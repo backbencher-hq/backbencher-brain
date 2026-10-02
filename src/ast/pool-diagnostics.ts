@@ -56,7 +56,7 @@
 // with no further edit. Three more sites are worth the same treatment and are
 // listed in AGENT-1-REPORT; none of them is required for correctness.
 
-import { fork as forkChild, type ChildProcess } from "node:child_process"
+import { fork as forkChild, spawnSync, type ChildProcess } from "node:child_process"
 import { existsSync } from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
@@ -89,6 +89,48 @@ export function poolStartupTimeoutMs(env: NodeJS.ProcessEnv = process.env): numb
   return n
 }
 
+/**
+ * Floor for the FORK PROBE's deadline. Not the workers' — see below.
+ *
+ * MEASURED, not guessed: a healthy cold start of the tsx target on this machine
+ * is 0.9-3.4s (the compiled target 0.55-0.67s), and a cold module cache on a
+ * loaded machine is worse. A probe deadline below that classifies a healthy
+ * worker as hung, which is the same false verdict as an old one, just faster.
+ */
+export const POOL_PROBE_MIN_TIMEOUT_MS = 15_000
+
+/**
+ * The fork PROBE's deadline — deliberately NOT the same number as the workers'
+ * watchdog, even though both come from one env var.
+ *
+ * They are two different questions, and the 60s that used to be hardcoded at
+ * the probe was not laziness, it was the fixture:
+ *
+ *   - THE PROBE (parallel-indexer.ts:4655) forks ONE throwaway worker and waits
+ *     for its first `ready`. It pays the whole loader cost — tsx boot plus the
+ *     module graph — before a single byte of work is done.
+ *   - EACH POOL WORKER (parallel-indexer.ts:1248) is forked only AFTER the probe
+ *     has already proved the target boots, so its deadline covers the remaining
+ *     work, not the cold start.
+ *
+ * When both read the same value, lowering the knob to make a slow machine
+ * workable starves the probe, and lowering it to EXERCISE per-worker startup
+ * failure (which is exactly what `script/m21/verify-w1-worker-lifecycle.ts:157`
+ * does with `BB_WORKER_STARTUP_TIMEOUT_MS=700` + `BB_WORKER_DELAY_READY_MS=5000`)
+ * stops exercising anything: measured on that fixture, the probe fails first at
+ * 700 ms, the pool is never created, `phases.mode` is `in-process` and
+ * `phases.workerStartupFailures` is 0 — so the assertion that startup failure is
+ * counted distinctly from parser failure can no longer pass at any setting.
+ *
+ * With the probe floored, that fixture's own numbers work again: probe 15s (a
+ * 5 s delayed `ready` fits), per-worker watchdog 700 ms (so it does fail, and is
+ * counted). And the worst case for an unset environment is 30 s, not the 60 s
+ * that used to be hardcoded — so no path waits a minute any more.
+ */
+export function poolProbeTimeoutMs(env: NodeJS.ProcessEnv = process.env): number {
+  return Math.max(poolStartupTimeoutMs(env), POOL_PROBE_MIN_TIMEOUT_MS)
+}
+
 /** How the fork target was found. Reported in the diagnosis so a user can see WHICH one was used. */
 export type PoolForkSource = "compiled-dist" | "tsx-local" | "tsx-path" | "bun-native"
 
@@ -111,6 +153,8 @@ export type PoolFailureReason =
   | "worker-exit-nonzero"
   /** The child was alive and said nothing within the startup window. */
   | "worker-startup-timeout"
+  /** The installed worker predates the self-test, so `bb doctor` cannot verify it. */
+  | "worker-selftest-unsupported"
   /** `fork()` itself refused (sandbox, closed fd table, no exec). */
   | "fork-unavailable"
 
@@ -260,6 +304,14 @@ function remediationFor(reason: PoolFailureReason, detail: PoolForkFailure["deta
         `Or watch it start by hand:\n  \`${workerCommand}\``,
         inProcessOptOut(),
       ]
+    case "worker-selftest-unsupported":
+      return [
+        "The installed worker did not answer bb's startup self-test, so bb cannot prove it\n" +
+          "starts. That is expected for a build older than the self-test; it is NOT a failure\n" +
+          "of the pool.",
+        "Rebuild to get a verifiable worker: `npm run build` (and `npm install --include=dev`\n" +
+          "if you are running from source, where tsx is required).",
+      ]
     case "fork-unavailable":
       return [
         "The operating system refused to fork a worker process.\n" +
@@ -302,6 +354,46 @@ function findOnPath(name: string, env: NodeJS.ProcessEnv, exists: (p: string) =>
     } catch {
       // An unreadable PATH entry is not a reason to stop looking.
     }
+  }
+  return null
+}
+
+/** How far up the tree the package-root walk will look before giving up. */
+const MAX_ROOT_WALK = 6
+
+/**
+ * The package root, found by walking up to the nearest `package.json`.
+ *
+ * WHY NOT `resolve(moduleDir, "../..")`, WHICH IS WHAT BOTH CALLERS USED.
+ * That expression is only correct for ONE layout — the unbundled source tree,
+ * where `src/ast` and `src/setup` each sit exactly two levels under the root.
+ * It breaks for every other layout, and the bundle is the layout that ships:
+ *
+ *   - tsup puts the doctor's code in a CHUNK at `dist/doctor-<hash>.js`, so
+ *     `import.meta.dirname` is `<pkg>/dist` and `../..` is the PARENT of the
+ *     package. Measured, not argued: `bin/bb doctor` from a compiled build
+ *     searched `<parent>/node_modules/.bin/tsx` and `<parent>/src/ast` — one
+ *     level above the checkout, where nothing exists. Every path the module
+ *     touches was wrong and the output said so.
+ *   - the same walk put `createRequire(path.join(ROOT_PKG, "package.json"))`
+ *     (src/setup/doctor.ts) outside the package, so better-sqlite3 failed to
+ *     resolve and `readStoredModels` quietly returned `[]` — doctor's
+ *     model-consistency check, dead in every published install and invisible
+ *     because the catch swallows it.
+ *
+ * One package.json lookup, from any of those layouts, and it is right.
+ */
+export function findPackageRoot(fromDir: string, exists: (p: string) => boolean = existsSync): string | null {
+  let dir = path.resolve(fromDir)
+  for (let i = 0; i <= MAX_ROOT_WALK; i++) {
+    try {
+      if (exists(path.join(dir, "package.json"))) return dir
+    } catch {
+      // Unreadable directory: keep walking.
+    }
+    const parent = path.dirname(dir)
+    if (parent === dir) return null
+    dir = parent
   }
   return null
 }
@@ -367,23 +459,44 @@ export function resolvePoolWorkerForkSafe(deps: PoolResolverDeps = {}): PoolFork
     )
   }
 
-  const projectRoot = path.resolve(moduleDir, "../..")
+  // The package root, not "two levels up". `../..` is right for exactly one
+  // layout (the unbundled `src/ast`) and wrong for every other — see
+  // findPackageRoot. When no package.json is in reach (an injected test root,
+  // a vendored copy) the old arithmetic is the fallback, so nothing that used to
+  // resolve stops resolving.
+  const walked = findPackageRoot(moduleDir, exists)
+  const projectRoot = walked ?? path.resolve(moduleDir, "../..")
   const isCompiled =
     (moduleDir.endsWith(`${path.sep}dist`) || moduleDir.includes(`${path.sep}dist${path.sep}`)) &&
     !moduleDir.includes(`${path.sep}src${path.sep}`)
 
   if (isCompiled) {
-    const workerPath = path.join(moduleDir, "pool-worker.js")
-    if (!exists(workerPath)) {
-      // Compiled layout selected but the entry is not on disk: a partial build
+    // `pool-worker.js` is a tsup ENTRY, so it lands at the top of dist/ — but
+    // the CALLER may not: the bundle can be `dist/cli/index.js` or a chunk at
+    // `dist/chunk-<hash>.js`, and the caller's own directory is not where the
+    // worker is. Search upward a bounded number of levels instead of assuming a
+    // sibling, and report every path tried when it is not there.
+    const candidates: string[] = []
+    let dir = moduleDir
+    for (let i = 0; i <= MAX_ROOT_WALK; i++) {
+      candidates.push(path.join(dir, "pool-worker.js"))
+      const parent = path.dirname(dir)
+      if (parent === dir) break
+      dir = parent
+    }
+    if (walked) candidates.push(path.join(walked, "dist", "pool-worker.js"))
+
+    const workerPath = candidates.find((p) => exists(p))
+    if (!workerPath) {
+      // Compiled layout selected but the entry is not on disk: a partial build,
       // or an install whose `files` list dropped dist/. The original resolver
-      // returned the path unconditionally, so fork() raised ENOENT and the
-      // caller reported "worker pool unavailable (spawn ENOENT)".
-      return fail("worker-entry-missing", `compiled worker entry is missing: ${workerPath}`, {
+      // returned the path unconditionally, so fork() raised ENOENT and the caller
+      // reported "worker pool unavailable (spawn ENOENT)" — naming neither.
+      return fail("worker-entry-missing", `compiled worker entry is missing (tried ${candidates.length} locations)`, {
         ...baseDetail,
         projectRoot,
-        workerPath,
-        searchedPaths: [workerPath],
+        workerPath: candidates[0],
+        searchedPaths: candidates,
       })
     }
     return { ok: true, workerPath, workerArgs: [], source: "compiled-dist", projectRoot }
@@ -596,34 +709,87 @@ const CAPTURE_TAIL_BYTES = 8 * 1024
 export interface WorkerOutputCapture {
   readonly stdout: string
   readonly stderr: string
+  /**
+   * Last N non-empty LINES of stderr, oldest first.
+   *
+   * Lines, not bytes, because a stack trace is worthless cut mid-line and
+   * worth a lot intact: "Error: invalid ELF header" tells the reader to
+   * reinstall node_modules, while the same bytes sliced at an arbitrary offset
+   * can be an empty fragment that explains nothing. This is what the failure
+   * path quotes.
+   */
+  stderrLines(): string[]
+  /** True when the cap discarded something, so the report can say "last N lines". */
+  readonly stderrTruncated: boolean
   /** Detach listeners and destroy the pipes. Always call this. */
   stop(): void
 }
 
+export interface WorkerOutputCaptureOptions {
+  /**
+   * Echo every line to the parent's stderr as it arrives. OFF by default, and
+   * that default is load-bearing: a pool of N workers writing routine INFO
+   * logging turns into a wall of text that buries the progress line, which is
+   * what the previous unconditional relay did. Diagnostics are not logs — they
+   * are surfaced by `explainWorkerStartupFailure` on the failure path only.
+   */
+  echo?: string
+  /** Lines of each stream retained. Default 20. */
+  lineLimit?: number
+  /** Bytes retained per stream, hard ceiling. Default 8 KB. */
+  byteLimit?: number
+}
+
+export const DEFAULT_CAPTURE_LINES = 20
+
 /**
- * Read a forked child's stdout/stderr.
+ * Read a forked child's stdout/stderr, keeping a bounded tail and echoing
+ * nothing by default.
  *
- * `stdio: ["ignore","pipe","pipe","ipc"]` (parallel-indexer.ts:1517 and 4544)
- * gives the parent a PIPE it must drain. Where it drains them, fine; where it
- * does not — the fork probe at 4544 — every byte the child writes is dropped,
- * which is why a worker that dies on load says nothing, AND the child will
- * eventually block forever writing into a full 64 KB pipe buffer. Attach this
- * at every fork site.
+ * `stdio: ["ignore","pipe","pipe","ipc"]` gives the parent a PIPE it must
+ * drain, at every fork site: parallel-indexer.ts:1598 (the pool, where it now
+ * drains via a gated relay) and :4648 (the fork probe, where NOTHING reads it).
+ * Two consequences, and the second is the one that bites:
  *
- * The tail is capped so a runaway child cannot grow the parent's heap.
+ *   1. a worker that dies on load says nothing, so the only evidence available
+ *      — its own error — is thrown away;
+ *   2. a child that writes more than the pipe buffer (~64 KB) BLOCKS forever
+ *      waiting for a reader that never comes.
+ *
+ * So: always drain, retain a bounded tail, and echo only on request. The tail
+ * is what `explainWorkerStartupFailure` quotes; `echo` is opt-in so routine
+ * logging still cannot flood a terminal.
  */
-export function attachWorkerOutputCapture(child: ChildProcess, prefix = ""): WorkerOutputCapture {
+export function attachWorkerOutputCapture(
+  child: ChildProcess,
+  options: WorkerOutputCaptureOptions | string = {},
+): WorkerOutputCapture {
+  // Accept the older `(child, prefix)` shape so an existing call site keeps
+  // working: a bare string is a prefix, i.e. "echo with this tag".
+  const opts: WorkerOutputCaptureOptions = typeof options === "string" ? { echo: options } : options
+  const echo = opts.echo ?? ""
+  const lineLimit = Math.max(1, opts.lineLimit ?? DEFAULT_CAPTURE_LINES)
+  const byteLimit = Math.max(256, opts.byteLimit ?? CAPTURE_TAIL_BYTES)
+
   let out = ""
   let err = ""
-  const keep = (acc: string, chunk: Buffer): string => (acc + chunk.toString()).slice(-CAPTURE_TAIL_BYTES)
+  let errTruncated = false
+
+  /** Append, cap by bytes, and remember that a cap discarded something. */
+  const keep = (acc: string, chunk: Buffer, isErr: boolean): string => {
+    const next = acc + chunk.toString()
+    if (next.length <= byteLimit) return next
+    if (isErr) errTruncated = true
+    return next.slice(-byteLimit)
+  }
 
   const onOut = (d: Buffer) => {
-    out = keep(out, d)
-    if (prefix) process.stderr.write(`${prefix}${d.toString()}`)
+    out = keep(out, d, false)
+    if (echo) process.stderr.write(`${echo}${d.toString()}`)
   }
   const onErr = (d: Buffer) => {
-    err = keep(err, d)
-    if (prefix) process.stderr.write(`${prefix}${d.toString()}`)
+    err = keep(err, d, true)
+    if (echo) process.stderr.write(`${echo}${d.toString()}`)
   }
 
   child.stdout?.on("data", onOut)
@@ -636,11 +802,196 @@ export function attachWorkerOutputCapture(child: ChildProcess, prefix = ""): Wor
     get stderr() {
       return err
     },
+    get stderrTruncated() {
+      return errTruncated
+    },
+    stderrLines() {
+      return err
+        .split("\n")
+        .map((l) => l.trimEnd())
+        .filter((l) => l.trim().length > 0)
+        .slice(-lineLimit)
+    },
     stop() {
       child.stdout?.off("data", onOut)
       child.stderr?.off("data", onErr)
     },
   }
+}
+
+/** The bounded stderr tail, as the block of lines a failure report quotes. */
+export function stderrTailLines(capture: WorkerOutputCapture | undefined, limit = DEFAULT_CAPTURE_LINES): string[] {
+  if (!capture) return []
+  const lines = capture.stderrLines().slice(-limit)
+  return lines
+}
+
+// ── synchronous probe (what `bb doctor` can afford) ─────────────────────────
+
+/** Env that turns the worker entry into a one-shot startup self-test. */
+export const SELFTEST_ENV = "BB_POOL_WORKER_SELFTEST"
+/** Marker the self-test prints on stdout, one line of JSON. */
+export const SELFTEST_MARKER = "[BB-WORKER-SELFTEST]"
+
+/** What the worker's self-test reports about itself. */
+export interface PoolWorkerSelfTestReport {
+  ok: boolean
+  engine: "ok" | "unavailable"
+  wasm: "ok" | "unavailable"
+  node: string
+  pid: number
+  execPath: string
+  /** The startup problems found, in the order found. */
+  diagnostics: string[]
+}
+
+export interface PoolSyncProbeOk extends PoolForkOk {
+  ms: number
+  report: PoolWorkerSelfTestReport
+  stderrTail: string
+}
+
+export type PoolSyncProbeResult = PoolSyncProbeOk | PoolForkFailure
+
+export interface PoolSyncProbeOptions {
+  /** Hard ceiling. Default 30s — a cold tsx boot is seconds, not minutes. */
+  timeoutMs?: number
+  env?: NodeJS.ProcessEnv
+}
+
+/**
+ * Start the worker ONCE, synchronously, and read what it says about itself.
+ *
+ * WHY THIS EXISTS SEPARATELY FROM `probePoolWorker`. `bb doctor` is called from
+ * a SYNC function — `runDoctorChecks` in src/setup/doctor.ts is not async, and
+ * src/cli/index.ts (which this work may not edit) calls it without `await`, so
+ * making it async would hand the CLI a Promise and break `report.healthy`.
+ * A probe that has to await an IPC handshake cannot run there at all.
+ *
+ * So this one does not handshake. It runs the worker's SELF-TEST mode
+ * (`BB_POOL_WORKER_SELFTEST=1`, implemented in pool-worker.ts), which performs
+ * the same startup work the handshake triggers — the wasm registry and the AST
+ * engine — and prints one machine-readable line. That covers the two failures
+ * that matter most and that resolution alone cannot see:
+ *
+ *   - the worker's own module graph fails to LOAD (a native module built for
+ *     another platform, a module that is not installed): non-zero exit, and the
+ *     error is on stderr for `explainWorkerStderr` to classify;
+ *   - the engine or the wasm registry fails to load: the worker starts but is
+ *     DEGRADED, and says so in the report instead of silently regex-parsing
+ *     every file.
+ *
+ * What it cannot cover: the IPC handshake itself, and a worker that boots and
+ * then wedges. `probePoolWorker` covers those and should be used wherever an
+ * async caller is available.
+ *
+ * The child is spawned the way the pool spawns it — under `process.execPath`,
+ * with the same target and args — so the verdict matches the indexer's, rather
+ * than testing something the indexer never runs.
+ */
+export function probePoolWorkerSync(
+  resolution: PoolForkResolution,
+  opts: PoolSyncProbeOptions = {},
+): PoolSyncProbeResult {
+  if (!resolution.ok) return resolution
+  const env = opts.env ?? process.env
+  const timeoutMs = opts.timeoutMs ?? 30_000
+  const startedAt = Date.now()
+
+  let res: ReturnType<typeof spawnSync>
+  try {
+    res = spawnSync(
+      process.execPath,
+      [resolution.workerPath, ...resolution.workerArgs],
+      {
+        env: { ...env, [SELFTEST_ENV]: "1" },
+        encoding: "utf8",
+        timeout: timeoutMs,
+        killSignal: "SIGKILL",
+        maxBuffer: 4 * 1024 * 1024,
+        windowsHide: true,
+      },
+    )
+  } catch (e: any) {
+    // spawnSync throws only on a malformed invocation, but a diagnostic that
+    // throws is worse than one that reports nothing.
+    return fail("fork-unavailable", `could not start a worker self-test: ${e?.message ?? String(e)}`, {
+      workerPath: resolution.workerPath,
+      workerArgs: resolution.workerArgs,
+      errorMessage: String(e?.message ?? e),
+    })
+  }
+
+  const ms = Date.now() - startedAt
+  const stdout = typeof res.stdout === "string" ? res.stdout : ""
+  const stderr = typeof res.stderr === "string" ? res.stderr : ""
+  const stderrTail = stderr
+    .split("\n")
+    .map((l) => l.trimEnd())
+    .filter((l) => l.trim().length > 0)
+    .slice(-DEFAULT_CAPTURE_LINES)
+    .join("\n")
+
+  // Timed out: the process was killed before it could finish starting.
+  if (res.error && (res.error as any).code === "ETIMEDOUT") {
+    const explained = stderrTail ? explainWorkerStderr(stderrTail) : null
+    const attributed = explained && explained.cause !== "unclassified" ? explained : null
+    return fail(
+      attributed ? "worker-load-crash" : "worker-startup-timeout",
+      attributed
+        ? `worker self-test did not finish: ${attributed.summary}`
+        : `worker self-test did not finish within ${timeoutMs}ms`,
+      {
+        workerPath: resolution.workerPath,
+        workerArgs: resolution.workerArgs,
+        timeoutMs,
+        stderrTail: stderrTail || undefined,
+        ...(attributed ? { cause: attributed.cause, causeRemediation: attributed.remediation } : {}),
+      },
+    )
+  }
+
+  const markerLine = stdout.split("\n").find((l) => l.startsWith(SELFTEST_MARKER))
+  if (markerLine) {
+    let report: PoolWorkerSelfTestReport | null = null
+    try {
+      report = JSON.parse(markerLine.slice(SELFTEST_MARKER.length).trim())
+    } catch {
+      report = null
+    }
+    if (report) {
+      // A DEGRADED worker is not an unavailable pool: it indexes, it is just
+      // thinner. The caller decides severity; this keeps the distinction.
+      return { ...resolution, ms, report, stderrTail }
+    }
+  }
+
+  // No marker. Either the worker predates the self-test, or it died before
+  // printing one. Both are answerable, and answering them differently is the
+  // point: an old build must not be reported as a broken pool.
+  if (res.status === 0 && !stderrTail) {
+    return fail(
+      "worker-selftest-unsupported",
+      "the installed worker did not run bb's startup self-test (it predates it)",
+      { workerPath: resolution.workerPath, workerArgs: resolution.workerArgs, exitCode: 0 },
+    )
+  }
+  const explained = stderrTail ? explainWorkerStderr(stderrTail) : null
+  const attributed = explained && explained.cause !== "unclassified" ? explained : null
+  return fail(
+    attributed ? "worker-load-crash" : "worker-exit-nonzero",
+    attributed
+      ? `the worker failed to start: ${attributed.summary}`
+      : `the worker exited with code ${res.status ?? "null"} before reporting a startup result`,
+    {
+      workerPath: resolution.workerPath,
+      workerArgs: resolution.workerArgs,
+      exitCode: res.status ?? null,
+      signal: res.signal ?? null,
+      stderrTail: stderrTail || undefined,
+      ...(attributed ? { cause: attributed.cause, causeRemediation: attributed.remediation } : {}),
+    },
+  )
 }
 
 // ── handshake probe ─────────────────────────────────────────────────────────
@@ -782,14 +1133,18 @@ export function probePoolWorker(
     })
 
     child.on("exit", (code, signal) => {
-      // `exit` is NOT when the child's stderr has arrived. Node emits it when
-      // the process ends; the piped bytes it wrote are delivered afterwards,
-      // on `close`, once the stdio streams are drained. Classifying here — the
-      // obvious thing to write — reads an EMPTY stderr for the one class of
-      // failure whose whole diagnosis IS its stderr, and reports "it printed
-      // nothing" for a child that printed a stack. Measured: a synthetic
-      // loader crashing with ERR_MODULE_NOT_FOUND was classified as having no
-      // stderr at all until this was moved to `close`.
+      // Classify on `close`, not here. Node does NOT promise that a child's piped
+      // stdout/stderr has been delivered by the time `exit` fires — and the class
+      // of failure this exists for is the one whose ENTIRE diagnosis is its
+      // stderr, so "probably delivered" is not good enough.
+      //
+      // Measured honestly: 25 identical crashing children in this environment
+      // delivered their stderr BEFORE `exit` every time, and an earlier revision
+      // of this file (classifying at `exit`) also produced complete stderr. So
+      // this is NOT a bug reproduced here — it is an ordering the docs leave
+      // open, and `close` is the only event guaranteed to follow the stdio
+      // drain. The grace timer below stops it becoming a hang when a grandchild
+      // still holds the write end.
       const classify = () => {
         if (settled) return
         const stderrTail = capture.stderr.trim()
@@ -999,7 +1354,12 @@ export async function diagnosePoolStartup(
   if (ready.engine === "unavailable") {
     findings.push({
       id: "pool-engine-unavailable",
-      severity: "fail",
+      // WARN, not fail. The pool DID start and files DO get indexed — through
+      // regex extraction, which yields fewer symbols. So the pool is degraded,
+      // not broken, and a doctor exiting 1 here would report an outage where the
+      // product is quietly returning a thinner index. The message says that in
+      // as many words, because "degraded" is the entire point of it.
+      severity: "warn",
       message:
         "A worker started but could not load the AST engine, so every file it parses falls back to " +
         "regex extraction (fewer symbols, still reported as indexed).\n" +
@@ -1026,7 +1386,325 @@ export async function diagnosePoolStartup(
       message: `The worker wrote to stderr during startup:\n${probe.stderrTail}`,
     })
   }
-  return { ok: true, resolution, probe, findings }
+return { ok: true, resolution, probe, findings }
+}
+
+// ── the synchronous form, for `bb doctor` ───────────────────────────────────
+
+/**
+ * Four states, because "workers don't start" and "workers started but are
+ * quietly worse" are different problems with different fixes:
+ *
+ *   - `disabled`    — off by request (`BB_POOL_WORKER=0`). Not a failure.
+ *   - `unavailable` — no worker can start. This is the report a user needs.
+ *   - `degraded`    — workers start, but the engine or the grammars did not
+ *                     load, so files are parsed by regex. Indexing works; the
+ *                     result is thinner. A WARN, not an exit-1.
+ *   - `ok`          — verified by actually starting one.
+ */
+export type PoolDoctorStatus = "ok" | "degraded" | "unavailable" | "disabled"
+
+export interface PoolDoctorReport {
+  status: PoolDoctorStatus
+  findings: PoolFinding[]
+  resolution: PoolForkResolution
+  /** Present when the self-test actually ran. */
+  probe?: PoolSyncProbeResult
+}
+
+export interface PoolDoctorOptions {
+  /**
+   * Directory of the AST module — `src/ast` when running from source, `dist`
+   * when running compiled. The resolver derives every path from it, so a caller
+   * that is NOT two levels below the package root must pass it. From
+   * `src/setup/` the default is already correct (both are two levels deep);
+   * from `src/setup/checks/` it would not be.
+   */
+  moduleDir?: string
+  env?: NodeJS.ProcessEnv
+  /**
+   * Run the worker's self-test. Default true — resolution alone cannot see a
+   * worker whose own module graph fails to load, which is the case a user is
+   * actually reporting when they say "workers don't start".
+   */
+  probe?: boolean
+  /** Self-test ceiling in ms. Default 30s. */
+  timeoutMs?: number
+}
+
+/**
+ * The synchronous diagnosis `bb doctor` calls.
+ *
+ * Sync because `runDoctorChecks` (src/setup/doctor.ts) is sync and
+ * src/cli/index.ts calls it without `await`; an async probe there would hand the
+ * CLI a Promise and break `report.healthy`. The cost of sync is real — it blocks
+ * the process for the length of one worker boot — so the probe is bounded,
+ * skipped entirely when resolution already failed (there is nothing to probe),
+ * and never throws.
+ */
+export function diagnosePoolStartupSync(opts: PoolDoctorOptions = {}): PoolDoctorReport {
+  const env = opts.env ?? process.env
+  const findings: PoolFinding[] = []
+  let resolution: PoolForkResolution
+  try {
+    resolution = resolvePoolWorkerForkSafe({ moduleDir: opts.moduleDir, env })
+  } catch (e: any) {
+    // The resolver does not throw — it returns a union. This guard exists so a
+    // future edit cannot make a throwing resolver take `bb doctor` down with it.
+    const message = String(e?.message ?? e)
+    return {
+      status: "unavailable",
+      resolution: {
+        ok: false,
+        reason: "fork-unavailable",
+        message: `the pool resolver itself failed: ${message}`,
+        remediation: ["This is a bug in bb. Re-run with BB_LOG_LEVEL=debug and report it."],
+        detail: { errorMessage: message },
+      },
+      findings: [
+        {
+          id: "pool-resolver-crashed",
+          severity: "fail",
+          message: `the pool resolver threw: ${message}`,
+          fix: "This is a bug in bb — please report it with the message above.",
+        },
+      ],
+    }
+  }
+
+  if (!resolution.ok) {
+    const disabled = resolution.reason === "pool-disabled-by-env"
+    findings.push({
+      id: `pool-${resolution.reason}`,
+      severity: disabled ? "info" : "fail",
+      message: renderPoolDiagnosis(resolution),
+      fix: resolution.remediation[0],
+    })
+    return { status: disabled ? "disabled" : "unavailable", resolution, findings }
+  }
+
+  // The runtime facts a reader needs BEFORE they read a cause: which loader is
+  // in play, and what is running it. A missing compiled entry and a missing tsx
+  // have different fixes and both present as "workers don't start" until you
+  // know which build is running.
+  const target =
+    resolution.source === "compiled-dist"
+      ? `the compiled worker (${resolution.workerPath})`
+      : `tsx + TypeScript source (${resolution.workerPath} ${resolution.workerArgs.join(" ")})`
+  findings.push({
+    id: "pool-target",
+    severity: "info",
+    message:
+      `Pool workers fork ${target}\n` +
+      `  runtime: ${process.execPath} (${process.version})\n` +
+      `  root: ${resolution.projectRoot}`,
+  })
+
+  if (opts.probe === false) return { status: "ok", resolution, findings }
+
+  let probe: PoolSyncProbeResult
+  try {
+    probe = probePoolWorkerSync(resolution, { env, timeoutMs: opts.timeoutMs })
+  } catch (e: any) {
+    findings.push({
+      id: "pool-selftest-crashed",
+      severity: "warn",
+      message: `the worker self-test could not be run: ${String(e?.message ?? e)}`,
+      fix: "Re-run with BB_LOG_LEVEL=debug; if this repeats it is a bug in bb.",
+    })
+    return { status: "ok", resolution, findings }
+  }
+
+  if (!probe.ok) {
+    // An old build that predates the self-test is not a broken pool, so it is a
+    // warn that says why, rather than a fail that would send the user chasing a
+    // reinstall they do not need.
+    const unverifiable = probe.reason === "worker-selftest-unsupported"
+    findings.push({
+      id: `pool-${probe.reason}`,
+      severity: unverifiable ? "warn" : "fail",
+      message: renderPoolDiagnosis(probe),
+      fix: probe.remediation[0],
+    })
+    return { status: unverifiable ? "ok" : "unavailable", resolution, probe, findings }
+  }
+
+  const r = probe.report
+  if (r.engine === "unavailable") {
+    findings.push({
+      id: "pool-engine-unavailable",
+      severity: "warn",
+      message:
+        "Pool workers START, but the AST engine did not load, so every file is parsed by regex\n" +
+        "extraction instead of its grammar. Indexing succeeds and returns FEWER symbols than a\n" +
+        "healthy run — which reads as \"bb works\" and is not.\n" +
+        `  worker said: ${r.diagnostics.join(" | ") || "(no detail)"}`,
+      fix: "npm rebuild --build-from-source && rm -rf node_modules && npm install --include=dev",
+    })
+  }
+  if (r.wasm === "unavailable") {
+    findings.push({
+      id: "pool-wasm-unavailable",
+      severity: "warn",
+      message:
+        "Pool workers START, but the tree-sitter wasm registry did not load. Grammar-based\n" +
+        "parsing is unavailable; files still index through the regex fallback.\n" +
+        `  worker said: ${r.diagnostics.join(" | ") || "(no detail)"}`,
+      fix: "Check the grammars shipped with your install: `ls wasm | head`",
+    })
+  }
+  if (r.engine === "ok" && r.wasm === "ok") {
+    findings.push({
+      id: "pool-verified",
+      severity: "info",
+      message: `A pool worker started and loaded the engine and the grammars in ${probe.ms}ms (pid ${r.pid}, ${r.node}).`,
+    })
+  }
+  const status: PoolDoctorStatus = r.engine === "ok" && r.wasm === "ok" ? "ok" : "degraded"
+  return { status, resolution, probe, findings }
+}
+// ── turning a caught failure into something a user can act on ───────────────
+
+export interface WorkerStartupFailureInput {
+  /** Whatever the `catch` received. */
+  error?: unknown
+  /** The bounded capture from `attachWorkerOutputCapture`, preferred. */
+  capture?: WorkerOutputCapture
+  /** Raw stderr, when there is no capture object. */
+  stderr?: string
+  exitCode?: number | null
+  signal?: string | null
+  timeoutMs?: number
+  /** The resolution that produced the fork, if the caller still has it. */
+  resolution?: PoolForkResolution
+  workerPath?: string
+  workerArgs?: string[]
+  /** Lines of stderr quoted in the report. Default `DEFAULT_CAPTURE_LINES`. */
+  lineLimit?: number
+}
+
+export interface WorkerStartupFailure {
+  ok: false
+  /** Reason code — the thing to grep, and the `doctor` finding id. */
+  reason: PoolFailureReason
+  /** Machine cause from the child's own output, or `unclassified`. */
+  cause: StderrCause
+  /** One sentence in prose. */
+  causeSummary: string
+  /** One line naming the failure. */
+  message: string
+  /** Ordered fixes. */
+  remediation: string[]
+  /** The bounded evidence: last N non-empty lines of the child's stderr. */
+  stderrLines: string[]
+  stderrTruncated: boolean
+  /** Terminal-ready block: cause, evidence, fixes, runtime facts. */
+  text: string
+}
+
+/**
+ * THE call the indexer makes when the pool will not start.
+ *
+ * Everything a user is told about a dead pool comes from here, in one place, so
+ * the fork probe and `bb doctor` cannot describe the same failure differently.
+ * It is built from what the caller actually HAS at the catch: the error, the
+ * bounded stderr capture, and the exit code. The chain is:
+ *
+ *     child's stderr  ->  explainWorkerStderr  ->  a named cause
+ *                     ->  PoolForkFailure       ->  cause + fixes + evidence
+ *
+ * That middle step is the one that was missing. The pool knew it had failed and
+ * roughly why the TARGET was unusable, but the worker's own output — a native
+ * module built for another platform, a module that is not installed, a Node
+ * version mismatch — was drained and dropped, so it was never the answer to
+ * "why aren't my pool workers starting?", even though it was the only evidence
+ * anyone had.
+ *
+ * Anti-spam: nothing here writes to the terminal. It RETURNS text for the
+ * failure path; routine worker logging stays un-echoed.
+ */
+export function explainWorkerStartupFailure(input: WorkerStartupFailureInput): WorkerStartupFailure {
+  const limit = Math.max(1, input.lineLimit ?? DEFAULT_CAPTURE_LINES)
+  const stderr = input.capture ? input.capture.stderr : (input.stderr ?? "")
+  const lines = input.capture
+    ? input.capture.stderrLines().slice(-limit)
+    : stderr
+        .split("\n")
+        .map((l) => l.trimEnd())
+        .filter((l) => l.trim().length > 0)
+        .slice(-limit)
+  const truncated = input.capture ? input.capture.stderrTruncated : stderr.length > 0 && lines.join("\n").length < stderr.trim().length
+  // The evidence block is the LINES, not the raw buffer: a stack trace cut at an
+  // arbitrary byte offset is usually the useless part.
+  const evidence = lines.join("\n")
+  const classified = evidence.trim() ? explainWorkerStderr(evidence) : null
+  const attributed = classified && classified.cause !== "unclassified" ? classified : null
+  const errMsg = input.error instanceof Error ? input.error.message : input.error ? String(input.error) : ""
+  const detail: PoolForkFailure["detail"] = {
+    workerPath: input.workerPath ?? (input.resolution?.ok ? input.resolution.workerPath : undefined),
+    workerArgs: input.workerArgs ?? (input.resolution?.ok ? input.resolution.workerArgs : undefined),
+    execPath: process.execPath,
+    nodeVersion: process.version,
+    timeoutMs: input.timeoutMs,
+    exitCode: input.exitCode,
+    signal: input.signal,
+    stderrTail: evidence || undefined,
+    ...(attributed ? { cause: attributed.cause, causeRemediation: attributed.remediation } : {}),
+  }
+
+  // A resolution-time failure already IS the complete answer — the worker was
+  // never forked, so its stderr is irrelevant (usually empty).
+  let failure: PoolForkFailure
+  if (input.resolution && !input.resolution.ok) {
+    failure = input.resolution
+  } else {
+    const reason: PoolFailureReason = attributed
+      ? "worker-load-crash"
+      : /timed out after|handshake did not complete/i.test(errMsg)
+        ? "worker-startup-timeout"
+        : input.exitCode === 0
+          ? "worker-exited-silently"
+          : input.exitCode !== undefined && input.exitCode !== null
+            ? "worker-exit-nonzero"
+            : "fork-unavailable"
+    const message = attributed
+      ? `the worker failed to start: ${attributed.summary}`
+      : errMsg || DEFAULT_FAILURE_MESSAGE[reason]
+    failure = fail(reason, message, {
+      ...detail,
+      timeoutMs: input.timeoutMs ?? (reason === "worker-startup-timeout" ? poolProbeTimeoutMs() : undefined),
+    })
+  }
+
+  const text = renderPoolDiagnosis(failure) + (truncated
+    ? "\n  (earlier stderr was dropped by the capture — the full trace, if the worker logged\n" +
+      "   one, is in $BB_DATA_DIR/logs/)"
+    : "")
+  return {
+    ok: false,
+    reason: failure.reason,
+    cause: attributed?.cause ?? failure.detail.cause ?? "unclassified",
+    causeSummary: attributed?.summary ?? failure.message,
+    message: failure.message,
+    remediation: failure.remediation,
+    stderrLines: lines,
+    stderrTruncated: truncated,
+    text,
+  }
+}
+
+const DEFAULT_FAILURE_MESSAGE: Record<PoolFailureReason, string> = {
+  "pool-disabled-by-env": "the pool is disabled by BB_POOL_WORKER",
+  "runtime-unsupported": "the worker cannot be forked under this runtime",
+  "worker-entry-missing": "the worker entry is not on disk",
+  "tsx-missing": "no tsx binary was found, so the source worker cannot be started",
+  "tsx-not-runnable": "the resolved tsx binary is not runnable",
+  "worker-load-crash": "the worker failed to start",
+  "worker-exited-silently": "the worker exited without ever reporting ready",
+  "worker-exit-nonzero": "the worker exited with a non-zero code",
+  "worker-startup-timeout": "the worker did not report ready in time",
+  "fork-unavailable": "forking a worker failed",
+  "worker-selftest-unsupported": "the installed worker does not support a startup self-test",
 }
 
 /**
