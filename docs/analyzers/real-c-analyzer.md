@@ -740,6 +740,32 @@ mutants **43/43** caught, 5 retired · 0 property violations · M12 truth drift 
 fabricated over 10,941 edges · differential **0 unexplained** in the C lane on curl,
 libgit2 and redis.
 
+**`validation/m12/results/c-differential.json` is regenerated, and its `passed: false` is
+the TRUTH being stale rather than the analyzer.** It was previously treated as not this
+lane's artifact — the handoff recorded it as "stale, 39/65 input hashes" and attributed
+it to the canonical 40-language sweep. It is per-analyzer, keyed on one language, and
+`bun run script/m12/verify-analyzer.ts c` regenerates it in seconds. Refreshing it moved
+every number the right way: true positives **79 → 85**, false negatives **13 → 7**,
+recall **0.859 → 0.924**, and the input set from 65 files to **26** — the generator now
+pins the inputs that reach the C lane rather than every analyzer in the tree, so 39 of the
+"stale" hashes were never this artifact's to hold. An artifact that pins 39 files it does
+not read reports itself stale every time an unrelated lane lands, which is what happened.
+
+All **7** remaining false negatives are rows where the truth is behind, and each says so in
+its own evidence text:
+
+| row | why the analyzer is right |
+| --- | --- |
+| `references:global:Module.h` and 5 siblings | the edge is emitted under the first-class `imports` kind (M60/#910); the truth spells it `references` |
+| `instantiates:buffer_create:Buffer` | `Buffer` is declared in `Module.h`, so from `Module.c` it is cross-file, and the truth's own note reads `RE-TARGETED UNDER C-D2 … the row is therefore RETARGETED` |
+
+The 17 false positives are the three classes this file already records: an `imports` edge
+the truth spells `references`, a `references` edge for a typedef declaration site the truth
+does not mention, and a value-less `#define` include guard the truth lists as NOISE and the
+analyzer mints deliberately (#901 — dropping it lost two real edges). `c-truth-drift.json`
+carries the per-row adjudication and is the instrument to read, because it compares row by
+row where this artifact compares by aggregate.
+
 The mutant count moved 41 → 43, for `c-lane/macro-type-member-name` (#985) and
 `c-lane/inline-enum-member-path` (#986). The count of SURVIVORS moved 0 → 0 only after
 `c-lane/macro-generated-field-name`'s revert was widened to remove both guards — see the
