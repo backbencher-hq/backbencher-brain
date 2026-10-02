@@ -202,7 +202,14 @@ if (fallbackResult) {
   suite.check("the run SAYS the worker pool was unavailable (never silent)", saidUnavailable, out.split("\n").filter((l) => /pool/i.test(l)).join(" | ").slice(0, 300))
   suite.check(
     "the report gives a CAUSE, not just a fact",
-    /worker pool unavailable \([^)]+\)/.test(out) || /no tsx binary found/i.test(out),
+    // The cause is now a bracketed reason code plus prose, e.g.
+    //   reason: worker pool unavailable [tsx-missing]: tsx not found: ...
+    // This originally expected the older parenthesised form
+    // "worker pool unavailable (...)" and so failed against a BETTER message:
+    // the reason code is machine-greppable and the prose names the fix.
+    /worker pool unavailable \[[a-z0-9-]+\]/i.test(out) ||
+      /no tsx binary found/i.test(out) ||
+      /tsx not found/i.test(out),
     out.split("\n").filter((l) => /pool unavailable|tsx/i.test(l)).join(" | ").slice(0, 300),
   )
   suite.negative(

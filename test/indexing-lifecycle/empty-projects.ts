@@ -206,9 +206,14 @@ suite.section("7. the CLI on an empty directory")
   const cli = await spawnCli(["index", root, "--no-setup"], { cwd: root })
   suite.check("`bb index` on an empty dir exits 0", cli.code === 0, `exit=${cli.code}\n${cli.stderr.slice(-400)}`)
   suite.check(
+    // Accept either phrasing. The summary used to read "indexed 0 files",
+    // which reads like a failure to anyone running `bb index` expecting work;
+    // it now says "nothing to index - already up to date". Both are honest, so
+    // assert the CLAIM (zero files indexed) rather than one exact wording.
     "`bb index` on an empty dir says it indexed 0 files",
-    /indexed 0 files/.test(cli.stdout),
-    cli.stdout.split("\n").filter((l) => l.includes("indexed")).join(" | ").slice(0, 200),
+    /indexed 0 files/.test(cli.stdout) ||
+      /nothing to index/i.test(cli.stdout),
+    cli.stdout.split("\n").filter((l) => /indexed|nothing to index/i.test(l)).join(" | ").slice(0, 200),
   )
   suite.check(
     "`bb index` on an empty dir reports 0 newly parsed (an honest no-op, not a silent one)",

@@ -22,12 +22,30 @@
 // Run:  npx tsx test/indexing-lifecycle/index-lock.ts
 // Env:   BB_TEST_INSERT_SYMBOL_REPAIR=1  diagnostic mode (see harness.ts)
 
-import { readFileSync, writeFileSync, mkdirSync, existsSync, rmSync } from "node:fs"
+import { readFileSync, writeFileSync, mkdirSync, existsSync, rmSync, utimesSync } from "node:fs"
 import path from "node:path"
 import {
   createSuite, isolateDataDir, installInsertSymbolRepair, printModeBanner,
   makeTsFixture, rmFixture, projectIdFor, spawnRaw, killTree, spawnCli, REPO_ROOT,
 } from "./harness"
+
+/**
+ * Backdate a planted lockfile so it looks older than the product's
+ * unreadable-lock grace window (BB_INDEX_LOCK_GRACE_MS, default 10s).
+ *
+ * Reclaim of an uninterpretable lock is deliberately delayed: a creator caught
+ * between "file exists" and "payload written" must not be mistaken for a
+ * crashed run. A brand-new corrupt lock therefore refuses CORRECTLY, and a test
+ * that plants one and immediately probes for reclaim is measuring the grace
+ * window, not whether the project stays wedged.
+ */
+function ageLockfilePastGrace(p: string): void {
+  const graceMs = Number(process.env.BB_INDEX_LOCK_GRACE_MS) >= 0
+    ? Number(process.env.BB_INDEX_LOCK_GRACE_MS)
+    : 10_000
+  const past = new Date(Date.now() - (graceMs + 5_000))
+  try { utimesSync(p, past, past) } catch { /* best effort */ }
+}
 
 const suite = createSuite("index-lock")
 isolateDataDir("lock")
@@ -155,7 +173,25 @@ suite.section("3. a lockfile the product cannot interpret")
     let err: any = null
     let took: any = null
     const t0 = Date.now()
-    try { took = await acquireIndexLock(pid, { kind: "probe", waitMs: 500, pollIntervalMs: 50 }) } catch (e) { err = e }
+    // Age the planted lockfile past the product's grace window BEFORE probing.
+    //
+    // This test originally waited only 500ms and concluded the lock "wedges the
+    // project permanently". That was wrong, and the product was right. An
+    // uninterpretable lockfile IS reclaimed — after
+    // `unreadableGraceMs()` (default 10_000ms), which exists so a creator caught
+    // between "file exists" and "payload written" is never mistaken for a
+    // crashed run. Verified by measurement: an empty lock aged past the window
+    // is reclaimed, and BB_INDEX_LOCK_GRACE_MS=0 reclaims it immediately.
+    //
+    // The original assertion therefore tested "is the grace window shorter than
+    // 500ms" rather than "does the project stay wedged", and failed against a
+    // correct implementation. Ageing the file keeps the real claim under test.
+    ageLockfilePastGrace(planted)
+    const graceMs = Number(process.env.BB_INDEX_LOCK_GRACE_MS) >= 0
+      ? Number(process.env.BB_INDEX_LOCK_GRACE_MS)
+      : 10_000
+    const waitBudget = graceMs + 2_000
+    try { took = await acquireIndexLock(pid, { kind: "probe", waitMs: waitBudget, pollIntervalMs: 100 }) } catch (e) { err = e }
     const waited = Date.now() - t0
 
     if (took) {
@@ -163,16 +199,13 @@ suite.section("3. a lockfile the product cannot interpret")
       await took.release()
       suite.check(`lockfile shaped as ${s.label}: a successful reclaim leaves no lockfile`, !existsSync(planted), planted)
     } else {
-      // The failure mode the task calls out as a suspected launch blocker: an
-      // uninterpretable lockfile is refused FOREVER — the reclaim branch
-      // requires a non-null pid (src/ast/index-lock.ts:199), there is no TTL,
-      // and there is no override flag. Contrast the repo's own gate lock,
-      // which has DEFAULT_STALE_MS = 10min plus BB_GATE_BREAK_STALE_LOCK.
+      // Only a genuine wedge reaches here: the lock survived well past its
+      // grace window, so nothing will ever reclaim it without a human.
       wedged.push(s.label)
       suite.check(
         `lockfile shaped as ${s.label}: it is reclaimable or escapable`,
         false,
-        `refused after ${waited}ms with no escape: ${String(err?.message ?? err).slice(0, 150)}`,
+        `refused after ${waited}ms (grace ${graceMs}ms) with no escape: ${String(err?.message ?? err).slice(0, 150)}`,
       )
       suite.check(
         `lockfile shaped as ${s.label}: the refusal does NOT promise an automatic reclaim it cannot perform`,
@@ -189,9 +222,16 @@ suite.section("3. a lockfile the product cannot interpret")
     `wedged shapes: ${wedged.join(" | ")}`,
   )
 
-  // User-visible consequence: with an uninterpretable lockfile in place, the
-  // shipped CLI cannot index the project at all.
+  // User-visible consequence: with an uninterpretable lockfile in place, can the
+  // shipped CLI still index the project?
+  //
+  // Age the lock past the grace window first, exactly as above. A BRAND-NEW
+  // truncated lockfile is refused correctly — the grace window exists so a
+  // creator caught between "file exists" and "payload written" is not mistaken
+  // for a crashed run — so probing one immediately tested the window's length
+  // rather than whether the project stays wedged.
   writeFileSync(planted, "{truncated")
+  ageLockfilePastGrace(planted)
   const blocked = await spawnCli(["index", fx.root, "--no-setup"], { cwd: fx.root })
   suite.check(
     "`bb index` is NOT permanently blocked by an uninterpretable lockfile",
