@@ -397,6 +397,146 @@ try {
     )
   }
 
+  // ── LANE: the three questions asked again, as hard direct claims ─────────
+  // Not a re-run of G1–G8: each of these is a whole-table equality over a graph
+  // that ALREADY contains dangling edges, which is the case that matters — the
+  // question is not "does enrichment create a bad edge" in the abstract but
+  // "given a graph that is already broken somewhere, can enrichment make it
+  // worse or hide it".
+  {
+    const { pid, raw } = await fixture("lane", (db, p) => {
+      insFile(db, p, `${p}:f1`, "src/lib.ts")
+      insFile(db, p, `${p}:f2`, "src/app.ts")
+      insFile(db, p, `${p}:f3`, "src/tests/app.test.ts", "typescript")
+      insSymbol(db, p, `${p}:hub`, `${p}:f1`, "Hub", "class", "service")
+      insSymbol(db, p, `${p}:port`, `${p}:f1`, "Port", "interface", "service")
+      insSymbol(db, p, `${p}:app`, `${p}:f2`, "app", "function", "ui")
+      insSymbol(db, p, `${p}:t`, `${p}:f3`, "t", "function")
+      insRel(db, p, "l1", `${p}:app`, `${p}:hub`, "calls")
+      insRel(db, p, "l2", `${p}:app`, `${p}:port`, "instantiates")
+      insRel(db, p, "l3", `${p}:app`, null, "calls")                                   // unresolved target
+      insRel(db, p, "l4", `${p}:t`, `${p}:hub`, "uses")                                 // test source
+      insRel(db, p, "l5", `${p}:app`, `${p}:hub`, "calls", { metadata: "{not json" })   // hostile metadata
+      insRel(db, p, "l6", `${p}:app`, `${p}:hub`, "calls", { metadata: JSON.stringify({ evidenceClass: "structural", custom: { deep: [1, 2] } }) })
+    })
+    // FK orphans, injected after the handle has memoized the open-time cleanup
+    // so they survive to the pass (see the G2 note).
+    await enrichRelationships(pid as any)
+    raw.exec("PRAGMA foreign_keys = OFF")
+    insRel(raw, pid, "danglingSrc", `${pid}:ghost`, `${pid}:hub`, "calls")
+    insRel(raw, pid, "danglingTgt", `${pid}:app`, `${pid}:ghostT`, "calls")
+    raw.exec("PRAGMA foreign_keys = ON")
+
+    // Whole-table snapshot of everything that is NOT the metadata column. If the
+    // pass could create, retarget or drop an edge, these would differ.
+    const graphShape = () =>
+      raw
+        .prepare(
+          `SELECT id, source_symbol_id, target_symbol_id, relationship_type, confidence, line_number,
+                  is_cross_file, is_cross_language, bridge_mechanism, time_created, time_updated
+             FROM brain_relationship WHERE project_id = ? ORDER BY id`,
+        )
+        .all(pid) as any[]
+    const metadataSnapshot = () =>
+      raw.prepare(`SELECT id, metadata FROM brain_relationship WHERE project_id = ? ORDER BY id`).all(pid) as any[]
+
+    const beforeShape = JSON.stringify(graphShape())
+    const targetSet = (rows: any[]) => rows.map((r) => `${r.id}=${r.target_symbol_id}`).sort()
+    const targetsBefore = targetSet(graphShape())
+
+    const pass1 = await enrichRelationships(pid as any)
+
+    check(
+      "L1a: enrichment changes NOTHING about the graph but the metadata column",
+      JSON.stringify(graphShape()) === beforeShape,
+      `row/edge/flag/timestamp projection is byte-identical before and after`,
+    )
+    check(
+      "L1b: it cannot CREATE a dangling target — the whole target set is unchanged",
+      JSON.stringify(targetSet(graphShape())) === JSON.stringify(targetsBefore),
+      `targets before ${targetsBefore.length} / after ${targetSet(graphShape()).length}`,
+    )
+    check(
+      "L1c: it cannot CREATE an edge at all (row count and ids unchanged)",
+      (raw.prepare(`SELECT COUNT(*) c FROM brain_relationship WHERE project_id = ?`).get(pid) as any).c === targetsBefore.length,
+      `${targetsBefore.length} rows before and after; the pass issues no INSERT`,
+    )
+    check(
+      "L1d: pre-existing dangling rows stay dangling AND stay COUNTED (not absorbed into coverage)",
+      pass1.danglingSources >= 1 && pass1.danglingTargets >= 1,
+      `danglingSources=${pass1.danglingSources} danglingTargets=${pass1.danglingTargets}`,
+    )
+    check(
+      "L1e: unresolved targets are labelled, never given a fabricated layer",
+      metaOf(raw, pid, "l3")?.layerFlow?.endsWith("→unresolved") === true,
+      JSON.stringify(metaOf(raw, pid, "l3")?.layerFlow),
+    )
+
+    // ── IDEMPOTENCE: byte-for-byte, not "enriched === 0".
+    const afterPass1 = JSON.stringify(metadataSnapshot())
+    const pass2 = await enrichRelationships(pid as any)
+    const afterPass2 = JSON.stringify(metadataSnapshot())
+    check(
+      "L2a: a second pass is byte-for-byte idempotent on EVERY row's metadata",
+      afterPass1 === afterPass2,
+      pass2.enriched === 0 ? "0 rows rewritten; not one byte differs" : `pass2 rewrote ${pass2.enriched} rows`,
+    )
+    check(
+      "L2b: idempotence holds for a THIRD pass too (no drift, no accumulating keys)",
+      (async () => {
+        const p3 = await enrichRelationships(pid as any)
+        return JSON.stringify(metadataSnapshot()) === afterPass2 && p3.enriched === 0 && p3.unchanged === pass2.unchanged
+      })(),
+      "pass3 == pass2 metadata, and the unchanged count is stable",
+    )
+    check(
+      "L2c: hostile pre-existing metadata is REPLACED once, then stays stable",
+      metaOf(raw, pid, "l5")?.inferredAt !== undefined && typeof metaOf(raw, pid, "l5") === "object",
+      `l5 metadata now ${JSON.stringify(metaOf(raw, pid, "l5"))?.slice(0, 60)}`,
+    )
+    check(
+      "L2d: analyzer-owned keys survive BOTH passes unchanged",
+      metaOf(raw, pid, "l6")?.evidenceClass === "structural" && JSON.stringify(metaOf(raw, pid, "l6")?.custom) === '{"deep":[1,2]}',
+      JSON.stringify(metaOf(raw, pid, "l6")),
+    )
+
+    // ── PARTIAL SUCCESS: the reported `enriched` must equal rows actually written.
+    {
+      const { pid: p3, raw: r3 } = await fixture("partial", (db, p) => {
+        insFile(db, p, `${p}:f`, "src/a.ts")
+        insSymbol(db, p, `${p}:s`, `${p}:f`, "s", "function")
+        insSymbol(db, p, `${p}:t`, `${p}:f`, "t", "function")
+        for (let i = 0; i < 6; i++) insRel(db, p, `x${i}`, `${p}:s`, `${p}:t`, "calls")
+      })
+      r3.exec(`CREATE TRIGGER a3_block BEFORE UPDATE ON brain_relationship
+               WHEN OLD.id IN ('x1','x2') BEGIN SELECT RAISE(ABORT, 'a3: injected fault'); END`)
+      const res = await enrichRelationships(p3 as any)
+      const actuallyWritten = (r3
+        .prepare(`SELECT COUNT(*) c FROM brain_relationship WHERE project_id = ? AND json_valid(metadata) AND json_extract(metadata,'$.inferredAt') >= ?`)
+        .get(p3, Date.now() - 60_000) as any).c
+      check(
+        "L3a: a partially-failed pass NEVER reports more enriched than it wrote",
+        res.enriched === actuallyWritten,
+        `reported enriched=${res.enriched}, rows carrying a fresh inferredAt=${actuallyWritten}`,
+      )
+      check(
+        "L3b: the failure is visible in the result, not only in a log",
+        res.failedPages > 0 && res.failedRows > 0 && typeof res.firstError === "string",
+        `failedPages=${res.failedPages} failedRows=${res.failedRows} firstError=${res.firstError}`,
+      )
+      check(
+        "L3c: considered == enriched + unchanged + failedRows (nothing vanishes between counters)",
+        res.considered === res.enriched + res.unchanged + res.failedRows,
+        `considered=${res.considered} enriched=${res.enriched} unchanged=${res.unchanged} failedRows=${res.failedRows}`,
+      )
+      check(
+        "L3d: truncated === false here, so a partial FAILURE is never disguised as a truncation",
+        res.truncated === false,
+        `truncated=${res.truncated} failedPages=${res.failedPages}`,
+      )
+    }
+  }
+
   console.log(`\n${checks - failed}/${checks} checks passed${failed ? `, ${failed} FAILED` : " — relationship-enrichment integrity verified"}`)
 } finally {
   rmSync(DATA, { recursive: true, force: true })
