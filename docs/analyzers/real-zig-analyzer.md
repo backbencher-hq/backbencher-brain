@@ -1294,3 +1294,210 @@ and synthetic-shape rulings in `reviews/zig/master-review.md`, and grammar-versi
 drift exposure (the analyzer reads `type`, `body`, `name`, `ok` and `operator`
 fields, so a grammar bump can change what it sees — which is why the grammar pin
 is a gate and not a comment).
+---
+
+## The ruling table for the ontology arbiter — `script/m14/zig-ruled.ts` (2026-10-03)
+
+### What the arbiter could and could not say about this lane before
+
+`script/m14/ontology-coverage-gate.ts` is the workstream's arbiter, and its own
+header records why it exists: `overrides` was missing from Bash for a whole wave
+and the differential stayed green, because the analyzer omitted it and the oracle
+was written after that ruling — nothing agrees with nothing. A ruling table is
+that gate's instrument for a type the analyzer does not emit, and the table lives
+in the shared file's `RULED_BY_LANG`, which held `bash` and `json` only.
+
+**So this lane's three RULED verdicts had never been checked by the arbiter.**
+Run unwired, the gate scans the corpus and then refuses:
+
+```
+ontology coverage gate — no RULING TABLE for zig.
+Refusing to report: a gate with an empty table would call every un-emitted type
+RULED-UNJUSTIFIED and that is a verdict about the TABLE, not about the lane.
+```
+
+(`exit 2`; measured at a bounded 1,200-file `BB_CORPUS_ROOT` and at an empty one.)
+
+### The table
+
+`script/m14/zig-ruled.ts` — three rows, each with the instrument the workstream
+defines and the measurement behind it.
+
+| type | instrument | what the probe measures | full-corpus count (3,834 files, draw `sha256:2f3545f9…`) |
+|---|---|---|---|
+| `extends` | A: grammar-inventory | 17 node types that would express a supertype relation (`class_declaration`, `trait_declaration`, `extends_clause`, `superclass`, `protocol_conformance`, …) | **0 present** of the 232 node types the grammar produces; 0 of 28 inheritance words in the wasm's own 239-entry type table or its 16 fields; A4's header-slot classification 1,797 children / 443 files / **0 UNCLASSIFIED** |
+| `implements` | A: grammar-inventory | the same 17, a conformance clause among them | **0 present**; same tables, same zero |
+| `overrides` | B: parse-tree-count | a same-scope duplicate DECLARATION, excluding destructuring rebinds, files that quote the compiler's own diagnostic for that identifier, and duplicate error-set members (which the compiler rejects too) | **0 read by the probe; 19 raw duplicate sites, 21 including 2 duplicate error-set members — every one a construct the compiler refuses** |
+
+`Ruled` is restated in the file because the gate does not export it and the gate
+is shared. **Wiring needed (§8): one import and one map entry** —
+`import { ZIG_RULED } from "./zig-ruled"` and
+`{ bash: BASH_RULED, json: JSON_RULED, zig: ZIG_RULED }` — the same shape css, nim,
+protobuf, json, clean, powershell, julia, markdown, scss, solidity, yaml and sql
+already needed in this wave. The two lines were applied locally to measure the
+table and **reverted before this commit**: the gate file is not mine.
+
+### The arbiter's verdict, on the FULL corpus
+
+```
+ontology coverage gate — zig
+corpus: 3834 admitted files
+
+type          status            detail
+-----------------------------------------------------------------------------------------------
+calls         EMITTED           113,476 edges in 4+ files, e.g. ghostty/example/c-vt-build-info/build.zig, ghostty/build.zig
+uses          EMITTED           132,201 edges in 4+ files, e.g. ghostty/example/c-vt-build-info/build.zig, ghostty/build.zig
+contains      EMITTED           77,459 edges in 4+ files, e.g. ghostty/pkg/apple-sdk/build.zig, ghostty/pkg/dcimgui/main.zig
+imports       EMITTED           10,200 edges in 4+ files, e.g. ghostty/example/c-vt-build-info/build.zig, ghostty/build.zig
+references    EMITTED           30,794 edges in 4+ files, e.g. ghostty/example/c-vt-build-info/build.zig, ghostty/build.zig
+exports       EMITTED           24,114 edges in 4+ files, e.g. ghostty/example/c-vt-build-info/build.zig, ghostty/build.zig
+extends       RULED-SOUND       NOT EMITTED; the grammar produced 232 distinct node types across the corpus and NONE expresses it
+implements    RULED-SOUND       NOT EMITTED; the grammar produced 232 distinct node types across the corpus and NONE expresses it
+overrides     RULED-SOUND       NOT EMITTED; the construct occurs 0x on the parse tree
+instantiates  EMITTED           4,306 edges in 4+ files, e.g. ghostty/pkg/fontconfig/pattern.zig, ghostty/pkg/freetype/face.zig
+-----------------------------------------------------------------------------------------------
+emitted 7/10   ruled-sound 3   FALSIFIED 0   ruled-without-justification 0
+```
+
+**7 EMITTED + 3 RULED-SOUND = 10 of 10 decided**, the first time an arbiter has
+ruled for this lane and the first time the three RULED verdicts were checked by
+anything other than the lane that wrote them.
+
+**The arbiter's seven emitted counts equal the lane census's, edge for edge**
+(113,476 / 132,201 / 77,459 / 10,200 / 30,794 / 24,114 / 4,306). That is a second
+account of the same population taken by different code, and it is worth recording
+*how* it nearly did not: an earlier run of the same command on the same corpus
+printed 4 `[BB-PARSE-ERR] … memory access out of bounds` lines and came back
+**27 edges low** (calls 113,475, uses 132,191, references 30,793, exports 24,100,
+instantiates 4,305) before dying on
+`[BB-HANG] parser stuck 120s on zig/test/cases/compile_errors/bad_usage_of_call.zig
+— exiting`. Each degraded file is silently replaced by the regex `extractFallback`,
+which emits none of the five affected classes, so a run of the arbiter is only
+trustworthy when it prints no `BB-PARSE-ERR`. **That is a property of the run, not
+of the corpus**, and it is the same mechanism the pass-3 section above measures a
+rate for; the arbiter has no fallback counter of its own to notice it.
+
+A bounded root was also run, through
+`validation/m14/fixtures/zig/arbiter-corpus-root.py` (the first 1,200 files of the
+same draw, `sha256:d60b554a…`, 26 MB, `ghostty=234 zig=930 zls=36`): 7 EMITTED,
+3 RULED-SOUND, 0 FALSIFIED, with the emitted counts at 29,588 calls / 35,867 uses /
+21,733 contains / 3,143 imports / 9,076 references / 6,433 exports / 1,253
+instantiates. That path exists because the gate scans the whole corpus BEFORE it
+consults `RULED_BY_LANG`, so a lane whose corpus trips the hang guard gets no
+verdict at all rather than the cheap refusal.
+
+### The arbiter convicted MY OWN PROBE three times, which is the part worth keeping
+
+A ruling table is only as good as the probe in it, and every one of the arbiter's
+objections to this one was a false positive that read as "derivable" — the exact
+verdict a wrong instrument produces.
+
+1. **942 phantom sites on a 200-file draw.** Three scope errors in one walk: a
+   child scope was seeded with a COPY of its parent's declarations (so
+   `error_bundle` in a nested anonymous struct collided with the outer struct's
+   field of the same name), error-set members were filed under the ENCLOSING scope
+   (so two unrelated error sets collided at file scope), and only `block` opened a
+   scope when an expression-position `{ … }` is a `block_expression`. Fixed by
+   seeding an empty map, by reading error-set members on the `error_set_declaration`
+   itself, and by taking the scope openers from the node types the grammar
+   actually produces.
+2. **`overrides … FALSIFIED … zig/test/behavior/optional.zig: ZeroBit member
+   declared twice`.** The site is `var two: ?struct { ZeroBit, ZeroBit }` — a
+   TUPLE type annotation, whose two positional fields put a user-declared type name
+   in the `name` field with no `type` field. Z28's rule ("read the name field only
+   when it is an identifier") is necessary and not sufficient; the discriminator is
+   the missing `type` field, because a named field is `name: Type`.
+3. **`overrides … FALSIFIED … zls/tests/analysis/error_union.zig: Foo error-member
+   declared twice`.** `const DuplicateErrorName = error{ Foo, Foo } || error{Bar};`
+   in a zls ANALYSIS test, which — unlike the zig fixtures — does not quote the
+   diagnostic. The compiler settles it: `lib/std/zig/AstGen.zig:5945` in the
+   corpus's own checkout emits `duplicate error set field '{s}'` and returns
+   `astgen.failTokNotes`, and
+   `zig/test/cases/compile_errors/duplicate_error_value_in_error_set.zig` is its
+   rejection fixture. An error set has no second spelling, so no accepting program
+   contains a duplicate member; the probe now excludes that kind on the compiler's
+   authority rather than on a quoted message.
+
+The same shapes run against the SHIPPED analyzer found **no phantom symbol and no
+phantom `contains` edge** — `parseFile` on `zig/test/behavior/optional.zig` and
+`zig/lib/std/Build.zig` publishes 0 symbols named `ZeroBit`, `u16` or `u8`, and 0
+member edges for the tuple types, because an anonymous container owns nothing under
+Z21/Z22. So all three were defects in the instrument and not in the analyzer, which
+is the correct place for them to be, and it is the third time in this lane's
+history that the instrument rather than the analyzer manufactured the class.
+
+Ten controls run through the exported probe on every invocation — three positives
+that must fire, seven negatives that must not — and `zig-ruled-probe.ts` exits
+non-zero if any control fails, if the probe reads non-zero, if any listed supertype
+node type is produced, or if the keyword calibration drops below 10 of 11. Both
+tuple shapes, the error-set duplicate and the quoted-diagnostic duplicate are
+controls now.
+
+### Full-corpus numbers, from instruments that never touch `parseFile`
+
+The two instruments that carry the full-population measurements load the pinned
+wasm directly (`wasm/tree-sitter-zig.wasm`), so they are immune to the
+`extractFallback` degradation above and the fallback flag cannot make one of their
+zeros mean "cannot see".
+
+- `construct-probe.ts`, re-run today over the whole admitted population:
+  **3,834 files, draw `sha256:2f3545f9…` — byte-identical to the draw every other
+  published zig figure names**, 239 declared node types, 16 declared field names,
+  28 of 28 inheritance words absent from both, A4 1,797 header-slot children in
+  443 files with 0 UNCLASSIFIED, B1 = 3, B2 = 14 (9 destructuring, 5 plain),
+  B3 = 9 with 9 of 9 inside `compile_errors/`, and 12 of 12 controls as expected.
+  Every number in **The three RULED types, each falsifiable** above reproduced
+  exactly, which is what re-reading a ruling is for.
+- `zig-ruled-probe.ts`, new today: **0 hits from the probe the gate runs, 19 raw
+  same-scope duplicate declarations (21 including the 2 duplicate error-set
+  members), 232 distinct node types produced, 0 of the 17 supertype names
+  present**, keyword calibration 10 of 11 — the missing one is `usingnamespace`,
+  which this grammar spells as a named node rather than an anonymous token, and the
+  calibration's purpose is to show the inventory holds keywords at all.
+
+The raw sites decompose as the lane's B1/B2/B3 probes do (3 duplicate functions,
+5 duplicate bindings, 9 duplicate members = 17 counted by probe identity rather
+than by site; this probe counts SITES, 19, and 21 with the error-set class). Every
+one of them sits in a file that quotes the compiler's own diagnostic for that
+identifier in a comment — including
+`zig/test/cases/global_variable_redeclaration.zig`, which sits OUTSIDE
+`compile_errors/`. A path rule would have missed that file; reading the comment is
+what makes the exclusion a fact about the file rather than a convention about a
+directory. **OVERTURN condition, stated so the arbiter can check it without this
+document:** a same-scope duplicate declaration in a file that does not carry the
+compiler's own duplicate/redeclaration diagnostic naming that identifier, and is not
+a duplicate error-set member. The probe pushes only those, so the arbiter flips the
+`overrides` row to FALSIFIED by itself.
+
+### Five items for the supervisor (§8), stated so they can be applied directly
+
+1. **Wire the table.** `script/m14/ontology-coverage-gate.ts`: add
+   `import { ZIG_RULED } from "./zig-ruled"` and the `zig:` entry in
+   `RULED_BY_LANG`. Exporting the `Ruled` type from the gate would also let lane
+   tables stop restating it.
+2. **The gate decides after it scans.** `RULED_BY_LANG[LANG] === undefined` is
+   checked at line ~312, AFTER the `parseFile` sweep, so a lane whose corpus trips
+   the engine's 120 s hang guard gets `[BB-HANG] … exiting` and no verdict rather
+   than the cheap `exit 2`. Moving the refusal above the corpus walk makes the
+   refusal observable on every lane.
+3. **`rulingFor` picks the SUPERSEDED decision.** All three RULED rows cite
+   `script/m14/spec/zig-completeness.json#ZIG.D.1`, whose own text begins
+   "SUPERSEDED per type by ZIG.O.1 … ZIG.O.4"; the live decisions are ZIG.O.1,
+   ZIG.O.2 and ZIG.O.3. `rulingFor` takes the first `status === "RULED"` decision
+   whose body mentions the type, and ZIG.D.1 mentions all four in one sentence. A
+   decision whose resolution opens with `SUPERSEDED` should be skipped.
+4. **Instrument A cannot express a POSITION probe.** The `Ruled` shape has two
+   instruments and one of them is a table lookup, so `extends`/`implements` are
+   decided in the gate by node-type presence alone. For zig the closing evidence is
+   positional — the header slot of a type declaration, 1,797 children,
+   **0 UNCLASSIFIED** — and that cannot be carried in this shape. Either
+   `countOnTree` becomes legal for instrument A (an enum, not a literal union), or
+   the gate's own output should say that an instrument-A ruling is a vocabulary
+   absence rather than a position test. Today it prints only the first, and the
+   lane's `describe` string — which does carry it — is never printed by the gate.
+5. **The arbiter cannot see its own degradation.** A full-corpus run that trips the
+   WASM trap publishes counts 27 edges low with no marker in its verdict table
+   (`fallback: true` exists on the `parseFile` result and nothing reads it). A
+   counter beside the corpus line — files parsed, files fallen back — would make the
+   difference between a run that measured the analyzer and one that measured a
+   mixture visible in the arbiter's own output.
