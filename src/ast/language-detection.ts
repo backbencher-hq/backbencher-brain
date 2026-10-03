@@ -110,6 +110,33 @@ const BASENAME_LANGUAGE: Readonly<Record<string, DetectedLanguage>> = {
   "gnumakefile": "make",
   ".makefile": "make",
   ".gnumakefile": "make",
+  // Extensionless files that are nonetheless a language bb can parse. Measured:
+  // a project containing a `Rakefile` indexed ZERO files and ZERO symbols, with
+  // no error and no warning — the file was silently skipped. The identical Ruby
+  // content in `tasks.rb` IS detected, so this was a routing gap and not a
+  // parsing failure.
+  //
+  // Each entry below was checked to have BOTH an analyzer and a grammar, so
+  // routing to it cannot create a new class of "detected but unparseable".
+  // Deliberately NOT added, because neither support exists:
+  //   Dockerfile, Jenkinsfile  — no grammar and no analyzer
+  //   Gemfile, CMakeLists.txt  — no grammar
+  // Returning null for those is correct and honest; a user with a Dockerfile is
+  // not told it is unsupported, which is a separate (and real) gap.
+  "rakefile": "ruby",
+  "gemfile": "ruby",
+  "guardfile": "ruby",
+  "capfile": "ruby",
+  "vagrantfile": "ruby",
+  "brewfile": "ruby",
+  "podfile": "ruby",
+  "berksfile": "ruby",
+  "thorfile": "ruby",
+  "buildfile": "ruby",
+  "gemrc": "ruby",
+  // Python tooling that ships without an extension, in the same class as Rakefile.
+  "pipfile": "toml",
+  "poetry.lock": "toml",
 }
 
 /**
