@@ -40,26 +40,71 @@ const OUT = path.resolve(ROOT, arg("--out", "validation/m60/lua/grammar-inventor
 /** The node types whose presence would mean each ruled construct exists. Taken from
  * the gate's own bash and json tables (script/m14/ontology-coverage-gate.ts) so the
  * lua ruling asks the SAME question those rulings ask. */
-const WOULD_MEAN: Record<string, { type: string; describe: string; nodeTypes: string[] }> = {
+/**
+ * `silentByConstruction` is the field the first version of this script did not
+ * have, and its absence produced a machine-readable claim that is false for
+ * THREE of the four entries.
+ *
+ * The old line was `instrumentASettlesIt: present.length === 0`. That is the
+ * right arithmetic and the wrong question. It asks "did any of these node types
+ * appear in the corpus?", which for three of these four types is a question about
+ * the GRAMMAR's vocabulary rather than about the corpus, so the answer is `true`
+ * whatever the corpus contains:
+ *
+ *   overrides     Lua expresses a redefinition as a SECOND `function_declaration`.
+ *                  No corpus can make an `override_specifier` node appear, because
+ *                  the grammar cannot produce one at any corpus. The inventory
+ *                  would read `true` on a corpus where every function is
+ *                  redefined, which is exactly the corpus where the ruling is
+ *                  wrong. Only instrument B can see it, and probe B1 counted 65
+ *                  redefinitions across 37 files.
+ *   extends       `setmetatable(D, B)` is an ordinary `function_call` with two
+ *                  identifier arguments. Nothing about it needs a new node type.
+ *   instantiates  `Table:new(...)` is likewise an ordinary `function_call`.
+ *
+ * So the committed artifact asserted `instrumentASettlesIt: true` for `overrides`,
+ * `extends` and `instantiates` while this lane's own doc says instrument A is
+ * silent for them. That contradiction is not cosmetic: `ontology-coverage-gate.ts`
+ * consumes a table of exactly this shape, so a `RULED_BY_LANG.lua` built from
+ * this artifact would have reported `extends` and `instantiates` RULED-SOUND and
+ * been contradicted by the lane's own 171 and 122 emitted edges.
+ *
+ * `implements` is the one entry where the inventory IS conclusive, and for a
+ * reason worth stating rather than assuming: Lua has no `class` keyword, no
+ * `interface` keyword, and no declaration form for a type at all, so there is no
+ * node type ANY corpus could produce. The absence is a property of the language's
+ * vocabulary. Instrument B was still run (1,295 supertype links across 453 files,
+ * every one of them the relation `extends` already publishes) because a second
+ * measurement of the same absence is worth more than one.
+ */
+const WOULD_MEAN: Record<string, { type: string; describe: string; nodeTypes: string[]; silentByConstruction: boolean; why: string }> = {
   implements: {
     type: "implements",
     describe: "a supertype clause naming an implemented or conformed-to type",
     nodeTypes: ["implements_clause", "extends_clause", "superclass", "interface_implementation", "interface_declaration", "trait_declaration"],
+    silentByConstruction: false,
+    why: "Lua has no type declaration of any kind, so no corpus can produce a supertype clause. The inventory is conclusive here.",
   },
   overrides: {
     type: "overrides",
     describe: "a second declaration replacing a prior one",
     nodeTypes: ["override_specifier", "redefinition", "override_declaration"],
+    silentByConstruction: true,
+    why: "A redefinition IS a second function_declaration / variable_declaration. The grammar expresses it and cannot also express its ABSENCE, so a node-type count is 0 on every possible corpus. Instrument B is the only instrument that can falsify this ruling, and it did: 65 redefinitions across 37 files.",
   },
   instantiates: {
     type: "instantiates",
     describe: "a constructor call",
     nodeTypes: ["new_expression", "object_creation_expression", "constructor_invocation"],
+    silentByConstruction: true,
+    why: "`Table:new(...)` is an ordinary function_call with a method_index_expression callee. Lua has no `new` keyword, so there is no node type to count. This lane emits 122 such edges.",
   },
   extends: {
     type: "extends",
     describe: "a type declaration another type could extend",
     nodeTypes: ["class_declaration", "class", "struct_declaration", "inheritance_specifier"],
+    silentByConstruction: true,
+    why: "`setmetatable(D, B)` is an ordinary function_call with two identifier arguments. Lua's only type relation is a runtime call, so a grammar inventory cannot see it. This lane emits 171 such edges.",
   },
 }
 
@@ -128,7 +173,22 @@ const produced = [...counts.keys()].sort()
 const verdicts = Object.fromEntries(
   Object.entries(WOULD_MEAN).map(([k, v]) => {
     const present = v.nodeTypes.filter((n) => counts.has(n))
-    return [k, { describe: v.describe, nodeTypesThatWouldMeanIt: v.nodeTypes, presentInCorpus: present, instrumentASettlesIt: present.length === 0 }]
+    return [k, {
+      describe: v.describe,
+      nodeTypesThatWouldMeanIt: v.nodeTypes,
+      presentInCorpus: present,
+      /** `present.length === 0` alone is the WRONG question for an entry the
+       * grammar cannot express the construct for — it is 0 on every possible
+       * corpus. See silentByConstruction for why three of the four entries are
+       * that way and what instrument settles them instead. */
+      nodeTypesAbsentInCorpus: present.length === 0,
+      silentByConstruction: v.silentByConstruction,
+      instrumentASettlesIt: present.length === 0 && !v.silentByConstruction,
+      instrumentThatSettlesIt: v.silentByConstruction
+        ? "B:parse-tree-count (a node-type inventory cannot see multiplicity, and this construct is an ordinary call or a repeat declaration)"
+        : "A:grammar-inventory",
+      why: v.why,
+    }]
   }),
 )
 
