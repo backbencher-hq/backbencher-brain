@@ -1,4 +1,4 @@
-// @ts-nocheck — pre-existing null union type issues
+
 /**
  * Brain Relationship Enrichment — Reasoning Layer
  *
@@ -353,7 +353,15 @@ export async function enrichRelationships(
     isGeneratedCode: boolean
     isFrameworkContract: boolean
     isDI: boolean
-    pattern: RelationshipEnrichment["pattern"]
+    /**
+     * Declared with the null/undefined cases because that is what the caller
+     * passes (`inferPattern` returns `... | null` when nothing matched) and what
+     * this function already handles: the body does `if (computed.pattern)` before
+     * copying it onto `meta`, so a null has always meant "no pattern" and is
+     * simply not written. Declaring it non-nullable was the mismatch; widening
+     * it records the existing contract instead of changing the behaviour.
+     */
+    pattern: RelationshipEnrichment["pattern"] | null | undefined
     role: RelationshipEnrichment["role"]
   }
 
@@ -814,11 +822,19 @@ function inferPattern(row: {
   return null
 }
 
+// `pattern` is declared as what the CALLER actually produces, which is
+// `inferPattern`'s return: one of the eight known patterns, or null when none
+// was detected. It was declared `string | undefined`, so passing the null case
+// was a type error the directive hid — and the two were already reconciled by
+// `if (computed.pattern)` in mergeMetadata and `if (pattern)` at the call site,
+// so this widens the declaration to the truth rather than changing behaviour.
+// `pattern` is only ever compared against string literals below, so a null was
+// always harmless; that is why this was a type mismatch and not a latent crash.
 function inferRole(
   relationshipType: string,
   sourceType: string,
   targetType: string,
-  pattern: string | undefined,
+  pattern: RelationshipEnrichment["pattern"] | null | undefined,
 ): RelationshipEnrichment["role"] | undefined {
   const st = (sourceType || "").toLowerCase()
   const tt = (targetType || "").toLowerCase()
