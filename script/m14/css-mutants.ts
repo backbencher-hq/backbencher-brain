@@ -38,6 +38,15 @@
  *
  *   - emitting nothing: the type silently disappears and the pre-fix state returns.
  *   - emitting on a vendor-prefixed pair: 142 fabricated edges over the corpus.
+ *
+ * ## THE PASS-2 SET (3 more, on the shape pass 2 added)
+ *
+ * Pass 2 measured a second `overrides` shape — a `--custom-property` assigned twice
+ * inside ONE declaration block — and the three mutants below attack it from the three
+ * directions it can be wrong. Only ONE of them is "emit too much", and that is the
+ * expensive direction: the shape's boundary is a BLOCK, and widening it to a file turns
+ * every `:root { --x } .dark { --x }` pair in a stylesheet into an edge asserting a
+ * replacement CSS does not perform.
  */
 import type { Mutant } from "./mutate-analyzer"
 
@@ -108,6 +117,105 @@ export const CSS_MUTANTS: Mutant[] = [
       relationships: (r.relationships ?? []).map((x: any) =>
         String(x.type).toLowerCase() === "overrides" ? { ...x, type: "extends" } : x,
       ),
+    }),
+  },
+  {
+    id: "css/overrides-custom-property-block-boundary-widened-to-the-file",
+    language: "css",
+    defectClass: "fabricated-relationship",
+    description:
+      "FABRICATION CLASS on pass 2's new shape, and the expensive direction. The `--custom-property` redefinition rule is scoped to ONE declaration block, because two declarations of one property inside one block share origin, context, layer, specificity and importance, so CSS Cascade 5 §6.1 (\"The last declaration in document order wins\") makes the later one replace the earlier one outright. `:root { --x: 1px }` followed by `.dark { --x: 2px }` shares NONE of those: the two apply to different elements and the cascade chooses between them per element. The mutant drops the block scope and keys the rule by property name alone, so every cross-block pair becomes an `overrides` edge asserting a replacement that never happens. This is the class the workstream calls the most expensive mistake available — an edge between two REAL symbols (the lane publishes one `--x` symbol by name-identity, which is exactly why the two blocks are the same node), so no resolution check can catch it. Caught by css/custom-property-redefinition-overrides, whose `forbidRelationships` rows refuse `overrides --scoped -> --scoped` and `overrides --guarded -> --guarded` while requiring the same type for `--twice`, `--thrice` and `--conditional`.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: [
+        ...(r.relationships ?? []),
+        // The block scope dropped: one edge per (name, occurrence) instead of per
+        // (block, name), built from the `variable` symbols the analyzer publishes.
+        ...(r.symbols ?? [])
+          .filter((s: any) => s.kind === "variable" && String(s.name ?? "").startsWith("--"))
+          .filter((s: any) => (s.metadata as any)?.occurrences > 1)
+          .map((s: any) => ({
+            type: "overrides",
+            source: String(s.name),
+            target: String(s.name),
+            confidence: 1,
+            line_number: s.startLine ?? s.range?.startLine,
+            metadata: { cssSpecific: true, isOverride: true, isCrossBlockRedefinition: true, distinctSites: true },
+          })),
+      ],
+    }),
+  },
+  {
+    id: "css/overrides-custom-property-ignores-importance",
+    language: "css",
+    defectClass: "fabricated-relationship",
+    description:
+      "SECOND FABRICATION DIRECTION on the same shape, subtler than the boundary one. `--guarded: 1px !important; --guarded: 2px;` does NOT redefine: CSS Cascade 5 §6.1 sorts IMPORTANCE above document order, so the later declaration LOSES to the important one and the edge would point the wrong way. The mutant drops the equal-importance guard, so every mixed-importance pair in a declaration block becomes an `overrides` edge. Caught by css/custom-property-redefinition-overrides, which forbids `overrides --guarded -> --guarded` while requiring the type for the three equal-importance pairs in the same fixture — so the guard cannot be satisfied by suppressing the whole shape either.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => {
+        if (String(x.type).toLowerCase() !== "overrides") return x
+        if ((x.metadata as any)?.isCustomPropertyRedefinition !== true) return x
+        // The guard inverted rather than removed: the mixed-importance pair now reads as
+        // a redefinition and the equal-importance one does not.
+        return { ...x, metadata: { ...(x.metadata ?? {}), importanceIgnored: true, isCustomPropertyRedefinition: false } }
+      }),
+    }),
+  },
+  {
+    id: "css/overrides-custom-property-only-adjacent",
+    language: "css",
+    defectClass: "dropped-construct",
+    description:
+      "UNDERSHOOT on the same shape, and the one a naive implementation gets. The rule keys on \"assigned twice in one block\", which is what CSS Cascade 5 §6.1 actually says; it does NOT require the two declarations to be ADJACENT. `:root { --twice: 1px; --between: 2px; --twice: 3px }` still has the second assignment replace the first, because position decides and nothing between them competes. The mutant adds an adjacency requirement, so any interleaved redefinition is silently dropped — the type shrinks toward zero on real stylesheets while every adjacent case still passes. Caught by css/custom-property-redefinition-overrides, which requires `overrides --twice -> --twice` at the line of the THIRD declaration with `supersedesLine` naming the first, across an interleaved `--between`.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter((x: any) => {
+        if (String(x.type).toLowerCase() !== "overrides") return true
+        if ((x.metadata as any)?.isCustomPropertyRedefinition !== true) return true
+        // Keep only the redefinition whose killed declaration sits on the immediately
+        // preceding line — i.e. the adjacent-only reading of the rule.
+        const sup = (x.metadata as any)?.supersedesLine
+        const line = (x as any).line_number
+        return typeof sup === "number" && typeof line === "number" && line - sup === 1
+      }),
+    }),
+  },
+  {
+    id: "css/scope-symbol-extent-collapsed-to-the-first-block",
+    language: "css",
+    defectClass: "wrong-payload",
+    description:
+      "REGRESSION GUARD on pass 2's second fix, and the defect class is an ENDPOINT rather than a label. `@media` and `@layer` publish ONE symbol per name, at the first block, so a second block of the same query used to leave the symbol's recorded extent covering only that first block — while every rule of the later block kept a `contains` edge pointing at it. Measured over the whole admitted corpus before the fix: 7,257 of 25,181 `isMediaScope` edges (28.8%) and 40 of 505 `isLayerScope` edges (7.9%) carried a contained rule OUTSIDE the source symbol's line range, e.g. `bootstrap-grid.css` pointing `.col-sm` at L284 through a symbol recorded at L22-L26. The mutant reverts the widening, so every multi-block scope collapses to its first block again. Caught by css/scope-conditions-and-custom-properties, which writes the same `@media` query twice and asserts the containment edge for a rule in the SECOND block. The class matters beyond this lane: a `contains` edge whose endpoint is somewhere its target is not is what makes `bb_impact` on a scope name report the wrong rule set, and no resolution check can see it because the endpoint DOES bind.",
+    transform: (r: any) => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) => {
+        const nm = String(s.name ?? "")
+        if (!(nm.startsWith("@media ") || nm.startsWith("@layer ") || nm.startsWith("@container ") || nm.startsWith("@scope "))) return s
+        // The pre-fix shape: the extent is the FIRST block only, which is what the
+        // symbol carried before `widenScopeSymbol` existed.
+        //
+        // BOTH spellings have to be collapsed. `analyze()` returns the extent inside a
+        // `range` object while `parseFile` flattens it to top-level `startLine` /
+        // `endLine`; the fixture runner's matcher reads `actual[k]` and falls back to
+        // `actual.range[k]` (run-fixtures.ts `matchConstraints`), so mutating only the
+        // flattened fields leaves `range.endLine` correct and THE FIRST VERSION OF THIS
+        // MUTANT SURVIVED. A mutant that changes a field nobody reads is not a weak
+        // mutant, it is a dead one, and the run reported it as a survivor rather than
+        // hiding it — which is the only reason it was found.
+        const startLine = s.range?.startLine ?? s.startLine
+        const startColumn = s.range?.startColumn ?? s.startColumn
+        const startIndex = s.range?.startIndex ?? s.startIndex
+        return {
+          ...s,
+          endLine: startLine,
+          endColumn: startColumn,
+          endIndex: startIndex,
+          ...(s.range
+            ? { range: { ...s.range, endLine: startLine, endColumn: startColumn, endIndex: startIndex } }
+            : {}),
+        }
+      }),
     }),
   },
   {
