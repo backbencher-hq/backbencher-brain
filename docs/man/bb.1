@@ -41,11 +41,15 @@ global, project), the winning tier, and the key as a last-four fingerprint
 only. The full key is never displayed. Exits 1 when nothing is configured.
 .TP
 .B doctor
-Diagnose embedding setup and index consistency from real local state (config
-tiers, file permissions, and the models actually stored in the project
-index). Every finding names the exact fix command. Read-only. Exits 1 when a
-hard finding exists, for example a model mismatch between configuration and
-index.
+Diagnose embedding setup, worker-pool startup and index consistency from real
+local state: the embedding configuration tiers, file permissions, the models
+actually stored in the project index, and a live probe that forks a pool worker
+and asks what it loaded (the only way to tell "no tsx" from "tsx ran and the
+engine would not load", which look identical from the outside and need opposite
+fixes). Every finding names the exact command that resolves it. Read-only by
+default; exits 1 when a hard finding exists.
+This is the first command to run when pool workers do not start or when semantic
+search returns poor results.
 .TP
 .B doctor \-\-fix
 Repair config file permissions to 0600 only. This is the single mutating arm
@@ -78,11 +82,24 @@ time \(em useful for finding or reclaiming disk.
 .B \-\-force
 skips the confirmation.
 .TP
-.B doctor
-Diagnose embedding setup and index consistency. Read-only: it changes nothing
-and reports what to fix, including which specific environment variable or
-command resolves each problem. This is the first command to run when pool
-workers do not start or semantic search returns poor results.
+.B upgrade
+Report whether a newer
+.I bb
+is published, and print the exact command to install it. bb is installed with
+.BR "npm install -g backbencher-brain" ,
+so npm owns the install and this command deliberately does not replace its own
+files \(em a self-updater would fight the package manager and fail on a
+read-only or root-owned global prefix.
+.B \-\-check
+reports only, changing nothing;
+.B \-\-to
+<dist-tag-or-range>
+compares against something other than
+.IR latest .
+When the registry cannot be reached, or answers with an error, it says so and
+exits 1 rather than reporting that you are up to date \(em a claim it cannot
+support. After upgrading, re-index with
+.BR "bb index \-\-changed" .
 .TP
 .BI onboard " [dir]"
 Write the bb tools guidance section into

@@ -112,22 +112,72 @@ export interface RemoveResult {
  * force is true (deleting a brain.db under a running index/MCP handle gives a
  * stale view). Returns {removed:false, reason} instead of throwing.
  */
+/**
+ * Resolve a possibly-abbreviated project id to the full 40-hex id.
+ *
+ * `bb projects` PRINTS the short 8-character form, and the `--remove` help
+ * documents `1a2b3c4d` — but removal required exactly 40 hex characters, so
+ * following the product's own instructions failed:
+ *
+ *   $ bb projects --remove 0163b5ff
+ *   ✗ no project with id 0163b5ff
+ *
+ * A prefix is accepted only when it is UNAMBIGUOUS. If two projects share a
+ * prefix the answer lists the candidates rather than picking one — silently
+ * deleting the wrong project's index would be far worse than refusing.
+ *
+ * Returns null when the prefix matches nothing or more than one project.
+ */
+export function resolveProjectId(prefix: string): string | null {
+  const p = prefix.trim().toLowerCase()
+  if (!/^[0-9a-f]{1,40}$/.test(p)) return null
+  if (p.length === 40) return existsSync(path.join(bbProjectsDir(), p)) ? p : null
+  let match: string | null = null
+  let ambiguous = false
+  try {
+    for (const entry of readdirSync(bbProjectsDir(), { withFileTypes: true })) {
+      if (!entry.isDirectory()) continue
+      if (!entry.name.startsWith(p)) continue
+      if (match) { ambiguous = true; break }
+      match = entry.name
+    }
+  } catch {
+    return null
+  }
+  return ambiguous ? null : match
+}
+
 export function removeProject(id: string, force: boolean): RemoveResult {
-  const dir = path.join(bbProjectsDir(), id)
-  if (!/^[0-9a-f]{40}$/.test(id) || !existsSync(dir)) {
+  const resolved = resolveProjectId(id)
+  if (!resolved) {
+    // Distinguish "no such prefix" from "ambiguous prefix" — the fixes differ.
+    const p = id.trim().toLowerCase()
+    if (/^[0-9a-f]{1,40}$/.test(p)) {
+      let hits = 0
+      try {
+        for (const entry of readdirSync(bbProjectsDir(), { withFileTypes: true })) {
+          if (entry.isDirectory() && entry.name.startsWith(p)) hits++
+        }
+      } catch {}
+      if (hits > 1) {
+        return { id, removed: false, reason: `project id ${p} is ambiguous (${hits} matches) — use more characters` }
+      }
+    }
     return { id, removed: false, reason: `no project with id ${id.slice(0, 8)}` }
   }
-  const live = readLiveStatus(id)
+  const id2 = resolved
+  const dir = path.join(bbProjectsDir(), id2)
+  const live = readLiveStatus(id2)
   const inFlight = !!live && live.phase === "indexing" && Date.now() - live.updatedAt < 3_600_000
   // M43.P1 (#656): the real single-flight lock is authoritative — a live lock
   // holder means a second process is writing RIGHT NOW (the soft live-status
   // heuristic only catches in-process runs). Refuse unless force.
-  const lockHolder = liveIndexLockHolder(id)
+  const lockHolder = liveIndexLockHolder(id2)
   if ((inFlight || lockHolder) && !force) {
     const reason = lockHolder
       ? `project is being indexed by pid ${lockHolder.pid} (index lock held); use --force to remove anyway`
       : `project is being indexed (in-flight); use --force to remove anyway`
-    return { id, removed: false, reason }
+    return { id: id2, removed: false, reason }
   }
   try {
     // Prefer in-place wipe semantics for the DB file, then remove the dir.
@@ -140,10 +190,10 @@ export function removeProject(id: string, force: boolean): RemoveResult {
     rmSync(dir, { recursive: true, force: true })
     // M23.P2: a removed project must be fully gone — including its live-status
     // file, otherwise bb status/stats still report hasIndex with zero counts.
-    clearStatus(id)
-    return { id, removed: !existsSync(dir) }
+    clearStatus(id2)
+    return { id: id2, removed: !existsSync(dir) }
   } catch (e: any) {
-    return { id, removed: false, reason: e?.message ?? String(e) }
+    return { id: id2, removed: false, reason: e?.message ?? String(e) }
   }
 }
 

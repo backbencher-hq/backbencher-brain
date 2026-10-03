@@ -308,6 +308,49 @@ export namespace ASTEngine {
 
   type SupportedLanguage = keyof typeof SUPPORTED_LANGUAGES
 
+  /**
+   * Is this a language bb actually registers?
+   *
+   * Derived from SUPPORTED_LANGUAGES itself so the answer cannot drift from what
+   * the engine will parse. `bb search --language X` uses this to reject a typo:
+   * an unknown filter used to return "no results" with exit 0, which reads as
+   * "this project has none of that language" rather than "that is not a
+   * language". Case-insensitive, because language names are not case-sensitive
+   * in practice and `TypeScript` is an obvious thing to type.
+   */
+  export function isSupportedLanguage(name: string): boolean {
+    if (typeof name !== "string") return false
+    const n = name.trim().toLowerCase()
+    if (!n) return false
+    if (Object.prototype.hasOwnProperty.call(SUPPORTED_LANGUAGES, n)) return true
+    // Accept a few common aliases so the check rejects typos rather than
+    // pedantry: these map onto a real entry above.
+    const aliases: Record<string, string> = {
+      ts: "typescript",
+      tsx: "tsx",
+      js: "javascript",
+      jsx: "javascript",
+      py: "python",
+      rb: "ruby",
+      rs: "rust",
+      csharp: "csharp",
+      "c#": "csharp",
+      golang: "go",
+      kt: "kotlin",
+      sh: "bash",
+      shell: "bash",
+      yml: "yaml",
+      md: "markdown",
+    }
+    const target = aliases[n]
+    return !!target && Object.prototype.hasOwnProperty.call(SUPPORTED_LANGUAGES, target)
+  }
+
+  /** The registered language keys, for a "did you mean" hint. */
+  export function supportedLanguageNames(): string[] {
+    return Object.keys(SUPPORTED_LANGUAGES).sort()
+  }
+
   // Universal symbol types for ANY programming language
   export interface UniversalSymbol {
     name: string
@@ -2330,6 +2373,11 @@ recordTruncation(filePath, content.length, MAX_PARSE_BYTES)
         lineStart: BrainSymbolTable.line_start,
         byteStart: BrainSymbolTable.byte_start,
         byteEnd: BrainSymbolTable.byte_end,
+        // The file row is already joined in, so the language is free here. It was
+        // absent, so `bb search --mode symbol` rendered `alpha0 [function]
+        // (m0.ts:1)` with no language while the DEFAULT mode printed
+        // `(typescript, m0.ts:1)` — the two modes disagreed about the same symbol.
+        language: BrainFileTable.language,
       })
       .from(BrainSymbolTable)
       .innerJoin(BrainFileTable, eq(BrainSymbolTable.file_id, BrainFileTable.id))

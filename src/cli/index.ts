@@ -23,26 +23,11 @@ import { FRESHNESS_REMEDIATION } from "../brain/freshness"
 import { collectStaleFiles, maybeAutoRefresh, autoRefreshLine } from "../ast/auto-refresh"
 import { resolveRowsFreshnessDetailed } from "../brain/freshness"
 
-export function getProjectId(projectPath: string): string {
-  const resolved = path.resolve(projectPath)
-  let canonical = resolved
-  try {
-    canonical = realpathSync.native(resolved)
-  } catch {
-    // Nonexistent paths retain deterministic lexical identity for validation.
-  }
-  const canonicalId = createHash("sha1").update(canonical).digest("hex").substring(0, 40)
-  if (canonical !== resolved) {
-    const legacyId = createHash("sha1").update(resolved).digest("hex").substring(0, 40)
-    const legacyDir = path.join(bbProjectsDir(), legacyId)
-    const canonicalDir = path.join(bbProjectsDir(), canonicalId)
-    if (existsSync(legacyDir) && !existsSync(canonicalDir)) {
-      mkdirSync(bbProjectsDir(), { recursive: true })
-      try { renameSync(legacyDir, canonicalDir) } catch {}
-    }
-  }
-  return canonicalId
-}
+// Re-exported from a leaf module: `src/mcp/server.ts` needs this, and importing
+// it from here created a cycle that broke `bb mcp` on the source entry only.
+// See src/util/project-id.ts.
+export { getProjectId } from "../util/project-id"
+import { getProjectId } from "../util/project-id"
 
 function requireDir(p: string): string {
   const abs = path.resolve(p)
@@ -503,6 +488,24 @@ async function cmdSearch(query: string, opts: { dir?: string; limit?: number; la
     console.error(`✗ unknown search mode "${opts.mode}" (known: symbols, content, symbol, file)`)
     process.exit(1)
   }
+
+  // An unknown --language used to return "no results" with exit 0, which reads
+  // as "this code has none of that language" when the truth is "that is not a
+  // language bb knows". A typo silently narrowing a search is worse than an
+  // error. Same shape as the --mode rejection above, and validated against the
+  // languages the engine actually registers rather than a hand-kept list — a
+  // second list would drift from SUPPORTED_LANGUAGES the way verify-rate-limit's
+  // label did.
+  if (opts.language !== undefined) {
+    const { ASTEngine } = await import("../ast/engine")
+    if (!ASTEngine.isSupportedLanguage(opts.language)) {
+      console.error(
+        `✗ unknown language "${opts.language}". Run \`bb index --help\` for supported languages, ` +
+          `or \`bb projects\` to see which are in this index.`,
+      )
+      process.exit(1)
+    }
+  }
   const mode = opts.mode ?? "symbols"
   if (mode !== "symbols") {
     const { createToolHandlers } = await import("../mcp/tool-handlers")
@@ -532,7 +535,23 @@ async function cmdSearch(query: string, opts: { dir?: string; limit?: number; la
     } else if (mode === "symbol") {
       for (const m of parsed.matches ?? []) {
         const stale = m.stale ? " ⚠stale" : ""
-        console.log(`  ${m.name} [${m.type}] (${m.language ?? ""}, ${m.fileId ?? m.file ?? ""}:${m.line ?? "?"})${stale}`)
+        // Field names come from the bb_search `symbol` mode payload, which is
+        // `symbolType`/`lineStart` — NOT `type`/`line`. The renderer read the
+        // wrong names, so every symbol-mode result printed
+        //   alpha0 [undefined] (, /abs/path/m.ts:?)
+        // i.e. it silently discarded the type, the language and the line number
+        // that the handler had already computed. Read the real names, and keep
+        // the old ones as a fallback so a different payload shape still renders.
+        const symType = m.symbolType ?? m.type
+        const line = m.lineStart ?? m.line
+        // `fileId` is an absolute path here (unlike the default mode, where it is
+        // a repo-relative one) — print the basename so the two modes agree.
+        const file = m.fileId ?? m.file ?? ""
+        // The symbol payload carries no language; the file row does. Prefer a
+        // language on the match, and do not print an empty pair when absent.
+        const lang = m.language ?? ""
+        const loc = lang ? `${lang}, ${path.posix.basename(String(file))}:${line ?? "?"}` : `${path.posix.basename(String(file))}:${line ?? "?"}`
+        console.log(`  ${m.name}${symType ? ` [${symType}]` : ""} (${loc})${stale}`)
       }
       const env = parsed.freshness ?? {}
       if (env.stale != null) console.log(`\nfreshness: ${env.fresh} fresh / ${env.stale} stale / ${env.missing} missing — ${env.remediation ?? ""}`)
@@ -607,9 +626,13 @@ async function cmdStats(dir: string | undefined) {
   const { composeStatus } = await import("../ast/index-status")
   const s = await composeStatus(pid)
   if (!s.hasIndex) {
-    console.log(`no index for ${abs}. Run: bb index "${abs}"`)
-    return
-  }
+        // Exit non-zero: "there is no index here" is a failure to answer the
+        // question asked, and `bb stats "$d" || fail` must not read this as success.
+        // Matches the `bb health` path (line ~691), which already does this.
+        console.error(`no index for ${abs}. Run: bb index "${abs}"`)
+        process.exitCode = 1
+        return
+      }
   let embeddings = 0
   try {
     const r = await BrainDatabase.getRawInstance(pid)
@@ -656,9 +679,13 @@ async function cmdStatus(dir: string | undefined) {
   const { composeStatus } = await import("../ast/index-status")
   const s = await composeStatus(pid)
   if (!s.hasIndex) {
-    console.log(`no index for ${abs}. Run: bb index "${abs}"`)
-    return
-  }
+        // Exit non-zero: "there is no index here" is a failure to answer the
+        // question asked, and `bb stats "$d" || fail` must not read this as success.
+        // Matches the `bb health` path (line ~691), which already does this.
+        console.error(`no index for ${abs}. Run: bb index "${abs}"`)
+        process.exitCode = 1
+        return
+      }
   const ms = (v?: number) => (typeof v === "number" ? `${v}ms` : "n/a")
   if (s.isRunning && s.live) {
     const l = s.live
@@ -754,6 +781,55 @@ export async function runCli(argv: string[]): Promise<void> {
   program.showSuggestionAfterError(true)
   program.showHelpAfterError("(run 'bb --help' for a list of commands)")
 
+  // `bb help <unknown>` used to print the TOP-LEVEL usage and exit 0 — the same
+  // output as `bb --help`, with nothing saying the command was not found. A user
+  // who mistypes a command is told nothing, and a script checking the exit code
+  // sees success. Commander's built-in `help` accepts any string, so register our
+  // own: commander resolves a user-defined command ahead of the implicit one, and
+  // `program.commands` is read-only in this version so it cannot be swapped out.
+  program
+    .command("help")
+    .description("display help for a command, or list all commands")
+    // VARIADIC, so `bb help setup show` reaches the subcommand. With a single
+    // `[command]` argument commander stopped at "setup" and treated "show" as a
+    // stray extra, so the descent below never ran.
+    .argument("[command...]", "command to describe; include a subcommand for `bb help <cmd> <sub>` (omit for the command list)")
+    .action((commandArg: string[] | undefined) => {
+      const parts = (Array.isArray(commandArg) ? commandArg : [commandArg]).filter(Boolean)
+      const commandName = parts[0]
+      if (!commandName) {
+        program.outputHelp()
+        return
+      }
+      const target = program.commands.find((c) => c.name() === commandName)
+      if (!target) {
+        const known = program.commands.map((c) => c.name()).sort()
+        const near = known.filter((n) => n.startsWith(commandName.slice(0, 2)))
+        console.error(`bb help: unknown command "${commandName}" — no such command.`)
+        if (near.length) console.error(`did you mean: ${near.join(", ")}?`)
+        console.error(`known commands: ${known.join(", ")}`)
+        process.exitCode = 1
+        return
+      }
+      // `bb help setup show` — the man page documents this form, and `setup show`
+      // IS a real subcommand. Without descending, help printed the PARENT's usage
+      // ("Usage: bb setup [options] [command]"), which looks like the subcommand
+      // does not exist. Follow the space-separated path.
+      let cmd: Command = target
+      for (const part of parts.slice(1)) {
+        const next: Command | undefined = cmd.commands.find((c) => c.name() === part)
+        if (!next) {
+          const subs = cmd.commands.map((c) => c.name()).sort()
+          console.error(`bb help: unknown subcommand "${part}" of "${cmd.name()}" — no such subcommand.`)
+          if (subs.length) console.error(`its subcommands: ${subs.join(", ")}`)
+          process.exitCode = 1
+          return
+        }
+        cmd = next
+      }
+      cmd.outputHelp()
+    })
+
   program
     .command("tool")
     .description("run one of the public tools with JSON arguments")
@@ -847,9 +923,9 @@ Full reference: man bb, or docs/indexing/ in the repository.
  * update it?") and is honest when it cannot: no network is a distinct, named
  * outcome, not a silent "you are up to date".
  */
-async function cmdUpgrade(opts: { check?: boolean; version?: string }) {
+async function cmdUpgrade(opts: { check?: boolean; to?: string }) {
   const { BACKBENCHER_BRAIN_VERSION: current, PKG_NAME } = await import("../version")
-  const range = opts.version ?? "latest"
+  const range = opts.to ?? "latest"
   const spec = `${PKG_NAME}@${range}`
   console.log(`bb ${current}`)
 
@@ -904,7 +980,11 @@ program
     .command("upgrade")
     .description("check for a newer bb and report exactly how to install it")
     .option("--check", "only report whether a newer version exists; change nothing")
-    .option("--version <range>", "npm dist-tag or version range to compare against (default: latest)")
+    // Deliberately NOT `--version`: commander gives the program-level
+    // `-v, --version` precedence, so `bb upgrade --version 1.2.3` printed the
+    // installed version and silently ignored the argument. Measured. `--to` reads
+    // as "compare up to this" and cannot collide.
+    .option("--to <dist-tag-or-range>", "npm dist-tag or version range to compare against (default: latest)")
     .addHelpText(
       "after",
       `
@@ -958,7 +1038,13 @@ Examples:
   program
     .command("search")
     .description("search the index (modes: symbols [default], content, symbol, file — parity with the MCP bb_search tool)")
-    .argument("<query>", "query text; in file mode, the file path to print")
+    // OPTIONAL, not required: `--symbol-name` and `--file-path` are documented as
+    // OVERRIDING "the positional query", and the help's own example
+    // (`bb search --mode symbol --symbol-name handleRequest`) passes no
+    // positional at all. With a required argument that example exited 1 with
+    // "missing required argument 'query'". The argument is therefore optional
+    // and the action below rejects a search that supplies neither.
+    .argument("[query]", "query text; in file mode, the file path to print (omit when --symbol-name or --file-path is given)")
     .option("--mode <mode>", "retrieval mode: symbols (default), content, symbol, or file")
     .option("--file-path <path>", "file target for --mode file (overrides the positional query)")
     .option("--symbol-name <name>", "exact symbol name for --mode symbol (overrides the positional query)")
@@ -970,10 +1056,21 @@ Examples:
     // --no-auto-refresh answers from existing data with the staleness footer.
     .option("--no-auto-refresh", "answer from the existing index with the staleness footer instead of auto-refreshing stale files within budget")
     .addHelpText("after", `\nExamples:\n  $ bb search handleRequest                 # symbol listing (default)\n  $ bb search --mode content "findUser("    # content matches with snippets\n  $ bb search --mode symbol --symbol-name handleRequest\n  $ bb search --mode file src/app.ts        # print an indexed file's content\n  $ bb search --no-auto-refresh query      # never auto-refresh on read\n`)
-    .action(async (query: string, opts: any) => {
+    .action(async (query: string | undefined, opts: any) => {
       // Commander negation: `--no-auto-refresh` sets opts.autoRefresh = false
       // (default true); translate to the option cmdSearch reads.
-      await cmdSearch(query, { ...opts, noAutoRefresh: opts.autoRefresh === false, limit: parseInt(opts.limit, 10) })
+      // A search with neither a query nor an override has nothing to look for.
+      // Say that rather than issuing a query for `undefined` and reporting "no
+      // results" — which reads as "the symbol is absent" when in fact nothing
+      // was asked.
+      if (!query && !opts.symbolName && !opts.filePath) {
+        console.error(
+          "bb search: nothing to search for. Pass a query, or --symbol-name <name>, or --file-path <path>.",
+        )
+        process.exitCode = 1
+        return
+      }
+      await cmdSearch(query as string, { ...opts, noAutoRefresh: opts.autoRefresh === false, limit: parseInt(opts.limit, 10) })
     })
 
   program

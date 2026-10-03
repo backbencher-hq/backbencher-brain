@@ -1,15 +1,26 @@
-// src/util/project-id.ts — the SINGLE owner of project identity.
-//
-// History: this lived in src/cli/index.ts, which made the bb_lsp server's
-// bundling graph reach into the CLI (commander and all). The owner spot-check
-// (2026-09-05) caught the result: the packaged VSIX server crashed at boot
-// with ERR_MODULE_NOT_FOUND 'commander' — a runtime dep the server never
-// needed. Moved here so the server graph stays CLI-free; the CLI re-exports
-// for compatibility (its identity remains sha1-of-realpath, unchanged).
-//
-// Nonexistent paths keep deterministic lexical identity for validation; a
-// legacy non-canonical id is migrated to the canonical one when only the
-// legacy directory exists.
+/**
+ * Project identity: a stable id for a project directory.
+ *
+ * This lives here, apart from `src/cli/index.ts`, because of a real circular
+ * import that only showed up on the SOURCE entry:
+ *
+ *   src/cli/index.ts  --(dynamic import, to start the server)-->  src/mcp/server.ts
+ *   src/mcp/server.ts --(static import, for getProjectId)------->  src/cli/index.ts
+ *
+ * Under the built binary (`bin/bb` -> `dist/`) esbuild inlines the graph, the
+ * cycle never materialises, and `bb mcp` answers an `initialize` handshake
+ * correctly. Under `node node_modules/tsx/dist/cli.mjs src/cli/index.ts mcp` the
+ * cycle is real: the dynamic import waits on a module graph that includes the
+ * module currently holding a pending top-level `await runCli(...)`, and the
+ * handshake never gets a response. Measured — the built entry answers with one
+ * JSON-RPC frame even when stdin closes immediately; the source entry answers
+ * with nothing even when stdin is held open.
+ *
+ * Moving the function to a leaf module removes the back-edge entirely. It has no
+ * dependency on the CLI: path, realpath, hash, and the data dir are all it uses.
+ *
+ * `src/cli/index.ts` re-exports it, so every existing import site keeps working.
+ */
 import { createHash } from "crypto"
 import { existsSync, mkdirSync, realpathSync, renameSync } from "fs"
 import path from "path"
