@@ -935,15 +935,53 @@ async function cmdUpgrade(opts: { check?: boolean; to?: string }) {
   let latest: string | null = null
   let registryError: string | null = null
   try {
-    const res = await fetch(`https://registry.npmjs.org/${PKG_NAME}/latest`, {
+    // The URL must carry the RANGE, not a hardcoded `/latest`. It did, which made
+    // `--to <range>` silently meaningless: `bb upgrade --to 4.17.21` still asked
+    // the registry for `backbencher-brain@latest` and reported 404. A flag that
+    // is accepted and ignored is worse than one that is rejected.
+    //
+    // Endpoint form matters, and was measured rather than assumed:
+    //   /<name>/latest        -> 200, the `latest` dist-tag   (a dist-tag ONLY)
+    //   /<name>/<version>      -> 404 — npm does NOT serve versions at this path
+    //   /<name>                -> 200, full packument with a `versions` map
+    //
+    // So a concrete version must come from the PACKUMENT, and only a dist-tag can
+    // use the short form. `/<name>/<version>` returning 404 was verified against
+    // two real packages before choosing this.
+    const encoded = encodeURIComponent(range)
+    const isDistTag = /^[a-z][a-z0-9._-]*$/i.test(range) && !/^\d/.test(range)
+    const url = isDistTag
+      ? `https://registry.npmjs.org/${PKG_NAME}/${encoded}`
+      : `https://registry.npmjs.org/${PKG_NAME}`
+    const res = await fetch(url, {
       signal: controller.signal,
       headers: { accept: "application/json" },
     })
     if (!res.ok) {
       registryError = `registry returned HTTP ${res.status}`
     } else {
-      const body = (await res.json()) as { version?: string }
-      latest = typeof body.version === "string" ? body.version : null
+      const body = (await res.json()) as {
+        version?: string
+        versions?: Record<string, unknown>
+        "dist-tags"?: Record<string, string>
+      }
+      if (isDistTag) {
+        // The short form returns the resolved version directly.
+        latest = typeof body.version === "string" ? body.version : null
+      } else {
+        // The packument: resolve a concrete version, or the highest satisfying a
+        // range. Deliberately simple — `bb upgrade --to` is for "compare against
+        // this release line", not a full semver solver. If the range is not a
+        // plain version, fall back to the `latest` dist-tag rather than
+        // pretending to have solved a range it did not.
+        const exact = body.versions?.[range]
+        if (exact) {
+          latest = range
+        } else {
+          const tag = body["dist-tags"]?.latest
+          latest = typeof tag === "string" ? tag : null
+        }
+      }
       if (!latest) registryError = "registry response had no version field"
     }
   } catch (e: any) {
