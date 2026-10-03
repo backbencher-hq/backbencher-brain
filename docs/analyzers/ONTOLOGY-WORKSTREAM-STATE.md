@@ -13,9 +13,32 @@ Shared contract: `docs/analyzers/ONTOLOGY-WORKSTREAM.md` (committed on the aggre
 | `/tmp/opencode/setup-lanes.sh` | creates the 23 per-language worktrees + branches |
 | `/tmp/opencode/launch-agent.sh <slug> <TITLE> <analyzer-stem> <BRANCH> "<missing types>"` | launches one co-agent in its own worktree |
 | `/tmp/opencode/status.sh` | status board: alive / log age / signal / commits per lane |
-| `/tmp/opencode/reprompt.sh <slug> "<msg>"` | re-prompt an agent that stopped to ask |
+| `/tmp/opencode/reprompt.sh <slug> [model] [message]` | re-prompt an agent that stopped to ask, or whose run was cut |
 | `/tmp/opencode/merge-lane.sh <BRANCH>` | review-gate then merge one lane into the aggregate |
 | `/tmp/opencode/AGENT-TEMPLATE.md` | the task template agents are launched with |
+
+## Model — read this before relaunching anything
+
+The task spec names `openrouter/stealth/space-bunny-alpha`. That provider's
+**daily free quota is exhausted**; every agent died on
+`Error: Rate limit exceeded: free-models-per-day-stealth` within a 90-second
+window on 2026-10-02 ~21:50. All agent work was preserved on disk, uncommitted,
+because of the per-lane worktrees — which is the argument for the worktrees.
+
+Use **`opencode/space-bunny-free`** instead. It is a different provider
+(OpenCode Zen, not OpenRouter) and is not quota-blocked. Verified working
+before the relaunch.
+
+Free models on Zen, as alternates: `opencode/big-pickle`,
+`opencode/longcat-2.5-preview-free`, `opencode/mimo-v2.6-flash-free`,
+`opencode/ling-3.1-flash-free`, `opencode/nemotron-3-ultra-free`.
+
+Models that are NOT usable from this box, so do not spend time on them again:
+`pollinations/*` (no credits on the account), `explabs/*` (organization balance
+negative), `zenmux/moonshotai/kimi-k3-free` (model not valid),
+`tokenrouter/*` (token has no access), `agentrouter/glm-5.2` (no channel),
+`kimi/kimi-k3` (public API access forbidden), `nvidia/z-ai/glm-5.2` (server
+error).
 
 ## Why per-lane worktrees
 
