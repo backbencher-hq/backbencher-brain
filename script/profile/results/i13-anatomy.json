@@ -1,0 +1,146 @@
+{
+  "factors": {
+    "symbols": 453476,
+    "relationships": 630467,
+    "bareNameEdges": 217720
+  },
+  "candidates": 52829262,
+  "candidatesMs": 6746,
+  "candidatesPerEdge": 242.65,
+  "candidatesPerSymbol": 116.5,
+  "concentration": {
+    "top": [
+      {
+        "name": "name",
+        "syms": 15091,
+        "edges": 825,
+        "product": 12450075
+      },
+      {
+        "name": "type",
+        "syms": 10881,
+        "edges": 187,
+        "product": 2034747
+      },
+      {
+        "name": "kind",
+        "syms": 10451,
+        "edges": 184,
+        "product": 1922984
+      },
+      {
+        "name": "file",
+        "syms": 9772,
+        "edges": 254,
+        "product": 2482088
+      },
+      {
+        "name": "target",
+        "syms": 9185,
+        "edges": 135,
+        "product": 1239975
+      },
+      {
+        "name": "id",
+        "syms": 6268,
+        "edges": 255,
+        "product": 1598340
+      },
+      {
+        "name": "from",
+        "syms": 6002,
+        "edges": 272,
+        "product": 1632544
+      },
+      {
+        "name": "detail",
+        "syms": 5423,
+        "edges": 438,
+        "product": 2375274
+      },
+      {
+        "name": "line",
+        "syms": 4978,
+        "edges": 260,
+        "product": 1294280
+      },
+      {
+        "name": "bytes",
+        "syms": 3998,
+        "edges": 7,
+        "product": 27986
+      },
+      {
+        "name": "symbols",
+        "syms": 3938,
+        "edges": 169,
+        "product": 665522
+      },
+      {
+        "name": "relationships",
+        "syms": 3829,
+        "edges": 78,
+        "product": 298662
+      },
+      {
+        "name": "status",
+        "syms": 3828,
+        "edges": 131,
+        "product": 501468
+      },
+      {
+        "name": "pass",
+        "syms": 3773,
+        "edges": 63,
+        "product": 237699
+      },
+      {
+        "name": "evidence",
+        "syms": 3590,
+        "edges": 74,
+        "product": 265660
+      },
+      {
+        "name": "sha256",
+        "syms": 3546,
+        "edges": 51,
+        "product": 180846
+      },
+      {
+        "name": "note",
+        "syms": 3446,
+        "edges": 171,
+        "product": 589266
+      },
+      {
+        "name": "layer",
+        "syms": 3382,
+        "edges": 6,
+        "product": 20292
+      },
+      {
+        "name": "attributes",
+        "syms": 3360,
+        "edges": 2,
+        "product": 6720
+      },
+      {
+        "name": "errors",
+        "syms": 3325,
+        "edges": 39,
+        "product": 129675
+      }
+    ],
+    "queryMs": 462
+  },
+  "distribution": {
+    "top20NamesProduct": 29954103,
+    "top20ShareOfIntermediate": 56.7,
+    "note": "top 20 names BY SYMBOL COUNT; product = syms x edges = their share of the intermediate"
+  },
+  "sameFileFirst": {
+    "edgesWithSameFileCandidate": 58765,
+    "shareOfBareEdges": 27,
+    "queryMs": 244208
+  }
+}
