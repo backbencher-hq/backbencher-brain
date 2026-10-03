@@ -64,6 +64,32 @@ const SHELL_BUILTINS = new Set([
 
 const DECLARATION_KEYWORDS = new Set(["export", "local", "declare", "typeset", "readonly"])
 
+/**
+ * POSIX/bash RESERVED WORDS. None of them is ever a command word: the shell
+ * consumes them itself, so no script can invoke one. They are listed here
+ * separately from SHELL_BUILTINS because the consequence is different — a builtin
+ * IS a real command (it is simply not a project symbol, so the edge would be
+ * noise), whereas a reserved word is not a command at all, so an edge to one is a
+ * fabrication.
+ *
+ * M60 measurement, 200 hash-ordered corpus files, 2,945 `calls` edges: 30 (1.02%)
+ * carried a reserved word as their target, and every one of the 30 is
+ * `fi`/`esac`/`then`/`elif`/`else`/`do`/`case`/`if` read as a command name by
+ * grammar recovery — e.g. `kubernetes/cluster/gce/config-test.sh:468`, a real
+ * bash file, where `if [[ -n "${LOGROTATE_FILES_MAX_COUNT:-}" ]]; then` emitted
+ * `calls -> if` AND `calls -> then`, and `ohmyzsh/lib/clipboard.zsh:66` emitted
+ * `calls -> elif` and `calls -> then` from one line. Zero of the 30 is a command
+ * any script could run: `./fi` is a command but its name is `./fi`, not `fi`.
+ *
+ * See guard-ab-bash-calls.ts for the A/B this decision rests on, including the
+ * damage-region guard that was measured and REJECTED because it deletes real calls.
+ */
+const SHELL_RESERVED_WORDS = new Set([
+  "if", "then", "else", "elif", "fi", "case", "esac", "for", "select", "while",
+  "until", "do", "done", "in", "function", "time", "{", "}", "!", "[[", "]]",
+  "((", "))", "coproc",
+])
+
 // Commands the analyzer interprets itself and therefore does not also emit as
 // Calls: the builtin forms above plus the few whose whole point is a
 // side-effect classification rather than a call target.
@@ -134,6 +160,12 @@ const isShellIdentifierName = (text: string): boolean => {
 
 const isCommandNameText = (text: string): boolean => {
   if (text.length === 0) return false
+  // A reserved word is never a command name. This is a POSIX fact rather than a
+  // heuristic, and it is the single gate for BOTH command paths (the
+  // `command_name` walk and the trap-handler splitter), so one check covers both.
+  // Measured cost of NOT having it: 30 fabricated `calls` edges in 2,945 on a
+  // 200-file hash-ordered sample. See SHELL_RESERVED_WORDS.
+  if (SHELL_RESERVED_WORDS.has(text)) return false
   // A bare NUMBER is never a command name — it is an arithmetic token or an
   // argument fragment. This predicate is the single gate for BOTH command paths
   // (the `command_name` walk and the trap-handler splitter), and it was admitting
@@ -210,7 +242,15 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
     // BD1: the line is part of an edge's identity. Keyed with the line so two
     // sites of one callee are two relationships, and so the store's per-site
     // `relId` has something to key on.
-    const sourceDir = this.dirnameOf(filePath)
+    //
+    // M60: `const sourceDir = this.dirnameOf(filePath)` sat here and was read by
+    // nothing. It existed to feed `normalizeRelative`, the relative-`source`
+    // resolver that BD9 REVERSED — bash resolves a relative `source` against
+    // `$PWD` at run time, not against the script's own directory — and the
+    // function was left behind when the decision was reversed. Its doc comment
+    // still described the reversed behaviour, so the file asserted two
+    // contradictory things about the same construct. Both are deleted rather than
+    // left as decoration.
 
     let cyclomaticComplexity = 1
     // Per-scope decision points. The lane published a FILE-level
@@ -555,12 +595,6 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
     return base.length > 0 ? base : "script.sh"
   }
 
-  private dirnameOf(filePath: string): string {
-    const normalized = filePath.split("\\").join("/")
-    const cut = normalized.lastIndexOf("/")
-    return cut > 0 ? normalized.slice(0, cut) : "."
-  }
-
   /** The 1-based line a symbol's NAME is written on (M60 #921). */
   private nameLineOf(sym: ASTEngine.UniversalSymbol): number {
     const line = sym.range?.startLine
@@ -636,88 +670,50 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   /**
-   * BD5: a call whose name the grammar cannot vouch for.
-   *
-   * Two facts, both needed. The first attempt walked UP from the name node
-   * looking for an ERROR or MISSING ancestor and found nothing, because the
-   * damage in the real shape is a SIBLING: `value=${value/]/%5D}` parses as
-   *
-   *   (command (variable_assignment … value: (expansion … (MISSING "}")))
-   *            name: (command_name (concatenation (word) (word) (word))))
-   *
-   * so the MISSING token hangs off the assignment on the same command line while
-   * the name's own ancestor chain is `command <- program` — clean. The
-   * fabricated edge was `calls: -> ]/%5D}`, three grammar fragments glued into
-   * something no source declares.
-   *
-   * The rule is therefore: the command's SUBTREE is damaged (it holds an ERROR
-   * or MISSING node) AND the name is not a single plain `word` (it is a
-   * concatenation or another derived shape). Both halves are load-bearing.
-   * Damage alone is not enough — refusing every command in a damaged file is
-   * the `#907` swallow class, and it would lose real declarations in a partly
-   * broken script. A glued name alone is not enough either: a legitimately
-   * quoted command is also derived, and it is handled by BD4 rather than here.
+   * A command's name is a WORD, and a plain `word` name is trusted outright.
+   * The two real-world shapes that put something else in `command_name` are
+   * both fabrications: a zsh `case` arm's alternation, and a quoted string or
+   * number the grammar could not classify. Measured on ohmyzsh's
+   * `tools/changelog.sh` the analyzer emitted `calls: -> ]+` and
+   * `calls: -> \e[2m\1\e[0m`; measured on the 385 extensionless files the
+   * shebang rule had just opened (nvm, rbenv, ohmyzsh, otp) it emitted
+   * `calls: -> 129`, `-> 130`, `-> 141`, `-> 143` and `-> 6` — numeric literals
+   * promoted to callees, 18 rows the independent oracle refused.
    */
-  private isRecoveredCommandWord(command: Node, nameNode: Node | null): boolean {
+  private isRecoveredCommandWord(nameNode: Node | null): boolean {
     if (!nameNode) return true
     if (nameNode.isMissing) return true
 
-    // A command's name is a WORD, and a plain `word` name is trusted outright.
-    // The two real-world shapes that put something else in `command_name` are
-    // both fabrications: a zsh `case` arm's alternation, and a quoted string or
-    // number the grammar could not classify. Measured on ohmyzsh's
-    // `tools/changelog.sh` the analyzer emitted `calls: -> ]+` and
-    // `calls: -> \e[2m\1\e[0m`; measured on the 385 extensionless files the
-    // shebang rule had just opened (nvm, rbenv, ohmyzsh, otp) it emitted
-    // `calls: -> 129`, `-> 130`, `-> 141`, `-> 143` and `-> 6` — numeric literals
-    // promoted to callees, 18 rows the independent oracle refused.
     const name: Node = nameNode
     const nameIsPlainWord =
       name.namedChildCount === 0 ||
       (name.namedChildCount === 1 && name.namedChild(0)?.type === "word")
     if (!nameIsPlainWord) {
       // Not a word, and therefore not a name — no callee exists to point at.
-      // The bidirectional damage check below used to be the ONLY thing standing
-      // between this shape and an edge, which meant an UNDAMAGED `number` fell
-      // straight through it and became a callee.
       return true
     }
     // A word that OPENS with a backslash is an escape, not a name. `\.` is what
     // the grammar leaves behind when it splits a sed argument such as
     // `s/\./-/g`, and a command named `\.` is a name no symbol can ever have.
     if (name.text.charCodeAt(0) === 92 /* \ */) return true
-    // A plain word is trusted for its shape. BD5's damage check deliberately
-    // stays scoped to the shapes above: running it for a plain word too costs
-    // 31 calls the independent oracle DOES corroborate, because that oracle is
-    // structure-only and cannot see damage at all. Those rows are the oracle's
-    // blind spot rather than an analyzer error, and "fixing" them would trade a
-    // real call for a phantom one.
-    return false
-  }
-
-  /** Is there an ERROR/MISSING node between `node` and its enclosing statement? */
-  private enclosingStatementIsDamaged(node: Node): boolean {
-    let p: Node | null = node.parent
-    let depth = 0
-    while (p && depth < 8) {
-      if (p.type === "ERROR" || p.isMissing) return true
-      if (p.type === "list" || p.type === "program" || p.type === "compound_statement") return false
-      p = p.parent
-      depth++
-    }
-    return false
-  }
-
-  private subtreeIsDamaged(root: Node): boolean {
-    const stack: Node[] = [root]
-    while (stack.length > 0) {
-      const n = stack.pop()!
-      if (n.type === "ERROR" || n.isMissing) return true
-      for (let i = 0; i < n.childCount; i++) {
-        const c = n.child(i)
-        if (c) stack.push(c)
-      }
-    }
+    // A plain word is trusted for its shape.
+    //
+    // M60, re-measured: the DAMAGE half of BD5 is not implemented, deliberately,
+    // and the two helpers that would have implemented it
+    // (`enclosingStatementIsDamaged`, `subtreeIsDamaged`) were dead code. They
+    // were removed rather than wired up because the A/B is now measured and the
+    // damage guard LOSES. `guard-ab-bash-calls.ts`, 200 hash-ordered corpus files,
+    // 2,945 `calls` edges: refusing every call in a damaged region removes 96
+    // (3.26%), and the removal set contains 15 real calls to
+    // `kube::log::status` in kubernetes/test/e2e_node/gubernator.sh plus real
+    // `print`/`echoti`/`setopt`/`autoload` invocations in
+    // ohmyzsh/lib/termsupport.zsh — a MISSING token anywhere in the file
+    // condemns every command under it, which is the `#907` swallow class this
+    // decision was originally taken to avoid.
+    //
+    // What IS implemented is the narrow half, and it is measured the same way: a
+    // reserved-word name is never a command, so `isCommandNameText` refuses it,
+    // which removes 30 fabrications and 0 real calls.
     return false
   }
 
@@ -1220,8 +1216,10 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
     // BD1: the edge's line is the line the command NAME is on.
     const nameLine = nameNode.startPosition.row + 1
 
-    // BD5: nothing is emitted out of a damaged region.
-    if (this.isRecoveredCommandWord(node, nameNode)) {
+    // BD5: nothing is emitted out of a recovered name. The shape test is
+    // `nameNode` alone: the damage half is measured and rejected, see
+    // isRecoveredCommandWord.
+    if (this.isRecoveredCommandWord(nameNode)) {
       patterns.add("Recovered Parse Region")
       return
     }
@@ -1229,8 +1227,18 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
     // BD4: a command word that is an unexpanded expression is not a call to a
     // name. The variables inside it are still read, and the expansion walk
     // already emits those Uses edges; there is no callee to point at.
+    //
+    // The refusal itself is ONE gate, `isCommandNameText` — the predicate the
+    // trap-handler path shares, so a reserved word cannot come back through the
+    // other door. The pattern label is derived here rather than gating anything:
+    // a reserved word is not a dynamic command name, it is the grammar handing
+    // back a keyword. Deriving the label instead of testing the word a second
+    // time is a measured choice — with the test duplicated, the mutant
+    // `bash/reserved-word-guard-removed` (which deletes the line in
+    // `isCommandNameText`) SURVIVED, because the duplicate still held the line.
+    // mutants-bash-lane.mts is what said so.
     if (this.containsExpansion(nameNode) || !isCommandNameText(cmdName)) {
-      patterns.add("Dynamic Command Name")
+      patterns.add(SHELL_RESERVED_WORDS.has(cmdName) ? "Recovered Parse Region" : "Dynamic Command Name")
       return
     }
 
@@ -1630,23 +1638,13 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
     return null
   }
 
-  /** Resolve a literal relative `source` target against the sourcing file's own
-   *  directory, so `./env.sh` sourced from `eng/build.sh` is named
-   *  `eng/env.sh` rather than `./env.sh` — the form every other lane's imports
-   *  already take, and the form a reader can act on. */
-  private normalizeRelative(arg: string, sourceDir: string): string {
-    const cleaned = arg.startsWith("./") ? arg.slice(2) : arg
-    if (arg.startsWith("/")) return arg
-    if (cleaned.startsWith("../")) {
-      const segs = sourceDir.split("/").filter((s) => s.length > 0)
-      for (const part of cleaned.split("/")) {
-        if (part === "..") segs.pop()
-        else if (part.length > 0) segs.push(part)
-      }
-      return segs.join("/")
-    }
-    return sourceDir === "." ? cleaned : `${sourceDir}/${cleaned}`
-  }
+  // `normalizeRelative` was DELETED in M60, not merely unused. It resolved a
+  // relative `source` against the sourcing file's own directory, which BD9
+  // reversed as wrong: bash resolves a relative `source` against `$PWD` at run
+  // time, so the rewrite turned `source ./eng/common/tools.sh` inside
+  // `eng/common/` into the nonexistent `eng/common/eng/common/tools.sh`. The
+  // function had no callers, and its doc comment still asserted the reversed
+  // behaviour, so the file described two different contracts for one construct.
 
   private detectFrameworks(patterns: string[]): string[] {
     // The language itself is not a framework. Returning a bare ["Bash"] made
