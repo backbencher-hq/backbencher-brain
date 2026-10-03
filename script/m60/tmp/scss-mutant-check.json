@@ -1,0 +1,280 @@
+{
+  "registry": "script/m60/scss-mutants.ts",
+  "registryWiredIntoSharedRunner": false,
+  "sharedRunner": "script/m14/mutate-analyzer.ts",
+  "sharedRunnerGap": "SCSS_MUTANTS is exported and never imported; one import + spread into MUTANTS closes it",
+  "checkedSections": [
+    "expectSymbols",
+    "expectSymbolCount",
+    "expectRelationships",
+    "forbidRelationships"
+  ],
+  "uncheckedSections": [
+    "expectParameters",
+    "expectComplexity",
+    "expectMetadata",
+    "expectImports",
+    "expectErrorCount",
+    "forbidSymbols",
+    "forbidDecorators"
+  ],
+  "fixtures": 11,
+  "baselineClean": true,
+  "baselineDirty": [],
+  "mutants": 23,
+  "caught": 20,
+  "survivors": [
+    "scss/callable-parameters-dropped",
+    "scss/module-imports-dropped",
+    "scss/parse-errors-swallowed"
+  ],
+  "scopeLimitedSurvivors": [
+    {
+      "id": "scss/callable-parameters-dropped",
+      "section": "expectParameters"
+    },
+    {
+      "id": "scss/module-imports-dropped",
+      "section": "expectImports"
+    },
+    {
+      "id": "scss/parse-errors-swallowed",
+      "section": "expectErrorCount"
+    }
+  ],
+  "genuineSurvivors": [],
+  "verdict": "all 23 SCSS mutants caught within this runner's four checked sections; 3 of them are witnessed only in sections this runner does not check (scss/callable-parameters-dropped -> expectParameters; scss/module-imports-dropped -> expectImports; scss/parse-errors-swallowed -> expectErrorCount); baseline clean on 11 fixtures",
+  "rows": [
+    {
+      "id": "scss/identically-named-scopes-collapsed",
+      "defectClass": "unresolvable-identity",
+      "caught": true,
+      "caughtBy": [
+        "identically-named-scopes-are-distinct: expected symbol not found: {\"name\":\"@each $size in (large, small)#2\",\"kind\":\"interface\"}"
+      ],
+      "threw": null
+    },
+    {
+      "id": "scss/variable-identity-collapsed",
+      "defectClass": "unresolvable-identity",
+      "caught": true,
+      "caughtBy": [
+        "self-referential-assignment-reads-itself: expected $x count 1; got 4",
+        "variables-flags-and-identity: expected $brand count 1; got 3",
+        "module-exports-and-global-overrides: expected $brand count 1; got 6"
+      ],
+      "threw": null
+    },
+    {
+      "id": "scss/visibility-flag-dropped",
+      "defectClass": "metadata-loss",
+      "caught": true,
+      "caughtBy": [
+        "variables-flags-and-identity: expected symbol not found: {\"name\":\"$pad\",\"kind\":\"variable\",\"meta.scssFlagDefault\":true}",
+        "module-exports-and-global-overrides: expected symbol not found: {\"name\":\"$invented\",\"kind\":\"variable\",\"meta.scssFlagGlobal\":true}"
+      ],
+      "threw": null
+    },
+    {
+      "id": "scss/module-namespace-dropped",
+      "defectClass": "relationship-loss",
+      "caught": true,
+      "caughtBy": [
+        "module-system-and-mixins: expected symbol not found: {\"name\":\"map\",\"kind\":\"namespace\"}"
+      ],
+      "threw": null
+    },
+    {
+      "id": "scss/return-self-edge",
+      "defectClass": "fabrication",
+      "caught": true,
+      "caughtBy": [
+        "functions-return-and-undeclared-uses: forbidden relationship present: \"contains\"[@function double->@function double]"
+      ],
+      "threw": null
+    },
+    {
+      "id": "scss/undeclared-include-edge",
+      "defectClass": "fabrication",
+      "caught": true,
+      "caughtBy": [
+        "functions-return-and-undeclared-uses: forbidden relationship present: \"uses\"[.a->@mixin not-declared-here]"
+      ],
+      "threw": null
+    },
+    {
+      "id": "scss/ownership-falls-back-to-target",
+      "defectClass": "unresolvable-identity",
+      "caught": true,
+      "caughtBy": [
+        "functions-return-and-undeclared-uses: expected relationship not found: {\"type\":\"uses\",\"from\":\".a\",\"target\":\"@function double\",\"meta.evidenceClass\":\"usage_contextual\",\"meta.isScssFunctionCall\":true,\"line_number\":11}",
+        "self-referential-assignment-reads-itself: expected relationship not found: {\"type\":\"references\",\"from\":\".a\",\"target\":\"$x\",\"meta.isScssVarRef\":true,\"line_number\":4}",
+        "reads-recovered-from-error-regions: expected relationship not found: {\"type\":\"references\",\"from\":\"$red\",\"target\":\"$opacity\",\"meta.isScssVarRef\":true,\"meta.scssRecoveredFromError\":true,\"line_number\":4}",
+        "placeholder-selectors-and-extend: expected relationship not found: {\"type\":\"uses\",\"from\":\".card\",\"target\":\"%badge\",\"meta.isScssExtend\":true,\"meta.scssExtendShape\":\"recovered\",\"meta.scssRecoveredFromError\":true,\"line_number\":10}",
+        "module-system-and-mixins: expected relationship not found: {\"type\":\"uses\",\"from\":\".card\",\"target\":\"@mixin button\",\"meta.evidenceClass\":\"usage_contextual\",\"meta.isScssInclude\":true,\"line_number\":11}",
+        "variables-flags-and-identity: expected relationship not found: {\"type\":\"references\",\"from\":\".a\",\"target\":\"$brand\",\"meta.evidenceClass\":\"usage_contextual\",\"meta.isScssVarRef\":true,\"line_number\":7}",
+        "module-exports-and-global-overrides: expected relationship not found: {\"type\":\"exports\",\"from\":\"module-exports-and-global-overrides.scss\",\"target\":\"$brand\",\"meta.isScssModuleMember\":true,\"line_number\":4}",
+        "control-flow-and-extend: expected relationship not found: {\"type\":\"uses\",\"from\":\".card\",\"target\":\".btn\",\"meta.evidenceClass\":\"structural\",\"meta.isScssExtend\":true,\"line_number\":16}",
+        "scope-containment-and-complexity: expected relationship not found: {\"type\":\"contains\",\"from\":\"@media (min-width: 768px)\",\"target\":\".grid\",\"meta.isMediaScope\":true}"
+      ],
+      "threw": null
+    },
+    {
+      "id": "scss/callable-parameters-dropped",
+      "defectClass": "metadata-loss",
+      "caught": false,
+      "caughtBy": [],
+      "threw": null,
+      "witnessedInUncheckedSection": "expectParameters"
+    },
+    {
+      "id": "scss/extend-edge-dropped",
+      "defectClass": "relationship-loss",
+      "caught": true,
+      "caughtBy": [
+        "placeholder-selectors-and-extend: expected relationship not found: {\"type\":\"uses\",\"from\":\".card\",\"target\":\"%badge\",\"meta.isScssExtend\":true,\"meta.scssExtendShape\":\"recovered\",\"meta.scssRecoveredFromError\":true,\"line_number\":10}",
+        "control-flow-and-extend: expected relationship not found: {\"type\":\"uses\",\"from\":\".card\",\"target\":\".btn\",\"meta.evidenceClass\":\"structural\",\"meta.isScssExtend\":true,\"line_number\":16}"
+      ],
+      "threw": null
+    },
+    {
+      "id": "scss/module-imports-dropped",
+      "defectClass": "relationship-loss",
+      "caught": false,
+      "caughtBy": [],
+      "threw": null,
+      "witnessedInUncheckedSection": "expectImports"
+    },
+    {
+      "id": "scss/loop-variables-dropped",
+      "defectClass": "metadata-loss",
+      "caught": true,
+      "caughtBy": [
+        "control-flow-and-extend: expected symbol not found: {\"name\":\"@each $key, $value in $palette\",\"kind\":\"interface\",\"meta.scssEachKey\":\"$key\",\"meta.scssEachValue\":\"$value\"}"
+      ],
+      "threw": null
+    },
+    {
+      "id": "scss/line-numbers-dropped",
+      "defectClass": "line-provenance",
+      "caught": true,
+      "caughtBy": [
+        "functions-return-and-undeclared-uses: expected relationship not found: {\"type\":\"uses\",\"from\":\".a\",\"target\":\"@function double\",\"meta.evidenceClass\":\"usage_contextual\",\"meta.isScssFunctionCall\":true,\"line_number\":11}",
+        "self-referential-assignment-reads-itself: expected relationship not found: {\"type\":\"references\",\"from\":\".a\",\"target\":\"$x\",\"meta.isScssVarRef\":true,\"line_number\":4}",
+        "reads-recovered-from-error-regions: expected relationship not found: {\"type\":\"references\",\"from\":\"$red\",\"target\":\"$opacity\",\"meta.isScssVarRef\":true,\"meta.scssRecoveredFromError\":true,\"line_number\":4}",
+        "placeholder-selectors-and-extend: expected relationship not found: {\"type\":\"uses\",\"from\":\".card\",\"target\":\"%badge\",\"meta.isScssExtend\":true,\"meta.scssExtendShape\":\"recovered\",\"meta.scssRecoveredFromError\":true,\"line_number\":10}",
+        "module-system-and-mixins: expected relationship not found: {\"type\":\"uses\",\"from\":\".card\",\"target\":\"@mixin button\",\"meta.evidenceClass\":\"usage_contextual\",\"meta.isScssInclude\":true,\"line_number\":11}",
+        "variables-flags-and-identity: expected relationship not found: {\"type\":\"references\",\"from\":\".a\",\"target\":\"$brand\",\"meta.evidenceClass\":\"usage_contextual\",\"meta.isScssVarRef\":true,\"line_number\":7}",
+        "module-exports-and-global-overrides: expected relationship not found: {\"type\":\"exports\",\"from\":\"module-exports-and-global-overrides.scss\",\"target\":\"$brand\",\"meta.isScssModuleMember\":true,\"line_number\":4}",
+        "control-flow-and-extend: expected relationship not found: {\"type\":\"uses\",\"from\":\".card\",\"target\":\".btn\",\"meta.evidenceClass\":\"structural\",\"meta.isScssExtend\":true,\"line_number\":16}"
+      ],
+      "threw": null
+    },
+    {
+      "id": "scss/evidence-class-dropped",
+      "defectClass": "metadata-loss",
+      "caught": true,
+      "caughtBy": [
+        "functions-return-and-undeclared-uses: expected relationship not found: {\"type\":\"uses\",\"from\":\".a\",\"target\":\"@function double\",\"meta.evidenceClass\":\"usage_contextual\",\"meta.isScssFunctionCall\":true,\"line_number\":11}",
+        "module-system-and-mixins: expected relationship not found: {\"type\":\"uses\",\"from\":\".card\",\"target\":\"@mixin button\",\"meta.evidenceClass\":\"usage_contextual\",\"meta.isScssInclude\":true,\"line_number\":11}",
+        "variables-flags-and-identity: expected relationship not found: {\"type\":\"references\",\"from\":\".a\",\"target\":\"$brand\",\"meta.evidenceClass\":\"usage_contextual\",\"meta.isScssVarRef\":true,\"line_number\":7}",
+        "control-flow-and-extend: expected relationship not found: {\"type\":\"uses\",\"from\":\".card\",\"target\":\".btn\",\"meta.evidenceClass\":\"structural\",\"meta.isScssExtend\":true,\"line_number\":16}",
+        "scope-containment-and-complexity: expected relationship not found: {\"type\":\"uses\",\"from\":\".panel\",\"target\":\"@mixin ladder\",\"meta.evidenceClass\":\"usage_contextual\",\"meta.isScssInclude\":true}"
+      ],
+      "threw": null
+    },
+    {
+      "id": "scss/parse-errors-swallowed",
+      "defectClass": "fabrication",
+      "caught": false,
+      "caughtBy": [],
+      "threw": null,
+      "witnessedInUncheckedSection": "expectErrorCount"
+    },
+    {
+      "id": "scss/declaration-markers-dropped",
+      "defectClass": "metadata-loss",
+      "caught": true,
+      "caughtBy": [
+        "variables-flags-and-identity: expected symbol not found: {\"name\":\"$brand\",\"kind\":\"variable\",\"meta.isScssVariable\":true}",
+        "module-exports-and-global-overrides: expected symbol not found: {\"name\":\"$brand\",\"kind\":\"variable\",\"meta.isScssVariable\":true}"
+      ],
+      "threw": null
+    },
+    {
+      "id": "scss/function-call-edge-dropped",
+      "defectClass": "recall",
+      "caught": true,
+      "caughtBy": [
+        "functions-return-and-undeclared-uses: expected relationship not found: {\"type\":\"uses\",\"from\":\".a\",\"target\":\"@function double\",\"meta.evidenceClass\":\"usage_contextual\",\"meta.isScssFunctionCall\":true,\"line_number\":11}",
+        "reads-recovered-from-error-regions: expected relationship not found: {\"type\":\"uses\",\"from\":\".a\",\"target\":\"@function mix\",\"meta.isScssFunctionCall\":true,\"line_number\":10}"
+      ],
+      "threw": null
+    },
+    {
+      "id": "scss/error-recovery-marker-dropped",
+      "defectClass": "metadata-loss",
+      "caught": true,
+      "caughtBy": [
+        "reads-recovered-from-error-regions: expected relationship not found: {\"type\":\"references\",\"from\":\"$red\",\"target\":\"$opacity\",\"meta.isScssVarRef\":true,\"meta.scssRecoveredFromError\":true,\"line_number\":4}",
+        "placeholder-selectors-and-extend: expected relationship not found: {\"type\":\"uses\",\"from\":\".card\",\"target\":\"%badge\",\"meta.isScssExtend\":true,\"meta.scssExtendShape\":\"recovered\",\"meta.scssRecoveredFromError\":true,\"line_number\":10}"
+      ],
+      "threw": null
+    },
+    {
+      "id": "scss/function-call-marker-dropped",
+      "defectClass": "metadata-loss",
+      "caught": true,
+      "caughtBy": [
+        "functions-return-and-undeclared-uses: expected relationship not found: {\"type\":\"uses\",\"from\":\".a\",\"target\":\"@function double\",\"meta.evidenceClass\":\"usage_contextual\",\"meta.isScssFunctionCall\":true,\"line_number\":11}",
+        "reads-recovered-from-error-regions: expected relationship not found: {\"type\":\"uses\",\"from\":\".a\",\"target\":\"@function mix\",\"meta.isScssFunctionCall\":true,\"line_number\":10}"
+      ],
+      "threw": null
+    },
+    {
+      "id": "scss/module-exports-dropped",
+      "defectClass": "recall",
+      "caught": true,
+      "caughtBy": [
+        "module-exports-and-global-overrides: expected symbol not found: {\"name\":\"module-exports-and-global-overrides.scss\",\"kind\":\"module\"}"
+      ],
+      "threw": null
+    },
+    {
+      "id": "scss/global-override-edge-dropped",
+      "defectClass": "recall",
+      "caught": true,
+      "caughtBy": [
+        "module-exports-and-global-overrides: expected relationship not found: {\"type\":\"overrides\",\"from\":\"@mixin probe\",\"target\":\"$brand\",\"meta.isScssGlobalOverride\":true,\"meta.overridesLine\":4,\"line_number\":34}"
+      ],
+      "threw": null
+    },
+    {
+      "id": "scss/recovered-extend-edge-dropped",
+      "defectClass": "recall",
+      "caught": true,
+      "caughtBy": [
+        "placeholder-selectors-and-extend: expected relationship not found: {\"type\":\"uses\",\"from\":\".card\",\"target\":\"%badge\",\"meta.isScssExtend\":true,\"meta.scssExtendShape\":\"recovered\",\"meta.scssRecoveredFromError\":true,\"line_number\":10}"
+      ],
+      "threw": null
+    },
+    {
+      "id": "scss/exports-scope-widened",
+      "defectClass": "fabrication",
+      "caught": true,
+      "caughtBy": [
+        "module-exports-and-global-overrides: forbidden relationship present: \"exports\"[module-exports-and-global-overrides.scss->$local]"
+      ],
+      "threw": null
+    },
+    {
+      "id": "scss/private-module-member-exported",
+      "defectClass": "fabrication",
+      "caught": true,
+      "caughtBy": [
+        "module-exports-and-global-overrides: forbidden relationship present: \"exports\"[module-exports-and-global-overrides.scss->$_internal]"
+      ],
+      "threw": null
+    }
+  ]
+}
