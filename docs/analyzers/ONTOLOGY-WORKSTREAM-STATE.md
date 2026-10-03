@@ -793,3 +793,71 @@ still exist. **Ten lanes share this machine**; that is the load.
   are close to their ceiling.
 - **A high score with few files is a warning, not a result.** protobuf's 10/120 is
   the shape to distrust.
+
+## The regex census, lane by lane
+
+`script/m12/verify-regex-census.ts` FAILS. Current counts:
+
+| lane | regex findings | status |
+|---|---|---|
+| **julia** | 0 | **CLEAN** — all 9 removed this wave |
+| css | 11 | open |
+| fsharp | 6 | open |
+| clean | 2 | open |
+| scss | 2 | open |
+| sql | 1 | open |
+| svelte / javascript / typescript / python | 4 / 2 / 1 / 1 | other laptop |
+
+**julia is the method.** The lane did not add a census row saying its regexes were
+acceptable — a census row is a verifier-written artifact (honesty contract 5.1), so
+the only honest move was to delete them. All 9 were node-text normalisation and
+became prefix/character tests: `stripSigil(text, "@")`, `unquoteOperatorMember`,
+`collapseSpace`. The supervisor verified it against the gate rather than the
+agent's word: the four remaining julia entries report as `ABSENT-IN-WORKTREE`, which
+is the gate agreeing the literals are gone.
+
+**A grep is not the gate.** A direct grep for `.replace|.split|.match` still finds
+3 call sites in the julia analyzer, and both live arguments are STRINGS
+(`"_statement"`, `"\n"`). Those are string methods, not regex. A naive scan
+over-reports, and the census is the instrument that decides.
+
+## keepSymbol — the register problem six lanes found
+
+`src/ast/pool-worker.ts`'s `keepSymbol` denied 15 names on the stated grounds that
+they are "never legitimate declarations in any language". Six lanes measured
+counterexamples independently:
+
+| lane | the name | what it actually is | cost |
+|---|---|---|---|
+| R | `source_file` | an ordinary R function (`r-testthat/R/source.R:18`) | 12 symbols / 9 files |
+| lua | `root`, `this`, … | `local root` at `lazy.nvim/lua/lazy/core/loader.lua:497` | **236 declarations, 677 edges** |
+| sql | `program` | a legal SQL COLUMN name | 3 of 18,325 symbols |
+| graphql | `me` | `Query.me`, an ordinary field name | 1 of 8,796 symbols |
+| hcl | `unknown` | a legitimately declared variable | filed as H10 |
+| solidity | — | measured the denylist as a store-vs-analyzer divergence | — |
+
+Of the 15 names, only `this`, `super` and `unknown` are reserved essentially
+everywhere; `me` is legitimate in every language there is and `destructor` is a real
+method name in C++/Rust/Go. **A node type and a user identifier occupy the same
+namespace in every language that allows keywords as names**, which is why a
+grammar-artifact denylist cannot also be a keyword denylist.
+
+Fixed by splitting the set: `UNIVERSAL` keeps only names no lane produced a
+counterexample for, and `RESERVED` is consulted per language. Verified with a
+24-case table including the cases that MUST differ (`self`/php false,
+`self`/python true; `program`/sql false, `program`/r true), and
+`sentinel-census.ts` — the R7 enforcement — is byte-identical before and after.
+
+## bash round 4 — the shape of a correct incoming fix
+
+357 `uses` edges named a declaration the analyzer never published, because bash
+binds names in four constructs the declaration collectors do not read (`for NAME
+in`, `read NAME`, `mapfile`, `printf -v`).
+
+**The `uses` total did not move: 7,802 before and after.** That is what
+distinguishes this from a fabricated edge — the edges already existed and named a
+real binding; only the declaration they named was missing. A fix that reduced the
+count would have been deleting real edges.
+
+`explained by a binding site` went 357 → **0**, and the unexplained residue stayed
+at 1,563. A class closed, not a number shifted.
