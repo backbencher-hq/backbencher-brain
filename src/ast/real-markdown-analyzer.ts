@@ -336,7 +336,7 @@ export class RealMarkdownAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
         patterns.push("Markdown headings")
         // Emit inline-derived uses for this heading's inline content.
-        this.emitInlineUses(node, inlineByStart, addRel, currentOwner ?? DOC, definitions, pendingAnchors)
+        this.emitInlineUses(node, inlineByStart, addRel, currentOwner ?? DOC, definitions, pendingAnchors, imports)
         continue
       }
 
@@ -348,6 +348,12 @@ export class RealMarkdownAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (inline?.tree?.rootNode) {
           const source = currentOwner ?? DOC
           this.walkInlineTree(inline.tree.rootNode, addRel, source, inline.line, definitions, pendingAnchors)
+          // MD-G3: a template include directive is not a node, so the structural walk
+          // above has nothing to dispatch on. It is read here, where the OWNING SECTION
+          // and the block's FILE LINE are both in hand — which is the only reason the
+          // source is the heading the directive sits under rather than whatever heading
+          // happened to be current when a whole-file pass ran.
+          this.emitIncludeImports(String(inline.tree.rootNode.text ?? ""), addRel, source, inline.line, imports)
         }
         continue
       }
@@ -672,6 +678,15 @@ export class RealMarkdownAnalyzer implements ASTEngine.LanguageAnalyzer {
         md.evidenceClass = "reference_qualified"
         continue
       }
+      if (t === "imports") {
+        // MD-G3. The same tier css gives its `imports` and `references` classes, and for
+        // the same reason: the evidence is a PATH the document names, which is what
+        // `import_based` means. It is not `structural` — nothing here was read off the
+        // block tree — and it is not `usage_contextual` — the argument was not matched
+        // against a name appearing in context. It was read verbatim out of a directive.
+        md.evidenceClass = "import_based"
+        continue
+      }
       md.evidenceClass = "usage_contextual"
     }
   }
@@ -781,12 +796,213 @@ export class RealMarkdownAnalyzer implements ASTEngine.LanguageAnalyzer {
     addRel: (source: string, type: string, target: string, metadata: Record<string, unknown>, line?: number) => void,
     source: string,
     definitions: Map<string, { destination: string; line: number }>,
-    pendingAnchors?: { source: string; fragment: string; literal: string; line?: number }[],
+    pendingAnchors: { source: string; fragment: string; literal: string; line?: number }[] | undefined,
+    imports: ASTEngine.ImportInfo[],
   ): void {
     const inline = this.headingInline(node)
     if (!inline) return
     const entry = inlineByStart.get(inline.startIndex)
-    if (entry?.tree?.rootNode) this.walkInlineTree(entry.tree.rootNode, addRel, source, entry.line, definitions, pendingAnchors)
+    if (entry?.tree?.rootNode) {
+      this.walkInlineTree(entry.tree.rootNode, addRel, source, entry.line, definitions, pendingAnchors)
+      // MD-G3, the heading half. A `{% include … %}` inside a heading is the same
+      // construct as one inside a paragraph and the same rule reads it; the reason it
+      // is a separate call rather than a fold into the DFS is that the DFS `continue`s
+      // on a heading and never reaches its `inline` child.
+      this.emitIncludeImports(String(entry.tree.rootNode.text ?? ""), addRel, source, entry.line, imports)
+    }
+  }
+
+  /**
+   * A template include directive, and the `imports` edge it carries (MD-G3).
+   *
+   * ## Why this is a text rule in a lane whose measured property is zero regexes
+   *
+   * Zero regex literals is a property this lane publishes and a probe measures
+   * (`validation/m12/results/regex-census.json`, markdown 4 → 0). Keeping it is not
+   * stubbornness: it is what makes "every fact this analyzer publishes is AST-derived"
+   * a checkable claim rather than a habit. This method is the one place where the fact
+   * cannot be AST-derived, and it is a character-code scan of ONE node's own text for a
+   * construct the grammar does not model — which is a different thing from scanning a
+   * file for a pattern. `stripAngleBrackets`, `stripAtxClosingSequence`, `anchorSlug` and
+   * `decodeFragment` are all the same technique, and they are why the property survived
+   * this round.
+   *
+   * ## What it reads, and what it refuses to read
+   *
+   * `{%` … `%}`, whose first word is `include` (optionally `include-markdown` or
+   * `include_relative`), whose argument is either a quoted string or a bare token, and
+   * whose argument **ends in a known file extension**.
+   *
+   * That last clause is the whole discipline. The corpus carries 1,030+ `{% include %}`
+   * directives and most are Jinja/pymdownx MACRO calls naming no file —
+   * `{% include type t="Number" %}` (317 occurrences), `{% include tag ver="5.0" %}`
+   * (60+), `{% include example spec=… %}` (94). Publishing `imports -> Number` or
+   * `imports -> 5.0` would be exactly the fabrication the workstream forbids, and it
+   * would be invisible to the differential only because the oracle would have to repeat
+   * the same mistake. The extension test is the discriminator, and it is measured: 68
+   * directives on the pinned corpus name a file, and those 68 are the population.
+   *
+   * ## Confidence and evidence class
+   *
+   * `1.0` and `import_based`. Nothing here is inferred: the path is the author's own
+   * text, read verbatim, and the edge says this document pulls that path in. The
+   * confidence is NOT a claim that the file exists — a per-file analyzer cannot know,
+   * and 0 of the 68 were checked for existence by this lane. It is a claim about how the
+   * edge was derived, which is what the number means everywhere else in this lane.
+   */
+  private emitIncludeImports(
+    text: string,
+    addRel: (source: string, type: string, target: string, metadata: Record<string, unknown>, line?: number) => void,
+    source: string,
+    baseLine: number,
+    imports: ASTEngine.ImportInfo[],
+  ): void {
+    const n = text.length
+    // The DIRECTIVE's row inside this block, tracked incrementally. The first version
+    // recounted the whole block for every directive, which is O(n x directives) and turns
+    // a pathological paragraph — a 100 KB block carrying a thousand `{% … %}` — into
+    // 100 M character operations. `i` only moves forward, so carrying the scan position
+    // makes the whole method O(n), which is the envelope this lane documents.
+    let row = 0
+    let scannedTo = 0
+    for (let i = 0; i + 1 < n; i++) {
+      if (text.charCodeAt(i) !== 123 /* '{' */ || text.charCodeAt(i + 1) !== 37 /* '%' */) continue
+      let p = i + 2
+      // `{%-` is Liquid's whitespace-trim form and carries the same meaning.
+      if (p < n && text.charCodeAt(p) === 45 /* '-' */) p++
+      while (p < n && this.isSpaceCode(text.charCodeAt(p))) p++
+      const wordAt = p
+      if (!this.consumeWord(text, p, "include")) continue
+      p += 7
+      // The rest of the directive's own name. `include-markdown` and `include_relative`
+      // are single words, so the sweep takes letters and digits as well as the joining
+      // `-`/`_`: a sweep over the joiners alone stopped at the `m` of `markdown`, the
+      // argument reader then took `markdown` as the argument, `namesAFile` rejected it,
+      // and 54 of the corpus's 68 file-naming directives published nothing while the
+      // fixture still read as covering them.
+      while (p < n) {
+        const c = text.charCodeAt(p)
+        const wordChar =
+          (c >= 65 && c <= 90) || (c >= 97 && c <= 122) || (c >= 48 && c <= 57) || c === 45 || c === 95
+        if (!wordChar) break
+        p++
+      }
+      const wordEnd = p
+      while (p < n && this.isSpaceCode(text.charCodeAt(p))) p++
+      const arg = this.readIncludeArgument(text, p, wordAt, wordEnd)
+      if (!arg.path || !this.namesAFile(arg.path)) continue
+      // The line is the DIRECTIVE's, not the block's: a paragraph may hold several, and
+      // M59 #825 takes `line_number` from the construct the edge is about.
+      for (let k = scannedTo; k < i; k++) if (text.charCodeAt(k) === 10 /* '\n' */) row++
+      scannedTo = i
+      const line = typeof baseLine === "number" && baseLine > 0 ? baseLine + row : undefined
+      const offset = baseLine > 0 ? row : 0
+      imports.push({
+        path: arg.path,
+        importType: "template-include",
+        localName: arg.path,
+        range: {
+          startLine: line ?? 0,
+          startColumn: 0,
+          endLine: (line ?? 0) + arg.lines - 1,
+          endColumn: 0,
+          startIndex: 0,
+          endIndex: 0,
+        },
+        metadata: { directive: arg.directive, quoted: arg.quoted, inlineBlockLine: offset },
+      })
+      addRel(
+        source,
+        ASTEngine.RelationshipType.Imports,
+        arg.path,
+        { role: "markdown_template_include", directive: arg.directive, ...(arg.quoted ? { quoted: true } : {}) },
+        line,
+      )
+      // Continue past the directive rather than re-scanning its own argument, so a path
+      // containing the literal `{%` cannot produce a second edge for one directive.
+      i = i + 2
+      continue
+    }
+  }
+
+  private isSpaceCode(c: number): boolean {
+    return c === 32 || c === 9 || c === 10 || c === 13
+  }
+
+  /**
+   * `word` at `at`, by character code.
+   *
+   * The boundary rule is asymmetric on purpose and the first version got it wrong in the
+   * direction that loses real edges: it treated `-` and `_` as word characters, so
+   * `include-markdown` and `include_relative` — 53 of the corpus's 68 file-naming
+   * directives between them — did not match, and only the bare `{% include x.md %}` form
+   * published. A letter or a digit after the word still ends the match, so `{% includes
+   * x.md %}` is not a directive; that is the case the fixture's near-miss section pins.
+   */
+  private consumeWord(text: string, at: number, word: string): boolean {
+    for (let k = 0; k < word.length; k++) if (text.charCodeAt(at + k) !== word.charCodeAt(k)) return false
+    const after = text.charCodeAt(at + word.length)
+    if ((after >= 65 && after <= 90) || (after >= 97 && after <= 122) || (after >= 48 && after <= 57)) return false
+    return true
+  }
+
+  /**
+   * The directive's argument: a quoted string if there is one, else the bare token up to
+   * whitespace or `%}`. Returns `lines` so the emitted range can cover a multi-line
+   * directive, which `{% include` with a long argument list does produce.
+   */
+  private readIncludeArgument(
+    text: string,
+    at: number,
+    wordAt: number,
+    wordEnd: number,
+  ): { path?: string; directive: string; quoted: boolean; lines: number } {
+    const n = text.length
+    // The directive's OWN NAME is the word, `include` / `include-markdown` /
+    // `include_relative`, and it is recorded because it is what tells a reader which of
+    // the three spellings the document used. Character codes, not a pattern:
+    // `split(/[%\s]/)` was the first thing written here and it put a regex literal into
+    // a file whose zero-regex count is a published, measured property.
+    const directive = wordEnd > wordAt ? text.slice(wordAt, wordEnd) : "include"
+    let p = at
+    let quoted = false
+    if (p < n && (text.charCodeAt(p) === 34 /* '"' */ || text.charCodeAt(p) === 39 /* "'" */)) {
+      const q = text.charCodeAt(p)
+      quoted = true
+      p++
+      let out = ""
+      while (p < n && text.charCodeAt(p) !== q) {
+        out += text[p]
+        p++
+      }
+      return { path: out.trim() || undefined, directive, quoted, lines: 1 }
+    }
+    let out = ""
+    while (p < n && !this.isSpaceCode(text.charCodeAt(p)) && text.charCodeAt(p) !== 37 /* '%' */) {
+      out += text[p]
+      p++
+    }
+    let lines = 1
+    for (let k = at; k < p && k < n; k++) if (text.charCodeAt(k) === 10) lines++
+    return { path: out || undefined, directive, quoted: false, lines }
+  }
+
+  /**
+   * Does this argument name a FILE rather than a macro keyword?
+   *
+   * The extension list is by character code and closed, and every entry is an extension
+   * that appears in the corpus's own include directives. It is a ROLE test rather than a
+   * shape test: the role is "a path to another file this build will read", and the
+   * discriminator the corpus supports is the extension, because that is the only part of
+   * the argument that differs between `properties.md` and `t="Number"`.
+   */
+  private namesAFile(path: string): boolean {
+    const dot = path.lastIndexOf(".")
+    if (dot <= 0 || dot === path.length - 1) return false
+    const ext = path.slice(dot + 1).toLowerCase()
+    const known = ["md", "markdown", "html", "htm", "txt", "yml", "yaml", "json", "toml", "svg", "png", "jpg", "jpeg", "gif", "csv", "ini", "conf", "pdf"]
+    for (const k of known) if (ext === k) return true
+    return false
   }
 
   /**
