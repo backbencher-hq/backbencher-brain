@@ -696,3 +696,42 @@ own `status.sh` had it first, and it was fixed there while going unmentioned to 
 agents. `anti-stall-brief.md` now tells every agent: run the census in the
 foreground, or capture the PID and `wait $PID`, or anchor the pattern so the shell
 cannot match itself. Never a bare `sleep N; pgrep -f <thing you launched>`.
+
+## Fleet round 3 — findings that outlived the sessions that made them
+
+All ten agents reached their session end. Their work is on disk; these are the
+findings worth carrying forward, recorded here because the logs are not a durable
+artifact.
+
+### A JSON parse produces ONE symbol and 200,000 children
+
+The json lane's depth probe reports, at depth 1 from the root, an `ERROR` node with
+`childCount 200000`, and `symbols=1 rels=0`. Two timings on the same input: OLD
+249,043 ms, NEW 347,114 ms.
+
+This is the same shape as the parse-error branch other lanes reported — `parseFile`
+substitutes a regex `extractFallback` whose symbols carry no `kind` (zig: 192
+kindless symbols per full run) — but at a scale nobody has characterised. A root
+with 200,000 children is not a parse, it is a failure to fail. It needs its own
+measurement before anyone claims a json number.
+
+### R cannot typecheck against its own analyzer's metadata
+
+`FileMetadata.complexity` is required, and the scss analyzer's metadata object
+omits it. This is a cross-lane type error in `src/ast/types.ts` — a file the
+supervisor owns and no agent may edit — and it blocks a lane from building. It is
+the third `types.ts` friction point in this wave, after the julia duplicate-doc
+repoint and the `SymbolKind.Instance` merge note in the contract.
+
+### Nim publishes symbol names that are its own internal scaffolding
+
+`RootRef` in `graphql-nim/graphql/builtin/*_respstream.nim` and `RootObj` in
+`graphql-nim/graphql/common/ast.nim` — these read as the analyzer's own working
+names rather than source declarations. If they reach the store as symbols, the
+graph carries names no Nim programmer wrote. Unconfirmed: the lane was checking
+whether they are declared or synthesized when its session ended.
+
+### Bash, Zig, Lua, Julia, SQL produced report-shaped output
+
+Each reached a report before exiting. Lua has 3 commits on its branch, php 1. Those
+are reviewable; the rest are read in the lane logs.
