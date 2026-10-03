@@ -56,9 +56,15 @@ interface TreeEdge { label: string; from: string; target: string }
 //      A table's identity is its header cells; each header cell is contained by
 //      the table.
 //   §7 links and images
-//      A link destination is a `uses` edge from the enclosing section. Inline
-//      and reference forms are the SAME edge: what differs is where the
-//      destination text is written, not whether there is a link.
+//      A link destination is an edge from the enclosing section, and its LABEL is
+//      decided by what the destination names. Inline and reference forms are the
+//      SAME edge: what differs is where the destination text is written, not
+//      whether there is a link. MD-L1 (2026-10-03) split the label: a `#fragment`
+//      is `references`, because CommonMark §4.6 defines it as "a link to a
+//      heading in the same document" and §2.1 defines a reference as a link to
+//      another CONSTRUCT — the document's own heading is a construct it declares.
+//      Every other destination is `uses`, because nothing in the corpus declares
+//      `https://example.com` and no edge should claim otherwise.
 //   §7.1 link reference definitions
 //      A reference link is a link ONLY if a definition for its label exists in
 //      the document. CommonMark: "If a link reference definition has not been
@@ -261,9 +267,10 @@ async function mdInlineTrees(root: any, content: string): Promise<{ start: numbe
 }
 
 /**
- * The markdown truth: `contains` for document structure and `uses` for every
- * link destination, derived from the block tree plus the companion inline
- * grammar's own sub-parse.
+ * The markdown truth: `contains` for document structure, `uses` for every link
+ * destination the document merely NAMES, and `references` for the one class it
+ * declares — a `#fragment` resolved to the heading it names — derived from the
+ * block tree plus the companion inline grammar's own sub-parse.
  *
  * `from` is carried for triage only — the harness's match is site-agnostic
  * (label + normalised target), because the comparator deliberately never reads
@@ -380,24 +387,71 @@ export async function deriveMarkdownEdges(root: any, content: string): Promise<T
         currentSection = name
         currentSectionId = id
       }
-      // A heading's OWN inline content is links too.
+      // A heading's OWN inline content is links too — and a heading does not hold it
+      // the same way in both forms. The ATX form puts the text in a DIRECT `inline`
+      // child; the SETEXT form does not, because the text is the paragraph the
+      // underline terminates:
+      //
+      //     atx_heading   > atx_hN_marker , inline
+      //     setext_heading > paragraph > inline , setext_hN_underline
+      //
+      // MD-DEFECT-2 (2026-10-03, the M60 pass-2 oracle census). This lookup is a
+      // DIRECT-named-child scan, so it returned null for every setext heading and the
+      // oracle published no link for one — the SAME defect the analyzer carried, found
+      // in the same place, and the reason the differential read 0 unexplained while
+      // both were wrong. That is the workstream's structural claim made concrete inside
+      // one lane: two walkers over one grammar agree when they share a bug.
+      //
+      // It became visible only because the analyzer side was fixed FIRST. The fix moved
+      // the disagreement from silent to measurable, and the measurement is the whole
+      // argument for fixing an oracle when the analyzer is the one that changed: with
+      // the analyzer fixed and this left alone, the kubernetes whole-repo census reads
+      // **7 unexplained `uses` edges**, all of them the link and image destinations of
+      // a setext H1 badge banner — `vendor/github.com/armon/go-socks5/README.md:1`,
+      // `vendor/github.com/russross/blackfriday/v2/README.md:1`,
+      // `vendor/github.com/xlab/treeprint/README.md:1`, each of which is
+      // `name [![badge](…img)](…)` followed by an `=====` underline.
+      //
+      // Written the way the analyzer writes it, from the measured shape and not from
+      // the analyzer's code: the oracle has its own tree walk and its own inline
+      // sub-parse, and the one-paragraph hop is bounded for the same reason it is
+      // bounded there — a heading's text is the inline inside that paragraph, and
+      // reaching further would collect body prose as heading text.
       const inline = (() => {
         for (let i = 0; i < node.namedChildCount; i++) {
           const c = node.namedChild(i)
           if (c && c.type === "inline") return c
         }
+        for (let i = 0; i < node.namedChildCount; i++) {
+          const c = node.namedChild(i)
+          if (c && c.type === "paragraph") {
+            for (let j = 0; j < c.namedChildCount; j++) {
+              const g = c.namedChild(j)
+              if (g && g.type === "inline") return g
+            }
+          }
+        }
         return null
       })()
       if (inline && text) {
         const t = inlineByStart.get(inline.startIndex)
-        if (t) mdCollectLinks(t, currentSection, definitions, add, pendingAnchors)
+        if (t) {
+          mdCollectLinks(t, currentSection, definitions, add, pendingAnchors)
+          // MD-G3's heading half. A directive inside a heading names a file this page
+          // will read, exactly as one inside a paragraph does, and the walk above never
+          // reaches a heading's `inline` child because the heading branch `continue`s.
+          mdIncludeImports(String(t?.text ?? ""), currentSection, add)
+        }
       }
       continue
     }
 
     if (node.type === "inline") {
       const t = inlineByStart.get(node.startIndex)
-      if (t) mdCollectLinks(t, currentSection, definitions, add, pendingAnchors)
+      if (t) {
+        mdCollectLinks(t, currentSection, definitions, add, pendingAnchors)
+        mdIncludeImports(String(t?.text ?? ""), currentSection, add)
+      }
       continue
     }
 
@@ -460,21 +514,128 @@ export async function deriveMarkdownEdges(root: any, content: string): Promise<T
   // A fragment that names no heading is NOT a truth row: it is the internal twin of
   // the undefined-reference-link case, and publishing it would assert an endpoint the
   // document does not contain.
+  //
+  // MD-L1: the LABEL is `references`, not `uses`, and the oracle derives that from the
+  // specification rather than from the analyzer. CommonMark §4.6 calls a fragment a
+  // "link to a heading in the same document", and §2.1 defines a reference as "a link
+  // from one construct to another construct". A destination the document itself
+  // declares is therefore a reference; a destination it merely names — a URL, an
+  // autolink, a path in another file — is a use. The distinction is drawn here from the
+  // same `charCodeAt(0) === 35` test the emit path uses, which is a specification fact
+  // about what a fragment IS rather than a fact about how the analyzer is written.
+  // Writing `uses` for both would make the oracle unable to see a mislabel in either
+  // direction, which is the colluding-truth failure this file exists to prevent.
   for (const p of pendingAnchors) {
     const hit = anchors.get(mdDecodeFragment(p.fragment))
-    if (hit) add("uses", p.section, hit)
+    if (hit) add("references", p.section, hit)
   }
 
   return edges
 }
 
 /**
- * Every link destination in one inline tree, as `uses` edges.
+ * Every link destination in one inline tree, as `uses` edges — except a pure
+ * fragment, which is deferred and re-emitted as `references` once the headings
+ * are known.
  *
  * Descends NAMED children only, which is what makes a code span structurally
  * excluded rather than filtered: the inline grammar gives a `code_span` only
  * anonymous children, so no `link_destination` exists beneath one.
  */
+/**
+ * A template include directive, and the `imports` row it is (MD-G3).
+ *
+ * ## The specification this is written from
+ *
+ * Liquid's `include` tag — which Jekyll, Hugo, MkDocs and every other static-site
+ * generator on this corpus inherit — reads the named file from disk at BUILD TIME and
+ * splices its content into the output. Jekyll's own documentation for
+ * `{% include_relative footer.md %}` is explicit that the path is resolved relative to
+ * the including page. So a document carrying one has a file dependency on that path,
+ * which is what `imports` names, and the construct is real whatever the markdown
+ * grammar does with it.
+ *
+ * ## Why it is read from TEXT, and what that costs the oracle's independence
+ *
+ * CommonMark has no notion of the tag: `{% include x.md %}` at the start of a line is a
+ * paragraph, so the BLOCK grammar gives the directive no node and the companion inline
+ * grammar gives it no node either — it is text inside an `inline` node. Reading it is
+ * therefore reading a string, and that is the same structural situation the JSON lane's
+ * `$ref` probe is in, for the same reason: **a grammar cannot see a construct that is
+ * spelled as a string.**
+ *
+ * The cost is stated rather than hidden. This function and the analyzer's
+ * `emitIncludeImports` are two implementations of ONE specification — Liquid's tag
+ * syntax — so a shared misreading of Liquid is invisible to the differential here in the
+ * way a shared misreading of the grammar is invisible everywhere else. What the
+ * differential CAN see is that the two disagree about a corpus, and what it cannot see
+ * is that both are wrong about Liquid. That is a declared limitation of the pair, not a
+ * property of either.
+ *
+ * ## The discriminator, and why a shape test would have been wrong
+ *
+ * The corpus carries 1,030+ `{% include %}` directives and the great majority name no
+ * file: `{% include type t="Number" %}` (317), `{% include example spec=… %}` (94),
+ * `{% include tag ver="5.0" %}` (60+). Liquid's `include` tag is overloaded — Jekyll,
+ * MkDocs' pymdownx macros and mkdocs-include all register tags under the same name — so
+ * "the tag is present" is NOT the construct. The construct is "the tag's argument names
+ * a file this build will read", and the part of the argument that carries that is the
+ * extension. 68 directives on the pinned corpus qualify.
+ *
+ * Written independently of the analyzer's version: this one reads the argument as
+ * `tag` `name` `argument` triples keyed on `name` starting with `include`, and the
+ * analyzer's reads a character-code sweep. They agree on the corpus and can disagree on
+ * a document, which is the property worth having.
+ */
+function mdIncludeImports(text: string, section: string, add: (label: string, from: string, target: string) => void): void {
+  // Liquid's `{% %}` is an OUTPUT delimiter, not a line construct: a tag may appear
+  // anywhere in the template body, and Jekyll's own generated CHANGELOGs put includes
+  // mid-sentence. So the scan is over the whole block, not over its lines.
+  //
+  // The first version of this function required `{%` at the start of a trimmed line and
+  // it disagreed with the analyzer on exactly one corpus construct — a directive inside a
+  // HEADING, where the block text is `Some heading {% include_relative footer.md %}` and
+  // the tag is mid-line. The analyzer published it and this did not, which is the shape
+  // of a specification question rather than of a bug, and the specification answers it:
+  // the tag is legal there. Recorded because the disagreement was found by MEASUREMENT
+  // (the whole-repo oracle census, 1 unexplained) and not by reading either
+  // implementation, which is the only reason it was found at all.
+  const OPEN = "{%"
+  let at = text.indexOf(OPEN)
+  while (at >= 0) {
+    let from = at + OPEN.length
+    if (text[from] === "-") from++
+    const close = text.indexOf("%}", from)
+    if (close < 0) break
+    const body = text.slice(from, close).trim()
+    at = text.indexOf(OPEN, close)
+    if (body.length === 0) continue
+    const parts = body.split(/\s+/)
+    const tag = parts[0]
+    if (!tag || !tag.startsWith("include")) continue
+    // The argument is the first token that is not a `key=value` pair. Every generator
+    // that overloads `include` passes its macro arguments that way — `type t="Number"`,
+    // `tag ver="5.0"`, `example spec=page.spec` — and the corpus carries 470+ of them,
+    // so skipping key/value tokens is what separates a file from a macro call.
+    let path = ""
+    for (const tok of parts.slice(1)) {
+      if (tok.length === 0) continue
+      if (tok.includes("=")) continue
+      path = tok
+      break
+    }
+    if (path.startsWith('"') || path.startsWith("'")) path = path.slice(1)
+    if (path.endsWith('"') || path.endsWith("'")) path = path.slice(0, -1)
+    if (path.length === 0) continue
+    const dot = path.lastIndexOf(".")
+    if (dot <= 0) continue
+    const ext = path.slice(dot + 1).toLowerCase()
+    const FILE_EXTENSIONS = ["md", "markdown", "html", "htm", "txt", "yml", "yaml", "json", "toml", "svg", "png", "jpg", "jpeg", "gif", "csv", "ini", "conf", "pdf"]
+    if (!FILE_EXTENSIONS.includes(ext)) continue
+    add("imports", section, path)
+  }
+}
+
 /**
  * A heading's GitHub anchor from its display text, and a link fragment decoded for
  * comparison against one. Both are specified by the RENDERER, not by this repository,
