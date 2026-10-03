@@ -1194,11 +1194,31 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
           child.text.charCodeAt(0) === 45 /* - */ &&
           child.text.charCodeAt(1) !== 45 /* not `--` */
         if (isOption) {
+          // A bundled option carries its value EITHER inside the bundle or in the
+          // next sibling, and which one is decided by POSITION: only a value-taking
+          // letter in the LAST position has nothing after it to take the value
+          // from. `-ra args` -> `a` is last, so `args` is the array name. `-u3
+          // name` -> `u` is followed by `3`, so the descriptor is inside the
+          // bundle and `name` is a TARGET.
+          //
+          // This was a real defect in the first version, which asked only "does
+          // this bundle contain a value letter" and so consumed `name` in
+          // `read -u3 name`, dropping a binding bash actually makes. It was found
+          // by a surviving MUTANT rather than by reading the code: emptying
+          // READ_VALUE_OPT_LETTERS left the fixture battery green, which said the
+          // fixture could not tell the two rules apart, and the discriminating
+          // shape is in `probe-bash-binding-shapes.mts` as bundle-u3.
+          const lastIndex = child.text.length - 1
           let consumesNext = false
           for (let j = 1; j < child.text.length; j++) {
             const letter = child.text[j]
             if (!READ_OPTION_LETTERS.has(letter)) continue
-            if (READ_VALUE_OPT_LETTERS.has(letter)) consumesNext = true
+            if (READ_VALUE_OPT_LETTERS.has(letter)) {
+              consumesNext = j === lastIndex
+              // The FIRST value-taking letter owns the value; a letter after it is
+              // not a separate option.
+              break
+            }
           }
           skipNext = consumesNext
           continue
