@@ -363,4 +363,57 @@ export const FSHARP_MUTANTS: Mutant[] = [
       return { ...r, relationships: (r.relationships ?? []).filter((x: any) => !(String(x.type) === "calls" && String(x.source) === String(x.target))) }
     },
   },
+  {
+    id: "fsharp/open-recorded-only-as-a-mention",
+    language: "fsharp",
+    defectClass: "wrong-relationship",
+    description:
+      "M60 ontology lane: ER-D41's shape in F#. `src/intelligence/analysis/dependencies.ts` reads `imports` relationship edges for file->file module dependencies, relying on them precisely because `brain_import.resolved_symbol_id` is routinely null — 19 analyzers emit `imports`, and F# recorded `open X` under `references` alone, so an `open FSharp.Compiler.Diagnostic` was stored under a label that reader never looks at. Reverted here by dropping every `imports` edge the analyzer emits, which is the honest pre-fix state: the mention survives and the dependency does not. Caught by fsharp/import-and-use, whose five `imports` rows (two `open`, one `open type`, `#r`, `#I`, `#load`) go missing while its two `references` rows stay green — so the mutant is caught by the ABSENCE of the dependency and not by any change to the mention.",
+    transform: (r: any) => {
+      const imports = (r.relationships ?? []).filter((x: any) => String(x.type) === "imports")
+      if (imports.length === 0) return r
+      return { ...r, relationships: (r.relationships ?? []).filter((x: any) => String(x.type) !== "imports") }
+    },
+  },
+  {
+    id: "fsharp/repl-control-directive-imports-a-resource",
+    language: "fsharp",
+    defectClass: "wrong-relationship",
+    description:
+      "M60 ontology lane: the `#r`/`#load`/`#I` rule reads the directive's keyword off the tree and accepts three of the six keywords `fsi_directive_decl` covers. Accepting the NODE TYPE instead emits an import for `#time \"on\"`, `#help` and `#quit`, which are REPL controls touching no resource outside the file — a fabricated dependency, the most expensive mistake available, because a fake dependency is counted as a fabrication by the oracle and poisons bb_graph, bb_impact and bb_migrate, where it becomes wrong refactoring advice. `#time` is the load-bearing case and not a contrived one: it CARRIES a string (`#time \"on\"`), so a rule that keyed on 'has a string argument' would emit the edge too, and only the keyword test refuses it. The two targets are F#'s two documented `#time` arguments. THIS IS AN INJECTION, NOT A BYTE-FAITHFUL REVERT, and the reason is stated rather than papered over: the pre-fix rule's extra edges leave NO trace in a result the analyzer refused to produce — no symbol, no relationship, no ImportInfo row — so a transform over the result cannot recover them, and a revert written against the source would be a text match, which is the instrument this project has twice measured to be wrong. What it asserts is exactly the defect: does the suite go red when an `imports` edge exists that names no resource? Caught by fsharp/import-and-use, whose forbid row for target `on` exists for this and nothing else.",
+    transform: (r: any) => {
+      const res = (r.relationships ?? []).filter(
+        (x: any) => String(x.type) === "imports" && String(x.metadata?.relationshipType ?? "") === "resource_directive",
+      )
+      if (res.length === 0) return r
+      const fabricated = ["on", "off"].map((v) => ({
+        type: "imports",
+        source: String(res[0].source),
+        target: v,
+        confidence: 1,
+        metadata: { nodeType: "fsi_directive_decl", relationshipType: "resource_directive", directive: "#time" },
+      }))
+      return { ...r, relationships: [...(r.relationships ?? []), ...fabricated] }
+    },
+  },
+  {
+    id: "fsharp/attribute-variance-target-read-as-the-dependency",
+    language: "fsharp",
+    defectClass: "wrong-payload",
+    description:
+      "M60 ontology lane, and a REGRESSION guard for a bug this lane's own round introduced and then removed. `[<return: Struct>]` and `[<assembly: CompilationRepresentation(…)>]` carry an attribute `target` field; the rule skips it by asking the tree for the field name at each child index. The pre-fix version skipped it by OBJECT IDENTITY (`c === attrTarget`), which does not hold — web-tree-sitter rebuilds the Node wrapper on each accessor call, so the comparison was false for the very child it meant to skip, and the variance keyword became the dependency. Measured: 11 `uses` edges in a 200-file draw whose target was the literal string `return`. Without this mutant, a rule that was wrong once is free to be wrong again, and the failure is invisible downstream because a fabricated target resolves to nothing while a real one resolves to a symbol. Caught by fsharp/import-and-use, whose forbid rows for `return` and `assembly` exist for this and nothing else.",
+    transform: (r: any) => {
+      const uses = (r.relationships ?? []).filter((x: any) => String(x.type) === "uses")
+      if (uses.length === 0) return r
+      const extra = uses
+        .filter((x: any) => x.metadata?.attributeTarget != null)
+        .map((x: any) => ({
+          ...x,
+          target: String(x.metadata.attributeTarget),
+          metadata: { ...x.metadata, attributeTarget: undefined, relationshipType: "attribute_application_PRE_FIELD_NAME_SKIP" },
+        }))
+      if (extra.length === 0) return r
+      return { ...r, relationships: [...(r.relationships ?? []), ...extra] }
+    },
+  },
 ]
