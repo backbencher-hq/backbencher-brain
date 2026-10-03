@@ -1,4 +1,4 @@
-// Pure-AST F# analyzer — M12 per-analyzer perfection contract.
+// Pure-AST F# analyzer — the M12 per-analyzer contract.
 //
 // Emits exactly the M12 differential contract (mirroring the C# family):
 //   Symbols: namespace, module, class, interface, enum, enum_member,
@@ -874,6 +874,149 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
             })
           }
         }
+        // M60 fsharp lane: `uses` — AN ATTRIBUTE APPLICATION.
+        //
+        // `[<Struct>]`, `[<Obsolete("gone")]`, `[<assembly: TypeProviderAssembly>]`.
+        // This is the construct a `uses` edge is FOR, and it is the only F# construct
+        // that is: it NAMES a type, applies it as a marker, and never invokes it. It is
+        // therefore not a `calls` (no application), not an `implements` (no interface
+        // declaration), not an `extends` (no base), not an `instantiates` (no
+        // construction), and not a `references` (no DECLARED type — nothing here is a
+        // signature; the analyzer's declared-type pass reads type WRITERS, and an
+        // attribute's type is the type of an object construction, not a written
+        // annotation).
+        //
+        // The census measured 0 `uses` edges over 400 real files while the grammar
+        // produces `attribute` nodes throughout them, so the construct was present and
+        // unread. What was already here read only the TypeProvider case, which is 2 of
+        // the node's spellings and about symbol PUBLICATION rather than about the edge.
+        //
+        // The name comes from the TYPE of the object construction, read off the tree:
+        // `attribute` is `seq(optional(seq(field("target", identifier), ":")), _object_construction)`
+        // and `_object_construction` is `seq(_type, optional(_expression))`. The `target`
+        // is a FIELD, so it is excluded by field name and not by position, and the
+        // attribute's ARGUMENT expression is not read at all — `[<Obsolete("x")>]` names
+        // `Obsolete` and nothing in `"x"`, and an argument that happens to contain a
+        // type-shaped word is an argument, not a use.
+        const attrTarget = node.childForFieldName("target")
+        // The `target` is skipped by FIELD NAME, not by object identity. `namedChild(i)`
+        // and `childForFieldName("target")` do not return the same JS object for the same
+        // tree node — web-tree-sitter builds the wrapper on each accessor call — so
+        // `c === attrTarget` is false for the very child it is meant to skip. Measured
+        // cost of getting it wrong: 11 `uses` edges in a 200-file draw whose target was
+        // the literal string `return`, from `[<return: Struct>]` on a `val`, i.e. the
+        // variance annotation read as the dependency. `fieldNameForChild(i)` is the
+        // question that is actually well defined.
+        let attrTypeNode: Node | null = null
+        for (let i = 0; i < node.childCount; i++) {
+          const c = node.child(i)
+          if (!c || !c.isNamed) continue
+          if (node.fieldNameForChild(i) === "target") continue
+          const named = this.typeNameNodeOf(c)
+          if (named) { attrTypeNode = named; break }
+        }
+        const attrName = attrTypeNode ? this.dependencyLeafName(attrTypeNode) : null
+        if (attrName) {
+          // Source = the declaration the attribute decorates. `attributes` is a CHILD of
+          // the declaration, and this walk publishes a declaration's symbol and pushes its
+          // scope BEFORE pushing its children — so `currentScope`'s innermost name is
+          // already the decorated declaration here, and fileScope/Global covers the
+          // file-level spellings (`[<assembly: …>]` above every module).
+          const attrOwner = currentScope.length > 0 ? currentScope[currentScope.length - 1] : undefined
+          pushRel(
+            attrOwner || fileScope || "Global",
+            attrName,
+            ASTEngine.RelationshipType.Uses,
+            1.0,
+            {
+              nodeType: type,
+              relationshipType: "attribute_application",
+              isAttributeUsage: true,
+              ...(attrTarget ? { attributeTarget: attrTarget.text } : {}),
+            },
+            attrTypeNode ? lineOf(attrTypeNode) : lineOf(node),
+          )
+        }
+      } else if (type === "module_abbrev") {
+        // M60 fsharp lane: `imports` — an ALIASED MODULE, `module X = Y`.
+        //
+        // F#'s second import form and the only one whose target lies OUTSIDE the
+        // compilation: `module Diagnostics = FSharp.Compiler.Diagnostic` is how a script
+        // or a signature file names an assembly or a namespace it does not define. The
+        // dependency is on the RIGHT-HAND path; the left-hand `X` is the local alias the
+        // file itself introduces, so naming `X` would make every alias look like a
+        // self-dependency — and DID: a first draft reached for the last `identifier` or
+        // `long_identifier` DESCENDANT, which is the local name, and emitted
+        // `imports Fixture.ImportAndUse -> IO` for `module IO = System.IO`. The grammar
+        // is `seq(optional(attributes), "module", identifier, "=", scoped(long_identifier, ...))`,
+        // so the alias and the path are DIRECT children and the path's own identifiers are
+        // GRANDCHILDREN. Reading direct children is what separates the alias from the thing
+        // it aliases.
+        const aliasNode = this.filterChildren(node, (n) => n.type === "identifier")[0]
+        const pathNode = this.filterChildren(node, (n) => n.type === "long_identifier").pop()
+        if (pathNode && pathNode.text) {
+          const alias = aliasNode?.text
+          imports.push({
+            module: pathNode.text,
+            items: [],
+            isDefault: true,
+            alias,
+            range: this.nodeToRange(node),
+          })
+          const abbrevOwner = currentScope.length > 0 ? currentScope[currentScope.length - 1] : undefined
+          pushRel(
+            abbrevOwner || fileScope || "Global",
+            pathNode.text,
+            ASTEngine.RelationshipType.Imports,
+            1.0,
+            { nodeType: type, relationshipType: "module_alias", ...(alias ? { moduleAlias: alias } : {}) },
+            lineOf(pathNode),
+          )
+        }
+      } else if (type === "fsi_directive_decl") {
+        // M60 fsharp lane: `imports` — a RESOURCE DIRECTIVE, `#r "…"`, `#load "…"`, `#I "…"`.
+        //
+        // The strongest import fact F# has: the string LITERALLY names the file or
+        // assembly this unit will be compiled against. The grammar's
+        // `fsi_directive_decl` covers six keywords and only three of them name a
+        // resource — `#time`, `#help` and `#quit` are REPL controls that touch nothing
+        // outside the file, and emitting an import for those would be an edge to a
+        // resource the language never reads. The keyword is therefore read off the tree
+        // (the first unnamed child token) and the other three are refused, rather than
+        // the whole node being accepted because it is the right node type.
+        const resourceKeywords = new Set(["#r", "#load", "#I"])
+        let directiveKeyword = ""
+        for (let i = 0; i < node.childCount; i++) {
+          const c = node.child(i)
+          if (c && !c.isNamed) { directiveKeyword = c.text; break }
+        }
+        const specifier =
+          this.findChild(node, (n) => n.type === "string" || n.type === "verbatim_string") ??
+          (node.namedChildCount > 0 ? node.namedChild(0) : null)
+        if (specifier && (specifier.type === "string" || specifier.type === "verbatim_string") &&
+            resourceKeywords.has(directiveKeyword)) {
+          const specifierValue = this.stringLiteralValue(specifier)
+          if (specifierValue) {
+            imports.push({
+              module: specifierValue,
+              items: [],
+              isDefault: false,
+              isExternal: true,
+              path: specifierValue,
+              range: this.nodeToRange(node),
+              metadata: { fsharpSpecific: true, directive: directiveKeyword },
+            })
+            const dirOwner = currentScope.length > 0 ? currentScope[currentScope.length - 1] : undefined
+            pushRel(
+              dirOwner || fileScope || "Global",
+              specifierValue,
+              ASTEngine.RelationshipType.Imports,
+              1.0,
+              { nodeType: type, relationshipType: "resource_directive", directive: directiveKeyword },
+              lineOf(specifier),
+            )
+          }
+        }
       } else if (type === "import_decl") {
         // FS-A1 (measured dead branches retired): `open_statement`/`open_decl`
         // never occur — 0 of 363,609 nodes in the shape census — `open X` IS
@@ -903,6 +1046,36 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
             ASTEngine.RelationshipType.References,
             0.9,
             { nodeType: type, isImport: true },
+            lineOf(node),
+          )
+          // M60 fsharp lane: `imports` — the same directive under the label the
+          // module-dependency pass actually reads.
+          //
+          // ER-D41 is the precedent and it is about THIS language's shape:
+          // `src/intelligence/analysis/dependencies.ts` reads `imports` relationship
+          // edges for file->file module dependencies, relying on them precisely because
+          // `brain_import.resolved_symbol_id` is routinely null. F# emitted only
+          // `references`, so an `open FSharp.Compiler.Diagnostic` was recorded under a
+          // label that reader never looks at — 19 analyzers emit `imports` and this one
+          // stored the fact where nothing was reading it.
+          //
+          // BOTH labels stay, and the asymmetry in confidence is the honest part:
+          // `imports` is 1.0 because the directive NAMES the scope — the tree carries a
+          // `long_identifier` and nothing is inferred — while the `references` edge
+          // above stays at 0.9, which is what it was measured at. Both are parse facts;
+          // the 0.9 is the lane's declared confidence for a file-level mention, and
+          // raising or lowering it here would move a pinned row on a claim this change
+          // has not measured.
+          //
+          // `open type X` is the SAME node (the grammar is `seq("open", optional("type"),
+          // $.long_identifier)`), so the two spellings are distinguished by the token and
+          // recorded in metadata rather than by being two node types.
+          pushRel(
+            owner || fileScope || "Global",
+            targetNode.text,
+            ASTEngine.RelationshipType.Imports,
+            1.0,
+            { nodeType: type, relationshipType: "open_directive", ...(this.nodeHasToken(node, "type") ? { opensTypes: true } : {}) },
             lineOf(node),
           )
         }
@@ -1772,39 +1945,14 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
     // which is the type the whole expression denotes (`int option` is `option`;
     // `Map<string,int>` is `Map`). This is also the node the edge carries its LINE on
     // (M59.A7), never the wrapper's own start.
-    const nameNodeOf = (t: Node): Node | null => {
-      let cur: Node | null = t
-      for (let guard = 0; guard < 8 && cur; guard++) {
-        if (cur.type === "type_argument") return null // a bound type parameter
-        if (cur.type === "long_identifier") {
-          let leaf: Node | null = null
-          for (let i = 0; i < cur.namedChildCount; i++) {
-            const c = cur.namedChild(i)
-            if (c && (c.type === "identifier" || c.type === "long_identifier")) leaf = c
-          }
-          return leaf ?? cur
-        }
-        if (cur.type === "identifier") return cur
-        let next: Node | null = null
-        for (let i = 0; i < cur.namedChildCount; i++) {
-          const c = cur.namedChild(i)
-          if (
-            c &&
-            (TYPE_WRAPPER_NODES.has(c.type) ||
-              c.type === "type_argument" ||
-              c.type === "type_arguments" ||
-              c.type === "long_identifier" || // the name written DIRECTLY on the wrapper
-              c.type === "identifier")
-          ) {
-            next = c
-            break
-          }
-        }
-        if (!next) return null
-        cur = next
-      }
-      return null
-    }
+    // M60 fsharp lane: the wrapper descent is `typeNameNodeOf` on the class now, shared
+    // with the attribute rule. It was a closure here. That is a pure relocation and it is
+    // MEASURED rather than asserted: the 400-file census over this analyzer is byte-
+    // identical on all seven pre-existing labels before and after (validation/m14/fixtures/
+    // fsharp/ontology-census.ts, `references` 2,358 / `declared_type` 1,669 among them).
+    // Were it not, the declared-type pass would have been the thing that moved, and this
+    // comment would be the place to say so.
+    const nameNodeOf = (t: Node): Node | null => this.typeNameNodeOf(t)
 
     /**
      * Is this node an F# TYPE BINDER — `'T`, `^T` — rather than a named type?
@@ -2164,6 +2312,129 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (OBJECT_LEAF_METHODS.has(leaf)) return true
     if (call === "Console.WriteLine" || call.startsWith("Console.")) return true
     return false
+  }
+
+  /**
+   * Does this node CARRY an unnamed token equal to `text`, anywhere in its children?
+   *
+   * Distinct from `firstTokenIs`, which asks about the FIRST non-trivia token and is
+   * used for a declaration's keyword (`override`, `new`). `open type X` needs the
+   * opposite question — the token is not first, it sits between the keyword and the
+   * path — so it asks for the token's presence rather than its position.
+   */
+  private nodeHasToken(node: Node, text: string): boolean {
+    for (let i = 0; i < node.childCount; i++) {
+      const c = node.child(i)
+      if (c && !c.isNamed && c.type === text) return true
+    }
+    return false
+  }
+
+  /**
+   * The name-bearing node inside a F# type wrapper, or null.
+   *
+   * WRAPPERS NEST (`postfix_type` holds a `simple_type` for its base and a
+   * `long_identifier` for the postfix), so the rule is: descend to the first type-ish
+   * child, then take the LAST `long_identifier`/`identifier` at that level — the name
+   * the wrapper writes LAST, which is the type the whole expression denotes (`int option`
+   * is `option`, `Map<string,int>` is `Map`). This is the extraction the declared-type
+   * pass has always used; it is a METHOD now so the attribute rule reads a wrapper the
+   * same way instead of carrying a second copy of the descent that could drift from it.
+   * A bound type parameter (`type_argument`) yields null: `'T` is a binder, not a name.
+   */
+  private typeNameNodeOf(t: Node): Node | null {
+    let cur: Node | null = t
+    for (let guard = 0; guard < 8 && cur; guard++) {
+      if (cur.type === "type_argument") return null
+      if (cur.type === "long_identifier") {
+        let leaf: Node | null = null
+        for (let i = 0; i < cur.namedChildCount; i++) {
+          const c = cur.namedChild(i)
+          if (c && (c.type === "identifier" || c.type === "long_identifier")) leaf = c
+        }
+        return leaf ?? cur
+      }
+      if (cur.type === "identifier") return cur
+      let next: Node | null = null
+      for (let i = 0; i < cur.namedChildCount; i++) {
+        const c = cur.namedChild(i)
+        if (
+          c &&
+          (TYPE_WRAPPER_NODES.has(c.type) ||
+            c.type === "type_argument" ||
+            c.type === "type_arguments" ||
+            c.type === "long_identifier" ||
+            c.type === "identifier")
+        ) {
+          next = c
+          break
+        }
+      }
+      if (!next) return null
+      cur = next
+    }
+    return null
+  }
+
+  /**
+   * The dependency LEAF a name-bearing node denotes: the last segment of a dotted path.
+   *
+   * `System.Obsolete` is `Obsolete`, which is the spelling a consumer binds by — the
+   * index stores one symbol per name, and `System.Obsolete` binds to nothing while
+   * `Obsolete` binds to the attribute class.
+   *
+   * "Is this a name?" is asked of the NODE and never of the string. This lane's doc
+   * carries a regex inventory whose first two rows are exactly this decision — the
+   * patterns `/^['^]/` and `/^[A-Za-z_][A-Za-z0-9_']*$/` — and both were replaced for
+   * the same reason this method has no pattern: the grammar already makes the
+   * distinction as a node type. `typeNameNodeOf` returns an `identifier` or a
+   * `long_identifier`, so a non-`identifier` node here is not a name, and `_` is
+   * refused because the grammar writes it as an `identifier` with that one spelling
+   * and it names no declaration.
+   */
+  private dependencyLeafName(node: Node): string | null {
+    if (node.type !== "identifier" && node.type !== "long_identifier") return null
+    const raw = (node.text ?? "").trim()
+    if (!raw || raw === "_") return null
+    // a type binder is a TOKEN in the tree: `type_argument "'T"` has an apostrophe child
+    for (let i = 0; i < node.childCount; i++) {
+      const c = node.child(i)
+      if (c && (c.type === "'" || c.type === "^")) return null
+    }
+    const leaf = raw.includes(".") ? (raw.split(".").pop() as string) : raw
+    return leaf && leaf !== "_" ? leaf : null
+  }
+
+  /**
+   * The VALUE inside an F# string-literal node, with the delimiters removed.
+   *
+   * The grammar gives the content no node: `(fsi_directive_decl (string))` — the
+   * `string` node's two children are the two `"` tokens and `namedChildCount` is 0.
+   * So the delimiters are read off the TREE (their `endIndex`/`startIndex` are the
+   * exact byte bounds) and the content is the span between them. Taking `node.text`
+   * instead put the quotes IN the dependency: `imports Fixture.ImportAndUse ->
+   * "nuget: FSharp.Core"`, a target that binds to nothing, which is the shape of a
+   * fabricated edge even though the fact underneath it is real.
+   *
+   * `verbatim_string` (`@"C:\dir\file.fsx"`) has three delimiter tokens: the opening
+   * `@"`, the escape `\`, and the closing `"`. The span between the FIRST and the LAST
+   * is the content. Its one disclosed limit: F# escapes a quote inside a verbatim
+   * string by doubling it, and this does not un-double it, so a specifier containing
+   * `""` keeps both characters. No corpus specifier does (measured over the whole
+   * corpus's 193 `fsi_directive_decl` nodes), and a wrong-but-visible path is better
+   * than a silently truncated one.
+   */
+  private stringLiteralValue(node: Node): string | null {
+    if (node.type !== "string" && node.type !== "verbatim_string") return null
+    if (node.childCount === 0) return null
+    const first = node.child(0)
+    const last = node.child(node.childCount - 1)
+    if (!first || !last) return null
+    const from = first.endIndex - node.startIndex
+    const to = last.startIndex - node.startIndex
+    if (!(to > from)) return null
+    const value = node.text.slice(from, to)
+    return value.length > 0 ? value : null
   }
 
   private firstTokenIs(node: Node, text: string): boolean {
