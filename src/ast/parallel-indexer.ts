@@ -1,4 +1,3 @@
-// @ts-nocheck — ported; verified by tests. Restored incrementally in Phase 3.
 // Parallel Indexer v4 - Batch Processing to Avoid Event Loop Blocking
 // Scales gracefully and avoids 500ms setup overhead per file
 
@@ -855,12 +854,21 @@ async function discoverAndFilterFiles(
   const rawDb = eligibleOnly ? null : await BrainDatabase.getRawInstance(projectId)
   let existingRecords: { path: string; last_modified: number; size_bytes: number }[] = []
 
-  if (eligibleOnly) {
+  if (!rawDb) {
     // M64.C: nothing below needs the index, and `rawDb` is deliberately null
     // here. The guard has to be a branch rather than a `rawDb &&` on each use:
     // the first version assigned null and then dereferenced it two lines later,
     // so the whole walk threw and bb_health reported UNKNOWN_SCAN_FAILED on
     // every call.
+    //
+    // ON `!rawDb` AND NOT ON `eligibleOnly`, which is what this used to test.
+    // `rawDb` is null IFF `eligibleOnly`, so the two guards accept exactly the
+    // same runs — but only one of them lets the type system know. Narrowing a
+    // `const` union by a DIFFERENT variable is not something TypeScript tracks,
+    // so every `rawDb.` below stayed "possibly null" and the seven uses that
+    // follow needed suppression to compile. Testing the value that is actually
+    // dereferenced is both correct and narrower: it holds if a future
+    // `getRawInstance` can return null for any other reason.
   } else if (filesOverride && filesOverride.length > 0) {
     // Only fetch stats for the specific files being overridden
     const placeholders = filesOverride.map(() => "?").join(",")
@@ -1056,7 +1064,11 @@ async function discoverAndFilterFiles(
   // M64.C: NEVER on an eligible-only run. That caller is asking what is on disk,
   // and deleting index rows to "answer" a health question would make the
   // question destructive — a read-only tool that mutated the index.
-  if (!eligibleOnly && (!filesOverride || filesOverride.length === 0)) {
+  // `rawDb` rather than `!eligibleOnly` for the same reason as the guard above:
+  // this block dereferences the handle seven times, and the null-ness is the
+  // handle's own. `existingRecords` is empty on the null path, so `staleFiles`
+  // is empty too — the `!rawDb` test changes nothing about what runs.
+  if (rawDb && !eligibleOnly && (!filesOverride || filesOverride.length === 0)) {
     const staleFiles = existingRecords.filter((record) => !foundFiles.has(record.path))
     if (staleFiles.length > 0) {
       log.debug("cleaning up stale files from database", { staleCount: staleFiles.length })
@@ -2150,6 +2162,36 @@ export async function surveyEmbeddingIntegrity(projectId: ProjectID): Promise<{
 }
 
 /**
+ * The pool numbers this run adds to the persisted summary.
+ *
+ * `BrainDatabase.IndexPerformanceStats["runs"][number]` declares exactly five keys
+ * (database.ts:284-290) and this is a sixth, so the object literal below was
+ * rejected for a property the type did not know about. The key IS written to the
+ * JSON column and IS read back by nothing — `dbFlushMs` duplicates `phases`, and
+ * the other four are pool counters that `phases` omits.
+ *
+ * Declared here rather than cast at the call site, because a cast would only
+ * silence the check; naming the shape states what is actually persisted. The
+ * honest long-term fix is one of:
+ *
+ *   - add `poolTelemetry?: {...}` to `IndexPerformanceStats` in
+ *     src/brain/database.ts (one line, keeps the data), or
+ *   - drop the key, since nothing consumes it.
+ *
+ * Neither is this file's to decide — the first belongs to database.ts, the second
+ * changes persisted output. Kept as-is, typed honestly, until then.
+ */
+type PersistedRun = BrainDatabase.IndexPerformanceStats["runs"][number] & {
+  poolTelemetry?: {
+    dbFlushMs: number
+    retries: number
+    workerCount: number
+    workerStartupFailures: number
+    poisonFiles: number
+  }
+}
+
+/**
  * Render the integrity census through the indexer's logger.
  *
  * Shared by both summary paths (derived-pass and no-op incremental) and used
@@ -2158,7 +2200,18 @@ export async function surveyEmbeddingIntegrity(projectId: ProjectID): Promise<{
  */
 function reportEmbeddingIntegrity(
   _log: { log: (s: string) => void },
-  integ: Awaited<ReturnType<typeof surveyEmbeddingIntegrity>> | undefined,
+  // `IndexStatsSummary["embeddingIntegrity"]`, NOT `ReturnType<typeof
+  // surveyEmbeddingIntegrity>` — the parameter type was derived from the
+  // PRODUCER, which always sets both fields, while the argument is often the
+  // value READ BACK from `performanceStats`, where a run persisted before those
+  // fields existed genuinely lacks them. The producer's return type therefore
+  // promised something the read path cannot deliver.
+  //
+  // The body already knew: it tests `if (integ.truncated)` and prints
+  // `integ.scanned ?? 0`. Those are not defensive noise — they are the code
+  // this signature was written for, and the annotation was the part that was
+  // wrong.
+  integ: NonNullable<ParallelIndexingStats["summary"]>["embeddingIntegrity"],
 ): void {
   if (!integ || (integ.models.length <= 1 && integ.unusableEmbeddings === 0)) return
   if (integ.mixed) {
@@ -4847,6 +4900,20 @@ export async function indexProjectParallel(
     workerBatchSize: ParallelIndexerConfig.workerBatchSize,
     dbBatchSize: ParallelIndexerConfig.dbBatchSize,
     retries: 0,
+    // Set here, not only where the pool reports them (parallel-indexer.ts:5195).
+    // The interface calls both REQUIRED, and that promise was being broken on a
+    // real path: the no-op branch assigns `stats.phases = phases` and returns at
+    // :5007, which is BEFORE the pool's unconditional assignments at :5195 — so a
+    // run that found nothing to index returned `undefined` for both counters.
+    //
+    // Measured consequence: `script/m21/verify-w1-worker-lifecycle.ts:111-112`
+    // asserts `d.phases?.workerStartupFailures === 0` — strict equality, not
+    // `?? 0` — so `undefined` fails a check that is asking "were there any?".
+    // Zero is the true answer for a no-op run: no worker was started, so none
+    // failed and none was poisoned. Overwritten with the real values on the main
+    // path; this makes the early return honest rather than merely convenient.
+    workerStartupFailures: 0,
+    poisonFiles: 0,
     noop: false,
   }
 
@@ -5198,7 +5265,20 @@ export async function indexProjectParallel(
       if (!previous || result.success || !previous.success) finalOutcomes.set(result.filePath, result)
     }
     stats.structuredErrors = []
-    const byLanguage: Record<string, { files: number; success: number; error: number; timeout: number; fallback: number; cancelled: number }> = {}
+    // No `cancelled` member, which is what the type used to declare.
+    //
+    // It was declared required here, omitted by BOTH `??=` initializers
+    // (:5212, :5302), and absent from the exported summary type too (:606) —
+    // three shapes for one field. Nothing in the repository reads or writes it:
+    // a cancelled file takes the `result.error === "cancelled by user"` branch,
+    // which bumps the separate `cancelledCount` scalar and `continue`s, so the
+    // per-language accumulator is never touched for a cancellation.
+    //
+    // So the field was a promise the code never kept: every language bucket that
+    // existed had `cancelled === undefined`, on a type that said it was a number.
+    // Dropping it aligns all three shapes with what the code actually does.
+    // Populating it instead would change reported output, which is not this task.
+    const byLanguage: Record<string, { files: number; success: number; error: number; timeout: number; fallback: number }> = {}
     // M21.R3: cancelled files are a distinct bucket — they were never parsed,
     // so counting them as "errors" misrepresents a cancelled run as broken.
     let cancelledCount = 0
@@ -5292,8 +5372,29 @@ export async function indexProjectParallel(
         // dotnet/fsharp's Cancellable.fs), taking the whole index run and any
         // unsaved evidence down with it. processWithWorkerPool stores successes
         // itself, so no extra storeResults call is needed here.
+        // `undefined, signal` — not `signal`.
+        //
+        // processWithWorkerPool's signature is (projectId, projectPath, files,
+        // onProgress, telemetry?, signal?), so passing `signal` fifth handed an
+        // AbortSignal to the TELEMETRY parameter and left the real signal
+        // undefined. Two consequences, both silent:
+        //
+        //   1. this retry pass could not be cancelled. The whole block is
+        //      skipped when `stats.cancelled` is already set, so a cancel that
+        //      arrives DURING the retry does nothing — the pool ran to
+        //      completion, which is precisely when a user who pressed Ctrl-C
+        //      expects the run to stop;
+        //   2. the pool then mutated the AbortSignal as if it were its metrics
+        //      object: `telemetry.dbFlushMs += …` and
+        //      `telemetry.workerStartupFailures = …` (parallel-indexer.ts:1496,
+        //      :1509) wrote numeric fields onto a signal, producing `NaN` and
+        //      junk properties.
+        //
+        // `undefined` is the right value, not a fresh telemetry object: nothing
+        // reads this call's telemetry (its return value is the FileResult list),
+        // and the enclosing run already keeps its own accumulator.
         const reprocessed = await processWithWorkerPool(projectId, projectPath, missed, () => {},
-                                                        signal)
+                                                        undefined, signal)
         // Map of files already tallied in the main pass, so a file that failed
         // there but recovered here is counted ONCE (as a success), not twice.
         const mainOutcomes = new Map<string, { success: boolean; timeout: boolean }>()
@@ -5530,6 +5631,34 @@ export async function indexProjectParallel(
     // RESET total_files/total_symbols to 0 and the status row read as empty for
     // a fully indexed project (caught by store-integrity). Passing them again
     // makes this idempotent and needs no nullability tricks on NOT NULL columns.
+    // Built as an ANNOTATED LOCAL rather than an inline literal, which is the
+    // whole mechanism: a fresh object literal is excess-property-checked against
+    // the declared run type, and that type has no `poolTelemetry` key (see
+    // PersistedRun). A variable is checked for assignability only, so the sixth
+    // key — which is genuinely what gets written to the JSON column — is part of
+    // the shape instead of a violation of it.
+    const persistedRun: PersistedRun = {
+      generatedAt: perfStats.runs[0].generatedAt,
+      mode: phases.mode,
+      noop: false,
+      phases: {
+        discoveryMs: phases.discoveryMs,
+        workerStartupMs: phases.workerStartupMs,
+        parseMs: phases.parseMs,
+        dbFlushMs: phases.dbFlushMs,
+        finalAccountingMs: phases.finalAccountingMs,
+        postProcessingMs: phases.postProcessingMs,
+        totalWallMs: phases.totalWallMs,
+      },
+      counts: perfStats.runs[0].counts,
+      poolTelemetry: {
+        dbFlushMs: phases.dbFlushMs,
+        retries: phases.retries,
+        workerCount: poolTelemetry.workerCount,
+        workerStartupFailures: phases.workerStartupFailures,
+        poisonFiles: phases.poisonFiles,
+      },
+    }
     try {
       await BrainDatabase.updateIndexStatus(projectId, {
         filesIndexed: stats.successFiles + stats.skippedFiles,
@@ -5540,30 +5669,7 @@ export async function indexProjectParallel(
         errors: stats.structuredErrors,
         performanceStats: {
           schemaVersion: 1,
-          runs: [
-            {
-              generatedAt: perfStats.runs[0].generatedAt,
-              mode: phases.mode,
-              noop: false,
-              phases: {
-                discoveryMs: phases.discoveryMs,
-                workerStartupMs: phases.workerStartupMs,
-                parseMs: phases.parseMs,
-                dbFlushMs: phases.dbFlushMs,
-                finalAccountingMs: phases.finalAccountingMs,
-                postProcessingMs: phases.postProcessingMs,
-                totalWallMs: phases.totalWallMs,
-              },
-              counts: perfStats.runs[0].counts,
-              poolTelemetry: {
-                dbFlushMs: phases.dbFlushMs,
-                retries: phases.retries,
-                workerCount: poolTelemetry.workerCount,
-                workerStartupFailures: phases.workerStartupFailures,
-                poisonFiles: phases.poisonFiles,
-              },
-            },
-          ],
+          runs: [persistedRun],
         },
       })
     } catch (e: any) {
