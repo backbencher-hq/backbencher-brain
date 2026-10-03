@@ -40,19 +40,23 @@ type ParseState = {
    *  with-clause's actual scope, breaking four fixtures. The scope belongs to the
    *  statement, and only the statement. */
   localCtes: Set<string>
-  /** First declaration of each replaceable name in this file, by 1-based line.
+  /** First declaration of each replaceable name in this file, by 1-based line,
+   *  keyed `kind:name` so two DIFFERENT objects that share a name cannot collide.
    *
    *  `CREATE OR REPLACE FUNCTION f` is a REPLACEMENT in PostgreSQL's own words,
    *  and the corpus carries it in quantity: 666 OR REPLACE declarations over the
-   *  1,460-file census. Almost all of them replace a declaration made in ANOTHER
+   *  1,459-file census. Almost all of them replace a declaration made in ANOTHER
    *  file — a migration chain re-declaring what the previous migration declared —
-   *  which a per-file analyzer cannot see. The 15 events this analyzer CAN see are
+   *  which a per-file analyzer cannot see. The events this analyzer CAN see are
    *  the ones where the earlier declaration is in the SAME file, and this map is
-   *  what makes them visible. It is deliberately keyed on the name only after the
-   *  caller has established that both declarations are the same KIND: keyed on the
-   *  name alone, Hasura's `CREATE FUNCTION hdb_catalog.f()` at line 7 and its
-   *  `CREATE TRIGGER f` at line 25 counted as a redefinition, and they are two
-   *  different objects that share a name. */
+   *  what makes them visible.
+   *
+   *  The kind is part of the key because it is load-bearing, not decoration. With
+   *  the name alone as the key, Hasura's `CREATE FUNCTION hdb_catalog.f()` at line
+   *  7 and its `CREATE TRIGGER f` at line 25 counted as one redefinition, and they
+   *  are two different objects that share a name. That was a documented intent with
+   *  no implementation behind it until pass 2, and it is why the analyzer emitted
+   *  22 `overrides` edges where the construct probe measured 15. */
   redeclared: Map<string, number>
   /** `kind path line` of every include directive already recorded, so the resync
    *  and EXECUTE-literal passes cannot record the same `\ir` a second time. The
@@ -85,7 +89,16 @@ type ParseState = {
  * `USING` and `FILTER` into call targets. Measured on 441 corpus files: 49 edges
  * to a keyword before this guard, 0 after.
  */
-const SQL_KEYWORDS = new Set([
+/**
+ * Exported so the lane's own probes can ask the GUARD's question instead of
+ * guessing at it. `validation/m14/fixtures/sql/adversarial-probe.mts` has to
+ * distinguish "a qualified call was suppressed because it is a PostgreSQL catalog
+ * builtin" from "a qualified call was dropped for an unexplained reason", and it
+ * cannot do that from a hardcoded copy of these lists: a copy would drift, and a
+ * drifted copy turns a working guard into a reported defect. Read-only by use —
+ * both are `Set`s the probe only calls `has` on.
+ */
+export const SQL_KEYWORDS = new Set([
   "all", "alter", "analyze", "and", "any", "array", "as", "asc", "at", "authorization",
   "begin", "between", "both", "by", "cascade", "case", "cast", "check", "collate",
   "column", "comment", "commit", "concurrently", "conflict", "constraint", "copy",
@@ -159,7 +172,7 @@ function classifyExternalTarget(
   return null
 }
 
-const SQL_BUILTINS = new Set([
+export const SQL_BUILTINS = new Set([
   // Provided by PostgreSQL or a stock EXTENSION rather than by this project.
   //
   // WHY THIS BLOCK EXISTS, measured 2026-09-27. Every name the analyzer
@@ -518,6 +531,8 @@ export class RealSqlAnalyzer implements ASTEngine.LanguageAnalyzer {
         overridesEmitted: 0,
         instantiationsEmitted: 0,
         reservedNameSymbolsSuppressed: 0,
+        indexOwnersAdopted: 0,
+        indexOwnersExternalToFile: 0,
       },
     }
 
@@ -534,6 +549,10 @@ export class RealSqlAnalyzer implements ASTEngine.LanguageAnalyzer {
     // than written as source. See `scanExecuteLiterals` for why no grammar can
     // reach these and why this pass is text-based rather than tree-based.
     this.runExecuteScan(content, state)
+
+    // The fourth pass, and it is the only one that MUTATES a symbol rather than
+    // adding one. Adopts index symbols whose table was declared after them.
+    this.adoptLateDeclaredIndexOwners(state)
 
     const tables = state.symbols.filter((s) => s.metadata?.type === "table")
     if (tables.length > 2) state.metadata.architecturalInsights!.push("Complex schema detected")
@@ -555,6 +574,62 @@ export class RealSqlAnalyzer implements ASTEngine.LanguageAnalyzer {
       exports: state.exports,
       metadata: state.metadata,
       errors: (state.metadata as any).errors ?? [],
+    }
+  }
+
+  /**
+   * Give an index symbol the owner its `contains` edge already names, when the
+   * table was declared AFTER the index.
+   *
+   * `processIndex` attaches the owner when the table symbol already exists, which
+   * covers `CREATE TABLE` then `CREATE INDEX`. The reverse order — a migration that
+   * adds the index first, or a file where the table is recovered by the
+   * declaration sweep or the EXECUTE-literal pass after the index was walked —
+   * leaves the index with `ownerName: undefined` while `contains table -> index`
+   * says otherwise. 70 containment edges over a 200-file corpus slice were in that
+   * state before this pass, and `bb_graph`'s owner-cascade and `bb_impact`'s reverse
+   * walk both read `ownerName`, so the member read as an orphan that happened to be
+   * named in an edge.
+   *
+   * WHY IT IS A SEPARATE PASS AND NOT A LOOKAHEAD. Declaration order in a SQL file
+   * is not the order the analyzer visits in: the root walk dispatches top-level
+   * statements, the declaration sweep then re-walks the whole tree, and the resync
+   * and EXECUTE-literal passes append afterwards. Any "is the table there yet"
+   * question asked at `processIndex` time is answered about a partial file. A pass
+   * at the end is a question about the finished one.
+   *
+   * IT ADDS NO EDGE AND NO SYMBOL. It writes four fields the symbol should have had
+   * from the start, and counts what it did in `ambiguity.indexOwnersAdopted`, so a
+   * file where the order was already right reports 0.
+   */
+  private adoptLateDeclaredIndexOwners(state: ParseState): void {
+    for (const symbol of state.symbols) {
+      if (symbol.metadata?.type !== "index") continue
+      if (symbol.ownerName) continue
+      const table = symbol.metadata.table
+      if (typeof table !== "string" || table.length === 0) continue
+      const owner = this.existingSymbol(table, ASTEngine.SymbolKind.Class, state)
+      if (!owner) {
+        // The table is not a symbol in THIS file — a migration that adds an index
+        // to a table an earlier migration created, which is the ordinary shape in
+        // a migration corpus. The edge `contains table -> index` is still true, so
+        // the member must still say who owns it or the symbol and the edge
+        // disagree; what it must not do is imply the owner is a resolvable symbol
+        // here. `ownerExternalToFile` is that statement, and the counter is what a
+        // consumer reads to tell "not adopted" from "cannot be adopted".
+        symbol.ownerName = table
+        symbol.ownerKind = ASTEngine.SymbolKind.Class
+        symbol.parent = table
+        symbol.metadata = { ...symbol.metadata, ownerExternalToFile: true }
+        state.ambiguity.indexOwnersExternalToFile++
+        continue
+      }
+      symbol.ownerName = owner.name
+      symbol.ownerKind = owner.kind
+      symbol.parent = owner.name
+      symbol.parentId = `${owner.id}.${symbol.name}`
+      symbol.metadata = { ...symbol.metadata, ownerDeclaredLater: true }
+      state.ambiguity.indexOwnersAdopted++
     }
   }
 
@@ -1226,12 +1301,7 @@ export class RealSqlAnalyzer implements ASTEngine.LanguageAnalyzer {
         // The scope is RESTORED afterwards rather than left in place: the sweep
         // visits sibling statements, and the next one has its own CTEs.
         const saved = new Set(state.localCtes)
-        const scope = this.ancestorStatement(current)
-        state.localCtes.clear()
-        if (scope) for (const cte of this.descendants(scope, "cte")) {
-          const nm = this.firstIdentifier(cte, state)
-          if (nm) state.localCtes.add(this.identifierName(nm, state))
-        }
+        state.localCtes = this.cteScope(current, state)
         this.processStatement(current, state, null)
         state.localCtes.clear()
         for (const name of saved) state.localCtes.add(name)
@@ -1281,6 +1351,24 @@ export class RealSqlAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
 
     if (DECLARATION_NODES.has(node.type)) {
+      // A function CALL is not only a thing a query does. `DEFAULT public.f()`,
+      // `CHECK (public.g(x))`, a generated column's expression and a policy's
+      // `USING (public.is_admin())` are all `invocation` nodes in grammar-mandated
+      // expression slots, and before this the only route into `processCalls` was
+      // `processQuery`, so none of them produced an edge. Measured on the corpus:
+      // `proxicall/database/archive/2026/20260129_pms_c1_3_rls_policies.sql` alone
+      // holds 17 qualified invocations in policy expressions and emitted none of
+      // them. That is a gap in reading the language, not a labelling question, so it
+      // is closed here rather than declared.
+      //
+      // WHY IT IS SAFE TO CALL THIS ALONGSIDE `dispatchDeclaration`. The two paths
+      // use the same source — the declaration's own name — and `addRelationship`
+      // deduplicates on (type, source, target), so an invocation inside a function
+      // body's `SELECT` is emitted once by `processQuery` and merges here. And the
+      // guard is the same `invocation`-with-no-ERROR test `processCalls` already
+      // applies, so a damaged expression contributes nothing rather than a guess.
+      const declaredName = this.declarationOwner(node, state)
+      this.processCalls(node, declaredName, state)
       // `markDeclaration` is the guard, and it was being CALLED and IGNORED here.
       // The sweep walks every declaration in the tree, including the ones the root
       // walk already dispatched, so `dispatchDeclaration` ran twice for every
@@ -1397,7 +1485,23 @@ export class RealSqlAnalyzer implements ASTEngine.LanguageAnalyzer {
    *  and correct are the same piece of work, and `validation/m14/fixtures/sql/
    *  sqld11` is what caught it — its `quoted_name` table lives inside an EXECUTE
    *  literal and vanished the moment the guard started meaning what it says. */
-  private markDeclaration(node: Node, state: ParseState): boolean {
+  /**
+ * The name a declaration's own invocations belong to.
+ *
+ * A function call inside a `CREATE FUNCTION` body is a call BY that function; one
+ * inside a table's column `DEFAULT` is a call BY that table. `global` is the
+ * analyzer's synthetic owner and is only correct where there is no declaration to
+ * attribute to — which is why the anonymous-statement path uses it and this does
+ * not.
+ */
+private declarationOwner(node: Node, state: ParseState): string {
+    const object = this.directChild(node, "object_reference")
+    const nameNode = object ? this.referenceNameNode(object) : this.firstIdentifier(node)
+    if (!nameNode) return "global"
+    return this.identifierName(nameNode, state) || "global"
+}
+
+private markDeclaration(node: Node, state: ParseState): boolean {
     const key = `${node.startIndex + state.slice.byteOffset}:${node.type}`
     if (state.declarationKeys.has(key)) return false
     state.declarationKeys.add(key)
@@ -1489,17 +1593,25 @@ export class RealSqlAnalyzer implements ASTEngine.LanguageAnalyzer {
     const nameNode = object ? this.referenceNameNode(object) : this.firstIdentifier(node)
     if (!nameNode) return
     const name = this.identifierName(nameNode, state)
+    // KEYED ON NAME **AND KIND**. It was keyed on the name alone, and
+    // `state.redeclared`'s own field comment claimed the caller "has established
+    // that both declarations are the same KIND" — which nothing did. Two DIFFERENT
+    // objects that share a name therefore collided: pass 1's own construct probe
+    // measured 15 same-kind OR REPLACE redeclarations against the analyzer's 22
+    // emitted `overrides` edges, and the 7-edge gap was exactly this. The field
+    // comment was right about the failure and wrong about where it was enforced.
+    const key = `${node.type}:${name}`
     const line = node.startPosition.row + state.slice.rowOffset + 1
     const replaces = this.directChild(node, "keyword_replace") !== null
     if (!replaces) {
       // Not a replacement, but the first declaration of this name is still worth
       // recording: a LATER `CREATE OR REPLACE` of the same name replaces THIS one.
-      if (!state.redeclared.has(name)) state.redeclared.set(name, line)
+      if (!state.redeclared.has(key)) state.redeclared.set(key, line)
       return
     }
-    const prior = state.redeclared.get(name)
+    const prior = state.redeclared.get(key)
     if (prior === undefined) {
-      state.redeclared.set(name, line)
+      state.redeclared.set(key, line)
       return
     }
     this.addRelationship(ASTEngine.RelationshipType.Overrides, "global", name, state, {
@@ -1509,7 +1621,7 @@ export class RealSqlAnalyzer implements ASTEngine.LanguageAnalyzer {
       priorLine: prior,
       replacementLine: line,
     })
-    state.redeclared.set(name, line)
+    state.redeclared.set(key, line)
     state.ambiguity.overridesEmitted++
   }
 
@@ -1784,11 +1896,27 @@ export class RealSqlAnalyzer implements ASTEngine.LanguageAnalyzer {
     const object = this.firstDescendant(node, "object_reference")
     const tableName = object ? this.referenceLeaf(object, state) : undefined
     const name = this.identifierName(nameNode, state)
-    this.createSymbol(name, ASTEngine.SymbolKind.Constant, nameNode, null, state, {
+    // The owner, when the table it indexes is already a symbol in this file.
+    //
+    // It usually is not. `CREATE TABLE` and `CREATE INDEX` are sibling
+    // statements, so a migration that writes the index before the table — and the
+    // corpus has 70 such containment edges whose member symbol carries
+    // `ownerName: undefined` — leaves nothing to attach to. Before pass 2 this was
+    // unconditional: `parent` was hardcoded `null`, so EVERY index symbol in the
+    // corpus had no owner, while the edge two lines below said the table contains
+    // it. The edge and the symbol's own metadata then disagreed, and both
+    // `bb_graph`'s owner-cascade and `bb_impact`'s reverse walk read `ownerName`,
+    // so the member looked like an orphan that happened to be mentioned in an edge.
+    // A later `CREATE TABLE` of the same name is adopted as the owner rather than
+    // re-creating the symbol, because the edge already names the table and two
+    // symbols for one index would break the id-keyed consumers.
+    const owner = tableName ? this.existingSymbol(tableName, ASTEngine.SymbolKind.Class, state) : undefined
+    this.createSymbol(name, ASTEngine.SymbolKind.Constant, nameNode, owner ?? null, state, {
       type: "index",
       indexName: name,
       table: tableName,
       columns: this.identifierTexts(this.firstDescendant(node, "index_fields"), state),
+      ...(tableName && !owner ? { ownerDeclaredLater: true } : {}),
     })
     this.addPattern("Custom Indexes", state)
     if (tableName) {
@@ -1985,7 +2113,14 @@ export class RealSqlAnalyzer implements ASTEngine.LanguageAnalyzer {
     })
     this.addPattern("Triggers", state)
     if (target) this.addRelationship(ASTEngine.RelationshipType.References, name, target, state, { triggerTarget: true })
-    if (action) this.addRelationship(ASTEngine.RelationshipType.Calls, name, action, state, { triggerAction: true })
+    // The action's qualification travels with the edge, for the same reason
+    // `processCalls` passes it: `EXECUTE FUNCTION app.f()` names its schema, and a
+    // `calls` edge that discarded that was published as `usage_contextual`.
+    if (action) {
+      const parts = actionRef ? this.referenceParts(actionRef, state) : []
+      this.addRelationship(ASTEngine.RelationshipType.Calls, name, action, state,
+        { triggerAction: true, ...(parts.length > 1 ? { qualified: parts.join(".") } : {}) })
+    }
   }
 
   // ---------------------------------------------------------------- types / containers
@@ -2152,8 +2287,20 @@ export class RealSqlAnalyzer implements ASTEngine.LanguageAnalyzer {
 
   private recordDml(node: Node, operation: string, state: ParseState): void {
     const scope = node.parent?.type === "statement" ? node.parent : node
-    const target = this.dmlTarget(node, state) ?? this.referenceLeaf(this.firstDescendant(scope, "object_reference"), state)
-    if (target) this.addRelationship(ASTEngine.RelationshipType.Uses, "global", target, state, { operation, tableReference: true })
+    const object = this.dmlTargetNode(node)
+    const target = object ? this.referenceLeaf(object, state) : this.referenceLeaf(this.firstDescendant(scope, "object_reference"), state)
+    if (target) {
+      // The qualification travels with the edge. `INSERT INTO app.t` names its
+      // schema and was published as `usage_contextual` because only the leaf was
+      // read here — the same defect `addTableEdge` never had, in the one DML path
+      // that resolves its own reference node.
+      const parts = object ? this.referenceParts(object, state) : []
+      this.addRelationship(ASTEngine.RelationshipType.Uses, "global", target, state, {
+        operation,
+        tableReference: true,
+        ...(parts.length > 1 ? { qualified: parts.join(".") } : {}),
+      })
+    }
     this.addPattern(`${operation.toUpperCase()} Statements`, state)
     this.processQueryDependencies(scope, null, state)
   }
@@ -2461,17 +2608,40 @@ export class RealSqlAnalyzer implements ASTEngine.LanguageAnalyzer {
   private processQueryDependencies(node: Node, owner: SqlSymbol | null, state: ParseState, sourceOverride?: string): void {
     const source = sourceOverride ?? owner?.name ?? "global"
     /**
-     * A CTE name is a local binding, and it only shadows an UNQUALIFIED
-     * reference. Matching on the bare leaf meant
+     * A CTE name is a local binding, and it shadows an UNQUALIFIED reference.
+     * Matching on the bare leaf meant
      *   WITH x AS (SELECT 1) SELECT * FROM x JOIN public.x ON true
      * suppressed the real `public.x` edge too, and the file emitted no
      * relationship at all. A qualified reference is never a CTE.
+     *
+     * THE SCOPE IS TWO SETS, and the second one was missing until pass 2 found
+     * it. Pass 1 fixed the DECLARATION SWEEP reaching a CTE body with an empty
+     * scope; the shape that survived is a CTE body whose own name it references:
+     *
+     *   WITH RECURSIVE parse(i, s, a, b) USING KEY (s, a, b) AS (
+     *     … FROM parse AS left_parse, recurring.parse AS right_parse …
+     *   ) facts AS (SELECT … FROM parse) SELECT … FROM facts;
+     *
+     * (`duckdb/benchmark/recursive_cte/queries/performance/asql_cyk_using_key.sql`)
+     *
+     * `parse`'s body is a `statement` INSIDE the `cte` node that declares it, so
+     * every set derived from that statement — the sweep's `ancestorStatement`
+     * scope, and `descendants(node, "cte")` here — excludes `parse`, because the
+     * node that names it is an ANCESTOR and not a descendant. PostgreSQL binds the
+     * name in its own body with or without `RECURSIVE` (that is what makes the
+     * recursive form work), so the reference is the CTE and publishing
+     * `uses global->parse` names a table that no file can declare — the same
+     * fabrication pass 1 removed from the other entry point, 33x over the corpus.
+     *
+     * WHY ONLY THE ANCESTOR CHAIN, and not every CTE in the enclosing statement.
+     * An earlier attempt at a wider scope walked the ancestors and collected
+     * everything under the with-clause, which shadowed real tables outside its
+     * actual scope and broke four fixtures — the `localCtes` field comment on
+     * `ParseState` records that. The chain here collects exactly the `cte` nodes
+     * ON THE PATH from the node to the root, so it adds a CTE's own name and
+     * nothing a later sibling declared.
      */
-    const localCtes = new Set<string>()
-    for (const cte of this.descendants(node, "cte")) {
-      const name = this.firstIdentifier(cte, state)
-      if (name) localCtes.add(this.identifierName(name, state))
-    }
+    const localCtes = this.cteScope(node, state)
     for (const relation of this.descendants(node, "relation")) {
       const object = this.namedChildren(relation).find((c) => c.type === "object_reference")
       if (!object) continue
@@ -2520,6 +2690,104 @@ export class RealSqlAnalyzer implements ASTEngine.LanguageAnalyzer {
    * type name are both in grammar-mandated positions; nothing here is a name
    * match.
    */
+  /**
+   * The names of the `cte` nodes the given node is INSIDE, nearest first.
+   *
+   * A CTE's own name is bound inside its own body — that is what makes
+   * `WITH RECURSIVE t AS (… FROM t …)` work — so every reference inside that body
+   * has to see it. The nodes naming it are ANCESTORS of the reference and
+   * DESCENDANTS of nothing the reference owns, which is why a scope computed from
+   * `descendants(reference, "cte")` or `descendants(enclosingStatement, "cte")`
+   * cannot contain it. Only the chain from the node to the root does.
+   *
+   * Bounded by construction: it is one pass up the parent chain and it collects a
+   * node's own name, so it cannot pick up a name a later sibling CTE declared.
+   */
+  private ancestorCteNames(node: Node, state: ParseState): string[] {
+    const names: string[] = []
+    for (let a = node.parent; a; a = a.parent) {
+      if (a.type !== "cte") continue
+      const nm = this.firstIdentifier(a, state)
+      if (nm) names.push(this.identifierName(nm, state))
+    }
+    return names
+  }
+
+  /**
+   * THE CTE SCOPE of a node, which is two sets and neither of them is
+   * `descendants(node, "cte")`.
+   *
+   * SQL's rule is that a WITH list's names are visible to every LATER item in the
+   * list and to the main query — not only inside the item that declares them. So:
+   *
+   *   WITH aoc5_input(i) AS (…), lines(y,line) AS (… FROM aoc5_input …),
+   *        rules(b,a) AS (… FROM lines …), updates(y,x,v) AS (… FROM lines …)
+   *   SELECT … FROM updates;
+   *
+   * `updates`' body reads `lines`, a SIBLING CTE. Both the per-node set and the
+   * sweep's `ancestorStatement` set miss it: the body is its own `statement`, its
+   * subtree holds no `cte`, and the node that names `lines` is neither an ancestor
+   * nor a descendant of the reference. Measured over the grown corpus, this leaked
+   * 32 `uses` edges across 16 DuckDB benchmark files — the same wrong output as
+   * pass 1's CTE leak, reached through a third entry point.
+   *
+   * The two sets that do settle it:
+   *
+   *   1. every `cte` under the OUTERMOST enclosing `statement`, which is the WITH
+   *      list the body belongs to — siblings included;
+   *   2. the `cte` names on the ANCESTOR CHAIN, which is what a CTE's own body
+   *      needs and is the only set that can see the node naming it.
+   *
+   * WHY THE OUTERMOST statement and not the nearest. Two `WITH` lists in one file
+   * are two scopes, and a name from the first must not shadow a table in the
+   * second. The outermost enclosing `statement` is exactly one WITH list.
+   *
+   * WHY A WIDER SCOPE WAS TRIED AND REVERTED, since this is the third attempt.
+   * `ParseState.localCtes`'s field comment records an ancestor walk that collected
+   * everything under the with-clause and shadowed real tables outside its actual
+   * scope. That version walked ancestors and kept DESCENDANTS of each — which
+   * re-reaches the same set this one does, but from the wrong root when the
+   * reference is in the OUTER query: it pulled in a WITH list belonging to a
+   * function body further up the file. Anchoring on the outermost statement of the
+   * reference itself removes that, because a reference in the outer query has that
+   * outer query as its own outermost statement. `sqld5` and `sqld14` pin both
+   * directions.
+   */
+  private cteScope(node: Node, state: ParseState): Set<string> {
+    let outermost: Node = node
+    for (let a = node.parent; a; a = a.parent) if (a.type === "statement") outermost = a
+    const scope = new Set<string>()
+    const collect = (from: Node) => {
+      for (const cte of this.descendants(from, "cte")) {
+        const nm = this.firstIdentifier(cte, state)
+        if (nm) scope.add(this.identifierName(nm, state))
+      }
+    }
+    collect(outermost)
+    if (outermost !== node) collect(node)
+    // The WITH LIST this node belongs to, read as the node's parent's own subtree.
+    //
+    // Both rules above can miss it, and the measured case needs this one:
+    // `duckdb/benchmark/aoc24/queries/day05.sql` has its whole `WITH RECURSIVE`
+    // list inside an ERROR node — 34 unparseable regions in 1,428 lines — so the
+    // six `cte` nodes are SIBLINGS of each other under that ERROR and the ERROR's
+    // parent is `program`. There is no `statement` ancestor to anchor on, the node
+    // itself is a `cte` whose subtree holds no other `cte`, and the parent chain
+    // holds none either: all three sets come back empty, and 5 `uses` edges were
+    // published naming CTE aliases as tables.
+    //
+    // It is gated on the node BEING a `cte` or being directly inside one. An
+    // ungated `collect(node.parent)` would also reach a `WITH` list in a SIBLING
+    // sub-statement of a plpgsql body, which is a different scope.
+    if (node.type === "cte" || node.parent?.type === "cte") {
+      let listRoot = node.parent
+      if (listRoot?.type === "cte") listRoot = listRoot.parent
+      if (listRoot) collect(listRoot)
+    }
+    for (const name of this.ancestorCteNames(node, state)) scope.add(name)
+    return scope
+  }
+
   private processInstantiations(node: Node, source: string, state: ParseState): void {
     for (const cast of this.descendants(node, "cast")) {
       const target = cast.childForFieldName?.("custom_type") as Node | null
@@ -2625,32 +2893,55 @@ export class RealSqlAnalyzer implements ASTEngine.LanguageAnalyzer {
         state.ambiguity.builtinCallsSuppressed++
         continue
       }
-      this.addRelationship(ASTEngine.RelationshipType.Calls, source, target, state)
+      // The qualification travels with the edge, and pass 2 is why: this call site
+      // passed no metadata at all, so `evidenceClassFor`'s `reference_qualified`
+      // arm read an always-undefined field and `calls` could NEVER reach that tier.
+      // A corpus measurement found the arm unreachable and the tier under-claimed:
+      // every `schema.func(…)` in the corpus was published as `usage_contextual`,
+      // which is the honest label for `my_func(1)` and a wrong one for a reference
+      // that names its schema. `addTableEdge` already passed `qualified` for the
+      // same reason; the two call sites now agree.
+      const parts = object ? this.referenceParts(object, state) : []
+      this.addRelationship(ASTEngine.RelationshipType.Calls, source, target, state,
+        parts.length > 1 ? { qualified: parts.join(".") } : {})
     }
   }
 
   private recordTableTarget(node: Node, type: "uses" | "references", operation: string, state: ParseState): void {
     const object = this.firstDescendant(node, "object_reference")
-    const target = object ? this.referenceLeaf(object, state) : undefined
-    if (target) this.addRelationship(type === "uses" ? ASTEngine.RelationshipType.Uses : ASTEngine.RelationshipType.References, "global", target, state, { operation, tableReference: true })
+    if (!object) return
+    const target = this.referenceLeaf(object, state)
+    if (!target) return
+    const parts = this.referenceParts(object, state)
+    this.addRelationship(type === "uses" ? ASTEngine.RelationshipType.Uses : ASTEngine.RelationshipType.References, "global", target, state, {
+      operation,
+      tableReference: true,
+      ...(parts.length > 1 ? { qualified: parts.join(".") } : {}),
+    })
   }
 
-  private dmlTarget(node: Node, state: ParseState): string | undefined {
-    if (node.type === "insert") {
-      const object = this.directChild(node, "object_reference")
-      return object ? this.referenceLeaf(object, state) : undefined
-    }
+  /**
+   * The `object_reference` node whose leaf is the DML statement's own target, or
+   * `null` when the shape does not have one. Split out of `dmlTarget` so the CALLER
+   * can read the reference's parts and not only its leaf: a bare leaf throws away
+   * the qualification, which is the whole content of `INSERT INTO app.t`.
+   */
+  private dmlTargetNode(node: Node): Node | null {
+    if (node.type === "insert") return this.directChild(node, "object_reference")
     if (node.type === "update") {
       const relation = this.directChild(node, "relation")
-      const object = relation ? this.directChild(relation, "object_reference") : this.firstDescendant(node, "object_reference")
-      return object ? this.referenceLeaf(object, state) : undefined
+      return relation ? this.directChild(relation, "object_reference") : this.firstDescendant(node, "object_reference")
     }
     if (node.type === "delete") {
       const scope = node.parent?.type === "statement" ? node.parent : node
-      const object = this.directChild(scope, "from") ? this.firstDescendant(this.directChild(scope, "from")!, "object_reference") : this.firstDescendant(scope, "object_reference")
-      return object ? this.referenceLeaf(object, state) : undefined
+      return this.directChild(scope, "from") ? this.firstDescendant(this.directChild(scope, "from")!, "object_reference") : this.firstDescendant(scope, "object_reference")
     }
-    return this.referenceLeaf(this.firstDescendant(node, "object_reference"), state)
+    return this.firstDescendant(node, "object_reference")
+  }
+
+  private dmlTarget(node: Node, state: ParseState): string | undefined {
+    const object = this.dmlTargetNode(node)
+    return object ? this.referenceLeaf(object, state) : undefined
   }
 
   // ---------------------------------------------------------------- symbols / edges
@@ -2702,6 +2993,18 @@ export class RealSqlAnalyzer implements ASTEngine.LanguageAnalyzer {
     state.symbolNames.add(name)
     if (parent) this.addRelationship(ASTEngine.RelationshipType.Contains, parent.name, name, state)
     return symbol
+  }
+
+  /**
+   * A symbol of this name and kind already emitted in this file, if any.
+   *
+   * Used to attach a member to an owner that is declared as a SIBLING statement.
+   * `createSymbol` returns a `placeholder` when its identity key is taken, so an
+   * index declared after its table already resolves through the ordinary path; this
+   * covers the other order, where the index arrives first.
+   */
+  private existingSymbol(name: string, kind: ASTEngine.SymbolKind, state: ParseState): SqlSymbol | undefined {
+    return state.symbols.find((s) => s.name === name && s.kind === kind)
   }
 
   private placeholder(name: string, kind: ASTEngine.SymbolKind, parent: SqlSymbol | null): SqlSymbol {
@@ -2831,9 +3134,16 @@ export class RealSqlAnalyzer implements ASTEngine.LanguageAnalyzer {
       case ASTEngine.RelationshipType.Imports:
         return "import_based"
       case ASTEngine.RelationshipType.Calls:
-        return metadata.qualified ? "reference_qualified" : "usage_contextual"
       case ASTEngine.RelationshipType.Uses:
-        return "usage_contextual"
+        // ONE rule for both, because pass 2 found the two arms disagreed: `Calls`
+        // consulted `metadata.qualified` and `Uses` hardcoded `usage_contextual`,
+        // while `addTableEdge` — which emits every `uses` edge — has passed
+        // `qualified` since it was written. So a `uses` edge derived from
+        // `FROM app.users` carried the qualification in metadata and was still
+        // labelled as if nothing disambiguated it. `reference_qualified` means the
+        // name was read through a reference that names its own schema, which is a
+        // stronger claim than a bare slot and the tier exists for it.
+        return metadata.qualified ? "reference_qualified" : "usage_contextual"
       case ASTEngine.RelationshipType.Contains:
       case ASTEngine.RelationshipType.References:
       case ASTEngine.RelationshipType.Extends:
