@@ -29,10 +29,14 @@
  * ## The defect classes these cover
  *
  * `npm-run-callee-any-token` and `npm-run-substring-runner` are the two mistakes the
- * new `calls` pass can make that a positive-only fixture would not catch: reading the
+ * `calls` pass can make that a positive-only fixture would not catch: reading the
  * runner out of a token with a substring test (`npx` contains `npm`, and a PATH named
  * `npm` is not a runner), and accepting a target that is not a key of the same
  * `scripts` object. The manifest fixture's `forbidRelationships` carry both shapes.
+ *
+ * The pass-2 group covers the inheritance emitter: `implements` disappearing, an
+ * inheritance edge to an undeclared target, a member descriptor accepted as a type
+ * declaration, and the `extends` source regressing to the `allOf` array.
  */
 import type { Mutant } from "./mutate-analyzer"
 
@@ -116,7 +120,99 @@ const jsonOverridesLineLost = (r: any) => ({
   ),
 })
 
+/**
+ * Pass-2 mutants. Four defects the pass-1 suite could not have caught, because the code they
+ * break did not exist: the `implements` emitter, the `extends` source, and the two
+ * document-level preconditions that keep the inheritance emitter from firing everywhere.
+ */
+
+/** Drops every `implements` edge — restoring the state this lane shipped, where `implements`
+ *  was RULED and the corpus was never asked. Caught by json/Inherit.lsp's four pins. */
+const dropJsonImplements = (r: any) => ({
+  ...r,
+  relationships: (r.relationships ?? []).filter((x: any) => relType(x) !== "implements"),
+})
+
+/**
+ * Emits an inheritance edge whose target the document never declares — the fabricated-edge
+ * class, and the one the ontology workstream names as the most expensive mistake available.
+ * Measured on the corpus, 16 real statements take this shape (duckdb naming a superclass
+ * declared in a sibling file). Caught by json/Inherit.lsp's `NotDeclaredAnywhere` /
+ * `AlsoNotDeclared` forbids and json/Inherit.duckdb's `ParseInfo` forbid.
+ */
+const jsonInheritanceAnyTarget = (r: any) => ({
+  ...r,
+  relationships: [
+    ...(r.relationships ?? []),
+    { source: "Inherit.lsp.structures[6]", target: "Inherit.lsp.structures[6].extends[0]", type: "extends", confidence: 1, line_number: 0 },
+    { source: "Inherit.duckdb[5]", target: "Inherit.duckdb[0]", type: "extends", confidence: 1, line_number: 0 },
+  ],
+})
+
+/**
+ * Reads the supertype off ANY object with a `base` string, dropping the `class` declaration
+ * marker. This is the permissive direction and it is the one that matters: duckdb writes
+ * `{ "id": 200, "name": "info", "type": "AlterInfo*", "base": "ParseInfo" }` for a FIELD,
+ * 16 corpus-wide, and a member descriptor is not a type declaration. Caught by
+ * json/Inherit.duckdb's two member-descriptor forbids.
+ */
+const jsonInheritanceUnmarkedDeclaration = (r: any) => ({
+  ...r,
+  relationships: [
+    ...(r.relationships ?? []),
+    { source: "Inherit.duckdb[4].members[0]", target: "Inherit.duckdb[0]", type: "extends", confidence: 1, line_number: 0 },
+    { source: "Inherit.duckdb[4].members[1]", target: "Inherit.duckdb[0]", type: "extends", confidence: 1, line_number: 0 },
+  ],
+})
+
+/**
+ * Sources an `extends` edge from the `allOf` ARRAY again instead of the schema object that
+ * composes. Caught by json/AllOf's two `extends` pins plus its two forbids. The array is a
+ * keyword shared by every schema in the file, so this is what a name-resolving consumer
+ * binds to an arbitrary schema.
+ */
+const jsonExtendsSourceIsArray = (r: any) => ({
+  ...r,
+  relationships: (r.relationships ?? []).map((x: any) =>
+    relType(x) === "extends" && x.metadata?.composition === "allOf"
+      ? { ...x, source: String(x.metadata?.compositionSite ?? x.source) }
+      : x,
+  ),
+})
+
 export const JSON_MUTANTS: Mutant[] = [
+  {
+    id: "json/implements-dropped",
+    language: "json",
+    defectClass: "missing-relationship-type",
+    description:
+      "M14 ontology pass-2 regression: `implements` stops being emitted, restoring the state this lane shipped — RULED on a grammar inventory, with 113 interface mix-in statements in one corpus file unread. Caught by json/Inherit.lsp's four pins.",
+    transform: dropJsonImplements,
+  },
+  {
+    id: "json/inheritance-undeclared-target",
+    language: "json",
+    defectClass: "fabricated-edge",
+    description:
+      "M14 ontology pass-2 regression: an inheritance statement resolves to a target the document never declares, so the edge names a symbol the file does not contain. Measured on the corpus, 16 real statements take exactly this shape and are correctly declined. Caught by json/Inherit.lsp's orphan forbids and json/Inherit.duckdb's `ParseInfo` forbid.",
+    transform: jsonInheritanceAnyTarget,
+  },
+  {
+    id: "json/inheritance-declaration-marker-dropped",
+    language: "json",
+    defectClass: "over-matching-predicate",
+    description:
+      "M14 ontology pass-2 regression: the supertype is read off any object carrying a `base` string, so a MEMBER DESCRIPTOR counts as a type declaration. duckdb writes `{\"id\":200,\"name\":\"info\",\"type\":\"AlterInfo*\",\"base\":\"ParseInfo\"}` for a FIELD whose C++ class derives from ParseInfo — 16 corpus-wide. Caught by json/Inherit.duckdb's member-descriptor forbids.",
+    transform: jsonInheritanceUnmarkedDeclaration,
+  },
+  {
+    id: "json/extends-source-is-allof-array",
+    language: "json",
+    defectClass: "mislabeled-source",
+    description:
+      "M14 ontology pass-2 regression: `extends` is sourced from the `allOf` array rather than the schema object that composes. Measured on a 2,343-file stride sample, that is the difference between 0% and 100% of `extends` endpoints binding by bare name. Caught by json/AllOf's two `extends` pins and its two forbids.",
+    transform: jsonExtendsSourceIsArray,
+  },
   {
     id: "json/calls-dropped",
     language: "json",
