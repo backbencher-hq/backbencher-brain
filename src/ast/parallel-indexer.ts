@@ -5507,6 +5507,60 @@ export async function indexProjectParallel(
 
     // Measured after every derived path has run, so the number describes the index
     // as handed back rather than the pass that produced it.
+    //
+    // The perf-stats write above (updateIndexStatus with `performanceStats`)
+    // happens BEFORE post-processing, so `phases.totalWallMs` was still unset
+    // when it was persisted — `bb status` therefore printed "total n/a" after
+    // every FULL run while incremental runs showed a real number.
+    //
+    // Re-persist now that the total is known. It repeats the SAME counter values
+    // the first call wrote rather than omitting them: `updateIndexStatus` binds
+    // `?? 0` for absent counters, so a call carrying only `performanceStats`
+    // RESET total_files/total_symbols to 0 and the status row read as empty for
+    // a fully indexed project (caught by store-integrity). Passing them again
+    // makes this idempotent and needs no nullability tricks on NOT NULL columns.
+    try {
+      await BrainDatabase.updateIndexStatus(projectId, {
+        filesIndexed: stats.successFiles + stats.skippedFiles,
+        filesParsed: stats.successFiles,
+        symbolsIndexed: stats.symbolsExtracted,
+        relationshipsIndexed: stats.relationshipsFound,
+        status: stats.errorFiles > 0 ? "partial" : "complete",
+        errors: stats.structuredErrors,
+        performanceStats: {
+          schemaVersion: 1,
+          runs: [
+            {
+              generatedAt: perfStats.runs[0].generatedAt,
+              mode: phases.mode,
+              noop: false,
+              phases: {
+                discoveryMs: phases.discoveryMs,
+                workerStartupMs: phases.workerStartupMs,
+                parseMs: phases.parseMs,
+                dbFlushMs: phases.dbFlushMs,
+                finalAccountingMs: phases.finalAccountingMs,
+                postProcessingMs: phases.postProcessingMs,
+                totalWallMs: phases.totalWallMs,
+              },
+              counts: perfStats.runs[0].counts,
+              poolTelemetry: {
+                dbFlushMs: phases.dbFlushMs,
+                retries: phases.retries,
+                workerCount: poolTelemetry.workerCount,
+                workerStartupFailures: phases.workerStartupFailures,
+                poisonFiles: phases.poisonFiles,
+              },
+            },
+          ],
+        },
+      })
+    } catch (e: any) {
+      // The totals are a convenience for `bb status`. Failing to refresh them
+      // must not fail the run that has already indexed everything.
+      log.warn("could not persist final phase timings", { error: e?.message })
+    }
+
     if (stats.summary) {
       stats.summary.unresolvedRelationships = await measureUnresolvedRelationships(projectId)
       // Measured here, after the derived pass, because that is when the final

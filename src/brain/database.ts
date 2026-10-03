@@ -373,6 +373,21 @@ export namespace BrainDatabase {
     // symbolsIndexed (the indexer's own totals); the older files/symbols keys
     // are honored for backward compatibility. indexed_files is written too,
     // since health-provider reads it and it was never populated before.
+    //
+    // Two things were wrong here, both found by measurement rather than reading:
+    //
+    //  - Absent means "this call did not measure it", NOT zero. Defaulting to 0
+    //    made a PARTIAL update wipe counts an earlier call had written. Caught by
+    //    store-integrity asserting the counters are non-zero: a later call that
+    //    passes only `performanceStats` (to refresh phase timings after
+    //    post-processing) reset every counter to 0, and the status row read as
+    //    empty for a fully indexed project.
+    //  - But these columns are NOT NULL, so binding null fails the constraint
+    //    ("NOT NULL constraint failed: brain_index_status.total_files").
+    //
+    // So: bind 0 (never null) on INSERT, and let the UPDATE arm's COALESCE keep
+    // the existing value when the caller supplied nothing. The two halves differ
+    // for a reason — NOT NULL on insert, "unmeasured" on update.
     const filesTotal = data.filesIndexed ?? data.files ?? 0
     const symbolsTotal = data.symbolsIndexed ?? data.symbols ?? 0
     const filesParsed = data.filesParsed ?? filesTotal
@@ -406,9 +421,9 @@ export namespace BrainDatabase {
          ON CONFLICT(project_id) DO UPDATE SET
            status = COALESCE(excluded.status, status),
            last_full_index = excluded.last_full_index,
-           total_files = excluded.total_files,
-           indexed_files = excluded.indexed_files,
-           total_symbols = excluded.total_symbols,
+           total_files = COALESCE(excluded.total_files, total_files),
+           indexed_files = COALESCE(excluded.indexed_files, indexed_files),
+           total_symbols = COALESCE(excluded.total_symbols, total_symbols),
            total_relationships = COALESCE(excluded.total_relationships, total_relationships),
            indexing_errors = excluded.indexing_errors,
            performance_stats = COALESCE(excluded.performance_stats, performance_stats),

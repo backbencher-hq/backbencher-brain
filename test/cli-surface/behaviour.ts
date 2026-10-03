@@ -49,7 +49,17 @@ suite.section("2. upgrade: what does a user actually get?")
   // anywhere in src/, so this records what the CLI really does rather than what
   // it should do.
   const up = bb(["upgrade"])
-  suite.check("`bb upgrade` exits 0", up.code === 0, `rc=${up.code}\n${up.all.slice(0, 300)}`)
+  // `bb upgrade` must exit 0 when it can determine the answer, and exit 1 when it
+  // CANNOT — an unreachable registry, or a package that is not published yet.
+  // Measured: `backbencher-brain` returns HTTP 404 from registry.npmjs.org, so
+  // the correct answer right now is "I could not check" + exit 1. Demanding exit
+  // 0 unconditionally would have pushed toward reporting a false "up to date".
+  const upgradeKnows = up.code === 0 || (/could not check/i.test(up.all) && up.code === 1)
+  suite.check(
+    "`bb upgrade` exits 0 when it can answer, and exits 1 (saying why) when it cannot",
+    upgradeKnows,
+    `rc=${up.code}\n${up.all.slice(0, 300)}`,
+  )
   suite.check("`bb upgrade` is not rejected as an unknown command", !/unknown command/.test(up.all), up.all.slice(0, 200))
   suite.check("`bb upgrade` prints something actionable (what it did, or what to do)", up.out.trim().length > 0, `stdout=${JSON.stringify(up.out.trim().slice(0, 200))}`)
 
@@ -288,10 +298,25 @@ suite.section("7. projects: listing, sorting, and safe removal")
   suite.check("`bb projects --sort <unknown>` is rejected or defaults honestly, never silently", bogusSort.code === 0 ? /projects,/.test(bogusSort.out) : true, `rc=${bogusSort.code}`)
 
   // The id the CLI PRINTS is 8 chars. The id it ACCEPTS must be the same one.
-  const printedId = list.out.split("\n").find((l) => l.includes("db: "))?.split("|")[0]?.trim() ?? ""
-  suite.check("`bb projects` prints an 8-character id prefix", /^[0-9a-f]{8}$/.test(printedId), `printed=${JSON.stringify(printedId)}`)
+  //
+  // This used to remove whatever project happened to be FIRST in the global
+  // list — which is the `behaviour` fixture itself, since it sorts by recency.
+  // The removal then FAILED (short ids were not accepted), so the fixture
+  // survived and the suite passed for the wrong reason. Now that short ids are
+  // resolved, that removal SUCCEEDS and deleted the fixture, breaking every
+  // later assertion that needs it indexed. A product fix exposed a test that was
+  // destroying its own fixture behind a failure it never saw.
+  //
+  // So: index a dedicated throwaway project, read ITS id, and remove that.
+  const disposable = makeFixture("disposable-remove")
+  bb(["index", disposable, "--no-setup"], { cwd: disposable })
+  const disposableId = bb(["projects"], { cwd: disposable })
+    .out.split("\n")
+    .find((l) => l.includes(disposable))
+    ?.split("|")[0]?.trim() ?? ""
+  suite.check("`bb projects` prints an 8-character id prefix", /^[0-9a-f]{8}$/.test(disposableId), `printed=${JSON.stringify(disposableId)}`)
 
-  const shortRemove = bb(["projects", "--remove", printedId], { cwd: fixture })
+  const shortRemove = bb(["projects", "--remove", disposableId], { cwd: fixture })
   suite.check(
     "`bb projects --remove <the id it printed>` works (help's own example is `--remove 1a2b3c4d`)",
     shortRemove.code === 0,
@@ -404,7 +429,12 @@ suite.section("10. exit-code contract")
 
   const stats = bb(["stats", empty], { cwd: empty })
   suite.check("`bb stats` on an unindexed directory exits non-zero", stats.code !== 0, `rc=${stats.code} out=${stats.out.trim().slice(0, 120)}`)
-  suite.check("`bb stats` on an unindexed directory says there is no index", /no index for/.test(stats.out), stats.out.trim().slice(0, 160))
+  // Checked across BOTH streams, not stdout alone. "no index" exits 1, so the
+  // message belongs on stderr — which is what `bb health` already did for the
+  // same condition. The claim under test is that the user is TOLD, not which
+  // stream carried it; pinning it to stdout would have kept the diagnostic on
+  // the wrong stream for the sake of a test.
+  suite.check("`bb stats` on an unindexed directory says there is no index", /no index for/.test(stats.all), stats.all.trim().slice(0, 160))
 
   const status = bb(["status", empty], { cwd: empty })
   suite.check("`bb status` on an unindexed directory exits non-zero", status.code !== 0, `rc=${status.code} out=${status.out.trim().slice(0, 120)}`)
