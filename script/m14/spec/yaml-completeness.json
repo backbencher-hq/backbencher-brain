@@ -279,12 +279,18 @@
       {
         "id": "YAML-D1",
         "decision": "No `calls` relationship. YAML has no call expression: there is no way to write one in the grammar, so the analyzer has nothing to read.",
-        "why": "Claiming `calls` for a language with no call expression would be coverage theatre. The M14 spec is explicit that `requiredKinds` must be the kinds a language ACTUALLY emits, not the schema's full list."
+        "why": "Claiming `calls` for a language with no call expression would be coverage theatre. The M14 spec is explicit that `requiredKinds` must be the kinds a language ACTUALLY emits, not the schema's full list.",
+        "supersededBy": "YAML-D9",
+        "status": "SUPERSEDED",
+        "supersededReason": "This ruling was written from the grammar alone and the grammar could not see it: GitHub Actions expresses invocation as DATA, so the construct exists in the corpus without existing in the node-type inventory. The corpus census is what overturned it."
       },
       {
         "id": "YAML-D2",
         "decision": "No `implements`, no `overrides`, no `instantiates`. YAML has no object-orientation axis: no class declaration, no method, no member lookup that resolves to a declaration site.",
-        "why": "Same reasoning as YAML-D1. Merge keys (`<<: *anchor`) are the one genuine inheritance construct YAML has, and they are emitted as `extends` with the anchor as the target -- which is the closest honest mapping, not a stand-in for a missing feature."
+        "why": "Same reasoning as YAML-D1. Merge keys (`<<: *anchor`) are the one genuine inheritance construct YAML has, and they are emitted as `extends` with the anchor as the target -- which is the closest honest mapping, not a stand-in for a missing feature.",
+        "supersededBy": "YAML-D10",
+        "status": "SUPERSEDED",
+        "supersededReason": "This ruling was written from the grammar alone and the grammar could not see it: GitHub Actions expresses invocation as DATA, so the construct exists in the corpus without existing in the node-type inventory. The corpus census is what overturned it."
       },
       {
         "id": "YAML-D3",
@@ -315,6 +321,66 @@
         "id": "YAML-D8",
         "decision": "Duplicate mapping keys in one mapping get disambiguated identities rather than one shared identity.",
         "why": "Duplicate keys are invalid YAML, so this is not a shape to model -- it is a shape to survive. Two symbols sharing one id and one qualifiedName makes every relationship endpoint addressed to that key ambiguous, because the graph resolves relationships by qualified name while the store's own primary key is `${fileId}:${name}:${startLine}` (src/ast/parallel-indexer.ts:2259). The analyzer must therefore keep its identities at least as specific as the store's, or it silently loses an edge."
+      },
+      {
+        "id": "YAML-D9",
+        "status": "RULED",
+        "subject": "calls",
+        "decision": "EMITTED, and the previous ruling that YAML has no call expression is withdrawn. YAML has no call EXPRESSION, which is what the old ruling measured, but GitHub Actions expresses invocation as DATA: a `uses:` key directly under `jobs.<job>` names a reusable workflow that the job invokes. The role is decided by the path the analyzer built for the entry, never by the characters of the value, because `acme/infra/x.yml@v3` and `actions/checkout@v4` both contain a `/` and only one of them names a workflow.",
+        "instrument": "B:parse-tree-count",
+        "probe": "Counted on the parse tree: every mapping pair whose ancestor key chain is exactly `jobs.<jobId>.uses`. The role is the chain, not the value; a value-shape probe would return a different and wrong number.",
+        "measured": "196 occurrences in 92 of the 16371 admitted yaml files, whole corpus, no sampling.",
+        "overturn": "Any corpus file with a `uses:` key under `jobs.<job>` whose value does not name a reusable workflow \u2014 which would mean the chain is not sufficient evidence and the edge would need a second condition.",
+        "why": "The old ruling made the same mistake the workstream document records for the gate first version: it treated the absence of a node type as the absence of the construct. Invocation in a configuration language is a value in a reserved position, and a grammar inventory cannot see it. Confidence is 1.0 because the role is a parse fact \u2014 GitHub Actions admits nothing else at `jobs.<id>.uses` \u2014 while `resolved` is false because the target workflow is another file and this analyzer is per-file. The edge is withheld, not downgraded, when the document does not claim to be a workflow."
+      },
+      {
+        "id": "YAML-D10",
+        "status": "RULED",
+        "subject": "implements",
+        "decision": "RULED \u2014 YAML has no construct that expresses interface satisfaction.",
+        "instrument": "A:grammar-inventory",
+        "nodeTypesThatWouldMeanIt": [
+          "class_declaration",
+          "interface_declaration",
+          "declaration",
+          "type_declaration",
+          "extends_clause",
+          "implements_clause",
+          "base_class_clause"
+        ],
+        "probe": "Enumerated every node type the wired tree-sitter-yaml grammar produces across all 16371 admitted files: 47 distinct types, against 36 declared in grammars/tree-sitter-yaml/src/node-types.json. None of the 47 is a declaration of any kind; the named nodes are containers (flow_node, block_mapping, block_mapping_pair, block_sequence, flow_sequence), scalars (plain/string/double_quote/single_quote/integer/float/boolean/null/block/timestamp), anchor, alias, tag, document, stream and the punctuation tokens.",
+        "measured": "0 declaration nodes. Two positive probes were run and REJECTED as false positives rather than reported as support: (a) 111 occurrences of `extends:`/`inherits:` keys in 92 files \u2014 these are yamllint and Azure-pipeline CONFIG keys meaning \"inherit this configuration\", not type conformance, and the probe matches the spelling rather than the role; (b) 15 distinct tag texts (55x `!include`, 31x `!unsafe`, 26x `!vault`, 12x `!reset`, 12x `!override`, 2x `!Sub`, 2x `!GetAtt`, 1x `!ENV`, and 6 `!!` core-schema tags) \u2014 a tag names the TYPE OF A VALUE and carries no declaration of conformance.",
+        "overturn": "A corpus file containing a custom tag that names an interface, or any `!<...>` construct whose semantics is \"this value satisfies that type\" as distinct from \"this value IS that type\". The `!!python/object:` family would be such a construct if it appeared: the corpus contains `!!python/name:` (4 occurrences) and `!!ruby/object:RI::ClassDescription` (1), both of which NAME a type, and neither of which constructs an instance of it.",
+        "why": "Interface satisfaction needs two declarations and a relation between them. YAML has one construct that binds a name to a value, and `!!python/name:module.attr` names a type without declaring conformance to anything, so there is nothing for an `implements` edge to join. The 111 `extends:` config keys are the trap here and are named explicitly so the next lane does not read them as support."
+      },
+      {
+        "id": "YAML-D11",
+        "status": "RULED",
+        "subject": "instantiates",
+        "decision": "RULED \u2014 YAML has no construct that expresses construction of a value.",
+        "instrument": "A:grammar-inventory",
+        "nodeTypesThatWouldMeanIt": [
+          "new_expression",
+          "object_creation",
+          "constructor_call",
+          "class_instance",
+          "instance"
+        ],
+        "probe": "The same 47-type grammar inventory as YAML-D10, plus the tag inventory: 15 distinct tag texts over the whole corpus, listed in YAML-D10. None constructs an object.",
+        "measured": "0 construction nodes. 0 tags with construction semantics.",
+        "overturn": "A corpus file using a tag whose semantics is \"build an instance of this class\" \u2014 `!!python/object:module.Class` is the canonical example and would be a real counterexample, since PyYAML turns it into an instance. It does not occur: the corpus carries `!!python/name:` four times, which names a Python attribute and resolves to the object it denotes rather than constructing one.",
+        "why": "A `$ref` into `components.schemas` is a reference to a definition, not a construction of a value, and the analyzer already emits it as `references`. Reading a schema reference as instantiation would put a `instantiates` edge in `bb_graph` that `bb_migrate` would then read as a type to rewrite."
+      },
+      {
+        "id": "YAML-D12",
+        "status": "RULED",
+        "subject": "overrides",
+        "decision": "EMITTED, and the `overrides` half of the old YAML-D2 is withdrawn. A duplicate mapping key is a replacement, and the analyzer already gives the two entries distinct identities (`root.child` and `root.child#2`, see YAML-D8), which is what makes an edge between them possible at all.",
+        "instrument": "B:parse-tree-count",
+        "probe": "Counted on the parse tree: for each mapping pair, compare its key against every EARLIER sibling pair in the SAME mapping. A parent-type test for a pair never fires \u2014 a pair's parent is `block_mapping`/`flow_mapping`, never another pair \u2014 so an earlier version of this probe counted 0 and the construct looked absent.",
+        "measured": "20 duplicate-key pairs in 17 of the 16371 admitted yaml files, whole corpus.",
+        "overturn": "A corpus file where two occurrences of one key sit in DIFFERENT documents of a multi-document stream. Documents are independent namespaces rather than layered ones, so that would not be an override either \u2014 which is why the probe is scoped to one mapping.",
+        "why": "The two entries are a parse fact. That the later REPLACES the earlier is loader behaviour and not a grammar guarantee: YAML 1.2 leaves duplicate mapping keys undefined, mainstream loaders take the last value, and GitHub Actions rejects such a file outright. The edge therefore carries confidence 0.8 with a reason code and evidenceClass `inferred`, while `resolved` is true because both endpoints are symbols of this file. The chain is last-wins rather than all-to-first, and a mutant pins that distinction."
       }
     ]
   }
