@@ -35,6 +35,15 @@ interface JsonContext {
   validationSymbols: ASTEngine.UniversalSymbol[]
   apiEndpointSymbols: ASTEngine.UniversalSymbol[]
   dependencySymbols: ASTEngine.UniversalSymbol[]
+  /** A key declared TWICE inside one object. The second declaration replaces the first
+   *  under every mainstream parser, which is the relation the bash lane calls
+   *  `overrides`, and RFC 8259 §4 says only that names SHOULD be unique and that a
+   *  parser's behaviour on a duplicate is unpredictable — it does not make the
+   *  redefinition go away. Scoped to the OBJECT because a key is unique only within
+   *  its object: the same key in two different objects is not a redefinition and is
+   *  the corpus's dominant shape (120,174 occurrences across 7,679 files, against
+   *  21 genuine duplicates across 11). */
+  overrideCandidates: { ownerName: string; key: string; line: number; overridesLine: number }[]
   objectCount: number
   propertyCount: number
   arrayCount: number
@@ -51,7 +60,7 @@ interface JsonContext {
 // the unresolvable `Basic.nested` while the symbol is named `nested`. One edge in the
 // probe battery failed on it and the rest passed, which is the worst possible shape
 // for a bug: invisible unless you nest.
-type PathFrame = { node: Node; parentPath: string; parentName: string; emitObject?: boolean }
+type PathFrame = { node: Node; parentPath: string; parentName: string; emitObject?: boolean; duplicateKeys?: Map<string, number> }
 
 const VALIDATION_KEYS = new Set([
   "minLength", "maxLength", "minimum", "maximum", "exclusiveMinimum",
@@ -91,6 +100,7 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
       validationSymbols: [],
       apiEndpointSymbols: [],
       dependencySymbols: [],
+      overrideCandidates: [],
       objectCount: 0,
       propertyCount: 0,
       rootNode,
@@ -108,6 +118,8 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
     this.extractManifestExports(ctx)
     this.extractSchemaComposition(ctx)
     this.extractPackageDependencies(ctx)
+    this.extractNpmScriptCalls(ctx)
+    this.extractDuplicateKeyOverrides(ctx)
 
     const rootSymbol: ASTEngine.UniversalSymbol = {
       name: rootName,
@@ -255,7 +267,7 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
         // resolved to nothing. It was invisible at the top level — where
         // `parentPath` happens to equal the module name — so the entire top-level
         // corpus agreed with itself and only a nested key exposed it.
-        this.pushNamedChildren(stack, node, parentPath, parentName)
+        this.pushNamedChildren(stack, node, parentPath, parentName, frame.duplicateKeys ?? new Map<string, number>())
         continue
       }
       if (node.type === "array") {
@@ -269,6 +281,18 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
       const key = this.keyText(node)
       const value = node.childForFieldName("value")
       if (!key || !value) continue
+      // A key declared TWICE in this one object replaces its earlier declaration.
+      // Recorded here because this is the only place that already knows the pair's
+      // CONTAINING OBJECT (via the frame) and its owner symbol name; a later pass
+      // would have to re-derive the owner, and a re-derived owner is how the `nested`
+      // bug in this file happened. `frame.duplicateKeys` is created per object, so
+      // this cannot fire for the same key in two different objects.
+      if (frame.duplicateKeys && key.length > 0) {
+        const line = node.startPosition.row + 1
+        const prior = frame.duplicateKeys.get(key)
+        if (prior === undefined) frame.duplicateKeys.set(key, line)
+        else ctx.overrideCandidates.push({ ownerName: parentName, key, line, overridesLine: prior })
+      }
       const path = this.childPath(parentPath, key)
       const valueType = this.valueType(value)
       // An object is a CONTAINER: it has named children, and `contains` edges are
@@ -553,6 +577,194 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
   }
 
+  /**
+   * An npm script that runs a SIBLING script, as `calls`.
+   *
+   * `calls` was ruled out for this lane twice, on a grammar inventory: the JSON
+   * grammar has no node type for a function, so it has none for an invocation either.
+   * That is the same unsound question that produced the wrong `imports`, `exports` and
+   * `extends` rulings, and the corpus settles it. A `package.json` `scripts` object
+   * declares its entries as ordinary keys, so both endpoints of the relation are
+   * symbols IN THE SAME FILE, and a command string naming one of them is an
+   * invocation of it:
+   *
+   *   "scripts": { "pretest": "npm run compile", "compile": "tsc -p ." }
+   *
+   * `pretest` calls `compile`, and both names resolve. This is not a name-match guess
+   * across files — the callee must be a key of the SAME `scripts` object, which is the
+   * only condition under which the edge can be checked at all.
+   *
+   * Three things are declined rather than left silent, each because emitting them would
+   * be a fabricated edge:
+   *
+   *   - `npm run <name>` where `<name>` is NOT a key of this `scripts` object. The
+   *     callee is then a binary, a workspace script in another package, or nothing;
+   *     `package.json` does not say, so the edge would name a symbol that is not there.
+   *     Measured separately by `validation/m14/fixtures/json/probes.ts` so the
+   *     undercount is visible instead of assumed.
+   *   - a script invoking ITSELF. npm rejects it, and a self-edge carries no order.
+   *   - npm's IMPLICIT lifecycle hooks (`pre<script>` / `post<script>` around any
+   *     script). npm runs them without the command naming them, which is real
+   *     behaviour and is NOT an explicit invocation, so emitting it would attribute an
+   *     edge to a name the file never wrote in that position.
+   *
+   * Confidence is 0.8, not 1, and the reason is carried in `reasonCode`: the two
+   * endpoints are structural facts but the LINK is read out of a string value by a
+   * known-CLI convention, which is exactly the class the honesty contract §4 requires
+   * to be below the deterministic threshold and countable.
+   */
+  /**
+   * A key declared twice in one object, as `overrides`.
+   *
+   * `overrides` was ruled out for this lane on a grammar inventory — the JSON grammar
+   * has no node type for a redefinition — which is the unsound question this lane has
+   * now had to retract three times (`imports`, `exports`, `extends`, and `calls` on the
+   * same corpus evidence). The construct is measurable and it occurs: 21 NAMED
+   * duplicate keys across 11 of 11,713 admitted files, e.g.
+   * dart-sdk/pkg/front_end/test/language_versioning/data/
+   * package_default_version_is_wrong_2/.dart_tool/package_config.json:8 declaring
+   * `languageVersion` twice, and duckdb/data/json/11152.json.
+   *
+   * The edge shape is the BASH lane's, deliberately, because it is the only shape that
+   * works when both declarations share one name: source is the OWNER symbol, target is
+   * the repeated key, and `overridesLine` carries the PRIOR declaration's line so the
+   * replacement is readable without re-deriving it. Both endpoints resolve — `contains`
+   * already emits a row for each declaration, so the pair exists independently.
+   *
+   * Three things are declined, each because the edge would assert something the file
+   * does not say:
+   *
+   *   - The same key in two DIFFERENT objects of one file. A key is unique only within
+   *     its object, so this is not a redefinition, and it is the corpus's dominant shape
+   *     (120,174 occurrences across 7,679 files against 21 real duplicates). Emitting
+   *     it would have been ~5,700 false positives.
+   *   - An EMPTY key. 10 occurrences across 5 files, every one a document the grammar
+   *     already recovered with ERROR nodes; an empty key is not a named member.
+   *   - Any attempt to name the two declarations apart. They share a name AND a
+   *     qualified path, so distinguishing them would mean minting a symbol the document
+   *     does not declare. The line metadata carries the distinction instead.
+   *
+   * Confidence is 1: two `pair` nodes with one key inside one `object` is a fact about
+   * the parse tree, read at the same place the symbol is created.
+   */
+  private extractDuplicateKeyOverrides(ctx: JsonContext): void {
+    for (const c of ctx.overrideCandidates) {
+      ctx.relationships.push({
+        source: c.ownerName,
+        target: c.key,
+        type: ASTEngine.RelationshipType.Overrides,
+        confidence: 1,
+        line_number: c.line,
+        metadata: {
+          jsonSpecific: true,
+          redefinition: true,
+          overridesLine: c.overridesLine,
+          evidenceClass: "structural",
+        },
+      })
+    }
+  }
+
+  private extractNpmScriptCalls(ctx: JsonContext): void {
+    if (!this.fileEndsWith(ctx.filePath, "package.json")) return
+    const document = ctx.rootNode
+    if (document.type !== "document") return
+    const rootObject = document.namedChildren?.find((c: any) => c.type === "object")
+    if (!rootObject) return
+    const scriptsObject = this.topLevelObjectValue(rootObject, "scripts")
+    if (!scriptsObject) return
+
+    const declared = new Map<string, Node>()
+    for (let i = 0; i < scriptsObject.namedChildCount; i++) {
+      const pair = scriptsObject.namedChild(i)
+      if (pair?.type !== "pair") continue
+      const key = this.keyText(pair)
+      if (key) declared.set(key, pair)
+    }
+    if (declared.size === 0) return
+
+    for (const [name, pair] of declared) {
+      const value = pair.childForFieldName("value")
+      if (value?.type !== "string") continue
+      for (const callee of this.npmRunTargets(this.stripQuotes(value.text))) {
+        if (callee === name) continue
+        if (!declared.has(callee)) continue
+        ctx.relationships.push({
+          source: name,
+          target: callee,
+          type: ASTEngine.RelationshipType.Calls,
+          confidence: 0.8,
+          line_number: pair.startPosition.row + 1,
+          metadata: {
+            jsonSpecific: true,
+            callForm: "npm_run_sibling_script",
+            evidenceClass: "usage_contextual",
+            reasonCode: "npm_run_sibling_script",
+          },
+        })
+      }
+    }
+  }
+
+  /**
+   * The script names a command string invokes through a package runner.
+   *
+   * Tokenised with a character scan and no regex, because the lane's contract is zero
+   * regex literals in this file (`script/m12/json-contract-probe.ts` enforces it) and
+   * because a runner name is only meaningful as a whole token: `npm` inside `npx` or
+   * a path like `./scripts/npm` is not a runner. A QUOTED target is declined, because
+   * the quoting means the shell rewrote the argument and the file no longer states
+   * the name plainly.
+   */
+  private npmRunTargets(command: string): string[] {
+    const RUNNERS = ["npm", "pnpm", "yarn", "bun"]
+    const VERBS = ["run", "run-script", "run-s"]
+    const SEPARATORS = [" ", "\t", "\n", "\r", ";", "&", "|", "(", ")", "<", ">"]
+    const tokens: { text: string; quoted: boolean }[] = []
+    let current = ""
+    let quoted = false
+    let inQuotes = false
+    for (const ch of command) {
+      if (ch === '"') {
+        inQuotes = !inQuotes
+        quoted = true
+        continue
+      }
+      if (!inQuotes && SEPARATORS.includes(ch)) {
+        if (current.length > 0) tokens.push({ text: current, quoted })
+        current = ""
+        quoted = false
+        continue
+      }
+      current += ch
+    }
+    if (current.length > 0) tokens.push({ text: current, quoted })
+
+    const out: string[] = []
+    for (let i = 0; i < tokens.length; i++) {
+      if (!RUNNERS.includes(tokens[i].text)) continue
+      const verb = tokens[i + 1]
+      if (!verb || verb.quoted || !VERBS.includes(verb.text)) continue
+      const target = tokens[i + 2]
+      if (!target || target.quoted) continue
+      out.push(target.text)
+      i += 2
+    }
+    return out
+  }
+
+  /** The object value of a named top-level key, or undefined. */
+  private topLevelObjectValue(rootObject: any, name: string): any {
+    for (let i = 0; i < rootObject.namedChildCount; i++) {
+      const pair = rootObject.namedChild(i)
+      if (pair?.type !== "pair") continue
+      if (this.keyText(pair) !== name) continue
+      const value = pair.childForFieldName("value")
+      if (value?.type === "object") return value
+    }
+    return undefined
+  }
+
   private dependencyVersion(ctx: JsonContext, dependency: ASTEngine.UniversalSymbol): string {
     const fullPath = String(dependency.metadata?.fullPath || "")
     const parts = fullPath.split(".")
@@ -786,10 +998,10 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (depth > ctx.maxDepth) ctx.maxDepth = depth
   }
 
-  private pushNamedChildren(stack: PathFrame[], node: Node, parentPath: string, parentName: string = parentPath): void {
+  private pushNamedChildren(stack: PathFrame[], node: Node, parentPath: string, parentName: string = parentPath, duplicateKeys?: Map<string, number>): void {
     for (let i = node.namedChildCount - 1; i >= 0; i--) {
       const child = node.namedChild(i)
-      if (child) stack.push({ node: child, parentPath, parentName })
+      if (child) stack.push({ node: child, parentPath, parentName, duplicateKeys })
     }
   }
 
@@ -797,9 +1009,20 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
     const slash = filePath.lastIndexOf("/")
     const base = slash >= 0 ? filePath.slice(slash + 1) : filePath
     const lower = base.toLowerCase()
-    const suffix = ".json"
-    const stem = lower.endsWith(suffix) ? base.slice(0, -suffix.length) : base
-    return stem || "document"
+    // All THREE spellings this lane is routed, not just `.json`. The contract is
+    // "the basename WITHOUT its extension" and `detectLanguageFromPath` sends
+    // `.jsonc` and `.json5` here too, so stripping only `.json` left those module
+    // symbols carrying their extension while `.json` ones did not. The lane-owned
+    // oracle strips any extension, and the disagreement showed up in the differential
+    // as 24 MISSING and 207 UNEXPLAINED `contains` edges — every sampled example a
+    // DOT-PREFIXED name like `.markdownlint-cli2.jsonc`, where the leading dot makes
+    // the basename and the stem look like different strings. Small (4 `.jsonc` and 6
+    // `.json5` files are tracked corpus-wide) and wrong in the direction that makes
+    // the module symbol disagree with the documented identity.
+    for (const suffix of [".json", ".jsonc", ".json5"]) {
+      if (lower.endsWith(suffix)) return base.slice(0, base.length - suffix.length) || "document"
+    }
+    return base || "document"
   }
 
   private fileEndsWith(filePath: string, suffix: string): boolean {
