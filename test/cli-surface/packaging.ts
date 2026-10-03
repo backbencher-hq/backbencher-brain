@@ -181,7 +181,16 @@ const stage = stageDir("pkg")
   suite.check("staged `bb --help` lists the commands", /Commands:/.test(h.out) && /index/.test(h.out), h.out.split("\n").slice(0, 3).join(" | ").slice(0, 200))
 
   const up = run(["upgrade"])
-  suite.check("staged `bb upgrade` exits 0", up.code === 0, `rc=${up.code}\n${up.all.slice(0, 300)}`)
+  // Same contract as the behaviour suite, and for the same reason: `bb upgrade`
+  // exits 0 when it can determine the answer and exits 1 (saying why) when it
+  // cannot. `backbencher-brain` is not published — registry.npmjs.org returns
+  // 404 — so the honest answer today is "could not check" + exit 1. Requiring 0
+  // would push toward printing a false "you are up to date".
+  suite.check(
+    "staged `bb upgrade` exits 0 when it can answer, and 1 with a reason when it cannot",
+    up.code === 0 || (/could not check/i.test(up.all) && up.code === 1),
+    `rc=${up.code}\n${up.all.slice(0, 300)}`,
+  )
 
   const idx = run(["index", fixture, "--no-setup"])
   suite.check("staged `bb index` exits 0", idx.code === 0, `rc=${idx.code}\n${idx.all.slice(-400)}`)

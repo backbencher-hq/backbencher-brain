@@ -314,6 +314,12 @@ function invokeBooleanFlag(cmd: string, flag: string, cwd: string) {
     "health --verbose-config": ["health", cwd, "--verbose-config"],
     "onboard --check": ["onboard", cwd, "--check"],
     "onboard --print": ["onboard", cwd, "--print"],
+    // `bb upgrade` was added after this table was written, so its boolean flags
+    // had no probe and reported "no probe available for this flag". `--check` is
+    // the read-only form and is safe to run for real; it contacts the registry,
+    // which is why it must not be confused with a usage-registration proof —
+    // the assertion below only rejects COMMANDER usage errors.
+    "upgrade --check": ["upgrade", "--check"],
   }
   const key = `${cmd} ${flag}`
   const args = argv[key]
