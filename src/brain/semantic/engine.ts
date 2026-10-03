@@ -1,4 +1,4 @@
-// @ts-nocheck — pre-existing Effect/Provider API migration issues
+
 import * as Log from "../../tool/brain-log"
 import { createHash } from "crypto"
 import * as fs from "fs"
