@@ -19,8 +19,15 @@
 import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import { execFileSync } from "node:child_process"
 import { join } from "node:path"
+import * as path from "node:path"
+import { fileURLToPath } from "node:url"
+// Derived from this file's own location, NOT hardcoded. Six of this lane's scripts
+// pinned $HOME/backbencher-brain, so in a lane worktree they read a path
+// that does not exist and the gate died with ENOENT instead of reporting a verdict.
+// A gate that cannot execute is not a gate, and the mutant battery looked green
+// only because its failure was being read as a pass.
+const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..")
 
-const REPO = "$HOME/backbencher-brain"
 const SRC = join(REPO, "src/ast/real-lua-analyzer.ts")
 const ORACLE = join(REPO, "script/m60/lua-truth-oracle.ts")
 const SAMPLE = process.argv.includes("--sample") ? Number(process.argv[process.argv.indexOf("--sample") + 1]) : 60
