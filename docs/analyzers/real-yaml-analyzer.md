@@ -84,7 +84,29 @@ third-party action. The role is now read from the **path the analyzer built for 
 
 **`exports`.** A YAML file has no module system, so the first candidate was rejected on
 measurement: `on.workflow_call.outputs.<name>` — the reusable-workflow output surface —
-occurs **0 times in 16,371 files**. The construct that does occur is schema publication:
+occurs **0 times in 16,371 files**.
+
+**Scope of that rejection — read before reusing it.** The probe counted the *dotted*
+spelling. GitHub Actions also writes the surface as a nested block:
+
+```yaml
+on:
+  workflow_call:
+    outputs:
+      base_branch:
+        description: 'The base branch'
+        value: ${{ jobs.setup.outputs.base_branch }}
+```
+
+That form occurs in the corpus (e.g. `otp/.github/workflows/reusable-setup.yaml:26`,
+`scala3/.github/workflows/build-msi.yml:15`,
+`consul/.github/workflows/reusable-conditional-skip.yml:5` — 3 files), so the
+rejection is of the dotted spelling only, not of reusable-workflow output
+declaration as a construct. Nothing here emits an `exports` edge for it, and no
+ruling claims the construct is absent. A future lane that wants it should probe
+the nested block form.
+
+The construct this lane does emit is schema publication:
 `components.schemas.<Name>` (OpenAPI 3) and `definitions.<Name>` (Swagger 2 / JSON Schema
 draft-4), defined once and reached from other documents as `$ref`. The corpus split:
 **2,462** under `definitions`, **43** under `components.schemas`, **4** under
