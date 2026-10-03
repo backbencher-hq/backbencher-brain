@@ -23,6 +23,7 @@ import { FSHARP_MUTANTS } from "./fsharp-mutants"
 import { CSS_MUTANTS } from "./css-mutants"
 import { NIM_MUTANTS } from "./nim-mutants"
 import { PROTOBUF_MUTANTS } from "./protobuf-mutants"
+import { JSON_MUTANTS } from "./json-mutants"
 
 const ROOT = process.env.BB_M14_ROOT ? path.resolve(process.env.BB_M14_ROOT) : path.resolve((import.meta as any).dirname ?? path.dirname(Bun?.main ?? process.argv[1] ?? "."), "..", "..")
 
@@ -2415,6 +2416,7 @@ export const MUTANTS: Mutant[] = [
   ...CSS_MUTANTS,
   ...NIM_MUTANTS,
   ...PROTOBUF_MUTANTS,
+  ...JSON_MUTANTS,
   // ---------------------------------------------------------------- VB wave
   // 2026-09-27. The vb lane reported a 1.000 F5 differential and a healthy-looking
   // corpus profile while THREE whole classes of output were missing or wrong. Each
