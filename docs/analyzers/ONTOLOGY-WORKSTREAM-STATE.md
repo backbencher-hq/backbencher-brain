@@ -427,3 +427,19 @@ from the aggregate tip so every lane sees the merged work.
 
 Slots: `clean` (first pass, never run) + `bash fsharp zig css markdown powershell`
 (pass 2).
+
+### Wave-2 incident: SQLite write collision across lanes
+
+The bash lane died on `Error: Failed to execute statement` with 52 GB free, so it
+was not disk. Seven lanes run concurrently and two can resolve the same
+`.bb-data` DB path; the loser gets a write-lock failure from its own census
+script.
+
+Consequence for the tooling: **a lane's census should use a lane-private DB path**
+(e.g. under `/tmp/opencode/<lang>/`), not the repo-relative `.bb-data`. The
+supervisor's re-prompt says so explicitly rather than letting the next lane rediscover it.
+
+Note also that `grep -o 'Error'` on these logs is a useless liveness signal — the
+logs are full of parser diagnostics (`Out of bounds`, `WASM`, `ErrorNodes`) that
+are corpus findings, not agent failures. Liveness is the process, and a lane's
+report is its final message.
