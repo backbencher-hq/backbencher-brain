@@ -72,34 +72,436 @@ turned into phantom recovery symbols.
 
 ## Relationship ontology
 
+Ten types, one verdict each, measured through the production entry point
+`parseFile` over **11,066 corpus files in 91 repositories** — every git-tracked
+file the router hands to the XML analyzer, not a sample.
+Instrument: `validation/m14/fixtures/xml/ontology-census.mts`, which walks the
+tree twice (once through `parseFile`, once through the wired wasm for the
+grammar inventory and the semantic probes) and writes
+`validation/m14/fixtures/xml/ontology-census.json`.
+
+| Type | Verdict | Edges | Files | Both ends resolve | `confidence` < 0.7 |
+| --- | --- | ---: | ---: | ---: | ---: |
+| `contains` | EMITTED | 179,605 | 10,847 | 179,604 / 179,605 = **100.0 %** | 0 |
+| `references` | EMITTED | 10,331 | 391 | 5,190 / 10,331 = **50.2 %** | 0 |
+| `imports` | EMITTED | 415 | 278 | 3 / 415 = 0.7 %, by design | 0 |
+| `calls` | EMITTED (was GAP) | **548** | 76 | 548 / 548 = **100 %** | 0 |
+| `extends` | EMITTED (was GAP) | **434** | 106 | 209 / 434 = **48.2 %** | 0 |
+| `uses` | RULED | 0 | 0 | — | — |
+| `exports` | RULED, with 620 adjudicated sites | 0 | 0 | — | — |
+| `implements` | RULED, with 307 adjudicated sites | 0 | 0 | — | — |
+| `overrides` | RULED (per-file) | 0 | 0 | — | — |
+| `instantiates` | RULED | 0 | 0 | — | — |
+
+What each type means **in this language**, which is not what it means in general:
+
 | Relationship | Rule |
 | --- | --- |
 | `contains` | element → nested element; element → attribute/namespace; element → processing instruction when nested; DTD declaration → declaration |
-| `imports` | DOCTYPE `ExternalID` system/public literal → external DTD path |
-| `references` | a QName-valued attribute resolved through a declared prefix → the component it names (`type`, `base`, `ref`, `itemType`, `substitutionGroup`, …). The target is the LOCAL name, published as a symbol on the same document, so the edge is resolvable rather than dangling |
-| `calls` | `xsl:call-template` / `xsl:apply-templates` → the `xsl:template` that declares the named template |
-| `imports` | `xsl:import`/`xsl:include` `href` → the stylesheet path, alongside the DOCTYPE and `schemaLocation` forms |
-| `uses` | not emitted; XML syntax alone does not establish executable use |
-| `extends`, `implements`, `instantiates`, `exports`, `overrides` | not emitted; no such semantics exist in the XML grammar |
+| `imports` | DOCTYPE `ExternalID` system/public literal → external DTD path; `xsl:import`/`xsl:include` `href`; an XSD `schemaLocation` URI. **The target is a FILE**, which is the one case where a value is the right target |
+| `references` | a QName-valued attribute resolved through a declared prefix → the component it names (`type`, `ref`, `itemType`, `substitutionGroup`, `xsi:type`, …); a RELAX NG `ref` `name`; an `xsl:apply-templates name=` dispatch; an `&entity;` use. The target is the LOCAL name |
+| `calls` | `xsl:call-template name="T"` → the `xsl:template` that declares `T` |
+| `extends` | XSD **type derivation**: `xs:extension base="T"` and `xs:restriction base="T"` → `T` |
+| `uses` | not emitted — see the ruling below |
+| `implements`, `instantiates`, `overrides`, `exports` | not emitted — see the rulings below |
 | imports array | external DTD `ExternalID` becomes an `ImportInfo` with `importType: xml-doctype` |
 
 Every `contains` target is a symbol published by this analyzer — that is a hard
 invariant, checked by a gate, because a `contains` edge pointing at a name that
 is not a symbol is a graph that cannot be walked.
 
+### `calls`: what the ontology was missing, and what it says
+
+XSLT 1.0 §6 Named Templates, quoted: *"An xsl:call-template element **invokes a
+template by name**; it has a required name attribute that identifies the template
+to be invoked."* A named template is the only procedure the XML family has: it
+takes parameters (§11.6), is invoked by name, and returns a result tree
+fragment. The lane emitted this edge as `references`, on the written reasoning
+that a call-template "names a template DECLARATION" — and that reasoning is wrong
+about the word *invokes*. `calls` sat at **0 edges** over 191,251 relationships
+while the language wrote the construct in one sentence of its own specification.
+
+The census probe counted **1,528 `xsl:call-template` sites across 282 files**, of
+which **754 name a template declared in the same stylesheet**. Those became 548
+`calls` edges in 76 files, all `resolvable: in-document`, all resolving at both
+ends, all `confidence: 1`.
+
+Three numbers explain why 548 edges come from 754 sites and why that is more than
+what was there before rather than fewer:
+
+- **548 > 442.** Before the change the edge was `references xsl:call-template ->
+  T`: the SOURCE was the instruction, so every call site in a stylesheet collapsed
+  onto one edge per template name. Attributing the edge to the CALLER — the
+  enclosing `xsl:template` — splits those apart, which is why the count rose by
+  106 on a re-label. Those 106 edges were in the file and in neither the graph nor
+  any count.
+- **754 sites → 548 edges.** Edge identity is `source|type|target`, so a template
+  that calls `inner` from three places writes one edge carrying
+  `meta.occurrences: 3`.
+- **774 sites refused.** Their target is declared in an `xsl:include`d or
+  `xsl:import`ed stylesheet, which a per-file analyzer cannot read. The refusal
+  costs a real edge and is recorded as declared debt rather than being papered
+  over with a phantom symbol; the sites are countable in the census artifact.
+
+Two rules around it, each pinned by fixture `xml/xslt-named-template-calls`:
+
+- **A call's source is the caller, never the call site.** The first implementation
+  emitted `calls xsl:call-template -> inner`, which names an instruction and
+  answers "what does this template call" with nothing.
+- **`xsl:apply-templates` is NOT a call and stays a `references` edge.** XSLT 1.0
+  §5.4 gives `xsl:apply-templates` no `name` attribute at all, and §6 says the
+  template's name "does not affect whether the template is invoked by an
+  `xsl:apply-templates` element". A dispatch by pattern and mode is a reference.
+  4,166 `apply-templates` sites in the corpus, of which 69 carry a `name` and
+  produce an edge.
+
+### `extends`: XSD type derivation, relabelled from `references`
+
+XSD 1.0 Part 1 §3.4.2 defines both `<extension base = xs:QName>` and
+`<restriction base = xs:QName>`, and documents `base` as **the qualified name of
+the base type**. Part 1 calls the mechanism type DERIVATION throughout, and both
+alternatives produce a subtype: `extension` keeps everything the base admits and
+adds to it, `restriction` narrows the content model to a subset.
+
+The lane's written ruling said the opposite — *"A `complexType` is not a subclass
+of another, it REFERENCES one by `base` — and publishing that as `extends` would
+be a category error"* (`script/m14/spec/xml-completeness.json`, `notApplicable`) —
+and the measurement is what settled it. The construct the ruling assumed absent
+is written by the specification, in the vocabulary's own name, in **111 corpus
+files**: 1,114 `xs:extension` and 534 `xs:restriction` with a `base`, of which
+1,240 carry a prefixed base and 408 a bare one. 434 emit; 1,212 are refused by the
+same rules the reference pass already applied (a prefixed base bound to a namespace
+this file neither declares nor imports points at a name no file supports).
+
+| `extends` | meaning | edges |
+| --- | --- | ---: |
+| `in-document` | the base is declared in this file; a target symbol is published | 185 |
+| `builtin` | the base is an XSD built-in — `xs:string`, `xs:int`, … — so the derivation is true and publishes **no** symbol | 240 |
+| `external` | the base is declared in a namespace this document imports, recorded in `importedFrom` | 9 |
+
+`metadata.derivation` carries `"extension"` or `"restriction"` on every edge,
+because the two narrow in opposite directions and a consumer asking "what does
+`Code` extend" needs to know which. Resolution is 48.2 % at both ends, and that
+is the correct figure rather than a defect: 240 of the 434 targets are
+specification built-ins, which by the lane's existing ruling are never published
+as local symbols.
+
+`type=` was NOT relabelled. §3.4.2 defines `base` as the base *type*; `type` names
+the type an element's **value** has, which is a different relation, and labelling
+it `extends` would invent a supertype where the document states a value type.
+Pinned by a forbid row.
+
+### The five not emitted, each with its instrument, probe and overturn condition
+
+`contains` is the only type whose target is guaranteed to be a symbol. For the
+rest, the resolution rate above is the honest one: a `references` target may be a
+built-in, a name in another file, or a name this file does not satisfy, and
+`metadata.resolvable` tells the three apart.
+
+| `resolvable` on `references` | meaning | edges | share |
+| --- | --- | ---: | ---: |
+| `in-document` | declared in this file; the target is a symbol this analyzer published | 4,666 | 45.2 % |
+| `builtin` | an XML/XSD built-in type | 5,266 | 51.0 % |
+| `external` | declared in a file this document imports; the edge records WHICH file in `importedFrom` | 375 | 3.6 % |
+| `unresolved` | a **real** reference this file does not satisfy — satisfied only by an `xs:include`, which a per-file analyzer cannot see | 24 | 0.2 % |
+
+#### `uses` — RULED, instrument B, probe count **0**
+
+The only construct in the XML family that adopts a named definition without
+merely naming it is XSLT `xsl:use-attribute-sets` (§7.1.4) and, in XSLT 2.0,
+`xsl:use-package`. **Probe: count `element` nodes whose local name is
+`use-attribute-sets` or `use-package` in the XSLT namespace. Result: 0
+occurrences across 0 files, over 11,066 files including all 583 XSL/XSLT files of
+libxslt.** A non-zero count overturns the ruling. Instrument A agrees: the
+grammar produced 95 distinct node types (64 named, 31 anonymous tokens) over
+5,444,635 nodes and none of them is a use-construct.
+
+Every other candidate is already an edge under its own label, which is why a `uses`
+edge would be a duplicate rather than a gain: `type="T"` on an element, `&e;` on an
+entity use, `rng:ref name="P"`, and `xsl:apply-templates name="T"` are all
+`references`, and the lane's X13 ruling records why a bare value whose owner is in
+a declaration vocabulary is emitted as `unresolved` rather than dropped.
+
+#### `instantiates` — RULED, instruments A and B, probe counts **0** and **0**
+
+Instantiation is the construction of an instance of a declared construct, and XML
+has no constructor syntax: every construct in the vocabulary is a declaration or a
+reference to one. **Instrument A: node types that would express it —
+`new_expression`, `object_creation_expression`, `constructor_invocation`,
+`constructor_declaration` — are all absent from the 64 named types the grammar
+produced. Instrument B: probe for `element` nodes named `new`, `instantiate`,
+`newinstance` or `create`. Result: 0 occurrences across 0 files.** A non-zero
+count on either probe overturns the ruling.
+
+The closest real construct is `<xs:element name="x" type="tns:T"/>`, which names
+the type of a value and is a `references` edge — measured at 9,527
+`attribute_qname_reference` edges after the relabel.
+
+#### `implements` — RULED, instruments A and B, probe count **307 adjudicated to 0**
+
+`implements` requires a declared interface and a type that obliges itself to it.
+No XML vocabulary has either. **Instrument A: node types expressing an
+interface or supertype obligation — `implements_clause`, `interface_declaration`,
+`superclass`, `abstract_class` — are absent from the 64 named types.**
+
+**Instrument B: probe for `element` nodes named `implements`, `extends`,
+`interface`, `implementsinterface` or `abstract`. Result: 307 occurrences in 20
+files. Every one is adjudicated, and the adjudication is the finding rather than a
+dismissal:**
+
+| local name | occurrences | files | what it is |
+| --- | ---: | ---: | --- |
+| `interface` | 261 | 2 | **Wayland protocol XML** (`ghostty/src/apprt/gtk/winproto/wayland/protocols/*.xml`) — `<interface name="…">` **declarations** produced by `wayland-scanner` |
+| `abstract` | 46 | 18 | **DocBook prose sections** in libxslt's tutorial and test documents |
+
+So: 307 hits, **0 of which is an implementation clause**. A Wayland `<interface>`
+*declares* an interface and nothing implements it; a DocBook `<abstract>` is a
+paragraph of documentation. A non-zero count of an element carrying an
+implementation clause — not a declaration of one — overturns the ruling.
+
+**Second finding from the same 261 sites, owed and not fixed here:** the Wayland
+protocol vocabulary is not in `DECLARATION_VOCABULARIES`, so 261 interface
+declarations are published under their tag name rather than the `name` attribute
+they carry. That is the declared-name recall gap X1 fixed for XSD, in a vocabulary
+nobody had listed. It is a recall gap, not a correctness one, and adding the
+vocabulary is a change to a shared table with 261 corpus sites of blast radius —
+recorded as owed rather than done in passing.
+
+#### `overrides` — RULED per file, and the ruling is a boundary, not an absence
+
+XSLT 1.0 has a section titled **§5.6 Overriding Template Rules**. The construct
+exists, and it is worth being precise about where, because the measurement puts
+it out of reach of a per-file analyzer:
+
+**Probe 1 — a same-file override: two `xsl:template` in one stylesheet with the
+same `match`, `mode` and `priority`. Result: 54 occurrences in 54 files (51 with
+no `match` at all, 2 `match="*"`, 1 `match="/"`).** These are NOT overrides.
+§5.5 Conflict Resolution says: *"It is an error if this leaves more than one
+matching template rule. An XSLT processor may signal the error; if it does not
+signal the error, it must recover by choosing … the one that occurs last in the
+stylesheet."* A same-file template pair with equal match/mode/priority is an
+**error with a defined recovery**, and §6 makes the same statement for names:
+*"It is an error if a stylesheet contains more than one template with the same
+name and same import precedence."* Emitting `overrides` here would label a
+conformance error as an inheritance relation, and 51 of the 54 are libxslt's own
+`tests/REC/` suite probing that error.
+
+**Probe 2 — where overrides actually live: `xsl:import`/`xsl:include`/`xs:include`/
+`xs:import`/`xs:redefine` sites, across files. Result: 455 occurrences in 221
+files** (312 `include`, 142 `import`, 1 `redefine`). §2.6.2 is explicit that an
+importing stylesheet's definitions "take precedence over template rules and
+definitions in the imported stylesheet", and §5.6 exists so the overridden rule
+can still be reached with `xsl:apply-imports`. **Both ends of such an edge live in
+two different files**, so no per-file analyzer can emit it, and `imports` edges are
+already there to let a project-level pass build the graph.
+
+A non-zero count on probe 1 from a **different** construct — a same-file
+declaration that replaces an earlier one at equal import precedence — overturns
+the ruling. A non-zero count on probe 2 does not: it says the construct occurs,
+across files, and names the machinery a project-level pass needs.
+
+#### `exports` — RULED, probe count **620 adjudicated to 0**
+
+**Probe: `element` nodes whose local name contains `export`, or equals `expose` or
+`publish`. Result: 620 occurrences in 8 files.** All 620 are named:
+
+| local name | occurrences | files | what it is |
+| --- | ---: | ---: | --- |
+| `exports` | 610 | 2 | **gtk-doc API descriptions** — `libxslt/doc/libxslt-api.xml` and `libxslt/doc/EXSLT/libexslt-api.xml`, each spelling `<exports symbol='xsltApplyAttributeSet' type='function'/>` for a **C** library |
+| `exportFormat` | 5 | 1 | an Eclipse `plugin.xml` extension declaration |
+| `pma_xml_export` | 4 | 3 | an attribute name on other Eclipse plugins |
+| `exportedmodules` | 1 | 1 | a Doxygen configuration file |
+
+**0 of them is an XML-family vocabulary element.** No XML, XSD, XSLT, RELAX NG,
+WSDL or DTD specification defines an element that publishes a name as part of a
+document's public interface, and the 610 that look closest are a **documentation
+convention for a C library**, in a dialect with no namespace to key a vocabulary
+on and a source element (`<file name='attributes'>`) whose name would be published
+under its tag — so every edge from it would collapse onto one source name.
+
+The refusal is recorded as visible debt rather than as absence, and the project
+precedent points the same way: the json lane's `exports` ruling was **removed**
+from the gate's table because a grammar cannot see a convention, and the type was
+implemented instead. **Overturn condition:** a corpus file in an XML vocabulary
+whose specification defines an export or public-interface meaning for an element,
+other than a documentation dialect for another language. That is a semantic
+judgement about a dialect, so it is stated as one and not dressed as a count.
+
+### The six questions, answered for every emitted type
+
+| Question | `contains` | `references` | `imports` | `calls` | `extends` |
+| --- | --- | --- | --- | --- | --- |
+| 1. Exists | walk + DTD branches | deferred reference pass | `extractExternalId`, `schemaLocation`, PI `href` | `XSLT_CALL_ELEMENTS` | `xsdDerivationElement` branch |
+| 2. Fires | 179,605 edges / 10,847 files | 10,331 / 391 | 415 / 278 | 548 / 76 | 434 / 106 |
+| 3. Correct | differential oracle, see below | — | — | — | — |
+| 4. Labelled | `structural` 179,605 (100 %) | `reference_qualified` 10,331 (100 %) | `import_based` 415 (100 %) | `reference_qualified` 548 (100 %) | `structural` 434 (100 %) |
+| 5. Resolved | 179,604/179,605 = **100.0 %** | 5,190/10,331 = **50.2 %** | 3/415 = 0.7 %, target is a file | 548/548 = **100 %** | 209/434 = **48.2 %** |
+| 6. Confident | 0 edges < 0.7 | 0 | 0 | 0 | 0 |
+
+**Q3, and the limitation that comes with it.** `script/m14/differential.ts --lang
+xml` **does not run this lane**: it prints `[lane] SKIP xml: no corpus repo mapped
+in LANG_REPOS and none checked out — declared unrun, not measured` and reports
+`measured 0 lane(s)`. `xml` is present in that file's `LANGS` (line 25226) and
+**absent from `LANG_REPOS`**, so no independent oracle has ever adjudicated any
+XML edge. The xml completeness spec claims the lane is "registered in
+differential.ts LANGS / **LANG_REPOS**"; the second half of that is false, and the
+measurement is what caught it.
+
+So question 3 is **not settled** for any type, and the honest statement of why is
+structural rather than procedural: the lane's own oracle
+(`script/m12/xml-corpus-differential.mts`, 20 relationship classes, and
+`script/m12/xml-differential-gap.mts`, 43 unexplained of 250,135 `contains` edges)
+is a second walker over the **same grammar**. It can disagree with the analyzer,
+which makes it a real check, but a grammar bug present in the tree is invisible to
+both, and the 595 `REL_SPURIOUS` rows the m12 document discusses are an instrument
+falling behind a correct analyzer rather than a disagreement. The lab's own
+warning applies here verbatim: *two implementations disagreeing is evidence about
+both; a percentage computed against a broken second implementation is a lie with a
+decimal point.*
+
+Q6 in full: every emitted edge carries `confidence: 1`. The heuristic ratio —
+edges below the 0.7 threshold — is **0 of 191,333**, and the `inferred` tier, the
+honest default for a rule the tier table does not name, holds **0 edges**. Every
+edge's tier is assigned where the edge is written, from `EVIDENCE_TIER`, keyed by
+the rule's role.
+
+### Integrity of the census itself
+
+| property | value |
+| --- | ---: |
+| files sampled | 11,066 (every git-tracked file routed to `xml`; 91 repositories) |
+| files that failed to parse | 0 |
+| files reporting parse errors | 55 |
+| symbols | 734,939 |
+| relationships | 191,333 |
+| `SymbolKind` values seen | `property` 466,862 · `class` 254,845 · `namespace` 12,659 · `type` 419 · `module` 203 |
+| empty or unknown `SymbolKind` | **0** |
+| symbols with an empty name | **0** |
+| edge endpoints equal to `unknown` | **0** (was 2 — see below) |
+| `contains` targets that resolve to a symbol | 179,605 / 179,605 = **100 %** |
+| `contains` sources that resolve to a symbol | 179,604 / 179,605 — **1** miss |
+| grammar node types | 95 distinct (64 named, 31 anonymous tokens) over 5,444,635 nodes |
+| `ERROR` nodes | 6,955, concentrated in 55 files |
+
+**Two defects the census found, both fixed here.**
+
+1. **The placeholder literal collided with a real component.** Resolving both ends
+   of all 191,251 pre-change relationships found **2** endpoints equal to the
+   literal `unknown` — in `libxslt/tests/general/bug-166.xsl`, whose two
+   `xsl:variable` result-tree fragments each begin with a literal result element
+   `<unknown/>`. The analyzer was asserting two truths a consumer cannot tell
+   apart: "the variable admits an element the author named `unknown`" and the same
+   three words meaning "this endpoint could not be determined". That violates M60
+   rule R7. Both symbols and both edges are now **refused**, at one choke point
+   rather than per publish site, because the name can arrive as an element tag, an
+   attribute name, a DTD entity name, a notation name or a content-model member.
+   Cost: 2 symbols and 2 edges in 1 file of 11,066. Pinned by fixture
+   `xml/placeholder-literal-refused`, whose two sibling-element rows stop the
+   refusal from being explained by a rule that stopped walking.
+2. **The documentation claimed a `calls` edge the analyzer never emitted.** The
+   ontology table above used to read "`calls` | `xsl:call-template` /
+   `xsl:apply-templates` → the `xsl:template` that declares the named template",
+   and the source contained no `RelationshipType.Calls` at all. A doc claim with no
+   code behind it is the same defect class as an unbacked ruling, and it survived
+   because nobody diffed the table against the enum.
+
+The single `contains` edge whose **source** does not resolve is
+`libxslt/tests/general/bug-110.xml: contains elem -> id`, and it is correct as
+written: `<!ATTLIST elem id ID #IMPLIED>` in the internal subset does say element
+`elem` carries attribute `id`, and the only `<elem>` in the file is inside a
+comment, so no symbol named `elem` exists. The lane's hard invariant is about
+`contains` **targets** — every target is a published symbol, and 179,605 of
+179,605 hold. The source is a name a DTD introduces and the document never
+declares, which is a statement about the document rather than a defect in the
+edge, and it is stated here rather than rounded into the 100 %.
+
+### Before and after, measured on the same corpus
+
+Both runs are the same instrument over the same 11,066 files.
+
+| Type | before | after | delta | what the delta is |
+| --- | ---: | ---: | ---: | --- |
+| `calls` | 0 | 548 | **+548** | the GAP, implemented |
+| `extends` | 0 | 434 | **+434** | the GAP, implemented |
+| `references` | 11,207 | 10,331 | **−876** | −434 `attribute_qname_reference` (the derivations) and −442 `xslt_named_template_reference` (the calls), exactly |
+| `contains` | 179,629 | 179,605 | −24 | **not** this work — see below |
+| symbols | 734,988 | 734,939 | −49 | **not** this work — see below |
+
+The `contains` and symbol deltas are the parser's **120-second hang guard**
+(`BB-HANG`), which is wall-clock dependent and dropped a *different* SVG file in
+each run: `bulma/.../svgs/solid/phone.svg` in the before run,
+`cargo/.../stderr.term.svg` in the after run. Scoping the census to exactly those
+two repositories and re-running it on **both** revisions gives byte-identical
+totals — 34,253 symbols and 8,975 relationships, `contains` 8,854, `references`
+120 — which is the checkable form of the claim that the delta is run noise rather
+than a consequence of the relabel. The `references`/`calls`/`extends` deltas
+reconcile exactly to the construct counts and cannot be produced by a whole-file
+drop.
+
+### DERIVATION findings: 4, and every type this lane emits is unaudited by the shared differential
+
+A DERIVATION finding is a type the analyzer emits that no differential audits. For
+XML the count is **4 — `references`, `imports`, `calls`, `extends`** — and the
+reason is the one measured above rather than a policy: `differential.ts` does not
+run this lane at all, and has no XML oracle to run.
+
+A 5th type, `contains`, is audited only by a lane-local instrument outside the
+shared differential (`script/m12/xml-differential-gap.mts`, 43 unexplained of
+250,135 edges over 8,889 files in the m12 corpus). So **no relationship type this
+lane emits has a shared-oracle check**, and the debt is not new: before this work
+the lane emitted `references` and `imports` with no auditor, which is exactly the
+structural condition the ontology workstream was convened to end.
+
+### Limitations
+
+Declared non-empty because the corpus is real and every gap below is a measured
+number rather than an assumption. XML is not a general-purpose programming
+language, so some limitation classes do not apply to it; the ones that do
+apply are the ones listed.
+
+1. **No independent oracle.** Every number above comes from the analyzer plus its
+   own fixtures. `differential.ts` will not run the lane (`LANG_REPOS` has no
+   `xml`), and the two lane-local oracles are separate walkers over the same
+   grammar, so a grammar-level defect is invisible to all three.
+2. **Cross-file calls are refused, not resolved.** 774 of 1,528 `xsl:call-template`
+   sites name a template in an included or imported stylesheet. Resolving them
+   needs the import graph, which is a project-level pass and not a per-file one.
+3. **Cross-file overrides are invisible.** 455 `xsl:import`/`xsl:include`/
+   `xs:redefine` sites in 221 files are where XSLT overrides live (§5.6). Both
+   ends are in different files.
+4. **`xs:include` cannot be resolved per file.** An included schema shares the
+   including schema's target namespace, so a bare base or type name may be
+   satisfied by either file. 24 `references` edges are `unresolved` for this
+   reason, and 103 carry `ambiguousWithBuiltin`.
+5. **1,212 of 1,648 derivations are refused.** A prefixed base bound to a
+   namespace this file neither declares nor imports names a component no file
+   supports, and from inside one file that is indistinguishable from one an
+   `xs:import` supplies.
+6. **An `extends`/`calls` source is the anonymous inline element.** The owner of a
+   `base=` attribute is the `xs:extension`/`xs:restriction` element and the owner
+   of a `xsl:call-template` site's caller is the enclosing template, so the
+   derived type is reached by walking containment back up (`Derived ->
+   xs:complexContent -> xs:extension`, two hops; `Code -> xs:restriction`, one).
+   `bb_graph`'s owner-cascade attributes member rows to the owner class, so the
+   answer is reachable, but the hop exists and its depth varies.
+7. **A `references` edge from an XSLT instruction carries the instruction's tag as
+   its source, while a `calls` edge carries the caller.** The asymmetry is
+   deliberate and inherited: making the instruction a caller would re-base every
+   XSD-style reference edge, which is a different change.
+8. **261 Wayland `<interface name=…>` declarations are published under their tag.**
+   The vocabulary is absent from `DECLARATION_VOCABULARIES`. Recorded above.
+9. **Standalone `.dtd` files are routed but not representable** by the `xml`
+   grammar, whose `document` rule requires a document element; they are declared
+   negative controls rather than counted as clean parses.
+10. **Grammar-version drift.** The wired grammar is the vendored, twice-patched
+    `grammars/tree-sitter-xml` (`grammars/tree-sitter-xml/PIN.md`,
+    sha256 `2425a26e…`), so every node name quoted above is a name in *that*
+    grammar. The 95 node types and their counts are re-measured by the census on
+    every run rather than quoted from this document.
+
 A `references` target is a local name, a built-in, a name in another file, or a
 name this file does not satisfy — and the four are told apart in
-`metadata.resolvable` rather than left to the reader. Measured over the corpus
-(31,770 reference edges):
-
-| `resolvable` | meaning | edges | share |
-| --- | --- | ---: | ---: |
-| `in-document` | declared in this file; the target is a symbol this analyzer published | 21,474 | 67.6 % |
-| `builtin` | an XML/XSD built-in type | 7,520 | 23.7 % |
-| `external` | declared in a file this document imports; the edge records WHICH file in `importedFrom` | 2,363 | 7.4 % |
-| `unresolved` | a **real** reference this file does not satisfy — satisfied only by an `xs:include`, which a per-file analyzer cannot see | 413 | 1.3 % |
-
-Only `in-document` publishes a target symbol. The other three deliberately do not:
+`metadata.resolvable` rather than left to the reader.
 a phantom local symbol is the M60.R10 lie, and a consumer that resolves a
 built-in, an external or an unresolved reference to a symbol with no declaration
 behind it is worse off than one that is told where to look.
@@ -244,7 +646,7 @@ timed runs rather than one measurement.
 The hot path is a single explicit stack traversal. Each AST node is visited
 once; direct child lookups scan only the bounded child list of that grammar
 node, and emitted relationship dedupe is constant-time. There are no scans of
-the complete symbol or relationship list and no O(n²) per-symbol resolution.
+the whole symbol or relationship list and no O(n²) per-symbol resolution.
 Space is O(h + s + r), where `h` is traversal depth and `s`/`r` are emitted
 symbols/relationships.
 
@@ -346,6 +748,9 @@ the tree before it can be called a defect — the instrument that produced them 
 the one shown above to be wrong.
 
 ## Corpus validation
+
+Three independent instruments, none of which shares code with the analyzer's walk,
+and the third one added by the ontology work above.
 
 ### Differential coverage — all six corpora
 
