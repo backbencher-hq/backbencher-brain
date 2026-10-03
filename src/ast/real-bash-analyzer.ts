@@ -90,10 +90,7 @@ const SHELL_RESERVED_WORDS = new Set([
   "((", "))", "coproc",
 ])
 
-// Commands the analyzer interprets itself and therefore does not also emit as
-// Calls: the builtin forms above plus the few whose whole point is a
-// side-effect classification rather than a call target.
-const INTERPRETED_COMMANDS = new Set(["source", ".", "export", "alias", "trap", "set"])
+
 
 // $@, $*, $?, $$, $#, $!, $_ — positional/special parameter punctuation. They
 // are tracked as function parameters but are shell bookkeeping, not project
@@ -156,6 +153,27 @@ const isShellIdentifierName = (text: string): boolean => {
     return false
   }
   return true
+}
+
+/** Does `text` open with `((`? bash reads that as arithmetic, never as a nested
+ *  subshell. A char test rather than a regex for the same reason
+ *  `isShellIdentifierName` is one: the M12 regex census asserts this file
+ *  contains NO regex literals, and a literal here is a gate row
+ *  (`MISSING real-bash-analyzer.ts`) as well as a contract the doc states. */
+const opensWithDoubleParen = (text: string): boolean =>
+  text.length >= 2 && text.charCodeAt(0) === 40 /* ( */ && text.charCodeAt(1) === 40
+
+/** Does `text` open with `$((` — the arithmetic EXPANSION, as opposed to `$(` plus
+ *  a subshell? The pinned grammar confuses the two in the two shapes
+ *  `isArithmeticOperandCommand` exists to refuse, so the distinction has to be
+ *  read off the node's own text. */
+const opensWithArithmeticExpansion = (text: string): boolean =>
+  text.length >= 3 && text.charCodeAt(0) === 36 /* $ */ && opensWithDoubleParen(text.slice(1))
+
+/** Does `text` end with `))`, ignoring surrounding whitespace? */
+const endsWithDoubleParen = (text: string): boolean => {
+  const t = text.trim()
+  return t.length >= 2 && t.charCodeAt(t.length - 2) === 41 /* ) */ && t.charCodeAt(t.length - 1) === 41
 }
 
 const isCommandNameText = (text: string): boolean => {
@@ -703,18 +721,76 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
     // `( (` written adjacently is `((`: bash reads it as arithmetic, never as a
     // nested subshell, so the closing pair is part of the test rather than a
     // detail. `( (date) )` has a space and stays a real subshell.
-    const isDoubleParen = (t: string): boolean => /^\(\(/.test(t) && /\)\)$/.test(t.trim())
+    const isDoubleParen = (t: string): boolean => opensWithDoubleParen(t) && endsWithDoubleParen(t)
     let cur: Node | null = node.parent
     while (cur) {
       // A `command_substitution` decides it. `$((` is the arithmetic expansion
       // the grammar misread as `$(` + subshell; a plain `$(` is a real command
       // substitution, and `$(wc -l < f)` nested inside `$(( ))` really does run
       // `wc`, so that edge must survive.
-      if (cur.type === "command_substitution") return /^\$\(\(/.test(cur.text)
+      if (cur.type === "command_substitution") return opensWithArithmeticExpansion(cur.text)
       if (cur.type === "subshell" && isDoubleParen(cur.text)) return true
       cur = cur.parent
     }
     return false
+  }
+
+  /**
+   * Is this `command` a `case` arm's PATTERN that the grammar could not close?
+   *
+   * `if ! case "$t" in binary) … ;; source) … ;; esac; then` is a construct the
+   * pinned wasm cannot close, so an arm arrives as
+   *
+   *   command @936 "binary) _try_existing binary"
+   *     command_name → word "binary"     ← the arm's PATTERN, not a command
+   *     ERROR → ")"                      ← the arm terminator the grammar kept
+   *     word "_try_existing"
+   *
+   * The structural fact is a POSIX one, not a heuristic: **a `)` can never
+   * immediately follow a command NAME in valid bash.** `(cmd)` puts the `)` on
+   * the subshell, a sibling of the whole command; `echo )` puts it after an
+   * argument or on its own as a `word`. The only way `)` lands directly between
+   * the name and the first argument is a terminator the grammar could not place.
+   *
+   * This is the narrow half that the rejected damage guard (see
+   * `guard-ab-bash-calls.ts`, guard E) lacked. Guard E refuses a command with ANY
+   * direct `ERROR`/missing child and costs 15 real `kube::log::status` calls in
+   * kubernetes/test/e2e_node/gubernator.sh, because `V=2 kube::log::status "…"`
+   * puts a `variable_assignment` in the command's own slot and the grammar puts an
+   * `ERROR` beside it. Keying on the POSITION — immediately after `command_name` —
+   * and on the CHARACTER `)` costs 0 real calls on 400 hash-ordered corpus files
+   * while removing 5 fabrications.
+   *
+   * The wider predicate was measured too and REJECTED, rather than assumed:
+   * "the command has a direct `ERROR`/missing child whose text is `)`" fires on
+   * `echo one two ) three`, where `)` is an ordinary word argument, so it would
+   * delete a real `calls: -> echo`. `guard-f-soundness.mts` asks both predicates
+   * about 39 node shapes; the positional one fires on 0 valid-parse commands, the
+   * wider one on 1.
+   *
+   * **Why this is worth an edge the `calls` guards were declined.** The `binary`,
+   * `git` and `auto` arms produce `calls` edges naming nothing runnable — the
+   * residuals pass 2 named and declined. The `source` arm's pattern is the word
+   * `source`, so that arm's `command` reaches the `source`/`.` branch, which emits
+   * `imports` AND `references` to its first argument:
+   *
+   *   gimme -[imports]->    _try_existing
+   *   gimme -[references]-> _try_existing
+   *
+   * `_try_existing` is a shell FUNCTION defined at gimme:414, not a file. That is
+   * a fabricated module dependency — the kind `imports` feeds `bb_migrate` and
+   * `bb_impact` — and no prior guard was aimed at it. The shared differential
+   * cannot see it either: `deriveBashEdges` pushes `imports`+`references` for the
+   * same construct, so two walkers over the same tree agree that a function name
+   * is a dependency.
+   */
+  private isCaseArmPatternCommand(node: Node): boolean {
+    const name = this.commandNameNode(node)
+    if (!name) return false
+    const after = name.nextSibling
+    if (!after) return false
+    if (after.type !== "ERROR" && !after.isMissing) return false
+    return after.text.charCodeAt(0) === 41 /* ) */
   }
 
   /**
@@ -1297,6 +1373,16 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
       return
     }
 
+    // A `case` arm's PATTERN, read back in command position because the grammar
+    // could not close the construct. This must sit ABOVE the `source`/`.` branch
+    // below, which is the whole point: the `source` arm's pattern IS the word
+    // `source`, so without this guard the arm publishes `imports` + `references`
+    // edges to a shell function. See `isCaseArmPatternCommand`.
+    if (this.isCaseArmPatternCommand(node)) {
+      patterns.add("Recovered Parse Region")
+      return
+    }
+
     // Dependency/pattern classification for well-known tooling.
     if (cmdName === "docker" || cmdName === "docker-compose" || cmdName === "kubectl" || cmdName === "helm") {
       patterns.add("Container/Orchestration Script")
@@ -1423,7 +1509,7 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
       patterns.add("Destructive File Operation")
     }
 
-    if (SHELL_BUILTINS.has(cmdName) || INTERPRETED_COMMANDS.has(cmdName)) return
+    if (SHELL_BUILTINS.has(cmdName)) return
     // A `case` arm's commands are ordinary calls — `case $1 in install)
     // apt-get install foo ;; esac` installs something, and a reader asking "what
     // does this script install?" must see it. The arm's PATTERN is a `word` or
