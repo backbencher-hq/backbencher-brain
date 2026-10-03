@@ -12,7 +12,7 @@ For each `src/ast/real-<lang>-analyzer.ts` and `docs/analyzers/real-<lang>-analy
 | analyzers with a canonical doc | 46 | — |
 | FALSE_NEGATIVE — doc says "not emitted", analyzer emits it | 8 | **yes** |
 | FALSE_POSITIVE — doc says "emitted", nothing emits it | 0 | **yes** |
-| UNDOCUMENTED — live channel, no checkable claim | 43 | no (measured here) |
+| UNDOCUMENTED — live channel, no checkable claim | 41 | no (measured here) |
 | MISSING_DOC — no canonical doc | 2 | no (owned by verify-analyzer-docs.ts) |
 | NO_CLAIM_TABLE — no ontology table to compare | 21 | no |
 | NON_ENGINE_KIND — row is not a RelationshipType alias | 26 | no |
@@ -62,8 +62,6 @@ This is the population the gate MEASURES rather than blocks. Each row is one ana
 | erlang | `imports (import-site: ImportInfo[])` | line 55 |
 | erlang | `exports (export-site: ExportInfo[])` | line 55 |
 | fsharp | `calls (relationship)` | line 53 |
-| fsharp | `imports (import-site: ImportInfo[])` | line 53 |
-| fsharp | `exports (export-site: ExportInfo[])` | line 53 |
 | go | `contains (relationship)` | line 58 |
 | groovy | `calls (relationship)` | line 118 |
 | groovy | `imports (import-site: ImportInfo[])` | line 118 |
@@ -153,7 +151,7 @@ This is the population the gate MEASURES rather than blocks. Each row is one ana
 | dart | `calls contains exports extends implements instantiates overrides uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | line 34, 9 rows |
 | elixir | `calls contains implements instantiates references` | import-site: ImportInfo[], export-site: ExportInfo[] | line 42, 5 rows |
 | erlang | `calls contains exports implements instantiates references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | line 55, 5 rows |
-| fsharp | `calls contains extends implements instantiates overrides references` | import-site: ImportInfo[], export-site: ExportInfo[] | line 53, 8 rows |
+| fsharp | `calls contains extends implements instantiates overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | line 53, 10 rows |
 | go | `calls contains extends implements instantiates references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | line 58, 9 rows |
 | graphql | `contains implements uses` | import-site: ImportInfo[], export-site: ExportInfo[] | absent |
 | groovy | `calls contains extends implements instantiates overrides references uses` | import-site: ImportInfo[], export-site: ExportInfo[] | line 118, 9 rows |
