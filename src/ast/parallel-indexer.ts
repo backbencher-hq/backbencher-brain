@@ -1122,6 +1122,16 @@ async function processInProcess(
   let processed = 0
   let consecutiveTimeouts = 0
   const MAX_CONSECUTIVE_TIMEOUTS = 50
+  // A cancel observed here has to be REPORTED, and `stats` does not exist in
+  // this function — this line read `stats.cancelled = true`, which is a
+  // ReferenceError at runtime. It was invisible because the whole file carries
+  // `@ts-nocheck`, which is exactly the class of defect that directive hides.
+  //
+  // `telemetry` is the channel this function already has for telling the caller
+  // what happened (it carries workerStartFailures/poisonFiles and is threaded
+  // from the caller), so `cancelled` belongs there rather than in a phantom
+  // variable. The caller propagates it to `stats.cancelled`.
+  let sawCancel = false
   const FILE_TIMEOUT_MS = 60000 // 60s per file in in-process mode
 
   // SAFETY LIMITS for compiled mode (where tree-sitter WASM can hang synchronously)
@@ -1141,7 +1151,8 @@ async function processInProcess(
   for (const file of effectiveFiles) {
     // M21.R3: cooperative cancellation — stop before starting the next file.
     if (aborted()) {
-      stats.cancelled = true
+      sawCancel = true
+      if (telemetry) (telemetry as { cancelled?: number }).cancelled = 1
       for (const f of effectiveFiles.slice(effectiveFiles.indexOf(file))) {
         results.push({ filePath: f, success: false, error: "cancelled by user" })
         processed++
