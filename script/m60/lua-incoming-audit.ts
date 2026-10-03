@@ -78,8 +78,11 @@ import { writeFileSync, existsSync, mkdirSync, statSync, readdirSync } from "nod
 import { createHash } from "node:crypto"
 import * as path from "node:path"
 import { fileURLToPath } from "node:url"
+import { readFileSync } from "node:fs"
 import { parseFile, keepSymbol } from "../../src/ast/pool-worker"
-import { parseWithAnalyzer } from "./lua-analyzer-direct"
+import { ASTEngine } from "../../src/ast/engine"
+import { RealLuaAnalyzer } from "../../src/ast/real-lua-analyzer"
+import { loadWebTreeSitter, resolveWasmAsset } from "../../src/util/wasm"
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..")
 const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
@@ -194,6 +197,9 @@ type TypeRow = {
   // D
   neverIndexedNames: Record<string, number>
   /** name -> edges, for targets pool-worker's keepSymbol deletes. Named, not a total. */
+  /** targets that are a DOTTED PATH, not a name — true as text, unwalkable as an edge */
+  dottedTarget: number
+  dottedExamples: Record<string, number>
   denylistedNames: Record<string, number>
   /** up to 4 (file, line, type, source, target) per denylisted target name — the doc quotes these */
   denylistedExamples: Record<string, { file: string; line: number; type: string; source: string; target: string }[]>
@@ -211,8 +217,40 @@ function newRow(): TypeRow {
   return {
     edges: 0, src: zeroBuckets(), tgt: zeroBuckets(), bothResolved: 0,
     lexicallyUnique: 0, lexicallyInnerWins: 0, genuinelyAmbiguous: 0,
+    dottedTarget: 0, dottedExamples: {},
     ambiguousNotLineBounded: 0, neverIndexedNames: {}, denylistedNames: {}, denylistedExamples: {},
   }
+}
+
+/**
+ * The analyzer's PRE-FILTER ParseResult, for one file.
+ *
+ * This is deliberately NOT `parseWithAnalyzer` from ./lua-analyzer-direct. That
+ * helper calls `mod.Language.load()` and `new mod.Parser()` on EVERY invocation and
+ * deletes only the tree, so one WASM language and one parser table survive per call.
+ * Over the full 3,252-file draw that is 3,252 leaked parser tables and the process
+ * dies with "FATAL ERROR: CALL_AND_RETRY_LAST Allocation failed" after ~450s — a
+ * crash in the instrument, which would have been reported as a lua finding.
+ *
+ * Here the language is loaded once and ONE parser is reused for every file, with the
+ * tree deleted after each. Same pre-filter result, flat memory. `parseFile` is still
+ * called first for every file because the raw Language.load needs the tree-sitter
+ * core initialised, which the engine does lazily on its first production parse.
+ */
+let cachedLang: any = null
+let cachedParser: any = null
+async function preFilterSymbols(file: string): Promise<any[]> {
+  if (!cachedLang) {
+    const mod: any = await loadWebTreeSitter()
+    cachedLang = await mod.Language.load(resolveWasmAsset("tree-sitter-lua.wasm"))
+    cachedParser = new mod.Parser()
+    cachedParser.setLanguage(cachedLang)
+  }
+  const src = readFileSync(file, "utf8")
+  const tree = cachedParser.parse(src)
+  const out = (new RealLuaAnalyzer().analyze(tree.rootNode, src, file) as ASTEngine.ParseResult).symbols ?? []
+  try { tree.delete() } catch { /* the table is reused; a failed delete is not fatal */ }
+  return out as any[]
 }
 
 async function main() {
@@ -223,9 +261,19 @@ async function main() {
   // name -> files in which some symbol carries it. Built from the WHOLE draw, so a
   // target is "declared elsewhere" on a measured basis, never a guess.
   const declaredIn = new Map<string, Set<string>>()
-  const perFile: { rel: string; syms: { name: string; kind?: string; scope?: string; startLine?: number; endLine?: number }[] }[] = []
+  // Edges are held COMPACTLY and classified after the draw completes. Classifying
+  // inside the parse loop was wrong: `declaredIn` is a CORPUS-WIDE claim, and a
+  // file processed before the file that declares the name cannot see it. Measured
+  // cost of that bug on the full draw — `calls -> get_db_utils` (288 edges) landed in
+  // `not-declared-anywhere`, because kong/spec/helpers.lua declares it and sorts
+  // AFTER kong/spec/03-plugins/. A false external, on the largest bucket in the
+  // instrument, produced by the instrument rather than by lua.
+  type StoredEdge = { t: string; s: string; g: string; l: number; f: string }
+  const stored: StoredEdge[] = []
   const droppedDecls: Record<string, number> = {}
-  let parseErr = 0, relTotal = 0, symTotal = 0, emptyNames = 0
+  const symbolsByFile: { rel: string; syms: Sym[] }[] = []
+  const droppedByFile = new Map<string, Set<string>>()
+  let parseErr = 0, relTotal = 0, symTotal = 0, emptyNames = 0, parsedFiles = 0
 
   for (const rel of files) {
     let r: any
@@ -241,18 +289,20 @@ async function main() {
       if (!set) { set = new Set(); declaredIn.set(s.name, set) }
       set.add(rel)
     }
-    perFile.push({ rel, syms })
+    parsedFiles++
+    symbolsByFile.push({ rel, syms })
 
     // Names the ANALYZER published that pool-worker's keepSymbol then removed, in
     // THIS file. Measured against the analyzer's own pre-filter output so the set is
     // the pipeline's deletions rather than a re-statement of the denylist.
     const droppedHere = new Set<string>()
     try {
-      const pre = await parseWithAnalyzer(path.join(CR, rel))
-      for (const s of (pre?.symbols ?? []) as any[]) {
+      const pre = await preFilterSymbols(path.join(CR, rel))
+      for (const s of pre as any[]) {
         const nm = s?.name
         if (nm && !keepSymbol(s, "lua")) { droppedHere.add(String(nm)); droppedDecls[String(nm)] = (droppedDecls[String(nm)] ?? 0) + 1 }
       }
+      droppedByFile.set(rel, droppedHere)
     } catch { /* a file the direct path cannot load contributes no deletions */ }
 
     const byName = new Map<string, Sym[]>()
@@ -264,72 +314,96 @@ async function main() {
     }
 
     for (const e of rels) {
-      const type = String(e.type ?? e.relationshipType ?? "?")
-      const row = rows[type] ?? (rows[type] = newRow())
-      row.edges++
-      const line = Number(e.line_number ?? 0)
+      stored.push({
+        t: String(e.type ?? e.relationshipType ?? "?"),
+        s: typeof (e.source ?? e.from) === "string" ? String(e.source ?? e.from) : String(e.source ?? e.from ?? ""),
+        g: typeof (e.target ?? e.to) === "string" ? String(e.target ?? e.to) : String(e.target ?? e.to ?? ""),
+        l: Number(e.line_number ?? 0),
+        f: rel,
+      })
+    }
+  }
 
-      // ── classify one endpoint
-      const classify = (raw: unknown, isTarget: boolean): Bucket => {
-        const name = typeof raw === "string" ? raw : String(raw ?? "")
-        if (name === "") return "not-declared-anywhere"
-        if (isTarget && type === "imports") return "module-path"
-        if (SCOPE_LABELS.has(name)) return "scope-label"
-        const local = byName.get(name)
-        if (local && local.length === 1) return "published-unique"
-        if (local && local.length > 1) {
-          // B: does the language settle it? A candidate must cover the line.
-          const covering = local.filter(s => {
-            const a = Number(s.startLine ?? 0), b = Number(s.endLine ?? 0)
-            if (!a || !b || !line) return false
-            return a <= line && line <= b
-          })
-          if (covering.length === 0) { row.ambiguousNotLineBounded++; return "published-ambiguous" }
-          // Innermost wins in Lua. Distinct scopes => the innermost is one symbol.
-          const scopes = new Set(covering.map(s => String(s.scope ?? "")))
-          if (scopes.size === 1) { row.lexicallyUnique++; return "published-ambiguous" }
-          // Same-name symbols at nested scopes: the DEEPEST scope wins.
-          const depths = covering.map(s => (s.scope === "global" ? 0 : 1))
-          const maxDepth = Math.max(...depths)
-          const innermost = covering.filter((_, i) => depths[i] === maxDepth)
-          if (innermost.length === 1) { row.lexicallyInnerWins++ } else { row.genuinelyAmbiguous++ }
-          return "published-ambiguous"
-        }
-        // Not published in THIS file. Now separate external from never-indexed.
-        //
-        // A name being ON the denylist is not the finding. `thread.self()` and
-        // `Config.me` put `self`/`me` in the text and neither ever declared
-        // anything, so the denylist deleted nothing there. The finding is narrower
-        // and much worse: a DECLARATION this analyzer published that keepSymbol
-        // then removed, which leaves an edge pointing at a node the pipeline
-        // deleted. That needs the analyzer's PRE-FILTER symbol list to name, because
-        // after the filter the declaration is indistinguishable from never having
-        // existed — which is exactly why it survived wave 2.
-        if (droppedHere.has(name)) return "declared-then-denylisted"
-        if (LUA54_BASE.has(name)) return "stdlib-external"
-        if (declaredIn.has(name)) return "declared-elsewhere-in-corpus"
-        return "not-declared-anywhere"
-      }
+  console.log(`draw complete: ${parsedFiles} files, ${stored.length} edges, ${declaredIn.size} distinct declared names`)
 
-      const sb = classify(e.source ?? e.from, false)
-      const tb = classify(e.target ?? e.to, true)
-      row.src[sb]++
-      row.tgt[tb]++
-      if (sb === "published-unique" && tb === "published-unique") row.bothResolved++
-      if (tb === "declared-then-denylisted") {
-        const n = typeof (e.target ?? e.to) === "string" ? String(e.target ?? e.to) : "?"
-        row.denylistedNames[n] = (row.denylistedNames[n] ?? 0) + 1
-        const ex = row.denylistedExamples[n] ?? (row.denylistedExamples[n] = [])
-        if (ex.length < 4) ex.push({
-          file: rel, line, type,
-          source: typeof (e.source ?? e.from) === "string" ? String(e.source ?? e.from) : "?",
-          target: n,
+  // ── classify every edge against the WHOLE corpus index
+  const byFile = new Map<string, Map<string, Sym[]>>()
+  for (const pf of symbolsByFile) {
+    const m = new Map<string, Sym[]>()
+    for (const s of pf.syms) {
+      if (!s.name) continue
+      const arr = m.get(s.name) ?? []
+      arr.push(s)
+      m.set(s.name, arr)
+    }
+    byFile.set(pf.rel, m)
+  }
+
+  for (const e of stored) {
+    const row = rows[e.t] ?? (rows[e.t] = newRow())
+    row.edges++
+    const type = e.t
+    const line = e.l
+    const byName = byFile.get(e.f) ?? new Map<string, Sym[]>()
+
+    // ── classify one endpoint
+    const classify = (name: string, isTarget: boolean): Bucket => {
+      if (name === "") return "not-declared-anywhere"
+      if (isTarget && type === "imports") return "module-path"
+      if (SCOPE_LABELS.has(name)) return "scope-label"
+      const local = byName.get(name)
+      if (local && local.length === 1) return "published-unique"
+      if (local && local.length > 1) {
+        // B: does the language settle it? A candidate must COVER the line.
+        const covering = local.filter(s => {
+          const a = Number(s.startLine ?? 0), b = Number(s.endLine ?? 0)
+          if (!a || !b || !line) return false
+          return a <= line && line <= b
         })
+        if (covering.length === 0) { row.ambiguousNotLineBounded++; return "published-ambiguous" }
+        // Innermost wins in Lua. Distinct scopes => the innermost is one symbol.
+        const scopes = new Set(covering.map(s => String(s.scope ?? "")))
+        if (scopes.size === 1) { row.lexicallyUnique++; return "published-ambiguous" }
+        const depths = covering.map(s => (s.scope === "global" ? 0 : 1))
+        const maxDepth = Math.max(...depths)
+        const innermost = covering.filter((_, i) => depths[i] === maxDepth)
+        if (innermost.length === 1) { row.lexicallyInnerWins++ } else { row.genuinelyAmbiguous++ }
+        return "published-ambiguous"
       }
-      if (tb === "not-declared-anywhere") {
-        const n = typeof (e.target ?? e.to) === "string" ? String(e.target ?? e.to) : "?"
-        row.neverIndexedNames[n] = (row.neverIndexedNames[n] ?? 0) + 1
-      }
+      // Not published in THIS file. Now separate external from never-indexed.
+      //
+      // A name being ON the denylist is not the finding. `thread.self()` and
+      // `Config.me` put `self`/`me` in the text and neither ever declared
+      // anything, so the denylist deleted nothing there. The finding is narrower
+      // and much worse: a DECLARATION this analyzer published that keepSymbol
+      // then removed, which leaves an edge pointing at a node the pipeline
+      // deleted. That needs the analyzer's PRE-FILTER symbol list to name, because
+      // after the filter the declaration is indistinguishable from never having
+      // existed — which is exactly why it survived wave 2.
+      if (droppedByFile.get(e.f)?.has(name)) return "declared-then-denylisted"
+      if (LUA54_BASE.has(name)) return "stdlib-external"
+      if (declaredIn.has(name)) return "declared-elsewhere-in-corpus"
+      return "not-declared-anywhere"
+    }
+
+    const sb = classify(e.s, false)
+    const tb = classify(e.g, true)
+    row.src[sb]++
+    row.tgt[tb]++
+    if (sb === "published-unique" && tb === "published-unique") row.bothResolved++
+    if (tb === "declared-then-denylisted") {
+      row.denylistedNames[e.g] = (row.denylistedNames[e.g] ?? 0) + 1
+      const ex = row.denylistedExamples[e.g] ?? (row.denylistedExamples[e.g] = [])
+      if (ex.length < 4) ex.push({ file: e.f, line: e.l, type: e.t, source: e.s, target: e.g })
+    }
+    if (tb === "not-declared-anywhere") {
+      row.neverIndexedNames[e.g] = (row.neverIndexedNames[e.g] ?? 0) + 1
+    }
+    // A DOTTED endpoint is neither a name nor a path the graph can walk. Counted apart.
+    if (e.g.includes(".")) row.dottedTarget += 1
+    if (e.g.includes(".")) {
+      const k = `${e.t} ${e.g}`
+      row.dottedExamples[k] = (row.dottedExamples[k] ?? 0) + 1
     }
   }
 
@@ -349,7 +423,7 @@ async function main() {
       drawDigest: digest,
     },
     production: {
-      filesParsed: perFile.length,
+      filesParsed: parsedFiles,
       parseErrorFiles: parseErr,
       symbols: symTotal,
       emptyNames,
@@ -366,6 +440,9 @@ async function main() {
     denylistedExamples: Object.fromEntries(
       Object.keys(rows).map(t => [t, rows[t].denylistedExamples]),
     ),
+    topDottedTargets: Object.fromEntries(
+      Object.keys(rows).map(t => [t, top(rows[t].dottedExamples, 12)]),
+    ),
     topNeverIndexed: Object.fromEntries(
       Object.keys(rows).map(t => [t, top(rows[t].neverIndexedNames, 15)]),
     ),
@@ -374,7 +451,7 @@ async function main() {
   mkdirSync(path.dirname(OUT), { recursive: true })
   writeFileSync(OUT, JSON.stringify(artifact, null, 2) + "\n")
 
-  console.log(`\nfiles ${perFile.length}  symbols ${symTotal}  relationships ${relTotal}  distinctNames ${declaredIn.size}`)
+  console.log(`\nfiles ${parsedFiles}  symbols ${symTotal}  relationships ${relTotal}  distinctNames ${declaredIn.size}`)
   console.log(`\ntype          edges   bothRes   amb:lexUniq  innerWins  GENUINE  denom-elsewhere  stdlib-ext  neverIdx`)
   console.log("-".repeat(108))
   for (const t of Object.keys(rows).sort()) {
@@ -391,6 +468,10 @@ async function main() {
   console.log(`\nDECLARATIONS POOL-WORKER DELETED (analyzer published, keepSymbol dropped):`)
   console.log(`  total ${Object.values(droppedDecls).reduce((a, b) => a + b, 0)}  by name ${JSON.stringify(top(droppedDecls, 12))}`)
   console.log(`  NOTE "me" IS LEGITIMATE: it is not a reserved word in ANY language.`)
+  console.log(`\nDOTTED TARGETS (a path, not a name — true as text, unwalkable as an edge):`)
+  for (const t of Object.keys(rows).sort()) {
+    if (rows[t].dottedTarget) console.log(`  ${t.padEnd(13)} ${rows[t].dottedTarget}  ${JSON.stringify(top(rows[t].dottedExamples, 6))}`)
+  }
   console.log(`\nedges whose TARGET is such a deleted declaration:`)
   for (const t of Object.keys(rows).sort()) {
     const n = rows[t].tgt["declared-then-denylisted"]
