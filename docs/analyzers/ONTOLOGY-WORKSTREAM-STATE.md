@@ -861,3 +861,61 @@ count would have been deleting real edges.
 
 `explained by a binding site` went 357 → **0**, and the unexplained residue stayed
 at 1,563. A class closed, not a number shifted.
+
+## Two gates that could not fail — found by the lanes that owned them
+
+### R: the mutation gate reported 26 caught while executing none of them
+
+`caught` was `code !== 0`. That is also true of a child that **crashed**. Under
+bun, `process.execPath` is the bun binary, bun rejects `--import tsx`, so every
+mutant child died before running a fixture — and all 26 pairs read `caught`. The
+same battery under `npx tsx` reported **12 caught and 14 survived**.
+
+A second rule was wrong in the same direction: a mutant counted as caught only if
+**every** fixture rejected it. That scores the *fixture*, so `drop-uses` was recorded
+as a survivor of a fixture that had no `uses` edge to remove.
+
+Fixed: a result counts only when the child's own banner and tally line are present;
+a missing banner is a **HARNESS FAULT**, counted apart from a survivor; and a mutant
+is caught by **at least one** fixture.
+
+Verified by the supervisor by running it under bun — the exact condition that
+exposed the tautology:
+
+```
+mutants: 0 caught by >=1 fixture, 13 survived by every fixture,
+         234 harness faults, of 234 mutant/fixture runs
+parent runtime: bun — a runtime that cannot execute `node --import tsx`
+makes every child fail and is reported as HARNESS, never as a catch
+```
+
+**234 faults, 0 false catches.** The guard is proven by the failure it was written
+for.
+
+### ZIG: an instrument with swapped buckets produced a clean negative
+
+P12 keyed `instOtherAt` (= `isConstructorApplication`, `TypeName{…}`) while P11
+keyed `isGenericTypeApplication` — which `real-zig-analyzer.ts:1482` pushes for a
+call to an in-file `fn … type`. **The buckets were swapped**, because the
+analyzer's own metadata name is a misnomer. P12 therefore reported **0 edges over
+1,528 sites** and read as a clean negative about a class that fires at **100%**.
+
+Two more in the same pass: P11/P12 matched on LINE while the edge keys on
+`(line, target)`, and P13 counted edge *presence* where it printed a per-site
+*percentage*. And the precondition `p13SelfSites > 0` asked Zig for a construct it
+has no keyword for, so that verdict line read NO on all eight CLEAN runs — an
+unsatisfiable precondition reporting as a result.
+
+**This is the same failure shape three times in one programme**: CSS's pass-1
+containment probe (which read `symbol.range.start.line`, but `parseFile` returns no
+`range`), TOML's `references` probe (Gradle writes the ref inside an inline table),
+and now ZIG's P12. A probe that measures the wrong thing returns a confident zero.
+The defence is the same each time: a **positive control that must fire**, and a
+precondition that is satisfiable.
+
+### The shape of both fixes: the honest result is fewer confident claims
+
+Both lanes ended with *fewer* things they could assert, not more. ZIG withdrew
+three zeros. R withdrew a green. Neither is a regression in the work — it is the
+first time these lanes could tell the difference between "measured" and "asked a
+question my instrument could not answer".
