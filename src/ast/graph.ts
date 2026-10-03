@@ -1,4 +1,4 @@
-// @ts-nocheck — ported; verified by tests. Restored incrementally in Phase 3.
+
 import { BrainDatabase } from "../brain/database"
 import type { ProjectID } from "../project/schema"
 import * as Log from "../tool/brain-log"
