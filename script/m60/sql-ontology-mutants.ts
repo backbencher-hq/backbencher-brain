@@ -280,4 +280,104 @@ export const SQL_ONTOLOGY_MUTANTS: Mutant[] = [
       return { ...r, relationships: [...(r.relationships ?? []), ...extra] }
     },
   },
+  {
+    id: "sql/cte-self-reference-escapes-the-scope",
+    language: "sql",
+    defectClass: "fabrication",
+    description:
+      "A CTE's body is a `statement` NESTED INSIDE the `cte` node that declares its name, so every scope set built from `descendants(node, \"cte\")` or `descendants(enclosingStatement, \"cte\")` excludes it - the node that names the CTE is an ANCESTOR of the reference. PostgreSQL binds the name inside its own body (that is what makes `WITH RECURSIVE t AS (... FROM t ...)` work, and it binds without RECURSIVE too), so `FROM t` there is the CTE and publishing `uses global->t` names a table no file can declare. Measured on the corpus: duckdb/benchmark/recursive_cte/queries/performance/asql_cyk_using_key.sql, a 4-CTE recursive query whose body reads its own name. This is the sibling of sql/declaration-sweep-drops-the-cte-scope, same wrong output, different entry point, and the pass-1 fix could not have caught it. Reverted by publishing an edge for every unqualified `FROM <name>` whose name is the alias of a `WITH <name> AS` list item. Caught by sql/sqld14-pass2-adversarial, whose forbidRelationships name `d14_self`, `d14_inner` and `d14_outer` and whose forbidSymbols forbid the three names as declarations.",
+    transform: (r: any, source?: string) => {
+      if (!source) return r
+      // Crude by design: a mutant only has to be CAUGHT. Over-matching costs a
+      // fixture failure, under-matching costs a surviving mutant, and the second is
+      // the failure mode this workstream exists to prevent.
+      const ctes = new Set<string>()
+      for (const m of source.matchAll(/(?:\bWITH\b(?:\s+RECURSIVE)?|,)\s*([A-Za-z_][A-Za-z0-9_$]*)\s*(?=[^,]*\bAS\b\s*\()/gi)) ctes.add(m[1])
+      if (ctes.size === 0) return r
+      const present = new Set((r.relationships ?? []).filter((x: any) => x.type === "uses").map((x: any) => x.target))
+      const extra = [...ctes]
+        .filter((n) => !present.has(n))
+        .map((n) => ({ type: "uses", source: "global", target: n, confidence: 1, weight: 1, metadata: { tableReference: true, evidenceClass: "usage_contextual" } }))
+      if (extra.length === 0) return r
+      return { ...r, relationships: [...(r.relationships ?? []), ...extra] }
+    },
+  },
+  {
+    id: "sql/reference-qualified-tier-unreachable",
+    language: "sql",
+    defectClass: "mislabel",
+    description:
+      "`evidenceClassFor` has three tiers and its `reference_qualified` arm reads `metadata.qualified`. `addTableEdge` has always passed it, but `evidenceClassFor`'s `Uses` arm hardcoded `usage_contextual` without looking, and `processCalls`, `processTrigger`'s action edge and `recordDml` passed NO metadata at all - so for `calls` the field was undefined on every edge and the tier was UNREACHABLE, and for `uses` it was present on the edge and ignored. A corpus probe found 46 qualified invocations and 1,406 `uses` edges carrying `qualified` in metadata, every one of them published as `usage_contextual`: the tier that means the name was read from a bare slot with nothing to disambiguate it. `app.users` names its schema. Reverted by stripping `qualified` from every relationship's metadata, which is exactly what the analyzer did for `calls` before pass 2. Caught by sql/sqld14-pass2-adversarial, whose expectRelationships pin `meta.qualified` and `meta.evidenceClass: reference_qualified` on a `calls` from a trigger action, a `uses` from a view body and a `uses` from a qualified INSERT.",
+    transform: (r: any) => {
+      let changed = 0
+      const rels = (r.relationships ?? []).map((x: any) => {
+        if (!x?.metadata?.qualified) return x
+        const { qualified, evidenceClass, ...rest } = x.metadata
+        void qualified
+        changed++
+        return { ...x, metadata: { ...rest, evidenceClass: "usage_contextual" } }
+      })
+      if (changed === 0) return r
+      return { ...r, relationships: rels }
+    },
+  },
+  {
+    id: "sql/index-symbol-drops-its-owner",
+    language: "sql",
+    defectClass: "wrong-edge",
+    description:
+      "`processIndex` hardcoded `parent: null` when it created the index symbol, so EVERY index symbol in the corpus had `ownerName: undefined` while the edge two lines below published `contains table -> index` naming the table as owner. `bb_graph`'s owner-cascade and `bb_impact`'s reverse walk both read `ownerName`, so the member read as an orphan that happened to be named in an edge. 70 containment edges in a 200-file corpus slice were in that state. Reverted by clearing `ownerName`/`ownerKind`/`parent` on every symbol whose metadata says it is an index. Caught by sql/sqld14-pass2-adversarial, whose expectSymbols pin `ownerName: d14_base` on an index declared after its table and `ownerName: d14_really_late` + `meta.ownerDeclaredLater: true` on one declared BEFORE it - the second is the case the immediate lookup cannot see and the end-of-analyze adoption pass exists for.",
+    transform: (r: any) => {
+      const symbols = (r.symbols ?? []).map((s: any) => {
+        if (s?.metadata?.type !== "index") return s
+        const { ownerDeclaredLater, ...meta } = s.metadata ?? {}
+        void ownerDeclaredLater
+        return { ...s, ownerName: undefined, ownerKind: undefined, parent: undefined, parentId: undefined, metadata: meta }
+      })
+      return { ...r, symbols }
+    },
+  },
+  {
+    id: "sql/override-key-ignores-the-declaration-kind",
+    language: "sql",
+    defectClass: "fabrication",
+    description:
+      "`state.redeclared` was keyed on the NAME alone while its own field comment claimed the caller \"has established that both declarations are the same KIND\" - which nothing did. Two DIFFERENT objects that share a name therefore collided, and pass 1 measured the collision: the construct probe counted 15 same-kind OR REPLACE redeclarations against the analyzer's 22 emitted `overrides` edges, and the 7-edge gap was this. The shape is hasura-engine/server/src-rsr/migrations/10_to_11.sql lines 7 and 25 - `CREATE FUNCTION hdb_catalog.f()` then `CREATE TRIGGER f`. Reverted by turning every `overrides` edge into one that also fires when no prior same-kind declaration exists, which the analyzer cannot express directly, so it is expressed the other way: any symbol name that appears under more than one kind in the file gets a synthetic `overrides` edge naming the LATER kind's line as the replacement. Caught by sql/sqld14-pass2-adversarial, whose forbidRelationships name `d14_twin` (a function and a view sharing one name) and whose expectRelationshipCount pins `overrides` at 1.",
+    transform: (r: any) => {
+      const symbols = r.symbols ?? []
+      const byName = new Map<string, any[]>()
+      for (const s of symbols) {
+        const list = byName.get(s.name) ?? []
+        list.push(s)
+        byName.set(s.name, list)
+      }
+      const present = new Set((r.relationships ?? []).filter((x: any) => x.type === "overrides").map((x: any) => x.target))
+      const extra: any[] = []
+      for (const [name, group] of byName) {
+        if (group.length < 2) continue
+        if (new Set(group.map((s: any) => s.kind)).size < 2) continue
+        if (present.has(name)) continue
+        // `analyze` returns `range.startLine`; only the ENGINE's flattening to a
+        // top-level `startLine` produces the other spelling, and the fixture lane
+        // calls `analyze` directly. Reading the wrong one made this a no-op mutant
+        // on its first run - it "survived" for the same reason
+        // sql/execute-literal-recovery-removed once did.
+        const lines = group
+          .map((s: any) => (typeof s.range?.startLine === "number" ? s.range.startLine : s.startIndex))
+          .filter((n: any) => typeof n === "number")
+          .sort((a: number, b: number) => a - b)
+        if (lines.length < 2) continue
+        extra.push({
+          type: "overrides",
+          source: "global",
+          target: name,
+          confidence: 1,
+          weight: 1,
+          metadata: { orReplace: true, redefinition: true, scope: "file", priorLine: lines[0], replacementLine: lines[lines.length - 1], evidenceClass: "structural" },
+        })
+      }
+      if (extra.length === 0) return r
+      return { ...r, relationships: [...(r.relationships ?? []), ...extra] }
+    },
+  },
 ]
