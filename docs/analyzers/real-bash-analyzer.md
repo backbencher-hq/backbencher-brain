@@ -29,8 +29,8 @@ at all.
 | `exports` | `export VAR`, `export VAR=value`, `declare -x` and `export -f fn` each emit an `exports` edge from the owning scope at the export line (`BD7`). This type was absent for the whole pre-`#277` history and its absence was a **defect, not a language limitation** — seven peer lanes already emitted it. |
 | `overrides` | A re-declared function emits `overrides` from the later declaration to the earlier one, with `metadata.overridesLine` naming the prior line (`BD8b`). 57 redefinitions across 38 of 2,747 admitted files. |
 | Patterns | `set -e`/`set -o errexit`, `curl \| bash`, `rm -rf /`, `chmod 777`, `eval`, `sudo`, container/cloud/build tooling — all from AST structure, never source text. |
-| Errors | Syntax errors are engine-owned (`engine.ts` merges `treeErrors`). **No blanket refusal of a damaged region** — the guard that would have done that was measured and deleted; see [What the corpus refused](#what-the-corpus-refused). The two refusals that remain are both structural and neither keys on the file: a name that is not a plain `word`, and a name that is a **reserved word**. |
-| Regex | **zero** regex usages (census 12 → 0), and the M12 contract probe enforces it |
+| Errors | Syntax errors are engine-owned (`engine.ts` merges `treeErrors`). **No blanket refusal of a damaged region** — the guard that would have done that was measured and deleted; see [What the corpus refused](#what-the-corpus-refused). The refusals that remain are all structural and none keys on the file: a name that is not a plain `word`, a name that is a **reserved word**, an **arithmetic operand** in command position, and a **`case` arm pattern** — the last two added in rounds 2 and 3, each with its own A/B. |
+| Regex | **zero** regex usages, and the M12 contract probe enforces it. Round 2 broke this and round 3 restored it; see [Regex inventory](#regex-inventory) |
 
 ## Relationship ontology — verdict per type, with the number behind it
 
@@ -40,28 +40,71 @@ by the production router `detectLanguageFromPath`), 48 repositories, out of
 4,012 admitted files from 441,259 tracked files in 141 repositories. The
 **gate** sample is every admitted file — 4,012 of them.
 
-**Every number below was re-measured on 2026-10-03, and every one of them moved,
-because the shared corpus grew.** The pass-1 revision of this table was written
-against 3,174 admitted files from 374,996 tracked files in 111 repositories
-(141 repositories, 7.3 GB, now). The gate column rose 12–20% per type and the
-census column moved in both directions, because adding files to a repository
-changes which files sort into the first 400 of a hash order: `imports` and
-`references` FELL from 61 to 45 while `exports` ROSE from 179 to 210. **A
-hash-ordered sample is reproducible against a PINNED corpus and not against a
-growing one.** The corpus state that these numbers describe is therefore part of
-the claim: 4,012 admitted / 441,259 tracked / 141 repositories. Re-running
-`census-bash-ontology.ts` against a different corpus is expected to produce a
-different sample, and that is a property of the method, not a regression.
+**Every number below was re-measured on 2026-10-03 (round 2) and again in round 3,
+and round 3 moved five of them because round 3 removed five fabricated edges.**
+The pass-1 revision of this table was written against 3,174 admitted files from
+374,996 tracked files in 111 repositories. The corpus is now 4,012 admitted /
+441,259 tracked / 141 repositories (7.3 GB). The census column is a 400-file
+sample in **hash order** (ascending sha256 of `repo/relpath`, admitted by the
+production router `detectLanguageFromPath`), 48 repositories. **A hash-ordered
+sample is reproducible against a PINNED corpus and not against a growing one**, and
+the census figures here reproduce exactly against the current corpus: the round-3
+re-run read 400 files / 48 repositories / 4,012 admitted / 441,259 tracked, the same
+denominators round 2 recorded.
 
-| type | emitted? | census: 400 files | gate: 4,012 files | evidence |
+Round 3's own delta, edge for edge, from `census-bash-ontology.ts` before and
+after the change in [Round 3](#round-3-what-the-census-was-already-printing):
+
+| type | round 2 | round 3 | delta | attributable to |
 | --- | --- | --- | --- | --- |
-| `calls` | **EMITTED** | 5,150 | 53,456 | `census-bash-ontology.ts`, gate row |
-| `uses` | **EMITTED** | 7,947 | 78,298 | same |
-| `contains` | **EMITTED** | 3,697 | 35,732 | same |
-| `imports` | **EMITTED** | 45 | 638 | same |
-| `references` | **EMITTED** | 45 | 638 | same |
-| `exports` | **EMITTED** | 210 | 1,912 | same |
-| `overrides` | **EMITTED** | 28 | 134 | same |
+| `calls` | 5,150 | **5,147** | **−3** | the case-arm-pattern guard, 3 arm-pattern names |
+| `imports` | 45 | **44** | **−1** | the same guard, a fabricated dependency edge |
+| `references` | 45 | **44** | **−1** | the same guard, the twin edge |
+| `uses`, `contains`, `exports`, `overrides` | 7,947 / 3,697 / 210 / 28 | 7,947 / 3,697 / 210 / 28 | 0 | — |
+| **total relationships** | 17,122 | **17,117** | **−5** | matches the A/B's 5 exactly |
+
+The `gate` column is every admitted file. **It is not a reproducible count, and
+round 3 measured how far from reproducible it is.** Two runs of
+`ontology-coverage-gate.ts bash` on this commit against this corpus:
+
+| type | gate run A | gate run B | spread |
+| --- | --- | --- | --- |
+| `calls` | 53,443 | 53,481 | **38** |
+| `uses` | 78,404 | 78,425 | **21** |
+| `contains` | 35,743 | 35,769 | **26** |
+| `imports` | 637 | 636 | 1 |
+| `references` | 637 | 636 | 1 |
+| `exports` | 1,912 | 1,913 | 1 |
+| `overrides` | 133 | 134 | 1 |
+
+The cause is named, not guessed: the pinned wasm aborts with `memory access out of
+bounds` on whichever files it reaches, and which files those are differs between
+runs — run A reported `json_xs.bash`, `k3b.bash`, `set_default_linux_apps.sh`,
+`nvm_print_default_alias`, `completion.zsh`; run B reported `jsonschema.bash`,
+`native_test_win32.sh`, `prepare_tool.sh`, `verify-openapi-spec.sh` and then
+`[BB-HANG] parser stuck 120s` on `jsonschema.bash` and exited. **No two of those
+ten paths is the same.** So the gate's denominator is "however many files the wasm
+survived", which is a different number each run, and every per-type total inherits
+that wobble. Both runs agree on the thing the gate exists to decide —
+`emitted 7/10 ruled-sound 3 FALSIFIED 0 ruled-without-justification 0`, and 164
+distinct node types — because a type being emitted at all does not depend on which
+40 files aborted.
+
+The **census** column has no such problem and is the number to quote: it goes
+through `parseFile`, reported **0 parse failures** on the same 400 files, and
+round 3 reproduced round 2's denominators exactly (400 files / 48 repositories /
+4,012 admitted / 441,259 tracked). The gate column is quoted as a range for that
+reason and not as a single figure.
+
+| type | emitted? | census: 400 files | gate: 4,012 files (run A / run B) | evidence |
+| --- | --- | --- | --- | --- |
+| `calls` | **EMITTED** | 5,147 | 53,443 / 53,481 | `census-bash-ontology.ts`, gate row |
+| `uses` | **EMITTED** | 7,947 | 78,404 / 78,425 | same |
+| `contains` | **EMITTED** | 3,697 | 35,743 / 35,769 | same |
+| `imports` | **EMITTED** | 44 | 637 / 636 | same |
+| `references` | **EMITTED** | 44 | 637 / 636 | same |
+| `exports` | **EMITTED** | 210 | 1,912 / 1,913 | same |
+| `overrides` | **EMITTED** | 28 | 133 / 134 | same |
 | `extends` | **RULED — never emitted** | 0 | 0 | instrument A + B below |
 | `implements` | **RULED — never emitted** | 0 | 0 | instrument A + B below |
 | `instantiates` | **RULED — never emitted** | 0 | 0 | instrument A + B below |
@@ -106,15 +149,13 @@ msys_tools/vc/emu_cc.sh`, `grails-core/etc/bin/verify-wrapper-distribution.sh`,
 clipboard.zsh` (`clipcopy`, `clippaste`).
 
 Gate summary line, unchanged by any of this work: `emitted 7/10  ruled-sound 3
-FALSIFIED 0  ruled-without-justification 0`. The 2026-10-03 run also printed
-three `[BB-PARSE-ERR] … memory access out of bounds` rows
-(`bash-completion/completions-core/jsonschema.bash`,
-`ohmyzsh/plugins/zsh-autosuggestions/zsh-autosuggestions.plugin.zsh`,
-`ohmyzsh/plugins/zsh-interactive-cd/zsh-interactive-cd.plugin.zsh`) and one
-`[BB-HANG] parser stuck 120s` on the first of those. Those are parser-robustness
-findings in the pinned wasm, not lane verdicts; they are recorded here because a
-gate that hangs is a gate that reports a smaller corpus than it claims, and the
-4,012 denominator above includes them.
+FALSIFIED 0  ruled-without-justification 0`. The 2026-10-03 runs printed five
+`[BB-PARSE-ERR] … memory access out of bounds` rows and, on one of them, a
+`[BB-HANG] parser stuck 120s`. Those are parser-robustness findings in the pinned
+wasm, not lane verdicts. They are recorded here because they are also the reason
+the gate column above is not a reproducible count, and because a gate that hangs
+is a gate that reports a smaller corpus than it claims — the 4,012 denominator
+includes the files it could not finish.
 
 ### The three RULED types — instrument, probe, and what would overturn it
 
@@ -156,15 +197,20 @@ indirection**, which never becomes a node at all. So
 | of those, candidates the parse tree confirms as a construct | **0** | **0** | **0** |
 
 The 12 lexical candidates are printed with file and line so they can be checked
-by hand, and **all 11 are `#` comment lines** — `bash-completion/
-completions-core/java.bash:99` (`# remove class extension`),
+by hand. **Every one of the 12 rows is a `#` comment line**, across **7 distinct
+sites** (`implements` and `extends` overlap on 4 of them) —
+`bash-completion/completions-core/java.bash:99` (`# remove class extension`),
 `bash-completion/startup-core/000_bash_completion_compat.bash:238` and `:241`,
-`flutter-packages/.ci/scripts/validate.sh:9`, `phpmyadmin/bin/
+`flutter-packages/.ci/scripts/validate.sh:9`, `vault/.release/docker/
+ubi-docker-entrypoint.sh:11`, `phpmyadmin/bin/
 transformations_generator_main_class.sh:3`, `bash-completion/completions-core/
-svcadm.bash:11`, `nvm/test/fast/Unit tests/nvm_get_default_packages mawk
-compat:5`. A lexical hit is reported as a candidate and never as a hit, because a
-string literal or an embedded language can fake one — which is the same trap that
-produced two false positives in the gate's first version.
+svcadm.bash:11`. (The previous revision of this document said "all 11"; the probe
+prints 12 rows over 7 sites, and the sentence did not add up. Round 3 re-ran it
+and restated the measured figures rather than leaving the arithmetic.) A lexical hit
+is reported as a candidate and never as a hit, because a string literal or an
+embedded language can fake one — which is the same trap that produced two false
+positives in the gate's first version, and the trap that would have produced a
+fabricated edge here had the probe treated a comment as a declaration.
 
 **The residual, sized rather than asserted.** The only routes by which a bash
 script could reach a relationship the static tree does not contain:
@@ -230,21 +276,153 @@ emitted with a count, or ruled with a measurement showing its construct does not
 occur. The same ontology is why bash emits 7 and PowerShell emits 9: the
 difference is exactly what each language has.
 
+## Round 3: what the census was already printing
+
+Round 1 measured how many edges there were. Round 2 asked which `calls` edges were
+WRONG and found two. Round 3's question was deliberately different and less
+flattering: **the shipped census output already contained a fabrication, in a
+section nobody read.** `census-bash-ontology.ts` prints up to six example edges per
+type, and among the `imports` examples on the 400-file sample was
+
+```
+kubernetes/third_party/gimme/gimme: gimme -[imports]-> _try_existing
+```
+
+`_try_existing` is a **shell function**, defined at `kubernetes/third_party/gimme/
+gimme:414`. It is not a file. `gimme` does not import it, does not depend on it,
+and no `source` of any such path exists. The analyzer published a module dependency
+on a function, plus the `references` twin of it, at confidence **1.0** with
+`evidenceClass: "import_based"` — presented as a parse fact.
+
+### The cause, and why it survived two rounds
+
+The pinned wasm cannot close a `case` in the `!` position of an `if`
+(`kubernetes/third_party/gimme/gimme:935`), so an arm arrives as
+
+```
+command @936 "binary) _try_existing binary"
+  command_name → word "binary"      ← the arm's PATTERN, not a command
+  ERROR → ")"                       ← the arm terminator, misplaced
+  word "_try_existing"
+```
+
+Round 1 found this region and wrote it down: it is why BD8's stated evidence is
+falsified, and it is where the four `calls` residuals come from. Round 2 named
+those four and closed none of them, on the measurement — recorded in the previous
+revision of this document as limitation 10 — that *"every structural guard that
+would remove them costs more real calls than it saves."*
+
+**That measurement was true about guards B and E and wrong about the space they
+left.** Round 3 measured a sixth candidate, and the cost is zero:
+
+| guard | predicate | removes on 400 files | of which real | verdict |
+| --- | --- | --- | --- | --- |
+| **E** (= F3 here) | any direct `ERROR`/missing child | 20 | **15** real `kube::log::status` calls | rejected, pass 1 |
+| **F1** | any direct `ERROR`/missing child whose text is `)` | 5 | **1+** — see below | **rejected by soundness** |
+| **F2** | the child **immediately after `command_name`** is `ERROR`/missing and begins with `)` | 5 | **0** | **implemented** |
+
+`guard-f-bash-imports.mts` measures all three, on the same hash-ordered sample, and
+prints the whole removal set for hand adjudication rather than a count. F2 removes
+the same 5 edges on **1,200 files / 76 repositories** that it removes on 400, so
+the zero-real-call cost is not a small-sample accident.
+
+**F1 was rejected on a counterexample, and that counterexample is the reason F2
+exists.** `guard-f-soundness.mts` asks both predicates about 39 node shapes
+directly rather than counting corpus edges. F1 fires on
+
+```
+awk one two ) three      →  command_name[awk] word[one] word[two] ERROR[)] word[three]
+```
+
+which is valid bash in which `)` is an ordinary word argument, so F1 would delete a
+real `calls: -> awk`. **F2 fires on 0 of the 39** and on both of the defect's
+commands. The POSIX fact underneath it: **a `)` can never immediately follow a
+command NAME in valid bash.** `(cmd)` puts the `)` on the subshell as a sibling of
+the whole command; `echo )` puts it after an argument or on its own as a `word`.
+Only a terminator the grammar could not place lands between the name and the first
+argument.
+
+The wider reading also reproduces pass 1's rejection of guard E from the other
+direction: on the current corpus F3 removes 20 edges of which **15 are real**
+`kube::log::status` calls in `kubernetes/test/e2e_node/gubernator.sh`, because
+`V=2 kube::log::status "…"` puts a `variable_assignment` in the command's own slot
+and the grammar puts an `ERROR` beside it. The cost of narrowing is therefore a
+measurement and not an argument.
+
+### What round 3 removed, and what it deliberately kept
+
+| edge | before | after | why |
+| --- | --- | --- | --- |
+| `calls → binary` @gimme:936 | kept | **removed** | the arm's pattern, not a command |
+| `calls → git` @gimme:938 | kept | **removed** | same |
+| `calls → auto` @gimme:939 | kept | **removed** | same |
+| `imports → _try_existing` @gimme:937 | kept | **removed** | a function is not a module |
+| `references → _try_existing` @gimme:937 | kept | **removed** | the twin edge |
+| `calls → *` @gimme:940 | kept | **kept** | see below |
+
+`calls → *` survives and is still named rather than closed, and round 3 checked
+rather than assumed why. It arrives as `(command (command_name (word)))` with **no
+damage on it anywhere**, so no positional or damage-shaped guard can reach it. The
+only test that would catch it is a blacklist on the literal character `*`, and
+that is not a POSIX fact — a file named `*` is legal. Round 2's reasoning for
+carrying it holds exactly.
+
+### A resolution rate that was measuring a fabrication
+
+Round 2 reported `imports` and `references` resolving at both ends on **1 of 45**
+edges (2.2%) and treated the other 44 as a language property: the target is a path
+in another file, which a single-file analyzer cannot bind. Removing the
+fabrication moved the rate to **0 of 44**, because the one edge that resolved was
+`_try_existing` — a name that resolved because it is a symbol *in the same file*.
+**The 2.2% was the fabricated edge, not a real dependency.** No instrument in
+rounds 1 or 2 could have said so: they counted edges, and this edge was a
+perfectly ordinary member of the count.
+
+### Two further defects round 3 found in the lane's own text
+
+**The Regex inventory was false.** `docs/analyzers/real-bash-analyzer.md` claimed,
+in two places, that the analyzer contains **zero** regex literals. Round 2 added
+three, in `isArithmeticOperandCommand`: `/^\(\(/`, `/\)\)$/` and `/^\$\(\(/`.
+`script/m12/verify-regex-census.ts` reported all three as `MISSING` against the
+committed blobs — a **live gate failure attributable to this lane** that neither
+round 2 nor the doc mentioned. Round 3 rewrote them as character checks
+(`opensWithDoubleParen`, `opensWithArithmeticExpansion`, `endsWithDoubleParen`) in
+the style `isShellIdentifierName` already uses, and the AST-driven census core now
+reads **bash 0**. That is the whole point of `isShellIdentifierName` being a char
+loop — it cites the M12 probe as its reason — and a second function in the same
+file citing a different convention is the kind of drift a census exists to catch.
+
+**`INTERPRETED_COMMANDS` was dead code.** The set
+`{source, ., export, alias, trap, set}` was consulted at exactly one site,
+`real-bash-analyzer.ts:1426`, as the second disjunct of the gate immediately before
+the `calls` edge. Every one of its six members returns earlier in `extractCommand`
+— `source`/`.` at the dependency branch, `export`, `alias`, `trap`, `set` each at
+their own branch — so the disjunct could never be the reason an edge was withheld.
+Round 3 counted it rather than reading it: **580** `command` nodes in command
+position on the 400-file sample are named by that set (`alias` 140, `set` 364,
+`source` 48, `trap` 23, `.` 5; `export` 0, because the grammar always gives it as
+a `declaration_command`), and **0** reach line 1426. The set and its use are
+deleted. The census delta of exactly −5 attributes **0** of the change to this
+deletion, which is what makes it provably dead rather than merely unused. Note
+what pass 1's dead-code sweep missed and why: it removed four functions with *no
+callers*, and this is the same defect wearing a call site — the call site exists,
+it just cannot be reached.
+
 ## The six questions, per emitted type
 
 Measured through the **production** `parseFile` from `src/ast/pool-worker.ts`,
 not `analyze()` — `analyze()` is a per-file unit that skips the pool-worker
 pipeline stages, so a count taken through it is a count of something the product
 does not run. Sample as stated above: 400 files, 48 repositories, 4,101 symbols,
-17,122 relationships, **0 parse failures**.
+**17,117 relationships, 0 parse failures**.
 
 | type | 1 exists | 2 fires | 3 correct | 4 labelled | 5 resolved (both ends) | 6 confident (<0.7) |
 | --- | --- | --- | --- | --- | --- | --- |
-| `calls` | yes | 5,150 | oracle: 1,597/1,597 covered, 0 unexplained | 0 arithmetic operands (see below) | **983 / 5,150 = 19.09%** | 0 / 5,150 |
+| `calls` | yes | 5,147 | oracle: 1,657/1,657 covered, 0 unexplained | 0 arithmetic operands, 0 arm patterns (see below) | **983 / 5,147 = 19.10%** | 0 / 5,147 |
 | `uses` | yes | 7,947 | same run | 0 positional targets | **5,974 / 7,947 = 75.17%** | 0 / 7,947 |
 | `contains` | yes | 3,697 | same run | 3,697/3,697 targets are symbols | **3,697 / 3,697 = 100%** | 0 / 3,697 |
-| `imports` | yes | 45 | same run | 45/45 keys identical to a `references` key | **1 / 45 = 2.2%** | 0 / 45 |
-| `references` | yes | 45 | same run | 45/45 keys identical to an `imports` key | **1 / 45 = 2.2%** | 0 / 45 |
+| `imports` | yes | 44 | same run | 44/44 keys identical to a `references` key | **0 / 44 = 0.0%** | 0 / 44 |
+| `references` | yes | 44 | same run | 44/44 keys identical to an `imports` key | **0 / 44 = 0.0%** | 0 / 44 |
 | `exports` | yes | 210 | same run | 210/210 targets carry `isExported` | **210 / 210 = 100%** | 0 / 210 |
 | `overrides` | yes | 28 | same run | 28/28 targets are `function` symbols | **28 / 28 = 100%** | 0 / 28 |
 
@@ -257,12 +435,14 @@ is invisible to source derivation, which is why this column is measured rather
 than read.
 
 **Q3 Correct** — `bun run script/m14/differential.ts --lang bash`, on the `otp`
-pin, 60 files: **tree-truth 1,597, covered 1,597, MISSING 0, analyzer-edges 1,548,
-unexplained 0, heuristic 0**. (Pass 1 recorded 1,596 / 1,596 / 1,547. Both sides
-rose by exactly 1, which is **not** attributable to the pass-2 guard: both
-fabrication sites are in `kubernetes`, and the `otp` pin draws 60 of 63 admitted
-files, so the pin's own selection moves when the shared corpus grows. The
-meaningful readings are unchanged — full coverage and zero unexplained edges.)
+pin, 60 files: **tree-truth 1,657, covered 1,657, MISSING 0, analyzer-edges 1,608,
+unexplained 0, heuristic 0**. Pass 2 recorded 1,597 / 1,597 / 1,548. Both sides
+rose by exactly 60, which is **not** attributable to round 3's guard: the guard's
+corpus sites are all in `kubernetes`, and the `otp` pin draws 60 of its admitted
+files. The meaningful readings are unchanged — every oracle edge covered, zero
+unexplained edges. The scoped run also prints, and this is worth reading, that it
+did **not** write the F5 artifact: *"a scoped run is for inspecting lanes, and
+writing it here would replace that claim with a smaller one."*
 
 **The limitation is stated rather than implied**: `deriveBashEdges` is a separate
 walker over the **same pinned wasm grammar**, so a grammar bug shared by both
@@ -281,28 +461,34 @@ defects in the lane (see the next section):
 - `calls` is split by the analyzer's own mutually-exclusive flags, and the split
   is what makes the flag checkable rather than decorative:
   `isFunctionCall=true` — **920 edges, 920 resolve to a `function` symbol in the
-  same file (920/920)**; `isExternalCommand=true` — **4,230 edges, 63 of which
+  same file (920/920)**; `isExternalCommand=true` — **4,227 edges, 63 of which
   (1.5%) happen to name a symbol**. A local call that failed to resolve, or an
   external call that resolved to one, would make the flag a lie. Neither happens.
 - `exports` — 210 of 210 targets carry `metadata.isExported`. What they point at
   is measured in the limitations, because it is the weakest label in the lane.
 - `overrides` — 28 of 28 targets are `function` symbols, and **28 of 28 have an
-  earlier definition of the same name in the same file**. That second number is
-  the answer to the strongest objection to this label, and it is in the
-  limitations below.
+  earlier definition of the same name in the same file**. Round 3 asked the
+  stronger question pass 2 did not: **are the two definitions UNCONDITIONAL?**
+  `if A; then f(){}; else f(){}; fi` declares a name twice in two mutually
+  exclusive branches and neither replaces the other, so `overrides` would be the
+  wrong label there. Walking the enclosing construct of both declarations of every
+  edge: **28 of 28 have both declarations at top level, 0 with one conditional and
+  0 with both.** The strongest objection to the label is therefore not present in
+  this sample; the `overrides` discussion in the limitations is about the meaning
+  of the word, not about a site where the edge lies.
 - `contains` — 3,697 of 3,697 targets are symbols in the same file. The single
   miss reported by pass 1 (`esock_ttest-server-gs -> program`, 1 edge of 3,664) is
   not in this sample; the type now resolves at 100% on the corpus it was measured
   against, and the rate is reported per sample rather than smoothed.
 - `uses` — 0 of 7,947 targets is a bare positional parameter.
 - **`imports` and `references` are the standing labelling finding.** On this sample
-  both types produce **45 edges, and the key sets are identical in both
-  directions — 45 of 45 `imports` keys appear as a `references` key and 45 of 45
+  both types produce **44 edges, and the key sets are identical in both
+  directions — 44 of 44 `imports` keys appear as a `references` key and 44 of 44
   `references` keys appear as an `imports` key, 0 differences either way.** So
   `references` carries nothing `imports` does not, in bash, for the
   `source`/`.` construct: the two types are one measurement published twice. That
   is not a fabrication — both edges are real edges to a real sourced file — but a
-  consumer paying for two types is getting one fact, and the graph is 45 edges
+  consumer paying for two types is getting one fact, and the graph is 44 edges
   larger than the distinct dependency count.
 
   **This lane did not "fix" it, and the reason is a measurement rather than
@@ -393,16 +579,17 @@ number, not silently left for a reader to trip over.
 finding. `contains`, `exports` and `overrides` resolve at both ends on **every**
 edge; `calls` and `uses` resolve on the **source** end only; `imports`/
 `references` resolve on the source end only because the target is a **filesystem
-path in another file**, which a single-file analyzer cannot bind to a symbol.
+path in another file**, which a single-file analyzer cannot bind to a symbol — and,
+after round 3 removed the one edge that resolved for the wrong reason, on 0 of 44.
 
-**A pooled 19.09% cannot be read as a recall number, so it was decomposed.**
+**A pooled 19.10% cannot be read as a recall number, so it was decomposed.**
 `adversarial-probes.ts` asks, for every unresolved target, whether an independent
 parse-tree walk finds a declaration of that name in the same file. If it does, the
 analyzer MISSED a symbol and the low rate is measuring its own recall. Measured:
 
 | type | total | resolved | **declared in file but never emitted** | undeclared by any file |
 | --- | --- | --- | --- | --- |
-| `calls` | 5,150 | 983 (19.09%) | **0** | 4,167 |
+| `calls` | 5,147 | 983 (19.10%) | **0** | 4,164 |
 | `uses` | 7,947 | 5,974 (75.17%) | **0** | 1,973 |
 
 **Zero on both.** Every unresolved target is a name the file does not declare:
@@ -413,8 +600,17 @@ shell-defined variables read from outside the file — `PATH`, `BASH_SOURCE`,
 property of how bash names things, not a symbol-extraction shortfall, and the
 decomposition is what makes that claim checkable instead of asserted.
 
+**The same decomposition says the reverse about `imports`/`references`: 0 of 44
+resolve at both ends.** Round 2 reported 1 of 45 and read the shortfall as "a path in
+another file, which a single-file analyzer cannot bind". Removing the fabrication
+took it to 0 of 44, which means the single resolving edge was `_try_existing` — it
+resolved *because it is a symbol in the same file*, which is precisely why it was
+not a dependency. **There is no recall component in this 0% at all**, and that is
+the opposite of the `calls` finding above, so neither rate can be pooled into one
+number.
+
 One more check falls out of the same table and is worth stating because a leak
-would be invisible in a count: **0 of 5,150 `calls` edges names a bash builtin**,
+would be invisible in a count: **0 of 5,147 `calls` edges names a bash builtin**,
 against the analyzer's `SHELL_BUILTINS` refusal. `echo`, `cd`, `printf` and `read`
 are refused deliberately (`real-bash-analyzer.ts`, the `SHELL_BUILTINS` guard),
 so a non-zero figure there would mean the guard leaked. It has not.
@@ -437,7 +633,7 @@ confidence distribution is now printed per type by `adversarial-probes.ts`:
 
 | type | confidence values on the 400-file sample |
 | --- | --- |
-| `calls` | `1.0` × 5,132, **`0.7` × 18** |
+| `calls` | `1.0` × 5,129, **`0.7` × 18** |
 | `uses` | **`0.8` × 7,947** |
 | `contains`, `imports`, `references`, `exports`, `overrides` | `1.0` × all |
 
@@ -448,25 +644,40 @@ and 0% of everything else.** Separately, **`uses` is uniformly 0.8**: all 7,947
 rather than a parse fact. `uses` is the largest type in the lane and the only one
 that is entirely a heuristic class; it clears the contract's threshold by 0.1
 because that is where the analyzer put it, not because 0.8 was measured against
-anything. A reader who takes "0 of 17,122 edges are heuristics" from the sub-0.7
+anything. A reader who takes "0 of 17,117 edges are heuristics" from the sub-0.7
 band alone would be reading a threshold artifact.
 
-**DERIVATION debt: 0, measured on 2026-10-03, not inherited.** Re-run:
-`npx tsx script/m60/rel-type-coverage-gate.ts --langs=bash` → CHECK 1 DERIVATION
-**clean**, and the gate prints `baseline: 104 recorded, 0 NEW, 104 repaid`.
-A DERIVATION finding is a type the analyzer emits that the differential never
-audits. `deriveBashEdges` pushes exactly seven labels — `calls`, `contains`,
-`exports`, `imports`, `overrides`, `references`, `uses` — and the gate prefers that
-per-lane export over the shared compared-label allowlist, so all seven are audited.
+Round 3 removed 5 edges, all of them at confidence **1.0** with
+`evidenceClass: "structural"` / `"import_based"`. **Confidence carried no signal
+about them at all**, which is the same observation pass 2 recorded for its two
+fabrications and is now measured twice: in this lane the dangerous edges are the
+ones the pipeline is most confident about.
 
-**The recorded baseline still lists 5 DERIVATION findings for bash** (`calls`,
-`contains`, `imports`, `references`, `uses`, each saying the differential audits
-only `["extends","implements","instantiates","overrides"]`), and that entry is now
-**stale**: `script/m14/differential.ts:23155` added `bash` to the `calls`
-allowlist on 2026-10-02, after the baseline was written on 2026-10-01. The gate
-classifies all 5 as repaid, which is the safe direction — a stale baseline
-over-reports the debt — but the file is shared machinery (`validation/m60/`), so
-the finding is reported rather than corrected here.
+**DERIVATION debt: 0, read from the shared evidence rather than asserted.** Two
+routes agree. `npx tsx script/m60/rel-type-coverage-gate.ts --langs=bash` prints
+CHECK 1 DERIVATION **clean** with `baseline: 104 recorded, 0 NEW, 104 repaid`;
+and `validation/m60/results/rel-type-coverage.json` itself carries **0 findings
+naming bash** and **0 baseline rows naming bash**. A DERIVATION finding is a type
+the analyzer emits that the differential never audits. `deriveBashEdges` pushes
+exactly seven labels — `calls`, `contains`, `exports`, `imports`, `overrides`,
+`references`, `uses` — and the gate prefers that per-lane export over the shared
+compared-label allowlist, so all seven are audited.
+
+**Round 3 corrects the previous revision of this section.** It stated that the
+recorded baseline "still lists 5 DERIVATION findings for bash" and that the entry
+was stale. The baseline has since been regenerated and **bash no longer appears in
+it at all**, so the count is 0 on both readings and the stale-entry discussion no
+longer describes the file. Kept as a correction rather than quietly dropped,
+because a note that says "0, measured" and a note that says "0, inherited" are
+different claims.
+
+**A warning about the command that produced the number.**
+`script/m60/rel-type-coverage-gate.ts --langs=bash` **overwrites
+`validation/m60/results/rel-type-coverage.json` with a one-lane version**, deleting
+the other 45 lanes' rows (1,413 lines removed, 46 lanes → 1). It has no output-path
+flag and no guard against a scoped run. Round 3 hit this, restored the file from
+`HEAD`, and re-derived the number from the restored evidence. Reported, not fixed
+(§8): that script and that artifact are shared machinery.
 
 ## What the corpus refused
 
@@ -529,11 +740,15 @@ fabrications against 15 real calls is not a trade to make silently. E is not
 implemented, and the 3 fabrications it would have caught stand as **named
 residuals** rather than being hidden inside a guard that costs more than it saves.
 
-**The residual that no structural guard can see.** `calls -> *` @ gimme:940
-arrives as `(command (command_name (word)))` with no damage anywhere on it. The
-only test that would catch it is a blacklist on the literal name `*`, and that is
-not a POSIX fact — a file named `*` is legal. It is carried as **1 edge on the
-400-file sample**, named, rather than closed with an invented rule.
+**The residual that no structural guard can see — and round 3 confirmed it rather
+than repeating it.** `calls -> *` @ gimme:940 arrives as
+`(command (command_name (word)))` with no damage anywhere on it, so no positional or
+damage-shaped predicate can reach it. The only test that would catch it is a
+blacklist on the literal name `*`, and that is not a POSIX fact — a file named `*`
+is legal. It is carried as **1 edge on the 400-file sample**, named, rather than
+closed with an invented rule. This is the one residual of the four that survives
+round 3's guard; the other three are removed, together with two dependency edges
+the earlier rounds never saw. See [Round 3](#round-3-what-the-census-was-already-printing).
 
 **Fixture and mutant coverage for this decision.** Fixture
 `bash/reserved-word-not-a-call` pins both directions: a `forbidRelationships` row
@@ -549,13 +764,39 @@ that works by **refusing** to emit:
 | --- | --- |
 | `bash/reserved-word-guard-removed` (the guard line deleted) | `bash/reserved-word-not-a-call` |
 | `bash/reserved-word-table-emptied` (the guard survives, the table goes empty) | `bash/reserved-word-not-a-call` |
-| `bash/reserved-word-guard-over-refuses-builtins` (guard widened to every builtin) | `bash/call-identity-bd10`, `bash/source-path-resolution-bd9`, `bash/trap-handler-bd3` |
+| `bash/reserved-word-guard-over-refuses-builtins` (guard widened to every builtin) | `bash/call-identity-bd10`, `bash/source-path-resolution-bd9`, `bash/trap-handler-bd3`, `bash/case-arm-pattern-not-a-command` |
 
 The third exists to prove the fixture pins **both** directions — the guard must
 remove fabrications *without* removing real calls — and it is the mutant that
 fails if the fixture only ever asserted the forbids. The second exists because a
 line-removal cannot produce it, and a hand-maintained word list decaying to empty
 is exactly the shape a table takes.
+
+**Round 3 added a fourth guard with three mutants of its own**, in the same style
+and for the same reason:
+
+| mutant | caught by |
+| --- | --- |
+| `bash/case-arm-guard-removed` | `bash/case-arm-pattern-not-a-command` |
+| `bash/case-arm-guard-widened-to-any-damage` (widened to guard E) | `bash/case-arm-pattern-not-a-command` |
+| `bash/case-arm-guard-keyed-on-command-name` (keyed on `source`/`.` instead) | `bash/case-arm-pattern-not-a-command`, `bash/source-path-resolution-bd9` |
+
+The third is the one the corpus A/B could not have caught. On the census sample the
+only `source`-named damaged command **is** the defect, so replacing the structural
+test with a name test removes nothing measurable while silently deleting every real
+`source ./lib.sh` dependency edge in the other 47 repositories. A fixture is what
+sees it; `bash/source-path-resolution-bd9` catches it too, which is the reassuring
+part.
+
+**One mutant anchor had to be repaired, and the reason is the regex fix.**
+`bash/arithmetic-guard-over-refuses-cmd-substitution` keys on the literal source
+line `if (cur.type === "command_substitution") return /^\$\(\(/.test(cur.text)`.
+Round 3 replaced that expression with `opensWithArithmeticExpansion(cur.text)`, so
+the anchor no longer matched and the mutant runner reported it as
+`ERROR … the anchor text is not present … the mutant does not apply to this source`.
+**A mutant whose anchor is a regex cannot survive the removal of that regex**, which
+means a lane can silently lose mutation coverage by fixing a style violation. The
+anchor is now the post-fix source text and the mutant is caught again — 8 of 8.
 
 ## Dead code removed, and why the removal is itself a finding
 
@@ -597,15 +838,21 @@ not excellence. This lane's are measured, not hedged:
    analyzer was right and the instrument was wrong. **Reported, not fixed**:
    `pool-worker.ts` is shared machinery (§8).
 2. **A single-file analyzer cannot resolve a `source` target to a symbol**, which
-   is why `imports`/`references` resolve at both ends on 1 of 45 edges. The edge
-   is real and its `resolution` metadata says which kind of path it is; the
-   binding does not exist at this scope and no single-file analyzer can invent it.
-3. **`calls` resolves at both ends on 19.09% of its edges**, and the other 80.91%
+   is why `imports`/`references` now resolve at both ends on **0 of 44** edges. The
+   edges are real and their `resolution` metadata says which kind of path each is;
+   the binding does not exist at this scope and no single-file analyzer can invent
+   it. **Round 3 corrects the reading of the number rather than the number**: the
+   previous revision reported 1 of 45 and attributed the shortfall to the
+   unbindable targets. Removing the `_try_existing` fabrication took it to 0 of 44,
+   which means the one edge that used to resolve resolved *because it was a symbol
+   in the same file* — so there is no recall component in this 0% at all. A reader
+   pooling this 0% with `calls`' 19.10% would be pooling two opposites.
+3. **`calls` resolves at both ends on 19.10% of its edges**, and the other 80.90%
    are calls to names this file does not declare — measured, not assumed: an
    independent tree walk finds a declaration for **0** of them, so this is not a
    recall shortfall. The `isFunctionCall`/`isExternalCommand` split is what makes
-   it readable (920/920 and 4,230/63) rather than a defect.
-4. **`references` duplicates `imports` on the measured sample** — 45 of 45 keys
+   it readable (920/920 and 4,227/63) rather than a defect.
+4. **`references` duplicates `imports` on the measured sample** — 44 of 44 keys
    identical in both directions, 0 either way. Two ontology types, one distinct
    fact, and the shared oracle does the same, so no differential can see it. See
    the Q4 section for why this lane reports rather than resolves it.
@@ -619,21 +866,36 @@ not excellence. This lane's are measured, not hedged:
    analyzer nor the differential resolves them, so a relationship reachable only
    through them is absent from the graph. That is the residual the three RULED
    types are ruled against, sized rather than asserted.
-7. **Roughly 68 of 91 `(( … ))` arithmetic operands emit no `uses` edge.**
-   `binary_expression` (58) and `unary_expression` (6) are not routed to
-   `emitVariableUses`, so `((i < 5))` names a variable the graph never mentions.
-   Known, instrumented, and left open: closing it adds edges, which is a payload
-   change owed its own measurement rather than a by-product of a defect fix. This
-   is the lane's largest known GAP.
+7. **Roughly 68 of the `(( … ))` arithmetic operands emit no `uses` edge**, and
+   round 3 corrected the node type in this entry. The previous revision called them
+   "91 `(( … ))` arithmetic **commands**"; they are not commands. A real
+   arithmetic command is a `compound_statement` whose text opens `((` — verified
+   directly on the tree (`if ((x < 5)); then` and a bare `((count++))` both produce
+   `compound_statement`, not `command`), so the counting probe's noun was wrong
+   even though its distribution was usable. What the gap is: the dispatch routes
+   `expansion`, `postfix_expression`, `arithmetic_expansion`, `simple_expansion`
+   and `c_style_for_statement` to `emitVariableUses`, and **`compound_statement` is
+   not among them**, so `((i < 5))` names `i` and `n` and the graph never mentions
+   either, while `((i++))` does produce a `uses` edge because its operand happens to
+   be a `postfix_expression`. The counter-shape that motivated the earlier phrasing
+   is real and round 3 re-confirmed it: `((x))` used to arrive as a `command` and
+   produced a `calls` edge, which is what round 2's guard removed.
+   **Left open deliberately**, with the reason it is not fixed here: closing it
+   **adds** edges, which is a payload change owed its own before/after measurement
+   across the graph and migration consumers, not a by-product of a defect fix. It is
+   the lane's largest known GAP and it is stated with the node type and the
+   dispatch list rather than as a round number.
 8. **`overrides` is the weakest label in the lane, and the strongest argument
    against it is that bash has no superclass.** What the measurement settles: all
    **28 of 28** edges point from a later definition to an earlier definition of
-   the same name in the same file, so there is always a base to override, and all
-   28 targets are `function` symbols. What it does not settle: bash has no
-   inheritance, so "override" is a *replacement* in the same scope, not a
-   polymorphic dispatch against a base type. A reader wanting "which function
-   shadows which" is served; a reader expecting override semantics is not, and the
-   edge does not claim to be that.
+   the same name in the same file, and round 3 added the stronger half — **28 of 28
+   have both declarations at top level, 0 with one or both inside an `if`/`elif`/
+   `case` arm**, which is the shape where "redefinition" and "mutually exclusive
+   alternatives" would differ. All 28 targets are `function` symbols. What it does
+   not settle: bash has no inheritance, so "override" is a *replacement* in the
+   same scope, not a polymorphic dispatch against a base type. A reader wanting
+   "which function shadows which" is served; a reader expecting override semantics
+   is not, and the edge does not claim to be that.
 9. **`exports` points at shell variables, not module exports.** By symbol kind on
    the measured sample: `constant` 183, `variable` 26, `function` 1 — so **209 of
    210 `exports` edges publish a variable into the environment of child
@@ -642,35 +904,79 @@ not excellence. This lane's are measured, not hedged:
    is honest about the language but the label is a shared-ontology approximation.
    The oracle corroborates the same rule, so this is a convention question rather
    than a lane defect.
-10. **4 `calls` edges name no runnable command** and are carried deliberately:
-   `binary` @gimme:936, `git` @gimme:938, `auto` @gimme:939, `*` @gimme:940. Every
-   structural guard that would remove them costs more real calls than it saves
-   (guards B and E above), so they are named instead of closed.
+10. **1 `calls` edge names no runnable command** and is carried deliberately:
+    `*` @gimme:940. **This entry was 4 edges last round and the correction is the
+    result, not a re-observation.** The previous revision said "every structural
+    guard that would remove them costs more real calls than it saves", which was
+    measured for guards B and E and generalised past them. Round 3 measured a sixth
+    candidate keyed on the POSITION of the damage rather than its presence, and its
+    cost is **0 real calls on 400 files and on 1,200**, so 3 of the 4 are removed.
+    The 4th survives because it carries no damage to key on.
 11. **24 of 400 sampled files contain at least one damaged command region, and 89
-   `calls` edges come from one.** This is a pinned-grammar limit, not an analyzer
-   limit: bash-completion's generated `completions-core/*.bash` nest extglob
-   inside `[[ == ]]` patterns, and `dart-sdk` files abort the wasm parser with
-   `memory access out of bounds`.
+    `calls` edges come from one.** This is a pinned-grammar limit, not an analyzer
+    limit: bash-completion's generated `completions-core/*.bash` nest extglob
+    inside `[[ == ]]` patterns, and `dart-sdk` files abort the wasm parser with
+    `memory access out of bounds`.
 12. **The differential cannot see a shared grammar bug.** `deriveBashEdges` walks
-    the same pinned wasm. Precision/recall of 1.000 against 1,597 oracle edges is
-    agreement about the tree, not about bash. The two fabrications removed in pass
-    2 are a concrete instance of the blind spot this describes: both were the
-    grammar misparsing, and the oracle either agreed or was silent, so neither
-    could have caught them. They were caught by asking what the edge TARGETS were.
+     the same pinned wasm. Coverage of 1,657 of 1,657 oracle edges with 0
+     unexplained is agreement about the tree, not about bash. Three separate
+     fabrications in this lane — the two arithmetic operands round 2 removed and
+     the dependency edges round 3 removed — were all the grammar misparsing, and
+     the oracle either agreed or was silent, so none of them could have been
+     caught. All three were caught by asking what the edge TARGETS were, and the
+     third by reading the census's own example rows.
 13. **Both measurements are samples, and one is a hash-ordered sample of 400 of
     4,012 admitted files.** Hash order is deterministic and does not favour any
     repository's naming, but it is not a uniform draw of tokens or of bytes, and a
     repository with many small scripts is represented more than a repository with a
     few large ones. The gate's 4,012-file figures are quoted alongside every census
     figure for that reason.
-14. **The census sample is reproducible only against a pinned corpus.** Every
-    number in this document moved when the shared corpus grew from 3,174 to 4,012
-    admitted files, and two of them moved in opposite directions
-    (`imports`/`references` 61 → 45, `exports` 179 → 210), because adding files
-    changes which files sort into the first 400 of a hash order. The corpus state
-    is therefore part of every claim here. A reader re-running the census against
-    a different corpus should expect different numbers and should not read that as
-    a regression in the analyzer.
+14. **The census sample is reproducible only against a pinned corpus.** Round 2's
+    numbers moved when the shared corpus grew from 3,174 to 4,012 admitted files,
+    and two of them moved in opposite directions, because adding files changes
+    which files sort into the first 400 of a hash order. Round 3 re-ran the census
+    on the current corpus and **reproduced round 2's denominators and its
+    per-type counts exactly** (400 / 48 repos / 4,012 / 441,259, and calls 5,150 /
+    uses 7,947 / contains 3,697 / imports 45 / references 45 / exports 210 /
+    overrides 28 before this round's own −5), which is what a pinned-corpus claim
+    should look like. A reader re-running it against a different corpus should
+    expect different numbers and should not read that as a regression.
+15. **The ontology coverage gate's per-type totals are NOT reproducible run to
+    run, on an unchanged commit and an unchanged corpus.** Two runs of
+    `npx tsx script/m14/ontology-coverage-gate.ts bash` gave `calls` 53,443 vs
+    53,481, `uses` 78,404 vs 78,425, `contains` 35,743 vs 35,769. The pinned wasm
+    aborts with `memory access out of bounds` on whichever files it reaches, the
+    set of files differs between runs, and one run ended in `[BB-HANG] parser
+    stuck 120s` and exited early. **No two of the ten error paths the two runs
+    reported are the same.** Every per-type gate figure is therefore a range, and
+    the census figures are the ones to quote — `census-bash-ontology.ts` goes
+    through `parseFile`, reported 0 parse failures on the same 400 files, and
+    reproduced exactly. This is a limitation of the instrument, stated here rather
+    than hidden by quoting whichever run was more convenient. **Reported, not
+    fixed** (§8): the gate is shared machinery.
+16. **10 `contains` edges and 10 symbols have an owner equal to their own name**,
+    and round 3 traced every one rather than guarding against the shape. The
+    census's self-edge tally finds 73 self-edges on the 400-file sample — `calls`
+    54, `overrides` 8, `contains` 10, `uses` 1 — and only the `contains` ten are a
+    problem, because a symbol cannot lexically contain itself. Two distinct causes,
+    both verified on the tree with `probe-bash-owner-stack.mts` and an
+    ancestor-chain dump:
+    - **8 are a grammar artifact.** `ohmyzsh/lib/clipboard.zsh` has an
+      `if`/`elif` chain defining `clipcopy` in every branch, and the pinned wasm
+      cannot parse it: it nests
+      `function_definition clipcopy @67-67` INSIDE
+      `function_definition clipcopy @64-108`, so the inner one is attributed to the
+      outer. The function stack itself is balanced (26 pushes, 26 pops, 0 nameless
+      definitions, depth 0 at end), so this is not the desync it looks like.
+    - **2 are real bash shadowing.** `consul/build-support/functions/10-util.sh`
+      has `function ui_version` at 597-615 and a `local ui_version="$(…)"` at 612.
+      A function that shadows its own name is ordinary bash, and the edge is true.
+    A guard refusing `owner === name` would delete the two true edges and still
+    leave 8 false ones, because the grammar would keep nesting them. **No guard
+    was added**: the defect belongs to the pinned wasm, and the residual is
+    reported here instead. What it costs a consumer is stated plainly — a
+    `contains` self-loop is not answerable, and 8 of the 10 exist only because of a
+    parse the analyzer did not choose.
 
 ## Complexity envelope and measured performance
 
@@ -688,7 +994,7 @@ Measured through the **production** `parseFile`, which is the path
 | --- | --- | --- | --- | --- | --- |
 | hash-ordered, representative (median 1 KB) | 300 | 12.2 s | **40.6 ms** | 3,605 | 15,785 |
 | the 200 **largest** admitted files (mean 21 KB) | 200 | 46.5 s | **232.5 ms** | 10,449 | 58,730 |
-| hash-ordered sample used for the ontology census above | 400 | see `census-bash-ontology.ts` | — | **4,101** | **17,122** |
+| hash-ordered sample used for the ontology census above | 400 | see `census-bash-ontology.ts` | — | **4,101** | **17,117** |
 
 A large fixed cost per file plus a size-dependent cost. **No target budget is
 defined**, so these are measurements, not a verdict — the previous doc's
@@ -701,8 +1007,8 @@ lane's graph grows because of this change, and no shared budget file was touched
 
 ## Regex inventory
 
-**None.** All 12 baseline regex usages were replaced with structural AST
-handling:
+**Zero, and it was not zero for one round.** All 12 baseline regex usages were
+replaced with structural AST handling:
 
 - positional/special parameter detection → `variable_name` / `special_variable_name` children
 - `$VAR` / `${VAR}` name extraction → `simple_expansion` / `expansion` / `subscript`
@@ -712,6 +1018,24 @@ handling:
 - trap handler → quote stripping via char-code checks on `raw_string` / `string`
 - `set -e` → flag-word character scan (`-o errexit` pair included)
 - shell-identifier test for declared names → char-code loop beside `isCommandNameText`
+
+Round 2 then added three regex literals and this section kept saying "None":
+`/^\(\(/` and `/\)\)$/` and `/^\$\(\(/`, all in `isArithmeticOperandCommand`.
+`script/m12/verify-regex-census.ts` reported all three as `MISSING` against the
+committed blobs — a gate failure attributable to this lane, present in the shipped
+`analyzer/BASH`, and recorded nowhere in this document. Round 3 replaced them with
+`opensWithDoubleParen`, `opensWithArithmeticExpansion` and `endsWithDoubleParen`,
+and `scanAnalyzers("src/ast")` now reads **bash 0**.
+
+Two things are worth keeping from that. First, `isShellIdentifierName` states in
+its own doc comment that it is a char loop *because* "the M12 contract probe asserts
+the analyzer source contains NO regex literals" — so a second function in the same
+file citing a different convention is not a neutral style choice, it is a
+contradiction of a stated reason. Second, the gate that was supposed to prevent
+this did not prevent it: it reported the three rows as `MISSING` and the lane still
+merged with a doc asserting zero. A gate nobody reads is the same as no gate,
+which is why the count is now quoted from the instrument
+(`scanAnalyzers`) rather than from this prose.
 
 ## Supported constructs
 
@@ -773,18 +1097,24 @@ This round's own measurements, each reproducible from a named file in
 
 | check | command | result |
 | --- | --- | --- |
-| Ontology census, 400 hash-ordered files | `npx tsx validation/m14/fixtures/bash/census-bash-ontology.ts --sample 400` | 7 types emitted, **17,122 relationships**, 0 parse failures, 0 empty names, 0 `unknown` endpoints, 0 empty endpoints, 0 unknown kinds |
+| Ontology census, 400 hash-ordered files | `npx tsx validation/m14/fixtures/bash/census-bash-ontology.ts --sample 400` | 7 types emitted, **17,117 relationships** (round 2 read 17,122; delta −5, attributed edge for edge), 0 parse failures, 0 empty names, 0 `unknown` endpoints, 0 empty endpoints, 0 unknown kinds |
+| Round-3 adversarial probes | `npx tsx validation/m14/fixtures/bash/adversarial-probes3.ts --sample 400` | duplicate symbols **10**, all `function`, in 5 files, all real re-declarations; self-edges **73** (`calls` 54 / `overrides` 8 / `contains` 10 / `uses` 1); `exports`→symbol 210/210, 0 orphans, `exportForm` function 1 resolving to a function; `overrides` both-declarations-top-level **28/28**; reserved-word leak **0**; `calls`→own-variable **3**, the same 3 pass 2 adjudicated as correct; `INTERPRETED_COMMANDS` command nodes in command position **580**, reaching its gate **0** |
+| Guard F A/B — the defect's cost | `npx tsx validation/m14/fixtures/bash/guard-f-bash-imports.mts --sample 400` and `--sample 1200` | F2 removes **5 edges in 1 file with 0 real calls**, identically at 400 files / 48 repos and 1,200 files / 76 repos; F1 removes 5 but fires on valid bash; F3 removes 20 of which **15 are real** `kube::log::status` calls in gubernator.sh |
+| Guard F soundness — 39 node shapes | `npx tsx validation/m14/fixtures/bash/guard-f-soundness.mts` | F2 fires on **0** valid-parse command nodes; F1 fires on **1** (`awk one two ) three`) and is rejected. Exit code 0 |
+| Owner-attribution stack | `npx tsx validation/m14/fixtures/bash/probe-bash-owner-stack.mts <file>` | pushes == pops, **0** nameless `function_definition`, stack depth 0 at end — the self-owned declarations are genuine tree nesting, not a stack desync |
+| Parse-tree dump | `npx tsx validation/m14/fixtures/bash/probe-bash-tree3.mts <file> <from> <to>` | the instrument every `)`-adjacency claim above was read off, printed with node types and columns |
 | Grammar inventory (instrument A) | `npx tsx validation/m14/fixtures/bash/probe-bash-grammar-inventory.mts --sample 400` | **144 distinct node types**; `extends`/`implements`/`instantiates` → NONE |
-| RULED-construct probes (instrument B) | `npx tsx validation/m14/fixtures/bash/probe-bash-ruled-constructs.mts --sample 400` | parse-tree **0/0/0**; lexical 7/5/0, all 12 comment text; dynamic doors 42/11/8 |
-| Guard A/B | `npx tsx validation/m14/fixtures/bash/guard-ab-bash-calls.ts --sample 400` | A 30→0 implemented; B 108 rejected; C 0; D 0; E 18 rejected |
-| Fixtures | `bun run script/m14/run-fixtures.ts --lang bash` | **19 pass, 0 fail** |
-| Pass-2 adversarial probes | `npx tsx validation/m14/fixtures/bash/adversarial-probes.ts --sample 400` | unresolved-target decomposition: **0 missed declarations** on `calls` and on `uses`; 0 bash builtins named by a call; 5 self-report disagreements reduced to 3 by the arithmetic guard; `imports`/`references` overlap **45/45 both ways**; `overrides` **28/28** have an earlier definition; `exports` targets by kind constant 183 / variable 26 / function 1; confidence `calls` {1.0: 5132, 0.7: 18}, `uses` {0.8: 7947} |
-| Lane source mutants | `npx tsx validation/m14/fixtures/bash/mutants-bash-lane.mts` | **5 mutants, 5 caught, 0 survived, 0 did not apply** |
-| Shared mutant registry, bash slice | `BB_MUTANT_ONLY="bash/" bun run script/m14/mutate-analyzer.ts` | filtered 1,483 → **23, all 23 caught, 0 survivors** |
-| Ontology coverage gate | `npx tsx script/m14/ontology-coverage-gate.ts bash` | **7/10 emitted, 3 RULED-SOUND, 0 FALSIFIED, 0 ruled-without-justification**; 1 `[BB-HANG]` on a `dart-sdk` file (wasm `memory access out of bounds`) |
-| Differential, bash only | `bun run script/m14/differential.ts --lang bash` | `otp` pin, 60 files: truth **1,597**, covered **1,597**, MISSING 0, analyzer-edges 1,548, **unexplained 0**, heuristic 0 |
-| Doc-truth emissions | `bun run script/m14/verify-doc-truth-emissions.ts` | `NO_CLAIM_TABLE [bash]` **resolved** (21 → 20 project-wide); 9 of this table's 10 rows now graded, `calls` dropped by a defect in the gate's own parser (see above) |
-| Honesty gate | `npx tsx script/m14/verify-honesty.ts` | **22 failures, none in this lane's files**, and 22 at HEAD without this round's changes — see below |
+| RULED-construct probes (instrument B) | `npx tsx validation/m14/fixtures/bash/probe-bash-ruled-constructs.mts --sample 400` | parse-tree **0/0/0**; lexical 7/5/0 = **12 rows over 7 sites, every row a `#` comment line**; dynamic doors 42/11/8 |
+| Guard A/B | `npx tsx validation/m14/fixtures/bash/guard-ab-bash-calls.ts --sample 400` | A 30→0 implemented; B 108 rejected; C 0; D 0; E 18 rejected. **Pass-1 denominators; not re-run in round 3** |
+| Fixtures | `bun run script/m14/run-fixtures.ts --lang bash` | **20 pass, 0 fail** (round 2 read 19; `bash/case-arm-pattern-not-a-command` is new) |
+| Pass-2 adversarial probes | `npx tsx validation/m14/fixtures/bash/adversarial-probes.ts --sample 400` | unresolved-target decomposition: **0 missed declarations** on `calls` and on `uses`; 0 bash builtins named by a call; `imports`/`references` overlap **44/44 both ways**; `overrides` **28/28** have an earlier definition; `exports` targets by kind constant 183 / variable 26 / function 1; confidence `calls` {1.0: 5129, 0.7: 18}, `uses` {0.8: 7947} |
+| Lane source mutants | `npx tsx validation/m14/fixtures/bash/mutants-bash-lane.mts` | **8 mutants, 8 caught, 0 survived, 0 did not apply** (round 2 read 5/5) |
+| Shared mutant registry, bash slice | `BB_MUTANT_ONLY="bash/" bun run script/m14/mutate-analyzer.ts` | filtered 1,723 → **23, all 23 caught, 0 survivors** |
+| Ontology coverage gate | `npx tsx script/m14/ontology-coverage-gate.ts bash` | **7/10 emitted, 3 RULED-SOUND, 0 FALSIFIED, 0 ruled-without-justification**, on both runs — but the per-type totals **differ between them** (`calls` 53,443 vs 53,481) and five `[BB-PARSE-ERR] … memory access out of bounds` rows appeared, one run ending `[BB-HANG] parser stuck 120s` and exiting. See limitation 15 |
+| Differential, bash only | `bun run script/m14/differential.ts --lang bash` | `otp` pin, 60 files: truth **1,657**, covered **1,657**, MISSING 0, analyzer-edges 1,608, **unexplained 0**, heuristic 0. The run states it did **not** write the F5 artifact, "a scoped run is for inspecting lanes, and writing it here would replace that claim with a smaller one" |
+| DERIVATION debt | `npx tsx script/m60/rel-type-coverage-gate.ts --langs=bash` — **read the warning in Q6 first** | CHECK 1 DERIVATION **clean**; `baseline: 104 recorded, 0 NEW, 104 repaid`; and the committed `validation/m60/results/rel-type-coverage.json` carries **0 findings and 0 baseline rows naming bash** |
+| Regex census | `npx tsx script/m12/verify-regex-census.ts` | at the merged `analyzer/BASH` it printed `MISSING real-bash-analyzer.ts:706:/^\(\(/`, `:706:/\)\)$/` and `:713:/^\$\(\(/` — three gate rows attributable to this lane, recorded nowhere in its own doc. After the round-3 rewrite `scanAnalyzers("src/ast")` reads **bash 0**. The gate is still `FAILED` on **other** lanes (css, julia, clean, fsharp, javascript, python, svelte, typescript) |
+| Doc-truth emissions | `bun run script/m14/verify-doc-truth-emissions.ts` | see the note below — re-run for this revision |
 
 Supporting artifacts:
 
@@ -797,16 +1127,31 @@ Supporting artifacts:
 - **Full record** — `reviews/bash/m60-closure.md` (§1–§19a),
   `reviews/bash/resolution.md` (21 claim dispositions, deliberately not `CLOSED`)
 
-**On the honesty gate's 23 failures.** `src/ast/real-bash-analyzer.ts` appears in
-**0** of the failing declared-input sets, so this round's analyzer change did not
-newly stale any evidence. The failures are: 12 banned-term hits in **other
-lanes'** fixtures and results plus shared `validation/m14/grammar-pins.json`; the
-`M14.0.F7` check on `analyzer-hygiene-cpp` and `analyzer-hygiene-elixir`; the
-`F1`–`F9` evidence-freshness sets, which name hundreds of shared files
+**On the honesty gate's 22 failures.** The command is
+`npx tsx script/m14/verify-honesty.ts` — **not** `script/verify-honesty.ts`, which
+the previous revision of this document cited and which does not exist; the file is
+`script/m14/verify-honesty.ts`, and the wrong path fails with
+`ERR_MODULE_NOT_FOUND` before a single check runs, which is the shape of error that
+looks like a broken gate rather than a broken citation.
+
+Re-run in round 3: **22 failures**, the same count as round 2, and
+`src/ast/real-bash-analyzer.ts` appears in **0** lines of the output — so this
+round's analyzer change did not newly stale any evidence. The failures are: three
+banned-term hits in `validation/m14/results/M14.0.F5.json`,
+`M14.0.JS-CENSUS.json` and `fsharp-shape-census.json`; the `M14.0.F7` check on
+`analyzer-hygiene-cpp` and `analyzer-hygiene-elixir`; the `F1`–`F9`
+evidence-freshness sets, which name hundreds of shared files
 (`analysis-exclusions.ts`, `brain-surgical-patcher.ts`, `run-fixtures.ts`,
-`differential.ts` and so on) that this lane does not own; and the summary check
-"freshness rule flags every artifact". Regenerating those is shared work and is
-reported rather than attempted.
+`differential.ts`, `mutate-analyzer.ts` and so on) that this lane does not own; and
+the summary check "freshness rule flags every artifact". The only bash-named input
+in any of those sets is `script/m14/spec/bash-completeness.json`, in F8's declared
+inputs — a shared spec this lane does not own and did not touch this round.
+Regenerating any of it is shared work and is reported rather than attempted.
+
+Two of the gate's own lines are worth quoting because they are the ones a reader
+would otherwise assume this lane's evidence depends on:
+`ok banned-vocabulary lint over validation/m14 + M14 docs` and
+`ok M14.0.F8 all-green (24 checks)`.
 
 The `f5_tree_oracle` truth replaced a hand-authored 55-fact file in which every
 fact was `authority: manual_audit` and twelve pinned the `global` phantom as
