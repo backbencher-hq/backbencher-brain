@@ -60,6 +60,84 @@ function isCapitalized(text: string): boolean {
  */
 const IMPLICIT_DYNAMIC_TYPE = "dynamic"
 
+/**
+ * Positions where a `type_identifier` is a type mention the analyzer has ALREADY
+ * published under another label, plus the one position where it is not a mention
+ * of a type at all.
+ *
+ * Every entry is here because publishing it a second time would DOUBLE-COUNT one
+ * fact under two labels, or claim a mention that the source does not make. The
+ * inventory that produced this list is measured, not recalled —
+ * `validation/m14/fixtures/dart/type-position-probe.ts` walks the same corpus and
+ * prints the parent-position histogram; `collectTypeMention` carries the reason
+ * for each group.
+ */
+const DART_TYPE_MENTION_DOUBLE_COUNTED = new Set<string>([
+  // heritage — `extends` / `implements` / `with` (extractClassHeritage)
+  "superclass", "interfaces", "mixins",
+  // a mixin `on`-base is an `extends` edge (DARTD14), and a mixin-application
+  // class publishes its base and its with-list through the same extractor
+  "mixin_declaration", "mixin_application",
+  // construction is `instantiates`
+  "new_expression", "const_object_expression", "constructor_invocation",
+  "redirecting_factory_constructor_signature",
+  // `class Box<T>` DECLARES a type variable; it does not mention a type
+  "type_parameter",
+  // parse damage: not a fact about a well-formed program
+  "ERROR",
+])
+
+/**
+ * M60 rule R7 — no relationship endpoint may be the placeholder literal
+ * `unknown`.
+ *
+ * MEASURED, analyzer-side, and reproducible with `BB_DART_CONC=1` — the census is
+ * deterministic only at concurrency 1, for the reason its own header records:
+ *
+ *   BEFORE (`git show HEAD:src/ast/real-dart-analyzer.ts`):
+ *     all 2,351 tracked `.dart` files of `proxicall` — **239** rows carry the literal
+ *       as an endpoint: 154 `uses`, 68 `contains`, 17 `calls`.
+ *     the 2,735-file sample across 5 repositories this lane's census uses — **106**
+ *       rows: 85 `uses`, 19 `contains`, 2 `calls`.
+ *   AFTER (this filter in place), the same two runs: **0** and **0**.
+ *   `symbolsNamedUnknown 0` in both AFTER runs: no sampled file publishes a symbol
+ *   named `unknown`, because `src/ast/pool-worker.ts` `keepSymbol`'s UNIVERSAL
+ *   denylist rejects the name for every language. So every one of those rows was an
+ *   endpoint NOTHING COULD BIND.
+ *
+ * Those 106 rows moved the published relationship total by 104 rather than 106: the
+ * filter shares its loop with the dedup, and two of the 85 `uses` rows were
+ * duplicates the dedup was already discarding. Both numbers are stated because a
+ * reader who subtracts one from the other should find that difference rather than
+ * trip on it.
+ *
+ * The shape is one construction, and it is common:
+ *
+ *   `ApiError.unknown('Data transformation failed: $e')`
+ *
+ * The selector chain reduces to its leaf, the leaf of a constructor call on a
+ * capitalized type is the named constructor's segment, and the segment happens to
+ * be the word `unknown`. The published edge read `map calls unknown`, i.e. a
+ * symbol named `unknown` that no file in the corpus contains, colliding with the
+ * pipeline's own "no target" sentinel.
+ *
+ * The alternative was to publish `map calls ApiError`, which is a different claim
+ * and a false one — a call is not a call OF the type. The third alternative,
+ * `instantiates ApiError`, is the shape `DT-A` trusts only for an IN-FILE named
+ * constructor, and widening that to a cross-file guess would put edges in the graph
+ * that the oracle does not derive and that nothing can check.
+ *
+ * So the edge goes. That is R7's own instruction: when a fallback has nothing
+ * truthful to say, the honest state is ABSENCE and not the string `unknown`. The
+ * cost is declared rather than assumed — a Dart declaration literally named
+ * `unknown` loses its edge, and `proxicall/lib/models/nms/user_segment.dart`
+ * declares exactly one (an enum constant, `enum SegmentType { …, unknown, … }`),
+ * so the price is measured and non-zero: one declaration, and it published no edge
+ * to it before the filter either.
+ */
+const R7_PLACEHOLDER_NAME = "unknown"
+
+
 
 // ============================================================================
 // SCOPE MANAGEMENT — frames carry an immutable snapshot of the scope chain
@@ -550,7 +628,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     // --- Relationship passes -------------------------------------------------
     this.addContainmentRelationships(symbols, relationships, nameLines)
     this.extractOverrideRelationships(symbols, relationships, context?.overrideCompanion, nameLines, (context as any)?.projectIndex)
-    this.extractCallRelationships(rootNode, relationships, moduleName, symbols)
+    this.extractExpressionRelationships(rootNode, relationships, moduleName, symbols, (context as any)?.projectIndex)
     // Deduplicate identical rows: calls/instantiates emit ONE row PER CALL
     // SITE, so N sites of the same callee in one function push N identical
     // (type,source,target,confidence) rows — 192,761 redundant rows across
@@ -562,6 +640,13 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
       const seenRel = new Set<string>()
       const uniq: ASTEngine.UniversalRelationship[] = []
       for (const r of relationships) {
+        // M60 R7, in the one pass that already rewrites the row list. See
+        // R7_PLACEHOLDER_NAME for the measurement and for what the alternatives
+        // would have claimed.
+        if (
+          r.source === R7_PLACEHOLDER_NAME || r.target === R7_PLACEHOLDER_NAME ||
+          (r as any).from === R7_PLACEHOLDER_NAME || (r as any).to === R7_PLACEHOLDER_NAME
+        ) continue
         const key = `${r.type}|${r.source}|${r.target}|${r.confidence}`
         if (seenRel.has(key)) continue
         seenRel.add(key)
@@ -1353,12 +1438,56 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     return leaf !== base && !!companion.get(leaf)?.has(method)
   }
 
-  private extractCallRelationships(
+  /**
+   * The whole-tree EXPRESSION pass: `calls`, `uses`, `instantiates` and
+   * `references`.
+   *
+   * Named for what it reads rather than for when it was written. It began as the
+   * call pass, but it is also the only traversal that already knows, at every
+   * node, which declaration encloses it (`current`/`owner`, the family attribution
+   * rule), and a type mention's SOURCE is the same question a call's source is.
+   * A second traversal would have had to re-derive that attribution, and two
+   * copies of one rule are two rules that drift.
+   *
+   * `projectIndex` is LAST and it must stay last — the same hazard
+   * `extractOverrideRelationships` documents: an optional parameter inserted
+   * earlier silently swapped the ones after it.
+   */
+  private extractExpressionRelationships(
     node: Node,
     relationships: ASTEngine.UniversalRelationship[],
     moduleName: string,
     symbols: ASTEngine.UniversalSymbol[],
+    projectIndex?: any,
   ): void {
+    // The types this run can SEE. `references` publishes a type mention only when
+    // the mentioned name binds to a type declaration the analyzer can point at —
+    // a type from another file is a real mention, but from one file it is a NAME,
+    // and a name with nothing behind it is what `references` must not publish
+    // (see `collectTypeMention`).
+    //
+    // Same-file types come from the symbol table the first pass just built.
+    // UNNAMED EXTENSIONS ARE EXCLUDED, and that exclusion is load-bearing:
+    // `extension on String {}` is published under the name of its TARGET type, so
+    // admitting it would make every mention of `String` in the file resolve to
+    // this file's extension — an edge to a symbol that is not the type the code
+    // names.
+    const visibleTypes = new Set<string>()
+    for (const s of symbols) {
+      const kind = s.kind as ASTEngine.SymbolKind
+      const isType = kind === ASTEngine.SymbolKind.Class || kind === ASTEngine.SymbolKind.Mixin ||
+        kind === ASTEngine.SymbolKind.Extension || kind === ASTEngine.SymbolKind.Enum ||
+        kind === ASTEngine.SymbolKind.TypeAlias
+      if (!isType) continue
+      if (kind === ASTEngine.SymbolKind.Extension && (s.metadata as any)?.isUnnamedExtension) continue
+      if (s.name) visibleTypes.add(s.name)
+    }
+    // What this FILE declared, kept apart from what the index contributed, so a
+    // row can say which of the two resolved it. Production supplies no index for
+    // `.dart`, so there the two are the same set and every row says false.
+    const fileTypes = new Set(visibleTypes)
+    for (const t of projectIndex?.typeKinds?.keys?.() ?? []) visibleTypes.add(String(t))
+
     // DT-A (first review): in-file named constructors (`Foo.named`) — the
     // calls below consult this set so construction wins over the dangling
     // leaf call. Cross-file named ctors stay leaf calls (translation-unit
@@ -1480,6 +1609,14 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
         // mixin name is a direct identifier child (no name field)
         const id = this.findChildByType(n, "identifier")
         return id ? id.text : owner
+      }
+      // `typedef A = B;` — the alias is a PUBLISHED symbol (kind `type`), so the
+      // mention of `B` belongs to `A` and not to the file. Added for `references`;
+      // it cannot move `calls`/`uses`/`instantiates`, because a typedef has no
+      // body for an expression to sit in.
+      if (t === "type_alias") {
+        const nm = n.childForFieldName?.("name")?.text || this.findChildByType(n, "type_identifier")?.text
+        return nm || owner
       }
       return owner
     }
@@ -2008,6 +2145,12 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
       }
 
+      // `references`: the declaration mentions a TYPE. Collected here, on the one
+      // traversal that knows the enclosing declaration — see `collectTypeMention`.
+      if (t === "type_identifier") {
+        this.collectTypeMention(n, callSource, relationships, visibleTypes, fileTypes)
+      }
+
       for (let i = 0; i < n.namedChildCount; i++) {
         const child = n.namedChild(i)
         if (child) processNode(child, current, owner, childLocals)
@@ -2018,6 +2161,167 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
 
     processNode(node, null, null, new Set<string>())
+  }
+
+  // ============================================================================
+  // `references` — A DECLARATION MENTIONS A TYPE
+  // ============================================================================
+
+  /**
+   * One type mention, read off ONE node. No recursion, no state: everything it
+   * needs (`source`, the type set, the row sink) arrives as an argument, so the
+   * rule below is the whole rule and a reader does not have to reconstruct a walk
+   * to know what a `references` edge claims.
+   *
+   * ## WHAT IS CLAIMED
+   *
+   * `X references T` means: the declaration `X` names the type `T` in a TYPE
+   * POSITION, and `T` binds to a type declaration this run can see.
+   *
+   * Dart is statically typed, and a type position is a grammatical position, not
+   * a convention — the grammar has a dedicated node (`type_identifier`) that never
+   * appears where a value identifier appears. So the mention is a PARSE FACT, not
+   * a name-shape guess. What is not a parse fact is the BINDING of that name to a
+   * declaration, which is why the edge is published only when the name resolves
+   * and carries 0.95 rather than 1.0 — the same derivation `instantiates` is
+   * published at, for the same reason (a syntactic role plus a resolved name).
+   *
+   * ## WHY RESOLUTION IS A GATE AND NOT A REPORT
+   *
+   * Measured over 1,000 corpus files across 5 repositories: 75,769 type mentions
+   * outside heritage clauses, of which 3,460 (4.57%) name a type the same file
+   * declares. The other 95.43% name `String`, `Widget`, `Future` — real types, in
+   * `dart:core` and the Flutter SDK, declared in files this per-file run has not
+   * read. Publishing those would make the label mostly a list of SDK types, at
+   * ~22x the edge count, and every one of them an endpoint no symbol in the index
+   * can bind. A narrow graph that is true beats a wide graph that is not, so the
+   * unresolvable majority is deliberately unread, and the number is stated rather
+   * than left to be discovered downstream.
+   *
+   * A `projectIndex` widens the gate to every type the run can see
+   * (`src/ast/project-index.ts` `typeKinds`), which is how the differential's
+   * `--dart-deps=direct` runs measure more than production does. Production does
+   * not supply one for `.dart`: `parallel-indexer.ts` `PROJECT_INDEX_EXTENSIONS`
+   * names only `.sol`. So the published set is file-local in production and grows
+   * with an index — recorded per row in `isIndexResolved` so the two answers are
+   * distinguishable in the store rather than conflated.
+   *
+   * ## WHAT IS NOT A REFERENCE
+   *
+   * Measured parent-position inventory (the probe that produced it is
+   * `validation/m14/fixtures/dart/type-position-probe.ts`):
+   *
+   *   published — formal_parameter, normal_parameter_type, super_formal_parameter,
+   *     constructor_param (a `this.x` parameter's type), function_signature /
+   *     getter_signature / setter_signature / operator_signature (return types),
+   *     type_arguments (`List<T>`, `Map<K,V>`), function_type, record_type_field,
+   *     type_cast (`as T`), type_test (`is T`), try_statement (`on T catch`),
+   *     initialized_variable_definition, typed_identifier, for_loop_parts,
+   *     declaration (a field's type), program (a top-level `const String x`),
+   *     qualified (the LEAF of `prefix.Type`), constructor_tearoff (`http.Client`
+   *     used as a value), extension_declaration (`on T`), representation_declaration
+   *     (an extension type's representation type), type_alias (`typedef A = B`),
+   *     type_bound (`<T extends B>`), object_pattern / variable_pattern / cast_pattern
+   *     (a Dart 3 pattern's type), record_type.
+   *
+   *   NOT published, each for a stated reason:
+   *     superclass / interfaces / mixins / mixin_declaration / mixin_application —
+   *       heritage already publishes `extends` / `implements` / `uses`, and a second
+   *       label for the same fact double-counts it.
+   *     new_expression / const_object_expression / constructor_invocation /
+   *       redirecting_factory_constructor_signature — construction already publishes
+   *       `instantiates`.
+   *     type_parameter — `class Box<T>` DECLARES a type variable; it does not
+   *       mention a type. A mention of `T` inside that class resolves to the type
+   *       VARIABLE, which is what `isTypeParameterShadowed` refuses.
+   *     ERROR — nothing inside a parse-error region is a fact about a well-formed
+   *       program, and this analyzer's error policy is to publish what survived the
+   *       parse, not what the recovery invented.
+   *
+   * The last one is the reason this method checks the PARENT at all: in this
+   * grammar `type_identifier` only ever appears in a type position, so the node
+   * type alone would publish the double-counted positions above.
+   */
+  private collectTypeMention(
+    n: Node,
+    source: string,
+    relationships: ASTEngine.UniversalRelationship[],
+    visibleTypes: Set<string>,
+    fileTypes: Set<string>,
+  ): void {
+    const parent = n.parent
+    const position = parent ? parent.type : ""
+    if (DART_TYPE_MENTION_DOUBLE_COUNTED.has(position)) return
+
+    // A `type_identifier` under a `qualified` name is ALWAYS the type, and the
+    // node's own text is that type: `prefix.Type` carries `prefix` as an
+    // `identifier` sibling, and `Type.member` carries `member` as one — so there is
+    // nothing to strip, and the import alias is never in this branch (DAD1/DT-B).
+    //
+    // The first version of this read the leaf off the `qualified` NODE instead,
+    // which returns null for a `type_identifier` — so every prefixed type mention
+    // (`c.List<int>`, `E2.one` in a constant pattern) was silently dropped. The
+    // battery in script/m14/verify-dart-references.ts caught it as a missing
+    // EXPECTED row on both sides, which is the one class of defect two
+    // implementations of one rule share.
+    const name = n.text
+    if (!name || name === IMPLICIT_DYNAMIC_TYPE) return
+    // SELF-REFERENCE IS NOT A DEPENDENCY. An unnamed extension is published under
+    // its target type's name, so without this `extension on String` publishes
+    // `String references String`.
+    if (name === source) return
+    if (!visibleTypes.has(name)) return
+    // A mention of a TYPE VARIABLE resolves to the variable, not to a type that
+    // happens to share its spelling. Ancestor-walked rather than tracked in the
+    // scope set, because it runs only for names that already resolved (measured:
+    // 4.57% of mentions), so the walk costs nothing on the other 95%.
+    if (this.isTypeParameterShadowed(n, name)) return
+
+    relationships.push({
+      source,
+      target: name,
+      type: ASTEngine.RelationshipType.References,
+      confidence: 0.95,
+      line_number: this.nodeLine(n),
+      metadata: {
+        isTypeMention: true,
+        typePosition: position,
+        isIndexResolved: !fileTypes.has(name),
+      },
+    })
+  }
+
+  /**
+   * Is `name` bound by a TYPE PARAMETER of an enclosing declaration?
+   * `class Box<T> { T value; }` — `T` here is the type variable the class
+   * introduced, so the mention is not a reference to a declared type even when
+   * something in the project is also called `T`.
+   */
+  private isTypeParameterShadowed(n: Node, name: string): boolean {
+    let cur: Node | null = n.parent
+    let guard = 0
+    while (cur && guard++ < 32) {
+      const tp = this.findChildByType(cur, "type_parameters")
+      if (tp) {
+        for (let i = 0; i < tp.namedChildCount; i++) {
+          const c = tp.namedChild(i)
+          if (!c || c.type !== "type_parameter") continue
+          // The parameter's TEXT SPANS ITS BOUND. `class Box<T extends Wallet>` is
+          // ONE `type_parameter` node whose `type_bound` is a child of it, so
+          // `c.text` is `"T extends Wallet"` — and comparing that against `T` never
+          // matches, so the gate declined every CONSTRAINED type variable, which is
+          // the common case. Measured on a 9-line reproduction with the file's own
+          // `class T {}` present: this published `Box -> T`, `get -> T` and
+          // `put -> T`, three edges that resolve — at the WRONG declaration, since
+          // `T` inside `Box` is the variable and the class is something else.
+          const declared = c.childForFieldName?.("name")?.text ??
+            this.findChildByType(c, "type_identifier")?.text
+          if (declared === name) return true
+        }
+      }
+      cur = cur.parent
+    }
+    return false
   }
 
   // ============================================================================
@@ -2164,6 +2468,15 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
         continue
       }
       if (type === "overrides") { md.evidenceClass = "structural"; continue }
+      // `references` is a MENTION in a type position (a parse fact) bound to a
+      // declaration by name (not a parse fact), so it is `usage_contextual` — the
+      // same tier `calls` gets — and never `structural`: claiming the binding is
+      // structural would overstate it, since a per-file run cannot see the other
+      // files that declare most Dart types.
+      if (type === "references") {
+        md.evidenceClass = (r.confidence ?? 0) >= 0.85 ? "usage_contextual" : "inferred"
+        continue
+      }
       md.evidenceClass = "usage_contextual"
     }
   }
