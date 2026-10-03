@@ -20,6 +20,9 @@ import * as fs from "fs"
 import * as path from "path"
 import { runLang, LANGS } from "./run-fixtures"
 import { FSHARP_MUTANTS } from "./fsharp-mutants"
+import { CSS_MUTANTS } from "./css-mutants"
+import { NIM_MUTANTS } from "./nim-mutants"
+import { PROTOBUF_MUTANTS } from "./protobuf-mutants"
 
 const ROOT = process.env.BB_M14_ROOT ? path.resolve(process.env.BB_M14_ROOT) : path.resolve((import.meta as any).dirname ?? path.dirname(Bun?.main ?? process.argv[1] ?? "."), "..", "..")
 
@@ -2394,6 +2397,24 @@ export const MUTANTS: Mutant[] = [
   // mutant, which is the shape the M14 contract's F4 rule exists to prevent. Keeping the
   // definitions in a lane-owned file means the next removal costs two lines, not 296.
   ...FSHARP_MUTANTS,
+  // M60 (laptop-B ontology wave). THREE more lanes had written mutant files that
+  // nothing imported, so their mutants never ran — the same failure as the fsharp
+  // wiring above, reached independently by the css, nim and protobuf lanes. Each of
+  // those lanes measured its OWN survivors through its own harness and reported the
+  // numbers there, so their verdicts were sound; what was unsound was any claim that
+  // the F4 gate covered them. It did not.
+  //
+  // The tell is visible from the outside: protobuf reported "6 survivors" from a
+  // global run and "2/2 fixtures passing" from its lane run, and the two numbers
+  // disagreed because zero of the 1,481 global mutants were protobuf's.
+  //
+  // A mutant file that nothing imports is indistinguishable from a defect class
+  // with no mutant, which is the shape the F4 rule exists to prevent. Same
+  // rationale as the fsharp split: definitions stay lane-owned, this registry
+  // holds two lines, and the next merge costs two lines rather than hundreds.
+  ...CSS_MUTANTS,
+  ...NIM_MUTANTS,
+  ...PROTOBUF_MUTANTS,
   // ---------------------------------------------------------------- VB wave
   // 2026-09-27. The vb lane reported a 1.000 F5 differential and a healthy-looking
   // corpus profile while THREE whole classes of output were missing or wrong. Each
