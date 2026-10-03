@@ -735,3 +735,61 @@ whether they are declared or synthesized when its session ended.
 
 Each reached a report before exiting. Lua has 3 commits on its branch, php 1. Those
 are reviewable; the rest are read in the lane logs.
+
+## MEASURED FIRING — 18 of 23 laptop-B lanes, production parseFile, 120 files each
+
+This is the first table built from `script/m14/firing-check.ts` rather than from an
+agent's summary. It is the number that matters, and it is **lower than what the
+lanes reported**, which is the expected direction: source derivation over-counts,
+because a branch guarded by a predicate the corpus never satisfies still greps.
+
+| lane | fired | edges | files | degraded |
+|---|---|---|---|---|
+| fsharp | **9/10** | 12,517 | 120/120 | 0 |
+| powershell | **9/10** | 13,967 | 120/120 | 0 |
+| nim | 8/10 | 5,320 | 120/120 | 0 |
+| php | 8/10 | 9,448 | 112/120 | 0 |
+| r | 8/10 | 5,284 | 120/120 | 0 |
+| zig | 7/10 | 8,445 | 120/120 | **1** |
+| bash | 6/10 | 4,583 | 107/120 | 0 |
+| graphql | 6/10 | 15,954 | 120/120 | 0 |
+| json | 6/10 | 42,918 | 114/120 | **1** |
+| julia | 6/10 | 18,579 | 120/120 | 0 |
+| sql | 6/10 | 1,409 | 120/120 | 0 |
+| css | 5/10 | 73,369 | 120/120 | 0 |
+| hcl | 5/10 | 3,440 | 120/120 | 0 |
+| scss | 5/10 | 510 | 120/120 | **1** |
+| xml | 5/10 | 2,674 | 120/120 | 0 |
+| yaml | 4/10 | 16,126 | 116/120 | 0 |
+| protobuf | 3/10 | 2,069 | **10/120** | 0 |
+| toml | 1/10 | 1,729 | 104/120 | 0 |
+
+Not yet measured: dart, clean, markdown, graphql's tail, scss's tail. Protobuf
+parsed **10 of 120** files — 2,069 edges from a tenth of the sample, so its 3/10 is
+provisional and the parse failures need their own count before the number means
+anything.
+
+### Three lanes are DEGRADED and their numbers are provisional
+
+zig, json and scss each had a degraded parse. The gate **refuses to publish a count
+from a degraded run**, because a degraded parse returns FEWER edges with no error:
+`parseFile`'s catch substitutes a regex `extractFallback` whose symbols carry no
+`kind` and whose edges sit at 0.4/0.5. A degraded lane's count is a count about the
+fallback, not about the analyzer.
+
+The root cause was found and fixed — `resolveWasm`'s last fallback wrote each
+grammar to a path shared by every process, so a concurrent reader got a truncated
+file (see `7a7f0810f`). The residual degradation means other concurrent readers
+still exist. **Ten lanes share this machine**; that is the load.
+
+### Reading this table honestly
+
+- **The high scorers are not thereby correct.** fsharp at 9/10 and powershell at
+  9/10 have both had fabricated edges removed in this very wave — powershell
+  published a wildcard as a symbol name, and a variable as a type name. Firing is a
+  necessary condition and not a sufficient one.
+- **A low score is not automatically a defect.** toml at 1/10 is CORRECT and is
+  complete at 1/1: a config format has no call graph. css at 5/10 and scss at 5/10
+  are close to their ceiling.
+- **A high score with few files is a warning, not a result.** protobuf's 10/120 is
+  the shape to distrust.
