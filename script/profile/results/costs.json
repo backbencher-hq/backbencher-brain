@@ -1,0 +1,113 @@
+{
+  "dataDir": "/var/folders/4j/11tssyqj4kj0f8dfz06jsb700000gn/T/bb-costs-4Lbe2T",
+  "measurements": {
+    "rowBytes": {
+      "symbols": 453476,
+      "avgSourceTextBytes": 76.92813511630163,
+      "avgDocstringBytes": 0.11321216558318412,
+      "avgQualifiedNameBytes": 44.18119150737856,
+      "totalSourceTextMiB": 33.268988609313965,
+      "symbolsWithSourceText": 93255
+    },
+    "analyze": {
+      "stat1RowsBefore": 60,
+      "stat1RowsAfter": 60,
+      "run1Ms": 60469,
+      "run2Ms": 4838,
+      "run3Ms": 4859,
+      "pragmaOptimizeMs": 1,
+      "analysisLimitTrials": [
+        {
+          "limit": 1000,
+          "ms": 1418
+        },
+        {
+          "limit": 10000,
+          "ms": 1594
+        },
+        {
+          "limit": 100000,
+          "ms": 2138
+        }
+      ]
+    },
+    "nameAmbiguity": {
+      "symbols": 453476,
+      "distinctNames": 56248,
+      "meanSymbolsPerName": 8.062082207367373,
+      "namesWithGt100Symbols": 469,
+      "namesWithGt1000Symbols": 60,
+      "maxSymbolsForOneName": 15091,
+      "top5": [
+        {
+          "name": "name",
+          "c": 15091
+        },
+        {
+          "name": "type",
+          "c": 10881
+        },
+        {
+          "name": "kind",
+          "c": 10451
+        },
+        {
+          "name": "file",
+          "c": 9772
+        },
+        {
+          "name": "target",
+          "c": 9185
+        }
+      ]
+    },
+    "i13": {
+      "bareNameEdges": 217720,
+      "candidatePairs": 52829262,
+      "candidatesPerEdge": 242.65,
+      "candidateCountMs": 18502,
+      "growth": [
+        {
+          "edgeFraction": 0.125,
+          "edges": 31976,
+          "candidates": 7027381,
+          "ms": null,
+          "msPerEdge": null
+        },
+        {
+          "edgeFraction": 0.25,
+          "edges": 87325,
+          "candidates": 25054623,
+          "ms": null,
+          "msPerEdge": null
+        },
+        {
+          "edgeFraction": 0.5,
+          "edges": 127518,
+          "candidates": 33147862,
+          "ms": null,
+          "msPerEdge": null
+        },
+        {
+          "edgeFraction": 1,
+          "edges": 198519,
+          "candidates": 50280273,
+          "ms": null,
+          "msPerEdge": null
+        }
+      ],
+      "growthTimingsNote": "candidate COUNTS only; timings need --growth and an otherwise-idle machine"
+    },
+    "gravity": {
+      "symbols": 453476,
+      "cacheSizeMiB": 64,
+      "readScanMs": 5,
+      "readPayloadBytes": 94155349,
+      "readPayloadMs": 656,
+      "correlatedSubqueriesReadOnlyMs": 38,
+      "writeStep1Ms": 11573,
+      "writeStep2Ms": 15188,
+      "writeSteps34Ms": 12892
+    }
+  }
+}
