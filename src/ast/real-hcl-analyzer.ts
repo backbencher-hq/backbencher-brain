@@ -32,8 +32,20 @@ import { ASTEngine } from "./engine"
  *   - Relationships:
  *       * `contains`   parent → child block / attribute (qualified).
  *       * `references` enclosing block → dotted reference path (var.x, local.x,
- *                      module.x, data.TYPE.NAME, RESOURCE_TYPE.NAME.attr, each.x,
- *                      count.index, self.x, terraform.x, ...).
+ *                      module.x, data.TYPE.NAME, RESOURCE_TYPE.NAME.attr, ...).
+ *       * `uses`       enclosing block → a language builtin (count.index,
+ *                      each.key, self.x, path.module, terraform.workspace).
+ *       * `overrides`  an `override_resource` / `override_data` /
+ *                      `override_module` block → the declaration its `target`
+ *                      names. This RETYPES the reference the target used to
+ *                      publish rather than adding to it: Terraform replaces the
+ *                      values it points at, it does not read them.
+ *       * `calls`      enclosing block → a `function` block the same file
+ *                      declares. A global callee (`merge`, `length`,
+ *                      `provider::test::is_true`) declares nothing, so it
+ *                      produces no edge and therefore no dangling call advice.
+ *       * `exports`    document root → each top-level block.
+ *       * `imports`    a `module` block → its `source`.
  *       * every relationship carries `line`: the 1-based line of the node the
  *         TARGET NAME is written on (M59.A7 — the site, not the declaration
  *         start), so navigation lands on the reference, not the block header.
@@ -93,6 +105,53 @@ const TERRAFRAMEWORK_NAME = "Terraform"
  * `references`.
  */
 const BUILTIN_ROOTS = new Set(["count", "each", "self", "path", "terraform"])
+
+/**
+ * Block types that DECLARE a callable the same file can then call.
+ *
+ * The HCL grammar itself has no function declaration — the container grammar
+ * treats a function as a block, and the ecosystem layers the declaration on top
+ * of that. `function "name" { … }` is docker-bake's spelling; Terraform 1.8+
+ * spells the same construct `func "name" { … }`. Both parse as an ordinary
+ * one-label block, which is why a block-driven walker reaches them without any
+ * grammar support at all.
+ *
+ * MEASURED, not assumed: over 9,329 corpus files / 2,035,319 nodes there is
+ * exactly ONE declaration of this shape — `function "bindir"` in
+ * `docker/docker-bake.hcl:56` — and 4 call sites for it (lines 101, 106, 137,
+ * 151). `func` occurs 0 times, so it is NOT read here; see the doc's declared
+ * limitations for the probe that would change that.
+ *
+ * A callee only becomes a `calls` edge when a declaration in the SAME FILE
+ * matches it, so `merge(…)` / `length(…)` / `provider::test::is_true(…)` —
+ * 12,968 unqualified and 20 namespaced `function_call` nodes in this corpus,
+ * every one of them a global — still produce no edge. That is the whole reason
+ * this list has one entry and not two.
+ */
+const FUNCTION_DECL_BLOCKS = new Set(["function"])
+
+/**
+ * Terraform's dedicated override blocks, and what each one overrides.
+ *
+ * `override_resource` / `override_data` / `override_module` each carry a
+ * `target` attribute naming the declaration whose values the block REPLACES.
+ * That is an override in the only sense Terraform has one, and the spelling is
+ * the language's own — this is not a heuristic keyed on a word.
+ *
+ * MEASURED: 71 such blocks across 33 corpus files (`override_resource` 38,
+ * `override_module` 17, `override_data` 16), 68 of them carrying a `target`
+ * (50 two-segment, 15 three-segment, 3 four-segment), and 51 of those 68
+ * binding to a block-declared name under the indexer's own resolution
+ * strategies. Before this the analyzer read the `target` as an ordinary
+ * `references` read, which is the neighbouring label: Terraform does not READ
+ * the declaration it overrides, it replaces its values. The reference edge is
+ * therefore RETYPED, not duplicated — see the attribute branch.
+ */
+const OVERRIDE_BLOCK_KIND: Record<string, string> = {
+  override_resource: "resource",
+  override_data: "data",
+  override_module: "module",
+}
 
 export class RealHclAnalyzer implements ASTEngine.LanguageAnalyzer {
   /** Per-analysis memo for `subtreeSize`, keyed by tree-sitter node id. */
@@ -175,6 +234,16 @@ export class RealHclAnalyzer implements ASTEngine.LanguageAnalyzer {
     // `locals {}`, would otherwise give the document and the block one identity
     // (measured: 308 collisions over the 9,079-file corpus). The block's real
     // Terraform address is preserved in `hclAddress`.
+    // Function declarations, `label -> declared name`, and the call sites that
+    // have to be resolved against them. Both are collected DURING the one DFS
+    // and joined at the end, rather than by a second tree walk: a call may
+    // precede its declaration in the file (docker/docker-bake.hcl declares
+    // `bindir` on line 56 and calls it on 101), and a pre-pass would double the
+    // node visits the complexity envelope is written against. Unresolved call
+    // sites are dropped, which is the pre-existing behaviour for a global.
+    const functionDecls = new Map<string, string>()
+    const pendingCalls: { callee: string; line: number; owner: string }[] = []
+
     const stack: {
       node: Node
       blockPath: string[]
@@ -182,6 +251,7 @@ export class RealHclAnalyzer implements ASTEngine.LanguageAnalyzer {
       taken: Map<string, number>
       iterators: Set<string>
       shadowed: Map<string, number>
+      overrideKind: string | null
     }[] = [
       {
         node: rootNode,
@@ -190,6 +260,7 @@ export class RealHclAnalyzer implements ASTEngine.LanguageAnalyzer {
         taken: new Map([[rootName, 1]]),
         iterators: new Set(),
         shadowed: new Map(),
+        overrideKind: null,
       },
     ]
 
@@ -200,15 +271,16 @@ export class RealHclAnalyzer implements ASTEngine.LanguageAnalyzer {
       taken: Map<string, number>,
       iterators: Set<string>,
       shadowed: Map<string, number>,
+      overrideKind: string | null,
     ) => {
       for (let i = node.namedChildCount - 1; i >= 0; i--) {
         const child = node.namedChild(i)
-        if (child) stack.push({ node: child, blockPath, blockKind, taken, iterators, shadowed })
+        if (child) stack.push({ node: child, blockPath, blockKind, taken, iterators, shadowed, overrideKind })
       }
     }
 
     while (stack.length > 0) {
-      const { node, blockPath, blockKind, taken, iterators, shadowed } = stack.pop()!
+      const { node, blockPath, blockKind, taken, iterators, shadowed, overrideKind } = stack.pop()!
       const type = node.type
 
       if (type === "block") {
@@ -238,7 +310,7 @@ export class RealHclAnalyzer implements ASTEngine.LanguageAnalyzer {
           // Malformed block: no type identifier. Descend so nested valid
           // nodes are still reachable; syntax errors are reported by the engine.
           // The sibling scope is preserved: a typeless block is still a level.
-          pushChildren(node, blockPath, blockKind, taken, iterators, shadowed)
+          pushChildren(node, blockPath, blockKind, taken, iterators, shadowed, overrideKind)
           continue
         }
 
@@ -261,6 +333,16 @@ export class RealHclAnalyzer implements ASTEngine.LanguageAnalyzer {
           terraformBlocks.set(blockType, (terraformBlocks.get(blockType) ?? 0) + 1)
         }
 
+        // A function DECLARATION. Recorded by the name the call site will write,
+        // and FIRST-wins: a second `function "x"` in one file is an error in every
+        // dialect that has the construct, so the first declaration is the one a
+        // call can mean. The flag rides on the symbol because a consumer reading
+        // the graph has no other way to tell a callable from any other block.
+        const isFunctionDecl = FUNCTION_DECL_BLOCKS.has(blockType)
+        if (isFunctionDecl && labels.length > 0 && !functionDecls.has(labels[0])) {
+          functionDecls.set(labels[0], name)
+        }
+
         symbols.push({
           name,
           qualifiedName: qualified,
@@ -280,6 +362,7 @@ export class RealHclAnalyzer implements ASTEngine.LanguageAnalyzer {
             // where the document root occupies slot 0 when its name collides
             // with the block's own address (`moved.tf` holding `moved {}`).
             hclDuplicateIndex: name === address ? 0 : (taken.get(address) ?? 1) - 1,
+            ...(isFunctionDecl ? { hclFunctionDecl: true } : {}),
           },
         })
 
@@ -337,7 +420,7 @@ export class RealHclAnalyzer implements ASTEngine.LanguageAnalyzer {
           }
         }
 
-        pushChildren(node, [...blockPath, name], kind, new Map(), childIterators, childShadowed)
+        pushChildren(node, [...blockPath, name], kind, new Map(), childIterators, childShadowed, OVERRIDE_BLOCK_KIND[blockType] ?? null)
         continue
       }
 
@@ -377,19 +460,48 @@ export class RealHclAnalyzer implements ASTEngine.LanguageAnalyzer {
 
           if (expr) {
             const refs: { path: string; line: number }[] = []
-            this.extractReferences(expr, iterators, shadowed, refs)
-            for (const ref of refs) {
-              // A builtin root is a `uses` edge (global namespace, unresolvable);
-              // anything else is a project address and is a `references` edge.
-              const root = ref.path.split(".")[0]
-              const builtin = BUILTIN_ROOTS.has(root)
-              addRelationship(
-                ownerPath,
-                ref.path,
-                builtin ? ASTEngine.RelationshipType.Uses : ASTEngine.RelationshipType.References,
-                ref.line,
-                { hclSite: builtin ? "builtin-use" : "reference", ...(builtin ? { hclBuiltin: true } : {}) },
-              )
+            this.extractReferences(expr, iterators, shadowed, refs, pendingCalls, ownerPath)
+
+            if (overrideKind !== null && key === "target") {
+              // An override block's `target` is the declaration whose values this
+              // block REPLACES, so the edge is `overrides` and the ordinary
+              // `references` edge is SUPPRESSED rather than duplicated — the
+              // retype costs the graph no edge, and publishing both would claim
+              // Terraform reads what it in fact overwrites.
+              //
+              // `ownerPath` is the OVERRIDE BLOCK's own qualified path here (the
+              // `target` attribute's owner), which is the precise actor: the
+              // block that replaces the values, not whatever block happens to
+              // enclose it. A `run "test" { override_resource { … } }` therefore
+              // reads `run.test.override_resource -> aws_instance.first`.
+              //
+              // The line is the `target` KEY's line, matching every other
+              // attribute-keyed edge, so navigation lands on the address.
+              for (const ref of refs) {
+                // A builtin cannot be overridden — `count.index` and friends are
+                // not declarations. Measured: 0 sites; the guard is here so a
+                // future corpus cannot turn this into a fabricated edge.
+                if (BUILTIN_ROOTS.has(ref.path.split(".")[0])) continue
+                addRelationship(ownerPath, ref.path, ASTEngine.RelationshipType.Overrides, keyNode!.startPosition.row + 1, {
+                  hclSite: "override-target",
+                  hclOverrideKind: overrideKind,
+                  evidenceClass: "structural",
+                })
+              }
+            } else {
+              for (const ref of refs) {
+                // A builtin root is a `uses` edge (global namespace, unresolvable);
+                // anything else is a project address and is a `references` edge.
+                const root = ref.path.split(".")[0]
+                const builtin = BUILTIN_ROOTS.has(root)
+                addRelationship(
+                  ownerPath,
+                  ref.path,
+                  builtin ? ASTEngine.RelationshipType.Uses : ASTEngine.RelationshipType.References,
+                  ref.line,
+                  { hclSite: builtin ? "builtin-use" : "reference", ...(builtin ? { hclBuiltin: true } : {}) },
+                )
+              }
             }
           }
         }
@@ -402,7 +514,25 @@ export class RealHclAnalyzer implements ASTEngine.LanguageAnalyzer {
       // replacing the map here would drop the root-name reservation (and with
       // it the `moved.tf`-holding-`moved {}` disambiguation) at the top level.
       // Only entering a `block` starts a new level.
-      pushChildren(node, blockPath, blockKind, taken, iterators, shadowed)
+      pushChildren(node, blockPath, blockKind, taken, iterators, shadowed, overrideKind)
+    }
+
+    // `calls` — resolved here, after the DFS, because a call may precede its
+    // declaration in the file. Only a callee a `function` block in THIS FILE
+    // declares becomes an edge; every global callee (12,968 unqualified
+    // `function_call` nodes in the measured corpus) is dropped, which is what
+    // keeps the edge resolvable and the graph free of dangling call advice.
+    for (const site of pendingCalls) {
+      const declared = functionDecls.get(site.callee)
+      if (!declared) continue
+      addRelationship(site.owner, declared, ASTEngine.RelationshipType.Calls, site.line, {
+        hclSite: "function-call",
+        // The spelling AT the call site, kept because the target is the
+        // declaration's index identity (`function.bindir`) rather than the bare
+        // name the file writes.
+        hclCallee: site.callee,
+        evidenceClass: "structural",
+      })
     }
 
     // The public interface of a module is its top-level blocks. Published as
@@ -544,14 +674,27 @@ export class RealHclAnalyzer implements ASTEngine.LanguageAnalyzer {
    * or a function name — not a reference — and is skipped. `loopVars` carries
    * `for`-intro identifiers and `dynamic` iterators so block-locals are never
    * mistaken for module/resource references.
+   *
+   * `callSites` collects every `function_call` CALLEE with the line it is
+   * written on, and nothing decides here whether it becomes an edge: a callee is
+   * only callable if a `function` block declares it, and that map is complete
+   * only after the DFS finishes (a call may precede its declaration). So the
+   * candidate is recorded and resolved by the caller.
    */
   private extractReferences(
     node: Node,
     loopVars: Set<string>,
     shadowed: Map<string, number>,
     out: { path: string; line: number }[],
+    callSites: { callee: string; line: number; owner: string }[],
+    owner: string,
   ): void {
     const type = node.type
+
+    if (type === "function_call") {
+      const callee = this.findChild(node, (n) => n.type === "identifier")
+      if (callee) callSites.push({ callee: callee.text, line: callee.startPosition.row + 1, owner })
+    }
 
     if (type === "for_expr" || type === "for_tuple_expr" || type === "for_object_expr") {
       const childLoopVars = new Set(loopVars)
@@ -565,7 +708,7 @@ export class RealHclAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
       for (let i = 0; i < node.namedChildCount; i++) {
         const child = node.namedChild(i)
-        if (child) this.extractReferences(child, childLoopVars, shadowed, out)
+        if (child) this.extractReferences(child, childLoopVars, shadowed, out, callSites, owner)
       }
       return
     }
@@ -576,7 +719,7 @@ export class RealHclAnalyzer implements ASTEngine.LanguageAnalyzer {
       // `fieldNameForChild` (which indexes over ALL children, anonymous
       // tokens included, so the two index spaces do not correspond).
       const val = node.childForFieldName?.("val")
-      if (val) this.extractReferences(val, loopVars, shadowed, out)
+      if (val) this.extractReferences(val, loopVars, shadowed, out, callSites, owner)
       return
     }
 
@@ -596,7 +739,7 @@ export class RealHclAnalyzer implements ASTEngine.LanguageAnalyzer {
       const child = node.child(i)
       if (!child) continue
       if (child.type !== "variable_expr" && child.type !== "get_attr") {
-        if (child.isNamed) this.extractReferences(child, loopVars, shadowed, out)
+        if (child.isNamed) this.extractReferences(child, loopVars, shadowed, out, callSites, owner)
         continue
       }
       const parts: string[] = []
