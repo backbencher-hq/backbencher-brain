@@ -339,6 +339,99 @@ export const PROTOBUF_MUTANTS: Mutant[] = [
     }),
   },
   {
+    id: "protobuf/field-shadows-its-own-type-reference",
+    language: "protobuf",
+    defectClass: "self-edge",
+    description:
+      "A REGRESSION guard for a defect this lane measured and fixed, not a revert of a pre-fix draft. Protobuf resolves a type name through nested scopes, and only TYPES are in that namespace; a field declares no type. The resolver accepted every declaration, so an ordinary field whose NAME equals the type it names answered its own type reference: `message Extra { repeated IPAMStatus IPAMStatus = 1; }` published the field as `pkg.Extra.IPAMStatus` moments before emitting its edge, the innermost scope candidate matched the field, and the edge became `pkg.Extra.IPAMStatus -> pkg.Extra.IPAMStatus`. Measured: 9 self-edges over 606 corpus files — docker/daemon/cluster/convert/netextra/extra.proto:12 and 8 under docker/vendor/github.com/moby/buildkit (api/types/worker.proto:13-14, frontend/gateway/pb/gateway.proto:173/193/197, solver/pb/ops.proto:117/120/317). A self-edge is the shape a fabricated edge takes when two declarations collide on one id, so bb_graph, bb_impact and bb_migrate would each read it as a field whose type is itself. Reverted by resolving against EVERY declaration again — the result's own symbol table gives the containing message of each `property`, and a `uses` edge from that property onto an id with the same leaf name is moved onto it. Caught by protobuf/absolute-and-scope-resolution, whose `SelfNamed.Inner` row pins the top-level type and whose forbid row pins the ABSENCE of the self-edge; the `SelfNamed.shadow` row is the control, since it has no collision for this defect to exploit.",
+    transform: (r: any) => {
+      const propIds = new Set(
+        syms(r).filter((s: any) => s?.kind === "property").map((s: any) => String(s?.metadata?.id ?? "")),
+      )
+      if (propIds.size === 0) return r
+      return {
+        ...r,
+        relationships: rels(r).map((x) => {
+          const t = x.type ?? x.relationshipType
+          if (t !== "uses") return x
+          const src = String(x.source ?? "")
+          const tgt = String(x.target ?? "")
+          // The pre-fix shape exactly: the field answers its own type reference,
+          // so the edge's SOURCE is also its TARGET. That is the whole defect —
+          // the innermost scope candidate that matched was `owner.<fieldName>`,
+          // which is this edge's own source. Matching on the source rather than
+          // on any field sharing a leaf name is what keeps the mutant faithful:
+          // a looser predicate also fires on unrelated fields and would then be
+          // caught by the wrong assertion, which is coverage that reads as
+          // coverage and is not.
+          if (src === tgt) return x
+          const leaf = tgt.includes(".") ? tgt.slice(tgt.lastIndexOf(".") + 1) : tgt
+          if (!src.endsWith(`.${leaf}`) || !propIds.has(src)) return x
+          return { ...x, target: src }
+        }),
+      }
+    },
+  },
+  {
+    id: "protobuf/import-edge-dropped",
+    language: "protobuf",
+    defectClass: "missing-edge",
+    description:
+      "A dependency graph for a schema language that cannot answer `which file does this type come from` is missing the one edge a consumer needs most, and its absence is invisible to a differential because the oracle was written after the same ruling. Measured before this lane's change: 1,117 `import` nodes across 392 of 606 corpus files were recorded into `result.imports` and emitted as NO edge at all. Reverted by dropping every `imports` relationship while leaving the `imports[]` array intact, which is exactly the pre-fix state — the array was already correct, so this mutant is faithful rather than a wholesale deletion. Caught by protobuf/imports-and-editions, which pins all three non-public forms including the editions feature import.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: rels(r).filter((x) => (x.type ?? x.relationshipType) !== "imports"),
+    }),
+  },
+  {
+    id: "protobuf/public-import-recorded-as-a-plain-import",
+    language: "protobuf",
+    defectClass: "wrong-type",
+    description:
+      "`import public` is a RE-EXPORT: this file's own importers reach the imported declarations through it. Recorded as a plain import it becomes an ordinary dependency, the re-export fact is lost, and a consumer asking which of two files importing the same path republishes it gets the same answer for both. Measured: 4 occurrences in 4 files (pb-reference/src/google/protobuf/{cpp_options,json_options,unittest_import,unittest_import_lite}.proto). Reverted by relabelling every `exports` edge as `imports` and dropping its `viaPublicImport` marker — the shape an analyzer that knew about imports but not re-exports produces. Caught by protobuf/imports-and-editions, which pins an `exports` row AND forbids the `imports` row for the same target, so relabelling alone cannot satisfy it.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: rels(r).map((x) => {
+        const t = x.type ?? x.relationshipType
+        if (t !== "exports") return x
+        const { viaPublicImport, ...rest } = (x.metadata ?? {}) as any
+        return { ...x, type: "imports", relationshipType: "imports", metadata: { ...rest, evidenceClass: "import_based" } }
+      }),
+    }),
+  },
+  {
+    id: "protobuf/import-edge-sourced-from-the-imported-path",
+    language: "protobuf",
+    defectClass: "fabricated-edge",
+    description:
+      "The SOURCE of a module edge is the importing file and the TARGET is the path as written. Taking the basename of the IMPORTED path for the source — which a first draft of this change did, before the suite caught it — makes a file appear to depend on ITSELF: `import public \"common/v1/types.proto\"` became `types.proto -> common/v1/types.proto`, an edge whose two endpoints name the same module, which bb_graph reads as a self-dependency and bb_impact reads as a cycle. Reverted by re-sourcing every module edge onto the basename of its own target. Caught by protobuf/imports-and-editions, whose forbid row names the self-import shape explicitly.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: rels(r).map((x) => {
+        const t = x.type ?? x.relationshipType
+        if (t !== "imports" && t !== "exports") return x
+        const tgt = String(x.target ?? "")
+        const self = tgt.includes("/") ? tgt.slice(tgt.lastIndexOf("/") + 1) : tgt
+        return { ...x, source: self }
+      }),
+    }),
+  },
+  {
+    id: "protobuf/evidence-class-dropped",
+    language: "protobuf",
+    defectClass: "missing-field",
+    description:
+      "Every edge this analyzer emits is read off the parse tree — a declaration node, a named child, an anonymous sibling token, a position — so its tier is `structural`, or `import_based` for an import. Measured before this lane's change: 40,562 of 40,562 production edges carried NO `evidenceClass`, so the honesty contract's requirement that a heuristic be COUNTABLE had nothing to count and the graph panel had to infer a tier from the confidence value instead. Reverted by deleting the key from every edge. Caught by protobuf/imports-and-editions, whose rows pin `meta.evidenceClass` on both a `contains` edge and an `imports` edge — the two different tiers, so an analyzer that stamped one constant on everything would fail as well.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: rels(r).map((x) => {
+        if (!x?.metadata || x.metadata.evidenceClass === undefined) return x
+        const { evidenceClass, ...rest } = x.metadata as any
+        return { ...x, metadata: rest }
+      }),
+    }),
+  },
+  {
     id: "protobuf/parse-fact-downgraded-to-a-heuristic",
     language: "protobuf",
     defectClass: "confidence",
