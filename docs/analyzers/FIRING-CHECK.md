@@ -14,7 +14,39 @@ corpus through the production path (`getParser` → `parse` → `analyze`),
 `script/m14/firing-check.mjs` is that test. It is the check that matters, and it
 should gate every lane from now on.
 
-## What actually fires (12 real corpus files per lane)
+## The real numbers: 120 corpus files per lane
+
+Twelve files under-reported. Kotlin went 4 -> 6 and Rust 6 -> 7 at 120 files, so
+the small sample was partly corpus starvation. These are the production-path
+results at 120 files, and they replace the table below it:
+
+    GO          10/10      SWIFT          7/10
+    TYPESCRIPT  10/10      JAVASCRIPT     7/10
+    HASKELL      9/10      KOTLIN         6/10
+    PYTHON       8/10      CLOJURE        6/10
+    SCALA        8/10      CPP            6/10
+    GROOVY       8/10      PERL           5/10
+    JAVA         8/10      ELIXIR         5/10
+    OBJECTIVE_C  8/10      C              5/10
+    RUBY         8/10      CSHARP         unmeasured (corpus has 16 .cs files,
+    ERLANG       8/10                        the sampler reached 1 — fix the
+                                            corpus before believing the number)
+
+**Go and TypeScript fire all ten.** The rest do not, and the gap is real rather
+than cosmetic: `overrides` never fires in 9 lanes, `exports` in 12.
+
+## The enum bug is fleet-wide, not per-lane
+
+`brain_import` was emitted by **zero of twenty** lanes at 120 files. Sixteen
+analyzers emit the raw literal `"imports"`, which is not an enum value. Fifty call
+sites compare against `RelationshipType.Imports`. So the `Imports` relationship
+type is currently unreachable through the enum in the entire codebase, and 16
+analyzers' import edges are invisible to all 50 consumers — silently, with no
+error. Only `real-cpp`, `real-erlang` and `real-html` mention `brain_import` at
+all. It arrived in 193d709db with no explanatory comment, so whoever fixes it must
+first establish whether that value was a deliberate namespace workaround.
+
+## superseded: the 12-file table
 
 | lane | fires | silent types |
 |---|---|---|
