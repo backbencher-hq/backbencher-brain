@@ -16,7 +16,7 @@
 // If the checkout's file set matches a previously indexed project's file set,
 // the DB can be adopted instead of reindexing from zero.
 import { createHash } from "crypto"
-import { readFile, readdir, stat } from "fs/promises"
+import { readFile, readdir, stat, open } from "fs/promises"
 import { existsSync } from "fs"
 import path from "node:path"
 
@@ -96,6 +96,29 @@ const DEFAULT_IGNORE_PATTERNS = [
   "**/benchmarkapps/**", "**/coverage/**", "**/testData/**",
 ]
 
+/**
+ * The first line of a file, for shebang detection — and nothing more.
+ *
+ * Bounded so this can never read a large file into memory: the walk touches
+ * every extensionless entry in a tree, and some of those are device nodes or
+ * multi-gigabyte blobs. A shebang is on line 1, so 256 bytes is generous; a file
+ * that opens with a BOM or whitespace before `#!` still fits.
+ */
+async function readShebang(p: string): Promise<string> {
+  try {
+    const fh = await open(p, "r")
+    try {
+      const buf = Buffer.alloc(256)
+      const { bytesRead } = await fh.read(buf, 0, 256, 0)
+      return buf.subarray(0, bytesRead).toString("utf8")
+    } finally {
+      await fh.close()
+    }
+  } catch {
+    return ""
+  }
+}
+
 async function walk(root: string, dir: string, ig: any, depth: number, rel: string[]): Promise<void> {
   if (depth > 50) return
   let entries: any[] = []
@@ -128,7 +151,33 @@ async function walk(root: string, dir: string, ig: any, depth: number, rel: stri
       continue
     }
     if (!entry.isFile()) continue
-    if (!detectLanguageFromPath(fullPath)) continue
+    // `detectLanguageFromPath` takes optional CONTENT, and content is REQUIRED to
+    // resolve an EXTENSIONLESS file: `nvm`, `libexec/rbenv` and `rbenv-init` are
+    // indexable only by their shebang — the whole reason the shebang rule exists
+    // (M14 #277: measured over five bash corpora, 385 extensionless files carry
+    // one and 97.7% parse clean).
+    //
+    // Passing no content made this walk MISS every one of them while discovery
+    // indexed them, so the two fingerprints disagreed on a tree that had not
+    // changed — measured walk=4 files vs index=5 rows, permanently. Every index
+    // then looked stale forever and the "did anything change" signal became
+    // meaningless.
+    //
+    // Only the first bytes are read, and only when the name carries no extension:
+    // a recognised extension always wins, so sniffing those would be wasted I/O
+    // on every file in the tree.
+    const baseName = entry.name
+    const hasExt = baseName.lastIndexOf(".") > 0
+    let detected: string | null = null
+    if (hasExt) {
+      detected = detectLanguageFromPath(fullPath)
+    } else {
+      // A basename can be a language on its own (Rakefile, Makefile); that needs
+      // no content. Otherwise fall back to the shebang.
+      detected = detectLanguageFromPath(fullPath)
+      if (!detected) detected = detectLanguageFromPath(fullPath, await readShebang(fullPath))
+    }
+    if (!detected) continue
     if (cliSkipPatterns.some((p) => p.test(normPath))) continue
     jobs.push(
       (async () => {
