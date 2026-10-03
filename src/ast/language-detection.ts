@@ -140,6 +140,64 @@ const BASENAME_LANGUAGE: Readonly<Record<string, DetectedLanguage>> = {
 }
 
 /**
+ * Replace comments and string/char literals with spaces, preserving offsets and
+ * newlines, so a marker search sees CODE rather than prose about code.
+ *
+ * Offsets are preserved deliberately: a later stage may care about line numbers,
+ * and replacing with equal-length filler keeps that mapping exact. Newlines are
+ * kept so a `/m` regex still means "per line".
+ *
+ * Not a C lexer — it is a marker scrubber. Unterminated block comments and
+ * strings run to end of input, which is the conservative direction: text that
+ * might be a comment is discarded, so a marker is never missed because a comment
+ * was mis-parsed. Missing a real marker (false negative) leaves the file routed
+ * as C, the safe default; inventing one (false positive) is the bug being fixed.
+ */
+function stripCommentsAndStrings(src: string): string {
+  let out = ""
+  let i = 0
+  const n = src.length
+  const blank = (from: number, to: number) => {
+    for (let k = from; k < to; k++) out += src[k] === "\n" ? "\n" : " "
+  }
+  while (i < n) {
+    const c = src[i]
+    const next = src[i + 1]
+    if (c === "/" && next === "/") {
+      let j = i
+      while (j < n && src[j] !== "\n") j++
+      blank(i, j)
+      i = j
+      continue
+    }
+    if (c === "/" && next === "*") {
+      let j = i + 2
+      while (j < n && !(src[j] === "*" && src[j + 1] === "/")) j++
+      const end = Math.min(n, j + 2)
+      blank(i, end)
+      i = end
+      continue
+    }
+    if (c === '"' || c === "'") {
+      const quote = c
+      let j = i + 1
+      while (j < n) {
+        if (src[j] === "\\") { j += 2; continue }
+        if (src[j] === quote) { j++; break }
+        if (src[j] === "\n") break // unterminated: stop at EOL, do not swallow the file
+        j++
+      }
+      blank(i, Math.min(j, n))
+      i = Math.min(j, n)
+      continue
+    }
+    out += c
+    i++
+  }
+  return out
+}
+
+/**
  * Detect syntax from filename conventions. Content is used ONLY to disambiguate
  * ambiguous extensions — currently the `.h` header which is shared by C, C++,
  * and Objective-C. Deterministic marker-based sniffing (not ML):
@@ -190,8 +248,16 @@ function languageFromShebang(content: string): DetectedLanguage | null {
   const nl = content.indexOf("\n")
   const first = (nl === -1 ? content : content.slice(0, nl)).trim()
   if (!first.startsWith("#!")) return null
+  // POSIX permits OPTIONAL WHITESPACE between `#!` and the interpreter path, and
+  // `#! /bin/sh` occurs in the wild. The old comparison built the candidate as
+  // `#!${interpreter}`, so a single space made every lookup miss and the file was
+  // silently un-routed — no error, no index entry, nothing. Normalise the gap
+  // once here rather than encoding the tolerance into every comparison.
+  const rest = first.slice(2).trimStart()
   for (const [interpreter, lang] of SHEBANG_LANGUAGE) {
-    if (first === `#!${interpreter}` || first.startsWith(`#!${interpreter} `)) return lang
+    // `=== interpreter` alone, or the interpreter followed by an argument.
+    if (rest === interpreter) return lang
+    if (rest.startsWith(interpreter) && /[\s]/.test(rest.charAt(interpreter.length))) return lang
   }
   return null
 }
@@ -226,8 +292,19 @@ export function detectLanguageFromPath(filePath: string, content?: string): Dete
   const byExtension = EXTENSION_LANGUAGE[ext]
   if (ext === "h" && content && content.length > 0) {
     const head = content.length > 65536 ? content.slice(0, 65536) : content
+    // COMMENTS ARE STRIPPED before sniffing. Several C++ markers are ordinary
+    // English that appears in prose about C — `// public:`, `// template<class T>`,
+    // `// std::vector`, `// namespace foo`, `// virtual void f()`, `// constexpr`.
+    // Every one of those routed a PLAIN C header to the C++ grammar, measured on
+    // trivial inputs, while the reverse direction (real C++ read as C) did not
+    // happen. So this is a false-positive defect: the header was parsed with a
+    // grammar for a different language, and reported as covered.
+    //
+    // Stripping string literals too, for the same reason — `"namespace foo"`
+    // in a C string is not a C++ namespace declaration.
+    const code = stripCommentsAndStrings(head)
     // Objective-C markers are unambiguous (@interface/@protocol/@implementation).
-    if (/@(?:interface|protocol|implementation)\s+[A-Za-z_]/m.test(head)) return "objective-c"
+    if (/@(?:interface|protocol|implementation)\s+[A-Za-z_]/m.test(code)) return "objective-c"
     // C++ markers: class declarations with access sections, templates,
     // namespaces, virtual/override, or C++ standard headers.
     const cppMarkers = [
@@ -240,7 +317,7 @@ export function detectLanguageFromPath(filePath: string, content?: string): Dete
       /#include\s*[<"](?:algorithm|array|bits\/|cassert|cctype|cerrno|cfloat|climits|cmath|cstddef|cstdint|cstdio|cstdlib|cstring|ctime|deque|exception|fstream|functional|iomanip|ios|iosfwd|iostream|istream|iterator|limits|list|locale|map|memory|mutex|new|numeric|ostream|queue|regex|set|sstream|stack|stdexcept|streambuf|string|typeinfo|unordered_map|unordered_set|utility|valarray|vector)[">]/m,
     ]
     for (let i = 0; i < cppMarkers.length; i++) {
-      if (cppMarkers[i].test(head)) return "cpp"
+      if (cppMarkers[i].test(code)) return "cpp"
     }
     return "c"
   }
