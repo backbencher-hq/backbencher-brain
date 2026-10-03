@@ -48,6 +48,14 @@ interface LuaFrame {
   selfName?: string
   localNames: Set<string>
   /**
+   * M60 LUA-49: names bound by a for-clause, each carrying the loop's END offset so
+   * the re-assignment test can ask whether that loop is still open. A bare
+   * `localNames` entry cannot express this, because Lua scopes a loop variable to
+   * the loop body and nothing else — the assignment after the loop is a different
+   * binding. See `registerLoopBindings`.
+   */
+  loopBindings?: Array<{ name: string; endIndex: number }>
+  /**
    * M60 LUA-20: true inside ANY function body, including a nameless closure.
    * `callable` cannot serve this purpose: a nameless closure at file scope has
    * no callable, so a guard written as `if (frame.callable)` never fires there
@@ -277,6 +285,10 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
         break
       case "return_statement":
         this.extractExport(node, frame, ctx)
+        break
+      case "for_statement":
+        // M60 LUA-49: a for-clause binds names, and the frame never heard of it.
+        this.registerLoopBindings(node, frame)
         break
       case "identifier":
         this.detectFrameworks(node.text, ctx)
@@ -673,6 +685,95 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
   }
 
+  /**
+   * M60 LUA-49: a for-clause BINDS a name, and the frame never heard of it.
+   *
+   * `extractAssignment` suppresses a local re-assignment with
+   * `frame.localNames.has(name)` — the one line standing between a re-assignment and
+   * a fabricated declaration. `localNames` was filled from exactly one place,
+   * `variable_declaration` (real-lua-analyzer.ts:649), so every OTHER binding form in
+   * the language fell through it. A generic-for clause is the common one:
+   *
+   *     for _, line in ipairs(lines) do
+   *       line = line:match("(.-)%%") or line     <- a re-assignment
+   *     end
+   *
+   * `line` is bound by the clause, so the statement above re-assigns a local and
+   * declares nothing. The analyzer had no record of the binding, published a
+   * `variable` SYMBOL for it, and `addContainsRelationships` then published
+   * `contains get_packages -> line` — a containment edge for a declaration that never
+   * happened, sitting on the assignment's line rather than the clause's.
+   *
+   * Found by the ORACLE rather than by reading: `lua-truth-oracle.ts` records
+   * for-clause names in `localsIn` (for its own LUA-26 exemption), so it correctly
+   * declined to derive the re-assignment, and the two disagreed. Four unexplained
+   * `contains` edges over ~600 corpus files, every one this shape:
+   * `contains get_packages -> line` (snacks.nvim/lua/snacks/image/doc.lua:131),
+   * `contains json -> item` (snacks.nvim/lua/snacks/picker/source/proc.lua:172),
+   * and one each in kong and luarocks.
+   *
+   * WHAT THIS DOES NOT DO, stated because the omission is the other half of the
+   * defect: the loop BINDING itself is still not published as a declaration. Lua
+   * binds `line` there, and neither a symbol nor a `contains` edge says so — the
+   * edge that used to appear was on the wrong line and for the wrong reason.
+   * Publishing the binding is the larger change and it is not made here: `for k, v in
+   * pairs(t)` is one of the most frequent constructs in Lua, so it is a symbol-count
+   * and payload decision for the whole graph surface, not a lane-local fix. Reported
+   * rather than done (§8 of the workstream, and limitation 14 of the doc).
+   *
+   * Scope: the name is recorded WITH THE LOOP'S END OFFSET, and the re-assignment
+   * test asks whether that loop is still lexically open at the assignment. That is
+   * not a refinement, it is the whole correctness of the rule: Lua scopes a loop
+   * variable to the loop body, so
+   *
+   *     for _, v in ipairs(t) do v = f(v) end   -- a RE-assignment
+   *     v = 5                                    -- a DIFFERENT binding
+   *
+   * are different facts. Recording the name in `localNames` unconditionally, which is
+   * what the first version of this fix did, got the first line right and the second
+   * one wrong: it suppressed 18 real `contains` edges on kong alone. The oracle caught
+   * it as 18 MISSING, which is the oracle working — it derives the post-loop
+   * assignment because the loop really has closed.
+   *
+   * Lua has no block scope for locals — a `do ... end` does not open one — so the
+   * binding goes in the ENCLOSING FUNCTION's frame rather than a block frame, and the
+   * loop's own extent is what bounds it. At file scope `frame.callable` is undefined
+   * and `extractAssignment`'s existing `frame.callable &&` guard still lets a
+   * file-scope assignment declare a global, which is correct: after
+   * `for _, v in ...` ends at file scope, `v = 5` assigns a global.
+   */
+  private registerLoopBindings(node: Node, frame: LuaFrame): void {
+    const clause = node.namedChild(0)
+    if (!clause) return
+    const end = node.endIndex
+    const add = (n: Node | null): void => {
+      if (n?.type !== "identifier") return
+      let list = frame.loopBindings
+      if (!list) frame.loopBindings = list = []
+      list.push({ name: n.text, endIndex: end })
+    }
+    if (clause.type === "for_numeric_clause") {
+      add(clause.childForFieldName("name"))
+      return
+    }
+    if (clause.type !== "for_generic_clause") return
+    for (let i = 0; i < clause.namedChildCount; i++) {
+      const list = clause.namedChild(i)
+      if (list?.type !== "variable_list") continue
+      for (let j = 0; j < list.namedChildCount; j++) add(list.namedChild(j))
+    }
+  }
+
+  /** Is `name` bound by a for-clause whose loop is still open at byte offset `at`? */
+  private inOpenLoopBinding(frame: LuaFrame, name: string, at: number): boolean {
+    const list = frame.loopBindings
+    if (!list) return false
+    for (let i = list.length - 1; i >= 0; i--) {
+      if (list[i].name === name && at < list[i].endIndex) return true
+    }
+    return false
+  }
+
   private extractAssignment(node: Node, frame: LuaFrame, ctx: LuaContext): void {
     if (node.parent?.type === "variable_declaration" && this.isLocalVariableDeclaration(node.parent)) return
     // M60 LUA-00: `name_list` is not a field in this grammar; the name list is
@@ -684,7 +785,23 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
       const variable = variableList.namedChild(i)
       const name = this.plainVariableName(variable)
       if (!variable || !name) continue // field/table mutations are not declarations
-      if (frame.callable && frame.localNames.has(name)) continue // local re-assignment
+      // The `frame.callable &&` guard covers the LOCAL case only, and must NOT cover the
+      // loop case. At file scope, `x = 1` with no `local` assigns a GLOBAL and does
+      // declare a symbol — that is the language's rule and it is why the guard
+      // exists. But a for-clause binds a real local at file scope too, so
+      //
+      //   for _, v in ipairs(X) do
+      //     _, v = next(v)          <- a RE-assignment, at FILE SCOPE
+      //   end
+      //
+      // declares nothing. Folding the loop test inside the guard exempted file-scope
+      // loops and published 7 fabricated `contains` edges over the 4-repo oracle draw
+      // — `contains global -> _` and `-> v` at
+      // kong/db/schema/entities/clustering_data_planes.lua:7, `contains global -> l`
+      // at plenary.nvim/lua/plenary/scandir.lua:22, and four more. The oracle found
+      // all seven, in one shape, which is the strongest evidence available that the
+      // rule is one rule and not seven.
+      if ((frame.callable && frame.localNames.has(name)) || this.inOpenLoopBinding(frame, name, node.startIndex)) continue // local re-assignment
       const isTable = this.isTableNode(value)
       if (isTable) ctx.declaredTables.add(name)
       ctx.symbols.push({
@@ -783,7 +900,27 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
       // whitelist never touched.
       const srcName = this.nameBearing(target)
       const mtName = this.nameBearing(metatable)
-      if (target && metatable && !this.isTableNode(target) && srcName && mtName) {
+      // M60 LUA-48: a table is not its own base. `setmetatable(M, M)` sets M's
+      // metatable to itself — an idiom for making a module table self-referential,
+      // not an inheritance relation — and the guard published `extends M -> M`, a
+      // type relation the language cannot express.
+      //
+      // Measured by script/m60/lua-labelling-audit.ts over the whole 3,252-file draw:
+      // 2 self-edges on `extends`, both of this shape —
+      // `return setmetatable(M, M)` at lazy.nvim/lua/lazy/state.lua:45 and
+      // `local ret = setmetatable(M, M)` at trouble.nvim/lua/trouble/cache.lua:59 —
+      // at confidence 1.0 and `evidenceClass: structural`, i.e. asserted as parse
+      // facts. A fabricated edge is what poisons `bb_graph`, `bb_impact` and
+      // `bb_migrate`: `extends M -> M` reads downstream as "M inherits from M",
+      // which is a cycle no refactoring advice should be built on.
+      //
+      // The same audit found 3 `contains` self-edges that are NOT this defect and are
+      // deliberately left alone: `function sum.sum(a, b)` at
+      // luarocks/spec/fixtures/busted_project/sum.lua:3 is a method named `sum` on
+      // owner `sum`, and a Lua table may carry a member with its own name. The
+      // distinction is whether the relation is TYPE-TO-TYPE or CONTAINER-TO-MEMBER,
+      // and only the first is inexpressible.
+      if (target && metatable && !this.isTableNode(target) && srcName && mtName && srcName !== mtName) {
         this.addRelationship(ctx, srcName, mtName, ASTEngine.RelationshipType.Extends, { luaSpecific: true, relationshipType: "lua_metatable" }, metatable)
       }
       if (metatable?.type === "identifier") {
