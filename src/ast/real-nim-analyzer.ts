@@ -110,6 +110,8 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
     })
     this.collectContainment(symbols, relationships)
     this.collectInheritance(symbols, relationships, fileTypes)
+    this.collectContractRefinement(rootNode, symbols, relationships)
+    this.pruneForeignReExports(symbols, exports)
     this.collectOverrides(symbols, relationships, declaredSubtypes, context?.overrideCompanion)
     this.collectCallsAndUses(rootNode, relationships, {
       fileValues,
@@ -231,7 +233,7 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
       } else if (t === "include_statement") {
         this.readIncludeStatement(n, imports, relationships)
       } else if (t === "export_statement") {
-        this.readExportStatement(n, exports)
+        this.readExportStatement(n, exports, relationships)
       }
       for (let i = n.namedChildCount - 1; i >= 0; i--) {
         const c = n.namedChild(i)
@@ -569,6 +571,13 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
       kind = ASTEngine.SymbolKind.Type
     }
 
+    // A CONCEPT's refinement clause: `type A = concept x of B` (the grammar
+    // spells the keyword `of`, NOT `is` — `is` puts the concept into an ERROR
+    // node, measured). It is the language's ONLY explicit declaration that one
+    // contract includes another, and it is what `collectContractRefinement`
+    // turns into an `implements` edge.
+    const refines = rhs && rhs.type === "concept_declaration" ? this.readRefinedConcepts(rhs) : []
+
     const sym: ASTEngine.UniversalSymbol = {
       name: nameInfo.name,
       kind,
@@ -582,12 +591,90 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
         nimTypeDefinition: true,
         ...(objectKind ? { nimObjectKind: objectKind } : {}),
         ...(inherits ? { nimInherits: inherits } : {}),
+        ...(refines.length > 0 ? { nimRefines: refines } : {}),
         ...(rhs ? { nimTypeRhs: this.nodeText(rhs) } : {}),
         nameRange: nameInfo.range,
       },
     }
     if (doc) sym.metadata.nimDocumented = true
     return sym
+  }
+
+  /**
+   * The contracts a concept refines — `type A = concept x of B` names `B`.
+   *
+   * The grammar puts the clause in a `refines` field of type `refinement_list`,
+   * which is `sep1($.type_expression, ",")`, so `of Number, Container` is two
+   * entries and each entry is a `type_expression`. Reading the FIELD rather than
+   * the `of` keyword is what makes this immune to the failure the arbiter
+   * documents about text probes: `is` inside a concept body is a different
+   * construct entirely (it is how a concept states its body is satisfied), and a
+   * probe on the word would count those too.
+   *
+   * Each entry is named by its leaf, because the store resolves an edge by
+   * matching the endpoint against a symbol name and the R10 rule requires the
+   * spelling the lane itself uses. A qualified refinement keeps the written
+   * spelling in `nimRefinesQualified`, which is the same two-part record the f#
+   * lane writes for `System.IDisposable`.
+   */
+  private readRefinedConcepts(concept: Node): string[] {
+    const list = this.refinementListOf(concept)
+    if (!list) return []
+    const out: string[] = []
+    for (let i = 0; i < list.namedChildCount; i++) {
+      const entry = list.namedChild(i)
+      if (!entry) continue
+      const leaf = this.typeConstructorLeaf(entry)
+      const written = this.nodeText(entry)
+      // A `/`-qualified refinement (`of std/numbers.Number`) arrives as an
+      // infix_expression, which `typeConstructorLeaf` does not walk — the same
+      // unbounded-depth path shape the import reader handles explicitly. Falling
+      // back to the last path segment keeps the edge addressable; a name with no
+      // separator and no leaf is skipped rather than guessed at.
+      const name = leaf
+        ? leaf.text
+        : this.lastPathSegment(written)
+      if (!name || out.indexOf(name) !== -1) continue
+      out.push(name)
+    }
+    return out
+  }
+
+  /**
+   * A `concept_declaration`'s `refinement_list`, or null when the concept
+   * refines nothing.
+   *
+   * ## The field shape, MEASURED
+   *
+   * `childForFieldName("refines")` on `type A = concept x of Number, Container`
+   * returns a node whose OWN TYPE is `refinement_list`, not a wrapper holding
+   * one — `childForFieldName("refinement_list")` on the same node returns null,
+   * while `childForFieldName("refines")` returns the two-entry list.
+   *
+   * Both readers of this clause (`readRefinedConcepts` for `implements`, the
+   * `concept_declaration` arm of `collectDeclaredTypeRefAt` for `references`)
+   * looked for a CHILD of that type on the field node instead, so both returned
+   * null on every file in the corpus and on a fixture that spells the construct
+   * correctly. Two readers independently wrong about one grammar fact is the
+   * reason the fact now has one function: the next grammar bump changes this.
+   */
+  private refinementListOf(concept: Node): Node | null {
+    const ref = concept.childForFieldName("refines")
+    if (!ref) return null
+    return ref.type === "refinement_list" ? ref : this.firstChildOfType(ref, "refinement_list")
+  }
+
+  /** The final `/`- or `.`-separated segment of a written type name. Index
+   *  arithmetic only — no pattern matching, like every other position reader in
+   *  this analyzer. */
+  private lastPathSegment(written: string): string {
+    let cut = written.length
+    for (let i = written.length - 1; i >= 0; i--) {
+      const ch = written[i]
+      if (ch === "/" || ch === ".") { cut = i + 1; break }
+    }
+    const seg = written.slice(cut)
+    return seg.length > 0 && seg.indexOf(" ") === -1 ? seg : ""
   }
 
   /** The node AFTER the `=` in a `type_declaration` — the `typeDefValue`. */
@@ -1103,14 +1190,213 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
   }
 
-  /** `export a, b` — a re-export of imported names, so no relationship of its
-   *  own; the names land in the export list and nothing else. */
-  private readExportStatement(n: Node, exports: ASTEngine.ExportInfo[]): void {
-    const list = this.firstChildOfType(n, "expression_list")
-    for (const text of this.identifierTextsIn(list)) {
-      if (!text) continue
-      exports.push({ name: text, metadata: { nimExport: true } })
+  /**
+   * `export a, b` — the module's RE-EXPORT, and the only Nim export fact that
+   * has no other carrier in this codebase.
+   *
+   * ## Why this emits an `exports` edge when the `*` marker does not
+   *
+   * Nim has two ways to make a name visible outside its module and they are
+   * different facts, so they are not interchangeable:
+   *
+   *   - the `*` marker (`proc foo*()`) sets the VISIBILITY of a declaration.
+   *     This analyzer already publishes that, as `visibility: "public"` plus
+   *     `metadata.exported`, and the parallel indexer persists it into
+   *     `brain_symbol.visibility`, where it already drives `gravity_score`
+   *     (parallel-indexer.ts:3044, :3052). Measured over the corpus: 28,900
+   *     `exported_symbol` nodes in 1,335 files. Publishing a second 28,900-edge
+   *     graph saying the same thing would grow the relationship payload by
+   *     ~17.6% (163,960 edges measured before) to add nothing a query could not
+   *     already ask. It is therefore NOT a gap, and the number is recorded here
+   *     so a reader can disagree with the judgement using the measurement rather
+   *     than the prose.
+   *
+   *   - the `export` STATEMENT re-publishes names this module IMPORTED. Nothing
+   *     on any symbol records that, no metadata field carries it, and the LSP
+   *     usages file-level section — which answers with
+   *     `relationship_type IN ('imports','exports')`, the one reader that answers
+   *     "what does this module depend on and hand on" — saw nothing for Nim.
+   *     That is a capability that emits NOTHING, which is the class every
+   *     existing gate is blind to. It is emitted here.
+   *
+   * ## The `except` clause, which the first version got backwards
+   *
+   * `doc/grammar.txt` spells the statement
+   * `exportStmt = 'export' optInd expr ((comma expr)* / 'except' optInd (expr^+ comma))`
+   * and the grammar agrees: `export nifpools except info, NoLineInfo, tagId, …`
+   * parses as `export_statement(identifier(nifpools), except_clause(expression_list(…)))`.
+   *
+   * The old reader walked every identifier under the statement, so it listed the
+   * EXCEPTED names as exported — the precise inverse of what the construct means,
+   * and a mistake that inflates the export set with names the author explicitly
+   * refused to re-publish. Measured on the corpus: 9 of 155 `export_statement`
+   * nodes carry an `except_clause`, and they are the whole reason a
+   * name-collecting walk is the wrong reader here. The operands are now read
+   * positionally: an operand inside `except_clause` is an exclusion, it is not
+   * published, and it rides the published operand's `nimExportExcluded`
+   * metadata.
+   *
+   * ## Spelling
+   *
+   * A re-export is usually written qualified — `export astyaml.treeToYaml`,
+   * `export common_parser.Parser` — and R10 requires the endpoint to be spelled
+   * the way the lane spells its own symbols, so the edge carries the LEAF and the
+   * written form is kept in `nimQualifiedName`. This is the same two-part record
+   * the f# lane writes for `System.IDisposable`. A `/`-separated operand is a
+   * MODULE rather than a symbol and is published whole, which is what the
+   * `imports` reader does with the same spelling, so the two spellings of one
+   * module are one target in the graph.
+   *
+   * Confidence 1.0: the statement names the operand outright, with no inference
+   * and no name matching.
+   */
+  private readExportStatement(
+    n: Node,
+    exports: ASTEngine.ExportInfo[],
+    relationships: ASTEngine.UniversalRelationship[],
+  ): void {
+    const exceptClause = this.firstChildOfType(n, "except_clause")
+    const exceptTexts = exceptClause
+      ? this.identifierTextsIn(this.firstChildOfType(exceptClause, "expression_list"))
+      : []
+    // The withheld names are NOT published as imports or exports: `except` says
+    // they do not leave the module, so putting them in the importable-unit list
+    // would state the inverse of the construct. They ride the metadata of the
+    // edge for the operand they qualify instead, which is the only place a
+    // reader asking "what does this module withhold" can find them.
+    for (const operand of this.exportOperands(n)) {
+      const read = this.readExportedName(operand)
+      if (!read.name) continue
+      exports.push({
+        name: read.name,
+        metadata: {
+          nimExport: true,
+          nimReExport: true,
+          ...(read.qualified ? { nimQualifiedName: read.qualified } : {}),
+          ...(read.alias ? { nimAlias: read.alias } : {}),
+        },
+      })
+      relationships.push({
+        source: "(global)",
+        target: read.name,
+        type: ASTEngine.RelationshipType.Exports,
+        confidence: 1,
+        line_number: operand.startPosition.row + 1,
+        metadata: {
+          relationshipType: "nim_reexport",
+          nimReExport: true,
+          ...(read.qualified ? { nimQualifiedName: read.qualified } : {}),
+          ...(read.alias ? { nimAlias: read.alias } : {}),
+          ...(read.isModule ? { nimModuleReExport: true } : {}),
+          ...(exceptTexts.length > 0 ? { nimExportExcluded: exceptTexts } : {}),
+        },
+      })
     }
+  }
+
+  /**
+   * Drop from the importable-unit list the re-exported names THIS FILE DOES NOT
+   * PROVIDE, keeping them on the `exports` relationship.
+   *
+   * ## Why the list and the edge answer different questions
+   *
+   * `result.exports` is the index's importable-unit set: a name an importer can
+   * bind, with this file as its provider. `exports foo` where `foo` is declared
+   * in another module is the opposite of that — the name is bindable, but
+   * SOMEBODY ELSE provides it, and recording it here would give one name two
+   * providers in the graph. The `exports` RELATIONSHIP is the right carrier for
+   * it, because the fact it states is "this module hands this name onward",
+   * which is true whoever declares it — and it is exactly what the LSP usages
+   * file-level section asks for with
+   * `relationship_type IN ('imports','exports')`.
+   *
+   * This is also the M49 exports-family invariant's own reading, which admits
+   * only names that resolve to a top-level symbol ("membership rides Contains")
+   * and lists the per-language exceptions explicitly. Nim's cross-module
+   * re-export needed no exception once the two carriers were separated; before
+   * this pass every `export` operand landed in the list, so a Nim fixture with
+   * an `export` statement at all failed the invariant on names that were never
+   * claimed to be local.
+   *
+   * The M49 invariant also requires export names to be UNIQUE — a duplicate
+   * cannot identify its provider — and `export a, a` is legal Nim, so the
+   * dedupe is here rather than left to a consumer to discover.
+   *
+   * Runs after `collectDeclarations` because answering "does this file declare
+   * it" needs the symbol set; the readers that fill the list run earlier, in
+   * the module-surface pass.
+   */
+  private pruneForeignReExports(
+    symbols: ASTEngine.UniversalSymbol[],
+    exports: ASTEngine.ExportInfo[],
+  ): void {
+    if (exports.length === 0) return
+    const local = new Set<string>()
+    for (const s of symbols) local.add(s.name)
+    const kept: ASTEngine.ExportInfo[] = []
+    const seen = new Set<string>()
+    for (const e of exports) {
+      const isReExport = !!(e.metadata as Record<string, unknown> | undefined)?.nimReExport
+      // A name this file does not declare is provided elsewhere; a name it does
+      // declare stays, because this file is then the provider the importer binds.
+      if (isReExport && !local.has(e.name)) continue
+      if (seen.has(e.name)) continue
+      seen.add(e.name)
+      kept.push(e)
+    }
+    exports.length = 0
+    for (const e of kept) exports.push(e)
+  }
+
+  /** The `export` statement's operands, positionally: a bare named child, or each
+   *  child of its `expression_list`, and never a node inside `except_clause`. */
+  private exportOperands(n: Node): Node[] {
+    const out: Node[] = []
+    for (let i = 0; i < n.namedChildCount; i++) {
+      const c = n.namedChild(i)
+      if (!c || c.type === "except_clause") continue
+      if (c.type === "expression_list") {
+        for (let j = 0; j < c.namedChildCount; j++) {
+          const item = c.namedChild(j)
+          if (item) out.push(item)
+        }
+        continue
+      }
+      out.push(c)
+    }
+    return out
+  }
+
+  /** One `export` operand, read for the NAME it publishes. A `/` path is a
+   *  module and is published whole; a `.` qualification is a symbol reached
+   *  through a module and is published by its leaf; `X as Y` renames locally and
+   *  still publishes `X`. */
+  private readExportedName(node: Node): { name: string; qualified?: string; alias?: string; isModule?: boolean } {
+    if (node.type === "identifier" || node.type === "accent_quoted") return { name: node.text }
+    if (node.type === "infix_expression") {
+      const op = node.childForFieldName("operator")
+      const left = node.childForFieldName("left")
+      const right = node.childForFieldName("right")
+      if (!op || !left) return { name: "" }
+      if (op.type === "as") {
+        const base = this.readExportedName(left)
+        const alias = right && right.type === "identifier" ? right.text : undefined
+        return alias ? { ...base, alias } : base
+      }
+      // The separator's text is the whole separator, `/` or `/..` fused, so a
+      // path is recognised by the node's own text carrying one — never by an
+      // equality test against "/" (see the grammar facts in this file's header).
+      if (op.text.indexOf("/") !== -1) return { name: this.nodeText(node), isModule: true }
+      return { name: "" }
+    }
+    if (node.type === "dot_expression") {
+      const right = node.childForFieldName("right")
+      if (!right || (right.type !== "identifier" && right.type !== "accent_quoted")) return { name: "" }
+      const leaf = right.text
+      const written = this.nodeText(node)
+      return written !== leaf ? { name: leaf, qualified: written } : { name: leaf }
+    }
+    return { name: "" }
   }
 
   private readImportStatement(
@@ -1388,6 +1674,276 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
         metadata: { relationshipType: "nim_object_inheritance", ...(sameFile ? {} : { nimCrossModuleBase: true }) },
       })
     }
+  }
+
+  /**
+   * `implements` — `type A = concept x of B`.
+   *
+   * ## Why this is `implements` and not `extends`
+   *
+   * A Nim `concept` is the language's only interface-like construct, it is
+   * satisfied STRUCTURALLY and implicitly (no type is ever annotated as
+   * implementing it), and the `of` clause is a declaration that A's contract
+   * includes B's. That is the same fact the elixir lane publishes as
+   * `implements` for a `@impl Protocol` — a duck-typed contract, satisfied
+   * without naming — and the same fact graphql publishes for `type X implements
+   * Y`. `extends` in this analyzer is already taken by the nominal class
+   * hierarchy (`object_declaration.inherits`), and this edge is emphatically not
+   * that: there is no vtable, no base type and no nominal subtype relation
+   * anywhere in a concept refinement.
+   *
+   * The two labels are not interchangeable here, and conflating them is exactly
+   * the confusion question 4 asks about: `A extends B` says A's storage contains
+   * B's; `A implements B` says anything satisfying A satisfies B.
+   *
+   * ## Why the base need not be declared in this file
+   *
+   * Same decision as `collectInheritance`, for the same reason: a concept
+   * refining a contract from a sibling module is ordinary Nim, and requiring a
+   * same-file declaration would drop the family the way it dropped cross-file
+   * `extends` at the seam (measured there: a three-file module persisted ZERO
+   * `extends` rows). The edge carries `nimCrossModuleContract` so a reader can
+   * tell a locally-declared contract from an imported one; the store resolves
+   * the far end.
+   *
+   * ## Confidence
+   *
+   * 1.0, not a guess. The `refines` field names the contract outright, in one
+   * spelling, with no name matching and no inference — the same grounds on which
+   * `extends` is 1.0 and the f#/graphql interface edges are 1.0. The
+   * `overrides` companion edge is 0.9 for a different reason: that one walks a
+   * PARTLY VISIBLE hierarchy, and this one does not walk anything.
+   *
+   * ## What it deliberately does NOT emit
+   *
+   * Concept SATISFACTION by an ordinary type (`type T = object` that happens to
+   * have `+` and `in`) is not emitted, and cannot be: it is decided by the
+   * compiler's structural matching at instantiation time, with no syntax naming
+   * the relationship. Inventing those edges is precisely the fabrication the
+   * workstream forbids — they would be unresolvable at both ends and would poison
+   * `bb_impact`. The `references` edge for the same `of` clause is deliberately
+   * KEPT, mirroring what this analyzer already does for `inherits` (which yields
+   * both `extends` and `references`): the ontology edge answers "which contract
+   * does this claim" and the type-graph edge answers "which types does this
+   * depend on", and those are two questions.
+   */
+  private collectContractRefinement(
+    rootNode: Node,
+    symbols: ASTEngine.UniversalSymbol[],
+    relationships: ASTEngine.UniversalRelationship[],
+  ): void {
+    const localTypes = new Set<string>()
+    for (const s of symbols) if (s.kind === ASTEngine.SymbolKind.Interface) localTypes.add(s.name)
+    if (localTypes.size === 0) return
+    for (const s of symbols) {
+      const refines = s.metadata?.nimRefines
+      if (!Array.isArray(refines) || refines.length === 0) continue
+      for (const raw of refines) {
+        const target = String(raw ?? "")
+        if (!target) continue
+        // A concept refining itself is not a relationship; `extends` carries the
+        // same guard for the same reason.
+        if (target === s.name) continue
+        const sameFile = localTypes.has(target)
+        relationships.push({
+          source: s.name,
+          target,
+          type: ASTEngine.RelationshipType.Implements,
+          confidence: 1,
+          ...(s.range?.startLine ? { line_number: s.range.startLine } : {}),
+          metadata: {
+            relationshipType: "nim_concept_refinement",
+            nimContractKind: "concept",
+            ...(sameFile ? {} : { nimCrossModuleContract: true }),
+          },
+        })
+      }
+    }
+    this.collectIsFormRefinement(rootNode, symbols, relationships, localTypes)
+  }
+
+  /**
+   * `implements`, second spelling — the `is` form of concept refinement.
+   *
+   * ## The two spellings, and which one real code uses
+   *
+   * `nim/doc/manual_experimental.md:1205-1213` names them as alternatives for
+   * one fact: "When the matched type within a concept is directly tested against
+   * a different concept, we say that the outer concept is a refinement of the
+   * inner concept … As an alternative way of defining concept refinements, you
+   * can use the object inheritance syntax involving the `of` keyword". So
+   *
+   *     type B = concept x
+   *       …
+   *     type A = concept x of B      # the `of` form  (collectContractRefinement)
+   *     type A = concept x
+   *       x is B                     # the `is` form  (here)
+   *
+   * state the same relationship. The `of` clause is the rarer of the two: over
+   * 4,101 corpus files it occurs ZERO times while the corpus holds 216 concept
+   * declarations, so an analyzer that read only the clause would report the type
+   * as absent from a corpus that is full of concepts.
+   *
+   * ## The three guards, and why each is load-bearing
+   *
+   * The `is` form is a much wider syntax than the `of` clause, so each guard
+   * removes a class of statement that is NOT a refinement:
+   *
+   *   1. The LEFT side must be one of the concept's own formal parameters. In a
+   *      concept body `o.foo is B` tests the type of a FIELD named `foo`, which
+   *      constrains that field and refines nothing — the corpus has exactly this
+   *      case (`nim/tests/concepts/texplain.nim:136`, `o.foo is RegularConcept`),
+   *      and reading it as a refinement would be a fabricated edge.
+   *   2. The RIGHT side must be a concept THIS FILE declares. `x is int` is a
+   *      type constraint on the matched parameter, and `int` implements nothing.
+   *      Measured on the corpus: of 125 `is X` expressions in concept bodies, the
+   *      most frequent right-hand sides are `T` (31), `int` (23), `bool` (15),
+   *      `string` (10), `V` (5), `float` (5) — a generic parameter or a concrete
+   *      type in every one of those, and emitting `implements -> int` for them is
+   *      the fabrication the workstream forbids. Only 5 name a same-file concept,
+   *      so the guard drops 120 of 125 rather than 0.
+   *   3. A concept naming ITSELF is skipped, as on the `of` path. All 5 corpus
+   *      cases are this shape (`nim/tests/concepts/trecursive_concepts.nim:26`,
+   *      `distinctBase(x) is Primitive`; `tconcepts_issues.nim:421`,
+   *      `bend(x is Bendable)`), which is why this family's corpus count is 0
+   *      edges rather than 5.
+   *
+   * An imported contract is NOT guessed at, even though `extends` does allow a
+   * cross-module base here: the same spelling names a concept or a concrete type
+   * depending on a scope this pass cannot see, so the guard is not relaxed for a
+   * confidence discount. That is the declared limit, with its measurement.
+   *
+   * Confidence 1.0 on the same grounds as the `of` form: the declaration names
+   * the contract outright, and guards 1-3 have already excluded every reading in
+   * which that name could be something else.
+   */
+  private collectIsFormRefinement(
+    rootNode: Node,
+    symbols: ASTEngine.UniversalSymbol[],
+    relationships: ASTEngine.UniversalRelationship[],
+    localConcepts: Set<string>,
+  ): void {
+    if (localConcepts.size === 0) return
+    interface ConceptSite {
+      name: string
+      params: Set<string>
+      body: Node | null
+    }
+    const sites: ConceptSite[] = []
+    const walk = (node: Node): void => {
+      if (node.type === "type_declaration") {
+        const decl = node.namedChildCount > 0 ? node.namedChild(0) : null
+        if (decl && decl.type === "type_symbol_declaration") {
+          const nameNode = decl.childForFieldName("name")
+          const concept = this.conceptDeclarationIn(node)
+          if (nameNode && concept) {
+            const params = new Set<string>()
+            for (const p of this.readConceptParameters(concept)) if (p.name) params.add(p.name)
+            sites.push({
+              name: this.readNameNode(nameNode).name,
+              params,
+              body: this.conceptBody(concept),
+            })
+          }
+        }
+      }
+      for (let i = node.childCount - 1; i >= 0; i--) {
+        const c = node.child(i)
+        if (c) walk(c)
+      }
+    }
+    walk(rootNode)
+    if (sites.length === 0) return
+    for (const site of sites) {
+      if (!site.name || !site.body) continue
+      const contracts = this.isFormContracts(site.body, site.params, localConcepts)
+      for (const contract of contracts) {
+        if (contract === site.name) continue
+        relationships.push({
+          source: site.name,
+          target: contract,
+          type: ASTEngine.RelationshipType.Implements,
+          confidence: 1,
+          line_number: site.body.startPosition.row + 1,
+          metadata: {
+            relationshipType: "nim_concept_refinement",
+            nimContractKind: "concept",
+            nimRefinementSpelling: "is",
+          },
+        })
+      }
+    }
+    void symbols
+  }
+
+  /** The `concept_declaration` inside a `type_declaration`'s right-hand side, if
+   *  the declaration is a concept at all. */
+  private conceptDeclarationIn(typeDecl: Node): Node | null {
+    const find = (n: Node): Node | null => {
+      if (n.type === "concept_declaration") return n
+      for (let i = 0; i < n.childCount; i++) {
+        const c = n.child(i)
+        if (!c) continue
+        const hit = find(c)
+        if (hit) return hit
+      }
+      return null
+    }
+    return find(typeDecl)
+  }
+
+  /** A concept's body — the LAST named child, which the grammar puts after the
+   *  optional parameter list and the optional `of` clause. */
+  private conceptBody(concept: Node): Node | null {
+    for (let i = concept.namedChildCount - 1; i >= 0; i--) {
+      const c = concept.namedChild(i)
+      if (c) return c
+    }
+    return null
+  }
+
+  /** The contracts a concept body tests its matched parameter against with `is`,
+   *  keeping only names that are a concept of this file.
+   *
+   *  Two structural guards, and both are needed because the `is` form is a much
+   *  wider syntax than the `of` clause:
+   *
+   *  - the LEFT side must be a BARE formal parameter. `o.length is Sized` tests a
+   *    field's type (`nim/tests/concepts/texplain.nim:136`), and
+   *    `distinctBase(x) is Primitive` tests the result of a call
+   *    (`trecursive_concepts.nim:26`); neither refines a contract, and both are
+   *    rejected because their left side is not the parameter itself. This one
+   *    guard covers a chain (`x is Shape or name(x) is Sized`) without needing to
+   *    understand `or`/`and`: the second operand's left side is a call, so it
+   *    fails here.
+   *  - an `argument_list` is not descended into, because `bend(x is Bendable)`
+   *    states a constraint passed to a call rather than a refinement. The corpus
+   *    has that shape too (`tconcepts_issues.nim:421`).
+   */
+  private isFormContracts(body: Node, params: Set<string>, localConcepts: Set<string>): string[] {
+    const out: string[] = []
+    const seen = new Set<string>()
+    const walk = (node: Node): void => {
+      if (node.type === "argument_list") return
+      if (node.type === "infix_expression") {
+        const op = node.childForFieldName("operator")
+        const left = node.childForFieldName("left")
+        const right = node.childForFieldName("right")
+        if (op && op.text === "is" && left && left.type === "identifier" && params.has(left.text) && right && right.type === "identifier") {
+          const name = right.text
+          if (localConcepts.has(name) && !seen.has(name)) {
+            seen.add(name)
+            out.push(name)
+          }
+        }
+      }
+      for (let i = 0; i < node.childCount; i++) {
+        const c = node.child(i)
+        if (c) walk(c)
+      }
+    }
+    walk(body)
+    return out
   }
 
   /**
@@ -1845,82 +2401,6 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   /**
-   * `instantiates` — Nim object construction is `TypeName(field: v, …)`, a
-   * `call` whose `function` is a TYPE name. Resolution requires the callee to be
-   * a type THIS file declares and not a callable it also declares, so a
-   * same-named value wins over the type and no `new`-style builtin's argument is
-   * ever misread as a construction.
-   */
-  private collectInstantiations(
-    rootNode: Node,
-    relationships: ASTEngine.UniversalRelationship[],
-    fileTypes: Set<string>,
-    fileCallables: Set<string>,
-  ): void {
-    const emitted = new Set<string>()
-    // The instantiation happens INSIDE a routine in every realistic case, so the
-    // edge must be attributed to that routine; "(file)" would make every
-    // construction in the file share one source and hide the call chain.
-    const stack: { node: Node; fn: string | null }[] = [{ node: rootNode, fn: null }]
-    while (stack.length > 0) {
-      const { node: n, fn: enclosing } = stack.pop()!
-      let nextEnclosing = enclosing
-      const callable = this.callableNodes[n.type]
-      if (callable) {
-        const nameNode = n.childForFieldName("name")
-        const info = nameNode ? this.readNameNode(nameNode) : null
-        nextEnclosing = info?.name ?? enclosing
-      }
-      if (n.type === "call") {
-        const fn = n.childForFieldName("function")
-        const leaf = fn ? this.calleeLeafNode(fn) : null
-        const leafText = leaf?.text
-        if (leafText && fileTypes.has(leafText) && !fileCallables.has(leafText)) {
-          const key = leafText
-          if (!emitted.has(key)) {
-            emitted.add(key)
-            relationships.push({
-              source: nextEnclosing ?? "(file)",
-              target: leafText,
-              type: ASTEngine.RelationshipType.Instantiates,
-              confidence: 0.9,
-              line_number: leaf ? leaf.startPosition.row + 1 : n.startPosition.row + 1,
-              metadata: { relationshipType: "nim_object_construction", callExpression: this.nodeText(n).slice(0, 60), isConstructor: true },
-            })
-          }
-        }
-        // `new(T)` / `new(result, T)` — the canonical allocation form, whose
-        // type argument is a bare identifier rather than a callee.
-        if (leafText === "new") {
-          const args = this.firstChildOfType(n, "argument_list")
-          if (args) {
-            for (let i = 0; i < args.namedChildCount; i++) {
-              const a = args.namedChild(i)
-              if (!a) continue
-              const t = a.type === "identifier" ? a.text : null
-              if (t && fileTypes.has(t) && !fileCallables.has(t) && !emitted.has(`new:${t}`)) {
-                emitted.add(`new:${t}`)
-                relationships.push({
-                  source: nextEnclosing ?? "(file)",
-                  target: t,
-                  type: ASTEngine.RelationshipType.Instantiates,
-                  confidence: 0.9,
-                  line_number: a.startPosition.row + 1,
-                  metadata: { relationshipType: "nim_new_allocation", isConstructor: true },
-                })
-              }
-            }
-          }
-        }
-      }
-      for (let i = n.namedChildCount - 1; i >= 0; i--) {
-        const c = n.namedChild(i)
-        if (c) stack.push({ node: c, fn: nextEnclosing })
-      }
-    }
-  }
-
-  /**
    * `references` — the declared-type graph, from the positions the grammar
    * marks as types: the `type` field of a parameter/field/variant
    * discriminator/value binding, the `return_type` of a routine or do-block, the
@@ -2185,9 +2665,12 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
       break
     }
     case "concept_declaration": {
-      const ref = n.childForFieldName("refines")
-      const list = ref ? this.firstChildOfType(ref, "refinement_list") : null
-      if (ref && list) for (let i = 0; i < list.namedChildCount; i++) collectFromTypeExpression(list.namedChild(i), "nim_declared_type", ownerOf(n))
+      // A concept's refinement list names contract types, so it is a
+      // declared-type position exactly as `object_declaration.inherits` is —
+      // which is why `implements` and `references` are both published for one
+      // `of` clause (see the co-existence note in `collectContractRefinement`).
+      const list = this.refinementListOf(n)
+      for (let i = 0; list && i < list.namedChildCount; i++) collectFromTypeExpression(list.namedChild(i), "nim_declared_type", ownerOf(n))
       break
     }
     case "type_declaration": {
@@ -2226,7 +2709,11 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (md.evidenceClass) continue
       const t = String(r.type ?? "")
       const rt = String(md.relationshipType ?? "")
-      if (t === "contains" || t === "extends" || t === "overrides") {
+      // `implements` joins the structural group: it is read straight off the
+      // grammar's `refines` field, exactly as `extends` is read off `inherits`,
+      // so an unclassified `implements` edge would be the one type the resolver
+      // has no tier for.
+      if (t === "contains" || t === "extends" || t === "implements" || t === "overrides") {
         md.evidenceClass = "structural"
         continue
       }
@@ -2236,6 +2723,13 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
       if (t === "instantiates") {
         md.evidenceClass = "usage_contextual"
+        continue
+      }
+      // `exports` is read straight off an `export_statement` operand, so it is a
+      // structural declaration like `imports` rather than a usage inference —
+      // grouped with the import surface, which is the other file-level fact.
+      if (t === "exports") {
+        md.evidenceClass = "structural"
         continue
       }
       md.evidenceClass = rt === "nim_import" || rt === "nim_include" || md.nimImportBased ? "import_based" : "usage_contextual"
