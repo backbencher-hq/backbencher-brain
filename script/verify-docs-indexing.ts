@@ -39,6 +39,7 @@
 import { readFileSync, readdirSync, statSync, existsSync } from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
+import { spawnSync } from "node:child_process"
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 const LIVE = process.argv.includes("--live")
@@ -560,6 +561,47 @@ console.log("\n5. citations and path references")
 // ═══════════════════════════════════════════════════════════════════════════
 console.log("\n6. reachability")
 {
+  // A documented COMMAND must actually run.
+  //
+  // The `BB_POOL_WORKER_SELFTEST` row told users to run
+  // `node dist/ast/pool-worker.js`, which does not exist — the built entry is
+  // `dist/pool-worker.js`. It typechecked fine, it was in a table, and following
+  // it produced "Cannot find module". A doc that names a command is a claim, and
+  // this checks the ones cheap enough to execute for real.
+  {
+    const workerEntry = path.join(ROOT, "dist", "pool-worker.js")
+    if (!existsSync(workerEntry)) {
+      fail(
+        "the documented pool-worker self-test command exists",
+        "dist/pool-worker.js is missing — run `npm run build` first; docs/indexing/troubleshooting.md documents `node dist/pool-worker.js`",
+      )
+    } else {
+      // And the DOC must name the path that exists, not a plausible one.
+      const trouble = tryRead("docs/indexing/troubleshooting.md")
+      if (trouble !== null && trouble.includes("dist/ast/pool-worker.js")) {
+        fail(
+          "the documented self-test command path exists on disk",
+          "docs/indexing/troubleshooting.md says dist/ast/pool-worker.js, which does not exist; the built entry is dist/pool-worker.js",
+        )
+      }
+      const r = spawnSync(process.execPath, [workerEntry], {
+        cwd: ROOT,
+        encoding: "utf8",
+        timeout: 60_000,
+        env: { ...process.env, BB_POOL_WORKER_SELFTEST: "1" },
+      })
+      const line = `${r.stdout ?? ""}`.split("\n").find((l) => l.includes("BB-WORKER-SELFTEST"))
+      if (line && /"ok":\s*true/.test(line)) {
+        ok("the documented pool-worker self-test command actually runs and reports ok")
+      } else {
+        fail(
+          "the documented pool-worker self-test command actually runs and reports ok",
+          `rc=${r.status} out=${(`${r.stdout ?? ""}`).slice(0, 200)} err=${(`${r.stderr ?? ""}`).slice(0, 200)}`,
+        )
+      }
+    }
+  }
+
   // `bb index --help` must point at the docs.
   const cli = read("src/cli/index.ts")
   const indexHelp = cli.slice(cli.indexOf('.command("index")'), cli.indexOf('.command("setup")'))

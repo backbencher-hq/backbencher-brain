@@ -18,6 +18,7 @@
     "docs/data/",
     "docs/tools/",
     "docs/man/",
+    "docs/indexing/",
     "README.md",
     "EMBEDDINGS.md",
     "CHANGELOG.md"
