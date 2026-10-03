@@ -46,7 +46,7 @@ export const CLEAN_MUTANTS: Mutant[] = [
     language: "clean",
     defectClass: "missing-relationship-type",
     description:
-      "M60 ONTOLOGY GAP (`overrides` reverted entirely): the lane emits no `overrides` edge at all, which is the state it was in before this round. This is the defect class `ontology-coverage-gate.ts` exists for — a relationship type absent from BOTH the analyzer and the oracle, so the differential agreed perfectly with itself and the type stayed invisible for the whole lane's history. Clean has no `override` KEYWORD, so no keyword probe could ever have found it: the only evidence is the typeclass pairing, and measuring the pairing is what produced it. Measured before the branch existed: 1,036 instance members across 78 classes at the 2,181-file corpus. Caught by clean/typeclass-overrides, whose two `expectRelationships` rows pin `overrides Thing.show -> Show.show` and `overrides Int.show -> Show.show`.",
+      "M60 ONTOLOGY GAP (`overrides` reverted entirely): the lane emits no `overrides` edge at all, which is the state it was in before this round. This is the defect class `ontology-coverage-gate.ts` exists for — a relationship type absent from BOTH the analyzer and the oracle, so the differential had nothing to disagree about and the type stayed invisible for the whole lane's history. Clean has no `override` KEYWORD, so no keyword probe could ever have found it: the only evidence is the typeclass pairing, and measuring the pairing is what produced it. Measured before the branch existed: 1,036 instance members across 78 classes at the 2,181-file corpus. Caught by clean/typeclass-overrides, whose two `expectRelationships` rows pin `overrides Thing.show -> Show.show` and `overrides Int.show -> Show.show`.",
     transform: (r: any) => ({
       ...r,
       relationships: (r.relationships ?? []).filter((x: any) => String(x.type).toLowerCase() !== "overrides"),
@@ -101,7 +101,7 @@ export const CLEAN_MUTANTS: Mutant[] = [
     language: "clean",
     defectClass: "wrong-payload",
     description:
-      "PAYLOAD CLASS on the type the lane just added. The `Owner.member` qualification is dropped from both endpoints, so `Thing.show -> Show.show` becomes `show -> show`. The edges still resolve — the store matches a bare name — and a resolution-rate check still reads 100%, so nothing about resolvability convicts this. What is lost is IDENTITY: three symbols in the typeclass-overrides fixture are named `show`, and `bb_graph`/`bb_impact` would merge them into one node. A bare-name edge cannot say WHICH `show`. This is the defect class where only a fixture pin can catch it, because every rate the store computes stays perfect. Caught by clean/typeclass-overrides, whose `forbidRelationships` rows refuse `overrides show` (the unqualified form) and whose two `expectRelationships` rows carry the qualified endpoints.",
+      "PAYLOAD CLASS on the type the lane just added. The `Owner.member` qualification is dropped from both endpoints, so `Thing.show -> Show.show` becomes `show -> show`. The edges still resolve — the store matches a bare name — and a resolution-rate check still reads 100%, so nothing about resolvability convicts this. What is lost is IDENTITY: three symbols in the typeclass-overrides fixture are named `show`, and `bb_graph`/`bb_impact` would merge them into one node. A bare-name edge cannot say WHICH `show`. This is the defect class where only a fixture pin can catch it, because every rate the store computes stays at 100%. Caught by clean/typeclass-overrides, whose `forbidRelationships` rows refuse `overrides show` (the unqualified form) and whose two `expectRelationships` rows carry the qualified endpoints.",
     transform: (r: any) => ({
       ...r,
       relationships: (r.relationships ?? []).map((x: any) => {
@@ -124,7 +124,7 @@ export const CLEAN_MUTANTS: Mutant[] = [
         // The pre-fix shape, built from the same REAL method symbols the analyzer
         // publishes: for every class that a POLYMORPHIC instance targets, each of
         // that class's own methods becomes a self-edge. Both endpoints are one real
-        // node, which is the point — every rate the store computes stays perfect.
+        // node, which is the point — every rate the store computes stays at 100%.
         ...[...new Set(
           (r.relationships ?? [])
             .filter((x: any) => String(x.type).toLowerCase() === "implements" && (x.metadata as any)?.isPolymorphicInstance)
