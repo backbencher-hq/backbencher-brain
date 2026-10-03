@@ -416,4 +416,54 @@ export const FSHARP_MUTANTS: Mutant[] = [
       return { ...r, relationships: [...(r.relationships ?? []), ...extra] }
     },
   },
+  {
+    id: "fsharp/interface-member-override-resolved-from-the-base-list",
+    language: "fsharp",
+    defectClass: "wrong-relationship",
+    description:
+      "M60 ontology lane pass 2, and a REGRESSION guard for the defect this lane's own pass 1 shipped. `override` is not a statement about a BASE CLASS: F# has no separate keyword for an interface member, so `interface I with override this.M() = …` implements `I.M` and the pre-fix rule — which read the `override` TOKEN alone — emitted `overrides Owner.M -> M` when the type had no `inherit` at all (a member that overrides itself, a target binding to nothing) and `overrides Owner.M -> Base.M` when it also inherited (an interface implementation attributed to a base-class member). Measured over the whole 6,619-file corpus by validation/m14/fixtures/fsharp/ontology-probe.ts, probes A1 (the population) and A2 (the subset with no base type to resolve). The mutant reverts the TARGET RESOLUTION rather than the edge: it rewrites each `interface_member_implementation` edge's target to the member's bare name, which is the pre-fix answer for the no-`inherit` case and the sharpest possible fabrication for the rest. Caught by fsharp/override-target, whose three forbid rows pin each of the three wrong answers — including `Guarded.Speak -> Animal.Speak`, where the wrong target names a member that REALLY EXISTS in the base class, which is why the defect survived a corpus census: a fabricated edge that resolves is indistinguishable from a correct one by name alone.",
+    transform: (r: any) => {
+      const ifaceOverrides = (r.relationships ?? []).filter(
+        (x: any) => String(x.type) === "overrides" && x.metadata?.isInterfaceMemberImplementation === true,
+      )
+      if (ifaceOverrides.length === 0) return r
+      return {
+        ...r,
+        relationships: (r.relationships ?? []).map((x: any) => {
+          if (String(x.type) !== "overrides" || x.metadata?.isInterfaceMemberImplementation !== true) return x
+          const src = String(x.source)
+          const member = src.includes(".") ? (src.split(".").pop() as string) : src
+          return { ...x, target: member, metadata: { ...x.metadata, relationshipType: "override_PRE_INTERFACE_TARGET" } }
+        }),
+      }
+    },
+  },
+  {
+    id: "fsharp/one-character-callee-refused",
+    language: "fsharp",
+    defectClass: "missing-relationship",
+    description:
+      "M60 ontology lane pass 2. `calls` was gated on `fnName.length > 1`, which no property of the program justifies: by the time the branch runs, the grammar has already said the callee is a NAME node. The gate removed every call to a ONE-LETTER function, of which instrument B counts 5,313 over the 6,619-file corpus in 735 files — 2.2% of the label against its 246,327 full-extent edges — and the dropped population is better connected than the emitted one (32.4% in-file resolution on a 120-file draw against 22.2%). The mutant drops the edges a one-character target carries, which is the honest pre-fix state: the application is in the tree and nothing is published about it. Caught by fsharp/one-char-calls, whose `composed -> f` row exists for this and nothing else. It is a REGRESSION guard in the strict sense — the gate was in the lane since M12 and no fixture asserted its absence, which is why 5,313 real calls could sit unread behind a green suite.",
+    transform: (r: any) => {
+      const short = (r.relationships ?? []).filter(
+        (x: any) => String(x.type) === "calls" && String(x.target).length === 1,
+      )
+      if (short.length === 0) return r
+      return { ...r, relationships: (r.relationships ?? []).filter((x: any) => !(String(x.type) === "calls" && String(x.target).length === 1)) }
+    },
+  },
+  {
+    id: "fsharp/bare-pipeline-not-read",
+    language: "fsharp",
+    defectClass: "missing-relationship",
+    description:
+      "M60 ontology lane pass 2, and the largest single `calls` gap this lane ever shipped. The lane's doc claimed pipe `a |> List.map` reads as a call, and it read one only when the pipeline sat in CALLEE position (`f (x |> g)`); a `let` whose BODY is the pipeline — the shape F# is actually written in — produced no edge at all. Measured on a 300-file corpus draw: 1,043 bare `|>` infix nodes with a NAME on the right, against 580 read in callee position, so ~11% of the corpus's calls were missing from the label. `script/m14/fsharp-truth-oracle.ts` has no `infix_expression` branch either, which is why the differential never reported it: both sides said nothing, so nothing disagreed. The mutant drops the pipeline edges the analyzer now emits. Caught by fsharp/one-char-calls, whose `applyBoth -> triple` row (metadata `isPipelineCall`) exists for this and nothing else, and whose three forbid rows — composition `>>`, a lambda on the right of a pipe, and `x = y` — are what stop a from-scratch implementation of the rule from passing by emitting far more than it should.",
+    transform: (r: any) => {
+      const pipes = (r.relationships ?? []).filter(
+        (x: any) => String(x.type) === "calls" && x.metadata?.isPipelineCall === true,
+      )
+      if (pipes.length === 0) return r
+      return { ...r, relationships: (r.relationships ?? []).filter((x: any) => !(String(x.type) === "calls" && x.metadata?.isPipelineCall === true)) }
+    },
+  },
 ]
