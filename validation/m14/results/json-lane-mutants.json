@@ -1,0 +1,111 @@
+{
+  "tool": "json lane mutant run",
+  "note": "run through the shared runLang; see script/m14/json-mutants.ts for the wiring this lane does not own",
+  "clean": {
+    "pass": 11,
+    "fail": 0
+  },
+  "mutants": [
+    {
+      "id": "json/calls-dropped",
+      "language": "json",
+      "defectClass": "missing-relationship-type",
+      "description": "M14 ontology regression: an npm script running a SIBLING script stops emitting `calls`, restoring the omission the corpus probe measured (12 sibling invocations across the first 300 admitted files, apollo-server/package.json carrying 7 with both endpoints resolving). Caught by json/manifest/package's three `calls` pins.",
+      "cleanFail": 0,
+      "mutatedPass": 10,
+      "mutatedFail": 1,
+      "caught": true,
+      "newlyFailingFixtures": [
+        "json/manifest/package"
+      ]
+    },
+    {
+      "id": "json/calls-callee-any-token",
+      "language": "json",
+      "defectClass": "fabricated-edge",
+      "description": "M14 ontology regression: a `npm run` target is accepted without checking it is a key of the SAME `scripts` object, so the edge names a symbol the file never declared — the fabricated-edge class the ontology workstream names as the most expensive mistake available. Caught by json/manifest/package's `external` forbid.",
+      "cleanFail": 0,
+      "mutatedPass": 10,
+      "mutatedFail": 1,
+      "caught": true,
+      "newlyFailingFixtures": [
+        "json/manifest/package"
+      ]
+    },
+    {
+      "id": "json/calls-runner-substring",
+      "language": "json",
+      "defectClass": "over-matching-predicate",
+      "description": "M14 ontology regression: the runner token is matched by substring instead of compared whole, so `npx` (which contains `npm`) and a PATH named `npm` are taken for package runners. Caught by json/manifest/package's `notarunner` and `pathrunner` forbids.",
+      "cleanFail": 0,
+      "mutatedPass": 10,
+      "mutatedFail": 1,
+      "caught": true,
+      "newlyFailingFixtures": [
+        "json/manifest/package"
+      ]
+    },
+    {
+      "id": "json/overrides-dropped",
+      "language": "json",
+      "defectClass": "missing-relationship-type",
+      "description": "M14 ontology regression: a key declared TWICE in one object stops emitting `overrides`, so the second declaration reads as an ordinary member and the replacement is unstated. 21 named duplicate keys across 11 of 11,713 admitted files. Caught by json/DuplicateKey.",
+      "cleanFail": 0,
+      "mutatedPass": 10,
+      "mutatedFail": 1,
+      "caught": true,
+      "newlyFailingFixtures": [
+        "json/DuplicateKey"
+      ]
+    },
+    {
+      "id": "json/overrides-unscoped-to-file",
+      "language": "json",
+      "defectClass": "fabricated-edge",
+      "description": "M14 ontology regression: the duplicate check is scoped to the FILE instead of the OBJECT, so the same key in two different objects reads as a redefinition. A JSON key is unique only within its object, and this is the permissive direction: 120,174 occurrences across 7,679 files against 21 genuine duplicates, so the mutant is worth about 5,700 false edges. Caught by json/SameKeyDifferentObjects, whose forbids exist for exactly this mutant.",
+      "cleanFail": 0,
+      "mutatedPass": 10,
+      "mutatedFail": 1,
+      "caught": true,
+      "newlyFailingFixtures": [
+        "json/SameKeyDifferentObjects"
+      ]
+    },
+    {
+      "id": "json/overrides-prior-line-lost",
+      "language": "json",
+      "defectClass": "dishonest-payload",
+      "description": "M14 ontology regression: the `overrides` edge is emitted but `overridesLine` is zeroed, and since both declarations share a name AND a qualified path the prior line is the only thing that distinguishes them — the edge then asserts a replacement without saying what was replaced. Caught by json/DuplicateKey's `meta.overridesLine` pin.",
+      "cleanFail": 0,
+      "mutatedPass": 10,
+      "mutatedFail": 1,
+      "caught": true,
+      "newlyFailingFixtures": [
+        "json/DuplicateKey"
+      ]
+    },
+    {
+      "id": "json/edge-lines-dropped",
+      "language": "json",
+      "defectClass": "dishonest-payload",
+      "description": "M14 ontology regression: every edge loses its site line, restoring the measured pre-M60 state in which `line_number` occurred ZERO times in the analyzer and every json edge in the index was stored with a NULL line while symbols carried `range` throughout.",
+      "cleanFail": 0,
+      "mutatedPass": 3,
+      "mutatedFail": 8,
+      "caught": true,
+      "newlyFailingFixtures": [
+        "json/AllOf",
+        "json/Arrays",
+        "json/Dotted.name",
+        "json/DuplicateKey",
+        "json/Imports",
+        "json/Lines",
+        "json/OpenApi",
+        "json/Refs"
+      ]
+    }
+  ],
+  "total": 7,
+  "caught": 7,
+  "survivors": 0
+}
