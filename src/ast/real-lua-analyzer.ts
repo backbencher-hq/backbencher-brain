@@ -1649,6 +1649,25 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
               isOverride: true,
               member,
               memberPath: `${derived}.${member} -> ${base}.${member}`,
+              // M60 LUA-52: the tier is `usage_contextual`, NOT the `structural` that
+              // `evidenceClassFor` hands every type which is not imports/references/uses.
+              // The rule this analyzer already wrote for ITSELF is at
+              // `addFactorySupertypeEdges` (:1381): "a 0.95 edge must not claim
+              // `structural`". `structural` asserts both endpoints are nodes this parse
+              // saw, which is true here — and is not the claim. The claim is that a
+              // member SHADOWS another through an `__index` chain, and Lua's inheritance
+              // is a CONVENTION over `setmetatable`/`__index` with nothing in the tree
+              // saying the link is meant as inheritance. Same reason, same 0.95, same
+              // tier as `lua_factory_supertype`.
+              //
+              // MEASURED (validation/m60/lua/ontology-census.json, 3,252 files): 2 of
+              // 67 `overrides` edges carried `structural` at confidence 0.95, and the
+              // census counted 67 edges before and after this change — the tier is the
+              // whole difference. Pinned by
+              // `validation/m14/fixtures/lua/override-shapes.expectation.json`, whose
+              // forbid half fails an implementation that derives the tier from the
+              // type, and by the mutant in script/m60/mutate-lua-evidence-tier.ts.
+              evidenceClass: "usage_contextual",
             },
             null,
             { dedupe: false, confidence: 0.95, symbolRange: { startLine: line } },
