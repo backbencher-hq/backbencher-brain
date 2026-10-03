@@ -44,6 +44,23 @@ interface JsonContext {
    *  the corpus's dominant shape (120,174 occurrences across 7,679 files, against
    *  21 genuine duplicates across 11). */
   overrideCandidates: { ownerName: string; key: string; line: number; overridesLine: number }[]
+  /** True when the document uses LSP's `{"kind":"reference","name":X}` literal — a
+   *  DISCRIMINATED UNION for "this is a named type", as against `{"kind":"or","items":[…]}`
+   *  and `{"kind":"array","element":…}`. Measured over the whole admitted population, 2 of
+   *  11,713 documents contain one, and only one of those also states inheritance. So this
+   *  flag is a DOCUMENT precondition, not a heuristic: it is what stops a `"name"` key in
+   *  an i18n bundle or an OpenAPI operation from being read as a type declaration. */
+  usesReferenceLiterals: boolean
+  /** True when the document declares a type by a `class` string, which is how duckdb's
+   *  serialization schemas name a C++ class. 21 of 11,713 documents, all duckdb. */
+  usesClassDeclarations: boolean
+  /** A type declared in THIS document, by the name it declares itself under, mapped to the
+   *  qualified path of the object that declares it. Built during the symbol walk because a
+   *  qualified path only exists there. */
+  typeDeclarations: Map<string, string>
+  /** An inheritance statement found during the walk, with its target still a NAME. Resolved
+   *  in a later pass, because a declaration can appear after the reference to it. */
+  inheritanceCandidates: { source: string; target: string; key: string; form: string; label: "extends" | "implements"; line: number }[]
   objectCount: number
   propertyCount: number
   arrayCount: number
@@ -70,6 +87,15 @@ const VALIDATION_KEYS = new Set([
 ])
 
 const API_METHOD_KEYS = new Set(["get", "post", "put", "patch", "delete", "head", "options", "trace"])
+
+/**
+ * The keys an LSP-style type declaration states inheritance with. `mixins` and `implements`
+ * are interface relations; `extends`, `base` and `superclass` are supertype relations. Only
+ * consulted in a document that has announced itself with a `{"kind":"reference"}` literal —
+ * 2 of 11,713 admitted files — so the list is bounded by the precondition rather than by
+ * the spelling.
+ */
+const LSP_INHERITANCE_KEYS = ["extends", "base", "superclass", "superClass", "implements", "mixins"]
 
 function isDependencyContainerPath(path: string): boolean {
   const dot = path.lastIndexOf(".")
@@ -101,6 +127,10 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
       apiEndpointSymbols: [],
       dependencySymbols: [],
       overrideCandidates: [],
+      usesReferenceLiterals: false,
+      usesClassDeclarations: false,
+      typeDeclarations: new Map(),
+      inheritanceCandidates: [],
       objectCount: 0,
       propertyCount: 0,
       rootNode,
@@ -112,11 +142,13 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
 
     this.collectErrors(rootNode, ctx)
+    this.collectDocumentConventions(rootNode, ctx)
     this.collectSchemaFacts(rootNode, ctx)
     this.extractSymbols(rootNode, ctx)
     this.extractRelationships(ctx)
     this.extractManifestExports(ctx)
     this.extractSchemaComposition(ctx)
+    this.extractDeclaredInheritance(ctx)
     this.extractPackageDependencies(ctx)
     this.extractNpmScriptCalls(ctx)
     this.extractDuplicateKeyOverrides(ctx)
@@ -200,6 +232,66 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   /**
+   * Two DOCUMENT-level preconditions, read once before anything is interpreted.
+   *
+   * Both exist because the pass-2 corpus probe found inheritance declared as ordinary
+   * object keys, and both are deliberately narrow. `implements` had been RULED on the
+   * ground that the grammar cannot express a supertype clause, and the corpus says
+   * otherwise: `dart-sdk`'s `lsp_meta_model.json` states 87 interface mix-ins and 66 class
+   * supertypes, and duckdb's serialization schemas state 200-odd superclasses. A grammar
+   * has no node type for a KEYWORD, which is the same unsound question this lane has now
+   * had to retract six times.
+   *
+   * What keeps this from firing everywhere is that both shapes are announced by the
+   * document before any key is interpreted:
+   *
+   *   - LSP's meta-model uses `{"kind":"reference","name":X}`, a discriminated union for
+   *     "this is a named type". Two documents in the admitted population contain one, and
+   *     only one of them states inheritance. So the `name` key of an arbitrary JSON object
+   *     is never read as a type declaration.
+   *   - duckdb's schemas declare a C++ class with a `class` string. Twenty-one documents,
+   *     all duckdb.
+   *
+   * The measurement that would overturn this: a corpus document that states a supertype or
+   * an interface mix-in in a shape carrying neither marker. 0 occurrences over 11,713
+   * files, which is what `validation/m14/fixtures/json/inheritance-probe.ts` reports.
+   */
+  private collectDocumentConventions(rootNode: Node, ctx: JsonContext): void {
+    const stack: Node[] = [rootNode]
+    while (stack.length > 0) {
+      const node = stack.pop()!
+      if (node.type === "pair") {
+        const key = this.keyText(node)
+        const value = node.childForFieldName("value")
+        if (key === "kind" && value?.type === "string" && this.stripQuotes(value.text) === "reference") {
+          ctx.usesReferenceLiterals = true
+        }
+        if (key === "class" && value?.type === "string") {
+          const declared = this.stripQuotes(value.text)
+          // A TYPE name, not prose: an identifier with no whitespace and a leading letter
+          // or underscore. Checked with a character scan because this file holds no regex.
+          if (declared.length > 0 && this.isIdentifierText(declared)) ctx.usesClassDeclarations = true
+        }
+      }
+      for (let i = node.namedChildCount - 1; i >= 0; i--) {
+        const child = node.namedChild(i)
+        if (child) stack.push(child)
+      }
+    }
+  }
+
+  private isIdentifierText(text: string): boolean {
+    const first = text[0]
+    if (!((first >= "a" && first <= "z") || (first >= "A" && first <= "Z") || first === "_")) return false
+    for (let i = 1; i < text.length; i++) {
+      const c = text[i]
+      const ok = (c >= "a" && c <= "z") || (c >= "A" && c <= "Z") || (c >= "0" && c <= "9") || c === "_"
+      if (!ok) return false
+    }
+    return true
+  }
+
+  /**
    * Collect schema metadata before symbol extraction so `required` is based on
    * the actual sibling array, not on a key-name convention. Each object is
    * visited once, so this pass is O(number of AST nodes).
@@ -260,6 +352,7 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (node.type === "object") {
         this.updateDepth(ctx, parentPath)
         if (frame.emitObject) this.addArrayObjectSymbol(ctx, node, parentPath, parentName)
+        this.recordTypeDeclaration(node, parentPath, ctx)
         // `parentName` MUST be threaded here. Omitting it made pushNamedChildren
         // default it to `parentPath`, so every key inside a nested object got the
         // QUALIFIED path as its owner: `inner`'s owner came out as `Basic.nested`
@@ -341,6 +434,195 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
   }
 
+  /**
+   * INHERITANCE DECLARED AS ORDINARY OBJECT KEYS — the corpus measurement that retracted
+   * this lane's `implements` ruling and found `extends` incomplete.
+   *
+   * `implements` was ruled on a grammar inventory ("the grammar produced 20 distinct node
+   * types across the corpus and NONE expresses it") and the corpus says otherwise. Two
+   * documents in 11,713 declare types and state their supertypes:
+   *
+   *   dart-sdk/…/lsp_meta_model.json — the Language Server Protocol's own serialisation of
+   *     its type declarations. 66 structures carry
+   *       "extends": [{"kind":"reference","name":"TextDocumentPositionParams"}]
+   *     and 87 carry
+   *       "mixins":  [{"kind":"reference","name":"WorkDoneProgressParams"}, …]
+   *     `mixins` names the TypeScript INTERFACES a class mixes in, which is `implements`
+   *     and nothing else: in TypeScript an interface carries no implementation, so there is
+   *     nothing else for the word to mean.
+   *
+   *   duckdb/src/include/duckdb/storage/serialization/*.json — serialisation schemas for
+   *     C++ classes. `{ "class": "NotNullConstraint", "base": "Constraint", … }`: `class`
+   *     declares the type, `base` names its superclass, and every superclass named is
+   *     declared in the same file.
+   *
+   * Two shapes are declined, and the corpus says why:
+   *
+   *   - A member descriptor. duckdb writes `{ "id": 200, "name": "info", "type":
+   *     "AlterInfo*", "base": "ParseInfo" }` — a FIELD whose C++ class derives from
+   *     `ParseInfo`. It is not a type declaration, and 16 such statements name a target the
+   *     document does not declare. The rule requires a `class` marker, which a member
+   *     descriptor does not carry, so all 16 are declined by the marker rather than by a
+   *     name list.
+   *   - `"parent"` and a non-string `base`. vega's data files carry `"parent": <number>` on
+   *     251 pairs; a number is not a type. The value must be a STRING.
+   *
+   * Confidence is 1.0 for `extends` and 0.9 for `implements`, and the difference is the
+   * honest one: a declared supertype is read structurally in both cases, but the mapping of
+   * LSP's word `mixins` onto the ontology's `implements` is a NAMING decision, not a parse
+   * fact. It therefore carries `reasonCode`, which is what the honesty contract §4 asks of
+   * anything below the deterministic threshold.
+   */
+  private recordTypeDeclaration(node: Node, path: string, ctx: JsonContext): void {
+    // A reference literal is a REFERENCE, not a declaration. Registering one would let an
+    // inheritance statement resolve to the very object that states it — which is what the
+    // first version did, and it produced
+    //   `structures[0] -[extends]-> structures[0].extends[0]`
+    // instead of `structures[0] -[extends]-> structures[1]`. A `$ref` names a location and a
+    // reference literal names a type; neither declares one.
+    if (this.referenceLiteralName(node) !== undefined) return
+    const pairs = this.objectPairs(node)
+    const className = ctx.usesClassDeclarations ? this.stringPairValue(pairs, "class") : undefined
+    // An LSP type declaration names itself with `name` (structures, enumerations) or
+    // `typeName` (requests, notifications), AND carries at least one of the keys that make
+    // an object a TYPE rather than a member: `properties`, `values`, or an inheritance key.
+    // The second test is what separates a declaration from the property descriptors inside
+    // it — `{ "name": "textDocument", "type": {…} }` is a FIELD, and it sits inside a
+    // declaration in the same file.
+    const named =
+      className ??
+      (ctx.usesReferenceLiterals ? this.lspDeclaredName(pairs) : undefined)
+    if (named !== undefined && named.length > 0 && !ctx.typeDeclarations.has(named)) ctx.typeDeclarations.set(named, path)
+    if (named === undefined || named.length === 0) return
+
+    if (className !== undefined) {
+      const base = this.stringPairValue(pairs, "base")
+      if (base !== undefined && base.length > 0) {
+        ctx.inheritanceCandidates.push({
+          source: path,
+          target: base,
+          key: "base",
+          form: "duckdb_base_class_name",
+          label: "extends",
+          line: this.pairLine(pairs, "base"),
+        })
+      }
+      return
+    }
+
+    for (const key of LSP_INHERITANCE_KEYS) {
+      const pair = this.pairFor(pairs, key)
+      const value = pair ? pair.childForFieldName("value") : undefined
+      if (value?.type !== "array") continue
+      const label: "extends" | "implements" = key === "mixins" || key === "implements" ? "implements" : "extends"
+      const items = (value.namedChildren ?? []).filter((c: any) => c.type !== "[")
+      for (const item of items) {
+        const reference = this.referenceLiteralName(item)
+        if (reference === undefined) continue
+        ctx.inheritanceCandidates.push({
+          source: path,
+          target: reference,
+          key,
+          form: "lsp_reference_literal",
+          label,
+          line: item.startPosition.row + 1,
+        })
+      }
+    }
+  }
+
+  /**
+   * Resolve the candidates against the declarations collected in the same walk and emit.
+   *
+   * A candidate whose target this document never declares produces NO edge. Measured: 16 of
+   * the supertype statements name a type declared in a sibling file, and an edge to a symbol
+   * this file does not contain is exactly the fabrication the ontology workstream calls the
+   * most expensive mistake available.
+   *
+   * The endpoints are QUALIFIED PATHS, which is the lane's established convention for a
+   * relation between two declarations rather than between two keys — the same choice
+   * `references` makes, and for the same reason: the thing that inherits is an object in the
+   * document, not a key. It has a measured cost, declared in the doc: these endpoints bind by
+   * qualified name and not by bare name, so the store cannot resolve them by name.
+   */
+  private extractDeclaredInheritance(ctx: JsonContext): void {
+    for (const c of ctx.inheritanceCandidates) {
+      const targetPath = ctx.typeDeclarations.get(c.target)
+      if (targetPath === undefined) continue
+      if (targetPath === c.source) continue
+      ctx.relationships.push({
+        source: c.source,
+        target: targetPath,
+        type: c.label === "implements" ? ASTEngine.RelationshipType.Implements : ASTEngine.RelationshipType.Extends,
+        confidence: c.label === "implements" ? 0.9 : 1,
+        line_number: c.line,
+        metadata: {
+          jsonSpecific: true,
+          inheritanceForm: c.form,
+          declarationKey: c.key,
+          declaredType: c.target,
+          reasonCode: c.label === "implements" ? "declared_interface_mixin" : "declared_supertype",
+          evidenceClass: "structural",
+          endpoints: "qualified_path",
+        },
+      })
+    }
+  }
+
+  /** An LSP reference literal: an object with `kind` == "reference" and a `name` string. */
+  private referenceLiteralName(node: any): string | undefined {
+    if (node?.type !== "object") return undefined
+    const pairs = this.objectPairs(node)
+    if (this.stringPairValue(pairs, "kind") !== "reference") return undefined
+    const name = this.stringPairValue(pairs, "name")
+    return name !== undefined && name.length > 0 ? name : undefined
+  }
+
+  /**
+   * The name an LSP-style object declares ITSELF under, or undefined when the object is not a
+   * type declaration.
+   *
+   * Two keys name the type (`name` for a structure or an enumeration, `typeName` for a
+   * request or a notification) and one of four makes the object a TYPE rather than one of its
+   * members: `properties`, `values`, `extends`, `mixins`. A property descriptor
+   * (`{"name":"textDocument","type":{"kind":"reference",…}}`) has a `name` and none of those,
+   * so it is declined — and it sits inside a declaration in the same file, which is what makes
+   * the test necessary rather than tidy.
+   */
+  private lspDeclaredName(pairs: any[]): string | undefined {
+    const carriesTypeShape =
+      this.pairFor(pairs, "properties") !== undefined ||
+      this.pairFor(pairs, "values") !== undefined ||
+      this.pairFor(pairs, "extends") !== undefined ||
+      this.pairFor(pairs, "mixins") !== undefined ||
+      this.pairFor(pairs, "implements") !== undefined
+    if (!carriesTypeShape) return undefined
+    return this.stringPairValue(pairs, "name") ?? this.stringPairValue(pairs, "typeName")
+  }
+
+  private objectPairs(node: any): any[] {
+    return ((node?.namedChildren ?? []) as any[]).filter((c: any) => c.type === "pair")
+  }
+
+  private pairFor(pairs: any[], key: string): any | undefined {
+    for (const p of pairs) if (this.keyText(p) === key) return p
+    return undefined
+  }
+
+  private stringPairValue(pairs: any[], key: string): string | undefined {
+    const pair = this.pairFor(pairs, key)
+    if (!pair) return undefined
+    const value = pair.childForFieldName("value")
+    if (value?.type !== "string") return undefined
+    const text = this.stripQuotes(String(value.text ?? ""))
+    return text.length > 0 ? text : undefined
+  }
+
+  private pairLine(pairs: any[], key: string): number {
+    const pair = this.pairFor(pairs, key)
+    return pair ? pair.startPosition.row + 1 : 0
+  }
+
   private addSymbol(ctx: JsonContext, symbol: ASTEngine.UniversalSymbol): void {
     ctx.symbols.push(symbol)
     ctx.symbolMap.set(symbol.name, symbol)
@@ -406,6 +688,11 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
           relationshipType: "json_reference",
           refPath,
           isExternal: !refPath.startsWith("#/") || !ctx.symbolMap.has(target),
+          // Honesty contract §4 point 1: anything below 1.0 carries a machine-readable code.
+          // The 0.8 case is exactly one thing — the pointer names a location this document
+          // does not declare — so the code says so, and the 1.0 case says the opposite.
+          reasonCode: target === refPath ? "ref_target_not_declared_in_document" : "json_schema_ref",
+          evidenceClass: "structural",
         },
       })
     }
@@ -417,7 +704,14 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
         type: ASTEngine.RelationshipType.Uses,
         confidence: 0.8,
         line_number: this.declLine(endpoint),
-        metadata: { relationshipType: "json_api_endpoint" },
+        metadata: {
+          relationshipType: "json_api_endpoint",
+          // Honesty contract §4 point 1. The endpoints are a fact about the tree; the claim
+          // that declaring an HTTP method in a `paths` entry is a USE rather than mere
+          // containment is a reading of the OpenAPI document shape, so it is 0.8 with a code.
+          reasonCode: "openapi_path_entry_declares_http_method",
+          evidenceClass: "usage_contextual",
+        },
       })
     }
   }
@@ -522,24 +816,33 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
       // still found 1. Both looked like working checks. The shape was read off a real
       // relationship's source rather than assumed, which is the only reason it was
       // caught before it was committed.
-      const bracket = parent.lastIndexOf("[")
+const bracket = parent.lastIndexOf("[")
       if (bracket > 0 && parent.endsWith("]")) parent = parent.slice(0, bracket)
       if (!parent.endsWith(".allOf")) continue
+      // The SOURCE is the schema object that COMPOSES, not the `allOf` array that records
+      // the composition. Every corpus example read as
+      //   `debugAdapterProtocol.definitions.Request.allOf -[extends]-> …ProtocolMessage`
+      // i.e. the edge said "the allOf array extends ProtocolMessage", and `allOf` is a
+      // keyword shared by every schema in the file, so a consumer resolving by name binds it
+      // to an arbitrary one of them. The thing that inherits is `Request`. The source is a
+      // QUALIFIED PATH either way — see `extractDeclaredInheritance` for why, and for the
+      // measured cost of that choice — but its last segment is now a declared type.
+      const composer = parent.length > ".allOf".length ? parent.slice(0, parent.length - ".allOf".length) : ctx.rootName
       const refPath = ref.metadata?.refPath as string | undefined
       if (!refPath) continue
       // A `$ref` inside `allOf` may point INSIDE the document (`#/…`) or at a SIBLING
       // FILE (`dataTypeBase.json#` — a relative file ref with a fragment, which
-      // isFileNamingRef already recognises and which `imports` already emits). The
-      // file form is still composition: "inherits from the schema in that file".
+      // isFileNamingRef already recognises and which `imports` already emits). The file form
+      // is still composition: "inherits from the schema in that file".
       // Requiring `#/` silently dropped it, which is the same class of error as the
-      // bracketed-index bug — a predicate written against the shape assumed rather
-      // than the shape observed, quietly covering a subset and reporting success.
+      // bracketed-index bug — a predicate written against the shape assumed rather than
+      // the shape observed, quietly covering a subset and reporting success.
       const isLocal = refPath.startsWith("#/")
       const isSiblingFile = !isLocal && this.isFileNamingRef(refPath)
       if (!isLocal && !isSiblingFile) continue
       const target = isLocal ? this.referenceTarget(ctx, refPath) : refPath
       ctx.relationships.push({
-        source: parent,
+        source: composer,
         target,
         type: ASTEngine.RelationshipType.Extends,
         confidence: 1,
@@ -547,10 +850,13 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
         metadata: {
           jsonSpecific: true,
           composition: "allOf",
+          compositionSite: parent,
           refForm: isLocal ? "intra_document" : "sibling_file",
           resolvedPath: isLocal,
           note: "allOf is a superset-of relationship; anyOf/oneOf are alternatives and emit only `references`",
+          reasonCode: "json_schema_all_of",
           evidenceClass: "structural",
+          endpoints: "qualified_path",
         },
       })
     }
