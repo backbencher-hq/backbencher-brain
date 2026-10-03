@@ -88,34 +88,274 @@ ONE symbol. `variables-flags-and-identity` pins `$brand` at exactly 1.
 
 ## Relationship ontology
 
-| Relationship | Emitted for | Evidence class |
-| --- | --- | --- |
-| `contains` | scope → rules it attributes (delegated), plus all CSS containment | `structural` |
-| `uses` | `@include` → a mixin **this file declares**; `@extend` → the selector extended | `usage_contextual` / `structural` |
-| `references` | a `$var` read → a variable **this file declares**; plus every CSS `var()` read | `usage_contextual` / `import_based` |
-| `imports` | `@use` / `@forward`, with the `as` namespace on the `ImportInfo` | `import_based` |
+### What each of the ontology's ten types means IN SASS
 
-**Both ends must resolve.** An `@include` of a mixin from another stylesheet, or a
-`$var` that arrived as a parameter, gets **no edge**. Inventing an endpoint is the
-`global` phantom the CSS lane removed once, and `functions-return-and-undeclared-uses`
-pins the absence with a `forbidRelationships` row.
+Not in general — in this language, where the general definition and the Sass fact part
+company for four of the ten.
+
+| Type | In Sass | Verdict | Edges (4,394 files / 21 repos) | Evidence class |
+| --- | --- | --- | --- | --- |
+| `contains` | a scope contains the rules attributed to it — `@media`, `@layer`, `@supports`, a `@mixin` body, a control-flow block | EMITTED | **11,779** in 2,306 files | `structural` |
+| `uses` | one thing draws on another **this file publishes**: `@include m`, `f(x)` for a declared `@function`, `@extend s` | EMITTED | **799** in 238 files | `usage_contextual` / `structural` |
+| `references` | a `$var` READ names a `$var` this file declares; plus every delegated CSS `var()` read | EMITTED | **6,260** in 571 files | `usage_contextual` / `import_based` |
+| `exports` | a `.scss` file IS a Sass module: `@use './theme'` exposes its **top-level** variables, mixins and functions. An assignment in a rule, mixin, function or control-flow block is local and is not exposed; a name beginning `-` or `_` is private and is not exposed either | EMITTED (added 2026-10-03) | **3,465** in 303 files, **100%** both-ends resolved | `structural` |
+| `overrides` | one declaration REPLACES a prior one. In Sass the only case that means it is `$x: … !global` where `$x` was already assigned at this file's top level | EMITTED (added 2026-10-03) | **16** in 6 files, **100%** both-ends resolved | `structural` |
+| `imports` | `@use` / `@forward` / `@import` name another **file**. The lane records all of them on `ParseResult.imports` | **GAP — the array only, 0 relationships** | **0 relationships**; 1,571 `@use` + 165 `@forward` + 3,562 `@import` in the array | `import_based` |
+| `calls` | `f(x)` where `f` is a `@function` this file declares. 211 such call sites exist and the lane reads every one | **GAP (label)** — emitted as `uses` | 0 as `calls`; **144** as `uses` | `usage_contextual` |
+| `extends` | `@extend` — Sass's inheritance: the extending selector takes on the extended selector's declarations. 437 `@extend` statements exist | **GAP (label)** — emitted as `uses`; 329 of the 437 name a selector in ANOTHER file (correct silence, SCSS-L7) | 0 as `extends`; **414** as `uses` | `structural` |
+| `implements` | nothing in Sass is a supertype clause. Instrument A | RULED-SOUND | 0 | — |
+| `instantiates` | nothing in Sass constructs a value. Instrument A | RULED-SOUND | 0 | — |
+
+The three verdicts are the workstream's, and each carries its measurement below. Counts
+come from the production entry point — `parseFile` from `src/ast/pool-worker.ts`, never
+`analyze()` — over **every** tracked `.scss` file the router admits across 21 corpus
+repositories (4,394 files; `consul` 3,042, `bulma` 179, `element-plus` 170,
+`wagtail` 133, `bootstrap` 122, `primer-css` 113, `vault` 108, `nomad` 98,
+`hasura-engine` 90, `spectre` 76, `phpmyadmin` 74, `pico` 54, `waypoint` 54,
+`r-pkgdown` 36, `sass-spec` 18, `riverpod` 13, `vue-element-admin` 9, `dart-sdk` 2,
+`r-air` 1, `snacks.nvim` 1, `vue-core` 1). No sampling: the whole admitted population,
+so a count cannot be a rotation of a sample. Instrument: `script/m14/tmp/scss-ontology-harness.ts`
+→ `script/m14/tmp/scss-ontology-harness.json`; the ruling probes are
+`script/m14/tmp/scss-ontology-probes.ts`.
+
+### The two RULED types, with the instrument, the probe and the overturn
+
+Both use **instrument A — grammar-inventory**, because each needs a node type the
+language does not have. The inventory is the grammar's OWN vocabulary observed across
+the whole corpus: **150 distinct node types** the wired `tree-sitter-scss` wasm produces,
+enumerated in the harness artifact.
+
+| node type that would MEAN it | occurrences in 4,394 files |
+| --- | --- |
+| `class_declaration`, `class`, `interface_declaration`, `trait_declaration`, `struct_declaration`, `class_body` | **0** each |
+| `implements_clause`, `extends_clause`, `superclass`, `base_class`, `interface_implementation`, `inheritance_specifier` | **0** each |
+| `new_expression`, `object_creation_expression`, `constructor_invocation`, `new` | **0** each |
+| `module_definition` | **0** |
+| `class_name` | 37,835 — **present, and it means nothing here** |
+
+`class_name` is the row worth reading twice. It is the CSS `.foo`'s own name, inside a
+`class_selector`, and it is the plausible-looking name that makes an inventory-by-substring
+wrong: a first version of the supertype probe was written as the shape regex
+`/^(class|interface|struct|trait|…)/` and reported **64,744** occurrences, every one of
+them a `class_selector` or a `class_name`. Instrument A asks whether the grammar HAS the
+construct, by exact name, and it does not.
+
+- **`implements` — RULED.** Sass has no supertype clause: a stylesheet declares mixins,
+  functions, variables and rules, and none of them declares what it is a member of. The
+  probe is the inventory above. **Overturn:** one occurrence of any of the six supertype
+  node types above. A Sass mixin is NOT the case — a mixin is textual inclusion with no
+  declared relationship to the including scope, and mapping it onto `implements` would be
+  a fabricated edge (see "the wide readings are wrong" below).
+- **`instantiates` — RULED.** Sass has no constructor and no value type. The probe is the
+  same inventory. **Overturn:** one occurrence of `new_expression`,
+  `object_creation_expression`, `constructor_invocation` or `new`. The nearest candidate
+  was a `%placeholder`, because Sass's own documentation calls a placeholder a selector
+  that exists only to be extended and one could argue an `@extend` "instantiates" it —
+  2,668 `placeholder` nodes, 350 `@extend`s naming one. That argument is rejected on the
+  label, not on the count: nothing in Sass instantiates anything, and an `instantiates`
+  edge would be the fabricated edge this workstream prices highest. The placeholders are
+  published and the `@extend`s are emitted (as `uses`) because those are real.
+
+### `overrides`: the three candidate classes, counted apart
+
+A wrong ruling here is the `overrides` mistake the ontology gate exists to catch, so the
+three readings of "override" are measured separately rather than one of them being chosen.
+
+| class | occurrences | verdict and why |
+| --- | --- | --- |
+| a SECOND `@mixin <name>` / `@function <name>` in one file | **0** / **0** across 4,394 files | the construct is expressible; this corpus does not use it. The branch is not emitted from, and the probe that says so is a parse-tree count, not an absence of evidence |
+| a plain same-scope `$var` reassignment | **422** in 52 files, of which **171 read the variable they assign** | NOT an override. `$_args: append($_args, …)` in bootstrap's `_functions.scss` is an accumulator mutating one binding, and the other 251 are a `$x: 1; … $x: 2` pair that the lane's identity ruling already collapses into ONE symbol — so an edge between the two assignments would be a self-edge |
+| `!global` on a name already assigned at this file's top level | **16 emitted**, and it is the only one that means what the type means | EMITTED. `!global` is the flag that reaches past the enclosing scope and reassigns the binding outside it, so the prior declaration is replaced. bootstrap's `_box-shadow.test.scss` is the model: `$enable-shadows: false !global;` … `$enable-shadows: true !global;` … and a final restore are three overrides of one variable |
+
+The prior assignment must be a **top-level** one. `!global` beside a name that exists only
+inside another mixin CREATES a global rather than replacing one, and 14 of the
+`!global` assignments in element-plus fail that test — which is why element-plus's
+60-file differential sample carries 10 of the 16 edges and the other 6 repositories carry
+one each. **Overturn for the ruling half:** a same-file second `@mixin`/`@function`
+declaration, which would make the emitted class incomplete rather than wrong.
+
+### `exports`: what a module offers, and what it does not
+
+Two exclusions, each pinned by a `forbidRelationships` row, because "every top-level
+declaration" is the over-reach and each exclusion is a different rule:
+
+- **SCOPE.** `$local: 1` inside `.card { … }` is a local. Measured: 3,315 top-level `$`
+  assignments against 523 scoped ones in 4,394 files.
+- **Sass's private-member rule.** A name beginning `-` or `_` is private to its module
+  and `@use` does not expose it. Measured: **30** top-level private assignments.
+
+Both ends resolve by construction — the source is the file's own module symbol, the
+target is a symbol the file publishes — which is the reason to model a module's surface
+as edges at all: `@use 'a', 'b'` binds members from two files, and nothing else in the
+graph can say which file offered a name. The module symbol's name is the file's basename
+**with** its extension, for the reason the bash lane gives for its script symbol (BD2):
+deterministic, no machine path in the index fingerprint, and unable to collide with a
+selector, a variable or a mixin name because a bare type selector has no dot.
+
+Two deliberate non-behaviours, both of which keep the addition measurable:
+
+1. **The module symbol is NOT an owner.** `ownerForNode` skips it. A module is not a
+   lexical scope, so making it the owner would re-source every top-level statement onto a
+   file-level name — a different edge from the one the lane emitted before this symbol
+   existed, and 1,491 top-level `@include`s plus 156 top-level `$var` reads currently emit
+   **no edge at all** precisely because nothing published encloses them. That silence is
+   pre-existing and unchanged; this lane did not widen it.
+2. **The `exports` EDGE and the `exports` ARRAY are not the same set.** The delegated CSS
+   analyzer puts every ownerless symbol in `ParseResult.exports`, which includes rule
+   selectors such as `.card`; Sass does not expose a selector through `@use`, so the edges
+   cover variables, mixins and functions only. Each entry carries its provenance
+   (`metadata.via: "sass-module-top-level"` on the array, `metadata.isScssModuleMember` on
+   the edge) so a consumer can tell the two claims apart instead of reading one as the
+   other.
+
+### The three GAPs that are reported rather than implemented, and why
+
+Each is a real construct with a measured population, and each needs a change in
+`script/m14/differential.ts` — shared machinery this lane does not own (§8 of the
+workstream). The workstream's own rule for this is the **full mirror**: truth AND the
+allowlist entry in one commit, or the label is compared against nothing. Applying half of
+it is the documented failure — java (81 edges), kotlin (54), php (163) and javascript all
+carried a label no oracle backed while publishing 0% unexplained.
+
+| type | what the lane emits now | the construct | what the shared change must be |
+| --- | --- | --- | --- |
+| `imports` | 0 relationships; 1,571 `@use` + 165 `@forward` + 3,562 `@import` on the `imports` array | a file dependency, and the CSS lane already emits it as a relationship sourced from the importing stylesheet's own name. `@use`/`@forward` are `use_statement`/`forward_statement` node types, which the CSS lane's `at_rule` dispatch never sees, so a `.scss` file produces **none** | `deriveScssEdges(root)` must take the module name the way `deriveCssEdges(root, moduleName)` does and source `imports` from it. Measured cost of the analyzer half on element-plus: **594 edges**, which is why it is not applied unilaterally against a floor of `unexplained ≤ 3` |
+| `calls` | `uses` for `f(x)` where `f` is a declared `@function` — **144** edges, 100% resolved | 211 such call sites across 16 files; the oracle already derives them, as `uses` | change `case "call_expression"` in `deriveScssEdges` to push `calls`, and add `calls` to the scss allowlist. The analyzer half alone reads as N MISSING against an oracle that still says `uses` |
+| `extends` | `uses` for `@extend` — **414** edges | 437 `@extend` statements; `@extend` IS inheritance and `uses` is a neighbour that loses the meaning | change `case "extend_statement"` in `deriveScssEdges` to push `extends` and to read a `placeholder` (which sits under an `ERROR` node, so the read has to be a deep search, not `kidOf`). `extends` is admitted by the harness's base allowlist for every language, so no allowlist edit is needed |
+
+These are declared deferrals with reproductions, not oversights — the same posture the
+lane took on the CSS oracle's comma-group defect, and for the same reason: the file is
+shared with a gated lane and the change has to be measured on both sides at once.
+
+### The `@extend` resolution finding, measured on the tree
+
+`uses` resolves at both ends on **439 / 799 (54.9%)**, and the aggregate hides three
+constructs with three different reasons for an absent endpoint
+(`script/m14/tmp/scss-uses-resolution.ts`):
+
+| construct | edges | both-ends resolved |
+| --- | --- | --- |
+| `@include` → a declared mixin | 153 | **153 / 153 = 100%** |
+| `f(x)` → a declared `@function` | 144 | **144 / 144 = 100%** |
+| `@extend`, top-level shape | 90 | 2 / 90 = 2.2% |
+| `@extend`, recovered shape (inside a rule body) | 320 | 49 / 320 = 15.3% |
+| delegated CSS (`@keyframes`, `@mixin` references) | 88 | 88 / 88 = 100% |
+| `exports` | 3,465 | 3,465 / 3,465 = 100% |
+| `overrides` | 16 | 16 / 16 = 100% |
+
+The low `@extend` rate is a **cross-file** property, and it is measured on the parse tree
+rather than asserted (`script/m14/tmp/scss-extend-tree-witness.ts`): of the corpus's 437
+`@extend` statements, **108 name a selector their own file writes** and **329 name one in
+another file** — `%block` is declared in bulma's `_utilities.scss` and extended from
+`docs/_sass/docs/code.scss`, `h1` is extended from bootstrap's `_type.scss` and declared
+in `_reboot.scss`. Silence on the 329 is SCSS-L7 doing its job; publishing an endpoint for
+them would be the phantom M60 R7 forbids.
+
+The residue that IS addressable: 108 declared-here targets against 54 resolving edges, so
+**at most ~54 edges name a selector the file writes and the lane does not publish under
+that name**, overwhelmingly a `%placeholder` the CSS lane publishes under its resolved
+(nested) name. The two probes spell a small number of targets differently — one reads
+`&.is-transparent` where the other reads `.is-transparent` — so the figure is an upper
+bound and is stated as one.
+
+### The recovered `@extend` shape: 63 of 99 statements were invisible
+
+A grammar fact, not a walk bug, and it is the largest single recall gain this lane has
+measured. The `extend_statement` RULE is written for a top-level `@extend`; the same text
+nested in a `block` parses as
+
+```
+block > ERROR > "@extend", placeholder, ";", ERROR("or", ":", …)
+```
+
+so the statement's own node type never appears, the keyword survives only as an
+**anonymous** token, and a walk over named children never sees either. Measured: **676**
+`@extend` tokens and **99** `extend_statement` nodes in 4,394 files — 85% of the tokens
+are in the recovered shape — and `.card { @extend %badge; }`, which is where a BEM
+codebase puts nearly every `@extend`, produced **no edge at all**. The lane now recognises
+the recovered form **by its keyword**, not by shape (checking for "an ERROR containing a
+selector" would fire on every broken declaration) and marks those edges
+`scssRecoveredFromError` + `scssExtendShape: "recovered"`, so a claim read out of a region
+the grammar gave up on is distinguishable from one read cleanly.
+
+An **interpolated** placeholder is still refused: `%responsive-container-#{$bp}` leaves the
+prefix `%responsive-container-`, which names no selector and resolves to no symbol, so the
+guard requires the placeholder's text to end in an identifier character. Measured on the
+tree: 1,081 of the 2,668 `placeholder` nodes sit under an `ERROR` and are interpolated
+half-selectors, and 1,587 sit in a `selectors` node. Pinned by three `forbidRelationships`
+rows in `placeholder-selectors-and-extend`.
+
+### DERIVATION findings
+
+**0 at handover, and the two types added here make it 2.** A DERIVATION finding is a type
+the analyzer emits that the differential never audits. `exports` and `overrides` are both
+emitted and both are compared against nothing, because the fix for each is in
+`deriveScssEdges`:
+
+- `exports` — the harness allowlist filters the **analyzer** side, and `exports` is in no
+  scss entry, so the 3,465 edges are dropped from the comparison entirely. The row prints
+  `COMPARED WITH NO TRUTH: exports (0 comparable, 0 truth)` once the entry exists; today
+  they are unmeasured, which is the "349,468 rows went unmeasured across five review
+  rounds" shape the differential's own header records.
+- `overrides` — `overrides` IS in the base allowlist for every language except
+  csharp/dart/swift/cpp/go, so all 16 edges are compared and all 16 land in
+  `unexplained`. Measured on element-plus's 60-file sample: `unexplained` 1 → 11,
+  `unexplained-by-label: overrides=10, references=1`, with `MISSING` unchanged at 30.
+
+Paying either down needs the same shared change as the three reported GAPs, which is why
+they are reported together.
 
 ## What is measured, and what is not
 
-**Both-ends resolve, 2,503 / 2,829 (88.5%)** — and the aggregate is a property of the
-corpus, not of this lane. Split by origin:
+### The production census, 4,394 files / 21 repositories
 
-| origin | resolved |
+Every count below comes from `parseFile` (`src/ast/pool-worker.ts`) over the whole
+admitted corpus. Symbol hygiene, which the standing rules make non-negotiable and which no
+count in this lane had been reporting:
+
+| | |
 | --- | --- |
-| SCSS `$var` reads (this lane) | **223 / 223 = 100%** |
-| CSS `var()` reads (delegated) | 14 / 220 = 6% |
-| `imports` | 0 / 120 = 0%, **correct** — an import names another file |
+| files admitted / parsed | 4,394 / 4,394 (0 threw) |
+| symbols | **38,262** |
+| symbols with an **empty name** | **0** |
+| symbols with an **empty kind** | **0** |
+| symbols with kind `unknown` | **0** |
+| relationships whose source or target is the literal `unknown` | **0** |
+| edges with `confidence < 0.7` | **0** — every SCSS-emitted edge is a deterministic parse fact |
 
-The 6% is the CSS lane's own behaviour meeting a stylesheet set that consumes Element
-Plus theme tokens (`--el-color-primary` and friends) defined in a **different file**.
-Verified by running identical input through both lanes: the behaviour is identical. This
-lane adds no unresolvable edge of its own, and "fixing" the 6% by publishing a symbol
-per read would be publishing a use as a declaration.
+Symbol kinds: `class` 23,074, `variable` 5,558, `module` 4,594, `type` 2,617,
+`function` 1,083, `interface` 964, `namespace` 229, `property` 143. The `module` count is
+4,594 because it is now one per file plus the CSS lane's `@media`/`@layer` scopes.
+
+Two consecutive runs of the same census differ by ±1 file, ±3 symbols and ±1 `contains`
+edge — `38,259`/`11,778` on one run and `38,262`/`11,779` on the next — and the difference
+is SCSS-L14: `consul/.../check-hexagon/property-16.scss` either parses or trips the pooled
+wasm path's 120-second stall, so its 6 symbols and its containment edge are present or
+absent depending on the run. Every other number above is stable across the two runs.
+
+### Resolution per type, on the current corpus
+
+| type | edges | both ends resolve | one end |
+| --- | --- | --- | --- |
+| `contains` | 11,779 | **11,779 = 100%** | 11,779 |
+| `exports` | 3,465 | **3,465 = 100%** | 3,465 |
+| `overrides` | 16 | **16 = 100%** | 16 |
+| `uses` | 799 | 439 = 54.9% | 799 |
+| `references` | 6,260 | 2,759 = 44.1% | 6,260 |
+
+`uses` and `references` are decomposed by construct in the ontology section above; the
+short version is that every edge this lane emits from an SCSS-specific construct resolves
+at both ends except `@extend`, whose targets are 76% cross-file by the language's own
+modularity, and that the `references` shortfall is the delegated CSS `var()` class, which
+is the CSS lane's behaviour meeting a stylesheet set that consumes Element Plus theme
+tokens defined in a different file. The behaviour is identical when identical input is run
+through both lanes.
+
+**Both-ends resolve is a property of the corpus, not of the lane.** On the 244-file corpus
+this lane was measured on before `consul`, `vault`, `nomad` and `waypoint` were added, the
+same three numbers were `contains` 2,225/2,225, `uses` 41/41, and `references` 223/223 for
+the lane's own `$var` reads — so the aggregate moves with the corpus while the per-construct
+resolution does not.
 
 ## Declared limitations
 
@@ -178,23 +418,106 @@ per read would be publishing a use as a declaration.
   `npm install --no-save tree-sitter-css@0.20.0` and is **not self-contained**. The
   package declares `^0.20.0`, a range, so the exact version is pinned in
   `verify-grammar-pins.ts` — a range is not a pin.
+- **SCSS-L9 — `overrides` covers one class of three, and says so.** Only a `!global`
+  reassignment of a top-level binding becomes an `overrides` edge (16 occurrences). A
+  second `@mixin`/`@function` declaration is expressible in Sass and measures **0** across
+  4,394 files, so no branch fires and a corpus that used one would still be silent. A plain
+  same-scope reassignment (422, of which 171 read the variable they assign) is
+  deliberately **not** an override: an accumulator mutating one binding is not the
+  replacement of a declaration, and the identity ruling makes the two assignments one
+  symbol, so the edge would be a self-edge. Stated because a reader seeing one `overrides`
+  edge in a corpus with 422 reassignments would otherwise assume the other 422 were
+  classified and rejected rather than not considered.
+- **SCSS-L10 — `exports` and `overrides` are compared against nothing.** Both are
+  implemented and both are DERIVATION findings until `deriveScssEdges` derives them; the
+  workstream's own remedy is the full mirror in one commit, and `deriveScssEdges` is shared
+  machinery. Measured cost of leaving it: 3,465 `exports` edges unmeasured (the harness
+  allowlist filters the analyzer side, and `exports` is in no scss entry) and 16
+  `overrides` edges counted as confident fabrications — 10 of them on element-plus's
+  60-file differential sample, which takes `unexplained` from 1 to 11 against a declared
+  floor of 3.
+- **SCSS-L11 — three GAPs are reported, not implemented**: `imports` as a relationship
+  (594 edges on element-plus, sourced from the file's own module name the way
+  `deriveCssEdges` already does for CSS), `calls` for the 144 `@function` call sites, and
+  `extends` for the 414 `@extend` edges. Each is a label or a channel the shared oracle
+  fixes in the same commit; see the ontology section for the exact change. Until then a
+  consumer reading `uses` cannot tell a function call from a mixin inclusion by label alone
+  — `metadata.isScssFunctionCall` and `metadata.isScssInclude` are what distinguish them,
+  and they are pinned by fixtures and mutants.
+- **SCSS-L12 — a module's surface is inferred from scope, not from a declaration.** Sass
+  has no `export` keyword: a top-level declaration is public because that is what `@use`
+  binds, and a `-`/`_` prefix is private by the same convention Python and Ruby use. The
+  convention is read from the first character of the name, so a stylesheet that wants a
+  private member under an ordinary name has no way to say so and this lane will report it
+  as public. Measured: 30 private top-level assignments in 4,394 files, so the rule is
+  exercised; nothing measures how often it is wanted and not expressed.
+- **SCSS-L13 — 156 top-level `$var` reads and 1,491 top-level `@include`s emit no edge.**
+  Nothing published encloses them: a statement at a file's top level has no owner, and the
+  module symbol introduced for `exports` is deliberately **not** registered as one. Making
+  it an owner would convert both populations, and every such edge would be new surface the
+  shared oracle does not derive — so the silence is pre-existing, unchanged, and named here
+  rather than left to be discovered as a bug.
+- **SCSS-L14 — one corpus file stalls the wasm parser under concurrency.**
+  `consul/ui/packages/consul-ui/app/styles/base/icons/icons/check-hexagon/property-16.scss`
+  produced `[BB-HANG] parser stuck 120s` and `[BB-PARSE-ERR] … memory access out of bounds`
+  in the 8-worker `parseFile` census, twice, while the same 842-byte file parses in **7 ms**
+  with a fresh parser and the same wasm. So it is a concurrency/memory fault in the pooled
+  wasm path, not a grammar fault in that file — and nothing here measures the rate, so
+  "one file in 4,394" is an observation from one run and not a rate.
 
 ## Verification
 
 - **grammar**: `script/m14/verify-grammar-pins.ts` — source↔wasm exact on all 84 declared
   names; A/B at `validation/m14/results/scss-grammar-ab.json` (76 fixed, 0 regressed,
   3 regression controls unchanged-clean).
-- **fixtures**: 7 / 7 in `run-fixtures.ts`. Expectations are authored from the rulings,
-  never transcribed from analyzer output — which is the only reason three of them could
-  fail, and they did.
-- **mutants**: 15 / 15 in `script/m60/scss-mutants.ts`. Four survived the first run and
-  all four were gaps in the suite: two were **bugs in the mutants** (one rewrote only
-  already-resolved sources, so it was a no-op; one wrote `{...s, ...rest}` after
-  destructuring `parameters` out, which **restores** the key), and two were missing pins
-  (no `line_number` assertion anywhere, and a `forbidRelationships` row that named only
-  one spelling of a phantom target).
+- **fixtures**: **11 / 11** in `run-fixtures.ts --lang scss`. Expectations are authored
+  from the rulings, never transcribed from analyzer output — which is the only reason they
+  could fail. Two are new (2026-10-03): `module-exports-and-global-overrides` and
+  `placeholder-selectors-and-extend`.
+- **mutants**: **23 in the registry, 0 survivors**, via
+  `bun run script/m60/scss-mutant-check.ts` → `script/m60/tmp/scss-mutant-check.json`.
+  Five are new (S11–S15) and all five are caught by the fixtures above. Four survived the
+  first run in an earlier wave and all four were gaps in the suite: two were **bugs in the
+  mutants** (one rewrote only already-resolved sources, so it was a no-op; one wrote
+  `{...s, ...rest}` after destructuring `parameters` out, which **restores** the key), and
+  two were missing pins (no `line_number` assertion anywhere, and a `forbidRelationships`
+  row that named only one spelling of a phantom target).
+  **The registry is not wired into the shared runner**: `grep -rn SCSS_MUTANTS script/`
+  returns the definition in `script/m60/scss-mutants.ts` and **no import site**, so
+  `bun run script/m14/mutate-analyzer.ts` never executes this lane's mutants. The lane
+  runner imports the transforms rather than mirroring them (a check that reimplements the
+  transform is a check of itself) and declares its own scope: it evaluates
+  `expectSymbols`, `expectSymbolCount`, `expectRelationships` and `forbidRelationships`
+  and NOT `expectParameters`, `expectImports`, `expectErrorCount`, `expectMetadata`,
+  `forbidSymbols` or `forbidDecorators` — so it reports 3 mutants as
+  `OUT-OF-SCOPE` rather than as survivors, because their witnesses live in sections it
+  does not read. §8 asks for the one-line shared change.
+- **ontology census**: `script/m14/tmp/scss-ontology-harness.ts` →
+  `script/m14/tmp/scss-ontology-harness.json`; ruling probes in
+  `script/m14/tmp/scss-ontology-probes.ts`; per-construct resolution in
+  `script/m14/tmp/scss-uses-resolution.ts`; the `@extend` cross-file witness in
+  `script/m14/tmp/scss-extend-tree-witness.ts`.
 - **census**: `script/m14/tmp/scss-analyzer-census.ts` →
   `validation/m14/results/scss-analyzer-census.json`.
+
+### The shared ontology gate cannot run this lane, and that is a reportable fact
+
+`script/m14/ontology-coverage-gate.ts` refuses any language with no entry in
+`RULED_BY_LANG`, and `scss` has none:
+
+```
+ontology coverage gate — no RULING TABLE for scss.
+Refusing to report: a gate with an empty table would call every un-emitted type
+RULED-UNJUSTIFIED and that is a verdict about the TABLE, not about the lane.
+```
+
+It exits 2 before printing a row, which is the correct refusal and leaves this lane
+without an arbiter. `RULED_BY_LANG` is shared machinery (§8), so the gate was not edited.
+The four verdicts this section carries are produced by
+`script/m14/tmp/scss-ontology-harness.ts`, which reports the same four statuses with the
+same two instruments over the same corpus; adding `scss: SCSS_RULED` to the shared table
+and pointing it at this lane's two probes is the change that would let the shared arbiter
+answer instead.
 
 ### Also verified
 
