@@ -115,6 +115,53 @@ const SHELL_DEFINED_VARS = new Set([
 ])
 
 /**
+ * Bash BINDS a name without ever writing `NAME=…`.
+ *
+ * The declaration collectors before this read exactly two node types:
+ * `variable_assignment` (a plain assignment) and `declaration_command`
+ * (`local`/`declare`/`export`/`readonly`/`typeset`). POSIX defines four more
+ * binding constructs that carry neither, so every one of them produced a `uses`
+ * edge naming a target the analyzer itself had never published — an edge the
+ * graph could not walk, on a name the language had genuinely bound.
+ *
+ *   `for NAME in words`      POSIX 6.7.3 — NAME is assigned each word. The pinned
+ *                            grammar carries it as a bare `variable_name` child of
+ *                            `for_statement`, verified in
+ *                            `validation/m14/fixtures/bash/probe-bash-binding-shapes.mts`.
+ *   `read NAME…`             POSIX 6.2.5 — stdin is assigned to NAME. The grammar
+ *                            gives the targets as plain `word`s, indistinguishable
+ *                            by TYPE from a flag, so the option table below is the
+ *                            only thing separating them.
+ *   `mapfile`/`readarray`    bash 4.0 — fills the ARRAY NAME.
+ *   `printf -v NAME`         bash 4.1 — assigns the formatted output to NAME.
+ *
+ * Measured on the corpus, 400 files in hash order, 96 DISTINCT files:
+ * **234 binding sites** — `for` 173 in 81 files, `read` 59 in 30, `mapfile` 1,
+ * `printf -v` 1 — and **357 `uses` edges** whose target one of them declared.
+ * Those 357 went from unresolvable to resolvable and the `uses` TOTAL did not
+ * move (7,802 before and after): the edges already existed, naming a target the
+ * analyzer had never published. The per-construct file counts overlap and do not
+ * sum to 96. Probe: `validation/m14/fixtures/bash/probe-bash-binding-sites.mts`.
+ */
+const READ_TARGET_COMMANDS = new Set(["read", "mapfile", "readarray"])
+
+/**
+ * `read`/`mapfile` option letters that CONSUME THE NEXT SIBLING NODE, whatever its
+ * type. `-d` takes a delimiter, `-p` a prompt, `-n`/`-N` a count, `-t` a timeout,
+ * `-u` a descriptor, `-i` text, `-e`/`-s` nothing. Consuming the next SIBLING and
+ * not the next `word` is what makes `read -p "Name: " reply` declare `reply`: the
+ * prompt is a `string` node, and a token-level scanner that only looked at `word`s
+ * had already dropped it.
+ */
+const READ_VALUE_OPT_LETTERS = new Set(["d", "e", "i", "n", "N", "p", "s", "t", "u", "O"])
+
+/** Every option letter `read`/`mapfile` accepts. A letter outside this set is not
+ * an option at all, so it cannot make the next sibling a VALUE rather than a
+ * target. `a` is here because it is `-a aname` — a flag whose value is the array
+ * name — which is why `read -ra args` binds `args` and not a variable named `a`. */
+const READ_OPTION_LETTERS = new Set(["r", "a", "d", "e", "i", "n", "N", "p", "s", "t", "u", "O", "C", "c"])
+
+/**
  * Is this text a command NAME rather than an unexpanded expression?
  *
  * Only used where the text has already been detached from the tree (a `trap`
@@ -456,6 +503,10 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
         node.type === "c_style_for_statement"
       ) {
         this.emitVariableUses(node, symbols, relSource, addRel, declaredSymbols, functionStack, functionParams)
+      } else if (node.type === "for_statement") {
+        // `for NAME in …` binds NAME with no assignment node. See
+        // `extractImplicitBinding` for the measurement this closes.
+        this.extractImplicitBinding(node, symbols, enclosingFunction() || scriptName, declaredSymbols, scopeOwners)
       } else if (node.type === "variable_assignment") {
         if (node.parent?.type !== "declaration_command") {
           this.extractAssignment(node, symbols, enclosingFunction() || scriptName, declaredSymbols, scopeOwners)
@@ -463,6 +514,7 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
       } else if (node.type === "declaration_command") {
         this.extractDeclaration(node, symbols, enclosingFunction() || scriptName, functionParams, declaredSymbols, scopeOwners, addRel)
       } else if (node.type === "command") {
+        this.extractImplicitBinding(node, symbols, enclosingFunction() || scriptName, declaredSymbols, scopeOwners)
         this.extractCommand(node, symbols, imports, patterns, {
           addRel,
           relSource,
@@ -1050,6 +1102,126 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
           ownerName: owner || undefined,
           metadata: { bashSpecific: true, isArray, isTopLevel: owner === "" },
         })
+        return
+      }
+    }
+  }
+
+  /**
+   * A binding the language creates without an assignment node.
+   *
+   * `extractAssignment` and `extractDeclaration` cover the two node types that
+   * carry an explicit `NAME=`. These four constructs bind a name and carry
+   * neither, so before this existed they produced a `uses` edge to a target the
+   * analyzer had not published — the edge asserted a read of a declaration that
+   * did not exist in the graph. Measured on a 400-file hash-ordered sample:
+   * 234 binding sites across 96 distinct files, and 357 `uses` edges naming a
+   * target one of them declared. Adding this closed all 357 — the unresolvable
+   * `uses` count fell 1,920 -> 1,563 and the `uses` total stayed at 7,802.
+   *
+   * The rule throughout is DECLINE, NEVER GUESS. A target counts only when it is
+   * a `word` sibling that is a shell identifier, because the pinned grammar
+   * represents a computed name as a different node and a literal name as a
+   * `word` — so the type test is the whole filter. Every one of these was
+   * verified on the tree rather than assumed, in
+   * `validation/m14/fixtures/bash/probe-bash-binding-shapes.mts`:
+   *
+   *   read "$target"          -> `string`      declined
+   *   read pre${n}fix         -> `concatenation` declined
+   *   printf -v "$2"          -> `string`      declined
+   *   mapfile -t "$name"      -> `string`      declined
+   *   read *.txt              -> `word`        declined, not an identifier
+   *   read                    -> (no target)   declined; bash assigns REPLY,
+   *                                            which is in SHELL_DEFINED_VARS
+   *   # read x                -> `comment`     declined
+   *   echo "read x"           -> `string_content` declined
+   *   cat <<'EOF' … read x …  -> `heredoc_body`  declined
+   *
+   * The last three are why this reads the tree: a text matcher would have
+   * declared a variable from a comment, a string and a heredoc.
+   */
+  private extractImplicitBinding(
+    node: Node,
+    symbols: ASTEngine.UniversalSymbol[],
+    owner: string,
+    declaredSymbols: Set<string>,
+    scopeOwners: Set<string>,
+  ) {
+    const publish = (name: string, at: Node, site: string, isArray: boolean) => {
+      if (!isShellIdentifierName(name)) return
+      const key = `${owner}\u0000${name}`
+      if (declaredSymbols.has(key)) return // already declared; first declaration wins
+      declaredSymbols.add(key)
+      symbols.push({
+        name,
+        kind: ASTEngine.SymbolKind.Variable,
+        range: this.nodeToRange(at),
+        scope: owner,
+        visibility: this.visibilityForOwner(owner, scopeOwners),
+        ownerName: owner || undefined,
+        metadata: { bashSpecific: true, isImplicitBinding: true, bindingSite: site, isArray },
+      })
+    }
+
+    // `for NAME in words; do …; done` and `for NAME; do …; done` — both carry a
+    // bare `variable_name` child of `for_statement`. The c-style loop
+    // `for ((i=0; …))` is a `c_style_for_statement` whose init IS a
+    // `variable_assignment`, so it arrives at `extractAssignment` already and is
+    // deliberately not handled here: two collectors publishing one name would
+    // make one of them dead.
+    if (node.type === "for_statement") {
+      for (let i = 0; i < node.namedChildCount; i++) {
+        const child = node.namedChild(i)
+        if (child && child.type === "variable_name") publish(child.text, child, "for", false)
+      }
+      return
+    }
+
+    // `read`/`mapfile`/`readarray` targets, and `printf -v NAME`.
+    const cmd = this.commandNameOf(node)
+    if (cmd.length === 0) return
+    if (READ_TARGET_COMMANDS.has(cmd)) {
+      let skipNext = false
+      for (let i = 0; i < node.namedChildCount; i++) {
+        const child = node.namedChild(i)
+        if (!child || child.type === "command_name") continue
+        // An env prefix (`IFS='/:' read …`) and a redirection target are neither
+        // an option nor a name; they just advance the scan.
+        if (child.type === "variable_assignment") continue
+        const isOption =
+          child.type === "word" &&
+          child.text.length > 1 &&
+          child.text.charCodeAt(0) === 45 /* - */ &&
+          child.text.charCodeAt(1) !== 45 /* not `--` */
+        if (isOption) {
+          let consumesNext = false
+          for (let j = 1; j < child.text.length; j++) {
+            const letter = child.text[j]
+            if (!READ_OPTION_LETTERS.has(letter)) continue
+            if (READ_VALUE_OPT_LETTERS.has(letter)) consumesNext = true
+          }
+          skipNext = consumesNext
+          continue
+        }
+        if (skipNext) {
+          skipNext = false
+          continue
+        }
+        // `mapfile`/`readarray` fill an ARRAY; `read` fills a scalar.
+        publish(child.text, child, cmd, cmd !== "read")
+      }
+      return
+    }
+    // `printf -v NAME fmt …` (bash 4.1). The target is the node IMMEDIATELY after
+    // `-v`, and it must itself be a `word`, so `printf -v "$2" …` — a name the
+    // script computes at run time — yields nothing. `echo` has no `-v`, which is
+    // why this is keyed on `printf` and not on the flag.
+    if (cmd === "printf") {
+      for (let i = 0; i < node.namedChildCount - 1; i++) {
+        const child = node.namedChild(i)
+        if (!child || child.type !== "word" || child.text !== "-v") continue
+        const target = node.namedChild(i + 1)
+        if (target && target.type === "word") publish(target.text, target, "printf -v", false)
         return
       }
     }
