@@ -353,3 +353,77 @@ Two supervisor-side lessons, both now fixed in the tooling:
 ### Supplied by the owner
 
 Use `opencode/space-bunny-free`. The provider is working and billing is settled.
+
+## WAVE 1 COMPLETE — 23/23 merged
+
+Aggregate `analyzers/ontology-laptop-b`, 54 commits, 250 files changed. Every
+language's ontology verdicts are landed and reviewed by the supervisor, who
+re-ran the agents' own instruments rather than reading their reports.
+
+| lane | headline | notes |
+|---|---|---|
+| BASH | 30 fabricated `calls` edges removed | reserved words read as command names |
+| NIM | `implements` closed as corpus-silent | 216 concepts, 0 refinements of a different concept |
+| ZIG | 10/10 verdicts, Z59 fixed | 11,332 dangling sources -> 1 in 249,983 edges |
+| F_SHARP | 9/10 EMITTED, `exports` RULED | convicted its own doc row |
+| LUA | 4 of 5 missing types measured PRESENT | declared its own 2.53x payload |
+| JULIA | `overrides` EMITTED after overturning a "declined" ruling | 63 -> 17 -> 4 -> 3 as fabrications removed |
+| PHP | namespace `contains` GAP | every other label exactly +0 in the A/B |
+| R | **overturned its own prose ruling** | 14,854 constructs produced nothing; corpus widened 3x |
+| SQL | 7/10 EMITTED, 3 RULED | its own oracle caught a CTE fabrication |
+| POWERSHELL | `imports` was a mislabel, not a gap | all 4 forms already read, published as `references` |
+| GRAPHQL | 4th verdict state: neither emitted nor ruled | construct occurs, per-file analyzer cannot reach it |
+| CSS | `overrides` added; `imports` reported at 0% resolution | corrected its own instrument (1 -> 4) |
+| PROTOBUF | a suite that can now fail | 8 own survivors found; "0 of 1,481 mutants were ours" |
+| JSON | 8/10 EMITTED | its oracle emitted first-doc edges twice, invisibly |
+| YAML | 3 GAPs; removed code measured at 0 occurrences | corrected a false "15 mutants caught" doc claim |
+| SCSS | `exports` + `overrides`; 3 GAPs reported not patched | named the structural cause precisely |
+| HCL | `overrides` retyped from `references`, cost 0 edges | 68 override blocks in `.tftest.hcl` |
+| TOML | 1 EMITTED, 9 RULED | declined cargo's `workspace = true`: a tool rule, not TOML's |
+| XML | 2 GAPs; overturned its own "category error" ruling | XSD 1.0 s3.4.2 |
+| DART | **10/10 EMITTED**, 5,265 `references` added | type-variable gate never fired for a bounded generic |
+| CLEAN | wave 2 | |
+
+### Shared-machinery defects found by lanes, fixed by the supervisor
+
+| fix | found by | defect |
+|---|---|---|
+| `cf6cabece` | POWERSHELL, and independently PROTOBUF | `meta.<key>: null` asserted nothing — 16 expectation rows across 6 lanes could not fail |
+| `760f0c501` | PROTOBUF | array comparison order-SENSITIVE for object elements (`sort()` with no comparator is a no-op) |
+| `e787473c8` | PROTOBUF, and independently YAML | css/nim/protobuf mutants existed but were never imported — 71 mutants never ran |
+| `b952a9a9c` | JSON | json's 15 mutants likewise never ran |
+| `79e3a9d85` | JULIA | `completeness-inventory.ts` named a doc the lane deleted |
+
+### Standing defects found and NOT fixed — for the owner
+
+- `script/m14/run-fixtures.ts` **exits 0 without executing any fixture**, because
+  its lane gate refuses `r` and `lua` for having expectation files with no runner
+  lane in `LANGS`. 10 expectation files are evidence nothing executes.
+- `script/m14/mutate-analyzer.ts` reports **9 surviving mutants**: java 1, groovy 2,
+  scala 1, make 1, html 3 (other laptop) and
+  `php/drop-external-override-guess` at 0 -> 0 failures, which means the php lane
+  has no fixture that fails when the behaviour is removed.
+- `ontology-coverage-gate.ts` `RULED_BY_LANG` has no entry for yaml, r, lua,
+  graphql, protobuf, json, css, scss, sql, php, hcl, dart — it exits 2 rather than
+  rule, so those lanes have no arbiter.
+- `differential.ts` has no `LANGS` entry for `r` and `lua`, so every type those
+  analyzers emit is a DERIVATION finding.
+- `pool-worker.ts`'s `UNIVERSAL` denylist holds the tree-sitter node-type name
+  `source_file`, which is also an ordinary R function: 12 symbols deleted across
+  9 files. Same class drops `Query.me` in graphql (1 of 8,796).
+- `pool-worker.ts`'s parse-error branch returns a regex fallback whose symbols
+  carry no `kind`: 192 empty-SymbolKind symbols per full zig run.
+- `filterNoiseRelationships` splits a target on `:` for Objective-C selector
+  arity, so 1 legal TOML edge in 19,088 is dropped.
+- `verify-honesty.ts` reports 23 failures on the PRISTINE aggregate (evidence
+  staleness, M14.0.F1-F9).
+
+## WAVE 2 — verification passes
+
+All 23 lanes merged, so wave 2 is the other half of the job: the six questions
+adversarially, DERIVATION debt as a number, and re-running pass 1's own probes to
+check a ruling that may be wrong the way R's, JULIA's and YAML's were. Launched
+from the aggregate tip so every lane sees the merged work.
+
+Slots: `clean` (first pass, never run) + `bash fsharp zig css markdown powershell`
+(pass 2).
