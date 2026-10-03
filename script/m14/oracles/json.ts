@@ -18,10 +18,18 @@
  * ## What JSON's semantics actually give
  *
  * A JSON document is a tree of `object` (pairs) / `array` / scalars, and the only
- * relation the format itself defines is CONTAINMENT: the object a key is written in
+ * relation the FORMAT itself defines is CONTAINMENT: the object a key is written in
  * contains that key. There is no name resolution, no binding, no inheritance and no
- * control flow, so `calls`, `extends`, `implements`, `overrides` and `instantiates` are
- * not derivable from the format at all.
+ * control flow, so `calls`, `implements`, `overrides` and `instantiates` are not
+ * derivable from the format at all.
+ *
+ * `extends` used to be listed in that sentence and no longer is. The FORMAT cannot
+ * express it — but neither can it express `imports`, `exports` or `uses`, and all
+ * three are derived here from CONVENTIONS (a `$ref` naming another file, a manifest's
+ * `exports`/`main`/`bin`, a `dependencies` entry). A grammar has no node type for a
+ * keyword any more than for a manifest field, so "the format cannot express it" was
+ * the wrong question and `allOf` — the one keyword that means "must satisfy all of
+ * these", a superset-of relation — is the convention that carries `extends`.
  *
  * ## The three rules this got wrong first, kept because they are the load-bearing parts
  *
@@ -53,13 +61,13 @@
  *
  * ## What JSON's semantics actually give
  *
- * A JSON document is a tree of `object` (pairs) / `array` / scalars, and the only
- * relation the format itself defines is CONTAINMENT: the object a key is written
- * in contains that key. There is no name resolution, no binding, no inheritance
- * and no control flow, so `calls`, `extends`, `implements`, `overrides` and
- * `instantiates` are not derivable from the format at all.
+* A JSON document is a tree of `object` (pairs) / `array` / scalars, and the only
+ * relation the FORMAT itself defines is CONTAINMENT: the object a key is written in
+ * contains that key. There is no name resolution, no binding, no inheritance and no
+ * control flow, so `calls`, `implements`, `overrides` and `instantiates` are not
+ * derivable from the format at all.
  *
- * The one non-trivial edge is JSON Schema's `$ref`, which names another location in
+ * ## The one non-trivial edge is JSON Schema's `$ref`, which names another location in
  * the SAME document. Resolving it needs a path index, so the oracle builds its own
  * from its own walk — deliberately not by calling the analyzer's `referenceTarget`,
  * because a shared resolver would make the comparison untestable in exactly the way
@@ -91,6 +99,74 @@ export function deriveJsonEdges(root: any, scriptName: string, opts?: { manifest
   // they are the same four keys because the FORMAT names those four, not because
   // the analyzer did.
   const MANIFEST_DEPENDENCY_KEYS = new Set(["dependencies", "devDependencies", "peerDependencies", "optionalDependencies"])
+
+  /**
+   * What an npm `scripts` object publishes, and what each entry INVOKES.
+   *
+   * Written from the npm manifest format: `scripts` maps a script name to a shell
+   * command, and a command of the form `<runner> run <name>` invokes the SIBLING script
+   * called `<name>`. The callee must be a key of the SAME `scripts` object — a target
+   * that is not declared there is a binary or another package's script, and naming it
+   * would be an edge to a symbol the file does not contain.
+   *
+   * Tokenised with its own character scan rather than by calling the analyzer's
+   * `npmRunTargets`, for the reason this file exists at all: two implementations that
+   * share a routine cannot disagree, and a disagreement is the only evidence the
+   * comparison produces. A runner is a WHOLE token (`npx` contains `npm`, and a path
+   * named `npm` is not a runner) and a quoted target is declined, because quoting means
+   * the shell rewrote the argument.
+   */
+  const npmScriptCalls = (rootObject: any): { from: string; target: string }[] => {
+    const out: { from: string; target: string }[] = []
+    const keyOf = (pair: any): string =>
+      String(pair?.childForFieldName?.("key")?.namedChildren?.find((c: any) => c.type === "string_content")?.text ?? "")
+    const scriptsPair = (rootObject?.namedChildren ?? [])
+      .filter((c: any) => c.type === "pair")
+      .find((p: any) => keyOf(p) === "scripts")
+    const scripts = scriptsPair?.childForFieldName?.("value")
+    if (!scripts || scripts.type !== "object") return out
+    const declared = new Set<string>()
+    const commands = new Map<string, string>()
+    for (const sp of (scripts.namedChildren ?? []).filter((c: any) => c.type === "pair")) {
+      const name = keyOf(sp)
+      const v = sp.childForFieldName?.("value")
+      if (!name) continue
+      declared.add(name)
+      if (v?.type === "string") commands.set(name, unquote(v))
+    }
+    const RUNNERS = ["npm", "pnpm", "yarn", "bun"]
+    const VERBS = ["run", "run-script", "run-s"]
+    const SEPARATORS = new Set([" ", "\t", "\n", "\r", ";", "&", "|", "(", ")", "<", ">"])
+    for (const [name, command] of commands) {
+      const tokens: { text: string; quoted: boolean }[] = []
+      let current = ""
+      let quoted = false
+      let inQuotes = false
+      for (const ch of command) {
+        if (ch === '"') { inQuotes = !inQuotes; quoted = true; continue }
+        if (!inQuotes && SEPARATORS.has(ch)) {
+          if (current.length > 0) tokens.push({ text: current, quoted })
+          current = ""
+          quoted = false
+          continue
+        }
+        current += ch
+      }
+      if (current.length > 0) tokens.push({ text: current, quoted })
+      for (let i = 0; i < tokens.length; i++) {
+        if (!RUNNERS.includes(tokens[i].text)) continue
+        const verb = tokens[i + 1]
+        if (!verb || verb.quoted || !VERBS.includes(verb.text)) continue
+        const target = tokens[i + 2]
+        if (!target || target.quoted) continue
+        if (target.text === name) continue
+        if (!declared.has(target.text)) continue
+        out.push({ from: name, target: target.text })
+        i += 2
+      }
+    }
+    return out
+  }
 
   /**
    * What a manifest PUBLISHES, from the npm manifest format rather than from the
@@ -187,10 +263,29 @@ export function deriveJsonEdges(root: any, scriptName: string, opts?: { manifest
 
     if (!isObject(node)) return
     const pairs = (node.namedChildren ?? []).filter((c: any) => c.type === "pair")
+    // A key declared TWICE in THIS object replaces its earlier declaration, which is
+    // the redefinition the bash lane calls `overrides`. Scoped to the object because a
+    // JSON key is unique only within its object — the same key in two different objects
+    // is not a redefinition, and it is the corpus's dominant shape (120,174 occurrences
+    // across 7,679 files, against 21 genuine duplicates across 11).
+    //
+    // The oracle cannot check this one against the analyzer's rule, because the analyzer
+    // derives it from the walk's per-object frame and there is no shared structure to
+    // compare: what is compared is the resulting (owner, key) pair, which both sides
+    // reach independently. An EMPTY key is declined — 10 occurrences, every one a
+    // document the grammar recovered with ERROR nodes, and an empty key names no member.
+    const declaredHere = new Set<string>()
     for (const pair of pairs) {
       const key = keyText(pair)
       const value = valueOf(pair)
       if (!key || !value) continue
+      if (key.length > 0) {
+        if (declaredHere.has(key)) {
+          if (parentName) edges.push({ label: "overrides", from: parentName, target: key })
+        } else {
+          declaredHere.add(key)
+        }
+      }
       const here = parentPath ? `${parentPath}.${key}` : key
       // CONTAINMENT: the object a key is written in contains that key. The SOURCE
       // is the parent SYMBOL's name, never its qualified path — an edge whose source
@@ -247,9 +342,6 @@ export function deriveJsonEdges(root: any, scriptName: string, opts?: { manifest
     }
   }
 
-  const doc = (root?.namedChildren ?? []).find((c: any) => c.type === "object") ?? (root?.type === "object" ? root : null)
-  if (doc) walk(doc, scriptName, scriptName)
-
   // The document's top level may be an OBJECT or an ARRAY, and an earlier version of
   // this oracle only handled the object — so all 1,380 array-rooted files returned
   // zero truth edges and every analyzer edge on them read as a fabrication.
@@ -271,6 +363,16 @@ export function deriveJsonEdges(root: any, scriptName: string, opts?: { manifest
   // two documents both declare `spec`, so both symbols are named `spec` and the
   // edges from them are AMBIGUOUS — which is the language property recorded in §7,
   // arriving through a door nobody expected.
+  //
+  // This loop REPLACED an earlier `walk(doc, …)` line rather than joining it, and for a
+  // `document`-rooted file the two overlapped: `doc` was the first entry of
+  // `topLevels`, so the walk ran twice over the whole first document and the oracle
+  // emitted every one of its edges exactly twice. Measured: `contains` truth 122,146
+  // against 61,115 analyzer edges — 50.03% coverage, with `uses` and `references` at
+  // 50.00% each and `calls`/`exports` at 100% (they are emitted from the manifest
+  // block, which was never walked twice). The shared F5 harness compares edge SETS, so
+  // the duplication was invisible there and the lane's recorded 100% survived it; a
+  // count-sensitive consumer inherits the halving. One walk, below.
   const topLevels: any[] =
     root?.type === "object" || root?.type === "array"
       ? [root]
@@ -331,6 +433,7 @@ export function deriveJsonEdges(root: any, scriptName: string, opts?: { manifest
     // the root object is the document's only named child
     const rootObject = (root?.namedChildren ?? []).find((c: any) => c.type === "object") ?? (root?.type === "object" ? root : null)
     for (const name of manifestPublished(rootObject)) edges.push({ label: "exports", from: scriptName, target: name })
+    for (const c of npmScriptCalls(rootObject)) edges.push({ label: "calls", from: c.from, target: c.target })
   }
 
   for (const d of deps) edges.push({ label: "uses", from: d.from, target: d.name })
