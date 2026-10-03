@@ -42,11 +42,96 @@ expressions, not named declarations, so they emit no symbol.
 | `overrides` | a method the **declared** base actually declares — in this file, or via `AnalyzeContext.overrideCompanion`. Resolution is **per-link**: a class is compared only against the base it declares, never transitively. Emitted at 0.95 / `structural` |
 | `imports` | module dependencies: `use` clauses (module = the FQN, alias carried in `metadata.aliased`, and a **grouped** `use C\{D, E}` records members *qualified*) and `require` / `require_once` / `include` / `include_once` paths. Owner is file scope — `use` is per-compilation-unit in PHP. A path is emitted only when **statically** known, and the operand **values** compose (never the source text of the concatenation) |
 | `references` | **only** the R9 declared-type reference graph: property types, **typed class constant types** (PHP 8.3), parameter types, and return types. `metadata.relationshipType` is `declared_type` or `return_type`; `metadata.declaredOn` names the position. Wrappers descend (`?Dep`, `Dep\|Other`, `Dep&IShape` → each member is its own dependency); `primitive_type` is silent; `self`/`static` resolve to the enclosing class and `parent` to its declared base. NOT include paths (those are `imports`) and NOT constant fetches (those ride `uses` with `isConstFetch`) |
-| `contains` | one edge for every owned symbol. Now **audited** by an independent oracle (see below) |
+| `contains` | one edge for every owned symbol. **Two owner levels**: a member is owned by its class/interface/trait/enum, and since M60 a **top-level declaration is owned by its namespace** (`contains App\One -> A`), matching the csharp and typescript convention. See "Namespace containment" below — that sentence about being "audited by an independent oracle" was **false** in this tree and has been corrected |
 
-`exports` is **ruled out** (PHPD33): PHP has no export syntax and a semantic version would be
-unverifiable from one file. Every value `RelationshipType` declares is therefore accounted for:
-**nine emitted, one ruled out**.
+`exports` is **ruled out** (PHPD33). The ruling is not a grammar argument: PHP's
+grammar having no `export` node proves nothing, because a convention is not a
+node. It rests on a parse-tree count of the construct, over all 4,621 admitted
+files — see "`exports` is RULED, and what would overturn it". Every value
+`RelationshipType` declares is accounted for: **nine emitted, one ruled**.
+
+## Namespace containment (M60)
+
+The lane emitted 4,442 `namespace` symbols and joined **none** of them to
+anything. Every `contains` edge it produced came from a member's `ownerName`,
+and a top-level declaration had no owner at all, so the fourth-largest label
+carried the member level and stopped there.
+
+It was an outlier against the project's own convention, not a judgement call:
+the **csharp** analyzer sets `ownerName` / `ownerKind: Namespace` for a
+top-level type, verified on `namespace App.Services { interface IRunner; class
+Runner; }` → `contains App.Services -> IRunner`, `contains App.Services ->
+Runner`, and **typescript** does the same through `ScopeKind.Namespace`.
+
+**Why it survived a reading of the heritage code.** PHP has two namespace forms
+and the grammar spells them differently:
+
+| form | shape | declarations are |
+| --- | --- | --- |
+| `namespace A { … }` | `namespace_definition` owns a `compound_statement` | CHILDREN, so the walk reached them with `ns` set |
+| `namespace A; …` | `namespace_definition` ends at the `;` | SIBLINGS at `program` level |
+
+The semicolon form is the common one, so the branch that worked was the rare
+one. `namespaceSegments()` now indexes the semicolon form by node `startIndex`
+(web-tree-sitter re-creates the `Node` wrapper per call, so a child index would
+not be a stable key), and a semicolon form's scope runs to the next `namespace`
+declaration or end of file — which is PHP's own rule, so a declaration after a
+semicolon form belongs to it, not to the global namespace.
+
+### The second defect behind it: `qualifiedName`
+
+`pool-worker.ts:870` derives `qualifiedName` from `metadata.fqn`, and the FQN is
+built from the same `ns`. Because `ns` never resolved for the semicolon form,
+every declaration under it carried the **leaf** as its qualified name. Measured
+on the fixture: `A` before, `App\One\A` after, with `App\Two\B` already correct
+(braced form). `qualifiedName` is a store column, so this changed indexed rows,
+not only edge text.
+
+### What it cost, in edges
+
+An A/B over the **same 4,621 files at the same worker count** (`BB_WORKERS=2` on
+both sides, whole corpus, no sampling — the count has to be matched because
+`pool-worker` returns `fallback` for a handful of pathological files and which
+ones trip it depends on concurrency):
+
+| type | before | after | delta |
+| --- | --- | --- | --- |
+| `contains` | 25,592 | 30,315 | **+4,723** (+18.45% on that label) |
+| `calls` | 94,227 | 94,227 | +0 |
+| `uses` | 132,591 | 132,591 | +0 |
+| `imports` | 25,900 | 25,900 | +0 |
+| `references` | 8,636 | 8,636 | +0 |
+| `extends` | 2,808 | 2,808 | +0 |
+| `implements` | 1,000 | 1,000 | +0 |
+| `overrides` | 2 | 2 | +0 |
+| `instantiates` | 10,587 | 10,587 | +0 |
+| **total, 9 types** | **301,343** | **306,066** | **+4,723 (+1.57%)** |
+
+**Every other label is exactly unchanged**, which is the result that matters: the
+namespace round touched containment and nothing else, so it introduced no new
+call, use, import, reference, heritage, instantiation or override edge and it
+did not move a single one of the 2 `overrides` edges.
+
+Two residual differences in the symbol table are **not** caused by the round and
+are reported so the table is not read as cleaner than it is: `namespace` 4,443 →
+4,442, `enum` 42 → 41, `enum_member` 125 → 124 — one file returned `fallback`
+in one run and parsed in the other. It emitted **0 relationships either way**
+(every relationship delta is +0), so it moves no edge count.
+
+### `imports` stays file-scoped, and a fixture caught the alternative
+
+The first implementation left `emitInclude`'s owner as `ns || "global"`. That
+had only ever been exercised one way — `ns` was `undefined` for essentially
+every real file — so making the semicolon form resolve made the branch reachable
+at scale, and it is **wrong**: `include`/`require` resolves a path against the
+file's own directory, and the namespace in force has no part in it. Left alone,
+one analyzer would have filed the same kind at two owners depending only on
+which namespace syntax a file happened to use. `php/include-paths` failed on 6
+edges, and the owner is now unconditionally `global`, which is what the
+`imports` row above always claimed.
+
+Pinned by `php/namespace-containment` (the namespaced case of the same rule) and
+`php/include-paths` (the file-scope contract).
 
 Member *access* (`$obj->prop`, no call) produces no edge; only member *calls*
 (`$obj->method()`) do. Constructor expressions emit `instantiates`, not `calls`.
@@ -124,7 +209,8 @@ coverage honestly means populating the companion index, not guessing.
   **66 facts, precision 1.000, recall 1.000, 0 FP, 0 FN**
   (`bun script/m12/verify-analyzer.ts php`)
 - Fixtures: `validation/m12/fixtures/php/{BaseService,Service,Negative}.php`,
-  and `validation/m14/fixtures/php/` (**19 pass / 0 fail** as of the last run)
+  and `validation/m14/fixtures/php/` (**22 pass / 0 fail** as of the last run;
+  this document previously said 19, which had drifted)
 - Mutants: **50 registered for `php/`, all 50 caught** (0 survivors). Five were added by the
   M60 master-review round: `error-report-dropped` and `error-recovery-stops` (the two halves of
   the malformed-file contract), `typed-class-const-dropped` (a capability the corpora cannot
@@ -205,6 +291,344 @@ Removing the guess took heuristic edges **198 → 0** on phpunit and **171 → 0
 on phpmyadmin with tree-truth coverage unchanged at 100%, confirming it
 contributed no real coverage.
 
+## The ontology, verdict by verdict (M60)
+
+Every number below is measured through **`parseFile`** (`src/ast/pool-worker.ts`),
+never `analyze()`, over the whole admitted corpus: **4,621 git-tracked `.php`
+files ≤ 512 KB** across `phpunit` (3,231), `phpmyadmin` (1,232), `slim` (125),
+`cloogle.org` (17), `nvim-treesitter` (13), `caddy` (3). Sampling: **none** —
+the census harness walks the admitted set whole, so every denominator is 4,621
+files. Reproduce with
+`BB_JSON=1 BB_WORKERS=4 npx tsx validation/m14/fixtures/php/census-harness.mts`.
+
+### Verdicts
+
+| type | verdict | count | files | note |
+| --- | --- | --- | --- | --- |
+| `calls` | EMITTED | 94,227 | 3,416 | |
+| `uses` | EMITTED | 132,591 | 3,131 | largest label |
+| `contains` | EMITTED | 30,315 | 4,000 | + namespace level this round; **DERIVATION** |
+| `imports` | EMITTED | 25,900 | 3,968 | **DERIVATION** |
+| `references` | EMITTED | 8,636 | 2,126 | |
+| `extends` | EMITTED | 2,808 | 2,792 | |
+| `implements` | EMITTED | 1,000 | 972 | |
+| `instantiates` | EMITTED | 10,587 | 1,560 | |
+| `overrides` | EMITTED | **2** | 2 | see below — the count is the finding |
+| `exports` | **RULED** | 0 | 0 | Instrument B, §"`exports` is RULED" |
+
+**Nine emitted, one ruled.** The corpus-wide symbol total is **34,914**
+(`method` 20,178 / `property` 5,131 / `namespace` 4,442 / `class` 4,221 /
+`function` 296 / `constant` 258 / `interface` 208 / `enum_member` 124 /
+`enum` 41 / `trait` 15), with **0** empty names, **0** `SymbolKind` values
+outside the enum, and **0** parse failures surfacing as exceptions.
+
+### The six questions, per emitted type
+
+**5. RESOLVED — both endpoints against the file's own symbol set.** This is the
+number the CSS `references` row (66.8%) is the reference point for, and it is
+the one with the most to say:
+
+| type | `from` resolved | `to` resolved | both | distinct targets | distinct targets naming a symbol declared in the corpus |
+| --- | --- | --- | --- | --- | --- |
+| `contains` | 100.00% | 99.99% | **99.99%** | 16,734 | 16,732 (**100.0%**) |
+| `uses` | 99.56% | 16.28% | 16.28% | 8,325 | 2,802 (33.7%) |
+| `calls` | 99.66% | 10.39% | 10.35% | 6,317 | 5,513 (87.3%) |
+| `instantiates` | 99.74% | 2.80% | 2.78% | 1,492 | 1,280 (85.8%) |
+| `references` | 98.47% | 4.83% | 4.81% | 963 | 787 (81.7%) |
+| `extends` | 100.00% | 0.32% | 0.32% | 166 | 141 (84.9%) |
+| `implements` | 100.00% | 0.00% | 0.00% | 128 | 100 (78.1%) |
+| `imports` | **0.00%** | 0.19% | 0.00% | 2,932 | 1,999 (68.2%) |
+| `overrides` | 100.00% | 100.00% | 100.00% | 2 | 2 (100.0%) |
+
+Read the last column before the `to`-resolved column, because the two answer
+different questions and the first is the one that holds for a leaf-spelled
+index. PHP keys every edge on the **leaf** name, so `extends B -> A` names a
+class this file does not declare and names a real one all the same — **84.9%**
+of `extends` targets and **78.1%** of `implements` targets name a type declared
+somewhere in the corpus. The per-file `to`-resolved rate cannot rise much for any
+cross-file label, and a low number there is the shape of the language rather than
+a defect; `contains` is the one label whose per-file rate *is* meaningful, and
+it is 99.99%.
+
+> The last column was **wrong in the instrument's first version** and the fix is
+> recorded because it moved the answer by 26× on one row. The harness reduced a
+> target to a segment on `.`/`:`/`>` only, and **PHP's namespace separator is a
+> backslash** — so no FQN was ever reduced, and `imports` read **2.5%** where it
+> is **68.2%**. A measurement bug that understated a lane's own resolution rate
+> is the kind of error that survives review, because the number it produces looks
+> like a finding about the analyzer.
+
+**`imports` resolves at 0.00% at the per-file level and that is a real finding,
+not a footnote.** Both endpoints are file-scope identities rather than symbol
+identities: the source is the literal string `"global"`
+(`real-php-analyzer.ts:1988`, file scope, matching
+`src/lsp/graph_request.ts:256`'s `('imports','exports')` file-level reader) and
+the target is an FQN (`Illuminate\Support\Facades\Route`) while class symbols are
+spelled by leaf. The analyzer emits **no `module` or `file` symbol for PHP at
+all** — the corpus kind census has no `module` row — so there is nothing for
+either endpoint to bind to *within its own file*. Project-wide the story is much
+better (**68.2%** of distinct targets name a symbol declared somewhere in the
+4,621-file corpus), which is exactly the split the two columns are reporting. It
+is deliberate, it is documented, and it is recorded here because a consumer
+reading "25,900 edges" would otherwise assume they resolve.
+
+**6. CONFIDENT — the heuristic ratio.** Confidence is bimodal and
+**`heuristic (< 0.7)` is 0 for every one of the nine emitted types**:
+
+| type | confidence histogram | `< 0.7` |
+| --- | --- | --- |
+| `contains` | `1.0: 30,315` | 0 (0.00%) |
+| `extends` | `1.0: 2,808` | 0 (0.00%) |
+| `implements` | `1.0: 1,000` | 0 (0.00%) |
+| `imports` | `1.0: 25,710`, `0.9: 190` | 0 (0.00%) |
+| `overrides` | `0.95: 2` | 0 (0.00%) |
+| `calls` | `0.9: 94,227` | 0 (0.00%) |
+| `uses` | `0.9: 132,582`, `1.0: 9` | 0 (0.00%) |
+| `references` | `0.9: 8,636` | 0 (0.00%) |
+| `instantiates` | `0.9: 10,587` | 0 (0.00%) |
+
+Per honesty-contract §4 the below-1.0 edges need to be countable rather than
+merely numbered, so: the 0.9s are *usage-contextual* (`calls`, `uses`,
+`references` — a syntactic AST shape with builtin filtering, not resolved
+dispatch) or *import-based* (`references`, and the 190 `imports` include paths),
+and the two 0.95 `overrides` are *structural*. **Nothing in the lane is below
+0.7**, so `pool-worker`'s 0.7 filter drops **0** php edges and no php edge is a
+guess. The 9 `uses` edges at 1.0 are trait-`use` composition (`isTraitUse`), which
+is a declaration fact.
+
+**1–4. EXISTS / FIRES / CORRECT / LABELLED.** Exists: derivable from source at
+the emission sites above. Fires: every emitted type is non-zero on the corpus, so
+no type is reachable only from a branch that never matches. Correct:
+`npx tsx script/m14/differential.ts --lang php --sample 300` over both pinned
+repos reads (this round's draw) **tree-truth 2,644 / covered 2,620 (99.1%),
+MISSING 24** (phpunit) and **10,371 / 10,368 (100%), MISSING 3** (phpmyadmin),
+with **`analyzer-edges` 2,449 and 10,152, `unexplained` 0 (0%)** and
+**`heuristic` 0** on both. `unexplained 0` is the number that says the namespace
+round fabricated nothing — 12,601 compared edges, none of them analyzer-only.
+
+> **Stated limitation on that number, as §2c requires.** The oracle is a separate
+> walker over the same pinned wasm, so a grammar-level defect shared by both
+> paths is invisible to it, and it shares the analyzer's `PHP_BUILTINS` set and
+> its `isPhpBindSite` shape by design (a deliberate single source of truth, and
+> the cost is that those two rules are not independently checked). It also covers
+> **7 of the 9** emitted types — `contains` and `imports` are not in its compared
+> set at all. So "0 unexplained" is a statement about 12,601 of 306,066 edges,
+> and about none of the 30,315 `contains` or 25,900 `imports`. The sample also
+> **rotates** between runs (`m14-f5-cold-pool.json` prefers never-sampled files, so
+> this round's draw is not the previous round's); the two draws above and the
+> earlier one all read `unexplained 0`, and no cross-run count comparison is
+> made here for that reason.
+
+Labelled: the 27 MISSING edges are **all** `references` to an `include`/`require`
+path, and they are one stale oracle rather than 27 defects — see §"What this
+lane could not settle", item 1. The known confusions (`uses` vs `references` vs
+`calls`, `extends` vs `implements`) are carried by 11 distinct `uses` metadata
+flags (`isMemberRead`, `isLocalRead`, `isTraitUse`, `isConstFetch`, …) measured
+per edge, so a mislabelling is countable rather than a matter of trust.
+
+**`overrides` — 2 edges is the finding, not a rounding error.** Both are in
+**test fixtures**, not application code:
+`nvim-treesitter/tests/query/highlights/php/keywords.php:61`
+(`B.foo -> A.foo`, a tree-sitter highlight-query input) and
+`phpunit/tools/.phpstan/vendor/tomasvotruba/type-coverage/…/SkipConstruct.php:9`
+(`SkipConstruct.__construct -> ParentConstructorClass.__construct`, a vendored
+phpstan fixture). The reason is a **shared-machinery** gap, not an analyzer one,
+and it is a four-link chain, each link read from source:
+
+1. `real-php-analyzer.ts:1777-1778` emits `overrides` when
+   `inFileMethods?.has(name) || context?.overrideCompanion?.get(base)?.has(name)`
+   — the construct **is** read, and the same-file half works
+   (`php/namespace-containment` and `php/cross-file-override` both pin
+   `Circle.__construct -> Base.__construct` at 0.95).
+2. `pool-worker.ts:1212` `contextFor()` returns `{ projectIndex }` and **never**
+   `overrideCompanion`, so the cross-file channel is empty.
+3. `parallel-indexer.ts:1300` `PROJECT_INDEX_EXTENSIONS = { ".sol": "solidity" }`
+   — `.php` is not in it, so no project index is built for PHP at all.
+4. `parallel-indexer.ts:1094` calls `parseFile(file, projectPath)` with no context.
+
+The corpus says the same thing from the other side.
+`validation/m14/fixtures/php/overrides-probe.mts` over all 4,621 files:
+**2,807** classes carry a declared base, **0** of them have that base in the same
+file (so **S = 0** same-file opportunities corpus-wide — 2 is not achievable and
+2 is what fired), and against a companion built from the whole corpus,
+**C = 0** opportunities with a false-rate that is therefore unmeasurable. No
+analyzer edit can close this; it needs steps 2–4.
+
+### `exports` is RULED, and what would overturn it
+
+Not a grammar argument. `script/m14/ontology-coverage-gate.ts`'s own header
+records why that is unsound — it removed a json `exports` ruling for exactly this
+reason — and a grammar cannot see a convention. So the ruling rests on
+**Instrument B, a parse-tree count** over all 4,621 files
+(`validation/m14/fixtures/php/exports-probe.mts`). Every probe is a **role test
+on a node or token the grammar produced**, never a text match, so no string
+literal or comment can produce a hit. Instrument A is reported alongside it and
+is *not* the basis: the pinned wasm produced **270 distinct node types** and
+**zero** containing `export` or `alias`.
+
+| probe | construct | occurrences | files |
+| --- | --- | --- | --- |
+| **P3** | `class_alias` / `function_alias` call | **0** | **0** |
+| **P4** | `define('NAME', …)` with a literal first argument | **0** | **0** |
+| **P1a** | `use function`/`use const`, **unqualified** target | 6,140 | 1,506 |
+| **P1b** | `use function`/`use const`, **qualified** target | **12** | **8** |
+| **P2a** | file-level `return`, no named value | 2 | 2 |
+| **P2b** | file-level `return`, naming a value | 28 | 20 |
+
+The split inside P1 is the whole verdict, and an earlier version of this probe
+reported P1 as one number — which read as "6,152 re-exports exist". The corpus
+does not say that. **P1a is 6,140 of the 6,152**, and every one of them is
+`use function array_merge;`-shaped: an unqualified target resolves against the
+**global** namespace, so it imports a builtin the current namespace could
+already call. Nothing is added to the namespace's surface. The not-published
+sample from the first run was `preg_replace_callback, asort, ceil, mkdir,
+shell_exec, PHP_OS, CACHE_DIR, TEMP_DIR` — every one a global.
+
+**P1b is the only true syntactic re-export, and it is 4 distinct targets
+corpus-wide**, of which **3 the analyzer already publishes as `imports` targets**
+(P1b cross-checked against `parseFile` over 758 files: 1,260 distinct `imports`
+targets published). The one unpublished target is
+`PHPUnit\TestFixture\Generator\f`, in a phpunit **unit test**. The 12
+occurrences are 6 in nvim-treesitter tree-sitter **query** test files and 5 more
+of that same phpunit fixture target; the 12th is `use function
+FastRoute\simpleDispatcher` in a slim test.
+
+**P2b is a convention, not a construct, and its composition is visible**: 19 of
+the 28 are composer's own vendored autoload files (`autoload_classmap.php`,
+`autoload_psr4.php`, `autoload_namespaces.php`, `installed.php`,
+`autoload_files.php` — the `return array(…)` autoloader convention), 9 are one
+nvim-treesitter grammar **indent-test fixture** with deliberately broken syntax
+(`return function () { };`), and 5 are phpmyadmin's Symfony-DI-style config
+(`app/services.php`, `app/services_controllers.php`, `app/services_loader.php`,
+`app/vendor_config.php`, `tests/doctum-config.php`). The value those files
+return is an **anonymous array** — there is no name for it, so an edge would have
+to invent one. What it *names* (`Advisor`, `BrowseForeignersController`) is
+already a symbol, and the analyzer already records the construction itself:
+the fixture's own file-level `return new Circle('mod', 1.0);` produces
+`instantiates global -> Circle`.
+
+**Overturn condition.** This ruling is **RULED-UNJUSTIFIED → GAP** if any of:
+
+- **P3 > 0** or **P4 > 0** on any admitted corpus. Measured 0 over 4,621 files,
+  so this is a corpus-zero shape, not a language impossibility — a corpus that
+  used `class_alias` would flip it, and the flip needs no analyzer change
+  because `class_alias('A', 'B')` names both ends on the tree.
+- **P1b distinct unpublished targets** reaches a scale worth a new edge kind.
+  Currently **1** distinct target (`PHPUnit\TestFixture\Generator\f`), in a
+  unit test. Above roughly a handful of distinct targets in application code,
+  one per re-exported name is justified; at 1 it is not.
+- P2b grows a **nameable** return. Composer's convention returns an anonymous
+  array and always will; a file returning a *named* symbol would give an edge
+  something real to point at.
+
+**Report-to-supervisor, not editable here.** `ontology-coverage-gate.ts:192`
+holds `RULED_BY_LANG = { bash: BASH_RULED, json: JSON_RULED }`, and `:289`
+refuses to report for any language absent from it — so for `php` the arbiter
+**exits 2 and prints no table at all** after spending ~3 minutes walking 4,621
+files and the grammar inventory first (the refusal is at the *end* of the run,
+so it burns the full cost before declining). Every number in this section was
+therefore produced by this lane's own instruments, built to the same admission
+rule so the counts are comparable: git-tracked files, `detectLanguageFromPath ===
+"php"`, ≤ 512 KB — byte-for-byte `ontology-coverage-gate.ts:196-209`. Adding
+`php: PHP_RULED` to that table with the `exports` entry above is the change that
+would let the arbiter rule rather than refuse.
+
+## What this lane could not settle, and what needs a shared file
+
+All four are outside the lane's ownership (§8 of the work order). Each is stated
+as file + function + what it must do + why, so none of it needs re-deriving.
+
+**1. The php oracle still derives the pre-M12 label for include paths, which is
+the whole of the differential's 16 MISSING edges.** `script/m14/differential.ts`,
+function `derivePhpEdges`, the `require_once_expression` /
+`include_expression` / `require_expression` branch at **:12141-12146**:
+
+```ts
+// Mirror the analyzer's emitInclude: references -> the include path
+const p = extractPhpIncludePath(n)
+if (p) push("references", p)
+```
+
+It must be `push("imports", p)`. `emitInclude` was changed in M12.PHP-IMPORTS
+(`real-php-analyzer.ts`, `source: "global"` branch) to file the include path as
+`imports` precisely because a file-level edge mislabelled `references` stayed
+out of `src/lsp/graph_request.ts:256`'s
+`relationship_type IN ('imports','exports')` reader. The oracle was not moved
+with it. **Measured:** all 16 MISSING rows in a 600-file two-repo draw are
+exactly this shape — `references (expr) -> __DIR__/../src/Covered.php`,
+`references (expr) -> ROOT_PATHapp/constants.php`. This also falsifies **PHPD3**,
+whose text claims "The differential oracle mirrors this split exactly."
+
+The second half of the fix is the allowlist: `contains` and `imports` are not in
+`php`'s compared-label set (`differential.ts:23153`, `:23186`, `:23434`), so
+correcting the label alone would still filter both off. Both need adding.
+
+**2. `derivePhpContainsEdges` does not exist**, though
+`script/m14/completeness-inventory.ts:1022` and this document's own §M60 entry 1
+both describe it as having fixed the `contains` audit. Writing it is a
+`differential.ts` change: derive `owner|member` containment from PHP's own
+declaration structure, sharing no rule with the analyzer, and add `"contains"`
+(and `"imports"`) to php's compared-label set. Until then **`contains` — now the
+third-largest label at 30,315 edges — is stored and compared against nothing**,
+and `script/m14/oracles/` has no php oracle of any kind.
+
+**3. `php/drop-external-override-guess` is a stale no-op mutant and it fails the
+mutation gate.** `script/m14/mutate-analyzer.ts:18402-18413` filters an edge
+`AuditService.handle -> ExternalBase.handle` that M12.PHP-OVERRIDE-AUDIT removed
+from the analyzer, so the transform changes nothing and it always survives:
+`BB_MUTANT_ONLY="php/" bun run script/m14/mutate-analyzer.ts` prints
+`SURVIVED php/drop-external-override-guess (0 -> 0 failures)` and exits 2, i.e.
+the gate reports "the suite cannot detect real defects" for a lane whose other 12
+mutants are all caught. It needs `retired: true`, the treatment
+`python/drop-external-override-guess` received — and the comment block at
+`:10816-10826` explains that treatment in exactly these terms ("A mutant that
+removes code which is not there is a no-op that always SURVIVES, and it survived
+for a long time before anyone read why — which is the more expensive half of a
+stale test"), which is why this one is worth retiring rather than tolerating.
+The replacement already exists and **is** caught:
+`php/re-add-external-override-guess` (`:10803`), which injects the guess rather
+than removing it, so it can fail.
+
+**4. `parseBomb` makes a whole-corpus sweep non-completable in one process.**
+`src/ast/engine.ts:1408-1413` arms a 120 s timer around the synchronous
+`parser.parse()` and calls `process.exit(1)`, because `setTimeout` cannot
+interrupt blocked C/WASM. The comment says "the indexer is incremental", which is
+true for the indexer and false for any lane instrument that sweeps the corpus
+in-process. **Measured:** the first full-corpus run of this lane's own overrides
+probe died; a retry loop then took **8 attempts and was killed on 8 different
+files** — so the kill is a concurrency artifact of the sweep (8 workers over
+4,621 files), not a property of any file. At `BB_WORKERS=2` the same sweep
+completes. No change is strictly required, but `BB_FILE_TIMEOUT_MS` is honoured
+for the worker pool and **not** here, so the two paths disagree about when a
+file is too slow.
+
+**Settled and not a defect, recorded because it looked like one:** 26 edges have
+an endpoint equal to the literal string `unknown`, which reads as a placeholder
+breaching the "no `unknown` endpoints" rule. It is not. **24 of the 26** resolve
+to a symbol declared in the same file, and the other 2 have the real symbol on
+the *source* side. Every one is phpunit's own factory methods named `unknown` —
+`PHPUnit\Framework\TestSize\TestSize::unknown()`,
+`TestStatus::unknown()`, `Collation::buildDescription()` reading
+`$this->description` — so `contains TestSize -> unknown` is a correct edge to a
+method that genuinely exists, and `instantiates unknown -> Unknown` is a correct
+`new Unknown` in `PHPUnit\Framework\TestSize\Unknown` declared in another file of
+the same namespace. A "no literal `unknown` endpoint" rule is **wrong for PHP**
+and would have to be name-aware to be usable.
+
+### Payload
+
+The namespace round adds **4,723** `contains` edges to a 25,592-edge label
+(**+18.45%** on `contains`) and **+1.57%** to the corpus total (301,343 →
+306,066), with **every other label at +0**. `contains` moves from 4th-largest to
+3rd-largest and is still well under `uses` (132,591) and `calls` (94,227), so no
+lane's *largest* label — the one an un-narrowed `bb_graph` walks first — changed.
+The A/B is in the table under "Namespace containment". No shared budget file was
+re-baselined, and no budgeted lane was measured as regressed, because this lane
+does not own one; `bb_graph`'s default expansion was **not** re-measured, so the
++18.45% on `contains` is stated here as an edge count and not as a latency
+figure — measuring that needs a budgeted lane's harness and a quiet machine, and
+guessing it from an edge count would be the dishonest direction.
+
 ## Complexity and limitations
 
 The extraction walk is iterative and linear in AST nodes; contains edges are a
@@ -232,8 +656,28 @@ are now adjudicated `RULED`, i.e. deliberate language boundaries rather than for
    `"{$o->p}"`) **are** handled and are adjudicated in the spec.
 2. **ini directives and hash-bang lines** — `ini_section`, `ini_entry`, `preprocessor`,
    `shell_comment`, `hash_bang_line`. Configuration and shell, not PHP declarations.
-3. **PHPD33 — an `exports` kind is ruled OUT**: make and python emit it syntactically (`export`,
-   `__all__`), PHP has no export syntax, and a semantic version would be unverifiable from one file.
+3. **PHPD33 — an `exports` kind is ruled OUT.** The wording in the spec ("PHP has no export
+   syntax") is **not** the basis and is not sufficient: the gate's own header records that ruling
+   a convention on a grammar inventory is unsound, because a convention is not a node. The
+   measurement that carries the ruling is Instrument B in
+   §"`exports` is RULED, and what would overturn it" — **P3 = 0 and P4 = 0** over all 4,621
+   admitted files, **P1b = 4 distinct** qualified re-export targets of which 3 the analyzer
+   already publishes, and P2b = 28 file-level returns of which 19 are composer's vendored
+   autoload convention and 9 are one grammar indent-test fixture. Overturn conditions are stated
+   with it.
+4. **Namespace-level dynamic dispatch is unresolved, and unresolvable from one file.** PHP
+   resolves an unqualified class name against the current namespace first and falls back to
+   global. The analyzer records `use` clauses as `imports` (the declared preference) and does not
+   use them to rewrite call or instantiation targets, so `calls`/`instantiates` targets are leaf
+   names that may name the wrong class when two namespaces declare the same leaf. That is
+   deliberate — it is the same leaf-keyed ambiguity that makes cross-file `overrides`
+   unresolvable — and it is the single largest source of the `to`-resolved rates in §"The six
+   questions".
+5. **`contains` and `imports` are unaudited.** Both are emitted in volume (30,315 and 25,900
+   edges) and the differential compares neither, because the php oracle does not derive them and
+   they are absent from php's compared-label allowlist. The fixture suite is the only thing
+   standing behind them. This is a DERIVATION finding, not a known gap in the analyzer, and the
+   change that would settle it is §"What this lane could not settle", item 2.
 
 **A boundary written only in a source comment is not a ruling.** That sentence is the M60 round's
 own lesson and it has a named victim: typed class constants sat on `phpDeclaredTypeRefs`'s
@@ -246,7 +690,7 @@ wearing a disclosure's clothes.
 ### Master review — what 100% coverage could not see
 
 A differential proves the analyzer agrees with the oracle. It cannot prove either
-is *right*: a construct both sides miss reads as a perfect agreement on an
+is *right*: a construct both sides miss reads as an exact agreement on an
 absence. So the review hunted correlated error, and found one.
 
 **`use C\{D, E as F};` emitted nothing.** A `use` declaration has two AST
@@ -386,14 +830,31 @@ section records what a consumer of the analyzer needs to know.
 allowlist entry, which means the differential filtered all 24,707 off the *analyzer* side before
 comparing: the largest obviously-correct structural class in the lane was invisible in both
 directions while the differential reported `unexplained 0`. `rel-type-coverage-gate` had it as a
-**NEW** regression. Fixed by `derivePhpContainsEdges` (script/m14/differential.ts), written from
-PHP's own containment semantics and sharing **no** rule with the analyzer — not a name helper, not
-a bind-site test, not the analyzer's `pushMembers`. Anonymous classes fall out naturally because
-the grammar's `anonymous_class` has no `name` child, so the "no nameable identity" rule arrives
-from the tree rather than from a shared decision. Measured standalone **before** the allowlist was
-touched: 23,399 distinct owner|member pairs, **0 truth-only, 0 analyzer-only**. After: the
-canonical draws' truth grew 668 → 888 (phpunit) and 2,393 → 2,864 (phpmyadmin), 100% covered, and
-a 2,000-file-per-lane draw reads 35,876 / 35,876, 0 unexplained.
+**NEW** regression.
+
+> **CORRECTION (M60 PHP ontology round). The "Fixed by" claim in this entry did not
+> happen and this document asserted it anyway.** `derivePhpContainsEdges` **does not exist**.
+> `grep -rn derivePhpContainsEdges` over the tree returns exactly one hit, and it is a
+> *comment* in `script/m14/completeness-inventory.ts:1022` that describes the function as
+> having fixed this — the same shape of claim, one file over. Measured against this tree:
+>
+> - `derivePhpEdges` + `derivePhpDeclaredTypeEdges` (`script/m14/differential.ts:11680-12900`)
+>   push exactly seven labels — `calls`, `uses`, `extends`, `implements`, `instantiates`,
+>   `overrides`, `references`. **No `contains`, no `imports`, no `exports`.**
+> - the compared-label allowlist for `php` resolves to those same seven
+>   (`differential.ts:23153` head `extends`/`implements`/`instantiates` + `overrides` +
+>   `calls`; `:23186` adds `calls`,`uses`; `:23434` adds `references`), so `contains` is
+>   filtered off the analyzer side and nothing derives it on the truth side either.
+>
+> **So `contains` and `imports` are DERIVATION findings in this lane — 2 of the 9 emitted
+> types are stored and compared against nothing.** The differential's own output is
+> consistent with this: `--lang php --sample 300` reports `unexplained 0` while comparing
+> 12,601 edges, and `contains` is 30,315 of the corpus's 306,066 — none of them in that
+> number. The prose above about a standalone measurement ("23,399 distinct owner|member
+> pairs, 0 truth-only, 0 analyzer-only") describes a run whose code is not in the tree and
+> cannot be reproduced; it is left in place only so the discrepancy is visible rather than
+> quietly deleted. See §"What this lane could not settle" for the file-and-function change
+> that would make the claim true.
 
 **2. `requiredKinds` now describes the analyzer, and the check that proves it runs both ways.**
 php's row omitted `imports` — a label the analyzer has emitted since M12.PHP-IMPORTS, 25,104 edges,
