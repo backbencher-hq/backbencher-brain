@@ -1208,14 +1208,22 @@ Stated as unresolved rather than rounded off. Nothing here is claimed as settled
 - **Composition operators (`>>` `>>>` `>=>` `<<<`) emit nothing** — correctly, on this lane's
   reading, but the reading is a decision about what `calls` means rather than a measurement,
   and no consumer requirement has been checked against it.
-- **This pass did not re-measure latency.** Pass 1 measured it (no measurable cost on 120
-  files). This pass adds two rules inside the existing single-pass walk and one unbounded
-  parent walk per `override` member, which is memoised nowhere and runs once per override
-  member rather than once per annotation; on the 400-file draw that is 33 members. No latency
-  claim is made for this pass, and the number to check is the `overrides` walk on a file with
-  many members — `vsintegration/tests/Salsa/VsMocks.fs` is the corpus's densest case at 6.
-  NOT MEASURED is the honest entry; pass 1's figure is not re-baselined and not re-asserted
-  here.
+- **Latency: measured, and the first measurement was wrong.** Two rules were added inside the
+  existing single-pass walk, plus one unbounded parent walk per `override` member (33 members
+  on the 400-file draw; the corpus's densest file, VsMocks.fs, has 6). A first A/B over a
+  120-file sample of the census's own draw read **54.5 ms/file before against 63.2 after**,
+  +16% with non-overlapping ranges, which reads as a real cost for +8.4% more relationships.
+  Re-measured **interleaved** on the same files, because four lanes share the box:
+
+  ```
+  round 1   BEFORE 65.3 ms/file (7,470 relationships)   AFTER 77.8 ms/file (8,096)
+  round 2   BEFORE 76.1 ms/file (7,470 relationships)   AFTER 67.9 ms/file (8,096)
+  ```
+
+  The ranges overlap almost completely, so the +16% was the machine's load and **no claim
+  finer than "inside the run-to-run spread of a shared box" is supported**. Reporting the first
+  number would have been a fabricated measurement of someone else's CPU time. Pass 1's own
+  latency row is neither re-baselined nor re-asserted here.
 
 ## Issue
 
