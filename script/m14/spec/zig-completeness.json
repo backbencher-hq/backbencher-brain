@@ -152,7 +152,43 @@
         "node_type": "extends,implements,overrides,instantiates",
         "status": "RULED",
         "question": "Zig has no class inheritance, no interfaces with implements clauses, no overrides, and no implicit type instantiation the way C++/Java do — how are these relationship kinds handled?",
-        "resolution": "By design, Zig emits NO extends/implements/overrides/instantiates edges. Composition is expressed through struct fields and opaque vtables; generics are compile-time monomorphized without a runtime type dispatch the analyzer can attribute statically. requiredKinds for zig reflect only the emitted kinds: calls, uses, contains, references."
+        "resolution": "SUPERSEDED per type by ZIG.O.1 (extends), ZIG.O.2 (implements), ZIG.O.3 (overrides) and ZIG.O.4 (instantiates, EMITTED). It asserted four rulings in one sentence and TWO of them were wrong. Its extends/implements/overrides claim was prose with no measurement, which the ontology workstream records as the failure mode that hid a missing relationship type for a whole wave: a differential cannot see a type absent from BOTH the analyzer and the oracle, because 'nothing' agrees with 'nothing'. Its instantiates claim was FALSIFIED outright — Z32 measured 132 constructions and generic applications over 400 files where this sentence asserted the branch was unreachable. The retained text is below because the coverage gate matches its ruling source by scanning `resolution` for the type name, and each of the four types now has its own measurement-bearing decision to point at. ORIGINAL (retracted, kept for the record): By design, Zig emits NO extends/implements/overrides/instantiates edges. Composition is expressed through struct fields and opaque vtables; generics are compile-time monomorphized without a runtime type dispatch the analyzer can attribute statically. requiredKinds for zig reflect only the emitted kinds: calls, uses, contains, references."
+      },
+      {
+        "id": "ZIG.O.1",
+        "node_type": "extends",
+        "status": "RULED",
+        "question": "Does Zig's grammar give a type declaration anywhere to name a supertype — i.e. a construct `extends` could mean?",
+        "instrument": "A:grammar-inventory",
+        "measured": "2026-10-02",
+        "resolution": "NO, and the measurement is positive rather than a failure to find. Instrument A (grammar-inventory), validation/m14/fixtures/zig/construct-probe.ts over the FULL 3,834-file corpus (draw sha256:2f3545f92c470090d61c9a745bb427d8d7dec1630d93d0fbc01cb2acdc5ce1ac): the pinned wasm's own `Language.types` table declares 239 entries and NONE of the 28 probed inheritance words (extends, implements, inherits, class, interface, trait, protocol, superclass, super, bases, interfaces, override, overrides, ...) is among them — 0 of 28 present. `Language.fields` declares 16 names (alternative, argument, body, condition, error, function, index, left, member, name, object, ok, operator, right, sentinel, type) and 0 of the 28 is among those either. `Language.types` carries the ANONYMOUS TOKEN types as well as the named ones — calibrated by asserting that 11 of 11 tested zig keywords (fn, const, var, pub, struct, enum, union, opaque, error, comptime, usingnamespace) are present in it — so this reading also answers 'is there an `extends` KEYWORD', which in zig is the decisive question: `extends` is an ordinary identifier, so a text probe for it would match any variable with that spelling, which is the false-positive class the coverage gate's own header records. A4 (the children of a type declaration, counted on the tree) closes the position test a node-type inventory cannot: 1,797 non-member children across 443 files, CLASSIFIED as 1,030 enum backing type, 275 packed-struct field count, 369 nested executable block, 122 union tag type, 1 error recovery, and 0 UNCLASSIFIED. UNCLASSIFIED is the only bucket a supertype slot could occupy. OVERTURN CONDITION: any of (a) an UNCLASSIFIED A4 count > 0, (b) any of the 28 words appearing in `Language.types` or `Language.fields`, (c) a corpus struct/enum/union/opaque/error_set declaration carrying a named child that is not a backing type, packed field count, union tag or nested executable block. All twelve probe controls pass, including a negative control that ordinary containers produce 0 A4 hits."
+      },
+      {
+        "id": "ZIG.O.2",
+        "node_type": "implements",
+        "status": "RULED",
+        "question": "Does Zig have an interface or protocol conformance clause an `implements` edge could name?",
+        "instrument": "A:grammar-inventory",
+        "measured": "2026-10-02",
+        "resolution": "NO. Zig models an interface as an `opaque` container plus a table of function POINTERS, and a pointer-to-function type is a `function_signature` node with no declaring name (ZIGD2: 960 `function_signature` nodes corpus-wide, all the anonymous fn-type form). There is no conformance clause to point at. Instrument A over the same 3,834-file run: 0 of the 28 inheritance words present as a node type/keyword, 0 of 28 present as a field; the 16 declared field names are listed in ZIG.O.1 and none is a conformance slot. A4: 0 UNCLASSIFIED of 1,797 header-slot children in 443 files. OVERTURN CONDITION: identical to ZIG.O.1 (a), (b) and (c); an `opaque` declaration carrying a named child other than its members would be the shape that overturns it."
+      },
+      {
+        "id": "ZIG.O.3",
+        "node_type": "overrides",
+        "status": "RULED",
+        "question": "Zig has no `override` keyword and no vtable slot. Is a redefinition — the only thing that could stand in for an override — expressible in source that zig COMPILES?",
+        "instrument": "B:parse-tree-count",
+        "measured": "2026-10-02",
+        "resolution": "NO. A same-scope duplicate declaration in zig is a COMPILER DIAGNOSTIC ('duplicate struct member name'), not a language feature, so the corpus contains files that are MEANT to fail and they document the compiler's REJECTION. Instrument B over the full 3,834 files, three probes: B1 same-scope duplicate `function_declaration`: 3 occurrences in 3 files, and all 3 are test cases carrying the compiler's own rejection text in a comment (zig/test/cases/compile_errors/colliding_invalid_top_level_functions.zig, zig/test/cases/compile_errors/multiple_function_definitions.zig, zig/test/cases/function_redeclaration.zig, whose body reads \":2:4: error: duplicate struct member name 'entry'\"). B2 same-scope duplicate `const`/`var` binding: 14 occurrences in 11 files, DECOMPOSED — 9 are zig DESTRUCTURING (`x, const y, var z: u64 = .{1,2,3}` is ONE declaration with several binding slots, a legal rebinding) and 5 are plain rebinding, and every one of the 5 sits in a compile_errors/ or `redefinition_of_*` case. B3 duplicate member in one container: 9 occurrences in 8 files, 9 of 9 inside `compile_errors/`, 0 outside — so once the files whose purpose is to be rejected are excluded the surviving count is 0. OVERTURN CONDITION: any of (a) a duplicate-declaration hit outside zig/test/cases/ that zig COMPILES, (b) a B3 count > 0 outside compile_errors/, (c) `override`/`overrides` appearing in `Language.types`."
+      },
+      {
+        "id": "ZIG.O.4",
+        "node_type": "instantiates",
+        "status": "RULED",
+        "question": "(correction of ZIG.D.1) Can the analyzer derive a construction or a generic application from zig's grammar?",
+        "instrument": "B:parse-tree-count",
+        "measured": "2026-10-02",
+        "resolution": "EMITTED, and ZIG.D.1's claim that it could not was FALSIFIED by measurement (Z32 first, then re-measured at full corpus). Production `parseFile` emits `instantiates` for a construction of a type the file names (`var x: Foo = .{}`, `Foo{ ... }`) and for an application of a generic function (`make(Bar)`). Over the FULL corpus through `parseFile` (validation/m14/fixtures/zig/measurements/ontology-census-full.json, draw sha256:2f3545f92c470090d61c9a745bb427d8d7dec1630d93d0fbc01cb2acdc5ce1ac): 4,306 `instantiates` edges across 530 files, confidence 1.0 on every one, evidenceClass `structural` when proven and `inferred` when not, target resolving at the corpus tier on 96.05% of them. OVERTURN CONDITION: a corpus count of 0 from production `parseFile`, which is what the retracted claim asserted."
       },
       {
         "id": "ZIG.D.2",
