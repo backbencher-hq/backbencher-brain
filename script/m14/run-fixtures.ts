@@ -342,7 +342,19 @@ function matchConstraints(actual: Entry, want: Entry): boolean {
     // `docstring` on an undocumented declaration). Without it the only writable
     // assertion was the presence case, and a rule that populated every field
     // everywhere would pass. Additive: every other comparison is untouched.
-    if (v === null) {
+    //
+    // ORDERING (M60, powershell lane). This branch must NOT swallow a `meta.` key.
+    // It used to, and the effect was that `{"meta.via": null}` returned true for an
+    // edge that CARRIES `metadata.via` — the fixture asserted nothing at all. The
+    // key `meta.via` is not a field of the record; it is a path into `metadata`, so
+    // `actual["meta.via"]` is `undefined` and the ABSENT test passed vacuously.
+    // The `meta.` handling below then never ran, which also made ITS `v === null`
+    // branch dead code. 16 expectation rows across 6 lanes (bash, powershell, svelte,
+    // typescript, vue, yaml) were inert this way: they could not fail.
+    //
+    // The negative test that pins the fix is that `{"meta.via": null}` must be FALSE
+    // against an edge carrying `via`, and TRUE against one that omits it.
+    if (v === null && !k.startsWith("meta.")) {
       if ((actual as any)[k] !== undefined && (actual as any)[k] !== null) return false
       continue
     }
