@@ -1374,8 +1374,12 @@ instantiates 4,305) before dying on
 — exiting`. Each degraded file is silently replaced by the regex `extractFallback`,
 which emits none of the five affected classes, so a run of the arbiter is only
 trustworthy when it prints no `BB-PARSE-ERR`. **That is a property of the run, not
-of the corpus**, and it is the same mechanism the pass-3 section above measures a
-rate for; the arbiter has no fallback counter of its own to notice it.
+of the corpus** — the pass-3 section above measures a rate for the cross-process
+half of it. Which half degraded THIS run is not established: the gate is a single
+process, so the accumulated-WASM-state trap and the shared
+`os.tmpdir()/bb-wasm_<grammar>` race are both consistent with it, and one run does
+not vary the other factor. The arbiter has no fallback counter of its own to notice
+either.
 
 A bounded root was also run, through
 `validation/m14/fixtures/zig/arbiter-corpus-root.py` (the first 1,200 files of the
