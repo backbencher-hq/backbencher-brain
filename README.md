@@ -34,6 +34,18 @@ bun run src/cli/index.ts search "calculateTotal" --dir ~/my-project
 Indexes live at `~/.bb/projects/<sha1-of-dir>/brain.db` — no opencode, no
 global config required.
 
+### Indexing guides
+
+Longer guides, for the questions the one-line table above cannot answer:
+
+| Guide | Covers |
+|---|---|
+| [Indexing guide](docs/indexing/README.md) | Every `bb index` mode and flag, and what each does **not** do |
+| [Resume](docs/indexing/resume.md) | Interrupting safely, what a checkpoint holds, how to verify a resume |
+| [Performance](docs/indexing/performance.md) | What to expect, why a big repo takes time, how to speed it up |
+| [Troubleshooting](docs/indexing/troubleshooting.md) | "Workers don't start", and every other common failure |
+| [Embeddings](docs/indexing/embeddings.md) | Configuring the embedding provider; env vars and fallbacks |
+
 ### Help and manual
 
 Every command documents itself: `bb --help` lists all commands, and
