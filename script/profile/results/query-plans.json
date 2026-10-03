@@ -1,0 +1,333 @@
+{
+  "dbPath": "/var/folders/4j/11tssyqj4kj0f8dfz06jsb700000gn/T/bb-qplan-Kwf6Pv/projects/818db37d8f54173ad1357ab24627373da2e9418c/brain.db",
+  "counts": {
+    "brain_file": 8126,
+    "brain_symbol": 453476,
+    "brain_relationship": 630467,
+    "brain_taint_flow": 9496,
+    "brain_semantic_embedding": 94484
+  },
+  "derived": {
+    "distinctNames": 56248,
+    "distinctQn": 415799,
+    "unresolved": 33408,
+    "bareNameEdges": 217720
+  },
+  "hasStat1": true,
+  "stat1Rows": 60,
+  "statements": [
+    {
+      "id": "gravity-1-reset",
+      "where": "src/ast/parallel-indexer.ts:77 — calculateGravityScores step 1",
+      "sql": "UPDATE brain_symbol SET gravity_score = (complexity * (CASE WHEN visibility = 'public' THEN 1.5 ELSE 1.0 END)) WHERE 1=1",
+      "error": null,
+      "plan": [
+        {
+          "id": 5,
+          "parent": 0,
+          "detail": "SCAN brain_symbol"
+        }
+      ],
+      "scansBrainSymbol": true,
+      "scansBrainRelationship": false,
+      "usesIndex": false,
+      "usesTempBtree": false,
+      "usesCoroutine": false
+    },
+    {
+      "id": "gravity-2-pagerank",
+      "where": "src/ast/parallel-indexer.ts:85 — step 2, correlated COUNT + EXISTS",
+      "sql": "UPDATE brain_symbol SET gravity_score = gravity_score + (SELECT COUNT(*) * 5.0 FROM brain_relationship r WHERE r.target_symbol_id = brain_symbol.id) WHERE EXISTS (SELECT 1 FROM brain_relationship r WHERE r.target_symbol_id = brain_symbol.id)",
+      "error": null,
+      "plan": [
+        {
+          "id": 4,
+          "parent": 0,
+          "detail": "SCAN brain_symbol"
+        },
+        {
+          "id": 7,
+          "parent": 0,
+          "detail": "CORRELATED SCALAR SUBQUERY 2"
+        },
+        {
+          "id": 11,
+          "parent": 7,
+          "detail": "SEARCH r USING COVERING INDEX brain_rel_target_cross_idx (target_symbol_id=?)"
+        },
+        {
+          "id": 60,
+          "parent": 0,
+          "detail": "CORRELATED SCALAR SUBQUERY 1"
+        },
+        {
+          "id": 65,
+          "parent": 60,
+          "detail": "SEARCH r USING COVERING INDEX brain_rel_target_cross_idx (target_symbol_id=?)"
+        }
+      ],
+      "scansBrainSymbol": true,
+      "scansBrainRelationship": false,
+      "usesIndex": true,
+      "usesTempBtree": false,
+      "usesCoroutine": false
+    },
+    {
+      "id": "gravity-3-core",
+      "where": "src/ast/parallel-indexer.ts:98 — step 3, layer filter",
+      "sql": "UPDATE brain_symbol SET gravity_score = gravity_score * 2.0 WHERE layer = 'core'",
+      "error": null,
+      "plan": [
+        {
+          "id": 4,
+          "parent": 0,
+          "detail": "SCAN brain_symbol"
+        }
+      ],
+      "scansBrainSymbol": true,
+      "scansBrainRelationship": false,
+      "usesIndex": false,
+      "usesTempBtree": false,
+      "usesCoroutine": false
+    },
+    {
+      "id": "res-i13-pick",
+      "where": "src/ast/parallel-indexer.ts:4193 — name-resolution window function over the _i13_src temp table",
+      "sql": "SELECT rel_id, target_symbol_id FROM (SELECT t.rel_id AS rel_id, s.id AS target_symbol_id, ROW_NUMBER() OVER (PARTITION BY t.rel_id ORDER BY COALESCE(s.is_declaration,0) ASC, (s.file_id = t.src_file) DESC, (COALESCE(f.language,'') = t.src_lang) DESC, s.id ASC) AS rn FROM _i13_src t JOIN brain_relationship r ON r.id = t.rel_id JOIN brain_symbol s ON s.project_id = 'X' AND s.name = r.target_external LEFT JOIN brain_file f ON f.id = s.file_id WHERE r.project_id = 'X' AND r.target_external IS NOT NULL AND r.relationship_type <> 'contains' AND instr(r.target_external,'.') = 0 AND instr(r.target_external,':') = 0) WHERE rn = 1",
+      "error": null,
+      "plan": [
+        {
+          "id": 2,
+          "parent": 0,
+          "detail": "CO-ROUTINE (subquery-1)"
+        },
+        {
+          "id": 5,
+          "parent": 2,
+          "detail": "CO-ROUTINE (subquery-3)"
+        },
+        {
+          "id": 15,
+          "parent": 5,
+          "detail": "SCAN t"
+        },
+        {
+          "id": 17,
+          "parent": 5,
+          "detail": "SEARCH r USING INDEX sqlite_autoindex_brain_relationship_1 (id=?)"
+        },
+        {
+          "id": 35,
+          "parent": 5,
+          "detail": "SEARCH s USING INDEX brain_sym_proj_name_type_idx (project_id=? AND name=?)"
+        },
+        {
+          "id": 42,
+          "parent": 5,
+          "detail": "SEARCH f USING INDEX sqlite_autoindex_brain_file_1 (id=?) LEFT-JOIN"
+        },
+        {
+          "id": 76,
+          "parent": 5,
+          "detail": "USE TEMP B-TREE FOR ORDER BY"
+        },
+        {
+          "id": 96,
+          "parent": 2,
+          "detail": "SCAN (subquery-3)"
+        },
+        {
+          "id": 144,
+          "parent": 0,
+          "detail": "SCAN (subquery-1)"
+        }
+      ],
+      "scansBrainSymbol": false,
+      "scansBrainRelationship": false,
+      "usesIndex": true,
+      "usesTempBtree": false,
+      "usesCoroutine": false
+    },
+    {
+      "id": "res-i13-crosslang",
+      "where": "src/ast/parallel-indexer.ts:4248 — cross-language normalisation, 2 correlated EXISTS",
+      "sql": "UPDATE brain_relationship SET is_cross_language = CASE WHEN EXISTS (SELECT 1 FROM brain_symbol ss LEFT JOIN brain_file sf ON sf.id = ss.file_id JOIN brain_symbol ts ON ts.id = brain_relationship.target_symbol_id LEFT JOIN brain_file tf ON tf.id = ts.file_id WHERE ss.id = brain_relationship.source_symbol_id AND COALESCE(sf.language,'') <> '' AND COALESCE(tf.language,'') <> '' AND lower(sf.language) <> lower(tf.language)) THEN 1 ELSE brain_relationship.is_cross_language END WHERE brain_relationship.project_id = 'X' AND brain_relationship.target_symbol_id IS NOT NULL",
+      "error": null,
+      "plan": [
+        {
+          "id": 5,
+          "parent": 0,
+          "detail": "SEARCH brain_relationship USING INDEX brain_rel_proj_target_idx (project_id=? AND target_symbol_id>?)"
+        },
+        {
+          "id": 30,
+          "parent": 0,
+          "detail": "CORRELATED SCALAR SUBQUERY 1"
+        },
+        {
+          "id": 41,
+          "parent": 30,
+          "detail": "SEARCH ss USING INDEX sqlite_autoindex_brain_symbol_1 (id=?)"
+        },
+        {
+          "id": 47,
+          "parent": 30,
+          "detail": "SEARCH sf USING INDEX sqlite_autoindex_brain_file_1 (id=?) LEFT-JOIN"
+        },
+        {
+          "id": 58,
+          "parent": 30,
+          "detail": "SEARCH ts USING INDEX sqlite_autoindex_brain_symbol_1 (id=?)"
+        },
+        {
+          "id": 64,
+          "parent": 30,
+          "detail": "SEARCH tf USING INDEX sqlite_autoindex_brain_file_1 (id=?) LEFT-JOIN"
+        }
+      ],
+      "scansBrainSymbol": false,
+      "scansBrainRelationship": false,
+      "usesIndex": true,
+      "usesTempBtree": false,
+      "usesCoroutine": false
+    },
+    {
+      "id": "res-i13-crossfile",
+      "where": "src/ast/parallel-indexer.ts:4225 — is_cross_file recompute, implicit self-join",
+      "sql": "UPDATE brain_relationship SET is_cross_file = CASE WHEN t.file_id <> s.file_id THEN 1 ELSE 0 END FROM brain_symbol t, brain_symbol s WHERE t.id = brain_relationship.target_symbol_id AND s.id = brain_relationship.source_symbol_id AND brain_relationship.project_id = 'X' AND brain_relationship.relationship_type <> 'contains' AND instr(brain_relationship.target_external,'.') = 0 AND instr(brain_relationship.target_external,':') = 0",
+      "error": null,
+      "plan": [
+        {
+          "id": 8,
+          "parent": 0,
+          "detail": "SCAN brain_relationship"
+        },
+        {
+          "id": 20,
+          "parent": 0,
+          "detail": "SEARCH t USING INDEX sqlite_autoindex_brain_symbol_1 (id=?)"
+        },
+        {
+          "id": 26,
+          "parent": 0,
+          "detail": "SEARCH s USING INDEX sqlite_autoindex_brain_symbol_1 (id=?)"
+        }
+      ],
+      "scansBrainSymbol": false,
+      "scansBrainRelationship": true,
+      "usesIndex": true,
+      "usesTempBtree": false,
+      "usesCoroutine": false
+    },
+    {
+      "id": "enrich-page",
+      "where": "src/brain/brain-relationship-enrichment.ts:607 — one page of 20k rows",
+      "sql": "SELECT r.id, r.rowid AS rowid, r.relationship_type, r.source_symbol_id, r.target_symbol_id, r.metadata, s.layer, s.symbol_type, s.name, t.id, t.layer, t.symbol_type, t.name, sf.relative_path, sf.language FROM brain_relationship r JOIN brain_symbol s ON s.id = r.source_symbol_id AND s.project_id = r.project_id LEFT JOIN brain_symbol t ON t.id = r.target_symbol_id AND t.project_id = r.project_id LEFT JOIN brain_file sf ON sf.id = s.file_id WHERE r.project_id = 'X' AND r.rowid > 0 ORDER BY r.rowid LIMIT 20000",
+      "error": null,
+      "plan": [
+        {
+          "id": 10,
+          "parent": 0,
+          "detail": "SEARCH r USING INTEGER PRIMARY KEY (rowid>?)"
+        },
+        {
+          "id": 14,
+          "parent": 0,
+          "detail": "SEARCH s USING INDEX sqlite_autoindex_brain_symbol_1 (id=?)"
+        },
+        {
+          "id": 24,
+          "parent": 0,
+          "detail": "SEARCH t USING INDEX sqlite_autoindex_brain_symbol_1 (id=?) LEFT-JOIN"
+        },
+        {
+          "id": 35,
+          "parent": 0,
+          "detail": "SEARCH sf USING INDEX sqlite_autoindex_brain_file_1 (id=?) LEFT-JOIN"
+        }
+      ],
+      "scansBrainSymbol": false,
+      "scansBrainRelationship": false,
+      "usesIndex": true,
+      "usesTempBtree": false,
+      "usesCoroutine": false
+    },
+    {
+      "id": "enrich-indegree",
+      "where": "src/brain/brain-relationship-enrichment.ts:259 — the one O(project) memory term",
+      "sql": "SELECT target_symbol_id, COUNT(*) as c FROM brain_relationship WHERE project_id = 'X' AND target_symbol_id IS NOT NULL AND target_symbol_id != '' GROUP BY target_symbol_id",
+      "error": null,
+      "plan": [
+        {
+          "id": 6,
+          "parent": 0,
+          "detail": "SEARCH brain_relationship USING COVERING INDEX brain_rel_proj_target_idx (project_id=? AND target_symbol_id>?)"
+        }
+      ],
+      "scansBrainSymbol": false,
+      "scansBrainRelationship": false,
+      "usesIndex": true,
+      "usesTempBtree": false,
+      "usesCoroutine": false
+    },
+    {
+      "id": "enrich-update",
+      "where": "src/brain/brain-relationship-enrichment.ts:310 — one row",
+      "sql": "UPDATE brain_relationship SET metadata = ? WHERE id = ? AND project_id = ?",
+      "error": null,
+      "plan": [
+        {
+          "id": 5,
+          "parent": 0,
+          "detail": "SEARCH brain_relationship USING INDEX sqlite_autoindex_brain_relationship_1 (id=?)"
+        }
+      ],
+      "scansBrainSymbol": false,
+      "scansBrainRelationship": false,
+      "usesIndex": true,
+      "usesTempBtree": false,
+      "usesCoroutine": false
+    },
+    {
+      "id": "res-unresolved-count",
+      "where": "src/ast/parallel-indexer.ts:4025 — the phase's entry guard",
+      "sql": "SELECT count(*) as c FROM brain_relationship WHERE target_symbol_id IS NULL AND target_external IS NOT NULL AND project_id = 'X'",
+      "error": null,
+      "plan": [
+        {
+          "id": 4,
+          "parent": 0,
+          "detail": "SEARCH brain_relationship USING INDEX brain_rel_proj_target_idx (project_id=? AND target_symbol_id=?)"
+        }
+      ],
+      "scansBrainSymbol": false,
+      "scansBrainRelationship": false,
+      "usesIndex": true,
+      "usesTempBtree": false,
+      "usesCoroutine": false
+    },
+    {
+      "id": "res-strategy1",
+      "where": "src/ast/parallel-indexer.ts:4060 — UPDATE ... FROM temp lookup",
+      "sql": "UPDATE brain_relationship SET target_symbol_id = 'X' FROM brain_symbol WHERE brain_relationship.target_external = brain_symbol.qualified_name AND brain_relationship.target_symbol_id IS NULL AND brain_relationship.project_id = 'X'",
+      "error": null,
+      "plan": [
+        {
+          "id": 5,
+          "parent": 0,
+          "detail": "SEARCH brain_relationship USING INDEX brain_rel_proj_target_idx (project_id=? AND target_symbol_id=?)"
+        },
+        {
+          "id": 12,
+          "parent": 0,
+          "detail": "SEARCH brain_symbol USING COVERING INDEX brain_symbol_qualified_idx (qualified_name=?)"
+        }
+      ],
+      "scansBrainSymbol": false,
+      "scansBrainRelationship": false,
+      "usesIndex": true,
+      "usesTempBtree": false,
+      "usesCoroutine": false
+    }
+  ]
+}
