@@ -43,7 +43,7 @@ language is Lua, which is what makes nine of them applicable and one not.
 | `imports` | `require("module")`, `module("module")`, and `require` guarded by `pcall`/`xpcall`. The module path is a STRING in the tree, so the endpoint may be declared in another file; `import_based`, and the 0.4% resolution rate is that fact rather than a defect. |
 | `references` | A member read WITHOUT calling it: `M.field`, `M:field`, `M["field"]`. The target is the member's own name. Since LUA-46 a member that is only **written** produces no `references` edge at all. |
 | `exports` | A chunk-scope `return` that NAMES something. Lua chunks are not modules, so the source is the file's global scope — this analyzer's existing convention for `imports` and file-scope `calls` — and no symbol is invented from the filename. |
-| `extends` | `setmetatable(D, B)`, the metatable relation, with a table constructor excluded as a target and both arguments required to be names. Lua's only type relation. |
+| `extends` | Two conventions, both a convention rather than a keyword. `setmetatable(D, B)`, with a table constructor excluded as a target and both arguments required to be DIFFERENT names (LUA-48). And `local D = factory(..., B)` where the factory's own `parameters` node declares a supertype-role parameter and its body folds that parameter into a `__`-prefixed metamethod (LUA-51). Lua's only type relation. |
 | `implements` | NOT APPLICABLE — see §3. |
 | `overrides` | Two constructs under two labels, never fused: `lua_redefinition` (the same name declared twice in one chunk, last-wins) at 1.0, and `lua_inherited_member` (a member of D that D also inherits from a base B through `__index`) at 0.95. |
 | `instantiates` | `Table:new(...)` / `Table.constructor(...)` / `Table.new(...)` where `Table` is a table declared in this file. |
@@ -80,7 +80,7 @@ edited (§9).
 | `imports` | EMITTED; the target is a module-path STRING, which is why 0.4% resolve | 6,547 | 2,140 | `require` sites |
 | `references` | yes — emitted since LUA-41 and narrowed by LUA-46, which removed 14,833 writes that were published as reads (§4) | 39,886 | 2,296 | every repo with a qualified read |
 | `exports` | EMITTED; 4 of 5,108 sources resolve, because a Lua chunk is not a module and no symbol is named after the file | 5,108 | 2,105 | chunk-scope `return` sites |
-| `extends` | EMITTED; instrument A is silent here by construction — `setmetatable(D, B)` is an ordinary `function_call` (§3.3). 171 before LUA-48, **169** after: the 2 `extends M -> M` self-edges were fabrications (§4) | 169 | 130 | `setmetatable` sites |
+| `extends` | EMITTED; instrument A is silent here by construction — `setmetatable(D, B)` is an ordinary `function_call` (§3.3). 171 before LUA-48, 169 after it, **171** after LUA-51: the 2 `extends M -> M` self-edges were fabrications (§4) and 2 written supertype clauses were unread (§4, LUA-51) | 171 | 131 | `setmetatable` sites (169) + factory supertype clauses (2) |
 | `calls` | yes — emitted; 8 of 57,057 come from pool-worker's regex fallback and are tallied apart; 647 of 15,283 resolved sources are a `variable`, which is not itself callable (§6) | 57,057 | 2,559 | kong 26,183, snacks.nvim 7,221, luarocks 5,409, luvit 3,398, 13 more |
 | `overrides` | yes — emitted since LUA-44; 65 `lua_redefinition` at 1.0 and 1 `lua_inherited_member` at 0.95; 64 of 66 targets name-ambiguous, so the 18.2% resolution rate is not the whole story (§6) | 66 | 38 | luvit 29, kong 23, luarocks 9, snacks.nvim 4, plenary.nvim 1 |
 | `instantiates` | EMITTED; instrument A is silent here by construction — `Table:new(...)` is an ordinary `function_call` (§3.3) | 122 | 65 | snacks.nvim 36, luvit 33, plenary.nvim 19, trouble.nvim 13, kong 10, 6 more |
@@ -88,7 +88,7 @@ edited (§9).
 **Total 218,381 relationships and 83,361 symbols** over the 3,252-file draw, re-measured
 after this pass's two fixes (`/tmp/opencode/lua-lane/final/f1`, draw digest
 `c990daa339a9…`, identical to the committed wave-2 draw). Sibling run on the same draw:
-**218,095 relationships, 83,274 symbols**. `extends` 169/169, `overrides` 66/66 and
+**218,097 relationships, 83,274 symbols**. `extends` 171/171, `overrides` 66/66 and
 `instantiates` 122/122 are byte-identical across the two runs; the rest move inside the
 nondeterminism floor §5 names.
 
@@ -378,6 +378,75 @@ so — the edge that used to appear was on the wrong line for the wrong reason.
 `for k, v in pairs(t)` is one of the most frequent constructs in Lua, so publishing every
 loop variable is a symbol-count and graph-payload decision for the whole surface, not a
 lane-local fix. Reported (§9, limitation 14) rather than done.
+
+### LUA-51 — a WRITTEN supertype clause the analyzer never read. 2 edges.
+
+`extends` was read from exactly one construct: `setmetatable(D, B)` at
+real-lua-analyzer.ts:924. The `class` branch read only `firstString` — the class's own
+NAME — and never looked at a parent argument. Lua's most widely vendored OOP factory
+states its supertype as an ordinary call argument:
+
+    luarocks/vendor/argparse.lua:38    local function class(prototype, properties, parent)
+    luarocks/vendor/argparse.lua:277   local Command = class({...}, {...}, Parser)
+    luarocks/vendor/argparse.lua:328   local Option  = class({...}, {...}, Argument)
+
+Both are inheritance, and the callee body says so at :41 —
+`if parent then cl.__prototype = deep_update(deep_update({}, parent.__prototype), prototype)`
+— the new class's prototype is built FROM the parent's. Neither edge was emitted.
+
+**Found by a probe that had to be rewritten to be able to see it.** The instrument that
+prompted the hunt is `script/m60/lua-conformance-probe.ts` bucket b1, and b1 reads
+`as[1]` — the SECOND argument — as the supertype. That is argparse's MIDDLE argument, a
+table of properties, so all four of b1's hits landed in `other` and the bucket read 0
+names. The probe GUESSED A POSITION, and the convention's position is a property of the
+callee's own parameter list, which the same file writes down and which b1's own header
+quoted. Rewritten to read the slot from that `parameters` node
+(`script/m60/lua-supertype-arg-probe.ts`):
+
+    written supertype arguments   7 across 5 files   (role-resolved)
+    positional guess would count  0
+
+This is the defect class the coverage gate's own header records for json's first `$ref`
+probe: a probe that matches a SHAPE rather than a ROLE produces a number, and the number
+is worth nothing. b1's 0 was a real number about the wrong slot.
+
+**Why the reader folds the parent into a metamethod, which is the part that mattered.**
+Of the 7, only 2 are inheritance. The other 5 are an ordinary tree-traversal parameter
+that happens to be named `parent`:
+
+    snacks.nvim/lua/snacks/layout.lua:186                        _each(widget, parent)
+    snacks.nvim/lua/snacks/picker/source/lsp/init.lua:379, :387  add(result, parent)
+    snacks.nvim/lua/snacks/picker/source/treesitter.lua:185      add(match, parent, depth)
+
+A rule keyed on the parameter NAME publishes 5 fabricated `extends` edges, claiming a
+widget's parent is a supertype. Requiring the call to be bound to a top-level name is
+NOT enough either — it was the first implementation, and the fixture caught it, because
+`local added = add({...}, walked)` is a top-level binding. What separates them is
+whether the factory's body folds the parent into a `__`-prefixed metamethod of the object
+it builds, which is what inheritance means in Lua:
+
+    (a)  parent.__prototype          luarocks/vendor/argparse.lua:41
+    (b)  cl.__super = parent         the same relation, other spelling
+
+Both spellings are in the corpus, which is why the test accepts both. That is a
+derivation over parse facts in the callee, not a name list, and it is what the fixture's
+load-bearing forbid row pins.
+
+**The edges, with their lines.** `extends` 169 → 171, no other type moves:
+
+    luarocks/vendor/argparse.lua:302   Command -> Parser   0.95  usage_contextual
+    luarocks/vendor/argparse.lua:351   Option  -> Argument 0.95  usage_contextual
+
+Confidence 0.95 and `usage_contextual`, NOT 1.0 and NOT `structural`, deliberately. Both
+endpoint names are written, which is what earns `extends` 1.0 on the `setmetatable` path;
+what is a convention is the ROLE — that a parameter named `parent` means the supertype.
+`overrides`' `lua_inherited_member` takes the same 0.95 for the same reason and cites the
+same family precedent (real-objective-c-analyzer.ts:1020). The line is the line the
+SUPERTYPE ARGUMENT is written on, which is the M59 rule (the name field, not the call's
+own start) — `class({` opens at :277 and `Parser` is written at :302.
+
+Reproduce: `npx tsx script/m60/lua-supertype-arg-probe.ts` and
+`npx tsx script/m60/lua-extends-census.ts`.
 
 ### Four defects in the ORACLE itself, each of which had been reporting agreement
 
@@ -737,10 +806,17 @@ does not do, each with its number.
    (B8 `unresolvedBase`), e.g. `setmetatable(opts or {}, defaults)`. No name is
    written, so no edge target could be.
 8. **Inheritance is a convention, not a keyword.** `extends` and `overrides` read
-   `setmetatable`/`__index`. A table that inherits by another runtime mechanism — a
-   C library's metatable, `middleclass`/`class()` from a third-party module — is not
-   seen. `class("Name")` calls are recognised as a class DECLARATION (a symbol) but
-   the library's own inheritance convention is not inferred.
+   `setmetatable`/`__index`, and since LUA-51 a factory whose body folds a
+   supertype-role parameter into a `__`-prefixed metamethod. A table that inherits by
+   another runtime mechanism — a C library's metatable, or a factory that composes the
+   parent WITHOUT a `__` field — is not seen. `class("Name")` calls are recognised as a
+   class DECLARATION (a symbol). The residual is measured rather than asserted: 13
+   functions in the corpus declare a `parent`/`super`/`base` parameter, 7 of them are
+   passed a name there, and LUA-51 reads 2 of those 7. The other 5 are tree traversal,
+   and the discriminator that excludes them is the metamethod fold — so a factory that
+   inherits by plain table composition, with no `__` field anywhere, stays unread and
+   would be indistinguishable from traversal under this rule. That is the honest limit
+   of the rule, and it is a rule chosen over publishing 5 fabricated edges.
 9. **The module surface is only what a chunk-scope `return` names.** Four shapes
    carry no written name and stay silent, disclosed in `ctx.unpublishedSurface`:
    `return require("x")` (a re-export), `return "literal"`, `return function() end`,
