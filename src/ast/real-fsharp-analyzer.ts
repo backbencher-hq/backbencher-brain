@@ -26,6 +26,24 @@ const FSHARP_CONSOLE_BUILTINS = new Set([
 const OBJECT_LEAF_METHODS = new Set(["ToString", "GetHashCode", "Equals", "GetType", "ReferenceEquals"])
 
 /**
+ * Which side of an F# pipeline operator carries the CALLEE, for the operators that APPLY a
+ * function. FS-A6: `x |> f` applies `f`, `f <| x` applies `f`, and the composition
+ * operators (`>>` `>>>` `>=>` `<<<`) are absent because they build a function and call
+ * neither — measured, not taste: 13 bare `>>` in a 300-file corpus draw, every one of them
+ * excluded on that ground.
+ *
+ * Keys are the `infix_op` TOKEN texts the grammar emits, so this is a lookup on a token and
+ * not a pattern over source text.
+ */
+const PIPELINE_CALLEE_SIDE = new Map<string, "left" | "right">([
+  ["|>", "right"],
+  ["|>>", "right"],
+  [">>=", "right"],
+  ["<|", "left"],
+  ["<<", "left"],
+])
+
+/**
  * Every grammar node that WRAPS a written type in F#. The name is always inside one of
  * these; the POSITION is decided by the wrapper's parent. Read off the wired grammar
  * (script/m14/tmp/fs001-shape-census.ts over 400 real files) and from
@@ -655,16 +673,67 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
               }
 
               // Qualified override: source = Owner.method, target = Base.method.
+              //
+              // FS-A2 (M60 pass 2): the `override` TOKEN is not a statement about a base
+              // class, and the token-only rule read it as one. F# has no separate keyword for
+              // an interface member — `override` is what implements one, exactly as in C#:
+              //
+              //     type Disposable() =
+              //         interface System.IDisposable with
+              //             override this.Dispose() = ()      // implements IDisposable
+              //
+              // — so `interface I with override this.M() = …` emits
+              //
+              //     overrides  Disposable.Dispose  ->  Dispose        (no `inherit` anywhere)
+              //     overrides  Disposable.Dispose  ->  Base.Dispose   (`inherit Base()` also present)
+              //
+              // and both are wrong. The first asserts that a member overrides ITSELF, which
+              // binds to nothing a consumer can follow and is the shape of a fabricated edge;
+              // the second attributes an interface implementation to a base-class member that
+              // need not exist. Measured over the whole corpus by
+              // validation/m14/fixtures/fsharp/ontology-probe.ts (probe A1/A2).
+              //
+              // The family's answer is settled and this adopts it: csharp
+              // (`resolveInterfaceImplementations`, C923) emits `overrides M -> I.m` with
+              // `metadata.relationshipType = "interface_member_implementation"`, and the same
+              // shape was measured in java, kotlin, typescript, dart and python. So the edge
+              // STAYS `overrides` — the member does satisfy a declaration above it — and the
+              // TARGET is read from the interface the tree writes, not from the base list.
+              //
+              // And with no interface and no base there is NO target to write, so nothing is
+              // emitted: the type-level `implements` edge above already carries the fact, and a
+              // member-level edge naming nothing would be the fabrication this lane's own
+              // workstream forbids.
               if (isMember && this.firstTokenIs(node, "override")) {
-                const baseName = owner ? baseTypes.get(owner) : undefined
-                pushRel(
-                  owner ? `${owner}.${name}` : name,
-                  baseName ? `${baseName}.${name}` : name,
-                  ASTEngine.RelationshipType.Overrides,
-                  1.0,
-                  { nodeType: type, isOverride: true },
-                  lineOf(node),
-                )
+                const qualifiedSource = owner ? `${owner}.${name}` : name
+                const implementedInterface = this.enclosingInterfaceImplementationLeaf(node)
+                if (implementedInterface) {
+                  pushRel(
+                    qualifiedSource,
+                    `${implementedInterface}.${name}`,
+                    ASTEngine.RelationshipType.Overrides,
+                    1.0,
+                    {
+                      nodeType: type,
+                      isOverride: true,
+                      relationshipType: "interface_member_implementation",
+                      isInterfaceMemberImplementation: true,
+                    },
+                    lineOf(node),
+                  )
+                } else {
+                  const baseName = owner ? baseTypes.get(owner) : undefined
+                  if (baseName) {
+                    pushRel(
+                      qualifiedSource,
+                      `${baseName}.${name}`,
+                      ASTEngine.RelationshipType.Overrides,
+                      1.0,
+                      { nodeType: type, isOverride: true },
+                      lineOf(node),
+                    )
+                  }
+                }
               }
 
               // Calls inside this member/function attribute to it; computed
@@ -1079,6 +1148,67 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
             lineOf(node),
           )
         }
+      } else if (type === "infix_expression") {
+        // FS-A6 (M60 pass 2): a BARE PIPELINE — `x |> f` as a WHOLE expression.
+        //
+        // F#'s pipeline operator is the language's defining idiom, and this lane claimed to
+        // read it ("pipe `a |> List.map` -> `map`"). It did not, except by accident. The
+        // `application_expression` branch has an `infix_expression` arm, so a pipeline was
+        // read only when it happened to sit in CALLEE position — `f (x |> g)` — and the shape
+        // F# is actually written in, a `let` whose body IS the pipeline, was dropped whole:
+        //
+        //     let relevant (diags: FSharpDiagnostic array) =
+        //         diags
+        //         |> Array.filter (fun d -> …)      // no `calls relevant -> filter` at all
+        //
+        // Measured on a 300-file draw of the corpus: **1,043** bare `|>` infix nodes, of which
+        // **1,037** carry a NAME on the right, against 580 read in callee position. So the
+        // label was missing roughly 11% of the calls the corpus writes, and it was missing
+        // them in the single most idiomatic F# construct there is.
+        //
+        // WHY NO ORACLE CAUGHT IT, which is the part worth keeping: `script/m14/fsharp-truth-
+        // oracle.ts` reads `application_expression` and `prefixed_expression` and has no
+        // `infix_expression` branch either, so both sides said nothing and nothing disagreed.
+        // That is exactly the failure the workstream document describes — "when a type is
+        // absent from BOTH … both say nothing, and nothing agrees with nothing" — reproduced
+        // inside a single label rather than across the ten.
+        //
+        // THE OPERATOR MAP, and why the composition operators are absent. `|>` `|>>` `>>=`
+        // apply the RIGHT operand to the left one; `<|` `<<` apply the LEFT. The side is a
+        // property of the operator, not of the expression, so it is read off the `infix_op`
+        // TOKEN the grammar emits — there is no text pattern anywhere in this rule.
+        // `>>` `>>>` `>=>` `<<<` are DELIBERATELY NOT HERE: they COMPOSE two functions and
+        // call neither (`let h = f >> g` builds a closure), so an edge from them would be a
+        // fabrication. Measured: 13 bare `>>` in the same 300-file draw, excluded on that
+        // ground and not because they were hard to read.
+        const opNode = this.filterChildren(node, (n) => n.type === "infix_op")[0]
+        const side = opNode ? PIPELINE_CALLEE_SIDE.get(opNode.text) : undefined
+        if (side && callOwner) {
+          // Only NAME children count, which is what makes `x |> List.map (fun y -> y)` work:
+          // the lambda is a sibling of the name, and asking for the last name rather than the
+          // last child is the difference between reading the pipeline and reading its argument.
+          const named = this.filterChildren(
+            node,
+            (n) =>
+              n.type === "long_identifier" ||
+              n.type === "identifier" ||
+              n.type === "long_identifier_or_op" ||
+              n.type === "dot_expression",
+          )
+          const calleeNode = side === "right" ? named[named.length - 1] : named[0]
+          const calleeText = calleeNode?.text ?? ""
+          const leaf = calleeText.split(".").pop() || calleeText
+          if (calleeText.length > 1 && !this.isFSharpBuiltin(calleeText, leaf)) {
+            pushRel(
+              callOwner,
+              leaf,
+              ASTEngine.RelationshipType.Calls,
+              0.8,
+              { nodeType: type, isPipelineCall: true, pipelineOperator: opNode!.text },
+              lineOf(calleeNode ?? node),
+            )
+          }
+        }
       } else if (type === "application_expression") {
         // Call/instantiation: source = enclosing function/method/constructor,
         // target = leaf name of the callee (C# family contract).
@@ -1101,7 +1231,29 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
             fnName = fnNode.text
           }
         }
-        if (fnName && fnName.length > 1 && callOwner) {
+        // A4 (M60 pass 2): the gate used to be `fnName.length > 1`, which is not a rule
+        // about the program. By the time this branch runs, the grammar has already said the
+        // callee is a NAME — the node it was read from is a `long_identifier`,
+        // `identifier`, `long_identifier_or_op` or `dot_expression` — so the only thing the
+        // length test removed was every call to a ONE-LETTER function, and F# is full of
+        // them: `let f x = …` composed into `f getLines`, `f argv.[!cursor]`.
+        //
+        // Measured, not assumed. Instrument B counts **5,313** one-character applications
+        // over the 6,619-file corpus, in 735 files
+        // (validation/m14/fixtures/fsharp/ontology-probe.ts, probe A4), against a full-extent
+        // `calls` count of 246,327 — 2.2% of the label, dropped for no reason. And the
+        // dropped population is MORE resolvable than the emitted one, which is the number
+        // that decided it: on a 120-file draw of the census's own sample, 32.4% of the
+        // one-character callees name a symbol the SAME file publishes, against 22.2% for
+        // emitted `calls` edges in-file
+        // (validation/m14/fixtures/fsharp/one-char-calls.ts). A gate that removes the
+        // better-resolving edges is not a noise filter, it is an unexamined rule.
+        //
+        // The gate also stood in front of the CONSTRUCTOR-CHAINING `instantiates` below,
+        // which is why that label gained an edge on the 400-file draw when this was removed.
+        // Nothing here infers: `fnName` is still the callee's written name and `leaf` is
+        // still its last segment, and the builtin filter below is unchanged.
+        if (fnName && callOwner) {
           const leaf = fnName.split(".").pop() || fnName
           if (!this.isFSharpBuiltin(fnName, leaf)) {
             // Constructor chaining `new() = Point(0, 0)` — instantiation of the
@@ -1135,6 +1287,12 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
             const calleeNode = operand.namedChild(0)
             const calleeText = calleeNode ? calleeNode.text : ""
             const leaf = calleeText.split(".").pop() || calleeText
+            // A4-DISCLOSED: this gate has the same shape as the one removed from `calls`
+            // above and the same lack of a reason — `new` + a name is a construction whatever
+            // the type is called — but it was NOT measured, so it stays. Removing an
+            // unmeasured gate on the strength of a measured one is the same move this lane
+            // criticises elsewhere; the corpus population of a one-letter constructed type is
+            // not established either way, and saying so is cheaper than guessing.
             if (calleeText && calleeText.length > 1 && !this.isFSharpBuiltin(calleeText, leaf)) {
               pushRel(callOwner, leaf, ASTEngine.RelationshipType.Instantiates, 0.95, { nodeType: type, isNewConstruction: true }, lineOf(node))
               for (let i = operand.namedChildCount - 1; i >= 0; i--) {
@@ -1444,6 +1602,45 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
     const idents = this.findDescendants(nameish, (n) => n.type === "identifier", 8)
     const leaf = idents.length ? idents[idents.length - 1]!.text : written
     return { written, leaf: leaf || written }
+  }
+
+  /**
+   * The interface a member IMPLEMENTS, when the member is written inside
+   * `interface I with …` — the LEAF of the interface's written name, or undefined.
+   *
+   * FS-A2. The walk to the nearest `interface_implementation` ancestor is unbounded on
+   * purpose: `findAncestor` cannot distinguish "no interface above this" from "further than
+   * N levels up", and treating both as the first is how the `overrides` rule ended up naming
+   * a base type for a member that implements an interface (see the call site).
+   *
+   * The name is read the SAME WAY the `implements` branch reads it — the first
+   * `long_identifier`/`identifier` descendant of the implementation node, then the leaf of a
+   * dotted path, with R10's spelling rule (`System.IDisposable` declares `IDisposable`). Two
+   * implementations of one rule is the point: a member-level edge and a type-level edge about
+   * the same `interface I with` clause that spell the interface differently would be
+   * indistinguishable downstream from two different interfaces.
+   *
+   * THE OBJECT-EXPRESSION ARM, and it is not a rare shape: `{ new IFoo with override x.M() }`
+   * has NO `interface_implementation` node at all — the grammar puts the interface directly on
+   * the `object_expression` as its own `long_identifier_or_op` child. So a walk that stops at
+   * `interface_implementation` answers "no interface" for every mock in the corpus, and the
+   * corpus is full of them: vsintegration/tests/Salsa/VsMocks.fs alone carries 6 such members
+   * on 2 object expressions. The interface is therefore read a second way, through the SAME
+   * `objectExpressionInterface` the `implements` branch and the symbol publication use, so the
+   * three edges about one object expression cannot spell its interface differently.
+   */
+  private enclosingInterfaceImplementationLeaf(node: Node): string | undefined {
+    let cur: Node | null = node.parent
+    while (cur) {
+      if (cur.type === "interface_implementation") {
+        const written = this.findDescendant(cur, (n) => n.type === "long_identifier" || n.type === "identifier", 3)
+        if (!written?.text) return undefined
+        return written.text.includes(".") ? (written.text.split(".").pop() as string) : written.text
+      }
+      if (cur.type === "object_expression") return this.objectExpressionInterface(cur)?.leaf
+      cur = cur.parent
+    }
+    return undefined
   }
 
   private memberNameOf(decl: Node): string | undefined {
