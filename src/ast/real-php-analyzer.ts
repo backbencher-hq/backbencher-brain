@@ -690,6 +690,29 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
           visibility: "public",
           isAbstract: modifiers.includes("abstract"),
           isStatic: modifiers.includes("static"),
+          // M60 NAMESPACE CONTAINMENT. A top-level class belongs to its
+          // namespace, and PHP's own resolution says so: an unqualified name is
+          // looked up in the current namespace FIRST, which is only true because
+          // the namespace scopes it. So this is a parse fact, not a guess, and
+          // it is emitted at the same 1.0 / structural the member-level
+          // containment edge already uses (the `contains` edges are generated
+          // from `ownerName` at line ~1158, so setting the owner here is what
+          // creates the edge — there is no second code path to keep in step).
+          //
+          // The convention is the project's, not php's own invention: the csharp
+          // analyzer sets `ownerName`/`ownerKind: Namespace` for a top-level type
+          // (verified on `namespace App.Services { interface IRunner; class Runner; }`
+          // -> `contains App.Services -> IRunner`, `contains App.Services -> Runner`)
+          // and the typescript analyzer does the same through
+          // `ScopeKind.Namespace`. php emitted 4,442 `namespace` symbols and
+          // joined NONE of them to anything, so before this the lane's 4th-largest
+          // label carried the member level and stopped there.
+          //
+          // Gated on `!owner` so a declaration nested in another declaration is
+          // never re-parented: PHP has no nested named classes, so this is
+          // belt-and-braces against a future frame that sets `owner`.
+          ownerName: owner ?? ns,
+          ownerKind: owner ? ownerKind : (ns ? ASTEngine.SymbolKind.Namespace : ownerKind),
           metadata: {
             phpSpecific: true,
             fqn: ns ? `${ns}\\${className}` : className,
@@ -784,6 +807,10 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
           kind: ASTEngine.SymbolKind.Interface,
           range: this.nodeToRange(node),
           visibility: "public",
+          // M60 NAMESPACE CONTAINMENT — see the class_declaration branch for
+          // the derivation and the csharp/typescript precedent.
+          ownerName: owner ?? ns,
+          ownerKind: owner ? ownerKind : (ns ? ASTEngine.SymbolKind.Namespace : ownerKind),
           metadata: { phpSpecific: true, fqn: ns ? `${ns}\\${ifaceName}` : ifaceName, namespace: ns, extendedInterfaces: extended },
         })
         const body = this.findChildByType(node, "declaration_list")
@@ -801,6 +828,9 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
           kind: ASTEngine.SymbolKind.Trait,
           range: this.nodeToRange(node),
           visibility: "public",
+          // M60 NAMESPACE CONTAINMENT — see the class_declaration branch.
+          ownerName: owner ?? ns,
+          ownerKind: owner ? ownerKind : (ns ? ASTEngine.SymbolKind.Namespace : ownerKind),
           metadata: { phpSpecific: true, isTrait: true, fqn: ns ? `${ns}\\${traitName}` : traitName, namespace: ns },
         })
         const body = this.findChildByType(node, "declaration_list")
@@ -837,6 +867,9 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
           kind: ASTEngine.SymbolKind.Enum,
           range: this.nodeToRange(node),
           visibility: "public",
+          // M60 NAMESPACE CONTAINMENT — see the class_declaration branch.
+          ownerName: owner ?? ns,
+          ownerKind: owner ? ownerKind : (ns ? ASTEngine.SymbolKind.Namespace : ownerKind),
           metadata: { phpSpecific: true, fqn: ns ? `${ns}\\${enumName}` : enumName, namespace: ns, implementedInterfaces: ifaceClause ? Array.from({ length: ifaceClause.namedChildCount }, (_, i) => this.heritageTarget(ifaceClause.namedChild(i)?.text ?? "", enumName)).filter(Boolean) : [] },
         })
         const list = this.findChildByType(node, "enum_declaration_list")
@@ -880,6 +913,13 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
           returnType,
           // Per-symbol cyclomatic complexity (managed-OO family contract).
           complexity: this.calculateNodeComplexity(node),
+          // M60 NAMESPACE CONTAINMENT — see the class_declaration branch. A
+          // namespaced function is the case PHP's resolution leans on hardest:
+          // `use function`/`call_user_func` reach a top-level function through
+          // its namespace, and without this edge the namespace symbol carries
+          // nothing at all.
+          ownerName: owner ?? ns,
+          ownerKind: owner ? ownerKind : (ns ? ASTEngine.SymbolKind.Namespace : ownerKind),
           metadata: { phpSpecific: true, fqn: ns ? `${ns}\\${fnName}` : fnName, namespace: ns },
         })
         const body = node.childForFieldName("body")
@@ -984,10 +1024,15 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
             name: nameNode.text,
             kind: ASTEngine.SymbolKind.Constant,
             range: this.nodeToRange(nameNode),
-            ownerName: owner,
-            ownerKind: owner ? ownerKind : undefined,
+            // M60 NAMESPACE CONTAINMENT — see the class_declaration branch. A
+            // top-level `const` lives in the namespace in force exactly as a
+            // top-level class does; it was the one top-level declaration kind
+            // still left unowned after the class/interface/trait/enum/function
+            // branches were converted.
+            ownerName: owner ?? ns,
+            ownerKind: owner ? ownerKind : (ns ? ASTEngine.SymbolKind.Namespace : undefined),
             visibility: owner ? visibility : "public",
-            metadata: { phpSpecific: true, isConstant: true },
+            metadata: { phpSpecific: true, isConstant: true, fqn: !owner && ns ? `${ns}\\${nameNode.text}` : undefined, namespace: !owner ? ns : undefined },
           })
         }
       }
@@ -1131,9 +1176,35 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
 
       // --- Program root: forward children ---
       if (type === "program") {
+        // M60 NAMESPACE CONTAINMENT, the half that makes the edge reachable.
+        //
+        // PHP has TWO namespace forms and the grammar spells them differently
+        // (probe-verified against the pinned wasm):
+        //
+        //   braced     `namespace A { class B {} }` -> `namespace_definition`
+        //               owns a `compound_statement`, so the declarations are
+        //               CHILDREN and the existing `namespace_definition` branch
+        //               reaches them with `ns` set.
+        //
+        //   semicolon  `namespace A; class B {}`  -> `namespace_definition`
+        //               ends at the `;` and the declarations are SIBLINGS at
+        //               `program` level. Nothing in the namespace_definition's
+        //               own subtree names them, so `ns` is `undefined` for every
+        //               one of them.
+        //
+        // The semicolon form is the overwhelmingly common one, so without this
+        // the `namespace` symbol — which the lane emits 4,442 of corpus-wide —
+        // would be joined to nothing at all. The scope of a semicolon form runs
+        // to the NEXT `namespace` declaration or to end of file; that is PHP's
+        // own rule, and it is what the segment index below encodes.
+        const segments = this.namespaceSegments(node)
         for (let i = node.namedChildCount - 1; i >= 0; i--) {
           const child = node.namedChild(i)
-          if (child) stack.push({ node: child, owner, ownerKind, ns, inFunction, scope: extScope })
+          if (!child) continue
+          // A `namespace_definition` reached directly at program level carries
+          // its own name; a declaration takes the segment's namespace.
+          const segNs = child.type === "namespace_definition" ? undefined : segments.get(child.startIndex)
+          stack.push({ node: child, owner, ownerKind, ns: segNs ?? ns, inFunction, scope: extScope })
         }
         continue
       }
@@ -1626,6 +1697,46 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
   // ========================================================================
 
   /**
+   * M60 NAMESPACE CONTAINMENT — the namespace each top-level declaration sits
+   * in, keyed by that declaration node's `startIndex`.
+   *
+   * Only the SEMICOLON form needs an index. The braced form nests its
+   * declarations inside the `namespace_definition`'s own `compound_statement`,
+   * so the walk reaches them with `ns` already set and they must NOT appear
+   * here (a `namespace_definition` carrying a `compound_statement` is therefore
+   * skipped, and its children are left to the normal descent).
+   *
+   * A file may carry several namespace blocks (`namespace A; ... namespace B;
+   * ...`), and a semicolon form's scope runs to the next declaration or to end
+   * of file. `use`/`declare` statements between blocks belong to the namespace
+   * in force at that point, which is why the running value is not reset by
+   * anything except the next `namespace_definition`.
+   *
+   * Byte offsets rather than child indices: the walk looks nodes up by identity
+   * and web-tree-sitter re-creates the Node wrapper per call, so an index into
+   * `namedChildren` would not be a stable key. `startIndex` is a value on the
+   * node itself and is unique within a file.
+   */
+  private namespaceSegments(program: Node): Map<number, string> {
+    const out = new Map<number, string>()
+    let current: string | undefined
+    for (let i = 0; i < program.namedChildCount; i++) {
+      const child = program.namedChild(i)
+      if (!child) continue
+      if (child.type === "namespace_definition") {
+        // The braced form owns a `compound_statement`; its declarations are
+        // children of that and the normal descent already reaches them.
+        if (this.findChildByType(child, "compound_statement")) continue
+        const nsName = this.findChildByType(child, "namespace_name")?.text
+        if (nsName) current = nsName
+        continue
+      }
+      if (current) out.set(child.startIndex, current)
+    }
+    return out
+  }
+
+  /**
    * PHP2: push a declaration's non-body children (attributes, signatures)
    * for the extractive walk. Bodies belong to walkBody; heritage and names
    * belong to no value rule — but defaults, const initializers and
@@ -2006,7 +2117,11 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
     node: Node,
     imports: ASTEngine.ImportInfo[],
     relationships: ASTEngine.UniversalRelationship[],
-    ns: string | undefined,
+    // Kept in the signature because both call sites pass it and the namespace is
+    // still the right thing for a future include-side resolution to have. The
+    // OWNER is unconditionally file scope — see the `source: "global"` note
+    // below — so nothing here reads it.
+    _ns: string | undefined,
   ): void {
     const filePath = this.extractIncludePath(node)
     if (!filePath) return
@@ -2018,7 +2133,26 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
       metadata: { phpSpecific: true, includeType: node.type.replace("_expression", "") },
     })
     relationships.push({
-      source: ns || "global",
+      // M60 NAMESPACE CONTAINMENT, the owner half. This was `ns || "global"`,
+      // and it was only ever exercised one way: before that round `ns` was
+      // UNDEFINED for every declaration under the common SEMICOLON namespace
+      // form, so the fallback fired on essentially every real file and the
+      // `ns` branch was reached only by a braced `namespace X { ... }`.
+      //
+      // Now that the semicolon form resolves, the branch became reachable at
+      // scale — and it is WRONG. `require`/`include` resolves a PATH against
+      // the file's own directory; the namespace in force has no part in it, and
+      // PHP scopes `include` to the compilation unit exactly as it scopes `use`.
+      // So the owner is file scope in both cases, which is what the doc's
+      // `imports` row already claimed ("Owner is file scope") and what
+      // `emitUseClause` hard-codes three branches above.
+      //
+      // Left as `ns || "global"`, one analyzer would have filed the SAME kind at
+      // two different owners depending only on which namespace syntax the file
+      // happened to use, and the `php/include-paths` fixture caught it: 6 of its
+      // expected file-scope `imports` edges stopped matching. The fixture is the
+      // contract here, not the code.
+      source: "global",
       target: filePath,
       // M12.PHP-IMPORTS: `require`/`include` is a module dependency, not a
       // symbol reference. It was filed as `references`, which mislabels a
