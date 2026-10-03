@@ -677,9 +677,39 @@ export namespace ASTEngine {
       if (data) {
         try {
           const os = require("os")
-          const tmp = path.join(os.tmpdir(), "bb-wasm_" + relativePath.replace(/\//g, "_").replace(/\\/g, "_"))
+          // M60 (zig lane, pass 3). This path was
+          //   os.tmpdir()/bb-wasm_<relativePath>
+          // — SHARED between every process on the machine and written with a
+          // plain writeFileSync. A concurrent reader therefore gets a TRUNCATED
+          // file: `Language.load` throws "need to see wasm magic number" or
+          // "section (code 10) extends past end of the module", and
+          // pool-worker.parseFile's catch silently substitutes extractFallback, a
+          // REGEX extractor whose symbols carry no kind and whose edges sit at
+          // 0.4/0.5 — including fabricated `calls this -> ...`.
+          //
+          // MEASURED by controlled comparison, not inferred: 4 concurrent rounds
+          // x 8 shards against 8 sequential, each a full 3,834-file parse of the
+          // same corpus draw at the same commit —
+          //   concurrent  6 of 32 shard-runs degraded, 7 of 14,856 files fell back
+          //   sequential  0 of 8 shard-runs degraded, 0 files fell back
+          // Cumulative across the lane: 12 of 64 concurrent, 0 of 11 sequential.
+          //
+          // Two fixes, both needed. The per-process suffix removes the collision
+          // entirely. The rename makes the write atomic, so even a reader that
+          // somehow resolves another process's path cannot observe a partial file.
+          const procTag = `${process.pid}_${(process.hrtime?.bigint?.() ?? BigInt(0)).toString(36)}`
+          const base = "bb-wasm_" + relativePath.replace(/\//g, "_").replace(/\\/g, "_")
+          const tmp = path.join(os.tmpdir(), `${base}_${procTag}.partial`)
+          const final = path.join(os.tmpdir(), `${base}_${procTag}`)
           fs.writeFileSync(tmp, data)
-          return tmp
+          // rename is atomic within a filesystem, so a reader sees either no file
+          // or the whole grammar — never a truncated one.
+          fs.renameSync(tmp, final)
+          // Best-effort cleanup. Another process may still be reading it, so this
+          // deliberately does NOT unlink: the per-process tag already makes an
+          // unbounded tmpdir growth the only cost, and deleting a file another
+          // process is mid-load on would recreate the original bug.
+          return final
             } catch (e) {
       log.debug("resolveWasm: temp file fallback failed", { error: (e as Error)?.message })
     }
