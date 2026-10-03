@@ -57,10 +57,12 @@ over upstream tree-sitter-fsharp:
 | implements | ✅ | `interface_implementation` (`interface ILogger with`) → `ILogger`; source = the type. R10 leaf spelling as for `extends`. | 1.0 |
 | instantiates | ✅ | constructor chaining `new() = Point(0, 0)` → `Point` (enclosing constructor body); source = `constructor` | 0.95 |
 | overrides | ✅ | `override` keyword token (first child of `member_defn`) + `inherit` base → qualified `Owner.method -> Parent.method` (`Dog.Speak -> Animal.Speak`); base from the type's `class_inherits_decl` | 1.0 |
-| uses | ❌ (not emitted) | F# member-access reads are covered at call level; the C# family emits no `uses` edges — the previous `_.X` / `this.X` phantom uses came from member *definition* headers (`property_or_ident`) and were pure noise | — |
+| uses | ✅ (**M60, 2026-10-02** — was ❌) | **An attribute application**: `[<Struct>]`, `[<Obsolete("gone")]`, `[<assembly: TypeProviderAssembly(…)>]`. This is the only F# construct a `uses` edge is FOR: it names a type, applies it as a marker, and never invokes it — so it is not a `calls` (no application), not an `implements` (no interface declaration), not an `extends` (no base), not an `instantiates` (no construction), and not a `references` (nothing here is a signature; the declared-type pass reads type WRITERS and an attribute's type is the type of an object construction). Source = the decorated declaration, read from the scope stack the walk already maintains. Measured: **1,666 edges in 157 of a 400-file corpus draw, all at confidence 1.0, all `metadata.relationshipType = "attribute_application"`**; 29,441 `attribute` nodes in 2,492 corpus files. Pinned by `validation/m14/fixtures/fsharp/import-and-use.fs`. **The old ❌ is not still true** — its stated reason (C#-family parity; member *reads* are covered at call level) never addressed attributes, which are not member reads. What is still not emitted: `base.X` member access, measured at **0 occurrences across all 6,619 corpus files** (see §M60 below) | 1.0 |
 | references | ✅ | Two classes. (a) `open_statement`/`open_decl` → full module path; source = enclosing namespace/module; a module path is legitimately dotted and is **not** subject to the R10 leaf rule. (b) **R9 `declared_type`** — every type WRITTEN in a declaration: `class_field`, `parameter`, `return_type`, `record_field`, `union_case_payload`, `type_abbreviation`, `local_annotation`. Absent from this lane until FS-D4 (the m60 census measured `absent` with the control present). Two positions are **refused**: a type *parameter* and a *predefined* type (`int`, `string`) name no declaration, and a **type query** (`typeof<T>`, `unbox<T>`) is an expression carrying a type argument rather than a written type — `typeof<Foo>.Assembly.Location` depends on a runtime value. The grammar spells a query as a `typed_expression` whose `long_identifier_or_op` child reads `typeof` — a **sibling** of the type, not its parent, which cost two attempts at the discriminator that each measured nothing (FS-D11). A local's written type belongs to the enclosing **callable**, not to the class. | 0.9 (opens) / 1.0 (declared_type) |
 | contains | ✅ | owner → owned members via `ownerName` (namespace → module/type, module → type/function, type → member). **`contains X -> X` is refused at composition**, not by suppressing the label: a DU case named after its own type really is contained by its union (`type P = P of string`), so suppressing the label would lose a real fact — 368 such self-edges per 400 corpus files (FS-D3). A `type X with` extension publishes no symbol at all (FS-D2), and a forward declaration in a signature file merges with its definition rather than shadowing it (FS-D2 regression guard). | 1.0 |
 | depends | ✅ | imports → References | 0.9 |
+| imports | ✅ (**M60, 2026-10-02** — was ❌) | F#'s THREE import forms, all measured on the wired grammar over the whole corpus: (a) `import_decl` — `open X` and `open type X` are the SAME node (`seq("open", optional("type"), $.long_identifier)`), distinguished by the token and recorded as `metadata.opensTypes`; (b) `module_abbrev` — `module IO = System.IO`, F#'s only alias whose target lies outside the compilation, read as the direct `identifier` (the alias) plus the direct `long_identifier` (the path), so the edge names `System.IO` and not the file's own alias; (c) `fsi_directive_decl` for `#r` / `#load` / `#I` only — the node covers six keywords and `#time` / `#help` / `#quit` import NOTHING, so the keyword is read off the tree and the other three are refused. **BOTH labels stay on an `open`**: `imports` is the dependency `src/intelligence/analysis/dependencies.ts` reads (19 analyzers emit it; ER-D41 is this lane's exact shape), `references` is the mention — the confidences are asymmetric because the derivations are: 1.0 on `imports` because the directive NAMES the path, 0.9 on `references` because that is what it was already measured at. Measured: **705 edges in 158 of a 400-file draw — 689 `open_directive` + 16 `resource_directive`**; whole corpus 11,371 `import_decl` nodes in 2,540 files, 193 `fsi_directive_decl` in 135, 5 `module_abbrev` in 5 | 1.0 |
+| exports | ✅ **payload channel only** — the parse result's `ExportInfo[]` is populated (the FS-D8 surface rules); the graph EDGE is **RULED** (M60, 2026-10-02) | F# has no export DECLARATION.
 
 ## Supported constructs
 
@@ -82,7 +84,16 @@ over upstream tree-sitter-fsharp:
 
 - **Property getters emit no calls** (C# family contract: `Display => Name.ToUpper()` emits no calls in C# either). Precisely: an **expression-bodied** property emits no calls. F#'s `with get, set` does have a second body for code to live in, and its **setter does emit calls** (FS-D13). The rule is about the shape, not the kind — stated this narrowly because the wider reading is what the fix had to correct.
 - **`abstract` + `default` dedup**: only the abstract member signature line is kept as the symbol. The default implementation line is walked for relationships but does not produce a second symbol. Documented.
-- **`uses`/`field_access` edges**: not materialized — documented non-goal, consistent with the C# family contract (zero uses in the C# ground truth).
+- **`uses`/field-access edges: PARTIALLY SUPERSEDED (M60, 2026-10-02).** This row said the
+  label is not materialized at all, as a documented non-goal consistent with the C#
+  family. It is no longer true as written. `uses` now IS emitted, for attribute
+  applications — 1,666 edges on a 400-file draw — and the reasoning above did not
+  reach attributes, which are not member reads. What remains true is narrower and is
+  the part worth keeping: the `_.X` / `this.X` PHANTOM uses, read off member
+  *definition* headers (`property_or_ident`), were pure noise and stay unemitted;
+  F# member *reads* are covered at call level; and `base.X` member access is measured
+  at **0 occurrences across all 6,619 corpus files**, so there is no `base.X` shape for
+  this label to cover here. See §M60.
 - **Interface implementation members in the walk**: `member _.Log(...)` under `interface ILogger with` is a Method on the implementing class (correct); the abstract signature on the interface is a separate Method symbol (correct — different owners).
 - **Object expressions** (`{ new IFoo with ... }`): emitted as `new <iface>` Class + Implements, and their members are owned by it (FS-D7 — they were ownerless, which is only visible in a script, where there is no enclosing scope to fall back on). The published name `new <iface>` is **not a name a consumer can join**; this is pinned as the behaviour it is, not as a success.
 - **`member val`**: ~890 corpus sites produce **no symbol at all**. This is a grammar gap, not an analyzer choice — the grammar does not emit a node the analyzer could read. FS-D5 removed the dead `val_property_defn` branch that was written for it, which tested for a node type the grammar never produces; F1 had been reporting that branch as live coverage of 41 literals while 91 of the analyzer's own comparisons went unaudited.
@@ -371,6 +382,399 @@ measures the harness is worse than a red.
 Still open, and not things a differential can settle: the `calls`/`instantiates` boundary,
 alias-versus-one-case-DU classification (resolution-bound), the grammar gaps in §5, and the
 `isMeasure` text test.
+
+## M60 ontology workstream — per-type verdicts (2026-10-02)
+
+The M60 workstream asks for one of three verdicts per relationship type — EMITTED,
+RULED, GAP — where RULED needs a corpus MEASUREMENT and GAP means the language has the
+construct and the analyzer was not reading it. This section is the record. Two
+instruments, both in `validation/m14/fixtures/fsharp/`, both driving the wired grammar:
+
+- `ontology-census.ts` — the production entry point `parseFile` from `src/ast/pool-worker.ts`,
+  NOT `analyze()`, over a bounded draw.
+- `ontology-probe.ts` — instrument A (grammar inventory) and instrument B (parse-tree
+  semantic count) over the WHOLE 6,619-file corpus, not the draw.
+
+### The arbiter does not run for this lane, and that is measured, not assumed
+
+`script/m14/ontology-coverage-gate.ts fsharp` walks all 6,619 corpus files through
+production `parseFile`, then exits **2** with:
+
+```
+ontology coverage gate — no RULING TABLE for fsharp.
+Refusing to report: a gate with an empty table would call every un-emitted type
+RULED-UNJUSTIFIED and that is a verdict about the TABLE, not about the lane.
+```
+
+`RULED_BY_LANG` (line 192) carries `bash` and `json` only, so the gate yields **zero
+measured counts for fsharp**, which is why this lane carries its own census. Recorded two
+ways, because one of them is a crash:
+
+- **Full corpus (`npx tsx script/m14/ontology-coverage-gate.ts fsharp`).** Admits all 6,619
+  files and then dies inside the `parseFile` walk with **4 `[BB-PARSE-ERR] … memory access
+  out of bounds`** rows and one `[BB-HANG] parser stuck 120s` on
+  `tests/FSharp.Compiler.ComponentTests/Conformance/TypeForwarding/NegativeCases/Delegate_NG_TurnToClass.fs`.
+  No verdict is printed. The WASM errors are the parser's own allocator on a box running
+  four lanes at once; they are a parser-robustness finding, recorded here and not treated
+  as this lane's result.
+- **Bounded corpus (`BB_CORPUS_ROOT` = a 2-file git repo), which is how the refusal itself
+  is recorded.** The refusal is unconditional on the corpus — it is a property of the
+  language key — so a bounded run prints it verbatim and **exits 2**:
+
+```
+ontology coverage gate — fsharp
+corpus: 2 admitted files
+
+ontology coverage gate — no RULING TABLE for fsharp.
+Refusing to report: a gate with an empty table would call every un-emitted type
+RULED-UNJUSTIFIED and that is a verdict about the TABLE, not about the lane.
+```
+
+Two further facts about that gate, both read from source and both for the supervisor
+rather than edited here:
+
+1. The refusal happens **after** the corpus walk and **before** the EMITTED table is
+   printed (line 289 vs line 298), so the run's cost is paid and nothing is reported.
+2. `rulingFor()` (line 277) tests `dec.status !== "RULED"` — exact string equality — and
+   this lane's spec writes `"RULED (carried over, M12-verified)"`, `"RULED (sharpened)"`
+   and 2 more. **4 of 12** fsharp decisions carry the bare `"RULED"`; all four are FSD1,
+   FSD4, FSD6 and FSD8, and **none of them mentions `imports`, `uses` or `exports`**. So
+   even with a ruling table, `rulingFor` would answer null for all three and the gate
+   would report `RULED-UNJUSTIFIED` — correctly, because nothing was written down.
+
+### The draw
+
+| | |
+|---|---|
+| corpus | `$HOME/fixtures/repositories` → one repo, `fsharp` |
+| admitted | 6,619 git-tracked `.fs`/`.fsi`/`.fsx` files ≤ 512 KB (the arbiter's own ceiling) |
+| sampled | 400 (6.0%), seeded shuffle, seed `0x5f5a1`, `slice(0, 400)` — a pure function of the corpus contents, no clock, no unseeded RNG |
+| parsed | 400/400, 0 failures, 5,750 symbols |
+| probe | the whole 6,619, 0 skipped |
+
+### Per-type verdict
+
+Counts are from `parseFile` on the 400-file draw; the "construct on the corpus" column is
+the probe over all 6,619.
+
+| type | verdict | edges | files | construct on the corpus |
+|---|---|---|---|---|
+| `calls` | EMITTED | 12,604 | 176 | — |
+| `contains` | EMITTED | 4,258 | 260 | — |
+| `references` | EMITTED | 2,358 | 195 | — |
+| `uses` | **GAP → implemented** | 1,666 | 157 | `attribute` 29,441 nodes in 2,492 files |
+| `imports` | **GAP → implemented** | 705 | 158 | `import_decl` 11,371 in 2,540; `fsi_directive_decl` 193 in 135; `module_abbrev` 5 in 5 |
+| `extends` | EMITTED | 62 | 30 | — |
+| `implements` | EMITTED | 72 | 20 | — |
+| `overrides` | EMITTED | 42 | 19 | — |
+| `instantiates` | EMITTED | 47 | 22 | — |
+| `exports` | **RULED** | 0 | 0 | **no export node exists — see below** |
+
+`imports` splits 689 `open_directive` + 16 `resource_directive` on the draw, and
+`module_abbrev` contributes 0 there while contributing 5 files over the corpus. The
+branch is live; the draw simply missed those five.
+
+### `exports` — RULED, with the overturn condition
+
+**Instrument: A (grammar inventory).** The probe enumerated every node type the wired
+grammar actually produces across the whole corpus: **353 distinct node types**. The
+candidates that would express an export declaration:
+
+```
+export_list          ABSENT      export_declaration  ABSENT
+module_export        ABSENT      export_stmt         ABSENT
+export_spec          ABSENT      exported_item       ABSENT
+```
+
+None appears, not once, in 6,619 files. F# has no `module M (a, b)` export list — that is
+the Haskell shape — and no `export` keyword. The export surface is IMPLICIT.
+
+**The adjacency number, because "no export declaration" is not "no exports".** The probe
+also counted namespaces/modules that declare at least one member: **7,818 occurrences in
+3,630 files**.
+That is the number an `exports` edge would enumerate, and it is exactly what `contains`
+already carries: `contains` emitted 4,258 edges on the draw at **100.0% resolution at both
+ends**. An `exports` edge over the same scopes would be a second label for one fact.
+
+**What would overturn this ruling.** A non-zero count of any of those six node types in
+the grammar inventory. Second, and independently: if the wired grammar were given a
+surface-restriction construct beyond `access_modifier` (`internal`/`private`, 4,850 nodes
+in 1,016 files — a modifier ON a declaration, not an export OF one), the ruling would need
+re-deriving, because an explicit export list would then be readable.
+
+**Two candidates considered and rejected, with reasons.**
+- `.fsi` signature files restrict the public surface to what the signature declares. It is
+  still not an export declaration: the signature's members ride `contains`, and the
+  surface/definition merge the lane already applies (FS-D8) is the right treatment.
+- `[<CompiledName("X")>]` renames a member for other languages and is the closest thing F#
+  has to a declared export name. It is an ATTRIBUTE, so it is now a `uses` edge, and reading
+  it as an export would make one construct two labels.
+
+### `uses` — GAP, implemented, and what is still not emitted
+
+The construct chosen is the attribute application, and the two candidates that were
+measured and dropped are recorded here rather than dropped in silence:
+
+| candidate | instrument B, whole corpus | verdict |
+|---|---|---|
+| attribute application `[<…>]` | **29,441 occurrences in 2,492 files** | **GAP — implemented** |
+| `base.X` member access | **0 occurrences, 6,619 files** | not emitted, and nothing to emit: F#'s corpus never writes one |
+| operator definition `let (+) a b` | **249 in 104 files** — after two wrong readings; see below | not a `uses`, and not a symbol gap |
+| `member _ : IFoo with …` inline interface | 1,339 raw → 1,105 with property accessors excluded → 7 per 1,200 files on the tightest discriminator, and every printed example is an object expression | an `implements` question, not `uses`, and NOT SETTLED — see §Unresolved |
+
+Two of those numbers were WRONG on the first pass and the probe was corrected, which is
+worth stating because the corrections are the measurements:
+
+- **The operator probe was wrong twice, and both numbers were published.** The first
+  version looked for a `long_identifier_or_op` under the declaration's left, reasoning
+  that the grammar spells an operator name there. It does not — `long_identifier_or_op`
+  is the node for a dotted NAME — so the probe caught every ordinary binding and reported
+  **84,148 "operator declarations"** whose printed examples were `fsprojPath`, `args`,
+  `items`. The second version refused backtick-quoted names by looking for a backtick in
+  the text, which caught ``` ``type`` ``` correctly but removed the filter that was doing
+  the work and the count rose again. The grammar has a node for exactly this and it was
+  the third reading: an operator binding's name is an **`op_identifier`** child of the
+  declaration's left, confirmed by reading the tree for all four spellings (`let (+) a b`,
+  `let f x`, `let ``type`` x`, `let (|Even|Odd|) n`). A rule keyed on the node type rather
+  than on the spelling is the one that would not have produced either number. This is
+  recorded because a probe that publishes 84,148 of something is worse than no probe: it
+  looks like a measurement.
+- **The `member _ : T with …` probe conflated two constructs.** `member _.P : int with
+  get, set` (a property with an explicit accessor list) and `member _ : IFoo with member …`
+  (an inline interface implementation) have the same shape, and the first pass's own
+  examples were `string`, `seq<ArgInfo>`, `LexBuffer<'char>` — plain types, i.e. mostly
+  properties. Separated on `property_accessor` nodes.
+- **The file-count column counted distinct SPELLINGS, not files.** `import_decl` read
+  "in 702 files" where the same node type is in 2,540 files by `nodeFileCounts`. Both
+  numbers are real and they answer different questions; the file count is now taken from a
+  per-key Set of file labels and the two are printed side by side.
+
+The `member _ : IFoo with …` question is NOT settled here and is stated as such: an inline
+interface implementation that the analyzer does not read would be an `implements` gap on an
+already-EMITTED type, and separating it from a property accessor list needs a measurement
+this round did not finish. It is in §Unresolved below.
+
+### The six questions, per already-emitted type
+
+Measured on the 400-file draw, production `parseFile`.
+
+| type | 1 Exists | 2 Fires | 3 Correct | 4 Labelled | 5 Resolved (both ends) | 6 Confident |
+|---|---|---|---|---|---|---|
+| `calls` | ✅ derived | ✅ 12,604 / 176 files | ✅ 100% covered, 0 MISSING vs the oracle | ✅ no neighbour-label bleed; 12,604 rows carry no `metadata.relationshipType` | **22.2% in-file / 33.1% project** | ✅ all at 0.8; **0 below 0.7** |
+| `contains` | ✅ | ✅ 4,258 / 260 files | ✅ | ✅ | **100.0% / 100.0%** | ✅ all 1.0; 0 below 0.7 |
+| `references` | ✅ | ✅ 2,358 / 195 files | ✅ | ✅ two classes kept apart by `metadata`: `declared_type` 1,669, `isImport` 689 | **20.1% / 34.1%** | ✅ mean 0.971; 0 below 0.7 |
+| `extends` | ✅ | ✅ 62 / 30 files | ✅ | ✅ | **58.1% / 66.1%** | ✅ all 1.0; 0 below 0.7 |
+| `implements` | ✅ | ✅ 72 / 20 files | ✅ | ✅ | **20.8% / 43.1%** | ✅ all 1.0; 0 below 0.7 |
+| `overrides` | ✅ | ✅ 42 / 19 files | ✅ | ✅ qualified `Owner.m -> Base.m`, resolving at both ends | **100.0% / 100.0%** | ✅ all 1.0; 0 below 0.7 |
+| `instantiates` | ✅ | ✅ 47 / 22 files | ✅ 1 UNEXPLAINED row on the A/B draw | ✅ | **31.9% / 34.0%** | ✅ all 0.95; 0 below 0.7 |
+| `uses` (new) | ✅ | ✅ 1,666 / 157 files | ❌ **no oracle** — DERIVATION finding 1 | ✅ every row `attribute_application` | **1.9% / 4.0%** | ✅ all 1.0; 0 below 0.7 |
+| `imports` (new) | ✅ | ✅ 705 / 158 files | ❌ **no oracle** — DERIVATION finding 2 | ✅ every row `open_directive` / `resource_directive` / `module_alias` | **2.4% / 22.3%** | ✅ all 1.0; 0 below 0.7 |
+
+**Resolution is the finding, and the two rates answer different questions.** The workstream's
+reference point is CSS `references` at 66.8% of its edges resolving at both ends. This
+lane's in-file rates are `contains` 100.0%, `overrides` 100.0%, `extends` 58.1%,
+`instantiates` 31.9%, `calls` 22.2%, `references` 20.1%, `implements` 20.8%. The workstream's
+number is not stated as in-file, so the two are not comparable without saying which; both
+are reported here rather than picking the flattering one.
+
+The in-file rate is low for a REASON, and it is a language fact rather than a defect: F#
+files declare what they use far more often than they define it. `System`,
+`FSharp.Compiler.Diagnostic`, `ChangeEqualsInFieldTypeToColonCodeFixProvider` and every
+base type come from a sibling `.fs` file. Project-scope resolution — every name published
+ANYWHERE in the draw — is the rate a consumer actually experiences, and it is 2 to 1.5×
+higher on every type with a low in-file rate. The two new types are the honest extremes:
+**`uses` resolves at 1.9% in-file and 4.0% project-scope, because an attribute dependency is
+external by nature** — `Theory`, `Directory`, `Fact`, `InlineData` are xUnit and
+`Microsoft.VisualBasic` attribute classes declared in assemblies this corpus does not
+contain. That is a true statement about F# code, not a broken edge, and it is why the rate
+is reported next to what the targets actually are.
+
+**Q3's limitation, stated rather than implied.** `script/m14/fsharp-truth-oracle.ts` is a
+second implementation reading ONE tree, not a re-read of the analyzer's walk. It therefore
+sees a grammar bug that both paths share, and it cannot see a construct NEITHER path reads —
+which is precisely how `imports`, `uses` and `exports` stayed invisible for this long. The
+oracle agrees on what both implementations already agreed to look at. Nothing here should be
+read as the oracle clearing the two new labels.
+
+**Q4, the label audit.** `metadata.relationshipType` distribution per type, on the draw:
+
+```
+calls:      —                              (12,604)
+contains:   —                              (4,258)
+references: declared_type=1669, isImport=689   (2,358)
+extends:    —                              (62)
+implements: —                              (72)
+overrides:  —                              (42)
+instantiates: —                            (47)
+uses:       attribute_application=1666     (1,666)
+imports:    open_directive=689, resource_directive=16  (705)
+```
+
+Every new row carries the class that produced it, so a consumer can tell an `open` from a
+`#r` and an attribute application from anything else. The `uses`/`references` boundary is the
+one this lane could most plausibly have got wrong — an attribute names a type, and a
+declared type also names a type — and it is separated by the node the name came from: a
+type WRAPPER in a declaration (`references`) versus the type of an attribute's object
+construction (`uses`).
+
+**Q6.** Every edge this lane emits is at or above 0.8. **0 edges below 0.7** across 21,814
+relationships on the draw, so the heuristic class is empty and countable. Nothing was given
+a made-up confidence: `1.0` on the three new rules is a parse fact (the directive names the
+path; the attribute names the type), `0.8` on `calls` and `0.95` on `instantiates` are the
+lane's pre-existing measurements and were NOT touched.
+
+### DERIVATION findings — 2, and they are new
+
+A DERIVATION finding is a type the analyzer emits that the differential never audits:
+stored, and compared against nothing.
+
+| # | label | edges on the draw | truth rows | allowlist |
+|---|---|---|---|---|
+| 1 | `uses` | 1,666 | **0** — no oracle derives it | not admitted for fsharp |
+| 2 | `imports` | 705 | **0** — no oracle derives it | not admitted for fsharp |
+
+**Measured, not asserted.** The A/B was run on ONE pinned file draw — the cold-pool
+rotation counter and the lane's seen-set were pinned before each run, so both analyzer
+versions saw the identical 60 files:
+
+```
+AFTER  [fsharp] files=60 tree-truth=4956 covered=4956 (100%) MISSING=0 | analyzer-edges=2710 unexplained=0 heuristic=0 hash=ba9b92ccb4ec47cc
+BEFORE [fsharp] files=60 tree-truth=4956 covered=4956 (100%) MISSING=0 | analyzer-edges=2710 unexplained=0 heuristic=0 hash=ba9b92ccb4ec47cc
+```
+
+Every number is identical while the analyzer gained 2,371 edges on the 400-file draw
+(19,443 → 21,814). That is the mechanism: the harness filters the ANALYZER side by its
+label allowlist (`script/m14/differential.ts:23153`), and `imports`/`uses` are not in
+fsharp's entry, so the new edges are dropped before the comparison — neither credited nor
+accused. Adding them needs three edits, all in shared machinery and none made here:
+
+1. `script/m14/fsharp-truth-oracle.ts` — add an `imports` rule (`import_decl` +
+   `fsi_directive_decl` resource keywords + `module_abbrev`) and a `uses` rule
+   (`attribute`). Precedent for both: `erlang-truth-oracle.ts:550` emits `imports`.
+2. `script/m14/differential.ts:23153` — admit `"imports"` and `"uses"` for `lang === "fsharp"`
+   in the analyzer-side allowlist.
+3. `validation/m14/differential-baseline.json` — re-pin `fsharp:csharp` (currently
+   `missing: 0, unexplained: 0, heuristic: 0, avgMsPerFile: 72.1`).
+
+Until (1) and (2) land together the lane must NOT get (3): the harness filters the analyzer
+side and not the truth side, so an oracle that derives a label the allowlist omits turns
+every true row into a false MISSING.
+
+### Regression mutants
+
+`script/m14/fsharp-mutants.ts` — 18 mutants, **all 18 CAUGHT** (`BB_MUTANT_ONLY="fsharp/"`).
+Three are new and each is caught by `fsharp/import-and-use`:
+
+| mutant | what it injects | caught by |
+|---|---|---|
+| `open-recorded-only-as-a-mention` | drops every `imports` edge — ER-D41's pre-fix state for F# | 1 failure |
+| `repl-control-directive-imports-a-resource` | emits an `imports` edge for `#time "on"`, which imports nothing | 1 failure |
+| `attribute-variance-target-read-as-the-dependency` | `[<return: Struct>]`'s variance keyword becomes the dependency | 1 failure |
+
+The third is a REGRESSION guard: that was a real bug in this lane's own first attempt, and
+without a mutant a rule that was wrong once is free to be wrong again.
+
+### Payload and latency
+
+More edges means bigger graphs, so the addition was measured rather than assumed. Same
+120 files (`.fs`/`.fsi`/`.fsx` ≤ 200 KB), same process, 10-file warm-up, A/B by stashing
+only the analyzer:
+
+| | wall | avg ms/file |
+|---|---|---|
+| BEFORE | 43,225 ms | 360.2 |
+| AFTER (2,371 more edges) | 41,677 ms | 347.3 |
+
+The AFTER is marginally FASTER, i.e. the delta is inside the noise of a box running four
+lanes at once — and the honest reading is exactly that: **no measurable latency cost**, and
+no claim finer than the noise. All three new rules run inside the EXISTING single-pass
+walk (`attribute`, `import_decl`, `module_abbrev` and `fsi_directive_decl` are nodes that
+walk already visited or already skipped), so no second traversal was added. The pinned
+`differential-baseline.json` row for this lane reads `avgMsPerFile: 72.1`; that is a
+different sample on a different harness and is **not** comparable to the numbers above, so
+it was not re-baselined.
+
+### Three wrong answers this round produced, and what caught them
+
+Recorded because the fixture and the mutant are the only reason these are known.
+
+1. **`return` as a dependency.** `[<return: Struct>]` on a `val` carries an attribute
+   `target` field. The rule skipped it by object identity — `c === attrTarget` — which does
+   not hold, because web-tree-sitter rebuilds the `Node` wrapper on each accessor call.
+   Measured cost: **11 `uses` edges in a 200-file draw targeting the literal string
+   `return`**. Fixed by skipping on `fieldNameForChild(i)`, which is the question that is
+   actually well defined.
+2. **Quotes inside the path.** `(fsi_directive_decl (string))` gives the content NO node —
+   the two children of `string` are the two `"` tokens. Reading `node.text` emitted
+   `imports -> "nuget: FSharp.Core"`: a target that binds to nothing. The delimiters are now
+   read off the tree and the span between them is the value.
+3. **The alias as its own dependency.** `module IO = System.IO` produced
+   `imports -> IO`, because the rule took the last `identifier`/`long_identifier`
+   DESCENDANT, which is the local name. The alias and the path are direct children and the
+   path's identifiers are grandchildren. An import of the file's own alias resolves — which
+   is exactly why it would have been invisible downstream.
+
+### Declared limitations
+
+For a Turing-complete language this list is not optional, and a blank one would be a claim
+rather than an achievement.
+
+- **Two of ten labels have no oracle.** `uses` and `imports` are stored and compared against
+  nothing (above, measured). Until the oracle and the allowlist land, a defect in either
+  rule is invisible to the differential — and a defect in a rule nobody audits is the class
+  this workstream exists to find.
+- **`exports` is ruled on the ABSENCE of SYNTAX, not on the absence of exports.** F# exports
+  7,818 member-declaring scopes. The claim is that the language has no export DECLARATION,
+  and that `contains` already carries the fact.
+- **Resolution rates are reported at two scopes and neither is the whole story.** Project
+  scope here means "anywhere in a 400-file draw", which is not "anywhere in the F# compiler"
+  and is not "in FSharp.Core". A real dependency graph would resolve better and a different
+  draw would resolve differently.
+- **Resolution is by NAME, not by symbol identity.** A dotted endpoint is tested on its
+  whole spelling and on its leaf, because a consumer binds by name. Two same-named symbols
+  in different scopes are indistinguishable to this measurement.
+- **The `member _ : IFoo with …` question is open** (below).
+- **`base.X` is 0 occurrences on this corpus.** That is a fact about ionide/tree-sitter-fsharp
+  6,619 files, not about F# — a corpus using `base.X` would find the construct unread.
+- **The corpus is ONE repository.** Every number here is FSharp.Compiler plus its tests, a
+  self-hosting compiler written in a narrow style. `module_abbrev` occurs 5 times in 6,619
+  files; a corpus of F# SCRIPTS would weight `open`, `#r` and `module X = Y` very
+  differently, and the relative weight of the three import forms in this section would move.
+- **`#time`'s verbatim-string unescaping is not implemented.** `stringLiteralValue` slices
+  between the delimiter tokens the tree reports; F# escapes a quote inside `@"…"` by
+  doubling it and this does not un-double it. No corpus specifier does (measured over the
+  193 `fsi_directive_decl` nodes), and a visibly wrong path beats a silently truncated one.
+
+### Unresolved
+
+- **`member _ : IFoo with …` — an inline interface implementation may be unread, and this
+  round did NOT settle it.** Three measurements, and none of them is a clean count, so no
+  number is asserted:
+  1. **1,339** raw hits for "a `member` with a `with` clause and a type under it" over the
+     corpus, dropping to **1,105 in 251 files** once members carrying `property_accessor`
+     nodes are excluded — and the probe's printed examples are still `string`,
+     `seq<ArgInfo>`, `LexBuffer<'char>`: plain types, i.e. the property spelling.
+  2. Separating on `property_accessor` nodes drops it to **7 hits in 1,200 files** — and
+     every printed example is an OBJECT EXPRESSION (`{ new IFoo with member _.M … }`),
+     which is FS-D7's anonymous class and is already read.
+  3. Over the whole corpus with the tight discriminator plus an ancestor walk, **121 hits:
+     16 inside an `object_expression` and 105 "on a type"** — and the 105 are again mostly
+     object expressions, because the ancestor walk reaches the enclosing `type_definition`
+     before it reaches the `object_expression` in these shapes.
+
+  So the honest statement is a bound, not a count: the population is small (7 per 1,200
+  files with the tightest discriminator), most of what a loose discriminator catches is
+  object expressions the analyzer already handles, and separating F#'s inline interface
+  implementation from its property accessor list at the shape level needs something this
+  round did not use — most likely name resolution, or a parse that puts the two in
+  different nodes. If the inline form turns out to be unread, `implements` is
+  UNDER-REPORTED on real F#, and that is a defect on an already-EMITTED label rather than a
+  gap. This is the first thing the next round should settle.
+- **`#r`-family edge count on a wider draw.** 16 resource directives on a 400-file draw is
+  a small number to characterise; **185 occurrences across the whole corpus** is the
+  firmer figure, and a script-heavy corpus would move it. The FILE count for that probe is deliberately
+  absent: instrument B's file column was counting distinct SPELLINGS rather than files when this was measured,
+  and the corrected column now lives in `ontology-probe.ts` rather than being guessed at from the old one.
 
 ## Issue
 
