@@ -183,15 +183,6 @@ canonicalizer is now imported wherever a name is compared, for that reason.
 Line numbers are NOT claimed for complexity (`metadata.complexity` /
 `cyclomaticComplexity` are counts, not positions) or for symbol declarations
 beyond their own declaration line.
-function/method name; any call or read in a **non-function** context (a
-top-level `const` initializer, a `comptime` block, a `test` body) emits with
-source `(global)` — the go family package-scope contract (ZIG.D.2).
-
-**Evidence tiers** (`#419-D`): `contains` → `structural`; `declared_type` →
-`reference_qualified`; an import → `import_based`; calls/uses →
-`usage_contextual`. Confidence: 1.0 for contains/declared-type/bare reads, 0.85
-for a call, 0.75 for a field read, 0.9 for a declared type — every heuristic
-edge carries a machine-readable `metadata.relationshipType` reason code.
 
 ## Complexity
 
@@ -203,27 +194,312 @@ substring of the expression text (`x + standard + order` must not count).
 `metadata.complexity` on the symbol and `metadata.cyclomaticComplexity` on the
 file both carry the real number.
 
-## What is deliberately NOT emitted (ZIG.D.1, ZIG.GAP.*)
+## Ontology workstream — the 10 relationship types (ZIG.O.1 … ZIG.O.4)
 
-- No `extends`/`implements`/`overrides`: Zig has no class inheritance and no
-  interface with an implements clause.
+Every count below comes from the PRODUCTION entry point, `parseFile` from
+`src/ast/pool-worker.ts`, never from `analyze()` — `analyze()` is the per-file unit
+and skips the pipeline stages, so a count taken from it is a count of the analyzer
+rather than of the indexer.
+
+**Corpus.** `$HOME/fixtures/repositories`, **100% of the admitted zig
+files: 3,834 of 3,834** — the whole population, not a sample. `zig` 2,938 parsed, `ghostty` 805, `zls` 90,
+`nvim-treesitter` 1. Admission is the same `git ls-files -- '*.zig'` walk per repo
+the coverage gate uses, ordered by `sha256(seed|<repo>/<rel>)`; with no truncation
+the draw is the population, and it is named by
+`sha256:2f3545f92c470090d61c9a745bb427d8d7dec1630d93d0fbc01cb2acdc5ce1ac`.
+**Sampling method:** deterministic hashed order, not a statistical random sample;
+re-drawable with `--seed`.
+
+**Instruments.** `validation/m14/fixtures/zig/ontology-census.ts` (the type census,
+every question below), `construct-probe.ts` (instrument A grammar-inventory and
+instrument B parse-tree-count for the un-emitted types), `dangling-source-census.ts`
+(endpoint resolution by cause), `parse-defect-census.ts` (grammar defect extent),
+`store-denylist-census.ts` (declarations the store refuses on name alone).
+
+### Verdicts
+
+Measured over that draw, through `parseFile` at the shipped analyzer (Z59 included):
+**127,536 symbols, 392,086 relationships, 0 symbols with an empty name.**
+
+| type | verdict | edges | files | src marker% | src dangling% | tgt file-local% | tgt corpus-tier% | both-ends corpus-tier% | confidence |
+|---|---|---|---|---|---|---|---|---|---|
+| `calls` | **EMITTED** | 113,341 | 2,781 | 11.53 | **0.01** | 40.03 | 95.52 | 95.51 | 0.85 ×113,334; 0.5 ×4, 0.4 ×3 (fallback, below) |
+| `uses` | **EMITTED** | 132,001 | 2,850 | 22.48 | **0** | 40.15 | 93.28 | 93.28 | 1.0 ×13,371; 0.75 ×118,630 |
+| `contains` | **EMITTED** | 77,427 | 1,472 | 0 | 0 | 99.80 | 99.80 | 99.80 | 1.0 |
+| `imports` | **EMITTED** | 10,195 | 2,691 | 100 | 0 | 29.79 | 33.54 | 33.54 | 0.9 |
+| `references` | **EMITTED** | 30,762 | 2,964 | 100 | 0 | 44.16 | 74.02 | 74.02 | 1.0 ×10,195; 0.9 ×20,567 |
+| `exports` | **EMITTED** | 24,084 | 3,162 | 100 | 0 | 99.99 | 99.99 | 99.99 | 1.0 |
+| `instantiates` | **EMITTED** | 4,276 | 529 | 54.77 | **0** | 85.69 | 96.02 | 96.02 | 1.0 — ZIG.O.4; the earlier ruling that this branch was unreachable was false and is retracted |
+| `extends` | **RULED** | — | ZIG.O.1, instrument A, 0 of 28 inheritance words in the grammar's own tables; 0 UNCLASSIFIED of 1,797 header-slot children |
+| `implements` | **RULED** | — | ZIG.O.2, instrument A, same tables; Zig models an interface as `opaque` + fn-pointer fields, so there is no conformance clause to name |
+| `overrides` | **RULED** | — | ZIG.O.3, instrument B: 3 duplicate-function, 14 duplicate-binding, 9 duplicate-member occurrences, and every surviving one is a file documenting the compiler's REJECTION |
+
+`script/m14/ontology-coverage-gate.ts zig` **refuses to report for this lane** — it
+exits 2 with "no RULING TABLE for zig" because `RULED_BY_LANG` in that shared file
+holds only `bash` and `json`. The gate is read-only and shared (§8), so this lane
+measured the three rulings with its own instruments and the spec decisions
+`ZIG.O.1`–`ZIG.O.4` carry the written reason, the instrument, the probe and the
+overturn condition the gate looks for. See the report item.
+
+### The three RULED types, each falsifiable
+
+A ruling that cannot be overturned is an assertion. Each of these names the probe
+and the count that would kill it.
+
+**`extends` — instrument A (grammar-inventory).** The pinned wasm's own
+`Language.types` declares **239** entries and `Language.fields` declares **16**
+(`alternative, argument, body, condition, error, function, index, left, member,
+name, object, ok, operator, right, sentinel, type`). Of **28** probed inheritance
+words (`extends, implements, inherits, class, interface, trait, protocol,
+superclass, super, bases, interfaces, override, overrides`, …) **0 are present as
+a node type or keyword and 0 as a field**. `Language.types` carries the ANONYMOUS
+TOKEN types as well as the named ones — calibrated by asserting that **11 of 11**
+tested zig keywords (`fn, const, var, pub, struct, enum, union, opaque, error,
+comptime, usingnamespace`) are present in it — so this also answers the decisive
+zig question: `extends` is an ordinary IDENTIFIER there, so a text probe for it
+would match any variable with that spelling, which is the false-positive class the
+coverage gate's own header records.
+**A4**, the position test an inventory cannot substitute for: the non-member
+children of every `struct`/`enum`/`union`/`opaque`/`error` declaration, counted on
+the tree and then **classified** — **1,797 across 443 files**, as 1,030
+`enum-backing-type`, 275 `packed-struct-field-count`, 369 `nested-executable-block`,
+122 `union-tag-type`, 1 `error-recovery`, and **0 `UNCLASSIFIED`**. `UNCLASSIFIED`
+is the only bucket a supertype slot could occupy. A4 is deliberately not published
+as a bare count: an earlier run published 2,168 with no classification, which reads
+as a non-zero and would have overturned the ruling for the wrong reason.
+**Overturn condition:** any of (a) `UNCLASSIFIED` > 0, (b) any of the 28 words in
+`Language.types` or `Language.fields`, (c) a container declaration carrying a named
+child that is not a backing type, packed field count, union tag or nested
+executable block.
+
+**`implements` — instrument A, the same run.** Same tables, same zero. Zig models
+an interface as an `opaque` container plus a table of function POINTERS, and a
+pointer-to-function type is a `function_signature` with no declaring name (ZIGD2:
+960 `function_signature` nodes corpus-wide, all the anonymous fn-type form). There
+is no conformance clause for an edge to point at. **Overturn condition:** identical
+to `extends` (a)–(c); an `opaque` declaration carrying a named child other than its
+members is the shape that would do it.
+
+**`overrides` — instrument B (parse-tree-count).** Zig has no `override` keyword
+(0 of 28 in the keyword table) and no vtable slot. The only thing that could stand
+in for an override is a redefinition, and **a same-scope duplicate declaration in
+zig is a compiler diagnostic** ("duplicate struct member name"), not a language
+feature — so the corpus contains files that are MEANT to fail, and they document
+the compiler's REJECTION. Three probes over the full corpus:
+- **B1** duplicate `function_declaration` in one scope: **3 occurrences in 3 files**,
+  and all 3 are test cases carrying the compiler's own rejection text in a comment
+  (`zig/test/cases/compile_errors/colliding_invalid_top_level_functions.zig`,
+  `…/multiple_function_definitions.zig`, `zig/test/cases/function_redeclaration.zig`,
+  whose body reads `:2:4: error: duplicate struct member name 'entry'`).
+- **B2** duplicate `const`/`var` binding in one scope: **14 in 11 files**,
+  decomposed — **9 are zig destructuring** (`x, const y, var z: u64 = .{1,2,3}` is
+  ONE declaration with several binding slots, a legal rebinding) and 5 are plain
+  rebinding, and every plain one sits in a `compile_errors/` or `redefinition_of_*`
+  case. All 8 hits outside `compile_errors/` are destructuring.
+- **B3** duplicate member in one container: **9 in 8 files, 9 of 9 inside
+  `compile_errors/`, 0 outside.**
+**Overturn condition:** any of (a) a duplicate-declaration hit outside
+`zig/test/cases/` that zig COMPILES, (b) a B3 count > 0 outside `compile_errors/`,
+(c) `override`/`overrides` appearing in `Language.types`.
+
+### The six questions, per emitted type
+
+Resolution is reported at two tiers, and the tier is named because a single number
+has to pick one and each under-reports differently. **File-local** = the name is a
+symbol in the SAME file, which is the strict reading and which calls every `std.*`
+leaf dangling. **Corpus-tier** = the name is a symbol anywhere in the draw, which is
+the reading a whole-repository index can satisfy and which is capped by a 3,834-file
+draw's coverage. A `(global)`/`(file)`/`(declared-type)` source is a SCOPE MARKER,
+not a symbol, and is counted apart from a source that fails to resolve.
+
+1. **Exists** — derived from source; each of the seven is constructed by a named
+   branch, and the branches are listed under **Relationships** above.
+2. **Fires** — measured, not derived. Every one of the seven produces edges on this
+   corpus (counts in the table below), so none is dead code. This question fails
+   independently of existence and source-reading cannot answer it.
+3. **Correct** — `script/m14/differential.ts` (F5) and the lane's own
+   `zig-truth.ts` oracle. **Declared limitation: the oracle is a second walker over
+   the SAME grammar** (`zig-truth.ts`'s `enclosing()` is line-for-line the same rule
+   as the analyzer's), so a grammar defect shared by both paths is invisible to the
+   agreement number. The grammar's own defect extent is measured separately and
+   reported below rather than assumed away.
+4. **Labelled** — the classes are disjoint by construction and gated per class:
+   `calls` only from a `call_expression` callee leaf, `uses` only from a
+   `field_expression` that is not the callee or a plain-`=` assignment LHS, or a
+   bare `identifier` read, `references` only from the grammar's `type` field or an
+   import site, `exports` only at file scope. `metadata.relationshipType` carries
+   the reason code on every edge and every edge carries an `evidenceClass`.
+5. **Resolved** — measured per type below. **The CSS `references` reference point
+   is 66.8% at both ends; this lane's `references` is above that at the corpus tier.**
+6. **Confident** — **7 of 392,086 edges are below 0.7 (0.0018%)**, and all 7 come
+   from the fallback path, not from this analyzer (next paragraph). The sub-1.0
+   edges the analyzer itself emits are 0.75 (field read), 0.85 (call) and 0.9
+   (import / declared type), each carrying a machine-readable
+   `metadata.relationshipType`. The heuristic ratio is therefore countable, and it is
+   ~0 for every class this lane emits.
+
+**Two classes of output do not come from this analyzer, and are reported rather than
+absorbed into its numbers.** `parseFile`'s parse-error branch returns
+`extractFallback(...)`, a REGEX-based extractor in shared machinery
+(`src/ast/pool-worker.ts`) whose `BasicSymbol` carries `type` and **no `kind`**. It
+fires for the files whose wasm parse traps or exceeds the hang guard, and on this
+corpus it contributes **192 symbols with an empty `SymbolKind`** and **7 `calls`
+edges at confidence 0.4/0.5 tagged `metadata.method: "regex"`. One of those fallback
+edges carries `source: "this"` — a caller name no zig file declares, which is exactly
+the fabricated-edge class the workstream's fabrication rule is about. This is **not**
+caused by Z59: the identical 400-file draw was measured on both sides of the change
+and reports 0 kindless symbols and 0 sub-0.7 edges on both. The fix belongs in shared
+machinery and is stated in the report.
+
+### DERIVATION findings
+
+**0.** `script/m60/rel-type-coverage-gate.ts --langs=zig` reports CHECK 1
+(DERIVATION — every emitted type has an oracle derivation) **clean**, CHECK 2
+(REACHABILITY) clean, CHECK 3 (AGREEMENT) clean, CHECK 4 (ENUM) clean, baseline
+"104 recorded, 0 NEW". That matches the handover figure for this lane.
+
+### Grammar defect extent (Z42, re-measured at full corpus)
+
+`parse-defect-census.ts` over the same 3,834 files: **810 ERROR nodes in 92 files
+(2.40%)**, **44 MISSING nodes in 28 files (0.73%)**, bucketed by the node the
+defect sits in — `ERROR in asm_expression` 335 (inline assembly the pinned grammar
+cannot parse), `ERROR in field_expression` 212, `ERROR in initializer_list` 120,
+`ERROR in call_expression` 46, `ERROR in variable_declaration` 32,
+`MISSING ; in variable_declaration` 32, and 25 further classes of 1–18. Each bucket
+carries a source snippet in the evidence file so the trigger is visible rather than
+described. The two NAMED defect classes this lane pinned —
+`ERROR_CHILD_COMMA` (a container carrying an `ERROR` child whose text is `,`) and
+`MISSING_BRACE` — are **0 over the whole corpus**, and that zero is calibrated: both
+fire 1 on their positive controls and 0 on their three negatives, so the probe can
+see the shape and the corpus does not use it. One corpus file, `ghostty/src/Command.zig`,
+contributed 9 of the 44 MISSING nodes through a labelled range
+(`if (c) c_int else u32` parses as a range), and `zig/lib/std/Io/{IoUring,Kqueue}.zig`
+account for most of the async/await and `MISSING }` rows.
+
+## Defects this lane found while establishing the ontology (Z59, Z60)
+
+Establishing the ten types is the half of the job that finds things. Two defects
+surfaced that the existing gates could not see, because both live on the SOURCE side
+of an edge and the differential's coverage match discards the source.
+
+**Z59 — FIXED. An edge source named a declaration the analyzer does not publish.**
+The three edge passes each took the nearest `function_declaration` /
+`test_declaration` identifier as the source name without asking whether a symbol was
+published for it. That is wrong for a function the analyzer DELIBERATELY declines to
+publish: a member of a container written inside a function or test body, a member of
+an anonymous container, or a member of a container nested in another unpublished one
+(Z22 / the C negative contract — such a type has no file-scope identity). Measured
+through production `parseFile` over the full corpus by
+`dangling-source-census.ts`, which asks the PARSE TREE what declaration each dangling
+source name belongs to: **11,332 of 224,599 `calls` + `uses` + `instantiates` edges
+= 5.05%** carried such a source, and the class residual — a dangling source no tree
+declaration explains — was **0**, so that is the whole population and not a sample of
+it. Every one was `member-of-unpublished-container`.
+
+The largest single site is `zig/lib/compiler/aro/aro/Builtins/powerpc.zig`: a
+175 KB generated file whose entire body is the anonymous struct returned by
+`pub fn with(comptime Properties: type) type`, so the analyzer publishes **2** symbols
+(`std`, `with`) and ~552 edges named members of the struct.
+
+The fix is one predicate, `zigFunctionScopeIsPublished`, applied at all three sites,
+and a source that falls back to the nearest scope the analyzer DOES publish — which
+for that file is `with`. After it, over the same draw: **1 dangling source in 249,983
+edges**, the single residual being `uses root -> node @22` in
+`zig/lib/compiler/resinator/ast.zig`, which is Z60 below.
+Post-fix full-corpus: **1 dangling source in 249,983 edges (0.0004%)**, of which 1 is
+`published-file-scope` and 0 are the class above. The fix also **removed 7,616 edges**
+(3.08% of the three types) that the old rule had split into duplicates: `calls` keys
+on `source->leaf` and `uses` on `source::leaf`, so two edges that differed only in an
+unpublished member's name are now one edge.
+
+Pinned by `validation/m14/fixtures/zig/unpublished-scope-source-z59.{zig,expectation.json}`,
+whose `forbidRelationships` are the six pre-fix shapes. **Calibrated:** reverting the
+analyzer makes the fixture fail with 5 missing expectations and all 6 forbidden
+shapes present.
+
+**Z60 — REPORTED, NOT FIXED. The store drops 168 real Zig declarations on name alone.**
+`parseFile`'s `keepSymbol` gate applies a UNIVERSAL denylist commented "language
+keywords / conventions and synthetic tree-sitter artifact names — never legitimate
+declarations in any language". The second half of that claim is false for zig.
+`store-denylist-census.ts` reads the list out of `src/ast/pool-worker.ts` at run time
+(a hand copy is a list that keeps reporting the old answer) and counts declarations
+the tree bears in a declaring position: **683 declarations carrying a denylisted
+name across 336 of 3,834 files, of which 168 are PUBLISHED by the analyzer and so
+genuinely lost from the index, across 130 files.** By name: `Self` 97, `unknown` 28,
+`root` 24, `self` 9, `program` 4, `super` 3, `destructor` 1, `source_file` 1,
+`this` 1.
+
+`Self` is the one that matters: `const Self = @This();` is a container-member type
+alias in `zig/lib/compiler/resinator/parse.zig:23` and
+`ghostty/src/config/io.zig:16`, published by the analyzer and then discarded, so every
+`contains Parser -> Self` edge the analyzer emits points at a symbol the store will
+never hold. `root` is `pub fn root(self: *Tree) *Node.Root` at
+`zig/lib/compiler/resinator/ast.zig:21` — the one surviving Z59 residual. `unknown`
+is an enum member the analyzer publishes as a truthful declaration, which is why the
+census reports 39 edges with a literal `unknown` endpoint and can separate the 2 that
+are placeholders from the 37 where the source file really declares a member called
+`unknown` (`const Outcome = union(enum) { unknown, … }`) — a name that is a finding on
+the denylist and not on the analyzer.
+
+The list lives in shared machinery (`src/ast/pool-worker.ts`, §8), so this lane
+measures and reports rather than edits. The change needed is stated in the report.
+
+## Declared limitations (non-empty by measurement, not by form)
+
+A blank limitations list on a Turing-complete language is treated as dishonesty
+rather than excellence, so each entry below names the number that bounds it.
+
+- **Named tests are a source with no symbol (Z39 retained deliberately, Z60
+  adjacent).** `test foo { … }` is a NAMED scope (Z39) and edges inside it are
+  attributed to `foo`, but the analyzer publishes no symbol for a test and the shared
+  `SymbolKind` has no `Test` member, so those sources do not resolve. Measured at
+  **0 after Z59** on the full corpus — because in every corpus file where a test
+  shares a name with a local container's member, Z59 attributes to the member and
+  `(global)` covers the rest — but the class is structural, not absent: the synthetic
+  case `test helper { helper(); }` with no same-named declaration is dangling. Resolving
+  it needs either a `SymbolKind.Test` (shared) or a decision to revert Z39, which
+  would attribute test bodies to file scope. **Not decided here.**
+- **`imports` targets do not resolve, by design and by necessity.** The target is the
+  module path AS WRITTEN (`"std/mem.zig"`), because a module is not a declaration. The
+  census therefore reports `imports` target resolution at 29.77% file-local / 33.52%
+  corpus-tier, and that number is not a defect rate — it is the price of typing the
+  edge against a path rather than against a name. Reporting it as an unresolved rate
+  without saying this would read as 66% of imports being broken.
+- **The oracle shares the analyzer's grammar.** `zig-truth.ts`'s `enclosing()` is the
+  same nearest-declaration rule as the analyzer's, so F5's agreement rate cannot see a
+  grammar defect both walkers share. The grammar's defect extent is therefore measured
+  independently (810 ERROR / 44 MISSING nodes over 3,834 files, bucketed above)
+  rather than taken from the agreement number.
+- **Cross-file `instantiates`.** Z48: the cross-file remainder is ~12,900 sites
+  (4.2%); 63.8% of the qualified-callee population is a method call through a VALUE
+  chain (`b.build_root.handle.readFileAlloc`), which no type index should resolve.
+  Closing the rest needs the index passed INTO `analyze(root, source, filePath)`,
+  which has no parameter for it — an API question, not a detection one.
+- **Grammar-version drift.** The analyzer reads the `type`, `body`, `name`, `left`,
+  `right` and `operator` fields and the anonymous tokens `const`/`var`/`pub`; a
+  grammar bump can change what it sees. The grammar pin is a gate, not a comment.
+- **The wasm cannot be regenerated.** `wasm/tree-sitter-zig.wasm` is byte-identical to
+  `tree-sitter-wasms@0.1.13`'s published build and that collection publishes no source,
+  so the underlying grammar version is recorded nowhere in this repository.
+
+## What is deliberately NOT emitted (ZIG.GAP.*)
+
+- **No `extends` / `implements` / `overrides`** — RULED with instruments, probes and
+  overturn conditions in **ZIG.O.1**–**ZIG.O.3** above, not by assertion. The
+  previous text ("Zig has no class inheritance and no interface with an implements
+  clause") was a prose justification with no measurement, which is the failure mode
+  that let a missing type survive a green differential in another lane.
 - ~~No `instantiates`.~~ **This was wrong and said so confidently.** An earlier
   draft of this document ruled that composition is expressed through struct
   fields and opaque vtables and that generics are monomorphized without a
   runtime dispatch, and therefore that the `instantiates` branch in
-  `classifyEvidenceTier` was unreachable. Z32 measured the opposite: a
-  construction (`Foo{ … }`, `var x: Foo = .{}`) and a generic application
-  (`make(Bar)`) are both statically derivable from the grammar, and the lane
-  emits 132 of them over 400 files. The premise was false and the `instantiates`
-  branch is very much reachable. A doc that rules a class out is making the same
-  claim as an analyzer that emits one, and it needs the same evidence.
-- No `instantiates`: composition is expressed through struct fields and opaque
-  vtables, and generics are monomorphized without a runtime dispatch to
-  attribute. The `instantiates` branch in `classifyEvidenceTier` is therefore
-  unreachable in this file and says so.
+  `classifyEvidenceTier` was unreachable. Z32 measured the opposite, and the full
+  corpus re-measures it at **4,306 edges over 530 files** — see ZIG.O.4. A doc that
+  rules a class out is making the same claim as an analyzer that emits one, and it
+  needs the same evidence.
 - No `calls`/`uses` edge for a type used in a value position with no annotation
-  (`Point{ … }`) — the family alternative is `instantiates`, ruled above, so the
-  gap is declared and counted (ZIG.GAP.3) rather than left silent.
+  (`Point{ … }`) beyond the `instantiates` construction form — declared and counted
+  (ZIG.GAP.3) rather than left silent.
 - No declared-type reference for a type that names nothing (ZIG.GAP.3/4 above).
 
 ## Verification (re-run 2026-09-30)
@@ -255,6 +531,14 @@ reproduces.
 | evidence tiers | `zigw-evidence-tier.ts` | every class carries a tier the family rule allows (`import_based` for `imports`/`exports` and the import `references` twin, `structural` for a proven `instantiates`, `declared_type` for a type reference) |
 | F5 wiring | `zigw-f5-wiring.ts` | the lane's audit is wired — and this gate has reported a real loss five times, including a commit that reverted `zig-truth.ts` from seven exports to four and dropped the whole of the Z37–Z39 work from HEAD |
 | output-channel invariants | `zigw-invariants.ts 300` | **0 violations** over 1,110 symbols / 2,908 relationships / 319 functions: no duplicate edge at a line, no self-loop outside `calls`, every confidence in (0,1] and equal to the contract table, every relationship carrying a reason code and a line, every kind in the shared `SymbolKind`, no `ownerName` the file does not declare, no duplicate symbol, every function carrying an integer complexity ≥ 1, and **no DANGLING target** (an edge whose target is declared at file scope with no symbol published — the invariant that found Z46). Calibrated: `--calibrate` reports 2 classes |
+| **ontology census (M14/ZIG.O)** | `fixtures/zig/ontology-census.ts` | **3,834 of 3,834 files, the whole admitted corpus** — symbols, kinds, empty names, `unknown` endpoints, per-type resolution at two tiers, confidence and evidenceClass histograms |
+| **construct probe (M14/ZIG.O)** | `fixtures/zig/construct-probe.ts` | instrument A + instrument B over the same draw; **12 / 12 controls pass**, corpus and control recorders separated and asserted uncontaminated |
+| **dangling-source census** | `fixtures/zig/dangling-source-census.ts` | **8 / 8 controls pass**; residual class 0 before the Z59 fix and after it |
+| **parse-defect census** | `fixtures/zig/parse-defect-census.ts` | 810 ERROR / 44 MISSING nodes bucketed with snippets; 6 / 6 controls pass; the two named classes are 0 corpus-wide with the controls firing |
+| **store-denylist census** | `fixtures/zig/store-denylist-census.ts` | 4 / 4 controls pass; the denylist is PARSED from `src/ast/pool-worker.ts`, not copied |
+| F3 fixtures (Z59 pin) | `fixtures/zig/unpublished-scope-source-z59` | **8 / 8 pass**; calibrated — reverting the analyzer fails it with 5 missing expectations and all 6 forbidden pre-fix shapes present |
+| F4 mutations after Z59 | `BB_MUTANT_ONLY="zig/" mutate-analyzer.ts` | **50 / 50 CAUGHT** (50 of 1,483). The new fixture is the catcher for 4 of them — `container-member-exported`, `instantiates-generic-dropped`, `exports-edge-dropped`, `import-binding-symbol-dropped` — so it adds mutation-catching power and not only a row |
+| F1 grammar audit after Z59 | `audit-analyzer-grammar.ts` | **zig PASS — 50 refs, 0 unknown node types, 0 unknown fields**, unchanged by the new predicate |
 | parse-error census | `zigw-parse-errors.ts` | **93 / 3,839 (2.4%)** files carry ERROR nodes, 811 ERROR nodes, 0 MISSING — bucketed: 43 intentionally invalid (`compile_errors` plus a langref page), 45 inline asm, 2 keyword-named fields, 3 labeled blocks in expression position. No analyzer defect in any of them (Z42) |
 | ownership verifier | `zigw-ownership.ts 3000` | 136,720 symbols, AGREE 84,442, **PHANTOM_OWN 0, ORPHAN 0**, COLLISION 1,485 — of which **enclosure disambiguates 1,485, leaving 0 genuinely ambiguous**. The store already resolved ownership by extent (`enclosingStoreableIdByName`), so #963 was filed against a fixed defect and is **resolved** (Z49) | Needed because the differential's coverage match ignores the SOURCE, so it cannot see an ownership error at all. This instrument was itself broken until Z43: it read a quoted name raw where the published symbol name is canonicalized, so it reported **701 phantom owners** that `zigw-contains.ts` — which derives from the grammar and keys on the owner — read as zero |
 ## Verification (re-run at HEAD, 2026-09-28)
@@ -280,10 +564,9 @@ cross-file index buys 541 sites today, and closing the rest needs the index pass
 INTO `analyze(root, source, filePath)`, which has no parameter for it, so this is
 an API question rather than a detection one), Z42 (93 of 3,839 files carry ERROR nodes —
 43 of them intentionally, and the rest confined to three named syntaxes rather than
-distributed invisibly), ZIG.GAP.3 (constructions),
-repositories above. Limitations are non-empty and declared: ZIG.GAP.3 (constructions),
-ZIG.GAP.4 (three two-sided RHS forms), ZIG.GAP.5 (the labeled-TYPE form does not
-parse in this grammar), Z10 (if/while else-arm capture scope), the nested-shadowing
+distributed invisibly), ZIG.GAP.3 (constructions), ZIG.GAP.4 (three two-sided
+RHS forms), ZIG.GAP.5 (the labeled-TYPE form does not parse in this grammar),
+Z10 (if/while else-arm capture scope), the nested-shadowing
 and synthetic-shape rulings in `reviews/zig/master-review.md`, and grammar-version
 drift exposure (the analyzer reads `type`, `body`, `name`, `ok` and `operator`
 fields, so a grammar bump can change what it sees — which is why the grammar pin
