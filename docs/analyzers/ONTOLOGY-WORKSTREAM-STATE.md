@@ -276,3 +276,54 @@ declared rather than discovered later.
   in the next, unchanged code, unchanged corpus — and tallied apart so none is
   attributed to this lane.
 - Supervisor re-ran the lane suite: **9 fixtures / 96 assertions / 0 failing**.
+
+### PHP — merged
+
+Verdict: **accept**. The strongest A/B discipline of any lane.
+
+- `contains` gained a namespace level. The lane emitted 4,442 `namespace` symbols
+  and joined **none** of them, so every `contains` edge came from a member's
+  `ownerName` and a top-level declaration had no owner. The agent justified this
+  as convention, not taste: csharp sets `ownerName`/`ownerKind: Namespace` for a
+  top-level type, and typescript does the same via `ScopeKind.Namespace`.
+- The cause was two namespace forms spelled differently. `namespace A { }` nests
+  declarations inside a `compound_statement`; `namespace A;` leaves them as
+  siblings at program level. **The semicolon form is the common one, so the
+  branch that worked was the rare one** — which is why it survived a reading.
+- Behind it, a second defect: `qualifiedName` is derived from `metadata.fqn`,
+  built from the same `ns`, so every declaration under the semicolon form carried
+  the LEAF as its qualified name (`A` instead of `App\One\A`).
+- **A/B over the same 4,621 files at matched worker count, whole corpus, no
+  sampling**: `contains` 25,592 → 30,315, and **every other label exactly
+  unchanged** (+0 on eight labels). TOTAL(9) +1.57%. No budget re-baselined.
+- The agent **caught a regression its own change made reachable**:
+  `emitInclude`'s owner was `ns || "global"`, which is wrong for the semicolon
+  form, and an existing fixture (`php/include-paths`) caught it on 6 edges.
+- `exports` RULED by instrument B. `overrides` EMITTED at 2 edges, both in test
+  fixtures — a number small enough to be worth stating plainly.
+
+### R — merged
+
+Verdict: **accept**. This lane overturned its own prior ruling, which is the case
+the ontology gate exists for.
+
+- The handover note ruled `uses` inapplicable on a **prose argument about import
+  bindings**. That argument does not reach a member read: `self$value` inside an
+  R6 method depends on nothing, and no edge of any kind carried it. Instrument B
+  over 1,890 files found 14,307 `extract_operator` nodes and 547 string-indexed
+  `[[` subscripts that are not a call's callee — **all 14,854 produced nothing**.
+  The prior verdict was RULED-UNJUSTIFIED, and the agent said so rather than
+  quietly shipping the edges.
+- `overrides` (13 edges / 2 files) and `instantiates` (1 edge) were also believed
+  missing: implemented, did not fire, because the corpus had none of the
+  constructs. The agent **widened the corpus from 4 repos / 637 files to 13 /
+  1,890** rather than ruling on a thin corpus, and rejected 1 duplicate commit.
+- `uses` 0 → 3,823; TOTAL 65,602 relationships / 22,479 symbols / **0 empty names
+  / 0 unknown kinds**; 0 edges below 0.7; 95.15% at 1.0.
+- **A/B over 2,027 files diffed PER LABEL**: 0 files differ on any type except
+  `uses`. `corpus-percount.ts` is committed so the A/B is a diff, not an assurance.
+- 15 declared limitations, each with its number.
+- Shared machinery reported, not touched: `keepSymbol`'s UNIVERSAL denylist holds
+  the node-type name `source_file`, which is **also an ordinary R function**
+  (`r-testthat/R/source.R:18`) — 12 symbols deleted across 9 files; and
+  `differential.ts` has no `LANGS.r`, so all of R's types are DERIVATION findings.
