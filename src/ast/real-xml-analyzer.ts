@@ -198,11 +198,40 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
    * carry, because the attribute is `name` and `name` is a DECLARATION on every
    * sibling construct. Declared explicitly for that reason, and each is pinned by
    * a fixture with its sibling case pinned the other way.
+   *
+   * `call-template` WAS here and was removed, and the removal is the M60
+   * ontology finding rather than a tidiness change. XSLT 1.0 §6 Named Templates
+   * is unambiguous about the construct:
+   *
+   *     "An xsl:call-template element INVOKES A TEMPLATE BY NAME; it has a
+   *      required name attribute that identifies the template to be invoked."
+   *
+   * and a named template is the only procedure the XML family has: it takes
+   * parameters (§11.6), is invoked by name, and returns a result tree fragment.
+   * Labelling that edge `references` says the document MENTIONS a name, when the
+   * document says it CALLS one — a `calls` edge existed in the ontology and the
+   * vocabulary was withholding it. So `call-template` emits `calls` (see
+   * `XSLT_CALL_ELEMENTS`), and `apply-templates` stays a `references` edge
+   * because XSLT 1.0 §5.4 gives `xsl:apply-templates` NO `name` attribute at
+   * all — §6 says so outright: "the name attribute on an xsl:template element
+   * does not affect whether the template is invoked by an xsl:apply-templates
+   * element". A dispatch by pattern and mode is not a call.
    */
   private static readonly NAMED_REFERENCE_ELEMENTS: Readonly<Record<string, ReadonlySet<string>>> = {
-    "http://www.w3.org/1999/XSL/Transform": new Set(["call-template", "apply-templates"]),
+    "http://www.w3.org/1999/XSL/Transform": new Set(["apply-templates"]),
     "http://relaxng.org/ns/structure/1.0": new Set(["ref"]),
   }
+
+  /**
+   * The XSLT instructions whose `name` attribute names a template that is
+   * INVOKED, which is a `calls` edge and not a `references` one.
+   *
+   * `xsl:call-template` is the whole list, and deliberately so. `xsl:apply-imports`
+   * (§5.6) invokes the rule a stylesheet overrides, but it names it by nothing —
+   * it takes no `name` — so there is no edge to write. `xsl:apply-templates`
+   * dispatches by pattern and mode and, in XSLT 1.0, carries no `name`.
+   */
+  private static readonly XSLT_CALL_ELEMENTS: ReadonlySet<string> = new Set(["call-template"])
 
   /**
    * XSLT names a template at its definition and calls it by that name, so `name`
@@ -256,6 +285,15 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
     processing_instruction_href: "import_based",
     schema_location: "import_based",
     attribute_qname_reference: "reference_qualified",
+    // An XSLT named template INVOKED by name. `reference_qualified` because the
+    // document names its target — that is what makes the call resolvable — and
+    // not `structural`, because the tree says nothing about which template an
+    // instruction invokes until the name is read.
+    xslt_named_template_call: "reference_qualified",
+    // XSD type derivation, `xs:extension`/`xs:restriction` `base=`. `structural`:
+    // the vocabulary element IS the declaration of the relation, so the fact needs
+    // nothing outside the file, exactly as a parent/child edge does.
+    xsd_derivation_base: "structural",
     // An entity use is reached through a NAME in the document's own DTD, not
     // through a declared namespace prefix — but it is a reference to a
     // declaration all the same, and `usage_contextual` would say the document is
@@ -339,9 +377,23 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
   private bareNameReference = false
   private bareNameDeclarationElement = false
 
+  /**
+   * The project's placeholder for an endpoint that could not be determined. Named
+   * here rather than inlined so the refusal that uses it and the census that checks
+   * it are reading the same string.
+   */
+  private static readonly PLACEHOLDER_LITERAL = "unknown"
+  /** `xsl:call-template`: its `name` attribute names a template it INVOKES. */
+  private xsltCallElement = false
+  /** An XSD `extension`/`restriction`: its `base` attribute names a SUPERtype. */
+  private xsdDerivationElement = false
+  private derivationKind: "extension" | "restriction" = "extension"
+
   public analyze(rootNode: Node, content: string, _filePath: string): ASTEngine.ParseResult {
     this.bareNameReference = false
     this.bareNameDeclarationElement = false
+    this.xsltCallElement = false
+    this.xsdDerivationElement = false
     const symbols: ASTEngine.UniversalSymbol[] = []
     const relationships: ASTEngine.UniversalRelationship[] = []
     const imports: ASTEngine.ImportInfo[] = []
@@ -411,6 +463,56 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
       bareNameReference?: boolean
     }
     const referenceCandidates: ReferenceCandidate[] = []
+
+    /**
+     * NAMED-TEMPLATE CALLS — M60 ontology, the `calls` type this lane withheld.
+     *
+     * XSLT 1.0 §6: "An xsl:call-template element invokes a template by name; it
+     * has a required name attribute that identifies the template to be invoked."
+     * Collected and not decided, for the same reason the reference queue exists: the
+     * template a call names is very often declared further down the stylesheet, and
+     * deciding on the spot drops every forward call.
+     */
+    type CallCandidate = { ownerName: string; templateName: string; valueNode: Node; textNode: Node }
+    const callCandidates: CallCandidate[] = []
+
+    /**
+     * XSD TYPE DERIVATION — `xs:extension base=` / `xs:restriction base=`.
+     *
+     * XSD 1.0 Part 1 §3.4.2 defines both elements with `base = xs:QName`, "the
+     * qualified name of the base type", and calls the whole mechanism type
+     * DERIVATION: the derived type's content model is the base's plus more
+     * (extension) or a narrowing of it (restriction). Both are subtype relations,
+     * which is what `extends` means in the ontology, so both emit `extends` rather
+     * than the `references` this lane used to give every `base=` value.
+     *
+     * Same collection-then-decide shape, for the same reason: a schema's types are
+     * declared in whatever order the author chose and a derived type routinely
+     * precedes its base.
+     */
+    type DerivationCandidate = {
+      ownerName: string
+      value: string
+      binding: string | undefined
+      /** The namespace of the element carrying `base=`, for the X13 bare-value test. */
+      ownerNs: string | undefined
+      kind: "extension" | "restriction"
+      valueNode: Node
+      nameNode: Node
+    }
+    const derivationCandidates: DerivationCandidate[] = []
+
+    /**
+     * TEMPLATE NAMES THIS STYLESHEET DECLARES.
+     *
+     * Separate from `declaredNames` on purpose. `declaredNames` also holds the
+     * shadow symbols `ensureTargetSymbol` publishes for resolvable references, so
+     * asking it "is `render` declared?" would accept a `type` symbol invented for a
+     * reference and publish `calls something -> render` pointing at a phantom.
+     * A call target must be a real `xsl:template` declaration, so the set is fed
+     * from the vocabulary declaration rule and nothing else.
+     */
+    const declaredTemplateNames = new Set<string>()
 
     /**
      * ENTITY USES — M60 M18. `&name;` in content is a real reference to a
@@ -717,6 +819,10 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
           }
           publish(elementSymbol, ownerName ? `${ownerName}\u0000${symbolName}` : symbolName)
           declaredNames.add(symbolName)
+          // An `xsl:template name="X"` is the only thing a `calls` edge may name.
+          if (declaration && effectiveNamespace === "http://www.w3.org/1999/XSL/Transform" && localName === "template") {
+            declaredTemplateNames.add(symbolName)
+          }
 
           if (ownerName) {
             addRelationship(ownerName, symbolName, ASTEngine.RelationshipType.Contains, {
@@ -744,6 +850,9 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
               ensureTargetSymbol,
               localName,
               effectiveNamespace,
+              callCandidates,
+              derivationCandidates,
+              ownerName,
             )
           }
 
@@ -1427,6 +1536,86 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
       }, candidate.valueNode)
     }
 
+    // ── named-template CALLS (XSLT 1.0 §6) ────────────────────────────────────
+    //
+    // `xsl:call-template name="render"` INVOKES the template `render`. The edge is
+    // written only when this stylesheet declares a template of that name, and the
+    // test is `declaredTemplateNames` rather than `declaredNames` so that a shadow
+    // symbol invented for some reference cannot become the target of a call.
+    //
+    // The 724 libxslt sites whose target is NOT declared in the same file are
+    // REFUSED rather than emitted as dangling, and the refusal is a real boundary
+    // rather than a gap: the template is declared in an INCLUDED or IMPORTED
+    // stylesheet, which a per-file analyzer cannot read. `xsl:import`/`xsl:include`
+    // sites are counted and reported as declared debt (see
+    // `docs/analyzers/real-xml-analyzer.md`, limitations), so the missing half of
+    // the call graph is a number in this repository and not a silence.
+    for (const cand of callCandidates) {
+      if (!declaredTemplateNames.has(cand.templateName)) continue
+      // NO self-edge guard here, and its absence is a finding rather than an
+      // oversight. The reference pass refuses a construct that references itself,
+      // and the obvious move was to copy that guard — which would have dropped
+      // RECURSION, because a template invoking itself is ordinary XSLT:
+      // `libxslt/tests/XSLTMark/bottles.xsl` calls `bottles` from inside `bottles`
+      // three times in one template. XSLT 1.0 §6 makes TWO TEMPLATES of one name and
+      // import precedence the error, not a template calling one of them, so
+      // `calls countdown -> countdown` is a true edge and is published.
+      addRelationship(cand.ownerName, cand.templateName, ASTEngine.RelationshipType.Calls, {
+        role: "xslt_named_template_call",
+        attributeName: "name",
+        templateName: cand.templateName,
+        // A name resolved against the stylesheet's own declarations, which is what
+        // makes this edge different from a mention. XSLT 2.0 §6.1.3 adds
+        // `xsl:use-when`/`use-unless` to conditional dispatch, and neither can change
+        // WHICH template is invoked.
+        resolvable: "in-document",
+      }, cand.textNode)
+    }
+
+    // ── XSD TYPE DERIVATION (XSD 1.0 §3.4.2) ─────────────────────────────────
+    //
+    // The four resolvability classes are the reference pass's, unchanged, because
+    // this IS the reference pass's decision with a more precise label: a derived
+    // type and its base stand in the relation `extends` names, and the question of
+    // whether the base can be resolved is the same question asked of `type=`.
+    for (const cand of derivationCandidates) {
+      const qname = this.asQName(cand.value)
+      if (!qname) continue
+      const resolvableInDocument = declaredNames.has(qname.local)
+      const isBuiltin = cand.binding !== undefined && RealXmlAnalyzer.BUILTIN_NAMESPACE_URIS.has(cand.binding)
+      const imported = !resolvableInDocument && !isBuiltin && cand.binding !== undefined
+        ? importedNamespaces.get(cand.binding)
+        : undefined
+      const ownerIsVocabulary = cand.ownerNs !== undefined
+        && RealXmlAnalyzer.DECLARATION_VOCABULARIES[cand.ownerNs] !== undefined
+      const isBareValue = qname.prefix.length === 0
+      const unresolvedBare = !resolvableInDocument && !isBuiltin && !imported && isBareValue && ownerIsVocabulary
+      if (!resolvableInDocument && !isBuiltin && !imported && !unresolvedBare) continue
+      // No self-edge guard, because for this edge one could not fire: the owner of a
+      // `base=` attribute is the anonymous `xs:extension`/`xs:restriction` element,
+      // never the derived type's name, so `ownerName === qname.local` is
+      // unreachable. A guard written to look like an invariant and be unreachable is
+      // the defect class `xml/dtd-declarations` was written to catch.
+      if (resolvableInDocument) {
+        ensureTargetSymbol(qname.local, undefined, ASTEngine.SymbolKind.Type, cand.nameNode, { isReferencedDeclaration: true })
+      }
+      addRelationship(cand.ownerName, qname.local, ASTEngine.RelationshipType.Extends, {
+        role: "xsd_derivation_base",
+        attributeName: "base",
+        qname: cand.value,
+        prefix: qname.prefix,
+        namespaceUri: cand.binding,
+        // WHICH derivation, because XSD has two and they narrow in opposite
+        // directions: `extension` keeps everything the base admits and adds to it,
+        // `restriction` admits a subset. The edge is the same subtype relation in
+        // both cases and this is what tells a consumer which way.
+        derivation: cand.kind,
+        resolvable: isBuiltin ? "builtin" : resolvableInDocument ? "in-document" : unresolvedBare ? "unresolved" : "external",
+        ...(unresolvedBare && RealXmlAnalyzer.XSD_BUILTIN_TYPE_NAMES.has(qname.local) ? { ambiguousWithBuiltin: true } : {}),
+        ...(imported ? { importedFrom: imported.path, importedBy: imported.element } : {}),
+      }, cand.valueNode)
+    }
+
     // ── entity uses, decided now that every declaration is known ─────────────
     for (const cand of entityReferenceCandidates) {
       const declared = declaredNames.has(cand.name)
@@ -1493,6 +1682,59 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
       // present a recovery-shaped reading as a clean one.
       for (const symbol of symbols) symbol.metadata.syntaxErrors = true
       for (const relationship of relationships) relationship.metadata.syntaxErrors = true
+    }
+
+    // ── the placeholder-literal refusal (M60 rule R7) ─────────────────────────
+    //
+    // `unknown` is the project's placeholder for "this endpoint could not be
+    // determined", and rule R7 says no edge endpoint may equal it — a consumer
+    // reading the string cannot tell a placeholder from a name.
+    //
+    // The census found the collision in real code, not in theory:
+    // `libxslt/tests/general/bug-166.xsl` lines 28-40 build two `xsl:variable`
+    // result-tree fragments out of literal result elements, and the first element
+    // in BOTH is literally `<unknown/>`. So the analyzer published a symbol named
+    // `unknown` and two edges `contains type-sort-order -> unknown` and
+    // `contains attribute-sort-order -> unknown` — 2 of the 191,251 relationship
+    // endpoints the census resolved, and the only 2 that collided.
+    //
+    // REFUSED, and the refusal costs 2 symbols and 2 edges in 1 file of 11,066.
+    // The alternative is a graph in which `unknown` is both a real component and
+    // the absence of one, and no consumer can be told which it is reading — which
+    // is the same ruling the lane already applied to a symbol named "" (`xmlns:`
+    // with an empty prefix), for the same reason.
+    //
+    // Placed at ONE choke point rather than at each publish site, because the
+    // collision can arrive from any of them — an element tag, an attribute name, a
+    // DTD entity name, a notation name, a content-model member — and a guard that
+    // is added per site is a guard that will eventually be missed at one of them.
+    {
+      const isPlaceholder = (name: string) => name === RealXmlAnalyzer.PLACEHOLDER_LITERAL
+      const keptSymbols = symbols.filter((s) => !isPlaceholder(String(s.name ?? "")))
+      const keptRelationships = relationships.filter((x) => !isPlaceholder(String(x.source ?? "")) && !isPlaceholder(String(x.target ?? "")))
+      const droppedSymbols = symbols.length - keptSymbols.length
+      const droppedRelationships = relationships.length - keptRelationships.length
+      if (droppedSymbols > 0 || droppedRelationships > 0) {
+        return {
+          language: "xml",
+          symbols: keptSymbols,
+          relationships: keptRelationships,
+          imports,
+          exports: [],
+          errors,
+          metadata: {
+            complexity: keptSymbols.length + keptRelationships.length,
+            linesOfCode: content.split("\n").length,
+            cyclomaticComplexity: 1,
+            patterns: [],
+            framework: "XML",
+            errorNodes,
+            missingNodes,
+            syntaxErrors: hasSyntaxErrors,
+            placeholderLiteralRefusals: droppedSymbols + droppedRelationships,
+          },
+        }
+      }
     }
 
     return {
@@ -1595,6 +1837,31 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
     ) => string,
     ownerLocalName: string,
     ownerNamespace: string | undefined,
+    // The two ontology queues this method feeds: XSLT named-template CALLS and XSD
+    // type DERIVATION. Both are collected here and decided after the walk, because
+    // both name a declaration that is usually declared later in the file.
+    callCandidates: { ownerName: string; templateName: string; valueNode: Node; textNode: Node }[],
+    derivationCandidates: {
+      ownerName: string
+      value: string
+      binding: string | undefined
+      ownerNs: string | undefined
+      kind: "extension" | "restriction"
+      valueNode: Node
+      nameNode: Node
+    }[],
+    /**
+     * The OWNER OF THE ELEMENT CARRYING THE ATTRIBUTE — one level further out than
+     * `ownerName`, which is the element's OWN symbol.
+     *
+     * It exists for one edge. A `calls` edge is caller-to-callee in every other
+     * analyzer, and the caller of `<xsl:call-template name="x"/>` is the enclosing
+     * template, not the instruction: `extractAttribute` is handed the instruction's
+     * own symbol, so using `ownerName` produced `calls xsl:call-template -> inner`,
+     * which names a call SITE and loses which template made the call. In a stylesheet
+     * with forty call instructions the source would be one name forty times over.
+     */
+    elementOwnerName: string | undefined,
   ): void {
     // The OWNER's resolved namespace, carried on every reference candidate. X11:
     // a BARE value names a built-in type only when the element carrying it is
@@ -1607,6 +1874,19 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
     // so the vocabulary — not the attribute name — decides which applies.
     const namedRefs = ownerNamespace ? RealXmlAnalyzer.NAMED_REFERENCE_ELEMENTS[ownerNamespace] : undefined
     this.bareNameReference = namedRefs ? namedRefs.has(ownerLocalName) : false
+    // `xsl:call-template` names a template it INVOKES (XSLT 1.0 §6), which is a
+    // `calls` edge. The predicate is the vocabulary's, not the attribute's, for the
+    // reason NAMED_REFERENCE_ELEMENTS states: `name` is a declaration on every
+    // sibling construct and a call target on this one.
+    this.xsltCallElement =
+      ownerNamespace === "http://www.w3.org/1999/XSL/Transform" && RealXmlAnalyzer.XSLT_CALL_ELEMENTS.has(ownerLocalName)
+    // `base` on an XSD `extension`/`restriction` is type DERIVATION (§3.4.2), not a
+    // reference. Read here, at the only place that knows the element's namespace
+    // and local name together.
+    this.xsdDerivationElement =
+      ownerNamespace === "http://www.w3.org/2001/XMLSchema"
+      && (ownerLocalName === "extension" || ownerLocalName === "restriction")
+    this.derivationKind = ownerLocalName === "extension" ? "extension" : "restriction"
     this.bareNameDeclarationElement =
       ownerNamespace === "http://relaxng.org/ns/structure/1.0"
       && (ownerLocalName === "element" || ownerLocalName === "attribute" || ownerLocalName === "define")
@@ -1721,6 +2001,24 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
         ownerNs,
         bareNameReference: true,
       })
+      return
+    }
+
+    if (this.xsltCallElement && attributeName === "name" && valueNode) {
+      // A CALL, not a reference (XSLT 1.0 §6). `return` on purpose: the generic
+      // QName path below must not also see this attribute, or one `xsl:call-template`
+      // would publish the same pair twice under two labels — the conflation the
+      // `Labelled` question exists to catch. The value is a QName per §2.4, and a
+      // template's name is read in the DEFAULT-less way the spec prescribes: an
+      // unprefixed name is the template's own name.
+      const colon = value.indexOf(":")
+      const local = colon >= 0 ? value.slice(colon + 1) : value
+      // No enclosing declaration means no caller to name, so the site is recorded
+      // nowhere rather than against the instruction's own tag.
+      if (local.length > 0 && local.length <= 256 && elementOwnerName) {
+        callCandidates.push({ ownerName: elementOwnerName, templateName: local, valueNode: node, textNode: valueNode })
+      }
+      return
     }
 
     // XML Schema's `QName` datatype carries the `collapse` whiteSpace facet
@@ -1765,6 +2063,22 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
     // arrive with one. The knowledge was present and unreachable.
     const declared = namespaceBindings.get(qname.prefix)
     const binding = declared ?? RealXmlAnalyzer.IMPLICIT_PREFIX_BINDINGS[qname.prefix]
+    if (this.xsdDerivationElement && attributeName === "base") {
+      // DERIVATION, not a reference — XSD 1.0 §3.4.2. The queue carries the raw
+      // value and the deferred pass re-parses it with the same `asQName`, so both
+      // readers see one string and the resolution classes stay identical to the
+      // reference pass they were factored from.
+      derivationCandidates.push({
+        ownerName,
+        value: collapsed,
+        binding,
+        ownerNs,
+        kind: this.derivationKind,
+        valueNode,
+        nameNode,
+      })
+      return
+    }
     referenceCandidates.push({
       ownerName,
       attributeName,
