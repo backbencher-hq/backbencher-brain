@@ -316,7 +316,19 @@ function matchConstraints(actual: Entry, want: Entry): boolean {
     // array, so a fixture listing `docTags: ["@notice", "@param"]` could not state
     // the list it wanted and the row asserted nothing while reading as coverage.
     // Additive: every scalar comparison below is untouched.
-    if (Array.isArray(v)) {
+    //
+    // `meta.` keys are EXCLUDED here, and this is a bug fix rather than a
+    // refinement. This branch runs BEFORE the `meta.` branch further down and
+    // `continue`s, so an array-valued `meta.*` pin (`meta.guards: [...]`) was
+    // resolved against the TOP-LEVEL key `actual["meta.guards"]`, which never
+    // exists because the value lives at `actual.metadata[key]`. `Array.isArray`
+    // on `undefined` is false, so the row returned false unconditionally: the
+    // assertion was not weak, it was UNSATISFIABLE, and no fixture could ever
+    // state it. The `meta.` branch below already compares arrays by sorted JSON
+    // correctly, so routing these keys to it is the whole fix. Two elixir
+    // mutants (merged-head-clause-ranges-dropped, guard-list-dropped) survived
+    // because of this and were unfixable from the fixture side.
+    if (Array.isArray(v) && !k.startsWith("meta.")) {
       const av = (actual as any)[k]
       if (!Array.isArray(av)) return false
       if (JSON.stringify([...av].sort()) !== JSON.stringify([...v].sort())) return false

@@ -5,9 +5,19 @@
 - Analyzer: `src/ast/real-sql-analyzer.ts`
 - Grammar: **patched** `@derekstride/tree-sitter-sql` 0.3.11, built from its own upstream
   source with eight rule groups added; wired at `wasm/tree-sitter-sql.wasm`
-  (sha256 `486ec2159ecff99bfb94c1549c3e1306594b252f653e13d920e2fdddcff99369`, 12,555,354 B;
-  826 node types, 62 fields)
-  (sha256 `848e08124724…`, 12,620,599 B; 825 node types, 62 fields)
+  (sha256 `848e081247247db54545d4122a394dad3c85f79bb96a5713dbd658081b8eb819`, 12,620,599 B;
+  **825 node-type ids / 590 distinct named types / 62 fields / ABI 15**, re-measured
+  2026-09-27 through web-tree-sitter 0.25.9 with `measureSurface` from
+  `script/m14/verify-grammar-pins.ts`)
+- **The pin record for this lane is STALE and the pin does not currently validate.**
+  `validation/m14/grammar-pins.json` → `lanes.sql.wired` records
+  sha256 `bcb9888ec30d27adf5dccb13e5fd45ee70102927920fcd5245e9812bed577800` at
+  **2,440,507 B** and a 729-id surface — the **pre-V11** build. The wired file is
+  12,620,599 B, so `bun run script/m14/verify-grammar-pins.ts` reports a drifted
+  sha for `sql` until the record is regenerated (an explicit `--write` act, and
+  regenerating it is a lane-owner decision because the regeneration rewrites 27
+  lanes at once). The figures quoted in this file are therefore measured against
+  the wired bytes **directly**, not read out of the pin.
 - Wiring: `ASTEngine.parseFile` → `RealSqlAnalyzer`; the engine also hands the analyzer its
   loaded grammar through `RealSqlAnalyzer.setGrammar` in `parseRaw` (see *Recovery passes*)
 - Corpora: `proxicall@1f3e3567` (441 tracked SQL files), `postgrest@978b169` (32), and — added
@@ -179,7 +189,6 @@ than argued.
 | **V6** | `optional(';')` restored after `END` in both dollar-quoted body forms, plus `[$.plpgsql_block]` declared | **SHIPPED, superseded by V8.** `errors=0` on the blocking input. Function recall 17.6 % → 37.0 % by the count ratio |
 | **V8** | psql meta-commands as an **`extra`**, quoted `LANGUAGE 'sql'`, C-language body `AS 'modulename', 'symbolname'` | **SHIPPED (current).** Files parsing with zero errors on the extension corpus **4/387 → 105/387**; distinct function names **834 → 951** of 1,170; class symbols 11 → 13. The psql directive was the top damage shape by *file count* (301 of 302) and it LOST declarations, not just error spans |
 | **V11** | plpgsql bodies that hold **embedded SQL**, plus an **opaque-body fallback** | **SHIPPED (current).** The body forms repeat `_plpgsql_body_item` rather than `_plpgsql_statement`, so a `BEGIN…END` can contain `SELECT`/`INSERT`/`CREATE TABLE` and not only procedural forms — before this, a plpgsql body produced **zero relationships**. Function symbols on the extension corpus 3,342 → **6,189**, distinct function names 922 → **1,004** of 1,170, table symbols 13 → **91**, relationships 5,253 → **11,765**. The opaque fallback is what makes it safe: a body the scaffolding cannot read degrades to one token instead of failing the rule and taking the declaration with it |
-| **V8** | psql meta-commands as an **`extra`**, quoted `LANGUAGE 'sql'`, C-language body `AS 'modulename', 'symbolname'` | **Shipped, superseded by V11.** Files parsing with zero errors on the extension corpus **4/387 → 105/387**; distinct function names **834 → 951** of 1,170; class symbols 11 → 13. The psql directive was the top damage shape by *file count* (301 of 302) and it LOST declarations, not just error spans |
 
 Six conflicts were resolved by measurement, not guesswork, and three of them are **declared**
 rather than resolved by deletion: `[$.plpgsql_block, $._plpgsql_body_item]`,
@@ -223,8 +232,31 @@ literals pays one extra parse per literal. Not separately benchmarked.
   fixtures, extended 2026-09-27 with `Schema2.sql`/`Queries2.sql`
 - Authority: manual audit of independent fixtures
 - Result: `validation/m12/results/sql-differential.json`
-- Differential: **84/84 facts, precision 1.000, recall 1.000, 0 FP, 0 FN, 0 unknown, 0
-  unsupported**, `earliestFailingLayer=none`, `parseErrors=0`
+- What the artifact **actually** records: **84/84 facts resolved — precision 0.988,
+  recall 1.000, 1 false positive, 0 false negatives, 0 unknown, 0 unsupported**,
+  `earliestFailingLayer=relationships`, `parseErrors=0`, `passed: false`.
+
+**This file previously claimed precision 1.000 with 0 FP and
+`earliestFailingLayer=none`. That was wrong, and the wrongness was visible in the
+artifact the line cites.** Every one of the 84 facts is a true positive and nothing
+is missing, but the analyzer emits **one** relationship the ground truth does not
+derive, so `passed` is `false` and precision is 0.988 rather than 1.000. The
+honest reading is "recall is complete and exactly one emitted edge is unaccounted
+for", and the single FP is left unnamed here because re-deriving which edge it is
+requires re-running the differential — which is a lane-owner action, not a
+documentation one. **To resolve: run `bun run script/m12/verify-analyzer.ts sql`,
+read `falsePositiveIds`, and either derive the shape in the ground truth or fix
+the emission.**
+
+The artifact is also **stale relative to this commit's analyzer**:
+`inputs.files["src/ast/real-sql-analyzer.ts"]` records sha256
+`a0539713649b2142c3a88ffdc9b1fa70b7f91a652cba65435b95832035968b47` at 110,121 B, while
+the file is now `74cab4b62821cf9a4fb92de6731c2e3add92da0e36b8b18d81ff021080bcc013`
+at 110,643 B (both re-measured 2026-09-27). So the 0.988 describes an analyzer
+522 bytes older than the one this page documents, and the current precision is
+**not established by any artifact in the repository**. Both facts are stated
+rather than resolved, because resolving them means re-running the lane's own
+gates.
 
 ## Gates
 
@@ -257,15 +289,15 @@ the record stays in the file, is printed on every run, and is not silently skipp
 
 ## Known gaps, stated rather than implied
 
-- **Distinct-name** function recall on real PostgreSQL extension DDL is **951 of 1,170 (81.3 %)**;
-  the count ratio says 35.8 %. Report the name-based figure: on a versioned extension corpus the
-  two disagree by more than 2x because the same function is re-declared in every version script,
-  and the count ratio measures repetition rather than coverage.
 - **Distinct-name** function recall on real PostgreSQL extension DDL is **1,004 of 1,170 (85.8 %)**
-  under the shipped V11 grammar (it was 922 under V8 and 999 under pristine 0.3.11);
-  the count ratio says 35.8 %. Report the name-based figure: on a versioned extension corpus the
-  two disagree by more than 2x because the same function is re-declared in every version script,
-  and the count ratio measures repetition rather than coverage.
+  under the shipped V11 grammar. The two earlier figures are recorded because they bound the
+  grammar's contribution and are not alternatives to this one: **922 of 1,170 (78.8 %)** under
+  V8, and **999 of 1,170 (85.4 %)** under pristine 0.3.11. A previous revision of this file
+  carried 951/1,170 (81.3 %) as if it were current — that is the **V8-era** figure and it was
+  stale the moment V11 shipped. The count ratio says 35.8 %. Report the name-based figure: on a
+  versioned extension corpus the two disagree by more than 2x because the same function is
+  re-declared in every version script, and the count ratio measures repetition rather than
+  coverage.
 - `PERFORM 1 FROM t` does not parse. plpgsql's `PERFORM` takes a full query and the shipped
   rule accepts only an expression, so `PERFORM my_func(1)` parses and `PERFORM 1 FROM t`
   does not. This is why sqld12 spells its in-body catalog read as `SELECT`. Fixing it needs a
