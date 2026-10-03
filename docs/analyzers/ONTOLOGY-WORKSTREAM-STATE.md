@@ -155,3 +155,33 @@ Reject and re-run anything that is prose instead of evidence.
 6. Are the measurements reproducible from a clean corpus?
 7. Did it touch only files it owns? (`git diff --name-only` vs the owned set)
 8. Does the commit message carry the measurement, not an adjective?
+## Lane log
+
+### BASH — merged as `78f465fdc`
+
+Verdict: **accept**. One real defect class fixed, measured in both directions.
+
+- **Fabricated edges removed.** 200 hash-ordered corpus files / 2,945 `calls`
+  edges: 30 edges (1.02%) carried a POSIX reserved word — `fi`, `then`, `elif`,
+  `esac`, `do`, `done` — as their call target. The grammar reads a keyword as a
+  `command_name` on recovery, and the analyzer emitted an edge to it. Zero of the
+  30 is a command any script could run (`./fi` is a command, and its name is
+  `./fi`). After the fix: 400 files / 5,232 `calls` edges, 0 remain.
+- **A guard was measured and REJECTED**, not chosen: the damage-region guard
+  removes 108 edges but deletes real calls, dominated by `::log::status` (15).
+  Recorded in `guard-ab-bash-calls.ts` so the next agent does not re-derive it.
+- **Dead code removed.** `dirnameOf` existed only to feed `normalizeRelative`,
+  the relative-`source` resolver BD9 reversed. Its doc comment still described
+  the reversed behaviour, so the file asserted two contradictory things about
+  one construct.
+- 13 files, +2,247 / −155. Ownership clean. Banned vocabulary: none in the files
+  the real gate scans.
+
+**Gate note — read before blaming a lane for this.** `script/m14/verify-honesty.ts`
+reports **23 failures on the pristine aggregate too**. All are evidence-freshness
+(`M14.0.F1`–`F9` declared inputs changed since the commit each artifact names) plus
+`freshness rule flags every artifact — it cannot distinguish current from stale`.
+This is pre-existing and NOT introduced by any lane here. It is a shared-machinery
+defect: the evidence artifacts predate the commits they name, and the freshness
+rule cannot tell a stale artifact from a current one. Supervisor-owned; filed for
+the owner.
