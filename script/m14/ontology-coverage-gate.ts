@@ -44,6 +44,7 @@ import { detectLanguageFromPath } from "../../src/ast/language-detection"
 import { parseFile } from "../../src/ast/pool-worker"
 import { LANGS } from "./differential"
 import { LUA_RULED } from "./lua-ruled"
+import { TOML_RULED } from "./toml-ruled"
 
 const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
 const LANG = process.argv[2] ?? "bash"
@@ -190,7 +191,7 @@ const JSON_RULED: Ruled[] = [
   },
 ]
 
-const RULED_BY_LANG: Record<string, Ruled[]> = { bash: BASH_RULED, json: JSON_RULED, lua: LUA_RULED }
+const RULED_BY_LANG: Record<string, Ruled[]> = { bash: BASH_RULED, json: JSON_RULED, lua: LUA_RULED, toml: TOML_RULED }
 const RULED: Ruled[] = RULED_BY_LANG[LANG] ?? []
 
 // ---------------------------------------------------------------- corpus
@@ -269,6 +270,28 @@ for (const r of RULED) {
 
 // ---------------------------------------------------------------- the spec's rulings
 function rulingFor(t: Type): { reason: string; src: string } | null {
+  // A ruling may live in EITHER place, and both are legitimate:
+  //   - `script/m14/spec/<lang>-completeness.json`, the long-standing spec whose
+  //     design_decision.decisions carry a `status: RULED` row;
+  //   - the lane's `RULED` entry in the table above, which is where a lane writes
+  //     when its rulings are corpus probes rather than prose.
+  //
+  // Reading only the spec reported 8 of TOML's 9 rulings as RULED-UNJUSTIFIED —
+  // the spec carries ONE decision (TOML-D1) while the other 8 were measured and
+  // live in `script/m14/toml-ruled.ts`. So a lane that did the harder work looked
+  // like a lane that skipped it, which is the inverse of the truth and exactly the
+  // kind of verdict this gate exists to prevent.
+  //
+  // The table is checked FIRST: it is where a measured ruling lives, and its
+  // `describe` is the probe's own statement of what it looked for.
+  const tabled = RULED.find((r) => r.type === t)
+  if (tabled) {
+    return {
+      reason: `${tabled.describe} [instrument ${tabled.instrument}${tabled.nodeTypesThatWouldMeanIt?.length ? `, probed for ${tabled.nodeTypesThatWouldMeanIt.join(" / ")}` : ""}]`,
+      src: `script/m14/${LANG}-ruled.ts (RULED_BY_LANG.${LANG})`,
+    }
+  }
+
   const specPath = `script/m14/spec/${LANG}-completeness.json`
   let raw: string
   try { raw = readFileSync(specPath, "utf8") } catch { return null }
