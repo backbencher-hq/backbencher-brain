@@ -1,4 +1,4 @@
-// @ts-nocheck — pre-existing null safety and type issues
+
 import * as Log from "../../tool/brain-log"
 
 const log = Log.create({ service: "local-embed" })
@@ -97,12 +97,19 @@ function seedPRNG(seed: number): () => number {
 
 function buildVectors(words: string[]): void {
   const unique = [...new Set(words.map(w => w.toLowerCase().slice(0, 30)).filter(w => w.length >= 2))]
-  _wordMap = Object.create(null)
-  _wordVecs = new Float32Array(unique.length * WORD_DIM)
+  // A local, explicitly typed map rather than assigning straight into the module
+  // global. `Object.create(null)` is typed `any`, so `_wordMap = Object.create(null)`
+  // widened the global to `any` for the whole function and left
+  // `_wordMap[unique[i]] = i` unchecked against the `Record<string, number>` the
+  // global is declared as — a write of a wrong type would have compiled.
+  const map: Record<string, number> = Object.create(null)
+  const vecs = new Float32Array(unique.length * WORD_DIM)
   for (let i = 0; i < unique.length; i++) {
-    _wordMap[unique[i]] = i
-    _wordVecs.set(wordVector(unique[i]), i * WORD_DIM)
+    map[unique[i]] = i
+    vecs.set(wordVector(unique[i]), i * WORD_DIM)
   }
+  _wordMap = map
+  _wordVecs = vecs
 }
 
 /** Publish a table as the module's current one (what `wordVectorForTest` reads). */

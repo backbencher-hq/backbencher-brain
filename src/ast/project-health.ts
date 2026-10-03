@@ -1,6 +1,4 @@
-// @ts-nocheck — ported; verified by tests. Restored incrementally in Phase 3.
-// Project Health Calculator
-// Computes and stores health metrics directly from indexed symbols
+
 
 import { BrainDatabase } from "../brain/database"
 import { BrainSymbolTable, BrainFileTable, BrainProjectHealthTable } from "../brain/brain.sql"
@@ -10,11 +8,48 @@ import * as Log from "../tool/brain-log"
 
 const log = Log.create({ service: "project-health" })
 
+/**
+ * Row shapes of the three projections below, declared next to the query that
+ * produces them.
+ *
+ * WHY THIS EXISTS. `BrainDatabase.getInstance()` returns `Promise<any>`
+ * (src/brain/database.ts), so a drizzle chain typed through it carries no element
+ * type at all: every `.reduce`/`.find`/`.filter`/`.map` callback parameter was
+ * implicitly `any` (the 10 errors `@ts-nocheck` was hiding here), and nothing
+ * downstream of a query was ever type-checked — `totalLines` could have been a
+ * string and `l.lines / totalLines` would have compiled.
+ *
+ * These are not invented types: each field mirrors the `sql<number>` or column
+ * reference in the matching `.select({...})` two lines below, and the `|| 0`
+ * guards already in this file remain correct, because `sum()` over an empty
+ * group really does come back null at runtime even though the projection is
+ * declared `number`. The annotation buys the thing that was missing: every use
+ * of a result is now verified.
+ */
+type SymbolCountRow = {
+  /** Nullable in the schema, hence the `s.type === "function"` probes below. */
+  type: string | null
+  count: number
+  avgComplexity: number
+}
+
+type LangCountRow = {
+  language: string | null
+  count: number
+  lines: number
+}
+
+type ComplexFunctionRow = {
+  name: string
+  complexity: number
+  file: string
+}
+
 export async function computeAndStoreProjectHealth(projectId: ProjectID): Promise<void> {
   const db = await BrainDatabase.getInstance(projectId)
 
   // Get symbol counts by type
-  const symbolCounts = await db
+  const symbolCounts: SymbolCountRow[] = await db
     .select({
       type: BrainSymbolTable.symbol_type,
       count: sql<number>`count(*)`,
@@ -25,7 +60,7 @@ export async function computeAndStoreProjectHealth(projectId: ProjectID): Promis
     .groupBy(BrainSymbolTable.symbol_type)
 
   // Get file counts by language
-  const langCounts = await db
+  const langCounts: LangCountRow[] = await db
     .select({
       language: BrainFileTable.language,
       count: sql<number>`count(*)`,
@@ -36,7 +71,7 @@ export async function computeAndStoreProjectHealth(projectId: ProjectID): Promis
     .groupBy(BrainFileTable.language)
 
   // Get high complexity functions (complexity > 10)
-  const complexFunctions = await db
+  const complexFunctions: ComplexFunctionRow[] = await db
     .select({
       name: BrainSymbolTable.name,
       complexity: BrainSymbolTable.complexity,
