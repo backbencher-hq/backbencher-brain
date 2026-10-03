@@ -9,11 +9,11 @@ For each `src/ast/real-<lang>-analyzer.ts` and `docs/analyzers/real-<lang>-analy
 | Measure | Count | Fails the gate |
 | --- | --- | --- |
 | analyzers examined | 48 | — |
-| analyzers with a canonical doc | 46 | — |
+| analyzers with a canonical doc | 47 | — |
 | FALSE_NEGATIVE — doc says "not emitted", analyzer emits it | 8 | **yes** |
 | FALSE_POSITIVE — doc says "emitted", nothing emits it | 0 | **yes** |
-| UNDOCUMENTED — live channel, no checkable claim | 43 | no (measured here) |
-| MISSING_DOC — no canonical doc | 2 | no (owned by verify-analyzer-docs.ts) |
+| UNDOCUMENTED — live channel, no checkable claim | 44 | no (measured here) |
+| MISSING_DOC — no canonical doc | 1 | no (owned by verify-analyzer-docs.ts) |
 | NO_CLAIM_TABLE — no ontology table to compare | 21 | no |
 | NON_ENGINE_KIND — row is not a RelationshipType alias | 26 | no |
 | MIXED_ROW — engine and non-kind names share one cell | 1 | no |
@@ -71,6 +71,7 @@ This is the population the gate MEASURES rather than blocks. Each row is one ana
 | haskell | `contains (relationship)` | line 48 |
 | java | `calls (relationship)` | line 57 |
 | javascript | `calls (relationship)` | line 29 |
+| julia | `calls (relationship)` | line 42 |
 | kotlin | `calls (relationship)` | line 30 |
 | objective-c | `contains (relationship)` | line 61 |
 | objective-c | `overrides (relationship)` | line 61 |
@@ -93,7 +94,6 @@ This is the population the gate MEASURES rather than blocks. Each row is one ana
 
 | Analyzer | Doc |
 | --- | --- |
-| real-julia-analyzer.ts | no `docs/analyzers/real-julia-analyzer.md` — content may live at `docs/analyzers/julia.md` |
 | real-makefile-analyzer.ts | no `docs/analyzers/real-makefile-analyzer.md` |
 
 ## Docs with no ontology claim table (nothing was comparable)
@@ -163,7 +163,7 @@ This is the population the gate MEASURES rather than blocks. Each row is one ana
 | java | `calls contains exports extends implements instantiates overrides references uses` | import-site: ImportInfo[], export-site: ExportInfo[] | line 57, 11 rows |
 | javascript | `calls contains exports extends instantiates overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | line 29, 9 rows |
 | json | `contains exports extends references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | absent |
-| julia | `—` | import-site: ImportInfo[], export-site: ExportInfo[] | absent |
+| julia | `calls contains extends instantiates overrides references uses` | import-site: ImportInfo[], export-site: ExportInfo[] | line 42, 9 rows |
 | kotlin | `calls contains extends implements instantiates overrides references uses` | import-site: ImportInfo[], export-site: ExportInfo[] | line 30, 11 rows |
 | lua | `calls contains extends instantiates imports` | import-site: ImportInfo[], export-site: ExportInfo[] | absent |
 | makefile | `calls contains exports references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | absent |
