@@ -185,3 +185,53 @@ This is pre-existing and NOT introduced by any lane here. It is a shared-machine
 defect: the evidence artifacts predate the commits they name, and the freshness
 rule cannot tell a stale artifact from a current one. Supervisor-owned; filed for
 the owner.
+
+### NIM — merged
+
+Verdict: **accept**. The `implements` handling is the model for a GAP verdict
+that does not become a fabrication.
+
+- `implements` reported as **0 edges**, and the reason is a measurement, not a
+  shrug: 216 `concept_declaration`s on the corpus and 0 refinements of a
+  different concept. The construct is real (`nim/compiler/parser.nim:2268`,
+  `doc/manual_experimental.md:1205`), so the GAP was closed in code and reported
+  as corpus-silent rather than as emitted.
+- Both spellings implemented per the manual: `concept x of B` off the grammar's
+  `refines` field, and `x is B` in a body behind 3 guards. Of 125 corpus `is`
+  expressions, **120 name a builtin or a generic parameter**, so the guard drops
+  them rather than fabricating `implements -> int`.
+- Two on-disk defects found and fixed: `childForFieldName("refines")` returned
+  the refinement list *itself*, so both readers looked for a child of that type
+  and the whole family silently read 0 while symbols stayed `interface`; and the
+  `except` clause read as publication — the inverse of the construct.
+- **Supervisor re-ran the mutant suite: 9/9 caught, 0 survived.** One mutant is
+  named `concept-satisfaction-invented` — a deliberate guard against the exact
+  fabrication failure this contract calls most expensive.
+- 10 files, +2,491 / −110.
+
+### ZIG — merged
+
+Verdict: **accept**. Strongest lane so far on measurement discipline.
+
+- **10/10 verdicts over the whole admitted corpus** (3,834 of 3,834 files, draw
+  `sha256:2f3545f9`): 127,536 symbols, 392,086 relationships, 0 empty names.
+- `extends`/`implements` RULED by **instrument A**: 0 of 28 inheritance words
+  appear in the wasm grammar's own `Language.types` (239 entries) or
+  `Language.fields` (16). Overturn condition stated: any UNCLASSIFIED header-slot
+  child, or any of the 28 words present in either table.
+- `overrides` RULED by **instrument B**, with the calibration shown (11/11 keyword
+  calibration).
+- **Z59 fixed**: 11,332 of 224,599 `calls`+`uses`+`instantiates` edges (5.05%)
+  named a member of a local or anonymous container the analyzer publishes nothing
+  for. After the fix **1 dangling source in 249,983 edges (0.0004%)**,
+  re-measured by the supervisor from the committed artifact.
+- **Two shared-machinery defects REPORTED, not edited**, which is the correct
+  §8 behaviour: 168 zig declarations lost to the pool-worker name denylist
+  (Self 97, unknown 28, root 24) across 130 files; and `parseFile`'s parse-error
+  branch returning a regex fallback whose symbols carry no `kind` — 192 empty-kind
+  symbols per full run, 7 regex `calls` edges, one with a fabricated
+  `source: "this"`. The agent established these are NOT caused by its own change
+  by measuring an identical 400-file draw on both sides (0/0 vs 192/7).
+- Its censuses carry **positive and negative controls**, so they cannot be
+  trivially true. Re-run by the supervisor: controls pass.
+- DERIVATION findings: **0**. Gates: fixtures 8/8, mutations 50/50 caught.
