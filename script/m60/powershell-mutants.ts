@@ -923,4 +923,95 @@ export const POWERSHELL_MUTANTS: Mutant[] = [
       relationships: (r.relationships ?? []).map((x: any) =>
         ({ ...x, metadata: { ...(x.metadata ?? {}), evidenceClass: x.metadata?.overridesMember ? "structural" : "usage_contextual" } })),
     }),  },
+  // ---------------------------------------------------------------- PS23 wave
+  // The `imports` relationship type. Before this wave the lane emitted it ZERO times
+  // across a 1,092-file corpus while `imports[]` held every module name, so a mutant
+  // that drops the type reproduces the PRE-FIX state exactly — which is the only
+  // kind of revert worth writing for a type that was absent rather than wrong.
+  {
+    id: "powershell/imports-edge-not-emitted",
+    language: "powershell",
+    defectClass: "missing-whole-kind",
+    description:
+      "PS23 REVERT: no `imports` edge is published, and the module dependency is carried by `references` alone. This is the pre-fix shape verbatim — `addImport` filled `imports[]` for all four PowerShell import forms (`Import-Module`, `using module`, `using namespace`, `#requires -Module`) and published one `references` row, so the ontology's `imports` type was EMITTED 0 TIMES across the whole corpus. `script/m60/powershell-surface-measure.ts:223` derives its `absent` list as `ONTOLOGY.filter(k => !kinds[k])` and `:243` prints it as the types 'all implemented + gated'; a type with zero edges corpus-wide is in that list for every draw, so the parenthetical asserted `imports` was implemented while `grep -c 'RelationshipType.Imports' src/ast/real-powershell-analyzer.ts` returned 0. Keyed on the TYPE rather than on a module name or a fixture, so it reverts the whole kind wherever it is emitted. Caught by imports-psb12's eleven `imports` rows and its `imports == 6` count; the count matters because a `forbid` alone would not notice a type that vanished, and the eleven rows matter because a count alone would not name the target.",
+    transform: psDropRelType("imports"),
+  },
+  {
+    id: "powershell/imports-tier-short-circuit-removed",
+    language: "powershell",
+    defectClass: "misattribution",
+    description:
+      "PS23 REVERT, the half that is easy to ship by accident: the `imports` edge keeps its type and every row count stays right, but its evidence TIER becomes `usage_contextual`. The edge now claims it was derived from a node's POSITION, which is the opposite of where an import comes from. `usage_contextual` is defined in this lane as 'settled by what the construct means', a true statement about `New-Object -ComObject Shell.Application` and a false one about `#requires -Module Pester`. Honesty contract §4 makes the tier a countable fact rather than a label, so a wrong tier on a whole type is a defect even when the edge itself is real.\n\nIT IS AIMED AT `evidenceClassFor`'s `if (isImport) return \"import_based\"` LINE, and the journey to that target is the record. The first two attempts aimed at a `case ASTEngine.RelationshipType.Imports:` added to the switch beside the `References` case, and BOTH SURVIVED — once while the two shared a fallthrough return, and once after they were split into separate cases with separate returns. Both mutants changed a line no edge's tier depended on, because `isImport` is true for every `imports` edge `addImport` emits and the function returns before the switch is reached. Reading a survivor as 'the fixtures do not check the tier' would have been wrong twice: the fixtures checked it and the tier had a different home. The `Imports` case was then DELETED as an L2 dead branch and the tier is decided, and tested, at the one line that actually decides it. Caught by imports-psb12's `meta.evidenceClass: \"import_based\"` constraint on all six `imports` rows.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) =>
+        x.type === "imports"
+          ? { ...x, metadata: { ...(x.metadata ?? {}), evidenceClass: "usage_contextual" } }
+          : x),
+    }),
+  },
+  {
+    id: "powershell/imports-references-edge-dropped",
+    language: "powershell",
+    defectClass: "missing-whole-kind",
+    description:
+      "PS23 REVERT, the other direction, and the reason this wave did not REPLACE the `references` edge: the module dependency is published as `imports` only. That is the shape a lane reaches by 'fixing' the missing type with a rename, and it is a regression rather than a repair — bash emits both channels for `source ./x.sh` (`imports` for module resolution, `references` for a general dependency edge) and the store's M60/#910 file-level seam keys on the `references` row's `metadata.fileLevel`. Removing the `references` edge would leave the module dependency present in the graph and invisible to every consumer that reads the channel the lane already published. Caught by imports-psb12's `references` row on `Pester` with `meta.import: true`, and by its `references == 7` count.",
+    transform: psDropRelType("references", (x: any) => x.metadata?.import === true),
+  },
+  // ---------------------------------------------------------------- PS24 wave
+  // The `#requires` MODULE LIST reader, which answered neither list-shaped declaration.
+  //
+  // These two are keyed on `metadata.via`, a field this wave ADDED to the import
+  // edges, and the addition is the reason they can be written at all. Before it, an
+  // `imports` row said `file -> Module` and nothing about which of the four
+  // declarations produced it; a `#requires` HASHTABLE row and a bare
+  // `#requires -Module X` row were identical in every field the result carries, so a
+  // faithful revert of one could not be told from a mutation of the other without a
+  // module-name filter — which this file's own header forbids, because a name filter
+  // silently stops matching the moment a fixture is renamed.
+  {
+    id: "powershell/requires-modules-first-token-only",
+    language: "powershell",
+    defectClass: "missing-whole-kind",
+    description:
+      "PS24 REVERT, the COMMA LIST: at most one module name per `#requires` declaration. That is the pre-PS24 reader verbatim — `extractRequiresValue` scanned forward from the flag and stopped at the first space, tab or comma, so `#requires -Modules CimCmdlets, PSReadLine` published `CimCmdlets` and dropped `PSReadLine`, which the file genuinely declares and which therefore did not appear in `imports[]` or in the graph at all. Measured over the 1,092-file admitted corpus: ONE occurrence of a comma-separated `#requires` module list — `#Requires -Modules PSScriptAnalyzer, PSSA-PSCustomUseLiteralPath` at `ansible/test/lib/ansible_test/_util/controller/sanity/pslint/pslint.ps1:2` — so `PSSA-PSCustomUseLiteralPath` was a declared dependency the lane read and dropped. The fixture's line 61 is a second copy of that shape. Caught by imports-psb12's `imports`/`references` row on `PSReadLine` at line 61 and by its `imports == 9` count — the count is what makes it unmissable, because the `via` of `CimCmdlets` and `PSReadLine` is identical (`requires_list`) and only the count distinguishes one from two.\n\nTHE POINT OF THE COUNT ROW. A reader keyed on (source, line) sees ONE dependency at line 61 and cannot tell that the file declares two, because both edges carry the declaration's line and the TARGET is the only thing that separates them. An `expectRelationships` row alone would be satisfied by any implementation that emitted `CimCmdlets` and dropped the rest, so the assertion that carries this class is the count.",
+    transform: (r: any) => {
+      const seenLine = new Set<string>()
+      const keep = (x: any): boolean => {
+        if (x.type !== "imports" && x.type !== "references") return true
+        if (x.metadata?.via !== "requires_list" && x.metadata?.via !== "requires_hashtable") return true
+        const key = `${x.type}|${x.source}|${x.line_number ?? "?"}`
+        if (seenLine.has(key)) return false
+        seenLine.add(key)
+        return true
+      }
+      return {
+        ...r,
+        relationships: (r.relationships ?? []).filter(keep),
+        imports: (r.imports ?? []).filter((i: any) => {
+          const key = `imp|${i.metadata?.via}|${i.range?.start?.line ?? i.line ?? "?"}`
+          if (seenLine.has(key)) return false
+          seenLine.add(key)
+          return true
+        }),
+      }
+    },
+  },
+  {
+    id: "powershell/requires-hashtable-name-read-as-flag-value",
+    language: "powershell",
+    defectClass: "fabrication",
+    description:
+      "PS24 REVERT, the HASHTABLE, and the one that wrote a garbage name rather than losing one: a `#requires -Modules @{ ModuleName = 'X'; ModuleVersion = '1.0' }` names its module inside the hashtable, and the pre-PS24 reader had no hashtable reader at all — it took the token after the flag, which is the `@{` that opens the hashtable. So the published row was `file -> \"@{\"` and `imports[]` stored `path: \"@{\"`. Measured on the corpus: 2 of 1,092 admitted files carry the form (both under `ansible/test/integration/targets/win_app_control/files/`, both `@{ ModuleName = 'OpenAuthenticode'; … }`) and they were the ENTIRE gap between `imports[] 552` and `imports 550` edges, because `filterNoiseRelationships` in `src/ast/pool-worker.ts` drops any relationship target whose leaf contains `{`.\n\nWHY IT IS STILL A FABRICATION DESPITE THE DOWNSTREAM DROP. The filter removed the EDGE; it did not remove the ImportInfo row, so the store received a dependency on a module named `@{`, and an edge that only a later stage declines to publish is an edge this lane asserted. The two corpus files name a real dependency (`OpenAuthenticode`) that the analyzer was reading and discarding. Caught by imports-psb12's `imports` row on `OpenAuthenticode` with `meta.via: \"requires_hashtable\"`, and by its `forbidImports` row for `@{` — which is the half that fires if the name is ever wrong in the other direction.",
+    transform: (r: any) => {
+      const garble = (name: string): string => "@{"
+      const rels = (r.relationships ?? []).map((x: any) =>
+        (x.type === "imports" || x.type === "references") && x.metadata?.via === "requires_hashtable"
+          ? { ...x, target: garble(x.target) }
+          : x)
+      const imps = (r.imports ?? []).map((i: any) =>
+        i.metadata?.via === "requires_hashtable" ? { ...i, module: garble(i.module) } : i)
+      return { ...r, relationships: rels, imports: imps }
+    },
+  },
 ]
