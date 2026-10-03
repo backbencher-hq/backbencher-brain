@@ -443,3 +443,59 @@ Note also that `grep -o 'Error'` on these logs is a useless liveness signal — 
 logs are full of parser diagnostics (`Out of bounds`, `WASM`, `ErrorNodes`) that
 are corpus findings, not agent failures. Liveness is the process, and a lane's
 report is its final message.
+
+## WAVE 2 — the two findings that outrank any single lane
+
+### 1. `parseFile` is not deterministic, so per-lane numbers are run-dependent
+
+The zig lane re-ran its census on a **byte-identical draw**
+(`sha256:2f3545f9`, 3,834 files) and got different numbers than pass 1:
+
+| | pass 1 | pass 2 |
+|---|---|---|
+| symbols | 127,536 | 127,429 |
+| relationships | 392,086 | 392,550 |
+| kindless symbols | 0 | 192 |
+
+The draw is the same, so the difference is the run. `parseFile` carries cumulative
+WASM state: one process over the draw printed `[BB-PARSE-ERR] memory access out
+of bounds` on 2–3 files and self-destructed with `[BB-HANG]` on **3 different
+files across 3 runs** (`assembly.zig` parses in 2.98 s alone). The catch silently
+substitutes the regex `extractFallback`, whose symbols carry **no kind** — which
+is where the 192 come from.
+
+Sharded across 8 workers, every shard read 0 and 0.
+
+**Consequence for this whole workstream:** any figure quoted from a single
+long-running process is a figure about that run, not about the corpus. Several
+lanes already noticed pieces of this independently — dart, powershell, protobuf,
+xml and zig all reported `[BB-HANG]` or parse-fallback noise — but zig is the
+first to state it as a property of the entry point and to withdraw a claim level
+over it.
+
+Two gates are needed and neither exists yet: a **sharded** census as the default
+(so WASM state does not accumulate), and a **byte-identical-draw, two-run**
+comparison as a standard check. Until then, per-lane relationship counts in this
+workstream should be read as single-run observations.
+
+### 2. A resolution RATE cannot detect a name collision
+
+zig's census reports `calls src dangling 0.00%`, and 0.49% of named `calls`
+sources are not callable at all. All 759 of them are a **named test colliding
+with a declaration in the same file**. The census resolves by NAME, so the
+collision resolves and the rate reads clean.
+
+This is the sixth question ("Resolved") failing in a way the fifth question
+cannot see, and it generalises: any lane whose resolution is name-based will
+report 100% on a graph where a name denotes two symbols. CSS `references` at
+66.8% both ends and `implements` at 43.6% intra-file in the clean lane are the
+related shape — a rate that is neither 100% nor 0 is a rate that hides a
+population, and reporting only the rate loses it.
+
+### L5 withdrawn
+
+zig was the only lane claiming L5. It withdrew it: the doc's claim table is now
+machine-graded by `verify-doc-truth-emissions` (9 of 10 rows, 0 findings), the F8
+section-b failure is recorded rather than papered over, and DERIVATION=0 is
+annotated with what it is worth — `zig-truth.ts` mirrors the analyzer's own rules,
+so the four wrong-edge classes above score as *agreement*.
