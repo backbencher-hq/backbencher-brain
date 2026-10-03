@@ -207,6 +207,15 @@ const isSpaceCode = (code: number): boolean =>
   code === 0x2028 || code === 0x2029 || code === 0x202f || code === 0x205f ||
   code === 0x3000 || code === 0xfeff
 
+/** `a-zA-Z` on a single already-lowercased or raw character. `text[i]` is `undefined`
+ *  past the end of the string and every comparison below is false for `undefined`, so
+ *  a caller needs no bound check of its own. */
+const isAsciiLetter = (c: string | undefined): boolean => {
+  if (c === undefined) return false
+  const code = c.charCodeAt(0)
+  return (code >= 65 && code <= 90) || (code >= 97 && code <= 122)
+}
+
 /**
  * F9 — could this string be a SYMBOL NAME at all?
  *
@@ -486,6 +495,24 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
      * keyword. Calling that `structural` would overstate it.
      */
     const evidenceClassFor = (type: ASTEngine.RelationshipType, isImport = false): string => {
+      // `imports` is `import_based` through the `isImport` line above, and it is NOT also
+      // given a `case` here — which was the first version of this fix and it was wrong in
+      // the way that matters. Adding `case Imports: return "import_based"` beside the
+      // `References` case looks like the obvious place for a type whose name says
+      // "import", and it is DEAD: `isImport` is true for every `imports` edge `addImport`
+      // emits, so the first line answers and the switch is never reached for that type.
+      //
+      // A branch that cannot affect any output is an L2 dead branch, and here it was
+      // worse than untidy, because a MUTANT written against it SURVIVED twice: once
+      // while `imports` shared a fallthrough return with `references`, and once after
+      // they were split into separate cases with separate returns. Both mutants changed
+      // a line no edge's tier depended on, so both read as "the fixtures do not check the
+      // tier" when what they actually proved is that the tier has a different home.
+      //
+      // The tier is asserted where it is decided, and the mutant that matters deletes the
+      // `isImport` line: `powershell/imports-tier-short-circuit-removed`. That one is
+      // caught by imports-psb12's `meta.evidenceClass` constraint on all six `imports`
+      // rows, which is what makes the tier a check rather than a claim.
       if (isImport) return "import_based"
       switch (type) {
         case ASTEngine.RelationshipType.Contains:
@@ -1029,39 +1056,19 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
 
     /**
-     * The value token that FOLLOWS the named child at `fromIndex`, skipping the
-     * grammar's `command_argument_sep` separators.
-     *
-     * This is the whole of PS7 and it was the whole bug. Measured shape:
-     * `command_elements` for `Import-Module -Name SqlServer -ErrorAction
-     * SilentlyContinue` is `[sep, command_parameter(-Name), sep, generic_token
-     * (SqlServer), sep, command_parameter(-ErrorAction), sep,
-     * generic_token(SilentlyContinue)]` — so the value sits at `i + 3`, not
-     * `i + 1`. Every implementation that read `namedChild(i + 1)` therefore found
-     * a separator, matched no branch, and read NO two-token parameter value at
-     * all: `Import-Module -Name SqlServer` imported nothing, and
-     * `Export-ModuleMember -Function F` exported nothing.
-     */
-    const valueAfter = (elements: Node, fromIndex: number): Node | null => {
-      for (let i = fromIndex + 1; i < elements.namedChildCount; i++) {
-        const c = elements.namedChild(i)
-        if (!c) continue
-        if (c.type === "command_argument_sep") continue
-        return c
-      }
-      return null
-    }
-
-    /** Is this node a token that can CARRY a value? */
-    const isValueToken = (c: Node | null | undefined): boolean =>
-      !!c && (c.type === "generic_token" || c.type === "string_literal" || c.type === "expandable_string_literal")
-
-    /**
      * PS7 — the POSITIONAL arguments of a command, plus the values of
      * two-token parameters, decided STRUCTURALLY: a `command_parameter`
-     * contributes a value only when the grammar's `argument` field names one
-     * (`-Name:Foo`) or when a value token physically follows it AND that token
-     * is not a switch-argument value (`-ErrorAction Stop`).
+     * contributes a value only when a value token physically follows it AND that
+     * token is not a switch-argument value (`-ErrorAction Stop`).
+     *
+     * `valueAfter` and a module-scope `isValueToken` used to sit directly above this
+     * function and both were DEAD: `valueAfter` had no call site at all (the private
+     * `valueAfterNode` does that job), and the outer `isValueToken` was shadowed by the
+     * identical declaration inside `commandArgs` below, so both of that function's call
+     * sites bound to the inner copy. A duplicate that is never the binding one is the
+     * kind of thing a reader has to re-derive to be sure of, and `grep -c` answers it
+     * only if you count the right string. Removed; the behaviour is unchanged, which is
+     * why removal is safe rather than merely tidy.
      */
     const commandArgs = (node: Node): string[] => {
       const out: string[] = []
@@ -1129,11 +1136,49 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
         range: this.nodeToRange(node),
         metadata: { powershellSpecific: true, via },
       })
+      // A module dependency carries TWO edges, and the second one is the fix.
+      //
+      // `imports` is the ontology's own type for "this file depends on that module",
+      // and PowerShell states the dependency four ways — `Import-Module`, `using
+      // module`, `using namespace`, `#requires -Module` — all four of which this
+      // function is the single reader for. The lane emitted only `references`, so over
+      // the 1,092-file corpus the `imports` type was EMITTED 0 times: a real
+      // construct, read correctly, recorded in `imports[]`, and absent from the graph
+      // as an `imports` edge. `script/m60/powershell-surface-measure.ts:223` computes
+      // `absent: ONTOLOGY.filter(k => !kinds[k])` and `:243` prints it as the types
+      // "not exercised by this draw (all implemented + gated)" — and a type with zero
+      // edges over the whole 1,092-file corpus is necessarily in that list for every
+      // draw that is a subset of it. That parenthetical is a string literal, so it
+      // asserted `imports` was implemented and gated while `RelationshipType.Imports`
+      // appeared nowhere in this file.
+      //
+      // `references` is KEPT, not replaced. bash is the precedent and the same shape of
+      // fact: `real-bash-analyzer.ts:1299` emits `imports` and `:1304` emits
+      // `references` for one `source ./x.sh`, at the same confidence, because a
+      // file-level dependency answers two different consumers and dropping either loses
+      // an edge something already resolves. Measured, not asserted:
+      // `grep -l 'RelationshipType.Imports' src/ast/real-*-analyzer.ts` names 22 of the
+      // 48 analyzers before this line and 23 after, so PowerShell was one of the 26 that
+      // did not carry the type while filling an `imports[]` array.
+      //
+      // Confidence is 0.9 on BOTH edges and that is not a new number: it is the value
+      // this function has always put on this exact fact. The module NAME is read off the
+      // tree; the module's RESOLUTION to a file on disk happens at run time, so the edge
+      // is a read of a dependency, not a proof of a file on disk. Both edges carry
+      // identical metadata so the two rows cannot come to describe different facts.
+      // `via` is on the ImportInfo already; putting it on the EDGE as well is what
+      // makes a row self-describing — `file -> Module` does not say whether the file
+      // wrote `Import-Module`, `using namespace`, `using module` or `#requires`, and
+      // those four are read by three different grammar branches. PS24 needed the
+      // distinction to be nameable from the result alone, because a `#requires`
+      // HASHTABLE row and a bare `#requires -Module X` row are otherwise identical
+      // in every field the output carries, and the pre-PS24 defect is invisible
+      // without it.
+      const meta = { powershellSpecific: true, import: true, via, fileLevel: atFileScope() }
       // A file-level dependency's source is the importing FILE (M60/#910), so
       // the stored row names an importer a reader can key on.
-      addRel(top().scope, moduleName, ASTEngine.RelationshipType.References, 0.9, line, {
-        powershellSpecific: true, import: true, fileLevel: atFileScope(),
-      })
+      addRel(top().scope, moduleName, ASTEngine.RelationshipType.Imports, 0.9, line, { ...meta })
+      addRel(top().scope, moduleName, ASTEngine.RelationshipType.References, 0.9, line, { ...meta })
     }
 
     /**
@@ -2104,8 +2149,8 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
           const text = node.text
           if (text.startsWith("#requires") || text.startsWith("#Requires")) {
             const line = node.startPosition.row + 1
-            const moduleName = this.extractRequiresModule(text)
-            if (moduleName) addImport(moduleName, "#requires", line, node)
+            const moduleNames = this.extractRequiresModules(text)
+            for (const m of moduleNames) addImport(m.name, m.via, line, node)
             const version = this.extractRequiresValue(text, "version")
             if (version) {
               addRel(top().scope, version, ASTEngine.RelationshipType.References, 0.9, line, {
@@ -2438,8 +2483,168 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
     return text.length > 0 ? text : undefined
   }
 
-  private extractRequiresModule(text: string): string | null {
-    return this.extractRequiresValue(text, "modules") ?? this.extractRequiresValue(text, "module")
+  /**
+   * PS24 — EVERY module name a `#requires -Module[s]` declares, which is not the
+   * same question `extractRequiresValue` answers.
+   *
+   * The reader above stops at the first space, tab or comma, which is right for
+   * `-Version 7.0` and wrong twice for a module list. Measured on the corpus's own
+   * two files that use the hashtable form
+   * (`ansible/.../win_app_control/files/{New-AnsiblePowerShellSignature,
+   * Set-ManifestSignature}.ps1`, both carrying
+   * `#Requires -Modules @{ ModuleName = 'OpenAuthenticode'; ModuleVersion = '0.5.0' }`):
+   * the old reader returned the literal `@{` as the module name, so `imports[]` stored
+   * a row whose `path` was `@{` and `addImport` published `imports`/`references` edges
+   * to `@{`. Those edges died one stage later — `filterNoiseRelationships` in
+   * `src/ast/pool-worker.ts` drops any target whose leaf contains `{` — which is why
+   * the census reads `imports[] 552` against `imports 550`, and the two rows that
+   * vanish are exactly these two files. A garbage edge killed by shared machinery is
+   * still a garbage row already written, and the module it should have named
+   * (`OpenAuthenticode`) is a dependency the file genuinely declares.
+   *
+   * The comma list is the second miss, and rarer than the hashtable:
+   * `#requires -Modules Pester, PoshRSJob` names two modules and the old reader
+   * returned `Pester` alone, because the loop stopped at the comma. Measured over the
+   * 1,092-file admitted corpus: ONE occurrence of a comma-separated `#requires` module
+   * list — `#Requires -Modules PSScriptAnalyzer, PSSA-PSCustomUseLiteralPath` at
+   * `ansible/test/lib/ansible_test/_util/controller/sanity/pslint/pslint.ps1:2` — so
+   * `PSSA-PSCustomUseLiteralPath` was a declared dependency this lane read and dropped.
+   *
+   * MEASURED DELTA, and the population it is measured over. Only a file carrying a
+   * `#requires -Module(s)` directive can be affected, and 59 of the 1,092 admitted files
+   * do, so those 59 are the whole population and the delta is exact rather than
+   * sampled. Through production `parseFile`, before -> after: `imports[]` records
+   * 101 -> 102, `imports` edges 99 -> 102, `references` edges 105 -> 108. The records /
+   * edges gap of 2 that exists BEFORE the fix is the two `@{` rows: they were written
+   * and then dropped by the pool-worker's brace rule, which is why the whole-corpus
+   * census reads `imports[] 552` against `imports 550`.
+   *
+   * Zero regex, like the reader above, for the reason recorded there. Three shapes are
+   * recognized and nothing else: a bare list, a comma-continued bare list, and a
+   * hashtable whose `ModuleName` key names the module. A hashtable with no
+   * `ModuleName` names no module and yields nothing — `@{ ModuleVersion = '1.0' }` is
+   * not a module declaration, and returning the flag's value for it is how `@{`
+   * reached `imports[]` in the first place.
+   */
+  private extractRequiresModules(text: string): Array<{ name: string; via: string }> {
+    const names: Array<{ name: string; via: string }> = []
+    const seen = new Set<string>()
+    // The `via` a row carries is the SHAPE it was declared in, not just the keyword:
+    // `requires_hashtable` and `requires_list` are different grammar — a hashtable's
+    // name is inside `{ ModuleName = '…' }` and a list's is a bare token — and an edge
+    // that does not record which one it came from cannot be told apart from the other
+    // by anything downstream.
+    let via = "requires_list"
+    const lower = text.toLowerCase()
+    const add = (raw: string): void => {
+      const v = this.stripQuotes(raw.trim())
+      if (v.length === 0 || seen.has(v)) return
+      seen.add(v)
+      names.push({ name: v, via })
+    }
+    for (let i = 0; i < text.length; i++) {
+      if (text[i] !== "-") continue
+      // The flag must be the WHOLE word: `-Module` is a prefix of `-Modules`, and a
+      // longer flag that merely begins with it (`-ModulePath`) is a different flag.
+      let j = i + 1
+      while (isAsciiLetter(lower[j])) j++
+      const flag = lower.slice(i + 1, j)
+      if (flag !== "module" && flag !== "modules") continue
+      while (text[j] === " " || text[j] === "\t") j++
+      if (j >= text.length) break
+      // The value is a LIST. Each element is a bare name or a module hashtable, and a
+      // `,` continues it — PowerShell accepts `#requires -Modules @{…}, @{…}` and
+      // `#requires -Modules A, @{ModuleName='B'}`, so the walk is over elements and
+      // not over one token.
+      for (;;) {
+        if (text[j] === "@" && text[j + 1] === "{") {
+          const ht = this.readHashtableModuleName(text, j + 1)
+          via = "requires_hashtable"
+          if (ht) add(ht)
+          // Step past the hashtable's closing brace so neither a `,` nor a `;` inside
+          // it can be read as the list separator.
+          while (text[j] !== undefined && text[j] !== "}") j++
+          if (text[j] === "}") j++
+        } else {
+          let end = j
+          while (text[end] !== undefined && text[end] !== " " && text[end] !== "\t" && text[end] !== "," && text[end] !== ";") end++
+          if (end > j) add(text.slice(j, end))
+          j = end
+        }
+        while (text[j] === " " || text[j] === "\t") j++
+        if (text[j] !== ",") break
+        j++
+        while (text[j] === " " || text[j] === "\t") j++
+        if (j >= text.length) break
+      }
+      i = j - 1
+    }
+    return names
+  }
+
+  /**
+   * PS24 — the `ModuleName` value inside a `#requires -Modules @{ … }` hashtable,
+   * starting at the `{`. Char-scanned and brace-balanced with quote awareness, because
+   * a `}` inside a quoted `ModuleVersion` must not close the hashtable.
+   *
+   * Returns null when the hashtable carries no `ModuleName` key. PowerShell's module
+   * hashtable is `{ ModuleName = 'X'; ModuleVersion | RequiredVersion | GUID = … }`, so
+   * the key is the only thing in it that names a module.
+   */
+  private readHashtableModuleName(text: string, openBrace: number): string | null {
+    const lower = text.toLowerCase()
+    let depth = 0
+    let quote = ""
+    for (let i = openBrace; i < text.length; i++) {
+      const c = text[i]
+      if (quote) {
+        if (c === quote) quote = ""
+        continue
+      }
+      if (c === "'" || c === '"' || c === "`") { quote = c; continue }
+      if (c === "{") { depth++; continue }
+      if (c === "}") {
+        depth--
+        if (depth === 0) return null
+        continue
+      }
+      if (depth !== 1) continue
+      // A KEY is a bare identifier at the hashtable's top level, so the scan can read
+      // one and compare it without knowing where the value ends.
+      if (!isAsciiLetter(c) && c !== "_") continue
+      let e = i
+      while (isAsciiLetter(lower[e]) || lower[e] === "_") e++
+      const key = lower.slice(i, e)
+      let v = e
+      while (text[v] === " " || text[v] === "\t") v++
+      if (text[v] !== "=") { i = e - 1; continue }
+      v++
+      while (text[v] === " " || text[v] === "\t") v++
+      // The VALUE ends at the `;` that separates hashtable entries, at the closing
+      // brace, or at whitespace — and a quoted value may contain both `;` and `}`
+      // without ending, so the scan is quote-aware for the same reason the brace
+      // balance is. A value cut at a `;` inside quotes yields `'Semi`, which is a
+      // garbage module name and worse than no name at all.
+      let vend = v
+      let vq = ""
+      while (vend < text.length) {
+        const vc = text[vend]
+        if (vq) {
+          if (vc === vq) vq = ""
+          vend++
+          continue
+        }
+        if (vc === "'" || vc === '"' || vc === "`") { vq = vc; vend++; continue }
+        if (vc === ";" || vc === "}" || vc === " " || vc === "\t") break
+        vend++
+      }
+      if (key === "modulename") {
+        const val = this.stripQuotes(text.slice(v, vend))
+        return val.length > 0 ? val : null
+      }
+      i = vend - 1
+    }
+    return null
   }
 
   /**
