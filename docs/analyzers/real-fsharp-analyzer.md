@@ -52,17 +52,17 @@ over upstream tree-sitter-fsharp:
 
 | Relationship type | Emitted? | How resolved | Confidence model |
 | --- | --- | --- | --- |
-| calls | ✅ | `app_expression`/`application_expression` → leaf callee name (`Map.tryFind` → `tryFind`, `store.Add` → `Add`, `first.Log` → `Log`, pipe `a \|> List.map` → `map`); single pass, deduped by identity in the harness. **Source (owner) is the enclosing callable**, and which callables count is the substance of FS-D10/D12/D13: a top-level `let` owns its initialiser's calls *whatever its kind* (a `let` with no arguments is a Variable, and a script top level has no enclosing callable, so keying on kind dropped 2,520 rows per 200 files); a `default` implementation owns its body's calls (it publishes no symbol — the abstract signature is canonical — but the body belongs to it); an explicit `with get, set` property owns its **setter**'s calls. A recursive `calls f -> f` is emitted: a self-CALL is a fact about the program, while a self-`contains` is not, and the refusal is per-label. | 0.8 |
+| calls | ✅ | `app_expression`/`application_expression` → leaf callee name (`Map.tryFind` → `tryFind`, `store.Add` → `Add`, `first.Log` → `Log`), **plus a BARE pipeline** (`infix_expression` whose `infix_op` token is a pipe) since FS-A6 (M60 pass 2) — single pass, deduped by identity in the harness. **FS-A6, and the doc's own pipe claim was half true until it was measured:** the pipe `a \|> List.map` → `map` was read only when the pipeline sat in CALLEE position (`f (x \|> g)`), because only the `application_expression` branch had an `infix_expression` arm. The shape F# is actually written in — a `let` whose BODY is the pipeline — produced nothing: **1,043 bare `\|>` nodes with a NAME on the right, against 580 read in callee position, on a 300-file corpus draw**, i.e. ~11% of the corpus's calls were absent from the label. The operator's TOKEN decides which side carries the callee (`\|>` `\|>>` `>>=` apply the right operand, `<\|` `<<` the left) and `>>` `>>>` `>=>` `<<<` are deliberately absent because they COMPOSE two functions and call neither. **FS-A4, in the same round:** the label was also gated on `fnName.length > 1`, which no property of the program justifies and which dropped every call to a one-letter function — **5,313 occurrences over 6,619 files in 735 files** (2.2% of the label's 246,327 full-extent edges), and the dropped population resolves BETTER than the emitted one (32.4% in-file on a 120-file draw against 22.2%). **Source (owner) is the enclosing callable**, and which callables count is the substance of FS-D10/D12/D13: a top-level `let` owns its initialiser's calls *whatever its kind* (a `let` with no arguments is a Variable, and a script top level has no enclosing callable, so keying on kind dropped 2,520 rows per 200 files); a `default` implementation owns its body's calls (it publishes no symbol — the abstract signature is canonical — but the body belongs to it); an explicit `with get, set` property owns its **setter**'s calls. A recursive `calls f -> f` is emitted: a self-CALL is a fact about the program, while a self-`contains` is not, and the refusal is per-label. | 0.8 |
 | extends | ✅ | `class_inherits_decl` (`inherit Animal()`) → `Animal`; source = the type. **R10 spelling:** a qualified target is published under the LEAF, with the qualified form kept in `metadata.qualifiedType` — the name this lane would publish for that type as a symbol, which is what a consumer joins on (FS-D9; 13 dotted `implements` + 3 dotted `extends` per 400 files) | 1.0 |
 | implements | ✅ | `interface_implementation` (`interface ILogger with`) → `ILogger`; source = the type. R10 leaf spelling as for `extends`. | 1.0 |
 | instantiates | ✅ | constructor chaining `new() = Point(0, 0)` → `Point` (enclosing constructor body); source = `constructor` | 0.95 |
-| overrides | ✅ | `override` keyword token (first child of `member_defn`) + `inherit` base → qualified `Owner.method -> Parent.method` (`Dog.Speak -> Animal.Speak`); base from the type's `class_inherits_decl` | 1.0 |
+| overrides | ✅ | `override` keyword token (first child of `member_defn`), and **FS-A2 (M60 pass 2) the target is resolved from the INTERFACE the member implements when there is one**, because `override` is not a statement about a base class: F# has no separate keyword for an interface member, so `interface I with override this.M() = …` implements `I.M`. Base-class form: `inherit Animal()` → `Dog.Speak -> Animal.Speak`. Interface form: `interface System.IDisposable with` → `Resource.Dispose -> IDisposable.Dispose`, carrying `metadata.relationshipType = "interface_member_implementation"` (the csharp lane's C923 shape, measured the same in java, kotlin, typescript, dart and python). The interface wins over the base list, and an OBJECT EXPRESSION is the same rule through a different node — `{ new IFoo with override x.M() }` has no `interface_implementation` node at all, the interface sits directly on the `object_expression`. **With neither an interface nor a base there is NO target and NOTHING is emitted**: pre-fix that case published `overrides Owner.M -> M`, a member overriding itself. Measured: 126 interface-implementation `override` members in 37 corpus files, 700 `override` members in types with no base at all across 179 files | 1.0 |
 | uses | ✅ (**M60, 2026-10-02** — was ❌) | **An attribute application**: `[<Struct>]`, `[<Obsolete("gone")]`, `[<assembly: TypeProviderAssembly(…)>]`. This is the only F# construct a `uses` edge is FOR: it names a type, applies it as a marker, and never invokes it — so it is not a `calls` (no application), not an `implements` (no interface declaration), not an `extends` (no base), not an `instantiates` (no construction), and not a `references` (nothing here is a signature; the declared-type pass reads type WRITERS and an attribute's type is the type of an object construction). Source = the decorated declaration, read from the scope stack the walk already maintains. Measured: **1,666 edges in 157 of a 400-file corpus draw, all at confidence 1.0, all `metadata.relationshipType = "attribute_application"`**; 29,441 `attribute` nodes in 2,492 corpus files. Pinned by `validation/m14/fixtures/fsharp/import-and-use.fs`. **The old ❌ is not still true** — its stated reason (C#-family parity; member *reads* are covered at call level) never addressed attributes, which are not member reads. What is still not emitted: `base.X` member access, measured at **0 occurrences across all 6,619 corpus files** (see §M60 below) | 1.0 |
 | references | ✅ | Two classes. (a) `open_statement`/`open_decl` → full module path; source = enclosing namespace/module; a module path is legitimately dotted and is **not** subject to the R10 leaf rule. (b) **R9 `declared_type`** — every type WRITTEN in a declaration: `class_field`, `parameter`, `return_type`, `record_field`, `union_case_payload`, `type_abbreviation`, `local_annotation`. Absent from this lane until FS-D4 (the m60 census measured `absent` with the control present). Two positions are **refused**: a type *parameter* and a *predefined* type (`int`, `string`) name no declaration, and a **type query** (`typeof<T>`, `unbox<T>`) is an expression carrying a type argument rather than a written type — `typeof<Foo>.Assembly.Location` depends on a runtime value. The grammar spells a query as a `typed_expression` whose `long_identifier_or_op` child reads `typeof` — a **sibling** of the type, not its parent, which cost two attempts at the discriminator that each measured nothing (FS-D11). A local's written type belongs to the enclosing **callable**, not to the class. | 0.9 (opens) / 1.0 (declared_type) |
 | contains | ✅ | owner → owned members via `ownerName` (namespace → module/type, module → type/function, type → member). **`contains X -> X` is refused at composition**, not by suppressing the label: a DU case named after its own type really is contained by its union (`type P = P of string`), so suppressing the label would lose a real fact — 368 such self-edges per 400 corpus files (FS-D3). A `type X with` extension publishes no symbol at all (FS-D2), and a forward declaration in a signature file merges with its definition rather than shadowing it (FS-D2 regression guard). | 1.0 |
 | depends | ✅ | imports → References | 0.9 |
 | imports | ✅ (**M60, 2026-10-02** — was ❌) | F#'s THREE import forms, all measured on the wired grammar over the whole corpus: (a) `import_decl` — `open X` and `open type X` are the SAME node (`seq("open", optional("type"), $.long_identifier)`), distinguished by the token and recorded as `metadata.opensTypes`; (b) `module_abbrev` — `module IO = System.IO`, F#'s only alias whose target lies outside the compilation, read as the direct `identifier` (the alias) plus the direct `long_identifier` (the path), so the edge names `System.IO` and not the file's own alias; (c) `fsi_directive_decl` for `#r` / `#load` / `#I` only — the node covers six keywords and `#time` / `#help` / `#quit` import NOTHING, so the keyword is read off the tree and the other three are refused. **BOTH labels stay on an `open`**: `imports` is the dependency `src/intelligence/analysis/dependencies.ts` reads (19 analyzers emit it; ER-D41 is this lane's exact shape), `references` is the mention — the confidences are asymmetric because the derivations are: 1.0 on `imports` because the directive NAMES the path, 0.9 on `references` because that is what it was already measured at. Measured: **705 edges in 158 of a 400-file draw — 689 `open_directive` + 16 `resource_directive`**; whole corpus 11,371 `import_decl` nodes in 2,540 files, 193 `fsi_directive_decl` in 135, 5 `module_abbrev` in 5 | 1.0 |
-| exports | ✅ **payload channel only** — the parse result's `ExportInfo[]` is populated (the FS-D8 surface rules); the graph EDGE is **RULED** (M60, 2026-10-02) | F# has no export DECLARATION.
+| exports | ✅ **payload channel only** — the parse result's `ExportInfo[]` is populated (the FS-D8 surface rules); the graph EDGE is **RULED** (M60, 2026-10-02, re-derived 2026-10-03) | F# has no export DECLARATION: the grammar produces no node type containing `export` in 353, and the adjacency count (7,818 member-declaring scopes in 3,630 files) is what `contains` already carries | — (no edge is emitted, so there is no confidence) |
 
 ## Supported constructs
 
@@ -714,10 +714,330 @@ Recorded because the fixture and the mutant are the only reason these are known.
    path's identifiers are grandchildren. An import of the file's own alias resolves — which
    is exactly why it would have been invisible downstream.
 
+## M60 ontology lane, PASS 2 — the six questions, adversarially (2026-10-03)
+
+Pass 1 shipped `imports` and `uses`, ruled `exports`, and left one question open. This pass
+asks the six questions the other way round: for every type the lane emits, find a case where
+the label is WRONG. Three were found, all on labels pass 1 called done, and all three are
+fixed here. Every number is from production `parseFile` (src/ast/pool-worker.ts) or from the
+wired grammar, and the two instruments that produce them are committed:
+`validation/m14/fixtures/fsharp/ontology-probe.ts` (whole corpus, 6,619 files),
+`validation/m14/fixtures/fsharp/ontology-census.ts` (400-file draw, seed 0x5f5a1) and
+`validation/m14/fixtures/fsharp/one-char-calls.ts` (120-file draw, 120 of the census's own).
+
+### What pass 1's numbers do now
+
+The pass-1 census was re-run before anything was changed and it reproduced **byte for
+byte**: 400/400 files, 0 failures, 5,750 symbols, 21,814 relationships, `calls` 12,604 /
+`contains` 4,258 / `references` 2,358 / `uses` 1,666 / `imports` 705 / `implements` 72 /
+`extends` 62 / `overrides` 42 / `instantiates` 47. So pass 1's evidence is sound and its
+verdicts stand; what changed is the analyzer underneath three of them.
+
+| type | pass 1 | pass 2 | why |
+|---|---|---|---|
+| `calls` | 12,604 / 176 files | **15,238 / 183** | FS-A4 (one-character callees) + FS-A6 (bare pipelines) |
+| `overrides` | 42 / 19 files | **33 / 14** | FS-A2 (interface targets; 9 self-targeted edges removed) |
+| `instantiates` | 47 / 22 files | **48 / 23** | FS-A4 — the length gate also stood in front of constructor chaining |
+| `contains`, `uses`, `imports`, `references`, `extends`, `implements` | 4,258 / 1,666 / 705 / 2,358 / 62 / 72 | identical | untouched |
+| symbols | 5,750 | 5,750 | no symbol rule was touched |
+| relationships (all ten types) | 21,814 | 24,440 | +2,626 |
+
+`exports` is re-derived below and still reads 0.
+
+### FS-A2 — `overrides`: the label was right and the TARGET was a fabrication
+
+**The strongest argument that the label is wrong, and the corpus supports it.** `override` is
+F#'s keyword for implementing an ABSTRACT MEMBER, of a base class or of an interface — F# has
+no second keyword, exactly as in C#. The lane read the `override` **token** and nothing else,
+so it published:
+
+```
+overrides  Disposable.Dispose  ->  Dispose              // no `inherit` anywhere: overrides ITSELF
+overrides  Disposable.Dispose  ->  Base.Dispose         // `inherit Base()` also present
+```
+
+Both are wrong, and the first is the shape of a fabricated edge — a target that names no other
+declaration. Populations, whole corpus, instrument B:
+
+| probe | population | what it is |
+|---|---|---|
+| A1 `override` under an `interface_implementation` | **126 in 37 files** | implements an interface member |
+| A1-control `override` with no interface ancestor | **1,861 in 331 files** | a real base-class override, untouched |
+| A2 `override` in a type with NO `class_inherits_decl` | **700 in 179 files** | the population that could resolve to nothing |
+| A3-control `interface_implementation` in a class body | 905 in 363 files | already read as `implements` |
+| A3-control-2 bare `type I = interface … end` | 230 in 110 files | already read |
+
+**The case that makes it a defect rather than a style question** is corpus file
+`vsintegration/tests/Salsa/VsMocks.fs`, where `Animal`-shaped accidents do not exist but
+mock objects do: `{ new IVsThreadedWaitDialog2 with override x.StartWaitDialog(…) = 0 }` —
+six members across two object expressions, all published pre-fix as
+`overrides new IVsThreadedWaitDialog2.StartWaitDialog -> StartWaitDialog`.
+
+**The fix follows the family rather than inventing a rule.** csharp's
+`resolveInterfaceImplementations` (C923) emits `overrides M -> I.m` with
+`metadata.relationshipType = "interface_member_implementation"`, measured the same in java,
+kotlin, typescript, dart and python. So the label stays `overrides`, the target is read from
+the interface clause the tree writes, that clause wins over the base list, and an object
+expression is the same rule read through its own node (it has no `interface_implementation`
+node at all — the interface sits directly on the `object_expression`). **With neither an
+interface nor a base there is no target and nothing is emitted.**
+
+Effect on the 400-file draw: `overrides` 42 → 33 (28 base-class + 5
+`interface_member_implementation`), still **100.0% in-file and 100.0% project-scope**
+resolution at both ends. Pinned by `validation/m14/fixtures/fsharp/override-target.fs`, whose
+forbid rows are the three wrong answers including `Guarded.Speak -> Animal.Speak`, where the
+wrong target names a member that REALLY EXISTS — a fabricated edge that resolves, which is
+why no census caught it.
+
+**What is now under-reported, and why it is not emitted.** A2's population minus A1 is 574
+`override` members in a type with no base. The real case is `[<CustomEquality>]` on a union —
+`src/Compiler/Utilities/TypeHashing.fs:428`:
+
+```fsharp
+[<CustomEquality; NoComparison>]
+type TypeStructure =
+    | Stable of hash: int * tokens: TypeToken[]
+    | Unstable of hash: int * tokens: TypeToken[]
+    | PossiblyInfinite
+
+    override this.GetHashCode() = …      // overrides System.Object.GetHashCode
+    override this.Equals(other) = …      // ditto
+```
+
+F# compiles that because every type derives from `System.Object`, so the base list is empty
+but the declaration is real. Reading it as `System.Object.M` would be an inference from F#'s
+type system rather than from the declaration, at a confidence below 1.0, with a target that
+binds to nothing in any corpus that does not contain .NET's own source — and the workstream's
+rule is that a narrow graph which is true beats a wide graph which is not. So the edge is not
+emitted and the population is reported: **574**. Overturn condition: a measurement showing the
+target resolves, or a decision that this lane may infer `System.Object` as an implicit base.
+
+### FS-A4 — `calls`: 5,313 real calls dropped by a length test
+
+`calls` was gated on `fnName.length > 1`. By the time the branch runs the grammar has already
+said the callee is a NAME node, so the gate removed exactly one thing: every call to a
+one-letter function, which is idiomatic F# (`let f x = …` composed into `f getLines`).
+
+* **5,313** one-character applications over the 6,619-file corpus, in **735** files — 2.2% of
+  the label against its 246,327 full-extent edges.
+* The dropped population is **better connected than the emitted one**: on a 120-file draw of
+  the census's own sample, **32.4%** of one-character callees name a symbol the same file
+  publishes, against **22.2%** for emitted `calls` in-file. That is the number that decided
+  it — a gate that removes the better-resolving edges is not a noise filter, it is an
+  unexamined rule.
+* The gate also stood in front of the constructor-chaining `instantiates`, which is why that
+  label gained one edge on the draw (47 → 48).
+
+### FS-A6 — `calls`: the pipeline the lane's own doc claimed to read
+
+This lane's doc has said since M12 that pipe `a |> List.map` reads as `map`. It was true only
+by accident: the `application_expression` branch has an `infix_expression` arm, so a pipeline
+was read when it sat in **callee position** (`f (x |> g)`), and the shape F# is actually
+written in — a `let` whose BODY is the pipeline — produced nothing at all.
+
+```
+let relevant (diags: FSharpDiagnostic array) =      // src/FSharp.Compiler.Service/…
+    diags
+    |> Array.filter (fun d -> …)                     // no `calls relevant -> filter`
+```
+
+* Sized BEFORE the rule was written, on a 300-file draw with a ≤200 KB size ceiling:
+  **1,043** bare `|>` infix nodes, **1,037** of them with a NAME on the right, against **580**
+  read in callee position — a 63/37 split, so the label was missing roughly a tenth of the
+  calls the corpus writes, in the most idiomatic construct the language has.
+* Whole corpus, whole population: **48,414** pipe infix nodes across **1,801** files, bare and
+  in-callee-position together, plus **1,261** composition-operator infix nodes in **186** files
+  which are excluded and counted so the exclusion is visible rather than assumed (probes A6
+  and A6-control).
+* The rule as shipped, on the census's own 400-file draw (≤512 KB ceiling, so a DIFFERENT
+  population from the 300-file sizing run and not a prediction of it): **2,558 pipeline
+  edges** — `|>` 2,489, `<|` 63, `<<` 6 — plus **76** one-character-callee edges. Those two
+  are the whole of `calls`' +2,634.
+* The operator's TOKEN decides which side carries the callee: `|>` `|>>` `>>=` apply the right
+  operand, `<|` `<<` the left. `>>` `>>>` `>=>` `<<<` are **deliberately excluded** — they
+  COMPOSE two functions and call neither (`let h = f >> g` builds a closure), and an edge from
+  them would be a fabrication. Measured: 1,261 such nodes in 186 corpus files (13 bare
+  `>>` in the sizing draw), excluded on that ground.
+* The rule asks for NAME siblings rather than the last child, which is what makes
+  `x |> List.map (fun y -> y)` read the pipeline instead of its lambda.
+
+**Why the differential never reported either calls defect, stated with a number.**
+`script/m14/fsharp-truth-oracle.ts` reads `application_expression` and `prefixed_expression`
+and has no `infix_expression` branch, and its `name.length > 1` test is the analyzer's retired
+gate verbatim. Both sides said nothing, so nothing disagreed — the workstream's central
+failure mode ("when a type is absent from BOTH … both say nothing") reproduced INSIDE a single
+label rather than across the ten. The same holds for FS-A2: the oracle derives `overrides`
+from the same `override` token and falls back to the member's own name the same way.
+
+### The six questions, per emitted type, after this pass
+
+400-file draw, seed 0x5f5a1, production `parseFile`. Resolution is given at both scopes
+because the workstream's 66.8% CSS reference point does not say which it means.
+
+| type | 1 Exists | 2 Fires | 3 Correct | 4 Labelled | 5 Resolved (in-file / project) | 6 Confident |
+|---|---|---|---|---|---|---|
+| `calls` | derived | 15,238 / 183 files | ❌ **oracle shares 2 defects** — 65 unexplained vs it | ✅ 4 classes by `metadata`: `-` 12,680, `pipeline:\|>` 2,489, `pipeline:<\|` 63, `pipeline:<<` 6; no neighbour-label bleed | **20.6% / 30.9%** | all 0.8; **0 below 0.7** |
+| `contains` | derived | 4,258 / 260 | ✅ | ✅ | **100.0% / 100.0%** | all 1.0; 0 below 0.7 |
+| `references` | derived | 2,358 / 195 | ✅ | ✅ `declared_type` 1,669 + `isImport` 689 | **20.1% / 34.1%** | mean 0.971; 0 below 0.7 |
+| `uses` | derived | 1,666 / 157 | ❌ **no oracle** — DERIVATION 1 | ✅ all `attribute_application` | **1.9% / 4.0%** | all 1.0; 0 below 0.7 |
+| `imports` | derived | 705 / 158 | ❌ **no oracle** — DERIVATION 2 | ✅ `open_directive` 689 + `resource_directive` 16 | **2.4% / 22.3%** | all 1.0; 0 below 0.7 |
+| `extends` | derived | 62 / 30 | ✅ | ✅ | **58.1% / 66.1%** | all 1.0; 0 below 0.7 |
+| `implements` | derived | 72 / 20 | ✅ | ✅ | **20.8% / 43.1%** | all 1.0; 0 below 0.7 |
+| `overrides` | derived | 33 / 14 | ❌ **9 MISSING, all truth-side** (see the A/B) | ✅ 28 base + 5 `interface_member_implementation`, distinguishable by metadata | **100.0% / 100.0%** | all 1.0; 0 below 0.7 |
+| `instantiates` | derived | 48 / 23 | ✅ | ✅ 48 `construction` | **33.3% / 35.4%** | all 0.95; 0 below 0.7 |
+| `exports` | — | **0** | — | — | — | — |
+
+Standing rules re-measured on this draw: **0** empty-or-unknown `SymbolKind` rows, **0**
+empty symbol names, **0** endpoints equal to `unknown`, **0** edges below 0.7 across 24,440
+relationships. The heuristic class is empty and countable.
+
+**Q5's honest reading, including the regression.** `calls` in-file resolution moved 22.2% →
+20.6% and project-scope 33.1% → 30.9%. That is the cost of FS-A4 and FS-A6 and it is stated
+rather than buried: the 2,626 added edges are on average LESS connected than the edges that
+were already there, because a bare pipeline's right operand is usually a library function
+(`filter`, `map`, `concat`) that lives in an assembly this corpus does not contain. The gain
+is that they are true; the cost is a lower ratio on a bigger denominator.
+
+### The differential A/B, on one pinned draw — and what it costs
+
+Both runs, `bun run script/m14/differential.ts --lang fsharp`, with `BB_M14_WORK` pointed at a
+private work root so the cold-pool rotation counter and the lane's seen-set started from the
+same empty state. The draw is identical — `tree-truth=4984` and `hash=2143f8bdc90fe3f1` in
+both rows — so the comparison is like for like.
+
+```
+BEFORE  files=60 tree-truth=4984 covered=4984 (100%)  MISSING=0  | analyzer-edges=2721 unexplained=0  (0%)
+AFTER   files=60 tree-truth=4984 covered=4975 (99.8%)  MISSING=9  | analyzer-edges=2793 unexplained=65 (2.3%)  unexplained-by-label: calls=65
+```
+
+* **MISSING 0 → 9, and every one is a truth-side defect.** The samples are
+  `overrides TypeStructure.GetHashCode -> GetHashCode`,
+  `overrides TypeStructure.Equals -> Equals` and
+  `overrides AssemblySymbol.ToString -> ToString`: the oracle deriving the pre-fix self-target
+  spelling, because it reads the same `override` token and falls back to the member's own name
+  the same way. The analyzer no longer agrees with it, which is the point.
+* **unexplained 0 → 65, all `calls`,** and they are the FS-A4/FS-A6 edges the oracle does not
+  derive. The harness calls a truth-side gap a fabrication; the number is reported rather than
+  argued with.
+* Net analyzer edges on this draw: 2,721 → 2,793.
+
+**This makes the lane's pinned differential row stale and needs three shared edits, none made
+here** (§8). Applied together, not separately:
+
+1. `script/m14/fsharp-truth-oracle.ts` — (a) add an `infix_expression` rule reading the
+   `infix_op` token and taking the name on the pipe's callee side, mirroring
+   `PIPELINE_CALLEE_SIDE` in `src/ast/real-fsharp-analyzer.ts`; (b) drop the `name.length > 1`
+   gate at lines 649 and 715; (c) resolve an `overrides` target from the enclosing
+   `interface_implementation` (or `object_expression`) before falling back to the base list,
+   and refuse when neither exists.
+2. `script/m14/differential.ts:23153` — admit `"imports"` and `"uses"` for `lang === "fsharp"`
+   in the analyzer-side allowlist (unchanged from pass 1; still required before the oracle can
+   derive them without every true row reading as MISSING).
+3. `validation/m14/differential-baseline.json` — re-pin the `fsharp:csharp` row, currently
+   `missing: 0, unexplained: 0, heuristic: 0, avgMsPerFile: 72.1`.
+
+### DERIVATION findings — 2, unchanged, and now with the mechanism named
+
+| # | label | edges on the draw | truth rows | allowlist |
+|---|---|---|---|---|
+| 1 | `uses` | 1,666 | **0** — `deriveFsharpEdges` emits no `uses` | not admitted for fsharp |
+| 2 | `imports` | 705 | **0** — no `imports` rule in the oracle | not admitted for fsharp |
+
+The oracle emits exactly seven labels — `calls`, `contains`, `extends`, `implements`,
+`instantiates`, `overrides`, `references` (counted from its own `emit(` call sites) — and the
+harness's compared set for fsharp is those seven, so **2 of this lane's 9 emitted types are
+stored and compared against nothing.** Pass 2 adds no new DERIVATION finding and retires none:
+FS-A2, FS-A4 and FS-A6 are all inside labels the differential DOES audit, and the finding they
+produce is of the opposite kind — audited against an oracle that shares the defect.
+
+### The `exports` ruling, re-derived as a search rather than a list
+
+Pass 1's ruling named six candidate node types and found all six absent. That is only as strong
+as the six, so this pass asks the inventory the open question instead: which node types the
+grammar produces at all whose name mentions an export surface? Over the same 6,619 files and
+the same 353 distinct node types:
+
+```
+node types matching an export-surface word: 5
+  open                 11,467 in 2,544 files   (matched "open")
+  member_signature      6,742 in   533 files   (matched "signature")
+  access_modifier       4,850 in 1,016 files   (matched "access")
+  property_accessor     1,529 in   211 files   (matched "access")
+  delegate_signature      143 in    71 files   (matched "signature")
+of those, an export DECLARATION: 0
+every node type the grammar can produce whose name contains "export": (none)
+```
+
+The adjacency number is unchanged and re-measured: **7,818** namespaces/modules declaring at
+least one member, in **3,630** files, which is what `contains` already carries at 100.0%
+resolution. **The ruling stands.** Overturn condition, restated as a search: any node type
+whose name contains `export` appearing at a non-zero count over the corpus, or any of the six
+named types.
+
+### Two instrument disagreements, both small and both explained
+
+* `import_decl` reads **11,371 in 2,540 files** under instrument A (which walks every child)
+  and **11,370 in 2,539** under instrument B (which walks named children only). One node in one
+  file, and the cause is the two traversal rules: exactly one `import_decl` in the corpus hangs
+  off an anonymous node. Both numbers are reproducible; they answer different questions, and
+  pass 1 quoted instrument A's.
+* Every other probe population reproduced pass 1 exactly: `attribute` 29,441 / 2,492;
+  `fsi_directive_decl` 193 / 135; `module_abbrev` 5 / 5; resource directives 185 / 134;
+  `base.X` **0**; operator definitions 249 / 104.
+
+### The `member _ : IFoo with …` question from pass 1 — SETTLED, and it is a grammar gap
+
+Pass 1 left open whether F#'s inline interface implementation was unread. It is not the shape
+it looked like. The probe separates the two constructs that share it — a property accessor list
+(`member _.P : int with get, set`) from an interface implementation — and finds:
+
+| probe | population | verdict |
+|---|---|---|
+| `member` with a `with` clause carrying `property_accessor` nodes | the property spelling | already read (property + setter calls) |
+| the same with accessors excluded | **7 per 1,200 files** | every printed example is an `{ new IFoo with … }` OBJECT EXPRESSION, which FS-D7 already reads |
+| `type I = interface J with … end` — the NAMED interface declaration | **32 in 24 files** | **NOT READ, and not readable from this tree** |
+
+The last row is the real answer. F#'s ordinary way to declare an interface that extends another
+is `type IFoo = interface IBar with … end`, and the pinned grammar does not parse it: the
+`interface` keyword lands in an ERROR node, `IBar` is taken as a `union_type_case` OF the
+interface itself, and the rest of the body becomes a second ERROR. Three consequences, all
+structural and none fixable in the analyzer:
+
+* the type is classified from `union_type_defn`, so it is published as an **Enum**;
+* the base interface name is published as an **EnumMember** of the interface;
+* **no `implements` edge exists for it**, and the members inside the ERROR are not walked at
+  all — the walk discloses a recovery region and does not descend (FS-D15/D16).
+
+So `implements` is under-reported by **32 declarations in 24 of 6,619 files** (2.7% of the
+1,167 interface-declaration shapes the corpus contains: 905 in class bodies + 230 bare + 32
+named). It is a **grammar** gap, not an analyzer one, and the fix belongs in
+`grammars/tree-sitter-fsharp/` (the same external-scanner probe that already discriminates
+`interface` in an implicit class body), which is shared and not this lane's. No edge was
+invented to cover it. Pass 1's parse-health table already carried this construct as item 6
+("bare `interface IY` type body", 8 nodes) measured by a narrower discriminator; this pass
+counts 32 by counting `union_type_defn`s carrying an `interface` ERROR, and both numbers are
+real.
+
+### Gates re-run at this pass's HEAD
+
+| gate | command | result |
+|---|---|---|
+| F3 fixtures | `bun run script/m14/run-fixtures.ts --lang fsharp` | **10/10 PASS** (8 pre-existing + `override-target` + `one-char-calls`) |
+| F4 mutants | `BB_MUTANT_ONLY="fsharp/" bun run script/m14/mutate-analyzer.ts` | **21/21 CAUGHT** (18 pre-existing + 3 new) |
+| tsc | `npx tsc --noEmit -p tsconfig.json` | clean |
+| census | `npx tsx validation/m14/fixtures/fsharp/ontology-census.ts` | 400/400 parsed, 0 failures — §"What pass 1's numbers do now" |
+| probe | `npx tsx validation/m14/fixtures/fsharp/ontology-probe.ts` | 6,619/6,619 walked, 353 node types, 0 skipped |
+| F5 differential | `bun run script/m14/differential.ts --lang fsharp` | see the A/B above; the pinned row needs re-pinning (§8) |
+| M60 arbiter | `npx tsx script/m14/ontology-coverage-gate.ts fsharp` | still refuses: `no RULING TABLE for fsharp`, exit 2 — unchanged from pass 1 and for the same reason (`RULED_BY_LANG` carries `bash` and `json`) |
+
 ### Declared limitations
 
 For a Turing-complete language this list is not optional, and a blank one would be a claim
 rather than an achievement.
+
+### Declared limitations, pass 1 (2026-10-02)
+
+**Pass 1 (2026-10-02) — this list still stands; pass 2's is below it.**
 
 - **Two of ten labels have no oracle.** `uses` and `imports` are stored and compared against
   nothing (above, measured). Until the oracle and the allowlist land, a defect in either
@@ -744,6 +1064,56 @@ rather than an achievement.
   between the delimiter tokens the tree reports; F# escapes a quote inside `@"…"` by
   doubling it and this does not un-double it. No corpus specifier does (measured over the
   193 `fsi_directive_decl` nodes), and a visibly wrong path beats a silently truncated one.
+
+### Declared limitations, pass 2 (2026-10-03)
+
+Each of these is a number or a named construct rather than a mood:
+
+- **Three of this lane's labels are audited by an oracle that shares their defects.** The
+  measured consequence is on the table above: 65 unexplained `calls` rows and 9 `overrides`
+  MISSING rows on one pinned 60-file draw, every one of them traceable to a rule the oracle
+  and the analyzer share rather than to either being wrong on its own. A differential over one
+  grammar cannot see a bug both walkers share; the six questions' Q3 is therefore bounded for
+  this lane in a way the numbers in the table do not suggest.
+- **`overrides` is under-reported by a measured 574 members** — an `override` in a type with
+  no base and no interface, which F# allows because every type derives from `System.Object`
+  (`[<CustomEquality>]` on a union). Reading `System.Object.X` would be an inference at
+  confidence < 1.0 with a target that binds to nothing in any corpus that does not contain
+  .NET's own source, so nothing is emitted. A corpus that DOES contain such a target, or a
+  decision that this lane may infer the implicit base, would overturn that.
+- **`implements` is under-reported by 32 declarations in 24 of 6,619 files** — the named
+  interface form `type I = interface J with … end`, which the pinned grammar mis-parses into
+  an ERROR plus a one-case union. A GRAMMAR gap: the analyzer publishes the type as an `Enum`
+  and the base interface as an `EnumMember`, publishes no `implements` edge, and does not walk
+  the members inside the recovery region at all. No edge was invented to cover it.
+- **`calls` resolution fell, and that is the price of the fix.** In-file 22.2% → 20.6%,
+  project-scope 33.1% → 30.9%, on a 12.6% larger label. A pipeline's right operand is usually
+  a library function that lives in an assembly this corpus does not contain, so the added
+  edges are on average less connected than the ones already there.
+- **The `new`-prefix gate was NOT measured.** `calls`' one-character gate was removed with a
+  population and a resolution rate behind it; the identical gate on the `prefixed_expression`
+  branch (`new X()` with a one-letter type name) was left in place because no measurement
+  exists for it. Same shape, same absence of a reason, different evidence — and the difference
+  is recorded in the source rather than smoothed over.
+- **Pipe operators the lane does not read.** `>>` `>>>` `>=>` `<<<` compose two functions and
+  call neither, so they emit nothing — 1,261 such nodes in 186 corpus files. If a consumer
+  wants composition edges that is a different relationship type, not a gap in this one.
+- **`Global` is a source that names nothing.** 2,021 file-level `import_decl`/`attribute`
+  nodes over the corpus have no enclosing scope, and the `imports`/`references`/`uses` rules
+  source them to the literal string `Global`, which no file declares — which is why `imports`
+  resolves at 90.6% at the source end against 100.0% for every other label. It is not the
+  literal `unknown`, so ledger R7 does not catch it, and a name-keyed consumer sees an
+  unresolvable source. Removing the edges would lose real dependencies; inventing a module
+  symbol would be a fabrication. Left, measured, declared.
+- **Both draws are FSharp.Compiler plus its tests.** One repository, 6,619 files, a
+  self-hosting compiler in a narrow style. The pipeline and one-character populations are
+  style-sensitive: a corpus of F# scripts would weight them very differently, and a
+  functional codebase would weight `|>` higher still.
+- **Two draws, two size ceilings.** The 300-file sizing run for FS-A6 admitted ≤200 KB and the
+  census admits ≤512 KB, so they are different populations drawn from the same seeded shuffle.
+  Their counts are each reproducible and neither predicts the other; both are quoted with the
+  ceiling that produced them.
+
 
 ### Unresolved
 
@@ -776,6 +1146,86 @@ rather than an achievement.
   absent: instrument B's file column was counting distinct SPELLINGS rather than files when this was measured,
   and the corrected column now lives in `ontology-probe.ts` rather than being guessed at from the old one.
 
+### Broken outside this language — found, not fixed (§8)
+
+- **`script/m14/verify-doc-truth-emissions.ts` drops the FIRST BODY ROW of every claim table.**
+  `parseClaimTable` walks the table and, on the first non-rule row after the header, executes
+  `if (!started) { started = true; continue }` — which advances past that row without reading
+  it. Minimal reproducer, three rows, run against the module directly:
+
+  ```
+  | Relationship type | Emitted? | How resolved | Confidence |
+  | --- | --- | --- | --- |
+  | calls | ✅ | a | 0.8 |
+  | contains | ✅ | b | 1.0 |
+  | uses | ❌ | c | — |
+
+  parseClaimTable -> rows: 2   contains=YES uses=NO        // `calls` is absent
+  ```
+
+  The visible symptom in this lane is `UNDOCUMENTED [fsharp] calls`, which is **pre-existing**
+  and identical before and after this pass (verified by running the gate against `HEAD`'s doc).
+  Project-wide it is `UNDOCUMENTED=40` of 48 analyzers, and it is the benign direction: a claim
+  that is silently ignored, not a wrong verdict. The direction that matters is the other one —
+  a lane whose FIRST row says "not emitted" for a label the analyzer does emit gets its
+  FALSE_NEGATIVE skipped, and `FALSE_NEGATIVE=7` project-wide should be read as a floor until
+  this is fixed. One-line fix in the shared file, not made here.
+- **`ontology-coverage-gate.ts` still refuses to report for this lane**, unchanged: exit 2 and
+  `no RULING TABLE for fsharp`, verified again on a 2-file bounded corpus root
+  (`BB_CORPUS_ROOT=/tmp/…/mini-root`, `corpus: 2 admitted files`). `RULED_BY_LANG` carries
+  `bash` and `json`. The lane therefore carries its own census, and its per-type verdicts have
+  never been produced by the arbiter.
+- **`script/m14/fsharp-truth-oracle.ts` shares three defects with the analyzer it audits**
+  (`infix_expression` unread, the `length > 1` gate, and the `override`-token target
+  resolution). Measured consequence on one pinned 60-file draw: 65 unexplained `calls` rows and
+  9 `overrides` MISSING rows, all attributable to the shared rules. This is the harness's
+  declared limitation made numeric rather than rhetorical, and it is why this pass's three fixes
+  move the F5 row the wrong way on purpose.
+- **`docs/DOC-TRUTH-EMISSIONS.md` was regenerated by running the gate and then NOT committed.**
+  Its delta at this HEAD is dominated by other lanes' analyzer changes (FALSE_NEGATIVE 8 → 7,
+  NO_CLAIM_TABLE 20 → 22), so committing it would import other branches' state into this one.
+  Left for the supervisor's own regeneration.
+
+## M60 pass 2 — Unresolved
+
+
+Stated as unresolved rather than rounded off. Nothing here is claimed as settled.
+
+- **574 `override` members with no readable base** (FS-A2's remainder) emit nothing. The
+  language fact is that F#'s implicit base is `System.Object`; the decision not to infer it is
+  a judgement about confidence and resolution, and it is reversible with a measurement.
+- **32 named interface declarations are unread** because the pinned grammar mis-parses
+  `type I = interface J with … end`. The fix belongs in `grammars/tree-sitter-fsharp/`'s
+  external scanner — the same probe that already discriminates `interface` in an implicit
+  class body — and in a wasm rebuild. Neither is this lane's file, so it is a report and not
+  a patch.
+- **The lane's pinned differential row is stale** and three shared edits are listed in §8 of
+  this section's A/B. Until they land together the F5 row under-reports what is audited (2
+  DERIVATION labels) and over-reports what is wrong (9 MISSING rows that are the oracle's
+  defect, 65 unexplained rows that are the oracle's gap).
+- **The `new`-prefix one-character gate is unmeasured**, so `instantiates` may be
+  under-reporting by an unquantified amount. It was left rather than guessed.
+- **Composition operators (`>>` `>>>` `>=>` `<<<`) emit nothing** — correctly, on this lane's
+  reading, but the reading is a decision about what `calls` means rather than a measurement,
+  and no consumer requirement has been checked against it.
+- **Latency: measured, and the first measurement was wrong.** Two rules were added inside the
+  existing single-pass walk, plus one unbounded parent walk per `override` member (33 members
+  on the 400-file draw; the corpus's densest file, VsMocks.fs, has 6). A first A/B over a
+  120-file sample of the census's own draw read **54.5 ms/file before against 63.2 after**,
+  +16% with non-overlapping ranges, which reads as a real cost for +8.4% more relationships.
+  Re-measured **interleaved** on the same files, because four lanes share the box:
+
+  ```
+  round 1   BEFORE 65.3 ms/file (7,470 relationships)   AFTER 77.8 ms/file (8,096)
+  round 2   BEFORE 76.1 ms/file (7,470 relationships)   AFTER 67.9 ms/file (8,096)
+  ```
+
+  The ranges overlap almost completely, so the +16% was the machine's load and **no claim
+  finer than "inside the run-to-run spread of a shared box" is supported**. Reporting the first
+  number would have been a fabricated measurement of someone else's CPU time. Pass 1's own
+  latency row is neither re-baselined nor re-asserted here.
+
 ## Issue
+
 
 Closes M12.08 (GitHub issue #147). The 2026-09-28 M14 round above does not close it.
