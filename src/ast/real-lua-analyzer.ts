@@ -97,6 +97,14 @@ interface LuaContext {
    * override: `setmetatable(D, B)` (direct) and `setmetatable(D, {__index = B})`
    * (through a metatable). */
   supertypeLinks: Map<string, Set<string>>
+  /** M60 LUA-51: every link `collectFactorySupertypeLinks` derived, keyed
+   * `"derived|base"`, holding BOTH endpoint names and the LINE of the supertype
+   * argument. An `extends` edge synthesized with no line is indistinguishable from
+   * one the analyzer invented, which is the same reason `membersByOwner` keeps
+   * first-declaration lines for `overrides` — and keeping the names in the value
+   * rather than re-splitting the key is what stops this map being confused with
+   * `supertypeLinks`, which holds two other conventions. */
+  factorySupertypeLines: Map<string, { derived: string; base: string; line: number }>
 }
 
 export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
@@ -117,6 +125,7 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
       declarationsByLabel: new Map(),
       membersByOwner: new Map(),
       supertypeLinks: new Map(),
+      factorySupertypeLines: new Map(),
     }
 
     this.collectErrors(rootNode, ctx)
@@ -126,6 +135,9 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
     // M60 LUA-44: also BEFORE the walk, because a supertype link may be written
     // after the member that overrides it, and an override needs both sides.
     this.collectSupertypeLinks(rootNode, ctx)
+    // M60 LUA-51: same reason, and it is a separate convention from the three
+    // `collectSupertypeLinks` reads. Also BEFORE the walk.
+    this.collectFactorySupertypeLinks(rootNode, ctx)
     const rootFrame: LuaFrame = { localNames: new Set<string>(), inFunction: false }
     const stack: { node: Node; frame: LuaFrame }[] = [{ node: rootNode, frame: rootFrame }]
 
@@ -217,6 +229,9 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
 
     this.addContainsRelationships(ctx)
+    // M60 LUA-51: BEFORE addOverrideRelationships, because that method reads
+    // `supertypeLinks` and the factory links must already be in it.
+    this.addFactorySupertypeEdges(ctx)
     this.addOverrideRelationships(ctx)
     const detectedFrameworks = [...ctx.frameworks]
     const detectedPatterns = [...ctx.patterns]
@@ -1144,6 +1159,238 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
       }
       for (let i = 0; i < node.namedChildCount; i++) { const c = node.namedChild(i); if (c) stack2.push(c) }
+    }
+  }
+
+  /**
+   * M60 LUA-51 — a WRITTEN supertype CLAUSE, expressed as an ordinary call argument.
+   *
+   * MEASURED BEFORE THIS METHOD EXISTED (script/m60/lua-supertype-arg-probe.ts, over
+   * the 3,250 admitted corpus files): 7 written supertype arguments across 5 files,
+   * of which 2 are inheritance and neither was emitted. The two:
+   *
+   *   luarocks/vendor/argparse.lua:277   local Command = class({...}, {...}, Parser)
+   *   luarocks/vendor/argparse.lua:328   local Option  = class({...}, {...}, Argument)
+   *
+   * `extends` read only `setmetatable` (real-lua-analyzer.ts:924) and the `class`
+   * branch read only `firstString`, the class's own NAME — so a parent passed in ANY
+   * argument position was invisible.
+   *
+   * ## Why the position is READ and not GUESSED
+   *
+   * The obvious implementation is "the third argument of a `class` call is the
+   * parent", and it is wrong in a way the corpus demonstrates: middleclass's own form
+   * is `class("Name", Super)` — second position — and luarocks' is
+   * `class(prototype, properties, parent)` — third. A fixed index publishes a wrong
+   * edge for one of them and misses the other.
+   *
+   * So the position comes from the CALLEE'S OWN PARAMETER LIST, which the same file
+   * writes down:
+   *
+   *   local function class(prototype, properties, parent)
+   *                        0           1          2      <- the parent slot
+   *
+   * A parameter whose NAME states the supertype role (`parent`, `super`, `base`,
+   * `supertype`, `superclass`, …) identifies its own slot. If the file does not
+   * declare such a parameter there is nothing to read, and no edge is published — so
+   * the rule cannot invent a relation from a call that never claimed one.
+   *
+   * ## Why this is `extends` and not `implements`
+   *
+   * Because the callee's body composes the parent into the object it returns:
+   *
+   *   if parent then cl.__prototype = deep_update(deep_update({}, parent.__prototype), prototype)
+   *
+   * The new class's prototype is built FROM the parent's. That is inheritance, and it
+   * is the same relation the `setmetatable` forms already publish, so it carries the
+   * same label and feeds the same `supertypeLinks` map that `overrides` reads.
+   *
+   * ## Confidence
+   *
+   * 0.95, `usage_contextual` — NOT 1.0 and NOT `structural`, and deliberately so.
+   * Both endpoint NAMES are written in the file, which is what earns `extends` 1.0
+   * elsewhere; what is a convention rather than a fact is the ROLE: that a parameter
+   * named `parent` means the supertype. `overrides`' `lua_inherited_member` takes the
+   * same 0.95 for the same reason and cites the same family precedent
+   * (real-objective-c-analyzer.ts:1020). The corpus shows the cost of reading it as
+   * certain: `snacks.nvim/lua/snacks/layout.lua` and three other files declare a
+   * `parent` parameter for TREE TRAVERSAL (`_each(widget, parent)`,
+   * `add(result, parent)`), and the probe returns all 5 of those alongside the 2 real
+   * ones.
+   *
+   * So the read is narrowed to the case the corpus proves is inheritance: the factory
+   * must be ASSIGNED to a top-level name, because `local Command = class(...)` is what
+   * makes the edge's SOURCE a name a consumer can follow, and the derived and base
+   * names must differ.
+   */
+  private collectFactorySupertypeLinks(root: Node, ctx: LuaContext): void {
+    const SUPERTYPE_ROLES = new Set([
+      "parent", "super", "base", "supertype", "superclass", "super_class", "parentclass", "parent_class",
+    ])
+    /** Parameter names of a `parameters` node, in order. `...` is a
+     * `vararg_expression` and is not a slot, so it is skipped rather than counted. */
+    const paramNames = (params: Node | null): string[] => {
+      const out: string[] = []
+      if (!params) return out
+      for (let i = 0; i < params.namedChildCount; i++) {
+        const c = params.namedChild(i)
+        if (!c) continue
+        if (c.type === "identifier") out.push(c.text)
+        else if (c.type === "vararg_expression") continue
+        else out.push("")
+      }
+      return out
+    }
+    // Does the factory fold `param` into a METAMETHOD field of the object it builds?
+    // That is what inheritance means in Lua, and it is the only discriminator the
+    // corpus supports — the parameter NAME is not one, because `parent` is also the
+    // ordinary name for a tree-traversal argument.
+    //
+    // Two shapes, both written in real code:
+    //
+    //   (a) `parent.__prototype`          luarocks/vendor/argparse.lua:41
+    //   (b) `cl.__super = parent`         the same relation, other spelling
+    //
+    // A parameter role alone is satisfied by five call sites in the corpus that are
+    // plain recursion over a tree — `_each(widget, parent)` at
+    // snacks.nvim/lua/snacks/layout.lua:186, `add(result, parent)` at
+    // snacks.nvim/lua/snacks/picker/source/lsp/init.lua:379 and three more — and
+    // publishing `extends` for those asserts that a widget's parent is a supertype.
+    const foldsIntoMetamethod = (fn: Node, param: string): boolean => {
+      let found = false
+      const isRole = (n: Node | null | undefined): boolean => n?.type === "identifier" && n.text === param
+      const visit = (n: Node): void => {
+        if (found) return
+        // (a) `param.__x`
+        if (n.type === "dot_index_expression" || n.type === "method_index_expression") {
+          if (isRole(n.namedChild(0))) {
+            const last = n.namedChild(n.namedChildCount - 1)
+            if (last?.text?.startsWith("__")) { found = true; return }
+          }
+        }
+        // (b) `x.__y = param`
+        if (n.type === "assignment_statement") {
+          const lhs = n.namedChild(0)
+          const lhsNode = lhs?.type === "variable_list" ? lhs.namedChild(0) : undefined
+          if (lhsNode && (lhsNode.type === "dot_index_expression" || lhsNode.type === "method_index_expression")) {
+            const field = lhsNode.namedChild(lhsNode.namedChildCount - 1)
+            const rhs = n.namedChild(1)
+            const rhsNode = rhs?.type === "expression_list" ? rhs.namedChild(0) : undefined
+            if (field?.text?.startsWith("__") && isRole(rhsNode)) { found = true; return }
+          }
+        }
+        for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) visit(c) }
+      }
+      // Skip the `parameters` node itself so a default value cannot self-satisfy.
+      const body = fn.childForFieldName("body") ?? fn
+      for (let i = 0; i < body.namedChildCount; i++) { const c = body.namedChild(i); if (c) visit(c) }
+      return found
+    }
+
+    // Pass 1 — the names this file binds a factory to, keeping only the factories
+    // whose body folds the role parameter into a metamethod. A `function M.foo()`
+    // binds a FIELD, which is not a call target, so only a plain `function foo()` /
+    // `local function foo()` counts.
+    const factoryParams = new Map<string, string[]>()
+    const stack0: Node[] = [root]
+    while (stack0.length > 0) {
+      const node = stack0.pop()!
+      if (node.type === "function_declaration" || node.type === "function_definition") {
+        const nameNode = node.childForFieldName("name")
+        if (nameNode?.type === "identifier" && nameNode.text && !factoryParams.has(nameNode.text)) {
+          const ps = paramNames(node.childForFieldName("parameters"))
+          if (ps.some((p) => SUPERTYPE_ROLES.has(p.toLowerCase()) && foldsIntoMetamethod(node, p))) {
+            factoryParams.set(nameNode.text, ps)
+          }
+        }
+      }
+      for (let i = 0; i < node.namedChildCount; i++) { const c = node.namedChild(i); if (c) stack0.push(c) }
+    }
+    if (factoryParams.size === 0) return
+
+    // Pass 2 — calls to those factories, and the name each result is bound to. The
+    // binding is read from the ENCLOSING declaration, so the edge's source is a name
+    // and not a temporary.
+    const stack1: Node[] = [root]
+    while (stack1.length > 0) {
+      const node = stack1.pop()!
+      if (node.type === "variable_declaration" || node.type === "assignment_statement") {
+        const inner = node.type === "variable_declaration" ? node.namedChild(0) : node
+        const call = inner?.type === "assignment_statement" ? inner.namedChild(1) : node
+        const value = call?.type === "expression_list" ? call.namedChild(0) : undefined
+        if (value?.type === "function_call" && inner) {
+          const callee = value.childForFieldName("name")
+          const args = value.childForFieldName("arguments")
+          if (callee?.type === "identifier" && args) {
+            const ps = factoryParams.get(callee.text)
+            if (ps) {
+              const list = inner.namedChild(0)
+              const derived = list?.type === "variable_list" ? list.namedChild(0) : undefined
+              const derivedName = derived?.type === "identifier" ? derived.text : undefined
+              ps.forEach((p, slot) => {
+                if (!SUPERTYPE_ROLES.has(p.toLowerCase())) return
+                const argNode = args.namedChild(slot)
+                if (argNode?.type !== "identifier") return
+                const baseName = argNode.text
+                if (!derivedName || derivedName === baseName) return
+                const existing = ctx.supertypeLinks.get(derivedName) ?? new Set<string>()
+                existing.add(baseName)
+                ctx.supertypeLinks.set(derivedName, existing)
+                ctx.factorySupertypeLines.set(`${derivedName}|${baseName}`, {
+                  derived: derivedName, base: baseName, line: argNode.startPosition.row + 1,
+                })
+              })
+            }
+          }
+        }
+      }
+      for (let i = 0; i < node.namedChildCount; i++) { const c = node.namedChild(i); if (c) stack1.push(c) }
+    }
+  }
+
+  /**
+   * M60 LUA-51 — publish the `extends` edge for a factory supertype clause.
+   *
+   * `extends` was emitted only from the `setmetatable` call site, so a link collected
+   * by `collectFactorySupertypeLinks` reached `overrides` and nothing else. This runs
+   * beside it and emits the same relation, deduplicated against the `extends` edges
+   * already in the result so a link both readers find is published once.
+   *
+   * It iterates `factorySupertypeLines` and NOT `supertypeLinks`, and that is the whole
+   * correction. The first version walked `supertypeLinks`, which is the union of THREE
+   * conventions, and so published the third one — `D.__index = Base` — under this
+   * method's `lua_factory_supertype` label. Measured on the file that exposed it:
+   *
+   *   luarocks/vendor/argparse.lua:99   class_metatable.__index = parent
+   *
+   * produced `class_metatable -[extends 0.95 lua_factory_supertype]-> parent` — a link
+   * the walk had deliberately never published, carrying a label that says "factory" for
+   * a construct with no factory in it. `factorySupertypeLines` is keyed only by links
+   * `collectFactorySupertypeLinks` created, so iterating it cannot reach the other two.
+   */
+  private addFactorySupertypeEdges(ctx: LuaContext): void {
+    const seen = new Set<string>()
+    for (const e of ctx.relationships) {
+      if (e.type !== ASTEngine.RelationshipType.Extends) continue
+      seen.add(`${e.source}|${e.target}`)
+    }
+    for (const [key, link] of ctx.factorySupertypeLines) {
+      const { derived, base, line } = link
+      if (seen.has(key)) continue
+      seen.add(key)
+      // `evidenceClass` rides in the metadata rather than the options because
+      // `addRelationship` derives it from the TYPE alone (`evidenceClassFor`: anything
+      // that is not imports/references/uses is `structural`), and a 0.95 edge must not
+      // claim `structural`. Its own spread lands after the derived value, so this wins.
+      this.addRelationship(
+        ctx,
+        derived,
+        base,
+        ASTEngine.RelationshipType.Extends,
+        { luaSpecific: true, relationshipType: "lua_factory_supertype", evidenceClass: "usage_contextual" },
+        null,
+        { dedupe: false, confidence: 0.95, symbolRange: { startLine: line } },
+      )
     }
   }
 
