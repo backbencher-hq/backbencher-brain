@@ -649,6 +649,22 @@ export function shouldSkipCli(filePath: string): boolean {
   return cliSkipPatterns.some((p) => p.test(filePath))
 }
 
+/**
+ * The CLI skip list, exported so the fingerprint walk can DERIVE its own list from
+ * the same patterns instead of keeping a hand-maintained copy.
+ *
+ * The copy drifted by 21 directory names, which made `computeCheckoutFingerprint`
+ * and `computeDbFingerprint` disagree on an unchanged tree — every index then
+ * looked permanently stale, and the "did anything change" signal meant nothing.
+ * Two copies of a skip list cannot be kept in agreement by review; they have to
+ * have only one source.
+ *
+ * Exported as a copy of the array reference so a caller cannot mutate ours.
+ */
+export function parallelIndexerCliSkipPatterns(): RegExp[] {
+  return cliSkipPatterns.slice()
+}
+
 export function hasValidExtension(filePath: string): boolean {
   return detectLanguageFromPath(filePath) !== null
 }

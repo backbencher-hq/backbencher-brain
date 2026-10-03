@@ -165,11 +165,21 @@ try {
     const leaf = { type: "leaf", namedChildCount: 0, namedChild: () => null, startIndex: 5, endIndex: 6, parent: null }
     ok("a node with no children is handled", treeContainsNodeType(leaf, "leaf") === true)
     ok("an absent type is answered false, not thrown", treeContainsNodeType(leaf, "zzz") === false)
-    // Documented sharp edge: the root is assumed non-null. Pinned so it is a
-    // stated contract rather than an accident.
+    // A null root now ANSWERS false rather than throwing. This check originally
+    // pinned the opposite — "DOCUMENTED: a null root throws" — as an intentional
+    // contract. It was not intentional: it was a latent crash that happened to be
+    // unreachable, because both call sites pass a non-null `rootNode: Node`, and
+    // the helper is typed `any` so nothing enforced it.
+    //
+    // It is on the path of every traversal in every analyzer, so it was fixed
+    // (see script/verify-node-walk.ts, which covers the same ground with 13
+    // checks). A null tree cannot contain a node of any type, so "no" is the
+    // correct answer and throwing is not.
     let threw = false
-    try { treeContainsNodeType(null as any, "x") } catch { threw = true }
-    ok("DOCUMENTED: a null root throws (the walk assumes a tree root)", threw === true)
+    let nullAnswer: boolean | undefined
+    try { nullAnswer = treeContainsNodeType(null as any, "x") } catch { threw = true }
+    ok("a null root answers false instead of throwing", threw === false && nullAnswer === false,
+      threw ? "threw" : `got ${String(nullAnswer)}`)
 
     ok("isNodeInSpans: the empty-span short-circuit answers false without walking",
       isNodeInSpans([], leaf) === false)

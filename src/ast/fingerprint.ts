@@ -19,6 +19,7 @@ import { createHash } from "crypto"
 import { readFile, readdir, stat, open } from "fs/promises"
 import { existsSync } from "fs"
 import path from "node:path"
+import { ParallelIndexerConfig, parallelIndexerCliSkipPatterns } from "./parallel-indexer"
 
 /** sha1 of a sorted, de-duplicated relative-path set. */
 export function relativePathFingerprint(sortedRel: string[]): string {
@@ -60,15 +61,24 @@ const largeSourceExtensions = new Set([".js", ".ts", ".jsx", ".tsx", ".mjs", ".c
 const skipDirNames = new Set([".git", ".svn", ".hg", ".cache", ".nyc_output", ".venv", ".next", ".nuxt", ".svelte-kit", ".turbo"])
 const compiledDirTokens = ["/perf/", "/Microbenchmarks/", "/wwwroot/", "/coverage/", "/node_modules/", "/dist/", "/build/", "/.git/", "/obj/", "/bin/", "/testData/"]
 
-// Skipped regardless of language/extension (shouldSkipCli parity).
-const cliSkipPatterns: RegExp[] = [
-  /\/node_modules\//, /\/dist\//, /\/build\//, /\/\.git\//,
-  /\/storybook-static\//, /\/\.turbo\//, /\/\.next\//,
-  /\/coverage\//, /\/__pycache__\//, /\/\.cache\//,
-  /.*\.min\./, /.*-min\./, /.*\.bundle\./, /.*\.chunk\./,
-  /snapshot\.json$/, /openapi\.json$/, /package-lock\.json$/,
-  /yarn\.lock$/, /bun\.lockb$/,
-]
+// Skipped regardless of language/extension.
+//
+// This list used to be a hand-maintained COPY, and it had drifted by 21 directory
+// names discovery skips — including `generated`, `bower_components`, `out`, `bin`,
+// `test`, `vendor`, `platforms` and `wwwroot`. The walk therefore counted files
+// discovery would never index, so the two fingerprints disagreed on an UNCHANGED
+// tree and every index looked permanently stale. Measured on a fixture with 6
+// deliberately divergent files: walk 9, indexed 3.
+//
+// It is now DERIVED from the two lists discovery actually consults, rather than
+// copied again — a third copy is exactly what rots. Note those two lists do not
+// agree with each other either: `snapshot.json` is in the CLI skip list but not
+// in `skipPatterns`, and `schema.json` is in `skipPatterns` but not the CLI list.
+// So the union is used, because the question the walk has to answer is "will
+// discovery index this?", and the honest answer is "no, if EITHER list says so".
+const cliSkipPatterns: RegExp[] = Array.from(
+  new Set([...ParallelIndexerConfig.skipPatterns, ...parallelIndexerCliSkipPatterns()]),
+)
 
 async function loadIgnores(root: string, ownPath: string, parentIg: any): Promise<any> {
   try {
