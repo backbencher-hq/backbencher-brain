@@ -327,3 +327,29 @@ the ontology gate exists for.
   the node-type name `source_file`, which is **also an ordinary R function**
   (`r-testthat/R/source.R:18`) — 12 symbols deleted across 9 files; and
   `differential.ts` has no `LANGS.r`, so all of R's types are DERIVATION findings.
+
+## Provider outages — do not misdiagnose these as agent failure
+
+Three times, all 7–8 lanes died within a minute of each other while doing real
+work, and the work was intact on disk each time because of the per-lane
+worktrees. Different causes; none was an agent stopping to ask.
+
+| when | symptom | actual cause | fix |
+|---|---|---|---|
+| 2026-10-02 ~21:50 | `Rate limit exceeded: free-models-per-day-stealth` | `openrouter/stealth/space-bunny-alpha` daily free quota exhausted | switched to `opencode/space-bunny-free` |
+| 2026-10-03 ~00:20 | `Error from provider (Console): OpenCode's free tier can only be used from within OpenCode` | billing on the selected model | owner fixed billing |
+| 2026-10-03 | agents wedged in a wait loop, log quiet ~17 min | agent's own `pgrep -f powershell/census` matched **the polling shell itself**, so the loop never exited | supervisor killed the loop, re-prompted |
+
+Two supervisor-side lessons, both now fixed in the tooling:
+
+- **`pgrep -f` is not scoped.** Any agent that polls for "is my census still
+  running" will match its own polling command. An agent waiting on a completed
+  job looks exactly like a working one.
+- **The ASKING detector read its own re-prompt banner.** `reprompt.sh` appends a
+  banner quoting phrases like "do not ask permission", so every re-prompted lane
+  reported ASKING forever. `status.sh` now inspects only the text after the last
+  banner.
+
+### Supplied by the owner
+
+Use `opencode/space-bunny-free`. The provider is working and billing is settled.
