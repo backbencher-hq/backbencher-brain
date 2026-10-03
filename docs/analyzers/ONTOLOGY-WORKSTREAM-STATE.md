@@ -499,3 +499,41 @@ machine-graded by `verify-doc-truth-emissions` (9 of 10 rows, 0 findings), the F
 section-b failure is recorded rather than papered over, and DERIVATION=0 is
 annotated with what it is worth — `zig-truth.ts` mirrors the analyzer's own rules,
 so the four wrong-edge classes above score as *agreement*.
+
+## WAVE 2 RESULTS — 7 lanes reviewed
+
+| lane | found | the part worth reading |
+|---|---|---|
+| ZIG | 4 wrong-edge classes, **L5 withdrawn** | its own census re-run on a byte-identical draw gave different numbers; `parseFile` is not deterministic |
+| BASH | 2 more fabricated `calls` edges | grammar misparses `$(( ))` in 2 shapes; guard stops at the first `$(` so `v=$(( $(wc -l < f) + 1 ))` keeps its real call |
+| POWERSHELL | 4 defects, 3 invisible to the census | `Export-ModuleMember -Function Measure*` published a wildcard as a symbol name; removing those edges RAISED the resolution rate |
+| CSS | 2 defects + a **vacuous pass-1 probe** | pass 1 read `symbol.range.start.line`, but `parseFile` returns no `range` — so 0 violations was also what a broken probe returns |
+| F_SHARP | 3 defects + **a latency claim withdrawn** | its +16% A/B was machine load; interleaved, the ranges overlap almost completely |
+| CLEAN | `overrides` was a GAP | Clean has no `override` KEYWORD — it has typeclasses, so every keyword probe was blind |
+| LUA/MARKDOWN/TOML/SQL | in flight | |
+
+### Three patterns worth carrying to any future agent
+
+1. **Removing edges that RAISED a resolution rate** is the signature of having
+   removed edges that named nothing. Found independently in powershell (exports
+   113 -> 106, corpusBoth 95.13% -> 98.11%) and used as a check in zig.
+2. **A probe that cannot fail returns the same number as a clean one.** CSS's
+   pass-1 containment check read 0 violations for 18 months' worth of reasons,
+   one of which was that the probe was broken. Every probe needs a POSITIVE
+   control that must fire, or its zero means nothing.
+3. **A latency figure from a shared box is a statement about load.** F#'s +16%
+   became "inside the run-to-run spread" once measured interleaved. Seven lanes
+   share this machine.
+
+### Ruling tables — the arbiter covers 2 of 23 lanes
+
+`ontology-coverage-gate.ts` can rule for `bash` and `json` only. The other 21 exit
+2 with no verdict, so those lanes' RULED verdicts have never been checked by the
+arbiter at all — the same blind spot the gate exists to catch, wearing a
+different hat.
+
+`--coverage` now reports this instead of leaving it to be discovered one exit-2 at
+a time. The tables are deliberately NOT written centrally: a ruling table encodes
+one lane's own node types and corpus counts, so the lane that measured it writes
+it, as `script/m14/<lang>-ruled.ts`, and the supervisor adds the import and map
+entry. A centrally-authored table would be a ruling with nobody behind it.
