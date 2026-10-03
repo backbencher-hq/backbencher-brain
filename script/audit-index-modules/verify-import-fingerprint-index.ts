@@ -236,7 +236,16 @@ try {
     const again = await fp.computeCheckoutFingerprint(root)
     ok("re-running the fingerprint on an unchanged tree is stable", again.fingerprint === checkout.fingerprint)
     // Direction 3: does it move when a file the INDEX ignores is added? It must not.
-    writeFileSync(path.join(root, "schema2.json"), '{"b":2}\n')
+    // Pick a file that discovery ACTUALLY skips, and assert the walk skips it too.
+    //
+    // This originally used `schema2.json` and asserted the fingerprint would not
+    // move. Measured: bb DOES index schema2.json — the skip rule is
+    // `/schema\.json$/`, an exact-name match, not a prefix — so the walk counting
+    // it was CORRECT and the assertion was wrong. Verified by indexing a fixture:
+    // schema.json -> skipped, schema2.json -> indexed. Asserting the walk ignored
+    // a genuinely indexable file would have "fixed" a correct behaviour.
+    mkdirSync(path.join(root, "node_modules", "pkg"), { recursive: true })
+    writeFileSync(path.join(root, "node_modules", "pkg", "extra.js"), "module.exports=1\n")
     const after = await fp.computeCheckoutFingerprint(root)
     ok(
       "adding a file discovery skips does NOT move the fingerprint",
@@ -276,10 +285,25 @@ try {
         [...streaming.symbolNames].sort().join(",") === [...collecting.symbolNames].sort().join(","),
         `types ${JSON.stringify([...streaming.typeKinds])}, names ${JSON.stringify([...streaming.symbolNames])}`)
       // A file that cannot be read must not vanish without a trace.
+      // The streaming form must RECORD the shortfall, not necessarily throw.
+      //
+      // This originally demanded the same ENOENT throw as the collecting form.
+      // But streaming exists to avoid holding every tree at once; aborting the
+      // whole run because one file vanished mid-scan discards the work already
+      // done, which is the opposite of what a streaming API is for. The honest
+      // contract is: finish, and report `damaged` so the caller can see that the
+      // index covers fewer files than it was asked about.
+      //
+      // Before the fix `stats` was never written at all, so this reported
+      // `{"files":0,"damaged":0}` — indistinguishable from "indexed nothing".
       const withMissing = await pi.buildProjectIndexStreaming(wasm, [a, path.join(dir, "gone.py")], pi.PYTHON_DECLARATION_SPEC)
       ok("streaming records a file it could not read (no silent shortfall)",
-        (withMissing.stats?.files ?? 0) === 2,
-        `stats=${JSON.stringify(withMissing.stats)} — the collecting form throws ENOENT on the same input`)
+        // Two files were requested and one does not exist, so the honest report is
+        // files=1 damaged=1. The assertion said `files === 2`, which would only
+        // hold if the unreadable file were counted as indexed — the exact
+        // dishonesty this check exists to prevent.
+        withMissing.stats?.files === 1 && withMissing.stats?.damaged === 1,
+        `stats=${JSON.stringify(withMissing.stats)} — expected files=1 damaged=1 for 1 readable + 1 missing of 2 requested`)
       rmSync(dir, { recursive: true, force: true })
     }
   }
