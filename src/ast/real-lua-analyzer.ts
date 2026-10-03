@@ -361,10 +361,44 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (this.isSameNode(parent.childForFieldName("name"), node)) return
     } else if (pt === "function_declaration") {
       if (this.isSameNode(parent.childForFieldName("name"), node)) return
-    } else if (pt === "dot_index_expression" || pt === "method_index_expression" || pt === "bracket_index_expression") {
-      // The receiver head of a qualified name. `M` in `M.field` is not read on its
-      // own account, and emitting `uses -> M` beside `references -> field` would
-      // state one access twice under two labels.
+    } else if (pt === "dot_index_expression" || pt === "method_index_expression") {
+      // M60 LUA-47: BOTH halves of a qualified name are excluded, and only the
+      // receiver half used to be. `M.field` is a `dot_index_expression` whose
+      // named children are the RECEIVER `M` and the FIELD `field`, so excluding
+      // `namedChild(0)` alone left the field to reach `uses` as well — and
+      // `emitMemberRead` publishes that same field as `references`, or
+      // `processCall` publishes it as `calls`. One access, one span, two labels:
+      //
+      //   local v = tbl.member   ->  uses -> member       AND references -> member
+      //   tbl:method()           ->  uses -> method       AND calls      -> method
+      //   local v = tbl.inner.member -> uses -> inner, uses -> member,
+      //                                references -> inner, references -> member
+      //
+      // Measured, 400 corpus files: 8,041 member edges carry BOTH a `uses` and a
+      // `references` edge for the same member on the same line — 26.07% of every
+      // `uses`+`references` edge on the corpus. Reproduce with
+      // `npx tsx script/m60/lua-uses-references-double-publish.ts --cap 400`.
+      //
+      // It survived a reading because the exclusion is CORRECT and its COMMENT is
+      // accurate — "the receiver head of a qualified name is not read on its own
+      // account" is true, and it is about the head — so nothing asserted that the
+      // field was covered, and the fixture that claims to pin this pair
+      // (validation/m14/fixtures/lua/name-reads.expectation.json) forbids
+      // `uses -> config` and `uses -> helper`, which are both RECEIVERS, and has
+      // no row for `uses -> retries` or `uses -> record`, which are both FIELDS.
+      // The suite was green on a defect it did not name. `validation/m14/fixtures/
+      // lua/read-classes` now forbids all four, and the mutant in
+      // script/m60/mutate-lua-read-classes.ts reinstates the old half-rule.
+      //
+      // The field of a `bracket_index_expression` is deliberately NOT excluded:
+      // `tbl[key]` reads `key`, which is a VARIABLE holding the subscript, and
+      // reading it is a real bare-name read. A literal `tbl["member"]` has a
+      // `string` field, which never reaches here at all. That asymmetry is why the
+      // two index forms are separate cases and not one.
+      if (this.isSameNode(parent.namedChild(0), node)) return
+      if (this.isSameNode(parent.namedChild(parent.namedChildCount - 1), node)) return
+    } else if (pt === "bracket_index_expression") {
+      // Receiver only — see the case above for why the field stays a `uses`.
       if (this.isSameNode(parent.namedChild(0), node)) return
     }
     this.addRelationship(
@@ -412,8 +446,35 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
       // LUA-45: span comparison, never `===` — see isSameNode.
       if (pt === "function_call" && (this.isSameNode(parent.childForFieldName("name"), node) || this.isSameNode(parent.namedChild(0), node))) return
       if (pt === "function_declaration" && this.isSameNode(parent.childForFieldName("name"), node)) return
-      if (pt === "assignment_statement" && this.isSameNode(parent.namedChild(0), node)) return
       if (pt === "field" && this.isSameNode(parent.childForFieldName("name"), node)) return
+      // M60 LUA-46: an assignment TARGET sits inside a `variable_list`, so the
+      // `assignment_statement` exclusion below could never fire. Measured on the
+      // wired grammar (script/m60/lua-grammar-shape.ts), `a = 1` parses as
+      //
+      //   assignment_statement {name=identifier}
+      //     variable_list {name=identifier}
+      //       identifier "a"
+      //
+      // so a target's PARENT is `variable_list`, and `namedChild(0)` of the
+      // assignment_statement is that variable_list — never the target itself. The
+      // exclusion was dead code on every write in the language, while the doc
+      // comment above already claimed "a member ASSIGNED TO is a write". A comment
+      // asserting a behaviour is not evidence that it exists; this lane has now
+      // made that mistake twice (LUA-30, and here).
+      //
+      // MEASURED POPULATION over 3,252 corpus files: 84,354 assignment targets, of
+      // which 69,521 are bare identifiers and 14,833 are QUALIFIED names. Each of
+      // those 14,833 published a `references` edge for a member that was written
+      // and never read — `memberlist_protocol.fields = 1` at
+      // docker/contrib/wireshark/memberlist.lua:41, `pinfo.cols.protocol = proto`
+      // at :126. That is 6.9% of the 214,155 member-shaped nodes in the corpus
+      // stating a read that does not exist, and 4,461 of them duplicate a read of
+      // the same member on the right-hand side of the same statement. Reproduce
+      // with `npx tsx script/m60/lua-write-as-read.ts --full`.
+      //
+      // The same node type is a declaration's target list, so this also stops
+      // `local x, y = 1, 2` from publishing a read of either bound name.
+      if (pt === "variable_list") return
     }
     let member: string | undefined
     let memberNode: Node | undefined
