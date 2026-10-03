@@ -24,6 +24,12 @@
  *   JUL-11 a generic method was invisible: the callee is a `parametrized_type_expression`
  *   JUL-12 a return-type annotation made the function publish under its RETURN TYPE
  *   JUL-13 `f(x)::T = …` is not the same tree shape as `f(x) = …`
+ *   JUL-14 the whole `overrides` TYPE was absent — the header's ruling was prose, and the
+ *           differential could not convict it because the julia oracle region omits the type too
+ *   JUL-15 `overrides` was published for a REPLACEMENT THAT NEVER HAPPENS: `isUnconditionalPosition`
+ *           read `&&`'s right operand at named-child index 1 while the operator is a NAMED child,
+ *           so the guard never matched and the corpus's one version-guarded method definition
+ *           produced an edge
  */
 import type { Mutant } from "../m14/mutate-analyzer"
 
@@ -34,6 +40,270 @@ const syms = (r: any) => (r.symbols ?? []) as any[]
 const lastSeg = (t: string) => (t.includes(".") ? t.slice(t.lastIndexOf(".") + 1) : t)
 
 export const JULIA_MUTANTS: Mutant[] = [
+  {
+    id: "julia/drop-overrides-edges",
+    language: "julia",
+    defectClass: "omission",
+    description:
+      "JUL-14 REVERT: every `overrides` relationship is dropped, which is the pre-M60 state of this lane " +
+      "in its entirety. The analyzer's file header DECLINED the type on the grounds that julia has multiple " +
+      "dispatch rather than overriding, and nothing measured that claim: julia's method table holds one " +
+      "entry per (name, signature) pair, so a second declaration of the SAME pair REPLACES the first — julia " +
+      "prints `WARNING: Method definition f(Int) … overwritten at line 40` under `--warn-overwrite=yes`. " +
+      "Measured over the 971 admitted corpus files: 417 redefinition declarations across 109 files, of which " +
+      "130 across 51 files are unconditional and therefore publishable. `script/m14/ontology-coverage-gate.ts`'s " +
+      "header records the bash instance of this same failure (BD8b). Caught by the two `overrides` rows in " +
+      "`method-redefinition-overrides` — a fixture authored from the measurement, not from the code.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: rels(r).filter((x: any) => String(x.type ?? x.relationshipType ?? "").toLowerCase() !== "overrides"),
+    }),
+  },
+  {
+    id: "julia/overrides-without-position-guard",
+    language: "julia",
+    defectClass: "fabrication",
+    description:
+      "JUL-15 REVERT: `isUnconditionalPosition`'s short-circuit test is disabled, so a redeclaration inside " +
+      "`if`/`else`, `try`/`catch`, a ternary, a `&&`/`||` right operand, or generated code publishes an " +
+      "`overrides` edge for a replacement that never happens. This is not hypothetical — it is what the lane " +
+      "shipped for one measurement round, because the operator of a `binary_expression` is a NAMED child in " +
+      "this grammar, so the operand list is [left, operator, right] and the first version compared index 1 " +
+      "against the declaration's node id and never matched. Measured over 971 admitted files: 11,549 `&&` " +
+      "binary_expressions, exactly 1 with a declaration node on the right " +
+      "(`julia/JuliaSyntax/src/core/parse_stream.jl:316`, `VERSION < v\"1.11.0-DEV.753\" && function " +
+      "ParseStream(io::IOBuffer; version=VERSION)`), plus 287 of the 417 corpus redefinition declarations " +
+      "sitting in a conditional or generated position — 287 edges that would be counted `unexplained` by the " +
+      "oracle and would make a real method's absence look like a caller. " +
+      "Written off the SOURCE TEXT because the pre-fix output cannot be reconstructed from the post-fix " +
+      "result: the result carries no record of which declaration was refused, which is the whole content of " +
+      "this mutation. Caught by the `guarded` and `toplevel_only` forbid rows in `method-redefinition-overrides`.",
+    transform: (r: any, source?: string) => {
+      if (!source) return r
+      // The pre-guard rule, restated over the source: two declarations of the same name with the same
+      // argument list, wherever they sit. `f(x) = …` and `function f(x) … end` are both declarations in
+      // this grammar, so both spellings are read — reading only one would produce a mutant that cannot
+      // express half the defect it names.
+      const seen = new Map<string, number>()
+      const re = /^(\s*)(?:function\s+([A-Za-z_][\w!]*)\s*\(|([A-Za-z_][\w!]*)\s*\()/gm
+      let m: RegExpExecArray | null
+      const added: any[] = []
+      while ((m = re.exec(source))) {
+        const name = m[2] ?? m[3] ?? ""
+        if (!name) continue
+        // The argument list is the balanced paren run after the name — enough to separate `f(x)` from
+        // `f(x, y)` without reproducing the analyzer's normaliser.
+        let i = re.lastIndex - 1
+        let depth = 0
+        let args = ""
+        for (; i < source.length; i++) {
+          const c = source[i]
+          if (c === "(") { depth++; if (depth === 1) continue }
+          if (c === ")") { depth--; if (depth === 0) { args += c; i++; break } }
+          args += c
+        }
+        re.lastIndex = i
+        const key = `${name}|${args.replace(/\s+/g, " ")}`
+        const prior = seen.get(key)
+        if (prior !== undefined && !added.some((x) => x.target === name)) {
+          added.push({
+            type: "overrides", source: name, target: name, confidence: 1,
+            line_number: source.slice(0, m.index).split("\n").length,
+            metadata: { juliaSpecific: true, redefinition: true, mutant: "JUL-15" },
+          })
+        } else if (prior === undefined) {
+          seen.set(key, source.slice(0, m.index).split("\n").length)
+        }
+      }
+      if (added.length === 0) return r
+      return { ...r, relationships: [...rels(r), ...added] }
+    },
+  },
+  {
+    id: "julia/overrides-ignores-local-scope",
+    language: "julia",
+    defectClass: "fabrication",
+    description:
+      "JUL-16 REVERT: the `overrides` pre-pass stops refusing LOCAL BINDINGS and stops carrying the " +
+      "enclosing scope in its key, so two closures in different function bodies collide into one " +
+      "\"method\". This is not a hypothetical: an earlier revision of this lane published 14 fabricated " +
+      "edges of exactly this shape before the fix. `julia/JuliaLowering/src/desugaring.jl` declares " +
+      "`wrap(asgn) = …` at line 153 inside `tuple_to_assignments` and again at line 324 inside a " +
+      "different function; `julia/base/range.jl` declares `throwbool(r) = …` at lines 488 and 496, " +
+      "inside two different inner constructors of `OneTo`. Inside a function body a short-form " +
+      "definition binds a LOCAL variable holding a closure — it adds no method and displaces nothing — " +
+      "so each of those 14 edges asserted a replacement between functions with no relationship. Two of " +
+      "them also named a `property` and a `constant` as the overridden method " +
+      "(`julia/test/core.jl:4441` -> `foo`, `:5489` -> `bar`), which is the tell: a field and a " +
+      "binding are not methods. " +
+      "Written off the SOURCE TEXT because the post-fix result cannot express this revert — it carries " +
+      "no record of the declarations the guard refused, which is the entire content of the mutation. " +
+      "Caught by the `wrap` forbid row in `method-redefinition-overrides`.",
+    transform: (r: any, source?: string) => {
+      if (!source) return r
+      // The pre-fix key: `name|signature`, no scope, no local check. Same balanced-paren argument
+      // scan as JUL-15 so the two mutants differ in exactly the one rule each names.
+      const seen = new Map<string, number>()
+      const re = /(?:function\s+([A-Za-z_][\w!]*)\s*\(|([A-Za-z_][\w!]*)\s*\()/g
+      let m: RegExpExecArray | null
+      const added: any[] = []
+      const touched = new Set<string>()
+      while ((m = re.exec(source))) {
+        const name = m[1] ?? m[2] ?? ""
+        if (!name) continue
+        let i = re.lastIndex - 1
+        let depth = 0
+        let args = ""
+        for (; i < source.length; i++) {
+          const c = source[i]
+          if (c === "(") { depth++; if (depth === 1) continue }
+          if (c === ")") { depth--; if (depth === 0) { args += c; i++; break } }
+          args += c
+        }
+        re.lastIndex = i
+        const key = `${name}|${args.replace(/\s+/g, " ")}`
+        const prior = seen.get(key)
+        if (prior !== undefined && !touched.has(name)) {
+          touched.add(name)
+          added.push({
+            type: "overrides", source: name, target: name, confidence: 1,
+            line_number: source.slice(0, m.index).split("\n").length,
+            metadata: { juliaSpecific: true, redefinition: true, mutant: "JUL-16" },
+          })
+        } else if (prior === undefined) {
+          seen.set(key, source.slice(0, m.index).split("\n").length)
+        }
+      }
+      if (added.length === 0) return r
+      return { ...r, relationships: [...rels(r), ...added] }
+    },
+  },
+  {
+    id: "julia/overrides-drops-where-clause",
+    language: "julia",
+    defectClass: "fabrication",
+    description:
+      "JUL-17 REVERT: the `overrides` signature key drops the `where` clause, so two methods of the same " +
+      "generic function whose ARGUMENT LISTS agree but whose type-variable BOUNDS differ collide. " +
+      "Julia keys the method table on the fully-specialised signature, so `f(x) where {T<:SignedInt}` and " +
+      "`f(x) where {T<:UnsignedInt}` are two live methods and neither replaces the other; publishing a " +
+      "replacement between them is the same falsehood the lane's own file header declined to tell about " +
+      "this type. Three corpus pairs were publishing exactly that edge: " +
+      "`julia/base/checked.jl:138-139` (`add_with_overflow`, `{T<:SignedInt}` vs `{T<:UnsignedInt}`), " +
+      "`julia/base/math.jl:834` and `:838` (`min`, `{T<:AbstractFloat}` vs `{T<:IEEEFloat}`), and " +
+      "`julia/test/testhelpers/Furlongs.jl:21-22` (`Furlong{p}`, `where {p,q}` vs `where {T,p,q}`). " +
+      "The cause is positional: the clause hangs off the assignment's LEFT-HAND SIDE, and the key was " +
+      "taken from the callable after `unwrapWhere` had descended past it. " +
+      "Written off the SOURCE TEXT, because the post-fix result records the clause and the revert is its " +
+      "removal — a transform that cannot see the source would have to re-derive the whole key. Caught by " +
+      "the `bounded` rows in `method-redefinition-overrides`: the `{T<:UnsignedInt}` declaration must " +
+      "produce no edge, and without the clause it does.",
+    transform: (r: any, source?: string) => {
+      if (!source) return r
+      const rows = rels(r).filter((x: any) => String(x.type ?? "") === "overrides")
+      if (rows.length === 0 || !source.includes("where")) return r
+      // The pre-fix key verbatim: `name|args`, with the `where` clause DISCARDED. Scanned off the
+      // source because the pre-fix output cannot be reconstructed from the post-fix result — the
+      // result records the clause, so the revert is its absence.
+      const scopeOf = new Map<string, string>()
+      for (const x of rows) scopeOf.set(String(x.target), String(x.source))
+      const firstLine = new Map<string, number>()
+      const added: any[] = []
+      const re = /^[ \t]*([A-Za-z_][\w!]*)\s*\(([^)]*)\)[^\n=]*\bwhere\b[^\n=]*=/gm
+      let m: RegExpExecArray | null
+      while ((m = re.exec(source))) {
+        const name = m[1] ?? ""
+        if (!scopeOf.has(name)) continue
+        // The pre-fix key's args portion is the `argument_list` NODE's text, so the PARENS are part
+        // of it: `(x)`, not `x`. Dropping them here made the row's `signature` `"x"` and the
+        // fixture's forbid row could not name it — which is itself the lesson the repo already has
+        // about mutants that cannot express the defect they describe.
+        const argsText = `(${(m[2] ?? "").replace(/\s+/g, " ").trim()})`
+        const key = `${name}|${argsText}`
+        const line = source.slice(0, m.index).split("\n").length
+        const prior = firstLine.get(key)
+        if (prior !== undefined) {
+          added.push({
+            type: "overrides", source: scopeOf.get(name)!, target: name, confidence: 1,
+            line_number: line,
+            // The pre-fix `methodSignatureKey` returned the argument list alone for a `where`-form
+            // short declaration, and that string is what landed in `metadata.signature`. Carrying it
+            // is what makes the row distinguishable from the correct one, whose signature keeps the
+            // clause — so the fixture's forbid row can name the defect instead of the fixture simply
+            // having to accept "any `overrides` edge on this name".
+            metadata: { juliaSpecific: true, redefinition: true, replacesLine: prior, signature: argsText, mutant: "JUL-17" },
+          })
+        } else {
+          firstLine.set(key, line)
+        }
+      }
+      if (added.length === 0) return r
+      return { ...r, relationships: [...rels(r), ...added] }
+    },
+  },
+  {
+    id: "julia/overrides-ignores-scope-line",
+    language: "julia",
+    defectClass: "fabrication",
+    description:
+      "JUL-18 REVERT: the `overrides` pre-pass key drops the scope's DECLARATION LINE, so two modules " +
+      "that share a name are one scope and a declaration in the second reads as replacing one in the " +
+      "first. Julia treats them as two modules with two method tables. Corpus shape: " +
+      "`julia/test/deprecation_exec.jl` declares `module Src` at line 325 inside " +
+      "`DeprecatedReexportTest` and again at line 358 inside `DeprecatedShadowTest`, each holding a " +
+      "`newg() = 1` at lines 329 and 364. Keyed on the name alone the edge is a fabricated replacement " +
+      "between two unrelated bindings. " +
+      "This mutant exists because the FIX for it did not work at first and the fixtures could not see " +
+      "that: the scope NAME was threaded down the pre-pass while its line reset to 0 at every frame, so " +
+      "every key came out `name@0` and the change was indistinguishable from no change. A lane with one " +
+      "module in its fixture has no way to catch that; the census caught it by reading the source of " +
+      "every edge the lane published. Caught by the `same` forbid row in " +
+      "`method-redefinition-overrides`.",
+    transform: (r: any, source?: string) => {
+      if (!source) return r
+      const rows = rels(r).filter((x: any) => String(x.type ?? "") === "overrides")
+      if (rows.length === 0) return r
+      // Two same-named scopes, each with a zero-argument method of the same name. Emitted from the
+      // SOURCE rather than from the result because the post-fix result carries no record of the
+      // rejected declaration, which is the entire content of this revert.
+      const re = /^\s*module\s+(\w+)\s*$(.*?)^\s*end\s*$/gms
+      let m: RegExpExecArray | null
+      const added: any[] = []
+const firstByScope = new Map<string, { scope: string; line: number }>()
+      // ANY argument list, not an empty one — a first version matched `\(\)` and therefore matched
+      // nothing in the fixture, which has `same(x) = 1`. That is the third time in this file's history
+      // that a mutant written to describe a defect could not express it.
+      const scopeRe = /^\s*([A-Za-z_][\w!]*)\s*\([^)]*\)\s*=/gm
+      while ((m = re.exec(source))) {
+        const scope = m[1] ?? ""
+        const body = m[2] ?? ""
+        const bodyStart = source.slice(0, m.index).split("\n").length
+        scopeRe.lastIndex = 0
+        let d: RegExpExecArray | null
+        while ((d = scopeRe.exec(body))) {
+          const name = d[1] ?? ""
+          if (!name) continue
+          const line = bodyStart + body.slice(0, d.index).split("\n").length - 1
+          const prior = firstByScope.get(name)
+          // The map is keyed on the NAME and is deliberately NOT cleared between modules — that is
+          // the defect. Keyed on the name alone, two same-named modules are one scope, and the flag
+          // fires when the same method name turns up under a scope NAME that differs from the first
+          // sighting's. Within one scope the redefinition is real and the fixture already pins it, so
+          // only the cross-scope case is emitted here.
+          if (prior && prior.scope !== scope) {
+            added.push({
+              type: "overrides", source: scope, target: name, confidence: 1, line_number: line,
+              metadata: { juliaSpecific: true, redefinition: true, replacesLine: prior.line, mutant: "JUL-18" },
+            })
+          } else if (!prior) {
+            firstByScope.set(name, { scope, line })
+          }
+        }
+      }
+      if (added.length === 0) return r
+      return { ...r, relationships: [...rels(r), ...added] }
+    },
+  },
   {
     id: "julia/qualified-path-to-last-segment",
     language: "julia",
