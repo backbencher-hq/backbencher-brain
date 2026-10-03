@@ -246,10 +246,24 @@ The draw is byte-identical (`sha256:2f3545f9…`, 3,834 of 3,834, asserted by th
 merge), so the difference is not the corpus: pass 1's single long process hit the
 WASM trap above on some files and replaced their output with `extractFallback`'s,
 whose `BasicSymbol` carries no `kind` and whose edges are regex-derived at
-confidence 0.4/0.5. **The 192 kindless symbols and the 7 sub-0.7 edges pass 1
-published are therefore an artefact of how the run was sharded, not a property of
-the corpus: 8 of 8 shards report 0 of each.** Every number below is the sharded
-re-measurement.
+confidence 0.4/0.5. **Every number below is the sharded re-measurement.**
+
+**PASS 3 CORRECTION — the "0 of each" was a property of one run, not of the
+corpus.** This paragraph originally read *"8 of 8 shards report 0 of each"*, which
+is what the 2026-10-03 run found. Re-running the identical draw at the identical
+commit, in the same eight shards, **read 510 kindless symbols and 21 sub-0.7 edges
+— three shards of eight degraded.** Sharding reduces the rate; it does not remove
+it, and the mechanism is a shared temp path that concurrent processes write and
+read (`src/ast/engine.ts`), not the parser state this paragraph blames. The
+degradation is now RATE-measured by
+`validation/m14/fixtures/zig/fallback-degradation-rate.py`, both instruments count
+`parseFile`'s `fallback: true` per file, and both merges REFUSE a degraded shard
+rather than publishing a mixture. On a run where every shard reports 0 the
+figures above reproduce exactly — 127,429 symbols, 392,550 relationships, 0 empty
+names, 0 kinds outside `SymbolKind`, 0 edges below 0.7 — so the numbers are right
+and what was wrong was calling one run's value a property. **The 192 kindless
+symbols and the 7 sub-0.7 edges pass 1 published were real, and they were the same
+class pass 3 re-measured at 510 and 21.** See the pass-3 section.
 
 The `Emitted?` column is written so `script/m14/verify-doc-truth-emissions.ts` can
 read it: this table used to be headed `type | verdict`, which that gate cannot
@@ -409,9 +423,13 @@ not a symbol, and is counted apart from a source that fails to resolve.
    `instantiates` targets from 85.72% file-local to **85.72% file-local with 14.28%
    naming a container the analyzer publishes nothing for**. Both numbers are
    reported; neither replaces the other.
-6. **Confident** — **0 of 392,550 edges are below 0.7** in the sharded re-measurement
-   (pass 1 published 7 of 392,086, all from the fallback path — see the next
-   paragraph for why that figure does not reproduce). The sub-1.0 edges the analyzer
+6. **Confident** — **0 of 392,550 edges are below 0.7** in the sharded re-measurement,
+   and **pass 3 reproduced that 0 exactly** on a run where all eight shards
+   reported no fallback. It is a per-run figure and not a per-lane one: the same
+   draw at the same commit also produced 21 sub-0.7 edges from three degraded
+   shards (pass 1 published 7 of 392,086, all from the fallback path). The
+   analyzer's OWN sub-1.0 values do not vary with the run, and those are what the
+   next sentence is about. The sub-1.0 edges the analyzer
    itself emits are 0.75 (field read), 0.85 (call) and 0.9 (import / declared type),
    each carrying a machine-readable `metadata.relationshipType`. The heuristic ratio
    is countable and it is ~0 for every class this lane emits — **which is a
@@ -425,7 +443,8 @@ absorbed into its numbers.** `parseFile`'s parse-error branch returns
 `extractFallback(...)`, a REGEX-based extractor in shared machinery
 (`src/ast/pool-worker.ts`) whose `BasicSymbol` carries `type` and **no `kind`**. It
 fires for the files whose wasm parse traps or exceeds the hang guard. **Its corpus
-extent is not a stable number, and pass 2 measured why.** A single long process over
+extent is not a stable number, and passes 2 and 3 both measured
+why.** A single long process over
 the 3,834-file draw trapped with `memory access out of bounds` on two files
 (`zig/src/link/C.zig`,
 `zig/test/cases/compile_errors/extra_comma_in_destructure.zig`), and a third run
@@ -673,6 +692,279 @@ contributed 9 of the 44 MISSING nodes through a labelled range
 (`if (c) c_int else u32` parses as a range), and `zig/lib/std/Io/{IoUring,Kqueue}.zig`
 account for most of the async/await and `MISSING }` rows.
 
+## Pass 3 — the third reading, and a correction to pass 2's headline number
+
+Pass 2 asked each emitted type for a case where its label or its endpoint is
+wrong, and found four. Every one of its thirteen probes begins from a branch in
+`real-zig-analyzer.ts` — from a reason code, a metadata key, an emission site.
+That is the right way to find a bug in a rule you can see, and the wrong way to
+find a bug in a rule you cannot: **every suppressor is a branch whose firing is
+invisible in the output, because the output is the set of edges that survived
+it.** A suppressor that fires when it should not produces a MISSING edge, and a
+missing edge is invisible to every count in this lane — a census counts what was
+published, so a loss reads as the same number as a correct run.
+
+So pass 3 is built from LOSS probes and from SHAPE probes, and it re-asks
+pass 1's and pass 2's published numbers for reproduction.
+
+**Instrument.** `validation/m14/fixtures/zig/pass3-adversarial.ts`, run through
+production `parseFile` over the same 3,834-file draw
+(`sha256:2f3545f92c470090d61c9a745bb427d8d7dec1630d93d0fbc01cb2acdc5ce1ac`), in
+8 shards, merged by `pass3-merge.py` with every ratio recomputed from summed
+primitives and the union hash asserted against the published draw. Tree facts
+come from a second parse of the same bytes through the same pinned wasm.
+**27 controls, 0 failing** — 13 pure-predicate controls and 14 END-TO-END ones
+that call the same `probeFile` over synthetic files whose right answer is known,
+in both directions. The end-to-end half is not decoration: P1's denominator was
+**0** on a 40-file draw before it existed, which is indistinguishable from a
+probe that cannot see, and the positive control
+(`const Foo = 1; fn f() !void { return error.Foo; }`) fires.
+
+### THE CORRECTION: the fallback figure was a property of one run
+
+The ontology section above states, from pass 2, that the run's sharded
+re-measurement reports **0 symbols outside `SymbolKind` and 0 edges below 0.7**,
+and attributes pass 1's 192 kindless symbols to how the run was sharded.
+**Pass 3 re-ran the identical draw at the identical commit, in the same eight
+shards, and read 510 kindless symbols and 21 sub-0.7 edges** — three shards of
+eight degraded. So the "0" is not a property of the lane; it is a property of a
+run. Repeated, it has a rate, and the rate is now measured by a committed script.
+
+`validation/m14/fixtures/zig/fallback-degradation-rate.py` re-runs the eight
+shards concurrently and one at a time and counts `parseFile` results carrying
+`fallback: true`. **Measured, 4 concurrent rounds x 8 shards against 8 sequential
+shards, every one a full 3,834-file parse of the same draw at the same commit:**
+
+| | degraded shard-runs | files that fell back | kindless symbols seen | sub-0.7 edges seen |
+|---|---|---|---|---|
+| **concurrent** | **6 of 32** | **7 of 14,856** | 0 / 4 / 4 / 145 across the degraded rounds | 0 / 1 / 0 / 9 |
+| **sequential** | **0 of 8** | **0** | 0 | 0 |
+
+One concurrent round lost a shard process outright — 3,354 files parsed where
+3,834 were asked for, with no raw dump — which is the `[BB-HANG] parser stuck
+120s` self-destruct pass 2 reported and this script's fourth signature. Across
+every concurrent measurement in this lane the cumulative figure is **12 degraded
+shard-runs of 64**, against **0 of 11 sequential**. So the degradation is a
+property of CONCURRENCY, established by a controlled comparison rather than
+inferred from a symptom — and the operational consequence is immediate: **shard
+this lane SEQUENTIALLY, or check `fallbackFiles` before believing a merge.**
+
+The stderr signatures, as recorded by the script:
+
+    2x  Language.load failed for zig: need to see wasm magic number
+    1x  Language.load failed for zig: WebAssembly.instantiate(): section (code 10, "Code") extends past end of the module (length 18911, remaining bytes 12029) @+255
+    1x  Language.load failed for zig: <empty message>
+
+and, from the pass-3 run of the shared arbiter, a fifth:
+
+    [BB-PARSE-ERR] zig | zig/test/cases/compile_errors/non_int_passed_to_floatFromInt.zig | memory access out of bounds
+
+Every one of them ends in the same place, and that is the point: **the message
+varies and the consequence does not.**
+
+The mechanism is not a mystery and it is not in this lane:
+
+- `resolveWasm("tree-sitter-zig/tree-sitter-zig.wasm")` in `src/ast/engine.ts`
+  walks its candidates, and in a worktree whose `node_modules` is symlinked from
+  another checkout every step misses — including
+  `node_modules/tree-sitter-wasms/out/`, the collection this grammar's bytes are
+  byte-identical to per the provenance note above.
+- It therefore reaches its LAST fallback, which writes the grammar to
+  `os.tmpdir() / ("bb-wasm_" + relativePath.replace(/\//g, "_"))` —
+  **`/tmp/bb-wasm_tree-sitter-zig_tree-sitter-zig.wasm`**, a name derived only
+  from the grammar. Every process that parses a zig file writes that path and
+  then reads it back. `writeFileSync` truncates before it writes, so a reader in
+  another process can observe a short file.
+- `Language.load` then throws, with one of two messages recorded on real runs:
+  `need to see wasm magic number`, and
+  `WebAssembly.instantiate(): section (code 10, "Code") extends past end of the
+  module (length 18911, remaining bytes 12029) @+255`.
+- `pool-worker.parseFile`'s `catch` converts that into `extractFallback`, a
+  REGEX extractor, **silently**. That file's real graph is replaced by
+  regex-derived symbols carrying no `kind` and edges at confidence 0.4/0.5,
+  including `calls this -> …` — a caller name no zig file declares, which is the
+  fabricated-edge class the workstream's rule names, reachable only here.
+
+**What changed in this lane's own instruments because of it.** Both merges now
+REFUSE a degraded shard rather than publishing a mixture, and both census and
+audit report the count:
+
+- `ontology-census.ts` counts `fallbackFiles` and prints
+  `parseFile FALLBACK files N`, with N > 0 flagged as *"this run is a MIXTURE of
+  the analyzer and extractFallback"*.
+- `shard-merge.py` exits 3, naming the shards, instead of summing them.
+- `pass3-adversarial.ts` counts it per file and `pass3-merge.py` exits 3.
+
+**What did not change.** On a run where every shard reports 0, the published
+census reproduces EXACTLY: **127,429 symbols, 392,550 relationships, 0 empty
+names, 0 kinds outside `SymbolKind`, 0 edges below 0.7**, and P5 independently
+maps **127,429 of 127,429** published symbols back to the grammar node each was
+read from. The numbers are right; what was wrong was calling a single run's
+value a property.
+
+### Per-probe result
+
+| probe | question | denominator | findings | rate |
+|---|---|---|---|---|
+| P1 | is an `error.X` leaf charged to a symbol that is not an error-set member? | 32 candidate reads in 5 files | **4** | 12.5% |
+| P2 | does a destructuring declaration bind every slot it declares? | 903 declarations, 1,033 non-first slots | **0** colliding, **0** wrong | 0% |
+| P3 | is the RECEIVER of a method call — a bare read — ever published? | 25,048 receivers naming a file-scope value | **683** lost, +115 ambiguous on alias receivers | 2.73% / 0.46% |
+| P4 | does an edge's SOURCE disagree with the named scope its recorded line sits in? | 249,983 `calls`/`uses`/`instantiates` | **0**; +5,643 inside an UNPUBLISHED local scope | 0% |
+| P5 | does a published symbol's KIND match the grammar node it was read from? | 127,429 symbols | **127,429 mapped, 0 unmapped, 0 start-index collisions** | 100% mapped |
+| P6 | does an `instantiates` target bind to the kind its own reason code claims? | 4,306 | **10** wrong kind, **615** unbound — one root cause, 625 edges | 14.51% |
+| P7 | does the tree say the named owner declares the named member? | 77,459 `contains` | **0**; 170 owner-unknown | 0% |
+| P8 | is an `exports` target declared at file scope? | 24,114 | **1** self-referential name, **3** dangling | 0.004% |
+| P9 | how many tree sites collapse into one published edge? | see below | `calls` 2.71, `uses`(field) 7.84, `uses`(bare) 39.27, `references`(declared type) 3.19, `instantiates` 2.97 sites per edge | — |
+
+### The two classes that ARE wrong, and the one hypothesis that was refuted
+
+**1. A bare read of a file-scope value as the RECEIVER of a method call is never
+published — 683 edges' worth of LOSS, 2.73% of 25,048.** The call edge is right
+(`fromInterned(x).put(...)` calls `put`) and the receiver read is a real read of a
+real declaration that the index holds, and nothing publishes it:
+`zig/src/Value.zig:2555`, `2806`, `2813`, `2836`, `2847`, `3015` and 677 more
+name `fromInterned`, a file-scope `fn` used as a receiver. The cause is
+`isCallCallee` in the bare-read pass: it walks up from an identifier to the
+enclosing `call_expression` and treats the whole callee subtree as the callee,
+so the OBJECT of `a.b()` is suppressed along with the member leaf. The class is
+invisible to every gate in this lane by construction — a differential asks
+whether a published edge is explained, and this is the absence of one. **115
+further rows are counted separately and NOT charged**: their receiver is bound by
+a qualified-path alias (`const cmath = math.complex;`), which is indistinguishable
+from a value by name. A further set is excluded entirely — a receiver bound by
+`@import` is a module, and `std.mem.copy(…)` reads `copy`, not `std`; counting
+those made the first draft of this probe report 107 losses in 146 rows, all of
+them `uses -> std`.
+
+**2. An `error.X` leaf charged to a symbol that is not an error-set member — 4
+edges.** `zig/test/behavior/underscore.zig` declares
+`fn optionalReturnError() !?u32 { return error.optionalReturnError; }`: the name
+is BOTH a function and the error member it returns. The bare-read gate is
+`fileValues.has(name) || (inError && enumMemberNames.has(name))` — an `or`, so
+the function alone admits the read, and the published target resolves to the
+function. Three of the four are in that one file; the fourth is
+`zig/test/cases/compile_errors/binary_OR_operator_on_error_sets.zig:1`, where the
+name is a constant. Every other one of the lane's error-leaf reads (28 of 32)
+charges an actual error-set member.
+
+**3. An `instantiates` construction of a container the analyzer declines to
+publish — 615 unbound targets, plus 10 more where the name collides with a
+published non-container symbol and so reads as bound to the WRONG KIND. 625 of
+4,306 edges (14.51%).** P6 splits the two forms, because asking one question of
+both convicts the analyzer on every generic application:
+`isGenericTypeApplication` names a generic FUNCTION (`Once(u8)` instantiates
+`Once`, published `function`) and only `isConstructorApplication` must name a
+container. With the split, **0 of the applications are wrong** and both arms are
+the same root cause: a construction of a type declared inside a function or test
+body, which Z22 correctly declines to publish because a local type has no
+file-scope identity. The 615 reproduce pass 2's class 3 (ZIG.O.4) to the edge.
+The 10 are the subset where the unpublished local's name happens to match a
+symbol the file DOES publish, of a kind that cannot be constructed — so the
+target resolves and resolves wrong, which is the more misleading of the two
+shapes. All 10 are in one file, `zig/test/behavior/union.zig:625-627` and
+`1016-1023`, where `const A = struct { b: B };` is declared inside
+`fn doTheTest()`'s block and written `A{ .b = B{ .c = C{} } }`, while a union
+field or enum member named `A` elsewhere in the same file is published as a
+`property`/`enum_member`. Finding them needed its own example bucket: the unbound
+arm is 60x larger and shares the row cap, so the 10 rarer rows were counted with
+zero examples until the two were split.
+
+**4. REFUTED — the destructuring hypothesis.** `const a, const c = .{1,2}` is ONE
+`variable_declaration` with two binding slots, the analyzer binds the first and
+breaks, so a read of the second should resolve outward to the file-scope
+declaration of the same name. **Over the corpus: 903 such declarations, 1,033
+non-first slots, and not ONE of those slot names is declared at file scope in the
+same file.** The class is empty, and the honest statement is that the rule is
+latent rather than wrong — it would misattribute a read the moment a file
+shadowed a global with a destructuring slot, which no file in this corpus does.
+Getting to that zero took two corrections to the probe itself, and both wrong
+versions manufactured a defect class out of correct code: "two or more direct
+`identifier` children" convicts the analyzer of 128 wrong edges (`pub const Error =
+IteratorError;` has two — the bound name and a right-hand-side READ the analyzer
+publishes correctly), and "identifiers before the `=`" convicts it of 38 more
+(`var dummy_execute_header: mach_hdr = undefined;` puts the TYPE between the name
+and the `=`). The shape that is actually a destructuring has a COMMA between its
+slots before the `=`. This is the same mistake this lane's history records six
+times — a rule applied on one side of a comparison and not the other — committed
+by the instrument rather than the analyzer, which is why the controls exist.
+
+### P5 — the symbol-level label question nothing had asked
+
+Every label question in passes 1 and 2 was asked about EDGES. P5 asks it about
+SYMBOLS, by mapping each published symbol's `startIndex` back to the grammar node
+it was read from on an independent parse. **127,429 of 127,429 map; 0 unmapped; 0
+start-index collisions.** The resulting (kind ← node-type) histogram is the
+first published evidence for this lane that a symbol's kind matches the
+declaration form it came from:
+
+| count | kind ← node type | | count | kind ← node type |
+|---|---|---|---|---|
+| 33,242 | `enum_member` ← `container_field` | | 5,378 | `struct` ← `variable_declaration` |
+| 22,262 | `constant` ← `variable_declaration` | | 1,974 | `enum` ← `variable_declaration` |
+| 22,073 | `property` ← `container_field` | | 1,907 | `constant` ← `source_file` |
+| 18,573 | `function` ← `function_declaration` | | 1,462 | `enum_member` ← `identifier` |
+| 10,480 | `method` ← `function_declaration` | | 678 | `function` ← `source_file` |
+| 8,107 | `type` ← `variable_declaration` | | 579 | `union` ← `variable_declaration` |
+| 331 | `variable` ← `variable_declaration` | | 127/119/86/29/22 | `type`/`struct`/`enum`/`union`/`variable` ← `source_file` |
+
+Two rows deserve naming rather than leaving in the table. **`enum_member` ←
+`identifier` (1,462) is the error-set form** — the members of `error{ A, B }` are
+bare identifiers directly under an `error_set_declaration`, which is the one
+declaration form with no field and no `container_field`, and the analyzer
+publishes them correctly. **The `← source_file` rows (2,968 in total) are symbols
+whose production `startIndex` is 0**, so they map onto the FILE ROOT rather than a
+declaration node; they are counted apart in the instrument
+(`p5.zeroStartIndex`) rather than presented as if the root were a declaration
+form. A consumer that maps a symbol to its declaration by byte offset cannot
+locate these 2,968, and that is a fact about the production payload shape rather
+than about the analyzer's choice of kind.
+
+**A production-shape finding, since P5 is what ran into it.** The analyzer builds
+`UniversalSymbol.range = { startLine, startColumn, endLine, endColumn, startIndex,
+endIndex }`, but what production `parseFile` returns carries those fields FLAT on
+the symbol — `symbol.startIndex`, not `symbol.range.startIndex` — and
+`symbol.range` is `undefined` for **0 of 8** symbols in a spot check. A consumer
+written against the `UniversalSymbol` interface in `src/ast/types.ts` finds no
+range at all. This is shared machinery (§8) and is reported, not edited.
+
+### P9 — deduplication, as a number
+
+The emitted edge keys are `source->leaf` (`calls`, `uses`) and a bare leaf name
+(`references`, `imports`), so N sites of one name from one source are ONE edge.
+Measured over the same draw, tree sites per published edge: **`calls` 2.71**
+(307,901 sites / 113,476 edges), **`uses`(field) 7.84** (931,306 / 118,795),
+**`uses`(bare) 39.27** (526,463 / 13,406), **`references`(declared type) 3.19**
+(65,622 / 20,594), **`instantiates` 2.97** (12,777 / 4,306). The bare-read figure
+is the largest and it is a direct consequence of the key: a file-scope constant
+read from ten functions is ten edges, read from one function forty times is one.
+A consumer that re-derives a call site from an edge will find a median of three
+per `calls` edge, and the line recorded is the FIRST site — which the M60
+line-accuracy gate already certifies at 100% for the line it does record.
+
+### Two properties of the instrument itself
+
+**`--sample 0` is required with `--files-from`, and the pass-1 usage string did
+not say so.** `ontology-census.ts` truncates the hashed draw by `SAMPLE` BEFORE
+the shard filter, so the documented default `--sample 400` silently caps a
+480-file shard at 400 files and prints a report that looks finished. The merge's
+union-hash assertion catches it, which is how it was caught here; the usage
+string now names the requirement and `pass3-adversarial.ts` states it in its own
+header.
+
+**Reading a symbol's range needs the production shape, not the declared one.**
+Stated above; it is why P5's first run reported "0 of 289 mapped" for a corpus it
+mapped entirely.
+
+### Why none of the two was fixed here, stated as a rule
+
+Both changes the SET of edges the analyzer emits, and this lane's oracle mirrors
+the analyzer's rules rule-for-rule (`script/m14/zig-truth.ts` is a §8 shared
+file), so a unilateral analyzer fix turns the lane's own source-keyed gate red
+against an oracle that reproduces the very defect being fixed. The specific
+changes are written out in the report so they can be applied without
+re-deriving them. **Nothing in this lane's committed output changed in pass 3
+except the instruments and this document.**
+
 ## Defects this lane found while establishing the ontology (Z59, Z60)
 
 Establishing the ten types is the half of the job that finds things. Two defects
@@ -746,6 +1038,61 @@ measures and reports rather than edits. The change needed is stated in the repor
 A blank limitations list on a Turing-complete language is treated as dishonesty
 rather than excellence, so each entry below names the number that bounds it.
 
+- **The RECEIVER of a method call is a bare read and is never published — 683
+  lost reads, 2.73% of the 25,048 method-call receivers that name a file-scope
+  value.** `isCallCallee` in the bare-read pass walks up to the enclosing
+  `call_expression` and treats the whole callee subtree as the callee, so
+  `fromInterned(x).put(…)` publishes `calls -> put` and nothing for the read of
+  `fromInterned`. A differential cannot see this class at all: it asks whether a
+  published edge is explained, and this is the ABSENCE of one, so a run with the
+  defect and a run without it report the same agreement. **115 further rows are
+  counted apart and not charged** (their receiver is a qualified-path alias such
+  as `const cmath = math.complex;`, indistinguishable from a value by name), and
+  receivers bound by `@import` are excluded entirely because a module is not a
+  value read. The fix is to suppress the member LEAF and the qualified non-leaves
+  while leaving the chain's base identifier readable — the rule the pass-2 doc
+  comment already describes and the code does not implement.
+- **An `error.X` leaf can be charged to a symbol that is not an error-set member
+  — 4 edges, 12.5% of the 32 candidate error-leaf reads.** In
+  `zig/test/behavior/underscore.zig` the name `optionalReturnError` is both a
+  `fn` and the error member it returns; the gate
+  `fileValues.has(name) || (inError && enumMemberNames.has(name))` admits the
+  read on the strength of the function, and the published target resolves to the
+  function. The remaining 28 of 32 charge a declared error-set member. The fix is
+  to prefer `enumMemberNames` over `fileValues` when `inError` is true, which is
+  a one-clause change to the same gate and needs `script/m14/zig-truth.ts`
+  changed in step (§8).
+- **`instantiates` names a type the analyzer declines to publish — 625 of 4,306
+  edges (14.51%), in two shapes.** 615 targets bind to nothing at all and 10 bind
+  to a same-named symbol of a kind that cannot be constructed; both are
+  constructions of a container declared inside a function or test body. The edge
+  is TRUE and the type is deliberately unpublished (Z22), and unlike the source
+  side there is no nearer published name for a target to fall back to. A4 asked
+  whether the target binds to anything published and this asks whether it binds
+  to the kind the edge's own reason code claims; splitting the two FORMS is
+  load-bearing, because a generic application legitimately names a generic
+  FUNCTION and one question asked of both convicts the analyzer on every one.
+- **A destructuring declaration binds only its FIRST slot — latent, and measured
+  empty.** `const a, const c = .{1,2}` is one `variable_declaration` with two
+  binding slots and the analyzer binds the first. Over the corpus: **903
+  declarations, 1,033 non-first slots, 0 of which name a file-scope declaration in
+  the same file.** So no published edge is wrong today; the rule would misattribute
+  a read the moment a file shadowed a global with a destructuring slot, and no
+  file in this corpus does. Declared because a clean zero on a corpus of this size
+  is a statement about the corpus and not about the rule.
+- **Site multiplicity is not recoverable from an edge — 2.71 tree sites per
+  `calls` edge, 7.84 per field-read `uses`, 39.27 per bare-read `uses`, 3.19 per
+  declared-type `references`, 2.97 per `instantiates`.** The keys are
+  `source->leaf` and a bare leaf name, so N sites of one name from one source are
+  one edge and the recorded line is the FIRST of them. A consumer re-deriving a
+  site from an edge needs to know this before it looks for one.
+- **2,968 published symbols carry `startIndex` 0** and therefore cannot be
+  located by byte offset; they are counted apart by `p5.zeroStartIndex` rather
+  than presented as mapping to a declaration form. Related and separate: what
+  production `parseFile` returns carries the range fields FLAT on the symbol
+  (`symbol.startIndex`), while `src/ast/types.ts` declares them nested under
+  `symbol.range` — so a consumer written against the declared interface reads no
+  range at all. Shared machinery (§8), reported not edited.
 - **A named test is an edge source with no symbol, and when the name collides the
   source is WRONG rather than dangling (Z39 retained deliberately; Z60 adjacent).
   CORRECTED 2026-10-03.** This entry previously read "measured at 0 after Z59 on the
@@ -857,7 +1204,7 @@ reproduces.
 | F3 fixtures | the project's own `runLang("zig")` | **7 / 7 pass**, including 8 hand-computed complexity pins, 7 reason-code assertions and the Z46 blank-identifier pair; calibrated at **5 / 7** with the `contains` reason code removed — `bare-value-reads`, `calls-uses-complexity`, `callsite-lines-825`, `declaration-vs-definition-612`, `kinds-and-owners`, `declared-type-leaf`, `relationship-classes` |
 | F4 mutations | `BB_MUTANT_ONLY="zig/" mutate-analyzer.ts` | **50 / 50 CAUGHT**, one per fixed class plus payload reverts. A mutant transforms the ANALYZER, so the count cannot reach an ORACLE defect — Z40 and Z41 were both mirror-side and neither had a mutant, which is the argument for the lane gates rather than a larger registry |
 | F8 completeness census | `completeness-inventory.ts --lang zig` | **RE-RUN 2026-10-03: section-b FAILS. 98 types classified, 7 of 8 sections pass.** `section-b-relationship-kinds — EMITTED but absent from requiredKinds: exports, instantiates`. The analyzer publishes both (24,114 `exports` and 4,306 `instantiates` edges, measured through production `parseFile` at the 3,834-file draw), and the zig `requiredKinds` row in `script/m14/completeness-inventory.ts` still lists only `["calls","uses","contains","references","imports"]` — pass 1 added the two emissions without updating the contract row, and the row is a §8 shared file. The comment above that row still asserts "no `exports` GRAPH edge … would be a phantom", which Z33 made false: `exports` targets resolve at 99.99% and 0 of them name a non-public symbol. **The 2026-09-30 row's "sections A–H 8/8 pass" is therefore retracted**: it was true before `exports` and `instantiates` were emitted and stopped being true when they were, and the gate that says so has been saying so since. Sections A, C, D, E, F, G, H all pass (E: floor zig:zig missing=0 unexplained=0; F: 85.5 ms/file; H: 12 checks). Earlier note retained: it runs under `npx tsx`; it had been recorded as bun-only, which was hiding a real section-A failure on the universal `ERROR`/`MISSING` pair (Z50) |
-| **F5 differential, LANE-OWNED** | `zigw-lane-differential.ts 400` | **RE-RUN 2026-10-03: 60,280 truth rows, 100.00% covered, MISSING 0, unexplained 0** of 56,906 analyzer edges — and **0 on the STRICT axis too** (the rule that keeps the dotted qualifier, which is the axis Z40 hid on). The 2026-09-30 figures were 60,107 / 58,303 on draw `sha256:afee5618d093`; the draw is now `sha256:6ba81e3b477b` because the corpus grew (`ghostty` 805 → 807 tracked `.zig` files), so the two rows are different file sets and neither is a regression. Reproduces the shared harness's semantics exactly (same `normTarget`, same `label + normTarget(target)` key), so the numbers are comparable. Calibrated: `--calibrate` reports 2 MISSING and 1 unexplained. **The corpus root in `script/m14/tmp/zigw-harness.ts` and `zigw-lane-differential.ts` defaults to `$HOME/ishaq/fixtures/repositories`, a path that does not exist here — these instruments only run with `BB_CORPUS_ROOT` set** |
+| **F5 differential, LANE-OWNED** | `zigw-lane-differential.ts 400` | **RE-RUN AT PASS 3, IDENTICAL TO THE PUBLISHED ROW: 60,280 truth rows, 100.00% covered, MISSING 0, unexplained 0** of 56,906 analyzer edges, on the same draw `sha256:6ba81e3b477b`, and 0/0 on the STRICT axis too (per class: contains 8,306/8,349, uses 21,897/20,804, calls 16,037/15,573, references 7,940/6,080, imports 2,339/2,339, exports 2,930/2,930, instantiates 831/831). It needs `BB_CORPUS_ROOT` set — the corpus root in that instrument defaults to a path that does not exist here — and **0 on the STRICT axis too** (the rule that keeps the dotted qualifier, which is the axis Z40 hid on). The 2026-09-30 figures were 60,107 / 58,303 on draw `sha256:afee5618d093`; the draw is now `sha256:6ba81e3b477b` because the corpus grew (`ghostty` 805 → 807 tracked `.zig` files), so the two rows are different file sets and neither is a regression. Reproduces the shared harness's semantics exactly (same `normTarget`, same `label + normTarget(target)` key), so the numbers are comparable. Calibrated: `--calibrate` reports 2 MISSING and 1 unexplained. **The corpus root in `script/m14/tmp/zigw-harness.ts` and `zigw-lane-differential.ts` defaults to `$HOME/ishaq/fixtures/repositories`, a path that does not exist here — these instruments only run with `BB_CORPUS_ROOT` set** |
 | file-scope declaration coverage | `zigw-decl-coverage.ts` | **20,944 declared, 20,944 published, 100.00%**, zero files short across all three corpora. Exits non-zero below 100% |
 | `contains` gate | `zigw-contains.ts 200` | **PHANTOM 0, MISSING 0** (owner-keyed, bidirectional) |
 | `imports` gate | `zigw-imports.ts 200` | **PHANTOM 0, MISSING 0** (site-keyed, bidirectional) |
@@ -880,11 +1227,14 @@ reproduces.
 | F1 grammar audit after Z59 | `audit-analyzer-grammar.ts` | **zig PASS — 50 refs, 0 unknown node types, 0 unknown fields**, unchanged by the new predicate |
 | parse-error census | `zigw-parse-errors.ts` | **93 / 3,839 (2.4%)** files carry ERROR nodes, 811 ERROR nodes, 0 MISSING — bucketed: 43 intentionally invalid (`compile_errors` plus a langref page), 45 inline asm, 2 keyword-named fields, 3 labeled blocks in expression position. No analyzer defect in any of them (Z42) |
 | **pass-2 adversarial audit** | `fixtures/zig/pass2-adversarial.ts` | **3,834 of 3,834 files, 8 shards merged, 45 distinct controls with 0 failing.** 13 probes: 7 classes at 0 findings (`calls` reserved target / not-called / digit-headed; `uses` reason code ×3; `exports` not-public; `payload` non-declared identifier) and 6 with counts, every one reported above. Production facts from `parseFile`, tree facts from a second parse of the same bytes |
-| **census sharding + merge** | `fixtures/zig/shard-draw.py`, `ontology-census.ts --files-from`, `fixtures/zig/shard-merge.py` | 8 shards partition the published draw; the merge **asserts the union hash equals the single-process draw hash** and it is equal (`sha256:2f3545f9…`), and it RECOMPUTES the corpus-tier columns and every ratio from the summed primitives. Without sharding the census self-destructs (`[BB-HANG]`) — see the ontology section |
-| **M60 rel-type coverage** | `rel-type-coverage-gate.ts --langs=zig` | CHECK 1 DERIVATION **clean** (= 0 findings, the number the handover asks for), CHECK 2 REACHABILITY clean, CHECK 3 AGREEMENT clean, CHECK 4 ENUM clean, baseline "104 recorded, 0 NEW, 104 repaid". **CHECK 1 counts TYPES with an audited label, not independent oracles** — the pass-2 section is what bounds what that is worth. **Not run unscoped, and the run was REVERTED**: `--langs=zig` rewrites `validation/m60/results/rel-type-coverage.json` with only the selected lane, which shrinks a 34-lane evidence file to one — so the file was restored with `git checkout` and the run is reported here rather than committed. §8 |
-| **ontology coverage gate (the arbiter)** | `ontology-coverage-gate.ts zig` | **DOES NOT REACH A VERDICT.** Two runs ended `[BB-HANG] parser stuck 120s on zig/lib/std/testing.zig — exiting` with no verdict printed, because the gate scans the corpus before it checks `RULED_BY_LANG`. Its refusal branch is real and was shown by pointing it at an empty corpus root: "no RULING TABLE for zig", **exit 2**. The three RULED verdicts were measured with `construct-probe.ts` instead, and reproduce the 2026-09-30 numbers exactly |
+| **pass-3 adversarial audit** | `fixtures/zig/pass3-adversarial.ts` + `pass3-merge.py` | **3,834 of 3,834 files, 8 shards merged, union hash asserted equal to the published draw, `fallbackFiles` 0, 27 controls with 0 failing** (13 pure-predicate + 14 END-TO-END, each running the same `probeFile` the corpus runs). 9 probes: 4 at zero findings (P2 destructuring, P4 source-vs-scope, P5 unmapped symbols, P7 `contains` owner), P5's 127,429/127,429 symbol→node mapping with the (kind ← node-type) histogram published, and 5 with counts — 683 lost receiver reads, 4 error-leaf misattributions, 10 wrong-kind `instantiates` targets, 1+3 `exports`, plus P9's site-multiplicity ratios |
+| **fallback degradation rate** | `fixtures/zig/fallback-degradation-rate.py` | the rate behind the pass-3 correction. **4 concurrent rounds x 8 shards: 6 of 32 shard-runs degraded, 7 of 14,856 files fell back to `extractFallback`, and one shard process died outright at 3,354 of 3,834 files. 8 sequential shards: 0 of 8 degraded, 0 files fell back.** Cumulative across every concurrent measurement in this lane, 12 of 64 shard-runs against 0 of 11 sequential — so the degradation is a property of concurrency, established by comparison rather than inferred from a symptom. Five distinct stderr signatures recorded, one consequence. **See the pass-3 section for the mechanism in `src/ast/engine.ts`** |
+| **census + audit self-certification (pass 3)** | `ontology-census.ts`, `shard-merge.py`, `pass3-merge.py` | both instruments now count `fallback: true` per file and BOTH merges **exit 3 naming the degraded shards** instead of summing a mixture of the analyzer and the regex extractor. The census prints `parseFile FALLBACK files N` and flags N > 0 as *"this run is a MIXTURE"*. Demonstrated by the pass-3 census run that read 510 kindless symbols and 21 sub-0.7 edges from 3 degraded shards |
+| **census sharding + merge** | `fixtures/zig/shard-draw.py`, `ontology-census.ts --files-from`, `fixtures/zig/shard-merge.py` | 8 shards partition the published draw; the merge **asserts the union hash equals the single-process draw hash** and it is equal (`sha256:2f3545f9…`), and it RECOMPUTES the corpus-tier columns and every ratio from the summed primitives. Without sharding the census self-destructs (`[BB-HANG]`) — see the ontology section. **`--sample 0` is REQUIRED with `--files-from`** (pass 3): `SAMPLE` truncates the hashed draw before the shard filter, so the documented default silently caps a 480-file shard at 400 and prints a report that looks finished; the merge's union-hash assertion catches it |
+| **M60 rel-type coverage** | `rel-type-coverage-gate.ts --langs=zig` | CHECK 1 DERIVATION **clean** (= 0 findings, the number the handover asks for), CHECK 2 REACHABILITY clean, CHECK 3 AGREEMENT clean, CHECK 4 ENUM clean, baseline "104 recorded, 0 NEW, 104 repaid" — **re-run at pass 3, all four checks clean, same baseline, so the lane's DERIVATION count is still 0 as a NUMBER.** **CHECK 1 counts TYPES with an audited label, not independent oracles** — the pass-2 section is what bounds what that is worth. **Not run unscoped, and the run was REVERTED, twice**: `--langs=zig` rewrites `validation/m60/results/rel-type-coverage.json` with only the selected lane, which shrinks a 34-lane evidence file to one — so the file was restored with `git checkout` and the run is reported here rather than committed. §8 |
+| **ontology coverage gate (the arbiter)** | `ontology-coverage-gate.ts zig` | **DOES NOT REACH A VERDICT, and pass 3 pins down why it is exit 1 and not a hang.** Pass 2 reported two runs ending `[BB-HANG] parser stuck 120s on zig/lib/std/testing.zig — exiting`. Pass 3 ran it twice: **both runs ran the corpus scan to the end in ~5 minutes and printed `ontology coverage gate — no RULING TABLE for zig.` followed by `Refusing to report: a gate with an empty table would call every un-emitted type RULED-UNJUSTIFIED and that is a verdict about the TABLE, not about the lane`, exit code 1.** `RULED_BY_LANG` in that shared file holds only `bash` and `json`, so zig's three RULED verdicts can never be graded by it; the corpus scan happens first, which is why a degradation in that scan can look like a hang. Both pass-3 runs also logged one `[BB-PARSE-ERR] … memory access out of bounds`, the third signature of the fallback class — see the pass-3 section. The three RULED verdicts were measured with `construct-probe.ts` and re-probed unchanged |
 | **doc-truth emissions** | `verify-doc-truth-emissions.ts --no-write` | **zig contributes 0 findings of any kind.** Its verdict table is now parseable (the header is `Relationship type | Emitted?`), so the lane's emission claims are machine-checked: 9 of the 10 rows grade clean — 7 `yes` against 7 emitted kinds and 2 `no` against 2 un-emitted ones, with **0 FALSE_POSITIVE and 0 FALSE_NEGATIVE**. The 10th row (`extends`) is the one `parseClaimTable` cannot read (it skips the first body row of every table — see the caption above). The gate's own summary still reads `-> FAIL` on **7 FALSE_NEGATIVE in other lanes' docs**; zig is not among them |
-| **honesty gate** | `verify-honesty.ts` | **20 failures, none of them this lane's.** Its `banned-vocabulary lint over validation/m14 + M14 docs` passes, and no failure names this doc or any file under `validation/m14/fixtures/zig/`. The failures are: banned terms inside OTHER lanes' fixture and result JSON (clean, csharp, html, sql, fsharp, `grammar-pins.json`, 4 `results/*.json`), `M14.0.F7` non-passing `analyzer-hygiene-cpp` and `analyzer-hygiene-elixir`, and 8 evidence-freshness failures (F2–F9) caused by shared `validation/m14/results/*.json` artifacts whose declared inputs have moved on the aggregate branch. §8 |
+| **honesty gate** | `bun run script/m14/verify-honesty.ts` | **22 failures at pass 3, none of them this lane's** — the published row said 20, and the two extra are shared-evidence movement on the aggregate branch, not this lane. The `banned-vocabulary lint over validation/m14 + M14 docs` line still reports **ok**; the 11 banned-term failures are in OTHER lanes' artifacts (`fixtures/html`, `fixtures/c`, `fixtures/clean`, `fixtures/csharp`, `fixtures/sql`, `grammar-pins.json`, 4 `results/*.json`) and none names this doc or any file under `validation/m14/fixtures/zig/`. The rest: `M14.0.F7` non-passing `analyzer-hygiene-cpp` and `analyzer-hygiene-elixir`, F1–F9 evidence-freshness (declared inputs moved on the aggregate branch), and `freshness rule flags every artifact — it cannot distinguish current from stale`. Note the lint's own scope: it walks `.md`/`.json` under `validation/m14/` and `docs/**M14**`, and `docs/analyzers/real-zig-analyzer.md` matches neither, so this lane's prose is not machine-linted for banned vocabulary. §8 |
 | ownership verifier | `zigw-ownership.ts 3000` | 136,720 symbols, AGREE 84,442, **PHANTOM_OWN 0, ORPHAN 0**, COLLISION 1,485 — of which **enclosure disambiguates 1,485, leaving 0 genuinely ambiguous**. The store already resolved ownership by extent (`enclosingStoreableIdByName`), so #963 was filed against a fixed defect and is **resolved** (Z49) | Needed because the differential's coverage match ignores the SOURCE, so it cannot see an ownership error at all. This instrument was itself broken until Z43: it read a quoted name raw where the published symbol name is canonicalized, so it reported **701 phantom owners** that `zigw-contains.ts` — which derives from the grammar and keys on the owner — read as zero |
 ## Verification (re-run at HEAD, 2026-09-28)
 
@@ -899,7 +1249,19 @@ reproduces.
 | A/B of the executable-body change | `zigw-dump.ts` (800 files) | 161 spurious symbols removed, 23 genuine `uses` edges gained, 27 fabricated `contains` edges removed |
 | zero-regex | `script/m49/verify-r2-regex.ts` + `reviews/regex-policy.md` | **0 regexes** in this analyzer (was 1; see Z18) |
 
-Claim level: **L4, restated at pass 2 — the pass-1 L5 is WITHDRAWN.** Pass 1
+Claim level: **L4, restated at pass 2 and again at pass 3 — the pass-1 L5 is
+WITHDRAWN.** Pass 3 adds no level and withdraws none: it re-derived every
+published number (the census reproduces exactly at 127,429 / 392,550; the
+lane-owned F5 differential reproduces exactly at 60,280 truth rows and 0
+unexplained of 56,906; the arbiter's behaviour is now characterised rather than
+guessed), and it withdrew one PUBLISHED CLAIM — the "8 of 8 shards report 0 and
+0" figure, which was a property of a run rather than of the lane and which is now
+a measured rate. It also found two classes of wrong or missing edge that no gate
+in this lane can see by construction (a suppressor that fires when it should not
+produces an ABSENCE, and an absence reads as the same count as a correct run):
+**683 lost receiver reads** and **4 error-leaf misattributions**, plus one
+latent rule (a destructuring binds its first slot only) that is measured empty
+over 1,033 slots. Pass 1
 recorded L5-SCOPED-VERIFIED. Pass 2 found four classes of wrong edge the differential
 scores as agreement (759 wrong-source rows, 75 wrongly-named declared-type targets,
 615 unbindable `instantiates` targets, 3,721 name-ambiguous `contains` owners), a
@@ -932,3 +1294,214 @@ and synthetic-shape rulings in `reviews/zig/master-review.md`, and grammar-versi
 drift exposure (the analyzer reads `type`, `body`, `name`, `ok` and `operator`
 fields, so a grammar bump can change what it sees — which is why the grammar pin
 is a gate and not a comment).
+---
+
+## The ruling table for the ontology arbiter — `script/m14/zig-ruled.ts` (2026-10-03)
+
+### What the arbiter could and could not say about this lane before
+
+`script/m14/ontology-coverage-gate.ts` is the workstream's arbiter, and its own
+header records why it exists: `overrides` was missing from Bash for a whole wave
+and the differential stayed green, because the analyzer omitted it and the oracle
+was written after that ruling — nothing agrees with nothing. A ruling table is
+that gate's instrument for a type the analyzer does not emit, and the table lives
+in the shared file's `RULED_BY_LANG`, which held `bash` and `json` only.
+
+**So this lane's three RULED verdicts had never been checked by the arbiter.**
+Run unwired, the gate scans the corpus and then refuses:
+
+```
+ontology coverage gate — no RULING TABLE for zig.
+Refusing to report: a gate with an empty table would call every un-emitted type
+RULED-UNJUSTIFIED and that is a verdict about the TABLE, not about the lane.
+```
+
+(`exit 2`; measured at a bounded 1,200-file `BB_CORPUS_ROOT` and at an empty one.)
+
+### The table
+
+`script/m14/zig-ruled.ts` — three rows, each with the instrument the workstream
+defines and the measurement behind it.
+
+| type | instrument | what the probe measures | full-corpus count (3,834 files, draw `sha256:2f3545f9…`) |
+|---|---|---|---|
+| `extends` | A: grammar-inventory | 17 node types that would express a supertype relation (`class_declaration`, `trait_declaration`, `extends_clause`, `superclass`, `protocol_conformance`, …) | **0 present** of the 232 node types the grammar produces; 0 of 28 inheritance words in the wasm's own 239-entry type table or its 16 fields; A4's header-slot classification 1,797 children / 443 files / **0 UNCLASSIFIED** |
+| `implements` | A: grammar-inventory | the same 17, a conformance clause among them | **0 present**; same tables, same zero |
+| `overrides` | B: parse-tree-count | a same-scope duplicate DECLARATION, excluding destructuring rebinds, files that quote the compiler's own diagnostic for that identifier, and duplicate error-set members (which the compiler rejects too) | **0 read by the probe; 19 raw duplicate sites, 21 including 2 duplicate error-set members — every one a construct the compiler refuses** |
+
+`Ruled` is restated in the file because the gate does not export it and the gate
+is shared. **Wiring needed (§8): one import and one map entry** —
+`import { ZIG_RULED } from "./zig-ruled"` and
+`{ bash: BASH_RULED, json: JSON_RULED, zig: ZIG_RULED }` — the same shape css, nim,
+protobuf, json, clean, powershell, julia, markdown, scss, solidity, yaml and sql
+already needed in this wave. The two lines were applied locally to measure the
+table and **reverted before this commit**: the gate file is not mine.
+
+### The arbiter's verdict, on the FULL corpus
+
+```
+ontology coverage gate — zig
+corpus: 3834 admitted files
+
+type          status            detail
+-----------------------------------------------------------------------------------------------
+calls         EMITTED           113,476 edges in 4+ files, e.g. ghostty/example/c-vt-build-info/build.zig, ghostty/build.zig
+uses          EMITTED           132,201 edges in 4+ files, e.g. ghostty/example/c-vt-build-info/build.zig, ghostty/build.zig
+contains      EMITTED           77,459 edges in 4+ files, e.g. ghostty/pkg/apple-sdk/build.zig, ghostty/pkg/dcimgui/main.zig
+imports       EMITTED           10,200 edges in 4+ files, e.g. ghostty/example/c-vt-build-info/build.zig, ghostty/build.zig
+references    EMITTED           30,794 edges in 4+ files, e.g. ghostty/example/c-vt-build-info/build.zig, ghostty/build.zig
+exports       EMITTED           24,114 edges in 4+ files, e.g. ghostty/example/c-vt-build-info/build.zig, ghostty/build.zig
+extends       RULED-SOUND       NOT EMITTED; the grammar produced 232 distinct node types across the corpus and NONE expresses it
+implements    RULED-SOUND       NOT EMITTED; the grammar produced 232 distinct node types across the corpus and NONE expresses it
+overrides     RULED-SOUND       NOT EMITTED; the construct occurs 0x on the parse tree
+instantiates  EMITTED           4,306 edges in 4+ files, e.g. ghostty/pkg/fontconfig/pattern.zig, ghostty/pkg/freetype/face.zig
+-----------------------------------------------------------------------------------------------
+emitted 7/10   ruled-sound 3   FALSIFIED 0   ruled-without-justification 0
+```
+
+**7 EMITTED + 3 RULED-SOUND = 10 of 10 decided**, the first time an arbiter has
+ruled for this lane and the first time the three RULED verdicts were checked by
+anything other than the lane that wrote them.
+
+**The arbiter's seven emitted counts equal the lane census's, edge for edge**
+(113,476 / 132,201 / 77,459 / 10,200 / 30,794 / 24,114 / 4,306). That is a second
+account of the same population taken by different code, and it is worth recording
+*how* it nearly did not: an earlier run of the same command on the same corpus
+printed 4 `[BB-PARSE-ERR] … memory access out of bounds` lines and came back
+**27 edges low** (calls 113,475, uses 132,191, references 30,793, exports 24,100,
+instantiates 4,305) before dying on
+`[BB-HANG] parser stuck 120s on zig/test/cases/compile_errors/bad_usage_of_call.zig
+— exiting`. Each degraded file is silently replaced by the regex `extractFallback`,
+which emits none of the five affected classes, so a run of the arbiter is only
+trustworthy when it prints no `BB-PARSE-ERR`. **That is a property of the run, not
+of the corpus** — the pass-3 section above measures a rate for the cross-process
+half of it. Which half degraded THIS run is not established: the gate is a single
+process, so the accumulated-WASM-state trap and the shared
+`os.tmpdir()/bb-wasm_<grammar>` race are both consistent with it, and one run does
+not vary the other factor. The arbiter has no fallback counter of its own to notice
+either.
+
+A bounded root was also run, through
+`validation/m14/fixtures/zig/arbiter-corpus-root.py` (the first 1,200 files of the
+same draw, `sha256:d60b554a…`, 26 MB, `ghostty=234 zig=930 zls=36`): 7 EMITTED,
+3 RULED-SOUND, 0 FALSIFIED, with the emitted counts at 29,588 calls / 35,867 uses /
+21,733 contains / 3,143 imports / 9,076 references / 6,433 exports / 1,253
+instantiates. That path exists because the gate scans the whole corpus BEFORE it
+consults `RULED_BY_LANG`, so a lane whose corpus trips the hang guard gets no
+verdict at all rather than the cheap refusal.
+
+### The arbiter convicted MY OWN PROBE three times, which is the part worth keeping
+
+A ruling table is only as good as the probe in it, and every one of the arbiter's
+objections to this one was a false positive that read as "derivable" — the exact
+verdict a wrong instrument produces.
+
+1. **942 phantom sites on a 200-file draw.** Three scope errors in one walk: a
+   child scope was seeded with a COPY of its parent's declarations (so
+   `error_bundle` in a nested anonymous struct collided with the outer struct's
+   field of the same name), error-set members were filed under the ENCLOSING scope
+   (so two unrelated error sets collided at file scope), and only `block` opened a
+   scope when an expression-position `{ … }` is a `block_expression`. Fixed by
+   seeding an empty map, by reading error-set members on the `error_set_declaration`
+   itself, and by taking the scope openers from the node types the grammar
+   actually produces.
+2. **`overrides … FALSIFIED … zig/test/behavior/optional.zig: ZeroBit member
+   declared twice`.** The site is `var two: ?struct { ZeroBit, ZeroBit }` — a
+   TUPLE type annotation, whose two positional fields put a user-declared type name
+   in the `name` field with no `type` field. Z28's rule ("read the name field only
+   when it is an identifier") is necessary and not sufficient; the discriminator is
+   the missing `type` field, because a named field is `name: Type`.
+3. **`overrides … FALSIFIED … zls/tests/analysis/error_union.zig: Foo error-member
+   declared twice`.** `const DuplicateErrorName = error{ Foo, Foo } || error{Bar};`
+   in a zls ANALYSIS test, which — unlike the zig fixtures — does not quote the
+   diagnostic. The compiler settles it: `lib/std/zig/AstGen.zig:5945` in the
+   corpus's own checkout emits `duplicate error set field '{s}'` and returns
+   `astgen.failTokNotes`, and
+   `zig/test/cases/compile_errors/duplicate_error_value_in_error_set.zig` is its
+   rejection fixture. An error set has no second spelling, so no accepting program
+   contains a duplicate member; the probe now excludes that kind on the compiler's
+   authority rather than on a quoted message.
+
+The same shapes run against the SHIPPED analyzer found **no phantom symbol and no
+phantom `contains` edge** — `parseFile` on `zig/test/behavior/optional.zig` and
+`zig/lib/std/Build.zig` publishes 0 symbols named `ZeroBit`, `u16` or `u8`, and 0
+member edges for the tuple types, because an anonymous container owns nothing under
+Z21/Z22. So all three were defects in the instrument and not in the analyzer, which
+is the correct place for them to be, and it is the third time in this lane's
+history that the instrument rather than the analyzer manufactured the class.
+
+Ten controls run through the exported probe on every invocation — three positives
+that must fire, seven negatives that must not — and `zig-ruled-probe.ts` exits
+non-zero if any control fails, if the probe reads non-zero, if any listed supertype
+node type is produced, or if the keyword calibration drops below 10 of 11. Both
+tuple shapes, the error-set duplicate and the quoted-diagnostic duplicate are
+controls now.
+
+### Full-corpus numbers, from instruments that never touch `parseFile`
+
+The two instruments that carry the full-population measurements load the pinned
+wasm directly (`wasm/tree-sitter-zig.wasm`), so they are immune to the
+`extractFallback` degradation above and the fallback flag cannot make one of their
+zeros mean "cannot see".
+
+- `construct-probe.ts`, re-run today over the whole admitted population:
+  **3,834 files, draw `sha256:2f3545f9…` — byte-identical to the draw every other
+  published zig figure names**, 239 declared node types, 16 declared field names,
+  28 of 28 inheritance words absent from both, A4 1,797 header-slot children in
+  443 files with 0 UNCLASSIFIED, B1 = 3, B2 = 14 (9 destructuring, 5 plain),
+  B3 = 9 with 9 of 9 inside `compile_errors/`, and 12 of 12 controls as expected.
+  Every number in **The three RULED types, each falsifiable** above reproduced
+  exactly, which is what re-reading a ruling is for.
+- `zig-ruled-probe.ts`, new today: **0 hits from the probe the gate runs, 19 raw
+  same-scope duplicate declarations (21 including the 2 duplicate error-set
+  members), 232 distinct node types produced, 0 of the 17 supertype names
+  present**, keyword calibration 10 of 11 — the missing one is `usingnamespace`,
+  which this grammar spells as a named node rather than an anonymous token, and the
+  calibration's purpose is to show the inventory holds keywords at all.
+
+The raw sites decompose as the lane's B1/B2/B3 probes do (3 duplicate functions,
+5 duplicate bindings, 9 duplicate members = 17 counted by probe identity rather
+than by site; this probe counts SITES, 19, and 21 with the error-set class). Every
+one of them sits in a file that quotes the compiler's own diagnostic for that
+identifier in a comment — including
+`zig/test/cases/global_variable_redeclaration.zig`, which sits OUTSIDE
+`compile_errors/`. A path rule would have missed that file; reading the comment is
+what makes the exclusion a fact about the file rather than a convention about a
+directory. **OVERTURN condition, stated so the arbiter can check it without this
+document:** a same-scope duplicate declaration in a file that does not carry the
+compiler's own duplicate/redeclaration diagnostic naming that identifier, and is not
+a duplicate error-set member. The probe pushes only those, so the arbiter flips the
+`overrides` row to FALSIFIED by itself.
+
+### Five items for the supervisor (§8), stated so they can be applied directly
+
+1. **Wire the table.** `script/m14/ontology-coverage-gate.ts`: add
+   `import { ZIG_RULED } from "./zig-ruled"` and the `zig:` entry in
+   `RULED_BY_LANG`. Exporting the `Ruled` type from the gate would also let lane
+   tables stop restating it.
+2. **The gate decides after it scans.** `RULED_BY_LANG[LANG] === undefined` is
+   checked at line ~312, AFTER the `parseFile` sweep, so a lane whose corpus trips
+   the engine's 120 s hang guard gets `[BB-HANG] … exiting` and no verdict rather
+   than the cheap `exit 2`. Moving the refusal above the corpus walk makes the
+   refusal observable on every lane.
+3. **`rulingFor` picks the SUPERSEDED decision.** All three RULED rows cite
+   `script/m14/spec/zig-completeness.json#ZIG.D.1`, whose own text begins
+   "SUPERSEDED per type by ZIG.O.1 … ZIG.O.4"; the live decisions are ZIG.O.1,
+   ZIG.O.2 and ZIG.O.3. `rulingFor` takes the first `status === "RULED"` decision
+   whose body mentions the type, and ZIG.D.1 mentions all four in one sentence. A
+   decision whose resolution opens with `SUPERSEDED` should be skipped.
+4. **Instrument A cannot express a POSITION probe.** The `Ruled` shape has two
+   instruments and one of them is a table lookup, so `extends`/`implements` are
+   decided in the gate by node-type presence alone. For zig the closing evidence is
+   positional — the header slot of a type declaration, 1,797 children,
+   **0 UNCLASSIFIED** — and that cannot be carried in this shape. Either
+   `countOnTree` becomes legal for instrument A (an enum, not a literal union), or
+   the gate's own output should say that an instrument-A ruling is a vocabulary
+   absence rather than a position test. Today it prints only the first, and the
+   lane's `describe` string — which does carry it — is never printed by the gate.
+5. **The arbiter cannot see its own degradation.** A full-corpus run that trips the
+   WASM trap publishes counts 27 edges low with no marker in its verdict table
+   (`fallback: true` exists on the `parseFile` result and nothing reads it). A
+   counter beside the corpus line — files parsed, files fallen back — would make the
+   difference between a run that measured the analyzer and one that measured a
+   mixture visible in the arbiter's own output.
