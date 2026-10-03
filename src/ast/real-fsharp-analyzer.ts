@@ -1181,8 +1181,28 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
         // call neither (`let h = f >> g` builds a closure), so an edge from them would be a
         // fabrication. Measured: 13 bare `>>` in the same 300-file draw, excluded on that
         // ground and not because they were hard to read.
-        const opNode = this.filterChildren(node, (n) => n.type === "infix_op")[0]
-        const side = opNode ? PIPELINE_CALLEE_SIDE.get(opNode.text) : undefined
+        //
+        // LATENCY, measured rather than assumed, and the measurement corrected a claim rather
+        // than confirming one. A first A/B on a 120-file sample of the census's own draw read
+        // 54.5 ms/file before against 63.2 after — +16%, with non-overlapping ranges, which
+        // looked like a real cost for +8.4% more relationships. Re-measured INTERLEAVED on the
+        // same files, because four lanes share this box: BEFORE 65.3 and 76.1, AFTER 77.8 and
+        // 67.9. The ranges overlap almost completely, so the first reading was the load, not
+        // the change, and **no latency claim finer than "inside the run-to-run spread of a
+        // shared box" is supported by these numbers.** Stating the +16% would have been a
+        // fabricated measurement of a shared machine's noise.
+        //
+        // What survives the correction is the code: the operator is read by a loop that breaks
+        // on the token and allocates nothing, and the second pass over the children runs only
+        // for an operator that IS a pipe. The F# compiler corpus is arithmetic-heavy, so
+        // `a + b` and `x = y` reach this branch constantly and the cheapest possible test is
+        // the right one even when its benefit is below the noise floor.
+        let opText = ""
+        for (let i = 0; i < node.childCount; i++) {
+          const c = node.child(i)
+          if (c && c.type === "infix_op") { opText = c.text; break }
+        }
+        const side = PIPELINE_CALLEE_SIDE.get(opText)
         if (side && callOwner) {
           // Only NAME children count, which is what makes `x |> List.map (fun y -> y)` work:
           // the lambda is a sibling of the name, and asking for the last name rather than the
@@ -1204,7 +1224,7 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
               leaf,
               ASTEngine.RelationshipType.Calls,
               0.8,
-              { nodeType: type, isPipelineCall: true, pipelineOperator: opNode!.text },
+              { nodeType: type, isPipelineCall: true, pipelineOperator: opText },
               lineOf(calleeNode ?? node),
             )
           }
