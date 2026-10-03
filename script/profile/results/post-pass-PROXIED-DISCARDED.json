@@ -1,0 +1,513 @@
+{
+  "corpus": {
+    "srcProjectId": "818db37d8f54173ad1357ab24627373da2e9418c",
+    "before": {
+      "tag": "before",
+      "files": 8126,
+      "symbols": 453476,
+      "relationships": 630467,
+      "attached": 597059,
+      "enriched": 630467,
+      "taints": 9496,
+      "embeddings": 94484
+    },
+    "after": {
+      "tag": "after",
+      "files": 8126,
+      "symbols": 453476,
+      "relationships": 630467,
+      "attached": 597530,
+      "enriched": 630467,
+      "taints": 9496,
+      "embeddings": 94484
+    }
+  },
+  "wallMs": 1470865,
+  "reportedTotalMs": 1470838,
+  "windowReconstruction": {
+    "reliable": true,
+    "drift": 0.017057853845536843,
+    "note": "drift = |wall - sum(phase.ms)| / sum(phase.ms)"
+  },
+  "phases": [
+    {
+      "name": "relationships",
+      "ms": 1157650,
+      "outcome": "ok"
+    },
+    {
+      "name": "enrichment",
+      "ms": 2,
+      "outcome": "failed"
+    },
+    {
+      "name": "gravity",
+      "ms": 145257,
+      "outcome": "ok"
+    },
+    {
+      "name": "taint",
+      "ms": 649,
+      "outcome": "ok"
+    },
+    {
+      "name": "health",
+      "ms": 4089,
+      "outcome": "ok"
+    },
+    {
+      "name": "integrity",
+      "ms": 52478,
+      "outcome": "ok"
+    },
+    {
+      "name": "vectorBlobs",
+      "ms": 3742,
+      "outcome": "ok"
+    },
+    {
+      "name": "analyze",
+      "ms": 82329,
+      "outcome": "ok"
+    }
+  ],
+  "windows": [
+    {
+      "name": "relationships",
+      "startMs": 26,
+      "endMs": 1157676,
+      "ms": 1157650,
+      "anchored": true,
+      "sqlMs": 1157056,
+      "nonSqlMs": 594
+    },
+    {
+      "name": "enrichment",
+      "startMs": 1164980,
+      "endMs": 1164982,
+      "ms": 2,
+      "anchored": true,
+      "sqlMs": 0,
+      "nonSqlMs": 2
+    },
+    {
+      "name": "gravity",
+      "startMs": 1165987,
+      "endMs": 1311244,
+      "ms": 145257,
+      "anchored": true,
+      "sqlMs": 145943,
+      "nonSqlMs": -686
+    },
+    {
+      "name": "taint",
+      "startMs": 1314791,
+      "endMs": 1315440,
+      "ms": 649,
+      "anchored": true,
+      "sqlMs": 1370,
+      "nonSqlMs": -721
+    },
+    {
+      "name": "health",
+      "startMs": 1315440,
+      "endMs": 1319529,
+      "ms": 4089,
+      "anchored": false,
+      "sqlMs": 667,
+      "nonSqlMs": 3422
+    },
+    {
+      "name": "integrity",
+      "startMs": 1319529,
+      "endMs": 1372007,
+      "ms": 52478,
+      "anchored": false,
+      "sqlMs": 51436,
+      "nonSqlMs": 1042
+    },
+    {
+      "name": "vectorBlobs",
+      "startMs": 1372007,
+      "endMs": 1375749,
+      "ms": 3742,
+      "anchored": false,
+      "sqlMs": 3125,
+      "nonSqlMs": 617
+    },
+    {
+      "name": "analyze",
+      "startMs": 1375749,
+      "endMs": 1458078,
+      "ms": 82329,
+      "anchored": false,
+      "sqlMs": 93592,
+      "nonSqlMs": -11263
+    }
+  ],
+  "topStatements": [
+    {
+      "ms": 992643,
+      "calls": 1,
+      "rows": 0,
+      "sample": "CREATE TEMP TABLE _i13_pick AS SELECT rel_id, target_symbol_id FROM ( SELECT t.rel_id AS rel_id, s.id AS target_symbol_id, ROW_NUMBER() OVER (PARTITION BY t.rel_id ORDER BY COALESCE(s.is_declaration, "
+    },
+    {
+      "ms": 82328,
+      "calls": 1,
+      "rows": 0,
+      "sample": "ANALYZE"
+    },
+    {
+      "ms": 70727,
+      "calls": 1,
+      "rows": 597530,
+      "sample": "UPDATE brain_relationship SET is_cross_language = CASE WHEN EXISTS ( SELECT 1 FROM brain_symbol ss LEFT JOIN brain_file sf ON sf.id = ss.file_id JOIN brain_symbol ts ON ts.id = brain_relationship.targ"
+    },
+    {
+      "ms": 65566,
+      "calls": 1,
+      "rows": 406752,
+      "sample": "UPDATE brain_symbol SET gravity_score = gravity_score + ( SELECT COUNT(*) * 5.0 FROM brain_relationship r WHERE r.target_symbol_id = brain_symbol.id ) WHERE EXISTS ( SELECT 1 FROM brain_relationship r"
+    },
+    {
+      "ms": 53056,
+      "calls": 1,
+      "rows": 453476,
+      "sample": "UPDATE brain_symbol SET gravity_score = (complexity * (CASE WHEN visibility = 'public' THEN 1.5 ELSE 1.0 END)) WHERE 1=1"
+    },
+    {
+      "ms": 46947,
+      "calls": 1,
+      "rows": 191157,
+      "sample": "UPDATE brain_relationship SET target_symbol_id = p.target_symbol_id FROM _i13_pick p WHERE brain_relationship.id = p.rel_id"
+    },
+    {
+      "ms": 25341,
+      "calls": 14,
+      "rows": 14,
+      "sample": "SELECT COUNT(*) c FROM brain_relationship WHERE metadata IS NOT NULL"
+    },
+    {
+      "ms": 23965,
+      "calls": 1,
+      "rows": 436537,
+      "sample": "UPDATE brain_symbol SET gravity_score = gravity_score * 2.0 WHERE layer = 'core'"
+    },
+    {
+      "ms": 16624,
+      "calls": 1,
+      "rows": 152223,
+      "sample": "UPDATE brain_relationship SET is_cross_file = CASE WHEN t.file_id <> s.file_id THEN 1 ELSE 0 END FROM brain_symbol t, brain_symbol s WHERE t.id = brain_relationship.target_symbol_id AND s.id = brain_r"
+    },
+    {
+      "ms": 15706,
+      "calls": 1,
+      "rows": 1,
+      "sample": "SELECT COUNT(*) as count FROM brain_relationship r WHERE r.project_id = ? AND r.target_symbol_id IS NOT NULL AND r.target_symbol_id != '' AND NOT EXISTS (SELECT 1 FROM brain_symbol s WHERE s.id = r.ta"
+    },
+    {
+      "ms": 11668,
+      "calls": 1,
+      "rows": 1,
+      "sample": "SELECT COUNT(*) as count FROM brain_relationship r WHERE r.project_id = ? AND r.source_symbol_id IS NOT NULL AND r.source_symbol_id != '' AND NOT EXISTS (SELECT 1 FROM brain_symbol s WHERE s.id = r.so"
+    },
+    {
+      "ms": 11024,
+      "calls": 1,
+      "rows": 415799,
+      "sample": "INSERT OR IGNORE INTO _res_qname (qualified_name, symbol_id, file_id) SELECT qualified_name, MIN(id), MIN(file_id) FROM brain_symbol WHERE project_id = ? AND qualified_name IS NOT NULL GROUP BY qualif"
+    },
+    {
+      "ms": 7742,
+      "calls": 14,
+      "rows": 14,
+      "sample": "SELECT COUNT(*) c FROM brain_relationship WHERE target_symbol_id IS NOT NULL AND target_symbol_id != ''"
+    },
+    {
+      "ms": 6323,
+      "calls": 1,
+      "rows": 6,
+      "sample": "SELECT entity_type AS kind, COUNT(DISTINCT entity_id) AS c FROM brain_semantic_embedding WHERE project_id = ? GROUP BY entity_type ORDER BY c DESC"
+    },
+    {
+      "ms": 5270,
+      "calls": 14,
+      "rows": 14,
+      "sample": "SELECT COUNT(*) c FROM brain_symbol"
+    },
+    {
+      "ms": 5169,
+      "calls": 1,
+      "rows": 453476,
+      "sample": "INSERT OR IGNORE INTO _res_name (name, symbol_id, file_id, cnt) SELECT name, id, file_id, COUNT(*) OVER (PARTITION BY name) FROM brain_symbol WHERE project_id = ?"
+    },
+    {
+      "ms": 4207,
+      "calls": 1,
+      "rows": 0,
+      "sample": "CREATE TEMP TABLE _i13_src AS SELECT r.id AS rel_id, src.file_id AS src_file, COALESCE(sf.language, '') AS src_lang FROM brain_relationship r LEFT JOIN brain_symbol src ON src.id = r.source_symbol_id "
+    },
+    {
+      "ms": 3671,
+      "calls": 1,
+      "rows": 1,
+      "sample": "SELECT COUNT(*) as count FROM brain_symbol s WHERE s.project_id = ? AND s.owner_symbol_id IS NOT NULL AND s.owner_symbol_id != '' AND s.owner_symbol_id NOT LIKE '%:0' AND NOT EXISTS (SELECT 1 FROM bra"
+    },
+    {
+      "ms": 3462,
+      "calls": 1,
+      "rows": 0,
+      "sample": "SELECT s.owner_symbol_id as oid, COUNT(*) as c FROM brain_symbol s WHERE s.project_id = ? AND s.owner_symbol_id IS NOT NULL AND s.owner_symbol_id != '' AND NOT EXISTS (SELECT 1 FROM brain_symbol p WHE"
+    },
+    {
+      "ms": 3400,
+      "calls": 1,
+      "rows": 0,
+      "sample": "SELECT rowid AS rowid, embedding_vector AS vector, vector_dimension AS dim FROM brain_semantic_embedding WHERE project_id = ? AND embedding_blob IS NULL AND embedding_model != 'tfidf-v1' AND rowid > ?"
+    },
+    {
+      "ms": 3208,
+      "calls": 1,
+      "rows": 0,
+      "sample": "DROP TABLE IF EXISTS _res_qname"
+    },
+    {
+      "ms": 2230,
+      "calls": 1,
+      "rows": 1,
+      "sample": "SELECT COUNT(*) as count FROM brain_relationship WHERE project_id = ?"
+    },
+    {
+      "ms": 1982,
+      "calls": 1,
+      "rows": 453476,
+      "sample": "SELECT id AS symbolId, file_id AS fileId, name AS name FROM brain_symbol WHERE project_id = ?"
+    },
+    {
+      "ms": 1901,
+      "calls": 1,
+      "rows": 16856,
+      "sample": "UPDATE brain_symbol SET gravity_score = gravity_score * 0.5 WHERE layer = 'test'"
+    },
+    {
+      "ms": 1810,
+      "calls": 1,
+      "rows": 1,
+      "sample": "SELECT COUNT(*) as count FROM brain_symbol s WHERE s.project_id = ? AND s.owner_symbol_id IS NOT NULL AND s.owner_symbol_id != '' AND s.owner_symbol_id LIKE '%:0' AND NOT EXISTS (SELECT 1 FROM brain_s"
+    },
+    {
+      "ms": 1642,
+      "calls": 1,
+      "rows": 1,
+      "sample": "SELECT COUNT(DISTINCT entity_id) as count FROM brain_semantic_embedding WHERE project_id = ?"
+    },
+    {
+      "ms": 1619,
+      "calls": 1,
+      "rows": 1,
+      "sample": "SELECT COUNT(*) as count FROM brain_file f WHERE f.project_id = ? AND NOT EXISTS (SELECT 1 FROM brain_symbol s WHERE s.file_id = f.id AND s.project_id = f.project_id) AND f.language IS NOT NULL AND f."
+    },
+    {
+      "ms": 958,
+      "calls": 1,
+      "rows": 1,
+      "sample": "SELECT COUNT(*) as total, SUM(CASE WHEN byte_start IS NULL OR byte_end IS NULL THEN 1 ELSE 0 END) as null_count FROM brain_symbol WHERE project_id = ?"
+    },
+    {
+      "ms": 880,
+      "calls": 14,
+      "rows": 14,
+      "sample": "SELECT COUNT(*) c FROM brain_semantic_embedding"
+    },
+    {
+      "ms": 764,
+      "calls": 1,
+      "rows": 83,
+      "sample": "UPDATE brain_symbol SET gravity_score = gravity_score * 1.5 WHERE layer = 'service' OR layer = 'db'"
+    }
+  ],
+  "totalSqlMs": 1466257,
+  "peakRssMiB": 279,
+  "rssTraceMiB": [
+    279,
+    141
+  ],
+  "snapshots": [
+    {
+      "tag": "Resolving cross-file relationships...",
+      "files": 8126,
+      "symbols": 453476,
+      "relationships": 630467,
+      "attached": 597059,
+      "enriched": 630467,
+      "taints": 9496,
+      "embeddings": 94484
+    },
+    {
+      "tag": "✓ resolved in 1157651ms",
+      "files": 8126,
+      "symbols": 453476,
+      "relationships": 630467,
+      "attached": 597530,
+      "enriched": 630467,
+      "taints": 9496,
+      "embeddings": 94484
+    },
+    {
+      "tag": "Enriching relationships with architectural context...",
+      "files": 8126,
+      "symbols": 453476,
+      "relationships": 630467,
+      "attached": 597530,
+      "enriched": 630467,
+      "taints": 9496,
+      "embeddings": 94484
+    },
+    {
+      "tag": "Computing gravity scores...",
+      "files": 8126,
+      "symbols": 453476,
+      "relationships": 630467,
+      "attached": 597530,
+      "enriched": 630467,
+      "taints": 9496,
+      "embeddings": 94484
+    },
+    {
+      "tag": "✓ gravity in 145257ms",
+      "files": 8126,
+      "symbols": 453476,
+      "relationships": 630467,
+      "attached": 597530,
+      "enriched": 630467,
+      "taints": 9496,
+      "embeddings": 94484
+    },
+    {
+      "tag": "Analyzing taint flows & security...",
+      "files": 8126,
+      "symbols": 453476,
+      "relationships": 630467,
+      "attached": 597530,
+      "enriched": 630467,
+      "taints": 9496,
+      "embeddings": 94484
+    },
+    {
+      "tag": "✓ taint(649ms) + health(4089ms)",
+      "files": 8126,
+      "symbols": 453476,
+      "relationships": 630467,
+      "attached": 597530,
+      "enriched": 630467,
+      "taints": 9496,
+      "embeddings": 94484
+    },
+    {
+      "tag": "✓ health check in 52478ms",
+      "files": 8126,
+      "symbols": 453476,
+      "relationships": 630467,
+      "attached": 597530,
+      "enriched": 630467,
+      "taints": 9496,
+      "embeddings": 94484
+    },
+    {
+      "tag": "⚠️  Index health: 85% — 2 warnings (run bb_health(integrity=",
+      "files": 8126,
+      "symbols": 453476,
+      "relationships": 630467,
+      "attached": 597530,
+      "enriched": 630467,
+      "taints": 9496,
+      "embeddings": 94484
+    },
+    {
+      "tag": "❌ Index Completeness: The indexer recorded this run's status",
+      "files": 8126,
+      "symbols": 453476,
+      "relationships": 630467,
+      "attached": 597530,
+      "enriched": 630467,
+      "taints": 9496,
+      "embeddings": 94484
+    },
+    {
+      "tag": "✓ vector blobs: 0/0 promoted in 3792ms",
+      "files": 8126,
+      "symbols": 453476,
+      "relationships": 630467,
+      "attached": 597530,
+      "enriched": 630467,
+      "taints": 9496,
+      "embeddings": 94484
+    },
+    {
+      "tag": "✓ planner stats (ANALYZE) in 82329ms",
+      "files": 8126,
+      "symbols": 453476,
+      "relationships": 630467,
+      "attached": 597530,
+      "enriched": 630467,
+      "taints": 9496,
+      "embeddings": 94484
+    }
+  ],
+  "logLines": [
+    {
+      "atMs": 26,
+      "text": "  Resolving cross-file relationships..."
+    },
+    {
+      "atMs": 1158421,
+      "text": "  ✓ resolved in 1157651ms"
+    },
+    {
+      "atMs": 1164980,
+      "text": "  Enriching relationships with architectural context..."
+    },
+    {
+      "atMs": 1165983,
+      "text": "  enriching reading 0%"
+    },
+    {
+      "atMs": 1165987,
+      "text": "  Computing gravity scores..."
+    },
+    {
+      "atMs": 1312181,
+      "text": "  ✓ gravity in 145257ms"
+    },
+    {
+      "atMs": 1314791,
+      "text": "  Analyzing taint flows & security..."
+    },
+    {
+      "atMs": 1321035,
+      "text": "  ✓ taint(649ms) + health(4089ms)"
+    },
+    {
+      "atMs": 1375214,
+      "text": "  ✓ health check in 52478ms"
+    },
+    {
+      "atMs": 1378607,
+      "text": "  ⚠️  Index health: 85% — 2 warnings (run bb_health(integrity=true) for details)"
+    },
+    {
+      "atMs": 1380402,
+      "text": "    ❌ Index Completeness: The indexer recorded this run's status as \"partial\" — 1000 file(s) errored during the run. An index marked partial is INCOMPLETE, and "
+    },
+    {
+      "atMs": 1385953,
+      "text": "  ✓ vector blobs: 0/0 promoted in 3792ms"
+    },
+    {
+      "atMs": 1469547,
+      "text": "  ✓ planner stats (ANALYZE) in 82329ms"
+    }
+  ],
+  "integrityHealth": 85
+}
