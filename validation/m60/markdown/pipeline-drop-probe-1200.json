@@ -1,0 +1,90 @@
+{
+  "instrument": "markdown pipeline-drop probe (validation/m14/fixtures/markdown/pipeline-drop-probe.ts)",
+  "compared": "ASTEngine.parseFile (pre-filter) vs pool-worker.parseFile (post-filter), same file, same analyzer",
+  "corpusRoot": "$HOME/fixtures/repositories",
+  "seed": "markdown-pipeline-drop-v1",
+  "admittedMarkdownFiles": 12729,
+  "drawn": 1200,
+  "drawHash": "3dd7a997a828b8c351559ed44ab1e4a3936e19ccf3804fd33f6fffe7ccb4cc93",
+  "filesCompared": 1200,
+  "preFailures": 0,
+  "postFailures": 0,
+  "relationshipsPreFilter": 40794,
+  "relationshipsPostFilter": 39029,
+  "relationshipsDroppedByPipeline": 1765,
+  "droppedPctOfPreFilter": "4.33%",
+  "symbolsPreFilter": 26378,
+  "symbolsPostFilter": 26378,
+  "symbolsDroppedByPipeline": 0,
+  "symbolsAddedByPipeline": 0,
+  "symbolsDroppedByRule": {},
+  "symbolsDroppedExamples": [],
+  "droppedByRule": {
+    "leaf-brace-angle-backtick": 1127,
+    "leaf-starts-with-space": 480,
+    "leaf-too-long": 133,
+    "leaf-too-short": 20,
+    "target-over-200": 5
+  },
+  "droppedByType": {
+    "contains": 1318,
+    "uses": 447
+  },
+  "droppedByRole": {
+    "heading_hierarchy": 1212,
+    "markdown_internal_anchor": 122,
+    "markdown_link": 324,
+    "table_under_heading": 40,
+    "table_column": 66,
+    "markdown_autolink": 1
+  },
+  "droppedExamples": {
+    "leaf-brace-angle-backtick": [
+      "tfsec/docs/checks/azure/compute/enable-disk-encryption/index.md: contains/heading_hierarchy \"Enable disk encryption on managed disk\" -> \"Default Severity: <span class=\"severity high\">high</span>\"",
+      "redwood/docs/versioned_docs/version-8.4/uploads.md: contains/heading_hierarchy \"Storage Prisma Extension\" -> \"`create` & `createMany` operations\"",
+      "redwood/docs/versioned_docs/version-8.4/uploads.md: contains/heading_hierarchy \"Storage Prisma Extension\" -> \"`update` & `updateMany` operations\"",
+      "redwood/docs/versioned_docs/version-8.4/uploads.md: contains/heading_hierarchy \"Storage Prisma Extension\" -> \"`delete` operations\"",
+      "redwood/docs/versioned_docs/version-8.4/uploads.md: contains/heading_hierarchy \"Storage Prisma Extension\" -> \"`upsert` operations\"",
+      "redwood/docs/versioned_docs/version-8.4/uploads.md: contains/heading_hierarchy \"Result Extensions\" -> \"Saving File lists - `saveFiles.inList()`\"",
+      "redwood/docs/versioned_docs/version-8.4/uploads.md: uses/markdown_internal_anchor \"2. Configuring the UI\" -> \"Saving File lists - `saveFiles.inList()`\"",
+      "redwood/docs/versioned_docs/version-8.1/typescript/utility-types.md: contains/heading_hierarchy \"Cells\" -> \"`CellSuccessProps<TData, TVariables>`\""
+    ],
+    "leaf-starts-with-space": [
+      "redwood/docs/versioned_docs/version-8.4/uploads.md: contains/heading_hierarchy \"Uploading Files\" -> \"1. Setting up the File scalar\"",
+      "redwood/docs/versioned_docs/version-8.4/uploads.md: contains/heading_hierarchy \"Uploading Files\" -> \"2. Configuring the UI\"",
+      "redwood/docs/versioned_docs/version-8.4/uploads.md: contains/heading_hierarchy \"Uploading Files\" -> \"3. Logging the Item Details\"",
+      "redwood/docs/versioned_docs/version-8.4/uploads.md: contains/heading_hierarchy \"Storage\" -> \"1. Configuring the Prisma schema\"",
+      "redwood/docs/versioned_docs/version-8.4/uploads.md: contains/heading_hierarchy \"Storage\" -> \"2. Configuring the Upload savers and Uploads extension\"",
+      "redwood/docs/versioned_docs/version-8.4/uploads.md: contains/heading_hierarchy \"Storage\" -> \"3. Attaching the Uploads extension\"",
+      "redwood/docs/versioned_docs/version-8.4/uploads.md: contains/heading_hierarchy \"Storage\" -> \"4. Implementing Upload savers\"",
+      "redwood/docs/versioned_docs/version-8.4/uploads.md: uses/markdown_internal_anchor \"Storage Prisma Extension\" -> \"2. Configuring the Upload savers and Uploads extension\""
+    ],
+    "leaf-too-long": [
+      "redwood/packages/auth-providers/dbAuth/setup/README.md: contains/heading_hierarchy \"Examples\" -> \"User record query by email with namespaced app_metadata roles as Auth0 requires custom JWT claims to be namespaced\"",
+      "redwood/packages/auth-providers/dbAuth/setup/README.md: contains/heading_hierarchy \"Examples\" -> \"Cookies and other request information are available in the req parameter, just in case\"",
+      "redwood/docs/versioned_docs/version-8.6/tutorial/chapter4/deployment.md: uses/markdown_link \"Environment Variables\" -> \"https://www.prisma.io/docs/guides/performance-and-optimization/connection-management#recommended-connection-pool-size-1\"",
+      "redwood/docs/versioned_docs/version-7.x/redwoodrecord.md: uses/markdown_link \"Background and Terminology\" -> \"https://www.prisma.io/docs/concepts/components/prisma-schema/relations/many-to-many-relations#implicit-many-to-many-relations\"",
+      "redwood/docs/versioned_docs/version-7.x/redwoodrecord.md: uses/markdown_link \"Background and Terminology\" -> \"https://www.prisma.io/docs/concepts/components/prisma-schema/relations/many-to-many-relations#explicit-many-to-many-relations\"",
+      "kubernetes/staging/src/k8s.io/kubectl/docs/maintainers/MAINTAINERS.md: uses/markdown_link \"Issue triage\" -> \"https://github.com/kubernetes/kubernetes/issues?utf8=%E2%9C%93&q=is%3Aissue%20is%3Aopen%20label%3Asig%2Fcli\"",
+      "kubernetes/staging/src/k8s.io/kubectl/docs/maintainers/MAINTAINERS.md: uses/markdown_link \"PR review\" -> \"https://github.com/kubernetes/kubernetes/pulls?utf8=%E2%9C%93&q=is%3Apr%20is%3Aopen%20label%3Asig%2Fcli\"",
+      "yq/pkg/yqlib/doc/operators/multiply-merge.md: uses/markdown_link \"Merging complex arrays together by a key field\" -> \"https://mikefarah.gitbook.io/yq/operators/multiply-merge#merge-arrays-of-objects-together-matching-on-a-key\""
+    ],
+    "leaf-too-short": [
+      "yq/pkg/yqlib/doc/usage/hcl.md: contains/heading_hierarchy \"HCL\" -> \"Roundtrip: Separate blocks with same name.\"",
+      "otp/erts/doc/references/erlc_cmd.md: contains/heading_hierarchy \"erlc\" -> \"erlc flags file1.ext file2.ext...\"",
+      "redwood/docs/versioned_docs/version-8.0/prerender.md: contains/heading_hierarchy \"Common Warnings & Errors\" -> \"Cannot prerender the query \\{queryName\\} as it requires auth.\"",
+      "redwood/docs/versioned_docs/version-6.x/prerender.md: contains/heading_hierarchy \"Common Warnings & Errors\" -> \"Cannot prerender the query \\{queryName\\} as it requires auth.\"",
+      "hledger/bin/README.md: contains/heading_hierarchy \"Scripts and add-ons\" -> \"How to...\"",
+      "nim/lib/wrappers/linenoise/README.markdown: contains/heading_hierarchy \"Linenoise\" -> \"Terminals, in 2010.\"",
+      "nim/lib/wrappers/linenoise/README.markdown: contains/heading_hierarchy \"Linenoise\" -> \"Tested with...\"",
+      "redwood/docs/versioned_docs/version-8.1/tutorial/chapter3/saving-data.md: contains/heading_hierarchy \"Saving Data\" -> \"One more thing...\""
+    ],
+    "target-over-200": [
+      "svelte/documentation/docs/03-template-syntax/19-await-expressions.md: uses/markdown_link \"Breaking changes\" -> \"/playground/untitled?#H4sIAAAAAAAAE22R3VLDIBCFX2WLvUhnTHsf0zre-Q7WmfwtFV2BgU1rJ5N3F0jaOuoVcPbw7VkYhK4_URTiGYkMnIyjDjLsFGO3EvdCKkIvipdB8NlGXxSCPt96snbtj0gctab2-J_eGs2oOWBE6VunLO_2es-EDKZ5x5ZhC0vPNWM2gHXGouNzAex6hHH1cPHil_Lsb95YT9VQX6KUAbS2DrNsBdsdDFHe8_XSYjH1SrhELTe3MLpsemajweiWVPuxHSbKNd-8eQTdE0EBf4OOaSg2hwNhhE_ABB_ulJzjj9FULvIcqgm5vnAqUB7wWFMfhuugQWkcAr8hVD-mq8D12kOep24J_IszToOXdveGDsuNnZwbJUNlXsKnhJdhUcTo42s41YpOSneikDV5HL8BktM6yRcCAAA=\"",
+      "hasura-engine/rfcs/disable-query-and-subscription-root-fields.md: contains/heading_hierarchy \"Motivation\" -> \"1. Allow selecting data only through relationships (issues: [207](https://github.com/hasura/graphql-engine/issues/207), [696](https://github.com/hasura/graphql-engine/issues/696), [3742](https://github.com/hasura/graphql-engine/issues/3742)).\"",
+      "svelte/documentation/docs/03-template-syntax/06-snippet.md: uses/markdown_link \"document\" -> \"/playground/untitled#H4sIAAAAAAAAE5VUYW-kIBD9K8Tmsm2yXXRzvQ-s3eR-R-0HqqOQKhAZb9sz_vdDkV1t000vRmHewMx7w2AflbIGG7GnPlK8gYhFv42JthG-m9Gwf6BGcLbVXZuPSGrzVho8ZirDGpDIhldgySN5GpEMez9kaNuckY1ANJZRamRuu2ZnhEZt6a84pvs43mzD4pMsUDDi8DMkQFYCGdkvsJwblFq5uCik9bmJ4JZwUkv1eoknWigX2eGNN6aGXa6bjV8ybP-X7sM36T58SVcrIIV2xVIaA41xeD5kKqWXuqpUJEefOqVuOkL9DfBchGrzWfu0vb-RpTd3o-zBR045Ga3HfuE5BmJpKauuhbPtENlUF2sqR9jqpsPSxWsMrlngyj3VJiyYjJXb1-lMa7IWC-iSk2M5Zzh-SJjShe-siq5kpZRPs55BbSGU5YPyte4vVV_VfFXxVb10dSLf17pS2lM5HnpPxw4Zpv6x-F57p0jI3OKlVnhv5V9wPQrNYQQ9D_f6aGHlC89fq1Z3qmDkJCTCweOGF4VUFSPJvD_DhreVdA0eu8ehJJ5x91dBaBkpWm3ureCFPt3uzRv56d4kdp-2euG38XZ6dsnd3ZmPG9yRBCrzRUvi-MccOdwz3qE-fOZ7AwAhlrtTUx3c76vRhSwlFBHDtoPhefgHX3dM0PkEAAA=\"",
+      "svelte/documentation/docs/03-template-syntax/06-snippet.md: uses/markdown_link \"document\" -> \"/playground/untitled#H4sIAAAAAAAAE5VUYW-bMBD9KxbRlERKY4jWfSA02n5H6QcXDmwVbMs-lnaI_z6D7TTt1moTAnPvzvfenQ_GpBEd2CS_HxPJekjy5IfWyS7BFz0b9id0CM62ajDVjBS2MkLjqZQldoBE9KwFS-7I_YyUOPqlRGuqnKw5orY5pVpUduj3mitUln5LU3pI0_UuBp9FjTwnDr9AHETLMSeHK6xiGoWSLi9yYT034cwSRjohn17zcQPNFTs8s153sK9Uv_Yh0-5_5d7-o9zbD-UqCaRWrllSYZQxLw_HUhb0ta-y4NnJUxfUvc7QuLJSaO0a3oh2MLBZat8u-wsPnXzKQvTtVVF34xK5d69ThFmHEQ4SpzeVRediTG8rjD5vBSeN3E5JyHh6R1DQK9-iml5kjzQUN_lSgVU8DhYLx7wwjSvRkMDvTjiwF4zM1kXZ7DlF1eN3A7IG85e-zRrYEjjm0FkI4Cc7Ripm0pHOChexhcWXzreeZyRMU6Mk3ljxC9w4QH-cQZ_b3T5pjHxk1VNr1CDrnJy5QDh6XLO6FrLNSRb2l9gz0wo3S6m7HErSgLsPGMHkpDZK31jOanXeHPQz-eruLHUP0z6yTbpbrn223V70uMXNSpQSZjpL0y8hcxxpNqA6_ql3BQAxlxvfpQ_uT9GrWjQC6iRHM8D0MP0GQsIi92QEAAA=\"",
+      "kubernetes/test/integration/scheduler_perf/README.md: uses/markdown_link \"Scheduler Performance Test\" -> \"https://perf-dash.k8s.io/#/?jobname=scheduler-perf-benchmark&metriccategoryname=Scheduler&metricname=BenchmarkPerfResults&Metric=SchedulingThroughput&Name=SchedulingBasic%2F5000Nodes%2Fnamespace-2&extension_point=not%20applicable&result=not%20applicable\""
+    ]
+  }
+}
