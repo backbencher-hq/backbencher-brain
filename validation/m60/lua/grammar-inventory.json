@@ -1,11 +1,11 @@
 {
   "schemaVersion": 1,
   "kind": "lua_grammar_inventory",
-  "at": "2026-10-03T03:09:17.826Z",
-  "commit": "8286c73915f07683e2fe8b9bca846c59cecefabe",
+  "at": "2026-10-03T18:03:02.946Z",
+  "commit": "9af483d2e6d56b55e98fff78d327da2bcb0ccdc3",
   "corpus": {
     "root": "$HOME/fixtures/repositories",
-    "repos": 111,
+    "repos": 141,
     "filesParsed": 1875,
     "capPerRepo": 400
   },
@@ -237,7 +237,11 @@
         "trait_declaration"
       ],
       "presentInCorpus": [],
-      "instrumentASettlesIt": true
+      "nodeTypesAbsentInCorpus": true,
+      "silentByConstruction": false,
+      "instrumentASettlesIt": true,
+      "instrumentThatSettlesIt": "A:grammar-inventory",
+      "why": "Lua has no type declaration of any kind, so no corpus can produce a supertype clause. The inventory is conclusive here."
     },
     "overrides": {
       "describe": "a second declaration replacing a prior one",
@@ -247,7 +251,11 @@
         "override_declaration"
       ],
       "presentInCorpus": [],
-      "instrumentASettlesIt": true
+      "nodeTypesAbsentInCorpus": true,
+      "silentByConstruction": true,
+      "instrumentASettlesIt": false,
+      "instrumentThatSettlesIt": "B:parse-tree-count (a node-type inventory cannot see multiplicity, and this construct is an ordinary call or a repeat declaration)",
+      "why": "A redefinition IS a second function_declaration / variable_declaration. The grammar expresses it and cannot also express its ABSENCE, so a node-type count is 0 on every possible corpus. Instrument B is the only instrument that can falsify this ruling, and it did: 65 redefinitions across 37 files."
     },
     "instantiates": {
       "describe": "a constructor call",
@@ -257,7 +265,11 @@
         "constructor_invocation"
       ],
       "presentInCorpus": [],
-      "instrumentASettlesIt": true
+      "nodeTypesAbsentInCorpus": true,
+      "silentByConstruction": true,
+      "instrumentASettlesIt": false,
+      "instrumentThatSettlesIt": "B:parse-tree-count (a node-type inventory cannot see multiplicity, and this construct is an ordinary call or a repeat declaration)",
+      "why": "`Table:new(...)` is an ordinary function_call with a method_index_expression callee. Lua has no `new` keyword, so there is no node type to count. This lane emits 122 such edges."
     },
     "extends": {
       "describe": "a type declaration another type could extend",
@@ -268,7 +280,11 @@
         "inheritance_specifier"
       ],
       "presentInCorpus": [],
-      "instrumentASettlesIt": true
+      "nodeTypesAbsentInCorpus": true,
+      "silentByConstruction": true,
+      "instrumentASettlesIt": false,
+      "instrumentThatSettlesIt": "B:parse-tree-count (a node-type inventory cannot see multiplicity, and this construct is an ordinary call or a repeat declaration)",
+      "why": "`setmetatable(D, B)` is an ordinary function_call with two identifier arguments. Lua's only type relation is a runtime call, so a grammar inventory cannot see it. This lane emits 171 such edges."
     }
   }
 }
