@@ -27,6 +27,29 @@ interface CssContext {
   frameworks: Record<string, boolean>
   patterns: Record<string, boolean>
   /**
+   * The LIVE declaration of a `@keyframes` name: the at-keyword it was last declared
+   * under, and the line it is on. "Live" rather than "first" because CSS Animations L1
+   * §3 makes the LAST declaration of a name the one that runs — so the third
+   * `@keyframes spin` in a file replaces the SECOND, not the first, and an edge that
+   * claimed otherwise would point at a block that was already dead.
+   *
+   * The KEYWORD is kept beside the line because it is the whole discriminator. CSS
+   * has no `vendor/standard` distinction anywhere else in its grammar, and an
+   * `@-webkit-keyframes` block is not a redeclaration of the `@keyframes` block beside
+   * it: they are two animations and the user agent picks the one it implements.
+   * Measured over the whole admitted corpus (1,114 files, 61 repos): 146 adjacent
+   * same-name declarations, of which **142 are a vendor-prefixed pair** and **4 are
+   * genuine redefinitions**. Emitting for the 142 would have been a fabrication over
+   * 97.3% of the type; emitting for none of the 4 would have been a ruling of `0`
+   * where the count is 4.
+   */
+  keyframeLive: Record<string, { keyword: string; line: number }>
+  /** The live `@property --x` registration's line. Same last-wins rule. */
+  propertyLive: Record<string, number>
+  /** Emitted `overrides` edges, keyed `name\u0000line`, so a third declaration of one
+   * name emits one edge per supersession rather than one per occurrence. */
+  overrideEdges: Record<string, boolean>
+  /**
    * Whether the stylesheet carries a parse error anywhere. The grammar signals a
    * construct it could not read by emitting an ERROR for that construct's head
    * and re-parsing the remainder as a SIBLING, so the damaged region is only
@@ -304,6 +327,9 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
       namespacePrefixes: {},
       layerOrder: [],
       mixinNames: {},
+      keyframeLive: {},
+      propertyLive: {},
+      overrideEdges: {},
       frameworks: {},
       patterns: {},
       fileHasParseError: rootNode.hasError === true,
@@ -2079,23 +2105,185 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
       node,
       (c) => c && (c.type === "keyframes_name" || c.type === "identifier" || c.type === "string_value"),
     )
-    if (nameNode) {
-      const name = stripAllQuotes(nameNode.text)
-      ctx.symbols.push({
-        name: name,
-        kind: ASTEngine.SymbolKind.Function,
-        range: this.nodeToRange(node),
-        scope: "",
-        visibility: "public",
-        complexity: 1 + this.countKeyframeStops(node),
-        metadata: {
-          isKeyframes: true,
-          // (the stop-count complexity is set on the symbol above)
-        },
-      })
-      ctx.keyframeNames[name] = true
-      ctx.patterns["CSS Animations"] = true
+    if (!nameNode) return
+    const name = stripAllQuotes(nameNode.text)
+    ctx.symbols.push({
+      name: name,
+      kind: ASTEngine.SymbolKind.Function,
+      range: this.nodeToRange(node),
+      scope: "",
+      visibility: "public",
+      complexity: 1 + this.countKeyframeStops(node),
+      metadata: {
+        isKeyframes: true,
+        // (the stop-count complexity is set on the symbol above)
+      },
+    })
+    ctx.keyframeNames[name] = true
+    ctx.patterns["CSS Animations"] = true
+    // The at-keyword this block was written under. The grammar's
+    // `keyframes_statement` opens with the ANONYMOUS `@keyframes` token OR with an
+    // `at_keyword` aliased from /@[-a-z]+keyframes/ (grammar.js:114-121), so the
+    // vendor prefix exists only on the `at_keyword` child and the default is the
+    // unprefixed keyword. Read from the tree rather than from the node text so a
+    // second spelling of the same prefix cannot split into two answers.
+    const keywordNode = this.findChild(node, (c) => c?.type === "at_keyword")
+    const keyword = keywordNode ? keywordNode.text.trim().toLowerCase() : "@keyframes"
+    this.recordKeyframesOverride(ctx, name, keyword, this.lineOf(node))
+  }
+
+  /**
+   * M14 ONTOLOGY, `overrides` — CSS's only inheritance-like construct, and the one the
+   * lane was silently omitting.
+   *
+   * ## What the construct is
+   *
+   * CSS Animations L1 §3: "If multiple `@keyframes` rules with the same name are
+   * declared, the last one wins." The Properties & Values API says the same for a
+   * re-registered `@property --x`. So a second declaration of a name REPLACES the
+   * first, wholly — the earlier block becomes dead code. This is the same shape the
+   * gate's own header records for bash's 174 redefinition events, and the reason the
+   * differential could not find it here: `deriveCssEdges` derives `contains`, `uses`,
+   * `references` and `imports`, and both walkers said nothing about `overrides`.
+   *
+   * ## What the corpus says, and the number that changed the design
+   *
+   * `validation/m14/census/css-overrides-split.ts` over the whole admitted corpus
+   * (1,114 files, 61 repos) found **146 second declarations of an already-declared
+   * `@keyframes` name in one file** — and **142 of them are a vendor-prefixed pair**,
+   * overwhelmingly Font Awesome's `@-webkit-keyframes fa-spin` / `@keyframes fa-spin`.
+   * A prefixed pair is not a redeclaration: two animations, selected by support. An
+   * `overrides` edge for each would have been a fabrication over 97.3% of the type, on
+   * the strength of an aggregate count.
+   *
+   * The remaining **4** are the real thing: `hasura-engine/frontend/libs/console/
+   * legacy-ce/src/lib/components/Services/ApiExplorer/GraphiQLWrapper/GraphiQL.css`
+   * (`@keyframes rotation` at L1534 and again at L2214) and three in
+   * `vue-element-admin/src/assets/custom-theme/index.css` (`v-modal-in`, `v-modal-out`,
+   * `progress`). Four occurrences in 1,114 files is a thin census and it is reported as
+   * one — but "four" is not "none", and a ruling of `overrides` that said the construct
+   * does not occur would be false by exactly those four.
+   *
+   * THE AGGREGATE ALSO NEEDS A CORRECTION, and the correction is about the instrument
+   * rather than the language. The first version of the split probe bucketed a whole
+   * NAME-GROUP by whether the group mentioned more than one keyword, so `v-modal-in`
+   * — spelled three times, once prefixed and twice not — was filed under
+   * "cross-keyword" on the strength of its first pair and its genuine redefinition was
+   * never counted. It reported 1 where the truth is 4. The rule that decides this is
+   * adjacency, because CSS Animations L1 §3 makes the LAST declaration the live one, so
+   * a declaration is compared against the one it replaces and not against its whole
+   * group. `validation/m14/census/css-overrides-split.ts` now counts adjacent pairs and
+   * agrees with the production census at 4.
+   *
+   * `@property` re-registration is counted at **0** occurrences, because the corpus
+   * cannot speak about it. It is implemented anyway and pinned by a fixture, which is
+   * this lane's standing answer to a construct the corpus does not exercise (see the
+   * `@counter-style` / `@custom-media` / `@font-feature-values` note in
+   * `collectCustomDefinitionNames`): a measured zero means the corpus is silent, not
+   * that the branch is wrong.
+   *
+   * ## Why `source === target`, stated rather than hidden
+   *
+   * The overriding declaration and the overridden one have the SAME NAME, and this
+   * lane publishes ONE symbol per name — the merge at the end of `analyze` is keyed
+   * `(kind, name)` and deliberately so, because "a selector is a MATCH PATTERN, not a
+   * declaration" and the same reasoning makes two `@keyframes spin` blocks two
+   * occurrences of one node. So the edge's two ends are the same string, and what
+   * distinguishes them is the SITE: `line_number` is the superseding declaration's
+   * line and `metadata.supersedesLine` is the declaration it kills.
+   *
+   * That is the shape `real-markdown-analyzer.ts:142` already guards for rather than
+   * forbids — `if (source === target && !distinctSites) return`, whose own comment is
+   * "The two ends name DIFFERENT sites even when they spell the same string". The two
+   * declarations here are two blocks of source text on two lines, so they are two
+   * sites by any reading, and `distinctSites: true` is recorded in the metadata
+   * rather than left for a reader to infer.
+   *
+   * The line is also load-bearing for STORAGE, not only for meaning: a relationship's
+   * store key is (source, type, target, line) — M59 #822, which markdown's own
+   * comment records — so an edge without the superseding line would collide with any
+   * other `spin -> spin` edge in the file and `INSERT OR IGNORE` would keep one.
+   *
+   * ## Confidence
+   *
+   * 1.0. This is not a name-match guess: both ends are read from two `@keyframes`
+   * nodes, the equality test is on the tree's own keyframes-name node, and the
+   * keyword discriminator is the tree's own `at_keyword`. There is no inference in it
+   * to be uncertain about.
+   */
+  private recordKeyframesOverride(
+    ctx: CssContext,
+    name: string,
+    keyword: string,
+    line: number | undefined,
+  ): void {
+    if (!name || !line) return
+    const live = ctx.keyframeLive[name]
+    if (live === undefined) {
+      ctx.keyframeLive[name] = { keyword, line }
+      return
     }
+    // A DIFFERENT KEYWORD is a different animation, not a redeclaration of this one.
+    // This is 142 of the 146 same-name second declarations in the corpus, and the
+    // reason the discriminator is carried at all.
+    if (live.keyword === keyword) {
+      this.emitOverride(ctx, name, line, live.line, {
+        isKeyframesRedefinition: true,
+        atKeyword: keyword,
+      })
+    }
+    // Either way the block just read becomes the live one, so a third declaration
+    // supersedes the second rather than the first.
+    ctx.keyframeLive[name] = { keyword, line }
+  }
+
+  /**
+   * `@property --x` written twice is the same last-wins replacement
+   * (`recordKeyframesOverride`'s rule, from the Properties & Values API rather than
+   * from CSS Animations). Measured at 0 occurrences over 1,114 corpus files, which is
+   * a fact about the corpus and not about the construct — so it is pinned by a fixture
+   * instead of being dropped for want of evidence.
+   */
+  private recordPropertyOverride(ctx: CssContext, name: string, line: number | undefined): void {
+    if (!name || !line) return
+    const prior = ctx.propertyLive[name]
+    if (prior !== undefined) {
+      this.emitOverride(ctx, name, line, prior, { isPropertyReregistration: true })
+    }
+    ctx.propertyLive[name] = line
+  }
+
+  private emitOverride(
+    ctx: CssContext,
+    name: string,
+    laterLine: number,
+    priorLine: number,
+    extra: Record<string, unknown>,
+  ): void {
+    const key = `${name}\u0000${laterLine}`
+    if (ctx.overrideEdges[key]) return
+    ctx.overrideEdges[key] = true
+    ctx.relationships.push({
+      source: name,
+      target: name,
+      type: ASTEngine.RelationshipType.Overrides,
+      // M59.A7: the name on this edge is the `@keyframes` name, and it is written on
+      // BOTH lines — the superseding one first, because that is the declaration the
+      // edge is about and the one a reader navigates to.
+      line_number: laterLine,
+      confidence: 1.0,
+      metadata: {
+        cssSpecific: true,
+        isOverride: true,
+        redefinition: true,
+        // The declaration this one kills. Carried explicitly so a consumer does not
+        // have to diff the file to find out WHICH earlier block died.
+        supersedesLine: priorLine,
+        // See the header: the two ends are two SITES, not one name twice.
+        distinctSites: true,
+        ...extra,
+      },
+    })
   }
 
   private processSupports(node: Node, ctx: CssContext): string | null {
@@ -2454,6 +2642,19 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
             // (the descriptor-count complexity is set on the symbol above)
           },
         })
+
+        // `@property --x` twice is a RE-REGISTRATION and the second replaces the first
+        // (Properties & Values API). Recorded against `publishedName`, which for a
+        // `@property` is the BARE `--x` and not `@property --x` — the same name a
+        // `var(--x)` read meets and the name the symbol above is published under, so
+        // the edge and the symbol cannot name different things.
+        //
+        // Inside the DECLARING block rather than beside the mixin bookkeeping below,
+        // because `publishedName` is scoped to it and hoisting the name outward would
+        // have put a second spelling of it in the file.
+        if (keyword === "@property") {
+          this.recordPropertyOverride(ctx, publishedName, this.lineOf(node))
+        }
       }
 
       if (keyword === "@layer") ctx.patterns["Cascade Layers (@layer)"] = true
