@@ -1,11 +1,16 @@
-// @ts-nocheck — ported; verified by tests. Restored incrementally in Phase 3.
-import type { Language, Parser, Node } from "web-tree-sitter"
+import type { Language, Parser, Node, Tree } from "web-tree-sitter"
 import * as Log from "../tool/brain-log"
 import { lazy } from "../util/lazy"
 import { fileURLToPath } from "url"
 import { createRequire } from "node:module"
 import { resolveWasmAsset, loadWebTreeSitter, hasWasmInRegistry, ensureWasmRegistry, isWasmRegistryLoaded } from "../util/wasm"
 import { detectLanguageFromPath } from "./language-detection"
+// Added for the byte-offset repair in findSymbol. It was USED there and never
+// imported, so every call threw `ReferenceError: decodeSourceText is not
+// defined` into a `catch` that reported it as "resolveWasm: temp file fallback
+// failed" — a message belonging to a different function entirely. The repair
+// therefore never ran for any row that needed it. See the call site.
+import { decodeSourceText } from "../util/source-text"
 
 const require = createRequire(import.meta.url)
 
@@ -279,6 +284,24 @@ export namespace ASTEngine {
     xml: "tree-sitter-xml",
     make: "tree-sitter-make",
     // === SYSTEMS & COMPILING LANGUAGES (a real parser each) ===
+    //
+    // `nim` appeared TWICE in this object: here as the real grammar, and again
+    // under "LANGUAGES WITHOUT DEDICATED PARSER" as `"__generic__"`. The later
+    // key won, so the map claimed nim had no parser while the wasm switch below,
+    // the vendored `grammars/tree-sitter-nim/`, the 5.8 MB
+    // `wasm/tree-sitter-nim.wasm` and a pinned fixture set all said otherwise.
+    //
+    // Two reasons it cost nothing measurable, which is why it survived until the
+    // type checker objected: this map's VALUES are never read (only its keys are
+    // — see the solidity note below), and the wasm switch is keyed off the
+    // language NAME, so .nim files loaded the real grammar either way. Measured
+    // before the fix, a .nim file declaring a type and a proc produced 3 real
+    // symbols (struct:Person, property:name, function:greet) — already correct.
+    //
+    // So removing the later entry is behaviour-NEUTRAL, and that is the point: the
+    // object no longer contradicts the grammar it points at. The M60 VB note
+    // below describes the same hazard for `vb`, where the outcome really was a
+    // silent regex pass. nim got lucky.
     nim: "tree-sitter-nim",
 
     // M60 VB wave. `vb` was `__generic__` until 2026-09-27: `.vb` was a routed
@@ -297,13 +320,40 @@ export namespace ASTEngine {
     // the upstream grammar was first wired.
     vb: "tree-sitter-vbnet",
 
-    // === LANGUAGES WITHOUT DEDICATED PARSER (fallback to GenericAnalyzer) ===
-    nim: "__generic__",
+// === LANGUAGES WITHOUT DEDICATED PARSER (fallback to GenericAnalyzer) ===
+    // (the `nim: "__generic__"` line that used to sit here is gone — see below)
+
     // Protobuf: the vendored, patched tree-sitter-proto. See
     // grammars/tree-sitter-proto/README.md — the node surface is snake_case and
-    // is a contract, and this is the ONE routed language whose grammar had to
-    // be cloned and patched because no protobuf grammar is published on npm.
+    // is a contract, and this is the ONE routed language whose grammar had to be
+    // cloned and patched because no protobuf grammar is published on npm.
     protobuf: "tree-sitter-protobuf",
+
+    // Solidity (SOL-21). ABSENT until now, and that was a real defect rather than
+    // a missing feature: the engine had a `case "solidity"` in the wasm switch
+    // below, a `case "solidity"` in getAnalyzer, a pinned grammar
+    // (validation/m14/grammar-pins.json), a real analyzer, and `DetectedLanguage`
+    // admitting "solidity" — but no key here, and this map is what
+    // `isSupportedLanguage` reads. Measured through the CLI, on an index holding
+    // the five symbols bb extracted from a Vault.sol:
+    //
+    //   $ bb search --dir <proj> --language solidity Vault
+    //   ✗ unknown language "solidity". Run `bb index --help` for supported
+    //     languages, or `bb projects` to see which are in this index.
+    //
+    // byte-identical to the answer for a genuine typo, from a filter whose whole
+    // purpose (see isSupportedLanguage) is to tell "not a language bb knows"
+    // apart from "this project has none of that language". The data was in the
+    // index and the filter refused the name.
+    //
+    // Parsing was never affected — the wasm switch and getAnalyzer key off the
+    // language name, not this map — which is exactly why it survived: the index
+    // looked correct, and the only symptom was a rejected flag.
+    //
+    // The value is the grammar package name, matching every other entry. Only the
+    // KEYS are read at runtime: isSupportedLanguage, supportedLanguageNames, and
+    // `language in SUPPORTED_LANGUAGES`.
+    solidity: "tree-sitter-solidity",
   } as const
 
   type SupportedLanguage = keyof typeof SUPPORTED_LANGUAGES
@@ -1606,7 +1656,26 @@ recordTruncation(filePath, content.length, MAX_PARSE_BYTES)
         try {
           const scriptBlocks = extractSfcScriptBlocks(tree.rootNode, content)
           if (scriptBlocks.length > 0) {
-            const sfcScriptTrees: Tree[] = []
+            // `(Tree | null)[]`, not `Tree[]`: web-tree-sitter types `parse()`
+            // as `Tree | null` (null on cancellation/timeout), and the value was
+            // pushed into a `Tree[]` regardless.
+            //
+            // THE NULL KEEPS ITS SLOT ON PURPOSE. These four arrays are read
+            // POSITIONALLY — `sfcScriptTrees[bi]` pairs with `sfcScriptLines[bi]`,
+            // `sfcScriptCols[bi]` and `sfcScriptStartIndex[bi]`
+            // (real-svelte-analyzer.ts:653-656, real-vue-analyzer.ts:396-398) — so
+            // skipping a failed sub-parse would shift every later block onto the
+            // wrong line, which is silent symbol misplacement rather than a
+            // visible failure. An empty slot preserves the alignment and lets the
+            // consumer drop that one block.
+            //
+            // svelte (`if (!scriptTree || …) continue`), html
+            // (`if (!tree) continue`) and markdown (`inline?.tree?.rootNode`)
+            // already handle a null slot. real-vue-analyzer.ts:396 does NOT — it
+            // reads `scriptTree.rootNode` unguarded — a pre-existing gap in that
+            // file, unchanged here: the same null was reaching it before, and
+            // this only stops the type from claiming it cannot happen.
+            const sfcScriptTrees: (Tree | null)[] = []
             const sfcScriptLines: number[] = []
             const sfcScriptCols: number[] = []
             const sfcScriptStartIndex: number[] = []
@@ -1645,7 +1714,11 @@ recordTruncation(filePath, content.length, MAX_PARSE_BYTES)
         try {
           const blocks = extractHtmlEmbeddedBlocks(tree.rootNode, content)
           if (blocks.length > 0) {
-            const trees: Tree[] = []
+            // `(Tree | null)[]` for the same reason as the SFC array above, and
+            // read the same way: real-html-analyzer.ts:1546-1548 pairs
+            // `trees[i]` with `langs[i]` / `startLines[i]` / `startIndices[i]`
+            // positionally and already skips a falsy entry.
+            const trees: (Tree | null)[] = []
             for (const block of blocks) {
               const subParser = await getParser(block.lang === "ts" ? "typescript" : block.lang === "tsx" ? "tsx" : block.lang === "css" ? "css" : "javascript")
               trees.push(subParser.parse(block.body))
@@ -1677,7 +1750,11 @@ recordTruncation(filePath, content.length, MAX_PARSE_BYTES)
           const inlineBlocks = extractMarkdownInlineBlocks(tree.rootNode)
           if (inlineBlocks.length > 0) {
             const inlineParser = await getMarkdownInlineParser()
-            const mdInlineTrees: Tree[] = []
+            // `(Tree | null)[]`, positionally paired with `mdInlineStarts` /
+            // `mdInlineLines` and consumed by real-markdown-analyzer.ts:178,
+            // which stores the entry and guards it at read time
+            // (`inline?.tree?.rootNode`, line 320).
+            const mdInlineTrees: (Tree | null)[] = []
             const mdInlineStarts: number[] = []
             const mdInlineLines: number[] = []
             for (const block of inlineBlocks) {
@@ -2364,7 +2441,30 @@ recordTruncation(filePath, content.length, MAX_PARSE_BYTES)
       }
     }
 
-    let results = await db
+    // The row shape the SELECTs below produce, declared from the schema rather
+    // than inferred: drizzle's `.all()` hands back a loose type here, and the
+    // filters downstream had no contextual type as a result — which is where both
+    // implicit-any errors in this function were reported. Nullability is taken
+    // from brain.sql.ts: `id`/`name`/`symbol_type`/`file_id`(path) are NOT NULL;
+    // `line_start`, `byte_start`, `byte_end` (brain_symbol) and `language`
+    // (brain_file) are nullable columns, so they are `| null` here.
+    //
+    // Stating it is what makes the byte-offset repair below honest: it assigns
+    // `r.byteStart = offset`, and that assignment is only correct if the column
+    // really is nullable-but-writable, rather than looking correct because the
+    // value happened to be `any`.
+    type SymbolRow = {
+      id: string
+      fileId: string
+      name: string
+      symbolType: string
+      lineStart: number | null
+      byteStart: number | null
+      byteEnd: number | null
+      language: string | null
+    }
+
+    let results: SymbolRow[] = await db
       .select({
         id: BrainSymbolTable.id,
         fileId: BrainFileTable.path,
@@ -2424,11 +2524,22 @@ recordTruncation(filePath, content.length, MAX_PARSE_BYTES)
             offset += lines[i].length + 1 // +1 for newline
           }
           r.byteStart = offset
-          // End offset: start of next line, or end of content
-          const lineEnd = (r as any).lineEnd as number | null
-          if (lineEnd != null && lineEnd >= r.lineStart!) {
+          // End offset: start of next line, or end of content.
+          //
+          // `lineEnd` is NOT in the SELECT above, so this read is always
+          // `undefined` and the `else` always runs. Left as-is on purpose: the
+          // cast is pre-existing, the branch is unreachable either way, and
+          // deleting it would decide an intent question (should the end offset
+          // honour line_end?) that is not this task's to answer. What it is NOT
+          // allowed to keep doing is pretending to be data — hence the note.
+          //
+          // The two `r.lineStart!` that used to be here are gone: the enclosing
+          // `r.lineStart != null` guard already narrows it, so they were
+          // assertions about something the type system had already proven.
+          const lineEnd = (r as { lineEnd?: number | null }).lineEnd ?? null
+          if (lineEnd != null && lineEnd >= r.lineStart) {
             let endOffset = offset
-            for (let i = r.lineStart!; i < Math.min(lineEnd + 1, lines.length); i++) {
+            for (let i = r.lineStart; i < Math.min(lineEnd + 1, lines.length); i++) {
               endOffset += lines[i].length + 1
             }
             r.byteEnd = endOffset
@@ -2436,8 +2547,12 @@ recordTruncation(filePath, content.length, MAX_PARSE_BYTES)
             // Default to end of the start line
             r.byteEnd = offset + (lines[Math.min(r.lineStart, lines.length - 1)]?.length || 0)
           }
-            } catch (e) {
-      log.debug("resolveWasm: temp file fallback failed", { error: (e as Error)?.message })
+    } catch (e) {
+      // This is `findSymbol`'s byte-offset repair. It used to log
+      // "resolveWasm: temp file fallback failed" — a message belonging to a
+      // different function — which is how a missing import stayed invisible: the
+      // only trace of the ReferenceError was a debug line about WASM assets.
+      log.debug("findSymbol: byte-offset repair failed", { error: (e as Error)?.message })
     }
       }
     }
@@ -2446,7 +2561,7 @@ recordTruncation(filePath, content.length, MAX_PARSE_BYTES)
     // Consistency with search: symbols in hard-noise files (JSON configs,
     // minified/d.ts/map assets) are excluded from every read surface.
     const { isHardNoisePath } = await import("./analysis-exclusions")
-    matches = matches.filter((m: any) => !isHardNoisePath(m.fileId ?? ""))
+    matches = matches.filter((m: SymbolRow) => !isHardNoisePath(m.fileId ?? ""))
 
     // If multiple matches at the exact same file, prefer class/interface over constructor/function
     if (matches.length > 1 && filePath) {
