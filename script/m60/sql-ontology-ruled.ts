@@ -60,6 +60,43 @@
  * and `create_extension` ARE in the vocabulary and are handled by the analyzer
  * (`Module` symbol), which is the honest counter-example to check — see the
  * `exports` entry.
+ *
+ * ## WHAT PASS 2 ADDED TO `extends`, AND WHY IT MATTERS MORE THAN THE COUNT
+ *
+ * Pass 1's overturn condition was "a `keyword_inherits`/`inherits_clause` node
+ * inside `create_table`". That is a NODE-NAMED condition, and it is unsound in a
+ * specific way: PostgreSQL has a SECOND construct that makes one table a subtype
+ * of another, and since PostgreSQL 11 the child inherits the parent's columns
+ * without any `INHERITS` clause at all —
+ *
+ *   CREATE TABLE c PARTITION OF p FOR VALUES FROM (…) TO (…);
+ *   ALTER TABLE p ATTACH PARTITION c FOR VALUES FROM (…) TO (…);
+ *
+ * A grammar could grow that clause, call the node `table_partition_attached` or
+ * anything else, and produce zero nodes matching pass 1's condition while making
+ * `extends` fully derivable. The ruling would then read 0 on a corpus where
+ * the construct is present and readable — still wrong, and still sounding right.
+ *
+ * So pass 2 PARSED all five shapes against the wired wasm rather than searching
+ * node names, in `validation/m14/fixtures/sql/adversarial-probe.mts`'s A12
+ * section. Result: `INHERITS` is absorbed into an ERROR, `PARTITION OF` has its
+ * `OF <parent>` absorbed into an ERROR, `ATTACH PARTITION` has its whole clause
+ * absorbed into an ERROR, `PARTITION BY RANGE` parses cleanly as `table_partition`
+ * but names no parent, and `LIKE p` parses (while `INCLUDING ALL` does not). The
+ * ruling SURVIVES, and now against the strongest counterexample the language has
+ * rather than only the one pass 1 happened to think of.
+ *
+ * ## THE NUMBERS BELOW, AND WHY THEY ARE FROM A DIFFERENT CORPUS
+ *
+ * `SQL_GRAMMAR_INVENTORY_FINDINGS` quotes 465 node types over 1,460 admitted
+ * files. The shared corpus has since grown to 1,946 admitted files across 141
+ * repositories as other lanes cloned into it, and pass 2 re-ran the probe over
+ * the whole grown corpus: the inventory is 465 distinct node types still, and
+ * every zero below is 0 still. The corpus-wide artifact is
+ * `validation/m14/fixtures/sql/construct-probe.json`, regenerated at pass 2's
+ * HEAD. A number that had moved would be restated rather than carried, so the
+ * fact that none did is itself the check that this table's entries are not
+ * sampling artefacts.
  */
 type Type = "calls" | "uses" | "contains" | "imports" | "references" | "exports" | "extends" | "implements" | "overrides" | "instantiates"
 
@@ -129,6 +166,7 @@ export const SQL_RULED: Ruled[] = [
  */export const SQL_GRAMMAR_INVENTORY_FINDINGS = {
   distinctNodeTypesOverCorpus: 465,
   corpusFiles: 1460,
+  corpusFilesAtPass2: 1946,
   /** Every entry here was searched for by SUBSTRING over all 465 type names. */
   substringSearches: {
     inherit: 0,
@@ -142,12 +180,25 @@ export const SQL_RULED: Ruled[] = [
     struct: 0,
     super: 0,
     extension: 2,
+    /**
+     * PASS 2 ADDED THIS ONE, and it is the strongest candidate a reader could raise
+     * against the `extends` ruling: declarative partitioning makes a child table a
+     * subtype of a parent, and the grammar HAS a `table_partition` rule and a
+     * `keyword_partition` token — 57 of them corpus-wide. They are all the
+     * `PARTITION BY <strategy>` form, which names no parent; the `PARTITION OF
+     * <parent>` form puts `OF <parent>` inside an ERROR. Measured, not assumed:
+     * `adversarial-probe.mts` A12 parses `CREATE TABLE c PARTITION OF p FOR VALUES
+     * …` against the wired wasm and reports the node shape.
+     */
+    partition: 2,
   },
-  /** The three node types that DID match a substring, and why none of them is the construct. */
+  /** The node types that DID match a substring, and why none of them is the construct. */
   substringHitsExplained: [
-    { type: "create_extension", matchedOn: "extension", n: 0, why: "`CREATE EXTENSION name` — handled by the analyzer as a `Module` symbol, and it occurs 0 times over the census. It is an INBOUND declaration of a package that publishes objects; the publishing set lives in the extension's own control file, not in this unit, so the clause that would express an `exports` edge does not exist here. Named here because it is the strongest candidate a reader could raise against the `exports` ruling, and answering it costs one line." },
-    { type: "keyword_extension", matchedOn: "extension", n: 0, why: "the `EXTENSION` keyword token itself — the token half of the above, so it inherits the same 0." },
-    { type: "keyword_regclass", matchedOn: "class", n: 0, why: "the `regclass` type name. It matches `class` as a SUBSTRING of a type name, not as a construct, which is the same false-positive shape the gate's own header records for bash (`class voice` inside a telnet IAC word list) and for json (`new Map(` inside a heredoc). It occurs 0 times." },
+    { type: "create_extension", matchedOn: "extension", n: 30, why: "`CREATE EXTENSION name` — handled by the analyzer as a `Module` symbol. It is an INBOUND declaration of a package that publishes objects; the publishing set lives in the extension's own control file, not in this unit, so the clause that would express an `exports` edge does not exist here. Named here because it is the strongest candidate a reader could raise against the `exports` ruling, and answering it costs one line. The count is 30 at pass 2's corpus against 27 at pass 1's — the corpus grew from 1,460 to 1,946 admitted files — and the verdict does not turn on it." },
+    { type: "keyword_extension", matchedOn: "extension", n: 30, why: "the `EXTENSION` keyword token itself — the token half of the above, so it inherits the same count." },
+    { type: "keyword_regclass", matchedOn: "class", n: 51, why: "the `regclass` type name. It matches `class` as a SUBSTRING of a type name, not as a construct, which is the same false-positive shape the gate's own header records for bash (`class voice` inside a telnet IAC word list) and for json (`new Map(` inside a heredoc)." },
+    { type: "table_partition", matchedOn: "partition", n: 6, why: "`CREATE TABLE t (...) PARTITION BY RANGE|HASH|LIST (…)` — a partitioning STRATEGY, which names no parent table and inherits nothing. A12 parses `PARTITION OF p` separately and it is an ERROR." },
+    { type: "keyword_partition", matchedOn: "partition", n: 57, why: "the `PARTITION` keyword token, the token half of the above. 6 of the 57 sit inside a `table_partition`; the rest are `ALTER TABLE … PARTITION BY`, `DROP TABLE … PARTITION OF`-adjacent damage, and `PARTITION OF` absorbed into an ERROR." },
   ],
   /** Instrument B counts, from `construct-probe.json` `constructCounts` / `zeroProbes`. */
   semanticCounts: {
@@ -158,6 +209,21 @@ export const SQL_RULED: Ruled[] = [
     "exports-node": 0,
     "exports-grant": 0,
   },
+  /**
+   * PASS 2's A12 capability battery — the shapes that would make `extends`
+   * derivable, each PARSED against `wasm/tree-sitter-sql.wasm` rather than
+   * searched for by name. A corpus count of 0 is consistent both with "the
+   * language lacks the construct" and with "the grammar cannot read it", and only
+   * a parse separates them.
+   */
+  capabilityBattery: [
+    { construct: "CREATE TABLE c (…) INHERITS (p)", verdict: "NOT EXPRESSIBLE — the clause does not survive the parse; the create_table ends at the column list and an ERROR holds the rest", nodeType: "ERROR" },
+    { construct: "CREATE TABLE c PARTITION OF p FOR VALUES …", verdict: "NOT EXPRESSIBLE — `OF p FOR VALUES FROM` is absorbed by an ERROR inside table_partition", nodeType: "table_partition(ERROR)" },
+    { construct: "ALTER TABLE p ATTACH PARTITION c FOR VALUES …", verdict: "NOT EXPRESSIBLE — the whole clause lands in a top-level ERROR", nodeType: "ERROR" },
+    { construct: "CREATE TABLE p (…) PARTITION BY RANGE (x)", verdict: "EXPRESSIBLE, but it is a STRATEGY and names no parent, so it is not the construct", nodeType: "table_partition" },
+    { construct: "CREATE TABLE c (LIKE p)", verdict: "EXPRESSIBLE — parsed as a column_definition whose type is `p`, i.e. a structural COPY (PostgreSQL: the two tables evolve independently)", nodeType: "column_definition" },
+    { construct: "CREATE TABLE c (LIKE p INCLUDING ALL)", verdict: "PARTIALLY EXPRESSIBLE — LIKE survives, `INCLUDING ALL` lands in an ERROR", nodeType: "column_definition(ERROR)" },
+  ],
 } as const
 
 /**
