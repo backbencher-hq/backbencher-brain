@@ -571,3 +571,78 @@ identifiers, with the fabrication class it would then admit pinned by an explici
 `forbidRelationships` row instead. Choosing which languages are exempt, and
 admitting which fabrications in exchange, is a decision about what the graph is
 allowed to contain. It belongs to the owner. Recorded here with the measurements.
+
+## THE COVERAGE CORRECTION — source derivation is not evidence
+
+A previous programme reported "14 lanes at 10/10" for a week. That number came from
+**source derivation**: counting which `RelationshipType` symbols appear in an
+analyzer's source. It answers only *"is this type constructible"*. It does not
+answer *"does it fire"*.
+
+`script/m14/firing-check.ts` now answers the second question. It drives the
+**production** entry point (`parseFile`, not `analyze()`) and reports per type:
+edges, files, whether the SOURCE is a symbol the run published or something
+external, and how many resolve at both ends. It also counts `fallback: true` per
+file and **refuses to publish a count from a degraded run** — a degraded parse
+returns fewer edges with no error, so its count is about the fallback, not the
+analyzer.
+
+The sharpest instance of the gap is in this repo, from the markdown lane:
+`emitInlineUses` resolved a heading's own inline with a **direct-child** lookup,
+but the two heading forms hold their text differently —
+`atx_heading > atx_hN_marker > inline` versus `setext_heading > paragraph > inline`
+— so it returned early for **every setext heading in the language**. The source says
+the type is emitted. It was not.
+
+### Coverage is reported as APPLICABLE, never as a flat 10
+
+| | meaning |
+|---|---|
+| **Complete** | `N/N` — the lane emits every type the language has, and the rest are measured-absent |
+| **Incomplete** | `3/4`, `2/10` — a real shortfall, reported as one |
+
+TOML emits 1 and has 9 measured-absent. That makes it **complete at 1/1**, not
+broken at 1/10. Reporting `1/10` misrepresents finished work as broken work.
+
+Two binding conditions:
+1. The denominator may shrink **only** via a RULED verdict carrying a corpus
+   measurement. Prose does not shrink it.
+2. Numerator and denominator must come from **different sources** — numerator from
+   what measurably fires, denominator from measured non-applicability. An agent
+   supplying both is grading its own homework.
+
+### A pin is not a rule
+
+SQL pass 1 fixed a CTE-scope bug and pinned **one** of its four entry points. The
+fixture was green and certified the entry point, not the rule. Pass 2 found three
+more, each only after its own measurement. A fixture that pins one path into a
+multi-path rule has measured the path.
+
+This is the same shape as the CSS pass-1 probe that could not fail, and the proto
+lane's two no-op mutants: a check that is narrower than the thing it checks reads as
+coverage and is not.
+
+### keepSymbol's denylist — three lanes, one register problem
+
+| lane | node-type name that is also a real declaration | cost |
+|---|---|---|
+| R | `source_file` is an ordinary R function (`r-testthat/R/source.R:18`) | 12 symbols deleted across 9 files |
+| graphql | `Query.me` | 1 of 8,796 symbols |
+| sql | `program` is a legal SQL COLUMN name | 1 of 11,786 `contains` edges names nothing resolvable; 3 of 18,325 symbols dropped |
+
+Each lane found it independently, which makes it a fleet-wide register problem
+rather than three coincidences. `keepSymbol`'s UNIVERSAL denylist holds
+**web-tree-sitter node-type names**, and a node type and a user identifier occupy
+the same namespace in every language that allows keywords as names.
+
+### No regex
+
+`script/m12/verify-regex-census.ts` currently **FAILS**: 30 MISSING/STALE across 8
+files. Laptop-B lanes in that failure: css 11, fsharp 6, julia 4, clean 2. A direct
+scan of the 23 analyzers for regex-receiver calls finds **4 lanes non-zero** —
+julia 8, css 8, php 1, scss 1 — and 19 already clean.
+
+Most hits are trivial (`node.type.replace(/_statement/, "")`, `content.split("\n")`),
+but the criterion is mechanical and the criterion is right: regex over source text
+matches comments and string literals, misses nested syntax, and breaks silently on
+the next grammar version.
