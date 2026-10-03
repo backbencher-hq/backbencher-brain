@@ -29,12 +29,16 @@ const LANES = {
   RUBY:        ["ruby", "real-ruby-analyzer", "ruby"],
   ERLANG:      ["erlang", "real-erlang-analyzer", "otp"],
   C:           ["c", "real-c-analyzer", "sqlite"],
+  VISUAL_BASIC:["vb", "real-vb-analyzer", "moo"],
+  VUE:         ["vue", "real-vue-analyzer", "vuejs"],
+  SVELTE:      ["svelte", "real-svelte-analyzer", "shadcn-svelte"],
+  HTML:        ["html", "real-html-analyzer", "vuejs"],
 }
 
-function pickFiles(dir, exts, want, cap = 40) {
+function pickFiles(dir, exts, want, cap = 400) {
   const out = []
   const walk = (d, depth) => {
-    if (out.length >= want || depth > 4) return
+    if (out.length >= want || depth > 7) return
     let ents; try { ents = readdirSync(d, { withFileTypes: true }) } catch { return }
     for (const e of ents) {
       if (out.length >= want) return
@@ -69,9 +73,10 @@ for (const L of targets) {
   const dir = join(CORPUS, corpusDir)
   const exts = { rust: [".rs"], python: [".py"], go: [".go"], kotlin: [".kt", ".kts"], scala: [".scala"],
     groovy: [".groovy"], haskell: [".hs"], swift: [".swift"], perl: [".pl", ".pm"], clojure: [".clj", ".cljs"],
+    vb: [".vb", ".bas", ".frm", ".cls"], vue: [".vue"], svelte: [".svelte"], html: [".html", ".htm"], css: [".css"],
     csharp: [".cs"], java: [".java"], "objective-c": [".m"], typescript: [".ts", ".tsx"], javascript: [".js", ".mjs"],
     elixir: [".ex", ".exs"], cpp: [".cpp", ".cc", ".h"], ruby: [".rb"], erlang: [".erl", ".hrl"], c: [".c", ".h"] }[lang] || []
-  const files = pickFiles(dir, exts, 12)
+  const files = pickFiles(dir, exts, Number(process.env.NFILES||120))
   if (!files.length) { report.push([L, `NO CORPUS under ${corpusDir}`, 0, []]); continue }
 
   const tally = new Map(), errs = []
