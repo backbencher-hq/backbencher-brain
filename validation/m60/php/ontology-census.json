@@ -1,0 +1,662 @@
+{
+  "generatedAt": "2026-10-03T22:08:55.169Z",
+  "corpusRoot": "$HOME/fixtures/repositories",
+  "sampling": "whole admitted corpus (no sampling)",
+  "filesAdmitted": 4642,
+  "filesSampled": 4642,
+  "grammarInventoryFiles": 4642,
+  "filesByRepo": {
+    "FSharp.Formatting": 1,
+    "caddy": 3,
+    "cloogle.org": 17,
+    "nvim-treesitter": 13,
+    "pb-grpc": 20,
+    "phpmyadmin": 1232,
+    "phpunit": 3231,
+    "slim": 125
+  },
+  "filesWithSymbols": 4498,
+  "parseFail": 0,
+  "parseFailFiles": [],
+  "symbols": 35094,
+  "relationships": {
+    "calls": {
+      "count": 94515,
+      "files": 3436,
+      "confHistogram": {
+        "0.9": 94515
+      },
+      "heuristicUnder07": 0,
+      "heuristicPct": "0.0%",
+      "fromResolved": 94160,
+      "toResolved": 9860,
+      "bothResolved": 9825,
+      "bothResolvedPct": "10.4%",
+      "distinctTargets": 6395,
+      "distinctTargetsResolvingInSample": 5558,
+      "distinctTargetsResolvingByFirstSegment": 5558,
+      "distinctTargetsResolvingByLastSegment": 5558,
+      "evidenceClasses": {
+        "usage_contextual": 94515
+      },
+      "metadataFlags": {
+        "phpSpecific": 94515,
+        "evidenceClass": 94515
+      },
+      "examples": [
+        "Markdown -> isset",
+        "Markdown -> transform",
+        "global -> isset"
+      ]
+    },
+    "contains": {
+      "count": 30457,
+      "files": 4000,
+      "confHistogram": {
+        "1": 30457
+      },
+      "heuristicUnder07": 0,
+      "heuristicPct": "0.0%",
+      "fromResolved": 30457,
+      "toResolved": 30454,
+      "bothResolved": 30454,
+      "bothResolvedPct": "100.0%",
+      "distinctTargets": 16836,
+      "distinctTargetsResolvingInSample": 16834,
+      "distinctTargetsResolvingByFirstSegment": 16834,
+      "distinctTargetsResolvingByLastSegment": 16834,
+      "evidenceClasses": {
+        "structural": 30457
+      },
+      "metadataFlags": {
+        "isContained": 30457,
+        "evidenceClass": 30457
+      },
+      "examples": [
+        "Textile -> TextileThis",
+        "Textile -> TextileRestricted",
+        "Textile -> blockLite"
+      ]
+    },
+    "extends": {
+      "count": 2819,
+      "files": 2803,
+      "confHistogram": {
+        "1": 2819
+      },
+      "heuristicUnder07": 0,
+      "heuristicPct": "0.0%",
+      "fromResolved": 2819,
+      "toResolved": 9,
+      "bothResolved": 9,
+      "bothResolvedPct": "0.3%",
+      "distinctTargets": 170,
+      "distinctTargetsResolvingInSample": 144,
+      "distinctTargetsResolvingByFirstSegment": 144,
+      "distinctTargetsResolvingByLastSegment": 144,
+      "evidenceClasses": {
+        "structural": 2819
+      },
+      "metadataFlags": {
+        "phpSpecific": 2819,
+        "evidenceClass": 2819
+      },
+      "examples": [
+        "B -> A",
+        "GreeterClient -> BaseStub",
+        "HelloReply -> Message"
+      ]
+    },
+    "implements": {
+      "count": 1000,
+      "files": 972,
+      "confHistogram": {
+        "1": 1000
+      },
+      "heuristicUnder07": 0,
+      "heuristicPct": "0.0%",
+      "fromResolved": 1000,
+      "toResolved": 0,
+      "bothResolved": 0,
+      "bothResolvedPct": "0.0%",
+      "distinctTargets": 128,
+      "distinctTargetsResolvingInSample": 100,
+      "distinctTargetsResolvingByFirstSegment": 100,
+      "distinctTargetsResolvingByLastSegment": 100,
+      "evidenceClasses": {
+        "structural": 1000
+      },
+      "metadataFlags": {
+        "phpSpecific": 1000,
+        "evidenceClass": 1000
+      },
+      "examples": [
+        "B -> T",
+        "Clock -> ClockInterface",
+        "BrowseForeignersController -> InvocableController"
+      ]
+    },
+    "imports": {
+      "count": 25922,
+      "files": 3976,
+      "confHistogram": {
+        "1": 25731,
+        "0.9": 191
+      },
+      "heuristicUnder07": 0,
+      "heuristicPct": "0.0%",
+      "fromResolved": 0,
+      "toResolved": 48,
+      "bothResolved": 0,
+      "bothResolvedPct": "0.0%",
+      "distinctTargets": 2936,
+      "distinctTargetsResolvingInSample": 2000,
+      "distinctTargetsResolvingByFirstSegment": 1833,
+      "distinctTargetsResolvingByLastSegment": 1896,
+      "evidenceClasses": {
+        "import_based": 25922
+      },
+      "metadataFlags": {
+        "phpSpecific": 25922,
+        "isImport": 25922,
+        "fileLevel": 25922,
+        "relationshipType": 25922,
+        "evidenceClass": 25922,
+        "aliased": 467,
+        "includeType": 191,
+        "grouped": 14
+      },
+      "examples": [
+        "global -> smartypants.php",
+        "global -> Illuminate\\Support\\Facades\\Route",
+        "global -> Foo\\Baz"
+      ]
+    },
+    "instantiates": {
+      "count": 10620,
+      "files": 1569,
+      "confHistogram": {
+        "0.9": 10620
+      },
+      "heuristicUnder07": 0,
+      "heuristicPct": "0.0%",
+      "fromResolved": 10582,
+      "toResolved": 298,
+      "bothResolved": 294,
+      "bothResolvedPct": "2.8%",
+      "distinctTargets": 1506,
+      "distinctTargetsResolvingInSample": 1289,
+      "distinctTargetsResolvingByFirstSegment": 1289,
+      "distinctTargetsResolvingByLastSegment": 1289,
+      "evidenceClasses": {
+        "structural": 10620
+      },
+      "metadataFlags": {
+        "phpSpecific": 10620,
+        "isNew": 10620,
+        "evidenceClass": 10620
+      },
+      "examples": [
+        "global -> mysqli",
+        "global -> DOMDocument",
+        "factory -> Toc"
+      ]
+    },
+    "overrides": {
+      "count": 2,
+      "files": 2,
+      "confHistogram": {
+        "0.95": 2
+      },
+      "heuristicUnder07": 0,
+      "heuristicPct": "0.0%",
+      "fromResolved": 2,
+      "toResolved": 2,
+      "bothResolved": 2,
+      "bothResolvedPct": "100.0%",
+      "distinctTargets": 2,
+      "distinctTargetsResolvingInSample": 2,
+      "distinctTargetsResolvingByFirstSegment": 2,
+      "distinctTargetsResolvingByLastSegment": 2,
+      "evidenceClasses": {
+        "structural": 2
+      },
+      "metadataFlags": {
+        "phpSpecific": 2,
+        "isOverride": 2,
+        "evidenceClass": 2
+      },
+      "examples": [
+        "B.foo -> A.foo",
+        "SkipConstruct.__construct -> ParentConstructorClass.__construct"
+      ]
+    },
+    "references": {
+      "count": 8674,
+      "files": 2132,
+      "confHistogram": {
+        "0.9": 8674
+      },
+      "heuristicUnder07": 0,
+      "heuristicPct": "0.0%",
+      "fromResolved": 8542,
+      "toResolved": 417,
+      "bothResolved": 415,
+      "bothResolvedPct": "4.8%",
+      "distinctTargets": 971,
+      "distinctTargetsResolvingInSample": 792,
+      "distinctTargetsResolvingByFirstSegment": 792,
+      "distinctTargetsResolvingByLastSegment": 792,
+      "evidenceClasses": {
+        "import_based": 8674
+      },
+      "metadataFlags": {
+        "relationshipType": 8674,
+        "declaredOn": 8674,
+        "evidenceClass": 8674
+      },
+      "examples": [
+        "foo -> B",
+        "foo -> A",
+        "baz -> A"
+      ]
+    },
+    "uses": {
+      "count": 133422,
+      "files": 3151,
+      "confHistogram": {
+        "1": 9,
+        "0.9": 133413
+      },
+      "heuristicUnder07": 0,
+      "heuristicPct": "0.0%",
+      "fromResolved": 132811,
+      "toResolved": 21676,
+      "bothResolved": 21664,
+      "bothResolvedPct": "16.2%",
+      "distinctTargets": 8455,
+      "distinctTargetsResolvingInSample": 2835,
+      "distinctTargetsResolvingByFirstSegment": 2835,
+      "distinctTargetsResolvingByLastSegment": 2835,
+      "evidenceClasses": {
+        "usage_contextual": 133422
+      },
+      "metadataFlags": {
+        "phpSpecific": 133422,
+        "evidenceClass": 133422,
+        "isLocalRead": 90484,
+        "isMemberRead": 29746,
+        "isSubscriptBase": 11251,
+        "isConstFetch": 3866,
+        "isStaticRead": 2299,
+        "isConstRead": 1540,
+        "isTearOff": 149,
+        "isClosureCapture": 95,
+        "isInterpolationRead": 78,
+        "isGlobalRead": 70,
+        "isTraitUse": 9
+      },
+      "examples": [
+        "Markdown -> parser",
+        "Markdown -> MARKDOWN_PARSER_CLASS",
+        "Markdown -> parser_class"
+      ]
+    }
+  },
+  "symbolKinds": {
+    "method": 20270,
+    "property": 5167,
+    "namespace": 4455,
+    "class": 4238,
+    "function": 316,
+    "constant": 258,
+    "interface": 208,
+    "enum_member": 125,
+    "enum": 42,
+    "trait": 15
+  },
+  "kindsNotInSymbolKindEnum": [],
+  "emptySymbolNames": {
+    "count": 0,
+    "examples": []
+  },
+  "unknownEndpoints": {
+    "count": 26,
+    "examples": [
+      "uses phpmyadmin/src/Charsets/Collation.php: buildDescription -> unknown",
+      "uses phpmyadmin/src/Charsets/Collation.php: buildDescription -> unknown",
+      "uses phpmyadmin/src/Charsets/Collation.php: getNameForLevel0 -> unknown",
+      "uses phpmyadmin/src/Charsets/Collation.php: getNameForLevel1 -> unknown",
+      "calls phpunit/src/Framework/TestCase.php: __construct -> unknown",
+      "instantiates phpunit/src/Framework/TestSize/TestSize.php: unknown -> Unknown",
+      "contains phpunit/src/Framework/TestSize/TestSize.php: TestSize -> unknown",
+      "references phpunit/src/Framework/TestSize/TestSize.php: unknown -> TestSize",
+      "calls phpunit/src/Framework/TestStatus/TestStatus.php: from -> unknown",
+      "instantiates phpunit/src/Framework/TestStatus/TestStatus.php: unknown -> Unknown"
+    ]
+  },
+  "grammarNodeTypes": {
+    "distinct": 277,
+    "inventory": {
+      "name": 520625,
+      "'": 227805,
+      "$": 205419,
+      "variable_name": 205417,
+      "(": 162986,
+      ")": 162986,
+      ";": 134512,
+      "argument": 132348,
+      "string": 123288,
+      "arguments": 118701,
+      ",": 116353,
+      "string_content": 110744,
+      "->": 95438,
+      "expression_statement": 79804,
+      "member_call_expression": 67511,
+      "array_element_initializer": 64504,
+      "\\": 56622,
+      "]": 47558,
+      "=": 46594,
+      "[": 41096,
+      "}": 40666,
+      "{": 40665,
+      "assignment_expression": 38343,
+      "compound_statement": 35801,
+      "::": 35698,
+      "primitive_type": 33818,
+      "binary_expression": 29660,
+      "member_access_expression": 27927,
+      "function": 26598,
+      "use": 25879,
+      "visibility_modifier": 25877,
+      "namespace_use_clause": 25786,
+      "namespace_use_declaration": 25775,
+      "=>": 25713,
+      "namespace_name": 25477,
+      "array_creation_expression": 24488,
+      "comment": 24025,
+      ":": 21706,
+      "qualified_name": 21555,
+      "formal_parameters": 21455,
+      "method_declaration": 20461,
+      "integer": 19550,
+      "scoped_call_expression": 19460,
+      "public": 18588,
+      "function_call_expression": 17276,
+      "simple_parameter": 16964,
+      "subscript_expression": 16535,
+      ".": 15099,
+      "parenthesized_expression": 13884,
+      "return": 13146,
+      "return_statement": 13145,
+      "boolean": 12375,
+      "class_constant_access_expression": 12234,
+      "relative_scope": 11348,
+      "if_statement": 10860,
+      "if": 10860,
+      "object_creation_expression": 10822,
+      "new": 10822,
+      "self": 9999,
+      "named_type": 9112,
+      "escape_sequence": 6860,
+      "null": 6812,
+      "attribute_group": 6461,
+      "#[": 6461,
+      "attribute": 6461,
+      "\"": 6388,
+      "private": 5983,
+      "program": 4642,
+      "php_tag": 4626,
+      "declaration_list": 4608,
+      "declare_statement": 4539,
+      "declare": 4539,
+      "declare_directive": 4539,
+      "strict_types": 4539,
+      "namespace": 4464,
+      "namespace_definition": 4456,
+      "class": 4385,
+      "class_declaration": 4239,
+      "static": 4194,
+      "array": 4166,
+      "bool": 4076,
+      "unary_op_expression": 4049,
+      "scoped_property_access_expression": 4003,
+      "property_declaration": 3903,
+      "property_element": 3903,
+      "attribute_list": 3733,
+      "!": 3689,
+      "===": 3680,
+      "final_modifier": 3571,
+      "final": 3571,
+      "nowdoc_string": 3436,
+      "static_modifier": 3277,
+      "encapsed_string": 3192,
+      "base_clause": 2927,
+      "extends": 2927,
+      "!==": 2808,
+      "as": 2350,
+      "&&": 2333,
+      "augmented_assignment_expression": 2004,
+      "int": 2000,
+      "|": 1988,
+      "foreach_statement": 1881,
+      "foreach": 1881,
+      "?": 1820,
+      ".=": 1760,
+      "union_type": 1665,
+      "cast_expression": 1572,
+      "cast_type": 1572,
+      "||": 1436,
+      "yield_expression": 1402,
+      "yield": 1399,
+      "readonly_modifier": 1353,
+      "readonly": 1353,
+      "protected": 1306,
+      "property_promotion_parameter": 1301,
+      "class_interface_clause": 1096,
+      "implements": 1096,
+      "const": 1045,
+      "instanceof": 993,
+      "conditional_expression": 971,
+      "else_clause": 940,
+      "else": 940,
+      "float": 887,
+      "optional_type": 846,
+      "??": 772,
+      "throw_expression": 748,
+      "throw": 748,
+      "case": 745,
+      "continue_statement": 716,
+      "continue": 716,
+      "-": 662,
+      "case_statement": 618,
+      "break_statement": 601,
+      "break": 601,
+      "else_if_clause": 586,
+      "elseif": 586,
+      "...": 451,
+      "parent": 435,
+      "anonymous_function": 429,
+      ">": 418,
+      "pair": 406,
+      "match_conditional_expression": 399,
+      "match_condition_list": 399,
+      "+": 388,
+      "update_expression": 358,
+      "<<<": 349,
+      "heredoc_start": 349,
+      "heredoc_end": 349,
+      "nowdoc": 347,
+      "nowdoc_body": 347,
+      "function_definition": 341,
+      "++": 331,
+      "<": 296,
+      "try_statement": 287,
+      "try": 287,
+      "catch_clause": 264,
+      "catch": 264,
+      "type_list": 264,
+      "unset_statement": 262,
+      "unset": 262,
+      "const_declaration": 258,
+      "const_element": 258,
+      ">=": 257,
+      "*": 251,
+      "list_literal": 250,
+      "error_suppression_expression": 244,
+      "@": 244,
+      "&": 229,
+      "arrow_function": 219,
+      "fn": 219,
+      "interface_declaration": 208,
+      "interface": 208,
+      "variadic_unpacking": 201,
+      "abstract_modifier": 167,
+      "abstract": 167,
+      "variadic_placeholder": 163,
+      "/": 155,
+      "+=": 154,
+      "while": 146,
+      "anonymous_class": 146,
+      "require_expression": 143,
+      "require": 143,
+      "while_statement": 135,
+      "enum_case": 125,
+      "echo_statement": 117,
+      "echo": 117,
+      "for_statement": 114,
+      "for": 114,
+      "print_intrinsic": 109,
+      "print": 109,
+      "anonymous_function_use_clause": 96,
+      "match_expression": 89,
+      "match": 89,
+      "match_block": 89,
+      "==": 88,
+      "variadic_parameter": 86,
+      "by_ref": 83,
+      "default": 83,
+      "<=": 80,
+      "object": 77,
+      "require_once_expression": 64,
+      "require_once": 64,
+      "match_default_expression": 62,
+      "!=": 61,
+      "ERROR": 56,
+      "reference_assignment_expression": 54,
+      "switch_statement": 51,
+      "switch": 51,
+      "switch_block": 51,
+      "exit_statement": 48,
+      "exit": 48,
+      "finally_clause": 45,
+      "finally": 45,
+      "enum_declaration": 42,
+      "enum": 42,
+      "enum_declaration_list": 42,
+      "sequence_expression": 36,
+      "reference_modifier": 34,
+      "?->": 33,
+      "--": 27,
+      "??=": 27,
+      "var_modifier": 25,
+      "-=": 25,
+      "**": 24,
+      "text": 21,
+      "default_statement": 21,
+      "nullsafe_member_access_expression": 20,
+      "bottom_type": 20,
+      "include_expression": 16,
+      "include": 16,
+      "clone_expression": 16,
+      "clone": 16,
+      "global_declaration": 15,
+      "global": 15,
+      "&=": 15,
+      "trait_declaration": 15,
+      "trait": 15,
+      "property_hook": 14,
+      "nullsafe_member_call_expression": 13,
+      "%": 12,
+      "intersection_type": 12,
+      "property_hook_list": 11,
+      "do_statement": 11,
+      "do": 11,
+      "include_once_expression": 8,
+      "include_once": 8,
+      "text_interpolation": 8,
+      "php_end_tag": 8,
+      "use_declaration": 8,
+      "relative_name": 8,
+      "|=": 8,
+      "*=": 7,
+      "<=>": 7,
+      "/=": 6,
+      ">>": 6,
+      "<<": 6,
+      "namespace_use_group": 5,
+      "list": 4,
+      "function_static_declaration": 3,
+      "static_variable_declaration": 3,
+      "empty_statement": 3,
+      "yield from": 3,
+      "dynamic_variable_name": 2,
+      "`": 2,
+      "use_as_clause": 2,
+      "xor": 2,
+      "heredoc": 2,
+      "heredoc_body": 2,
+      "~": 2,
+      "|>": 2,
+      "shell_command_expression": 1,
+      "named_label_statement": 1,
+      "use_list": 1,
+      "use_instead_of_clause": 1,
+      "insteadof": 1,
+      "**=": 1,
+      "%=": 1
+    }
+  },
+  "allTenTypes": [
+    {
+      "type": "calls",
+      "emitted": true
+    },
+    {
+      "type": "uses",
+      "emitted": true
+    },
+    {
+      "type": "contains",
+      "emitted": true
+    },
+    {
+      "type": "imports",
+      "emitted": true
+    },
+    {
+      "type": "references",
+      "emitted": true
+    },
+    {
+      "type": "exports",
+      "emitted": false
+    },
+    {
+      "type": "extends",
+      "emitted": true
+    },
+    {
+      "type": "implements",
+      "emitted": true
+    },
+    {
+      "type": "overrides",
+      "emitted": true
+    },
+    {
+      "type": "instantiates",
+      "emitted": true
+    }
+  ]
+}
