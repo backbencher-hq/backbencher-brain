@@ -235,3 +235,44 @@ Verdict: **accept**. Strongest lane so far on measurement discipline.
 - Its censuses carry **positive and negative controls**, so they cannot be
   trivially true. Re-run by the supervisor: controls pass.
 - DERIVATION findings: **0**. Gates: fixtures 8/8, mutations 50/50 caught.
+
+### F_SHARP — merged
+
+Verdict: **accept**. 9/10 EMITTED, `exports` RULED by instrument A.
+
+- `uses` 1,666/157 files and `imports` 705/158 were GAPs at handover, implemented
+  with confidence 1.0. **Constructs were measured before implementation**:
+  29,441 `attribute` nodes across 2,492 files, 11,371 `import_decl` across 2,540.
+- `exports` RULED: 353 distinct node types across 6,619 files and **none** of the
+  six export-declaration node types appears. F# has no export *declaration*. The
+  adjacency count (7,818 member-declaring scopes in 3,630 files) is what
+  `contains` already carries at 100.0% resolution. Overturn condition stated.
+- The agent **convicted its own earlier doc row** for denying emission without
+  saying so — `verify-doc-truth-emissions.ts` flagged it as a FALSE_NEGATIVE and
+  the agent corrected the row rather than the gate.
+- `docs/DOC-TRUTH-EMISSIONS.md` is machine-generated; supervisor re-ran
+  `audit:doc-truth-emissions` and confirmed the committed bytes reproduce.
+
+### LUA — merged
+
+Verdict: **accept**. The most edges added of any lane, and the payload cost was
+declared rather than discovered later.
+
+- Production `parseFile` over 3,250 corpus files from 120 repos:
+  `uses` **0 → 133,189**/2,666 files, `references` **0 → 44,755**/2,340,
+  `exports` **0 → 5,167**/2,137, `overrides` **0 → 66**/38.
+  Four of the five types believed missing at handover were measured PRESENT.
+- `exports` is the notable one: 5,173 export **names** were already published as a
+  list, but no edge said so, so `bb_graph` could not answer "what does this module
+  export".
+- `implements` RULED by instrument A: 100 node types across 1,875 files, none of
+  the six inheritance node types.
+- `overrides` needs instrument B by construction — the grammar has no
+  `override_specifier` and no redefinition node, so instrument A is silent *by
+  construction* and only a tree count could falsify it. Correct choice, stated.
+- **Payload 119,606 → 302,783 edges (2.53×)**, declared in the commit. Of that
+  total, 6 edges and 7 symbols come from pool-worker's regex fallback, which the
+  agent demonstrated is **nondeterministic** — 7 files/9 symbols in one run, 6/8
+  in the next, unchanged code, unchanged corpus — and tallied apart so none is
+  attributed to this lane.
+- Supervisor re-ran the lane suite: **9 fixtures / 96 assertions / 0 failing**.
