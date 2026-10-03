@@ -6,6 +6,10 @@
 > They are that machine's numbers. They are **not** SLOs, not capacity claims,
 > and not portable to your hardware. Where no measurement exists, this document
 > says so instead of estimating.
+>
+> Statements about *behaviour* (which phase runs, which files are skipped) are
+> gated against the code by `script/verify-docs-indexing.ts`; statements about
+> *timings* are only as good as the evidence file named beside them.
 
 ## The short version
 
@@ -13,8 +17,11 @@
   normal.**
 - **The cost is the number of eligible files**, and secondarily how expensive
   each language's analyzer is — not the number of languages.
-- **Re-indexing an unchanged project is nearly free**, because unchanged files
-  are never re-parsed.
+- **The parse half of a re-run is nearly free**, because unchanged files are
+  never re-parsed — on *every* mode, bare `bb index` included. On an unchanged
+  project a bare re-run parses nothing and reports `derived: skipped-unchanged`.
+  When a re-run *does* parse something, it pays for the full derived pass, where
+  `--changed` pays for a bounded one. That is what the flag buys.
 - **The two dominant costs are parsing and writing to the database.** Discovery
   and worker startup are measurable but negligible.
 - If you want one number for your own project, run `bb index` once and read
@@ -26,7 +33,7 @@
 
 Discovery skips `.gitignore`d paths, `.bbignore`d paths, built-in skip patterns
 (`node_modules`, `dist`, `build`, `out`, `target`, `coverage`, …), and files
-over 5 MB (`src/ast/parallel-indexer.ts:249-274`, `:810-838`).
+over 5 MB (`src/ast/parallel-indexer.ts:253-300`, `:850-877`).
 
 Two corpora can both contain 250,000 files and differ by two orders of
 magnitude in index time, because only the eligible ones are parsed. Discovery
@@ -58,18 +65,24 @@ published a number for that shape and this document will not invent one.
 
 ### 3. Whether the run has anything to do
 
-An incremental run only parses files whose `mtime` **and** `size` differ from
-what is stored (`src/ast/parallel-indexer.ts:848-856`). On an unchanged
-project that is zero files. The one recorded unchanged-project run — rake, 57
-files — completed in **85 ms** with `parsedFiles: 0` and `noop: true`
+Every run — incremental or not — parses only files whose `mtime` **and** `size`
+differ from what is stored (`src/ast/parallel-indexer.ts:887-894`). On an
+unchanged project that is zero files. The one recorded unchanged-project run —
+rake, 57 files — completed in **85 ms** with `parsedFiles: 0` and `noop: true`
 (`validation/mA/results/probe-index-ux.json`).
+
+Verified live by `script/verify-docs-indexing.ts --live`: a second bare
+`bb index` on an unchanged fixture parses nothing and reports
+`derived: skipped-unchanged`.
 
 ### 4. The derived phases
 
-After parsing, five derived phases run over the whole project: `relationships`,
-`enrichment`, `gravity`, `taint`, `health`
-(`src/ast/parallel-indexer.ts:5260-5360`). On element-plus they took 9.5s of a
-152s run — real, but not dominant:
+After parsing, the derived phases run over the whole project. Current code
+records **eight**: `relationships`, `enrichment`, `gravity`, `taint`, `health`,
+`integrity`, `vectorBlobs`, `analyze`
+(`src/ast/parallel-indexer.ts:576`, `:5561-5680`). The measurement below predates
+the last three being recorded, so its table has six rows — the five derived-data
+phases plus `integrity`:
 
 | Phase | Time |
 | --- | ---: |
@@ -85,7 +98,9 @@ After parsing, five derived phases run over the whole project: `relationships`,
 27,781 symbols, 47,480 relationships, 7 workers on an 8-CPU host).
 
 So on that run: parse 141s, dbFlush 169s, post-processing 9.5s. **Parse and DB
-flush dominate; enrichment is secondary.**
+flush dominate; enrichment is secondary.** Note this run's shape differs from a
+cold full index — see the wall-clock caveat at the end of this document before
+using it to reason about first runs.
 
 ## Where the time goes
 
@@ -159,9 +174,10 @@ extrapolating, not reporting.
 
 In descending order of effect:
 
-1. **Use `bb index --changed`, not `bb index`.** Parses only files whose mtime
-   or size changed, and runs a bounded derived pass scoped to those files. On a
-   steady codebase this is close to free.
+1. **Use `bb index --changed`, not a bare `bb index`.** Both parse only files
+   whose mtime or size changed — that filter is not a flag. What `--changed`
+   changes is the derived pass: `bounded` (scoped to touched files) instead of
+   `full` (the whole project). On a steady codebase this is close to free.
 2. **Cut discovery with `.bbignore`.** Discovery is cheap in absolute terms
    (0.002 of wall) but it decides how many files the expensive phases must
    handle. Excluding generated code, vendored trees and fixtures with a
