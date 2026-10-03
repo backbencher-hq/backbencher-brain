@@ -401,11 +401,16 @@ headline:
   is the reason the class is `uses` rather than `references`.
 - `overrides` at 73.53 % splits **21 by exact name** (trustworthy) and **29 by
   dotted tail** (`aws_instance.second` binding because a symbol named `second`
-  exists), with **18 unbound** — those are the corpus's deliberately invalid
-  fixtures (`invalid_module_override_target.tftest.hcl` targets
-  `module.absent_four`, which no file declares). A `bb_impact` answer built on
-  the dotted-tail half could name the wrong symbol; that is a property of the
-  indexer's third strategy, not of this analyzer.
+  exists), with **18 unbound**. The unbound 18 are concentrated in the corpus's
+  deliberately invalid fixtures — `test_resource.absent_one` (×2),
+  `module.absent_four`, `test_resource.absent_five`,
+  `module.setup.test_resource.absent_three/…_six` in
+  `terraform/internal/command/testdata/test/invalid-overrides/main.tftest.hcl`,
+  plus `data.aws_instance.test` (×6), `data.aws_subnets.private_subnets` (×2),
+  `aws_launch_template.vm` (×2) and `data.aws_secretsmanager_secret.creds`,
+  where the target module declares nothing under the name the fixture uses. A
+  `bb_impact` answer built on the dotted-tail half could name the wrong symbol;
+  that is a property of the indexer's third strategy, not of this analyzer.
 - `references` at 70.18 % is the largest unbound class in absolute terms
   (12,561 edges), led by `module.this.context` (761),
   `module.iam_roles.terraform_role_arn` (236), `module.this.enabled` (233),
