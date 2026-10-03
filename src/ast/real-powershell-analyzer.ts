@@ -1133,6 +1133,44 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
       findDescendant(node, "variable", 12)
 
     /**
+     * PS29 — is the node an argument's value came from a `variable`?
+     *
+     * The question a string cannot answer. `New-Object System.Version` and
+     * `New-Object $type` are both `stripQuotes`-ed text, and the first is a type name
+     * while the second is a variable holding one — the TEXT alone is `System.Version`
+     * and `type`, which look equally like names. Only the node says which.
+     *
+     * **This predicate was written with THREE arms and now has ONE, and the revert
+     * proof is why.** Both extra arms were dead code that survived being reverted:
+     *
+     *   · an `expandable_string_literal` arm, on the reasoning that `"$t"` is an
+     *     interpolation and `'$t'` is a literal. Unreachable — the pinned grammar always
+     *     wraps a quoted argument in `array_literal_expression > unary_expression >
+     *     string_literal`, so the argument node is never the quoted node itself.
+     *   · an `array_literal_expression || unary_expression` arm doing its own
+     *     `findDescendantVariable` search. Also unreachable, and for a sharper reason:
+     *     **`commandArgs` has already done that search.** It pushes the UNWRAPPED
+     *     `variable` node into `sourceNodes`, not the wrapper it was found under, so the
+     *     node arriving here is the `variable` and the first arm answers. Reverting this
+     *     arm alone left the fixture suite green.
+     *
+     * So the shape table belongs to `commandArgs`, which is where the unwrapping
+     * happens, and this predicate is one node-type test:
+     *
+     *   `New-Object $t`             -> commandArgs pushes `variable "$t"`          -> uses
+     *   `New-Object "$t"`           -> commandArgs pushes `variable "$t"`          -> uses
+     *   `New-Object -TypeName $t`   -> commandArgs pushes `variable "$t"`          -> uses
+     *   `New-Object -TypeName 'lit'`-> commandArgs pushes `string_literal 'lit'`    -> instantiates
+     *   `New-Object System.Version` -> commandArgs pushes `generic_token`           -> instantiates
+     *
+     * A branch that cannot affect any output is an L2 dead branch, and this file
+     * already records two earlier mutants that survived because of one. Both arms were
+     * removed rather than commented, and `mutant-proof-psb14.sh` pins what replaced
+     * them: a revert of the `commandArgs` unwrapping, and a revert of the node handoff.
+     */
+    const nodeIsAVariableReference = (node: Node): boolean => node.type === "variable"
+
+    /**
      * The TYPE CONSTRAINT of a parameter or member, as SOURCE TEXT.
      *
      * Two shapes, and reading only the first is why every `[string]$Name` in the
@@ -1260,7 +1298,7 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
      * only if you count the right string. Removed; the behaviour is unchanged, which is
      * why removal is safe rather than merely tidy.
      */
-    const commandArgs = (node: Node): string[] => {
+    const commandArgs = (node: Node, sourceNodes?: Node[]): string[] => {
       const out: string[] = []
       const elements = findFirstChild(node, "command_elements")
       if (!elements) return out
@@ -1284,17 +1322,16 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
           const next = elements.namedChild(i + 1)
           if (next && isValueToken(next) && !SWITCH_ARGUMENT_VALUES.has(next.text.toLowerCase())) {
             out.push(this.stripQuotes(next.text))
+            sourceNodes?.push(next)
           }
           continue
         }
-        if (isValueToken(c)) { out.push(this.stripQuotes(c.text)); continue }
+        if (isValueToken(c)) { out.push(this.stripQuotes(c.text)); sourceNodes?.push(c); continue }
         if (c.type === "array_literal_expression" || c.type === "unary_expression") {
           const v = findDescendantVariable(c)
-          if (v) out.push(stripDollar(v.text))
-          else {
-            const lit = this.findQuoted(c)
-            if (lit) out.push(this.stripQuotes(lit.text))
-          }
+          if (v) { out.push(stripDollar(v.text)); sourceNodes?.push(v); continue }
+          const lit = this.findQuoted(c)
+          if (lit) { out.push(this.stripQuotes(lit.text)); sourceNodes?.push(lit) }
         }
       }
       return out
@@ -1433,7 +1470,7 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
       exportedNames.add(name.toLowerCase())
       exports.push({ name, range: this.lineRange(line), metadata: { powershellSpecific: true, via } })
       addRel(top().scope, name, ASTEngine.RelationshipType.Exports, 1.0, line, {
-        powershellSpecific: true, viaExportModuleMember: true, fileLevel: atFileScope(),
+        powershellSpecific: true, viaExportModuleMember: true, via, fileLevel: atFileScope(),
       })
     }
 
@@ -2305,22 +2342,76 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
             // spelling of the type: a dotted .NET name and a COM ProgID look alike
             // and mean different things. Caught by the fixture's two metadata rows
             // before it was committed.
-            const comObject = this.parameterValue(node, "ComObject") ?? this.parameterValue(node, "comobject")
-            const typeName = this.parameterValue(node, "TypeName") ?? this.parameterValue(node, "typename")
+            //
+            // PS29 — and the constructed name can be a VARIABLE, which is not a type
+            // name at all. Each reader below now also reports the NODE its text came
+            // from, because `-TypeName System.Version` and `-TypeName $t` produce the
+            // same kind of string and mean different things: the first names a type,
+            // the second names a variable whose VALUE is a type name, resolved at run
+            // time. `instantiates` asserts the target IS a type, so on the second it
+            // was asserting something the source does not say.
+            //
+            // Measured over all 1,108 admitted files through production `parseFile`,
+            // cross-referencing each target against the symbol table of the file that
+            // published it (so a corpus-wide name collision cannot explain it):
+            // **123 of 1,268 `instantiates` edges — 9.70% — name a `variable` symbol
+            // their own file declares.** A further 99 name a `class` / `function` /
+            // `enum` in their own file, and those are CORRECT and are not touched:
+            // `New-Object MyType` genuinely constructs a PowerShell class.
+            //
+            // This is the same defect class the lane already declares fixed for
+            // `calls`. F9 changed `$type::$method()` from `calls -> $method` to
+            // `uses -> method` precisely because a `$`-prefixed member is a VARIABLE,
+            // not a name; `instantiates` is the channel that did not get the same
+            // treatment, and it is read by the same reasoning. So the fix routes the
+            // variable form to `uses` — a name READ — at the same 0.9 the `calls`
+            // route uses for the same shape, carrying `isDynamicTypeName` so a
+            // consumer can tell "reads the variable that holds the type name" from
+            // "reads a variable for some other reason".
+            //
+            // Why the shape reaches the POSITIONAL branch when a flag is present:
+            // `parameterValue` accepts only a `generic_token` / `string_literal` /
+            // `expandable_string_literal`, and the pinned wasm wraps a bare `$t` in an
+            // `array_literal_expression`, so `-TypeName $t` finds no flagged value and
+            // arrives as the first positional. The node that decides is therefore
+            // whichever of the three the `??` chain actually took, which is why the
+            // node is captured per reader rather than re-derived.
+            const comObjectOut: { node: Node | null } = { node: null }
+            const typeNameOut: { node: Node | null } = { node: null }
+            const comObject =
+              this.parameterValue(node, "ComObject", comObjectOut) ??
+              this.parameterValue(node, "comobject", comObjectOut)
+            const typeName =
+              this.parameterValue(node, "TypeName", typeNameOut) ??
+              this.parameterValue(node, "typename", typeNameOut)
             // The POSITIONAL form: `New-Object System.Collections.ArrayList` and
             // `New-Object System.Version`, which is how the cmdlet is written
             // whenever the author did not bother with a flag. `commandArgs` returns
             // values only, having already skipped every `command_parameter`, so the
             // first entry is the positional type name and the flagged forms leave it
-            // empty.
-            const positional = commandArgs(node)[0]
+            // empty. `positionalNodes` carries the node each value was read from.
+            const positionalNodes: Node[] = []
+            const positional = commandArgs(node, positionalNodes)[0]
             const constructed = comObject ?? typeName ?? positional
+            const constructedFrom = comObject
+              ? comObjectOut.node
+              : typeName
+                ? typeNameOut.node
+                : (positionalNodes[0] ?? null)
             if (constructed && !isTypeAccelerator(constructed)) {
-              addRel(top().scope, constructed, ASTEngine.RelationshipType.Instantiates, 0.9, nameLine, {
-                powershellSpecific: true,
-                viaNewObject: true,
-                ...(comObject ? { isComObject: true } : {}),
-              })
+              if (constructedFrom && nodeIsAVariableReference(constructedFrom)) {
+                addRel(top().scope, constructed, ASTEngine.RelationshipType.Uses, 0.9, nameLine, {
+                  powershellSpecific: true,
+                  viaNewObject: true,
+                  isDynamicTypeName: true,
+                  isVariableReference: true,
+                })
+              } else {
+                addRel(top().scope, constructed, ASTEngine.RelationshipType.Instantiates, 0.9, nameLine, {
+                  powershellSpecific: true, viaNewObject: true,
+                  ...(comObject ? { isComObject: true } : {}),
+                })
+              }
             }
             break
           }
@@ -2347,12 +2438,34 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
             const elements = findFirstChild(node, "command_elements")
             if (elements) {
               const isFlag = (t: string) => t === "function" || t === "cmdlet" || t === "variable" || t === "alias"
+              // PS30 — the FLAG is the fact, and it was being thrown away. `via` was
+              // `leaf`, which is the COMMAND NAME and therefore the same string
+              // `Export-ModuleMember` on every row: measured over all 1,108 admitted
+              // files, 106 of 106 `exports` rows carried `via: "Export-ModuleMember"`
+              // and 0 named the flag. So `file -> Get-Foo` did not say whether the
+              // module published that name as a FUNCTION, a VARIABLE, an ALIAS or a
+              // CMDLET, and the four are not the same kind of thing — a `-Cmdlet`
+              // target is a name the file cannot declare at all, so a consumer cannot
+              // even tell whether it should look for it.
+              //
+              // This is the same argument PS23 made for `imports`, applied to the
+              // sibling channel: `file -> Module` does not say which of the four
+              // declarations produced it, so `metadata.via` names the form on every
+              // `imports` row. The `exports` reader already COMPUTES the flag — the
+              // `isFlag(flag)` line above is a test on the very string it then
+              // discarded — so this is a value that was in hand and not written down.
+              //
+              // The unflagged branch below keeps the command name, because there the
+              // flag genuinely is not there: `Export-ModuleMember Get-Foo` with no
+              // `-Function` publishes nothing in PowerShell, so naming a flag would
+              // assert something the source does not state.
               for (let i = 0; i < elements.namedChildCount; i++) {
                 const c = elements.namedChild(i)
                 if (!c) continue
                 if (c.type === "command_parameter") {
                   const flag = stripLeadingDash(stripDollar(c.text)).toLowerCase()
                   if (!isFlag(flag)) continue
+                  const via = `-${flag}`
                   // Walk the whole value list, stopping at the next flag.
                   for (let j = i + 1; j < elements.namedChildCount; j++) {
                     const v = elements.namedChild(j)
@@ -2360,9 +2473,9 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
                     if (v.type === "command_parameter") break
                     if (v.type === "command_argument_sep") continue
                     if (v.type === "generic_token" || v.type === "string_literal" || v.type === "expandable_string_literal") {
-                      addExport(this.stripQuotes(v.text), leaf, v.startPosition.row + 1)
+                      addExport(this.stripQuotes(v.text), via, v.startPosition.row + 1)
                     } else {
-                      for (const t of this.literalTokens(v)) addExport(t, leaf, v.startPosition.row + 1)
+                      for (const t of this.literalTokens(v)) addExport(t, via, v.startPosition.row + 1)
                     }
                   }
                   continue
@@ -2598,7 +2711,7 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   /** The value of a two-token parameter (`-TypeName Foo`) or `-Name:Foo`. */
-  private parameterValue(node: Node, flag: string): string | null {
+  private parameterValue(node: Node, flag: string, out?: { node: Node | null }): string | null {
     const elements = this.findChildByType(node, "command_elements")
     if (!elements) return null
     const wanted = stripLeadingDash(flag).toLowerCase()
@@ -2608,6 +2721,11 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (stripLeadingDash(this.stripQuotes(c.text)).toLowerCase() !== wanted) continue
       const next = this.valueAfterNode(elements, i)
       if (next && (next.type === "generic_token" || next.type === "string_literal" || next.type === "expandable_string_literal")) {
+        // PS29 — the VALUE NODE is reported alongside the text, because whether the value
+        // is a NAME or a VARIABLE holding a name is a property of the node and not of the
+        // string. `-TypeName System.Version` and `-TypeName $t` are both `stripQuotes`-ed
+        // text, and only the second is a variable. See the `New-Object` reader.
+        if (out) out.node = next
         return this.stripQuotes(next.text)
       }
     }
