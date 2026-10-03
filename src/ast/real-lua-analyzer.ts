@@ -73,6 +73,22 @@ interface LuaContext {
   seenRelationships: Set<string>
   /** M60 LUA-02: counted during the walk, because the stored edge carries the callee FIELD ("create"), not the qualified path ("coroutine.create"). */
   coroutineCalls: number
+  /** M60 LUA-44: every function/method declaration, as ONE label -> its declaration
+   * lines. Ordered by LINE, not by visit order, because the walk pops a stack and
+   * therefore visits siblings in reverse — "the later declaration replaces the
+   * earlier one" is a claim about the source order, so it must be read off the
+   * source order and never off the traversal. */
+  declarationsByLabel: Map<string, Array<{ line: number; owner: string | null; member: string | null }>>
+  /** M60 LUA-44: the tables whose members this file declares, keyed by owner, then
+   * by member name -> the member's FIRST declaration line. The line is kept
+   * because an `overrides` edge must be anchored at a site: a synthesized edge
+   * with no line is indistinguishable from one the analyzer invented. */
+  membersByOwner: Map<string, Map<string, number>>
+  /** M60 LUA-44: derived table -> the tables its member lookup falls back to. Both
+   * Lua inheritance forms land here, because both mean the same thing for an
+   * override: `setmetatable(D, B)` (direct) and `setmetatable(D, {__index = B})`
+   * (through a metatable). */
+  supertypeLinks: Map<string, Set<string>>
 }
 
 export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
@@ -90,12 +106,18 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
       patterns: new Set<string>(),
       seenRelationships: new Set<string>(),
       coroutineCalls: 0,
+      declarationsByLabel: new Map(),
+      membersByOwner: new Map(),
+      supertypeLinks: new Map(),
     }
 
     this.collectErrors(rootNode, ctx)
     // M60 LUA-06: BEFORE the walk, so a constructor call does not depend on
     // where its table was declared.
     this.collectDeclaredTables(rootNode, ctx)
+    // M60 LUA-44: also BEFORE the walk, because a supertype link may be written
+    // after the member that overrides it, and an override needs both sides.
+    this.collectSupertypeLinks(rootNode, ctx)
     const rootFrame: LuaFrame = { localNames: new Set<string>(), inFunction: false }
     const stack: { node: Node; frame: LuaFrame }[] = [{ node: rootNode, frame: rootFrame }]
 
@@ -187,6 +209,7 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
 
     this.addContainsRelationships(ctx)
+    this.addOverrideRelationships(ctx)
     const detectedFrameworks = [...ctx.frameworks]
     const detectedPatterns = [...ctx.patterns]
 
@@ -257,8 +280,169 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
         break
       case "identifier":
         this.detectFrameworks(node.text, ctx)
+        // M60 LUA-40: `uses` — a name read as a value. See emitNameRead for why the
+        // role is read off the PARENT and never off the text.
+        this.emitNameRead(node, frame, ctx)
+        break
+      case "dot_index_expression":
+      case "method_index_expression":
+      case "bracket_index_expression":
+        // M60 LUA-41: `references` — a member read. The three forms are the whole
+        // set the grammar produces for a qualified name, and one node type is one
+        // pass over the same role test.
+        this.emitMemberRead(node, frame, ctx)
         break
     }
+  }
+
+  /**
+   * M60 LUA-40 — `uses`: a name this scope READS.
+   *
+   * Measured before it was written (script/m60/lua-ontology-census.ts, probe
+   * B4-bare-name-read): 295,019 bare-name reads across 3,250 corpus files. The
+   * type was absent, so the largest read surface the language has was invisible.
+   *
+   * The rule is a ROLE, read off the parent node, never a text shape. Each
+   * exclusion is a different relationship that is already published or is not a
+   * declaration at all:
+   *
+   *   callee of a function_call      -> that is `calls`, published by processCall
+   *   a `variable_list` child        -> a DECLARATION, published as a symbol and
+   *                                     as `contains`
+   *   the LHS of an assignment       -> a WRITE, not a read
+   *   a `field`'s key                 -> a table-literal KEY, a declaration site
+   *   a `function_declaration` name  -> a member DECLARATION
+   *   the RECEIVER of an index expr  -> part of a qualified name; that read is
+   *                                     `references` (LUA-41), and publishing both
+   *                                     would double-count one fact under two labels
+   *   a `parameters` child           -> a parameter BINDING, not a use of it
+   *
+   * Confidence is 0.9, not 1.0, and the reason is not a hedge: the node proves
+   * the file READS A NAME. Which binding that name denotes — a local, an
+   * upvalue, a global, a stdlib function, a field of a required module — is not
+   * written anywhere in the tree. The machine-readable reason code the honesty
+   * contract §4 requires for anything under 1.0 is `evidenceClass:
+   * "usage_contextual"`, which is this codebase's existing word for a link
+   * established by a NAME in a value position (real-css-analyzer.ts:737).
+   */
+  /**
+   * M60 LUA-45: node identity, the only way that works on this runtime.
+   *
+   * `web-tree-sitter` returns a FRESH wrapper object on every access, so
+   * `parent.namedChild(0) === node` is false even when both name the same span —
+   * measured on validation/m14/fixtures/lua/name-reads.lua, where the receiver
+   * test silently never fired and published 3 edges it exists to suppress:
+   * `apply -> config` at L22, `apply -> helper` at L24 and `never -> helper` at
+   * L29. Every one of them states a qualified access twice under two labels.
+   *
+   * The identity that IS stable is the SPAN, which is what this compares. It is
+   * the family's own idiom and not a local invention: real-c-analyzer.ts:2336,
+   * :2525 and :6012 all compare `startIndex`/`endIndex` for exactly this reason.
+   * `type` is compared too because a span can be covered by more than one node
+   * type in a grammar that reuses a token, and a wrong-type match here would
+   * suppress a real edge.
+   */
+  private isSameNode(a: Node | null | undefined, b: Node | null | undefined): boolean {
+    if (!a || !b) return false
+    return a.type === b.type && a.startIndex === b.startIndex && a.endIndex === b.endIndex
+  }
+
+  private emitNameRead(node: Node, frame: LuaFrame, ctx: LuaContext): void {
+    const parent = node.parent
+    if (!parent) return
+    const pt = parent.type
+    if (pt === "function_call") {
+      if (this.isSameNode(parent.childForFieldName("name"), node) || this.isSameNode(parent.namedChild(0), node)) return
+    } else if (pt === "variable_list" || pt === "parameters") {
+      return
+    } else if (pt === "assignment_statement") {
+      if (this.isSameNode(parent.namedChild(0), node)) return
+    } else if (pt === "field") {
+      if (this.isSameNode(parent.childForFieldName("name"), node)) return
+    } else if (pt === "function_declaration") {
+      if (this.isSameNode(parent.childForFieldName("name"), node)) return
+    } else if (pt === "dot_index_expression" || pt === "method_index_expression" || pt === "bracket_index_expression") {
+      // The receiver head of a qualified name. `M` in `M.field` is not read on its
+      // own account, and emitting `uses -> M` beside `references -> field` would
+      // state one access twice under two labels.
+      if (this.isSameNode(parent.namedChild(0), node)) return
+    }
+    this.addRelationship(
+      ctx,
+      frame.callable || "global",
+      node.text,
+      ASTEngine.RelationshipType.Uses,
+      { luaSpecific: true, relationshipType: "lua_name_read" },
+      node,
+      { confidence: 0.9 },
+    )
+  }
+
+  /**
+   * M60 LUA-41 — `references`: a MEMBER of a table read without calling it.
+   *
+   * Measured first, the same way: probe B3-member-read counted 198,720 qualified
+   * reads across 2,643 files. A qualified read is the shape the family's
+   * `references` is for and the shape this lane was missing: css's `var(--x)`
+   * asserts a dependency on a NAME that may be declared in another file, and
+   * `M.field` asserts exactly that — `M` is written, `field` is written, and
+   * which module owns `field` is not written anywhere.
+   *
+   * The same four exclusions as `calls`/`contains` already rely on, each for the
+   * same reason: a member's CALLEE is a `calls` edge (processCall), a member's
+   * DECLARATION is a symbol plus a `contains` edge, a member ASSIGNED TO is a
+   * write, and a `field`'s key is a table-literal key.
+   *
+   * A COMPUTED index (`dao[method or context .. "_by_" .. endpoint_key]`) has no
+   * name, and LUA-22's payload lesson applies unchanged: a literal STRING index
+   * does (`dao["rows"]`, read as `rows`), a number and a variable-held key do not.
+   *
+   * The TARGET is the member's own field name, which is what every other lua edge
+   * uses for a member (LUA-13/LUA-15: `obj:method()` yields target `method`), and
+   * the RECEIVER is recorded in metadata so a consumer that needs the qualified
+   * path has it without this edge having to claim an identity it cannot prove.
+   * The cost of that choice is measured and declared: two tables in one file can
+   * both have a member `run`, and the bare name fuses them. The qualified path is
+   * recorded per edge, so the ambiguity is recoverable rather than lost.
+   */
+  private emitMemberRead(node: Node, frame: LuaFrame, ctx: LuaContext): void {
+    const parent = node.parent
+    if (parent) {
+      const pt = parent.type
+      // LUA-45: span comparison, never `===` — see isSameNode.
+      if (pt === "function_call" && (this.isSameNode(parent.childForFieldName("name"), node) || this.isSameNode(parent.namedChild(0), node))) return
+      if (pt === "function_declaration" && this.isSameNode(parent.childForFieldName("name"), node)) return
+      if (pt === "assignment_statement" && this.isSameNode(parent.namedChild(0), node)) return
+      if (pt === "field" && this.isSameNode(parent.childForFieldName("name"), node)) return
+    }
+    let member: string | undefined
+    let memberNode: Node | undefined
+    if (node.type === "bracket_index_expression") {
+      const key = node.childForFieldName("field")
+      if (key?.type !== "string") return
+      member = this.stringValue(key)
+      memberNode = key
+    } else {
+      const last = node.namedChildCount > 0 ? node.namedChild(node.namedChildCount - 1) : undefined
+      if (last?.type !== "identifier") return
+      member = last.text
+      memberNode = last
+    }
+    if (!member || !memberNode) return
+    const receiver = this.nameBearing(node.childForFieldName("table"))
+    this.addRelationship(
+      ctx,
+      frame.callable || "global",
+      member,
+      ASTEngine.RelationshipType.References,
+      {
+        luaSpecific: true,
+        relationshipType: "lua_member_read",
+        ...(receiver ? { receiver } : {}),
+      },
+      memberNode,
+      { confidence: 0.9 },
+    )
   }
 
   private extractFunction(node: Node, frame: LuaFrame, ctx: LuaContext, isLocal: boolean): void {
@@ -333,7 +517,19 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (owner) {
       ctx.declaredTables.add(owner)
       ctx.patterns.add("Object-Oriented Programming")
+      // M60 LUA-44: a member DECLARATION, which is what an `overrides` edge needs
+      // on the overriding side. Recorded here, where the owner/member split has
+      // already been made, rather than re-derived in the post-pass.
+      const members = ctx.membersByOwner.get(owner) ?? new Map<string, number>()
+      if (!members.has(name)) members.set(name, node.startPosition.row + 1)
+      ctx.membersByOwner.set(owner, members)
     }
+    // M60 LUA-44: the label is the IDENTITY (LUA-15's contract), so two
+    // declarations of one label are two declarations of one name — which is
+    // exactly what a redefinition is.
+    const byLabel = ctx.declarationsByLabel.get(label) ?? []
+    byLabel.push({ line: node.startPosition.row + 1, owner: owner ?? null, member: owner ? name : null })
+    ctx.declarationsByLabel.set(label, byLabel)
     if (lexicallyLocal) ctx.globalVariables.delete(name)
   }
 
@@ -633,6 +829,126 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
   }
 
+  /**
+   * M60 LUA-44: derived table -> the tables its member lookup falls back to.
+   *
+   * Lua has NO inheritance keyword, so a grammar inventory can never find this
+   * relation — it is a CONVENTION over three ordinary constructs, and the
+   * ontology-coverage gate's own json ruling says in as many words that a grammar
+   * cannot see a convention. All three forms are read here because all three mean
+   * the same thing for an override:
+   *
+   *   setmetatable(D, B)            D's members fall back to B's  (direct)
+   *   setmetatable(D, {__index = B})  the same, through an inline metatable
+   *   local Mt = {__index = B}; setmetatable(D, Mt)   the same, through a named
+   *                                    metatable — kong's idiom, and the shape
+   *                                    probe B2 actually found
+   *   D.__index = B                 the same, assigned after the fact
+   *
+   * The named-metatable form needs TWO HOPS and is why this method does not simply
+   * read the second argument: `setmetatable(_lmdb, _lmdb_mt)` names a METATABLE,
+   * and reading it as a supertype would make every metatable in the corpus look
+   * like a base class. Resolving `Mt -> Mt.__index -> Base` is the difference
+   * between the two, and it is a derivation over parse facts rather than a guess:
+   * both hops are written in the file.
+   *
+   * The third form is deliberately absent from the B2 probe in
+   * script/m60/lua-ontology-census.ts, which reads only the inline
+   * `setmetatable` forms and therefore UNDER-counts (1 occurrence). That probe is
+   * the falsifiable instrument for the ruling; this is the analyzer's wider read,
+   * and the gap between them is disclosed rather than reconciled by widening the
+   * probe until the numbers agree.
+   */
+  private collectSupertypeLinks(root: Node, ctx: LuaContext): void {
+    const link = (derived: string | undefined, base: string | undefined): void => {
+      if (!derived || !base || derived === base) return
+      if (ctx.declaredTables.has(derived) || ctx.declaredTables.has(base)) {
+        const set = ctx.supertypeLinks.get(derived) ?? new Set<string>()
+        set.add(base)
+        ctx.supertypeLinks.set(derived, set)
+      }
+    }
+    /** The `__index = Base` field of a table literal, or undefined. The `field`
+     * node's KEY is the role test, so a table literal that merely CONTAINS the
+     * string "__index" as a value cannot match. */
+    const indexField = (table: Node | null | undefined): string | undefined => {
+      if (table?.type !== "table_constructor") return undefined
+      for (let i = 0; i < table.namedChildCount; i++) {
+        const f = table.namedChild(i)
+        if (f?.type !== "field") continue
+        const key = f.childForFieldName("name") ?? f.namedChild(0)
+        const value = f.namedChild(1)
+        if (key?.text === "__index" && value?.type === "identifier") return value.text
+      }
+      return undefined
+    }
+    /** Metatable variable -> the table its `__index` names. */
+    const metatableIndex = new Map<string, string>()
+    /** Deferred, because a metatable variable may be DEFINED AFTER the
+     * `setmetatable` call that uses it, and this walk is a stack, not source order. */
+    const pending: Array<{ derived: string | undefined; second: Node | null | undefined }> = []
+    const stack: Node[] = [root]
+    while (stack.length > 0) {
+      const node = stack.pop()!
+      if (node.type === "function_call") {
+        const fn = node.childForFieldName("name")
+        const args = node.childForFieldName("arguments")
+        if (fn?.type === "identifier" && (fn.text === "setmetatable" || fn.text === "setmetatable2")) {
+          const a0 = args?.namedChild(0) ?? null
+          pending.push({ derived: a0?.type === "identifier" ? a0.text : undefined, second: args?.namedChild(1) ?? null })
+        }
+      }
+      if (node.type === "variable_declaration" || node.type === "assignment_statement") {
+        const inner = node.type === "variable_declaration" ? node.namedChild(0) : node
+        if (inner?.type === "assignment_statement") {
+          const list = inner.namedChild(0)
+          const values = inner.namedChild(1)
+          const table = values?.type === "expression_list" ? values.namedChild(0) : undefined
+          const base = indexField(table)
+          if (base && list?.type === "variable_list") {
+            for (let i = 0; i < list.namedChildCount; i++) {
+              const id = list.namedChild(i)
+              if (id?.type === "identifier") metatableIndex.set(id.text, base)
+            }
+          }
+        }
+      }
+      for (let i = 0; i < node.namedChildCount; i++) { const c = node.namedChild(i); if (c) stack.push(c) }
+    }
+    // Resolve the deferred sites now that every metatable variable is known.
+    for (const site of pending) {
+      const second = site.second
+      if (second?.type === "identifier") {
+        // A NAMED metatable: follow its `__index` if it has one, otherwise the
+        // second argument IS the base (`setmetatable(D, B)`).
+        link(site.derived, metatableIndex.get(second.text) ?? second.text)
+      } else {
+        const base = indexField(second)
+        if (base) link(site.derived, base)
+      }
+    }
+    // `D.__index = Base` — the metamethod field assigned after the fact.
+    const stack2: Node[] = [root]
+    while (stack2.length > 0) {
+      const node = stack2.pop()!
+      if (node.type === "assignment_statement") {
+        const list = node.namedChild(0)
+        const values = node.namedChild(1)
+        const lhs = list?.type === "variable_list" ? list.namedChild(0) ?? null : null
+        const rhs = values?.type === "expression_list" ? values.namedChild(0) ?? null : null
+        if (
+          (lhs?.type === "dot_index_expression" || lhs?.type === "method_index_expression") &&
+          lhs.namedChild(lhs.namedChildCount - 1)?.text === "__index" &&
+          rhs?.type === "identifier"
+        ) {
+          const receiver = lhs.namedChild(0)
+          link(receiver?.type === "identifier" ? receiver.text : undefined, rhs.text)
+        }
+      }
+      for (let i = 0; i < node.namedChildCount; i++) { const c = node.namedChild(i); if (c) stack2.push(c) }
+    }
+  }
+
   private extractExport(node: Node, frame: LuaFrame, ctx: LuaContext): void {
     // M60 LUA-20: the guard is "inside any function", not "has a callable" — a
     // nameless closure at file scope has no callable and its `return` was
@@ -647,8 +963,28 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
     const values = this.childOfType(node, "expression_list")
     const target = values?.namedChild(0)
     if (!target) return
+    // M60 LUA-42: the module SURFACE is a relationship, not only a list.
+    // `exports` was measured at 0 edges over 3,250 corpus files while this very
+    // method published 5,173 export NAMES — so the surface existed, was named,
+    // and the graph could not see it: no edge says what a file publishes, and
+    // `bb_graph` cannot answer "what does this module export" from an array.
+    //
+    // The SOURCE is the file's global scope, which is this analyzer's existing
+    // convention and not an invention: `imports` and a file-scope `calls` edge
+    // are already sourced from `global` (addImport, processCall), and c's
+    // getRelationshipSource documents the same rule for the family. A Lua chunk
+    // has no module symbol, and inventing one from the filename would fabricate
+    // a symbol that no source contains.
+    //
+    // Only the shapes whose SURFACE NAME IS WRITTEN get an edge. The four shapes
+    // that carry no name stay silent exactly as they already stayed silent in the
+    // export list — `return require("x")`, `return "s"`, `return function() end`
+    // and a positional `return {1,2}` publish no name here either, and inventing
+    // one would be the fabrication rule. They remain recorded in
+    // ctx.unpublishedSurface, which is a disclosure and never an edge.
     if (target.type === "identifier") {
       ctx.exports.push({ name: target.text, isDefault: true, range: this.nodeToRange(node), metadata: { luaSpecific: true } })
+      this.addExportEdge(ctx, target.text, target)
       return
     }
     // M60 LUA-09: `return { a = 1, b = 2 }` published NOTHING. Only `return
@@ -703,14 +1039,15 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
       const nameNode = target.childForFieldName("name") ?? target.namedChild(0)
       const calleeName = nameNode ? this.callee(nameNode)?.name : undefined
       if (calleeName === "setmetatable") {
-        const first = this.callArgument(target, 0)
-        const named = this.nameBearing(first)
-        if (named) {
-          ctx.exports.push({ name: named, isDefault: true, range: this.nodeToRange(first!), metadata: { luaSpecific: true, viaMetatable: true } })
-        } else {
-          ctx.unpublishedSurface.push({ shape: "call-result", detail: calleeName ?? null, line: target.startPosition.row + 1, why: "setmetatable's first argument is an expression, so the surface has no name" })
-        }
-      } else if (calleeName === "require") {
+          const first = this.callArgument(target, 0)
+          const named = this.nameBearing(first)
+          if (named) {
+            ctx.exports.push({ name: named, isDefault: true, range: this.nodeToRange(first!), metadata: { luaSpecific: true, viaMetatable: true } })
+            this.addExportEdge(ctx, named, first ?? null)
+          } else {
+            ctx.unpublishedSurface.push({ shape: "call-result", detail: calleeName ?? null, line: target.startPosition.row + 1, why: "setmetatable's first argument is an expression, so the surface has no name" })
+          }
+        } else if (calleeName === "require") {
         const arg = this.callArgument(target, 0)
         const path = arg?.type === "string" ? this.stringValue(arg) : null
         ctx.unpublishedSurface.push({ shape: "re-export", detail: path ?? null, line: target.startPosition.row + 1, why: "the surface is another module's, not this module's" })
@@ -741,6 +1078,137 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
         // statement's. On a multi-line literal those differ, and anchoring on
         // the return would collapse every member onto the `return` line.
         ctx.exports.push({ name, isDefault: false, range: this.nodeToRange(key), metadata: { luaSpecific: true } })
+        this.addExportEdge(ctx, name, key)
+      }
+    }
+  }
+
+  /** M60 LUA-42: the `exports` edge for one nameable module-surface name.
+   *
+   * Confidence 1.0 and `evidenceClass: "structural"`, because both halves of the
+   * claim are written in the file: a `return` at chunk scope names this name. That
+   * is the difference from `uses`/`references` (LUA-40/LUA-41), where the name is
+   * written but the BINDING it denotes is not — the reason those two carry 0.9
+   * and those two only.
+   */
+  private addExportEdge(ctx: LuaContext, name: string, nameNode: Node | null): void {
+    this.addRelationship(
+      ctx,
+      "global",
+      name,
+      ASTEngine.RelationshipType.Exports,
+      { luaSpecific: true, relationshipType: "lua_module_return" },
+      nameNode,
+    )
+  }
+
+  /**
+   * M60 LUA-44 — `overrides`, the type this lane was missing.
+   *
+   * MEASURED BEFORE THIS METHOD EXISTED, on 3,250 corpus files through
+   * `parseFile` (script/m60/lua-ontology-census.ts):
+   *
+   *   B1-override-redefinition   65 occurrences / 37 files
+   *   B2-override-inherited       1 occurrence  /  1 file
+   *
+   * Both non-zero, so `overrides` could NOT be ruled and had to be built. That is
+   * the whole reason this method exists: the ontology-coverage gate refuses a
+   * ruling whose probe finds a non-zero count, and the lua grammar's 100 node
+   * types include no `override_specifier` and no `redefinition` node, so no
+   * grammar inventory would ever have found it — instrument A is silent here by
+   * construction, and only instrument B could falsify the ruling.
+   *
+   * TWO SHAPES, two labels, because Lua expresses two different things and fusing
+   * them would state one of them falsely:
+   *
+   *   lua_redefinition    the SAME name declared twice in one chunk. The later
+   *                       declaration replaces the earlier one. 1.0, structural —
+   *                       both endpoints are nodes this parse saw, and the
+   *                       `overridesLine` metadata carries the prior declaration's
+   *                       line so the two are distinguishable, exactly as
+   *                       real-bash-analyzer.ts:343 does for the same construct.
+   *
+   *   lua_inherited_member  a member of D that D also inherits from a base B. 0.95,
+   *                       structural — the family number for this edge is objc's
+   *                       (real-objective-c-analyzer.ts:1020), and perl uses 0.95
+   *                       for the same verified-base case. It is not 1.0 because
+   *                       the corpus's inheritance is a CONVENTION over
+   *                       `setmetatable`/`__index`, and nothing in the tree says
+   *                       the link is meant as inheritance.
+   *
+   * The DIRECTION and the ENDPOINTS deliberately do NOT copy objc's
+   * `Derived.member -> Base.member`. This lane's member-identity contract (LUA-15,
+   * pinned by validation/m14/fixtures/lua/member-identity.expectation.json) holds
+   * that a member's identity is its container plus its own name and that the
+   * qualified path must not BE the name — that fixture FORBIDS `Buffer:initialize`
+   * as a symbol name. So the edge runs `Derived -> Base`, the same pair `extends`
+   * uses, and the overridden member travels in metadata as `member` plus the
+   * qualified `memberPath`. Two tables in one file can therefore produce an
+   * `overrides` and an `extends` edge between the same pair, under different type
+   * labels; the store treats a distinct type on the same pair as a distinct link,
+   * which is the property that keeps them from being read as one fact.
+   */
+  private addOverrideRelationships(ctx: LuaContext): void {
+    // Shape 1 — one name declared more than once in this chunk.
+    for (const [label, decls] of ctx.declarationsByLabel) {
+      if (decls.length < 2) continue
+      const byLine = [...decls].sort((a, b) => a.line - b.line)
+      const first = byLine[0]
+      for (let i = 1; i < byLine.length; i++) {
+        const d = byLine[i]
+        // TARGET is the MEMBER's own name when the declaration has an owner, so the
+        // pair reads exactly like the `contains` pair for the same declaration
+        // (`M` -> `serialize`). The first version put the LABEL in the target, which
+        // is the qualified path `M.serialize` — the very form LUA-15's
+        // member-identity fixture forbids as a symbol name, and a consumer joining
+        // `contains` to `overrides` on (source, target) would have found one edge
+        // with a bare member and one with a dotted path. Measured on the corpus, that
+        // version produced labelShape {bare 54, dotted 8, colon 4}; with the member
+        // name the mixed shapes collapse to bare. The path stays in metadata as
+        // `qualifiedName`, which is what it is for.
+        this.addRelationship(
+          ctx,
+          d.owner ?? "global",
+          d.owner ? (d.member ?? label) : label,
+          ASTEngine.RelationshipType.Overrides,
+          {
+            luaSpecific: true,
+            relationshipType: "lua_redefinition",
+            redefinition: true,
+            qualifiedName: label,
+            overridesLine: first.line,
+            overriddenOwner: first.owner,
+          },
+          null,
+          { dedupe: false, confidence: 1.0, symbolRange: { startLine: d.line } },
+        )
+      }
+    }
+    // Shape 2 — a member declared on D that D inherits from a base B.
+    for (const [derived, bases] of ctx.supertypeLinks) {
+      const derivedMembers = ctx.membersByOwner.get(derived)
+      if (!derivedMembers || derivedMembers.size === 0) continue
+      for (const base of bases) {
+        const baseMembers = ctx.membersByOwner.get(base)
+        if (!baseMembers) continue
+        for (const [member, line] of derivedMembers) {
+          if (!baseMembers.has(member)) continue
+          this.addRelationship(
+            ctx,
+            derived,
+            base,
+            ASTEngine.RelationshipType.Overrides,
+            {
+              luaSpecific: true,
+              relationshipType: "lua_inherited_member",
+              isOverride: true,
+              member,
+              memberPath: `${derived}.${member} -> ${base}.${member}`,
+            },
+            null,
+            { dedupe: false, confidence: 0.95, symbolRange: { startLine: line } },
+          )
+        }
       }
     }
   }
@@ -832,10 +1300,10 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
     // after the walk from symbol pairs rather than observed at a site; they
     // carry no node and must not be invented one. See addContainsRelationships.
     nameNode?: Node | null,
-    opts?: { dedupe?: boolean; symbolRange?: { startLine: number } },
+    opts?: { dedupe?: boolean; symbolRange?: { startLine: number }; confidence?: number },
   ): void {
     if (!source || !target) return
-    const key = `${type}\u001f${source}\u001f${target}`
+    const key = `${type}${source}${target}`
     // M60 LUA-01: `dedupe: false` is for SYNTHESIZED edges only. Observed edges
     // keep the dedup so a callee called from four places is still one edge in
     // the store. The per-site problem that dedup causes is recorded as its own
@@ -851,7 +1319,7 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
       source,
       target,
       type,
-      confidence: 1.0,
+      confidence: opts?.confidence ?? 1.0,
       metadata,
     }
     // 1-based, on the name-bearing node. Absent rather than 0 or -1 when there
@@ -860,7 +1328,34 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
     // would re-create it.
     if (nameNode) relationship.line_number = nameNode.startPosition.row + 1
     else if (opts?.symbolRange) relationship.line_number = opts.symbolRange.startLine
+    // M60 LUA-43: every edge carries its evidence tier, from ONE function.
+    //
+    // Measured before this line: 119,606 of 119,606 lua relationships carried NO
+    // `evidenceClass` at all, so the honesty contract §4 requirement — a
+    // machine-readable reason code beside every confidence below 1.0 — had
+    // nothing to point at, and the three tiers the family already uses
+    // (`structural`, `usage_contextual`, `import_based`, spelled out at
+    // real-css-analyzer.ts:737) could not be told apart on a lua edge.
+    //
+    // The mapping is css's, applied per type and for the same reasons:
+    //   structural       both endpoints are nodes this parse saw
+    //   usage_contextual the link rests on a NAME in a value position
+    //   import_based     the endpoint may be declared OUTSIDE this tree
+    //
+    // `imports` and `references` are `import_based` for the same reason css gives:
+    // a `require("x")` module and an `M.field` member are both dependencies on a
+    // name that may live in another file, and the property really is imported
+    // from somewhere.
+    relationship.metadata = { evidenceClass: this.evidenceClassFor(type), ...relationship.metadata }
     ctx.relationships.push(relationship)
+  }
+
+  /** M60 LUA-43: the evidence tier for a relationship type. See the call site for
+   * why these three words and not a fourth. */
+  private evidenceClassFor(type: ASTEngine.RelationshipType): "structural" | "usage_contextual" | "import_based" {
+    if (type === ASTEngine.RelationshipType.Imports || type === ASTEngine.RelationshipType.References) return "import_based"
+    if (type === ASTEngine.RelationshipType.Uses) return "usage_contextual"
+    return "structural"
   }
 
   private functionName(node: Node): string | undefined {
