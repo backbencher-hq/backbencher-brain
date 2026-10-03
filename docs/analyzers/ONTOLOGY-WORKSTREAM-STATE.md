@@ -646,3 +646,53 @@ Most hits are trivial (`node.type.replace(/_statement/, "")`, `content.split("\n
 but the criterion is mechanical and the criterion is right: regex over source text
 matches comments and string literals, misses nested syntax, and breaks silently on
 the next grammar version.
+
+## INCOMING — now part of the definition of done
+
+An analyzer is done when the graph can walk **to** a declaration as well as **from**
+one. `script/m14/incoming-check.ts` measures it.
+
+`src/lsp/impact.ts` already does bounded reverse-dependency traversal, with declared
+budgets, depth limits, truncation disclosure and verifier gates. It obtains its
+reverse edges by **scanning outgoing edges and matching targets**. No inbound edge is
+stored anywhere — the schema holds none. So the reverse walk is exactly as good as
+the target-matching, and two consequences are the lanes' problem rather than the
+traversal code's:
+
+1. **A target resolving to more than one published symbol.** The reverse walk picks
+   one by a rule nobody chose. Measured on 8 cloogle.org Clean files: **10 of 15
+   `references` targets were ambiguous**, and `LogMemory` is both `:: LogMemory = …`
+   (a generic type synonym, `CloogleServer.icl:313`) and `instance zero LogMemory`
+   (a class instance of it, `:320`). Both are real declarations with the same name.
+   An ambiguous target is **one** edge attributed to **one** declaration; counting it
+   as N is how a name collision becomes a wrong refactor.
+2. **A hopeless-string target** — an external package, a path, a builtin, a dynamic
+   dispatch — is indistinguishable from a declaration that was never indexed. On the
+   same 8 files, **273 of 320 `references` targets resolved to nothing at all**.
+
+The orphan rate is reported but deliberately **not thresholded**: in a language
+whose files are independent a high rate is correct, so a pass/fail there would be a
+judgement about the language dressed as a measurement.
+
+Laptop C owns the resolution layer and the schema work. Laptop B's side is making
+emitted edges resolvable and being honest about the ones that cannot be.
+
+## Process defect found while supervising — agents waiting on jobs that finished
+
+Three agents sat silent for 20+ minutes with **no child process running**. The cause
+was always this shape:
+
+```bash
+setsid nohup npx tsx census.ts > out.log 2>&1 < /dev/null & disown
+sleep 200; pgrep -f census >/dev/null && echo RUNNING || echo DONE
+```
+
+`pgrep -f census` matches **the polling shell itself**, because the pattern is in
+that shell's own command line. The predicate is always true, so the loop always
+prints RUNNING and the agent waits forever on a job that finished minutes ago.
+
+This is the second time this exact bug has cost the fleet time — the supervisor's
+own `status.sh` had it first, and it was fixed there while going unmentioned to the
+agents. `anti-stall-brief.md` now tells every agent: run the census in the
+foreground, or capture the PID and `wait $PID`, or anchor the pattern so the shell
+cannot match itself. Never a bare `sleep N; pgrep -f <thing you launched>`.
