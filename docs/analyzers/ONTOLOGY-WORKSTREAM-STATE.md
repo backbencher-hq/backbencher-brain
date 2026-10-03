@@ -537,3 +537,37 @@ a time. The tables are deliberately NOT written centrally: a ruling table encode
 one lane's own node types and corpus counts, so the lane that measured it writes
 it, as `script/m14/<lang>-ruled.ts`, and the supervisor adds the import and map
 entry. A centrally-authored table would be a ruling with nobody behind it.
+
+## The noise-filter class — three lanes, one root cause
+
+`pool-worker.ts`'s `filterNoiseRelationships` deletes edges on their way to the
+index. Each rule was added to fix a real fabrication, and each has since deleted
+legal edges in a language the rule was not written for:
+
+| lane | rule | what it deletes | cost |
+|---|---|---|---|
+| objc | `split(":")` for selector arity | every message-send target — a selector ends in `:` | 12 of 30 M12 false negatives |
+| bash | brace ban | every `${var}`-built source path | 21 of 23 import edges (23 emitted, 2 delivered) |
+| css | "keep `contains` only" | `var(--x)` and `animation:` references | 2,170 edges, 1,437 resolving at both ends |
+| **markdown** | identifier rules applied to a heading's **PROSE** | 1,765 of 40,794 edges (**4.33%**) — `leaf-brace-angle-backtick` 1,127, `leaf-starts-with-space` 480 | never reached the index |
+| toml | `:` split (same as objc) | 1 legal TOML edge in 19,088 | reported by the toml lane |
+| yaml | target containing `{` | every edge whose target was `'@{…}'` | the whole gap between `imports[]` 552 and `imports` 550 |
+
+The markdown case is the sharpest instance of the shape. Its targets are HEADINGS,
+which are prose by definition. `1. Setting up the File scalar` is a numbered-list
+heading — its leaf starts with a space, so `leaf.startsWith(" ")` deleted it. A
+heading containing `` `code` `` or `<span>` died on the brace/angle rule.
+
+**The structural problem:** the filter is a universal identifier sanitizer applied
+to targets that are not identifiers. It already carries per-language escape
+hatches — `json`, `yaml`, `hcl`, `terraform`, `graphql` bypass entirely; `bash`
+bypasses for path-shaped labels; CSS has an explicit no-type-filter branch with a
+measurement behind it. Markdown, and to a lesser degree toml and yaml, have
+neither.
+
+**What a fix looks like, and why it is not the supervisor's to make:** the right
+shape is the CSS branch — no type-based filter for a language whose targets are not
+identifiers, with the fabrication class it would then admit pinned by an explicit
+`forbidRelationships` row instead. Choosing which languages are exempt, and
+admitting which fabrications in exchange, is a decision about what the graph is
+allowed to contain. It belongs to the owner. Recorded here with the measurements.
