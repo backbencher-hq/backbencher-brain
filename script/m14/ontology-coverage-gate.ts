@@ -286,6 +286,29 @@ function rulingFor(t: Type): { reason: string; src: string } | null {
 
 // ---------------------------------------------------------------- verdict
 type Row = { type: Type; status: "EMITTED" | "RULED-SOUND" | "FALSIFIED" | "RULED-UNJUSTIFIED"; detail: string }
+
+// `--coverage` reports which lanes this gate can actually rule for, and does NOT
+// parse a corpus. The gate's own header records why this matters: it exists
+// because `overrides` was missing from Bash for a whole wave and the differential
+// stayed green, since the analyzer omitted it and the oracle was written after
+// that ruling — nothing agrees with nothing. A lane with no RULING TABLE gets no
+// verdict here at all, which is the same blind spot wearing a different hat.
+//
+// So the size of the blind spot is reported rather than left to be discovered one
+// exit-2 at a time.
+if (process.argv.includes("--coverage")) {
+  const LANGS_WITH_TABLES = Object.keys(RULED_BY_LANG).sort()
+  console.log("ontology coverage gate — ruling-table coverage\n")
+  console.log(`lanes this arbiter can rule for: ${LANGS_WITH_TABLES.length}`)
+  for (const l of LANGS_WITH_TABLES) console.log(`  ${l}`)
+  console.log()
+  console.log("Every other lane exits 2 with no verdict, because an empty table would call every")
+  console.log("un-emitted type RULED-UNJUSTIFIED, and that is a verdict about the TABLE, not the lane.")
+  console.log("A ruling table encodes that lane's OWN corpus probe — its node types, its counts — so it")
+  console.log("is written by the lane that measured it, not centrally. See RULED_BY_LANG above.")
+  process.exit(0)
+}
+
 if (RULED_BY_LANG[LANG] === undefined) {
   console.log(`\nontology coverage gate — no RULING TABLE for ${LANG}.`)
   console.log(`Refusing to report: a gate with an empty table would call every un-emitted type`)
