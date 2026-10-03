@@ -353,6 +353,113 @@ const volumeSourceScannedAsNames = (r: any) => {
   return { ...r, relationships: [...(r.relationships ?? []), ...invented] }
 }
 
+// ---------------------------------------------------------------------------
+// M60 ONTOLOGY ROUND — the three types this round added (`calls`, `exports`,
+// `overrides`) had no mutant at all, and the ruling that kept them out was a
+// prose argument about the grammar. Each transform below is a revert of one of
+// the rules this round added, so a rule that was correct once cannot be wrong
+// again without the suite going red.
+// ---------------------------------------------------------------------------
+
+/** The `uses` role rule, reverted: every `calls` edge becomes the `imports` edge it replaced. */
+const callsRevertedToImports = (r: any) => ({
+  ...r,
+  relationships: (r.relationships ?? []).map((x: any) => {
+    if (String(x.type ?? "").toLowerCase() !== "calls") return x
+    if (x.metadata?.relationshipType !== "yaml_workflow_call") return x
+    return { ...x, type: "imports", metadata: { ...x.metadata, relationshipType: "yaml_action_use" } }
+  }),
+})
+
+/** Every `uses:` promoted to a call — the rule inverted, so an action becomes a caller. */
+const everyUsesBecomesACall = (r: any) => ({
+  ...r,
+  relationships: (r.relationships ?? []).flatMap((x: any) => {
+    const rt = x.metadata?.relationshipType
+    if (rt !== "yaml_action_use" && rt !== "yaml_action_use_unverified") return [x]
+    return [{ ...x, type: "calls", metadata: { ...x.metadata, relationshipType: "yaml_workflow_call" } }]
+  }),
+})
+
+/** The `calls` edges dropped, as if the role branch had never been written. */
+const callsDropped = (r: any) => ({
+  ...r,
+  relationships: (r.relationships ?? []).filter(
+    (x: any) => !(String(x.type ?? "").toLowerCase() === "calls" && x.metadata?.relationshipType === "yaml_workflow_call"),
+  ),
+})
+
+/** The shape gate removed: a job-level `uses:` is a call on the strength of its key names. */
+const callsShapeGateRemoved = (r: any) => ({
+  ...r,
+  relationships: (r.relationships ?? []).flatMap((x: any) => {
+    if (x.metadata?.relationshipType !== "yaml_workflow_call_unverified") return [x]
+    return [{ ...x, type: "calls", metadata: { ...x.metadata, relationshipType: "yaml_workflow_call", confidence: 1 } }]
+  }),
+})
+
+/** The override direction reversed: the replaced entry claims to override its replacement. */
+const overridesDirectionReversed = (r: any) => ({
+  ...r,
+  relationships: (r.relationships ?? []).map((x: any) => {
+    if (String(x.type ?? "").toLowerCase() !== "overrides") return x
+    return { ...x, source: x.target, target: x.source }
+  }),
+})
+
+/** Last-wins collapsed to all-to-first: every duplicate claims to replace the original. */
+const overridesAllToFirst = (r: any) => ({
+  ...r,
+  relationships: (r.relationships ?? []).map((x: any) => {
+    if (String(x.type ?? "").toLowerCase() !== "overrides") return x
+    return { ...x, target: String(x.target ?? "").replace(/#\d+$/, "") }
+  }),
+})
+
+/** The semantics uncertainty hidden: the edge claims the grammar said what it did not. */
+const overridesConfidenceInflated = (r: any) => ({
+  ...r,
+  relationships: (r.relationships ?? []).map((x: any) => {
+    if (String(x.type ?? "").toLowerCase() !== "overrides") return x
+    const md = { ...x.metadata }
+    delete md.confidenceReason
+    return { ...x, confidence: 1, metadata: { ...md, evidenceClass: "structural" } }
+  }),
+})
+
+/** The publication gate removed: any `definitions` container publishes, API claim or not. */
+const exportsGateRemoved = (r: any) => ({
+  ...r,
+  relationships: [
+    ...(r.relationships ?? []),
+    ...(r.symbols ?? [])
+      .filter((s: any) => typeof s.qualifiedName === "string" && /^[^.]+\.(definitions|components)\.[^.]+$/.test(s.qualifiedName))
+      .map((s: any) => ({
+        source: String(s.qualifiedName).split(".")[0],
+        target: s.qualifiedName,
+        type: "exports",
+        confidence: 1,
+        metadata: { relationshipType: "yaml_schema_publication", evidenceClass: "structural", resolved: true },
+      })),
+  ],
+})
+
+/** The publication over-fires to every nested descendant, as if the container were flat. */
+const exportsOverFires = (r: any) => ({
+  ...r,
+  relationships: (r.relationships ?? []).flatMap((x: any) => {
+    if (String(x.type ?? "").toLowerCase() !== "exports") return [x]
+    const prefix = `${x.target}.`
+    return [
+      x,
+      ...(r.symbols ?? [])
+        .filter((s: any) => typeof s.qualifiedName === "string" && String(s.qualifiedName).startsWith(prefix))
+        .map((s: any) => ({ ...x, target: s.qualifiedName })),
+    ]
+  }),
+})
+
+
 export const YAML_MUTANTS = [
   {
     id: "yaml/sequence-index-collapsed",
@@ -473,5 +580,77 @@ export const YAML_MUTANTS = [
     description:
       "The volume-source revert: a `volumes[].configMap`/`secret`/`persistentVolumeClaim` PAYLOAD is read as a source of resource names, so `defaultMode: 3` yields a `references` edge to `3` — an integer that names no resource. Found by the M60 target-spelling census (4 fabricated `literal` targets over 500 files), not by a fixture, and fixed by splitting one key set into three: wrappers (`configMapRef`, whose payload IS a reference), volume sources (whose payload is configuration, named by `name`/`secretName`/`claimName` or by scalar shorthand), and plain scalars (`serviceAccountName`). Caught by k8s-volume-source-not-a-name's `forbidRelationships` rows for `3`, `420`, `a`, `b/c`, `true` and by the child-key set this transform names; the fixture also pins the six refs that MUST survive, so a fix that stopped emitting resource references outright would fail it.",
     transform: volumeSourceScannedAsNames,
+  },
+{
+    id: "yaml/calls-reverted-to-imports",
+    language: "yaml",
+    defectClass: "wrong-relationship-type",
+    description:
+      "PRE-FIX (M60 ontology round): GitHub Actions gives the `uses` key three meanings and only the path decides which. At `jobs.<job>.uses` it names a reusable workflow this job INVOKES; at `jobs.<job>.steps[].uses` it names an action this step runs. Before the role was read from the path, both took the imports branch, so all 196 job-level reusable-workflow references in the corpus were labelled as imports of third-party actions. Measured: 196 edges in 92 of 16371 admitted files, and the corpus-wide conservation is exact — the stride draw's `imports` fell by exactly the 12 edges `calls` gained. Caught by yaml/workflow-call-role, whose forbid rows name both reusable workflows under `imports`: a first draft asserted only that the calls exist, which a relabel satisfies, so the forbids are the assertion carrying the weight.",
+    transform: callsRevertedToImports,
+  },
+  {
+    id: "yaml/every-uses-becomes-a-call",
+    language: "yaml",
+    defectClass: "wrong-relationship-type",
+    description:
+      "The role rule INVERTED rather than removed: every `uses:` is promoted to a call, so `actions/checkout@v4` acquires a caller. This is the failure a value-shape heuristic makes — `acme/infra/x.yml@ref` and `actions/checkout@v4` both contain a `/`, and only one of them names a workflow. Caught by yaml/workflow-call-role, which forbids a `calls` edge to both the remote action and the local one.",
+    transform: everyUsesBecomesACall,
+  },
+  {
+    id: "yaml/calls-dropped",
+    language: "yaml",
+    defectClass: "dropped-relationship-type",
+    description:
+      "The `calls` edges removed entirely, as if the role branch had never been written. Nothing else in the output changes, so this is the mutant that separates `calls` being emitted from `calls` being emitted CORRECTLY. Caught by yaml/workflow-call-role's two expectRelationships rows, one local and one remote.",
+    transform: callsDropped,
+  },
+  {
+    id: "yaml/calls-shape-gate-removed",
+    language: "yaml",
+    defectClass: "over-firing",
+    description:
+      "The file-shape gate removed, so a document carrying top-level `jobs` and a job-level `uses:` but declaring neither `on:` nor the `.github/workflows` path is treated as a workflow. `jobs.<id>.uses` is defined by GitHub Actions and by nothing else in YAML, so this promotes an unproven reference to a call naming a caller that may not exist — the fabricated-edge shape. Caught by yaml/workflow-call-role-negative, which forbids any `calls` edge in a file that does not claim to be a workflow.",
+    transform: callsShapeGateRemoved,
+  },
+  {
+    id: "yaml/overrides-direction-reversed",
+    language: "yaml",
+    defectClass: "wrong-relationship-type",
+    description:
+      "The override DIRECTION reversed, so the entry that gets replaced claims to override its replacement. An `overrides` edge read backwards is worse than a missing one: `bb_impact` reads it as the replaced entry depending on the replacement. Caught by yaml/duplicate-key-overrides, which pins the direction on the two-occurrence chain and forbids the reverse.",
+    transform: overridesDirectionReversed,
+  },
+  {
+    id: "yaml/overrides-all-to-first",
+    language: "yaml",
+    defectClass: "wrong-target",
+    description:
+      "Last-wins collapsed to all-to-first: the third occurrence of a key claims to replace the FIRST rather than the second. Both readings look defensible in prose, which is why this is worth a mutant — the loader replaces the value currently in effect, which after the second occurrence is the second. Caught by yaml/duplicate-key-overrides, whose forbid row names `child#3 -> child` specifically.",
+    transform: overridesAllToFirst,
+  },
+  {
+    id: "yaml/overrides-confidence-inflated",
+    language: "yaml",
+    defectClass: "wrong-payload",
+    description:
+      "The one MUTANT here about honesty rather than structure, and the reason the harness keeps `confidenceMax` as a pinnable field. The two entries of a duplicate key are a parse FACT; that the later REPLACES the earlier is loader behaviour, not a grammar guarantee — YAML 1.2 leaves duplicate mapping keys undefined and GitHub Actions rejects them outright. This mutant claims confidence 1.0 and evidenceClass structural, i.e. it asserts the convention as if the grammar had said it, and drops the reason code the M14 contract §4 requires. Caught by yaml/duplicate-key-overrides on `confidenceMax`.",
+    transform: overridesConfidenceInflated,
+  },
+  {
+    id: "yaml/exports-gate-removed",
+    language: "yaml",
+    defectClass: "over-firing",
+    description:
+      "The publication gate removed: any `definitions` or `components` container publishes its children, whether or not the document declares `openapi:`/`swagger:`. A container name is a coincidence of spelling, and an `exports` edge on a coincidence puts a name into `bb_graph` and `bb_impact` that nothing can consume. Measured over the corpus: 2462 publications under `definitions` are gated on the API claim, and the ungated reading would fire on every `definitions:` key in the 15438 corpus files that are not API descriptions. Caught by yaml/schema-publication-export-negative, whose whole content is a top-level `definitions` in a file that makes no API claim.",
+    transform: exportsGateRemoved,
+  },
+  {
+    id: "yaml/exports-over-fires",
+    language: "yaml",
+    defectClass: "over-firing",
+    description:
+      "The publication over-fires to every nested descendant, as if the container were flat: `components.schemas.Item.properties.id` acquires its own `exports` edge alongside `Item`. The corpus cost of this shape is not small — `components.schemas.Item` holds `properties`, `properties.id` and `type`, and the measured 2511 publications would multiply by the schemas' depth. Caught by yaml/schema-publication-export, whose forbid rows name `Item.properties.id` and both container levels.",
+    transform: exportsOverFires,
   },
 ]
