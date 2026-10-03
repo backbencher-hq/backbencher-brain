@@ -670,6 +670,54 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   /**
+   * Is this `command` node an ARITHMETIC OPERAND that the grammar handed back in
+   * command position?
+   *
+   * bash writes an arithmetic expression `$(( ... ))`. The pinned grammar models
+   * it correctly in the ordinary position — `z=$((a + 1))` yields
+   * `arithmetic_expansion` → `binary_expression` → `variable_name`, and there
+   * is no `command` node to misread. It misparses in exactly two shapes, and in
+   * both the operand arrives as a `command` whose `command_name` is a VARIABLE,
+   * so the analyzer was emitting a call to something bash never runs:
+   *
+   *   1. as the default operand of a parameter expansion inside a string —
+   *      `last_run="${last_run:-$((attempt + 1))}"` parses as
+   *      `expansion` → `command_substitution` → `subshell` → `command` →
+   *      `command_name: attempt`, i.e. `$(` plus a subshell where `$((` was meant.
+   *   2. under `!` — `! ((force_known_update))` parses as `negated_command` →
+   *      `subshell` → `subshell` → `command` → `command_name`.
+   *
+   * The test is the enclosing node's own text, never the source text: a
+   * `command_substitution` whose text opens `$((` is an arithmetic expansion,
+   * and a `subshell` whose text opens `((` is one too. A real command
+   * substitution is untouched by this — `$(wc -l < f)` inside `$(( ))` opens
+   * `$(w`, so `calls: -> wc` still fires, which is correct, because `wc` really
+   * is run there.
+   *
+   * Measured on the 400-file census sample: 2 occurrences of shape 1 and 1 of
+   * shape 2. Both edges carried `confidence: 1` and
+   * `evidenceClass: structural`, i.e. they were presented as parse facts rather
+   * than guesses, which is what made them worth removing rather than labelling.
+   */
+  private isArithmeticOperandCommand(node: Node): boolean {
+    // `( (` written adjacently is `((`: bash reads it as arithmetic, never as a
+    // nested subshell, so the closing pair is part of the test rather than a
+    // detail. `( (date) )` has a space and stays a real subshell.
+    const isDoubleParen = (t: string): boolean => /^\(\(/.test(t) && /\)\)$/.test(t.trim())
+    let cur: Node | null = node.parent
+    while (cur) {
+      // A `command_substitution` decides it. `$((` is the arithmetic expansion
+      // the grammar misread as `$(` + subshell; a plain `$(` is a real command
+      // substitution, and `$(wc -l < f)` nested inside `$(( ))` really does run
+      // `wc`, so that edge must survive.
+      if (cur.type === "command_substitution") return /^\$\(\(/.test(cur.text)
+      if (cur.type === "subshell" && isDoubleParen(cur.text)) return true
+      cur = cur.parent
+    }
+    return false
+  }
+
+  /**
    * A command's name is a WORD, and a plain `word` name is trusted outright.
    * The two real-world shapes that put something else in `command_name` are
    * both fabrications: a zsh `case` arm's alternation, and a quoted string or
@@ -1239,6 +1287,13 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
     // mutants-bash-lane.mts is what said so.
     if (this.containsExpansion(nameNode) || !isCommandNameText(cmdName)) {
       patterns.add(SHELL_RESERVED_WORDS.has(cmdName) ? "Recovered Parse Region" : "Dynamic Command Name")
+      return
+    }
+
+    // An arithmetic operand the grammar handed back in command position is not a
+    // callee. `attempt` inside `$((attempt + 1))` is a number being read, not a
+    // program being run, so there is nothing to point a `calls` edge at.
+    if (this.isArithmeticOperandCommand(node)) {
       return
     }
 
