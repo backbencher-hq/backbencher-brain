@@ -269,11 +269,50 @@ export class RealProtobufAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
       return cand
     }
+    /**
+     * Ids that are IN THE TYPE NAMESPACE, which is what a reference resolves
+     * against — deliberately narrower than `declaredIds`.
+     *
+     * Protobuf resolves a type name through nested scopes, and what lives in
+     * those scopes is TYPES: messages and enums. A field is not in that
+     * namespace, because a field declares no type. Resolving against every
+     * declaration therefore let a FIELD answer a reference to a type, and the
+     * shape that triggers it is ordinary protobuf — a field whose name equals
+     * the type it names:
+     *
+     *   message Extra { repeated IPAMStatus IPAMStatus = 1; }
+     *
+     * The field is published as `pkg.Extra.IPAMStatus` moments before its own
+     * `uses` edge is emitted, so the innermost scope candidate matched the
+     * field and the edge became `pkg.Extra.IPAMStatus -> pkg.Extra.IPAMStatus`
+     * — the field pointing at ITSELF — instead of at the top-level
+     * `pkg.IPAMStatus` the specification names.
+     *
+     * Measured on the corpus: 9 self-edges over 606 files, every one of them
+     * this shape — docker/daemon/cluster/convert/netextra/extra.proto:12, and 8
+     * in docker/vendor/github.com/moby/buildkit (api/types/worker.proto:13-14,
+     * frontend/gateway/pb/gateway.proto:173/193/197, solver/pb/ops.proto:117/120/317).
+     * `pb.Definition.Source`, `pb.Mount.SSHOpt` and `pb.Mount.TmpfsOpt` are the
+     * same defect reached through the package-relative spelling `pb.X`.
+     *
+     * A self-edge is the shape a fabricated edge takes when two declarations
+     * collide on one id, so this is the defect class the workstream calls the
+     * most expensive one available: `bb_graph`, `bb_impact` and `bb_migrate`
+     * would each read it as a field whose type is itself.
+     */
+    const declaredTypeIds = new Set<string>()
+    /** `class` is a message or a group's type and `enum` is a type; a service, a
+     *  field, a oneof and an rpc are declarations but NOT types, so none of them
+     *  may satisfy a type reference. */
+    const isTypeDeclaring = (kind: ASTEngine.SymbolKind): boolean =>
+      kind === ASTEngine.SymbolKind.Class || kind === ASTEngine.SymbolKind.Enum
+
     /** Returns the id actually assigned, which is what relationships must use. */
     const addSymbol = (id: string, s: ASTEngine.UniversalSymbol): string => {
       const real = uniqueId(id, String(s.kind))
       usedIds.add(real)
       declaredIds.add(real)
+      if (isTypeDeclaring(s.kind)) declaredTypeIds.add(real)
       if (collectOnly) return real
       // The resolved id is published on the symbol, not just used in
       // relationships. A consumer that re-derives `ownerName + "." + name`
@@ -305,6 +344,30 @@ export class RealProtobufAnalyzer implements ASTEngine.LanguageAnalyzer {
      * a type gets in phase 1 is by construction the id it gets in phase 2.
      */
     let collectOnly = false
+
+    /**
+     * The evidence tier of an edge, in the vocabulary the graph panel reads
+     * (`structural` / `import_based` / `usage_contextual` / `reference_qualified`
+     * / `inferred`).
+     *
+     * Every edge this analyzer emits is read off the parse tree — a declaration
+     * node, a named child, an anonymous sibling token, a position — so
+     * `contains`, `uses` and `exports` are `structural` and an import is
+     * `import_based`, which is what the C analyzer assigns the same two shapes.
+     *
+     * The lane previously set NO tier at all: measured over the corpus,
+     * 40,562 of 40,562 production edges carried no `evidenceClass`, so the
+     * honesty contract's requirement that a heuristic be COUNTABLE had nothing
+     * to count and the graph panel had to fall back to inferring a tier from the
+     * confidence value. Nothing here is inferred from confidence — that is the
+     * point of writing it down where the derivation is a fact about the tree.
+     */
+    const evidenceClassFor = (type: ASTEngine.RelationshipType): string => {
+      if (type === ASTEngine.RelationshipType.Imports) return "import_based"
+      if (type === ASTEngine.RelationshipType.Exports) return "structural"
+      return "structural"
+    }
+
     const addRel = (
       source: string,
       target: string,
@@ -320,7 +383,7 @@ export class RealProtobufAnalyzer implements ASTEngine.LanguageAnalyzer {
         relationshipType: type,
         line_number: line,
         confidence: 1.0,
-        metadata,
+        metadata: { evidenceClass: evidenceClassFor(type), ...metadata },
       })
     }
 
@@ -351,7 +414,13 @@ export class RealProtobufAnalyzer implements ASTEngine.LanguageAnalyzer {
       chain.push(null)
       for (const base of chain) {
         const cand = base ? `${base}.${text}` : text
-        if (declaredIds.has(cand)) return cand
+        // `declaredTypeIds`, not `declaredIds`: only a TYPE can satisfy a type
+        // reference. A field is a declaration but not a type, so admitting one
+        // here let a field named after its own type resolve to ITSELF — the
+        // 9 self-edges measured in `declaredTypeIds`'s comment. The candidate
+        // `declaredTypeIds` rejects is exactly the field the walk just
+        // published, and the walk then continues outward to the real type.
+        if (declaredTypeIds.has(cand)) return cand
       }
       // Not declared in this file. The two cases differ, and the difference is
       // measured rather than guessed: an UNQUALIFIED name resolves within the
@@ -412,6 +481,8 @@ export class RealProtobufAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
     const RelationshipTypeContains = ASTEngine.RelationshipType.Contains
     const RelationshipTypeUses = ASTEngine.RelationshipType.Uses
+    const RelationshipTypeImports = ASTEngine.RelationshipType.Imports
+    const RelationshipTypeExports = ASTEngine.RelationshipType.Exports
 
     const emitField = (node: Node, ctx: Ctx): void => {
       const typeNode = firstOfType(node, "type")
@@ -786,7 +857,7 @@ export class RealProtobufAnalyzer implements ASTEngine.LanguageAnalyzer {
             break
           }
         }
-        if (!collectOnly)
+        if (!collectOnly) {
           imports.push({
             module: path,
             path,
@@ -796,6 +867,60 @@ export class RealProtobufAnalyzer implements ASTEngine.LanguageAnalyzer {
             range: nodeToRange(d),
             metadata: { ...(modifier ? { modifier } : {}) },
           })
+          // `imports` and `exports` — the two relationship types this lane was
+          // missing, and both were missing while the CONSTRUCT was everywhere.
+          //
+          // Measured on 606 corpus files before this change: 1,117 `import`
+          // nodes in 392 files, recorded into `result.imports` and emitted as NO
+          // edge at all; and 4 `import public` nodes in 4 files. A dependency
+          // graph for a schema language that cannot answer "which file does this
+          // type come from" is missing the one edge a consumer needs most, and
+          // its absence is invisible to a differential because the oracle was
+          // written after the same ruling.
+          //
+          // The ENDPOINTS are module paths, not local symbols, and that is the
+          // family's convention rather than a protobuf invention: the CSS
+          // analyzer imports from `importerName` onto the imported stylesheet's
+          // name, Dart from the library name, and the store records an edge whose
+          // endpoint is not a symbol of the file as `source_external` / an
+          // external target. protoc resolves `import "a/b.proto"` against -I
+          // include roots the analyzer is never told, so the path AS WRITTEN is
+          // the most faithful name available; the file's own module name is its
+          // basename for the same reason CSS uses one, with the full path kept in
+          // metadata so a consumer that knows the include root can do better.
+          if (path) {
+            // The SOURCE is the importing file's own module name and the TARGET
+            // is the path as written. Taking the basename of the IMPORTED path
+            // for the source instead — which a first draft did — makes a file
+            // appear to import ITSELF: `import public "common/v1/types.proto"`
+            // became `types.proto -> common/v1/types.proto`, an edge whose two
+            // endpoints name the same module and which `bb_graph` would read as a
+            // self-dependency. CSS's `importerName` is the importing file for the
+            // same reason.
+            const selfMod = filePath.split("/").pop() || filePath
+            if (modifier === "public") {
+              // `import public` is a RE-EXPORT: this file's own importers reach
+              // the imported declarations THROUGH it, which is a fact about the
+              // module graph and is not derivable from the path — two files can
+              // import the same path and only one of them publish it.
+              addRel(selfMod, path, RelationshipTypeExports, lineOf(d), {
+                modulePath: path,
+                filePath,
+                viaPublicImport: true,
+              })
+            } else {
+              addRel(selfMod, path, RelationshipTypeImports, lineOf(d), {
+                modulePath: path,
+                filePath,
+                ...(modifier ? { modifier } : {}),
+                // The editions FEATURE import resolves an option's definition
+                // rather than a message, which is why it is not a re-export even
+                // though it names a file this one depends on.
+                ...(modifier === "option" ? { isFeatureImport: true } : {}),
+              })
+            }
+          }
+        }
         continue
       }
       if (t === "package") {
