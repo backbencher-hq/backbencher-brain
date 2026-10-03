@@ -40,6 +40,25 @@ type ParseState = {
    *  with-clause's actual scope, breaking four fixtures. The scope belongs to the
    *  statement, and only the statement. */
   localCtes: Set<string>
+  /** First declaration of each replaceable name in this file, by 1-based line.
+   *
+   *  `CREATE OR REPLACE FUNCTION f` is a REPLACEMENT in PostgreSQL's own words,
+   *  and the corpus carries it in quantity: 666 OR REPLACE declarations over the
+   *  1,460-file census. Almost all of them replace a declaration made in ANOTHER
+   *  file — a migration chain re-declaring what the previous migration declared —
+   *  which a per-file analyzer cannot see. The 15 events this analyzer CAN see are
+   *  the ones where the earlier declaration is in the SAME file, and this map is
+   *  what makes them visible. It is deliberately keyed on the name only after the
+   *  caller has established that both declarations are the same KIND: keyed on the
+   *  name alone, Hasura's `CREATE FUNCTION hdb_catalog.f()` at line 7 and its
+   *  `CREATE TRIGGER f` at line 25 counted as a redefinition, and they are two
+   *  different objects that share a name. */
+  redeclared: Map<string, number>
+  /** `kind path line` of every include directive already recorded, so the resync
+   *  and EXECUTE-literal passes cannot record the same `\ir` a second time. The
+   *  relationship itself is deduplicated by type/source/target; this guards the
+   *  `imports` ROW, which has no such dedup. */
+  includeKeys: Set<string>
   imports: ASTEngine.ImportInfo[]
   exports: ASTEngine.ExportInfo[]
   relationshipKeys: Set<string>
@@ -286,6 +305,94 @@ const SQL_BUILTINS = new Set([
 const identifierTypes = new Set(["identifier", "literal"])
 const queryTypes = new Set(["select", "set_operation", "create_query", "subquery", "cte"])
 
+/**
+ * psql's file-include directives, and what the argument has to look like before
+ * it is treated as a file on disk.
+ *
+ * WHY `imports` IS EMITTED AT ALL. This lane's spec recorded the opposite
+ * decision — `script/m14/spec/sql-completeness.json` SQL-D* ruled that "the
+ * analyzer emits no `imports`. SQL has no import statement", on the grounds that
+ * the previous implementation scanned for `#import`/`@import` text the grammar
+ * can never produce. That was true of the MECHANISM and false of the LANGUAGE,
+ * and the measurement that separates them is the whole point of a ruling being
+ * falsifiable:
+ *
+ *   psql meta-command nodes over the same 1,460-file corpus: 143
+ *   of which `\ir`: 22, every one naming another .sql file, across 6 files
+ *   include with a psql VARIABLE target (`:name`):  0
+ *   include with no recognisable filename suffix:  0
+ *
+ * `\i file` and `\ir file` ARE imports: a file dependency, resolved by the psql
+ * client before any SQL runs. `postgrest/test/io/fixtures/load.sql` includes six
+ * sibling scripts this way, so the dependency graph of that fixture directory is
+ * real and was invisible. `\ir` resolves relative to the INCLUDING script's own
+ * directory and `\i` relative to psql's working directory, which is why the kind
+ * is recorded on the edge rather than being flattened.
+ *
+ * The 121 other meta-commands (`\echo` 108, `\set` 8, `\gexec`, `\if`, `\endif`,
+ * `\gset`, `\pset`) are NOT imports and are counted as such in
+ * `ambiguity.psqlCommandsSkipped`, so a command shape added to the grammar later
+ * shows up in a number rather than silently as nothing.
+ */
+const PSQL_INCLUDE_COMMANDS = new Set(["i", "ir"])
+const PSQL_INCLUDE_SUFFIXES = [".sql", ".psql", ".dump"]
+
+/**
+ * Declarations PostgreSQL accepts `OR REPLACE` on, and nothing else.
+ *
+ * `CREATE OR REPLACE TABLE`, `... TYPE`, `... TRIGGER`, `... SCHEMA` and
+ * `... INDEX` are syntax errors in PostgreSQL, so a replacement event cannot
+ * exist for them and admitting them here would let any re-declared name be
+ * published as an override. `CREATE OR REPLACE VIEW` and `... MATERIALIZED VIEW`
+ * are legal and replace the existing definition.
+ */
+const REPLACEABLE_DECLARATIONS = new Set([
+  "create_function",
+  "create_procedure",
+  "create_view",
+  "create_materialized_view",
+])
+
+/**
+ * The value-shape nodes that build a value rather than convert one.
+ *
+ * `ROW(1,2)::my_composite` is PostgreSQL's composite constructor — the cast IS a
+ * call to that type's constructor — and `('a', 2)::pet` is the same thing written
+ * as a bare parenthesised row. `x::my_enum`, `col::my_type` and
+ * `nextval('s')::bigint` are CONVERSIONS of a value that already exists, and
+ * publishing those as `instantiates` would assert an object was created where
+ * none was.
+ */
+const CONSTRUCTOR_VALUE_NODES = new Set(["list", "array"])
+
+/**
+ * Reserved words that error recovery can re-emit as an UNQUOTED column name, and
+ * which therefore cannot legally be one.
+ *
+ * The wired grammar cannot represent `CREATE TABLE c (LIKE p INCLUDING ALL)`, so
+ * it parses the `LIKE p` pair as `column_definition name:(identifier "LIKE")
+ * custom_type:(object_reference "p")` — and `processColumn` read that as a column
+ * named `LIKE` of type `p`, with a fabricated `sqlType`. Measured corpus-wide: 6
+ * phantom columns named `LIKE` in 2 files, each carrying the source table's name
+ * as its type. `ALTER TABLE c INHERIT p` parses the same way (`INHERIT p` as a
+ * column named `INHERIT`).
+ *
+ * Both words are reserved in every dialect the wired grammar serves — `LIKE` in
+ * SQL:2016, in PostgreSQL and in MySQL; `INHERIT` in PostgreSQL — so a column
+ * that really carries one must be quoted, and a quoted name arrives as a
+ * `literal`, not an `identifier`. That is what makes this guard narrow rather than
+ * a keyword sweep: `key`, `name`, `range`, `type` and `value` are all legal
+ * unquoted column names in PostgreSQL and a broad keyword guard would delete real
+ * symbols, which is why the one other phantom this lane has — `ALTER TABLE log ADD
+ * KEY useragent_id (useragent_id)`, which the grammar reads as a column named
+ * `KEY` of type `useragent_id` — is NOT guarded here and is reported instead. The
+ * tree cannot tell that shape from `ALTER TABLE t ADD key my_type`, which is
+ * legal PostgreSQL, so a text guard would trade one wrong symbol for a missing
+ * one. One phantom symbol corpus-wide is the cheaper of the two and is stated
+ * rather than hidden.
+ */
+const RESERVED_AS_COLUMN_NAME = new Set(["like", "inherit"])
+
 /** ASCII letter or `_`, the first character of an unquoted SQL identifier. */
 function isTagIdentStart(code: number): boolean {
   return (
@@ -373,6 +480,8 @@ export class RealSqlAnalyzer implements ASTEngine.LanguageAnalyzer {
       exports: [],
       relationshipKeys: new Set(),
       relationshipsByKey: new Map(),
+      redeclared: new Map(),
+      includeKeys: new Set(),
       symbolKeys: new Set(),
       declarationKeys: new Set(),
       symbolNames: new Set(),
@@ -403,6 +512,12 @@ export class RealSqlAnalyzer implements ASTEngine.LanguageAnalyzer {
         executeLiterals: 0,
         executeRecovered: 0,
         executeSkipped: 0,
+        psqlCommandsSkipped: 0,
+        includeNonLiteral: 0,
+        extensionImportsEmitted: 0,
+        overridesEmitted: 0,
+        instantiationsEmitted: 0,
+        reservedNameSymbolsSuppressed: 0,
       },
     }
 
@@ -1015,6 +1130,16 @@ export class RealSqlAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (nm) state.localCtes.add(this.identifierName(nm, state))
         }
       }
+      // Record the top-level statement in the sweep's own ledger BEFORE dispatching
+      // it, so `sweepDeclarations` does not walk straight back into the node the
+      // root walk is already handling. That set's comment has claimed this since it
+      // was written — "records what this walk has already dispatched so a top-level
+      // statement is not processed twice" — and it was doing exactly that for the
+      // sweep while the root walk never wrote to it, so every top-level statement in
+      // every file was processed twice. No edge doubled (`relationshipsByKey`
+      // deduplicates) but the pass did, and so did every counter it touches: one
+      // `ROW(1,2)::t` construction reported `instantiationsEmitted: 2`.
+      if (current.type === "statement") state.nestedStatements.add(current.startIndex + state.slice.byteOffset)
       this.processStatement(current, state, null)
     }
 
@@ -1070,9 +1195,46 @@ export class RealSqlAnalyzer implements ASTEngine.LanguageAnalyzer {
       // re-entry is: `relationshipsByKey` and `symbolKeys` make both passes
       // idempotent, and `nestedStatements` records what this walk has already
       // dispatched so a top-level statement is not processed twice.
-      if (current.type === "statement" && !state.nestedStatements!.has(current.startIndex)) {
-        state.nestedStatements!.add(current.startIndex)
+      if (current.type === "statement" && !state.nestedStatements!.has(current.startIndex + state.slice.byteOffset)) {
+        state.nestedStatements!.add(current.startIndex + state.slice.byteOffset)
+        // A statement nested inside a `cte` sees that CTE's NAME as a local
+        // binding, and the sweep was dispatching it with an EMPTY scope.
+        //
+        // `parseState.localCtes` is documented as holding the scope of the
+        // statement and only the statement, and the main walk honours that because
+        // `processRoot` populates it before dispatching. The sweep is a SEPARATE
+        // walk with no such step, so it reached
+        //
+        //   WITH recent_users AS (...), named_users AS (SELECT u.id FROM recent_users u)
+        //   SELECT ... FROM named_users
+        //
+        // and dispatched `named_users`'s body statement — whose only enclosing
+        // `statement` ancestor is the top-level one — with both sets empty. The
+        // CTE guard is `localCtes.has(leaf) || state.localCtes.has(leaf)`, so
+        // `FROM recent_users u` was published as `uses global->recent_users`: a
+        // table edge to a name no file declares and cannot declare, because the
+        // CTE binds it. `named_users` in the outer SELECT was suppressed
+        // correctly, so the file published exactly the one edge it should not
+        // have.
+        //
+        // This is the single false positive the m12 differential has been
+        // reporting against 84 hand-audited facts (precision 0.988,
+        // `FP rel:Queries.sql:uses:global:recent_users`), recorded in this file's
+        // Differential section as "left unnamed because re-deriving it requires
+        // re-running the differential". It was this.
+        //
+        // The scope is RESTORED afterwards rather than left in place: the sweep
+        // visits sibling statements, and the next one has its own CTEs.
+        const saved = new Set(state.localCtes)
+        const scope = this.ancestorStatement(current)
+        state.localCtes.clear()
+        if (scope) for (const cte of this.descendants(scope, "cte")) {
+          const nm = this.firstIdentifier(cte, state)
+          if (nm) state.localCtes.add(this.identifierName(nm, state))
+        }
         this.processStatement(current, state, null)
+        state.localCtes.clear()
+        for (const name of saved) state.localCtes.add(name)
       }
       if (DECLARATION_NODES.has(current.type)) {
         if (this.markDeclaration(current, state)) {
@@ -1119,8 +1281,20 @@ export class RealSqlAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
 
     if (DECLARATION_NODES.has(node.type)) {
-      this.markDeclaration(node, state)
-      this.dispatchDeclaration(node, state, owner)
+      // `markDeclaration` is the guard, and it was being CALLED and IGNORED here.
+      // The sweep walks every declaration in the tree, including the ones the root
+      // walk already dispatched, so `dispatchDeclaration` ran twice for every
+      // top-level declaration: once from `processRoot` and once from
+      // `sweepDeclarations` re-entering the same top-level `statement`. Nothing in
+      // the graph doubled, because `symbolKeys`/`relationshipsByKey` deduplicate —
+      // but the WORK doubled and, once the counters existed, so did the honesty
+      // numbers: a single `CREATE TABLE … (LIKE s)` reported
+      // `reservedNameSymbolsSuppressed: 2` and a single
+      // `CREATE OR REPLACE FUNCTION f` pair reported `overridesEmitted: 3`, all
+      // three from the same one edge. An ambiguity counter that reports three of
+      // something that happened once is the exact failure the honesty contract
+      // exists to prevent, so the guard is now load-bearing.
+      if (this.markDeclaration(node, state)) this.dispatchDeclaration(node, state, owner)
       return
     }
 
@@ -1192,6 +1366,9 @@ export class RealSqlAnalyzer implements ASTEngine.LanguageAnalyzer {
       case "returning":
         this.processReturning(node, state)
         return
+      case "psql_meta_command":
+        this.processPsqlMetaCommand(node, state)
+        return
       default:
         return
     }
@@ -1199,15 +1376,36 @@ export class RealSqlAnalyzer implements ASTEngine.LanguageAnalyzer {
 
   /** Record that this declaration node has been dispatched, so neither the main
    *  walk nor the sweep can emit it twice, and so the sweep can report how much
-   *  it contributed that the main walk could not reach. */
+   *  it contributed that the main walk could not reach.
+   *
+   *  THE KEY IS IN FILE COORDINATES, and that is load-bearing rather than
+   *  cosmetic. `node.startIndex` is relative to the PARSE that produced the node,
+   *  and three of this analyzer's passes produce nodes from a re-parsed SLICE: the
+   *  main walk parses the whole file (so its offsets are already file offsets),
+   *  the resync pass parses one statement at a time, and the EXECUTE-literal pass
+   *  parses the text between a literal's quotes. Keyed on the raw `startIndex`,
+   *  a declaration inside an EXECUTE literal collided with whatever the main pass
+   *  had already seen at the same SLICE-LOCAL offset, and was silently dropped.
+   *  `state.slice.byteOffset` maps a slice node back to its true position — the
+   *  raw literal is handed to the parser with its `''` escapes intact precisely so
+   *  it stays a contiguous substring of the file and that mapping holds — so the
+   *  file coordinate is both correct and unique.
+   *
+   *  This was invisible while `processStatement` called `markDeclaration` and then
+   *  dispatched regardless of the answer: the redundant dispatch is what was
+   *  masking the collision. Making the guard load-bearing (`if (markDeclaration(…))`)
+   *  and correct are the same piece of work, and `validation/m14/fixtures/sql/
+   *  sqld11` is what caught it — its `quoted_name` table lives inside an EXECUTE
+   *  literal and vanished the moment the guard started meaning what it says. */
   private markDeclaration(node: Node, state: ParseState): boolean {
-    const key = `${node.startIndex}:${node.type}`
+    const key = `${node.startIndex + state.slice.byteOffset}:${node.type}`
     if (state.declarationKeys.has(key)) return false
     state.declarationKeys.add(key)
     return true
   }
 
   private dispatchDeclaration(node: Node, state: ParseState, owner: SqlSymbol | null): void {
+    if (REPLACEABLE_DECLARATIONS.has(node.type)) this.recordReplacement(node, state)
     switch (node.type) {
       case "create_table":
         this.processTable(node, state)
@@ -1241,7 +1439,7 @@ export class RealSqlAnalyzer implements ASTEngine.LanguageAnalyzer {
         this.processNamedContainer(node, ASTEngine.SymbolKind.Namespace, "role", state)
         return
       case "create_extension":
-        this.processNamedContainer(node, ASTEngine.SymbolKind.Module, "extension", state)
+        this.processExtension(node, state)
         return
       case "create_database":
         this.processDatabase(node, state)
@@ -1255,6 +1453,64 @@ export class RealSqlAnalyzer implements ASTEngine.LanguageAnalyzer {
       default:
         return
     }
+  }
+
+  /**
+   * `CREATE OR REPLACE FUNCTION f` when this file ALREADY declared `f` of the
+   * same kind: the second declaration replaces the first.
+   *
+   * The scope is exactly that, and each clause of it is a measured boundary:
+   *
+   *   - SAME FILE only. 666 OR REPLACE declarations exist over the 1,460-file
+   *     census and all but a handful replace a declaration made in a DIFFERENT
+   *     file — a migration chain re-declaring what the previous migration
+   *     declared. A per-file analyzer cannot see those, so this emits for the 15
+   *     events it can and declares the rest rather than pretending to them.
+   *   - SAME KIND only. Keyed on the name alone, `CREATE FUNCTION
+   *     hdb_catalog.f()` at line 7 and `CREATE TRIGGER f` at line 25 of Hasura's
+   *     `10_to_11.sql` counted as a redefinition; they are two different objects
+   *     that happen to share a name, and the probe that produced that number is
+   *     the same shape-versus-role error this lane has now hit three times.
+   *   - `OR REPLACE` REQUIRED on the later declaration. Measured 20 same-kind
+   *     re-declarations carry no `OR REPLACE` and PostgreSQL rejects those
+   *     outright ("relation already exists"), so calling them overrides would
+   *     assert a replacement the language does not perform.
+   *
+   * The SOURCE is `global`, this lane's existing spelling for a file-level fact
+   * about a named object (`uses global->t` for a DML target, `references
+   * global->t` for `GRANT … ON t`). The two ends cannot be two symbols: SQL
+   * replacement is same-name, so any source/target pair would collapse to a
+   * self-loop `overrides f->f` that tells a graph consumer nothing about which
+   * declaration replaced which. The lines that do distinguish them ride in
+   * metadata instead, which is where a consumer can read them.
+   */
+  private recordReplacement(node: Node, state: ParseState): void {
+    const object = this.firstDescendant(node, "object_reference")
+    const nameNode = object ? this.referenceNameNode(object) : this.firstIdentifier(node)
+    if (!nameNode) return
+    const name = this.identifierName(nameNode, state)
+    const line = node.startPosition.row + state.slice.rowOffset + 1
+    const replaces = this.directChild(node, "keyword_replace") !== null
+    if (!replaces) {
+      // Not a replacement, but the first declaration of this name is still worth
+      // recording: a LATER `CREATE OR REPLACE` of the same name replaces THIS one.
+      if (!state.redeclared.has(name)) state.redeclared.set(name, line)
+      return
+    }
+    const prior = state.redeclared.get(name)
+    if (prior === undefined) {
+      state.redeclared.set(name, line)
+      return
+    }
+    this.addRelationship(ASTEngine.RelationshipType.Overrides, "global", name, state, {
+      orReplace: true,
+      redefinition: true,
+      scope: "file",
+      priorLine: prior,
+      replacementLine: line,
+    })
+    state.redeclared.set(name, line)
+    state.ambiguity.overridesEmitted++
   }
 
   // ---------------------------------------------------------------- tables
@@ -1302,6 +1558,20 @@ export class RealSqlAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   /**
+   * Is this column name a reserved word that error recovery re-emitted?
+   *
+   * Only an UNQUOTED name can be one: a quoted `"like"` arrives as a `literal` and
+   * is a legal column name in every dialect, so the guard keys on the node type as
+   * well as the text. See `RESERVED_AS_COLUMN_NAME` for the measured counts and for
+   * why this list is two words and not the whole keyword set.
+   */
+  private reservedColumnName(node: Node): boolean {
+    if (node.type !== "identifier") return false
+    if (!RESERVED_AS_COLUMN_NAME.has(node.text.toLowerCase())) return false
+    return true
+  }
+
+  /**
    * A `CONSTRAINT <name> FOREIGN KEY` the grammar could not build a `constraint`
    * node for arrives as an ERROR whose own children are still
    * `keyword_constraint` + `identifier`. Rebuild a constraint-shaped view of it
@@ -1328,6 +1598,10 @@ export class RealSqlAnalyzer implements ASTEngine.LanguageAnalyzer {
   private processColumn(node: Node, table: SqlSymbol, state: ParseState): void {
     const rawName = node.childForFieldName?.("name") ?? this.firstIdentifier(node)
     if (!rawName || !identifierTypes.has(rawName.type)) return
+    if (this.reservedColumnName(rawName)) {
+      state.ambiguity.reservedNameSymbolsSuppressed++
+      return
+    }
 
     let isPrimaryKey = false
     let isUnique = false
@@ -1749,6 +2023,74 @@ export class RealSqlAnalyzer implements ASTEngine.LanguageAnalyzer {
     this.addPattern(type === "schema" ? "Schemas" : type === "sequence" ? "Sequences" : type === "extension" ? "Extensions" : "Roles", state)
   }
 
+  /**
+   * `CREATE EXTENSION name` — a declaration AND a dependency, and only the
+   * declaration was being read.
+   *
+   * The extension is the closest thing SQL has to a separately published unit: it
+   * ships its own types, functions and operators, it lives outside this unit, and
+   * the database cannot run this file without it. `processNamedContainer` recorded
+   * the symbol and stopped there, so 27 declarations over the 1,460-file census
+   * produced 27 `module` symbols and **no edge at all** — a real cross-unit
+   * dependency, invisible in the graph, in the one construct where SQL genuinely
+   * has one.
+   *
+   * The edge is `imports`, and it is the same type the psql `\i`/`\ir` pass emits
+   * for a different reason: a dependency on a named artifact resolved from outside
+   * the file before the file's own SQL can mean anything. The two mechanisms are
+   * kept distinguishable in metadata (`extensionInstall` vs `psqlInclude`) because
+   * they answer different questions — one is "this file loads another FILE", the
+   * other is "this file requires another DISTRIBUTION to be installed" — and a
+   * consumer that cannot tell them apart will read a `\i schema.sql` edge as
+   * evidence about the environment.
+   *
+   * WHY `global` AS THE SOURCE and why the target is an external name. The
+   * extension is not declared by this file; it is installed into the DATABASE.
+   * Labelling the edge `external` keeps it distinguishable from a psql include,
+   * whose target IS a file in this repository and is in principle resolvable. That
+   * makes the extension edges the only `imports` edges in this lane with a target
+   * that can never bind, which is a property of the construct and is stated here
+   * rather than left for a reader to discover from the resolution rate.
+   *
+   * `evidenceClass` is `structural`: `create_extension` is a visible rule and the
+   * name is in the `object_reference` the rule puts there. Nothing here is a name
+   * match. `CREATE EXTENSION IF NOT EXISTS` is the same shape with a guard
+   * keyword, so it is the same edge — the extension is still required.
+   */
+  private processExtension(node: Node, state: ParseState): void {
+    this.processNamedContainer(node, ASTEngine.SymbolKind.Module, "extension", state)
+    const object = this.firstDescendant(node, "object_reference")
+    const nameNode = object ? this.referenceNameNode(object) : this.firstIdentifier(node)
+    if (!nameNode) {
+      state.ambiguity.includeNonLiteral++
+      return
+    }
+    const name = this.identifierName(nameNode, state)
+    if (SQL_KEYWORDS.has(name.toLowerCase())) {
+      state.ambiguity.keywordTargetsSuppressed++
+      return
+    }
+    const line = node.startPosition.row + state.slice.rowOffset + 1
+    this.addRelationship(ASTEngine.RelationshipType.Imports, "global", name, state, {
+      extensionInstall: true,
+      external: true,
+      fileDependency: false,
+      scope: "database",
+      line,
+    })
+    state.ambiguity.extensionImportsEmitted++
+    state.imports.push({
+      module: name,
+      items: [],
+      importType: "sql_extension",
+      lineNumber: line,
+      line,
+      range: this.range(node, state),
+      isExternal: true,
+      metadata: { extensionInstall: true, scope: "database" },
+    })
+  }
+
   private processDatabase(node: Node, state: ParseState): void {
     const object = this.directChild(node, "object_reference")
     const nameNode = object ? this.referenceNameNode(object) : this.firstIdentifier(node)
@@ -1856,6 +2198,28 @@ export class RealSqlAnalyzer implements ASTEngine.LanguageAnalyzer {
    * climbed four parents, sailed past `statement`, landed on `program`, and
    * emitted nothing.
    */
+  /**
+   * The nearest ANCESTOR `statement` — the scope a nested statement inherits.
+   *
+   * SQL attaches its `WITH` list to the STATEMENT, so a statement inside a `cte`
+   * body, inside a plpgsql block or inside a dollar-quoted fragment inherits the
+   * CTEs of the statement it is nested in, and nothing else. Distinct from
+   * `enclosingStatement` above, which SEEKING includes the node itself and falls
+   * back to it: this one starts at the parent and admits that there may be none,
+   * because a top-level statement has no enclosing scope to inherit.
+   *
+   * `descendants` is transitive, so one level of lookup suffices however deeply
+   * the statement is buried.
+   */
+  private ancestorStatement(node: Node): Node | null {
+    let parent = node.parent
+    while (parent) {
+      if (parent.type === "statement") return parent
+      parent = parent.parent
+    }
+    return null
+  }
+
   private enclosingStatement(node: Node): Node {
     let current: Node | null = node
     while (current) {
@@ -1882,6 +2246,102 @@ export class RealSqlAnalyzer implements ASTEngine.LanguageAnalyzer {
     const columns = this.identifierTexts(node, state)
     if (columns.length === 0) return
     this.addPattern("RETURNING Clause", state)
+  }
+
+  /**
+   * psql meta-commands. `\i` / `\ir` name another FILE, which is an import; the
+   * other 121 shapes over the census corpus do not, and are counted rather than
+   * silently ignored so a command the grammar starts producing later appears in
+   * a number instead of in nothing.
+   *
+   * `psql_meta_command` is a LEAF token — the whole `\ir schema.sql` is one node
+   * with no children — so both the command word and its argument have to be read
+   * out of that one string. A character scan rather than a regex, per this
+   * lane's zero-regex policy (`reviews/regex-policy.md`, and
+   * `validation/m12/results/regex-census.json` which once recorded SQL at all as
+   * unregistered).
+   *
+   * Three guards, each of which has already cost something if dropped:
+   *   - the command must be `i` or `ir` exactly, so `\echo`, `\set`, `\gexec`,
+   *     `\gset`, `\pset`, `\if`, `\endif` stay out (`\gset` writes a variable
+   *     FROM a query, which is the opposite direction, and `\o`/`\g` write a
+   *     query result TO a file, which is not a source dependency).
+   *   - the argument must not begin with `:`. `\i :script` includes a file whose
+   *     NAME is computed by an earlier `\set`, and a target invented from a
+   *     variable name is a fabricated edge. Measured 0 on the corpus, so the
+   *     guard costs nothing there and is kept for the corpus that uses it.
+   *   - the argument must carry a SQL/dump suffix, so `\i` onto an extensionless
+   *     name is skipped rather than resolved against nothing.
+   *
+   * The path is kept exactly as written — `../../orioledb.sql` is what the file
+   * says and what a reader needs — with `relativeToScript` recording that `\ir`
+   * resolves against the including script's own directory rather than psql's
+   * working directory.
+   */
+  private processPsqlMetaCommand(node: Node, state: ParseState): void {
+    const text = node.text
+    if (text.length < 2 || text.charCodeAt(0) !== 92 /* \ */) return
+    const isSpace = (c: number) => c === 32 || c === 9 || c === 10 || c === 13 || c === 12 || c === 11
+    let end = 1
+    while (end < text.length && !isSpace(text.charCodeAt(end))) end++
+    const command = text.slice(1, end).toLowerCase()
+    if (!PSQL_INCLUDE_COMMANDS.has(command)) {
+      state.ambiguity.psqlCommandsSkipped++
+      return
+    }
+    let start = end
+    while (start < text.length && isSpace(text.charCodeAt(start))) start++
+    let stop = text.length
+    while (stop > start && isSpace(text.charCodeAt(stop - 1))) stop--
+    const argument = text.slice(start, stop)
+    if (argument.length === 0) {
+      state.ambiguity.includeNonLiteral++
+      return
+    }
+    if (argument.charCodeAt(0) === 58 /* : */) {
+      state.ambiguity.includeNonLiteral++
+      return
+    }
+    for (let i = 0; i < argument.length; i++) {
+      if (isSpace(argument.charCodeAt(i))) {
+        state.ambiguity.includeNonLiteral++
+        return
+      }
+    }
+    const lowered = argument.toLowerCase()
+    let suffixOk = false
+    for (const suffix of PSQL_INCLUDE_SUFFIXES) {
+      if (lowered.length > suffix.length && lowered.endsWith(suffix)) {
+        suffixOk = true
+        break
+      }
+    }
+    if (!suffixOk) {
+      state.ambiguity.includeNonLiteral++
+      return
+    }
+    const line = node.startPosition.row + state.slice.rowOffset + 1
+    const kind = `${command} ${argument} ${line}`
+    if (state.includeKeys.has(kind)) return
+    state.includeKeys.add(kind)
+    this.addRelationship(ASTEngine.RelationshipType.Imports, "global", argument, state, {
+      psqlInclude: true,
+      includeKind: command,
+      relativeToScript: command === "ir",
+      fileDependency: true,
+      line,
+    })
+    this.addPattern("psql Script Include", state)
+    state.imports.push({
+      module: argument,
+      items: [],
+      importType: "sql_import",
+      lineNumber: line,
+      line,
+      range: this.range(node, state),
+      isExternal: false,
+      metadata: { psqlInclude: true, includeKind: command, relativeToScript: command === "ir" },
+    })
   }
 
   /** `COMMENT ON <object> …` — the object named is a real dependency. */
@@ -1963,6 +2423,10 @@ export class RealSqlAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (!definition) continue
       const nameNode = definition.childForFieldName?.("name") ?? this.firstIdentifier(definition)
       if (!nameNode || !identifierTypes.has(nameNode.type)) continue
+      if (this.reservedColumnName(nameNode)) {
+        state.ambiguity.reservedNameSymbolsSuppressed++
+        continue
+      }
       const column = this.createSymbol(
         this.identifierName(nameNode, state),
         ASTEngine.SymbolKind.Property,
@@ -2022,6 +2486,87 @@ export class RealSqlAnalyzer implements ASTEngine.LanguageAnalyzer {
     for (const merge of this.descendants(node, "keyword_merge")) {
       void merge
     }
+    this.processInstantiations(node, source, state)
+  }
+
+  /**
+   * `ROW(...)::my_composite` — a value BUILT for a named type.
+   *
+   * PostgreSQL implements a composite cast as a call to that type's constructor,
+   * so this is the one place SQL constructs an instance of a declared type, and it
+   * is what the ontology's `instantiates` names. Measured over the 1,460-file
+   * census: 4,406 `cast` nodes, of which only those carrying a `custom_type`
+   * FIELD name a user type at all (a builtin target such as `::integer` is a bare
+   * anonymous token), and of those the ones whose VALUE side is a constructor
+   * rather than a pre-existing value are the construction events.
+   *
+   * Two guards, and both were arrived at by discarding a wrong answer:
+   *
+   *   - the value side must CONSTRUCT. `x::my_enum` and `col::my_type` convert a
+   *     value that already exists; publishing those would assert an object was
+   *     created where none was. A `cast` whose left side is an ERROR is also
+   *     skipped: DuckDB's `[a+b, …]::vec4` parses as `ERROR :: type` because the
+   *     grammar cannot read a bracketed array literal, so the shape is a damaged
+   *     parse and not a construction the analyzer can vouch for.
+   *   - the type name must not be a keyword or a builtin. DuckDB's
+   *     `CAST(ROW(x) AS ROW(a INT, b INT))` puts the literal word `ROW` in the
+   *     same `custom_type` field, and 67 casts corpus-wide target a name no file
+   *     declares. Those stay external names, which is what they are.
+   *
+   * The target may be declared in another file — a composite type is usually
+   * declared once and constructed from many migrations — so an unresolved target
+   * is the normal case for this type and is reported as such rather than
+   * suppressed. `evidenceClass` is `structural` because the constructor and the
+   * type name are both in grammar-mandated positions; nothing here is a name
+   * match.
+   */
+  private processInstantiations(node: Node, source: string, state: ParseState): void {
+    for (const cast of this.descendants(node, "cast")) {
+      const target = cast.childForFieldName?.("custom_type") as Node | null
+      if (!target) continue
+      const name = this.referenceLeaf(target, state)
+      if (!name) continue
+      const lowered = name.toLowerCase()
+      if (SQL_KEYWORDS.has(lowered) || SQL_BUILTINS.has(lowered)) {
+        state.ambiguity.keywordTargetsSuppressed++
+        continue
+      }
+      let value: Node | null = null
+      for (let i = 0; i < cast.childCount; i++) {
+        const child = cast.child(i)
+        if (!child) continue
+        if (child.type === "::") break
+        if (child.isNamed) value = child
+      }
+      if (!value || value.hasError) continue
+      if (!this.constructsAValue(value)) continue
+      this.addRelationship(ASTEngine.RelationshipType.Instantiates, source, name, state, {
+        operation: "cast",
+        construction: true,
+        constructor: value.type,
+      })
+      state.ambiguity.instantiationsEmitted++
+    }
+  }
+
+  /**
+   * Is this expression BUILDING a value, rather than naming one?
+   *
+   * `ROW(1,2)` is the grammar's `invocation` whose callee is the bare word `ROW`,
+   * and that callee name is the discriminator: `nextval('s')::bigint` is also an
+   * `invocation` and is a conversion. `('a', 2)` and `ARRAY[...]` are `list` /
+   * `array`, which cannot be anything but a constructed collection. Anything else
+   * — a `field`, a `parameter`, a bare `literal`, a `parenthesized_expression`
+   * wrapping a column — is a value that already existed.
+   */
+  private constructsAValue(node: Node): boolean {
+    if (CONSTRUCTOR_VALUE_NODES.has(node.type)) return true
+    if (node.type === "invocation") {
+      const callee = this.directChild(node, "object_reference")
+      const nameNode = callee ? this.referenceNameNode(callee) : this.firstIdentifier(node)
+      return nameNode?.text.toLowerCase() === "row"
+    }
+    return false
   }
 
   private addTableEdge(source: string, object: Node, localCtes: Set<string>, state: ParseState): void {
@@ -2119,7 +2664,13 @@ export class RealSqlAnalyzer implements ASTEngine.LanguageAnalyzer {
     metadata: Record<string, any> = {},
     extra: Partial<SqlSymbol> = {},
   ): SqlSymbol {
-    const identity = `${node.startIndex}:${kind}:${name}:${parent?.name ?? ""}`
+    // File coordinates, for the same reason `markDeclaration` uses them: the resync
+    // and EXECUTE-literal passes hand this function nodes from a re-parsed SLICE,
+    // and a slice-local `startIndex` collides with an offset the main pass already
+    // consumed. The consequence was a real missing symbol — the declaration the
+    // EXECUTE pass recovers was treated as a duplicate of an unrelated one at the
+    // same slice-local offset and dropped.
+    const identity = `${node.startIndex + state.slice.byteOffset}:${kind}:${name}:${parent?.name ?? ""}`
     if (state.symbolKeys.has(identity)) {
       return state.symbols.find((s) => s.name === name && s.kind === kind && s.ownerName === parent?.name) ?? this.placeholder(name, kind, parent)
     }
@@ -2227,9 +2778,73 @@ export class RealSqlAnalyzer implements ASTEngine.LanguageAnalyzer {
       return
     }
     state.relationshipKeys.add(key)
-    const relationship = { type, source, target, confidence: 1, weight: 1, metadata }
+    const relationship = { type, source, target, confidence: 1, weight: 1, metadata: { ...metadata, evidenceClass: metadata.evidenceClass ?? this.evidenceClassFor(type, metadata) } }
     state.relationshipsByKey.set(key, relationship)
     state.relationships.push(relationship)
+  }
+
+  /**
+   * The tier an emitted edge was actually derived at.
+   *
+   * WHY THIS EXISTS, and what it cost to be missing. Until this mapping existed
+   * every edge this analyzer emitted carried `confidence: 1` and NO
+   * `evidenceClass` at all — so the honesty contract's §4 requirement, that the
+   * heuristic/deterministic ratio be a queryable NUMBER, was not answerable for
+   * this lane: the census reported `evidenceClass` absent on 22,073 of 22,073
+   * edges, which reads as "no heuristics" and in fact means "nothing recorded".
+   * A field that is absent is not the same claim as a field that is uniformly
+   * `structural`, and only one of them is true.
+   *
+   * The tiers, and why each edge lands where it does:
+   *
+   *   structural          the fact is in a grammar-mandated position. Every
+   *                       `contains` (an owner and a member the grammar nested
+   *                       it under), every `imports` (a `psql_meta_command`
+   *                       token naming a file), every `overrides` (an
+   *                       `OR REPLACE` on a name this file declared), every
+   *                       `instantiates` (a `cast` whose `custom_type` FIELD is
+   *                       the type), and every `references` — the FK target sits
+   *                       after `keyword_references`, the trigger's table after
+   *                       `keyword_on`, the policy's table after `keyword_on`,
+   *                       GRANT/REVOKE's object is the statement's own
+   *                       `object_reference`. Each of those is a fixed slot, not a
+   *                       name match.
+   *   usage_contextual    the name sits in a bare name slot with nothing around
+   *                       it to corroborate: a `uses` edge from a `from`/`relation`
+   *                       clause (the relation may be a CTE, which is why the CTE
+   *                       guard exists), and a `calls` edge whose callee is an
+   *                       UNQUALIFIED `invocation` — `my_func(1)`, which the
+   *                       grammar has told us is a call and not which `my_func`
+   *                       among the schemas resolves it.
+   *   reference_qualified the name was read through a QUALIFIED reference, which
+   *                       is the one case that carries its own disambiguation:
+   *                       `schema.func(...)` names one object by construction.
+   *
+   * `confidence` stays 1 for all of them, and that is now a claim rather than an
+   * omission: no edge this analyzer emits is a guess about a NAME. Where the
+   * analyzer genuinely cannot tell — a target it labels `external`, a
+   * concatenation fragment whose identifier is computed at run time — the edge is
+   * not emitted at all, and the suppression is counted in `ambiguity` instead.
+   */
+  private evidenceClassFor(type: ASTEngine.RelationshipType, metadata: Record<string, any>): string {
+    switch (type) {
+      case ASTEngine.RelationshipType.Imports:
+        return "import_based"
+      case ASTEngine.RelationshipType.Calls:
+        return metadata.qualified ? "reference_qualified" : "usage_contextual"
+      case ASTEngine.RelationshipType.Uses:
+        return "usage_contextual"
+      case ASTEngine.RelationshipType.Contains:
+      case ASTEngine.RelationshipType.References:
+      case ASTEngine.RelationshipType.Extends:
+      case ASTEngine.RelationshipType.Implements:
+      case ASTEngine.RelationshipType.Exports:
+      case ASTEngine.RelationshipType.Overrides:
+      case ASTEngine.RelationshipType.Instantiates:
+        return "structural"
+      default:
+        return "structural"
+    }
   }
 
   // ---------------------------------------------------------------- identifiers
