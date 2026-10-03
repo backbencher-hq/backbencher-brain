@@ -1,7 +1,4 @@
-// @ts-nocheck — ported; verified by tests. Restored incrementally in Phase 3.
-// Cross-Language Intelligence Engine
-// polyglot analysis system that traces relationships across ALL 26 languages
-// The most advanced cross-language intelligence ever built - NO STONE LEFT UNTURNED
+
 
 import type { Node } from "web-tree-sitter"
 import type { ProjectID } from "../project/schema"
@@ -450,11 +447,61 @@ export namespace CrossLanguageIntelligence {
       .from(BrainTaintFlowTable)
       .where(eq(BrainTaintFlowTable.project_id, projectId))
 
+    // Row shapes of the three projections above, declared because
+    // `BrainDatabase.getInstance()` is `Promise<any>` and therefore carries no
+    // element type: the `.map`/`.filter` callbacks below were all implicitly
+    // `any`, and `symbolById` inferred as a map of `{}`, so every `src?.file` /
+    // `sourceSym?.name` read through it failed. With the rows named, the Map is
+    // `Map<string, SymbolRow>` and each field access is checked. The shapes
+    // mirror the `.select({...})` projections exactly.
+    type SymbolRow = {
+      id: string
+      name: string
+      type: string
+      /** relative_path comes from a LEFT JOIN, so it is null for an orphan symbol. */
+      file: string | null
+      language: string | null
+      line: number
+    }
+    type RelRow = {
+      id: string
+      type: string
+      source_id: string | null
+      target_id: string | null
+    }
+    type TaintRow = {
+      id: string
+      source_id: string | null
+      sink_id: string | null
+      source_type: string
+      sink_type: string
+      vulnerability_type: string
+      severity: string
+      /**
+       * The column is `integer({ mode: "boolean" })` (src/brain/brain.sql.ts), so
+       * drizzle already hands back a real boolean. Declaring it `number` — the
+       * obvious guess from the storage class — is what made
+       * `t.is_mitigated || false` look like it produced `number | false` and
+       * stopped matching `TaintFlow.isMitigated: boolean`. The declared type now
+       * matches the value that has always been there.
+       */
+      is_mitigated: boolean
+      /**
+       * Read as raw text on purpose — the column is json mode but legacy rows
+       * hold '|||'-delimited strings, so the parsed array below has to cope with
+       * a non-array. See the defensive parse in the map.
+       */
+      flow_path: string
+    }
+    const symbols = dbSymbols as SymbolRow[]
+    const rels = dbRels as RelRow[]
+    const taints = dbTaints as TaintRow[]
+
     // Build lookup map: O(1) instead of O(N) find() per relationship
-    const symbolById = new Map(dbSymbols.map((s) => [s.id, s]))
+    const symbolById = new Map<string, SymbolRow>(symbols.map((s) => [s.id, s]))
 
     // 4. Reconstruct CrossLanguageSymbols
-    const crossLanguageSymbols = dbSymbols.map(
+    const crossLanguageSymbols = symbols.map(
       (s) =>
         ({
           id: s.id,
@@ -478,7 +525,7 @@ export namespace CrossLanguageIntelligence {
     )
 
     // 5. Reconstruct CrossLanguageRelationships
-    const crossLanguageRelationships = dbRels.map(
+    const crossLanguageRelationships = rels.map(
       (r) => {
         const src = r.source_id ? symbolById.get(r.source_id) : undefined
         const tgt = r.target_id ? symbolById.get(r.target_id) : undefined
@@ -511,7 +558,26 @@ export namespace CrossLanguageIntelligence {
     )
 
     // 6. Reconstruct TaintFlows
-    const reconstructedTaintFlows: TaintFlow[] = dbTaints
+    //
+    // NOT `TaintFlow[]`, and the difference is a real defect this directive was
+    // hiding rather than a stylistic choice. `parseFlowPath` returns the stored
+    // path SEGMENTS as `string[]` — it has to, because the column holds either a
+    // json-mode array or a legacy '|||'-joined string, and there is no structure
+    // in either to build a DataFlowStep from. `TaintFlow.flowPath` however
+    // declares `DataFlowStep[]`, so every reconstructed flow carries strings
+    // where the interface promises objects, and a consumer reading
+    // `flowPath[0].filePath` would silently get undefined.
+    //
+    // Reshaping the segments into DataFlowStep objects here would invent
+    // structure the indexer never recorded, so the value is left exactly as it is
+    // and the real shape is named instead. `Omit` keeps every OTHER field
+    // checked against `TaintFlow`, so only the one known-wrong field is
+    // exempt. Nothing reads this field today (`flowPath` appears only at this
+    // write and in the unrelated data-flow-analyzer writer), which is why it is
+    // latent rather than live — the fix belongs in either the stored format or
+    // `TaintFlow.flowPath`'s declared type, both outside this change.
+    type ReconstructedTaintFlow = Omit<TaintFlow, "flowPath"> & { flowPath: string[] }
+    const reconstructedTaintFlows: ReconstructedTaintFlow[] = taints
       .filter((t) => t.source_id && t.sink_id && t.source_type !== "unresolved" && t.sink_type !== "unresolved")
       .map((t) => {
         const sourceSym = t.source_id ? symbolById.get(t.source_id) : undefined
@@ -533,7 +599,14 @@ export namespace CrossLanguageIntelligence {
             sinkType: t.sink_type,
           },
           vulnerabilityType: t.vulnerability_type,
-          severity: (t.severity || "high") as any,
+          // The stored value passes through unchanged, on purpose. The column is
+          // free text (`text().notNull()`, commented "critical"/"high"/
+          // "medium"/"low") and this function exists to report what the indexer
+          // actually recorded — normalising an out-of-band value to a default
+          // here would quietly rewrite a security finding. Asserted to the
+          // declared union rather than to `any`, so the pass-through is visible
+          // and a caller reading this line knows the value is unchecked.
+          severity: (t.severity || "high") as TaintFlow["severity"],
           isMitigated: t.is_mitigated || false,
           flowPath: parseFlowPath(t.flow_path),
         }
