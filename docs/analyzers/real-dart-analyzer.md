@@ -634,6 +634,62 @@ the wrong scope answers a question nobody asked.
 
 ### Ambiguity: 490,135 ambiguous targets, 296,854 of them closable
 
+**The figures from here to *The defect this measurement found* were measured on the
+tree at `c48f381d1` and every one of them is pinned to that commit.** Re-measured
+after the base merge (sixth pass, `BB_DART_CONC=1`, same 4,788 files, same draw), the
+edge population is **byte-identical** — 960,634 relationships, and every per-type
+`emitted` count matches to the unit — while **every resolution cell moved in the same
+direction, by a small amount, and every one of them moved toward resolving**:
+
+| | pinned at `c48f381d1` | re-measured post-merge | Δ |
+| --- | --- | --- | --- |
+| symbols | 337,336 | **337,440** | +104 |
+| `symbolsNamedUnknown` | 0 | **74** | +74 |
+| ambiguous targets (2–5 and 6+) | 490,135 | **490,292** | +157 |
+| of those, closable by `<source>.<target>` | 296,854 | **296,855** | +1 |
+| targets binding to nothing | 144,032 | **143,833** | −199 |
+| of those, `unexplained` | 1,829 | **1,817** | −12 |
+| `overrides` both-ends repoFull | 230,467 93.0% | **230,505 93.0%** | +38 |
+| `overrides` target unique | 232,736 | **232,774** | +38 |
+
+**The mechanism is in shared code this lane does not own, and it is not a change to
+this analyzer.** `src/ast/real-dart-analyzer.ts` is byte-identical across the two
+trees — `git diff c48f381d1..origin/analyzers/ontology-laptop-b` over it is empty —
+and the edge count being identical is the proof that the analyzer's output did not
+move. What moved is `src/ast/pool-worker.ts` (+102 lines), which sits on the
+production `parseFile` path this lane measures through. Its universal symbol-name
+denylist was **split**: names that are only reserved in *some* languages moved out of
+the unconditional drop list into a per-language RESERVED set. Seven were removed, each
+with another lane's measurement behind it — `self`, `Self`, `me`, `My`, `destructor`,
+`root`, `program`, `source_file`, `unknown`. **Every one of those is a legal Dart
+identifier**, so a Dart declaration carrying one of those names used to be silently
+dropped from the symbol table and is now published. That is the +104 symbols, and the
+74 of them named literally `unknown` account for most of the movement: a target called
+`unknown` used to bind to nothing and now binds, which moves rows out of
+`tgtNoSymbol` (−199) and out of `unexplained` (−12), and rows that now bind to a
+published `unknown` in more than one place move into the ambiguous set (+157).
+
+Two consequences worth stating rather than leaving implicit:
+
+- **`symbolsNamedUnknown` is no longer 0 for this lane, and 0 was the wrong thing for
+  it to be.** Dart permits `unknown` as a declaration name; publishing it is correct
+  and dropping it was the bug the base fixed. The lane's own hard criteria still hold
+  where they matter — `emptySymbolNames` 0, `emptyOrUnknownKind` 0 and
+  `unknownEndpoints` 0 on both the 2,735-file and the 4,788-file sample — and "no
+  `unknown` ENDPOINT" is unaffected, because a legitimately-named `unknown` symbol is
+  not an unresolved target.
+- **The base merge also fixed the WASM cache collision** (`src/ast/engine.ts`, a
+  per-process cache path plus an atomic rename, from the zig lane). That is why every
+  run in this pass reports `degraded 0`: the concurrent-truncation path that
+  substituted a regex extractor is gone from this tree. It does not affect any count
+  above — the 67 excluded fallback edges and the 4 `>1 MB` structural fallbacks are
+  size-based and identical in both trees.
+
+A reader comparing this section against a re-run should expect small positive deltas
+in every resolution column until the figures are re-pinned to the current base, and
+should treat the pinned values as a record of one tree rather than as this lane's
+present state.
+
 Ambiguity is measured as a SET SIZE — how many distinct `kind|owner|file`
 declarations share the target's name — because a `Set<string>` of names cannot
 answer the question it is being asked: it collapses the collision it exists to
@@ -1875,13 +1931,26 @@ One Dart-source file in the lane's fixtures, `payload-and-complexity.dart:158`, 
 `RegExp(r'f6-\w+')`. That is a `RegExp` in the LANGUAGE, held as fixture input for a
 regular-expression field, not a pattern in an instrument.
 
-`script/m12/verify-regex-census.ts` currently FAILS. Its failures are 24 MISSING and
-25 STALE entries, and **not one names a Dart file** — the MISSING entries are
-`real-css-analyzer.ts` (11) and `real-julia-analyzer.ts` (4) plus a perFile/census
-disagreement; the STALE entries are `real-clean-analyzer.ts`, `real-fsharp-analyzer.ts`,
-`real-javascript-analyzer.ts`, `real-python-analyzer.ts`, `real-svelte-analyzer.ts` and
-`real-typescript.ts`. This lane contributes 0 to either list and the gate is
-not this lane's to fix.
+`script/m12/verify-regex-census.ts` **now PASSES**, and did not when this section was
+written. It reported 24 MISSING and 25 STALE entries across six other languages'
+analyzers (`real-css-analyzer.ts`, `real-julia-analyzer.ts`, `real-clean-analyzer.ts`,
+`real-fsharp-analyzer.ts`, `real-javascript-analyzer.ts`, `real-python-analyzer.ts`,
+`real-svelte-analyzer.ts`, `real-typescript.ts`); the 504 commits merged into this
+branch carried the census entries those lanes owed, and the gate now reads:
+
+```
+census entries: 5 | HEAD scan: 5 | working-tree scan: 5
+missing from census: 0    stale in census: 0
+unclassified: 0           mislocated: 0
+regex census gate PASSED
+```
+
+That is a pass **for the repository**, and it is not a pass on this lane's own
+property: the gate scans `real-*-analyzer.ts` files, so a lane whose regexes are
+literals inside a harness reports 0 from it either way. The measurement that does
+establish this lane's property is the AST census above — 0 `RegExpLiteral` nodes and
+0 `RegExp` constructions over the lane-owned set. A green gate here and a green AST
+census are two different claims, and only the second one is about this lane.
 
 **The gate's blind spot is general, not specific to this lane.** A lane whose only
 regexes are literals will report 0 from this census and be counted clean. That is the
@@ -2205,11 +2274,15 @@ reproduced exactly**. What did not:
   while `3 symbols, 21 rels` was byte-identical both times.** Any latency number
   derived from this probe, including a reader's own spot check, is measuring the
   machine.
-- **`script/m12/verify-regex-census.ts` still FAILS and still names no dart file.** Its
-  14 MISSING rows are `real-css-analyzer.ts` (9) and `real-julia-analyzer.ts` (5), and
-  its 25 STALE rows are clean/fsharp/javascript/python/svelte/typescript. This lane
-  contributes 0 of each, which is the state item 10 asks for and not a pass on the
-  gate.
+- **`script/m12/verify-regex-census.ts` now PASSES** — `census entries: 5 | HEAD scan: 5
+  | working-tree scan: 5`, `missing 0`, `stale 0`, `unclassified 0`, `mislocated 0`. It
+  read 14 MISSING and 25 STALE rows over six other analyzers two paragraphs ago, and the
+  504 merged commits carried the entries those lanes owed. This lane contributes 0 to
+  either list, which is the state item 10 asks for; the gate passing is a fact about the
+  repository and **not** a measurement of this lane, whose own property is established by
+  the AST census — re-run in this pass at **0 `RegExpLiteral` nodes and 0 `RegExp`
+  constructions over 19 lane-owned files / 8,560 lines** (was quoted as 18 / 8,337; the
+  merge and this wave's one-line addition to `hang-file-innocence.ts` moved both).
 - **`script/m14/verify-honesty.ts` fails with 21, not the 23 recorded above, and the
   difference is upstream rather than this lane's.** Re-run after the base merge
   (exit 6): 10 banned-term, 9 declared-input sets, 1 milestone check, 1 freshness
@@ -2321,9 +2394,23 @@ analyzer at HEAD and its BEFORE column is pinned to `8286c7391`. The live-corpus
 that checkout is outside this worktree and is not the sampled corpus. The
 `--dart-deps` index table was not re-run; it is a harness-side option over the
 differential's own corpus. `script/m14/incoming-check.ts` was not re-run in the
-fourth pass: it is shared machinery absent from this branch, and the committed
-`incoming-census.ts` measures the same direction over 4,788 files with the per-type
-and per-cause breakdown this lane's report needs.
+fourth pass: it is shared machinery, and the committed `incoming-census.ts` measures
+the same direction over 4,788 files with the per-type and per-cause breakdown this
+lane's report needs.
+
+**`incoming-census.ts` WAS re-run in this pass, and it is the one instrument whose
+numbers did not survive contact with the base.** The edge population is
+byte-identical — 960,634 relationships and every per-type `emitted` count to the
+unit — but every resolution cell moved, all of them toward resolving, and the totals
+this document quotes for that section are now **pinned to `c48f381d1` and superseded**.
+The mechanism is measured and is not in this lane's code: `src/ast/pool-worker.ts`
+split its universal symbol-name denylist and stopped unconditionally dropping nine
+names that are only reserved in *some* languages, and **every one of the nine is a
+legal Dart identifier**. Dart declarations carrying those names are now published —
+`symbolsNamedUnknown` goes 0 → 74, total symbols 337,336 → 337,440 — so targets that
+bound to nothing now bind. The corrected figures, the per-cell deltas and the
+directions are tabulated under *Ambiguity* above. Read that section as a record of one
+tree, not as this lane's present state.
 
 The 2026-10-01 state was: both differential lanes at `--dart-deps=direct` plus the
 vendored Dart SDK library tree, `proxicall:dart` 29,203/29,203 (100%) MISSING 0, and
