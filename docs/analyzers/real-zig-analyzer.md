@@ -3859,3 +3859,224 @@ workaround, and a workaround on the default path of one's own instrument is a de
 file list now bypasses the default cap; an explicit `--sample` is still honoured, because narrowing a
 named list is a legitimate request. Verified by re-running §B's cross-check with no `--sample` at
 all: same `1,200 files sampled (3834 admitted)`, same draw hash, 0 fallback, 108,009 relationships.
+
+## Pass 16 — the arbiter at the FULL population, and `[BB-HANG]` names a file that already failed (2026-10-04)
+
+Pass 15 ended with four items open. One of them said the widest arbiter measurement available on this
+lane is **31% of the population**, and this pass removed that limit — not by changing the gate, which
+is §8, but by reading what its exit actually means.
+
+### A. The full population, from the gate as written
+
+Pass 15 §G's last bullet read *"per-type counts at the full 3,834 population from the supervisor's
+gate, which would need the gate to shard."* That was read off `ontology-coverage-gate.ts:229`:
+
+```ts
+await Promise.all(Array.from({ length: 8 }, () => worker()))
+```
+
+A hardcoded fan-out, no shard switch — so the reasoning behind the limit was sound. **The premise
+was wrong: the gate does not need to shard, it needs the run not to die**, and §B shows the death is
+caused by a message that does not mean what it says. The gate needs no edit.
+
+`validation/m14/fixtures/zig/measurements/arbiter-full3834-2026-10-04-p16.log`, full corpus root,
+3,834 admitted files:
+
+```
+type          status            detail
+--------------------------------------------------------------------------------------------
+calls         EMITTED           113,476 edges in 4+ files, e.g. ghostty/example/c-vt-effects/build.zig, ghostty/build.zig
+uses          EMITTED           132,201 edges in 4+ files, …
+contains      EMITTED            80,714 edges in 4+ files, …
+imports       EMITTED            10,200 edges in 4+ files, …
+references    EMITTED            30,794 edges in 4+ files, …
+exports       EMITTED            24,113 edges in 4+ files, …
+extends       RULED-SOUND       NOT EMITTED; the grammar produced 232 distinct node types … NONE expresses it.
+implements    RULED-SOUND       NOT EMITTED; … 232 distinct node types … NONE expresses it.
+overrides     RULED-SOUND       NOT EMITTED; the construct occurs 0x on the parse tree.
+instantiates  EMITTED             4,306 edges in 4+ files, …
+--------------------------------------------------------------------------------------------
+emitted 7/10   ruled-sound 3   FALSIFIED 0   ruled-without-justification 0
+```
+
+**`FALSIFIED 0` and `ruled-without-justification 0` now stand over 100% of the admitted corpus rather
+than over a 31% sample**, and `232 distinct node types` is the whole corpus's figure — against the
+239 the grammar *declares*, which is the corpus-independent table the ruling's own probe reads. The
+table is the gate's, from the gate's own instruments; this lane contributed the analyzer and the
+corpus.
+
+The process exited **1**, thirty seconds or more after printing the table. §B is why that exit code
+is not a statement about the walk.
+
+### B. The `[BB-HANG]` file is not the file that hung
+
+`src/ast/engine.ts:1444-1450`, read rather than guessed:
+
+```ts
+const parseBomb = setTimeout(() => {
+  process.stderr.write(`[BB-HANG] parser stuck 120s on ${filePath} — exiting\n`)
+  process.exit(1)
+}, 120000)
+
+const tree = parser.parse(content)
+clearTimeout(parseBomb)          // reached only when parse() RETURNS
+```
+
+There is no `try`, `catch` or `finally` between the arm and the clear. `parseRaw` spans
+`engine.ts:1333-1474` and contains none; the only `finally` in the file is at `engine.ts:1972`, in a
+different function. **So when `parser.parse(content)` THROWS, `clearTimeout` is never reached and the
+bomb stays armed with that file's path.** A WASM trap throws, and `memory access out of bounds` is a
+trap — so the trap path is exactly the path that leaks the timer.
+
+That yields a prediction which discriminates between the two readings of the pairing: **a
+`[BB-HANG]` line must name a file that also produced a `[BB-PARSE-ERR]` line.** Under a genuine hang
+that is impossible, because a parse that never returns never reaches the handler that prints
+`[BB-PARSE-ERR]`.
+
+The run's own stderr settles it before the prediction is even needed, because the `[INFO]` lines
+carry the engine's clock:
+
+| engine clock | event |
+|---|---|
+| 08:09:50 | last successful parser load before the trap |
+| — | `[BB-PARSE-ERR] zig \| …/compile_errors/bitCast_with_different_sizes_inside_an_expression.zig \| memory access out of bounds` |
+| 08:11:30 | **language parser loaded — the wasm is instantiated again and parsing continues** (5 more) |
+| 08:11:35 | 2 more |
+| 08:11:48 | 2 more |
+| — | `[BB-HANG] parser stuck 120s on …/bitCast_with_different_sizes_inside_an_expression.zig — exiting` |
+
+**The named file was never stuck.** It trapped, was reported, was replaced by `extractFallback`, and
+the run continued for at least 58 further seconds across 9 more wasm parser instantiations before a
+timer armed for the already-failed file killed the process.
+
+| run | `[BB-PARSE-ERR]` file(s) | `[BB-HANG]` file | HANG ∈ PARSE-ERR |
+|---|---|---|---|
+| pass 15 run 2 | `undef_shifts_are_illegal.zig` | same | yes |
+| pass 16 replica A | `zig/lib/std/start.zig` | same | yes |
+| pass 16 replica B | `ghostty/src/lib/tinyio/test.zig`, `zig/doc/langref/test_opaque.zig` | `…/tinyio/test.zig` | yes |
+| pass 16 replica C | `zig/lib/docs/wasm/Decl.zig` | same | yes |
+| pass 16 full population | `…/bitCast_with_different_sizes_inside_an_expression.zig` | same | yes |
+
+**5 of 5 in this pass, and the 3 of 3 pass 15 recorded, for 8 of 8.** Pass 15 called the pairing
+"either a mechanism or a coincidence" and left it there; it is a mechanism, and pass 15 had already
+established the two halves that make it unavoidable — the guard is armed per `parse()` call
+(`engine.ts:1440-1448`) and the trap handler returns without re-parsing (`pool-worker.ts:1196-1210`).
+Both true, and together they mean a same-file pairing cannot happen by chance, because the HANG line
+is emitted by a timer captured on a parse that had already failed. What was missing was the third
+fact: **the clear is not in a `finally`.**
+
+**Two corrections to this lane's own published evidence follow, and both are withdrawals.**
+
+1. **§8 item 20's flagged set is a set of files that TRAPPED, not files that hung**, and the
+   control built on it answered a different question than the one it was asked. Passes 14 and 15
+   parsed each flagged file alone and reported 8 of 8 clean, concluding "the variable is concurrency,
+   not the corpus". That conclusion is right, but the reason is now sharper: those files trap under
+   fan-out 8 and not alone, and **no file has been observed to hang at all.** The population is
+   still a real corpus property — 13 distinct files now trap across the recorded runs, against pass
+   15's 9 — but it was never a hang population.
+2. **The gate's exit code is decided by a leaked timer, so exit 1 does not mean the walk failed.**
+   Pass 5 §F recorded that the exit code is not about the verdicts; this is the mechanism. It also
+   means the four full-root aborts attributed to "the full-root run aborts" (pass 15 §G bullet 1)
+   are not evidence that the full root is unrunnable — **§A is a full-root run that finished the
+   walk.** Pass 15 §G bullet 1 is resolved as stated: the difference between the bounded and
+   unbounded runs was never the population.
+
+### C. All seven per-type counts agree at the full population, and the one difference is attributed
+
+The gate's §A table against this lane's 8-shard census over the **same 3,834 files**, same draw
+`sha256:2f3545f9…`:
+
+| type | supervisor's gate, full root | this lane's census, 8 shards | delta |
+|---|---|---|---|
+| `calls` | 113,476 | 113,476 | 0 |
+| `uses` | 132,201 | 132,201 | 0 |
+| `contains` | 80,714 | 80,714 | 0 |
+| `references` | 30,794 | 30,794 | 0 |
+| `imports` | 10,200 | 10,200 | 0 |
+| `instantiates` | 4,306 | 4,306 | 0 |
+| `exports` | **24,113** | **24,114** | **1** |
+| **total** | **395,804** | **395,805** | **1** |
+
+The gate's run degraded exactly one file, and §B names it. `degraded-file-attribution.mts` parses
+that file alone through production `parseFile`:
+
+```
+file: …/zig/test/cases/compile_errors/bitCast_with_different_sizes_inside_an_expression.zig
+fallback: undefined symbols: 1 relationships: 1
+byType: {"exports":1}
+```
+
+**One symbol and one `exports` edge — the delta exactly.** So the residual is not a disagreement
+between two instruments at the full population; it is one file served by the regex fallback instead
+of the analyzer, and it is the same contamination pass 15 §B measured at 12 edges in 108,009 for a
+larger degraded file. **Every per-type count this lane publishes is now reproduced to the digit by
+the supervisor's own gate over 100% of the corpus**, with the single exception attributed rather
+than rounded away.
+
+### D. §8 item 21 is closed, and §8 item 22 is the fix
+
+**21. CLOSED — the pairing is mechanical.** `[BB-HANG]` names the file whose parse **threw**, because
+the 120 s guard is cleared only on the return path (`engine.ts:1447`) and `parseRaw` has no
+`finally`. Evidence: the discriminating prediction holds 8 of 8, and one run shows 58 s and 9 wasm
+instantiations of successful parsing *after* the named file had already failed.
+
+**22. `clearTimeout(parseBomb)` must run on the throw path.** `src/ast/engine.ts:1446-1447`, inside
+`parseRaw`: wrap the parse so the guard is cleared in a `finally`, or catch, clear, and rethrow. It
+is two lines and it is not this lane's file. **Why it matters beyond this lane:** as written, any
+trapped file anywhere in the indexer arms a process-killing timer that fires 120 s later naming a
+file that already failed, so a corpus containing one trap is reported as a hang on an unrelated file
+and the run dies after printing a finished verdict table. Every lane that has recorded a
+`[BB-HANG]` is reporting a trap it has already been told about, twice.
+
+### E. A non-destructive invocation for the DERIVATION gate, and what it found
+
+Pass 3 recorded the M60 DERIVATION count as 0 and passes 9 to 15 declined to re-run it, because
+`rel-type-coverage-gate.ts:595` writes `validation/m60/results/rel-type-coverage.json`
+**unconditionally** — `--langs=zig` narrows the report and not the write, so a scoped run replaces a
+multi-lane evidence file with one lane. Two passes ran it and reverted with `git checkout`.
+
+The gate already exports `BB_M60_ROOT` (`:61`), and setting it to a scratch tree carrying `src` and
+`script/m14` symlinked at this worktree, a copy of the baseline, and a **real** `validation/m60/
+results/` directory gives the scoped run somewhere to write that is not the shared one:
+
+```
+CHECK 1 — DERIVATION: every emitted type has an oracle derivation   clean
+CHECK 2 — REACHABILITY                                               clean
+CHECK 3 — AGREEMENT                                                   clean
+CHECK 4 — ENUM                                                        clean
+baseline: 104 recorded, 0 NEW, 104 repaid
+```
+
+**DERIVATION findings for this lane: 0**, at HEAD, by the supervisor's byte-identical gate, with
+`md5(validation/m60/results/rel-type-coverage.json)` **identical before and after** and
+`git status` clean. §8 item 18 stands — the flag is still missing from the gate — but a lane can now
+re-measure without the revert, and this lane will not run the destructive form again.
+
+### F. Every gate this lane can run, re-run at this commit
+
+| gate | command | result |
+|---|---|---|
+| typecheck | `npx tsc --noEmit -p tsconfig.json` | exit 0 |
+| fixture suite | `bun run script/m14/run-fixtures.ts --lang zig` | **11 pass / 0 fail**, no baseline regression |
+| mutation (shared) | `BB_MUTANT_ONLY="zig/" bun run script/m14/mutate-analyzer.ts` | **50 / 50 CAUGHT** (1,748 → 50) |
+| mutation (lane) | `npx tsx validation/m14/fixtures/zig/m13-mutants.mts` | **6 / 6 CAUGHT** |
+| ontology arbiter, full root | §A, 3,834 files | **exit 0 verdict: 7/10, RULED-SOUND 3, FALSIFIED 0, RULED-WITHOUT-JUSTIFICATION 0**; process exit 1 from the §D leak, after the table |
+| ruled probe | `npx tsx validation/m14/fixtures/zig/zig-ruled-probe.ts` | 10 / 10 controls; `overrides` 0 hits, raw 19, split 19/21/0/1; instrument A 239 declared / 232 produced, 0 of 17 supertype names, keyword calibration 11/11 declared |
+| DERIVATION (non-destructive) | §E, `BB_M60_ROOT` scratch | **CHECK 1-4 clean, DERIVATION 0**, shared evidence byte-identical |
+| regex census | `npx tsx script/m12/verify-regex-census.ts` | gate `FAILED` on **43 rows in 8 other analyzers**, **0 zig rows** |
+| honesty gate | `npx tsx script/m14/verify-honesty.ts` | 22 failures, **0 naming this document or any file under `validation/m14/fixtures/zig/`** |
+| F8 completeness | `npx tsx script/m14/completeness-inventory.ts --lang zig` | 7 of 8 sections pass; **section-b still FAILS** on `requiredKinds` missing `exports` and `instantiates` (§8, unchanged) |
+
+### G. What pass 16 could not settle
+
+- **Whether a real hang exists at all on this corpus.** Every `[BB-HANG]` in this lane's record is
+  now explained as a leaked timer, so the corpus has produced **zero observed hangs** and the guard
+  has never fired on its intended condition. Whether it would is untested, and §D's fix would not
+  change that — it would only stop the leak.
+- **Which file was being parsed when the leaked timer fired.** The bomb carries the *trapped* file's
+  path and the engine prints no parse ordinal, so the in-flight file stays unnamed. This is the
+  residue of §8 item 21 and it is not worth an engine change on its own.
+- **Whether `exports 24,113` or `24,114` is the corpus figure.** Both are correct for their runs:
+  24,114 is 0 degraded files and 24,113 is 1. The census figure is the one published, because it is
+  the run that refuses to publish a mixture, but neither is "the" number without naming the
+  degradation.
