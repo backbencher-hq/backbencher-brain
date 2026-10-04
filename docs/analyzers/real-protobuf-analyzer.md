@@ -9,7 +9,7 @@ pinned** grammar.
 | Grammar | `grammars/tree-sitter-proto/` — `amaanq/tree-sitter-proto` @ `e9f6b43f`, 8 patches |
 | Wired WASM | `wasm/tree-sitter-protobuf.wasm` — 81,735 B, sha256 `4624eb6d4b7830dd…` |
 | Replaced WASM | `fixtures/graphql/baseline/tree-sitter-proto-UPSTREAM.wasm` — 72,342 B, sha256 `dbbde8a8f047b6b6…` |
-| Probes | `script/m14/tmp/protobuf/` — `run-all.sh` runs every gate. `probe/store-binding.mts` indexes a scratch project through the real store (pass 5) |
+| Probes | `script/m14/tmp/protobuf/` — `run-all.sh` runs every gate. `probe/store-binding.mts` indexes a scratch project through the real store (pass 5). `probe/protoc-oracle.py` adjudicates every `uses` target against `protoc` (pass 8) |
 | Review | `reviews/protobuf/master-review.md` |
 
 ## Why this grammar is unusual
@@ -481,7 +481,13 @@ the `import` branch of `drain`; `overrides` from the `slotClaims` map consulted 
 **2 — Fires.** 40,098 / 13,275 / 1,561 / 4 / 1 across 821 files. None is reachable
 only from a branch that never matches.
 
-**3 — Correct.** **There is no oracle for this lane, and this is the largest
+**3 — Correct.** > **SUPERSEDED BY PASS 8 for `uses`.** `protoc` 36.2 now adjudicates
+> every `uses` target: **11,250 edges judged, 11,208 agree, 99.627%**, with all 42
+> disagreements named and all 42 found to be one defect. The other four emitted types
+> remain unaudited by an independent implementation, and for them what follows is
+> still true.
+
+**There is no oracle for this lane, and this is the largest
 limitation in this document.** `protobuf` does not appear in `differential.ts`'s
 `LANGS` (0 occurrences), and `script/m14/oracles/` holds 19 oracles for other
 languages and none for protobuf. No independent implementation exists to disagree
@@ -573,6 +579,13 @@ whose text is a type the file declares: **39 raw, 0 of them a non-keyword name**
 reference was dropped.
 
 ## DERIVATION findings: 5
+
+> **SUPERSEDED BY PASS 8 — this count is now 4.** `uses` is adjudicated by `protoc`
+> over 11,250 edges at 99.627% agreement, and the 42 disagreements are named. The
+> section is left as pass 1 wrote it because the reasoning is the record of why the
+> lane believed an oracle was impossible here; what changed is that the oracle turned
+> out to be a compiler that was simply not installed. See **DERIVATION findings: 5 → 4**
+> in pass 8.
 
 **Five**, one per emitted type — `contains`, `uses`, `imports`, `exports`,
 `overrides`. Each is stored by the analyzer and compared against nothing: no protobuf
@@ -1216,9 +1229,15 @@ copies — refusing to splice if any anchor has moved.
 
 ## Still not settled
 
-- **No oracle, so 5 DERIVATION findings stand.** No `protobuf` entry in `differential.ts`'s
-  `LANGS` and no `script/m14/oracles/protobuf-*.ts` — the oracles directory holds 19 files
-  for 8 languages and none for this one. Every correctness claim in this document rests on
+- **No oracle, so 5 DERIVATION findings stand.** > **PASS 8 PAID ONE OF THE FIVE DOWN.**
+  > `uses` is now adjudicated by `protoc` 36.2 — 11,250 edges judged, 99.627% agreement,
+  > 42 named disagreements — so **4** remain: `contains`, `imports`, `exports`,
+  > `overrides`. The first three are readable from the `FileDescriptorProto` the oracle
+  > already parses and are simply not written yet; `overrides` has no `protoc` analogue
+  > because protobuf has no slots. What still stands is that there is no `protobuf`
+  > entry in `differential.ts`'s `LANGS` and no `script/m14/oracles/protobuf-*.ts` — the
+  > oracles directory holds 19 files for 8 languages and none for this one, so the
+  > shared gate still audits nothing here. Every correctness claim in this document rests on
   hand-derived expectations, 26 mutants, the protobuf specification, and the probes here.
   An oracle would live in `script/m14/oracles/`, which is shared machinery.
 - **1,763 ambiguous endpoints** and **52 targets no file publishes**, from
@@ -1819,8 +1838,11 @@ Every gate re-run at this pass's HEAD. Nothing moved except the census, which ga
   empty result for a file whose wasm parse threw and the caller cannot distinguish that
   from an empty file; fixing it means `parseFile` reporting the fault, which is
   `src/ast/pool-worker.ts` and therefore not this lane's to edit.
-- **No verdict in this document is backed by an independent implementation.** Five DERIVATION
-  findings stand, one per emitted type. The mutant battery and the hand-derived expectations
+- **No verdict in this document is backed by an independent implementation.** > **PASS 8:
+  > `uses` now is.** `protoc` 36.2 judges 11,250 of its edges at 99.627% agreement.
+  > Four DERIVATION findings remain — `contains`, `imports`, `exports`, `overrides`.
+  > This bullet is pass 7's and is kept as written; the limitation it states is now
+  > true of four types rather than five. The mutant battery and the hand-derived expectations
   are what stand in for an oracle, and both share this lane's reading of one patched grammar.
 - **The `uses` resolution figures are population-dependent and three of them are quoted with
   different denominators on purpose** — per-file 72.84%, corpus-wide 99.58%, and 88.57% to
@@ -1831,3 +1853,348 @@ Every gate re-run at this pass's HEAD. Nothing moved except the census, which ga
 - **The corpus is 18 repositories and it is not the language.** `descriptor.proto` is vendored
   into four of them, which is what makes 2,702 ids ambiguous corpus-wide; a corpus with one
   copy would report 0 ambiguity and would be less informative, not more correct.
+
+---
+
+# PASS 8 — an independent implementation at last, and one real defect it found
+
+No verdict moved. 5 emitted, 5 ruled-sound, 0 FALSIFIED; 13,275 / 40,098 / 1,561 / 4 / 1
+and 54,939 through `parseFile` unchanged; 821 ok / 0 fail; 94 node types; 28/28 mutants;
+9/9 fixtures. What is new is that **one of the five DERIVATION findings is now paid
+down by something that is not this lane**, and that it found a defect six earlier
+passes measured the symptoms of without being able to name the cause.
+
+## The oracle: protoc, adjudicating every `uses` target
+
+Passes 1–7 each declared the same limitation in the same words: *"No verdict in this
+document is backed by an independent implementation."* Every resolution figure quoted
+for this lane — 72.87% per-file, 99.58% corpus-wide, 88.57% to exactly one declaration
+— was computed by resolving an emitted name against **the analyzer's own id set**. A
+grammar bug shared by the extractor and the checker is invisible to both, and this
+lane had no other checker.
+
+`protoc` is the reference implementation and is not that. Handed a file it emits a
+`FileDescriptorProto` in which **every message-typed field's `type_name` is an
+absolute, fully qualified, resolved name** — `protoc` has already run the C++ name
+lookup, and it is the same value it reads when it links a descriptor. Agreement is
+exact string equality after the leading dot. The two sides share no code: one is a
+vendored patched tree-sitter grammar, the other is the C++ compiler.
+
+`script/m14/tmp/protobuf/probe/protoc-oracle.py`. `libprotoc 36.2`, run over the
+821-file corpus:
+
+| | |
+|---|---|
+| files carrying `uses` edges | **675** |
+| compiled by protoc | **640** |
+| protoc REJECTED | **35**, every cause named below |
+| **edges judged** | **11,250** |
+| **AGREE** | **11,208 — 99.627%** |
+| **WRONG-NAME** | **42** |
+| of which map fields | 351, compared on the entry's VALUE type |
+| of which rpc request/response | 2,682, compared as an unordered pair |
+| NOT-A-TYPE, excluded | 909 |
+| INDISTINCTUISHABLE, excluded | 17 |
+| UNRESOLVED, file did not compile | 1,099 |
+
+**All 42 disagreements are one shape**: the emitted name is `protoc`'s with a package
+prefix missing. 31 in consul, 6 in containerd, 4 in `plugin.proto`, 1 in
+kubernetes. That is the ancestor-package walk — a defect this lane has measured four
+times and declined to fix per-file because the correction prices at net −82. What
+changed is its standing: it was an inference from directory layout, and it is now
+**confirmed by the reference compiler, edge by edge, with the 42 named in
+`oracle36-AFTER.json`**.
+
+The 35 rejections are named rather than dropped: 16 `Edition 2026 is later than the
+maximum supported edition 2024`, 13 an import path no directory in this corpus
+provides (`github.com/docker/swarmkit/api/types.proto`, `xds/data/orca/v3/…` — real
+vendor gaps in the corpus, not analyzer failures), 3 `Expected ";"` in fixtures that
+do not compile, 2 `opaqueany.Any is not defined`, 1 an unknown option.
+
+## The defect: a nested `extend` resolved against the type it extends
+
+**The oracle found this, and the analyzer's own instruments had not.** The A/B probe
+`script/m14/tmp/protobuf/probe/scope-fix-ab.mts` was written to price a candidate fix
+and instead located the defect; the oracle is what proved the fix right.
+
+`extend Foo { … }` adds the block's members to `Foo`. It does **not** open a scope: a
+type written inside the block is looked up from where the block is **written**. The
+analyzer carried one value for both questions, so the resolver was handed the extended
+type as the scope of every member of the block — a type the language never made a
+scope of.
+
+The shape is the reference implementation's own.
+`pb-reference/src/google/protobuf/unittest_custom_options.proto:295-300`:
+
+```proto
+message ComplexOptionType2 {
+  message ComplexOptionType4 {
+    extend google.protobuf.MessageOptions {
+      optional ComplexOptionType4 complex_opt4 = 7633546;
+```
+
+The analyzer emitted `proto2_unittest.ComplexOptionType4`. `protoc` reports that
+field's type as `proto2_unittest.ComplexOptionType2.ComplexOptionType4`. The emitted
+id is published by **no file in any repository in the corpus** — it is one of the 23
+targets pass 6 priced and called unclosable per-file, and the reason it read that way
+is that the cause is not a missing map at all.
+
+`Ctx` now carries `scope` — the lexical position — separately from `owner` — the
+extended type. The two are equal everywhere else: a message, enum, service, group body
+and oneof each set both to the declaration they open. **`extend` is the only site that
+separates them, and it is the only site that changed.**
+
+| | before | after |
+|---|---|---|
+| `uses` targets moved (A/B, 821 files, 13,275 edges each arm) | — | **6** |
+| edges added or removed | — | **0** |
+| edge counts (uses / contains / imports / exports / overrides) | 13,275 / 40,098 / 1,561 / 4 / 1 | **unchanged** |
+| symbols, analyzer-direct / through `parseFile` | 41,956 / 41,955 | **unchanged** |
+| `uses` both-ends, production ids | 72.84% | **72.87%** |
+| self-loops / empty names / bad kinds / `unknown` endpoints | 0 / 0 / 0 / 0 | **0 / 0 / 0 / 0** |
+| **oracle WRONG-NAME** | **47** | **42** |
+| **oracle AGREE** | **11,203 — 99.582%** | **11,208 — 99.627%** |
+| oracle verdict flips | — | **5, all WRONG-NAME → AGREE, 0 new** |
+
+The 5 flips, each a case where `protoc` names a nested declaration the pre-fix
+analyzer could not see:
+
+```
+proto2_unittest.ComplexOptionType2.ComplexOptionType4
+proto2_unittest.TestExtensionOrderings2.TestExtensionOrderings3
+edition_unittest.TestExtensionOrderings2.TestExtensionOrderings3
+proto2_unittest.TestNestedExtension.OptionalGroup_extension
+edition_unittest.TestNestedExtension.OptionalGroup_extension
+```
+
+### The sixth moved edge, and why the fixture needs two rows
+
+The 6th is in `unittest_delimited.proto`, where `protoc` reports **two declarations
+under one owner-qualified name** and the oracle records INDISTINCTUISHABLE rather than
+guessing. Read by hand from `protoc`'s descriptor, it answers
+`editions_unittest.LengthPrefixed` — the post-fix emitted name. That file is the
+reference implementation's own test of exactly this question:
+
+```proto
+message LengthPrefixed { … }              // editions_unittest.LengthPrefixed
+message TestDelimited {
+  message LengthPrefixed { … }            // …TestDelimited.LengthPrefixed
+  LengthPrefixed lengthprefixed = 1;
+}
+extend TestDelimited {
+  LengthPrefixed lengthprefixed = 1004;   // protoc: editions_unittest.LengthPrefixed
+}
+```
+
+The `extend` block is at **file scope**, so C++ lookup from `editions_unittest` finds
+the file-scope declaration and stops; `TestDelimited` is not an enclosing scope of a
+file-scope extend block. The pre-fix analyzer, handed the extended type as the scope,
+answered the nested one.
+
+**This is why the fix is not "prefer the innermost declaration."** That rule passes
+the `ComplexOptionType4` case and fails this one. `validation/m14/fixtures/protobuf/nested-extend-scope`
+asserts both directions, forbids the pre-fix answer for each, and adds an
+ordinary-field control so neither direction may break in-file resolution for nested
+types. Both rows are adjudicated by `protoc` on the fixture file itself:
+
+```
+FILE-SCOPE extensions:
+   which_twin: extendee=.nse.demo.Dual  type_name=.nse.demo.Twin
+NESTED extensions of nse.demo.Nest.Leaf:
+   leaf_ref:   extendee=.google.protobuf.FieldOptions  type_name=.nse.demo.Nest.Leaf
+```
+
+Ownership is unchanged and asserted on both extension members — still the **extended**
+type with `metadata.viaExtension` — so a one-sided fix that moved the resolution scope
+by also moving ownership fails on a `contains` row rather than passing. The new
+fixture **FAILS on the pre-fix analyzer** (verified by stashing the fix and re-running),
+so it discriminates rather than merely passing.
+
+## Four instrument defects, each of which produced a wrong number first
+
+The oracle is only worth its verdict if the oracle is right, and it was wrong four
+times before it was right. Each defect is recorded because each one had already
+produced a number this lane would otherwise have reported.
+
+**1 — Extensions are not fields.** `protoc` keeps an `extend` block's members in the
+FILE's `extension` list, and a **nested** extend block's members in the **enclosing
+message's** list. Reading only `message_type[].field` skipped every extension field in
+the corpus — 3,635 edges into NOT-A-TYPE — and since a nested-extend reference can
+only occur inside an `extend` block, the oracle reported the pre-fix and post-fix
+analyzers as **identically correct** while they differ on 6 edges. The read that
+exposes it: `protoc` on `unittest_custom_options.proto` lists 48 top-level extensions
+and `complex_opt4` is not among them, and it appears instead under
+`proto2_unittest.ComplexOptionType2.ComplexOptionType4`.
+
+**2 — A key collision is not a verdict.** Two declarations share one owner-qualified
+name on *both* sides whenever a message declares `T x = 1` and an `extend` of that
+message declares `T x = 1004`. `unittest_delimited.proto` has three such pairs —
+`lengthprefixed`, `grouplike`, `messageimport`. The analyzer disambiguates them with a
+`#property` suffix; `protoc` has no such suffix and keys both to `owner.name`.
+Comparing them pairwise by dict order produced a WRONG-NAME against whichever row
+landed last. An edge is now judged **only when the pairing is 1:1**; otherwise every
+edge on that key is INDISTINCTUISHABLE and excluded from the rate. Seventeen edges are
+excluded this way and **reported**, because an unjudged edge named is information and
+a wrongly judged one is not. `probe/extend-member-id-collision.mts` confirms the
+analyzer side independently: **0 of 821** files publish any id twice.
+
+**3 — An rpc's request and response are not fields.** `protoc` stores them on the
+METHOD as `input_type`/`output_type`. They are judged as an **unordered pair**
+deliberately: the analyzer writes request before response and `protoc` stores input
+before output, so matching by position would make the oracle agree with the analyzer
+by agreeing about emission order rather than by evidence. 2,682 edges.
+
+**4 — A map field's declared type is its synthesized entry message.** For
+`map<string, ListValue> api_tags = 1;` `protoc` reports `api_tags`'s `type_name` as
+`Owner.ApiTagsEntry`, a type nobody wrote and this analyzer does not publish.
+Comparing against that reported **all 351 map fields wrong**, which was wrong about
+which: the analyzer deliberately emits the map's **value** type, because
+`map<string, ListValue>` means the field holds ListValues. Map fields are therefore
+compared against the map entry's own `value` field `type_name`, which tests the
+analyzer's convention against `protoc`'s instead of against a type neither chose.
+
+Two instrument limits, stated rather than worked around:
+
+- **Include roots are discovered as a fixpoint from `protoc`'s own diagnostics.** When
+  `protoc` says `<import>: File not found`, that import is resolved to the directory
+  that provides it and the compile is retried; the file's own ancestors come first, so
+  a repository's own copy of a vendored file wins. Handing `protoc` all **611**
+  corpus directories holding a schema was tried first and made the result **worse** —
+  **542** files compiled against **570** with repository roots alone — because `protoc`
+  takes the first root providing a path and `descriptor.proto` is vendored into four
+  repositories here. 32 include-root choices were genuinely ambiguous; the first
+  candidate is taken and **each is recorded** in `ambiguousRootChoices`.
+- **The `grpc_tools` bundled build is `libprotoc 35.1`, which rejects edition 2026.**
+  "Edition 2026 is later than the maximum supported edition 2024" — and **16** corpus
+  files declare that edition, **including every file carrying a nested-extend
+  reference**. A 35.1 oracle silently cannot adjudicate the case this fix exists for:
+  at 35.1 the pre-fix and post-fix arms were identical at 42 WRONG-NAME, and the fix
+  looked like it had changed nothing. `--protoc` selects the binary.
+
+## The band on every production-side count was understated by 5×
+
+Pass 7 measured the silent parse loss as *"2 of 7 corpus-scale runs, one 62-line file
+whole"* and left a **±10 symbol / ±9 edge** band. Both numbers were wrong.
+
+Six losses were observed in `pb-googleapis/google/api/expr/`, which is a locality
+hypothesis, and `probe/lost-parse-locality.mts` was built to test it — with a control,
+because a locality claim with no complement is a coincidence of sample size. **The
+control falsified it**: `docker/vendor/github.com/containerd/containerd/api/events/task.proto`
+lost its parse under the same load. The same 11 `expr/` files parsed **deterministically
+6 rounds of 6 in isolation** (367 symbols / 518 edges every time), so the fault needs
+corpus-scale load and is not a property of any one file.
+
+| | pass 7 said | measured |
+|---|---|---|
+| corpus-scale rounds with a loss | 2 of 7 (29%) | **9 of 19 (47%)** |
+| distinct files ever lost | 1 | **7, across 5 repositories** |
+| files lost in one round | 1 | **up to 2** |
+| worst single round | −10 symbols / −9 edges | **−69 symbols / −100 edges** |
+| spread on the symbol total | ±10 | **69** (41,886 – 41,955) |
+| spread on the edge total | ±9 | **100** (54,839 – 54,939) |
+| localized to one directory | — | **NO — falsified by its own control** |
+
+Every production-side count in this document therefore carries a **−69 symbol / −100
+edge** band, not ±10/±9, and the analyzer-direct figures carry none. The clean-run
+totals this document quotes are the reproducible ones: **41,955 symbols / 54,939
+edges** through `parseFile`, reached on 10 of 19 rounds.
+
+## All 23 unresolved targets, every one, with their candidates
+
+Passes 5 and 6 reported **52** unbound and **4** hopeless `uses` targets. The audit
+stored 5 examples of each — enough to show a shape, not enough to settle whether the
+52 share one cause or fifty-two. `probe/unpublished-uses-targets.mts` prints all of
+them: **23 distinct targets carrying 55 edges**, 20 name-exists-unbound (**51
+edges**) and 3 hopeless (**4**).
+
+Classified by what the corpus says the reference should have been, this is where the
+number stops being one number:
+
+| class | targets | edges | what closes it |
+|---|---|---|---|
+| **ancestor-package prefix missing** — `common.EnterpriseMeta` → `hashicorp.consul.internal.common.EnterpriseMeta` | 12 | **33** | the include-root map (item 1). **Now oracle-confirmed**, not inferred from directory layout |
+| **vendor-rewrite** — `NodeSpec.Membership` → `docker.swarmkit.v1.NodeSpec.Membership`, referenced from a file vendored at `moby/swarmkit/v2` | 2 | **4** | the vendor map (item 2) |
+| **nested declaration, lexical scope** — the shape pass 8 fixed | 3 | **3** | **CLOSED** |
+| **fixture that references what it never declares** — `sls.asfd.asfd.CustomType`, `sls.asfd.asfd.JsonFormat`, `github.com.hashicorp.go.kms.wrapping.v2.types.BlobInfo` | 3 | **3** | nothing; `protoc` rejects or does not define them |
+
+Candidates per target, which is what tells the classes apart: **4 targets have exactly
+one** candidate (a rename from binding), 5 have two, 2 have three, 3 have four, and
+the largest is `status.Status` with **34** — a name so common in this corpus that no
+per-file rule could pick a winner. `common.EnterpriseMeta` alone accounts for **16
+edges** and has **18** candidates.
+
+**This is the honest answer to "what reaches a declaration": 33 of the 55 edges are one
+defect, oracle-confirmed, and all 33 are closed by the same project-level map. The lane
+cannot supply it — `parseFile` is handed one file and told nothing about include roots —
+and that is why it is reported as an item rather than fixed.**
+
+## DERIVATION findings: 5 → 4
+
+`uses` is no longer one. 11,250 of its edges are now adjudicated by an implementation
+that shares no code with this one, and the 42 it rejects are named. The remaining
+**four** are `contains`, `imports`, `exports` and `overrides`:
+
+| type | edges | what an oracle would have to be |
+|---|---|---|
+| `contains` | 40,098 | read `FileDescriptorProto`'s `nested_type` / `field` / `extension` nesting — available from the same descriptor the oracle already parses, and not yet written |
+| `imports` | 1,561 | compare `dependency` against the `imports` edge set — likewise available, not yet written |
+| `exports` | 4 | compare against `public_dependency` — likewise |
+| `overrides` | 1 | the slot-restatement rule; `protoc` has no concept of it, since protobuf does not override |
+
+The first three are **cheap and the descriptor is already in hand** — the oracle writes
+a `FileDescriptorProto` today and reads only fields and methods out of it. That they are
+not written is a statement about this session, not a structural obstacle, and it is the
+first work item for whoever picks this lane up. `overrides` is different in kind: the
+construct is a field **slot** being restated and `protoc` has no opinion about slots at
+all, so its oracle would have to be written from the specification rather than read off
+a descriptor.
+
+`imports` and `exports` endpoints are module paths by design and resolve 0% against
+symbols; that is unchanged and remains correct rather than a defect.
+
+## Pass 8 gate table
+
+| Command | Result |
+|---|---|
+| `npx tsc --noEmit` | no diagnostics |
+| `npx tsx script/m14/run-fixtures.ts --lang protobuf` | **9 pass / 0 fail**; the new fixture FAILS on the pre-fix analyzer |
+| `bun run script/m14/tmp/protobuf/probe/mutant-sweep.mts` | **28 caught / 0 survived** |
+| `npx tsx script/m14/tmp/protobuf/probe/scope-fix-ab.mts` | 821 files, 13,275 edges each arm, **6 moved, 0 added, 0 removed** |
+| `npx tsx script/m14/tmp/protobuf/probe/nested-extend-scope.mts` | **PASS** — 3 shapes, ownership asserted unchanged |
+| `npx tsx script/m14/tmp/protobuf/probe/protoc-oracle.py --protoc …/protoc` | **11,250 judged, 11,208 AGREE (99.627%), 42 WRONG-NAME**; before-arm 47 |
+| `npx tsx script/m14/tmp/protobuf/probe/lost-parse-locality.mts --scope=rest` | **LOCALITY FALSIFIED** — control lost `docker/…/events/task.proto` |
+| `npx tsx script/m14/tmp/protobuf/probe/lost-parse-locality.mts --scope=expr` | **0 of 6 rounds**, deterministic — the fault needs corpus load |
+| `npx tsx script/m14/tmp/protobuf/probe/lost-parse-locality.mts --scope=all` | 7 rounds, **5 with a loss, 2 files in one round, 5 repositories** |
+| `npx tsx script/m14/tmp/protobuf/probe/unpublished-uses-targets.mts` | **23 targets / 55 edges**, every one named: 20 + 3 |
+| `npx tsx script/m14/tmp/protobuf/probe/extend-member-id-collision.mts` | **0 of 821** files publish any id twice |
+| `npx tsx script/m14/protobuf-census.ts` | 821 ok / 0 fail; 13,275 / 40,098 / 1,561 / 4 / 1; 54,939; 0 empty names; 0 bad kinds; 0 `unknown`; 0 self-loops; **0** under 0.7 |
+| `npx tsx script/m14/protobuf-construct-probes.mts` | **94** node types; all 5 rulings re-probed and still reading **0** |
+| `npx tsx script/m14/protobuf-ruling-table-proof.mts` | run **c**: `emitted 5/10 ruled-sound 5 FALSIFIED 0`, exit 0 |
+| `npx tsx script/m14/firing-check.ts --files 120 protobuf` | **3/10 fired, 2,069 edges, 10/120 files** — unchanged, and pass 3's part 1 is its diagnosis |
+
+## Declared limitations, pass 8
+
+- **One of five types is oracle-checked and four are not.** `uses` is adjudicated by
+  `protoc` at 99.627% over 11,250 edges. `contains` (40,098), `imports` (1,561),
+  `exports` (4) and `overrides` (1) are compared against nothing but hand-derived
+  expectations and the mutant battery. The first three are readable from the
+  descriptor the oracle already parses and **are simply not written yet**; saying so
+  is more useful than implying the work is hard.
+- **The oracle's 1,099 UNRESOLVED edges are edges nobody has checked.** They sit in 35
+  files `protoc` rejects, 16 of them for declaring edition 2026. A larger `protoc` may
+  reject them for a different reason, or compile them and disagree; neither is known.
+- **The oracle judges names, not graph shape.** It cannot see an edge that is missing,
+  only one that is misnamed. A reference the analyzer never emits is invisible to it,
+  and the construct probes remain the only instrument for that.
+- **The 42 remaining disagreements are left in place.** They are one defect, oracle-
+  confirmed, closed only by a project-level include-root map that `parseFile` is never
+  told. Pass 7 measured the per-file correction at net −82 and pass 8 has nothing that
+  changes that number — it only establishes that the defect is real, which the four
+  earlier passes had inferred.
+- **`include_roots` is `protoc`-driven, so the oracle's verdicts depend on include
+  roots it discovered rather than roots the projects declare.** 32 choices were
+  ambiguous and each is recorded, but a corpus whose vendored copies disagree could
+  adjudicate a file against a schema it never read. This is the same project-level
+  fact as the analyzer's own open item, approached from the other side.
+- **Every production-side count carries a −69 symbol / −100 edge band**, measured at 9
+  of 19 corpus-scale rounds, and the band is silent: the run reports `821 ok / 0 fail`.
