@@ -10,26 +10,40 @@
   },
   "method": "production pool-worker parseFile per tracked file (the indexer's own route), ERROR and MISSING nodes counted as parse errors",
   "totals": {
-    "corpora": 12,
-    "files": 5227,
-    "errorFiles": 50,
-    "errorNodes": 250,
+    "corporaDeclared": 13,
+    "corporaMeasured": 3,
+    "corporaAbsent": [
+      "nimble",
+      "arraymancer",
+      "prologue",
+      "pixie",
+      "nitter",
+      "nigui",
+      "jester",
+      "nimtest",
+      "torrentinim",
+      "mosdepth"
+    ],
+    "corpora": 13,
+    "files": 5521,
+    "errorFiles": 64,
+    "errorNodes": 238,
     "crashFiles": 0,
-    "errorRatePct": 0.957
+    "errorRatePct": 1.159
   },
   "corpora": [
     {
       "corpus": "nim",
       "primary": true,
       "why": "the Nim compiler and the whole standard library: every construct the analyzer must know appears under compiler/ or lib/, and it is the language's own reference implementation rather than a user of it",
-      "revision": "bb85d2dda5441d4871e44ffe1ebab7c36dc02ecb",
-      "files": 3965,
+      "revision": "3ab70cd006a6898efa53f2d9d31ca1da0ef3880f",
+      "files": 3968,
       "errorFiles": 48,
       "errorNodes": 186,
       "crashFiles": 0,
-      "symbols": 73948,
-      "relationships": 155551,
-      "errorRate": 1.211,
+      "symbols": 76031,
+      "relationships": 159194,
+      "errorRate": 1.21,
       "damaged": [
         {
           "file": "compiler/semobjconstr.nim",
@@ -229,32 +243,27 @@
       "corpus": "nimble",
       "primary": false,
       "why": "the package manager: a real application of Nim, heavy on import statements, nimble task definitions and shell-out statements",
-      "revision": "33a6bc8e50a33222fce075143800fe5a715e8bfe",
-      "files": 435,
-      "errorFiles": 1,
-      "errorNodes": 48,
+      "revision": "ABSENT",
+      "files": 0,
+      "errorFiles": 0,
+      "errorNodes": 0,
       "crashFiles": 0,
-      "symbols": 3987,
-      "relationships": 11779,
-      "errorRate": 0.23,
-      "damaged": [
-        {
-          "file": "tests/filepathrequires/nim-results/tests/test_results.nim",
-          "errors": 48
-        }
-      ]
+      "symbols": 0,
+      "relationships": 0,
+      "errorRate": 0,
+      "damaged": []
     },
     {
       "corpus": "arraymancer",
       "primary": false,
       "why": "the most GENERIC-heavy real codebase reachable — multi-parameter type classes, concept dispatch, and a `when` per element type",
-      "revision": "d3b67712a3334ab4ded2809cc793e9cd7fed5fae",
-      "files": 318,
+      "revision": "ABSENT",
+      "files": 0,
       "errorFiles": 0,
       "errorNodes": 0,
       "crashFiles": 0,
-      "symbols": 3430,
-      "relationships": 9583,
+      "symbols": 0,
+      "relationships": 0,
       "errorRate": 0,
       "damaged": []
     },
@@ -262,13 +271,13 @@
       "corpus": "prologue",
       "primary": false,
       "why": "a web framework: import/re-export discipline, templates, async procs",
-      "revision": "2956ef2b2d03900c85770ec6a2a23c321c7e4acc",
-      "files": 195,
+      "revision": "ABSENT",
+      "files": 0,
       "errorFiles": 0,
       "errorNodes": 0,
       "crashFiles": 0,
-      "symbols": 1488,
-      "relationships": 4178,
+      "symbols": 0,
+      "relationships": 0,
       "errorRate": 0,
       "damaged": []
     },
@@ -276,13 +285,13 @@
       "corpus": "pixie",
       "primary": false,
       "why": "a 2D graphics library: operator overloads, value objects, variant objects, generic containers",
-      "revision": "30bb510877f02cbf9643e4f904e33d1c90f7910f",
-      "files": 112,
+      "revision": "ABSENT",
+      "files": 0,
       "errorFiles": 0,
       "errorNodes": 0,
       "crashFiles": 0,
-      "symbols": 2876,
-      "relationships": 7996,
+      "symbols": 0,
+      "relationships": 0,
       "errorRate": 0,
       "damaged": []
     },
@@ -290,13 +299,13 @@
       "corpus": "nitter",
       "primary": false,
       "why": "the largest real-world Nim application by stars; async, template-heavy, an actual service",
-      "revision": "376f14908e27e095049bbbeb648e742501144010",
-      "files": 74,
+      "revision": "ABSENT",
+      "files": 0,
       "errorFiles": 0,
       "errorNodes": 0,
       "crashFiles": 0,
-      "symbols": 1345,
-      "relationships": 4484,
+      "symbols": 0,
+      "relationships": 0,
       "errorRate": 0,
       "damaged": []
     },
@@ -304,13 +313,13 @@
       "corpus": "nimterop",
       "primary": false,
       "why": "C++ interop: the most pragma- and emit-heavy real codebase in the ecosystem",
-      "revision": "2532ce0d3c4b7e5a2be94ebde22d63ec9f0eb6d3",
+      "revision": "856347107b494ad0f340451167799c58e50e50a8",
       "files": 45,
       "errorFiles": 0,
       "errorNodes": 0,
       "crashFiles": 0,
-      "symbols": 781,
-      "relationships": 2580,
+      "symbols": 813,
+      "relationships": 2677,
       "errorRate": 0,
       "damaged": []
     },
@@ -318,13 +327,13 @@
       "corpus": "nigui",
       "primary": false,
       "why": "a cross-platform desktop GUI toolkit: JS-backend emit, FFI pragmas, destructors",
-      "revision": "8a1bb04bfbebec5828fc46dd3394abc3c69418ac",
-      "files": 32,
+      "revision": "ABSENT",
+      "files": 0,
       "errorFiles": 0,
       "errorNodes": 0,
       "crashFiles": 0,
-      "symbols": 2553,
-      "relationships": 3706,
+      "symbols": 0,
+      "relationships": 0,
       "errorRate": 0,
       "damaged": []
     },
@@ -332,13 +341,13 @@
       "corpus": "jester",
       "primary": false,
       "why": "a sinatra-like web framework: async procs, template DSL, JS backend",
-      "revision": "8a491a8e28965ee9291f058963ff65571a315e84",
-      "files": 19,
+      "revision": "ABSENT",
+      "files": 0,
       "errorFiles": 0,
       "errorNodes": 0,
       "crashFiles": 0,
-      "symbols": 235,
-      "relationships": 1004,
+      "symbols": 0,
+      "relationships": 0,
       "errorRate": 0,
       "damaged": []
     },
@@ -346,13 +355,13 @@
       "corpus": "nimtest",
       "primary": false,
       "why": "a test framework: templates, macros, a unittest DSL, the {.raises.} pragma",
-      "revision": "ce88334735c2406951152ccfc5573cac70d9c03c",
-      "files": 13,
+      "revision": "ABSENT",
+      "files": 0,
       "errorFiles": 0,
       "errorNodes": 0,
       "crashFiles": 0,
-      "symbols": 209,
-      "relationships": 720,
+      "symbols": 0,
+      "relationships": 0,
       "errorRate": 0,
       "damaged": []
     },
@@ -360,34 +369,108 @@
       "corpus": "torrentinim",
       "primary": false,
       "why": "a real self-hosted service (jester + jesterpkg + SQL-ish state)",
-      "revision": "8a0f2294c7e11f71540d6e2bbbc48fa25748494e",
-      "files": 13,
-      "errorFiles": 1,
-      "errorNodes": 16,
+      "revision": "ABSENT",
+      "files": 0,
+      "errorFiles": 0,
+      "errorNodes": 0,
       "crashFiles": 0,
-      "symbols": 45,
-      "relationships": 295,
-      "errorRate": 7.692,
-      "damaged": [
-        {
-          "file": "src/crawlers/leetx.nim",
-          "errors": 16
-        }
-      ]
+      "symbols": 0,
+      "relationships": 0,
+      "errorRate": 0,
+      "damaged": []
     },
     {
       "corpus": "mosdepth",
       "primary": false,
       "why": "a real bioinformatics CLI: a let/var-heavy application with a JS-target conditional tree",
-      "revision": "3211a79388ca3316b91df8b6cb5fb6ab2c7e2461",
-      "files": 6,
+      "revision": "ABSENT",
+      "files": 0,
       "errorFiles": 0,
       "errorNodes": 0,
       "crashFiles": 0,
-      "symbols": 114,
-      "relationships": 380,
+      "symbols": 0,
+      "relationships": 0,
       "errorRate": 0,
       "damaged": []
+    },
+    {
+      "corpus": "nimony",
+      "primary": false,
+      "why": "the next-generation compiler, and the ONLY corpus that exercises concept INHERITANCE (`X = concept of Y`) — 38 `refinement_list` sites in 24 files, which is what took the `implements` family off zero on 2026-10-04. Added for that reason and not for size: it is a second reference implementation, so it is also the check on whether a construct the 1.x compiler never writes is a grammar gap or a corpus gap",
+      "revision": "c6e7faf3657e01cedbdf8c83c03b9f58ab1e97dd",
+      "files": 1508,
+      "errorFiles": 16,
+      "errorNodes": 52,
+      "crashFiles": 0,
+      "symbols": 26384,
+      "relationships": 82606,
+      "errorRate": 1.061,
+      "damaged": [
+        {
+          "file": "lib/std/opt.nim",
+          "errors": 2
+        },
+        {
+          "file": "lib/std/result.nim",
+          "errors": 2
+        },
+        {
+          "file": "tests/nimony/generics/treturntype_infer.nim",
+          "errors": 2
+        },
+        {
+          "file": "tests/nimony/notnil/tnilalloc.nim",
+          "errors": 2
+        },
+        {
+          "file": "tests/nimony/object/deps/msumtype.nim",
+          "errors": 6
+        },
+        {
+          "file": "tests/nimony/object/deps/msumtype_generic.nim",
+          "errors": 8
+        },
+        {
+          "file": "tests/nimony/object/tguarded_fields.nim",
+          "errors": 2
+        },
+        {
+          "file": "tests/nimony/object/tjson_sumtype.nim",
+          "errors": 2
+        },
+        {
+          "file": "tests/nimony/object/tsumtype.nim",
+          "errors": 6
+        },
+        {
+          "file": "tests/nimony/object/tsumtype_dup_emptycase.nim",
+          "errors": 4
+        },
+        {
+          "file": "tests/nimony/object/tsumtype_errors.nim",
+          "errors": 4
+        },
+        {
+          "file": "tests/nimony/object/tsumtype_fieldless_construct.nim",
+          "errors": 2
+        },
+        {
+          "file": "tests/nimony/object/tsumtype_generic.nim",
+          "errors": 4
+        },
+        {
+          "file": "tests/nimony/object/tsumtype_shared.nim",
+          "errors": 2
+        },
+        {
+          "file": "tests/nimony/object/tsumtype_shared_after.nim",
+          "errors": 2
+        },
+        {
+          "file": "tests/nimony/sysbasics/tscf_stdtmpl.nim",
+          "errors": 2
+        }
+      ]
     }
   ]
 }
