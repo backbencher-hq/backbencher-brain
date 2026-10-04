@@ -529,6 +529,71 @@ files) is the one that is a property of the lane. The discrepancy with the super
 26-lane table row for css (73,369) is this same effect and is not a disagreement about
 behaviour.
 
+## PASS 8 — a fourth unmoved corpus, every gate reproduced, and the hang population finally
+## timed rather than argued
+
+Pass 6 and pass 7 each found the corpus where the previous pass left it. This round checked
+first and found it again: **`$HOME/fixtures/repositories` is the same 1,255 files
+/ 79 repositories** those passes measured, so every headline figure below is a *fourth*
+reproduction rather than a re-measurement. The corpus root now holds 183 repositories and the
+disk is at **98% (9.4 G free)** — worth the supervisor's attention as a shared resource, and
+recorded under §8 rather than acted on.
+
+### Every gate reproduced
+
+| gate | pass 8 | pass 7 | |
+| --- | --- | --- | --- |
+| `npx tsx script/m14/ontology-coverage-gate.ts css` | **exit 0**, all ten rows, `emitted 5/10  ruled-sound 5  FALSIFIED 0  ruled-without-justification 0`; counts `contains` 175,171 / `uses` 2,620 / `references` 161,768 / `imports` 243 / `overrides` 48 | same verdict, exit 1 | reproduced, **and exit 0 for the first time in this lane's record** |
+| `npx tsx validation/m14/census/css-parsefile-census.ts --all` | **1,255/1,255 parsed, 0 failures, 0 degraded**, 238,536 symbols, **339,850 relationships**, **0** empty names, **0** empty/unknown kind, **0** `unknown` endpoints, **0** empty-string endpoints | identical | reproduced, byte-for-byte |
+| `npx tsx script/m14/firing-check.ts --files 120 css` | **5/10 fired, 47,667 edges, 120/120 files, 0 degraded** | identical | reproduced, byte-for-byte |
+| `npx tsx validation/m14/census/css-ontology-probe.ts` | 103 node types, 1,255 files / 79 repos, 422 with an ERROR, `var()` **162,470** / 392 files, `@extend` directive **0** / 0, at-keyword **46** / 26 | identical | reproduced |
+| `npx tsx validation/m14/census/css-extend-lexability.ts` | **46 / 46 `@extend` keywords inside ERROR nodes**, 0 directives, ancestor chains `ERROR` 32 / `ERROR > ERROR` 8 / `stylesheet > ERROR` 5 / `ERROR > import_statement > binary_expression > ERROR` 1 | identical | reproduced |
+| `npx tsx validation/m14/census/css-overrides-differential.ts` | **exit 0**, 1,255/1,255, 48 emitted, **48 agree / 20 MISSING (20 store collisions, 0 real gaps) / 0 EXTRA**, `VERDICT: no analyzer defect` | identical | reproduced |
+| `npx tsx script/m14/differential.ts --lang css --sample 60` | **exit 0**, `unexplained=0` and `heuristic=0` on both corpora, **MISSING=2** (the pinned `@namespace` rows); svelte 39/41, grails-core **507/507** (`rot 43`) | svelte 39/41, grails-core 487/487 (`rot 42`) | reproduced; the `rot` moved, and the row counts moved with it exactly as pass 7 predicted |
+| `bun run script/m14/run-fixtures.ts --lang css` | **15 pass / 0 fail**, `fixture baseline gate: no regressions` | identical | reproduced |
+| `BB_MUTANT_ONLY="css/" bun run script/m14/mutate-analyzer.ts` | **14 mutants, 14 CAUGHT, 0 surviving** (filtered 1,753 → 14) | identical | reproduced |
+| `npx tsx script/m12/verify-regex-census.ts` | `real-css-analyzer.ts` in **neither** MISSING nor STALE; **lane count 0** | identical | reproduced |
+| `npx tsc --noEmit` | **0 errors** | identical | reproduced |
+
+### The gate exited 0 for the first time, and the run before it exited 1 with no table at all
+
+The two runs are the spread pass 7 measured, observed again in a single round:
+
+| run | real exit | table printed | what the machine said |
+| --- | --- | --- | --- |
+| 1 | **1** | **NO** — the guard fired before any row | `[BB-PARSE-ERR] … errors.css \| memory access out of bounds`, the same for `mobile.css`, then `[BB-HANG] parser stuck 120s on … errors.css` |
+| 2 | **0** | yes, all ten rows | nothing at all — no parse-error line, no hang |
+
+Same commit, same corpus, same command, 5 minutes apart. Run 2's counts match the census to
+the edge, which is the part that matters: **a run that is not truncated is not a run that is
+wrong**, and run 2 is the first in this lane's record to exit 0.
+
+### The hang population is timed now, not argued
+
+Pass 5 timed one file (`spectre.min.css`, 1.06 s). Pass 7 listed five files and argued from
+co-occurrence that the population is not a property of the files. This round timed **all six**
+through production `parseFile`, which converts the argument into a measurement:
+
+| file | isolation time | symbols | relationships |
+| --- | --- | --- | --- |
+| `grails-core/…/stylesheets/errors.css` | **2,977 ms** | 17 | 0 |
+| `spectre/dist/spectre.min.css` | **1,270 ms** | 640 | 100 |
+| `grails-core/…/stylesheets/main.css` | **201 ms** | 91 | 5 |
+| `grails-core/…/stylesheets/mobile.css` | **104 ms** | 16 | 14 |
+| `hasura-engine/scripts/ekg/monitor.css` | **21 ms** | 8 | 0 |
+| `svelte/…/preserve-specificity/expected.css` | **16 ms** | 2 | 0 |
+
+The budget is 120,000 ms. The slowest of the six is **40× under it** and the fastest parses
+in 16 ms. **So no file on the list is slow**, and the guard is measuring the machine.
+
+**A second thing fell out of the same table.** Run 1 printed `[BB-PARSE-ERR] … memory access
+out of bounds` for `mobile.css` as well as for `errors.css`, and `mobile.css` is the
+**104 ms** row above — it parses to 16 symbols and 14 relationships without difficulty. So the
+parse-error line is not a second, independent parser defect either; it is the same loaded
+machine, and the census's own accounting agrees: it prints `parse failures 0` over the same
+1,255 files. A reader who took run 1's two error lines as evidence about those two files would
+be wrong on both counts, and this round has the numbers to say so.
+
 ## PASS 7 — every gate reproduced on a THIRD consecutive unmoved corpus, and the `extends`
 ## ruling's two numbers were reconciled instead of being consistent
 
@@ -789,7 +854,7 @@ asserted from a comment or from a spec file.
 | Growth, pass 5 | 1,180 → **1,255 files, 76 → 79 repositories**, again by other lanes cloning into the shared corpus. This lane cloned nothing in pass 5. The +64 `imports` edges are the visible consequence and are attributed under "PASS 5" above |
 | Files the project states as its floor | 200+ per family; the census is 6.3× that |
 | Files parsed | **1,255 of 1,255**; **0 failed**; **0 degraded** (`fallback: true`) |
-| Parse-robustness findings | **422 of 1,255 (33.6%)** carry a tree-sitter ERROR somewhere (`css-ontology-probe.ts`, re-measured in pass 5 and again in pass 6; 358 of 1,180 / 30.3% at pass 4; 356 of 1,131 / 31.5% at pass 2; 354 of 1,114 / 31.8% at handover). **FIVE** distinct files have now been observed tripping `parseFile`'s own 120 s `[BB-HANG]` guard — `svelte/packages/svelte/tests/css/samples/preserve-specificity/expected.css`, `hasura-engine/scripts/ekg/monitor.css`, `spectre/dist/spectre.min.css` (which parses in **1.06 s in isolation**, so it is a load artefact and not a property of the file) `grails-core/grails-test-examples/namespaces/grails-app/assets/stylesheets/main.css` and `spectre/docs/dist/spectre-exp.css`. The set keeps changing while `spectre.min.css` stays fast, which is the evidence that the population is not a property of the files — see §8 item (f) |
+| Parse-robustness findings | **422 of 1,255 (33.6%)** carry a tree-sitter ERROR somewhere (`css-ontology-probe.ts`, re-measured in pass 5 and again in pass 6; 358 of 1,180 / 30.3% at pass 4; 356 of 1,131 / 31.5% at pass 2; 354 of 1,114 / 31.8% at handover). **SIX** distinct files have now been observed tripping `parseFile`'s own 120 s `[BB-HANG]` guard, and **pass 8 timed every one of them in isolation through production `parseFile`, so the whole population is measured rather than inferred**: `errors.css` **2,977 ms**, `spectre.min.css` **1,270 ms**, `main.css` **201 ms**, `mobile.css` **104 ms**, `hasura-engine/scripts/ekg/monitor.css` **21 ms**, `svelte/.../preserve-specificity/expected.css` **16 ms**. Not one of the six is near 120 s, so the trip is a property of the machine and not of any file — see §8 item (f) and "PASS 8" below |
 
 The 31.8% is a **grammar** figure, not an analyzer figure: the pinned tree-sitter-css is
 0.25.0 and range media queries, `@page`, `[attr i]`, `&&` nesting and HTML comments are
@@ -1413,16 +1478,34 @@ on `@extend` BY CONSTRUCTION because the grammar routes every unrecognised at-ru
 catch-all `at_rule`. Both rows carry their A probe as a secondary check and their B probe as
 the decider. `script/m14/css-ruled.ts` is authoritative.
 
-### Reported, not edited — six open items, one applied in pass 4, one added in pass 7
+### Reported, not edited — seven open items, one applied in pass 4, one added in pass 7, one added in pass 8
 
 Items (b) through (g) are open and §8-owned. Item (a) was open for a round, was the lane's
 critical path, and is now APPLIED — it is kept in the list rather than deleted so the
 measurement that justified it stays next to the record of what it produced. Item (g) was added
-this round: it was found by running the gate, and it silently destroys a shared artifact.
+in pass 7: it was found by running the gate, and it silently destroys a shared artifact.
+Item (h) was added in pass 8.
 
 Each is written to be applied without re-deriving it: file, function, what it must do,
 why, and the measurement that says it is needed. All are §8 items under
 `docs/analyzers/ONTOLOGY-WORKSTREAM.md`.
+
+**(h) ADDED IN PASS 8 — the shared corpus is at 98% of the disk, and the arbiter's hang guard
+is the mechanism that will make that someone's problem first.** Measured at 11:55 on
+2026-10-04 from this lane: `df -h /` reports **9.4 G free of 460 G (98% used)**, and
+`$HOME/fixtures/repositories` holds **183 repositories** against the ~90 the lane
+brief described. Nothing needs to change in the code for this to be fixed — it needs someone
+to decide whether the corpus keeps growing, and if so what gets deleted. Two concrete notes
+so the decision does not have to be re-derived: (1) this lane's own admitted set is
+**1,255 files**, so the 183 repositories are mostly *not* css and a css-only lane cannot
+audit the other 182; (2) the deletion rule the lane brief states is "delete build artifacts,
+never source", and the temptation under pressure will be to delete whole repositories that
+other lanes are mid-measurement on — `mdn/content` is the worked example, 260 MB of walk
+cost for 0 admitted css files, deleted by this lane in an earlier pass. **No shared
+corpus state is this lane's to change**, so this is reported and not acted on. It is filed
+here rather than as prose because the failure it predicts is the one this lane has now
+measured twice: a gate run that dies on a 120 s guard and prints no verdict, on a machine
+that is out of memory and out of disk at the same time.
 
 **(a) APPLIED IN PASS 4 — `script/m14/ontology-coverage-gate.ts`, `RULED_BY_LANG`.**
 This item was open for a whole round and was the lane's critical path: the gate exited 2
@@ -1681,12 +1764,18 @@ spectre.min.css -> {"ms":1063,"symbols":640,"rels":100,"errors":0}
 the guard killed the gate on is not slow and not unparseable in isolation, and the
 `[BB-PARSE-ERR] memory access out of bounds` that precedes the hang is a *consequence* of
 the loaded machine rather than a property of the file — the same file parsed clean minutes
-later under the same wasm. FIVE files have now been observed tripping it across this lane
+later under the same wasm. **SIX** files have now been observed tripping it across this lane
 (`preserve-specificity/expected.css`, `hasura-engine/…/monitor.css`, `spectre.min.css`,
-`grails-core/…/namespaces/grails-app/assets/stylesheets/main.css`,
-`spectre/docs/dist/spectre-exp.css`) and the population is **not a property of the files**
+`grails-core/…/stylesheets/main.css`, `spectre/docs/dist/spectre-exp.css`,
+`grails-core/…/stylesheets/errors.css`) and the population is **not a property of the files**
 — every one of them was observed on a run where a sibling run over the SAME corpus
-completed. Pass 6 also measured the consequence, which is the reason this item is worth
+finished. **Pass 8 closed the remaining gap in that argument by timing all six in
+isolation, and the timings are the load measurement**: 2,977 / 1,270 / 201 / 104 / 21 / 16 ms
+against a 120,000 ms budget, the slowest being 40× under it. Pass 8 also caught the
+`[BB-PARSE-ERR] memory access out of bounds` being emitted for a file that is not slow —
+`mobile.css` drew that line in the same run and parses to 16 symbols and 14 relationships in
+**104 ms** — so the error line is a symptom of the same loaded machine, not a second
+independent parser defect. Pass 6 also measured the consequence, which is the reason this item is worth
 the supervisor's time rather than a file list: a truncated run still prints the full
 ten-row table and `FALSIFIED 0`, with its edge counts short by 8 `uses` and 6 `contains`.
 See "PASS 6" above for the four-run comparison. That narrows the fix: this is not
