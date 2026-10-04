@@ -749,6 +749,106 @@ resolved targets is 0.6%, and the same mechanism would apply; it was not applied
 because a second untested edge type is a new claim rather than a closed gap, and
 the 6 are counted here instead.
 
+## DERIVATION debt: the five unexplained edges are the oracle's blind spot
+
+`script/m14/differential.ts --lang bash` reports, on its 60-file `otp` sample
+(`rot 21`, hash `b0549e4c8d9e5e6a`): truth **1,597**, covered **1,597 (100%)**,
+MISSING 0, analyzer-edges 1,561, **unexplained 5 (0.3%)**, heuristic 0. Round 3
+read unexplained 0. Five unexplained edges is the kind of number that gets
+attributed to whatever change happens to be in the tree, so this section
+establishes which of the two it is before saying anything about it.
+
+**Not round 5.** `ab-round5-targetline.ts` parses the same 115 pinned `otp` files
+through the analyzer before and after the target-resolution work and differences
+the relationship sets as sets of `(source, type, target, line)`:
+
+| | value |
+| --- | --- |
+| edges, pre-change (`b2b6ee090~1`) | **7,813** |
+| edges, post-change (`b2b6ee090`) | **7,813** |
+| edges ADDED | **0** |
+| edges REMOVED | **0** |
+| edges with metadata changed | 84, additive only (`targetLine` 84, `targetKind` 84, `targetResolution` 84) |
+
+The differential could not have answered this itself. Its cold-pool rotation draws
+`rot N` and increments on every run, so two consecutive runs are not comparable;
+and its lane journal lives in a shared `/tmp` file that six other agents are also
+writing. Resetting the rotation to reproduce the exact 60 files would have meant
+mutating state this lane does not own. The A/B is therefore a separate instrument
+with a pinned file set, which is what the claim needed.
+
+**Not a fabrication either — an oracle that cannot see the construct.** All five
+were located from the F5 lane journal, and every one carries
+`metadata.isImplicitBinding: true`:
+
+| file:line | edge | site |
+| --- | --- | --- |
+| `otp/make/fixup_doc_links.sh:29` | `contains` `fixup_doc_links.sh` → `app` | `for` |
+| `otp/erts/etc/win32/nsis/find_redist.sh:74` | `contains` `add_path_element` → `x` | `for` |
+| `otp/erts/etc/win32/nsis/find_redist.sh:174` | `contains` `find_redist.sh` → `verdir` | `for` |
+| `otp/lib/edoc/test/test_libs.sh:19` | `contains` `test_libs.sh` → `i` | `for` |
+| `otp/erts/emulator/ryu/update.sh:57` | `contains` `update.sh` → `yn` | `read` |
+
+The cause is one condition in the oracle. `deriveBashEdges` (exported at
+`script/m14/differential.ts:24815`) branches on
+
+```ts
+if (n.type === "variable_assignment" || n.type === "declaration_command")
+```
+
+which are exactly the two node types the analyzer's declaration collectors read
+**before round 4**. The oracle was never taught `for NAME in …`, `read NAME`,
+`mapfile` or `printf -v`, so it publishes no declaration and no `contains` edge for
+any of them, and every symbol round 4 added is unexplained *by construction*. This
+is the same failure the lane has already recorded once, from the other side: the
+`overrides` type was omitted by the oracle too, and two implementations that both
+say nothing agree perfectly.
+
+**Size of the class** (`probe-bash-derivation-debt.ts`, 400 files hash order,
+4,130 admitted):
+
+| | count |
+| --- | --- |
+| implicit-binding symbols published | **175** (`for` 127 in 71 files, `read` 48 in 25) |
+| `contains` edges naming one | **179** — all unexplained by construction |
+| `uses` edges naming one | **400** — all resolve; this was round 4's fix |
+| `mapfile`, `printf -v` | **0** on this sample, and the reason is measured below |
+
+So the DERIVATION debt in this lane is **one class over two constructs**, not a
+general divergence: 179 `contains` edges on a 400-file sample, from `for` and
+`read`. The `uses` side needs nothing, because an edge whose target resolves is
+right whether or not the oracle happens to have heard of it — which is also why
+round 4's 357-target improvement never showed up here.
+
+**Reported, not edited** (§8): `script/m14/differential.ts` is shared machinery.
+The change needed is, in `deriveBashEdges`: read the bare `variable_name` child of
+`for_statement`; and for `read`/`mapfile`/`readarray`, apply the option table
+(`READ_VALUE_OPT_LETTERS`) plus the last-position bundle rule — the same table
+round 4b spent a surviving mutant on, so it is known to be the subtle half. Without
+both, a partial port would leave the lane at unexplained > 0 with no way to tell
+"the oracle is still incomplete" from "the analyzer fabricates".
+
+### A correction against round 4's own headline number
+
+Round 4 reported "binding sites 234". That is a count of **tree sites** and it
+answers "does the construct occur"; it must not be read as 234 declarations
+published. Measured on the same sample: of the **173** `for` sites, **21 (12.1%)
+are correctly declined** because the name is already declared in the same scope by
+a `NAME=` or a declaration construct, and the analyzer publishes **175**
+implicit-binding symbols. The two `mapfile`/`printf -v` sites round 4 listed were
+checked individually and are both reassignments:
+
+- `bash-completion/completions-core/cvs.bash` declares `cvsroots` at line 43 with
+  `cvsroots=("$CVSROOT")` and only re-targets it at line 46 with
+  `mapfile -tO "${#cvsroots[@]}" cvsroots <CVS/Root`
+- `bash-completion/completions-core/ip.bash` declares `local namespace` at line 30
+  and only re-targets it at line 31 with `printf -v namespace '%q' "$ns"`
+
+Declining those is first-declaration-wins working, not a gap, and the symbols they
+produce carry the earlier site's metadata rather than `bindingSite`. Round 4's
+number was not wrong about anything it claimed to measure; the reading is, so it is
+corrected here rather than left to be over-read.
+
 ## The two fabrications pass 2 found, and the guard that removed them
 
 Pass 1 measured how MANY edges there were. Pass 2's job was to find edges that are
@@ -1341,7 +1441,7 @@ This round's own measurements, each reproducible from a named file in
 
 | check | command | result |
 | --- | --- | --- |
-| Ontology census, 400 hash-ordered files | `npx tsx validation/m14/fixtures/bash/census-bash-ontology.ts --sample 400` | 7 types emitted, **17,117 relationships** (round 2 read 17,122; delta −5, attributed edge for edge), 0 parse failures, 0 empty names, 0 `unknown` endpoints, 0 empty endpoints, 0 unknown kinds |
+| Ontology census, 400 hash-ordered files | `npx tsx validation/m14/fixtures/bash/census-bash-ontology.ts --sample 400` | **ROUND 5**: 4,130 admitted / 458,446 scanned / 48 repos in sample; 7 types emitted, **17,009 relationships**, 4,186 symbols, 0 parse failures, 0 empty names, 0 `unknown` endpoints, 0 empty endpoints, 0 unknown kinds. Per type: calls 5,099 · uses 7,802 · contains 3,782 · imports 44 · references 44 · exports 210 · overrides 28. NOT comparable with round 3's 17,117: different sample (corpus grew 4,012 → 4,130 admitted) |
 | Round-3 adversarial probes | `npx tsx validation/m14/fixtures/bash/adversarial-probes3.ts --sample 400` | duplicate symbols **10**, all `function`, in 5 files, all real re-declarations; self-edges **73** (`calls` 54 / `overrides` 8 / `contains` 10 / `uses` 1); `exports`→symbol 210/210, 0 orphans, `exportForm` function 1 resolving to a function; `overrides` both-declarations-top-level **28/28**; reserved-word leak **0**; `calls`→own-variable **3**, the same 3 pass 2 adjudicated as correct; `INTERPRETED_COMMANDS` command nodes in command position **580**, reaching its gate **0** |
 | Guard F A/B — the defect's cost | `npx tsx validation/m14/fixtures/bash/guard-f-bash-imports.mts --sample 400` and `--sample 1200` | F2 removes **5 edges in 1 file with 0 real calls**, identically at 400 files / 48 repos and 1,200 files / 76 repos; F1 removes 5 but fires on valid bash; F3 removes 20 of which **15 are real** `kube::log::status` calls in gubernator.sh |
 | Guard F soundness — 39 node shapes | `npx tsx validation/m14/fixtures/bash/guard-f-soundness.mts` | F2 fires on **0** valid-parse command nodes; F1 fires on **1** (`awk one two ) three`) and is rejected. Exit code 0 |
@@ -1350,14 +1450,19 @@ This round's own measurements, each reproducible from a named file in
 | Grammar inventory (instrument A) | `npx tsx validation/m14/fixtures/bash/probe-bash-grammar-inventory.mts --sample 400` | **144 distinct node types**; `extends`/`implements`/`instantiates` → NONE |
 | RULED-construct probes (instrument B) | `npx tsx validation/m14/fixtures/bash/probe-bash-ruled-constructs.mts --sample 400` | parse-tree **0/0/0**; lexical 7/5/0 = **12 rows over 7 sites, every row a `#` comment line**; dynamic doors 42/11/8 |
 | Guard A/B | `npx tsx validation/m14/fixtures/bash/guard-ab-bash-calls.ts --sample 400` | A 30→0 implemented; B 108 rejected; C 0; D 0; E 18 rejected. **Pass-1 denominators; not re-run in round 3** |
-| Fixtures | `bun run script/m14/run-fixtures.ts --lang bash` | **20 pass, 0 fail** (round 2 read 19; `bash/case-arm-pattern-not-a-command` is new) |
+| Fixtures | `bun run script/m14/run-fixtures.ts --lang bash` | **ROUND 5: 22 pass, 0 fail** (round 3 read 20; `bash/ambiguous-target-resolution` is new) |
 | Pass-2 adversarial probes | `npx tsx validation/m14/fixtures/bash/adversarial-probes.ts --sample 400` | unresolved-target decomposition: **0 missed declarations** on `calls` and on `uses`; 0 bash builtins named by a call; `imports`/`references` overlap **44/44 both ways**; `overrides` **28/28** have an earlier definition; `exports` targets by kind constant 183 / variable 26 / function 1; confidence `calls` {1.0: 5129, 0.7: 18}, `uses` {0.8: 7947} |
-| Lane source mutants | `npx tsx validation/m14/fixtures/bash/mutants-bash-lane.mts` | **8 mutants, 8 caught, 0 survived, 0 did not apply** (round 2 read 5/5) |
+| Lane source mutants | `npx tsx validation/m14/fixtures/bash/mutants-bash-lane.mts` | **ROUND 5: 16 mutants, 16 caught, 0 survived, 0 did not apply**, control 22/22 green before any verdict is read (round 3 read 8/8; 4 new for the ambiguity work) |
 | Shared mutant registry, bash slice | `BB_MUTANT_ONLY="bash/" bun run script/m14/mutate-analyzer.ts` | filtered 1,723 → **23, all 23 caught, 0 survivors** |
 | Ontology coverage gate | `npx tsx script/m14/ontology-coverage-gate.ts bash` | **7/10 emitted, 3 RULED-SOUND, 0 FALSIFIED, 0 ruled-without-justification**, on both runs — but the per-type totals **differ between them** (`calls` 53,443 vs 53,481) and five `[BB-PARSE-ERR] … memory access out of bounds` rows appeared, one run ending `[BB-HANG] parser stuck 120s` and exiting. See limitation 15 |
-| Differential, bash only | `bun run script/m14/differential.ts --lang bash` | `otp` pin, 60 files: truth **1,657**, covered **1,657**, MISSING 0, analyzer-edges 1,608, **unexplained 0**, heuristic 0. The run states it did **not** write the F5 artifact, "a scoped run is for inspecting lanes, and writing it here would replace that claim with a smaller one" |
+| Differential, bash only | `npx tsx script/m14/differential.ts --lang bash` | `otp` pin, 60 files, `rot 21`, hash `b0549e4c8d9e5e6a`: truth **1,597**, covered **1,597 (100%)**, MISSING 0, analyzer-edges 1,561, **unexplained 5 (0.3%), all labelled `contains`**, heuristic 0. **Round 3 read unexplained 0, and the five are attributed, not absorbed — see [DERIVATION](#derivation-debt-the-five-unexplained-edges-are-the-oracles-blind-spot).** The run states it did **not** write the F5 artifact, "a scoped run is for inspecting lanes, and writing it here would replace that claim with a smaller one" |
+| Round-5 A/B — did the change alter an edge? | `BB_AB_BASE=b2b6ee090 npx tsx validation/m14/fixtures/bash/ab-round5-targetline.ts --sample 200` | `otp`, 115 pinned files: old 7,813 edges, new 7,813 edges, **ADDED 0, REMOVED 0**, 84 metadata-only changes (`targetLine`/`targetKind`/`targetResolution` × 84 each). **PASS**. Written because the differential could not answer it: its cold-pool rotation drew `rot 21`, two consecutive runs are not comparable, and its lane journal is a shared `/tmp` file this lane does not own |
+| Ambiguity — one edge, N declarations | `npx tsx validation/m14/fixtures/bash/probe-bash-ambiguity.mts --sample 400` | **1,879** ambiguous targets across 5 types; **0 irreducible by line** (100% of candidate sets on distinct `startLine`s); nearest-preceding picks exactly one in **1,830 = 97.4%**, 49 tie. Per type: uses 1,185 (19.0% of 6,239 resolved) · contains 658 (17.4%) · overrides 28 (100%) · calls 6 (0.6%) · exports 2 (1.0%). Denominators match the census exactly, which required copying its 512 KB cap and content-form `detectLanguageFromPath` |
+| DERIVATION debt — class size | `npx tsx validation/m14/fixtures/bash/probe-bash-derivation-debt.ts --sample 400` | implicit-binding symbols published **175** (for 127/71 files, read 48/25 files); `contains` edges naming one **179**, all unexplained by construction; `uses` edges naming one **400**, all resolving |
+| Evidence census, every admitted file | `npx tsx validation/m14/fixtures/bash/probe-bash-missing-evidence.mts` | 4,130 admitted files, **137,770 edges, 0 with no `evidenceClass`**. calls 55,220 · uses 80,851 · contains 38,273 · exports 1,929 · imports 679 · references 679 · overrides 138. Confidence: **0 edges below 0.7 in any type**; the 223 `calls` edges at exactly 0.7 are the damaged-region tier |
+| Lane regex census | `npx tsx validation/m14/fixtures/bash/probe-bash-no-regex.mts` | **0 regex literals across 0 of 16 lane files** (analyzer + 15 probes/fixtures/mutants) |
 | DERIVATION debt | `npx tsx script/m60/rel-type-coverage-gate.ts --langs=bash` — **read the warning in Q6 first** | CHECK 1 DERIVATION **clean**; `baseline: 104 recorded, 0 NEW, 104 repaid`; and the committed `validation/m60/results/rel-type-coverage.json` carries **0 findings and 0 baseline rows naming bash** |
-| Regex census | `npx tsx script/m12/verify-regex-census.ts` | at the merged `analyzer/BASH` it printed `MISSING real-bash-analyzer.ts:706:/^\(\(/`, `:706:/\)\)$/` and `:713:/^\$\(\(/` — three gate rows attributable to this lane, recorded nowhere in its own doc. After the round-3 rewrite `scanAnalyzers("src/ast")` reads **bash 0**. The gate is still `FAILED` on **other** lanes (css, julia, clean, fsharp, javascript, python, svelte, typescript) |
+| Regex census (project gate) | `npx tsx script/m12/verify-regex-census.ts` | **Re-run round 5: still `FAILED`, with ZERO rows naming bash.** The committed `validation/m12/results/regex-census.json` has `perFile` = 7 files / 26 regex usages and `real-bash-analyzer.ts` is not among them, which is the census recording that the lane has none. The 30 MISSING/STALE rows are **css, julia, clean, fsharp, javascript, python, svelte, typescript** — not this lane's to fix (§8). The lane's own direct measurement is the row above |
 | Doc-truth emissions | `bun run script/m14/verify-doc-truth-emissions.ts` | see the note below — re-run for this revision |
 
 Supporting artifacts:
