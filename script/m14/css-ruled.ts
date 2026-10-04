@@ -1,11 +1,17 @@
 /**
  * CSS's entry for `script/m14/ontology-coverage-gate.ts`'s ruling table.
  *
- * ## WHY THE TABLE LIVES HERE AND NOT IN THE GATE
+ * ## THE TABLE IS NOW REGISTERED — THIS SECTION IS THE RECORD OF WHY IT USED NOT TO BE
+ *
+ * Everything in this block is a record of a PAST run and its corpus is not the current
+ * one. The corpus is shared and other lanes clone into it, so `1196` below was a real
+ * reading at the time and is 1,255 today; nothing in this block should be quoted as a
+ * current figure. The measurements a reader should act on are in `CSS_RULED`'s own
+ * `describe` strings, which the gate re-measures and re-prints on every run.
  *
  * `script/m14/ontology-coverage-gate.ts` is supervisor-owned shared machinery (lane
  * brief §8) and `RULED_BY_LANG` in it is a literal with no extension point. Run
- * against `css` it refuses to report at all:
+ * against `css` it used to refuse to report at all:
  *
  *   $ npx tsx script/m14/ontology-coverage-gate.ts css
  *   ontology coverage gate — css
@@ -16,24 +22,37 @@
  *   $ echo $?
  *   2
  *
- * That refusal is the gate behaving correctly. It is also why this lane's five RULED
- * verdicts have never been checked by the arbiter, which is the whole point of the
- * table. So it lives in a file this lane owns, in the gate's own `Ruled` shape, and
- * the supervisor's permanent change is two lines:
+ * That refusal was the gate behaving correctly. It was also why this lane's five RULED
+ * verdicts went unchecked by the arbiter, which is the whole point of the table. So the
+ * table was written here first, in a file this lane owns, in the gate's own `Ruled`
+ * shape, and `validation/m14/fixtures/css/ruled-gate.ts` proved it by applying the two
+ * lines to a COPY of the gate in /tmp and running that.
+ *
+ * `ROUND-BRIEF.md` item 3 then asked for the registration, and it is now in the gate:
  *
  *   import { CSS_RULED } from "./css-ruled"
- *   const RULED_BY_LANG: Record<string, Ruled[]> = { bash: BASH_RULED, json: JSON_RULED, css: CSS_RULED }
+ *   const RULED_BY_LANG: Record<string, Ruled[]> = { …, css: CSS_RULED }
+ *
+ * The arbiter's verdict on this table, on 1,255 admitted files, is `FALSIFIED 0`,
+ * `ruled-without-justification 0` — five EMITTED plus these five, so 10 of 10
+ * types are ADJUDICATED rather than five adjudicated and five unadjudicated. The gate
+ * re-measures every row on every run, so this note is a record of a measurement and
+ * not a substitute for the next one.
  *
  * The `Ruled` type is declared here rather than imported because the gate's own copy
- * is not exported. It is a structural copy of the gate's (lines 79–87) and the runner
- * below proves the two agree by compiling the gate against this file.
+ * is not exported. It is a structural copy of the gate's, and the runner compiles the
+ * gate against this file, so a divergence in the shape is a compile error rather than a
+ * silent pass.
  *
- * `validation/m14/fixtures/css/ruled-gate.ts` applies exactly those two lines to a COPY
- * of the gate in /tmp and runs it, so the table is proven rather than asserted. The
- * MEASUREMENTS behind every entry are not here — they are in
+ * The MEASUREMENTS behind every entry are not here — they are in
  * `validation/m14/census/css-ontology-probe.ts`, which prints the full grammar
  * vocabulary and every probe's count — and each entry names the probe that produced
- * its number.
+ * its number. That probe's admission rule is transcribed argument-for-argument from the
+ * gate's, because a census over a different file set than the arbiter's makes every
+ * number here uncheckable by the instrument meant to check them: it once read 1,171
+ * where the gate read 1,180, purely because it called `detectLanguageFromPath` with one
+ * argument where the gate uses two. The counts were unchanged; the denominator was not
+ * the same denominator.
  *
  * ## WHAT IS IN THIS TABLE
  *
@@ -67,7 +86,7 @@
  *
  * It is not a claim that the language could never express the construct. For `extends`
  * it demonstrably can: SCSS's `@extend .base` is real selector-level inheritance, and
- * the 3 `.sass` and 54 `.less` files routed to this lane can both write it. What the
+ * the 67 `.sass` and 54 `.less` files routed to this lane can both write it. What the
  * measurement shows is that the construct occurs 0 times in the admitted corpus, so
  * the ruling is about the corpus and the gate re-measures it on every run rather than
  * trusting this note. `.scss` — 4,404 files, the largest CSS-family population in the
@@ -150,7 +169,7 @@ export const CSS_RULED: Ruled[] = [
       "function_declarator", "function_rule", "custom_function_statement",
     ],
     describe:
-      "a user-defined function DEFINITION — the callee a `calls` edge has to name. INSTRUMENT A: the corpus (1,171 admitted files across 76 repositories) yields 103 distinct node types and NOT ONE of them declares a function; the full vocabulary is printed by css-ontology-probe.ts so the claim is checkable rather than asserted. INSTRUMENT B as well, and this is the part that matters: CSS Functions and Mixins Level 1 gives CSS its own named function, `@function --add(a, b) { … }`, which the pinned grammar has no production for, so it can only arrive as a generic `at_rule` whose `at_keyword` reads `@function`. Counted on the tree: 0 declarations, 0 files. The corpus's 85 distinct `function_name` values are every one a CSS built-in — `var` 162,440, `rgba` 18,752, `calc` 15,004, `rgb` 7,347, `url` 4,931 — and no analyzer names a built-in as a `calls` target, which is right: a built-in is not declared anywhere, so there is no declaration to point at. Overturn: any `@function` at-rule on the tree, or any function-declaration node type in the printed vocabulary.",
+      "a user-defined function DEFINITION — the callee a `calls` edge has to name. INSTRUMENT A: the corpus (1,255 admitted files across 79 repositories) yields 103 distinct node types and NOT ONE of them declares a function; the full vocabulary is printed by css-ontology-probe.ts so the claim is checkable rather than asserted. INSTRUMENT B as well, and this is the part that matters: CSS Functions and Mixins Level 1 gives CSS its own named function, `@function --add(a, b) { … }`, which the pinned grammar has no production for, so it can only arrive as a generic `at_rule` whose `at_keyword` reads `@function`. Counted on the tree: 0 declarations, 0 files. The corpus's 85 distinct `function_name` values are every one a CSS built-in — `var` 162,470, `rgba` 20,370, `calc` 15,220, `rgb` 7,362, `url` 4,932 — and no analyzer names a built-in as a `calls` target, which is right: a built-in is not declared anywhere, so there is no declaration to point at. Overturn: any `@function` at-rule on the tree, or any function-declaration node type in the printed vocabulary.",
   },
   {
     type: "exports",
@@ -207,7 +226,7 @@ export const CSS_RULED: Ruled[] = [
       visit(root)
     },
     describe:
-      "a cross-file export SURFACE. INSTRUMENT B and deliberately not instrument A, because the gate's own header records its json lane REMOVING an `exports` ruling made on a grammar inventory: a grammar cannot see a convention, and CSS Modules' surface is a convention with no syntax of its own. Counted on the tree: **0 `composes: … from …` declarations and 0 `:export` rule_sets** across 1,171 files / 76 repositories — and 0 `composes` declarations of ANY kind, so the local-composition case is empty too. INSTRUMENT A agrees and is not relied on: 0 of the 103 node types is `export_statement`, `export_declaration`, `export_list`, `exports_clause`, `export_specifier` or `export_block`. Overturn: any `:export` rule_set or any `composes … from …` declaration on the tree. This is a ruling about THIS corpus, which is dominated by framework stylesheets and holds one CSS-Modules file; a CSS-Modules-heavy repository produces a non-zero count and overturns it.",
+      "a cross-file export SURFACE. INSTRUMENT B and deliberately not instrument A, because the gate's own header records its json lane REMOVING an `exports` ruling made on a grammar inventory: a grammar cannot see a convention, and CSS Modules' surface is a convention with no syntax of its own. Counted on the tree: **0 `composes: … from …` declarations and 0 `:export` rule_sets** across 1,255 files / 79 repositories — and 0 `composes` declarations of ANY kind, so the local-composition case is empty too. INSTRUMENT A agrees and is not relied on: 0 of the 103 node types is `export_statement`, `export_declaration`, `export_list`, `exports_clause`, `export_specifier` or `export_block`. Overturn: any `:export` rule_set or any `composes … from …` declaration on the tree. This is a ruling about THIS corpus, which is dominated by framework stylesheets and holds one CSS-Modules file; a CSS-Modules-heavy repository produces a non-zero count and overturns it.",
   },
   {
     type: "extends",
@@ -221,10 +240,16 @@ export const CSS_RULED: Ruled[] = [
       // `content:` value, and the gate's header records exactly that failure having
       // overturned a ruling once.
       //
-      // Instrument A is silent BY CONSTRUCTION here, which is why B is the decider and
-      // not a supplement: the pinned grammar routes every at-rule it does not
-      // recognise through the catch-all `at_rule`, so no vocabulary change would ever
-      // report `@extend` as absent.
+// Instrument A is silent BY CONSTRUCTION here, which is why B is the decider and
+        // not a supplement: the pinned grammar routes every at-rule it does not
+        // recognise through the catch-all `at_rule`, so no vocabulary change would ever
+        // report `@extend` as absent.
+        //
+        // The count below is 0 and it is the DIRECTIVE count, which is not the same question
+        // as "does the corpus write `@extend`" — it writes it 46 times. `css-extend-lexability.ts`
+        // measured where all 46 land: 46 of 46 are inside an ERROR node, 0 inside an at_rule.
+        // So this predicate returning 0 is a property of the grammar, not of the corpus and not
+        // of a filter that failed to look.
       const visit = (n: any): void => {
         if ((n.type === "at_rule" || n.type === "postcss_statement") && atKeywordOf(n) === "@extend") {
           hits.push(`${fileLabel}: @extend (selector-level inheritance)`)
@@ -234,7 +259,7 @@ export const CSS_RULED: Ruled[] = [
       visit(root)
     },
     describe:
-      "selector-level or type-level INHERITANCE. INSTRUMENT B, because instrument A cannot see it: `@extend .base` is a directive the pinned grammar routes through the catch-all `at_rule`, so the 103-node-type inventory is silent by construction — the same structural reason bash's `overrides` needs instrument B. Counted on the tree: **0 `@extend` at-rules across 1,171 files / 76 repositories, and 0 occurrences of the at-keyword itself**, so the directive is not merely absent but unexercised by the corpus. INSTRUMENT A agrees and is not relied on: 0 of the 103 node types is a type declaration (`class_declaration`, `class_specifier`, `interface_declaration`, `struct_declaration`, `inheritance_specifier`, `base_class_clause`, `superclass`, `base_list`). WHAT THIS IS NOT: a claim that the language cannot express it. SCSS's `@extend` is real, `.sass` and `.less` are both routed to this lane and both can write it, and the corpus's 3 `.sass` + 54 `.less` files simply do not. `.scss` — 4,404 files, the largest CSS-family population in the corpus — routes to `real-scss-analyzer.ts` under `analyzer/SCSS`, so the `extends` question for it is that lane's separate verdict on a separate corpus. Overturn: any `@extend` at-rule on the tree, or any type-declaration node type in the printed vocabulary.",
+      "selector-level or type-level INHERITANCE. INSTRUMENT B, because instrument A cannot see it: `@extend .base` is a directive the pinned grammar routes through the catch-all `at_rule`, so the 103-node-type inventory is silent by construction — the same structural reason bash's `overrides` needs instrument B. Counted on the tree: **0 `@extend` at-rules across 1,255 files / 79 repositories**. THE AT-KEYWORD IS NOT ABSENT, and an earlier version of this string said it was — that was wrong, and wrong in the direction that made the ruling look better supported than it is. Measured: the at-keyword `@extend` occurs **46 times in 26 files**, every one inside a `.sass` partial. WHERE THOSE 46 LIVE is the number that settles the ruling, and `validation/m14/census/css-extend-lexability.ts` reports the ancestor chain of every one: **46 of 46 sit inside an ERROR node** (`ERROR` 32, `ERROR > ERROR` 8, `stylesheet > ERROR` 5, `ERROR > import_statement > binary_expression > ERROR` 1) and **0 sit inside an `at_rule` or `postcss_statement`**. So the corpus writes the directive, the grammar lexes the keyword, and the grammar has no production for the construct — what reaches the tree is error recovery around bytes it cannot classify, and an ERROR node carries a byte range with no meaning attached, so the directive is not recoverable by ANY analyzer over this grammar. INSTRUMENT A agrees and is not relied on: 0 of the 103 node types is a type declaration (`class_declaration`, `class_specifier`, `interface_declaration`, `struct_declaration`, `inheritance_specifier`, `base_class_clause`, `superclass`, `base_list`). WHAT THIS IS NOT: a claim that the language cannot express it. SCSS's `@extend` is real, `.sass` and `.less` are both routed to this lane and both can write it, and the corpus's 67 `.sass` + 54 `.less` files write the keyword without producing a directive. `.scss` — 4,404 files, the largest CSS-family population in the corpus — routes to `real-scss-analyzer.ts` under `analyzer/SCSS`, so the `extends` question for it is that lane's separate verdict on a separate corpus. Overturn: any `@extend` at-rule on the tree, or any type-declaration node type in the printed vocabulary.",
   },
   {
     type: "implements",
@@ -254,7 +279,7 @@ export const CSS_RULED: Ruled[] = [
       "object_creation", "instantiation_expression", "new_declarator",
     ],
     describe:
-      "a CONSTRUCTOR CALL, or any expression that builds a value from a name. INSTRUMENT A: 0 of the 103 node types is an object-creation production; the pinned grammar has none because CSS has no user-defined type to construct. The one CSS construct that produces a value from a name is `var(--x)` substitution, and it is measured rather than argued: **162,440 `var()` calls across 386 files**, every one of them a READ of a declaration rather than a construction, and every one of them already emitted as a `references` edge by this lane. That is the population a careless probe would have counted as 162,440 instantiations, and it is why the row carries the number instead of the adjective. Overturn: any object-creation node type in the printed vocabulary, or a CSS construct that constructs rather than reads.",
+      "a CONSTRUCTOR CALL, or any expression that builds a value from a name. INSTRUMENT A: 0 of the 103 node types is an object-creation production; the pinned grammar has none because CSS has no user-defined type to construct. The one CSS construct that produces a value from a name is `var(--x)` substitution, and it is measured rather than argued: **162,470 `var()` calls across 392 files**, every one of them a READ of a declaration rather than a construction, and every one of them already emitted as a `references` edge by this lane. That is the population a careless probe would have counted as 162,470 instantiations, and it is why the row carries the number instead of the adjective. Overturn: any object-creation node type in the printed vocabulary, or a CSS construct that constructs rather than reads.",
   },
 ]
 
@@ -265,6 +290,6 @@ export const CSS_RULED: Ruled[] = [
  * never consults the table. It is exported here anyway because the gate's report line
  * prints it, and a row whose instrument was never exercised reads identically to a row
  * whose instrument found nothing. `overrides` is EMITTED on the corpus: 48 edges in 7
- * files of 1,180, measured through production `parseFile`.
+ * files of 1,255, measured through production `parseFile`.
  */
-export const CSS_OVERRIDES_EXAMINED = { edges: 48, files: 7, admittedFiles: 1180 }
+export const CSS_OVERRIDES_EXAMINED = { edges: 48, files: 7, admittedFiles: 1255 }

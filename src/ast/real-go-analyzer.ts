@@ -391,6 +391,83 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
 
+    // PHASE 5b: the same list as an EDGE. The `exports` ARRAY above has been
+    // published for this lane since the M14 wave and consumed as "what this
+    // package makes available", but no `exports` RELATIONSHIP was ever emitted,
+    // so `bb_graph` could not answer "what does this module export?" — the
+    // question the edge exists for, and the question the F3 export-uniqueness
+    // invariant is written about.
+    //
+    // Read FROM the array rather than recomputed, deliberately: a second
+    // predicate would be a second answer, and the day they disagreed the lane
+    // would publish an export set that contradicts its own export list. One
+    // source, two surfaces.
+    //
+    // Confidence 1.0: Go's rule is syntactic and total (spec, "Exported
+    // identifiers": exported iff the first character of the name is an upper-case
+    // Unicode letter), so this is a fact about the declaration and not an
+    // inference about it. `classifyEvidenceTier` labels it `structural`.
+    //
+    // SCOPE, stated rather than hidden: the array's predicate excludes package-
+    // scope VARIABLES and every METHOD, because membership rides `contains` and
+    // the JVM-closure F3 invariant requires unique top-level names. Go DOES
+    // export a capitalized package-level `var` (`http.ErrServerClosed`), so that
+    // part of the surface is deliberately not carried here; the count is
+    // measured in docs/analyzers/real-go-analyzer.md rather than estimated.
+    //
+    // PACKAGE SCOPE IS RE-READ FROM THE GRAMMAR, and that is a second predicate
+    // by design, because it answers a DIFFERENT question from the one above. The
+    // array answers "is this symbol a top-level UNIT the export-uniqueness
+    // invariant will accept" — a harness question, answered from the symbol
+    // table. This asks "is this DECLARATION at package scope" — a question about
+    // Go, and the grammar answers it: a `SourceFile`'s DIRECT named children are
+    // package scope by definition, and nothing inside a function body is.
+    //
+    // WHY the edge needs it, measured: the lane deliberately publishes a
+    // function-local `type` as a symbol (the declared-type pass attributes that
+    // type's field types to it, so omitting the symbol would publish a
+    // relationship whose SOURCE names nothing). Those symbols carry no
+    // `ownerName`, so nothing in the symbol table distinguishes `type Widget
+    // struct{}` at line 10 from the same declaration at line 2946 inside a
+    // function body. Position is the only thing that tells them apart, so
+    // position is what is read.
+    //
+    // The gate is on the DECLARATION's position, not on a flag the symbol pass
+    // chose to set, because a flag would be exactly the thing that can be wrong.
+    //
+    // MEASURED, both directions, 500-file stride sample of go-stdlib
+    // (validation/m14/go/go-mislabel-probe.ts): 4,165 `exports` edges published,
+    // 11 of them (2 files) for a name declared inside a function body — Go does
+    // not export those, no importer can bind to them, and each carried
+    // `exportForm: "capitalized_package_scope_name"`, i.e. the edge was labelled
+    // with the exact fact it contradicted:
+    //   test/fixedbugs/bug285.go:20,26,32,38,41,48,55,56   exports -> B Z S T P C I1 I2
+    //   src/cmd/compile/internal/test/align_test.go:78,84,90 exports -> X2 X4 X8
+    //
+    // Fixture validation/m14/fixtures/go/exports-package-scope pins both halves:
+    // a package-scope capitalised name still exports, a function-local one does
+    // not, and neither does one that only LOOKS capitalised.
+    if (packageName) {
+      const packageScopeNames = this.collectGoPackageScopeNames(rootNode)
+      for (const e of exports) {
+        if (!e.name || e.name === packageName) continue
+        if (!packageScopeNames.has(e.name)) continue
+        relationships.push({
+          source: packageName,
+          target: e.name,
+          type: ASTEngine.RelationshipType.Exports,
+          confidence: 1.0,
+          // M59.A7 (#825): the exported declaration's own line.
+          ...(e.range?.startLine ? { line_number: e.range.startLine } : {}),
+          metadata: {
+            relationshipType: "go_exported_identifier",
+            exportForm: "capitalized_package_scope_name",
+            symbolKind: String(e.kind ?? ""),
+          },
+        })
+      }
+    }
+
     // PHASE 5.5: Declared-type reference graph (M14): struct fields, params,
     // receivers, return values, var declarations. Absent until M14 — the
     // corpus oracle never checked it. qualified_type keeps its dotted
@@ -473,10 +550,20 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
       // reached this test only through the round-2 change that MOVED the go
       // import edge off the `references` label, so the alternative became
       // unreachable in the same commit that made the live branch above correct.
-      // The `t === "exports"` alternative next to it is a family-contract mirror
-      // (rust/c/cpp carry it) and go emits no `exports` edge at all; it is left
-      // as the family mirror, and this comment is the record that it is a mirror
-      // rather than a live path here.
+      // The `t === "exports"` branch is NO LONGER a family mirror: the
+      // relationship-type workstream closed the `exports` GAP and the lane now
+      // emits the edge (the export ARRAY always existed; see PHASE 5b), so that
+      // branch is a live path and the comment that called it a mirror was the
+      // kind of stale note that outlives the code it describes.
+      //
+      // TIER, measured not assumed: the export edge is `structural` because both
+      // ends are DECLARATIONS in the same file and the rule is syntactic (Go
+      // spec, "Exported identifiers"). The `overrides` edge below is NOT
+      // `structural` and that is deliberate rather than an oversight: for the
+      // extends/implements/overrides family this classifier derives the tier
+      // from CONFIDENCE, so `extends` at 0.8 reads `inferred` and `overrides` at
+      // 0.95 reads `usage_contextual`. One rule for the family beats a per-type
+      // exception, and src/lsp/evidence_tier.ts rule 1 lets the stored claim win.
       if (t === "references") {
         md.evidenceClass =
           md.relationshipType === "declared_type" || md.relationshipType === "return_type" ? "reference_qualified"
@@ -490,6 +577,92 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (t === "instantiates") { md.evidenceClass = "structural"; continue }
       md.evidenceClass = "usage_contextual"
     }
+  }
+
+  /**
+   * The names this file declares at PACKAGE SCOPE, read from the grammar.
+   *
+   * WHY POSITION AND NOT THE SYMBOL TABLE. The lane publishes a function-local
+   * `type` as a symbol on purpose (the declared-type pass attributes that type's
+   * field types to it, so dropping the symbol would publish a `references` edge
+   * whose SOURCE names nothing), and such a symbol carries no `ownerName`. So
+   * the symbol table cannot answer "is this name in package scope" — nothing in a
+   * `type_spec` symbol distinguishes line 10 from line 2946. The declaration's
+   * position can, and position is what Go's own scoping rule is written about.
+   *
+   * WHY THE DIRECT CHILDREN OF `source_file`. That is the grammar's own
+   * statement of package scope: `package_clause`, `import_declaration`, and the
+   * declarations are its direct named children, and everything else is reachable
+   * only by descending into a `function_declaration`, `method_declaration` or
+   * `func_literal` body — a `block`, which is not a direct child of `source_file`
+   * by construction.
+   *
+   * WHY ONE LEVEL OF SPEC DESCENT AND NO FURTHER. `type_declaration`,
+   * `var_declaration` and `const_declaration` nest their `type_spec`,
+   * `type_alias`, `var_spec`/`const_spec` children directly, and those two
+   * levels are all a package-scope declaration needs. A nested
+   * `function_declaration` is unreachable from here because it would be a child
+   * of a `block`.
+   *
+   * `type_alias` IS a sibling of `type_spec`, not a variant of it:
+   * `type_declaration` holds a choice of the two, so `type WidgetList =
+   * []*Widget` arrives as `type_alias` and `type Widget struct{}` as
+   * `type_spec`. Handling only `type_spec` dropped every exported ALIAS, which
+   * the pre-existing fixture `exports-contract` caught on the first run — see
+   * the commit for that row.
+   *
+   * `_` is the BLANK identifier. It has no name and names no graph node, so it is
+   * left out: the answer to "is this name at package scope" is not yes.
+   *
+   * `Set<string>`, so a declaration named `constructor` or `toString` cannot be
+   * confused with an inherited member — the same Object.prototype hazard the
+   * interface and promotion passes defend against separately.
+   */
+  private collectGoPackageScopeNames(root: Node): Set<string> {
+    const names = new Set<string>()
+    const addSpecNames = (spec: Node): void => {
+      for (let i = 0; i < spec.namedChildCount; i++) {
+        const c = spec.namedChild(i)
+        if (!c) continue
+        if (c.type !== "identifier" && c.type !== "type_identifier") continue
+        const text = String(c.text ?? "")
+        if (text.length === 0 || text === "_") continue
+        names.add(text)
+      }
+    }
+    for (let i = 0; i < root.namedChildCount; i++) {
+      const d = root.namedChild(i)
+      if (!d) continue
+      if (d.type === "function_declaration" || d.type === "method_declaration") {
+        // A method's NAME is package-scoped as a name but the edge's own
+        // predicate drops every method, so including it here would be harmless
+        // and excluding it would be a second scope rule. It is included: this
+        // set answers one question, and the caller answers the other.
+        const nm = d.childForFieldName?.("name")
+        if (nm) {
+          const text = String(nm.text ?? "")
+          if (text.length > 0) names.add(text)
+        }
+        continue
+      }
+      if (d.type !== "type_declaration" && d.type !== "var_declaration" && d.type !== "const_declaration") continue
+      for (let j = 0; j < d.namedChildCount; j++) {
+        const spec = d.namedChild(j)
+        if (!spec) continue
+        if (spec.type === "type_spec" || spec.type === "type_alias") {
+          const nm = spec.childForFieldName?.("name")
+          if (nm) {
+            const text = String(nm.text ?? "")
+            if (text.length > 0) names.add(text)
+          }
+          continue
+        }
+        if (spec.type === "var_spec" || spec.type === "const_spec") {
+          addSpecNames(spec)
+        }
+      }
+    }
+    return names
   }
 
   /**
@@ -522,6 +695,18 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
     // written on so the edge can carry that line instead of the construct's.
     const collectTypeNameNodes = (n: Node, out: Node[], qualified?: string): void => {
       if (n.type === "qualified_type" || n.type === "type_identifier") {
+        // R7, the EMPTY-NAME half. Error recovery types a hole as a real node
+        // with no text: `src/cmd/compile/internal/syntax/testdata/tparams.go`
+        // carries `func f[ /* ERROR empty type parameter list */ ]()`, and the
+        // pinned grammar types the gap as a `type_identifier` whose `text` is
+        // "". The walk collected it like any other type name and published
+        // `references f -> ""` — an endpoint no declaration can resolve, which
+        // is the defect class rule R7 names. Measured over the corpus: 1 such
+        // edge in 500 files, on a file the grammar cannot parse cleanly, and it
+        // was the ONLY empty endpoint in any of the ten types. The guard is here
+        // rather than at the push site because this collector is the only place
+        // that can tell a recovered hole from a written name.
+        if (!n.text) return
         if (!BUILTINS.has(n.text) && !out.some((x) => x.text === n.text)) out.push(n)
         return
       }
@@ -638,6 +823,45 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
         case "field_declaration": {
           // Struct field: type is everything after the name identifier.
           emit(resolveSource(n), [n], "declared_type")
+          break
+        }
+        case "function_declaration":
+        case "method_declaration":
+        case "func_literal":
+        case "method_spec": {
+          // A result written WITHOUT parentheses.
+          //
+          // The grammar gives a function/method/func_literal/method_spec a
+          // `result` FIELD that is EITHER one type node OR a `parameter_list`,
+          // and Go's spec makes the unparenthesised single result the ordinary
+          // spelling (`func f() *T`). Only the `parameter_list` half reached the
+          // `parameter_declaration` case below, so `func f() *T` produced no
+          // return-type reference at all: the walk descended through
+          // `pointer_type` and matched no case.
+          //
+          // MEASURED, both directions, over a 200-file stride sample of
+          // go-stdlib (validation/m14/go/go-return-type-probe.ts):
+          //
+          //   bare_type_result      262 sites / 46 files -> 265 expected edges,
+          //                        1 published   (0.4%)
+          //   parenthesised_result  156 sites / 33 files -> 167 expected,
+          //                        162 published (97.0%)
+          //
+          // So the silent shape was the MAJORITY of the surface, and the shape
+          // that worked was the minority. Fixture
+          // validation/m14/fixtures/go/return-type-shapes pins both, plus the
+          // three predeclared-only results that must publish nothing.
+          //
+// `resolveSource` is called on the RESULT node, matching what the
+          // parenthesised half already does through its
+          // `parameter_declaration`: resolveSource starts at `start.parent`, so
+          // handing it the declaration itself would start the walk one level too
+          // high and attribute every bare result to `global` — a pseudo-source
+          // no consumer can navigate from, which is the same dangling-source
+          // class GOD11 and GO36 were fixed for. Verified by the fixture, which
+          // failed with `global -> Alpha` before this line was corrected.
+          const result = n.childForFieldName("result")
+          if (result && result.type !== "parameter_list") emit(resolveSource(result), [result], "return_type")
           break
         }
         case "parameter_declaration":
@@ -1824,6 +2048,12 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
     // 1. Analyze struct embedding relationships (extends only)
     this.analyzeGoStructEmbedding(rootNode, relationships)
 
+    // 1b. Method SHADOWING of a promoted method (`overrides`). Runs after the
+    // embedding pass because it reads the `extends` edges that pass wrote, and
+    // before the interface pass because that pass's promotion dedupe already
+    // computes the same shadow relation — the edge was known and discarded.
+    this.analyzeGoMethodPromotionShadowing(relationships, symbols)
+
     // 2. Analyze interface implementation relationships
     this.analyzeGoInterfaceImplementation(rootNode, relationships, symbols)
 
@@ -1878,6 +2108,168 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
           // a wrapped declaration reports where the name is written).
           ...(s.range?.startLine ? { line_number: s.range.startLine } : {}),
           metadata: {},
+        })
+      }
+    }
+  }
+
+  /**
+   * Go method promotion SHADOWING — the `overrides` relationship.
+   *
+   * WHY THIS IS AN OVERRIDE AND NOT AN INVENTED EDGE. Go has no `override`
+   * keyword, but it has the SEMANTIC: a method declared on the outer type at
+   * depth 0 replaces the promoted method of the same name at depth 1 for every
+   * selector `x.M` (Go spec, selectors: the shallowest depth wins). The family
+   * already models this half — the embedding itself is an `extends` edge
+   * (`go_struct_embedding`). What was missing is the second half: the analyzer
+   * COMPUTED the shadowing inside `collectGoPromotedMethods` and THREW IT AWAY,
+   * dropping the promoted method from the method set without recording that it
+   * had been displaced. So the relationship was derivable from this file's own
+   * evidence, was never emitted, and the differential could not charge for it —
+   * the exact shape `overrides` was omitted for in bash.
+   *
+   * MEASURED, not ruled — `script/m14/go-ontology-census.ts` probe B2/B3 on
+   * go-stdlib + cobra. See docs/analyzers/real-go-analyzer.md for the counts.
+   *
+   * ENDPOINT SPELLING follows the family: a method has no package-scope name of
+   * its own, so both ends are `Receiver.Method` (perl, objc, python, kotlin,
+   * dart, swift, php, cpp all publish `overrides|.` as a recorded separator
+   * triple in validation/m60/target-spelling-register.json).
+   *
+   * THE NAME RULE IS GO's, not the family's: the match is on the method NAME
+   * alone. A signature-compatible shadow is the only shape other languages
+   * accept, but Go permits `T.M` and `E.M` to have different signatures, and
+   * `x.M` selects T's either way — so name-only is the fact, and a
+   * signature-matching subset would under-report it. `sameSignature` records
+   * which of the two it is, so a consumer can tell a substitutable shadow from a
+   * hiding one without re-deriving the signature.
+   *
+   * CONFIDENCE 0.95, BELOW 1.0 AND NOT 1.0, with a reason code per the M14
+   * contract §4: the two declarations are read from this file, but the outer
+   * type's promoted set is resolved against the embedding closure as THIS FILE
+   * declares it. A method promoted from another file of the same package is not
+   * in the closure, so this edge's absence is not evidence of absence — see the
+   * lane's declared limitations.
+   */
+  private analyzeGoMethodPromotionShadowing(
+    relationships: ASTEngine.UniversalRelationship[],
+    symbols: ASTEngine.UniversalSymbol[],
+  ): void {
+    // source -> embedded leaves, read from the `extends` edges the embedding pass
+    // just wrote. `Object.create(null)`, NOT `{}`: the key is a Go TYPE NAME and
+    // Go identifiers may be any Unicode letter — which includes `constructor`,
+    // `toString` and every other Object.prototype member, so a plain literal
+    // hands a type named `constructor` its own inherited members here too. The
+    // interface pass reached the identical hazard and defends it the same way.
+    const embeddedOf: Record<string, string[]> = Object.create(null)
+    for (const r of relationships) {
+      if (
+        (r.type || r.relationshipType || "") !== ASTEngine.RelationshipType.Extends ||
+        (r.metadata as any)?.relationshipType !== "go_struct_embedding"
+      ) {
+        continue
+      }
+      const src = String(r.source ?? r.from ?? "")
+      const tgt = String(r.target ?? r.to ?? r.toSymbol ?? "")
+      if (!src || !tgt) continue
+      // A QUALIFIED embed names a type in ANOTHER PACKAGE, and this pass cannot
+      // see that package's method set. Following it by leaf is not a small
+      // imprecision, it invents edges: `src/archive/zip/writer.go` declares
+      // `type nopCloser struct{ io.Writer }` AND `type Writer struct{...}` with
+      // its own `Close()`, so the leaf-keyed walk read the stdlib embed as the
+      // local type and published `overrides nopCloser.Close -> Writer.Close` —
+      // a fact about `zip.Writer` that is not true of `nopCloser`, whose
+      // promoted set comes from `io.Writer`, an interface with no `Close` at
+      // all. The `extends` edge keeps the raw spelling in
+      // `metadata.embeddedStruct`, so the distinction is available here.
+      const raw = String((r.metadata as any)?.embeddedStruct ?? tgt)
+      if (raw.includes(".")) continue
+      if (!embeddedOf[src]) embeddedOf[src] = []
+      if (!embeddedOf[src].includes(tgt)) embeddedOf[src].push(tgt)
+    }
+    if (Object.keys(embeddedOf).length === 0) return
+
+    const methods = filterSymbols(symbols, (s) => s.kind === ASTEngine.SymbolKind.Method)
+    // receiver -> its own methods, indexed ONCE. The first version re-scanned the
+    // whole method list for every embedded type of every method, which is
+    // O(methods^2 x embeds) on a single file — `src/go/types` and
+    // `cmd/compile/internal/types2` carry hundreds of methods each — and the
+    // pass had no measured budget to hide behind. Same answers, one pass.
+    // `Object.create(null)`: the key is a Go TYPE NAME (see above).
+    const byReceiver: Record<string, ASTEngine.UniversalSymbol[]> = Object.create(null)
+    for (const m of methods) {
+      const r = m.metadata?.receiverType || m.metadata?.receiver?.typeName
+      if (typeof r !== "string" || !r) continue
+      if (!byReceiver[r]) byReceiver[r] = []
+      byReceiver[r].push(m)
+    }
+    if (Object.keys(byReceiver).length === 0) return
+    /** Every (outerType, embedderType, methodName) shadowing this file proves,
+     *  with the shallowest depth each was reached at (Go's selector rule). */
+    const depths = new Map<string, number>()
+    for (const m of methods) {
+      const outer = m.metadata?.receiverType || m.metadata?.receiver?.typeName
+      if (typeof outer !== "string" || !outer) continue
+      // Normalised on BOTH sides, and by the SAME normaliser the `implements`
+      // pass compares with. A raw string compare would call `M(a int)` and
+      // `M( a int )` different methods, and `sameSignature` is a published field:
+      // a consumer must not have to re-derive whitespace and variadic spacing to
+      // read it.
+      const ownSig = this.normalizeGoSignature(this.buildGoMethodSignature(m))
+      /** `Embedder.Method` pairs promoted onto `outer`, each with the depth it was
+       *  found at, path-marked rather than globally visited (a diamond embedding
+       *  must reach the second path). */
+      const promoted = (
+        tname: string,
+        depth: number,
+        visiting: Set<string>,
+      ): { m: ASTEngine.UniversalSymbol; depth: number }[] => {
+        const out: { m: ASTEngine.UniversalSymbol; depth: number }[] = []
+        if (depth > 4 || visiting.has(tname)) return out
+        visiting.add(tname)
+        for (const et of embeddedOf[tname] ?? []) {
+          for (const em of byReceiver[et] ?? []) out.push({ m: em, depth: depth + 1 })
+          for (const em of promoted(et, depth + 1, visiting)) out.push(em)
+        }
+        visiting.delete(tname)
+        return out
+      }
+      for (const entry of promoted(outer, 0, new Set())) {
+        const em = entry.m
+        if (!em || em.name !== m.name) continue
+        const embedder = em.metadata?.receiverType || em.metadata?.receiver?.typeName
+        if (typeof embedder !== "string" || !embedder || embedder === outer) continue
+        const key = `${outer}.${m.name}|${embedder}.${em.name}`
+        // Go spec, selectors: the SHALLOWEST depth wins, so when the same
+        // declaration is reachable by two embedding paths (a diamond — `Diamond`
+        // embeds `Left` and `Right`, both of which embed `Base`) the recorded
+        // depth is the shallowest of them. One method at one depth is not an
+        // ambiguous selector, which is why the diamond emits ONE edge and not
+        // two: `Left` and `Right` declare no `Read` of their own, so a target
+        // `Left.Read` would name a method that does not exist anywhere.
+        const prior = depths.get(key)
+        if (prior !== undefined && prior <= entry.depth) continue
+        depths.set(key, entry.depth)
+        relationships.push({
+          source: `${outer}.${m.name}`,
+          target: `${embedder}.${em.name}`,
+          type: ASTEngine.RelationshipType.Overrides,
+          confidence: 0.95,
+          // M59.A7 (#825): the SHADOWING declaration's own line — the site that
+          // makes `x.M` select this method rather than the promoted one.
+          ...(m.range?.startLine ? { line_number: m.range.startLine } : {}),
+          metadata: {
+            relationshipType: "go_method_promotion_shadowing",
+            isOverride: true,
+            // contract §4: confidence < 1.0 carries a machine-readable reason.
+            reasonCode: "promoted-method-shadowed-by-outer-declaration",
+            // True when the two signatures match, i.e. this is a substitutable
+            // override; false when the outer method merely HIDES the promoted one
+            // (legal in Go, and still the method `x.M` selects).
+            sameSignature: this.normalizeGoSignature(this.buildGoMethodSignature(em)) === ownSig,
+            shadowedAtDepth: 0,
+            promotedAtDepth: entry.depth,
+          },
         })
       }
     }
@@ -2315,6 +2707,11 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     // GO3: dot-import leniency for bare callees (mirrored by the oracle).
     const dotImported = this.hasGoDotImport(rootNode)
+    // For the `instantiates` callee-shape guard only. The `calls` edge above
+    // deliberately keeps receiver selectors — `s.repo.Save(user)` ->
+    // `calls Save -> Save` is the family's leaf contract — so this is not
+    // consulted for `calls`.
+    const ownPackageName = this.goOwnPackageName(rootNode)
     forEachSymbol(functions, (func) => {
       const qualifiedCalls = func.qualified_calls || []
       // M59.A7 (#825): the callee leaf recorded by findGoFunctionCalls, keyed by
@@ -2349,6 +2746,14 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
           })
           // Go constructors: NewFoo() — PascalCase top-level function.
           // Methods and unresolved stdlib leaves never instantiate.
+          //
+          // The CALLEE'S SHAPE is now part of the rule, and it has to be:
+          // `ctorSymbol` above matches on NAME, so `bufio.NewReader(r)` in a
+          // file that declares its own `NewReader` resolved to that function
+          // and published a construction of the wrong symbol. The comment's own
+          // claim ("methods never instantiate") was not enforced. The check is
+          // on the callee NODE recorded by findGoFunctionCalls, so it reads the
+          // shape the grammar gives rather than re-deriving the call text.
           const ctorSymbol = findSymbol(
             symbols,
             (s) =>
@@ -2356,8 +2761,13 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
               s.kind === ASTEngine.SymbolKind.Function &&
               !s.ownerName,
           )
+          // `goCalleeNameNode` records the LEAF for a selector callee, so the
+          // selector itself is its parent.
+          const calleeLeaf = callSites?.get(call)
+          const calleeNode = calleeLeaf && calleeLeaf.parent?.type === "selector_expression" ? calleeLeaf.parent : calleeLeaf
           if (
             ctorSymbol &&
+            this.isGoTopLevelFunctionCallee(calleeNode, ownPackageName) &&
             ctorSymbol.name[0] === ctorSymbol.name[0].toUpperCase() &&
             ctorSymbol.name[0] !== ctorSymbol.name[0].toLowerCase()
           ) {
@@ -2395,6 +2805,8 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
     const declared = new Set<string>()
     // GO3: dot-import leniency for bare package-scope callees (mirrored).
     const dotImported = this.hasGoDotImport(rootNode)
+    // Callee-shape guard for the `instantiates` edge below only.
+    const ownPackageName = this.goOwnPackageName(rootNode)
     // Instantiates contract (family, mirrored in the differential oracle
     // deriveGoEdges.ctorFns): only PascalCase TOP-LEVEL FUNCTION symbols
     // instantiate — never methods and never unresolved stdlib/external leaves.
@@ -2508,7 +2920,16 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
           // FUNCTION symbols — flag.String(...) must not instantiate->String
           // when a method String() exists (deep-review 2026-08-29, go-tools
           // @200 measured 2 UNEXPLAINED). ctorFns = top-level functions only.
-          if (isCtor && ctorFns.has(leaf) && !emitted.has("inst:" + leaf)) {
+          //
+          // Same callee-shape guard as the other 0.6 site, for the same reason:
+          // `ctorFns.has(leaf)` is a NAME test, so a receiver selector whose
+          // field happens to share a top-level function's name passed it. The
+          // source stays the `global` pseudo-source, which is the pre-existing
+          // behaviour of this site and is not widened here — a package-scope
+          // `var x = NewThing()` has no enclosing declaration that could own
+          // the call, and the `calls` edge above already carries the
+          // attributable one via resolveGoWorkSource.
+          if (isCtor && ctorFns.has(leaf) && this.isGoTopLevelFunctionCallee(fn, ownPackageName) && !emitted.has("inst:" + leaf)) {
             emitted.add("inst:" + leaf)
             relationships.push({
               source: "global",
@@ -4240,6 +4661,67 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
     const sig = `${method.name}(${params}) ${returnType}`
     if (typeof key === "number") this.goSignatures.set(key, sig)
     return sig
+  }
+
+  /**
+   * The name of THIS file's own package, read from the grammar.
+   *
+   * `package_clause` has NO fields in tree-sitter-go 0.25.0's node-types.json:
+   * the identifier is a plain named child. Reading `childForFieldName("name")`
+   * here returns "" and the caller would then reject EVERY selector callee,
+   * silently deleting the self-qualified constructions the edge is supposed to
+   * carry — the same class of silent total loss the oracle hit on its first run.
+   */
+  private goOwnPackageName(rootNode: Node): string {
+    const pkgClause = this.findChildByType(rootNode, "package_clause")
+    if (!pkgClause) return ""
+    for (let i = 0; i < pkgClause.namedChildCount; i++) {
+      const c = pkgClause.namedChild(i)
+      if (c && c.type === "package_identifier") return String(c.text ?? "")
+    }
+    return ""
+  }
+
+  /**
+   * Can this call's callee be the top-level function THIS FILE declares?
+   *
+   * The `instantiates` edge's target is always a symbol from this file's own
+   * symbol table, so the question is not "is this a package-qualified call" —
+   * it is "does this call select something this file could be responsible for".
+   * Two shapes qualify:
+   *
+   *   `NewReader(1)`          a bare identifier call. In Go a bare call at
+   *                           package scope can only reach a name in this
+   *                           package (or a dot-imported one, which the
+   *                           leniency parameter already handles).
+   *   `calleeshape.NewReader(3)` the file's OWN package name as the qualifier.
+   *                           Legal Go — `src/html/template/escape.go:977` is
+   *                           `func HTMLEscape(...) { template.HTMLEscape(w, b) }`
+   *                           — and it selects this file's top-level function.
+   *
+   * Any OTHER qualifier does not qualify, and the reason is the bug this method
+   * exists for. `bufio.NewReader(r)` is a top-level function of `bufio`, but the
+   * `instantiates` target had to come from THIS file's symbol table, so a file
+   * that happened to declare its own `NewReader` published
+   * `instantiates ReceiverCollision -> NewReader` for a construction it did not
+   * perform. The callee's shape was right; the callee's PACKAGE was not the one
+   * the target symbol lives in. Counting import aliases as qualifiers does not
+   * fix this — an alias can collide with a same-named local function just as
+   * easily as a package name can.
+   *
+   * Measured over a 500-file stride sample of go-stdlib: 155 `instantiates`
+   * edges at confidence 0.6, 8 of them (6 files) naming a symbol in the wrong
+   * package. See validation/m14/go/go-mislabel-probe.ts and the fixture
+   * `instantiates-callee-shape`.
+   */
+  private isGoTopLevelFunctionCallee(calleeNode: Node | null | undefined, ownPackageName: string): boolean {
+    if (!calleeNode) return false
+    if (calleeNode.type === "identifier") return true
+    if (calleeNode.type !== "selector_expression") return false
+    const operand = calleeNode.childForFieldName("operand")
+    if (!operand || operand.type !== "identifier") return false
+    if (ownPackageName.length === 0) return false
+    return String(operand.text ?? "") === ownPackageName
   }
 
   /**
