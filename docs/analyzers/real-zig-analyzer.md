@@ -2867,3 +2867,182 @@ committed nothing to that file. The fix is not this lane's: either the gate take
 `--out`, or it prints the register and leaves writing to a separate regeneration step run from a
 full checkout. **Until then, a lane that runs the gate from its worktree must revert
 `docs/DOC-TRUTH-EMISSIONS.md` before committing.**
+
+## Pass 11 — every published total re-measured at HEAD, and a claim of pass 10's that did not hold (2026-10-04)
+
+Pass 10 published two totals from two instruments, called them the same population, and
+read the delta between them as a property of a commit in a file this lane does not own.
+**One of those two claims was wrong, and this pass measures which.** No analyzer source
+changed; the seventh consecutive pass to verify rather than edit.
+
+### A. The census at HEAD, 8 shards, 0 fallback, on the published draw
+
+`validation/m14/fixtures/zig/ontology-census.ts --sample 5000` × 8 shards drawn by
+`shard-draw.py`, merged by `shard-merge.py`. Evidence:
+`measurements/ontology-census-full-2026-10-04-p11.json`.
+
+**3,834 files parsed · 0 parse failures · 0 fallback · union `sha256:2f3545f9…`, equal to the
+draw every published zig figure in this document names.** Per-shard admission was 480, 480,
+479 × 6 — the arithmetic closes on 3,834, so the merge's union assertion is not doing hidden
+work.
+
+| figure | value |
+|---|---|
+| symbols | **127,614** |
+| relationships | **392,550** |
+| symbols with an empty name | **0** |
+| symbol kinds outside the shared `SymbolKind` | **0** |
+| relationship endpoints equal to the literal `unknown` | **39** |
+| edges below 0.7 confidence | **0** (0.00% of 392,550) |
+
+The seven EMITTED counts reproduce the arbiter's table **to the edge**: `calls` 113,476 ·
+`uses` 132,201 · `contains` 77,459 · `imports` 10,200 · `references` 30,794 · `exports`
+24,114 · `instantiates` 4,306. Those are two instruments — the arbiter through
+`ontology-coverage-gate.ts`, this through `ontology-census.ts` — and they agree on every
+count.
+
+**Two figures moved since pass 3 and both moved in the direction the repair predicts, and one
+of them is a correction rather than a repair.** Pass 3's sharded census read
+**510 kindless symbols** and **21 sub-0.7 edges**; HEAD reads **0 and 0**. Pass 2 attributed
+the kindless symbols to `extractFallback` and warned that the count is "not a stable number"
+because a WASM trap downgrades one file to a regex extraction. This run trapped on nothing, so
+the number is 0 — which is what pass 2 said it would be, measured once more.
+
+### B. Per-type, at HEAD: resolution at both tiers, evidence class, reason code, heuristics
+
+`shard-merge.py` re-resolves the corpus tier against the UNION of shards, so these are
+whole-draw figures. `srcMark` is a scope marker (`(global)`/`(file)`/`(declared-type)`), which
+is a convention and not a dangling edge; it is counted apart from `srcDangle` for that reason.
+
+| type | edges | files | srcMark% | srcDangle% | tgt file-local% | tgt corpus% | both corpus% | conf | evidence class | reason code | <0.7 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| `uses` | 132,201 | 480 | 22.48 | **0.00** | 40.20 | 93.36 | 93.36 | 1:13,406 0.75:118,795 | `usage_contextual` | `zig_field_access` 118,795 · `identifier_usage` 13,406 | 0 |
+| `calls` | 113,476 | 479 | 11.53 | **0.00** | 40.04 | 95.54 | 95.54 | 0.85:113,476 | `usage_contextual` | `zig_function_call` 113,476 | 0 |
+| `contains` | 77,459 | 472 | 0.00 | **0.00** | **99.99** | 99.99 | 99.99 | 1:77,459 | `structural` | `zig_ownership` 77,459 | 0 |
+| `references` | 30,794 | 480 | 100.00 | **0.00** | 44.39 | **74.65** | 74.65 | 1:10,200 0.9:20,594 | `reference_qualified` 20,594 · `import_based` 10,200 | `declared_type` 20,594 · `zig_import` 10,200 | 0 |
+| `exports` | 24,114 | 480 | 100.00 | **0.00** | **100.00** | 100.00 | 100.00 | 1:24,114 | `import_based` | `zig_export` 24,114 | 0 |
+| `imports` | 10,200 | 480 | 100.00 | **0.00** | 29.89 | **33.79** | 33.79 | 0.9:10,200 | `import_based` | `zig_import` 10,200 | 0 |
+| `instantiates` | 4,306 | 336 | 55.04 | **0.00** | 85.72 | 96.05 | 96.05 | 1:4,306 | `structural` | `zig_instantiation` 4,306 | 0 |
+
+**Three readings, and each one is a finding rather than a footnote.**
+
+1. **`srcDangle` is 0.00% on all seven types.** Every edge's source is either a published
+   symbol or a declared scope marker. The one fabricated-caller shape this lane ever produced
+   — pass 1's `source: "this"` at confidence 0.4, reachable only through `extractFallback` — is
+   absent, and 0 of 392,550 rather than 1 of 392,086 is the number that says so.
+2. **`references` is 74.65% at the corpus tier and 44.39% file-local.** The CSS reference
+   point this document quotes is 66.8% at both ends, so zig's `references` is **7.85 points
+   above it** at the tier a whole-repository index can satisfy. Pass 2's objection stands and
+   is unaffected by this: a name-keyed rate reads `calls Hash -> init` as resolved, so the
+   number is an upper bound on correctness, not a measure of it.
+3. **`imports` is the lowest-resolving applicable type at 33.79%**, and pass 8 established why
+   with 34.7% of import paths denoting one global module name and 65.3% a per-directory path.
+   That is not a resolver defect: a Zig import path denotes a module, not a declaration.
+
+**Heuristic ratio is 0 of 392,550 = 0.00%**, across 8 shards with 0 fallback. Pass 3 recorded
+that this figure is a **per-run** property and not a per-lane one (the same draw once produced
+21 sub-0.7 edges from three degraded shards), so it is stated with its condition attached: 0
+on a run where no shard fell back. The analyzer's own sub-1.0 values are fixed and are the
+durable part — 0.75 field read, 0.85 call, 0.9 import and declared type, 1.0 the rest — and
+every edge carries a machine-readable reason code, which is the table's last two columns.
+
+### C. The correction: pass 10's two totals were NOT the same population
+
+Pass 10 §C published `ontology-census` at **127,590 symbols / 391,084 relationships** and
+`denylist-publication` at **127,612 / 392,543**, and described both as "the same admitted
+population at HEAD". They were not, and the difference is not a rounding of the same set.
+
+`population-attribution.ts` (new, committed) rebuilds both admission rules from their own
+source and prints the symmetric difference:
+
+| rule | source | files | repos |
+|---|---|---|---|
+| census | `ontology-census.ts:113` — `git ls-files -z -- '*.zig'` for **every** git repo in the corpus root | 3,834 | ghostty, **nvim-treesitter**, zig, zls |
+| denylist | `denylist-publication.ts:274-277` — the same walk over **three named** repo roots, `CEILING = 524288` at `:83` (the same byte) | 3,833 | ghostty, zig, zls |
+| census \ denylist | | **1 file** | `nvim-treesitter/tests/indent/zig/pr-3269.zig`, 254 bytes |
+| denylist \ census | | **0 files** | |
+
+Production `parseFile` over exactly that one file: **2 symbols, 7 relationships** —
+`constant:std`, `function:main`; `calls` ×2, `uses` ×2, `references`, `imports`, `exports`.
+`127,614 − 2 = 127,612` and `392,550 − 7 = 392,543`. **The difference is fully attributed to
+admitted scope, to the file, and to the byte.** A whole-repo omission by a hardcoded name list
+is the mechanism, and the script says "the difference is exactly WHOLE REPO(S) the named list
+omits" only after measuring that the symmetric difference is the repo's entire `.zig` file set —
+so a size-rule or walk defect would have been reported as one instead.
+
+**What survives from pass 10 §C and what does not.** The symbol delta attributed to
+`0a65d2b48` survives and is if anything understated: on the draw that includes all four repos,
+the pre-fix 127,590 becomes 127,614, so **+24 symbols**, not the +183 pass 10 published — because
+pass 10 compared a 3-file-repo run against an 8-shard run whose own published total was 127,590,
+and **127,590 was itself the sharded figure from a run with 510 kindless symbols and 21
+sub-0.7 edges**, i.e. a run where shards fell back. Pass 3 warned that this number was
+per-run. It was, and pass 10 read it as a per-lane one.
+
+**The relationship delta's sign is what pass 10 should have caught.** Pass 10 reported
+"**−7 relationships**" as an effect of the repair and read it as the repair *removing* edges.
+Attributed, it is **+7**, from one 254-byte file the named repo list never walked. A published
+delta that reverses sign under attribution is not a small correction.
+
+### D. Every gate this lane can run, re-run at this commit
+
+| gate | command | result |
+|---|---|---|
+| fixture suite | `bun run script/m14/run-fixtures.ts --lang zig` | **9 pass / 0 fail**, exit 0, no baseline regression |
+| mutation | `BB_MUTANT_ONLY="zig/" bun run script/m14/mutate-analyzer.ts` | **50 / 50 CAUGHT** (filtered 1,748 → 50), exit 0 |
+| firing | `npx tsx script/m14/firing-check.ts --files 120 zig` | **7/10 fired, 8,445 edges, 120/120 files, 1 DEGRADED** — the pass-6 row, reproduced to the edge |
+| incoming | `npx tsx script/m14/incoming-check.ts zig <6 corpus files>` | 474 symbols, 0 degraded, 0 parse failures; 7 orphans of 474; **6 ambiguous targets** (`none`, `order`, `max`, `min`, `hex`, `number`) |
+| arbiter (lane's proof runner, fan-out 1) | `BB_ZIG_RULED_WORKERS=1 npx tsx validation/m14/fixtures/zig/ruled-gate.ts` | **emitted 7/10 · ruled-sound 3 · FALSIFIED 0 · unjustified 0**, exit 0, 0 `[BB-PARSE-ERR]`, 0 `[BB-HANG]`, 810 s — **n=4 identical** |
+| regex census | `npx tsx script/m12/verify-regex-census.ts` | still prints `regex census gate FAILED`, on `real-typescript-analyzer.ts` and `real-vue-analyzer.ts` and 6 other lanes; **0 zig rows** |
+| honesty lint | `script/verify-honesty.ts` — **the path §1 of the contract names does not exist on this branch.** The lint is implemented three times, once per milestone, and each copy hardcodes exactly two files: `script/m33/verify-governance.ts:208`, `script/m36/verify-governance.ts:199` and `script/m41/verify-governance.ts:203` each read their own `docs/m<N>/M<N>-MASTER-PLAN.md` and `validation/m<N>/results/manifest.json`. **No copy reads `docs/analyzers/` or `validation/m14/`, so no lint covers the file this workstream's claims live in.** §16. |
+
+The firing row's 1 degraded file is §8 item 10's, `zig/lib/compiler_rt/udivmodti4_test.zig` at
+10,249,535 bytes, and it contributes 0 edges, which is why 8,445 is unchanged across passes 6,
+8 and 11. `incoming-check.ts` was run with corpus-absolute paths because it does not resolve
+relative ones: with repo-relative paths it reports **6 parse failures and 0 symbols** and still
+prints a full type table, all rows `NO`. An instrument that prints a verdict table over zero
+parsed files is a shape worth knowing about; §8 item 17.
+
+### E. The three RULED verdicts re-probed at HEAD, not carried forward
+
+This pass owed that measurement, so it is here rather than in §F. Both probes re-ran over the
+same 3,834-file draw `sha256:2f3545f9…`, loading the pinned wasm directly and so immune to
+`extractFallback`. Evidence: `measurements/zig-ruled-probe-full-2026-10-04-p11.json` and
+`measurements/construct-probe-full-2026-10-04-p11.json`.
+
+`zig-ruled-probe.ts` — **10 of 10 controls ok**, `overrides` probe **0 hits in 0 files**,
+raw same-scope duplicates **19** sites (member 8, function 4, binding 7), exclusion split
+**quoted-diagnostic OFF / error-member ON = 19 · OFF/OFF = 21 · ON/ON = 0** (what the gate
+reads), **232** node types produced, **0 of the 17** supertype names produced or declared,
+keyword calibration **11/11 declared · 10/11 produced** (absent from the corpus:
+`usingnamespace`, which this grammar spells as a named node rather than an anonymous token).
+
+`construct-probe.ts` — instrument A: **239** declared node types, **16** declared field names,
+**232** produced; `fieldsNeverResolvingAnywhere` = **`value`, `superclass`, `bases`,
+`interfaces`**, which is the `extends`/`implements` evidence stated as a field name the grammar
+declares and the corpus never resolves; A4 header-slot classification **1,797 children across
+443 files** = 1,030 `enum-backing-type` + 369 `nested-executable-block` + 275
+`packed-struct-field-count` + 122 `union-tag-type` + 1 `error-recovery` = 1,797, **0
+`UNCLASSIFIED`**; B1 = **3 in 3 files**, B2 = **14** (9 destructuring, 5 plain), B3 = **9 in 8
+files, 9 of 9 inside `compile_errors/`**; **11 of 11 controls ok**. `compilerErrorCaseFilesInDraw`
+= 961, which is the population the `overrides` exclusions draw from.
+
+**Every number in "The three RULED types, each falsifiable" reproduces at this commit**, so the
+three RULED verdicts are re-read on the corpus at HEAD rather than inherited. Combined with the
+arbiter's `RULED-SOUND` × 3, `FALSIFIED` 0, the 7/3 split is now measured at two levels: the
+table against the gate, and the probe against the corpus.
+
+### F. What pass 11 could not settle
+
+- **`references` at 44.39% file-local is not decomposed here** into the Z22
+  anonymous-container class, the `std.*` external-leaf class, and the genuinely wrong class.
+  Pass 10's §E decomposed the four denylist names; the other 25,601 `references` edges naming
+  ordinary identifiers are not decomposed at this commit. The census carries a
+  `danglingFileLocal` count per type and the incoming resolver a per-target verdict, so the
+  decomposition is reachable — it is simply not done.
+- **Whether `+24 symbols` is the whole effect of `0a65d2b48`** is not established. The honest
+  statement is that two totals differing by 24 were measured on two populations and the
+  attribution in §C closes the arithmetic; the counterfactual requires running the pre-fix
+  denylist over the same draw, which is a shared-file change and therefore §8.
+- **`incoming-check.ts` was not run at the full draw.** It was run on 6 named files (§D) and
+  the paired 134-file run is pass 8's. A full-draw incoming figure for zig does not exist, so
+  the 6 ambiguous targets in §D are **not** a lane-wide count and must not be quoted as one.
