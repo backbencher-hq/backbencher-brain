@@ -490,9 +490,10 @@ oracle existed it would be a second walker over the *same* patched grammar, so a
 grammar bug shared by both paths would be invisible to it. What the lane has instead
 is (a) expectations derived by hand from the specification rather than captured from a
 run — `script/m14/tmp/protobuf/probe/contract-battery.mts` states the rule and the
-eight fixtures in `validation/m14/fixtures/protobuf/` follow it; (b) a 26-mutant
-battery, below; (c) the probes in this document, each of which is written to be able
-to come back non-zero.
+eight fixtures in `validation/m14/fixtures/protobuf/` follow it; (b) a **27**-mutant
+battery, below — pass 2 ran 26 and passes 5 and 6 run 27, the twenty-seventh being
+`protobuf/qualified-id-stopped-being-published`; (c) the probes in this document, each of
+which is written to be able to come back non-zero.
 
 **4 — Labelled.** The confusable pairs in this language, each pinned by a fixture row
 rather than left to be believed, and each with the STRONGEST argument that the label
@@ -512,11 +513,22 @@ and against the ids production redraws:
 
 | Type | both ends, analyzer ids | both ends, production ids | corpus-wide, analyzer ids |
 |---|---|---|---|
-| `contains` | **99.22%** (40,098) | 99.11% | **100%** (41,100 of 41,100) |
-| `uses` | **72.84%** (13,275) | 72.71% | **99.58%** (13,219 of 13,275) binds somewhere; **88.57%** (11,758) binds to exactly one declaration |
+| `contains` | **99.22%** (40,098) | **99.22%** | **100%** (41,100 of 41,100) |
+| `uses` | **72.84%** (13,275) | **72.84%** | **99.58%** (13,219 of 13,275) binds somewhere; **88.57%** (11,758) binds to exactly one declaration |
 | `imports` | 0% | 0% | 0% — module-path endpoints by design |
 | `exports` | 0% | 0% | 0% — module-path endpoints by design |
-| `overrides` | **100%** (1) | 0% | 100% (1) |
+| `overrides` | **100%** (1) | **100%** (1) | 100% (1) |
+
+**The two production-id figures in this table are pass-5 numbers and supersede the
+pass-2 values in the same three cells.** Pass 2 recorded `contains` 99.11% and
+`overrides` **0%** on production ids; pass 5 found the projection was publishing no
+qualified id at all, and after the fix every `overrides` end and every `contains` end
+resolves through the production path, so both now equal the analyzer-id figure. The
+pass-2 reading of `overrides` at 0% — and the "re-derived ids collide" explanation under
+this table — are both retired by that fix; see the pass-5 section for what it did and did
+not move. The re-derived-id collisions were real and remain real **for a consumer that
+re-derives ids instead of reading the published one**, which is a different measurement
+and is kept below for that reason only.
 
 Three different denominators, and conflating them is how a lane talks itself into a
 false comparison with CSS's 66.8% `references` figure.
@@ -533,9 +545,12 @@ false comparison with CSS's 66.8% `references` figure.
   they answer four different questions.
 - **`imports` and `exports` at 0% is by design and is reported rather than omitted.** A
   consumer resolves them against the project's include roots.
-- `overrides` at 0% on production ids is the `uniqueId` projection limit, not a
-  dangling edge: 30 re-derived ids collide across the corpus, every one a proto2
-  `group` field or a repeated name, against **0** published-id collisions.
+- `overrides` resolves at **both** ends through the production path, **100% of 1**. Pass 2
+  read 0% here and attributed it to the `uniqueId` `#property` suffix; that attribution
+  was wrong and pass 5 measured it — the limit was the missing qualified id, not the
+  suffix. The 30 re-derived-id collisions pass 2 counted are unaffected, because they
+  collide only for a consumer that rebuilds ids from `ownerName + "." + name` instead of
+  reading the published one, and **0** published ids collide.
 
 **6 — Confident.** **0 of 54,939 production edges fall below 0.7** — the heuristic
 ratio is 0, and it is countable rather than merely true: `evidenceClass` is
@@ -762,7 +777,7 @@ a consumer to do with the edge. Measured by
 ## Declared limitations
 
 - **No independent oracle.** Stated in full under question 3. Every correctness claim
-  in this document rests on hand-derived expectations, a 26-mutant battery, and the
+  in this document rests on hand-derived expectations, a **27**-mutant battery, and the
   specification — not on a second implementation. **5 DERIVATION findings**, all 54,939
   edges unaudited.
 - **Reference resolution is per-file**, by the declared boundary in the analyzer
