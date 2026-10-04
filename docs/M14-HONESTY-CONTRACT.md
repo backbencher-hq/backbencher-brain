@@ -187,3 +187,40 @@ html, css, markdown) — must pass:
 Method and ordering: M34 tracking issue #593. Precedents: #264 (csharp),
 #271 (haskell, dart gates). The 18 gated-done analyzers receive this pass
 under M34 before M14's remaining languages begin.
+
+## Rule: an instrument must declare the population it covered
+
+Three separate findings in this programme were the *same* defect, and none of them
+was a wrong number — each was a **correct number about the wrong population**, which
+is the most dangerous shape a number can take because every downstream reader treats
+it as a finding.
+
+| Where | Printed | Actually covered | Truth |
+|---|---|---|---|
+| `incoming-check` per-type table | `imports  0 edges` | 0 of the labels the store emits | 253 (zig), 153 (clean), 55 (haskell) |
+| `probe-bash-no-regex.mts` | `0 regex literals across 0 of 16 files` | 16 of the lane's 25 files | 1 regex, in a file never scanned |
+| dart census, documented command | 43,042 `calls` | 1,250 of 2,735 files | 22,436 |
+
+The dart row is the sharpest, because the number and the command that produced it
+were printed **side by side** and still disagreed by half. Nothing detects this except
+someone re-running the command and comparing.
+
+**The rule.** Any instrument that prints a count must also print the population it
+counted over, and that population must be *derived* rather than hand-written — a
+hard-coded file list rots silently and no reviewer diffs it against the directory. A
+hand-written `FILES = [...]` array is a defect the moment a file is added beside it,
+and the instrument will keep reporting `0` with total confidence.
+
+Two consequences that are now programme-wide:
+
+1. **A count of zero is a claim that needs its population attached.** "0 regexes" and
+   "0 regexes across 16 of 25 files" are not the same statement, and only the second
+   is true.
+2. **Where the population is a list, derive it** (`readdir`, a glob, the registry) so
+   it cannot drift. If it cannot be derived, the instrument must fail loudly when the
+   list is shorter than the subject, rather than printing a smaller `N` as though it
+   were the whole.
+
+This generalises beyond regexes: it is the same rule that makes a sampled coverage
+number report its sample size, and that makes a project-wide percentage state its
+denominator.
