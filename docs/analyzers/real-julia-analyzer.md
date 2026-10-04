@@ -24,6 +24,7 @@
 
 ```
 npx tsx validation/m14/fixtures/julia/census.ts --json /tmp/census.json       # the census, 971 files
+npx tsx validation/m14/fixtures/julia/doc-tables-check.ts --json /tmp/census.json  # every table CELL vs the census
 npx tsx validation/m14/fixtures/julia/overrides-differential.ts --json /tmp/ov.json
 npx tsx validation/m14/fixtures/julia/direct-oracle-check.ts --files 40      # per-label, deterministic
 npx tsx validation/m14/fixtures/julia/ruled-probe-check.ts                  # the implements ruling's 325/60
@@ -1278,6 +1279,60 @@ that file should decide whether R7 marks its placeholders by an explicit flag or
 the current code does neither. **The julia symptom is benign** — the one julia declaration of that name
 is a genuine function and publishing it is correct — which is exactly why this belongs in a report
 rather than a fix: a lane that only tested julia would see nothing wrong.
+
+## A gate that reads this file's own tables — 209 cells
+
+The defect that motivated this pass was not a wrong measurement. It was a right measurement in the
+wrong slot: the prose said **10,936** ambiguous-target edges while the table above it summed to
+**11,098** and the census had printed **11,101** all along. Nothing in the lane could see it. The
+census passes. The 5 fixtures pass. All 25 mutants die. The arbiter agrees to the edge. The doc is
+wrong, and every one of those gates is silent about it, because none of them reads the doc.
+
+`validation/m14/fixtures/julia/doc-tables-check.ts` closes that gap. It reads
+`docs/analyzers/real-julia-analyzer.md`, finds each table by its header cells, and compares every
+figure against `census.json`:
+
+```
+$ npx tsx validation/m14/fixtures/julia/doc-tables-check.ts --json /tmp/census.json
+doc tables check — docs/analyzers/real-julia-analyzer.md
+cells checked: 209
+PASS — every table cell equals the instrument's value
+```
+
+**209 cells** across six tables: the 10-row verdict table (edge count + file count per type, with
+RULED rows held to "emitted 0" instead of being read as an edge count), the 9-row incoming bucket
+table (all 9 buckets per type), the residual-ambiguity table including the requirement that each
+row's total equals its own two columns and that the column sum equals the instrument's total, the
+six-questions table (FIRES edges + files, and RESOLVED both-ends / src / tgt / neither), the
+production-totals symbol count, and the by-kind and by-relation paragraphs.
+
+**It is proved against injected drift, because a gate that cannot fail is the defect it exists to
+catch.** Six drifts were injected one at a time into a clean doc — `calls` 86,876 → 86,967;
+`references` unresolvable 6,463 → 6,999; the ambiguity sum 11,101 → 11,999; the symbol total 28,286 →
+28,999; `overrides` FIRES 3 → 9; `function` 16,834 → 16,999. **All six were caught**, each named by
+table, row and column.
+
+**The first version caught five of six, and the miss is the interesting part.** It read only the
+RESOLVED column of the six-questions table, so `overrides`' FIRES cell could hold any number at all.
+That was found by the injected `3 / 3` → `9 / 3` passing, not by reading the code — the same
+conclusion this file's other instruments keep reaching, which is why the negative control rather than
+the review is what established the gate works.
+
+**Two conventions it had to learn, both of which are really doc defects it declined to enforce:**
+
+- Percentages are compared **one-sidedly**. The doc prints `contains` both-ends as **99.9%** where
+  10466/10467 = 99.9904% and `toFixed(1)` gives `100.0%`. Forcing the doc to `100%` would be a worse
+  number — it is the "100% coverage" shape the honesty contract bans — so the rule is that a printed
+  figure may truncate but may never **over**state, within one unit in the last place.
+- `By kind:` and `By relation:` are hard-wrapped prose paragraphs, not single lines. A checker that
+  reads line-by-line finds half of every figure and reports it as missing. The checker joins the
+  paragraph first. Its first version did not, and reported 8 false misses.
+
+It is deliberately **not** a scan of the prose. Prose carries figures that are not claims — quoted
+historical runs, ratios, and the deliberately-wrong `10,936` quoted in order to be corrected — and a
+scan that cannot tell a claim from a citation would either miss real drift or force this file to stop
+explaining why a number changed. The scope is the class with no excuse: a table cell the instrument
+can produce exactly.
 
 ## What the lane's own gates caught
 
