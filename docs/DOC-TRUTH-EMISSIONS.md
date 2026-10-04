@@ -52,7 +52,7 @@ This is the population the gate MEASURES rather than blocks. Each row is one ana
 | csharp | `imports (import-site: ImportInfo[])` | line 44 |
 | csharp | `exports (export-site: ExportInfo[])` | line 44 |
 | css | `contains (relationship)` | line 161 |
-| dart | `calls (relationship)` | line 52 |
+| dart | `calls (relationship)` | line 58 |
 | elixir | `contains (relationship)` | line 42 |
 | elixir | `imports (import-site: ImportInfo[])` | line 42 |
 | elixir | `exports (export-site: ExportInfo[])` | line 42 |
@@ -69,7 +69,7 @@ This is the population the gate MEASURES rather than blocks. Each row is one ana
 | haskell | `contains (relationship)` | line 48 |
 | java | `calls (relationship)` | line 57 |
 | javascript | `calls (relationship)` | line 29 |
-| julia | `calls (relationship)` | line 52 |
+| julia | `calls (relationship)` | line 527 |
 | kotlin | `calls (relationship)` | line 30 |
 | objective-c | `contains (relationship)` | line 61 |
 | objective-c | `overrides (relationship)` | line 61 |
@@ -140,7 +140,7 @@ This is the population the gate MEASURES rather than blocks. Each row is one ana
 | cpp | `calls contains extends instantiates overrides references uses` | import-site: ImportInfo[], export-site: ExportInfo[] | line 259, 9 rows |
 | csharp | `calls contains extends implements instantiates overrides references uses` | import-site: ImportInfo[], export-site: ExportInfo[] | line 44, 9 rows |
 | css | `contains overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | line 161, 9 rows |
-| dart | `calls contains exports extends implements instantiates overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | line 52, 9 rows |
+| dart | `calls contains exports extends implements instantiates overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | line 58, 9 rows |
 | elixir | `calls contains implements instantiates references` | import-site: ImportInfo[], export-site: ExportInfo[] | line 42, 5 rows |
 | erlang | `calls contains exports implements instantiates references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | line 55, 5 rows |
 | fsharp | `calls contains extends implements instantiates overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | line 53, 10 rows |
@@ -153,7 +153,7 @@ This is the population the gate MEASURES rather than blocks. Each row is one ana
 | java | `calls contains exports extends implements instantiates overrides references uses` | import-site: ImportInfo[], export-site: ExportInfo[] | line 57, 11 rows |
 | javascript | `calls contains exports extends instantiates overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | line 29, 9 rows |
 | json | `calls contains exports extends implements overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | absent |
-| julia | `calls contains exports extends instantiates overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | line 52, 9 rows |
+| julia | `calls contains exports extends instantiates overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | line 527, 9 rows |
 | kotlin | `calls contains extends implements instantiates overrides references uses` | import-site: ImportInfo[], export-site: ExportInfo[] | line 30, 11 rows |
 | lua | `calls contains exports extends instantiates overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | line 75, 9 rows |
 | makefile | `calls contains exports references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | absent |
