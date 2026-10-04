@@ -1886,7 +1886,7 @@ comments, char literals, triple-quoted strings — and all six are clean.
 | empty or unknown `SymbolKind` | **0** · empty symbol names: **0** |
 | endpoints equal to the literal `unknown` | 11, all in `julia/JuliaLowering/src/validation.jl`, and **all 11 now resolve** — see [the section on them](#the-unknown-endpoints-resolved-by-a-shared-fix-i-do-not-own) |
 | determinism | SHA-256 identical across a reused and a fresh analyzer instance |
-| fixtures / mutants | 5 fixtures / **25 mutants, 25 killed, 0 survivors** |
+| fixtures / mutants | 5 fixtures / **28 mutants, 28 killed, 0 survivors** |
 | largest single file | 1,818 symbols / 3,890 relationships |
 
 By kind: function 21,603 · property 6,339 · constant 3,261 · class 3,069 · module 1,146 · macro 554 ·
@@ -2250,7 +2250,7 @@ rather than a fix: a lane that only tested julia would see nothing wrong.
 The defect that motivated this pass was not a wrong measurement. It was a right measurement in the
 wrong slot: the prose said **10,936** ambiguous-target edges while the table above it summed to
 **11,098** and the census had printed **11,101** all along. Nothing in the lane could see it. The
-census passes. The 5 fixtures pass. All 25 mutants die. The arbiter agrees to the edge. The doc is
+census passes. The 5 fixtures pass. All 28 mutants die. The arbiter agrees to the edge. The doc is
 wrong, and every one of those gates is silent about it, because none of them reads the doc.
 
 `validation/m14/fixtures/julia/doc-tables-check.ts` closes that gap. It reads
@@ -2260,11 +2260,12 @@ figure against `census.json`:
 ```
 $ npx tsx validation/m14/fixtures/julia/doc-tables-check.ts --json /tmp/census.json
 doc tables check — docs/analyzers/real-julia-analyzer.md
-cells checked: 294
+  (mutant-count scan: 4 current-state figure(s) checked, 2 historical citation(s) exempted by an explicit past-tense marker)
+cells checked: 305
 PASS — every table cell equals the instrument's value
 ```
 
-**294 cells** across six tables: the 10-row verdict table (edge count + file count per type, with
+**299 cells** across six tables: the 10-row verdict table (edge count + file count per type, with
 RULED rows held to "emitted 0" instead of being read as an edge count), the 9-row incoming bucket
 table (all 9 buckets per type), the residual-ambiguity table including the requirement that each
 row's total equals its own two columns and that the column sum equals the instrument's total, the
@@ -2292,7 +2293,43 @@ FAIL — 1 mismatch(es):
 **The count is a moving figure and this check will fire on ordinary doc edits**, which is the correct
 time to fire: a table added here raises the count, and the quoted figure has to move with it. A
 failure where the doc claims MORE cells than the gate delivers is the more serious direction and names
-a table that stopped being checked.
+a table that stopped being checked. **This section is itself inside the counted region** — the block
+above quotes gate output, and the block below quotes three figures the mutant scan reads — so writing
+about the gate changes the number the gate reports. That self-reference is real and is left visible
+rather than engineered away: the failure message always names the two numbers, so the fix is to copy
+the count the gate just printed.
+
+### The same drift, one syntactic level down: a check anchored on a PHRASING, not a quantity
+
+**The mutant count said 25 in two places while `script/m60/julia-mutants.ts` held 28, and section 7's
+own check passed.** It did not pass because the figure was right. It passed because the check anchored on
+the *shape* of the sentence rather than on the quantity:
+
+```
+checked:  /killed,\s+[\d,]+\s+survived,\s+of\s+[\d,]+/   → "28 killed, 0 survived, of 28"   MATCHES
+drifted:  "5 fixtures / **25 mutants, 25 killed, 0 survivors**"                          NO ", of"
+drifted:  "All 25 mutants die"                                                            no such shape
+```
+
+Two of the three places the doc states the count use a different wording, so neither was read. The
+comment above that block already warned about *"a check reading only the first line of a figure that
+appears twice is the same two-places-one-number defect this check exists to catch, one level up"* — and
+the same defect arrived one syntactic level down instead. **A figure is a figure however it is worded.**
+
+The check now reads every `N mutants` in the doc and compares it to the module's length, with one
+distinction it has to make: a figure can be a **claim** about the current module or a **citation** of a
+value this file used to print, and both are written identically. Two lines here legitimately cite the
+past (`This paragraph said 4 fixtures and 21 mutants`), so a citation is exempted by an explicit
+past-tense marker in the preceding words — **and the number of exemptions is printed rather than
+silently applied**, because a marker list that quietly exempts text is the same hole one level down
+again:
+
+```
+(mutant-count scan: 4 current-state figure(s) checked, 2 historical citation(s) exempted by an explicit past-tense marker)
+```
+
+Both drifted figures were found this way, and corrected to 28 against `mutation-check.ts --all`, which
+reports **`28 killed, 0 survived, of 28`**.
 
 **It is proved against injected drift, because a gate that cannot fail is the defect it exists to
 catch.** Six drifts were injected one at a time into a clean doc — `calls` 86,876 → 86,967;
