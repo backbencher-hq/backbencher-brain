@@ -19,19 +19,30 @@ import { ASTEngine } from "./engine"
  * The remaining 177 defect files are NOT hidden. They are in the census and the differential,
  * and a construct in one of them is published as far as the tree allows.
  *
- * WHAT JULIA'S SEMANTICS ACTUALLY ARE, because three of the 13 relationship types must be
- * declined rather than faked
- * --------------------------------------------------------------------------------------------
- * `overrides` is **declined**. Julia has multiple dispatch, not overriding: two methods with the
- * same name and different signatures are DIFFERENT METHODS, both live, and neither replaces the
- * other. Emitting an `overrides` edge between them would state a falsehood about the language —
- * the single most common way a multi-language analyzer lies is by importing another language's
- * ontology wholesale and calling the result coverage.
+ * WHAT JULIA'S SEMANTICS ACTUALLY ARE, because two of the 10 relationship types are declined
+ * rather than faked and one of them was declined WRONGLY before this header said so
+ * ----------------------------------------------------------------------------------------------
+ * `implements` is **declined**. Julia has no interfaces to implement: `abstract type` participates
+ * in a TYPE hierarchy (`<:`), not in a protocol-conformance relation. Publishing "S implements I"
+ * for `struct S <: I` would be the managed-OO ontology applied to a language that does not have it.
+ * MEASURED: `wasm/tree-sitter-julia.wasm` produces 149 distinct node types over the 971 admitted
+ * corpus files (4,948,278 nodes) and NONE of the 12 node-type names that would express a protocol
+ * or conformance clause occurs; the nearest corpus construct — a supertype clause naming an
+ * `abstract type` declared in the same file — occurs 325 times across 60 files and every one is a
+ * SUBTYPE relation already published as `extends`. See `validation/m14/fixtures/julia/census.ts`
+ * instrument A and instrument B.
  *
- * `implements` is **declined** for the same reason. Julia has no interfaces to implement:
- * `abstract type` participates in a TYPE hierarchy (`<:`), not in a protocol-conformance relation.
- * Publishing "S implements I" for `struct S <: I` would be the managed-OO ontology applied to a
- * language that does not have it.
+ * `overrides` WAS **declined** here, on the grounds that "Julia has multiple dispatch, not
+ * overriding", and the argument was **sound for the case it names and silent about the case julia
+ * has**. Two methods with the same name and different signatures are DIFFERENT METHODS, both live,
+ * neither replacing the other — true, and irrelevant to the method table. Julia's method table holds
+ * exactly ONE entry per `(name, signature)` pair, so a second declaration of the SAME pair replaces
+ * the first, and julia says so itself: under `--warn-overwrite=yes` it prints
+ * `WARNING: Method definition f(Int) in module Main at line 12 overwritten at line 40`. `overrides`
+ * is emitted, behind four guards, and the guards were each put there by a measurement that removed
+ * edges: 417 redefinition pairs in the corpus, 237 unconditional, 200 not a local binding, 163 in a
+ * genuinely different scope, 44 inside a DECLARED module — and 3 edges. The refusals are counted,
+ * not hidden; `overridesEmit` below and `docs/analyzers/real-julia-analyzer.md` carry the numbers.
  *
  * `extends` is emitted ONLY for `<: Supertype` on an `abstract type` or a `struct`. That is the
  * real subtype edge and nothing else is.
