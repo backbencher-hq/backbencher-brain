@@ -201,7 +201,54 @@ export class RealGraphqlAnalyzer implements ASTEngine.LanguageAnalyzer {
         type,
         confidence: 1,
         line_number: line,
-        metadata: { ...metadata, relationshipRole: role },
+        // Every edge this analyzer emits is read off a NAMED AST NODE — an
+        // `ImplementsInterfaces` clause, a `NamedType`, a field's own `Name`, a
+        // `Directives` child — so `structural` is the class for all of them and is
+        // stated rather than left absent. 38 sibling lanes publish this key and this
+        // one published none, which made "how much of this graph is guesswork" a
+        // question with no machine-readable answer on this lane: the honesty contract
+        // §4.3 requires the heuristic ratio to be a QUERYABLE number, and an absent
+        // key is not queryable. `confidence` was already 1 everywhere, so nothing
+        // here is newly a heuristic — the key says so explicitly.
+        metadata: { ...metadata, relationshipRole: role, evidenceClass: "structural" },
+      })
+    }
+
+    /**
+     * A DECLARED-TYPE reference: the declaration that WRITES a type name names the
+     * type it writes.
+     *
+     * These five positions are `references`, not `uses`, and the family decided it
+     * rather than this lane. Ledger rule R9 states the contract every lane owes — a
+     * `references` edge from a declaration to the type it names, marked
+     * `metadata.relationshipType === "declared_type"` — and the measured shape of the
+     * sibling lanes that satisfy it is uniform: java, kotlin, scala, csharp, go,
+     * typescript and rust all emit `RelationshipType.References` for a field type, a
+     * parameter, a return type or a variable type, and NONE of them emits a `uses`
+     * edge for the same fact. typescript even suppresses the duplicate explicitly
+     * (`alreadyPublished`, real-typescript-analyzer.ts:3439). Publishing the same
+     * fact under two labels is the label-divergence class R10 exists to catch, so the
+     * edge is REPLACED, not duplicated: `uses` loses 7,949 edges here and `references`
+     * gains them, and the graph grows by the `exports` and `overrides` families only.
+     *
+     * The positions are exactly the ones a `Type` node appears in — a field's return
+     * type, an argument's type, an input field's type, a variable's type, a directive
+     * argument's type — and that is the whole rule. A union member, a root operation
+     * type and a fragment type condition are a NAME in a list or a name in a mapping,
+     * not a type clause, so they stay `uses`; the census counts both populations
+     * (7,949 `Type` nodes under a declaration against 24,630 `uses` edges) so the
+     * split is measured rather than asserted.
+     */
+    const addDeclaredType = (
+      source: string,
+      target: string,
+      line: number,
+      role: string,
+      metadata: Record<string, any> = {},
+    ) => {
+      addRelationship(source, target, ASTEngine.RelationshipType.References, line, role, {
+        ...metadata,
+        relationshipType: "declared_type",
       })
     }
 
@@ -228,9 +275,87 @@ export class RealGraphqlAnalyzer implements ASTEngine.LanguageAnalyzer {
     // document's direct definitions — it is O(top-level definitions), not a
     // second full traversal.
     const declaredHere = new Set<string>()
+    /**
+     * What kind THIS DOCUMENT gives each type name.
+     *
+     * It exists for one labelling decision. `type A implements B` and
+     * `type A extends B` are written with the SAME grammar rule — GraphQL has an
+     * `implements` clause and no `extends` clause — so which relationship an edge
+     * carries is a decision about what `B` IS. A per-file analyzer can only read that
+     * off the document it is parsing, so this index is exactly the evidence available
+     * and the rule states what it does when the document is silent.
+     *
+     * Corpus measurement behind it (script/m14/tmp/graphql/probe/ontology-census.mts,
+     * 426 files / 161,957 nodes): 11 `implements` clauses in the corpus name a
+     * supertype no file declares as an interface, 7 of them inside documents the
+     * grammar parses with zero ERROR/MISSING nodes — and **0 of those 7 declare the
+     * supertype in the SAME document**, every one of them in a schema split across
+     * files. So this rule is correct and reaches nothing on this corpus, and the
+     * cross-file remainder is a project-scope derivation that a per-file analyzer
+     * cannot make. That count is carried as a declared limitation rather than left
+     * implicit; it is also why the rule is stated narrowly instead of being widened
+     * to guess across files.
+     */
+    const kindOfNameHere = new Map<string, Set<ASTEngine.SymbolKind>>()
     for (const decl of this.topLevelDeclarations(rootNode)) {
-      if (decl.name) declaredHere.add(`${decl.symbolKind}\u0000${decl.name}`)
+      if (!decl.name) continue
+      declaredHere.add(`${decl.symbolKind}\u0000${decl.name}`)
+      const kinds = kindOfNameHere.get(decl.name) ?? new Set<ASTEngine.SymbolKind>()
+      kinds.add(decl.symbolKind)
+      kindOfNameHere.set(decl.name, kinds)
     }
+    /**
+     * What kind THIS DOCUMENT gave a supertype name, or undefined when the document
+     * says nothing about it. `Class` is both an object type and an input object type
+     * and `Type` is both a union and a scalar, so the answer is a SET and a name the
+     * document declares two ways is genuinely ambiguous — which the caller treats as
+     * "not classifiable" rather than resolving by preference.
+     */
+    const supertypeKindOf = (supertype: string): ASTEngine.SymbolKind | undefined => {
+      const kinds = kindOfNameHere.get(supertype)
+      if (!kinds || kinds.size !== 1) return undefined
+      const only = [...kinds][0]
+      return only === ASTEngine.SymbolKind.Interface || only === ASTEngine.SymbolKind.Class || only === ASTEngine.SymbolKind.Type ? only : undefined
+    }
+    /**
+     * One `implements` clause, labelled by what the document says its supertype IS.
+     *
+     * GraphQL writes both relationships with one rule, so the label is a decision about
+     * the supertype: an interface is `implements` — the specification's own meaning —
+     * and a supertype the document declares to be an object type, an input object, a
+     * union or a scalar is inheritance, which is `extends`. When the document says
+     * nothing about the name, or declares it two ways, the edge stays `implements`:
+     * inventing an `extends` edge for a supertype this analyzer cannot classify is
+     * the fabrication the workstream's rule exists to prevent, and 6 of the 11
+     * object-typed supertypes in the corpus are named by a file other than the one
+     * carrying the clause.
+     *
+     * The pair is recorded in `heritageEdges` either way, because it is a fact about
+     * the document whatever the edge is called, and the `overrides` post-pass needs it.
+     */
+    const emitHeritage = (owner: string, supertype: string, line: number, inExtension: boolean) => {
+      const supertypeKind = supertypeKindOf(supertype)
+      const relType = supertypeKind === ASTEngine.SymbolKind.Class || supertypeKind === ASTEngine.SymbolKind.Type ? ASTEngine.RelationshipType.Extends : ASTEngine.RelationshipType.Implements
+      heritageEdges.push({ owner, iface: supertype, ifaceKind: supertypeKind })
+      addRelationship(owner, supertype, relType, line, relType === ASTEngine.RelationshipType.Extends ? "extends" : "implements", {
+        ...(relType === ASTEngine.RelationshipType.Extends ? { implementsClause: true } : {}),
+        ...(inExtension ? { extension: true } : {}),
+      })
+    }
+    /** Every `implements` clause this document states, for the `overrides` post-pass. */
+    const heritageEdges: Array<{ owner: string; iface: string; ifaceKind?: ASTEngine.SymbolKind }> = []
+    /**
+     * Every field each type name declares in THIS document, with the field's own `Name`
+     * node so an `overrides` edge can carry the line its member is written on.
+     *
+     * Filled from the walk rather than by a pre-pass, because the walk already visits
+     * every `FieldDefinition` with its owner in hand and a second traversal of the tree
+     * is not free. A FORWARD reference is the reason the `overrides` edges are emitted
+     * after the walk rather than inside the `implements` arm: github-schema.graphql
+     * writes `interface Node` after every type that implements it, so at the moment
+     * `type App implements Node` is handled the interface's member list is empty.
+     */
+    const memberNameNodes = new Map<string, Map<string, Node>>()
     // Which types this document EXTENDS. Measured at 320 ms (28%) when computed by
     // re-walking every top-level definition once per scalar definition; the walk is
     // already being done above, so the answer is collected here for free and every
@@ -381,9 +506,7 @@ export class RealGraphqlAnalyzer implements ASTEngine.LanguageAnalyzer {
           const implNode = this.firstChildOfType(node, "ImplementsInterfaces")
           if (implNode) {
             for (const { name: iface, node: ifaceNode } of this.collectNamedTypes(implNode)) {
-              addRelationship(name, iface, ASTEngine.RelationshipType.Implements, this.lineOf(ifaceNode), "implements", {
-                ...(inExtension ? { extension: true } : {}),
-              })
+              emitHeritage(name, iface, this.lineOf(ifaceNode), inExtension)
             }
           }
           // union members
@@ -442,7 +565,7 @@ export class RealGraphqlAnalyzer implements ASTEngine.LanguageAnalyzer {
           const implNode = this.firstChildOfType(node, "ImplementsInterfaces")
           if (implNode) {
             for (const { name: iface, node: ifaceNode } of this.collectNamedTypes(implNode)) {
-              addRelationship(name, iface, ASTEngine.RelationshipType.Implements, this.lineOf(ifaceNode), "implements", { extension: true })
+              emitHeritage(name, iface, this.lineOf(ifaceNode), true)
             }
           }
           if (definitionType === "UnionTypeDefinition") {
@@ -523,7 +646,7 @@ export class RealGraphqlAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (argsNode) {
             for (const arg of this.argumentPairs(argsNode)) {
               if (!arg.type || !arg.typeNode) continue
-              addRelationship(`@${name}`, arg.type, ASTEngine.RelationshipType.Uses, this.lineOf(arg.typeNode), "directive_argument_type", { argument: arg.name })
+              addDeclaredType(`@${name}`, arg.type, this.lineOf(arg.typeNode), "directive_argument_type", { argument: arg.name })
               if (arg.name) this.emitEnumValueReferences(`@${name}`, arg.defaultNode, arg.type, addRelationship, { declaration: "directive_argument_default", argument: arg.name })
             }
           }
@@ -561,9 +684,18 @@ export class RealGraphqlAnalyzer implements ASTEngine.LanguageAnalyzer {
               ...(this.directiveMetadata(directivesOf(node))),
             },
           })
-          addRelationship(owner.name, ownerSymbol, ASTEngine.RelationshipType.Contains, this.lineOf(this.firstChildOfType(node, "Name") ?? node), "contains", {
+          const fieldNameNode = this.firstChildOfType(node, "Name")
+          addRelationship(owner.name, ownerSymbol, ASTEngine.RelationshipType.Contains, this.lineOf(fieldNameNode ?? node), "contains", {
             ...(inExtension ? { extension: true } : {}),
           })
+          // The member list of `owner.name`, for the `overrides` post-pass. Recorded
+          // once per member name, so a field a definition and an extension both write
+          // contributes the FIRST declaration and not two rows for one edge.
+          if (fieldNameNode) {
+            const bag = memberNameNodes.get(owner.name) ?? new Map<string, Node>()
+            if (!bag.has(fieldName)) bag.set(fieldName, fieldNameNode)
+            memberNameNodes.set(owner.name, bag)
+          }
           // The guard is on the RESOLVED NAME, not on the `Type` node existing.
           // `broken:` with no type makes the grammar's recovery emit a `Type` node
           // whose `Name` is MISSING, so `typeNode` is truthy and `returnType` is
@@ -572,14 +704,14 @@ export class RealGraphqlAnalyzer implements ASTEngine.LanguageAnalyzer {
           // script/m12/graphql-contract-probe.ts, which had asserted exactly that
           // ("missing-type field emits no bogus type reference") and was failing.
           if (returnType) {
-            addRelationship(ownerSymbol, returnType, ASTEngine.RelationshipType.Uses, this.lineOf(this.namedTypeNode(typeNode!) ?? typeNode!), "field_return_type", {
+            addDeclaredType(ownerSymbol, returnType, this.lineOf(this.namedTypeNode(typeNode!) ?? typeNode!), "field_return_type", {
               ...(inExtension ? { extension: true } : {}),
             })
           }
           if (argsNode) {
             for (const arg of this.argumentPairs(argsNode)) {
               if (!arg.type || !arg.typeNode) continue
-              addRelationship(ownerSymbol, arg.type, ASTEngine.RelationshipType.Uses, this.lineOf(arg.typeNode), "field_argument_type", {
+              addDeclaredType(ownerSymbol, arg.type, this.lineOf(arg.typeNode), "field_argument_type", {
                 argument: arg.name,
                 ...(inExtension ? { extension: true } : {}),
               })
@@ -639,7 +771,7 @@ export class RealGraphqlAnalyzer implements ASTEngine.LanguageAnalyzer {
           this.emitEnumValueReferences(ownerSymbol, this.firstChildOfType(node, "DefaultValue"), fieldType, addRelationship, { declaration: "input_field_default" })
           // Same guard as a field's return type, for the same reason.
           if (fieldType) {
-            addRelationship(ownerSymbol, fieldType, ASTEngine.RelationshipType.Uses, this.lineOf(this.namedTypeNode(typeNode!) ?? typeNode!), "input_field_type", {
+            addDeclaredType(ownerSymbol, fieldType, this.lineOf(this.namedTypeNode(typeNode!) ?? typeNode!), "input_field_type", {
               ...(inExtension ? { extension: true } : {}),
             })
           }
@@ -690,7 +822,7 @@ export class RealGraphqlAnalyzer implements ASTEngine.LanguageAnalyzer {
             // `returnType`/`rawType` were carrying the fact as a string where
             // every sibling fact is a relationship.
             if (varType) {
-              addRelationship(`$${varName}`, varType, ASTEngine.RelationshipType.Uses, this.lineOf(this.namedTypeNode(typeNode!) ?? typeNode!), "variable_type", {
+              addDeclaredType(`$${varName}`, varType, this.lineOf(this.namedTypeNode(typeNode!) ?? typeNode!), "variable_type", {
                 operation: opName,
               })
             }
@@ -856,6 +988,38 @@ export class RealGraphqlAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
       if (sym) sym.metadata = { ...sym.metadata, droppedExtensionSymbol: true }
     }
+    // ------------------------------------------------ overrides: a supplied member
+    //
+    // `type Film implements Node` plus a field `id` on `Film` and a field `id` on
+    // `Node` is the ONE place GraphQL has an override-shaped construct: §3.6 requires
+    // the object to supply every member the interface declares, so the object's field
+    // is the one that implements it. Measured on the corpus before this was written —
+    // 1,054 occurrences across 4 files, all of them in documents the grammar parses
+    // with zero ERROR/MISSING nodes, and **all 1,054 same-document**, which is the
+    // resolution this post-pass can do.
+    //
+    // Both endpoints are symbols the analyzer already emits (`property`, qualified
+    // `Type.field`), so the edge resolves at both ends without a project-scope join.
+    // A cross-file split — the interface in one file, the object in another — gets the
+    // `implements` edge and both member lists and NO `overrides` edge from this lane,
+    // which is stated as a limitation rather than papered over by resolving names
+    // against a corpus this analyzer never sees.
+    for (const h of heritageEdges) {
+      if (h.owner === h.iface) continue
+      const mine = memberNameNodes.get(h.owner)
+      const theirs = memberNameNodes.get(h.iface)
+      if (!mine || !theirs) continue
+      for (const [member, nameNode] of mine) {
+        if (!theirs.has(member)) continue
+        addRelationship(`${h.owner}.${member}`, `${h.iface}.${member}`, ASTEngine.RelationshipType.Override, this.lineOf(nameNode), "interface_member_supplied", {
+          implementedType: h.owner,
+          supertype: h.iface,
+          supertypeKind: h.ifaceKind ?? "undeclared_in_this_document",
+          member,
+        })
+      }
+    }
+
     // `exports` is derived after the post-pass so a dropped symbol is not
     // published as an export of the file.
     for (const s of symbols) {
@@ -866,6 +1030,28 @@ export class RealGraphqlAnalyzer implements ASTEngine.LanguageAnalyzer {
       // disagree with the emit path the moment a spelling changed.
       if (s.metadata?.topLevel !== true) continue
       exports.push({ name: s.name, kind: s.kind, range: s.range, visibility: "public" })
+      // ...and as an EDGE, because `ParseResult.exports` has no consumer.
+      //
+      // `parallel-indexer.ts` reads `result.imports` (line 3293, into `brain_import`)
+      // and reads NOTHING named `exports`: the only `exports` it knows is
+      // `relType === "exports"`, a relationship. So every declaration this analyzer
+      // listed as an export of the schema reached no graph, no `bb_graph`, no
+      // `bb_impact` — and `exports` is one of the ten ontology types, so the graph
+      // had no way to answer "what does this schema offer a client". 19 sibling
+      // analyzers publish it as an edge; this is that same move, and it is the reason
+      // the json lane stopped ruling `exports` on a grammar inventory (a Node manifest
+      // writes `exports` as an ordinary object key, which no grammar can see).
+      //
+      // The SOURCE is the file, spelled the way the store expects: `metadata.fileLevel`
+      // is the M60/#910 contract for a module-level edge whose source is the importing
+      // FILE rather than a symbol, and the store rewrites `source_external` to the
+      // project-relative path on exactly that flag. `zig` spells the same source
+      // `"(file)"`; nothing here claims a symbol that the file does not contain.
+      addRelationship("(file)", s.name, ASTEngine.RelationshipType.Exports, s.range.startLine, "exports", {
+        fileLevel: true,
+        ...(s.metadata?.graphqlType ? { graphqlType: s.metadata.graphqlType } : {}),
+        ...(s.metadata?.graphqlCategory ? { graphqlCategory: s.metadata.graphqlCategory } : {}),
+      })
     }
 
     return {
@@ -910,8 +1096,8 @@ export class RealGraphqlAnalyzer implements ASTEngine.LanguageAnalyzer {
    * and it is the only place a type can be DECLARED, so it is exactly the set
    * an extension has to be compared against.
    */
-  private topLevelDeclarations(rootNode: Node): Array<{ name?: string; symbolKind: string; typeNode: string }> {
-    const out: Array<{ name?: string; symbolKind: string; typeNode: string }> = []
+  private topLevelDeclarations(rootNode: Node): Array<{ name?: string; symbolKind: ASTEngine.SymbolKind; typeNode: string }> {
+    const out: Array<{ name?: string; symbolKind: ASTEngine.SymbolKind; typeNode: string }> = []
     for (const def of this.topLevelDefinitions(rootNode)) {
       const inner = this.innermostNamed(def)
       if (!inner) continue

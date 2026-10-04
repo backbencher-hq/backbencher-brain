@@ -82,6 +82,148 @@ const IMPLICIT_OR_CONSTANT: ReadonlySet<string> = new Set([
   "nothing", "missing", "undef", "ARGS", "ENV", "C_NULL", "stdout", "stderr", "stdin",
 ])
 
+/**
+ * Text normalisation, three shapes, and NOT one regex each.
+ *
+ * `script/m12/verify-regex-census.ts` reported nine regex literals in this file, all of the form
+ * `node.text.replace(/…/)`, and the committed census
+ * (`validation/m12/results/regex-census.json`) carries **no julia row at all** — the analyzer was
+ * written after the census was established, so the whole file arrived as unrecorded debt. A census
+ * row is a results artifact written by a verifier script (honesty contract §5.1), so it is not
+ * editable here even to declare the debt honestly. The only honest move is to DELETE the regexes,
+ * which is what these three functions do.
+ *
+ * Each replacement is a PREFIX or CHARACTER test rather than a pattern, which is the actual
+ * property the regex was standing in for: the grammar attaches these sigils deterministically at
+ * the start or end of a token, so "does this text start with `@`" is the whole question and
+ * `/^@/` is a nine-times-larger spelling of it.
+ */
+
+/** Drop a sigil the grammar puts at the FRONT of a token: `macro_identifier`'s `@`, a quote's `:`. */
+function stripSigil(text: string, sigil: string): string {
+  const t = text.trim()
+  return t.startsWith(sigil) ? t.slice(sigil.length) : t
+}
+
+/**
+ * The quoted-OPERATOR member of a field read: `x.:(==)` and `s.:<` put the member in a
+ * `quote_expression`, whose text is `:(==)` — five characters around a two-character name. The
+ * former spelling was `/^:\(|\)$/g`, which strips a leading `:(` and a trailing `)` in either order;
+ * this strips the same two characters and nothing else, so it cannot also eat a `)` or `(` that is
+ * part of an operator name.
+ */
+function unquoteOperatorMember(text: string): string {
+  let t = text.trim()
+  if (t.startsWith(":")) t = t.slice(1)
+  if (t.startsWith("(") && t.endsWith(")")) t = t.slice(1, -1)
+  return t.trim()
+}
+
+/**
+ * Every run of whitespace collapsed to one space, with the ends trimmed.
+ *
+ * This is the `overrides` method-signature key's layout normalisation: `f( x )` and `f(x)` are the
+ * SAME method to julia, so the key has to be indifferent to spacing inside the argument list, and
+ * the fixture `method-redefinition-overrides` pins the resulting string exactly. Whitespace is
+ * tested per CHARACTER (`ch.trim() === ""`), which is what `/s+/` means and, unlike an ASCII
+ * allowlist, keeps the Unicode space characters julia source can carry.
+ */
+function collapseSpace(text: string): string {
+  const words: string[] = []
+  let word = ""
+  for (const ch of text) {
+    if (ch.trim() === "") {
+      if (word) { words.push(word); word = "" }
+    } else {
+      word += ch
+    }
+  }
+  if (word) words.push(word)
+  return words.join(" ")
+}
+
+/**
+ * Node types inside which a declaration is CONDITIONAL, or is text julia GENERATED rather than
+ * text this file declares. An `overrides` edge is only a parse fact in an unconditional position,
+ * so this set is the whole test.
+ *
+ * EVERY MEMBER IS A MEASURED NODE TYPE, not a recollection: `validation/m14/fixtures/julia/census.ts`
+ * enumerates the 142 distinct node types `wasm/tree-sitter-julia.wasm` produces across the admitted
+ * corpus, and these are drawn from that inventory (`instrumentA.nodeTypes` in its JSON output). A
+ * name that does not appear there cannot be reached, which is a smaller rule than it looks: it means
+ * a typo fails closed rather than silently admitting a conditional position.
+ *
+ * The MEMBERSHIP is measured rather than guessed, by the same instrument. These three files each
+ * declare a method TWICE with an identical signature, and every one of the three is inside an
+ * `if`/`else` — a version guard, which is the idiom this set exists to exclude:
+ *
+ *   json_jl/src/write.jl:626-629   `if isdefined(Base, :StringVector) … else … end`
+ *   json_jl/src/lazy.jl:437-442    `if VERSION < v"1.11" … else … end`
+ *
+ * Exactly one branch runs and the other method is never defined, so the pair is not a replacement.
+ * Counting them would have been the fabrication the ontology workstream's rule exists to prevent,
+ * on the two files a reader is most likely to look at.
+ *
+ * The GENERATED half is `macrocall_expression` and the two quote forms, because their content is not
+ * julia source in this file: `@eval f(x) = …` and `quote f(x) = … end` carry code julia writes at
+ * expansion, and the tree holds the generated text rather than the declaration.
+ */
+const CONDITIONAL_OR_GENERATED: ReadonlySet<string> = new Set([
+  // conditional
+  "if_statement", "else_clause", "elseif_clause",
+  "while_statement", "for_statement",
+  "try_statement", "catch_clause", "finally_clause",
+  "ternary_expression",
+  "macrocall_expression",
+  // generated, not declared here
+  "quote_expression", "quote_statement",
+])
+
+/**
+ * Node types inside which a declaration is a LOCAL BINDING rather than a method-table entry.
+ *
+ * This is the second half of the `overrides` rule and it is the half that separates a real edge from
+ * a fabricated one, because Julia's nesting is where the method table stops.
+ *
+ * Inside a function body, `f(x) = …` binds a LOCAL variable holding a closure. It does not add a
+ * method, and it displaces nothing: the next time the enclosing function runs, the same closure is
+ * built again. The same holds for a `do` block, a `let`, and a `->` anonymous function's body. An
+ * edge published there would say "this definition replaced an earlier one" about two bindings that
+ * never met.
+ *
+ * MEASURED over the 971 admitted corpus files, and every member of the set fires — which is what
+ * keeps this from being a dead predicate (honesty contract §2's L2 requires zero of those):
+ *
+ *   41  `let_statement`         29  `function_definition`    3  `macro_definition`    3  `do_clause`
+ *
+ * Two corpus shapes, both fabricated edges in an earlier revision of this lane that produced 14 of
+ * the 63 `overrides` edges it published:
+ *
+ *   julia/JuliaLowering/src/desugaring.jl:153 and :324 — `wrap(asgn) = …` inside TWO DIFFERENT
+ *     function bodies. The pre-pass keyed on (name, signature) alone, so the two closures collided
+ *     and it published `_destructure -overrides-> wrap`, a replacement between two functions that
+ *     have no relationship at all.
+ *
+ *   julia/base/range.jl:488 and :496 — `throwbool(r) = …` inside two different inner constructors
+ *     of `OneTo`, same collision, published as `OneTo -overrides-> throwbool`.
+ *
+ * `compound_statement` is DELIBERATELY absent, and the measurement is why: it is the node for both
+ * a function body AND a top-level `begin … end` inside a module, and the second is a legitimate
+ * method-table position. Verified on both spellings —
+ *
+ *     module M; begin; f(x) = 1; f(x) = 2; end; end      ->  (module_definition (compound_statement …))
+ *     module M; function g(); h(x) = 1; end; end         ->  (function_definition (compound_statement …))
+ *
+ * The function case is already covered by `function_definition` in this set, so listing
+ * `compound_statement` would refuse the legitimate half to catch the case that is caught anyway.
+ *
+ * `comprehension_expression` and `generator` are absent because they hold 0 of the 417 redefinition
+ * declarations in the corpus, not because they are irrelevant.
+ */
+const LOCAL_BINDING_SCOPE: ReadonlySet<string> = new Set([
+  "function_definition", "macro_definition", "do_clause", "let_statement", "arrow_function_expression",
+])
+
 export class RealJuliaAnalyzer {
   /**
    * Call sites under an `@ccall`, recorded when the macro is visited and consulted when the
@@ -110,12 +252,58 @@ export class RealJuliaAnalyzer {
    */
   private typeHeadSites = new Set<number>()
 
+  /**
+   * Declaration nodes that REPLACE an earlier declaration of the same method, keyed by node id.
+   *
+   * COLLECTED IN A PRE-PASS for the same reason `declaredTypes` is: the question "has this exact
+   * method already been defined in this file?" is only answerable once the whole file has been
+   * seen, and answering it during a single walk would classify the FIRST declaration as the
+   * override and leave the second — the one that actually replaces it — unrecorded.
+   *
+   * M60/julia `overrides`. The lane's file header declined this type on the grounds that julia has
+   * multiple dispatch rather than overriding, and the argument is sound for the case it names: two
+   * methods of the same name with DIFFERENT signatures are different methods, both live, and
+   * neither replaces the other. It does not cover the case julia actually has. Julia's method table
+   * holds exactly one entry per (name, signature) tuple, so a second declaration of the SAME pair
+   * REPLACES the first — julia itself says so, printing `WARNING: Method definition f(Int) in
+   * module Main at line 12 overwritten at line 40` under `--warn-overwrite=yes`. That is a
+   * replacement, and it is the only sense in which the language has one, which is the same
+   * criterion the bash lane's `overrides` ruling used to convict this very omission
+   * (`script/m14/ontology-coverage-gate.ts` header, BD8b).
+   *
+   * MEASURED: filled in from `validation/m14/fixtures/julia/census.ts` over the admitted corpus —
+   * see `docs/analyzers/real-julia-analyzer.md` for the counts and the probe that produces them.
+   */
+  private redefinedAt = new Map<number, { name: string; replacesLine: number; signature: string; scope: string }>()
+
+  /**
+   * The kind of every symbol this file declares, by name. Populated at each `symbols.push`, which is
+   * the single point every declaration in this analyzer goes through, so the table cannot fall behind
+   * the symbol list. Cleared per `analyze()` like the other per-file state.
+   *
+   * It exists for one question: does this file declare `owner` as a module or a type, and `target` as
+   * a method? See `ownsAMethodTable`.
+   */
+  private declaredSymbolKinds = new Map<string, ASTEngine.SymbolKind>()
+
   analyze(rootNode: Node, content: string, filePath: string): ASTEngine.ParseResult {
     this.inMacroBody = false
     this.foreignMarked.clear()
     this.declSites.clear()
     this.typeHeadSites.clear()
+    this.redefinedAt.clear()
+    this.declaredSymbolKinds.clear()
     const symbols: ASTEngine.UniversalSymbol[] = []
+    /**
+     * The ONE place a declaration enters the symbol list, so `declaredSymbolKinds` cannot fall
+     * behind it. Eight separate `symbols.push` sites existed before this; a table maintained at all
+     * but one of them is a table that is wrong, and wrong in the direction that makes `overrides`
+     * look better than it is.
+     */
+    const pushSym = (s: ASTEngine.UniversalSymbol): void => {
+      symbols.push(s)
+      this.declaredSymbolKinds.set(s.name, s.kind)
+    }
     const relationships: ASTEngine.UniversalRelationship[] = []
     const imports: ASTEngine.ImportInfo[] = []
     const exports: ASTEngine.ExportInfo[] = []
@@ -154,6 +342,81 @@ export class RealJuliaAnalyzer {
         for (const c of this.namedChildren(n)) collect(c)
       }
       collect(rootNode)
+    }
+
+    // The `overrides` pre-pass: which declaration replaces an earlier one. See `redefinedAt` for
+    // why this type exists and what julia's own rule is. The POSITION test is the part that makes
+    // the edge true rather than merely plausible, and it is stated here because it is the whole
+    // difference between a real replacement and a fabricated one:
+    //
+    //   `if Sys.iswindows(); pathsep() = '\\'; else; pathsep() = '/'; end` declares the same
+    //   (name, signature) pair twice in one file and OVERRIDES nothing — exactly one branch runs,
+    //   and the other method is never defined. Counting it would be the fabrication the ontology
+    //   workstream's own rule exists to prevent, and it would be counted as many as the corpus has
+    //   such branches, which is a lot: `if VERSION >= v"1.9"` guards are idiomatic julia.
+    //
+    // So a declaration is admitted only when NOTHING about its position makes its execution
+    // conditional or its text generated. An unconditional declaration directly in a module body or a
+    // struct body runs whenever the file is loaded, and a second one with the same signature
+    // therefore replaces it. Everything else is refused and the refusal is counted, not hidden — the
+    // census prints the admitted and the refused counts side by side.
+    //
+    // The pre-pass carries its OWN SCOPE, and it carries it for the reason `desugaring.jl` needs it:
+    // the key is `scope|name|signature`, not `name|signature`. Keyed on the name alone, `wrap(asgn)`
+    // at `desugaring.jl:153` (inside `tuple_to_assignments`) and the same short form at `:324`
+    // (inside a different function) are one method as far as the map is concerned, and the lane
+    // published a replacement between two closures that have no relationship. The scope in the key is
+    // the module or type that owns the method table — the walk's own `activeScope` is not consulted
+    // because at pre-pass time it does not exist yet, and a frame-walking pre-pass that recomputes it
+    // could disagree with the walk's.
+    //
+    // `localDepth` is the same idea for the local-binding half: a declaration under a function body,
+    // a `do`, a `let` or a `->` binds a closure and never enters the method table (see
+    // `LOCAL_BINDING_SCOPE` for the corpus shapes this removed), so it is not even offered to the map.
+    {
+      const firstDecl = new Map<string, { line: number; safe: boolean }>()
+      const scan = (n: Node, scope: string, scopeAt: number, localDepth: number) => {
+        let childScope = scope
+        let childScopeAt = scopeAt
+        let childLocal = localDepth
+        if (TYPE_DECLARATIONS.has(n.type)) {
+          const head = this.firstNamedChildOfType(n, "type_head")
+          const name = head ? this.typeHeadName(head) : ""
+          if (name) { childScope = name; childScopeAt = n.startPosition.row + 1 }
+        } else if (n.type === "module_definition") {
+          const nameNode = n.childForFieldName("name")
+          const name = nameNode ? nameNode.text.trim() : ""
+          if (name) { childScope = name; childScopeAt = n.startPosition.row + 1 }
+        }
+        // A function body advances the WALK's scope but not the method table's owner, so the
+        // pre-pass keeps `childScope` and only marks the subtree local.
+        if (LOCAL_BINDING_SCOPE.has(n.type)) childLocal = localDepth + 1
+        const site = this.declarationSiteOf(n)
+        if (site && site.name && site.signature && localDepth === 0) {
+          // The scope goes into the key as `name@line`, and the LINE is load-bearing: two modules in
+          // one file can share a name and are still two modules with two method tables. Measured shape
+          // — `julia/test/deprecation_exec.jl` declares `module Src` twice, at line 325 inside
+          // `DeprecatedReexportTest` and at line 358 inside `DeprecatedShadowTest`, and each holds a
+          // `newg() = 1` at lines 329 and 364. Keyed on the name alone those are one method and the
+          // second reads as replacing the first; they share nothing. Keying on the name alone would
+          // leave 1 fabricated edge in a 4-edge set, which is a quarter of the type wrong.
+          const key = `${childScope}@${childScopeAt}|${site.name}|${site.signature}`
+          const prior = firstDecl.get(key)
+          const safe = this.isUnconditionalPosition(n)
+          if (prior && prior.safe && safe) {
+            this.redefinedAt.set(n.id, { name: site.name, replacesLine: prior.line, signature: site.signature, scope: childScope })
+          }
+          if (!prior) firstDecl.set(key, { line: n.startPosition.row + 1, safe })
+        }
+        // `childScopeAt` is passed down, and omitting it is a defect this lane shipped for one
+        // measurement round: the scope NAME propagated while its LINE reset to 0 at every frame, so
+        // every scope key came out `name@0` and the two same-named `module Src` blocks in
+        // `julia/test/deprecation_exec.jl` collided exactly as they would have with no line at all.
+        // The fix is invisible in a fixture — `Registry` appears once — so the corpus is what found
+        // it and a fixture cannot be the only gate.
+        for (const c of this.namedChildren(n)) scan(c, childScope, childScopeAt, childLocal)
+      }
+      scan(rootNode, "", 0, 0)
     }
 
     let activeScope = ""
@@ -199,7 +462,7 @@ export class RealJuliaAnalyzer {
           const nameNode = node.childForFieldName("name")
           const name = nameNode ? nameNode.text.trim() : ""
           if (name) {
-            symbols.push({
+            pushSym({
               name,
               kind: ASTEngine.SymbolKind.Module,
               range: this.range(node),
@@ -207,7 +470,7 @@ export class RealJuliaAnalyzer {
               ownerName: scope || undefined,
               metadata: { juliaSpecific: true, isBareModule: this.firstNamedChildType(node) === "baremodule" },
             })
-            if (scope) relationships.push(this.rel(scope, "contains", name, node, 1.0))
+            if (scope) relationships.push(this.rel(scope, ASTEngine.RelationshipType.Contains, name, node, 1.0))
             activeScope = name
           }
           break
@@ -223,7 +486,7 @@ export class RealJuliaAnalyzer {
           const kind = node.type === "struct_definition"
             ? ASTEngine.SymbolKind.Class
             : ASTEngine.SymbolKind.Interface
-          symbols.push({
+          pushSym({
             name,
             kind,
             range: this.range(node),
@@ -232,7 +495,7 @@ export class RealJuliaAnalyzer {
             metadata: { juliaSpecific: true, declarationForm: node.type, isMutable: this.hasToken(node, "mutable") },
           })
           declaredTypes.add(name)
-          if (scope) relationships.push(this.rel(scope, "contains", name, node, 1.0))
+          if (scope) relationships.push(this.rel(scope, ASTEngine.RelationshipType.Contains, name, node, 1.0))
 
           // A type's OWN HEAD is not a reference. `struct Circle{T<:Real} <: Shape` names Circle in
           // its own type head, and the `parametrized_type_expression` case below reads that as a
@@ -251,14 +514,14 @@ export class RealJuliaAnalyzer {
           // `where`-less `binary_expression` (or a `comparison_operator` chain) between the type
           // head and the supertypes; `abstract type` uses the same shape.
           for (const sup of this.supertypesOf(node)) {
-            relationships.push(this.rel(name, "extends", sup, node, 1.0, { juliaSpecific: true, isSubtype: true }))
+            relationships.push(this.rel(name, ASTEngine.RelationshipType.Extends, sup, node, 1.0, { juliaSpecific: true, isSubtype: true }))
           }
 
           // A struct's fields. `struct S; x::T; end` puts bare `x::T` in the body, which is a
           // `field_definition`-shaped position; the grammar has no dedicated node, so a
           // `typed_expression` directly inside the struct body is a field.
           for (const field of this.structFields(node)) {
-            symbols.push({
+            pushSym({
               name: field.name,
               kind: ASTEngine.SymbolKind.Property,
               range: this.range(field.node),
@@ -266,7 +529,7 @@ export class RealJuliaAnalyzer {
               ownerName: name,
               metadata: { juliaSpecific: true, isStructField: true },
             })
-            relationships.push(this.rel(name, "contains", field.name, field.node, 1.0))
+            relationships.push(this.rel(name, ASTEngine.RelationshipType.Contains, field.name, field.node, 1.0))
           }
           break
         }
@@ -307,7 +570,7 @@ export class RealJuliaAnalyzer {
           // the way out. `activeScope` is restored by the exit frame; this flag rides alongside it.
           const wasInMacro = this.inMacroBody
           if (isMacro) this.inMacroBody = true
-          symbols.push({
+          pushSym({
             name,
             kind: isMacro ? ASTEngine.SymbolKind.Macro : ASTEngine.SymbolKind.Function,
             range: this.range(node),
@@ -315,8 +578,13 @@ export class RealJuliaAnalyzer {
             ownerName: scope || undefined,
             metadata: { juliaSpecific: true, isMacro, hasBlockBody: !!this.firstNamedChildOfType(node, "compound_statement") },
           })
-          if (scope) relationships.push(this.rel(scope, "contains", name, node, 1.0))
+          if (scope) relationships.push(this.rel(scope, ASTEngine.RelationshipType.Contains, name, node, 1.0))
           activeScope = name
+          // BD8b: a declaration that REPLACES an earlier one with the same (name, signature) — the
+          // only sense in which julia has an override. See `overrideEdgeFor` for the edge shape and
+          // for why it is refused outside a declared scope.
+          const ovr = this.overrideEdgeFor(node, scope)
+          if (ovr) relationships.push(ovr)
           break
         }
 
@@ -346,7 +614,7 @@ export class RealJuliaAnalyzer {
           if (lhs.type !== "call_expression") break
           const name = this.calleeName(lhs)
           if (!name || IMPLICIT_OR_CONSTANT.has(name)) break
-          symbols.push({
+          pushSym({
             name,
             kind: ASTEngine.SymbolKind.Function,
             range: this.range(node),
@@ -360,7 +628,12 @@ export class RealJuliaAnalyzer {
           // not invoke it. The node is recorded so the call case can tell a declaration site from
           // an invocation, which is a distinction the tree does not make on its own.
           this.declSites.add(lhs.id)
-          if (scope) relationships.push(this.rel(scope, "contains", name, node, 1.0))
+          if (scope) relationships.push(this.rel(scope, ASTEngine.RelationshipType.Contains, name, node, 1.0))
+          // The short form is the form the corpus prefers, so the `overrides` pre-pass admits it
+          // too: measuring only `function … end` would have missed every `f(x) = …` redefinition,
+          // which is most of them. Same edge, same refusal rules — see `overrideEdgeFor`.
+          const ovr = this.overrideEdgeFor(node, scope)
+          if (ovr) relationships.push(ovr)
           // Parameters are deliberately NOT published as symbols. That is this repo's standing
           // negative contract — `SymbolKind` has no Parameter member at all, and swift/kotlin/
           // csharp all removed theirs under the C# M12.07 ParamsAreNotSymbols /
@@ -407,7 +680,7 @@ export class RealJuliaAnalyzer {
           // the fixtures asserted `cached` as a macro and never looked at what it appeared to
           // contain. A `local` in generated code is not a member of anything.
           if (this.inMacroBody && node.type !== "const_statement") break
-          symbols.push({
+          pushSym({
             name,
             kind: node.type === "const_statement" ? ASTEngine.SymbolKind.Constant : ASTEngine.SymbolKind.Variable,
             range: this.range(node),
@@ -415,7 +688,7 @@ export class RealJuliaAnalyzer {
             ownerName: scope || undefined,
             metadata: { juliaSpecific: true, binding: node.type.replace("_statement", "") },
           })
-          if (scope) relationships.push(this.rel(scope, "contains", name, node, 1.0))
+          if (scope) relationships.push(this.rel(scope, ASTEngine.RelationshipType.Contains, name, node, 1.0))
           break
         }
 
@@ -430,7 +703,7 @@ export class RealJuliaAnalyzer {
               lineNumber: node.startPosition.row + 1,
               isExternal: !t.name.startsWith("."),
             })
-            relationships.push(this.rel("root", "references", t.name, node, 1.0, { juliaSpecific: true, isImport: true, importForm: node.type }))
+            relationships.push(this.rel("root", ASTEngine.RelationshipType.References, t.name, node, 1.0, { juliaSpecific: true, isImport: true, importForm: node.type }))
           }
           break
         }
@@ -479,7 +752,7 @@ export class RealJuliaAnalyzer {
           // adjoint itself. `adjoint(x)` written long is an ordinary call and already published, so
           // this is the same fact in the short spelling rather than a new kind of edge.
           if (this.namedChildren(node).length === 1) {
-            relationships.push(this.rel(scope || GLOBAL_SCOPE, "calls", "adjoint", node, 1.0,
+            relationships.push(this.rel(scope || GLOBAL_SCOPE, ASTEngine.RelationshipType.Calls, "adjoint", node, 1.0,
               { juliaSpecific: true, isOperatorApplication: true, spelling: "postfix_prime" }))
           }
           break
@@ -492,7 +765,7 @@ export class RealJuliaAnalyzer {
           // because a consumer asking who calls `sqrt` should not have to know about broadcasting.
           const callee = this.calleeName(node)
           if (callee && !IMPLICIT_OR_CONSTANT.has(callee)) {
-            relationships.push(this.rel(scope || GLOBAL_SCOPE, "calls", callee, node, 1.0,
+            relationships.push(this.rel(scope || GLOBAL_SCOPE, ASTEngine.RelationshipType.Calls, callee, node, 1.0,
               { juliaSpecific: true, isBroadcastCall: true }))
           }
           break
@@ -521,7 +794,7 @@ export class RealJuliaAnalyzer {
           {
             relationships.push(this.rel(
               scope || GLOBAL_SCOPE,
-              isCtor ? "instantiates" : "calls",
+              isCtor ? ASTEngine.RelationshipType.Instantiates : ASTEngine.RelationshipType.Calls,
               callee,
               node,
               isCtor ? 0.9 : 1.0,
@@ -541,7 +814,7 @@ export class RealJuliaAnalyzer {
           if (foreign) {
             relationships.push(this.rel(
               scope || GLOBAL_SCOPE,
-              "calls",
+              ASTEngine.RelationshipType.Calls,
               foreign.symbol,
               node,
               1.0,
@@ -560,7 +833,7 @@ export class RealJuliaAnalyzer {
         // ---------------------------------------------------------------- macro calls
         case "macrocall_expression": {
           const nameNode = this.firstNamedChildOfType(node, "macro_identifier")
-          const name = nameNode ? nameNode.text.trim().replace(/^@/, "") : ""
+          const name = nameNode ? stripSigil(nameNode.text, "@") : ""
 
           // `@ccall strlen(s::Ptr{UInt8})::Csize_t` names a C SYMBOL, not a Julia binding. Its
           // callee is a plain `call_expression` in the tree, so the walk reaches the ordinary call
@@ -573,7 +846,7 @@ export class RealJuliaAnalyzer {
           // that form is handled in the call case below, library included.
           if (name === "ccall") this.markForeignCallees(node)
           if (!name) break
-          relationships.push(this.rel(scope || GLOBAL_SCOPE, "calls", name, node, 1.0, { juliaSpecific: true, isMacroCall: true }))
+          relationships.push(this.rel(scope || GLOBAL_SCOPE, ASTEngine.RelationshipType.Calls, name, node, 1.0, { juliaSpecific: true, isMacroCall: true }))
           break
         }
 
@@ -584,7 +857,7 @@ export class RealJuliaAnalyzer {
           // already published as a field above and must not also become a read here.
           const typeNode = this.pos(node, 1)
           const typeName = typeNode ? this.typeHeadName(typeNode) : ""
-          if (typeName) relationships.push(this.rel(scope || GLOBAL_SCOPE, "references", typeName, node, 1.0, { juliaSpecific: true, isTypeReference: true }))
+          if (typeName) relationships.push(this.rel(scope || GLOBAL_SCOPE, ASTEngine.RelationshipType.References, typeName, node, 1.0, { juliaSpecific: true, isTypeReference: true }))
           break
         }
 
@@ -603,7 +876,7 @@ export class RealJuliaAnalyzer {
               if (bo.op !== "<:" && bo.op !== ">:") continue
               const bound = bo.right ? this.typeHeadName(bo.right) : ""
               if (bound && bo.left) {
-                relationships.push(this.rel(bo.left.text.trim(), "extends", bound, b, 1.0,
+                relationships.push(this.rel(bo.left.text.trim(), ASTEngine.RelationshipType.Extends, bound, b, 1.0,
                   { juliaSpecific: true, isSubtype: true, isWhereBound: true }))
               }
             }
@@ -623,7 +896,7 @@ export class RealJuliaAnalyzer {
           const base = baseNode ? this.fieldPath(baseNode) : ""
           // `scope` IS this edge's source, so unlike the `where`-bound case it belongs in the guard —
           // with the file-scope fallback, or the reference vanishes in a module-less file.
-          if (base) relationships.push(this.rel(scope || GLOBAL_SCOPE, "references", base, node, 1.0, { juliaSpecific: true, isTypeReference: true }))
+          if (base) relationships.push(this.rel(scope || GLOBAL_SCOPE, ASTEngine.RelationshipType.References, base, node, 1.0, { juliaSpecific: true, isTypeReference: true }))
           break
         }
 
@@ -647,7 +920,7 @@ export class RealJuliaAnalyzer {
                 if (r2.op !== "<:" && r2.op !== ">:") continue
                 const b = r2.right ? this.typeHeadName(r2.right) : ""
                 if (b && r2.left) {
-                  relationships.push(this.rel(r2.left.text.trim(), "extends", b, inner, 1.0, { juliaSpecific: true, isSubtype: true, isWhereBound: true }))
+                  relationships.push(this.rel(r2.left.text.trim(), ASTEngine.RelationshipType.Extends, b, inner, 1.0, { juliaSpecific: true, isSubtype: true, isWhereBound: true }))
                 }
               }
               continue
@@ -666,7 +939,7 @@ export class RealJuliaAnalyzer {
             // `T extends AbstractFloat` and `base/hashing.jl` `UTF8Units extends AbstractString`,
             // both at file scope, and the analyzer had neither.
             if (sub && left) {
-              relationships.push(this.rel(left.text.trim(), "extends", sub, child, 1.0, { juliaSpecific: true, isSubtype: true, isWhereBound: true }))
+              relationships.push(this.rel(left.text.trim(), ASTEngine.RelationshipType.Extends, sub, child, 1.0, { juliaSpecific: true, isSubtype: true, isWhereBound: true }))
             }
           }
           break
@@ -695,7 +968,7 @@ export class RealJuliaAnalyzer {
           if (value.type === "field_expression") {
             const path = this.fieldPath(node)
             if (path) {
-              relationships.push(this.rel(scope || GLOBAL_SCOPE, "references", path, node, 0.95,
+              relationships.push(this.rel(scope || GLOBAL_SCOPE, ASTEngine.RelationshipType.References, path, node, 0.95,
                 { juliaSpecific: true, isQualifiedReference: true }))
             }
             break
@@ -720,10 +993,10 @@ export class RealJuliaAnalyzer {
             ?? this.namedChildren(node).find((c) => c.id !== value.id && (c.type === "quote_expression" || c.type === "operator"))
           if (!member) break
           const memberName = member.type === "quote_expression"
-            ? (this.pos(member, 0)?.text.trim() ?? member.text.trim().replace(/^:\(|\)$/g, ""))
+            ? (this.pos(member, 0)?.text.trim() ?? unquoteOperatorMember(member.text))
             : member.text.trim()
           if (!memberName) break
-          relationships.push(this.rel(scope || GLOBAL_SCOPE, "uses", memberName, node, 0.9,
+          relationships.push(this.rel(scope || GLOBAL_SCOPE, ASTEngine.RelationshipType.Uses, memberName, node, 0.9,
             { juliaSpecific: true, isFieldRead: true, isOperatorMember: member.type !== "identifier" }))
           break
         }
@@ -793,12 +1066,260 @@ export class RealJuliaAnalyzer {
 
   // ------------------------------------------------------------------ helpers
 
+  /**
+   * The declaration this node carries, as the pair julia's method table keys on: a NAME and a
+   * SIGNATURE. Returns null for a node that declares no method.
+   *
+   * The signature is the WHOLE argument list, normalised for whitespace, plus the `where` clause
+   * when the declaration has one — because `f(x) where {T} = …` and `f(x) where {S} = …` are two
+   * DIFFERENT methods and `f(x) = …` and `f(x, y) = …` are two different methods, while
+   * `f(x) = 1` and `f( x ) = 2` are the same one. Keying on the name alone would conflate every
+   * method of a generic function, and a generic function's methods are precisely the ones the
+   * `overrides` argument in this file's header says are NOT overrides.
+   *
+   * Both declaration FORMS are read, because julia has two and the corpus uses both heavily: the
+   * long `function f(x) … end` (whose `signature` holds the call) and the short `f(x) = …` (whose
+   * assignment's left-hand side is the call, possibly behind a `where`, a return-type annotation
+   * and parentheses — the same wrappers `unwrapWhere` already knows about).
+   */
+  private declarationSiteOf(node: Node): { name: string; signature: string } | null {
+    if (node.type === "function_definition" || node.type === "macro_definition") {
+      const sig = this.firstNamedChildOfType(node, "signature")
+      if (!sig) return null
+      const name = this.signatureName(sig)
+      return name ? { name, signature: this.methodSignatureKey(sig) } : null
+    }
+    if (node.type !== "assignment") return null
+    // The `where` clause is captured BEFORE the unwrapping below, and that ordering is load-bearing.
+    // `f(x) where {T} = …` is `(assignment (where_expression (call_expression …) {T}) (operator) …)`,
+    // so the clause hangs off the assignment's LEFT-HAND SIDE and `unwrapWhere` — whose entire job is
+    // to reach the callable — discards it on the way down. The first version unwrapped first and keyed
+    // on the resulting call, which silently dropped the clause, and two methods of the same generic
+    // function with different type-variable bounds collided:
+    //
+    //     julia/base/checked.jl:138-139
+    //       add_with_overflow(x::T, y::T) where {T<:SignedInt}   = …
+    //       add_with_overflow(x::T, y::T) where {T<:UnsignedInt} = …
+    //     julia/base/math.jl:834 and :838
+    //       min(x::T, y::T) where {T<:AbstractFloat} = …
+    //       min(x::T, y::T) where {T<:IEEEFloat}      = …
+    //     julia/test/testhelpers/Furlongs.jl:21-22
+    //       Furlong{p}(x::Furlong{q}) where {p,q}       = …
+    //       Furlong{p,T}(x::Furlong{q}) where {T,p,q}   = …
+    //
+    // All three pairs are DIFFERENT methods that coexist in the method table, and publishing a
+    // replacement between them is the same falsehood this file's header declined to tell about
+    // `overrides` in the first place. The key is taken from the un-unwrapped left-hand side, which
+    // holds both the call and the clause.
+    const rawLhs = this.pos(node, 0) ?? node
+    let lhs = this.unwrapWhere(rawLhs)
+    if (lhs.type === "typed_expression") {
+      const inner = this.pos(lhs, 0)
+      if (inner && inner.type === "call_expression") lhs = inner
+    }
+    if (lhs.type !== "call_expression") return null
+    const name = this.calleeName(lhs)
+    if (!name || IMPLICIT_OR_CONSTANT.has(name)) return null
+    return { name, signature: this.methodSignatureKey(rawLhs, lhs) }
+  }
+
+  /**
+   * The `(name, signature)` half that distinguishes two methods of the same generic function.
+   *
+   * `root` is the node the declaration's text hangs off — a `signature` for the long form, the
+   * assignment's un-unwrapped left-hand side for the short one — and `call` is the callable inside
+   * it. Both are needed because they are not the same node: `where` wraps the call in one and the
+   * other has no `where` at all, so a single argument could only ever capture one of the two shapes.
+   */
+  private methodSignatureKey(root: Node, call?: Node): string {
+    const callNode = call ?? (root.type === "call_expression" ? root : this.namedChildren(root).find((c) => c.type === "call_expression"))
+    if (!callNode) return ""
+    const args = this.firstNamedChildOfType(callNode, "argument_list")
+    const whereNode = root.type === "where_expression" ? root : this.namedChildren(root).find((c) => c.type === "where_expression")
+    if (!args && !whereNode) return ""
+    return `${args ? collapseSpace(args.text) : ""}${whereNode ? `|where ${collapseSpace(whereNode.text)}` : ""}`
+  }
+
+  /**
+   * Is this declaration reached unconditionally, with text julia itself wrote?
+   *
+   * Walks ANCESTORS rather than the parent, because the conditional node is not always adjacent:
+   * a declaration inside `else` sits under `else_clause` and `if_statement`, and a declaration
+   * inside `catch` sits under `catch_clause` and `try_statement`, so a parent-only test reads
+   * `try_statement` as unconditional. The whole list is what the test is — adding a construct to
+   * it makes the edge class narrower, which is the direction that errs toward refusing rather than
+   * toward asserting.
+   *
+   * `macrocall_expression` and the quote forms are in the set because their content is not julia text
+   * in this file: `@eval f(x) = …` and `quote f(x) = … end` are code GENERATED at expansion, and the
+   * tree shows the generated text, not what the file declares.
+   *
+   * `&&` and `||` are not in the set — they are `binary_expression` nodes, which are the most common
+   * node in julia and cannot be listed wholesale — so the short-circuit case is tested by OPERATOR.
+   * In `cond && function f() … end` the right operand runs only when `cond` holds, and a declaration
+   * there is as conditional as one inside an `if`. Only the RIGHT operand is conditional; the left
+   * one always runs, which is why the test looks at the second OPERAND rather than both.
+   *
+   * `&&` is the live operator and `||` is not: measured over the 971 admitted corpus files there are
+   * 11,549 `&&` binary_expressions and 5,145 `||` ones, and of the `&&` set exactly ONE has a
+   * declaration node as its right operand — `julia/JuliaSyntax/src/core/parse_stream.jl:316`,
+   *
+   *     VERSION < v"1.11.0-DEV.753" && function ParseStream(io::IOBuffer; version=VERSION)
+   *
+   * which is a version-guarded method definition and is exactly the shape that must not publish an
+   * edge. One is not zero, so this is a predicate the grammar can reach rather than a safety net
+   * that never fires; `||` is left out because no `||` in the corpus has one, and a branch that
+   * cannot match is what honesty contract §2's L2 audit exists to report.
+   *
+   * THE OPERAND INDEX IS NOT 1. The operator is a NAMED child of `binary_expression` in this
+   * grammar, so the operand list is `[left, operator, right]` over named children and the right
+   * operand sits at index 2. The first version read index 1, compared it to the declaration's own
+   * node id, never matched, and published `overrides` for the one guarded definition in the corpus
+   * — found by running the fixture rather than by reading the code, which is the only way a
+   * predicate that is wrong in the direction of asserting anything gets caught.
+   */
+  private isUnconditionalPosition(node: Node): boolean {
+    let cur: Node | null = node
+    for (let i = 0; i < 24 && cur; i++) {
+      if (CONDITIONAL_OR_GENERATED.has(cur.type)) return false
+      if (cur.type === "binary_expression" && this.shortCircuitOperator(cur) === "&&") {
+        const named = this.namedChildren(cur).filter((c) => c.type !== "operator")
+        const right = named.length > 1 ? named[named.length - 1] : null
+        if (right && right.id === node.id) return false
+      }
+      cur = cur.parent ?? null
+    }
+    return true
+  }
+
+  /** The operator token of a `binary_expression`, or "" — in this grammar the operator is a NAMED
+   *  child of type `operator`, the same shape `binOp` reads in the census instrument. */
+  private shortCircuitOperator(node: Node): string {
+    for (let i = 0; i < node.childCount; i++) {
+      const c = node.child(i)
+      if (c && c.type === "operator") return c.text.trim()
+    }
+    return ""
+  }
+
+  /**
+   * The `overrides` edge for a declaration that replaces an earlier one.
+   *
+   * ## The edge shape, and why it is not `name -> name`
+   *
+   * A Julia method-table replacement has both of its endpoints at the SAME symbol: the earlier
+   * declaration and the later one are both named `f` with the same signature, so the second
+   * definition replaces the first IN PLACE — it acquires no supertype, no owner and no new name. A
+   * self-loop `f -overrides-> f` is therefore the most literally accurate shape available, and it is
+   * exactly the shape this codebase already ruled out three times:
+   *
+   *   - `src/ast/real-php-analyzer.ts:2496` — "UNRESOLVABLE and emit NO edge (a self-loop is always
+   *     fabrication, and a …)"
+   *   - `src/lsp/rich_hover.ts:222` — "Degenerate self-loop rows … are not connections and not
+   *     usages: skip them."
+   *   - `src/intelligence/patterns/orphans.ts:818` — a self-loop `overrides` row is listed under
+   *     "REFUSED EVIDENCE", and the rake `listen` regression is the case it cites: a self-loop row
+   *     was the only thing standing between a real method and a dead-code report.
+   *
+   * A corpus full of rows every consumer discards is not coverage; it is volume that makes the
+   * signal harder to see. So the SOURCE is the enclosing DECLARED scope — a `module` or a type, a
+   * symbol this file really declares — and the TARGET is the method whose entry is replaced.
+   * `module M … f(x) = 1; f(x) = 2 … end` gives `M -overrides-> f` with both ends binding to real
+   * symbols in the same file, which is the same shape the bash lane settled on for the same
+   * construct (`real-bash-analyzer.ts:322-348`, BD8b) and the shape
+   * `src/ast/override-retarget.ts` is written to consume.
+   *
+   * ## Why the module-less case is REFUSED rather than published as `global`
+   *
+   * 71.9% of Julia corpus files declare no module at all — measured, see this file's `GLOBAL_SCOPE`
+   * note — so the refused case is the MAJORITY one and it is worth being explicit that it is a
+   * refusal rather than an oversight. Publishing `global -overrides-> f` would give the edge a
+   * source that resolves to nothing, which is the same dangling identity this file's `contains` case
+   * declines to invent, and `global -calls-> f` is already the largest unresolvable-source bucket in
+   * the census. The edge is dropped instead, and the drop is counted by the census rather than left
+   * invisible.
+   *
+   * Confidence 1.0: this is a byte comparison of two declaration signatures in one file, which is a
+   * parse fact and not a guess. `evidenceClass` is `structural` for the same reason (see
+   * `classifyEvidenceTier`), so the edge is never counted as a heuristic.
+   */
+  private overrideEdgeFor(node: Node, scope: string): ASTEngine.UniversalRelationship | null {
+    const hit = this.redefinedAt.get(node.id)
+    if (!hit) return null
+    // The SOURCE must be the thing that owns a method table. A module and a type do; a FUNCTION does
+    // not — a body holds local closures, which is the whole of `LOCAL_BINDING_SCOPE`, and a
+    // definition inside one displaces nothing. Measured: 14 of an earlier revision's 63 `overrides`
+    // edges were sourced from a function, e.g. `julia/base/range.jl:496`'s `throwbool(r) = …` inside
+    // a second inner constructor of `OneTo` reading as `OneTo -overrides-> throwbool`. Every one is
+    // gone under this line.
+    //
+    // The empty scope is refused for the reason `GLOBAL_SCOPE` documents: 71.9% of julia corpus files
+    // declare no module, and `global` is a synthetic name rather than a symbol, so an edge sourced
+    // from it resolves to nothing. 71.9% of the corpus is the bucket this refuses, and it is counted
+    // by the census rather than left invisible.
+    //
+    // `scope === hit.name` closes the last self-loop: a module and a method sharing a name would
+    // otherwise produce one wearing a different hat.
+    if (!scope || scope === hit.name) return null
+    if (!this.ownsAMethodTable(scope, hit.name)) return null
+    return this.rel(scope, ASTEngine.RelationshipType.Overrides, hit.name, node, 1.0, {
+      juliaSpecific: true,
+      isMethodRedefinition: true,
+      redefinition: true,
+      via: "identical_signature_redefinition",
+      replacesLine: hit.replacesLine,
+      signature: hit.signature.slice(0, 120),
+      declaredIn: scope,
+    })
+  }
+
+  /**
+   * Does this file declare `owner` as a module or a type — the two things whose bodies hold a method
+   * table?
+   *
+   * Answered from the symbol table rather than from the walk's `activeScope`, because `activeScope`
+   * names FUNCTIONS too and a function is not a method-table owner. The symbol kinds are the
+   * analyzer's own: `SymbolKind.Module` for a `module`/`baremodule`, `SymbolKind.Interface` for an
+   * `abstract type`/`primitive type` and `SymbolKind.Class` for a `struct`. Cost is a scan of the
+   * file's own symbols, once per admitted override edge, over a list that is already in memory.
+   */
+  private ownsAMethodTable(owner: string, target: string): boolean {
+    const syms = this.declaredSymbolKinds
+    if (!syms) return false
+    const kind = syms.get(owner)
+    if (kind !== ASTEngine.SymbolKind.Module && kind !== ASTEngine.SymbolKind.Interface && kind !== ASTEngine.SymbolKind.Class) return false
+    // The target must be a declaration of a METHOD or a MACRO. A `property` or a `constant` target
+    // means the pre-pass read a field or a binding as a method, and 2 of the earlier 63 edges had
+    // exactly that shape (`julia/test/core.jl:4441` -> `foo`, a `constant`; `:5489` -> `bar`, a
+    // `property`) — both `function` forms nested in a `let` inside another function.
+    const t = syms.get(target)
+    return t === ASTEngine.SymbolKind.Function || t === ASTEngine.SymbolKind.Macro
+  }
+
+  /**
+   * The one place a relationship is constructed.
+   *
+   * `type` is `ASTEngine.RelationshipType` and NOT `RelationshipType | string`, and that narrowing is
+   * the point of this entry rather than a typing preference. The lane used to pass serialized string
+   * literals ("contains", "extends"), which type-checked because the parameter accepted `string` — and
+   * which `script/m14/verify-doc-truth-emissions.ts` cannot see: its header declares the limit
+   * outright, "A serialized kind emitted by assigning a STRING literal would be invisible to this
+   * gate", and it derives a lane's emitted surface from `RelationshipType.X` references in code. So
+   * every relationship this analyzer published was outside the one gate whose whole job is to catch a
+   * doc claiming a channel the analyzer does not fill. Naming the enum member makes the surface
+   * readable by that gate and makes a typo in a type label a compile error rather than a row nothing
+   * groups.
+   *
+   * The serialized values are identical to the literals that were here (`RelationshipType.Contains`
+   * is `"contains"`, `RelationshipType.Imports` is `"brain_import"`), so this changes the label's
+   * provenance and nothing about the bytes stored.
+   */
   private rel(
-    source: string, type: ASTEngine.RelationshipType | string, target: string, node: Node, confidence: number,
+    source: string, type: ASTEngine.RelationshipType, target: string, node: Node, confidence: number,
     metadata?: Record<string, unknown>,
   ): ASTEngine.UniversalRelationship {
     return {
-      source, target, type: type as ASTEngine.RelationshipType, confidence,
+      source, target, type, confidence,
       line_number: node.startPosition.row + 1,
       metadata: { juliaSpecific: true, ...(metadata ?? {}) },
     } as ASTEngine.UniversalRelationship
@@ -924,7 +1445,7 @@ export class RealJuliaAnalyzer {
     // `struct Circle <: Shape` published no `extends` edge at all, on a file with zero ERROR
     // nodes, which is the quietest possible failure. The node being asked about may BE the name.
     if (node.type === "identifier") return node.text.trim()
-    if (node.type === "macro_identifier") return node.text.trim().replace(/^@/, "")
+    if (node.type === "macro_identifier") return stripSigil(node.text, "@")
     if (node.type === "operator") return node.text.trim()
     // A subtype/where chain: the declared name is on the LEFT, the bound on the right.
     if (node.type === "binary_expression") {
@@ -1060,10 +1581,10 @@ export class RealJuliaAnalyzer {
     if (!first) return null
     if (first.type === "quote_expression") {
       const sym = this.pos(first, 0)
-      return sym ? { symbol: sym.text.trim().replace(/^:/, ""), library: null } : null
+      return sym ? { symbol: stripSigil(sym.text, ":"), library: null } : null
     }
     if (first.type === "tuple_expression") {
-      const parts = this.namedChildren(first).map((q) => this.pos(q, 0)?.text.trim().replace(/^:/, "") ?? "")
+      const parts = this.namedChildren(first).map((q) => { const inner = this.pos(q, 0); return inner ? stripSigil(inner.text, ":") : "" })
       if (parts.length >= 2 && parts[0] && parts[1]) return { symbol: parts[0], library: parts[1] }
       if (parts.length === 1 && parts[0]) return { symbol: parts[0], library: null }
     }
@@ -1135,7 +1656,7 @@ export class RealJuliaAnalyzer {
       return base ? this.fieldPath(base) : ""
     }
     if (node.type === "quote_expression") return node.text.trim()
-    if (node.type === "macro_identifier") return node.text.trim().replace(/^@/, "")
+    if (node.type === "macro_identifier") return stripSigil(node.text, "@")
     if (node.type === "operator") return node.text.trim()
     if (node.type === "where_expression" || node.type === "parenthesized_expression") {
       const inner = this.pos(node, 0)
@@ -1235,8 +1756,16 @@ export class RealJuliaAnalyzer {
         pending = { name: c.text.trim(), items: [] }
         out.push(pending)
       } else if (c.type === "import_alias" && pending) {
-        const items = this.namedChildren(c).filter((x) => x.type === "identifier" || x.type === "import_list")
-        pending.items = items.map((x) => (x.type === "import_list" ? x.text.trim() : x.text.trim()))
+        // Only `identifier`, and the node-type set is measured rather than remembered: over the 971
+        // admitted corpus files the production grammar produces no `import_list`, and an earlier
+        // version filtered for one here and then mapped it with a TERNARY whose two branches were both
+        // `x.text.trim()`. Two dead branches wearing one: a node the grammar cannot produce, and a
+        // conditional that cannot choose. Found by instrument A' in
+        // `validation/m14/fixtures/julia/census.ts`, which extracts the analyzer's node-type CLAIMS
+        // (the literals in a `.type` comparison, a `firstNamedChildOfType` argument, or a node-type
+        // `Set`) and checks each against the node types the grammar actually produced.
+        const items = this.namedChildren(c).filter((x) => x.type === "identifier")
+        pending.items = items.map((x) => x.text.trim())
       } else if (c.type === "identifier" || c.type === "scoped_identifier") {
         // `using LinearAlgebra` — a bare path with no colon list.
         if (!pending) { pending = { name: c.text.trim(), items: [] }; out.push(pending) }
@@ -1254,9 +1783,13 @@ export class RealJuliaAnalyzer {
       const segs = this.namedChildren(node).filter((x) => x.type === "identifier")
       return segs.length ? segs[segs.length - 1]!.text.trim() : node.text.trim()
     }
-    if (node.type === "macro_identifier") return node.text.trim().replace(/^@/, "")
+    if (node.type === "macro_identifier") return stripSigil(node.text, "@")
     if (node.type === "call_expression") return this.calleeName(node) ?? ""
-    if (node.type === "list_litteral" || node.type === "tuple_expression" || node.type === "parenthesized_expression") {
+    // `list_litteral` WAS HERE, misspelled and unreachable. The grammar produces no such node over
+    // the 971 admitted corpus files, and the two spellings that do exist — `tuple_expression` and
+    // `parenthesized_expression`, both here — already cover the shapes an export list takes. Kept as
+    // a note rather than deleted silently because it is the kind of branch that reads as coverage.
+    if (node.type === "tuple_expression" || node.type === "parenthesized_expression") {
       for (const c of this.namedChildren(node)) {
         const n = this.exportableName(c)
         if (n) return n
@@ -1274,6 +1807,14 @@ export class RealJuliaAnalyzer {
       const t = String(r.type ?? "")
       if (t === "contains") { md.evidenceClass = "structural"; continue }
       if (t === "imports" || t === "exports" || t === "references") { md.evidenceClass = "import_based"; continue }
+      // `overrides` is structural for the same reason `contains` is, and the rule is stated rather
+      // than derived from the number: a redefinition is two declaration signatures in one file that
+      // compare equal, which the tree states outright — there is no inference between the signature
+      // and the edge. Keying it off `confidence >= 0.9` instead, as the `extends` line above does,
+      // would leave this lane with no tier at all for the type, because an earlier version read the
+      // confidence and the branch had no arm for `overrides` — so the six edges published with NO
+      // `evidenceClass`, which every consumer that groups by tier then counted as unclassified.
+      if (t === "overrides") { md.evidenceClass = "structural"; continue }
       if (t === "calls" || t === "uses" || t === "instantiates") {
         md.evidenceClass = (r.confidence ?? 0) >= 0.85 ? "usage_contextual" : "inferred"
         continue
@@ -1296,7 +1837,14 @@ export class RealJuliaAnalyzer {
    */
   private complexity(root: Node): number {
     let c = 1
-    const decisions = new Set(["if_statement", "elseif_clause", "for_statement", "while_statement", "case_statement"])
+    // `case_statement` is NOT here because julia has no `case`. The language spells multi-way branching
+    // with `if`/`elseif`, and all three of its spellings are already in this set; `case_statement` was
+    // a member from another language's vocabulary, unreachable in every julia file. Instrument A'
+    // in `validation/m14/fixtures/julia/census.ts` is what named it: it extracts the node-type claims
+    // in this file and checks each against what the production grammar produced over 971 corpus
+    // files. It is named here rather than dropped without a trace because a decision point that is
+    // silently absent is indistinguishable from one nobody looked for.
+    const decisions = new Set(["if_statement", "elseif_clause", "for_statement", "while_statement"])
     const stack: Node[] = [root]
     let guard = 0
     while (stack.length > 0 && guard++ < 200000) {
