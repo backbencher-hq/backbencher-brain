@@ -5,11 +5,11 @@ pinned** grammar.
 
 | | |
 |---|---|
-| Analyzer | `src/ast/real-protobuf-analyzer.ts` (1,225 lines) |
+| Analyzer | `src/ast/real-protobuf-analyzer.ts` (1,274 lines) |
 | Grammar | `grammars/tree-sitter-proto/` — `amaanq/tree-sitter-proto` @ `e9f6b43f`, 8 patches |
 | Wired WASM | `wasm/tree-sitter-protobuf.wasm` — 81,735 B, sha256 `4624eb6d4b7830dd…` |
 | Replaced WASM | `fixtures/graphql/baseline/tree-sitter-proto-UPSTREAM.wasm` — 72,342 B, sha256 `dbbde8a8f047b6b6…` |
-| Probes | `script/m14/tmp/protobuf/` — `run-all.sh` runs every gate |
+| Probes | `script/m14/tmp/protobuf/` — `run-all.sh` runs every gate. `probe/store-binding.mts` indexes a scratch project through the real store (pass 5) |
 | Review | `reviews/protobuf/master-review.md` |
 
 ## Why this grammar is unusual
@@ -1212,3 +1212,246 @@ copies — refusing to splice if any anchor has moved.
 - **1,525 custom-option sites** name an extension by its **declaring** package while this
   analyzer publishes an extension member under the **extended** type, so those names can
   never coincide. Not emitted, with the measurement in the section above.
+
+---
+
+# PASS 5 — the store half: 0 of 3,075 edges bound to the declaration they named
+
+Passes 1–4 measured this lane from the analyzer outward: `parseFile` output, the
+analyzer's own id set, a node-type census, a mutant battery. Every one of those
+questions is answered before the pipeline projects a symbol or the store binds an
+edge. Pass 5 asks the last question, and it is the one `bb_impact`, `bb_graph` and
+`bb_analyze callers/callees` actually answer: **when the graph stores an edge and
+then walks back along it, does it arrive at the declaration the edge named?**
+
+The answer was no, for every edge, and the cause was one missing assignment.
+
+## What was measured, and how
+
+`script/m14/tmp/protobuf/probe/store-binding.mts` — new in this pass — indexes 40 real
+reference `.proto` files through `indexProjectParallel` into a scratch database and reads
+`brain_symbol` and `brain_relationship` back. Nothing is simulated: the numbers are a
+real indexer, a real store and a real `resolveRelationships` pass over real corpus files.
+The probe deletes the database and the corpus is read-only to it.
+
+**Three columns, because "bound" is not the question either.**
+
+| column | meaning |
+|---|---|
+| `BOUND` | `target_symbol_id IS NOT NULL` — a reverse walk can follow the row |
+| `BOUND==exact` | the bound symbol's `qualified_name` **equals** the edge's `target_external`. The only form of "bound to the right declaration" the store can prove |
+| store-generated | rows `src/ast/parallel-indexer.ts:3137` synthesises per `(owner, owned)` symbol pair from `ownerName`, with the target bound by construction and `target_external` set to the bare name. **Not this lane's edges.** They are counted separately and excluded from every rate below |
+
+The store-generated rows are separated by reading `metadata.evidenceClass` off the row,
+which every analyzer edge this lane emits carries and no synthesised row does. They are
+**2,557** on this corpus and **2,557** of them bound. Averaging them in would have made
+this lane's `contains` figure read as a defect that belongs to the store.
+
+| | before | after |
+|---|---|---|
+| `brain_symbol.qualified_name == name` | **2,603 of 2,603** | **40 of 2,603** |
+| `contains` — edges / bound / exact | 2,565 / 2,551 / **0** | 2,565 / 2,563 / **2,563** |
+| `uses` — edges / bound / exact | 489 / 449–451 / **0** | 489 / 452–470 / **414** |
+| `imports` — bound | 0 of 19 | 0 of 19 |
+| `exports` — bound | 0 of 2 | 0 of 2 |
+| **all analyzer edges — provably named** | 3,075 / **0 (0.00%)** | 3,075 / **2,977 (96.81%)** |
+
+Two runs of each arm. `exact` did not move between runs of the same arm: **2,563** and
+**414** both times. `BOUND` for `uses` did: **446–470**. So the edges the fix made exact
+are deterministic, and the edges it did not reach are not — which is the finding, not a
+detail of the harness.
+
+## The cause, and why BOUND was the wrong number to trust
+
+Every endpoint this analyzer emits is dotted and package-qualified:
+`google.protobuf.Mixin.root`. `pool-worker`'s symbol projection left `qualifiedName`
+equal to the bare name (`root`), so all three of `resolveRelationships`' name strategies
+miss:
+
+1. strategy 1 compares `target_external` to `brain_symbol.qualified_name` — `root` ≠
+   `google.protobuf.Mixin.root`;
+2. strategy 2 compares the whole `target_external` to a bare `name` — a dotted string is
+   never a bare name;
+3. strategy 3 matches `SUBSTR(target_external, INSTR(target_external, '.') + 1)` — the
+   text after the **first** dot, which for a protobuf target is `protobuf.Mixin.root`, a
+   name the language cannot declare.
+
+What bound instead is the insert-time leaf-name fallback at
+`src/ast/parallel-indexer.ts:3494-3498`, **first-wins**. So the edge bound, and bound to
+whichever same-named declaration happened to be stored first. Measured on the pre-fix
+arm: `uses` edges bound to a symbol in **another file** numbered **2 to 26 across two
+identical runs**, and the number of targets whose leaf name more than one file declares
+is **89** on this corpus. `bb_impact` reading such a row cannot tell a correct binding
+from a wrong one — the row says a declaration id, and the id is a real declaration that
+never mentioned this edge. That is the shape the workstream calls a name collision
+becoming a wrong refactor, and here it was not a rare shape: it was **every edge in the
+language**.
+
+## The fix
+
+One assignment per symbol, in `addSymbol`: `s.qualifiedName = real`, where `real` is the
+id the analyzer already resolved and already used for every relationship endpoint. It
+carries the `#property` suffix too, which is the disambiguator a proto2 group's two
+same-named declarations need — `#` cannot occur in a protobuf identifier.
+
+The same value is also published as `metadata.qualifiedName`. That copy exists because
+`run-fixtures.ts`'s `CONSTRAINT_KEY_ALLOWLIST` carries no `qualifiedName` key, so a
+fixture cannot assert the channel that decides whether an edge binds, and an assertion
+nobody can write is an assertion no regression can be caught by. Both values are pinned,
+by four rows in `protobuf/absolute-and-scope-resolution`.
+
+## What the fix moved outside the store, measured on the whole corpus
+
+The corpus-wide instruments re-ran at 821 files, 0 degraded. **No edge count moved** —
+13,275 / 40,098 / 1,561 / 4 / 1, 54,939 through `parseFile`. What moved is how many of
+them resolve against the ids a consumer actually receives:
+
+| | before | after |
+|---|---|---|
+| `uses` both-ends, production ids | 72.71% | **72.84%** — equal to the analyzer-id figure |
+| `contains` both-ends, production ids | 99.15% | **99.22%** — equal to the analyzer-id figure |
+| `overrides` both-ends, production ids | **0%** | **100%** |
+
+The `overrides` row closes a limitation passes 2 and 3 declared twice: "at **0%** against
+ids a consumer re-derives as `ownerName + "." + name`, because the later declaration's id
+carries `uniqueId`'s `#property` suffix. That is the same projection limit the proto2
+`group` has always had". The limit was the missing `qualifiedName`, not the `#property`
+suffix, and both ends of that one edge now resolve through the production path. The 30
+re-derived id collisions the earlier passes measured are unaffected — they were real,
+and they are still real for a consumer that re-derives instead of reading the published id.
+
+## What it did NOT fix, and the numbers that say so
+
+- **1,764 edges still carry an ambiguous endpoint** (1,461 `uses` + 303 `contains`),
+  unchanged. `descriptor.proto` is vendored into four repositories of this corpus, so
+  `google.protobuf.Timestamp` has 3 publishers and `google.protobuf.FileOptions` has 4.
+  A published qualified id does not make two identical ids distinguishable — the two
+  declarations really do share a name, and `protoc` separates them by include root, which
+  this analyzer is never told. Measured on a 0-degraded run: **38,551** distinct
+  published ids, **2,702** published by more than one file.
+- **52 `uses` targets name an id no file in the corpus publishes**, and **4** are
+  hopeless — no declaration in the corpus carries the name. Both unchanged.
+- **1,593 cross-file targets are correct but not vouched**, consul's two include roots
+  agreeing with neither the package they hold nor any ancestor of it. Unchanged.
+- **`imports` and `exports` remain 0% by symbol resolution.** Module-path endpoints by
+  design and family convention; unchanged and reported rather than omitted.
+- **75 `uses` edges of 489 still do not resolve exactly** on the 40-file store probe.
+  They are the ones whose target is not declared in that 40-file slice, plus 41 whose
+  target no file in the slice publishes. **26 of them are cross-file** and those bind by
+  the same nondeterministic leaf fallback.
+
+## A blocker in a file this lane does not own, and how the probe got past it
+
+`storeResults` **cannot store anything, for any language, at HEAD**. Its `insertSymbol`
+prepared statement carries two `VALUES` clauses — 31 placeholders then 30 — and SQLite
+rejects the statement:
+
+```
+SqliteError: near "VALUES": syntax error
+    at storeResults (src/ast/parallel-indexer.ts:2153)
+```
+
+Measured by calling `storeResults` directly with a two-file batch: **typescript, python
+and java all throw the same error**, so it is not this lane's and not this language's.
+`git log -L` puts it at merge `687999ba` ("reconcile the local line with the consolidated
+origin/main", 2026-10-02), which is an ancestor of every analyzer branch. The comment
+immediately above the statement says VALUES "must carry 31 placeholders"; there are two
+VALUES lines, the second carrying 30. The consequence is that `bb index` currently stores
+no symbols and no relationships for **any** language, which is why the store-level
+question above was unanswerable when this pass started.
+
+`src/ast/parallel-indexer.ts` is shared machinery, so the probe **derives** a copy with
+that one line removed, indexes through the derived copy, and deletes the copy — the same
+technique `script/m14/protobuf-ruling-table-proof.mts` uses for the arbiter. The splice
+**refuses to run if its anchor is not found exactly once**, so a silently-unrepaired copy
+reports as a loud failure instead of as a measurement. `--no-derive` runs against the
+shared file as shipped, which fails.
+
+## Pass 5 gate table
+
+| Command | Result |
+|---|---|
+| `npx tsc --noEmit` | no diagnostics |
+| `npx tsx script/m14/run-fixtures.ts --lang protobuf` | **8 pass / 0 fail**, no baseline regressions |
+| `bun run script/m14/tmp/protobuf/probe/mutant-sweep.mts` | **27 caught / 0 survived** (26 before this pass) |
+| `npx tsx script/m14/tmp/protobuf/probe/store-binding.mts --files 40` | before 0/3,075 provably named → **after 2,977/3,075 (96.81%)**; refuses to splice if the shared anchor moved |
+| `npx tsx script/m14/protobuf-census.ts` | **821 ok / 0 fail**; 54,939 edges; 0 empty names; 0 bad kinds; 0 `unknown` endpoints; 0 self-loops; **0** edges under 0.7 |
+| `npx tsx script/m14/protobuf-adversarial.mts` | 14 probes; 628,758 nodes, **0** without `.id`; `uses` corpus-wide **99.58%**; heuristic ratio **0** |
+| `npx tsx script/m14/protobuf-construct-probes.mts` | **94** observed node types; all 5 rulings re-probed and still reading **0** |
+| `npx tsx script/m14/protobuf-ruling-table-proof.mts` | run **c**: `emitted 5/10 ruled-sound 5 FALSIFIED 0`, exit 0. run **b**: **FALSIFIED 2**. run **a**: exit 2, no RULING TABLE |
+| `npx tsx script/m14/protobuf-incoming-audit.mts` | 821 parsed / **0 failed / 0 degraded**; 1,764 ambiguous, 52 unbound, 4 hopeless; 38,551 declarations, 37,113 (96.27%) with an inbound edge |
+| `npx tsx script/m14/firing-check.ts --files 120 protobuf` | **3/10 fired, 2,069 edges, 10/120 files, 0 degraded** — unchanged, and pass 3's part 1 is its diagnosis |
+| `npx tsx script/m14/incoming-check.ts protobuf <40 files>` | `contains` unresolved **2,879 → 0**, distinct 0 → 2,876. `uses` unresolved **635 → 55**, distinct 0 → 243 |
+| `npx tsx script/m12/verify-regex-census.ts` | exits 1; **0 protobuf rows** |
+| `npx tsx script/m14/verify-honesty.ts` | exits 6 on **22 failures, 0 naming a protobuf path** |
+| `bun run script/m14/verify-doc-truth-emissions.ts --no-write` | **FALSE_NEGATIVE=7 FALSE_POSITIVE=0**, none in this lane's rows |
+
+## Coverage, restated after pass 5 — unchanged, and said again with its sources
+
+**5 of 5 applicable types emitted; 5 of 5 ruled with a corpus measurement. 5/5.** No
+verdict moved in this pass and no type was added: `calls`, `extends`, `implements`,
+`references` and `instantiates` are still RULED with the same instruments and the same
+counts, and the emitted five are still 13,275 / 40,098 / 1,561 / 4 / 1. The numerator is
+the arbiter's own firing measurement over the full corpus and the denominator is the
+lane's construct probes, so they come from different instruments.
+
+What pass 5 changed is not the count and not the verdict. It is that **96.81%** of the
+edges behind those counts are now attached to the declaration they name, against **0%**
+before, and the ones that are not are counted, classified and named rather than rounded
+into a rate.
+
+## Four items in files this lane does not own, restated so they can be applied
+
+1. **`src/ast/parallel-indexer.ts:2163-2165`** — delete the second `VALUES (...)` clause
+   in the `insertSymbol` prepared statement (the 30-placeholder line). *Why:* with both
+   present every `storeResults` call throws `near "VALUES": syntax error` and no language
+   stores anything. Measured for typescript, python and java; introduced by merge
+   `687999ba`. **This is the highest-severity item in this report** — it is not a
+   protobuf finding and it blocks every lane's store-level measurement.
+2. **`script/m14/run-fixtures.ts`** — add `"qualifiedName"` to `CONSTRAINT_KEY_ALLOWLIST`
+   (the symbol-rows block, beside `"qualified_calls"`). *Why:* the runner's inert-assertion
+   guard correctly refused `qualifiedName` as an unknown constraint key, which left the
+   field that decides whether an edge binds in the store unassertable by any fixture. The
+   lane worked around it with `meta.qualifiedName`, which is the runner's own documented
+   route, so the workaround is not load-bearing — but the allowlist omission is real.
+3. **`script/m14/incoming-check.ts`** — `orphans` is computed as
+   `declaredNames.filter(n => !named.has(n))`, where `declaredNames` holds `s.name` (bare)
+   and `named` is keyed by `rel.target` (qualified). *Why:* after item 4 below the two key
+   spaces stop coinciding, so the tool now reports "3,918 of 3,918 orphans" in the same
+   run where it reports 2,876 distinct declarations named by an edge. Before this pass
+   both sides were effectively bare names and the line was merely uninformative; now it
+   is self-contradictory. Either index `declaredNames` by `qualifiedName` or count orphans
+   against the same key space `named` uses.
+4. **`script/m14/ontology-coverage-gate.ts` and `script/m14/differential.ts`** — the two
+   one-line wirings from pass 2, still unwired. Without them the gate exits 2 and hands
+   both instruments the **bash** grammar, which run (b) above demonstrates: `calls` reads
+   FALSIFIED because `function_definition` is a real bash node type, and `instantiates`
+   refuses to report 0 from a language whose construct cannot occur.
+
+## Declared limitations, pass 5
+
+- **No independent oracle. Unchanged, and still the largest.** No `protobuf` entry in
+  `differential.ts`'s `LANGS`; no `script/m14/oracles/protobuf-*.ts`. **5 DERIVATION
+  findings**, one per emitted type. Every correctness claim here rests on hand-derived
+  expectations, 27 mutants, the protobuf specification, and the probes in this document.
+- **The store-level measurement is 40 files, not 821.** The probe stages a scratch project
+  because a full-corpus index does not fit the probe's budget; 40 reference files is the
+  densest cross-file reference set available and it is where the well-known types are
+  declared once and named from everywhere else. The 821-file figures in this document are
+  from the analyzer-side instruments, which do not need a store.
+- **2,557 of the 5,632 stored rows on that probe are the store's own synthesised
+  containment, not this lane's**, and they are excluded from every rate above. A reader
+  comparing the row totals against the analyzer's own count should expect the difference.
+- **75 `uses` edges of 489 still bind by the nondeterministic leaf fallback**, and 26 of
+  them land in another file. Publishing the id fixed the 414 whose target the store can
+  match exactly; it cannot fix a target the store cannot see.
+- **`imports` and `exports` endpoints are module paths**, 0% by symbol resolution by
+  design and family convention. A consumer resolves them against include roots.
+- **`overrides` has a corpus count of 1, in a file `protoc` rejects.** Stated beside the
+  verdict everywhere it appears. Both its ends now resolve through production.
+- **Runs under concurrency intermittently report `[BB-HANG]`** on
+  `pb-googleapis/google/api/expr/v1beta1/expr.proto`. Every headline number in this
+  document is from a run reporting **0 degraded**.
+- **Grammar-version drift.** The grammar is vendored, patched and pinned with 8
+  load-bearing patches; the analyzer reads node names a future upstream release could
+  rename.
