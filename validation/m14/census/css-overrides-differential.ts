@@ -135,6 +135,8 @@ let oracleRowsTotal = 0
 
 const missing: { file: string; name: string; supersedesLine: string; rule: string; classification?: string; supersedingLine?: number | null }[] = []
 const extra: { file: string; name: string; supersedesLine: string; rule: string }[] = []
+/** Oracle rows deduped on (label, from, target) — the shared oracle's own convention. */
+const oracleLabelKeys = new Set<string>()
 /** Surplus oracle rows where both declarations share a line: a store-key collision. */
 let storeCollision = 0
 /** Surplus oracle rows on different lines: an analyzer gap. This is the number that must be 0. */
@@ -186,6 +188,16 @@ for (const f of files) {
   const truth = tree ? deriveCssOverridesTruth(tree.rootNode, path.basename(f.abs)) : []
   tree?.delete?.()
   oracleRowsTotal += truth.length
+// The same rows under the convention `deriveCssEdges` uses in the SHARED differential:
+// dedupe on (label, from, target), no line. That is the shape the shared oracle's
+// comparison is written against, and it is also what the STORE does, since a
+// relationship's key is (source, type, target, line) and every `overrides` row here has
+// from === target. Measured rather than assumed, because it is the number that tells the
+// supervisor whether wiring this oracle in will read as agreement or as a phantom gap.
+for (const e of truth) {
+  const k = `${e.label}|${e.from}|${e.target}`
+  if (!oracleLabelKeys.has(k)) oracleLabelKeys.add(k)
+}
 
   const oracle = new Map<string, number>()
   const oracleRule = new Map<string, string>()
@@ -289,6 +301,7 @@ const report = {
   analyzerEdgesDistinctUnderStoreKey: storeDistinctTotal,
   analyzerEdgesLostToInsertOrIgnore: emittedTotal - storeDistinctTotal,
   oracleRowsDerived: oracleRowsTotal,
+  oracleRowsDistinctUnderLabelFromTarget: oracleLabelKeys.size,
   analyzerEdgesLostToInsertOrIgnore: emittedTotal - storeDistinctTotal,
   agree: AGREE,
   missingInAnalyzer: MISSING,
