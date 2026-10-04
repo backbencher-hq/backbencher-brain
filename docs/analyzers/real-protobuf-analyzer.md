@@ -1086,3 +1086,129 @@ workstream exists to distrust. Escaped; `tsc` clean.
   load-bearing patches; the analyzer reads node names a future upstream release could
   rename. `script/m14/protobuf-construct-probes.mts` re-derives the vocabulary from the
   wasm's own node-type table on every run.
+
+---
+
+# PASS 4 — the whole battery re-run at the current HEAD, and the lane's last regexes
+
+Pass 3 established the verdicts. Pass 4 changed no verdict: it re-ran every instrument
+this lane owns against the same corpus, recorded the numbers a second time from a
+separate process, and removed the two remaining regular expressions from this lane's own
+instruments. Where a number moved, the movement is stated rather than reconciled.
+
+## Every number reproduced, and the two that moved
+
+| instrument | pass 3 | pass 4 | moved |
+|---|---|---|---|
+| `protobuf-census.ts` files ok / fail | 821 / 0 | **821 / 0** | no |
+| symbols through `parseFile` | 41,955 | **41,955** | no |
+| edges through `parseFile` | 54,939 | **54,939** | no |
+| `uses` / `contains` / `imports` / `exports` / `overrides` | 13,275 / 40,098 / 1,561 / 4 / 1 | **13,275 / 40,098 / 1,561 / 4 / 1** | no |
+| symbols with empty name | 0 | **0** | no |
+| unknown `SymbolKind` | 0 | **0** | no |
+| endpoints equal to `unknown` | 0 | **0** | no |
+| self-loops | 0 | **0** | no |
+| edges with confidence < 0.7 | 0 | **0** | no |
+| `uses` corpus-wide, both ends | 99.58% | **99.58%** | no |
+| `contains` corpus-wide, both ends | 100% | **100%** | no |
+| distinct node types observed | 94 | **94** | no |
+| rulings reading 0 after re-probe | 5 | **5** | no |
+| mutants caught / survived | 26 / 0 | **26 / 0** | no |
+| fixtures pass / fail | 8 / 0 | **8 / 0** | no |
+| incoming audit: declarations | 38,551 | **38,551** | no |
+| incoming audit: ambiguous endpoints | 1,764 | **1,763** | −1 |
+| incoming audit: `uses` edges seen | 13,275 | **13,267** | −8 |
+| incoming audit: files degraded | 0 | **2** | +2 |
+
+The three movements share one cause and it is the one already declared: this run drew
+**2 degraded files** where the pass-3 run drew 0 —
+`pb-googleapis/google/api/expr/v1beta1/{eval,source}.proto`, which the parser reports as
+`memory access out of bounds` and which `[BB-HANG]` reports as stuck at 120 s. Losing
+those two files costs 8 `uses` edges and promotes exactly one previously-unambiguous
+target to ambiguous. The `contains` count is unaffected.
+
+The audit's **process exit is 1** on this run and 0 on the pass-3 run, for the same
+reason: the hang is raised after the audit has already written its JSON. The audit's
+findings are unaffected; its exit status is not, and it is quoted here as measured.
+
+`script/m14/protobuf-ruling-table-proof.mts` run (b) reported `contains 40,089` against
+run (c)'s `40,098` in the same invocation — a 9-edge spread between two runs of the same
+corpus minutes apart, which is the same degraded-file effect seen from the other side.
+Runs (b) and (c) differ only in which grammar the two instruments are handed.
+
+## The lane's last two regular expressions
+
+The analyzer was already regex-free. Two of this lane's **own instruments** were not:
+
+- `protobuf-adversarial.mts:375` — `/^(uses|contains|imports|exports)$/.test(ty)`
+- `protobuf-ruling-table-proof.mts:118` — `/^\[INFO]/` and `/BB-PARSE-ERR|BB-HANG/`
+
+Neither matched `.proto` source: the first tested a relationship-type name against a
+closed four-value set, the second filtered the harness's own log lines. So neither could
+mis-read a declaration, and neither is the failure mode the ban describes. They are
+removed anyway, because the ban covers census scripts and oracles, and a pattern over
+text is a surface that breaks silently on the next change to the text it reads.
+
+Replaced with a `Set` membership test and with `startsWith` / `includes`.
+
+```
+npx tsx script/m12/verify-regex-census.ts | grep -c protobuf     ->  0 rows
+```
+
+The census gate itself still exits 1, on **10 other lanes**: `vue` 12, `css` 7,
+`typescript` 6, `fsharp` 6, `svelte` 4, `clean` 2, `scss` 2, `javascript` 2, `python` 1,
+`sql` 1, `xml` 1. None of those files is this lane's to edit.
+
+## Pass 4 gate table
+
+| Command | Result |
+|---|---|
+| `npx tsc --noEmit` | no diagnostics |
+| `npx tsx script/m14/run-fixtures.ts --lang protobuf` | **8 pass / 0 fail**, no baseline regressions |
+| `npx tsx script/m14/tmp/protobuf/probe/mutant-sweep.mts` | **26 caught / 0 survived** |
+| `npx tsx script/m14/protobuf-census.ts` | **821 ok / 0 fail**; 54,939 edges; 0 empty names; 0 bad kinds; 0 `unknown` endpoints; 0 self-loops |
+| `npx tsx script/m14/protobuf-construct-probes.mts` | **94** observed node types; all 5 rulings re-probed and still reading **0**; 13 ERROR + 2 MISSING in 1 file |
+| `npx tsx script/m14/protobuf-adversarial.mts` | 14 probes; 628,758 nodes, **0** without `.id`; `uses` corpus-wide **99.58%**; edges under 0.7: **0** |
+| `npx tsx script/m14/protobuf-ruling-table-proof.mts` | run **c**: `emitted 5/10 ruled-sound 5 FALSIFIED 0`, exit 0. run **b**: **FALSIFIED 2** — both instruments handed the bash grammar. run **a**: exit 2, no RULING TABLE |
+| `npx tsx script/m14/protobuf-incoming-audit.mts` | part 1: 120 sampled, **10 present / 110 absent**. part 2: **1,763** ambiguous, 52 unbound, 4 hopeless; exit 1 on the 2 degraded files |
+| `npx tsx script/m14/firing-check.ts --files 120 protobuf` | **3/10 fired, 2,069 edges, 10/120 files, 0 degraded** — fired types `uses`, `contains`, `imports` |
+| `npx tsx script/m12/verify-regex-census.ts` | exits 1; **0 protobuf rows** |
+| `npx tsx script/m14/verify-honesty.ts` | exits 6 on **22 failures, 0 naming a protobuf path** |
+
+## Two items in files this lane does not own, restated so they can be applied
+
+Both are one-line additions, and the second is not cosmetic: without it both of the
+arbiter's instruments are handed the **bash** grammar, which is what run (b) above
+demonstrates — `calls` comes back FALSIFIED because `function_definition` is a real bash
+node type, and `instantiates` refuses to report 0 from a language whose construct cannot
+occur.
+
+1. `script/m14/ontology-coverage-gate.ts`
+   - add `import { PROTOBUF_RULED } from "./protobuf-ruled"` beside the `LANGS` import
+   - add `protobuf: PROTOBUF_RULED` to the `RULED_BY_LANG` literal at line 195
+   - why: the gate exits 2 today, so this lane's 5 rulings have never been checked by the
+     arbiter. `script/m14/protobuf-ruled.ts` is written and shaped correctly.
+
+2. `script/m14/differential.ts` — add to `LANGS`:
+   `protobuf: { wasm: "tree-sitter-protobuf.wasm", analyzerFile: "real-protobuf-analyzer", className: "RealProtobufAnalyzer", ext: "proto" },`
+   - why: the gate selects its wasm with `(LANGS as any)[LANG]?.wasm ?? "tree-sitter-bash.wasm"`,
+     so with no entry every protobuf instrument reads bash's grammar. All four fields are
+     already carried at `script/m14/run-fixtures.ts:91`, so this copies an existing value.
+
+Both are proven by `script/m14/protobuf-ruling-table-proof.mts`, which splices them into
+derived copies of the two shared files, runs the real gate three ways, and deletes the
+copies — refusing to splice if any anchor has moved.
+
+## Still not settled
+
+- **No oracle, so 5 DERIVATION findings stand.** No `protobuf` entry in `differential.ts`'s
+  `LANGS` and no `script/m14/oracles/protobuf-*.ts` — the oracles directory holds 19 files
+  for 8 languages and none for this one. Every correctness claim in this document rests on
+  hand-derived expectations, 26 mutants, the protobuf specification, and the probes here.
+  An oracle would live in `script/m14/oracles/`, which is shared machinery.
+- **1,763 ambiguous endpoints** and **52 targets no file publishes**, from
+  `descriptor.proto` being vendored into 4 repositories and from consul's two include
+  roots. Closing either needs the include-root map, a project-level fact.
+- **1,525 custom-option sites** name an extension by its **declaring** package while this
+  analyzer publishes an extension member under the **extended** type, so those names can
+  never coincide. Not emitted, with the measurement in the section above.
