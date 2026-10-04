@@ -3981,44 +3981,94 @@ fact: **the clear is not in a `finally`.**
    walk.** Pass 15 §G bullet 1 is resolved as stated: the difference between the bounded and
    unbounded runs was never the population.
 
+### B2. A second full-population run, and the two-point proportionality that attributes the delta
+
+`measurements/arbiter-full3834-run2-2026-10-04-p16.log`, full root again, independently:
+
+```
+calls 113,476   uses 132,201   contains 80,714   references 30,794
+imports 10,200   exports 24,111   instantiates 4,306
+emitted 7/10   ruled-sound 3   FALSIFIED 0   ruled-without-justification 0
+```
+
+**The same verdict at the full population, n=2.** `exports` reads 24,111 here against §A's 24,113
+and the census's 24,114 — three different numbers for three runs, and the difference between them
+is the degraded file, measured rather than modelled:
+
+| run | degraded file | what that file contributes, parsed alone | gate `exports` | census `exports` | delta |
+|---|---|---|---|---|---|
+| §A | `bitCast_with_different_sizes_inside_an_expression.zig` | 1 symbol, **1 `exports`** | 24,113 | 24,114 | **1** |
+| run 2 | `bitCast_with_invalid_array_element_type.zig` | 3 symbols, **3 `exports`** | 24,111 | 24,114 | **3** |
+
+Two runs, two different degraded files, and the gap tracks each file's own contribution exactly.
+That is a proportionality, not a coincidence: it is what distinguishes "the instruments disagree by
+a small amount" from "one file is served by the regex extractor instead of the analyzer", and it is
+why §C's single-point attribution is now stated as a measured relation.
+
+**One methodological note, because it is the reason this run is the one worth keeping.**
+`process.stderr.write` is **synchronous for a file and asynchronous for a pipe** in Node, so a run
+whose stderr is piped — the obvious way to timestamp it — delivers every line at process exit and
+destroys exactly the ordering the question needs. A first attempt at this measurement returned five
+lines all stamped with the same second and had to be discarded. Writing stderr straight to a file
+preserves write order, and the file's mtime is the `[BB-HANG]` write time.
+
+That run's bracket, with the engine's own clock on the `[INFO]` lines:
+
+| engine clock | event |
+|---|---|
+| 08:26:47 | last successful parser instantiation before the trap |
+| — | `[BB-PARSE-ERR] … compile_errors/bitCast_with_invalid_array_element_type.zig \| memory access out of bounds` |
+| 08:28:17 → 08:28:31 | **6 more wasm parsers instantiated and used — parsing continues** |
+| — | `[BB-HANG] parser stuck 120s on … bitCast_with_invalid_array_element_type.zig — exiting` |
+| 08:31:27 | `[BB-HANG]` write time (stderr mtime) — and the **verdict table's** write time (stdout mtime), 2 ms apart |
+
+**6 more successful parses after the named file had already failed, and the process then died at the
+same instant it finished printing a finished verdict table.**
+
+**The firing is later than 120 s after the trap, and that is expected rather than a loose end.**
+The bomb is armed at `engine.ts:1444` and set for 120 s, but `parser.parse` is synchronous WASM and
+the gate then walks all 3,834 files again for instruments A and B — so the event loop is blocked
+almost continuously and an overdue timer can only run when a turn appears. It appeared after the
+table. **So the practical consequence is worse than a spurious death: the run is killed at an
+arbitrary later point, after its work is done, and how much of the work got done is not something
+the exit code tells you.** Pass 15 read three full-root aborts as evidence that the full root is
+expensive or unstable. It is neither; a full-root run finishes, and then a timer set by a file that
+failed five minutes earlier ends it.
+
 ### C. All seven per-type counts agree at the full population, and the one difference is attributed
 
 The gate's §A table against this lane's 8-shard census over the **same 3,834 files**, same draw
 `sha256:2f3545f9…`:
 
-| type | supervisor's gate, full root | this lane's census, 8 shards | delta |
-|---|---|---|---|
-| `calls` | 113,476 | 113,476 | 0 |
-| `uses` | 132,201 | 132,201 | 0 |
-| `contains` | 80,714 | 80,714 | 0 |
-| `references` | 30,794 | 30,794 | 0 |
-| `imports` | 10,200 | 10,200 | 0 |
-| `instantiates` | 4,306 | 4,306 | 0 |
-| `exports` | **24,113** | **24,114** | **1** |
-| **total** | **395,804** | **395,805** | **1** |
+| type | supervisor's gate, full root (run §A) | same gate, run 2 | this lane's census, 8 shards | delta vs census |
+|---|---|---|---|---|
+| `calls` | 113,476 | 113,476 | 113,476 | 0 |
+| `uses` | 132,201 | 132,201 | 132,201 | 0 |
+| `contains` | 80,714 | 80,714 | 80,714 | 0 |
+| `references` | 30,794 | 30,794 | 30,794 | 0 |
+| `imports` | 10,200 | 10,200 | 10,200 | 0 |
+| `instantiates` | 4,306 | 4,306 | 4,306 | 0 |
+| `exports` | **24,113** | **24,111** | **24,114** | **1 / 3** |
+| **total** | **395,804** | **395,802** | **395,805** | **1 / 3** |
 
-The gate's run degraded exactly one file, and §B names it. `degraded-file-attribution.mts` parses
-that file alone through production `parseFile`:
-
-```
-file: …/zig/test/cases/compile_errors/bitCast_with_different_sizes_inside_an_expression.zig
-fallback: undefined symbols: 1 relationships: 1
-byType: {"exports":1}
-```
-
-**One symbol and one `exports` edge — the delta exactly.** So the residual is not a disagreement
-between two instruments at the full population; it is one file served by the regex fallback instead
-of the analyzer, and it is the same contamination pass 15 §B measured at 12 edges in 108,009 for a
-larger degraded file. **Every per-type count this lane publishes is now reproduced to the digit by
-the supervisor's own gate over 100% of the corpus**, with the single exception attributed rather
-than rounded away.
+**Six of the seven types agree to the digit, twice, at the full population.** `exports` is the only
+type that moves, it moves only downward, and it moves by exactly what the run's degraded file
+contributes — §B2's proportionality table measures both points. So the residual is not a
+disagreement between two instruments; it is one file served by the regex fallback instead of the
+analyzer, which is the same contamination pass 15 §B measured at 12 edges in 108,009 for a larger
+degraded file. **Every per-type count this lane publishes is reproduced to the digit by the
+supervisor's own gate over the whole corpus**, with the one exception attributed rather than rounded
+away, and with the corpus figure being the 0-degraded run because that is the run whose merge
+REFUSES to publish a mixture.
 
 ### D. §8 item 21 is closed, and §8 item 22 is the fix
 
 **21. CLOSED — the pairing is mechanical.** `[BB-HANG]` names the file whose parse **threw**, because
 the 120 s guard is cleared only on the return path (`engine.ts:1447`) and `parseRaw` has no
-`finally`. Evidence: the discriminating prediction holds 8 of 8, and one run shows 58 s and 9 wasm
-instantiations of successful parsing *after* the named file had already failed.
+`finally`. Evidence, in three independent forms: the discriminating prediction holds **8 of 8**;
+run §A shows 58 s and 9 wasm instantiations of successful parsing *after* the named file had already
+failed; run 2 (§B2) shows **6 more successful parses** after its named file failed and then the
+process dying at the same instant it finished printing a finished verdict table.
 
 **22. `clearTimeout(parseBomb)` must run on the throw path.** `src/ast/engine.ts:1446-1447`, inside
 `parseRaw`: wrap the parse so the guard is cleared in a `finally`, or catch, clear, and rethrow. It
@@ -4060,7 +4110,7 @@ re-measure without the revert, and this lane will not run the destructive form a
 | fixture suite | `bun run script/m14/run-fixtures.ts --lang zig` | **11 pass / 0 fail**, no baseline regression |
 | mutation (shared) | `BB_MUTANT_ONLY="zig/" bun run script/m14/mutate-analyzer.ts` | **50 / 50 CAUGHT** (1,748 → 50) |
 | mutation (lane) | `npx tsx validation/m14/fixtures/zig/m13-mutants.mts` | **6 / 6 CAUGHT** |
-| ontology arbiter, full root | §A, 3,834 files | **exit 0 verdict: 7/10, RULED-SOUND 3, FALSIFIED 0, RULED-WITHOUT-JUSTIFICATION 0**; process exit 1 from the §D leak, after the table |
+| ontology arbiter, full root, **n=2** | §A and §B2, 3,834 files each | **both runs: 7/10, RULED-SOUND 3, FALSIFIED 0, RULED-WITHOUT-JUSTIFICATION 0**; 232 node types corpus-wide; both process exits 1 from the §D leak, both AFTER the table |
 | ruled probe | `npx tsx validation/m14/fixtures/zig/zig-ruled-probe.ts` | 10 / 10 controls; `overrides` 0 hits, raw 19, split 19/21/0/1; instrument A 239 declared / 232 produced, 0 of 17 supertype names, keyword calibration 11/11 declared |
 | DERIVATION (non-destructive) | §E, `BB_M60_ROOT` scratch | **CHECK 1-4 clean, DERIVATION 0**, shared evidence byte-identical |
 | regex census | `npx tsx script/m12/verify-regex-census.ts` | gate `FAILED` on **43 rows in 8 other analyzers**, **0 zig rows** |
