@@ -1557,6 +1557,21 @@ for this lane. Every item below names the measurement that produced it.
     version could not see it is written into the probe's own header, because the failure
     mode is re-introducing the wrong field name rather than forgetting to re-run
     anything.
+19. **THE CORPUS IS CONCENTRATED, and every verdict above inherits that.** Measured at
+    pass 9 by `validation/m14/census/css-admission-diff.ts`: the 1,255 admitted files come
+    from **79 repositories**, and the five densest — `pico` **238**, `grails-core` **191**,
+    `svelte` **186**, `bulma` **116**, `Documenter.jl` **73** — hold **804 of 1,255 files
+    (64%)**. The remaining 74 repositories hold 451 files between them, 33 of them one
+    file each. So "1,255 files" overstates the breadth of the evidence for the types those
+    five dominate: `contains` 175,171 and `references` 161,768 are largely pico/grails-core/
+    svelte/Bulma token stylesheets, which is exactly the population where a `var(--x)` read
+    is dense and a CSS-Modules `composes` export is absent. Two consequences a reader should
+    weigh: (a) the `exports` ruling is a ruling about a corpus with 1 `isCssModule` symbol
+    in it, and one CSS-Modules-heavy repository would overturn it; (b) the
+    `references`-resolves-at-98.7% figure is a figure about stylesheets that mostly
+    *declare* the custom properties they read, so it is an upper bound on what the same
+    measurement would read over a corpus of partial copies. The probe prints the full
+    79-row table so the concentration can be re-derived rather than taken on trust.
 
 ### For the supervisor: the `CSS_RULED` table entry — SUPERSEDED, kept as the record
 
