@@ -40,6 +40,18 @@ const ANONYMOUS_CONTAINER_NODES = new Set([
   "error_set_declaration", "opaque_declaration",
 ])
 
+/** Node types the pinned lexer produces for an enum member's NAME when that
+ *  name happens to spell a Zig primitive type or keyword literal. Zig has no
+ *  reserved words, so `pub const Feature = enum { bool, clamps }` and
+ *  `pub const SimpleValue = enum { undefined, null, true, ... }` are ordinary
+ *  declarations whose names the lexer classifies by what they MEAN rather than
+ *  by their grammatical role. Every entry is measured — see the container_field
+ *  name site for the census that produced these four and the enum gate that
+ *  keeps the same token refused where it IS a type (a tuple struct's element). */
+const ENUM_MEMBER_NAME_NODE_TYPES: ReadonlySet<string> = new Set([
+  "builtin_type", "boolean", "null", "undefined",
+])
+
 const ZIG_VALUE_RHS = new Set([
   "integer", "float", "string", "multiline_string", "boolean", "character",
   "binary_expression", "unary_expression", "null_coercion_expression",
@@ -779,13 +791,46 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
         // claimed 0 unknown. The live disjunct is the first one, so removing the
         // dead one changes no output -- which is the point: it was never load
         // bearing, only misleading.
+        //
+        // Z-p20, and it is the GATE that the refusal above was missing. That
+        // refusal was right about `zls/src/analyser/InternPool.zig` -- a
+        // `builtin_type` name field there is a TUPLE struct's element type, and
+        // publishing it as a field name fabricates a declaration. It was wrong as
+        // a blanket rule, because Zig also lets an enum member be NAMED with a
+        // primitive type name: `pub const Feature = enum { bool, clamps }`
+        // (zig/lib/std/Target/xtensa.zig:8), `BlockType.f64 = 0x7C`
+        // (zig/lib/std/wasm.zig:663), `Key.f16` (ghostty/src/input/key.zig:263).
+        // Measured over the 3,834-file draw `sha256:2f3545f9`: 468 sites carry a
+        // `builtin_type` name field, of which 122 sit in an ENUM and all 122 were
+        // ABSENT from parseFile's output -- `Feature.clamps` published beside an
+        // unpublished `Feature.bool`, same enum, same container, the only
+        // difference being how the lexer spelled the name. Enum bodies have no
+        // positional form, so a bare token there is a member NAME by the language's
+        // own rules. Structs and unions DO have one, which is why the same token in
+        // `struct { usize, bool }` (ghostty/src/simd/base64.zig:197) is an element
+        // type and stays refused: that is 332 of the 468, and naming them would
+        // repeat the 31 fabrications this comment already records.
+        //
+        // The four node types are the census's, not a judgement: over the same
+        // draw, 162 bound non-local enum members carry a name field the lexer
+        // spelled as something other than an `identifier` — `builtin_type` 116
+        // (Feature.bool, BlockType.f64, Key.f16), `boolean` 28 (Redraw.true,
+        // Redraw.false), `null` 14 (OptRef.null, SimpleValue.null) and
+        // `undefined` 4 (SimpleValue.undefined). Every one of those texts is a
+        // legal identifier in Zig declaration position, which the corpus
+        // demonstrates by compiling. A node type absent from this set is absent BY
+        // MEASUREMENT, so adding one needs a census row rather than an intuition.
+        const isEnumMember = container?.kind === ASTEngine.SymbolKind.Enum
+        const enumPrimitiveName =
+          isEnumMember && nameField && ENUM_MEMBER_NAME_NODE_TYPES.has(nameField.type)
+            ? nameField
+            : null
         const nameNode =
           nameField && nameField.type === "identifier"
             ? nameField
-            : this.anyChild(node, (n) => n.type === "identifier")
+            : (enumPrimitiveName ?? this.anyChild(node, (n) => n.type === "identifier"))
         const fieldName = nameNode ? nameNode.text : ""
         if (fieldName && fieldName !== "_" && fieldName.length < 200) {
-          const isEnumMember = container?.kind === ASTEngine.SymbolKind.Enum
           // Z17b (deep review): the field's declared type used to be found by
           // asking for one of five node types, so the most common kinds of
           // declaration in Zig published NO type at all — `size: Size`,
