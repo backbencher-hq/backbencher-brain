@@ -133,8 +133,12 @@ let emittedTotal = 0
 let storeDistinctTotal = 0
 let oracleRowsTotal = 0
 
-const missing: { file: string; name: string; supersedesLine: string; rule: string }[] = []
+const missing: { file: string; name: string; supersedesLine: string; rule: string; classification?: string; supersedingLine?: number | null }[] = []
 const extra: { file: string; name: string; supersedesLine: string; rule: string }[] = []
+/** Surplus oracle rows where both declarations share a line: a store-key collision. */
+let storeCollision = 0
+/** Surplus oracle rows on different lines: an analyzer gap. This is the number that must be 0. */
+let realGap = 0
 const perRule = new Map<string, { agree: number; missing: number; extra: number }>()
 const bump = (rule: string, col: "agree" | "missing" | "extra", by = 1): void => {
   const row = perRule.get(rule) ?? { agree: 0, missing: 0, extra: 0 }
@@ -185,10 +189,17 @@ for (const f of files) {
 
   const oracle = new Map<string, number>()
   const oracleRule = new Map<string, string>()
+  // The oracle's rows, kept per comparison key so the SURPLUS can be classified. The
+  // comparison key is (name, supersedesLine), which on its own cannot tell a store
+  // collision from a real gap — see the classification in the surplus loop below.
+  const oracleRowsByKey = new Map<string, { line: number; supersedesLine: number }[]>()
   for (const e of truth) {
     const k = cmpKey(e.from, e.supersedesLine)
     tally(oracle, k)
     if (e.rule && !oracleRule.has(k)) oracleRule.set(k, e.rule)
+    const rows = oracleRowsByKey.get(k) ?? []
+    rows.push({ line: Number(e.line ?? -1), supersedesLine: Number(e.supersedesLine ?? -1) })
+    oracleRowsByKey.set(k, rows)
   }
 
   if (analyzer.size > 0 || oracle.size > 0) filesWithEither++
@@ -203,7 +214,41 @@ for (const f of files) {
     bump(rule, "agree", shared)
     bump(rule, "missing", n - shared)
     const parts = splitKey(k)
-    for (let i = 0; i < n - shared; i++) missing.push({ file: label, name: parts.name, supersedesLine: parts.sup, rule })
+    const rows = oracleRowsByKey.get(k) ?? []
+    // The surplus rows are CLASSIFIED, because `missing` on its own conflates two
+    // things that call for opposite conclusions and the reader cannot tell them apart:
+    //
+    //   STORE-COLLISION — the superseding declaration and the one it supersedes are on
+    //     the SAME line, so the two edges are indistinguishable under the store's
+    //     (source,type,target,line) key and one of them cannot be held. This is a
+    //     MINIFIED-FILE artefact: `bulma-no-helpers-prefixed.min.css` is 2 lines long,
+    //     so all three of its blocks sit on line 2 and three supersessions of one name
+    //     all want the same key. The analyzer is not missing a construct here; the
+    //     store cannot represent the second and third. Reported separately so it is
+    //     not read as a defect in the analyzer.
+    //
+    //   REAL-GAP — the two declarations are on DIFFERENT lines, so the store can hold
+    //     the edge, the oracle derived it, and the analyzer did not publish it. That is
+    //     an analyzer gap and it is the number that must be zero.
+    //
+    // The two are separated by a parse fact (`line` vs `supersedesLine`), not by a
+    // judgement about which number looks better.
+    const surplus = n - shared
+    for (let i = 0; i < surplus; i++) {
+      const row = rows[shared + i]
+      const cls = row && row.line === row.supersedesLine ? "store-collision" : "real-gap"
+      if (cls === "store-collision") storeCollision++
+      else realGap++
+      missing.push({
+        file: label,
+        name: parts.name,
+        supersedesLine: parts.sup,
+        rule,
+        classification: cls,
+        supersedingLine: row ? row.line : null,
+      })
+    }
+    void surplus
   }
   // Analyzer edges the oracle derives nothing for - the FABRICATION column.
   for (const [k, n] of analyzer) {
@@ -247,10 +292,16 @@ const report = {
   analyzerEdgesLostToInsertOrIgnore: emittedTotal - storeDistinctTotal,
   agree: AGREE,
   missingInAnalyzer: MISSING,
+  missingClassified: { storeCollision, realGap },
   extraInAnalyzer: EXTRA,
   agreementPct: TOTAL === 0 ? null : Number(((100 * AGREE) / TOTAL).toFixed(2)),
   perRule: Object.fromEntries(perRule),
   missingExamples: missing.slice(0, 20),
+  // The two classes are listed SEPARATELY. A single truncated example list shows the
+  // first 20 rows in file order, which here are all store collisions, so the printed
+  // examples describe the benign class and the defect class is invisible in them.
+  realGapExamples: missing.filter((m) => m.classification === "real-gap").slice(0, 20),
+  storeCollisionExamples: missing.filter((m) => m.classification === "store-collision").slice(0, 10),
   extraExamples: extra.slice(0, 20),
 }
 if (ji !== -1 && argv[ji + 1]) writeFileSync(argv[ji + 1], JSON.stringify(report, null, 2) + "\n")
@@ -273,8 +324,27 @@ console.log("-".repeat(61))
 console.log(`${w("TOTAL", 34)}${w(String(AGREE), 9)}${w(String(MISSING), 10)}${w(String(EXTRA), 8)}`)
 console.log(``)
 console.log(`agreement ${report.agreementPct === null ? "n/a (no rows on either side)" : `${report.agreementPct}%`}  (agree / (agree + missing + extra))`)
-console.log(`MISSING (oracle derives, analyzer does not publish) = ${MISSING}  -> an analyzer gap`)
+console.log(`MISSING (oracle derives, analyzer does not publish) = ${MISSING}`)
+console.log(`  of which STORE-COLLISION (both declarations on one line; the store key cannot hold both) = ${storeCollision}`)
+console.log(`  of which REAL-GAP (different lines; the store CAN hold it and the analyzer dropped it) = ${realGap}   <- this is the defect count`)
 console.log(`EXTRA   (analyzer publishes, oracle derives nothing)  = ${EXTRA}  -> a FABRICATION if non-zero`)
 for (const e of missing.slice(0, 10)) console.log(`  MISSING ${e.file}: ${e.name} supersedes L${e.supersedesLine} (${e.rule})`)
 for (const e of extra.slice(0, 10)) console.log(`  EXTRA   ${e.file}: ${e.name} supersedes ${e.supersedesLine} (${e.rule})`)
-process.exitCode = MISSING === 0 && EXTRA === 0 ? 0 : 1
+// The exit code answers "is the analyzer wrong", so it keys on the DEFECT count and not
+// on the raw surplus. A store collision is not an analyzer defect: two supersessions
+// that land on one line in a minified file want the same (source,type,target,line) key
+// and the store holds one row for it, so the second edge is unrepresentable rather than
+// unpublished. Exiting 1 on it would train the reader to ignore this script's failures,
+// which is how a real 42-edge gap sat behind a benign 20 for a round. `EXTRA` — an edge
+// the analyzer publishes and the oracle derives nothing for — is a fabrication and is
+// still a failure on its own.
+const DEFECTS = realGap + EXTRA
+console.log(
+  DEFECTS === 0
+    ? `VERDICT: no analyzer defect. ${realGap} real gap(s), ${EXTRA} fabrication(s).` +
+        (storeCollision > 0
+          ? ` The ${storeCollision} store collision(s) are unrepresentable under the store key, not unpublished.`
+          : "")
+    : `VERDICT: ${DEFECTS} analyzer defect(s) — ${realGap} real gap(s), ${EXTRA} fabrication(s).`,
+)
+process.exitCode = DEFECTS === 0 ? 0 : 1
