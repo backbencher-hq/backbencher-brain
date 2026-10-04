@@ -34,18 +34,27 @@ import { ASTEngine } from "./engine"
  * ## Relationship ontology
  *
  *   - `contains`  declaration → member. message→field, message→nested type,
- *                 message→oneof, oneof→field, enum→enum_field, service→rpc.
+ *                 message→oneof, enum→enum_field, service→rpc. There is
+ *                 deliberately NO oneof→field edge: the message owns the field
+ *                 and the oneof is a sibling grouping, so one edge meaning both
+ *                 membership and grouping would make one edge mean two things. The
+ *                 grouping travels as `metadata.oneof` on the field.
  *   - `uses`      declaration → referenced type. A field's declared type, a
  *                 map value type, a `oneof_field` type, and BOTH of an rpc's
  *                 request and response types. A SCALAR type is not a reference
  *                 and produces no edge.
  *   - `imports`   file → a file it depends on. The source is the importing
- *                 file's own module name (its basename) and the target is the
+ *                 file's own identity — its `package` namespace symbol where it
+ *                 declares one, its basename otherwise — and the target is the
  *                 path as written, because `protoc` resolves an import against
- *                 `-I` include roots this file is never told. Both endpoints are
- *                 therefore MODULE PATHS rather than symbols, which is the
- *                 family's convention (`real-css-analyzer.ts`,
- *                 `real-dart-analyzer.ts`) and not a protobuf invention.
+ *                 `-I` include roots this file is never told, so the TARGET is a
+ *                 module path and is external by necessity. The SOURCE was
+ *                 measured rather than assumed (pass 16): it was a basename,
+ *                 which resolved at 0 of 1,565 module edges and was shared with
+ *                 another corpus file on 967 of them. It is now the `package`
+ *                 namespace this analyzer already publishes, so 1,560 of 1,565
+ *                 (99.68%) resolve, and `metadata.moduleOwner` says which
+ *                 spelling an edge used.
  *   - `exports`   file → a file it re-exports. `import public "x.proto"` is
  *                 BOTH a dependency and a republication, so it emits BOTH
  *                 edges: the two are separate facts, and pass 1's ruling that
