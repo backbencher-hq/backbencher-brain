@@ -1084,7 +1084,7 @@ can resolve — but it is a different number and it was published under the wron
 | `calls` | yes | 122,150 / 1,873 files | **75.8% covered / 294 unexplained** of 1,214, oracle `julia-calls`, **target only** | `usage_contextual` | **17.2%** (src 78.5 / tgt 19.8 / neither 19.0) | conf 1.0 on all; **0 under 0.7** |
 | `uses` | yes | 37,087 / 1,480 | **98.9% / 5 unexplained** of 473, oracle `julia-refs`, **target only** | `usage_contextual` | **23.6%** (src 79.1 / tgt 25.6 / neither 19.0) | conf 0.9; **0 under 0.7** |
 | `contains` | yes | 14,299 / 954 | **86.8% / 40 unexplained** of 302, oracle `julia-contains`, **both ends**; it found a real defect | `structural` | **100.0%** (neither 0.0) | conf 1.0; **0 under 0.7** |
-| `references` | yes | 50,150 / 1,662 | **91.4% / 36 unexplained** of 418, oracle `julia-refs`, **target only** | `import_based` | **17.3%** (src 85.5 / tgt 18.3 / neither 13.4) | conf 1.0 ×46,698 + 0.95 ×3,452; **0 under 0.7** |
+| `references` | yes | 50,150 / 1,662 | **88.0% / 52 unexplained** of 434, oracle `julia-refs`, **target only** | `import_based` | **17.3%** (src 85.5 / tgt 18.3 / neither 13.4) | conf 1.0 ×46,698 + 0.95 ×3,452; **0 under 0.7** |
 | `imports` | yes | 3,386 / 961 | **lane-owned oracle `julia-imports`, 99.8% agreement — NOT yet wired into F5**, so at the F5 level this label is still compared against nothing | `import_based` | **0.4%** both-ends (src 51.2 / tgt 0.7); target-end 53.5% corpus-only + 10.3% external-by-import | conf 1.0; **0 under 0.7** |
 | `exports` | yes | 2,795 / 207 | **lane-owned oracle `julia-exports`, 99.9% agreement — NOT yet wired into F5**, so at the F5 level this label is still compared against nothing | `import_based` | **28.6%** (src 71.6 / tgt 39.4); target-end 87.9% bind somewhere | conf 1.0; **0 under 0.7** |
 | `extends` | yes | 2,580 / 537 | **57.1% / 12 unexplained** of 28, oracle `julia-type-edges`, **both ends** | `structural` | **19.5%** (src 53.6 / tgt 26.1 / neither 39.7) | conf 1.0; **0 under 0.7** |
@@ -1859,18 +1859,36 @@ by truth from the file that declares it. Two consecutive runs are byte-identical
 
 ```
 population 1985 admitted files, 40 checked, evenly spaced and SORTED (not a prefix)
-selection: every 49.6th file of the sorted population; 10 of the 14 admitted projects are represented
+selection: every 49.6th file of the sorted population; 10 of the 14 admitted projects are represented — Aqua.jl, DataFrames.jl, Documenter.jl, Flux.jl, Graphs.jl, LanguageServer.jl, Pkg.jl, Query.jl, StaticArrays.jl, julia
+first: Aqua.jl/docs/changelog.jl
+last:  julia/test/testhelpers/StridedArrays.jl
+unreadable by the grammar: 0   parseFile threw: 0
+
+DETERMINISTIC. The same corpus gives these numbers on every run; unlike the rotating F5 sample, nothing here is a sample size.
 
 label           verified    truth   analyzer  covered  missing unexplained covered% srcUnverified
+----------------------------------------------------------------------------------------------------
 calls           TARGET only 1083    1214      920      163     294         75.8%    1214
 uses            TARGET only 468     473       468      0       5           98.9%    473
-references      TARGET only 398     418       382      16      36          91.4%    418
+references      TARGET only 398     434       382      16      52          88.0%    434
 contains        both ends   268     302       262      6       40          86.8%    0
 extends         both ends   19      28        16       3       12          57.1%    0
-instantiates    TARGET only 19      26        19       0       7           73.1%    26
+instantiates   TARGET only 19      26        19       0       7           73.1%    26
 overrides       both ends   1       1         1        0       0           100.0%   0
-TOTAL                       2256    2462      2068     188     394         84.0%
+----------------------------------------------------------------------------------------------------
+TOTAL                       2256    2478      2068     188     410         83.5%
+
+overall unexplained rate: 16.5%
 ```
+
+**`references` is the one row that moved, and the movement is worth reading rather than filing as a
+regression.** Truth (398) and covered (382) are UNCHANGED and `missing` is unchanged at 16; what moved
+is the ANALYZER's edge count in the draw, **418 -> 434**, so the edges the oracle cannot account for grew
+from 36 to 52 and covered% fell 91.4 -> 88.0. Those 16 edges arrived with the oracle-driven fix that
+took corpus `references` from 49,586 to 50,150 — they are real `references` the analyzer emits and
+`julia-refs` does not derive. **An oracle that disagrees with a fix is either catching a defect or is
+narrower than the code it checks; this lane has not separated those two for these 16, so the honest
+statement is the rate and not a claim that the analyzer is right.**
 
 **`overrides` is no longer `n/a`, and that is the corpus's doing rather than the instrument's.** Over
 the old 971-file population the 40-file draw contained zero `overrides` edges, so the instrument
@@ -1880,7 +1898,7 @@ contains one, it is verified on **both ends** at 100%, and the seven-oracle tabl
 row with a number in it. It is still one edge, so this is the thinnest possible corroboration of the
 type and `overrides-differential.ts` over 1,985 files remains the real check.
 
-**Four of the seven oracles verify the TARGET only, and that is a limit on 2,131 edges.** `julia-calls`,
+**Four of the seven oracles verify the TARGET only, and that is a limit on 2,147 edges.** `julia-calls`,
 `julia-refs` (both `uses` and `references`) and `julia-type-edges`' `instantiates` emit `from: ""` — they
 never derive the enclosing scope — so for those labels the question answered is "does an independent
 walker agree this file calls/uses/references/constructs this NAME", never "is the edge attached to the
@@ -2234,19 +2252,25 @@ can be a fixture asserting things the code does not do, and the fixture is what 
   `type|source->target` with no line, so two declarations of one name under one scope produce one
   `contains` row. Widening it would grow every `contains` edge in every julia payload (14,299 rows
   today), which is a shared payload-budget decision and was not taken unilaterally.
-- **Four of the seven lane oracles verify only the TARGET of an edge, not its source.** 2,131 edges
+- **Four of the seven lane oracles verify only the TARGET of an edge, not its source.** 2,147 edges
   are covered by an oracle that never looks at the enclosing symbol, so for `calls`, `uses`,
   `references` and `instantiates` this lane can say "an independent walker agrees this file calls this
   name" and **cannot** say "the edge is attached to the right enclosing declaration". `contains`,
   `extends` and `overrides` populate `from` and are checked on both ends. Closing this needs the four
   oracles to derive scope, which is a shared `script/m14/oracles/` effort; `direct-oracle-check.ts`
   prints the verified side per label so the number is never read as covering more than it does.
-- **39 of the 40-file check's unexplained `calls` edges are plain unqualified calls, and they are not
-  yet separated into defects and legitimate divergence.** The other 629 unexplained `calls` edges
-  bucket cleanly into macro calls, qualified namespace paths and `ccall` C symbols — oracle narrowness
-  agreed in advance. The 39 (`adjoint`, and `!` read as a callee at
-  `julia/JuliaLowering/src/binding_analysis.jl:116` and `:150`) are what a reader should look at, and
-  this lane has not looked.
+- **The 40-file check's unexplained `calls` edges are not separated into defects and legitimate
+  divergence, and the previous version of this bullet put two irreconcilable numbers in one
+  sentence.** It read "39 of the 40-file check's unexplained `calls` edges … The other 629", and
+  39 + 629 = 668, while `direct-oracle-check --files 40` reports **294** unexplained `calls` edges on
+  the present corpus. The 629 belonged to a different run of a different comparison and no
+  instrument in this repo now produces it, so the sentence has been withdrawn rather than
+  re-derived. What survives: **294 unexplained `calls` edges in the 40-file draw**, of which the
+  macro-call, qualified-namespace-path and `ccall`-C-symbol buckets were oracle narrowness agreed in
+  advance, and a residue including `adjoint` and `!` read as a callee at
+  `julia/JuliaLowering/src/binding_analysis.jl:116` and `:150` that this lane has not looked at.
+  **The residue is not separated, so the count above is a floor on what needs reading, not a
+  measurement of what is wrong.**
 - **An oracle is a second walker over one grammar.** A grammar bug shared by the analyzer and all five
   oracles is invisible to every differential in this file, and nothing in them can see a relationship
   type that neither side derives. Only instrument A and instrument B measure the language.
