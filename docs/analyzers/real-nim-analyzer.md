@@ -598,23 +598,123 @@ sha256 `9d9ee478e3295c28` unchanged on both sides of the walk
 | `implements` | **47** | **47** | **0** | 47 |
 | verdict | `emitted 10/10` | `emitted 10/10` | — | — |
 
-The arbiter's own spread on `calls` is **109 edges, not the 19 the paired
-table implies** — so a single paired comparison understates it by 5.7×, and the
-honest envelope for a single instrument is the ~0.1% figure already quoted, not
-the delta of one pair. The three rows the verdict rests on most sharply
-(`exports`, `overrides`, `implements`) are **bit-identical across both runs and
-both instruments**, and `extends` moved by 1. That is the claim worth keeping:
-the types with no concurrency-sensitive derivation are exactly the types that
-reproduce, which is what one would expect if the movement comes from the
-load-dependent WASM heap exhaustion in *Limitations* 8 rather than from the
-readers themselves.
+### Session 5: the digest pin did not cover the entry point, and two arbiter fields are broken
+
+Everything above pins its numbers to the **analyzer** blob `9d9ee478e3295c28`. That is
+the right thing to pin and it is not sufficient: `parseFile` lives in
+`src/ast/pool-worker.ts`, which is production code this lane does not own and which has
+since changed on the base. `analyzer/NIM` carries `7c30d519a9b2aacc`,
+`analyzers/ontology-laptop-b` carries `d2b6b1163244ac7a`, and nothing in this document
+said so. So the first thing this pass measured was the size of that gap, as an A/B with
+the corpus, the worker count and the analyzer held fixed and **only** `pool-worker.ts`
+varying (`validation/m14/measurements/nim/session5-poolworker-ab.txt`):
+
+| | arm A (this branch) | arm B (base) | delta |
+| --- | --- | --- | --- |
+| all ten types, total edges | **267,297** | **267,297** | **+0** |
+| symbols published | 110,076 | 110,148 | **+72** |
+| distinct published names | 54,695 | 54,701 | +6 |
+| callable recall (of 46,971 on the tree) | 46,960 | **46,967** | +7 |
+| **unpublished callable residue** | **11** | **4** | **−7** |
+| empty names / empty kinds / `unknown` endpoints | 0 / 0 / 8 | 0 / 0 / 8 | 0 |
+
+**Not one edge moves. Seventy-two symbols appear.** The cause is the base's `keepSymbol`
+split, which moved `destructor`, `root`, `me`, `self` and `unknown` out of the
+*universal* denylist into per-language reserved-word handling. Two consequences, and they
+point in opposite directions:
+
+1. **The per-type edge table needs no re-measurement.** Identical to the digit on all
+   ten types, so the verdict table above stands on the base's production entry as well
+   as on this branch's.
+2. **The symbol count and the residue were properties of the shared denylist.** This
+   document reports 110,060/110,076 symbols and a residue of 11; under the base those
+   are 110,148 and 4. The residue was never 11 defects in this analyzer — 7 of them are
+   names the shared filter was deleting, and the base has already stopped.
+
+The 4 that remain under the base are `super`(2), which the base still keeps
+unconditionally, and `_`(2), Nim's discard name, which this analyzer suppresses on
+purpose. **Arm B is the arm whose breakdown is complete** — 4 residue, 4 named — where
+arm A's is capped at 10 by `resolution-audit.ts:360`, which is what makes the "all 11 are
+named" claim elsewhere in this document false and is corrected in *Five defects* 1.
+
+**The `.nimble` omission, measured in edges rather than in files.**
+`script/m14/differential.ts:25174` declares `ext: "nim,nims"` while
+`language-detection.ts:53` routes `nim`, `nims` *and* `nimble` here, so the shared
+differential does not sweep `.nimble`. That was already on record as a file count; the
+number a reader needs is how much of the graph sits in the unswept files
+(`validation/m14/fixtures/nim/extension-split.ts`, no regex, reconciles against the
+census to the digit):
+
+| ext | files | symbols | edges | swept by the shared map |
+| --- | --- | --- | --- | --- |
+| `.nim` | 5,846 | 110,030 | 266,784 | yes |
+| `.nims` | 51 | 35 | 230 | yes |
+| **`.nimble`** | **166** | **11** | **283** | **no** |
+
+Inside those 166 files: `calls` 273 (0.23% of the corpus's `calls`), `imports` 9
+(0.07%), `uses` 1 (0.00%), and **zero edges of the other seven types**. That last
+sentence is the load-bearing one. An omitted extension can only move a verdict by
+taking a type from non-zero to zero, and seven of the ten cannot be touched at all while
+the three that can are already the three highest-volume types in the language. So the
+omission is real, it is 2.7% of files and 0.11% of edges, and **it cannot flip any of
+the ten verdicts in either direction.** §8 — reported, not edited.
+
+**Two fields in the supervisor's firing arbiter are wrong by construction.** Both were
+found by running it and reading the output rather than the source, and both are §8, so
+neither is edited here. Full write-up with source citations:
+`validation/m14/measurements/nim/session5-firing-check-defects.txt`.
+
+- **`analyzerDigest` is `MISSING` for every lane in the fleet.**
+  `firing-check.ts:216` builds `path.join(here, "..", "ast", …)` from
+  `here = script/m14`, so it resolves to `script/ast/` — a directory that does not exist
+  — while the analyzers are in `src/ast/`. Measured on three lanes (nim, lua, toml):
+  all `MISSING`, all `analyzerStableDuringRun: true`. The field compares `MISSING` to
+  `MISSING` and reports *stable*. The tripwire that stops a number being quoted against
+  an analyzer state that moved **cannot fire in the instrument designated to corroborate
+  it**, and this lane's own `census.ts` — which hashes before and after and prints
+  `CHANGED DURING THE RUN` — has no counterpart there.
+- **`types[t].files` is the last file's count, not the number of files a type fired
+  in.** `filesByType` is declared at line 334 *inside* the per-file loop (289–381) and
+  read at 380, also inside it, so the `Set` is rebuilt per file and
+  `res.types[type].files` keeps the last file's value. All ten nim types read `files: 1`,
+  including `calls` at 118,261 edges — which cannot have fired in 1 of 6,063 files. The
+  field is the maximum possible understatement and it is indistinguishable from a correct
+  1, which is why it survived being read as a column.
+
+Neither touches edges, symbols, source direction or both-ends resolution, so **the
+arbiter's own headline for this lane is undisturbed** and is reproduced here
+independently: `10/10 fired, 267,297 edges, 6,063/6,063 files`, agreeing with this lane's
+census to the digit, and its per-repo file counts (`nim` 3,968, `nimony` 1,508,
+`nim-lang-nimble` 435, `graphql-nim` 55, `nimterop` 45, `bigints` 21, `dom96-jester` 19,
+`Aporia` 12) match a tally taken outside the arbiter. At its 120-file stride default the
+same instrument reads **8/10, 4,247 edges** — `implements` and `overrides` do not fire in
+a stride sample, for the two different reasons given in *`implements`* and
+*Limitations* 15 — so the sample size is a real input to this arbiter's verdict and not a
+detail.
+
+**One number that looks like a disagreement and is not:** `unknownEndpoints` reads **8**
+in this lane's census and **1** in the arbiter, because they count different things on
+purpose. The census counts every edge with an endpoint equal to the literal `unknown`;
+the arbiter (`firing-check.ts:361`) counts it only when *neither* endpoint is in the run's
+published set. Both are quoted here with the definition attached so the two columns are
+not read as one contradicting the other.
+
+**The arbiter's own spread on `calls` is 109 edges, not the 19 the paired table
+implies** — so a single paired comparison understates it by 5.7×, and the honest
+envelope for a single instrument is the ~0.1% figure already quoted, not the delta of
+one pair. The three rows the verdict rests on most sharply (`exports`, `overrides`,
+`implements`) are **bit-identical across both runs and both instruments**, and `extends`
+moved by 1. That is the claim worth keeping: the types with no concurrency-sensitive
+derivation are exactly the types that reproduce, which is what one would expect if the
+movement comes from the load-dependent WASM heap exhaustion in *Limitations* 8 rather
+than from the readers themselves.
 
 The four rows the verdict rests on — `exports` 617, `overrides` 67, `implements`
 47, and `extends` within 2 — are stable across both instruments. The rows that
 move are the ones *Limitations* 8 and 11 attribute to the concurrent production
 path: the WASM parser loses a load-dependent set of files to heap exhaustion, and
 which files are lost is a property of machine load rather than of the corpus.
-`BB_NIM_WORKERS` now sets the fan-out on this lane's five corpus instruments and
+`BB_NIM_WORKERS` now sets the fan-out on this lane's six corpus instruments and
 each artifact prints the count it ran at, so the spread is choosable rather than
 merely reported.
 
@@ -844,14 +944,25 @@ Three numbers per row because they are three corpora and two walks. The pinned
 figure is `validation/m14/measurements/nim/resolution-audit.json` on blob
 `9d9ee478e3295c28` over 6,063 files, and its 19 is the count to quote: the fix-time
 17 was over 4,555 files and the earlier 14 was a third walk of that corpus. The
-residue is 11 unpublished callable names on the pinned walk, of which **2 are
-`proc _`** — Nim's discard name, suppressed on purpose — and the rest are
-`destructor`(3), `root`(3), `me`, `super`(2). **All 11 are named with their source
-lines in the artifact, so there is no residue left to argue about and no
-"defensible figure" to subtract: a name that is published nowhere and named in the
-artifact is either a suppression rule or a defect, and each of these 11 is
-traceable to one.** 653 → 19 over a corpus 33% larger is the honest shape of this
-fix, and it is not 653 → 0.
+residue is 11 unpublished callable names on the pinned walk. **10 of the 11 are named
+in the artifact and one is not**, because `resolution-audit.ts:360` stores
+`unpublishedExamples.slice(0, 10)` — so the per-name breakdown below is a **bound over
+the first 10 misses**, not a partition of the 11. An earlier revision of this paragraph
+printed `root`(3) and said "**All 11 are named with their source lines in the artifact,
+so there is no residue left to argue about**". Both halves of that were wrong: the
+artifact names 10, and `root`'s 3 is what is LEFT after subtracting the eight names that
+are listed, which is a subtraction and not a count. What the artifact actually holds is
+`destructor`(3), `root`(2), `me`(1), `super`(2), `_`(2) — ten entries, with an
+eleventh unnamed. The count of 11 is measured; the breakdown under it is a bound.
+
+The residue is not this analyzer's either, and that is now measured rather than
+asserted. Under the base's `src/ast/pool-worker.ts` the residue is **4**, fully
+enumerated (4 residue, 4 named), the 7 that clear being `destructor`, `root` and `me` —
+the three names the base's `keepSymbol` split moved out of the universal denylist. See
+*Session 5*. So 7 of the 11 are a property of the shared denylist and not of this lane;
+what remains attributable here is `super`(2), which the base still keeps
+unconditionally, and `_`(2), Nim's discard name. 653 → 19 over a corpus 33% larger is
+the honest shape of this fix, and it is not 653 → 0.
 
 **2. A `runnableExamples:` block's type declarations are declarations.** The Nim
 compiler compiles a `runnableExamples` block as its own unit, so
@@ -1005,12 +1116,14 @@ corpus grew 33% and the defect rate is flat, which is the only form of that
 sentence worth printing.
 
 Callable declaration recall over the same walk is **46,960 of 46,971 = 100.0%**.
-The 11 unpublished callable names are named in the artifact with their source
-lines, and they are `destructor`(3), `root`(3), `me`(1), `super`(2), `_`(2) —
-hook and conventional names, each in a `template`/`proc`/`method` the analyzer
-declines to publish or that the production filter drops. Two of them
-(`destructor`, `super`) are templates whose `contains` edge the filter deletes
-(*Limitations* 12).
+10 of the 11 unpublished callable names are named in the artifact, capped there by
+`resolution-audit.ts:360` (`slice(0, 10)`), and they are `destructor`(3), `root`(2),
+`me`(1), `super`(2), `_`(2) — hook and conventional names, each in a `template`/`proc`/
+`method` the analyzer declines to publish or that the production filter drops. The
+eleventh is unnamed by the artifact, which is why the count 11 and this breakdown are
+different kinds of number. Two of the named ones (`destructor`, `super`) are templates
+whose `contains` edge the filter deletes (*Limitations* 12). Under the base's
+`pool-worker.ts` the recall is **46,967 of 46,971** and the residue is 4 (*Session 5*).
 
 **Three artifacts, three counts for the same list, and the reader needs all three.**
 `resolution-audit.txt` prints a `callable: 11 shown` header and then lists rows;
@@ -1359,9 +1472,10 @@ exactly what the incoming direction cannot reach:
 | callable declaration recall | 34,452 / 34,466 | **46,960 / 46,971** | **100.0%** |
 
 The count rose because the corpus did; the RATE did not move, and that is the
-honest framing. The 11 unpublished callable names are named in the artifact and
-are `destructor`(3), `root`(3), `me`, `super`(2) and `_`(2) — hook and
-conventional names, not dropped declarations.
+honest framing. 10 of the 11 unpublished callable names are named in the artifact (it
+caps at 10) and are `destructor`(3), `root`(2), `me`, `super`(2) and `_`(2) — hook and
+conventional names, not dropped declarations, and 7 of the 11 clear under the base's
+`pool-worker.ts` because that file stopped denylisting them (*Session 5*).
 
 **Question 6 — confident, in one number.** **0 of 267,287 corpus edges fall below
 0.7**, so nothing in this lane is a heuristic by the honesty contract §4's 0.7
@@ -1959,7 +2073,22 @@ rather than against this branch.** Only the arbiter registration landed:
 | register `NIM_RULED` in `RULED_BY_LANG` | `script/m14/ontology-coverage-gate.ts` | **LANDED** — line 66 import, line 223 map key |
 | add `nim` to `LANG_REPOS` | `script/m14/differential.ts` | **still open** — `grep -nE '^\s+nim: "'` returns nothing |
 | wire `deriveNimEdges` into the differential | `script/m14/differential.ts` | **still open** — `nim-truth-oracle`/`NIM_ORACLE` return nothing |
-| add `nimble` to the swept extension list | `script/m14/differential.ts` | **still open** — `ext: "nim,nims"` while `src/ast/language-detection.ts:53` routes `nimble` |
+| add `nimble` to the swept extension list | `script/m14/differential.ts` | **still open** — `ext: "nim,nims"` while `src/ast/language-detection.ts:53` routes `nimble`. **Now costed in edges, not just files** (*Session 5*): 166 files, 11 symbols, **283 edges** — `calls` 273, `imports` 9, `uses` 1, and **zero** of the other seven types. An omitted extension can only move a verdict by taking a type from non-zero to zero, seven of the ten cannot be touched at all, and the three that can are the three highest-volume types in the language — so this cannot flip any of the ten verdicts. The one-line fix is `ext: "nim,nims,nimble"` |
+
+Two further §8 items, both in `script/m14/firing-check.ts`, both found by running the
+arbiter at full corpus rather than by reading it, and both stated with the fix spelled
+out in `validation/m14/measurements/nim/session5-firing-check-defects.txt`:
+
+| §8 item | file | status | the one-line fix |
+| --- | --- | --- | --- |
+| `analyzerDigest` resolves to `script/ast/`, which does not exist | `script/m14/firing-check.ts:216` | **open, fleet-wide** — `MISSING` and `stable=true` on all three lanes measured (nim, lua, toml), so `analyzerStableDuringRun` compares `MISSING` to `MISSING` | `path.join(here, "..", "..", "src", "ast", …)`; and consider failing the run on a MISSING digest rather than reporting it stable |
+| `types[t].files` is the last file's count, not the union | `script/m14/firing-check.ts:334` + `:380` | **open, every lane** — all ten nim types read `files: 1`, including `calls` at 118,261 edges over 6,063 files | hoist the `filesByType` declaration above the per-file loop at 289 and move the aggregation below its close at 381 |
+
+Neither touches edges, symbols, source direction or both-ends resolution, so the
+arbiter's `10/10 fired, 267,297 edges, 6,063 files` for this lane stands and is
+reproduced independently. The first one matters beyond this lane: it means **no lane's**
+firing number is currently pinned to an analyzer state, and a digest that cannot be
+computed is not evidence that nothing changed.
 
 The consequence of the last three being open is re-measured and is a fact about
 this lane's visibility rather than about its correctness: `--lang nim` still
@@ -1976,13 +2105,18 @@ default audited list and never opens `nim-truth-oracle.ts`.
 
 | gate | exit | what it said about this lane |
 | --- | --- | --- |
-| `ontology-coverage-gate.ts nim` | 2 | `no RULING TABLE for nim` — this branch's copy predates the base's registration |
+| `ontology-coverage-gate.ts nim` | 2 | `no RULING TABLE for nim` — this branch's copy predates the base's registration. The BASE's copy cannot be run in place either: it imports `./fsharp-ruled`, which also post-dates this fork. The verdict below comes from `ruled-gate.ts`, which applies the supervisor's two-line wiring to a copy in `/tmp` and runs the copy |
+| `ruled-gate.ts` (the arbiter, with the wiring applied) | **0** | **`emitted 10/10  ruled-sound 0  FALSIFIED 0  ruled-without-justification 0`**, 6,063 admitted files, 379 s, analyzer digest `9d9ee478e3295c28` unchanged on both sides of the walk |
+| `firing-check.ts --files 100000 nim` (the arbiter) | **0** | **`10/10 fired, 267,297 edges, 6,063/6,063 files`**, 0 parse failures, 0 degraded fallbacks, 0 empty names, 0 empty kinds. Two of its output fields are broken — *Session 5* |
+| `firing-check.ts --files 120 nim` (its own default) | **0** | **`8/10 fired, 4,247 edges, 120/120`** — reproduces session 3 exactly. `implements` and `overrides` do not fire in a stride sample, for two different and separately documented reasons |
 | `verify-regex-census.ts` | 1 | **27 findings, `grep -in nim` over the whole output returns nothing.** css 5, julia 5, clean 1, fsharp 4, javascript 2, python 1, svelte 4, typescript 1 |
-| `verify-honesty.ts` | 6 | 22 failures, zero naming nim; banned-vocabulary lint over `validation/m14` + M14 docs **passes** |
-| `run-fixtures.ts --lang nim` | 0 | `{"nim":{"pass":10,"fail":0}}`, scoped run wrote no evidence and refused `--update-baseline` |
+| `verify-honesty.ts` | 6 | 22 failures, zero naming nim; banned-vocabulary lint over `validation/m14` + M14 docs **passes**. Re-run after this pass's doc edits: still exit 6, still **0** lines matching `nim` |
+| `run-fixtures.ts --lang nim` | 0 | `{"nim":{"pass":10,"fail":0}}`, scoped run wrote no evidence and refused `--update-baseline`. The **unscoped** form exits 6 at `2 fixture director(ies) no runner lane claims: r, lua` and never reaches nim — a repo-wide condition belonging to other lanes, recorded so it is not mistaken for this lane's |
 | `verify-mutants.ts` (lane's own) | 0 | 17 declared nim mutants run, **17 CAUGHT, 0 survived** |
+| `verify-analyzer-hygiene-nim.ts` (lane's own substitute) | 0 | 0 findings on HEAD, and the reverted copy **is caught** by `bare-node-identity-comparison`, so the green is not vacuous |
 | `differential.ts --lang nim --sample 60` | 0 | `[lane] SKIP nim` — the §8 item above, declared unrun rather than measured |
 | `verify-analyzer-docs.ts` | 0 | nim is **absent** from the 13-lane missing-sections list, so all required sections are present |
+| `verify-grammar-pins.ts` | 3 | the `nim` pin holds — `421369fe6a88`, 5,797,624 B, `ids=377 named=127 anon=205 fields=24`, 19 files vendored. All four `PIN FAILURE` lines are julia's |
 
 The 17 here and the 60 in `session3-mutate-analyzer-shared.txt` are not in
 conflict and the difference is worth stating rather than reconciling away: 17 is
@@ -3030,6 +3164,47 @@ quiet machine will cover all 5,227 through the production path.
     It is not only the totals that move. The resolution audit's **tree-only**
     column — the one a reader would act on — read **127** on a degraded walk and
     **90** on a clean one, with callable declaration recall 99.4% against 100.0%,
-    because 650 published symbols went missing. A defect count that moves by 37
-    when the box is busy is not yet a defect count; the committed artifact is the
-    clean run and the other is named in the table rather than deleted.
+     because 650 published symbols went missing. A defect count that moves by 37
+     when the box is busy is not yet a defect count; the committed artifact is the
+     clean run and the other is named in the table rather than deleted.
+25. **The digest pin covers the analyzer and NOT the production entry point, and this
+    document did not say so until it had been measured.** Every number here is pinned
+    to `sha256(src/ast/real-nim-analyzer.ts) = 9d9ee478e3295c28`, printed before and
+    after each walk. `parseFile` is imported from `src/ast/pool-worker.ts`, which is
+    production code this lane does not own, and **a digest of the analyzer is not a
+    digest of the pipeline that runs it.** The base's copy of that file has since
+    changed, and the A/B in *Session 5* is the measurement of what the gap was worth:
+    **+0 edges on all ten types, +72 symbols, and the callable residue 11 → 4.** So the
+    edge table happened to be insensitive to it and the resolution figures were not,
+    which is the shape of the risk — a pin that covers the file you own and not the
+    file you depend on can be simultaneously sufficient and misleading, and nothing
+    about printing `unchanged` on both sides of a walk would have revealed it.
+    Two consequences are stated rather than left implicit: the symbol counts
+    (110,060 / 110,076) and the residue of 11 are properties of *this branch's*
+    `pool-worker.ts`, and under the base's they are 110,148 and 4. The one-line remedy
+    for the next lane is to hash the transitive production imports, not just the
+    analyzer, and to print the hash of every file in that closure.
+26. **One regex remains in this lane, and it is a probe that decides nothing.**
+    The analyzer itself holds none — 0 `RegExp`, 0 `.match(`, `.replace(`, `.test(`,
+    0 `.split(/…/)`, 0 regex literals, and `verify-regex-census.ts` names nim nowhere.
+    `nim-ruled-probe.ts:246` does run a regex over corpus source text, and it is kept
+    deliberately: it is a **non-instrument** whose every hit is then classified by the
+    node it sits in, and its purpose is falsifiability — `nim/compiler/parser.nim`
+    *quotes* the `conceptDecl` production inside a diagnostic string, so a text search
+    finds it, and "a text probe would have found N and all N are prose" is a stronger
+    statement than silence. A candidate-generating regex whose candidates are judged by
+    a tree-sitter walk is the pattern the no-regex rule is aiming at, so this is
+    recorded as a declared deviation with its reason rather than quietly deleted, and
+    the supervisor may still rule it banned. The other regexes in the lane's census
+    scripts operate on output paths, file extensions and captured stdout, never on
+    corpus source.
+27. **Two fields of the arbiter that is supposed to corroborate this lane's firing
+    numbers are wrong by construction, so the corroboration is partial.** The edge
+    counts, symbol counts, source direction and both-ends resolution it reports are
+    sound and match this lane's census to the digit, but `analyzerDigest` reads
+    `MISSING` for every lane in the fleet and `types[t].files` reports the last file's
+    count instead of the union. A reader who takes "10/10 fired" from this instrument
+    is reading a number that survives both defects; a reader who takes the per-type
+    file counts, or who believes any lane's digest tripwire is armed, is not. Full
+    citations and the two one-line fixes are in *Session 5* and in
+    `validation/m14/measurements/nim/session5-firing-check-defects.txt`.
