@@ -272,7 +272,20 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
     dtd_attribute_declaration: "structural",
     dtd_content_model: "usage_contextual",
     dtd_notation_reference: "usage_contextual",
-    dtd_ndata_notation: "structural",
+    // NOT `structural`, and the containment ledger is what moved it. XML 1.0 §4.5
+    // writes the clause as "NDATA NotationName", naming a notation that the DTD
+    // declares ELSEWHERE — and necessarily EARLIER, so the notation's declaration is
+    // never inside the entity's. Measured over the full 11,464-file admitted
+    // population: 2 edges, `libxslt/tests/general/bug-21-.xml` (`<!ENTITY test SYSTEM
+    // "test.jpg" NDATA JPEG>` with `<!NOTATION JPEG …>` at 96-130 and the entity at
+    // 131-174) and `libxslt/tests/general/bug-52.xml`, and in both the target's span lies
+    // entirely BEFORE the source's. A `structural` tier is a claim that nesting was
+    // observed, and no nesting was; `usage_contextual` already defines this exact shape
+    // one row up — "a containment the document states through an attribute rather than
+    // through nesting" — and the DTD content model is its precedent. Two edges is not
+    // worth a new relationship type, and relabelling them `references` would be worse:
+    // `references` resolution has four classes and this construct is not one of them.
+    dtd_ndata_notation: "usage_contextual",
     dtd_entity_declaration: "structural",
     dtd_parameter_entity_declaration: "structural",
     dtd_notation_declaration: "structural",
