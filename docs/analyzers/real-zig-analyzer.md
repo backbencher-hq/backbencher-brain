@@ -282,14 +282,14 @@ row is still here for a reader; it is simply the row no script grades.
 
 | Relationship type | Emitted? | edges | files | src marker% | src dangling% | tgt file-local% | tgt corpus-tier% | both-ends corpus-tier% | confidence |
 |---|---|---|---|---|---|---|---|---|---|
-| `extends` | no — RULED, ZIG.O.1, instrument A: 0 of 28 inheritance words in the grammar's own 239-entry type table or its 16 fields; 0 UNCLASSIFIED of 1,797 header-slot children | 0 | 0 | — | — | — | — | — | — |
-| `calls` | yes — emitted, and every target is called at its own line (A2: 0 of 113,476) | 113,476 | 2,781 | 11.53 | **0** | 40.03 | 95.53 | 95.53 | 0.85 ×113,476 |
-| `uses` | yes — emitted, and 0 of 132,201 targets contradict their reason code (A3) | 132,201 | 2,850 | 22.48 | **0** | 40.16 | 93.29 | 93.29 | 1.0 ×13,406; 0.75 ×118,795 |
-| `contains` | yes — emitted; 4.80% of owners are name-ambiguous (A5) | 77,459 | 1,472 | 0 | 0 | 99.80 | 99.80 | 99.80 | 1.0 |
-| `imports` | yes — emitted; 20,396 of 20,400 spell `@import` on the line, 0 paths absent (A8) | 10,200 | 2,691 | 100 | 0 | 29.77 | 33.52 | 33.52 | 0.9 |
-| `references` | yes — emitted; 75 of 20,594 declared-type targets are not type names (A7) | 30,794 | 2,964 | 100 | 0 | 44.14 | 74.03 | 74.03 | 1.0 ×10,200; 0.9 ×20,594 |
-| `exports` | yes — emitted; 0 of 24,114 targets name a non-public symbol (A6) | 24,114 | 3,162 | 100 | 0 | 99.99 | 99.99 | 99.99 | 1.0 |
-| `instantiates` | yes — emitted; 615 of 4,306 targets bind to nothing published (A4) | 4,306 | 529 | 55.04 | **0** | 85.72 | 96.05 | 96.05 | 1.0 — ZIG.O.4; the earlier ruling that this branch was unreachable was false and is retracted |
+| `extends` | no — RULED, ZIG.O.1, instrument A: 0 of 28 inheritance words in the grammar's 239-entry type table or its 16 fields; 0 UNCLASSIFIED of 1,797 header-slot children | 0 | 0 | — | — | — | — | — | — |
+| `calls` | yes — emitted, and every target is called at its own line (A2: 0 of 113,476) | 113,476 | 2,781 | 11.53 | **0.0** | 40.13 | 95.55 | 95.55 | 0.85 ×113476 |
+| `uses` | yes — emitted, and 0 of 132,201 targets contradict their reason code (A3) | 132,201 | 2,852 | 22.48 | **0.0** | 47.73 | 97.43 | 97.43 | 1 ×13406 · 0.75 ×118795 |
+| `contains` | yes — emitted; 4.80% of owners are name-ambiguous (A5) | 80,714 | 1,557 | 0.0 | **0.0** | 99.99 | 99.99 | 99.99 | 1 ×80714 |
+| `imports` | yes — emitted; 20,396 of 20,400 spell `@import` on the line, 0 paths absent (A8) | 10,200 | 2,693 | 100.0 | **0.0** | 29.89 | 33.8 | 33.8 | 0.9 ×10200 |
+| `references` | yes — emitted; 75 of 20,594 declared-type targets are not type names (A7) | 30,794 | 2,966 | 100.0 | **0.0** | 44.39 | 74.66 | 74.66 | 1 ×10200 · 0.9 ×20594 |
+| `exports` | yes — emitted; 0 of 24,114 targets name a non-public symbol (A6) | 24,114 | 3,164 | 100.0 | **0.0** | 100.0 | 100.0 | 100.0 | 1 ×24114 |
+| `instantiates` | yes — emitted; 615 of 4,306 targets bind to nothing published (A4) — ZIG.O.4; the earlier ruling that this branch was unreachable was false and is retracted | 4,306 | 530 | 55.04 | **0.0** | 85.72 | 96.05 | 96.05 | 1 ×4306 |
 | `implements` | no — RULED, ZIG.O.2, instrument A, same tables; Zig models an interface as `opaque` + fn-pointer fields, so there is no conformance clause to name | 0 | 0 | — | — | — | — | — | — |
 | `overrides` | no — RULED, ZIG.O.3, instrument B: 3 duplicate-function, 14 duplicate-binding, 9 duplicate-member occurrences, and every surviving one is a file documenting the compiler's REJECTION | 0 | 0 | — | — | — | — | — | — |
 
@@ -3457,3 +3457,83 @@ one:* the arbiter should emit its flagged set **as machine-readable output** (a 
 field on its existing line) at the moment it aborts, so a control probe can read the population from
 the run that produced it instead of from a transcript. Today that information exists only in the
 abort message and dies with the terminal.
+
+### J. The sharded census pipeline did not run, and said it had
+
+§A's population rule applied to the *other* instrument chain produced two defects that make
+pass 11–13's `files` column and its union-hash claim unsound as published. Both were found by
+**running** the documented commands, which is the only way either is visible.
+
+**1. `shard-merge.py` counted shard-LOCAL indices as files.** `ontology-census.ts:258` records each
+edge as `{t, src, tgt, file: i}` where `i` is the loop index over **that shard's own draw**. The merge
+built `files_of_type` straight from `e["file"]` with no translation, so shard 0's index 5 and shard 1's
+index 5 counted as one file. Every type's `files` column therefore read **479/480** — and 3834/8 =
+479.25, i.e. the shard size. `uses` has **2,852** files carrying it and reported 480.
+
+This was an *acknowledged* hazard one screen earlier in the same file (lines 65–72: *"The per-file
+name sets and the per-edge `file` fields are keyed by the shard's OWN loop index, which COLLIDES
+across shards"*) — translated for `fileNames` at line 73 and missed for `files_of_type`. Now
+translated through each shard's `drawFiles`, and an out-of-range index **aborts** rather than being
+bucketed.
+
+**2. The union-hash assertion was dead code.** `shard-merge.py` read
+
+```python
+published = None
+if published and published != union_hash:
+    sys.exit(...)
+```
+
+`published` was assigned `None` unconditionally and never reassigned, so the guard could never fire,
+and the artifact field recorded **`unionEqualsPublishedDraw: null`** — which is what
+`ontology-census-full-2026-10-04-p13.json` contains. The document stated, of this merge: *"asserts the
+union hash equals the single-process draw hash — it is equal."* **It was not asserted; it could not
+have been.** The published draw hash is now a required `argv[3]` and its absence is fatal.
+
+**3. A third defect, in the same run: `--sample` defaults to 400.** `ontology-census.ts:63` reads
+`SAMPLE = Number(arg("sample", "400"))`, and the `--files-from` branch filters that already-truncated
+pool. So every shard is a subset of the same first 400 hashed files: my first run drew **400 of 3,834**
+(8 shards × 479 requested) and the merge's union was 400 — with the dead assertion, nothing objected.
+Passing `--sample 3834` draws all 3,834. The documented invocation (`--files-from` takes one shard) does
+not mention this flag, so **the sharded pipeline as documented cannot measure the published draw.**
+
+### K. Re-measured with all three fixed — pass 13's totals reproduce, the files column does not
+
+8 shards, **run sequentially**, `--sample 3834`, merged with the published hash as an argument:
+
+```
+union of 8 shards: 3834 files  sha256:2f3545f9…c5ce1ac
+union hash == published draw hash          <-- the assertion, now running
+parsed 3834  symbols 130935  relationships 395805
+fallback 0  parseFailures 0  empty-name 0  kinds outside SymbolKind 0  heuristic (<0.7) 0 = 0.0%
+```
+
+| type | edges | files | both-ends file-local | both-ends corpus-tier | edges < 0.7 |
+|---|---|---|---|---|---|
+| `uses` | 132,201 | 2,852 | 47.73% | 97.43% | 0 |
+| `calls` | 113,476 | 2,781 | 40.13% | 95.55% | 0 |
+| `contains` | 80,714 | 1,557 | 99.99% | 99.99% | 0 |
+| `references` | 30,794 | 2,966 | 44.39% | 74.66% | 0 |
+| `exports` | 24,114 | 3,164 | 100.00% | 100.00% | 0 |
+| `imports` | 10,200 | 2,693 | 29.89% | 33.80% | 0 |
+| `instantiates` | 4,306 | 530 | 85.72% | 96.05% | 0 |
+| **total** | **395,805** | — | **59.09%** | **94.14%** | **0** |
+
+**130,935 symbols and 395,805 relationships reproduce pass 13 exactly**, so §C's before/after deltas
+stand. The `files` column is new: the Verdict table above has been **rewritten from this artifact**,
+which also retires a stale row — it still carried `contains` at **77,459 / 1,472**, the *pre*-pass-13
+figure, while §C reported 80,714 for the same draw.
+
+**Sequential shards are also 3–5× faster than the concurrent ones** (35–53 s per shard here; the
+pass-11/13 runs reported ~204 s) with 0 fallback. That is the same variable pass 14 §C identified,
+now on the census: concurrency costs time *and* correctness here, and nothing required it.
+
+### L. What pass 14 could not settle, added to §H
+
+- **Whether the p11/p13 artifacts were produced by `shard-merge.py` at all.** The merge cannot parse
+  the census output without `--raw`, and `unionEqualsPublishedDraw` is `null` in both, which is what a
+  run of the *unfixed* merge would also produce. Their symbol/relationship totals match this run
+  exactly, so the numbers are sound; **the provenance string in the artifact (`sharded, merged by
+  shard-merge.py`) is not established**, and this lane cannot re-derive it because the shard raws were
+  untracked at `c479d97b2`. *Needed:* keep the shard raws, or stamp each merged artifact with the
+  union hash it verified against, so the chain is checkable after the fact.
