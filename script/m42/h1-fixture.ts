@@ -50,10 +50,40 @@ export const H1_EXPECT = {
   symbolName: "total",
 }
 
+/**
+ * The UNROUTABLE fixture — the negative case for contract §11.7 (a file outside
+ * the launch-language set must get DECLARED ABSENCE, never a wire error).
+ *
+ * `.txt` is not in EXTENSION_LANGUAGE and has no basename/shebang route, so
+ * `detectLanguageFromPath` returns null and `ASTEngine.parseTree` throws
+ * `Unsupported file type`. It is a REAL file on disk with REAL text on the
+ * query line, so the request that used to fail was a well-formed request at a
+ * real position in a real file — not a malformed params object.
+ *
+ * Deliberately NOT inside the indexed source tree's language: the indexer skips
+ * it, so `H1/R1` stays "indexed 1 files" and this leg cannot perturb the
+ * positive legs' fixture.
+ */
+export const UNROUTED_REL = "docs/notes.txt"
+export const UNROUTED_FILE = path.join(H1_ROOT, UNROUTED_REL)
+export const UNROUTED_QUERY_LINE = 1 // 0-based: `total is here`
+export const UNROUTED_QUERY_CHARACTER = 0
+export const UNROUTED_SOURCE = `plain notes
+total is here
+not code
+`
+
 export function writeH1Fixture(): string {
   mkdirSync(path.dirname(H1_FILE), { recursive: true })
   writeFileSync(H1_FILE, H1_SOURCE)
+  writeUnroutableFixture()
   return H1_ROOT
+}
+
+export function writeUnroutableFixture(): string {
+  mkdirSync(path.dirname(UNROUTED_FILE), { recursive: true })
+  writeFileSync(UNROUTED_FILE, UNROUTED_SOURCE)
+  return UNROUTED_FILE
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
