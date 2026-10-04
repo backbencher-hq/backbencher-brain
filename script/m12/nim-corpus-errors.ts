@@ -49,6 +49,10 @@ const CORPORA: { name: string; primary?: boolean; why: string }[] = [
   { name: "nimtest", why: "a test framework: templates, macros, a unittest DSL, the {.raises.} pragma" },
   { name: "torrentinim", why: "a real self-hosted service (jester + jesterpkg + SQL-ish state)" },
   { name: "mosdepth", why: "a real bioinformatics CLI: a let/var-heavy application with a JS-target conditional tree" },
+  {
+    name: "nimony",
+    why: "the next-generation compiler, and the ONLY corpus that exercises concept INHERITANCE (`X = concept of Y`) — 38 `refinement_list` sites in 24 files, which is what took the `implements` family off zero on 2026-10-04. Added for that reason and not for size: it is a second reference implementation, so it is also the check on whether a construct the 1.x compiler never writes is a grammar gap or a corpus gap",
+  },
 ]
 
 const argRepos = process.argv.slice(2).filter((a) => !a.startsWith("-"))
@@ -171,6 +175,17 @@ const document = {
   method:
     "production pool-worker parseFile per tracked file (the indexer's own route), ERROR and MISSING nodes counted as parse errors",
   totals: {
+    // DECLARED and MEASURED are different numbers, and `corpora:` alone read as
+    // one. This artifact is a DECLARED list of 13 corpora, and on a machine that
+    // does not have all of them only 3 contribute files — so a reader taking
+    // `corpora: 13` as "13 repositories were measured" is wrong by 10, and the
+    // document that quotes these totals was wrong in exactly that way until it
+    // was checked against this file. An absent corpus records `revision:
+    // "ABSENT"` per row, so the truth was in the artifact the whole time and the
+    // summary line was the thing that could not be trusted.
+    corporaDeclared: results.length,
+    corporaMeasured: results.filter((r) => r.revision !== "ABSENT").length,
+    corporaAbsent: results.filter((r) => r.revision === "ABSENT").map((r) => r.corpus),
     corpora: results.length,
     files: totalFiles,
     errorFiles: totalErrorFiles,
@@ -182,7 +197,9 @@ const document = {
 }
 writeFileSync(OUT, JSON.stringify(document, null, 2) + "\n")
 console.log(
-  `\nTOTAL corpora=${results.length} files=${totalFiles} errorFiles=${totalErrorFiles} errorNodes=${totalErrorNodes} crashes=${totalCrashFiles} errorRate=${document.totals.errorRatePct}%`,
+  `\nTOTAL corpora=${results.length} declared, ${document.totals.corporaMeasured} measured` +
+  `${document.totals.corporaAbsent.length ? ` (absent: ${document.totals.corporaAbsent.join(", ")})` : ""}` +
+  `  files=${totalFiles} errorFiles=${totalErrorFiles} errorNodes=${totalErrorNodes} crashes=${totalCrashFiles} errorRate=${document.totals.errorRatePct}%`,
 )
 console.log(`wrote ${path.relative(ROOT, OUT)}`)
 if (totalCrashFiles > 0) process.exitCode = 1

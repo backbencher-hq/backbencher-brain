@@ -1,0 +1,104 @@
+{
+  "language": "lua",
+  "grammar": {
+    "wasm": "wasm/tree-sitter-lua.wasm",
+    "sha256": "9ebb71c0a6acc4791ba7b46624900584024646af2ac9c3c036775c7e5c937f3a",
+    "bytes": 50917,
+    "distinctNodeTypesProducedAcrossCorpus": 100,
+    "namedTypesProduced": [
+      "arguments",
+      "assignment_statement",
+      "binary_expression",
+      "block",
+      "bracket_index_expression",
+      "break_statement",
+      "chunk",
+      "comment",
+      "comment_content",
+      "do_statement",
+      "dot_index_expression",
+      "else_statement",
+      "elseif_statement",
+      "empty_statement",
+      "escape_sequence",
+      "expression_list",
+      "field",
+      "for_generic_clause",
+      "for_numeric_clause",
+      "for_statement",
+      "function_call",
+      "function_declaration",
+      "function_definition",
+      "goto_statement",
+      "hash_bang_line",
+      "identifier",
+      "if_statement",
+      "label_statement",
+      "method_index_expression",
+      "parameters",
+      "parenthesized_expression",
+      "repeat_statement",
+      "return_statement",
+      "string",
+      "table_constructor",
+      "then",
+      "unary_expression",
+      "until",
+      "vararg_expression",
+      "variable_declaration",
+      "variable_list",
+      "while_statement"
+    ],
+    "provenance": "the FULL produced vocabulary (100 types, named + anonymous) is enumerated in validation/m60/lua/grammar-inventory.json with a per-type count, because a COUNT cannot be argued with: a reader cannot check whether the node type that would express a construct is in the set when the set is not written down. That file also records, per ruled type, the node types that WOULD mean the construct exists and whether the grammar produced any of them. The 43 named types above are the subset of the 100 that the grammar declares as named nodes; the remaining 57 are anonymous tokens (`+`, `..`, `end`, `{`, `::`, …), which are counted in the artifact and omitted here because a token cannot be the grammatical evidence for a declaration."
+  },
+  "_authority": "script/m60/lua-ontology-census.ts (three instruments: production counts through `parseFile`, instrument A grammar inventory, instrument B parse-tree construct counts) and script/m60/lua-grammar-inventory.ts (instrument A as a standalone artifact). There is NO independent lua truth oracle in script/m14/oracles/, so every claim here rests on the analyzer plus a second instrument that does not share its rule table — never on the analyzer agreeing with itself.",
+  "_wave": "M14 / M60 lane wave, lua — 2026-10-03",
+  "corpus": {
+    "root": "$HOME/fixtures/repositories",
+    "repos": 120,
+    "filesDrawn": 3250,
+    "sampling": "every `git ls-files '*.lua'` path in every corpus repo, sorted, no cap. Deterministic and identical on every machine; not a random sample.",
+    "admittedFilesByGate": 3250,
+    "note": "The census sample and the ontology gate's admitted set are both 3,250, because both enumerate the same predicate — tracked `*.lua` under a git repo. The gate additionally applies `detectLanguageFromPath`, which admits all 3,250."
+  },
+  "design_decision": {
+    "description": "Owner rulings. Each is a deliberate refusal to publish, not a silence.",
+    "decisions": [
+      {
+        "id": "BD-ontology",
+        "node_type": "(relationship ontology)",
+        "status": "RULED",
+        "question": "Which of the 10 relationship types does lua emit, and why is the rest inapplicable?",
+        "resolution": "RULED ONCE, AFTER BEING WRONG FOUR TIMES. NINE are emitted — calls, uses, contains, imports, references, exports, extends, overrides, instantiates — and ONE is ruled: `implements`. The revisions are the substance of this decision, because each one was a ruling that measurement refused. `uses` was ruled inapplicable (a name read is not a dependency); probe B4 then counted 295,019 bare-name reads across 3,116 of 3,250 files and it is now 133,192 edges in 2,666. `references` was ruled inapplicable (a member read is a call); probe B3 counted 198,720 qualified reads across 2,643 files and it is now 44,757 edges in 2,340. `exports` was ruled inapplicable, which was true of the RELATIONSHIP and false of the FACT — the analyzer was already publishing 5,167 export names into `result.exports`, so the surface existed, was named, and no edge said so; it is now 5,167 edges in 2,137 files. `overrides` was ruled inapplicable, and that ruling was WRONG in the way this workstream exists to catch: the lua grammar produces 100 node types and none of them is `override_specifier` or `redefinition`, so a grammar inventory is silent here BY CONSTRUCTION, exactly as it is silent for json's `exports`. Instrument B found 65 redefinitions across 37 files, and the type is now 66 edges in 38 files. The lesson generalises to the family: a grammar cannot see a CONVENTION, and Lua's inheritance and module surface are both conventions over ordinary constructs. What remains excluded is `implements` and ONLY `implements` — see BD-implements, which is the one ruling here that instrument A settles on its own."
+      },
+      {
+        "id": "BD-implements",
+        "node_type": "(relationship ontology)",
+        "status": "RULED",
+        "question": "Does lua express a conformance relation distinct from a supertype link, and is `implements` therefore inapplicable?",
+        "resolution": "RULED, and `implements` is the type it rules. Instrument A: the pinned grammar produced 100 distinct node types across 1,875 corpus files (validation/m60/lua/grammar-inventory.json), and NONE of the six node types that would express it is among them — `implements_clause`, `extends_clause`, `superclass`, `interface_implementation`, `interface_declaration`, `trait_declaration`. Lua has no `class` keyword, no `interface` keyword and no declaration form for a type at all, so the construct has no grammatical shape for an `implements` edge to be derived from; that is a fact about the language, not a failure to find something. Instrument B, for the relation that IS expressible: probe B6 counted 1,295 supertype links across 453 files, and every one of them is the SAME relation `extends` already publishes — probe B8 split them into four buckets over 501 links: 79 `crossTable` (derived and base are both declared tables), 45 `derivedIsSelf` (written as `setmetatable(self, …)` inside a constructor), 3 `selfLink` (derived equals base), and 374 `unresolvedBase` (the base argument is an EXPRESSION, e.g. `setmetatable(opts or {}, defaults)` at kong/kong/api/arguments.lua, so no name is written for it). Only the 79 carry a named base on both sides, and of those the analyzer emits 1 override because an override additionally requires a MEMBER both tables declare. A language with exactly one type relation cannot have a second one: conformance in Lua is DUCK TYPING, structural and undeclared, so there is no written clause naming a conformed-to type for an `implements` edge to carry. WHAT WOULD OVERTURN THIS RULING, stated so it can be falsified: a non-zero count of any of the six node types above in the instrument-A artifact, which is what a Lua dialect with a `class`/`interface` declaration would introduce; or a probe finding a constructor-like call immediately followed by a conformance test (`if type(x) ~= \"table\" then error(...) end`) at a rate worth an edge. Probe B8's `crossTable` bucket is the closest thing to a counter-example this corpus contains and it measures 1."
+      },
+      {
+        "id": "BD-overrides-shapes",
+        "node_type": "overrides",
+        "status": "RULED",
+        "question": "Which of the two things 'override' can mean in Lua does the emitted edge claim, and does the target use the member's own name?",
+        "resolution": "RULED, and the ruling is a refusal to fuse. Lua writes TWO distinct constructs that a single label would conflate: a same-name redefinition in one chunk, where the later `function` replaces the earlier one (probe B1: 65 occurrences across 37 files), and a member of a derived table that shadows an inherited member through `__index` (probe B8: 1 cross-table site). They are emitted under two `meta.relationshipType` values — `lua_redefinition` at confidence 1.0 and `lua_inherited_member` at 0.95, the family's own numbers for the same two cases (real-bash-analyzer.ts:343, real-objective-c-analyzer.ts:1020) — so a consumer can count either without the other. The TARGET is the member's OWN NAME (`Derived` -> `run`) and never the qualified path (`Derived` -> `Derived.run`), because this lane's member-identity contract (LUA-15, pinned by validation/m14/fixtures/lua/member-identity.expectation.json) holds that the identity is container plus own name; the path is metadata (`meta.qualifiedName`, `meta.memberPath`). Measured consequence: the first version, which put the label in the target, produced labelShape {bare 54, dotted 8, colon 4} across the corpus and made the edge unjoinable to the `contains` edge for the same member. NOT CLAIMED: a `setmetatable(self, …)` inside a constructor — probe B8's `derivedIsSelf` bucket, 45 sites across 42 files. Nor the `unresolvedBase` bucket, 374 sites across 218 files, where the base is an expression and therefore has no written name. The derived table is only reachable by evaluating the constructor, and nothing in the parse tree says which table it returns, so closing those edges would require interprocedural evaluation rather than reading. That is stated as a limit, not as a ruling, because it is not a claim about the language."
+      },
+      {
+        "id": "BD-node-identity",
+        "node_type": "(analyzer runtime)",
+        "status": "RULED",
+        "question": "Can a relationship rule test which node it is looking at by object identity?",
+        "resolution": "RULED: no, and the ruling is enforced in code by `isSameNode` (real-lua-analyzer.ts), which compares `type` + `startIndex` + `endIndex`. `web-tree-sitter` returns a FRESH wrapper object on every access, so `parent.namedChild(0) === node` is false even when both name the same span. Measured cost of getting this wrong: the `uses`/`references` exclusions never fired, publishing 3 edges on the 15-line fixture lua/name-reads.lua that each state one qualified access twice under two labels, and dropping that fixture from 26 edges to 19 and lua/export-shapes from 25 to 16. This is the family's idiom rather than a local invention — real-c-analyzer.ts:2336, :2525 and :6012 all compare spans for this reason. REGRESSION-PINNED by script/m60/mutate-lua-node-identity.ts, which re-derives the identity comparison from the fixed source, requires the suite to go red under it, and restores the file: 4 forbid rows fail, and the restore is re-verified green."
+      },
+      {
+        "id": "BD-no-oracle",
+        "node_type": "(differential)",
+        "status": "RULED",
+        "question": "Which relationship types does the lua differential audit, and what does it therefore prove?",
+        "resolution": "RULED: the differential can only audit what its oracle implements, and there is NO lua entry in script/m14/oracles/, so every lua type in this wave is a DERIVATION finding — emitted by the analyzer and compared against nothing. That count is 9 of 9 emitted types and it is the largest single limitation on this lane's claims. It is also the reason the ontology gate exists: two implementations that both say nothing agree perfectly, which is how `uses`, `references`, `exports` and `overrides` were all absent from both paths and the differential stayed green throughout. The instrument that caught them was measuring the LANGUAGE (probes B1, B3, B4, B6, B8) rather than diffing the CODE. Writing a lua truth oracle is shared work in script/m14/ (§8) and is not this lane's to add; the precise requirement is recorded in the handover report."
+      }
+    ]
+  }
+}
