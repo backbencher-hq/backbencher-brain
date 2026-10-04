@@ -1482,7 +1482,11 @@ deleting a gate removes edges and an expect-only fixture would not notice.
 - **A base the file, or the index, proves lacks the member is refuted.** Without
   evidence the fallback may fire; against evidence it may not.
 
-### Two rulings
+### Two DECISIONS, not RULED verdicts
+
+Neither of these is a `RULED` verdict in the §Verdicts sense: no relationship type is
+ruled in this lane. They are label-placement and scope choices, recorded here because
+both were available to state as rulings and neither is one.
 
 **`part of` stays in `imports`.** It names the file's PARENT, so the edge states the
 dependency backwards. Kept anyway: every module-level URI is then one edge class, a
