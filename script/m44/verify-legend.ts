@@ -35,6 +35,12 @@ import { tmpdir } from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { writeSealed } from "../lib/evidence.ts"
+// M62 lane-7 finding (2026-10-05): project identity has ONE owner. Hashing
+// path.resolve(ws) here was a second derivation, and it disagrees with
+// src/util/project-id.ts wherever the temp dir is a symlink (macOS: /var ->
+// /private/var), so this gate failed on macOS while passing on Linux and its red
+// said nothing about the law it checks. See makeFixture() for the note.
+import { getProjectId } from "../../src/util/project-id.ts"
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..")
 const EVIDENCE_DIR = path.join(ROOT, "validation/m44/results")
@@ -120,8 +126,11 @@ async function makeFixture(): Promise<Fixture> {
     "util.ts": "export function util(w: Widget): void {}\n",
   }
   for (const [rel, content] of Object.entries(files)) writeFileSync(path.join(ws, rel), content)
-  const canonical = path.resolve(ws)
-  const projectId = createHash("sha1").update(canonical).digest("hex").substring(0, 40)
+  const projectId = getProjectId(ws)
+  const lexicalId = createHash("sha1").update(path.resolve(ws)).digest("hex").substring(0, 40)
+  if (lexicalId !== projectId) {
+    console.log(`      note: lexical sha1 (${lexicalId.slice(0, 9)}) != canonical (${projectId.slice(0, 9)}) — the temp dir is a symlink here`)
+  }
   mkdirSync(path.join(dataDir, "projects", projectId), { recursive: true })
   process.env.BB_DATA_DIR = dataDir
 
