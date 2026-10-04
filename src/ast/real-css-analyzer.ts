@@ -1914,8 +1914,64 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
     return selectorText
   }
 
+  /**
+   * The node that NAMES the module an `@import` pulls in, or `null` when the statement
+   * carries none.
+   *
+   * A DIRECT `string_value` / `call_expression` child is the shape the grammar produces for
+   * a well-formed `@import`, and it stays the first thing tried so the 243 edges that were
+   * already published are untouched.
+   *
+   * The DESCENDANT pass exists because pass 10 measured a 7-edge gap on the admitted corpus:
+   * 250 `import_statement` nodes, 243 published `imports` edges
+   * (`validation/m14/census/css-import-coverage.ts`). The 7 are indented-Sass `.sass`
+   * partials, which this pinned CSS grammar cannot parse, and it recovers them into an
+   * ERROR shape — `;+@import+ERROR+binary_expression`, `;+@import+ERROR+ERROR+float_value+
+   * keyword_query` and four siblings — where the quoted specifier is still a real
+   * `string_value` node but sits under the ERROR rather than directly under the statement.
+   * `@import "../utilities/mixins"` is a genuine fetch the user agent performs; publishing
+   * nothing for it is a silent miss, not a ruling.
+   *
+   * **The line guard is what makes the descendant pass safe, and it is not optional.** The
+   * ERROR recovery SWALLOWS the rest of the file into the `import_statement` node:
+   * `Documenter.jl/.../bulma/elements/button.sass` spans L2..L50 and carries ELEVEN
+   * `string_value` descendants — one at L2 (`"../utilities/mixins"`, the module) and ten at
+   * L47 (the `$breakpoints` map's `"mobile"`, `"small"`, `"normal"`, … ). Taking the first
+   * descendant in document order happens to pick the right one there, and would pick the
+   * WRONG one for any statement whose own specifier is not a node. Restricting the search to
+   * the `@import` KEYWORD's own row rejects the L47 ten by construction, so the name is
+   * always the specifier written on the `@import` line and never a string the recovery
+   * swept up from a later line.
+   *
+   * Node-type and position tests only. No pattern over raw text, so a quoted word in a
+   * comment, in a `content:` value or in a class name cannot become a module name.
+   */
+  private findImportNameNode(node: Node): Node | null {
+    const isNameNode = (n: Node): boolean => n.type === "string_value" || n.type === "call_expression"
+    const direct = this.findChild(node, isNameNode)
+    if (direct) return direct
+
+    const keyword = this.findChild(node, (c) => c?.type === "@import")
+    const keywordRow = (keyword ?? node).startPosition.row
+
+    let found: Node | null = null
+    const walk = (n: Node): void => {
+      if (found) return
+      if (n.startPosition.row === keywordRow && isNameNode(n)) {
+        found = n
+        return
+      }
+      for (let i = 0; i < n.childCount; i++) {
+        const child = n.child(i)
+        if (child) walk(child)
+      }
+    }
+    walk(node)
+    return found
+  }
+
   private processImport(node: Node, ctx: CssContext) {
-    const stringNode = this.findChild(node, (c) => c?.type === "string_value" || c?.type === "call_expression")
+    const stringNode = this.findImportNameNode(node)
     if (stringNode) {
       const moduleName = unwrapUrl(stringNode.text)
       ctx.imports.push({
