@@ -154,7 +154,7 @@ not a convenience). Artifacts, all under `validation/m14/fixtures/sql/measuremen
 `pass3-final-census.json`, `pass3-adversarial-probe.json`, `pass3-construct-probe.json`,
 `pass3-incoming-corpus.json`, `pass3-invocation-why-after.json`,
 `pass3-phantom-constraint-{before,after}.json`. Written rulings:
-`script/m60/sql-ontology-ruled.ts`, applied to a COPY of the arbiter by `run-ruling-table.mts`.
+`script/m14/sql-ruled.ts`, applied to a COPY of the arbiter by `run-ruling-table.mts`.
 
 **The arbiter's own verdict on this lane's own ruling table**, copy patched, arbiter on disk
 untouched: **`emitted 7/10   ruled-sound 3   FALSIFIED 0   ruled-without-justification 0`.**
@@ -859,7 +859,7 @@ other direction and it is a property of the exclusion, not a disagreement.
 type name — so it cites `SQL-D11` for `exports` (which is about `imports`), `SQL-D16` for
 `extends` and `SQL-D13` for `implements` (which is about `instantiates`). The VERDICT is
 decided by the instrument and is unaffected; only the pointer is wrong. The fix is specified in
-`script/m60/sql-ontology-ruled.ts` → `SQL_RULING_CITATIONS`: an optional `ontologyType` field on
+`script/m14/sql-ruled.ts` → `SQL_RULING_CITATIONS`: an optional `ontologyType` field on
 each decision, with the prose match as the fallback, plus splitting `SQL-D16` into two entries
 because it covers two types. §8 item.
 
@@ -1014,7 +1014,7 @@ each specified so it can be applied without re-deriving it.
   seven by being killed. The citation bug is also pass 2's and unchanged: `rulingFor` matches a type by
   PROSE, so it cites `SQL-D11` for `exports` (which is about `imports`). The fix is an optional
   `ontologyType` on each decision with the prose match as fallback, plus splitting `SQL-D16` into two
-  entries. Specified in `script/m60/sql-ontology-ruled.ts` → `SQL_RULING_CITATIONS`.
+  entries. Specified in `script/m14/sql-ruled.ts` → `SQL_RULING_CITATIONS`.
 
 ### Carried from the M60 SQL wave
 
@@ -1242,7 +1242,7 @@ artifacts are under `validation/m14/fixtures/sql/measurements/`:
 Carried forward from pass 2 and still the correctness instruments: `ontology-census.json`
 (superseded), `construct-probe.json`, `adversarial-probe.json`, `keep-symbol-census.json`.
 
-- Ruling table and its demonstration: `script/m60/sql-ontology-ruled.ts`, run by
+- Ruling table and its demonstration: `script/m14/sql-ruled.ts`, run by
   `validation/m14/fixtures/sql/run-ruling-table.mts`
 - Ontology mutants and their runner: `script/m60/sql-ontology-mutants.ts` (21, five of them
   pass-3), `script/m60/run-sql-ontology-mutants.ts`
