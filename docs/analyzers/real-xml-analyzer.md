@@ -89,24 +89,53 @@ of the arbiter under `/tmp` and runs it, so the table is proven rather than
 asserted. Resolution rates come from the census draw described below; the edge
 counts come from the arbiter's own `parseFile` pass.
 
-| Type | Verdict | Edges | Files | Both ends resolve | `confidence` < 0.7 |
+| Type | Emitted? | Edges | Files | Both ends resolve | `confidence` < 0.7 |
 | --- | --- | ---: | ---: | ---: | ---: |
-| `contains` | EMITTED | 185,979 | 10,847+ | **100.0 %** | 0 |
-| `references` | EMITTED | 10,411 | 391+ | **49.1 %** | 0 |
-| `imports` | EMITTED | 464 | 278+ | 0.0 %, target is a file, by design | 0 |
-| `calls` | EMITTED (was GAP) | **548** | 76+ | **100 %** | 0 |
-| `extends` | EMITTED (was GAP) | **438** | 106+ | **40.1 %** | 0 |
-| `overrides` | EMITTED (was RULED — the corpus overturned it) | **3** | 3 | **100 %** | 0 |
-| `uses` | RULED-SOUND, instrument B, probe count **0** | 0 | 0 | — | — |
-| `exports` | RULED-SOUND, instrument A, 611 sites adjudicated | 0 | 0 | — | — |
-| `implements` | RULED-SOUND, instrument A, 5 sites adjudicated | 0 | 0 | — | — |
-| `instantiates` | RULED-SOUND, instrument A, probe counts **0** and **0** | 0 | 0 | — | — |
+| `contains` | yes — EMITTED | 185,979 | 10,847+ | **100.0 %** | 0 |
+| `references` | yes — EMITTED | 10,411 | 391+ | **49.1 %** | 0 |
+| `imports` | yes — EMITTED | 464 | 278+ | 0.0 %, target is a file, by design | 0 |
+| `calls` | yes — EMITTED (was GAP) | **548** | 76+ | **100 %** | 0 |
+| `extends` | yes — EMITTED (was GAP) | **438** | 106+ | **40.1 %** | 0 |
+| `overrides` | yes — EMITTED (was RULED — the corpus overturned it) | **3** | 3 | **100 %** | 0 |
+| `uses` | no — not emitted. RULED-SOUND, instrument B, probe count **0** | 0 | 0 | — | — |
+| `exports` | no — not emitted. RULED-SOUND, instrument A, 611 sites adjudicated | 0 | 0 | — | — |
+| `implements` | no — not emitted. RULED-SOUND, instrument A, 5 sites adjudicated | 0 | 0 | — | — |
+| `instantiates` | no — not emitted. RULED-SOUND, instrument A, probe counts **0** and **0** | 0 | 0 | — | — |
 
 Per-type integrity and resolution detail, on a 2,500-file family-stratified draw:
 `validation/m14/fixtures/xml/ontology-census.mts`, artifact
 `validation/m14/fixtures/xml/ontology-census-overrides-gap.json`. The previous
 full-population artifact is kept at `…/ontology-census.json` (11,066 files / 91
 repositories, before the corpus grew to 110).
+
+**The second column is headed `Emitted?` so `script/m14/verify-doc-truth-emissions.ts`
+can grade these claims, and doing so exposed a defect in that gate.** It reports
+`UNDOCUMENTED [xml] contains (relationship)` — "analyzer emits `contains` and the
+ontology table makes no checkable claim about it". That claim is false: the row is
+line 94 of this file, directly under the header. The gate's `parseClaimTable`
+skips the `---` rule with `if (isRuleRow(cs)) continue` and then *also* discards
+the next row through `if (!started) { started = true; continue }`, so the first
+data row of every claim table is silently dropped. Minimal repro, no repo needed:
+
+```
+| Relationship | Emitted? |
+| --- | --- |
+| `calls` | yes |
+| `contains` | yes |
+| `imports` | no |
+```
+`parseClaimTable` returns **2 rows, not 3**, and the missing one is `calls`.
+
+**32 of the 48 analyzer docs lose their first claim row to this**, including xml's
+`contains` — the most-emitted type in the lane. The gate is shared machinery
+(§8), so this is reported rather than patched here. `contains` was deliberately
+left in first position: reordering the table would move the defect onto a
+different type and make this lane's table look clean while hiding the bug. The
+other **9 rows are graded, and all 9 agree with the analyzer** — the 6 `yes` rows
+against the 6 `RelationshipType.*` references in the source
+(`Contains` 8, `References` 5, `Imports` 3, `Overrides` 1, `Extends` 1, `Calls` 1)
+and the 4 `no` rows against the absence of `Uses`, `Exports`, `Implements` and
+`Instantiates`.
 
 What each type means **in this language**, which is not what it means in general:
 
@@ -483,6 +512,22 @@ edges below the 0.7 threshold — is **0 of 191,333**, and the `inferred` tier, 
 honest default for a rule the tier table does not name, holds **0 edges**. Every
 edge's tier is assigned where the edge is written, from `EVIDENCE_TIER`, keyed by
 the rule's role.
+
+**The 0 is a measurement of this analyzer's code, not of the corpus, and the two
+must not be confused.** `confidence` is not computed anywhere in this file: it is a
+single unconditional literal at `real-xml-analyzer.ts:739`, the one and only
+`confidence:` assignment in the analyzer. So "0 edges below 0.7" restates the
+existence of that literal and would read identically on a corpus of pure noise.
+It is reported because the contract requires heuristic edges to be countable, and
+this lane's honest answer is that it has none to count — not because 191,333
+independent judgements were made and all 191,333 came out certain.
+
+What does carry per-edge weight is the **tier**, because it is stamped from
+`EVIDENCE_TIER` per role and an unmapped role falls to `inferred`. The census
+counting `inferred = 0` is therefore a real result: it says every rule that emits
+an edge is named in that table, and a new rule added without a tier would show up
+as a non-zero `inferred` count. That is the number to watch on this lane; the
+confidence ratio cannot detect anything.
 
 ### Integrity of the census itself
 
