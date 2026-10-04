@@ -193,6 +193,47 @@ is why a rebuild needs `tree-sitter generate` first, not just
 47 corpus files in two orders with zero differences, so this lane does not pay
 the per-file parser construction that the Lua-family lanes need.
 
+## Supported constructs
+
+What the analyzer reads off the parse tree, and — for each — where it is measured.
+Every row is a `##` heading in this document with the number attached, so nothing
+here is a list of intentions.
+
+| Construct | Grammar node / spelling | Read as | Measured |
+| --- | --- | --- | --- |
+| proc / func | `proc_declaration`, `func_declaration` | `SymbolKind.function` + module-scope callable | 29,904 functions of 83,639 symbols; callable recall **34,456 / 34,466** |
+| method | `method_declaration`, receiver from the first parameter | `SymbolKind.method` + `ownerName` = receiver | 177 methods; 48 `overrides` edges; 141 of 178 methods have a readable receiver |
+| named nested routine | a `proc` lexically inside another | `SymbolKind.function`, `scope` = parent, `contains` from `metadata.nimNestedIn` | **653 → 15** tree-only `calls` targets; 17 nested-routine `contains` families |
+| iterator | `iterator_declaration` | `function`, **not** macro | `nim/contract` pins `{countUp, function}` |
+| template | `template_declaration` | `macro` | `nim/contract` pins `{twice, macro}` |
+| macro | `macro_declaration` | `macro` | 4,142 macros |
+| macro / template body | the body of either | **suppressed** — expansion is not a declaration site | `nim/mac` + 4 forbids |
+| object / ref object | `object_declaration`, `type_declaration` | `class` with `ref`, `struct` without | 840 classes, 4,182 structs |
+| tuple type | `tuple_type` | `struct` | **defect 1 of the mutant round**: published as a bare `type` in both spellings, now pinned both ways |
+| concept | `concept_declaration` | `SymbolKind.interface` | **216 in 69 files** |
+| enum + members | `enum_declaration`, `enum_field` | `enum` + `enum_member` | 940 enums, 8,164 members |
+| object field | `field_declaration` | `property` | 12,066 properties |
+| const / let / var | `const_declaration`, `var_declaration` | `constant`, `variable`, `property` for `var` fields | 9,010 constants, 10,774 variables |
+| type alias | `type_declaration` with a non-object body | `type` | 2,722 types |
+| inheritance | `object_declaration.inherits` | `extends` | **941 occurrences accounted 941/941**; 568 edges |
+| contract refinement | `concept_declaration.refines`, `x is B` in a body | `implements` | 0 of 216 concepts; `refinement_list` produced 0 times |
+| instantiation | `bracket_expression` in callee position, `TypeName(field: v)` | `instantiates` | 2,998 constructions; 1,988 edges |
+| call | `call`, `dot_generic_call`, parenless UFCS member leaf | `calls` | 79,020 edges |
+| bare / member read | `identifier`, the leaf of a non-callee `dot_expression` | `uses` | 31,010 edges |
+| declared type | parameter, return, field, annotation, `new`/`of` operand | `references` | 40,521 edges |
+| import | `import`, `from … import`, `include` | `imports` + the `ImportInfo[]` channel | 9,324 edges; 179 `export_statement` and 31,408 `exported_symbol` nodes also enumerated |
+| export | `export` OPERANDS, positionally | `exports` | 407 edges |
+| the `*` marker | `exported_symbol` | **no edge** — `visibility: "public"` + `metadata.exported` | 31,408 sites in 1,500 files |
+| `static:` / doc-example bodies | `static` block, `runnableExamples` argument | `type` declarations **published**, `value` declarations suppressed | 9 → 6 tree-only `extends` owners |
+| destructor / sink hooks | `=destroy`, `=sink`, `=copy` | hook, not a runtime call — **filtered as a builtin** | named in the oracle's unexplained set and adjudicated |
+| accent-quoted operator | `` proc `-!` ``, `` `==` `` | an ordinary declaration | **1,417** declaration sites; 365 of its edges are deleted by the shared filter (*Limitations* 12) |
+| do-pragma | `expr.#[…].#` | **not read** — the grammar consumes it as a block-comment extra | 16 affected corpus files; the grammar patch is measured harmful and stays unapplied (*Limitations* 1) |
+
+Three constructs are read and deliberately produce NO edge, each with the count
+that says so rather than an assertion: the `*` marker (31,408 sites), concept
+SATISFACTION (no syntax names it), and a macro/template body (expansion is not a
+declaration site).
+
 ## Import and export semantics
 
 All three import forms route through **one** path reader, so a module spelled
@@ -889,7 +930,7 @@ supervisor-owned. What is needed is one import
 it for `lang === "nim"`, after which all ten types have a derivation and the six
 DERIVATION findings repay.
 
-### Corpus
+## Corpus validation
 
 | Repo | Files | What it is |
 | --- | --- | --- |
@@ -952,12 +993,66 @@ in the same run (*Limitations* 8). A gate that cannot distinguish "this run fail
 from "this run finished and the process could not exit" is a gate whose green and
 red are the same colour.
 
+## Differential ground truth
+
+Three separate instruments, because the shared one cannot run this lane and the
+other two answer different questions.
+
+**1. The shared differential cannot run it at all.** `$ npx tsx
+script/m14/differential.ts --lang nim` prints `[lane] SKIP nim: no corpus repo
+mapped in LANG_REPOS and none checked out` and `probe run (--lang nim): measured
+0 lane(s)`. Two independent causes, both §8, both reported with the change needed
+(*Limitations* 18): `LANG_REPOS` (`script/m14/differential.ts:393`) has no `nim`
+key, and the file imports no nim oracle — `grep -c "nim-truth-oracle\|deriveNimEdges"
+script/m14/differential.ts` returns **0**. So the arbiter of the six questions is
+silent here and every question-3 number below comes from instrument 2.
+
+**2. This lane's own oracle — the real second opinion.**
+`script/m14/nim-truth-oracle.ts` derives edges from the **parse tree** by
+`deriveNimEdges`, reading node types and fields and no analyzer metadata, and
+`validation/m14/fixtures/nim/oracle-crosscheck.ts` runs both sides through
+production `parseFile` on the same file and compares site-agnostically (label +
+normalized target). Both sides now print `sha256` before and after the walk.
+
+| | pinned run |
+| --- | --- |
+| sample | 400 of 4,075 discovered files, deterministic every-10th, 400 parsed, 0 parse failures, 0 oracle throws |
+| agreement | `imports` 349/349, `extends` 30/30, `overrides` 3/3, `instantiates` 124/124 — **exact** |
+| MISSING | **23** = `exports` 20 (no oracle derivation exists at all) + `references` 3 |
+| UNEXPLAINED | **18** = `calls` 13, `contains` 4, `uses` 1 |
+| disagreements | every one adjudicated in *The oracle had to be able to disagree* above; the oracle was wrong twice and the analyzer once |
+
+**The limit, stated because it is real: both sides walk the same grammar.** A
+grammar fact both derivations get wrong is invisible to this instrument. It shows
+that two independent walkers agree, never that an edge is true. And the arrangement
+has one shared input on purpose — the analyzer's builtin-name filter, and its
+symbol list as the name inventory for `contains` — because ownership assignment is
+not what a differential audits and a second place to be wrong helps nobody
+(*Limitations* 4).
+
+**3. The M12 ground truth, which is what gates the cross-file override family.**
+`validation/m12/ground-truth/nim.json` asserts
+`overrides:GlossPainter.paint -> Painter.paint` across `painter.nim` and
+`gloss.nim`. No single-file fixture can express it, because the base type and the
+method it declares live in different modules by definition, so this family is
+gated by the cross-file ground truth rather than by `validation/m14/fixtures/nim/`.
+A mutant for it was written and deliberately **removed**: the mutation gate
+requires a mutant to turn the fixture suite red, the fixture runner passes no
+context, so the mutant was vacuous by construction and would have held the gate red
+forever over a genuinely covered family. The fixture-visible half of the same
+mechanism — a method declaring its `ownerName` — is gated normally, as
+`nim/method-owner-name-dropped`.
+
 ## Regex inventory
 
 Zero. The analyzer contains no `RegExp`, no `.match(`, `.replace(`, `.test(`, no
 `.split(/…/)` and no regex literal. Every decision is made on node types and
-fields, which is what makes the 17-file matrix and the 5,227-file corpus
-comparable across grammar versions.
+fields, which is what makes the compiler matrix and the 4,555-file census
+comparable across grammar versions. The shared gate confirms it from the other
+side: `npx tsx script/m12/verify-regex-census.ts` FAILS repo-wide, and **0 of its
+51 rows are this lane's** — 26 MISSING and 25 STALE, in `css`, `julia`, `clean`,
+`fsharp`, `javascript`, `python`, `svelte` and `typescript`. There is no nim row
+to fix because there is no nim regex.
 
 ## Verification evidence
 
@@ -1301,7 +1396,7 @@ stack, one local counter, closures built once, and nothing allocated per node.**
 The win is fewer node *visits*; per-node allocation of any kind costs more than
 the traversal it rides on.
 
-### Complexity envelope
+## Complexity envelope
 
 `script/m12/nim-corpus-measure.ts`, artifact
 `validation/m12/results/nim-corpus-complexity.json`. Two numbers are deliberately
