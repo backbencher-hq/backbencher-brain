@@ -64,6 +64,8 @@ import { JULIA_RULED } from "./julia-ruled"
 import { CSS_RULED } from "./css-ruled"
 import { XML_RULED } from "./xml-ruled"
 import { NIM_RULED } from "./nim-ruled"
+import { PHP_RULED } from "./php-ruled"
+import { SQL_RULED } from "./sql-ruled"
 
 const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
 const LANG = process.argv[2] ?? "bash"
@@ -226,6 +228,8 @@ const RULED_BY_LANG: Record<string, Ruled[]> = {
   julia: JULIA_RULED,
   css: CSS_RULED,
   xml: XML_RULED,
+  php: PHP_RULED,
+  sql: SQL_RULED,
 }
 const RULED: Ruled[] = RULED_BY_LANG[LANG] ?? []
 
