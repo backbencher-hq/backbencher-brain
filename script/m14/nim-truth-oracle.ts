@@ -493,9 +493,10 @@ export function deriveNimEdges(root: any, symbols: any[]): TruthEdge[] {
   // the source line), and the analyzer side is collapsed to one edge per
   // (label,target). Keying on the source as well made 5 callers of one target
   // count as 5 independent truth rows against the analyzer's single deduped
-  // edge: measured tree-truth=901 vs analyzer-edges=432 with "100% coverage",
-  // i.e. the denominator was mostly the same fact repeated and the percentage
-  // meant far less than it read. `from` is still carried on the edge for triage
+  // edge: measured tree-truth=901 vs analyzer-edges=432, which the ratio then
+  // reported as every truth row matched — i.e. the denominator was mostly the
+  // same fact repeated and the rate meant far less than it read. `from` is
+  // still carried on the edge for triage
   // and sample printing; it is only the KEY that is source-free.
   const seen = new Set<string>()
   const push = (label: string, from: string, target: string): void => {
