@@ -636,16 +636,28 @@ type ReasonCode =
   | "go-builtin-call-not-an-edge"
   | "predeclared-type-not-an-edge"
   | "analyzer-scope-excludes-methods-and-vars"
-  | "cross-file-package-member-invisible-to-oracle"
-  | "oracle-does-not-model-generic-instantiation"
+  | "already-carried-as-an-instantiates-edge"
+  | "composite-literal-type-is-an-instantiation-not-a-reference"
   | "UNEXPLAINED"
 
-function classifyOracOnly(type: string, e: Edge, model: FileModel): ReasonCode {
+function classifyOracOnly(type: string, e: Edge, model: FileModel, instantiates: Set<string>): ReasonCode {
   if (type === "calls" && GO_BUILTIN_FUNCS.has(e[1])) return "go-builtin-call-not-an-edge"
   if (type === "references" && PREDECLARED_TYPES.has(e[1])) return "predeclared-type-not-an-edge"
   if (type === "exports") {
     const isMethod = model.decls.some((d) => d.kind === "method" && d.name === e[1])
     if (isMethod) return "analyzer-scope-excludes-methods-and-vars"
+  }
+  if (type === "references" && instantiates.has(`${e[0]}|${e[1]}`)) {
+    // The oracle's rule is "every type_identifier outside a qualified_type is a
+    // reference", which is deliberately over-broad: a composite literal's type
+    // (`ft := fileTypedefs{...}`) is an expression the lane already carries as
+    // an `instantiates` edge from the same construct, so a second `references`
+    // row for it would be the same fact under two labels. Verified on
+    // src/cmd/cgo/gcc.go:197 — `instantiates loadDebug -> fileTypedefs` is
+    // present and `references loadDebug -> fileTypedefs` is not, while the same
+    // name IS a `references` target where it is genuinely declared
+    // (`references loadDWARF -> fileTypedefs`, from the parameter list).
+    return "already-carried-as-an-instantiates-edge"
   }
   return "UNEXPLAINED"
 }
@@ -715,6 +727,7 @@ async function main(): Promise<void> {
     const model = scanModel(tree.rootNode)
 
     const analyzerByType = new Map<string, Edge[]>()
+    const instantiatesEdges = new Set<string>()
     for (const r of res.relationships as any[]) {
       const ty = typeof r.type === "string" && r.type.length > 0 ? r.type : typeof r.relationshipType === "string" ? r.relationshipType : ""
       if (ty.length === 0) continue
@@ -726,6 +739,7 @@ async function main(): Promise<void> {
         analyzerByType.set(ty, arr)
       }
       arr.push([src, dst])
+      if (ty === "instantiates") instantiatesEdges.add(`${src}|${dst}`)
     }
 
     for (const ty of [...ENUM_VALUES, OFF_ENUM_IMPORTS]) {
@@ -739,10 +753,10 @@ async function main(): Promise<void> {
       for (const e of o) {
         if (aSet.has(key(e))) slot.agree++
         else {
-          if (classifyOracOnly(ty, e, model) === "UNEXPLAINED") unexplainedByType[ty] = (unexplainedByType[ty] || 0) + 1
+          if (classifyOracOnly(ty, e, model, instantiatesEdges) === "UNEXPLAINED") unexplainedByType[ty] = (unexplainedByType[ty] || 0) + 1
           slot.oracleOnly++
           if (slot.oracleOnlyFiles.length < 6) slot.oracleOnlyFiles.push(`${f.rel}: ${e[0]} -> ${e[1]}`)
-          if (disagreements.length < 900) disagreements.push({ file: f.rel, type: ty, kind: "oracle-only", edge: e, reason: classifyOracOnly(ty, e, model) })
+          if (disagreements.length < 900) disagreements.push({ file: f.rel, type: ty, kind: "oracle-only", edge: e, reason: classifyOracOnly(ty, e, model, instantiatesEdges) })
         }
       }
       for (const e of a) {
