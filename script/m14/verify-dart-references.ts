@@ -36,6 +36,7 @@ import * as fs from "node:fs"
 import * as path from "node:path"
 import { deriveDartReferencesTruth } from "./oracles/dart-references"
 import { RealDartAnalyzer } from "../../src/ast/real-dart-analyzer"
+import type { ASTEngine } from "../../src/ast/engine"
 
 const ROOT = path.resolve(path.dirname(process.argv[1]), "..", "..")
 const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
@@ -81,9 +82,13 @@ async function analyzer(src: string, visible?: string[]): Promise<string[]> {
   const parser = await parserFor()
   const r: any = await new RealDartAnalyzer().analyze(
     parser.parse(src).rootNode, src, FILE_PATH,
-    visible ? { projectIndex: { typeKinds: new Map(visible.map((v) => [v, "class"])) } } : undefined,
+    visible
+      ? ({
+          projectIndex: { typeKinds: new Map(visible.map((v) => [v, "class"])) },
+        } as ASTEngine.AnalyzeContext)
+      : undefined,
   )
-  return [...new Set((r.relationships ?? [])
+  return [...new Set<string>((r.relationships ?? [])
     .filter((e: any) => e.type === "references")
     .map((e: any) => `${e.source} -> ${e.target}`))].sort()
 }
