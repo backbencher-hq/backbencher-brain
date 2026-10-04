@@ -1390,6 +1390,28 @@ export class RealSqlAnalyzer implements ASTEngine.LanguageAnalyzer {
       case "alter_table":
         this.addPattern("Schema Evolution (ALTER)", state)
         this.recordTableTarget(node, "uses", "alter", state)
+        // An `ALTER TABLE` can CALL a function, in a grammar-mandated expression slot:
+        // `ALTER TABLE t ALTER COLUMN c SET DEFAULT app.f()` is the shape, and
+        // `hasura-engine/server/src-rsr/migrations/41_to_42.sql` writes it five times in one
+        // file (`SET DEFAULT hdb_catalog.gen_hasura_uuid()`).
+        //
+        // It produced no edge, because the only two routes into `processCalls` were `processQuery`
+        // and `DECLARATION_NODES`, and an `alter_table` is neither — it is not a query and it
+        // declares nothing. `processAlterTable` cannot cover it either: it returns early when the
+        // statement adds no column, which is exactly the shape here. Settled by
+        // `validation/m14/fixtures/sql/pass3-invocation-why.mts`, which classifies every qualified
+        // invocation on the corpus tree that carries no `calls` edge: 742 on the tree, 449 emitted,
+        // 53 suppressed by the keyword/builtin guard, 240 not emitted — **224 inside an error
+        // subtree** (a grammar bound, not a lane defect), 2 inside a `plpgsql_block`, and **14 here**,
+        // the only bucket that is a candidate lane defect. This closes that bucket.
+        //
+        // Sourced to the ALTERED TABLE rather than to `global`, because the table is a published
+        // symbol and `global` is not — so this is also an edge the reverse walk can arrive at. The
+        // fallback is `global` only when the statement names no table.
+        //
+        // New type, new source: no existing edge changes, because `addRelationship` keys on
+        // (type, source, target) and nothing emitted `calls` from a table name before.
+        this.processCalls(node, this.referenceLeaf(this.directChild(node, "object_reference"), state) ?? "global", state)
         this.processAlterTable(node, state)
         return
       case "drop_table":
@@ -1404,6 +1426,25 @@ export class RealSqlAnalyzer implements ASTEngine.LanguageAnalyzer {
       case "drop_policy":
         this.addPattern("Schema Evolution (DROP)", state)
         this.recordTableTarget(node, "uses", "drop", state)
+        return
+      case "do_statement":
+        // `processDo` is DISPATCHED FROM HERE, and until pass 3 it was not dispatched from here at
+        // all: its only caller sat in `dispatchDeclaration`, which runs for `DECLARATION_NODES` only,
+        // and `do_statement` is not a declaration — it declares nothing. So `processDo` was
+        // unreachable dead code, and the source said otherwise: the method exists, its body is
+        // three real calls, and a source-derivation count of "which relationship types can this
+        // analyzer construct" would have counted it. This is the exact failure the ontology
+        // workstream was opened for, in this lane's own analyzer.
+        //
+        // Measured consequence, per statement rather than per corpus: `DO $$ BEGIN PERFORM f(1);
+        // END $$;` published NO `calls` edge, and `DO $$ BEGIN SELECT id FROM t; END $$;` published
+        // no `Anonymous Procedural Block` pattern — its `uses` edge came from the sweep dispatching
+        // a nested `statement`, which is a different code path reaching a different conclusion about
+        // the same file. Both were verified on single-statement fixtures rather than inferred.
+        //
+        // `processDo` also calls `processQueryDependencies`, which is what a DO block's own
+        // top-level reads were missing; the sweep only recovers statements nested INSIDE it.
+        this.processDo(node, state)
         return
       case "insert":
         this.recordDml(node, "insert", state)
