@@ -166,6 +166,54 @@ export function stripZigQuoting(text: string): string {
   return out
 }
 
+/**
+ * A symbol as the walk carries it, plus the ONE internal field this analyzer
+ * needs and the projection must never publish.
+ *
+ * `zigOwnerPath` is the container's ABSOLUTE dotted path — the same string the
+ * shared projection builds as that container's `qualifiedName`. It is read only
+ * to spell a member's own owner; `pool-worker.ts:926-946` copies an explicit
+ * field list, so an extra key here is invisible to everything downstream.
+ */
+type ZigWalkSymbol = ASTEngine.UniversalSymbol & { zigOwnerPath?: string }
+
+/**
+ * The owner's ABSOLUTE dotted path, falling back to its bare name for a
+ * file-scope container — where the two are the same string, which is why this
+ * is a no-op for every top-level container and its members.
+ *
+ * ## Why the path, and not the bare name (Z-p22)
+ *
+ * `scope`/`ownerName` were `container.name`, and the projection spells a symbol
+ * `scope ? scope + "." + name : name` (pool-worker.ts:930). A container
+ * therefore published its ABSOLUTE name and its members published a RELATIVE
+ * one, so the two halves of one nesting landed in two coordinate systems:
+ *
+ * ```zig
+ * pub const IOSurface = struct {      // ghostty/pkg/macos/iosurface/iosurface.zig:10
+ *     pub const Error = error{         // container -> qn `IOSurface.Error`
+ *         InvalidOperation,            // member    -> qn `Error.InvalidOperation`
+ * ```
+ *
+ * The member is then unreachable from the only spelling that identifies its
+ * container, and the `contains` edge names a source that is not a published
+ * qualified name at all. Measured over the 3,834-file draw before this change:
+ * **15,686 of 80,876 `contains` edges (19.4%)** were not composition-resolvable
+ * (owner-path-probe.ts), in 529 files. Carrying the absolute path makes the
+ * edge's source a published `qualifiedName` and makes `source + "." + target`
+ * the member's own published spelling, which is the walk the graph performs.
+ *
+ * Components are stripped at CONSTRUCTION rather than left to
+ * `canonicalizePublishedNames`, because that pass strips `ownerName` but not
+ * `scope` — a raw `@"my type"` component would leave the container spelling
+ * `my type` and the member `@"my type".field`, the same split this change
+ * removes.
+ */
+function ownerPathOf(container: ZigWalkSymbol | null): string | undefined {
+  if (!container) return undefined
+  return container.zigOwnerPath ?? container.name
+}
+
 export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
   public analyze(rootNode: Node, content: string, filePath: string): ASTEngine.ParseResult {
     const symbols: ASTEngine.UniversalSymbol[] = []
@@ -181,7 +229,7 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
     // reached as an EXPRESSION (an `if`/`switch` branch, a struct literal in a
     // prune). Such a container has no name, so it can own nothing: see the
     // ANONYMOUS CONTAINER branch below.
-    const walkStack: { node: Node; container: ASTEngine.UniversalSymbol | null; inFunction: boolean; anonContainer: boolean }[] = [
+    const walkStack: { node: Node; container: ZigWalkSymbol | null; inFunction: boolean; anonContainer: boolean }[] = [
       { node: rootNode, container: null, inFunction: false, anonContainer: false },
     ]
 
@@ -424,8 +472,8 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
           kind,
           visibility: isExported ? "public" : "private",
           range: this.nodeRange(node),
-          scope: container ? container.name : undefined,
-          ownerName: container?.name,
+          scope: ownerPathOf(container),
+          ownerName: ownerPathOf(container),
           ownerKind: container?.kind,
           metadata: {
             zigDeclaration: kind,
@@ -451,6 +499,18 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (isExported && !container) exports.push({ name: varName, kind, range: this.nodeRange(node) })
 
         // Container members belong to the new container symbol.
+        //
+        // Z-p22: a container records its OWN absolute path, which is what a
+        // member's `ownerName`/`scope` are spelled from (`ownerPathOf`). It is
+        // computed only for a container, so the 100k+ non-container declarations
+        // pay nothing, and `stripZigQuoting` runs per component so the path
+        // agrees with the STRIPPED name the projection builds the container's own
+        // `qualifiedName` from.
+        if (isContainer) {
+          const own = stripZigQuoting(varName)
+          const parentPath = ownerPathOf(container)
+          ;(sym as ZigWalkSymbol).zigOwnerPath = parentPath ? `${parentPath}.${own}` : own
+        }
         const newContainer = isContainer ? sym : container
         this.pushChildren(node, walkStack, newContainer, inFunction, anonContainer)
         continue
@@ -641,9 +701,9 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
             kind: isMethod ? ASTEngine.SymbolKind.Method : ASTEngine.SymbolKind.Function,
             visibility: isExported ? "public" : "private",
             range: this.nodeRange(node),
-            scope: container ? container.name : undefined,
+            scope: ownerPathOf(container),
             parameters: params,
-            ownerName: container?.name,
+            ownerName: ownerPathOf(container),
             ownerKind: container?.kind,
             // Per-symbol cyclomatic complexity (family standard — go/c/rust
             // emit symbol.complexity; zig did NOT, so completeness section C
@@ -845,8 +905,8 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
             kind: isEnumMember ? ASTEngine.SymbolKind.EnumMember : ASTEngine.SymbolKind.Property,
             visibility: "public",
             range: this.nodeRange(node),
-            scope: container?.name,
-            ownerName: container?.name,
+            scope: ownerPathOf(container),
+            ownerName: ownerPathOf(container),
             ownerKind: container?.kind,
             returnType: typeField ? this.nodeText(typeField) : undefined,
             metadata: { zigField: true, ...(isEnumMember ? { zigEnumMember: true } : {}) },
@@ -867,8 +927,8 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
             kind: ASTEngine.SymbolKind.EnumMember,
             visibility: "public",
             range: this.nodeRange(node),
-            scope: container.name,
-            ownerName: container.name,
+            scope: ownerPathOf(container),
+            ownerName: ownerPathOf(container),
             ownerKind: container.kind,
             metadata: { zigErrorSetMember: true },
           })
@@ -2680,8 +2740,8 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
 
   private pushChildren(
     node: Node,
-    walkStack: { node: Node; container: ASTEngine.UniversalSymbol | null; inFunction: boolean; anonContainer: boolean }[],
-    container: ASTEngine.UniversalSymbol | null,
+    walkStack: { node: Node; container: ZigWalkSymbol | null; inFunction: boolean; anonContainer: boolean }[],
+    container: ZigWalkSymbol | null,
     inFunction: boolean,
     anonContainer: boolean,
   ): void {
