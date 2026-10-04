@@ -973,7 +973,8 @@ showed the failure is the directory's, not one script's.
    corpus scale, and the reason is the first half of item 5.**
 
    **The exit-2 refusal is verified by reading the gate, not by running it at full
-   corpus — because the full-corpus run never reaches it.** Measured four times on this
+   corpus — because the full-corpus run never reaches it.** Measured seven times on
+   this
    branch, `npx tsx script/m14/ontology-coverage-gate.ts dart`:
 
    ```
@@ -1004,11 +1005,17 @@ showed the failure is the directory's, not one script's.
             [BB-HANG] parser stuck 120s on dart-sdk/.../is_postfix_completion_applicable_test.dart — exiting
             exit 1
    run 6:  corpus: 33692 admitted files   (2026-10-04, fifth re-measurement, 5m20.421s real)
-            [BB-PARSE-ERR] dart | dart-sdk/pkg/_fe_analyzer_shared/.../flow_analysis_operations.dart | memory access out of bounds
-            [BB-PARSE-ERR] dart | dart-sdk/pkg/analysis_server/lib/src/services/correction/dart/merge_combinators.dart | memory access out of bounds
-            [BB-HANG] parser stuck 120s on dart-sdk/pkg/_fe_analyzer_shared/.../flow_analysis_operations.dart — exiting
-            exit 1
+           [BB-PARSE-ERR] dart | dart-sdk/pkg/_fe_analyzer_shared/.../flow_analysis_operations.dart | memory access out of bounds
+           [BB-PARSE-ERR] dart | dart-sdk/pkg/analysis_server/lib/src/services/correction/dart/merge_combinators.dart | memory access out of bounds
+           [BB-HANG] parser stuck 120s on dart-sdk/pkg/_fe_analyzer_shared/.../flow_analysis_operations.dart — exiting
+           exit 1
+   run 7:  (2026-10-04, sixth re-measurement)
+           [BB-PARSE-ERR] dart | dart-sdk/pkg/analysis_server/test/lsp_over_legacy/execute_command_test.dart | memory access out of bounds
+           [BB-PARSE-ERR] dart | dart-sdk/pkg/analyzer/lib/dart/analysis/analysis_context_collection.dart | memory access out of bounds
+           [BB-HANG] parser stuck 120s on dart-sdk/pkg/analysis_server/test/lsp_over_legacy/execute_command_test.dart — exiting
+           exit 1
    ```
+
 
    Run 3's hang file is one run 2 already listed as a PARSE-ERR, and run 3 is the only
    one of the three whose hang file and parse-error set coincide as a single element —
@@ -2172,15 +2179,32 @@ reproduced exactly**. What did not:
   swing is a factor of 119 on MISSING. It is corrected in place, with the mechanism
   measured — 38 of 2,351 proxicall files each carry 5,353 `overrides` truth rows and a
   60-file draw contains one with probability 62.4%.
-- **`[BB-HANG]` run count n=5 → n=6**, and run 6 localizes the population: runs 1 and 6
-  share `dart-sdk/pkg/_fe_analyzer_shared/lib/src/flow_analysis/` and runs 2–5 share
-  `dart-sdk/pkg/analysis_server/`, so five of six sit in two dart-sdk subtrees rather
-  than spreading across 33,692 admitted files.
+- **`[BB-HANG]` run count n=5 → n=6 → n=7**, and run 6 localizes the population:
+  runs 1 and 6 share `dart-sdk/pkg/_fe_analyzer_shared/lib/src/flow_analysis/` and
+  runs 2–5 share `dart-sdk/pkg/analysis_server/integration_test/edit/`, so five of six
+  sit in two dart-sdk subtrees rather than spreading across 33,692 admitted files.
+  **Run 7 (2026-10-04, sixth re-measurement) names
+  `dart-sdk/pkg/analysis_server/test/lsp_over_legacy/execute_command_test.dart`** —
+  a seventh distinct file, and a THIRD subtree: it is under `pkg/analysis_server/`
+  like runs 2–5 but under `test/lsp_over_legacy/` rather than
+  `integration_test/edit/`. Six of seven still sit in two subtrees. Run 7 also
+  reproduced the rest of the shape exactly, `[BB-PARSE-ERR]` for
+  `execute_command_test.dart` and for
+  `dart-sdk/pkg/analyzer/lib/dart/analysis/analysis_context_collection.dart` before
+  the hang, then `exit 1`. The new file is innocent on the same evidence as the other
+  six: parsed alone through production `parseFile` it returns **3 symbols, 21 rels**
+  with no error, so `hang-file-innocence.ts` now reads **7 of 7 clean** and the two
+  properties below hold across all seven.
 - **The hang-file innocence probe's per-file PARSE TIMES are not a measurement** and
   the table now says so: `flow_analysis_log.dart` parsed in 935 / 1022 / 1690 ms on
   three runs of the same 20,272-byte file, a 1.81x spread, while its `32 symbols,
   136 rels` was identical on all three. Determinism is in the counts, not the
-  milliseconds, and a reader checking it should compare those.
+  milliseconds, and a reader checking it should compare those. **Run 7's file makes
+  the point harder: the same 1,173-byte file parsed in 1013 ms when handed to the
+  probe alone and 39 ms when handed to it as the seventh of seven — a 26x spread —
+  while `3 symbols, 21 rels` was byte-identical both times.** Any latency number
+  derived from this probe, including a reader's own spot check, is measuring the
+  machine.
 - **`script/m12/verify-regex-census.ts` still FAILS and still names no dart file.** Its
   14 MISSING rows are `real-css-analyzer.ts` (9) and `real-julia-analyzer.ts` (5), and
   its 25 STALE rows are clean/fsharp/javascript/python/svelte/typescript. This lane
