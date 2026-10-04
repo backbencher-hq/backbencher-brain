@@ -26,8 +26,15 @@
 import { join } from "node:path"
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs"
 import { execFileSync } from "node:child_process"
+import * as path from "node:path"
+import { fileURLToPath } from "node:url"
+// Derived from this file's own location, NOT hardcoded. Six of this lane's scripts
+// pinned $HOME/backbencher-brain, so in a lane worktree they read a path
+// that does not exist and the gate died with ENOENT instead of reporting a verdict.
+// A gate that cannot execute is not a gate, and the mutant battery looked green
+// only because its failure was being read as a pass.
+const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..")
 
-const REPO = "$HOME/backbencher-brain"
 const REPOS = "$HOME/fixtures/repositories"
 const argOf = (k: string, d?: string): string | undefined => (process.argv.includes(k) ? process.argv[process.argv.indexOf(k) + 1] : d)
 const CORPUS = argOf("--repo", "kong")!

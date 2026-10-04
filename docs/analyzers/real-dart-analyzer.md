@@ -31,19 +31,1479 @@
 
 ## Relationship ontology
 
-| Relationship type | Emitted? | How resolved | Confidence model |
-| --- | --- | --- | --- |
-| calls | ✅ | `selector` + `argument_part` → leaf callee (selector chains reduce to the last identifier: `obj.method()` → `method`; `Future.delayed(...)` → `delayed`); source = enclosing function/method/constructor leaf name (derived from the signature that precedes the `function_body` sibling); cascade calls (`..increment()`) → cascade selector leaf; global builtins filtered (`print`, `assert`, `identical`); Object-leaf methods filtered (`toString`, `hashCode`, `runtimeType`, `noSuchMethod`) | 0.9 |
-| extends | ✅ | `superclass` → first `type_identifier` | 1.0 |
-| implements | ✅ | `interfaces` → each `type_identifier` | 1.0 |
-| uses | ✅ | **Four distinct surfaces, not one.** (1) MIXIN — `mixins` child → each `type_identifier`, 1.0. (2) FIELD / MEMBER READ — a `selector` WITHOUT its own `argument_part` (`obj.method` tear-off, `this.count`, `C.total`, `a?.value`), 0.9; a CALLED member is a `calls` edge, not a field read. A `qualified` name under a `constant_pattern` (`case WalletOperationType.recipientLookup:`) is the SAME read parsed the other way round and is read too, 0.9, `isConstantPattern` — the string `qualified` was absent from this analyzer until that fix, so a switch case naming a declared enum member published nothing at all. (3) BARE IDENTIFIER — a plain `return count;` on a declared member of the enclosing type, gated on resolution AND on the name not being locally bound, 0.6, `isBareRead`. (4) TEMPLATE INTERPOLATION — each identifier in `${…}`, 0.9, `isLocalRead`; a name bound by a local DECLARATOR suppresses it, a PARAMETER does not (the TypeScript `interp-uses` parity, `989ba4c7`) | 0.6–1.0 by surface |
-| contains | ✅ | computed from `ownerName` on symbols (single pass) — class/mixin/extension/enum members | 1.0 |
-| references | — | **not emitted at all.** Dart's `uses` surfaces above carry every mention; there is no `references` relationship in the Dart ontology and the live census confirms it (9 classes, none named `references`) | — |
-| instantiates | ✅ | capitalized identifier + `argument_part` selector (Dart has no `new`: `Counter(1)` → instantiates Counter — types are capitalized); `constructor_invocation` (`List<int>.filled(...)`) → the constructed `type_identifier`; redirecting factory (`factory X.y() = X.z;`) → the redirect target type | 0.95 |
-| imports | ✅ | `import_specification` / `part_directive` → module leaf → `${uri}:*` | 1.0 |
-| exports | ✅ | `library_export` → module leaf → exported uri | 1.0 |
-| overrides | ✅ | derived method matching base-class method name; base resolved via extends + cross-file harness companion (`Counter.format → BaseService.format`) | 0.95 |
+**What each of the ten types means IN DART** — not in general. The counts are a
+2,735-file deterministic stride sample across five repositories (600 each from
+`proxicall`, `riverpod`, `flutter-packages`, `dart-sdk`, plus all 335 of
+`dart-http`), measured through the production entry point `parseFile` by
+`validation/m14/fixtures/dart/census.ts`. The BEFORE column is the same 2,735 files
+against the pre-M14 analyzer under the same harness, so every delta is measured
+rather than argued. **The pre-M14 analyzer is pinned to a commit, not to `HEAD`** —
+`git show 8286c7391:src/ast/real-dart-analyzer.ts`, 3,087 lines, the parent of the
+commit that added `references` (86a27dcb4) and 410 lines shorter than the 3,497-line
+file at this branch's head. `HEAD` is the wrong reference here and always was: it
+moved. `8286c7391` contains no `references` emission at all — the string occurs once
+in the file, in a comment on line 1699 — which is what makes it the BEFORE and not a
+near neighbour.
 
+**Both runs use `BB_DART_CONC=1`, and that is not a default — it is a requirement.**
+The file set is deterministic; the result is not, at concurrency above 1. Measured
+over the same 1,000 files with the same analyzer at `BB_DART_CONC=6`, two runs gave
+36,550 and 36,503 symbols and 124,772 and 124,638 relationships, with every affected
+label LOWER in the second run; at `BB_DART_CONC=1` the same two runs are identical to
+the row. The engine prints `[BB-PARSE-ERR] … memory access out of bounds` on some
+file-parses under concurrency (twice in ~5,500 file-parses, never at concurrency 1),
+so the loss is a failed parse inside the WASM parser, not arithmetic in the census.
+`parseFile` is shared machinery; see §Shared-machinery needs.
+
+| Relationship type | Emitted? | What it means in Dart | How resolved | Count (2,735 files) | BEFORE | Confidence |
+| --- | --- | --- | --- | --- | --- | --- |
+| calls | ✅ | an EXPRESSION was invoked | `selector` + `argument_part` → leaf callee (selector chains reduce to the last identifier: `obj.method()` → `method`; `Future.delayed(...)` → `delayed`); source = enclosing function/method/constructor leaf name (derived from the signature that precedes the `function_body` sibling); cascade calls (`..increment()`) → cascade selector leaf; global builtins filtered (`print`, `assert`, `identical`); Object-leaf methods filtered (`toString`, `hashCode`, `runtimeType`, `noSuchMethod`) | 43,042 | 43,044 (−2, R7 rows) | 0.9 |
+| uses | ✅ | a VALUE was read — four distinct surfaces, not one | (1) MIXIN — `mixins` child → each `type_identifier`, 1.0. (2) FIELD / MEMBER READ — a `selector` WITHOUT its own `argument_part` (`obj.method` tear-off, `this.count`, `C.total`, `a?.value`), 0.9; a CALLED member is a `calls` edge, not a field read. A `qualified` name under a `constant_pattern` (`case WalletOperationType.recipientLookup:`) is the SAME read parsed the other way round and is read too, 0.9, `isConstantPattern`. (3) BARE IDENTIFIER — `return count;` on a declared member of the enclosing type, gated on resolution AND on the name not being locally bound, 0.6, `isBareRead`. (4) TEMPLATE INTERPOLATION — each identifier in `${…}`, 0.9, `isLocalRead`; a local DECLARATOR suppresses it, a PARAMETER does not | 110,679 | 110,762 (−83, R7 rows) | 0.6–1.0 by surface |
+| contains | ✅ | a declaration is a member of a container | computed from `ownerName` on symbols (single pass) — class/mixin/extension/enum members | 119,515 | 119,534 (−19, R7 rows) | 1.0 |
+| imports | ✅ | this file REACHES FOR a module | `import_specification` / `part_directive` → module leaf → `${uri}:*` | 10,657 | 10,657 | 1.0 |
+| references | ✅ **(new)** | this declaration NAMES A TYPE in a type position | every `type_identifier` outside the positions another label already publishes, gated on the name binding to a type this run can see — same file always, `projectIndex.typeKinds` when an index is supplied | **5,265** | **0** | 0.95, `isTypeMention` + `typePosition` + `isIndexResolved` |
+| exports | ✅ | this library PUBLISHES a module | `library_export` → module leaf → exported uri | 302 | 302 | 1.0 |
+| extends | ✅ | a type INHERITS a base type | `superclass` → first `type_identifier`; a mixin `on`-base is the same edge (DARTD14) | 4,730 | 4,730 | 1.0 |
+| implements | ✅ | a type SATISFIES an interface | `interfaces` → each `type_identifier` | 758 | 758 | 1.0 |
+| overrides | ✅ | a member REPLACES one it inherits | derived method matching base-class method name; base resolved via extends + the cross-file companion | 90,352 | 90,352 | 0.8 |
+| instantiates | ✅ | an object of a type was CONSTRUCTED | capitalized identifier + `argument_part` selector (Dart has no `new`: `Counter(1)` → instantiates Counter — types are capitalized); `constructor_invocation` (`List<int>.filled(...)`) → the constructed `type_identifier`; redirecting factory (`factory X.y() = X.z;`) → the redirect target type | 18,374 | 18,374 | 0.95 |
+
+Total relationships on the sample: **403,674** after, **398,513** before —
++5,265 new `references`, −104 net from the R7 filter. Those two deltas account for the
+whole difference: 398,513 + 5,265 − 104 = 403,674, and every other label's count is
+identical in the two runs.
+
+The R7 rows are **106**, not 104, and the difference is not an error: the filter
+shares its loop with the dedup, and two of the 85 `uses` rows it drops were duplicates
+the dedup was discarding anyway. Per label, BEFORE: 85 `uses`, 19 `contains`, 2
+`calls`. AFTER: **0**, with `symbolsNamedUnknown 0` — no sampled file publishes a
+symbol named `unknown`, because `keepSymbol`'s universal denylist rejects the name for
+every language, so every one of those 106 rows was an endpoint nothing could bind.
+
+### The tenth type: `references`
+
+The rule in one line: **`X references T` iff the declaration `X` names the type
+`T` in a type position, and `T` binds to a type declaration this run can see.**
+
+Both clauses are needed and they fail independently.
+
+**The mention is a parse fact.** In this grammar `type_identifier` is the node the
+parser builds for a type name and never appears where a value identifier appears,
+so "this names a type" needs no capitalization heuristic and no shape guess. The
+parent-position inventory that decided which positions publish is measured, not
+recalled — `validation/m14/fixtures/dart/type-position-probe.ts` walks the same
+corpus and prints it: 75,769 type mentions outside heritage clauses across the
+1,000-file sample, led by `getter_signature` 17,274, `formal_parameter` 14,292,
+`type_arguments` 13,201, `function_signature` 6,709, `declaration` 3,312,
+`initialized_variable_definition` 3,188, `type_cast` 1,833, `type_test` 910,
+`try_statement` 215 (an `on T catch`), `type_bound` 59, `type_alias` 78,
+`qualified` 646 (the leaf of `prefix.Type`), and 21 further positions — **33 positions
+in all**, which is every one the probe found rather than a top-N cut: the JSON carries
+`top(positionCounts, 40)` and the map holds 33 entries, so the cap never bound. An
+earlier version of this sentence said "28 further positions", implying 40 and matching
+neither; the 40 is the instrument's cap and it had been read as a count.
+
+**The binding is not a parse fact, which is why the label is gated.** 3,460 of
+those 75,769 mentions (4.57%) name a type the same file declares. The other 95.43%
+name `String`, `Widget`, `Future` — real types, in `dart:core` and the Flutter SDK,
+declared in files a per-file run has not read. Publishing them would make the label
+mostly a list of SDK type names at roughly 22× the edge count, and every one of
+them an endpoint no symbol in the index can bind. **So the unresolvable majority is
+deliberately unread, and the number is stated here rather than left to be found
+downstream.**
+
+Positions that are NOT published, each with its reason:
+
+| Position | Why not |
+| --- | --- |
+| `superclass`, `interfaces`, `mixins`, `mixin_declaration`, `mixin_application` | heritage already publishes `extends` / `implements` / `uses`; a second label for one fact is a double count |
+| `new_expression`, `const_object_expression`, `constructor_invocation`, `redirecting_factory_constructor_signature` | construction already publishes `instantiates` |
+| `type_parameter` | `class Box<T>` DECLARES a type variable; a mention of `T` resolves to the variable, refused by `isTypeParameterShadowed` |
+| `ERROR` | nothing inside a parse-error region is a fact about a well-formed program |
+
+Three further refusals are not about positions but about names:
+
+- `dynamic` — Dart's IMPLICIT type, the absence of a declared type rather than a
+  dependency on one. It is spelled as a type name, so it needs the explicit
+  exclusion the fixture pins.
+- a self-reference — an UNNAMED extension (`extension on String {}`) is published
+  under its TARGET TYPE's name, so without this rule it publishes
+  `String references String`. An UNNAMED extension is also kept out of the
+  visible-type set for the same reason: admitting it would make every mention of
+  `String` in the file resolve to this file's extension.
+- a name no visible type answers to — the gate itself.
+
+Source attribution is the lane's existing rule for a non-function context
+(DARTD8/DARTD9): the innermost PUBLISHED declaration that mentions the type. A
+member's own signature; a type's own declaration (including a `typedef`'s aliased
+type and an extension's `on` clause); the FILE for a top-level mention, by the
+file's base name — the same convention `calls` and `instantiates` already use. Two
+attribution shapes are set by the GRAMMAR rather than by the text, and both are
+measured:
+
+- a **LOCAL FUNCTION** is not a published symbol (`local_function_declaration >
+  lambda_expression > function_signature`), so its type mention folds into the
+  function that encloses it. Publishing the local function's own name would make the
+  SOURCE endpoint a symbol nothing can bind.
+- an **expression-bodied member** is not always a method: tree-sitter-dart resolves
+  `foo() => Bar(...)` to `method_signature > constructor_signature`, so the source
+  is the family name `constructor`, the same name `contains` gives that symbol. The
+  two labels have to agree on a constructor's identity or a graph cannot join them.
+
+The fixture that holds all of this is
+`validation/m14/fixtures/dart/type-references.dart` — 14 expected rows and 15
+forbidden ones, each forbid naming a shape where a plausible widening either
+double-counts another label or claims a mention the source does not make.
+
+### Defects found and fixed while establishing this lane's numbers
+
+Four, all in this lane's own code, all found by measurement rather than by reading.
+Three were found in code this wave wrote; the fourth is in the census harness this
+lane also wrote, and it is the one that had been quietly mis-reporting.
+
+1. **The type-variable gate never fired for a CONSTRAINED type variable.**
+   `isTypeParameterShadowed` compared `type_parameter.text` against the mentioned
+   name, and a `type_parameter` node's text SPANS ITS BOUND — `class Box<T extends
+   Wallet>` is one node whose text is `"T extends Wallet"`. So the comparison never
+   matched any generic with a bound, which is the common case. On a 9-line
+   reproduction whose file also declared `class T {}`, the analyzer published
+   `Box -> T`, `get -> T` and `put -> T`: three edges that RESOLVE, at the wrong
+   declaration, because inside `Box` the name is the type variable. Fixed by reading
+   the parameter's `type_identifier` child instead of its text, on both the analyzer
+   side and the oracle side. **Corpus effect: 0 rows** — 2,735 files contain no
+   constrained type variable whose name is also a declared type in the same file, so
+   this is a reachable defect with no corpus incidence, and the fixture
+   (`class Shadowed<T extends Shadowed>` beside `class T {}`) is what holds it.
+2. **The oracle read three shapes the analyzer does not.** A corpus agreement run at
+   150 files per repository disagreed on 19 of 1,210 rows, and every one of the 19 was
+   the ORACLE's reading, never a fabricated analyzer row:
+   - it named a local function as the source (13 rows, all inside closures in
+     `material_ui/test/dropdown_menu_test.dart`);
+   - it did not treat a class ALIAS as a type declaration (`class SuperC = S with M;`
+     puts the name inside `mixin_application_class`, so a `name`-field read sees no
+     class at all — 2 rows);
+   - it tested for a constructor signature before descending the wrapper, so it
+     missed every expression-bodied member the grammar calls a constructor (3 rows).
+   After the fixes: **1,203 of 1,203 rows agreed over the same 799 files, 0 missing,
+   0 unexplained.** Each fix is pinned by a case in the battery.
+3. **The census reported a capped counter as a total.** `unknownEndpoints` was one
+   array used both as the counter and as the capped example list, and the report read
+   `.length` off it while the pushes stopped at 40 — so every run whose true count
+   exceeded the cap printed exactly `40`. That is how a 2,351-file measurement came to
+   be quoted as 40 when the true figure is 239. Fixed by separating the counter from
+   the sample list, and the count is now reported per label as well, because "106
+   rows carry the literal" and "which labels" are two questions.
+4. **A named-constructor leaf call can name the placeholder** — the R7 defect, above.
+   106 rows on the 2,735-file sample, 239 on proxicall's full tracked set.
+
+### The one type that was missing is not the only defect the census found
+
+`references` was believed missing and was. Two further defects surfaced while
+establishing the baseline, and both are in this analyzer:
+
+1. **106 relationships carried the placeholder literal `unknown` as an endpoint**
+   (M60 rule R7), on the 2,735-file sample: 85 `uses`, 19 `contains`, 2 `calls` —
+   and 239 rows on proxicall's full 2,351-file tracked set (154 `uses`, 68
+   `contains`, 17 `calls`). Two constructions produce them, and both are the same
+   shape at the leaf:
+   - a selector chain reduced to its leaf, where the leaf of a constructor call on a
+     capitalized type is the named constructor's segment and the segment is the word
+     `unknown` — `ApiError.unknown('Data transformation failed: $e')`,
+     `proxicall/lib/services/api/api_response.dart:172`;
+   - a same-named enum constant read through its type —
+     `enum SegmentType { …, unknown, … }` in
+     `proxicall/lib/models/nms/user_segment.dart:37`, read at line 60 and 82.
+   After the filter: **0**, measured on both sample sets.
+   The alternatives were each worse: `map calls ApiError` claims a call is a call
+   OF the type, and promoting the row to `instantiates` would extend DT-A's
+   in-file named-constructor evidence to a cross-file guess. The edge goes, which
+   is what R7 prescribes — the honest state is absence, not the string `unknown`.
+   **What it costs is measured rather than assumed:** all 106 targets named symbols
+   that the store never receives, because `keepSymbol`'s universal denylist
+   (`src/ast/pool-worker.ts`) drops the name `unknown` for every language, and the
+   census counts 0 surviving symbols named `unknown` in the same sample. So the
+   graph loses nothing; the edges pointed at nothing. The price that IS real is one
+   declaration: `user_segment.dart`'s enum constant is named `unknown`, it loses any
+   edge to it, and it had none before the filter either.
+   The one cost outside the analyzer is in the DIFFERENTIAL, and it is a supervisor
+   item: the oracles still derive such rows (measured 9 per 525 files,
+   `validation/m14/fixtures/dart/r7-truth-cost.ts`), and the harness matches on
+   (label, target), so every one it samples now reads MISSING. See §Shared-machinery
+   needs below.
+2. **`references` was the only one of the ten types the differential does not
+   compare** — see DERIVATION below.
+
+
+## Verdicts, one per relationship type (M14 ontology wave)
+
+Each of the ten types carries exactly one verdict. **There is no RULED type in this
+lane any more**: all ten are emitted, so the arbiter has nothing left to rule and
+the falsifiable-ruling machinery is vacuous here. That is a statement about the
+measurement, not a preference — the counts in the table above come from production
+`parseFile` over 1,000 corpus files, and a type with a non-zero count cannot be
+ruled.
+
+| Type | Verdict | Count (2,735 files) | Evidence |
+| --- | --- | --- | --- |
+| calls | EMITTED | 43,042 | production `parseFile`, `BB_DART_CONC=1`, sample files listed in the census JSON |
+| uses | EMITTED | 110,679 | same |
+| contains | EMITTED | 119,515 | same |
+| imports | EMITTED | 10,657 | same |
+| references | EMITTED | 5,265 | same; `type-references` fixture (14 expect / 15 forbid) + lane oracle at 100.0% (1,203/1,203 rows) over 799 corpus files |
+| exports | EMITTED | 302 | same; arbiter `firing-check.ts --files 400 dart` independently reports 10/10 with 9 `exports` edges — see *the supervisor's arbiter reads 9/10 at n=120* |
+| extends | EMITTED | 4,730 | same |
+| implements | EMITTED | 758 | same |
+| overrides | EMITTED | 90,352 | same |
+| instantiates | EMITTED | 18,374 | same |
+
+Corpus: `proxicall` (600 of 2,351 tracked, stride 3), `riverpod` (600 of 1,295,
+stride 2), `flutter-packages` (600 of 4,033, stride 6), `dart-sdk` (600 of 25,734,
+stride 42), `dart-http` (all 335). Sampling is a deterministic stride over
+`git ls-files '*.dart'` sorted, per repository — no randomness, so a reviewer
+reproduces the same 2,735 file set from a clean corpus.
+
+### How many files each type fires in, over the same 2,735
+
+A count says a type exists; a file count says how widely. `census.ts` wrote only
+six example files per type and that field is capped at six **in iteration order**,
+so all sixty examples were `proxicall` files — which made `exports` look like a
+single-repository edge when it is not. The census now carries an uncapped per-type
+file set, so the breadth is measured rather than sampled:
+
+| Type | edges | files carrying it | % of 2,735 | repos | spread (proxicall / dart-http / riverpod / flutter-packages / dart-sdk) |
+| --- | --- | --- | --- | --- | --- |
+| calls | 43,042 | 2,310 | 84.5% | 5/5 | 532 / 299 / 533 / 515 / 431 |
+| uses | 110,679 | 2,373 | 86.8% | 5/5 | 561 / 273 / 546 / 526 / 467 |
+| contains | 119,515 | 1,696 | 62.0% | 5/5 | 441 / 96 / 435 / 371 / 353 |
+| imports | 10,657 | 2,461 | 90.0% | 5/5 | 578 / 315 / 583 / 575 / 410 |
+| references | 5,265 | 911 | 33.3% | 5/5 | 242 / 47 / 267 / 203 / 152 |
+| exports | 302 | 104 | 3.8% | 5/5 | 18 / **54** / 12 / 11 / 9 |
+| extends | 4,730 | 1,218 | 44.5% | 5/5 | 348 / 58 / 363 / 279 / 170 |
+| implements | 758 | 307 | 11.2% | 5/5 | 116 / 39 / 38 / 44 / 70 |
+| overrides | 90,352 | 1,100 | 40.2% | 5/5 | 321 / 56 / 348 / 266 / 109 |
+| instantiates | 18,374 | 2,032 | 74.3% | 5/5 | 516 / 254 / 508 / 460 / 294 |
+
+**Every one of the ten fires in all five repositories, so no verdict above rests
+on a single corpus.** Two rows are worth reading closely. `exports` fires in 104
+of 2,735 files (3.8%), which is the edge-side counterpart of the 2.0117%
+node-side base rate below, and its largest share is `dart-http` — the one
+repository in the sample that is entirely library code, where a `lib/` entry point
+is what carries an export. And `exports` is the only type whose largest
+repository is not `proxicall` or `riverpod`, which is the same fact the capped
+example list was hiding.
+
+`contains` is the one type that does NOT approach its ceiling: 1,696 of 2,735
+files, 62.0%. A first draft explained the missing 1,039 as "scripts, `part`
+fragments and generated files with no declaration of their own" — a plausible
+sentence, and not a measurement. `validation/m14/fixtures/dart/zero-contains-probe.ts`
+now characterizes the population from node types instead, and the accounting
+closes to 1,039 with **no unexplained remainder**:
+
+| shape | files | what it is |
+| --- | --- | --- |
+| no declaration node, no directive | 882 | nothing for `contains` to point at |
+| declaration nodes, all member-less | 96 | 211 empty `class_definition`, 28 `type_alias`, 10 `mixin_declaration`, 3 `extension_declaration` — an empty class genuinely contains nothing |
+| directives only (`library`/`part`/`part of`) | 51 | 89 `part_directive` + 22 `part_of_directive` + `library_definition` nodes; a `part` fragment declares nothing of its own |
+| declaration WITH members | 5 | the structural fallback and one parse error — the only row where an edge *should* exist and does not |
+| parse error, no declaration | 5 | 9 ERROR nodes across the population |
+| **total** | **1,039** | the instrument's four mutually exclusive shapes are 882 + 101 + 51 + 5; the 101 splits 96 member-less + 5 with members, and the five rows above are that refinement |
+
+The fourth row is the one that mattered, because it is the only row where an edge
+*should* exist and does not. All five were checked against production `parseFile`
+rather than argued about. Four return `fallback=true` with symbols that carry no
+`kind` and a `calls` row from the regex extractor; the fifth is a 35-byte
+`ERROR`-bearing parse case:
+
+```
+native_cupertino_bindings.dart  1,075,261 B  fallback=true  symbols=6    rels={calls:24}
+ok_http/.../jni/bindings.dart   1,192,087 B  fallback=true  symbols=1    rels={calls:10}
+google_fonts_lite.dart          1,873,498 B  fallback=true  symbols=1061 rels={calls:1}
+dartfuzz_type_table.dart       11,723,071 B  fallback=true  symbols=0    rels={}
+patternVariableDeclaration_inClass.dart  35 B  errors=1  rels={}
+```
+
+So **`contains` misses nothing the analyzer can see**: every sampled file that
+declares something with a member and is under the size guard carries the edge.
+The 62.0% is the label being defined over declarations, and reporting it as 100%
+would be reporting the absence of a counter-example as coverage.
+
+Two false readings were produced and caught while measuring this, both from
+naming a node type nobody had checked rather than reading it off the tree. The
+first hardcoded `class_member` and measured **0 of 923** declarations as having a
+member; the second hardcoded `method_signature`/`field_declaration` as children of
+the declaration and measured 0 again. The grammar puts members one level down,
+inside `class_body` (713), `extension_body` (163), `enum_body` (12) and
+`representation_declaration` (237), and a declaration's own named children are
+only its name, heritage clauses, type parameters and annotations. A third reading
+was wrong for a different reason — it classified from an accumulator that spanned
+the whole corpus, which reported 101 files with members when 5 have them. The
+probe derives the member set from the histogram it prints and classifies per file;
+that is why the table above can be checked rather than believed.
+
+Reproduce the breadth columns and the zero-`contains` accounting:
+
+```bash
+BB_DART_CONC=1 BB_DART_OUT=/tmp/c.json npx tsx validation/m14/fixtures/dart/census.ts
+# -> perType.<type>.filesWith and .filesWithByRepo, plus filesWithoutContains
+BB_DART_CENSUS=/tmp/c.json npx tsx validation/m14/fixtures/dart/zero-contains-probe.ts
+# -> the 882 / 101 / 51 / 5 shape split, and filesWithMemberDecls = 5
+```
+
+### The supervisor's arbiter reads 9/10 at n=120, and that reading is a sample artifact
+
+`script/m14/firing-check.ts --files 120 dart` reports:
+
+```
+9/10 fired, 8290 edges, 120/120 files
+notFired: ["exports"]
+```
+
+`firing-check.ts` is shared machinery and is not on this branch, so it was run from
+a copy of `5a634e17e:script/m14/firing-check.ts` placed at the path its relative
+imports require and removed afterwards; it is not committed here. **Both readings below
+were reproduced on this branch from that same copy**, so the pair is a measurement and
+not a recollection — and the file exists at `5a634e17e`, so the remedy for item 7 is to
+land that commit rather than to write a new instrument. Its own numbers at
+n=120 versus n=400, same instrument, same corpus, same analyzer:
+
+| n | fired | relationships | files | `exports` edges |
+| --- | --- | --- | --- | --- |
+| 120 | 9/10 | 8,290 | 120/120 | **0** |
+| 400 | **10/10** | 53,252 | 400/400 | **9** |
+
+The n=400 run prints, verbatim:
+
+```
+10/10 fired, 53252 edges, 400/400 files
+
+lang       files       fired   rels        degraded  fired types
+dart       400/400     10/10   53,252      0    calls,uses,contains,imports,references,exports,extends,implements,overrides,instantiates
+```
+
+and the n=120 run prints `dart  120/120  9/10  8,290  0` with `exports` absent from the
+fired list — the supervisor's table, reproduced. `degraded` is 0 on both.
+
+At n=400 the arbiter reports `degraded: 0`, `unknownEndpoints: 0`,
+`emptySymbolNames: 0`, `emptyOrUnknownKind: 0`.
+
+**Why 120 files cannot see an export in Dart.** `validation/m14/fixtures/dart/export-population-probe.ts`
+walks the whole admitted corpus and counts `library_export` NODES on the parse tree —
+a node-type count, because `export` also occurs inside identifiers, comments and string
+literals and a text instrument could not tell a directive from a word:
+
+```
+corpus total .dart files: 33,753
+files carrying >=1 library_export node: 679  (2.012%)
+library_export nodes across the corpus: 2,040
+  of those, inside an ERROR region: 1
+```
+
+At a 2.012% base rate, 120 files are expected to contain `679/33753 x 120 = 2.41`
+export-bearing files, and the probability that a 120-file sample contains NONE is
+`(1 - 0.0201167)^120 = 0.0873`. The probe reproduces the arbiter's own sample from the
+arbiter's own rule and finds **0** export-bearing files in it — consistent with the
+reading, not evidence against it. n ≥ 148 gives a ≥95% chance of at least one; at
+n=400 the expected count is 8.04 and the arbiter measured 9.
+
+**The probe's own printed sentence was wrong about this and understated the surprise.**
+It printed the **per-file** non-export rate — `97.988%` — and attributed the observed 0
+to it. The quantity that predicts a 0 at a sample of 120 is `(1 - p)^120` = **8.73%**,
+an order of magnitude away, and the error ran in the permissive direction: 97.988% makes
+a zero sound expected, so a reader skimming it would have had less reason to go and look
+for the defect the 0 might have been. The probe now prints the base rate, the sample
+probability and the n that reaches P(none) ≤ 5% as three separate, labelled numbers.
+The numbers in the paragraph above are unchanged by the fix; only the sentence that
+explained them was wrong.
+
+**So `exports` is EMITTED and the 9/10 is the sample, not the lane.** The ruling that
+was tempting here — "`library_export` is rare enough that 120 files miss it, so 9/10 is
+the lane's real ceiling" — was available and would have been wrong, and it is wrong in
+the direction that matters: it would have reported a shortfall on a label that fires 302
+times over 2,735 files. A type's firing verdict must be taken at a sample where its
+base rate can be seen; the same arbiter at 400 files is the same code reading 10/10.
+
+The first version of this probe reached the OPPOSITE conclusion — it reported that the
+arbiter's sample contained 2 export-bearing files, which would have made the 0 a real
+defect — and it was wrong twice over: it sorted the whole-corpus list before striding
+(`filesForLanguage` strides in construction order and sorts only the picked files), and
+it filtered files over 512 KB, which the arbiter does not, admitting 33,692 of the
+arbiter's 33,755 and shifting the stride from 281 to 280. Both errors changed which 120
+files were measured. The corrected probe and the corpus rule it depends on are in the
+file header.
+
+The one `library_export` node inside an ERROR region corpus-wide is counted
+separately above rather than folded into the base rate; it does not change the
+verdict, and the analyzer's own `exports` row (302 over 2,735 files) is a count of
+EDGES, measured through `parseFile`, not of nodes.
+
+Reproduce:
+
+```bash
+BB_DART_CONC=1 npx tsx validation/m14/fixtures/dart/census.ts    # the table above
+npx tsx validation/m14/fixtures/dart/type-position-probe.ts      # the position inventory
+npx tsx script/m14/verify-dart-references.ts                     # 38 shapes, both sides
+BB_DART_PER_REPO=150 npx tsx script/m14/verify-dart-references.ts --corpus
+bun run script/m14/run-fixtures.ts --lang dart                  # 16 fixtures
+BB_MUTANT_ONLY="dart/" bun run script/m14/mutate-analyzer.ts      # 42/42 caught
+
+npx tsx validation/m14/fixtures/dart/export-population-probe.ts # the 2.012% base rate
+npx tsx validation/m14/fixtures/dart/export-firing-probe.ts     # edges on the 2 sampled files
+npx tsx script/m14/firing-check.ts --files 400 dart             # 10/10, 53,252 edges
+```
+
+`firing-check.ts` and `incoming-check.ts` are shared machinery and are NOT on this
+branch; both were run from a copy under `/tmp` staged at `script/m14/` for the relative
+imports and removed afterwards. Neither is committed by this lane. **Two of the arbiter's
+own JSON fields are wrong on every lane and a reader will meet both** — `analyzerDigest`
+is a `MISSING:` path because it looks for `script/ast/` instead of `src/ast/`, which also
+makes `analyzerStableDuringRun` vacuously true, and `types[type].files` is 1 for every
+type because its map is rebuilt per file. Remedies are items 14 and 15 under
+*Shared-machinery needs*. The fired count, the edge count, `degraded`, and the four
+zero-safety fields are unaffected by either, which is why the readings above stand.
+
+The incoming pass (§The incoming direction) has its own instruments, and they use a
+different sample on purpose — a symbol table that is itself a stride cannot answer a
+cross-file resolution question:
+
+```bash
+BB_DART_CONC=1 npx tsx validation/m14/fixtures/dart/incoming-census.ts   # the incoming tables
+bun run validation/m14/fixtures/dart/object-interface-mutant.ts          # 4/4 mutants caught
+bun run script/m14/verify-dart-contains.ts                               # 37 shapes
+bun run script/m14/verify-dart-overrides.ts                              # 14/14 shapes exact
+bun run script/m14/verify-dart-references.ts                             # 38 shapes, both sides
+npx tsx validation/m14/fixtures/dart/regex-census.ts                     # 0 regexes, AST-measured
+npx tsx validation/m14/fixtures/dart/regex-census.ts --all               # + the 7 pre-existing tmp rows
+npx tsx validation/m14/fixtures/dart/hang-file-innocence.ts             # 5/5 hang files parse clean alone
+```
+
+### The six questions, per emitted type
+
+They fail independently, so each is answered with its own measurement. Resolution is
+given in three scopes because they answer different questions: `file` is this file's
+symbols, `sample` is every sampled file's, and `repo` is every sampled file of the
+SAME repository — the narrowest honest cross-file scope, since a per-file analyzer
+cannot see another file and a type declared in one is a real symbol the edge can
+legitimately name. All figures below are the 2,735-file run, and every one is a field
+`census.ts` writes to its JSON: `src∈file`, `tgt∈file`, `both∈file`, `tgt∈sample`,
+`both∈sample`, `tgt∈repo`, `both∈repo`. Where this table says "both∈X" it means BOTH
+endpoints bind at that scope; the two tables below used to mix target-only and
+both-ends figures under one word, and two of the numbers below were left over from a
+census run that predated the qualified-spelling fix (defect 4 under *Four defects in
+this lane's own harnesses*), which is why `overrides` was quoted at 0.0% in-repo.
+
+| Type | 1 Exists | 2 Fires | 3 Correct | 4 Labelled | 5 Resolved | 6 Confident |
+| --- | --- | --- | --- | --- | --- | --- |
+| calls | ✅ | ✅ 43,042 | ✅ differential, 60-file proxicall sample: 6,120/6,220 truth rows covered, **0 unexplained** | ✅ | src∈file 99.1% · tgt∈file 22.1% · both∈sample 66.6% · both∈repo 50.8% | 35 of 43,042 under 0.7 (0.1%), min 0.4 — sub-threshold `uses`-style reads inherited from the shared bare-read surface |
+| uses | ✅ | ✅ 110,679 | ✅ same run, 0 unexplained | ✅ four surfaces, each pinned by a fixture; no surface borrows another's label | src∈file 99.3% · tgt∈file 25.5% · both∈sample 69.2% · both∈repo 60.1% | 13,325 of 110,679 under 0.7 (12.0%), all the bare-read surface at 0.6 — the largest heuristic class in the lane |
+| contains | ✅ | ✅ 119,515 | ✅ `deriveDartContainsTruth`, 37/37 shapes exact, and 0 unexplained in the differential | ✅ | **both∈file 100.0%, both∈repo 100.0%** — the only label in the lane that resolves at both ends by construction; 3 of 119,515 targets are bare-name and unbound | 0 under 0.7 |
+| imports | ✅ | ✅ 10,657 | ✅ `deriveDartImportsTruth`, 7,340 rows measured EXACT on both corpora | ✅ | src 2.7% / tgt 0.0% both-ends: targets are module URIs (`package:foo/src/x.dart:*`), and a URI is not a symbol in this index | 0 under 0.7 |
+| references | ✅ | ✅ 5,265 | ✅ lane oracle `script/m14/oracles/dart-references.ts` — **1,203/1,203 rows agreed (100.0%), 0 missing, 0 unexplained** over 799 corpus files, and 38/38 shapes exact in the battery | ✅ 14 expect rows name the position they came from; 15 forbid rows cover heritage, construction, type variables (including a constrained one shadowing a same-named class), self-reference, `dynamic` and the resolution gate | src∈file 97.9% · **tgt∈file 100.0% by construction** · both∈file 97.9% · both∈sample 98.7% · both∈repo 98.6% | **0 of 5,265 under 0.7** — all `usage_contextual` at exactly 0.95, min = mean = 0.95 |
+| exports | ✅ | ✅ 302 | ✅ same oracle as imports | ✅ | 0.0% both-ends, same URI shape | 0 under 0.7 |
+| extends | ✅ | ✅ 4,730 | ✅ differential, 0 unexplained | ✅ alias-free leaf resolution (DAD1), pinned by `dart/heritage-alias-not-resolved`'s fixture twin | src∈file 100% · tgt∈file 15.0% · both∈sample 33.2% · both∈repo 27.1% | 0 under 0.7 |
+| implements | ✅ | ✅ 758 | ✅ differential, 0 unexplained | ✅ alias-free (DAD2) | src∈file 100% · tgt∈file 29.7% · both∈sample 48.0% · both∈repo 45.1% | 0 under 0.7 |
+| overrides | ✅ | ✅ 90,352 | ✅ `verify-dart-overrides` 14/14 shapes exact — **but the differential does not compare this label**, see DERIVATION | ✅ exposer-not-declarer, instance-vs-static, breadth-not-depth, all pinned with a negative twin per rule | src∈file 100% · tgt∈file 2.3% · both∈sample 3.1% · both∈repo 2.9% | 0 under 0.7; 88,211 of 90,352 rows are the external-base form, all at 0.8 |
+| instantiates | ✅ | ✅ 18,374 | ✅ differential, 0 unexplained | ✅ construction only, never a call (DT-A) | src∈file 96.8% · tgt∈file 13.4% · both∈sample 28.2% · both∈repo 22.4% | 0 under 0.7 |
+
+Three things in that table need reading rather than skimming.
+
+**"Correct" for `calls`, `uses`, `extends`, `implements` and `instantiates` is the
+differential's word, and the differential has a declared blind spot:** the analyzer
+and the oracle are two walkers over ONE grammar, so a defect in the grammar's own
+vocabulary is invisible to both. `references` does not have that excuse for its
+first half — the oracle is a second implementation of the same measured rule, and
+its agreement is evidence about implementation disagreement, not about the rule.
+The rule's own argument is the fixture battery and the position inventory.
+
+**The resolution rates for `calls`, `uses`, `instantiates`, `extends` and
+`implements` are low and that is not new.** They are low for the same reason CSS
+`references` is the family reference point at 66.8%: a per-file analyzer names
+targets that live in other files, and the index binds them when the whole project
+is read. `references` is the only label whose target resolves in-file by
+construction, because resolution is its gate — and the honest reading of that is
+that it is also the only label that cannot tell you about a dependency this file has
+on a type in another file.
+
+**`overrides` resolves at 2.9% in-repo, and that low figure is a SHAPE rather than a
+rate.** 88,275 of its 90,352 unresolved targets — 97.7% — are `dotted-path`: the edge
+names `State.setState`, not `setState`, so it binds only where the `owner.name`
+spelling is itself published. An earlier version of this document quoted 0.0% here,
+and that number was the HARNESS's, not the analyzer's: `census.ts` put the qualified
+`owner.name` spelling into the per-file symbol table only, so a label whose source and
+target are both qualified read zero in every cross-file scope on a sample that plainly
+contained the declaring class (defect 4 below). With the spelling in all three tables
+the same run reads 3.1% in-sample and 2.9% in-repo. The 2.3% in-file figure remains the
+honest one for a per-file run. Whether the dotted spelling is the right endpoint for a
+cross-language graph is a question about the whole family and not this lane's to
+answer; it is recorded here because a reader of `overrides` for Dart will otherwise
+read 2.9% as "no base was ever found" — the incoming census below, which resolves
+against whole repositories read in full, puts the same label at 93.0%.
+
+### DERIVATION findings
+
+A DERIVATION finding is a type the analyzer emits that the differential never
+audits — stored and compared against nothing. **This lane had one at handover and
+has one now, and it is a different one from the one the recorded baseline names.**
+
+`script/m60/rel-type-coverage-gate.ts --langs=dart`, run on this branch:
+
+```
+CHECK 1 — DERIVATION: every emitted type has an oracle derivation
+  dart         2 un-audited: ["overrides","references"]
+```
+
+- **`overrides`** — pre-existing, and it is a harness gap rather than a lane gap:
+  the oracle exists (`script/m14/oracles/dart-overrides.ts`, pushed as
+  `deriveDartOverridesTruth`) and the analyzer-side allowlist excludes the label for
+  dart at `script/m14/differential.ts:23153` (`lang !== "dart"` in the overrides
+  arm). Because the allowlist filters the ANALYZER side only, the truth rows land
+  as permanent MISSING: **100 on a 60-file proxicall sample and 14 on dart-http,
+  every one of them an `overrides` row.** Declared in this lane's spec
+  (`script/m14/spec/dart-completeness.json` → `label_coverage.declared_gaps`), so
+  `verify-label-coverage.ts` reports it as declared rather than undeclared.
+- **`references`** — introduced by this wave, and it is the honest cost of adding a
+  label ahead of its wiring. The oracle exists and its battery reports 38/38 shapes
+  exact over 799 corpus files (`bun run script/m14/verify-dart-references.ts`, and
+  `--corpus` for 1,203/1,203 rows agreed); the allowlist drops the label, so the
+  5,265 rows are compared by nothing.
+  Declared in the same spec entry with the reason and the `closes_when`.
+
+The recorded baseline (`validation/m60/results/rel-type-coverage.json`, 2026-10-01)
+says dart audits 5 labels and has 4 DERIVATION findings; this branch's gate reports
+2. The difference is the M60 label-coverage sweep, which wired the `contains`,
+`imports` and `exports` oracles after that artifact was written. The baseline file
+is supervisor-owned and was not regenerated here.
+
+## The incoming direction: can an emitted edge be walked TO
+
+The tables above measure outgoing edges. This section measures the other direction,
+because `src/lsp/impact.ts` obtains its reverse edges by scanning outgoing edges and
+matching targets — so the reverse walk is exactly as good as that matching, and two
+things follow from it that are not about emission at all:
+
+1. **A target that resolves to more than one published symbol.** The reverse walk
+   picks one by a rule nobody chose, so ONE edge is silently attributed to one of N
+   real declarations and the other N−1 lose a caller they have.
+2. **A hopeless target** — an SDK type, a package type, a member of an external
+   type, a local variable — which in a count is identical to "a declaration in my
+   own corpus the run failed to publish". Those are opposite findings.
+
+Instrument: `validation/m14/fixtures/dart/incoming-census.ts`, driving production
+`parseFile`. **This is a different sample from the tables above and the two are
+never mixed.** The verdict table's 2,735-file census draws a stride from five
+repositories; this census reads three repositories WHOLE and strides two, because
+the questions are about cross-file resolution and a symbol table that is itself a
+stride cannot answer them.
+
+```
+4,788 files   dart-http 335/335, riverpod 1,295/1,295, proxicall 2,351/2,351  (FULL)
+              flutter-packages 404/4,033 (stride 10), dart-sdk 403/25,734 (stride 64)
+337,336 symbols   960,634 analyzer relationships   BB_DART_CONC=1
+26 files carry 457 ERROR-node parse errors; 4 files >1 MB go to the fallback
+67 edges EXCLUDED as degraded-fallback output (below)
+emptySymbolNames 0   emptyOrUnknownKind 0   symbolsNamedUnknown 0   unknownEndpoints 0
+```
+
+**Every count in that block reproduced exactly on a second run; the wall time did
+not, and it is quoted here as a range for that reason.** The harness prints
+`wallMs(walk)` and two runs on this machine measured **615,539 ms** and
+**995,723 ms** — a 1.62x spread over an identical input, because the machine is
+shared and this run's load average was 13. A millisecond-precision figure
+presented as a lane property would be a number a reviewer re-runs, fails to
+reproduce, and cannot tell apart from a regression. The stable form of the same
+measurement is throughput: **960,634 analyzer relationships over 4,788 files**,
+which reproduced exactly.
+
+Resolution, per type. `repoFull` is over the three FULL repositories; `sample` is
+over the two strided ones; the columns are never mixed, because a rate quoted over
+the wrong scope answers a question nobody asked.
+
+| Type | emitted | both ends, file | both ends, sample | both ends, repoFull | target unique | target ambiguous (2–5) | target crowded (6+) | target binds to nothing | confidence < 0.7 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| calls | 90,827 | 17,833 19.6% | 55,772 61.4% | 48,111 53.0% | 18,993 20.9% | 15,649 17.2% | 30,478 33.6% | 25,707 28.3% | 0 0.00% |
+| uses | 226,095 | 56,417 25.0% | 158,944 70.3% | 137,653 60.9% | 33,842 15.0% | 32,617 14.4% | 106,083 46.9% | 53,553 23.7% | 25,464 11.26% |
+| contains | 310,925 | 310,923 100.0% | 310,923 100.0% | 292,025 93.9% | 14,197 4.6% | 11,122 3.6% | 285,604 91.9% | 2 0.0% | 0 0.00% |
+| imports | 22,506 | 0 0.0% | 0 0.0% | 0 0.0% | 0 | 0 | 0 | 22,506 100% | 0 0.00% |
+| references | 10,273 | 10,049 97.8% | 10,131 98.6% | 7,468 72.7% | 6,948 67.6% | 947 9.2% | 2,378 23.1% | 0 0.0% | 0 0.00% |
+| exports | 403 | 0 0.0% | 0 0.0% | 0 0.0% | 0 | 0 | 0 | 403 100% | 0 0.00% |
+| extends | 10,317 | 1,542 14.9% | 4,832 46.8% | 4,131 40.0% | 4,543 44.0% | 615 6.0% | 164 1.6% | 4,995 48.4% | 0 0.00% |
+| implements | 2,082 | 397 19.1% | 1,550 74.4% | 1,399 67.2% | 1,444 69.4% | 117 5.6% | 91 4.4% | 430 20.7% | 0 0.00% |
+| overrides | 247,737 | 3,524 1.4% | 232,941 94.0% | 230,467 93.0% | 232,736 93.9% | 505 0.2% | 102 0.0% | 14,394 5.8% | 0 0.00% |
+| instantiates | 39,469 | 4,593 11.6% | 13,597 34.4% | 12,185 30.9% | 13,764 34.9% | 1,443 3.7% | 2,220 5.6% | 22,042 55.8% | 0 0.00% |
+
+### Ambiguity: 490,135 ambiguous targets, 296,854 of them closable
+
+Ambiguity is measured as a SET SIZE — how many distinct `kind|owner|file`
+declarations share the target's name — because a `Set<string>` of names cannot
+answer the question it is being asked: it collapses the collision it exists to
+detect.
+
+| Type | ambiguous targets | closable by the edge's own `<source>.<target>` |
+| --- | --- | --- |
+| contains | 296,726 | **296,726 (100.0%)** |
+| uses | 138,700 | 128 (0.09%) |
+| calls | 46,127 | 0 |
+| instantiates | 3,663 | 0 |
+| references | 3,325 | 0 |
+| extends | 779 | 0 |
+| overrides | 607 | 0 (already qualified at both ends) |
+| implements | 208 | 0 |
+| imports / exports | 0 | n/a — targets are module URIs |
+| **total** | **490,135** | **296,854 (60.6%)** |
+
+**An 8-file sample reads 0 ambiguous targets, and that is not a contradiction.**
+`script/m14/incoming-check.ts dart <8 files>` — the supervisor's instrument, run on 8
+real files from `flutter-packages/packages/video_player/video_player_avfoundation` and
+`dart-http/pkgs/cronet_http` — reports 274 symbols, 149 distinct declarations named by
+at least one edge, and `target names resolving to >1 published symbol : 0`. Ambiguity is
+a COLLISION count: it is a property of the symbol table's size and name variety, and 274
+symbols drawn from two packages that mostly call into the Flutter SDK collide far less
+than 337,336 symbols drawn from five repositories do. So the same lane reads 0 at n=8
+and 490,135 at n=4,788, and quoting the 8-file figure as the lane's ambiguity rate
+would understate it by five orders of magnitude. The 4,788-file table is the one to
+quote; the 8-file run is a shape check, and it is a useful one — it confirms 0 parse
+failures, 0 degraded parses, all TEN types firing, and 1 orphan of 274 symbols.
+
+**That 0 is a property of those 8 files, not of small samples, and a different small
+sample reads non-zero.** Re-running the same instrument over 7 files — the two packages'
+`lib/` trees rather than their examples, including `jni_bindings.dart`, which alone
+publishes ~1,000 symbols — gives **1,427 symbols, 876 distinct declarations named by at
+least one edge, and 14 ambiguous targets**, against 274 / 149 / 0 for the recorded run:
+
+| ambiguous target | collides as |
+| --- | --- |
+| `CronetException`, `NetworkException`, `QuicException`, `CallbackException`, `CronetEngine` | class, extension |
+| `builder`, `immediatelyRetryable`, `wasCached` | property, method |
+| 6 more | |
+
+Orphans move the same way: 22 of 1,427 against 1 of 274. The doc's mechanism sentence
+above already names the right variable — ambiguity tracks the SYMBOL TABLE's size and
+name variety, not the file count — and this pair is the evidence for it: 5.2× the
+symbols turns a 0 into 14. So the honest form is **"at 274 symbols, 0"**, and a reader
+holding a small file set should expect its own number rather than this one.
+
+**`contains` is closed, and that is arithmetic rather than luck.** The edge publishes
+the OWNER on the source side and the bare member on the target side, so
+`<source>.<target>` is a published spelling for every one of the 296,726 — a consumer
+that binds `contains` by (owner, member) has zero ambiguity over 95.4% of the
+label's rows, which is the largest single-label population in the lane (310,925,
+32.4% of all edges).
+
+**The rest is irreducible in Dart, and the count is the answer rather than an
+apology.** `obj.method()` reduces to the leaf `method`; the receiver's static type
+is discarded at emission, so `add` is `List.add` and `Set.add` and
+`StreamSubscription.add` with nothing on the edge to separate them. Recovering the
+receiver type is a type-inference problem this analyzer does not attempt, and
+inventing a target from a name shape is exactly the fabrication the workstream's
+rule forbids. `uses` has a measured 128 rows where it happens to work anyway, and
+they are counted rather than rounded up to the type.
+
+### Targets that bind to nothing: 144,032 rows, split by cause
+
+Because "external" and "never indexed" are opposite findings that a single count
+conflates, every no-symbol target is filed under a POSITIVE test, in funnel order.
+
+| Bucket | rows | what the test is |
+| --- | --- | --- |
+| `uriEndpoint` | 22,909 | an `imports`/`exports` target — a module path, which is not a bindable name by design (`package:flutter/material.dart:*`, `../core.dart`) |
+| `localNotPublished` | 25,730 | the row carries `isLocalRead`, or is an `imports`/`exports` URI: a BINDING the family contract publishes no symbol for (DARTD8). freezed's generated `map`/`maybeMap` takes the mapping function as a formal parameter named `$default` and calls it, so `calls -> $default` is a real invocation of a parameter |
+| `sdkDeclared` | 12,281 | the name is published by one of the **479 real `.dart` files under `dart-sdk/sdk/lib`**, parsed through the same production entry point — not a hand-written builtin list, which would be a second and drifting definition of the same thing |
+| `packageDeclared` | 79,743 | the file's TRANSITIVE import graph reaches a `package:`/`dart:` URI and the name is in neither the repository nor the SDK |
+| `outsideSample` | 1,540 | the row comes from a strided repository, so absence proves nothing in either direction; counted apart and never in the defect bucket |
+| `unexplained` | **1,829** | none of the above, in a FULL-scope repository: the class that would be a defect |
+
+**The transitive import closure is load-bearing and was a real bug.** Dart's barrel
+convention routes a library's dependencies through one relative `export`, so
+`riverpod/packages/flutter_riverpod/lib/src/core/consumer.dart` declares exactly ONE
+import — `../core.dart` — and reaches `package:flutter/widgets.dart` through it. A
+file-local test therefore files every barrel-imported supertype as a defect. The
+closure follows 10,511 relative hops and finds a package URI reachable from 87.4% of
+files. Its first implementation looked each hop up under a `repo|rel` key while the
+import table was keyed `repo/rel`; every lookup missed, the closure was one hop deep,
+and the entire `packageDeclared` population came out **byte-identical to the run
+before the fix**. Identical numbers across a change are how that was caught.
+
+### The defect this measurement found, and what it cost
+
+**`overrides` named members that do not exist.** Dart's `Object` is the root of every
+class interface, so `toString`, `hashCode`, `runtimeType`, `noSuchMethod` and
+`operator ==` are reachable from every type in the language — which makes `Object`
+the one override target a per-file analyzer can name without the base's own file,
+and the first-heritage-parent fallback was not using it.
+
+```dart
+class ProtocolException implements Exception {
+  @override String toString() => 'protocol';
+}
+```
+
+published `ProtocolException.toString -> Exception.toString`. `Exception` declares
+no `toString`: `dart-sdk/sdk/lib/core/exceptions.dart` publishes 17 symbols through
+the production entry point and `Exception.toString` is not one of them. The edge
+asserted a declaration where there is none.
+
+| | `overrides` rows | unexplained | SDK-declared target | resolves repoFull |
+| --- | --- | --- | --- | --- |
+| before | 247,737 | 2,422 (0.98%) | 51 | 230,666 93.1% |
+| after | 247,737 | 1,670 (0.67%) | 1,167 | 230,467 93.0% |
+| **all ten types, before** | 960,634 | **2,862 (0.298%)** | | |
+| **all ten types, after** | 960,634 | **1,829 (0.190%)** | | |
+
+Repo-scope resolution for `overrides` goes DOWN 199 rows and that is the honest
+direction of the trade: `Object` is not declared in these three repositories, so a
+consumer whose index stops at the project boundary binds 199 fewer rows. A consumer
+that also indexes `dart:core` binds **1,167 more**, because every one of those
+targets is a declaration the Dart SDK publishes. The retarget records the name it
+discarded in `metadata.firstHeritageParent`, so no information is lost, and tags the
+row `isObjectInterfaceBase`.
+
+**What the retarget gives up, stated rather than argued away.** If an out-of-run base
+DOES declare the member, `Base.toString` was the nearest correct target and
+`Object.toString` is one hop further up. The two cases are indistinguishable without
+the base's file. The rule prefers naming a declaration that provably exists over one
+that may not — the same preference the rest of that pass already makes when it
+refuses a refuted fallback — and it is scoped to those five members, so an in-file
+resolution (Pass 1, confidence 0.95) and a refuted fallback are both untouched.
+
+### The residual 1,829, and what it actually is
+
+| Type | unexplained | distinct targets | dominant shape |
+| --- | --- | --- | --- |
+| overrides | 1,670 | 140 | `$FunctionalProvider.debugGetCreateSourceHash` 836, `$NotifierProvider.debugGetCreateSourceHash` 175, `$NotifierProvider.create` 175, `$Notifier.runBuild` 175 |
+| uses | 73 | 38 | `FirstT` 10, `SecondT` 10, `DiagnosticableTreeMixin` 9, `snake` 4, `$2` 3 |
+| instantiates | 41 | 4 | `EqualUnmodifiableListView` 20, `DeepCollectionEquality` 18 |
+| calls | 35 | 10 | `root` 12, `fromMicrosecondsSinceEpoch` 6, `$enumDecodeNullable` 6 |
+| implements | 9 | 1 | `DiagnosticableTreeMixin` 9 |
+| extends | 1 | 1 | `GeneralizingAstVisitor` 1 |
+| contains / imports / references / exports | 0 | — | — |
+
+**The dominant shape is a CORPUS GAP, not an analyzer defect, and the distinction is
+measured.** riverpod 3's `$FunctionalProvider` / `$NotifierProvider` / `$Notifier` /
+`$AsyncNotifier` are GENERATED declarations — 1,502 of the 1,670 `overrides` rows
+(89.9%) name a base whose spelling begins with `$`, and `grep -rl 'FunctionalProvider'
+--include=*.dart` over the whole riverpod checkout returns nothing while the
+SUBCLASSES that extend them are present. So those rows name a declaration this
+checkout does not contain. That is the third thing the "never indexed" bucket has to
+hold apart from "external", and it is a property of the corpus, not of the analyzer:
+sampling is `git ls-files`, which sees tracked files only, and these are not tracked.
+
+The remaining shapes are named limitations rather than defects, each with its count:
+`DiagnosticableTreeMixin` / `GeneralizingAstVisitor` are `package:analyzer` types
+reached through a barrel the closure cannot leave; `DeepCollectionEquality` and
+`EqualUnmodifiableListView` are `package:collection`; `FirstT`/`SecondT` are
+freezed's generic parameters read as values; `$2` is a Dart 3 RECORD positional
+field (`($1, $2).$2`), whose accessor the analyzer does not synthesize because no
+declaration names it.
+
+### 67 edges that are not the analyzer's
+
+`src/ast/pool-worker.ts` routes a file over 1 MB to `extractFallback`, a **regex**
+extractor, whose rows carry `metadata.method === "regex"` and sit at confidence
+0.4/0.5 and whose symbols carry no `kind`. Counting those as analyzer output is how a
+lane quotes a resolution rate for edges no analyzer produced. This census tallies
+them apart and excludes them from every analyzer column: **67 `calls` rows across 4
+files**, of which 20 are in one file, `native_cupertino_bindings.dart` (1.4 MB).
+
+Among them is a fabrication worth naming, and it is in shared machinery:
+`extractBasicRelationships` matched the **declaration**
+`extension type NSCachedURLResponse._(objc.ObjCObject object$)` with its
+`obj.method(` pattern and published `calls NSCachedURLResponse -> _` at 0.4 — a call
+to a symbol named `_`, for a constructor invocation that is a declaration. The same
+row appears 12 times over (`NSLocking`, `NSOperation`, `NSProgressReporting`, …).
+Reported in §Shared-machinery needs; not edited here.
+
+### Four defects in this lane's own harnesses
+
+Each was found by a number that did not move when it should have, which is the only
+instrument that finds this class.
+
+1. `incoming-census.ts` resolved scope, ambiguity and the no-symbol buckets INSIDE
+   the walk, against a symbol table still being filled.
+   `pkgs/http2/lib/src/flowcontrol/window_handler.dart` sorts before
+   `pkgs/http2/lib/src/sync_errors.dart`, so `processWindowUpdate ->
+   FlowControlException` was filed `unexplained` for a class declared 200 lines away
+   in the same FULL repository. All cross-file work is now a settled second phase, so
+   two runs give the same numbers regardless of scheduling.
+2. The import closure's key mismatch, above — byte-identical output across a change.
+3. `census.ts` incremented `tgtSample` under `if (tgtOk)`, so the column reprinted
+   the in-file rate under a sample-scope heading (`references 857 840/857 98.0%
+   857/857 100.0% 840/857 98.0%` — the middle number should have been the sample
+   rate and was the in-file count again), and `bothSample` was order-dependent
+   against a growing set. Both moved to the settled phase.
+4. `census.ts` added the qualified `owner.name` spelling to the per-file table but
+   never to the sample or repo tables. `overrides` is qualified at BOTH ends, so it
+   read **0/7,566 in-sample** on a sample that plainly contained the declaring class.
+   The column was measuring the absence of a spelling, not the absence of a symbol.
+
+### What the incoming pass changed, and what it did not
+
+- Unresolvable is down from 2,862 to 1,829 rows, 0.298% to 0.190% of 960,634.
+- `references` and `contains` bind to nothing at all: **0 rows each**.
+- `imports` and `exports` bind to nothing by DESIGN (a URI is not a symbol), and
+  that is now stated as a design with 22,909 rows behind it rather than left to be
+  discovered downstream as a 0.0% column.
+- Heuristic ratio (confidence < 0.7): `uses` 25,464 of 226,095 (11.26%), all the
+  bare-read surface at 0.6. **Every other type is 0.00%**, and `calls` moved to 0
+  because the sub-0.7 rows it inherited are now counted under `isLocalRead`.
+- NOT fixed, and declared: the leaf-name reduction for `calls`/`uses` (490,135
+  ambiguous targets in total, of which 296,726 are `contains` rows the edge already
+  disambiguates and 193,409 are not closable by any spelling the analyzer emits,
+  save the 128 `uses` rows where `<source>.<target>` happens to be published), the
+  corpus's untracked generated declarations (1,502 rows), and record-type field
+  accessors (`$1`/`$2`).
+
+## Declared limitations
+
+A blank list on a general-purpose language is treated as dishonesty, not as
+excellence. This is not blank, and the entries are ordered by how much they could
+mislead a reader of the graph.
+
+1. **95.43% of Dart's type mentions are deliberately unread.** `references` gates
+   on the mentioned type being visible to the run, and production supplies no
+   project index for `.dart` (`parallel-indexer.ts` `PROJECT_INDEX_EXTENSIONS`
+   names only `.sol`), so the published set is file-local. Every fact in this
+   document about `references` volume is therefore a LOWER bound on what the
+   language expresses, stated as a lower bound rather than as the whole.
+2. **Cross-file type dependency is not published, so `bb_impact` cannot answer
+   "who depends on this type" for a project.** The label answers the intra-library
+   question. A run with an index answers more, and every row records which of the
+   two answers it is (`isIndexResolved`).
+3. **A self-type mention is not published.** `class A { final A? next; }` names
+   `A` inside `A`, and the source and target are then the same symbol, so nothing
+   is published. Measured cost: unmeasured on the corpus (the guard fires rarely
+   enough that it did not appear in the sample's top rows), and the case is pinned
+   by a fixture instead.
+4. **A field's type mention folds to the owning class, not to the field.** The
+   lane's DARTD9 convention, applied consistently here for the first time to a
+   type position. So `class A { final B b; }` publishes `A references B`, and the
+   edge from the FIELD itself is absent. A reader wanting per-field type
+   dependencies is not served by this label.
+5. **`dynamic` is filtered as a type mention.** It is the absence of a type, not a
+   dependency, and it is the most common type position in idiomatic Dart after
+   `var`. Every untyped declaration therefore contributes no `references` row.
+6. **Cross-file named constructors still publish a leaf `calls` edge.** DT-A's
+   rule — an unknown cross-file `X.y()` stays a leaf call — predates this wave and
+   is unchanged, so `RemoteFailure.parsing(raw)` publishes `calls load -> parsing`
+   where `parsing` resolves to nothing (constructors are published as `constructor`
+   and the named segment lives in metadata). The R7 filter removes the same shape
+   only when the segment is the literal `unknown`; the general case is a declared
+   limitation, pinned as it stands by `dart/unknown-endpoint-r7` so a future change
+   to it is deliberate rather than a side effect.
+7. **The `references` oracle agrees with the analyzer by construction on the rule,
+   and independently on the implementation.** Both were written from the same
+   MEASURED position inventory, so agreement is evidence that two implementations of
+   one rule do not diverge — not that the rule is right. A defect in the inventory
+   would be shared. The fixtures carry that argument and they were authored from
+   the language before the analyzer run.
+8. **Files over 1 MB never reach this analyzer.** `parseFile` routes them to the
+   pool worker's structural extractor, which publishes `{name, type, startLine,
+   endLine}` symbols with no `kind` and no relationships at all. Measured on the
+   sample: 4 of the 2,735 files, carrying 1,068 fallback symbols between them (and
+   1 more file over the 5 MB skip limit, which is never parsed at all). A census
+   that counts symbol kinds across such files is measuring the fallback; this
+   lane's census counts and reports them apart.
+9. **Parse damage inside an `ERROR` region publishes nothing.** 35 of the 2,735
+   sampled files carried ERROR nodes — 580 parse errors between them, 1.28% of the
+   sample — and a type mention inside a damaged region is not a fact about a
+   well-formed program. The earlier figure quoted here (11 of 1,000 files, 88 errors)
+   was measured on a 1,000-file run and understated the rate by an order of
+   magnitude; the 2,735-file figure is the one the rest of this document uses.
+10. **`bb`-visible cross-file `overrides` and `references` are unaudited by the
+    differential** (DERIVATION, above). Both have oracles and batteries; neither is
+    wired into the harness's comparison.
+11. **A receiver's static type is discarded, so `calls` and `uses` targets are leaf
+    names and are irreducibly ambiguous.** `obj.method()` publishes `method`; 46,127
+    `calls` targets and 138,700 `uses` targets match two or more published symbols
+    and 193,409 of them cannot be disambiguated by any spelling the analyzer emits.
+    Recovering the receiver type is type inference this analyzer does not attempt,
+    and inventing a target from a name shape is the fabrication the workstream's
+    rule forbids. Measured, not estimated — see §The incoming direction.
+12. **`imports` and `exports` targets are module URIs and bind to no symbol by
+    design.** 22,909 rows, 100% of both labels. `package:flutter/material.dart:*`
+    and `../core.dart` are paths, not declarations, and the M49 exports invariant
+    deliberately keeps an exported FILE out of the bindable export list. A reader
+    looking for a resolved import target will find none and should read the URI.
+13. **A Dart 3 record's positional field accessor is not synthesized.** `($1, $2).$2`
+    is a real read of a field no declaration names, so it publishes `uses -> $2`
+    with nothing to bind. Measured at 3 rows in the census above; the shape recurs in
+    every record-heavy file.
+14. **An external base's members are unverifiable without the base's own file.**
+    13,160 of 247,737 `overrides` rows are the `isExternalBase` fallback at 0.8, and
+    11,396 of those still name a type declared outside the repository. The
+    `Object`-interface retarget (§The incoming direction) closed the 1,117 rows that
+    named a member provably absent from their base; it cannot close the rest, and a
+    base in another package that declares the member itself is indistinguishable
+    from one that inherits it.
+15. **1,502 `overrides` rows name generated declarations this corpus checkout does
+    not contain.** riverpod 3's `$FunctionalProvider` family is absent from
+    `git ls-files` output while its subclasses are present. This is a corpus
+    property — a `--filter=blob:none` clone plus untracked generated output — and it
+    is counted apart from both "external" and "never indexed" precisely because a
+    reader who filed it as either would be wrong twice.
+
+## Shared-machinery needs (reported, not edited)
+
+Fifteen changes outside this lane's ownership, each stated so it can be applied
+without re-deriving it. The files are supervisor-owned per
+`docs/analyzers/ONTOLOGY-WORKSTREAM.md` §Ownership. Items 1–5 predate this pass;
+6–8 come from measuring the incoming direction, 9–10 from removing this lane's
+regexes, 11 from re-running the M60 gate to reproduce the DERIVATION count,
+12 from running the doc-truth-emissions gate over this lane's table, 13–14 from
+re-running the same gates and watching what they wrote to disk, 15 from
+reading `firing-check.ts --json` and finding `files` is per-file, not per-type.
+Item 13 was rewritten during the final pass: it first named one gate and now names
+ten, because running the documented `npx tsx` invocation over the whole directory
+showed the failure is the directory's, not one script's.
+
+1. **`script/m14/ontology-coverage-gate.ts` — add a `dart` entry to
+   `RULED_BY_LANG` (line ~183: `const RULED_BY_LANG: Record<string, Ruled[]> = {
+   bash: BASH_RULED, json: JSON_RULED }`).** What it must do: accept an EMPTY
+   ruling table for a lane that emits all ten types. Why: the gate currently exits 2
+   with "no RULING TABLE for dart" BEFORE its verdict loop, so it prints no table at
+   all for a lane with nothing to rule — which is this lane. The refusal is
+   right for a lane with a non-emitting type and wrong for one that emits 10/10, and
+   the check has no way to tell them apart because it runs before the observation.
+   The condition should be `RULED_BY_LANG[LANG] === undefined && LANG !== "dart"`,
+   or better: move the refusal after the observation and refuse only when some type
+   is neither observed nor ruled. With that one term, this lane's arbiter run prints
+   `emitted 10/10` and exits 0. **But fixing that term is not sufficient at full
+   corpus scale, and the reason is the first half of item 5.**
+
+   **The exit-2 refusal is verified by reading the gate, not by running it at full
+   corpus — because the full-corpus run never reaches it.** Measured four times on this
+   branch, `npx tsx script/m14/ontology-coverage-gate.ts dart`:
+
+   ```
+   run 1:  corpus: 33692 admitted files
+           [BB-PARSE-ERR] dart | dart-sdk/.../flow_analysis_log.dart | memory access out of bounds
+           [BB-HANG] parser stuck 120s on dart-sdk/.../flow_analysis_log.dart — exiting
+           exit 1
+
+   run 2:  corpus: 33692 admitted files
+           [BB-PARSE-ERR] dart | dart-sdk/.../list_postfix_completion_templates_test.dart | memory access out of bounds
+           [BB-PARSE-ERR] dart | dart-sdk/.../import_elements_test.dart | memory access out of bounds
+           [BB-PARSE-ERR] dart | dart-sdk/.../is_postfix_completion_applicable_test.dart | memory access out of bounds
+           [BB-PARSE-ERR] dart | dart-sdk/.../document_color_test.dart | memory access out of bounds
+           [BB-HANG] parser stuck 120s on dart-sdk/.../list_postfix_completion_templates_test.dart — exiting
+           exit 1
+   run 3:  corpus: 33692 admitted files   (2026-10-04, re-measured)
+            [BB-PARSE-ERR] dart | dart-sdk/.../import_elements_test.dart | memory access out of bounds
+            [BB-HANG] parser stuck 120s on dart-sdk/.../import_elements_test.dart — exiting
+            exit 1
+   run 4:  corpus: 33692 admitted files   (2026-10-04, third re-measurement)
+            [BB-PARSE-ERR] dart | dart-sdk/.../get_statement_completion_test.dart | memory access out of bounds
+            [BB-PARSE-ERR] dart | dart-sdk/.../get_refactoring_test.dart | memory access out of bounds
+            [BB-HANG] parser stuck 120s on dart-sdk/.../get_statement_completion_test.dart — exiting
+            exit 1
+   run 5:  corpus: 33692 admitted files   (2026-10-04, fourth re-measurement)
+            [BB-PARSE-ERR] dart | dart-sdk/.../is_postfix_completion_applicable_test.dart | memory access out of bounds
+            [BB-PARSE-ERR] dart | dart-sdk/.../make_return_type_nullable.dart | memory access out of bounds
+            [BB-HANG] parser stuck 120s on dart-sdk/.../is_postfix_completion_applicable_test.dart — exiting
+            exit 1
+   ```
+
+   Run 3's hang file is one run 2 already listed as a PARSE-ERR, and run 3 is the only
+   one of the three whose hang file and parse-error set coincide as a single element —
+   which is the correlation below holding for the third time, on the strongest form.
+   **Runs 4 and 5 each name a file no earlier run named**, so the set of files this
+   failure has been observed on is five: `flow_analysis_log.dart`,
+   `list_postfix_completion_templates_test.dart`, `import_elements_test.dart`,
+   `get_statement_completion_test.dart` and `is_postfix_completion_applicable_test.dart`.
+   Two properties hold across all five runs and
+   both argue the same way — the hang file is never the same file twice, and it is
+   always a member of that run's own PARSE-ERR set. A grammar defect would name the
+   same construct every time; a corrupted WASM heap names whatever the next allocation
+   lands in.
+
+   Every hang file is parseable in isolation, and that is now a committed instrument
+   rather than a table someone typed: `validation/m14/fixtures/dart/hang-file-innocence.ts`
+   runs one production `parseFile` per file, prints symbols and relationships, and
+   records for each entry whether that run had also reported the file in its own
+   PARSE-ERR set. **5 of 5 clean**, and the symbol/rel counts agree with the ad-hoc
+   table below on every file they share:
+
+   ```
+   flow_analysis_log.dart                        20,272 B  OK 935 ms — 32 symbols, 136 rels  [hang run 1, also in that run's PARSE-ERR set]
+   list_postfix_completion_templates_test.dart    1,254 B  OK  24 ms —  3 symbols,  20 rels  [hang run 2, also in that run's PARSE-ERR set]
+   import_elements_test.dart                      4,190 B  OK  60 ms —  9 symbols,  84 rels  [hang run 3, also in that run's PARSE-ERR set]
+   get_statement_completion_test.dart             1,715 B  OK  35 ms —  3 symbols,  29 rels  [hang run 4, also in that run's PARSE-ERR set]
+   is_postfix_completion_applicable_test.dart      1,198 B  OK  16 ms —  3 symbols,  20 rels  [hang run 5, also in that run's PARSE-ERR set]
+   ```
+
+   The probe reports `MISSING — not on disk` rather than a pass when a recorded path
+   does not resolve, and it did exactly that on its first run: the path recorded for
+   run 1 carried a `mapped_by_package/` segment that is not in the tree, and
+   `git ls-files` put the file at `pkg/_fe_analyzer_shared/lib/src/flow_analysis/`.
+   An instrument that cannot tell "the file is clean" from "the file is not there"
+   would have reported 5 of 5 on a corpus of 4.
+
+   Run 4's two files parse cleanly through production `parseFile` one at a time,
+   which is the claim the whole argument rests on:
+
+   ```
+   get_statement_completion_test.dart  ms=967  fallback=false  symbols=3  rels=29  errors=0
+   get_refactoring_test.dart            ms=42   fallback=false  symbols=3  rels=36  errors=0
+   ```
+
+   So on this corpus the arbiter exits **1**, five times out of five, and never
+   prints a verdict —
+   `exit 2` is what `ontology-coverage-gate.ts:289-293` does when it gets there,
+   which is a source fact (`RULED_BY_LANG` holds only `bash` and `json`, and the
+   refusal precedes the row loop) rather than a measurement. An earlier version of
+   this item quoted an `exit 2` run with `corpus: 563 admitted files`; that run used
+   `BB_CORPUS_ROOT` pointed at a 565-file symlink sample, and the corpus has since
+   grown to 33,692 admitted files, so the quoted number no longer describes any
+   run a reviewer can reproduce today.
+
+   **The `[BB-HANG]` is the CONCURRENT PARSE PATH, and the file it names is
+   innocent.** This corrects the reading that a `[BB-HANG]` naming one file is a
+   parser-robustness finding about that file. Every file named across the five runs
+   above parses cleanly through the same production `parseFile`, one at a time — 5 of 5
+   on the committed probe. The
+   `document_color_test.dart` row needed a path to be checkable at all, because
+   **dart-sdk tracks two files of that name** and the bare filename names neither:
+
+   | file named by a failing run | alone, via `parseFile` |
+   | --- | --- |
+   | `pkg/_fe_analyzer_shared/.../flow_analysis_log.dart` | OK 108 ms — 32 symbols, 136 rels |
+   | `.../edit/list_postfix_completion_templates_test.dart` | OK 14 ms — 3 symbols, 20 rels |
+   | `.../edit/import_elements_test.dart` | OK 731 ms — 9 symbols, 84 rels |
+   | `test/lsp_over_legacy/document_color_test.dart` | OK 27 ms — 5 symbols, 48 rels |
+   | `test/lsp_over_legacy/document_color_test.dart` — the row above is THIS file | |
+   | `test/lsp/document_color_test.dart` — the OTHER tracked file of that name | OK 123 ms — 35 symbols, 163 rels |
+   | `pkg/dartpad/lib/src/util/environment.dart` (run 3's first hang) | OK 9 ms — 1 symbol, 1 rel |
+| `.../edit/get_statement_completion_test.dart` (run 4's hang) | OK 967 ms — 3 symbols, 29 rels |
+| `.../edit/get_refactoring_test.dart` (run 4's other PARSE-ERR) | OK 42 ms — 3 symbols, 36 rels |
+
+   Two readings from that. The 5 symbols / 48 rels recorded for `document_color_test.dart`
+   are `test/lsp_over_legacy/`; `test/lsp/` publishes **35 symbols and 163 rels** from
+   the same basename, so the row was uncheckable as written and a reader following the
+   filename would have measured a different file and found a different number. And every
+   symbol/rel count reproduced on re-measurement — 32/136, 3/20 and 9/84 all agree with
+   the earlier run — while the wall times did not (144→108, 1,008→14, 104→731 ms), which
+   is this machine's load, not the files.
+
+   The file the engine reported as stuck for 120 s parses in 1,008 ms on its own. It
+   also survives being parsed eight at a time — the gate's own worker count
+   (`ontology-coverage-gate.ts:233`) — for 5 trials × 8 parses = 40 parses, all
+   `fulfilled`, all returning the same 136 relationships. The named file differs
+   between the three runs, and so does the set of `memory access out of bounds`
+   files (1 file, then 4, then 1). A defect in a file would name the same file every
+   time — and run 2 names four distinct files as parse errors while hanging on a fifth.
+
+   **This CONFIRMS item 5's second bullet rather than competing with it.** In all
+   three runs the hang file is also in that same run's `[BB-PARSE-ERR]` set — run 1 on one
+   file, run 2 on one of four, run 3 on one of one — which is the "the hang follows the parse failure
+   rather than being independent" reading, now at corpus scale rather than over
+   5,500 file-parses. What this adds is the other half: the parse failure is not a
+   property of the file either. The same file, same bytes, same production
+   `parseFile`, parses clean one at a time and 8 at a time. So the corrupted WASM
+   state is the cause and the file is the victim — which is why the remedy in item 5
+   (abort that file's parse and return an error) is the right shape, and why an
+   engine that made the failure visible per-file would also have made this
+   diagnosis possible.
+
+   What the evidence does support: the failures are in the engine's WASM parse path
+   under concurrency, which is the same non-determinism this lane's own census
+   measured and reported (`census.ts` header — 1,000 files at concurrency 6 gave
+   36,550 vs 36,503 symbols and 124,772 vs 124,638 relationships; byte-identical at
+   concurrency 1). `src/ast/engine.ts:1407-1414` then converts that into a whole-run
+   failure: the 120 s per-file timer calls `process.exit(1)`, so one bad parse
+   discards every measurement the gate accumulated. **Not reproduced end to end:**
+   this lane did not reproduce the hang itself in a controlled run, only its
+   recurrence at full corpus scale (n=3) and the innocence of the named files.
+2. **`script/m14/differential.ts` — admit the two labels for dart.** Two edits, both
+   required together (truth without the allowlist entry reads as a fabricated
+   MISSING; the allowlist entry without the truth reads every row as unexplained):
+   - push `deriveDartReferencesTruth(root, dartProjectIndex ? [...dartProjectIndex.typeKinds.keys()] : undefined, path.basename(relPath, path.extname(relPath)))` in the `if (lang === "dart")` block at line ~22756, next to the four existing pushes;
+   - add `"references"` to the dart arm of the compared-label filter at line ~23186
+     (`...(lang === "dart" ? ["imports", "exports"] : [])` → `["imports","exports","references"]`).
+   Measured expectation after both edits: `references` becomes comparable at 100.0%
+   agreement with 0 unexplained, from the 799-file oracle run (1,203/1,203 rows).
+   Before them, 5,265 rows per 2,735 sampled files stay invisible.
+   The same paragraph is where `overrides` belongs for dart: the `lang !== "dart"`
+   term at line 23153 is what turns a wired oracle into 114 permanent MISSING rows
+   on the two 60-file lanes.
+3. **A symmetric R7 guard in the comparison.** The harness already applies one for
+   the EMPTY endpoint (`truth = truth.filter(t => String(t.target ?? "").trim().length
+   > 0)`, line ~23473, with a comment explaining that a rule only one side obeys
+   turns into a false gap). The literal `unknown` needs the same treatment on both
+   sides: the analyzer now publishes 0 such rows and the oracles still derive them
+   (9 per 525 files, measured by `validation/m14/fixtures/dart/r7-truth-cost.ts`),
+   and the matcher compares on (label, target), so every row the differential
+   samples reads MISSING. What it must do: drop rows whose source or target is the
+   literal `unknown` from `truth` and from `rels` in the same place, and count them.
+   Why here and not in the analyzer: a rule one side obeys manufactures a gap, and
+   all 106 removed rows named endpoints the store never receives anyway
+   (`keepSymbol` drops the name `unknown` universally).
+4. **`script/m14/mutate-analyzer.ts` — four mutants for the two new behaviours.**
+   The file is supervisor-owned and the 42 existing dart mutants are unaffected by
+   this wave, so nothing currently fails if `references` or the R7 filter is
+   deleted. Suggested, in the shape of the existing dart entries (each is a
+   `transform: r => ({...r, relationships: (r.relationships ?? []).filter(...)})`):
+   - `dart/references-dropped` — filters `x.type !== "references"`. Caught by
+     `dart/type-references` (13 expect rows).
+   - `dart/references-resolution-gate-removed` — appends
+     `{ source: "consume", target: "String", type: "references", confidence: 0.95 }`.
+     Caught by the `consume -> String` forbid (fabrication class).
+   - `dart/references-heritage-double-count` — appends
+     `{ source: "Derived", target: "Wallet", type: "references", confidence: 0.95 }`.
+     Caught by the `Derived -> Wallet` forbid (double-count class).
+   - `dart/r7-unknown-endpoint-reintroduced` — appends
+     `{ source: "load", target: "unknown", type: "calls", confidence: 0.9 }`. Caught
+     by the label-independent forbid in `dart/unknown-endpoint-r7`.
+   - `dart/references-confidence-inflated` — rewrites every `references` row's
+     confidence to 1. Caught by the exact `confidence: 0.95` pin in
+     `dart/type-references`.
+   - `dart/references-type-parameter-shadow-removed` — deletes the
+     `isTypeParameterShadowed` guard. Caught by the `Shadowed -> T` forbid, which is
+     the only pin in the fixture that a same-named declared class makes load-bearing.
+
+   **What was verified here without touching that file**, because the mutants are
+   supervisor-owned: each of the six behaviours above was removed from the analyzer
+   one at a time and `run-fixtures.ts --lang dart` re-run. Five of the six turned the
+   suite red on the fixture named above; the sixth — the type-parameter shadow guard —
+   did NOT, because at the time no fixture contained a constrained type variable whose
+   name was also a declared type, so deleting the guard was invisible. That gap is
+   what produced defect 1 under *Defects found and fixed*, and it is closed now. The
+   remaining five are: the double-counted-position guard, the qualified-name read, the
+   exact confidence, the R7 filter, and the drop-the-label mutation.
+5. **`src/ast/pool-worker.ts` / `src/ast/engine.ts` — two parse-path findings, both
+   measured on this lane's corpus and neither caused by this lane.**
+   - **`parseFile` is not concurrency-safe.** Two runs of the same 1,000 files with
+     the same analyzer at concurrency 6 gave 36,550 and 36,503 symbols and 124,772 and
+     124,638 relationships; at concurrency 1 the same two runs are identical. The
+     engine's `[BB-PARSE-ERR] … memory access out of bounds` message is the tell — it
+     appeared twice in ~5,500 file-parses under concurrency and never at concurrency
+     1 — so a file silently contributes fewer symbols and edges. What it must do:
+     either serialize the parse or make the failure visible as a per-file result the
+     caller can count, because a caller that parallelizes (every census harness,
+     including this lane's) currently gets a number that is not reproducible. Why it
+     matters beyond this lane: any measurement taken at concurrency > 1 is not a
+     measurement, and nothing in the API says so.
+    - **A single file can take the whole process down.** `src/ast/engine.ts` line ~1408
+      arms a 120 s `setTimeout` that writes `[BB-HANG] parser stuck 120s on <file>` and
+      calls `process.exit(1)`. Observed twice in ~5,500 file-parses, on
+      `dart-sdk/pkg/vm_service/test/step_through_call_on_field_in_class_lib.dart` in one
+      run and `riverpod/packages/riverpod/lib/src/core/override_with_value.dart` in
+      another, each preceded by `[BB-PARSE-ERR] … memory access out of bounds` on the
+      SAME file — so the hang follows the parse failure rather than being independent.
+      Rate: 1 file in 2,735 sampled (0.037%). **Both of those files, and all four named
+      by the two full-corpus runs under item 1, parse clean in isolation** (33–1,008 ms,
+      real symbols and relationships), so the file is the victim of the corrupted WASM
+      state rather than its cause — see item 1 for the per-file table. What it must do:
+      abort that file's parse and return an error for it, rather than exiting the
+      process; the indexer is incremental by design and this makes one pathological
+      file lose the whole run, which for a measurement gate means the run produces no
+      table at all rather than a partial one.
+6. **`src/ast/pool-worker.ts` `extractBasicRelationships` — the >1 MB fallback
+   fabricates `calls` edges from declarations, and the corpus contains the proof.**
+   The fallback is a regex extractor (the analyzer is regex-free; this is not) whose
+   `obj.method(` pattern matches an `extension type X._(T rep)` DECLARATION and
+   publishes `calls X -> _` at 0.4 — a call to a symbol named `_`. Measured on
+   `dart-http/pkgs/cupertino_http/lib/src/native_cupertino_bindings.dart` (1.4 MB):
+   **20 of its 24 relationships are fallback rows, and 12 of those name `_`** across
+   `NSLocking`, `NSOperation`, `NSProgressReporting`, `NSURLAuthenticationChallenge`
+   and others. Across this lane's 4,788-file census the fallback contributed **67
+   `calls` rows**. What it must do: skip a line that parses as a declaration, or
+   at minimum not treat an `extension type` header as an invocation. Why here and
+   not in the analyzer: no analyzer ever sees these files — `parseFile` diverts
+   them before dispatch — so there is nothing for a lane to fix. Why it matters
+   beyond this lane: a fabricated caller in `bb_graph` is wrong refactoring advice,
+   and the confidence 0.4 is below the 0.7 line the contract uses to separate
+   heuristics from facts while the row is stored beside facts.
+7. **`script/m14/firing-check.ts` and `script/m14/incoming-check.ts` do not exist.**
+   The M14 ontology workstream prompt instructs every lane to run
+   `npx tsx script/m14/firing-check.ts --files 120 <lang>` and
+   `npx tsx script/m14/incoming-check.ts <lang> <files...>`, and names the first as
+   the arbiter that shows which types fire. Neither file is present in this tree
+   (`find` over `script/` returns nothing), so no lane can run either, and the
+   per-type firing table the prompt quotes as "the supervisor's numbers" has no
+   reproducible instrument behind it here. What to do: land both, or amend the
+   prompt. This lane substituted two committed instruments and states them so the
+   substitution is checkable rather than silent:
+   - `validation/m14/fixtures/dart/census.ts` — what FIRES: per-type counts, symbol
+     kinds, empty names, `unknown` endpoints, endpoint resolution. 2,735-file stride
+     sample across 5 repositories.
+   - `validation/m14/fixtures/dart/incoming-census.ts` — what REACHES a declaration:
+     per-type resolution at three scopes, target ambiguity as a set size, and the
+     no-symbol population split by cause. 4,788 files, 3 repositories read whole.
+   Both drive production `parseFile`, both declare `BB_DART_CONC=1` as a
+   precondition, and both are deterministic from a clean corpus.
+8. **`script/m14/verify-honesty.ts` fails project-wide, and this lane is not
+   among the causes.** Re-measured on this branch, no scoping flag exists on the
+   script: **23 failure(s), exit 6.** The composition, because a total is not a
+   breakdown and this entry previously carried a total that happened to match while
+   its breakdown did not:
+
+   | kind | count | which |
+   |---|---|---|
+   | banned term in an artifact | **12** | `validation/m14/fixtures/{c,clean,csharp,html,php,sql}/*.expectation.json`, `validation/m14/grammar-pins.json`, `validation/m14/results/M14.0.{F5,F11.fsharp,JS-CENSUS}.json`, `validation/m14/results/fsharp-shape-census.json` |
+   | declared inputs changed since the named commit | 9 | `M14.0.F1`…`F9` |
+   | a milestone check not passing | 1 | `M14.0.F7 has 2 non-passing check(s): analyzer-hygiene-cpp, analyzer-hygiene-elixir` |
+   | the freshness rule itself cannot discriminate | 1 | `freshness rule flags every artifact` |
+
+   **An earlier version of this entry said "No banned-vocabulary check fails, so
+   the failure set is evidence staleness alone." That was wrong, and the total was
+   right by coincidence: 23 matched while 12 of the 23 were banned-term hits.** All
+   12 name files in `c`, `clean`, `csharp`, `html`, `php`, `sql`, `fsharp`, the
+   shared `grammar-pins.json`, or supervisor-owned `validation/m14/results/*.json`.
+   None is under `fixtures/dart/` and none is `real-dart-analyzer.ts`; a scan of
+   this lane's own two M14 files for all eleven banned terms returns 0.
+
+   The declared-input failures name files this lane has never touched —
+   `src/ast/analysis-exclusions.ts`, `src/ast/brain-surgical-patcher.ts`,
+   `src/ast/dependency-graph-visualizer.ts`,
+   `src/ast/cross-language-migration-assistant.ts`, and 20 other languages'
+   `script/m14/spec/*-completeness.json` — each verified unchanged by this branch with
+   `git diff 8286c7391..HEAD -- <file>` (empty for all four named above).
+   `validation/m14/fixtures/dart/census.ts` is named in **no** declared input set, so
+   this lane's own edits do not add to those counts — checked, because a lane that
+   worsens a gate it is not fixing should say so rather than be counted as innocent.
+   Regeneration is the supervisor's: those artifacts are `validation/m14/results/*.json`,
+   which the honesty contract §5.1 reserves for verifier scripts, and regenerating them
+   from one lane would replace the milestone's claim with a single lane's. Reported, not
+   worked around.
+9. **`script/m14/oracles/dart-overrides.ts` — a gate that is written and never read,
+   and a comment that asserts it is enforced.** Found while removing this lane's last
+   regexes; the code is lane-owned and the dead computation is removed, but the
+   DECISION it was hiding is not this lane's to take.
+   - What is true now: `overrideMembers`/`hasOverrideAnnotation` computed which
+     members carry a real `@override`; the result went into an `overrideOf` map that
+     nothing ever looked up (`grep` for `overrideOf.get` / `overrideOf[` → 0 hits). So
+     the oracle's EXTERNAL resolution pass has never been annotation-gated.
+   - What was claimed: the comment above it asserted the pass IS gated and that an
+     ungated pass "derived 81 `X.props -> Equatable.props` edges the analyzer
+     deliberately does not publish".
+   - What contradicts it: this lane's own battery pins the opposite. The case
+     `an unannotated external member: oracle has evidence, analyzer does not here`
+     (in `script/m14/verify-dart-overrides.ts`) asserts the oracle DOES claim the row
+     with no annotation, on the reasoning that a companion-verified match is evidence
+     rather than a guess, and that `@override` is only a lint (`annotate_overrides`).
+     A comment saying gated and a case saying ungated cannot both describe one pass.
+   - What the owner must decide, and why it is not a refactor: wiring the gate changes
+     published truth rows. Either (a) the companion pass stays ungated and the
+     "81 edges" claim is withdrawn as describing a program that never existed here,
+     or (b) the gate goes live and every unannotated external-base member stops being
+     claimed, which will move MISSING counts on any lane using this oracle. The rule a
+     wired gate needs is already in the file as `isOverrideAnnotation` (gates on
+     `node.type === "annotation"`, reads the identifier child — the rule
+     `RealDartAnalyzer.extractAnnotations` already applies). Measured for reference:
+     the analyzer's own FALLBACK pass is annotation-gated and its COMPANION pass is
+     not, so option (b) makes the oracle match the analyzer exactly.
+   - Verified behaviour-preserving: `run-fixtures.ts --lang dart` 16/16,
+     `verify-dart-overrides` 14/14 before and after, and the differential holds
+     `cov 98.4% / MISSING 100 / unexplained 0` (proxicall) and
+     `cov 99.4% / MISSING 14 / unexplained 0` (dart-http) on every run.
+10. **`script/m12/verify-regex-census.ts` cannot see a regex LITERAL, so a lane whose
+    only regexes are literals is counted clean.** This lane reported 0 regexes for
+    several waves while holding 9 of them, all in that shape — a constant assigned
+    `/…/` and then `.test()`ed through the variable. The gate's patterns
+    (`new RegExp`, `RegExp(`, `.match/.replace/.test/.search(`, `.matchAll`) match a
+    construction site and a call site; none of them matches
+    `const IDENT = /^[A-Za-z_$][A-Za-z0-9_$]*$/`. What it must do: parse the AST and
+    count regex-valued expressions and `new RegExp`/`RegExp()` constructions, so a
+    literal is counted by being a literal. Why it matters beyond this lane: the same
+    shape as the source-derivation error this wave exists to correct — an instrument
+    blind to a construct reports an absence, and the absence is read as a pass. The
+    per-file `m12` census has the same blind spot.
+    **A working instrument for this now exists and can be lifted**:
+    `validation/m14/fixtures/dart/regex-census.ts` counts `RegExpLiteral` nodes and
+    `RegExp` constructions through `ts.createSourceFile`, prints the directories it
+    entered, and excludes itself by name. It is lane-scoped but nothing in it is
+    Dart-specific except the file list.
+11. **`script/m60/rel-type-coverage-gate.ts` — `--langs=` narrows the EVIDENCE file,
+    which its own docstring says it does not.** Line 50 of that file reads
+    `--langs=a,b  restrict the report (never narrows the gate's own claim)`, and line
+    595 writes `validation/m60/results/rel-type-coverage.json` **unconditionally** —
+    there is no `--langs` guard on the write and no `--dry-run`. So running the gate
+    scoped, which is what a lane is told to do, replaces the project-wide artifact with
+    a one-lane one. Measured here: `--langs=dart` turned a **1,441-line** artifact into
+    a **24-line** one (`24 insertions, 1417 deletions`), and the DERIVATION count the
+    lane needs (2 for dart) is still correct — the damage is to every OTHER lane's row,
+    not to this one's answer. What it must do: either skip the write when `--langs` is
+    present and is not the full set, or write to a per-scope path
+    (`rel-type-coverage.<langs>.json`) and leave the project-wide artifact for
+    unscoped runs. Why here and not in this lane: the file is supervisor-owned, and the
+    fix must be applied once for every lane — six lanes running this scoped right now
+    are each silently truncating the same file. **This lane reverted its own write**
+   (`git checkout -- validation/m60/results/rel-type-coverage.json`) and quotes the
+   number from the console, not from the artifact. `validation/m60/ledger.json` is not
+   touched — only `--update-baseline` writes it, which this lane never passed.
+12. **`script/m14/verify-doc-truth-emissions.ts` — `parseClaimTable` drops the FIRST
+    body row of every claim table, so one `RelationshipType` per language is never
+    compared at all.** This is the gate commissioned to catch a doc claiming an
+    emission the analyzer does not make, and it silently discards one row per table
+    while doing it. `script/m14/verify-doc-truth-emissions.ts:458-481`, loop from
+    `chosen.at`:
+
+    ```ts
+    if (isRuleRow(cs)) continue          // line 465 — eats the `---` row
+    if (!started) { started = true; continue }   // 466-469 — then eats the FIRST BODY ROW
+    ```
+
+    The `---` rule row is consumed by the `isRuleRow` branch and `continue`s before
+    `started` is ever set, so the next row — the table's first real body row — is
+    consumed by the `!started` branch and never pushed. Minimal repro against the
+    exported function:
+
+    ```
+    wrote  2 body rows -> parsed 1: t1
+    wrote  3 body rows -> parsed 2: t1,t2
+    wrote 10 body rows -> parsed 9: t1,t2,t3,t4,t5,t6,t7,t8,t9
+    ```
+
+    **Measured effect on this lane:** the gate reports `UNDOCUMENTED [dart] calls
+    (relationship)` at `docs/analyzers/real-dart-analyzer.md:58`, and that finding
+    is FALSE. This lane's table is at line 58 and its first body row is `calls`;
+    `parseClaimTable` returns 9 rows where the table has 10, and the 9 it returns
+    are `uses, contains, imports, references, exports, extends, implements,
+    overrides, instantiates`. `classifyClaim("✅")` returns `YES`, so the row would
+    compare cleanly — the doc does claim `calls`.
+
+    **It is not this lane's row, and that is the sharper form of the finding.**
+    Re-measured on this branch the gate prints **43 `UNDOCUMENTED` findings, of
+    which 30 are the `(relationship)` shape — a language's dropped first
+    relationship row — across 23 languages**: c, clojure, cpp, csharp, css, dart,
+    elixir, erlang, fsharp, go, groovy, haskell, java, javascript, kotlin, python,
+    rust, scala, scss, svelte, swift, typescript, objective-c. One row per language
+    is ungraded, and the lane that owns the parser does not own 22 of the 30
+    findings. The 8 `FALSE_NEGATIVE` findings the gate does report are real and
+    unaffected by this bug.
+
+    **What it must do:** set `started` from the rule row instead of from the first
+    body row, i.e. replace lines 465-469 with
+
+    ```ts
+    if (isRuleRow(cs)) { started = true; continue }
+    ```
+
+    and delete the `!started` branch. This is safe because the header detector at
+    line 451 already requires a rule row whose width equals the header's, so a
+    matched table always has one. **Why it is not this lane's to fix:** the change
+    moves findings in every lane's row, and five languages' documents are owned by
+    other lanes.
+
+    **Why it is still worth reporting rather than shrugging at:** the dropped row is
+    dropped from BOTH directions. `claimed` is what the FALSE_NEGATIVE and
+    FALSE_POSITIVE checks iterate, so a first row that reads "not emitted" is never
+    graded either — the gate cannot report the falsehood it was built to find. The 8
+    FALSE_NEGATIVE findings it does report are real and unaffected; this one removes
+    a row, not a verdict.
+
+    **The selftest passes 12/12 and cannot see it**, which is the part worth
+    fixing alongside the parser: its cases assert the SET of disagreement kinds, not
+    the row count, and several expectations have a spurious `UNDOCUMENTED` baked in —
+    `expected [NON_ENGINE_KIND] … got [NON_ENGINE_KIND, UNDOCUMENTED]`,
+    `expected [MIXED_ROW] … got [MIXED_ROW, UNDOCUMENTED]`,
+    `expected [FALSE_POSITIVE] … got [FALSE_POSITIVE, UNDOCUMENTED]`. The extra
+    entries are this bug's output, accepted as expected rather than traced to it. A
+    case asserting `parseClaimTable` returns the row count it was given would fail
+    today.
+
+    **A third finding in the same file, and it is why the numbers above needed
+    re-deriving: running this gate WRITES supervisor-owned evidence.** Measured on
+    this branch, `bun run script/m14/verify-doc-truth-emissions.ts` modifies four
+    tracked files: `docs/DOC-TRUTH-EMISSIONS.md`,
+    `validation/m14/results/M14.0.F1.json`, `M14.0.F4.json` and `M14.0.F7.json`. The
+    `DOC-TRUTH-EMISSIONS.md` diff is not cosmetic — it rewrites this lane's own row
+    from `calls (relationship) | line 34` to `| line 58` because the claim table moved
+    when this file was edited, and it adds `dart` to a
+    "Docs with more than one ontology-shaped table (only the first is compared)"
+    list. `verify-analyzer-hygiene.ts` writes `M14.0.F7.json` the same way. What it
+    must do: take an output path, or write nothing on a non-canonical invocation, the
+    way `differential.ts` already refuses (`a scoped run is for inspecting lanes, and
+    writing it here would replace that claim with a smaller one`). Why it matters
+    beyond this lane: a lane told to run a gate inherits a dirty worktree and a
+    temptation to commit the result, and the natural commit is six other lanes'
+    evidence. This lane reverted all four files (`git checkout --`) and quotes its
+    numbers from the console.
+
+13. **TEN shared gates cannot run under `npx tsx` at all, and the documented invocation
+    is `npx tsx`.** This started as a one-file observation about
+    `verify-analyzer-hygiene.ts` and is not one file. Every gate in `script/m14/` that
+    resolves `ROOT` from `__dirname` dies at module scope under `npx tsx`, because
+    `__dirname` does not exist in ES module scope:
+
+    | script | line | error under `npx tsx` |
+    | --- | --- | --- |
+    | `owner-spot-check.ts` | 15 | `__dirname is not defined in ES module scope` |
+    | `verify-analyzer-hygiene.ts` | 27 | same |
+    | `verify-attr-line-base-920.ts` | 48 | same |
+    | `verify-corpus-census.ts` | 31 | same |
+    | `verify-doc-truth-emissions.ts` | 131 | same |
+    | `verify-fixture-coverage.ts` | 38 | same |
+    | `verify-parse-success.ts` | 75 | same |
+    | `verify-probe-battery.ts` | 24 | same |
+    | `verify-include-names-924.ts` | 48 | `Cannot determine intended module format` — mixed `require()` and top-level `await`, so it dies EARLIER and never reaches line 48 |
+    | `verify-name-surface-924.ts` | 46 | same |
+
+    **All ten run under `bun`** — verified one by one, each printing no
+    `is not defined` and no `Cannot determine intended module format`. `verify-js-census.ts`
+    is the twelfth file that names `__dirname` and is fine: its occurrence is a string
+    in a list of global names, not a path resolution.
+
+    Two consequences, and the second is the one that costs a lane its evidence. A gate
+    that prints nothing and a gate that found nothing look identical in a log, and only
+    one of them is a result. And a lane following the workstream's own gate list —
+    `npx tsx script/m14/<gate>.ts` — collects a non-zero exit and an empty log from ten
+    gates and cannot tell a crash from a pass. This lane hit it twice: the first
+    version of item 13 named only `verify-analyzer-hygiene.ts`, and the
+    `verify-doc-truth-emissions.ts` run that produced item 12 was itself run under `bun`
+    for this reason without the connection being stated.
+
+    **What it must do:** resolve `ROOT` the way `differential.ts` does
+    (`import.meta.dirname`), or the way `zig-relationship-census.ts` does
+    (`path.dirname(fileURLToPath(import.meta.url))`) — the second is already in this
+    directory and its comment at line 34 records the same wall, so the fix and a note
+    about it are both already written. Failing that, print an explicit "no findings"
+    line so an empty output is distinguishable from a crash. Why not this lane's to fix:
+    `script/m14/` is shared machinery and ten gates are not one lane's files.
+14. **`script/m14/firing-check.ts` never hashes the analyzer, so its drift guard cannot
+    fire.** `analyzerDigest` resolves the analyzer at
+    `path.join(here, "..", "ast", \`${rel}.ts\`)` where `here` is `script/m14`, giving
+    **`script/ast/…`** — and every analyzer in this repository lives in **`src/ast/`**.
+    The `existsSync` check therefore fails for all 23 onboarded lanes and the function
+    returns the string `MISSING:/…/script/ast/real-<lang>-analyzer.ts` instead of a
+    sha256. Measured on this lane: `"analyzerDigest":
+    "MISSING:$HOME/mcp/bb-lanes/dart/script/ast/real-dart-analyzer.ts"`,
+    while the file it means to hash is `src/ast/real-dart-analyzer.ts` at
+    `sha256 4d5c584d581658801981573ad19d9c50cba2337a6b2a0981ca63ff362ea0cea7`.
+
+    Two consequences, and the second is the worse one. The header's stated purpose —
+    "sha256 of the ANALYZER UNDER TEST, so a number is tied to the code that produced
+    it" — is not met for any lane: the field identifies nothing. And because
+    `MISSING:…` is a CONSTANT, `digestBefore === digestAfter` always, so
+    `analyzerStableDuringRun` is vacuously `true` and the `ANALYZER CHANGED DURING THE
+    RUN` warning at lines 417-419 and 484-488 is unreachable. A concurrency-sensitive
+    measurement whose whole point is that the analyzer did not move under it has a
+    guard that cannot report movement.
+
+    **What it must do:** add one `..` — `path.join(here, "..", "..", "ast", …)` — and
+    make the absence loud rather than a return value: if the file is missing, report
+    `analyzerDigest: ""` with an explicit `analyzerDigestMissing: true` and exclude the
+    lane from the `analyzerStableDuringRun` claim, so "the digest is absent" cannot be
+    read as "the digest agreed". Why not this lane's to fix: it changes a field every
+    lane's JSON carries, and `script/m14/` is shared machinery.
+
+15. **`script/m14/firing-check.ts` reports `types[type].files` as 1 for every type,
+    always.** `filesByType` is declared at line 334, INSIDE the per-file loop that
+    starts near line 270, and consumed at line 380, also inside it. Each file therefore
+    builds a fresh map holding one path, so `set.size` is 1 for any type that fires in
+    that file, and the assignment overwrites the previous file's 1 with 1. Measured at
+    n=400: **all ten types read `files: 1`**, including `calls` (6,970 edges) and
+    `contains` (11,885), each of which this lane's own census measures across 2,310
+    and 1,696 of 2,735 files respectively.
+
+    The field is not printed by the text report — that prints `r.filesParsed` — so it
+    is only visible in `--json`, and a reader of the JSON sees a plausible small
+    integer with no way to tell it is structural. **What it must do:** hoist the
+    `filesByType` declaration above the file loop and move the
+    `for (const [type, set] of filesByType)` loop out with it, so the set accumulates
+    across files. Alternatively drop the field: a per-type file count that no one
+    computes is worse than none, because `firedOnCorpus` and `edges` already answer
+    what a reader actually asks. Either is a one-line move; the second is honest about
+    the fact that per-type BREADTH is what this lane's `census.ts` exists to measure,
+    and it measures it uncapped.
 
 ## Supported constructs
 
@@ -97,13 +1557,223 @@
 
 ## Regex inventory
 
-From `validation/m12/results/regex-census.json`: the Dart analyzer has
-**0 regex usages** (baseline 8: 5 quote-strip/callee-sanitization
-normalizations + 3 widget-detection `isWidgetTree`/uppercase heuristics).
-The old widget-detection heuristic (`/Widget$|Element$|.../`) is dropped
-entirely — widget-classification produced noise, not contract facts. All
-text normalization now uses pure-String helpers (`unquote`,
-`stripCommentMarkers`, `isCapitalized`, `stripNonIdentifier`).
+**Zero regexes in this lane, and it took a second scan to establish that — the first
+scan was blind to the construct it was looking for.**
+
+`validation/m12/results/regex-census.json` contains no `dart` key and no `dart` string
+at all — `script/m12/verify-regex-census.ts` scans `real-*-analyzer.ts` files, so it
+reports nothing for Dart and an earlier version of this section read that absence as
+"0 regex usages". Absence of an entry is not a measurement of zero; the gate cannot
+distinguish "scanned and found none" from "never looked at this lane".
+
+So the number is measured here by a scan over everything this lane owns —
+`src/ast/real-dart-analyzer.ts`, `validation/m14/fixtures/dart/**`,
+`script/m14/oracles/dart-*.ts`, `script/m14/verify-dart-*.ts`. **The first version of
+that scan searched for `new RegExp`, `RegExp(`, `.match/.replace/.test/.search(` and
+`.matchAll`, and reported 2** (both in `script/m14/oracles/dart-imports.ts:68`, since
+removed). **It reported 0 on a second pass, and 0 was wrong: there were 9 more.**
+
+The blind spot is the reason this section exists now. A regex **literal** —
+`/^[A-Za-z_$][A-Za-z0-9_$]*$/` — matches NONE of those five patterns. It is not
+constructed through `RegExp`, and a `.test()` call on it is `.test(` only on the
+variable holding it. A scan that greps for construction sites cannot see a literal
+assigned to a constant. Measured, in `script/m14/oracles/dart-overrides.ts`:
+
+| line | construct | sites |
+| --- | --- | --- |
+| 159 | `const IDENT = /^[A-Za-z_$][A-Za-z0-9_]*$/` | 6 × `IDENT.test()` at 190, 194, 254, 260, 399, 416 |
+| 340 | `/@override\b/` | 1 × `.test()` |
+| 344 | `/@?override\b/` | 1 × `.test()` |
+
+All 9 are removed. `IDENT` became `isIdentifierSpelling`, a `charCodeAt` predicate in
+the same shape as the analyzer's `isCapitalized`. The `@override` pair became
+`isOverrideAnnotation`, which gates on `node.type === "annotation"` and then reads the
+identifier child — the rule the analyzer already applies in `extractAnnotations`
+(`prev.type === "annotation"` before any text comparison).
+
+### The number is now an AST measurement, not a re-run of the same text scan
+
+The second pass above was still a TEXT scan with more patterns, so it could still miss
+a literal shape nobody thought of. `validation/m14/fixtures/dart/regex-census.ts` counts
+the two things that are actually a regex — a `RegExpLiteral` node and a `RegExp`
+construction — by walking the TypeScript AST with `ts.createSourceFile`. Division and
+comment text are excluded by the grammar rather than by a filter, because a `/` that is
+not a regex literal never forms that node.
+
+```
+dart lane regex census — instrument: TypeScript AST (ts.createSourceFile), no text patterns
+scope: lane-owned set
+owned dirs: src/ast/real-dart-analyzer.ts | validation/m14/fixtures/dart/* |
+            script/m14/oracles/dart-* | script/m14/dart-* | script/m14/verify-dart-*
+files scanned: 18  (8337 lines)   excluded from its own count: …/regex-census.ts
+lane-owned files: 18
+
+RESULT: 0 regexes in the lane-owned set.
+```
+
+The 17 files that are not the instrument are the whole lane-owned set — 4 oracles,
+3 verifiers, the analyzer and 9 fixture harnesses. **Both numbers in that block are 18,
+not 17, and the difference is the census itself:** it counts itself in both totals and
+excludes itself only from the MATCH set (`hits.filter(h => laneOwned(h.file) && h.file
+!== SELF)`), because its own header carries example regex literals inside a comment. So
+18 files are scanned, 17 are evidence, and the RESULT sentence's own "MEASUREMENT over
+18 files" is one file generous. The block above previously read `16 (7881 lines)`,
+which matched no run: the set was 16 files then and is 17 evidence files now, so that
+figure had been carried through at least one file being added and removed.
+
+**The `lines` figure is one per file larger than the files hold.** 8,337 is
+`content.split(/\r?\n/).length` summed over 18 files, and every file ends in a newline,
+so each contributes one empty trailing segment: the real total is **8,319**
+(`wc -l` over the same 18). It is quoted as the instrument prints it because that is
+what a reviewer sees, and the 18-line gap is named here rather than left for someone to
+find.
+
+**Both figures in that block have moved twice, and both moves are the same lesson.** They
+read 8,185 / 8,168 until commit `b1b02d2b8` added a single line to a lane-owned file
+(`bothInSameRepoPooled: pooledBoth(t),` in `validation/m14/fixtures/dart/census.ts`) —
+a commit about the census's own JSON field, which is not a regex-bearing file and
+carries no regex. They then read 8,186 / 8,169 until this wave added
+`validation/m14/fixtures/dart/hang-file-innocence.ts`, which took the set to 18 files.
+A quoted instrument block is a measurement of the tree at a commit, and any later commit
+that touches a scanned file invalidates it silently. The `RESULT: 0` did not move
+through either change and could not: adding lines that contain no `RegExpLiteral` adds
+no matches. **The count is therefore worth less than the RESULT, and a reader who
+re-runs this should expect the file count to differ by whatever their branch added.**
+
+**Writing that instrument cost this lane two of its own blind spots, and both were the
+same defect one level up.** The first version selected its file set with regexes and then
+counted itself: 4 hits, every one its own filename patterns. The second required a file
+to sit directly in `script/m14/`, which silently excluded all three oracles — it reported
+9 files and had never looked at `dart-imports.ts`, `dart-overrides.ts` or
+`dart-references.ts`. A scope that drops files without saying so is the same failure as
+the text-pattern gate, and a smaller number is not a better one. The selection is now
+pure `startsWith`/`endsWith`, the owned directories are printed, and the file excludes
+itself by name so the exclusion is visible.
+
+`--all` widens the scan to every dart-named `.ts` in the repository. It used to report
+**7** regex literals, all in two scratch files under `script/m14/tmp/`
+(`dart-container-types.ts:21`, `dart-contains-adjudicate.ts:130,161,162,163,164,175`).
+An earlier version of this entry declined to touch them because
+`git diff 8286c7391..HEAD -- script/m14/tmp/` is empty — they are in the branch's base.
+**That reasoning was wrong and it is withdrawn.** "Arrived in the base" is a statement
+about a diff, not about ownership: `script/m14/spec/dart-completeness.json:553` cites
+`dart-contains-adjudicate.ts` as the `measured_by` instrument for a spec claim, so the
+file is inside this lane's evidence chain whether or not this lane wrote it. A lane that
+declares a scratch script outside its scope while that script backs one of its own claims
+has drawn the scope to protect the number. Both files are now regex-free:
+
+| was | now |
+|---|---|
+| `/body/.test(x.type)` | `String(x.type).includes("body")` |
+| `/^[a-z]/.test(o)` | `o[0] >= "a" && o[0] <= "z"` |
+| `/^constructor$/.test(t)` | `t === "constructor"` |
+| `/\$\d+$/.test(t)` | `overloadSuffix(t) !== ""` |
+| `/^[A-Z]/.test(t)` | `t[0] >= "A" && t[0] <= "Z"` |
+| `/^[a-z_][A-Za-z0-9_]*$/.test(t)` | `isIdent(t)` — explicit first-char class, then a per-char loop |
+| `t.replace(/\$\d+$/, "")` | `stripOverload(t)` |
+
+`--all` now reports **0 regex literals over 31 files / 8,996 lines** (was 7 over 31).
+Both files typecheck clean and `dart-contains-adjudicate.ts proxicall 12` still runs
+(16 truth rows, 16 agreed, 0 analyzer-only, 0 truth-only).
+
+**The replacement was WRONG on first write, and the way it was found is the part worth
+keeping.** `overloadSuffix` was written as "if the name does not end in `$`, there is no
+suffix" — but the name ends in a DIGIT. Every real overload suffix returned `""`, so
+`stripOverload` returned the name unchanged and every truth-only row would have been
+classified `other:` instead of `overload-suffixed ($N)`: the family the probe exists to
+find would have read as ABSENT, in a probe whose whole purpose is counting families.
+Caught by running the five replacements beside the five regexes they replaced over 19
+names and diffing the results — **95/95 comparisons agree** after the fix, including the
+awkward cases (`"$1"` → suffix `"$1"`, `"name$0$1"` → suffix `"$1"` and strip `"name$0"`,
+`"f9"` and `"x$y"` → no suffix, `""` → no suffix, `"Ünicode"` → not an identifier).
+A comment asserting the rewrite was equivalent would have been worth nothing; the
+diff is the evidence. Note that the comparison itself carries regex literals, so it is
+not committed as a fixture — a self-test that re-derives the regexes would put the seven
+back and make the census read non-zero to prove the census works.
+
+**The `@override` pair was not only a rule violation but a wrong answer**, and the
+measurement is on the node rather than on a row count. For a member whose preceding
+sibling is a doc comment, the regex tested the comment's TEXT:
+
+```
+/// We do not @override here — prose only.     sibling type documentation_comment
+  OLD /@override\b/.test(sibling.text) = true      NEW structural = false
+@override int get compute => 1;                 sibling type annotation
+  OLD = true    NEW = true                        (unchanged)
+```
+
+That is the failure the workstream names for regexes — matching comments — measured on
+this lane's own oracle.
+
+**A note on what this did and did not change, because the honest answer is "no
+counts".** Removing the regexes changed no emitted edge and no truth row, and I am not
+quoting a count as if it did. Two reasons, and the second is the stronger one:
+
+1. The differing predicate is not reachable through the oracle's public entry. On
+   every shape I could construct the annotation gate does not decide the row.
+2. **`overrideMembers` and `hasOverrideAnnotation` had no reader at all.**
+   `overrideOf` was written at line 531 and never looked up, so the gate was computed
+   per declaration and discarded. That is a static fact (`grep` for `overrideOf.get`
+   and `overrideOf[` returns 0 hits), which is why it is the claim I stand behind
+   rather than a differential comparison.
+
+The differential confirms the invariant that IS comparable — coverage and MISSING,
+which are stable across original and changed code on every run:
+
+```
+proxicall  cov 98.4%  MISSING 100  unexplained 0
+dart-http  cov 99.4%  MISSING  14  unexplained 0
+```
+
+**Absolute totals from that harness are not comparable run-to-run and this document
+quotes none of them as evidence.** The cold-pool rotation advances between runs;
+measured on unmodified HEAD with the resume journal cleared, `dart-http` returned
+`tree-truth` 2253, 2271 and 2277 across three runs and `proxicall` returned 6220 and
+6162. A reader comparing two differential runs row-for-row will see movement that is
+sampling, not change.
+
+### A comment that asserted a guarantee the code did not enforce
+
+The comment above the removed `overrideMembers` claimed the EXTERNAL resolution pass
+is annotation-gated, and that without the gate "an ungated pass derived 81
+`X.props -> Equatable.props` edges the analyzer deliberately does not publish". The
+gate was never wired, so that sentence described a different program.
+
+It also contradicts this lane's own battery, which pins the opposite: the case
+`an unannotated external member: oracle has evidence, analyzer does not here` asserts
+that the oracle DOES claim the row with no annotation, reasoning that a
+companion-verified match is evidence rather than a guess and that `@override` is only
+a lint (`annotate_overrides`). Both cannot be true of the same pass.
+
+Wiring the gate changes published truth rows, so it is not a refactor and not this
+lane's call — it is item 9 under *Shared-machinery needs*. The dead computation and
+the false comment are removed, and `isOverrideAnnotation` is kept because it is the
+rule a wired gate would need.
+
+Historical, for the record: the analyzer itself once carried 8 (5 quote-strip /
+callee-sanitization normalizations + 3 widget-detection `isWidgetTree` / uppercase
+heuristics), recorded in the M12 baseline. The widget-detection heuristic
+(`/Widget$|Element$|.../`) was dropped entirely — widget classification produced noise,
+not contract facts. All analyzer-side text normalization uses pure-String helpers
+(`unquote`, `stripCommentMarkers`, `isCapitalized`, `stripNonIdentifier`).
+
+One Dart-source file in the lane's fixtures, `payload-and-complexity.dart:158`, contains
+`RegExp(r'f6-\w+')`. That is a `RegExp` in the LANGUAGE, held as fixture input for a
+regular-expression field, not a pattern in an instrument.
+
+`script/m12/verify-regex-census.ts` currently FAILS. Its failures are 24 MISSING and
+25 STALE entries, and **not one names a Dart file** — the MISSING entries are
+`real-css-analyzer.ts` (11) and `real-julia-analyzer.ts` (4) plus a perFile/census
+disagreement; the STALE entries are `real-clean-analyzer.ts`, `real-fsharp-analyzer.ts`,
+`real-javascript-analyzer.ts`, `real-python-analyzer.ts`, `real-svelte-analyzer.ts` and
+`real-typescript.ts`. This lane contributes 0 to either list and the gate is
+not this lane's to fix.
+
+**The gate's blind spot is general, not specific to this lane.** A lane whose only
+regexes are literals will report 0 from this census and be counted clean. That is the
+same shape as the source-derivation error this wave exists to correct: an instrument
+that cannot see the construct it is measuring reports an absence, and the absence is
+read as a pass.
 
 ## Complexity envelope
 
@@ -143,6 +1813,36 @@ they are the generated `l10n/generated/app_localizations_*.dart` set — ~30 fil
 400–965 KB, each declaring ~5,353 real getters. A tail that flat is a corpus-shape
 fact, not a per-file pathology, and it is the same set that supplies 48% of all
 `property` symbols.
+
+### What this wave cost in latency, measured A/B
+
+The budget question is not "is the analyzer fast" but "did adding `references` make it
+slower, and by how much", and the declared artifact above cannot answer it: it is
+sealed at 2026-09-14 (`bbSeal.sealedAt`), predates every change in this wave, and
+`script/m60/analyzer-complexity-gate.ts` scores dart **unscorable** because its corpus
+row carries no `loadAvg1`, no `loadQuiet`, no `userCpuMsPerFile` and no
+`corpusManifest` — 40 of the gate's 44 lanes are in the same state, so it is a
+project-wide condition and not a dart finding. Its row is also not reproducible from
+the primary corpus: it measured `/tmp/dart-corpus` at 281.9 s for 399 files (707
+ms/file) where the same instrument on real corpus files runs at 129–165 ms/file.
+
+So the delta was measured directly, alternating the two analyzer blobs so the load
+condition is shared rather than assumed: 300 files (5 repositories × 60, stride),
+`BB_DART_CONC=1`, runs in the order AFTER, BEFORE, AFTER, BEFORE.
+
+| analyzer | run 1 | run 2 | mean | per file | symbols | relationships |
+| --- | --- | --- | --- | --- | --- | --- |
+| this wave's HEAD | 49,450 ms | 50,111 ms | 49,781 ms | 165.9 ms | 15,154 | 48,306 |
+| pre-M14 `8286c7391` | 49,390 ms | 48,532 ms | 48,961 ms | 163.2 ms | 15,154 | 47,882 |
+| **delta** | | | **+820 ms** | **+2.7 ms/file** | **0** | **+424 (+0.89%)** |
+
+**+1.67% wall for +424 edges (+0.89%), and the symbol count is unchanged** — the whole
+cost is the type-mention pass and nothing else. The 424 are all `references` (430
+emitted, less the 6 R7 rows the filter removes: 5 `uses`, 1 `contains`). Against the
+declared 400-file corpus budget of 600 s, 400 files at the measured 165.9 ms/file is
+66.4 s, so the addition is 9.0x inside the budget rather than a marginal pass — and
+that projection is stated as a projection, not as a measurement of the declared
+`corpus_subset`, whose file set this lane cannot re-derive.
 
 Hot-path audit: single iterative AST traversal (explicit stack, no recursion
 depth risk); scope carried per-frame as immutable snapshots (no shared
@@ -258,28 +1958,45 @@ same-owner duplicates, which DARTD20 forbids: **zero**.
 - Corpus sample: `validation/m12/results/dart-corpus-sample.txt`
 - Grammar wasm: `wasm/tree-sitter-dart.wasm` (rebuilt from
   `UserNobody14/tree-sitter-dart` `be07cf7`)
-- Regex census: `validation/m12/results/regex-census.json` (0 for this analyzer;
-  re-verified 2026-09-30 — 0 occurrences of `new RegExp`, `.match(`, `.replace(`,
-  `.test(` or a regex split)
+- Regex census: `validation/m12/results/regex-census.json` — **it contains no `dart` key
+  and no `dart` string**, so it is not evidence about this lane in either direction. The
+  number that is evidence is `npx tsx validation/m14/fixtures/dart/regex-census.ts`:
+  0 `RegExpLiteral` nodes and 0 `RegExp` constructions over the 16 lane-owned files
+  (17 scanned — the census counts itself and excludes itself only from the match set), by
+  AST. See §Regex inventory.
 - Analyzer hygiene: `script/m14/verify-analyzer-hygiene.ts` — **Dart clean** (the
-  gate's one finding is another lane's elixir node-identity comparison)
+  gate reports 3 findings on this branch and none is Dart: `bare-node-identity-comparison`
+  in `real-cpp-analyzer.ts:170`, `bare-node-identity-comparison` in the haskell
+  analyzer at :1157, and `node-identity-comparison` in `real-elixir-analyzer.ts:942`).
+  Run it with `bun` — under `npx tsx` the script dies on `__dirname is not defined
+  in ES module scope` at line 27 and prints nothing, which reads as a clean lane.
 - Spec: `script/m14/spec/dart-completeness.json` — 95 handled / 106 internal-silent
   / 6 re-scoped gaps / 33 ruled decisions
 - Reviews: `reviews/dart/` — five documents; `master-review-4.md` is the
   whole-surface pass measured against the live corpus
-- Fixtures (current): `validation/m14/fixtures/dart/` — 12, all green
+- Fixtures (current): `validation/m14/fixtures/dart/` — 16, and the harness reports `summary: {"dart":{"pass":16,"fail":0}}` with no baseline regression
 
 ## Known limits of the evidence
 
-1. **40 Dart mutants exist and NONE can execute.** They live in
-   `script/m14/mutate-analyzer.ts`, which does not parse (the
-   `xml/implicit-xml-prefix-unbound` transform has been malformed since
-   `f5f002c6`). Until that shared file is repaired, "40 mutants" is a claim, not a
-   measurement, and it is the single largest gap in this lane's assurance.
-2. **73.6% of the graph has no Dart-derived truth** — see the oracle table above.
+1. **~~40 Dart mutants exist and NONE can execute.~~ RESOLVED — this limit no longer
+   holds and the entry was stale.** It claimed `script/m14/mutate-analyzer.ts` does not
+   parse (the `xml/implicit-xml-prefix-unbound` transform malformed since `f5f002c6`), so
+   "40 mutants" was a claim rather than a measurement. Re-measured on this branch:
+   `BB_MUTANT_ONLY="dart/" bun run script/m14/mutate-analyzer.ts` prints
+   **`all 42 mutants caught - the gates can fail (BB_MUTANT_ONLY="dart/" filtered 1483 -> 42)`**,
+   so the harness parses, the suite runs, and 42 mutants execute and are all caught. The
+   count also moved 40 → 42. Kept as a numbered entry rather than deleted, because a
+   limit that was believed for several waves and then measured away is evidence about how
+   long a stale claim survives without re-derivation.
+2. **73.6% of the graph has no Dart-derived truth** — see the oracle table above. Stated
+   for the pre-M60 position: `contains`, `overrides`, `imports` and `exports` now have
+   Dart-owned oracles and batteries, but `overrides` and `references` are still outside
+   the differential's compared set, which is what the DERIVATION gate reports.
 3. **The differential's 1.000 is five fixture files** against an audit that says it
    predates three analyzer waves.
-4. **No corpus-scale perf figure**, and the corpus is ~3× the sampled size.
+4. **No corpus-scale perf figure** on the declared corpus, and the corpus is ~3× the
+   sampled size — though the live `ProxiCall/lib` figure below is measured on 1,294 real
+   files and is not a projection.
 5. Two recorded suspicions were measured out of existence and are kept as such: a
    pattern binding shadowing a field (the metadata proves a 0.9 local read, not a
    0.6 member read; 0 collisions across 1,294 files) and the assumption that the
@@ -312,18 +2029,120 @@ load-bearing rather than cosmetic:
 Reading a bare `==` off an `operator_signature` is therefore a bug in either
 implementation, and the fixture battery pins the contract in both directions.
 
-## Final measured state (2026-10-01)
+## Measured state — and a 2026-10-01 reading that no longer reproduces
 
-Both differential lanes, `--dart-deps=direct` plus the vendored Dart SDK library
-tree, from runs reporting `files=` (never `RESUMED from journal`):
+### Re-measured 2026-10-04, every headline number in this file
 
-| lane | coverage | MISSING | unexplained |
-|---|---|---|---|
-| proxicall:dart | **29203 / 29203 (100%)** | **0** | **0** |
-| dart-http:dart | **2288 / 2288 (100%)** | **0** | **0** |
+A second pass re-ran every instrument on this branch rather than trusting the figures
+already written here. **What reproduced, exactly:** the arbiter at n=120 (9/10, 8,290
+edges, 120/120, `degraded 0`) and n=400 (10/10, 53,252, 400/400, `degraded 0`); all ten
+census counts over 2,735 files (43,042 / 110,679 / 119,515 / 10,657 / 5,265 / 302 /
+4,730 / 758 / 90,352 / 18,374); every breadth row; all four zero-fields
+(`emptySymbolNames`, `emptyOrUnknownKind`, `unknownEndpoints`, `degradedFallbacks`);
+every cell of the 10×9 incoming table; the 144,032 unresolvable rows across all six
+buckets; the 490,135 ambiguous targets; the 1,829 residual split six ways; the
+`zero-contains` accounting (882 + 101 + 51 + 5 = 1,039); the 2.0117% export base rate
+and P(none)=8.73% at n=120; `type-position-probe` at 75,769 mentions / 3,460 resolvable
+/ 4.57%; the `references` oracle at 1,203/1,203 over 799 files; 16/16 fixtures;
+42/42 mutants; 37/37, 14/14 and 38/38 shape batteries; the r7 truth cost at 9 rows /
+525 files; and the differential, forced fresh, at 6,120/6,220 covered with 0 unexplained
+and 100 + 14 MISSING, all `overrides`.
 
-**No residual row.** Every analyzer edge either corpus measures is corroborated by
-independently derived truth, and the truth publishes nothing the analyzer does not.
+**What did not reproduce is recorded as corrected, in the sections that carry it:** the
+`28 further positions` of the type inventory (33 positions exist — this section's "28"),
+the quoted regex-census block (`16 (7881 lines)`, which matched no run — now 18/8,337
+with the self-count explained), the `document_color_test.dart` row that named a
+basename two tracked files share, and the `[BB-HANG]` run count (n=2 → n=3 → n=4 → n=5,
+each new run naming a hang file no earlier run named and each innocent on the same
+evidence as the first).
+
+**A third pass, same day, changed two more figures in this file, both from the same
+cause.** A quoted instrument block is a measurement of the tree *at a commit*, and a
+later commit that touches a file the instrument counts invalidates it silently:
+
+- The regex-census line count moved 8,185 → 8,186 (real `wc -l` 8,168 → 8,169) because
+  `b1b02d2b8` added one line to `validation/m14/fixtures/dart/census.ts` — a commit about
+  the census's own JSON field, a file carrying no regex — and then to 8,337 / 8,319 when
+  this wave added `hang-file-innocence.ts` to the lane-owned set. `RESULT: 0 regexes`
+  could not move through either change, because a line with no `RegExpLiteral` adds no
+  match.
+- The `zero-contains` accounting table said `declaration WITH members, >1 MB | 4` and
+  totalled 1,038 with a hand note that one file was double-counted. The probe's own
+  `filesWithMemberDecls` is **5**, and the code block already printed below that table
+  listed 5 files. The 4 counted only the files over 1 MB; the fifth,
+  `patternVariableDeclaration_inClass.dart` (35 B), is an `ERROR`-bearing parse case, so
+  the table counted one population under two criteria and corrected the total by hand.
+  Now 5, totalling 1,039, with the 96 + 5 = 101 split named.
+
+The two instruments agreed with each other and disagreed with the prose both times,
+which is the argument for reading the instrument's output rather than the file that
+quotes it.
+
+**What was NOT re-run, and why.** The latency A/B was not repeated: it alternates two
+analyzer blobs over 300 files × 4 runs, and `src/ast/real-dart-analyzer.ts` has not
+changed since `8e86c8364` (2026-10-03 23:47), so its AFTER column still describes the
+analyzer at HEAD and its BEFORE column is pinned to `8286c7391`. The live-corpus
+`ProxiCall/lib` figures (1,294 files, 675,964 relationships) were not re-derived —
+that checkout is outside this worktree and is not the sampled corpus. The
+`--dart-deps` index table was not re-run; it is a harness-side option over the
+differential's own corpus.
+
+The 2026-10-01 state was: both differential lanes at `--dart-deps=direct` plus the
+vendored Dart SDK library tree, `proxicall:dart` 29,203/29,203 (100%) MISSING 0, and
+`dart-http:dart` 2,288/2,288 (100%) MISSING 0. **That reading does not reproduce on this
+checkout, and the reason is dated.** `script/m14/differential.ts:23153` carries its own
+comment: on **2026-10-02**, a branch consolidation "took the REMOTE side", which drops
+`overrides` from the compared set for dart as well as csharp/swift/cpp/go. The allowlist
+filters the ANALYZER side only, so every `overrides` truth row now lands as a permanent
+MISSING — which is the DERIVATION finding above, showing up in a coverage number.
+
+Re-measured on this branch, both lanes at the default `--dart-deps=none`:
+
+| lane | coverage | MISSING | unexplained | re-measured |
+|---|---|---|---|---|
+| proxicall:dart | 6120 / 6220 (98.4%) | **100** | 0 | 2026-10-04 |
+| dart-http:dart | 2263 / 2277 (99.4%) | **14** | 0 | 2026-10-04 |
+
+**The two rows above are from DIFFERENT rotations, and only three of their five
+columns are stable.** `script/m14/differential.ts` picks the 60 files per lane with
+`coldPoolPick`, which by design "draws never-sampled files each wave" and advances a
+per-lane rotation counter on every run (`differential.ts:927-950`, seeded per
+rotation so it is reproducible *within* a rotation and different *across* one). Two
+consecutive `--force-fresh` runs on this branch:
+
+| run | proxicall truth/covered | dart-http truth/covered | ratio | MISSING | unexplained |
+|---|---|---|---|---|---|
+| rotation 73 | 6220 / 6120 | 2280 / 2266 | 98.4% / 99.4% | 100 / 14 | 0 / 0 |
+| rotation 74 | 6162 / 6062 | 2277 / 2263 | 98.4% / 99.4% | 100 / 14 | 0 / 0 |
+
+So the truth-row count moved by **58** on proxicall and **3** on dart-http between
+two runs of identical code on an identical corpus, and the table above quotes proxicall
+from rotation 73 and dart-http from rotation 74. What a reviewer re-running will fail
+to reproduce is the *denominator*, not the claim: coverage percentage, MISSING and
+unexplained are identical across both rotations, and those are the three numbers the
+verdict rests on. An earlier reading of this file quoted the same absolutes as if
+they were fixed, which is how a rotating sample becomes a lane property.
+
+Both MISSING counts are what §DERIVATION predicts (100 on the 60-file proxicall sample,
+14 on dart-http), and both are entirely the excluded label — the harness prints a capped
+12-row sample and all 12 printed rows are `overrides` on each lane, and `overrides` is
+the only label the allowlist drops for dart, so the remaining rows cannot be anything
+else. `unexplained` is 0 on both lanes, which is the number that means the ANALYZER is
+not at fault: nothing it emits is uncorroborated.
+
+`--dart-deps=direct` on this checkout reports `[project-index] dart deps=direct: +0
+dependency files` — the vendored SDK tree resolves 439 files and 3,574 types (against
+1,012 at `none`), but no package dependency does — and moves dart-http to
+2290/2309 (99.2%) MISSING 19, unexplained 0. **It makes the MISSING count worse, not
+better**, because a larger type index satisfies more override truth rows without
+re-admitting the label. The 100% figure is reachable only by wiring `overrides` into
+the compared set, which is §Shared-machinery item 2.
+
+**What the 2026-10-01 state did establish, and still holds:** `unexplained` is 0 on both
+lanes in every mode measured here, which is the claim that matters — every analyzer edge
+either corpus measures is corroborated by independently derived truth, and the truth
+publishes nothing the analyzer does not. The MISSING rows are the harness refusing to
+compare a label, not a gap in the analyzer.
 
 The last row to go was `CupertinoClientWithProfile._createProfile ->
 CupertinoClient._createProfile`, and it had been misfiled as a reach problem — the
@@ -346,12 +2165,18 @@ counting, and the count is the only thing anyone reads.
   the opposite direction.
 
 Every analyzer edge either corpus measures is corroborated by independently derived
-truth, and the truth publishes nothing the analyzer does not. No unexplained row and
-no missing row on either corpus.
+truth, and the truth publishes nothing the analyzer does not — `unexplained` is 0 on both
+lanes in every mode measured on this branch. **The "no missing row" half of this sentence
+no longer holds and was correct only before 2026-10-02**: the 100 and 14 MISSING rows
+measured above are `overrides` truth rows the compared-label filter refuses to admit, not
+edges the analyzer failed to emit.
 
-Fixtures **13/13**, `verify-dart-contains.ts` **37/37**, `verify-dart-overrides.ts`
-**14/14**, mutants 42/42, parse 0 errors on 1,294 `lib` files, 2.0 min for the full
-corpus.
+Fixtures **16/16** (13 before this wave added `type-references`,
+`object-interface-override` and `unknown-endpoint-r7`), `verify-dart-contains.ts`
+**37/37**, `verify-dart-overrides.ts` **14/14**, `verify-dart-references.ts` **38/38
+shapes, both sides**, mutants **42/42 caught**, regex census **0 over the 16
+lane-owned files** (17 scanned, the census being one of them), parse 0 errors on 1,294
+`lib` files, 2.0 min for the full corpus.
 
 Both oracle batteries are DIFFERENTIAL — each case asserts the oracle AND the
 analyzer against the same expected rows. `verify-dart-contains.ts` used to derive
@@ -376,7 +2201,7 @@ indexing the `lib/` TREE is what finds it, not "the dart:io library".
 
 ### The rules the `overrides` resolution turns on
 
-Each is pinned by `verify-dart-overrides.ts` (12 shapes, each recording the corpus row
+Each is pinned by `verify-dart-overrides.ts` (14 shapes, each recording the corpus row
 that exposed the defect) and, where the rule is analyzer-side, by
 `dart/override-witness-shapes` — which carries a negative twin per rule, because
 deleting a gate removes edges and an expect-only fixture would not notice.
@@ -402,7 +2227,11 @@ deleting a gate removes edges and an expect-only fixture would not notice.
 - **A base the file, or the index, proves lacks the member is refuted.** Without
   evidence the fallback may fire; against evidence it may not.
 
-### Two rulings
+### Two DECISIONS, not RULED verdicts
+
+Neither of these is a `RULED` verdict in the §Verdicts sense: no relationship type is
+ruled in this lane. They are label-placement and scope choices, recorded here because
+both were available to state as rulings and neither is one.
 
 **`part of` stays in `imports`.** It names the file's PARENT, so the edge states the
 dependency backwards. Kept anyway: every module-level URI is then one edge class, a

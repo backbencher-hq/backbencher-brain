@@ -27,8 +27,21 @@
  *                position + not a label + not an assignment target.
  *   instantiates a call whose callee is a declared type -> `instantiates`; plus
  *                `new(T)`'s type argument.
- *   contains     owner -> owned member (from the analyzer's own owner names,
- *                shared ground truth).
+ *   contains     owner -> owned member. Two SEPARATE derivations, because they
+ *                rest on different evidence and only one of them is shared:
+ *                  (a) owner -> member from the analyzer's own `ownerName`
+ *                      (shared ground truth: the owner assignment is not what
+ *                      the differential is for), and
+ *                  (b) enclosingRoutine -> nestedRoutine, derived HERE from the
+ *                      PARSE TREE by lexical nesting. (b) exists because the
+ *                      analyzer stopped reading `ownerName` for a nested
+ *                      routine — its owner is a FUNCTION, and `ownerName` is the
+ *                      family field for a class owner — and an oracle that
+ *                      derived nothing for the family would agree with the
+ *                      analyzer by saying nothing, which is the blind spot
+ *                      this oracle exists to prevent. Measured on the 400-file
+ *                      sample before (b) existed: 126 `contains` MISSING, every
+ *                      one of them a nested closure.
  *   extends      `ref object of B` -> the base, unless the base is one of the
  *                compiler's roots (RootObj/RootRef/Object), which exist nowhere.
  *   overrides    a method whose receiver is a declared subtype of another
@@ -37,6 +50,14 @@
  *                annotations, return types, `cast[T]`, `ref object of`,
  *                `concept … of`, and a type alias's RHS — constructor AND
  *                type arguments.
+ *
+ * It deliberately does NOT derive `exports` or `implements`. Both are absent
+ * here and that absence is RECORDED rather than silent: `script/m14/nim-ruled.ts`
+ * carries the falsifiable measurement for `implements` (216 concepts examined, 0
+ * refinements) and `exports` is a module-level re-export whose shape is
+ * position-dependent (`except` names what does NOT leave). Deriving either here
+ * without a corpus measurement behind it would be a second opinion nobody
+ * checked.
  *
  * It deliberately does NOT derive the docstring, the range, or the imports
  * array: those are compared by the fixture lane and the pipeline seam gate, and
@@ -133,6 +154,173 @@ function lastNamed(node: any): any {
 
 function spansInside(parent: any, child: any): boolean {
   return !!parent && parent.startIndex <= child.startIndex && parent.endIndex >= child.endIndex
+}
+
+/** The name of the `type_declaration` a node belongs to, or "" if none does.
+ *
+ *  `type_declaration` declares no field of its own: the name lives on its
+ *  `type_symbol_declaration` child, and that child's `name` field is an
+ *  `exported_symbol` for a public type whose TEXT includes the `*`. So this goes
+ *  through `nameOf`, which unwraps the marker — reading the node text directly
+ *  makes every exported type anonymous, which is how a whole concept population
+ *  once measured as 0. */
+function owningTypeName(node: any): string {
+  let p: any = node
+  let guard = 0
+  while (p && guard++ < 32) {
+    if (p.type === "type_declaration") {
+      for (const c of named(p)) {
+        if (c.type === "type_symbol_declaration") return nameOf(field(c, "name")).name
+      }
+      return ""
+    }
+    p = p.parent
+  }
+  return ""
+}
+
+/**
+ * `implements` — every (concept, supertype) pair the `of` clause names.
+ *
+ * The `of` clause is the grammar's `refines` field, a `refinement_list` of
+ * `type_expression`, so the names come off its named children and a qualified or
+ * generic spelling is taken by its LAST segment — which is the type's own name
+ * in every form real code writes (`mod.Contract`, `Contract[T]`,
+ * `Foo[T]` in `Bar*[T] = concept of Foo[T]`).
+ *
+ * A concept refining ITSELF is not a relationship and is dropped, for the same
+ * reason `extends` drops `type X = object of X`. It is not hypothetical: the
+ * corpus holds `nimony/tests/nimony/concepts/tconceptcycle.nim`, whose whole
+ * body is `type Cycle = concept of Cycle` and whose upstream `.msgs` reads
+ * `Error: concept inheritance cycle detected`.
+ */
+export function deriveConceptRefinement(root: any): [string, string][] {
+  const out: [string, string][] = []
+  const seen = new Set<string>()
+  const stack: any[] = [root]
+  while (stack.length > 0) {
+    const n = stack.pop()
+    if (n.type === "concept_declaration") {
+      const owner = owningTypeName(n)
+      const refines = n.childForFieldName?.("refines")
+      if (owner && refines) {
+        for (const target of refinementTargetNames(refines)) {
+          if (!target || target === owner) continue
+          const k = `${owner}|${target}`
+          if (seen.has(k)) continue
+          seen.add(k)
+          out.push([owner, target])
+        }
+      }
+    }
+    for (let i = 0; i < n.childCount; i++) stack.push(n.child(i))
+  }
+  return out
+}
+
+/**
+ * ONE name per `type_expression` in a refinement list — the type's own name.
+ *
+ * This is a per-operand rule and the earlier version was a recursive name
+ * scrape, which is wrong in a way the cross-check caught immediately: on
+ * `Bar = concept of Foo[T]` it collected `Foo` AND `T` and published
+ * `Bar implements T`. `T` is the type ARGUMENT. A type argument read as the
+ * type it constrains is the same confusion the doc records for
+ * `BlenderRgb[Rgba8]` on the `references` side, and it is the reason this walks
+ * to the CONSTRUCTOR instead of taking a last segment.
+ *
+ * The three shapes, all read off node types:
+ *
+ *   Foo              type_expression / identifier
+ *   Foo[T]           type_expression / bracket_expression — the name is the
+ *                    CONSTRUCTOR, its FIRST named child, and the
+ *                    `argument_list` is not descended into
+ *   mod.Contract     type_expression / prefix_expression — a QUALIFIER, and the
+ *                    name is its LAST identifier. The leading `.` parses as an
+ *                    ERROR node with no field, so the qualified spelling is a
+ *                    parse artifact rather than clean syntax; reading the leaf is
+ *                    still the right answer and the ERROR is why Limitation 7
+ *                    records this shape as unparseable for `export`.
+ */
+function refinementTargetNames(refinementList: any): string[] {
+  const out: string[] = []
+  for (const te of named(refinementList)) {
+    if (te.type !== "type_expression") continue
+    const inner = named(te)[0]
+    if (!inner) continue
+    if (inner.type === "identifier") { out.push(String(inner.text)); continue }
+    if (inner.type === "bracket_expression") {
+      const ctor = named(inner)[0]
+      if (ctor && ctor.type === "identifier") out.push(String(ctor.text))
+      continue
+    }
+    if (inner.type === "prefix_expression") {
+      let leaf = ""
+      for (const c of named(inner)) if (c.type === "identifier") leaf = String(c.text)
+      if (leaf) out.push(leaf)
+    }
+  }
+  return out
+}
+
+/**
+ * `exports` — one edge per OPERAND of an `export` statement.
+ *
+ * Positionally, and `except` read as what does NOT leave: `export a, b except c`
+ * re-exports `a` and `b` and withholds `c`. The excluded operand lives in an
+ * `except_clause` inside the operand list, so it is skipped by ancestry rather
+ * than by name — the same shape the `imports` arm handles, and for the same
+ * reason: `x except y` and `x, y` are one node type and only the clause tells
+ * them apart.
+ *
+ * The `*` marker is not here. `exported_symbol` is a VISIBILITY modifier on a
+ * declaration in this module (39,933 sites on the corpus), not a re-export of a
+ * name from elsewhere, and counting it is the mistake
+ * `nim/star-marker-promoted-to-an-exports-edge` exists to catch.
+ */
+export function deriveExports(root: any): [string, string][] {
+  const out: [string, string][] = []
+  const seen = new Set<string>()
+  const stack: any[] = [root]
+  while (stack.length > 0) {
+    const n = stack.pop()
+    if (n.type === "export_statement") {
+      const exceptClause = firstOfType(n, "except_clause")
+      const list = firstOfType(n, "expression_list")
+      for (const operand of list ? named(list) : []) {
+        if (exceptClause && isDescendantOf(operand, exceptClause)) continue
+        for (const nm of exportedNamesIn(operand)) {
+          if (!nm) continue
+          const k = `(global)|${nm}`
+          if (seen.has(k)) continue
+          seen.add(k)
+          out.push(["(global)", nm])
+        }
+      }
+    }
+    for (let i = 0; i < n.childCount; i++) stack.push(n.child(i))
+  }
+  return out
+}
+
+/** Names an `export` operand publishes: identifiers, with a qualifier's leaf. */
+function exportedNamesIn(node: any): string[] {
+  const out: string[] = []
+  const visit = (x: any): void => {
+    if (x.type === "identifier") { out.push(String(x.text)); return }
+    if (x.type === "exported_symbol") return
+    if (x.type === "dot_expression") {
+      const leaf = x.namedChildCount > 0 ? x.namedChild(x.namedChildCount - 1) : null
+      if (leaf && leaf.type === "identifier") out.push(String(leaf.text))
+      return
+    }
+    for (let i = 0; i < x.namedChildCount; i++) {
+      const c = x.namedChild(i)
+      if (c) visit(c)
+    }
+  }
+  visit(node)
+  return out
 }
 
 /** The name a `_symbol` / `exported_symbol` field node carries. */
@@ -327,6 +515,142 @@ function supertypesOf(leaf: string, subtypes: Map<string, Set<string>>): Set<str
 
 // ── the derivation ──
 
+/**
+ * `contains` for a NAMED nested routine, derived from the parse tree alone.
+ *
+ * ## Why this is a separate walk and not a field read
+ *
+ * The `contains` derivation above reads `symbol.ownerName`, which is declared
+ * shared ground truth on the grounds that the owner assignment is not what the
+ * differential is for. That reasoning does not transfer here: a nested routine's
+ * owner is a FUNCTION, and the analyzer deliberately does not put a function in
+ * `ownerName` (the family field is for a class or module owner), so the edge
+ * comes from `metadata.nimNestedIn` — the analyzer's own metadata. An oracle
+ * that read `nimNestedIn` would be checking the analyzer against itself.
+ *
+ * So this walks the tree. The rule is the language's, not the analyzer's: a
+ * routine declared inside another routine's BODY is nested in it. The BODY is
+ * read as the `body` FIELD, because a routine's doc comment is not its body —
+ * which is the same distinction the analyzer's `pushCallableChildren` makes, and
+ * it is stated here independently so a disagreement is still possible.
+ *
+ * ## What is deliberately not derived
+ *
+ * A routine with no name contributes nothing: there is no target to point an edge
+ * at, and inventing one would be the fabrication the workstream treats as its
+ * most expensive mistake. A routine at file scope has no enclosing routine, so it
+ * contributes nothing either.
+ *
+ * ## Comparison basis
+ *
+ * START OFFSETS, never `===`. `childForFieldName` and `namedChild` each allocate
+ * their own JS wrapper for one underlying node, so object identity is false for
+ * the node itself. Two nodes in one tree cannot share a start offset.
+ */
+const ROUTINE_NODES = new Set([
+  "proc_declaration", "func_declaration", "method_declaration",
+  "iterator_declaration", "macro_declaration", "template_declaration",
+  "converter_declaration",
+])
+
+function declaredRoutineName(node: any): string {
+  const nameNode = node.childForFieldName?.("name")
+  if (!nameNode) return ""
+  // `exported_symbol` wraps the identifier and a `*`; the identifier is the name.
+  if (nameNode.type === "exported_symbol") {
+    return nameNode.namedChildCount > 0 ? String(nameNode.namedChild(0).text) : ""
+  }
+  return String(nameNode.text ?? "")
+}
+
+export function deriveNestedRoutineContainment(root: any): [string, string][] {
+  const out: [string, string][] = []
+  const seen = new Set<string>()
+  const stack: { node: any; enclosing: string }[] = [{ node: root, enclosing: "" }]
+  while (stack.length > 0) {
+    const { node, enclosing } = stack.pop()!
+    const isRoutine = ROUTINE_NODES.has(node.type)
+    let selfName = enclosing
+    if (isRoutine) {
+      const name = declaredRoutineName(node)
+      if (name && name !== "_" && enclosing) {
+        const k = `${enclosing}|${name}`
+        if (!seen.has(k)) { seen.add(k); out.push([enclosing, name]) }
+      }
+      // Only a routine with a NAME opens a frame: an anonymous nested routine has
+      // nothing for a deeper one to be contained by.
+      selfName = name || enclosing
+    }
+    const body = isRoutine ? node.childForFieldName?.("body") : null
+    const bodyStart = body ? body.startIndex : -1
+    // A `runnableExamples:` argument is a SEPARATE COMPILATION UNIT, and clearing
+    // the enclosing routine there is an ADJUDICATED disagreement, not a detail.
+    // This oracle derived `then -> fn`, `then -> asyncFact` and `then -> main` for
+    // the block at nim/lib/js/asyncjs.nim:206-216 and the analyzer published
+    // those three routines with no enclosing routine at all; the block is compiled
+    // by `nim doc` as its own unit, so a routine inside it is not lexically inside
+    // the proc that documents it, and `then -> fn` states something false. The
+    // evidence is the tree and the compiler's own treatment of the block; the
+    // analyzer's answer is adopted and the reason is recorded here so the next
+    // reader can overturn it with better evidence rather than by re-deriving.
+    const exampleStart = docExampleArgumentStart(node)
+    for (let i = node.namedChildCount - 1; i >= 0; i--) {
+      const c = node.namedChild(i)
+      if (!c) continue
+      // A routine's BODY is what opens the lexical frame. Its doc comment and its
+      // pragma list are siblings of the body, and a routine written inside a doc
+      // comment is not nested in this routine.
+      if (exampleStart >= 0 && c.startIndex === exampleStart) {
+        stack.push({ node: c, enclosing: "" })
+        continue
+      }
+      stack.push({ node: c, enclosing: bodyStart >= 0 && c.startIndex === bodyStart ? selfName : enclosing })
+    }
+  }
+  return out
+}
+
+/**
+ * The start offset of a `runnableExamples:` call's ARGUMENT LIST, or -1.
+ *
+ * ## The shape, not the word
+ *
+ * The argument must hold a statement list or a block. A user proc named
+ * `runnableExamples` called with an expression is an ordinary call and is not a
+ * doc block, and `runnableExamples` read as a callee is not a call to anything —
+ * see the `isDocExamplePragma` note on the `calls` derivation below, which is the
+ * SAME shape test applied to a different question.
+ *
+ * Read as a NAMED CHILD of that type rather than through `childForFieldName`,
+ * because the pinned grammar does not populate the `argument_list` FIELD here: it
+ * parses `runnableExamples:` as a labelled statement, so the field accessor
+ * returns null while the child is plainly present. Verified on
+ * nim/lib/system.nim:859.
+ */
+function docExampleArgumentStart(node: any): number {
+  if (node.type !== "call") return -1
+  let fn: any = null
+  for (let i = 0; i < node.namedChildCount; i++) {
+    const c = node.namedChild(i)
+    if (c && c.type === "identifier") { fn = c; break }
+  }
+  if (!fn || String(fn.text) !== "runnableExamples") return -1
+  for (let i = 0; i < node.namedChildCount; i++) {
+    const c = node.namedChild(i)
+    if (!c || c.type !== "argument_list") continue
+    for (let k = 0; k < c.namedChildCount; k++) {
+      const g = c.namedChild(k)
+      if (g && (g.type === "statement_list" || g.type === "block")) return c.startIndex
+    }
+  }
+  return -1
+}
+
+/** True when a `call` node is a `runnableExamples:` doc block rather than a call. */
+export function isDocExamplePragma(node: any): boolean {
+  return docExampleArgumentStart(node) >= 0
+}
+
 export function deriveNimEdges(root: any, symbols: any[]): TruthEdge[] {
   const inv = buildInventory(symbols)
   const edges: TruthEdge[] = []
@@ -336,9 +660,10 @@ export function deriveNimEdges(root: any, symbols: any[]): TruthEdge[] {
   // the source line), and the analyzer side is collapsed to one edge per
   // (label,target). Keying on the source as well made 5 callers of one target
   // count as 5 independent truth rows against the analyzer's single deduped
-  // edge: measured tree-truth=901 vs analyzer-edges=432 with "100% coverage",
-  // i.e. the denominator was mostly the same fact repeated and the percentage
-  // meant far less than it read. `from` is still carried on the edge for triage
+  // edge: measured tree-truth=901 vs analyzer-edges=432, which the ratio then
+  // reported as every truth row matched — i.e. the denominator was mostly the
+  // same fact repeated and the rate meant far less than it read. `from` is
+  // still carried on the edge for triage
   // and sample printing; it is only the KEY that is source-free.
   const seen = new Set<string>()
   const push = (label: string, from: string, target: string): void => {
@@ -355,6 +680,15 @@ export function deriveNimEdges(root: any, symbols: any[]): TruthEdge[] {
   for (const s of symbols ?? []) {
     if (s.ownerName) push("contains", s.ownerName, s.name)
   }
+
+  // ── contains: enclosing routine -> nested routine, from the TREE.
+  //
+  // A named nested routine is contained by the routine it is lexically inside,
+  // and the analyzer publishes that edge from `metadata.nimNestedIn` rather than
+  // from `ownerName`. So this derivation cannot read the analyzer's metadata at
+  // all — it walks the parse tree and records the nesting it can see, which is
+  // what makes it a second opinion rather than a restatement.
+  for (const pair of deriveNestedRoutineContainment(root)) push("contains", pair[0], pair[1])
 
   // ── extends / overrides ──
   for (const s of symbols ?? []) {
@@ -441,6 +775,47 @@ export function deriveNimEdges(root: any, symbols: any[]): TruthEdge[] {
       for (const operand of list ? named(list) : []) for (const mp of modulePaths(operand)) emitImport(mp)
     }
   }
+
+  // ── implements: a concept naming a supertype contract, from the TREE ──
+  //
+  // Added 2026-10-04, and it is the derivation whose absence was measurable: the
+  // cross-check read `implements` as 3 analyzer targets against 0 oracle
+  // derivations, which is a DERIVATION finding rather than three defects. Until
+  // `nim-lang/nimony` entered the corpus this label read 0 on both sides, which
+  // is why nobody noticed that no derivation existed — a type nothing emits
+  // cannot be un-audited by an instrument that compares emissions.
+  //
+  // Read off the `refines` FIELD of `concept_declaration`, never off node text,
+  // for the reason the `imports` arm records: `nim/compiler/parser.nim:2268`
+  // QUOTES the production this construct is written in
+  // (`conceptDecl = 'concept' COMMENT? ... ('of' typeDesc ^* ',')?`) inside a
+  // diagnostic string. A text probe for `concept … of` finds 61 sites on this
+  // corpus of which 21 are comments and 1 is that string; the tree holds 38.
+  //
+  // The `is` form is deliberately NOT derived here. It is guarded on the right
+  // naming a concept the SAME FILE declares, which is the analyzer's rule and
+  // this oracle's, so deriving it would restate the code under audit rather than
+  // check it — and it measures 0 occurrences on the corpus anyway (156 `is`
+  // expressions in concept bodies, 13 with a bare formal parameter on the left,
+  // 0 naming a local concept).
+  for (const [owner, refines] of deriveConceptRefinement(root)) push("implements", owner, refines)
+
+  // ── exports: one edge per OPERAND of an `export` statement, from the TREE ──
+  //
+  // The second of the two labels with no derivation, and the same shape of
+  // omission: the cross-check read `exports` as 12 analyzer targets against 0
+  // oracle derivations on a 400-file sample, and 20 against 0 on the previous
+  // one. Both numbers were reported as "unaudited" rather than as a missing
+  // derivation, because a DERIVATION finding and N defects look identical in a
+  // MISSING column and are not the same work.
+  //
+  // An operand is a re-export of a name this module imported, which nothing else
+  // in the payload records — so this is derived from `export_statement`'s own
+  // children, positionally, and `except` is read as what does NOT leave. The
+  // `*` visibility marker is NOT an export: it is a modifier on a local
+  // declaration, which is the confusion `nim/star-marker-promoted-to-an-exports-edge`
+  // exists to catch on the analyzer side.
+  for (const edge of deriveExports(root)) push("exports", edge[0], edge[1])
 
   // ── the tree walk: calls / uses / instantiates / references ──
   interface Scope { names: Set<string>; fn: string | null }
@@ -624,7 +999,18 @@ export function deriveNimEdges(root: any, symbols: any[]): TruthEdge[] {
 
     if (t === "call") {
       const fn = field(node, "function")
-      if (!(isModifierCall(node) && isTypePosition(node))) {
+      // `runnableExamples:` is a doc-comment PRAGMA, not a call. The grammar
+      // parses the whole example as the call's `argument_list`, so without this
+      // the call branch fires on a keyword. Over the 400-file sample that
+      // produced 7 unexplained `calls -> runnableExamples` edges across
+      // nim/lib/{experimental/diff,js/asyncjs,pure/base64,pure/collections/lists,
+      // pure/complex,pure/encodings,pure/memfiles,pure/parsecsv}.nim — a name no
+      // Nim program can call, asserted seven times. Same shape test the
+      // containment walk uses; stated here too because the two questions are
+      // different and a reader should not have to infer one from the other.
+      if (isDocExamplePragma(node)) {
+        // no edge
+      } else if (!(isModifierCall(node) && isTypePosition(node))) {
         const leaf = fn ? calleeLeaf(fn) : null
         const leafText = leaf ? leaf.text : ""
         const isTypeCtor = !!leafText && inv.types.has(leafText) && !inv.callables.has(leafText)
