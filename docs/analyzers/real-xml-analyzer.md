@@ -650,6 +650,26 @@ confidence ratio cannot detect anything.
 
 ### Integrity of the census itself
 
+**The counts reproduce and the artifact does not, and the artifact now says so.**
+Four runs of `ontology-census.mts` against the same corpus at the same caps
+(2,500 files, 110 repositories, per-repo cap 400): **every count field was
+byte-identical in all four**, and **the example arrays came out in four different
+orders**. The draw is deterministic — repositories in sorted order, files in
+lexicographic path order, no randomness in the selection, so all four runs parse
+the same 2,500 files — but `fileExamples`, `unresolvableExamples` and the probe
+`examples` record the *first* file a type was seen in, and "first" is whichever
+concurrent worker arrived first.
+
+The failure mode this creates is a **misread, not a wrong number**: someone
+diffing two artifacts sees a reordered example list, and a reordered example list
+looks at a glance exactly like a count that moved. The artifact therefore carries
+a `reproducibility` block declaring which fields a reader may compare
+(`countsAreDeterministic: true`, `exampleArraysAreDeterministic: false`,
+`measuredRuns: 4`, and the four field paths that are **not** part of the claim).
+The rule it states is the checkable one: **compare counts, not byte order.**
+
+The counts themselves, from the matched 11,066-file pair:
+
 | property | value |
 | --- | ---: |
 | files sampled | 11,066 (every git-tracked file routed to `xml`; 91 repositories) |
