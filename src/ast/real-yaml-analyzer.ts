@@ -102,7 +102,13 @@ interface YamlContext {
   /** Duplicate-key disambiguation counters, keyed by document + base path. */
   duplicateCounters: Map<string, number>
   /** `uses:` sites, held until the file's shape decides whether it is a workflow. */
-  pendingActionUses: { source: string; action: string; line: number }[]
+  pendingActionUses: { source: string; action: string; line: number; role: UsesRole }[]
+  /**
+   * Named schema definitions a document PUBLISHES for other documents to reference by
+   * `$ref`. Held for the same reason `pendingActionUses` is: the container only means a
+   * publication in a file that declares itself an API description.
+   */
+  pendingSchemaPublications: { document: string; container: string; name: string; path: string; line: number }[]
   /** Sibling-name references awaiting the post-pass that can resolve them. */
   pendingReferences: { source: string; target: string; kind: string; line: number }[]
   frameworks: string[]
@@ -272,6 +278,62 @@ const FILE_IMPORT_KEYS = new Set([
   "include_tasks", "import_tasks", "import_playbook", "import_role", "include_role",
   "import_values", "import", "include",
 ])
+
+/**
+ * What a `uses:` KEY MEANS, decided by the path the analyzer itself built for the
+ * entry — never by the characters of the value.
+ *
+ * GitHub Actions gives this one key two meanings that are worth distinguishing, and
+ * the position is the whole of the evidence:
+ *
+ *   `jobs.<job>.uses`   a REUSABLE WORKFLOW this job invokes  -> `calls`
+ *   anything else       the pre-existing treatment, unchanged
+ *
+ * The third `uses:` spelling — outside a `jobs` block entirely — is deliberately NOT a
+ * third role. It was already one case here: one relationship, one reason code,
+ * `file-shape-is-not-a-github-workflow`. Splitting it off would give one fact two
+ * vocabularies, which is the mistake this file already documents once at the action
+ * import. Only the job level diverges, because only the job level is a different fact.
+ *
+ * Before this existed, every `uses:` took the `imports` branch, so all 196 job-level
+ * reusable-workflow references in the corpus were labelled as an import of a third-party
+ * action. The value's shape does not decide this: `owner/repo/x.yml@ref` and
+ * `actions/checkout@v4` both contain a `/`, and only one of them names a workflow.
+ */
+type UsesRole = "workflow-call" | "other"
+
+/** The OpenAPI 3 component containers, which exist to be referenced from elsewhere. */
+const OPENAPI_COMPONENT_CONTAINERS = new Set([
+  "schemas", "responses", "parameters", "examples", "requestBodies",
+  "headers", "securitySchemes", "links", "callbacks", "pathItems",
+])
+
+/**
+ * The publication container `parentPath` names, or null. `definitions` and `$defs` are
+ * the JSON Schema / Swagger 2 spelling; `components.<sub>` is the OpenAPI 3 one. The
+ * segment count is what keeps this role-scoped: `definitions.X` at the document's top
+ * level is a publication and `foo.definitions.X` is not.
+ */
+function schemaPublicationRole(parentPath: string, document: string): string | null {
+  const prefix = `${document}.`
+  if (!parentPath.startsWith(prefix)) return null
+  const parts = parentPath.slice(prefix.length).split(".")
+  if (parts.length === 1 && (parts[0] === "definitions" || parts[0] === "$defs")) return parts[0]
+  if (parts.length === 2 && parts[0] === "components" && OPENAPI_COMPONENT_CONTAINERS.has(parts[1]!)) {
+    return `components.${parts[1]}`
+  }
+  return null
+}
+
+/** True when `parentPath` is exactly `<document>.jobs.<jobId>` and nothing deeper. */
+function isJobLevelPath(parentPath: string, document: string): boolean {
+  const prefix = `${document}.jobs.`
+  if (!parentPath.startsWith(prefix)) return false
+  const jobId = parentPath.slice(prefix.length)
+  // A job id containing a dot is legal YAML and still one job; a job id followed by
+  // `steps` is a step, so the segment count is what separates the two.
+  return jobId.length > 0 && !jobId.includes(".")
+}
 
 /** HTTP methods that appear as a `paths` child in an OpenAPI document. */
 const OPENAPI_METHODS = new Set([
@@ -484,6 +546,7 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
       tagHandles: new Map(),
       duplicateCounters: new Map(),
       pendingActionUses: [],
+      pendingSchemaPublications: [],
       pendingReferences: [],
       frameworks: [],
       frameworkPatterns: [],
@@ -503,6 +566,7 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     this.detectFrameworks(ctx)
     this.resolveActionUses(ctx)
+    this.resolveSchemaExports(ctx)
     this.resolveAliases(ctx)
     this.resolvePointerReferences(ctx)
     this.resolveSiblingReferences(ctx)
@@ -845,7 +909,48 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (isDuplicate) current.siblingKeys.add(`${key}\u0000dup`)
     else current.siblingKeys.add(key)
 
+    const keyLine = keyNode.startPosition.row + 1
     const path = this.uniquePath(current.parentPath, current.document, key, isDuplicate, ctx)
+    // A duplicate mapping key is a REPLACEMENT, and the two entries are already two
+    // distinct symbols because `uniquePath` gave the later one a `#n` suffix. That is
+    // what makes an `overrides` edge possible at all: an edge needs two endpoints, and
+    // without the disambiguation both endpoints would be the same path.
+    //
+    // Confidence is 0.8, not 1.0, and the reason is recorded on the edge: the two
+    // entries are a parse FACT, but "the later one replaces the earlier" is loader
+    // behaviour rather than a grammar guarantee. YAML 1.2 leaves duplicate mapping
+    // keys undefined; mainstream loaders take the last value, GitHub Actions rejects
+    // the file outright. So the pair is certain and the override semantics are a
+    // convention, and an edge that claimed 1.0 would be asserting the convention as
+    // if the grammar had said it.
+    if (isDuplicate) {
+      const base = current.parentPath ? `${current.parentPath}.${key}` : key
+      // `uniquePath` has already bumped the counter to this occurrence's number, so
+      // reading it back rather than recomputing keeps the edge's two endpoints and the
+      // two symbol paths derived from ONE number instead of two that can disagree.
+      const ordinal = ctx.duplicateCounters.get(`${current.document}\u0000${base}`) ?? 1
+      const overridden = ordinal === 1 ? base : `${base}#${ordinal}`
+      this.addRelationship(
+        ctx,
+        path,
+        overridden,
+        ASTEngine.RelationshipType.Overrides,
+        {
+          relationshipType: "yaml_duplicate_key",
+          duplicateKey: key,
+          occurrence: ordinal + 1,
+          overriddenPath: overridden,
+          isDuplicateKey: true,
+          // Both endpoints are symbols of THIS file, so this resolves; the uncertainty
+          // is in the semantics, which is why `resolved` and `confidence` disagree here.
+          resolved: true,
+          yamlSpecStatus: "duplicate mapping keys are undefined in YAML 1.2; last-wins is conventional loader behaviour",
+        },
+        keyLine,
+        0.8,
+        "duplicate-mapping-key-last-wins",
+      )
+    }
     const pointerPath = `${current.pointerPath}/${this.escapePointer(key)}`
     const symbolKind = valueType === "object"
       ? ASTEngine.SymbolKind.Class
@@ -909,7 +1014,7 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
     this.indexShape(current.document, current.parentPath, path, valueType, ctx)
     if (valueType === "object" || valueType === "array") ctx.pointerIndex.set(pointerPath, path)
 
-    this.emitKeySemantics(key, symbol, valueNode, valueType, keyNode, line, ctx)
+    this.emitKeySemantics(key, symbol, valueNode, valueType, keyNode, line, current, ctx)
 
     if (valueNode) {
       stack.push({
@@ -939,6 +1044,7 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
     valueType: string,
     keyNode: Node,
     line: number,
+    current: VisitContext,
     ctx: YamlContext,
   ): void {
     const path = symbol.qualifiedName || symbol.id
@@ -1021,10 +1127,23 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
 
-    // `uses:` is an import of an action, but only in a file that IS a workflow. The
-    // shape decides it, so the site is held until detectFrameworks has run.
+    // `uses:` is one key with more than one meaning, and the file's shape decides which.
+    // The site is held until detectFrameworks has run, and the ROLE travels with it
+    // because a job-level `uses:` is a call and must not be labelled an import.
     if (key === "uses" && valueType === "string" && valueNode) {
-      ctx.pendingActionUses.push({ source: path, action: this.scalarText(valueNode), line })
+      const role: UsesRole = isJobLevelPath(current.parentPath, current.document) ? "workflow-call" : "other"
+      ctx.pendingActionUses.push({ source: path, action: this.scalarText(valueNode), line, role })
+    }
+
+    // A named schema definition under a PUBLICATION container. This is the one place YAML
+    // writes down an export: the definition is named once here and reached from other
+    // documents as `$ref: '#/components/schemas/<name>'`, which is what `exports` means
+    // in every other lane. The container name alone does not decide it — a `definitions`
+    // key inside an unrelated document is just a bag of values — so the role is only
+    // settled in the post-pass, against the file's own `openapi:`/`swagger:` claim.
+    const publication = schemaPublicationRole(current.parentPath, current.document)
+    if (publication) {
+      ctx.pendingSchemaPublications.push({ document: current.document, container: publication, name: key, path, line })
     }
 
     // The declared-type graph (M60 R9): the tag WRITES a type name at this
@@ -1280,21 +1399,49 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
     return false
   }
 
-  /** `uses:` becomes an import only in a file the shape index proved is a workflow. */
+  /** A job-level `uses:` is a CALL of a reusable workflow, and never an import. */
   private resolveActionUses(ctx: YamlContext): void {
     if (ctx.pendingActionUses.length === 0) return
-    if (!ctx.frameworks.includes("GitHub Actions")) {
-      for (const use of ctx.pendingActionUses) {
+    const isWorkflow = ctx.frameworks.includes("GitHub Actions")
+    // The calls are held to the same shape gate as the action imports. A job-level
+    // `uses:` in a file whose shape did not prove a workflow is left as an unproven
+    // reference rather than promoted to a call, because `jobs.<id>.uses` is only
+    // defined by GitHub Actions and nothing else in YAML gives `jobs` that meaning.
+    for (const use of ctx.pendingActionUses) {
+      if (use.role === "workflow-call") {
+        if (!isWorkflow) {
+          this.addRelationship(ctx, use.source, use.action, ASTEngine.RelationshipType.References, {
+            relationshipType: "yaml_workflow_call_unverified",
+            isExternal: true,
+            resolved: false,
+            unresolvedReason: "file-shape-is-not-a-github-workflow",
+          }, use.line, 0.7, "shape-not-workflow")
+          continue
+        }
+        // `./path` names a workflow in THIS repository; anything else names one in
+        // another repository at a ref. Both are cross-file, so neither endpoint is a
+        // symbol here and `resolved` says so instead of implying a bind that did not
+        // happen. Confidence is 1.0 because the ROLE is a parse fact — the key sits at
+        // `jobs.<id>.uses`, where GitHub Actions admits nothing else.
+        const local = use.action.startsWith("./") || use.action.startsWith("../")
+        this.addRelationship(ctx, use.source, use.action, ASTEngine.RelationshipType.Calls, {
+          relationshipType: "yaml_workflow_call",
+          evidenceClass: "structural",
+          isExternal: !local,
+          resolved: false,
+          unresolvedReason: local ? "workflow-in-same-repository-not-indexed" : "workflow-in-another-repository",
+        }, use.line)
+        continue
+      }
+      if (!isWorkflow) {
         this.addRelationship(ctx, use.source, use.action, ASTEngine.RelationshipType.References, {
           relationshipType: "yaml_action_use_unverified",
           isExternal: true,
           resolved: false,
           unresolvedReason: "file-shape-is-not-a-github-workflow",
         }, use.line, 0.7, "shape-not-workflow")
+        continue
       }
-      return
-    }
-    for (const use of ctx.pendingActionUses) {
       // `yaml_action_use`, NOT `github_action`: the relationship beside it already uses
       // that name, and an import row that disagrees with its own relationship is a second
       // vocabulary for one fact. The corpus census asserts row-type == relationshipType
@@ -1305,6 +1452,36 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
         isExternal: !use.action.startsWith("./") && !use.action.startsWith("docker://"),
       }, use.line)
     }
+  }
+
+  /**
+   * `exports`: the named definitions a document publishes for other documents to
+   * `$ref`. The document is the exporting unit and the definition is the exported
+   * name, and BOTH are symbols of this file — so unlike every external edge in this
+   * analyzer, this one resolves at both ends.
+   *
+   * Gated on the document declaring `openapi:` or `swagger:` at its top level, read
+   * from the shape index rather than from the text: a `components.schemas.X` path
+   * inside a file that never claims to be an API description is a coincidence of
+   * naming, and a publication edge on a coincidence is a fabricated edge.
+   */
+  private resolveSchemaExports(ctx: YamlContext): void {
+    if (ctx.pendingSchemaPublications.length === 0) return
+    let emitted = 0
+    for (const pub of ctx.pendingSchemaPublications) {
+      const shapes = ctx.documentShapes.get(pub.document)
+      if (!shapes || !(shapes.has("openapi") || shapes.has("swagger"))) continue
+      this.addRelationship(ctx, pub.document, pub.path, ASTEngine.RelationshipType.Exports, {
+        relationshipType: "yaml_schema_publication",
+        evidenceClass: "structural",
+        container: pub.container,
+        definitionName: pub.name,
+        isExternal: false,
+        resolved: true,
+      }, pub.line)
+      emitted++
+    }
+    if (emitted > 0) this.addPattern(ctx, "Published Schema Components")
   }
 
   /** `$ref` targets that point outside this file, or at a pointer nothing declares. */
@@ -1640,6 +1817,7 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
         continue
       }
       if (t === "instantiates") { md.evidenceClass = "structural"; continue }
+      if (t === "calls") { md.evidenceClass = md.relationshipType === "yaml_workflow_call" ? "structural" : "inferred"; continue }
       md.evidenceClass = "usage_contextual"
     }
   }

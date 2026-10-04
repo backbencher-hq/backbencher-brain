@@ -1,0 +1,1987 @@
+{
+  "generatedAt": "2026-10-04T00:19:24.474Z",
+  "corpusRoot": "$HOME/fixtures/repositories",
+  "sampling": "whole admitted corpus (no sampling)",
+  "workers": 3,
+  "filesAdmitted": 4642,
+  "filesSampled": 4642,
+  "grammarInventoryFiles": 4642,
+  "filesByRepo": {
+    "FSharp.Formatting": 1,
+    "caddy": 3,
+    "cloogle.org": 17,
+    "nvim-treesitter": 13,
+    "pb-grpc": 20,
+    "phpmyadmin": 1232,
+    "phpunit": 3231,
+    "slim": 125
+  },
+  "filesWithSymbols": 4508,
+  "parseFail": 0,
+  "parseFailFiles": [],
+  "fallbackFiles": 1,
+  "fallbackFileList": [
+    "phpunit/tests/unit/Framework/Constraint/Math/IsNanTest.php"
+  ],
+  "filesAnalyzed": 4641,
+  "degradedRunPublished": true,
+  "symbols": 35148,
+  "relationships": {
+    "calls": {
+      "count": 94492,
+      "files": 3436,
+      "confHistogram": {
+        "0.9": 94492
+      },
+      "heuristicUnder07": 0,
+      "heuristicPct": "0.0%",
+      "fromResolved": 94137,
+      "toResolved": 9861,
+      "bothResolved": 9826,
+      "bothResolvedPct": "10.4%",
+      "distinctTargets": 6395,
+      "distinctTargetsResolvingInSample": 5558,
+      "distinctTargetsResolvingByFirstSegment": 5558,
+      "distinctTargetsResolvingByLastSegment": 5558,
+      "incoming": {
+        "tiers": {
+          "exact": 5558,
+          "leaf": 0,
+          "rootOnly": 0,
+          "none": 837
+        },
+        "byDistinctTarget": {
+          "one": 3834,
+          "ambiguous": 1724,
+          "none": 837
+        },
+        "byEdge": {
+          "one": 24140,
+          "ambiguous": 59428,
+          "none": 10924
+        },
+        "unresolvedSplit": {
+          "rootOnly": 0,
+          "pathShaped": 0,
+          "qualifiedUndeclaredRoot": 0,
+          "bareLeafUndeclared": 837
+        },
+        "bareLeafUndeclaredBySpread": {
+          "seenIn2PlusRepos": 124,
+          "seenIn1RepoOnly": 713
+        },
+        "ambiguousSamples": [
+          {
+            "target": "__construct",
+            "declarations": 1165,
+            "repos": 4
+          },
+          {
+            "target": "getName",
+            "declarations": 90,
+            "repos": 4
+          },
+          {
+            "target": "execute",
+            "declarations": 35,
+            "repos": 3
+          },
+          {
+            "target": "get",
+            "declarations": 16,
+            "repos": 4
+          },
+          {
+            "target": "foo",
+            "declarations": 14,
+            "repos": 2
+          },
+          {
+            "target": "handle",
+            "declarations": 14,
+            "repos": 4
+          },
+          {
+            "target": "time",
+            "declarations": 10,
+            "repos": 5
+          },
+          {
+            "target": "getMessage",
+            "declarations": 7,
+            "repos": 4
+          },
+          {
+            "target": "setup",
+            "declarations": 6,
+            "repos": 2
+          },
+          {
+            "target": "close",
+            "declarations": 4,
+            "repos": 3
+          },
+          {
+            "target": "setStatus",
+            "declarations": 4,
+            "repos": 2
+          },
+          {
+            "target": "bar",
+            "declarations": 3,
+            "repos": 2
+          },
+          {
+            "target": "setMessage",
+            "declarations": 3,
+            "repos": 2
+          },
+          {
+            "target": "empty",
+            "declarations": 2,
+            "repos": 6
+          },
+          {
+            "target": "prepare",
+            "declarations": 2,
+            "repos": 3
+          },
+          {
+            "target": "respond",
+            "declarations": 2,
+            "repos": 2
+          },
+          {
+            "target": "factory",
+            "declarations": 2,
+            "repos": 4
+          },
+          {
+            "target": "query",
+            "declarations": 2,
+            "repos": 3
+          },
+          {
+            "target": "baz",
+            "declarations": 2,
+            "repos": 1
+          },
+          {
+            "target": "initOnce",
+            "declarations": 2,
+            "repos": 1
+          }
+        ],
+        "unresolvedSamples": [
+          "isset  <- FSharp.Formatting/csharp/MarkdownSharpTests/source/php/markdown.php",
+          "remove_filter  <- FSharp.Formatting/csharp/MarkdownSharpTests/source/php/markdown.php",
+          "str_rot13  <- FSharp.Formatting/csharp/MarkdownSharpTests/source/php/markdown.php",
+          "SmartyPants  <- FSharp.Formatting/csharp/MarkdownSharpTests/source/php/markdown.php",
+          "prepareItalicsAndBold  <- FSharp.Formatting/csharp/MarkdownSharpTests/source/php/markdown.php",
+          "$method  <- FSharp.Formatting/csharp/MarkdownSharpTests/source/php/markdown.php",
+          "formParagraphs  <- FSharp.Formatting/csharp/MarkdownSharpTests/source/php/markdown.php",
+          "encodeAttribute  <- FSharp.Formatting/csharp/MarkdownSharpTests/source/php/markdown.php",
+          "processListItems  <- FSharp.Formatting/csharp/MarkdownSharpTests/source/php/markdown.php",
+          "doLists  <- FSharp.Formatting/csharp/MarkdownSharpTests/source/php/markdown.php",
+          "encodeAmpsAndAngles  <- FSharp.Formatting/csharp/MarkdownSharpTests/source/php/markdown.php",
+          "encodeEmailAddress  <- FSharp.Formatting/csharp/MarkdownSharpTests/source/php/markdown.php",
+          "crc32  <- FSharp.Formatting/csharp/MarkdownSharpTests/source/php/markdown.php",
+          "dechex  <- FSharp.Formatting/csharp/MarkdownSharpTests/source/php/markdown.php",
+          "handleSpanToken  <- FSharp.Formatting/csharp/MarkdownSharpTests/source/php/markdown.php",
+          "makeCodeSpan  <- FSharp.Formatting/csharp/MarkdownSharpTests/source/php/markdown.php",
+          "create_function  <- FSharp.Formatting/csharp/MarkdownSharpTests/source/php/markdown.php",
+          "error_reporting  <- cloogle.org/frontend/api.php",
+          "microtime  <- cloogle.org/frontend/api.php",
+          "mysqli_connect_errno  <- cloogle.org/frontend/api.php"
+        ]
+      },
+      "evidenceClasses": {
+        "usage_contextual": 94492
+      },
+      "metadataFlags": {
+        "phpSpecific": 94492,
+        "evidenceClass": 94492
+      },
+      "examples": [
+        "Markdown -> isset",
+        "Markdown -> transform",
+        "global -> isset"
+      ]
+    },
+    "contains": {
+      "count": 30454,
+      "files": 4000,
+      "confHistogram": {
+        "1": 30454
+      },
+      "heuristicUnder07": 0,
+      "heuristicPct": "0.0%",
+      "fromResolved": 30454,
+      "toResolved": 30451,
+      "bothResolved": 30451,
+      "bothResolvedPct": "100.0%",
+      "distinctTargets": 16835,
+      "distinctTargetsResolvingInSample": 16833,
+      "distinctTargetsResolvingByFirstSegment": 16833,
+      "distinctTargetsResolvingByLastSegment": 16833,
+      "incoming": {
+        "tiers": {
+          "exact": 16833,
+          "leaf": 0,
+          "rootOnly": 0,
+          "none": 2
+        },
+        "byDistinctTarget": {
+          "one": 14006,
+          "ambiguous": 2827,
+          "none": 2
+        },
+        "byEdge": {
+          "one": 14006,
+          "ambiguous": 16445,
+          "none": 3
+        },
+        "unresolvedSplit": {
+          "rootOnly": 0,
+          "pathShaped": 0,
+          "qualifiedUndeclaredRoot": 0,
+          "bareLeafUndeclared": 2
+        },
+        "bareLeafUndeclaredBySpread": {
+          "seenIn2PlusRepos": 2,
+          "seenIn1RepoOnly": 0
+        },
+        "ambiguousSamples": [
+          {
+            "target": "__construct",
+            "declarations": 1165,
+            "repos": 4
+          },
+          {
+            "target": "message",
+            "declarations": 79,
+            "repos": 4
+          },
+          {
+            "target": "Foo",
+            "declarations": 25,
+            "repos": 2
+          },
+          {
+            "target": "id",
+            "declarations": 20,
+            "repos": 4
+          },
+          {
+            "target": "title",
+            "declarations": 16,
+            "repos": 5
+          },
+          {
+            "target": "foo",
+            "declarations": 14,
+            "repos": 2
+          },
+          {
+            "target": "setup",
+            "declarations": 6,
+            "repos": 2
+          },
+          {
+            "target": "A",
+            "declarations": 5,
+            "repos": 2
+          },
+          {
+            "target": "Helloworld",
+            "declarations": 5,
+            "repos": 1
+          },
+          {
+            "target": "SayHello",
+            "declarations": 4,
+            "repos": 1
+          },
+          {
+            "target": "a",
+            "declarations": 3,
+            "repos": 5
+          },
+          {
+            "target": "Markdown_Parser",
+            "declarations": 2,
+            "repos": 1
+          },
+          {
+            "target": "link",
+            "declarations": 2,
+            "repos": 4
+          },
+          {
+            "target": "children",
+            "declarations": 2,
+            "repos": 3
+          },
+          {
+            "target": "factory",
+            "declarations": 2,
+            "repos": 4
+          },
+          {
+            "target": "variable",
+            "declarations": 2,
+            "repos": 3
+          },
+          {
+            "target": "baz",
+            "declarations": 2,
+            "repos": 1
+          },
+          {
+            "target": "B",
+            "declarations": 2,
+            "repos": 2
+          },
+          {
+            "target": "is_initialized",
+            "declarations": 2,
+            "repos": 1
+          },
+          {
+            "target": "initOnce",
+            "declarations": 2,
+            "repos": 1
+          }
+        ],
+        "unresolvedSamples": [
+          "unknown  <- phpmyadmin/src/Charsets/Collation.php",
+          "root  <- phpmyadmin/src/Plugins/Import/ImportOds.php"
+        ]
+      },
+      "evidenceClasses": {
+        "structural": 30454
+      },
+      "metadataFlags": {
+        "isContained": 30454,
+        "evidenceClass": 30454
+      },
+      "examples": [
+        "Textile -> TextileThis",
+        "Textile -> TextileRestricted",
+        "Textile -> blockLite"
+      ]
+    },
+    "exports": {
+      "count": 57,
+      "files": 17,
+      "confHistogram": {
+        "1": 57
+      },
+      "heuristicUnder07": 0,
+      "heuristicPct": "0.0%",
+      "fromResolved": 0,
+      "toResolved": 57,
+      "bothResolved": 0,
+      "bothResolvedPct": "0.0%",
+      "distinctTargets": 48,
+      "distinctTargetsResolvingInSample": 48,
+      "distinctTargetsResolvingByFirstSegment": 48,
+      "distinctTargetsResolvingByLastSegment": 48,
+      "incoming": {
+        "tiers": {
+          "exact": 48,
+          "leaf": 0,
+          "rootOnly": 0,
+          "none": 0
+        },
+        "byDistinctTarget": {
+          "one": 43,
+          "ambiguous": 5,
+          "none": 0
+        },
+        "byEdge": {
+          "one": 43,
+          "ambiguous": 14,
+          "none": 0
+        },
+        "unresolvedSplit": {
+          "rootOnly": 0,
+          "pathShaped": 0,
+          "qualifiedUndeclaredRoot": 0,
+          "bareLeafUndeclared": 0
+        },
+        "bareLeafUndeclaredBySpread": {
+          "seenIn2PlusRepos": 0,
+          "seenIn1RepoOnly": 0
+        },
+        "ambiguousSamples": [
+          {
+            "target": "ROOT_PATH",
+            "declarations": 5,
+            "repos": 1
+          },
+          {
+            "target": "CLEANHOME",
+            "declarations": 3,
+            "repos": 1
+          },
+          {
+            "target": "CACHE_DIR",
+            "declarations": 2,
+            "repos": 1
+          },
+          {
+            "target": "VERSION_SUFFIX",
+            "declarations": 2,
+            "repos": 1
+          },
+          {
+            "target": "TESTSUITE",
+            "declarations": 2,
+            "repos": 1
+          }
+        ],
+        "unresolvedSamples": []
+      },
+      "evidenceClasses": {
+        "import_based": 57
+      },
+      "metadataFlags": {
+        "phpSpecific": 57,
+        "fileLevel": 57,
+        "relationshipType": 57,
+        "file": 57,
+        "globalName": 57,
+        "evidenceClass": 57
+      },
+      "examples": [
+        "global -> MARKDOWN_VERSION",
+        "global -> MARKDOWN_EMPTY_ELEMENT_SUFFIX",
+        "global -> MARKDOWN_TAB_WIDTH"
+      ]
+    },
+    "extends": {
+      "count": 2819,
+      "files": 2803,
+      "confHistogram": {
+        "1": 2819
+      },
+      "heuristicUnder07": 0,
+      "heuristicPct": "0.0%",
+      "fromResolved": 2819,
+      "toResolved": 9,
+      "bothResolved": 9,
+      "bothResolvedPct": "0.3%",
+      "distinctTargets": 170,
+      "distinctTargetsResolvingInSample": 144,
+      "distinctTargetsResolvingByFirstSegment": 144,
+      "distinctTargetsResolvingByLastSegment": 144,
+      "incoming": {
+        "tiers": {
+          "exact": 144,
+          "leaf": 0,
+          "rootOnly": 0,
+          "none": 26
+        },
+        "byDistinctTarget": {
+          "one": 125,
+          "ambiguous": 19,
+          "none": 26
+        },
+        "byEdge": {
+          "one": 571,
+          "ambiguous": 2199,
+          "none": 49
+        },
+        "unresolvedSplit": {
+          "rootOnly": 0,
+          "pathShaped": 0,
+          "qualifiedUndeclaredRoot": 0,
+          "bareLeafUndeclared": 26
+        },
+        "bareLeafUndeclaredBySpread": {
+          "seenIn2PlusRepos": 7,
+          "seenIn1RepoOnly": 19
+        },
+        "ambiguousSamples": [
+          {
+            "target": "Test",
+            "declarations": 45,
+            "repos": 1
+          },
+          {
+            "target": "Exception",
+            "declarations": 15,
+            "repos": 3
+          },
+          {
+            "target": "PHPUnit\\Framework\\TestCase",
+            "declarations": 13,
+            "repos": 3
+          },
+          {
+            "target": "Subscriber",
+            "declarations": 12,
+            "repos": 1
+          },
+          {
+            "target": "Bar",
+            "declarations": 9,
+            "repos": 2
+          },
+          {
+            "target": "A",
+            "declarations": 5,
+            "repos": 2
+          },
+          {
+            "target": "Configuration",
+            "declarations": 5,
+            "repos": 1
+          },
+          {
+            "target": "RuntimeException",
+            "declarations": 4,
+            "repos": 3
+          },
+          {
+            "target": "TestCase",
+            "declarations": 4,
+            "repos": 3
+          },
+          {
+            "target": "Error",
+            "declarations": 4,
+            "repos": 3
+          },
+          {
+            "target": "Message",
+            "declarations": 3,
+            "repos": 3
+          },
+          {
+            "target": "InvalidArgumentException",
+            "declarations": 3,
+            "repos": 4
+          },
+          {
+            "target": "TestSuite",
+            "declarations": 3,
+            "repos": 1
+          },
+          {
+            "target": "AbstractTestCase",
+            "declarations": 2,
+            "repos": 2
+          },
+          {
+            "target": "Dispatcher",
+            "declarations": 2,
+            "repos": 3
+          },
+          {
+            "target": "Stub",
+            "declarations": 2,
+            "repos": 2
+          },
+          {
+            "target": "Assert",
+            "declarations": 2,
+            "repos": 1
+          },
+          {
+            "target": "Known",
+            "declarations": 2,
+            "repos": 1
+          },
+          {
+            "target": "ParentTestCase",
+            "declarations": 2,
+            "repos": 1
+          }
+        ],
+        "unresolvedSamples": [
+          "BaseStub  <- pb-grpc/examples/php/Helloworld/GreeterClient.php",
+          "IteratorAggregate  <- phpmyadmin/src/Dbal/ResultInterface.php",
+          "SplDoublyLinkedList  <- phpmyadmin/src/Gis/Ds/Polygon.php",
+          "Stringable  <- phpmyadmin/src/Dbal/Warning.php",
+          "ArrayObject  <- phpmyadmin/src/ListDatabase.php",
+          "TCPDF  <- phpmyadmin/src/Controllers/Table/GisVisualizationController.php",
+          "PdfLib  <- phpmyadmin/src/Plugins/Export/Helpers/Pdf.php",
+          "ShapeFile  <- phpmyadmin/src/Plugins/Import/ShapeFileImport.php",
+          "XMLWriter  <- phpmyadmin/src/Plugins/Schema/Dia/Dia.php",
+          "AbstractExtension  <- phpmyadmin/src/Twig/I18nExtension.php",
+          "AbstractExpression  <- phpmyadmin/src/Twig/Node/Expression/TransExpression.php",
+          "BaseException  <- phpunit/src/Framework/MockObject/Generator/Exception/Exception.php",
+          "Countable  <- phpunit/src/Event/Events/EventCollection.php",
+          "RecursiveFilterIterator  <- phpunit/src/Runner/Filter/Factory.php",
+          "Traversable  <- phpmyadmin/src/Footer.php",
+          "Driver  <- phpunit/src/Runner/CodeCoverage.php",
+          "Comparator  <- phpunit/src/Framework/TestCase.php",
+          "FrameworkTestCase  <- phpunit/tests/unit/Runner/Phpt/TestCaseTest.php",
+          "NodeVisitorAbstract  <- phpunit/tools/.phpstan/vendor/tomasvotruba/type-coverage/packages/type-perfect/src/NodeVisitor/CallableNodeVisitor.php",
+          "RuleTestCase  <- phpunit/tools/.phpstan/vendor/tomasvotruba/type-coverage/packages/type-perfect/tests/Rules/NarrowPrivateClassMethodParamTypeRule/NarrowPrivateClassMethodParamTypeRuleTest.php"
+        ]
+      },
+      "evidenceClasses": {
+        "structural": 2819
+      },
+      "metadataFlags": {
+        "phpSpecific": 2819,
+        "evidenceClass": 2819
+      },
+      "examples": [
+        "B -> A",
+        "GreeterClient -> BaseStub",
+        "HelloReply -> Message"
+      ]
+    },
+    "implements": {
+      "count": 1000,
+      "files": 972,
+      "confHistogram": {
+        "1": 1000
+      },
+      "heuristicUnder07": 0,
+      "heuristicPct": "0.0%",
+      "fromResolved": 1000,
+      "toResolved": 0,
+      "bothResolved": 0,
+      "bothResolvedPct": "0.0%",
+      "distinctTargets": 128,
+      "distinctTargetsResolvingInSample": 100,
+      "distinctTargetsResolvingByFirstSegment": 100,
+      "distinctTargetsResolvingByLastSegment": 100,
+      "incoming": {
+        "tiers": {
+          "exact": 100,
+          "leaf": 0,
+          "rootOnly": 0,
+          "none": 28
+        },
+        "byDistinctTarget": {
+          "one": 70,
+          "ambiguous": 30,
+          "none": 28
+        },
+        "byEdge": {
+          "one": 432,
+          "ambiguous": 325,
+          "none": 243
+        },
+        "unresolvedSplit": {
+          "rootOnly": 0,
+          "pathShaped": 0,
+          "qualifiedUndeclaredRoot": 0,
+          "bareLeafUndeclared": 28
+        },
+        "bareLeafUndeclaredBySpread": {
+          "seenIn2PlusRepos": 9,
+          "seenIn1RepoOnly": 19
+        },
+        "ambiguousSamples": [
+          {
+            "target": "Test",
+            "declarations": 45,
+            "repos": 1
+          },
+          {
+            "target": "Exception",
+            "declarations": 15,
+            "repos": 3
+          },
+          {
+            "target": "SkippedTest",
+            "declarations": 6,
+            "repos": 1
+          },
+          {
+            "target": "Server",
+            "declarations": 5,
+            "repos": 1
+          },
+          {
+            "target": "IncompleteTest",
+            "declarations": 4,
+            "repos": 1
+          },
+          {
+            "target": "FinishedSubscriber",
+            "declarations": 4,
+            "repos": 1
+          },
+          {
+            "target": "Plugin",
+            "declarations": 3,
+            "repos": 2
+          },
+          {
+            "target": "StartedSubscriber",
+            "declarations": 3,
+            "repos": 1
+          },
+          {
+            "target": "DeprecationTriggeredSubscriber",
+            "declarations": 3,
+            "repos": 1
+          },
+          {
+            "target": "NoticeTriggeredSubscriber",
+            "declarations": 3,
+            "repos": 1
+          },
+          {
+            "target": "WarningTriggeredSubscriber",
+            "declarations": 3,
+            "repos": 1
+          },
+          {
+            "target": "Dispatcher",
+            "declarations": 2,
+            "repos": 3
+          },
+          {
+            "target": "Event",
+            "declarations": 2,
+            "repos": 2
+          },
+          {
+            "target": "Stub",
+            "declarations": 2,
+            "repos": 2
+          },
+          {
+            "target": "ExecutionFinishedSubscriber",
+            "declarations": 2,
+            "repos": 1
+          },
+          {
+            "target": "SkippedSubscriber",
+            "declarations": 2,
+            "repos": 1
+          },
+          {
+            "target": "ErrorTriggeredSubscriber",
+            "declarations": 2,
+            "repos": 1
+          },
+          {
+            "target": "PhpDeprecationTriggeredSubscriber",
+            "declarations": 2,
+            "repos": 1
+          },
+          {
+            "target": "PhpNoticeTriggeredSubscriber",
+            "declarations": 2,
+            "repos": 1
+          },
+          {
+            "target": "PhpWarningTriggeredSubscriber",
+            "declarations": 2,
+            "repos": 1
+          }
+        ],
+        "unresolvedSamples": [
+          "T  <- nvim-treesitter/tests/query/highlights/php/keywords.php",
+          "ClockInterface  <- phpmyadmin/src/Clock/Clock.php",
+          "Stringable  <- phpmyadmin/src/Dbal/Warning.php",
+          "JsonSerializable  <- phpmyadmin/src/Favorites/RecentFavoriteTable.php",
+          "ResponseFactoryInterface  <- phpmyadmin/src/Http/Factory/ResponseFactory.php",
+          "ServerRequestFactoryInterface  <- phpmyadmin/src/Http/Factory/ServerRequestFactory.php",
+          "UriFactoryInterface  <- phpmyadmin/src/Http/Factory/UriFactory.php",
+          "RequestHandlerInterface  <- phpmyadmin/src/Http/Handler/ApplicationHandler.php",
+          "MiddlewareInterface  <- phpmyadmin/src/Http/Middleware/Authentication.php",
+          "ResponseInterface  <- phpmyadmin/src/Http/Handler/ApplicationHandler.php",
+          "ServerRequestInterface  <- phpmyadmin/src/Http/Handler/ApplicationHandler.php",
+          "Countable  <- phpunit/src/Event/Events/EventCollection.php",
+          "IteratorAggregate  <- phpmyadmin/src/Dbal/ResultInterface.php",
+          "Iterator  <- phpunit/src/Event/Events/EventCollectionIterator.php",
+          "RecursiveIterator  <- phpunit/src/Framework/TestSuiteIterator.php",
+          "AfterLastTestMethodErroredSubscriberInterface  <- phpunit/src/Logging/OpenTestReporting/Subscriber/AfterLastTestMethodErroredSubscriber.php",
+          "AfterLastTestMethodFailedSubscriberInterface  <- phpunit/src/Logging/OpenTestReporting/Subscriber/AfterLastTestMethodFailedSubscriber.php",
+          "BeforeFirstTestMethodErroredSubscriberInterface  <- phpunit/src/Logging/OpenTestReporting/Subscriber/BeforeFirstTestMethodErroredSubscriber.php",
+          "BeforeFirstTestMethodFailedSubscriberInterface  <- phpunit/src/Logging/OpenTestReporting/Subscriber/BeforeFirstTestMethodFailedSubscriber.php",
+          "RunnerException  <- phpunit/src/Runner/Phpt/Exception/CannotLoadPhptFileException.php"
+        ]
+      },
+      "evidenceClasses": {
+        "structural": 1000
+      },
+      "metadataFlags": {
+        "phpSpecific": 1000,
+        "evidenceClass": 1000
+      },
+      "examples": [
+        "B -> T",
+        "Clock -> ClockInterface",
+        "BrowseForeignersController -> InvocableController"
+      ]
+    },
+    "imports": {
+      "count": 25914,
+      "files": 3975,
+      "confHistogram": {
+        "1": 25723,
+        "0.9": 191
+      },
+      "heuristicUnder07": 0,
+      "heuristicPct": "0.0%",
+      "fromResolved": 0,
+      "toResolved": 49,
+      "bothResolved": 0,
+      "bothResolvedPct": "0.0%",
+      "distinctTargets": 2936,
+      "distinctTargetsResolvingInSample": 2011,
+      "distinctTargetsResolvingByFirstSegment": 1844,
+      "distinctTargetsResolvingByLastSegment": 1907,
+      "incoming": {
+        "tiers": {
+          "exact": 1711,
+          "leaf": 196,
+          "rootOnly": 104,
+          "none": 925
+        },
+        "byDistinctTarget": {
+          "one": 1702,
+          "ambiguous": 205,
+          "none": 1029
+        },
+        "byEdge": {
+          "one": 15176,
+          "ambiguous": 2870,
+          "none": 7868
+        },
+        "unresolvedSplit": {
+          "rootOnly": 104,
+          "pathShaped": 2,
+          "qualifiedUndeclaredRoot": 247,
+          "bareLeafUndeclared": 676
+        },
+        "bareLeafUndeclaredBySpread": {
+          "seenIn2PlusRepos": 236,
+          "seenIn1RepoOnly": 440
+        },
+        "ambiguousSamples": [
+          {
+            "target": "PhpMyAdmin\\Http\\Middleware",
+            "declarations": 32,
+            "repos": 1
+          },
+          {
+            "target": "PhpMyAdmin\\Controllers\\Database",
+            "declarations": 15,
+            "repos": 1
+          },
+          {
+            "target": "Foo\\foo",
+            "declarations": 14,
+            "repos": 1
+          },
+          {
+            "target": "Foo\\Baz\\foo",
+            "declarations": 14,
+            "repos": 1
+          },
+          {
+            "target": "foo",
+            "declarations": 14,
+            "repos": 2
+          },
+          {
+            "target": "Foo\\Baz\\Foo\\foo",
+            "declarations": 14,
+            "repos": 1
+          },
+          {
+            "target": "PhpMyAdmin\\Config",
+            "declarations": 13,
+            "repos": 1
+          },
+          {
+            "target": "smartypants.php",
+            "declarations": 10,
+            "repos": 1
+          },
+          {
+            "target": "ROOT_PATHapp/vendor_config.php",
+            "declarations": 10,
+            "repos": 1
+          },
+          {
+            "target": "Foo\\Baz\\Bar",
+            "declarations": 9,
+            "repos": 1
+          },
+          {
+            "target": "Foo\\Baz\\Foo\\Bar",
+            "declarations": 9,
+            "repos": 1
+          },
+          {
+            "target": "PhpMyAdmin\\Controllers\\Normalization",
+            "declarations": 6,
+            "repos": 1
+          },
+          {
+            "target": "PhpMyAdmin\\Database\\Designer",
+            "declarations": 4,
+            "repos": 1
+          },
+          {
+            "target": "Foo\\bar",
+            "declarations": 3,
+            "repos": 1
+          },
+          {
+            "target": "PhpMyAdmin\\Controllers\\Export",
+            "declarations": 3,
+            "repos": 1
+          },
+          {
+            "target": "PhpMyAdmin\\Controllers\\Import",
+            "declarations": 3,
+            "repos": 1
+          },
+          {
+            "target": "PhpMyAdmin\\Controllers\\Operations",
+            "declarations": 3,
+            "repos": 1
+          },
+          {
+            "target": "Illuminate\\Support\\Facades\\Route",
+            "declarations": 2,
+            "repos": 1
+          },
+          {
+            "target": "Foo\\Bar",
+            "declarations": 2,
+            "repos": 1
+          },
+          {
+            "target": "PhpMyAdmin\\Server\\Privileges",
+            "declarations": 2,
+            "repos": 1
+          }
+        ],
+        "unresolvedSamples": [
+          "Baz  <- nvim-treesitter/tests/query/highlights/php/namespaces.php",
+          "Google\\Protobuf\\Internal\\GPBType  <- pb-grpc/examples/php/Helloworld/HelloReply.php",
+          "Google\\Protobuf\\Internal\\RepeatedField  <- pb-grpc/examples/php/Helloworld/HelloReply.php",
+          "Google\\Protobuf\\Internal\\GPBUtil  <- pb-grpc/examples/php/Helloworld/HelloReply.php",
+          "Psr\\Clock\\ClockInterface  <- phpmyadmin/app/services.php",
+          "Symfony\\Component\\ExpressionLanguage\\ExpressionLanguage  <- phpmyadmin/app/services.php",
+          "Symfony\\Component\\DependencyInjection\\Loader\\Configurator\\ContainerConfigurator  <- phpmyadmin/app/services_loader.php",
+          "__  <- phpmyadmin/src/Advisory/Advisor.php",
+          "array_merge  <- phpmyadmin/src/Advisory/Advisor.php",
+          "htmlspecialchars  <- phpmyadmin/src/Advisory/Advisor.php",
+          "implode  <- phpmyadmin/src/Advisory/Advisor.php",
+          "preg_match  <- phpmyadmin/src/Advisory/Advisor.php",
+          "preg_replace_callback  <- phpmyadmin/src/Advisory/Advisor.php",
+          "round  <- phpmyadmin/src/Advisory/Advisor.php",
+          "sprintf  <- phpmyadmin/src/Advisory/Advisor.php",
+          "str_contains  <- phpmyadmin/src/Advisory/Advisor.php",
+          "substr  <- phpmyadmin/src/Advisory/Advisor.php",
+          "vsprintf  <- phpmyadmin/src/Advisory/Advisor.php",
+          "Fig\\Http\\Message\\StatusCodeInterface  <- phpmyadmin/src/Application.php",
+          "Laminas\\HttpHandlerRunner\\Emitter\\SapiEmitter  <- phpmyadmin/src/Application.php"
+        ]
+      },
+      "evidenceClasses": {
+        "import_based": 25914
+      },
+      "metadataFlags": {
+        "phpSpecific": 25914,
+        "isImport": 25914,
+        "fileLevel": 25914,
+        "relationshipType": 25914,
+        "evidenceClass": 25914,
+        "aliased": 467,
+        "includeType": 191,
+        "grouped": 14
+      },
+      "examples": [
+        "global -> smartypants.php",
+        "global -> Illuminate\\Support\\Facades\\Route",
+        "global -> Foo\\Baz"
+      ]
+    },
+    "instantiates": {
+      "count": 10612,
+      "files": 1568,
+      "confHistogram": {
+        "0.9": 10612
+      },
+      "heuristicUnder07": 0,
+      "heuristicPct": "0.0%",
+      "fromResolved": 10574,
+      "toResolved": 298,
+      "bothResolved": 294,
+      "bothResolvedPct": "2.8%",
+      "distinctTargets": 1506,
+      "distinctTargetsResolvingInSample": 1289,
+      "distinctTargetsResolvingByFirstSegment": 1289,
+      "distinctTargetsResolvingByLastSegment": 1289,
+      "incoming": {
+        "tiers": {
+          "exact": 1289,
+          "leaf": 0,
+          "rootOnly": 0,
+          "none": 217
+        },
+        "byDistinctTarget": {
+          "one": 1060,
+          "ambiguous": 229,
+          "none": 217
+        },
+        "byEdge": {
+          "one": 6060,
+          "ambiguous": 3375,
+          "none": 1177
+        },
+        "unresolvedSplit": {
+          "rootOnly": 0,
+          "pathShaped": 0,
+          "qualifiedUndeclaredRoot": 0,
+          "bareLeafUndeclared": 217
+        },
+        "bareLeafUndeclaredBySpread": {
+          "seenIn2PlusRepos": 18,
+          "seenIn1RepoOnly": 199
+        },
+        "ambiguousSamples": [
+          {
+            "target": "Bar",
+            "declarations": 9,
+            "repos": 2
+          },
+          {
+            "target": "Greeter",
+            "declarations": 9,
+            "repos": 2
+          },
+          {
+            "target": "Source",
+            "declarations": 6,
+            "repos": 2
+          },
+          {
+            "target": "A",
+            "declarations": 5,
+            "repos": 2
+          },
+          {
+            "target": "Server",
+            "declarations": 5,
+            "repos": 1
+          },
+          {
+            "target": "Error",
+            "declarations": 4,
+            "repos": 3
+          },
+          {
+            "target": "Export",
+            "declarations": 4,
+            "repos": 1
+          },
+          {
+            "target": "Import",
+            "declarations": 4,
+            "repos": 1
+          },
+          {
+            "target": "Schema",
+            "declarations": 4,
+            "repos": 1
+          },
+          {
+            "target": "InvalidArgumentException",
+            "declarations": 3,
+            "repos": 4
+          },
+          {
+            "target": "Console",
+            "declarations": 3,
+            "repos": 2
+          },
+          {
+            "target": "Table",
+            "declarations": 3,
+            "repos": 1
+          },
+          {
+            "target": "Message",
+            "declarations": 3,
+            "repos": 3
+          },
+          {
+            "target": "Point",
+            "declarations": 2,
+            "repos": 2
+          },
+          {
+            "target": "Validator",
+            "declarations": 2,
+            "repos": 2
+          },
+          {
+            "target": "Template",
+            "declarations": 2,
+            "repos": 2
+          },
+          {
+            "target": "Transformations",
+            "declarations": 2,
+            "repos": 1
+          },
+          {
+            "target": "Parser",
+            "declarations": 2,
+            "repos": 2
+          },
+          {
+            "target": "Search",
+            "declarations": 2,
+            "repos": 1
+          },
+          {
+            "target": "File",
+            "declarations": 2,
+            "repos": 2
+          }
+        ],
+        "unresolvedSamples": [
+          "mysqli  <- cloogle.org/frontend/api.php",
+          "DOMDocument  <- cloogle.org/frontend/doc/contents.php",
+          "DirectoryIterator  <- cloogle.org/frontend/src/lib.php",
+          "MethodDescriptor  <- pb-grpc/examples/php/Helloworld/GreeterStub.php",
+          "EchoServiceClient  <- pb-grpc/examples/php/echo/client.php",
+          "EchoRequest  <- pb-grpc/examples/php/echo/client.php",
+          "ServerStreamingEchoRequest  <- pb-grpc/examples/php/echo/client.php",
+          "RpcServer  <- pb-grpc/examples/php/greeter_and_routeguide_multi_server.php",
+          "OpenID_RelyingParty  <- phpmyadmin/examples/openid.php",
+          "OpenID_Message  <- phpmyadmin/examples/openid.php",
+          "RequestHandlerRunner  <- phpmyadmin/src/Application.php",
+          "SapiEmitter  <- phpmyadmin/src/Application.php",
+          "DateTimeImmutable  <- phpmyadmin/src/Clock/Clock.php",
+          "RecursiveIteratorIterator  <- phpmyadmin/src/Command/CacheWarmupCommand.php",
+          "RecursiveDirectoryIterator  <- phpmyadmin/src/Command/CacheWarmupCommand.php",
+          "SymfonyStyle  <- phpmyadmin/src/Command/TwigLintCommand.php",
+          "ArrayLoader  <- phpmyadmin/src/Command/TwigLintCommand.php",
+          "RangeException  <- phpmyadmin/src/Command/SetVersionCommand.php",
+          "SymfonyContainerBuilder  <- phpmyadmin/src/Container/ContainerBuilder.php",
+          "PhpFileLoader  <- phpmyadmin/src/Container/ContainerBuilder.php"
+        ]
+      },
+      "evidenceClasses": {
+        "structural": 10612
+      },
+      "metadataFlags": {
+        "phpSpecific": 10612,
+        "isNew": 10612,
+        "evidenceClass": 10612
+      },
+      "examples": [
+        "global -> mysqli",
+        "global -> DOMDocument",
+        "factory -> Toc"
+      ]
+    },
+    "overrides": {
+      "count": 2,
+      "files": 2,
+      "confHistogram": {
+        "0.95": 2
+      },
+      "heuristicUnder07": 0,
+      "heuristicPct": "0.0%",
+      "fromResolved": 2,
+      "toResolved": 2,
+      "bothResolved": 2,
+      "bothResolvedPct": "100.0%",
+      "distinctTargets": 2,
+      "distinctTargetsResolvingInSample": 2,
+      "distinctTargetsResolvingByFirstSegment": 2,
+      "distinctTargetsResolvingByLastSegment": 2,
+      "incoming": {
+        "tiers": {
+          "exact": 2,
+          "leaf": 0,
+          "rootOnly": 0,
+          "none": 0
+        },
+        "byDistinctTarget": {
+          "one": 1,
+          "ambiguous": 1,
+          "none": 0
+        },
+        "byEdge": {
+          "one": 1,
+          "ambiguous": 1,
+          "none": 0
+        },
+        "unresolvedSplit": {
+          "rootOnly": 0,
+          "pathShaped": 0,
+          "qualifiedUndeclaredRoot": 0,
+          "bareLeafUndeclared": 0
+        },
+        "bareLeafUndeclaredBySpread": {
+          "seenIn2PlusRepos": 0,
+          "seenIn1RepoOnly": 0
+        },
+        "ambiguousSamples": [
+          {
+            "target": "A.foo",
+            "declarations": 3,
+            "repos": 1
+          }
+        ],
+        "unresolvedSamples": []
+      },
+      "evidenceClasses": {
+        "structural": 2
+      },
+      "metadataFlags": {
+        "phpSpecific": 2,
+        "isOverride": 2,
+        "evidenceClass": 2
+      },
+      "examples": [
+        "B.foo -> A.foo",
+        "SkipConstruct.__construct -> ParentConstructorClass.__construct"
+      ]
+    },
+    "references": {
+      "count": 8675,
+      "files": 2133,
+      "confHistogram": {
+        "0.9": 8675
+      },
+      "heuristicUnder07": 0,
+      "heuristicPct": "0.0%",
+      "fromResolved": 8543,
+      "toResolved": 417,
+      "bothResolved": 415,
+      "bothResolvedPct": "4.8%",
+      "distinctTargets": 971,
+      "distinctTargetsResolvingInSample": 792,
+      "distinctTargetsResolvingByFirstSegment": 792,
+      "distinctTargetsResolvingByLastSegment": 792,
+      "incoming": {
+        "tiers": {
+          "exact": 792,
+          "leaf": 0,
+          "rootOnly": 0,
+          "none": 179
+        },
+        "byDistinctTarget": {
+          "one": 635,
+          "ambiguous": 157,
+          "none": 179
+        },
+        "byEdge": {
+          "one": 5461,
+          "ambiguous": 1868,
+          "none": 1346
+        },
+        "unresolvedSplit": {
+          "rootOnly": 0,
+          "pathShaped": 0,
+          "qualifiedUndeclaredRoot": 0,
+          "bareLeafUndeclared": 179
+        },
+        "bareLeafUndeclaredBySpread": {
+          "seenIn2PlusRepos": 22,
+          "seenIn1RepoOnly": 157
+        },
+        "ambiguousSamples": [
+          {
+            "target": "A",
+            "declarations": 5,
+            "repos": 2
+          },
+          {
+            "target": "Server",
+            "declarations": 5,
+            "repos": 1
+          },
+          {
+            "target": "ExportController",
+            "declarations": 5,
+            "repos": 1
+          },
+          {
+            "target": "Error",
+            "declarations": 4,
+            "repos": 3
+          },
+          {
+            "target": "Schema",
+            "declarations": 4,
+            "repos": 1
+          },
+          {
+            "target": "Import",
+            "declarations": 4,
+            "repos": 1
+          },
+          {
+            "target": "Export",
+            "declarations": 4,
+            "repos": 1
+          },
+          {
+            "target": "Application",
+            "declarations": 3,
+            "repos": 2
+          },
+          {
+            "target": "Message",
+            "declarations": 3,
+            "repos": 3
+          },
+          {
+            "target": "Console",
+            "declarations": 3,
+            "repos": 2
+          },
+          {
+            "target": "ErrorHandler",
+            "declarations": 3,
+            "repos": 3
+          },
+          {
+            "target": "B",
+            "declarations": 2,
+            "repos": 2
+          },
+          {
+            "target": "Point",
+            "declarations": 2,
+            "repos": 2
+          },
+          {
+            "target": "ResponseRenderer",
+            "declarations": 2,
+            "repos": 1
+          },
+          {
+            "target": "ThemeManager",
+            "declarations": 2,
+            "repos": 1
+          },
+          {
+            "target": "Template",
+            "declarations": 2,
+            "repos": 2
+          },
+          {
+            "target": "Validator",
+            "declarations": 2,
+            "repos": 2
+          },
+          {
+            "target": "Transformations",
+            "declarations": 2,
+            "repos": 1
+          },
+          {
+            "target": "Sql",
+            "declarations": 2,
+            "repos": 1
+          },
+          {
+            "target": "StructureController",
+            "declarations": 2,
+            "repos": 1
+          }
+        ],
+        "unresolvedSamples": [
+          "Dog  <- nvim-treesitter/tests/query/highlights/php/types.php",
+          "ServerContext  <- pb-grpc/examples/php/Helloworld/GreeterStub.php",
+          "ServerCallWriter  <- pb-grpc/examples/php/route_guide/RouteGuideService.php",
+          "ServerCallReader  <- pb-grpc/examples/php/route_guide/RouteGuideService.php",
+          "ExpressionLanguage  <- phpmyadmin/src/Advisory/Advisor.php",
+          "DateTimeImmutable  <- phpmyadmin/src/Clock/Clock.php",
+          "OutputInterface  <- phpmyadmin/src/Command/CacheWarmupCommand.php",
+          "InputInterface  <- phpmyadmin/src/Command/CacheWarmupCommand.php",
+          "SymfonyStyle  <- phpmyadmin/src/Command/TwigLintCommand.php",
+          "ClockInterface  <- phpmyadmin/src/Clock/Clock.php",
+          "ServicesConfigurator  <- phpmyadmin/src/Container/ContainerBuilder.php",
+          "ContainerInterface  <- phpmyadmin/src/Container/ContainerBuilder.php",
+          "DesignerCommon  <- phpmyadmin/src/Controllers/Database/DesignerController.php",
+          "ForeignKeyObject  <- phpmyadmin/src/Controllers/Table/RelationController.php",
+          "TableSqlController  <- phpmyadmin/src/Controllers/Table/ReplaceController.php",
+          "DatabaseSqlController  <- phpmyadmin/src/Controllers/Table/ReplaceController.php",
+          "CreateStatement  <- phpmyadmin/src/Database/Routines.php",
+          "mysqli_result  <- phpmyadmin/src/Dbal/MysqliResult.php",
+          "Statement  <- phpmyadmin/src/Display/Results.php",
+          "StatementInfo  <- phpmyadmin/src/Display/Results.php"
+        ]
+      },
+      "evidenceClasses": {
+        "import_based": 8675
+      },
+      "metadataFlags": {
+        "relationshipType": 8675,
+        "declaredOn": 8675,
+        "evidenceClass": 8675
+      },
+      "examples": [
+        "foo -> B",
+        "foo -> A",
+        "baz -> A"
+      ]
+    },
+    "uses": {
+      "count": 133419,
+      "files": 3151,
+      "confHistogram": {
+        "1": 9,
+        "0.9": 133410
+      },
+      "heuristicUnder07": 0,
+      "heuristicPct": "0.0%",
+      "fromResolved": 132808,
+      "toResolved": 21707,
+      "bothResolved": 21679,
+      "bothResolvedPct": "16.2%",
+      "distinctTargets": 8455,
+      "distinctTargetsResolvingInSample": 2861,
+      "distinctTargetsResolvingByFirstSegment": 2861,
+      "distinctTargetsResolvingByLastSegment": 2861,
+      "incoming": {
+        "tiers": {
+          "exact": 2861,
+          "leaf": 0,
+          "rootOnly": 0,
+          "none": 5594
+        },
+        "byDistinctTarget": {
+          "one": 1777,
+          "ambiguous": 1084,
+          "none": 5594
+        },
+        "byEdge": {
+          "one": 16486,
+          "ambiguous": 75724,
+          "none": 41209
+        },
+        "unresolvedSplit": {
+          "rootOnly": 0,
+          "pathShaped": 0,
+          "qualifiedUndeclaredRoot": 0,
+          "bareLeafUndeclared": 5594
+        },
+        "bareLeafUndeclaredBySpread": {
+          "seenIn2PlusRepos": 258,
+          "seenIn1RepoOnly": 5336
+        },
+        "ambiguousSamples": [
+          {
+            "target": "response",
+            "declarations": 179,
+            "repos": 4
+          },
+          {
+            "target": "name",
+            "declarations": 77,
+            "repos": 5
+          },
+          {
+            "target": "value",
+            "declarations": 66,
+            "repos": 4
+          },
+          {
+            "target": "matches",
+            "declarations": 54,
+            "repos": 5
+          },
+          {
+            "target": "line",
+            "declarations": 45,
+            "repos": 3
+          },
+          {
+            "target": "key",
+            "declarations": 25,
+            "repos": 4
+          },
+          {
+            "target": "data",
+            "declarations": 25,
+            "repos": 5
+          },
+          {
+            "target": "method",
+            "declarations": 22,
+            "repos": 4
+          },
+          {
+            "target": "title",
+            "declarations": 16,
+            "repos": 5
+          },
+          {
+            "target": "code",
+            "declarations": 14,
+            "repos": 6
+          },
+          {
+            "target": "text",
+            "declarations": 13,
+            "repos": 4
+          },
+          {
+            "target": "time",
+            "declarations": 10,
+            "repos": 5
+          },
+          {
+            "target": "db",
+            "declarations": 8,
+            "repos": 3
+          },
+          {
+            "target": "result",
+            "declarations": 7,
+            "repos": 4
+          },
+          {
+            "target": "output",
+            "declarations": 7,
+            "repos": 4
+          },
+          {
+            "target": "parser",
+            "declarations": 6,
+            "repos": 4
+          },
+          {
+            "target": "read",
+            "declarations": 6,
+            "repos": 5
+          },
+          {
+            "target": "level",
+            "declarations": 2,
+            "repos": 4
+          },
+          {
+            "target": "link",
+            "declarations": 2,
+            "repos": 4
+          },
+          {
+            "target": "command",
+            "declarations": 2,
+            "repos": 3
+          }
+        ],
+        "unresolvedSamples": [
+          "parser_class  <- FSharp.Formatting/csharp/MarkdownSharpTests/source/php/markdown.php",
+          "t  <- FSharp.Formatting/csharp/MarkdownSharpTests/source/php/markdown.php",
+          "mdwp_hidden_tags  <- FSharp.Formatting/csharp/MarkdownSharpTests/source/php/markdown.php",
+          "mdwp_placeholders  <- FSharp.Formatting/csharp/MarkdownSharpTests/source/php/markdown.php",
+          "lite  <- FSharp.Formatting/csharp/MarkdownSharpTests/source/php/markdown.php",
+          "less_than_tab  <- FSharp.Formatting/csharp/MarkdownSharpTests/source/php/markdown.php",
+          "link_id  <- FSharp.Formatting/csharp/MarkdownSharpTests/source/php/markdown.php",
+          "url  <- FSharp.Formatting/csharp/MarkdownSharpTests/source/php/markdown.php",
+          "attr  <- FSharp.Formatting/csharp/MarkdownSharpTests/source/php/markdown.php",
+          "nested_tags_level  <- FSharp.Formatting/csharp/MarkdownSharpTests/source/php/markdown.php",
+          "block_tags_b_re  <- FSharp.Formatting/csharp/MarkdownSharpTests/source/php/markdown.php",
+          "block_tags_a_re  <- FSharp.Formatting/csharp/MarkdownSharpTests/source/php/markdown.php",
+          "content2  <- FSharp.Formatting/csharp/MarkdownSharpTests/source/php/markdown.php",
+          "boundary  <- FSharp.Formatting/csharp/MarkdownSharpTests/source/php/markdown.php",
+          "i  <- FSharp.Formatting/csharp/MarkdownSharpTests/source/php/markdown.php",
+          "link_text  <- FSharp.Formatting/csharp/MarkdownSharpTests/source/php/markdown.php",
+          "whole_match  <- FSharp.Formatting/csharp/MarkdownSharpTests/source/php/markdown.php",
+          "alt_text  <- FSharp.Formatting/csharp/MarkdownSharpTests/source/php/markdown.php",
+          "block  <- FSharp.Formatting/csharp/MarkdownSharpTests/source/php/markdown.php",
+          "marker_ul_re  <- FSharp.Formatting/csharp/MarkdownSharpTests/source/php/markdown.php"
+        ]
+      },
+      "evidenceClasses": {
+        "usage_contextual": 133419
+      },
+      "metadataFlags": {
+        "phpSpecific": 133419,
+        "evidenceClass": 133419,
+        "isLocalRead": 90481,
+        "isMemberRead": 29747,
+        "isSubscriptBase": 11251,
+        "isConstFetch": 3866,
+        "isStaticRead": 2299,
+        "isConstRead": 1539,
+        "isTearOff": 149,
+        "isClosureCapture": 95,
+        "isInterpolationRead": 78,
+        "isGlobalRead": 70,
+        "isTraitUse": 9
+      },
+      "examples": [
+        "Markdown -> parser",
+        "Markdown -> MARKDOWN_PARSER_CLASS",
+        "Markdown -> parser_class"
+      ]
+    }
+  },
+  "symbolKinds": {
+    "method": 20266,
+    "property": 5168,
+    "namespace": 4455,
+    "class": 4238,
+    "function": 316,
+    "constant": 315,
+    "interface": 208,
+    "enum_member": 125,
+    "enum": 42,
+    "trait": 15
+  },
+  "kindsNotInSymbolKindEnum": [],
+  "emptySymbolNames": {
+    "count": 0,
+    "examples": []
+  },
+  "unknownEndpoints": {
+    "count": 26,
+    "examples": [
+      "uses phpmyadmin/src/Charsets/Collation.php: buildDescription -> unknown",
+      "uses phpmyadmin/src/Charsets/Collation.php: buildDescription -> unknown",
+      "uses phpmyadmin/src/Charsets/Collation.php: getNameForLevel0 -> unknown",
+      "uses phpmyadmin/src/Charsets/Collation.php: getNameForLevel1 -> unknown",
+      "calls phpunit/src/Framework/TestCase.php: __construct -> unknown",
+      "instantiates phpunit/src/Framework/TestSize/TestSize.php: unknown -> Unknown",
+      "contains phpunit/src/Framework/TestSize/TestSize.php: TestSize -> unknown",
+      "references phpunit/src/Framework/TestSize/TestSize.php: unknown -> TestSize",
+      "calls phpunit/src/Framework/TestStatus/TestStatus.php: from -> unknown",
+      "instantiates phpunit/src/Framework/TestStatus/TestStatus.php: unknown -> Unknown"
+    ]
+  },
+  "grammarNodeTypes": {
+    "distinct": 277,
+    "inventory": {
+      "name": 520625,
+      "'": 227805,
+      "$": 205419,
+      "variable_name": 205417,
+      "(": 162986,
+      ")": 162986,
+      ";": 134512,
+      "argument": 132348,
+      "string": 123288,
+      "arguments": 118701,
+      ",": 116353,
+      "string_content": 110744,
+      "->": 95438,
+      "expression_statement": 79804,
+      "member_call_expression": 67511,
+      "array_element_initializer": 64504,
+      "\\": 56622,
+      "]": 47558,
+      "=": 46594,
+      "[": 41096,
+      "}": 40666,
+      "{": 40665,
+      "assignment_expression": 38343,
+      "compound_statement": 35801,
+      "::": 35698,
+      "primitive_type": 33818,
+      "binary_expression": 29660,
+      "member_access_expression": 27927,
+      "function": 26598,
+      "use": 25879,
+      "visibility_modifier": 25877,
+      "namespace_use_clause": 25786,
+      "namespace_use_declaration": 25775,
+      "=>": 25713,
+      "namespace_name": 25477,
+      "array_creation_expression": 24488,
+      "comment": 24025,
+      ":": 21706,
+      "qualified_name": 21555,
+      "formal_parameters": 21455,
+      "method_declaration": 20461,
+      "integer": 19550,
+      "scoped_call_expression": 19460,
+      "public": 18588,
+      "function_call_expression": 17276,
+      "simple_parameter": 16964,
+      "subscript_expression": 16535,
+      ".": 15099,
+      "parenthesized_expression": 13884,
+      "return": 13146,
+      "return_statement": 13145,
+      "boolean": 12375,
+      "class_constant_access_expression": 12234,
+      "relative_scope": 11348,
+      "if_statement": 10860,
+      "if": 10860,
+      "object_creation_expression": 10822,
+      "new": 10822,
+      "self": 9999,
+      "named_type": 9112,
+      "escape_sequence": 6860,
+      "null": 6812,
+      "attribute_group": 6461,
+      "#[": 6461,
+      "attribute": 6461,
+      "\"": 6388,
+      "private": 5983,
+      "program": 4642,
+      "php_tag": 4626,
+      "declaration_list": 4608,
+      "declare_statement": 4539,
+      "declare": 4539,
+      "declare_directive": 4539,
+      "strict_types": 4539,
+      "namespace": 4464,
+      "namespace_definition": 4456,
+      "class": 4385,
+      "class_declaration": 4239,
+      "static": 4194,
+      "array": 4166,
+      "bool": 4076,
+      "unary_op_expression": 4049,
+      "scoped_property_access_expression": 4003,
+      "property_declaration": 3903,
+      "property_element": 3903,
+      "attribute_list": 3733,
+      "!": 3689,
+      "===": 3680,
+      "final_modifier": 3571,
+      "final": 3571,
+      "nowdoc_string": 3436,
+      "static_modifier": 3277,
+      "encapsed_string": 3192,
+      "base_clause": 2927,
+      "extends": 2927,
+      "!==": 2808,
+      "as": 2350,
+      "&&": 2333,
+      "augmented_assignment_expression": 2004,
+      "int": 2000,
+      "|": 1988,
+      "foreach_statement": 1881,
+      "foreach": 1881,
+      "?": 1820,
+      ".=": 1760,
+      "union_type": 1665,
+      "cast_expression": 1572,
+      "cast_type": 1572,
+      "||": 1436,
+      "yield_expression": 1402,
+      "yield": 1399,
+      "readonly_modifier": 1353,
+      "readonly": 1353,
+      "protected": 1306,
+      "property_promotion_parameter": 1301,
+      "class_interface_clause": 1096,
+      "implements": 1096,
+      "const": 1045,
+      "instanceof": 993,
+      "conditional_expression": 971,
+      "else_clause": 940,
+      "else": 940,
+      "float": 887,
+      "optional_type": 846,
+      "??": 772,
+      "throw_expression": 748,
+      "throw": 748,
+      "case": 745,
+      "continue_statement": 716,
+      "continue": 716,
+      "-": 662,
+      "case_statement": 618,
+      "break_statement": 601,
+      "break": 601,
+      "else_if_clause": 586,
+      "elseif": 586,
+      "...": 451,
+      "parent": 435,
+      "anonymous_function": 429,
+      ">": 418,
+      "pair": 406,
+      "match_conditional_expression": 399,
+      "match_condition_list": 399,
+      "+": 388,
+      "update_expression": 358,
+      "<<<": 349,
+      "heredoc_start": 349,
+      "heredoc_end": 349,
+      "nowdoc": 347,
+      "nowdoc_body": 347,
+      "function_definition": 341,
+      "++": 331,
+      "<": 296,
+      "try_statement": 287,
+      "try": 287,
+      "catch_clause": 264,
+      "catch": 264,
+      "type_list": 264,
+      "unset_statement": 262,
+      "unset": 262,
+      "const_declaration": 258,
+      "const_element": 258,
+      ">=": 257,
+      "*": 251,
+      "list_literal": 250,
+      "error_suppression_expression": 244,
+      "@": 244,
+      "&": 229,
+      "arrow_function": 219,
+      "fn": 219,
+      "interface_declaration": 208,
+      "interface": 208,
+      "variadic_unpacking": 201,
+      "abstract_modifier": 167,
+      "abstract": 167,
+      "variadic_placeholder": 163,
+      "/": 155,
+      "+=": 154,
+      "while": 146,
+      "anonymous_class": 146,
+      "require_expression": 143,
+      "require": 143,
+      "while_statement": 135,
+      "enum_case": 125,
+      "echo_statement": 117,
+      "echo": 117,
+      "for_statement": 114,
+      "for": 114,
+      "print_intrinsic": 109,
+      "print": 109,
+      "anonymous_function_use_clause": 96,
+      "match_expression": 89,
+      "match": 89,
+      "match_block": 89,
+      "==": 88,
+      "variadic_parameter": 86,
+      "by_ref": 83,
+      "default": 83,
+      "<=": 80,
+      "object": 77,
+      "require_once_expression": 64,
+      "require_once": 64,
+      "match_default_expression": 62,
+      "!=": 61,
+      "ERROR": 56,
+      "reference_assignment_expression": 54,
+      "switch_statement": 51,
+      "switch": 51,
+      "switch_block": 51,
+      "exit_statement": 48,
+      "exit": 48,
+      "finally_clause": 45,
+      "finally": 45,
+      "enum_declaration": 42,
+      "enum": 42,
+      "enum_declaration_list": 42,
+      "sequence_expression": 36,
+      "reference_modifier": 34,
+      "?->": 33,
+      "--": 27,
+      "??=": 27,
+      "var_modifier": 25,
+      "-=": 25,
+      "**": 24,
+      "text": 21,
+      "default_statement": 21,
+      "nullsafe_member_access_expression": 20,
+      "bottom_type": 20,
+      "include_expression": 16,
+      "include": 16,
+      "clone_expression": 16,
+      "clone": 16,
+      "global_declaration": 15,
+      "global": 15,
+      "&=": 15,
+      "trait_declaration": 15,
+      "trait": 15,
+      "property_hook": 14,
+      "nullsafe_member_call_expression": 13,
+      "%": 12,
+      "intersection_type": 12,
+      "property_hook_list": 11,
+      "do_statement": 11,
+      "do": 11,
+      "include_once_expression": 8,
+      "include_once": 8,
+      "text_interpolation": 8,
+      "php_end_tag": 8,
+      "use_declaration": 8,
+      "relative_name": 8,
+      "|=": 8,
+      "*=": 7,
+      "<=>": 7,
+      "/=": 6,
+      ">>": 6,
+      "<<": 6,
+      "namespace_use_group": 5,
+      "list": 4,
+      "function_static_declaration": 3,
+      "static_variable_declaration": 3,
+      "empty_statement": 3,
+      "yield from": 3,
+      "dynamic_variable_name": 2,
+      "`": 2,
+      "use_as_clause": 2,
+      "xor": 2,
+      "heredoc": 2,
+      "heredoc_body": 2,
+      "~": 2,
+      "|>": 2,
+      "shell_command_expression": 1,
+      "named_label_statement": 1,
+      "use_list": 1,
+      "use_instead_of_clause": 1,
+      "insteadof": 1,
+      "**=": 1,
+      "%=": 1
+    }
+  },
+  "allTenTypes": [
+    {
+      "type": "calls",
+      "emitted": true
+    },
+    {
+      "type": "uses",
+      "emitted": true
+    },
+    {
+      "type": "contains",
+      "emitted": true
+    },
+    {
+      "type": "imports",
+      "emitted": true
+    },
+    {
+      "type": "references",
+      "emitted": true
+    },
+    {
+      "type": "exports",
+      "emitted": true
+    },
+    {
+      "type": "extends",
+      "emitted": true
+    },
+    {
+      "type": "implements",
+      "emitted": true
+    },
+    {
+      "type": "overrides",
+      "emitted": true
+    },
+    {
+      "type": "instantiates",
+      "emitted": true
+    }
+  ]
+}

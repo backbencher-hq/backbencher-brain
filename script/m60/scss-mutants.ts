@@ -295,6 +295,120 @@ const collapseIdenticallyNamedScopes = (r: any) => {
   return { ...r, symbols: out }
 }
 
+
+/**
+ * S11 REVERT — the file's module symbol and its `exports` edges disappear.
+ *
+ * The pre-fix lane had no module symbol at all: a `.scss` file's public surface was
+ * invisible, so `@use 'a', 'b'` bound members from two files and nothing in the graph
+ * could say which file offered a name. Removing the symbol removes the only edge whose
+ * source is a file, which is why the fixture pins the symbol's own `kind` as well as the
+ * six edges — a mutant that dropped the edges alone would leave a published module
+ * exporting nothing, which reads as a file with no members rather than as a defect.
+ */
+const dropModuleExports = (r: any) => ({
+  ...r,
+  symbols: (r.symbols ?? []).filter((s: any) => s.metadata?.isScssModule !== true),
+  relationships: (r.relationships ?? []).filter((x: any) => x.metadata?.isScssModuleMember !== true),
+  exports: (r.exports ?? []).filter((e: any) => e.metadata?.via !== "sass-module-top-level"),
+})
+
+/**
+ * S12 REVERT — every `!global` reassignment of a module-level binding loses its
+ * `overrides` edge.
+ *
+ * This is a RECALL revert, and it is the only one in the set that removes a relationship
+ * TYPE rather than a marker: before it, `overrides` had no edge on this corpus at all and
+ * the lane's own gate could not tell that from "the language has no overrides" — the exact
+ * failure the ontology workstream is about, where a ruling written on a prose
+ * justification outlives the construct. The measured construct: 7 occurrences across 4,394
+ * admitted files, all in bootstrap's test partials, where `$enable-shadows: false !global`
+ * … `$enable-shadows: true !global` … and a restore are three overrides of one variable.
+ */
+const dropGlobalOverrides = (r: any) => ({
+  ...r,
+  relationships: (r.relationships ?? []).filter((x: any) => x.metadata?.isScssGlobalOverride !== true),
+})
+
+/**
+ * S13 REVERT — the `@extend` in the RECOVERED shape loses its edge.
+ *
+ * 63 of the 99 `@extend` statements in the corpus are inside a rule body, where the
+ * grammar produces `block > ERROR > "@extend", placeholder, ";"` instead of an
+ * `extend_statement`. The pre-fix lane matched only the node type, so those 63 emitted
+ * nothing. A count-based gate could not see it: `control-flow-and-extend` pins a
+ * TOP-LEVEL `@extend`, which still parses, so the fixture suite was on the one shape the
+ * grammar gets right. The control for this mutant is
+ * `placeholder-selectors-and-extend`, where every `@extend` is inside a rule.
+ */
+const dropRecoveredExtends = (r: any) => ({
+  ...r,
+  relationships: (r.relationships ?? []).filter((x: any) => x.metadata?.scssExtendShape !== "recovered"),
+})
+
+/**
+ * S14 REVERT — `exports` widens to every variable, scoped or not.
+ *
+ * The obvious over-reach, and the one a reader of the code would write first: "a module
+ * exports its declarations" is true of a top-level one and false of a local one, and the
+ * difference is invisible in the symbol list because `$local` is published either way. The
+ * mutant ADDS the missing edges rather than removing any, so every count-based gate sees
+ * the original edges survive and only a `forbidRelationships` row catches it. `$_local`
+ * inside `.card` is bound by no `@use` in any file, ever.
+ */
+const widenExportsToScoped = (r: any) => {
+  const module = (r.symbols ?? []).find((s: any) => s.metadata?.isScssModule)
+  if (!module) return r
+  const already = new Set(
+    (r.relationships ?? [])
+      .filter((x: any) => x.type === "exports")
+      .map((x: any) => `${x.source}->${x.target}`),
+  )
+  const extra = (r.symbols ?? [])
+    .filter((s: any) => s.kind === "variable" && s.scope && !already.has(`${module.name}->${s.name}`))
+    .map((s: any) => ({
+      source: module.name,
+      target: s.name,
+      type: "exports",
+      line_number: s.range?.startLine ?? 1,
+      confidence: 1,
+      metadata: { evidenceClass: "structural", isScssModuleMember: true, scssModule: module.name },
+    }))
+  return { ...r, relationships: [...(r.relationships ?? []), ...extra] }
+}
+
+/**
+ * S15 REVERT — the PRIVATE-MEMBER rule is dropped, so a `-`/`_` name is exported.
+ *
+ * Sass's own rule is that a name beginning `-` or `_` is private to its module and
+ * `@use`ing the module does not expose it. The mutant removes the check, which is a
+ * subtler defect than dropping the scope test because the name LOOKS like a member: it is
+ * a top-level variable in a file anyone can `@use`, and the only thing that makes it
+ * private is the first character of its name. Caught by the `$_internal` forbid row.
+ */
+const exportPrivateMembers = (r: any) => {
+  const module = (r.symbols ?? []).find((s: any) => s.metadata?.isScssModule)
+  if (!module) return r
+  const already = new Set(
+    (r.relationships ?? []).filter((x: any) => x.type === "exports").map((x: any) => x.target),
+  )
+  const extra = (r.symbols ?? [])
+    .filter((s: any) => {
+      if (s.kind !== "variable") return false
+      if (already.has(s.name)) return false
+      return /^\$[-_]/.test(s.name)
+    })
+    .map((s: any) => ({
+      source: module.name,
+      target: s.name,
+      type: "exports",
+      line_number: s.range?.startLine ?? 1,
+      confidence: 1,
+      metadata: { evidenceClass: "structural", isScssModuleMember: true, scssModule: module.name },
+    }))
+  return { ...r, relationships: [...(r.relationships ?? []), ...extra] }
+}
+
 export const SCSS_MUTANTS = [
   {
     id: "scss/identically-named-scopes-collapsed",
@@ -444,5 +558,45 @@ export const SCSS_MUTANTS = [
     description:
       "REVERT: `metadata.isScssFunctionCall` is stripped, so a call to a user function is indistinguishable from an `@include` of a mixin — both are `uses`. A consumer could no longer tell a value-position call from a statement-position include, which is the difference between \"this function is called\" and \"this block is included\".",
     transform: dropRelMeta("isScssFunctionCall"),
+  },
+  {
+    id: "scss/module-exports-dropped",
+    language: "scss",
+    defectClass: "recall",
+    description:
+      "S11 REVERT: the file's module symbol and every `exports` edge disappear, so a stylesheet's public surface is invisible. A Sass module is what `@use` loads and what it binds, and before this the lane had no node for it at all. Caught by module-exports-and-global-overrides' six `exports` rows plus its `kind: module` symbol row — the symbol row is load-bearing because an edges-only mutant would leave a published module exporting nothing, which reads as an empty file rather than as a defect.",
+    transform: dropModuleExports,
+  },
+  {
+    id: "scss/global-override-edge-dropped",
+    language: "scss",
+    defectClass: "recall",
+    description:
+      "S12 REVERT: an `!global` reassignment of a module-level variable loses its `overrides` edge. The only mutant in this set that removes a relationship TYPE, and the reason the ontology workstream exists: the lane had no `overrides` edge on the corpus and its own gate could not distinguish that from 'Sass has no overrides'. Measured construct: 7 occurrences across 4,394 admitted files, all in bootstrap's test partials, plus 203 plain same-scope reassignments of which 171 are self-reading accumulators and are deliberately NOT overrides. Caught by module-exports-and-global-overrides' `overrides` row with its `meta.overridesLine` pin.",
+    transform: dropGlobalOverrides,
+  },
+  {
+    id: "scss/recovered-extend-edge-dropped",
+    language: "scss",
+    defectClass: "recall",
+    description:
+      "S13 REVERT: the `@extend` in the grammar's RECOVERED shape loses its edge, which is 63 of the 99 `@extend` statements in the corpus — every `@extend` inside a rule body, where the tree is `block > ERROR > \"@extend\", placeholder, \";\"` and the statement's own node type never appears. It survived a fixture suite that pins a TOP-LEVEL `@extend`, because that one parses; a count-based gate cannot see a construct the parser shapes differently in the position that matters. Caught by placeholder-selectors-and-extend, whose three `uses` rows all sit inside a rule and carry `meta.scssExtendShape: recovered`.",
+    transform: dropRecoveredExtends,
+  },
+  {
+    id: "scss/exports-scope-widened",
+    language: "scss",
+    defectClass: "fabrication",
+    description:
+      "S14 REVERT, and it ADDS: `exports` widens from a module's top-level members to every variable including the ones scoped inside a rule. Nothing is removed, so every count-based gate sees the original edges intact and only a `forbidRelationships` row catches it. `$local`, declared in the body of `.card`, is bound by no `@use` in any file, ever, and claiming otherwise makes `bb_impact` report a dependency that does not exist.",
+    transform: widenExportsToScoped,
+  },
+  {
+    id: "scss/private-module-member-exported",
+    language: "scss",
+    defectClass: "fabrication",
+    description:
+      "S15 REVERT: Sass's private-member rule is dropped, so a `-`/`_`-prefixed top-level variable is exported. Subtler than S14 because the name still LOOKS like a member — it is a top-level variable in a file anyone can `@use` — and the only thing that makes it private is the first character of its name. Caught by module-exports-and-global-overrides' `$_internal` forbid row.",
+    transform: exportPrivateMembers,
   },
 ]
