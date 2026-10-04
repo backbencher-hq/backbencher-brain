@@ -71,7 +71,7 @@ This is the population the gate MEASURES rather than blocks. Each row is one ana
 | haskell | `contains (relationship)` | line 48 |
 | java | `calls (relationship)` | line 57 |
 | javascript | `calls (relationship)` | line 29 |
-| julia | `calls (relationship)` | line 42 |
+| julia | `calls (relationship)` | line 52 |
 | kotlin | `calls (relationship)` | line 30 |
 | objective-c | `contains (relationship)` | line 61 |
 | objective-c | `overrides (relationship)` | line 61 |
@@ -163,7 +163,7 @@ This is the population the gate MEASURES rather than blocks. Each row is one ana
 | java | `calls contains exports extends implements instantiates overrides references uses` | import-site: ImportInfo[], export-site: ExportInfo[] | line 57, 11 rows |
 | javascript | `calls contains exports extends instantiates overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | line 29, 9 rows |
 | json | `contains exports extends references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | absent |
-| julia | `calls contains extends instantiates overrides references uses` | import-site: ImportInfo[], export-site: ExportInfo[] | line 42, 9 rows |
+| julia | `calls contains exports extends instantiates overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | line 52, 9 rows |
 | kotlin | `calls contains extends implements instantiates overrides references uses` | import-site: ImportInfo[], export-site: ExportInfo[] | line 30, 11 rows |
 | lua | `calls contains extends instantiates imports` | import-site: ImportInfo[], export-site: ExportInfo[] | absent |
 | makefile | `calls contains exports references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | absent |
