@@ -3094,3 +3094,197 @@ this repo for a sibling instrument and was not applied here.
 emits 7 types, all 7 are in the audited set, and `regressionsDetail` contains 0 entries
 mentioning `zig`.** 41 of the 46 lanes do have regressions. So this lane's DERIVATION count is
 **0** and that number comes from the shared baseline, not from a run that overwrote it.
+
+## Pass 12 — the file-local miss decomposed, and this lane's own resolution evidence found to be 43 minutes stale (2026-10-04)
+
+Pass 11 §F left `references` at 44.39% file-local as one unexplained number. It is also the
+tier a reverse walk wants most, so it is decomposed here rather than left as a percentage.
+
+### A. The instrument, and a correction about the evidence pass 11 read
+
+`filelocal-miss-class.ts` (new) classifies every edge whose target is **not** a published symbol
+in its **own** file, by evidence, in a fixed ladder: `scope-marker`, `empty`, `non-identifier`,
+`path`, `builtin-fn`, `builtin-type`, then `dropped-decl-IN-FILE` / `dropped-field-IN-FILE` /
+`param-IN-FILE` / `local-IN-FILE` (this file's own tree declares it, and nothing was published),
+then `declared-elsewhere` / `declared-elsewhere-p`, then `external` — no tree in the draw declares
+it, which is the honest name for *unexplained*.
+
+**Control C4 is what makes this a decomposition rather than a second measurement.** The local-hit
+rate this file reports must equal the rate `ontology-census.ts` reports for the same type on the
+same population, and the expectation is passed in rather than read from this file's own output.
+**7 of 7 types match.** The first revision did not have that control and was wrong in a visible
+way: it tested `isPlainIdent` before the hit test, so `contains` — whose targets include 1,178
+spellings that are not plain identifiers and *are* published in their own file — read **98.43%**
+where the census reads **99.99%**. A decomposition whose complement does not match the number it
+decomposes is a second measurement wearing the first one's name. The hit test now runs first and
+is exactly the census's rule. The same revision leaked its two synthetic control entries into the
+file count and printed **3,836** files on a 3,834-file draw.
+
+**The correction.** The dumps behind `incoming-resolution-full-2026-10-03.json` are stamped
+20:16–20:29. Commit `4f65703cc` — which publishes `const Self = @This()` as a symbol — landed at
+**20:59:43**. So `incoming-resolve.ts`'s ambiguity and `zeroCause` figures were measured against a
+pre-fix analyzer, and this document read them at HEAD. Regenerated over the same draw
+`sha256:2f3545f9`: **392,550 edges, 0 fallback**, identical to the pass-11 census, so the edge
+totals were never in question and only the resolution attribution moves. `Self` measures **146**
+dropped edges against the stale dumps and **0** against the regenerated ones.
+
+### B. The decomposition, per type, at HEAD before pass 13
+
+Misses only; "local hit" is the census's own strict rule.
+
+| type | edges | local hit | the miss, largest first |
+|---|---|---|---|
+| `references` | 30,794 | 44.39% | declared-elsewhere 7,748 (45.24%) · **path 6,621 (38.66%)** · local-IN-FILE 1,248 · param-IN-FILE 727 · external 532 · dropped-field 132 · dropped-decl 25 |
+| `uses` | 132,201 | 40.20% | declared-elsewhere 50,343 (63.69%) · **dropped-field-IN-FILE 13,626 (17.24%)** · local-IN-FILE 7,220 · param-IN-FILE 4,626 · external 2,518 · dropped-decl 276 |
+| `calls` | 113,476 | 40.04% | declared-elsewhere 58,112 (85.40%) · local-IN-FILE 4,746 · external 2,898 · param-IN-FILE 826 · dropped-field 337 · dropped-decl 117 |
+| `imports` | 10,200 | 29.89% | **path 6,621 of 7,181 misses (92.59%)** · declared-elsewhere 339 · external 92 |
+| `instantiates` | 4,306 | 85.72% | local-IN-FILE 544 · param-IN-FILE 51 · dropped-field 19 |
+| `contains` | 77,459 | 99.99% | dropped-field 8 |
+| `exports` | 24,114 | 100.00% | none |
+
+Two of these are answers rather than percentages. **`imports`' 29.89% is not a resolver defect**:
+6,621 of its 7,181 misses are a PATH, and an import path in Zig names a *module*, which is not a
+declaration and can never be one. **`uses`' 17.24% dropped-field is a defect**, and pass 13 fixes
+it.
+
+### C. DELIVERABLE C, separated: 14,541 edges against 6,040
+
+| finding | edges | reading |
+|---|---|---|
+| `dropped-*-IN-FILE` | **14,541** | a declaration in the edge's OWN file's tree, published as nothing. **The analyzer owns this.** 55 files. |
+| `external` | **6,040** | a name no tree in the draw declares — an external package, a `@cImport` header, a builtin the analyzer does not enumerate. Honest name: unexplained. |
+
+In a single "unresolved" count these are one number and they are opposite findings: the first is
+a bug with an owner, the second is a property of the corpus.
+
+## Pass 13 — the file-as-struct shape, read for the first time (2026-10-04)
+
+The largest single number pass 12 produced — 13,626 `uses` edges naming a declaration the parser
+already had — turned out to be one shape, and the language expresses it explicitly.
+
+### A. What the shape is, and why it was skipped
+
+Zig lets a **file** be a struct. `const OpenURI = @This();` followed by bare fields makes the
+file's top level the body of that struct, and the grammar says so structurally: the fields arrive
+as `container_field` whose **direct parent is `source_file`**, not as a child of any
+`container_declaration`. Pinned-wasm probe, `ghostty/src/apprt/gtk/portal/OpenURI.zig:20` —
+ancestors read `container_field < source_file`.
+
+The analyzer skipped every `container_field` whose container is absent or anonymous, citing a
+contract it states in the same breath: *"fields of an anonymous struct returned by a generic
+function … must NOT become file-scope symbols (C negative contract: anonymous containers are not
+named)."* **That contract is about a different shape.** It concerns a field inside an anonymous
+struct — one returned from `fn GenericStack(...) type { return struct {…} }` — whose owner has no
+stable identity. A file-level field's owner is the **file**: it has a path, and in 401 of the 411
+corpus files that declare one it has a name too, bound by `const X = @This()`. The skip reached
+the shape without the contract applying to it.
+
+`filecontainer-census.ts` (new) measures the shape before anything is changed, with controls C1
+(a named struct's field must **not** be counted) and C2 (the typed/untyped split). C1 earned its
+place immediately: the probe's first version read the `@This()` binding with
+`childForFieldName("name")`, and **this grammar declares no `name` field on
+`variable_declaration`** — the analyzer reads `namedChild(0)` at `:81` for the same reason — so it
+reported **0 bindings on a source that carries one**.
+
+| question | answer |
+|---|---|
+| Q1 files carrying ≥1 `container_field < source_file` | **411** of 3,834 |
+| Q2 binding `const X = @This()` | **401** with · **10** without |
+| Q3 fields | **3,324** — 3,321 typed (a struct field), 3 untyped (an enum member) |
+| Q4 names already published elsewhere in their file | **2,892 not published** · 429 already are |
+
+By repo: zig 269 files, ghostty 131, zls 11. Top bindings: `Self` 19, `Thread` 5, `Mir` 5,
+`Parser` 4, `Object` 4.
+
+### B. The change, and what it refuses to do
+
+`zigThisBindingName` reads the binding off node types; `zigFileLevelField` publishes one field.
+Three refusals, each measured rather than asserted:
+
+- **No owner is invented.** The 66 fields in the 10 files that never bind `@This()` are published
+  with `ownerName` undefined. Their reads resolve; **no `contains` edge is emitted**, because that
+  edge needs a source symbol and taking the owner from the file's path would put an edge on a
+  symbol the analyzer never publishes — an edge the graph asserts and cannot walk.
+- **A malformed file-level field mints nothing.** The corpus's 3 untyped file-level fields are all
+  in `zig/test/cases/compile_errors/` — `file_level_tuple.zig` is a file-level *tuple*, which Zig
+  rejects — and each holds a **type** where a name belongs (`u32`, `comptime u8 = 123`). Measured:
+  those two files produce **0** and **1** symbols. A symbol named after its own type is the
+  fabrication the named-container branch already refuses for unnamed `extern struct` members.
+- **An ordinary named struct is untouched.** `file-container-fields.zig` declares both, and the
+  fixture forbids `contains Widget -> inner` and `contains Widget -> get`: a file-level branch that
+  ran before the named-container branch claimed them would double-publish those members under two
+  owners.
+
+**The kind comes from the field's own `type` FIELD, not from the container.** `const X = @This()`
+publishes `X` as a `Type` whether the body is a struct or an enum, so the container's published
+kind cannot discriminate. The grammar uses one node type for `a: u8` and for a bare `north`, and
+only the former carries a type — this analyzer's own discriminator, read the same way inside a
+named container at `:2180`. `file-container-enum.zig` exists as a **separate** fixture for that
+half, because a struct-only fixture cannot see a mutant that publishes every file-level field as a
+`Property`.
+
+### C. Measured, over the published draw `sha256:2f3545f9`, 3,834 files, 8 shards, 0 fallback
+
+| figure | before | after | delta |
+|---|---|---|---|
+| symbols | 127,614 | **130,935** | **+3,321** — exactly the 3,321 typed fields |
+| relationships | 392,550 | **395,805** | **+3,255**, all `contains` |
+| `contains` | 77,459 | **80,714** | +3,255 |
+| `uses` tgtLocal% | 40.20% | **47.73%** | **+7.53 pts** |
+| empty-name symbols | 0 | **0** | — |
+| kinds outside `SymbolKind` | 0 | **0** | — |
+| endpoints equal to `unknown` | 39 | **39** | — |
+| edges below 0.7 | 0 | **0** | — |
+| **edges binding at both ends** | 213,207 | **232,499** | **+19,292** (54.32% → **58.74%**) |
+| analyzer-owned misses (deliverable C) | 14,541 | **4,509** | **−10,032, −69%** |
+
++3,255 `contains` and not +3,321 is the 66 unowned fields, attributed to the byte. Per-type
+resolution at both ends: `uses` 46,585 → **61,878**, `contains` 77,145 → **80,698**, `references`
+13,334 → **13,607**, `calls` 45,337 → **45,463**, `imports` 3,008 → **3,049**, `exports` 24,108 →
+**24,114**, `instantiates` 3,690 → 3,690 (unchanged).
+
+**The honest cost, in the other direction.** Ambiguity **rose**: 271,643 ambiguous edges against
+265,887, **+5,756**, because 3,321 more symbols means more names carry more than one candidate.
+The breakable share rose with it — **151,004 → 161,553**, 56.79% → **59.47%** — and the rate at
+which an edge binds at both ends rose **4.42 points**, so the net is positive. But a wider symbol
+table did make the target-matching problem `src/lsp/impact.ts` walks larger in absolute edges, and
+that is a number a budgeted lane should be told rather than discover.
+
+### D. Every gate this lane can run, re-run at this commit
+
+| gate | command | result |
+|---|---|---|
+| fixture suite | `bun run script/m14/run-fixtures.ts --lang zig` | **11 pass / 0 fail** (was 9/9), exit 0, no baseline regression |
+| mutation (shared) | `BB_MUTANT_ONLY="zig/" bun run script/m14/mutate-analyzer.ts` | **50 / 50 CAUGHT** (filtered 1,748 → 50), exit 0 |
+| mutation (lane) | `npx tsx validation/m14/fixtures/zig/m13-mutants.mts` | **6 / 6 CAUGHT**, baseline 0 failing, exit 0 |
+| firing | `npx tsx script/m14/firing-check.ts --files 120 zig` | **7/10 fired, 8,501 edges, 120/120 files, 1 DEGRADED** (8,445 before, +56) |
+| incoming | `npx tsx script/m14/incoming-check.ts zig <6 corpus-absolute files>` | 520 symbols, 0 degraded, 0 parse failures; 9 orphans of 520; **28 ambiguous targets** |
+| lane arbiter | `BB_ZIG_RULED_WORKERS=1 npx tsx validation/m14/fixtures/zig/ruled-gate.ts` | **emitted 7/10 · RULED-SOUND 3 · FALSIFIED 0 · unjustified 0**, exit 0, 0 `[BB-PARSE-ERR]`, 0 `[BB-HANG]`, **589 s** |
+| RULED re-probe | `npx tsx validation/m14/fixtures/zig/zig-ruled-probe.ts` | **10 of 10 controls ok**; `overrides` probe 0 hits in 0 files; raw duplicates 19 (member 8, function 4, binding 7); split OFF/ON 19 · OFF/OFF 21 · ON/ON 0; 239 declared / 232 produced node types; 0 of 17 supertypes; keyword calibration 11/11 declared, 10/11 produced |
+| regex census | `npx tsx script/m12/verify-regex-census.ts` | still `regex census gate FAILED` on `real-typescript-analyzer.ts`, `real-vue-analyzer.ts`, `real-svelte-analyzer.ts`, `real-fsharp-analyzer.ts`, `real-javascript-analyzer.ts`, `real-python-analyzer.ts` — **0 zig rows** |
+| typecheck | `npx tsc --noEmit -p tsconfig.json` | clean, exit 0 |
+
+The three RULED verdicts are **re-probed at this commit**, not inherited, and every number
+reproduces pass 11's. The fixture suite goes **red on the pre-change source** (`9 pass / 1 fail`),
+so `zig/file-container-fields` is not vacuous — measured by stashing the analyzer change and
+re-running, not asserted.
+
+`incoming-check.ts` was given **corpus-absolute** paths: with repo-relative paths it reports
+`6 file(s), 0 symbols`, `parse failures: 6`, and still prints the full ten-row table — §8 item 17.
+
+### E. What pass 13 could not settle
+
+- **The remaining 4,509 analyzer-owned edges are not decomposed.** 3,977 of them are `uses`, and
+  the largest single name class in the top list is now `DeviceError x39 in 9 file(s)`,
+  `InvalidParameter x31 in 9`, `NotStarted x30 in 4` — error-set members, which the analyzer
+  publishes under a different rule than struct fields. Whether each is a dropped declaration or a
+  member of an error set the index deliberately does not publish is **not** decided here.
+- **The 429 file-level names already published elsewhere in their file (Q4) were added anyway.**
+  Each is a genuine second declaration under a name the file already publishes, so the added edge
+  is one more edge in an ambiguity this lane already reports. The alternative — dropping those 429
+  — would drop real declarations to keep a count lower, which is the trade this lane does not make.
+  The number is stated so the decision can be reversed with evidence.
+- **A whole-draw `incoming-check.ts` figure does not exist.** It ran on 6 named files; the
+  whole-draw resolution figures come from `incoming-resolve.ts`, which measures a different thing
+  (corpus-tier binding, not the per-file reverse walk). The 28 ambiguous targets are **not** a
+  lane-wide count and must not be quoted as one.
