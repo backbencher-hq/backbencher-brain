@@ -589,7 +589,24 @@ the same line"), and `nim/doc/manual_experimental.md:1205-1213` documents the tw
 spellings as alternatives for one fact. So the honest reading of the 0 is
 **"absent from these 4,555 files"**, never "not implemented" and never "not in
 the language". The reader is pinned by 6 fixture edges across both spellings and
-4 forbids.
+**7** fixture forbids — and the seven are not four, which is what an earlier
+revision of this document said. They split into **4 shape guards** and **3
+fabrication guards**, and the second group is the one the workstream's "never
+invent an edge the language cannot express" rule is about:
+
+| forbid | what it stops | why it is not optional |
+| --- | --- | --- |
+| `HasField` | `o.length is Sized` — a FIELD's type constrained | the corpus carries the same shape at `nim/tests/concepts/texplain.nim:136`, where `RegularConcept` **is** a same-file concept, so a reader checking only the right-hand side fabricates |
+| `Numeric` | `x is int` — a type constraint on the matched parameter | `int`, `bool`, `string` and generic parameters implement nothing; an unguarded reader points edges at builtins |
+| `Recursive` | `r is Recursive` — recursion, not refinement | the self-reference shape |
+| `Chained` → `Sized` | `name(x) is Sized` — a CALL on the parameter | the corpus shape is `distinctBase(x) is Primitive` at `trecursive_concepts.nim:26` |
+| `Meters` | inferring SATISFACTION from visible members | Nim has no syntax declaring that a type implements a concept — the compiler matches structurally at instantiation. An analyzer inferring it would publish one edge per (object type × concept) pair, every one fabricated |
+| `Number` | an `implements` edge out of a concept with no `of` clause | the edge needs a named supertype contract |
+| `Container` | the same, on the parameterless spelling | ditto |
+
+Counted from `validation/m14/fixtures/nim/concept.expectation.json`
+(`expectRelationships` filtered to `implements` = 6, `forbidRelationships`
+filtered to `implements` = 7).
 
 The measurement, from `validation/m14/fixtures/nim/nim-ruled-probe.ts` (artifact
 `validation/m14/measurements/nim/ruling-probe.json`):
@@ -633,9 +650,41 @@ between a probe that examined the corpus and one that examined nothing — and i
 is the number that makes the ruling falsifiable rather than decorative. The
 second half of the overturn condition, an `is X` whose X is a concept in a
 DIFFERENT file, is stated and not implemented, because the gate hands a walk one
-root at a time; that half's cost is measured at **0 occurrences** (all 13 guarded
-`is` sites name `int`, `string`, `U`, `PrimitiveBase`, `IntegerBase`, `IdBase` or
-a concrete type) and is carried by the corpus-wide census.
+root at a time.
+
+**An earlier revision of this paragraph called that half "measured at 0
+occurrences", and the word measured was doing work the probe cannot do.** The
+probe resolves a concept name against the concepts the SAME file declares, so it
+has no vocabulary for "a concept declared elsewhere" at all: on this corpus it
+would report the same 0 whether the answer were 0 or 40. That is a guard that
+cannot match, which is the failure mode this document's own probe-bug list is
+about.
+
+What *is* measurable is a bound, and it is now published by the probe rather than
+asserted in a fixture comment. Of the 156 `is`-in-a-concept-body expressions,
+**124 name an identifier on the right and 32 do not**; of the 124, **13 sit on a
+bare formal parameter** (the population guard 1 accepts) and the other 111 sit on
+a dotted left (`o.foo is X`, guard 1 declines) or a call (`name(x) is X`, guard 4
+declines). The 13 name `U(2)`, `int1`, `int2`, `PrimitiveBase`, `IntegerBase`,
+`IdBase`, `string`.
+
+Checked against the corpus rather than against the probe's own bookkeeping:
+`U` is a formal parameter of `Callable1`/`Callable2` in `nim/tests/macros/
+tgettype.nim:33,44` and not a concept; `int1`, `int2` and `string` are builtins;
+and `PrimitiveBase`, `IntegerBase`, `IdBase` are **not declared as a concept
+anywhere in the corpus** (`grep` for `<name> = concept` over all 4,555 files, zero
+hits each). So **no concept-declared name appears on any bare-parameter site**,
+and the cross-file question has no candidate in this corpus rather than a measured
+zero.
+
+The concept-declared names in the wider population are `Primitive(1)`,
+`IntegerLike(1)`, `IdLike(1)` — all from `nim/tests/concepts/trecursive_concepts.nim`
+— and `RegularConcept(1)` from `nim/tests/concepts/texplain.nim:131`. Every one of
+the four sits on a left the guards decline, which is why they are correctly absent
+from the 13. The cross-file half is therefore **bounded, not settled**: it would
+need a cross-file concept index to decide, and this corpus would give it nothing to
+decide. Stated that way because "0 occurrences" and "no candidate exists" are
+different claims and only the second one is what was measured.
 
 **Two probe bugs, both found by running and both the same class.** A guard that
 cannot match prints the same 0 as a construct that does not occur:
@@ -1947,8 +1996,8 @@ quiet machine will cover all 5,227 through the production path.
    ruling table carries `conceptsExamined` beside `refinements`.
 6. **`implements` has zero corpus occurrences, so its edge count is not evidence
    of anything on its own.** The reader is pinned by 6 fixture edges across both
-   spellings and 4 forbids, and the construct is confirmed present in the
-   language (`nim/compiler/parser.nim:2268/2275/2291`,
+   spellings and **7** fixture forbids, and the construct is confirmed present in
+   the language (`nim/compiler/parser.nim:2268/2275/2291`,
    `nim/doc/manual_experimental.md:1205-1213`) — but no file in 4,555 exercises
    it, and the corpus is not thin on the construct's own terms: it holds **216
    `concept_declaration` in 69 files**. Read the 0 as "not present in this
@@ -2248,7 +2297,7 @@ quiet machine will cover all 5,227 through the production path.
     than 20 defects.** The oracle derives **zero** `exports` targets, so all 20
     analyzer targets on the 400-file sample are counted MISSING by the
     cross-check's arithmetic and are unaudited by anything. The label is still
-    pinned in both directions by the fixture (6 expected edges across both
+    pinned in both directions by the fixture (7 expected edges across both
     spellings, plus 4 forbids, including
     `nim/export-except-published-as-exported` and
     `nim/foreign-reexport-listed-as-local-provider`), which is a weaker instrument
