@@ -1800,3 +1800,23 @@ can be a fixture asserting things the code does not do, and the fixture is what 
 - **An oracle is a second walker over one grammar.** A grammar bug shared by the analyzer and all five
   oracles is invisible to every differential in this file, and nothing in them can see a relationship
   type that neither side derives. Only instrument A and instrument B measure the language.
+
+---
+
+# Shared-file changes this lane needs (§8 — reported, not applied)
+
+Consolidated here so a reader does not have to reconstruct the list from nine scattered mentions.
+Each row states file, location, what it must do, and why, so it can be applied without re-deriving
+anything. Ordered by what blocks the most measurement. **None of these is a julia-analyzer change**,
+which is why none of them is in this lane's commits.
+
+| # | file | location | what it must do | why |
+|---|---|---|---|---|
+| 1 | `src/ast/engine.ts` | `:1441-1447` | wrap `parser.parse(content)` in `try`/`finally` so `clearTimeout(parseBomb)` runs on the throwing path too | a throwing parse orphans a 120 s `process.exit(1)` bomb. Measured: 10,797 armed / 10,794 cleared / **3 never cleared**, one per parse error, 2 observed fires. Any language's census can lose its last 2 minutes of work, and any lane scored by a gate loses the gate's verdict table |
+| 2 | `script/m14/ontology-coverage-gate.ts` | `:240` | drop the 8-wide `Promise.all` to the width that is clean (4 is measured clean; 1 and 4 trapped 0/2,400 each, 8 trapped 3/1,200 in 3 of 3 rounds) | `parseFile` traps `memory access out of bounds` at width 8 on this corpus and at no other width tested. With #1 unfixed this costs the gate its exit code; with #1 fixed it still costs edges |
+| 3 | `script/m14/differential.ts` | after `:44`, after `:22863`, beside `:23212-23223` | the three lines that import `deriveJuliaOverridesTruth`, push its rows for `lang === "julia"`, and add `"overrides"` to the F5 label allowlist for julia | clears the last DERIVATION finding this lane can clear itself. The oracle exists (`script/m14/oracles/julia-overrides.ts`), agrees 3/3 when run, and is in no gate |
+| 4 | `script/m14/differential.ts` | `:457-469` in `script/m14/verify-doc-truth-emissions.ts` | drop the `continue` that skips the first body row of a claim table | `parseClaimTable` never compares the first row, so a lane whose table leads with a relationship type cannot fail that gate for it. julia reads `UNDOCUMENTED [julia] calls` while `calls` is its largest emitted type. Same shape reported against `real-kotlin-analyzer.md` |
+| 5 | `script/m14/oracles/` + `differential.ts` | new `julia-imports.ts`, `julia-exports.ts` | independent derivations of "this file imports that module" and "this module exports that binding", sharing no rule with `importTargets()` / `exportableName()` | the last 2 DERIVATION findings. Reusing the functions under test would make the oracle agree by construction — the BD8b failure the gate header records. This is a second derivation of julia's module grammar and cannot be lane-owned |
+| 6 | `src/ast/language-detection.ts` / arbiter repo config | `LANG_REPOS_SECOND`-style list at `:370-377` | allow a third and subsequent corpus project per language | 3 clone attempts fail from this network (`timholyford/Revise.jl`, `stevehie/StructTypes.jl`, `JuliaMath/Distributions.jl` all return "Repository not found"), so the corpus cannot be widened past 14 projects from inside the lane. No `Revise.jl` means no `eval`-heavy project; no `Distributions.jl`/`StatsBase` means the parametric numeric tower is under-sampled — and the `implements` ruling is measured on 14 projects, not the ecosystem |
+| 7 | `src/ast/engine.ts` | `:1442` | report a hang and continue, or at minimum name the file it is about to abandon, instead of `process.exit(1)` | a single slow file ends any run that touches it. Distinct from #1: #1 is a bomb that should never have been armed, this is the policy for one that legitimately is |
+| 8 | `validation/m12/` harness | `script/m12/measure-analyzer.ts` | create `validation/m12/fixtures/julia` so the shared M12 timing harness can time this lane | julia is absent from `script/m60/analyzer-complexity-gate.ts` (44 lanes, no julia row), from `validation/m60/analyzer-budget-register.json`, and `validation/m12/results/julia-complexity.json` does not exist. **There is therefore no budgeted lane for this lane to regress**, which is why the payload/latency question in this file is answered by a lane-owned envelope measurement instead |
