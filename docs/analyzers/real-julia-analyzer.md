@@ -2174,16 +2174,39 @@ figure against `census.json`:
 ```
 $ npx tsx validation/m14/fixtures/julia/doc-tables-check.ts --json /tmp/census.json
 doc tables check — docs/analyzers/real-julia-analyzer.md
-cells checked: 209
+cells checked: 294
 PASS — every table cell equals the instrument's value
 ```
 
-**209 cells** across six tables: the 10-row verdict table (edge count + file count per type, with
+**294 cells** across six tables: the 10-row verdict table (edge count + file count per type, with
 RULED rows held to "emitted 0" instead of being read as an edge count), the 9-row incoming bucket
 table (all 9 buckets per type), the residual-ambiguity table including the requirement that each
 row's total equals its own two columns and that the column sum equals the instrument's total, the
 six-questions table (FIRES edges + files, and RESOLVED both-ends / src / tgt / neither), the
 production-totals symbol count, and the by-kind and by-relation paragraphs.
+
+**That figure said 209 for four commits, and the gate that printed it could not notice.** The count
+grew from 209 to 294 as this file's tables grew — it is a function of how many census-comparable cells
+the doc contains, so documenting more measurement raises it — and the prose kept quoting the number
+it was built with. The drift was invisible for the same reason the gate reads table cells and not
+prose: **the quoted figure lives in a fenced code block, which this gate deliberately does not read**,
+so it was the one number in this section with no check on it. That is this file's own defect class one
+level up: a right measurement in a slot nothing could see. The gate now reads its own coverage out of
+the doc and fails when the two disagree, which it was proved by doing on the real file rather than on a
+synthetic one:
+
+```
+$ npx tsx validation/m14/fixtures/julia/doc-tables-check.ts --json /tmp/census.json
+cells checked: 294
+FAIL — 1 mismatch(es):
+  self-count: the doc quotes "cells checked: 209" and this run checked 294. the doc understates the
+  gate's coverage — either the doc's figure is stale or a table stopped being checked.
+```
+
+**The count is a moving figure and this check will fire on ordinary doc edits**, which is the correct
+time to fire: a table added here raises the count, and the quoted figure has to move with it. A
+failure where the doc claims MORE cells than the gate delivers is the more serious direction and names
+a table that stopped being checked.
 
 **It is proved against injected drift, because a gate that cannot fail is the defect it exists to
 catch.** Six drifts were injected one at a time into a clean doc — `calls` 86,876 → 86,967;
