@@ -240,7 +240,7 @@ ruled.
 | contains | EMITTED | 119,515 | same |
 | imports | EMITTED | 10,657 | same |
 | references | EMITTED | 5,265 | same; `type-references` fixture (14 expect / 15 forbid) + lane oracle at 100.0% (1,203/1,203 rows) over 799 corpus files |
-| exports | EMITTED | 302 | same |
+| exports | EMITTED | 302 | same; arbiter `firing-check.ts --files 400 dart` independently reports 10/10 with 9 `exports` edges — see *the supervisor's arbiter reads 9/10 at n=120* |
 | extends | EMITTED | 4,730 | same |
 | implements | EMITTED | 758 | same |
 | overrides | EMITTED | 90,352 | same |
@@ -252,6 +252,68 @@ stride 42), `dart-http` (all 335). Sampling is a deterministic stride over
 `git ls-files '*.dart'` sorted, per repository — no randomness, so a reviewer
 reproduces the same 2,735 file set from a clean corpus.
 
+### The supervisor's arbiter reads 9/10 at n=120, and that reading is a sample artifact
+
+`script/m14/firing-check.ts --files 120 dart` reports:
+
+```
+9/10 fired, 8290 edges, 120/120 files
+notFired: ["exports"]
+```
+
+`firing-check.ts` is shared machinery and is not on this branch, so it was run from
+a copy of `5a634e17e:script/m14/firing-check.ts` placed at the path its relative
+imports require and removed afterwards; it is not committed here. Its own numbers at
+n=120 versus n=400, same instrument, same corpus, same analyzer:
+
+| n | fired | relationships | files | `exports` edges |
+| --- | --- | --- | --- | --- |
+| 120 | 9/10 | 8,290 | 120/120 | **0** |
+| 400 | **10/10** | 53,252 | 400/400 | **9** |
+
+At n=400 the arbiter reports `degraded: 0`, `unknownEndpoints: 0`,
+`emptySymbolNames: 0`, `emptyOrUnknownKind: 0`.
+
+**Why 120 files cannot see an export in Dart.** `validation/m14/fixtures/dart/export-population-probe.ts`
+walks the whole admitted corpus and counts `library_export` NODES on the parse tree —
+a node-type count, because `export` also occurs inside identifiers, comments and string
+literals and a text instrument could not tell a directive from a word:
+
+```
+corpus total .dart files: 33,753
+files carrying >=1 library_export node: 679  (2.012%)
+library_export nodes across the corpus: 2,040
+  of those, inside an ERROR region: 1
+```
+
+At a 2.012% base rate, 120 files are expected to contain `679/33753 x 120 = 2.41`
+export-bearing files, and the probability that a 120-file sample contains NONE is
+`(1 - 0.0201167)^120 = 0.0873`. The probe reproduces the arbiter's own sample from the
+arbiter's own rule and finds **0** export-bearing files in it — consistent with the
+reading, not evidence against it. n ≥ 148 gives a ≥95% chance of at least one; at
+n=400 the expected count is 8.04 and the arbiter measured 9.
+
+**So `exports` is EMITTED and the 9/10 is the sample, not the lane.** The ruling that
+was tempting here — "`library_export` is rare enough that 120 files miss it, so 9/10 is
+the lane's real ceiling" — was available and would have been wrong, and it is wrong in
+the direction that matters: it would have reported a shortfall on a label that fires 302
+times over 2,735 files. A type's firing verdict must be taken at a sample where its
+base rate can be seen; the same arbiter at 400 files is the same code reading 10/10.
+
+The first version of this probe reached the OPPOSITE conclusion — it reported that the
+arbiter's sample contained 2 export-bearing files, which would have made the 0 a real
+defect — and it was wrong twice over: it sorted the whole-corpus list before striding
+(`filesForLanguage` strides in construction order and sorts only the picked files), and
+it filtered files over 512 KB, which the arbiter does not, admitting 33,692 of the
+arbiter's 33,755 and shifting the stride from 281 to 280. Both errors changed which 120
+files were measured. The corrected probe and the corpus rule it depends on are in the
+file header.
+
+The one `library_export` node inside an ERROR region corpus-wide is counted
+separately above rather than folded into the base rate; it does not change the
+verdict, and the analyzer's own `exports` row (302 over 2,735 files) is a count of
+EDGES, measured through `parseFile`, not of nodes.
+
 Reproduce:
 
 ```bash
@@ -261,7 +323,15 @@ npx tsx script/m14/verify-dart-references.ts                     # 38 shapes, bo
 BB_DART_PER_REPO=150 npx tsx script/m14/verify-dart-references.ts --corpus
 bun run script/m14/run-fixtures.ts --lang dart                  # 16 fixtures
 BB_MUTANT_ONLY="dart/" bun run script/m14/mutate-analyzer.ts      # 42/42 caught
+
+npx tsx validation/m14/fixtures/dart/export-population-probe.ts # the 2.012% base rate
+npx tsx validation/m14/fixtures/dart/export-firing-probe.ts     # edges on the 2 sampled files
+npx tsx script/m14/firing-check.ts --files 400 dart             # 10/10, 53,252 edges
 ```
+
+`firing-check.ts` and `incoming-check.ts` are shared machinery and are NOT on this
+branch; both were run from a copy under `/tmp` staged at `script/m14/` for the relative
+imports and removed afterwards. Neither is committed by this lane.
 
 The incoming pass (§The incoming direction) has its own instruments, and they use a
 different sample on purpose — a symbol table that is itself a stride cannot answer a
