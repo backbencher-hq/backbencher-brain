@@ -97,7 +97,7 @@ export const ZIG_RULED: Ruled[] = [
     instrument: "A:grammar-inventory",
     nodeTypesThatWouldMeanIt: ZIG_SUPERTYPE_NODE_TYPES,
     describe:
-      "a supertype relation — a declaration that names another type as its base. MEASURED (ZIG.O.1, construct-probe.ts over the full corpus, draw sha256:2f3545f9…): the pinned wasm's own tables declare 239 node types (including anonymous keyword tokens — 11/11 tested zig keywords present) and 16 field names, and 0 of the 28 probed inheritance words (extends, implements, inherits, class, interface, trait, protocol, superclass, super, bases, interfaces, override, overrides, …) is present as a node type, a keyword or a field. The POSITION test the gate's shape cannot carry: the non-member children of every struct/enum/union/opaque/error declaration are 1,797 across 443 files and 0 are UNCLASSIFIED (1,030 enum backing type, 369 nested executable block, 275 packed-struct field count, 122 union tag type, 1 error recovery) — UNCLASSIFIED is the only bucket a supertype slot could occupy. Composition through a by-value struct field is not subtyping: zig has no nominal base type, so an edge would name a relationship the language does not have. OVERTURN: any listed node type produced on the corpus; or UNCLASSIFIED > 0 in A4; or a container declaration carrying a named child that is not a backing type, packed field count, union tag or nested executable block.",
+      "a supertype relation — a declaration that names another type as its base. MEASURED (ZIG.O.1, construct-probe.ts over the full corpus, draw sha256:2f3545f9…): the pinned wasm's own tables declare 239 node types (including anonymous keyword tokens — 11 of 11 tested zig keywords present: fn, const, var, pub, struct, enum, union, opaque, error, comptime, usingnamespace) and 16 field names, and 0 of the 28 probed inheritance words (extends, implements, inherits, class, interface, trait, protocol, superclass, super, bases, interfaces, override, overrides, …) is present as a node type, a keyword or a field; independently, 0 of the 17 names in nodeTypesThatWouldMeanIt is in the declared table or among the 232 node types the corpus PRODUCES. The corpus-side keyword calibration is 10 of 11, not 11: `usingnamespace` occurs in 0 of the corpus's files (measured in zig@738d2be9, zls and ghostty — upstream deprecated it), which is a fact about the corpus and not about the grammar, since the same wasm parses `usingnamespace std;` into (using_namespace_declaration (identifier)). The POSITION test the gate's shape cannot carry: the non-member children of every struct/enum/union/opaque/error declaration are 1,797 across 443 files and 0 are UNCLASSIFIED (1,030 enum backing type, 369 nested executable block, 275 packed-struct field count, 122 union tag type, 1 error recovery) — UNCLASSIFIED is the only bucket a supertype slot could occupy. Composition through a by-value struct field is not subtyping: zig has no nominal base type, so an edge would name a relationship the language does not have. OVERTURN: any listed node type produced on the corpus; or UNCLASSIFIED > 0 in A4; or a container declaration carrying a named child that is not a backing type, packed field count, union tag or nested executable block.",
   },
   {
     type: "implements",
@@ -111,7 +111,7 @@ export const ZIG_RULED: Ruled[] = [
     instrument: "B:parse-tree-count",
     countOnTree: countZigOverridesConstruct,
     describe:
-      "a second declaration of a name already declared in the same scope, where the second REPLACES the first — the only thing in zig that could stand in for an override, since there is no `override` keyword (0 of the 28 words) and no vtable. MEASURED (ZIG.O.3, construct-probe.ts over the full corpus): 17 duplicate-declaration sites on the parse tree — 3 duplicate functions, 5 duplicate bindings, 9 duplicate container members — and 17 of 17 sit in a file that quotes the compiler's OWN diagnostic for that identifier in a comment (`:2:5: error: duplicate struct member name 'foo'`), i.e. every one of them documents the compiler REJECTING the construct. The 9 further hits in the lane probe are zig DESTRUCTURING (`x, const y, var z: u64 = .{1,2,3}` is one declaration with several binding slots and rebinding an existing name there is legal) and are excluded by this probe's declaration test, not by their path. OVERTURN: any same-scope duplicate declaration in a file that does not carry the compiler's own duplicate/redeclaration diagnostic naming that identifier — i.e. any duplicate declaration the zig compiler ACCEPTS. The probe below pushes only those, so the arbiter flips this row to FALSIFIED by itself.",
+      "a second declaration of a name already declared in the same scope, where the second REPLACES the first — the only thing in zig that could stand in for an override, since there is no `override` keyword (0 of the 28 words) and no vtable. MEASURED (ZIG.O.3; zig-ruled-probe.ts over the full 3,834-file corpus, draw sha256:2f3545f9…, running THIS probe): 21 same-scope duplicate declarations on the parse tree with both exclusions switched off — 8 container members, 4 functions, 7 bindings and 2 error-set members — and 0 survive, because every one of them sits in a file that quotes the compiler's OWN diagnostic for that identifier in a comment (`:2:5: error: duplicate struct member name 'foo'`), i.e. every one documents the compiler REJECTING the construct. The two exclusions are told apart by measurement rather than asserted: quoted-diagnostic OFF / error-member ON 19, OFF / OFF 21, ON / ON 0 (what the gate reads), ON / OFF 1 — so the quoted-diagnostic rule removes 19 and the error-set-member rule removes exactly the 1 that survives it, a zls analysis test whose expected annotation is the resulting error SET. A separate instrument reading the same construct with three narrower sub-probes (construct-probe.ts B1/B2/B3) counts 17 non-destructuring sites, decomposed as 3 functions, 5 bindings and 9 members; the 4-site difference is that instrument's own declaration test, and its 9 further hits are zig DESTRUCTURING (`x, const y, var z: u64 = .{1,2,3}` is one declaration with several binding slots and rebinding an existing name there is legal). OVERTURN: any same-scope duplicate declaration in a file that does not carry the compiler's own duplicate/redeclaration diagnostic naming that identifier — i.e. any duplicate declaration the zig compiler ACCEPTS. The probe below pushes only those, so the arbiter flips this row to FALSIFIED by itself.",
   },
 ]
 
@@ -145,8 +145,26 @@ export const ZIG_RULED: Ruled[] = [
  * `validation/m14/fixtures/zig/zig-ruled-probe.ts` can measure the RAW duplicate
  * count with the same walk rather than a second implementation of it; the gate
  * passes three arguments and never reaches it.
+ *
+ * The optional FIFTH parameter switches the error-set-member rule OFF, and exists for the
+ * same reason: without it the two exclusions cannot be told apart, and "the error-member rule
+ * is what takes the count to 0" is exactly the kind of claim that has to be measured rather
+ * than asserted. MEASURED over the full 3,834-file corpus (draw sha256:2f3545f9…,
+ * `zig-ruled-probe.ts`, the 2×2 `overridesExclusionSplit`): quoted-diagnostic OFF /
+ * error-member ON **19**; OFF / OFF **21**; ON / ON **0** (what the gate reads); ON / OFF
+ * **1**. So the corpus carries 2 duplicate error-set members, the quoted-diagnostic rule
+ * removes 19, and the error-set-member rule removes exactly the 1 that survives it — a zls
+ * analysis test whose expected annotation is the resulting error SET. Earlier revisions of this
+ * comment credited the error-member rule with the whole 19 and were wrong; the split is what
+ * caught it.
  */
-export function countZigOverridesConstruct(root: any, fileLabel: string, hits: string[], rejections?: Set<string>): void {
+export function countZigOverridesConstruct(
+  root: any,
+  fileLabel: string,
+  hits: string[],
+  rejections?: Set<string>,
+  countErrorMembers?: boolean,
+): void {
   const compilerRejections = rejections ?? collectCompilerRejectionComments(root)
   const names = declaredNamesByScope(root)
   for (const site of names) {
@@ -157,10 +175,9 @@ export function countZigOverridesConstruct(root: any, fileLabel: string, hits: s
     // (lib/std/zig/AstGen.zig:5945 in the corpus's own checkout, 738d2be9), and its
     // rejection fixture is zig/test/cases/compile_errors/duplicate_error_value_in_error_set.zig.
     // There is no second spelling of an error set, so no accepting program contains
-    // one. Measured consequence: this is the rule that takes the count from 1 to 0
-    // over the full corpus, and the site it removes is in a zls ANALYSIS test whose
-    // expected annotation is the resulting error SET, not an override.
-    if (site.kind === "error-member") continue
+    // one. Measured contribution on the full corpus: 1 site, the 19th being the error value in
+    // a zls ANALYSIS test.
+    if (site.kind === "error-member" && countErrorMembers !== true) continue
     hits.push(`${fileLabel}: ${site.name} ${site.kind} declared twice in ${site.scope} (line ${site.line})`)
   }
 }
