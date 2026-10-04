@@ -212,7 +212,7 @@ they come from in the cell itself.
 | --- | --- | --- | --- |
 | proc / func | `proc_declaration`, `func_declaration` | `SymbolKind.function` + module-scope callable | 30,125 functions of 83,692 symbols; callable recall **34,452 / 34,466** |
 | method | `method_declaration`, receiver from the first parameter | `SymbolKind.method` + `ownerName` = receiver | 177 methods; 48 `overrides` edges; 141 of 178 methods have a readable receiver |
-| named nested routine | a `proc` lexically inside another | `SymbolKind.function`, `scope` = parent, `contains` from `metadata.nimNestedIn` | **653 → 14** tree-only `calls` targets (`resolution-audit`); 17 nested-routine `contains` families |
+| named nested routine | a `proc` lexically inside another | `SymbolKind.function`, `scope` = parent, `contains` from `metadata.nimNestedIn` | **653 → 14** tree-only `calls` targets on the committed blob, of which **9** survive the `csvbench.nim` hang (`resolution-audit`); 17 nested-routine `contains` families |
 | iterator | `iterator_declaration` | `function`, **not** macro | `nim/contract` pins `{countUp, function}` |
 | template | `template_declaration` | `macro` | `nim/contract` pins `{twice, macro}` |
 | macro | `macro_declaration` | `macro` | 4,155 macros |
@@ -640,11 +640,16 @@ unqualified reference to that name anywhere in the file.
 
 | | before | after |
 | --- | --- | --- |
-| `calls` edges whose target is declared on the tree and published nowhere | 653 | **17** |
-| callable declaration recall (tree declarations vs published symbols) | 97.5% | **99.97%** (34,455 / 34,466) |
+| `calls` edges whose target is declared on the tree and published nowhere | 653 | **17**, re-measured **14** on the committed blob |
+| callable declaration recall (tree declarations vs published symbols) | 97.5% | **99.97%** (34,455 / 34,466), re-measured **100.0%** (34,452 / 34,466) |
 
-The residue is 11 declarations, and they are `proc _` — Nim's discard name for a
-declaration, which the analyzer suppresses on purpose.
+Two numbers per cell because they are two walks: 17 / 34,455 is the fix-time run
+and 14 / 34,452 is `validation/m14/measurements/nim/resolution-audit.json` on
+blob `9d9ee478e3295c28`, which is the pinned one. The residue is **14**
+declarations on the pinned walk, of which **5** are the `csvbench.nim` hang and
+**4** are `proc _` — Nim's discard name, suppressed on purpose. The defensible
+analyzer defect is therefore **9**, and 653 → 9 is the honest shape of this fix,
+not 653 → 0.
 
 **2. A `runnableExamples:` block's type declarations are declarations.** The Nim
 compiler compiles a `runnableExamples` block as its own unit, so
@@ -788,19 +793,49 @@ Over the same 4,555 files:
 
 The **tree-only** column is the defect column: the target IS declared on a corpus
 parse tree and no symbol with that name was published anywhere. It is **90 edges**
-across the whole corpus, from five distinct names — `destructor`, `root`, `me`,
-`super`, `localPassCAnswer` — plus `_`, and two of them (`destructor`, `super`) are
+across the whole corpus — `calls` 14 + `uses` 53 + `contains` 23, and 0 on the
+other seven types — and it resolves to **four** distinct names, not five:
+`destructor`, `root`, `me`, `super`. Two of the four (`destructor`, `super`) are
 templates whose `contains` edge the production filter deletes (*Limitations* 12).
-Callable declaration recall over the same walk is **34,452 of 34,466 = 100.0%**,
-and all ten unpublished names are printed with their source line in
-`validation/m14/measurements/nim/resolution-audit.txt`.
+Callable declaration recall over the same walk is **34,452 of 34,466 = 100.0%**.
+
+**This paragraph previously named five names — `destructor`, `root`, `me`, `super`,
+`localPassCAnswer` "plus `_`" — and two of those appear nowhere in the committed
+artifact.** They are residue of the earlier 127-edge walk. The artifact's own
+`TREE-ONLY` lines name exactly `calls: destructor root me super`,
+`uses: root`, `contains: root destructor me`, and the union is those four.
+Correcting a name list against the file that prints the names is the whole
+method; a prose list that outruns its instrument is how a reader ends up chasing
+a declaration that was never missing.
+
+**The artifact pair carries THREE different counts for the same list, and the
+reader needs all three.** `resolution-audit.txt` prints the header
+`callable: 14 shown` and then lists **12** rows; `resolution-audit.json` carries
+**10** `unpublishedExamples`; and the recall row counts **14** unpublished. The
+count is 14 and the two lists are truncated at different depths, so "all ten
+unpublished names are printed", which an earlier revision of this paragraph said,
+was false twice over. The 12 rows the text file does print are in it.
+
+**5 of the 14 come from one file, and that file is the one the same run reported
+`[BB-HANG]` on.** `nim/tests/benchmarks/strings/csvbench.nim` contributes
+`makeName`, `makeUrl`, `csvPath`, `writeCsv`, `parseAndMaterialize` — a hung
+parse publishes none of its declarations, so its 5 are the walk degrading rather
+than the analyzer missing them. The *defensible* tree-only figure for
+`calls` is therefore **9**, not 14, and that is the number to quote as an analyzer
+defect. The 90 total has the same 5 in it, so its clean-walk value is **85**.
 
 **This column is the one that moves with the walk, so it is worth saying which walk
 this is.** An earlier resolution-audit run on the same corpus and the same analyzer
 read **127** tree-only edges (calls 53, uses 52, contains 22) and put callable
 recall at 34,273 / 34,466 = 99.4%, because it published 83,041 symbols against the
-committed walk's 83,691 — 650 symbols lost to the load-dependent parse failures in
-*Limitations* 8. A defect count that moves by 37 when the walk degrades is not a
+committed walk's own 83,691 — 650 symbols lost to the load-dependent parse failures in
+*Limitations* 8. That instrument reads **83,691** where the census reads
+**83,692** on the same walk and the same blob; a 1-symbol difference between two
+instruments that enumerate the published set slightly differently (0.001%), named
+here because two numbers for one quantity in one document is the defect this
+document exists to catch, and it is not a walk difference — both walks are pinned
+to `9d9ee478e3295c28`. A defect count that moves by 37 when the walk degrades is
+not a
 defect count a reader can act on, so the committed artifact is the clean run and the
 degraded one is recorded here rather than deleted. Both are reproducible: the same
 command on a loaded box gives the larger number.
@@ -933,7 +968,13 @@ audit* above splits the same edges into local / another-file / builtin / tree-on
 / external, and `calls` at 39.4% local is 58.1% declared in another corpus file and
 2.4% genuinely external. Before this pass the same measurement read 653 `calls`
 edges in the **tree-only** bucket — a declaration the tree carried and the analyzer
-published nowhere — and it now reads 15.
+published nowhere — and it now reads **14**, the `calls` cell of the resolution
+table above. The **90** in that table is the whole-corpus figure, and it is
+`calls` 14 + `uses` 53 + `contains` 23.
+
+An earlier revision of this paragraph read **15** for that cell, which is neither
+14 nor 90 and matches no artifact. It was a transcription of the `uses` row into
+the `calls` sentence; the artifact is the authority and it says 14.
 
 **Question 6, and the one edge below 0.7.** This analyzer emits **0** edges below
 0.7 on every type, so nothing in the lane is a heuristic by the honesty contract
