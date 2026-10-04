@@ -640,6 +640,45 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
           emit(resolveSource(n), [n], "declared_type")
           break
         }
+        case "function_declaration":
+        case "method_declaration":
+        case "func_literal":
+        case "method_spec": {
+          // A result written WITHOUT parentheses.
+          //
+          // The grammar gives a function/method/func_literal/method_spec a
+          // `result` FIELD that is EITHER one type node OR a `parameter_list`,
+          // and Go's spec makes the unparenthesised single result the ordinary
+          // spelling (`func f() *T`). Only the `parameter_list` half reached the
+          // `parameter_declaration` case below, so `func f() *T` produced no
+          // return-type reference at all: the walk descended through
+          // `pointer_type` and matched no case.
+          //
+          // MEASURED, both directions, over a 200-file stride sample of
+          // go-stdlib (validation/m14/go/go-return-type-probe.ts):
+          //
+          //   bare_type_result      262 sites / 46 files -> 265 expected edges,
+          //                        1 published   (0.4%)
+          //   parenthesised_result  156 sites / 33 files -> 167 expected,
+          //                        162 published (97.0%)
+          //
+          // So the silent shape was the MAJORITY of the surface, and the shape
+          // that worked was the minority. Fixture
+          // validation/m14/fixtures/go/return-type-shapes pins both, plus the
+          // three predeclared-only results that must publish nothing.
+          //
+// `resolveSource` is called on the RESULT node, matching what the
+          // parenthesised half already does through its
+          // `parameter_declaration`: resolveSource starts at `start.parent`, so
+          // handing it the declaration itself would start the walk one level too
+          // high and attribute every bare result to `global` — a pseudo-source
+          // no consumer can navigate from, which is the same dangling-source
+          // class GOD11 and GO36 were fixed for. Verified by the fixture, which
+          // failed with `global -> Alpha` before this line was corrected.
+          const result = n.childForFieldName("result")
+          if (result && result.type !== "parameter_list") emit(resolveSource(result), [result], "return_type")
+          break
+        }
         case "parameter_declaration":
         case "variadic_parameter_declaration": {
           // Params, receivers, generic type-parameter constraints AND
