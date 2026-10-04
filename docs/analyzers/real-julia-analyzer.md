@@ -789,6 +789,43 @@ alternative — a green 152/152 — would have meant asserting two names it cann
 
 ---
 
+## The arbiter's exit 0 reproduced once, and both causes are still unfixed
+
+After the `imports`/`exports` work, `npx tsx script/m14/ontology-coverage-gate.ts julia` ran to
+completion and **agreed with the census to the edge on all ten types**:
+
+```
+emitted 9/10   ruled-sound 1   FALSIFIED 0   ruled-without-justification 0
+calls 122,150 · uses 37,087 · contains 14,299 · imports 3,386 · references 50,150 ·
+exports 2,795 · extends 2,580 · overrides 3 · instantiates 3,428 · implements RULED-SOUND
+EXIT=0
+```
+
+**That is a data point about a PROBABILISTIC failure, not a retraction, and both shared defects that
+make the gate unreliable are still in the tree as of this commit — checked in the same run, not read off
+the previous version of this file:**
+
+- `src/ast/engine.ts:1441-1447` still reads `const tree = parser.parse(content)` immediately followed by
+  `clearTimeout(parseBomb)`, with no `try`/`finally`. §8 row 1 is unactioned, so a throwing parse still
+  orphans a 120 s `process.exit(1)` bomb that names a file which had already failed.
+- `script/m14/ontology-coverage-gate.ts:240` is still `await Promise.all(Array.from({ length: 8 }, …))`.
+  §8 row 2 is unactioned.
+
+So the honest statement is the one this lane already corrected itself to: the 8-way trap is real and
+**probabilistic**, no rate can honestly be quoted for it, the arbiter has now both died naming a file
+that had not failed and exited 0 on the same corpus, and a green arbiter run is **not** evidence that the
+run was clean. The per-type agreement above is worth having and is worth less than it looks: it is one
+sample of a process that has been observed to abort.
+
+**A GREEN ARBITER RUN ALSO REWRITES A FILE THIS LANE DOES NOT OWN.** `docs/DOC-TRUTH-EMISSIONS.md` is a
+register over all 47 analyzers and the gate regenerates it. Its drift after the 149 shared commits merged
+in `9e5a0a808` is not julia's — UNDOCUMENTED 40 → 43, NO_CLAIM_TABLE 19 → 15, css's table line 52 → 54,
+and a column of `Ontology table at line N` entries for other languages — and it was stale for the whole
+repo before this lane ran anything. It is deliberately **not committed here**: six lanes would each
+regenerate it and each would conflict with the others. Reported as a shared item.
+
+---
+
 ## `implements` — RULED
 
 **Instrument: A, grammar-inventory.** Julia has no interface-conformance relation. `abstract type`
