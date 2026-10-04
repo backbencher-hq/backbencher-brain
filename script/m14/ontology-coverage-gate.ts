@@ -46,10 +46,18 @@ import { LANGS } from "./differential"
 import { LUA_RULED } from "./lua-ruled"
 import { TOML_RULED } from "./toml-ruled"
 import { FSHARP_RULED } from "./fsharp-ruled"
+// Conflict resolution, and the rule for every future one: this file is a REGISTRY,
+// so a conflict here is always "both sides added a lane", and the correct resolution
+// is the UNION. Taking either side would silently delete the other lane's ruling
+// table — and a deleted entry does not fail loudly, it just makes the arbiter exit 2
+// for that lane again, which reads as "nobody has ruled on this yet" rather than
+// "someone's work was dropped in a merge". Silent loss in a registry is the failure
+// mode to fear, so resolve toward MORE here, never fewer.
 import { NIM_RULED } from "./nim-ruled"
 import { PROTOBUF_RULED } from "./protobuf-ruled"
 import { ZIG_RULED } from "./zig-ruled"
 import { JULIA_RULED } from "./julia-ruled"
+import { CSS_RULED } from "./css-ruled"
 
 const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
 const LANG = process.argv[2] ?? "bash"
@@ -196,7 +204,18 @@ const JSON_RULED: Ruled[] = [
   },
 ]
 
-const RULED_BY_LANG: Record<string, Ruled[]> = { bash: BASH_RULED, json: JSON_RULED, lua: LUA_RULED, toml: TOML_RULED, fsharp: FSHARP_RULED, nim: NIM_RULED, protobuf: PROTOBUF_RULED, zig: ZIG_RULED, julia: JULIA_RULED }
+const RULED_BY_LANG: Record<string, Ruled[]> = {
+  bash: BASH_RULED,
+  json: JSON_RULED,
+  lua: LUA_RULED,
+  toml: TOML_RULED,
+  fsharp: FSHARP_RULED,
+  nim: NIM_RULED,
+  protobuf: PROTOBUF_RULED,
+  zig: ZIG_RULED,
+  julia: JULIA_RULED,
+  css: CSS_RULED,
+}
 const RULED: Ruled[] = RULED_BY_LANG[LANG] ?? []
 
 // ---------------------------------------------------------------- corpus
