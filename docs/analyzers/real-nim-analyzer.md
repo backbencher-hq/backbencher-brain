@@ -93,7 +93,7 @@ inheritance syntax involving the `of` keyword". Both are read:
 | Spelling | Read from | Corpus occurrences |
 | --- | --- | --- |
 | `type A = concept x of B` | the grammar's `refines` field on `concept_declaration` | **0** |
-| `type A = concept x` with body `x is B` | an `is` expression whose LEFT is a bare formal parameter of the concept | **0 refinements of a different concept**; 5 name a same-file concept and all 5 are self-references or field constraints |
+| `type A = concept x` with body `x is B` | an `is` expression whose LEFT is a bare formal parameter of the concept | **0** — 156 `is` expressions in concept bodies, 13 with a bare formal parameter on the left, and **0** whose right side names a concept this file declares. The 13 name `U`(2), `int1`, `int2`, `string`, `PrimitiveBase`, `IntegerBase`, `IdBase`: a generic parameter or a concrete base type, every one |
 
 Both are published as `implements` and not `extends`, because `extends` is
 already the label for the nominal class hierarchy (`object_declaration.inherits`)
@@ -356,6 +356,7 @@ records the count its run used.
 
 | Relationship type | Emitted? | Verdict | Measured on this corpus | Where the number comes from |
 | --- | --- | --- | --- | --- |
+| **all ten, one row each** | 10 of 10 examined | **9 EMITTED + 1 implemented-and-measured-absent** | **184,447 edges over 83,639 symbols** | `validation/m14/measurements/nim/ontology-census.txt`, digest-pinned on both sides of the walk |
 | `calls` | YES | EMITTED | 79,020 edges | `collectCallsAndUses`: the callee branches plus the parenless-UFCS member-leaf branch |
 | `uses` | YES | EMITTED | 31,010 edges | `collectCallsAndUses`, the member-leaf and bare-identifier read branches |
 | `contains` | YES | EMITTED | 21,561 edges | `collectContainment`, from `ownerName` and from `metadata.nimNestedIn` for a nested routine |
@@ -939,6 +940,8 @@ quoted from an earlier round.
 | `npx tsx validation/m14/fixtures/nim/oracle-crosscheck.ts` | 0 | MISSING 23 / UNEXPLAINED 18 |
 | `npx tsx validation/m14/fixtures/nim/ambiguity-split.ts` (×2 subtrees) | 0 | irreducible ambiguity 0.5% and 3.6% |
 | `npx tsx script/m14/incoming-check.ts nim <files>` (×2 subtrees) | 0 | the two rows in the incoming table |
+| `bun run script/m14/verify-doc-truth-emissions.ts` | 0 | **0 findings for nim** — no `FALSE_NEGATIVE`, no `FALSE_POSITIVE`, no `UNDOCUMENTED`, no `NO_CLAIM_TABLE`. Under `npx tsx` it cannot run at all: `script/m14/verify-doc-truth-emissions.ts:131` uses `__dirname` in an ES module and dies with `ReferenceError: __dirname is not defined in ES module scope` (*Limitations* 21) |
+| `npx tsx script/m12/verify-regex-census.ts` | 1 | gate FAILED, and **this lane contributes 0 of its 51 rows**: 26 MISSING + 25 STALE, all in `css`, `julia`, `clean`, `fsharp`, `javascript`, `python`, `svelte`, `typescript`. `grep -c 'nim'` over the gate's own output is **0**. The analyzer holds no `RegExp`, no `.match(`, `.replace(`, `.test(` and no regex literal, so there is nothing here for this lane to fix |
 | `npx tsx script/m14/ontology-coverage-gate.ts nim` | **2** | unchanged: `RULED_BY_LANG` carries `bash`, `json`, `lua`, `toml` and no `nim`, so the gate walks 4,555 files and refuses to print a verdict. `ruled-gate.ts` supplies the wiring on a copy |
 
 **The three exit-1 rows are a shared-machinery defect, not a lane failure, and the
@@ -1471,8 +1474,8 @@ quiet machine will cover all 5,227 through the production path.
    that cost is **0 occurrences** over 4,555 files, and the funnel is measured
    rather than asserted: 156 `is` expressions in concept bodies, 13 whose LEFT is a
    bare concept formal parameter, **0** whose RIGHT names a same-file concept — the
-   13 name `int`, `string`, `U`, `PrimitiveBase`, `IntegerBase` or `IdBase`, i.e. a
-   concrete type or a generic parameter in every one. A cross-file semantic index
+   13 name `U`(2), `int1`, `int2`, `string`, `PrimitiveBase`, `IntegerBase` or
+   `IdBase`, i.e. a concrete type or a generic parameter in every one. A cross-file semantic index
    would lift the restriction; a name-shape heuristic would not be worth the
    fabrications. The first version of this probe reported the 13 as 0, because it
    looked the parameter up in a map keyed by concept OWNER name instead of walking
@@ -1694,7 +1697,39 @@ quiet machine will cover all 5,227 through the production path.
     instrument in this lane can reduce it without a qualified name the source does
     not carry. §8 fix, not applied: key the map `name -> file -> kinds` and the
     column means what a reader takes it to mean.
-20. **`exports` has no second opinion, and that is one DERIVATION finding rather
+20. **`parseClaimTable` drops the first body row of every ontology table, so
+    every lane carries one spurious `UNDOCUMENTED` finding.** In
+    `script/m14/verify-doc-truth-emissions.ts:456-481` the body scan does
+
+    ```
+    if (i === chosen.at) continue          // the header
+    if (isRuleRow(cs)) continue            // the --- separator
+    if (!started) { started = true; continue }   // <-- drops the FIRST DATA ROW
+    ```
+
+    and the separator is already handled by the line above it, so the third guard
+    silently discards one real row per table. Measured across the repo's own
+    tables: `clean` loses `calls`, `c` loses `calls`, `rust` loses `calls`,
+    `python` and `go` each lose their first type — every lane whose table starts
+    at a relationship type. For this lane it produced exactly one finding,
+    `UNDOCUMENTED [nim] calls (relationship)`, and `bash` carries the same shape.
+
+    This lane's table now opens with a totals row (`**all ten, one row each** |
+    10 of 10 examined | 9 EMITTED + 1 implemented-and-measured-absent | 184,447
+    edges over 83,639 symbols | …`), which states the section's summary and puts
+    the drop on a row that makes no per-type claim. The gate then reads **0
+    findings for nim**. §8, not edited: deleting the third guard is the fix, and
+    until it is, every lane's register under-reports its own claims by one row.
+21. **`verify-doc-truth-emissions.ts` cannot be run with `tsx`, only with `bun`.**
+    Line 131 is `const REPO_ROOT = path.resolve(__dirname, "..", "..")` in a file
+    the package declares as an ES module, so `npx tsx script/m14/verify-doc-truth-emissions.ts`
+    exits 1 on `ReferenceError: __dirname is not defined in ES module scope` before
+    reading a single file. `bun run` on the same path works and produced the
+    numbers in the gate table above. A gate that only runs under one of the two
+    runners in `package.json` is a gate whose green is not reproducible from the
+    documented command, and the documented form is the one that fails. §8 fix:
+    `import.meta.dirname`, matching what every other harness in this lane uses.
+22. **`exports` has no second opinion, and that is one DERIVATION finding rather
     than 20 defects.** The oracle derives **zero** `exports` targets, so all 20
     analyzer targets on the 400-file sample are counted MISSING by the
     cross-check's arithmetic and are unaudited by anything. The label is still
