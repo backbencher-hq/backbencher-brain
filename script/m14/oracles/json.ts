@@ -444,7 +444,7 @@ export function deriveJsonEdges(root: any, scriptName: string, opts?: { manifest
       if (key.length > 1 && key.startsWith("/") && isObject(value)) {
         const methods = (value.namedChildren ?? []).filter((c: any) => c.type === "pair").map((c: any) => keyText(c))
         if (methods.some((m: string | null) => !!m && HTTP_METHOD_KEYS.has(m))) {
-          endpoints.push({ from: parentName || scriptName, target: key })
+          endpoints.push({ from: parentPath, target: here })
         }
       }
       if (opts?.manifest && MANIFEST_DEPENDENCY_KEYS.has(key) && isObject(value)) {
@@ -601,7 +601,20 @@ export function deriveJsonEdges(root: any, scriptName: string, opts?: { manifest
     // the root object is the document's only named child
     const rootObject = (root?.namedChildren ?? []).find((c: any) => c.type === "object") ?? (root?.type === "object" ? root : null)
     for (const name of manifestPublished(rootObject)) edges.push({ label: "exports", from: scriptName, target: name })
-    for (const c of npmScriptCalls(rootObject)) edges.push({ label: "calls", from: c.from, target: c.target })
+    for (const c of npmScriptCalls(rootObject)) {
+      // QUALIFIED PATHS on both ends, because both endpoints are keys of ONE `scripts`
+      // object and therefore both have a position in the document. The oracle published bare
+      // script names while the analyzer published paths, which put every `calls` edge on the
+      // population at 0% covered / 217 MISSING / 217 UNEXPLAINED — a disagreement about
+      // endpoint FORM dressed as a disagreement about the language. This is the second time
+      // this lane has run it (the first was `contains`); an endpoint-form change is a change
+      // to the comparison, and the comparison has to be re-run or it certifies nothing.
+      edges.push({
+        label: "calls",
+        from: `${scriptName}.scripts.${c.from}`,
+        target: `${scriptName}.scripts.${c.target}`,
+      })
+    }
   }
 
   for (const d of deps) edges.push({ label: "uses", from: d.from, target: d.name })
