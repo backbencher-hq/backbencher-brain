@@ -2780,11 +2780,23 @@ a choice.
 ### G. Why nothing in `src/ast/real-zig-analyzer.ts` changed, and the check that decides it
 
 The obvious repair is to publish `const X = @This()` inside an anonymous container. **Its cost is
-measurable and it is the reason Z22 exists**: the store resolves ownership by extent
-(`enclosingStoreableIdByName`), so a symbol given the byte range of a declaration inside
-`return struct { … }` inside `CircBuf` is filed under `CircBuf` — the misattribution Z22 was filed
-to prevent. The alternative is to publish it ownerless, which leaves the same extent for the store
-to resolve. **Neither is available from this lane's file.**
+not an argument, it is an enforced mutant.** `zig/local-container-owns`
+(`script/m14/mutate-analyzer.ts:15275`, defect class `symbol-ownership-loss`) injects precisely that
+shape — symbols carrying `scope: "Host", ownerName: "Host"` for a container declared inside an
+executable body, plus the two `contains` edges — and describes it as *"Z22 regression"*. It is
+**CAUGHT**, by `zig/kinds-and-owners`' `forbidSymbols` (`helper`, `limit`) and its `forbidRelationships`
+on the two `contains` shapes. So the lane's own suite already refuses this repair: implementing it
+would mean flipping `local-container-owns` from caught to surviving, which is rewriting the Z22
+contract rather than extending the analyzer.
+
+Two reasons that is the right refusal, both from source:
+
+1. **Ownership.** the store resolves ownership by extent (`enclosingStoreableIdByName`), so a
+   symbol given the byte range of a declaration inside `return struct { … }` inside `CircBuf` is
+   filed under `CircBuf` — the misattribution Z22 was filed to prevent. Publishing it ownerless
+   leaves the same extent for the store to resolve.
+2. **Ambiguity.** §F: 31 of the 108 files bind their name more than once, and requirement B
+   forbids resolving those by picking one.
 
 So this is §8 item **14**, stated so it can be applied without re-deriving it:
 
@@ -2792,14 +2804,40 @@ So this is §8 item **14**, stated so it can be applied without re-deriving it:
 > decision is not the analyzer's.** 92 corpus files bind `const Self = @This()` inside a struct a
 > generic function returns; 240 `references` edges name `Self` and 145 of them already bind
 > file-locally through the top-level `Self` declarations. Publishing the 92 makes 77 files
-> unambiguous and 31 ambiguous unless the edge carries position, and it puts the store's extent
-> rule in conflict with Z22 (`docs/analyzers/real-zig-analyzer.md:49`). The three options are
-> (a) `src/ast/engine.ts` learns an explicit anonymous-container scope so a member is not filed
-> under the enclosing function, (b) the `references` edge to such a name carries a disambiguator
-> the resolver honours, or (c) Z22 is revised and the 31 ambiguous files stay unresolvable by
-> choice rather than by accident. Option (a) is the only one that resolves all 240. **Whoever owns
-> the incoming resolution layer picks; the numbers that decide it are §B, §E and §F.**
+> unambiguous and 31 ambiguous unless the edge carries position, and it is the exact shape the
+> `zig/local-container-owns` mutant injects and `zig/kinds-and-owners` forbids — so the refusal is
+> the lane's own contract, not a preference. The three options are (a) `src/ast/engine.ts` learns
+> an explicit anonymous-container scope so a member is not filed under the enclosing function,
+> which is the only one that resolves all 240; (b) the `references` edge to such a name carries a
+> disambiguator the resolver honours, which fixes the 31 and not the ownership; (c) Z22 is revised
+> and the 31 ambiguous files stay unresolvable by choice rather than by accident, which requires
+> rewriting `kinds-and-owners`. **Whoever owns the incoming resolution layer picks; the numbers
+> that decide it are §B, §E and §F.**
 
 Nothing in `src/ast/real-zig-analyzer.ts` changed in pass 10. Sixth consecutive pass verified
 rather than edited, and this time the reason is a measured ownership conflict rather than a
 fabrication hazard.
+
+### H. Every gate this lane can run, re-run at this commit
+
+| gate | command | result |
+|---|---|---|
+| fixture suite | `bun run script/m14/run-fixtures.ts --lang zig` | **9 pass / 0 fail**, exit 0, no baseline regression |
+| mutation | `BB_MUTANT_ONLY="zig/" bun run script/m14/mutate-analyzer.ts` | **50 / 50 CAUGHT** (filtered 1,748 → 50), exit 0 |
+| firing | `npx tsx script/m14/firing-check.ts --files 120 zig` | **7/10 fired, 8,445 edges, 120/120 files, 1 degraded** — the pass-6 row, to the edge |
+| arbiter (lane's proof runner, fan-out 1) | `BB_ZIG_RULED_WORKERS=1 npx tsx validation/m14/fixtures/zig/ruled-gate.ts` | **emitted 7/10 · ruled-sound 3 · FALSIFIED 0 · unjustified 0**, exit 0, **0 `[BB-PARSE-ERR]`, 0 `[BB-HANG]`**, 810 s — **n=4 identical** |
+| regex census | `npx tsx script/m12/verify-regex-census.ts` | still prints `regex census gate FAILED`, on `real-typescript-analyzer.ts` and `real-vue-analyzer.ts`; **0 zig rows** |
+
+The arbiter row is now **n=4 identical** (passes 7, 8, 9 and this one), so the verdict table is a
+property of the corpus and not of one run — which is what pass 7 corrected and pass 8 re-read. Its
+seven EMITTED counts reproduce the census exactly: `calls` 113,476 · `uses` 132,201 · `contains`
+77,459 · `imports` 10,200 · `references` 30,794 · `exports` 24,114 · `instantiates` 4,306.
+
+**The shared arbiter still prints no verdict of its own at its default fan-out**, and that remains
+§8 item 7 (`BB_GATE_WORKERS`): the lane's runner gets the table by copying the file and pinning
+`Array.from({ length: 1 }, …)` in the copy, at 810 s, and the shared file on disk is untouched.
+
+The 1 degraded file in the firing row is the same one §8 item 10 names — `zig/lib/compiler_rt/udivmodti4_test.zig`
+at 10,249,535 bytes, which `pool-worker.ts:779-794` returns empty for WITHOUT running the regex
+extractor, so the instrument's message names the wrong mechanism. It contributes 0 edges, which is
+why 8,445 is unchanged.
