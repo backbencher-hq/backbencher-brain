@@ -62,7 +62,7 @@ async function derive(src: string): Promise<string[]> {
 async function analyze(src: string): Promise<string[]> {
   const parser = await parserFor()
   const r: any = await new RealDartAnalyzer().analyze(parser.parse(src).rootNode, src, "/tmp/verify-dart-contains.dart")
-  return [...new Set((r.relationships ?? []).filter((e: any) => e.type === "contains").map((e: any) => `${e.source} -> ${e.target}`))].sort()
+  return [...new Set<string>((r.relationships ?? []).filter((e: any) => e.type === "contains").map((e: any) => `${e.source} -> ${e.target}`))].sort()
 }
 
 /**
