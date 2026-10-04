@@ -1026,6 +1026,20 @@ can be a fixture asserting things the code does not do, and the fixture is what 
   So the trap is a function of parser state under concurrency, not of file content. It is recorded
   because "0 crashes" in this lane is measured as "0 throws" and `parseFile` CATCHES the wasm trap —
   a file the parser cannot read leaves no trace in a counter that only counts throws.
+- **`exports` targets are ambiguous more often than any other new edge, and the edge cannot fix it.**
+  **128 distinct names across 159 of the 1,770 `exports` edges (9.0%)** name more than one symbol the
+  analyzer published in the same file. Split by cause: **113 names / 132 edges (7.5% of all `exports`)
+  are genuine cross-kind collisions** — `x` is published as a `property` and a `variable` and a
+  `macro` in one file — and **15 names / 27 edges are several methods of one binding**, which is *not*
+  a collision for an export, since a module exports a name once however many methods it has.
+  `imports` is nearly clean: 2 distinct names across 3 of 1,502 edges, of which 1 name / 2 edges
+  (`Bar`, published as both `class` and `module`) is a real collision.
+  The edge cannot narrow these, and the reason is the `declaresNothing` property this lane got right:
+  `export X` asserts no kind, so there is no kind to narrow by. Adding one would mean guessing. The
+  remaining lever is for the edge to carry the **owning scope**, which would separate a struct field
+  named `x` from a function named `x` — that is a schema question owned by the incoming-resolution
+  layer, and this lane's count is the evidence for it rather than a duplicate of the work. Reported,
+  not worked around.
 - **`contains` collapses same-named siblings.** The relationship dedup key is
   `type|source->target` with no line, so two declarations of one name under one scope produce one
   `contains` row. Widening it would grow every `contains` edge in every julia payload (10,467 rows
