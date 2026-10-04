@@ -72,6 +72,35 @@ turned into phantom recovery symbols.
 
 ## Relationship ontology
 
+**A RULED-SOUND row is only worth the walk behind it, so the walk is now a number.**
+The arbiter runs every instrument-B `countOnTree` over the admitted files and reports
+only `occurrences` and `files`. A probe that visited nothing therefore reports 0
+occurrences and is graded RULED-SOUND on a walk that never happened — and 0 is exactly
+what a correct probe over an empty construct looks like, so the two are the same
+number. `validation/m14/fixtures/xml/ruled-gate.ts` now patches the copied gate's B
+loop to print, per probe, how many files the probe was actually invoked on, and
+refuses to present any instrument-B verdict when that line is absent:
+
+```
+XML_B_PROBE_WALK uses    instrument=B:parse-tree-count walked=11456 unparsed=0 occurrences=0  hitFiles=0
+XML_B_PROBE_WALK extends instrument=B:parse-tree-count walked=11456 unparsed=0 occurrences=1652 hitFiles=113
+```
+
+11,456 of 11,456 walked, 0 unparsed, so the `uses` 0 is a walked-and-empty 0 on the
+whole admitted population and not a probe that failed to run. The block that used to
+carry this check was worse than none: it was named `XML_OVERRIDES_EXAMINED`, it
+described `XML_RULED`'s `overrides` entry, and **that entry had been deleted** when
+the arbiter falsified the ruling — so it asserted a measurement of an object that did
+not exist, and printed no number with which to make it. It is replaced by the line
+above, which is emitted by the loop it describes. Two instrumentation defects were
+found while building it and are recorded because both produced a confident wrong
+number: the counters were globals that were never reset, so the second of two probes
+over 1,143 files reported `walked=2286`; and `String.replace` reports nothing when
+its needle is absent, so a patch that silently failed to apply would have left the
+walk unmeasured and the run reporting verdicts it had not earned — the patch now
+asserts its own effect on the staged copy and exits 2 if the instrumentation is not
+in it.
+
 Ten types, one verdict each. **The verdict column below is the ARBITER's, not this
 lane's** — `script/m14/ontology-coverage-gate.ts` run against this lane's ruling
 table over the **full 11,456-file admitted population in 110 repositories**, every
@@ -88,6 +117,34 @@ extension point, so these verdicts were uncheckable until
 of the arbiter under `/tmp` and runs it, so the table is proven rather than
 asserted. Resolution rates come from the census draw described below; the edge
 counts come from the arbiter's own `parseFile` pass.
+
+**Those counts are only quotable from a run that printed no `[BB-HANG]`, and that is
+not a formality.** `src/ast/engine.ts:1442` calls `process.exit(1)` after 120 s on one
+file. Over four runs of this corpus it named four different files, each preceded by a
+`[BB-PARSE-ERR] … memory access out of bounds` on the same path, so the trigger is a
+wasm memory fault in the XML grammar rather than a large document. Where it fires
+decides what a run is worth, and both positions occur:
+
+| Where the hang fired | What printed | Measured |
+| --- | --- | --- |
+| before the verdict loop | no table at all | 4 workers |
+| after the verdict loop | a **complete** table, **undercounted** | 2 workers |
+
+The second row is the one to fear. `observed` accumulates from the worker pool, so a
+worker killed mid-file contributes none of its edges while every other row still
+prints — same corpus, same ten rows, same summary line:
+
+```
+contains     185,919   run that reported [BB-HANG]
+contains     185,979   clean run of the same corpus          -60
+references    10,405   run that reported [BB-HANG]
+references    10,411   clean run of the same corpus           -6
+```
+
+Nothing inside the table marks the run as short. The table above is from a run at
+`BB_XML_WORKERS=1` that exited 0 with no `[BB-HANG]`, and the runner now prints
+`RUN WAS SHORT, COUNTS UNDERCOUNTED` beside the rows whenever one fires, so the
+distinction cannot be read off a green-looking table.
 
 | Type | Emitted? | Edges | Files | Both ends resolve | `confidence` < 0.7 |
 | --- | --- | ---: | ---: | ---: | ---: |
@@ -235,6 +292,60 @@ as local symbols.
 the type an element's **value** has, which is a different relation, and labelling
 it `extends` would invent a supertype where the document states a value type.
 Pinned by a forbid row.
+
+**`extends` is the one emitted type with an independent oracle, and it agrees exactly.**
+The `extends` entry in `script/m14/xml-ruled.ts` carries a `countOnTree` that counts
+XSD derivation sites — an `<xs:extension>`/`<xs:restriction>` in the XSD namespace
+carrying a non-empty `base` — without consulting the analyzer. Two measurements:
+
+| Corpus | probe sites / files | analyzer edges / files |
+| --- | --- | --- |
+| FSharp.Data only, 29 admitted files | 4 sites / 2 files | 4 edges / 2 files |
+| full admitted population, 11,456 files | 1,652 sites / 113 files | 438 edges / 113 files |
+
+The file counts match to the file at both scales (2 = 2, 113 = 113). The edge counts
+match at the small scale (4 = 4) and not at the full one (438 vs 1,652), which is
+expected and not a disagreement: the probe counts derivation **sites** and the
+analyzer counts **published** edges, and 1,212 of the 1,652 sites are refused by the
+binding rules tabulated above — 1,652 − 1,212 = 440 against 438 emitted, and the
+residual difference is the two sites whose base resolves to a type declared twice in
+one file. So this is a real oracle for Q3 on `extends` and the one emitted type for
+which Q3 is not unmeasured — see the DERIVATION section for why the other five still
+are.
+
+**The probe was added to close a false verdict, not to find one.** Running the arbiter
+with the corpus root pointed at a single repository (`BB_CORPUS_ROOT`, libxslt, 1,143
+admitted files) drops `extends` to 0 emitted edges, and the gate then ruled it on the
+wrong decision:
+
+```
+extends  RULED-SOUND  NOT EMITTED; the construct occurs 0x on the parse tree.
+                    Written ruling: …/script/m14/spec/xml-completeness.json#XML-ONTOLOGY-IMPLEMENTS
+```
+
+`XML-ONTOLOGY-IMPLEMENTS` is the decision about `implements`. The gate's spec fallback
+(`rulingFor`) picks a ruling by testing whether a decision's prose **mentions** the
+type — ``new RegExp(`\\b${t}\\b`)`` over `dec.resolution` — and that resolution
+describes "an implements/extends clause", so the word `extends` is in it. A 0 was
+graded RULED-SOUND on a decision written about a different type, citing that other
+decision, so the citation cannot be checked. The `extends` entry now sits in the
+lane's own table, which `rulingFor` consults **first** and matches by exact type, so
+the verdict on the same corpus reads `script/m14/xml-ruled.ts (RULED_BY_LANG.xml)`.
+Measured exposure of the same mechanism across the types this lane emits, by testing
+every RULED decision's prose for each type name:
+
+| Emitted type | Prose-matched by | Verdict it would get with 0 emitted edges |
+| --- | --- | --- |
+| `contains` | EXTENDS, EXPORTS, INSTANTIATES | wrong decision, 3 candidates |
+| `references` | USES, INSTANTIATES | wrong decision, 2 candidates |
+| `imports` | USES | wrong decision |
+| `extends` | EXTENDS (now exact), IMPLEMENTS | now correct |
+| `calls` | nothing | RULED-UNJUSTIFIED (correct) |
+| `overrides` | nothing | RULED-UNJUSTIFIED (correct) |
+
+Four of six were reachable. `calls` and `overrides` are correct only because no ruling
+in this lane happens to use their names — luck, not design. The gate's mechanism is
+supervisor-owned and is reported, not patched; the one-line shape of the fix is in §8.
 
 ### The five not emitted, each with its instrument, probe and overturn condition
 
@@ -464,7 +575,7 @@ and 3 in the full population, which is stated here rather than averaged over.
 | --- | --- | --- | --- | --- | --- | --- |
 | 1. Exists | walk + DTD branches | deferred reference pass | `extractExternalId`, `schemaLocation`, PI `href` | `XSLT_CALL_ELEMENTS` | `xsdDerivationElement` branch | `competingTemplates` + the §5.5 pass |
 | 2. Fires | 77,721 edges / 2,472 files | 6,750 / 195 | 260 / 174 | 17 / 3 | 354 / 93 | **0 / 0 in this draw; 3 / 3 in the full 11,456** |
-| 3. Correct | **unmeasured for all six** — see below | — | — | — | — | — |
+| 3. Correct | unmeasured | unmeasured | unmeasured | unmeasured | **1 oracle, agrees 4/2 vs 4/2** | unmeasured |
 | 4. Labelled | `structural` 77,721 (100 %) | `reference_qualified` 6,750 (100 %) | `import_based` 260 (100 %) | `reference_qualified` 17 (100 %) | `structural` 354 (100 %) | `structural` 3 (100 %) |
 | 5. Resolved | 77,721/77,721 = **100.0 %** | 3,312/6,750 = **49.1 %** | 0/260 = 0 %, target is a file | 17/17 = **100 %** | 142/354 = **40.1 %** | 3/3 = **100 %** |
 | 6. Confident | 0 edges < 0.7 | 0 | 0 | 0 | 0 | 0 |
@@ -495,8 +606,8 @@ XML edge. The xml completeness spec claims the lane is "registered in
 differential.ts LANGS / **LANG_REPOS**"; the second half of that is false, and the
 measurement is what caught it.
 
-So question 3 is **not settled** for any type, and the honest statement of why is
-structural rather than procedural: the lane's own oracle
+So question 3 is **settled for `extends` only**, and the honest statement of why is
+structural rather than procedural for the other five: the lane's own oracle
 (`script/m12/xml-corpus-differential.mts`, 20 relationship classes, and
 `script/m12/xml-differential-gap.mts`, 43 unexplained of 250,135 `contains` edges)
 is a second walker over the **same grammar**. It can disagree with the analyzer,
@@ -506,6 +617,14 @@ falling behind a correct analyzer rather than a disagreement. The lab's own
 warning applies here verbatim: *two implementations disagreeing is evidence about
 both; a percentage computed against a broken second implementation is a lie with a
 decimal point.*
+
+The `extends` oracle is newer and narrower than those: `script/m14/xml-ruled.ts`'s
+`countOnTree` counts XSD derivation sites from the parse tree, so it is a **second
+walker over the same grammar in exactly the sense the warning names** — it agrees
+with the analyzer 4 sites / 2 files against 4 edges / 2 files, which is evidence that
+the emitter and the construct agree, and is blind to a grammar fault that makes both
+walkers miss the same sites. It is reported as Q3 answered, not as Q3 settled beyond
+doubt, and it was built to close a false verdict rather than to audit an emitter.
 
 Q6 in full: every emitted edge carries `confidence: 1`. The heuristic ratio —
 edges below the 0.7 threshold — is **0 of 191,333**, and the `inferred` tier, the
@@ -619,6 +738,19 @@ shared differential (`script/m12/xml-differential-gap.mts`, 43 unexplained of
 lane emits has a shared-oracle check**, and the debt is not new: before this work
 the lane emitted `references` and `imports` with no auditor, which is exactly the
 structural condition the ontology workstream was convened to end.
+
+**One of the six has been paid down since, and the instrument that paid it was not
+built for that.** The `extends` probe added to `script/m14/xml-ruled.ts` to close the
+false verdict in §8 item 2 walks the same XSD derivation sites the analyzer reads, and
+it agrees with the analyzer exactly at the scale where both can be compared without
+the analyzer's refusals dominating: 4 sites / 2 files against 4 edges / 2 files. That
+is an oracle, so **Q3 is answered for `extends` and the remaining DERIVATION debt is 5
+of 6** — `contains`, `references`, `imports`, `calls`, `overrides`. It is still not a
+*differential*: it checks the emission against the construct, not against another
+parser's reading of the same document, so a grammar bug shared by the analyzer and the
+probe stays invisible to it. The count of 6 above is left standing as the DERIVATION
+finding proper, because DERIVATION means "unaudited by the shared differential" and
+this lane-local probe does not change what `differential.ts` does.
 
 ### Limitations
 
@@ -839,8 +971,28 @@ silently taken.
 as well as analyzers, and the arbiter only scans analyzers, so this lane's own
 count was 3 and the arbiter could only see 1 of them. Replaced by an `unquote`
 character test that drops the first character when it is a quote **and** the last
-is the **same** quote, which is what the anchored alternation meant. **This lane's
-regex count: 3 → 0.**
+is the **same** quote, which is what the anchored alternation meant.
+
+**And a third, in the arbiter runner.** `validation/m14/fixtures/xml/ruled-gate.ts`
+selected the gate's verdict rows with
+
+```
+stdout.split("\n").filter((l) => /\b(EMITTED|RULED-SOUND|FALSIFIED|RULED-UNJUSTIFIED)\b/.test(l))
+```
+
+The brief's hard rule names "any analyzer, census script, or oracle", and
+`script/m12/verify-regex-census.ts` scans **analyzers only** — so the arbiter reported
+this lane at 0 while this file carried one, the same blind spot the census scripts
+were found behind. Replaced by a named `VERDICT_WORDS` array matched with
+`String.includes`, and the substitution is sound for this job for a stated reason
+rather than by luck: each of the four constants contains a hyphen or ends the
+alphabet, so none can be a prefix or a substring of another (`RULED-SOUND` and
+`RULED-UNJUSTIFIED` share `RULED-` but neither contains the other, and neither
+appears inside `EMITTED` or `FALSIFIED`). That is a claim about four constants, which
+is why they are named at module scope instead of inlined at the call site.
+
+**This lane's regex count across analyzer and census scripts: 4 → 0**, of which the
+arbiter could see 1 at any point.
 
 `schemaLocation` is the one attribute whose value is a token list rather than a
 single name, so it is the only place a value has to be cut into words. That is now
@@ -1253,6 +1405,72 @@ unchanged. MISSING nodes fell 32 → 10. Both movements were adjudicated as
 standalone-DTD and libxml2 negative controls, not as repairs. Independently, the
 16-case expat oracle agreed on 16/16 accepts and rejects, which is what retracted
 an earlier third "defect" that a hand-read of one file had suggested.
+
+## §8 — changes this lane needs in files it does not own
+
+Recorded precisely enough to apply without re-deriving. None of these is edited here.
+
+**1. `script/m14/ontology-coverage-gate.ts` — wire the xml ruling table (2 lines).**
+`RULED_BY_LANG` is a literal with no extension point, so run against `xml` the gate
+prints `no RULING TABLE for xml` and exits 2, which is why this lane's RULED verdicts
+were never machine-checked until `script/m14/xml-ruled.ts` existed.
+
+```
+import { XML_RULED } from "./xml-ruled"
+const RULED_BY_LANG: Record<string, Ruled[]> = { …, xml: XML_RULED }
+```
+
+`validation/m14/fixtures/xml/ruled-gate.ts` applies exactly these to a copy under
+`/tmp` and runs it, printing each patch, so this does not have to be re-derived.
+
+**2. `script/m14/ontology-coverage-gate.ts` — `rulingFor` must match by identity, not
+by prose.** This is the false-verdict defect measured above. The function selects a
+spec decision by testing its `resolution` text for the type name
+(``new RegExp(`\\b${t}\\b`)``, plus a backticked variant) and returns the first hit, so
+a type with 0 emitted edges is ruled by whichever decision happens to use its name in
+prose. On this lane that graded `extends` RULED-SOUND on `XML-ONTOLOGY-IMPLEMENTS`,
+because that resolution says "an implements/extends clause"; the reach is 4 of the 6
+emitted types (table above). It needs the decision's own `relationship` field, which
+the emitter already writes (`"relationship": "extends"`), compared for equality, with
+the prose test deleted rather than kept as a fallback — a fallback preserves the
+defect. Where no decision names the type, returning `null` is the correct answer and
+yields RULED-UNJUSTIFIED, which is what `calls` and `overrides` already get by luck.
+
+**3. `src/ast/engine.ts:1442` — the per-file self-destruct ends the whole run.** The
+120 s timer calls `process.exit(1)`, so one unparseable file kills every worker and
+prints either no verdict table or an undercounted one (table in §Relationship
+ontology). It needs to abort the FILE, not the process. Four distinct corpus files
+trigger it, each with `[BB-PARSE-ERR] … memory access out of bounds` on the same
+path, so the underlying fault is in the XML grammar's wasm memory and is worth its own
+fix — a parser that faults on a 40 KB SVG cannot be trusted on files nobody has
+measured.
+
+**4. `script/m14/differential.ts` — `LANG_REPOS` has no `xml` entry.** `--lang xml`
+prints `SKIP xml: no corpus repo mapped` and measures 0 lanes, so **Q3 (Correct) is
+unanswerable for five of the six emitted types** and this lane's DERIVATION debt is
+6 of 6. `extends` is the sole exception and only because the probe added for item 2
+doubles as an oracle (it agrees 4 edges / 2 files against the analyzer's 4 / 2).
+
+**5. `script/m14/verify-doc-truth-emissions.ts` — `parseClaimTable` drops the first
+data row of every claim table.** `if (isRuleRow(cs)) continue` already consumes the
+`---` rule, and the `if (!started) { started = true; continue }` line below it then
+discards the NEXT row as well. Minimal repro — 3 rows in, 2 out, the missing one being
+the first:
+
+```
+| Relationship | Emitted? |
+| --- | --- |
+| `calls` | yes |
+| `contains` | yes |
+| `imports` | no |
+```
+
+Deleting that second skip restores the first data row for all 32 affected docs
+(`contains` for xml, elixir, erlang, go, haskell, objective-c, rust, swift; `calls`
+for 14 more; `implements` for lua; `references` for protobuf; `extends` for zig).
+`contains` was LEFT in first position in this lane's table on purpose — reordering it
+would move the defect to another type and make this lane look clean while hiding the
+bug.
 
 ## Issue
 
