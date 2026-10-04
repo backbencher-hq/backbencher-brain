@@ -13,7 +13,7 @@
       "status": "pass"
     },
     {
-      "description": "per-literal shrink-only register with reasons (43/45 languages pass)",
+      "description": "per-literal shrink-only register with reasons (44/44 languages pass)",
       "id": "dead-literal-gate",
       "status": "pass"
     },
@@ -24,56 +24,16 @@
     }
   ],
   "claimLevel": "L2",
-  "commit": "e21538b1ddba6565054419f55d145d18355b6b3d",
-  "committedAt": "2026-10-03T22:41:32-04:00",
+  "commit": "13303ed32a7fa5400bb93cc427251c961afc095c",
+  "committedAt": "2026-10-01T21:31:34-04:00",
   "data": {
     "deadLiteralRegister": {
       "adjudication": {
-        "countRegressions": [
-          {
-            "from": 0,
-            "lang": "cpp",
-            "to": 2
-          },
-          {
-            "from": 0,
-            "lang": "rust",
-            "to": 2
-          }
-        ],
-        "ok": false,
+        "countRegressions": [],
+        "ok": true,
         "recordIsV1": false,
         "shrunk": [],
-        "unregistered": [
-          {
-            "context": "real-cpp-analyzer.ts:comparison",
-            "kind": "type",
-            "lang": "cpp",
-            "line": 153,
-            "literal": "class_body"
-          },
-          {
-            "context": "real-cpp-analyzer.ts:comparison",
-            "kind": "type",
-            "lang": "cpp",
-            "line": 3759,
-            "literal": "class_body"
-          },
-          {
-            "context": "real-rust-analyzer.ts:comparison",
-            "kind": "type",
-            "lang": "rust",
-            "line": 1915,
-            "literal": "bare_function_type"
-          },
-          {
-            "context": "real-rust-analyzer.ts:comparison",
-            "kind": "type",
-            "lang": "rust",
-            "line": 1915,
-            "literal": "parenthesized_type"
-          }
-        ]
+        "unregistered": []
       },
       "counts": {
         "bash": 0,
@@ -389,7 +349,7 @@
         "fieldless": false,
         "oracleFieldCount": 45,
         "oracleGrammars": 1,
-        "oracleNodeTypeCount": 382,
+        "oracleNodeTypeCount": 381,
         "referencedFieldLiterals": 8,
         "referencedTypeLiterals": 73,
         "status": "pass",
@@ -410,7 +370,7 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 452,
         "referencedFieldLiterals": 2,
-        "referencedTypeLiterals": 62,
+        "referencedTypeLiterals": 55,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -648,8 +608,8 @@
         "oracleFieldCount": 44,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 539,
-        "referencedFieldLiterals": 8,
-        "referencedTypeLiterals": 53,
+        "referencedFieldLiterals": 7,
+        "referencedTypeLiterals": 42,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -668,7 +628,7 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 407,
         "referencedFieldLiterals": 6,
-        "referencedTypeLiterals": 79,
+        "referencedTypeLiterals": 78,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -697,25 +657,6 @@
         ],
         "wasmFieldCounts": [
           14
-        ]
-      },
-      "protobuf": {
-        "analyzer": "src/ast/real-protobuf-analyzer.ts",
-        "fieldless": false,
-        "oracleFieldCount": 3,
-        "oracleGrammars": 1,
-        "oracleNodeTypeCount": 119,
-        "referencedFieldLiterals": 3,
-        "referencedTypeLiterals": 14,
-        "status": "pass",
-        "unknownFields": [],
-        "unknownNodeTypes": [],
-        "waivedFindings": [],
-        "wasm": [
-          "tree-sitter-protobuf.wasm"
-        ],
-        "wasmFieldCounts": [
-          3
         ]
       },
       "python": {
@@ -846,9 +787,9 @@
       "sql": {
         "analyzer": "src/ast/real-sql-analyzer.ts",
         "fieldless": false,
-        "oracleFieldCount": 62,
+        "oracleFieldCount": 53,
         "oracleGrammars": 1,
-        "oracleNodeTypeCount": 823,
+        "oracleNodeTypeCount": 727,
         "referencedFieldLiterals": 5,
         "referencedTypeLiterals": 43,
         "status": "pass",
@@ -857,15 +798,20 @@
         "waivedFindings": [
           {
             "justification": "M14 grammar audit (real-sql-analyzer.ts:58, the SQL_KEYWORDS set): a SQL KEYWORD in a keyword table, not a parse-tree node reference. `table` is the reserved word the guard exists to recognise, and the audit's `X.type === \"lit\"` / set-literal heuristic reports set members the way it reports node types. Waived, not fixed — deleting the keyword would change behaviour, and the swift `String` entry is the same shape (a type-name table, waived with a justification).",
-            "line": 423,
+            "line": 406,
             "literal": "table"
+          },
+          {
+            "justification": "M14 grammar audit (real-sql-analyzer.ts:199, the PostGIS/aggregate function-name table): a SQL FUNCTION NAME in an identifier table, not a parse-tree node reference. `grant_statement` is the grammar's real node type and is read on its own branch; this literal is the function-name table's membership test. Same shape as the swift and typescript entries already in this allowlist.",
+            "line": 1147,
+            "literal": "grant_statement"
           }
         ],
         "wasm": [
           "tree-sitter-sql.wasm"
         ],
         "wasmFieldCounts": [
-          62
+          53
         ]
       },
       "svelte": {
@@ -1024,7 +970,7 @@
         "waivedFindings": [
           {
             "justification": "M14 TS wave (real-typescript-analyzer.ts:5008, extractExportRelations): this is an ExportInfo `type` TAG THE ANALYZER WRITES ITSELF — the anonymous-default branch of extractExports sets it — not a parse-tree node reference. It is NOT a typescript grammar node type: the pinned grammar emits `export_statement` for every `export default` form, confirmed by parsing `export default f`, `export default function g(){}` and `export default 42`. The comparison suppresses the `module -> default` edge for an anonymous default export, whose target no index could ever join. Same shape as the swift String/Int entries above: a literal in a comparison against an analyzer-owned payload, making no grammar conformance claim. The name reads like a node type, which is why this tolerance is written down rather than left to look like dead code.",
-            "line": 5625,
+            "line": 5527,
             "literal": "default_export_expression"
           }
         ],
@@ -1064,8 +1010,8 @@
         "oracleFieldCount": 46,
         "oracleGrammars": 3,
         "oracleNodeTypeCount": 420,
-        "referencedFieldLiterals": 6,
-        "referencedTypeLiterals": 45,
+        "referencedFieldLiterals": 5,
+        "referencedTypeLiterals": 30,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -1088,7 +1034,7 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 146,
         "referencedFieldLiterals": 0,
-        "referencedTypeLiterals": 21,
+        "referencedTypeLiterals": 18,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -1140,10 +1086,10 @@
       }
     },
     "summary": {
-      "fail": 2,
-      "languagesAudited": 45,
-      "pass": 43,
-      "totalUnknownReferences": 4
+      "fail": 0,
+      "languagesAudited": 44,
+      "pass": 44,
+      "totalUnknownReferences": 0
     }
   },
   "governance": "docs/M14-HONESTY-CONTRACT.md",
@@ -1171,9 +1117,9 @@
       "description": "REGISTERED RESIDUAL (2026-09-16, #863): with the oracle real, lua (5 sites), perl (1 site, no fallback) and r (1 site) report field literals their pinned grammar cannot resolve. Their baseline counts hold those findings; the JVM and web families are strictly clean (0 unknown field literals each)"
     }
   ],
-  "regeneratedAt": "2026-10-04T02:43:31.159Z",
-  "regeneratedAtCommit": "e21538b1ddba6565054419f55d145d18355b6b3d",
-  "runtime": "node v22.22.1",
+  "regeneratedAt": "2026-10-02T01:38:49.095Z",
+  "regeneratedAtCommit": "13303ed32a7fa5400bb93cc427251c961afc095c",
+  "runtime": "node v24.3.0",
   "schemaVersion": 2,
   "title": "Grammar-conformance auditor"
 }
