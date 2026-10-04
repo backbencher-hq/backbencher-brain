@@ -17,7 +17,9 @@
 import { join } from "node:path"
 import { readFileSync, readdirSync } from "node:fs"
 
-const REPO = "$HOME/backbencher-brain"
+// Derived from this file's own location. Hardcoding the main checkout made this
+// script unreadable from a lane worktree.
+const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..")
 const REPOS = "$HOME/fixtures/repositories"
 const argOf = (k: string, d?: string): string | undefined => (process.argv.includes(k) ? process.argv[process.argv.indexOf(k) + 1] : d)
 const ONLY = argOf("--only")
