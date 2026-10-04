@@ -125,8 +125,8 @@ queryable. Before pass 1 **no** edge carried it, which reads as "no heuristics" 
 action edge and `recordDml` passed **no metadata at all**, so for `calls` the field was
 undefined on every edge in the corpus. Measured before the fix: **0 of 3,827 `calls` and 0 of
 the qualified `uses` edges carried the tier**, and 2,254 carry it now. The adversarial probe
-re-derives the expected tier independently of the analyzer's own table and reports
-**3,827 of 3,827 `calls` and 9,017 of 9,017 `uses` edges AGREE, 0 disagree**
+re-derives the expected tier independently of the analyzer's own table and reports, at this HEAD,
+**3,892 of 3,892 `calls` and 9,106 of 9,106 `uses` edges AGREE, 0 disagree**
 (`adversarial-probe.json`, `A3-tier-AGREES-with-the-metadata` / `A4-tier-AGREES-with-the-metadata`)
 — a probe that read the analyzer's own mapping could not have reported a disagreement.
 
@@ -255,7 +255,7 @@ under the table.
 | `contains` | yes | 11,977 | 11,976 of 11,977 member endpoints resolve by `ownerName`; **1 does not**, and it is named below | distinct from `references` (an FK/policy/index target, all in fixed keyword slots) | 99.99 % / 99.99 % | 1.0, all `structural` |
 | `uses` | yes | 9,106 | 19 of 19 CTE-named edges are AMBIGUOUS rather than fabricated (a qualified reference reaches the same bare leaf) or unrecoverable (below) | distinct from `calls`; tier agrees with metadata on every edge | 32.51 % / 88.95 % | 1.0; 7,276 `usage_contextual`, 1,830 `reference_qualified` |
 | `references` | yes | 5,996 | 84/84 facts | distinct from `uses`: every target follows `keyword_references`/`keyword_on` | 69.56 % / 98.27 % | 1.0, all `structural` |
-| `calls` | yes | 3,892 | 84/84 facts; **574 qualified invocations emitted** and **0 unexplained** — the residual is bucketed by cause rather than reported as a number | distinct from `uses`; tier agrees on every edge | 40.34 % / 78.75 % | 1.0; 3,417 `usage_contextual`, 475 `reference_qualified` |
+| `calls` | yes | 3,892 | 84/84 facts; **629 of 742** qualified invocations on the tree emitted, **53** guard-suppressed, **60** inside an error subtree, **0 unexplained** | distinct from `uses`; tier agrees on 3,892 of 3,892 edges | 40.34 % / 78.75 % | 1.0; 3,417 `usage_contextual`, 475 `reference_qualified` |
 | `imports` | yes | 52 | not in the 84-fact oracle; 0 unexplained by construction and the two mechanisms are separable in metadata | `psqlInclude` (22) vs `extensionInstall` (30) | 57.69 % / 57.69 % | 1.0, all `import_based` |
 | `overrides` | yes | 22 edges from **34 events** | the analyzer's own rule re-implemented on parse trees yields 34 events → 22 per-file edge keys, **exactly production's 22**; the probe's rule yields 15 and the 19-edge difference decomposes to 12 multiplicity + 7 visit order, exact | `orReplace: true` + both line numbers on every edge | 100 % / 100 % | 1.0, all `structural` |
 | `instantiates` | yes | 21 | 17 of the construction-shaped casts sit OUTSIDE any query node and **all 17 are emitted**, so the type is not query-only | `construction: true` + the constructor node type; conversions carry no edge | 52.38 % / 90.48 % | 1.0, all `structural` |
@@ -275,17 +275,30 @@ the number is reported as an open item rather than as a characterised class." A 
 cause is a to-do. `pass3-invocation-why.mts` assigns each miss a cause by asking the TREE what
 shape it is in, over 1,955 files:
 
-| Bucket | Pass 2 | Pass 3 | What it is |
-| --- | --- | --- | --- |
-| qualified invocations on the tree | 742 | 742 | the denominator |
-| emitted as a `calls` edge | 449 | **579** | the fix |
-| suppressed by the keyword/builtin guard | 53 | 53 | a guard working as designed |
-| inside an error subtree | 224 | **107** | a grammar bound, not a lane defect: the names in a swallowed WITH list never become nodes |
-| inside a `plpgsql_block` / `function_body` | 2 | **5** | ditto |
-| reachable shape, still not emitted | **196 (unsplit)** | **0** | the candidate defects, and the reason pass 2's number was a to-do |
+| Bucket | Pass 2 | Pass 3 | Pass 5 (this HEAD) | What it is |
+| --- | --- | --- | --- | --- |
+| qualified invocations on the tree | 742 | 742 | **742** | the denominator, unchanged across three passes |
+| emitted as a `calls` edge | 449 | 579 | **629** | the two dispatch fixes, still in |
+| suppressed by the keyword/builtin guard | 53 | 53 | **53** | a guard working as designed |
+| inside an error subtree | 224 | 107 | **60** | a grammar bound, not a lane defect: the names in a swallowed WITH list never become nodes |
+| inside a `plpgsql_block` / `function_body` | 2 | 5 | **0** | absorbed into the row above — the probe's own chains read `…>plpgsql_assignment>function_body>create_function`, i.e. an error *above* the plpgsql body, so it is one class and splitting it was double-counting |
+| reachable shape, still not emitted | **196 (unsplit)** | **0** | **0** | the candidate defects, and the reason pass 2's number was a to-do |
 
-Two dispatch gaps accounted for 14 of the reachable bucket, and both are the failure mode this
-workstream exists on: a branch that reads as constructible and never runs. See *PASS 3*.
+629 + 53 + 60 = 742, so the decomposition is closed at pass 5 as well as at pass 3. Two dispatch
+gaps accounted for 14 of pass 2's reachable bucket, and both are the failure mode this workstream
+exists on: a branch that reads as constructible and never runs. See *PASS 3*.
+
+**The lane's two probes ask this question with DIFFERENT POPULATIONS, and the difference is a
+filter rather than a disagreement.** `pass3-invocation-why.mts` counts every `invocation` with a
+two-part callee and then buckets the misses by cause, so it reports 742 / 629 / 53 / 60.
+`adversarial-probe.mts` A3 skips any invocation whose own subtree carries an error
+(`if (n.type !== "invocation" || n.hasError) return`), so those nodes are outside its population
+entirely and it reports **696 = 628 + 16 + 52**. 742 − 696 = **46**, which is the filter. The two
+probes also disagree by **1** on the emitted bucket and **1** on the guard bucket — 2 of 742,
+0.27 % — and I did not settle why; the candidates are A3's global quote-strip on the leaf against
+this probe's leading/trailing-only `unquote`, and `Set`-membership on a leaf shared by two
+invocations in one file. It is reported rather than chosen between, because either probe's number
+alone would have read as the whole population.
 
 ### `overrides` reconciled, and a pass-1 explanation OVERTURNED
 
@@ -1043,9 +1056,9 @@ is part of the row.
 | ontology census (`validation/m14/fixtures/sql/ontology-census.mts`, 8 shards + merge) | **1,955 of 1,955 admitted parsed, 0 parse failures, 0 degraded by timeout, 0 in regex fallback, 0 empty names, 0 `unknown` endpoints, 31,066 relationships / 18,482 symbols** | nothing is unmeasured and nothing is degraded, so there is no `filesWithNoShardRow` to name; the same figure comes out of a 4-shard walk (`pass4-census-4shard.json`) |
 | **two independent walks, different partitioning, same HEAD** | **8 strided shards and 4 contiguous shards each measure 1,955 / 1,955 files, 18,482 symbols and 31,066 relationships, with identical per-type totals, resolution rates and `evidenceClass` splits** | this is the row pass 2 could not fill and pass 3 could not either; it is why the census is sharded and merged from shard rows. `measurements/pass4-census.json` and `measurements/pass4-census-4shard.json` |
 | incoming probe (`validation/m14/fixtures/sql/pass3-incoming.mts`) | re-run at this HEAD over 1,955 files: 31,066 edges, 0 parse failures, 0 degraded. `contains` resolves **99.54 %** intra-file by (name, `ownerName`), **99.61 %** with `metadata.memberKind`, against **92.71 %** on the bare name corpus-wide, and **45.62 %** on (name, `ownerName`) corpus-wide | reads only fields that SURVIVE production `parseFile` — see DEFECT 1's note on the metadata whitelist. Artifact `measurements/pass5-incoming-corpus.json` |
-| invocation-cause probe (`pass3-invocation-why.mts`) | 742 qualified invocations on the tree → 579 emitted, 53 guard-suppressed, 112 bucketed by cause, **0 unexplained** | pass 2's open item; it also discloses its own degradation after two runs disagreed |
+| invocation-cause probe (`pass3-invocation-why.mts`) | re-run at this HEAD: **742 qualified invocations on the tree → 629 emitted, 53 guard-suppressed, 60 inside an error subtree, 0 unexplained**; 629 + 53 + 60 = 742, so the decomposition is closed. 0 files degraded | closes pass 2's open item. Its population is LARGER than the adversarial probe's A3 by 46, because A3 excludes error-bearing invocations from its population — see the cross-probe note under *`calls` residual* |
 | phantom-constraint probe (`pass3-phantom-constraint.mts`) | **53 phantoms in 22 files → 0**, same oracle both sides, which also clears 4 legitimate same-name indexes | a parse-tree oracle, because the name heuristic cannot decide it |
-| adversarial probe (`validation/m14/fixtures/sql/adversarial-probe.mts`) | full corpus, 23 probe populations; **574 qualified invocations emitted**, 0 tier disagreements; A12's 6 verdicts now read off node types and fields | the run disclosed 1 engine-timeout and 6 regex-fallback files, and the A12 battery's instrument is stated above |
+| adversarial probe (`validation/m14/fixtures/sql/adversarial-probe.mts`) | re-run at this HEAD over all 1,955 files, 23 probe populations: **628 qualified invocations emitted**, 52 guard-suppressed, 16 unexplained by this probe's population, **3,892 of 3,892** `calls` tiers and **9,106 of 9,106** `uses` tiers AGREE, A12's 6 verdicts read off node types and fields | **0 files degraded at this HEAD**, against 1 engine-timeout and 6 regex-fallback files at pass 3 — the pass-4 optimization is what removed them. The 16 is not a defect: see the cross-probe note under *`calls` residual* |
 | `overrides` reconciliation (`validation/m14/fixtures/sql/overrides-reconciliation.mts`) | **34 events → 22 per-file edge keys = production's 22 exactly**; the probe's rule reproduces its committed **15**, and the 19-edge difference is **12 multiplicity + 7 visit order = 19, exact**. The probe's 48-char text read of `OR REPLACE` and the analyzer's `keyword_replace` node read disagree on **0 of 4,645 declarations** | closes limitation 14. Its own first version joined pass 2 to pass 1 on line number and produced visit indices of 48 and 216 for a group of two declarations; the fix keys on `startIndex` and that failure is recorded in its header |
 | construct probe (`validation/m14/fixtures/sql/construct-probe.mts`) | **480 distinct node types**, 0 parse failures, **every zero probe 0**, and no node type anywhere contains `export`/`module`/`provide` | `exports-keyword` was 1 and is now 0: the 1 was a COLUMN named `module`, and the old probe counted declaration names |
 | ruling table (`validation/m14/fixtures/sql/run-ruling-table.mts`) | **`emitted 7/10   ruled-sound 3   FALSIFIED 0   ruled-without-justification 0`** | the arbiter on disk is untouched; the copy is written under `node_modules/` and removed. The script's patch anchor was **stale** and exited 2 until pass 3 re-anchored it on the declaration rather than the literal |
@@ -1389,12 +1402,13 @@ above can be used for.
     Pass 2 measured the fixable half: **22 of 22** psql targets exist on disk once joined.
 11. **`contains` cannot be verified from ranges in SQL, so it cannot be tested the way the CSS
     lane tested it.** Symbol ranges are NAME-ANCHORED — a `CREATE TABLE`'s range is its
-    identifier's span — so 11,252 of 11,786 containment edges (95.5 %) have a member whose span
-    lies outside the owner's. That is a property of the symbol model, not a defect in the edges,
+    identifier's span — so **11,392 of 11,977** containment edges (**95.1 %**, 380 files) have a
+    member whose span lies outside the owner's. That is a property of the symbol model, not a defect in the edges,
     and it means the CSS lane's defect class ("containment edges pointing at a symbol that does
     not contain the member") is untestable by range here: `parseFile` returns no `range` object
     and a `contains` edge carries no line number. `ownerName` is the only ground truth, and
-    11,785 of 11,786 members now agree with their edge on it.
+    **11,976 of 11,977** members agree with their edge on it; the 1 that does not is named in
+    `pass5-adversarial-probe.json` under `A10-contains-target-has-no-symbol-in-this-file`.
 12. **A CTE inside an ERROR-recovery span cannot be scoped.** 91 `uses` edges across 56 files
     come from inside a CTE whose own subtree carries an ERROR; when recovery swallows a WITH
     list the names in it never become `cte` nodes, so the scope set is complete and still wrong.
@@ -1402,12 +1416,14 @@ above can be used for.
     suppresses true table edges for every file with an unrelated unparseable expression in a CTE.
     It needs a grammar change, not a guard, and it is why `uses` still carries 19 edges naming a
     CTE with no qualified reach.
-13. **107 qualified invocations are inside an error subtree and 5 inside a plpgsql body, and
-    pass 3 did not fix them because they are not lane defects.** Pass 2's version of this item
-    said "196, reason not settled"; the reason is now settled and the residual is smaller: 112 are
-    a property of the TREE — when error recovery swallows an expression, the callee never becomes
-    an `invocation` node at all — and **0 remain unexplained**. Reaching the 112 needs a grammar
-    change, not a guard.
+13. **60 qualified invocations are inside an error subtree, and they are not lane defects.** Pass
+    2's version of this item said "196, reason not settled"; the reason is settled and the residual
+    has fallen at every pass — 196 unsplit, then 107 + 5, now **60 in one bucket** — because the two
+    dispatch gaps closed and because the plpgsql body cases turned out to be the same class (their
+    ancestor chain carries an error above the body, so pass 3's separate bucket was double-counting
+    one population). They are a property of the TREE: when error recovery swallows an expression the
+    callee never becomes an `invocation` node at all. **0 remain unexplained.** Reaching the 60 needs
+    a grammar change, not a guard.
 14. **`overrides` is the one emitted type whose edge count is not its event count, and the
     difference is in the graph's identity key rather than in the analyzer.** 34 replacement events
     become 22 edges because `addRelationship` keys on `(type, source, target)` and the source is
@@ -1491,6 +1507,8 @@ artifacts are under `validation/m14/fixtures/sql/measurements/`:
 | `pass5-incoming-corpus.json` | `validation/m14/fixtures/sql/pass3-incoming.mts` | the incoming direction re-measured at this HEAD: ambiguity, `contains` resolution under four match rules, the trigger/function collision, keyword-named symbols, orphan declarations |
 | `pass5-keep-symbol-census.json` | `validation/m14/fixtures/sql/keep-symbol-census.mts` | 18,485 emitted − 3 refused = 18,482 published, the reconciliation that closes limitation 19 |
 | `pass5-overrides-reconciliation.json` | `validation/m14/fixtures/sql/overrides-reconciliation.mts` | both `overrides` rules re-implemented and the difference decomposed with an exactness check, plus the per-file edge-identity collapse that turns 34 events into 22 edges |
+| `pass5-adversarial-probe.json` | `validation/m14/fixtures/sql/adversarial-probe.mts` | the six questions' adversarial half re-measured at this HEAD over all 1,955 files with **0 degraded**, and the A12 capability battery's 6 verdicts |
+| `pass5-invocation-why.json` | `validation/m14/fixtures/sql/pass3-invocation-why.mts` | the cause breakdown for every qualified invocation carrying no `calls` edge, closed at 742 = 629 + 53 + 60 with **0 unexplained** |
 | `pass3-incoming-corpus.json`, `pass3-incoming-boundary.json` | `validation/m14/fixtures/sql/pass3-incoming.mts` | the incoming direction: ambiguity per type, `contains` resolution under three match rules, the trigger/function collision, keyword-named symbols, orphan declarations |
 | `pass3-invocation-why.json`, `pass3-invocation-why-after.json` | `validation/m14/fixtures/sql/pass3-invocation-why.mts` | the cause breakdown for every qualified invocation that carries no `calls` edge, and the 0 that remain unexplained |
 | `pass3-phantom-constraint-before.json`, `pass3-phantom-constraint-after.json` | `validation/m14/fixtures/sql/pass3-phantom-constraint.mts` | 53 fabricated declarations → 0, by the same parse-tree oracle on both sides |
