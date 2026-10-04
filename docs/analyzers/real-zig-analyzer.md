@@ -4746,9 +4746,29 @@ declared node-type table — and the 8× replication in §D.
   builtin-fn; `references` shares the same 6,621 paths plus 531 external. A path is not a symbol,
   and the decision about whether a cross-file path should resolve to a declaration is §8 item 12,
   not a lane decision.
-- **`exports` has a 0.00% published SOURCE rate** — every one of its 24,114 edges has a scope marker
-  for a source, by design, which is why its corpus-tier resolution is 100% while a reverse walk has
-  no published symbol to arrive at. Closing that needs the incoming schema work Laptop C owns.
+- **110,271 of 395,805 edges (27.86%) carry a SCOPE MARKER as their source, not a published
+  symbol** — so a reverse walk cannot arrive at them through any declaration. The rate is not
+  uniform and the shape is per-type, not incidental:
+
+  | type | marker source | of | % |
+  |---|---|---|---|
+  | `exports` | 24,114 | 24,114 | **100.00%** |
+  | `imports` | 10,200 | 10,200 | **100.00%** |
+  | `references` | 30,794 | 30,794 | **100.00%** |
+  | `instantiates` | 2,370 | 4,306 | 55.04% |
+  | `uses` | 29,714 | 132,201 | 22.48% |
+  | `calls` | 13,079 | 113,476 | 11.53% |
+  | `contains` | 0 | 80,714 | 0.00% |
+  | **total** | **110,271** | **395,805** | **27.86%** |
+
+  For the three file-scoped types this is a deliberate choice, not a defect: an import, an export
+  and a `references` edge are statements about the FILE, and the file is not a symbol this project
+  publishes. The cost is that their 100%/100%/100% corpus-tier *target* resolution is not
+  reachable by `bb_impact`, which walks published symbols. That is the same finding as
+  deliverable C's "external vs never indexed", read from the other end: the target side of these
+  three types is dominated by **paths** (6,621 of `imports`' 6,752 unresolved targets, 98.06%), so
+  both endpoints of a file-scoped zig edge are outside the symbol graph by construction. Closing it
+  needs the incoming schema work Laptop C owns; nothing in `real-zig-analyzer.ts` can.
 - **The BB-PARSE-ERR → BB-HANG pairing is n=9 and still has no per-file mechanism.** `trap-second-parse.ts`
   measured 0 of 2 files trapping twice when parsed sequentially, and the guard is per `parse()`
   call, so there is no poisoned-instance explanation to point at. Both halves are recorded (pass 15
