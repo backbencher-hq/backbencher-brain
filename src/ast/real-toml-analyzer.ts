@@ -141,6 +141,26 @@ function unquoteKey(text: string): string {
  * then unwinds. Recursion is bounded by the key's segment count, and a key with
  * 10,000 segments would be a file no tool can read — but the walk is iterative
  * anyway, so a pathological key cannot overflow the stack.
+ *
+ * **An EMPTY SEGMENT IS A SEGMENT.** A `quoted_key` of `""` is a real TOML key
+ * — the empty name — and `joinPath` spells it back as `""`, so it round-trips.
+ * This used to end in `.filter((s) => s.length > 0)`, which deleted it, and the
+ * deletion was not neutral: inside a table the caller's path is built as
+ * `${name}.${joinPath(...)}`, so `[tool.setuptools.package-dir]` followed by
+ * `"" = "src/python/grpcio"` produced the published symbol name
+ * `tool.setuptools.package-dir.` — a trailing dot, which is not a spelling TOML
+ * can parse back. Measured on the corpus, not reasoned about:
+ * `pb-grpc/pyproject.toml:53` is the one occurrence in 1,140 files, and the
+ * lane's own differential oracle already had it right (`spell("")` returns
+ * `""` and its `segmentsOf` does not filter), so the two disagreed by exactly
+ * one edge on exactly one file — a file neither of the lane's two differential
+ * corpora contains.
+ *
+ * The DOCUMENTED OMISSION is unchanged and is now applied at both levels by
+ * `namesSomething`: a key that is `""` and nothing else produces no symbol,
+ * because an identity needs a name. That is the lane's stated decision and
+ * `toml/malformed-and-rejected` pins it at the document root; what changed is
+ * that the in-table path now obeys the same rule instead of disagreeing with it.
  */
 function segmentsOf(node: Node): string[] {
   // Collect the dotted_key chain from the root down.
@@ -165,7 +185,20 @@ function segmentsOf(node: Node): string[] {
       for (const seg of segmentsOf(rest)) out.push(seg)
     }
   }
-  return out.filter((s) => s.length > 0)
+  return out
+}
+
+/**
+ * Does this key NAME something? A key of `""` — and only `""` — does not, and
+ * produces no symbol, which is the lane's recorded decision rather than an
+ * oversight. It is asked of every key at every level so that the document root
+ * and a table cannot disagree about the same rule: before this, the root asked
+ * `segments.length === 0` (which an empty segment satisfies by accident) and a
+ * table asked nothing at all.
+ */
+function namesSomething(segments: string[]): boolean {
+  for (const s of segments) if (s.length > 0) return true
+  return false
 }
 
 /**
@@ -231,9 +264,31 @@ function spellSegment(seg: string): string {
 /** The value node of a `pair`, or null when the pair has none. */
 function valueOf(pair: Node): Node | null {
   const kids = (pair.namedChildren ?? []) as Node[]
-  // The KEY is first; the VALUE is whatever follows it. A pair with no value is a
-  // parse artefact, not a TOML document.
-  return kids.length > 1 ? kids[kids.length - 1] : null
+  // The KEY is first and the VALUE follows it — but a TRAILING COMMENT also follows
+  // it, and a comment is a named child:
+  //
+  //     detekt = "1.23.8"   # When upgrading, also upgrade in detekt.yml ...
+  //     pair > bare_key, string, comment
+  //
+  // So "the last named child" returned the COMMENT, not the value. That misreported
+  // `valueType` as "comment" for a commented string, made every such key invisible to
+  // scalar detection, and — worse — meant a key with an INLINE TABLE plus a trailing
+  // comment was never recognised as an inline table, so its nested keys were dropped
+  // from `inlineKeys` entirely.
+  //
+  // Found while implementing alias references: 3 of 82 `version.ref` aliases in
+  // Exposed/gradle/libs.versions.toml silently failed to resolve because the version
+  // key they name carried a trailing comment.
+  //
+  // Scanned backwards for the last child that is not a comment, which keeps the
+  // original behaviour for every pair without a trailing comment.
+  for (let i = kids.length - 1; i >= 1; i--) {
+    const k = kids[i]
+    if (k.type === "comment") continue
+    return k
+  }
+  // Only a key, or a key and comments: a parse artefact, not a TOML document.
+  return null
 }
 
 /** The key node of a `pair` — first child, which is always a key type. */
@@ -252,6 +307,90 @@ function headerKeyOf(node: Node): Node | null {
 }
 
 /** A stable, human-meaningful `resourceType`-style label for a value node. */
+/**
+ * The string a TOML `string` node holds, or null if it is not a plain string.
+ *
+ * Single-quoted ('literal') and double-quoted ("basic") forms are both returned with
+ * their quotes stripped. No escape processing is done for the basic form, which is
+ * deliberate and is the conservative choice: an alias containing an escape sequence
+ * will simply fail to resolve and produce NO edge, rather than resolving to a
+ * half-decoded name. An edge to a name that does not exist is worse than a missing
+ * edge, because it cannot be distinguished from a real reference by a reader.
+ */
+/**
+ * Is this value node a SCALAR (not a table, array, or inline table)?
+ *
+ * Deliberately NOT `valueKind() !== "..."`. `valueKind` classifies the whole PAIR, so a
+ * key whose value is a string with a TRAILING COMMENT comes back as "comment":
+ *
+ *     detekt = "1.23.8"   # When upgrading, also upgrade in detekt.yml ...
+ *     -> versions.detekt  valueType "comment"
+ *
+ * Relying on that made alias resolution drop every version-scoped key that happens to
+ * carry a comment, which silently cost 3 edges in the corpus — and it would have done
+ * the same to any commented key in any file. The value node is the authority on what
+ * the VALUE is; a comment is not part of it.
+ *
+ * (That `valueType: "comment"` for a commented string is itself questionable, but it is
+ * the analyzer's published contract and changing it would shift counts across the lane,
+ * so it is recorded rather than altered here. See the state doc.)
+ */
+function isScalarValueNode(node: Node | null): boolean {
+  if (!node) return false
+  return (
+    node.type === "string" ||
+    node.type === "integer" ||
+    node.type === "float" ||
+    node.type === "boolean"
+  )
+}
+
+function stringValueOf(node: Node | null): string | null {
+  if (!node || node.type !== "string") return null
+  const text = (node.text ?? "").trim()
+  if (text.length < 2) return null
+  const q = text[0]
+  if (q !== "'" && q !== '"') return null
+  if (text[text.length - 1] !== q) return null
+  return text.slice(1, -1)
+}
+
+/**
+ * The `*.ref` aliases an INLINE TABLE declares, as `{ keyPath, alias }`.
+ *
+ * The construct is Gradle's version catalogue:
+ *
+ *     [versions]
+ *     groovy = "4.0.26"
+ *     groovy-bom = { module = 'org.apache.groovy:groovy-bom', version.ref = 'groovy' }
+ *
+ * `version.ref = 'groovy'` names a key of the SAME DOCUMENT, which is the only thing
+ * that makes it a reference rather than a string. Only a key whose LAST segment is
+ * `ref` qualifies — that is what makes it an alias of a sibling declaration rather
+ * than an arbitrary nested field, and it is why `module` and `group` are ignored.
+ *
+ * The alias is looked up by FINAL SEGMENT, because the alias lives in `[versions]`
+ * while the referencing key sits at the document root, so the two are never in the
+ * same table scope. Matching on the last segment is the documented resolution and is
+ * what the lane's corpus measurement used (167 occurrences in 5 files, all 167
+ * resolving).
+ */
+function inlineRefAliases(inlineTable: Node): { keyPath: string; alias: string }[] {
+  const out: { keyPath: string; alias: string }[] = []
+  for (const child of (inlineTable.namedChildren ?? []) as Node[]) {
+    if (child.type !== "pair") continue
+    const ck = keyOf(child)
+    if (!ck) continue
+    const segs = segmentsOf(ck)
+    if (segs.length === 0) continue
+    if (segs[segs.length - 1] !== "ref") continue
+    const alias = stringValueOf(valueOf(child))
+    if (!alias) continue
+    out.push({ keyPath: joinPath(segs), alias })
+  }
+  return out
+}
+
 function valueKind(node: Node | null): string {
   if (!node) return "none"
   switch (node.type) {
@@ -392,6 +531,9 @@ export class RealTomlAnalyzer implements ASTEngine.LanguageAnalyzer {
     let arrayOfTablesCount = 0
     let inlineTableCount = 0
     let maxDepth = 0
+    /** Sections emitted by the single walk, so the second pass can re-own them. */
+    const sectionRecords: { segments: string[]; owner: string; symbolIndex: number; relIndex: number }[] = []
+    let reOwnedSections = 0
 
     /**
      * The nearest DECLARED ancestor of `segments`, which is the owner a table
@@ -442,6 +584,14 @@ export class RealTomlAnalyzer implements ASTEngine.LanguageAnalyzer {
      * which is what makes the file's names unique without a synthetic suffix on
      * every collision.
      */
+    /**
+     * Declared scalar keys, keyed by their FINAL segment, for alias resolution.
+     * A `references` edge is only emitted where the alias is unambiguous.
+     */
+    const declaredByFinalSegment = new Map<string, string>()
+    const ambiguousFinalSegments = new Set<string>()
+    const pendingAliases: { source: string; keyPath: string; alias: string; line: number }[] = []
+
     const emitKey = (pair: Node, path: string, owner: string): void => {
       const keyNode = keyOf(pair)
       if (!keyNode) return
@@ -486,6 +636,32 @@ export class RealTomlAnalyzer implements ASTEngine.LanguageAnalyzer {
         },
       })
       keyCount++
+
+      // Record the key for alias resolution. Only SCALAR keys are recorded: a table
+      // named `groovy` is a namespace, not the version string that `version.ref`
+      // names, and pointing a reference edge at a namespace would resolve to
+      // something that exists but means something else.
+      if (isScalarValueNode(value)) {
+        const segs = segmentsOf(keyNode)
+        if (segs.length > 0) {
+          const finalSeg = segs[segs.length - 1]
+          // First declaration wins, and that choice is recorded rather than being
+          // last-wins silently: a document that declares the same final segment twice
+          // in different tables has no single right answer, and picking one without
+          // saying so is how an edge ends up pointing at an arbitrary declaration.
+          if (!declaredByFinalSegment.has(finalSeg)) {
+            declaredByFinalSegment.set(finalSeg, name)
+          } else {
+            ambiguousFinalSegments.add(finalSeg)
+          }
+        }
+      }
+
+      if (value && value.type === "inline_table") {
+        for (const { keyPath, alias } of inlineRefAliases(value)) {
+          pendingAliases.push({ source: name, keyPath, alias, line })
+        }
+      }
     }
 
     // The document's children are its sections and its implicit-root keys. TOML
@@ -496,7 +672,7 @@ export class RealTomlAnalyzer implements ASTEngine.LanguageAnalyzer {
         const header = headerKeyOf(node)
         if (!header) continue
         const segments = segmentsOf(header)
-        if (segments.length === 0) continue
+        if (!namesSomething(segments)) continue
         const path = joinPath(segments)
         const { owner, implied } = resolveOwner(segments)
         const isArray = node.type === "table_array_element"
@@ -508,6 +684,12 @@ export class RealTomlAnalyzer implements ASTEngine.LanguageAnalyzer {
         declaredTables[path] = name
         tableCount++
         if (segments.length > maxDepth) maxDepth = segments.length
+        // Captured BEFORE either push, because the indices have to address the
+        // symbol and the edge this header is about to produce. Reading
+        // `symbols.length` afterwards addresses the NEXT one, which is how the
+        // first version of this pass moved the wrong symbols and still typechecked.
+        const symbolIndex = symbols.length
+        const relIndex = relationships.length
         symbols.push({
           name,
           kind: ASTEngine.SymbolKind.Namespace,
@@ -544,23 +726,124 @@ export class RealTomlAnalyzer implements ASTEngine.LanguageAnalyzer {
           },
         })
         // The section's own key/value pairs. Comments and nested values are not
-        // descended into — see the inline-table ruling.
+        // descended into — see the inline-table ruling. `namesSomething` is asked
+        // here as well as at the document root, so a `"" = 1` inside a table is
+        // omitted by the SAME rule that omits one at the root; before this the
+        // root asked and the table did not, and the disagreement published a
+        // symbol whose name ended in a bare `.`.
+        sectionRecords.push({ segments, owner, symbolIndex, relIndex })
         for (const child of (node.namedChildren ?? []) as Node[]) {
           if (child.type !== "pair") continue
           const ck = keyOf(child)
           if (!ck) continue
-          emitKey(child, `${name}.${joinPath(segmentsOf(ck))}`, name)
+          const segs = segmentsOf(ck)
+          if (!namesSomething(segs)) continue
+          emitKey(child, `${name}.${joinPath(segs)}`, name)
         }
       } else if (node.type === "pair") {
         // A key before any header belongs to the implicit root table.
         const ck = keyOf(node)
         if (!ck) continue
         const segs = segmentsOf(ck)
-        if (segs.length === 0) continue
+        if (!namesSomething(segs)) continue
         emitKey(node, joinPath(segs), moduleName)
         if (segs.length > maxDepth) maxDepth = segs.length
       }
     }
+
+    // ---- SECOND PASS: TOML's declaration order is not significant ----------
+    //
+    // `[a.b]` written ABOVE `[a]` is valid TOML, and `a.b` is inside `a`. The
+    // walk above resolves an owner from a document-order map, so such a section
+    // is filed under the MODULE and its `contains` edge points at the file
+    // instead of at the table that contains it. That is a containment edge with
+    // the wrong source, which is the same defect class the lane's `resolveOwner`
+    // comment already records for quoted segments ("the emit path does quote — so
+    // only the CONTAINMENT was wrong").
+    //
+    // Measured: 1 occurrence in 1,140 files, `ansible/pyproject.toml`, where
+    // `[tool.setuptools.dynamic]` is on line 45 and `[tool.setuptools]` on line
+    // 49. One is still one, and it is the ONLY shape in the corpus where the
+    // walk's order assumption is contradicted by the language, which is why it is
+    // fixed rather than recorded.
+    //
+    // The fix is a re-own pass over the sections already emitted, using the
+    // WHOLE declared-table map. It cannot loop: an owner is always a strict
+    // PREFIX of the section's own path, so the containment it writes is acyclic by
+    // construction, and a section's own keys are unaffected because they hang off
+    // its allocated name rather than off its owner.
+    //
+    // The lane's differential oracle builds its `declared` map in document order
+    // too, so it will disagree on exactly this file until
+    // `deriveTomlEdges` in `script/m14/differential.ts` (supervisor-owned) gains
+    // the same second pass. Neither of the lane's two differential corpora
+    // contains a file with the shape, so the toml differential draw is unchanged;
+    // the whole-pool draw is where the disagreement would appear.
+    for (const rec of sectionRecords) {
+      const { owner, implied } = resolveOwner(rec.segments)
+      if (owner === rec.owner) continue
+      const symbol = symbols[rec.symbolIndex] as { ownerName?: string; ownerKind?: unknown; metadata?: Record<string, unknown> }
+      symbol.ownerName = owner
+      symbol.ownerKind = owner === moduleName ? ASTEngine.SymbolKind.Module : ASTEngine.SymbolKind.Namespace
+      const meta = symbol.metadata ?? (symbol.metadata = {})
+      meta.isDocumentRoot = owner === moduleName
+      // The implied-parent record was computed against the incomplete map, so it
+      // is recomputed rather than patched: with the full map a prefix the file
+      // declares LATER is declared, and calling it implied would be the same
+      // order-dependence one pass later.
+      if (implied.length > 0) meta.impliedParents = implied
+      else delete meta.impliedParents
+      const rel = relationships[rec.relIndex] as { source: string; metadata?: Record<string, unknown> }
+      rel.source = owner
+      const relMeta = rel.metadata ?? (rel.metadata = {})
+      if (implied.length > 0) relMeta.hasImpliedParents = true
+      else delete relMeta.hasImpliedParents
+      reOwnedSections++
+    }
+
+    // ---- `references`: alias edges, emitted AFTER the document is walked -------
+    //
+    // Order matters and is the whole reason this is here rather than inside emitKey:
+    // an alias may name a key declared LATER in the file, so resolving during the walk
+    // would miss every forward reference. `groovy-bom` on line 40 of
+    // `geb/gradle/libs.versions.toml` names `groovy`, declared on line 18 — fine — but
+    // the reverse order occurs too and would silently produce nothing.
+    //
+    // An alias whose final segment is AMBIGUOUS (declared more than once in different
+    // tables) emits NO edge and is counted, because picking one declaration would be a
+    // guess. A reference to an arbitrary one of two candidates cannot be
+    // distinguished from a correct one by anything downstream.
+    let aliasEdges = 0
+    let aliasUnresolved = 0
+    let aliasAmbiguous = 0
+    for (const { source, keyPath, alias, line } of pendingAliases) {
+      const target = declaredByFinalSegment.get(alias)
+      if (ambiguousFinalSegments.has(alias)) {
+        aliasAmbiguous++
+        continue
+      }
+      if (!target) {
+        aliasUnresolved++
+        continue
+      }
+      aliasEdges++
+      relationships.push({
+        source: `${source}.${keyPath}`,
+        target,
+        type: ASTEngine.RelationshipType.References,
+        confidence: 1.0,
+        line_number: line,
+        metadata: {
+          tomlSpecific: true,
+          isAliasReference: true,
+          resolvedBy: "final-segment",
+          evidenceClass: "structural",
+        },
+      })
+    }
+    if (aliasEdges > 0) patterns.push(`alias-refs x${aliasEdges}`)
+    if (aliasUnresolved > 0) patterns.push(`alias-unresolved x${aliasUnresolved}`)
+    if (aliasAmbiguous > 0) patterns.push(`alias-ambiguous x${aliasAmbiguous}`)
 
     // Structural observations, published as `patterns` so a consumer can see the
     // document's SHAPE without re-parsing it. None of these is a defect claim.
@@ -598,6 +881,11 @@ export class RealTomlAnalyzer implements ASTEngine.LanguageAnalyzer {
           arrayOfTablesCount,
           inlineTableCount,
           maxKeyPathDepth: maxDepth,
+          // How many sections the second pass moved. Zero on every file whose
+          // headers declare their ancestors first, which is the overwhelming
+          // majority; a non-zero value names the count of sections in this file
+          // whose `contains` source was corrected.
+          reOwnedSections,
         },
       },
     }
