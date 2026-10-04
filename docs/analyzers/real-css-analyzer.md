@@ -653,7 +653,7 @@ implemented without re-deriving it.
 
 CSS is not Turing-complete, but a blank list would still be a false claim for this lane.
 
-1. **`overrides` is a thin census.** 48 edges in 7 files of 1,131 (0.62% of files), and
+1. **`overrides` is a thin census.** 48 edges in 7 files of 1,180 (0.59% of files), and
    44 of the 48 come from ONE construct in SIX files — Bulma's minified bundles. The
    construct is spec-defined and the implementation is exercised by two fixtures and eight
    mutants, but the corpus cannot say whether the rule is right about shapes it has never
