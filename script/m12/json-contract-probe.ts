@@ -53,14 +53,26 @@ check("top-level property is owned by the module", syms(basic).find((s: any) => 
     noLine.length === 0,
     `${noLine.length} of ${cs.length} have none` + (noLine.length ? ` e.g. ${noLine[0].source} -> ${noLine[0].target}` : ""),
   )
-  check("nested object is contained by its parent", // The source is the parent SYMBOL's name (`nested`), NOT its qualified path
-  // (`Basic.nested`). This expectation was written from the analyzer's output
-  // rather than from the contract, so it encoded the bug it was meant to catch —
-  // which is the same failure this probe exists to prevent, one level down.
-  rels(basic).some((x: any) => String(x.type).toLowerCase() === "contains" && String(x.source) === "nested" && String(x.target) === "inner"))
-  check("array-valued key is contained", has(basic, "contains", "Basic", "list"))
-  check("scalar-valued key is contained", has(basic, "contains", "Basic", "count"))
-  check("null-valued key is contained", has(basic, "contains", "Basic", "nothing"))
+  // ENDPOINTS ARE QUALIFIED PATHS, and these four expectations were re-derived from the
+  // contract rather than from the output — which is the only honest reason to change a pin.
+  //
+  // They previously asserted BARE names (`nested -> inner`, `Basic -> list`). A bare JSON key
+  // is ambiguous by construction: the same document repeats `name`, `type`, `items` and
+  // `properties` in every object, and the shared resolver declines a non-unique bare name, so
+  // an ambiguous endpoint does not degrade to a wrong answer — it degrades to NO answer.
+  // Measured on a 202-file, 99-repo sample: 32,660 of 66,032 `contains` targets (49.4%) matched
+  // more than one published symbol and 1,119 edges were self-loops because the source and the
+  // target were the same bare string. After the change: 6 ambiguous targets (0.009%) and 0
+  // self-loops. The path is the symbol's `qualifiedName`, which the resolver matches exactly.
+  check("nested object is contained by its parent", // the SOURCE is the OWNER's qualified path
+  // (`Basic.nested`) and the TARGET is the child's (`Basic.nested.inner`). The first version
+  // of this pin asserted `nested -> inner` and had been written from the analyzer's output
+  // rather than from the contract, so it encoded the defect it was meant to catch — the same
+  // failure this probe exists to prevent, one level down.
+  rels(basic).some((x: any) => String(x.type).toLowerCase() === "contains" && String(x.source) === "Basic.nested" && String(x.target) === "Basic.nested.inner"))
+  check("array-valued key is contained", has(basic, "contains", "Basic", "Basic.list"))
+  check("scalar-valued key is contained", has(basic, "contains", "Basic", "Basic.count"))
+  check("null-valued key is contained", has(basic, "contains", "Basic", "Basic.nothing"))
 }
 
 // --- every relationship, not just contains ----------------------------------------
@@ -68,12 +80,17 @@ check("top-level property is owned by the module", syms(basic).find((s: any) => 
   const all = rels(basic)
   const noLine = all.filter((x: any) => !(typeof x.line_number === "number" && x.line_number > 0))
   check("EVERY relationship carries a positive line_number", noLine.length === 0, `${noLine.length} of ${all.length} have none`)
-  const declared = new Set(names(basic))
-  // The analyzer qualifies a CONTAINMENT SOURCE with a dotted path (`Basic.nested`)
-  // while the symbol itself is named by its bare key (`nested`) with an ownerName.
-  // bash satisfies this invariant by making the source the OWNING SYMBOL's name, so
-  // this is a real divergence and the check stays: an edge whose source is not a
-  // symbol name cannot be resolved to a node by any consumer.
+  // An endpoint is resolved by NAME **or** by QUALIFIED PATH, because that is what the store
+  // indexes: a symbol is published under its bare name and its qualified name, and the
+  // resolver tries the path first. The check used NAMES only, which made every path-shaped
+  // endpoint a failure — `Basic.nested` is the qualifiedName of the symbol named `nested`, so
+  // it was a declared symbol all along and the probe was measuring the wrong thing.
+  //
+  // The invariant itself stays, and it is the one that matters: an endpoint that is neither a
+  // name nor a qualified path resolves to nothing, and an edge that resolves to nothing is in
+  // the graph asserting a relation no consumer can walk in either direction.
+  const declared = new Set<string>(names(basic))
+  for (const sy of syms(basic)) declared.add(String(sy.qualifiedName ?? sy.name))
   const badSrc = all.filter((x: any) => !declared.has(String(x.source)))
   check("EVERY relationship source is a declared symbol", badSrc.length === 0, `${badSrc.length} do not resolve: ${[...new Set(badSrc.map((x: any) => x.source))].join(", ")}`)
 }
