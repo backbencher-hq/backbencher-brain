@@ -34,23 +34,25 @@
 ## Relationship ontology
 
 Measured through the production entry point (`parseFile` from
-`src/ast/pool-worker.ts`) over the whole admitted corpus — 1,114 `.css`/`.sass`/`.less`
-files across 61 repositories, `validation/m14/census/css-parsefile-census.ts`. "Both
-ends resolve" is parallel-indexer's own insert-time binding rule, so the rate is what a
-consumer gets and not what the analyzer wrote.
+`src/ast/pool-worker.ts`) over the whole admitted corpus — **1,180 `.css`/`.less`/`.sass`
+files (1,123 + 54 + 3) across 76 repositories**, `validation/m14/census/css-parsefile-census.ts`.
+"Both ends resolve" is the rate at which an endpoint binds to a symbol the same file
+published, counting the bare name, the `scope.name` spelling and `qualifiedName` — the
+three spellings the store binds — so the number is what a consumer gets rather than what
+the analyzer wrote.
 
 | Relationship type | Emitted? | Edges / files | Both ends resolve | How resolved |
 | --- | --- | --- | --- | --- |
-| contains | yes | 168,206 / 553 | 168,206 / 168,206 | custom-property declaration scope (`:root contains --primary`); at-rule scope (`@layer base contains body`); `@media`/`@supports`/`@container`/`@scope` scope; nested-selector scope (`.nav contains .nav .item`); selector-chain edges, emitted only where both chain leaves are published symbols |
-| uses | yes | 2,609 / 323 | 2,609 / 2,609 | `animation`/`animation-name` naming a `@keyframes` this file declares (2,561); `font-family` naming an `@font-face` family this file declares (48) |
-| references | yes | 161,192 / 369 | 159,184 / 161,192 (98.8%) | `var(--x)` reading a custom property (161,191); a selector using a declared `@namespace` prefix (1) |
-| imports | yes | 171 / 46 | 0 / 171 | `@import url("x.css")` / `@import "x.css"`, unwrapped by the pure-String `unwrapUrl` |
-| overrides | yes | see "M14 ontology verdicts" | see below | a second `@keyframes` of one name under the SAME at-keyword; a `@property --x` re-registration; and a `--custom-property` assigned twice inside ONE declaration block (pass 2). See "M14 ontology verdicts" below |
-| extends | no — RULED | 0 | — | no supertype clause in 103 node types; 0 `@extend` directives on the tree |
-| implements | no — RULED | 0 | — | no supertype/implementation clause node type exists in the grammar |
-| calls | no — RULED | 0 | — | no function-definition node type; 0 CSS-Functions-L4 `@function` declarations on the tree |
-| exports | no — RULED | 0 | — | no export node type; 0 `composes: … from …` and 0 `:export` blocks on the tree |
-| instantiates | no — RULED | 0 | — | no object-creation node type |
+| contains | yes | 170,432 / 582 | 170,405 / 170,432 (99.98%) | custom-property declaration scope (`:root contains --primary`); at-rule scope (`@layer base contains body`); `@media`/`@supports`/`@container`/`@scope` scope; nested-selector scope; selector-chain edges, emitted only where both chain leaves are published symbols. Sub-shapes by flag: `isCustomPropertyScope` 137,315, `isMediaScope` 26,800, `isSelectorChain` 4,882, `isLayerScope` 505, `isNestedSelector` 420, `isSupportsScope` 368, `isContainerScope` 142 |
+| uses | yes | 2,613 / 325 | 2,613 / 2,613 (100.0%) | `animation`/`animation-name` naming a `@keyframes` this file declares (`isAnimationRef` 2,565); `font-family` naming an `@font-face` family this file declares (`isFontFamilyRef` 48) |
+| references | yes | 161,738 / 383 | 159,648 / 161,738 (98.7%) | `var(--x)` reading a custom property (`isVariableRef` 161,737); a selector using a declared `@namespace` prefix (`isNamespaceRef` 1) |
+| imports | yes | 179 / 49 | 0 / 179 (0.0%) | `@import url("x.css")` / `@import "x.css"`, unwrapped by the pure-String `unwrapUrl` (`isCssImport` 179); the `@use`/`@forward` module form (`isSassModuleImport` **0**) |
+| overrides | yes | 48 / 7 | 48 / 48 (100.0%) | `isKeyframesRedefinition` 4; `isCustomPropertyRedefinition` 44. Both audited by a second walker since this round — see "DERIVATION findings" |
+| extends | no — RULED | 0 | — | instrument A: 0 of 103 node types is a type declaration. instrument B: **0** `@extend` at-rules on the tree |
+| implements | no — RULED | 0 | — | instrument A: 0 of 103 node types is a supertype/implementation clause |
+| calls | no — RULED | 0 | — | instrument A: 0 function-definition node types. instrument B: **0** CSS-Functions-L1 `@function` declarations on the tree |
+| exports | no — RULED | 0 | — | instrument A: 0 export node types. instrument B: **0** `composes: … from …` and **0** `:export` blocks on the tree |
+| instantiates | no — RULED | 0 | — | instrument A: 0 object-creation node types. instrument B for completeness: **162,440** `var(--x)` calls in 386 files, every one a READ already emitted as `references` |
 
 **The `imports` resolution rate is 0%, and PASS 2 CORRECTED THE REASON THIS FILE GAVE FOR
 IT.** The previous text said 0% "is the same handling every other language's top-level
@@ -86,6 +88,145 @@ hyphenated-property noise guard". That is no longer what `filterNoiseRelationshi
 the evidence: `uses`, `references` and `imports` all reach `parseFile`'s return value.
 The note was removed rather than reworded because it described behaviour the code no
 longer has.
+
+## PASS 3 — every ontology number re-measured, the analyzer's last 11 regexes deleted, and the DERIVATION debt paid
+
+This section is the current state. The pass-1 and pass-2 sections below it are kept as
+history, and where they disagree with this table **this table is the one to read** — the
+corpus grew from 1,114 to 1,180 files between those passes and every relationship count
+moved for that reason alone, which is stated wherever a number moved.
+
+| | pass 2 said | pass 3 measured | why it moved |
+| --- | --- | --- | --- |
+| corpus | 1,131 files / 65 repos | **1,180 files / 76 repos** (`.css` 1,123, `.less` 54, `.sass` 3) | other lanes cloned into the shared corpus. This lane cloned nothing: `df -h /` showed 24 GB free against a corpus already at **7.9 GB**, and the brief's budget is ~8 GB, so a clone would have breached it |
+| files parsed | 1,131 / 1,131 | **1,180 / 1,180**, 0 failures, **0 degraded** (`fallback: true`) | — |
+| grammar vocabulary | 103 node types | **103 node types** | the corpus grew by 49 files and produced no new node type, which is the cleanest available confirmation that instrument A's evidence of absence is a property of the grammar and not of the draw |
+| symbols | 218,116 | **222,786** (188.8/file) | corpus growth |
+| `contains` | 168,327 / 561 files | **170,432 / 582 files** | corpus growth |
+| `uses` | 2,611 / 324 | **2,613 / 325** | corpus growth |
+| `references` | 161,217 / 371 | **161,738 / 383** | corpus growth |
+| `references` both-ends | 159,204 (98.8%) | **159,648 (98.7%)** | corpus growth; 2,090 cross-file `var()` reads in the new files |
+| `imports` | 177 / 47 | **179 / 49** | corpus growth |
+| `overrides` | 48 / 7 | **48 / 7** | unchanged, and now AUDITED (below) |
+| `contains` both-ends | 100% | **170,405 / 170,432 (99.98%)** | 27 edges name an endpoint that does not bind; pass 2 reported 100% and this is the first pass to measure it |
+| all relationships | 332,380 | **335,010** (283.9/file) | corpus growth |
+| empty symbol names | 0 | **0** of 222,786 | — |
+| empty / unknown `SymbolKind` | 0 | **0** of 222,786 | — |
+| endpoints equal to `unknown` | 0 | **0** | — |
+| edges below confidence 0.7 | 0 | **0** of 335,010 | — |
+| edges missing `evidenceClass` | 0 | **0** | — |
+| regex literals in the analyzer | 3 (then found to be 11) | **0** | this round; arbiter below |
+| DERIVATION findings | 1 | **1 finding, 1 oracle written, 1 measurement** | paid |
+
+**`contains` both-ends is 99.98%, not 100%, and pass 2's 100% was a measurement artefact.**
+Pass 2 read parallel-indexer's insert-time binding rule; pass 3 reads the symbol set the
+same file published, across all three spellings the store binds (`name`, `scope.name`,
+`qualifiedName`). The 27 edges that do not bind are the selector-chain edges whose
+source is a chain leaf rather than a rule, and the type is documented as
+`emit only where both chain leaves are published symbols` — so 99.98% is the honest
+number for what the type claims and 100% was the number for what the check could see.
+
+### The 11 regexes, and what each became
+
+`script/m12/verify-regex-census.ts` is the arbiter. At the start of this round it
+reported **11 regex literals in `src/ast/real-css-analyzer.ts`**, in **8 call sites**, and
+this document claimed 3. The document was wrong and the arbiter was right; the count had
+grown after the census was last regenerated.
+
+| # | Site | Regex | Became | Why that is not a narrowing |
+| --- | --- | --- | --- | --- |
+| 1 | `leadingCustomIdent` | `/^(--[A-Za-z0-9_-]+)/` | `leadingCustomIdent` prefix scan + `isCustomIdentChar` | the same character class, expressed as a comparison chain |
+| 2 | `analyze`, importer name | `/[\\/]/` in `filePath.split(…)` | `lastPathSegment` — last `/`- or `\`-separated segment | the last element of the split, found by scanning for the last separator |
+| 3 | `leafOf` | `/:\d+$/` in `n.replace(…)` | `stripOccurrenceSuffix` | digits-to-end preceded by `:`; `a:1b`, `123` and `a:` are all returned untouched, as the pattern returned them |
+| 4 | identity merge | `/specificity\|omplexity/` | `k.includes("specificity") \|\| k.includes("omplexity")` | a substring test, which is what the alternation was |
+| 5 | `atRulePrelude` | `/^@\S+/` | **the tree**: `at_keyword` (or the anonymous `@keyword`) child's `endIndex` | see below — this one carried a real defect |
+| 6 | `atRulePrelude` | `/;\s*$/` | **the tree**: the `;` child's `startIndex` | same |
+| 7 | `collectNamespacePrefixes` | `/^@namespace\s*/` | **the tree**: the `@namespace` child's `endIndex` | same |
+| 8 | `collectNamespacePrefixes` | `/;\s*$/` | **the tree**: the `;` child's `startIndex` | same |
+| 9 | `@media` custom-media reference | `/^\(/` | **the tree**: `customMediaRefsIn` walks for `parenthesized_query > keyword_query` | this one WIDENED the construct; see below |
+| 10 | `@media` custom-media reference | `/\)$/` | **the tree**: same | same |
+| 11 | `@use`/`@forward` module name | `/\s+/` in `namePart.split(…)[0] ?? namePart` | `firstToken` | the `?? namePart` fallback was **dead code**: `String.split` never returns `undefined`, so the branch could not be taken. Deleted rather than translated |
+
+**Sites 5–8 removed a latent defect, not just a pattern.** `atRulePrelude` found the end
+of an at-rule's prelude with `node.text.indexOf(block.text)` — a substring search from
+offset 0 of the NODE's text. A prelude that CONTAINS the block's own text therefore
+truncated at the wrong offset and published a scope name cut mid-word. The grammar hands
+over both boundaries as child nodes, so the search was never necessary. Pin:
+`css/at-rule-prelude-boundary-by-text-search`.
+
+**Site 9–10 widened a construct, and the corpus cannot see that it did.** The old
+implementation took the media query's whole text, peeled one leading `(` and one trailing
+`)`, and asked whether what was left began with `--`. That answers `@media (--narrow)` and
+nothing else: in `@media screen and (--narrow)` nothing is peeled at the front, the
+string starts with `s`, and the reference is LOST — while the grammar hands it over as a
+`keyword_query` inside a `parenthesized_query`, unambiguously. The new
+`customMediaRefsIn` reads that shape, so the composed, negated and comma forms are all
+covered, and it refuses a media TYPE (`print`, `screen`) because `keyword_query` is the
+grammar's node for those too. Measured: **0 occurrences of the construct in the admitted
+corpus**, so no corpus number distinguishes the two versions and the fixture
+`css/custom-media-in-every-query-shape` is the only evidence — two of its seven
+`expectRelationships` rows (`@media screen and (--wide)`, `@media not (--c)`) fail
+against the old code and two `forbidRelationships` rows fail against an implementation
+that keys on the node type alone.
+
+**The A/B that says the other eleven changed nothing.** The whole corpus was censused
+twice, once with the analyzer at HEAD and once with the analyzer as edited, and every
+number is byte-identical: 222,786 symbols, 335,010 relationships, and the same per-type
+edge counts, file counts and resolution rates. So the regex removal is
+behaviour-preserving on real code, and the single behaviour change in this round has no
+corpus witness at all. Both facts belong in the report; neither is visible without the A/B.
+
+### The DERIVATION finding: oracle written, wired by measurement, wiring still owed
+
+`overrides` was EMITTED and derived by NOTHING. `deriveCssEdges`
+(`script/m14/differential.ts`) pushes `contains`, `uses`, `references` and `imports`, and
+the css comparison allowlist is those same four — so the type was stored and compared
+against no truth, which is what a DERIVATION finding is. The count was 1 and the type was
+`overrides`; it is still 1, and this round it is no longer unaudited:
+
+`script/m14/oracles/css-overrides.ts` is a second walker over the parse tree that imports
+nothing from `src/ast/real-css-analyzer.ts` and shares no helper with it.
+`validation/m14/census/css-overrides-differential.ts` runs it against production
+`parseFile` over the whole admitted corpus. Measured:
+
+```
+admitted files                                  1,180   parsed 1,180/1,180, 0 degraded
+analyzer `overrides` edges EMITTED                   48   distinct under the store key (source,type,target,line): 48
+oracle rows derived                                110
+AGREE                                              48
+MISSING (oracle derives, analyzer does not)        62   -> the minified one-line collapse, limitation 3
+EXTRA   (analyzer publishes, oracle derives 0)      0   -> NO FABRICATION
+```
+
+**EXTRA = 0 is the number this lane could not previously produce, and it is the expensive
+one.** `overrides`'s corpus population is 97.3% one shape — 142 of the 146 same-name
+second `@keyframes` declarations are a vendor-prefixed pair — and emitting for those would
+assert a replacement CSS does not perform between two REAL symbols, which no resolution
+check can catch. A second walker that derives the vendor-prefix rule and the block
+boundary independently finds **zero** rows the analyzer invented, and **zero** rows it got
+wrong in the other direction apart from the 62 that are a storage artefact.
+
+**The 62 MISSING are limitation 3, now measured rather than asserted.** Pass 2 asserted
+"62 of 106 same-block re-assignments are not emitted" from a shape count; the oracle
+derives **110** rows (106 custom-property + 4 keyframes) and the analyzer publishes 48, so
+**62 are unemitted** — the same number, from a different instrument. All 62 sit in
+`bulma/css/versions/bulma-no-helpers{,-prefixed}.min.css`, whose second line is 181,071
+characters, and `emitOverride`'s dedup key is `(name, line)`: every declaration in that
+line shares one line, so N supersessions of one property collapse to one edge. The runner
+**exits 1** on this, because the analyzer and the oracle genuinely disagree by 62 rows,
+and a gate that returned 0 would be reporting a number the two sides do not share.
+
+**The four wiring changes this needs are the supervisor's** (`ONTOLOGY-WORKSTREAM.md`
+§Ownership) and are written out in full in the oracle's own header: one import beside the
+other oracle imports, one loop in the `if (lang === "css")` branch, `"overrides"` added
+to the allowlist at `differential.ts:23373`, and a **multiplicity-aware comparison** —
+`source === target` by construction here, so `(label, from, target)` cannot tell one
+redefinition from three and a set-based comparison degrades to "is the name right".
+
+**Independence, and its limit.** The oracle and the analyzer are two walkers over the
+SAME pinned `wasm/tree-sitter-css.wasm`, so a grammar bug shared by both is invisible to
+this check. That is the harness's declared limitation and it is not upgraded by the
+oracle agreeing on 48 of 48 emitted rows.
 
 ## M14 ontology verdicts
 
@@ -140,6 +281,60 @@ Nothing was overturned and nothing was weakened. The one figure that moved —
 direction that makes `instantiates` MORE like a ruling and not less: 25 more
 name-to-value reads, every one already accounted for as a `references` edge, and 0
 constructions.
+
+### The shared differential, re-run scoped to css, and its ONE remaining disagreement
+
+`npx tsx script/m14/differential.ts --lang css`, at this commit:
+
+```
+[svelte]      css: files=60 tree-truth=41  covered=39  (95.1%) MISSING=2 | analyzer-edges=24  unexplained=0 (0%) heuristic=0
+[grails-core] css: files=60 tree-truth=502 covered=502 (100%)  MISSING=0 | analyzer-edges=393 unexplained=0 (0%) heuristic=0
+[css] 2 MISSING / undefined truth — samples:
+  imports expected.css -> http://www.w3.org/1999/xhtml  (svelte/.../supports-namespace/expected.css)
+  imports expected.css -> http://www.w3.org/2000/svg    (svelte/.../supports-namespace/expected.css)
+probe run (--lang css): measured 2 lane(s) — M14.0.F5 NOT written (a scoped run is for inspecting lanes)
+```
+
+**`unexplained=0` on both corpora** is the fabrication column at zero against an
+independent walker over the four labels the oracle derives, and `heuristic=0` is the
+confidence question answered by the harness rather than by this document.
+
+**`MISSING=2` is a real disagreement and this lane does not implement it.** The file is
+`svelte/packages/svelte/tests/css/samples/supports-namespace/expected.css`:
+
+```css
+@namespace url(http://www.w3.org/1999/xhtml);
+@namespace svg url(http://www.w3.org/2000/svg);
+svg|a { color: green; }
+```
+
+The analyzer emits exactly one edge for it — `references svg|a -> @namespace svg
+url(http://www.w3.org/2000/svg)`, the selector's use of the declared prefix — and no
+`imports`. The oracle derives two `imports` rows, one per `@namespace` URI.
+
+**The reading is that the analyzer is right and the oracle over-derives,** and this round
+turned that from an argument into a measurement. Production `parseFile` on that exact file
+returns **5 symbols and 1 relationship**: two `module` symbols carrying the two
+declarations verbatim, and the single `references` edge with `isNamespaceRef`. So the
+construct is READ, and the disagreement is about the TYPE alone, not about coverage. An
+`@namespace` URI is an XML namespace NAME, a vocabulary identifier the user agent resolves
+against, while `@import url(…)` names a stylesheet the user agent FETCHES; the two are
+different acts and one is not a file dependency. The analyzer's edge also carries strictly
+more than the oracle's row — it says WHICH selector depends on WHICH declaration, where
+`imports expected.css -> <uri>` says only that the file mentions the URI.
+
+`validation/m14/fixtures/css/namespace-uri-is-not-an-import.{css,expectation.json}` pins
+this decision so it cannot be closed the cheap way. Its `forbidRelationships` rows refuse
+`imports` targeting either URI in both the bare and the prefixed spelling, and it carries a
+real `@import url("theme.css")` so the refusal is about namespaces specifically rather than
+about an `imports` branch that never fires. The mutant
+`css/namespace-uri-published-as-an-import` performs exactly the change that would make
+`MISSING=2` read zero — republish each `@namespace` URI as an `imports` edge — and the
+fixture catches it. This lane therefore still declines the two rows, and the §8 item
+against `deriveCssEdges` stands: the oracle is supervisor-owned, so the honest state of
+this row is "two rows the oracle derives that the analyzer declines, with a measurement and
+a fixture against the alternative, pending the owner's decision". Closing it by emitting
+them would assert a fetch CSS does not perform.
 
 ### The two instruments
 
@@ -458,7 +653,7 @@ implemented without re-deriving it.
 
 CSS is not Turing-complete, but a blank list would still be a false claim for this lane.
 
-1. **`overrides` is a thin census.** 48 edges in 7 files of 1,131 (0.62% of files), and
+1. **`overrides` is a thin census.** 48 edges in 7 files of 1,180 (0.59% of files), and
    44 of the 48 come from ONE construct in SIX files — Bulma's minified bundles. The
    construct is spec-defined and the implementation is exercised by two fixtures and eight
    mutants, but the corpus cannot say whether the rule is right about shapes it has never
@@ -497,10 +692,12 @@ CSS is not Turing-complete, but a blank list would still be a false claim for th
 7. **Resolution is measured per FILE.** A name that binds in one stylesheet does not bind
    across two, so every rate here is a within-file rate. A cross-file `references` claim
    (a `var(--x)` defined in another stylesheet) is deliberately not made.
-8. **`.sass` and `.less` are routed here and have no corpus.** 0 files of each across 61
-   repositories, so this document can neither support nor refute a claim about either
-   dialect. `.sass` in particular is indented syntax and a different grammar, not a
-   dialect flag.
+8. **`.sass` and `.less` are routed here and the corpus for both is thin.** Pass 2
+   measured 0 files of each and this document said so; pass 3 measures **54 `.less` and 3
+   `.sass`** after other lanes cloned. Three `.sass` files cannot support a claim about
+   indented syntax, and the pinned `wasm/tree-sitter-css.wasm` is not the `.sass` grammar
+   in any case. Every ruling in this file is measured over all 57 dialect files, so the
+   `extends` and `calls` probes are not vacuous — they are simply unexercised.
 9. **`overrides` has no differential oracle**, so its correctness rests on two fixtures,
    eight mutants, a spec sentence and a corpus census of 48 occurrences. That is the
    weakest evidence backing any emitted type in this lane, and it is the DERIVATION
@@ -537,7 +734,35 @@ CSS is not Turing-complete, but a blank list would still be a false claim for th
     its endpoint, and a CSS property name is a token in a declaration rather than a graph
     node — so that edge cannot be drawn without inventing the endpoint, which is the
     fabrication rule.
-14. **Pass 1's containment figure was vacuous and its corrected replacement is in this
+14. **`isCustomMediaRef` has 0 corpus occurrences, so the branch this round widened is
+    pinned only by a fixture.** The corpus holds 0 `@custom-media` declarations and 0
+    `@media (--x)` uses, so no corpus number distinguishes the tree walk from the text
+    peel it replaced, and the A/B over 1,180 files is byte-identical for that reason. The
+    fixture `css/custom-media-in-every-query-shape` is the whole of the evidence, plus two
+    mutants from opposite directions. "0 in the corpus" is what a broken probe and a
+    working branch both report, and this row is where that fact has to be read.
+15. **The comma-list form of a custom-media query resolves only its FIRST query.**
+    `@media (--a), (--b)` publishes ONE scope, named after the first query, so the `--b`
+    dependency is dropped rather than attributed to a scope whose name does not mention it.
+    Pinned in the fixture's `knownLimitation`. Widening the scope naming to cover a query
+    list is a separate change with its own measurement, and attributing `--b` to a scope
+    named `@media (--a)` would be the misleading alternative.
+16. **`contains` resolves at both ends on 99.98%, not 100%, and pass 2's 100% was a
+    measurement artefact.** 27 of 170,432 edges name an endpoint that does not bind to a
+    symbol the file published. The selector-chain edges are documented as `emitted only
+    where both chain leaves are published symbols`, so 99.98% is the honest number for what
+    the type claims; pass 2 reported 100% because its check could only see the edges that
+    bind. A resolution rate measured with an instrument that cannot return a lower number
+    is a vacuous 1.0, and 99.98% is the first number for this lane that is not.
+17. **`confidence` is ABSENT, not 1.0, on 197,468 of 335,010 edges** — all 2,613 `uses`,
+    all 161,738 `references`, and 33,117 of 170,432 `contains`. The lane writes
+    `confidence: 1.0` explicitly on 137,315 `contains`, 179 `imports` and 48 `overrides`
+    edges, so "0 edges below 1.0" partly measures an ABSENCE rather than a measurement.
+    Pass 2 said this and it is still true at pass 3's corpus: the reason code
+    (`metadata.evidenceClass`) is present on 335,010 of 335,010 edges, which is what the
+    honesty contract §4.1 asks for, but the numeric field is missing where a consumer
+    expecting to threshold on it will read a default.
+18. **Pass 1's containment figure was vacuous and its corrected replacement is in this
     file rather than in a changelog.** A probe that cannot return non-zero reports the
     same 0 as a correct one. The 28.8% it missed is now fixed, and the reason the first
     version could not see it is written into the probe's own header, because the failure
@@ -583,17 +808,56 @@ Each is written to be applied without re-deriving it: file, function, what it mu
 why, and the measurement that says it is needed. All three are §8 items under
 `docs/analyzers/ONTOLOGY-WORKSTREAM.md`.
 
-**(a) `script/m14/ontology-coverage-gate.ts:192` — `RULED_BY_LANG` has no `css` entry, so
-the arbiter still exits 2 and reports nothing for this lane.** Re-verified in pass 2: the
-gate prints `corpus: 1140 admitted files` and then
-`ontology coverage gate — no RULING TABLE for css.` and stops. The `CSS_RULED` table is
-still specified verbatim in this file, unchanged from milestone 1, and
-`validation/m14/census/css-ontology-probe.ts` still prints every probe's body and its
-overturn condition. Note the gate's own corpus figure is **1,140** where this lane's
-copied admission rule admits **1,131** — a 9-file divergence between two implementations
-of the same rule, which is worth resolving in whichever direction the supervisor prefers,
-because a census whose denominator depends on whose code computed it is not comparable
-across lanes.
+**(a) `script/m14/ontology-coverage-gate.ts` — `RULED_BY_LANG` has no `css` entry, so the
+arbiter still exits 2 and reports nothing for this lane. TWO LINES, NOW PROVEN INSTEAD OF
+SPECIFIED.** `script/m14/css-ruled.ts` is the table, in the gate's own `Ruled` shape, with
+five entries (one per un-emitted type) and each `describe` carrying its measured number and
+its overturn condition. `validation/m14/fixtures/css/ruled-gate.ts` copies the gate to
+`/tmp`, applies EXACTLY these two lines, and runs the copy:
+
+```ts
+import { CSS_RULED } from "./css-ruled"
+const RULED_BY_LANG: Record<string, Ruled[]> = { bash: BASH_RULED, json: JSON_RULED, lua: LUA_RULED, toml: TOML_RULED, fsharp: FSHARP_RULED, css: CSS_RULED }
+```
+
+Measured result of that proof run, over the whole admitted corpus:
+
+```
+ontology coverage gate — css
+corpus: 1180 admitted files
+
+type          status            detail
+calls         RULED-SOUND       NOT EMITTED; the grammar produced 103 distinct node types across the corpus and NONE expresses it. Written ruling: script/m14/css-ruled.ts (RULED_BY_LANG.css)
+uses          EMITTED           2,613 edges in 4+ files, e.g. Paket/.../font-awesome.min.css, bootstrap/dist/css/bootstrap.css
+contains      EMITTED           170,432 edges in 4+ files, e.g. Exposed/docs/api/ui-kit/ui-kit.min.css, Exposed/docs/api/styles/prism.css
+imports       EMITTED           179 edges in 4+ files, e.g. FSharp.Formatting/docs/content/fsdocs-default.css, Saturn/docs/static/css/landing_style.css
+references    EMITTED           161,738 edges in 4+ files, e.g. Exposed/docs/api/ui-kit/ui-kit.min.css, Exposed/docs/api/styles/prism.css
+exports       RULED-SOUND       NOT EMITTED; the construct occurs 0x on the parse tree. Written ruling: script/m14/css-ruled.ts (RULED_BY_LANG.css)
+extends       RULED-SOUND       NOT EMITTED; the construct occurs 0x on the parse tree. Written ruling: script/m14/css-ruled.ts (RULED_BY_LANG.css)
+implements    RULED-SOUND       NOT EMITTED; the grammar produced 103 distinct node types across the corpus and NONE expresses it. Written ruling: script/m14/css-ruled.ts (RULED_BY_LANG.css)
+overrides     EMITTED           48 edges in 4+ files, e.g. bulma/css/versions/bulma-no-helpers-prefixed.min.css, bulma/css/versions/bulma-no-helpers.min.css
+instantiates  RULED-SOUND       NOT EMITTED; the grammar produced 103 distinct node types across the corpus and NONE expresses it. Written ruling: script/m14/css-ruled.ts (RULED_BY_LANG.css)
+
+emitted 5/10   ruled-sound 5   FALSIFIED 0   ruled-without-justification 0
+gate exit code: 0
+```
+
+Two things to note if the wiring is applied. First, the `RULED_BY_LANG` literal in the
+current gate also carries `lua`, `toml` and `fsharp`, so the second line must be the whole
+literal replaced, not an append. Second, the runner needs **no third patch** — unlike
+toml's, which must redirect `specPath` because toml's own spec writes its rulings in
+`ruling` while the gate reads `resolution`. `rulingFor()` checks the TABLE first, so a
+`CSS_RULED` entry is returned before the spec is opened; two fewer patches is a fact about
+the gate's control flow and not a simplification.
+
+**The corpus-figure divergence this item used to raise is resolved and the direction is
+now known.** The gate's own admission printed `corpus: 1180 admitted files`; this lane's
+copied admission rule measured 1,180 in `css-parsefile-census.ts` and 1,171 in
+`css-ontology-probe.ts`. The 9-file difference is `css-ontology-probe.ts` skipping
+zero-byte files (`if (statSync(abs).size === 0) continue`, probe line 86) and nothing
+else — the gate and the census agree exactly. The probe's exclusion is deliberate and its
+header states the admission rule as "non-empty"; the honest fix is to make the two headers
+say the same thing rather than to change either.
 
 **(b) `src/ast/pool-worker.ts:960-1011` — the CSS `metadata` allowlist drops every key a
 scope symbol carries, so 2,804 at-rule scope symbols reach the store indistinguishable.**
@@ -627,33 +891,67 @@ narrow (widening `annotations` for every symbol in every language is a separate,
 change needing its own measurement round) is a good one, and the fix belongs next to
 that decision rather than in it.
 
-**(c) `script/m14/oracles/` — the `overrides` oracle, which is the lane's one DERIVATION
-finding.** It has to be a second walker over the parse tree, importing nothing from
-`src/ast/real-css-analyzer.ts`. Three rules, all pinned by
-`validation/m14/fixtures/css/custom-property-redefinition-overrides.css` and
-`keyframes-redefinition-overrides.css` so they do not have to be re-derived:
+**(c) `script/m14/oracles/css-overrides.ts` — WRITTEN, MEASURED, AND STILL UNWIRED.**
+The oracle exists and has been run against production `parseFile` over the whole admitted
+corpus; what is owed is the four changes that let `script/m14/differential.ts` use it. They
+are reproduced here so they can be applied without reading the oracle:
 
-1. **`@keyframes`**: walk each `keyframes_statement`, read its `at_keyword` and its
-   `keyframes_name`, and emit a row when a declaration's at-keyword EQUALS the previous
-   declaration's. A different at-keyword is two animations, not a redefinition — measured
-   at 142 of 146 same-name second declarations in the corpus, so this rule is 97.3% of the
-   type's correctness.
-2. **`@property`**: for each `@property --x`, emit a row when `--x` was already registered
-   in this file. Properties & Values API §2.1: "the last such one in document order is
-   the registration."
-3. **`--custom-property` in a declaration block**: within ONE `rule_set` or
-   `keyframe_block`, emit a row when a `--x` has already been assigned, AND the two
-   declarations carry the SAME importance. Cascade 5 §6.1 ("The last declaration in
-   document order wins") plus Cascade's sorting of importance above document order; CSS
-   Variables 1 §2 for custom properties being ordinary. Cross-block pairs must NOT be
-   emitted — that is the fabrication the `css/overrides-custom-property-block-boundary-
-   widened-to-the-file` mutant injects.
+1. `script/m14/differential.ts`, beside the other oracle imports (line ~44):
+   `import { deriveCssOverridesTruth } from "./oracles/css-overrides"`
+2. `script/m14/differential.ts:22172`, the `if (lang === "css")` branch: after the
+   `deriveCssEdges` loop, a second loop over
+   `deriveCssOverridesTruth(root, cssModule)` pushing the same `{ label, from, target }`
+   shape. **The allowlist must be changed at the same time (item 3)**, because it filters
+   the ANALYZER side and a label the oracle derives and the allowlist omits reads as a
+   MISSING truth row — a trap that file's own comments record happening twice.
+3. `script/m14/differential.ts:23373`: add `"overrides"` to
+   `...(lang === "css" ? ["uses", "contains", "references", "imports"] : [])`.
+4. The comparison must be **multiplicity-aware for this label**. `source === target` by
+   construction — the lane publishes one symbol per name — so `(label, from, target)`
+   cannot tell one redefinition from three. The oracle returns one row per SUPERSESSION and
+   carries `supersedesLine` on each, so a multiset comparison can check the payload. If the
+   shared comparison is set-based, this label degrades to "is the name right" and nothing
+   more, which should be recorded rather than discovered later.
 
-Why it cannot be done here: `script/m14/differential.ts` and `script/m14/oracles/` are
-supervisor-owned, and the css allowlist at `differential.ts:23373` is the third place the
-change has to land — `overrides` must be added there at the same time, because the
-allowlist filters the ANALYZER side and a label the oracle derives but the allowlist
-omits reads as MISSING (a trap that file's own comments record happening twice).
+The measured result is in "PASS 3" above: **48 agree, 62 MISSING, 0 EXTRA** over 1,180
+files, with the 62 being the minified one-line collapse (limitation 3) and the 0 being the
+number that matters.
+
+**(d) `script/m14/firing-check.ts:340` — the per-type `files` column cannot report a
+number above 1, so it is the one row of the supervisor's table this lane cannot quote.**
+`filesByType` is rebuilt for each file and the per-file counts are then ASSIGNED rather
+than accumulated:
+
+```ts
+for (const [type, set] of filesByType) res.types[type].files = set.size
+```
+
+`set` is a `Set` of file paths built inside one file's loop, so `set.size` is 1 whenever
+the type fired at all. Measured at a 300-file sample: every fired type reads `files=1`,
+including `references`, which is present in **383 of 1,180** files and **298 of 300** in
+the sample. What it must do: accumulate — `row[type].files.add(...)` per file, or hoist
+the map outside the loop and union. Why it matters beyond this lane: `firing-check.ts` is
+the instrument that produces the per-lane firing table the supervisor reads, and a column
+that can only ever print 0 or 1 makes a type present in 98% of files look like it is
+present in one. This lane computed the column correctly in
+`validation/m14/census/css-parsefile-census.ts` rather than quote the broken one, and it is
+reported rather than edited.
+
+**(e) `validation/m12/results/regex-census.json` — the committed census does not describe
+HEAD for FIVE analyzers, and the css rows are now wrong in the other direction.** The
+arbiter prints `missing from census: 18` and `stale in census: 25` at this commit. For css
+specifically: 11 rows are `MISSING` (present in HEAD, absent from the census) because the
+census was never regenerated after the complexity work and the pass-1/pass-2 additions.
+This round deletes all 11 from the analyzer, so at this commit's successor HEAD the css
+rows become `STALE` (in the census, absent from the source) until the census is
+regenerated by its generator. What it must do: re-run the census generator. Why this lane
+does not do it: the file is a machine-emitted artifact covering 5 analyzers across 4
+lanes, the honesty contract §5.1 says agents edit code and fixtures and never results, and
+hand-editing another lane's rows to make a gate green is exactly the failure the contract
+exists to prevent. Note also that the 11 rows currently MISSING belong to no lane's
+accounting in either direction — `css 11` in the brief, `3` in the old doc, `0` measured
+now — which is the "3 in between belonged to no lane" failure the gate's own header
+records having been fixed by printing every row.
 
 ## Supported constructs
 
@@ -828,11 +1126,16 @@ grammar patches            2, both strictly additive (76 fixed, 0 regressed)
 `RealScssAnalyzer`, and the fixture lane claims `.scss` separately. See
 `docs/analyzers/real-scss-analyzer.md`.
 
-`.sass` and `.less` **still** route here and are **still declared** — 0 files of each
-across 13 corpora, so this repo can neither support nor refute a claim about them, and
-inventing coverage for a dialect with no corpus would be a claim with nothing behind
-it. `.sass` in particular is indented syntax and is a genuinely different grammar, not
-a dialect flag.
+`.sass` and `.less` **still** route here. The corpus now holds **54 `.less` files and 3
+`.sass` files** (pass 3: 1,180 admitted files = 1,123 `.css` + 54 `.less` + 3 `.sass`),
+so the "0 files of each" this paragraph used to carry is superseded — but not by enough to
+support a claim about either dialect. Three `.sass` files is a sample too small to
+generalise from, and `.sass` is INDENTED syntax: a genuinely different grammar, not a
+dialect flag, and the pinned `wasm/tree-sitter-css.wasm` is not its grammar. The 54
+`.less` files do exercise this analyzer's LESS arms — they are the whole of the `imports`
+population naming `_variables.less` and `_mixins.less` — and they are why `@extend` and
+`@function`, which BOTH dialects can write, are measured over 57 real dialect files rather
+than over none. All 57 are counted in every ruling and none uses either construct.
 
 The general lesson, recorded because it is the second time in this lane: **a
 limitation that lives only in a document is not a limitation, it is a paragraph.**
@@ -841,42 +1144,44 @@ was that the spec entry was replaced by a measurement another gate could fail on
 
 ## Regex inventory
 
-From `validation/m12/results/regex-census.json`: the CSS analyzer has **3**
-regex usages (15 in the previous analyzer eliminated — census 119 → 104;
-4 more were in a dead `if (false && ...)` SCSS block removed entirely).
+**0 regex literals, as of this round. The arbiter is `script/m12/verify-regex-census.ts`
+and it is the instrument, not a grep.**
 
-**This section previously said 0, and that was wrong.** The complexity work added
-five regexes — `queryComplexity` testing `/\s/` once per *character* of every
-query, plus a `/var\(\s*--/` test — taking the lane from 0 to 9 while the census
-sat unchanged in the tree, because nothing re-ran it. All five are now gone, so
-the true count is 3, which is also the count before that work. The per-character
-`/\s/` was a performance bug as well as a census regression: a regex test per
-character is far slower than a set lookup, in a method that runs once per scope
-symbol.
+The count this section used to report — 3 — was wrong twice over. It was wrong when
+written (the census had not been re-run after the complexity work, which took the lane to
+9 and then back), and it was wrong at the start of this round: the arbiter reported
+**11 literals in 8 call sites**. The per-literal accounting is the table in "PASS 3"
+above, with what each became and why the replacement is not a narrowing.
 
-| # | Operation | Source | Adjudication |
-| --- | --- | --- | --- |
-| 1 | `split` | `/[\\/]/` | path separator on the file path — a 2-character alphabet, not content matching |
-| 2 | `replace` | `/:\d+$/` | strips a trailing `:<digits>` in `leafOf` (a svelte-emitted `:123` suffix) |
-| 3 | `split` | `/\s+/` | whitespace run in a symbol name |
+The three this file used to adjudicate by hand:
 
-All three are normalization on identifiers and paths. The census still labels them
-`needs_review` because the classifier only auto-labels some shapes; the
-adjudication above is the record, and none of them inspects a *value* — which is
-the distinction that matters, since a regex over a declaration's value is where a
-CSS analyzer would start inventing structure that is not there.
+| old | became |
+| --- | --- |
+| `split(/[\\\\/]/)` on a file path | `lastPathSegment` |
+| `replace(/:\\d+$/)` in `leafOf` | `stripOccurrenceSuffix` |
+| `split(/\\s+/)` for a symbol name | `firstToken` |
 
-The whitespace replacement lists the full set JS `\s` matches (including \v, NBSP,
-the U+2000 block, the line/paragraph separators and the BOM) rather than the ASCII
-five, so it is not a narrowing: a predicate that quietly stops matching a code
-point is a behaviour change wearing a cleanup's commit message. Verified directly
-— the scan and the regex agree on all 14 `var(` shapes tested, including
-`var( --x)`, `var(\t--x)` and `var(\n --x)`.
-Replaced with pure-String helpers: `stripQuotes` (paired-quote strip),
-`stripAllQuotes` (all quote chars), `unwrapUrl` (`url(...)` unwrap),
-`replaceAll` (`&` substitution for nesting resolution), `isResetSelector`
-(universal reset detection), `isTailwindClass`/`isBootstrapClass`/
-`isBulmaClass`/`isFoundationClass` (framework heuristics).
+Three helpers this round WROTE and then DELETED, which is recorded because a helper
+written and deleted and a helper never needed look identical in a diff:
+`stripSigil`, `stripLeadingToken` and `stripTrailingSemicolon`. Each was written to
+replace one anchored pattern and each became unnecessary the moment the call site was
+moved onto the tree — `at_keyword`, `@namespace`, `;` and `block` are all child nodes
+with `startIndex`/`endIndex`, so a position the parser already computed beat a substring
+search for it. Only `stripOccurrenceSuffix` and `firstToken` survived, because their two
+call sites genuinely have only a string.
+
+Two properties of the replacements are worth stating because they are the ones a
+cleanup usually loses:
+
+- **The whitespace set is not narrowed.** `JS_WHITESPACE` lists every code point JS `\s`
+  matches — ASCII six, `\v`, NBSP, the U+2000 block, the line and paragraph separators and
+  the BOM — not the ASCII five. A replacement that quietly stops matching a code point is
+  a behaviour change wearing a cleanup's commit message. There is now ONE such set in the
+  file: the class's `JS_SPACE` was a second copy and now aliases the module-level one.
+- **No replacement inspects a value.** Not one of the eleven was a pattern over a
+  declaration's value, and that is the distinction that matters — a regex over a value is
+  where a CSS analyzer starts inventing structure that is not there. The five that were
+  removed from at-rule boundaries all became node reads for the same reason.
 
 ## Complexity envelope
 
@@ -1002,7 +1307,31 @@ in the parts of CSS that two corpora happen not to contain.
 
 ### The gates
 
-**18 mutants, 18 caught, 0 survived**, measured by running each transform against the
+**PASS 4: 27 mutants, 27 caught, 0 survived. 15 fixtures pass, 0 fail**, measured
+by `npx tsx validation/m14/census/css-mutant-run.ts`, which refuses to score anything
+against a red baseline. 13 mutants are the pre-existing `script/m60/css-mutants.ts` set
+and 14 are `script/m14/css-mutants.ts`. Five are new this round:
+
+| mutant | direction | caught by |
+| --- | --- | --- |
+| `css/namespace-uri-published-as-an-import` | FABRICATION — the change that would make the differential's `MISSING=2` read zero, by republishing each `@namespace` URI as `imports` | `css/namespace-uri-is-not-an-import` |
+| `css/custom-media-ref-narrows-to-a-bare-query` | UNDERSHOOT — reinstates the peel-one-paren-each-side reach, so `@media screen and (--x)` loses its edge | `css/custom-media-in-every-query-shape` |
+| `css/custom-media-ref-accepts-a-media-type` | FABRICATION — drops the `--` prefix test, so `@media print` names a device category as a declaration | the same fixture, via its two `forbidRelationships` rows |
+| `css/import-source-taken-from-the-wrong-segment` | ENDPOINT — the `imports` source split on `.` instead of `/`, so the basename loses its extension | `css/scope-conditions-and-custom-properties`, whose two `imports` rows now pin `from` |
+| `css/at-rule-prelude-boundary-by-text-search` | the replacement's own failure mode — re-cuts an at-rule scope name at its query's first `(` | three fixtures that pin at-rule scope NAMES |
+
+**One of those four found a gap in the pins rather than in the code, and that is the
+direction worth recording.** `css/import-source-taken-from-the-wrong-segment` SURVIVED its
+first run: no css fixture constrained an `imports` edge's SOURCE, only its target, so a
+mutant that corrupted the one field `lastPathSegment` produces passed the whole suite. The
+pin was added because the mutant was written — the fixture did not fail first and teach us
+— which is mutation-first rather than test-first, and the reverse of the direction this
+repo's M13 retrospective was about. The mutant's first formulation (split on `/`, take
+index 0) was also not reachable from the edge at all, because the source has already been
+reduced to a basename and there is no separator left in it to get wrong; that is stated in
+the mutant's own description rather than left for the next reader to work out.
+
+**PASS 2: 18 mutants, 18 caught, 0 survived**, measured by running each transform against the
 shared fixture runner — `bun run validation/m14/census/css-mutant-run.ts`, which
 refuses to score anything against a red baseline. Baseline: 11 fixtures pass, 0 fail.
 
@@ -1145,16 +1474,28 @@ other.
   `css-adversarial-followup.ts` (the printed cases), `css-boundary-probe.ts` (what
   survives the production boundary, and the containment check in a form that CAN return
   non-zero) — each → `--json <path>`
-- Fixtures: `validation/m14/fixtures/css/` — 12 fixtures, including
+- `overrides` ORACLE and its measured differential (the DERIVATION finding, paid):
+  `script/m14/oracles/css-overrides.ts` (a second walker, importing nothing from the
+  analyzer) and `validation/m14/census/css-overrides-differential.ts` → `--json <path>`.
+  Measured: 48 agree, 62 MISSING, **0 EXTRA** over 1,180 files.
+- Ruling table, and the PROOF that it runs (applies the two shared-file lines to a copy
+  of the gate in /tmp and runs it): `script/m14/css-ruled.ts` and
+  `validation/m14/fixtures/css/ruled-gate.ts`. Gate result: `emitted 5/10 ruled-sound 5
+  FALSIFIED 0 ruled-without-justification 0`, exit 0.
+- Fixtures: `validation/m14/fixtures/css/` — 15 fixtures, including
   `keyframes-redefinition-overrides` and `custom-property-redefinition-overrides` for the
-  type `overrides` and its block boundary
+  type `overrides` and its block boundary, `custom-media-in-every-query-shape` for the
+  one branch with 0 corpus occurrences, and `namespace-uri-is-not-an-import` for the
+  `@namespace` type dispute with the shared differential
 - Ground truth: `validation/m12/ground-truth/css.json`
 - Differential: `validation/m12/results/css-differential.json`;
   `bun run script/m14/differential.ts --lang css`
 - Complexity: `validation/m12/results/css-complexity.json`
 - Corpus scan: `script/m12/css-corpus-errors.ts`
 - Grammar compare: `script/m12/css-wasm-compare.ts`
-- Regex census: `validation/m12/results/regex-census.json` (3 for this analyzer)
+- Regex census: `script/m12/verify-regex-census.ts` is the ARBITER; the committed
+  `validation/m12/results/regex-census.json` is stale for five analyzers including this one
+  (see "Reported, not edited" (e)). **This analyzer's own count, measured: 0.**
 - Docs: this file
 
 ## Issue

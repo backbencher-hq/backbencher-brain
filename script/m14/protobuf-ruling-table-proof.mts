@@ -53,7 +53,25 @@ const KEEP = process.argv.includes("--keep")
 const ONLY = process.argv.find((a) => a.startsWith("--only="))?.slice("--only=".length)
 
 const IMPORT_ANCHOR = 'import { LANGS } from "./differential"'
-const MAP_ANCHOR = "const RULED_BY_LANG: Record<string, Ruled[]> = { bash: BASH_RULED, json: JSON_RULED }"
+/**
+ * The ruling map is located STRUCTURALLY — the declaration line, then the `}` that
+ * closes it — instead of by pinning its whole text. Three lanes have since been
+ * wired into it and a pinned string had already gone stale twice, and a stale
+ * anchor here throws before the gate runs, which reads as a broken lane rather
+ * than as a shared file that grew. Index arithmetic only; no pattern matching.
+ */
+const MAP_DECL = "const RULED_BY_LANG: Record<string, Ruled[]> = {"
+function findMapDecl(src: string): { start: number; close: number } | null {
+  const at = src.indexOf(MAP_DECL)
+  if (at < 0) return null
+  // From the DECLARATION, not from the end of its line: the map's closing brace is
+  // the last character of that line, so a search begun at the newline walks PAST it
+  // and lands on whichever `}` comes next in the file — which spliced the entry into
+  // an unrelated type annotation and produced a table that was still empty.
+  const close = src.indexOf("}", at)
+  if (close < 0) return null
+  return { start: at, close }
+}
 const LANGS_ANCHOR = '  bash: { wasm: "tree-sitter-bash.wasm", analyzerFile: "real-bash-analyzer", className: "RealBashAnalyzer", ext: "sh,bash" },'
 const PROTOBUF_LANGS_ENTRY =
   '  protobuf: { wasm: "tree-sitter-protobuf.wasm", analyzerFile: "real-protobuf-analyzer", className: "RealProtobufAnalyzer", ext: "proto" },'
@@ -72,10 +90,14 @@ const need = (haystack: string, needle: string, what: string, file: string): voi
 const splice = (withTable: boolean, withLang: boolean): string => {
   let s = gateSrc
   need(s, IMPORT_ANCHOR, "the differential import", path.relative(ROOT, GATE))
-  need(s, MAP_ANCHOR, "RULED_BY_LANG", path.relative(ROOT, GATE))
+  const map = findMapDecl(s)
+  if (!map) {
+    throw new Error(`anchor missing: RULED_BY_LANG in ${path.relative(ROOT, GATE)}. Refusing to splice a file whose shape I do not recognise.`)
+  }
   if (withTable) {
     s = s.replace(IMPORT_ANCHOR, `${IMPORT_ANCHOR}\nimport { PROTOBUF_RULED } from "./protobuf-ruled"`)
-    s = s.replace(MAP_ANCHOR, MAP_ANCHOR.replace(" }", ", protobuf: PROTOBUF_RULED }"))
+    const at = findMapDecl(s)!
+    s = `${s.slice(0, at.close)}, protobuf: PROTOBUF_RULED ${s.slice(at.close)}`
   }
   if (withLang) {
     need(diffSrc, LANGS_ANCHOR, "the bash LANGS entry", path.relative(ROOT, DIFFERENTIAL))
@@ -90,10 +112,12 @@ const splice = (withTable: boolean, withLang: boolean): string => {
   return s
 }
 
+const NOISE_PREFIX = "[INFO]"
+const NOISE_TOKENS = ["BB-PARSE-ERR", "BB-HANG"]
 const clean = (s: string): string =>
   s
     .split("\n")
-    .filter((l) => !/^\[INFO\]/.test(l) && !/BB-PARSE-ERR|BB-HANG/.test(l))
+    .filter((l) => !l.startsWith(NOISE_PREFIX) && !NOISE_TOKENS.some((t) => l.includes(t)))
     .join("\n")
 
 const run = (label: string, code: string, tailOnly = false): string => {

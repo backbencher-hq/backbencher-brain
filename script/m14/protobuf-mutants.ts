@@ -561,6 +561,101 @@ export const PROTOBUF_MUTANTS: Mutant[] = [
       }
     },
   },
+
+  {
+    id: "protobuf/dotted-reference-back-to-the-name-as-written",
+    language: "protobuf",
+    defectClass: "dangling-endpoint",
+    description:
+      "A relative DOTTED type name is resolved through the package's ANCESTOR scopes, because protobuf's rule is C++ name lookup over every enclosing scope and not only the package subtree. The pre-fix behaviour was to emit such a name exactly as written, which is the shape of all 431 corpus edges that named an id no file publishes: `resources.scopes.v1.ScopeInfo` where the declaration is `controller.api.resources.scopes.v1.ScopeInfo`. This transform rewrites a target back to the name as written ONLY where the walk moved ALONG a shared ancestor path — the target's package shares a leading segment with the source's own package but is not equal to it, which is the corpus shape and is what makes the transform fire on the row under test and not on the guard's row. Caught by protobuf/ancestor-scope-resolution, which requires the ancestor-resolved id and forbids the name as written as well as the package-prefixed reading. Nothing is dropped, so a transform that emitted no edge at all would fail the same three rows.",
+    transform: (r: any) => {
+      const declared = new Set<string>(syms(r).map((s: any) => String(s?.metadata?.id)).filter(Boolean))
+      const importedDirs = new Set<string>()
+      for (const x of rels(r)) {
+        if ((x.type ?? x.relationshipType) !== "imports") continue
+        const mod = String((x?.metadata as any)?.modulePath ?? x?.target ?? "")
+        const cut = mod.lastIndexOf("/")
+        importedDirs.add(cut > 0 ? mod.slice(0, cut) : "")
+      }
+      if (importedDirs.size === 0) return r
+      /** The first package segment boundary, or -1 when the two share nothing. */
+      const sharedAncestorDepth = (a: string, b: string): number => {
+        const as = a.split(".")
+        const bs = b.split(".")
+        let i = 0
+        while (i < as.length && i < bs.length && as[i] === bs[i]) i++
+        return i
+      }
+      return {
+        ...r,
+        relationships: rels(r).map((x: any) => {
+          if ((x.type ?? x.relationshipType) !== "uses") return x
+          const tgt = String(x?.target ?? "")
+          if (declared.has(tgt)) return x
+          const tCut = tgt.lastIndexOf(".")
+          if (tCut <= 0) return x
+          const targetPkg = tgt.slice(0, tCut)
+          if (!importedDirs.has(targetPkg.split(".").join("/"))) return x
+          const src = String(x?.source ?? "")
+          const sCut = src.lastIndexOf(".")
+          if (sCut <= 0) return x
+          const sourcePkg = src.slice(0, sCut)
+          if (targetPkg === sourcePkg) return x
+          // Shares a leading segment but is not the source's own package: the walk
+          // went up to a common ancestor and back down into a sibling.
+          if (sharedAncestorDepth(targetPkg, sourcePkg) < 2) return x
+          return { ...x, target: tgt.slice(tgt.indexOf(".") + 1) }
+        }),
+      }
+    },
+  },
+  {
+    id: "protobuf/ancestor-scope-guard-removed",
+    language: "protobuf",
+    defectClass: "dangling-endpoint",
+    description:
+      "The ancestor walk accepts a candidate only when the matched import directory is not a proper SUFFIX of a more specific candidate's directory, and that condition is what a `-I` root ABOVE the package looks like. Dropping it was measured at 7 wrong corpus ids: docker vendors containerd, whose `api/types/platform.proto` declares `package containerd.types;` and is imported as `types/platform.proto`, so a guardless walk answers `types.Platform` where `protoc` answers `containerd.types.Platform`. This transform reproduces the guardless answer for the ONE shape the guard exists for — a reference whose package is a SINGLE segment, so every ancestor candidate is strictly longer and `types` is a proper suffix of all of them — and fires on nothing else. Caught by protobuf/ancestor-scope-resolution alone, and by exactly two of its rows: the `Shifted` requirement (`types.Platform`) goes missing and the innermost-candidate forbid (`corp.api.resources.accounts.v1.types.Platform`) appears instead. Measured rather than described: the walk reaches the MOST SPECIFIC ancestor first, so the id it asserts is that one and not `corp.types.Platform` — which is a second forbid row in the fixture, added so the chain ORDER is pinned independently of the guard. The ancestor-walk row is untouched by this mutant, which is what separates it from the mutant above.",
+    transform: (r: any) => {
+      const declared = new Set<string>(syms(r).map((s: any) => String(s?.metadata?.id)).filter(Boolean))
+      const importedDirs = new Set<string>()
+      for (const x of rels(r)) {
+        if ((x.type ?? x.relationshipType) !== "imports") continue
+        const mod = String((x?.metadata as any)?.modulePath ?? x?.target ?? "")
+        const cut = mod.lastIndexOf("/")
+        importedDirs.add(cut > 0 ? mod.slice(0, cut) : "")
+      }
+      if (importedDirs.size === 0) return r
+      return {
+        ...r,
+        relationships: rels(r).map((x: any) => {
+          if ((x.type ?? x.relationshipType) !== "uses") return x
+          const tgt = String(x?.target ?? "")
+          if (declared.has(tgt)) return x
+          const tCut = tgt.lastIndexOf(".")
+          if (tCut <= 0) return x
+          const rootedAt = tgt.slice(0, tCut)
+          // A SINGLE-segment package: the shape a shifted `-I` root produces, and
+          // the only one on which the guard is decidable without the chain.
+          if (rootedAt.includes(".")) return x
+          if (!importedDirs.has(rootedAt)) return x
+          const src = String(x?.source ?? "")
+          const sCut = src.lastIndexOf(".")
+          if (sCut <= 0) return x
+          const sourcePkg = src.slice(0, sCut)
+          const segs = sourcePkg.split(".")
+          // The most specific ancestor whose directory ends with the matched one,
+          // which is what the guardless walk would have reached.
+          for (let i = segs.length - 1; i > 0; i--) {
+            const longer = [...segs.slice(0, i), ...rootedAt.split(".")].join("/")
+            if (longer.endsWith(rootedAt) && longer !== rootedAt) {
+              return { ...x, target: `${segs.slice(0, i).join(".")}.${rootedAt}.${tgt.slice(tCut + 1)}` }
+            }
+          }
+          return x
+        }),
+      }
+    },
+  },
 ]
 
 export default PROTOBUF_MUTANTS
