@@ -139,21 +139,27 @@ round 3 reproduced round 2's denominators exactly (400 files / 48 repositories /
 4,012 admitted / 441,259 tracked). The gate column is quoted as a range for that
 reason and not as a single figure.
 
-| type | emitted? | **WHOLE CORPUS: 4,133 admitted, production `parseFile` (round 9)** | census: 400 files (round 8) | evidence |
-| --- | --- | --- | --- | --- |
-| `calls` | **EMITTED** | **55,231** | 5,097 | `census-bash-ontology.ts --all`, gate row |
-| `uses` | **EMITTED** | **81,529** | 7,856 | same |
-| `contains` | **EMITTED** | **38,278** | 3,775 | same |
-| `imports` | **EMITTED** | **679** | 44 | same |
-| `references` | **EMITTED** | **679** | 44 | same |
-| `exports` | **EMITTED** | **1,929** | 210 | same |
-| `overrides` | **EMITTED** | **138** | 28 | same |
-| `extends` | **RULED — never emitted** | 0 | 0 | instrument A + B below |
-| `implements` | **RULED — never emitted** | 0 | 0 | instrument A + B below |
-| `instantiates` | **RULED — never emitted** | 0 | 0 | instrument A + B below |
+| type | emitted? | **WHOLE CORPUS: 4,133 admitted, production `parseFile` (round 11)** | census: 400 files (round 11) | **edges that resolve to ONE declaration** | evidence |
+| --- | --- | --- | --- | --- | --- |
+| `calls` | **EMITTED** | **55,194** | 5,097 | 231 of 236 ambiguous; **0 dangling** | `census-bash-ontology.ts --all`, gate row, `probe-bash-published-resolvability.mts --all` |
+| `uses` | **EMITTED** | **81,490** | 7,856 | 11,177 of 12,136 ambiguous; 959 decline; **0 dangling** | same |
+| `contains` | **EMITTED** | **38,279** | 3,775 | **6,159 of 6,159 (100%)** — the edge's own line | same |
+| `imports` | **EMITTED** | **679** | 44 | n/a — the target is a path, 0 present | same |
+| `references` | **EMITTED** | **679** | 44 | n/a — the twin edge, 0 present | same |
+| `exports` | **EMITTED** | **1,929** | 210 | **96 of 96 (100%)** | same |
+| `overrides` | **EMITTED** | **138** | 28 | **138 of 138 (100%)** — definitional | same |
+| `extends` | **RULED — never emitted** | 0 | 0 | n/a | instrument A + B below |
+| `implements` | **RULED — never emitted** | 0 | 0 | n/a | instrument A + B below |
+| `instantiates` | **RULED — never emitted** | 0 | 0 | n/a | instrument A + B below |
 
 **Totals, in prose because the gate grades this table:** the seven emitted types sum
-to **178,463 relationships over 42,418 symbols**, from 4,133 admitted files. (A
+to **178,388 relationships over 42,420 symbols**, from 4,133 admitted files, 0 parse
+failures, 4,132 grammar-read and 1 answered by `extractFallback` contributing 0
+relationships. Rounds 9 and 10 read 178,463/42,418 and 178,396/42,403 on the same
+admitted set; that 0.04% wobble is the documented instrument property and it does not
+touch the four rarest types. The **last column is new in round 11** and it is the one
+that answers "can the graph walk to a declaration": over **18,765 name-ambiguous
+edges, 0 leave zero candidates in any type.** (A
 `total` row is not a row in this table: `verify-doc-truth-emissions.ts` parses every
 data row as a relationship type and reports a summary line as
 `NON_ENGINE_KIND [bash] total`, which this lane introduced once and removed.)
@@ -717,7 +723,18 @@ tell an array from a scalar. It does not need to be told a constant is not expor
 The eight keys still at 0% are produced and unread; widening the channel for them would
 make it larger without making it more true.
 
-## One edge, N declarations: the incoming-edge half, measured and partly closed
+## One edge, N declarations: the incoming-edge half, measured, partly closed in round 5, and finished in round 11
+
+> **ROUND 11 HEADLINE.** Applying the fields an edge PUBLISHES to the file's real
+> symbol table, over the **whole corpus**: **18,765 name-ambiguous edges, 17,801 resolve
+> to exactly one declaration, 959 decline explicitly, 5 are external binaries whose name
+> collides with a local variable, and 0 leave zero candidates in any type.** Before this
+> round, round 9 counted 6,491 of them open by name alone, 29 of those dangling and 109
+> publishing nothing. The section below is kept as written in rounds 5 and 9 with its two
+> retractions inline, because the shape of the two mistakes — a count copied forward a
+> round without a re-run, and a rule the instrument never contradicts — is the part a
+> reader of any lane's numbers needs. See
+> [Round 11](#round-11-the-open-population-was-counted-by-name-and-the-probe-was-wrong-twice).
 
 ### Round 9: which classes carry enough to disambiguate, and which do not
 
@@ -759,6 +776,22 @@ structural type at the end of a session or to name the number. `contains` sits a
 100% endpoint resolution with 0 `neither`, so nothing is dangling; what is missing
 is *which* of several same-named symbols, and a consumer reading a `contains` edge
 today must still pick by a rule nobody chose.
+
+> **RETRACTED IN ROUND 11, all three numbers, and the reason is worth more than the
+> numbers.** This counted how many published symbols share an edge's target **NAME**,
+> which is the condition `bb_impact` faces when it has nothing else — and a consumer
+> has the edge row too. Applying the fields the edge PUBLISHES to the real symbol
+> table: `contains` resolves **6,159 of 6,159** from the edge's own line, because a
+> `contains` line *is* the child's name line (`nameLineOf`, M60 #921) — so it was
+> never open, and the paragraph above saying so and this one saying it was unfixed
+> were both in the same section. `exports` was worse than counted: 29 of its 96
+> ambiguous edges left **zero** candidates, because the edge carries the `export`
+> STATEMENT's line rather than the declaration's, and the 400-file sample saw 2
+> ambiguous `exports` edges in which those were the same line. And the `uses` residual
+> quoted further down as "395 = 33.3% carry nothing" is round 5's figure, re-stated
+> without a re-run after round 6 had fixed the mechanism it blamed; reproduced, it is
+> **4**, of which 3 are now closed. See
+> [Round 11](#round-11-the-open-population-was-counted-by-name-and-the-probe-was-wrong-twice).
 
 The two `x` cases are a different fact and are named so they are not pooled with the
 above: `x` is declared **once per file** and the collision is **across** the 6 files
@@ -832,6 +865,15 @@ from fabricating: this attributes an existing claim, it does not add one.
 | now carry `targetLine` (`innermostScope` 674, `outerScope` 99) | **773 = 65.2%** |
 | decline explicitly (`targetResolution: "ambiguousInFile"`, no line) | 17 = 1.4% |
 | carry nothing | **395 = 33.3%** |
+
+> **RETRACTED IN ROUND 11.** These three rows are round 5's, re-stated here without a
+> re-run: `git log -S'65.2%'` puts the figure in `e7774ed40`, and round 6 had already
+> closed the mechanism this table blames by re-asking `resolveDeclaration` against the
+> finished index after the walk. Measured on the same 400 files: **1,183 of 1,187 = 99.7%**
+> carry a `targetResolution` and **4 = 0.3%** carry nothing, of which 3 were closed in
+> round 11 (`readCannotBeAFunction`) and 1 is the `declaredAfterUse` case. The mechanism
+> named below is real and was real in round 5; the number was simply never re-taken, and
+> a count copied forward a round without a re-run is not a measurement.
 
 The 395 are the **walk's own order**, not a failure of the rule. `declSites` is
 filled as the walk proceeds, so a use emitted above a later declaration of the same
@@ -1892,6 +1934,258 @@ No analyzer change in this round. `src/ast/real-bash-analyzer.ts` is byte-identi
 round 9 (`git diff 98bccd9c0..HEAD -- src/ast/real-bash-analyzer.ts` is empty), and to
 round 8's `81f6cbc33` before it.
 
+## Round 11: the open population was counted by name, and the probe was wrong twice
+
+Round 9 closed with a number and a plan: **6,491 ambiguous edges** it called an open
+population — 236 `calls`, 6,159 `contains`, 96 `exports` — plus "1,185 ambiguous `uses`
+edges, 395 = 33.3% carry nothing". It said `contains` was 95% of the open population,
+that `resolveDeclaration`'s scope-chain rule would apply to it unchanged, and that it
+was "not fixed and no edge is claimed to be fixed" because the session was ending.
+
+All three numbers were wrong, in three different ways, and each was wrong for a reason
+worth writing down. Two of the three were this lane's own instruments.
+
+### The question round 9 asked cannot see the answer
+
+Round 9 counted **how many published symbols in a file share an edge's target name**.
+That is the condition `bb_impact`'s name-match faces when it has nothing else — but a
+consumer does not have nothing else. It has the edge row and the symbol table, and the
+edge row carries fields. `probe-bash-published-resolvability.mts` asks the question
+that decides the work: *apply every discriminator the edge PUBLISHES to the file's real
+symbol table, and report what each one leaves.* The answers are three, not two:
+
+| outcome | meaning |
+| --- | --- |
+| **0 candidates** | the edge asserts a declaration the published table does not contain — a dangling claim, and the worst outcome |
+| **1 candidate** | resolvable, and the table says **which published field** did it |
+| **>1** | genuinely ambiguous: nothing the edge publishes separates them |
+
+On the 400-file hash-order sample, production `parseFile`, admitted 4,133 / scanned
+462,809 / 0 parse failures:
+
+| type | edges | target present | ambiguous | → 0 cand | → 1 cand | → >1 cand | decided by |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `calls` | 5,097 | 961 (18.9%) | 6 | 6 (100%) | 0 | 0 | **nothing** |
+| `uses` | 7,856 | 6,279 (79.9%) | 1,187 | 0 | 1,097 (92.4%) | 90 (7.6%) | `targetKind` |
+| `contains` | 3,775 | 3,775 (100%) | 658 | 0 | **658 (100%)** | 0 | `edgeLine` |
+| `exports` | 210 | 210 (100%) | 2 | 0 | 2 (100%) | 0 | `edgeLine` |
+| `overrides` | 28 | 28 (100%) | 28 | 0 | 28 (100%) | 0 | `overridesLine` |
+| `imports` / `references` | 44 / 44 | 0 | — | — | — | — | target is a path |
+
+**Correction 1 — `contains` was never open.** 658 of 658 ambiguous `contains` edges
+reduce to exactly one candidate from the edge's own line, because a `contains` edge's
+line *is* the child's name line (`nameLineOf`, M60 #921). Round 9's 6,159-edge open
+population was 95% counting a name where a line was already published. This file had
+said so in prose since round 5 ("`contains` puts the child's *name* line on the edge")
+and then, four paragraphs later, counted the same edges as unfixed — both statements
+were in the same section, and the count won because a count is easier to check than a
+prose claim about a field.
+
+**Correction 2 — the 395 was a round-5 number quoted after round 6 fixed its cause.**
+Round 9's table (`1,185 ambiguous`, `773 = 65.2% carry targetLine`, `395 = 33.3% carry
+nothing`) is round 5's, carried forward unchanged. `git log -S'65.2%'` puts it in
+`e7774ed40`, and round 9 re-stated it without re-measuring. Round 6 had already fixed
+the mechanism round 5 blamed: a post-walk second pass re-asks `resolveDeclaration`
+against the finished index (`real-bash-analyzer.ts`, the `attribution, second pass`
+loop). Reproduced on the same 400 files:
+
+| of the 1,187 name-ambiguous `uses` edges | count |
+| --- | --- |
+| carry `targetResolution` | **1,183 = 99.7%** |
+| carry nothing at all | **4 = 0.3%** |
+| of those carrying it: `innermostScope` 995 · `outerScope` 102 · `ambiguousInFile` 86 | |
+
+So the number round 9 called a defect was **4**, not 395, and 3 of those 4 were closed
+by this round. The lesson is narrow and repeatable: a count copied forward one round
+without a re-run is not a measurement, and the failure is invisible precisely because
+the number is plausible.
+
+### `exports` was not closed either, and the reason is a coincidence
+
+The probe's per-type rows disagreed with the prose in the same section, so the
+prose was checked against a file by hand. `dark/scripts/testing/_gates-ui`:
+
+```
+SYM constant DARK_CONFIG_RUNDIR@31  owner=gate_workbench_scm
+SYM constant DARK_CONFIG_RUNDIR@93  owner=gate_workbench_views
+SYM constant DARK_CONFIG_RUNDIR@144 owner=gate_lsp_branches
+EXP gate_workbench_scm -[exports]-> DARK_CONFIG_RUNDIR @65   (edge line 65)
+```
+
+`65` is the **`export` statement's** line. No published symbol carries it. Rounds 5 and
+9 both recorded `exports` as already disambiguated because "the edge puts the
+declaration's line on it" — it puts the *export's* line, and the two are the same
+statement only when the export is the declaration (`export FOO=1`). Whole corpus:
+
+| `exports` edges | ambiguous | edge line leaves **0 candidates** | leaves 1 |
+| --- | --- | --- | --- |
+| 1,929 | 96 | **29 (30.2%)** | 67 |
+
+`nvm_supports_xz -[exports]-> PATH @37` against `constant@8` and `constant@21`;
+`check_ce2ee -[exports]-> ORG_REPO @625` against four candidates;
+`gate_workbench_scm -[exports]-> DARK_CONFIG_RUNDIR @65` against `constant@31/93/144`.
+
+**The 400-file sample saw 2 ambiguous `exports` edges and in both the export line and
+the declaration line were the same statement.** So the rule agreed with the coincidence
+on every case the instrument could see, and a rule the instrument never contradicts is
+not a verified rule. Fixed by the existing outward scope walk over `declSites` — an
+exported name is a variable or a constant, which is what `declSites` keys; `export -f fn`
+targets a function and is left to the function rule. **96 of 96 now resolve.**
+
+### The two gaps that were real, and what closed them
+
+Both were invisible to the 400-file sample and both were found by the same `--all` run.
+
+**`calls` to a redefined function — 6 edges on the sample, 236 corpus-wide.** No
+published field answered, and `isFunctionCall: true` could not: it says the target *is* a
+function declared in this file, not *which* one, so as a filter it leaves **zero**
+candidates on every case. The corpus shape is
+`kubernetes/third_party/gimme/gimme`: `_version_sort` defined at 125, redefined at 127,
+called at 535, 565, 581. bash functions have no nested scope, so the answer is the
+latest definition at or before the call site — and note the direction, because the
+`overrides` edge points the *other* way (from a redefinition back to the one it
+replaces). Copying the `overrides` reflex into `calls` answers 125 and is wrong.
+
+**`calls` to a name that is a function once and a variable too — 105 edges, corpus-only.**
+Among *function* declarations the name is unique, so the rule above declines correctly
+and the edge publishes nothing — while the published symbol table holds two
+declarations and a consumer matching by target has two candidates.
+`swift-nio/scripts/nio-diagnose:398` calls `nio_pids` against `variable@136` and
+`function@151`; `mvdan-sh/syntax/typedjson/testdata/roundtrip/file.sh` calls `foo`
+against `function@19` and `variable@20`. A **command position cannot denote a variable**
+at all, so the single function is the answer, published as `commandNameIsAFunction` with
+position deliberately irrelevant — unlike a `uses` edge, which has a "declared after the
+use site" case to decline and a command has none.
+
+The symmetric case on the read side was already closed above it: a `$name` read cannot
+denote a function, so `readCannotBeAFunction` names the variable. The two are one rule
+with a sign error between them, which is why the fixture asserts all three edges on one
+name and requires them to resolve to **opposite declarations on adjacent lines**
+(`command_name` function@127, variable@128, read at 137 → 128 and called at 131 → 127).
+
+### Whole corpus, after: 0 dangling, 18,765 ambiguous edges accounted for
+
+`census-bash-ontology.ts --all` and `probe-bash-published-resolvability.mts --all`, both
+production `parseFile`, 4,133 admitted, **0 parse failures**, 4,132 grammar-read and 1
+answered by `extractFallback` contributing **0 relationships**:
+
+| type | edges | files | ambiguous | → 1 candidate | → >1 | said so explicitly | bare | **→ 0 candidates** |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `calls` | 55,194 | 3,734 | 236 | **231 (97.9%)** | 5 | 0 | 5 | **0** |
+| `uses` | 81,490 | 3,263 | 12,136 | **11,177 (92.1%)** | 959 | 959 | 0 | **0** |
+| `contains` | 38,279 | 3,353 | 6,159 | **6,159 (100%)** | 0 | 0 | 0 | **0** |
+| `exports` | 1,929 | 647 | 96 | **96 (100%)** | 0 | 0 | 0 | **0** |
+| `overrides` | 138 | 48 | 138 | **138 (100%)** | 0 | 0 | 0 | **0** |
+
+**17,801 of 18,765 name-ambiguous edges resolve to exactly one declaration. 959 decline
+explicitly. 5 are external. 0 leave zero candidates — in any type, on any of the four
+instruments.** Before this round: 6,491 counted open by name alone, **29 of them
+dangling**, 109 publishing nothing.
+
+**The 5 that publish nothing are not an attribution gap, and counting them as one would
+be the wrong finding.** All five have `isFunctionCall: false` and
+`isExternalCommand: true` — `ohmyzsh/plugins/pip/pip.plugin.zsh:107` calls `xargs`,
+which that file also uses as a variable at 106 and 114; `Paket/completion/
+paket-completion.zsh:1486` calls `key`; `kubernetes/cluster/gce/util.sh:3829` calls
+`name`. These are external binaries whose *name* collides with a local variable, which
+belongs with the 702 name collisions already counted under
+[external vs never indexed](#external-and-never-indexed-are-separated-at-the-whole-corpus).
+The flag itself is sound, measured rather than assumed: **`isFunctionCall: true` on
+14,057 whole-corpus `calls` edges, and 14,057 of 14,057 have a published function symbol
+of that name — 0 exceptions.**
+
+### The probe was wrong twice, and both times the analyzer was right
+
+Worth its own section because the instrument is the thing this lane keeps being wrong
+about, and because in both cases the honest move was to check a file by hand rather than
+re-tune until the number looked better.
+
+**It ANDed two alternative discriminators.** `targetLine` and `edgeLine` both select on
+a line. Applying both is a conjunction that can only delete candidates — so after the
+`exports` fix, all 29 edges the analyzer had just repaired were reported as leaving
+**zero** candidates, because the export statement's line was ANDed with the
+declaration's `targetLine` and no published symbol carries both. The probe was wrong and
+the analyzer was right, and the tell was that a fix had made a number get *worse*.
+Corrected to model a consumer: apply the discriminators the edge carries, **stop at the
+first that answers**. The 29 were confirmed against `_gates-ui` by hand *before* the
+claim was rewritten.
+
+**It treated a flag as a discriminator.** `isFunctionCall` was in the narrowing
+pipeline and can only discard — never narrow — so it converted 231 correctly-resolved
+`calls` edges into dangling claims. It is now measured in the per-rule health table and
+**not applied**, with the reason in the probe's own source: *a rule that can only remove
+answers must stay out of the narrowing pipeline or it converts a resolved edge into a
+dangling claim.* It leaves zero candidates on 231 of 231, which is the measurement that
+keeps it out.
+
+That per-rule health table is the falsifiable half of this probe, and it is what makes
+both corrections visible rather than arguable:
+
+| rule | applied to an ambiguous edge | → 0 cand | → 1 cand | → >1 cand |
+| --- | --- | --- | --- | --- |
+| `targetLine` | 11,504 | **0** | 11,504 (100%) | 0 |
+| `targetKind` | 11,504 | 0 | 199 (1.7%) | 11,305 |
+| `overridesLine` | 138 | **0** | 138 (100%) | 0 |
+| `edgeLine` | 6,255 | 29 (0.5%) | 6,226 (99.5%) | 0 |
+| `isFunctionCall` (measured, **not applied**) | 231 | 231 (100%) | 0 | 0 |
+
+`edgeLine`'s 29 zeros are the `exports` claim this round retracts; `targetKind`'s 11,305
+"many" is why it cannot be the primary discriminator; `isFunctionCall`'s 231 zeros are
+why it is not applied at all.
+
+### Coverage, unchanged, and a mutant that passed for a structural reason
+
+**7/7 applicable, 3 measured-absent, 0 unaccounted** — this round changed no verdict. It
+changed the incoming half from "6,491 edges counted open by name" to "0 dangling", and
+it retracted two of this file's own numbers to get there.
+
+The gate re-run is unchanged: `emitted 7/10  ruled-sound 3  FALSIFIED 0
+ruled-without-justification 0`, with the same two `[BB-PARSE-ERR]` rows and the same
+`[BB-HANG]` exit that rounds 3, 7 and 9 recorded. `firing-check --files 120 bash` still
+reads **6/10**, for the arithmetic priced in
+[round 10](#overrides-reads-0-at-120-files-and-that-is-arithmetic): `overrides` has 1.16%
+prevalence and P(reading 0 in 120 files) = 24.6%.
+
+`bash/exports-resolution-inverted` **survived the battery**, and the reason is worth
+recording because it is the second time in this lane that a survivor was structural
+rather than careless. The mutant walks the `exports` scope chain from the file inward;
+the fixture held the module-scope export (`@159` → `150`) and *claimed* in the mutant's
+own description to hold the in-function one. It did not. An implementation that ignored
+scope answers `150` for both, so the inversion was invisible. The missing row —
+`exports_from_its_own_scope` → `165`, its own declaration — is now asserted, and
+**34 of 34 mutants are caught with 0 survivors.** The two rows are `150` and `165`
+precisely so that a scope-blind walk cannot produce both.
+
+### Files changed, and the payload
+
+`src/ast/real-bash-analyzer.ts`: **+284 / −0**, all of it in the post-walk attribution
+region — the walk, the collectors and every emitter are untouched, which is why the edge
+counts are identical before and after. Two indexes (`functionDeclLines` over published
+function declaration lines, `namesWithNonFunctionDecl` over names carrying a non-function
+declaration) and two methods (`resolveFunctionTarget`, `resolveReadAgainstFunctionSymbol`).
+Four `targetResolution` values exist where two did — `latestDefinitionBeforeUse`,
+`declaredAfterUse`, `commandNameIsAFunction`, `readCannotBeAFunction` — and each is
+published **only on an edge whose target the published symbol table answers to more than
+once**:
+
+| | edges | edges carrying ≥1 target key | share |
+| --- | --- | --- | --- |
+| `calls` | 55,194 | **231** | 0.4% |
+| `uses` | 81,490 | **11,177** | 13.7% |
+| `exports` | 1,929 | **96** | 5.0% |
+| `contains` / `overrides` | 38,279 / 138 | **0** | already carried the line |
+| `imports` / `references` | 679 / 679 | **0** | the target is a path |
+
+**11,504 edges of 138,613 = 8.3%** carry an attribution key, measured as the sum of the
+probe's `decided by` column, and the four types the round did not touch are untouched for
+the same reason round 5 gave: an edge whose target is unique in its file carries no new
+information, and attaching keys to all of them would be paying to say what the row already
+says. One `targetLine` literal cost a round here — the first version wrote `"Function"`
+where `SymbolKind.Function` is `"function"`, so the key existed and matched nothing on
+every edge it touched — so the value is now read off the published symbol and a literal
+of that shape is a mutant, not a style question. No budget file was re-baselined; no
+shared file was edited.
+
 ## The two fabrications pass 2 found, and the guard that removed them
 
 Pass 1 measured how MANY edges there were. Pass 2's job was to find edges that are
@@ -2525,6 +2819,51 @@ verdicts are therefore quoted against 164 and the difference is stated rather th
     corpus. **Round 9 re-ran every headline number at `--all` for this reason, and
     the sample-based column is now labelled as the sample it is.**
 
+28. **Round 11: a 400-file sample hid two defects and a rule the sample agreed with
+    was never a verified rule.** The two were opposite in kind. `calls` to a name
+    declared as a function once and a variable as well — **105 whole-corpus edges** —
+    has an expected count in 120 files of 0.13, so P(seeing one) is **12.3%** and the
+    sample read 0 by arithmetic, not by luck; `exports` pointing at a declaration that
+    does not exist at the row it names — **29 of 96 ambiguous edges** — had an expected
+    count of 1.8 in 120 files, so P(seeing one) is **83.3%** and the sample saw 2
+    ambiguous `exports` edges in which the export statement and the declaration were
+    the *same statement*, so the rule and the coincidence agreed every time the
+    instrument could look. A rule an instrument never contradicts is not a verified
+    rule; it is a rule with no negative case. The generalisation is the one worth
+    keeping: **prevalence bounds how badly a sample will mislead, and P(0) in n files
+    is (1−p)^n** — so a defect's sample-visibility is a property of the defect, and a
+    defect that is invisible at 400 files is invisible at 4,000 for the same reason.
+    What caught both was running the same instrument at 4,133, and what caught the
+    `exports` retraction was checking one file by hand before writing the number down.
+
+29. **The 959 `uses` edges that decline are a correct answer and are not a defect,
+    but a consumer that only reads `targetLine` will read them as unresolved.** They
+    publish `targetResolution: "ambiguousInFile"` and no line, because the name is
+    declared several times in the file and none of the declarations is in effect where
+    the edge points — `consul/test/integration/connect/envoy/helpers.bash:60` reads
+    `status`, declared at 910 and 954, from line 60. Publishing the nearer of the two
+    would be an invented attribution, so the row says what it saw instead. **A
+    reverse walk that requires a line cannot distinguish "declined" from "never
+    looked",** and nothing in this lane's published data makes that distinction for it
+    beyond the presence of the key. Fixing that is a consumer-side change (laptop C's
+    resolution layer), not a schema change, and it is named here rather than left as a
+    footnote because 959 is a number a reader will otherwise have to discover.
+
+30. **5 whole-corpus `calls` edges still publish nothing, and they are external — but
+    the count is not zero by construction and a future corpus could make it non-zero
+    for a different reason.** All five have `isFunctionCall: false` and
+    `isExternalCommand: true` and name a binary whose name a local variable also
+    carries (`xargs` in `ohmyzsh/plugins/pip/pip.plugin.zsh`, `key` in
+    `Paket/completion/paket-completion.zsh`, `name` in
+    `kubernetes/cluster/gce/util.sh`). `isFunctionCall` itself is sound on this corpus:
+    **14,057 of 14,057** `isFunctionCall: true` edges have a published `function` symbol
+    of that name. The limitation is that this lane's only defence against the *other*
+    case — a name that is a local function yet published as no function symbol — is the
+    published symbol table itself, and that table is produced by the same analyzer the
+    flag is about. A grammar that stopped emitting a `function_definition` node would
+    make the flag and the table agree on a wrong answer, and nothing in the flag would
+    report it.
+
 ## Complexity envelope and measured performance
 
 One iterative pre-order walk with a constant-time function-scope stack, a Map of
@@ -2667,6 +3006,10 @@ This round's own measurements, each reproducible from a named file in
 | Ontology coverage gate | `npx tsx script/m14/ontology-coverage-gate.ts bash` | **7/10 emitted, 3 RULED-SOUND, 0 FALSIFIED, 0 ruled-without-justification** — round 10. calls 55,212 · uses 81,486 · contains 38,254 · imports 676 · references 676 · exports 1,926 · overrides 138; all three RULED rows cite 164 grammar node types and `script/m14/bash-ruled.ts`. Four `[BB-PARSE-ERR] … memory access out of bounds` rows and one `[BB-HANG] parser stuck 120s` on `bash-completion/completions-core/iconv.bash`, then exit — so its per-type totals sit slightly under the census on the same corpus (55,212 vs 55,222). See limitation 15 |
 | Differential, bash only | `npx tsx script/m14/differential.ts --lang bash` | **ROUND 6, RE-MEASURED WITH `--force-fresh`**: `otp` pin, 60 files, `rot 22`, hash `657ef2aed8371f1a`: truth **1,673**, covered **1,673 (100%)**, MISSING 0, analyzer-edges 1,637, unexplained **5 (0.3%), all labelled `contains`**, heuristic 0, cold-pool `0/60 fresh (rot 22, corpus 63)`. The absolute counts are **+76 against round 5's 1,597 / 1,561** because the corpus grew and the sample rotated — the sample hash changed with them, so the two rows are not comparable. What IS comparable is the shape and it did not move: coverage 100%, MISSING 0, unexplained 5. Round 3 read unexplained 0, and the five are attributed, not absorbed — see [DERIVATION](#derivation-debt-the-five-unexplained-edges-are-the-oracles-blind-spot).** The run states it did **not** write the F5 artifact, "a scoped run is for inspecting lanes, and writing it here would replace that claim with a smaller one" |
 | Round-5 A/B — did the change alter an edge? | `BB_AB_BASE=b2b6ee090 npx tsx validation/m14/fixtures/bash/ab-round5-targetline.ts --sample 200` | `otp`, 115 pinned files: old 7,813 edges, new 7,813 edges, **ADDED 0, REMOVED 0**, 84 metadata-only changes (`targetLine`/`targetKind`/`targetResolution` × 84 each). **PASS**. Written because the differential could not answer it: its cold-pool rotation drew `rot 21`, two consecutive runs are not comparable, and its lane journal is a shared `/tmp` file this lane does not own |
+| **PUBLISHED RESOLVABILITY — whole corpus (round 11)** | `npx tsx validation/m14/fixtures/bash/probe-bash-published-resolvability.mts --all` | **ROUND 11: 4,133 admitted / 462,809 scanned / 0 parse failures.** Applies the fields an edge PUBLISHES to the file's real symbol table. Over **18,765 name-ambiguous edges**: **17,801 resolve to exactly one declaration, 959 decline explicitly, 5 are external, and 0 leave ZERO candidates in any type.** Per type: calls 236 ambiguous → 231 resolve / 5 external / 0 dangling · uses 12,136 → 11,177 / 959 declined / 0 · contains 6,159 → **6,159 (100%)** via the edge's own line · exports 96 → **96 (100%)** · overrides 138 → **138 (100%)**. Per-rule health: `targetLine` 11,504 → 1 candidate 100% · `overridesLine` 138 → 100% · `edgeLine` 6,255 → **29 zeros** (the retracted `exports` claim) · `targetKind` 11,504 → 199 one / 11,305 many · `isFunctionCall` 231 → **231 zeros, measured and NOT applied** (a flag that can only discard is not a discriminator) |
+| `isFunctionCall` soundness (round 11) | `npx tsx <whole-corpus walk over production parseFile>` | **`isFunctionCall: true` on 14,057 whole-corpus `calls` edges; 14,057 of 14,057 have a published `function` symbol of that name — 0 exceptions.** This is what separates the 5 residual publishing-nothing `calls` edges (external binaries colliding with a local variable name) from an attribution gap |
+| Ontology census, whole corpus, round 11 A/B | `npx tsx validation/m14/fixtures/bash/census-bash-ontology.ts --all` | **178,388 relationships / 42,420 symbols / 0 parse failures / `grammar-read 4,132` / `FALLBACK 1` contributing 0 relationships.** Per type: calls 55,194 · uses 81,490 · contains 38,279 · imports 679 · references 679 · exports 1,929 · overrides 138. Round 9 read 178,463/42,418 and round 10 read 178,396/42,403 on the same admitted set: the 0.04% run-to-run wobble is the documented instrument property and it does not touch the four rarest types. The 400-file sample reproduces exactly across the round-11 analyzer change — calls 5,097 · uses 7,856 · contains 3,775 · imports 44 · references 44 · exports 210 · overrides 28, total 17,054 on 4,179 symbols, identical before and after |
+| Round-11 fixture + mutants | `bun run script/m14/run-fixtures.ts --lang bash` and `bun run validation/m14/fixtures/bash/mutants-bash-lane.mts` | 26/26 fixtures pass. **34/34 mutants caught, 0 survived, 0 did not apply** — 9 of the 34 added this round. `bash/exports-resolution-inverted` SURVIVED the first version of the round because the fixture asserted one `exports` row while the mutant's own description claimed two; the missing row (`exports_from_its_own_scope` → 165, its own declaration, against the module-scope row's 150) is now asserted, and the two rows are 150 and 165 precisely so a scope-blind walk cannot produce both |
 | Ambiguity — one edge, N declarations | `npx tsx validation/m14/fixtures/bash/probe-bash-ambiguity.mts --sample 400` | **1,879** ambiguous targets across 5 types; **0 irreducible by line** (100% of candidate sets on distinct `startLine`s); nearest-preceding picks exactly one in **1,830 = 97.4%**, 49 tie. Per type: uses 1,185 (19.0% of 6,239 resolved) · contains 658 (17.4%) · overrides 28 (100%) · calls 6 (0.6%) · exports 2 (1.0%). Denominators match the census exactly, which required copying its 512 KB cap and content-form `detectLanguageFromPath` |
 | DERIVATION debt — class size | `npx tsx validation/m14/fixtures/bash/probe-bash-derivation-debt.ts --sample 400` | implicit-binding symbols published **175** (for 127/71 files, read 48/25 files); `contains` edges naming one **179**, all unexplained by construction; `uses` edges naming one **400**, all resolving |
 | Evidence census, every admitted file | `npx tsx validation/m14/fixtures/bash/probe-bash-missing-evidence.mts` | **SUPERSEDED — do not quote.** Its reading was 4,130 admitted, **137,770 edges, 0 with no `evidenceClass`** (calls 55,220 · uses 80,851 · contains 38,273 · exports 1,929 · imports 679 · references 679 · overrides 138). Round 9 shows this probe also walked the borrowed parser and covered ~499 files, so its "every admitted file" label was false. Use the `--all` row. Its *invariant* — **0 edges with no `evidenceClass`, and 0 below 0.7 confidence** — is re-confirmed at 100% by the `--all` run and is the part worth keeping |
