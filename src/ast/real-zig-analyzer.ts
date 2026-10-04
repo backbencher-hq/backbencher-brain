@@ -173,6 +173,12 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
       { node: rootNode, container: null, inFunction: false, anonContainer: false },
     ]
 
+    /** The name the FILE gives its own container, if it gives one. Computed once,
+     *  before the walk, because it is a property of the file rather than of any
+     *  node the walk visits — and read here so the `container_field` branch can
+     *  attribute a file-level field to it. */
+    const fileContainerName = this.zigThisBindingName(rootNode)
+
     while (walkStack.length > 0) {
       const item = walkStack.pop()!
       const { node, container, inFunction, anonContainer } = item
@@ -702,6 +708,38 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
       // have no stable container identity and must NOT become file-scope
       // symbols (C negative contract: anonymous containers are not named).
       if (type === "container_field") {
+        // ─── A FIELD OF THE FILE ITSELF (`@This()`) ───
+        // Zig lets a FILE be a struct. `const OpenURI = @This();` followed by
+        // bare fields makes the file's top level the body of that struct, and
+        // the grammar states that structurally: the fields arrive as
+        // `container_field` whose DIRECT parent is `source_file`, not as a
+        // child of any `container_declaration`. Pinned-wasm probe,
+        // ghostty/src/apprt/gtk/portal/OpenURI.zig:20 — the ancestors read
+        // `container_field < source_file`, and the file's own tree declares
+        // `app`, `dbus`, `mutex`, `entries`, `cleanup_timer`, `alive`.
+        //
+        // The `!container` skip below did not reach this shape, and the
+        // negative contract it cites does not either. That contract is about a
+        // field inside an ANONYMOUS struct — one returned from a generic
+        // function, `fn GenericStack(...) type { return struct {...} }` — whose
+        // owner has no stable identity. A file-level field's owner is the FILE:
+        // it has a path, and in 401 of the 411 corpus files that declare one it
+        // has a name too, bound by `const X = @This()`. Measured over the
+        // published 3,834-file draw (filecontainer-census.ts): 411 files carry
+        // at least one, 3,324 fields in all, and 2,892 of those names were
+        // published NOWHERE in their own file — so every read of one was an
+        // unresolvable `uses` edge naming a declaration the parser had in hand.
+        //
+        // The owner is asserted ONLY when the file names it. `anonContainer` is
+        // not consulted: a file-level field is by construction not inside an
+        // anonymous container, and requiring `node.parent` to be `source_file`
+        // is the stronger statement — it cannot be true of a field that some
+        // enclosing struct owns.
+        if (!container && !anonContainer && node.parent?.type === "source_file") {
+          this.zigFileLevelField(node, fileContainerName, symbols)
+          this.pushChildren(node, walkStack, container, inFunction, anonContainer)
+          continue
+        }
         if (!container || anonContainer) {
           this.pushChildren(node, walkStack, container, inFunction, anonContainer)
           continue
@@ -2510,6 +2548,89 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (kinds.size === 1) md.targetKind = [...kinds][0]
       else md.targetKindCount = kinds.size
     }
+  }
+
+  /** The `const X = @This();` binding of a file, or null when the file does not
+   *  name its own container. Read off node types only: a direct
+   *  `variable_declaration` child of the root whose value is a `builtin_function`
+   *  carrying the `builtin_identifier` `@This`.
+   *
+   *  The NAME is `namedChild(0)` when that is an `identifier`, NOT
+   *  `childForFieldName("name")`: this grammar declares no `name` field on
+   *  `variable_declaration` — the walk reads a variable declaration's name the
+   *  same way, and a probe that used the field lookup reported 0 bindings on a
+   *  source that carries one. `container_field` DOES declare `name`, which is
+   *  why `zigFileLevelField` can use the field.
+   *
+   *  Null is a real answer and not a fallback: 10 of the 411 corpus files that
+   *  declare file-level fields never bind `@This()`, and for those the owner of
+   *  those fields is not nameable from the file. */
+  private zigThisBindingName(root: Node): string | null {
+    for (let i = 0; i < root.namedChildCount; i++) {
+      const decl = root.namedChild(i)
+      if (!decl || decl.type !== "variable_declaration") continue
+      for (let j = 0; j < decl.namedChildCount; j++) {
+        const value = decl.namedChild(j)
+        if (!value || value.type !== "builtin_function") continue
+        const isThis = this.anyChild(value, (n) => n.type === "builtin_identifier" && n.text === "@This")
+        if (!isThis) continue
+        const name = decl.namedChildCount > 0 ? decl.namedChild(0) : null
+        if (name && name.type === "identifier") return name.text
+      }
+    }
+    return null
+  }
+
+  /** Publish one `container_field` whose direct parent is the file's root — a
+   *  member of the struct the FILE is, per `zigThisBindingName`.
+   *
+   *  The kind is decided by the field's own `type` FIELD, which is this
+   *  analyzer's discriminator between a struct field and an enum member
+   *  (`:2180`): the grammar uses one node type for `a: u8` and for `north`, and
+   *  only the former carries a type. A named container gets that answer from
+   *  its kind instead; a file-level container has no published kind, because
+   *  `const X = @This()` publishes `X` as a `Type` whether the body is a struct
+   *  or an enum, so the field's own field is the only evidence there is.
+   *
+   *  The owner is set ONLY when the file names it. The 10 corpus files that
+   *  declare file-level fields without a `@This()` binding publish the field
+   *  with no owner: the declaration is real and its reads then resolve, while
+   *  no `contains` edge is emitted for it, because that edge would need a
+   *  source symbol and asserting one would be inventing the container's name.
+   *
+   *  The name guards are the SAME three the named-container branch applies, and
+   *  they are load-bearing here rather than defensive: the corpus's three
+   *  untyped file-level fields are all in `zig/test/cases/compile_errors/`
+   *  (`file_level_tuple.zig` — a file-level tuple, which Zig rejects), and their
+   *  text holds a TYPE where a name belongs (`u32`, `comptime u8 = 123`). A
+   *  symbol named `u32` is a fabrication, so they are refused exactly as an
+   *  unnamed `extern struct` member is. */
+  private zigFileLevelField(
+    node: Node,
+    ownerName: string | null,
+    symbols: ASTEngine.UniversalSymbol[],
+  ): void {
+    const nameField = this.namedFieldOf(node, "name")
+    const nameNode =
+      nameField && nameField.type === "identifier" ? nameField : this.anyChild(node, (n) => n.type === "identifier")
+    const fieldName = nameNode ? nameNode.text : ""
+    if (!fieldName || fieldName === "_" || fieldName.length >= 200) return
+    const typeField = this.typeFieldOf(node)
+    symbols.push({
+      name: fieldName,
+      kind: typeField ? ASTEngine.SymbolKind.Property : ASTEngine.SymbolKind.EnumMember,
+      visibility: "public",
+      range: this.nodeRange(node),
+      scope: ownerName ?? undefined,
+      ownerName: ownerName ?? undefined,
+      ownerKind: ownerName ? ASTEngine.SymbolKind.Type : undefined,
+      returnType: typeField ? this.nodeText(typeField) : undefined,
+      metadata: {
+        zigField: true,
+        zigFileLevelField: true,
+        ...(typeField ? {} : { zigEnumMember: true }),
+      },
+    })
   }
 
   private pushChildren(
