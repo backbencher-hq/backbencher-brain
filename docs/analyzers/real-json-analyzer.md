@@ -402,8 +402,15 @@ empty or unknown kind**, **0 endpoints equal to the literal `unknown`**, 0 edges
 12,542 — one file short of the population, and the file is named in §limitation 8.
 
 **Differential**, production `parseFile` against `deriveJsonEdges` over a fresh parse
-(`validation/m14/fixtures/json/differential.ts`), 1,952 files across 4 repositories
-chosen for the inheritance evidence:
+(`validation/m14/fixtures/json/differential.ts`). Two runs, because the second is the one
+that covers the inheritance evidence and the first is the wider corpus:
+
+| | files | truth | covered | MISSING | UNEXPLAINED | files matching exactly |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 12 repositories (openapi-spec, postgrest, docker, terraform, kubernetes, svelte, apollo-server, duckdb, otp, vault, graphql-js, vega) | 3,272 | 846,762 | 846,762 (100.00%) | **0** | **200** | 2,878 of 2,897 |
+| 4 repositories (dart-sdk, duckdb, openapi-spec, hasura-engine) | 1,952 | 526,510 | 526,510 (100.00%) | **0** | **65** | 1,891 of 1,909 |
+
+Per label, on the 4-repository run chosen for the inheritance evidence:
 
 | label | truth | analyzer | covered | MISSING | UNEXPLAINED |
 | --- | ---: | ---: | ---: | ---: | ---: |
@@ -417,7 +424,7 @@ chosen for the inheritance evidence:
 | `calls` | 5 | 5 | 100.00% | 0 | 0 |
 | `overrides` | 15 | 15 | 100.00% | 0 | 0 |
 
-Three classes of defect were found here and are fixed rather than listed as
+**Four** classes of defect were found here and are fixed rather than listed as
 limitations:
 
 1. **`contains` for an array inside an array.** 183 edges corpus-wide that the analyzer
@@ -430,14 +437,23 @@ limitations:
    rows[0][1]` between two objects that are not nested. **Both implementations had the
    same bug**, which is the case the honesty contract names: agreement is evidence that
    two walkers agree, not that either is right about the language.
-2. **The oracle resolved `allOf` composition DURING its walk.** `definitions` frequently
+2. **The oracle published BARE `contains` endpoints while the analyzer published qualified
+   paths.** The endpoint change landed without it, and nobody ran the lane's differential, so
+   the change was invisible to the lane's own instrument: on the 3,272-file corpus,
+   `contains` read **17,541 of 834,130 covered — 2.10% — with 816,589 MISSING and 816,589
+   UNEXPLAINED**. The oracle already computed both paths (`parentPath` is the owning
+   object's own path, `here` is the child's) and published names instead. After the fix:
+   **834,130 of 834,130, 0 MISSING, 0 UNEXPLAINED.** The lesson is the one this lane keeps
+   re-learning: a change to an endpoint form is a change to the comparison, and the
+   comparison has to be re-run or it certifies nothing.
+3. **The oracle resolved `allOf` composition DURING its walk.** `definitions` frequently
    comes after `properties` in a JSON Schema document, so a pointer into `definitions`
    had not been recorded when the `allOf` referencing it was read. Measured: 809
    `extends` edges on a 3,272-file corpus read as analyzer-only, and on go-openapi's
    `schema.json` the oracle produced **zero** where the analyzer produced 4 — every one an
    `allOf` under `properties`. The same document order is why the `references` rule,
    which resolves in a second pass, was always right.
-3. **`extends` was sourced from the `allOf` ARRAY** rather than from the schema object
+4. **`extends` was sourced from the `allOf` ARRAY** rather than from the schema object
    that composes. Every corpus example read
    `debugAdapterProtocol.definitions.Request.allOf -[extends]-> …ProtocolMessage`, and
    `allOf` is a keyword shared by every schema in the file. The array's own path is still
