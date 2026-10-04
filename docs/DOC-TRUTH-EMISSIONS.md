@@ -85,7 +85,7 @@ This is the population the gate MEASURES rather than blocks. Each row is one ana
 | swift | `imports (import-site: ImportInfo[])` | line 36 |
 | swift | `exports (export-site: ExportInfo[])` | line 36 |
 | typescript | `calls (relationship)` | line 29 |
-| xml | `contains (relationship)` | line 214 |
+| xml | `contains (relationship)` | line 321 |
 
 ## MISSING_DOC
 
@@ -178,6 +178,6 @@ This is the population the gate MEASURES rather than blocks. Each row is one ana
 | typescript | `calls contains exports extends implements instantiates overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | line 29, 12 rows |
 | vb | `calls contains extends implements overrides references imports` | import-site: ImportInfo[] | absent |
 | vue | `contains exports extends instantiates references uses` | import-site: ImportInfo[], export-site: ExportInfo[] | line 56, 9 rows |
-| xml | `calls contains extends overrides references imports` | import-site: ImportInfo[] | line 214, 9 rows |
+| xml | `calls contains extends overrides references imports` | import-site: ImportInfo[] | line 321, 9 rows |
 | yaml | `calls contains exports extends overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | absent |
 | zig | `calls contains exports instantiates references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | line 283, 9 rows |
