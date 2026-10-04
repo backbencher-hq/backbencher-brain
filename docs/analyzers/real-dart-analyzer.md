@@ -36,8 +36,14 @@
 `proxicall`, `riverpod`, `flutter-packages`, `dart-sdk`, plus all 335 of
 `dart-http`), measured through the production entry point `parseFile` by
 `validation/m14/fixtures/dart/census.ts`. The BEFORE column is the same 2,735 files
-against the pre-M14 commit (`git show HEAD:src/ast/real-dart-analyzer.ts`) under the
-same harness, so every delta is measured rather than argued.
+against the pre-M14 analyzer under the same harness, so every delta is measured
+rather than argued. **The pre-M14 analyzer is pinned to a commit, not to `HEAD`** —
+`git show 8286c7391:src/ast/real-dart-analyzer.ts`, 3,087 lines, the parent of the
+commit that added `references` (86a27dcb4) and 410 lines shorter than the 3,497-line
+file at this branch's head. `HEAD` is the wrong reference here and always was: it
+moved. `8286c7391` contains no `references` emission at all — the string occurs once
+in the file, in a comment on line 1699 — which is what makes it the BEFORE and not a
+near neighbour.
 
 **Both runs use `BB_DART_CONC=1`, and that is not a default — it is a requirement.**
 The file set is deterministic; the result is not, at concurrency above 1. Measured
