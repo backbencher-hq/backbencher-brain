@@ -199,34 +199,43 @@ What the analyzer reads off the parse tree, and — for each — where it is mea
 Every row is a `##` heading in this document with the number attached, so nothing
 here is a list of intentions.
 
+**Every count in the `Measured` column is the `kinds` / `probes` block of
+`validation/m14/measurements/nim/ontology-census.json` on analyzer blob
+`9d9ee478e3295c28`, over the same 4,555 files, except the three rows that name a
+different instrument.** The pin is stated here because this table was the one
+table in the document that carried no instrument: a per-type table was re-tied
+to the digest and this one was not, so eleven of its cells drifted while the
+rest of the document was corrected. The three exceptions say which instrument
+they come from in the cell itself.
+
 | Construct | Grammar node / spelling | Read as | Measured |
 | --- | --- | --- | --- |
 | proc / func | `proc_declaration`, `func_declaration` | `SymbolKind.function` + module-scope callable | 30,125 functions of 83,692 symbols; callable recall **34,452 / 34,466** |
 | method | `method_declaration`, receiver from the first parameter | `SymbolKind.method` + `ownerName` = receiver | 177 methods; 48 `overrides` edges; 141 of 178 methods have a readable receiver |
-| named nested routine | a `proc` lexically inside another | `SymbolKind.function`, `scope` = parent, `contains` from `metadata.nimNestedIn` | **653 → 15** tree-only `calls` targets; 17 nested-routine `contains` families |
+| named nested routine | a `proc` lexically inside another | `SymbolKind.function`, `scope` = parent, `contains` from `metadata.nimNestedIn` | **653 → 14** tree-only `calls` targets (`resolution-audit`); 17 nested-routine `contains` families |
 | iterator | `iterator_declaration` | `function`, **not** macro | `nim/contract` pins `{countUp, function}` |
 | template | `template_declaration` | `macro` | `nim/contract` pins `{twice, macro}` |
-| macro | `macro_declaration` | `macro` | 4,142 macros |
+| macro | `macro_declaration` | `macro` | 4,155 macros |
 | macro / template body | the body of either | **suppressed** — expansion is not a declaration site | `nim/mac` + 4 forbids |
-| object / ref object | `object_declaration`, `type_declaration` | `class` with `ref`, `struct` without | 840 classes, 4,182 structs |
+| object / ref object | `object_declaration`, `type_declaration` | `class` with `ref`, `struct` without | 840 classes, 4,221 structs |
 | tuple type | `tuple_type` | `struct` | **defect 1 of the mutant round**: published as a bare `type` in both spellings, now pinned both ways |
 | concept | `concept_declaration` | `SymbolKind.interface` | **216 in 69 files** |
-| enum + members | `enum_declaration`, `enum_field` | `enum` + `enum_member` | 940 enums, 8,164 members |
-| object field | `field_declaration` | `property` | 12,066 properties |
-| const / let / var | `const_declaration`, `var_declaration` | `constant`, `variable`, `property` for `var` fields | 9,010 constants, 10,774 variables |
-| type alias | `type_declaration` with a non-object body | `type` | 2,722 types |
-| inheritance | `object_declaration.inherits` | `extends` | **941 occurrences accounted 941/941**; 568 edges |
+| enum + members | `enum_declaration`, `enum_field` | `enum` + `enum_member` | 942 enums, 8,172 members |
+| object field | `field_declaration` | `property` | 12,332 properties |
+| const / let / var | `const_declaration`, `var_declaration` | `constant`, `variable`, `property` for `var` fields | 9,014 constants, 10,775 variables |
+| type alias | `type_declaration` with a non-object body | `type` | 2,723 types |
+| inheritance | `object_declaration.inherits` | `extends` | **941 occurrences accounted 941/941**; 570 edges (`gap-hunt`) |
 | contract refinement | `concept_declaration.refines`, `x is B` in a body | `implements` | 0 of 216 concepts; `refinement_list` produced 0 times |
-| instantiation | `bracket_expression` in callee position, `TypeName(field: v)` | `instantiates` | 2,998 constructions; 1,988 edges |
+| instantiation | `bracket_expression` in callee position, `TypeName(field: v)` | `instantiates` | 2,998 constructions; 1,990 edges |
 | call | `call`, `dot_generic_call`, parenless UFCS member leaf | `calls` | 79,129 edges |
 | bare / member read | `identifier`, the leaf of a non-callee `dot_expression` | `uses` | 31,063 edges |
 | declared type | parameter, return, field, annotation, `new`/`of` operand | `references` | 40,559 edges |
 | import | `import`, `from … import`, `include` | `imports` + the `ImportInfo[]` channel | 9,345 edges; 179 `export_statement` and 31,408 `exported_symbol` nodes also enumerated |
-| export | `export` OPERANDS, positionally | `exports` | 407 edges |
+| export | `export` OPERANDS, positionally | `exports` | 408 edges |
 | the `*` marker | `exported_symbol` | **no edge** — `visibility: "public"` + `metadata.exported` | 31,408 sites in 1,500 files |
 | `static:` / doc-example bodies | `static` block, `runnableExamples` argument | `type` declarations **published**, `value` declarations suppressed | 9 → 6 tree-only `extends` owners |
 | destructor / sink hooks | `=destroy`, `=sink`, `=copy` | hook, not a runtime call — **filtered as a builtin** | named in the oracle's unexplained set and adjudicated |
-| accent-quoted operator | `` proc `-!` ``, `` `==` `` | an ordinary declaration | **1,417** declaration sites; 365 of its edges are deleted by the shared filter (*Limitations* 12) |
+| accent-quoted operator | `` proc `-!` ``, `` `==` `` | an ordinary declaration | **1,417** declaration sites (`accent-quoted-endpoints`); 366 of its edges are deleted by the shared filter (*Limitations* 12) |
 | do-pragma | `expr.#[…].#` | **not read** — the grammar consumes it as a block-comment extra | 16 affected corpus files; the grammar patch is measured harmful and stays unapplied (*Limitations* 1) |
 
 Three constructs are read and deliberately produce NO edge, each with the count
@@ -342,8 +351,8 @@ re-runnable). **Corpus: 4,555 tracked files over 7 repositories** — `nim` 3,96
 `nim-lang-nimble` 435, `graphql-nim` 55, `nimterop` 45, `dom96-jester` 19,
 `bigints` 21, `Aporia` 12 — sampled by `git ls-files` +
 `detectLanguageFromPath === "nim"` + a 512 KB cap, which is the arbiter's own
-walk, so the file set is the same set. 83,051 symbols, 0 empty names, 4 empty
-kinds (see *Limitations* 8), 0 edge types outside the ten, 0 empty endpoints.
+walk, so the file set is the same set. 83,692 symbols, 0 empty names, 0 empty
+kinds, 0 edge types outside the ten, 0 empty endpoints.
 Artifacts: `validation/m14/measurements/nim/ontology-census.{json,txt}`.
 
 **EVERY NUMBER IN THIS SECTION IS AGAINST A COMMITTED BLOB, not a working
@@ -1006,9 +1015,9 @@ regression in publication would actually move.
 below 0.7**, so nothing in this lane is a heuristic by the honesty contract §4's
 0.7 line, and the ratio is countable rather than a vibe. The sub-1.0 edges are a
 different thing and are countable by type — `calls` 0.85 (usage-inferred callee,
-75,617) and 0.9 (3,349), `imports`-qualified `calls` 0.75 (54), `uses` 0.75
+75,726) and 0.9 (3,349), `imports`-qualified `calls` 0.75 (54), `uses` 0.75
 (15,992 = 51.5% of that family) with the rest at 1.0, `references` 0.9 (40,559),
-`instantiates` 0.9 (1,988), `overrides` companion edges 0.9.
+`instantiates` 0.9 (1,990), `overrides` companion edges 0.9.
 
 ### DERIVATION debt
 
@@ -1722,7 +1731,23 @@ quiet machine will cover all 5,227 through the production path.
    doing.** The count is load-dependent and MOVES BETWEEN RUNS on the same corpus:
    16 of 77,371 symbols, then 20, then 4 of 83,051, then 21 of 83,639, then 2,
    then **0** — the 0 being the clean walk every committed artifact is now taken
-   from, and every non-zero one in a file that also logged
+   from — then **34 of 83,701**, measured on this pass and added because a seventh
+   walk that nobody records is how a reader ends up believing the sequence ended
+   at 0. That 34 is the largest value on record and it came from a **single**
+   file: `nim/tests/async/twinasyncrw.nim`, which is the one walk in the sequence
+   where every one of the 34 empty-kind symbols in the whole corpus belongs to
+   one path, and the run exited 1 on `[BB-HANG] parser stuck 120s` on that same
+   file, having already logged
+   `[BB-PARSE-ERR] nim | …/twinasyncrw.nim | memory access out of bounds`. The
+   degraded walk moved **4 of the 10** types against the clean artifact —
+   `calls` 79,033 against 79,129 (−96), `references` 40,537 against 40,559
+   (−22), `imports` 9,336 against 9,345 (−9), `contains` 21,573 against 21,579
+   (−6) — while the other **6 read identical**: `uses` 31,063, `exports` 408,
+   `extends` 570, `overrides` 48, `instantiates` 1,990, `implements` 0. So a
+   degraded walk is not a uniform scale factor and must not be averaged in; it
+   is localized, and the six types the verdict rests on are among the six that
+   did not move.
+   Every non-zero one in a file that also logged
    `[BB-PARSE-ERR] … memory access out of bounds` in the same run
    (`nim/lib/std/tempfiles.nim`, `nim/tests/casestmt/tcstring.nim`,
    `nim/tests/manyloc/keineschweine/dependencies/chipmunk/chipmunk.nim`, and
@@ -1813,15 +1838,32 @@ quiet machine will cover all 5,227 through the production path.
     target leaf, on the stated grounds that in JavaScript it marks template-literal
     garbage. Measured by `validation/m14/fixtures/nim/accent-quoted-endpoints.ts`:
     1,417 accent-quoted declaration sites on the corpus parse trees; `analyze()`
-    emits 4,508 edges with a backtick endpoint and `parseFile` delivers 4,132, so
-    **365 are deleted by the filter (8.1%)** — `calls` 210, `contains` 135,
-    `exports` 11, `uses` 8, `overrides` 1, which sums to 365 and the artifact
-    prints the sum beside the total so it can be checked. The 376-edge difference
-    between 4,508 and 4,132 is 365 of filter and **11 that the filter is not
-    responsible for**, which are named in the artifact rather than folded in. (This
-    breakdown was previously published as 231/135/21/8/1 = 396 against a stated
-    366; it came from a 40-row SAMPLE, and the instrument now tallies every
-    deletion by type instead of sampling.) The symbol survives, so the result is a declaration the
+    emits 4,509 edges with a backtick endpoint and `parseFile` delivers 4,143, so
+    **366 are deleted by the filter (8.1%)** — `calls` 210, `contains` 135,
+    `exports` 12, `uses` 8, `overrides` 1, which sums to 366 and the artifact
+    prints the sum beside the total so it can be checked.
+
+    **An earlier revision of this paragraph split that difference wrongly, and the
+    arithmetic is what gave it away.** It read "the 376-edge difference between
+    4,508 and 4,132 is 365 of filter and 11 that the filter is not responsible
+    for". There is no such remainder: the backtick-endpoint difference is
+    **4,509 − 4,143 = 366**, and the filter accounts for **all 366** of it, split
+    210/135/12/8/1. The number it was reaching for — 11 — is not a residual of
+    this comparison at all. It came from a DIFFERENT pair in the same artifact,
+    the per-type `pre → post` totals, where `imports` falls 9,083 → 9,061 and
+    `exports` falls 418 → 397: those deltas are `analyze()` versus the full
+    `parseFile` pipeline, which also applies pool-worker stages, truncation and
+    enhancements, so they are not attributable to the backtick filter. The
+    artifact's own "deleted for OTHER reasons: 1 sampled" row
+    (`nim/tests/modules/timportas.nim: (global) -[imports]-> .. / modules /
+    definitions`) is the only other-reason deletion it names, and 1 is not 11.
+    The TOTAL edge counts tell the same story and are the honest framing: 182,456
+    pre-filter against 182,010 post-filter is a 446-edge difference, of which
+    **366 is the backtick filter and 80 is the pipeline** — two findings, not
+    one. (The per-type breakdown itself was previously published as
+    231/135/21/8/1 = 396 against a stated 366; it came from a 40-row SAMPLE, and
+    the instrument now tallies every deletion by type instead of sampling.) The
+    symbol survives, so the result is a declaration the
     graph holds and no edge can reach: `bb_impact` on `` `-!` `` returns nothing
     and the reverse walk cannot tell that from a declaration nobody uses. This is
     the cause of the three `` `-!` ``/`` `lhs` `` `contains` rows the oracle reports
