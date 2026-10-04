@@ -494,6 +494,87 @@ const walkExamples: { retargetsBound: string[]; retargetsUnbound: string[]; regr
 }
 let unqualifiedCrossFile = 0
 let walkAlreadyBinds = 0
+/**
+ * IS THE DECLINE DECIDABLE PER FILE?
+ *
+ * The walk above is applied UNCONDITIONALLY, which is the only way to price it: the
+ * analyzer, holding one file, has no way to ask whether `pkg.text` is published
+ * somewhere it was never shown. That makes the 75 a measurement of the worst
+ * implementation, not of the best one, and the difference is the whole question.
+ *
+ * protobuf's rule is C++ scoping: search the enclosing scopes innermost first and
+ * STOP at the first scope with a match. So the ONLY correct decline condition is
+ * "the innermost scope already publishes this name" — and if it publishes it, the
+ * walk must not move the edge at all. `google.api.apikeys.v2.AndroidApplication` is
+ * declared at pb-googleapis/google/api/apikeys/v2/resources.proto:140 and referenced
+ * at :136 of the same file, four lines earlier, so no scoping rule reaches
+ * `google.api.AndroidApplication`.
+ *
+ * A per-file analyzer knows the publisher set of exactly ONE file: the one it is
+ * parsing. `declaredTypeIds` in the analyzer already declines the walk when the file
+ * itself declares the innermost name, so those edges never reach this code. What is
+ * left is the case where the publisher is ANOTHER file in the same package, which is
+ * precisely the project-level fact item 1 is about.
+ *
+ * So this splits the 75 by whether the referencing file is itself one of the
+ * publishers of the name the walk would abandon. A non-zero count here would be a
+ * per-file fix; a zero count means the decline is undecidable per file and the walk
+ * is not implementable in this analyzer at all, rather than merely risky.
+ */
+const regressPublisherScope = { sameFile: 0, otherFileSamePackage: 0 }
+const regressExamples: string[] = []
+for (const f of facts.values()) {
+  const importDirs = new Set<string>()
+  for (const m of f.imports) {
+    const cut = m.lastIndexOf("/")
+    importDirs.add(cut > 0 ? m.slice(0, cut) : "")
+  }
+  for (const u of f.uses) {
+    if (!f.pkg || !u.to.startsWith(f.pkg + ".")) continue
+    const rest = u.to.slice(f.pkg.length + 1)
+    const alreadyBinds = (publishers.get(u.to)?.size ?? 0) > 0
+    if (!alreadyBinds) continue
+    let scope: string | null = null
+    for (const id of f.typeIds) {
+      if (u.from === id || u.from.startsWith(id + ".")) {
+        if (scope === null || id.length > scope.length) scope = id
+      }
+    }
+    if (scope === null) scope = f.pkg
+    const landed = (() => {
+      for (const base of specChain(scope, f.pkg)) {
+        const cand = base.length > 0 ? `${base}.${rest}` : rest
+        const dir = base.split(".").join("/")
+        if (!importDirs.has(dir)) continue
+        let declined = false
+        for (const other of specChain(scope, f.pkg)) {
+          const otherDir = other.length > 0 ? other.split(".").join("/") : ""
+          if (otherDir !== dir && otherDir.length > dir.length && otherDir.endsWith(dir)) {
+            declined = true
+            break
+          }
+        }
+        if (declined) continue
+        return cand
+      }
+      return null
+    })()
+    if (landed === null || landed === u.to) continue
+    if ((publishers.get(landed)?.size ?? 0) > 0) continue
+    // The walk abandons a name that binds today and lands on one that binds nowhere.
+    // Who publishes the name it is abandoning?
+    const pubs = publishers.get(u.to) ?? new Set<string>()
+    const selfPublishes = pubs.has(f.rel)
+    if (selfPublishes) regressPublisherScope.sameFile++
+    else regressPublisherScope.otherFileSamePackage++
+    if (regressExamples.length < 12) {
+      regressExamples.push(
+        `${selfPublishes ? "SAME-FILE publisher" : "other-file publisher"}: ${u.to} -> ${landed} (0 publishers)  in ${f.rel}` +
+          (selfPublishes ? "  [this file declares it]" : `  [published by ${[...pubs].slice(0, 2).join(", ")}${pubs.size > 2 ? ` +${pubs.size - 2}` : ""}]`),
+      )
+    }
+  }
+}
 for (const f of facts.values()) {
   const importDirs = new Set<string>()
   for (const m of f.imports) {
@@ -626,6 +707,13 @@ const out = {
     walkRetargetsUnbound: walk.retargetsUnbound,
     examplesBound: walkExamples.retargetsBound,
     examplesUnbound: walkExamples.retargetsUnbound,
+    declineDecidablePerFile: {
+      description:
+        "of the edges the walk would break, how many the REFERENCING FILE could decline on its own. protobuf's rule is C++ scoping — stop at the first scope with a match — so the only correct decline is 'the innermost scope already publishes this name', and a per-file analyzer knows the publisher set of exactly one file",
+      publisherIsTheReferencingFile: regressPublisherScope.sameFile,
+      publisherIsAnotherFileInTheSamePackage: regressPublisherScope.otherFileSamePackage,
+      examples: regressExamples,
+    },
   },
   detail: detail.slice(0, 200),
 }
@@ -660,6 +748,12 @@ console.log(`  reconciles to the population: ${walkReconciles === unqualifiedCro
 for (const e of walkExamples.regresses) console.log(`      REGRESS ${e}`)
 for (const e of walkExamples.retargetsBound) console.log(`      BOUND   ${e}`)
 for (const e of walkExamples.retargetsUnbound) console.log(`      UNBOUND ${e}`)
+console.log("")
+console.log(`--- IS THE DECLINE DECIDABLE PER FILE?  (the ${walk.regressesWorkingEdge} edges the walk would break)`)
+console.log(`  publisher is the REFERENCING FILE itself      ${regressPublisherScope.sameFile}`)
+console.log(`  publisher is ANOTHER file, same package       ${regressPublisherScope.otherFileSamePackage}`)
+console.log(`  -> a per-file analyzer can decline the walk in ${regressPublisherScope.sameFile} of ${walk.regressesWorkingEdge}; the other ${regressPublisherScope.otherFileSamePackage} need the project-level map.`)
+for (const e of regressExamples) console.log(`      ${e}`)
 console.log("")
 console.log(`by repository: ${JSON.stringify(out.byRepo)}`)
 for (const k of Object.keys(examples) as Class[]) {
