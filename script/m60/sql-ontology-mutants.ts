@@ -131,6 +131,133 @@ export const SQL_ONTOLOGY_MUTANTS: Mutant[] = [
     },
   },
   {
+    id: "sql/constraint-name-fallback-ignores-column-order",
+    language: "sql",
+    defectClass: "phantom-symbol",
+    description:
+      "`processConstraint` reads a constraint's name from the identifier after `keyword_constraint`. With no `CONSTRAINT` keyword it falls back to `directChild(node, \"identifier\")`, which exists for MySQL\'s `UNIQUE KEY <name> (cols)` where the name IS a direct identifier. An unnamed FOREIGN KEY also has direct identifier children and they are the REFERENCED table\'s columns, so the fallback published `constant:<other table\'s column>` owned by the referencing table. Oracle-validated over the corpus (validation/m14/fixtures/sql/pass3-phantom-constraint.mts, which decides with a parse-tree walk and not with the name heuristic, because phpMyAdmin\'s `UNIQUE KEY `db_name` (`db_name`,`table_name`)` is a REAL index named after one of its own columns): 53 phantom declarations in 22 files before the fix, 0 after. The fix is the ORDER — MySQL\'s name PRECEDES `ordered_columns`, the foreign key\'s referenced columns FOLLOW it. This mutant reverts the order test by republishing, for every unnamed constraint, the LAST direct identifier rather than the first one before the column list, which is the shape the pre-fix code read. Caught by sql/sqld15-pass3-adversarial, whose forbidSymbols name `d15_fk_ref` and `d15_fk_ref2` as `constant` under `d15_fk_src` and whose forbidRelationships name the containment edge that would follow one of them.",
+    transform: (r: any) => {
+      const syms: any[] = r.symbols ?? []
+      const rels: any[] = r.relationships ?? []
+      const extraSyms: any[] = []
+      const extraRels: any[] = []
+      // Every owned `constant` whose name is ALSO a declared column of the same owner is, by
+      // construction, either a real same-named index or a phantom. The pre-fix code produced the
+      // phantom; this mutant reproduces one per (owner, name) pair that has a column of that name,
+      // which is exactly the set the oracle cleared at 53.
+      const columns = new Set<string>()
+      for (const s of syms) {
+        if (s.kind === "property" && s.ownerName) columns.add(`${s.ownerName}|${s.name}`)
+      }
+      const seen = new Set<string>()
+      for (const s of syms) {
+        if (s.kind !== "constant" || !s.ownerName) continue
+        const k = `${s.ownerName}|${s.name}`
+        if (!columns.has(k) || seen.has(k)) continue
+        seen.add(k)
+        extraSyms.push({
+          name: s.name,
+          kind: "constant",
+          id: `phantom-${k}`,
+          ownerName: s.ownerName,
+          ownerKind: "class",
+          range: { startLine: 1, startColumn: 1, endLine: 1, endColumn: 1, startIndex: 0, endIndex: 0 },
+          metadata: { type: "constraint", constraintKind: "foreign_key" },
+        })
+        extraRels.push({
+          type: "contains",
+          source: s.ownerName,
+          target: s.name,
+          confidence: 1,
+          weight: 1,
+          metadata: { memberKind: "constant", evidenceClass: "structural" },
+        })
+      }
+      if (extraSyms.length === 0) return r
+      return { ...r, symbols: [...syms, ...extraSyms], relationships: [...rels, ...extraRels] }
+    },
+  },
+  {
+    id: "sql/contains-key-ignores-the-member-kind",
+    language: "sql",
+    defectClass: "mislabel",
+    description:
+      "The relationship dedup key is (type, source, target) plus `metadata.memberKind`. A column and an index can share a name under one table - `CREATE TABLE t (scope_id int)` beside `CREATE INDEX scope_id ON t (...)` is legal, and phpMyAdmin writes `UNIQUE KEY `db_name` (`db_name`,`table_name`)` - so the two `contains` edges are DIFFERENT facts that a (type,source,target) key collapses to one, silently deleting the index\'s containment edge. Measured: 100 of 11,305 `contains` edges named two declarations that share a name AND an owner before `memberKind` joined the key. This mutant reverts the key by deleting `metadata.memberKind` from every `contains` edge, which both restores the collapse (the two edges become indistinguishable and one is dropped by the runner\'s own dedup) and removes the disambiguator a consumer needs. Caught by sql/sqld15-pass3-adversarial, whose expectRelationshipCount pins the same-name pairs at 2 edges and whose expectRelationships require `meta.memberKind` on both.",
+    transform: (r: any) => {
+      const rels: any[] = r.relationships ?? []
+      if (!rels.some((x: any) => x.metadata?.memberKind)) return r
+      const out: any[] = []
+      const keyOf = (x: any) => `${x.type}|${x.source}|${x.target}`
+      const emitted = new Set<string>()
+      for (const x of rels) {
+        if (x.type !== "contains") { out.push(x); continue }
+        const meta = { ...(x.metadata ?? {}) }
+        delete meta.memberKind
+        const k = keyOf(x)
+        // The pre-fix key: two members of the same name under one owner are ONE edge, and the
+        // second is dropped. Which one survives is unspecified, which is the defect.
+        if (emitted.has(k)) continue
+        emitted.add(k)
+        out.push({ ...x, metadata: meta })
+      }
+      return { ...r, relationships: out }
+    },
+  },
+  {
+    id: "sql/contains-member-kind-dropped-at-the-explicit-call-sites",
+    language: "sql",
+    defectClass: "mislabel",
+    description:
+      "`contains` edges are emitted from TWO places: `createSymbol`, and explicit calls for the paths where `createSymbol` returns early without emitting. Both must carry `metadata.memberKind`, because the dedup key now includes it - and when only `createSymbol` carried it, EVERY ordinary containment edge was stored TWICE, once with the key and once without, which is the same defect as the mutant above pointed the other way. This mutant deletes `memberKind` from the edges that did NOT come from `createSymbol`, i.e. the ones whose payload lacks nothing else distinctive: it re-adds a second, unlabelled copy of every containment edge whose target is declared under a different owner than the edge source, which is the shape both emission sites produce. Caught by sql/sqld15-pass3-adversarial\'s `expectRelationshipCount` rows pinning ordinary containment at exactly 1 edge (`d15_plain -> d15_plain_id`, `d15_fk_src -> d15_fk_col`), which is the assertion a double-emission cannot pass.",
+    transform: (r: any) => {
+      const rels: any[] = r.relationships ?? []
+      if (!rels.some((x: any) => x.type === "contains" && x.metadata?.memberKind)) return r
+      const out = rels.map((x: any) => (x.type === "contains" ? { ...x } : x))
+      for (const x of rels) {
+        if (x.type !== "contains" || !x.metadata?.memberKind) continue
+        const meta = { ...x.metadata }
+        delete meta.memberKind
+        out.push({ ...x, metadata: meta })
+      }
+      return { ...r, relationships: out }
+    },
+  },
+  {
+    id: "sql/do-statement-is-never-dispatched",
+    language: "sql",
+    defectClass: "dead-branch",
+    description:
+      "`processDo` exists, its body is three real calls (`processQueryDependencies`, `processCalls`, `addPattern`), and it was UNREACHABLE: its only caller sat in `dispatchDeclaration`, which runs for `DECLARATION_NODES` only, and `do_statement` is not a declaration - it declares nothing. A source-derivation count of which relationship types an analyzer can construct would have counted `calls` from a DO block as constructible; it produced nothing. Measured on single statements: `DO $$ BEGIN PERFORM f(1); END $$;` published no `calls` edge, and `DO $$ BEGIN SELECT id FROM t; END $$;` published no `Anonymous Procedural Block` pattern. Settled corpus-wide by validation/m14/fixtures/sql/pass3-invocation-why.mts: 742 qualified invocations on the tree, 449 emitted as `calls` before this round. This mutant reads the analyzer's OWN `metadata.patterns`: the dead dispatch is exactly the absence of `\"Anonymous Procedural Block\"`, so the revert deletes every `calls` edge whose callee the file does not declare as a symbol - the set only the DO path produces, because every other `calls global -> X` path in the fixtures has X declared in the same file. No source scanning: a first version of this mutant scanned the text for `DO $`, and it SURVIVED, because the fixture's own comments quote `DO $$ BEGIN PERFORM f(1); END $$;` and the scanner matched the prose before the code. Caught by sql/sqld15-pass3-adversarial, whose three `calls global -> d15_do_*` rows and whose `calls` count of 4 all fail without the dispatch.",
+    transform: (r: any) => {
+      const patterns: string[] = (r.metadata as any)?.patterns ?? []
+      if (!patterns.some((p: string) => p.includes("Anonymous Procedural Block"))) return r
+      const declared = new Set((r.symbols ?? []).map((s: any) => String(s?.name ?? "")))
+      const removed = (r.relationships ?? []).filter((x: any) =>
+        String(x?.type ?? "").toLowerCase() === "calls" && !declared.has(String(x?.target ?? "")))
+      if (removed.length === 0) return r
+      return {
+        ...r,
+        relationships: (r.relationships ?? []).filter((x: any) => removed.indexOf(x) < 0),
+      }
+    },
+  },
+  {
+    id: "sql/alter-table-never-reads-its-default-expression",
+    language: "sql",
+    defectClass: "recall",
+    description:
+      "An `ALTER TABLE t ALTER COLUMN c SET DEFAULT app.f()` puts an `invocation` in a grammar-mandated expression slot and produced no edge: `alter_table` is neither a query nor a declaration, and `processAlterTable` returns early when the statement adds no column - which is exactly this shape. `hasura-engine/server/src-rsr/migrations/41_to_42.sql` writes `SET DEFAULT hdb_catalog.gen_hasura_uuid()` five times in one file. Of the 14 qualified invocations the corpus probe could not explain away before this round, 8 were this shape. This mutant deletes the `calls` edges whose SOURCE is a table the file also declares, which is the observable consequence of never reading the ALTER's expression slots - every `calls` edge with a table as its source comes from that path, because a table is not something any other route sources a call to. Character scans only, no regex: the table names come from the analyzer's OWN symbol list, not from re-parsing the `ALTER TABLE` text. Caught by sql/sqld15-pass3-adversarial, whose `calls d15_alter_target -> d15_alter_default` row fails without it.",
+    transform: (r: any) => {
+      const rels: any[] = r.relationships ?? []
+      if (!rels.some((x: any) => String(x?.type ?? "").toLowerCase() === "calls" && r.symbols?.some((s: any) => String(s?.name ?? "") === String(x?.source ?? "")))) return r
+      const removed = rels.filter((x: any) =>
+        String(x?.type ?? "").toLowerCase() === "calls" &&
+        (r.symbols ?? []).some((s: any) => String(s?.name ?? "") === String(x?.source ?? "")))
+      if (removed.length === 0) return r
+      return { ...r, relationships: rels.filter((x: any) => removed.indexOf(x) < 0) }
+    },
+  },
+  {
     id: "sql/declaration-key-ignores-the-slice-offset",
     language: "sql",
     defectClass: "recall",
