@@ -260,6 +260,44 @@ function enclosingMethod(lines: string[], line: number): string | undefined {
   return undefined
 }
 
+/**
+ * Local aliases of a node's `.type`, per method: `const pt = parent.type` makes
+ * `pt === "field"` a type guard on `parent`, which is the same evidence as
+ * `parent.type === "field"` and which the narrow regex below cannot see.
+ *
+ * Without this, `siteNodeType`'s rule 2 finds no guard and falls through to rule 3,
+ * which types the site by the helper's CALLER's dispatch. That is the exact false
+ * positive rule 2's own comment records for LUA-09, arriving by a different road:
+ *
+ *   emitNameRead     `const pt = parent.type` then `pt === "field"`      -> rule 2 blind
+ *   emitMemberRead   the same, with three guards                        -> rule 2 blind
+ *   both are called from `case "identifier":` / `case "dot_index_expression":`
+ *                     in processNode                                     -> rule 3 says
+ *                                                                                   identifier
+ *
+ * The gate reported 6 unreachable field uses against analyzer code whose guards are
+ * correct, and the grammar resolves `name` on all three of `field`,
+ * `function_declaration` and `function_call` — the very list the failure message prints
+ * while convicting the code. An instrument that convicts correct code on the strength of
+ * a shape it cannot parse is the defect class this file exists to catch, pointed the
+ * other way.
+ *
+ * The alias is resolved to the node EXPRESSION (`parent`), and the guard is only
+ * accepted when the literal is asked of that same expression — so a planted regression
+ * that narrows one variable and asks the field of another is still attributed the old
+ * way and still fails.
+ */
+function typeAliases(lines: string[], methodIdx: number, method: string | undefined): Map<string, string> {
+  const out = new Map<string, string>()
+  if (!method) return out
+  for (let i = methodIdx; i < lines.length; i++) {
+    if (methodIdx >= 0 && i > methodIdx && /^\s{2}(?:private|public)\s+[a-zA-Z_]+\s*\(/.test(lines[i])) break
+    const m = lines[i].match(/\bconst\s+([a-zA-Z_][\w]*)\s*=\s*([a-zA-Z_][\w]*)\??\.\s*type\b/)
+    if (m) out.set(m[1], m[2])
+  }
+  return out
+}
+
 function siteNodeType(src: string, line: number, callers: Map<string, Array<{ method: string; argIndex: number }>>): string[] {
   const lines = src.split("\n")
   const depthAt = (idx: number): number => {
@@ -302,7 +340,13 @@ function siteNodeType(src: string, line: number, callers: Map<string, Array<{ me
   //    re-narrows, which is precisely the LUA-09 shape.
       const literalSrc = lines[line - 1] ?? ""
       if (methodIdx >= 0) {
-        for (let i = line - 2; i >= 0; i--) {
+        const aliases = typeAliases(lines, methodIdx, method)
+        // A guard is a comparison of a node's `.type` against a node type, either
+        // written directly (`parent.type === "field"`) or through a local alias
+        // (`const pt = parent.type` then `pt === "field"`). Both name the node the
+        // field must be asked of, and the literal line must ask it of THAT node.
+        const guardRe = /(?:\b([a-zA-Z_][\w]*)\.type\s*[!=]==?\s*|\b([a-zA-Z_][\w]*)\s*[!=]==?\s*)"([a-z_]+)"/
+        for (let i = line - 1; i >= 0; i--) {
           if (i < methodIdx) break
           const d = depthAt(i)
           // `d < here - 1`, NOT `d < here`. A type guard is almost always written
@@ -315,8 +359,12 @@ function siteNodeType(src: string, line: number, callers: Map<string, Array<{ me
           // The gate was reporting a false positive against code that had already
           // been checked against the grammar by hand.
           if (d < here - 1) break
-          const g = lines[i].match(/(\w+)\.type\s*[!=]==?\s*"([a-z_]+)"/)
-          if (g && new RegExp(`\\b${g[1]}\\.childForFieldName\\b`).test(literalSrc)) return [g[2]]
+          const g = lines[i].match(guardRe)
+          if (!g) continue
+          const nodeExpr = g[1] ?? (g[2] ? aliases.get(g[2]) : undefined)
+          if (!nodeExpr) continue
+          if (!new RegExp(`\\b${nodeExpr}\\.childForFieldName\\b`).test(literalSrc)) continue
+          return [g[3]]
         }
       }
   // 3. otherwise the literal sits in a helper: type it by that helper's
