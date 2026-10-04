@@ -258,6 +258,91 @@ stride 42), `dart-http` (all 335). Sampling is a deterministic stride over
 `git ls-files '*.dart'` sorted, per repository — no randomness, so a reviewer
 reproduces the same 2,735 file set from a clean corpus.
 
+### How many files each type fires in, over the same 2,735
+
+A count says a type exists; a file count says how widely. `census.ts` wrote only
+six example files per type and that field is capped at six **in iteration order**,
+so all sixty examples were `proxicall` files — which made `exports` look like a
+single-repository edge when it is not. The census now carries an uncapped per-type
+file set, so the breadth is measured rather than sampled:
+
+| Type | edges | files carrying it | % of 2,735 | repos | spread (proxicall / dart-http / riverpod / flutter-packages / dart-sdk) |
+| --- | --- | --- | --- | --- | --- |
+| calls | 43,042 | 2,310 | 84.5% | 5/5 | 532 / 299 / 533 / 515 / 431 |
+| uses | 110,679 | 2,373 | 86.8% | 5/5 | 561 / 273 / 546 / 526 / 467 |
+| contains | 119,515 | 1,696 | 62.0% | 5/5 | 441 / 96 / 435 / 371 / 353 |
+| imports | 10,657 | 2,461 | 90.0% | 5/5 | 578 / 315 / 583 / 575 / 410 |
+| references | 5,265 | 911 | 33.3% | 5/5 | 242 / 47 / 267 / 203 / 152 |
+| exports | 302 | 104 | 3.8% | 5/5 | 18 / **54** / 12 / 11 / 9 |
+| extends | 4,730 | 1,218 | 44.5% | 5/5 | 348 / 58 / 363 / 279 / 170 |
+| implements | 758 | 307 | 11.2% | 5/5 | 116 / 39 / 38 / 44 / 70 |
+| overrides | 90,352 | 1,100 | 40.2% | 5/5 | 321 / 56 / 348 / 266 / 109 |
+| instantiates | 18,374 | 2,032 | 74.3% | 5/5 | 516 / 254 / 508 / 460 / 294 |
+
+**Every one of the ten fires in all five repositories, so no verdict above rests
+on a single corpus.** Two rows are worth reading closely. `exports` fires in 104
+of 2,735 files (3.8%), which is the edge-side counterpart of the 2.0117%
+node-side base rate below, and its largest share is `dart-http` — the one
+repository in the sample that is entirely library code, where a `lib/` entry point
+is what carries an export. And `exports` is the only type whose largest
+repository is not `proxicall` or `riverpod`, which is the same fact the capped
+example list was hiding.
+
+`contains` is the one type that does NOT approach its ceiling: 1,696 of 2,735
+files, 62.0%. A first draft explained the missing 1,039 as "scripts, `part`
+fragments and generated files with no declaration of their own" — a plausible
+sentence, and not a measurement. `validation/m14/fixtures/dart/zero-contains-probe.ts`
+now characterizes the population from node types instead, and the accounting
+closes to 1,039 with **no unexplained remainder**:
+
+| shape | files | what it is |
+| --- | --- | --- |
+| no declaration node, no directive | 882 | nothing for `contains` to point at |
+| declaration nodes, all member-less | 96 | 211 empty `class_definition`, 28 `type_alias`, 10 `mixin_declaration`, 3 `extension_declaration` — an empty class genuinely contains nothing |
+| directives only (`library`/`part`/`part of`) | 51 | 89 `part_directive` + 22 `part_of_directive` + `library_definition` nodes; a `part` fragment declares nothing of its own |
+| declaration WITH members, >1 MB | 4 | the structural fallback — `parseFile` never routes these to the analyzer, and the census already excludes them (declared limitation 8) |
+| parse error, no declaration | 5 | 9 ERROR nodes across the population |
+| **total** | **1,038** | one file is both error-bearing and counted above |
+
+The fourth row is the one that mattered, because it is the only row where an edge
+*should* exist and does not. All four were checked against production `parseFile`
+rather than argued about, and all four return `fallback=true` with symbols that
+carry no `kind` and a `calls` row from the regex extractor:
+
+```
+native_cupertino_bindings.dart  1,075,261 B  fallback=true  symbols=6    rels={calls:24}
+ok_http/.../jni/bindings.dart   1,192,087 B  fallback=true  symbols=1    rels={calls:10}
+google_fonts_lite.dart          1,873,498 B  fallback=true  symbols=1061 rels={calls:1}
+dartfuzz_type_table.dart       11,723,071 B  fallback=true  symbols=0    rels={}
+patternVariableDeclaration_inClass.dart  35 B  errors=1  rels={}
+```
+
+So **`contains` misses nothing the analyzer can see**: every sampled file that
+declares something with a member and is under the size guard carries the edge.
+The 62.0% is the label being defined over declarations, and reporting it as 100%
+would be reporting the absence of a counter-example as coverage.
+
+Two false readings were produced and caught while measuring this, both from
+naming a node type nobody had checked rather than reading it off the tree. The
+first hardcoded `class_member` and measured **0 of 923** declarations as having a
+member; the second hardcoded `method_signature`/`field_declaration` as children of
+the declaration and measured 0 again. The grammar puts members one level down,
+inside `class_body` (713), `extension_body` (163), `enum_body` (12) and
+`representation_declaration` (237), and a declaration's own named children are
+only its name, heritage clauses, type parameters and annotations. A third reading
+was wrong for a different reason — it classified from an accumulator that spanned
+the whole corpus, which reported 101 files with members when 5 have them. The
+probe derives the member set from the histogram it prints and classifies per file;
+that is why the table above can be checked rather than believed.
+
+Reproduce the breadth columns and the zero-`contains` accounting:
+
+```bash
+BB_DART_CONC=1 BB_DART_OUT=/tmp/c.json npx tsx validation/m14/fixtures/dart/census.ts
+# -> perType.<type>.filesWith and .filesWithByRepo, plus filesWithoutContains
+BB_DART_CENSUS=/tmp/c.json npx tsx validation/m14/fixtures/dart/zero-contains-probe.ts
+```
+
 ### The supervisor's arbiter reads 9/10 at n=120, and that reading is a sample artifact
 
 `script/m14/firing-check.ts --files 120 dart` reports:
