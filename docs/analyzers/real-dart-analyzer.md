@@ -2386,6 +2386,74 @@ because this lane's own mutants were only ever run through
 `BB_MUTANT_ONLY="dart/"`, which filters `selected` before the harness ever reads
 `m.language` — the defect lives in the branch of the harness that a scoped run skips.
 
+**A seventh pass, on a tree where the arbiter is now present, reproduced every figure
+above and added a fifth rotation data point to the bimodality claim.** Run in the
+foreground, sequentially, no polling:
+
+| instrument | reading on this pass | matches the figure in this file |
+| --- | --- | --- |
+| `firing-check.ts --files 120 dart` | `9/10 fired, 8290 edges, 120/120, degraded 0`, `exports` absent | yes, to the edge |
+| `firing-check.ts --files 400 dart` | `10/10 fired, 53252 edges, 400/400, degraded 0` | yes, to the edge |
+| `census.ts`, `BB_DART_CONC=1`, 2,735 files | all ten counts, all ten breadth rows and their five-repo spreads, all nine resolution columns, `emptySymbolNames 0`, `emptyOrUnknownKind 0`, `unknownEndpoints 0`, `symbolsNamedUnknown 20`, `structuralFallbackFiles 4`, `filesWithoutContains 1039` | yes, every cell |
+| `incoming-census.ts`, `BB_DART_CONC=1`, 4,788 files | `960,634` relationships, `337,440` symbols, `symbolsNamedUnknown 74`, ambiguous `490,292` (= 63,015 two-to-five + 427,277 six-plus), closable `296,855`, no-symbol `143,833`, unexplained `1,817`, `overrides` both-ends-repoFull `230,505` = 93.0% | yes, all eight post-merge figures |
+| `run-fixtures.ts --lang dart` | `{"dart":{"pass":16,"fail":0}}` | yes |
+| `mutate-analyzer.ts` with `BB_MUTANT_ONLY="dart/"` | `all 42 mutants caught`, `filtered 1789 -> 42`, 0 survivors | yes |
+| `verify-dart-{contains,overrides,references}.ts` | 37 PASS / 0 FAIL, `14/14 shapes exact`, 38 PASS / 0 FAIL | yes |
+| `regex-census.ts` | `files scanned: 19 (8560 lines)`, `RESULT: 0 regexes` | yes |
+| `rel-type-coverage-gate.ts --langs=dart` | CHECK 1 `2 un-audited: ["overrides","references"]`; CHECKs 2–4 clean | yes |
+| `verify-regex-census.ts` | `census entries: 5 \| HEAD scan: 5 \| working-tree scan: 5`, `missing 0`, `stale 0`, `unclassified 0`, `mislocated 0`, `PASSED` | yes |
+| `verify-analyzer-docs.ts` | dart row `present: true`, `missingSections: []`, `ontologyGaps: []` | yes |
+| `verify-honesty.ts` | `21 failure(s)`, and the only `dart` substring in the whole output is `dart-http` inside the PASSING `corpus pins present` line | yes — no dart file is named |
+| `verify-doc-truth-emissions.ts` | still `ReferenceError: __dirname is not defined in ES module scope` under `npx tsx`; under `bun run` still `UNDOCUMENTED [dart] calls` pointing at `docs/analyzers/real-dart-analyzer.md:58` | yes, item 12 unchanged |
+
+The three supervisor-owned artifacts those gates wrote to disk
+(`docs/DOC-TRUTH-EMISSIONS.md`, `validation/m14/results/analyzer-docs.json`,
+`validation/m60/results/rel-type-coverage.json`) were reverted uncommitted, as §Ownership
+requires.
+
+**The differential, at two rotations not yet recorded, and it is the 98.4% branch
+again.** `--force-fresh`, one lane per invocation:
+
+| lane | rotation | tree-truth / covered | ratio | MISSING | analyzer edges | unexplained | heuristic |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `proxicall:dart` | 80 | 6162 / 6062 | **98.4%** | **100** | 5,562 | **0** | 0 |
+| `dart-http:dart` | 75 | 2277 / 2263 | **99.4%** | **14** | 2,106 | **0** | 0 |
+
+So the ratio has now read 98.4% at rotations 73, 74 and 80 and 58.9% at 78 and 79 —
+**four of five recorded rotations are the high branch**, which strengthens the bimodal
+reading rather than softening it, and the truth-row denominators moved again (6,220 →
+6,162 on proxicall, 2,280 → 2,277 on dart-http) exactly as the denominator-stability
+paragraph above predicts. Every printed MISSING row on both lanes is `overrides`, which
+is §DERIVATION predicting the residue by label rather than by count. `unexplained` is 0
+on both lanes at both rotations, and that is the fifth consecutive reading of 0.
+
+**Item 17 was re-verified mechanically rather than quoted, and both halves hold.**
+The array was walked in declaration order with the spread files resolved through their
+imports: **absolute index 80 is `PROTOBUF_MUTANTS[27]`, which is
+`protobuf/qualified-id-stopped-being-published`** — the entry with no `language` field,
+and the only one of that file's 30 entries without one. The total is 1,789, printed by
+the scoped run itself, so 1,789 − 80 = **1,709 entries never execute**. The crash site
+is as stated: `mutate-analyzer.ts:18843` calls `clean(m.language)` → `runLang(lang)` →
+`path.join(FIXTURES_DIR, lang)` at `run-fixtures.ts:506`, which throws
+`TypeError [ERR_INVALID_ARG_TYPE]` on `undefined`. For (b), `main()` reads
+`process.env.BB_MUTANT_ONLY` and nothing else; the only two `process.argv` uses in the
+file are ROOT derivation at line 36 and the `endsWith("mutate-analyzer.ts")` entrypoint
+guard at line 18,920, so `bun run script/m14/mutate-analyzer.ts dart` cannot scope. One
+detail is recorded as approximate: this walk puts the last `dart/` entry at 1,723 where
+the item says 1,718, and the same walk totals 1,794 where the run prints 1,789 — five
+`id:` lines are being counted that the runtime does not, so the walk's absolute indices
+are reliable only up to the first `dart/` entry, which it places at **1,049**, matching
+the item exactly. The figures 1,789, index 80 and 1,709 are the ones the verdict leans
+on and all three come from the runtime or from the ordered spread walk, not from this
+approximate total.
+
+**The census wall time moved again and this is the second pass to say so.**
+`wallMs` 553,290 = 9.22 min on the same 2,735 files and the same `BB_DART_CONC=1`, against
+337,371 = 5.62 min recorded above — a 1.64x spread with every count byte-identical. That
+is the third measurement of a machine-dependent quantity in this file (the other two
+being the hang-probe parse times), and it is why no latency figure derived from a
+single run of a corpus sweep is quoted here as a property of the analyzer.
+
 **What was NOT re-run, and why.** The latency A/B was not repeated: it alternates two
 analyzer blobs over 300 files × 4 runs, and `src/ast/real-dart-analyzer.ts` has not
 changed since `8e86c8364` (2026-10-03 23:47), so its AFTER column still describes the
