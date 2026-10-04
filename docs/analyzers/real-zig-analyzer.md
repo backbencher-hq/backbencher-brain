@@ -3253,13 +3253,27 @@ half, because a struct-only fixture cannot see a mutant that publishes every fil
 | kinds outside `SymbolKind` | 0 | **0** | — |
 | endpoints equal to `unknown` | 39 | **39** | — |
 | edges below 0.7 | 0 | **0** | — |
-| **edges binding at both ends** | 213,207 | **232,499** | **+19,292** (54.32% → **58.74%**) |
+| **edges binding at both ends** | 220,556 | **233,867** | **+13,311** (56.19% → **59.09%**) |
 | analyzer-owned misses (deliverable C) | 14,541 | **4,509** | **−10,032, −69%** |
 
+**PASS 17 CORRECTION — this row read `213,207 → 232,499, +19,292 (54.32% → 58.74%)` from pass 13
+to pass 16, and every one of those three cells was wrong.** The pass-13 commit that introduced it
+also committed the census artifact it was transcribed from, and that artifact disagrees: summing
+`byType[*].bothResolvedFileLocal` over the four archived full-draw censuses gives **220,556**
+(`ontology-census-full-2026-10-04-p11.json`), **233,867** (`…-p13.json`), **233,867**
+(`…-p15.json`) and **233,867** (this pass's independent re-run). The `before` cell was low by
+**7,349**, the `after` cell low by **1,368**, and the delta was therefore overstated by **5,981** —
+the improvement is **+13,311**, not +19,292, so the change was worth **45% less** than this lane
+reported for six passes. The pass-13 commit message carries the same overstated figure and is
+left unamended; this row is the correction. The per-type row below was wrong in the same way and
+from the same source. What did **not** move is the shape of the finding: `uses` is still the
+largest single gain and the direction of every cell is unchanged, so no conclusion drawn from
+this table reverses — only the magnitude of the win does.
+
 +3,255 `contains` and not +3,321 is the 66 unowned fields, attributed to the byte. Per-type
-resolution at both ends: `uses` 46,585 → **61,878**, `contains` 77,145 → **80,698**, `references`
-13,334 → **13,607**, `calls` 45,337 → **45,463**, `imports` 3,008 → **3,049**, `exports` 24,108 →
-**24,114**, `instantiates` 3,690 → 3,690 (unchanged).
+resolution at both ends: `uses` 53,151 → **63,100**, `contains` 77,451 → **80,706**, `references`
+13,669 → **13,670**, `calls` 45,431 → **45,537**, `imports` 3,049 → 3,049 (unchanged), `exports`
+24,114 → 24,114 (unchanged), `instantiates` 3,691 → 3,691 (unchanged).
 
 **The honest cost, in the other direction.** Ambiguity **rose**: 271,643 ambiguous edges against
 265,887, **+5,756**, because 3,321 more symbols means more names carry more than one candidate.
