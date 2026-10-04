@@ -36,6 +36,84 @@ const onDisk = new Set(
     .filter((x): x is string => !!x),
 )
 
+/**
+ * Lanes this gate should expect to be ruleable at all.
+ *
+ * Kept as an explicit list rather than derived from the corpus, because the useful
+ * question is not "does a file exist" but "is this lane adjudicated SOMEWHERE". A lane
+ * with no `*-ruled.ts` is not necessarily unadjudicated — `rulingFor` also reads
+ * `spec/<lang>-completeness.json`, and 11 lanes are ruled from there. So this gate
+ * alone would have reported those 11 as gaps, which is the same over-reporting mistake
+ * the arbiter's own guard was making.
+ *
+ * A lane appears on the UNADJUDICATED list when it has neither source. That list is the
+ * real remaining work: every entry needs a lane to write a ruling table.
+ */
+const UNADJUDICATED = ["clean", "r", "scss"]
+
+const SPEC_DIR = join(HERE, "spec")
+
+/**
+ * Does this lane's spec supply any RULED decision?
+ *
+ * NOT "does the file exist" — that was the first version of this check and it was
+ * wrong immediately: `clean-completeness.json` exists but carries no decision with
+ * `status: "RULED"`, so the gate flagged its own UNADJUDICATED list as stale on the
+ * run that added it. The question is whether the spec supplies a RULING, which is what
+ * `rulingFor` actually looks for.
+ */
+function specSuppliesRuling(lang: string): boolean {
+  const spec = join(SPEC_DIR, `${lang}-completeness.json`)
+  if (!existsSync(spec)) return false
+  try {
+    const d = JSON.parse(readFileSync(spec, "utf8"))
+    const decs = d?.design_decision?.decisions ?? []
+    return decs.some((x: { status?: string }) => x?.status === "RULED")
+  } catch {
+    return false
+  }
+}
+
+for (const lang of UNADJUDICATED) {
+  if (specSuppliesRuling(lang)) {
+    console.error(`STALE LIST: ${lang} is listed unadjudicated but its spec carries a RULED decision.`)
+    console.error("Drop it from UNADJUDICATED. A stale list hides the lane it forgot.")
+    process.exit(1)
+  }
+}
+
+/** Any lane with neither source is a real gap and must be on the list, or the list lies. */
+/**
+ * Laptop B's lanes — the population this cross-check is over.
+ *
+ * Scoped deliberately. A first version globbed every spec in the directory and then
+ * flagged `solidity`, which has no ruling source and is nobody's problem here: it is
+ * another laptop's language. A gate that reports another team's backlog as your gap is
+ * the same defect as measuring the wrong population — it is technically true and
+ * practically useless, and it trains the reader to ignore the gate.
+ *
+ * So the population is stated, not inferred, and the gate only makes claims about it.
+ */
+const LANES_B = [
+  "bash", "clean", "css", "dart", "fsharp", "groovy", "hcl", "haskell", "java", "json",
+  "julia", "lua", "make", "nim", "php", "powershell", "protobuf", "python", "r", "ruby",
+  "scala", "scss", "sql", "toml", "xml", "yaml", "zig",
+]
+
+const missing = LANES_B.filter(
+  (l) => !onDisk.has(l) && !specSuppliesRuling(l),
+).sort()
+const onList = new Set(UNADJUDICATED)
+const unlisted = missing.filter((l) => !onList.has(l))
+if (unlisted.length) {
+  console.error(`INCOMPLETE LIST: these lanes have no table and no spec ruling, but are not`)
+  console.error(`listed as unadjudicated: ${unlisted.join(" ")}`)
+  console.error(`Add them, or the gate reports a clean state while work is outstanding.`)
+  process.exit(1)
+}
+console.log(`unadjudicated lanes (neither table nor spec RULED) : ${UNADJUDICATED.length}  (${UNADJUDICATED.join(" ")})`)
+console.log(`cross-check: ${missing.length} lane(s) with no source, all listed — ${missing.join(" ") || "none"}`)
+
 const src = readFileSync(GATE, "utf8")
 const block = /const RULED_BY_LANG: Record<string, Ruled\[\]> = \{([\s\S]*?)\n\}/.exec(src)
 if (!block) {
