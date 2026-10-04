@@ -1197,15 +1197,29 @@ follows is the residue that is a GAP rather than a fixed defect, plus the two §
   containment and replacement logic depends on), and `uses`/`references` should be scoped to the
   WITH list, because pass 2 showed that is what the analyzer now does and an oracle that did not
   would report 91 errors in 56 files as findings.
-- **SQL-G15 — `overrides` sees 22 of 777 real replacement events.** 777 `OR REPLACE`
-  declarations exist over the census corpus and all 777 are corpus-wide from the construct probe;
-  22 replace a declaration of the same kind in the same file and are therefore visible to a
-  per-file analyzer, which is what it emits. The other **755 replace a declaration made in
-  another file** — a migration chain re-declaring what the previous migration declared — and a
-  per-file analyzer cannot see them. 163 same-kind re-declarations carry no `OR REPLACE` at all
-  and PostgreSQL rejects those outright, so calling them overrides would assert a replacement the
-  language does not perform. The number that could be recovered is therefore 755, not 0, and it
-  is named rather than rounded away.
+- **SQL-G15 — `overrides` emits 22 edges from 34 replacement events. THE 777 AND THE 755 ARE
+  WITHDRAWN AS UNMEASURED, and the cross-file claim is falsified.** This item previously read "777
+  `OR REPLACE` declarations exist … the other 755 replace a declaration made in another file …
+  the number that could be recovered is therefore 755". Measured at pass 5 over all 1,955 admitted
+  files and 4,645 declarations, with the analyzer's own rule applied to a corpus-wide declaration
+  list per `kind:name`:
+
+  | | Count |
+  | --- | --- |
+  | redeclared `kind:name` groups | **178** |
+  | groups carrying at least one replacement event | **22** |
+  | groups carrying none (duplicate or re-creation, no `OR REPLACE`) | **156** |
+  | replacement events, per file | **34** |
+  | replacement events, corpus-wide | **34** |
+
+  Per-file and corpus-wide are the SAME number, so **every same-name re-declaration in the admitted
+  corpus is intra-file and there are no cross-file replacements to recover.** The 755 was wrong, and
+  the mechanism that made it plausible — PostgreSQL's extension corpus shipping one file per
+  version with the same function in every version — contributes nothing here, because the extension
+  corpus at `/usr/share/postgresql/14/extension` is not in the git-tracked corpus this lane admits.
+  What remains true and is the reason this is filed at all: 34 events become 22 edges because the
+  edge key is `(type, source, target)` with source `global`, so the replacement CHAIN of a name
+  declared 6 times is unreconstructable from the graph even though both line numbers survive.
 - **SQL-G16 — 91 `uses` edges from inside an error-bearing CTE.** See limitation 12: the WITH
   list is inside an ERROR node, so its names never become `cte` nodes and no scope rule can
   recover them. Needs a grammar change. Not filed as a shared item because the grammar is this
