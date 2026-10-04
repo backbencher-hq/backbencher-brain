@@ -482,6 +482,27 @@ figure in the verdict table exactly. The two `[BB-*]` lines are **one event, not
 orphans the 120 s self-destruct armed at `engine.ts:1441-1447`, and the orphan fires naming whichever
 file armed the oldest surviving bomb — §8 rows 1 and 7 reproducing, on the same corpus, in one run.
 
+**Four full-corpus runs on 2026-10-04, and the trap fired in two of them.** This is an OBSERVED count
+from one session, not a rate — §8 row 2 already warns that a quoted rate for this defect has been an
+artifact before, and this table is here so the claim "the run was clean" is never made without saying
+which run:
+
+| run | instrument | width | outcome |
+|---|---|---|---|
+| 1 | `census.ts` | 4 | `[BB-PARSE-ERR] remote.jl` → degraded 1 → `[BB-HANG] remote.jl` +110 s → **exit 1** |
+| 2 | `census.ts` | 4 | clean, degraded 0, **exit 0** |
+| 3 | `overrides-differential.ts` | seq | `[BB-HANG] repository.jl`, **no** `[BB-PARSE-ERR]` in the run → **exit 1** |
+| 4 | `overrides-differential.ts` | seq | clean → **exit 0** |
+
+**Run 3 is the sharper evidence for §8 row 1, because it is the case the mechanism predicts.** There
+was no `[BB-PARSE-ERR]` line anywhere in that run, and the bomb still fired naming
+`julia/stdlib/LibGit2/src/repository.jl` — a *different* file from run 1's. A `[BB-HANG]` line names
+whichever file armed the oldest surviving bomb, so its file is not evidence about the file it prints.
+Both runs wrote their report BEFORE the bomb fired, so the bomb costs the exit code and not the
+measurement; that is luck, not design, and it is why `parseFile`'s catch being invisible to a
+counter that only counts throws (`0 crashes`) is the defect that let the original wasm-trap bug survive
+a full corpus run in the first place.
+
 **`degraded: 0` is what most runs report, not what every run reports, and this lane has no rate for
 it.** `firing-check --files 2000`, `arbiter-census-diff` and `ontology-coverage-gate julia` all
 reported `degraded 0` / `fallback: 0` on 2026-10-04; the census reported 1. Both are honest readings of
@@ -1813,6 +1834,24 @@ corpus, or a `--repo a,b` sweep. Not applied here — `differential.ts` is super
                                      analyzer-edges=4163 tree-truth=4106 MISSING=131 heuristic=0
                                      unexplained-by-label: calls=181 contains=144 instantiates=22
                                                         references=18 extends=11 uses=8
+
+    2026-10-04, 60-file default draw, rot 44:  covered 94.6%   unexplained 9.3%
+                                     analyzer-edges=5901 tree-truth=5900 MISSING=316 heuristic=0
+                                     unexplained-by-label: calls=246 contains=201 references=36
+                                                        instantiates=34 extends=25 uses=9
+
+**`covered` is NOT one of the stable figures, and the row above is why.** Across the draws recorded
+in this file `covered` reads 99.1 / 98.9 / 96.8 / 96.8 / **94.6**% while `unexplained` reads
+8.5 / 8.7 / 9.3 / 9.2 / **9.3**% — so `unexplained` sits in a narrow 8.5–9.3% band across five draws
+and `covered` moves 4.5 points. This file previously named "the unexplained rate and the no-truth line"
+as the stable pair; the unexplained rate is supported by that and the `covered` column should not be
+quoted from one draw. **The rot-44 draw also printed NO `COMPARED WITH NO TRUTH: overrides` line**,
+which is the harness's own designed behaviour rather than a fix: that line needs at least one
+comparable edge in the draw, and rot 44's 60 files contained no `overrides` edge at all. A DERIVATION
+finding disappearing from a gate's output because the rotation did not sample the type is the failure
+mode source-derivation-counting has, reproduced inside a gate — so the finding is recorded here from the
+40-file deterministic instrument (`direct-oracle-check`, which shows the `overrides` row every run)
+rather than read off the rotating sweep.
 
 `MISSING=131` and `covered 96.8%` are IDENTICAL across the rot-35 and rot-36 draws while
 `analyzer-edges` moved 4,088 → 4,163 and `tree-truth` 4,038 → 4,106: the draw changed how many edges were
