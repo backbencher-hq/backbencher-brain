@@ -507,6 +507,19 @@ detect.
 | imports / exports | 0 | n/a — targets are module URIs |
 | **total** | **490,135** | **296,854 (60.6%)** |
 
+**An 8-file sample reads 0 ambiguous targets, and that is not a contradiction.**
+`script/m14/incoming-check.ts dart <8 files>` — the supervisor's instrument, run on 8
+real files from `flutter-packages/packages/video_player/video_player_avfoundation` and
+`dart-http/pkgs/cronet_http` — reports 274 symbols, 149 distinct declarations named by
+at least one edge, and `target names resolving to >1 published symbol : 0`. Ambiguity is
+a COLLISION count: it is a property of the symbol table's size and name variety, and 274
+symbols drawn from two packages that mostly call into the Flutter SDK collide far less
+than 337,336 symbols drawn from five repositories do. So the same lane reads 0 at n=8
+and 490,135 at n=4,788, and quoting the 8-file figure as the lane's ambiguity rate
+would understate it by five orders of magnitude. The 4,788-file table is the one to
+quote; the 8-file run is a shape check, and it is a useful one — it confirms 0 parse
+failures, 0 degraded parses, all TEN types firing, and 1 orphan of 274 symbols.
+
 **`contains` is closed, and that is arithmetic rather than luck.** The edge publishes
 the OWNER on the source side and the bare member on the target side, so
 `<source>.<target>` is a published spelling for every one of the 296,726 — a consumer
