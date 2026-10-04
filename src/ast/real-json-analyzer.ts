@@ -142,7 +142,6 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
 
     this.collectErrors(rootNode, ctx)
-    this.collectDocumentConventions(rootNode, ctx)
     this.collectSchemaFacts(rootNode, ctx)
     this.extractSymbols(rootNode, ctx)
     this.extractRelationships(ctx)
@@ -232,7 +231,7 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   /**
-   * Two DOCUMENT-level preconditions, read once before anything is interpreted.
+   * Two DOCUMENT-level preconditions, read in the pass that already visits every pair.
    *
    * Both exist because the pass-2 corpus probe found inheritance declared as ordinary
    * object keys, and both are deliberately narrow. `implements` had been RULED on the
@@ -255,29 +254,24 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
    * The measurement that would overturn this: a corpus document that states a supertype or
    * an interface mix-in in a shape carrying neither marker. 0 occurrences over 11,713
    * files, which is what `validation/m14/fixtures/json/inheritance-probe.ts` reports.
+   *
+   * It is folded into `collectSchemaFacts` rather than given its own walk, and the reason is
+   * measured. `otp`'s adversarial `json_SUITE_data/n_structure_open_array_object.json` is 50,000
+   * unclosed `[` — the grammar recovers it as an ERROR root with 200,000 children — and every
+   * extra full-tree walk over that shape costs ~100 s on top of a 249 s baseline, because
+   * `namedChild(i)` is not O(1) in this binding. Two walks became one.
    */
-  private collectDocumentConventions(rootNode: Node, ctx: JsonContext): void {
-    const stack: Node[] = [rootNode]
-    while (stack.length > 0) {
-      const node = stack.pop()!
-      if (node.type === "pair") {
-        const key = this.keyText(node)
-        const value = node.childForFieldName("value")
-        if (key === "kind" && value?.type === "string" && this.stripQuotes(value.text) === "reference") {
-          ctx.usesReferenceLiterals = true
-        }
-        if (key === "class" && value?.type === "string") {
-          const declared = this.stripQuotes(value.text)
-          // A TYPE name, not prose: an identifier with no whitespace and a leading letter
-          // or underscore. Checked with a character scan because this file holds no regex.
-          if (declared.length > 0 && this.isIdentifierText(declared)) ctx.usesClassDeclarations = true
-        }
-      }
-      for (let i = node.namedChildCount - 1; i >= 0; i--) {
-        const child = node.namedChild(i)
-        if (child) stack.push(child)
-      }
+  private noteDocumentConventions(key: string, value: Node | null, ctx: JsonContext): void {
+    if (value?.type !== "string") return
+    if (key === "kind") {
+      if (this.stripQuotes(value.text) === "reference") ctx.usesReferenceLiterals = true
+      return
     }
+    if (key !== "class" || ctx.usesClassDeclarations) return
+    // A TYPE name, not prose: an identifier with no whitespace and a leading letter or
+    // underscore. Checked with a character scan because this file holds no regex.
+    const declared = this.stripQuotes(value.text)
+    if (this.isIdentifierText(declared)) ctx.usesClassDeclarations = true
   }
 
   private isIdentifierText(text: string): boolean {
@@ -313,6 +307,7 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
           const key = this.keyText(pair)
           const value = pair.childForFieldName("value")
           if (!key) continue
+          this.noteDocumentConventions(key, value, ctx)
           schemaKeys.add(key)
           if (key === "required" && value?.type === "array") {
             const required = new Set<string>()
@@ -336,7 +331,7 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (schemaMatches >= 2) ctx.schemaObjects.add(parentPath)
         continue
       }
-      if (node.type === "array") this.pushArrayChildren(stack, node, parentPath, ctx.rootName)
+      if (node.type === "array") this.pushArrayChildren(stack, node, parentPath, ctx.rootName, ctx.rootName)
     }
   }
 
@@ -366,7 +361,14 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (node.type === "array") {
         ctx.arrayCount++
         ctx.hasArrays = true
-        this.pushArrayChildren(stack, node, parentPath, parentName)
+        // An array that is itself an ELEMENT of another array is a container with a
+        // declared position, and `contains` is emitted from it — so it needs a symbol, or the
+        // containment edge it sources names a path nothing declares. Measured: 37 such edges
+        // on a 3,272-file corpus, 30 of them the class an independent oracle could not
+        // corroborate. Declining the edge instead would have hidden the container; giving it
+        // the symbol it already has a name for states the same fact and resolves.
+        if (frame.emitObject) this.addArrayElementSymbol(ctx, node, parentPath, parentName)
+        this.pushArrayChildren(stack, node, parentPath, parentName, ctx.rootName)
         continue
       }
       if (node.type !== "pair") continue
@@ -474,15 +476,19 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
    * anything below the deterministic threshold.
    */
   private recordTypeDeclaration(node: Node, path: string, ctx: JsonContext): void {
+    // ONE key -> pair index per object, and every lookup below reads it. The first version
+    // called `objectPairs` and then `pairFor` per candidate key, which is O(pairs) each time
+    // and therefore O(pairs^2) per object; on `otp`'s 50,000-unclosed-bracket adversarial
+    // fixture that is real time, not a style point.
+    const index = this.objectKeyIndex(node)
     // A reference literal is a REFERENCE, not a declaration. Registering one would let an
     // inheritance statement resolve to the very object that states it — which is what the
     // first version did, and it produced
     //   `structures[0] -[extends]-> structures[0].extends[0]`
     // instead of `structures[0] -[extends]-> structures[1]`. A `$ref` names a location and a
     // reference literal names a type; neither declares one.
-    if (this.referenceLiteralName(node) !== undefined) return
-    const pairs = this.objectPairs(node)
-    const className = ctx.usesClassDeclarations ? this.stringPairValue(pairs, "class") : undefined
+    if (this.referenceLiteralName(index) !== undefined) return
+    const className = ctx.usesClassDeclarations ? this.stringPairValue(index, "class") : undefined
     // An LSP type declaration names itself with `name` (structures, enumerations) or
     // `typeName` (requests, notifications), AND carries at least one of the keys that make
     // an object a TYPE rather than a member: `properties`, `values`, or an inheritance key.
@@ -491,12 +497,12 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
     // declaration in the same file.
     const named =
       className ??
-      (ctx.usesReferenceLiterals ? this.lspDeclaredName(pairs) : undefined)
+      (ctx.usesReferenceLiterals ? this.lspDeclaredName(index) : undefined)
     if (named !== undefined && named.length > 0 && !ctx.typeDeclarations.has(named)) ctx.typeDeclarations.set(named, path)
     if (named === undefined || named.length === 0) return
 
     if (className !== undefined) {
-      const base = this.stringPairValue(pairs, "base")
+      const base = this.stringPairValue(index, "base")
       if (base !== undefined && base.length > 0) {
         ctx.inheritanceCandidates.push({
           source: path,
@@ -504,20 +510,19 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
           key: "base",
           form: "duckdb_base_class_name",
           label: "extends",
-          line: this.pairLine(pairs, "base"),
+          line: this.pairLine(index, "base"),
         })
       }
       return
     }
 
     for (const key of LSP_INHERITANCE_KEYS) {
-      const pair = this.pairFor(pairs, key)
-      const value = pair ? pair.childForFieldName("value") : undefined
+      const value = this.pairValue(index, key)
       if (value?.type !== "array") continue
       const label: "extends" | "implements" = key === "mixins" || key === "implements" ? "implements" : "extends"
       const items = (value.namedChildren ?? []).filter((c: any) => c.type !== "[")
       for (const item of items) {
-        const reference = this.referenceLiteralName(item)
+        const reference = this.referenceLiteralName(this.objectKeyIndex(item))
         if (reference === undefined) continue
         ctx.inheritanceCandidates.push({
           source: path,
@@ -570,11 +575,9 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   /** An LSP reference literal: an object with `kind` == "reference" and a `name` string. */
-  private referenceLiteralName(node: any): string | undefined {
-    if (node?.type !== "object") return undefined
-    const pairs = this.objectPairs(node)
-    if (this.stringPairValue(pairs, "kind") !== "reference") return undefined
-    const name = this.stringPairValue(pairs, "name")
+  private referenceLiteralName(index: Map<string, any>): string | undefined {
+    if (this.stringPairValue(index, "kind") !== "reference") return undefined
+    const name = this.stringPairValue(index, "name")
     return name !== undefined && name.length > 0 ? name : undefined
   }
 
@@ -583,43 +586,54 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
    * type declaration.
    *
    * Two keys name the type (`name` for a structure or an enumeration, `typeName` for a
-   * request or a notification) and one of four makes the object a TYPE rather than one of its
-   * members: `properties`, `values`, `extends`, `mixins`. A property descriptor
+   * request or a notification) and one of five makes the object a TYPE rather than one of its
+   * members: `properties`, `values`, `extends`, `mixins`, `implements`. A property descriptor
    * (`{"name":"textDocument","type":{"kind":"reference",…}}`) has a `name` and none of those,
    * so it is declined — and it sits inside a declaration in the same file, which is what makes
    * the test necessary rather than tidy.
    */
-  private lspDeclaredName(pairs: any[]): string | undefined {
-    const carriesTypeShape =
-      this.pairFor(pairs, "properties") !== undefined ||
-      this.pairFor(pairs, "values") !== undefined ||
-      this.pairFor(pairs, "extends") !== undefined ||
-      this.pairFor(pairs, "mixins") !== undefined ||
-      this.pairFor(pairs, "implements") !== undefined
-    if (!carriesTypeShape) return undefined
-    return this.stringPairValue(pairs, "name") ?? this.stringPairValue(pairs, "typeName")
+  private lspDeclaredName(index: Map<string, any>): string | undefined {
+    if (
+      !index.has("properties") &&
+      !index.has("values") &&
+      !index.has("extends") &&
+      !index.has("mixins") &&
+      !index.has("implements")
+    ) {
+      return undefined
+    }
+    return this.stringPairValue(index, "name") ?? this.stringPairValue(index, "typeName")
   }
 
-  private objectPairs(node: any): any[] {
-    return ((node?.namedChildren ?? []) as any[]).filter((c: any) => c.type === "pair")
+  /** A key -> pair index for one object, built once. */
+  private objectKeyIndex(node: any): Map<string, any> {
+    const index = new Map<string, any>()
+    const children = (node?.namedChildren ?? []) as any[]
+    for (let i = 0; i < children.length; i++) {
+      const child = children[i]
+      if (child?.type !== "pair") continue
+      const key = this.keyText(child)
+      if (key.length === 0) continue
+      // First declaration wins, which is the same rule the duplicate-key contract states.
+      if (!index.has(key)) index.set(key, child)
+    }
+    return index
   }
 
-  private pairFor(pairs: any[], key: string): any | undefined {
-    for (const p of pairs) if (this.keyText(p) === key) return p
-    return undefined
+  private pairValue(index: Map<string, any>, key: string): any | undefined {
+    const pair = index.get(key)
+    return pair ? pair.childForFieldName("value") : undefined
   }
 
-  private stringPairValue(pairs: any[], key: string): string | undefined {
-    const pair = this.pairFor(pairs, key)
-    if (!pair) return undefined
-    const value = pair.childForFieldName("value")
+  private stringPairValue(index: Map<string, any>, key: string): string | undefined {
+    const value = this.pairValue(index, key)
     if (value?.type !== "string") return undefined
     const text = this.stripQuotes(String(value.text ?? ""))
     return text.length > 0 ? text : undefined
   }
 
-  private pairLine(pairs: any[], key: string): number {
-    const pair = this.pairFor(pairs, key)
+  private pairLine(index: Map<string, any>, key: string): number {
+    const pair = index.get(key)
     return pair ? pair.startPosition.row + 1 : 0
   }
 
@@ -635,18 +649,51 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
   private extractRelationships(ctx: JsonContext): void {
     for (const symbol of ctx.symbols) {
       if (symbol.ownerName) {
+        // ENDPOINTS ARE QUALIFIED PATHS — and this is the lane's LAST type that was not.
+        //
+        // Every other type here already emits paths (`references`, `extends`, `implements`,
+        // `uses`, `calls`, `exports`, `overrides`), and `contains` was the outlier: it emitted
+        // `ownerName -> name`, two BARE names. That looks resolvable and is not, and the
+        // measurement is in `validation/m14/fixtures/json/incoming-check` runs:
+        //
+        //   66,032 `contains` edges over a 202-file, 99-repo sample
+        //   32,660 of them (49.4%) name a target that matches MORE THAN ONE published symbol
+        //   1,119 are self-loops (source string == target string)
+        //   51 corpus-wide carry an endpoint equal to the literal `unknown`, because a real
+        //     JSON key is named `unknown` (proxicall's i18n bundles, hasura's OpenAPI map)
+        //
+        // A JSON document repeats key names relentlessly — `name`, `type`, `items`,
+        // `properties` — so a bare-name target is ambiguous by construction. And ambiguity here
+        // does not degrade to a wrong answer, it degrades to NO answer: the shared resolver
+        // (`src/ast/parallel-indexer.ts`, strategy 2) resolves a bare name only under
+        // `HAVING COUNT(*) = 1`, and strategy 3 requires a `.` in the string. So an ambiguous
+        // bare target satisfies neither and `target_symbol_id` stays NULL — the edge is in the
+        // graph, asserts containment, and cannot be walked in either direction.
+        //
+        // The qualified path is already computed: it is the symbol's `qualifiedName`, which
+        // for every symbol in this analyzer IS its path. Strategy 1 matches it exactly.
+        //
+        // The fallback matters and is not decoration. Where a path cannot be reduced to its
+        // owner the bare `ownerName` is kept, so this change can only ADD resolution, never
+        // remove it: a bare name that was unique still resolves, and a bare name that was
+        // ambiguous was already resolving to nothing.
         ctx.relationships.push({
-          source: symbol.ownerName,
-          target: symbol.name,
+          source: this.ownerPathOf(symbol),
+          target: String(symbol.qualifiedName || symbol.name),
           type: ASTEngine.RelationshipType.Contains,
           confidence: 1,
           line_number: this.declLine(symbol),
-          metadata: { fullPath: symbol.metadata?.fullPath || "" },
+          metadata: {
+            fullPath: symbol.metadata?.fullPath || "",
+            ownerName: symbol.ownerName,
+            endpoints: "qualified_path",
+          },
         })
       }
     }
 
-    // A `$ref` that names ANOTHER FILE is a file dependency, which is what
+
+  // A `$ref` that names ANOTHER FILE is a file dependency, which is what
     // `imports` is for. Found by the ontology gate: the first ruling for `imports`
     // said JSON has no imports, on the ground that the grammar has no import node —
     // which is the wrong question, because a `$ref` is a STRING and the grammar cannot
@@ -714,6 +761,51 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
         },
       })
     }
+  }
+
+    /**
+   * The OWNER's qualified path, recovered from a child's own path — or the bare `ownerName`
+   * when the path does not reduce to one.
+   *
+   * Two shapes occur and both are handled by string surgery on the child's path, because the
+   * path IS the child's `qualifiedName` in this analyzer:
+   *
+   *   an object property — path `ar.dashboard.analytics.unknown`, name `unknown`; the owner is
+   *   everything before the final `.unknown`, i.e. `ar.dashboard.analytics`.
+   *
+   *   an array item — path `ar.items[0]`, name `ar.items[0]` (see `arrayItemName`: an item is
+   *   named after the array that holds it plus its index). There is no `.` immediately before
+   *   the name, so the `.`-suffix test misses it and the `[i]` suffix test catches it, leaving
+   *   `ar.items`.
+   *
+   * The fallback returns `ownerName` unchanged, which is what the previous version always
+   * emitted. That direction was chosen on purpose: a path can only ever resolve MORE than a
+   * bare name (strategy 1 exact-matches it), so an unreducible path degrades to today's
+   * behaviour and never to a worse one.
+   */
+  private ownerPathOf(symbol: ASTEngine.UniversalSymbol): string {
+    const owner = String(symbol.ownerName ?? "")
+    if (owner === "") return owner
+    const p = String(symbol.qualifiedName ?? "")
+    const n = String(symbol.name ?? "")
+    if (n === "" || p === "") return owner
+    // An ARRAY ITEM is owned by the ARRAY, so only the `[i]` comes off: `Arrays.objs[0]`
+    // belongs to `Arrays.objs`. Stripping `.objs[0]` instead reaches `Arrays`, which is the
+    // document root — a real edge to the wrong owner, and 5 fixture pins caught it.
+    //
+    // The two shapes are told apart by `isArrayItem`, which is set where the item is created,
+    // rather than by pattern-matching the name. That matters because an item's NAME is the
+    // array's name plus the index (`arrayItemName`), so the two rules are indistinguishable
+    // from the string alone — and guessing between them is how `contains` came to name the
+    // array as the owner of its own items.
+    if (symbol.metadata?.isArrayItem === true) {
+      const bracket = p.lastIndexOf("[")
+      if (bracket > 0) return p.slice(0, bracket)
+      return owner
+    }
+    if (p.length > n.length && p.endsWith(`.${n}`)) return p.slice(0, p.length - n.length - 1)
+    if (p.length > n.length && p.endsWith(n)) return p.slice(0, p.length - n.length)
+    return owner
   }
 
   /**
@@ -1225,21 +1317,46 @@ const bracket = parent.lastIndexOf("[")
   /**
    * An array item's SYMBOL name and the SYMBOL name of the array that holds it.
    *
-   * Derived from the array's own NAME plus the index, never from the item's path.
-   * The previous version took the last dot-segment of the path, which is correct
-   * only while the module name has no dot in it — and a JSON file whose name does
-   * contain one is entirely ordinary: `index.svelte.warnings.json` gave the module
-   * `index.svelte.warnings` and the item owner came out as `warnings`, so every
-   * `contains` edge from it named no symbol at all. The same file is a snapshot
-   * fixture, and 14 such edges were the largest genuinely-unresolvable class in the
-   * corpus. `tsconfig.build.json` and every `*.svelte.*.json` have the same shape.
+   * Derived from the array's own QUALIFIED path (minus the module prefix) plus the index,
+   * never from the item's path and never from the array's bare NAME — and the second half of
+   * that is the fix. The array's own NAME is not enough once an array can be an ELEMENT of
+   * another array, because then two different arrays share it:
    *
-   * The array's own name is already on the frame: `parentName` when an array frame
-   * is popped IS the name of the array, because the frame is pushed with the key it
-   * was written under, and a document's top-level array arrives with the module name.
+   *   { "rows": [ [ {"cell": 1}, {"cell": 2} ] ] }
+   *
+   * The inner array's name arrives as `rows`, the same name the OUTER array has, so its two
+   * elements came out as `rows[0]` and `rows[1]` — names that collide with the outer array's
+   * own element namespace — while their qualified paths said `rows[0][0]` and `rows[0][1]`.
+   * The consequence was not cosmetic: `contains` is emitted from the OWNER symbol, and the
+   * owner was derived from the truncated name, so the document stated
+   *
+   *   rows[0] contains rows[0][1]
+   *
+   * between two objects that are not nested at all. Measured over the corpus: 30 of the 37
+   * `contains` edges an independent oracle could not corroborate, and 183 at the whole-population
+   * count before the endpoint change. The two walkers agreed on the defect, which is the case
+   * the honesty contract calls out: agreement is evidence that two implementations agree, not
+   * that either is right.
+   *
+   * Deriving from the array's own NAME is still right for the ordinary case, because a key's
+   * qualified path minus the module prefix IS its name — `a.rows` → `rows` — and it is what
+   * makes a dotted module name survive: `index.svelte.warnings.json` gives the module
+   * `index.svelte.warnings` and the item owner `items`, not `warnings`.
    */
-  private arrayItemName(arrayName: string, index: number): { item: string; holder: string } {
-    return { item: `${arrayName}[${index}]`, holder: arrayName }
+  private arrayItemName(arrayPath: string, rootName: string, index: number): { item: string; holder: string } {
+    // An array that is itself an ELEMENT has no key of its own, so its children are named from
+    // its qualified path. An array written under a KEY keeps the short name the key gives it,
+    // because that is the name the rest of the document already uses: `allOf[0]`, not
+    // `definitions.Extended.allOf[0]`. The test is the path's last segment — an element's ends
+    // in `]` and a keyed array's is the key.
+    // A document whose TOP LEVEL is an array is the third case: the array has no key and is
+    // not an element either, and it is named by the MODULE — whose basename may contain a dot,
+    // which is the whole point of `Dotted.name.json`. Taking the last dot-segment there gives
+    // `name[0]`, and that is the defect this fixture was written for.
+    if (arrayPath === rootName) return { item: `${rootName}[${index}]`, holder: rootName }
+    const lastSegment = arrayPath.slice(arrayPath.lastIndexOf(".") + 1)
+    const self = lastSegment.endsWith("]") ? arrayPath.slice(rootName.length + 1) : lastSegment
+    return { item: `${self}[${index}]`, holder: self }
   }
 
   private addArrayObjectSymbol(ctx: JsonContext, node: Node, path: string, itemName: string): void {
@@ -1270,11 +1387,52 @@ const bracket = parent.lastIndexOf("[")
     })
   }
 
+  /**
+   * The symbol for an array element that is itself an ARRAY.
+   *
+   * Same shape as `addArrayObjectSymbol` and for the same reason: `contains` is emitted from
+   * the OWNER symbol, so an element that owns elements needs a symbol of its own. Its name is
+   * the qualified path minus the module prefix (`rows[0]`), which is the same string the
+   * object-element rule produces, so the two kinds cannot collide on one position.
+   */
+  private addArrayElementSymbol(ctx: JsonContext, node: Node, path: string, itemName: string): void {
+    // The frame's parentName for an array ELEMENT is the element's own name; for a keyed
+    // array it is the key. The qualified path is the reliable statement in both cases, and the
+    // two agree whenever the array is written under a key.
+    const lastSegment = path.slice(path.lastIndexOf(".") + 1)
+    const name = lastSegment.endsWith("]") ? (path === ctx.rootName ? path : path.slice(ctx.rootName.length + 1)) : lastSegment
+    // The holder is the name up to this element's own bracket, so the owner is the ENCLOSING
+    // array and not the module. `addArrayObjectSymbol` derives it the same way, and the two
+    // must agree or a `contains` edge from one of them resolves to nothing.
+    const bracket = name.lastIndexOf("[")
+    const ownerName = bracket > 0 ? name.slice(0, bracket) : ctx.rootName
+    this.addSymbol(ctx, {
+      name,
+      kind: ASTEngine.SymbolKind.Class,
+      qualifiedName: path,
+      range: this.nodeToRange(node),
+      ownerName,
+      ownerKind: ASTEngine.SymbolKind.Class,
+      scope: ownerName,
+      visibility: "public",
+      returnType: "array",
+      metadata: {
+        jsonSpecific: true,
+        nodeType: "array",
+        valueType: "array",
+        fullPath: path,
+        isArray: true,
+        isArrayItem: true,
+        depth: this.pathDepth(path, ctx.rootName),
+      },
+    })
+  }
+
   private childPath(parentPath: string, key: string): string {
     return parentPath ? `${parentPath}.${key}` : key
   }
 
-  private pushArrayChildren(stack: PathFrame[], node: Node, parentPath: string, parentName: string): void {
+  private pushArrayChildren(stack: PathFrame[], node: Node, parentPath: string, parentName: string, rootName: string): void {
     for (let i = node.namedChildCount - 1; i >= 0; i--) {
       const child = node.namedChild(i)
       if (!child) continue
@@ -1282,14 +1440,17 @@ const bracket = parent.lastIndexOf("[")
       // The frame's parentName is the ITEM's symbol name, so the keys inside an
       // array element are owned by that element. Passing the array's name here is
       // what made `a` a child of `objs` instead of `objs[0]`.
-      // `parentName` here is the ARRAY's own name, so the item is named from it
-      // rather than from a path segment.
-      const { item } = this.arrayItemName(parentName, i)
+      // `parentPath` here is the ARRAY's own qualified path, and `arrayItemName`
+      // derives the item from it rather than from the array's bare NAME — which is
+      // what an array nested inside another array needs, and the two agree for every
+      // array that is written under a key.
+      const { item } = this.arrayItemName(parentPath, rootName, i)
+      const isElement = child.type === "object" || child.type === "array"
       stack.push({
         node: child,
         parentPath: itemPath,
-        parentName: child.type === "object" ? item : parentName,
-        emitObject: child.type === "object",
+        parentName: isElement ? item : parentName,
+        emitObject: isElement,
       })
     }
   }
