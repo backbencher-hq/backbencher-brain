@@ -529,7 +529,7 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
       // ERROR/MISSING nodes — grails-core's `docs-core/.../main.css` produces
       // 3,418 of them, and the first spans the ENTIRE 1,217-line file. Skipping
       // error subtrees deleted 883 of that file's 964 lost output lines, i.e. the
-      // whole file, including the rules the grammar had read perfectly well.
+      // whole file, including the rules the grammar had parsed without error.
       //
       // The suppression was also never necessary. Inside a real ERROR node the
       // children are tokens the switch does not match — for the
@@ -997,9 +997,9 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
    * True when the node IS the parse failure, rather than merely containing one.
    *
    * `Node.hasError` is true for a node with a broken descendant too, so using it
-   * as a suppression test would discard declarations that are perfectly well
-   * formed. A MISSING node is a token the parser inserted where the source had
-   * none, which is equally not a declaration.
+   * as a suppression test would discard declarations that are well formed. A
+   * MISSING node is a token the parser inserted where the source had none,
+   * which is equally not a declaration.
    */
   /**
    * The 1-based line of a node — the M59 convention, matching the symbol
@@ -1332,7 +1332,7 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
     // Recovery debris is not a rule. When the pinned grammar cannot read a
     // construct it emits an ERROR node for the construct's HEAD and re-parses
     // the remainder as a sibling of that ERROR — so the fabricated nodes are
-    // perfectly well-formed and no subtree suppression can reach them. The
+    // well-formed and no subtree suppression can reach them. The
     // measured case is `@keyframes "fade" { from {…} to {…} }` (a quoted
     // keyframes name, which the grammar cannot represent):
     //
