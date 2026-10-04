@@ -46,7 +46,7 @@
  *      BOTH an extends base and an implemented interface emits ONE row, and it is
  *      the base: `class C extends A implements I` with `go` in both emits
  *      `C.go -> A.go` and not `C.go -> I.go`. This is the part most likely to be
- *      encoded wrongly, because emitting both rows looks more complete and is a
+ *      encoded wrongly, because emitting both rows looks more exhaustive and is a
  *      duplicate edge in the graph. Breadth-first order is what makes "nearest"
  *      well defined: `extends` is enqueued before `implements`, and `implements`
  *      before `with`.
