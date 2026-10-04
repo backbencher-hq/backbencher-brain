@@ -141,6 +141,26 @@ function unquoteKey(text: string): string {
  * then unwinds. Recursion is bounded by the key's segment count, and a key with
  * 10,000 segments would be a file no tool can read — but the walk is iterative
  * anyway, so a pathological key cannot overflow the stack.
+ *
+ * **An EMPTY SEGMENT IS A SEGMENT.** A `quoted_key` of `""` is a real TOML key
+ * — the empty name — and `joinPath` spells it back as `""`, so it round-trips.
+ * This used to end in `.filter((s) => s.length > 0)`, which deleted it, and the
+ * deletion was not neutral: inside a table the caller's path is built as
+ * `${name}.${joinPath(...)}`, so `[tool.setuptools.package-dir]` followed by
+ * `"" = "src/python/grpcio"` produced the published symbol name
+ * `tool.setuptools.package-dir.` — a trailing dot, which is not a spelling TOML
+ * can parse back. Measured on the corpus, not reasoned about:
+ * `pb-grpc/pyproject.toml:53` is the one occurrence in 1,140 files, and the
+ * lane's own differential oracle already had it right (`spell("")` returns
+ * `""` and its `segmentsOf` does not filter), so the two disagreed by exactly
+ * one edge on exactly one file — a file neither of the lane's two differential
+ * corpora contains.
+ *
+ * The DOCUMENTED OMISSION is unchanged and is now applied at both levels by
+ * `namesSomething`: a key that is `""` and nothing else produces no symbol,
+ * because an identity needs a name. That is the lane's stated decision and
+ * `toml/malformed-and-rejected` pins it at the document root; what changed is
+ * that the in-table path now obeys the same rule instead of disagreeing with it.
  */
 function segmentsOf(node: Node): string[] {
   // Collect the dotted_key chain from the root down.
@@ -165,7 +185,20 @@ function segmentsOf(node: Node): string[] {
       for (const seg of segmentsOf(rest)) out.push(seg)
     }
   }
-  return out.filter((s) => s.length > 0)
+  return out
+}
+
+/**
+ * Does this key NAME something? A key of `""` — and only `""` — does not, and
+ * produces no symbol, which is the lane's recorded decision rather than an
+ * oversight. It is asked of every key at every level so that the document root
+ * and a table cannot disagree about the same rule: before this, the root asked
+ * `segments.length === 0` (which an empty segment satisfies by accident) and a
+ * table asked nothing at all.
+ */
+function namesSomething(segments: string[]): boolean {
+  for (const s of segments) if (s.length > 0) return true
+  return false
 }
 
 /**
@@ -392,6 +425,9 @@ export class RealTomlAnalyzer implements ASTEngine.LanguageAnalyzer {
     let arrayOfTablesCount = 0
     let inlineTableCount = 0
     let maxDepth = 0
+    /** Sections emitted by the single walk, so the second pass can re-own them. */
+    const sectionRecords: { segments: string[]; owner: string; symbolIndex: number; relIndex: number }[] = []
+    let reOwnedSections = 0
 
     /**
      * The nearest DECLARED ancestor of `segments`, which is the owner a table
@@ -496,7 +532,7 @@ export class RealTomlAnalyzer implements ASTEngine.LanguageAnalyzer {
         const header = headerKeyOf(node)
         if (!header) continue
         const segments = segmentsOf(header)
-        if (segments.length === 0) continue
+        if (!namesSomething(segments)) continue
         const path = joinPath(segments)
         const { owner, implied } = resolveOwner(segments)
         const isArray = node.type === "table_array_element"
@@ -508,6 +544,12 @@ export class RealTomlAnalyzer implements ASTEngine.LanguageAnalyzer {
         declaredTables[path] = name
         tableCount++
         if (segments.length > maxDepth) maxDepth = segments.length
+        // Captured BEFORE either push, because the indices have to address the
+        // symbol and the edge this header is about to produce. Reading
+        // `symbols.length` afterwards addresses the NEXT one, which is how the
+        // first version of this pass moved the wrong symbols and still typechecked.
+        const symbolIndex = symbols.length
+        const relIndex = relationships.length
         symbols.push({
           name,
           kind: ASTEngine.SymbolKind.Namespace,
@@ -544,22 +586,79 @@ export class RealTomlAnalyzer implements ASTEngine.LanguageAnalyzer {
           },
         })
         // The section's own key/value pairs. Comments and nested values are not
-        // descended into — see the inline-table ruling.
+        // descended into — see the inline-table ruling. `namesSomething` is asked
+        // here as well as at the document root, so a `"" = 1` inside a table is
+        // omitted by the SAME rule that omits one at the root; before this the
+        // root asked and the table did not, and the disagreement published a
+        // symbol whose name ended in a bare `.`.
+        sectionRecords.push({ segments, owner, symbolIndex, relIndex })
         for (const child of (node.namedChildren ?? []) as Node[]) {
           if (child.type !== "pair") continue
           const ck = keyOf(child)
           if (!ck) continue
-          emitKey(child, `${name}.${joinPath(segmentsOf(ck))}`, name)
+          const segs = segmentsOf(ck)
+          if (!namesSomething(segs)) continue
+          emitKey(child, `${name}.${joinPath(segs)}`, name)
         }
       } else if (node.type === "pair") {
         // A key before any header belongs to the implicit root table.
         const ck = keyOf(node)
         if (!ck) continue
         const segs = segmentsOf(ck)
-        if (segs.length === 0) continue
+        if (!namesSomething(segs)) continue
         emitKey(node, joinPath(segs), moduleName)
         if (segs.length > maxDepth) maxDepth = segs.length
       }
+    }
+
+    // ---- SECOND PASS: TOML's declaration order is not significant ----------
+    //
+    // `[a.b]` written ABOVE `[a]` is valid TOML, and `a.b` is inside `a`. The
+    // walk above resolves an owner from a document-order map, so such a section
+    // is filed under the MODULE and its `contains` edge points at the file
+    // instead of at the table that contains it. That is a containment edge with
+    // the wrong source, which is the same defect class the lane's `resolveOwner`
+    // comment already records for quoted segments ("the emit path does quote — so
+    // only the CONTAINMENT was wrong").
+    //
+    // Measured: 1 occurrence in 1,140 files, `ansible/pyproject.toml`, where
+    // `[tool.setuptools.dynamic]` is on line 45 and `[tool.setuptools]` on line
+    // 49. One is still one, and it is the ONLY shape in the corpus where the
+    // walk's order assumption is contradicted by the language, which is why it is
+    // fixed rather than recorded.
+    //
+    // The fix is a re-own pass over the sections already emitted, using the
+    // WHOLE declared-table map. It cannot loop: an owner is always a strict
+    // PREFIX of the section's own path, so the containment it writes is acyclic by
+    // construction, and a section's own keys are unaffected because they hang off
+    // its allocated name rather than off its owner.
+    //
+    // The lane's differential oracle builds its `declared` map in document order
+    // too, so it will disagree on exactly this file until
+    // `deriveTomlEdges` in `script/m14/differential.ts` (supervisor-owned) gains
+    // the same second pass. Neither of the lane's two differential corpora
+    // contains a file with the shape, so the toml differential draw is unchanged;
+    // the whole-pool draw is where the disagreement would appear.
+    for (const rec of sectionRecords) {
+      const { owner, implied } = resolveOwner(rec.segments)
+      if (owner === rec.owner) continue
+      const symbol = symbols[rec.symbolIndex] as { ownerName?: string; ownerKind?: unknown; metadata?: Record<string, unknown> }
+      symbol.ownerName = owner
+      symbol.ownerKind = owner === moduleName ? ASTEngine.SymbolKind.Module : ASTEngine.SymbolKind.Namespace
+      const meta = symbol.metadata ?? (symbol.metadata = {})
+      meta.isDocumentRoot = owner === moduleName
+      // The implied-parent record was computed against the incomplete map, so it
+      // is recomputed rather than patched: with the full map a prefix the file
+      // declares LATER is declared, and calling it implied would be the same
+      // order-dependence one pass later.
+      if (implied.length > 0) meta.impliedParents = implied
+      else delete meta.impliedParents
+      const rel = relationships[rec.relIndex] as { source: string; metadata?: Record<string, unknown> }
+      rel.source = owner
+      const relMeta = rel.metadata ?? (rel.metadata = {})
+      if (implied.length > 0) relMeta.hasImpliedParents = true
+      else delete relMeta.hasImpliedParents
+      reOwnedSections++
     }
 
     // Structural observations, published as `patterns` so a consumer can see the
@@ -598,6 +697,11 @@ export class RealTomlAnalyzer implements ASTEngine.LanguageAnalyzer {
           arrayOfTablesCount,
           inlineTableCount,
           maxKeyPathDepth: maxDepth,
+          // How many sections the second pass moved. Zero on every file whose
+          // headers declare their ancestors first, which is the overwhelming
+          // majority; a non-zero value names the count of sections in this file
+          // whose `contains` source was corrected.
+          reOwnedSections,
         },
       },
     }

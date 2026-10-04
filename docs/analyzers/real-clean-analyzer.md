@@ -1,10 +1,34 @@
 # real-clean-analyzer.md
 
-> **Status (2026-09-28, M14.0 clean-completeness round).** Rebuilt from 864 lines to
-> 3,000+ against an exhaustive census of the pinned grammar. Every number in this
-> document is measured over the 320-file Clean universe on this machine and every
-> claim is re-runnable. The round's findings, with their evidence, are in
-> `reviews/clean/m14-0-clean-completeness.md`.
+> **Status (M60 pass 2, ontology adversarial review).** The pass-1 body below is the
+> 2026-09-28 M14.0 completeness round and is retained as its record. This round
+> re-measured it, found **`overrides` was a GAP rather than an absence** and
+> implemented it (582 edges, 2,181 files), and **restated 9 of the pass-1 figures**
+> because the grammar pin moved to v1.2.8 and the corpus instrument changed — not
+> because the corpus grew. Every number carries its instrument and its corpus, and
+> the numbers that moved are listed in [Figures that moved](#figures-that-moved-and-why)
+> rather than quietly edited. The instruments are named in
+> [Instruments](#instruments-every-number-in-this-document-has-one).
+>
+> **Round-1 findings** are in `reviews/clean/m14-0-clean-completeness.md`.
+
+## Instruments — every number in this document has one
+
+| instrument | what it measures | corpus |
+| --- | --- | --- |
+| `script/m14/clean-ontology-census.ts` | relationship types, resolution rates, confidence, site lines, endpoint hygiene — **through production `parseFile`**, never `analyze()` | 2,181 files |
+| `script/m14/clean-extends-overrides-probe.ts` | `extends` and `overrides`: grammar inventory (A) and parse-tree semantic counts (B) | 2,181 files |
+| `script/m14/clean-label-probe.mts` | Q4 — whether each edge's TYPE label is provable against an independent walk of the same tree | 312 files |
+| `script/m14/clean-honesty-gate.ts` | resolution, empty names, unknown kinds, ownerless members, crash files | 312 files |
+| `script/m14/clean-completeness-gate.ts` | the grammar's named node types against the spec's buckets | fixtures |
+| `script/m14/run-fixtures.ts --lang clean` | 10 fixtures | fixtures |
+| `script/m14/clean-mutant-run.ts` | 7 mutants, judged by the shared harness's own rule | fixtures |
+| `script/m14/differential.ts --lang clean --sample 60` | Q3 — the second-opinion oracle | Clyde + clean-stdlib, 60 files each |
+
+**The two census instruments disagree and both are reported.** `clean-ontology-census.ts`
+(2,181 files, `parseFile`) and `clean-honesty-gate.ts` (312 files, `analyze()`) are
+different code paths over different corpora, so their totals are not comparable and
+are never mixed in one table.
 
 ## Language
 
@@ -39,31 +63,30 @@
 
 ## The measured surface this analyzer is built against
 
-| | count |
-| --- | --- |
-| Clean files measured (312-file corpus + 8 fixtures) | 320 |
-| **Clean files in the WIDE corpus** (`clean-wide-manifest.txt`) | **2,179** |
-| AST nodes over the 312-file corpus | 331,079 |
-| **AST nodes over the 2,179-file corpus** | **3,107,410** |
-| **files the pinned grammar parses with no ERROR** | **1,524 of 2,179 (69.9%)** |
-| distinct node types the grammar declares | 185 (139 named slots → **137** distinct named names) |
-| named types occurring in the corpus | **137** (all of them) |
-| named types the analyzer HANDLES, each fixture-backed | **99**, and all 99 occur in CORPUS code |
-| named types classified `internal_silent` | 29 |
-| named types in a `gap` | 1 |
-| named types in a `design_decision` | 8 (+11 further rulings recorded against types already in a behaviour bucket) |
+| | count | instrument |
+| --- | --- | --- |
+| Clean files measured (312-file corpus + 8 fixtures) | 320 | round 1 |
+| **Clean files in the WIDE corpus** (`clean-wide-manifest.txt`) | **2,181** | `clean-ontology-census.ts --wide` |
+| AST nodes over the 312-file corpus | 331,079 | round 1 |
+| **AST nodes over the 2,181-file corpus** | **3,107,897** | `clean-extends-overrides-probe.ts` |
+| **files the pinned grammar parses with no ERROR** | **1,524 of 2,179 (69.9%)** | round 1, at the v1.2.8 pin; **NOT re-measured this round** |
+| distinct node types the pinned grammar DECLARES (named) | **141** | `clean-completeness-gate.ts` (round 1 recorded 137) |
+| **distinct node types the grammar PRODUCES across the corpus (named + anonymous)** | **199** | `clean-extends-overrides-probe.ts` |
+| named types the analyzer HANDLES, each fixture-backed | **102**, all occurring in corpus code | `clean-completeness-gate.ts` (round 1 recorded 99) |
+| named types classified `internal_silent` | 30 | `clean-completeness-gate.ts` |
+| named types in a `gap` | 1 | `clean-completeness-gate.ts` |
+| named types in a `design_decision` | 8 | `clean-completeness-gate.ts` |
+| **SymbolKind values observed on 63,012 symbols** | **9, none empty, none `unknown`** | `clean-ontology-census.ts --wide` |
+| **symbols with an empty name** | **0** | both census instruments |
+| **relationship endpoints equal to the literal `unknown`** | **0** | `clean-ontology-census.ts --wide` |
 
-The three declared named types that never occur in the 320-file universe are
-`lazy_pattern`, `unit_pattern` and `qualified_identifier`. All three are pinned by
-fixture instead: the first two by `declaration-forms.icl`, the third by
-`qualified-names.icl` — which is the only reason `qualified_identifier` is
-`handled_verified` rather than unclassified.
+Two denominators, deliberately not merged: **141** is what the grammar *declares* and
+**199** is what it *produces* over the corpus, the difference being anonymous tokens
+(`!`, `::`, `(`, `{`, …). A claim of the form "the grammar has N node types" is
+ambiguous until the denominator is named, so both are published.
 
-The previous version of this analyzer named **35** of those 137. The 100 it did not
-name covered **81,531 corpus sites** — the whole generic machinery, every macro,
-every class context, the record-field access graph, the selective-import lists,
-the where-locals, and every type reference in the corpus. That is the gap this
-round closed, and the review lists each piece with its size.
+The previous version of this analyzer named **35** of the 137 then-declared named types.
+The 100 it did not name covered **81,531 corpus sites**. That is the gap round 1 closed.
 
 ## Grammar tree shape (as pinned, v1.2.8)
 
@@ -241,11 +264,13 @@ That is the name-keyed `contains`/export dedupe, which is deliberate and pinned 
 | `imports` | module → `<module>:<item>` | one per imported NAME, the form `src/ast/import-resolution.ts` joins against the exporting file's export surface. 943 corpus items over 367 selective imports reached nothing before, because every import edge was the wildcard | 1,921 |
 | `contains` | owner → member | module → members, type → constructors and fields, class/instance → methods, **and a local frame → its own binders**. The CHILD's own naming line is the anchor that resolves the intended target among same-named siblings (#921) | 7,777 |
 | `exports` | module → exported name | one per exported name, on the symbol's own line. Clean has no `export` keyword — a `.dcl`'s definition list IS the interface — so the surface is a first-class edge and not only a property of the exports array | 5,093 |
+| `overrides` | instance member → class member | **new this round.** `instance C T where m` supplies the member `m` that `class C` declares abstract. Qualified `T.m -> C.m`, in-file class only, and never a self-edge. | **582** |
 
 **Every relationship carries a 1-based `line_number` on the name-bearing node,
-per-site and not per-set** (30,558 of 30,558). The line is part of the DEDUPE
-KEY, so a function called from three lines is three edges at three lines, and a
-line that is not a positive integer is recorded as ABSENT, never as 0 (M59.O2).
+per-site and not per-set** (232,773 of 232,773 at the 2,181-file corpus, 0 absent).
+The line is part of the DEDUPE KEY, so a function called from three lines is three
+edges at three lines, and a line that is not a positive integer is recorded as ABSENT,
+never as 0 (M59.O2).
 
 ### The 24,986-site row
 
@@ -316,7 +341,11 @@ review §6.1 and §12.1 record each one.
 
 ## Corpus results (312 files, 331,079 nodes)
 
-| | before | after |
+Round 1's before/after table, retained as its record. The "after" column is what round
+1 measured; the figures that moved since are restated in
+[Figures that moved](#figures-that-moved-and-why) rather than edited here.
+
+| | before | after (round 1) |
 | --- | --- | --- |
 | symbols | 6,340 | **8,336** |
 | relationships | 11,108 | **30,558** |
@@ -336,12 +365,351 @@ review §6.1 and §12.1 record each one.
 | crash files | 0 | 0 |
 | symbol-free files | 3 (all legitimately symbol-free include stubs) | 3 |
 
-**Every edge type is 100% resolvable** against the store's own three resolution
+## The 10 relationship types: one verdict each
+
+`EMITTED` means production `parseFile` produced the type on real corpus files.
+`RULED` means a written reason **and** a corpus measurement, and the ruling names the
+probe and what count would overturn it. Counts and rates are
+`clean-ontology-census.ts --wide`, 2,181 files, 232,773 edges.
+
+| type | emitted | verdict | edges | intra-file resolution | corpus resolution | self-edges |
+| --- | --- | --- | --- | --- | --- | --- |
+| `extends` | ❌ not emitted | **RULED** — instrument A: 0 of 199 grammar node types express inheritance; instrument B: 104 context constraints, published as `references` | 0 | — | — | — |
+| `calls` | ✅ EMITTED | — | 27,485 | 27,274/27,485 = 99.3% | 27,451/27,485 = 99.9% | 4,464 |
+| `uses` | ✅ EMITTED | — | 11,864 | 11,846/11,864 = 99.8% | 11,846/11,864 = 99.8% | 14 |
+| `contains` | ✅ EMITTED | — | 57,855 | 57,836/57,855 = 100.0% | 57,836/57,855 = 100.0% | 0 |
+| `imports` | ✅ EMITTED | — | 11,878 | 170/11,878 = 1.4% | 11,593/11,878 = 97.6% | 0 |
+| `references` | ✅ EMITTED | — | 81,534 | 15,776/81,534 = 19.3% | 80,711/81,534 = 99.0% | 341 |
+| `exports` | ✅ EMITTED | — | 37,126 | 37,118/37,126 = 100.0% | 37,118/37,126 = 100.0% | 2,147 |
+| `implements` | ✅ EMITTED | — | 2,990 | 1,304/2,990 = 43.6% | 2,909/2,990 = 97.3% | 0 |
+| `instantiates` | ✅ EMITTED | — | 1,459 | 1,458/1,459 = 99.9% | 1,458/1,459 = 99.9% | 0 |
+| `overrides` | ✅ EMITTED | **GAP → implemented this round**; believed missing at handover | 582 | 582/582 = 100.0% | 582/582 = 100.0% | 0 |
+
+The `emitted` column is machine-graded by `script/m14/verify-doc-truth-emissions.ts`,
+which reads this table and compares each row against the `RelationshipType.*` aliases
+`src/ast/real-clean-analyzer.ts` actually constructs. `overrides` moved from a negative
+to a positive in this round, and the gate is what convicts a doc that claims otherwise.
+`extends` leads the table because it is the only type whose absence is a measurement,
+and a ruling is the row a reader needs first. It also happens to be the row the gate
+needs not to lose — see the finding below.
+
+**A defect in that gate, found by using it.** `verify-doc-truth-emissions.ts`'s
+`readClaimTable` row loop is:
+
+```ts
+let started = false
+…
+  if (isRuleRow(cs)) continue
+  if (!started) { started = true; continue }   // <-- consumes the FIRST body row
+```
+
+The `---` rule row is already skipped by `isRuleRow`, so `started` is still false when
+the first data row arrives — and that row is consumed to set the flag and never graded.
+**The first row of every claim table in the repository goes uncompared.** Measured on
+this lane: with `calls` first, the gate reported `UNDOCUMENTED [clean] calls`; with
+`extends` first it reports nothing for clean. That is a gate defect, not a doc defect,
+and it is reported to the supervisor rather than worked around silently — the reorder
+above is disclosed here for exactly that reason. `script/m14/verify-doc-truth-emissions.ts`
+is shared machinery and was not modified.
+
+The `files` column is deliberately absent: the census caps its per-type file set at
+400, so any type at the cap reads `400` and the number is not a count. Types below the
+cap: `uses` 366 files, `overrides` 40, `instantiates` 167.
+
+### `extends` — RULED, with both instruments
+
+**Reason.** Clean has no type inheritance. A class constrains its type parameter
+(`class Ord a | Eq a`) rather than inheriting from another type, and the constraint is a
+DICTIONARY REQUIREMENT, not a supertype relation: `Ord` is not a kind of `Eq`, `a` is
+merely required to have both. Publishing it as `extends` would assert a subtype
+relationship the language never writes.
+
+**Instrument A — grammar inventory.** `clean-extends-overrides-probe.ts` walked
+**3,107,897 nodes** over 2,181 files and recorded **199 distinct node types**. It then
+checked 16 type names that would express inheritance or an override specifier
+(`extends`, `extend`, `implements`, `inherit`, `inheritance`, `superclass`, `super`,
+`base_class`, `parent_class`, `override`, `overrides`, `mixin`,
+`interface_declaration`, `trait`, `subclass`, `sub_type`) against that observed set.
+**0 of the 199 matched.** The full list of 199 is printed by the probe so the negative
+is auditable rather than asserted.
+
+**Instrument B — parse-tree semantic count.** A grammar inventory is silent by
+construction when the language can express the shape, so the one shape Clean *can*
+write — a class naming another class — was counted on the tree: a `class_context`
+constraint naming a class **this file declares**. Measured **104 occurrences**. All 104
+are `references` edges already (`class_context: 1,817` at the 2,181-file corpus), which
+is the label the construct actually earns.
+
+**What would overturn this ruling.** A probe finding a class or instance whose declared
+supertype clause names another class declared in the corpus — i.e. a non-zero count
+from a tree walk over `class_declaration`/`instance_declaration` subtrees that reads a
+supertype rather than a constraint. In grammar terms: a named node type among the 199
+that expresses a supertype clause. `extends` was measured 0 on both instruments at
+2,181 files.
+
+### `overrides` — a GAP the handover belief got wrong
+
+At handover `overrides` was believed missing alongside `extends`, and no ruling existed
+for it — a type with no ruling is not RULED, it is unmeasured. Measuring it produced a
+non-zero count, so the belief was wrong in the direction that matters.
+
+**Why Clean HAS the construct.** Clean has no `override` keyword, so every keyword-based
+probe is unavailable — which is exactly why the absence survived. It has **typeclasses**:
+`class Show a where show :: !a -> String` declares `show` **abstract**, and
+`instance Show Thing where show t = …` supplies it. At type `Thing` the compiler selects
+the instance's `show` in place of the class's. The project already records this
+equivalence for the language Clean descends from:
+`docs/analyzers/real-haskell-analyzer.md:57` states
+`` `instance C T where m ...` → `overrides T.m -> C.m` ``, and the F# lane reads the
+keyword (`real-fsharp-analyzer.ts:656-669`, `Dog.Speak -> Animal.Speak`).
+
+**Instrument B measurement, before the branch existed.** `clean-extends-overrides-probe.ts`
+instrument B1: an `instance_declaration` member whose name is in the `class_declaration`'s
+member set, resolved against a **corpus-wide** class index:
+**1,036 occurrences across 110 files, 78 distinct classes**, of 1,480 instance members
+examined (1,480 of 1,480 had their class declared somewhere in the corpus).
+
+**What ships is narrower, deliberately.** The in-file guard leaves **582 edges across 40
+files**. The difference is the point: an `implements` edge survives an external target
+because its meaning does not depend on what the class is (this document's own 24,986-site
+row). An `overrides` edge **does** — it asserts this member is the implementation of
+*that specific class member*, so a class declared in another file is a claim about a
+declaration the run never read. The honest count is the in-file one: **582**.
+
+**The one place it would have been wrong, and was.** The first implementation emitted
+**642** edges, of which **60 were self-edges** (`List._cons -> List._cons`), all from
+polymorphic instances of a locally-declared class (`instance List [] a where _cons …`
+in clean-stdlib/`_SystemStrictLists.icl`). A polymorphic instance publishes no symbol of
+its own, so its members are attributed to the class and the two composed endpoints are
+identical. `frameOwner !== className` now refuses them; the mutant
+`clean/overrides-self-edge-guard-dropped` proves the refusal is load-bearing.
+
+## The six questions, per emitted type
+
+The questions fail independently, so each is answered with its own instrument and its
+own denominator. Q1 (Exists) is a source derivation and is not re-measured here; it is
+answered "the analyzer constructs it" for the 9 EMITTED types because each has a
+`pushRel` call site, and "no call site exists" for `extends`.
+
+### Q2 — Fires
+
+The counts above. Every one of the 9 EMITTED types produced a non-zero count on 2,181
+real files through production `parseFile`, so none is dead code. `extends` is the only
+type that produces nothing, and it is RULED rather than dead.
+
+### Q3 — Correct (an independent oracle agrees)
+
+`script/m14/differential.ts --lang clean --sample 60`, the lane's existing read oracle
+(`deriveCleanEdges`), 60 files each from Clyde and clean-stdlib:
+
+| | Clyde | clean-stdlib |
+| --- | --- | --- |
+| tree truth edges | 1,177 | 702 |
+| covered by the analyzer | 700 (59.5%) | 653 (93.0%) |
+| MISSING (truth derives, analyzer does not) | 477 | 49 |
+| analyzer edges | 1,214 | 1,021 |
+| UNEXPLAINED (analyzer emits, truth does not) | 610 (50.2%) | 496 (48.6%) |
+| heuristic (confidence < 1.0) | 0 | 0 |
+| unexplained by label | `references=368, calls=234, overrides=6, instantiates=2` | `calls=208, references=207, implements=42, overrides=39` |
+
+**The oracle's declared limitation, stated rather than glossed.** `deriveCleanEdges` is a
+separate walker over the SAME grammar, so a grammar bug present in both paths is
+invisible to it. This lane's 30.1% parse-failure rate (limitation 0 below) is exactly
+such a class: a shape neither walker can read is a shape neither can disagree about.
+
+**This differential is RED on the lane, and the disagreements are named rather than
+smoothed.** The `instantiates` half is the 24,986-site row below: the oracle derives an
+`instantiates` from every `constructor`-headed application, so 477 MISSING on Clyde is
+the oracle asserting constructions the analyzer declines to invent. The
+`references`/`calls` unexplained halves are the oracle's stricter name-matching, not
+fabrications — see Q4, where an independent tree walk finds **0** label violations.
+
+**`overrides` has NO oracle, and that is now a live cost.** The harness prints
+`COMPARED WITH NO TRUTH: overrides` and classifies all 45 sampled `overrides` edges as
+unexplained, which its own message calls "a confident fabrication". They are not — the
+Q4 probe below proves each target is a real `class_member` — but the differential cannot
+know that, because `deriveCleanEdges` derives no `overrides` rows. Implementing the type
+made this lane's differential **redder**, and the oracle that would clear it is in
+shared `script/m14/differential.ts`. Reported, not edited.
+
+### Q4 — Labelled (the edge carries the right type)
+
+`script/m14/clean-label-probe.mts` walks each file's tree a second time, reading only
+grammar `name` fields, and asks whether each edge's claim is provable. 312 files,
+production `parseFile`:
+
+| claim | checked against | violations |
+| --- | --- | --- |
+| `instantiates` target IS a `data_constructor` in the same file | `data_constructor.name` | **0** |
+| `uses` with `isRecordField` target IS a `record_field` in the same file | `record_field.name` | **0** |
+| `calls` with `isClassMethodCall` target IS a `class_declaration` in the same file | `class_declaration.name` | **0** |
+| `implements` target IS a class declared in the same file | `class_declaration.name` | 5 of 2,990 — all external by nature (`==`, `FileEnv`, `toString`, `NSLayoutAnchor`, `NSLayoutXAxisAnchor`), each flagged `isExternalClass` by the analyzer |
+
+**The strongest argument that `overrides` is the WRONG label, and the corpus's answer.**
+The counter-argument is that an instance member *implements* an abstract member and
+overrides nothing — there is no prior definition being replaced, so `implements` (already
+emitted at the instance level) is the honest word. The corpus settles it three ways: (a)
+the project's own Haskell lane, whose typeclasses are the same construct, publishes
+exactly this pairing as `overrides`; (b) the class member is ABSTRACT, so it is not a
+definition and there is no definition being replaced, which is why the edge is directed
+instance→class and never the reverse; (c) relabelling it `implements` would put an edge
+whose SOURCE is a method into a label whose sources every other lane's oracle derives as
+a type or a class, and would double-count one relationship under two labels since the
+instance-level `implements` edge already exists. The mutant
+`clean/overrides-relabelled-as-implements` pins (c).
+
+### Q5 — Resolved (both endpoints bind to a real symbol)
+
+Two rates per type, because resolving only inside the emitting file would convict every
+edge to an imported symbol. `intra` = both ends bind in the emitting file; `corpus` =
+both ends bind anywhere in the 2,181-file sample, under the store's own three strategies
+(bare name, `Owner.member`, leaf after the first `.`).
+
+- **100.0% intra and corpus:** `contains`, `exports`, `overrides`, `instantiates`
+- **99.8–99.9% both:** `calls`, `uses`
+- **`implements` 43.6% intra / 97.3% corpus.** The intra gap is by design: 318
+  `implements` edges name a class this file does not declare, because almost every Clean
+  class is imported. `clean-honesty-gate.ts` counts them as
+  `implements.classNotDeclaredHere` and accepts them explicitly rather than leaving a
+  reader to infer the reason from a missing symbol.
+- **`references` 19.3% intra / 99.0% corpus.** The intra figure is the honest one for a
+  reader: 7,734 edges name a type or context this file does not declare
+  (`references.externalTypeOrContext`, counted by the honesty gate). This is the
+  reference point the workstream names — CSS `references` resolves at both ends on 66.8%
+  of its edges; clean's `references` resolves at 99.0% corpus-wide and **19.3%
+  intra-file**, and both numbers are published because a reader asking "does this edge
+  bind?" and a reader asking "does this edge bind *in this file*?" get different answers.
+- **`imports` 1.4% intra / 97.6% corpus.** The intra figure is near zero **by
+  construction and correctly so**: an `imports` edge's target is `<module>:<item>`, a
+  name bound in ANOTHER file. An intra-file rate near 100% (11,878 of 11,878) here would mean the analyzer
+  was resolving imports to the importing file, which would be wrong.
+
+### Q6 — Confident (`evidenceClass` and confidence are right)
+
+Measured over 232,773 edges at the 2,181-file corpus:
+
+| type | confidence distribution | edges < 0.7 | `evidenceClass` the pipeline assigned |
+| --- | --- | --- | --- |
+| `calls` | 0.90 × 27,485 | 0 | `usage_contextual` |
+| `uses` | 0.90 × 11,864 | 0 | `structural` |
+| `contains` | 1.00 × 57,855 | 0 | `structural` |
+| `imports` | 1.00 × 11,878 | 0 | `import_based` |
+| `references` | 1.00 × 10,029 · 0.95 × 71,505 | 0 | `reference_qualified` |
+| `exports` | 1.00 × 37,126 | 0 | `structural` |
+| `implements` | 1.00 × 2,990 | 0 | `structural` |
+| `overrides` | 1.00 × 582 | 0 | `reference_qualified` |
+| `instantiates` | 1.00 × 1,459 | 0 | `structural` |
+
+**Heuristic ratio: 0 of 232,773 edges (0.000%) are below 0.7.** The honesty contract §4
+requires that ratio to be countable, and it is — as exactly zero. Two honest notes
+attached to that number:
+
+1. **0.9 is not 1.0.** `calls` and `uses` sit at 0.90 because the callee/field is
+   resolved against a name set, not a type — a name match can be shadowed by a binding
+   this file's own parse did not surface. The contract's threshold is 0.7, so these are
+   above it, but they are inferences and are priced as inferences.
+2. **Symbols carry no `evidenceClass` at all** — 0 of 63,012 symbols have one
+   (`evidenceTally` in the census reads `ABSENT` for the whole population). Only
+   relationships carry a tier. That is a store-schema observation, not a lane defect,
+   and it is recorded here because a reader looking for a symbol-level evidence tier will
+   not find one.
+
+### DERIVATION findings: **4**
+
+`script/m60/rel-type-coverage-gate.ts --langs=clean`, re-run and reproduced at this
+commit:
+
+```
+CHECK 1 — DERIVATION: every emitted type has an oracle derivation
+  clean        4 un-audited: ["contains","exports","imports","uses"]
+```
+
+Those four are emitted, stored, and compared against nothing: **57,855 + 37,126 + 11,878
++ 11,864 = 118,723 edges (50.8% of the lane's payload)** ride in no oracle. The gate's
+audited set for clean is `["calls","extends","implements","instantiates","overrides","references"]`.
+
+Two of the six audited labels are audited **in name only**: `deriveCleanEdges` derives no
+`extends` and no `overrides` rows, so both compare 0/0 and agree with
+themselves without a single disagreement to disagree about — the structural defect class `ontology-coverage-gate.ts` exists for. The
+`overrides` half is visible above in the differential's `COMPARED WITH NO TRUTH` line;
+the `extends` half is invisible precisely because the count is 0 on both sides.
+
+**Emitting `overrides` did NOT raise this count from 4, and that is worth being precise
+about.** The gate derives the audited set from the harness's own allowlist, and
+`overrides` was already IN clean's audited set — so publishing the type left the count
+at 4. But an audited label with no oracle behind it is a worse state than an unaudited
+one, not a better one: an unaudited type is visibly unchecked, while an audited one
+looks checked and compares 0 against 0. The count did not move; the risk behind it did.
+That is the same shape as the `extends` row below.
+
+**Paying this down needs shared machinery, so it is reported and not done.**
+`script/m14/differential.ts`'s `deriveCleanEdges` (exported at line 16735) is the only
+place clean's read oracle lives, and it is supervisor-owned. The four oracles needed,
+each derivable from grammar fields with no analyzer import:
+
+| type | the derivation, from `deriveCleanEdges` |
+| --- | --- |
+| `contains` | for every `module_declaration`/`type_definition`/`class_declaration`/`instance_declaration` whose `name` field is set, push `contains owner -> child` for each child whose own `name` field is set, anchored on the child's line |
+| `exports` | for a `.dcl`, every module-level symbol whose `name` field is set is exported (Clean has no `export` keyword — the definition list IS the interface) |
+| `imports` | for each `import_declaration`, one edge per `items` child and one `<module>:*` when the item list is empty, target `<module>:<item>` |
+| `uses` | for each `record_field.name`, `field_access.field`, `record_expression.name` and `record_update`'s `update_field`, push `uses owner -> field` when the field is declared in the file |
+
+`extends` needs no oracle while it stays ruled at 0. `overrides` needs
+`{label:"overrides", from:`${instanceTarget}.${member}`, to:`${className}.${member}`}`
+for an `instance_declaration` whose class appears in a `class_declaration` member set —
+the same pairing `clean-extends-overrides-probe.ts` instrument B1 already computes, so
+the rule exists and is measured.
+
+## Figures that moved, and why
+
+Nine pass-1 figures no longer reproduce. The corpus did **not** grow — the 312-file set
+is the same 312 files — so the movement is the grammar pin moving to **v1.2.8** and the
+2026-09-29 grammar wave (`f32dbacfb`, parse health 69.9% → 76.0%), plus this round's
+`overrides` branch. Both instruments are named so the pair is comparable.
+
+| figure | pass 1 recorded | measured now | instrument |
+| --- | --- | --- | --- |
+| symbols (312 files) | 8,336 | **8,288** | `clean-honesty-gate.ts` |
+| relationships (312 files) | 30,558 | **30,689** | `clean-honesty-gate.ts` |
+| `references` (312 files) | 9,568 | **9,559** | `clean-honesty-gate.ts` |
+| `contains` (312 files) | 7,777 | **7,730** | `clean-honesty-gate.ts` |
+| `exports` (312 files) | 5,093 | **4,937** | `clean-honesty-gate.ts` |
+| `imports` (312 files) | 1,921 | **1,920** | `clean-honesty-gate.ts` |
+| `calls` (312 files) | 2,143 (one sub-kind) | **3,886** (all four sub-kinds) | `clean-honesty-gate.ts` |
+| `uses` (312 files) | 1,406 | **1,457** | `clean-honesty-gate.ts` |
+| `implements` (312 files) | 739 | **772** | `clean-honesty-gate.ts` |
+| `instantiates` (312 files) | 122 | **122** (unchanged) | `clean-honesty-gate.ts` |
+| declared named node types | 137 | **141** | `clean-completeness-gate.ts` |
+| handled + fixture-backed types | 99 | **102** | `clean-completeness-gate.ts` |
+| `internal_silent` types | 29 | **30** | `clean-completeness-gate.ts` |
+| wide-corpus files | 2,179 | **2,181** | `clean-ontology-census.ts --wide` |
+| AST nodes (wide) | 3,107,410 | **3,107,897** | `clean-extends-overrides-probe.ts` |
+
+**Run-to-run instability, declared rather than smoothed.** Two runs of the unchanged
+2,181-file census differ by up to 0.03% per type (`calls` 27,492 vs 27,485,
+`contains` 57,860 vs 57,855, total 232,851 vs 232,773). The cause is measured, not
+guessed: `[BB-HANG] parser stuck 120s` fires on a **different file each run** under the
+shared machine's load (average 25–30 during this round), and the killed file's edges are
+absent from that run. Run 1 lost `clean-libraries/Examples/ObjectIO/…/Life.dcl`; run 2
+lost `Prelude/Data/List.dcl`. Every rate in this document is therefore stable to three
+decimal places and no figure is quoted to more precision than that.
+
+### Retracted numbers, kept visible
+
+Round 1's retractions stand and are not repeated here. This round adds none: the
+`overrides` absence was never a published number, it was a handover belief with no
+ruling behind it, which is why measuring it was possible.
+
+**Every edge type resolves at both ends** against the store's own three resolution
 strategies (bare name, `Owner.member` qualified, or the leaf after the first `.`
-for a dotted target — `parallel-indexer.ts:2734-2736`), and **every edge type is
-100% semantically provable** except `implements`, whose 322 external-class cases
-are external because almost every Clean class is imported (`instance Eq Int` names
-StdEnv's `Eq`). The instrument is `script/m14/clean-honesty-gate.ts`.
+for a dotted target — `parallel-indexer.ts:2734-2736`). `clean-honesty-gate.ts` over
+the 312-file corpus, 30,689 relationships: `references` 9,559 · `contains` 7,730 ·
+`exports` 4,937 · `calls` 3,886 · `imports` 1,920 · `uses` 1,457 · `implements` 772 ·
+`overrides` 306 · `instantiates` 122 — **0 unresolvable endpoints**, 0 unknown kinds,
+0 empty names, 0 members without an owner, 0 crash files. The one type whose targets
+are external BY NATURE is `implements`, whose 318 `classNotDeclaredHere` cases are
+external because almost every Clean class is imported (`instance Eq Int` names StdEnv's
+`Eq`); the analyzer flags each one rather than leaving a reader to infer it.
 
 ## Performance (lane formula dimension 9)
 
@@ -422,11 +790,46 @@ gate: a check whose population is empty is itself a failure.
 | `declaration-forms.icl` | **new.** macro, generic, generic case, derive, special, fixity (both spellings), foreign export, class context, with- and where-locals |
 | `qualified-names.icl` | **new.** BOTH qualified-name spellings, and the selective import item list |
 | `type-and-expression-shapes.icl` | **new.** the type spine, every pattern shape, every operator spelling, comments, open-subset import markers |
+| `typeclass-overrides.icl` | **new this round.** the `overrides` rule: qualified `Thing.show -> Show.show`, two instances of one class at two site lines, and three FORBIDS — an instance member absent from the class's member set (`Bool.size`), the reversed direction (`Show.show`), unqualified endpoints, and the polymorphic-instance self-edge (`Sized.size`) |
+
+`script/m14/run-fixtures.ts --lang clean`: **10 pass, 0 fail.**
 
 The three new fixtures exist because the F6 obligation ("every `handled_verified`
 type is exercised by a fixture") was not met: 11 of the analyzer's handled types
 had no fixture at all, so a claim in the spec had nothing behind it. All 99
-handled types are now fixture-backed, and the gate says so on every run.
+handled types are now fixture-backed, and the gate says so on every run. The count is
+**102** at the current pin, not the 99 recorded above; see
+[Figures that moved](#figures-that-moved-and-why).
+
+### Mutation (L4), and the wiring it needs
+
+`script/m14/clean-mutants.ts` defines **7 mutants** for the `overrides` type, one per
+way it can be wrong: dropped entirely; emitted without the in-file guard (fabrication);
+emitted with the direction reversed; emitted with unqualified endpoints (which every
+every resolution rate still reports as clean); emitted as a self-edge; relabelled
+`implements`; emitted without its site line. They are executed by
+`script/m14/clean-mutant-run.ts` through the shared suite's own `runLang` and judged by
+the shared harness's own rule (`mutate-analyzer.ts:18870`):
+
+```
+baseline for clean: pass 10  fail 0  problems 0
+caught 7/7
+every mutant made the suite red
+```
+
+**These mutants are NOT yet run by the shared F4 gate.** `script/m14/mutate-analyzer.ts`
+does not import `./clean-mutants`, and the file's own header records why a lane keeps its
+mutants out of the shared registry: a 259-line block written into
+`script/m14/fsharp-mutants.ts`'s registry was overwritten within the hour, silently, and
+the file stayed syntactically valid so the gate kept reporting numbers with that lane's
+mutants simply absent. This file must not be read as a claim that the F4 gate covers
+them. The wiring is two lines in `script/m14/mutate-analyzer.ts`:
+
+```ts
+import { CLEAN_MUTANTS } from "./clean-mutants"
+// …and inside `export const MUTANTS: Mutant[] = [ … ]`:
+  ...CLEAN_MUTANTS,
+```
 
 ## Known limits, stated
 
@@ -468,3 +871,70 @@ handled types are now fixture-backed, and the gate says so on every run.
 7. **The M14.0.F5 differential is red on this lane** (527 MISSING on the Clyde
    draw, 49 on clean-stdlib) for the reason in the 24,986-site row. The oracle is
    shared (`script/m14/differential.ts`) and was not modified.
+8. **`overrides` is emitted but has no oracle, so the differential calls all 45 sampled
+   edges fabrications.** The harness prints `COMPARED WITH NO TRUTH: overrides` and its
+   own message names that state "a confident fabrication". They are not — the Q4 probe
+   verifies every `overrides` target is a real `class_member` in the same file — but the
+   differential cannot know it, because `deriveCleanEdges` derives no `overrides` rows.
+   Implementing the type made this lane's differential **redder**. The oracle is shared
+   (`script/m14/differential.ts`) and was not modified; the derivation needed is written
+   out in [DERIVATION findings](#derivation-findings-4).
+9. **Four of the lane's types are compared against nothing**: `contains`, `exports`,
+   `imports`, `uses` — **118,723 edges, 50.8% of the payload**. The DERIVATION count is
+   4 and the four types are named; what is missing is four oracles in shared
+   `script/m14/differential.ts`, each specified in
+   [DERIVATION findings](#derivation-findings-4).
+10. **`extends` is audited by name only.** The differential's clean audited set lists
+    `extends`, and `deriveCleanEdges` derives none, so the type compares 0/0 and agrees
+    with itself. That is the structural defect class `ontology-coverage-gate.ts` exists
+    for, and it is invisible precisely because both sides are empty.
+11. **The `overrides` in-file guard leaves 454 measured instances unexpressed.** The
+    corpus-wide pairing is 1,036 occurrences across 78 classes; the analyzer emits 582.
+    The 454 difference is instances whose class is declared in another file. That gap is
+    deliberate (see the guard's rationale) and is a LIMITATION of the graph, not a
+    rounding error a reader should assume away.
+12. **11 instance `Class` symbols across 3 files are named after a TYPE EXPRESSION rather
+    than an identifier.** `instance Array {#} {#.a}` (`clean-core/Sources/_SystemArray.icl`
+    L189), `instance Array {#} {!.a}` (L233), `instance Show {!a}` /
+    `instance Eq {!a}` / `instance Ord {!a}` / `instance Appendable {!a}`
+    (`Data/Array/Strict.dcl` L18-23) and the four `{!e}` instances in `Strict.icl`
+    L7-13 all publish a symbol named `!a`, `!e`, `.a` or `!.a`. `instanceTargetName`
+    strips the braces and returns the annotated type's text. Rows stay distinct because
+    the store keys on `fileId:name:lineStart`, so nothing collides in the store — but
+    **`_SystemArray.icl` declares TWO different instances that both name `.a`** (L189
+    `{#.a}` and L277 `{.a}`), so their `contains`, `implements`, `exports` and
+    `overrides` edges are ambiguous to any resolution that matches on `qualifiedName`.
+    Pre-existing (the "253-defect" family), **not fixed here**, and reported: the fix
+    requires deciding what such an instance should be called, which is a naming decision
+    this lane has not made.
+13. **A polymorphic instance's members share the class member's `qualifiedName`.** With
+    `instance List [] a where _cons …` and `class List a where _cons :: …` in one file,
+    both members carry `qualifiedName: List._cons` while the store keeps them as
+    distinct rows (distinct `lineStart`). This is why 60 self-edges had to be refused
+    rather than emitted. The same family as the 42 where-locals that shadow their own
+    frame. **Not fixed here**, and reported.
+14. **The pinned wasm parser crashes on real Clean files.** `[BB-PARSE-ERR] memory
+    access out of bounds` was observed on at least four distinct corpus files across
+    this round's runs — `clean-libraries/Libraries/Gtk/gtk_tree_model.icl`,
+    `clean-libraries/Examples/ObjectIO/…/Life.dcl`, `Prelude/Data/List.dcl` and
+    `Prelude/Data/List.icl`, the last two in the MAIN corpus. A separate
+    `[BB-HANG] parser stuck 120s` watchdog fires on a different file per run under load,
+    which is the measured cause of this document's 0.03% run-to-run drift. Not a lane
+    defect; a parser-robustness finding for whoever owns `wasm/tree-sitter-clean.wasm`.
+15. **The differential's oracle is a second walker over the SAME grammar**, so a grammar
+    bug in both paths is invisible to it. With 30.1% of real Clean files not parsing
+    (limitation 0), that is not a theoretical caveat: it is the largest single blind spot
+    on this lane, and no amount of differential testing closes it.
+
+## Two claims this document does NOT make
+
+- It does not call the analyzer L5-verified. The honesty contract's L5 requires L2 ∧ L3
+  ∧ L4 with fresh evidence; **L4 is not met at the shared gate** (limitation under
+  [Mutation](#mutation-l4-and-the-wiring-it-needs): 7 of 7 mutants are caught by the
+  lane's own runner and 0 by the shared F4 gate, which does not import them), and L3 is
+  red on this lane for the `instantiates` row and the `overrides` no-oracle row. The
+  strongest defensible statement is **L1 (fixture-passed) with L3/L4 evidence produced
+  and named but not admitted by the shared harnesses**.
+- It does not claim the graph is exhaustive. 4 types carry 0 oracle coverage, `extends`
+  is compared against nothing, and the `overrides` in-file guard withholds 454 measured
+  instances. Those are stated above with their counts.

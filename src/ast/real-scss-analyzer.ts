@@ -34,6 +34,11 @@
  *   `@extend`           `uses` edge to the selector being extended
  *   `@if`/`@each`/      `interface` symbol + `contains` edges, the same shape the
  *   `@for`/`@while`     CSS lane gives `@supports`
+ *   `%placeholder`      selector symbol, so an `@extend %x` has an endpoint
+ *   the file            `module` symbol — a Sass module's public surface is what
+ *                      `@use` exposes — and an `exports` edge per public member
+ *   `$x: … !global`     `overrides` edge, for the one reassignment the language
+ *                      itself calls an override
  *
  * ── THE TWO RULES THIS LANE HOLDS ITSELF TO ───────────────────────────────────
  *
@@ -93,6 +98,7 @@ interface ScssContext {
   symbols: ASTEngine.UniversalSymbol[]
   relationships: ASTEngine.UniversalRelationship[]
   imports: ASTEngine.ImportInfo[]
+  exports: ASTEngine.ExportInfo[]
   /** mixin name -> published symbol, pre-collected */
   mixinNames: Record<string, string>
   /** function name -> published symbol, pre-collected */
@@ -105,10 +111,61 @@ interface ScssContext {
   published: Record<string, boolean>
   /** the owner each published name was published under, so a scope can be told apart */
   publishedOwner: Record<string, string>
+  /** this file's module name — a `.scss` file IS a Sass module (see `moduleNameOf`) */
+  moduleName: string
+  /** `$name` -> the line of its first TOP-LEVEL assignment, pre-collected */
+  topLevelVarLines: Record<string, number>
   /** the file debugs / warns / forwards content / escapes scope at least once */
   sawDiagnostic: boolean
   sawContent: boolean
   sawAtRoot: boolean
+}
+
+/**
+ * A SCOPE-INTRODUCING node, for the two questions that are about SCOPE rather than
+ * about syntax: "is this declaration a module member?" and "is this assignment a
+ * shadow or a mutation?".
+ *
+ * `@media` is deliberately NOT here. Sass gives a media query no new scope for
+ * variables — `@media { $x: 1 }` at the root level assigns the root `$x` — so a
+ * declaration inside one is still a module-level assignment. A mixin, a function, a
+ * rule body and each control-flow block all do introduce one.
+ */
+const SCOPE_NODES = new Set([
+  "rule_set",
+  "mixin_statement",
+  "function_statement",
+  "if_statement",
+  "each_statement",
+  "for_statement",
+  "while_statement",
+])
+
+function hasScopeAncestor(node: Node): boolean {
+  for (let p = node.parent; p; p = p.parent) if (SCOPE_NODES.has(p.type)) return true
+  return false
+}
+
+/**
+ * Sass's PRIVATE-MEMBER rule, and the reason `exports` is not simply "every top-level
+ * declaration".
+ *
+ * A name beginning `-` or `_` is private to its module: `@use`ing the module does NOT
+ * expose it. Measured over 4,394 admitted corpus files: 30 top-level `$` assignments
+ * carry such a name and are therefore members of their file but not of its public
+ * surface. Exporting them would claim a contract the language does not offer, so the
+ * check is on the SYMBOL's own text and never on a pattern over the file — a private
+ * mixin is `@mixin _button`, and `@mixin` in the source says nothing either way.
+ */
+function isPrivateSassName(published: string): boolean {
+  const bare = published.startsWith("$")
+    ? published.slice(1)
+    : published.startsWith("@mixin ")
+      ? published.slice("@mixin ".length)
+      : published.startsWith("@function ")
+        ? published.slice("@function ".length)
+        : published
+  return bare.startsWith("-") || bare.startsWith("_")
 }
 
 export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
@@ -125,38 +182,71 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
       symbols: base.symbols ?? [],
       relationships: base.relationships ?? [],
       imports: base.imports ?? [],
+      exports: base.exports ?? [],
       mixinNames: {},
       functionNames: {},
       variableNames: {},
       namespaces: {},
       published: {},
       publishedOwner: {},
+      moduleName: this.moduleNameOf(filePath),
+      topLevelVarLines: {},
       sawDiagnostic: false,
       sawContent: false,
       sawAtRoot: false,
     }
+    // The file IS a Sass module, and it is published FIRST so that a member's owner can
+    // name it. Sass has no separate "module file": `@use './theme'` loads ANY stylesheet
+    // and exposes its top-level variables, mixins and functions, which is why a
+    // stylesheet's public surface is a graph fact rather than a naming convention.
+    //
+    // The name is the file's own basename WITH the extension, for the reason the bash
+    // lane gives for its script symbol (BD2): it is deterministic (no machine path, so
+    // the index fingerprint is stable), it cannot collide with a selector or a variable
+    // (a class selector is `.btn`, a variable is `$x`, a mixin is `@mixin btn`, and no
+    // Sass selector can be `name.scss` because a bare type selector has no dot), and it
+    // is not something `isIndexArtifactName` rejects.
+    ctx.symbols.unshift({
+      name: ctx.moduleName,
+      kind: ASTEngine.SymbolKind.Module,
+      range: this.nodeToRange(rootNode),
+      scope: "",
+      visibility: "public",
+      complexity: 1,
+      metadata: { cssSpecific: true, isScssModule: true, scssModuleName: ctx.moduleName, scssModulePath: filePath },
+    })
     for (const s of ctx.symbols) ctx.published[s.name] = true
 
     this.collectDeclarations(rootNode, ctx)
     this.walk(rootNode, ctx)
+    this.emitModuleExports(ctx)
 
     return {
       ...base,
       symbols: ctx.symbols,
       relationships: ctx.relationships,
       imports: ctx.imports,
+      exports: ctx.exports,
       metadata: {
         ...(base.metadata ?? {}),
         scssDialect: true,
         scssMixins: Object.keys(ctx.mixinNames).length,
         scssFunctions: Object.keys(ctx.functionNames).length,
         scssVariables: Object.keys(ctx.variableNames).length,
+        scssModuleName: ctx.moduleName,
         scssFrameworks: ["SCSS/SASS"],
         ...(ctx.sawDiagnostic ? { scssHasDiagnostics: true } : {}),
         ...(ctx.sawContent ? { scssForwardsContent: true } : {}),
         ...(ctx.sawAtRoot ? { scssEscapesScope: true } : {}),
       },
     }
+  }
+
+  /** The stylesheet's own module name: its basename, extension included. */
+  private moduleNameOf(filePath: string): string {
+    const normalized = filePath.split("\\").join("/")
+    const base = normalized.slice(normalized.lastIndexOf("/") + 1)
+    return base.length > 0 ? base : "module.scss"
   }
 
   // ── helpers ────────────────────────────────────────────────────────────────
@@ -235,6 +325,14 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
     let best: ASTEngine.UniversalSymbol | null = null
     let bestSpan = Number.POSITIVE_INFINITY
     for (const sym of ctx.symbols) {
+      // The file's own module symbol spans the WHOLE file, so it would win every
+      // lookup by being the only candidate for a statement at the top level — and it is
+      // skipped on purpose. A module is not a lexical scope: making it the owner would
+      // re-source every top-level statement onto a file-level name, which is a
+      // different edge from the one the lane emitted before this symbol existed. The
+      // module is the source of `exports` and `overrides`, where "the file offered this"
+      // is exactly the claim; it is not the owner of a rule, a mixin or a declaration.
+      if (sym.metadata?.isScssModule) continue
       const r = sym.range
       if (!r || typeof r.startIndex !== "number" || typeof r.endIndex !== "number") continue
       // the symbol's own declaration node should not own itself
@@ -296,6 +394,127 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
     return true
   }
 
+    // ── the module's public surface: `exports` ─────────────────────────────────
+
+  /**
+   * A Sass module exports its top-level variables, mixins and functions, and nothing
+   * else — that is precisely what `@use 'this-file'` binds. An assignment inside a rule,
+   * a mixin, a function or a control-flow block is LOCAL and is not part of the surface.
+   *
+   * Measured over 4,394 admitted corpus files: 3,315 top-level `$` assignments naming
+   * 2,501 distinct variables, 30 of them private by the `-`/`_` rule, plus 308 mixin and
+   * 77 function declarations — so this emits roughly one edge per distinct public member
+   * of every stylesheet, which is the module-system pair with `imports`.
+   *
+   * BOTH ends resolve by construction: the source is this file's own module symbol and
+   * the target is a symbol this file publishes. That is the whole reason to model a
+   * module's surface as EDGES rather than as a convention: `@use 'a', 'b'` binds
+   * members from two files and nothing else in the graph can say which file offered a
+   * name.
+   */
+  private emitModuleExports(ctx: ScssContext): void {
+    const published = new Set<string>()
+    for (const sym of ctx.symbols) {
+      if (sym.metadata?.isScssModule) continue
+      if (sym.kind !== ASTEngine.SymbolKind.Variable && sym.kind !== ASTEngine.SymbolKind.Function) continue
+      // a control-flow scope is an `interface` and a mixin/function is a `function`; the
+      // only `function`-kind symbols this lane publishes are `@mixin`/`@function`
+      // declarations, and only those carry one of these markers
+      const isCallable = sym.kind === ASTEngine.SymbolKind.Function
+      if (isCallable ? !sym.metadata?.scssCallable : !sym.metadata?.isScssVariable) continue
+      // scoped symbols carry the owner they were published under; a module member has
+      // none. This is the same test the fixture harness's export invariant uses, so the
+      // two cannot disagree about what a module member is.
+      if (sym.scope) continue
+      const name = sym.name
+      if (published.has(name)) continue
+      if (isPrivateSassName(name)) {
+        published.add(name)
+        continue
+      }
+      published.add(name)
+      ctx.relationships.push({
+        source: ctx.moduleName,
+        target: name,
+        type: ASTEngine.RelationshipType.Exports,
+        line_number: sym.range?.startLine ?? 1,
+        confidence: 1.0,
+        metadata: {
+          evidenceClass: "structural",
+          cssSpecific: true,
+          isScssModuleMember: true,
+          scssModule: ctx.moduleName,
+        },
+      })
+      ctx.exports.push({
+        name,
+        kind: sym.kind,
+        range: sym.range,
+        visibility: "public",
+        metadata: { via: "sass-module-top-level", scssModule: ctx.moduleName },
+      })
+    }
+  }
+
+  // ── `overrides`: the one reassignment Sass itself calls an override ─────────
+
+  /**
+   * `$x: … !global` where `$x` was already assigned at this file's top level.
+   *
+   * This is the narrowest honest `overrides` in the language and every part of it is
+   * measured, because the wide readings are wrong:
+   *
+   *   * A SECOND `@mixin x` / `@function x`: 0 occurrences across 4,394 admitted files.
+   *     The branch exists and cannot fire on this corpus, which is a fact about the
+   *     corpus and not a claim that the construct does not exist.
+   *   * A plain same-scope reassignment: 203 occurrences, of which 171 READ the variable
+   *     they assign (`$_args: append($_args, …)` in bootstrap's `_functions.scss` is the
+   *     shape) — an accumulator mutating one binding, which is not the replacement of a
+   *     declaration and would be a fabricated edge. The other 32 are a `$x: 1; … $x: 2`
+   *     pair, which the lane's own identity ruling already collapses into ONE symbol, so
+   *     an edge between the two assignments would be a self-edge.
+   *   * `!global`: 7 occurrences, and it is the only one of the three that means what
+   *     `overrides` means. `!global` is the flag that reaches PAST the enclosing scope
+   *     and reassigns the binding outside it, so the prior declaration is replaced and
+   *     the two are different things. bootstrap's `_box-shadow.test.scss` is the model:
+   *     `$enable-shadows: false !global;` … `$enable-shadows: true !global;` … and a
+   *     final restore, three overrides of one module-level variable.
+   *
+   * The prior assignment must be a TOP-LEVEL one. `!global` beside a name that only
+   * exists inside another mixin CREATES a global rather than replacing one, and the 14
+   * `!global` assignments in element-plus that fail this test are exactly that.
+   *
+   * The edge runs from the scope that performs the assignment to the variable it
+   * replaces, with `overridesLine` carrying the replaced declaration's line, so a
+   * consumer does not have to infer it. `source` falls back to the module symbol for an
+   * assignment at the file's top level, which is the only case with no enclosing scope.
+   */
+  private emitGlobalOverride(node: Node, name: string, ctx: ScssContext): void {
+    if (!this.hasVisibilityFlag(node, "global")) return
+    const line = this.lineOf(node) ?? 0
+    const prior = ctx.topLevelVarLines[name]
+    // `prior < line`, not merely `prior !== undefined`: the FIRST assignment is itself
+    // in `topLevelVarLines`, and without the ordering test it would emit an edge saying
+    // a declaration overrides itself.
+    if (prior === undefined || prior >= line) return
+    const owner = this.ownerForNode(node, ctx) || ctx.moduleName
+    if (!owner) return
+    ctx.relationships.push({
+      source: owner,
+      target: name,
+      type: ASTEngine.RelationshipType.Overrides,
+      line_number: line,
+      confidence: 1.0,
+      metadata: {
+        evidenceClass: "structural",
+        cssSpecific: true,
+        isScssGlobalOverride: true,
+        overridesLine: prior,
+        scssFlagGlobal: true,
+      },
+    })
+  }
+
   // ── pass 1: declarations, so a use may precede its declaration ─────────────
 
   private collectDeclarations(root: Node, ctx: ScssContext): void {
@@ -332,6 +551,21 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
         const module = this.findChild(n, (c) => c.type === "string_value")
         const ns = this.findChild(n, (c) => c.type === "plain_value" || c.type === "identifier")
         if (module && ns) ctx.namespaces[stripAllQuotes(ns.text)] = stripAllQuotes(module.text)
+      }
+      if (n.type === "declaration" && !hasScopeAncestor(n)) {
+        // Where each module-level `$var` is FIRST assigned, pre-collected so the
+        // `overrides` edge does not depend on the walk reaching the assignment before
+        // the reassignment — the lane's rule 2, which exists because Sass does not care
+        // about order. The FIRST line is the one an override replaces.
+        const prop = this.findChild(n, (c) => c.type === "property_name")
+        const name = prop ? prop.text : ""
+        if (name.startsWith("$")) {
+          const line = n.startPosition.row + 1
+          // the MINIMUM line, not the first one this DFS happened to reach: the walk
+          // pops a stack, so "first visited" is not "first written"
+          const seen = ctx.topLevelVarLines[name]
+          if (seen === undefined || line < seen) ctx.topLevelVarLines[name] = line
+        }
       }
       for (let i = 0; i < n.namedChildCount; i++) {
         const c = n.namedChild(i)
@@ -372,6 +606,7 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
       // which is worth recording: the traversal bug was real and worth fixing, and it
       // was not the one causing the MISSING rows it looked like it was causing.
       if (this.isErrorNode(child)) {
+        this.processRecoveredExtend(child, ctx)
         this.walk(child, ctx, true)
         continue
       }
@@ -636,6 +871,55 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
   // ── `@extend` ───────────────────────────────────────────────────────────────
 
   private processExtend(node: Node, ctx: ScssContext): void {
+    this.emitExtend(node, node, ctx, false)
+  }
+
+  /**
+   * The `@extend` INSIDE A RULE BODY, which is 63 of the 99 `@extend` statements in the
+   * corpus and every one of them was invisible.
+   *
+   * This is a grammar fact and it is worth stating exactly, because it is not a defect
+   * in the analyzer's walk. The `extend_statement` RULE is written for a top-level
+   * `@extend`; nested inside a `block` the same text parses as
+   *
+   *     block > ERROR > "@extend", placeholder, ";", ERROR("or", ":", …)
+   *
+   * — so the statement's own node type never appears, the keyword survives only as an
+   * ANONYMOUS token, and the walk (which visits named children) never sees either.
+   * Measured: 125 `@extend` tokens across 4,394 admitted files and only 36
+   * `extend_statement` nodes, so 89 of them — 71% — are in the recovered shape and 63 of
+   * the 99 real `@extend`s (`.card { @extend %badge; }`, which is where a BEM codebase
+   * puts nearly all of them) were producing no edge at all.
+   *
+   * The recognition is by the KEYWORD, not by shape: the first non-whitespace child is
+   * the anonymous token `@extend`. Checking for "an ERROR with a selector in it" would
+   * fire on every broken declaration, and checking node types would check for the type
+   * that is absent.
+   *
+   * The edge is marked `scssRecoveredFromError` because it is read out of a region the
+   * grammar gave up on, and the rest of this lane marks recovered claims the same way
+   * (see `emitVariableReadEdges`). Both ends still resolve: the owner is a rule this
+   * file publishes and the target is a selector this file publishes.
+   */
+  private processRecoveredExtend(node: Node, ctx: ScssContext): void {
+    if (!this.isErrorNode(node)) return
+    let keywordSeen = false
+    for (let i = 0; i < node.childCount; i++) {
+      const c = node.child(i)
+      if (!c) continue
+      if (c.type === "@extend") {
+        keywordSeen = true
+        break
+      }
+      if (!c.isNamed || c.type === "comment") continue
+      // a NAMED child before the keyword: this error node is a different broken thing
+      return
+    }
+    if (!keywordSeen) return
+    this.emitExtend(node, node, ctx, true)
+  }
+
+  private emitExtend(node: Node, lineNode: Node, ctx: ScssContext, recovered: boolean): void {
     const target = this.extendedSelectorName(node)
     if (!target) return
     const owner = this.ownerForNode(node, ctx)
@@ -644,8 +928,13 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
       source: owner,
       target,
       type: ASTEngine.RelationshipType.Uses,
-      line_number: this.lineOf(node),
-      metadata: { evidenceClass: "structural", cssSpecific: true, isScssExtend: true },
+      line_number: this.lineOf(lineNode),
+      metadata: {
+        evidenceClass: "structural",
+        cssSpecific: true,
+        isScssExtend: true,
+        ...(recovered ? { scssRecoveredFromError: true, scssExtendShape: "recovered" } : {}),
+      },
     })
   }
 
@@ -668,12 +957,28 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
     // `class_selector` comes first because `@extend .btn` wraps its name in one, and
     // the wrapper's own text is the same string — either would do, but the wrapper is
     // the narrower node and cannot swallow a neighbouring selector.
+    //
+    // `placeholder` is the fourth form and it was MISSING, which cost the lane every
+    // `@extend %x`. The tree for `@extend %responsive-container-#{$breakpoint};` is
+    // `extend_statement > ERROR > placeholder > "%", identifier`, so the node is real,
+    // it is what the statement names, and it is the one form a stylesheet extends
+    // without appearing in the output. 26 corpus occurrences name one; before this the
+    // lane resolved none of them. The interpolated one is rejected on its own text
+    // (`%responsive-container-` is a PREFIX), because a prefix names no selector and an
+    // edge to it would have an endpoint that resolves to nothing.
     const sel = this.findDescendant(
       node,
-      (n) => n.type === "class_selector" || n.type === "id_selector" || n.type === "plain_value",
+      (n) => n.type === "class_selector" || n.type === "id_selector" || n.type === "plain_value" || n.type === "placeholder",
     )
     if (!sel) return undefined
     const name = collapseWhitespace(sel.text)
+    // The interpolated form cuts the placeholder at the interpolation, so its text is a
+    // PREFIX that ends on a name boundary: `%responsive-container-#{$bp}` yields
+    // `%responsive-container-`, whose last character is not an identifier character. A
+    // readable placeholder ends in one, which also rejects the degenerate bare `%` the
+    // grammar produces for `@extend %` in a broken region. Neither names a selector, so
+    // an edge to either would have an endpoint that resolves to nothing.
+    if (sel.type === "placeholder" && !/^%[-\w]*[\w]$/.test(name)) return undefined
     return name.length > 0 ? name : undefined
   }
 
@@ -771,6 +1076,7 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
     const name = prop.text
     if (!name.startsWith("$")) return
     if (!ctx.variableNames[name]) ctx.variableNames[name] = name
+    this.emitGlobalOverride(node, name, ctx)
     const owner = this.ownerForNode(node, ctx)
     this.publishOnce(ctx, {
       name,
