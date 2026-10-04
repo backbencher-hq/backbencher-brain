@@ -696,9 +696,22 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
     let objectKind = parentObjectKind
     let inherits: string | null = null
     let objectNode: Node | null = null
+    //
+    // The skip is by INDEX, and it has to be. `c === symDecl` is the shape the
+    // hygiene gate flags as `bare-node-identity-comparison` (KAD2/TSD2 class):
+    // web-tree-sitter hands out a FRESH wrapper per access, so two `namedChild`
+    // reads of the same node are never `===`. Measured over the corpus by
+    // validation/m14/fixtures/nim/verify-analyzer-hygiene-nim.ts: 494
+    // `type_declaration` nodes across 109 files, `c === symDecl` TRUE at the one
+    // index where it could be — **0**; `c.id === symDecl.id` and span equality,
+    // **494 of 494**. So the guard never fired: the loop went on to test the
+    // symbol declaration itself, whose type matches no branch below, and the
+    // outcome was the same — a no-op iteration. Behaviour-identical, so no edge
+    // count moved; but the guard was dead code that reads as protection, and a
+    // later branch keyed on `type_symbol_declaration` would have consumed it.
     for (let i = 0; i < node.namedChildCount; i++) {
       const c = node.namedChild(i)
-      if (!c || c === symDecl) continue
+      if (!c || i === 0) continue
       if (c.type === "ref_type" || c.type === "pointer_type" || c.type === "out_type" || c.type === "var_type" || c.type === "distinct_type") {
         objectKind = c.type
         const inner = this.lastNamedChild(c)
