@@ -1,0 +1,655 @@
+{
+  "instrument": "markdown edge-recall probe (validation/m14/fixtures/markdown/edge-recall-probe.ts)",
+  "entryPoint": "parseFile (src/ast/pool-worker.ts), compared against node counts on the pinned trees",
+  "corpusRoot": "$HOME/fixtures/repositories",
+  "seed": "markdown-edge-recall-v1",
+  "admittedMarkdownFiles": 12729,
+  "drawn": 200,
+  "drawHash": "19ed0b27e157c0484ad0761fefa5cc3655ff5df309628e4c88b90201098fbe44",
+  "parsedFiles": 200,
+  "parseFailures": 0,
+  "relationshipsTotal": 7511,
+  "typeCounts": {
+    "contains": 3419,
+    "uses": 4092
+  },
+  "roleCounts": {
+    "heading_hierarchy": 1754,
+    "code_block_under_heading": 1108,
+    "markdown_autolink": 92,
+    "markdown_link": 3591,
+    "table_under_heading": 166,
+    "table_column": 391,
+    "markdown_internal_anchor": 409
+  },
+  "tree": {
+    "linkDestination": 3901,
+    "fragmentOnly": 418,
+    "uriAutolink": 91,
+    "emailAutolink": 1,
+    "codeSpanWithDestination": 0,
+    "headingsTotal": 2727,
+    "headingsNestedIncludingEmpty": 1843,
+    "headingsNestedExcludingEmpty": 1843,
+    "emptyHeadings": 0,
+    "referenceLinkUses": 791,
+    "referenceLinkUsesDefined": 117,
+    "duplicateDestinationNodes": 3,
+    "duplicateDestinationFiles": {},
+    "fragmentsResolvableInFile": 418,
+    "fragmentsUnresolvableInFile": 0
+  },
+  "twoSidedDecomposition": {
+    "note": "T = eligible nodes on the pinned trees; A = what the analyzer emitted PRE-filter (ASTEngine.parseFile); D = what the worker delivered POST-filter (pool-worker.parseFile). analyzerShortfall = T - A is a construct this lane does not read. pipelineDeletion = A - D is an edge filterNoiseRelationships removed. Two disjoint numbers, no remainder.",
+    "analyzerEdgesPreFilter": 7630,
+    "analyzerShortfall": 4,
+    "analyzerShortfallUnlabelled": 0,
+    "analyzerShortfallByRule": {
+      "NOT-DROPPED-BY-ANY-NAMED-RULE": 4
+    },
+    "analyzerShortfallExamples": [
+      "markdown_link [pool edge shape: NOT-DROPPED-BY-ANY-NAMED-RULE] \"[3.2.47](https://github.com/vuejs/core/compa\" -> \"https://github.com/vuejs/core/compare/v3.2.46...v3.2.47\"",
+      "markdown_internal_anchor [pool edge shape: NOT-DROPPED-BY-ANY-NAMED-RULE] \"oplog\" -> \"Usage\"",
+      "markdown_link [pool edge shape: NOT-DROPPED-BY-ANY-NAMED-RULE] \"DOCS\" -> \"doc.md\"",
+      "markdown_link [pool edge shape: NOT-DROPPED-BY-ANY-NAMED-RULE] \"Workflow\" -> \"https://mise.jdx.dev/\""
+    ],
+    "pipelineDeletion": 119,
+    "pipelineDeletionByRule": {
+      "leaf-starts-with-space": 52,
+      "leaf-brace-angle-backtick": 46,
+      "leaf-too-long": 21
+    },
+    "pipelineDeletionByRole": {
+      "heading_hierarchy": 89,
+      "markdown_link": 20,
+      "markdown_internal_anchor": 8,
+      "table_under_heading": 1,
+      "table_column": 1
+    },
+    "pipelineDeletionExamples": [
+      "heading_hierarchy [leaf-starts-with-space] \"Premises\" -> \"Premise 1: current compiler design\"",
+      "heading_hierarchy [leaf-starts-with-space] \"Premises\" -> \"Premise 2: current compilation time consumption\"",
+      "heading_hierarchy [leaf-starts-with-space] \"Reusing typechecking results between compile\" -> \"Experiment: force-generated signature files efficiency\"",
+      "heading_hierarchy [leaf-brace-angle-backtick] \"What’s new in the 0.19.0-RC1 technology prev\" -> \"Allow `given` in pattern bindings\"",
+      "heading_hierarchy [leaf-brace-angle-backtick] \"What’s new in the 0.19.0-RC1 technology prev\" -> \"Wildcard types written with `?`\"",
+      "heading_hierarchy [leaf-starts-with-space] \"Let us know what you think!\" -> \"Library authors: Join our community build\"",
+      "heading_hierarchy [leaf-brace-angle-backtick] \"JSON Functions Enhancements (2022)\" -> \"2.0 New operators **->** and **->>**\"",
+      "markdown_link [leaf-too-long] \"Releases\" -> \"https://docs.github.com/en/repositories/releasing-projects-o\"",
+      "heading_hierarchy [leaf-starts-with-space] \"String Operators\" -> \"Custom types: that are really strings\"",
+      "heading_hierarchy [leaf-starts-with-space] \"Cells\" -> \"Advanced Example: Implementing a Cell Yourself\""
+    ]
+  },
+  "rows": [
+    {
+      "row": "uses / markdown_link",
+      "tree": 3483,
+      "emitted": 3591,
+      "mechanisms": [
+        {
+          "name": "reference-link USES with a definition (no destination node of their own)",
+          "count": 117
+        },
+        {
+          "name": "reference-link USES with NO definition — MD-D1: literal text, not a link",
+          "count": 674
+        }
+      ],
+      "expectedFromTree": 3600,
+      "unexplained": 9,
+      "note": "a `full_reference_link` names only its label; the destination lives in a block-level `link_reference_definition`, so a reference link adds an edge and no inline node. An UNDEFINED reference is suppressed (MD-D1) and is the second mechanism, not a miss."
+    },
+    {
+      "row": "uses / markdown_autolink",
+      "tree": 92,
+      "emitted": 92,
+      "mechanisms": [],
+      "expectedFromTree": 92,
+      "unexplained": 0,
+      "note": "uri_autolink + email_autolink, one edge each."
+    },
+    {
+      "row": "uses / markdown_internal_anchor",
+      "tree": 418,
+      "emitted": 409,
+      "mechanisms": [
+        {
+          "name": "fragments resolving to no heading in this file — MD-D6: not published, count disclosed in metadata.patterns",
+          "count": 0
+        }
+      ],
+      "expectedFromTree": 418,
+      "unexplained": 9,
+      "note": "resolved PER FILE, under the renderer's own ordinal rule (`slug`, `slug-1`, `slug-2`), because the analyzer's anchor map is per file and a fragment naming another document's heading is its declared boundary."
+    },
+    {
+      "row": "contains / heading_hierarchy",
+      "tree": 1843,
+      "emitted": 1754,
+      "mechanisms": [
+        {
+          "name": "nesting levels contributed ONLY by an EMPTY heading, which MD-D2 declines to publish (so its children attach to the nearest NAMED ancestor)",
+          "count": 0
+        }
+      ],
+      "expectedFromTree": 1843,
+      "unexplained": 89,
+      "note": "a child whose text EQUALS its parent's is NOT lost: the analyzer passes `distinctSites = ownerId !== id` on this edge precisely so `# Changelog` over `## Changelog` publishes (a child's id can never equal its parent's id, so the flag is always true here)."
+    },
+    {
+      "row": "code_span containing a link_destination",
+      "tree": 0,
+      "emitted": 0,
+      "mechanisms": [],
+      "expectedFromTree": 0,
+      "unexplained": 0,
+      "note": "a STRUCTURAL reachability claim, not an emission: the inline grammar gives code_span only ANONYMOUS children and the analyzer descends NAMED children only, so no destination is reachable beneath one. A non-zero tree count falsifies it."
+    }
+  ],
+  "perFileResidual": [
+    {
+      "file": "redwood/docs/versioned_docs/version-8.6/uploads.md",
+      "headingExpected": 24,
+      "headingEmitted": 12,
+      "headingDelta": 12,
+      "linkExpected": 14,
+      "linkEmitted": 14,
+      "linkDelta": 0,
+      "anchorExpected": 5,
+      "anchorEmitted": 3,
+      "anchorDelta": 2
+    },
+    {
+      "file": "docker/vendor/github.com/go-openapi/validate/README.md",
+      "headingExpected": 10,
+      "headingEmitted": 10,
+      "headingDelta": 0,
+      "linkExpected": 20,
+      "linkEmitted": 34,
+      "linkDelta": -14,
+      "anchorExpected": 0,
+      "anchorEmitted": 0,
+      "anchorDelta": 0
+    },
+    {
+      "file": "proxicall/docs/MONEY_MODEL_REVIEW.md",
+      "headingExpected": 14,
+      "headingEmitted": 3,
+      "headingDelta": 11,
+      "linkExpected": 0,
+      "linkEmitted": 0,
+      "linkDelta": 0,
+      "anchorExpected": 0,
+      "anchorEmitted": 0,
+      "anchorDelta": 0
+    },
+    {
+      "file": "hasura-engine/frontend/docs/generic-info.md",
+      "headingExpected": 19,
+      "headingEmitted": 15,
+      "headingDelta": 4,
+      "linkExpected": 24,
+      "linkEmitted": 20,
+      "linkDelta": 4,
+      "anchorExpected": 2,
+      "anchorEmitted": 0,
+      "anchorDelta": 2
+    },
+    {
+      "file": "otp/system/doc/efficiency_guide/eff_guide_processes.md",
+      "headingExpected": 9,
+      "headingEmitted": 8,
+      "headingDelta": 1,
+      "linkExpected": 10,
+      "linkEmitted": 3,
+      "linkDelta": 7,
+      "anchorExpected": 0,
+      "anchorEmitted": 0,
+      "anchorDelta": 0
+    },
+    {
+      "file": "kubernetes/CHANGELOG/CHANGELOG-1.30.md",
+      "headingExpected": 332,
+      "headingEmitted": 329,
+      "headingDelta": 3,
+      "linkExpected": 1276,
+      "linkEmitted": 1276,
+      "linkDelta": 0,
+      "anchorExpected": 354,
+      "anchorEmitted": 351,
+      "anchorDelta": 3
+    },
+    {
+      "file": "proxicall/docs/launch/store/play_data_safety.md",
+      "headingExpected": 5,
+      "headingEmitted": 0,
+      "headingDelta": 5,
+      "linkExpected": 0,
+      "linkEmitted": 0,
+      "linkDelta": 0,
+      "anchorExpected": 0,
+      "anchorEmitted": 0,
+      "anchorDelta": 0
+    },
+    {
+      "file": "powershell/.github/instructions/log-grouping-guidelines.instructions.md",
+      "headingExpected": 14,
+      "headingEmitted": 10,
+      "headingDelta": 4,
+      "linkExpected": 1,
+      "linkEmitted": 0,
+      "linkDelta": 1,
+      "anchorExpected": 0,
+      "anchorEmitted": 0,
+      "anchorDelta": 0
+    },
+    {
+      "file": "snacks.nvim/docs/init.md",
+      "headingExpected": 8,
+      "headingEmitted": 3,
+      "headingDelta": 5,
+      "linkExpected": 0,
+      "linkEmitted": 0,
+      "linkDelta": 0,
+      "anchorExpected": 0,
+      "anchorEmitted": 0,
+      "anchorDelta": 0
+    },
+    {
+      "file": "redwood/docs/versioned_docs/version-8.3/schema-relations.md",
+      "headingExpected": 5,
+      "headingEmitted": 4,
+      "headingDelta": 1,
+      "linkExpected": 7,
+      "linkEmitted": 4,
+      "linkDelta": 3,
+      "anchorExpected": 0,
+      "anchorEmitted": 0,
+      "anchorDelta": 0
+    },
+    {
+      "file": "r-cli/.github/CODE_OF_CONDUCT.md",
+      "headingExpected": 11,
+      "headingEmitted": 7,
+      "headingDelta": 4,
+      "linkExpected": 1,
+      "linkEmitted": 1,
+      "linkDelta": 0,
+      "anchorExpected": 0,
+      "anchorEmitted": 0,
+      "anchorDelta": 0
+    },
+    {
+      "file": "fsharp/docs/reusing-typechecking-results.md",
+      "headingExpected": 8,
+      "headingEmitted": 5,
+      "headingDelta": 3,
+      "linkExpected": 1,
+      "linkEmitted": 1,
+      "linkDelta": 0,
+      "anchorExpected": 0,
+      "anchorEmitted": 0,
+      "anchorDelta": 0
+    },
+    {
+      "file": "scala3/docs/_blog/_posts/2019-09-23-19th-dotty-milestone-release.md",
+      "headingExpected": 10,
+      "headingEmitted": 7,
+      "headingDelta": 3,
+      "linkExpected": 9,
+      "linkEmitted": 9,
+      "linkDelta": 0,
+      "anchorExpected": 0,
+      "anchorEmitted": 0,
+      "anchorDelta": 0
+    },
+    {
+      "file": "redwood/docs/versioned_docs/version-8.4/tutorial/chapter7/api-side-currentuser.md",
+      "headingExpected": 15,
+      "headingEmitted": 12,
+      "headingDelta": 3,
+      "linkExpected": 7,
+      "linkEmitted": 7,
+      "linkDelta": 0,
+      "anchorExpected": 1,
+      "anchorEmitted": 1,
+      "anchorDelta": 0
+    },
+    {
+      "file": "redwood/docs/versioned_docs/version-8.3/tutorial/chapter7/api-side-currentuser.md",
+      "headingExpected": 15,
+      "headingEmitted": 12,
+      "headingDelta": 3,
+      "linkExpected": 7,
+      "linkEmitted": 7,
+      "linkDelta": 0,
+      "anchorExpected": 1,
+      "anchorEmitted": 1,
+      "anchorDelta": 0
+    },
+    {
+      "file": "kubernetes/vendor/go.uber.org/zap/FAQ.md",
+      "headingExpected": 14,
+      "headingEmitted": 11,
+      "headingDelta": 3,
+      "linkExpected": 4,
+      "linkEmitted": 4,
+      "linkDelta": 0,
+      "anchorExpected": 0,
+      "anchorEmitted": 0,
+      "anchorDelta": 0
+    },
+    {
+      "file": "fsharp/TESTGUIDE.md",
+      "headingExpected": 30,
+      "headingEmitted": 29,
+      "headingDelta": 1,
+      "linkExpected": 12,
+      "linkEmitted": 12,
+      "linkDelta": 0,
+      "anchorExpected": 7,
+      "anchorEmitted": 6,
+      "anchorDelta": 1
+    },
+    {
+      "file": "redwood/packages/auth-providers/netlify/setup/README.md",
+      "headingExpected": 15,
+      "headingEmitted": 13,
+      "headingDelta": 2,
+      "linkExpected": 0,
+      "linkEmitted": 0,
+      "linkDelta": 0,
+      "anchorExpected": 0,
+      "anchorEmitted": 0,
+      "anchorDelta": 0
+    },
+    {
+      "file": "redwood/docs/versioned_docs/version-8.1/tutorial/chapter6/comments-schema.md",
+      "headingExpected": 6,
+      "headingEmitted": 6,
+      "headingDelta": 0,
+      "linkExpected": 11,
+      "linkEmitted": 9,
+      "linkDelta": 2,
+      "anchorExpected": 0,
+      "anchorEmitted": 0,
+      "anchorDelta": 0
+    },
+    {
+      "file": "redwood/docs/versioned_docs/version-8.1/a11y.md",
+      "headingExpected": 5,
+      "headingEmitted": 3,
+      "headingDelta": 2,
+      "linkExpected": 4,
+      "linkEmitted": 4,
+      "linkDelta": 0,
+      "anchorExpected": 0,
+      "anchorEmitted": 0,
+      "anchorDelta": 0
+    },
+    {
+      "file": "redwood/packages/auth-providers/custom/setup/README.md",
+      "headingExpected": 15,
+      "headingEmitted": 13,
+      "headingDelta": 2,
+      "linkExpected": 0,
+      "linkEmitted": 0,
+      "linkDelta": 0,
+      "anchorExpected": 0,
+      "anchorEmitted": 0,
+      "anchorDelta": 0
+    },
+    {
+      "file": "redwood/packages/auth-providers/auth0/setup/README.md",
+      "headingExpected": 15,
+      "headingEmitted": 13,
+      "headingDelta": 2,
+      "linkExpected": 0,
+      "linkEmitted": 0,
+      "linkDelta": 0,
+      "anchorExpected": 0,
+      "anchorEmitted": 0,
+      "anchorDelta": 0
+    },
+    {
+      "file": "Exposed/.claude/skills/migrate-to-1.0/references/module-detection.md",
+      "headingExpected": 3,
+      "headingEmitted": 1,
+      "headingDelta": 2,
+      "linkExpected": 0,
+      "linkEmitted": 0,
+      "linkDelta": 0,
+      "anchorExpected": 0,
+      "anchorEmitted": 0,
+      "anchorDelta": 0
+    },
+    {
+      "file": "redwood/packages/auth-providers/auth0/api/README.md",
+      "headingExpected": 15,
+      "headingEmitted": 13,
+      "headingDelta": 2,
+      "linkExpected": 1,
+      "linkEmitted": 1,
+      "linkDelta": 0,
+      "anchorExpected": 0,
+      "anchorEmitted": 0,
+      "anchorDelta": 0
+    },
+    {
+      "file": "sqlite/doc/json-enhancements.md",
+      "headingExpected": 4,
+      "headingEmitted": 3,
+      "headingDelta": 1,
+      "linkExpected": 0,
+      "linkEmitted": 0,
+      "linkDelta": 0,
+      "anchorExpected": 0,
+      "anchorEmitted": 0,
+      "anchorDelta": 0
+    },
+    {
+      "file": "wagtail/docs/packages/index.md",
+      "headingExpected": 11,
+      "headingEmitted": 11,
+      "headingDelta": 0,
+      "linkExpected": 43,
+      "linkEmitted": 42,
+      "linkDelta": 1,
+      "anchorExpected": 0,
+      "anchorEmitted": 0,
+      "anchorDelta": 0
+    },
+    {
+      "file": "yq/pkg/yqlib/doc/operators/string-operators.md",
+      "headingExpected": 26,
+      "headingEmitted": 25,
+      "headingDelta": 1,
+      "linkExpected": 3,
+      "linkEmitted": 3,
+      "linkDelta": 0,
+      "anchorExpected": 0,
+      "anchorEmitted": 0,
+      "anchorDelta": 0
+    },
+    {
+      "file": "vue-core/changelogs/CHANGELOG-3.2.md",
+      "headingExpected": 90,
+      "headingEmitted": 90,
+      "headingDelta": 0,
+      "linkExpected": 1183,
+      "linkEmitted": 1182,
+      "linkDelta": 1,
+      "anchorExpected": 0,
+      "anchorEmitted": 0,
+      "anchorDelta": 0
+    },
+    {
+      "file": "redwood/docs/versioned_docs/version-3.x/cells.md",
+      "headingExpected": 16,
+      "headingEmitted": 15,
+      "headingDelta": 1,
+      "linkExpected": 11,
+      "linkEmitted": 11,
+      "linkDelta": 0,
+      "anchorExpected": 1,
+      "anchorEmitted": 1,
+      "anchorDelta": 0
+    },
+    {
+      "file": "pb-grpc/examples/cpp/debugging/README.md",
+      "headingExpected": 14,
+      "headingEmitted": 13,
+      "headingDelta": 1,
+      "linkExpected": 6,
+      "linkEmitted": 6,
+      "linkDelta": 0,
+      "anchorExpected": 0,
+      "anchorEmitted": 0,
+      "anchorDelta": 0
+    },
+    {
+      "file": "boundary/internal/oplog/README.md",
+      "headingExpected": 5,
+      "headingEmitted": 5,
+      "headingDelta": 0,
+      "linkExpected": 0,
+      "linkEmitted": 0,
+      "linkDelta": 0,
+      "anchorExpected": 6,
+      "anchorEmitted": 5,
+      "anchorDelta": 1
+    },
+    {
+      "file": "tfsec/docs/checks/aws/rds/no-public-db-access/index.md",
+      "headingExpected": 7,
+      "headingEmitted": 6,
+      "headingDelta": 1,
+      "linkExpected": 2,
+      "linkEmitted": 2,
+      "linkDelta": 0,
+      "anchorExpected": 0,
+      "anchorEmitted": 0,
+      "anchorDelta": 0
+    },
+    {
+      "file": "proxicall/.copilot-tools/m10_issues/2512_evidence.md",
+      "headingExpected": 5,
+      "headingEmitted": 4,
+      "headingDelta": 1,
+      "linkExpected": 0,
+      "linkEmitted": 0,
+      "linkDelta": 0,
+      "anchorExpected": 0,
+      "anchorEmitted": 0,
+      "anchorDelta": 0
+    },
+    {
+      "file": "hledger/doc/DOCS.md",
+      "headingExpected": 17,
+      "headingEmitted": 17,
+      "headingDelta": 0,
+      "linkExpected": 4,
+      "linkEmitted": 3,
+      "linkDelta": 1,
+      "anchorExpected": 0,
+      "anchorEmitted": 0,
+      "anchorDelta": 0
+    },
+    {
+      "file": "docker/vendor/github.com/aws/aws-sdk-go-v2/credentials/CHANGELOG.md",
+      "headingExpected": 0,
+      "headingEmitted": 0,
+      "headingDelta": 0,
+      "linkExpected": 4,
+      "linkEmitted": 3,
+      "linkDelta": 1,
+      "anchorExpected": 0,
+      "anchorEmitted": 0,
+      "anchorDelta": 0
+    },
+    {
+      "file": "tfsec/docs/checks/google/compute/project-level-oslogin/index.md",
+      "headingExpected": 7,
+      "headingEmitted": 6,
+      "headingDelta": 1,
+      "linkExpected": 1,
+      "linkEmitted": 1,
+      "linkDelta": 0,
+      "anchorExpected": 0,
+      "anchorEmitted": 0,
+      "anchorDelta": 0
+    },
+    {
+      "file": "redwood/docs/versioned_docs/version-4.x/environment-variables.md",
+      "headingExpected": 12,
+      "headingEmitted": 11,
+      "headingDelta": 1,
+      "linkExpected": 7,
+      "linkEmitted": 7,
+      "linkDelta": 0,
+      "anchorExpected": 1,
+      "anchorEmitted": 1,
+      "anchorDelta": 0
+    },
+    {
+      "file": "redwood/docs/versioned_docs/version-8.6/cors.md",
+      "headingExpected": 14,
+      "headingEmitted": 13,
+      "headingDelta": 1,
+      "linkExpected": 7,
+      "linkEmitted": 7,
+      "linkDelta": 0,
+      "anchorExpected": 0,
+      "anchorEmitted": 0,
+      "anchorDelta": 0
+    },
+    {
+      "file": "scala3/changelogs/3.4.0-RC1.md",
+      "headingExpected": 34,
+      "headingEmitted": 33,
+      "headingDelta": 1,
+      "linkExpected": 274,
+      "linkEmitted": 274,
+      "linkDelta": 0,
+      "anchorExpected": 0,
+      "anchorEmitted": 0,
+      "anchorDelta": 0
+    },
+    {
+      "file": "redwood/docs/versioned_docs/version-8.0/realtime.md",
+      "headingExpected": 36,
+      "headingEmitted": 36,
+      "headingDelta": 0,
+      "linkExpected": 12,
+      "linkEmitted": 11,
+      "linkDelta": 1,
+      "anchorExpected": 5,
+      "anchorEmitted": 5,
+      "anchorDelta": 0
+    },
+    {
+      "file": "wagtail/docs/releases/6.0.3.md",
+      "headingExpected": 5,
+      "headingEmitted": 4,
+      "headingDelta": 1,
+      "linkExpected": 5,
+      "linkEmitted": 5,
+      "linkDelta": 0,
+      "anchorExpected": 0,
+      "anchorEmitted": 0,
+      "anchorDelta": 0
+    },
+    {
+      "file": "apollo-server/DEVELOPMENT.md",
+      "headingExpected": 5,
+      "headingEmitted": 5,
+      "headingDelta": 0,
+      "linkExpected": 12,
+      "linkEmitted": 11,
+      "linkDelta": 1,
+      "anchorExpected": 0,
+      "anchorEmitted": 0,
+      "anchorDelta": 0
+    }
+  ],
+  "perFileWorstResidual": []
+}
