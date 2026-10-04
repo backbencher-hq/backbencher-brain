@@ -49,6 +49,18 @@ import { readFileSync, writeFileSync } from "node:fs"
 import { parseWithAnalyzer } from "./lua-analyzer-direct"
 import { parseFile, filterNoiseRelationships, keepSymbol, nameTheSymbolRule } from "../../src/ast/pool-worker"
 
+import * as path from "node:path"
+import { fileURLToPath } from "node:url"
+// Derived from this file's own location, NOT hardcoded. Six of this lane's scripts
+// pinned $HOME/backbencher-brain, so in a lane worktree they read a path
+// that does not exist and the gate died with ENOENT instead of reporting a verdict.
+// A gate that cannot execute is not a gate, and the mutant battery looked green
+// only because its failure was being read as a pass.
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..")
+// NOTE: `REPO` below is a CORPUS repo name, not this project. That is why the output path
+// reads ROOT explicitly and must not be spelled with REPO.
+const REPO = process.argv.includes("--repo") ? process.argv[process.argv.indexOf("--repo") + 1] : "all"
+
 const argv = process.argv.slice(2)
 const arg = (n: string) => {
   const i = argv.indexOf(n)
@@ -403,7 +415,7 @@ log("")
 log(`  SPURIOUS (parseFile returned something the analyzer did not): ${results.relationships.spurious + results.exports.spurious + results.symbols.spurious}`)
 for (const s of results.spurious.slice(0, 15)) log(`    ${s.file}  ${s.what}`)
 
-const out = `$HOME/backbencher-brain/validation/m60/results/lua-output-coverage-${REPO}.json`
+const out = `${ROOT}/validation/m60/results/lua-output-coverage-${REPO}.json`
 writeFileSync(out, JSON.stringify({ schemaVersion: 1, gate: "verify-lua-output-coverage", repo: REPO, ...results, mutation: MUTATE ? "mutant" : "none" }, null, 2))
 log("")
 log(`  wrote ${out}`)

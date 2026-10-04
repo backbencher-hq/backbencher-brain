@@ -294,6 +294,44 @@ function unknownConstraintKeys(rows: any[] | undefined): string[] {
   return [...bad].sort()
 }
 
+/**
+ * Canonical form of an array for ORDER-INSENSITIVE comparison.
+ *
+ * The comparison this serves is documented as set equality: "arrays now compare
+ * by sorted JSON, exactly as the imports matcher does, so a list mirror is
+ * pinned as a set rather than being silently unassertable."
+ *
+ * `[...arr].sort()` does not deliver that for a non-primitive element. With no
+ * comparator, every object stringifies to `"[object Object]"`, so the sort is a
+ * no-op and two arrays holding the same objects in DIFFERENT orders compare
+ * UNEQUAL — the comparison is silently order-sensitive, the opposite of what the
+ * comment claims. Found by the protobuf lane pinning an object array
+ * (`reserved`, a repeated message field, whose elements are objects).
+ *
+ * Key order inside an element matters too: `JSON.stringify` emits keys in
+ * insertion order, so `{a,b}` and `{b,a}` would compare unequal for the same
+ * reason. A canonical stringify with sorted keys removes that as well.
+ *
+ * Sorting the SERIALIZED form rather than the values keeps this total and
+ * deterministic for mixed and nested element types, which a value comparator
+ * cannot be.
+ */
+function stableSortedJson(arr: unknown[]): string {
+  return JSON.stringify([...arr].map(canonicalJson).sort())
+}
+
+/** JSON with object keys emitted in sorted order, recursively. */
+function canonicalJson(value: unknown): string {
+  if (Array.isArray(value)) return "[" + value.map(canonicalJson).join(",") + "]"
+  if (value && typeof value === "object") {
+    const entries = Object.entries(value as Record<string, unknown>)
+      .filter(([, v]) => v !== undefined)
+      .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+    return "{" + entries.map(([k, v]) => JSON.stringify(k) + ":" + canonicalJson(v)).join(",") + "}"
+  }
+  return JSON.stringify(value) ?? "null"
+}
+
 function matchConstraints(actual: Entry, want: Entry): boolean {
   for (const [k, v] of Object.entries(want)) {
     // Documentation fields on expectation entries are NOT match constraints.
@@ -331,7 +369,7 @@ function matchConstraints(actual: Entry, want: Entry): boolean {
     if (Array.isArray(v) && !k.startsWith("meta.")) {
       const av = (actual as any)[k]
       if (!Array.isArray(av)) return false
-      if (JSON.stringify([...av].sort()) !== JSON.stringify([...v].sort())) return false
+      if (stableSortedJson(av) !== stableSortedJson(v)) return false
       continue
     }
     // `field: null` at the TOP level means "this field must be ABSENT or null", the
@@ -342,7 +380,19 @@ function matchConstraints(actual: Entry, want: Entry): boolean {
     // `docstring` on an undocumented declaration). Without it the only writable
     // assertion was the presence case, and a rule that populated every field
     // everywhere would pass. Additive: every other comparison is untouched.
-    if (v === null) {
+    //
+    // ORDERING (M60, powershell lane). This branch must NOT swallow a `meta.` key.
+    // It used to, and the effect was that `{"meta.via": null}` returned true for an
+    // edge that CARRIES `metadata.via` — the fixture asserted nothing at all. The
+    // key `meta.via` is not a field of the record; it is a path into `metadata`, so
+    // `actual["meta.via"]` is `undefined` and the ABSENT test passed vacuously.
+    // The `meta.` handling below then never ran, which also made ITS `v === null`
+    // branch dead code. 16 expectation rows across 6 lanes (bash, powershell, svelte,
+    // typescript, vue, yaml) were inert this way: they could not fail.
+    //
+    // The negative test that pins the fix is that `{"meta.via": null}` must be FALSE
+    // against an edge carrying `via`, and TRUE against one that omits it.
+    if (v === null && !k.startsWith("meta.")) {
       if ((actual as any)[k] !== undefined && (actual as any)[k] !== null) return false
       continue
     }
@@ -365,7 +415,7 @@ function matchConstraints(actual: Entry, want: Entry): boolean {
       // list mirror is pinned as a set rather than being silently unassertable.
       if (Array.isArray(v)) {
         if (!Array.isArray(mv)) return false
-        if (JSON.stringify([...mv].sort()) !== JSON.stringify([...v].sort())) return false
+        if (stableSortedJson(mv) !== stableSortedJson(v)) return false
       } else if (v === null) {
         // M59 fixed this hole for `line_number`; it is the SAME hole one level
         // down. Several analyzers emit a metadata label on TRUE only and omit it

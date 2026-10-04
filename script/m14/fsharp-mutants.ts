@@ -363,4 +363,127 @@ export const FSHARP_MUTANTS: Mutant[] = [
       return { ...r, relationships: (r.relationships ?? []).filter((x: any) => !(String(x.type) === "calls" && String(x.source) === String(x.target))) }
     },
   },
+  {
+    id: "fsharp/open-recorded-only-as-a-mention",
+    language: "fsharp",
+    defectClass: "wrong-relationship",
+    description:
+      "M60 ontology lane: ER-D41's shape in F#. `src/intelligence/analysis/dependencies.ts` reads `imports` relationship edges for file->file module dependencies, relying on them precisely because `brain_import.resolved_symbol_id` is routinely null — 19 analyzers emit `imports`, and F# recorded `open X` under `references` alone, so an `open FSharp.Compiler.Diagnostic` was stored under a label that reader never looks at. Reverted here by dropping every `imports` edge the analyzer emits, which is the honest pre-fix state: the mention survives and the dependency does not. Caught by fsharp/import-and-use, whose five `imports` rows (two `open`, one `open type`, `#r`, `#I`, `#load`) go missing while its two `references` rows stay green — so the mutant is caught by the ABSENCE of the dependency and not by any change to the mention.",
+    transform: (r: any) => {
+      const imports = (r.relationships ?? []).filter((x: any) => String(x.type) === "imports")
+      if (imports.length === 0) return r
+      return { ...r, relationships: (r.relationships ?? []).filter((x: any) => String(x.type) !== "imports") }
+    },
+  },
+  {
+    id: "fsharp/repl-control-directive-imports-a-resource",
+    language: "fsharp",
+    defectClass: "wrong-relationship",
+    description:
+      "M60 ontology lane: the `#r`/`#load`/`#I` rule reads the directive's keyword off the tree and accepts three of the six keywords `fsi_directive_decl` covers. Accepting the NODE TYPE instead emits an import for `#time \"on\"`, `#help` and `#quit`, which are REPL controls touching no resource outside the file — a fabricated dependency, the most expensive mistake available, because a fake dependency is counted as a fabrication by the oracle and poisons bb_graph, bb_impact and bb_migrate, where it becomes wrong refactoring advice. `#time` is the load-bearing case and not a contrived one: it CARRIES a string (`#time \"on\"`), so a rule that keyed on 'has a string argument' would emit the edge too, and only the keyword test refuses it. The two targets are F#'s two documented `#time` arguments. THIS IS AN INJECTION, NOT A BYTE-FAITHFUL REVERT, and the reason is stated rather than papered over: the pre-fix rule's extra edges leave NO trace in a result the analyzer refused to produce — no symbol, no relationship, no ImportInfo row — so a transform over the result cannot recover them, and a revert written against the source would be a text match, which is the instrument this project has twice measured to be wrong. What it asserts is exactly the defect: does the suite go red when an `imports` edge exists that names no resource? Caught by fsharp/import-and-use, whose forbid row for target `on` exists for this and nothing else.",
+    transform: (r: any) => {
+      const res = (r.relationships ?? []).filter(
+        (x: any) => String(x.type) === "imports" && String(x.metadata?.relationshipType ?? "") === "resource_directive",
+      )
+      if (res.length === 0) return r
+      const fabricated = ["on", "off"].map((v) => ({
+        type: "imports",
+        source: String(res[0].source),
+        target: v,
+        confidence: 1,
+        metadata: { nodeType: "fsi_directive_decl", relationshipType: "resource_directive", directive: "#time" },
+      }))
+      return { ...r, relationships: [...(r.relationships ?? []), ...fabricated] }
+    },
+  },
+  {
+    id: "fsharp/attribute-variance-target-read-as-the-dependency",
+    language: "fsharp",
+    defectClass: "wrong-payload",
+    description:
+      "M60 ontology lane, and a REGRESSION guard for a bug this lane's own round introduced and then removed. `[<return: Struct>]` and `[<assembly: CompilationRepresentation(…)>]` carry an attribute `target` field; the rule skips it by asking the tree for the field name at each child index. The pre-fix version skipped it by OBJECT IDENTITY (`c === attrTarget`), which does not hold — web-tree-sitter rebuilds the Node wrapper on each accessor call, so the comparison was false for the very child it meant to skip, and the variance keyword became the dependency. Measured: 11 `uses` edges in a 200-file draw whose target was the literal string `return`. Without this mutant, a rule that was wrong once is free to be wrong again, and the failure is invisible downstream because a fabricated target resolves to nothing while a real one resolves to a symbol. Caught by fsharp/import-and-use, whose forbid rows for `return` and `assembly` exist for this and nothing else.",
+    transform: (r: any) => {
+      const uses = (r.relationships ?? []).filter((x: any) => String(x.type) === "uses")
+      if (uses.length === 0) return r
+      const extra = uses
+        .filter((x: any) => x.metadata?.attributeTarget != null)
+        .map((x: any) => ({
+          ...x,
+          target: String(x.metadata.attributeTarget),
+          metadata: { ...x.metadata, attributeTarget: undefined, relationshipType: "attribute_application_PRE_FIELD_NAME_SKIP" },
+        }))
+      if (extra.length === 0) return r
+      return { ...r, relationships: [...(r.relationships ?? []), ...extra] }
+    },
+  },
+  {
+    id: "fsharp/interface-member-override-resolved-from-the-base-list",
+    language: "fsharp",
+    defectClass: "wrong-relationship",
+    description:
+      "M60 ontology lane pass 2, and a REGRESSION guard for the defect this lane's own pass 1 shipped. `override` is not a statement about a BASE CLASS: F# has no separate keyword for an interface member, so `interface I with override this.M() = …` implements `I.M` and the pre-fix rule — which read the `override` TOKEN alone — emitted `overrides Owner.M -> M` when the type had no `inherit` at all (a member that overrides itself, a target binding to nothing) and `overrides Owner.M -> Base.M` when it also inherited (an interface implementation attributed to a base-class member). Measured over the whole 6,619-file corpus by validation/m14/fixtures/fsharp/ontology-probe.ts, probes A1 (the population) and A2 (the subset with no base type to resolve). The mutant reverts the TARGET RESOLUTION rather than the edge: it rewrites each `interface_member_implementation` edge's target to the member's bare name, which is the pre-fix answer for the no-`inherit` case and the sharpest possible fabrication for the rest. Caught by fsharp/override-target, whose three forbid rows pin each of the three wrong answers — including `Guarded.Speak -> Animal.Speak`, where the wrong target names a member that REALLY EXISTS in the base class, which is why the defect survived a corpus census: a fabricated edge that resolves is indistinguishable from a correct one by name alone.",
+    transform: (r: any) => {
+      const ifaceOverrides = (r.relationships ?? []).filter(
+        (x: any) => String(x.type) === "overrides" && x.metadata?.isInterfaceMemberImplementation === true,
+      )
+      if (ifaceOverrides.length === 0) return r
+      return {
+        ...r,
+        relationships: (r.relationships ?? []).map((x: any) => {
+          if (String(x.type) !== "overrides" || x.metadata?.isInterfaceMemberImplementation !== true) return x
+          const src = String(x.source)
+          const member = src.includes(".") ? (src.split(".").pop() as string) : src
+          return { ...x, target: member, metadata: { ...x.metadata, relationshipType: "override_PRE_INTERFACE_TARGET" } }
+        }),
+      }
+    },
+  },
+  {
+    id: "fsharp/one-character-callee-refused",
+    language: "fsharp",
+    defectClass: "missing-relationship",
+    description:
+      "M60 ontology lane pass 2. `calls` was gated on `fnName.length > 1`, which no property of the program justifies: by the time the branch runs, the grammar has already said the callee is a NAME node. The gate removed every call to a ONE-LETTER function, of which instrument B counts 5,313 over the 6,619-file corpus in 735 files — 2.2% of the label against its 246,327 full-extent edges — and the dropped population is better connected than the emitted one (32.4% in-file resolution on a 120-file draw against 22.2%). The mutant drops the edges a one-character target carries, which is the honest pre-fix state: the application is in the tree and nothing is published about it. Caught by fsharp/one-char-calls, whose `composed -> f` row exists for this and nothing else. It is a REGRESSION guard in the strict sense — the gate was in the lane since M12 and no fixture asserted its absence, which is why 5,313 real calls could sit unread behind a green suite.",
+    transform: (r: any) => {
+      const short = (r.relationships ?? []).filter(
+        (x: any) => String(x.type) === "calls" && String(x.target).length === 1,
+      )
+      if (short.length === 0) return r
+      return { ...r, relationships: (r.relationships ?? []).filter((x: any) => !(String(x.type) === "calls" && String(x.target).length === 1)) }
+    },
+  },
+  {
+    id: "fsharp/bare-pipeline-not-read",
+    language: "fsharp",
+    defectClass: "missing-relationship",
+    description:
+      "M60 ontology lane pass 2, and the largest single `calls` gap this lane ever shipped. The lane's doc claimed pipe `a |> List.map` reads as a call, and it read one only when the pipeline sat in CALLEE position (`f (x |> g)`); a `let` whose BODY is the pipeline — the shape F# is actually written in — produced no edge at all. Measured on a 300-file corpus draw: 1,043 bare `|>` infix nodes with a NAME on the right, against 580 read in callee position, so ~11% of the corpus's calls were missing from the label. `script/m14/fsharp-truth-oracle.ts` has no `infix_expression` branch either, which is why the differential never reported it: both sides said nothing, so nothing disagreed. The mutant drops the pipeline edges the analyzer now emits. Caught by fsharp/one-char-calls, whose `applyBoth -> triple` row (metadata `isPipelineCall`) exists for this and nothing else, and whose three forbid rows — composition `>>`, a lambda on the right of a pipe, and `x = y` — are what stop a from-scratch implementation of the rule from passing by emitting far more than it should.",
+    transform: (r: any) => {
+      const pipes = (r.relationships ?? []).filter(
+        (x: any) => String(x.type) === "calls" && x.metadata?.isPipelineCall === true,
+      )
+      if (pipes.length === 0) return r
+      return { ...r, relationships: (r.relationships ?? []).filter((x: any) => !(String(x.type) === "calls" && x.metadata?.isPipelineCall === true)) }
+    },
+  },
+  {
+    id: "fsharp/drop-owner-qualified-name",
+    language: "fsharp",
+    defectClass: "unresolvable-endpoint",
+    description:
+      "M60 ontology lane pass 3, FS-P3-1. `overrides` is the only relationship this analyzer emits whose SOURCE it qualifies, because a bare member name is ambiguous: `type Resource() = interface System.IDisposable with override this.Dispose() = ()` writes `overrides Resource.Dispose -> IDisposable.Dispose`. The analyzer published every OWNED symbol under its BARE name, so that endpoint matched the store at 0 of 63 `overrides` edges on a 400-file stride draw of the 11,809-file population — confirmed on Grace/src/Grace.Actors/AccessControl.Actor.fs, where the stored symbol read `qualifiedName=\"OnActivateAsync\"` while the edge read `source=\"AccessControlActor.OnActivateAsync\"`. `pool-worker.ts:870` derives the stored value as `s.qualifiedName || s.metadata?.fqn || (s.scope ? … : name)`, and this analyzer set none of the three, so `brain_symbol.qualified_name` held a bare name while `brain_relationship.source_external` held a dotted one — and those are the two columns `src/ast/parallel-indexer.ts` JOINs. The mutant strips `metadata.fqn` from every symbol, which is the pre-fix state exactly, and it is written off the RESULT's own symbol table rather than off a name so it cannot silently stop matching when a fixture is renamed. Caught by fsharp/qualified-name-seam, whose two forbid rows forbid an owned member carrying NO fqn — a presence-ONLY row could not fail here, because the pre-fix symbol has no field to be absent from, which is why that fixture asserts the absence and not the value. The corpus-wide, owner-agnostic form of the same invariant is validation/m14/fixtures/fsharp/store-seam-check.ts.",
+    transform: (r: any) => {
+      const owned = (r.symbols ?? []).filter((s: any) => String(s?.ownerName ?? "").length > 0)
+      if (owned.length === 0) return r
+      return {
+        ...r,
+        symbols: (r.symbols ?? []).map((s: any) => {
+          if (String(s?.ownerName ?? "").length === 0 || !s?.metadata || s.metadata.fqn === undefined) return s
+          const metadata = { ...s.metadata }
+          delete metadata.fqn
+          return { ...s, metadata }
+        }),
+      }
+    },
+  },
 ]
