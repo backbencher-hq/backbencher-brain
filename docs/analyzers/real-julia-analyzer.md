@@ -91,6 +91,7 @@ is mine to apply.
 
 ## The arbiter's exit 0 does not reproduce, and the bomb that ends it is not the file it names
 
+
 **The recorded block above is a RECORDED RUN and it no longer reproduces at `exit 0`.** On current shared
 machinery `npx tsx script/m14/ontology-coverage-gate.ts julia` prints a `[BB-PARSE-ERR] … memory
 access out of bounds`, then a `[BB-HANG]` about two minutes later naming the same file, then exits
@@ -1407,6 +1408,84 @@ INCOMING table below and the per-type resolution figures in the six questions. A
 instrument cannot be named cannot be defended, so this one is flagged instead of re-derived on a
 guess.
 
+## "EXTERNAL" vs "NEVER INDEXED" — the split the limitations list said was missing
+
+**The Known-limitations list carried this as unmet**: *"The 1,204 unresolvable are not separated into
+'external package' / 'builtin' / 'dynamic dispatch' / 'a declaration we failed to publish', which are
+four findings and one count."* It is now measured, by
+`validation/m14/fixtures/julia/unresolved-split.ts` (lane-owned, read-only, writes only `--json`).
+
+The split turns on one fact the census does not collect: **does any admitted file MENTION the name
+anywhere?** Collecting that from `identifier` nodes on the production grammar's own trees — never from
+source text, so a comment or a string literal cannot put a name in the set — splits the population in
+two, and only one arm needs adjudication:
+
+| arm | meaning | verdict |
+|---|---|---|
+| **`not-in-corpus`** | no admitted file mentions the name in ANY identifier position | **provably not a dropped declaration.** Whatever it is — a `Base` builtin, a package outside the corpus, a macro-generated binding — it is not a declaration this lane threw away |
+| **`mentioned-unpublished`** | the corpus uses the word and no symbol is published under it | **OPEN.** A declaration form this analyzer does not read, and a mere READ of something declared elsewhere, are both still live |
+
+Corpus-wide over the full admitted population of 1,985 files, degraded 0, zero-symbol files 365,
+49,149 distinct identifiers mentioned, 25,255 distinct names published:
+
+```
+CORPUS-WIDE, distinct names over all types
+  unresolvable names: 10,410
+  not-in-corpus (PROVABLY not a dropped declaration): 6,418  (61.7%)
+  mentioned-unpublished (OPEN): 3,992  (38.3%)
+  …and of those, mentioned ONLY in files that publish zero symbols: 60
+```
+
+Per type, with the sharpest arm named:
+
+| type | edges | distinct names | `not-in-corpus` | `mentioned-unpublished` | of which only-in-zero-symbol-files |
+|---|---|---|---|---|---|
+| `calls` | 16,914 | 6,132 | 4,210 | 1,922 | 28 |
+| `references` | 12,318 | 3,444 | 2,873 | 571 | 16 |
+| `uses` | 4,909 | 1,826 | **14** | **1,812** | 16 |
+| `imports` | 1,532 | 654 | 478 | 176 | 13 |
+| `extends` | 580 | 105 | 45 | 60 | 0 |
+| `exports` | 339 | 284 | 1 | 283 | 0 |
+| `contains` | 1 | 1 | 0 | 1 | 0 |
+| `implements` / `overrides` / `instantiates` | 0 | 0 | — | — | — |
+
+**`uses` reads 14 against 1,812 and that is the informative row.** A `uses` target is a bare name in
+source, so it is almost always a word the corpus also writes somewhere — and the open arm's top entries
+say what those words are: `throw` (1,405 edges), `Type` (1,388), `AbstractString` (919), `isa` (881),
+`AbstractVector` (573), `Vararg` (374), `NTuple` (337), `getfield` (314), `Function` (271), `Any` (251).
+**Those are `Base` builtins.** They are mentioned in the corpus and declared in none of it, which is
+exactly the "builtin" category the limitations bullet said was undistinguished — so the largest named
+component of the open arm is now identified, and it is not a publication defect. The largest
+`not-in-corpus` names are the qualified and library forms a `not-in-corpus` proof is designed to
+catch: `Core.svec` (89 edges), `Base.julia_cmd` (88), `Core.eval` (84), `Meta.isexpr` (82),
+`Base.inferencebarrier` (77), `GC.gc` (76), `Base.OneTo` (69), `..Pkg` (68), `Threads.Atomic` (55).
+
+**The 60-name sharpest arm is where a defect would actually live**, and it is nameable per file:
+`ScientificTypes` (10 edges, mentioned only in two `Pkg.jl` sandbox `test/runtests.jl`),
+`Changelog` (8, `Aqua.jl/docs/changelog.jl` + `docs/make.jl`), `readdlm` (5), `TestItemRunner` (4),
+`CommonMark` (2), `DocumenterTools` (2), `Plots` (2), `MLDatasets` (2), `JLD2` (2), `Arrow` (2).
+Read honestly, most of these are a `docs/make.jl` or a sandbox `runtests.jl` naming a package it
+`using`s — a file that publishes nothing because it is a build script. **So the sharpest arm is
+narrower than it looks and this lane does not claim 60 defects; it claims 60 names whose only possible
+declaration site is a file that publishes nothing, which is the set a reader should open first.**
+
+**THE POPULATION IS WIDER THAN THE CENSUS'S `unresolvable`, and the two must never be quoted as one
+number.** This instrument counts a target unresolved when it binds neither to a symbol in its own file
+nor to any published name in the corpus. The census applies two further tests first:
+`external-by-import` (a qualified root this file imports) and `local-binding` (a parameter / loop /
+`let` / `catch` binding — bound in the file and deliberately not published). Hence `calls` reads
+**16,914 here against 10,034 in the census**, and the 6,880 between them are targets the census has
+already answered by a different rule. A wider population is the right one for this question — the two
+skipped buckets are already separated answers to it — but the counts are different measurements and
+the table above prints this instrument's own.
+
+**What this does not settle.** The `mentioned-unpublished` arm is not adjudicated name by name. Doing
+so needs to decide, per name, whether some file DECLARES it, and this grammar is almost entirely
+POSITIONAL — the declaration name is identified by child position rather than by a `name` field, so
+"declared on some tree" is the analyzer's own logic and re-deriving it outside the analyzer would test
+the analyzer against itself. That is why the split is reported at the level a mention-set can support:
+one arm proven, one arm named and bounded, and the sharpest arm enumerated per file.
+
 The three types at 1.0× are the ones whose edges are **in-file by construction** — `contains` names a
 member of the enclosing declaration, `instantiates` and `overrides` name a sibling method — so a
 5-file window loses nothing. Every type that reaches across files loses a great deal, and `imports`
@@ -2396,9 +2475,17 @@ can be a fixture asserting things the code does not do, and the fixture is what 
   A module path is declared in the module and not in the file that imports it, so a per-file graph
   cannot resolve it by construction; the corpus-wide figure is what matters and the incoming table
   separates the two (349 `external-by-import`, 1,810 `corpus-only`, 1,204 `unresolvable`, 20
-  `in-file-unique`, 3 residual-ambiguous). **The 1,204 unresolvable are not separated into "external
-  package" / "builtin" / "dynamic dispatch" / "a declaration we failed to publish"**, which are four
-  findings and one count. Growing this type 20.8% did not change its resolution rate, which is the
+  `in-file-unique`, 3 residual-ambiguous). **Those 1,204 were previously four findings in one count —
+  "external package" / "builtin" / "dynamic dispatch" / "a declaration we failed to publish" — and the
+  separation is now measured**: over the corpus as a whole, 10,410 distinct unresolvable names split
+  **6,418 (61.7%) `not-in-corpus`, provably not a dropped declaration** because no admitted file mentions
+  the name in any identifier position, and **3,992 (38.3%) `mentioned-unpublished`, which is OPEN**. The
+  largest named component of the open arm is `Base` builtins (`throw` 1,405 edges, `Type` 1,388,
+  `AbstractString` 919, `isa` 881), so the biggest slice of it is the "builtin" category rather than a
+  publication defect, and the 60 names mentioned only in zero-symbol files are the set a reader should
+  open first. See [§ EXTERNAL vs NEVER INDEXED](#external-vs-never-indexed--the-split-the-limitations-list-said-was-missing);
+  that instrument's population is deliberately wider than this bucket's and the two counts are not
+  interchangeable. Growing this type 20.8% did not change its resolution rate, which is the
   useful part: the fix added real dependencies rather than real resolutions.
 - **The `public = expr` refusal silences the DECLARATION as well as the export, and that is a coverage
   gap.** `public` and `export` are contextual keywords, so `public = 1` declares a variable — and the
