@@ -1877,10 +1877,26 @@ corpus, or a `--repo a,b` sweep. Not applied here — `differential.ts` is super
                                      unexplained-by-label: calls=246 contains=201 references=36
                                                         instantiates=34 extends=25 uses=9
 
-**`covered` is NOT one of the stable figures, and the row above is why.** Across the draws recorded
-in this file `covered` reads 99.1 / 98.9 / 96.8 / 96.8 / **94.6**% while `unexplained` reads
-8.5 / 8.7 / 9.3 / 9.2 / **9.3**% — so `unexplained` sits in a narrow 8.5–9.3% band across five draws
-and `covered` moves 4.5 points. This file previously named "the unexplained rate and the no-truth line"
+    2026-10-04, 40-file scoped, CURRENT draw:   covered 98.8%   unexplained 8.5%   hash=ecef1a0f0244ce6f
+                                     analyzer-edges=3593 tree-truth=3373 MISSING=42 heuristic=0
+                                     unexplained-by-label: calls=192 contains=58 extends=22
+                                                        references=16 instantiates=13 uses=4
+
+**Every row above except the last is a HISTORICAL draw and none of them is what the command returns
+now.** The last row is the one to reproduce: `bun run script/m14/differential.ts --repo julia
+--sample 40`, two consecutive runs byte-identical including the hash. The four rows above it were
+recorded on the same date and are kept because the SPREAD across draws is the measurement — it is
+what shows `covered` moving 4 points and `unexplained` staying inside a 0.8-point band — but a reader
+who quotes `MISSING=131` as a lane figure is quoting a draw that the harness no longer produces, and
+`MISSING` is the least stable column here by a factor of three. The 40-file rows also read "40 of 971"
+where the corpus is now 1,985 across 14 projects; `971` was the whole-corpus count when those rows
+were written and the julia repo itself holds 941 files, so the denominator in those two labels is
+stale independently of the draw.
+
+**`covered` is NOT one of the stable figures, and the row above is why.** Across the six draws recorded
+in this file `covered` reads 99.1 / 98.9 / 96.8 / 96.8 / **94.6** / **98.8**% while `unexplained` reads
+8.5 / 8.7 / 9.3 / 9.2 / **9.3** / **8.5**% — so `unexplained` sits in a narrow 8.5–9.3% band across six
+draws and `covered` moves 4.2 points. This file previously named "the unexplained rate and the no-truth line"
 as the stable pair; the unexplained rate is supported by that and the `covered` column should not be
 quoted from one draw. **The rot-44 draw also printed NO `COMPARED WITH NO TRUTH: overrides` line**,
 which is the harness's own designed behaviour rather than a fix: that line needs at least one
@@ -1890,11 +1906,41 @@ mode source-derivation-counting has, reproduced inside a gate — so the finding
 40-file deterministic instrument (`direct-oracle-check`, which shows the `overrides` row every run)
 rather than read off the rotating sweep.
 
-`MISSING=131` and `covered 96.8%` are IDENTICAL across the rot-35 and rot-36 draws while
+`MISSING=131` and `covered 96.8%` were IDENTICAL across the rot-35 and rot-36 draws while
 `analyzer-edges` moved 4,088 → 4,163 and `tree-truth` 4,038 → 4,106: the draw changed how many edges were
-compared and did not change how many the analyzer failed to account for, which is a small piece of
-evidence that the 131 are a property of the code rather than of the draw. It is not proof — 131 could be
-a coincidence of two draws — and it is reported as two runs, not as a rate.
+compared and did not change how many the analyzer failed to account for, which this file read as "a small
+piece of evidence that the 131 are a property of the code rather than of the draw".
+
+**That inference is now withdrawn. `MISSING` is strongly draw-dependent and the draw moved.** On current
+shared machinery the same scoped command returns a DIFFERENT sample — `hash=ecef1a0f0244ce6f`, not
+`3ced448db031430c` — and on it `MISSING` is **42**, not 131, `covered` is **98.8%**, not 96.8%, and
+`unexplained` is **8.5%**, not 9.2%:
+
+```
+bun run script/m14/differential.ts --repo julia --sample 40     (2026-10-04, two runs, byte-identical)
+[julia] julia: files=40 tree-truth=3373 covered=3331 (98.8%) MISSING=42 | analyzer-edges=3593
+                     unexplained=305 (8.5%) heuristic=0 hash=ecef1a0f0244ce6f | unexplained-by-label:
+                     calls=192, contains=58, extends=22, references=16, instantiates=13, uses=4
+```
+
+So `MISSING` spans **42 to 131** across three draws of the same 40-file size on the same analyzer, a
+3.1× range, and two draws agreeing on 131 was the coincidence it was already labelled as being not
+proof of. Two draws is not a rate and this file said so; the sentence that drew the conclusion anyway
+is the error, and the third draw is what exposed it. **The corpus did not move** — the five pinned
+incoming-check files still carry 2026-09-30 mtimes and the census still admits 1,985 — so the sample
+selection in the shared `differential.ts` changed under this lane, which is a §8 item and is not
+applied here.
+
+**What survives is the determinism claim, and it is worth separating carefully from the figures.** Two
+consecutive runs on current machinery return byte-identical output including the hash, so the scoped
+form is still deterministic; what is stale is the particular sample it draws. The printed `hash` is
+what makes the difference visible rather than invisible, and it is why the claim is checkable at all —
+a reader who compares hashes sees the draw change immediately, and a reader who compares only
+percentages would have read `covered 96.8% → 98.8%` as the analyzer improving.
+
+`unexplained` remains the narrow figure: 8.5 / 8.7 / 9.2 / 9.3 / **9.3** / **8.5**% across six draws,
+including the new one at the bottom of that band. `MISSING` does not belong beside it as a stable
+figure, and this file should not have implied otherwise by setting it in a paragraph about stability.
 
 **Which of these reproduce depends on the invocation, and the previous version of this file said
 "ROTATES per run" for all of them, which is true of the cold-pool sweep and false of the scoped form.**
@@ -1905,15 +1951,35 @@ per rotation — `differential.ts:927-950`) and it only advances on the unscoped
 bun run script/m14/differential.ts --repo julia --sample 40
 ```
 
-skips the cold pool entirely and is therefore **deterministic**: three consecutive runs on 2026-10-04
-returned `tree-truth=4106 covered=3975 (96.8%) MISSING=131 analyzer-edges=4163 unexplained=384 (9.2%)
-hash=3ced448db031430c` byte for byte, and that row is the rot-36 line above. The printed `hash` is the
-sample set's identity, so a later run that draws different files announces itself. A **scoped** run also
+skips the cold pool entirely and is therefore **deterministic**: on current shared machinery two
+consecutive runs on 2026-10-04 returned
+
+```
+[julia] julia: files=40 tree-truth=3373 covered=3331 (98.8%) MISSING=42 | analyzer-edges=3593
+                     unexplained=305 (8.5%) heuristic=0 hash=ecef1a0f0244ce6f
+```
+
+byte for byte, hash included. **An earlier version of this sentence quoted a different draw as the
+reproducible one — `tree-truth=4106 covered=3975 (96.8%) MISSING=131 analyzer-edges=4163 unexplained=384
+(9.2%) hash=3ced448db031430c` — and that hash is what a reader would have compared against, so the
+claim as written was false against the machine it was written on.** The determinism property is real and
+reproduced; the sample it draws is not the sample it drew when written. The printed `hash` is the
+sample set's identity, which is exactly why this was catchable: a reader comparing hashes sees the draw
+change, and a reader comparing only percentages would have read `covered 96.8% → 98.8%` as the analyzer
+getting better. § above records what moved and what did not. A **scoped** run also
 writes no artifact — the harness refuses (`probe run (--repo julia): … M14.0.F5 NOT written`), because
 the canonical artifact carries a 43-language claim and a one-language run would replace it with a
 smaller one. Note that `--repo julia` selects the *repo*, not the language: it probes every language for
 `.jl` files and prints 33 `files=0 SKIPPED` lines before julia's own row, so `--lang julia` is the
 correct flag when the language is what you mean.
+
+**A `BB_LABEL_DUMP=julia` run of the same scoped form reproduces the one structural fact this lane
+needs from it** — six labels compared, three emitted types absent from both columns — on the new draw
+(`calls truth=1718 comparable=1953 · contains 313/252 · extends 22/36 · instantiates 47/61 ·
+references 576/587 · uses 697/704`). `imports`, `exports` and `overrides` appear in neither column,
+which is the §8 row 3 wiring gap stated as a measurement rather than as a claim about a 24,000-line
+file's control flow. The absolute counts differ from the 2026-10-04 dump quoted in § DERIVATION because
+the sample changed; the structure did not.
 
 `heuristic=0` is the stable part: no rotation has ever produced an edge under 0.7 confidence. **The
 number to quote is not any of these rows** — it is the per-label table below, which does not rotate.
