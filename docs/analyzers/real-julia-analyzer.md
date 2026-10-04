@@ -741,11 +741,33 @@ compared **zero** julia `imports` rows against zero truth rows and printed *"COM
 the published coverage for those labels is not coverage."* A type that is emitted and never compared
 is exactly what a RULED verdict hides.
 
-| type | edges | independent oracle | what stands behind it instead |
-|---|---|---|---|
-| `overrides` | 3 | **yes** — `script/m14/oracles/julia-overrides.ts`, 3/3 agreement | paid down below; not yet wired into F5 |
-| `imports` | 1,502 | **no** | fixture `imports-and-exports` + the construct-vs-edge reconciliation (504/504, 0 silent) |
-| `exports` | 1,770 | **no** | fixture `imports-and-exports`; 151 of 152 files, the shortfall explained by node type |
+**Measured, not read off the allowlist.** `BB_LABEL_DUMP=julia` makes the harness print truth rows
+against comparable rows per label, which is the instrument that settles "is this label compared?"
+without reading a 24,000-line file's control flow:
+
+```
+$ BB_LABEL_DUMP=julia bun run script/m14/differential.ts --repo julia --sample 40
+[label-dump] julia: truth-vs-comparable per label
+[label-dump]   calls          truth=  1875  comparable=  2094
+[label-dump]   contains       truth=   649  comparable=   450
+[label-dump]   extends        truth=    41  comparable=    27
+[label-dump]   instantiates   truth=    42  comparable=    64
+[label-dump]   references     truth=   592  comparable=   612
+[label-dump]   uses           truth=   907  comparable=   916
+```
+
+**Six labels are compared and three of the nine emitted types are absent from the list entirely** —
+`imports`, `exports` and `overrides` appear in neither column. The harness prints **no
+`COMPARED WITH NO TRUTH` line**, which is the correct behaviour and worth distinguishing from coverage:
+every label it *does* compare has truth behind it, and the three it cannot compare are not counted as
+covered at all rather than being counted against zero. That is the difference between an honest gap and
+the failure mode the gate header records, and it is why this section can state a count.
+
+| type | edges | in F5's compared set | independent oracle | what stands behind it instead |
+|---|---|---|---|---|
+| `overrides` | 3 | **no** | **yes** — `script/m14/oracles/julia-overrides.ts`, 3/3 agreement | paid down below; truth exists but is not pushed into F5 |
+| `imports` | 1,502 | **no** | **no** | fixture `imports-and-exports` + the construct-vs-edge reconciliation (504/504, 0 silent) |
+| `exports` | 1,770 | **no** | **no** | fixture `imports-and-exports`; 151 of 152 files, the shortfall explained by node type |
 
 Neither of the two is close to paid down the way `overrides` was, and the limit should be stated
 rather than papered over: an oracle for either would have to derive "this file imports that module"
@@ -1103,14 +1125,22 @@ real edges the truth side declines to claim, not those edges being wrong.
                                      analyzer-edges=4088 tree-truth=4038 MISSING=131 heuristic=0
                                      unexplained-by-label: calls=177 contains=144 instantiates=22
                                                         references=18 extends=11 uses=8
+    2026-10-04, 40 of 971, rot 36:   covered 96.8%   unexplained 9.2%
+                                     analyzer-edges=4163 tree-truth=4106 MISSING=131 heuristic=0
+                                     unexplained-by-label: calls=181 contains=144 instantiates=22
+                                                        references=18 extends=11 uses=8
 
 The sample ROTATES per run, so per-rotation covered and MISSING counts move: this file's quotes are
-captured runs, not a result to reproduce. A per-rotation count is a sample size. The third row is the
-2026-10-04 run at `--sample 40`; it is lower than the other two and that is expected, because a
-40-file draw over 971 files is a different and much smaller sample than a 200-file draw over 941, and
-`contains` alone contributes 144 of its 380 unexplained edges. `heuristic=0` is the stable part: no
-rotation has ever produced an edge under 0.7 confidence. **The number to quote is not any of these
-three** — it is the per-label table below, which does not rotate.
+captured runs, not a result to reproduce. A per-rotation count is a sample size. The last two rows are
+consecutive rotations on 2026-10-04 and are printed as a pair because the contrast is the useful part:
+**`MISSING=131` and `covered 96.8%` are IDENTICAL across both rotations while `analyzer-edges` moved
+4,088 → 4,163 and `tree-truth` 4,038 → 4,106.** The rotation changed how many edges were drawn and did
+not change how many the analyzer failed to account for, which is a small piece of evidence that the
+131 are a property of the code rather than of the draw. It is not proof — 131 could be a coincidence of
+two rotations — and it is reported as two runs, not as a rate.
+
+`heuristic=0` is the stable part: no rotation has ever produced an edge under 0.7 confidence. **The
+number to quote is not any of these rows** — it is the per-label table below, which does not rotate.
 
 ### The stable per-label figures, and a limit four of the oracles have
 
