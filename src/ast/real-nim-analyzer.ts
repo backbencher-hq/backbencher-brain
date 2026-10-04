@@ -81,7 +81,14 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
     // ── Per-file facts, all built in ONE pass and read by the later passes ──
     const fileValues = new Set<string>() // module-scope const/let/var/using names
     const fileTypes = new Set<string>() // module-scope type names
-    const fileCallables = new Set<string>() // proc/func/method/… names
+    const fileCallables = new Set<string>() // MODULE-SCOPE proc/func/method/… names
+    /** Callables this file declares INSIDE another routine. Deliberately a
+     *  separate set from `fileCallables`: a nested routine is not module scope,
+     *  and adding it to `fileCallables` would reclassify every unqualified
+     *  reference to that name anywhere in the file. It is consulted by exactly
+     *  one rule — the parenless UFCS test below — which asks a narrower
+     *  question: "does THIS FILE declare a callable by this name". */
+    const nestedCallables = new Set<string>()
     const fileEnumMembers = new Set<string>() // every enum field name in the file
     const fileFieldNames = new Set<string>() // every object field name in the file
     const genericParamNames = new Set<string>() // [T, U] of any generic in the file
@@ -103,6 +110,7 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
       fileValues,
       fileTypes,
       fileCallables,
+      nestedCallables,
       fileEnumMembers,
       fileFieldNames,
       genericParamNames,
@@ -117,6 +125,7 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
       fileValues,
       fileTypes,
       fileCallables,
+      nestedCallables,
       fileEnumMembers,
       fileFieldNames,
       genericParamNames,
@@ -304,6 +313,7 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
       fileValues: Set<string>
       fileTypes: Set<string>
       fileCallables: Set<string>
+      nestedCallables: Set<string>
       fileEnumMembers: Set<string>
       fileFieldNames: Set<string>
       genericParamNames: Set<string>
@@ -360,9 +370,11 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
           // `fileCallables` is the MODULE-SCOPE callable set, and it is what
           // `collectCallsAndUses` reads to decide that an unqualified call names
           // something this module declares. A nested routine is callable only
-          // from inside its parent, so adding it here would reclassify every
-          // reference to that name anywhere in the file. Deliberately not added.
-          if (!inCallable) ctx.fileCallables.add(sym.name)
+          // from inside its parent, so adding it there would reclassify every
+          // reference to that name anywhere in the file. It goes in
+          // `nestedCallables` instead, which only the parenless-UFCS test reads.
+          if (inCallable) ctx.nestedCallables.add(sym.name)
+          else ctx.fileCallables.add(sym.name)
         }
         this.pushCallableChildren(node, stack, enclosingCallable)
         continue
@@ -2318,6 +2330,10 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
       fileValues: Set<string>
       fileTypes: Set<string>
       fileCallables: Set<string>
+      /** Callables declared INSIDE another routine. Read by the parenless-UFCS
+       *  test only — see the note at that branch. Not a substitute for
+       *  `fileCallables`, which is the module-scope set. */
+      nestedCallables: Set<string>
       fileEnumMembers: Set<string>
       fileFieldNames: Set<string>
       genericParamNames: Set<string>
@@ -2554,7 +2570,19 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
         // exercise -> describe` for `r.describe` inside `echo s, …, r.describe`).
         // Both the analyzer AND the differential oracle omitted it, so the lane
         // reported 0% unexplained — the shape was invisible to every gate.
-        const callableName = leafText && (ctx.fileCallables.has(leafText)) ? leafText : null
+        // BOTH sets, and the reason is a measured disagreement rather than a
+        // guess. `script/m14/nim-truth-oracle.ts` derives this rule against every
+        // callable the file declares, and it disagreed: on
+        // nim/lib/packages/docutils/rst.nim:3493 the read
+        // `p.s.idxImports[origFilename.rmSpaces]` is a parenless UFCS call of
+        // `rmSpaces`, a routine declared at rst.nim:3491 — INSIDE
+        // `proc dirImportdoc`. Testing `fileCallables` alone could not see it,
+        // because nested routines are deliberately kept out of that set, so the
+        // oracle reported one unexplained `calls` edge on the 400-file sample and
+        // the analyzer had no defence. Both sets is the answer: the question is
+        // whether this FILE declares the callable, and a nested routine is a
+        // declaration this file makes.
+        const callableName = leafText && (ctx.fileCallables.has(leafText) || ctx.nestedCallables.has(leafText)) ? leafText : null
         if (callableName && !inCallCallee) {
           push(currentFn(), callableName, ASTEngine.RelationshipType.Calls, 0.9, leaf ? leaf.startPosition.row + 1 : node.startPosition.row + 1, {
             relationshipType: "nim_ufcs_member_call",
