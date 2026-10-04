@@ -1075,3 +1075,42 @@ them at file scope. PHP is now 10/10 with 0 ruled.
 
 That is the single strongest argument in this programme for the discipline the
 honesty contract already demands: **a probe that cannot fail is not a measurement.**
+
+## A latent shared defect: two files disagree on one enum value
+
+Found by the zig lane via the bug it exposed in my `incoming-check` instrument.
+
+```
+                        src/ast/types.ts     src/ast/engine.ts
+RelationshipType.Imports        brain_import        imports
+```
+
+Every other one of the 20 members agrees. This is a single-point divergence.
+
+**Which is right?** `engine.ts`. Analyzers import `RelationshipType` from
+`./engine`, the store's `relationship_type` column documents its vocabulary as
+`"calls", "extends", "implements", "uses", "imports", "exports", etc.`, and
+`brain_import` is the name of a **separate table** that holds import records with
+their own columns (`import_path`, `imported_name`, `is_external`). So the two
+strings mean different things and `types.ts` has conflated the table name with the
+edge label.
+
+**Severity: latent, not active.** No analyzer imports `RelationshipType` from
+`./types` — checked across all 50 — so nothing currently emits the wrong label and
+no stored row is wrong today. It becomes active the moment one does.
+
+**Not fixed here, deliberately.** `types.ts` is one of the two files the supervisor
+owns, so this is squarely in scope — but the fix needs a decision about whether the
+`brain_import` TABLE should also be reconciled, and a wrong guess there would change
+what every import query in the product returns. It is recorded with the evidence and
+left for the owner.
+
+**What it already cost:** my own `incoming-check` keyed its table on `brain_import`,
+so it reported `imports` as **0 in every language in the fleet** — a confident zero
+from a table that could never match. Fixed in `e9096830f` by accepting both
+spellings through an alias map rather than by picking one. Measured after:
+clean 153 import edges, haskell 55.
+
+That is the generalisable lesson: **a table keyed on a string that is wrong in a way
+which always reads zero is worse than no table**, because the zero looks like a
+finding about the language rather than a defect in the instrument.
