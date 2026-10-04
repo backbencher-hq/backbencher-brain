@@ -1568,6 +1568,9 @@ reproduces.
 | **ontology coverage gate (the arbiter)** | `ontology-coverage-gate.ts zig` | **DOES NOT REACH A VERDICT, and pass 3 pins down why it is exit 1 and not a hang.** Pass 2 reported two runs ending `[BB-HANG] parser stuck 120s on zig/lib/std/testing.zig — exiting`. Pass 3 ran it twice: **both runs ran the corpus scan to the end in ~5 minutes and printed `ontology coverage gate — no RULING TABLE for zig.` followed by `Refusing to report: a gate with an empty table would call every un-emitted type RULED-UNJUSTIFIED and that is a verdict about the TABLE, not about the lane`, exit code 1.** `RULED_BY_LANG` in that shared file holds only `bash` and `json`, so zig's three RULED verdicts can never be graded by it; the corpus scan happens first, which is why a degradation in that scan can look like a hang. Both pass-3 runs also logged one `[BB-PARSE-ERR] … memory access out of bounds`, the third signature of the fallback class — see the pass-3 section. The three RULED verdicts were measured with `construct-probe.ts` and re-probed unchanged |
 | **doc-truth emissions** | `verify-doc-truth-emissions.ts --no-write` | **zig contributes 0 findings of any kind.** Its verdict table is now parseable (the header is `Relationship type | Emitted?`), so the lane's emission claims are machine-checked: 9 of the 10 rows grade clean — 7 `yes` against 7 emitted kinds and 2 `no` against 2 un-emitted ones, with **0 FALSE_POSITIVE and 0 FALSE_NEGATIVE**. The 10th row (`extends`) is the one `parseClaimTable` cannot read (it skips the first body row of every table — see the caption above). The gate's own summary still reads `-> FAIL` on **7 FALSE_NEGATIVE in other lanes' docs**; zig is not among them |
 | **honesty gate** | `bun run script/m14/verify-honesty.ts` | **22 failures at pass 3, none of them this lane's** — the published row said 20, and the two extra are shared-evidence movement on the aggregate branch, not this lane. The `banned-vocabulary lint over validation/m14 + M14 docs` line still reports **ok**; the 11 banned-term failures are in OTHER lanes' artifacts (`fixtures/html`, `fixtures/c`, `fixtures/clean`, `fixtures/csharp`, `fixtures/sql`, `grammar-pins.json`, 4 `results/*.json`) and none names this doc or any file under `validation/m14/fixtures/zig/`. The rest: `M14.0.F7` non-passing `analyzer-hygiene-cpp` and `analyzer-hygiene-elixir`, F1–F9 evidence-freshness (declared inputs moved on the aggregate branch), and `freshness rule flags every artifact — it cannot distinguish current from stale`. Note the lint's own scope: it walks `.md`/`.json` under `validation/m14/` and `docs/**M14**`, and `docs/analyzers/real-zig-analyzer.md` matches neither, so this lane's prose is not machine-linted for banned vocabulary. §8 |
+| **incoming-check paired (pass 6)** | `fixtures/zig/incoming-check-paired.ts` | **PASS.** SHARED instrument vs a `/tmp` copy carrying one token (`"brain_import"` → `"imports"`), diffed field by field: **0 differing fields outside the two rows that spell the import class.** Shared reports `fired: false`, 0 edges; patched reports `fired: true`, **253 edges**, 13 distinct targets, 1 ambiguous, 159 unresolved, 0 self-loops; production `parseFile` over the same 134 arguments emits **253**. Three negative controls exit 2: a delta outside the import rows, a patched count disagreeing with production, and a shared run that already reports a non-zero import row. The shared file on disk is unmodified |
+| **zero-regex, pass 6** | `script/m12/verify-regex-census.ts` | the shared gate still prints `regex census gate FAILED` and **zig is in none of its 39 MISSING/STALE rows**; `real-zig-analyzer.ts` carries no regex literal and no `new RegExp` / `.match(` / `.replace(` / `RegExp(` |
+| **reproduction at HEAD (pass 6)** | fixtures + mutations + firing-check + ruled-gate | **9/9 fixtures pass, 50/50 mutants caught, `firing-check` 7/10 fired and 8,445 edges, `ruled-gate` 7 EMITTED + 3 RULED-SOUND / FALSIFIED 0 / exit 0 with 0 `BB-PARSE-ERR` and 0 `BB-HANG`, and `incoming-check`'s seven-row per-type table identical field for field.** Every published number in this document was re-read at this commit |
 | ownership verifier | `zigw-ownership.ts 3000` | 136,720 symbols, AGREE 84,442, **PHANTOM_OWN 0, ORPHAN 0**, COLLISION 1,485 — of which **enclosure disambiguates 1,485, leaving 0 genuinely ambiguous**. The store already resolved ownership by extent (`enclosingStoreableIdByName`), so #963 was filed against a fixed defect and is **resolved** (Z49) | Needed because the differential's coverage match ignores the SOURCE, so it cannot see an ownership error at all. This instrument was itself broken until Z43: it read a quoted name raw where the published symbol name is canonicalized, so it reported **701 phantom owners** that `zigw-contains.ts` — which derives from the grammar and keys on the owner — read as zero |
 ## Verification (re-run at HEAD, 2026-09-28)
 
@@ -2177,3 +2180,117 @@ shared arbiter rather than by this lane's own instruments:
 Two different instruments, as the workstream requires. The 3 RULED rows each carry
 an instrument, a probe, a measured count and an overturn condition that the arbiter
 re-measures by itself — which is why `FALSIFIED 0` is a result and not an absence.
+
+## Pass 6 — re-measuring every published number at HEAD, and the number the shared `imports` blind spot hides (2026-10-03)
+
+Pass 5 ended without a handover, so the first question pass 6 asks is whether its
+numbers survive a fresh reading of the same commits. Every one of them does, and
+two of them were being read past a shared instrument that cannot see this lane.
+
+### A. What reproduces, and how it was re-read
+
+| claim | pass 5 / earlier | pass 6 at HEAD | instrument |
+|---|---|---|---|
+| fixtures | 9 / 9 pass | **9 / 9 pass** — `bare-value-reads`, `calls-uses-complexity`, `callsite-lines-825`, `declaration-vs-definition-612`, `declared-type-leaf`, `kinds-and-owners`, `relationship-classes`, `target-scope`, `unpublished-scope-source-z59` | `run-fixtures.ts --lang zig` |
+| mutants | 50 / 50 caught | **50 / 50 caught** (50 of 1,748) | `BB_MUTANT_ONLY="zig/" mutate-analyzer.ts` |
+| what fires | 7/10, 8,445 edges | **7/10 fired, 8,445 edges, 120/120 files, 1 degraded** | `script/m14/firing-check.ts --files 120 zig` |
+| the 10 verdicts | 7 EMITTED + 3 RULED-SOUND | **7 EMITTED + 3 RULED-SOUND, FALSIFIED 0, exit 0**, 0 `BB-PARSE-ERR`, 0 `BB-HANG`, 204 s | `fixtures/zig/ruled-gate.ts` on the 1,200-file root |
+| the arbiter's emitted counts | 29,588 / 35,867 / 21,733 / 3,143 / 9,076 / 6,433 / 1,253 | **identical, edge for edge** | same run |
+| `incoming-check` per type | the 7-row table above | **identical, field for field** (2,562 / 2,613 / 1,722 / 714 / 409 / 140 and every companion column) | `script/m14/incoming-check.ts --json` |
+| regex census | 0 zig entries | **0 zig entries**; `grep -nE '/[^/ ][^/]*/[gimsuy]*'` on `real-zig-analyzer.ts` matches only comment prose (`integer`/`float`), and there is no `new RegExp`, `.match(`, `.replace(` or `RegExp(` anywhere in the file | `script/m12/verify-regex-census.ts` |
+
+The gate named by the workstream's last correction —
+`npx tsx script/m12/verify-regex-census.ts` — still prints `regex census gate FAILED`,
+and **zig is not in its output**: the 39 `MISSING`/`STALE` rows are `real-css-`,
+`real-scss-`, `real-sql-`, `real-svelte-`, `real-xml-`, `real-clean-`, `real-fsharp-`,
+`real-javascript-`, `real-python-`, `real-typescript-` and `real-vue-` analyzers.
+This lane's own defect in that class was paid down before pass 5 and there is
+nothing here to fix.
+
+### B. The `imports` blind spot, measured rather than described
+
+Pass 5 reported that `incoming-check.ts` reads `brain_import` at 0 while
+`firing-check.ts` reads `imports` at 256, and correctly declined to quote the
+missing row's contents because the lane had never run the instrument with the key
+corrected. That left the workstream's deliverable **D — every applicable
+relationship must resolve — unmeasured for the one class the shared instrument
+drops entirely.**
+
+`validation/m14/fixtures/zig/incoming-check-paired.ts` closes that. It runs the SHARED
+instrument unmodified, then a `/tmp` copy carrying **exactly one token changed**
+(`"brain_import"` → `"imports"` in the `TYPES` literal), diffs the two per-type
+tables field by field, and re-measures the class a third time through production
+`parseFile` over the same files. `script/m14/incoming-check.ts` on disk is untouched
+and the patched copy is never committed.
+
+Over `firing-check.ts`'s own 120-file draw (`/tmp/opencode/zig-lane/zig120.txt`,
+reproduced by `draw120.ts` from the same rule at `firing-check.ts:172-194`):
+
+| | shared, unmodified | patched, one token | production `parseFile` |
+|---|---|---|---|
+| import row name | `brain_import` | `imports` | — |
+| `fired` | **false** | **true** | — |
+| `edges` | **0** | **253** | **253** |
+| `targetsDistinct` | 0 | **13** | — |
+| `ambiguousTargets` | 0 | **1** | — |
+| `unresolvedTargets` | 0 | **159** | — |
+| `selfLoops` | 0 | 0 | — |
+| symbols / degraded / parseFailures | 2,807 / 1 / 17 | 2,807 / 1 / 17 | — |
+
+**253 of 253 agree between the patched instrument and production**, and the
+field-by-field diff is **0 differing fields outside the two rows that spell the
+import class** — so the patch is a key change and not a behaviour change, which is
+what makes the number quotable. A run whose delta spilled into another type would
+have exited 2; so would a patched count that disagreed with production, and so
+would a shared run that already reported a non-zero import row. All three are
+negative controls on the instrument itself.
+
+**So the row the shared instrument reads as `0 / not fired` is 253 edges over 13
+distinct target names, of which 1 is ambiguous and 159 are unresolved edges (37.16%
+of the class resolving).** That is the `imports` resolution rate through the
+shared incoming path, and it is not a defect rate: the target is a module path as
+written, for the reason already stated in **Declared limitations**. What it was
+before this pass is worse than a defect rate — it was a **zero**, in a table whose
+other nine rows were non-zero, from an instrument that reads the store's own label
+wrongly in every language that emits it.
+
+### C. The 256 / 253 difference, attributed to the byte
+
+`firing-check.ts` reports **256** imports edges and `incoming-check.ts` **253** on the
+same draw, and the gap is not noise:
+
+- `firing-check.ts` parses its sample in-process and reads **120/120 files**;
+- `incoming-check.ts` takes `<file>...` **positionally**, so the shell has already
+  split the draw's 3 paths containing spaces
+  (`zig/test/cases/safety/@intFromFloat cannot fit - boundary case - signed max.zig`,
+  `…/integer negation overflow.zig`, `…/slice sentinel mismatch - floats.zig`) into
+  14 fragments. **17 `parseFailures` are ENOENT on those fragments** and the 3 files
+  are absent from every count in both rows of the table above.
+
+Those 3 files carry **exactly 3 `imports` edges** — measured through production
+`parseFile`, 1 each, 11 + 11 + 10 relationships and 4 + 4 + 3 symbols. So
+**256 − 3 = 253**, and every file the two instruments disagree about is accounted
+for by name. Two numbers, both correct for their own universe; the difference is a
+shell quoting rule in a shared instrument and not a property of the analyzer.
+
+### D. Three §8 items re-checked at HEAD, and one of them is now the last unblocked gap
+
+All three shared-instrument defects pass 5 reported are **still present**:
+
+- `script/m14/incoming-check.ts:65-76` still lists `"brain_import"` — measured this
+  pass, and §B is the number it hides.
+- `script/m14/firing-check.ts:340` still assigns `res.types[type].files = set.size`
+  from a `filesByType` created **inside** the per-file loop (line 294), so the
+  column reads `1` for every fired type on any population. Pass 5's table quoted
+  no `files` column for that reason; the lane's own instruments accumulate into a
+  `Set` outside the loop and are the source of the real file counts.
+- `script/m14/ontology-coverage-gate.ts:195`'s `RULED_BY_LANG` now reads
+  `{ bash, json, lua, toml, fsharp }` — **five lanes, and zig is not one of them.**
+  The supervisor has wired the others since pass 5, so the one-line gap §8 item 1
+  describes is now the **only** thing standing between this lane's three RULED
+  verdicts and the real gate. The proof runner exists precisely so that applying it
+  needs no re-derivation: it prints the two lines.
+
+Nothing in `src/ast/real-zig-analyzer.ts` changed in pass 6. The analyzer was
+verified, not edited: fixtures, mutations, the grammar audit and the regex census
+are all read-only checks of a file that has been stable since Z65.
