@@ -4267,7 +4267,7 @@ ladder a decomposition of the census's number rather than a second measurement w
 
 | finding | edges | reading |
 |---|---|---|
-| **analyzer-owned** (`dropped-decl-IN-FILE` + `dropped-field-IN-FILE`) | **4,509** | a declaration in the edge's OWN file, published as nothing. **The analyzer owns this.** |
+| **analyzer-owned** (`dropped-decl-IN-FILE` + `dropped-field-IN-FILE`) | **4,509** | a declaration in the edge's OWN file, published as nothing. **The analyzer owns this.** — **4,508 at pass 19 §A**; one of the 4,509 was an accusation against the builtin `u0`, which is not a declaration |
 | **`external`** (no tree in the draw declares it) | **6,038** | an external package, a `@cImport` header, a builtin the analyzer does not enumerate. Honest name: unexplained. |
 
 The two are opposite findings and the ladder keeps them apart: `uses` contributes 3,977 of the
@@ -4300,7 +4300,8 @@ side, `references`' 532 externals and `uses`' 2,516 are dominated by `struct` ×
   untested on a real one. Pass 16 §G's first bullet stands unchanged; this is now n=3 clean, n=2
   leaked-timer.
 - **The 4,509 analyzer-owned misses are still not decomposed by cause.** The ladder separates
-  `dropped-decl-IN-FILE` (**417** across all types) from `dropped-field-IN-FILE` (**4,092**), and
+  `dropped-decl-IN-FILE` (**417** across all types — **416** at pass 19 §A) from
+  `dropped-field-IN-FILE` (**4,092**, unchanged), and
   4,509 is their sum; but 3,703 of the latter are `uses` on struct fields, and nothing here says
   which of them a fix would recover.
 - **Which 13 `file-local` edges the Z65 label gets wrong is now known; whether the label should be
@@ -4354,6 +4355,13 @@ rather than reading them, re-walks all **499 affected files** with a shadow walk
 | `published-but-absent` | 0 | **0** | 0.00% | **DEFECT** |
 | `no-local-decl-site` | 0 | **0** | 0.00% | **DEFECT** |
 | **total** | **2,662** | **4,509** | 100.00% | — |
+
+> **CORRECTED at pass 19 §A — read this table as pass 18 measured it, not as current.**
+> `incoming-check.ts` was reading a container declaration's backing type as a declared name, so
+> one of these 4,509 was an accusation against zig's builtin `u0`. The fix drops it:
+> **2,661 cases over 498 files = 4,508 edges**, `ladder-read-a-type-expression` **1 → 0**, and
+> `references`/`dropped-decl-IN-FILE` **25 → 24**. Every other cell is unchanged and no emitted
+> edge moved. The decomposition, the ownership split and the DEFECT 0 conclusion all stand.
 
 **By owner: analyzer-stated-rule 4,495 (99.69%) · shared-pipeline 13 (0.29%) · lane-instrument 1
 (0.02%) · DEFECT 0 (0.00%).** The sum is 4,509 exactly, so the ladder accounts for every edge it
@@ -4529,3 +4537,238 @@ it is a property of the run, not of the corpus and not of the analyzer.
   *Measured cost:* **1 edge** at the full population. *Not applied here:* it is an input to seventeen
   passes of published tables in this document (§D), and `analyzer-owned-miss-cause.ts`'s C2 will exit
   1 on the change rather than let the two populations diverge silently.
+
+---
+
+## Pass 19 — §8 item 26 applied, the whole population re-measured at HEAD, and 8 replicates of the `overrides` probe (2026-10-04)
+
+Pass 18 ended with two open §8 items of its own: **item 26**, a defect in this lane's own
+`incoming-check.ts`, blocked only on C2 going green; and a corrected `dropped-decl-IN-FILE` count
+that no pass had applied. Both are closed here. Nothing else about the analyzer changed, and that
+is the point: **the 7 firing types keep their counts to the edge.**
+
+### A. §8 item 26 — a container's backing type is not a declaration name
+
+`incoming-check.ts`'s `treeDeclaredNames` read a container declaration's `namedChild(0)` as a
+declared name. For `struct` / `enum` / `union` / `opaque` that child is a **backing type**, so
+
+```zig
+const E = enum(u0) { the_only_possible_value };
+```
+
+parsed as `variable_declaration(const, E, =, enum_declaration(u0))` recorded the zig builtin `u0`
+as a file-scope `decl`. The resolution ladder then charged an **analyzer** miss against a name zig
+never declared — and zig's builtin type names (`u0`, `u8`, `bool`, …) are exactly the spelling most
+likely to sit in that slot, so the accusation lands on the one word that can never be a
+user declaration. One occurrence in the whole corpus:
+`zig/test/behavior/extern_struct_zero_size_fields.zig`.
+
+Measured over the full population, draw `sha256:2f3545f9…`:
+
+| cell | before | after |
+|---|---|---|
+| names in the ladder's set (`treeDeclaredNames`) | 197,873 | **197,868** |
+| analyzer-owned cases | 2,662 over 499 files | **2,661 over 498** |
+| analyzer-owned edges | 4,509 | **4,508** |
+| `references` / `dropped-decl-IN-FILE` | 25 | **24** |
+| `ladder-read-a-type-expression` | 1 case / 1 edge | **0 / 0** |
+| `uses` 274+3,703 · `calls` 117+231 · `references` field 131 · `instantiates` 1+19 · `contains` 8 | — | **unchanged** |
+
+The published edge totals are untouched: 395,805 relationships, 0 under confidence 0.7, 0 empty
+names, 39 `unknown` endpoints, 0 kinds outside `SymbolKind`. **What moved is an accusation, not an
+edge** — the ladder never emitted the false edge; it charged the analyzer for failing to publish a
+name that was never declared.
+
+**§8 item 26 named five container types. Four were right and the fifth was wrong**, and the
+control caught it before any corpus measurement: `error_set_declaration`'s first child **is** a
+declared name — `const Err = error{ E1 }` parses its `E1` there — so skipping it would drop every
+error-set member in the corpus. Control **C4** pins both directions, because a fix that merely
+dropped containers would pass the negative half and fail the positive:
+
+```
+controls: 1 ok, 0 FAILING (C3 top-level vs local vs field vs parameter)
+controls: 2 ok, 0 FAILING (C4 container backing type is not a declaration name)
+```
+
+C4 asserts the five backing/tag types (`u0 u8 u3 u1 enum`) are **absent** and that the containers'
+own names and members (`E S U O Err a v x E1`) are still **present**.
+
+C2 is the guard that reported the change rather than letting the two populations diverge, and it
+behaved as designed — the first run after the fix printed
+`references/dropped-decl-IN-FILE: recomputed 24 != published 25` and exited 1. The baseline in
+`analyzer-owned-miss-cause.ts` now carries 24, recorded as a **correction, not a re-baseline**: one
+cell moved, down by the exact number of false names the fix removes. At HEAD:
+
+```
+analyzer-owned: 2661 (file,name) cases over 498 files = 4508 edges
+  filtered-by-keepSymbol         5      13   0.29%   shared-pipeline
+  local-type                 1967    3304  73.29%   analyzer-stated-rule
+  anon-container              689    1191  26.42%   analyzer-stated-rule
+  ladder-read-a-type-expression   0      0   0.00%   lane-instrument
+  published-but-absent           0      0   0.00%   DEFECT
+  no-local-decl-site             0      0   0.00%   DEFECT
+C1 published-fields checked 22254  violations 0
+C2 recomputed rungs vs published: OK
+C3 synthetic refusal classes: OK   4/4
+C4 field-owner agreement: checked 21351  violations 0
+```
+
+**DEFECT 0 in every bucket.** §8 item 26 is closed.
+
+### B. Four lane instruments named their output file with a hardcoded day
+
+Found by hitting it. `incoming-resolve.ts` was run over the full population with no `--out` and
+replaced the committed `incoming-resolution-full-2026-10-03.json` in place — a file whose name then
+claimed 2026-10-03 and whose content was from a later date, with a `git status` that read as an
+edit rather than as a clobber. Four of this lane's instruments had the shape and **no two agreed**
+on the day: `incoming-resolve.ts` said `2026-10-03`, the other three said `2026-10-04`.
+
+All four now derive it: `new Date().toISOString().slice(0, 10)`. Re-verified — a no-`--out` run
+writes `incoming-resolution-full-2026-10-04.json`, leaves the committed 2026-10-03 artifact
+byte-identical, and exits 0 on the same 395,805-edge numbers. The committed p3 artifact was restored
+with `git checkout --` and the run redone with an explicit `--out`. No new `tsc` errors (2 before,
+2 after, both pre-existing and in other lanes' files). Swept the rest of the tree for the shape:
+**0 occurrences outside this lane's own fixtures.**
+
+This is §8 items 15 and 18's shape — an instrument writing a register under a name that misstates
+its content — with the target being this lane's own artifacts, which is why it was closable here.
+
+### C. The whole population re-measured at HEAD, and every cell is identical
+
+Drawn from the corpus, not inherited: `shard-draw.py` reproduced
+`sha256:2f3545f92c470090d61c9a745bb427d8d7dec1630d93d0fbc01cb2acdc5ce1ac` — the same hash 17
+published passes have used — and `shard-merge.py` asserted the 8-shard union hash equals it before
+writing anything. 3,834 files, 8 shards, **0 fallback**, **0 parse failures**, 130,935 symbols,
+**395,805 relationships**.
+
+| type | edges | files | tgt file-local | tgt corpus-tier | conf | evidenceClass |
+|---|---|---|---|---|---|---|
+| `calls` | 113,476 | 2,781 | 40.13% | 95.55% | 0.85 | `usage_contextual` |
+| `uses` | 132,201 | 2,852 | 47.73% | 97.43% | 1 (13,406) / 0.75 (118,795) | `usage_contextual` |
+| `contains` | 80,714 | 1,557 | 99.99% | 99.99% | 1 | `structural` |
+| `imports` | 10,200 | 2,693 | 29.89% | 33.80% | 0.9 | `import_based` |
+| `references` | 30,794 | 2,966 | 44.39% | 74.66% | 1 (10,200) / 0.9 (20,594) | `reference_qualified` |
+| `exports` | 24,114 | 3,164 | 100% | 100% | 1 | `import_based` |
+| `instantiates` | 4,306 | 530 | 85.72% | 96.05% | 1 | `usage_contextual` |
+
+Symbols with an empty name **0**. Kinds outside the shared `SymbolKind` **0** (10 kinds, all shared:
+`enum_member` 34,741 · `property` 25,421 · `constant` 24,187 · `function` 19,251 · `method` 10,482 ·
+`type` 8,333 · `struct` 5,498 · `enum` 2,060 · `union` 608 · `variable` 354). Edges with an
+`unknown` endpoint **39**, of which 37 are declared in the source file and 2 elsewhere, **0**
+placeholder. **Edges under confidence 0.7: 0 of 395,805 = 0.00%** — every edge this lane emits is a
+deterministic parse fact or a named structural relation, so the contract §4 heuristic bucket is
+empty and there is nothing to discount.
+
+Every cell above is byte-identical to the p17 artifact, compared field by field.
+
+### D. The `overrides` ruling, replicated 8 times at the full population
+
+The RULED verdicts are what make the denominator defensible, and one run of one probe is one
+sample. **8 independent concurrent full-population runs** of `zig-ruled-probe.ts` — each draws the
+whole 3,834-file corpus, so these are 8 replicates of one measurement, not 8 shards of it. All 8
+exit 0, all 8 report `controlsAllOk`, and **all 8 content hashes are identical**
+(`sha256:7dd9628a…`):
+
+- `overridesProbe.whatTheGateReads` = **0** in 8 of 8. The construct does not occur in code zig
+  compiles.
+- Raw same-scope duplicate declarations, both exclusions off: **21**. With the quoted-diagnostic
+  rule off and the error-member rule on: **19** (8 container members, 4 functions, 7 bindings). With
+  both on — **what the gate reads** — **0**. Diagnostic on / error-member off: **1** (a zls analysis
+  test whose expected annotation is the resulting error *set*). The two exclusions are told apart by
+  measurement, not asserted.
+- Instrument A: the pinned wasm's own tables declare **239** node types (11 of 11 tested zig
+  keywords present) and the corpus **produces 232**; **0** of the 17 supertype names is in either.
+  Keyword calibration corpus-side is 10 of 11 — `usingnamespace` occurs in 0 corpus files, which is
+  a fact about the corpus, not the grammar (the same wasm parses `usingnamespace std;` into
+  `(using_namespace_declaration (identifier))`).
+
+### E. The arbiter's own verdict, and the exit code that is not about the walk
+
+Lane-wired copy of the shared gate (§8 item 1: the shared `RULED_BY_LANG` still holds
+`bash, json, lua, toml, fsharp` and **not** zig), bounded 1,200-file root of the same draw
+(`sha256:d60b554a…`) so the verdict table is reached before the corpus walk trips the engine's
+self-destruct guard:
+
+```
+emitted 7/10   ruled-sound 3   FALSIFIED 0   ruled-without-justification 0
+```
+
+**`FALSIFIED 0`** is the load-bearing cell: it means the three rulings were re-tested by the
+arbiter's own instruments on a corpus this lane did not choose the instrument for, and none of them
+was overturned. The toml lane's ruling WAS overturned that way, so the cell can read non-zero.
+
+The process exits **1**, and the exit is not a statement about the walk: `[BB-HANG] parser stuck
+120s on …/compile_errors/union_access_of_inactive_field.zig` names **the same file** as this run's
+own `[BB-PARSE-ERR] … memory access out of bounds` line — the **9th consecutive run where
+HANG ∈ PARSE-ERR** (8 of 8 recorded through pass 16, 4 of 4 at pass 18, 9 of 9 now). §8 item 21's
+mechanism holds: the guard is armed per `parse()` call and the trap path never reaches its
+`clearTimeout`, so the bomb outlives the file that armed it.
+
+### F. DERIVATION debt: **0**, and the checker that proves it is committed
+
+An emitted type the differential never audits is stored and compared against nothing. For zig the
+compared-label set is **exactly the 7 emitted types** — `calls, uses, references, imports,
+instantiates, exports, contains` — and the 3 RULED types emit nothing to audit.
+`script/m14/tmp/zigw-f5-wiring.ts` (tracked by git, not ignored) verifies exactly that set and
+exits 0. The differential run agrees from the other side:
+`zig: files=60 tree-truth=5566 covered=5566 (100%) MISSING=0 · analyzer-edges=4354 unexplained=5
+(0.1%)` and `zls: files=60 tree-truth=14087 covered=14087 (100%) MISSING=0 · analyzer-edges=8009
+unexplained=54 (0.7%)`, both `unexplained-by-label: contains` only.
+
+**The limitation the workstream requires stated plainly:** each oracle is a **separate walker over
+the same grammar**, so a grammar bug shared by analyzer and oracle is invisible to it. These
+numbers bound *disagreement*, not truth. What bounds truth here is instrument A — the wasm's own
+declared node-type table — and the 8× replication in §D.
+
+### G. Gates re-run at HEAD
+
+| gate | command | result |
+|---|---|---|
+| firing check | `npx tsx script/m14/firing-check.ts --files 120 zig` | **7/10 fired**, 8,501 edges, 120/120 files, 1 DEGRADED; exits 1 refusing the count as untrustworthy, naming the degraded file (§8 item 10) |
+| ontology arbiter | `BB_CORPUS_ROOT=<1,200-file root> npx tsx validation/m14/fixtures/zig/arbiter-zig-wired.ts zig` | **emitted 7/10 · ruled-sound 3 · FALSIFIED 0 · ruled-without-justification 0**; exit 1 on §E's timer |
+| ruled probe ×8 | `npx tsx validation/m14/fixtures/zig/zig-ruled-probe.ts` | 8/8 exit 0, 8/8 controls ok, 8/8 identical hashes, gate cell **0** |
+| census, 8 shards | `npx tsx validation/m14/fixtures/zig/ontology-census.ts --files-from …` + `shard-merge.py` | 8/8 exit 0, union hash == published draw, every cell identical to p17 |
+| miss-cause ladder | `npx tsx validation/m14/fixtures/zig/analyzer-owned-miss-cause.ts --dumps …` | **exit 0** — C1 0/22,254 · C2 OK · C3 4/4 · C4 0/21,351 |
+| differential | `bun run script/m14/differential.ts --lang zig` | exit 0 — zig 100% (5,566/5,566) MISSING=0 unexplained=5; zls 100% (14,087/14,087) MISSING=0 unexplained=54 |
+| fixtures | `bun run script/m14/run-fixtures.ts --lang zig` | **11 PASS / 0 FAIL**; scoped run writes no evidence and refuses `--update-baseline` |
+| mutation (shared) | `BB_MUTANT_ONLY="zig/" bun run script/m14/mutate-analyzer.ts` | **50 / 50 CAUGHT** (1,748 → 50 filtered) |
+| mutation (lane) | `npx tsx validation/m14/fixtures/zig/m13-mutants.mts` | **6 / 6 CAUGHT** |
+| honesty gate | `npx tsx script/m14/verify-honesty.ts` | 22 failures, exit 6, **0 naming this document, `real-zig-analyzer.ts`, or any file under `validation/m14/fixtures/zig/`**; the "freshness rule flags every artifact" failure is §8 item 16 |
+| regex census | `npx tsx script/m12/verify-regex-census.ts` | gate `FAILED` on **43 findings (18 MISSING + 25 STALE) across 11 other analyzers**, **0 zig rows**, `unclassified: 0`, `mislocated: 0` — this pass adds no regex, and `src/ast/real-zig-analyzer.ts` contains **0** |
+| F8 completeness | `npx tsx script/m14/completeness-inventory.ts --lang zig` | 7 of 8 sections pass; **section-b still FAILS** on `requiredKinds` missing `exports` and `instantiates` (§8 item 23's neighbour: a shared spec row, not this lane's file). section-f perf **85.5 ms/file** |
+| doc-truth emissions | `bun run script/m14/verify-doc-truth-emissions.ts` | `FAIL` overall — 7 FALSE_NEGATIVE, 41 UNDOCUMENTED, 1 MISSING_DOC, 17 NO_CLAIM_TABLE across other lanes — and **0 findings name zig**, so this lane's `Emitted?` column machine-checks. **Run it with `bun`, not `npx tsx`**: it uses `__dirname`, absent in ESM scope, so `npx tsx` dies with `ReferenceError` before reading a claim. It **REWRITES `docs/DOC-TRUTH-EMISSIONS.md`** (§8 item 15) — this run's diff was 12 insertions / 11 deletions, every row in another lane; reverted |
+
+### H. What pass 19 could not settle
+
+- **`imports` at 33.80% and `references` at 74.66% corpus-tier resolution are untouched.** Both are
+  path targets, and the split is measured rather than argued: of `imports`' 6,752 unresolved
+  targets, **6,621 (98.06%) are paths**, 92 external, 24 non-identifier, 13 declared-local, 2
+  builtin-fn; `references` shares the same 6,621 paths plus 531 external. A path is not a symbol,
+  and the decision about whether a cross-file path should resolve to a declaration is §8 item 12,
+  not a lane decision.
+- **`exports` has a 0.00% published SOURCE rate** — every one of its 24,114 edges has a scope marker
+  for a source, by design, which is why its corpus-tier resolution is 100% while a reverse walk has
+  no published symbol to arrive at. Closing that needs the incoming schema work Laptop C owns.
+- **The BB-PARSE-ERR → BB-HANG pairing is n=9 and still has no per-file mechanism.** `trap-second-parse.ts`
+  measured 0 of 2 files trapping twice when parsed sequentially, and the guard is per `parse()`
+  call, so there is no poisoned-instance explanation to point at. Both halves are recorded (pass 15
+  §C) and neither is resolved; this pass adds a ninth instance.
+- **C1 validates the walk against `parseFile`'s name SET, not against owner or kind.** A field
+  published under the right name and the wrong `ownerKind` would pass C1. C4 covers the owner NAME;
+  nothing checks the published `kind` against the site's shape.
+
+### I. §8 items, from this pass
+
+- **Item 26 — CLOSED in this pass.** `incoming-check.ts`'s `treeDeclaredNames` no longer reads a
+  container node's `namedChild(0)` as a declaration name; control **C4** pins both directions. §A.
+  *One correction to the item as written:* it named `error_set_declaration` among the five to skip,
+  and that one is wrong — an error set's first child IS a declared name. Four skipped, not five.
+- **Item 27 — the arbiter's `[BB-HANG]` exit is indistinguishable from a real hang to anything
+  reading its exit code.** *File:* `src/ast/engine.ts:1440-1448`. *What it must do:* move the
+  `clearTimeout(parseBomb)` into a `finally` around `parser.parse(content)`, so a file that TRAPS
+  does not leave a bomb armed. *Why:* `parseRaw` spans `engine.ts:1333-1474` and has no `finally`;
+  the only one in the file is at `:1972`, in a different function. Every ontology-gate run on this
+  lane therefore exits 1 **after** printing a correct verdict table, which is a gate whose exit code
+  is not a function of its verdict. *Measured:* 9 of 9 runs, and the named file was never stuck —
+  each `[BB-HANG]` names a file its own run already reported as `[BB-PARSE-ERR]`, and parsing those
+  files alone is clean. *Not applied here:* `engine.ts` is §8 shared machinery.
