@@ -2594,3 +2594,403 @@ its own missing input**, and "missing" includes its own prerequisites.
 - **One shared line stands between this lane and a passing arbiter**, and it is in a
   file this lane does not own. The lane's own numbers do not depend on it: runs (b) and
   (c) above differ only in whether the arbiter reads bash's grammar.
+
+---
+
+# PASS 10 — three of the four DERIVATION findings paid down, and the oracle found a phantom type
+
+Pass 9 ended with this lane's sharpest outstanding weakness stated in its own
+limitations: *"4 of 5 types are compared against nothing but this lane's own
+expectations… a defect in them would be invisible to every instrument this lane owns —
+which is exactly the failure mode `overrides` had in pass 2."* This pass built the
+missing instrument, and it found a defect on its first reading of the corpus.
+
+## The instrument, and what each of the three types costs to read from it
+
+`protoc` is already this lane's oracle for `uses`. The same `FileDescriptorProto`
+answers the other three emitted types by **direct field read, with no interpretation**:
+
+| type | descriptor field | what the descriptor states |
+|---|---|---|
+| `contains` | the containment tree itself | `message_type[].nested_type`, `.field`, `.oneof_decl`, `enum_type[].value`, `service[].method`, and `extendee` for an extension |
+| `imports` | `FileDescriptorProto.dependency` | the import paths **as written**, in order |
+| `exports` | `FileDescriptorProto.public_dependency` | repeated int32 **indices into** `dependency` |
+
+`exports` reading a *different field* from `imports` is the point, not an
+implementation detail: an `import public` is one dependency **plus** one index, so
+the dependency and the republication are two facts. That is why this lane emits both
+edges for a public import, and it is now read from `protoc` rather than argued.
+
+The instrument is `script/m14/tmp/protobuf/probe/protoc-descriptor-oracle.py`, and
+its input is `probe/dump-contains-io.mts`, which dumps the three types off production
+`parseFile`. It shares **no code** with the analyzer: one side is a string helper over
+a vendored patched tree-sitter grammar, the other is the C++ reference compiler's own
+data structure. It **imports** `protoc-oracle.py`'s include-root discovery rather than
+copying it, for the reason that file's `load_shared` docstring gives — the delicate
+part of running `protoc` over 18 real repositories is deciding which `-I` roots to
+hand it, and two include-root policies would make a disagreement between them
+indistinguishable from a disagreement about protobuf.
+
+### Five conventions the oracle adopts, each a place a disagreement would be invisible
+
+An oracle that quietly adopts the analyzer's conventions agrees by construction. Each
+is named in the file's header and each is a shared assumption:
+
+1. **Top-level ownership is the package.** `protoc` has no notion of "a top-level
+   declaration is contained by the file"; the descriptor's containment starts at the
+   package. A file with **no** package therefore contributes no top-level `contains`
+   edge on either side — and the corpus contains such files, so this is load-bearing.
+2. **A group's type is the message a `TYPE_GROUP` field names**, read from
+   `field.type` and never from a name.
+3. **`options.map_entry` messages are excluded** — `protoc` synthesizes one per
+   `map<K,V>` field and nobody wrote it. **840** of them in this corpus, counted.
+4. **An extension member belongs to its extendee**, from `extendee`.
+5. **The `#<kind>` id suffix is stripped on a `field` row only**, and the stripped rows
+   are reported. See "a stripping collision" below for why that qualifier is load-bearing.
+
+## What it measured, with the denominator stated
+
+821 `.proto` files in 18 repositories, walked as a working tree, uncapped. **781
+compiled** by libprotoc 36.2; **37 rejected**, each reported with its first stderr line
+and excluded from every rate rather than skipped quietly. 16 rejection reasons; the
+largest classes are 5 × `no directory in the corpus provides
+github.com/planetscale/vtprotobuf/…`, 5 × `…/docker/swarmkit/api/types/…` and 4 ×
+`etcd/api/mvccpb/kv.proto` — vendored dependencies this corpus does not carry.
+
+| type | edges in the dump | **judged** | agree | disagree | in a rejected file |
+|---|---|---|---|---|---|
+| `contains` | 40,098 | **37,042** (92.4%) | **36,022** | 1,020 | 2,390 |
+| `imports` | 1,561 | **1,442** (92.4%) | **1,442** | **0** | 110 |
+| `exports` | 4 | **4** (100%) | **4** | **0** | 0 |
+| total | 41,663 | **38,488** (92.4%) | **37,468** | 1,020 | 2,500 |
+
+`imports` and `exports` are **exact**: 1,442 of 1,442 and 4 of 4, no disagreement, no
+label question. `contains` agreement is **36,022 / 37,042 = 97.24%**, and the 1,020
+disagreements are not findings — see the four named classes below, one of which
+contains **0**.
+
+## `unexplained` is the number that has to be zero, and it was 7
+
+The oracle partitions the residual by rules stated in the file, retains every row, and
+reports an `unexplained` bucket for whatever those rules cannot account for. Both
+directions are partitioned, so a disagreement cannot be hidden by being on the side
+with fewer rows.
+
+| class | before the fix | after | the rule |
+|---|---|---|---|
+| `DROPPED-BY-PIPELINE-NAME-LENGTH` | 1,002 | 1,002 | target leaf > 80 chars, `src/ast/pool-worker.ts:653`, or target > 200, `:643` |
+| `GROUP-FIELD-SPELLING` | 16 | 18 | `protoc` records a group's field name lowercased; this analyzer spells it with the group's **declared** name |
+| `GROUP-TYPE-SCOPE` | 0 | 0 | — |
+| **`unexplained`** | **7** | **0** | — |
+
+The 1,002 is worth pausing on: this document has carried "1,002 edges are produced by
+the analyzer and not kept by production" since pass 2, arrived at by differencing an
+analyzer-direct run against a `parseFile` run. The oracle arrives at the same 1,002
+from the opposite direction — the descriptor's idea of what should exist, minus what
+the pipeline's cited length rule keeps. Two routes, one number.
+
+## The defect: a group's type was owned by the extendee
+
+The 7 unexplained rows were one bug.
+
+```proto2
+// pb-reference/src/google/protobuf/test_messages_proto2.proto, package protobuf_test_messages.proto2
+extend TestAllTypesProto2 {
+  optional group GroupField = 121 {
+    optional int32  group_int32  = 122;
+    optional uint32 group_uint32 = 123;
+  }
+}
+```
+
+| | answer |
+|---|---|
+| `protoc` | the group's **type** is `protobuf_test_messages.proto2.GroupField`, a **top-level message**; the extension `groupfield` carries `extendee = .…TestAllTypesProto2` and `type_name = .…protobuf_test_messages.proto2.GroupField` |
+| analyzer, before | a nested type `protobuf_test_messages.proto2.TestAllTypesProto2.GroupField`, its two members under it, and the extension field naming it |
+
+The extendee owns the block's **fields**. It does not own the **types those fields
+declare**, and `extend` opens no scope — the group's type belongs where the block is
+*written*. The pre-fix analyzer published a nested type that no compiler defines and
+put four edges into it. `unittest_custom_options.proto` has the same construction
+(`optional group ComplexOpt6 = 7595468` in a file-scope
+`extend google.protobuf.MessageOptions`) and contributed 3 more.
+
+Same defect class as pass 8's nested-`extend` scope fix, one level out: `Ctx.owner`
+(the extendee) and `Ctx.scope` (the lexical position) are equal everywhere except
+inside an `extend`, and pass 8 found them differing for a *reference*; this pass found
+the group's own **declaration** using the wrong one.
+
+**The fix, measured on both arms with one instrument:**
+
+| | before | after |
+|---|---|---|
+| `contains` agree | 36,017 | **36,022** |
+| `unexplained` | **7** | **0** |
+| corpus `contains` edges moved | — | **7**, in 2 files |
+| edges added / removed | — | **0 / 0** |
+| rows carrying the `#property` id suffix | 30 | **28** |
+| `contains` both-end resolution | 39,786 | **39,787** |
+
+The 7 rows, every one:
+
+```
+test_messages_proto2.proto     protobuf_test_messages.proto2 -> …TestAllTypesProto2.GroupField   [groupType]
+test_messages_proto2.proto     …GroupField -> …GroupField.group_int32                             [field]
+test_messages_proto2.proto     …GroupField -> …GroupField.group_uint32                            [field]
+test_messages_proto2.proto     …TestAllTypesProto2 -> …TestAllTypesProto2.groupfield              [field]
+unittest_custom_options.proto  proto2_unittest -> proto2_unittest.ComplexOpt6                     [groupType]
+unittest_custom_options.proto  ComplexOpt6 -> ComplexOpt6.xyzzy                                   [field]
+unittest_custom_options.proto  google.protobuf.MessageOptions -> …MessageOptions.complexopt6      [field]
+```
+
+The `#property` suffix drops from 30 to 28 because hoisting the type **separated** the
+two colliding ids — the suffix existed only to keep a group's field and its type apart
+in the same owner, and in these 2 rows they are no longer in the same owner.
+
+**One number moved by 1 and it understates the fix.** Both-end resolution rose by a
+single edge out of 40,098, because the phantom type *was* a published id: it resolved
+before and it resolves now, to a different declaration. A resolution count cannot see
+"resolves to the wrong declaration" — only the oracle could, and it did.
+
+## A second, independent confirmation, through code that shares nothing
+
+The defect was also visible to the **existing** `uses` oracle — once that oracle was
+able to see a group's field at all. It could not, and admitting `TYPE_GROUP` alone was
+**necessary and not sufficient**, which is the more useful half of this measurement:
+
+| change to `protoc-oracle.py` | judged | notAType | wrongName |
+|---|---|---|---|
+| as pass 9 shipped it | 11,250 | 909 | 42 |
+| + admit `TYPE_GROUP` | **11,250** | **909** | **42** |
+| + key a group row on its declared name | **11,260** | **899** | **42** |
+
+The middle row is the finding. `protoc` keys a group's row by its own `name`
+(`optional group Item = 1` → `name = "item"`) while this analyzer spells it `Item`, so
+every group edge missed a key it was never compared on and landed in `notAType` — the
+class the oracle **excludes from its rate**. All 10 group `uses` edges in the corpus
+were silently unjudged. The declared name is in the leaf of `type_name`, which
+`protoc` needed in order to resolve the type, so `row_name` reads it there.
+
+With the rows finally judged, the `uses` oracle reads the same defect from
+`type_name`, a field the containment-tree oracle never looks at:
+
+| metric | pre-fix | post-fix |
+|---|---|---|
+| judged | 11,260 | 11,260 |
+| agree | 11,216 | **11,218** |
+| **wrongName** | **44** | **42** |
+
+Exactly **2 verdict flips and 0 new ones**, both shape `same-leaf-different-package` —
+the signature of a phantom nested type:
+
+```
+google.protobuf.MessageOptions.ComplexOpt6        <- protoc: proto2_unittest.ComplexOpt6
+protobuf_test_messages.proto2.TestAllTypesProto2.GroupField  <- protoc: protobuf_test_messages.proto2.GroupField
+```
+
+Two oracles, two different descriptor fields, zero shared code, one finding.
+
+## Three defects in the oracle itself, each caught because the number was absurd
+
+An instrument that reports a wrong number confidently is worse than no instrument, so
+these are recorded with the symptom that exposed each. **All three were found by the
+oracle disagreeing with itself across runs, not by argument.**
+
+1. **Member targets were the bare leaf.** The descriptor stores a member's own name
+   and its owner separately; the oracle emitted `request_type` where the analyzer
+   publishes `UnknownRequest.request_type`. It reported **29,391 ORACLE-ONLY rows**.
+   The number is the defense: a convention error that large cannot be mistaken for a
+   finding.
+2. **`protoc`'s synthetic oneofs were emitted as real ones.** A `oneof_decl` whose
+   member carries `proto3_optional` is created by `protoc` per proto3 `optional` field
+   and named `_` + the field name. `_MaxRequestHeadersKB` appears in this corpus only
+   inside a generated `.pb.go`, never in a `.proto`. Read from the descriptor rather
+   than from the `_` prefix: **103** excluded, which is also why the analyzer's 299
+   `oneof` edges and `protoc`'s 278 declared oneofs reconcile to 278 + 103 + 18
+   spelling rows.
+3. **Hoisted groups were labelled `nestedType`.** The only evidence that a top-level
+   message is a group is the `TYPE_GROUP` **extension** pointing at it — not that
+   message's own `field` list — so reading only `m.field` reported the analyzer's
+   correct `groupType` as a mislabel on exactly the 2 hoisted groups. `LABEL` went
+   2 → 0.
+
+And one defect in the **comparison**, which is the same shape as (1) in a different
+place: the `#property` suffix was stripped on every row, so a group's field row's base
+(`…Item`) collided with its type row's base (`…Item`) and the two merged into one key
+carrying two labels. It reported **8 `analyzer 2, protoc 1` rows on a corpus where
+every one of the 8 is a correct edge.** Stripping is now confined to `field` rows,
+where the suffix is a disambiguator for a known collision, and a suffix on any other
+row is reported rather than resolved.
+
+## What the corpus cannot see, and why the fixture is not redundant
+
+The corpus contains **10** `groupType` edges: **2** in a file-scope `extend` block
+(their type's owner is the package), **8** directly in a message body (their type's
+owner is that message), and **0** in an `extend` block nested inside a message.
+
+So the mutant *"always hoist a group's type to the package"* scores **the same 36,022
+of 37,042 and the same `unexplained` 0** as the correct analyzer on every file in the
+corpus, while being wrong on every group written in an in-message `extend` block. A
+corpus measurement cannot see it and no amount of corpus would. That is the measured
+reason a fixture exists alongside a corpus oracle, and it is stated here because
+quoting the corpus number as though it covered this would be the same mistake in a
+different place.
+
+`protobuf/group-in-extend-scope` therefore pins the rule in **three** directions,
+because any two can be satisfied by a rule that is wrong in the third:
+
+| row | shape | pre-fix answer |
+|---|---|---|
+| 1 | group in a **file-scope** `extend` — the corpus defect | `gie.demo.Target.Hoisted` |
+| 2 | group in an `extend` **nested inside a message** | `gie.demo.Outer.Holder.Inner` |
+| 3 | group **already inside its owner** — the control | correct, and unchanged |
+
+Every row is adjudicated by `protoc` 36.2 **on the fixture file itself**: a top-level
+message `gie.demo.Hoisted`, a nested message `gie.demo.Outer.Inner`, a nested message
+`gie.demo.Plain.Innermost`, and three extensions with the `(extendee, type_name)`
+pairs the fixture asserts. ROW 2 also rules out "always the package"
+(`gie.demo -> gie.demo.Outer.Inner` is an explicitly forbidden row) and ROW 3 rules out
+"hoist on every `group` node". Measured falsification: the pre-fix analyzer differs
+from the post-fix one on **exactly 7 of the fixture's 19 edges**, all in ROWS 1 and 2,
+and ROW 3's 4 edges are byte-identical in both arms.
+
+## DERIVATION findings: 4 → 1
+
+| type | before | now | adjudicated by |
+|---|---|---|---|
+| `contains` | 40,098 | adjudicated | `protoc` descriptor, 36,022/37,042 agree, `unexplained` 0 |
+| `imports` | 1,561 | adjudicated | `protoc` `dependency`, **1,442/1,442** |
+| `exports` | 4 | adjudicated | `protoc` `public_dependency`, **4/4** |
+| `overrides` | 1 | **still a finding** | — |
+| `uses` | adjudicated | adjudicated | `protoc` `type_name`, 11,218/11,260 |
+
+`overrides` cannot be adjudicated this way and the reason is structural: **no
+descriptor field records that a field number was declared twice**, and `protoc`
+**rejects** the construct — its one corpus instance is
+`nvim-treesitter/tests/query/highlights/proto/test.proto`, a syntax-highlighting
+fixture in a file `protoc` refuses. There is no descriptor to read. It remains this
+lane's **one** DERIVATION finding, resting on 1 edge in 1 file out of 821, and that
+is stated at every place the count appears.
+
+## Mutants: 28 → 30, 30 caught, 0 survived
+
+| mutant | caught by | corpus-visible? |
+|---|---|---|
+| `protobuf/group-type-owned-by-the-extendee` | `protobuf/group-in-extend-scope` **only** | yes — `unexplained` 7 vs 0 |
+| `protobuf/group-type-hoisted-to-the-package` | `group-in-extend-scope`, `extend-and-group` | **no** — identical corpus score |
+
+The first mutant is caught by exactly one fixture and by nothing else, which is the
+measure of that fixture's load. The second is caught by two fixtures and by **0** of
+821 corpus files, which is the measure of the gap the corpus leaves.
+
+## Pass 10 gate table
+
+| Command | Result |
+|---|---|
+| `npx tsc --noEmit` | **no diagnostics** |
+| `npx tsx script/m14/protobuf-census.ts` | 821 ok / 0 fail; 41,955 symbols / 54,939 edges through `parseFile`; 13,275 / 40,098 / 1,561 / 4 / 1; 0 empty names; 0 bad kinds; 0 `unknown`; 0 self-loops; **0** under 0.7 |
+| `npx tsx script/m14/tmp/protobuf/probe/dump-contains-io.mts` | 40,098 / 1,561 / 4, reproducing the census from a separate walk; member labels `field` 26,647, `nestedType` 8,623, `oneof` 299, `enumValue` 2,967, `rpc` 1,552, `groupType` 10 |
+| `npx tsx script/m14/protobuf-incoming-audit.mts` | 821 parsed / 0 failed / 0 degraded; `uses` 1,461 ambiguous + 49 unbound + 4 hopeless; 38,551 ids, 2,702 published by >1 file; `contains` in-file-both 39,787 |
+| `npx tsx script/m14/protobuf-construct-probes.mts` | **94** observed node types; all 5 rulings re-probed, still **0**; `block_lit` histogram `{constant: 1909}` |
+| `npx tsx script/m14/firing-check.ts --files 120 protobuf` | **3/10 fired, 2,069 edges, 10/120 files, `analyzerStableDuringRun`** |
+| `npx tsx script/m14/protobuf-ruling-table-proof.mts` | run (c) `emitted 5/10 ruled-sound 5 FALSIFIED 0` **exit 0**; runs (a)/(b) `FALSIFIED 2`, **exit 1** |
+| `npx tsx script/m14/ontology-coverage-gate.ts protobuf` | **exit 1** — `ruled-sound 3 FALSIFIED 2`, both rows the missing `LANGS` entry, unchanged |
+| `npx tsx script/m14/run-fixtures.ts --lang protobuf` | **10 pass / 0 fail** |
+| `bun run script/m14/tmp/protobuf/probe/mutant-sweep.mts` | **30 caught / 0 survived** |
+| `npx tsx script/m12/verify-regex-census.ts` | **regex census gate PASSED** — 0 protobuf rows |
+| `protoc-descriptor-oracle.py` | **unexplained 0**; `contains` 36,022/37,042, `imports` 1,442/1,442, `exports` 4/4; 781 compiled, 37 rejected |
+| `protoc-oracle.py --protoc /tmp/opencode/protoc-36/bin/protoc` | **libprotoc 36.2**; 11,260 judged, **11,218 agree**, 42 wrong-name; 899 not-a-type; 35 files rejected, 1,099 unadjudicated |
+| `npx tsx script/m14/verify-honesty.ts` | 26 failures, **0 in any protobuf file** — every one another lane's fixture, a milestone artifact whose declared inputs moved under the merge, or the shared freshness rule that flags all 9 artifacts |
+
+### One gate row that is a loss, not a pass
+
+`firing-check.ts` still reports **3/10 fired, 10/120 files**, unchanged across nine
+passes, and this pass did not move it. The arbiter's sampler offers 120 `git
+ls-files` paths of which **110 are not on disk** (8,524 offered, 821 on disk,
+7,703 not), so it reads 10 files and draws a verdict from them. That is the
+supervisor's instrument and its sample; the lane's own census walks all 821. Stating
+it as 3/10 without that sentence would misrepresent a sampler artifact as a property
+of protobuf.
+
+### One run of this pass's own census was lossy, and is not quoted
+
+The first `protobuf-census.ts` invocation in this pass reported `contains` 40,089 and
+41,945 symbols, with `files the analyzer read and production published NOTHING for: 1
+— pb-googleapis/google/api/expr/v1beta1/source.proto: analyzer 10 symbols / 9 edges,
+production 0 / 0` and a `[BB-HANG]` line. **Analyzer-direct was unchanged at 41,956 /
+55,941**, so the loss is in production, not in the analyzer: 10 symbols and 9 edges,
+exactly the shortfall. The second invocation read the clean figures in the table
+above. This is the band pass 9 measured, in the locality pass 9 recorded.
+
+## Files this pass owns
+
+| file | lines | what |
+|---|---|---|
+| `src/ast/real-protobuf-analyzer.ts` | +53 / −6 | a group's type takes `Ctx.scope`, its field keeps `Ctx.owner` |
+| `script/m14/tmp/protobuf/probe/protoc-descriptor-oracle.py` | 617 | new: `contains` / `imports` / `exports` against `protoc`'s descriptor |
+| `script/m14/tmp/protobuf/probe/dump-contains-io.mts` | 108 | new: dumps the three types off `parseFile`, with the `member` label |
+| `script/m14/tmp/protobuf/probe/protoc-oracle.py` | +32 | `TYPE_GROUP` admitted; `row_name` reads a group's declared name off `type_name` |
+| `script/m14/protobuf-mutants.ts` | +160 | 2 mutants for the new rule |
+| `validation/m14/fixtures/protobuf/group-in-extend-scope.proto` | 99 | new: 3 rows, adjudicated by `protoc` |
+| `validation/m14/fixtures/protobuf/group-in-extend-scope.expectation.json` | 55 | new |
+
+## §8 items, restated so they can be applied without re-deriving them
+
+Unchanged from pass 9, and still **one line**:
+
+> `script/m14/differential.ts` — add to `LANGS`:
+> `protobuf: { wasm: "tree-sitter-protobuf.wasm", analyzerFile: "real-protobuf-analyzer", className: "RealProtobufAnalyzer", ext: "proto" },`
+> Why: until this exists, both of the arbiter's instruments read bash's grammar and
+> report two of this lane's five rulings as FALSIFIED. Proof it is sufficient and
+> necessary: runs (b) and (c) above. All four values are already carried at
+> `script/m14/run-fixtures.ts:91`.
+
+**One new item, and it is an observation rather than a request.** Other lanes register
+lane-owned oracles in `script/m14/oracles/` (`julia-overrides.ts`,
+`css-overrides.ts`). This lane's two oracles live in
+`script/m14/tmp/protobuf/probe/`, beside the census and the fixtures' probes, because
+`protobuf` is absent from `differential.ts`'s `LANGS` and so no discovery mechanism
+would find them there either. If the `LANGS` line above is applied, moving
+`protoc-descriptor-oracle.py` and `protoc-oracle.py` into `script/m14/oracles/` is
+what would let the shared harness invoke them. **This lane has not made that move**,
+because the path is the supervisor's to choose and a half-moved oracle is an oracle
+nobody runs.
+
+One item for the corpus, not for code: **16 rejection reasons name a vendored
+dependency this corpus does not carry** (`vtprotobuf`, `docker/swarmkit`,
+`etcd/api/*`, `xds/data/orca/v3/orca_load_report.proto`), which is why 37 files and
+2,500 edges are outside the descriptor oracle's reach. Cloning those four upstreams
+would take `contains` coverage from 92.4% to ~98% and would put
+`xds.data.orca.v3.OrcaLoadReport` — one of this lane's 4 hopeless `uses` targets — inside
+the judge's reach. Disk is tight and the task caps the corpus at ~8 GB, so this is
+reported rather than done.
+
+## Declared limitations, pass 10
+
+- **The oracle judges 92.4% of the three types' edges, not 100%.** 2,500 edges in 37
+  files sit in files `protoc` refuses, 16 reasons, dominated by vendored dependencies
+  this corpus does not carry. They are excluded from every rate and listed, not
+  dropped. A defect confined to those 37 files would be invisible here — and 4 of the
+  5 EMITTED types would be unadjudicated on 6.2% of their edges.
+- **`contains`'s 1,020 residual disagreements are all in two named classes, and one of
+  the four classes is empty.** A reader who wants only "what is wrong" should read
+  `unexplained`: it is 0. The 1,002 name-length rows are a **shared pipeline** rule
+  (`src/ast/pool-worker.ts:653`), not this analyzer's, and are a §8 item for whoever
+  owns that threshold — 1,001 of them are field `contains` edges in 2 `pb-reference`
+  files whose identifiers are 112–1,000 characters.
+- **`GROUP-FIELD-SPELLING` is a declared convention difference, not a fix.** This
+  analyzer publishes a group's field under the group's **declared** name (`Item`);
+  `protoc` records `item`. 9 groups, 18 rows. The analyzer's spelling is what the
+  source says and what its `uses` edge pairs against, so changing it would break the
+  pairing and the 28 remaining `#property` rows. Both spellings resolve; they differ.
+- **The 18 group `uses` edges are newly judged and newly all agree, and that is a
+  change to the ORACLE, not a change in what was previously known.** Pass 9's
+  "11,250 judged, 99.6267%" was correct **for the rows it could see** and silent about
+  10 edges it could not. The rate moved 99.6267% → 99.6270% and the wrong-name count
+  is what carries the finding (44 → 42).
+- **`overrides` is still unadjudicated**, for the structural reason above, and its
+  entire corpus support remains 1 edge in 1 file that `protoc` rejects.
+- **`firing-check.ts` still reports 10/120 files**, and this pass did not move it.
+- **The corpus cannot see a group's in-message `extend` scope, and no re-run of this
+  corpus will.** That is a property of the corpus, measured above, and it is why
+  ROW 2 of the new fixture exists.
