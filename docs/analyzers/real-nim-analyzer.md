@@ -1088,7 +1088,7 @@ quoted from an earlier round.
 | `bun run script/m14/verify-analyzer-docs.ts` | 0 | 48 analyzers: doc present 47/48, all 8 sections 19/47, no unexplained cells 35/48. **nim appears in none of the three lists** and in none of the 13 `(no relationship-ontology section)` entries (bash, clean, hcl, json, julia, lua, powershell, protobuf, r, ruby, solidity, vb, zig) |
 | `npx tsx script/m14/differential.ts --lang nim` | 0 | **[lane] SKIP nim: no corpus repo mapped in `LANG_REPOS`** — measured 0 lanes, M14.0.F5 not written. *Limitations* 18 |
 | `npx tsx validation/m14/fixtures/nim/ruled-gate.ts` | 0 | the arbiter's own verdict loop on a copy, run on both analyzer blobs: **emitted 9/10, ruled-sound 1, FALSIFIED 0, ruled-without-justification 0** every time, 204s / 203s / 247s across three runs, and the per-type spread is in the *How the arbiter itself now reports these ten* section. Re-run on this pass, **253s, exit 0, same verdict**: `calls` 79,099, `uses` 31,055, `contains` 21,575, `imports` 9,341, `references` 40,544, `exports` 408, `extends` 570, `overrides` 48, `instantiates` 1,986, `implements` RULED-SOUND. The four rows the verdict rests on — `exports` 408, `extends` 570, `overrides` 48, `implements` 0 — are **byte-identical to the committed census**, and the five that moved did so downward on a box running seven lanes, which is the same effect *Limitations* 8 measures. The probe counters printed by the run's own epilogue: `conceptsExamined 174`, `withRefinesField 0`, `isExpressionsInConceptBodies 156`, `refinements 0` — and the gate prints which of those is the falsifier: *"refinements is the number that would have made the row above print FALSIFIED"* |
-| `npx tsx script/m60/rel-type-coverage-gate.ts --langs=nim` | **1** | **6 DERIVATION findings**: `calls`, `contains`, `exports`, `imports`, `references`, `uses`. CHECK 2/3/4 clean. An earlier revision of this row recorded exit **0**; re-running the command gives **1**, and the reason is in the gate's own last line — `process.exit(regressions.length === 0 ? 0 : 1)` (`script/m60/rel-type-coverage-gate.ts:614`). The 6 are printed under its own heading `REGRESSIONS (not in the recorded debt)`, so a non-zero exit is the gate's verdict on this lane, not a crash. Recording 0 would have been the gate table asserting a clean run the gate does not report |
+| `npx tsx script/m60/rel-type-coverage-gate.ts --langs=nim` | **1** | **6 DERIVATION findings**: `calls`, `contains`, `exports`, `imports`, `references`, `uses`. CHECK 2/3/4 clean. An earlier revision of this row recorded exit **0**; re-running the command gives **1**, and the reason is in the gate's own last line — `process.exit(regressions.length === 0 ? 0 : 1)` (`script/m60/rel-type-coverage-gate.ts:614`). The 6 are printed under its own heading `REGRESSIONS (not in the recorded debt)`, so a non-zero exit is the gate's verdict on this lane, not a crash. Recording 0 would have been the gate table asserting a clean run the gate does not report. **It also DESTROYS the §8 artifact it writes when scoped** — see the four-gate table below |
 | `npx tsx validation/m14/fixtures/nim/census.ts` | **1**, then **0**, then **1** ×3 | run six times. First exit 1 on the new blob (degraded: 2 empty-kind symbols, 184,675 edges). Second exit 0 but on the PRE-fix blob (184,691). Third exit 0 on the committed blob: **184,691 edges / 83,692 symbols / 0 empty names / 0 empty kinds**, artifact written and digest-pinned on both sides of the walk. The committed artifact is the third. The last three are this pass, all exit 1 and all degraded (34, 22, 18 empty kinds — *Limitations* 8), and the fourth of them is what the write-guard below was added for. **The command takes the output path as `argv[2]` and writes NOTHING without it**, so a bare invocation cannot touch the committed artifact either |
 | the `census.ts` write-guard, itself | **1** | regression-tested on this pass, not asserted. Run against a scratch path with a deliberately degraded walk: exit 1, `DEGRADED WALK — 22 empty-kind symbols`, `REFUSING to overwrite …/guardtest.json`, and `guardtest.json` **was never created** while `guardtest.degraded.json` was. Run a second time against the real artifact path: exit 1, refused, `git status` clean, the committed `ontology-census.json` byte-identical. The guard fires on any of empty-kind symbols, empty names, a `parseFile` throw, a raw-parse throw, or a file count that did not parse — the five ways this walk is known to degrade |
 | `npx tsx validation/m14/fixtures/nim/resolution-audit.ts` | **1** | both attempts; `[BB-HANG] parser stuck 120s on nim/tests/benchmarks/strings/csvbench.nim — exiting`, after the artifact was written. The two runs DIFFER where it matters: **127** tree-only edges and recall 34,273/34,466 = 99.4% on the first, **90** and 34,452/34,466 = 100.0% on the second. The committed artifact is the second; the first is named in the resolution table rather than deleted |
@@ -1106,20 +1106,105 @@ quoted from an earlier round.
 | `npx tsx script/m14/verify-honesty.ts` | **6** | **22 failures repo-wide, 0 naming nim**, re-measured on this pass; an earlier run of the same command read **19**, so the count moves with the rest of the fleet and the number to quote is the **0**, not the total. Every failure is a shared-artifact staleness or banned-term finding against other lanes' work: `M14.0.F6: 945 declared input(s) changed since 799464551c`, `M14.0.F7: 61 … since 66b9327df0`, `M14.0.F8: 132 … since a943047e5c`, `M14.0.F9: 70 … since 4f7f78ebd6`, plus 11 banned-term hits in other lanes' fixtures and in `M14.0.F5.json` / `M14.0.F11.fsharp.json` / `M14.0.JS-CENSUS.json`. This lane's own contribution to the input sets is `src/ast/real-nim-analyzer.ts`, and it is not among the changed inputs in any of the four. Changing the analyzer blob earlier made the gate report `M14.0.F4: 3 declared input(s) changed since 469ecd1afd` and `M14.0.F7: 1 declared input(s) changed` — both naming this lane's own files — and re-running the two producers (`mutate-analyzer.ts`, `verify-analyzer-hygiene.ts`) cleared them, which is the gate working: it declares evidence stale against the artifact's producer, not against a date. One sub-check is worth quoting because it is a gate limitation rather than a lane result: **`freshness rule flags every artifact — it cannot distinguish current from stale`** (2,522 inputs changed since `65df67e`, and 0 of 9 artifacts read current). A gate in that state cannot be used as evidence either way, so it is reported and not leaned on. **The path the contract gives for this gate — `script/verify-honesty.ts` (honesty contract §42) — does not exist**; the file is at `script/m14/verify-honesty.ts`, and a reader who follows the contract gets `ERR_MODULE_NOT_FOUND`, which is indistinguishable from the gate having nothing to report. §8 |
 | `npx tsx script/m14/ontology-coverage-gate.ts nim` | **2** | unchanged: `RULED_BY_LANG` carries `bash`, `json`, `lua`, `toml` and no `nim`, so the gate walks 4,555 files and refuses to print a verdict. `ruled-gate.ts` supplies the wiring on a copy |
 
-**Two of the gates in that table WRITE SUPERVISOR-OWNED FILES as a side effect of
-being run, which is a cross-lane hazard and cost this lane a near-miss.** Measured
-on this pass: `verify-doc-truth-emissions.ts` rewrote
-`docs/DOC-TRUTH-EMISSIONS.md` and `verify-analyzer-docs.ts` rewrote
-`validation/m14/results/analyzer-docs.json` — **151 insertions, 88 deletions across
-the two**, none of it this lane's. The diff was other lanes' concurrent progress
-surfacing through a shared generator (`FALSE_NEGATIVE` 8→7, `UNDOCUMENTED` 43→41,
-`NO_CLAIM_TABLE` 20→16, `NON_ENGINE_KIND` 26→19). Both files are §8, so both were
-reverted and the branch carries only `real-nim-analyzer.ts`, its doc, and its own
-fixtures — but a gate cannot be both a thing you run for evidence and a thing that
-edits a file you do not own, and the two requirements conflict. §8: either the
-generators take an output path the way `census.ts` does (write nothing without one),
+### Re-verification pass, and what reproduced
+
+Every headline number in this document was re-measured on the committed blob
+`9d9ee478e3295c28` in one pass, because a number inherited from a previous
+session is a number nobody checked. The result is that **the census reproduces
+exactly and the arbiter reproduces its verdict**, and the only per-type movement
+is in the rows *Limitations* 8 and 11 name as walk-dependent.
+
+| | committed artifact | this pass | delta |
+| --- | --- | --- | --- |
+| files walked / parsed | 4,555 / 4,555 | 4,555 / 4,555 | **0** |
+| symbols | 83,692 | 83,692 | **0** |
+| empty names / empty kinds | 0 / 0 | 0 / 0 | **0** |
+| `parseFile` threw / raw-parse threw | 0 / 0 | 0 / 0 | **0** |
+| endpoints equal to `unknown` | 8 | 8 | **0** |
+| empty endpoints | 0 | 0 | **0** |
+| edge types outside the ten | 0 | 0 | **0** |
+| grammar node types (Instrument A) | 209 | 209 | **0** |
+| all ten per-type edge counts | — | — | **0 on every one** |
+
+The comparison is field-by-field over the whole `types` array, not a spot check:
+every numeric field of all ten rows is identical, and the only two fields that
+differ are `examples` (which three edges the census chose to print) and one
+`topUnresolvedTargets` tie at count 4 (`ast` vs `init`, order not contents). Both
+are presentation, and both are the same effect as *Limitations* 8: the walk is
+concurrent, so which walker's output is seen first is not fixed.
+
+**The arbiter, run twice more (walks six and seven of the on-record set), prints
+`emitted 9/10  ruled-sound 1  FALSIFIED 0  ruled-without-justification 0` both
+times**, 272s and 272s, with the four load-bearing rows byte-identical for the
+seventh time running:
+
+| type | census | arbiter walk 6 | arbiter walk 7 |
+| --- | --- | --- | --- |
+| `calls` | 79,129 | 79,099 | 79,099 |
+| `uses` | 31,063 | 31,020 | 30,991 |
+| `contains` | 21,579 | 21,567 | 21,564 |
+| `imports` | 9,345 | 9,340 | 9,344 |
+| `references` | 40,559 | 40,542 | 40,415 |
+| **`exports`** | **408** | **408** | **408** |
+| **`extends`** | **570** | **570** | **570** |
+| **`overrides`** | **48** | **48** | **48** |
+| `instantiates` | 1,990 | 1,989 | 1,985 |
+| **`implements`** | **0** | **0 RULED-SOUND** | **0 RULED-SOUND** |
+
+`calls` is the only moving row that landed on the same value twice, and it landed
+on the previous pass's value (79,099) rather than on the census's — so the spread
+is a property of the walk and not of the day. The honest figure remains
+`calls 79,099–79,129` and `references 40,415–40,559` at this corpus size and
+worker count. The probe epilogue repeated: `conceptsExamined 174`,
+`withRefinesField 0`, `isExpressionsInConceptBodies 156`, `refinements 0`.
+
+Also re-run, and unchanged: `run-fixtures.ts --lang nim` **10 pass / 0 fail**
+(exit 0), `verify-mutants.ts` **15 run / 15 CAUGHT / 0 survived** (exit 0),
+`mutate-analyzer.ts` **58 nim mutants / 58 caught / 0 survived** (exit 2, on 6
+survivors in `java`, `groovy`×2, `scala`, `make`, `php`),
+`rel-type-coverage-gate.ts --langs=nim` **6 DERIVATION findings** (exit 1), and
+`verify-regex-census.ts` **exit 1 with 0 of its 51 rows naming nim** — while the
+analyzer itself greps to **0** for `RegExp`, `.match(`, `.replace(`, `.test(`
+and `.split(/`.
+
+**FOUR of the gates in that table WRITE SUPERVISOR-OWNED FILES as a side effect of
+being run, and the fourth is qualitatively worse than the other three.** Measured
+on this pass, all four reverted:
+
+| gate | §8 file it rewrote | diff | nature |
+| --- | --- | --- | --- |
+| `verify-doc-truth-emissions.ts` | `docs/DOC-TRUTH-EMISSIONS.md` | 151 insertions, 88 deletions, shared with the next row | other lanes' progress through a shared generator |
+| `verify-analyzer-docs.ts` | `validation/m14/results/analyzer-docs.json` | (as above) | (as above) |
+| `mutate-analyzer.ts` | `validation/m14/results/M14.0.F4.json` | **13,034 insertions, 9,615 deletions** | every lane's mutants, re-recorded at this branch's `commit` |
+| `script/m60/rel-type-coverage-gate.ts --langs=nim` | `validation/m60/results/rel-type-coverage.json` | **37 insertions, 1,410 deletions** | **DESTRUCTIVE WHEN SCOPED** |
+
+The first two move because other lanes' concurrent progress surfaces through a
+shared generator (`FALSE_NEGATIVE` 8→7, `UNDOCUMENTED` 43→41, `NO_CLAIM_TABLE`
+20→16, `NON_ENGINE_KIND` 26→19). The third re-records all lanes' mutants and
+re-stamps the artifact's `commit` field from `ee3ae4ef` to this branch.
+
+**The fourth DELETES other lanes' records, and it is the one that would not have
+been caught.** `--langs=nim` is *narrower* than the artifact it writes: the
+committed `validation/m60/results/rel-type-coverage.json` holds **46 lanes**, and
+the scoped run replaces it with **1**. Measured, not quoted — `git checkout --
+validation/m60/results/rel-type-coverage.json` followed by
+`len(json.load(...)['lanes'])` reads 46 again; the 1-lane version had 37 of 46
+lanes' rows absent. A scoped gate that truncates a repo-wide ledger is worse than
+an unscoped one that refreshes it: the first destroys data, the second only
+reorders it, and the deleted rows are other lanes' repayment records against the
+104-item baseline. This is the same defect class as the write-guard added to this
+lane's own `census.ts` (write nothing without an explicit output path), reachedfrom
+the other direction.
+
+All four files are §8, so all four were reverted and the branch carries only
+`real-nim-analyzer.ts`, its doc, and its own fixtures. But a gate cannot be both a
+thing you run for evidence and a thing that edits a file you do not own, and the
+two requirements conflict. §8, in the order the cost rises: either the generators
+take an output path the way `census.ts` does (write nothing without one), or a
+`--langs`-scoped gate writes to a scoped path and never to the repo-wide artifact,
 or the workstream states that running a gate implies committing its output, which
-on a seven-lane branch means every lane commits every other lane's numbers.
+on a seven-lane branch means every lane commits every other lane's numbers — and,
+for the fourth, means every lane commits a file that deletes 45 lanes' work.
 
 **The exit-1 rows from this lane's own instruments are a shared-machinery defect,
 not a lane failure, and the distinction is measured rather than asserted:** in each
