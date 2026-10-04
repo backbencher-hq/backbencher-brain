@@ -2650,3 +2650,156 @@ fan-out, and the reason is measured rather than argued: on this corpus it does n
 
 Nothing in `src/ast/real-zig-analyzer.ts` changed in pass 9. Fifth consecutive pass verified
 rather than edited.
+
+## Pass 10 — §8 item 8 was closed by another lane; here is what it did to zig's 490 edges (2026-10-04)
+
+Pass 9 ended with two §8 items open. One of them is no longer open, it was closed **by a commit
+this lane did not make and did not measure the effect of**, and the effect is 303 edges.
+
+### A. The unit row — the falsifier, and it passes
+
+`§8 item 8` asked for a per-language exemption from `keepSymbol`'s UNIVERSAL denylist for `Self`,
+`root` and `unknown`, on the counts 240 / 157 / 39 edges. Commit **`0a65d2b48`** ("keepSymbol's
+denylist deleted real declarations in six languages") answered it differently and more widely: it
+**split** the list, moved `self, Self, me, My, destructor, root, program, source_file, unknown` out
+of `UNIVERSAL`, and put `self`/`parent` under `php` and `program` under `sql`
+(`src/ast/pool-worker.ts:477-508`). Zig is in neither map.
+
+Read from the production function itself — `keepSymbol(s, "zig")`, not a copy of the old list:
+
+| name | pre-fix | kept at HEAD | pre-fix dropped it |
+|---|---|---|---|
+| `Self` `root` `unknown` `self` | denied | **true** | no — now published |
+| `me` `My` `destructor` `program` `source_file` | denied | **true** | no — now published |
+| `this` `super` | denied | false | YES — still deleted |
+| `SCSS_FILE_SCOPE` `GlobalScope` `module_declaration` `package_manifest` | denied | false | YES — still deleted |
+
+**9 of 15 pre-fix denials are gone for zig; 6 remain. §8 item 8 is closed**, and the four names it
+named are three-quarters of the residue.
+
+### B. The corpus row — production `parseFile`, 3,833 admitted files, 0 degraded, 0 failed
+
+`validation/m14/fixtures/zig/denylist-publication.ts`, the whole admitted population
+(`git ls-files -- '*.zig'` per repo, `<= 512 KB`, 14 files over the ceiling excluded).
+Evidence: `measurements/denylist-publication-2026-10-04.log`. `binds` is a tree-sitter walk over
+the four binding slots the pinned grammar actually has — `variable_declaration` child 1,
+`parameter`, `container_field`, `function_declaration` — and no regex.
+
+| name | files that bind it | symbols published | files publishing | edges naming it | bind file-locally | bind corpus-uniquely | corpus-ambiguous |
+|---|---|---|---|---|---|---|---|
+| `Self` | 162 | 98 | 70 | 240 | **145** | 0 | 240 |
+| `root` | 33 | 36 | 28 | 157 | **98** | 0 | 157 |
+| `unknown` | 30 | 35 | 31 | 39 | **37** | 0 | 39 |
+| `self` | 13 | 11 | 11 | 27 | **23** | 0 | 27 |
+| `this` | 3 | 0 | 0 | 3 | 0 | 0 | 0 |
+| `super` | 2 | 0 | 0 | 24 | 0 | 0 | 0 |
+
+**+303 of these 490 edges became file-locally resolvable** (`Self` +145, `root` +98, `unknown`
++37, `self` +23) as a result of a change in a file this lane does not own. Before `0a65d2b48` every
+one of the 303 was 0, because the name it names could not be published.
+
+**`super` is a separate finding and it is not a denylist question: 24 edges name `super` and the
+grammar binds it in 2 of 3,833 files.** Zig has no `super` keyword and no vtable; those 24 edges
+are the analyzer reading a declared-type position whose name happens to be a word from another
+language's vocabulary. 22 of the 24 are in files that never bind it at all.
+
+### C. The lane's own headline count moved, and it moved because of that commit
+
+The sharded census figures this document has published since pass 1 are **127,429 symbols /
+392,550 relationships**. The same admitted population at HEAD, in **one process with 0 degraded
+and 0 failed files**, reads **127,612 symbols / 392,543 relationships**. **+183 symbols,
+−7 relationships.** The symbol delta is the repair: 98 + 36 + 35 + 11 = 180 published symbols
+across the four previously-denied names, plus `me`/`My`/`destructor`/`program`/`source_file`
+declarations that also now survive. **No single-run figure in this document is a property of the
+analyzer alone**, which is pass 3's correction restating itself at a new commit.
+
+### D. Requirement B — the ambiguous target is NOT closed, and the number is 240 of 240
+
+The incoming-edge brief's requirement B says a target resolving to more than one published symbol
+must not be attributed to an arbitrary one. For `Self`: **98 published symbols share the one
+name, so 0 of its 240 edges bind uniquely corpus-wide and all 240 are ambiguous.** File-local
+resolution is what makes them bindable at all, and it closes 145.
+
+### E. Requirement C — the 95 misses, separated into the two opposite findings
+
+| name | edges | no file-local bind | grammar binds it, nothing published | file never binds it |
+|---|---|---|---|---|
+| `Self` | 240 | 95 | **92** | 3 |
+| `root` | 157 | 59 | 7 | 21 |
+| `self` | 27 | 4 | 4 | 0 |
+| `this` | 3 | 3 | 3 | 0 |
+| `super` | 24 | 24 | 2 | 6 |
+| `unknown` | 39 | 2 | 0 | 2 |
+
+The brief's C distinction holds and the two columns are opposite findings. **108 files bind one of
+these names in the grammar and production published no symbol for it.** `Self` alone is 92 files,
+and the shape is one idiom:
+
+```zig
+// ghostty/src/datastruct/circ_buf.zig:7-9
+pub fn CircBuf(comptime T: type, comptime default: T) type {
+    return struct {
+        const Self = @This();
+```
+
+`const Self = @This()` inside a struct a generic function **returns**. Production publishes the
+function (`CircBuf`, 5 symbols in that file) and nothing inside it. So the edge
+`references (declared-type)->Self` at line 28 (`buf: Self,`) is a **true fact about code whose
+declaration this analyzer deliberately does not publish.**
+
+**That is Z22, and it is a declared scope, not a defect.** `Declaration surface` row 49: *"a
+container inside an executable body — a LOCAL type has no file-scope identity, so it owns nothing
+— its declarations would otherwise be filed under the enclosing container."* Row 53: *"Anonymous
+containers produce no symbols."* The 92 files are that rule applied, and the rule was itself a
+filed fix. **Calling it a dropped declaration would be wrong**, which is why this section says
+"nothing published" and not "defect".
+
+So `Self`'s residue is the same class as pass 8's `imports`: **a true edge naming something the
+analyzer's contract declines to publish.** The `imports` case was unresolvable because a Zig import
+path denotes a module, not a declaration. This one is unresolvable because an anonymous container
+has no identity to own a declaration.
+
+### F. The decision variable for any repair, measured before proposing one
+
+Whether a repair is safe depends on how many times each such file binds the name:
+
+| name | binds-per-file histogram over the unpublished files | unambiguous at file scope |
+|---|---|---|
+| `Self` | 67× once, 13× twice, 4× 3×, 4× 4×, 3× 5×, 1× 12× | **67 of 92** |
+| `root` | 7× once | **7 of 7** |
+| `this` | 3× once | **3 of 3** |
+| `super` | 1× once, 1× 4× | 1 of 2 |
+| `self` | 2× twice, 2× 19× | 0 of 4 |
+
+**77 of the 108 files bind their name exactly once**, so a symbol published there would bind
+file-locally with no ambiguity at all. The remaining 31 would need a positional discriminator the
+edge does not carry, and requirement B forbids resolving them by picking one. **The repair is
+therefore sound for 77 files and unsound for 31**, and the split is a property of the corpus, not
+a choice.
+
+### G. Why nothing in `src/ast/real-zig-analyzer.ts` changed, and the check that decides it
+
+The obvious repair is to publish `const X = @This()` inside an anonymous container. **Its cost is
+measurable and it is the reason Z22 exists**: the store resolves ownership by extent
+(`enclosingStoreableIdByName`), so a symbol given the byte range of a declaration inside
+`return struct { … }` inside `CircBuf` is filed under `CircBuf` — the misattribution Z22 was filed
+to prevent. The alternative is to publish it ownerless, which leaves the same extent for the store
+to resolve. **Neither is available from this lane's file.**
+
+So this is §8 item **14**, stated so it can be applied without re-deriving it:
+
+> **Publishing a declaration inside an anonymous container needs an ownership decision, and the
+> decision is not the analyzer's.** 92 corpus files bind `const Self = @This()` inside a struct a
+> generic function returns; 240 `references` edges name `Self` and 145 of them already bind
+> file-locally through the top-level `Self` declarations. Publishing the 92 makes 77 files
+> unambiguous and 31 ambiguous unless the edge carries position, and it puts the store's extent
+> rule in conflict with Z22 (`docs/analyzers/real-zig-analyzer.md:49`). The three options are
+> (a) `src/ast/engine.ts` learns an explicit anonymous-container scope so a member is not filed
+> under the enclosing function, (b) the `references` edge to such a name carries a disambiguator
+> the resolver honours, or (c) Z22 is revised and the 31 ambiguous files stay unresolvable by
+> choice rather than by accident. Option (a) is the only one that resolves all 240. **Whoever owns
+> the incoming resolution layer picks; the numbers that decide it are §B, §E and §F.**
+
+Nothing in `src/ast/real-zig-analyzer.ts` changed in pass 10. Sixth consecutive pass verified
+rather than edited, and this time the reason is a measured ownership conflict rather than a
+fabrication hazard.
