@@ -31,19 +31,487 @@
 
 ## Relationship ontology
 
-| Relationship type | Emitted? | How resolved | Confidence model |
-| --- | --- | --- | --- |
-| calls | ✅ | `selector` + `argument_part` → leaf callee (selector chains reduce to the last identifier: `obj.method()` → `method`; `Future.delayed(...)` → `delayed`); source = enclosing function/method/constructor leaf name (derived from the signature that precedes the `function_body` sibling); cascade calls (`..increment()`) → cascade selector leaf; global builtins filtered (`print`, `assert`, `identical`); Object-leaf methods filtered (`toString`, `hashCode`, `runtimeType`, `noSuchMethod`) | 0.9 |
-| extends | ✅ | `superclass` → first `type_identifier` | 1.0 |
-| implements | ✅ | `interfaces` → each `type_identifier` | 1.0 |
-| uses | ✅ | **Four distinct surfaces, not one.** (1) MIXIN — `mixins` child → each `type_identifier`, 1.0. (2) FIELD / MEMBER READ — a `selector` WITHOUT its own `argument_part` (`obj.method` tear-off, `this.count`, `C.total`, `a?.value`), 0.9; a CALLED member is a `calls` edge, not a field read. A `qualified` name under a `constant_pattern` (`case WalletOperationType.recipientLookup:`) is the SAME read parsed the other way round and is read too, 0.9, `isConstantPattern` — the string `qualified` was absent from this analyzer until that fix, so a switch case naming a declared enum member published nothing at all. (3) BARE IDENTIFIER — a plain `return count;` on a declared member of the enclosing type, gated on resolution AND on the name not being locally bound, 0.6, `isBareRead`. (4) TEMPLATE INTERPOLATION — each identifier in `${…}`, 0.9, `isLocalRead`; a name bound by a local DECLARATOR suppresses it, a PARAMETER does not (the TypeScript `interp-uses` parity, `989ba4c7`) | 0.6–1.0 by surface |
-| contains | ✅ | computed from `ownerName` on symbols (single pass) — class/mixin/extension/enum members | 1.0 |
-| references | — | **not emitted at all.** Dart's `uses` surfaces above carry every mention; there is no `references` relationship in the Dart ontology and the live census confirms it (9 classes, none named `references`) | — |
-| instantiates | ✅ | capitalized identifier + `argument_part` selector (Dart has no `new`: `Counter(1)` → instantiates Counter — types are capitalized); `constructor_invocation` (`List<int>.filled(...)`) → the constructed `type_identifier`; redirecting factory (`factory X.y() = X.z;`) → the redirect target type | 0.95 |
-| imports | ✅ | `import_specification` / `part_directive` → module leaf → `${uri}:*` | 1.0 |
-| exports | ✅ | `library_export` → module leaf → exported uri | 1.0 |
-| overrides | ✅ | derived method matching base-class method name; base resolved via extends + cross-file harness companion (`Counter.format → BaseService.format`) | 0.95 |
+**What each of the ten types means IN DART** — not in general. The counts are a
+2,735-file deterministic stride sample across five repositories (600 each from
+`proxicall`, `riverpod`, `flutter-packages`, `dart-sdk`, plus all 335 of
+`dart-http`), measured through the production entry point `parseFile` by
+`validation/m14/fixtures/dart/census.ts`. The BEFORE column is the same 2,735 files
+against the pre-M14 commit (`git show HEAD:src/ast/real-dart-analyzer.ts`) under the
+same harness, so every delta is measured rather than argued.
 
+**Both runs use `BB_DART_CONC=1`, and that is not a default — it is a requirement.**
+The file set is deterministic; the result is not, at concurrency above 1. Measured
+over the same 1,000 files with the same analyzer at `BB_DART_CONC=6`, two runs gave
+36,550 and 36,503 symbols and 124,772 and 124,638 relationships, with every affected
+label LOWER in the second run; at `BB_DART_CONC=1` the same two runs are identical to
+the row. The engine prints `[BB-PARSE-ERR] … memory access out of bounds` on some
+file-parses under concurrency (twice in ~5,500 file-parses, never at concurrency 1),
+so the loss is a failed parse inside the WASM parser, not arithmetic in the census.
+`parseFile` is shared machinery; see §Shared-machinery needs.
+
+| Relationship type | Emitted? | What it means in Dart | How resolved | Count (2,735 files) | BEFORE | Confidence |
+| --- | --- | --- | --- | --- | --- | --- |
+| calls | ✅ | an EXPRESSION was invoked | `selector` + `argument_part` → leaf callee (selector chains reduce to the last identifier: `obj.method()` → `method`; `Future.delayed(...)` → `delayed`); source = enclosing function/method/constructor leaf name (derived from the signature that precedes the `function_body` sibling); cascade calls (`..increment()`) → cascade selector leaf; global builtins filtered (`print`, `assert`, `identical`); Object-leaf methods filtered (`toString`, `hashCode`, `runtimeType`, `noSuchMethod`) | 43,042 | 43,044 (−2, R7 rows) | 0.9 |
+| uses | ✅ | a VALUE was read — four distinct surfaces, not one | (1) MIXIN — `mixins` child → each `type_identifier`, 1.0. (2) FIELD / MEMBER READ — a `selector` WITHOUT its own `argument_part` (`obj.method` tear-off, `this.count`, `C.total`, `a?.value`), 0.9; a CALLED member is a `calls` edge, not a field read. A `qualified` name under a `constant_pattern` (`case WalletOperationType.recipientLookup:`) is the SAME read parsed the other way round and is read too, 0.9, `isConstantPattern`. (3) BARE IDENTIFIER — `return count;` on a declared member of the enclosing type, gated on resolution AND on the name not being locally bound, 0.6, `isBareRead`. (4) TEMPLATE INTERPOLATION — each identifier in `${…}`, 0.9, `isLocalRead`; a local DECLARATOR suppresses it, a PARAMETER does not | 110,679 | 110,762 (−83, R7 rows) | 0.6–1.0 by surface |
+| contains | ✅ | a declaration is a member of a container | computed from `ownerName` on symbols (single pass) — class/mixin/extension/enum members | 119,515 | 119,534 (−19, R7 rows) | 1.0 |
+| imports | ✅ | this file REACHES FOR a module | `import_specification` / `part_directive` → module leaf → `${uri}:*` | 10,657 | 10,657 | 1.0 |
+| references | ✅ **(new)** | this declaration NAMES A TYPE in a type position | every `type_identifier` outside the positions another label already publishes, gated on the name binding to a type this run can see — same file always, `projectIndex.typeKinds` when an index is supplied | **5,265** | **0** | 0.95, `isTypeMention` + `typePosition` + `isIndexResolved` |
+| exports | ✅ | this library PUBLISHES a module | `library_export` → module leaf → exported uri | 302 | 302 | 1.0 |
+| extends | ✅ | a type INHERITS a base type | `superclass` → first `type_identifier`; a mixin `on`-base is the same edge (DARTD14) | 4,730 | 4,730 | 1.0 |
+| implements | ✅ | a type SATISFIES an interface | `interfaces` → each `type_identifier` | 758 | 758 | 1.0 |
+| overrides | ✅ | a member REPLACES one it inherits | derived method matching base-class method name; base resolved via extends + the cross-file companion | 90,352 | 90,352 | 0.8 |
+| instantiates | ✅ | an object of a type was CONSTRUCTED | capitalized identifier + `argument_part` selector (Dart has no `new`: `Counter(1)` → instantiates Counter — types are capitalized); `constructor_invocation` (`List<int>.filled(...)`) → the constructed `type_identifier`; redirecting factory (`factory X.y() = X.z;`) → the redirect target type | 18,374 | 18,374 | 0.95 |
+
+Total relationships on the sample: **403,674** after, **398,513** before —
++5,265 new `references`, −104 net from the R7 filter. Those two deltas account for the
+whole difference: 398,513 + 5,265 − 104 = 403,674, and every other label's count is
+identical in the two runs.
+
+The R7 rows are **106**, not 104, and the difference is not an error: the filter
+shares its loop with the dedup, and two of the 85 `uses` rows it drops were duplicates
+the dedup was discarding anyway. Per label, BEFORE: 85 `uses`, 19 `contains`, 2
+`calls`. AFTER: **0**, with `symbolsNamedUnknown 0` — no sampled file publishes a
+symbol named `unknown`, because `keepSymbol`'s universal denylist rejects the name for
+every language, so every one of those 106 rows was an endpoint nothing could bind.
+
+### The tenth type: `references`
+
+The rule in one line: **`X references T` iff the declaration `X` names the type
+`T` in a type position, and `T` binds to a type declaration this run can see.**
+
+Both clauses are needed and they fail independently.
+
+**The mention is a parse fact.** In this grammar `type_identifier` is the node the
+parser builds for a type name and never appears where a value identifier appears,
+so "this names a type" needs no capitalization heuristic and no shape guess. The
+parent-position inventory that decided which positions publish is measured, not
+recalled — `validation/m14/fixtures/dart/type-position-probe.ts` walks the same
+corpus and prints it: 75,769 type mentions outside heritage clauses across the
+1,000-file sample, led by `getter_signature` 17,274, `formal_parameter` 14,292,
+`type_arguments` 13,201, `function_signature` 6,709, `declaration` 3,312,
+`initialized_variable_definition` 3,188, `type_cast` 1,833, `type_test` 910,
+`try_statement` 215 (an `on T catch`), `type_bound` 59, `type_alias` 78,
+`qualified` 646 (the leaf of `prefix.Type`), and 28 further positions.
+
+**The binding is not a parse fact, which is why the label is gated.** 3,460 of
+those 75,769 mentions (4.57%) name a type the same file declares. The other 95.43%
+name `String`, `Widget`, `Future` — real types, in `dart:core` and the Flutter SDK,
+declared in files a per-file run has not read. Publishing them would make the label
+mostly a list of SDK type names at roughly 22× the edge count, and every one of
+them an endpoint no symbol in the index can bind. **So the unresolvable majority is
+deliberately unread, and the number is stated here rather than left to be found
+downstream.**
+
+Positions that are NOT published, each with its reason:
+
+| Position | Why not |
+| --- | --- |
+| `superclass`, `interfaces`, `mixins`, `mixin_declaration`, `mixin_application` | heritage already publishes `extends` / `implements` / `uses`; a second label for one fact is a double count |
+| `new_expression`, `const_object_expression`, `constructor_invocation`, `redirecting_factory_constructor_signature` | construction already publishes `instantiates` |
+| `type_parameter` | `class Box<T>` DECLARES a type variable; a mention of `T` resolves to the variable, refused by `isTypeParameterShadowed` |
+| `ERROR` | nothing inside a parse-error region is a fact about a well-formed program |
+
+Three further refusals are not about positions but about names:
+
+- `dynamic` — Dart's IMPLICIT type, the absence of a declared type rather than a
+  dependency on one. It is spelled as a type name, so it needs the explicit
+  exclusion the fixture pins.
+- a self-reference — an UNNAMED extension (`extension on String {}`) is published
+  under its TARGET TYPE's name, so without this rule it publishes
+  `String references String`. An UNNAMED extension is also kept out of the
+  visible-type set for the same reason: admitting it would make every mention of
+  `String` in the file resolve to this file's extension.
+- a name no visible type answers to — the gate itself.
+
+Source attribution is the lane's existing rule for a non-function context
+(DARTD8/DARTD9): the innermost PUBLISHED declaration that mentions the type. A
+member's own signature; a type's own declaration (including a `typedef`'s aliased
+type and an extension's `on` clause); the FILE for a top-level mention, by the
+file's base name — the same convention `calls` and `instantiates` already use. Two
+attribution shapes are set by the GRAMMAR rather than by the text, and both are
+measured:
+
+- a **LOCAL FUNCTION** is not a published symbol (`local_function_declaration >
+  lambda_expression > function_signature`), so its type mention folds into the
+  function that encloses it. Publishing the local function's own name would make the
+  SOURCE endpoint a symbol nothing can bind.
+- an **expression-bodied member** is not always a method: tree-sitter-dart resolves
+  `foo() => Bar(...)` to `method_signature > constructor_signature`, so the source
+  is the family name `constructor`, the same name `contains` gives that symbol. The
+  two labels have to agree on a constructor's identity or a graph cannot join them.
+
+The fixture that holds all of this is
+`validation/m14/fixtures/dart/type-references.dart` — 14 expected rows and 15
+forbidden ones, each forbid naming a shape where a plausible widening either
+double-counts another label or claims a mention the source does not make.
+
+### Defects found and fixed while establishing this lane's numbers
+
+Four, all in this lane's own code, all found by measurement rather than by reading.
+Three were found in code this wave wrote; the fourth is in the census harness this
+lane also wrote, and it is the one that had been quietly mis-reporting.
+
+1. **The type-variable gate never fired for a CONSTRAINED type variable.**
+   `isTypeParameterShadowed` compared `type_parameter.text` against the mentioned
+   name, and a `type_parameter` node's text SPANS ITS BOUND — `class Box<T extends
+   Wallet>` is one node whose text is `"T extends Wallet"`. So the comparison never
+   matched any generic with a bound, which is the common case. On a 9-line
+   reproduction whose file also declared `class T {}`, the analyzer published
+   `Box -> T`, `get -> T` and `put -> T`: three edges that RESOLVE, at the wrong
+   declaration, because inside `Box` the name is the type variable. Fixed by reading
+   the parameter's `type_identifier` child instead of its text, on both the analyzer
+   side and the oracle side. **Corpus effect: 0 rows** — 2,735 files contain no
+   constrained type variable whose name is also a declared type in the same file, so
+   this is a reachable defect with no corpus incidence, and the fixture
+   (`class Shadowed<T extends Shadowed>` beside `class T {}`) is what holds it.
+2. **The oracle read three shapes the analyzer does not.** A corpus agreement run at
+   150 files per repository disagreed on 19 of 1,210 rows, and every one of the 19 was
+   the ORACLE's reading, never a fabricated analyzer row:
+   - it named a local function as the source (13 rows, all inside closures in
+     `material_ui/test/dropdown_menu_test.dart`);
+   - it did not treat a class ALIAS as a type declaration (`class SuperC = S with M;`
+     puts the name inside `mixin_application_class`, so a `name`-field read sees no
+     class at all — 2 rows);
+   - it tested for a constructor signature before descending the wrapper, so it
+     missed every expression-bodied member the grammar calls a constructor (3 rows).
+   After the fixes: **1,203 of 1,203 rows agreed over the same 799 files, 0 missing,
+   0 unexplained.** Each fix is pinned by a case in the battery.
+3. **The census reported a capped counter as a total.** `unknownEndpoints` was one
+   array used both as the counter and as the capped example list, and the report read
+   `.length` off it while the pushes stopped at 40 — so every run whose true count
+   exceeded the cap printed exactly `40`. That is how a 2,351-file measurement came to
+   be quoted as 40 when the true figure is 239. Fixed by separating the counter from
+   the sample list, and the count is now reported per label as well, because "106
+   rows carry the literal" and "which labels" are two questions.
+4. **A named-constructor leaf call can name the placeholder** — the R7 defect, above.
+   106 rows on the 2,735-file sample, 239 on proxicall's full tracked set.
+
+### The one type that was missing is not the only defect the census found
+
+`references` was believed missing and was. Two further defects surfaced while
+establishing the baseline, and both are in this analyzer:
+
+1. **106 relationships carried the placeholder literal `unknown` as an endpoint**
+   (M60 rule R7), on the 2,735-file sample: 85 `uses`, 19 `contains`, 2 `calls` —
+   and 239 rows on proxicall's full 2,351-file tracked set (154 `uses`, 68
+   `contains`, 17 `calls`). Two constructions produce them, and both are the same
+   shape at the leaf:
+   - a selector chain reduced to its leaf, where the leaf of a constructor call on a
+     capitalized type is the named constructor's segment and the segment is the word
+     `unknown` — `ApiError.unknown('Data transformation failed: $e')`,
+     `proxicall/lib/services/api/api_response.dart:172`;
+   - a same-named enum constant read through its type —
+     `enum SegmentType { …, unknown, … }` in
+     `proxicall/lib/models/nms/user_segment.dart:37`, read at line 60 and 82.
+   After the filter: **0**, measured on both sample sets.
+   The alternatives were each worse: `map calls ApiError` claims a call is a call
+   OF the type, and promoting the row to `instantiates` would extend DT-A's
+   in-file named-constructor evidence to a cross-file guess. The edge goes, which
+   is what R7 prescribes — the honest state is absence, not the string `unknown`.
+   **What it costs is measured rather than assumed:** all 106 targets named symbols
+   that the store never receives, because `keepSymbol`'s universal denylist
+   (`src/ast/pool-worker.ts`) drops the name `unknown` for every language, and the
+   census counts 0 surviving symbols named `unknown` in the same sample. So the
+   graph loses nothing; the edges pointed at nothing. The price that IS real is one
+   declaration: `user_segment.dart`'s enum constant is named `unknown`, it loses any
+   edge to it, and it had none before the filter either.
+   The one cost outside the analyzer is in the DIFFERENTIAL, and it is a supervisor
+   item: the oracles still derive such rows (measured 9 per 525 files,
+   `validation/m14/fixtures/dart/r7-truth-cost.ts`), and the harness matches on
+   (label, target), so every one it samples now reads MISSING. See §Shared-machinery
+   needs below.
+2. **`references` was the only one of the ten types the differential does not
+   compare** — see DERIVATION below.
+
+
+## Verdicts, one per relationship type (M14 ontology wave)
+
+Each of the ten types carries exactly one verdict. **There is no RULED type in this
+lane any more**: all ten are emitted, so the arbiter has nothing left to rule and
+the falsifiable-ruling machinery is vacuous here. That is a statement about the
+measurement, not a preference — the counts in the table above come from production
+`parseFile` over 1,000 corpus files, and a type with a non-zero count cannot be
+ruled.
+
+| Type | Verdict | Count (2,735 files) | Evidence |
+| --- | --- | --- | --- |
+| calls | EMITTED | 43,042 | production `parseFile`, `BB_DART_CONC=1`, sample files listed in the census JSON |
+| uses | EMITTED | 110,679 | same |
+| contains | EMITTED | 119,515 | same |
+| imports | EMITTED | 10,657 | same |
+| references | EMITTED | 5,265 | same; `type-references` fixture (14 expect / 15 forbid) + lane oracle at 100.0% (1,203/1,203 rows) over 799 corpus files |
+| exports | EMITTED | 302 | same |
+| extends | EMITTED | 4,730 | same |
+| implements | EMITTED | 758 | same |
+| overrides | EMITTED | 90,352 | same |
+| instantiates | EMITTED | 18,374 | same |
+
+Corpus: `proxicall` (600 of 2,351 tracked, stride 3), `riverpod` (600 of 1,295,
+stride 2), `flutter-packages` (600 of 4,033, stride 6), `dart-sdk` (600 of 25,734,
+stride 42), `dart-http` (all 335). Sampling is a deterministic stride over
+`git ls-files '*.dart'` sorted, per repository — no randomness, so a reviewer
+reproduces the same 2,735 file set from a clean corpus.
+
+Reproduce:
+
+```bash
+BB_DART_CONC=1 npx tsx validation/m14/fixtures/dart/census.ts    # the table above
+npx tsx validation/m14/fixtures/dart/type-position-probe.ts      # the position inventory
+npx tsx script/m14/verify-dart-references.ts                     # 38 shapes, both sides
+BB_DART_PER_REPO=150 npx tsx script/m14/verify-dart-references.ts --corpus
+bun run script/m14/run-fixtures.ts --lang dart                  # 15 fixtures
+BB_MUTANT_ONLY="dart/" bun run script/m14/mutate-analyzer.ts      # 42/42 caught
+```
+
+### The six questions, per emitted type
+
+They fail independently, so each is answered with its own measurement. Resolution is
+given in three scopes because they answer different questions: `file` is this file's
+symbols, `sample` is every sampled file's, and `repo` is every sampled file of the
+SAME repository — the narrowest honest cross-file scope, since a per-file analyzer
+cannot see another file and a type declared in one is a real symbol the edge can
+legitimately name. All figures below are the 2,735-file run.
+
+| Type | 1 Exists | 2 Fires | 3 Correct | 4 Labelled | 5 Resolved | 6 Confident |
+| --- | --- | --- | --- | --- | --- | --- |
+| calls | ✅ | ✅ 43,042 | ✅ differential, 60-file proxicall sample: 6,120/6,220 truth rows covered, **0 unexplained** | ✅ | src 99.1% file / tgt 22.1% file / 51.4% sample / 50.8% repo | 35 of 43,042 under 0.7 (0.1%), min 0.4 — sub-threshold `uses`-style reads inherited from the shared bare-read surface |
+| uses | ✅ | ✅ 110,679 | ✅ same run, 0 unexplained | ✅ four surfaces, each pinned by a fixture; no surface borrows another's label | src 99.3% / tgt 25.5% file / 56.2% sample / 60.1% repo | 13,325 of 110,679 under 0.7 (12.0%), all the bare-read surface at 0.6 — the largest heuristic class in the lane |
+| contains | ✅ | ✅ 119,515 | ✅ `deriveDartContainsTruth`, 37/37 shapes exact, and 0 unexplained in the differential | ✅ | **both ends 100.0%** — the only label in the lane that resolves at both ends by construction | 0 under 0.7 |
+| imports | ✅ | ✅ 10,657 | ✅ `deriveDartImportsTruth`, 7,340 rows measured EXACT on both corpora | ✅ | src 2.7% / tgt 0.0% both-ends: targets are module URIs (`package:foo/src/x.dart:*`), and a URI is not a symbol in this index | 0 under 0.7 |
+| references | ✅ | ✅ 5,265 | ✅ lane oracle `script/m14/oracles/dart-references.ts` — **1,203/1,203 rows agreed (100.0%), 0 missing, 0 unexplained** over 799 corpus files, and 38/38 shapes exact in the battery | ✅ 14 expect rows name the position they came from; 15 forbid rows cover heritage, construction, type variables (including a constrained one shadowing a same-named class), self-reference, `dynamic` and the resolution gate | src 97.9% / **tgt 100.0% by construction** / both-ends 97.9% / both-ends-in-repo 98.6% / both-ends-in-sample 98.5% | **0 of 5,265 under 0.7** — all `usage_contextual` at exactly 0.95, min = mean = 0.95 |
+| exports | ✅ | ✅ 302 | ✅ same oracle as imports | ✅ | 0.0% both-ends, same URI shape | 0 under 0.7 |
+| extends | ✅ | ✅ 4,730 | ✅ differential, 0 unexplained | ✅ alias-free leaf resolution (DAD1), pinned by `dart/heritage-alias-not-resolved`'s fixture twin | src 100% / tgt 15.0% file / 27.1% repo | 0 under 0.7 |
+| implements | ✅ | ✅ 758 | ✅ differential, 0 unexplained | ✅ alias-free (DAD2) | src 100% / tgt 29.7% file / 45.1% repo | 0 under 0.7 |
+| overrides | ✅ | ✅ 90,352 | ✅ `verify-dart-overrides` 14/14 shapes exact — **but the differential does not compare this label**, see DERIVATION | ✅ exposer-not-declarer, instance-vs-static, breadth-not-depth, all pinned with a negative twin per rule | src 100% / tgt 2.3% file / **0.0% repo** | 0 under 0.7; 88,211 of 90,352 rows are the external-base form, all at 0.8 |
+| instantiates | ✅ | ✅ 18,374 | ✅ differential, 0 unexplained | ✅ construction only, never a call (DT-A) | src 96.8% / tgt 13.4% file / 22.4% repo | 0 under 0.7 |
+
+Three things in that table need reading rather than skimming.
+
+**"Correct" for `calls`, `uses`, `extends`, `implements` and `instantiates` is the
+differential's word, and the differential has a declared blind spot:** the analyzer
+and the oracle are two walkers over ONE grammar, so a defect in the grammar's own
+vocabulary is invisible to both. `references` does not have that excuse for its
+first half — the oracle is a second implementation of the same measured rule, and
+its agreement is evidence about implementation disagreement, not about the rule.
+The rule's own argument is the fixture battery and the position inventory.
+
+**The resolution rates for `calls`, `uses`, `instantiates`, `extends` and
+`implements` are low and that is not new.** They are low for the same reason CSS
+`references` is the family reference point at 66.8%: a per-file analyzer names
+targets that live in other files, and the index binds them when the whole project
+is read. `references` is the only label whose target resolves in-file by
+construction, because resolution is its gate — and the honest reading of that is
+that it is also the only label that cannot tell you about a dependency this file has
+on a type in another file.
+
+**`overrides` resolves at 0.0% in every cross-file scope, and that is a shape rather
+than a rate.** 88,275 of its 90,352 unresolved targets are `dotted-path`: the edge
+names `State.setState`, not `setState`, so it cannot match a bare symbol name in any
+scope. The 2.3% in-file figure is the honest one for a per-file run. Whether the
+dotted spelling is the right endpoint for a cross-language graph is a question about
+the whole family and not this lane's to answer; it is recorded here because a reader
+of `overrides` for Dart will otherwise read 0.0% as "no base was ever found".
+
+### DERIVATION findings
+
+A DERIVATION finding is a type the analyzer emits that the differential never
+audits — stored and compared against nothing. **This lane had one at handover and
+has one now, and it is a different one from the one the recorded baseline names.**
+
+`script/m60/rel-type-coverage-gate.ts --langs=dart`, run on this branch:
+
+```
+CHECK 1 — DERIVATION: every emitted type has an oracle derivation
+  dart         2 un-audited: ["overrides","references"]
+```
+
+- **`overrides`** — pre-existing, and it is a harness gap rather than a lane gap:
+  the oracle exists (`script/m14/oracles/dart-overrides.ts`, pushed as
+  `deriveDartOverridesTruth`) and the analyzer-side allowlist excludes the label for
+  dart at `script/m14/differential.ts:23153` (`lang !== "dart"` in the overrides
+  arm). Because the allowlist filters the ANALYZER side only, the truth rows land
+  as permanent MISSING: **100 on a 60-file proxicall sample and 14 on dart-http,
+  every one of them an `overrides` row.** Declared in this lane's spec
+  (`script/m14/spec/dart-completeness.json` → `label_coverage.declared_gaps`), so
+  `verify-label-coverage.ts` reports it as declared rather than undeclared.
+- **`references`** — introduced by this wave, and it is the honest cost of adding a
+  label ahead of its wiring. The oracle exists and the battery is green; the
+  allowlist drops the label, so the 5,265 rows are compared by nothing.
+  Declared in the same spec entry with the reason and the `closes_when`.
+
+The recorded baseline (`validation/m60/results/rel-type-coverage.json`, 2026-10-01)
+says dart audits 5 labels and has 4 DERIVATION findings; this branch's gate reports
+2. The difference is the M60 label-coverage sweep, which wired the `contains`,
+`imports` and `exports` oracles after that artifact was written. The baseline file
+is supervisor-owned and was not regenerated here.
+
+## Declared limitations
+
+A blank list on a Turing-complete language is treated as dishonesty, not as
+excellence. This is not blank, and the entries are ordered by how much they could
+mislead a reader of the graph.
+
+1. **95.43% of Dart's type mentions are deliberately unread.** `references` gates
+   on the mentioned type being visible to the run, and production supplies no
+   project index for `.dart` (`parallel-indexer.ts` `PROJECT_INDEX_EXTENSIONS`
+   names only `.sol`), so the published set is file-local. Every fact in this
+   document about `references` volume is therefore a LOWER bound on what the
+   language expresses, stated as a lower bound rather than as the whole.
+2. **Cross-file type dependency is not published, so `bb_impact` cannot answer
+   "who depends on this type" for a project.** The label answers the intra-library
+   question. A run with an index answers more, and every row records which of the
+   two answers it is (`isIndexResolved`).
+3. **A self-type mention is not published.** `class A { final A? next; }` names
+   `A` inside `A`, and the source and target are then the same symbol, so nothing
+   is published. Measured cost: unmeasured on the corpus (the guard fires rarely
+   enough that it did not appear in the sample's top rows), and the case is pinned
+   by a fixture instead.
+4. **A field's type mention folds to the owning class, not to the field.** The
+   lane's DARTD9 convention, applied consistently here for the first time to a
+   type position. So `class A { final B b; }` publishes `A references B`, and the
+   edge from the FIELD itself is absent. A reader wanting per-field type
+   dependencies is not served by this label.
+5. **`dynamic` is filtered as a type mention.** It is the absence of a type, not a
+   dependency, and it is the most common type position in idiomatic Dart after
+   `var`. Every untyped declaration therefore contributes no `references` row.
+6. **Cross-file named constructors still publish a leaf `calls` edge.** DT-A's
+   rule — an unknown cross-file `X.y()` stays a leaf call — predates this wave and
+   is unchanged, so `RemoteFailure.parsing(raw)` publishes `calls load -> parsing`
+   where `parsing` resolves to nothing (constructors are published as `constructor`
+   and the named segment lives in metadata). The R7 filter removes the same shape
+   only when the segment is the literal `unknown`; the general case is a declared
+   limitation, pinned as it stands by `dart/unknown-endpoint-r7` so a future change
+   to it is deliberate rather than a side effect.
+7. **The `references` oracle agrees with the analyzer by construction on the rule,
+   and independently on the implementation.** Both were written from the same
+   MEASURED position inventory, so agreement is evidence that two implementations of
+   one rule do not diverge — not that the rule is right. A defect in the inventory
+   would be shared. The fixtures carry that argument and they were authored from
+   the language before the analyzer run.
+8. **Files over 1 MB never reach this analyzer.** `parseFile` routes them to the
+   pool worker's structural extractor, which publishes `{name, type, startLine,
+   endLine}` symbols with no `kind` and no relationships at all. Measured on the
+   sample: 4 of the 2,735 files, carrying 1,068 fallback symbols between them (and
+   1 more file over the 5 MB skip limit, which is never parsed at all). A census
+   that counts symbol kinds across such files is measuring the fallback; this
+   lane's census counts and reports them apart.
+9. **Parse damage inside an `ERROR` region publishes nothing.** 11 of 1,000 sampled
+   files carried ERROR nodes (88 parse errors), and a type mention inside a damaged
+   region is not a fact about a well-formed program.
+10. **`bb`-visible cross-file `overrides` and `references` are unaudited by the
+    differential** (DERIVATION, above). Both have oracles and batteries; neither is
+    wired into the harness's comparison.
+
+## Shared-machinery needs (reported, not edited)
+
+Five changes outside this lane's ownership, each stated so it can be applied
+without re-deriving it. The files are supervisor-owned per
+`docs/analyzers/ONTOLOGY-WORKSTREAM.md` §Ownership.
+
+1. **`script/m14/ontology-coverage-gate.ts` — add a `dart` entry to
+   `RULED_BY_LANG` (line ~183: `const RULED_BY_LANG: Record<string, Ruled[]> = {
+   bash: BASH_RULED, json: JSON_RULED }`).** What it must do: accept an EMPTY
+   ruling table for a lane that emits all ten types. Why: the gate currently exits 2
+   with "no RULING TABLE for dart" BEFORE its verdict loop, so it prints no table at
+   all for a lane with nothing to rule — which is this lane. The refusal is
+   right for a lane with a non-emitting type and wrong for one that emits 10/10, and
+   the check has no way to tell them apart because it runs before the observation.
+   The condition should be `RULED_BY_LANG[LANG] === undefined && LANG !== "dart"`,
+   or better: move the refusal after the observation and refuse only when some type
+   is neither observed nor ruled. With that one term, this lane's arbiter run prints
+   `emitted 10/10` and exits 0. Measured run today (exit 2):
+   ```
+   ontology coverage gate — dart
+   corpus: 563 admitted files
+
+   ontology coverage gate — no RULING TABLE for dart.
+   ```
+   Note the corpus: the gate walks every tracked file in every corpus repo and
+   parses them all, which for this language is **37,753 `.dart` files** across 6
+   repositories. At the 0.157 s/file this lane measures through `parseFile`, that is
+   ~1.6 h for the emission pass plus a second full parse for instrument A. The run
+   above used `BB_CORPUS_ROOT` pointed at a 565-file symlink sample so it would
+   finish; the full-corpus run was not performed, and that is a limit of this
+   report rather than a claim about it.
+2. **`script/m14/differential.ts` — admit the two labels for dart.** Two edits, both
+   required together (truth without the allowlist entry reads as a fabricated
+   MISSING; the allowlist entry without the truth reads every row as unexplained):
+   - push `deriveDartReferencesTruth(root, dartProjectIndex ? [...dartProjectIndex.typeKinds.keys()] : undefined, path.basename(relPath, path.extname(relPath)))` in the `if (lang === "dart")` block at line ~22756, next to the four existing pushes;
+   - add `"references"` to the dart arm of the compared-label filter at line ~23186
+     (`...(lang === "dart" ? ["imports", "exports"] : [])` → `["imports","exports","references"]`).
+   Measured expectation after both edits: `references` becomes comparable at 100.0%
+   agreement with 0 unexplained, from the 799-file oracle run (1,203/1,203 rows).
+   Before them, 5,265 rows per 2,735 sampled files stay invisible.
+   The same paragraph is where `overrides` belongs for dart: the `lang !== "dart"`
+   term at line 23153 is what turns a wired oracle into 114 permanent MISSING rows
+   on the two 60-file lanes.
+3. **A symmetric R7 guard in the comparison.** The harness already applies one for
+   the EMPTY endpoint (`truth = truth.filter(t => String(t.target ?? "").trim().length
+   > 0)`, line ~23473, with a comment explaining that a rule only one side obeys
+   turns into a false gap). The literal `unknown` needs the same treatment on both
+   sides: the analyzer now publishes 0 such rows and the oracles still derive them
+   (9 per 525 files, measured by `validation/m14/fixtures/dart/r7-truth-cost.ts`),
+   and the matcher compares on (label, target), so every row the differential
+   samples reads MISSING. What it must do: drop rows whose source or target is the
+   literal `unknown` from `truth` and from `rels` in the same place, and count them.
+   Why here and not in the analyzer: a rule one side obeys manufactures a gap, and
+   all 106 removed rows named endpoints the store never receives anyway
+   (`keepSymbol` drops the name `unknown` universally).
+4. **`script/m14/mutate-analyzer.ts` — four mutants for the two new behaviours.**
+   The file is supervisor-owned and the 42 existing dart mutants are unaffected by
+   this wave, so nothing currently fails if `references` or the R7 filter is
+   deleted. Suggested, in the shape of the existing dart entries (each is a
+   `transform: r => ({...r, relationships: (r.relationships ?? []).filter(...)})`):
+   - `dart/references-dropped` — filters `x.type !== "references"`. Caught by
+     `dart/type-references` (13 expect rows).
+   - `dart/references-resolution-gate-removed` — appends
+     `{ source: "consume", target: "String", type: "references", confidence: 0.95 }`.
+     Caught by the `consume -> String` forbid (fabrication class).
+   - `dart/references-heritage-double-count` — appends
+     `{ source: "Derived", target: "Wallet", type: "references", confidence: 0.95 }`.
+     Caught by the `Derived -> Wallet` forbid (double-count class).
+   - `dart/r7-unknown-endpoint-reintroduced` — appends
+     `{ source: "load", target: "unknown", type: "calls", confidence: 0.9 }`. Caught
+     by the label-independent forbid in `dart/unknown-endpoint-r7`.
+   - `dart/references-confidence-inflated` — rewrites every `references` row's
+     confidence to 1. Caught by the exact `confidence: 0.95` pin in
+     `dart/type-references`.
+   - `dart/references-type-parameter-shadow-removed` — deletes the
+     `isTypeParameterShadowed` guard. Caught by the `Shadowed -> T` forbid, which is
+     the only pin in the fixture that a same-named declared class makes load-bearing.
+
+   **What was verified here without touching that file**, because the mutants are
+   supervisor-owned: each of the six behaviours above was removed from the analyzer
+   one at a time and `run-fixtures.ts --lang dart` re-run. Five of the six turned the
+   suite red on the fixture named above; the sixth — the type-parameter shadow guard —
+   did NOT, because at the time no fixture contained a constrained type variable whose
+   name was also a declared type, so deleting the guard was invisible. That gap is
+   what produced defect 1 under *Defects found and fixed*, and it is closed now. The
+   remaining five are: the double-counted-position guard, the qualified-name read, the
+   exact confidence, the R7 filter, and the drop-the-label mutation.
+5. **`src/ast/pool-worker.ts` / `src/ast/engine.ts` — two parse-path findings, both
+   measured on this lane's corpus and neither caused by this lane.**
+   - **`parseFile` is not concurrency-safe.** Two runs of the same 1,000 files with
+     the same analyzer at concurrency 6 gave 36,550 and 36,503 symbols and 124,772 and
+     124,638 relationships; at concurrency 1 the same two runs are identical. The
+     engine's `[BB-PARSE-ERR] … memory access out of bounds` message is the tell — it
+     appeared twice in ~5,500 file-parses under concurrency and never at concurrency
+     1 — so a file silently contributes fewer symbols and edges. What it must do:
+     either serialize the parse or make the failure visible as a per-file result the
+     caller can count, because a caller that parallelizes (every census harness,
+     including this lane's) currently gets a number that is not reproducible. Why it
+     matters beyond this lane: any measurement taken at concurrency > 1 is not a
+     measurement, and nothing in the API says so.
+   - **A single file can take the whole process down.** `src/ast/engine.ts` line ~1408
+     arms a 120 s `setTimeout` that writes `[BB-HANG] parser stuck 120s on <file>` and
+     calls `process.exit(1)`. Observed twice in ~5,500 file-parses, on
+     `dart-sdk/pkg/vm_service/test/step_through_call_on_field_in_class_lib.dart` in one
+     run and `riverpod/packages/riverpod/lib/src/core/override_with_value.dart` in
+     another, each preceded by `[BB-PARSE-ERR] … memory access out of bounds` on the
+     SAME file — so the hang follows the parse failure rather than being independent.
+     Rate: 1 file in 2,735 sampled (0.037%). What it must do: abort that file's parse
+     and return an error for it, rather than exiting the process; the indexer is
+     incremental by design and this makes one pathological file lose the whole run.
 
 ## Supported constructs
 

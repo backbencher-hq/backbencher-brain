@@ -161,6 +161,14 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
       // tril)(x)`. Counted, because the alternative is that these vanish from the totals
       // and a reader cannot tell "no such calls" from "not measured".
       callsToUnnameableCallee: 0,
+      // `uses` accounting. The three numbers the `uses` surface cannot hide behind:
+      // a member read already carried by `calls`, a member WRITE, and a read with no
+      // enclosing named symbol to attribute to. Each is counted rather than dropped,
+      // for the reason the counter above states.
+      memberReadsSuppressedByCall: 0,
+      memberWrites: 0,
+      memberReadsUnresolvedScope: 0,
+      memberReadsWithComputedIndex: 0,
     }
 
     if (rootNode.hasError) {
@@ -237,6 +245,19 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
         stack.push(EXIT_MARKER)
       } else if (type === "subset" || type === "subset2") {
         this.pushIfUnique(metadata.patterns, "Vectorized Subsetting")
+        // `df[["col"]]` is the base-R spelling of a member read and `df$col` is the
+        // tidyverse one; both name a member, so both belong to the same surface.
+        //
+        // This MUST be inside this branch rather than a following `else if`. The walk
+        // is one `if / else if` chain, so a separate `else if (type === "subset2" && …)`
+        // is unreachable — `type === "subset2"` has already matched above — and the
+        // `[[` surface emitted nothing while this fixture reported it missing. A gate
+        // that cannot be reached is not a gate.
+        if (type === "subset2" && this.stringSubsetIndex(current)) {
+          this.handleMemberRead(current, fnStack, relationships, ambiguity)
+        }
+      } else if (type === "extract_operator") {
+        this.handleMemberRead(current, fnStack, relationships, ambiguity)
       } else if (type === "unary_operator" && current.childForFieldName("operator")?.text === "~") {
         this.pushIfUnique(metadata.patterns, "Formula Interface")
         if (metadata.statisticalFocus !== undefined) metadata.statisticalFocus += 10
@@ -325,6 +346,24 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
     // base class DECLARED IN THIS SAME FILE is a provable override. A base that
     // lives in another package cannot be resolved from syntax, so no edge is
     // invented for it — the scope limit is stated on the edge.
+    //
+    // DIRECTION. This used to push `(base, member)`, which says "the BASE class's
+    // member overrides something". `Child2$render` is what overrides `Base2$render`;
+    // the derived declaration is the override and the base declaration is what it
+    // overrides. Every other analyzer in this repo runs the edge the other way —
+    // real-kotlin-analyzer.ts:537 emits `${ownerName}.${s.name}` -> `${parent}.${s.name}`,
+    // real-java-analyzer.ts:1866 emits the overriding task's FQN -> the overridden
+    // FQN, and script/m60/objc-line-truth.ts:77 states the line contract in as many
+    // words: "an override's line is the overriding declaration". The old direction
+    // also put the answer in metadata (`overriddenBy`) while asserting the opposite
+    // in the source position, and F12-edges.R is the fixture that shows it: three
+    // classes declare `render`, and the single edge read `overrides Base2 -> render`.
+    //
+    // The TARGET stays the bare member name because that is the name R publishes the
+    // method under (`name: "render"`, `ownerName: "Base2"`), and an edge whose target
+    // resolves to nothing is an edge the graph cannot walk. That leaves a real
+    // ambiguity when two classes in one file declare the same member name, so both
+    // qualified names ride in metadata where a consumer can read them.
     for (const [className, bases] of classBases) {
       const own = classMembers.get(className)
       if (!own || !own.length) continue
@@ -333,12 +372,14 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (!inherited) continue
         for (const member of inherited) {
           if (!own.includes(member)) continue
-          this.pushRel(relationships, base, member, ASTEngine.RelationshipType.Overrides, 0.95, {
+          this.pushRel(relationships, className, member, ASTEngine.RelationshipType.Overrides, 0.95, {
             rSpecific: true,
             relationshipSubType: "object_system_method_override",
-            overriddenBy: className,
+            overridingMember: `${className}$${member}`,
+            overriddenMember: `${base}$${member}`,
+            overriddenClass: base,
             reasonCode: "base_class_declared_in_same_file",
-            reason: `base class \`${base}\` is declared in this file, so the shadowing member is provably an override`,
+            reason: `\`${className}$${member}\` shadows \`${base}$${member}\`, whose class is declared in this file, so the shadowing member is provably an override`,
           }, memberLine.get(`${className}\u001f${member}`) ?? classDeclLine.get(className))
         }
       }
@@ -417,6 +458,10 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
       throughClosure: ambiguity.callsAttributedThroughClosure,
       heuristicS3Generic: ambiguity.heuristicS3Generic,
       unnameableCallee: ambiguity.callsToUnnameableCallee ?? 0,
+      memberReadsSuppressedByCall: ambiguity.memberReadsSuppressedByCall,
+      memberWrites: ambiguity.memberWrites,
+      memberReadsUnresolvedScope: ambiguity.memberReadsUnresolvedScope,
+      memberReadsWithComputedIndex: ambiguity.memberReadsWithComputedIndex,
     }
 
     this.byteOffsetOf = null
@@ -818,7 +863,28 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
           }
         }
       }
-      if (doc && this.roxygenHasTag(doc, "@export")) exports.push({ name: className, kind: ASTEngine.SymbolKind.Class })
+      // The EXPORT names the R BINDING, not the declared class name.
+      //
+      // `#' @export` on `class_logical <- new_base_class("logical")` marks the object
+      // bound on the LEFT for export, so roxygen2 writes `export(class_logical)`. This
+      // line pushed `className`, so it emitted `exports global -> logical` and no
+      // `exports global -> class_logical` — and the symbol layer eleven lines above
+      // had already published BOTH names and linked them with an `s7_class_binding`
+      // edge, so the graph simultaneously asserted that `logical` is not the package's
+      // export and that the package exports `logical`.
+      //
+      // S7's own roxygen-generated NAMESPACE settles which is right, and it is not a
+      // matter of opinion: `export(class_logical)` is at S7/NAMESPACE:66, there are 25
+      // `export(class_*)` lines, and `export(logical)` / `export(double)` /
+      // `export(integer)` appear ZERO times in the file. Found by the lane oracle
+      // (validation/m14/fixtures/r/oracle-r.ts) as 17 UNEXPLAINED `exports` edges.
+      //
+      // The kind follows the symbol actually published under `name`: the binding is a
+      // `Variable` when the declared name differs (line 814) and the `Class` itself when
+      // it does not.
+      if (doc && this.roxygenHasTag(doc, "@export")) {
+        exports.push({ name, kind: declared && declared !== name ? ASTEngine.SymbolKind.Variable : ASTEngine.SymbolKind.Class })
+      }
       return true
     }
 
@@ -1553,6 +1619,228 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
       return arg
     }
     return null
+  }
+
+  // ------------------------------------------------------------------ member reads
+
+  /**
+   * The `arguments` of a `subset2`, i.e. `x[[ ... ]]` -- not the same node as the
+   * `arguments` of a `call`. The grammar gives the field the same name in both, so
+   * reading it off the wrong node kind returns null and the count is 0 rather than
+   * wrong, which is the failure mode worth avoiding here.
+   */
+  private subset2Arguments(node: Node): Node | null {
+    if (node.type !== "subset2") return null
+    return node.childForFieldName("arguments")
+  }
+
+  /**
+   * The NAME a `subset2` indexes by, when it indexes by a string literal:
+   * `df[["col"]]` -> `col`. Returns null for `df[[i]]` and `df[[get_col()]]`,
+   * because a computed index does not name a member and naming one anyway would be
+   * the fabrication this lane's ontology workstream warns about.
+   *
+   * Only `[[` is read, never `[`. In R the two are not interchangeable: `df[["col"]]`
+   * is a member lookup, while `df["col"]` on a plain list is a CHARACTER SUBSET that
+   * evaluates to NULL, and on a data.frame it is a column selection by a rule R
+   * documents separately (exact, then partial match). Publishing the string index of
+   * a `[` as a member name would put a `uses` edge on an expression R does not treat
+   * as a member read at all.
+   */
+  private stringSubsetIndex(node: Node): string | null {
+    const args = this.subset2Arguments(node)
+    if (!args) return null
+    for (let i = 0; i < args.namedChildCount; i++) {
+      const arg = args.namedChild(i)
+      if (!arg || arg.type !== "argument") continue
+      const value = arg.childForFieldName("value")
+      if (value && value.type === "string") {
+        const name = this.stringNodeText(value)
+        if (name) return name
+      }
+    }
+    return null
+  }
+
+  /**
+   * The MEMBER NAME an `extract_operator` reads, or null when the right side does
+   * not name one. `obj$member` and `obj@slot` name a member by construction; a
+   * computed right side (`obj[[which()]]` is a different node, but `obj$f()`-shaped
+   * and interpolated forms exist) does not, so no edge is emitted and the case is
+   * counted.
+   */
+  private extractOperatorMember(node: Node): string | null {
+    if (node.type !== "extract_operator") return null
+    const operator = node.childForFieldName("operator")?.text
+    if (operator !== "$" && operator !== "@") return null
+    const rhs = node.childForFieldName("rhs")
+    if (!rhs) return null
+    if (rhs.type === "identifier") return this.unquoteIdentifier(rhs.text) || null
+    if (rhs.type === "string") return this.stringNodeText(rhs) || null
+    return null
+  }
+
+  /**
+   * Is this node the `function` field of an enclosing `call`?
+   *
+   * Compared by RANGE and not by object identity: web-tree-sitter allocates a fresh
+   * JS wrapper on every accessor call, so `parent.childForFieldName("function") === n`
+   * is false for the very node it just returned. The walk that built this gate first
+   * compared identities and reported zero callee-position nodes out of 11,216 --
+   * a number that reads as a fact about R and is a bug in the gate.
+   *
+   * `pkg::obj$fn(...)` is the wrapped form the second clause exists for: the
+   * `namespace_operator` occupies the call's function field and the `extract_operator`
+   * is its `rhs`.
+   */
+  private isCalleePosition(node: Node): boolean {
+    const parent = node.parent
+    if (!parent) return false
+    if (parent.type === "call") return this.sameNode(parent.childForFieldName("function"), node)
+    if (parent.type === "extract_operator" || parent.type === "namespace_operator") {
+      if (this.sameNode(parent.childForFieldName("rhs"), node)) return this.isCalleePosition(parent)
+    }
+    return false
+  }
+
+  /**
+   * Is this member access the TARGET of an assignment, i.e. a write?
+   * `obj$field <- v` and `obj$field <<- v` store into the member; they do not read
+   * it. `x <- obj$field` reads. The two sides are read off the grammar's operator
+   * field through `assignmentSides`, so the rightward forms are handled by the same
+   * rule that already decides which side an assignment binds -- not by a second,
+   * possibly disagreeing, test.
+   */
+  private isMemberWrite(node: Node): boolean {
+    const parent = node.parent
+    if (!parent || parent.type !== "binary_operator") return false
+    return this.sameNode(this.assignmentSides(parent).target, node)
+  }
+
+  /**
+   * A `uses` edge for one member read of a value.
+   *
+   * THE RULE, and why it is this rule: in R, `obj$member`, `obj@slot` and
+   * `df[["col"]]` all READ a named member of something. Reading a member is not
+   * calling anything, so it is not a `calls` edge, and it is not a package
+   * dependency, so it is not an `imports` edge. It is the same construct the Python
+   * and Julia lanes publish as `uses` (`python:1425` `isMemberRead`,
+   * `script/m14/oracles/julia-refs.ts` on `a.b`), and it is by a wide margin the
+   * largest thing this analyzer was not reading: measured over 1,890 real R files
+   * (`validation/m14/fixtures/r/probe-surfaces.ts`), the corpus holds 9,108
+   * `extract_operator` nodes of which **1,012 are the callee of a call** and
+   * **8,096 are not**. Before this method all 8,096 produced nothing.
+   *
+   * FOUR GATES, each of which exists because the alternative is a false edge:
+   *
+   *   1. not the callee of a call -- `obj$method()` is already a `calls` edge whose
+   *      target is `obj$method`. Publishing a second edge to `method` would be the
+   *      same fact under two labels, which is the `uses`/`references`/`calls`
+   *      confusion the workstream names as question 4.
+   *   2. not the target of an assignment -- `obj$field <- v` writes.
+   *   3. the member must be NAMEABLE -- a computed right side yields no edge, and is
+   *      counted rather than dropped.
+   *   4. an enclosing named symbol must exist -- the same attribution rule `calls`
+   *      uses, including the 0.7 closure case, so the two surfaces cannot disagree
+   *      about who owns a body. 55.6% of R's call sites are at file scope, so this
+   *      gate suppresses a large number and that number is reported in
+   *      `metadata.callAttribution.memberReadsUnresolvedScope` rather than lost.
+   *
+   * CONFIDENCE is the ATTRIBUTION's, not a constant, and that is the whole point of
+   * reading it from `enclosingAttribution` rather than writing 1.0: the member name
+   * is a certain parse fact, but the OWNER of a body reached through an anonymous
+   * function is inferred, so the edge is 0.7 there exactly as a `calls` edge in the
+   * same body is. A `uses` edge that reported 1.0 while the `calls` edge beside it
+   * reported 0.7 would be a confidence that measures the label rather than the
+   * evidence, and the honesty contract §4 ratio would then understate this lane's
+   * guesswork by exactly the closure cases. Every edge below 1.0 carries a
+   * `reasonCode` and a `reason`.
+   *
+   * The RECEIVER is recorded in metadata, not in the edge target, so the edge binds
+   * to a symbol with the member's own name -- which is what makes it joinable with
+   * the `property` symbols R6/R5/S4/S7 publish, and is the convention the Python and
+   * Julia lanes follow.
+   */
+  private handleMemberRead(
+    node: Node,
+    fnStack: Array<{ node: Node; attribution: CallAttribution | null }>,
+    relationships: ASTEngine.UniversalRelationship[],
+    ambiguity: {
+      memberReadsSuppressedByCall: number
+      memberWrites: number
+      memberReadsUnresolvedScope: number
+      memberReadsWithComputedIndex: number
+    },
+  ): void {
+    const member = node.type === "extract_operator" ? this.extractOperatorMember(node) : this.stringSubsetIndex(node)
+    if (!member) {
+      if (node.type === "extract_operator") ambiguity.memberReadsWithComputedIndex++
+      return
+    }
+    if (this.isCalleePosition(node)) {
+      ambiguity.memberReadsSuppressedByCall++
+      return
+    }
+    if (this.isMemberWrite(node)) {
+      ambiguity.memberWrites++
+      return
+    }
+    const attribution = this.enclosingAttribution(fnStack)
+    if (!attribution) {
+      ambiguity.memberReadsUnresolvedScope++
+      return
+    }
+    const receiver = this.memberReadReceiver(node)
+    const inferred = attribution.subType !== "function"
+    this.pushRel(
+      relationships,
+      attribution.name,
+      member,
+      ASTEngine.RelationshipType.Uses,
+      attribution.confidence,
+      {
+        rSpecific: true,
+        relationshipSubType: "member_read",
+        memberAccessOperator: node.type === "extract_operator" ? node.childForFieldName("operator")?.text : "[[",
+        ...(receiver ? { receiver } : {}),
+        ...(inferred
+          ? { attributionSubType: attribution.subType, reasonCode: attribution.reason, reason: attribution.reason }
+          : {}),
+      },
+      this.memberNameNode(node),
+    )
+  }
+
+  /**
+   * The receiver of a member read, when it is itself a plain NAME, for metadata
+   * only. A receiver that is an expression (`pkg::obj$fn`, `get_obj()$field`) is
+   * omitted rather than interpolated: the edge target never carries source text, and
+   * a metadata field that quotes the input back is the same smell in a place where
+   * nobody is looking at it.
+   */
+  private memberReadReceiver(node: Node): string | null {
+    const lhs = node.type === "extract_operator" ? node.childForFieldName("lhs") : node.childForFieldName("function")
+    if (!lhs) return null
+    if (lhs.type === "identifier") return this.unquoteIdentifier(lhs.text) || null
+    return null
+  }
+
+  /** The node that WRITES the member name, which is where the edge's line comes from. */
+  private memberNameNode(node: Node): Node {
+    if (node.type === "extract_operator") {
+      const rhs = node.childForFieldName("rhs")
+      if (rhs && (rhs.type === "identifier" || rhs.type === "string")) return rhs
+    }
+    const args = this.subset2Arguments(node)
+    if (args) {
+      for (let i = 0; i < args.namedChildCount; i++) {
+        const arg = args.namedChild(i)
+        if (!arg || arg.type !== "argument") continue
+        const value = arg.childForFieldName("value")
+        if (value && value.type === "string") return value
+      }
+    }
+    return node
   }
 
   // ----------------------------------------------------------------------- call

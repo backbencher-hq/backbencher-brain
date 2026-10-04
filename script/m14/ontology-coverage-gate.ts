@@ -43,6 +43,9 @@ import * as path from "node:path"
 import { detectLanguageFromPath } from "../../src/ast/language-detection"
 import { parseFile } from "../../src/ast/pool-worker"
 import { LANGS } from "./differential"
+import { LUA_RULED } from "./lua-ruled"
+import { TOML_RULED } from "./toml-ruled"
+import { FSHARP_RULED } from "./fsharp-ruled"
 
 const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
 const LANG = process.argv[2] ?? "bash"
@@ -189,7 +192,7 @@ const JSON_RULED: Ruled[] = [
   },
 ]
 
-const RULED_BY_LANG: Record<string, Ruled[]> = { bash: BASH_RULED, json: JSON_RULED }
+const RULED_BY_LANG: Record<string, Ruled[]> = { bash: BASH_RULED, json: JSON_RULED, lua: LUA_RULED, toml: TOML_RULED, fsharp: FSHARP_RULED }
 const RULED: Ruled[] = RULED_BY_LANG[LANG] ?? []
 
 // ---------------------------------------------------------------- corpus
@@ -268,6 +271,28 @@ for (const r of RULED) {
 
 // ---------------------------------------------------------------- the spec's rulings
 function rulingFor(t: Type): { reason: string; src: string } | null {
+  // A ruling may live in EITHER place, and both are legitimate:
+  //   - `script/m14/spec/<lang>-completeness.json`, the long-standing spec whose
+  //     design_decision.decisions carry a `status: RULED` row;
+  //   - the lane's `RULED` entry in the table above, which is where a lane writes
+  //     when its rulings are corpus probes rather than prose.
+  //
+  // Reading only the spec reported 8 of TOML's 9 rulings as RULED-UNJUSTIFIED —
+  // the spec carries ONE decision (TOML-D1) while the other 8 were measured and
+  // live in `script/m14/toml-ruled.ts`. So a lane that did the harder work looked
+  // like a lane that skipped it, which is the inverse of the truth and exactly the
+  // kind of verdict this gate exists to prevent.
+  //
+  // The table is checked FIRST: it is where a measured ruling lives, and its
+  // `describe` is the probe's own statement of what it looked for.
+  const tabled = RULED.find((r) => r.type === t)
+  if (tabled) {
+    return {
+      reason: `${tabled.describe} [instrument ${tabled.instrument}${tabled.nodeTypesThatWouldMeanIt?.length ? `, probed for ${tabled.nodeTypesThatWouldMeanIt.join(" / ")}` : ""}]`,
+      src: `script/m14/${LANG}-ruled.ts (RULED_BY_LANG.${LANG})`,
+    }
+  }
+
   const specPath = `script/m14/spec/${LANG}-completeness.json`
   let raw: string
   try { raw = readFileSync(specPath, "utf8") } catch { return null }
@@ -286,6 +311,29 @@ function rulingFor(t: Type): { reason: string; src: string } | null {
 
 // ---------------------------------------------------------------- verdict
 type Row = { type: Type; status: "EMITTED" | "RULED-SOUND" | "FALSIFIED" | "RULED-UNJUSTIFIED"; detail: string }
+
+// `--coverage` reports which lanes this gate can actually rule for, and does NOT
+// parse a corpus. The gate's own header records why this matters: it exists
+// because `overrides` was missing from Bash for a whole wave and the differential
+// stayed green, since the analyzer omitted it and the oracle was written after
+// that ruling — nothing agrees with nothing. A lane with no RULING TABLE gets no
+// verdict here at all, which is the same blind spot wearing a different hat.
+//
+// So the size of the blind spot is reported rather than left to be discovered one
+// exit-2 at a time.
+if (process.argv.includes("--coverage")) {
+  const LANGS_WITH_TABLES = Object.keys(RULED_BY_LANG).sort()
+  console.log("ontology coverage gate — ruling-table coverage\n")
+  console.log(`lanes this arbiter can rule for: ${LANGS_WITH_TABLES.length}`)
+  for (const l of LANGS_WITH_TABLES) console.log(`  ${l}`)
+  console.log()
+  console.log("Every other lane exits 2 with no verdict, because an empty table would call every")
+  console.log("un-emitted type RULED-UNJUSTIFIED, and that is a verdict about the TABLE, not the lane.")
+  console.log("A ruling table encodes that lane's OWN corpus probe — its node types, its counts — so it")
+  console.log("is written by the lane that measured it, not centrally. See RULED_BY_LANG above.")
+  process.exit(0)
+}
+
 if (RULED_BY_LANG[LANG] === undefined) {
   console.log(`\nontology coverage gate — no RULING TABLE for ${LANG}.`)
   console.log(`Refusing to report: a gate with an empty table would call every un-emitted type`)
