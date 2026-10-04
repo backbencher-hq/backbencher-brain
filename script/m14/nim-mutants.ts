@@ -281,4 +281,114 @@ export const NIM_MUTANTS: NimMutant[] = [
       return { ...r, relationships: [...(r.relationships ?? []), ...extra] }
     },
   },
+  {
+    id: "nim/nested-routine-symbol-dropped",
+    language: "nim",
+    defectClass: "unpublished-declaration",
+    description:
+      "A NAMED nested routine stops being published, which is the exact defect this lane " +
+      "fixed: 653 `calls` edges over 4,555 corpus files named a declaration the parse tree " +
+      "carried and the run published nowhere, because a `calls` EDGE was emitted while its " +
+      "far end had no symbol. The analyzer is a per-file walker with no second pass, so the " +
+      "regression is invisible in any edge count — only the symbol is missing. " +
+      "Caught by nim/nested's expectSymbols {recentlyOpenedAdd, scope: closeTab} and by its " +
+      "expectRelationships {contains, closeTab -> recentlyOpenedAdd}.",
+    transform: (r: any) => ({
+      ...r,
+      symbols: (r.symbols ?? []).filter((s: any) => s.scope === undefined || s.scope === ""),
+    }),
+  },
+  {
+    id: "nim/nested-routine-scope-lost",
+    language: "nim",
+    defectClass: "scope-misattribution",
+    description:
+      "The nested routine keeps its symbol but loses `scope`, so it reads as a module " +
+      "procedure. The lua lane measured why this is a real defect and not cosmetics: `scope` " +
+      "is what a consumer reads to decide where a symbol belongs, and a closure declared " +
+      "inside `closeTab` does not belong to the file's module scope. It also breaks the " +
+      "`qualifiedName` the worker derives from `scope`, so `closeTab.recentlyOpenedAdd` " +
+      "stops resolving for the incoming walk. " +
+      "Caught by nim/nested's expectSymbols scope assertion.",
+    transform: (r: any) => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) => (s.scope ? { ...s, scope: undefined } : s)),
+    }),
+  },
+  {
+    id: "nim/doc-example-values-published",
+    language: "nim",
+    defectClass: "phantom-symbol",
+    description:
+      "A `runnableExamples` block's VALUE declarations are published as module symbols. " +
+      "`var base: Base = Sub1()` is a local of the example unit exactly as `var` in a routine " +
+      "body is a local of that routine, so this is `LocalsAreNotSymbols` violated in the " +
+      "opposite direction from the nested-routine fix — the two must be fixed together or the " +
+      "first fix reintroduces the second defect. " +
+      "Caught by nim/nested's forbidSymbols {exampleOnlyLocal}, a name the fixture " +
+      "declares nowhere else so the forbid cannot be satisfied by a coincidence.",
+    transform: (r: any) => ({
+      ...r,
+      symbols: [
+        ...(r.symbols ?? []),
+        {
+          name: "exampleOnlyLocal",
+          kind: "variable",
+          visibility: "private",
+          range: { startLine: 56, startColumn: 5, endLine: 56, endColumn: 30, startIndex: 0, endIndex: 0 },
+        },
+      ],
+    }),
+  },
+  {
+    id: "nim/runnable-examples-pragma-published-as-a-call",
+    language: "nim",
+    defectClass: "fabricated-edge",
+    description:
+      "The `runnableExamples:` doc pragma is published as a `calls` edge. This is the " +
+      "fabrication rule's cheapest available instance: the grammar parses the whole example " +
+      "as the call's `argument_list`, so the call branch fires on a keyword, and the edge " +
+      "lands on an identifier no Nim program can call — a name the graph can never resolve. " +
+      "Measured before the fix: 24 such frames in nim/lib/system.nim alone. " +
+      "Caught by nim/nested's forbidRelationships {calls, describe -> runnableExamples}.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: [
+        ...(r.relationships ?? []),
+        {
+          source: "describe",
+          target: "runnableExamples",
+          type: "calls",
+          confidence: 0.85,
+          line_number: 1,
+          metadata: { relationshipType: "nim_call", evidenceClass: "usage_contextual" },
+        },
+      ],
+    }),
+  },
+  {
+    id: "nim/method-qualified-name-dropped",
+    language: "nim",
+    defectClass: "unresolvable-endpoint",
+    description:
+      "A method stops publishing `qualifiedName`, so every `overrides` endpoint — which is " +
+      "receiver-qualified (`Rect.describe`) because the bare name cannot address either end — " +
+      "fails to resolve for the incoming walk. Measured with `script/m14/incoming-check.ts` on " +
+      "nim/lib/pure (105 files, 6,638 symbols) before the fix: 14 of 14 `overrides` edges " +
+      "reported as UNRESOLVED targets, every one a correct edge. The worker's `qualifiedName` " +
+      "fallback cannot recover it, because a method's owner is `ownerName`, not `scope`. " +
+      "Caught by nim/contract's expectSymbols {describe, meta.fqn: Shape.describe}. The pin is " +
+      "on `meta.fqn` rather than on `qualifiedName` because run-fixtures.ts cannot assert the " +
+      "latter — it is missing from CONSTRAINT_KEY_ALLOWLIST, so a row carrying it is reported as " +
+      "an INERT assertion. `pool-worker.ts:870` reads `s.qualifiedName || s.metadata?.fqn`, so " +
+      "both carry the same fact and the metadata one is the assertable channel.",
+    transform: (r: any) => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) =>
+        s.kind === "method" && s.ownerName
+          ? { ...s, qualifiedName: undefined, metadata: { ...(s.metadata ?? {}), fqn: undefined } }
+          : s,
+      ),
+    }),
+  },
 ]
