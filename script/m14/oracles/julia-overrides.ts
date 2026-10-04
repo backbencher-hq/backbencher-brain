@@ -197,29 +197,78 @@ function methodKey(root: any): { name: string; signature: string } | null {
   return { name, signature }
 }
 
+/** A node that OWNS a method table: a module, or a type declaration. */
+const METHOD_TABLE_OWNER = new Set([
+  "module_definition", "baremodule_definition",
+  "struct_definition", "abstract_definition", "primitive_definition",
+])
+
+/** The DECLARED name of a method-table owner. A module's is a field; a type head is positional. */
+function ownerName(n: any): string {
+  if (n.type === "module_definition" || n.type === "baremodule_definition") {
+    const byField = n.childForFieldName?.("name")
+    const nm = byField ?? kids(n)[0]
+    return nm && nm.type === "identifier" ? nm.text.trim() : ""
+  }
+  const head = kids(n).find((c: any) => c.type === "type_head")
+  if (!head) return ""
+  // The declared name is the subtree's LEFT-most name: `struct S{T<:Real} <: Base` puts the
+  // supertype on the right of a `binary_expression`, so reading left-first is what keeps a struct
+  // from being published under its own supertype.
+  let cur: any = head
+  for (let i = 0; i < 6 && cur; i++) {
+    if (cur.type === "identifier") return cur.text.trim()
+    const next: any = kids(cur)[0]
+    if (!next) break
+    if (cur.type === "binary_expression") cur = next
+    else if (cur.type === "parametrized_type_expression") cur = next
+    else if (cur.type === "parenthesized_expression") cur = next
+    else break
+  }
+  return ""
+}
+
 /**
- * The nearest enclosing `module` — its NODE IDENTITY and its DECLARED NAME.
+ * The nearest enclosing METHOD-TABLE OWNER — its NODE IDENTITY and its DECLARED NAME.
  *
  * Two things, and both are needed, which is the whole reason this returns an object rather than a
  * string. The NAME is the only admissible edge source, because the graph resolves endpoints by name.
- * The IDENTITY is what the method-pair key must be scoped by, because two modules in one file can
- * share a name and are still two method tables with two method tables' worth of entries —
- * `julia/test/deprecation_exec.jl` declares `module Src` three times.
+ * The IDENTITY is what the method-pair key must be scoped by, because two owners in one file can
+ * share a name and are still two method tables.
  *
- * The first version of this oracle threaded the NAME into the key and found ZERO truth edges over
- * the corpus including on the files where the analyzer emits them. The failure is the same one this
- * lane has now hit twice, and it is worth writing down because the symptom was silence: the
- * declaration's LINE was in the key, so two declarations of the same method never shared a key. A
- * key that cannot collide reports a perfect absence, which is the most dangerous shape a measurement
- * can take.
+ * ## WHY A TYPE IS AN OWNER, and what it cost to get wrong
+ *
+ * The first version of this oracle scoped by the enclosing MODULE only, and it disagreed with the
+ * analyzer on exactly one construct in the corpus: `julia/test/core.jl:8196-8209` declares
+ * `struct S36104{K,V}` twice inside `module M36104`, each with the same two inner constructors. The
+ * oracle called that two overrides; the analyzer called it none.
+ *
+ * The oracle was wrong, and julia's own data model says so rather than preference. An INNER
+ * constructor — `S36104{K,V}() where {K,V} = new()` written inside a `struct` body — is added to the
+ * TYPE's constructor table, and the table hangs off the type OBJECT. A second `struct S36104{K,V}`
+ * declaration creates a NEW type object with a NEW, EMPTY table and rebinds the name; the first
+ * type becomes unreachable. So the second constructor does not displace the first method in a live
+ * table — it writes into a different one. Scoping by module alone attributes a replacement across
+ * two tables that never met.
+ *
+ * This is recorded at length because of what it nearly was: an oracle written to catch a fabricated
+ * edge, disagreeing with the analyzer, with the tempting conclusion that the ANALYZER was under-
+ * emitting. The disagreement was real and the temptation was reasonable, and the only thing that
+ * settles it is knowing where julia keeps the table — not running the differential harder. No julia
+ * runtime was available in this environment to execute the test, so the reading is argued from the
+ * data model and stated as such rather than presented as an observed result.
+ *
+ * The first version ALSO threaded the NAME into the key rather than the node's identity, and found
+ * ZERO truth edges over the whole corpus including on the files where the analyzer emits them. The
+ * failure is the same one this lane has hit twice, and the symptom was silence: two declarations of
+ * one method never shared a key, so the map could not collide and the oracle reported a perfect
+ * absence. A key that cannot collide is the most dangerous shape a measurement can take.
  */
-function enclosingModule(n: any): { id: number; name: string } | null {
+function enclosingMethodTableOwner(n: any): { id: number; name: string } | null {
   let cur: any = n.parent ?? null
   for (let i = 0; i < 24 && cur; i++) {
-    if (cur.type === "module_definition" || cur.type === "baremodule_definition") {
-      const byField = cur.childForFieldName?.("name")
-      const nm = byField ?? kids(cur)[0]
-      const name = nm && nm.type === "identifier" ? nm.text.trim() : ""
+    if (METHOD_TABLE_OWNER.has(cur.type)) {
+      const name = ownerName(cur)
       return name ? { id: cur.id, name } : null
     }
     cur = cur.parent ?? null
@@ -280,7 +329,7 @@ export function deriveJuliaOverridesTruth(root: any): JuliaOverridesEdge[] {
     if (isLongForm || isShortForm) {
       const ok = isUnconditionalPosition(n) && !isInLocalBindingScope(n)
       if (ok) {
-        const scope = enclosingModule(n)
+        const scope = enclosingMethodTableOwner(n)
         if (isLongForm) {
           const sig = kids(n).find((c: any) => c.type === "signature")
           claim(scope, sig ? methodKey(sig) : null)
