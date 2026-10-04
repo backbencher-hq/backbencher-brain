@@ -911,12 +911,13 @@ mislead a reader of the graph.
 
 ## Shared-machinery needs (reported, not edited)
 
-Twelve changes outside this lane's ownership, each stated so it can be applied
+Fourteen changes outside this lane's ownership, each stated so it can be applied
 without re-deriving it. The files are supervisor-owned per
 `docs/analyzers/ONTOLOGY-WORKSTREAM.md` §Ownership. Items 1–5 predate this pass;
 6–8 come from measuring the incoming direction, 9–10 from removing this lane's
-last regexes, 11 from re-running the M60 gate to reproduce the DERIVATION count,
-and 12 from running the doc-truth-emissions gate over this lane's table.
+regexes, 11 from re-running the M60 gate to reproduce the DERIVATION count,
+12 from running the doc-truth-emissions gate over this lane's table, and 13–14 from
+re-running the same gates and watching what they wrote to disk.
 
 1. **`script/m14/ontology-coverage-gate.ts` — add a `dart` entry to
    `RULED_BY_LANG` (line ~183: `const RULED_BY_LANG: Record<string, Ruled[]> = {
@@ -1288,6 +1289,33 @@ and 12 from running the doc-truth-emissions gate over this lane's table.
     entries are this bug's output, accepted as expected rather than traced to it. A
     case asserting `parseClaimTable` returns the row count it was given would fail
     today.
+
+    **A third finding in the same file, and it is why the numbers above needed
+    re-deriving: running this gate WRITES supervisor-owned evidence.** Measured on
+    this branch, `bun run script/m14/verify-doc-truth-emissions.ts` modifies four
+    tracked files: `docs/DOC-TRUTH-EMISSIONS.md`,
+    `validation/m14/results/M14.0.F1.json`, `M14.0.F4.json` and `M14.0.F7.json`. The
+    `DOC-TRUTH-EMISSIONS.md` diff is not cosmetic — it rewrites this lane's own row
+    from `calls (relationship) | line 34` to `| line 58` because the claim table moved
+    when this file was edited, and it adds `dart` to a
+    "Docs with more than one ontology-shaped table (only the first is compared)"
+    list. `verify-analyzer-hygiene.ts` writes `M14.0.F7.json` the same way. What it
+    must do: take an output path, or write nothing on a non-canonical invocation, the
+    way `differential.ts` already refuses (`a scoped run is for inspecting lanes, and
+    writing it here would replace that claim with a smaller one`). Why it matters
+    beyond this lane: a lane told to run a gate inherits a dirty worktree and a
+    temptation to commit the result, and the natural commit is six other lanes'
+    evidence. This lane reverted all four files (`git checkout --`) and quotes its
+    numbers from the console.
+
+13. **`script/m14/verify-analyzer-hygiene.ts` reads as a PASS under `npx tsx`.** It
+    uses `__dirname` at line 27, which is not defined in ES module scope, so under
+    `npx tsx` it throws `ReferenceError: __dirname is not defined in ES module scope`
+    and exits 1 having printed no findings at all. Under `bun` it reports 3
+    findings, none Dart. A gate that prints nothing and a gate that found nothing look
+    identical in a log, and only one of them is a result. What it must do: resolve
+    ROOT the way `differential.ts` does (`import.meta.dirname`), or print an explicit
+    "no findings" line so an empty output is distinguishable from a crash.
 
 ## Supported constructs
 
