@@ -343,6 +343,8 @@ bun run validation/m14/fixtures/dart/object-interface-mutant.ts          # 4/4 m
 bun run script/m14/verify-dart-contains.ts                               # 37 shapes
 bun run script/m14/verify-dart-overrides.ts                              # 14/14 shapes exact
 bun run script/m14/verify-dart-references.ts                             # 38 shapes, both sides
+npx tsx validation/m14/fixtures/dart/regex-census.ts                     # 0 regexes, AST-measured
+npx tsx validation/m14/fixtures/dart/regex-census.ts --all               # + the 7 pre-existing tmp rows
 ```
 
 ### The six questions, per emitted type
@@ -786,8 +788,9 @@ mislead a reader of the graph.
 Ten changes outside this lane's ownership, each stated so it can be applied
 without re-deriving it. The files are supervisor-owned per
 `docs/analyzers/ONTOLOGY-WORKSTREAM.md` §Ownership. Items 1–5 predate this pass;
-6–8 come from measuring the incoming direction, and 9–10 from removing this lane's
-last regexes.
+6–8 come from measuring the incoming direction, 9–10 from removing this lane's
+last regexes, and 11 from re-running the M60 gate to reproduce the DERIVATION
+count.
 
 1. **`script/m14/ontology-coverage-gate.ts` — add a `dart` entry to
    `RULED_BY_LANG` (line ~183: `const RULED_BY_LANG: Record<string, Ruled[]> = {
@@ -928,19 +931,22 @@ last regexes.
    Both drive production `parseFile`, both declare `BB_DART_CONC=1` as a
    precondition, and both are deterministic from a clean corpus.
 8. **`script/m14/verify-honesty.ts` fails project-wide on evidence freshness, and
-   this lane is not the cause.** The run on this branch reports
-   `honesty gate: 23 failure(s) — release blocked`, all of the form
-   `HONESTY-GATE FAIL: M14.0.F<n>: <k> declared input(s) changed since <sha> —
-   regenerate`, plus `evidence freshness: 0 artifact(s) current against their
-   declared inputs`. The failing input sets name files this lane has never touched
-   — `src/ast/analysis-exclusions.ts`, `src/ast/brain-surgical-patcher.ts`,
+   this lane is not the cause.** Re-measured on this branch: **23 failure(s), exit 6.**
+   Nine are of the form `HONESTY-GATE FAIL: M14.0.F<n>: <k> declared input(s) changed
+   since <sha> — regenerate` for n = 1…9, one is `freshness rule flags every artifact —
+   it cannot distinguish current from stale`, and the run also prints
+   `evidence freshness: 0 artifact(s) current against their declared inputs`.
+   **No banned-vocabulary check fails**, so the failure set is evidence staleness alone.
+   The failing input sets name files this lane has never touched —
+   `src/ast/analysis-exclusions.ts`, `src/ast/brain-surgical-patcher.ts`,
    `src/ast/dependency-graph-visualizer.ts`,
    `src/ast/cross-language-migration-assistant.ts`, and 20 other languages'
-   `script/m14/spec/*-completeness.json` — all verified unchanged between
-   `887f8eb0` and this branch's HEAD. Regeneration is the supervisor's: those
-   artifacts are `validation/m14/results/*.json`, which the honesty contract §5.1
-   reserves for verifier scripts, and regenerating them from one lane would replace
-   the milestone's claim with a single lane's. Reported, not worked around.
+   `script/m14/spec/*-completeness.json` — each verified unchanged by this branch with
+   `git diff 8286c7391..HEAD -- <file>` (empty for all four named above).
+   Regeneration is the supervisor's: those artifacts are `validation/m14/results/*.json`,
+   which the honesty contract §5.1 reserves for verifier scripts, and regenerating them
+   from one lane would replace the milestone's claim with a single lane's. Reported, not
+   worked around.
 9. **`script/m14/oracles/dart-overrides.ts` — a gate that is written and never read,
    and a comment that asserts it is enforced.** Found while removing this lane's last
    regexes; the code is lane-owned and the dead computation is removed, but the
@@ -984,6 +990,29 @@ last regexes.
     shape as the source-derivation error this wave exists to correct — an instrument
     blind to a construct reports an absence, and the absence is read as a pass. The
     per-file `m12` census has the same blind spot.
+    **A working instrument for this now exists and can be lifted**:
+    `validation/m14/fixtures/dart/regex-census.ts` counts `RegExpLiteral` nodes and
+    `RegExp` constructions through `ts.createSourceFile`, prints the directories it
+    entered, and excludes itself by name. It is lane-scoped but nothing in it is
+    Dart-specific except the file list.
+11. **`script/m60/rel-type-coverage-gate.ts` — `--langs=` narrows the EVIDENCE file,
+    which its own docstring says it does not.** Line 50 of that file reads
+    `--langs=a,b  restrict the report (never narrows the gate's own claim)`, and line
+    595 writes `validation/m60/results/rel-type-coverage.json` **unconditionally** —
+    there is no `--langs` guard on the write and no `--dry-run`. So running the gate
+    scoped, which is what a lane is told to do, replaces the project-wide artifact with
+    a one-lane one. Measured here: `--langs=dart` turned a **1,441-line** artifact into
+    a **24-line** one (`24 insertions, 1417 deletions`), and the DERIVATION count the
+    lane needs (2 for dart) is still correct — the damage is to every OTHER lane's row,
+    not to this one's answer. What it must do: either skip the write when `--langs` is
+    present and is not the full set, or write to a per-scope path
+    (`rel-type-coverage.<langs>.json`) and leave the project-wide artifact for
+    unscoped runs. Why here and not in this lane: the file is supervisor-owned, and the
+    fix must be applied once for every lane — six lanes running this scoped right now
+    are each silently truncating the same file. **This lane reverted its own write**
+    (`git checkout -- validation/m60/results/rel-type-coverage.json`) and quotes the
+    number from the console, not from the artifact. `validation/m60/ledger.json` is not
+    touched — only `--update-baseline` writes it, which this lane never passed.
 
 ## Supported constructs
 
@@ -1070,6 +1099,46 @@ the same shape as the analyzer's `isCapitalized`. The `@override` pair became
 `isOverrideAnnotation`, which gates on `node.type === "annotation"` and then reads the
 identifier child — the rule the analyzer already applies in `extractAnnotations`
 (`prev.type === "annotation"` before any text comparison).
+
+### The number is now an AST measurement, not a re-run of the same text scan
+
+The second pass above was still a TEXT scan with more patterns, so it could still miss
+a literal shape nobody thought of. `validation/m14/fixtures/dart/regex-census.ts` counts
+the two things that are actually a regex — a `RegExpLiteral` node and a `RegExp`
+construction — by walking the TypeScript AST with `ts.createSourceFile`. Division and
+comment text are excluded by the grammar rather than by a filter, because a `/` that is
+not a regex literal never forms that node.
+
+```
+dart lane regex census — instrument: TypeScript AST (ts.createSourceFile), no text patterns
+scope: lane-owned set
+owned dirs: src/ast/real-dart-analyzer.ts | validation/m14/fixtures/dart/* |
+            script/m14/oracles/dart-* | script/m14/dart-* | script/m14/verify-dart-*
+files scanned: 16  (7881 lines)   excluded from its own count: …/regex-census.ts
+lane-owned files: 16
+
+RESULT: 0 regexes in the lane-owned set.
+```
+
+The 16 files are the whole lane-owned set — 4 oracles, 3 verifiers, the analyzer and 8
+fixture harnesses — and it prints them, so the scope can be checked rather than trusted.
+
+**Writing that instrument cost this lane two of its own blind spots, and both were the
+same defect one level up.** The first version selected its file set with regexes and then
+counted itself: 4 hits, every one its own filename patterns. The second required a file
+to sit directly in `script/m14/`, which silently excluded all three oracles — it reported
+9 files and had never looked at `dart-imports.ts`, `dart-overrides.ts` or
+`dart-references.ts`. A scope that drops files without saying so is the same failure as
+the text-pattern gate, and a smaller number is not a better one. The selection is now
+pure `startsWith`/`endsWith`, the owned directories are printed, and the file excludes
+itself by name so the exclusion is visible.
+
+`--all` widens the scan to every dart-named `.ts` in the repository. It reports **7**
+regex literals, all in two pre-existing scratch files under `script/m14/tmp/`
+(`dart-container-types.ts:21`, `dart-contains-adjudicate.ts:130,161,162,163,164,175`).
+Those arrived in `d7fb2ee2b`, are in this branch's base, and are not this lane's to
+change — `git diff 8286c7391..HEAD -- script/m14/tmp/` is empty. They are listed so a
+reviewer sees them rather than inheriting a flattering scope.
 
 **The `@override` pair was not only a rule violation but a wrong answer**, and the
 measurement is on the node rather than on a row count. For a member whose preceding
