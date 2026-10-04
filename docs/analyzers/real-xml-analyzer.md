@@ -149,6 +149,90 @@ open, so the two columns are not comparable and neither is quoted as the current
 What the block still establishes is unchanged and is the point of it: the hang costs
 tens of edges on the two largest rows and marks nothing in the table.
 
+### `countsAreDeterministic: true` was false, and the mechanism is named
+
+The section above leaves three candidates for the `contains` drift and calls the cause
+"not established". It is established now, and the candidate list is closed.
+
+The census artifact carried `reproducibility.countsAreDeterministic: true`, measured over
+four runs at the default worker count. Those four runs agreed. They could not have found
+the fault, because four runs at ONE setting cannot detect a dependence on concurrency.
+Two probes vary the thing four same-setting runs hold fixed.
+
+**`validation/m14/fixtures/xml/worker-determinism-probe.mts`** — one fixed 600-file draw,
+fingerprint `6ad7d4ddf1656e6f`, production `parseFile`, per-file counts comparable:
+
+| workers | symbols | relationships | `contains` |
+| ---: | ---: | ---: | ---: |
+| 1 | 126,486 | 15,479 | 15,239 |
+| 8 | 126,430 | 15,438 | 15,198 |
+| **8**, re-run | **126,486** | **15,479** | **15,239** |
+| 16 | 126,447 | 15,450 | 15,210 |
+| **16**, re-run | **126,486** | **15,479** | **15,239** |
+| 1 vs 8, on a 1,200-file draw | 230,021 both | — | 0 per-file differences |
+
+The worker count is **not** the variable: the same worker count produced both outcomes, in
+consecutive runs. What the worker count does is change how OFTEN the fault fires.
+
+**`validation/m14/fixtures/xml/shared-parser-probe.mts`** — the same 48 files, 20 rounds,
+sequential against 8-in-flight, in one process:
+
+| schedule | symbols over all rounds | files that ever varied |
+| --- | ---: | ---: |
+| sequential | 223,400 | **0** |
+| concurrent (8) | 221,087 | **5 of 48** |
+
+Each losing result object, captured in full rather than inferred:
+
+```
+LOST Exposed/.idea/icon.svg:            success=true fallback=true errors=0 rels=0 size=2997
+LOST Exposed/.idea/vcs.xml:             success=true fallback=true errors=0 rels=0 size=509
+LOST Exposed/.idea/detekt.xml:          success=true fallback=true errors=0 rels=0 size=769
+LOST Documenter.jl/docs/src/assets/logo.svg:  success=true fallback=true errors=0 rels=0 size=13463
+LOST Documenter.jl/test/examples/images/big.svg: success=true fallback=true errors=0 rels=0 size=113087
+```
+
+`success: true`, `fallback: true`, `errors: 0`, **zero symbols**. `pool-worker.parseFile`'s
+catch substituted `extractFallback` after the grammar load failed under WASM memory
+pressure, and the structural extractor cannot read these files. The loss is silent by
+construction: `filesFailed` does not move, `filesWithErrors` does not move, and the file
+reads as one that simply declares nothing.
+
+**Three properties of the fault that change how every number in this document is read.**
+
+1. **The unit of loss is a FILE, not an edge.** So the error does not shrink as the sample
+   grows — it grows with it. A 2,500-file draw does not make the counts more trustworthy;
+   it is more exposure. `Documenter.jl/…/big.svg` alone is 2,209 symbols.
+2. **Neither error marker detects it.** `[BB-PARSE-ERR]` and `[BB-HANG]` are both
+   orthogonal to it: the run above printed `filesFailed 0`, `filesWithErrors 7`, and no
+   marker of either kind. The `n=8` row in the table above is a *different* failure — it
+   self-destructs and prints nothing — and this one prints a full, confident table.
+3. **It is in shared code, so every lane's census on this machine is a lower bound.**
+   `src/ast/engine.ts` `getParser` returns ONE cached `TSParser` per language to every
+   concurrent caller and deletes it in two places (`cleanupParsers()` at
+   `MAX_CONCURRENT_PARSERS = 20`, and the `currentCount >= 500` recreate).
+   `web-tree-sitter`'s `parser.parse()` is async, so N holders of one instance interleave
+   inside the WASM module. §8 item 3 carries the report; this lane does not edit that file.
+
+**What the census does about it, rather than describing it.** Every run now records
+`drawFingerprint` and `workers`, so a moved draw is separable from a moved count — the
+conflation that let a stale artifact be published as current. Every run counts
+`fallbackFiles` / `fallbackSymbols` / `fallbackRelationships` and prints the degraded
+rows: the 2,500-file run published here lost **1** file,
+`phpmyadmin/public/themes/bootstrap/img/dark/col-minus.svg`, 359 bytes, 0 symbols,
+0 relationships. The claim a reader may make is narrowed to `instrumentA` and
+`instrumentB`, which are byte-identical at workers 1, 8 and 16 — 78 distinct node types
+over 981,491 nodes on the 600-file draw, and every probe's occurrence and file count
+identical — and which are what the four RULED verdicts actually rest on. **No ruling in
+§The five not emitted is affected by this withdrawal.**
+
+**And the specific candidate this section could not previously choose between is chosen.**
+`84970cf3d`'s 185,957 was published from a run that lost whole files to this fault. The
+corpus-growth candidate is ruled out directly: `find $HOME/fixtures/repositories
+-type f -newermt '2026-10-04 11:00'` returns **0 files**, so no corpus file content changed
+between the publishing run and the re-measures, and `git diff 84970cf3d HEAD -- src/ast/`
+is **empty**, so no analyzer state differs either. What differed was the run.
+
 ### `contains 185,957` did not reproduce, and the number published here is now 186,270
 
 Commit `84970cf3d` published `contains 185,957` in four places. Re-measured on this
@@ -224,11 +308,15 @@ the 603-file probe that came back INCONCLUSIVE, and what would separate them.
 | `implements` | no — not emitted. RULED-SOUND, instrument A, 5 sites adjudicated | 0 | 0 | — | — |
 | `instantiates` | no — not emitted. RULED-SOUND, instrument A, probe counts **0** and **0** | 0 | 0 | — | — |
 
-Per-type integrity and resolution detail, on a 2,500-file family-stratified draw:
-`validation/m14/fixtures/xml/ontology-census.mts`, artifact
-`validation/m14/fixtures/xml/ontology-census-overrides-gap.json`. The previous
-full-population artifact is kept at `…/ontology-census.json` (11,066 files / 91
-repositories, before the corpus grew to 110).
+Per-type integrity and resolution detail, on a 2,500-file family-stratified draw,
+114 repositories: `validation/m14/fixtures/xml/ontology-census.mts`, artifact
+`validation/m14/fixtures/xml/ontology-census.json` — `contains` **77,882**,
+`references` 7,415, `extends` 852, `imports` 261, `calls` 2, `overrides` 0 on this
+draw, 86 distinct node types over 2,829,074 nodes, 1 file silently degraded.
+The PRE-FIX artifact for the same draw is kept at
+`…/ontology-census-overrides-gap.json` (`references` 6,750 before the source re-base,
+`contains` 77,887) and carries a `superseded` block saying so; it also predates the
+fallback accounting, so its totals are a lower bound of unknown depth.
 
 **The second column is headed `Emitted?` so `script/m14/verify-doc-truth-emissions.ts`
 can grade these claims, and doing so exposed a defect in that gate.** It reports
@@ -1091,23 +1179,26 @@ confidence ratio cannot detect anything.
 
 ### Integrity of the census itself
 
-**The counts reproduce and the artifact does not, and the artifact now says so.**
-Four runs of `ontology-census.mts` against the same corpus at the same caps
-(2,500 files, 110 repositories, per-repo cap 400): **every count field was
-byte-identical in all four**, and **the example arrays came out in four different
-orders**. The draw is deterministic — repositories in sorted order, files in
-lexicographic path order, no randomness in the selection, so all four runs parse
-the same 2,500 files — but `fileExamples`, `unresolvableExamples` and the probe
-`examples` record the *first* file a type was seen in, and "first" is whichever
-concurrent worker arrived first.
+**This subsection previously said the counts reproduce. They do not, and the sentence is
+withdrawn rather than edited away.** Its evidence was four runs of `ontology-census.mts`
+against the same corpus at the same caps with **every count field byte-identical in all
+four**, and the `reproducibility` block recorded `countsAreDeterministic: true` on the
+strength of it. Four runs at one worker count cannot detect a dependence on concurrency,
+and the claim was false: see §`countsAreDeterministic: true` was false, and the mechanism
+is named for the two probes, the six-run table, and the captured losing result objects.
+Two consecutive runs at the same worker count, same draw fingerprint, unchanged corpus
+bytes and unchanged analyzer, gave `contains` 77,887 and 77,882.
 
-The failure mode this creates is a **misread, not a wrong number**: someone
-diffing two artifacts sees a reordered example list, and a reordered example list
-looks at a glance exactly like a count that moved. The artifact therefore carries
-a `reproducibility` block declaring which fields a reader may compare
-(`countsAreDeterministic: true`, `exampleArraysAreDeterministic: false`,
-`measuredRuns: 4`, and the four field paths that are **not** part of the claim).
-The rule it states is the checkable one: **compare counts, not byte order.**
+What survives from the original text, and it is still the right reading of the arrays:
+the draw is deterministic — repositories in sorted order, files in lexicographic path
+order, no randomness in the selection, so every run parses the same files — while
+`fileExamples`, `unresolvableExamples` and the probe `examples` record the *first* file a
+type was seen in, and "first" is whichever concurrent worker arrived first. Reordered
+example arrays are a **misread**, and they look at a glance exactly like a count that
+moved. That is why `exampleArraysAreDeterministic: false` stands and why the rule is
+still **compare counts, not byte order** — except that the counts are now declared
+non-comparable unless `drawFingerprint` and `workers` both match, and even then a reader
+must read `production.fallbackFiles` beside them.
 
 The counts themselves, from the matched 11,066-file pair:
 
@@ -1720,7 +1811,9 @@ the project.
 | `BB_XML_WORKERS=1 npx tsx validation/m14/fixtures/xml/ruled-gate.ts` | **run TWICE**, exit 0 both, full 10-row table both, **0 `[BB-PARSE-ERR]`, 0 `[BB-HANG]`** both, `FALSIFIED 0`, `ruled-without-justification 0` both. `XML_B_PROBE_WALK uses walked=11464 / 11473 unparsed=0 occurrences=0`. The two runs differ in admitted population (11,464 → 11,473, another lane added a repository mid-afternoon) and agree on every row — see §`contains 185,957 did not reproduce` |
 | `npx tsx script/m14/ontology-coverage-gate.ts xml` | **6/10 EMITTED, 4 RULED-SOUND, FALSIFIED 0, ruled-without-justification 0** — exit 0. `contains` **186,270** · `references` 11,094 · `imports` 465 · `extends` 1,429 · `calls` 402 · `overrides` 3. **Run through `ruled-gate.ts` at `BB_XML_WORKERS=1`, twice, both exit 0, both 0 `[BB-PARSE-ERR]` and 0 `[BB-HANG]`, both printing these numbers** — the shared gate at its own 8 workers cannot finish this corpus (it self-destructs at 120 s on one file before printing a row), so `ruled-gate.ts` is the instrument the numbers come from. See §`contains 185,957 did not reproduce` |
 | `npx tsx script/m14/firing-check.ts --files 120 xml` | **4/10 fired, 1,653 edges, 120/120 files, 0 degraded** — `contains, imports, references, extends` |
-| `BB_XML_WORKERS=4 npx tsx validation/m14/fixtures/xml/ontology-census.mts` | 2,500 files, **0 failed**, 388,365 symbols, 85,747 relationships, **0 empty names, 0 `unknown` endpoints** |
+| `BB_XML_WORKERS=4 npx tsx validation/m14/fixtures/xml/ontology-census.mts` | 2,500 files, **0 failed**, 388,365 symbols, 86,412 relationships, **0 empty names, 0 `unknown` endpoints**, draw `c38110881a301dae`, **1 file silently degraded** (`phpmyadmin/…/dark/col-minus.svg`, 359 B, 0 symbols) |
+| `npx tsx validation/m14/fixtures/xml/worker-determinism-probe.mts --workers {1,8,16}` | `countsAreDeterministic: true` **falsified**. One 600-file draw, fingerprint `6ad7d4ddf1656e6f`: symbols 126,486 / 126,430 / 126,447, and **126,486 again at the same worker count on re-run**. A 1,200-file draw at 1 vs 8 workers: 230,021 both, **0 per-file differences**. `--diff` prints the per-file breakdown |
+| `BB_XML_ROUNDS=20 npx tsx validation/m14/fixtures/xml/shared-parser-probe.mts` | sequential 223,400 symbols, **0 files vary**; concurrent(8) 221,087 symbols, **5 of 48 files return 0 symbols**, every losing result `success=true fallback=true errors=0` |
 | `npx tsx validation/m14/fixtures/xml/derivation-accounting.mts` | `extends` fabricated **0 of 1,429** · `calls` fabricated **0 of 402** · call-site ledger **481 accepted = 481 occurrences, 0 unrepresented** · `references` fabricated **111 of 11,094** (was 1,066 of 10,411) · **0 edges with no site behind them** |
 | `npx tsx validation/m14/fixtures/xml/concurrent-parser-probe.mts --files 600` | grade **INCONCLUSIVE**, exit 0 (control intact) |
 | `npx tsx script/m14/verify-honesty.ts` | gate FAILED project-wide, **23 failures and 0 name an xml file** — 12 banned-term rows in other lanes' fixtures and `validation/` artifacts, `M14.0.F7` non-passing on `analyzer-hygiene-cpp` / `analyzer-hygiene-elixir`, 9 `declared inputs changed since <sha>` regeneration rows, and `freshness rule flags every artifact`. Not one is this lane's |
@@ -1757,6 +1850,18 @@ corpus: the admitted population moved from 11,066 files / 91 repositories to 11,
 
 ## Evidence pointers
 
+- Ruling table: `script/m14/xml-ruled.ts` → `XML_RULED`, registered at
+  `script/m14/ontology-coverage-gate.ts` lines 49 and 196; the arbiter prints
+  `emitted 6/10  ruled-sound 4  FALSIFIED 0  ruled-without-justification 0` for `xml`
+- Ontology census (production `parseFile`, 2,500-file stratified draw):
+  `validation/m14/fixtures/xml/ontology-census.mts` →
+  `…/ontology-census.json`. Pre-fix artifact for the same draw:
+  `…/ontology-census-overrides-gap.json` (carries a `superseded` block)
+- Determinism: `…/worker-determinism-probe.mts` (`--diff` compares two artifacts,
+  per-file) and `…/shared-parser-probe.mts` (sequential against concurrent schedules).
+  Both are what falsified `countsAreDeterministic: true`
+- Ruling walk counts: `…/ruled-gate.ts`, `BB_XML_WORKERS=1`, full admitted population
+- Derivation accounting: `…/derivation-accounting.mts` → `…/derivation-accounting.json`
 - Fixtures: `validation/m12/fixtures/xml/`
 - Ground truth: `validation/m12/ground-truth/xml.json`
 - Differential: `validation/m12/results/xml-differential.json`
@@ -2079,6 +2184,36 @@ same 8,452 relationships — and none of the four known-trapping inputs trapped.
 probe does **not** establish the reentrancy reading, and it must not be quoted as if it
 did. What it does establish is the refutation above: the four files are sound here, at
 both concurrency levels, so the fault is not in them.
+
+**AND NOW THE SECOND HALF IS MEASURED, by a probe that could have said no.**
+`validation/m14/fixtures/xml/shared-parser-probe.mts` asks the question the 603-file probe
+could not: not "does a trap occur" but "does a concurrent schedule return FEWER SYMBOLS for
+the same bytes". 48 files, 20 rounds, sequential against 8-in-flight, one process:
+
+```
+sequential  223,400 symbols · 0 of 48 files ever vary
+concurrent  221,087 symbols · 5 of 48 files return 0 symbols in some rounds
+LOST Exposed/.idea/icon.svg:  success=true fallback=true errors=0 rels=0 size=2997
+LOST Documenter.jl/test/examples/images/big.svg:  success=true fallback=true errors=0 rels=0 size=113087
+```
+
+So the shared-instance reading is **supported, not established**: the concurrent schedule
+loses whole files to a silent `extractFallback` substitution, and the file count that
+varies is 0 out of 48 under a serial schedule in the same process over the same bytes. The
+falsifier is stated rather than implied — the 1,200-file draw at 1 and 8 workers returned
+**230,021 symbols both with 0 per-file differences** — so neither the worker count nor the
+500-parse eviction boundary is *sufficient* to trigger it, and this lane does not claim
+which of the two candidates in the list above is the cause.
+
+**What is needed, precisely enough to apply without re-deriving it.**
+`src/ast/engine.ts`, `getParser`: hand each parse its own `Parser`, or wrap the cached
+entry in a borrow count so a `Parser` is never `delete()`d or shared while a `parse()` is
+in flight — the two eviction sites are `cleanupParsers()` at `MAX_CONCURRENT_PARSERS = 20`
+and the `currentCount >= 500` recreate. `src/ast/pool-worker.ts`, `parseFile`'s catch: the
+`extractFallback` substitution returns `success: true` with `errors: []`, which is why the
+loss is invisible; it must carry an `errors` entry naming the grammar-load failure and the
+fallback, so a degraded file is countable rather than indistinguishable from an empty one.
+Neither edit is in this lane (§8).
 
 Two defects were found while building that probe and are recorded because both would have
 produced a confident wrong answer. It first counted every entry in `result.errors` as a
