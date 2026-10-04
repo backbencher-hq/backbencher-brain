@@ -23,10 +23,13 @@ import { ASTEngine } from "./engine"
  *   - fenced_code_block            -> function (executable/declared snippet)
  *   - minus_metadata (front matter) -> namespace (document metadata)
  *
- * Relationship map:
- *   - contains: heading -> nested heading / table / code block / front matter
- *   - uses: heading/table/code -> link destination, image source,
+* Relationship map:
+ *   contains: heading -> nested heading / table / code block / front matter
+ *   uses: heading/table/code -> link destination, image source,
  *     uri autolink, email autolink (from the inline grammar)
+ *   references: a `#fragment` destination resolved to the heading it names, which is
+ *     the one edge class here whose target is a symbol THIS file publishes (measured
+ *     1,107 of 1,107) — see `addRel`'s call site for why it is not `uses`.
  */
 export class RealMarkdownAnalyzer implements ASTEngine.LanguageAnalyzer {
   public analyze(
@@ -198,6 +201,30 @@ export class RealMarkdownAnalyzer implements ASTEngine.LanguageAnalyzer {
     // Document-level container for top-level facts.
     const DOC = "document"
 
+    /**
+     * How many headings were PUBLISHED, counted as they are published.
+     *
+     * MD-L2 (2026-10-03, the M60 pass-2 line-by-line read). This field used to be
+     * `headingStack.length`, evaluated in the RETURN object — and by then the stack
+     * holds the ancestor chain of the LAST heading the walk reached, not the headings
+     * of the document. CommonMark caps that chain at six, so the field could not
+     * exceed 6 in any document ever written, under any heading count, on any corpus.
+     *
+     * Measured on a 1,200-file draw of a corpus whose documents carry hundreds of
+     * headings: the field took exactly the five values 0, 1, 2, 3 and 4
+     * (94 / 361 / 542 / 186 / 17 files) with a maximum of 4, against a mean of 7.1
+     * published headings per file in the same draw
+     * (`validation/m60/markdown/pass2-labelling-probe.json`, `headingCountMetadata`).
+     * A consumer filtering documents by "how many headings does this have" was reading
+     * the nesting depth of the last one.
+     *
+     * Nothing in this repository reads markdown's `headingCount` — html's field of the
+     * same name is its own and is computed by its own counter at
+     * `real-html-analyzer.ts:754` — so the change is contained to this file, and the
+     * old value was wrong rather than load-bearing.
+     */
+    let publishedHeadings = 0
+
     // Same-document references, resolved after the walk.
     //
     // `anchorMap` is filled as headings are published, so by the time the walk ends
@@ -231,6 +258,7 @@ export class RealMarkdownAnalyzer implements ASTEngine.LanguageAnalyzer {
         const level = this.headingLevel(node)
         const name = this.headingText(node)
         if (name) {
+          publishedHeadings++
           while (headingStack.length > 0 && headingStack[headingStack.length - 1].level >= level) {
             headingStack.pop()
           }
@@ -512,9 +540,55 @@ export class RealMarkdownAnalyzer implements ASTEngine.LanguageAnalyzer {
       // target-name-plus-link-line pair would name a row that does not exist — the
       // dangling-endpoint class again, one line away. The link's own line is kept in
       // metadata, so where the author wrote it is not lost.
+      //
+      // MD-L1 (2026-10-03, the M60 pass-2 labelling review). The TYPE is `references`,
+      // and it was `uses`. The label change is the whole of the defect and it is
+      // measured, not stylistic:
+      //
+      //   Every link destination this lane publishes was `uses` — 10,709 of them in a
+      //   1,200-file corpus draw, of which **0** have a target that is a name the file
+      //   declares. That is not a quality footnote, it is the aggregate a consumer
+      //   reads: "this analyzer's edges resolve at 0.0%". The number is an artefact of
+      //   the label, because those 10,709 are four different relations published under
+      //   one name. Classified on the tree by the node's OWN text, the same draw gives:
+      //
+      //     scheme (https:, mailto:, …)  8,943   an external resource, unresolvable by
+      //                                              construction — no file declares it
+      //     relative (./other.md, …)     1,325   another file; 822 resolve to a tracked
+      //                                              file, 503 name a dead path
+      //     fragment (#install)           1,406   a heading IN THIS FILE
+      //     absolute-path (/img/x.png)     131
+      //
+      //   The third class is the one that is a reference to something DECLARED, and it
+      //   is the only edge class in this lane whose target binds to a published symbol:
+      //   **1,107 of 1,107, 100.0%** (`validation/m60/markdown/pass2-labelling-probe.json`,
+      //   role `markdown_internal_anchor`, `targetResolved`). css's `references` is the
+      //   same shape for the same reason — `var(--x)` reading a custom property the file
+      //   declares — and the enum itself spells the class twice: `References = "references"`
+      //   beside `DependsOn = "references"`, against `Uses = "uses"`.
+      //
+      //   So the split is: a destination the FILE DECLARES is a `references` edge; a
+      //   destination the file merely NAMES — a URL, an autolink, a cross-file path — is
+      //   a `uses` edge. That relabels 1,107 edges the lane already published and adds
+      //   none, so the fabrication class the workstream forbids is untouched.
+      //
+      //   What it does NOT do is claim the cross-file class: 1,325 relative destinations
+      //   are published as `uses` and 503 of them name a path no tracked file has. A
+      //   per-file analyzer cannot tell a live path from a dead one — production hands a
+      //   markdown analyzer no project index (`PROJECT_INDEX_EXTENSIONS` carries `.sol`
+      //   only) — so relabelling those would publish a `references` edge the lane cannot
+      //   resolve at all. They stay `uses`, and the limitation is declared in the doc
+      //   rather than left for a reader to discover.
+      //
+      //   The SOURCE half of this edge class is a separate fact and is NOT a defect: 610
+      //   of the 1,107 name `document` as their source, because the linking paragraph
+      //   sits above the document's first heading. `document` is the repo-wide
+      //   pseudo-owner that html, json, toml and yaml all use and none of them publish;
+      //   `parallel-indexer.ts` writes `source_symbol_id = null` with the name kept in
+      //   `source_external`, which is nullable by design.
       addRel(
         p.source,
-        ASTEngine.RelationshipType.Uses,
+        ASTEngine.RelationshipType.References,
         hit.name,
         {
           role: "markdown_internal_anchor",
@@ -543,7 +617,7 @@ export class RealMarkdownAnalyzer implements ASTEngine.LanguageAnalyzer {
         linesOfCode: content.split("\n").length,
         patterns,
         framework: "Markdown",
-        headingCount: headingStack.length,
+        headingCount: publishedHeadings,
         inlineBlockCount: mdInlineTrees.length,
       },
     }
@@ -574,6 +648,12 @@ export class RealMarkdownAnalyzer implements ASTEngine.LanguageAnalyzer {
    *     lane resolves a destination the grammar read out of a node, so the
    *     `resolved === false` arm that other lanes need is unreachable here and is
    *     deliberately not invented.
+   *   references -> reference_qualified
+   *     The same tier as `uses`, for the same reason, and deliberately NOT
+   *     `structural`: the edge is not a parent/child relation read off the tree. A
+   *     `#fragment` names a heading, the analyzer recomputes that heading's anchor and
+   *     looks it up, and the edge exists because the lookup HIT. The lookup is the
+   *     qualification.
    */
   private classifyEvidenceTier(relationships: ASTEngine.UniversalRelationship[]): void {
     for (const r of relationships) {
@@ -585,6 +665,10 @@ export class RealMarkdownAnalyzer implements ASTEngine.LanguageAnalyzer {
         continue
       }
       if (t === "uses") {
+        md.evidenceClass = "reference_qualified"
+        continue
+      }
+      if (t === "references") {
         md.evidenceClass = "reference_qualified"
         continue
       }
@@ -633,8 +717,63 @@ export class RealMarkdownAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   /**
+   * A heading's OWN `inline` node, which the two heading forms do not hold the same way.
+   *
+   * MD-DEFECT-1 (2026-10-03, the M60 pass-2 review). The ATX form puts the heading text in
+   * a DIRECT `inline` child:
+   *
+   *     atx_heading > atx_h1_marker, inline
+   *
+   * and the SETEXT form does not — the text lives one level down, inside the paragraph the
+   * underline terminates:
+   *
+   *     setext_heading > paragraph > inline , setext_h1_underline
+   *
+   * Both shapes are measured on the pinned wasm, not read off a spec. `emitInlineUses`
+   * resolved the heading's inline with `findChildByType`, which walks DIRECT named
+   * children only, so it returned null for every setext heading and the method returned
+   * before emitting anything: **every link, image, autolink and reference link inside a
+   * setext heading was silently dropped.** The `if (!inline) return` read as a guard
+   * against a heading with no text, and it was in fact a guard that matched half the
+   * heading forms.
+   *
+   * The population is small and it is stated rather than inflated: 76 setext headings in a
+   * 1,200-file corpus draw, of which 17 files carry one, and a whole-corpus scan of every
+   * line whose FOLLOWING line is a setext underline and which itself contains a link found
+   * **3** — `docker/vendor/github.com/hashicorp/go-immutable-radix/README.md:1`,
+   * `docker/vendor/github.com/hashicorp/go-immutable-radix/v2/README.md:1`, and
+   * `packer/README.md:4`. All three are H1 badge banners. Three instances is small; the
+   * asymmetry inside ONE construct is the defect, and the same argument closed MD-G1 for
+   * indented code blocks at a population the lane's own first estimate understated by 100x.
+   * It is also a dead branch in the sense the workstream names — reachable, and always
+   * taking the early return for one of the two heading forms.
+   *
+   * The engine already supplies the tree. `extractMarkdownInlineBlocks` walks the WHOLE
+   * block tree and collects every `inline` node, so the setext paragraph's inline is in
+   * `context.mdInlineStarts` under its own byte offset; nothing but this lookup was
+   * missing, and no shared file changes.
+   *
+   * Depth is bounded to one `paragraph` hop on purpose. A heading's text is the inline
+   * inside that paragraph, and reaching further would start picking up inline blocks that
+   * are body content rather than heading text.
+   */
+  private headingInline(node: Node): Node | null {
+    const direct = this.findChildByType(node, new Set(["inline"]))
+    if (direct) return direct
+    // SETEXT: the heading text is the paragraph's inline, one level down.
+    const paragraph = this.findChildByType(node, new Set(["paragraph"]))
+    if (!paragraph) return null
+    return this.findChildByType(paragraph, new Set(["inline"]))
+  }
+
+  /**
    * Walk a heading node's own inline child and emit `uses` edges for every
    * link/image/autolink in the companion inline tree matched by byte offset.
+   *
+   * `headingInline` rather than a direct-child lookup, for the reason its own comment
+   * gives: an ATX heading holds its `inline` directly and a setext heading holds it inside
+   * a `paragraph`, and reading only the direct form dropped every link in every setext
+   * heading in the corpus.
    */
   private emitInlineUses(
     node: Node,
@@ -644,7 +783,7 @@ export class RealMarkdownAnalyzer implements ASTEngine.LanguageAnalyzer {
     definitions: Map<string, { destination: string; line: number }>,
     pendingAnchors?: { source: string; fragment: string; literal: string; line?: number }[],
   ): void {
-    const inline = this.findChildByType(node, new Set(["inline"]))
+    const inline = this.headingInline(node)
     if (!inline) return
     const entry = inlineByStart.get(inline.startIndex)
     if (entry?.tree?.rootNode) this.walkInlineTree(entry.tree.rootNode, addRel, source, entry.line, definitions, pendingAnchors)
