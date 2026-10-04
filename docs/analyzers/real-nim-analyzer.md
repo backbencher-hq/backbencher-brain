@@ -457,18 +457,45 @@ records the count its run used.
 | `overrides` | YES | EMITTED | 67 edges | `collectOverrides`, receiver-qualified `Receiver.method`; the cross-file family additionally needs `overrideCompanion` |
 | `exports` | YES | EMITTED | 617 edges | `readExportStatement`, one edge per OPERAND of `export`, with `except` read positionally as what does NOT leave |
 
-| Type | Verdict | Edges | Both ends resolve | Confidence | evidenceClass |
-| --- | --- | --- | --- | --- | --- |
-| `calls` | EMITTED | 118,261 | 38.9% | 0.85 (113,997) / 0.9 (4,206) / 0.75 (58) | `usage_contextual` 118,203, `import_based` 58 |
-| `uses` | EMITTED | 45,662 | 99.8% | 1.0 (20,558) / 0.75 (25,104) | `usage_contextual` 45,604, `import_based` 58 |
-| `contains` | EMITTED | 29,361 | 99.8% | 1.0 | `structural` |
-| `references` | EMITTED | 56,438 | 45.6% | 0.9 | `reference_qualified` 48,364, `import_based` 8,074 |
-| `imports` | EMITTED | 13,364 | 37.1% | 1.0 | `import_based` |
-| `instantiates` | EMITTED | 2,843 | 100.0% | 0.9 | `usage_contextual` |
-| `extends` | EMITTED | 627 | 71.0% | 1.0 | `structural` |
-| `exports` | EMITTED | 617 | 3.7% | 1.0 | `structural` |
-| `overrides` | EMITTED | 67 | 100.0% | 1.0 | `structural` |
-| `implements` | EMITTED | 47 | 91.5% | 1.0 | `structural` |
+**READ THE "Both ends resolve" COLUMN AS AN INTRA-FILE RATE.** It answers *can this
+file's own graph be walked from this edge*, not *does this edge bind in the index*. Both
+instruments that report it — `census.ts` and the supervisor's `firing-check.ts` — build
+their name set inside the per-file loop (`census.ts:232`, `firing-check.ts:322`), so each
+edge is resolved against the declarations of its own file. Widening the universe to the
+whole 6,063-file corpus moves seven of the ten types, and the fourth-session numbers in
+the column below were quoting the narrow scope without saying so. Both scopes:
+
+| Type | Verdict | Edges | Both ends resolve, **intra-file** | **corpus-wide** | Confidence | evidenceClass |
+| --- | --- | --- | --- | --- | --- | --- |
+| `calls` | EMITTED | 118,261 | 38.9% | **98.3%** | 0.85 (113,997) / 0.9 (4,206) / 0.75 (58) | `usage_contextual` 118,203, `import_based` 58 |
+| `uses` | EMITTED | 45,662 | 99.8% | 99.8% | 1.0 (20,558) / 0.75 (25,104) | `usage_contextual` 45,604, `import_based` 58 |
+| `contains` | EMITTED | 29,361 | 99.8% | 99.9% | 1.0 | `structural` |
+| `references` | EMITTED | 56,438 | 45.6% | **96.9%** | 0.9 | `reference_qualified` 48,364, `import_based` 8,074 |
+| `imports` | EMITTED | 13,364 | 37.1% | 38.6% | 1.0 | `import_based` |
+| `instantiates` | EMITTED | 2,843 | 100.0% | 100.0% | 0.9 | `usage_contextual` |
+| `extends` | EMITTED | 627 | 71.0% | **99.4%** | 1.0 | `structural` |
+| `exports` | EMITTED | 617 | 3.7% | **75.4%** | 1.0 | `structural` |
+| `overrides` | EMITTED | 67 | 100.0% | 100.0% | 1.0 | `structural` |
+| `implements` | EMITTED | 47 | 91.5% | **100.0%** | 1.0 | `structural` |
+
+The corpus-wide column is `validation/m14/fixtures/nim/resolution-scope.ts` over the
+6,063-file corpus, one pass, digest `9d9ee478e3295c28` unchanged on both sides. **Its
+intra-file column reproduces the census figure exactly on all ten types**, which is what
+makes the second column readable as the same edges measured against a wider universe
+rather than as a different measurement.
+
+**The four types that do not move are the four whose targets are intra-file by
+construction** — `uses` (a member read), `contains` (an owner to its own member),
+`overrides` (a receiver declared in the same file), `instantiates` (a callee this file
+declares, which is the type's definition). That is the confirmation that the delta is
+measuring *scope* and not counting better, and it is why the workstream's reference
+point needs its scope attached: CSS `references` at 66.8% against nim `references` at
+45.6% compares an intra-file rate to an intra-file rate and reads as nim being worse by
+21 points, where nim corpus-wide is **96.9%**. Neither number is wrong; they are rates at
+different scopes, and the scope is the thing the number is about. `imports` is the one
+type whose corpus-wide figure is weak for a separate reason — it rests on a module-path
+heuristic rather than a symbol match, and neither instrument resolves a Nim module path
+like `std/strutils` properly (*Session 5*).
 
 **267,287 edges. 0 below 0.7 from this analyzer.** One `calls` edge sits at 0.5 with
 no `evidenceClass`, and it is not this analyzer's: it comes from the regex fallback
@@ -691,6 +718,41 @@ same instrument reads **8/10, 4,247 edges** — `implements` and `overrides` do 
 a stride sample, for the two different reasons given in *`implements`* and
 *Limitations* 15 — so the sample size is a real input to this arbiter's verdict and not a
 detail.
+
+**The resolution rates in this document were intra-file, and saying so changes what they
+mean.** Both instruments that report a "both ends resolve" rate — this lane's
+`census.ts` and the supervisor's `firing-check.ts` — build their name set *inside* the
+per-file loop (`census.ts:232`, `firing-check.ts:322`), so every edge is resolved against
+the declarations of its own file. `validation/m14/fixtures/nim/resolution-scope.ts`
+measures both scopes in one pass and **its intra-file column reproduces `census.ts`
+exactly on all ten types**, which is what licenses reading the second column as the same
+edges against a wider universe:
+
+| type | edges | intra-file (quoted until now) | **corpus-wide** | edges that move |
+| --- | --- | --- | --- | --- |
+| `calls` | 118,261 | 38.9% | **98.3%** | +70,201 |
+| `references` | 56,445 | 45.6% | **96.9%** | +28,957 |
+| `exports` | 617 | 3.7% | **75.4%** | +442 |
+| `extends` | 627 | 71.0% | **99.4%** | +178 |
+| `imports` | 13,364 | 37.1% | 38.6% | +201 |
+| `implements` | 47 | 91.5% | **100.0%** | +4 |
+| `contains` | 29,362 | 99.8% | 99.9% | +10 |
+| `uses` | 45,664 | 99.8% | 99.8% | 0 |
+| `overrides` | 67 | 100.0% | 100.0% | 0 |
+| `instantiates` | 2,843 | 100.0% | 100.0% | 0 |
+
+**Seven of the ten types resolve at 96.9% or better once the universe is the corpus.**
+The four that do not move are the four whose targets are intra-file *by construction* —
+`uses` a member read, `contains` an owner to its own member, `overrides` a receiver in
+the same file, `instantiates` a callee this file declares — and that is the confirmation
+that the delta measures scope rather than counting better. The universe is 78,838
+distinct published name spellings, from 118,261 `calls` edges.
+
+This also resolves a scope confusion the workstream's reference point invites: CSS
+`references` at 66.8% against nim `references` at 45.6% reads as nim being worse by 21
+points, and nim corpus-wide is **96.9%**. Both are correct at their own scope. The rate
+is a property of the edges *and* the resolver's universe, and quoting one without the
+other is how a language gets compared to itself.
 
 **One number that looks like a disagreement and is not:** `unknownEndpoints` reads **8**
 in this lane's census and **1** in the arbiter, because they count different things on
@@ -3200,11 +3262,37 @@ quiet machine will cover all 5,227 through the production path.
     corpus source.
 27. **Two fields of the arbiter that is supposed to corroborate this lane's firing
     numbers are wrong by construction, so the corroboration is partial.** The edge
-    counts, symbol counts, source direction and both-ends resolution it reports are
-    sound and match this lane's census to the digit, but `analyzerDigest` reads
-    `MISSING` for every lane in the fleet and `types[t].files` reports the last file's
-    count instead of the union. A reader who takes "10/10 fired" from this instrument
-    is reading a number that survives both defects; a reader who takes the per-type
-    file counts, or who believes any lane's digest tripwire is armed, is not. Full
-    citations and the two one-line fixes are in *Session 5* and in
+    counts, symbol counts and source direction it reports are sound and match this
+    lane's census to the digit, but `analyzerDigest` reads `MISSING` for every lane in
+    the fleet, `types[t].files` reports the last file's count instead of the union, and
+    — the same scoping cause as the second one — its `published` set is rebuilt per
+    file (`firing-check.ts:322`), so its **both-ends-resolution and source-direction
+    columns are intra-file rates**. A reader who takes "10/10 fired" from this
+    instrument is reading a number that survives all three defects; a reader who takes
+    the per-type file counts, the resolution rates, or who believes any lane's digest
+    tripwire is armed, is not. Full citations and the fixes — two of them one line each
+    — are in *Session 5* and in
     `validation/m14/measurements/nim/session5-firing-check-defects.txt`.
+28. **The corpus-wide resolution figures are a name match against a name universe, not a
+    bind.** `resolution-scope.ts` widens the resolver from one file to 78,838 published
+    name spellings, and `calls` goes from 38.9% to 98.3% — which is a real and important
+    finding about scope, and it is still a *string* match. A name that appears in the
+    corpus but is declared by a different symbol than the edge means is counted resolved,
+    and Nim's name reuse (`config`, `emptyNode`, `c`, `map`, `name` — the 36
+    same-file-ambiguous names in *The incoming direction*, of which `c` alone accounts
+    for 23 edges) means name equality is a weak identity even inside one file. So 98.3%
+    is an upper bound on what a graph walk can actually follow, and the gap between
+    "resolves by name" and "binds to this declaration" is not measured by anything in
+    this lane. Closing it needs the position- and scope-qualified identity the
+    cross-language work is already carrying, not a wider name set.
+29. **`imports` is the one type whose resolution figure rests on a heuristic rather than
+    a match**, in both scopes and in both instruments. An `imports` target is a module
+    path (`std/strutils`), not a symbol. `census.ts:149` treats every PATH SEGMENT of a
+    corpus file's module path as a candidate module name — so a directory called `lib`
+    makes `lib` resolvable — which is why the intra-file figure is 37.1% where a
+    basename-only match gives 2.6%. `resolution-scope.ts` reproduces that rule rather
+    than correcting it, so that it isolates one variable (the width of the universe) and
+    not two, and the consequence is declared here instead: **38.6% is not a measurement
+    of how many imports this analyzer resolves, it is a measurement of how many target
+    strings collide with a corpus path segment.** No instrument in this lane resolves a
+    Nim module path properly.
