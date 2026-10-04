@@ -313,16 +313,30 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
     interface Frame {
       node: Node
       /** True once the walk is inside a routine body. Locals — and a `type`
-       *  section inside a body (C-D1) — are execution artifacts, never symbols. */
+       *  section inside a body (C-D1) — are execution artifacts, never symbols.
+       *
+       *  EXCEPT the one case measured below: a routine's own DOC COMMENT is not
+       *  its body, and a `## runnableExamples:` block is compiled by the Nim
+       *  compiler as a real unit. Reading "inside a declaration" instead of
+       *  "inside the body field" dropped those declarations whole. */
       inCallable: boolean
+      /** The nearest enclosing routine's SYMBOL NAME. A named nested routine is a
+       *  first-class Nim declaration with a stable name, callable by that name
+       *  from its parent, so it is published with this as its `scope` and as the
+       *  far end of a `contains` edge. */
+      enclosingCallable: string
+      /** Inside a `runnableExamples:` block — a doc-comment unit the Nim COMPILER
+       *  compiles. Its TYPE declarations are declarations; its value declarations
+       *  are locals of the example, not of the enclosing routine. */
+      docExample: boolean
       /** The `ref`/`ptr` wrapper of the enclosing type declaration, so a nested
        *  `object_declaration` knows whether it is a value or a reference type. */
       objectKind: string
     }
-    const stack: Frame[] = [{ node: rootNode, inCallable: false, objectKind: "" }]
+    const stack: Frame[] = [{ node: rootNode, inCallable: false, enclosingCallable: "", docExample: false, objectKind: "" }]
 
     while (stack.length > 0) {
-      const { node, inCallable, objectKind } = stack.pop()!
+      const { node, inCallable, enclosingCallable, docExample, objectKind } = stack.pop()!
       const type = node.type
 
       // ── error reporting: one row per ERROR / MISSING node, never per
@@ -340,18 +354,23 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
       // ── the seven callable spellings ────────────────────────────────────
       const callable = this.callableNodes[type]
       if (callable) {
-        const sym = this.buildCallableSymbol(node, callable, ctx, inCallable)
+        const sym = this.buildCallableSymbol(node, callable, ctx, inCallable, enclosingCallable)
         if (sym) {
           ctx.symbols.push(sym)
-          ctx.fileCallables.add(sym.name)
+          // `fileCallables` is the MODULE-SCOPE callable set, and it is what
+          // `collectCallsAndUses` reads to decide that an unqualified call names
+          // something this module declares. A nested routine is callable only
+          // from inside its parent, so adding it here would reclassify every
+          // reference to that name anywhere in the file. Deliberately not added.
+          if (!inCallable) ctx.fileCallables.add(sym.name)
         }
-        this.pushChildren(node, stack, true, "")
+        this.pushCallableChildren(node, stack, enclosingCallable)
         continue
       }
 
       // ── type definitions ────────────────────────────────────────────────
       if (type === "type_declaration") {
-        if (!inCallable) {
+        if (!inCallable || docExample) {
           const sym = this.buildTypeSymbol(node, ctx, objectKind)
           if (sym) {
             ctx.symbols.push(sym)
@@ -360,7 +379,7 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
             this.pushTypeMembers(node, sym, ctx)
           }
         }
-        this.pushChildren(node, stack, inCallable, objectKind)
+        this.pushChildren(node, stack, inCallable, enclosingCallable, docExample, objectKind)
         continue
       }
 
@@ -370,13 +389,18 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
         for (let i = 0; i < node.namedChildCount; i++) {
           const decl = node.namedChild(i)
           if (decl && decl.type === "variable_declaration") {
-            for (const sym of this.buildValueSymbols(decl, sectionKind, type, inCallable, ctx)) {
+            // A doc example's `var base: Base = Sub1()` is a local of the EXAMPLE,
+            // exactly like a local of a routine body — `LocalsAreNotSymbols`
+            // applies to both. `inCallable` is false inside the example (that is
+            // what re-enables its type declarations), so the suppression is
+            // `inCallable || docExample`.
+            for (const sym of this.buildValueSymbols(decl, sectionKind, type, inCallable || docExample, ctx)) {
               ctx.symbols.push(sym)
               ctx.fileValues.add(sym.name)
             }
           }
         }
-        this.pushChildren(node, stack, inCallable, objectKind)
+        this.pushChildren(node, stack, inCallable, enclosingCallable, docExample, objectKind)
         continue
       }
 
@@ -385,8 +409,109 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
       const childObjectKind =
         type === "ref_type" ? "ref_type" : type === "pointer_type" ? "pointer_type" : type === "distinct_type" || type === "out_type" || type === "var_type" ? type : objectKind
 
-      this.pushChildren(node, stack, inCallable, childObjectKind)
+      this.pushChildren(node, stack, inCallable, enclosingCallable, docExample, childObjectKind,
+        inCallable ? this.runnableExamplesArgument(node) : null)
     }
+  }
+
+  /**
+   * `runnableExamples:` — a `##` doc-comment block the Nim COMPILER compiles.
+   *
+   * ## What the grammar does with it, and why it matters
+   *
+   * The pinned grammar does not give the block a node type. For
+   *
+   *     proc `of`*[T, S](x: T, y: typedesc[S]): bool =
+   *       ## Checks if `x` is an instance of `y`.
+   *       runnableExamples:
+   *         type
+   *           Base = ref object of RootObj
+   *           Sub1 = ref object of Base
+   *           Sub2 = ref object of Base
+   *
+   * it emits ONE `documentation_comment` node for the first `##` line, and then
+   * parses `runnableExamples:` as ordinary CODE — a `call` whose `function` is the
+   * identifier `runnableExamples` and whose `argument_list` holds the whole
+   * example body — INSIDE the routine's `body` field. So the example's types are
+   * body-locals by tree position, and the C-D1 rule (a `type` section inside a
+   * body is an execution artifact) correctly suppressed them.
+   *
+   * That rule is right for a body and wrong here, because a `runnableExamples`
+   * block is not the routine's body: it is a separate compilation unit that
+   * `nim doc` type-checks, and the declarations in it are real.
+   *
+   * ## Measured cost of getting it wrong, and what is left
+   *
+   * Over 4,555 corpus files, 9 `object_declaration.inherits` occurrences on the
+   * parse tree had an owner symbol the analyzer published NOWHERE. This rule took
+   * that to 6, and the six that remain are three different things, none of them
+   * this rule:
+   *
+   *   - 2 in nimsuggest/tests/fixtures/mclass_macro.nim — `type \`typeName\` of
+   *     \`baseName\``, a macro that BUILDS an inheritance clause from two
+   *     backtick parameters. The declarations exist only as macro input.
+   *   - 1 in tests/macros/tgettypeinst.nim — `_ of Model`, where the declared
+   *     name is `_` and the analyzer suppresses `_` by design (it is Nim's
+   *     discard name for a declaration).
+   *   - 1 each in tests/stdlib/trepr.nim (`TFoo`, under `static:` inside a proc)
+   *     and tests/template/template_issues.nim (`name`, inside a `template` body)
+   *     — a `type` section inside a BODY, which is the C-D1 rule and is
+   *     deliberate. A `runnableExamples` block is a separate compilation unit; a
+   *     `static:` block or a template body is not.
+   *
+   * So the honest claim is 9 -> 6, with the residue enumerated. An earlier draft
+   * of this comment said the rule emptied the bucket; the measurement says
+   * otherwise and the measurement is what is written here.
+   *
+   * ## What is published, and what is not
+   *
+   * The block's `type_section` declarations are published — they are type
+   * declarations the compiler checks. Its value declarations are NOT: `var base:
+   * Base = Sub1()` is a local of the EXAMPLE, exactly like a local of a routine
+   * body, and publishing it as a file-scope value would be the same defect in the
+   * opposite direction.
+   *
+   * The trigger is read off the tree as a SHAPE WITH A ROLE — a `call` whose
+   * `function` field is the identifier `runnableExamples` — not as a text search,
+   * so a comment or a string cannot fake it. It fires only inside a routine body,
+   * because outside one `runnableExamples` is an ordinary (if odd) call and its
+   * arguments are ordinary expressions.
+   */
+  private runnableExamplesArgument(node: Node): Node | null {
+    if (node.type !== "call") return null
+    const fn = node.childForFieldName("function") ?? this.namedChildOfType(node, "identifier")
+    if (!fn || fn.type !== "identifier") return null
+    if (String(fn.text) !== "runnableExamples") return null
+    // The `argument_list` FIELD is not populated for this node — the grammar
+    // parses `runnableExamples:` as a labelled statement, and the field name is
+    // declared for a different alternative — so `childForFieldName` returns null
+    // while the child is plainly there. Read it as a NAMED CHILD of that type
+    // instead. Verified against nim/lib/system.nim:857, where the call at line
+    // 859 has `function: identifier runnableExamples` and an unlabelled
+    // `argument_list` child holding the example's `statement_list`.
+    const args = node.childForFieldName("argument_list") ?? this.namedChildOfType(node, "argument_list")
+    if (!args) return null
+    // The `argument_list` itself is returned, not the `statement_list` inside it.
+    // The frame is applied by comparing a node's own children against the
+    // returned start offset, and the example body is a GRANDchild of the call
+    // (`call > argument_list > statement_list`), so returning the inner node
+    // matched nothing and the whole rule was dead. Verified on
+    // nim/lib/system.nim:859 — 24 example frames are found across that file and
+    // every one of them silently published nothing before this was fixed.
+    for (let i = 0; i < args.namedChildCount; i++) {
+      const c = args.namedChild(i)
+      if (c && (c.type === "statement_list" || c.type === "block")) return args
+    }
+    return null
+  }
+
+  /** The first NAMED child of the given node type, or null. */
+  private namedChildOfType(node: Node, type: string): Node | null {
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const c = node.namedChild(i)
+      if (c && c.type === type) return c
+    }
+    return null
   }
 
   private buildCallableSymbol(
@@ -398,6 +523,7 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
       genericParamNames: Set<string>
     },
     inCallable: boolean,
+    enclosingCallable: string,
   ): ASTEngine.UniversalSymbol | null {
     // The name field is `_symbol` (identifier or accent_quoted for `+`) or
     // `exported_symbol` (identifier/accent_quoted followed by `*`).
@@ -405,10 +531,6 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (!nameNode) return null
     const nameInfo = this.readNameNode(nameNode)
     if (!nameInfo.name || nameInfo.name === "_") return null
-    // A routine declared inside another routine is a nested routine: Nim
-    // allows it (closure), and the family rule is that an anonymous/inner
-    // body entity is an execution artifact.
-    if (inCallable) return null
 
     const parameters = this.readParameters(node)
     const returnNode = node.childForFieldName("return_type")
@@ -421,13 +543,37 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
     const doc = ctx.docCommentByStartLine.get(node.startPosition.row + 1)
 
     const receiverType = callable.callableKind === "method" ? this.methodReceiverTypeLeaf(node) : undefined
+    // A NAMED routine nested in another routine's body. Nim closures are
+    // first-class named procedures: `proc recentlyOpenedAdd(filename: string)`
+    // inside `proc closeTab` is called by that name from its parent and from its
+    // own body, and both calls are already published as `calls` edges.
+    //
+    // Dropping the symbol while keeping the edges is the defect requirement D
+    // names: "an edge the graph cannot walk is a thing the graph asserts that is
+    // not there". Measured over 4,555 corpus files: 653 `calls` edges named a
+    // declaration the parse tree carried and the analyzer published nowhere, and
+    // every one of them was a nested routine (Aporia's `{.closure.}` GTK
+    // callbacks, `onConnect`, `toggleSingle`, and so on).
+    //
+    // It is published with `scope` set to its parent — the lua lane's convention
+    // for exactly this shape (real-lua-analyzer.ts, `lexicallyLocal`) — so a
+    // consumer can tell a closure from a module procedure, and it is NOT added to
+    // `fileCallables`, which is the module-scope callable set. The companion
+    // `contains` edge is emitted in `collectContainment` from
+    // `metadata.nimNestedIn`, not from `ownerName`, because the owner here is a
+    // FUNCTION and `ownerName` is the family field for a class or module owner.
+    //
+    // What stays dropped: an unnamed nested routine. `readNameNode` returns "" for
+    // `proc() = ...` written without a name, and that is the "anonymous inner body
+    // entity" the family rule is actually about.
+    const nestedIn = inCallable ? enclosingCallable : ""
 
     const sym: ASTEngine.UniversalSymbol = {
       name: nameInfo.name,
       kind: callable.kind,
-      visibility: nameInfo.exported ? "public" : "private",
+      visibility: nestedIn ? "private" : nameInfo.exported ? "public" : "private",
       range: this.nodeRange(node),
-      scope: undefined,
+      scope: nestedIn || undefined,
       parameters,
       returnType: returnNode ? this.nodeText(returnNode) : undefined,
       genericParameters: genericParameters.length > 0 ? genericParameters : undefined,
@@ -447,6 +593,18 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
       // copy stays — the override labels are built from it, and it is the
       // documented place the receiver is recorded.
       ...(receiverType ? { ownerName: receiverType, ownerKind: ASTEngine.SymbolKind.Class } : {}),
+      // `qualifiedName` is the disambiguating handle the override edges need.
+      // `overrides` endpoints are receiver-qualified (`Rect.describe`) because the
+      // bare name `describe` cannot address either end — and a consumer that
+      // resolves an edge by matching a target against published names has no way
+      // to reach `Rect.describe` unless some symbol publishes that spelling.
+      // Measured on nim/lib/pure (105 files, 6,638 symbols) with
+      // `script/m14/incoming-check.ts`: all 14 `overrides` edges reported as
+      // UNRESOLVED targets, every one of them a correct receiver-qualified edge.
+      // This is the same field the lua lane fills for the same reason
+      // (real-lua-analyzer.ts: `qualifiedName: label`, "the `name` field is the
+      // identity; this is the path").
+      ...(receiverType ? { qualifiedName: `${receiverType}.${nameInfo.name}` } : {}),
       // The store binds `brain_symbol.docstring` from this field (see
       // parallel-indexer's insertSymbol binding). Emitting only `comments`
       // produced docs=0 for every nim symbol through the real CLI, so the `##`
@@ -466,7 +624,22 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
         ...(nameInfo.exported ? { exported: true } : {}),
         paramCount: parameters.length,
         ...(genericParameters.length > 0 ? { genericParameterCount: genericParameters.length } : {}),
+        ...(nestedIn ? { nimNestedIn: nestedIn } : {}),
         ...(callable.callableKind === "method" ? { nimReceiverType: receiverType } : {}),
+        // The receiver-qualified LABEL, recorded in metadata as well as in
+        // `qualifiedName`. Two reasons, both measured:
+        //   - `pool-worker.ts:870` reads `s.qualifiedName || s.metadata?.fqn ||
+        //     (s.scope ? …)`, so `metadata.fqn` is the worker\'s own declared
+        //     fallback channel and this is where the same fact belongs for a
+        //     consumer that reads metadata.
+        //   - `script/m14/run-fixtures.ts` cannot assert `qualifiedName`: it is
+        //     absent from that file\'s CONSTRAINT_KEY_ALLOWLIST, so a fixture row
+        //     carrying it is reported as an INERT assertion and the
+        //     `nim/method-qualified-name-dropped` mutant survives. `meta.*` keys
+        //     ARE assertable, so the same fact is pinned here instead of nowhere.
+        //     The allowlist gap is reported to the supervisor rather than edited
+        //     (workstream §8).
+        ...(receiverType ? { fqn: `${receiverType}.${nameInfo.name}` } : {}),
         ...(node.childForFieldName("rewrite_pattern") ? { nimRewritePattern: true } : {}),
         ...(hasPragma("raises") ? { nimRaises: true } : {}),
         ...(hasPragma("noSideEffect") ? { nimNoSideEffect: true } : {}),
@@ -1616,17 +1789,37 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
   private collectContainment(symbols: ASTEngine.UniversalSymbol[], relationships: ASTEngine.UniversalRelationship[]): void {
     const seen = new Set<string>()
     for (const s of symbols) {
-      if (!s.ownerName) continue
-      const key = `${s.ownerName} ${s.name}`
+      if (s.ownerName) {
+        const key = `${s.ownerName} ${s.name}`
+        if (seen.has(key)) continue
+        seen.add(key)
+        relationships.push({
+          source: s.ownerName,
+          target: s.name,
+          type: ASTEngine.RelationshipType.Contains,
+          confidence: 1,
+          ...(s.range?.startLine ? { line_number: s.range.startLine } : {}),
+          metadata: { relationshipType: "nim_contains" },
+        })
+        continue
+      }
+      // A nested ROUTINE's owner is a function, and `ownerName` is the family
+      // field for a class or module owner — so the containment is published from
+      // the metadata instead, and it is a real lexical fact read off the tree
+      // rather than a name-shape guess. Confidence 1: the parent is the node this
+      // routine is physically nested in, which the grammar gives directly.
+      const parent = typeof s.metadata?.nimNestedIn === "string" ? (s.metadata.nimNestedIn as string) : ""
+      if (!parent) continue
+      const key = `${parent} ${s.name}`
       if (seen.has(key)) continue
       seen.add(key)
       relationships.push({
-        source: s.ownerName,
+        source: parent,
         target: s.name,
         type: ASTEngine.RelationshipType.Contains,
         confidence: 1,
         ...(s.range?.startLine ? { line_number: s.range.startLine } : {}),
-        metadata: { relationshipType: "nim_contains" },
+        metadata: { relationshipType: "nim_contains", nimNestedRoutine: true },
       })
     }
   }
@@ -2308,7 +2501,20 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
         } else {
         const leaf = fn ? this.calleeLeafNode(fn) : undefined
         const leafText = leaf?.text
-        if (leafText && leafText !== "_" && REAL_NIM_BUILTINS.indexOf(leafText) === -1 && !isKeywordLike(leafText)) {
+        // `runnableExamples:` is a DOC-COMMENT PRAGMA, not a call. The grammar
+        // parses the whole example as the call's `argument_list`, so the call
+        // branch fired on it and published
+        //   describe -[calls]-> runnableExamples
+        // with `callExpression` holding sixty characters of the example's
+        // source. No Nim program calls anything named `runnableExamples`: it is
+        // the one identifier in the language that is spelled like a call and
+        // never is one, and an edge to it is a name the graph can never resolve.
+        //
+        // The test is the SHAPE, not the word alone: the argument must be a
+        // statement list or a block. A real `runnableExamples(x)` call has an
+        // expression argument, and a user proc of that name is still published.
+        const isDocPragma = leafText === "runnableExamples" && this.runnableExamplesArgument(node) !== null
+        if (leafText && leafText !== "_" && !isDocPragma && REAL_NIM_BUILTINS.indexOf(leafText) === -1 && !isKeywordLike(leafText)) {
           const source = currentFn()
           const importBased = fn ? this.isImportQualified(fn, ctx.importQualifiers) : false
           push(source, leafText, ASTEngine.RelationshipType.Calls, importBased ? 0.75 : 0.85, leaf ? leaf.startPosition.row + 1 : node.startPosition.row + 1, {
@@ -3190,14 +3396,98 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
 
   private pushChildren(
     node: Node,
-    stack: { node: Node; inCallable: boolean; objectKind: string }[],
+    stack: { node: Node; inCallable: boolean; enclosingCallable: string; docExample: boolean; objectKind: string }[],
     inCallable: boolean,
+    enclosingCallable: string,
+    docExample: boolean,
     objectKind: string,
+    /** When set, this node is a `runnableExamples:` call and that child opens a
+     *  doc-example frame instead of inheriting the caller's. */
+    exampleBody?: Node | null,
   ): void {
+    // Compare by START OFFSET, not by `===`: the accessors each allocate their
+    // own JS wrapper for one underlying node, and two nodes cannot share a start
+    // offset inside one tree.
+    const exampleStart = exampleBody ? exampleBody.startIndex : -1
     for (let i = node.namedChildCount - 1; i >= 0; i--) {
       const c = node.namedChild(i)
-      if (c) stack.push({ node: c, inCallable, objectKind })
+      if (!c) continue
+      const inExample = exampleStart >= 0 && c.startIndex === exampleStart
+      stack.push({
+        node: c,
+        // Inside the example, `inCallable` is FALSE: the C-D1 rule suppressed
+        // these because they sat inside a routine BODY, and the example is not
+        // the body. Value declarations are suppressed separately, by `docExample`.
+        inCallable: inExample ? false : inCallable,
+        enclosingCallable,
+        docExample: inExample ? true : docExample,
+        objectKind,
+      })
     }
+  }
+
+  /**
+   * A routine's children are NOT all its body, and reading them as if they were
+   * dropped real declarations.
+   *
+   * The pinned grammar ABSORBS a `##` doc comment into the declaration node (see
+   * `collectDocModulesAndComplexity` for the two placements and why reading only
+   * the sibling form measured zero docstrings). So for
+   *
+   *     proc `of`*[T, S](x: T, y: typedesc[S]): bool =
+   *       ## Checks if `x` is an instance of `y`.
+   *       runnableExamples:
+   *         type
+   *           Base = ref object of RootObj
+   *           Sub1 = ref object of Base
+   *
+   * the doc comment — and the `runnableExamples:` code the Nim COMPILER compiles
+   * as its own unit — is a child of the `proc_declaration`, sibling to the `body`
+   * field. Pushing every child with `inCallable: true` therefore marked
+   * `Base` and `Sub1` as body-local and published neither.
+   *
+   * Measured cost over the corpus: 9 `object_declaration.inherits` occurrences on
+   * the parse tree had no published owner symbol, every one of them inside a
+   * `runnableExamples` block (nim/lib/system.nim Sub1/Sub2, lib/std/assertions.nim
+   * MyError, tests/stdlib/trepr.nim TFoo, tests/stdlib/tjsonmacro.nim MsgChallenge,
+   * tests/template/template_issues.nim `name`) — so `extends` lost the edges and
+   * the graph lost the symbols.
+   *
+   * Only the `body` field carries `inCallable: true`, which is exactly the
+   * distinction the C-D1 rule wanted: a `type` section inside a BODY is still
+   * dropped, and a `type` section inside a DOC COMMENT is a declaration the
+   * compiler type-checks.
+   */
+  private pushCallableChildren(
+    node: Node,
+    stack: { node: Node; inCallable: boolean; enclosingCallable: string; docExample: boolean; objectKind: string }[],
+    enclosingCallable: string,
+  ): void {
+    const body = node.childForFieldName("body")
+    const selfName = this.callableNameOf(node)
+    // Compare by START OFFSET, not by `===`. `childForFieldName` and
+    // `namedChild` each allocate their own JS wrapper for the same underlying
+    // node, so `c === body` was false for the body itself and every child of
+    // every routine was pushed with `inCallable: false` — which republished every
+    // function-local `let`/`var` and failed nim/negative. Two nodes in one tree
+    // cannot share a start offset, so this is exact.
+    const bodyStart = body ? body.startIndex : -1
+    for (let i = node.namedChildCount - 1; i >= 0; i--) {
+      const c = node.namedChild(i)
+      if (!c) continue
+      const isBody = c.startIndex === bodyStart && bodyStart >= 0
+      // The body opens a new lexical frame whose owner is THIS routine, so a
+      // routine nested one level deeper is scoped to it rather than to whatever
+      // surrounded this one.
+      stack.push({ node: c, inCallable: isBody, enclosingCallable: isBody ? selfName : enclosingCallable, docExample: false, objectKind: "" })
+    }
+  }
+
+  /** The published NAME of a routine node, or "" when it has none. */
+  private callableNameOf(node: Node): string {
+    const nameNode = node.childForFieldName("name")
+    if (!nameNode) return ""
+    return this.readNameNode(nameNode).name
   }
 
   private nodeRange(node: Node): ASTEngine.UniversalSymbol["range"] {
