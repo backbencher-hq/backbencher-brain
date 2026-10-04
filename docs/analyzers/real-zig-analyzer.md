@@ -4324,3 +4324,207 @@ side, `references`' 532 externals and `uses`' 2,516 are dominated by `struct` ×
   merge raised `KeyError: 'drawFiles'` twenty lines in — a traceback naming neither the file nor
   the flag. Fixed in this lane's own instrument, with both wrong invocations now refusing on
   distinct exits and naming the command that fixes them.
+
+## Pass 18 — the 4,509 "analyzer-owned" misses, decomposed, and the word "analyzer-owned" is wrong (2026-10-04)
+
+Pass 17 §G's second bullet was the only number in this document's own tables that no pass had
+attributed. `filelocal-miss-class.ts` counts **4,509 edges** whose target is a name the file's own
+tree declares and `parseFile` published nothing for, and files the whole lot under the single word
+"analyzer-owned". That word is a claim about `real-zig-analyzer.ts`, and nothing had tested it. This
+pass decomposes the 4,509 and the claim does not survive.
+
+### A. The decomposition, and the instrument that produced it
+
+`validation/m14/fixtures/zig/analyzer-owned-miss-cause.ts`, over the **same** 3,834-file draw
+(`sha256:2f3545f9…`, 8 shards, **0 fallback files**, 395,805 edges, the union hash asserted equal to
+the published draw hash). It recomputes the miss ladder's two analyzer-owned rungs from the dumps
+rather than reading them, re-walks all **499 affected files** with a shadow walk that replicates
+`real-zig-analyzer.ts`'s own four-state machine (`container`, `inFunction`, `anonContainer`,
+`containerIsErrorSet`), and attributes every case:
+
+| cause | (file,name) cases | edges | % of 4,509 | owner |
+|---|---|---|---|---|
+| `local-type` | 1,967 | **3,304** | 73.28% | analyzer, stated rule (Z22) |
+| `anon-container` | 689 | **1,191** | 26.41% | analyzer, stated rule |
+| `name-refused-by-analyzer` | 0 | **0** | 0.00% | analyzer, stated rule |
+| `owner-cascade` | 0 | **0** | 0.00% | analyzer, stated rule |
+| `no-named-owner` | 0 | **0** | 0.00% | analyzer, stated rule |
+| `filtered-by-keepSymbol` | 5 | **13** | 0.29% | **shared pipeline** (§8 item 25) |
+| `ladder-read-a-type-expression` | 1 | **1** | 0.02% | **this lane's own instrument** (§D) |
+| `published-but-absent` | 0 | **0** | 0.00% | **DEFECT** |
+| `no-local-decl-site` | 0 | **0** | 0.00% | **DEFECT** |
+| **total** | **2,662** | **4,509** | 100.00% | — |
+
+**By owner: analyzer-stated-rule 4,495 (99.69%) · shared-pipeline 13 (0.29%) · lane-instrument 1
+(0.02%) · DEFECT 0 (0.00%).** The sum is 4,509 exactly, so the ladder accounts for every edge it
+decomposes and leaves no remainder. The two `local-type` and `anon-container` classes are the Z22
+contract and the anonymous-container negative contract doing what they say: a container with no
+stable identity owns nothing, so its members are not symbols.
+
+**Scope of the 0.** It is a statement about this class — edges whose target the file's own tree
+declares as a `decl` or a `field` and `parseFile` published nothing for — and about nothing else.
+`imports` at 33.80% and `references` at 74.66% corpus-tier resolution are unchanged by this pass and
+are not defects this lane can close (§G).
+
+### B. Four controls, and the three that refused the first answer
+
+| control | what it asserts | result |
+|---|---|---|
+| **C1** | every field the shadow walk says the analyzer publishes is in the name set `parseFile` returned for that file | **22,263 sites checked, 0 violations** |
+| **C2** | the restated ladder reproduces `filelocal-miss-class.ts`'s per-type totals, both analyzer-owned rungs, all 7 types | **OK — equal to the digit** |
+| **C3** | four synthetic sources, one per refusal class, each run through **production `parseFile`**: classified into its rung *and* absent from production output | **4 of 4 OK** |
+| **C4** | for a field site in declaration scope, the walk's `container` equals the tree's nearest container declaration | **21,361 sites checked, 0 violations**; **0 fields published under an owner the source does not name** |
+
+Each of C1, C3 and C4 failed on its first run and the failure was in the instrument, not the corpus:
+
+- **C1 reported 8 violations, all of them `this`/`super`.** `keepSymbol` runs **inside** `parseFile`
+  (`src/ast/pool-worker.ts:918`), so a denylisted field is published by the analyzer and then dropped
+  by the pipeline. C1 now excludes names `keepSymbol` rejects, and that exclusion is the finding:
+  see §C.
+- **C3's `anon-container` and `owner-cascade` fixtures did not exercise their own rungs.**
+  `var h: struct { f: u8 } = undefined;` is **not** an anonymous container — the grammar hands the
+  `variable_declaration` only `[identifier, struct_declaration]`, so the struct **is** its last named
+  child, the walk publishes `h` as a `Struct` and `f` as its field, and it is right to. The rewrite
+  puts the inline struct in a **field's** type, the only shape that is anonymous while the walk is
+  still in declaration scope. The "81-character" name was **74** characters, under the 80-character
+  cap, so nothing was refused; the cap fixture's length is now **asserted in code**, because a
+  control whose fixture silently fails to exercise its own rung is precisely the failure this lane
+  exists to catch.
+- **C4 reported 13,294 violations, every one a field of a container declared inside a function**,
+  where Z22 publishes no owner at all so there is no owner to agree with. The invariant is about
+  declaration scope only, and the gate is the correction rather than a caveat.
+
+**And one defect this file found in itself, recorded because the shape recurs.** `declSites` first
+recorded a *scope* refusal as a *name* refusal, which moved **1,587 edges** into
+`name-refused-by-analyzer` — a number that large and that wrong is not a finding, it is a boolean
+where a reason belongs. `nameRefused` is now a reason string (`blank-identifier`, `length-cap`,
+`no-identifier`, `enum-member-length-cap`) and the four sites that genuinely hit a name guard are
+counted under the scope rule that actually refused them.
+
+### C. `keepSymbol` is a pipeline filter, and for Zig it deletes real declarations
+
+`src/ast/pool-worker.ts:427` `keepSymbol`, applied at `:918` **inside** `parseFile`, drops the
+`UNIVERSAL` names. For Zig that set is reached at `this` and `super` — and both are legal Zig field
+spellings, not JS-global noise. Measured over the same 3,834 files, **27 edges across 10 files**
+target a name that set deletes: **`super` ×24, `this` ×3**, of which **19 `uses`**
+(`zig_field_access`, conf 0.75) and **8 `contains`** (`zig_ownership`, conf 1.0). Thirteen of the 27
+name a field declared in the edge's **own** file. The `contains` eight are the sharper half, because
+an ownership edge asserts the container **owns** a member:
+
+```
+ghostty/src/apprt/action.zig:995          contains  CloseTabMode -> this    conf=1
+ghostty/src/input/Binding.zig:1201        contains  CloseTabMode -> this    conf=1
+ghostty/src/input/key_encode.zig:928      contains  KittyMods   -> super   conf=1
+ghostty/src/input/key_mods.zig:21         contains  Mod         -> super   conf=1
+zig/lib/std/zig/Zir.zig:1938              contains  Extended    -> this    conf=1
+```
+
+`ghostty/src/apprt/action.zig:994-996` declares `pub const CloseTabMode = enum(c_int) { /// Close the
+current tab.  this,` — a doc comment, an enum member named `this`, and a real member of a real
+published enum. The analyzer publishes it; `keepSymbol` deletes it; the `contains` edge survives and
+names nothing. This is §8 item 25 and it is **not this lane's file to edit**: `pool-worker.ts` is
+shared machinery, and the fix is a per-language decision, not a deletion. Note that this lane's
+published pass-17 §E figure of 13 `file-local` edges lost to the denylist is the *same* fact measured
+on the file-local tier only; the whole-corpus cost is **27 edges**, and the 8 `contains` edges were
+never in that count because `contains` resolves file-local by a different route.
+
+### D. One case was this lane's own ladder misreading a type expression
+
+`zig/test/behavior/extern_struct_zero_size_fields.zig:1-3` — `const E = enum(u0) {`. The
+`enum_declaration` node's first named child is the **tag type** `u0`, and
+`incoming-check.ts:192`'s `treeDeclaredNames` reads `namedChild(0)`, so the ladder recorded the Zig
+builtin `u0` as a file-scope **declaration** this lane then failed to publish. One edge
+(`references`, line 8). The analyzer is right; the ladder is wrong.
+
+**Not applied here, deliberately.** `treeDeclaredNames` skips the bare container nodes
+(`struct_declaration`, `enum_declaration`, `union_declaration`, `opaque_declaration`,
+`error_set_declaration`) when bucketing a name, because the declared name of a container lives on its
+parent `variable_declaration`, not on the container node. Applying it moves exactly **1 edge** at this
+population out of `dropped-decl-IN-FILE` and into `builtin-type`. It is not applied in this pass
+because that number is an input to seventeen passes of published tables in this document, and
+re-deriving every one of them to move one edge is a different piece of work from settling the
+attribution. It is §8 item 26 for the lane's next pass, and C2 in this instrument is what will
+report the movement when it happens: **C2 asserts equality with the published table, so the fix will
+make this instrument exit 1 rather than silently publish two different populations.**
+
+### E. The arbiter at the full population, n=4 — a `[BB-HANG]` that fired on its intended condition
+
+`script/m14/ontology-coverage-gate.ts` byte-identical to `c2f4a136c` (`diff` empty), full root, all
+3,834 files, 4 m 18 s. **Exit 1**, with **2 `[BB-PARSE-ERR] memory access out of bounds`** and
+**1 `[BB-HANG] parser stuck 120s`** — and the hang names
+`ghostty/src/lib/tinyio/windows.zig`, which had already printed `[BB-PARSE-ERR]` in the same process
+**30 seconds earlier**.
+
+That is one more instance of the pairing pass 15 §C called unexplained: **in 4 runs of 4, the file
+named in `[BB-HANG]` is the file named in the `[BB-PARSE-ERR]` line from the same process.** It is
+n=4 now, and this run settles pass 17 §G's first bullet as far as the corpus can: the guard **has**
+fired, on a file that trapped first, so "zero observed hangs" is no longer true of the corpus. What
+is still true is that **the guard firing does not mean the file is at fault** — the lane's own
+control, `gate-flagged-files.ts`, over this run's log, **exits 0**: both flagged files parse clean
+alone, **5/5 runs each**, `ghostty/src/lib/tinyio/windows.zig` in 1,129 ms against a 120 s guard
+(**106×**) and `zig/lib/docs/wasm/main.zig` in 373 ms (**322×**), both `fallback=false`. The flagged
+set is now **10 distinct files over 6 runs**, and **10 of 10 parse clean alone**.
+
+No verdict table was printed by this run, so it contributes nothing to the per-type counts and is
+not counted toward the 7/10. The arbiter's sequence at the full population across four runs is
+**exit 1, exit 1, exit 0, exit 1**: **1 of 4 exits clean**, which is the honest reading of pass 16
+§F's "the gate's exit code is not about the verdicts" — the exit-1 is the leaked-timer condition, and
+it is a property of the run, not of the corpus and not of the analyzer.
+
+### F. Every gate this lane can run, re-run at this commit
+
+| gate | command | result |
+|---|---|---|
+| typecheck | `npx tsc --noEmit -p tsconfig.json` | exit 0 |
+| fixture suite | `bun run script/m14/run-fixtures.ts --lang zig` | **11 pass / 0 fail**, no baseline regression |
+| mutation (shared) | `BB_MUTANT_ONLY="zig/" bun run script/m14/mutate-analyzer.ts` | **50 / 50 CAUGHT** (1,748 → 50) |
+| mutation (lane) | `npx tsx validation/m14/fixtures/zig/m13-mutants.mts` | **6 / 6 CAUGHT** |
+| **cause ladder (new)** | `npx tsx validation/m14/fixtures/zig/analyzer-owned-miss-cause.ts --dumps /tmp/opencode/zig-inc-p17` | **C1 0/22,263 · C2 OK · C3 4/4 · C4 0/21,361**, exit 0 |
+| flagged-file control | `npx tsx validation/m14/fixtures/zig/gate-flagged-files.ts --from …arbiter-fullpop-p18.err --subjects derived` | exit 0, **0 of 2** flagged files show a defect alone |
+| ontology arbiter, full root, n=4 | §E, 3,834 files | **exit 1** on the leaked-timer condition, **0 verdict rows printed**, 2 `[BB-PARSE-ERR]`, 1 `[BB-HANG]` |
+| honesty gate | `npx tsx script/m14/verify-honesty.ts` | 22 failures, exit 6, **0 naming this document, `analyzer-owned-miss-cause.ts`, or any file under `validation/m14/fixtures/zig/`** |
+| regex census | `npx tsx script/m12/verify-regex-census.ts` | gate `FAILED` on **43 findings (18 MISSING + 25 STALE) across 11 other analyzers**, **0 zig rows**, `unclassified: 0`, `mislocated: 0` — this pass adds no regex |
+| F8 completeness | `npx tsx script/m14/completeness-inventory.ts --lang zig` | 7 of 8 sections pass; **section-b still FAILS** on `requiredKinds` missing `exports` and `instantiates` (§8 item 23's neighbour: a shared spec row, not this lane's file). section-f perf **85.5 ms/file** |
+
+### G. What pass 18 could not settle
+
+- **The BB-PARSE-ERR → BB-HANG pairing is now n=4 and still unexplained.** `trap-second-parse.ts`
+  measured 0 of 2 files trapping twice when parsed sequentially, so there is no poisoned-instance
+  mechanism to point at, and `engine.ts:1440-1448`'s guard is per `parse()` call. Both facts are
+  recorded in pass 15 §C and neither is resolved here; this pass adds one more instance and a
+  confirmed-clean control on both of today's files.
+- **The `ladder-read-a-type-expression` fix is specified and not applied** (§D), so the published
+  `dropped-decl-IN-FILE` counts in §17's table remain one edge above what a corrected ladder would
+  read. C2 is wired to make that visible the moment it changes.
+- **C1 validates the walk against parseFile's name SET, not against owner or kind.** A field
+  published under the right name and the wrong `ownerKind` would pass C1. C4 covers the owner NAME;
+  nothing here checks the published `kind` against the site's shape.
+- **`imports` at 33.80% and `references` at 74.66% corpus-tier resolution are untouched by this
+  pass.** They are the largest resolution gaps in this lane and neither is in the class decomposed
+  here, because their targets are paths and cross-file names rather than in-file declarations.
+
+### H. §8 items, from this pass
+
+- **Item 25 — `keepSymbol`'s `UNIVERSAL` denylist drops real Zig declarations, and the surviving
+  edges name nothing.** *File:* `src/ast/pool-worker.ts`, `keepSymbol` (`:427`), applied at `:918`.
+  *What it must do:* treat `this` and `super` per language, exactly as the existing
+  `RESERVED: Record<string, ReadonlySet<string>>` table already does for `php: self/parent` and
+  `sql: program` — add `zig: new Set(["this", "super"])`, or remove both names from `UNIVERSAL` and
+  let the per-language table carry them. *Why:* the comment above `UNIVERSAL` argues that a name
+  survives only if no lane produced a counterexample, and **this lane has now produced 13** — Zig
+  declares `this` as an enum member (`ghostty/src/apprt/action.zig:995`) and `super` as a field
+  (`ghostty/src/input/key_mods.zig:21`), across 10 files and 27 edges, 8 of which are `contains`
+  ownership edges that assert a container owns a member the index does not hold. *Measured cost at
+  the full 3,834-file population:* 27 edges, 10 files, 13 of the names declared in the edge's own
+  file. *Not applied here:* `pool-worker.ts` is shared machinery (§8), and the change moves the
+  symbol count in every lane that has a field or enum member so named.
+- **Item 26 — `incoming-check.ts`'s `treeDeclaredNames` reads a container node's `namedChild(0)` as
+  a declaration name.** *File:* `validation/m14/fixtures/zig/incoming-check.ts:191-193` (this lane's
+  own instrument). *What it must do:* skip `struct_declaration`, `enum_declaration`,
+  `union_declaration`, `opaque_declaration` and `error_set_declaration` when bucketing a `decl`,
+  since the declared name of a container is on its parent `variable_declaration`. *Why:*
+  `const E = enum(u0)` records the Zig builtin `u0` as a file-scope declaration, and the miss ladder
+  then reports a `dropped-decl-IN-FILE` edge against a name that was never a declaration.
+  *Measured cost:* **1 edge** at the full population. *Not applied here:* it is an input to seventeen
+  passes of published tables in this document (§D), and `analyzer-owned-miss-cause.ts`'s C2 will exit
+  1 on the change rather than let the two populations diverge silently.
