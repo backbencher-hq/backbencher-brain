@@ -4,10 +4,17 @@
  * ## WHY THE TABLE LIVES HERE AND NOT IN THE GATE
  *
  * `script/m14/ontology-coverage-gate.ts` is supervisor-owned shared machinery (lane
- * brief §8), and `RULED_BY_LANG` in it is a literal with no extension point. Run
- * against `xml` it refuses to report at all:
+ * brief §8), so the TABLE lives in a file this lane owns, in the gate's own `Ruled`
+ * shape, and registration is the two-line change the supervisor applies:
  *
- *   $ npx tsx script/m14/ontology-coverage-gate.ts xml
+ *   import { XML_RULED } from "./xml-ruled"
+ *   const RULED_BY_LANG: Record<string, Ruled[]> = { …, xml: XML_RULED }
+ *
+ * **AND IT IS ALREADY REGISTERED — gate lines 49 and 196, as of commit 45da9ace0.** The
+ * refusal this header used to quote as the reason for the file's existence is HISTORY,
+ * kept here because the shape of it is the reason this file exists at all:
+ *
+ *   $ npx tsx script/m14/ontology-coverage-gate.ts xml        # BEFORE registration
  *   ontology coverage gate — xml
  *   corpus: 11456 admitted files
  *
@@ -17,20 +24,14 @@
  *   $ echo $?
  *   2
  *
- * (exit status measured on this branch, corpus 11,456 admitted files across 110
- * repositories.)
- *
- * That refusal is the gate behaving correctly, and it is also why this lane's five
- * RULED verdicts have never been checked by the arbiter — which is the whole point of
- * the table. So it lives in a file this lane owns, in the gate's own `Ruled` shape,
- * and the supervisor's permanent change is two lines:
- *
- *   import { XML_RULED } from "./xml-ruled"
- *   const RULED_BY_LANG: Record<string, Ruled[]> = { …, xml: XML_RULED }
- *
- * `validation/m14/fixtures/xml/ruled-gate.ts` applies exactly those two lines to a
- * COPY of the gate under /tmp and runs it, so the table is proven rather than
- * asserted.
+ * (exit status measured on this branch before registration, corpus 11,456 admitted files
+ * across 110 repositories.) That refusal was the gate behaving correctly, and it is also
+ * why this lane's RULED verdicts went unadjudicated until the map entry landed — which
+ * is the whole point of a table. `validation/m14/fixtures/xml/ruled-gate.ts` therefore no
+ * longer proves the table is REACHABLE (the shared file does that, and its runner skips
+ * patches 1-2 when it detects xml is already wired); it proves the table is correct, by
+ * running the arbiter over the full admitted population and printing the per-probe walk
+ * count beside every instrument-B 0.
  *
  * ## WHAT IS AND IS NOT IN THIS TABLE
  *
