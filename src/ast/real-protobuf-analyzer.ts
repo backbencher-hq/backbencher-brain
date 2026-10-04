@@ -781,18 +781,58 @@ export class RealProtobufAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (!typeNode && body) {
         const gname = node.childForFieldName("name")?.text ?? firstOfType(node, "identifier")?.text
         if (gname) {
+          // A group's TYPE is declared where the `extend` block SITS; only the
+          // group's FIELD belongs to the extendee. `protoc` agrees, and this lane
+          // got it wrong until an oracle independent of this grammar said so:
+          // `optional group GroupField = 121 { … }` written inside a FILE-LEVEL
+          // `extend TestAllTypesProto2 { … }` in
+          // `pb-reference/src/google/protobuf/test_messages_proto2.proto` produces
+          //
+          //   protoc   proto2_unittest.GroupField          (a top-level message)
+          //            proto2_unittest.GroupField.group_int32
+          //            extension `groupfield` extendee .…TestAllTypesProto2
+          //
+          // while this analyzer produced
+          //
+          //   analyzer  …TestAllTypesProto2.GroupField              (a TYPE)
+          //            …TestAllTypesProto2.GroupField.group_int32
+          //            extension `GroupField#property` owned by the extendee
+          //
+          // so the analyzer published a nested type `…TestAllTypesProto2.GroupField`
+          // that no compiler defines, and three edges pointed into it. A phantom
+          // declaration is the expensive kind of wrong: `bb_impact` on it returns
+          // confident advice about a type that does not exist.
+          //
+          // `ctx.scope` is the enclosing DECLARATION and `ctx.owner` is the
+          // EXTENDEE, and they are equal everywhere except inside an `extend` — the
+          // one site pass 8's nested-`extend` fix already found them differing. So
+          // the type takes `scope` and the field keeps `owner`, and in every group
+          // outside an `extend` the two are the same string and nothing moves.
+          //
+          // `viaExtension` is cleared with the scope, because a type declared at
+          // the block's own scope is not itself an extension member. It was true for
+          // these rows and is false now; on a group outside an `extend` it was
+          // already false.
+          const typeOwner = ctx.viaExtension ? ctx.scope : ctx.owner
           // Two symbols, two ids: the type takes the plain dotted id and the
           // field is disambiguated by `uniqueId`, so the `uses` edge below
           // points field→type instead of looping a symbol onto itself.
-          const typeId = addSymbol(qualify(ctx.owner, gname), {
+          const typeId = addSymbol(qualify(typeOwner, gname), {
             name: gname,
             kind: SymbolKind.Class,
             range: nodeToRange(node),
-            ownerName: ctx.owner ?? undefined,
-            ownerKind: ctx.ownerKind ?? undefined,
-            metadata: { isGroupType: true, ...(ctx.viaExtension ? { viaExtension: true } : {}) },
+            ownerName: typeOwner ?? undefined,
+            // Inside an `extend`, `ctx.ownerKind` is the EXTENDEE's kind, which is
+            // not the kind of the scope the type is being declared in, so it is
+            // omitted rather than asserted. Outside an `extend` the two agree and it
+            // is carried through unchanged.
+            ...(ctx.viaExtension ? {} : { ownerKind: ctx.ownerKind ?? undefined }),
+            // `isGroupType` and nothing else: a type declared at the block's own
+            // scope is not an extension member, so it does not carry `viaExtension`.
+            // The group's FIELD below still does.
+            metadata: { isGroupType: true },
           })
-          if (ctx.owner) addRel(ctx.owner, typeId, RelationshipTypeContains, lineOf(node), { member: "groupType", ...(ctx.viaExtension ? { viaExtension: true } : {}) })
+          if (typeOwner) addRel(typeOwner, typeId, RelationshipTypeContains, lineOf(node), { member: "groupType" })
           const fieldId = addSymbol(qualify(ctx.owner, gname), {
             name: gname,
             kind: SymbolKind.Property,
@@ -810,7 +850,14 @@ export class RealProtobufAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (ctx.owner) addRel(ctx.owner, fieldId, RelationshipTypeContains, lineOf(node), { member: "field", ...(ctx.viaExtension ? { viaExtension: true } : {}) })
           addRel(fieldId, typeId, RelationshipTypeUses, lineOf(node), { role: "groupType" })
           // the group's own body
-          const inner: Ctx = { ...ctx, owner: typeId, scope: typeId, ownerKind: SymbolKind.Class, oneof: null }
+          const inner: Ctx = {
+            ...ctx,
+            owner: typeId,
+            scope: typeId,
+            ownerKind: SymbolKind.Class,
+            oneof: null,
+            viaExtension: false,
+          }
           pushAll(kids(body), inner)
           return
         }
