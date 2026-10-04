@@ -1018,3 +1018,60 @@ executing the language adjudicated it.
 
 This is the strongest verification available in this programme, and it is the answer
 to "how do you know the analyzer is right" for the cases where two parsers agree.
+
+## "10/10" is population-dependent — PHP is the worked example
+
+PHP's lane reports **10/10 EMITTED** and the arbiter agrees at whole-corpus scale.
+But the supervisor's own `firing-check` reads **9/10** on a 120-file sample and still
+**9/10** on a 1,112-file sample. Both numbers are true. The difference is `overrides`:
+
+| population | `overrides` fires? |
+|---|---|
+| 120-file stride sample | no |
+| 1,112-file stride sample | no |
+| whole corpus, 4,588 files walked | **1 edge, 1 file** |
+| whole corpus, 4,642 admitted (lane's census) | **2 edges, 2 files** |
+
+The one file the supervisor's walk found:
+`phpunit/tools/.phpstan/vendor/tomasvotruba/type-coverage/packages/type-perfect/tests/Rules/NoParamTypeRemovalRule/Fixture/SkipConstruct.php`
+→ `SkipConstruct.__construct -> ParentConstructorClass.__construct`.
+
+So PHP is genuinely 10/10 **at whole-corpus scale**, and `overrides` is a real PHP
+construct that occurs in **0.04% of files** (2 of 4,642). A stride sample will miss it
+reliably.
+
+**This is the honest shape of a coverage claim, and it has three parts:**
+1. the **numerator** — types that measurably fire,
+2. the **denominator** — types the language has, established by measured
+   non-applicability rather than by the ontology table,
+3. the **population** — and the numerator is a function of it.
+
+A claim that states only (1) and (2) is incomplete in a way that matters, because a
+reader cannot tell whether a missing type is absent from the language or absent from
+the sample. Every firing figure in this workstream now states its population for that
+reason.
+
+## The sharpest instance of a vacuous zero — PHP's own `define()` probe
+
+PHP had RULED `exports` inapplicable on "0 `define()` calls in 4,642 files". That zero
+was **structural**: the probe read `arguments.namedChild(0)` and tested it for
+`string`, but tree-sitter-php puts an `argument` node between them —
+
+```
+function_call_expression
+  name "define"
+  arguments
+    argument          <- what namedChild(0) returned
+      encapsed_string <- the node the test wanted
+```
+
+No corpus could falsify it, because no corpus makes it non-zero. **The ruling's own
+overturn condition was unreachable — falsifiable in form, unfalsifiable in fact.**
+
+What caught it was a **positive control, not a bigger sample**: 7 synthetic files, one
+per construct, each asserting its probe fires. `define("X", 1);` read 0 and located the
+defect exactly. After the fix: **60 literal-name `define()` calls in 20 files**, 57 of
+them at file scope. PHP is now 10/10 with 0 ruled.
+
+That is the single strongest argument in this programme for the discipline the
+honesty contract already demands: **a probe that cannot fail is not a measurement.**
