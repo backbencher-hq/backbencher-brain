@@ -540,6 +540,36 @@ would have picked. The exact replay is the analyzer-level revert above. The shar
 harness is supervisor-owned (§8), so both new mutants live in this lane's
 `ontology-mutants.mts` — **14/14 caught, 0 survivors**.
 
+**The 146 dropped edges are counted, not argued.** A rationale for a drop is not a count,
+so the same site ledger `extends` was given is run over `calls`: every
+`xsl:call-template` carrying a `name` on the parse tree, classified by the two refusals
+that fail independently.
+
+| class | sites | why |
+| --- | ---: | --- |
+| `no-named-caller` | **791** | no named template/variable above it. XSLT 1.0 §2.4 puts no instruction sequence at stylesheet top level, so there is no caller to name. |
+| `covered-callee-undeclared` | **256** | the callee is not an `xsl:template` this file declares (`src/ast/real-xml-analyzer.ts:1700`). An `xsl:include` could supply it, which from inside one file is indistinguishable from a missing declaration. |
+| `covered-callee-declared` | **481** | accepted |
+| **total sites** | **1,528** | |
+
+**481 accepted sites against 402 published edges and `sum(metadata.occurrences)` = 481 —
+0 unrepresented.** The 79-edge difference is same-file collapse on the `(source, type,
+target)` triple, counted rather than lost. This closes the `calls` ledger the way
+`edgesWithNoSiteBehindThem = 0` closes the `extends` one.
+
+Three probe defects were found and fixed while building that ledger, each of which had
+produced a confident wrong number, and each recorded at the point of the fix:
+
+- `nearestCaller` was a **closure variable mutated inside the element branch**, so a named
+  template leaked its name to its **siblings**. That reported 1,509 covered sites against
+  481 occurrences — a 1,028-site "shortfall" that was entirely the probe's own scoping.
+- Template names were pooled with `variable`/`param`/`function` names, but the analyzer's
+  test is `declaredTemplateNames.has(name)` and that set holds only `xsl:template` names.
+  The off-by-one it produced was the probe calling a **variable** a declared callee.
+- Two temporal-dead-zone crashes, `declaredByFile` and `callsByFile` declared below the
+  phases that write them. A probe that dies on its own plumbing teaches nothing about the
+  language.
+
 #### Payload
 
 `extends` grew 438 → 1,429 (+991), `calls` fell 548 → 402 (−146, all of them calls with
