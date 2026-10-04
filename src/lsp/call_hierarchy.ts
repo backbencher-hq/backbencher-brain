@@ -49,6 +49,31 @@
 //   detail:      every item names its symbol type, its call-site count and its
 //                evidence tier, plus `recursive` / `cycle` markers.
 //
+// Declared-absence + position-ownership wave (this lane):
+//   absence:     prepare, incomingCalls and outgoingCalls each answer a file
+//                outside the launch set, an unindexed file, an unknown symbol
+//                id, an external node, or an unplaceable span with a
+//                MACHINE-READABLE `absence.code` (contract §11.7). The pre-wave
+//                answers were a bare `null` / a bare `[]`, which on the wire
+//                read as "this position has no call hierarchy" / "no callers
+//                found" — a different claim.
+//   nodes:       an edge whose own file is outside the launch set is omitted
+//                and listed in `declaredAbsentNodes` (never rendered as a
+//                caller bb cannot vouch for).
+//   positions:   the LINE dimension is converted by the position owner
+//                (contract §5 Rule 1) and VALIDATED against the file text; the
+//                pre-wave code clamped stored lines inline (`Math.max(0,
+//                node.line - 1)`), which turned an external node's stored line 0
+//                into a confident "line 1 of a file that does not exist".
+//                A position the owner cannot place yields the protocol
+//                placeholder plus `positionBasis: "declared_unresolvable"` —
+//                never a plausible-looking range (contract §15.3).
+//   freshness:   every response carries a machine-readable staleness marker
+//                (contract §4); a stale answer without one is a defect of the
+//                same severity as a wrong answer.
+//   launch set:  read from src/lsp/launch_languages.ts, the single owner — not
+//                through hover's re-export chain.
+//
 // Mutation gates (script/m55/verify-call-hierarchy.ts): dropping the call-site
 // resolution, re-admitting receiver-qualified self-edges, re-admitting
 // transitive hops, returning a body selectionRange, and swallowing an
@@ -56,9 +81,22 @@
 
 import { readFileSync } from "node:fs";
 import type { CoreDatabase } from "../brain/database";
+import { checkFileFreshness } from "../brain/freshness";
 import type { ProjectID } from "../project/schema";
 import { createPositionMapper, resolveRowByteColumns } from "./positions";
-import { languageForPath } from "./hover";
+// The launch set is read from its SINGLE owner (src/lsp/launch_languages.ts),
+// never through hover's re-export chain — the chain is a drift hazard, and a
+// caller hierarchy that answers "no callers" for a language the server does not
+// serve is declared absence (contract §11.7), not an empty list.
+import { languageForPath } from "./launch_languages";
+// The declared-absence / staleness vocabulary is owned by symbols.ts so the two
+// surfaces cannot drift into naming the same absence differently (§11.7, §4).
+import {
+  absenceWith,
+  declaredAbsenceFor,
+  type DeclaredAbsence,
+  type StalenessMarker,
+} from "./symbols";
 import { renderSignature } from "./signature";
 import { findIndexedSymbol } from "./navigation";
 import { traverseGraph } from "../intelligence/graph/graph-engine";
@@ -114,6 +152,18 @@ export interface CallHierarchyItem {
   selectionRange: LspRange;
   /** M55.T2: human-readable identity line (type · call sites · tier). */
   detail?: string;
+  /**
+   * How `range`/`selectionRange` were derived (contract §15.3).
+   *   source_resolved       the stored coordinates were converted by the
+   *                         position owner against the real file text — this
+   *                         item is navigable.
+   *   declared_unresolvable the stored coordinates could not be placed (an
+   *                         external node has no file at all, or the file text
+   *                         is unreadable). The protocol REQUIRES a range, so
+   *                         the placeholder is present — and this flag says the
+   *                         item is NOT a location, so nothing renders it as one.
+   */
+  positionBasis: "source_resolved" | "declared_unresolvable";
   /** Symbol identity for expand requests. */
   data: { symbolId: string; isExternal: boolean };
 }
@@ -139,6 +189,15 @@ export interface PrepareResult {
   item: CallHierarchyItem | null;
   /** Declared absence when the symbol/file is not indexed. */
   notIndexed: boolean;
+  /**
+   * §11.7: WHY there is no item, as a machine-readable code. A bare
+   * `item: null` reads to a generic client as "this position has no call
+   * hierarchy" — which is a different claim from "bb does not serve this
+   * language" or "this file is not indexed". Never null without a reason.
+   */
+  absence: DeclaredAbsence | null;
+  /** §4: machine-readable staleness marker for the file this answer came from. */
+  staleness: StalenessMarker;
 }
 
 export interface ExpandRequest {
@@ -157,6 +216,15 @@ export interface DroppedEdge {
   reason: string;
 }
 
+/** An edge the engine returned that this surface does not serve and therefore
+ *  omits — declared, never silently dropped (contract §11.7). */
+export interface DeclaredAbsentNode {
+  name: string;
+  symbolId: string;
+  /** Why the edge is not rendered (the language of the node's file). */
+  reason: string;
+}
+
 export interface ExpandResult {
   calls: Array<CallHierarchyIncomingCall | CallHierarchyOutgoingCall>;
   /** Engine truncation carried verbatim — never swallowed. */
@@ -170,6 +238,12 @@ export interface ExpandResult {
   callSitesApproximate: number;
   /** M55.T2: edges dropped as not-genuine, each with its reason. */
   droppedEdges: DroppedEdge[];
+  /** §11.7: why `calls` is empty, as a machine-readable code. */
+  absence: DeclaredAbsence | null;
+  /** §11.7: edges omitted because their own file is outside the launch set. */
+  declaredAbsentNodes: DeclaredAbsentNode[];
+  /** §4: machine-readable staleness marker for every file this answer used. */
+  staleness: StalenessMarker;
 }
 
 /** Injectable traversal — the default wraps the real M14 engine. */
@@ -202,6 +276,133 @@ export const defaultTraverse: TraverseFn = traverseGraph;
 /** Map an analyzer symbol_type to an LSP SymbolKind (with declared default). */
 export function symbolKindFor(symbolType: string): number {
   return KIND_MAP[symbolType] ?? 2; // Module — declared fallback, never guessed
+}
+
+/**
+ * The 0-based LSP line window for a stored 1-based index line span, or null
+ * when the stored span cannot be placed.
+ *
+ * Contract §5 Rule 1: the conversion belongs to the position owner, and the
+ * owner also VALIDATES — `indexToLsp` throws when the stored line is not in
+ * the file (a legacy 0, a stale row pointing past EOF). The pre-wave code did
+ * `Math.max(0, node.line - 1)`, which turned both into line 0 with the
+ * confidence of a real answer; §15.3 forbids that. null here means "no
+ * position", and every caller must declare it.
+ *
+ * Column 1 is the line's first byte, so the character is 0 and the owner's job
+ * is purely the line — but it is still the owner's job.
+ */
+function lspLineWindow(
+  mapper: ReturnType<typeof createPositionMapper>,
+  line: number,
+  lineEnd: number,
+): { start: number; end: number } | null {
+  try {
+    const start = mapper.indexToLsp({ line, column: 1 }).line;
+    const endLine = Number.isInteger(lineEnd) && lineEnd >= line ? lineEnd : line;
+    const end = mapper.indexToLsp({ line: endLine, column: 1 }).line;
+    // An ordering guard between two values the owner already produced, not a
+    // coordinate conversion: a stored end before its start is inconsistent data.
+    return { start, end: Math.max(start, end) };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * The protocol placeholder for an item whose position cannot be resolved. LSP
+ * REQUIRES a range, so it is present — and every item carrying it also carries
+ * `positionBasis: "declared_unresolvable"`, so no surface can present it as a
+ * location (contract §15.3).
+ */
+function unresolvableRange(): LspRange {
+  return { start: { line: 0, character: 0 }, end: { line: 0, character: 0 } };
+}
+
+/** §4: a staleness marker for an answer that read no indexed file. */
+function unknownStaleness(paths: string[] = []): StalenessMarker {
+  return { stale: true, status: "unknown", filesChecked: 0, filesUnverified: paths };
+}
+
+/**
+ * §4 staleness for one indexed file. A status the index cannot establish is
+ * reported as `unknown` with `stale: true` — we cannot claim freshness for a
+ * file we could not check, and silence is guilt.
+ */
+function symbolStaleness(
+  raw: CoreDatabase,
+  fileId: string,
+  filePath: string,
+): StalenessMarker {
+  const status = checkFileFreshness(raw, fileId);
+  if (status === null) return unknownStaleness([filePath]);
+  return {
+    stale: status.status !== "fresh",
+    status: status.status,
+    filesChecked: 1,
+    filesUnverified: [],
+  };
+}
+
+/**
+ * §4 staleness for every file an expand answer used (the root plus every edge
+ * file that was rendered). One batched lookup for the edge files, then one
+ * `checkFileFreshness` per distinct file — bounded by the fanout budget, and
+ * any file the index cannot resolve is DECLARED in `filesUnverified` rather
+ * than assumed fresh.
+ */
+function expandStaleness(
+  raw: CoreDatabase,
+  rootFileId: string | null,
+  rootFilePath: string,
+  edgePaths: string[],
+): StalenessMarker {
+  const distinct = [...new Set(edgePaths)].filter((p) => p !== "" && p !== rootFilePath);
+  const idByPath = new Map<string, string>();
+  if (distinct.length > 0) {
+    const placeholders = distinct.map(() => "?").join(", ");
+    let rows: Array<{ id: string; path: string }> = [];
+    try {
+      rows = raw
+        .prepare(`SELECT id, path FROM brain_file WHERE path IN (${placeholders})`)
+        .all(...distinct) as Array<{ id: string; path: string }>;
+    } catch {
+      rows = [];
+    }
+    for (const row of rows) idByPath.set(row.path, row.id);
+  }
+  let fresh = 0;
+  let stale = 0;
+  let missing = 0;
+  const unverified: string[] = [];
+  const account = (fileId: string | null, filePath: string): void => {
+    if (fileId === null) {
+      unverified.push(filePath);
+      return;
+    }
+    const status = checkFileFreshness(raw, fileId);
+    if (status === null) unverified.push(filePath);
+    else if (status.status === "fresh") fresh++;
+    else if (status.status === "stale") stale++;
+    else missing++;
+  };
+  account(rootFileId, rootFilePath);
+  for (const path of distinct) account(idByPath.get(path) ?? null, path);
+  return {
+    stale: stale > 0 || missing > 0 || unverified.length > 0,
+    status:
+      missing > 0
+        ? "missing"
+        : stale > 0
+          ? "stale"
+          : unverified.length > 0
+            ? "unknown"
+            : fresh > 0
+              ? "fresh"
+              : "unknown",
+    filesChecked: 1 + distinct.length - unverified.length,
+    filesUnverified: unverified,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -276,7 +477,14 @@ function classify(receiver: string, isConstruct: boolean, ownNames: ReadonlySet<
 
 /** Every CALL of `targetName` inside a caller's 0-based line range, with exact
  *  UTF-16 columns and the receiver that qualified each one. Comments are
- *  ignored; positions come from the P1 position owner only. */
+ *  ignored; BOTH coordinate dimensions come from the P1 position owner
+ *  (contract §5 Rule 1) — the pre-wave code hand-built the index line
+ *  (`line0 + 1`) and the index byte column (`Buffer.byteLength(...) + 1`).
+ *
+ *  A match whose position the owner refuses (a stored name that splits a
+ *  surrogate pair, so the offset is not a character boundary) is not emitted as
+ *  a call site; the caller then reports it as an APPROXIMATE call site, which is
+ *  declared. It is never placed on a guessed position. */
 export function resolveInvocations(
   sourceText: string,
   targetName: string,
@@ -309,13 +517,18 @@ export function resolveInvocations(
       const isConstruct = /(^|[^\w$])new\s+$/.test(line.slice(0, at));
       if (!isCall && !isConstruct) continue;
       const receiver = receiverBefore(line, at);
-      const startByte = Buffer.byteLength(line.slice(0, at), "utf8") + 1;
-      const endByte = Buffer.byteLength(line.slice(0, at + targetName.length), "utf8") + 1;
+      // The owner converts this 0-based LSP line and UTF-16 offset into the
+      // index's 1-based line + 1-based byte column, and back. No arithmetic here.
+      let range: LspRange;
+      try {
+        const start = mapper.lspToIndex({ line: line0, character: at });
+        const end = mapper.lspToIndex({ line: line0, character: at + targetName.length });
+        range = { start: mapper.indexToLsp(start), end: mapper.indexToLsp(end) };
+      } catch {
+        continue; // declared by the caller as an approximate call site
+      }
       out.push({
-        range: {
-          start: mapper.indexToLsp({ line: line0 + 1, column: startByte }),
-          end: mapper.indexToLsp({ line: line0 + 1, column: endByte }),
-        },
+        range,
         kind: classify(receiver, isConstruct, ownNames),
         receiver,
       });
@@ -325,7 +538,8 @@ export function resolveInvocations(
 }
 
 /** The NAME token's exact range anywhere in a 0-based line range (used for
- *  selectionRange — the editor highlights what this points at). */
+ *  selectionRange — the editor highlights what this points at). Both
+ *  dimensions are converted by the P1 position owner. */
 export function nameTokenRange(
   sourceText: string,
   name: string,
@@ -342,12 +556,13 @@ export function nameTokenRange(
       if (at === -1) break;
       from = at + name.length;
       if (isWordChar(line[at - 1]) || isWordChar(line[at + name.length])) continue;
-      const startByte = Buffer.byteLength(line.slice(0, at), "utf8") + 1;
-      const endByte = Buffer.byteLength(line.slice(0, at + name.length), "utf8") + 1;
-      return {
-        start: mapper.indexToLsp({ line: line0 + 1, column: startByte }),
-        end: mapper.indexToLsp({ line: line0 + 1, column: endByte }),
-      };
+      try {
+        const start = mapper.lspToIndex({ line: line0, character: at });
+        const end = mapper.lspToIndex({ line: line0, character: at + name.length });
+        return { start: mapper.indexToLsp(start), end: mapper.indexToLsp(end) };
+      } catch {
+        return null; // declared by the caller, never guessed
+      }
     }
   }
   return null;
@@ -389,26 +604,72 @@ export function prepareCallHierarchy(
   raw: CoreDatabase,
   request: PrepareRequest,
 ): PrepareResult {
+  // §11.7: a file the server does not serve is DECLARED ABSENT with a
+  // machine-readable reason, checked BEFORE the index is touched. The
+  // pre-lane code returned a bare `{item: null, notIndexed: true}` whose wire
+  // body is a bare `null` — indistinguishable from "this position has no call
+  // hierarchy", which is a different claim.
+  const scope = declaredAbsenceFor(request.filePath);
+  if (scope !== null) {
+    return { item: null, notIndexed: true, absence: scope, staleness: unknownStaleness([request.filePath]) };
+  }
   const symbol = findIndexedSymbol(raw, request.filePath, request.line, request.character);
   if (symbol === null) {
-    return { item: null, notIndexed: true };
+    return {
+      item: null,
+      notIndexed: true,
+      absence: absenceWith(
+        "symbol_not_at_position",
+        "the index stores no symbol covering this position (this is a served language: the answer is 'no symbol here', not 'no call hierarchy')",
+        request.filePath,
+      ),
+      staleness: unknownStaleness([request.filePath]),
+    };
   }
+  const staleness = symbolStaleness(raw, symbol.file_id, symbol.path);
   let sourceText: string;
   try {
     sourceText = readFileSync(symbol.path, "utf8");
   } catch {
-    return { item: null, notIndexed: true };
+    return {
+      item: null,
+      notIndexed: true,
+      absence: absenceWith(
+        "source_unreadable",
+        "the file text could not be read, so no stored span can be converted to an LSP position (no item is placed)",
+        symbol.path,
+      ),
+      staleness,
+    };
   }
   if (
     symbol.byte_start === null || symbol.byte_end === null ||
     symbol.line_start === null || symbol.line_end === null
   ) {
-    return { item: null, notIndexed: true };
+    return {
+      item: null,
+      notIndexed: true,
+      absence: absenceWith(
+        "coordinates_missing",
+        "the indexed symbol stored no byte/line coordinates, so no position can be derived from it (no item is placed)",
+        symbol.path,
+      ),
+      staleness,
+    };
   }
   const startCol = resolveRowByteColumns(sourceText, symbol.line_start, symbol.byte_start);
   const endCol = resolveRowByteColumns(sourceText, symbol.line_end, symbol.byte_end);
   if (startCol === null || endCol === null) {
-    return { item: null, notIndexed: true };
+    return {
+      item: null,
+      notIndexed: true,
+      absence: absenceWith(
+        "coordinates_missing",
+        "the indexed span could not be resolved against the file's own byte columns (no item is placed)",
+        symbol.path,
+      ),
+      staleness,
+    };
   }
   const mapper = createPositionMapper(sourceText);
   const range = mapper.indexRangeToLsp({
@@ -420,10 +681,13 @@ export function prepareCallHierarchy(
     end: { line: range.end.line, character: range.end.character },
   };
   // M55.T2: the editor highlights selectionRange — point it at the NAME token.
+  // The scan window is the range the position OWNER already produced, so no
+  // coordinate is re-derived here (the pre-lane code rebuilt it inline with a
+  // `?? 1` default that invented line 1 for a row that stored none).
   const nameRange = nameTokenRange(
     sourceText,
     symbol.name,
-    { start: (symbol.line_start ?? 1) - 1, end: (symbol.line_end ?? 1) - 1 },
+    { start: lspRange.start.line, end: lspRange.end.line },
   ) ?? lspRange;
   // M55.T4 (issue #772, §14 Truth Rule 4): the item's detail line carries the
   // HUMAN signature, rendered by the ONE owner (src/lsp/signature.ts) — the
@@ -456,9 +720,12 @@ export function prepareCallHierarchy(
       range: lspRange,
       selectionRange: nameRange,
       detail,
+      positionBasis: "source_resolved",
       data: { symbolId: symbol.id, isExternal: false },
     },
     notIndexed: false,
+    absence: null,
+    staleness,
   };
 }
 
@@ -470,14 +737,17 @@ function itemFromNode(
   detail: string,
 ): CallHierarchyItem {
   const filePath = node.filePath !== "" ? node.filePath : node.file;
-  const start0 = Math.max(0, node.line - 1);
-  const end0 = Math.max(start0, node.lineEnd - 1);
-  let range: LspRange = {
-    start: { line: start0, character: 0 },
-    end: { line: end0, character: 0 },
-  };
+  // §5 Rule 1 / §15.3: the stored line window is converted by the position
+  // owner (which also validates it against the real file). The pre-lane code
+  // wrote `Math.max(0, node.line - 1)` inline, so an external node's stored
+  // line 0 became a confident "line 1 of a file that does not exist".
+  const mapper = source === null ? null : createPositionMapper(source);
+  const window = mapper === null ? null : lspLineWindow(mapper, node.line, node.lineEnd);
+  const start0 = window === null ? 0 : window.start;
+  const end0 = window === null ? 0 : window.end;
+  let range: LspRange = unresolvableRange();
   let selectionRange: LspRange = range;
-  if (source !== null) {
+  if (source !== null && window !== null) {
     // Visible declaration span (from the indentation to the end of the last
     // line) + the NAME token for the highlight.
     range = {
@@ -486,13 +756,15 @@ function itemFromNode(
     };
     selectionRange = nameTokenRange(source, node.name, { start: start0, end: end0 }) ?? range;
   }
+  const resolved = source !== null && window !== null;
   return {
     name: node.name,
     kind: symbolKindFor(node.symbolType),
     uri: filePath !== "" ? `file://${filePath}` : "",
     range,
     selectionRange,
-    detail,
+    detail: resolved ? detail : `${detail} · position unresolvable (no readable source for this node)`,
+    positionBasis: resolved ? "source_resolved" : "declared_unresolvable",
     data: { symbolId: node.id, isExternal: node.isExternal },
   };
 }
@@ -507,7 +779,8 @@ export async function expandCalls(
 ): Promise<ExpandResult> {
   const { item } = request;
   if (item.data.isExternal) {
-    // External nodes have no index identity to traverse — declared empty.
+    // External nodes have no index identity to traverse — declared empty, and
+    // §11.7 requires the reason to be machine-readable rather than a bare [].
     return {
       calls: [],
       truncated: false,
@@ -516,6 +789,12 @@ export async function expandCalls(
       callSitesResolved: 0,
       callSitesApproximate: 0,
       droppedEdges: [],
+      absence: absenceWith(
+        "external_target",
+        "the expanded item is an external node with no index identity, so there is nothing for bb to traverse (this is NOT 'this symbol has no callers')",
+      ),
+      declaredAbsentNodes: [],
+      staleness: unknownStaleness(),
     };
   }
   // Re-resolve the root row from the index for the engine's root shape.
@@ -526,6 +805,7 @@ export async function expandCalls(
               COALESCE(s.line_end,0) AS lineEnd,
               COALESCE(f.relative_path,'') AS relativePath,
               COALESCE(f.path,'') AS filePath,
+              f.id AS fileId,
               COALESCE(f.language,'unknown') AS language,
               COALESCE(s.complexity,0) AS complexity
        FROM brain_symbol s JOIN brain_file f ON f.id = s.file_id
@@ -541,11 +821,15 @@ export async function expandCalls(
         lineEnd: number;
         relativePath: string;
         filePath: string;
+        fileId: string | null;
         language: string;
         complexity: number;
       }
     | undefined;
   if (rootRow === undefined) {
+    // §11.7: an unknown symbol id is declared absence with its own code. The
+    // pre-lane answer was `calls: []` + `evidenceTier: "not_indexed"`, which on
+    // the wire is a bare [] that reads as "no callers found".
     return {
       calls: [],
       truncated: false,
@@ -554,6 +838,30 @@ export async function expandCalls(
       callSitesResolved: 0,
       callSitesApproximate: 0,
       droppedEdges: [],
+      absence: absenceWith(
+        "symbol_not_in_index",
+        `the index stores no symbol with id "${item.data.symbolId}", so there is no hierarchy to traverse (this is NOT 'this symbol has no callers')`,
+      ),
+      declaredAbsentNodes: [],
+      staleness: unknownStaleness(),
+    };
+  }
+  // §11.7: the ROOT's own file decides whether this surface serves the request
+  // at all. A non-launch language is declared absent here — before the engine
+  // runs — instead of answering "no callers" for a language bb does not serve.
+  const rootScope = declaredAbsenceFor(rootRow.filePath);
+  if (rootScope !== null) {
+    return {
+      calls: [],
+      truncated: false,
+      maxDepthReached: 0,
+      evidenceTier: "not_indexed",
+      callSitesResolved: 0,
+      callSitesApproximate: 0,
+      droppedEdges: [],
+      absence: rootScope,
+      declaredAbsentNodes: [],
+      staleness: unknownStaleness([rootRow.filePath]),
     };
   }
 
@@ -592,6 +900,8 @@ export async function expandCalls(
   const calls: Array<CallHierarchyIncomingCall | CallHierarchyOutgoingCall> = [];
   const seenFrom = new Set<string>();
   const droppedEdges: DroppedEdge[] = [];
+  const declaredAbsentNodes: DeclaredAbsentNode[] = [];
+  const edgePaths: string[] = [];
   let callSitesResolved = 0;
   let callSitesApproximate = 0;
 
@@ -601,21 +911,46 @@ export async function expandCalls(
     const node = result.nodes[otherId];
     if (node === undefined) continue;
 
+    const nodePath = node.filePath !== "" ? node.filePath : node.file;
+    // §11.7: an edge into a file this server does not serve is DECLARED ABSENT
+    // and omitted, not rendered as a caller with a position bb cannot vouch
+    // for. An external node has no file at all and is handled by itemFromNode's
+    // declared-unresolvable position instead.
+    if (!node.isExternal && declaredAbsenceFor(nodePath) !== null) {
+      declaredAbsentNodes.push({
+        name: node.name,
+        symbolId: otherId,
+        reason: `the node's own file (${nodePath}) is outside the bb launch set, so bb declares no call sites for it`,
+      });
+      continue;
+    }
+    edgePaths.push(nodePath);
+
     // The caller's own source + declaration range: incoming edges are invoked
     // from the caller's body; outgoing edges are invoked from the ROOT's body.
-    const callerSource = direction === "callers"
-      ? readSource(node.filePath !== "" ? node.filePath : node.file)
-      : rootSource;
-    const callerLines0 = direction === "callers"
-      ? { start: Math.max(0, node.line - 1), end: Math.max(0, node.lineEnd - 1) }
-      : { start: Math.max(0, rootRow.line - 1), end: Math.max(0, rootRow.lineEnd - 1) };
+    const callerSource = direction === "callers" ? readSource(nodePath) : rootSource;
+    // §5 Rule 1: the scan window is converted by the position owner, which also
+    // validates it against the caller's own source. `null` = the stored
+    // declaration line cannot be placed, which is NOT the same as "this caller
+    // does not invoke the name" — the pre-lane code clamped both to line 0 and
+    // could not tell the two apart, so an unplaceable caller was reported as a
+    // stale/transitive row. Unplaceable now means an APPROXIMATE call site,
+    // which is declared.
+    const callerWindow = callerSource === null
+      ? null
+      : lspLineWindow(
+          createPositionMapper(callerSource),
+          direction === "callers" ? node.line : rootRow.line,
+          direction === "callers" ? node.lineEnd : rootRow.lineEnd,
+        );
+    const callerLines0 = callerWindow;
     const invokedName = direction === "callers" ? rootRow.name : node.name;
     // The caller's own declaration name (never an invocation of anything).
     const callerOwnName = direction === "callers" ? node.name : rootRow.name;
-    const callerNamePos = callerSource === null
+    const callerNamePos = callerSource === null || callerLines0 === null
       ? undefined
       : nameTokenRange(callerSource, callerOwnName, callerLines0)?.start;
-    const invocations = callerSource === null
+    const invocations = callerSource === null || callerLines0 === null
       ? []
       : resolveInvocations(callerSource, invokedName, callerLines0, callerNamePos, ownNames);
 
@@ -644,6 +979,7 @@ export async function expandCalls(
     if (
       invocations.length === 0 &&
       callerSource !== null &&
+      callerLines0 !== null &&
       !node.isExternal &&
       edge.relationshipType === "calls"
     ) {
@@ -657,8 +993,15 @@ export async function expandCalls(
     seenFrom.add(otherId);
 
     const recursiveMarker = isSelfEdge ? " · recursive" : "";
-    const detail = `${node.symbolType} · ${edge.relationshipType} · ${recursiveMarker ? "self" : "1 call site"}${recursiveMarker}`;
-    const expanded = itemFromNode(node, direction === "callers" ? callerSource : readSource(node.filePath !== "" ? node.filePath : node.file), detail);
+    const unplaceable = callerLines0 === null && callerSource !== null;
+    const baseDetail = `${node.symbolType} · ${edge.relationshipType} · ${recursiveMarker ? "self" : "1 call site"}${recursiveMarker}`;
+    // The unplaceable-caller declaration rides on the item's own identity line
+    // (declared, not silent): the stored declaration line could not be placed in
+    // the caller's own source, so no call site could be read from it.
+    const detail = unplaceable
+      ? `${baseDetail} · caller declaration line unresolvable in its own source`
+      : baseDetail;
+    const expanded = itemFromNode(node, direction === "callers" ? callerSource : readSource(nodePath), detail);
 
     // M55.T2: the call sites are the invocations found in the caller's source —
     // every occurrence, exactly positioned. A caller whose invocation cannot be
@@ -691,8 +1034,20 @@ export async function expandCalls(
     callSitesResolved,
     callSitesApproximate,
     droppedEdges,
+    absence: calls.length === 0
+      ? absenceWith(
+          "symbol_not_at_position",
+          edges.length === 0
+            ? `the engine returned no stored ${direction === "callers" ? "caller" : "callee"} edge for ${rootRow.name} (this is an indexed, served symbol: the answer is "none stored", not "unknown")`
+            : `every stored ${direction === "callers" ? "caller" : "callee"} edge was dropped or declared absent (${droppedEdges.length} dropped, ${declaredAbsentNodes.length} declared absent) — none is rendered`,
+          rootRow.filePath,
+        )
+      : null,
+    declaredAbsentNodes,
+    staleness: expandStaleness(raw, rootRow.fileId ?? null, rootRow.filePath, edgePaths),
   };
 }
 
-// Re-export for response-layer convenience.
+// Re-export for response-layer convenience. Sourced from the launch-set OWNER
+// (src/lsp/launch_languages.ts), not from hover's re-export chain.
 export { languageForPath };
