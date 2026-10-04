@@ -9,11 +9,11 @@
   "negativeCases": 2,
   "mutantsCaught": 4,
   "mutantsTotal": 4,
-  "currentCommit": "a0ed9eade7008de7ce93a312f6b0bd7e182a43a9",
+  "currentCommit": "e7564a1b5454b5a7f02eaae428d75ce1e75d59ee",
   "workingTreeRelevantChanges": [],
   "verifierCommand": "npx tsx script/m44/verify-usages-fallback.ts",
   "evidenceFile": "U6.json",
-  "generatedAt": "2026-10-04T23:27:33.648Z",
+  "generatedAt": "2026-10-04T23:35:28.504Z",
   "fixture": {
     "root": "$HOME/Documents/Default Project/ishaq/wt/lsp7/.tools/m44-u6-fixture",
     "files": [
@@ -31,7 +31,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-04T23:27:33.651Z",
-    "contentSha256": "c4d4e0ba5de81fa334cceaa7818d907d72220566f81250383e6fc2277ab304e3"
+    "sealedAt": "2026-10-04T23:35:28.507Z",
+    "contentSha256": "4ed7904196fb36d5ecf58226116263aec9f30f978482ea8339338e465baf6667"
   }
 }
