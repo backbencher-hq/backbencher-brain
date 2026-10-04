@@ -233,6 +233,29 @@ corpus-growth candidate is ruled out directly: `find $HOME/fixtures/repositories
 between the publishing run and the re-measures, and `git diff 84970cf3d HEAD -- src/ast/`
 is **empty**, so no analyzer state differs either. What differed was the run.
 
+**And the arbiter's own runs vary, which is the strongest form of this evidence because
+nobody chose the worker count there.** `script/m14/ontology-coverage-gate.ts xml` at its
+built-in 8 workers, same commit, same corpus, five runs across this pass and the last:
+
+| instrument | worker count | `contains` | `references` | `imports` | `extends` | `calls` | `overrides` |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| shared arbiter | 8 | 185,957 (published, `84970cf3d`) | 11,094 | 465 | 1,429 | 402 | 3 |
+| shared arbiter | 8 | 186,149 | 11,094 | 465 | 1,429 | 402 | 3 |
+| shared arbiter | 8 | **186,233** | 11,094 | 465 | 1,429 | 402 | 3 |
+| `ruled-gate.ts` | 1 | 186,270 | 11,094 | 465 | 1,429 | 402 | 3 |
+| `ruled-gate.ts` | 1 | 186,270 | 11,094 | 465 | 1,429 | 402 | 3 |
+
+**Every other row is byte-identical across all five runs.** `contains` is the only one that
+moves, and it is the only row whose per-file contribution is large enough for one lost file
+to be visible in it — `contains` averages 16 edges per file across the admitted population,
+so a single degraded file in a run of 11,464 moves it by tens, and a degraded SVG moves it
+by hundreds. The 186,233 run also printed `[BB-HANG] parser stuck 120s on
+…/fontawesome-free-5.15.2-web/svgs/solid/grip-vertical.svg` **after** the table, which is
+the `bulma` vendor directory the 186,149 run named — the same family of large generated
+SVGs, and the ones `shared-parser-probe.mts` caught losing 2,209 symbols in a single round.
+`186,270` is quoted as this lane's number because it is the value two clean
+single-worker runs agree on, and it is a **lower bound**, not a measurement of the corpus.
+
 ### `contains 185,957` did not reproduce, and the number published here is now 186,270
 
 Commit `84970cf3d` published `contains 185,957` in four places. Re-measured on this
@@ -1055,8 +1078,9 @@ weaker instrument here rather than a matter of taste.
 
 **The substring clauses were tested rather than assumed.** Every one of them was run
 against the grammar inventory the census already measured — **86 distinct node types over
-2,787,237 nodes**, listed in `ontology-census-overrides-gap.json` →
-`instrumentA.nodeTypes`:
+2,829,074 nodes**, listed in `ontology-census.json` → `instrumentA.nodeTypes`, and re-run
+against `ontology-census-overrides-gap.json`'s earlier inventory of 2,787,237 nodes over
+the same 86 types with the same result:
 
 ```
 export -> []      implement -> []     instantiat -> []    new -> []
@@ -1080,8 +1104,9 @@ gate's prose-matching `rulingFor`, in the opposite direction.
 ### The six questions, answered for every emitted type
 
 Rows 2, 4, 5 and 6 are from the 2,500-file family-stratified draw
-(`ontology-census.json`, 85,747 relationships, 388,365 symbols, 86 distinct node
-types over the same draw, 0 files failed); the edge counts in the ontology table
+(`ontology-census.json`, draw `c38110881a301dae`, workers 8, 86,412 relationships,
+388,365 symbols, 86 distinct node types over the same draw, 0 files failed,
+**1 file silently degraded** — see §`countsAreDeterministic: true` was false); the edge counts in the ontology table
 above are the arbiter's full-population pass. `overrides` reads **0 in this draw**
 and 3 in the full population, which is stated here rather than averaged over. The
 draw is re-run for every row, so a row that predates the `references` re-base and
@@ -1090,11 +1115,11 @@ was not re-measured would be a stale claim rather than a history.
 | Question | `contains` | `references` | `imports` | `calls` | `extends` | `overrides` |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1. Exists | walk + DTD branches | deferred reference pass | `extractExternalId`, `schemaLocation`, PI `href` | `XSLT_CALL_ELEMENTS` | `xsdDerivationElement` branch | `competingTemplates` + the §5.5 pass |
-| 2. Fires | 77,887 edges / 2,472 files | 7,415 / 195 | 261 / 175 | 2 / 1 | **852 / 93** | **0 / 0 in this draw; 3 / 3 in the full population** |
+| 2. Fires | 77,882 edges / 2,471 files | 7,415 / 195 | 261 / 175 | 2 / 1 | **852 / 93** | **0 / 0 in this draw; 3 / 3 in the full population** |
 | 3. Correct | unmeasured | unmeasured | unmeasured | unmeasured | **1 oracle; 1,615 of 1,652 sites covered, 37 refused, 0 edges without a site** | unmeasured |
-| 4. Labelled | `structural` 77,887 (100 %) | `reference_qualified` 7,415 (100 %) | `import_based` 261 (100 %) | `reference_qualified` 2 (100 %) | `structural` 852 (100 %) | `structural` 3 (100 %) |
-| 5. Resolved | 77,887/77,887 = **100.0 %** | source **7,415/7,415 = 100.0 %**; target 3,591/7,415 = **48.4 %** | 0/261 = 0 %, target is a file | 2/2 = **100 %** | source **1,429/1,429 = 100.0 %**; both ends 267/852 = 31.3 %, and 56.4 % of bases are built-in or imported | 3/3 = **100 %** |
-| 5b. Source is a name the file writes | 77,887/77,887 (the parent, read off the tree) | **10,413/11,094 = 93.9 %** — was 8,771/10,411 = 84.2 % | n/a, the target is a file | **402/402 = 100 %** | **1,429/1,429 = 100 %** — was 438/438 = 0 % | 3/3 = **100 %** |
+| 4. Labelled | `structural` 77,882 (100 %) | `reference_qualified` 7,415 (100 %) | `import_based` 261 (100 %) | `reference_qualified` 2 (100 %) | `structural` 852 (100 %) | `structural` 3 (100 %) |
+| 5. Resolved | 77,882/77,882 = **100.0 %** | source **7,415/7,415 = 100.0 %**; target 3,591/7,415 = **48.4 %** | 0/261 = 0 %, target is a file | 2/2 = **100 %** | source **1,429/1,429 = 100.0 %**; both ends 267/852 = 31.3 %, and 56.4 % of bases are built-in or imported | 3/3 = **100 %** |
+| 5b. Source is a name the file writes | 77,882/77,882 (the parent, read off the tree) | **10,413/11,094 = 93.9 %** — was 8,771/10,411 = 84.2 % | n/a, the target is a file | **402/402 = 100 %** | **1,429/1,429 = 100 %** — was 438/438 = 0 % | 3/3 = **100 %** |
 | 6. Confident | 0 edges < 0.7 | 0 | 0 | 0 | 0 | 0 |
 
 **The two rates below 100 % are a declared resolvability class, not dangling
@@ -1156,7 +1181,9 @@ walkers miss the same sites. It is reported as Q3 answered, not as Q3 settled be
 doubt, and it was built to close a false verdict rather than to audit an emitter.
 
 Q6 in full: every emitted edge carries `confidence: 1`. The heuristic ratio —
-edges below the 0.7 threshold — is **0 of 191,333**, and the `inferred` tier, the
+edges below the 0.7 threshold — is **0 of 86,412** on the 2,500-file draw and **0 of
+199,663** on the full admitted population at `BB_XML_WORKERS=1`
+(186,270 + 11,094 + 465 + 1,429 + 402 + 3), and the `inferred` tier, the
 honest default for a rule the tier table does not name, holds **0 edges**. Every
 edge's tier is assigned where the edge is written, from `EVIDENCE_TIER`, keyed by
 the rule's role.
@@ -1167,8 +1194,8 @@ single unconditional literal at `real-xml-analyzer.ts:739`, the one and only
 `confidence:` assignment in the analyzer. So "0 edges below 0.7" restates the
 existence of that literal and would read identically on a corpus of pure noise.
 It is reported because the contract requires heuristic edges to be countable, and
-this lane's honest answer is that it has none to count — not because 191,333
-independent judgements were made and all 191,333 came out certain.
+this lane's honest answer is that it has none to count — not because 199,663
+independent judgements were made and all 199,663 came out certain.
 
 What does carry per-edge weight is the **tier**, because it is stamped from
 `EVIDENCE_TIER` per role and an unmapped role falls to `inferred`. The census
@@ -1809,7 +1836,7 @@ the project.
 | `BB_MUTANT_ONLY="xml/" bun run script/m14/mutate-analyzer.ts` | **all 21 caught**, 0 survivors (filtered 1748 → 21) |
 | `npx tsx validation/m14/fixtures/xml/ontology-mutants.mts` | **17/17 caught**, 0 survivors |
 | `BB_XML_WORKERS=1 npx tsx validation/m14/fixtures/xml/ruled-gate.ts` | **run TWICE**, exit 0 both, full 10-row table both, **0 `[BB-PARSE-ERR]`, 0 `[BB-HANG]`** both, `FALSIFIED 0`, `ruled-without-justification 0` both. `XML_B_PROBE_WALK uses walked=11464 / 11473 unparsed=0 occurrences=0`. The two runs differ in admitted population (11,464 → 11,473, another lane added a repository mid-afternoon) and agree on every row — see §`contains 185,957 did not reproduce` |
-| `npx tsx script/m14/ontology-coverage-gate.ts xml` | **6/10 EMITTED, 4 RULED-SOUND, FALSIFIED 0, ruled-without-justification 0** — exit 0. `contains` **186,270** · `references` 11,094 · `imports` 465 · `extends` 1,429 · `calls` 402 · `overrides` 3. **Run through `ruled-gate.ts` at `BB_XML_WORKERS=1`, twice, both exit 0, both 0 `[BB-PARSE-ERR]` and 0 `[BB-HANG]`, both printing these numbers** — the shared gate at its own 8 workers cannot finish this corpus (it self-destructs at 120 s on one file before printing a row), so `ruled-gate.ts` is the instrument the numbers come from. See §`contains 185,957 did not reproduce` |
+| `npx tsx script/m14/ontology-coverage-gate.ts xml` | **6/10 EMITTED, 4 RULED-SOUND, FALSIFIED 0, ruled-without-justification 0** — exit 0. `contains` **186,233** on this run and 186,149 on an earlier run of the same commit at the same 8 workers, against **186,270** on two `ruled-gate.ts` runs at `BB_XML_WORKERS=1` — see §`countsAreDeterministic: true` was false. `references` 11,094 · `imports` 465 · `extends` 1,429 · `calls` 402 · `overrides` 3, byte-identical across all five runs. **Run through `ruled-gate.ts` at `BB_XML_WORKERS=1`, twice, both exit 0, both 0 `[BB-PARSE-ERR]` and 0 `[BB-HANG]`, both printing these numbers** — the shared gate at its own 8 workers cannot finish this corpus (it self-destructs at 120 s on one file before printing a row), so `ruled-gate.ts` is the instrument the numbers come from. See §`contains 185,957 did not reproduce` |
 | `npx tsx script/m14/firing-check.ts --files 120 xml` | **4/10 fired, 1,653 edges, 120/120 files, 0 degraded** — `contains, imports, references, extends` |
 | `BB_XML_WORKERS=4 npx tsx validation/m14/fixtures/xml/ontology-census.mts` | 2,500 files, **0 failed**, 388,365 symbols, 86,412 relationships, **0 empty names, 0 `unknown` endpoints**, draw `c38110881a301dae`, **1 file silently degraded** (`phpmyadmin/…/dark/col-minus.svg`, 359 B, 0 symbols) |
 | `npx tsx validation/m14/fixtures/xml/worker-determinism-probe.mts --workers {1,8,16}` | `countsAreDeterministic: true` **falsified**. One 600-file draw, fingerprint `6ad7d4ddf1656e6f`: symbols 126,486 / 126,430 / 126,447, and **126,486 again at the same worker count on re-run**. A 1,200-file draw at 1 vs 8 workers: 230,021 both, **0 per-file differences**. `--diff` prints the per-file breakdown |
