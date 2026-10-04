@@ -30,6 +30,7 @@ npx tsx validation/m14/fixtures/julia/ruled-probe-check.ts                  # th
 npx tsx validation/m14/fixtures/julia/arbiter-census-diff.ts                 # census vs arbiter, per type
 npx tsx script/m14/firing-check.ts --files 120 julia                         # what FIRES, 120-file stride
 npx tsx script/m14/firing-check.ts --files 2000 julia                        # …and over all 971
+npx tsx script/m14/incoming-check.ts julia <file>...                         # the reverse direction, per file set
 bun  run script/m14/run-fixtures.ts --lang julia
 bun  run validation/m14/fixtures/julia/mutation-check.ts --all
 npx tsx script/m14/ontology-coverage-gate.ts julia                            # exit 0, 9 emitted / 1 ruled
@@ -580,6 +581,59 @@ edges are sourced from `global`/`root`.** Those are dangling sources by construc
 as such: a resolution rate that excluded them would not be the number a consumer sees.
 
 ### The ambiguity, and the fact that the edge already carries the answer
+
+`script/m14/incoming-check.ts` measures the same property from the other direction, on an explicit file
+set, and its output names the ambiguous targets individually. On the three files that carry this lane's
+only `overrides` edges plus two parse-heavy ones (5 files, 342 symbols, `degraded parses: 0`,
+`parse failures: 0`):
+
+```
+type            fired  edges    distinct  ambiguous  unresolved
+calls           yes    766      121       0          534
+uses            yes    302      50        2          143
+contains        yes    161      138       2          0
+imports         yes    51       1         0          50
+references      yes    343      15        56         274
+exports         yes    41       22        2          16
+extends         yes    6        0         0          6
+implements      NO     0        0         0          0
+overrides       yes    3        3         0          0
+instantiates    yes    37       10        30         0
+declarations named by >=1 edge : 234      orphans: 72 of 342
+target names resolving to >1 published symbol : 6
+  exported -> variable, function      Comments     -> class, function
+  CommentBlock -> class, function     Parser       -> class, function
+  ParserError -> class, function      DateTime     -> class, function
+```
+
+**All six ambiguous names are the `class`/`function` pair and nothing else**, which is the structural
+property stated below rather than an accident of naming: in julia `struct X … end` and `X() = …` are
+one binding, so the analyzer publishes two symbols under one name. `references` and `instantiates` carry
+the ambiguity (56 and 30 of it) because they assert the type kind and therefore land on type names.
+
+**Its `unresolved` column is NOT comparable to the corpus-wide buckets below, and the difference is the
+instrument, not a disagreement.** `incoming-check.ts` resolves only against the files it was handed —
+5 files — so a call into `Base` is unresolvable there by construction. The census resolves against all
+971 at once and therefore has a `corpus-only` bucket (54,004 of 86,876 `calls`) this instrument has no
+way to produce. Target-end resolution, 5-file draw against corpus-wide:
+
+| type | 5 files | 971 files | ratio |
+|---|---|---|---|
+| `imports` | 2.0% | 62.6% | **32.0×** |
+| `references` | 20.1% | 82.1% | 4.1× |
+| `calls` | 30.3% | 92.3% | 3.1× |
+| `uses` | 52.6% | 86.0% | 1.6× |
+| `exports` | 61.0% | 87.2% | 1.4× |
+| `contains` / `instantiates` / `overrides` | 100% | 100% | 1.0× |
+| `extends` | **0 of 6** | 88.7% | — |
+
+The three types at 1.0× are the ones whose edges are **in-file by construction** — `contains` names a
+member of the enclosing declaration, `instantiates` and `overrides` name a sibling method — so a
+5-file window loses nothing. Every type that reaches across files loses a great deal, and `imports`
+loses the most because a `using Foo` names a module that lives in another file. `extends` reading 0 of
+6 on this draw is the sharpest illustration: 5 files contain no supertype declaration that any of the
+other 4 declares, so a per-file instrument cannot see the language's inheritance at all. **A single
+number for "resolution rate" is only meaningful alongside the size of the window it was measured in.**
 
 **11,101 edges target a name the file publishes under more than one kind or more than once.** The
 concrete case is structural in Julia rather than accidental: `struct Object … end` together with
