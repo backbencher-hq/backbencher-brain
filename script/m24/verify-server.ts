@@ -51,7 +51,7 @@
 //     catch, which now fails the suite (contract §8.7, "the fixture that
 //     cannot fail").
 
-import { mkdtempSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs"
+import { mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join, dirname } from "node:path"
 import { PassThrough } from "node:stream"
@@ -247,7 +247,10 @@ async function testCapabilities(): Promise<void> {
     server.capabilities().callHierarchyProvider === undefined,
   )
   server.register("callHierarchy/outgoingCalls", () => ({}))
-  check("G2: callHierarchyProvider advertised once complete", server.capabilities().callHierarchyProvider === true)
+  check(
+    "G2: callHierarchyProvider advertised once all three methods are registered",
+    server.capabilities().callHierarchyProvider === true,
+  )
 
   const init = await server.handleMessage({ jsonrpc: "2.0", id: 1, method: "initialize", params: {} })
   const caps = (init as any)?.result?.capabilities ?? {}
@@ -291,24 +294,106 @@ async function testTransport(): Promise<void> {
   const headerOk = /^Content-Length: \d+\r\n\r\n/.test(rawOut)
   check("G3: responses use Content-Length framing", headerOk, rawOut.slice(0, 80))
 
-  // Frame-aware parsing: responses are back-to-back on the wire, so split by
-  // Content-Length rather than naively on \r\n\r\n.
+  // A client that only learns what it receives by listening for it, which is
+  // the whole point of the bb/absence carrier: over REAL streams, an absence
+  // must produce both a framed response and framed notifications.
+  const ws2 = tmpWorkspace()
+  try {
+    writeUnroutable(ws2)
+    const s2 = new BbLspServer(ws2)
+    wireFeatures(s2)
+    const cin = new PassThrough()
+    const sout = new PassThrough()
+    const got: Buffer[] = []
+    sout.on("data", (c: Buffer) => got.push(c))
+    const run2 = s2.run(cin, sout)
+    const mkFrame = (obj: unknown): Buffer => {
+      const b = Buffer.from(JSON.stringify(obj), "utf8")
+      return Buffer.concat([Buffer.from(`Content-Length: ${b.length}\r\n\r\n`, "utf8"), b])
+    }
+    cin.write(mkFrame({ jsonrpc: "2.0", id: 1, method: "initialize", params: {} }))
+    cin.write(mkFrame({ jsonrpc: "2.0", method: "initialized" }))
+    cin.write(
+      mkFrame({
+        jsonrpc: "2.0",
+        id: 2,
+        method: "textDocument/references",
+        params: { textDocument: { uri: "file://" + join(ws2, "notes.txt") }, position: { line: 0, character: 0 }, context: { includeDeclaration: false } },
+      }),
+    )
+    await Promise.race([run2, new Promise((r) => setTimeout(r, 5000))])
+    const wire = Buffer.concat(got)
+    // Frame-walk over bytes (see the note above) and read the methods out.
+    const methods: string[] = []
+    let off = 0
+    while (off < wire.length) {
+      const he = wire.indexOf("\r\n\r\n", off, "utf8")
+      if (he === -1) break
+      const m2 = /Content-Length:\s*(\d+)/i.exec(wire.subarray(off, he).toString("utf8"))
+      if (!m2) break
+      const len2 = parseInt(m2[1], 10)
+      const bs = he + 4
+      if (wire.length < bs + len2) break
+      try {
+        methods.push((JSON.parse(wire.subarray(bs, bs + len2).toString("utf8")) as any)?.method ?? "(response)")
+      } catch {
+        methods.push("(unparseable)")
+      }
+      off = bs + len2
+    }
+    check(
+      "G3: a declared absence is FRAMED on the wire, not merely queued (bb/absence + window/logMessage)",
+      methods.includes("bb/absence") && methods.includes("window/logMessage"),
+      `frames=${JSON.stringify(methods)}`,
+    )
+    check(
+      "G3: the response is written BEFORE the notices that explain it (a client reading in order sees the answer first)",
+      methods.indexOf("(response)") < methods.indexOf("bb/absence"),
+      `frames=${JSON.stringify(methods)}`,
+    )
+  } finally {
+    rmSync(ws2, { recursive: true, force: true })
+  }
+
+  // Frame-aware parsing over BYTES, not characters. Content-Length counts
+  // bytes; slicing a decoded string counts UTF-16 code units, so any non-ASCII
+  // payload (an em dash in a human-readable message) desynchronises the parse
+  // and the harness reads garbage — which is exactly what happened once the
+  // absence advertisement carried prose. The server frames correctly
+  // (`Buffer.from(...)` then `body.length`); the harness must verify it the
+  // same way rather than trusting a lossy round trip through a string.
+  const bytes = Buffer.concat(chunks)
   const bodies: any[] = []
-  let rest = rawOut
-  while (rest.length > 0) {
-    const m = /^Content-Length: (\d+)\r\n\r\n/.exec(rest)
+  let offset = 0
+  while (offset < bytes.length) {
+    const headerEnd = bytes.indexOf("\r\n\r\n", offset, "utf8")
+    if (headerEnd === -1) break
+    const headerText = bytes.subarray(offset, headerEnd).toString("utf8")
+    const m = /Content-Length:\s*(\d+)/i.exec(headerText)
     if (!m) break
     const len = parseInt(m[1], 10)
-    const start = m[0].length
+    const bodyStart = headerEnd + 4
+    if (bytes.length < bodyStart + len) break
     try {
-      bodies.push(JSON.parse(rest.slice(start, start + len)))
+      bodies.push(JSON.parse(bytes.subarray(bodyStart, bodyStart + len).toString("utf8")))
     } catch {
       bodies.push(null)
     }
-    rest = rest.slice(start + len)
+    offset = bodyStart + len
   }
+  // A frame-by-frame walk also proves no stray bytes trail the last message:
+  // leftover bytes would mean the server wrote something a client cannot parse.
+  check(
+    "G3: the byte stream is consumed exactly, with no trailing bytes after the last frame",
+    offset === bytes.length,
+    `consumed=${offset} total=${bytes.length}`,
+  )
   const ids = bodies.filter(Boolean).map((b) => b.id)
-  check("G3: responses for both requests received in order", JSON.stringify(ids) === JSON.stringify([1, 2]), JSON.stringify(ids))
+  check(
+    "G3: responses for both requests received in order",
+    JSON.stringify(ids) === JSON.stringify([1, 2]),
+    `${JSON.stringify(ids)} from ${bodies.length} frames`,
+  )
   rmSync(ws, { recursive: true, force: true })
 }
 
@@ -442,6 +527,20 @@ async function testCoverage(): Promise<void> {
   const declared = new Set(CAPABILITY_COVERAGE.map((e) => e.key))
   const phantom = keys.filter((k) => !declared.has(k))
   check("G6: every advertised key is declared in CAPABILITY_COVERAGE", phantom.length === 0, `phantom: ${JSON.stringify(phantom)}`)
+
+  // The absence carrier is part of the same reachability law, so it is gated
+  // here as well as in G11: "the channel exists" and "the channel is
+  // advertised" are different claims, and a client needs BOTH to listen.
+  check(
+    "G6: the absence carrier is advertised (a channel that exists but is unadvertised is unreachable)",
+    (caps as any).absenceProvider !== undefined,
+    `keys=${JSON.stringify(keys)}`,
+  )
+  negative(
+    "G6 negative: the absence carrier is NOT advertised as an inbound request key",
+    !keys.includes("bb/absence"),
+    `keys=${JSON.stringify(keys)}`,
+  )
 
   const declaredMethodsHere = new Set(CAPABILITY_COVERAGE.flatMap((e) => e.methods))
 
@@ -638,6 +737,522 @@ async function testSyncModel(): Promise<void> {
   )
   rmSync(bare.context.root, { recursive: true, force: true })
 }
+
+// --- G9/G10/G11: declared absence at the wire seam ----------------------------
+//
+// Contract §11.7: "for any file outside the launch-language set, the server
+// responds with declared-absent semantics … and the absence is verifiable by a
+// negative test. Silent empty results that look like 'no references found' are
+// a violation."
+//
+// The components now COMPUTE an absence reason (hover's provenance.limitations,
+// navigation's evidenceTier, document_highlight's evidenceTier). At the moment
+// of this wave the WIRE threw it away at four sites, and in one case replaced a
+// declared absence with -32603. The checks below are written BEFORE the fix
+// (contract §11 F7: gate BEFORE fix) and are therefore RED at the commit this
+// wave started from.
+
+/** The server→client notifications produced by the last handleMessage call.
+ *  Read defensively (`typeof ... === "function"`) so the check can exist before
+ *  the channel does: pre-fix it reads as "no notifications", which FAILS,
+ *  rather than throwing — the honest RED. */
+function notificationsOf(server: any): any[] {
+  return typeof server?.notifications === "function" ? server.notifications() : []
+}
+function absenceNotices(server: any): any[] {
+  return notificationsOf(server).filter((n) => n?.method === "bb/absence")
+}
+function logNotices(server: any): any[] {
+  return notificationsOf(server).filter((n) => n?.method === "window/logMessage")
+}
+
+/** A workspace with one REAL indexed symbol, so the success path can be told
+ *  apart from the absence path. Without a real fixture, "no absence notice" on
+ *  the success path would be vacuously true (the absence check would fail too,
+ *  for the wrong reason). */
+async function indexedWorkspace(): Promise<{ ws: string; projectId: string; dataDir: string; restore: () => void }> {
+  // The file must hold a symbol with a real CALLER so references is non-empty
+  // on the success path. A self-edge does not count: navigation resolves
+  // references through brain_relationship, so an earlier fixture that made
+  // `main` call itself produced `[]` and the success-path precondition failed —
+  // which would have made "no absence notice" true for the wrong reason.
+  const ws = tmpWorkspace()
+  const dataDir = tmpWorkspace()
+  // "function main(): void {}\nmain()\n" — `main` is indexed at line 0, and a
+  // caller edge exists so references is non-empty on the success path.
+  writeFileSync(
+    join(ws, "main.ts"),
+    "function main(): void {}\nfunction caller(): void {\n  main();\n}\n",
+  )
+  const projectId = createHash("sha1").update(canonicalOf(ws)).digest("hex").substring(0, 40)
+  mkdirSync(join(dataDir, "projects", projectId), { recursive: true })
+  const prevDataDir = process.env.BB_DATA_DIR
+  process.env.BB_DATA_DIR = dataDir
+  const { BrainDatabase } = await import("../../src/brain/database")
+  const db = await BrainDatabase.getRawInstance(projectId)
+  db.prepare(
+    `INSERT INTO brain_file (id, project_id, path, relative_path, language, file_hash) VALUES (?,?,?,?,?,?)`,
+  ).run("l1-file", projectId, join(ws, "main.ts"), "main.ts", "typescript", "l1-hash")
+  const sym = db.prepare(
+    `INSERT INTO brain_symbol (id, project_id, file_id, name, symbol_type, line_start, line_end, byte_start, byte_end, gravity_score) VALUES (?,?,?,?,?,?,?,?,?,?)`,
+  )
+  // `main` at 1-based line 1, `caller` at 1-based line 2. navigation maps the
+  // 0-based LSP position onto these 1-based index lines itself.
+  sym.run("l1-main", projectId, "l1-file", "main", "function", 1, 1, 1, 3, 5)
+  sym.run("l1-caller", projectId, "l1-file", "caller", "function", 2, 4, 26, 28, 3)
+  const rel = db.prepare(
+    `INSERT INTO brain_relationship (id, project_id, source_symbol_id, target_symbol_id, relationship_type, confidence, metadata) VALUES (?,?,?,?,?,?,?)`,
+  )
+  // caller → main, so `main` HAS a reference. A self-edge would not resolve.
+  rel.run("l1-rel", projectId, "l1-caller", "l1-main", "calls", 0.9, JSON.stringify({ evidenceClass: "structural" }))
+  return {
+    ws,
+    projectId,
+    dataDir,
+    restore: () => {
+      if (prevDataDir === undefined) delete process.env.BB_DATA_DIR
+      else process.env.BB_DATA_DIR = prevDataDir
+      try { rmSync(ws, { recursive: true, force: true }) } catch {}
+      try { rmSync(dataDir, { recursive: true, force: true }) } catch {}
+    },
+  }
+}
+
+/** A file outside the routed extension set, inside a workspace. */
+function writeUnroutable(ws: string, name = "notes.txt"): string {
+  writeFileSync(join(ws, name), "hello\n")
+  return join(ws, name)
+}
+
+const READ_METHODS: Array<{ method: string; params: (uri: string) => any; honestAbsence: (result: unknown) => boolean }> = [
+  {
+    method: "textDocument/hover",
+    params: (uri) => ({ textDocument: { uri }, position: { line: 0, character: 0 } }),
+    honestAbsence: (r) => r === null || r === undefined,
+  },
+  {
+    method: "textDocument/definition",
+    params: (uri) => ({ textDocument: { uri }, position: { line: 0, character: 0 } }),
+    honestAbsence: (r) => r === null || r === undefined,
+  },
+  {
+    method: "textDocument/documentHighlight",
+    params: (uri) => ({ textDocument: { uri }, position: { line: 0, character: 0 } }),
+    honestAbsence: (r) => r === null || r === undefined,
+  },
+  {
+    method: "textDocument/references",
+    params: (uri) => ({ textDocument: { uri }, position: { line: 0, character: 0 }, context: { includeDeclaration: false } }),
+    // references returns Location[]; a declared absence is the empty list.
+    // It is ALSO reached through the seam, which answers `null` — both are
+    // honest ("nothing to list"), and LSP 3.18 permits `Location[] | null` for
+    // references. The point of this lane is not which empty shape is chosen
+    // but that the reason reaches the client either way.
+    honestAbsence: (r) => (Array.isArray(r) && r.length === 0) || r === null || r === undefined,
+  },
+]
+
+async function testDeclaredAbsenceCarrier(): Promise<void> {
+  console.log("G9: declared absence reaches the client")
+  const ws = tmpWorkspace()
+  try {
+    writeUnroutable(ws)
+    const server = new BbLspServer(ws)
+    wireFeatures(server)
+    await server.handleMessage({ jsonrpc: "2.0", id: 1, method: "initialize", params: {} })
+
+    for (const spec of READ_METHODS) {
+      const uri = "file://" + join(ws, "notes.txt")
+      const res: any = await server.handleMessage({
+        jsonrpc: "2.0",
+        id: 2,
+        method: spec.method,
+        params: spec.params(uri),
+      })
+      // 1. The standard result stays the honest LSP shape (never a fabricated
+      //    field added to a standard result — Lane 4's protocol constraint).
+      check(
+        `G9: ${spec.method} answers the standard honest-absence shape on an unroutable file`,
+        spec.honestAbsence(res?.result),
+        JSON.stringify(res ?? null).slice(0, 160),
+      )
+      // 2. The reason is NOT discarded: it reaches the client out of band.
+      const notices = absenceNotices(server)
+      check(
+        `G9: ${spec.method} emits a bb/absence notice naming the method`,
+        notices.some((n) => n?.params?.method === spec.method),
+        `notices=${JSON.stringify(notices ?? null).slice(0, 200)}`,
+      )
+    }
+
+    // The reason must be the SPECIFIC one, not a generic null.
+    const hoverServer = new BbLspServer(ws)
+    wireFeatures(hoverServer)
+    await hoverServer.handleMessage({ jsonrpc: "2.0", id: 1, method: "initialize", params: {} })
+    await hoverServer.handleMessage({
+      jsonrpc: "2.0",
+      id: 2,
+      method: "textDocument/hover",
+      params: { textDocument: { uri: "file://" + join(ws, "notes.txt") }, position: { line: 0, character: 0 } },
+    })
+    const notice = absenceNotices(hoverServer)[0]?.params
+    // Detail strings are built from real state; `?? null` keeps a missing notice
+    // rendering as "null" in the FAIL line rather than crashing the run (a
+    // crashed verifier reports no verdict at all — worse than a failure).
+    const noticeText = JSON.stringify(notice ?? null).slice(0, 200)
+    check(
+      "G9: the notice reason is the specific one (language_not_launched), not a generic null",
+      notice?.reason === "language_not_launched",
+      noticeText,
+    )
+    check(
+      "G9: the notice labels the language exactly as the single owner resolves it (null when unrouted, never invented)",
+      Object.prototype.hasOwnProperty.call(notice ?? {}, "language") &&
+        notice?.language === languageForPath(join(ws, "notes.txt")),
+      `${JSON.stringify(notice ?? null).slice(0, 160)} | expected=${JSON.stringify(languageForPath(join(ws, "notes.txt")))}`,
+    )
+    check(
+      "G9: the notice states the index was NOT searched (never-searched ≠ searched-and-empty)",
+      notice?.searchedIndex === false,
+      JSON.stringify(notice ?? null).slice(0, 200),
+    )
+    check(
+      "G9: the notice carries a non-empty human-readable detail",
+      typeof notice?.detail === "string" && notice.detail.length > 0,
+      JSON.stringify(notice ?? null).slice(0, 200),
+    )
+
+    // The protocol's own diagnostic channel, so a client that does not know
+    // bb/absence is still told by a standard mechanism.
+    const logs = logNotices(hoverServer)
+    check(
+      "G9: window/logMessage is also emitted (the protocol's own channel)",
+      logs.some((n) => typeof n?.params?.message === "string" && n.params.message.includes("language_not_launched")),
+      `logs=${JSON.stringify(logs ?? null).slice(0, 200)}`,
+    )
+    check(
+      "G9: the logMessage type is Info (a declared absence is not a fault)",
+      logs.every((n) => n?.params?.type === 3),
+      JSON.stringify(logs.map((n) => n?.params?.type)),
+    )
+  } finally {
+    rmSync(ws, { recursive: true, force: true })
+  }
+
+  // The success path must stay SILENT. This check is only meaningful because
+  // the next one proves the success path really answered — without it, "no
+  // notice" would be true for the wrong reason (a tautological check).
+  const fx = await indexedWorkspace()
+  try {
+    const server = new BbLspServer(fx.ws)
+    wireFeatures(server)
+    await server.handleMessage({ jsonrpc: "2.0", id: 1, method: "initialize", params: {} })
+    const uri = "file://" + join(fx.ws, "main.ts")
+    const hoverRes: any = await server.handleMessage({
+      jsonrpc: "2.0",
+      id: 2,
+      method: "textDocument/hover",
+      params: { textDocument: { uri }, position: { line: 0, character: 9 } },
+    })
+    check(
+      "G9: PRECONDITION — hover on an indexed symbol really answers content (else the next check is vacuous)",
+      hoverRes?.result !== null && hoverRes?.result !== undefined && hoverRes?.result?.contents !== undefined,
+      JSON.stringify(hoverRes ?? null).slice(0, 160),
+    )
+    negative(
+      "G9 negative: a SERVED request emits no absence notice and no logMessage (no logging on the success path)",
+      absenceNotices(server).length === 0 && logNotices(server).length === 0,
+      `absence=${JSON.stringify(absenceNotices(server)).slice(0, 120)} logs=${JSON.stringify(logNotices(server)).slice(0, 120)}`,
+    )
+    const refsRes: any = await server.handleMessage({
+      jsonrpc: "2.0",
+      id: 3,
+      method: "textDocument/references",
+      params: { textDocument: { uri }, position: { line: 0, character: 9 }, context: { includeDeclaration: false } },
+    })
+    check(
+      "G9: PRECONDITION — references on an indexed symbol really answers a non-empty list (else the next check is vacuous)",
+      Array.isArray(refsRes?.result) && refsRes.result.length > 0,
+      JSON.stringify(refsRes ?? null).slice(0, 160),
+    )
+    negative(
+      "G9 negative: a references request that FOUND references emits no absence notice (a found result is not an absence)",
+      absenceNotices(server).filter((n) => n?.params?.method === "textDocument/references").length === 0,
+      JSON.stringify(absenceNotices(server)).slice(0, 160),
+    )
+  } finally {
+    fx.restore()
+  }
+}
+
+/** The conflation that made a reason unusable: "we do not serve your language"
+ *  and "we looked and found nothing" both arrive as an empty result. */
+async function testAbsenceReasonIsNotConflated(): Promise<void> {
+  console.log("G9b: never-searched is not searched-and-empty")
+  const ws = tmpWorkspace()
+  try {
+    writeUnroutable(ws)
+    // An unroutable file, and a ROUTABLE file that simply is not indexed. Both
+    // answer an empty result; only the reason tells them apart.
+    writeFileSync(join(ws, "orphan.ts"), "const x = 1\n")
+
+    // Each request is measured on a FRESH server: the notice queue is per
+    // request (the dispatch resets it), so reusing one server made the second
+    // read the first request's notice and the comparison came out vacuous.
+    const unroutableServer = new BbLspServer(ws)
+    wireFeatures(unroutableServer)
+    await unroutableServer.handleMessage({ jsonrpc: "2.0", id: 1, method: "initialize", params: {} })
+    await unroutableServer.handleMessage({
+      jsonrpc: "2.0",
+      id: 2,
+      method: "textDocument/definition",
+      params: { textDocument: { uri: "file://" + join(ws, "notes.txt") }, position: { line: 0, character: 0 } },
+    })
+    const unroutable = absenceNotices(unroutableServer).find((n) => n?.params?.method === "textDocument/definition")?.params
+    check(
+      "G9b: an unroutable file reports reason=language_not_launched, searchedIndex=false",
+      unroutable?.reason === "language_not_launched" && unroutable?.searchedIndex === false,
+      JSON.stringify(unroutable ?? null).slice(0, 200),
+    )
+
+    const indexedServer = new BbLspServer(ws)
+    wireFeatures(indexedServer)
+    await indexedServer.handleMessage({ jsonrpc: "2.0", id: 1, method: "initialize", params: {} })
+    await indexedServer.handleMessage({
+      jsonrpc: "2.0",
+      id: 2,
+      method: "textDocument/definition",
+      params: { textDocument: { uri: "file://" + join(ws, "orphan.ts") }, position: { line: 0, character: 0 } },
+    })
+    const notIndexed = absenceNotices(indexedServer).find((n) => n?.params?.method === "textDocument/definition")?.params
+    check(
+      "G9b: PRECONDITION — both requests produced a notice (else the comparison below is vacuous)",
+      unroutable !== undefined && notIndexed !== undefined,
+      `unroutable=${unroutable === undefined} notIndexed=${notIndexed === undefined}`,
+    )
+    check(
+      "G9b: a routable-but-unindexed file reports reason=not_indexed, searchedIndex=true",
+      notIndexed?.reason === "not_indexed" && notIndexed?.searchedIndex === true,
+      JSON.stringify(notIndexed ?? null).slice(0, 200),
+    )
+    negative(
+      "G9b negative: the two absences are NOT reported with the same reason (the conflation this lane exists to remove)",
+      unroutable?.reason !== notIndexed?.reason,
+      `both=${JSON.stringify(unroutable?.reason)}/${JSON.stringify(notIndexed?.reason)}`,
+    )
+  } finally {
+    rmSync(ws, { recursive: true, force: true })
+  }
+}
+
+/**
+ * The STRUCTURAL seam. The question this group answers is not "did the fix work"
+ * but "where is the boundary between a component that CANNOT ANSWER (declared
+ * absence) and a component that is BROKEN (internal error)", and the boundary
+ * has to be defensible in both directions:
+ *   - too narrow  → a handler that cannot answer leaks -32603 (lane 2's defect)
+ *   - too broad   → a genuine bug is reported as "nothing here", which is the
+ *                  same dishonesty with a friendlier face
+ * Both directions are gated, and the broad one is the one that protects the
+ * gate itself: if a blanket catch ever turns every fault into declared absence,
+ * these checks fail and the suite cannot silently degrade.
+ */
+async function testDispatchSeamBoundary(): Promise<void> {
+  console.log("G10: the declared-absence / internal-error boundary")
+
+  // --- Direction 1 (narrow enough): a component that CANNOT answer. ----------
+  const ws = tmpWorkspace()
+  try {
+    writeUnroutable(ws)
+    const server = new BbLspServer(ws)
+    wireFeatures(server)
+    await server.handleMessage({ jsonrpc: "2.0", id: 1, method: "initialize", params: {} })
+    const res: any = await server.handleMessage({
+      jsonrpc: "2.0",
+      id: 2,
+      method: "textDocument/documentHighlight",
+      params: { textDocument: { uri: "file://" + join(ws, "notes.txt") }, position: { line: 0, character: 0 } },
+    })
+    negative(
+      "G10 negative: an unroutable file does NOT reach the client as -32603 (lane 2's defect class)",
+      res?.error?.code !== ErrorCodes.InternalError,
+      JSON.stringify(res ?? null).slice(0, 200),
+    )
+    check(
+      "G10: an unroutable file is answered as declared absence with a reason",
+      absenceNotices(server).some((n) => n?.params?.method === "textDocument/documentHighlight"),
+      JSON.stringify(absenceNotices(server)).slice(0, 200),
+    )
+  } finally {
+    rmSync(ws, { recursive: true, force: true })
+  }
+
+  const bare = tmpWorkspace()
+  try {
+    const { PositionError } = await import("../../src/lsp/positions")
+
+    // --- Direction 2 (broad enough): a component that IS broken stays loud. --
+    const faulted = new BbLspServer(bare)
+    faulted.register("bb/test-fault", () => {
+      throw new TypeError("simulated component fault: this is a BUG, not an absence")
+    })
+    await faulted.handleMessage({ jsonrpc: "2.0", id: 1, method: "initialize", params: {} })
+    const faultRes: any = await faulted.handleMessage({ jsonrpc: "2.0", id: 2, method: "bb/test-fault" })
+    check(
+      "G10: a genuine unexpected fault is STILL -32603 (the seam must not swallow real bugs)",
+      faultRes?.error?.code === ErrorCodes.InternalError,
+      JSON.stringify(faultRes ?? null).slice(0, 200),
+    )
+    check(
+      "G10: a genuine fault is NOT dressed up as a declared absence",
+      absenceNotices(faulted).filter((n) => n?.params?.method === "bb/test-fault").length === 0,
+      JSON.stringify(absenceNotices(faulted)).slice(0, 200),
+    )
+    check(
+      "G10: a genuine fault names the client-actionable prefix, never a bare stack shape",
+      typeof faultRes?.error?.message === "string" && !faultRes.error.message.includes("at Object."),
+      JSON.stringify(faultRes?.error?.message).slice(0, 160),
+    )
+
+    // --- Direction 3: a DECLARED input error stays the client's to fix. -----
+    const bad = new BbLspServer(bare)
+    wireFeatures(bad)
+    await bad.handleMessage({ jsonrpc: "2.0", id: 1, method: "initialize", params: {} })
+    const ch: any = await bad.handleMessage({
+      jsonrpc: "2.0",
+      id: 2,
+      method: "textDocument/prepareCallHierarchy",
+      params: { textDocument: { uri: "" }, position: { line: 0, character: 0 } },
+    })
+    check(
+      "G10: a DeclaredParamsError is still InvalidParams (M55.T2 unchanged)",
+      ch?.error?.code === ErrorCodes.InvalidParams,
+      JSON.stringify(ch ?? null).slice(0, 200),
+    )
+
+    // --- Direction 4: an out-of-range position is declared absence (§13.10). -
+    const oor = new BbLspServer(bare)
+    // Registered absentable, exactly as every real read handler is: the
+    // PositionError branch is part of the opt-in seam, so the fixture must
+    // opt in too (a non-opted-in handler keeps -32603, and that is asserted
+    // separately below).
+    oor.register("bb/test-position", () => {
+      throw new PositionError("line 99 out of range (0..3)")
+    }, { absentable: true })
+    await oor.handleMessage({ jsonrpc: "2.0", id: 1, method: "initialize", params: {} })
+    const oorRes: any = await oor.handleMessage({ jsonrpc: "2.0", id: 2, method: "bb/test-position" })
+    check(
+      "G10: an out-of-range position is declared absence, NOT a wire error (§13.10)",
+      oorRes?.error === undefined && oorRes?.result === null,
+      JSON.stringify(oorRes ?? null).slice(0, 200),
+    )
+    check(
+      "G10: the out-of-range absence names reason=unresolvable_location",
+      absenceNotices(oor).some((n) => n?.params?.reason === "unresolvable_location"),
+      JSON.stringify(absenceNotices(oor)).slice(0, 200),
+    )
+
+    // --- Direction 5: the seam is not a blanket catch. ----------------------
+    // It must not fire for requests that carry no document at all: a fault in
+    // one of those is a fault, and treating it as "nothing here" would be the
+    // over-broad dishonesty.
+    const plain = new BbLspServer(bare)
+    plain.register("bb/test-nodoc-fault", () => {
+      throw new RangeError("boom")
+    })
+    await plain.handleMessage({ jsonrpc: "2.0", id: 1, method: "initialize", params: {} })
+    const plainRes: any = await plain.handleMessage({ jsonrpc: "2.0", id: 2, method: "bb/test-nodoc-fault" })
+    check(
+      "G10: a fault on a request with no document is still -32603 (the seam is not a blanket catch)",
+      plainRes?.error?.code === ErrorCodes.InternalError,
+      JSON.stringify(plainRes ?? null).slice(0, 200),
+    )
+
+    // --- Direction 6: the absent channel is one-way. -----------------------
+    const oneWay = new BbLspServer(bare)
+    await oneWay.handleMessage({ jsonrpc: "2.0", id: 1, method: "initialize", params: {} })
+    const inbound: any = await oneWay.handleMessage({ jsonrpc: "2.0", id: 2, method: "bb/absence", params: {} })
+    check(
+      "G10: bb/absence is server→client only; an inbound request is MethodNotFound, never a fabricated record",
+      inbound?.error?.code === ErrorCodes.MethodNotFound && inbound?.result === undefined,
+      JSON.stringify(inbound ?? null).slice(0, 200),
+    )
+  } finally {
+    rmSync(bare, { recursive: true, force: true })
+  }
+}
+
+/** The absence channel is an advertised capability, under the same exhaustive
+ *  table law as every other key (contract §2, and this file's wave-1 rule). */
+async function testAbsenceCapabilityAdvertised(): Promise<void> {
+  console.log("G11: the absence channel is advertised")
+  const ws = tmpWorkspace()
+  try {
+    const server = new BbLspServer(ws)
+    wireFeatures(server)
+    const caps = server.capabilities()
+    const advertised = (caps as any).absenceProvider
+    const carried = (serverAbsenceModule() as any).ABSENCE_SCHEMA_VERSION
+    check(
+      "G11: the absence channel is advertised with a schemaVersion a client can gate on",
+      advertised !== undefined && Number.isInteger(advertised?.schemaVersion) && advertised?.schemaVersion > 0,
+      JSON.stringify(advertised ?? null).slice(0, 200),
+    )
+    check(
+      "G11: the advertisement names both carriers, so a client knows where to listen",
+      advertised?.carriers !== undefined,
+      JSON.stringify(advertised ?? null).slice(0, 200),
+    )
+    // The advertisement must match the constant the notification actually
+    // carries — a client that gates on 1 and receives 2 is worse than a client
+    // that was never told.
+    // The strongest form of the drift check: the version ON THE WIRE must equal the
+  // module's exported constant. Comparing the advertisement against a
+  // second copy of the constant read from the same module proved nothing — it
+  // passed with the notice hardcoding a literal, because both sides then read
+  // the same unchanged constant. Only reading the value the client actually
+  // receives can fail. Found by the mutant that survived the weaker check.
+    const ws3 = tmpWorkspace()
+    try {
+      writeUnroutable(ws3)
+      const live = new BbLspServer(ws3)
+      wireFeatures(live)
+      await live.handleMessage({ jsonrpc: "2.0", id: 1, method: "initialize", params: {} })
+      await live.handleMessage({
+        jsonrpc: "2.0",
+        id: 2,
+        method: "textDocument/definition",
+        params: { textDocument: { uri: "file://" + join(ws3, "notes.txt") }, position: { line: 0, character: 0 } },
+      })
+      const onTheWire = absenceNotices(live)[0]?.params?.schemaVersion
+      check(
+        "G11: the schemaVersion the CLIENT receives equals the module's exported constant",
+        onTheWire === carried && onTheWire === advertised?.schemaVersion,
+        `onTheWire=${JSON.stringify(onTheWire)} constant=${JSON.stringify(carried)} advertised=${JSON.stringify(advertised?.schemaVersion)}`,
+      )
+    } finally {
+      rmSync(ws3, { recursive: true, force: true })
+    }
+    negative(
+      "G11 negative: bb/absence is NOT an inbound request handler (advertisement must not imply a callable method)",
+      !server.implementedMethods().includes("bb/absence"),
+      JSON.stringify(server.implementedMethods()),
+    )
+  } finally {
+    rmSync(ws, { recursive: true, force: true })
+  }
+}
+
+/** The server module's own absence constants, read by NAME so this file
+ *  compiles against a server that does not export them yet (the gate is
+ *  written before the fix, contract §11 F7). Pre-fix this reads `{}` and the
+ *  comparison fails honestly. */
+function serverAbsenceModule(): Record<string, unknown> {
+  return serverAbsenceExports as Record<string, unknown>
+}
+/** `any` on purpose: the point of the check is that the export EXISTS and
+ *  matches, so the type system cannot be allowed to vouch for it. */
+const serverAbsenceExports: any = await import("../../src/lsp/server")
 
 // --- Mutation suite (proves every gate above CAN FAIL) -----------------------
 
@@ -836,8 +1451,8 @@ const MUTANTS: Mutant[] = [
     // leaks the envelope (contents !== undefined), the honest server answers
     // plain null.
     name: "hover: leak the component envelope onto the wire",
-    from: "if (r.contents === null || r.range === null || r.data === null) return null",
-    to: "if (false) return null",
+    from: "if (r.contents === null || r.range === null || r.data === null) {",
+    to: "if (false) {",
     oracle: (mod) =>
       withServer(mod, async (server) => {
         mod.wireFeatures(server)
@@ -937,7 +1552,7 @@ const MUTANTS: Mutant[] = [
   },
   {
     // The phantom-promise direction: a table entry for a method NO handler
-    // serves. Coverage looks complete on paper while the client gets
+    // serves. Coverage looks fine on paper while the client gets
     // MethodNotFound from the wire.
     name: "coverage: table declares a method no handler serves",
     from: 'key: "documentSymbolProvider", methods: ["textDocument/documentSymbol"], kind: "handler", value: () => true },',
@@ -981,6 +1596,202 @@ const MUTANTS: Mutant[] = [
         return (server.capabilities() as any).stalenessProvider?.syncModel?.debounceMs !== 300
       }),
   },
+  // --- The declared-absence carrier (G9/G9b/G10/G11). Each of these plants the
+  // --- defect the corresponding check exists to catch, INCLUDING the two that
+  // --- prove the carrier can itself fail (the log dropped, the reason stripped)
+  // --- and the one that proves the seam is not a blanket catch.
+  {
+    // The carrier stops carrying. G9 observes: no notice, silence again.
+    name: "absence: the reason is discarded again (the original defect, re-planted)",
+    from: "if (error instanceof DeclaredParamsError) {",
+    to: "if (error instanceof DeclaredParamsError || true) {",
+    oracle: (mod) =>
+      withServer(mod, async (server) => {
+        mod.wireFeatures(server)
+        await initialized(mod, server)
+        await server.handleMessage({
+          jsonrpc: "2.0",
+          id: 2,
+          method: "textDocument/definition",
+          params: { textDocument: { uri: "file://" + join(server.context.root, "nothing.ts") }, position: { line: 0, character: 0 } },
+        })
+        // Observed the way G9 observes it: no bb/absence notice reached the client.
+        return typeof server.notifications === "function" && server.notifications().filter((n: any) => n.method === "bb/absence").length === 0
+      }),
+  },
+  {
+    // The notice arrives but the REASON is gone — the worst outcome, because a
+    // client sees "something was declared" with nothing to declare. G9's
+    // specific-reason checks are what observe this.
+    // Anchored in the hover handler, the one place that computes the reason from
+  // `provenance.limitations` — so the oracle hovers. Stripping the reason here
+  // leaves a notice that announces an absence while declaring nothing, which
+  // is worse than no notice at all.
+  name: "absence: the notice is emitted but the reason field is stripped",
+    from: 'reason: notLaunched ? "language_not_launched" : "not_indexed",',
+    to: 'reason: undefined as any,',
+    oracle: (mod) =>
+      withServer(mod, async (server) => {
+        mod.wireFeatures(server)
+        await initialized(mod, server)
+        await server.handleMessage({
+          jsonrpc: "2.0",
+          id: 2,
+          method: "textDocument/hover",
+          params: { textDocument: { uri: "file://" + join(server.context.root, "nothing.ts") }, position: { line: 0, character: 0 } },
+        })
+        const notices = server.notifications().filter((n: any) => n.method === "bb/absence")
+        // Observed as G9 observes it: a notice exists but carries no reason.
+        return notices.length > 0 && notices.some((n: any) => n.params?.reason === undefined)
+      }),
+  },
+  {
+    // The human line is dropped, leaving only the machine channel. G9 checks
+    // window/logMessage independently, so losing it fails the gate.
+    name: "absence: the window/logMessage carrier is dropped",
+    from: 'this.notify("window/logMessage", {',
+    to: "if (false) this.notify(\"window/logMessage\", {",
+    oracle: (mod) =>
+      withServer(mod, async (server) => {
+        mod.wireFeatures(server)
+        await initialized(mod, server)
+        await server.handleMessage({
+          jsonrpc: "2.0",
+          id: 2,
+          method: "textDocument/definition",
+          params: { textDocument: { uri: "file://" + join(server.context.root, "nothing.ts") }, position: { line: 0, character: 0 } },
+        })
+        return typeof server.notifications === "function" && server.notifications().filter((n: any) => n.method === "window/logMessage").length === 0
+      }),
+  },
+  {
+    // searchedIndex is what separates "never searched" from "searched, nothing
+    // there" — the exact conflation G9b exists to remove. Drop it and the two
+    // cases become indistinguishable to a client again.
+    name: "absence: searchedIndex flipped, re-conflating never-searched with searched-and-empty",
+    from: "    searchedIndex: !notLaunched,\n    totalCount: null,\n  }\n}",
+    to: "    searchedIndex: true,\n    totalCount: null,\n  }\n}",
+    oracle: (mod) =>
+      withServer(mod, async (server) => {
+        mod.wireFeatures(server)
+        await initialized(mod, server)
+        // An unroutable file is the case where searchedIndex must be FALSE, so
+        // the fixture creates one (the guard classifies by the launch set, not
+        // by the file's existence, but a real file keeps this honest).
+        writeFileSync(join(server.context.root, "notes.txt"), "hello\n")
+        await server.handleMessage({
+          jsonrpc: "2.0",
+          id: 2,
+          method: "textDocument/definition",
+          params: { textDocument: { uri: "file://" + join(server.context.root, "notes.txt") }, position: { line: 0, character: 0 } },
+        })
+        const unroutable = server.notifications()
+          .filter((n: any) => n.method === "bb/absence")
+          .find((n: any) => n.params?.reason === "language_not_launched")?.params
+        return unroutable?.searchedIndex === true
+      }),
+  },
+  {
+    // The DANGEROUS one: a blanket catch. Every fault becomes declared absence,
+    // so a genuinely broken server renders as "nothing here" — the same
+    // dishonesty with a friendlier face. G10's "still -32603" checks observe it.
+    name: "seam: blanket catch turns a genuine fault into declared absence",
+    // Planted as the REAL blanket-catch defect: the internal-error FALLBACK answers
+    // declared absence instead of -32603. Widening the type check instead would
+    // make `error.absence` undefined and throw inside the catch, so the mutant
+    // would be "caught" only by a load failure — which this suite deliberately
+    // does not count as a catch.
+    from:
+      "this.record(\"out\", method, ErrorCodes.InternalError)\n        return this.errorResponse(message.id, ErrorCodes.InternalError, error?.message ?? String(error))",
+    to:
+      "this.emitAbsence({ method, reason: \"not_indexed\", language: null, detail: \"something went wrong\", evidenceTier: null, searchedIndex: true, totalCount: null })\n        this.record(\"out\", method)\n        return { jsonrpc: JSONRPC, id: message.id, result: null }",
+    oracle: (mod) =>
+      withServer(mod, async (server) => {
+        server.register("bb/test-fault", () => {
+          throw new TypeError("simulated component fault")
+        }, { absentable: true })
+        await initialized(mod, server)
+        const res: any = await server.handleMessage({ jsonrpc: "2.0", id: 2, method: "bb/test-fault" })
+        // Observed as G10 observes it: the fault is no longer loud.
+        return res?.error?.code !== -32603
+      }),
+  },
+  {
+    // The opposite failure: the seam's per-method opt-in is dropped, so a
+    // handler that was supposed to degrade now leaks -32603 (lane 2's defect).
+    name: "seam: the unroutable-file guard is removed (lane 2's defect returns)",
+    from: 'typeof error.message === "string" && error.message.startsWith("Unsupported file type")',
+    to: "false",
+    oracle: (mod) =>
+      withServer(mod, async (server) => {
+        mod.wireFeatures(server)
+        await initialized(mod, server)
+        writeFileSync(join(server.context.root, "notes.txt"), "hello\n")
+        const res: any = await server.handleMessage({
+          jsonrpc: "2.0",
+          id: 2,
+          method: "textDocument/documentHighlight",
+          params: { textDocument: { uri: "file://" + join(server.context.root, "notes.txt") }, position: { line: 0, character: 0 } },
+        })
+        return res?.error?.code === -32603
+      }),
+  },
+  {
+    // Logging on the SUCCESS path: the channel that always talks is a channel
+    // the user learns to ignore. G9's negative check observes it.
+    name: "absence: a served request also emits a notice (noise on the success path)",
+    from: "const result = await handler(message.params)\n        this.record(\"out\", method)",
+    to: "const result = await handler(message.params)\n        this.notify(\"bb/absence\", { schemaVersion: 1, method, reason: \"not_indexed\", language: null, detail: \"noise\", evidenceTier: null, searchedIndex: true, totalCount: null })\n        this.record(\"out\", method)",
+    oracle: (mod) =>
+      withServer(mod, async (server) => {
+        server.register("bb/test-served", () => ({ ok: true }))
+        await initialized(mod, server)
+        await server.handleMessage({ jsonrpc: "2.0", id: 2, method: "bb/test-served" })
+        return server.notifications().filter((n: any) => n.method === "bb/absence").length > 0
+      }),
+  },
+  {
+    // The advertised channel vanishes while the notices keep flowing: a client
+    // has no way to learn the carrier exists. G11 observes.
+    name: "absence: the channel is emitted but never advertised",
+    from: "caps.absenceProvider = absenceProviderPayload()",
+    to: "void absenceProviderPayload()",
+    oracle: (mod) =>
+      withServer(mod, async (server) => {
+        mod.wireFeatures(server)
+        return server.capabilities().absenceProvider === undefined
+      }),
+  },
+  {
+    // The advertised version drifts from the emitted one: a client that gates
+    // on 1 and receives 2 is worse off than a client that was never told.
+    // A first attempt at this mutant replaced the constant reference with a
+  // literal `1` — and SURVIVED, because at the current constant the literal
+  // and the constant are equal, so the mutant changed nothing observable. That
+  // is a tautological mutant and the suite was right to refuse it: the defect
+  // is the STALENESS of a hardcoded literal, so the literal must differ from
+  // the constant for the defect to exist at all.
+  name: "absence: the notice hardcodes a version literal that no longer tracks the constant",
+    from: "this.notify(ABSENCE_METHOD, { schemaVersion: ABSENCE_SCHEMA_VERSION, ...absence })",
+    to: "this.notify(ABSENCE_METHOD, { schemaVersion: 999, ...absence })",
+    oracle: (mod) =>
+      withServer(mod, async (server) => {
+        mod.wireFeatures(server)
+        await initialized(mod, server)
+        writeFileSync(join(server.context.root, "notes.txt"), "hello\n")
+        await server.handleMessage({
+          jsonrpc: "2.0",
+          id: 2,
+          method: "textDocument/definition",
+          params: { textDocument: { uri: "file://" + join(server.context.root, "notes.txt") }, position: { line: 0, character: 0 } },
+        })
+        // Observed as G11 observes it: the notice's own version no longer comes
+        // from the constant the advertisement is built from.
+        const carried = server.notifications().find((n: any) => n.method === "bb/absence")?.params?.schemaVersion
+        const declared = mod.ABSENCE_SCHEMA_VERSION
+        return carried !== declared
+      }),
+  },
   {
     // The advertised number must track the module that ENFORCES it.
     name: "advertisement: staleness schema version drifts from its owner constant",
@@ -995,8 +1806,8 @@ const MUTANTS: Mutant[] = [
   },
   {
     name: "advertisement: impact schema version drifts from IMPACT_SCHEMA_VERSION",
-    from: "return { schemaVersion: 1 }\n}\n\n/** The declared `workspace` capability",
-    to: "return { schemaVersion: 99 }\n}\n\n/** The declared `workspace` capability",
+    from: "  return { schemaVersion: 1 }\n}\n\n/** The declared-absence channel advertisement",
+    to: "  return { schemaVersion: 99 }\n}\n\n/** The declared-absence channel advertisement",
     oracle: (mod) =>
       withServer(mod, async (server) => {
         mod.wireFeatures(server)
@@ -1098,6 +1909,10 @@ async function main(): Promise<void> {
   await testCoverage()
   await testAdvertisedConstants()
   await testSyncModel()
+  await testDeclaredAbsenceCarrier()
+  await testAbsenceReasonIsNotConflated()
+  await testDispatchSeamBoundary()
+  await testAbsenceCapabilityAdvertised()
 
   const { caught, loadFailures, anchorsMissing } = await runMutants()
 
@@ -1131,6 +1946,12 @@ async function main(): Promise<void> {
     failures,
     negativeCases,
     claimLevel: "I1 (protocol-passed) — reference-client harness, real streams, planted mutants. NOT I2: no index-conformance or position-mapping assertion is made here, and NOT I3: no named editor run is part of this evidence.",
+    declaredAbsence: {
+      carriers: ["bb/absence (versioned, server→client notification)", "window/logMessage (the protocol's own channel)"],
+      reasons: ["language_not_launched", "not_indexed", "unresolvable_location", "unsupported_language"],
+      note: "LSP 3.18 mandates Location|null for definition and Location[] for references, so there is NO field on those results a reason could ride. The standard result shapes are UNCHANGED; the reason travels out of band. An empty standard result on these methods must not be read as 'nothing found'.",
+      componentContractRead: "navigation.ts exposes evidenceTier at this commit, NOT Lane 4's richer absence record (that commit 04d56ab75 is not an ancestor of this branch — see limitations). The reason is derived from the launch set through its single owner, and the vocabulary matches what Lane 4 publishes, so the seam is correct today and still correct when that field lands.",
+    },
     os: `${process.platform} ${process.arch} (${process.version})`,
     canFail: canFailFromChecks(checkLog),
     advertisement: {
@@ -1151,6 +1972,7 @@ async function main(): Promise<void> {
     reviewers: {
       separationOfDuties: "NOT satisfied for this change: the author of the component change wrote the only gate covering it (contract §8.6 requires cross-review where feasible). Owner spot-check (§8.5) is the closure authority.",
       crossReview: "requested from script/m26/verify-graph-transport.ts owner: its M5 mutant anchors on the literal graphProvider line in src/lsp/server.ts, which is why that line was preserved rather than replaced by a table lookup.",
+      wave2: "This wave's author also wrote the checks covering it. Three defects were found by the wave's own gates on its own code and are recorded rather than hidden: (1) the G11 schemaVersion check compared two reads of the same constant and could not fail — a mutant survived it and the check was rewritten to read the value the client receives; (2) a blanket-catch mutant was first planted as a syntactically broken rewrite and was 'caught' only by load failure, which the suite correctly refused to count, and was replanted as a behaviour change; (3) G3's frame parser decoded the stream to a string and mis-parsed as soon as the advertisement carried a non-ASCII em dash, which the byte-level rewrite fixed.",
     },
     limitations: [
       "single-root workspaces only (multi-root is a filed decision for later waves); declared on the wire as workspace.workspaceFolders.supported = false",
@@ -1160,6 +1982,11 @@ async function main(): Promise<void> {
       "bb/staleness and bb/impact use non-standard capability keys; a client that ignores unknown keys cannot discover them from the initialize result",
       "the mutation suite plants into src/lsp/ and deletes the copy in a finally block; a crash mid-run can leave a server.mutant.<pid>.<n>.ts file behind (git status shows untracked files)",
       "G7 exercises bb/staleness on an UNINDEXED workspace only; the marker shape for a fresh/stale indexed file is freshness.ts's contract, gated by script/m25, not here",
+      "NOT VERIFIED: that any editor renders the bb/absence notice. The channel is proven to be emitted and framed on the wire (G3, G9); nothing here proves a client displays it. Claiming a rendered badge would be a §1/I3 claim this evidence does not support",
+      "NOT VERIFIED: absence notices for bb/graph, bb/impact, and bb/staleness. Those transports own their own loud `bb/…`-prefixed errors by design (the versioning mechanism) and are not registered absentable; their error text already names the reason",
+      "navigation.ts does not yet expose Lane 4's `absence: {reason, language, detail, searchedIndex, totalCount}` record at this commit (04d56ab75 is not an ancestor of lsp/3), so the reason is derived from `evidenceTier` plus the launch set. When that field lands, navigationAbsence() should read it directly; the vocabulary and searchedIndex semantics already match",
+      "the DocumentUnroutable type is defined and handled at the seam, but no component throws it yet — document_highlight.ts still lets ASTEngine's own Error propagate and the seam recognises that message. The declared type is the forward-compatible path for other lanes",
+      "the seam matches ASTEngine's 'Unsupported file type' message prefix to recognise unroutability. That string is a cross-module coupling to src/ast/engine.ts; if the engine rewords it, the seam degrades to -32603 (loud, not silent) and the mutant 'seam: the unroutable-file guard is removed' fails the suite, so the drift is gated rather than silent",
     ],
   }
 

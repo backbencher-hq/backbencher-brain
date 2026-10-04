@@ -45,6 +45,7 @@ import path from "node:path"
 import { realpathSync, appendFileSync } from "node:fs"
 import { getProjectId } from "../util/project-id"
 import { documentHighlight } from "./document_highlight"
+import { PositionError } from "./positions"
 import { BACKBENCHER_BRAIN_VERSION } from "../version"
 
 /** The launch set, its membership test, and the path→language map live in
@@ -122,6 +123,24 @@ export function stalenessProviderPayload(): Record<string, unknown> {
  *  if this number stops matching the owner's constant. */
 export function impactProviderPayload(): Record<string, unknown> {
   return { schemaVersion: 1 }
+}
+
+/** The declared-absence channel advertisement. One factory, read by both
+ *  `capabilities()` and CAPABILITY_COVERAGE, so the advertised shape and the
+ *  emitted record cannot drift (G11 gates that they agree). */
+export function absenceProviderPayload(): Record<string, unknown> {
+  return {
+    schemaVersion: ABSENCE_SCHEMA_VERSION,
+    method: ABSENCE_METHOD,
+    direction: "serverToClient",
+    carriers: [ABSENCE_METHOD, "window/logMessage"],
+    /** The reason vocabulary, advertised so a client renders known reasons
+     *  correctly instead of string-matching on prose. */
+    reasons: ["language_not_launched", "not_indexed", "unresolvable_location", "unsupported_language"],
+    /** What a client is being told, stated plainly: an EMPTY standard result
+     *  on these methods is not evidence that nothing exists. */
+    emptyResultMeans: "absent-or-unserved — not 'nothing found'; read the bb/absence notice for which",
+  }
 }
 
 /** The declared `workspace` capability: a server CONSTANT, not a
@@ -207,6 +226,20 @@ export const CAPABILITY_COVERAGE: readonly CapabilityCoverage[] = [
     kind: "static",
     value: workspaceProviderPayload,
   },
+  {
+    /**
+     * The declared-absence channel. `kind: "static"` because it describes a
+     * SERVER-TO-CLIENT notification, not a request handler: it is offered
+     * whenever the server is running, and there is deliberately no inbound
+     * `bb/absence` handler to advertise (G10 asserts an inbound request gets
+     * MethodNotFound). `direction` is stated so a client cannot build a
+     * request around it.
+     */
+    key: "absenceProvider",
+    methods: [],
+    kind: "static",
+    value: absenceProviderPayload,
+  },
 ]
 
 /** The capability key a given LSP method is advertised under (or undefined when
@@ -226,6 +259,69 @@ export const ErrorCodes = {
   ServerNotInitialized: -32002,
 } as const
 
+/** The language a request names, read from the standard
+ *  `textDocument.uri`/`workspace/symbol` shapes, or null. Used only to LABEL a
+ *  declared absence — never to decide behaviour, so a client that sends an
+ *  unusual shape still gets an answer (just an unlabelled one). */
+function languageForMessage(params: any): string | null {
+  const uri: unknown = params?.textDocument?.uri
+  if (typeof uri !== "string" || uri.length === 0) return null
+  return languageForPath(uriToPath(uri))
+}
+
+/**
+ * The unroutability seam at the REGISTRATION boundary, so a fourth handler
+ * repeating lane 2's defect is stopped structurally rather than by convention.
+ *
+ * The problem lane 2 hit: `parseForSafety` → `ASTEngine.parseTree` throws a
+ * plain `Error("Unsupported file type: …")` when `detectLanguage` returns null,
+ * and the call site must guard it. Fixing one call site fixes ONE handler; the
+ * next one that forgets reproduces it, and the user gets -32603. Guarding at
+ * the seam means a handler does not have to remember.
+ *
+ * Why a WRAPPER rather than a catch: the seam only knows a file is unroutable
+ * by looking at the request's URI, and it can only do that for the standard
+ * `textDocument.uri` shape. It must NOT pre-answer on that basis alone —
+ * `workspace/symbol` and the `bb/` transports legitimately carry no URI, and a
+ * handler given no document may still have real work to do. So the wrapper
+ * LAUNCHES the handler, and only converts a fault it recognises as
+ * unroutability (by the declared `DocumentUnroutable` type, or by the engine's
+ * own message). Everything else propagates untouched to the dispatch catch,
+ * which keeps its -32603. A seam that pre-answered would also swallow genuine
+ * faults in routable files, which is the dishonesty this design exists to avoid.
+ */
+function guardUnroutableDocument(
+  method: string,
+  handler: (params: any) => unknown,
+): (params: any) => unknown {
+  return async (params: any) => {
+    const uri: unknown = params?.textDocument?.uri
+    const hasDocument = typeof uri === "string" && uri.length > 0
+    try {
+      return await handler(params)
+    } catch (error: any) {
+      // Recognised unroutability ONLY: the declared type, or the engine's own
+      // message from ASTEngine.parseTree (src/ast/engine.ts, the throw that
+      // lane 2 hit live). Anything else is rethrown for the dispatch catch to
+      // classify — a TypeError here must stay a -32603, never an absence.
+      const unroutable =
+        error instanceof DocumentUnroutable ||
+        (error instanceof Error && typeof error.message === "string" && error.message.startsWith("Unsupported file type"))
+      if (!unroutable) throw error
+      throw new DeclaredAbsenceThrow({
+        method,
+        reason: "language_not_launched",
+        language: hasDocument ? languageForMessage(params) : null,
+        detail:
+          "this file's type is outside the analyzer's routed set, so it was never routed and the index was not searched",
+        evidenceTier: "unsupported_language",
+        searchedIndex: false,
+        totalCount: null,
+      })
+    }
+  }
+}
+
 /** A declared, machine-readable client-input error (M55.T2). Handlers throw
  *  this when a request cannot be answered for a reason IN THE REQUEST (a
  *  missing item, a malformed position): the wire answer is InvalidParams with
@@ -236,6 +332,110 @@ export class DeclaredParamsError extends Error {
   constructor(message: string) {
     super(message)
     this.name = "DeclaredParamsError"
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Declared absence: the reason a request was not answered, computed by the
+// component and CARRIED TO THE CLIENT instead of discarded (contract §11.7).
+// ---------------------------------------------------------------------------
+
+/** Wire version of the `bb/absence` notice. A client that gates on this number
+ *  can tell a future shape from the current one; it is advertised as
+ *  `absenceProvider.schemaVersion` so a client never has to guess. */
+export const ABSENCE_SCHEMA_VERSION = 1
+
+/** Server→client absence channel. NOT a request method: there is no inbound
+ *  `bb/absence` handler, and sending one answers MethodNotFound (G10). The
+ *  advertisement says `direction: "serverToClient"` so a client does not build
+ *  a request around it. */
+export const ABSENCE_METHOD = "bb/absence"
+
+/** The LSP MessageType for `window/logMessage`. 3 = Info. A declared absence is
+ *  the contract working, not a fault: using Error (1) would train the user to
+ *  ignore the channel, and Warning (2) would overstate it. */
+export const ABSENCE_LOG_TYPE = 3
+
+/**
+ * WHY THIS REASON SET. The vocabulary is the union of what the components can
+ * already prove, plus one the seam adds:
+ *   language_not_launched    the file is outside the launch set. The index was
+ *                            NEVER searched — `searchedIndex: false`. Distinct
+ *                            from everything below because "we do not serve your
+ *                            language" and "we looked and found nothing" are
+ *                            different facts, and a client that cannot tell them
+ *                            apart cannot label either honestly.
+ *   not_indexed              the index WAS searched and stores nothing here.
+ *   unresolvable_location    the request named a position or location that does
+ *                            not resolve — e.g. out of range (contract §13.10,
+ *                            PositionError).
+ *   unsupported_language     the request is well formed but the analyzer cannot
+ *                            serve this language at all.
+ * Adding a reason is cheap; adding one that overlaps an existing reason is a
+ * defect, because it reintroduces the conflation G9b gates.
+ */
+export type AbsenceReason =
+  | "language_not_launched"
+  | "not_indexed"
+  | "unresolvable_location"
+  | "unsupported_language"
+
+export interface DeclaredAbsence {
+  /** The method whose answer is being declared absent. */
+  method: string
+  /** Which fact, from the set above. Never a bare null. */
+  reason: AbsenceReason
+  /** The detected language, when one could be determined; else null. */
+  language: string | null
+  /** Human-readable sentence. Never an empty string and never a JSON blob:
+   *  contract §15.4 forbids machine shapes in anything a developer reads. */
+  detail: string
+  /** evidenceTier when the component computed one, else null. */
+  evidenceTier: string | null
+  /** FALSE when the index was never searched (language_not_launched) — the
+   *  field that separates "never searched" from "searched, nothing there". */
+  searchedIndex: boolean
+  /** Match count when the index was searched, else null. */
+  totalCount: number | null
+}
+
+/**
+ * A component that CANNOT answer, distinguished by construction from a
+ * component that is BROKEN.
+ *
+ * THE BOUNDARY, AND WHY IT IS DRAWN HERE. The seam must not be a blanket
+ * catch: turning every fault into declared absence is the same dishonesty with
+ * a friendlier face, because the client would render "nothing here" while the
+ * server is in fact broken. So the conversion is OPT-IN per handler — a handler
+ * declares itself answerable-or-absentable — and it still fires only for the
+ * error TYPES below, each of which is a declared, expected inability:
+ *
+ *   PositionError      out-of-range / mid-codepoint positions (§13.10 names a
+ *                       wire error here a defect)
+ *   DeclaredAbsenceThrow  a component computed an absence and raised it (the
+ *                       shape the read handlers use)
+ *   DocumentUnroutable  the file cannot be parsed because its type is outside
+ *                       the analyzer's routed set — lane 2's live defect, whose
+ *                       call-site fix does not stop a FOURTH handler repeating it
+ *
+ * Anything else — a TypeError, a null dereference, a parser timeout — is a bug
+ * and stays -32603. G10 gates both directions, and the "stays -32603" checks
+ * are what stop the seam from widening into a blanket catch.
+ */
+export class DocumentUnroutable extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = "DocumentUnroutable"
+  }
+}
+
+/** A component raising this answers with `null` AND emits the absence notice. */
+export class DeclaredAbsenceThrow extends Error {
+  readonly absence: DeclaredAbsence
+  constructor(absence: DeclaredAbsence) {
+    super(absence.detail)
+    this.name = "DeclaredAbsenceThrow"
+    this.absence = absence
   }
 }
 
@@ -262,6 +462,13 @@ export interface ServerHooks {
   log?: (msg: string, meta?: Record<string, unknown>) => void
 }
 
+/** A server→client JSON-RPC notification queued for the wire. */
+export interface ServerNotification {
+  jsonrpc: typeof JSONRPC
+  method: string
+  params: unknown
+}
+
 const JSONRPC = "2.0"
 
 function isRequest(msg: { id?: unknown; method?: unknown }): boolean {
@@ -285,6 +492,15 @@ function isResponse(msg: { id?: unknown; method?: unknown }): boolean {
 export class BbLspServer {
   private lifecycleState: "uninitialized" | "initialized" | "shutdown" = "uninitialized"
   private handlers = new Map<string, (params: any) => unknown>()
+  /** Methods opted into the declared-absence seam (see register). */
+  private absentableMethods = new Set<string>()
+  /**
+   * Server→client notifications produced by the most recent handleMessage
+   * call, drained by the wire loop. Queueing them here (rather than writing
+   * straight to the stream) keeps handleMessage pure and testable, and is what
+   * lets the verifier assert on EXACTLY what a client would receive.
+   */
+  private outboundNotifications: ServerNotification[] = []
   private protocolEvents: ProtocolEvent[] = []
   private hooks: ServerHooks
   private stderrLogPath: string | null = process.env.BB_LSP_STDERR_LOG ?? null
@@ -308,9 +524,17 @@ export class BbLspServer {
     this.hooks = hooks
   }
 
-  /** Register a feature handler. Capabilities derive from this table. */
-  register(method: string, handler: (params: any) => unknown): void {
-    this.handlers.set(method, handler)
+  /** Register a feature handler. Capabilities derive from this table.
+   *
+   *  `absentable: true` opts the method into the declared-absence seam: a
+   *  component fault of a DECLARED type (PositionError, DeclaredAbsenceThrow,
+   *  DocumentUnroutable) then answers as declared absence with a reason the
+   *  client can read, instead of -32603. The opt-in is per method and
+   *  deliberate: a blanket catch over all handlers would let a genuine bug
+   *  render as "nothing here", and G10 gates exactly that regression. */
+  register(method: string, handler: (params: any) => unknown, opts: { absentable?: boolean } = {}): void {
+    this.handlers.set(method, opts.absentable ? guardUnroutableDocument(method, handler) : handler)
+    if (opts.absentable) this.absentableMethods.add(method)
   }
 
   /** The LSP methods this instance can actually serve — the honest successor
@@ -366,12 +590,57 @@ export class BbLspServer {
     if (this.handlers.has("bb/graph")) caps.graphProvider = { schemaVersion: 2 }
     if (this.handlers.has("bb/staleness")) caps.stalenessProvider = stalenessProviderPayload()
     if (this.handlers.has("bb/impact")) caps.impactProvider = impactProviderPayload()
+    caps.absenceProvider = absenceProviderPayload()
     caps.workspace = workspaceProviderPayload()
     return caps
   }
 
   state(): string {
     return this.lifecycleState
+  }
+
+  /** The server→client notifications queued by the last handleMessage call.
+   *  Read-only: a test may inspect them, and the wire loop still drains the
+   *  same queue, so what the test asserts on is byte-for-byte what a client
+   *  receives. */
+  notifications(): ServerNotification[] {
+    return [...this.outboundNotifications]
+  }
+
+  /** Take the queued notifications, leaving the queue empty. */
+  private drainNotifications(): ServerNotification[] {
+    const queued = this.outboundNotifications
+    this.outboundNotifications = []
+    return queued
+  }
+
+  /** Queue a server→client notification. Every notification this server emits
+   *  goes through here so the carriers cannot drift: `bb/absence` for the
+   *  machine-readable record and `window/logMessage` for the human line are
+   *  emitted as ONE unit from `emitAbsence`, never separately. */
+  private notify(method: string, params: unknown): void {
+    this.outboundNotifications.push({ jsonrpc: JSONRPC, method, params })
+  }
+
+  /**
+   * Announce a declared absence on BOTH carriers, from one call, so they cannot
+   * disagree:
+   *   - `bb/absence` (versioned, machine-readable; what a client should read)
+   *   - `window/logMessage` (the protocol's own channel; reaches a client that
+   *     has never heard of bb/*)
+   * Emitted ONLY on the absence path — never on a served request (G9's negative
+   * case gates that; logging every successful hover would be noise the user
+   * learns to ignore, which is how a warning channel dies).
+   */
+  private emitAbsence(absence: DeclaredAbsence): void {
+    this.notify(ABSENCE_METHOD, { schemaVersion: ABSENCE_SCHEMA_VERSION, ...absence })
+    this.notify("window/logMessage", {
+      type: ABSENCE_LOG_TYPE,
+      // Named by method so the log line is actionable on its own: a user who
+      // only sees this in an output panel learns WHICH request was not
+      // answered, and why.
+      message: `bb ${absence.method}: declared absence (${absence.reason}) — ${absence.detail}`,
+    })
   }
 
   events(): ProtocolEvent[] {
@@ -453,17 +722,70 @@ export class BbLspServer {
     const handler = this.handlers.get(method)
     if (handler) {
       this.record("in", method)
+      // Each request starts with an empty outbox: a notice belongs to the
+      // request that caused it, never to whatever ran before it.
+      this.outboundNotifications = []
       try {
         const result = await handler(message.params)
         this.record("out", method)
         return { jsonrpc: JSONRPC, id: message.id, result }
       } catch (error: any) {
-        // The distinction is by TYPE, never by a duck-typed `.code` (Node's own
-        // errors carry codes too). A declared input error is the client's to
-        // fix; anything else is an internal failure and is reported as one.
-        const code = error instanceof DeclaredParamsError ? ErrorCodes.InvalidParams : ErrorCodes.InternalError
-        this.record("out", method, code)
-        return this.errorResponse(message.id, code, error?.message ?? String(error))
+        // THE BOUNDARY between "cannot answer" and "is broken". Read in order,
+        // narrowest reason first, and every branch names what it decides:
+        //   1. DeclaredParamsError — the CLIENT sent something malformed. Theirs
+        //      to fix; InvalidParams with the offending field named.
+        //   2. DeclaredAbsenceThrow — the component computed an absence and
+        //      raised it. Answer the protocol's honest empty shape AND emit the
+        //      reason, so "nothing here" is distinguishable from "not served".
+        //   3. PositionError — an out-of-range position (§13.10: a wire error
+        //      where the contract requires honest emptiness is a defect).
+        //   4. DocumentUnroutable — the file's type is outside the analyzer's
+        //      routed set, so there was never an answer to give.
+        // Branches 2-4 fire ONLY for methods that opted in with
+        // `{ absentable: true }`, and only for these TYPES. Everything else —
+        // TypeError, null dereference, parser timeout — is a BUG and stays
+        // -32603, because reporting a broken server as "nothing here" is a lie
+        // the user cannot detect. G10 gates both directions.
+        if (error instanceof DeclaredParamsError) {
+          this.record("out", method, ErrorCodes.InvalidParams)
+          return this.errorResponse(message.id, ErrorCodes.InvalidParams, error.message)
+        }
+        const absentable = this.absentableMethods.has(method)
+        if (absentable && error instanceof DeclaredAbsenceThrow) {
+          this.emitAbsence(error.absence)
+          this.record("out", method)
+          return { jsonrpc: JSONRPC, id: message.id, result: null }
+        }
+        if (absentable && error instanceof PositionError) {
+          this.emitAbsence({
+            method,
+            reason: "unresolvable_location",
+            language: languageForMessage(message.params),
+            detail: `${error.message} — the position does not resolve, so there is no answer to give (contract §13.10)`,
+            evidenceTier: null,
+            searchedIndex: false,
+            totalCount: null,
+          })
+          this.record("out", method)
+          return { jsonrpc: JSONRPC, id: message.id, result: null }
+        }
+        if (absentable && error instanceof DocumentUnroutable) {
+          this.emitAbsence({
+            method,
+            reason: "language_not_launched",
+            language: null,
+            detail: `${error.message} — this file type is outside the analyzer's routed set, so the index was never searched`,
+            evidenceTier: null,
+            searchedIndex: false,
+            totalCount: null,
+          })
+          this.record("out", method)
+          return { jsonrpc: JSONRPC, id: message.id, result: null }
+        }
+        // A genuine unexpected fault. Reported as an internal error, never
+        // dressed up as an absence (G10 gates this).
+        this.record("out", method, ErrorCodes.InternalError)
+        return this.errorResponse(message.id, ErrorCodes.InternalError, error?.message ?? String(error))
       }
     }
 
@@ -498,6 +820,20 @@ export class BbLspServer {
       const body = Buffer.from(JSON.stringify(message), "utf8")
       output.write(`Content-Length: ${body.length}\r\n\r\n`)
       output.write(body)
+    }
+
+    // Server→client notifications (the declared-absence carrier) are written
+    // AFTER the response that caused them, so a client reading the stream in
+    // order sees the answer first and the reason attached to it. Each is
+    // independently framed: one notification is one message on the wire, not a
+    // concatenated blob.
+    const writeNotification = (notification: ServerNotification): void => {
+      const body = Buffer.from(JSON.stringify(notification), "utf8")
+      output.write(`Content-Length: ${body.length}\r\n\r\n`)
+      output.write(body)
+    }
+    const drainNotifications = (): void => {
+      for (const notification of this.drainNotifications()) writeNotification(notification)
     }
 
     return new Promise<void>((resolve) => {
@@ -541,7 +877,7 @@ export class BbLspServer {
             chunks = [combined.subarray(contentLength)]
             buffered = chunks[0].length
             contentLength = -1
-            void this.dispatch(body.toString("utf8"), writeMessage, finish)
+            void this.dispatch(body.toString("utf8"), writeMessage, finish, drainNotifications)
             if (finished) return
             continue
           }
@@ -563,6 +899,7 @@ export class BbLspServer {
     body: string,
     write: (message: Record<string, unknown> | null) => void,
     finish: () => void,
+    drainNotifications: () => void,
   ): Promise<void> {
     let message: unknown
     try {
@@ -589,6 +926,7 @@ export class BbLspServer {
       } catch {}
     }
     write(response)
+      drainNotifications()
   }
 
   private errorResponse(id: unknown, code: number, message: string): Record<string, unknown> {
@@ -733,6 +1071,11 @@ export function wireFeatures(server: BbLspServer): void {
   })
 
 
+  // Every read handler below is registered `absentable: true`: a component
+  // that CANNOT answer (unroutable file, out-of-range position) degrades to a
+  // declared absence with a reason, instead of leaking -32603 to the editor.
+  // The opt-in is per method so the seam can never widen into a blanket catch
+  // over handlers that must stay loud (G10).
   server.register("textDocument/hover", async (params: any) => {
     const raw = await BrainDatabase.getRawInstance(projectId)
     const r = await hover(raw, {
@@ -749,13 +1092,41 @@ export function wireFeatures(server: BbLspServer): void {
     // markdown; absence is wire `null`. M42/M44 extras (evidence tier,
     // provenance, action args) ride `Hover.data` — the spec's declared
     // data slot, which the client passes through untouched.
-    if (r.contents === null || r.range === null || r.data === null) return null
+    //
+    // ABSENCE IS DECLARED, NOT DISCARDED (contract §11.7). The wire shape is
+    // still a bare `null` — LSP 3.18 has nowhere in `Hover | null` to carry a
+    // reason, and inventing a field on a standard result is banned — so the
+    // reason travels on the `bb/absence` carrier instead. `provenance.limitations`
+    // is the component's own sentence about WHY, and it is now READ here rather
+    // than dropped: previously a user in an unsupported language got a silent
+    // null that reads as "nothing known about this symbol".
+    if (r.contents === null || r.range === null || r.data === null) {
+      const limits = r.provenance?.limitations ?? []
+      const notLaunched = limits.some((l) => l.includes("launch language set"))
+      throw new DeclaredAbsenceThrow({
+        method: "textDocument/hover",
+        reason: notLaunched ? "language_not_launched" : "not_indexed",
+        language: languageForMessage(params),
+        // Human prose, never a JSON blob (§15.4): the component's own
+        // limitation sentences, joined.
+        detail:
+          limits.length > 0
+            ? limits.join("; ")
+            : "no indexed symbol at this position (the index was searched and stores nothing here)",
+        evidenceTier: r.provenance?.evidenceClass ?? null,
+        // A launch-language miss means the index WAS asked. A non-launch file
+        // means it never was — the distinction that lets a client label the
+        // difference instead of guessing.
+        searchedIndex: !notLaunched,
+        totalCount: null,
+      })
+    }
     return {
       contents: r.contents,
       range: { start: r.range.start, end: r.range.end },
       data: { provenance: r.provenance, symbol: r.data },
     }
-  })
+  }, { absentable: true })
 
   // Wire law (LSP 3.18) — same rule as documentHighlight below. The standard
   // read methods answer PROTOCOL shapes (Location[], DocumentSymbol[], …),
@@ -775,9 +1146,21 @@ export function wireFeatures(server: BbLspServer): void {
     })
     // Wire: Location | Location[] | null. Absence is `null`, never an
     // envelope that would read as a fabricated definition.
-    if (!r.found || r.location === null) return null
+    //
+    // The reason travels on the `bb/absence` carrier (contract §11.7): LSP 3.18
+    // mandates `Location | null` here, so there is no field on this result a
+    // reason could ride. Previously `!r.found` collapsed to a silent null, and
+    // a client could not tell "this server does not serve your language" from
+    // "there is no definition here" — two facts that need different labels.
+    if (!r.found || r.location === null) {
+      throw new DeclaredAbsenceThrow(
+        navigationAbsence("textDocument/definition", params, r.evidenceTier, {
+          limit: r.symbol?.qualifiedName ?? r.symbol?.name ?? null,
+        }),
+      )
+    }
     return navLocationToWire(r.location)
-  })
+  }, { absentable: true })
 
   server.register("textDocument/documentHighlight", async (params: any) => {
     const raw = await BrainDatabase.getRawInstance(projectId)
@@ -791,13 +1174,34 @@ export function wireFeatures(server: BbLspServer): void {
     // declared metadata (evidence tier + staleness, §12.2) rides on each
     // item's `data`: a client that ignores data still renders ranges/kinds;
     // ours reads it to label the highlight render. Absence is wire `null`.
-    if (r.highlights.length === 0) return null
+    //
+    // §11.7 + lane 2's finding: `evidenceTier` is NOT decoration. The component
+    // now distinguishes `unsupported_language` ("the router never routed this
+    // file") from `not_indexed` ("the index was asked and had nothing"), and a
+    // bare `null` flattened that distinction into silence. The reason travels
+    // on the `bb/absence` carrier, and the tier rides in the record so a
+    // client can render it without re-deriving anything.
+    if (r.highlights.length === 0) {
+      const tier = r.evidenceTier
+      const notLaunched = tier === "unsupported_language"
+      throw new DeclaredAbsenceThrow({
+        method: "textDocument/documentHighlight",
+        reason: notLaunched ? "language_not_launched" : "not_indexed",
+        language: languageForMessage(params),
+        detail: notLaunched
+          ? "this file's type is outside the analyzer's routed set, so it was never routed and the index was not searched"
+          : "the index was searched and stores no occurrence of this symbol at the requested position",
+        evidenceTier: tier,
+        searchedIndex: !notLaunched,
+        totalCount: 0,
+      })
+    }
     return r.highlights.map((h) => ({
       range: { start: h.start, end: h.end },
       kind: h.kind,
       data: { evidenceTier: r.evidenceTier, staleness: r.staleness, symbol: r.symbol },
     }))
-  })
+  }, { absentable: true })
 
   server.register("textDocument/references", async (params: any) => {
     const raw = await BrainDatabase.getRawInstance(projectId)
@@ -809,8 +1213,16 @@ export function wireFeatures(server: BbLspServer): void {
     })
     // Wire: Location[]. Honesty (truncated/totalCount/evidenceTier) stays at
     // the component layer — the references UI renders what the index stores.
+    // §11.7, and this is the sharpest instance: an empty `[]` is EXACTLY the
+    // shape that "reads as 'no references found'" — so returning it bare for an
+    // unsupported language told the user their symbol has no callers when the
+    // truth was that the server never looked. The result stays `[]` (LSP 3.18
+    // mandates `Location[]`); the reason goes out of band on `bb/absence`.
+    if (r.locations.length === 0) {
+      throw new DeclaredAbsenceThrow(navigationAbsence("textDocument/references", params, r.evidenceTier))
+    }
     return r.locations.map(navLocationToWire)
-  })
+  }, { absentable: true })
 
   server.register("textDocument/documentSymbol", async (params: any) => {
     const raw = await BrainDatabase.getRawInstance(projectId)
@@ -928,6 +1340,61 @@ function requireCallHierarchyItem(params: unknown): CallHierarchyItem {
     throw new DeclaredParamsError("bb/callHierarchy: params.item.data.isExternal must be a boolean")
   }
   return item as unknown as CallHierarchyItem
+}
+
+/**
+ * Build the declared absence for a navigation read from what the component
+ * actually proved — never from the mere fact that the result was empty.
+ *
+ * The decision order matters and is the whole point:
+ *   1. If the file's language is outside the launch set, the index was NEVER
+ *      searched. That is `language_not_launched` / `searchedIndex: false`, and
+ *      it is a DIFFERENT fact from everything below — a client told "not
+ *      indexed" for an unsupported language would be told a lie about work we
+ *      never did.
+ *   2. Otherwise the component reports `not_indexed`, meaning the index WAS
+ *      asked and stores nothing here. `searchedIndex: true`.
+ *
+ * NOTE ON THE COMPONENT CONTRACT: navigation.ts at this commit exposes
+ * `evidenceTier` ("indexed" | "not_indexed"), not Lane 4's richer
+ * `absence: {reason, language, detail, searchedIndex, totalCount}` record —
+ * that commit (04d56ab75) is not an ancestor of this branch. This helper reads
+ * the fields that EXIST and derives the rest from the launch set through the
+ * single owner (launch_languages.ts), so it is correct today and still correct
+ * when `absence` lands: the reason vocabulary and the `searchedIndex` semantics
+ * are already the ones Lane 4 publishes, and G9b gates the two cases apart.
+ */
+function navigationAbsence(
+  method: string,
+  params: any,
+  evidenceTier: string,
+  extra: { limit?: string | null } = {},
+): DeclaredAbsence {
+  const language = languageForMessage(params)
+  // The launch set is the single owner of "do we serve this language", and a
+  // file whose extension is not routed at all is also not launch-launched (it
+  // could never be reached by any analyzer). `languageForPath` answers null
+  // for an unmapped extension, which is a DIFFERENT state from "mapped to a
+  // non-launch language" — both mean "not served", but naming them the same
+  // would lose the distinction between "we know this language and decline" and
+  // "we cannot read this file type at all".
+  const notLaunched = language === null || !isLaunchLanguage(language)
+  const what = extra.limit ? ` (asked for ${extra.limit})` : ""
+  const which =
+    language === null
+      ? "this file's type is not routed by any analyzer"
+      : `${language} is outside the launch-language set`
+  return {
+    method,
+    reason: notLaunched ? "language_not_launched" : "not_indexed",
+    language,
+    detail: notLaunched
+      ? `${which}, so the index was never searched for this position${what}`
+      : `the index was searched and stores no matching symbol at this position${what}`,
+    evidenceTier,
+    searchedIndex: !notLaunched,
+    totalCount: null,
+  }
 }
 
 /** Wire helper: a NavigationLocation (component) -> LSP Location. */
