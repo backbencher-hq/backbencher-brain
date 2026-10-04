@@ -4485,6 +4485,7 @@ it is a property of the run, not of the corpus and not of the analyzer.
 | honesty gate | `npx tsx script/m14/verify-honesty.ts` | 22 failures, exit 6, **0 naming this document, `analyzer-owned-miss-cause.ts`, or any file under `validation/m14/fixtures/zig/`** |
 | regex census | `npx tsx script/m12/verify-regex-census.ts` | gate `FAILED` on **43 findings (18 MISSING + 25 STALE) across 11 other analyzers**, **0 zig rows**, `unclassified: 0`, `mislocated: 0` — this pass adds no regex |
 | F8 completeness | `npx tsx script/m14/completeness-inventory.ts --lang zig` | 7 of 8 sections pass; **section-b still FAILS** on `requiredKinds` missing `exports` and `instantiates` (§8 item 23's neighbour: a shared spec row, not this lane's file). section-f perf **85.5 ms/file** |
+| doc-truth emissions | `bun run script/m14/verify-doc-truth-emissions.ts` | gate `FAIL`s overall — **7 FALSE_NEGATIVE, 41 UNDOCUMENTED, 1 MISSING_DOC, 17 NO_CLAIM_TABLE across other lanes — and 0 findings name zig**, so this lane's `Emitted?` column machine-checks. **Run it with `bun`, not `npx tsx`**: it uses `__dirname`, which does not exist in ESM scope, so `npx tsx` dies with `ReferenceError` before reading a single claim. It also REWRITES `docs/DOC-TRUTH-EMISSIONS.md`, a shared register this lane does not own — reverted here. |
 
 ### G. What pass 18 could not settle
 
