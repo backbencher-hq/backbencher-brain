@@ -4620,3 +4620,37 @@ its assertions are older than the instruments that could check them.**
   once and the fixture caught it.** Recorded because the alternative — rewriting the
   fixture until it matched the analyzer — is always available and would have left a
   green suite asserting nothing.
+
+## One number that did not move, and why
+
+`protobuf-incoming-audit.mts` re-run at this pass's HEAD: **821 files parsed, 0
+failed, 0 degraded, 38,551 published ids, 37,113 declarations with at least one
+inbound edge — 96.27%**, which is pass 15's figure to two decimals. Nothing about this
+pass should have moved it, and the reason is worth stating rather than leaving a
+reader to assume the fix was invisible for some other cause:
+
+```
+if (which === "target") inboundPerId.set(end, (inboundPerId.get(end) ?? 0) + 1)
+```
+
+`protobuf-incoming-audit.mts:557` counts an inbound edge on the **target** end only.
+This pass changed the **source** end, so the inbound-coverage metric cannot see it —
+not "did not move by a little", structurally cannot. The audit's own 5×5 endpoint
+matrix is the view that does see it, and it moved exactly as the census predicted:
+
+| cell | edges |
+|---|---|
+| `imports` / source `in-file-both` / target `name-exists-unbound` | **1,556** |
+| `imports` / source `name-exists-unbound` / target `name-exists-unbound` | **5** |
+| `exports` / source `in-file-both` / target `name-exists-unbound` | **4** |
+
+So the honest statement of what this pass bought is about the **outbound** walk: a
+package namespace is a published symbol, and `bb_graph` on one now shows the files
+that namespace's files depend on, where before it showed nothing. What it did not buy
+is any new inbound path, and this lane's headline inbound figure is the one that would
+have caught it if it had.
+
+The audit's unchanged headline is also a small argument for keeping it: it is
+computed from a different end of the edge than the census's resolution rate, and two
+instruments reading different ends agreeing that nothing moved is worth more than
+either alone.
