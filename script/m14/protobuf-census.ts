@@ -115,6 +115,15 @@ let unknownEndpoints = 0, unknownEndpointExamples: string[] = []
 let importsN = 0, filesWithImports = 0
 let selfLoops = 0
 let filesOk = 0, filesFail = 0, failExamples: string[] = []
+// A file whose PRODUCTION result declares nothing while the ANALYZER found
+// symbols in the same bytes. `parseFile` catches its own wasm faults and RETURNS,
+// so a file that lost its whole parse is counted `ok` above and this is the only
+// place the loss can surface. Measured 2026-10-04: four runs of this census on
+// one commit and one corpus gave 41,955 symbols through parseFile three times
+// and 41,945 once, the -10 being one 62-line file whole; see
+// script/m14/tmp/protobuf/probe/parse-variance.mts.
+let silentEmpty = 0
+const silentEmptyFiles: string[] = []
 let dupAnalyzerIds = 0, dupProductIds = 0
 let relsAnalyzer = 0, relsProduct = 0
 let analyzerOnlyRels = 0, productOnlyRels = 0
@@ -160,6 +169,10 @@ async function worker(): Promise<void> {
     symsProduct += (prod.symbols ?? []).length
     relsAnalyzer += (a.relationships ?? []).length
     relsProduct += (prod.relationships ?? []).length
+    if ((a.symbols ?? []).length > 0 && (prod.symbols ?? []).length === 0) {
+      silentEmpty++
+      if (silentEmptyFiles.length < 10) silentEmptyFiles.push(`${label}: analyzer ${(a.symbols ?? []).length} symbols / ${(a.relationships ?? []).length} edges, production 0 / 0`)
+    }
     const imp = prod.imports ?? []
     if (imp.length) { filesWithImports++; importsN += imp.length }
 
@@ -228,6 +241,8 @@ const out: any = {
   parseOk: filesOk,
   parseFail: filesFail,
   failExamples,
+  filesAnalyzerReadProductionPublishedNothing: silentEmpty,
+  filesAnalyzerReadProductionPublishedNothingExamples: silentEmptyFiles,
   symbolsAnalyzerDirect: symsAnalyzer,
   symbolsThroughParseFile: symsProduct,
   relationshipsAnalyzerDirect: relsAnalyzer,
@@ -268,6 +283,7 @@ console.log(`\nfiles ${filesOk} ok / ${filesFail} fail`)
 console.log(`symbols   analyzer-direct ${symsAnalyzer}   through parseFile ${symsProduct}`)
 console.log(`edges     analyzer-direct ${relsAnalyzer}   through parseFile ${relsProduct}   analyzer-only ${analyzerOnlyRels}   parseFile-only ${productOnlyRels}`)
 console.log(`symbols with empty name ${emptyNames}   bad kinds ${badKinds.size}   endpoints=="unknown" ${unknownEndpoints}   self-loops ${selfLoops}`)
+console.log(`files the analyzer read and production published NOTHING for  ${silentEmpty}${silentEmpty ? `   e.g. ${silentEmptyFiles.join("; ")}` : ""}`)
 console.log(`imports[] recorded ${importsN} in ${filesWithImports} files   (relationships: see the table)`)
 console.log(`\n${w("type", 13)}${w("edges", 8)}${w("aBoth", 8)}${w("aBoth%", 9)}${w("rBoth", 8)}${w("rBoth%", 9)}${w("c<0.7", 7)}evidenceClass`)
 console.log("-".repeat(104))
