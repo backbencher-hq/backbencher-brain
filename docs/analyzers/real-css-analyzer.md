@@ -636,6 +636,8 @@ unchanged in substance and larger in scope than pass 6 stated it.
 | `npx tsx script/m14/firing-check.ts --files 120 css` | 5/10 fired, **47,667 edges, 120/120 files, 0 degraded** | identical | reproduced |
 | `npx tsx validation/m14/census/css-ontology-probe.ts` | 103 node types, 1,255 files / 79 repos, 422 with an ERROR, `var()` 162,470 / 392 files, `@extend` directive 0 / 0, at-keyword 46 / 26 | identical | reproduced |
 | `npx tsx validation/m14/census/css-extend-lexability.ts` | **NEW**: 46 / 46 `@extend` keywords inside ERROR nodes, 0 directives, 1,255 / 79 | — | new instrument |
+| `npx tsx validation/m14/census/css-overrides-differential.ts` | **exit 0**, 1,255/1,255 parsed, 48 emitted, **48 agree, 20 MISSING (20 store collisions, 0 real gaps), 0 EXTRA**, `VERDICT: no analyzer defect` | identical | reproduced |
+| `npx tsx script/m60/rel-type-coverage-gate.ts --langs=css` | exit 0, **CHECK 1 DERIVATION clean, CHECK 2 REACHABILITY clean (10 of 10), CHECK 3 AGREEMENT clean, CHECK 4 ENUM clean**, `baseline: 104 recorded, 0 NEW, 104 repaid` — but it **overwrote the shared artifact**, see §8 (g) | not measured | first clean reading of all four checks for this lane; read CHECK 1 against §8 (c) |
 | `npx tsx script/m14/differential.ts --lang css` | **exit 0**, `unexplained=0` and `heuristic=0` on both corpora, 2 MISSING (the pinned `@namespace` rows); svelte tree-truth 41 rows / 39 covered, grails-core **497** rows / 497 covered | reproduced | reproduced; only the rotating sample moved (grails-core 482 → 497) |
 | `bun run script/m14/run-fixtures.ts --lang css` | **15 pass / 0 fail**, `no regressions` | identical | reproduced |
 | `BB_MUTANT_ONLY="css/" bun run script/m14/mutate-analyzer.ts` | **14 mutants, 14 CAUGHT, 0 surviving** (filtered 1,753 → 14) | identical | reproduced |
@@ -1219,12 +1221,15 @@ that emitted `overrides` on every file would have printed the same `covered=67 (
 MISSING=0` and the same single line, which is the failure mode the ontology gate exists
 for.
 
-The lane's two fixtures and its eight mutants are the only checks on the type, and
-neither a fixture nor a mutant is an oracle. **The strongest thing this lane can say
-about `overrides` correctness is that a spec sentence and a fixture agree** — Cascade 5
-§6.1 for the `@keyframes` and custom-property halves, Properties & Values API §2.1 for
-`@property` ("the last such one in document order is the registration") — and that is
-weaker evidence than a second walker, and it is not upgraded by being quoted twice.
+The lane's own fixtures and mutants are on it, and — since pass 4 — so is a second
+walker, `script/m14/oracles/css-overrides.ts`, importing nothing from the analyzer. Re-measured
+in pass 7 over all 1,255 files: **48 agree, 20 MISSING of which 20 are store collisions and
+**0** are real gaps, 0 EXTRA** (`css-overrides-differential.ts`). What remains is the honest
+part of this finding: **the shared `script/m14/differential.ts` still does not audit the type**,
+its allowlist comparison runs over four labels, and the wiring is §8 item (c). An oracle run by
+the same agent that wrote the analyzer, outside the milestone's own harness, is weaker evidence
+than being inside that harness, so this entry stays open at 1 rather than being closed on the
+strength of a script this lane also owns.
 
 The oracle this needs is written out under "Reported, not edited" below so it can be
 implemented without re-deriving it.
@@ -1285,12 +1290,18 @@ for this lane. Every item below names the measurement that produced it.
    the 46 `@extend` at-keywords the probe finds are all inside those `.sass` partials: the
    construct is written 46 times in NAME and produced as a DIRECTIVE 0 times, which is a
    statement about the pinned grammar, not about SCSS.
-9. **`overrides` has no differential oracle**, so its correctness rests on two fixtures,
-   eight mutants, a spec sentence and a corpus census of 48 occurrences. That is the
-   weakest evidence backing any emitted type in this lane, and it is the DERIVATION
-   finding above. Pass 2 raised the edge count 12× without raising the evidence CLASS,
-   which is worth saying plainly: more occurrences of an unaudited type is not more
-   confidence in it.
+9. **`overrides` is audited by a LANE-owned oracle but not by the milestone's own
+   instrument.** Pass 7 corrected this entry, which said "`overrides` has no differential
+   oracle" — it has had one since pass 4 (`script/m14/oracles/css-overrides.ts`, a second
+   walker importing nothing from the analyzer). Re-measured today over the whole admitted
+   corpus: **48 agree, 20 MISSING of which 20 are store collisions and 0 are real gaps,
+   0 EXTRA** (0 fabrications), `VERDICT: no analyzer defect`. So the type's correctness
+   rests on a second walker rather than on fixtures alone. What is still true is the part
+   that makes it the DERIVATION finding: the SHARED `script/m14/differential.ts` does not
+   audit it, the wiring is owed and is §8 item (c), and a lane-owned oracle run by the same
+   agent that wrote the analyzer is weaker evidence than the milestone's own harness. Pass 2
+   raised the edge count 12× without raising the evidence CLASS, which is worth saying
+   plainly: more occurrences of an unaudited type is not more confidence in it.
 10. **62 of 106 same-block re-assignments are unemittable** — limitation 3, counted
     separately because it is a storage limit rather than an analyzer limit, and because
     "48 edges" would otherwise read as the size of the construct when the size is 106.
@@ -1356,7 +1367,14 @@ for this lane. Every item below names the measurement that produced it.
     mode is re-introducing the wrong field name rather than forgetting to re-run
     anything.
 
-### For the supervisor: the `CSS_RULED` table entry
+### For the supervisor: the `CSS_RULED` table entry — SUPERSEDED, kept as the record
+
+**This section is the PRE-PASS-4 state and is left exactly as it was written, because it is
+what the item looked like when it was filed.** It is applied: `CSS_RULED` is registered in
+`script/m14/ontology-coverage-gate.ts` and the arbiter rules all ten types (`FALSIFIED 0`). Do
+not apply what follows — see "Reported, not edited" item (a), which carries the measured result
+of applying it, and `script/m14/css-ruled.ts` for the table as built. A reader who needs to know
+what the supervisor's machine does today should read the gate, not this block.
 
 `script/m14/ontology-coverage-gate.ts` exits 2 for `css` —
 
@@ -1389,11 +1407,18 @@ inventory cannot see a construct the language reaches through a lenient path:
 the gate's own `countOnTree(root, fileLabel, hits)` signature, and prints the overturn
 condition for every probe.
 
-### Reported, not edited — five open items, plus one applied in pass 4
+**DIVERGENCE FROM WHAT WAS BUILT, so this block is not copied by mistake:** the table as
+registered gives `exports` **and `extends`** instrument **B**, not A — instrument A is silent
+on `@extend` BY CONSTRUCTION because the grammar routes every unrecognised at-rule through the
+catch-all `at_rule`. Both rows carry their A probe as a secondary check and their B probe as
+the decider. `script/m14/css-ruled.ts` is authoritative.
 
-Items (b) through (f) are open and §8-owned. Item (a) was open for a round, was the lane's
+### Reported, not edited — six open items, one applied in pass 4, one added in pass 7
+
+Items (b) through (g) are open and §8-owned. Item (a) was open for a round, was the lane's
 critical path, and is now APPLIED — it is kept in the list rather than deleted so the
-measurement that justified it stays next to the record of what it produced.
+measurement that justified it stays next to the record of what it produced. Item (g) was added
+this round: it was found by running the gate, and it silently destroys a shared artifact.
 
 Each is written to be applied without re-deriving it: file, function, what it must do,
 why, and the measurement that says it is needed. All are §8 items under
@@ -1558,6 +1583,52 @@ that can only ever print 0 or 1 makes a type present in 98% of files look like i
 present in one. This lane computed the column correctly in
 `validation/m14/census/css-parsefile-census.ts` rather than quote the broken one, and it is
 reported rather than edited.
+
+**(g) NEW IN PASS 7 — `script/m60/rel-type-coverage-gate.ts --langs=<x>` OVERWRITES the
+canonical aggregate artifact with the scoped subset, and has no guard against it.**
+`validation/m60/results/rel-type-coverage.json` is supervisor-owned (§8), and running the gate
+scoped to this lane replaces it:
+
+```
+$ npx tsx script/m60/rel-type-coverage-gate.ts --langs=css
+lanes: 1
+CHECK 1 — DERIVATION: clean    CHECK 2 — REACHABILITY: clean
+CHECK 3 — AGREEMENT: clean     CHECK 4 — ENUM: clean
+$ git diff --stat -- validation/m60/
+ validation/m60/results/rel-type-coverage.json | 1424 +-------------
+ 1 file changed, 6 insertions(+), 1418 deletions(-)
+```
+
+**1,418 lines deleted: the artifact goes from every lane to `css` alone, and the console says
+`lanes: 1` without ever saying the file on disk is now a one-lane claim.** `script/m14/run-fixtures.ts`
+refuses exactly this, in its own words — *"SCOPED run (css of 46 lanes): results are printed here
+and NO evidence is written … either would shrink the milestone's claim to the lanes this run
+covered"* (`run-fixtures.ts:1553`) — and `script/m14/regex-census.ts` carries a `--head` mode for
+the same class of problem. `rel-type-coverage-gate.ts:595` writes unconditionally:
+
+```ts
+fs.writeFileSync(path.join(RESULTS, "rel-type-coverage.json"), JSON.stringify({ … run … }))
+```
+
+What it must do: mirror the fixture runner — when `--langs=` narrows the run, print and do NOT
+write, or write to a scoped path such as `rel-type-coverage.css.json`, exactly as
+`differential.ts --lang css` already declines to overwrite the canonical sweep artifact
+(*"M14.0.F5 NOT written. The artifact belongs to the canonical 60-file, 43-language sweep"*).
+Why it matters beyond this lane: the four CHECKS are repository-wide claims and the artifact is
+what the next lane reads, so one scoped invocation silently converts a 43-lane finding set into
+a 1-lane one that reads `clean` on all four checks. This lane restored the file and did not
+commit it.
+
+**The scoped result itself is worth recording, because it is the first clean reading of all four
+checks for this lane:** `lanes: 1`, CHECK 1 DERIVATION **clean**, CHECK 2 REACHABILITY **clean**
+(traversal default 10 of 10, parsed from `graph-engine.ts`), CHECK 3 AGREEMENT **clean**, CHECK 4
+ENUM **clean**, `baseline: 104 recorded, 0 NEW, 104 repaid`, exit 0.
+
+**Read CHECK 1 against item (c) before believing it.** This gate derives a lane's audited set by
+EVALUATING `differential.ts`'s own filter expression, and the css allowlist already contains
+`overrides` via the base disjunct — while `deriveCssEdges` pushes only four labels. So CHECK 1
+reports `overrides` as audited when the oracle behind it does not yet derive it. The check is
+reading the filter, not the oracle, and for this lane the difference is item (c).
 
 **(e) `validation/m12/results/regex-census.json` — the committed census does not describe
 HEAD for FIVE analyzers, and the css rows are now wrong in the other direction.** The
