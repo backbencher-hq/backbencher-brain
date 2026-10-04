@@ -757,9 +757,14 @@ rather than by any test.
 
 | Match rule | Unique | Ambiguous | Share unique |
 | --- | --- | --- | --- |
-| bare name alone, corpus-wide | 10,649 | 842 | 92.7 % |
-| (name, `ownerName`), within the edge's own file | 11,436 | 55 | 99.52 % |
-| + the edge's `metadata.memberKind` | **11,444** | **47** | **99.59 %** |
+| bare name alone, corpus-wide | **11,104** | **872** | 92.72 % |
+| (name, `ownerName`), within the edge's own file | **11,921** | **55** | 99.54 % |
+| + the edge's `metadata.memberKind` | **11,929** | **47** | **99.61 %** |
+
+**Counts re-measured at pass 9**; the pass-3 counts were 10,649 / 842, 11,436 / 55 and 11,444 / 47,
+so the unique counts moved with corpus growth while both **ambiguous counts held exactly** at 55 and
+47. The buckets sum to **11,976**, not 11,977: the one `contains` edge whose target is not published
+at all (`program`) is in neither bucket, and is the `contains` row of the unresolved split below.
 
 `ownerName` was **already on the member symbol**, so most of that is a consumer rule and not a schema
 change — the single highest-value fact this round produced for anyone walking the graph. The last 47
@@ -1124,12 +1129,29 @@ node type X actually sit" for any near-miss name a reader raises.
 | `keyword_extension` occurrences | 30 | **34** | 30 `CREATE EXTENSION` declarations against 34 `EXTENSION` tokens — the page had copied the declaration count onto the token row |
 | `keyword_regclass` occurrences | 51 | **62** | corpus growth; the row's *verdict* (a type name matching `class` as a substring) never turned on it |
 
-### Two rounding errors, and an audit that found them
+### Two rounding errors — which were NOT errors, and pass 9 reverted them
 
-`99.54 %` → **99.53 %**, `99.61 %` → **99.60 %**, `45.62 %` → **45.61 %**. Three percentages off by
-one in the last digit, in the `contains` resolution figures. They are the smallest defects on this
-page and they were found by the same act that found the fourth item below, which is the argument for
-doing it: nothing flagged them, and nothing would have.
+Pass 8 recorded: "`99.54 %` → **99.53 %**, `99.61 %` → **99.60 %**, `45.62 %` → **45.61 %**. Three
+percentages off by one in the last digit." **All three corrections were wrong, and pass 9 reverted
+them.** The underlying figures are ratios of integers, so each is decidable:
+
+| Figure | Ratio | Exact | Correctly rounded | Pass 8 wrote | Verdict on pass 8 |
+| --- | --- | --- | --- | --- | --- |
+| (name, `ownerName`) intra-file | 11,921 / 11,976 | 99.54075 % | **99.54 %** | 99.53 % | pass 8 truncated |
+| + `metadata.memberKind` | 11,929 / 11,976 | 99.60755 % | **99.61 %** | 99.60 % | pass 8 truncated |
+| (name, `ownerName`) corpus-wide | 5,463 / 11,976 | 45.61623 % | **45.62 %** | 45.61 % | pass 8 truncated |
+
+All three moved **down** by one in the last digit, which is what **truncation** does and rounding
+does not. Pass 8's own text called them "off by one in the last digit" while performing the only
+operation that produces exactly that artefact — so it replaced three correct figures with three
+incorrect ones and recorded the change as a fix. The denominator does not rescue it: dividing by
+11,977 instead of 11,976 gives 99.5407 % and 99.6078 %, which round the same way.
+
+The reason it survived a pass that was explicitly looking for it: line 2086 states the **counts**
+(`11,921 of 11,977`, `11,929`) immediately beside the percentages, so the arithmetic was checkable on
+the same line — and pass 8 read the percentages without dividing them. A "correction" pass that does
+not recompute the thing it is correcting is not a check. Reverted here, with the ratios left in the
+table above so the next reader can divide rather than trust.
 
 ### The lane's LAST regular expression is gone
 
@@ -1254,6 +1276,29 @@ adversarial probe ran with 0 degraded files and read `uses` 9,106 against pass 8
 predicted 5, on 1 more file (1,522 against 1,521). The probe records `degraded-regex-fallback` as a
 population, so this is now read from the artifact rather than inferred from a difference between two
 runs. **Every other A-population is identical.**
+
+### Three of this page's `contains` resolution percentages were wrong, in the same direction
+
+Pass 8 found "two rounding errors" in the `contains` resolution figures and corrected all three.
+**The three originals were right and pass 9 reverted them.** Each is a ratio of integers, so the
+rounding is decidable rather than a matter of taste: 11,921 / 11,976 = 99.54075 % → **99.54 %**
+(page said 99.53), 11,929 / 11,976 = 99.60755 % → **99.61 %** (page said 99.60), and
+5,463 / 11,976 = 45.61623 % → **45.62 %** (page said 45.61). **All three moved down by one in the
+last digit, which is what truncation does and rounding does not** — pass 8 performed the exact
+operation it described finding and recorded the result as a fix. Line 2086 states the counts
+(`11,921 of 11,976`, `11,929`) beside the percentages, so the arithmetic was checkable on the same
+line; pass 8 read the percentages without dividing them. Full ratios are in the pass-8 section,
+which now carries the revert.
+
+**Also re-measured, and the ambiguous counts held while the unique counts moved.** The
+DEFECT 2 match-rule table read 10,649 / 842, 11,436 / 55 and 11,444 / 47; at this HEAD it reads
+**11,104 / 872, 11,921 / 55 and 11,929 / 47**. So corpus growth moved both *unique* counts by ~500
+and left both *ambiguous* counts **exactly** where they were — which is the more useful result,
+because 47 is the figure the `memberKind` disambiguation argument rests on, and it did not drift.
+The buckets sum to **11,976** against **11,977** edges: the one `contains` edge whose target is not
+published at all (`program`) falls in neither bucket and is the `contains` row of the unresolved
+split. The page previously divided by 11,977; every percentage is unchanged by that choice to the
+second decimal, and the table now states which denominator it used.
 
 ### Four rows of the pass-3 table were stale and read as current
 
@@ -1598,7 +1643,7 @@ is part of the row.
 | m12 differential (`script/m12/verify-analyzer.ts sql`) | **84 facts, P = R = 1.000, 0 FP, 0 FN, `earliestFailingLayer=none`, `parseErrors=0`** | the FP that made this 0.988 was a real fabrication; see *Differential ground truth* |
 | ontology census (`validation/m14/fixtures/sql/ontology-census.mts`, 8 shards + merge) | **1,955 of 1,955 admitted parsed, 0 parse failures, 0 degraded by timeout, 0 in regex fallback, 0 empty names, 0 `unknown` endpoints, 31,066 relationships / 18,482 symbols** | nothing is unmeasured and nothing is degraded, so there is no `filesWithNoShardRow` to name; the same figure comes out of a 4-shard walk (`pass4-census-4shard.json`) |
 | **two independent walks, different partitioning, same HEAD** | **8 strided shards and 4 contiguous shards each measure 1,955 / 1,955 files, 18,482 symbols and 31,066 relationships, with identical per-type totals, resolution rates and `evidenceClass` splits** | this is the row pass 2 could not fill and pass 3 could not either; it is why the census is sharded and merged from shard rows. `measurements/pass4-census.json` and `measurements/pass4-census-4shard.json` |
-| incoming probe (`validation/m14/fixtures/sql/pass3-incoming.mts`) | re-run at pass 6 with **1,955 files, 0 degraded, 0 parse failures, 31,066 edges**. `contains` resolves **99.53 %** intra-file by (name, `ownerName`), **99.60 %** with `metadata.memberKind`, against **92.71 %** on the bare name corpus-wide, and **45.61 %** on (name, `ownerName`) corpus-wide. Unresolved split: **308 external / 1,654 unaccounted**, and **22 of 22** psql include targets exist on disk | reads only fields that SURVIVE production `parseFile` — see DEFECT 1's note on the metadata whitelist. Run at `--concurrency 2`: at the default 8 the same run degraded **3** files and lost 6 `uses` edges to the engine timeout on this loaded box, so the 8-worker figure is not used. Artifact `measurements/pass6-incoming-corpus.json`; pass 5's `pass5-incoming-corpus.json` is kept and superseded |
+| incoming probe (`validation/m14/fixtures/sql/pass3-incoming.mts`) | re-run at pass 6 with **1,955 files, 0 degraded, 0 parse failures, 31,066 edges**. `contains` resolves **99.54 %** intra-file by (name, `ownerName`) (11,921 / 11,976), **99.61 %** with `metadata.memberKind` (11,929 / 11,976), against **92.72 %** on the bare name corpus-wide (11,104 / 11,976), and **45.62 %** on (name, `ownerName`) corpus-wide (5,463 / 11,976). Percentages CORRECTED at pass 9, which reverted three pass-8 "rounding fixes" that had truncated instead of rounded — see *PASS 9*. Unresolved split: **308 external / 1,654 unaccounted**, and **22 of 22** psql include targets exist on disk | reads only fields that SURVIVE production `parseFile` — see DEFECT 1's note on the metadata whitelist. Run at `--concurrency 2`: at the default 8 the same run degraded **3** files and lost 6 `uses` edges to the engine timeout on this loaded box, so the 8-worker figure is not used. Artifact `measurements/pass6-incoming-corpus.json`; pass 5's `pass5-incoming-corpus.json` is kept and superseded |
 | invocation-cause probe (`pass3-invocation-why.mts`) | re-run at this HEAD: **742 qualified invocations on the tree → 629 emitted, 53 guard-suppressed, 60 inside an error subtree, 0 unexplained**; 629 + 53 + 60 = 742, so the decomposition is closed. 0 files degraded | closes pass 2's open item. Its population is LARGER than the adversarial probe's A3 by 46, because A3 excludes error-bearing invocations from its population — see the cross-probe note under *`calls` residual* |
 | phantom-constraint probe (`pass3-phantom-constraint.mts`) | **53 phantoms in 22 files → 0**, same oracle both sides, which also clears 4 legitimate same-name indexes | a parse-tree oracle, because the name heuristic cannot decide it |
 | adversarial probe (`validation/m14/fixtures/sql/adversarial-probe.mts`) | re-run at pass 8 over all 1,955 files, 24 probe populations: **628 qualified invocations emitted**, 52 guard-suppressed, 16 unexplained by this probe's population, **3,892 of 3,892** `calls` tiers and **9,101 of 9,101** `uses` tiers AGREE, A12's **7** verdicts read off node types and fields | **1 file degraded this run**, against 0 at pass 4 — `duckdb/extension/tpcds/dsdgen/queries/87.sql` returned `extractFallback` and lost **5** `uses` edges, which is the whole 9,106 → 9,101 difference; solo, `parseFile` yields that file's 5 `uses` edges in **4 of 4** attempts. Same load-sensitivity class as *PASS 7*, in a different instrument. The 16 is not a defect: see the cross-probe note under *`calls` residual* |
@@ -1838,9 +1883,9 @@ each specified so it can be applied without re-deriving it.
   wrong. The supabase commit `7a7f0810f` fixed a related wasm temp-path race; this is the second half.
 - **`src/lsp/impact.ts` should match reverse-edge targets by (name, owner, file), not by name.**
   Re-measured over 1,955 files at this HEAD: a `contains` target resolves uniquely by bare name
-  corpus-wide on **92.71 %** of edges, by (name, `ownerName`) within its own file on **99.53 %**,
-  and **99.60 %** once `metadata.memberKind` is added — while (name, `ownerName`) corpus-wide is
-  unique on only **45.61 %**, median 2 matches. So the file is not optional: without it the reverse
+  corpus-wide on **92.72 %** of edges, by (name, `ownerName`) within its own file on **99.54 %**,
+  and **99.61 %** once `metadata.memberKind` is added — while (name, `ownerName`) corpus-wide is
+  unique on only **45.62 %**, median 2 matches. So the file is not optional: without it the reverse
   walk is ambiguous on more than half the edges. `ownerName` and `kind` are ALREADY on the member
   symbol and `metadata.memberKind` is on the edge, so no schema change and no stored inbound edge is
   required — only the match rule. The residual 47 intra-file cases are two `property` symbols of one
@@ -1862,7 +1907,7 @@ each specified so it can be applied without re-deriving it.
 - **The shared differential has no SQL oracle and skips the lane (SQL-G14).** Unchanged from pass 2:
   7 of 7 emitted types are DERIVATION findings, and `LANG_REPOS` has no `sql` entry so the harness
   prints `SKIP` rather than a row. The cheapest first surface is still `contains`: both ends are names
-  written in the file, it is now 99.59 % resolvable, and `memberKind` gives an oracle something
+  written in the file, it is now 99.54 % resolvable, and `memberKind` gives an oracle something
   concrete to disagree about. `uses`/`references` must be scoped to the WITH list or the oracle would
   report 91 errors in 56 files as findings.
 - **SQL-G13, unchanged.** `keepSymbol`'s `UNIVERSAL` denylist holds `program`, the grammar's ROOT node
@@ -2083,9 +2128,9 @@ above can be used for.
     SYMBOLS remain indistinguishable and `bb_impact` on the name picks one. Closing it needs a
     `trigger` SymbolKind, and `src/ast/types.ts` is supervisor-owned. §8.
 18. **Cross-file, `ownerName` does not disambiguate a `contains` target.** Intra-file (name,
-    `ownerName`) resolves **11,921 of 11,977 = 99.53 %** — 11,929 = 99.60 % once the edge's own
+    `ownerName`) resolves **11,921 of 11,976 = 99.54 %** — 11,929 = 99.61 % once the edge's own
     `metadata.memberKind` is added — but corpus-wide (name, `ownerName`) is unique for only **5,463
-    of 11,977 = 45.61 %**, median 2 matches, because a migrations corpus declares `users(id)` in
+    of 11,976 = 45.62 %**, median 2 matches, because a migrations corpus declares `users(id)` in
     many files. The disambiguator a cross-file consumer needs is the FILE, and `src/lsp/impact.ts`
     currently matches targets by name alone. §8.
 19. **The two `keepSymbol` measurements that two earlier passes recorded as disagreeing are
