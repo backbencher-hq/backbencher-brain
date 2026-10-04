@@ -968,6 +968,7 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
               derivationCandidates,
               ownerName,
               nearestNamedDeclaration,
+              isNamedVocabularyDeclaration ? symbolName : undefined,
             )
           }
 
@@ -1375,7 +1376,20 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
           // Same reasoning as the entity-replacement-text path: no length cap,
           // because the name is bounded by the file and the declaration side has
           // none either.
-          if (name.length > 0) entityReferenceCandidates.push({ ownerName, name, node, textNode: node })
+          //
+          // The SOURCE is `nearestNamedDeclaration`, the same re-base the
+          // `attribute_qname_reference` pass got, and for the same reason. The node
+          // here is CONTENT, so its owner is whatever element encloses the text:
+          // `<xsl:if>&gt;</xsl:if>` inside `<xsl:template name="row">` is used by
+          // `row`, and the edge said `xsl:if` — the instruction's own tag, an entity
+          // no document declares. The work item's `nearestNamedDeclaration` already
+          // means self-or-ancestor, so a `use` written directly in a named
+          // declaration keeps its source (`row -> amp`) and only the case with no
+          // name in scope falls back to the enclosing element, which is the value
+          // that was there before. Measured: 158 `references` edges still carried a
+          // vocabulary tag as source after the attribute pass alone, and this was
+          // the largest remaining class among them.
+          if (name.length > 0) entityReferenceCandidates.push({ ownerName: nearestNamedDeclaration ?? ownerName, name, node, textNode: node })
         }
       }
 
@@ -2127,6 +2141,25 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
      * honest value, and `addRelationship` already refuses a falsy source.
      */
     nearestNamedDeclaration: string | undefined,
+    /**
+     * This element's OWN declared name, when it has one — undefined when it does not,
+     * which is the case that made `ownerName` a vocabulary tag.
+     *
+     * It is read at the same place `nearestNamedDeclaration` is (the walk knows both),
+     * and it exists because the SOURCE of a reference edge is the element that DECLARES
+     * the name being referenced FROM, and that is this element when this element has a
+     * name of its own. `<xs:element name="e" type="T"/>` is `e -> T`: the element `e`
+     * has the type `T`, and `ownerName` already said so. It is only when the carrier has
+     * NO name — `<xs:element ref="c"/>` inside `<xs:complexType name="PurchaseOrderType">`
+     * — that `ownerName` falls back to the TAG TEXT, and then the declarer is the nearest
+     * named ancestor.
+     *
+     * So the two parameters answer one question between them and the reference pass reads
+     * them in that order. Neither is a fallback for the other: `nearestNamedDeclaration`
+     * can never be right for an element that declares its own name, because the reference
+     * belongs to the declaration, not to its enclosing scope.
+     */
+    selfNamedDeclaration: string | undefined,
   ): void {
     // The OWNER's resolved namespace, carried on every reference candidate. X11:
     // a BARE value names a built-in type only when the element carrying it is
@@ -2366,7 +2399,40 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
       return
     }
     referenceCandidates.push({
-      ownerName,
+      // THE SOURCE OF A REFERENCE EDGE. This is the third edge type to need it, and the
+      // defect is the same one the other two had: `ownerName` is the element's OWN symbol,
+      // which is its declared name when the vocabulary writes one on `name=` and its TAG
+      // TEXT when it does not. A tag text is not an entity a document declares.
+      //
+      // From FSharp.Data/docs/data/po.xsd, verbatim:
+      //
+      //   "xs:element" -> "comment"   (role=attribute_qname_reference)
+      //
+      // `<xs:element ref="comment" minOccurs="0"/>` sits inside
+      // `<xs:complexType name="PurchaseOrderType">`. The reference is made BY that type's
+      // content model, so the source is `PurchaseOrderType`; the analyzer published
+      // `xs:element`, which is the schema vocabulary's word for a type CONSTRUCTOR and a
+      // symbol no document declares. Measured at 1,066 of 10,411 `references` edges on the
+      // gate's own sample — see `docs/analyzers/real-xml-analyzer.md`.
+      //
+      // The rule, and it is deliberately two lines rather than one:
+      //
+      //   self declared      the carrier HAS a name of its own, so the reference belongs
+      //                      to that declaration — `<xs:element name="e" type="T"/>` is
+      //                      `e -> T`, and this branch leaves those edges exactly as they
+      //                      were. It is also why `nearestNamedDeclaration` must not be
+      //                      consulted here: for that element the enclosing scope is not
+      //                      the declarer.
+      //   nearest, else tag  the carrier has NO name, so the declarer is the nearest
+      //                      named ancestor, and the tag is kept when there is none. That
+      //                      fallback is the difference between this fix and the
+      //                      `extends` fix, which has no fallback at all and refuses
+      //                      instead: `references` is emitted for carriers in EVERY
+      //                      vocabulary — Spring, SVG, WSDL, DocBook and application XML —
+      //                      and most of them have no named schema ancestor, so refusing
+      //                      would delete real edges rather than re-base them. It cannot
+      //                      fabricate, because it is the value that was there before.
+      ownerName: selfNamedDeclaration ?? nearestNamedDeclaration ?? ownerName,
       attributeName,
       // The COLLAPSED value, not the raw one. The deferred pass re-parses
       // `candidate.value` with `asQName`, so storing the raw text meant the
