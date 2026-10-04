@@ -156,6 +156,173 @@ function spansInside(parent: any, child: any): boolean {
   return !!parent && parent.startIndex <= child.startIndex && parent.endIndex >= child.endIndex
 }
 
+/** The name of the `type_declaration` a node belongs to, or "" if none does.
+ *
+ *  `type_declaration` declares no field of its own: the name lives on its
+ *  `type_symbol_declaration` child, and that child's `name` field is an
+ *  `exported_symbol` for a public type whose TEXT includes the `*`. So this goes
+ *  through `nameOf`, which unwraps the marker — reading the node text directly
+ *  makes every exported type anonymous, which is how a whole concept population
+ *  once measured as 0. */
+function owningTypeName(node: any): string {
+  let p: any = node
+  let guard = 0
+  while (p && guard++ < 32) {
+    if (p.type === "type_declaration") {
+      for (const c of named(p)) {
+        if (c.type === "type_symbol_declaration") return nameOf(field(c, "name")).name
+      }
+      return ""
+    }
+    p = p.parent
+  }
+  return ""
+}
+
+/**
+ * `implements` — every (concept, supertype) pair the `of` clause names.
+ *
+ * The `of` clause is the grammar's `refines` field, a `refinement_list` of
+ * `type_expression`, so the names come off its named children and a qualified or
+ * generic spelling is taken by its LAST segment — which is the type's own name
+ * in every form real code writes (`mod.Contract`, `Contract[T]`,
+ * `Foo[T]` in `Bar*[T] = concept of Foo[T]`).
+ *
+ * A concept refining ITSELF is not a relationship and is dropped, for the same
+ * reason `extends` drops `type X = object of X`. It is not hypothetical: the
+ * corpus holds `nimony/tests/nimony/concepts/tconceptcycle.nim`, whose whole
+ * body is `type Cycle = concept of Cycle` and whose upstream `.msgs` reads
+ * `Error: concept inheritance cycle detected`.
+ */
+export function deriveConceptRefinement(root: any): [string, string][] {
+  const out: [string, string][] = []
+  const seen = new Set<string>()
+  const stack: any[] = [root]
+  while (stack.length > 0) {
+    const n = stack.pop()
+    if (n.type === "concept_declaration") {
+      const owner = owningTypeName(n)
+      const refines = n.childForFieldName?.("refines")
+      if (owner && refines) {
+        for (const target of refinementTargetNames(refines)) {
+          if (!target || target === owner) continue
+          const k = `${owner}|${target}`
+          if (seen.has(k)) continue
+          seen.add(k)
+          out.push([owner, target])
+        }
+      }
+    }
+    for (let i = 0; i < n.childCount; i++) stack.push(n.child(i))
+  }
+  return out
+}
+
+/**
+ * ONE name per `type_expression` in a refinement list — the type's own name.
+ *
+ * This is a per-operand rule and the earlier version was a recursive name
+ * scrape, which is wrong in a way the cross-check caught immediately: on
+ * `Bar = concept of Foo[T]` it collected `Foo` AND `T` and published
+ * `Bar implements T`. `T` is the type ARGUMENT. A type argument read as the
+ * type it constrains is the same confusion the doc records for
+ * `BlenderRgb[Rgba8]` on the `references` side, and it is the reason this walks
+ * to the CONSTRUCTOR instead of taking a last segment.
+ *
+ * The three shapes, all read off node types:
+ *
+ *   Foo              type_expression / identifier
+ *   Foo[T]           type_expression / bracket_expression — the name is the
+ *                    CONSTRUCTOR, its FIRST named child, and the
+ *                    `argument_list` is not descended into
+ *   mod.Contract     type_expression / prefix_expression — a QUALIFIER, and the
+ *                    name is its LAST identifier. The leading `.` parses as an
+ *                    ERROR node with no field, so the qualified spelling is a
+ *                    parse artifact rather than clean syntax; reading the leaf is
+ *                    still the right answer and the ERROR is why Limitation 7
+ *                    records this shape as unparseable for `export`.
+ */
+function refinementTargetNames(refinementList: any): string[] {
+  const out: string[] = []
+  for (const te of named(refinementList)) {
+    if (te.type !== "type_expression") continue
+    const inner = named(te)[0]
+    if (!inner) continue
+    if (inner.type === "identifier") { out.push(String(inner.text)); continue }
+    if (inner.type === "bracket_expression") {
+      const ctor = named(inner)[0]
+      if (ctor && ctor.type === "identifier") out.push(String(ctor.text))
+      continue
+    }
+    if (inner.type === "prefix_expression") {
+      let leaf = ""
+      for (const c of named(inner)) if (c.type === "identifier") leaf = String(c.text)
+      if (leaf) out.push(leaf)
+    }
+  }
+  return out
+}
+
+/**
+ * `exports` — one edge per OPERAND of an `export` statement.
+ *
+ * Positionally, and `except` read as what does NOT leave: `export a, b except c`
+ * re-exports `a` and `b` and withholds `c`. The excluded operand lives in an
+ * `except_clause` inside the operand list, so it is skipped by ancestry rather
+ * than by name — the same shape the `imports` arm handles, and for the same
+ * reason: `x except y` and `x, y` are one node type and only the clause tells
+ * them apart.
+ *
+ * The `*` marker is not here. `exported_symbol` is a VISIBILITY modifier on a
+ * declaration in this module (39,933 sites on the corpus), not a re-export of a
+ * name from elsewhere, and counting it is the mistake
+ * `nim/star-marker-promoted-to-an-exports-edge` exists to catch.
+ */
+export function deriveExports(root: any): [string, string][] {
+  const out: [string, string][] = []
+  const seen = new Set<string>()
+  const stack: any[] = [root]
+  while (stack.length > 0) {
+    const n = stack.pop()
+    if (n.type === "export_statement") {
+      const exceptClause = firstOfType(n, "except_clause")
+      const list = firstOfType(n, "expression_list")
+      for (const operand of list ? named(list) : []) {
+        if (exceptClause && isDescendantOf(operand, exceptClause)) continue
+        for (const nm of exportedNamesIn(operand)) {
+          if (!nm) continue
+          const k = `(global)|${nm}`
+          if (seen.has(k)) continue
+          seen.add(k)
+          out.push(["(global)", nm])
+        }
+      }
+    }
+    for (let i = 0; i < n.childCount; i++) stack.push(n.child(i))
+  }
+  return out
+}
+
+/** Names an `export` operand publishes: identifiers, with a qualifier's leaf. */
+function exportedNamesIn(node: any): string[] {
+  const out: string[] = []
+  const visit = (x: any): void => {
+    if (x.type === "identifier") { out.push(String(x.text)); return }
+    if (x.type === "exported_symbol") return
+    if (x.type === "dot_expression") {
+      const leaf = x.namedChildCount > 0 ? x.namedChild(x.namedChildCount - 1) : null
+      if (leaf && leaf.type === "identifier") out.push(String(leaf.text))
+      return
+    }
+    for (let i = 0; i < x.namedChildCount; i++) {
+      const c = x.namedChild(i)
+      if (c) visit(c)
+    }
+  }
+  visit(node)
+  return out
+}
+
 /** The name a `_symbol` / `exported_symbol` field node carries. */
 function nameOf(node: any): { name: string; exported: boolean } {
   if (!node) return { name: "", exported: false }
@@ -493,9 +660,10 @@ export function deriveNimEdges(root: any, symbols: any[]): TruthEdge[] {
   // the source line), and the analyzer side is collapsed to one edge per
   // (label,target). Keying on the source as well made 5 callers of one target
   // count as 5 independent truth rows against the analyzer's single deduped
-  // edge: measured tree-truth=901 vs analyzer-edges=432 with "100% coverage",
-  // i.e. the denominator was mostly the same fact repeated and the percentage
-  // meant far less than it read. `from` is still carried on the edge for triage
+  // edge: measured tree-truth=901 vs analyzer-edges=432, which the ratio then
+  // reported as every truth row matched — i.e. the denominator was mostly the
+  // same fact repeated and the rate meant far less than it read. `from` is
+  // still carried on the edge for triage
   // and sample printing; it is only the KEY that is source-free.
   const seen = new Set<string>()
   const push = (label: string, from: string, target: string): void => {
@@ -607,6 +775,47 @@ export function deriveNimEdges(root: any, symbols: any[]): TruthEdge[] {
       for (const operand of list ? named(list) : []) for (const mp of modulePaths(operand)) emitImport(mp)
     }
   }
+
+  // ── implements: a concept naming a supertype contract, from the TREE ──
+  //
+  // Added 2026-10-04, and it is the derivation whose absence was measurable: the
+  // cross-check read `implements` as 3 analyzer targets against 0 oracle
+  // derivations, which is a DERIVATION finding rather than three defects. Until
+  // `nim-lang/nimony` entered the corpus this label read 0 on both sides, which
+  // is why nobody noticed that no derivation existed — a type nothing emits
+  // cannot be un-audited by an instrument that compares emissions.
+  //
+  // Read off the `refines` FIELD of `concept_declaration`, never off node text,
+  // for the reason the `imports` arm records: `nim/compiler/parser.nim:2268`
+  // QUOTES the production this construct is written in
+  // (`conceptDecl = 'concept' COMMENT? ... ('of' typeDesc ^* ',')?`) inside a
+  // diagnostic string. A text probe for `concept … of` finds 61 sites on this
+  // corpus of which 21 are comments and 1 is that string; the tree holds 38.
+  //
+  // The `is` form is deliberately NOT derived here. It is guarded on the right
+  // naming a concept the SAME FILE declares, which is the analyzer's rule and
+  // this oracle's, so deriving it would restate the code under audit rather than
+  // check it — and it measures 0 occurrences on the corpus anyway (156 `is`
+  // expressions in concept bodies, 13 with a bare formal parameter on the left,
+  // 0 naming a local concept).
+  for (const [owner, refines] of deriveConceptRefinement(root)) push("implements", owner, refines)
+
+  // ── exports: one edge per OPERAND of an `export` statement, from the TREE ──
+  //
+  // The second of the two labels with no derivation, and the same shape of
+  // omission: the cross-check read `exports` as 12 analyzer targets against 0
+  // oracle derivations on a 400-file sample, and 20 against 0 on the previous
+  // one. Both numbers were reported as "unaudited" rather than as a missing
+  // derivation, because a DERIVATION finding and N defects look identical in a
+  // MISSING column and are not the same work.
+  //
+  // An operand is a re-export of a name this module imported, which nothing else
+  // in the payload records — so this is derived from `export_statement`'s own
+  // children, positionally, and `except` is read as what does NOT leave. The
+  // `*` visibility marker is NOT an export: it is a modifier on a local
+  // declaration, which is the confusion `nim/star-marker-promoted-to-an-exports-edge`
+  // exists to catch on the analyzer side.
+  for (const edge of deriveExports(root)) push("exports", edge[0], edge[1])
 
   // ── the tree walk: calls / uses / instantiates / references ──
   interface Scope { names: Set<string>; fn: string | null }

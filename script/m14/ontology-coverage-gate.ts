@@ -46,10 +46,26 @@ import { LANGS } from "./differential"
 import { LUA_RULED } from "./lua-ruled"
 import { TOML_RULED } from "./toml-ruled"
 import { FSHARP_RULED } from "./fsharp-ruled"
-import { NIM_RULED } from "./nim-ruled"
+// This file is a REGISTRY, so a merge conflict here is always "both sides added a
+// lane" and the correct resolution is always the UNION. Taking either side deletes the
+// other lane's ruling table SILENTLY, and a deleted entry does not fail loudly — the
+// arbiter just exits 2 for that lane again, which reads as "nobody has ruled on this
+// yet" rather than "someone's work was dropped in a merge". Silent loss in a registry
+// is the failure mode to fear, so resolve toward MORE entries here, never fewer.
+//
+// The same applies to the import block: it is a registry too. Both halves must be
+// present or the map does not compile — which is the one saving grace, because a
+// missing import is a hard error rather than a silent wrong answer.
+import { BASH_RULED } from "./bash-ruled"
+import { JSON_RULED } from "./json-ruled"
 import { PROTOBUF_RULED } from "./protobuf-ruled"
 import { ZIG_RULED } from "./zig-ruled"
 import { JULIA_RULED } from "./julia-ruled"
+import { CSS_RULED } from "./css-ruled"
+import { XML_RULED } from "./xml-ruled"
+import { NIM_RULED } from "./nim-ruled"
+import { PHP_RULED } from "./php-ruled"
+import { SQL_RULED } from "./sql-ruled"
 
 const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
 const LANG = process.argv[2] ?? "bash"
@@ -196,7 +212,25 @@ const JSON_RULED: Ruled[] = [
   },
 ]
 
-const RULED_BY_LANG: Record<string, Ruled[]> = { bash: BASH_RULED, json: JSON_RULED, lua: LUA_RULED, toml: TOML_RULED, fsharp: FSHARP_RULED, nim: NIM_RULED, protobuf: PROTOBUF_RULED, zig: ZIG_RULED, julia: JULIA_RULED }
+// Resolved to the UNION — see the note at the imports above. A registry conflict is
+// always "both sides added a lane"; taking one side deletes the other's ruling table
+// silently, and a deleted entry makes the arbiter exit 2 for a lane that WAS ruled,
+// which reads as "unadjudicated" rather than "dropped in a merge".
+const RULED_BY_LANG: Record<string, Ruled[]> = {
+  bash: BASH_RULED,
+  json: JSON_RULED,
+  lua: LUA_RULED,
+  toml: TOML_RULED,
+  fsharp: FSHARP_RULED,
+  nim: NIM_RULED,
+  protobuf: PROTOBUF_RULED,
+  zig: ZIG_RULED,
+  julia: JULIA_RULED,
+  css: CSS_RULED,
+  xml: XML_RULED,
+  php: PHP_RULED,
+  sql: SQL_RULED,
+}
 const RULED: Ruled[] = RULED_BY_LANG[LANG] ?? []
 
 // ---------------------------------------------------------------- corpus
@@ -339,10 +373,34 @@ if (process.argv.includes("--coverage")) {
 }
 
 if (RULED_BY_LANG[LANG] === undefined) {
-  console.log(`\nontology coverage gate — no RULING TABLE for ${LANG}.`)
-  console.log(`Refusing to report: a gate with an empty table would call every un-emitted type`)
-  console.log(`RULED-UNJUSTIFIED and that is a verdict about the TABLE, not about the lane.`)
-  process.exit(2)
+  // The guard's original reasoning was right — a lane with no ruling source at all
+  // would get every un-emitted type called RULED-UNJUSTIFIED, which is a verdict about
+  // the TABLE rather than about the lane. But it fired on the ABSENCE OF A TABLE alone,
+  // and `rulingFor` legitimately reads TWO places: the table, then
+  // `script/m14/spec/<lang>-completeness.json`.
+  //
+  // So it refused lanes whose spec DOES carry rulings — HCL-D1..D6, MAKE-D1..D5 among
+  // them — discarding real evidence and reporting those lanes as unadjudicated when
+  // they had been adjudicated all along. Measured: 13 of 26 lanes were blocked, and 12
+  // of the 13 have spec rulings that were never consulted.
+  //
+  // The precise guard is this one: refuse only when rulingFor() finds NOTHING for any
+  // un-emitted type, i.e. when neither source can supply a verdict. The original failure
+  // mode is still fully prevented — a lane with neither a table nor spec decisions
+  // still refuses — and the lanes it now lets through are reported with a note saying
+  // their rulings came from the spec, so a spec-only lane is never mistaken for a
+  // corpus-measured one.
+  const unEmittedForGuard = ALL_TYPES.filter((t) => (observed.get(t)?.n ?? 0) === 0)
+  const ruledFromSpec = unEmittedForGuard.filter((t) => rulingFor(t) !== null)
+  if (ruledFromSpec.length === 0) {
+    console.log(`\nontology coverage gate — no RULING SOURCE for ${LANG}.`)
+    console.log(`Refusing to report: with no ruling anywhere, every un-emitted type would be called`)
+    console.log(`RULED-UNJUSTIFIED, and that is a verdict about the absence of evidence, not about the lane.`)
+    console.log(`Neither RULED_BY_LANG.${LANG} nor script/m14/spec/${LANG}-completeness.json supplies one.`)
+    process.exit(2)
+  }
+  console.log(`note: ${LANG} has no ruling TABLE; ${ruledFromSpec.length}/${unEmittedForGuard.length} un-emitted types are ruled from its SPEC.`)
+  console.log(`      a spec ruling is prose; a table ruling is a corpus probe. They are not equally strong.`)
 }
 
 const rows: Row[] = []
