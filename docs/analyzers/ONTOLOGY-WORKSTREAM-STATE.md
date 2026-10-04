@@ -499,3 +499,725 @@ machine-graded by `verify-doc-truth-emissions` (9 of 10 rows, 0 findings), the F
 section-b failure is recorded rather than papered over, and DERIVATION=0 is
 annotated with what it is worth — `zig-truth.ts` mirrors the analyzer's own rules,
 so the four wrong-edge classes above score as *agreement*.
+
+## WAVE 2 RESULTS — 7 lanes reviewed
+
+| lane | found | the part worth reading |
+|---|---|---|
+| ZIG | 4 wrong-edge classes, **L5 withdrawn** | its own census re-run on a byte-identical draw gave different numbers; `parseFile` is not deterministic |
+| BASH | 2 more fabricated `calls` edges | grammar misparses `$(( ))` in 2 shapes; guard stops at the first `$(` so `v=$(( $(wc -l < f) + 1 ))` keeps its real call |
+| POWERSHELL | 4 defects, 3 invisible to the census | `Export-ModuleMember -Function Measure*` published a wildcard as a symbol name; removing those edges RAISED the resolution rate |
+| CSS | 2 defects + a **vacuous pass-1 probe** | pass 1 read `symbol.range.start.line`, but `parseFile` returns no `range` — so 0 violations was also what a broken probe returns |
+| F_SHARP | 3 defects + **a latency claim withdrawn** | its +16% A/B was machine load; interleaved, the ranges overlap almost completely |
+| CLEAN | `overrides` was a GAP | Clean has no `override` KEYWORD — it has typeclasses, so every keyword probe was blind |
+| LUA/MARKDOWN/TOML/SQL | in flight | |
+
+### Three patterns worth carrying to any future agent
+
+1. **Removing edges that RAISED a resolution rate** is the signature of having
+   removed edges that named nothing. Found independently in powershell (exports
+   113 -> 106, corpusBoth 95.13% -> 98.11%) and used as a check in zig.
+2. **A probe that cannot fail returns the same number as a clean one.** CSS's
+   pass-1 containment check read 0 violations for 18 months' worth of reasons,
+   one of which was that the probe was broken. Every probe needs a POSITIVE
+   control that must fire, or its zero means nothing.
+3. **A latency figure from a shared box is a statement about load.** F#'s +16%
+   became "inside the run-to-run spread" once measured interleaved. Seven lanes
+   share this machine.
+
+### Ruling tables — the arbiter covers 2 of 23 lanes
+
+`ontology-coverage-gate.ts` can rule for `bash` and `json` only. The other 21 exit
+2 with no verdict, so those lanes' RULED verdicts have never been checked by the
+arbiter at all — the same blind spot the gate exists to catch, wearing a
+different hat.
+
+`--coverage` now reports this instead of leaving it to be discovered one exit-2 at
+a time. The tables are deliberately NOT written centrally: a ruling table encodes
+one lane's own node types and corpus counts, so the lane that measured it writes
+it, as `script/m14/<lang>-ruled.ts`, and the supervisor adds the import and map
+entry. A centrally-authored table would be a ruling with nobody behind it.
+
+## The noise-filter class — three lanes, one root cause
+
+`pool-worker.ts`'s `filterNoiseRelationships` deletes edges on their way to the
+index. Each rule was added to fix a real fabrication, and each has since deleted
+legal edges in a language the rule was not written for:
+
+| lane | rule | what it deletes | cost |
+|---|---|---|---|
+| objc | `split(":")` for selector arity | every message-send target — a selector ends in `:` | 12 of 30 M12 false negatives |
+| bash | brace ban | every `${var}`-built source path | 21 of 23 import edges (23 emitted, 2 delivered) |
+| css | "keep `contains` only" | `var(--x)` and `animation:` references | 2,170 edges, 1,437 resolving at both ends |
+| **markdown** | identifier rules applied to a heading's **PROSE** | 1,765 of 40,794 edges (**4.33%**) — `leaf-brace-angle-backtick` 1,127, `leaf-starts-with-space` 480 | never reached the index |
+| toml | `:` split (same as objc) | 1 legal TOML edge in 19,088 | reported by the toml lane |
+| yaml | target containing `{` | every edge whose target was `'@{…}'` | the whole gap between `imports[]` 552 and `imports` 550 |
+
+The markdown case is the sharpest instance of the shape. Its targets are HEADINGS,
+which are prose by definition. `1. Setting up the File scalar` is a numbered-list
+heading — its leaf starts with a space, so `leaf.startsWith(" ")` deleted it. A
+heading containing `` `code` `` or `<span>` died on the brace/angle rule.
+
+**The structural problem:** the filter is a universal identifier sanitizer applied
+to targets that are not identifiers. It already carries per-language escape
+hatches — `json`, `yaml`, `hcl`, `terraform`, `graphql` bypass entirely; `bash`
+bypasses for path-shaped labels; CSS has an explicit no-type-filter branch with a
+measurement behind it. Markdown, and to a lesser degree toml and yaml, have
+neither.
+
+**What a fix looks like, and why it is not the supervisor's to make:** the right
+shape is the CSS branch — no type-based filter for a language whose targets are not
+identifiers, with the fabrication class it would then admit pinned by an explicit
+`forbidRelationships` row instead. Choosing which languages are exempt, and
+admitting which fabrications in exchange, is a decision about what the graph is
+allowed to contain. It belongs to the owner. Recorded here with the measurements.
+
+## THE COVERAGE CORRECTION — source derivation is not evidence
+
+A previous programme reported "14 lanes at 10/10" for a week. That number came from
+**source derivation**: counting which `RelationshipType` symbols appear in an
+analyzer's source. It answers only *"is this type constructible"*. It does not
+answer *"does it fire"*.
+
+`script/m14/firing-check.ts` now answers the second question. It drives the
+**production** entry point (`parseFile`, not `analyze()`) and reports per type:
+edges, files, whether the SOURCE is a symbol the run published or something
+external, and how many resolve at both ends. It also counts `fallback: true` per
+file and **refuses to publish a count from a degraded run** — a degraded parse
+returns fewer edges with no error, so its count is about the fallback, not the
+analyzer.
+
+The sharpest instance of the gap is in this repo, from the markdown lane:
+`emitInlineUses` resolved a heading's own inline with a **direct-child** lookup,
+but the two heading forms hold their text differently —
+`atx_heading > atx_hN_marker > inline` versus `setext_heading > paragraph > inline`
+— so it returned early for **every setext heading in the language**. The source says
+the type is emitted. It was not.
+
+### Coverage is reported as APPLICABLE, never as a flat 10
+
+| | meaning |
+|---|---|
+| **Complete** | `N/N` — the lane emits every type the language has, and the rest are measured-absent |
+| **Incomplete** | `3/4`, `2/10` — a real shortfall, reported as one |
+
+TOML emits 1 and has 9 measured-absent. That makes it **complete at 1/1**, not
+broken at 1/10. Reporting `1/10` misrepresents finished work as broken work.
+
+Two binding conditions:
+1. The denominator may shrink **only** via a RULED verdict carrying a corpus
+   measurement. Prose does not shrink it.
+2. Numerator and denominator must come from **different sources** — numerator from
+   what measurably fires, denominator from measured non-applicability. An agent
+   supplying both is grading its own homework.
+
+### A pin is not a rule
+
+SQL pass 1 fixed a CTE-scope bug and pinned **one** of its four entry points. The
+fixture was green and certified the entry point, not the rule. Pass 2 found three
+more, each only after its own measurement. A fixture that pins one path into a
+multi-path rule has measured the path.
+
+This is the same shape as the CSS pass-1 probe that could not fail, and the proto
+lane's two no-op mutants: a check that is narrower than the thing it checks reads as
+coverage and is not.
+
+### keepSymbol's denylist — three lanes, one register problem
+
+| lane | node-type name that is also a real declaration | cost |
+|---|---|---|
+| R | `source_file` is an ordinary R function (`r-testthat/R/source.R:18`) | 12 symbols deleted across 9 files |
+| graphql | `Query.me` | 1 of 8,796 symbols |
+| sql | `program` is a legal SQL COLUMN name | 1 of 11,786 `contains` edges names nothing resolvable; 3 of 18,325 symbols dropped |
+
+Each lane found it independently, which makes it a fleet-wide register problem
+rather than three coincidences. `keepSymbol`'s UNIVERSAL denylist holds
+**web-tree-sitter node-type names**, and a node type and a user identifier occupy
+the same namespace in every language that allows keywords as names.
+
+### No regex
+
+`script/m12/verify-regex-census.ts` currently **FAILS**: 30 MISSING/STALE across 8
+files. Laptop-B lanes in that failure: css 11, fsharp 6, julia 4, clean 2. A direct
+scan of the 23 analyzers for regex-receiver calls finds **4 lanes non-zero** —
+julia 8, css 8, php 1, scss 1 — and 19 already clean.
+
+Most hits are trivial (`node.type.replace(/_statement/, "")`, `content.split("\n")`),
+but the criterion is mechanical and the criterion is right: regex over source text
+matches comments and string literals, misses nested syntax, and breaks silently on
+the next grammar version.
+
+## INCOMING — now part of the definition of done
+
+An analyzer is done when the graph can walk **to** a declaration as well as **from**
+one. `script/m14/incoming-check.ts` measures it.
+
+`src/lsp/impact.ts` already does bounded reverse-dependency traversal, with declared
+budgets, depth limits, truncation disclosure and verifier gates. It obtains its
+reverse edges by **scanning outgoing edges and matching targets**. No inbound edge is
+stored anywhere — the schema holds none. So the reverse walk is exactly as good as
+the target-matching, and two consequences are the lanes' problem rather than the
+traversal code's:
+
+1. **A target resolving to more than one published symbol.** The reverse walk picks
+   one by a rule nobody chose. Measured on 8 cloogle.org Clean files: **10 of 15
+   `references` targets were ambiguous**, and `LogMemory` is both `:: LogMemory = …`
+   (a generic type synonym, `CloogleServer.icl:313`) and `instance zero LogMemory`
+   (a class instance of it, `:320`). Both are real declarations with the same name.
+   An ambiguous target is **one** edge attributed to **one** declaration; counting it
+   as N is how a name collision becomes a wrong refactor.
+2. **A hopeless-string target** — an external package, a path, a builtin, a dynamic
+   dispatch — is indistinguishable from a declaration that was never indexed. On the
+   same 8 files, **273 of 320 `references` targets resolved to nothing at all**.
+
+The orphan rate is reported but deliberately **not thresholded**: in a language
+whose files are independent a high rate is correct, so a pass/fail there would be a
+judgement about the language dressed as a measurement.
+
+Laptop C owns the resolution layer and the schema work. Laptop B's side is making
+emitted edges resolvable and being honest about the ones that cannot be.
+
+## Process defect found while supervising — agents waiting on jobs that finished
+
+Three agents sat silent for 20+ minutes with **no child process running**. The cause
+was always this shape:
+
+```bash
+setsid nohup npx tsx census.ts > out.log 2>&1 < /dev/null & disown
+sleep 200; pgrep -f census >/dev/null && echo RUNNING || echo DONE
+```
+
+`pgrep -f census` matches **the polling shell itself**, because the pattern is in
+that shell's own command line. The predicate is always true, so the loop always
+prints RUNNING and the agent waits forever on a job that finished minutes ago.
+
+This is the second time this exact bug has cost the fleet time — the supervisor's
+own `status.sh` had it first, and it was fixed there while going unmentioned to the
+agents. `anti-stall-brief.md` now tells every agent: run the census in the
+foreground, or capture the PID and `wait $PID`, or anchor the pattern so the shell
+cannot match itself. Never a bare `sleep N; pgrep -f <thing you launched>`.
+
+## Fleet round 3 — findings that outlived the sessions that made them
+
+All ten agents reached their session end. Their work is on disk; these are the
+findings worth carrying forward, recorded here because the logs are not a durable
+artifact.
+
+### A JSON parse produces ONE symbol and 200,000 children
+
+The json lane's depth probe reports, at depth 1 from the root, an `ERROR` node with
+`childCount 200000`, and `symbols=1 rels=0`. Two timings on the same input: OLD
+249,043 ms, NEW 347,114 ms.
+
+This is the same shape as the parse-error branch other lanes reported — `parseFile`
+substitutes a regex `extractFallback` whose symbols carry no `kind` (zig: 192
+kindless symbols per full run) — but at a scale nobody has characterised. A root
+with 200,000 children is not a parse, it is a failure to fail. It needs its own
+measurement before anyone claims a json number.
+
+### R cannot typecheck against its own analyzer's metadata
+
+`FileMetadata.complexity` is required, and the scss analyzer's metadata object
+omits it. This is a cross-lane type error in `src/ast/types.ts` — a file the
+supervisor owns and no agent may edit — and it blocks a lane from building. It is
+the third `types.ts` friction point in this wave, after the julia duplicate-doc
+repoint and the `SymbolKind.Instance` merge note in the contract.
+
+### Nim publishes symbol names that are its own internal scaffolding
+
+`RootRef` in `graphql-nim/graphql/builtin/*_respstream.nim` and `RootObj` in
+`graphql-nim/graphql/common/ast.nim` — these read as the analyzer's own working
+names rather than source declarations. If they reach the store as symbols, the
+graph carries names no Nim programmer wrote. Unconfirmed: the lane was checking
+whether they are declared or synthesized when its session ended.
+
+### Bash, Zig, Lua, Julia, SQL produced report-shaped output
+
+Each reached a report before exiting. Lua has 3 commits on its branch, php 1. Those
+are reviewable; the rest are read in the lane logs.
+
+## MEASURED FIRING — 18 of 23 laptop-B lanes, production parseFile, 120 files each
+
+This is the first table built from `script/m14/firing-check.ts` rather than from an
+agent's summary. It is the number that matters, and it is **lower than what the
+lanes reported**, which is the expected direction: source derivation over-counts,
+because a branch guarded by a predicate the corpus never satisfies still greps.
+
+| lane | fired | edges | files | degraded |
+|---|---|---|---|---|
+| fsharp | **9/10** | 12,517 | 120/120 | 0 |
+| powershell | **9/10** | 13,967 | 120/120 | 0 |
+| nim | 8/10 | 5,320 | 120/120 | 0 |
+| php | 8/10 | 9,448 | 112/120 | 0 |
+| r | 8/10 | 5,284 | 120/120 | 0 |
+| zig | 7/10 | 8,445 | 120/120 | **1** |
+| bash | 6/10 | 4,583 | 107/120 | 0 |
+| graphql | 6/10 | 15,954 | 120/120 | 0 |
+| json | 6/10 | 42,918 | 114/120 | **1** |
+| julia | 6/10 | 18,579 | 120/120 | 0 |
+| sql | 6/10 | 1,409 | 120/120 | 0 |
+| css | 5/10 | 73,369 | 120/120 | 0 |
+| hcl | 5/10 | 3,440 | 120/120 | 0 |
+| scss | 5/10 | 510 | 120/120 | **1** |
+| xml | 5/10 | 2,674 | 120/120 | 0 |
+| yaml | 4/10 | 16,126 | 116/120 | 0 |
+| protobuf | 3/10 | 2,069 | **10/120** | 0 |
+| toml | 1/10 | 1,729 | 104/120 | 0 |
+
+Not yet measured: dart, clean, markdown, graphql's tail, scss's tail. Protobuf
+parsed **10 of 120** files — 2,069 edges from a tenth of the sample, so its 3/10 is
+provisional and the parse failures need their own count before the number means
+anything.
+
+### Three lanes are DEGRADED and their numbers are provisional
+
+zig, json and scss each had a degraded parse. The gate **refuses to publish a count
+from a degraded run**, because a degraded parse returns FEWER edges with no error:
+`parseFile`'s catch substitutes a regex `extractFallback` whose symbols carry no
+`kind` and whose edges sit at 0.4/0.5. A degraded lane's count is a count about the
+fallback, not about the analyzer.
+
+The root cause was found and fixed — `resolveWasm`'s last fallback wrote each
+grammar to a path shared by every process, so a concurrent reader got a truncated
+file (see `7a7f0810f`). The residual degradation means other concurrent readers
+still exist. **Ten lanes share this machine**; that is the load.
+
+### Reading this table honestly
+
+- **The high scorers are not thereby correct.** fsharp at 9/10 and powershell at
+  9/10 have both had fabricated edges removed in this very wave — powershell
+  published a wildcard as a symbol name, and a variable as a type name. Firing is a
+  necessary condition and not a sufficient one.
+- **A low score is not automatically a defect.** toml at 1/10 is CORRECT and is
+  complete at 1/1: a config format has no call graph. css at 5/10 and scss at 5/10
+  are close to their ceiling.
+- **A high score with few files is a warning, not a result.** protobuf's 10/120 is
+  the shape to distrust.
+
+## The regex census, lane by lane
+
+`script/m12/verify-regex-census.ts` FAILS. Current counts:
+
+| lane | regex findings | status |
+|---|---|---|
+| **julia** | 0 | **CLEAN** — all 9 removed this wave |
+| css | 11 | open |
+| fsharp | 6 | open |
+| clean | 2 | open |
+| scss | 2 | open |
+| sql | 1 | open |
+| svelte / javascript / typescript / python | 4 / 2 / 1 / 1 | other laptop |
+
+**julia is the method.** The lane did not add a census row saying its regexes were
+acceptable — a census row is a verifier-written artifact (honesty contract 5.1), so
+the only honest move was to delete them. All 9 were node-text normalisation and
+became prefix/character tests: `stripSigil(text, "@")`, `unquoteOperatorMember`,
+`collapseSpace`. The supervisor verified it against the gate rather than the
+agent's word: the four remaining julia entries report as `ABSENT-IN-WORKTREE`, which
+is the gate agreeing the literals are gone.
+
+**A grep is not the gate.** A direct grep for `.replace|.split|.match` still finds
+3 call sites in the julia analyzer, and both live arguments are STRINGS
+(`"_statement"`, `"\n"`). Those are string methods, not regex. A naive scan
+over-reports, and the census is the instrument that decides.
+
+## keepSymbol — the register problem six lanes found
+
+`src/ast/pool-worker.ts`'s `keepSymbol` denied 15 names on the stated grounds that
+they are "never legitimate declarations in any language". Six lanes measured
+counterexamples independently:
+
+| lane | the name | what it actually is | cost |
+|---|---|---|---|
+| R | `source_file` | an ordinary R function (`r-testthat/R/source.R:18`) | 12 symbols / 9 files |
+| lua | `root`, `this`, … | `local root` at `lazy.nvim/lua/lazy/core/loader.lua:497` | **236 declarations, 677 edges** |
+| sql | `program` | a legal SQL COLUMN name | 3 of 18,325 symbols |
+| graphql | `me` | `Query.me`, an ordinary field name | 1 of 8,796 symbols |
+| hcl | `unknown` | a legitimately declared variable | filed as H10 |
+| solidity | — | measured the denylist as a store-vs-analyzer divergence | — |
+
+Of the 15 names, only `this`, `super` and `unknown` are reserved essentially
+everywhere; `me` is legitimate in every language there is and `destructor` is a real
+method name in C++/Rust/Go. **A node type and a user identifier occupy the same
+namespace in every language that allows keywords as names**, which is why a
+grammar-artifact denylist cannot also be a keyword denylist.
+
+Fixed by splitting the set: `UNIVERSAL` keeps only names no lane produced a
+counterexample for, and `RESERVED` is consulted per language. Verified with a
+24-case table including the cases that MUST differ (`self`/php false,
+`self`/python true; `program`/sql false, `program`/r true), and
+`sentinel-census.ts` — the R7 enforcement — is byte-identical before and after.
+
+## bash round 4 — the shape of a correct incoming fix
+
+357 `uses` edges named a declaration the analyzer never published, because bash
+binds names in four constructs the declaration collectors do not read (`for NAME
+in`, `read NAME`, `mapfile`, `printf -v`).
+
+**The `uses` total did not move: 7,802 before and after.** That is what
+distinguishes this from a fabricated edge — the edges already existed and named a
+real binding; only the declaration they named was missing. A fix that reduced the
+count would have been deleting real edges.
+
+`explained by a binding site` went 357 → **0**, and the unexplained residue stayed
+at 1,563. A class closed, not a number shifted.
+
+## Two gates that could not fail — found by the lanes that owned them
+
+### R: the mutation gate reported 26 caught while executing none of them
+
+`caught` was `code !== 0`. That is also true of a child that **crashed**. Under
+bun, `process.execPath` is the bun binary, bun rejects `--import tsx`, so every
+mutant child died before running a fixture — and all 26 pairs read `caught`. The
+same battery under `npx tsx` reported **12 caught and 14 survived**.
+
+A second rule was wrong in the same direction: a mutant counted as caught only if
+**every** fixture rejected it. That scores the *fixture*, so `drop-uses` was recorded
+as a survivor of a fixture that had no `uses` edge to remove.
+
+Fixed: a result counts only when the child's own banner and tally line are present;
+a missing banner is a **HARNESS FAULT**, counted apart from a survivor; and a mutant
+is caught by **at least one** fixture.
+
+Verified by the supervisor by running it under bun — the exact condition that
+exposed the tautology:
+
+```
+mutants: 0 caught by >=1 fixture, 13 survived by every fixture,
+         234 harness faults, of 234 mutant/fixture runs
+parent runtime: bun — a runtime that cannot execute `node --import tsx`
+makes every child fail and is reported as HARNESS, never as a catch
+```
+
+**234 faults, 0 false catches.** The guard is proven by the failure it was written
+for.
+
+### ZIG: an instrument with swapped buckets produced a clean negative
+
+P12 keyed `instOtherAt` (= `isConstructorApplication`, `TypeName{…}`) while P11
+keyed `isGenericTypeApplication` — which `real-zig-analyzer.ts:1482` pushes for a
+call to an in-file `fn … type`. **The buckets were swapped**, because the
+analyzer's own metadata name is a misnomer. P12 therefore reported **0 edges over
+1,528 sites** and read as a clean negative about a class that fires at **100%**.
+
+Two more in the same pass: P11/P12 matched on LINE while the edge keys on
+`(line, target)`, and P13 counted edge *presence* where it printed a per-site
+*percentage*. And the precondition `p13SelfSites > 0` asked Zig for a construct it
+has no keyword for, so that verdict line read NO on all eight CLEAN runs — an
+unsatisfiable precondition reporting as a result.
+
+**This is the same failure shape three times in one programme**: CSS's pass-1
+containment probe (which read `symbol.range.start.line`, but `parseFile` returns no
+`range`), TOML's `references` probe (Gradle writes the ref inside an inline table),
+and now ZIG's P12. A probe that measures the wrong thing returns a confident zero.
+The defence is the same each time: a **positive control that must fire**, and a
+precondition that is satisfiable.
+
+### The shape of both fixes: the honest result is fewer confident claims
+
+Both lanes ended with *fewer* things they could assert, not more. ZIG withdrew
+three zeros. R withdrew a green. Neither is a regression in the work — it is the
+first time these lanes could tell the difference between "measured" and "asked a
+question my instrument could not answer".
+
+## keepSymbol — verification of the blast radius, since it touches all 46 lanes
+
+Moving 8 names out of the denylist makes MORE symbols survive for every language,
+so the change needed measuring rather than asserting.
+
+**Per-name, per-language, after the fix:**
+
+| name | status |
+|---|---|
+| `this`, `super` | still refused in **every** language tested |
+| `module_declaration`, `package_manifest`, `GlobalScope`, `SCSS_FILE_SCOPE` | still refused everywhere — these are names OUR analyzers mint, so no user program can declare them |
+| `self`, `Self`, `me`, `My`, `destructor`, `root`, `source_file`, `unknown` | admitted |
+| `program` | admitted EXCEPT in `sql`, where it is reserved |
+| `self` | refused in `php`, admitted in `lua`/`r`/`python`/`typescript`/`zig` — verified to differ by language |
+
+**The R7 risk, closed at runtime rather than in source.** Moving `unknown` out of
+the denylist means a symbol named `unknown` now survives `keepSymbol` — and `keepSymbol`
+only sees the symbol object, never the tree, so it **cannot** distinguish a DECLARED
+`unknown` from a PLACEHOLDER one. `script/m60/sentinel-census.ts` is source-level and
+was byte-identical, which is necessary and not sufficient.
+
+So it was measured on real output: **840 files across 7 repositories, 246,074 symbols
+published, 0 named `unknown`, 0 edges touching one.** The risk is closed empirically.
+A placeholder named `unknown` is therefore prevented by the analyzers not emitting one —
+which is what the sentinel census gates — rather than by `keepSymbol` silently dropping
+every legitimate declaration of that name.
+
+**A gate that printed 15 of 18 failures.** `verify-regex-census.ts` reported
+"missing from census: 18" and printed 15. A reader counting rows saw 15; a reader
+trusting the header saw 18; and the 3 in between (one xml, two extra svelte) belonged
+to no lane in either accounting. Now everything prints, with `BB_REGEX_LIST_CAP` to
+re-introduce a cap that says so rather than truncating silently.
+
+**The real remaining debt: 18 regexes in HEAD.**
+
+| lane | count | mine |
+|---|---|---|
+| css | 11 | yes |
+| svelte | 3 | no |
+| scss | 2 | yes |
+| xml | 1 | yes |
+| sql | 1 | yes |
+
+Laptop B owns **15 of the 18**. julia is clean; two of php's census hits were doc
+comments *describing* a regex that no longer exists, which is the same over-report the
+gate's own scanner avoids.
+
+## Infrastructure: the 98 GB database that was breaking agents
+
+Agents kept dying on `Error: Failed to execute statement`. It was first read as a
+`.bb-data` collision between lanes, which was **wrong**. The real cause:
+
+```
+~/.local/share/opencode/opencode-main.db     97.6 GB
+~/.bb/projects/                               41 GB   (871 derived indexes)
+```
+
+opencode writes every message and tool call to that one SQLite file. At 98 GB with a
+0.4 GB WAL, **ten concurrent agents contend on it** — so the disk pressure and the
+write failures were one cause with two symptoms, not two problems.
+
+Cleared with the owner's authorisation: `~/.bb/projects` staged, verified to contain
+only `brain.db` derived indexes and one stale `.index.lock`, then deleted. Nothing was
+held open by any agent at the time. **22 GB free → 62 GB free; `~/.bb` 41 GB → 391 MB.**
+
+The opencode session database was left alone — it is the owner's session history
+across every project and not the supervisor's to prune.
+
+## R installed the language runtime to adjudicate the analyzer
+
+16 of the R lane's 18 fixtures asserted **nothing**: the runner enumerates
+`*.expectation.json` and F01–F16 had none, so the directory looked like coverage and
+was 16 lines of comment.
+
+Authoring the missing expectations required checking two of them, and both were
+**wrong** — so the lane installed **R 4.6.1** and ran it:
+
+1. F13 asserted "a function bound rightward is a declaration". It is not.
+   `eval(parse(text="function() 1 -> x"), new.env())` leaves `ls()` empty, and
+   tree-sitter-r agrees: the assignment nests inside the function body as
+   `function_definition > binary_operator op="->"`. The analyzer publishing nothing
+   was **right**; the fixture was wrong. The oracle that "verified" it was the wrong
+   instrument.
+
+2. F15 cited `R 4.4.3 accepts "..2dge <- 1; ls()"` as evidence. **`ls()` is the wrong
+   oracle for a dot-prefixed name** — it hides those by default. On R 4.6.1
+   `ls(env)` is empty, `ls(env, all.names=TRUE)` is `"..2dge"`, and
+   `exists("..2dge")` is TRUE. The analyzer is right, and a fixture checked with
+   `ls()` would have **found a defect that does not exist**.
+
+**An oracle can be wrong in the SAME DIRECTION as the analyzer, and the two then
+agree.** That is the differential's declared blind spot made concrete. A second
+tree-sitter walker over the same grammar would have reproduced the same mistake,
+because it would have inherited the same reading of what the construct means. Only
+executing the language adjudicated it.
+
+This is the strongest verification available in this programme, and it is the answer
+to "how do you know the analyzer is right" for the cases where two parsers agree.
+
+## "10/10" is population-dependent — PHP is the worked example
+
+PHP's lane reports **10/10 EMITTED** and the arbiter agrees at whole-corpus scale.
+But the supervisor's own `firing-check` reads **9/10** on a 120-file sample and still
+**9/10** on a 1,112-file sample. Both numbers are true. The difference is `overrides`:
+
+| population | `overrides` fires? |
+|---|---|
+| 120-file stride sample | no |
+| 1,112-file stride sample | no |
+| whole corpus, 4,588 files walked | **1 edge, 1 file** |
+| whole corpus, 4,642 admitted (lane's census) | **2 edges, 2 files** |
+
+The one file the supervisor's walk found:
+`phpunit/tools/.phpstan/vendor/tomasvotruba/type-coverage/packages/type-perfect/tests/Rules/NoParamTypeRemovalRule/Fixture/SkipConstruct.php`
+→ `SkipConstruct.__construct -> ParentConstructorClass.__construct`.
+
+So PHP is genuinely 10/10 **at whole-corpus scale**, and `overrides` is a real PHP
+construct that occurs in **0.04% of files** (2 of 4,642). A stride sample will miss it
+reliably.
+
+**This is the honest shape of a coverage claim, and it has three parts:**
+1. the **numerator** — types that measurably fire,
+2. the **denominator** — types the language has, established by measured
+   non-applicability rather than by the ontology table,
+3. the **population** — and the numerator is a function of it.
+
+A claim that states only (1) and (2) is incomplete in a way that matters, because a
+reader cannot tell whether a missing type is absent from the language or absent from
+the sample. Every firing figure in this workstream now states its population for that
+reason.
+
+## The sharpest instance of a vacuous zero — PHP's own `define()` probe
+
+PHP had RULED `exports` inapplicable on "0 `define()` calls in 4,642 files". That zero
+was **structural**: the probe read `arguments.namedChild(0)` and tested it for
+`string`, but tree-sitter-php puts an `argument` node between them —
+
+```
+function_call_expression
+  name "define"
+  arguments
+    argument          <- what namedChild(0) returned
+      encapsed_string <- the node the test wanted
+```
+
+No corpus could falsify it, because no corpus makes it non-zero. **The ruling's own
+overturn condition was unreachable — falsifiable in form, unfalsifiable in fact.**
+
+What caught it was a **positive control, not a bigger sample**: 7 synthetic files, one
+per construct, each asserting its probe fires. `define("X", 1);` read 0 and located the
+defect exactly. After the fix: **60 literal-name `define()` calls in 20 files**, 57 of
+them at file scope. PHP is now 10/10 with 0 ruled.
+
+That is the single strongest argument in this programme for the discipline the
+honesty contract already demands: **a probe that cannot fail is not a measurement.**
+
+## A latent shared defect: two files disagree on one enum value
+
+Found by the zig lane via the bug it exposed in my `incoming-check` instrument.
+
+```
+                        src/ast/types.ts     src/ast/engine.ts
+RelationshipType.Imports        brain_import        imports
+```
+
+Every other one of the 20 members agrees. This is a single-point divergence.
+
+**Which is right?** `engine.ts`. Analyzers import `RelationshipType` from
+`./engine`, the store's `relationship_type` column documents its vocabulary as
+`"calls", "extends", "implements", "uses", "imports", "exports", etc.`, and
+`brain_import` is the name of a **separate table** that holds import records with
+their own columns (`import_path`, `imported_name`, `is_external`). So the two
+strings mean different things and `types.ts` has conflated the table name with the
+edge label.
+
+**Severity: latent, not active.** No analyzer imports `RelationshipType` from
+`./types` — checked across all 50 — so nothing currently emits the wrong label and
+no stored row is wrong today. It becomes active the moment one does.
+
+**Not fixed here, deliberately.** `types.ts` is one of the two files the supervisor
+owns, so this is squarely in scope — but the fix needs a decision about whether the
+`brain_import` TABLE should also be reconciled, and a wrong guess there would change
+what every import query in the product returns. It is recorded with the evidence and
+left for the owner.
+
+**What it already cost:** my own `incoming-check` keyed its table on `brain_import`,
+so it reported `imports` as **0 in every language in the fleet** — a confident zero
+from a table that could never match. Fixed in `e9096830f` by accepting both
+spellings through an alias map rather than by picking one. Measured after:
+clean 153 import edges, haskell 55.
+
+That is the generalisable lesson: **a table keyed on a string that is wrong in a way
+which always reads zero is worse than no table**, because the zero looks like a
+finding about the language rather than a defect in the instrument.
+
+## Dart: the documented command did not reproduce the documented table
+
+The lane's verdict table is a 2,735-file measurement and the command printed beside
+it was `BB_DART_CONC=1 npx tsx validation/m14/fixtures/dart/census.ts` — but the
+harness defaulted to `BB_DART_PER_REPO=250` and so sampled **1,250** files.
+
+Re-running the documented command reproduced **22,436 `calls` against the table's
+43,042** — about **52% of every count**, with nothing in the output saying the two
+disagreed. The default is now 600/repo, which is the sample the table describes, so
+the printed command reproduces the printed table.
+
+**This is the cheapest and most embarrassing class of defect in the programme: a
+number and the command that produces it, side by side, disagreeing by half.** Nothing
+detects it unless someone actually re-runs the command, which is why the lane did.
+
+Two more fields the doc cited and the harness never emitted: `tgtSample` was
+accumulated since the settled-phase fix and never written out, and there was no
+target-in-repo field at all — so the doc's sample/repo figures for `calls` and `uses`
+had **no instrument field behind them**.
+
+## Latency measured by alternating the blobs, not by trusting the artifact
+
+The declared complexity artifact **cannot** answer the budget question: it is sealed
+at 2026-09-14, predates every change in this wave, and `analyzer-complexity-gate`
+scores dart `unscorable` because its corpus row carries no load data (40 of that
+gate's 44 lanes share the state). Its row is also not reproducible from the primary
+corpus — 707 ms/file on /tmp/dart-corpus against 129–165 ms/file on real files.
+
+So the lane measured directly, alternating the two analyzer blobs so the load
+condition is SHARED rather than assumed — 300 files, runs in the order
+AFTER, BEFORE, AFTER, BEFORE:
+
+```
+  this wave's HEAD    49,450 / 50,111 ms   mean 49,781   165.9 ms/file
+  pre-M14 8286c7391   49,390 / 48,532 ms   mean 48,961   163.2 ms/file
+  delta                        +820 ms     +2.7 ms/file    +1.67% wall
+  symbols 15,154 both — unchanged
+  relationships 47,882 -> 48,306  +424 (+0.89%), all of them `references`
+```
+
+Against the declared 400-file budget of 600 s, 400 files at the measured
+165.9 ms/file is **66.4 s — 9.0x inside budget**. Stated as a **projection**, not as
+a measurement of the declared `corpus_subset`, whose file set the lane cannot
+re-derive.
+
+That is the honest form: it says what was measured, over what, and what is
+extrapolated. Note also that the fsharp lane withdrew a +16% latency claim for
+exactly the opposite reason — non-interleaved A/B on a shared box. Alternating the
+blobs is the fix both lanes converged on independently.
+
+## Regex census: 18 -> 5, and the mode that produces it was dead
+
+Two separate defects, and the second is the one that mattered.
+
+**1. `--head` had never worked.** `npx tsx script/m12/regex-census.ts --head` threw
+`usages is not iterable` on the first loop. The `--head` branch was missing its
+`await`, and an `as Promise<typeof usages>` assertion told the compiler the
+un-awaited Promise was fine — so **`npx tsc --noEmit` passed** while the value was a
+Promise at runtime.
+
+That assertion converted a compile-time error into a runtime one. And `--head` is the
+*only* mode that produces a census describing a **commit** rather than whatever the
+working tree happens to carry, which `reviews/regex-policy.md` requires. So the
+reproducible path was dead and the only way left to refresh the census was the
+unreproducible one — which is exactly how the census came to carry ~30 **stale** rows
+claiming regexes that no longer exist, and why the gate could not tell "the census is
+wrong" apart from "the code has regexes".
+
+The general rule, now applied to every assertion in this programme: **a type
+assertion is a claim the compiler cannot check. Where it is false, it does not fail
+the build — it moves the failure somewhere with less context.**
+
+**2. The debt itself, measured at HEAD across 48 analyzers: 7 -> 5.**
+
+```
+  LAPTOP-B  real-scss-analyzer.ts:77   /\s+/g                replace     <- removed 6e0de3897
+  LAPTOP-B  real-scss-analyzer.ts:981  /^%[-\w]*[\w]$/       test        <- removed 6e0de3897
+  LAPTOP-B  real-sql-analyzer.ts:143   /^pg_[a-z_]+$/        other       <- ACTIVE AGENT
+  OTHER     real-svelte-analyzer.ts:50     /line/i
+  OTHER     real-svelte-analyzer.ts:622    /^[A-Za-z_$][A-Za-z0-9_$]*$/
+  OTHER     real-svelte-analyzer.ts:1259   /context=["']module["']/
+  OTHER     real-svelte-analyzer.ts:1445   /^(.*?)\s+(?:then|as)\s+/
+```
+
+From 18 at the start of the wave: the **CSS lane cleared all 11**, the **XML lane its
+last 1**, julia its 9, and the supervisor cleared SCSS's 2 (that lane had no active
+slot). **Laptop B is at 1**, and an agent is on it. The 4 Svelte rows belong to
+another laptop — and Svelte went **3 -> 4** while this work was running, so it
+*added* one. Reported, not edited.
+
+### The SCSS removals were verified, not asserted
+
+Both literals are pure string predicates, so neither needs a pattern engine: `\s`
+became an explicit `JS_WHITESPACE` set and `\w` a char-code range test. The set is
+local rather than imported from `real-css-analyzer` so the two lanes stay independent.
+
+```
+  differential vs the original regexes, 428 cases (every form the analyzer can
+    produce, plus adversarial and fuzzed inputs) ................ 0 disagreements
+  whole-corpus A/B, 120 .scss files, full symbol+relationship output hashed:
+    before 9b451f4d9d8b1c53   after 9b451f4d9d8b1c53   IDENTICAL, 154,348 bytes
+```
+
+Note the shape of that second check: not "the tests still pass" but *the entire
+emitted graph, hashed, before and after*. A regex removal that changed one selector
+name in one file would pass every fixture and still be wrong.

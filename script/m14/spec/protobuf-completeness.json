@@ -1,0 +1,183 @@
+{
+  "language": "protobuf",
+  "grammar": "grammars/tree-sitter-proto (amaanq/tree-sitter-proto @ e9f6b43f, 8 local patches); wasm/tree-sitter-protobuf.wasm, sha256 4624eb6d4b7830dd",
+  "_authority": "agent-authored by the analyzer/PROTOBUF lane. Expectations in validation/m14/fixtures/protobuf/ were hand-derived from the protobuf language specification and from protobuf's own reference corpus, not captured from an analyzer run; the oracle gaps and the mutant battery that stands in for one are stated per decision rather than left implicit.",
+  "_wave": "M14 / M60 ontology workstream, laptop B, pass 2 (adversarial re-verification of pass 1)",
+  "_corpus": {
+    "root": "$HOME/fixtures/repositories",
+    "files_admitted": 821,
+    "repositories": 18,
+    "sampling": "working-tree walk of every *.proto, uncapped. NOT `git ls-files`: three of these corpora are sparse checkouts where git ls-files lists 8,694 tracked paths that are not on disk, so reading them would make the corpus size a fiction.",
+    "observed_node_types": 94,
+    "declared_node_types": 117,
+    "error_nodes": 13,
+    "missing_nodes": 2,
+    "files_with_error_nodes": 1
+  },
+  "handled_verified": [
+    "contains",
+    "uses",
+    "imports",
+    "exports",
+    "overrides"
+  ],
+  "internal_silent": [
+    "syntax and edition headers are file metadata, not symbols",
+    "file-level option is a code-generation directive, not a declaration",
+    "reserved and extensions ranges and names are metadata on the owning message",
+    "custom option names (option (x.y) = ...) name an extension in an imported file and resolve to no published id"
+  ],
+  "gap": [
+    "custom options are not read as references: 1,525 sites, 0 of which resolve to a published id even against the whole 821-file corpus",
+    "cross-file type resolution needs a project index; this lane resolves within a file"
+  ],
+  "design_decision": {
+    "description": "One decision per relationship type the ontology workstream asks about, each stating the verdict, the instrument that makes it falsifiable, the measured number, and what would overturn it. The arbiter is script/m14/ontology-coverage-gate.ts, which reads the RULING TABLE in script/m14/protobuf-ruled.ts and the written rulings in this file; a table without this file's decisions reports RULED-UNJUSTIFIED.",
+    "decisions": [
+      {
+        "id": "PB-REL-1",
+        "node_type": "message,enum,service,rpc,field,map_field,oneof_field,enum_field,oneof,extend,import",
+        "status": "RULED",
+        "question": "Is `calls` emitted? A `.proto` file declares a schema and has no executable body, so nothing in it can be invoked.",
+        "resolution": "RULED, and `calls` is the type this decision is about. Instrument and probe: RULED, instrument A (grammar inventory). No node type in the grammar's 117-declared vocabulary expresses a function definition or a call expression, and none of the 94 node types observed across 821 corpus files is one: the intersection with [function_definition, method_definition, call_expression, call, invocation, function_body, block, expression_statement, argument_list, body_statement] is EMPTY. The nearest construct is `rpc Foo(Req) returns (Res)`, which names two message types rather than invoking anything, and both are emitted as  the calls label edges with role rpcRequest / rpcResponse. OVERTURN: any observed node type in that list, or any corpus file containing an invocation. The probe is a node-type intersection over the corpus's own parse trees, not a text search \u2014 a regex for `(` would have matched every option aggregate in the corpus.",
+        "measured": {
+          "distinct_node_types_observed": 94,
+          "intersection": 0
+        }
+      },
+      {
+        "id": "PB-REL-2",
+        "node_type": "extend,message_body,field",
+        "status": "RULED",
+        "question": "Is `extends` emitted? `extend Foo { \u2026 }` looks like inheritance and is not: it adds FIELDS to a type declared in another file.",
+        "resolution": "RULED, and `extends` is the type this decision is about. Instrument and probe: RULED, instrument A (grammar inventory). No node type expresses class heritage; the intersection with [extends_clause, superclass, class_declaration, interface_declaration, struct_declaration, inheritance_specifier, base_class, class_heritage] is EMPTY. The vocabulary's `extend` is the proto2 field-extension BLOCK \u2014 214 `extend` nodes observed \u2014 which is read as  the extends label from the extended type to each member, carrying `metadata.viaExtension` on BOTH the edge and the member symbol. A consumer reading `google.protobuf.MessageOptions -contains-> audit_ticket` therefore knows the member arrived by extension. The block emits no symbol of its own, because the extended type already has a declaration in the file that owns it and a second one would be a fabricated type. OVERTURN: any observed node type expressing heritage or a superclass.",
+        "measured": {
+          "extend_nodes": 214,
+          "files_with_extend": 64,
+          "intersection": 0
+        }
+      },
+      {
+        "id": "PB-REL-3",
+        "node_type": "service,rpc",
+        "status": "RULED",
+        "question": "Is `implements` emitted? Protobuf's contract type is `service` \u2014 it is mapped to `SymbolKind.Interface` \u2014 so does a service satisfy another contract?",
+        "resolution": "RULED, and `implements` is the type this decision is about. Instrument and probe: RULED, instrument A (grammar inventory). No node type expresses an implements clause, separately or inside a heritage clause; the intersection with [implements_clause, superclass, interface_implementation, protocol_reference_list, base_class, satisfies_clause] is EMPTY. The mapping of `service` to `interface` is a SYMBOL-KIND mapping, not a graph edge: a service declares `rpc`s and names no supertype, so there is nothing on the tree for an edge to point at. 259 `service` nodes were counted so the size of the surface a reader would look in is on the record. OVERTURN: any observed node type expressing an implements clause, or any `service` node naming a supertype.",
+        "measured": {
+          "service_nodes": 259,
+          "files_with_service": 221,
+          "intersection": 0
+        }
+      },
+      {
+        "id": "PB-REL-4",
+        "node_type": "block_lit,constant,option,field_option",
+        "status": "RULED",
+        "question": "Is `instantiates` emitted? Protobuf declares; it does not construct. But the grammar HAS an aggregate literal, and a ruling that only inspected node-type NAMES would have missed it.",
+        "resolution": "RULED, and `instantiates` is the type this decision is about. Instrument and probe: RULED, instrument B (parse-tree count), because instrument A would be a name list and the construct this type needs is spelled `block_lit`, which is in no `new_expression`-shaped list. The probe counts `block_lit` nodes whose ancestor chain reaches no `option`, `constant`, `field_option` or `enum_value_option`: a `{ \u2026 }` that is not an option's payload would be a written message value. MEASURED: 1,909 `block_lit` nodes and `aggregateLiteralsByParentNode` is `{ constant: 1909 }` \u2014 every one is the value of a constant, so 0 construct occurrences. The 10,166 message-TYPED declarations the same walk counts are REFERENCES, not constructions: a field whose type is a message holds one and declaring the field creates nothing. All 10,166 are emitted as  the instantiates label. OVERTURN: a `block_lit` outside an option value, or any node type that constructs a value.",
+        "measured": {
+          "block_lit_nodes": 1909,
+          "block_lit_under_constant": 1909,
+          "constructions": 0,
+          "message_typed_declarations": 10166
+        }
+      },
+      {
+        "id": "PB-REL-5",
+        "node_type": "message_or_enum_type,type",
+        "status": "RULED",
+        "question": "Is `references` emitted as its OWN label? This is not a missing construct, and the difference is the whole point of the ruling.",
+        "resolution": "RULED, and `references` is the type this decision is about. Instrument and probe: RULED, instrument A (grammar inventory), for the SEPARATE label only. Protobuf's only references are TYPE references \u2014 there is no expression, no variable read and no value use, because the language has no expression. The construct occurs constantly (10,166 `message_or_enum_type` nodes at this corpus size) and it IS emitted, as  the references label: a field's declared type, a map VALUE type, a oneof_field's type, and both of an rpc's request and response. A SCALAR produces no edge, decided structurally \u2014 a `type` node holding a `message_or_enum_type` child is a reference, one with no named children is a keyword \u2014 so an unrecognised scalar is safe by construction rather than by being absent from a hardcoded list. The `references` label stays unused because there is no SECOND KIND of reference for it to name, and emitting both labels on one node would make one edge mean two things. OVERTURN: any observed construct that references a name other than a type.",
+        "measured": {
+          "message_or_enum_type_nodes": 10166,
+          "intersection": 0,
+          "uses_edges_emitted": 13275
+        }
+      },
+      {
+        "id": "PB-REL-6",
+        "node_type": "field,field_number,message_body",
+        "status": "RULED",
+        "question": "Is `overrides` emitted? Pass 1 ruled it absent on instrument B and MEASURED ITS CONSTRUCT AT 1 \u2014 a count of 1 is not a count of 0, and the gate's rule is that a ruled type whose construct probe finds a non-zero count is FALSIFIED.",
+        "resolution": "RULED, and `overrides` is the type this decision is about. Instrument and probe: PASS 2 OVERTURNS PASS 1. `overrides` is now EMITTED, because the honest options were to emit it or to hold a ruling the arbiter had already falsified, and holding it would have been the pass-1 mistake repeated. What protobuf can express is not a method replacing a base but a field SLOT being restated: two declarations in one message claiming the same field number, where the later one states what that slot holds. The test is the NUMBER and not the name, and the distinction is load-bearing \u2014 same number under two names is an override attempt; the same name across two numbers is two distinct slots that share a label and replaces nothing, so it gets no edge. MEASURED over 821 files: 1 `overrides` edge, in nvim-treesitter/tests/query/highlights/proto/test.proto, message LogContent, where `required string Value = 2;` and `required CustomType Value = 2;` claim slot 2 twice. `protoc` rejects that file, so the edge states a fact about the text rather than about a schema that compiles; both endpoints are real published symbols, disambiguated by `uniqueId`'s `#property` suffix, so it is not a fabricated edge. Its entire corpus support is that one syntax-highlighting fixture and that is stated wherever the count appears. Direction is DOCUMENT order, read off the range, not visit order \u2014 the walk is a LIFO stack, so a rule using visit order emits the edge backwards \u2014 and the edge's `line_number` is the SOURCE's line, because `line_number` is what `bb_graph` and the store's relId key on. OVERTURN: nothing; the type is emitted, so the question is closed rather than ruled.",
+        "measured": {
+          "overrides_edges": 1,
+          "files": 1,
+          "protoc_accepts_that_file": false
+        }
+      },
+      {
+        "id": "PB-REL-7",
+        "node_type": "import",
+        "status": "RULED",
+        "question": "Is `import public \"x.proto\"` an `exports` edge only, or both an `imports` and an `exports` edge? Pass 1 said exports only and pinned the absence of `imports` with a fixture forbid.",
+        "resolution": "RULED, and `imports` is the type this decision is about. Instrument and probe: PASS 2 OVERTURNS PASS 1. Both. Pass 1's forbid carried a written reason \u2014 emitting both 'would double the module's inbound dependency and lose the re-export fact entirely' \u2014 and neither half survives measurement: nothing is doubled, because the pair went from ZERO `imports` edges to one, and the re-export fact is not lost, it is what the `exports` edge carries. What emitting `exports` alone lost is the DEPENDENCY: a consumer asking which files it must read to compile this one got an incomplete answer, and `bb_impact` on the imported file could not see a file that reaches it through a public import. `protoc` agrees \u2014 a public import is a `FileDescriptorProto` dependency like any other, with `public_dependency` naming its index. MEASURED: 4 `import public` sites in 4 files, all in pb-reference (cpp_options.proto:15, json_options.proto:14, unittest_import.proto, unittest_import_lite.proto), so 4 `exports` edges and 4 more `imports` edges. Both labels are now required by protobuf/imports-and-editions, so an analyzer emitting either alone fails. The editions `import option` is still `imports` only and never `exports`: it resolves an option's definition rather than republishing a message.",
+        "measured": {
+          "import_public_sites": 4,
+          "exports_edges": 4,
+          "imports_edges_added": 4
+        }
+      },
+      {
+        "id": "PB-REL-8",
+        "node_type": "option",
+        "status": "RULED",
+        "question": "A custom option's name is parenthesised \u2014 `option (gogoproto.marshaler_all) = true;` names an EXTENSION TYPE. Is that a `uses` edge the analyzer is failing to emit?",
+        "resolution": "RULED, and `uses` is the type this decision is about. Instrument and probe: RULED as a measured NON-emission rather than a gap, and the measurement is stronger than pass 1's. 1,525 custom-option sites at this corpus size (117 at file scope, 928 on an `rpc`, 338 in a message body, 80 on a service, 60 in an enum body, 2 in a oneof). ZERO resolve to a symbol published in the same file, and \u2014 the number pass 1 did not have \u2014 ZERO resolve against the published id set of ALL 821 files. The reason is structural rather than incidental: protobuf names an extension by the package that DECLARED the extend block, while this analyzer publishes an extension member under the EXTENDED type (`google.protobuf.MessageOptions.audit_ticket`), because that is where the field number lives and what `protoc` reports. So the two names can never coincide, and a cross-file index would not fix it. Emitting the edge would therefore add 1,525 edges with a 0% resolution rate and no endpoint that binds \u2014 the fabrication risk the workstream calls its most expensive mistake, bought for no gain. DECIDED BY THE SAME STANDARD APPLIED TO  the uses label AND `exports`: those are emitted at 0% symbol resolution because a module-path endpoint is the family's convention and a consumer resolves it against the project's include roots, and a custom option's extension name has no such convention to be resolved by.",
+        "measured": {
+          "custom_option_sites": 1525,
+          "resolve_in_file": 0,
+          "resolve_corpus_wide": 0
+        }
+      },
+      {
+        "id": "PB-REL-9",
+        "node_type": "message_or_enum_type,type,full_ident",
+        "status": "RULED",
+        "question": "What is a `uses` edge's TARGET when the type is declared in another file? Is naming it a parse fact or a derivation?",
+        "resolution": "RULED, and `uses` is the type this decision is about. Instrument and probe: RULED: it is the language's own resolution rule applied without the import graph, and the number is stated rather than asserted. 13,275 `uses` edges at this corpus size; 9,670 (72.84%) name a type the SAME file declares, where the target is a parse fact in the strict sense. The remaining 3,605 (27.16%) name an imported type, and there the analyzer applies protobuf's specification rule \u2014 a leading dot is absolute, otherwise resolve from the innermost scope outward, then fall back to `<package>.<name>` \u2014 against the symbols this file declares. The fallback is a DERIVATION: the parse tree says `Foo`, the edge says `<package>.Foo`. It is the rule `protoc` itself applies, so it is not a name-match guess, and `evidenceClass` stays `structural`; but a consumer reading a `uses` edge has to know that 27.16% of them were qualified rather than read. Measured against the published id set of all 821 files at once, so cross-file resolution is possible, the same edges resolve at 96.72% \u2014 the remainder names a type from a repository outside this corpus. Both numbers are true and they measure different things; per-file and corpus-wide.",
+        "measured": {
+          "uses_edges": 13275,
+          "target_declared_in_same_file": 9670,
+          "target_not_declared_in_same_file": 3605,
+          "corpus_wide_both_ends_rate_pct": 96.72
+        }
+      },
+      {
+        "id": "PB-REL-10",
+        "node_type": "field,map_field,oneof_field,enum_field,oneof",
+        "status": "RULED",
+        "question": "What is `metadata.oneof`, and can it address a oneof?",
+        "resolution": "RULED, and `uses` is the type this decision is about. Instrument and probe: PASS 2 CHANGED THIS. It is the oneof's RESOLVED ID, not its bare name. It was the bare name, and a bare name cannot address a oneof: two messages in one file may each declare `oneof body`, and a consumer grouping fields by that string merges two unrelated discriminated unions. MEASURED before the change: 423 of 1,121 oneof fields (37.73%) sat under a bare name declared by more than one owner \u2014 `oneof attrs` alone appears in 7 different messages of boundary's session_recording.proto. `protobuf/slot-and-grouping` declares `oneof body` twice and requires the two groups' keys to differ, and `protobuf/oneof-grouping-key-downgraded-to-the-bare-name` reverts it. A side effect worth stating: `protobuf/oneof-field-reowned-by-the-oneof`, a pass-1 mutant, stopped being able to fire when this changed, because it looked the oneof up as `<message id>.<bare name>`. A mutant that can no longer fire reports a hole that does not exist while missing the one that does, so the mutant now tries both spellings.",
+        "measured": {
+          "oneof_fields": 1121,
+          "ambiguous_bare_name": 423,
+          "rate_pct": 37.73
+        }
+      },
+      {
+        "id": "PB-REL-11",
+        "node_type": "field,field_number",
+        "status": "RULED",
+        "question": "Are two declarations of the same field number in one message an `overrides` edge, or does protobuf have no override at all?",
+        "resolution": "RULED, and `overrides` is the type this decision is about. Instrument and probe: RULED as EMITTED \u2014 see PB-REL-6, which carries the measurement. The discriminator is the field number: two claims on one slot is an override attempt (1 occurrence in 821 files), one name across two slots replaces nothing (0 occurrences). A proto2 `group` is excluded by KIND rather than by a special case \u2014 it declares a nested type `G` (a `class`) and a field `G` of it (a `property`), and only the property claims a slot, and `uniqueId` keeps the two ids apart so the pair cannot read as an override of itself. One consequence of the id scheme is on the record because a reader will assume the opposite: for a name declared twice in one scope, the PLAIN dotted id goes to whichever declaration the walk reaches first, and the walk reaches siblings in reverse document order, so the plain id marks the LAST declaration written and `#property` marks the earlier one.",
+        "measured": {
+          "same_slot": 1,
+          "same_name_different_slot": 0
+        }
+      },
+      {
+        "id": "PB-REL-12",
+        "node_type": "package,source_file,message",
+        "status": "RULED",
+        "question": "A top-level declaration belongs to the file's `package`, so is `contains: <package> -> <top-level type>` right, and what happens in a file with no package?",
+        "resolution": "RULED, and `contains` is the type this decision is about. Instrument and probe: RULED: yes for the package case, and the asymmetry is declared rather than smoothed over. A `package` is published as a `namespace` symbol whose id is the package name, and a top-level declaration is contained by it \u2014 7,166 such `contains` edges at this corpus size. The edges mean membership in a namespace, which is what `contains` means everywhere else in this family. The ASYMMETRY: 11 of 821 files declare no package, and their 46 top-level declarations get `ownerName: undefined` and NO containment edge at all, because `root.owner` is `pkg || null` and the file has no namespace to own them. That is a real difference between two files that are otherwise equivalent, and a consumer walking `contains` upward from a top-level symbol in such a file finds nothing. It is left as-is rather than fixed by minting a file-module symbol, because the family's convention for a module edge is a module-path endpoint (see PB-REL-7) and inventing a per-file namespace symbol here would put a symbol in the graph that protobuf does not declare.",
+        "measured": {
+          "package_contains_edges": 7166,
+          "files_without_package": 11,
+          "top_level_declarations_without_owner_edge": 46
+        }
+      }
+    ]
+  }
+}
