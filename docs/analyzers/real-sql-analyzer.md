@@ -77,7 +77,11 @@ Pinned by mutant `sql/range-columns-zero-based` and fixture `sqld8-range-and-ids
 ## Relationship ontology
 
 Every rule below is stated **for SQL**, not in general. Pass 4 re-measured every count through
-production `parseFile` over **1,955 of 1,955 admitted SQL files in 169 corpus repositories**
+production `parseFile` over **1,955 of 1,955 admitted SQL files, of which 16 corpus repositories
+contribute at least one** (`duckdb` 594, `boundary` 486, `proxicall` 438, `hasura-engine` 346,
+`postgrest` 32, `sqlite` 13, `dark` 9, `phpmyadmin` 9, `Exposed` 8, `redwood` 8,
+`nvim-treesitter` 7, and 5 repositories contributing 1 each; a 17th, `kong`, tracks one `.sql`
+that is over the 512 KB cap and contributes 0)
 (`validation/m14/fixtures/sql/measurements/pass4-census.json`): **31,066 relationships and
 18,482 symbols**, with **0 files degraded by the analyzer timeout and 0 in the regex-extractor
 fallback**. Every count on this page was re-measured at pass 4's HEAD; nothing is carried
@@ -144,10 +148,10 @@ unexplained reason", which is 196 and is named as such rather than folded into t
 number. Measured before the guard export the two were indistinguishable, and a drifting copy
 of the lists would have turned a working guard into a reported defect.
 
-## Ontology verdicts — all ten types (verdicts and counts re-measured at pass 4, 2026-10-04; incoming direction re-measured at pass 5, 2026-10-04)
+## Ontology verdicts — all ten types (verdicts and counts re-measured at pass 4, 2026-10-04; incoming direction at pass 5; every gate re-confirmed at pass 6, 2026-10-04)
 
-Instrument: production `parseFile` (not `analyze()`) over **1,955 of 1,955 admitted SQL files in 169
-repositories**, size cap 512 KB, **every** admitted file sampled rather than a subset, walked as
+Instrument: production `parseFile` (not `analyze()`) over **1,955 of 1,955 admitted SQL files, of
+which 16 corpus repositories contribute at least one**, size cap 512 KB, **every** admitted file sampled rather than a subset, walked as
 **8 strided shards and merged** (see *Reproducibility*). Artifacts, all under
 `validation/m14/fixtures/sql/measurements/`:
 `pass4-census.json`, `pass4-census-4shard.json`, `pass4-sharded-arbiter.json`,
@@ -543,7 +547,7 @@ as history, not as the current state.
 
 | Residual | Count | Files | Why it is not fixed here |
 | --- | --- | --- | --- |
-| `uses` edges from inside an error-bearing CTE | **91** | 56 | when error recovery swallows a WITH list the names in it never become `cte` nodes, so the scope set is complete and still wrong. The fix would have to decide that ANY error inside a CTE body means the WITH list was lost, and that suppresses true table edges for every file with an unrelated unparseable expression in a CTE. Needs a grammar fix, not a guard. |
+| `uses` edges from inside an error-bearing CTE | **91** | 56 | when error recovery swallows a WITH list the names in it never become `cte` nodes, so the scope set is finished and still wrong. The fix would have to decide that ANY error inside a CTE body means the WITH list was lost, and that suppresses true table edges for every file with an unrelated unparseable expression in a CTE. Needs a grammar fix, not a guard. |
 | `uses` edges targeting a CTE name with no qualified reach | **19** | 11 | down from 32; the remainder is the row above. |
 | `uses` edges whose bare leaf is ambiguous between a CTE and a qualified table | **16** | 16 | `uses global->parse` in `duckdb/…/asql_cyk_using_key.sql` is one bare leaf reached both by the CTE `parse` (correctly suppressed) and by the real table `recurring.parse` (correctly emitted). The (type, source, target) key cannot represent two different objects with one leaf; that is limitation 8's shape applied to `uses`. |
 | qualified invocations not emitted for a reason not settled | **196** | 11 | 52 are explained (keyword/builtin guard, and the probe separates them). The other 196 are inside damaged subtrees and I did not establish which guard or which pass drops them. |
@@ -854,6 +858,77 @@ already rebuilt the grammar eight times to add rule groups. It is not shipped he
 grammar build and `validation/m14/grammar-pins.json` are shared artefacts (§8), and a rebuild
 attempt has already produced a `parser.c` 111,557 bytes off the wired one. Reported, not done
 quietly.
+
+## PASS 6 — the denominator no instrument on the page was producing (2026-10-04)
+
+Pass 5 re-measured the incoming direction. Pass 6 re-ran every gate this lane can run at HEAD
+`f918e9055` — 16 commits after pass 4's census — and read the page against what the gates printed.
+**The per-type numbers all reproduced. One number about the CORPUS did not, and nothing on the page
+could have caught it.**
+
+### The corpus denominator was wrong, and the arbiter had been printing the right one
+
+The page said, in two places, that the census covered "1,955 of 1,955 admitted SQL files in **169
+corpus repositories**". The arbiter's own walk prints, from the same corpus root and the same
+admission rule:
+
+```
+admitted: 1955 SQL files in 16 repositories
+```
+
+169 was wrong and 16 is measured. The reason it survived four passes is structural rather than
+careless: **every instrument on this page counts files and edges, and none of them counted
+repositories.** A per-type census cannot produce a repository count, so there was nothing to
+disagree with 169 — it was a free-floating figure with no instrument behind it, and the arbiter's
+own `16` sat in a different document from the page that contradicted it.
+
+`corpus-composition.mts` now produces the denominator, under the admission rule **copied** from
+`script/m14/ontology-coverage-gate.ts:203-208` (`git ls-files`, ≤ 512 KiB,
+`detectLanguageFromPath === "sql"`) — copied because the population a ruling is measured over is
+the population the arbiter admits, and a second rule would make the two differ by an unknown
+amount. `script/m14/` is supervisor-owned (§8).
+
+| Figure | Value |
+| --- | --- |
+| repository directories in the corpus root | **183** |
+| with at least one tracked `.sql` path | **17** |
+| contributing ≥ 1 **admitted** file | **16** |
+| tracked `.sql` paths | **1,963** |
+| admitted under the arbiter's rule | **1,955** — agrees with the arbiter exactly |
+| excluded | **8**: 7 over the 512 KB cap in `hasura-engine`, 1 in `kong` |
+
+`git ls-files '*.sql'` is deliberately not the instrument: it reads 1,963 against the arbiter's
+1,955, and the 8-file difference IS the cap and the detection, which is the thing worth measuring.
+
+**The corpus root contains a repo reached through a SYMLINK out of it** — `proxicall ->
+$HOME/ProxiCall` — and it supplies **438 of the 1,955 admitted files (22.4 %)**. Every
+figure on this page therefore depends on a path outside the corpus root, and `bb_index`-style
+realpath containment checks would refuse it. `run-sharded-arbiter.mts` builds each shard as a
+directory of symlinks for the same reason and reads them fine.
+
+**That symlink cost this script a wrong first answer, and the failure is worth recording because it
+was invisible in the rows and visible only in the total.** The first version filtered the corpus
+root with `readdirSync(..., { withFileTypes: true }).isDirectory()`, which reports a symlink as
+`isSymbolicLink()`, so `proxicall` was skipped entirely: 181 repos walked, **1,517** admitted — and
+`1,955 − 1,517 = 438`, exactly the missing repository. The per-repo table would have read as a
+finished answer with a repo absent from it; only the disagreement with the arbiter's 1,955 named
+it. Fixed to `statSync(dir).isDirectory()`, which follows the link.
+
+### Every gate this lane can run, re-run at `f918e9055`
+
+| Gate | Command | Result at this HEAD |
+| --- | --- | --- |
+| ontology arbiter, whole corpus, 8 repo-shards | `npx tsx validation/m14/fixtures/sql/run-sharded-arbiter.mts` | **`emitted 7/10   ruled-sound 3   FALSIFIED 0   ruled-without-justification 0`**, 8/8 shards answering all ten rows, and per-type edges **identical to the pass-4 census**: 3,892 / 9,106 / 11,977 / 52 / 5,996 / 22 / 21 |
+| arbiter on a COPY with the ruling table patched in | `npx tsx validation/m14/fixtures/sql/run-ruling-table.mts` | same verdict line. Single process, so it dies on `[BB-HANG] parser stuck 120s` on `duckdb/benchmark/aoc24/queries/day02.sql` partway through and its partial per-type counts read 3,875 / 9,100 / 11,873 / 51 / 5,951 — the sharded run is the authoritative one, and this is the known `engine.ts` `process.exit(1)` behaviour (§8) |
+| fixture lane | `npx tsx script/m14/run-fixtures.ts --lang sql` | **15 / 15 PASS, exit 0**. Unscoped, the same script **exits 6 before running any lane** because `lua` and `r` have fixture directories no runner lane claims — other lanes' defect, not this one's (§8) |
+| ontology mutants | `bun run script/m14/mutate-analyzer.ts sql` | **34 / 34 `sql/*` mutants CAUGHT, 0 `sql/*` SURVIVED**. The script's 6 survivors are `java` ×1, `groovy` ×2, `scala`, `make`, `php` — other lanes. **It does not honour the language argument**: it sweeps every lane and **rewrites the shared `validation/m14/results/M14.0.F4.json`**, changing 22,627 lines of other lanes' rows as a side effect of running this lane's gate. That file is §8-owned, so this lane restores it (`git restore`) and does not commit the rewrite. Running this command as the workstream instructions direct is therefore not lane-scoped and mutates a shared artifact (§8 item) |
+| regex census | `npx tsx script/m12/verify-regex-census.ts` | **0 SQL rows.** The gate FAILS on `MISSING` rows for `real-css-analyzer.ts` (9) and `real-julia-analyzer.ts` (5) and `STALE` rows for clean, fsharp, javascript, python, svelte, typescript. This lane contributes 0 rows to that failure |
+| m14 differential | `npx tsx script/m14/differential.ts --lang sql` | **`SKIP sql: no corpus repo mapped in LANG_REPOS and none checked out — declared unrun, not measured`**, and 0 lanes measured. `script/m14/differential.ts` is shared machinery (§8): `sql` needs an entry in its `LANG_REPOS`, and the m12 hand-audited oracle (`validation/m12/ground-truth/sql.json`, 84 facts) is the lane's correctness instrument instead |
+| corpus composition | `npx tsx validation/m14/fixtures/sql/corpus-composition.mts` | 183 / 17 / 16 / 1,963 / **1,955**, agreeing with the arbiter |
+
+**So the page's seven emitted counts and three rulings reproduce at a HEAD 16 commits later, and the
+one figure that did not is now measured rather than asserted.** No verdict moved. Nothing on this
+lane is un-adjudicated: all ten types carry EMITTED or a corpus-measured RULED.
 
 ## Recovery passes
 
@@ -1474,7 +1549,7 @@ above can be used for.
     `pass5-adversarial-probe.json` under `A10-contains-target-has-no-symbol-in-this-file`.
 12. **A CTE inside an ERROR-recovery span cannot be scoped.** 91 `uses` edges across 56 files
     come from inside a CTE whose own subtree carries an ERROR; when recovery swallows a WITH
-    list the names in it never become `cte` nodes, so the scope set is complete and still wrong.
+    list the names in it never become `cte` nodes, so the scope set is finished and still wrong.
     The fix would have to treat ANY error in a CTE body as "the WITH list was lost", which
     suppresses true table edges for every file with an unrelated unparseable expression in a CTE.
     It needs a grammar change, not a guard, and it is why `uses` still carries 19 edges naming a
@@ -1572,6 +1647,7 @@ artifacts are under `validation/m14/fixtures/sql/measurements/`:
 | `pass5-overrides-reconciliation.json` | `validation/m14/fixtures/sql/overrides-reconciliation.mts` | both `overrides` rules re-implemented and the difference decomposed with an exactness check, plus the per-file edge-identity collapse that turns 34 events into 22 edges |
 | `pass5-adversarial-probe.json` | `validation/m14/fixtures/sql/adversarial-probe.mts` | the six questions' adversarial half re-measured at this HEAD over all 1,955 files with **0 degraded**, and the A12 capability battery's 6 verdicts |
 | `pass5-invocation-why.json` | `validation/m14/fixtures/sql/pass3-invocation-why.mts` | the cause breakdown for every qualified invocation carrying no `calls` edge, closed at 742 = 629 + 53 + 60 with **0 unexplained** |
+| `pass6-corpus-composition.json` | `validation/m14/fixtures/sql/corpus-composition.mts` | the corpus DENOMINATOR the per-type census never produced: 183 repo directories walked, 17 with a tracked `.sql`, **16 contributing an admitted file**, 1,963 tracked paths → **1,955 admitted**, agreeing with the arbiter. Names `proxicall`, the symlink out of the corpus root that supplies 438 of those files, and the 8 excluded paths |
 | `pass3-incoming-corpus.json`, `pass3-incoming-boundary.json` | `validation/m14/fixtures/sql/pass3-incoming.mts` | the incoming direction: ambiguity per type, `contains` resolution under three match rules, the trigger/function collision, keyword-named symbols, orphan declarations |
 | `pass3-invocation-why.json`, `pass3-invocation-why-after.json` | `validation/m14/fixtures/sql/pass3-invocation-why.mts` | the cause breakdown for every qualified invocation that carries no `calls` edge, and the 0 that remain unexplained |
 | `pass3-phantom-constraint-before.json`, `pass3-phantom-constraint-after.json` | `validation/m14/fixtures/sql/pass3-phantom-constraint.mts` | 53 fabricated declarations → 0, by the same parse-tree oracle on both sides |
