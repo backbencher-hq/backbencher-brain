@@ -240,10 +240,16 @@ export const CSS_RULED: Ruled[] = [
       // `content:` value, and the gate's header records exactly that failure having
       // overturned a ruling once.
       //
-      // Instrument A is silent BY CONSTRUCTION here, which is why B is the decider and
-      // not a supplement: the pinned grammar routes every at-rule it does not
-      // recognise through the catch-all `at_rule`, so no vocabulary change would ever
-      // report `@extend` as absent.
+// Instrument A is silent BY CONSTRUCTION here, which is why B is the decider and
+        // not a supplement: the pinned grammar routes every at-rule it does not
+        // recognise through the catch-all `at_rule`, so no vocabulary change would ever
+        // report `@extend` as absent.
+        //
+        // The count below is 0 and it is the DIRECTIVE count, which is not the same question
+        // as "does the corpus write `@extend`" — it writes it 46 times. `css-extend-lexability.ts`
+        // measured where all 46 land: 46 of 46 are inside an ERROR node, 0 inside an at_rule.
+        // So this predicate returning 0 is a property of the grammar, not of the corpus and not
+        // of a filter that failed to look.
       const visit = (n: any): void => {
         if ((n.type === "at_rule" || n.type === "postcss_statement") && atKeywordOf(n) === "@extend") {
           hits.push(`${fileLabel}: @extend (selector-level inheritance)`)
@@ -253,7 +259,7 @@ export const CSS_RULED: Ruled[] = [
       visit(root)
     },
     describe:
-      "selector-level or type-level INHERITANCE. INSTRUMENT B, because instrument A cannot see it: `@extend .base` is a directive the pinned grammar routes through the catch-all `at_rule`, so the 103-node-type inventory is silent by construction — the same structural reason bash's `overrides` needs instrument B. Counted on the tree: **0 `@extend` at-rules across 1,255 files / 79 repositories**. THE AT-KEYWORD IS NOT ABSENT, and an earlier version of this string said it was — that was wrong, and wrong in the direction that made the ruling look better supported than it is. Measured: the at-keyword `@extend` occurs **46 times in 26 files**, every one inside a `.sass` partial, because the pinned grammar routes it through the catch-all `at_rule` instead of a production of its own. So the corpus DOES write the directive and the grammar DOES lex its name; what is 0 is the directive as a node the analyzer could read. That is why this ruling cites BOTH instruments — instrument A is silent by construction here, so instrument B is the only one carrying the claim, and it is carrying a count of 0 against a construct the corpus exercises 46 times in name only. INSTRUMENT A agrees and is not relied on: 0 of the 103 node types is a type declaration (`class_declaration`, `class_specifier`, `interface_declaration`, `struct_declaration`, `inheritance_specifier`, `base_class_clause`, `superclass`, `base_list`). WHAT THIS IS NOT: a claim that the language cannot express it. SCSS's `@extend` is real, `.sass` and `.less` are both routed to this lane and both can write it, and the corpus's 67 `.sass` + 54 `.less` files write the keyword without producing a directive. `.scss` — 4,404 files, the largest CSS-family population in the corpus — routes to `real-scss-analyzer.ts` under `analyzer/SCSS`, so the `extends` question for it is that lane's separate verdict on a separate corpus. Overturn: any `@extend` at-rule on the tree, or any type-declaration node type in the printed vocabulary.",
+      "selector-level or type-level INHERITANCE. INSTRUMENT B, because instrument A cannot see it: `@extend .base` is a directive the pinned grammar routes through the catch-all `at_rule`, so the 103-node-type inventory is silent by construction — the same structural reason bash's `overrides` needs instrument B. Counted on the tree: **0 `@extend` at-rules across 1,255 files / 79 repositories**. THE AT-KEYWORD IS NOT ABSENT, and an earlier version of this string said it was — that was wrong, and wrong in the direction that made the ruling look better supported than it is. Measured: the at-keyword `@extend` occurs **46 times in 26 files**, every one inside a `.sass` partial. WHERE THOSE 46 LIVE is the number that settles the ruling, and `validation/m14/census/css-extend-lexability.ts` reports the ancestor chain of every one: **46 of 46 sit inside an ERROR node** (`ERROR` 32, `ERROR > ERROR` 8, `stylesheet > ERROR` 5, `ERROR > import_statement > binary_expression > ERROR` 1) and **0 sit inside an `at_rule` or `postcss_statement`**. So the corpus writes the directive, the grammar lexes the keyword, and the grammar has no production for the construct — what reaches the tree is error recovery around bytes it cannot classify, and an ERROR node carries a byte range with no meaning attached, so the directive is not recoverable by ANY analyzer over this grammar. INSTRUMENT A agrees and is not relied on: 0 of the 103 node types is a type declaration (`class_declaration`, `class_specifier`, `interface_declaration`, `struct_declaration`, `inheritance_specifier`, `base_class_clause`, `superclass`, `base_list`). WHAT THIS IS NOT: a claim that the language cannot express it. SCSS's `@extend` is real, `.sass` and `.less` are both routed to this lane and both can write it, and the corpus's 67 `.sass` + 54 `.less` files write the keyword without producing a directive. `.scss` — 4,404 files, the largest CSS-family population in the corpus — routes to `real-scss-analyzer.ts` under `analyzer/SCSS`, so the `extends` question for it is that lane's separate verdict on a separate corpus. Overturn: any `@extend` at-rule on the tree, or any type-declaration node type in the printed vocabulary.",
   },
   {
     type: "implements",

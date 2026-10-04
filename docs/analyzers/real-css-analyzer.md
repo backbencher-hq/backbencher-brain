@@ -529,6 +529,119 @@ files) is the one that is a property of the lane. The discrepancy with the super
 26-lane table row for css (73,369) is this same effect and is not a disagreement about
 behaviour.
 
+## PASS 7 — every gate reproduced on a THIRD consecutive unmoved corpus, and the `extends`
+## ruling's two numbers were reconciled instead of being consistent
+
+Pass 6 found nothing to re-baseline. This round checked the same thing first and found the
+same answer — the corpus is still **1,255 files / 79 repositories** — so every headline figure
+below is a third reproduction, not a re-measurement. Then it did the one thing passes 5 and 6
+left asserted rather than shown.
+
+### The `extends` ruling's 0 and its 46 are not in tension, and now that is shown
+
+`script/m14/css-ruled.ts`'s `extends` row carries two numbers that read as contradictory:
+
+```
+extends  B:parse-tree-count    0   0   an `@extend` DIRECTIVE (`@extend .base`)
+extends  B:parse-tree-count   46  26   the `@extend` at-KEYWORD itself
+```
+
+The corpus writes `@extend` 46 times; the ruling reports 0 directives. Pass 6 established that
+the at-keyword is lexable and the directive is not, and stopped there — so which of the two
+readings of "0" was correct was **asserted, not measured**. There were three possible answers
+and they have different consequences: (1) the keyword sits inside an `at_rule`, which would make
+the 0 false, falsify the ruling and make `extends` a GAP this lane owes; (2) it sits in an
+ordinary token position, so the directive is genuinely unreadable; (3) it sits inside an
+ERROR node, which is a stronger form of (2).
+
+`validation/m14/census/css-extend-lexability.ts` walks the ancestor chain of every `@extend`
+`at_keyword` in the admitted corpus. The answer is **(3)**, all 46 of them:
+
+```
+@extend AT-KEYWORD occurrences: 46 in 26 files
+@extend DIRECTIVES (keyword directly inside at_rule / postcss_statement): 0 in 0 files
+occurrences inside an ERROR node: 46
+
+BY DIRECT PARENT NODE TYPE
+parent node type           occurrences   files
+ERROR                               46      26   line 13: Documenter.jl/.../bulma/components/breadcrumb.sass
+
+ANCESTOR CHAINS
+    32  ERROR
+     8  ERROR > ERROR
+     5  stylesheet > ERROR
+     1  ERROR > import_statement > binary_expression > ERROR
+```
+
+**Every single `@extend` token on this corpus is inside an ERROR node, and 5 of them sit
+directly under `stylesheet`.** So the 46 are not directives written in a shape this grammar
+cannot classify — they are the error-recovery artefact of `.sass` partials the pinned grammar
+has no production for. There is no other position, which means no analyzer over this grammar
+can read them: an ERROR node is a byte range with no production behind it, so recovering
+`@extend .base` from one would mean deciding by hand what the bytes mean, which is precisely
+the text-matching this lane's instrument discipline exists to prevent.
+
+**The `extends` ruling is therefore stronger than pass 6 could state it, and its `overturn`
+condition is now exact rather than merely stated:** any `@extend` at-rule on the tree, or any
+type-declaration node type in the printed vocabulary. A corpus writing `@extend` in a file
+this grammar can parse — a `.scss` file routed to the SCSS lane, or a grammar revision with an
+at-rule production for it — produces one. This corpus does not, and its 46 are precisely why a
+reader might have believed otherwise.
+
+### The new probe drifted on its first run, and the printed file count is what said so
+
+The probe printed **1,254 files / 78 repositories** where the arbiter prints **1,255 / 79**.
+That is the **third** admission-rule transcription to drift in this lane and the third to be
+caught by the same check. All three defects changed the SET rather than shrinking a copy of it:
+
+| defect | why it changes the set |
+| --- | --- |
+| filtered `rel.endsWith(".css"/".sass"/".less")` before calling `detectLanguageFromPath` | the gate asks the detector and does not pre-filter; the detector admits a file whose extension is not one of those three |
+| `git ls-files` newline-split where the probe uses `-z` NUL-split | a tracked path containing a newline becomes two bogus paths, neither of which stats |
+| repository list from `readdirSync(withFileTypes)` + a literal `.git` skip | the probe asks git for `--git-dir`, which excludes a directory that is not a repository |
+
+Fixed, and the probe now reads **1,255 / 79** — the arbiter's own number, the same check that
+caught `css-boundary-probe.ts` in pass 6 and `css-ontology-probe.ts` in pass 4. **The argument
+for transcribing the rule argument-for-argument in every probe rather than importing it is
+now three measurements in a row**, and the argument for printing the count and comparing it
+against the arbiter's before believing anything the probe says is the whole reason this round's
+defect was five minutes' work instead of a wrong ruling.
+
+### The arbiter's exit code varies; its VERDICT does not
+
+Pass 6 measured two runs of `npx tsx script/m14/ontology-coverage-gate.ts css` and recorded
+`FALSIFIED 0` on both. This round ran it **four** times on the same corpus at the same commit,
+and the spread is wider than pass 6 saw — one run printed no table at all:
+
+| run | real exit | table printed | `contains` | verdict line |
+| --- | --- | --- | --- | --- |
+| 1 | 1 | **NO** — the guard fired before any row | — | — |
+| 2 | 1 | yes, all ten rows | **175,166** (5 short of 175,171) | `emitted 5/10  ruled-sound 5  FALSIFIED 0  ruled-without-justification 0` |
+| 3 | 1 | yes, all ten rows | **175,157** (14 short) | identical |
+| 4 (earlier this round) | 1 | yes, all ten rows | **175,171** — matches the census | identical |
+
+So pass 6's "8 `uses` and 6 `contains` edges short" was one draw from a distribution that also
+contains 5, 14, and "nothing printed at all". The **verdict line is identical in every run that
+printed one**, so the arbiter's verdict for this lane is reproducible and its *counts* are not
+quotable from the arbiter — which is why every count in this file comes from
+`css-parsefile-census.ts --all` and the arbiter is quoted only for verdicts. §8 item (f) is
+unchanged in substance and larger in scope than pass 6 stated it.
+
+### Every gate reproduced, third consecutive round
+
+| gate | this round | pass 6 | |
+| --- | --- | --- | --- |
+| `npx tsx script/m14/ontology-coverage-gate.ts css` | `emitted 5/10  ruled-sound 5  FALSIFIED 0  ruled-without-justification 0`; **exit 1 on all four runs** — see above | verdict identical, exit varied | verdict reproduced; exit code confirmed not to be a result |
+| `npx tsx validation/m14/census/css-parsefile-census.ts --all` | 1,255/1,255 parsed, 0 failures, 0 degraded, **238,536 symbols, 339,850 relationships**, 0 empty names, 0 empty/unknown kind, 0 `unknown` endpoints | identical | reproduced |
+| `npx tsx script/m14/firing-check.ts --files 120 css` | 5/10 fired, **47,667 edges, 120/120 files, 0 degraded** | identical | reproduced |
+| `npx tsx validation/m14/census/css-ontology-probe.ts` | 103 node types, 1,255 files / 79 repos, 422 with an ERROR, `var()` 162,470 / 392 files, `@extend` directive 0 / 0, at-keyword 46 / 26 | identical | reproduced |
+| `npx tsx validation/m14/census/css-extend-lexability.ts` | **NEW**: 46 / 46 `@extend` keywords inside ERROR nodes, 0 directives, 1,255 / 79 | — | new instrument |
+| `npx tsx script/m14/differential.ts --lang css` | **exit 0**, `unexplained=0` and `heuristic=0` on both corpora, 2 MISSING (the pinned `@namespace` rows); svelte tree-truth 41 rows / 39 covered, grails-core **497** rows / 497 covered | reproduced | reproduced; only the rotating sample moved (grails-core 482 → 497) |
+| `bun run script/m14/run-fixtures.ts --lang css` | **15 pass / 0 fail**, `no regressions` | identical | reproduced |
+| `BB_MUTANT_ONLY="css/" bun run script/m14/mutate-analyzer.ts` | **14 mutants, 14 CAUGHT, 0 surviving** (filtered 1,753 → 14) | identical | reproduced |
+| `npx tsx script/m12/verify-regex-census.ts` | `real-css-analyzer.ts` in neither MISSING nor STALE; **lane count 0** | identical | reproduced |
+| `npx tsc --noEmit` | exit 0 | identical | reproduced |
+
 ## PASS 6 — the corpus did NOT move, every gate reproduced, and the ruled table was carrying four pass-4 figures
 
 Pass 5's finding was that the shared corpus grows under the figures, so this round first
@@ -785,7 +898,7 @@ rather than asserted.
 | `references` | EMITTED | **161,768 edges, 389 files** (pass 5; 161,738 / 383 at pass 4; 161,217 / 371 at pass 2) | `Exposed/docs/api/styles/main.css` (`:root -> --color-b08`) |
 | `imports` | EMITTED | **243 edges, 68 files** (pass 5; 179 / 49 at pass 4; 177 / 47 at pass 2) | `bulma/docs/assets/css/custom.css`, `bulma/docs/assets/vendor/fontawesome-free-5.15.2-web/less/fontawesome.less` |
 | `overrides` | EMITTED (was a GAP; implemented this milestone, and a second shape added in pass 2) | **48 edges, 7 files** | `hasura-engine/.../GraphiQL.css` (`rotation`, L1534 → L2214); `vue-element-admin/src/assets/custom-theme/index.css` (`v-modal-in`, `v-modal-out`, `progress`); `bulma/css/versions/bulma-no-helpers{,-prefixed}.min.css` and siblings (`--bulma-light-l` and 43 others — 106 same-block re-assignments on the tree, of which 44 are emittable; see limitation 10) |
-| `extends` | RULED | instrument A: 0 of 103 node types is a type declaration or a supertype clause. instrument B: **0** `@extend` directives on the tree in 1,255 files, although the at-keyword itself is lexable and occurs 46 times in 26 files | Overturn: any `@extend` at-rule, or any `class_declaration`/`superclass`/`implements_clause`/`base_class_clause` node type in the printed vocabulary |
+| `extends` | RULED | instrument A: 0 of 103 node types is a type declaration or a supertype clause. instrument B: **0** `@extend` directives on the tree in 1,255 files, although the at-keyword itself is lexable and occurs 46 times in 26 files — and **pass 7 measured where all 46 live: 46 of 46 are inside an ERROR node** (`css-extend-lexability.ts`), so there is no other position for the directive to be in | Overturn: any `@extend` at-rule on the tree, or any `class_declaration`/`superclass`/`implements_clause`/`base_class_clause` node type in the printed vocabulary |
 | `implements` | RULED | instrument A: 0 of 103 node types is `implements_clause`, `extends_clause`, `superclass`, `interface_implementation`, `base_class_clause`, `type_inheritance_clause`, `mixin_declaration_list` or `super_interfaces` | Overturn: any such node type in the printed vocabulary |
 | `calls` | RULED | instrument A: 0 of 103 node types declares a function (`function_declaration`, `method_definition`, `function_definition`, `arrow_function`, `function_item`, `custom_function_statement`, …). instrument B: **0** `@function` at-rules — CSS Functions and Mixins L4's `@function --add(a,b) { … }` — on the tree | Overturn: any `@function` at-rule on the tree, or any function-declaration node type |
 | `exports` | RULED | instrument A: 0 of 103 node types is `export_statement`, `export_declaration`, `export_list`, `exports_clause`, `export_specifier` or `export_block`. instrument B: **0** `composes: … from …` declarations and **0** `:export` rule_sets (0 `composes` declarations of any kind) | Overturn: any `:export` rule_set or `composes … from …` declaration on the tree |
@@ -2025,6 +2138,9 @@ other.
   `validation/m14/census/css-parsefile-census.ts` → `--json <path>`
 - Ontology instruments A and B (grammar inventory + parse-tree counts):
   `validation/m14/census/css-ontology-probe.ts` → `--json <path>`
+- The `extends` reconciliation (pass 7): where all 46 `@extend` at-keywords live on the parse
+  tree — 46 of 46 inside an ERROR node, 0 inside an at-rule, which is what makes the ruling's
+  0 a property of the grammar: `validation/m14/census/css-extend-lexability.ts`
 - `overrides` same-keyword / cross-keyword split (the measurement that separated the 4
   from the 142): `validation/m14/census/css-overrides-split.ts` → `--json <path>`
 - Mutation run for both css mutant sets:
