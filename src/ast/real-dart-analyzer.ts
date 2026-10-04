@@ -1813,7 +1813,21 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
                 type: ASTEngine.RelationshipType.Calls,
                 confidence: 0.9,
                 line_number: this.nodeLine(leafNode),
-                metadata: {},
+                // A CALLEE can be a binding, not a declaration, and the label has
+                // to say so. `$default(_that)` is a real invocation — freezed's
+                // generated `map`/`maybeMap` takes the mapping function as a formal
+                // parameter named `$default` and calls it — and the family contract
+                // publishes no locals, so the target binds to nothing a consumer
+                // holds. `uses` already carries `isLocalRead` for exactly this and
+                // the `calls` branch consulted `locals` for nothing, so the class was
+                // present but UNCOUNTABLE: 138 `calls -> $default` rows and 50
+                // `calls -> orElse` rows over 4,788 corpus files, indistinguishable
+                // in any report from a call to a method nobody declared.
+                //
+                // Metadata only. No row is added or removed and no confidence moves,
+                // so this cannot change a payload; it makes an existing population
+                // queryable, which is what M14 §4 asks of a heuristic edge.
+                metadata: locals.has(leaf) ? { isLocalRead: true } : {},
               })
             }
           }
@@ -1859,7 +1873,10 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
               type: ASTEngine.RelationshipType.Calls,
               confidence: 0.9,
               line_number: this.nodeLine(calleeNode),
-              metadata: {},
+              // Same reason as the bare-call arm above: a leaf that the enclosing
+              // function binds is a binding, and the row is labelled so a consumer
+              // can tell it from a call to a declared member.
+              metadata: locals.has(method) ? { isLocalRead: true } : {},
             })
           }
         }
