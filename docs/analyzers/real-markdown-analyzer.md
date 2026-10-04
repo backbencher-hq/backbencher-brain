@@ -382,11 +382,31 @@ import { MARKDOWN_RULED } from "./markdown-ruled"
 const RULED_BY_LANG: Record<string, Ruled[]> = { bash: BASH_RULED, json: JSON_RULED, markdown: MARKDOWN_RULED as Ruled[] }
 ```
 
-That edit is **not** in this branch. What IS in this branch is the proof that the table is
-right: the two-line wiring above was applied locally, the arbiter was run for this lane,
-and its verdict table is pasted below. Without the wiring the arbiter parses the whole
-corpus and then exits 2 with `no RULING TABLE for markdown`, which is the gate refusing to
-guess correctly rather than a verdict about markdown.
+The wiring **is** in this branch now, as its own commit (`94e7e4101`, "wip(m60): wire
+MARKDOWN_RULED into the arbiter's RULED_BY_LANG") so it can be dropped independently if the
+supervisor prefers to land it centrally. `ontology-coverage-gate.ts` is shared (§8) and the
+brief for this round asks each lane to apply exactly this edit, so it is applied rather than
+only described; it is one import and one map entry and nothing else.
+
+**An earlier version of this section claimed the arbiter's verdict table for markdown was
+"pasted below". It was not, and could not be.** With the wiring applied the arbiter was run
+twice on the wired table and both runs died before printing a row:
+
+| run | admitted files | exit | last thing it said |
+| --- | --- | --- | --- |
+| 1 | 15,234 | 1 | `[BB-HANG] parser stuck 120s on Grace/sdk/generated/matrix/openapi-generator/rust/docs/DiffDto.md — exiting` |
+| 2 | 15,234 | 1 | `[BB-HANG] parser stuck 120s on FsToolkit.ErrorHandling/gitbook/validation/ofChoice.md — exiting` |
+
+Each run also reported three or four `[BB-PARSE-ERR] … memory access out of bounds` on files
+that are **disjoint** between the two runs, and every one of the six parses alone in
+60–2,678 ms, and eight concurrent `parseFile` calls on them trap 0 times in 16 parses. So
+the trap is a function of concurrency and load, not of a file, and no file-level workaround
+exists at this lane's level. The arbiter's verdict for markdown on this corpus is
+**unavailable**, and the substitute is named below rather than papered over.
+
+Without the wiring the arbiter would instead have parsed the whole corpus and exited 2 with
+`no RULING TABLE for markdown`, which is the gate refusing to guess correctly rather than a
+verdict about markdown.
 
 Two further §8 items the same run established, both needed before a `references` or an
 `imports` edge can be *audited* rather than merely stored:
@@ -967,13 +987,18 @@ Each entry is a place where the graph is narrower or different from the document
     it in the shared registry is a §8 item. **The previous claim of 10 is retracted.**
 15. **The arbiter does not report for this lane** and its refusal is not a lane result. Two
     independent causes, both §8 items: `engine.ts:1412` `process.exit(1)` on a 120 s parse
-    hang in `dart-sdk/.../lsp.md`, and the absence of a `markdown` entry in the gate's
-    `RULED_BY_LANG` table.
+    hang, and — now fixed on this branch — the absence of a `markdown` entry in the gate's
+    `RULED_BY_LANG` table. With the wiring applied the arbiter was run twice and died at the
+    first cause both times, before printing a row, on two different files. The gate's verdict
+    for markdown is therefore **unavailable**, not favourable: the table it would have read
+    is exercised by `validation/m14/fixtures/markdown/ruling-table-adjudication.ts` instead,
+    which transcribes the gate's own four-way decision and runs it over the whole admitted
+    population against the same `script/m14/markdown-ruled.ts` the gate imports.
 16. **Four grammar-level parse errors and one hang** are recorded rather than attributed to
-    the analyzer: `[BB-PARSE-ERR] … memory access out of bounds` on
-    `dart-sdk/pkg/analysis_server/doc/implementation/{lsp,overview}.md`,
-    `element-plus/.github/CONTRIBUTING.zh-CN.md` and
-    `flutter-packages/packages/rfw/CHANGELOG.md`, and the `lsp.md` hang.
+    the analyzer. This round measured the class rather than listing instances: two runs, six
+    distinct files, **zero overlap**, every one parsing alone in 60–2,678 ms, and 0 traps in
+    16 concurrent `parseFile` calls over those same six. The trap needs concurrency and load,
+    so it is not a property of any file and no file-level exclusion can remove it.
 17. **One edge-recall delta is not decomposed**: 1 of 7,630 pre-filter edges in a 200-file
     draw, cause unknown. Recorded in `validation/m60/markdown/edge-recall-probe.json` rather
     than rounded away.
@@ -1310,14 +1335,14 @@ Not a blank list, and not a list of adjectives. Each item is a fact a consumer c
    `import { MARKDOWN_MUTANTS }` and `...MARKDOWN_MUTANTS,` in
    `script/m14/mutate-analyzer.ts` — following the fsharp / css / nim / protobuf precedent
    already in that file.
-3. **The arbiter has no ruling table wired for markdown.** §8, and now the only reason.
-   `script/m14/markdown-ruled.ts` exists and exports `MARKDOWN_RULED` — six types, each
-   with its instrument, probe, measured count and overturn condition. What is missing is the
-   wiring, which is one import and one `RULED_BY_LANG` entry in
-   `script/m14/ontology-coverage-gate.ts`; the exact line is in this document above.
-   Verified locally: with the two-line wiring applied, the arbiter reports ten rows for
-   markdown instead of exiting 2, and the local edit was reverted before this branch was
-   committed.
+3. **The arbiter's ruling table is wired; the arbiter still cannot finish.** §8, and now the
+   only reason. `script/m14/markdown-ruled.ts` exports `MARKDOWN_RULED` — six types, each
+   with its instrument, probe, measured count and overturn condition — and commit
+   `94e7e4101` adds the one import and one `RULED_BY_LANG` entry to
+   `script/m14/ontology-coverage-gate.ts`. With it applied the gate stops exiting 2 and
+   starts dying 120 s into a file (next item), so the wiring is necessary and not
+   sufficient. `ruling-table-adjudication.ts` is the substitute verdict and says in its own
+   output that it is not the arbiter's.
 4. **The differential does not AUDIT markdown's `references` or `imports`.** §8, and it is
    the more expensive of the two because a label the oracle derives and the compared-set
    allowlist omits is not merely unmeasured — it is measured as a defect. Measured with the
@@ -1326,16 +1351,20 @@ Not a blank list, and not a list of adjectives. Each item is a fact a consumer c
    ANALYZER side while leaving on the truth side. With `references` and `imports` added:
    MISSING=0, covered 100%. `script/m14/differential.ts`, one line, and the comment beside
    it — which asserts "the lane emits no `references`" — is now false.
-5. **The arbiter dies on one corpus file.** §8. `src/ast/engine.ts:1412`'s
-   `process.exit(1)` on a 120 s parse hang ends the whole gate run, so any lane whose corpus
-   contains a file the block grammar cannot parse in 120 s can never be gated. Two runs of
-   this lane's own gate named two different files —
-   `dart-sdk/pkg/analysis_server/doc/implementation/lsp.md` and, on the wired run,
-   `flutter-packages/packages/rfw/README.md` — and both runs also reported
-   `[BB-PARSE-ERR] … memory access out of bounds` on 2–4 files. The hang is
-   non-deterministic across runs, so a corpus draw is not reproducible while it exists. The
-   comment says the indexer is incremental and re-running resumes; a gate has no such
-   property.
+5. **The arbiter dies on one corpus file.** §8, and the only remaining blocker on this
+   lane's gating. `src/ast/engine.ts:1411`'s `process.exit(1)` on a 120 s parse hang ends the
+   whole gate run, so any lane whose corpus contains a file the parser cannot finish in
+   120 s can never be gated, and the gate is the one instrument with no way to resume —
+   `whole-corpus-census.ts` gets that property by sharding, because a census is not a gate.
+   Two runs of this lane's wired gate named two different files
+   (`Grace/sdk/generated/matrix/openapi-generator/rust/docs/DiffDto.md`, then
+   `FsToolkit.ErrorHandling/gitbook/validation/ofChoice.md`) and the three-to-four
+   `[BB-PARSE-ERR] … memory access out of bounds` files per run are **disjoint** between
+   them; all six parse alone in 60–2,678 ms and trap 0 times in 16 concurrent parses. The
+   hang is load- and concurrency-dependent, so it moves between runs and a corpus draw is
+   not reproducible while it exists. A minimal change that would fix it without touching
+   parse semantics: retry the file on a FRESH `Parser` instance once, and only then take the
+   process down — `getParser` already knows how to build one (`engine.ts:1034`).
 6. **The canonical `M14.0.F5.json`** has no markdown row. markdown's F5 rows are
    measured and pinned in `differential-baseline.json`, but a scoped run is refused the
    right to write the milestone artifact — that belongs to the 43-language sweep.
