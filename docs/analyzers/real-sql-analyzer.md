@@ -390,13 +390,17 @@ from a pass that did not measure it, and no instrument in this repository reprod
 ### DERIVATION findings — 7 of 7 emitted types
 
 Every type this analyzer emits is a **DERIVATION finding**: stored, and compared against
-nothing. `script/m14/differential.ts` exports **116 distinct `derive*` oracle functions**
-across `script/m14/` (161 export sites, some re-exported) and **none for SQL** — re-counted at
-pass 3 and unchanged, so **7 of 7 emitted types** remain DERIVATION findings —
-`deriveJavaEdges`, `deriveGoEdges`, `deriveCSharpEdges`, `deriveDartEdges`, `deriveZigEdges`,
-`deriveJuliaContainsTruth` and 110 others, no `deriveSqlEdges`. Pass 1 reported 68; that number
-was a count of one grep pattern on one file and is superseded by the 116 above, which counts
-distinct names across the whole directory.
+nothing. `script/m14/differential.ts` exports `derive*` oracle functions that live across
+`script/m14/` — **106 distinct names at 166 export sites** (some re-exported), re-counted at
+pass 6 — and **none for SQL**, so **7 of 7 emitted types** remain DERIVATION findings. The names
+belong to other lanes (`deriveJavaEdges`, `deriveGoEdges`, `deriveCSharpEdges`, `deriveDartEdges`,
+`deriveZigEdges`, `deriveJuliaContainsTruth` and 100 others); there is no `deriveSqlEdges`. Pass 1
+reported 68; that number was a count of one grep pattern on one file and is superseded, first by
+116 (counted across the whole directory at pass 3) and now by 106. **Both the 116 and the 106 move
+as other lanes add and remove oracles** — the figure is a property of the shared directory at the
+moment it is counted, not of this lane, which is why it is re-counted rather than cited. What does
+not move, and is the finding: the count for SQL is **0** at every one of those measurements, so the
+denominator of 7 is not in dispute.
 
 **The mechanism changed too, and the old symptom no longer reproduces.** Pass 1 recorded that a
 scoped run exits with "derived ZERO truth edges". Today it does not even get that far:
@@ -1261,7 +1265,7 @@ The pass-2 defects and their measurements are in *PASS 2 — the adversarial aud
 follows is the residue that is a GAP rather than a fixed defect, plus the two §8 items.
 
 - **SQL-G14 — the shared differential has no SQL oracle and now skips the lane outright.**
-  116 distinct `derive*` oracle functions across `script/m14/`, none for SQL, and
+  106 distinct `derive*` oracle functions across `script/m14/` (166 export sites), none for SQL, and
   `LANG_REPOS` has no `sql` entry, so `differential.ts --lang sql` prints
   `SKIP sql: no corpus repo mapped in LANG_REPOS` instead of running. All 7 emitted types are
   DERIVATION findings. **§8.** The specification: an oracle must derive SQL truth from the tree
