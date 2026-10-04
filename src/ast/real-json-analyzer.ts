@@ -35,6 +35,19 @@ interface JsonContext {
   validationSymbols: ASTEngine.UniversalSymbol[]
   apiEndpointSymbols: ASTEngine.UniversalSymbol[]
   dependencySymbols: ASTEngine.UniversalSymbol[]
+  /** A declared dependency's VERSION RANGE, keyed by the dependency symbol's `fullPath`.
+   *
+   *  This exists because `dependencyVersion` used to look the symbol up in `symbolMap` and
+   *  read its `returnType`, which is the dependency VALUE'S JSON TYPE — so every published
+   *  `metadata.version` on a `package_dependency` edge read `"string"`, or `"unknown"` when
+   *  the lookup missed. `"^4.11.3"` was in the tree the whole time, one node away, in the
+   *  pair's `value`. A metadata field whose name says version and whose value says `string`
+   *  is worse than no field: it is a type assertion a consumer will believe.
+   *
+   *  Populated in the same walk that already holds the pair's `value` node. Recorded there
+   *  rather than re-derived in a later pass because a re-read of the tree to recover a value
+   *  the walk already had is the shape that produced this bug. */
+  dependencyVersions: Map<string, string>
   /** A key declared TWICE inside one object. The second declaration replaces the first
    *  under every mainstream parser, which is the relation the bash lane calls
    *  `overrides`, and RFC 8259 §4 says only that names SHOULD be unique and that a
@@ -126,6 +139,7 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
       validationSymbols: [],
       apiEndpointSymbols: [],
       dependencySymbols: [],
+      dependencyVersions: new Map(),
       overrideCandidates: [],
       usesReferenceLiterals: false,
       usesClassDeclarations: false,
@@ -430,7 +444,16 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (symbol.metadata.isReference) ctx.referenceSymbols.push(symbol)
       if (symbol.metadata.hasValidation) ctx.validationSymbols.push(symbol)
       if (symbol.metadata.isApiEndpoint) ctx.apiEndpointSymbols.push(symbol)
-      if (isDependencyContainerPath(parentPath)) ctx.dependencySymbols.push(symbol)
+      if (isDependencyContainerPath(parentPath)) {
+        ctx.dependencySymbols.push(symbol)
+        // The version range, read from the value node this branch already holds. Only a
+        // string value carries one; npm allows an object (`{"name":…}` alias form) and
+        // composer allows an array, and neither has a range to publish.
+        if (value.type === "string") {
+          const range = this.stripQuotes(String(value.text ?? ""))
+          if (range.length > 0) ctx.dependencyVersions.set(path, range)
+        }
+      }
 
       if (value.type === "object" || value.type === "array") stack.push({ node: value, parentPath: path, parentName: key })
     }
@@ -1165,10 +1188,10 @@ const bracket = parent.lastIndexOf("[")
 
   private dependencyVersion(ctx: JsonContext, dependency: ASTEngine.UniversalSymbol): string {
     const fullPath = String(dependency.metadata?.fullPath || "")
-    const parts = fullPath.split(".")
-    const parent = parts.slice(0, -1).join(".")
-    const version = ctx.symbolMap.get(`${parent}.${dependency.name}`)
-    return version?.returnType || "unknown"
+    const recorded = ctx.dependencyVersions.get(fullPath)
+    if (recorded !== undefined) return recorded
+    // No range to publish, and saying so beats inventing one: the value was not a string.
+    return "unspecified"
   }
 
   /**

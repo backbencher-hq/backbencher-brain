@@ -262,7 +262,33 @@ const jsonArrayItemNamedFromBareName = (r: any) => ({
   }),
 })
 
-export const JSON_MUTANTS: Mutant[] = [
+/** Reverts the fix that made `metadata.version` publish the dependency's VERSION RANGE.
+   *
+   *  The defect it reintroduces is the one this lane shipped: `dependencyVersion` looked
+   *  the symbol up in `symbolMap` and read `returnType`, which is the dependency VALUE'S
+   *  JSON TYPE. So every published `metadata.version` on a `package_dependency` edge read
+   *  `"string"` — or `"unknown"` on a lookup miss — while the real range sat in the pair's
+   *  `value` node. A field named `version` carrying the word `string` is a type assertion a
+   *  consumer will believe, which is worse than publishing nothing. Caught by
+   *  json/manifest/package's `meta.version` pin, and by its two forbids. */
+  const jsonDependencyVersionIsTheJsonType = (r: any) => ({
+    ...r,
+    relationships: (r.relationships ?? []).map((x: any) => {
+      const meta = x.metadata ?? {}
+      if (meta.relationshipType !== "package_dependency") return x
+      return { ...x, metadata: { ...meta, version: "string" } }
+    }),
+  })
+
+  export const JSON_MUTANTS: Mutant[] = [
+  {
+    id: "json/dependency-version-is-the-json-type",
+    language: "json",
+    defectClass: "dishonest-metadata",
+    description:
+      "M14 ontology pass-3 regression: a manifest dependency's `metadata.version` publishes the dependency VALUE'S JSON TYPE (`\"string\"`) instead of its version range, because the lookup read the symbol's `returnType` and the real range was in the pair's `value` node. Every `package_dependency` `uses` edge in the corpus carried it — 4,741 dependency `uses` at the last census. Caught by json/manifest/package's `meta.version` pin and its two forbids.",
+    transform: jsonDependencyVersionIsTheJsonType,
+  },
   {
     id: "json/array-item-named-from-bare-array-name",
     language: "json",
