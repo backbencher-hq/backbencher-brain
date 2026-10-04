@@ -50,6 +50,8 @@ import { tmpdir } from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { writeSealed } from "../lib/evidence.ts"
+// M62 lane-7: project identity has ONE owner. See makeFixture().
+import { getProjectId } from "../../src/util/project-id.ts"
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..")
 const EVIDENCE_DIR = path.join(ROOT, "validation/m44/results")
@@ -110,8 +112,21 @@ async function makeFixture(): Promise<Fixture> {
     "util.ts": "export function util(): void {}\n",
   }
   for (const [rel, content] of Object.entries(files)) writeFileSync(path.join(ws, rel), content)
-  const canonical = path.resolve(ws)
-  const projectId = createHash("sha1").update(canonical).digest("hex").substring(0, 40)
+  // M62 lane-7 finding (2026-10-05): this used to hash `path.resolve(ws)` — a
+  // SECOND derivation of project identity, and it disagrees with the owner
+  // (`src/util/project-id.ts` `getProjectId`) on every platform where the temp
+  // directory is a symlink. macOS is one: `mkdtempSync(tmpdir())` yields
+  // `/var/folders/...`, `realpathSync.native` yields `/private/var/folders/...`,
+  // so the gate seeded project A and the child server opened project B and
+  // answered "workspace is not indexed". The gate therefore failed on macOS
+  // while passing on Linux, and its red said nothing about the law it claims to
+  // check. One owner, imported, plus the assertion below so a future divergence
+  // names itself instead of surfacing as a confusing server error.
+  const projectId = getProjectId(ws)
+  const lexicalId = createHash("sha1").update(path.resolve(ws)).digest("hex").substring(0, 40)
+  if (lexicalId !== projectId) {
+    console.log(`      note: lexical sha1 (${lexicalId.slice(0, 9)}) != canonical (${projectId.slice(0, 9)}) — the temp dir is a symlink here`)
+  }
   mkdirSync(path.join(dataDir, "projects", projectId), { recursive: true })
   process.env.BB_DATA_DIR = dataDir
 
