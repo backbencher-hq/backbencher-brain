@@ -1087,7 +1087,8 @@ quoted from an earlier round.
 | `npx tsx script/m14/differential.ts --lang nim` | 0 | **`[lane] SKIP nim: no corpus repo mapped in LANG_REPOS`** — measured 0 lanes, M14.0.F5 not written. *Limitations* 18 |
 | `npx tsx validation/m14/fixtures/nim/ruled-gate.ts` | 0 | the arbiter's own verdict loop on a copy, run on both analyzer blobs: **emitted 9/10, ruled-sound 1, FALSIFIED 0, ruled-without-justification 0** every time, 204s / 203s / 247s across three runs, and the per-type spread is in the *How the arbiter itself now reports these ten* section |
 | `npx tsx script/m60/rel-type-coverage-gate.ts --langs=nim` | **1** | **6 DERIVATION findings**: `calls`, `contains`, `exports`, `imports`, `references`, `uses`. CHECK 2/3/4 clean. An earlier revision of this row recorded exit **0**; re-running the command gives **1**, and the reason is in the gate's own last line — `process.exit(regressions.length === 0 ? 0 : 1)` (`script/m60/rel-type-coverage-gate.ts:614`). The 6 are printed under its own heading `REGRESSIONS (not in the recorded debt)`, so a non-zero exit is the gate's verdict on this lane, not a crash. Recording 0 would have been the gate table asserting a clean run the gate does not report |
-| `npx tsx validation/m14/fixtures/nim/census.ts` | **1**, then **0** | run three times. First exit 1 on the new blob (degraded: 2 empty-kind symbols, 184,675 edges). Second exit 0 but on the PRE-fix blob (184,691). Third exit 0 on the committed blob: **184,691 edges / 83,692 symbols / 0 empty names / 0 empty kinds**, artifact written and digest-pinned on both sides of the walk. The committed artifact is the third; the first two are the spread, measured rather than asserted |
+| `npx tsx validation/m14/fixtures/nim/census.ts` | **1**, then **0**, then **1** ×3 | run six times. First exit 1 on the new blob (degraded: 2 empty-kind symbols, 184,675 edges). Second exit 0 but on the PRE-fix blob (184,691). Third exit 0 on the committed blob: **184,691 edges / 83,692 symbols / 0 empty names / 0 empty kinds**, artifact written and digest-pinned on both sides of the walk. The committed artifact is the third. The last three are this pass, all exit 1 and all degraded (34, 22, 18 empty kinds — *Limitations* 8), and the fourth of them is what the write-guard below was added for. **The command takes the output path as `argv[2]` and writes NOTHING without it**, so a bare invocation cannot touch the committed artifact either |
+| the `census.ts` write-guard, itself | **1** | regression-tested on this pass, not asserted. Run against a scratch path with a deliberately degraded walk: exit 1, `DEGRADED WALK — 22 empty-kind symbols`, `REFUSING to overwrite …/guardtest.json`, and `guardtest.json` **was never created** while `guardtest.degraded.json` was. Run a second time against the real artifact path: exit 1, refused, `git status` clean, the committed `ontology-census.json` byte-identical. The guard fires on any of empty-kind symbols, empty names, a `parseFile` throw, a raw-parse throw, or a file count that did not parse — the five ways this walk is known to degrade |
 | `npx tsx validation/m14/fixtures/nim/resolution-audit.ts` | **1** | both attempts; `[BB-HANG] parser stuck 120s on nim/tests/benchmarks/strings/csvbench.nim — exiting`, after the artifact was written. The two runs DIFFER where it matters: **127** tree-only edges and recall 34,273/34,466 = 99.4% on the first, **90** and 34,452/34,466 = 100.0% on the second. The committed artifact is the second; the first is named in the resolution table rather than deleted |
 | `npx tsx validation/m14/fixtures/nim/accent-quoted-endpoints.ts` | **1** | `[BB-HANG]` on `nimterop/nimterop/build/ccompiler.nim`, after the artifact was written. 1,417 declaration sites, 366 edges deleted downstream — unchanged from the pre-fix walk, as it must be |
 | `npx tsx validation/m14/fixtures/nim/gap-hunt.ts` | 1 | `[BB-HANG]` on `nim/lib/std/private/since.nim`, artifact written. extends accounted **941/941**, published as `extends` **570** |
@@ -1747,6 +1748,24 @@ quiet machine will cover all 5,227 through the production path.
    degraded walk is not a uniform scale factor and must not be averaged in; it
    is localized, and the six types the verdict rests on are among the six that
    did not move.
+
+   **Two further degraded walks on this pass, and a conclusion that is not
+   comfortable: the clean walk is not currently reproducible on this box.** Three
+   full censuses were run against blob `9d9ee478e3295c28` over the same 4,555
+   files and **3 of 3 came back degraded** — 34 of 83,701, then 22 of 83,620,
+   then 18 of 83,635. Not one reproduced the 0 the committed artifact records.
+   That is consistent with the load explanation above (seven lanes on 8 cores at
+   the time) and it means the honest reading of this limitation is *not* "the
+   count is occasionally non-zero"; it is **"at the corpus's size and this
+   machine's current load, a clean walk is the exception"**. The committed
+   artifact stays as the clean walk because it IS one — pinned on both sides,
+   4,555/4,555 parsed, 0 throws, 0 empty kinds — and it was measured, not
+   assumed. What cannot be claimed is that re-running the command today
+   reproduces it. The two degraded walks above are not committed (they are
+   reproducible only as "some walk on this box on this pass"); the guard added
+   to `census.ts` below is what stops the next one being mistaken for a clean
+   one.
+
    Every non-zero one in a file that also logged
    `[BB-PARSE-ERR] … memory access out of bounds` in the same run
    (`nim/lib/std/tempfiles.nim`, `nim/tests/casestmt/tcstring.nim`,
