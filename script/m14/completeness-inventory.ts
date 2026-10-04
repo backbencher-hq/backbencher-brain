@@ -730,7 +730,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     wasm: "tree-sitter-julia.wasm",
     classification: "julia-completeness.json",
     fixturesDir: "validation/m14/fixtures/julia",
-    docs: ["docs/analyzers/julia.md"],
+    docs: ["docs/analyzers/real-julia-analyzer.md"],
     differentialCheck: "differential-julia",
     perfKey: "julia:julia",
     // The six kinds the analyzer actually emits, measured: calls 85,174 · references 34,898 ·
