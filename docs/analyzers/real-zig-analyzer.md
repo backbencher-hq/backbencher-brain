@@ -2420,3 +2420,144 @@ Nothing in `src/ast/real-zig-analyzer.ts` changed in pass 7 either. Third consec
 pass verified rather than edited: the analyzer has been stable since Z65, and its
 correctness at this commit rests on 9 fixtures, 50 caught mutants, 7 arbiter-emitted
 counts and 3 arbiter-adjudicated rulings.
+
+## Pass 8 — the one applicable relationship that cannot resolve, and why adding a node would fabricate it (2026-10-04)
+
+The incoming brief's requirement D asks that every APPLICABLE relationship resolve. Seven
+of this lane's types resolve against published symbols at 15.2%–44.3% and the eighth —
+`imports` — resolves at **0.15%**: 15 of 10,200 targets bind to a uniquely-named symbol. That
+is the brief's "an edge the graph asserts that is not there", and it is the only type where
+the obvious repair is available in this lane's own file and has not been taken, so it needed
+a verdict rather than a note.
+
+### A. The repair that was available, and not taken
+
+`SymbolKind.Module` EXISTS (`src/ast/types.ts:25`) and this lane deliberately does not use it.
+The Declaration surface table says an `@import` publishes "(no symbol)", on the Java/Go/Rust
+family contract that a module alias is a binding rather than a declaration of a type. So
+publishing the imported module — 10 lines in `real-zig-analyzer.ts` — would give the edge a
+node to bind. Whether that is SAFE is a question about what a Zig import path DENOTES, and
+it is measurable rather than arguable.
+
+Instrument: `validation/m14/fixtures/zig/import-target-identity.ts`, over production
+`parseFile` on all 3,847 tracked `.zig` files in `zig`, `zls`, `ghostty` — **10,286 `imports`
+edges**, 3,847 parsed, 4 degraded, 0 failed. Evidence:
+`measurements/import-target-identity-2026-10-04.log`.
+
+### B. What an import path denotes here — 34.7% is one global name, 65.3% is a per-directory path
+
+| bucket | sites | share | distinct | dirs per literal |
+|---|---|---|---|---|
+| `bare` (one global name each) | 3,567 | **34.7%** | 86 | 4.19 |
+| `std-rooted` (`std/…`) | **0** | **0.0%** | 0 | — |
+| `path-not-std` (relative / package-relative) | 6,718 | **65.3%** | 2,615 | 0.08 |
+| `c-header` | 1 | 0.01% | 1 | 1.00 |
+
+Buckets sum to the edge count exactly: 3,567 + 0 + 6,719 = 10,286.
+
+**`std-rooted` is 0, and that is a corpus fact verified twice.** Modern Zig writes
+`const std = @import("std")` and then `std.mem.copy`; it does not write `@import("std/mem")`.
+The instrument finds 0 such sites, and `git grep '@import("std/'` over all three repos
+independently finds 0. So the "library path" case the repair was imagined for does not occur
+here at all — 767 of the bare sites are `@import("builtin")` (2,190 are `std`), which is a
+compiler pseudo-module with no file and no declaration.
+
+**The bare bucket is already served, not a gap.** `const std = @import("std")` mints a symbol
+named `std` carrying `metadata.zigImportBinding` (`real-zig-analyzer.ts:419`), which is why
+**3,049 `imports` edges carry `targetScope: "file-local"`** and resolve without a corpus-wide
+guess. A `Module` node would duplicate a binding that exists.
+
+### C. The merge hazard — the number that decides it
+
+A `Module` node keyed on the literal AS EMITTED is sound only if one literal denotes one
+module. It does not:
+
+- **2,628 of 6,719 non-bare sites (39.1%)** are written by a literal that **more than one
+  directory** also writes. One node would merge distinct modules.
+- **243 of 2,616 distinct non-bare literals** are multi-directory.
+- The worst case is not marginal: `../std.zig` is written from **24 directories**,
+  `../main.zig` and `../../std.zig` from 18 each, `c.zig` from 14, `main.zig` from 10.
+  `../std.zig` from `zig/lib/std/mem.zig` and from `zig/src/main.zig` are two different files.
+
+So the repair converts **2,628 sites into fabricated merges** — the one outcome the brief bans
+outright, and the reason §4's "never invent an edge the language cannot express" is a rule
+about this case and not a formality. **A `Module` symbol is therefore RULED for the 65.3%
+path population by measurement, and redundant for the 34.7% bare population.**
+
+Keying the node on the CANONICAL resolved path instead of the literal removes the merge — and
+replaces it with a name that is an absolute filesystem path containing the corpus root, so it
+is not portable between machines and not a Zig-level identity. That trade is a schema
+decision, not a lane decision; it is §8 item 12.
+
+### D. Two instrument defects, both found by running it
+
+1. **It undercounted its own hazard by 2,604 sites.** The hazard table was filtered on
+   `target.includes("/")`, on the reasoning that only slashed literals are paths.
+   `build.zig` has no slash and is exactly as relative as `../build.zig`; 2,604 sites were
+   invisible to the table. Fixed, and the fix is what moved the hazard from 1,583 sites /
+   38.5% to **2,628 / 39.1%** — the defect understated the finding it existed to size.
+2. **A shell enumeration cross-check disagreed and the SHELL was wrong.** `for f in $(git
+   ls-files)` reports 4,281 `.zig` files; the node enumeration reports 3,847
+   (zig 2,950 + zls 90 + ghostty 807). The corpus contains paths with spaces —
+   `zig/test/cases/safety/@intFromFloat cannot fit/…` — and word-splitting inflates the
+   count. This is the same defect as §8 item 7's second bullet, and it means any lane
+   enumerating this corpus with a shell word loop is reading 434 phantom files.
+
+### E. The 10,286 / 10,200 difference, attributed
+
+Applying the arbiter's own 512 KB admission ceiling to the same run: **10,199 `imports` edges
+from the 3,833 files under it**, and **87 from the 14 files over it** (3,847 tracked − 14 over
+= 3,833). So 86 of the 87-edge gap to the arbiter's 10,200 is the ceiling, not a disagreement.
+
+The residual is **1 edge in 10,200 (0.0098%)**: the arbiter admitted 3,834 files where this
+run admits 3,833. `ghostty` moved to `822e842` (2026-10-02 23:37), after this lane's
+21:22 census, and this lane's own earlier pass recorded ghostty at 799 tracked files against
+807 now. I cannot attribute the single file from here without the earlier corpus state, and I
+am not going to invent a mechanism for it. It changes no verdict: `imports` is EMITTED on
+either population, and both round to the same coverage.
+
+### F. What requirement D is answered for `imports`
+
+Not "close enough" — answered. Of 10,199 `imports` edges on the admitted population:
+
+- **3,049** resolve file-locally today, to a published `zigImportBinding` symbol.
+- **6,621** name a **filesystem path**, now positively identified as paths rather than left
+  in an undifferentiated "unresolved" bucket — which is the brief's category C distinction
+  between external and never-indexed, made for this type. Of these, **2,628** would be
+  corrupted by a node keyed on the literal.
+- The residue (`external` 92, `neverIndexed-decl` 28, `declared-local` 13, `non-identifier`
+  24, `builtin-fn` 2) is 159 edges, already itemised in the `incoming-resolution` evidence.
+
+The honest statement for the graph is that **`imports` names modules and paths, not
+declarations**, and the unresolvable majority is the second of those — a fact about Zig's
+import syntax, not a defect in the analyzer. That is why `imports` is EMITTED and why it is
+not repairable from this lane's file.
+
+### G. Two additions to §8
+
+12. **`imports` needs a node identity that is not the import literal.** 65.3% of this lane's
+   `imports` edges name a per-directory relative path, and 39.1% of those name a literal
+   written by more than one directory (up to 24), so a node keyed on the literal merges
+   distinct modules. A key on the canonical resolved path is sound but yields an absolute,
+   corpus-root-dependent name that is not portable between machines. Whoever owns the
+   incoming resolution layer decides which; the number that decides it is on this lane.
+
+13. **`script/m14/verify-doc-truth-emissions.ts` cannot run under `npx tsx`.** It uses
+   `__dirname` at line 131 in an ES module and dies with `ReferenceError: __dirname is not
+   defined in ES module scope`; under `bun` it runs and reports
+   `FALSE_NEGATIVE=7 FALSE_POSITIVE=0 UNDOCUMENTED=41 MISSING_DOC=1 NO_CLAIM_TABLE=17`.
+   The lane brief tells agents to run gates with `npx tsx`, so this script is unrunnable as
+   documented. `import.meta.dirname` (Node ≥ 20.11) fixes it. **zig findings: 0**, so this
+   lane's doc-truth position is clean either way.
+
+A third, from §E and not a code change: `docs/DOC-TRUTH-EMISSIONS.md` carries a stale
+pointer for this lane — it says zig's claim table is at line **269** and it is at line
+**283**, because this lane's doc grew by 14 lines. I did not edit it: that register is
+regenerated over all 48 analyzers from the docs on disk, and my worktree holds older
+versions of six other lanes' docs (bash, powershell, protobuf, markdown, json, fsharp), so
+regenerating here would revert their rows.
+
+Nothing in `src/ast/real-zig-analyzer.ts` changed in pass 8. Fourth consecutive pass
+verified rather than edited, and the reason is now measured rather than asserted: the one
+repair this lane's own file could have made to `imports` resolution would fabricate 2,628
+merges, so the analyzer is right not to make it.
