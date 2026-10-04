@@ -2403,6 +2403,128 @@ were inside types this lane already emitted. Reported as applicable rather than 
 verdicts carrying corpus measurements, and numerator and denominator came from different
 instruments.
 
+## Round 13: the property that was false, and the guard that would delete 427 declarations
+
+Round 12's defect was a **depth assumption**, not a missing feature: the handler read
+an assignment's LHS as a direct `variable_name` child, and the grammar holds
+`subscript > variable_name` for `name[i]=v`, one level deeper. Nothing about that is
+visible by reading the handler — it is correct for the shape it names, and the grammar
+has a second shape. So the generalization is a question about **every position the
+analyzer reads by shape**, and this round's work is the instrument that answers it plus
+the finding the instrument produced.
+
+**No verdict changed: 7/7 applicable, 3 measured-absent, 0 unaccounted.** Both findings
+are inside types this lane already emitted, and one of them is a correction to this
+file rather than a change to the analyzer.
+
+### The shape census, whole corpus
+
+`probe-bash-grammar-position-shapes.mts`. A position is a node type **in a role**,
+because round 12 read a `subscript` correctly on the read path (`collectReadNames`
+walks every named child, :1596) and by `namedChild(0)` alone on the assignment path
+(:1641) — counting node types would average those two into one meaningless row. Every
+shape is `node.type`, integer child indices and `startPosition`; **no regex**, and the
+probe owns its `web-tree-sitter` handle rather than borrowing the engine's, because two
+owners of one parser handle is what makes the coverage gate's per-type totals wobble
+(limitation 15).
+
+Whole corpus — 4,133 admitted files, 462,809 tracked, 120 repositories:
+
+| position | nodes | distinct shapes | unread | what the handler requires |
+| --- | --- | --- | --- | --- |
+| `declaration_command` | 9,718 | 245 | **0** | `child(0).text` ∈ {export, local, declare, typeset, readonly} (:1866) |
+| `for_statement` | 1,618 | 797 | **0** | a direct `variable_name` named child (:1737) |
+| `variable_assignment` | 40,170 | 810 | **0** | a direct `variable_name`, or `subscript > variable_name` (round 12) |
+| `subscript` under `variable_assignment` | **5,474** | **16** | **0** | `namedChild(0)` is `variable_name` (:1641) |
+| `function_definition` | 6,773 | 2,737 | **427** | the grammar's own `name:` field (:1430) — see below |
+
+**The fourth row closes round 12's claim at corpus scale.** The doc previously rested it
+on "with a `variable_name` base on **19 of 19**" — a 400-file sample against a
+whole-corpus population of 5,474, which is limitation 27's error taken twice. It is
+**5,474 of 5,474 over 16 distinct base shapes**, in 123 files. `variable_assignment`
+reads 40,170 nodes, the same figure this file already carried, which is the control: had
+the census and the doc disagreed, the doc would be wrong.
+
+**The fifth row is the finding, and it goes the other way from what the probe expected.**
+
+### "A damaged region publishes no declaration" is false
+
+Limitation 33 asserted that property, and `functionName` (:1424) reads the grammar's
+`name:` field with no condition on **where** that field resolves — so the assertion
+invites a guard dropping a function whose name sits near a damaged region.
+`probe-bash-error-name-field.mts`, whole corpus:
+
+| | count |
+| --- | --- |
+| `function_definition` nodes | 6,773 |
+| `name:` field resolved | **6,773 (100%)**, always a `word` |
+| name node inside an ERROR span | **427** (6.3% of definitions, 1.0% of all 42,469 symbols) |
+| — ERROR span starts **before** the definition | **421** — the definition is **intact** |
+| — ERROR span starts **at** the definition | **6** — the definition is damaged |
+| published by production `parseFile` | **427 / 427** |
+| distinct files involved | 73 |
+
+**All 427 are real declarations.** Read, not inferred. The smallest plain-bash instance is
+`hledger/docker/run.sh:4` (619 bytes, third smallest of the 73 files, and the only one
+that is bash rather than zsh): `function usage()` is declared at line 4 and **called**
+from a case arm at line 20, so the declaration is load-bearing. The cause is **one
+byte** — the arm is written `*)usage; exit 1 ;;` with no space after the `*`, the pinned
+grammar drops the whole tail into one ERROR node, and that node's **span** reaches back
+over the declarations before it.
+
+`ohmyzsh/lib/clipboard.zsh:55` is the same population in zsh: `function clipcopy() { cat
+"${1:-/dev/stdin}" | pbcopy; }` nested in an `if`, which a minimal fixture confirms the
+pinned grammar parses **cleanly** (`root.hasError === false`) once the enclosing zsh
+`(( ${+commands[…]} ))` condition is removed. All 6 internal cases hand-read as valid
+bash (`ohmyzsh/lib/functions.zsh:1` `function zsh_stats() {`, `rg.zsh:15` `_rg() {`,
+`perms.plugin.zsh:9` `function set644 {`, and three more).
+
+**So "inside an ERROR node" is a statement about a node's SPAN, not a claim that the
+analyzer recovered a name from wreckage.** Limitation 33 is right about **commands** — a
+damaged region publishes no command and the analyzer invents none — and wrong about
+**declarations**, which is the half that moves symbol counts. A guard built on the
+property as written would delete **427 correct symbols corpus-wide** while reading as
+care.
+
+### Two things this round got wrong, both recorded rather than quietly fixed
+
+**The probe's own first conclusion was wrong.** It printed "427 declarations exist ONLY
+inside error recovery", from reading `alsoDeclaredCleanly=no` as a verdict. That column
+is not a verdict column: a nested `function clipcopy()` inside an `if` is the *only*
+definition of `clipcopy` in its file, so `no` is the expected answer and says nothing
+about whether the declaration is real. The column is annotated in the file so the next
+reader does not repeat it, and the probe now prints the span distinction that actually
+decides the question.
+
+**The first mutant was a no-op that passed for the wrong reason.** Adding the
+ERROR-ancestor test to the `name:` field read does not remove anything, because
+`functionName`'s **positional fallback** then reads the same name off the preceding
+`word` sibling. The guard now refuses outright, which is what the property actually
+invites — and a guard its own fallback defeats is not a guard.
+
+**The first fixture could not be caught by either.** Built from zsh
+`(( ${+commands[…]} ))` constructs with content after them, it **SURVIVED, 40/41**.
+Measured why: the span forms only when the damaged region sits near the **end** of the
+parse, so trailing content prevents it. The fixture is now the verbatim corpus construct,
+and `function-declared-in-damaged-span` pins four functions inside **one** ERROR node
+spanning rows 76-129 — `untouched_one` @76, `untouched_two` @80, `spaced_usage` @89,
+`usage` @106 — all four published, plus `calls usage` from the arm that causes the
+damage.
+
+### Declared limitation of this round's own fixture
+
+The trigger is **unstable under reduction**, and the fixture says so. Measured on the
+pinned wasm: three preceding arms do not span, four arms plus a trailing command do, five
+arms do; dropping **any** trailing line from the 29-line corpus original stops it. So the
+fixture pins behaviour **on this pinned grammar**, and a future wasm that recovered better
+would make it **vacuous rather than wrong**. The corpus measurement in
+`probe-bash-error-name-field.mts` is the instrument that does not depend on the recovery
+continuing to behave this way, and it is the number to quote.
+
+### Coverage, unchanged
+
+**7/7 applicable, 3 measured-absent, 0 unaccounted.**
+
 ## The two fabrications pass 2 found, and the guard that removed them
 
 Pass 1 measured how MANY edges there were. Pass 2's job was to find edges that are
@@ -3117,10 +3239,16 @@ verdicts are therefore quoted against 164 and the difference is stated rather th
     is bounded and measured: 19 of the 123 files holding an element assignment are
     zsh-syntax files (`ohmyzsh`, `nvim-treesitter/tests/query/highlights/zsh`) whose
     trees are damaged enough that `${(P)key}` and `commit:type` do not parse as bash.
-    A damaged region publishes no declaration, which is the same property that makes
-    ERROR nodes safe to ignore for edge counts and unsafe for declaration counts — so
-    **a future grammar that recovered better would raise both the symbol count and the
-    ambiguity count**, and the A/B is the instrument that tells those two apart.
+    **The sentence this entry used to end with — "a damaged region publishes no
+    declaration" — is FALSE, and round 13 measured the counterexample: 427 of the
+    6,773 whole-corpus `function_definition` nodes (6.3%) have their name node inside
+    a tree-sitter ERROR span, production `parseFile` publishes 427 of them, and all
+    427 are real declarations.** The property is right about COMMANDS — a damaged
+    region publishes no command, and the analyzer does not invent the ones the grammar
+    withheld — and wrong about DECLARATIONS, which is the half that matters for
+    symbol counts. See [Round 13](#round-13-the-property-that-was-false-and-the-guard-that-would-delete-427-declarations). So
+    **a future grammar that recovered better would raise the symbol count and lower
+    the ambiguity count**, and the A/B is the instrument that tells those two apart.
 
 34. **One whole-corpus `contains` edge names a declaration the production pipeline
     deletes, and the deletion is in shared machinery this lane does not own.**
