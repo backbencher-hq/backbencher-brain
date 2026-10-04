@@ -3827,3 +3827,35 @@ engine emits no instance id, no file index and no parse ordinal. *Needed, in the
 settle it:* stamp each `[BB-PARSE-ERR]` and `[BB-HANG]` with the parser instance id and the parse
 ordinal, so the pairing can be tested for "the trap poisoned the instance" against "the run happened
 to hand it the same file twice". One line in `src/ast/engine.ts`; not this lane's file.
+
+### I. The census is reproducible only when nothing degrades, and it now says so per run
+
+§B's agreement rests on both sides being 0-fallback runs, and checking that produced the one number
+this pass had not measured: **what a degraded run does to the same population.** Three runs of the
+identical 1,200-file draw (`sha256:d60b554a…`, unchanged across all three):
+
+| run | fallback files | symbols | relationships | kinds outside `SymbolKind` |
+|---|---|---|---|---|
+| 1 | 0 | 36,432 | **108,009** | 0 |
+| 2 | 0 | 36,432 | **108,009** | 0 |
+| 3 | **2** | 36,433 | **108,004** | **1** |
+
+Runs 1 and 2 reproduce **exactly**, so the census is deterministic given a clean run and the variance
+is not in the analyzer. Run 3 is pass 3's finding returning in its original form: two files were
+replaced by `extractFallback`, whose `BasicSymbol` carries no `kind` — which is where the **1 kind
+outside `SymbolKind`** comes from, and it is the only run of the three that produces one. The
+contamination is **5 edges and 1 symbol in 108,009 = 0.005%**.
+
+This is why §B is stated over 0-fallback runs and why both merges **refuse** a degraded shard rather
+than publishing a mixture: a 5-edge difference is small enough to read as noise and large enough to
+change a published total, and nothing in the artifact would say which it was. The single-process run
+prints `parseFile FALLBACK files N` on every run precisely so the reader can tell; the sharded
+pipeline enforces it.
+
+**`--files-from` no longer inherits the `--sample 400` default.** Pass 14 §J recorded that the sample
+cap was applied *before* the `--files-from` filter, so every shard drew 400 of its ~480 files and a
+first run's union was 400 rather than 3,834. Documenting the required `--sample 3834` was a
+workaround, and a workaround on the default path of one's own instrument is a defect. An explicit
+file list now bypasses the default cap; an explicit `--sample` is still honoured, because narrowing a
+named list is a legitimate request. Verified by re-running §B's cross-check with no `--sample` at
+all: same `1,200 files sampled (3834 admitted)`, same draw hash, 0 fallback, 108,009 relationships.
