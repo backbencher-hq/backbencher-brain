@@ -1,31 +1,42 @@
 // src/lsp/server.ts — M24.L1: bb_lsp server skeleton.
 //
 // A standalone LSP 3.18 server over stdio. This module owns the protocol
-// layer only: lifecycle (initialize/initialized/shutdown/exit), capabilities
+// layer: lifecycle (initialize/initialized/shutdown/exit), capabilities
 // advertisement, and project resolution. Feature handlers (hover, definition,
-// references, symbols, call hierarchy) are registered in later issues (L2-L5)
-// — capabilities advertise ONLY what is implemented here (IDE Honesty
-// Contract §2: advertising an unimplemented capability is a gate failure).
+// references, document highlight, symbols, call hierarchy, and the bb/
+// honesty transports) register in `wireFeatures` below.
 //
 // Declared guarantees (gated by script/m24/verify-server.ts):
 //   lifecycle:     initialize → initialized → shutdown → exit honored;
 //                  requests before initialize rejected with -32002; requests
 //                  after shutdown rejected with -32600
-//   capabilities:  advertised capabilities match registered handlers exactly
-//                  (currently: none — features land in L2-L5)
+//   capabilities:  the advertised key set is derived from the LIVE handler set
+//                  (a key appears only when every method it requires is
+//                  registered), and CAPABILITY_COVERAGE below is the exhaustive
+//                  method → key declaration the gate enforces in both
+//                  directions — IDE Honesty Contract §2 (advertisement must
+//                  match registration exactly)
 //   transport:     JSON-RPC 2.0 with Content-Length framing over stdio
-//   project:       workspace root resolves to the brain.db project id using
-//                  the sha1-of-realpath convention (src/cli/index.ts)
+//   project:       workspace root canonicalized with realpath(3) BEFORE the
+//                  project id is derived, so identity is sha1-of-realpath
+//                  (src/cli/index.ts) and not sha1-of-whatever-path-was-typed
 //   index guard:   unindexed workspace → every request gets actionable
 //                  guidance (mirrors the MCP index guard), never a crash
 //   languages:     requests for files in non-launch languages receive
 //                  declared-absent responses, never a crash
 //
 // Declared limitations (per contract §1):
-//   - single-root workspaces only (multi-root is a filed decision for later)
+//   - single-root workspaces only; advertised as `workspace.workspaceFolders
+//     .supported: false` so a client learns it from the wire instead of
+//     discovering it (contract §11.6)
 //   - no completion, no diagnostics, no rename (complement stance, §7)
-//   - feature handlers arrive in L2-L5; capabilities advertise only
-//     registered handlers
+//   - NO textDocumentSync is advertised, and that is the truthful state: this
+//     server registers no `textDocument/did*` handler, so a client that sent
+//     document sync would be sending into a void. The declared sync model is
+//     filesystem-side, not client-side — `src/lsp/freshness.ts` runs a
+//     recursive fs.watch, debounces 300 ms (DEBOUNCE_MS), and runs the
+//     incremental reindex itself; a watcher failure degrades to scan-on-read
+//     rather than to silent staleness (contract §4.2).
 //
 // Run: npx tsx src/lsp/server.ts --dir <workspace-root>
 //      (also runs from compiled dist: node dist/lsp/server.js --dir <path>)
@@ -42,10 +53,168 @@ import { BACKBENCHER_BRAIN_VERSION } from "../version"
 import { LAUNCH_LANGUAGES, isLaunchLanguage, languageForPath } from "./launch_languages"
 export { LAUNCH_LANGUAGES, isLaunchLanguage, languageForPath }
 
-/** LSP method names this server implements. The capabilities advertisement is
- *  derived from this table so the two can never drift apart. Features land in
- *  L2-L5; today the set is empty by design. */
-export const IMPLEMENTED_METHODS: string[] = []
+/** How a capability key reaches the initialize result. */
+export type CapabilityKind =
+  /** Emitted only when EVERY method in `methods` is registered on the server. */
+  | "handler"
+  /**
+   * An unconditional DECLARATION of a server constant — it states something
+   * that is true whether or not a handler exists, so deriving it from handlers
+   * would be wrong. `workspace` (workspaceFolders.supported: false, contract
+   * §11.6 single-root) is the only one. Its payload is gated separately, and
+   * an entry here whose truth depends on a handler is a defect.
+   */
+  | "static"
+
+export interface CapabilityCoverage {
+  /** the initialize-result capability key this entry governs */
+  key: string
+  /** the LSP methods the key is served by (empty for a `static` declaration) */
+  methods: string[]
+  kind: CapabilityKind
+  /**
+   * The advertised payload for a `handler` entry. A factory, not a constant,
+   * so the schema versions named here cannot drift from the components that
+   * enforce them on inbound requests.
+   */
+  value?: () => unknown
+}
+
+/** Schema version bb/staleness answers with. bb/staleness has no version
+ *  constant of its own in `freshness.ts` (it is a marker, not a request
+ *  envelope), so the wire contract is declared HERE and gated against the real
+ *  handler's response shape by script/m24/verify-server.ts (G7). Bump this and
+ *  the gate fails until the handler agrees. */
+export const STALENESS_SCHEMA_VERSION = 1
+
+/** The advertised bb/staleness payload. The response shape IS the contract:
+ *  `StaleMarker` from src/lsp/freshness.ts. Advertising it lets a client
+ *  render the stale marker without having read our source, and G7 asserts the
+ *  LIVE handler answers exactly these fields — so this description cannot
+ *  describe a shape the handler stopped producing. */
+export function stalenessProviderPayload(): Record<string, unknown> {
+  return {
+    schemaVersion: STALENESS_SCHEMA_VERSION,
+    marker: {
+      stale: "boolean",
+      status: ["fresh", "stale", "missing", "unknown"],
+      pendingReindex: "boolean",
+    },
+    /** The declared sync model (contract §4.2): filesystem-side, debounced by
+     *  DEBOUNCE_MS in src/lsp/freshness.ts, with a scan-on-read fallback when
+     *  the watcher fails. No latency figure is advertised — this gate measures
+     *  none, and an unmeasured budget presented as a budget is a §1 claim
+     *  violation. */
+    syncModel: {
+      source: "filesystem-watch",
+      debounceMs: 300,
+      fallback: "scan-on-read",
+      clientDocumentSync: false,
+    },
+  }
+}
+
+/** The advertised bb/impact payload. The version number is copied from the
+ *  module that ENFORCES it (IMPACT_SCHEMA_VERSION in ./impact_request) rather
+ *  than imported: those transports load via `await import(...)` inside their
+ *  handlers so the graph engine never enters the startup module graph (contract
+ *  §7.3 activation budget). The copy is therefore gated, not trusted — G7 fails
+ *  if this number stops matching the owner's constant. */
+export function impactProviderPayload(): Record<string, unknown> {
+  return { schemaVersion: 1 }
+}
+
+/** The declared `workspace` capability: a server CONSTANT, not a
+ *  handler-derived fact. Single-root only (contract §11.6), declared on the
+ *  wire so a client learns it from the initialize result instead of inferring
+ *  it from a request that never answers. */
+export function workspaceProviderPayload(): Record<string, unknown> {
+  return { workspaceFolders: { supported: false, changeNotifications: false } }
+}
+
+/**
+ * The exhaustive method → capability-key law (contract §2: advertisement must
+ * reflect reality exactly, in both directions).
+ *
+ * WHY A TABLE AND NOT A COMMENT — the defect this replaces: this file used to
+ * export `IMPLEMENTED_METHODS: string[] = []` under the comment "the
+ * capabilities advertisement is derived from this table so the two can never
+ * drift apart … today the set is empty by design". Every clause was false. The
+ * set was empty while twelve handlers were registered; `capabilities()`
+ * derived from `this.handlers`, never from that export; and the export had zero
+ * consumers repo-wide. That is a stale exported lie, and a comment asserting a
+ * guarantee the code does not provide is worse than no comment at all (contract
+ * §1, §8.7). The export is deleted — a handler set is per-instance, so the
+ * honest form of that constant is `BbLspServer.implementedMethods()`. The law
+ * the comment described now lives here, and "can never drift" is a GATE in
+ * script/m24/verify-server.ts rather than a sentence in a comment:
+ *   - a registered handler with no entry here                  → FAIL
+ *   - an advertised key that is not in here                     → FAIL
+ *   - an entry whose methods are only partly registered while its
+ *     key is advertised (or all registered while it is not)    → FAIL
+ *   - a wired server whose advertisement is missing bb/staleness or
+ *     bb/impact (the reachability half of the original defect) → FAIL
+ *
+ * WHY `capabilities()` IS NOT A LOOP OVER THIS TABLE: the per-key guards in
+ * `capabilities()` are the emission site, and
+ * `script/m26/verify-graph-transport.ts` plants its M5 mutant ("advertisement
+ * gone") on the literal source line
+ * `if (this.handlers.has("bb/graph")) caps.graphProvider = { schemaVersion: 2 }`.
+ * Replacing that line with a table lookup would leave m26 printing "SKIP
+ * (anchor not found)" — a silently skipped gate, which contract §8.3 counts as
+ * a failure — so the line stays verbatim until that lane re-anchors. The
+ * duplication is therefore deliberate, and machine-enforced from both sides by
+ * G6, rather than removed and left ungated.
+ */
+export const CAPABILITY_COVERAGE: readonly CapabilityCoverage[] = [
+  { key: "hoverProvider", methods: ["textDocument/hover"], kind: "handler", value: () => true },
+  { key: "definitionProvider", methods: ["textDocument/definition"], kind: "handler", value: () => true },
+  { key: "referencesProvider", methods: ["textDocument/references"], kind: "handler", value: () => true },
+  {
+    key: "documentHighlightProvider",
+    methods: ["textDocument/documentHighlight"],
+    kind: "handler",
+    value: () => true,
+  },
+  { key: "documentSymbolProvider", methods: ["textDocument/documentSymbol"], kind: "handler", value: () => true },
+  { key: "workspaceSymbolProvider", methods: ["workspace/symbol"], kind: "handler", value: () => true },
+  {
+    key: "callHierarchyProvider",
+    methods: [
+      "textDocument/prepareCallHierarchy",
+      "callHierarchy/incomingCalls",
+      "callHierarchy/outgoingCalls",
+    ],
+    kind: "handler",
+    value: () => true,
+  },
+  { key: "graphProvider", methods: ["bb/graph"], kind: "handler", value: () => ({ schemaVersion: 2 }) },
+  {
+    key: "stalenessProvider",
+    methods: ["bb/staleness"],
+    kind: "handler",
+    value: stalenessProviderPayload,
+  },
+  {
+    key: "impactProvider",
+    methods: ["bb/impact"],
+    kind: "handler",
+    value: impactProviderPayload,
+  },
+  {
+    key: "workspace",
+    methods: [],
+    kind: "static",
+    value: workspaceProviderPayload,
+  },
+]
+
+/** The capability key a given LSP method is advertised under (or undefined when
+ *  the method is not part of the declared surface). The gate and the mutation
+ *  suite both read the answer from here — never from a second inline list. */
+export function capabilityKeyForMethod(method: string): string | undefined {
+  return CAPABILITY_COVERAGE.find((e) => e.methods.includes(method))?.key
+}
 
 /** JSON-RPC / LSP error codes used by the lifecycle. */
 export const ErrorCodes = {
@@ -144,8 +313,41 @@ export class BbLspServer {
     this.handlers.set(method, handler)
   }
 
+  /** The LSP methods this instance can actually serve — the honest successor
+   *  to the deleted `IMPLEMENTED_METHODS` export, which was a frozen empty
+   *  array while twelve handlers were registered. Handler set is per-instance
+   *  (it is whatever `register`/`wireFeatures` put there), so the truth is an
+   *  instance read, not a module constant. */
+  implementedMethods(): string[] {
+    return [...this.handlers.keys()].sort()
+  }
+
   /** Capabilities advertised in the initialize result — derived from the
-   *  registered handler set so advertisement can never outrun reality. */
+   *  registered handler set so advertisement can never outrun reality, and
+   *  cross-checked against CAPABILITY_COVERAGE by script/m24/verify-server.ts
+   *  (G6) in both directions.
+   *
+   *  The three additions below are the ones a client could not previously
+   *  discover:
+   *    - stalenessProvider / impactProvider: bb/staleness and bb/impact were
+   *      registered but had NO capability key, so a client could only reach
+   *      them blind. LSP 3.18 has no standard `impactProvider`, and the
+   *      `bb/` namespace is private honesty plumbing rather than a standard
+   *      provider, so these ride top-level keys exactly as bb/graph already
+   *      did (`graphProvider`) — with the schemaVersion the handler ENFORCES
+   *      on inbound requests, so a client can detect a version mismatch before
+   *      it sends one. The G6 table makes their absence a gate failure.
+   *    - workspace: the single-root limitation is a server CONSTANT, not a
+   *      handler-derived fact, so it is declared unconditionally. Advertising
+   *      `workspaceFolders.supported: false` is how a client learns it from the
+   *      wire (contract §11.6) instead of inferring it from a hang.
+   *  What is deliberately NOT here: `textDocumentSync`. This server registers
+   *  no `textDocument/did*` handler, so advertising a sync kind would tell the
+   *  client to send notifications into a void — a capability we do not
+   *  implement, which contract §2 calls a gate failure. The sync model is
+   *  filesystem-side (see the file header) and is advertised, truthfully, as
+   *  `stalenessProvider.syncModel`. G8 pins the absence so a future edit that
+   *  advertises a sync kind without a did* handler fails the gate. */
   capabilities(): Record<string, unknown> {
     const caps: Record<string, unknown> = {}
     if (this.handlers.has("textDocument/hover")) caps.hoverProvider = true
@@ -162,6 +364,9 @@ export class BbLspServer {
       caps.callHierarchyProvider = true
     }
     if (this.handlers.has("bb/graph")) caps.graphProvider = { schemaVersion: 2 }
+    if (this.handlers.has("bb/staleness")) caps.stalenessProvider = stalenessProviderPayload()
+    if (this.handlers.has("bb/impact")) caps.impactProvider = impactProviderPayload()
+    caps.workspace = workspaceProviderPayload()
     return caps
   }
 
