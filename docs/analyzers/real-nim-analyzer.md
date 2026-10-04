@@ -1854,6 +1854,31 @@ compiler-injected `=destroy` / `=copy` / `=sink` / `=dispose`, the `ctype getCla
 form, `get procName` / `set procName` accessor pairs, and `$`. The 3 missing are
 `references` → `U`, `Foo` and `T` in two test files.
 
+**The two shared gates, run for the record, and one trap in the interface.**
+`npx tsx script/m14/ontology-coverage-gate.ts nim` **exits 2** — `corpus: 6063
+admitted files`, one `[BB-PARSE-ERR]` memory-access-out-of-bounds on
+`nim/tests/overload/tproc_types_dont_like_subtypes.nim` (*Limitations* 8, in shared
+`engine.ts`), then `no RULING TABLE for nim` and a refusal to report. That is the §8
+registration gap, not a lane failure, and it is unchanged from the pass above.
+**`script/m14/mutate-analyzer.ts` takes no language argument at all** — there is no
+argv filter anywhere in it, so `mutate-analyzer.ts nim` silently performs a full sweep
+of every lane and its exit code belongs to every lane rather than to the one named. A
+lane that reads a non-zero exit from that invocation as its own would be wrong, and
+this is recorded so the next one does not. Measured from the full sweep
+(`session3-mutate-analyzer-shared.txt`): **nim 60 mutants, 60 CAUGHT, 0 survived**,
+reproducing the recorded figure; across all lanes 1,740 caught and 9 surviving, the 9
+belonging to groovy (2), html (3), java, make, php and scala.
+
+**The honesty gate, and which of its findings are this lane's.** `script/m14/
+verify-honesty.ts` exits 6. The **banned-vocabulary lint over `validation/m14` + M14
+docs passes** with this section's text in place. The 22 failures are evidence-freshness
+(`M14.0.F1`–`F9`: declared inputs changed since their recorded commits, 64 to 2,237
+inputs each, because the base branch moved 205 commits) plus fixture files belonging to
+c, clean, csharp, html, sql and fsharp. **Zero name nim.** The gate also reports its own
+defect in the same run — *freshness rule flags every artifact — it cannot distinguish
+current from stale*, with `evidence freshness: 0 artifact(s) current against their
+declared inputs` — which is §8 and not a lane edit.
+
 ## Differential ground truth
 
 Three separate instruments, because the shared one cannot run this lane and the
