@@ -3306,3 +3306,154 @@ already filters by an id prefix, so the mechanism exists — or a line in the sh
 output naming the lane-owned mutants it did not run, so the count it prints is not read as the
 whole. The Z65 file already documents the correct design and why a harness must import the real
 matcher; what is missing is the registration, not the harness.
+
+## Pass 14 — the population rule, applied to this lane's own instruments (2026-10-04)
+
+Pass 13 left one instrument in this lane still holding a hand-written file list. Base has since
+added **the population rule** (`0e37e541e`: *"any instrument printing a count must print the
+population it counted over, and that population must be derived, not hand-written — a hard-coded
+FILES array rots silently the moment a file is added beside it, and keeps reporting 0 with total
+confidence"*). Applying it here found a real defect and overturned a published number.
+
+### A. One instrument of fourteen violated it, and the violation was load-bearing
+
+`gate-flagged-files.ts` printed
+
+```
+-> 0 of 4 flagged files show any defect alone; the flag is a property of the concurrent run, not of the file.
+```
+
+`4` was the length of a literal array at the top of the file. The population those four paths claim
+to cover was **recorded nowhere on disk** — pass 9 §C transcribed them out of a terminal, and the
+run that printed them was never captured. So the sentence was a correct number about a population
+that could not be re-derived, which is the exact shape the rule names.
+
+The instrument carried a comment defending the literals: *"Kept as literals on purpose: a control
+that re-derives its own subjects is not a control."* **That argument is right about the SUBJECTS and
+was being used to excuse the POPULATION**, which is a different thing. The fix keeps the literals as
+subjects and makes the population derived and checked: `--from <log>` reads the flagged set and the
+admitted count out of a captured run, and the probe **exits 3** when a flagged file goes untested.
+
+The other thirteen instruments were checked and are compliant — `ontology-census.ts` prints
+`${sampledFiles} files sampled (${corpusFilesAdmitted} admitted), draw ${drawHash}`;
+`zig-ruled-probe.ts` prints `${draw.length} files, draw sha256:…`; `construct-probe.ts`,
+`filecontainer-census.ts`, `filelocal-miss-class.ts`, `denylist-publication.ts`,
+`population-attribution.ts`, `import-target-identity.ts`, `incoming-resolve.ts` each derive their
+draw. That is 13 of 14 by inspection of the print sites, not by a gate.
+
+### B. The derived population, and the literals have ZERO overlap with it
+
+Captured run, `measurements/gate-run-2026-10-04.log`:
+
+```
+population from …gate-run-2026-10-04.log (3793 bytes, sha256:cf376569230482ec)
+  admitted by that run: 3834   flagged by that run: 1
+  subjects under test: 4 literals; 0 of 1 flagged files covered,
+                        and 4 of the 4 literals are NOT in that run's flagged set
+  NOT COVERED by this probe: …/zig/test/cases/compile_errors/non_error_sets_used_in_merge_error_sets_operator.zig
+  -> the literals are STALE for this run. Re-run with --subjects derived.
+```
+
+**0 of 1.** Not "some of the population went untested" — the one file this run flagged is named by
+**none** of the four literals. Pass 9 §C's "0 of 4" was therefore a statement about four files that a
+fresh run of the same command does not flag at all.
+
+### C. The flagged set ROTATES per run — 3 runs, 6 distinct files, 0 overlap
+
+This is the measurement the control was reaching for, and it is stronger than the one published.
+
+| run | exit | outcome | files flagged |
+|---|---|---|---|
+| pass 9 (in this doc §C, from a terminal) | 1 | abort, no verdict table | `ghostty/src/lib/types.zig`, `ghostty/src/lib/tinyio/windows.zig`, `ghostty/src/lib/struct.zig`, `zig/doc/langref/test_opaque.zig` |
+| `gate-run-2026-10-04.log` | 2 | **scan COMPLETED**, reached the verdict stage | `zig/test/cases/compile_errors/non_error_sets_used_in_merge_error_sets_operator.zig` |
+| `gate-run-2026-10-04b.log` | 1 | abort, `[BB-HANG]` | `zig/doc/langref/test_optional_pointer.zig` |
+
+**4 + 1 + 1 = 6 named, 6 DISTINCT, 0 shared between any two runs.** The smallest file the gate has
+ever flagged is 244 bytes (`test_opaque.zig`, 10–32 ms on its own) and the largest is 28,839.
+
+### D. The control, re-run over the population each run actually produced
+
+Both of today's runs, subjects read from the run's own log:
+
+| run | flagged file | bytes | 5 sequential runs | symbols/rels | fallback | 120 s guard vs slowest own parse |
+|---|---|---|---|---|---|---|
+| run 1 | `non_error_sets_used_in_merge_error_sets_operator.zig` | 267 | 1604, 58, 50, 60, 44 ms | 2 / 2 | false | **75×** |
+| run 2 | `test_optional_pointer.zig` | 479 | 768, 41, 22, 12, 22 ms | 1 / 5 | false | **156×** |
+
+**0 of 2 flagged files show any defect alone: 10 of 10 parses returned, 0 throws, 0
+`fallback: true`.** Exit 0 both times. The pass-9 conclusion — *the variable is concurrency, not the
+corpus* — **survives**, now over 6 distinct flagged files across 3 runs rather than 4 files from 1.
+
+### E. Two published statements this pass corrects
+
+**1. Pass 9 §C's population.** "0 of 4 flagged files" is withdrawn as a whole-population claim. The
+replacement is §D: 0 of 2, over files named by the runs that flagged them. The four literals remain
+in the instrument as its control subjects and are now checked against each run's flagged set.
+
+**2. Pass 9 §B's fan-out claim is too strong.** It read: *"that literal [`Array.from({length: 8})]
+is the whole difference between a run that prints a verdict table and a run that aborts."* At the
+hardcoded fan-out of 8, **run 1 completed the scan and printed the verdict stage; run 2 aborted.**
+Same literal, same corpus, opposite outcomes. So fan-out is not the sole determinant — it is a
+contributor to a race whose outcome is not reproducible run to run. §8 item 7 (`BB_GATE_WORKERS`) is
+**not withdrawn**: fan-out 1 remains 3 of 3 clean and deterministic, so the override still buys a lane
+a verdict on demand. What is withdrawn is the claim that the override is necessary for the scan to
+finish at all.
+
+### F. Three defects in the fix itself, found by running it
+
+- The digit walk-back did not skip the space before `admitted files`, so a log reading
+  `corpus: 3834 admitted files` printed `admitted by that run: NOT STATED IN LOG`. Found by
+  running, not reading.
+- `covered` was computed from the literal side, so zero overlap printed the nonsensical
+  **`4 of 1 flagged files covered`**. It is now counted from the flagged side, where zero overlap
+  reads as `0`.
+- The gate prints **corpus-absolute** paths; they were being joined onto `CORPUS`, producing
+  `/home/…/repositories/home/isaq2321/…`.
+- And after the first commit, a **fourth**: one run names the same file twice (`[BB-PARSE-ERR]` then
+  the `[BB-HANG]` that follows it), so run 2's population read `2` over one file and the summary
+  claimed 2 of 2 were covered. Deduplicated in first-seen order; run 1 re-checked and unchanged at
+  1 of 1, which is the control on the dedupe.
+
+### G. Every gate this lane can run, re-run at this commit
+
+| gate | command | result |
+|---|---|---|
+| typecheck | `npx tsc --noEmit -p tsconfig.json` | clean, exit 0 |
+| fixture suite | `bun run script/m14/run-fixtures.ts --lang zig` | **11 pass / 0 fail**, exit 0, no baseline regression |
+| regex census | `npx tsx script/m12/verify-regex-census.ts` | still `regex census gate FAILED` on 11 other lanes' analyzers — **0 zig rows** |
+| population check | `--from <log>` (literals) | exit **3**, STALE, 0 of 1 covered |
+| population check | `--from <log> --subjects derived` | exit **0**, 1 of 1 covered, 0 defects, both runs |
+
+`src/ast/real-zig-analyzer.ts` did not change in pass 14. Seventh consecutive pass verified rather
+than edited.
+
+### H. What pass 14 could not settle
+
+- **Why run 1 completed and run 2 aborted is not decided.** Both are the shared arbiter at its
+  hardcoded fan-out over the same 3,834-file draw, minutes apart. Nothing in either log distinguishes
+  them beyond the outcome. A third and fourth run would give a rate; that is a supervisor-costed run
+  of a shared gate and this pass spent two.
+- **The arbiter's verdict for zig is still not printed from this branch.** Run 1 reached the verdict
+  stage and exited **2** with `no RULING TABLE for zig`, because `script/m14/ontology-coverage-gate.ts`
+  in this worktree still reads a `RULED_BY_LANG` that does not contain zig. **On base that same line
+  does** — `zig: ZIG_RULED` is at `ontology-coverage-gate.ts:199` — so this is a merge-base artefact of
+  a branch that is 157 commits behind, not a live defect, and this lane does not edit that file.
+- **`test_optional_pointer.zig` yields 1 symbol and 5 relationships.** That is a plausible reading of
+  a 479-byte langref file and was not audited here; it is recorded so a reader does not have to
+  rediscover it.
+
+### I. §8 item 20
+
+**20. No fixed probe can certify the flagged-file population, because the population rotates.**
+
+Three runs of the same shared command over the same corpus flagged 6 distinct files with 0 overlap,
+and the outcome itself varied (1 completed, 2 aborted). Any probe whose subject list is written down
+in advance is therefore measuring a population that run will not reproduce — which is how pass 9 §C
+came to certify four files that a later run does not flag.
+
+`src/ast/pool-worker.ts` / the shared engine's WASM caching is where the rotation comes from, and this
+lane does not own either. *Needed, if the supervisor wants a per-run control rather than a per-lane
+one:* the arbiter should emit its flagged set **as machine-readable output** (a path list or NDJSON
+field on its existing line) at the moment it aborts, so a control probe can read the population from
+the run that produced it instead of from a transcript. Today that information exists only in the
+abort message and dies with the terminal.
