@@ -888,9 +888,25 @@ and the observed ERROR span did not move.
 
 ## Regex inventory
 
-The SQL analyzer has **zero regex usages**, and this is now enforced rather than asserted.
-**Pass 3 extended that to this lane's census scripts and probes, which is where the remaining
-ones were.** The gate's own scan covers `src/ast/real-*-analyzer.ts`, so it reported no SQL
+**ONE regex remains in the analyzer, and an earlier revision of this section claimed zero. That
+claim was false and is withdrawn.** The survivor is `POSTGRES_CATALOG = /^pg_[a-z_]+$/` at
+`src/ast/real-sql-analyzer.ts:167`, used once at :189 to answer "is this target in PostgreSQL's
+system-catalog namespace", on a name already extracted from the parse tree.
+
+It is kept rather than converted, and the reason is that the rule's rationale does not reach it:
+`reviews/regex-policy.md`'s objection is that a regex over SOURCE TEXT matches comments and string
+literals, misses nested syntax, and breaks on the next grammar version. This pattern is applied to
+a single lowercased identifier that came out of a grammar-mandated slot, it is anchored at both
+ends, and it tests a naming convention PostgreSQL itself guarantees for catalog objects. Replacing
+it with a `Set` would mean enumerating every `pg_*` name in the catalogue, which replaces a
+specification with a snapshot of one release. **That is a judgement and it is stated rather than
+assumed** — and it is registered here rather than left for the next reader to discover as a
+discrepancy, which is how this sentence came to be wrong in the first place. `script/m12/verify-regex-census.ts`
+reports **0 SQL entries**, so the gate does not see it; that is a gap in the gate's coverage of
+this lane rather than a clean bill, and it is a §8 item.
+
+**Pass 3 extended the zero-regex property to this lane's census scripts and probes, which is where
+the remaining ones were.** The gate's own scan covers `src/ast/real-*-analyzer.ts`, so it reported no SQL
 finding while the lane's PROBES still carried nine regexes — seven in `adversarial-probe.mts`,
 deciding the A12 capability battery by matching REGEXES over a rendered `rootNode.toString()`
 dump. That is the instrument the ontology gate's header rejects, and it had already produced
@@ -906,8 +922,9 @@ this lane introduced were unregistered and `script/m12/verify-regex-census.ts` r
 `PENDING` while passing silently on the drift. Both were replaced with character scans — a
 dollar-quote tag reader and a `CONSTRAINT` prefix reader — and equivalence was proven over
 **3,406,758 dollar positions** across the corpus plus adversarial input, 0 mismatches. The
-EXECUTE-literal scanner is a character state machine for the same reason. The remaining census
-failures belong to other lanes.
+EXECUTE-literal scanner is a character state machine for the same reason. The census gate still
+FAILS, on **other lanes**: CSS, Julia, Clean, F#, JavaScript, Python, Svelte and TypeScript, with
+`MISSING` and `STALE` rows for each. This lane contributes **0 rows** to that failure.
 
 ## Complexity envelope
 
