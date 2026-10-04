@@ -1236,16 +1236,28 @@ and 12 from running the doc-truth-emissions gate over this lane's table.
     exported function:
 
     ```
-    two body rows:   wrote 2, parsed 1 -> ["uses"]
-    three body rows: wrote 3, parsed 2 -> ["uses","contains"]
+    wrote  2 body rows -> parsed 1: t1
+    wrote  3 body rows -> parsed 2: t1,t2
+    wrote 10 body rows -> parsed 9: t1,t2,t3,t4,t5,t6,t7,t8,t9
     ```
 
     **Measured effect on this lane:** the gate reports `UNDOCUMENTED [dart] calls
-    (relationship)`, and that finding is FALSE. This lane's table is at line 52 and
-    its first body row is `calls`; `parseClaimTable` returns 9 rows where the table
-    has 10, and the 9 it returns are `uses, contains, imports, references, exports,
-    extends, implements, overrides, instantiates`. `classifyClaim("✅")` returns
-    `YES`, so the row would compare cleanly — the doc does claim `calls`.
+    (relationship)` at `docs/analyzers/real-dart-analyzer.md:58`, and that finding
+    is FALSE. This lane's table is at line 58 and its first body row is `calls`;
+    `parseClaimTable` returns 9 rows where the table has 10, and the 9 it returns
+    are `uses, contains, imports, references, exports, extends, implements,
+    overrides, instantiates`. `classifyClaim("✅")` returns `YES`, so the row would
+    compare cleanly — the doc does claim `calls`.
+
+    **It is not this lane's row, and that is the sharper form of the finding.**
+    Re-measured on this branch the gate prints **43 `UNDOCUMENTED` findings, of
+    which 30 are the `(relationship)` shape — a language's dropped first
+    relationship row — across 23 languages**: c, clojure, cpp, csharp, css, dart,
+    elixir, erlang, fsharp, go, groovy, haskell, java, javascript, kotlin, python,
+    rust, scala, scss, svelte, swift, typescript, objective-c. One row per language
+    is ungraded, and the lane that owns the parser does not own 22 of the 30
+    findings. The 8 `FALSE_NEGATIVE` findings the gate does report are real and
+    unaffected by this bug.
 
     **What it must do:** set `started` from the rule row instead of from the first
     body row, i.e. replace lines 465-469 with
@@ -1676,7 +1688,11 @@ same-owner duplicates, which DARTD20 forbids: **zero**.
   0 `RegExpLiteral` nodes and 0 `RegExp` constructions over the 16 lane-owned files, by
   AST. See §Regex inventory.
 - Analyzer hygiene: `script/m14/verify-analyzer-hygiene.ts` — **Dart clean** (the
-  gate's one finding is another lane's elixir node-identity comparison)
+  gate reports 3 findings on this branch and none is Dart: `bare-node-identity-comparison`
+  in `real-cpp-analyzer.ts:170`, `bare-node-identity-comparison` in the haskell
+  analyzer at :1157, and `node-identity-comparison` in `real-elixir-analyzer.ts:942`).
+  Run it with `bun` — under `npx tsx` the script dies on `__dirname is not defined
+  in ES module scope` at line 27 and prints nothing, which reads as a clean lane.
 - Spec: `script/m14/spec/dart-completeness.json` — 95 handled / 106 internal-silent
   / 6 re-scoped gaps / 33 ruled decisions
 - Reviews: `reviews/dart/` — five documents; `master-review-4.md` is the
