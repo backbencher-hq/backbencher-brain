@@ -473,7 +473,9 @@ bun run script/m14/verify-dart-overrides.ts                              # 14/14
 bun run script/m14/verify-dart-references.ts                             # 38 shapes, both sides
 npx tsx validation/m14/fixtures/dart/regex-census.ts                     # 0 regexes, AST-measured
 npx tsx validation/m14/fixtures/dart/regex-census.ts --all               # + the 7 pre-existing tmp rows
-npx tsx validation/m14/fixtures/dart/hang-file-innocence.ts             # 5/5 hang files parse clean alone
+npx tsx validation/m14/fixtures/dart/hang-file-innocence.ts             # 6/6 hang files parse clean alone
+npx tsx validation/m14/fixtures/dart/differential-rotation-instability.ts  # 38/2351 files, 5353 each
+bun run script/m14/differential.ts --lang dart --force-fresh          # 2 lanes, unexplained=0
 ```
 
 ### The six questions, per emitted type
@@ -942,14 +944,15 @@ mislead a reader of the graph.
 
 ## Shared-machinery needs (reported, not edited)
 
-Fifteen changes outside this lane's ownership, each stated so it can be applied
+Sixteen changes outside this lane's ownership, each stated so it can be applied
 without re-deriving it. The files are supervisor-owned per
 `docs/analyzers/ONTOLOGY-WORKSTREAM.md` §Ownership. Items 1–5 predate this pass;
 6–8 come from measuring the incoming direction, 9–10 from removing this lane's
 regexes, 11 from re-running the M60 gate to reproduce the DERIVATION count,
 12 from running the doc-truth-emissions gate over this lane's table, 13–14 from
 re-running the same gates and watching what they wrote to disk, 15 from
-reading `firing-check.ts --json` and finding `files` is per-file, not per-type.
+reading `firing-check.ts --json` and finding `files` is per-file, not per-type, and
+16 from comparing the label this analyzer writes against the enum member that names it.
 Item 13 was rewritten during the final pass: it first named one gate and now names
 ten, because running the documented `npx tsx` invocation over the whole directory
 showed the failure is the directory's, not one script's.
@@ -999,16 +1002,29 @@ showed the failure is the directory's, not one script's.
             [BB-PARSE-ERR] dart | dart-sdk/.../make_return_type_nullable.dart | memory access out of bounds
             [BB-HANG] parser stuck 120s on dart-sdk/.../is_postfix_completion_applicable_test.dart — exiting
             exit 1
+   run 6:  corpus: 33692 admitted files   (2026-10-04, fifth re-measurement, 5m20.421s real)
+            [BB-PARSE-ERR] dart | dart-sdk/pkg/_fe_analyzer_shared/.../flow_analysis_operations.dart | memory access out of bounds
+            [BB-PARSE-ERR] dart | dart-sdk/pkg/analysis_server/lib/src/services/correction/dart/merge_combinators.dart | memory access out of bounds
+            [BB-HANG] parser stuck 120s on dart-sdk/pkg/_fe_analyzer_shared/.../flow_analysis_operations.dart — exiting
+            exit 1
    ```
 
    Run 3's hang file is one run 2 already listed as a PARSE-ERR, and run 3 is the only
    one of the three whose hang file and parse-error set coincide as a single element —
    which is the correlation below holding for the third time, on the strongest form.
-   **Runs 4 and 5 each name a file no earlier run named**, so the set of files this
-   failure has been observed on is five: `flow_analysis_log.dart`,
+   **Runs 4, 5 and 6 each name a file no earlier run named**, so the set of files this
+   failure has been observed on is six: `flow_analysis_log.dart`,
    `list_postfix_completion_templates_test.dart`, `import_elements_test.dart`,
-   `get_statement_completion_test.dart` and `is_postfix_completion_applicable_test.dart`.
-   Two properties hold across all five runs and
+   `get_statement_completion_test.dart`, `is_postfix_completion_applicable_test.dart`
+   and `flow_analysis_operations.dart`.
+   **Run 6 also localizes the population, which five files could not.** Runs 1 and 6 are
+   both under `dart-sdk/pkg/_fe_analyzer_shared/lib/src/flow_analysis/`; runs 2–5 are all
+   under `dart-sdk/pkg/analysis_server/`. Five of six sit in two dart-sdk subtrees
+   rather than spreading across 33,692 admitted files, so the trigger is
+   dart-sdk-analyser-shaped and not a property of large files or of concurrency — the
+   two explanations the earlier runs invited, neither of which the directory evidence
+   supports.
+   Two properties hold across all six runs and
    both argue the same way — the hang file is never the same file twice, and it is
    always a member of that run's own PARSE-ERR set. A grammar defect would name the
    same construct every time; a corrupted WASM heap names whatever the next allocation
@@ -1018,15 +1034,16 @@ showed the failure is the directory's, not one script's.
    rather than a table someone typed: `validation/m14/fixtures/dart/hang-file-innocence.ts`
    runs one production `parseFile` per file, prints symbols and relationships, and
    records for each entry whether that run had also reported the file in its own
-   PARSE-ERR set. **5 of 5 clean**, and the symbol/rel counts agree with the ad-hoc
+   PARSE-ERR set. **6 of 6 clean**, and the symbol/rel counts agree with the ad-hoc
    table below on every file they share:
 
    ```
-   flow_analysis_log.dart                        20,272 B  OK 935 ms — 32 symbols, 136 rels  [hang run 1, also in that run's PARSE-ERR set]
-   list_postfix_completion_templates_test.dart    1,254 B  OK  24 ms —  3 symbols,  20 rels  [hang run 2, also in that run's PARSE-ERR set]
-   import_elements_test.dart                      4,190 B  OK  60 ms —  9 symbols,  84 rels  [hang run 3, also in that run's PARSE-ERR set]
-   get_statement_completion_test.dart             1,715 B  OK  35 ms —  3 symbols,  29 rels  [hang run 4, also in that run's PARSE-ERR set]
-   is_postfix_completion_applicable_test.dart      1,198 B  OK  16 ms —  3 symbols,  20 rels  [hang run 5, also in that run's PARSE-ERR set]
+   flow_analysis_log.dart                        20,272 B  OK 1690 ms — 32 symbols, 136 rels  [hang run 1, also in that run's PARSE-ERR set]
+   list_postfix_completion_templates_test.dart    1,254 B  OK   44 ms —  3 symbols,  20 rels  [hang run 2, also in that run's PARSE-ERR set]
+   import_elements_test.dart                      4,190 B  OK  162 ms —  9 symbols,  84 rels  [hang run 3, also in that run's PARSE-ERR set]
+   get_statement_completion_test.dart             1,715 B  OK   51 ms —  3 symbols,  29 rels  [hang run 4, also in that run's PARSE-ERR set]
+   is_postfix_completion_applicable_test.dart      1,198 B  OK   35 ms —  3 symbols,  20 rels  [hang run 5, also in that run's PARSE-ERR set]
+   flow_analysis_operations.dart                   6,787 B  OK   43 ms — 27 symbols,  27 rels  [hang run 6, also in that run's PARSE-ERR set]
    ```
 
    The probe reports `MISSING — not on disk` rather than a pass when a recorded path
@@ -1035,6 +1052,14 @@ showed the failure is the directory's, not one script's.
    `git ls-files` put the file at `pkg/_fe_analyzer_shared/lib/src/flow_analysis/`.
    An instrument that cannot tell "the file is clean" from "the file is not there"
    would have reported 5 of 5 on a corpus of 4.
+
+   **The per-file parse times are not a stable measurement and the table above should
+   not be read as one.** `flow_analysis_log.dart` parsed in 935 ms, 1022 ms and 1690 ms
+   on three runs of the same 20,272-byte file, a 1.81x spread, while the five files
+   under 7 KB stayed within 16–162 ms. What is stable across every run is the SYMBOL
+   AND RELATIONSHIP COUNT — `32 symbols, 136 rels` on all three — so the parse is
+   deterministic in its output and only its wall time is not. A reader checking
+   determinism should compare the counts, not the milliseconds.
 
    Run 4's two files parse cleanly through production `parseFile` one at a time,
    which is the claim the whole argument rests on:
@@ -1056,8 +1081,8 @@ showed the failure is the directory's, not one script's.
 
    **The `[BB-HANG]` is the CONCURRENT PARSE PATH, and the file it names is
    innocent.** This corrects the reading that a `[BB-HANG]` naming one file is a
-   parser-robustness finding about that file. Every file named across the five runs
-   above parses cleanly through the same production `parseFile`, one at a time — 5 of 5
+   parser-robustness finding about that file. Every file named across the six runs
+   above parses cleanly through the same production `parseFile`, one at a time — 6 of 6
    on the committed probe. The
    `document_color_test.dart` row needed a path to be checkable at all, because
    **dart-sdk tracks two files of that name** and the bare filename names neither:
@@ -1505,6 +1530,41 @@ showed the failure is the directory's, not one script's.
     the fact that per-type BREADTH is what this lane's `census.ts` exists to measure,
     and it measures it uncapped.
 
+16. **`RelationshipType.Imports` carries the value `"brain_import"`, and nothing
+    writes or reads that string.** `src/ast/types.ts:69` reads
+    `Imports = "brain_import"`, while every analyzer emits the label `"imports"` —
+    this one included, at `src/ast/real-dart-analyzer.ts:2558`, and the TypeScript and
+    Python analyzers carry one `"imports"` literal each. `parallel-indexer.ts:3374`
+    writes `rel.type` through verbatim (`const relType = rel.type || rel.relationshipType
+    || "references"`), so the stored `relationship_type` is `imports`.
+
+    **Measured on this lane, through production `parseFile`:** the `imports` rows are
+    10,657 over the 2,735-file census sample and 22,506 over the 4,788-file incoming
+    sample. The census buckets any label outside its ten-name ontology list under a
+    `<non-ontology labels>` key rather than dropping it, that key is **absent** from
+    its output, and its ten per-type counts sum to exactly its own relationship total
+    (403,674) — so this analyzer emits exactly ten distinct labels and one of them is
+    `imports`, never `brain_import`.
+
+    A search for a consumer does not find one: `grep` for `relationship_type =
+    'brain_import'`, `relType === 'brain_import'` and `type === 'brain_import'` across
+    the tree returns nothing. The `brain_import` that *does* appear throughout
+    `import-resolution.ts` and `parallel-indexer.ts` is a **database table** holding
+    `ImportInfo` rows, a different thing from a relationship row.
+
+    **What it must do, and why it is not this lane's to do it:** decide which string is
+    canonical. Either set `RelationshipType.Imports = "imports"` to match every
+    producer, or normalize `"imports"` to `"brain_import"` once in the indexer so the
+    enum, the store and the analyzers agree. **No measured effect today** — nothing
+    queries the string, so all 22,506 dart `imports` edges are visible in
+    `bb_graph`/`bb_impact` today, and `script/m14/firing-check.ts` already carries
+    both spellings in its alias table (`imports: ["brain_import", "imports"]`),
+    which is that script working around this rather than fixing it. The risk is
+    prospective: the first consumer written against `RelationshipType.Imports`
+    instead of against the observed label will match zero rows and report an empty
+    graph for a language whose edges are all there. `src/ast/types.ts` is
+    supervisor-owned, so this is reported.
+
 ## Supported constructs
 
 - Libraries: `library` directive (no symbol — file-level declaration, metadata only) — all fixtures
@@ -1605,38 +1665,40 @@ dart lane regex census — instrument: TypeScript AST (ts.createSourceFile), no 
 scope: lane-owned set
 owned dirs: src/ast/real-dart-analyzer.ts | validation/m14/fixtures/dart/* |
             script/m14/oracles/dart-* | script/m14/dart-* | script/m14/verify-dart-*
-files scanned: 18  (8337 lines)   excluded from its own count: …/regex-census.ts
-lane-owned files: 18
+files scanned: 19  (8559 lines)   excluded from its own count: …/regex-census.ts
+lane-owned files: 19
 
 RESULT: 0 regexes in the lane-owned set.
 ```
 
-The 17 files that are not the instrument are the whole lane-owned set — 4 oracles,
-3 verifiers, the analyzer and 9 fixture harnesses. **Both numbers in that block are 18,
-not 17, and the difference is the census itself:** it counts itself in both totals and
+The 18 files that are not the instrument are the whole lane-owned set — 4 oracles,
+3 verifiers, the analyzer and 10 fixture harnesses. **Both numbers in that block are 19,
+not 18, and the difference is the census itself:** it counts itself in both totals and
 excludes itself only from the MATCH set (`hits.filter(h => laneOwned(h.file) && h.file
 !== SELF)`), because its own header carries example regex literals inside a comment. So
-18 files are scanned, 17 are evidence, and the RESULT sentence's own "MEASUREMENT over
-18 files" is one file generous. The block above previously read `16 (7881 lines)`,
-which matched no run: the set was 16 files then and is 17 evidence files now, so that
+19 files are scanned, 18 are evidence, and the RESULT sentence's own "MEASUREMENT over
+19 files" is one file generous. The block above previously read `16 (7881 lines)`,
+which matched no run: the set was 16 files then and is 18 evidence files now, so that
 figure had been carried through at least one file being added and removed.
 
-**The `lines` figure is one per file larger than the files hold.** 8,337 is
-`content.split(/\r?\n/).length` summed over 18 files, and every file ends in a newline,
-so each contributes one empty trailing segment: the real total is **8,319**
-(`wc -l` over the same 18). It is quoted as the instrument prints it because that is
-what a reviewer sees, and the 18-line gap is named here rather than left for someone to
+**The `lines` figure is one per file larger than the files hold.** 8,559 is
+`content.split(/\r?\n/).length` summed over 19 files, and every file ends in a newline,
+so each contributes one empty trailing segment: the real total is **8,540**
+(`wc -l` over the same 19). It is quoted as the instrument prints it because that is
+what a reviewer sees, and the 19-line gap is named here rather than left for someone to
 find.
 
-**Both figures in that block have moved twice, and both moves are the same lesson.** They
+**Both figures in that block have moved three times, and every move is the same lesson.** They
 read 8,185 / 8,168 until commit `b1b02d2b8` added a single line to a lane-owned file
 (`bothInSameRepoPooled: pooledBoth(t),` in `validation/m14/fixtures/dart/census.ts`) —
 a commit about the census's own JSON field, which is not a regex-bearing file and
 carries no regex. They then read 8,186 / 8,169 until this wave added
-`validation/m14/fixtures/dart/hang-file-innocence.ts`, which took the set to 18 files.
+`validation/m14/fixtures/dart/hang-file-innocence.ts`, which took the set to 18 files,
+and then 8,337 / 8,319 until it added
+`validation/m14/fixtures/dart/differential-rotation-instability.ts`, which took it to 19.
 A quoted instrument block is a measurement of the tree at a commit, and any later commit
 that touches a scanned file invalidates it silently. The `RESULT: 0` did not move
-through either change and could not: adding lines that contain no `RegExpLiteral` adds
+through any change and could not: adding lines that contain no `RegExpLiteral` adds
 no matches. **The count is therefore worth less than the RESULT, and a reader who
 re-runs this should expect the file count to differ by whatever their branch added.**
 
@@ -2048,12 +2110,57 @@ and P(none)=8.73% at n=120; `type-position-probe` at 75,769 mentions / 3,460 res
 525 files; and the differential, forced fresh, at 6,120/6,220 covered with 0 unexplained
 and 100 + 14 MISSING, all `overrides`.
 
+**A fourth pass, same day, re-ran every instrument a third time and changed two more
+figures in this file.** All ten census counts, every breadth row, all four zero-fields,
+the whole 10×9 incoming table, 144,032 / 490,135 / 296,854 / 1,829, the arbiter at both
+n=120 (9/10, 8,290, 120/120, degraded 0) and n=400 (10/10, 53,252, 400/400, degraded 0),
+16/16 fixtures, 42/42 mutants, the 37 / 14 / 38 shape batteries, the `references` oracle
+at 1,203/1,203, the 4/4 mutant battery, the regex census at 0 over 19 files / 8,559
+lines, the zero-`contains` accounting, `type-position-probe` at 75,769 / 3,460 / 4.57%,
+the 2.0117% export base rate, and the r7 truth cost at 9 rows over 525 files **all
+reproduced exactly**. What did not:
+
+- **The differential did not reproduce, and this section's own claim about it was the
+  error.** Two lines below recorded coverage percentage, MISSING and unexplained as
+  "identical across rotations" on the evidence of two adjacent rotations. Rotations 78
+  and 79 read 58.9% with MISSING 11,935. The generalisation was made from n=2 and the
+  swing is a factor of 119 on MISSING. It is corrected in place, with the mechanism
+  measured — 38 of 2,351 proxicall files each carry 5,353 `overrides` truth rows and a
+  60-file draw contains one with probability 62.4%.
+- **`[BB-HANG]` run count n=5 → n=6**, and run 6 localizes the population: runs 1 and 6
+  share `dart-sdk/pkg/_fe_analyzer_shared/lib/src/flow_analysis/` and runs 2–5 share
+  `dart-sdk/pkg/analysis_server/`, so five of six sit in two dart-sdk subtrees rather
+  than spreading across 33,692 admitted files.
+- **The hang-file innocence probe's per-file PARSE TIMES are not a measurement** and
+  the table now says so: `flow_analysis_log.dart` parsed in 935 / 1022 / 1690 ms on
+  three runs of the same 20,272-byte file, a 1.81x spread, while its `32 symbols,
+  136 rels` was identical on all three. Determinism is in the counts, not the
+  milliseconds, and a reader checking it should compare those.
+- **`script/m12/verify-regex-census.ts` still FAILS and still names no dart file.** Its
+  14 MISSING rows are `real-css-analyzer.ts` (9) and `real-julia-analyzer.ts` (5), and
+  its 25 STALE rows are clean/fsharp/javascript/python/svelte/typescript. This lane
+  contributes 0 of each, which is the state item 10 asks for and not a pass on the
+  gate.
+- **`script/m14/verify-honesty.ts` still fails with 23**, and the breakdown is
+  unchanged: 12 banned-term (in `fixtures/{c,clean,csharp,html,php,sql}`,
+  `grammar-pins.json` and `results/*`), 9 declared-input sets, 1 milestone check, 1
+  freshness rule. **Zero name a dart file**, checked against the current list rather
+  than the earlier one.
+- **`script/m14/verify-doc-truth-emissions.ts` still cannot run under `npx tsx`**
+  (`ReferenceError: __dirname is not defined in ES module scope`, exit 1) and still
+  reports `UNDOCUMENTED [dart] calls` under `bun run` — item 12's `parseClaimTable`
+  off-by-one, unchanged. `verify-analyzer-docs.ts` reports dart's row clean
+  (`missingSections: []`, `ontologyGaps: []`) across 8 required sections. Both scripts
+  write supervisor-owned artifacts; the two this run touched
+  (`docs/DOC-TRUTH-EMISSIONS.md`, `validation/m14/results/analyzer-docs.json`) were
+  reverted uncommitted.
+
 **What did not reproduce is recorded as corrected, in the sections that carry it:** the
 `28 further positions` of the type inventory (33 positions exist — this section's "28"),
 the quoted regex-census block (`16 (7881 lines)`, which matched no run — now 18/8,337
 with the self-count explained), the `document_color_test.dart` row that named a
-basename two tracked files share, and the `[BB-HANG]` run count (n=2 → n=3 → n=4 → n=5,
-each new run naming a hang file no earlier run named and each innocent on the same
+basename two tracked files share, and the `[BB-HANG]` run count (n=2 → n=3 → n=4 → n=5 →
+n=6, each new run naming a hang file no earlier run named and each innocent on the same
 evidence as the first).
 
 **A third pass, same day, changed two more figures in this file, both from the same
@@ -2085,7 +2192,10 @@ analyzer at HEAD and its BEFORE column is pinned to `8286c7391`. The live-corpus
 `ProxiCall/lib` figures (1,294 files, 675,964 relationships) were not re-derived —
 that checkout is outside this worktree and is not the sampled corpus. The
 `--dart-deps` index table was not re-run; it is a harness-side option over the
-differential's own corpus.
+differential's own corpus. `script/m14/incoming-check.ts` was not re-run in the
+fourth pass: it is shared machinery absent from this branch, and the committed
+`incoming-census.ts` measures the same direction over 4,788 files with the per-type
+and per-cause breakdown this lane's report needs.
 
 The 2026-10-01 state was: both differential lanes at `--dart-deps=direct` plus the
 vendored Dart SDK library tree, `proxicall:dart` 29,203/29,203 (100%) MISSING 0, and
@@ -2103,12 +2213,63 @@ Re-measured on this branch, both lanes at the default `--dart-deps=none`:
 | proxicall:dart | 6120 / 6220 (98.4%) | **100** | 0 | 2026-10-04 |
 | dart-http:dart | 2263 / 2277 (99.4%) | **14** | 0 | 2026-10-04 |
 
-**The two rows above are from DIFFERENT rotations, and only three of their five
-columns are stable.** `script/m14/differential.ts` picks the 60 files per lane with
-`coldPoolPick`, which by design "draws never-sampled files each wave" and advances a
-per-lane rotation counter on every run (`differential.ts:927-950`, seeded per
-rotation so it is reproducible *within* a rotation and different *across* one). Two
-consecutive `--force-fresh` runs on this branch:
+**CORRECTED 2026-10-04, later the same day: the 98.4% is one of TWO MODES, and
+the second one is 58.9%.** Two further `--force-fresh` runs on this branch, at
+rotations 78 and 79:
+
+| run | proxicall truth/covered | ratio | MISSING | analyzer edges | unexplained |
+|---|---|---|---|---|---|
+| rotation 78 | 29131 / 17196 | 59.0% | **11935** | 16604 | 0 |
+| rotation 79 | 29066 / 17131 | 58.9% | **11935** | 16549 | 0 |
+
+MISSING rose from 100 to **11,935** — a factor of 119 — on the same code, the same
+corpus and the same analyzer, and the section above had recorded coverage
+percentage, MISSING and unexplained as "identical across rotations". They were
+identical across *those two adjacent* rotations and are not identical across the
+range. The generalisation was the error, and it was made from n=2.
+
+**The mechanism is measured, not inferred.**
+`validation/m14/fixtures/dart/differential-rotation-instability.ts` walks the parse
+tree of `proxicall` and counts the population behind the swing:
+
+```
+tracked .dart files 2351
+base  lib/l10n/generated/app_localizations.dart   class AppLocalizations: 5355 member names
+generated subclasses carrying a base member name:
+  files 38 of 2351 tracked (1.616%)
+  own members across them            225,264
+  members whose name the base declares 5,353 PER FILE, every one of the 38
+P(a 60-file draw contains NONE)  3.762e-1
+P(at least one)                  0.6238
+```
+
+So 1.6% of the repository's files each carry **5,353** `overrides` truth rows, a
+60-file draw contains one with probability **62.4%**, and `11935 / 5353 = 2.2`
+files' worth. The harness's own capped MISSING sample agrees: 11 of its 12 printed
+rows are `app_localizations_bn.dart`. The 98.4% reading is the `P(none) = 37.6%`
+branch and the 58.9% reading is the other branch, and **which one you get is decided
+by a rotation counter, not by the analyzer.** `overrides` is the label the allowlist
+drops for dart (§DERIVATION), so every one of those rows is a permanent MISSING by
+construction — a property of the harness's label set meeting a generated-code
+population, not a coverage fact about this lane.
+
+`dart-http` moved too and by less: 2277/2263 MISSING 14 in the earlier session,
+2287/2262 MISSING 25 now, at a nominally identical `rot 74`. The draw hash is
+`549143339f0cfaa9` in both of today's runs and in neither recorded session, so the
+rotation counter is not the only thing that moved between sessions. **The absolutes
+in this section are not reproducible across sessions; the claim under them is.**
+
+What survives every rotation and both sessions, and is what the verdict rests on:
+**`unexplained` is 0 on both lanes in all four runs.** That is the number that says
+the analyzer emits nothing uncorroborated, and it has never moved. Coverage
+percentage and MISSING are properties of the draw.
+
+The same caveat applies to the denominator's own stability, for the same reason.
+`script/m14/differential.ts` picks the 60 files per lane with `coldPoolPick`, which
+by design "draws never-sampled files each wave" and advances a per-lane rotation
+counter on every run (`differential.ts:927-950`, seeded per rotation so it is
+reproducible *within* a rotation and different *across* one). The two runs quoted
+immediately above:
 
 | run | proxicall truth/covered | dart-http truth/covered | ratio | MISSING | unexplained |
 |---|---|---|---|---|---|
@@ -2116,19 +2277,17 @@ consecutive `--force-fresh` runs on this branch:
 | rotation 74 | 6162 / 6062 | 2277 / 2263 | 98.4% / 99.4% | 100 / 14 | 0 / 0 |
 
 So the truth-row count moved by **58** on proxicall and **3** on dart-http between
-two runs of identical code on an identical corpus, and the table above quotes proxicall
-from rotation 73 and dart-http from rotation 74. What a reviewer re-running will fail
-to reproduce is the *denominator*, not the claim: coverage percentage, MISSING and
-unexplained are identical across both rotations, and those are the three numbers the
-verdict rests on. An earlier reading of this file quoted the same absolutes as if
-they were fixed, which is how a rotating sample becomes a lane property.
+two runs of identical code on an identical corpus. An earlier reading of this file
+quoted the same absolutes as if they were fixed, which is how a rotating sample
+becomes a lane property; the swing above is the same failure at a larger amplitude.
 
-Both MISSING counts are what §DERIVATION predicts (100 on the 60-file proxicall sample,
-14 on dart-http), and both are entirely the excluded label — the harness prints a capped
-12-row sample and all 12 printed rows are `overrides` on each lane, and `overrides` is
-the only label the allowlist drops for dart, so the remaining rows cannot be anything
-else. `unexplained` is 0 on both lanes, which is the number that means the ANALYZER is
-not at fault: nothing it emits is uncorroborated.
+Both MISSING counts on those two runs are what §DERIVATION predicts (100 on the
+60-file proxicall sample, 14 on dart-http), and both are entirely the excluded label
+— the harness prints a capped 12-row sample and all 12 printed rows are `overrides`
+on each lane, and `overrides` is the only label the allowlist drops for dart, so the
+remaining rows cannot be anything else. `unexplained` is 0 on both lanes, which is
+the number that means the ANALYZER is not at fault: nothing it emits is
+uncorroborated.
 
 `--dart-deps=direct` on this checkout reports `[project-index] dart deps=direct: +0
 dependency files` — the vendored SDK tree resolves 439 files and 3,574 types (against
