@@ -955,6 +955,36 @@ they are the generated `l10n/generated/app_localizations_*.dart` set — ~30 fil
 fact, not a per-file pathology, and it is the same set that supplies 48% of all
 `property` symbols.
 
+### What this wave cost in latency, measured A/B
+
+The budget question is not "is the analyzer fast" but "did adding `references` make it
+slower, and by how much", and the declared artifact above cannot answer it: it is
+sealed at 2026-09-14 (`bbSeal.sealedAt`), predates every change in this wave, and
+`script/m60/analyzer-complexity-gate.ts` scores dart **unscorable** because its corpus
+row carries no `loadAvg1`, no `loadQuiet`, no `userCpuMsPerFile` and no
+`corpusManifest` — 40 of the gate's 44 lanes are in the same state, so it is a
+project-wide condition and not a dart finding. Its row is also not reproducible from
+the primary corpus: it measured `/tmp/dart-corpus` at 281.9 s for 399 files (707
+ms/file) where the same instrument on real corpus files runs at 129–165 ms/file.
+
+So the delta was measured directly, alternating the two analyzer blobs so the load
+condition is shared rather than assumed: 300 files (5 repositories × 60, stride),
+`BB_DART_CONC=1`, runs in the order AFTER, BEFORE, AFTER, BEFORE.
+
+| analyzer | run 1 | run 2 | mean | per file | symbols | relationships |
+| --- | --- | --- | --- | --- | --- | --- |
+| this wave's HEAD | 49,450 ms | 50,111 ms | 49,781 ms | 165.9 ms | 15,154 | 48,306 |
+| pre-M14 `8286c7391` | 49,390 ms | 48,532 ms | 48,961 ms | 163.2 ms | 15,154 | 47,882 |
+| **delta** | | | **+820 ms** | **+2.7 ms/file** | **0** | **+424 (+0.89%)** |
+
+**+1.67% wall for +424 edges (+0.89%), and the symbol count is unchanged** — the whole
+cost is the type-mention pass and nothing else. The 424 are all `references` (430
+emitted, less the 6 R7 rows the filter removes: 5 `uses`, 1 `contains`). Against the
+declared 400-file corpus budget of 600 s, 400 files at the measured 165.9 ms/file is
+66.4 s, so the addition is 9.0x inside the budget rather than a marginal pass — and
+that projection is stated as a projection, not as a measurement of the declared
+`corpus_subset`, whose file set this lane cannot re-derive.
+
 Hot-path audit: single iterative AST traversal (explicit stack, no recursion
 depth risk); scope carried per-frame as immutable snapshots (no shared
 mutable stack — children are processed later from the DFS stack, so scope
