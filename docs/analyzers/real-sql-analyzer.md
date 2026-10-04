@@ -130,9 +130,13 @@ action edge and `recordDml` passed **no metadata at all**, so for `calls` the fi
 undefined on every edge in the corpus. Measured before the fix: **0 of 3,827 `calls` and 0 of
 the qualified `uses` edges carried the tier**, and 2,254 carry it now. The adversarial probe
 re-derives the expected tier independently of the analyzer's own table and reports, at this HEAD,
-**3,892 of 3,892 `calls` and 9,106 of 9,106 `uses` edges AGREE, 0 disagree**
-(`adversarial-probe.json`, `A3-tier-AGREES-with-the-metadata` / `A4-tier-AGREES-with-the-metadata`)
-— a probe that read the analyzer's own mapping could not have reported a disagreement.
+**3,892 of 3,892 `calls` and 9,101 of 9,101 `uses` edges AGREE, 0 disagree**
+(`pass8-adversarial-probe.json`, `A3-tier-AGREES-with-the-metadata` / `A4-tier-AGREES-with-the-metadata`)
+— a probe that read the analyzer's own mapping could not have reported a disagreement. The `uses`
+population reads 9,101 and not the census's 9,106 because one of 1,955 files degraded in that run;
+the 5-edge difference is `87.sql` alone, which yields its 5 `uses` edges in 4 of 4 solo `parseFile`
+calls. `0 disagree` is verifiable as the ABSENCE of a `…-tier-DISAGREES-…` probe key, which is a
+stronger form than a zero the probe chose to print.
 
 `confidence` is **1 on all 31,066 edges and 0 edges fall below 0.7.** That is a claim rather
 than an omission: no edge this analyzer emits is a guess about a *name*. Where the analyzer
@@ -148,13 +152,14 @@ unexplained reason", which is 196 and is named as such rather than folded into t
 number. Measured before the guard export the two were indistinguishable, and a drifting copy
 of the lists would have turned a working guard into a reported defect.
 
-## Ontology verdicts — all ten types (verdicts and counts re-measured at pass 4, 2026-10-04; incoming direction at pass 5; every gate re-confirmed at pass 6 and again at pass 7, 2026-10-04)
+## Ontology verdicts — all ten types (verdicts and counts re-measured at pass 4, 2026-10-04; incoming direction at pass 5; every gate re-confirmed at passes 6, 7 and 8, 2026-10-04 — pass 8 also re-derived this page's OWN figures from the stored artifacts and corrected four of them, see *PASS 8*)
 
 Instrument: production `parseFile` (not `analyze()`) over **1,955 of 1,955 admitted SQL files, of
 which 16 corpus repositories contribute at least one**, size cap 512 KB, **every** admitted file sampled rather than a subset, walked as
 **8 strided shards and merged** (see *Reproducibility*). Artifacts, all under
 `validation/m14/fixtures/sql/measurements/`:
-`pass7-census.json`, `pass7-sharded-arbiter.json`,
+`pass8-census.json`, `pass8-sharded-arbiter.json`, `pass8-adversarial-probe.json`,
+`pass8-partition-by-sites.json`, `pass8-incoming-corpus.json`, `pass7-census.json`, `pass7-sharded-arbiter.json`,
 `pass4-census.json`, `pass4-census-4shard.json`, `pass5-sharded-arbiter.json`,
 `pass4-arbiter-shape-diff.json`, `pass4-descendants-equivalence.json`,
 `pass3-adversarial-probe.json`, `pass3-construct-probe.json`, `pass3-incoming-corpus.json`,
@@ -1686,8 +1691,10 @@ follows is the residue that is a GAP rather than a fixed defect, plus the two §
   oversight.
 - **`extends` is RULED against the wired grammar, not against SQL.** SQL has table inheritance
   in two forms — `INHERITS (p)` and, since PostgreSQL 11, `PARTITION OF p` — and the grammar
-  cannot represent either. The five-shape capability battery that establishes this is recorded
-  in `adversarial-probe.json` and the overturn condition is a parse, not a node's spelling.
+  cannot represent either. The seven-shape capability battery that establishes this is recorded
+  in `pass8-adversarial-probe.json` — the seventh shape being the `partition_by` window-function
+  clause, which the first six never covered because none of them is that construct — and the
+  overturn condition is a parse, not a node's spelling.
 
 ### Added by pass 3 (2026-10-03)
 
@@ -1987,6 +1994,34 @@ above can be used for.
     queries over 1,955 files, so the index is correct but its cost is still linear in tree size per
     query until the queries are hoisted. No corpus file degrades, and no headline number depends on
     which side of a budget a file lands on.
+22. **This page's figures were audited against the analyzer for seven passes and against THEMSELVES
+    for one, and the eighth pass found four wrong.** Passes 1–7 built independent oracles and
+    measured the analyzer's output; nothing re-derived the page's own arithmetic from the stored
+    artifacts. Pass 8 did, and found that the `partition` substring search had **three** matching
+    node types where the page named two, that two files this lane owns disagreed about the size of
+    the node-type inventory (**465** vs **480**), and that three `contains` resolution percentages
+    were off by one in the last digit. None of the four changed a verdict, and that is the finding
+    rather than a reassurance: **a measurement can be right and the sentence quoting it can still be
+    wrong**, so an audit that only re-runs the instrument audits half of what it appears to. The
+    remaining risk is that the four were the four that a re-read could see — a figure that is wrong
+    in a way that looks plausible is not detectable by reading harder, only by re-deriving.
+23. **The capability battery tests the constructs it already suspects, and that is a structural
+    limit rather than a fixable oversight.** All seven shapes in it are table-partitioning or
+    structural-copy forms, which is why `partition_by` — the one `partition`-named node that is
+    neither — survived six passes unnamed. The battery was widened once because a gap was noticed,
+    and the way it failed is the generalisable part: **widening a battery by adding the case you
+    just noticed does not cover the case you have not noticed.** `partition-by-sites.mts` exists to
+    cover the second kind, because it is generic over `--type` and answers "where does node type X
+    actually sit" for any name a reader wants to challenge, rather than for the six names this lane
+    already thought of.
+24. **A degraded file is a silent subtraction, and the arbiter will not tell you.** The engine
+    answers a parse fault with `extractFallback` — a success-shaped result — so a file lost to a
+    parse error contributes **0** edges and no error the gate can see. Measured twice on this page:
+    the adversarial probe lost **5** `uses` edges on `87.sql` (9,106 → 9,101) and the incoming probe
+    lost **8** across 3 files at concurrency 8. Both were recovered by re-running, which is not a
+    property of the instrument and cannot be relied on: the census's own shard-splitting exists
+    only to bound this, and the arbiter still has no serial-repair pass. **A figure produced by a
+    single-process walk over this corpus is a lower bound and should be quoted as one.**
 
 ## Evidence pointers
 
@@ -2010,6 +2045,11 @@ artifacts are under `validation/m14/fixtures/sql/measurements/`:
 | `pass3-incoming-corpus.json`, `pass3-incoming-boundary.json` | `validation/m14/fixtures/sql/pass3-incoming.mts` | the incoming direction: ambiguity per type, `contains` resolution under three match rules, the trigger/function collision, keyword-named symbols, orphan declarations |
 | `pass3-invocation-why.json`, `pass3-invocation-why-after.json` | `validation/m14/fixtures/sql/pass3-invocation-why.mts` | the cause breakdown for every qualified invocation that carries no `calls` edge, and the 0 that remain unexplained |
 | `pass3-phantom-constraint-before.json`, `pass3-phantom-constraint-after.json` | `validation/m14/fixtures/sql/pass3-phantom-constraint.mts` | 53 fabricated declarations → 0, by the same parse-tree oracle on both sides |
+| `pass8-census.json` (+ `.shard0..7.json`) | `validation/m14/fixtures/sql/ontology-census.mts` at 8 shards | the census after the regex removal: **0 differences against `pass7-census.json` over 208 leaf keys**, which is the evidence that the edit changed no behaviour |
+| `pass8-sharded-arbiter.json` | `validation/m14/fixtures/sql/run-sharded-arbiter.mts --shards 8 --json` | the arbiter's verdict with per-shard node-type vocabularies, so the 256-vs-480 union argument can be re-checked from the artifact |
+| `pass8-adversarial-probe.json` | `validation/m14/fixtures/sql/adversarial-probe.mts` | 24 probe populations at this HEAD, A12's battery now **7** shapes, and `degraded-regex-fallback` recorded as a population so the degraded count is in the artifact rather than inferred |
+| `pass8-partition-by-sites.json` | `validation/m14/fixtures/sql/partition-by-sites.mts` | every `partition_by` site with its parent chain: **44 occurrences, 44 of 44 under `window_specification`, 0 in a table-partitioning declaration** |
+| `pass8-incoming-corpus.json` | `validation/m14/fixtures/sql/pass3-incoming.mts --concurrency 2` | the incoming direction at this HEAD: **0 differences against `pass6-incoming-corpus.json` over 151 leaf keys**, 0 degraded, 31,066 edges |
 
 Carried forward from pass 2 and still the correctness instruments: `ontology-census.json`
 (superseded), `construct-probe.json`, `adversarial-probe.json`, `keep-symbol-census.json`.
