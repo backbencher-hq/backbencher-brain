@@ -465,11 +465,11 @@
   "measurements": [
     {
       "name": "verify-analyzer:sql",
-      "wallTimeMs": 91.716919,
-      "userCpuMs": 138.607,
-      "systemCpuMs": 21.397,
-      "peakRssBytes": 336470016,
-      "rssDeltaBytes": 4194304,
+      "wallTimeMs": 109.707336,
+      "userCpuMs": 161.841,
+      "systemCpuMs": 14.821,
+      "peakRssBytes": 342999040,
+      "rssDeltaBytes": 9699328,
       "databaseBytes": null,
       "files": null,
       "symbols": null,
