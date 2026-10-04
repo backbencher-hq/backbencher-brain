@@ -570,6 +570,51 @@ produced a confident wrong number, and each recorded at the point of the fix:
   phases that write them. A probe that dies on its own plumbing teaches nothing about the
   language.
 
+### `references` has the same defect on 1,066 of 10,411 edges, and it is NOT fixed
+
+The source-authenticity question was put to all three types that resolve below 100 %.
+`references` has it too, at a third the rate:
+
+| class | edges | share |
+| --- | ---: | ---: |
+| source is a name the file writes on some `name=` | 8,771 | 84.2 % |
+| source is a **vocabulary tag** | **1,066** | **10.2 %** |
+| undeclared (reported, not judged) | 574 | 5.5 % |
+
+From `FSharp.Data/docs/data/po.xsd`, verbatim:
+
+```
+"xs:element" -> "comment"     (role=attribute_qname_reference)
+```
+
+`<xs:element ref="comment" minOccurs="0"/>` sits inside `<xs:complexType
+name="PurchaseOrderType">`. The `ref` is a reference made **by that type's content model**,
+so the source is `PurchaseOrderType`; the analyzer published `xs:element`, the anonymous
+constructor's own tag. Same mechanism, third type: `438/438` for `extends`, `495/548` for
+`calls`, `1,066/10,411` for `references`.
+
+**Why this one is reported rather than fixed.** The two fixed cases have a safe rule
+available. For `base=` and `name=` on a call, the owning element is a **known vocabulary
+element**, so `DECLARATION_VOCABULARIES` already says whether the element declares a name
+or names something else. For `references` the carrier can be **any element in any
+vocabulary**, and the question "is this `name` a declaration or a reference?" has no
+general answer in XML: `NAMED_REFERENCE_ELEMENTS` enumerates exactly two exceptions
+(`xsl:apply-templates`, RelaxNG `ref`) across the whole analyzer, and a correct rule would
+have to cover XSLT, XSD, RelaxNG, DocBook, SVG, WSDL and arbitrary application XML.
+
+The obvious shortcut — "the owner is the nearest ancestor-or-self carrying a `name`
+attribute" — is wrong for exactly the constructs that make `references` interesting, and
+wrong in the direction that fabricates: on `<xsl:with-param name="select">` the `name` is
+a **parameter name**, not a declaration, so the rule would attribute the reference to
+whatever ancestor happens to be named `select`. That is a different fabricated endpoint,
+not a fix for this one, and it would land on the highest-volume type in the lane. The
+finding is therefore stated with its count and left unfixed. **What a fix needs:** a
+per-vocabulary table saying which elements' `name` attribute DECLARES, in the same shape
+as `DECLARATION_VOCABULARIES` and `NAMED_REFERENCE_ELEMENTS` but covering the reference
+carriers, plus a decision for the 574 `undeclared` sources, which this probe reports and
+does not judge — a `references` source may legitimately be an element the document only
+CONTAINS, since the analyzer publishes inline elements as symbols.
+
 #### Payload
 
 `extends` grew 438 → 1,429 (+991), `calls` fell 548 → 402 (−146, all of them calls with
