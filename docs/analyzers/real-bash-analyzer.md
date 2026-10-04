@@ -580,15 +580,31 @@ defects in the lane (see the next section):
 
 The six questions ask whether an edge is right. They do not ask whether the
 **evidence** the edge is labelled with is readable by anything downstream. In bash
-it is not, and the measurement is unambiguous.
+the answer differs by which object the fact is attached to, and **an earlier
+revision of this section got it wrong**, which is why the split is stated first.
 
-`parseFile` re-shapes every symbol it returns and forwards the analyzer's
-`metadata` object **only for a hardcoded allowlist**
-(`src/ast/pool-worker.ts:960-1012`). The allowlist today carries CSS keys and
-markdown keys. The bash analyzer publishes **13** metadata keys. The
-intersection is **zero**.
+**RELATIONSHIP metadata survives. SYMBOL metadata does not.** Measured on
+`kubernetes/third_party/gimme/gimme` and `ohmyzsh/lib/clipboard.zsh`, both through
+production `parseFile`:
 
-| key | published by `analyze()` in | survives `parseFile()` in |
+| object | carries metadata | of which the store can read |
+| --- | --- | --- |
+| relationships (`gimme`) | 1 of 1 `overrides` edges | **1**, `overridesLine: 125` |
+| relationships (`clipboard.zsh`) | 23 of 23 `overrides` edges | **23**, `overridesLine: 55` |
+| symbols (`gimme`) | 0 of 126 | **0** |
+| symbols (`clipboard.zsh`) | 0 of 28 | **0** |
+
+The mechanism is visible in the source and matches the measurement exactly.
+`src/ast/pool-worker.ts:1094` forwards relationships whole —
+`filterNoiseRelationships(parsed.relationships, …)` — so `evidenceClass`,
+`isVariableReference`, `isAssignedInFile`, `isShellDefined`, `overridesLine` and the
+round-5 `targetLine`/`targetKind`/`targetResolution` all reach the store. The
+symbol map at `src/ast/pool-worker.ts:960-1012` instead rebuilds `metadata` from a
+hardcoded allowlist that today carries CSS keys and markdown keys.
+
+**So the symbol-side seam is real, and it costs this lane three labels.**
+
+| key | published by `analyze()` in | survives `parseFile()` on a SYMBOL |
 | --- | --- | --- |
 | `bashSpecific` | 105 of 105 files | **0 (0.0%)** |
 | `isScript`, `scriptPath` | 105 of 105 | **0 (0.0%)** |
@@ -602,37 +618,136 @@ intersection is **zero**.
 | `isReadonly` | 15 of 105 | **0 (0.0%)** |
 | `isAlias` | 4 of 105 | **0 (0.0%)** |
 
-Measured twice, on one file, both paths in the same process, because a single
-comparison is what makes this a seam and not a guess:
-`analyze()` returns **22 symbols, 22 of them carrying `metadata`**;
-`parseFile()` on the same `kubernetes/hack/lib/protoc.sh` returns **22 symbols,
-0 of them carrying `metadata`** (`{"name":"KUBE_ROOT",…}` with no `metadata` key
-at all).
+13 keys, 13 at zero, against a 512-file two-path comparison in which
+`analyze()` returned **22 symbols with metadata** and `parseFile()` returned **22
+symbols with none** on `kubernetes/hack/lib/protoc.sh` — same file, same process.
 
-**Why this is a real finding rather than a documentation nit.** The bash
-analyzer's `metadata` is not decorative — three labels in this document are
-*derived* from it, and each is therefore verified on a path the product does not
-run: `exports` (isExported), the round-4 implicit-binding families
-(isImplicitBinding, bindingSite) and the array/scalar distinction (isArray). A
-consumer reading `brain_symbol.annotations` cannot tell a `read`-bound name from a
-`NAME=` assignment, cannot tell an array from a scalar, and cannot tell an exported
-name from a private one. The CSS lane hit this seam first and paid for it by
-losing `declaresProperties`; the markdown lane hit it second and paid for it by
-losing `headingLevel`, which is load-bearing for reconstructing a document
-outline. Both were fixed by adding *that lane's* keys to the allowlist. Bash has
-the same defect and has not been paid for.
+**What it costs, precisely.** A consumer reading `brain_symbol.annotations` cannot
+tell a `read`-bound name from a `NAME=` assignment (`isImplicitBinding`,
+`bindingSite`), cannot tell an array from a scalar (`isArray`), and cannot tell an
+exported name from a private one (`isExported`). The third of those is why the
+`exports` row of the six-questions table is annotated "on the `analyze()` path":
+the label is verified where the analyzer runs and unreadable where the product
+runs, which is a weaker claim than a bare "210/210" and is why the table says so.
+
+The CSS lane hit this seam first and paid for it by losing `declaresProperties`;
+the markdown lane hit it second and lost `headingLevel`, which is load-bearing for
+reconstructing a document outline. Both were fixed by adding *that lane's* keys.
 
 **Reported, not edited** (§8): `src/ast/pool-worker.ts` is shared machinery and
-the allowlist is the supervisor's. The change needed is one line per key in the
+the allowlist is the supervisor's. The change needed is one line per key inside the
 IIFE at line 960, and it should carry only keys a **reader** consumes — the
-precedent comment at lines 951-956 is explicit that the list is deliberately narrow
-precisely to avoid carrying facts that are merely produced. On the bash side the
-candidates that a reader would actually read are `isExported` (to justify the
-`exports` label without re-parsing), `isImplicitBinding` + `bindingSite` (to
-distinguish the four binding constructs from `NAME=`), and `isArray` (because
-`uses` to an array name and to a scalar name are different facts). The other ten
-are produced and unread, and adding them would make the channel larger without
-making it more true.
+precedent comment at lines 951-956 is explicit that the list is narrow precisely to
+avoid carrying facts that are merely produced. On the bash side the candidates a
+reader would actually read are `isExported` (to justify the `exports` label without
+re-parsing), `isImplicitBinding` + `bindingSite` (to distinguish the four binding
+constructs from `NAME=`), and `isArray`. The other ten are produced and unread, and
+adding them would make the channel larger without making it more true.
+
+## One edge, N declarations: the incoming-edge half, measured and partly closed
+
+`src/lsp/impact.ts` obtains its reverse edges by scanning outgoing edges and
+matching targets, so no inbound edge is stored anywhere. Two consequences follow,
+and both are this lane's problem rather than the traversal code's. The incoming
+resolution layer itself is laptop C's and is not duplicated here; what is done here
+is that the lane's own edges carry enough to be resolvable, and that the ones which
+cannot be are counted rather than described.
+
+**Measured** (`probe-bash-ambiguity.mts`, production `parseFile`, 400 files hash
+order, 4,130 admitted / 458,446 scanned — the same denominators as the census,
+which required copying its 512 KB cap and its content-form
+`detectLanguageFromPath`; without the content form the probe admits 3,308 files
+instead of 4,130, because the content form is what admits an extensionless file by
+its shebang):
+
+| type | target present | ambiguous | candidates at DISTINCT lines |
+| --- | --- | --- | --- |
+| `calls` | 961 (18.8%) | 6 (0.6%) | 6 of 6 = 100% |
+| `uses` | 6,239 (80.0%) | **1,185 (19.0%)** | 1,185 = 100% |
+| `contains` | 3,782 (100%) | 658 (17.4%) | 658 = 100% |
+| `exports` | 210 (100%) | 2 (1.0%) | 2 = 100% |
+| `overrides` | 28 (100%) | 28 (100%) | 28 = 100% |
+
+**1,879 ambiguous edges. 0 of them are irreducible by line** — every candidate set
+sits on distinct `startLine`s, so no consumer is ever choosing between two
+declarations on the same row.
+
+**Three of the five types were already disambiguated, and a count cannot tell you
+that.** `contains` puts the child's *name* line on the edge (`nameLineOf`, M60
+#921), `exports` puts the declaration's line on it, and `overrides` carries
+`overridesLine` — verified to survive the worker on `gimme` and `clipboard.zsh`.
+`overrides` reads 100% ambiguous and 100% disambiguated at the same time, which is
+the right shape for it: a redefinition has two declarations *by definition*, and
+`overridesLine` says which is which. `uses` and `calls` put the **use site's** line
+on the edge, which is a different line from the declaration, so the declaration was
+unrecoverable from the row. That is the gap round 5 closed.
+
+### What was added, and what it does not reach
+
+`uses` edges whose target is ambiguous in their file now carry `targetLine`,
+`targetKind` and `targetResolution`. The rule is a lexical-scope chain walked
+**outward**: in the first scope holding a declaration of the name at or before the
+use site, the nearest such line is the answer, and the walk stops. `innermostScope`
+and `outerScope` are published separately because the difference between them is
+the bug.
+
+**The rule was wrong first and the fixture caught it**, which is the part worth
+recording. The first version had no scope chain at all — it took every declaration
+of the name in the file and took the nearest preceding one. So `echo "$SHARED"` on
+line 45 inside `read_early`, whose own assignment to `SHARED` is on line 46,
+resolved to line 37: a declaration inside `read_other`, a function with nothing to
+do with that read. bash has no mechanism by which one function's assignment
+shadows another's, and the edge asserted one. That is not a hypothetical — it is
+what the code did before the fixture existed.
+
+**Edge counts did not move.** `calls` 5,099, `uses` 7,802, `contains` 3,782,
+`imports` 44, `references` 44, `exports` 210, `overrides` 28 — identical before and
+after, on the same 400 files. That is the property that separates disambiguating
+from fabricating: this attributes an existing claim, it does not add one.
+
+**Coverage, stated as what it is rather than as what it could be:**
+
+| of the 1,185 ambiguous `uses` edges | count |
+| --- | --- |
+| now carry `targetLine` (`innermostScope` 674, `outerScope` 99) | **773 = 65.2%** |
+| decline explicitly (`targetResolution: "ambiguousInFile"`, no line) | 17 = 1.4% |
+| carry nothing | **395 = 33.3%** |
+
+The 395 are the **walk's own order**, not a failure of the rule. `declSites` is
+filled as the walk proceeds, so a use emitted above a later declaration of the same
+name cannot see it, and at emit time the name has one declaration and is therefore
+not yet ambiguous. The offline probe, which sees the *final* symbol set, resolves
+97.4% of ambiguous edges — the gap between 65.2% and 97.4% is exactly this
+ordering effect. Closing it needs a declaration pre-pass in the shape of the
+existing `collectFunctionNames`, and that has a blast radius wider than this
+change: `isAssignedInFile` and `isDeclaredGlobal` read the same order-dependent
+index, so making declarations known earlier changes those two flags and can move
+the lane against its own oracle. Reported as the size of the gap rather than
+attempted blind.
+
+**Metadata is added to 15.2% of `uses` edges, not to all of them, and the absence is
+asserted rather than hoped for.** `bash/ambiguity-published-on-every-edge` drops the
+`cands.length < 2` guard, changes no value at all, and is caught only by two
+`forbid` rows on a name declared exactly once. That mutant exists because the task's
+payload budget is a real constraint: 80,851 `uses` edges on the whole corpus would
+each grow up to three keys to state what the edge's target already states, and the
+key's *presence* has to remain the signal that the target was ambiguous.
+
+**One mutant survived the first version of this work, and the reason is structural.**
+`bash/ambiguity-publishes-a-line-when-it-cannot-pick` takes the nearest candidate in
+the branch that is supposed to decline. With the correct rule in place, **no edge in
+the fixture reached that branch at all**, so the fabricator passed through it — the
+same "instrument cannot see the class it was built for" failure the lane's mutant
+file exists to prevent. The fixture could not manufacture the branch's real input,
+because two declarations in one scope are impossible (a second assignment is a
+reassignment, not a declaration), so an `alpha`/`beta`/`gamma` block was added whose
+read is declared by neither its own scope nor the file. That block is in the
+fixture's own source with the limitation written next to it.
+
+**`calls` was left alone, with the reason measured.** 6 ambiguous edges out of 961
+resolved targets is 0.6%, and the same mechanism would apply; it was not applied
+because a second untested edge type is a new claim rather than a closed gap, and
+the 6 are counted here instead.
 
 ## The two fabrications pass 2 found, and the guard that removed them
 
