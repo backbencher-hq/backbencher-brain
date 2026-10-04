@@ -62,11 +62,26 @@
 import * as path from "node:path"
 import { parseFile } from "../../src/ast/pool-worker"
 
+/**
+ * The ten ontology type names, as the STORE spells them on a relationship row.
+ *
+ * The zig lane found the bug in an earlier version of this file: the table was
+ * keyed on "brain_import", which is the value `src/ast/types.ts` gives
+ * RelationshipType.Imports — while `src/ast/engine.ts` gives the SAME member the
+ * value "imports". Two files, one enum member, two values. Analyzers import
+ * RelationshipType from engine, so a relationship row carries "imports", so this
+ * instrument matched nothing and reported imports as 0 in EVERY language while
+ * emitting it. A table that is wrong in a way that always reads zero is worse than
+ * no table, because the zero looks like a finding.
+ *
+ * Resolution is deliberately NOT done by picking one. Both spellings are accepted
+ * below, so the instrument is correct whichever a given analyzer uses.
+ */
 const TYPES = [
   "calls",
   "uses",
   "contains",
-  "brain_import",
+  "imports",
   "references",
   "exports",
   "extends",
@@ -74,6 +89,33 @@ const TYPES = [
   "overrides",
   "instantiates",
 ] as const
+
+/** Store label -> ontology name. Both `imports` spellings are accepted. */
+const LABEL_ALIASES: Record<string, string> = {
+  calls: "calls",
+  call: "calls",
+  uses: "uses",
+  contains: "contains",
+  composition: "contains",
+  part_of: "contains",
+  imports: "imports",
+  brain_import: "imports",
+  references: "references",
+  depends_on: "references",
+  related: "references",
+  exports: "exports",
+  provides: "exports",
+  extends: "extends",
+  inheritance: "extends",
+  implements: "implements",
+  implementation: "implements",
+  overrides: "overrides",
+  override: "overrides",
+  instantiates: "instantiates",
+}
+
+/** Map whatever label a row carries onto the ontology name, or null if unknown. */
+const ontologyName = (raw: string): string | null => LABEL_ALIASES[raw] ?? null
 
 const argv = process.argv.slice(2)
 const JSON_OUT = argv.includes("--json")
@@ -156,10 +198,9 @@ async function main(): Promise<void> {
   for (const t of TYPES) perType[t] = blank()
 
   for (const { rel } of rels) {
-    const label = String(rel?.type ?? rel?.relationshipType ?? "")
+    const label = ontologyName(String(rel?.type ?? rel?.relationshipType ?? ""))
     if (!label) continue
     const row = perType[label]
-    if (!row) continue
 
     const src = String(rel?.source ?? rel?.from ?? rel?.fromSymbol ?? "")
     const tgt = String(rel?.target ?? rel?.to ?? rel?.toSymbol ?? "")
@@ -198,7 +239,7 @@ async function main(): Promise<void> {
     let amb = 0
     let unres = 0
     for (const { rel } of rels) {
-      const label = String(rel?.type ?? rel?.relationshipType ?? "")
+      const label = ontologyName(String(rel?.type ?? rel?.relationshipType ?? ""))
       if (label !== t) continue
       const tgt = String(rel?.target ?? rel?.to ?? rel?.toSymbol ?? "")
       if (tgt.length === 0) continue
