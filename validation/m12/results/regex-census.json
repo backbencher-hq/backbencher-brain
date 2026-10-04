@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "milestone": "M12",
   "purpose": "ast_driven_regex_census_across_wired_analyzers",
-  "generatedAt": "2026-10-04T06:29:38.628Z",
+  "generatedAt": "2026-10-04T19:00:13.849Z",
   "describes": "HEAD blobs (git show HEAD:src/ast/...)",
   "parser": "tree-sitter-typescript (project WASM pipeline)",
   "methodology": "parse analyzer source with tree-sitter; walk for regex literal nodes and RegExp constructors; record location, operation, receiver category, and preliminary classification",
@@ -74,7 +74,7 @@
       "usages": [
         {
           "file": "real-sql-analyzer.ts",
-          "line": 143,
+          "line": 167,
           "column": 26,
           "source": "/^pg_[a-z_]+$/",
           "operation": "other",
