@@ -17,7 +17,7 @@
  *
  *   $ npx tsx script/m14/ontology-coverage-gate.ts nim
  *   ontology coverage gate — nim
- *   corpus: 4101 admitted files
+ *   corpus: 4555 admitted files
  *
  *   ontology coverage gate — no RULING TABLE for nim.
  *   Refusing to report: a gate with an empty table would call every un-emitted type
@@ -25,24 +25,40 @@
  *   $ echo $?
  *   2
  *
- * That refusal is measured, not quoted: the run above walks all 4,101 admitted
+ * That refusal is measured, not quoted: the run above walks all 4,555 admitted
  * files through production `parseFile` and then exits 2 without printing a
  * verdict. `validation/m14/fixtures/nim/ruled-gate.ts` applies exactly the two
  * lines to a COPY of the gate in /tmp and runs the copy, so this table is proved
  * rather than asserted.
  *
+ * An earlier revision of this header quoted `corpus: 4101 admitted files`, from a
+ * run made before the corpus grew. The gate's admission is now 4,555 — the same
+ * set the census walks — so the transcript above is the current one. A quoted
+ * transcript that has drifted from the command it documents is worse than no
+ * transcript, because it is the one line here a reader is likely to believe
+ * without re-running anything.
+ *
  * ## WHY THIS TABLE HAS ONE ROW
  *
  * Nine of the ten types are EMITTED by production `parseFile` on the corpus, and
  * the gate's verdict loop checks `observed` FIRST, so a row for an emitted type
- * would be dead configuration asserting something false. The nine, re-measured:
+ * would be dead configuration asserting something false. The nine, re-measured on
+ * the committed analyzer blob sha256 9d9ee478e3295c28 over the 4,555-file corpus:
  *
- *   calls 73,234 | uses 29,196 | contains 19,323 | references 38,170
- *   imports 8,004 | instantiates 1,905 | extends 547 | exports 376 | overrides 48
+ *   calls 79,129 | uses 31,063 | contains 21,579 | references 40,559
+ *   imports 9,345 | instantiates 1,990 | extends 570 | exports 408 | overrides 48
  *
- * (`validation/m14/fixtures/nim/census.ts`, artifacts in `validation/m60/nim/`.)
+ * (`validation/m14/fixtures/nim/census.ts`, artifacts in
+ * `validation/m14/measurements/nim/`.)
  * The tenth, `implements`, is the row below. A table padded to ten rows would
  * look more finished and be less true.
+ *
+ * These nine figures were previously quoted here as 73,234 / 29,196 / 19,323 /
+ * 38,170 / 8,004 / 1,905 / 547 / 376 / 48 against a 4,101-file corpus that
+ * EXCLUDED `nim-lang-nimble` (435 files) and `dom96-jester` (19). Every one was
+ * low, in the same direction, because the two dropped repos are real Nim. The
+ * corpus is now the one the census uses and the gate admits, and the numbers
+ * above are the pinned ones.
  *
  * ## WHAT THIS ROW IS NOT
  *
@@ -58,7 +74,7 @@
  * and implements it at :2275 and :2291, and `nim/doc/manual_experimental.md:1205-1213`
  * documents the two spellings as alternatives for one fact. So this row is a
  * measurement that the CONSTRUCT does not occur in THIS CORPUS — which is a
- * statement about 4,101 files, not about the language and not about the analyzer.
+ * statement about 4,555 files, not about the language and not about the analyzer.
  * The distinction is load-bearing: a reader who takes the row as "nim cannot
  * express implements" will be wrong about the language, and one who takes the
  * analyzer's 0 edges as "the analyzer does not implement it" will be wrong about
@@ -129,7 +145,7 @@ export const NIM_RULED: Ruled[] = [
     instrument: "B:parse-tree-count",
     countOnTree: countNimImplementsConstruct,
     describe:
-      "a concept REFINEMENT — one contract asserting that it includes another's. MEASURED (validation/m14/fixtures/nim/census.ts over 4,101 admitted files: nim 3,968 + graphql-nim 55 + nimterop 45 + bigints 21 + Aporia 12; production parseFile; `implements/concept-refines` probe): the grammar produced 209 distinct node types and `concept_declaration` IS among them, so instrument A cannot decide this and instrument B is used instead. On the parse tree: 216 `concept_declaration` in 74 files (concepts are everywhere in this corpus) and 0 of them carry a `refines` field, which is the `of` spelling; the `is` spelling contributes 0 refinements of a different concept, its 5 same-file concept-naming sites being 4 self-references and 1 field constraint (nim/tests/concepts/texplain.nim:136, `o.foo is RegularConcept`). Instrument A over the same corpus is what makes the 0 informative rather than vacuous: the construct's OWN node type is present 216 times, so this is a corpus that could express the relation and does not. OVERTURN: any non-zero count of `concept_declaration.refines`, or any `is X` in a concept body whose X is a concept declared in a DIFFERENT file — the second half because the `is`-form guard is deliberately same-file-only, and a cross-file semantic index would lift it.",
+      "a concept REFINEMENT — one contract asserting that it includes another's. MEASURED (validation/m14/fixtures/nim/nim-ruled-probe.ts over 4,555 admitted files: nim 3,968 + nim-lang-nimble 435 + graphql-nim 55 + nimterop 45 + dom96-jester 19 + bigints 21 + Aporia 12; production parseFile; `implements/concept-refines` probe; artifact validation/m14/measurements/nim/ruling-probe.json, analyzer sha256 9d9ee478e3295c28 unchanged): the grammar produced 209 distinct node types and `concept_declaration` IS among them, so instrument A cannot decide this and instrument B is used instead. On the parse tree: 216 `concept_declaration` across 69 files (concepts are everywhere in this corpus) and 0 of them carry a `refines` field, which is the `of` spelling. The `is` spelling: 156 `is` expressions inside a concept body, 143 of them inside an `argument_list` (a constraint passed to a call, not a refinement), leaving 13 whose left is a bare concept formal parameter; of those 13, 8 name an identifier on the right (U x2, int1, int2, PrimitiveBase, IntegerBase, IdBase, string) and 5 have a non-identifier right, and 0 of the 8 name a concept THIS FILE declares — so refinements is 0. That last guard is what excludes nim/tests/concepts/texplain.nim:136 `o.foo is RegularConcept`, where RegularConcept IS declared in the same file at :131: the left side is the dotted `o.foo`, a FIELD constraint rather than a refinement of the contract, so the probe declines it and the decline is the correct answer. The table's own probe, run over the same corpus, examined 174 concepts and pushed 0 hits. Instrument A over the same corpus is what makes the 0 informative rather than vacuous: the construct's OWN node type is present 216 times, so this is a corpus that could express the relation and does not. OVERTURN: any non-zero count of `concept_declaration.refines`, or any `is X` in a concept body whose X is a concept declared in a DIFFERENT file — the second half because the `is`-form guard is deliberately same-file-only, and a cross-file semantic index would lift it.",
   },
 ]
 

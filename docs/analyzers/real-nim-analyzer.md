@@ -476,22 +476,49 @@ EMITTED type would be dead configuration asserting something false.
 wiring to a COPY of the gate in `/tmp` and runs the copy. Its output:
 
 ```
+corpus: 4555 admitted files
+
 type          status            detail
-calls         EMITTED           79,128 edges in 4+ files
-uses          EMITTED           31,063 edges in 4+ files
-contains      EMITTED           21,578 edges in 4+ files
-imports       EMITTED           9,345 edges in 4+ files
-references    EMITTED           40,559 edges in 4+ files
-exports       EMITTED           408 edges in 4+ files
-extends       EMITTED           570 edges in 4+ files
+------------------------------------------------------------------------------------------------------------------------
+calls         EMITTED           79,006 edges in 4+ files, e.g. Aporia/aporia.nim, Aporia/processes.nim
+uses          EMITTED           31,063 edges in 4+ files, e.g. Aporia/aporia.nim, Aporia/processes.nim
+contains      EMITTED           21,579 edges in 4+ files, e.g. Aporia/aporia.nim, Aporia/processes.nim
+imports       EMITTED           9,336 edges in 4+ files, e.g. Aporia/aporia.nim, Aporia/processes.nim
+references    EMITTED           40,559 edges in 4+ files, e.g. Aporia/aporia.nim, Aporia/processes.nim
+exports       EMITTED           406 edges in 4+ files, e.g. dom96-jester/jester.nim, graphql-nim/graphql.nim
+extends       EMITTED           570 edges in 4+ files, e.g. Aporia/cfg.nim, Aporia/gtksourceview.nim
 implements    RULED-SOUND       NOT EMITTED; the construct occurs 0x on the parse tree.
                                 Written ruling: script/m14/nim-ruled.ts (RULED_BY_LANG.nim)
-overrides     EMITTED           48 edges in 4+ files
-instantiates  EMITTED           1,990 edges in 4+ files
+overrides     EMITTED           48 edges in 4+ files, e.g. nim/lib/pure/logging.nim, nim/lib/pure/unittest.nim
+instantiates  EMITTED           1,990 edges in 4+ files, e.g. Aporia/CustomStatusBar.nim, dom96-jester/jester.nim
+------------------------------------------------------------------------------------------------------------------------
 emitted 9/10   ruled-sound 1   FALSIFIED 0   ruled-without-justification 0
-exit code 0   (247s)
+
+== NIM_IMPLEMENTS_EXAMINED (from THIS run) ==
+  conceptsExamined                  174
+  withRefinesField                  0
+  isExpressionsInConceptBodies      156
+  refinements                       0
+exit code 0  (324s)
 analyzer sha256 across the child's walk : 9d9ee478e3295c28  (unchanged)
 ```
+
+The gate's own corpus line is in that block for a reason. It read
+`corpus: 4101 admitted files` until this pass, and the same stale figure was
+quoted in `script/m14/nim-ruled.ts`'s own header — the file whose `describe`
+string the arbiter prints. That text also carried the nine emitted counts from
+the same superseded 4,101-file walk (73,234 / 29,196 / 19,323 / 38,170 / 8,004 /
+1,905 / 547 / 376 / 48, every one low because the omitted repos, `nim-lang-nimble`
+at 435 files and `dom96-jester` at 19, are real Nim), the wrong file count for the
+probe's population (74 files against the pinned 69), a claim that the `is` spelling
+had "5 same-file concept-naming sites" where the pinned probe measures **0**, and
+an artifact path pointing at a directory that has now been deleted. All of it is
+re-pinned to `ruling-probe.json`, and the gate re-run to prove the corrected row
+still prints `RULED-SOUND` with `refinements 0` over `conceptsExamined 174`.
+
+**A ruling is the one artifact in a lane that a reader is most likely to trust
+without re-running, because it is a conclusion rather than a count — and it was
+the artifact here that had drifted furthest from its own evidence.**
 
 So the coverage figure is **9 emitted + 1 measured-absent = 10 of 10
 applicable**, and the two halves of that sentence come from different sources:
@@ -873,21 +900,71 @@ seen from the source side, and it is stated here rather than smoothed over.
 `script/m14/incoming-check.ts` is the only instrument that measures the reverse
 direction, and `src/lsp/impact.ts` is the consumer that needs it — the reverse walk
 obtains its edges by scanning outgoing edges and matching targets, because no
-inbound edge is stored in the schema at all. Both runs below are production
-`parseFile`, digest `9d9ee478e3295c28`, 0 degraded parses, 0 parse failures.
+inbound edge is stored in the schema at all.
+
+**This section's numbers were, until this pass, the only numbers in the document
+with no artifact behind them.** The table below was transcribed from a console
+run of the shared instrument that was never committed, so nothing in the
+repository could say which analyzer state produced it — and when it was finally
+re-run and pinned, three of its five `nim/compiler` cells were stale.
+`validation/m14/fixtures/nim/incoming-audit.ts` is the lane-owned wrapper that
+closes this: it shells out to the shared script (which is §8 and is not edited
+here) and adds the analyzer digest on both sides of the walk, a sha256 of the
+FILE LIST, the child's exit code and stderr, and the one ratio the shared script
+leaves implicit. Artifacts: `validation/m14/measurements/nim/incoming-compiler.{json,txt}`
+and `incoming-lib-pure.{json,txt}`.
 
 | index | files | symbols | `calls` edges | `calls` distinct | ambiguous | unresolved | `overrides` |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `nim/compiler` | 182 | 11,363 | 24,291 | 4,671 | 3,150 | 2,246 | 0 edges |
+| `nim/compiler` | 182 | **11,366** | **24,299** | 4,671 | 3,150 | **2,253** | 0 edges |
 | `nim/lib/pure` | 105 | 6,912 | 10,196 | 1,776 | 1,202 | 2,985 | 14 edges / 7 distinct / **0 unresolved** |
+
+Three cells moved, all on the `nim/compiler` row, and each is shown rather than
+overwritten: symbols **11,363 → 11,366**, `calls` edges **24,291 → 24,299**,
+`calls` unresolved **2,246 → 2,253**. The `lib/pure` row reproduces **exactly**,
+all five cells, so the compiler row was the stale one and not the instrument. The
+corrected 2,253 agrees with `ambiguity-compiler.json`'s own
+`perType.calls.unresolved`, so the two artifacts now corroborate each other where
+they used to differ by 7.
+
+Both runs are production `parseFile`, digest `9d9ee478e3295c28` unchanged on both
+sides, child exit 0, 0 degraded parses, 0 parse failures. The file counts are
+checkable now rather than asserted, and they are not the obvious ones:
+`nim/compiler` is **182 = 180 `.nim` + 2 `.nimble`**
+(`compiler/compiler.nimble`, `compiler/plugins/plugins.nimble`), because
+`src/ast/language-detection.ts` routes `nimble: "nim"` alongside `nim` and `nims`.
+A `compiler/*.nim` glob gives 180 and would have been wrong by two files.
+
+**The ratio that predicts a wrong attribution is ambiguous-over-DISTINCT-TARGETS,
+not ambiguous-over-edges**, because `src/lsp/impact.ts` picks one winner per
+target name. The wrapper publishes it:
+
+| type | `nim/compiler` | `nim/lib/pure` |
+| --- | --- | --- |
+| `calls` | 3,150 / 4,671 = **67.4%** | 1,202 / 1,776 = **67.7%** |
+| `uses` | 1,621 / 2,156 = **75.2%** | 823 / 1,399 = **58.8%** |
+| `contains` | 356 / 3,894 = 9.1% | 289 / 1,317 = 21.9% |
+| `references` | 114 / 480 = 23.8% | 219 / 327 = **67.0%** |
+| `exports` | 0 / 17 = 0% | 3 / 42 = 7.1% |
+| `extends` | 0 / 3 = 0% | 1 / 12 = 8.3% |
+| `instantiates` | 2 / 155 = 1.3% | 14 / 103 = 13.6% |
+| `overrides` | type did not fire | **0 / 7 = 0%** |
+| `implements` | type did not fire | type did not fire |
+
+**Two thirds of distinct `calls` targets on `nim/compiler` are ambiguous to a
+name-keyed reverse walk**, and `uses` is worse at 75.2%. Read alone that is
+alarming; it is the number the ambiguity-split table below then reduces by 97.8%,
+and both are on the page because the reduction is this lane's own claim and needs
+its unreduced form next to it.
 
 The `overrides` row is the one to read twice. On `nim/lib/pure` it is **14 edges,
 7 distinct targets, 0 ambiguous and 0 unresolved** — that is the `qualifiedName`
 fix (*Five defects*, 4) holding end to end, and it is the same measurement the
-before/after table quotes as 14 edges moving from 14 unresolved to 0. On
-`nim/compiler` it reads **0 edges at all**: the family fires, but not there, and
-*Limitations* 15 says why (10 corpus methods carry a receiver declared in another
-file, and a bare corpus walk builds no companion).
+before/after table quotes as 14 edges moving from 14 unresolved to 0. It is also
+the only emitted type in this language that is **fully unambiguous**, on the one
+index where it fires. On `nim/compiler` it reads **0 edges at all**: the family
+fires, but not there, and *Limitations* 15 says why (10 corpus methods carry a
+receiver declared in another file, and a bare corpus walk builds no companion).
 
 **The `ambiguous` column is not this lane's ambiguity, and reading it as one would
 be wrong by two orders of magnitude.** `incoming-check.ts:107` keys its
