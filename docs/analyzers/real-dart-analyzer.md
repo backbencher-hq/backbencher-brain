@@ -978,13 +978,40 @@ without re-deriving it. The files are supervisor-owned per
 
 ## Regex inventory
 
-From `validation/m12/results/regex-census.json`: the Dart analyzer has
-**0 regex usages** (baseline 8: 5 quote-strip/callee-sanitization
-normalizations + 3 widget-detection `isWidgetTree`/uppercase heuristics).
-The old widget-detection heuristic (`/Widget$|Element$|.../`) is dropped
-entirely — widget-classification produced noise, not contract facts. All
-text normalization now uses pure-String helpers (`unquote`,
-`stripCommentMarkers`, `isCapitalized`, `stripNonIdentifier`).
+**Zero regexes in this lane, and the census artifact alone does not establish that.**
+
+`validation/m12/results/regex-census.json` contains no `dart` key and no `dart` string
+at all — `script/m12/verify-regex-census.ts` scans `real-*-analyzer.ts` files, so it
+reports nothing for Dart and an earlier version of this section read that absence as
+"0 regex usages". Absence of an entry is not a measurement of zero; the gate cannot
+distinguish "scanned and found none" from "never looked at this lane".
+
+So the number that is actually measured here is from a scan over everything this lane
+owns — `src/ast/real-dart-analyzer.ts`, `validation/m14/fixtures/dart/**`,
+`script/m14/oracles/dart-*.ts`, `script/m14/verify-dart-*.ts` — for regex-shaped
+constructs (`new RegExp`, `RegExp(`, `.match/.replace/.test/.search(/`, `.matchAll`).
+That scan found **2**, both in `script/m14/oracles/dart-imports.ts:68`, which the
+census gate does not reach. Both are removed; the count is now 0 by that scan and not
+by the artifact's silence.
+
+Historical, for the record: the analyzer itself once carried 8 (5 quote-strip /
+callee-sanitization normalizations + 3 widget-detection `isWidgetTree` / uppercase
+heuristics), recorded in the M12 baseline. The widget-detection heuristic
+(`/Widget$|Element$|.../`) was dropped entirely — widget classification produced noise,
+not contract facts. All analyzer-side text normalization uses pure-String helpers
+(`unquote`, `stripCommentMarkers`, `isCapitalized`, `stripNonIdentifier`).
+
+One Dart-source file in the lane's fixtures, `payload-and-complexity.dart:158`, contains
+`RegExp(r'f6-\w+')`. That is a `RegExp` in the LANGUAGE, held as fixture input for a
+regular-expression field, not a pattern in an instrument.
+
+`script/m12/verify-regex-census.ts` currently FAILS. Its failures are 24 MISSING and 25
+STALE entries, and **not one names a Dart file** — the MISSING entries are
+`real-css-analyzer.ts` (11) and `real-julia-analyzer.ts` (4) plus a perFile/census
+disagreement; the STALE entries are `real-clean-analyzer.ts`, `real-fsharp-analyzer.ts`,
+`real-javascript-analyzer.ts`, `real-python-analyzer.ts`, `real-svelte-analyzer.ts` and
+`real-typescript-analyzer.ts`. This lane contributes 0 to either list and the gate is
+not this lane's to fix.
 
 ## Complexity envelope
 
