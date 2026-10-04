@@ -902,16 +902,29 @@ restores the file dimension and separates the two:
 | `nim/lib/pure` | 21,235 | 5,990 | **756 = 3.6%** | 5,234 |
 
 Per type on `nim/compiler` the irreducible share is `calls` 0.8%, `uses` 0.6%,
-`contains` 0.4%, and **0.0%** on the other six. The 270 edges come from five names
-in ordinary Nim — `config(62)`, `emptyNode(28)`, `c(23)`, `map(16)`, `name(15)`,
-`add(12)`, `key(11)`, `ensureKind(11)`, `history(10)`, `union(7)` — a file that
-declares the same name twice, which is what overloading and the
+`contains` 0.4%, and **0.0%** on the other six. The 270 edges come from **36
+names**, and the artifact carries all 36 with their counts
+(`ambiguity-compiler.json` `sameFileAmbiguousNames`, whose per-name counts sum to
+270 exactly): the top five are `config(62)`, `emptyNode(28)`, `c(23)`, `map(16)`,
+`name(15)`, and the tail runs down to nine names at 1 edge each. Each is a file
+that declares the same name twice, which is what overloading and the
 field-versus-accessor collision look like in every language. **This is the place
 the language makes the distinction impossible per-file, stated with its count
-rather than smoothed over: 270 edges over 182 files.** `lib/pure` is 8x worse
-(3.6%) because it is many small files in one package where a name recurs inside a
-file more often, so the figure is a property of the subtree and not of the
-analyzer — which is why both are reported.
+rather than smoothed over: 270 edges over 182 files.**
+
+An earlier revision of this paragraph said the 270 edges came from "five names" and
+then printed ten of them. The count was wrong and the list was truncated at a
+different depth than the count: it is 36 names, of which ten were shown. The same
+shape as the tree-only-list error the previous commit corrected, and it survived
+that pass because it sat in the `ambiguity-split` section rather than the
+resolution one. Stating it here because a reader who checked would otherwise have
+no way to tell which of the two numbers was the measurement.
+
+`lib/pure` is worse (756 edges, 3.6%) and again it is **92 names**, top five
+`kind(60)`, `seconds(46)`, `im(29)`, `nanosecond(29)`, `isSsl(28)`, summing to 756
+(`ambiguity-lib-pure.json`). It is worse because it is many small files in one
+package where a name recurs inside a file more often, so the figure is a property
+of the subtree and not of the analyzer — which is why both are reported.
 
 **External is separated from never-indexed, per type, and the separation is a
 bound rather than a verdict.** Against an index of 182 files and a corpus of 4,555:
