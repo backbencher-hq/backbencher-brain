@@ -1709,6 +1709,169 @@ produce carry the earlier site's metadata rather than `bindingSite`. Round 4's
 number was not wrong about anything it claimed to measure; the reading is, so it is
 corrected here rather than left to be over-read.
 
+## Round 10: the column that was a count and was not, and what a 120-file sample can decide
+
+Round 9 answered "what fires" at 100% of the corpus. It left one number in the census
+output that was not a number, and that number is the one a reader uses to decide
+whether a rare type is real.
+
+### The `files` column was a display cap wearing a count's header
+
+`census-bash-ontology.ts` keeps a capped per-type example set — `noteFile` adds a label
+only `if (s.size < 6)` — and the report printed that set's size under a column headed
+`files`, with a `+` appended whenever the type had any edges at all:
+
+```
+overrides     138       6+      138 100.0%  0  0.0%    0  0.0%    0  0.0%     structural:138
+```
+
+Every type with more than six example files printed `6+`. `overrides` — 138 edges, the
+rarest type the analyzer emits — printed `6+`, which reads as "six or more files" and
+was in fact "the cap, reached". The same shape is in `script/m14/firing-check.ts`, for
+a different reason and with a worse outcome; see [reported to the supervisor](#reported-not-edited-two-defects-in-shared-instruments).
+
+Fixed in the census: a second set, `relFileCount`, is never capped, and the report
+prints `files` (exact) beside `ex` (the capped list, labelled as not a count). Same
+whole-corpus run, 4,133 admitted files:
+
+| type | edges | **files (exact)** | share of admitted | both-ends | ambiguous |
+| --- | --- | --- | --- | --- | --- |
+| `calls` | 55,222 | **3,733** | 90.3% | 14,752 26.7% | 1.6% |
+| `uses` | 81,485 | **3,261** | 78.9% | 64,494 79.1% | 18.8% |
+| `contains` | 38,264 | **3,352** | 81.1% | 38,263 100.0% | 16.1% |
+| `imports` | 679 | **489** | 11.8% | 0 0.0% | — |
+| `references` | 679 | **489** | 11.8% | 0 0.0% | — |
+| `exports` | 1,929 | **647** | 15.7% | 1,927 99.9% | 5.0% |
+| `overrides` | 138 | **48** | **1.16%** | 138 100.0% | 100.0% |
+
+Nothing about the analyzer changed — the analyzer is untouched in this round, and the
+per-type edge counts reproduce round 9 within 0.04% (178,396 against 178,463). The
+defect was in this lane's own reporting, and it was the reporting that decided whether
+the rarest type looked real.
+
+### `overrides` reads 0 at 120 files, and that is arithmetic
+
+`script/m14/firing-check.ts --files 120 bash` — the arbiter the workstream names —
+reports:
+
+```
+bash       106/120     6/10    4,293       0    stable   calls,uses,contains,imports,references,exports
+```
+
+Six of ten. `overrides` is one of the four zeros, alongside the three RULED types. The
+census says `overrides` fires in 48 of 4,133 admitted files. So the sample and the
+census disagree about a type the analyzer emits 138 times, and the sample is not wrong
+— it is small relative to the type's prevalence:
+
+| type | prevalence | expected in 120 files | P(sample reads 0) |
+| --- | --- | --- | --- |
+| `calls` / `uses` / `contains` | 78.9–90.3% | 94.7–108.4 | **0.0%** |
+| `exports` | 15.7% | 18.8 | **0.0%** |
+| `imports` / `references` | 11.8% | 14.2 | **0.0%** |
+| **`overrides`** | **1.16%** | **1.39** | **24.6%** |
+
+**Reading 0 for `overrides` at 120 files is the single most likely outcome**, and it is
+what happened. Six consecutive runs of the same command after the first read six again.
+The type is EMITTED at 138 edges in 48 files, 138 of 138 resolving at both ends, and
+its 0 at 120 files is a property of the sample size, not of the analyzer.
+
+This matters beyond this lane, because the arbiter is run at `--files 120` for every
+language: **any lane whose rarest emitted type has prevalence below ~4% will read it at
+0 and be invited to declare a GAP or a RULED verdict it has not earned.** The threshold
+is P(0) = (1−p)^120 > 0.10 at p ≈ 1.9%. Only `overrides` is exposed here, and only
+because bash's redefinition rate is low — a shell function is rarely declared twice.
+The measurement that settles it is the per-type file count, which is why the column
+that was a cap is now a count.
+
+### Round 9 reproduces, and the residual delta is NOT the fallback file
+
+Same analyzer, same corpus, same 4,133 admitted files, two whole-corpus runs on
+different days:
+
+| | round 9 | round 10 | delta |
+| --- | --- | --- | --- |
+| relationships | 178,463 | **178,396** | −67 (−0.04%) |
+| symbols | 42,418 | **42,403** | −15 |
+| `imports` / `references` / `exports` / `overrides` | 679 / 679 / 1,929 / 138 | **679 / 679 / 1,929 / 138** | **0** |
+| `calls` / `uses` / `contains` | 55,231 / 81,529 / 38,278 | 55,222 / 81,485 / 38,264 | −9 / −44 / −14 |
+| grammar-read / FALLBACK | 4,131 / 2 | 4,130 / 3 | +1 fell back |
+
+The obvious explanation is that the one extra file past the wasm is worth exactly 67
+relationships. **It is not.** `probe-bash-one-file-rels.mts` reads what the grammar
+gives each of this run's three fallback files through `parseFile`:
+
+| fallback file | symbols | relationships |
+| --- | --- | --- |
+| `terragrunt/.github/scripts/ci/set-go-memory-limits.sh` | 1 | **2** (uses) |
+| `vault/enos/modules/vault_verify_performance_replication/scripts/verify-replication-status.sh` | 14 | **62** (calls 16 · contains 13 · uses 33) |
+| `sqlite/ext/wasm/split-speedtest1-script.sh` | 6 | **22** (calls 3 · contains 5 · uses 14) |
+
+2, 62 and 22 — none is 67, and all three together are 86. Round 9's two fallbacks were
+different files again. So the tidy story is wrong, and this round does not replace it
+with another one: **the mechanism that moves a whole-corpus count by tens of edges
+between two runs of an unchanged analyzer on an unchanged admitted file set is not
+settled here.** What is measured is the size of the wobble (0.04% corpus-wide) and that
+it does not touch the four rarest types at all.
+
+### What IS reproducible, measured rather than asserted
+
+Eight runs of the census on one fixed 800-file sample, same analyzer, same files:
+
+| run | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| relationships | 31,992 | **32,317** | **32,317** | **32,317** | 32,289 | **32,317** | **32,317** | **32,317** |
+| fallback files | — | 0 | 0 | 0 | — | 0 | 0 | 0 |
+
+**Six of eight read exactly 32,317, and two read low by 325 and 28 edges.** The
+shortfall is not the cached-wasm copy: `/tmp/bb-ts-core.wasm` was deleted between runs
+4 and 5 and run 5 still read low (32,289) while run 6 read 32,317, so the file's
+existence on disk does not predict the count. The four runs that read the fixed point
+recorded `FALLBACK : 0` and `grammar-read: 800`, so on those runs every sampled file
+was parsed by the grammar and the shortfall is absent rather than relocated.
+
+The two short reads did not have their abort rows captured — the instrument printed
+`rels` but not `grammar-read`/`FALLBACK` on those invocations — so this round cannot say
+whether they lost files to fallback or lost edges inside files that parsed. That is
+recorded as open rather than filled in. The consequence for a reader is narrow and
+worth stating: **a single census run on this corpus is a lower bound, and the fixed
+point is the value to quote.** Every whole-corpus number in this document is quoted
+from a run, and the ones this round re-took reproduce round 9 to 0.04%.
+
+### Reported, not edited: two defects in shared instruments
+
+Both are §8 material. Neither was touched.
+
+1. **`script/m14/firing-check.ts` — the per-type `files` column cannot exceed 1.** The
+   map is declared *inside* the per-file loop (`const filesByType = new Map<…>()` at
+   the loop body's line 325, `for (const file of files)` at 288) and consumed after it
+   at line 371: `for (const [type, set] of filesByType) res.types[type].files =
+   set.size`. Each iteration therefore sees only the current file's set and
+   **overwrites** rather than accumulates. Measured on this lane:
+   `calls: {edges: 1119, files: 1}` across 106 parsed files. The fix is to hoist the
+   declaration above line 288. Until it is hoisted, the `files` column of that report is
+   `1` for every type that fired and `0` for every type that did not, on every lane.
+
+2. **`script/m14/firing-check.ts` — a 120-file stride cannot decide a rare type.** Not
+   a code defect but a reporting one, and it is why finding 1 matters more than it
+   looks: the arbiter prints `6/10 fired` with no indication that the sample was too
+   small to see the seventh. Either raise `--files` for the arbiter, or have it print
+   per-type prevalence alongside the verdict. The census's `--all` mode is the
+   instrument that answers it, and it runs in 4m20s.
+
+### Coverage, unchanged, and the sample that now measures it
+
+**7/7 applicable, 3 measured-absent** (`extends`, `implements`, `instantiates`, each
+with instrument A over all 164 grammar node types plus instrument B on the parse tree),
+**0 unaccounted.** Nothing in this round changed a verdict; it changed one reported
+column into the measurement that keeps a verdict honest at a sample size the arbiter
+actually uses. The `--files 120` arbiter reads **6/10**; the whole corpus reads **7/7
+applicable**, and the difference is the `overrides` row, priced above.
+
+### Reported to the supervisor
+
+No analyzer change in this round. `src/ast/real-bash-analyzer.ts` is byte-identical to
+round 9.
+
 ## The two fabrications pass 2 found, and the guard that removed them
 
 Pass 1 measured how MANY edges there were. Pass 2's job was to find edges that are
@@ -2461,7 +2624,11 @@ This round's own measurements, each reproducible from a named file in
 
 | check | command | result |
 | --- | --- | --- |
-| Ontology census, **WHOLE CORPUS** | `npx tsx validation/m14/fixtures/bash/census-bash-ontology.ts --all` | **ROUND 9: 4,133 admitted / 460,452 scanned / 120 repos; 7 types emitted, 178,463 relationships, 42,418 symbols, 0 parse failures, `grammar-read 4,131`, `FALLBACK 2` contributing 0 relationships.** Per type: calls 55,231 · uses 81,529 · contains 38,278 · imports 679 · references 679 · exports 1,929 · overrides 138. Resolution: contains 100.0% · overrides 100.0% · exports 99.9% · uses 79.2% · calls 26.7% · imports/references 0.0%. **`neither` 0 on every type**; 0 empty names, 0 unknown kinds, 0 `unknown`/empty endpoints, 0 edges below 0.7 conf. 4m20s |
+| Ontology census, **WHOLE CORPUS** | `npx tsx validation/m14/fixtures/bash/census-bash-ontology.ts --all` | **ROUND 10: 4,133 admitted / 462,809 scanned / 120 repos; 7 types emitted, 178,396 relationships, 42,403 symbols, 0 parse failures, `grammar-read 4,130`, `FALLBACK 3` contributing 0 relationships.** Per type: calls 55,222 · uses 81,485 · contains 38,264 · imports 679 · references 679 · exports 1,929 · overrides 138. Resolution: contains 100.0% · overrides 100.0% · exports 99.9% · uses 79.1% · calls 26.7% · imports/references 0.0%. **`neither` 0 on every type**; 0 empty names, 0 unknown kinds, 0 `unknown`/empty endpoints, 0 edges below 0.7 conf. **Per-type FILES (exact, round 10): calls 3,733 · uses 3,261 · contains 3,352 · imports 489 · references 489 · exports 647 · overrides 48** — round 9's run of the same command read 178,463 rels / 42,418 symbols, i.e. this row reproduces round 9 to 0.04% |
+| Determinism, 8 runs on one fixed 800-file sample | `npx tsx validation/m14/fixtures/bash/census-bash-ontology.ts --sample 800` ×8 | **6 of 8 read exactly 32,317 relationships; 2 read low by 325 and 28** (31,992 / 32,289). Not the cached wasm copy — `/tmp/bb-ts-core.wasm` deleted between runs 4 and 5, run 5 still low, run 6 back to 32,317. The 4 fixed-point runs recorded `FALLBACK 0`, `grammar-read 800`. A single run is a **lower bound**; the fixed point is the value to quote. Round 10 does not settle the mechanism — see round 10 |
+| Per-file relationship count | `npx tsx validation/m14/fixtures/bash/probe-bash-one-file-rels.mts <file>…` | round 10's three FALLBACK files through `parseFile`: `set-go-memory-limits.sh` 1 symbol / **2** rels · `verify-replication-status.sh` 14 / **62** · `split-speedtest1-script.sh` 6 / **22**. Neither 2, 62 nor 22 is the 67-edge corpus delta, so "one extra fallback file" does not explain it |
+| Firing arbiter, the workstream's sample size | `npx tsx script/m14/firing-check.ts --files 120 bash` | **`106/120 files parsed, 6/10 fired, 4,293 edges, 0 degraded, analyzer stable`**, fired: `calls` 1,119 · `uses` 2,100 · `contains` 991 · `imports` 19 · `references` 19 · `exports` 45. `overrides` reads **0** at this size against 138 edges in 48 files corpus-wide — priced at P(0)=24.6% in round 10. 0 empty names, 0 empty/unknown kinds, 0 `unknown` endpoints, 0 edges below 0.7 conf on every type |
+| Incoming arbiter, 5 named corpus files | `npx tsx script/m14/incoming-check.ts bash <5 files>` | 189 symbols. `calls` 194 edges / 22 distinct targets / 0 ambiguous / 151 unresolved · `uses` 278 / 73 / 0 / 26 · `contains` 184 / 137 / **2** / 0 · `imports`,`references`,`exports`,`overrides` 0 on these five. **1** target resolving to >1 published symbol (`have` → function, variable). 137 declarations named by at least one edge, **5 orphans of 189** |
 | Ontology census, 400 hash-ordered files | `npx tsx validation/m14/fixtures/bash/census-bash-ontology.ts --sample 400` | **ROUND 5**: 4,130 admitted / 458,446 scanned / 48 repos in sample; 7 types emitted, **17,009 relationships**, 4,186 symbols, 0 parse failures, 0 empty names, 0 `unknown` endpoints, 0 empty endpoints, 0 unknown kinds. Per type: calls 5,099 · uses 7,802 · contains 3,782 · imports 44 · references 44 · exports 210 · overrides 28. **Superseded for every headline figure by the `--all` row above**; retained because it is the sample the A/B pairs share |
 | Whole-corpus arithmetic operands (round 9 re-derivation) | `npx tsx validation/m14/fixtures/bash/probe-bash-arithmetic-operands.mts --sample 4400` | **0 unparsed** (was 3,634); 351 files with an arithmetic `compound_statement` (was 41), **834** `compound_statements` (was 104), **1,139** operand name nodes (was 150), **995 already published** (was 137), **0 predicted new edges**; 7,495 excluded (was 948) of which **5** open `((` unclosed, **5 of 5** ERROR/MISSING, **3 of 5** no operand node, **0 of 5** operand from the arithmetic prefix |
 | Tree-lifetime A/B (the mechanism) | `npx tsx validation/m14/fixtures/bash/probe-bash-wasm-tree-lifetime.mts --files 2500` | **0 threw, rss flat at 239 MB with no `delete()` at all** — falsifies the leaked-heap hypothesis and localises the fault to the shared parser handle. With `--delete` and `BASELINE_THREW`, adjudicates explicitly and exits non-zero if `delete()` does not improve on the baseline |
@@ -2473,17 +2640,17 @@ This round's own measurements, each reproducible from a named file in
 | Grammar inventory (instrument A) | `npx tsx validation/m14/fixtures/bash/probe-bash-grammar-inventory.mts --sample 400` | **144 distinct node types**; `extends`/`implements`/`instantiates` → NONE |
 | RULED-construct probes (instrument B) | `npx tsx validation/m14/fixtures/bash/probe-bash-ruled-constructs.mts --sample 400` | parse-tree **0/0/0**; lexical 7/5/0 = **12 rows over 7 sites, every row a `#` comment line**; dynamic doors 42/11/8 |
 | Guard A/B | `npx tsx validation/m14/fixtures/bash/guard-ab-bash-calls.ts --sample 400` | A 30→0 implemented; B 108 rejected; C 0; D 0; E 18 rejected. **Pass-1 denominators; not re-run in round 3** |
-| Fixtures | `bun run script/m14/run-fixtures.ts --lang bash` | **ROUND 6: 23 pass, 0 fail** (round 5 read 22; `bash/order-independent-attribution` is new — and it **FAILS against the pre-fix analyzer**, 22 pass / 1 fail, so it pins the defect rather than the fix) |
+| Fixtures | `bun run script/m14/run-fixtures.ts --lang bash` | **ROUND 10 re-run: 25 pass, 0 fail** (round 6 read 23; `bash/order-independent-attribution` is new — and it **FAILS against the pre-fix analyzer**, 22 pass / 1 fail, so it pins the defect rather than the fix) |
 | Pass-2 adversarial probes | `npx tsx validation/m14/fixtures/bash/adversarial-probes.ts --sample 400` | unresolved-target decomposition: **0 missed declarations** on `calls` and on `uses`; 0 bash builtins named by a call; `imports`/`references` overlap **44/44 both ways**; `overrides` **28/28** have an earlier definition; `exports` targets by kind constant 183 / variable 26 / function 1; confidence `calls` {1.0: 5129, 0.7: 18}, `uses` {0.8: 7947} |
-| Lane source mutants | `npx tsx validation/m14/fixtures/bash/mutants-bash-lane.mts` | **ROUND 6: 19 mutants, 19 caught, 0 survived, 0 did not apply**, control 23/23 green before any verdict is read (round 5 read 16/16; 3 new for the order-dependent attribution work) |
+| Lane source mutants | `npx tsx validation/m14/fixtures/bash/mutants-bash-lane.mts` | **ROUND 10 re-run: 25 mutants, 25 caught, 0 survived, 0 did not apply** (round 6 read 19/19) |
 | Shared mutant registry, bash slice | `BB_MUTANT_ONLY="bash/" bun run script/m14/mutate-analyzer.ts` | filtered 1,723 → **23, all 23 caught, 0 survivors** |
-| Ontology coverage gate | `npx tsx script/m14/ontology-coverage-gate.ts bash` | **7/10 emitted, 3 RULED-SOUND, 0 FALSIFIED, 0 ruled-without-justification**, on both runs — but the per-type totals **differ between them** (`calls` 53,443 vs 53,481) and five `[BB-PARSE-ERR] … memory access out of bounds` rows appeared, one run ending `[BB-HANG] parser stuck 120s` and exiting. See limitation 15 |
+| Ontology coverage gate | `npx tsx script/m14/ontology-coverage-gate.ts bash` | **7/10 emitted, 3 RULED-SOUND, 0 FALSIFIED, 0 ruled-without-justification** — round 10. calls 55,212 · uses 81,486 · contains 38,254 · imports 676 · references 676 · exports 1,926 · overrides 138; all three RULED rows cite 164 grammar node types and `script/m14/bash-ruled.ts`. Four `[BB-PARSE-ERR] … memory access out of bounds` rows and one `[BB-HANG] parser stuck 120s` on `bash-completion/completions-core/iconv.bash`, then exit — so its per-type totals sit slightly under the census on the same corpus (55,212 vs 55,222). See limitation 15 |
 | Differential, bash only | `npx tsx script/m14/differential.ts --lang bash` | **ROUND 6, RE-MEASURED WITH `--force-fresh`**: `otp` pin, 60 files, `rot 22`, hash `657ef2aed8371f1a`: truth **1,673**, covered **1,673 (100%)**, MISSING 0, analyzer-edges 1,637, unexplained **5 (0.3%), all labelled `contains`**, heuristic 0, cold-pool `0/60 fresh (rot 22, corpus 63)`. The absolute counts are **+76 against round 5's 1,597 / 1,561** because the corpus grew and the sample rotated — the sample hash changed with them, so the two rows are not comparable. What IS comparable is the shape and it did not move: coverage 100%, MISSING 0, unexplained 5. Round 3 read unexplained 0, and the five are attributed, not absorbed — see [DERIVATION](#derivation-debt-the-five-unexplained-edges-are-the-oracles-blind-spot).** The run states it did **not** write the F5 artifact, "a scoped run is for inspecting lanes, and writing it here would replace that claim with a smaller one" |
 | Round-5 A/B — did the change alter an edge? | `BB_AB_BASE=b2b6ee090 npx tsx validation/m14/fixtures/bash/ab-round5-targetline.ts --sample 200` | `otp`, 115 pinned files: old 7,813 edges, new 7,813 edges, **ADDED 0, REMOVED 0**, 84 metadata-only changes (`targetLine`/`targetKind`/`targetResolution` × 84 each). **PASS**. Written because the differential could not answer it: its cold-pool rotation drew `rot 21`, two consecutive runs are not comparable, and its lane journal is a shared `/tmp` file this lane does not own |
 | Ambiguity — one edge, N declarations | `npx tsx validation/m14/fixtures/bash/probe-bash-ambiguity.mts --sample 400` | **1,879** ambiguous targets across 5 types; **0 irreducible by line** (100% of candidate sets on distinct `startLine`s); nearest-preceding picks exactly one in **1,830 = 97.4%**, 49 tie. Per type: uses 1,185 (19.0% of 6,239 resolved) · contains 658 (17.4%) · overrides 28 (100%) · calls 6 (0.6%) · exports 2 (1.0%). Denominators match the census exactly, which required copying its 512 KB cap and content-form `detectLanguageFromPath` |
 | DERIVATION debt — class size | `npx tsx validation/m14/fixtures/bash/probe-bash-derivation-debt.ts --sample 400` | implicit-binding symbols published **175** (for 127/71 files, read 48/25 files); `contains` edges naming one **179**, all unexplained by construction; `uses` edges naming one **400**, all resolving |
 | Evidence census, every admitted file | `npx tsx validation/m14/fixtures/bash/probe-bash-missing-evidence.mts` | **SUPERSEDED — do not quote.** Its reading was 4,130 admitted, **137,770 edges, 0 with no `evidenceClass`** (calls 55,220 · uses 80,851 · contains 38,273 · exports 1,929 · imports 679 · references 679 · overrides 138). Round 9 shows this probe also walked the borrowed parser and covered ~499 files, so its "every admitted file" label was false. Use the `--all` row. Its *invariant* — **0 edges with no `evidenceClass`, and 0 below 0.7 confidence** — is re-confirmed at 100% by the `--all` run and is the part worth keeping |
-| Lane regex census | `npx tsx validation/m14/fixtures/bash/probe-bash-no-regex.mts` | **0 regex literals across 0 of 25 lane files** (analyzer + 24 probes/fixtures/mutants). Round 5 fixed the probe's own coverage gap: it had been checking **16** of the lane's 25 files and the 9 it missed now read 0 as well |
+| Lane regex census | `npx tsx validation/m14/fixtures/bash/probe-bash-no-regex.mts` | **0 regex literals across 0 of 32 lane files** (analyzer + 31 probes/fixtures/mutants, round 10 — the 32nd is `probe-bash-one-file-rels.mts`). Round 5 fixed the probe's own coverage gap: it had been checking **16** of the lane's 25 files and the 9 it missed now read 0 as well |
 | DERIVATION debt | `npx tsx script/m60/rel-type-coverage-gate.ts --langs=bash` — **read the warning in Q6 first** | CHECK 1 DERIVATION **clean**; `baseline: 104 recorded, 0 NEW, 104 repaid`; and the committed `validation/m60/results/rel-type-coverage.json` carries **0 findings and 0 baseline rows naming bash** |
 | Regex census (project gate) | `npx tsx script/m12/verify-regex-census.ts` | **Re-run round 9: `regex census gate PASSED`** — 5 entries, HEAD and working-tree scans agree at 5, `missing 0, stale 0, unclassified 0, mislocated 0`. The previous revision of this row said "still `FAILED`, with ZERO rows naming bash" and attributed the 30 MISSING/STALE rows to css, julia, clean, fsharp, javascript, python, svelte and typescript; those are gone from the census and `real-bash-analyzer.ts` is still not among its 5. **This lane's own direct measurement is unchanged and is the one to quote: 0 regex literals across 0 of 31 lane files.** The gate passing is not this lane's work — the lane did not touch the shared census baseline |
 | Doc-truth emissions | `bun run script/m14/verify-doc-truth-emissions.ts` | see the note below — re-run for this revision |
