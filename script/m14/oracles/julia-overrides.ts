@@ -261,7 +261,7 @@ function ownerName(n: any): string {
  * The first version ALSO threaded the NAME into the key rather than the node's identity, and found
  * ZERO truth edges over the whole corpus including on the files where the analyzer emits them. The
  * failure is the same one this lane has hit twice, and the symptom was silence: two declarations of
- * one method never shared a key, so the map could not collide and the oracle reported a perfect
+ * one method never shared a key, so the map could not collide and the oracle reported a clean
  * absence. A key that cannot collide is the most dangerous shape a measurement can take.
  */
 function enclosingMethodTableOwner(n: any): { id: number; name: string } | null {
