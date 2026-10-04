@@ -1850,21 +1850,36 @@ a duplicate error-set member. The probe pushes only those, so the arbiter flips 
    name match on them is a guess. `src/lsp/identity.ts`'s resolver is the other
    candidate site; it already reports `rootMatch.nameMatches`, and the number to
    compare against is the `tgt AMBIGUOUS` column above.
-7. **`script/m14/firing-check.ts` and `script/m14/incoming-check.ts` DO NOT EXIST.**
-   The workstream's incoming section names both, and `script/m14/` holds 100 files
-   with neither among them, so the instruction to "run the arbiter and report your
-   lane's numbers" via those two paths cannot be followed as written. The lane-owned
-   equivalents are `validation/m14/fixtures/zig/incoming-check.ts` (per-shard dump of
-   production `parseFile` output plus a tree-declared-name index) and
-   `incoming-resolve.ts` (the resolver; 2 controls, non-zero exit on failure). If
-   the shared pair is wanted, it is a lift of these two with the lane-specific
-   knowledge removed: the cause ladder (`path` / `external` / `neverIndexed` /
-   `declared-local` / `declared-parameter` / `builtin-*`) and the four-way
-   target classifier (`unique` / `ambiguous` / `misbindable` / `unbindable`) are the
-   parts worth keeping, and the `neverIndexed` discriminator — a name is only
-   "never indexed" when the TREE declares it and no symbol was published — is the
-   part that must not be simplified to a name lookup, because a name lookup is what
-   makes external and never-indexed look identical.
+7. **RESOLVED, then two defects in the pair that landed.** Both files now exist and
+   this lane has been re-run through them (sections A and C above). Two defects,
+   each a report rather than a fix:
+
+   - `script/m14/incoming-check.ts:65-76` keys its per-type table on the literal
+     `"brain_import"`, and lines 161-162 drop any label not in that array. The
+     store's relationship label is `"imports"` — `src/ast/engine.ts:454`
+     `RelationshipType.Imports = "imports"`, `src/ast/graph.ts:38`, and the DB
+     column values are `relationship_type IN ('imports','exports')`
+     (`src/ast/real-nim-analyzer.ts:1217,1311`) — and `brain_import` is a TABLE
+     name. Measured on this lane's own 120-file draw through production
+     `parseFile`: `firing-check.ts` reports 256 `imports` edges,
+     `incoming-check.ts` reports **0**. Fix: add `"imports"` to that array, or route
+     the label through `firing-check.ts`'s `LABEL_ALIASES`. Every lane that emits
+     the store's own label is currently invisible to this instrument.
+   - `script/m14/incoming-check.ts:102` derives one `projectPath` from
+     `path.dirname(files[0])` and passes it to `parseFile` for every file. It is
+     harmless today (`parseFile`'s second parameter is unused by the parse path)
+     but it reads as project scoping and is not. Separately, a corpus path
+     containing a space is split into separate arguments — 17 ENOENT
+     `parseFailures` in the 120-file run are fragments of 3 real paths, e.g.
+     `zig/test/cases/safety/@intFromFloat cannot fit/boundary/case/max.zig`.
+
+   The lane-owned equivalents are kept: `validation/m14/fixtures/zig/incoming-check.ts`
+   and `incoming-resolve.ts`, because they carry the cause ladder
+   (`path` / `external` / `neverIndexed` / `declared-local` / `declared-parameter` /
+   `builtin-*`) and the `neverIndexed` discriminator — a name is only "never
+   indexed" when the TREE declares it and no symbol was published — and because they
+   measure the full population, which a single-file universe cannot.
+
 8. **`keepSymbol`'s UNIVERSAL denylist needs a per-language exemption for `Self`,
    `root` and `unknown`** (`src/ast/pool-worker.ts:449`, shared). `Self` is not a Zig
    keyword: `const Self = @This();` is the language's own self-type idiom and a real
@@ -1875,3 +1890,290 @@ a duplicate error-set member. The probe pushes only those, so the arbiter flips 
    `exports` are already handled by a JS_FAMILY guard two lines above; `Self`,
    `root`, `unknown` and `self` need the same treatment, because in Zig they are
    ordinary declaration names rather than a receiver.
+
+9. **`script/m14/firing-check.ts:340` assigns the `files` column instead of
+   accumulating it**, so every fired type reads `files: 1` on any population
+   (`filesByType` is created per file at line 294). `edges` accumulates correctly
+   at line 310. The fsharp lane reported the same line independently.
+10. **`script/m14/firing-check.ts:429` names the wrong degradation mechanism, and the
+    NDJSON form names no file at all.** It prints "fell back to the regex extractor",
+    but `src/ast/pool-worker.ts:779-794` returns
+    `{symbols: [], relationships: [], fallback: true}` for a file over 5 MB
+    WITHOUT running `extractFallback`, which is the 1–5 MB path (line 811). The one
+    degraded file in this lane's 120-file draw is
+    `zig/lib/compiler_rt/udivmodti4_test.zig` at 10,249,535 bytes, contributing 0
+    symbols and 0 edges. Corpus-wide: 3,834 files ≤ 512 KB, 10 at 512 KB–1 MB, 2 at
+    1–5 MB, 2 over 5 MB — 4 of 3,848 degrade, and 14 exceed the 512 KB ceiling the
+    arbiter admits under. Line 392 emits `degradedDetail: {}`: the field exists and
+    is always empty, so the machine-readable output can name neither file nor cause.
+11. **The shared arbiter's exit code is not a verdict on this lane.** Three runs of
+    the patched copy over the same 1,200-file root gave an identical verdict table
+    and exit codes 0, 1, 0, because the pinned zig wasm crashes under the concurrent
+    fan-out — a DIFFERENT `zig/test/cases/compile_errors/` fixture each round — and
+    the engine's 120 s `[BB-HANG]` guard fires on that same file. The same file
+    parses alone in 865 ms with 4 symbols and 4 relationships, and 3 rounds × 8
+    workers over 61 files produced no crash at all, so the population size matters.
+    A `fallback` counter beside the corpus line (already item 5) and not exiting the
+    process on a parse that already recovered are the two changes that would make
+    the arbiter's own output trustworthy here.
+## Pass 5 — the shared instruments, and the arbiter run as a proof (2026-10-03)
+
+The two shared instruments this lane previously recorded as non-existent
+(§8 item 7 below) now exist, and the arbiter can rule for five lanes. Everything
+below is measured through those shared paths so the numbers are comparable with
+every other lane's, not through lane-owned equivalents.
+
+### A. `script/m14/firing-check.ts` — what fires, on its own 120-file draw
+
+```
+npx tsx script/m14/firing-check.ts --files 120 zig
+7/10 fired, 8445 edges, 120/120 files, 1 DEGRADED
+```
+
+Corpus 3,848 tracked `.zig` files; the draw is the instrument's own stride
+(stride 32, sorted), reproduced byte-identically in
+`/tmp/opencode/zig-lane/draw120.ts` so the incoming run below used the same 120
+files.
+
+| type | edges | source published | source external | both ends resolve | conf < 0.7 | `evidenceClass` missing |
+|---|---|---|---|---|---|---|
+| `calls` | 2,569 | 2,121 | 448 | 714 | 0 | 0 |
+| `uses` | 2,623 | 1,911 | 712 | 587 | 0 | 0 |
+| `contains` | 1,722 | 1,722 | 0 | 1,722 | 0 | 0 |
+| `imports` | 256 | 0 | 256 | 0 | 0 | 0 |
+| `references` | 720 | 0 | 720 | 0 | 0 | 0 |
+| `exports` | 415 | 0 | 415 | 0 | 0 | 0 |
+| `instantiates` | 140 | 66 | 74 | 63 | 0 | 0 |
+| `extends` `implements` `overrides` | 0 | — | — | — | — | — |
+
+Also from that run: `emptySymbolNames 0`, `emptyOrUnknownKind 0`,
+`unknownEndpoints 0`, `parseFailures 0`.
+
+Three readings of this table, none of them flattering by default:
+
+- **`calls`/`uses`/`instantiates` are mostly external-source edges.** 448 of 2,569
+  `calls` edges have a source the run did not publish. A graph cannot walk out of
+  those, and it is not a defect in the analyzer: a call inside a function body has
+  the function as its source, and the count is published per file, so this needs
+  the per-class breakdown below before it is called anything.
+- **`imports`, `references` and `exports` read 0 published sources and 0
+  resolution** on a per-file universe. That is CORRECT for zig and it is the
+  incoming check's point: these three carry a MODULE PATH or a PUBLISHED API name
+  as their target, and a single file publishes neither the imported module nor the
+  consumer of an export. `contains` resolves 1,722 of 1,722 because both endpoints
+  of a containment edge are declarations in the same file. The comparison the
+  workstream asks for — CSS `references` at 66.8% both-ends — has no zig
+  equivalent, and saying "zig resolves references at 0%" without that sentence
+  would be the misleading number.
+- **0 edges below confidence 0.7 and 0 missing `evidenceClass`** across all 8,445
+  edges: the heuristic ratio this lane publishes is 0, and it is countable rather
+  than asserted.
+
+### B. The instrument's own two defects, measured (not mine to fix)
+
+1. **`files` is assigned, not accumulated** — `script/m14/firing-check.ts:340`,
+   `for (const [type, set] of filesByType) res.types[type].files = set.size`.
+   `filesByType` is created fresh per file (line 294), so every fired type reads
+   `files: 1` on any population. `edges` is correct (`row.edges++`). Any lane
+   quoting that column is quoting 1. Identical to the defect the fsharp lane
+   reported; the per-type file counts elsewhere in this document come from
+   instruments that accumulate into a `Set` outside the loop.
+2. **"fell back to the regex extractor" is the wrong mechanism, and this lane can
+   name the file.** The 1 degraded file in the 120-file draw is
+   `zig/lib/compiler_rt/udivmodti4_test.zig`, **10,249,535 bytes**.
+   `src/ast/pool-worker.ts:779-794` returns `{symbols: [], relationships: [],
+   fallback: true}` for any file over 5 MB — no regex extractor runs, and the file
+   contributes 0 symbols and 0 edges. `extractFallback` is the 1–5 MB path
+   (line 811). Measured over the whole corpus: **3,834 files ≤ 512 KB, 10 in
+   512 KB–1 MB, 2 in 1–5 MB, 2 over 5 MB**, so 4 of 3,848 (0.104%) degrade and 14
+   (0.364%) exceed the 512 KB ceiling the arbiter admits under. The NDJSON form
+   compounds it: `degradedDetail: {}` is emitted empty (line 392), so the
+   machine-readable output names neither the file nor the cause.
+
+### C. `script/m14/incoming-check.ts` — and a disagreement between the two
+
+```
+npx tsx script/m14/incoming-check.ts --json zig <the same 120 files>
+distinctIncomingTargets 1892   orphanDeclarations 114 of 2807 (4.06%)
+degraded 1   symbols 2807   target names resolving to >1 published symbol: 82
+```
+
+| type | fired | edges | distinct targets | ambiguous | unresolved | self-loops |
+|---|---|---|---|---|---|---|
+| `calls` | yes | 2,562 | 382 | 301 | 1,359 | 78 |
+| `uses` | yes | 2,613 | 577 | 288 | 1,101 | 53 |
+| `contains` | yes | 1,722 | 1,245 | 175 | 0 | 0 |
+| `references` | yes | 714 | 214 | 38 | 323 | 0 |
+| `exports` | yes | 409 | 342 | 65 | 0 | 0 |
+| `instantiates` | yes | 140 | 13 | 111 | 3 | 0 |
+| `brain_import` | **NO** | **0** | 0 | 0 | 0 | 0 |
+
+**`brain_import` is 0 here and 256 in `firing-check.ts`, on the same production run
+over the same 120 files. The cause is a key, not the analyzer.**
+`script/m14/incoming-check.ts:65-76` lists `"brain_import"` in its `TYPES`, and
+line 161-162 does `const row = perType[label]; if (!row) continue`. This lane's
+analyzer emits the label `"imports"` — and `"imports"` is the STORE's spelling:
+`src/ast/engine.ts:454 RelationshipType.Imports = "imports"`,
+`src/ast/graph.ts:38 Imports = "imports"`, and the DB column values are
+`relationship_type IN ('imports','exports')`
+(`src/ast/real-nim-analyzer.ts:1217,1311`). `brain_import` is a TABLE name, not a
+relationship label. `firing-check.ts:96-107` bridges both spellings through
+`LABEL_ALIASES`; `incoming-check.ts` does not, so it drops every import edge in
+every language that emits the store's own label. One-line fix (§8): put
+`"imports"` in that `TYPES` array, or route the label through the same
+`LABEL_ALIASES` bridge. Until then, `incoming-check`'s `imports` row is 0 for zig
+and is not a fact about zig.
+
+Two more consequences of the same file, both measured here:
+
+- **`projectPath` is the first file's directory, for every file.**
+  `incoming-check.ts:102` takes `path.dirname(files[0])` and passes it to
+  `parseFile` for all 120. `parseFile`'s second parameter is unused by the parse
+  path (`src/ast/pool-worker.ts:772` is its only occurrence), so no count here is
+  affected — but the signature invites a reader to believe the run was
+  project-scoped.
+- **A path with a space is split into two arguments.** 17 `parseFailures` in that
+  run are ENOENT on fragments (`cannot`, `fit`, `boundary`, `-`, `max.zig`, …) of
+  3 real zig paths, e.g.
+  `zig/test/cases/safety/@intFromFloat cannot fit/boundary/case/max.zig`. The tool
+  takes `<file>...` positionally and the shell has already split them. Those 3
+  files are absent from every count above.
+
+### D. The `overrides` ruling-table numbers, measured through the SHARED arbiter
+
+`validation/m14/fixtures/zig/ruled-gate.ts` copies
+`script/m14/ontology-coverage-gate.ts` to `/tmp`, applies exactly the two lines
+the permanent wiring needs, prints them, runs the copy, and then diffs the gate's
+printed rows against an INDEPENDENT restatement. `script/m14/ontology-coverage-gate.ts`
+on disk is untouched.
+
+```
+BB_CORPUS_ROOT=<1,200-file root> BB_ZIG_RULED_WORKERS=4 \
+  npx tsx validation/m14/fixtures/zig/ruled-gate.ts
+```
+
+Population: the first 1,200 files of this lane's own
+`sha256(ontology-census-v1|repo/rel)` draw — `sha256:d60b554a…`,
+`ghostty=234 zig=930 zls=36`, built by `arbiter-corpus-root.py`.
+
+```
+calls         EMITTED      29,588 edges
+uses          EMITTED      35,867 edges
+contains      EMITTED      21,733 edges
+imports       EMITTED       3,143 edges
+references    EMITTED       9,076 edges
+exports       EMITTED       6,433 edges
+extends       RULED-SOUND  the grammar produced 231 distinct node types across the corpus and NONE expresses it
+implements    RULED-SOUND  the grammar produced 231 distinct node types across the corpus and NONE expresses it
+overrides     RULED-SOUND  the construct occurs 0x on the parse tree
+instantiates  EMITTED       1,253 edges
+emitted 7/10   ruled-sound 3   FALSIFIED 0   ruled-without-justification 0
+exit 0
+```
+
+The three RULED rows are the first verdicts on this lane's rulings produced by
+anything other than the lane that wrote them. The gate's EMITTED counts here match
+the run recorded above for the same 1,200-file root (29,588 / 35,867 / 21,733 /
+3,143 / 9,076 / 6,433 / 1,253).
+
+### E. The diff, and the two claims of mine it falsified
+
+The runner compares three sources: `EXPECTED` (restated as literals in the runner),
+`script/m14/zig-ruled.ts` as the gate reads it, and the gate's own printed rows.
+Fields per ruled row: `type`, `instrument`, `nodeTypesThatWouldMeanIt`
+element-wise, `countOnTree` presence, every measured number in `describe`
+cross-checked against the spec decision `ZIG.O.1`–`ZIG.O.3`, and the gate's status,
+basis string and cited ruling source.
+
+**It failed twice on first run, both times on my own table.**
+
+1. `overrides.describe-numbers: describe states [28, 17, 17, 17] and ZIG.O.3's
+   resolution does not`. The describe claimed "17 duplicate-declaration sites …
+   17 of 17" and attributed them to `construct-probe.ts`. Running **the probe the
+   gate runs** over the full 3,834-file corpus gives **21 raw** — 8 container
+   members, 4 functions, 7 bindings, 2 error-set members — and 0 surviving. The 17
+   is real and belongs to `construct-probe.ts`'s three narrower sub-probes; the
+   two numbers were never reconcilable from the text. Both are now stated, each
+   attributed to the instrument that measured it.
+2. `keywordCalibrationPresent: 10` of 11 in the probe's own artifact, against
+   "11 of 11 tested zig keywords" in the ruling table. Measured to settle it:
+   `Language.types` declares 239 node types and holds **11 of 11** of the tested
+   keywords, including `usingnamespace`; the corpus **produces** 232 node types
+   and **10 of 11**, the absence being `usingnamespace`, which occurs in **0 of the
+   corpus's 3,848 files** (checked in `zig@738d2be9`, `zls` and `ghostty` — upstream
+   deprecated it). It is a fact about the corpus, not about the grammar: the same
+   wasm parses `usingnamespace std;` into
+   `(using_namespace_declaration (identifier))`. The probe had been filtering the
+   PRODUCED set when the calibration's purpose is to test the DECLARED table, and
+   it therefore failed its own exit criterion while the ruling table asserted the
+   declared-table number. Both numbers are now recorded; the exit criterion is the
+   declared one.
+
+A third correction, found by the 2×2 the probe now runs rather than by the diff:
+the `overrides` probe's comment claimed the error-set-member rule "is the rule
+that takes the count from 1 to 0" while implying it removed the whole raw set.
+Measured, with the new fifth parameter switching that rule off:
+
+| quoted-diagnostic | error-set-member | sites |
+|---|---|---|
+| OFF | ON | 19 |
+| OFF | OFF | 21 |
+| ON | ON | **0** (what the gate reads) |
+| ON | OFF | 1 |
+
+So the corpus carries 2 duplicate error-set members, the quoted-diagnostic rule
+removes 19, and the error-set-member rule removes exactly the 1 that survives it —
+a zls analysis test whose expected annotation is the resulting error SET. The
+earlier sentence was half right and has been replaced by the table.
+
+**Negative control.** Two mutations of `EXPECTED` — `overrides`'s instrument
+changed to `A:grammar-inventory`, and one extra node type `class_body` added to
+`extends` — produce 3 `DIFF` lines and `exit 2`:
+
+```
+DIFF: extends.nodeTypes.length: table 17 vs expected 18
+DIFF: extends.nodeTypes[17]: table undefined vs expected "class_body"
+DIFF: overrides.instrument: table B:parse-tree-count vs expected A:grammar-inventory
+```
+
+So a clean diff is a fact about the three sources agreeing, not a comparison that
+cannot fail.
+
+### F. The gate's exit code is not about the verdicts, and this is measurable
+
+Three proof runs on the same 1,200-file root: **the verdict table was byte-identical
+every time** (`emitted 7/10  ruled-sound 3  FALSIFIED 0  ruled-without-justification 0`)
+while the **process exit code read 0, 1, 0**. The non-zero runs are the pinned wasm
+crashing under the concurrent fan-out, not a ruling being falsified.
+
+The crash class, measured with 8 workers over the same 1,200 files, two rounds:
+
+```
+round 1  [BB-PARSE-ERR] zig | zig/test/cases/compile_errors/undefined_value_call.zig | memory access out of bounds
+         [BB-HANG]      parser stuck 120s on the same file — exiting
+round 2  [BB-PARSE-ERR] zig | zig/test/cases/compile_errors/union_access_of_inactive_field.zig | memory access out of bounds
+         [BB-HANG]      parser stuck 120s on the same file — exiting
+```
+
+A **different file each round**, so it is a class and not a file — the same shape
+the fsharp lane reported for F#. Each crash is followed by a 120 s hang on that
+same file and the engine's guard fires. The same file parsed ALONE is fine:
+`truncate_sign_mismatch.zig`, 583 bytes, **865 ms, 4 symbols, 4 relationships, no
+fallback**. A control that isolates the fan-out — 3 rounds × 8 workers × 61 files
+including an offender — produced 0 crashes and 1 `fallback` (the 10 MB file's size
+guard), so 61 files is too small a population to reproduce it and 1,200 is not.
+
+`src/ast/engine.ts` is shared (§8). Not fixed here.
+
+### G. Coverage, reported as applicable
+
+**7 EMITTED + 3 RULED-SOUND = 10 of 10 applicable, decided**, and now decided by the
+shared arbiter rather than by this lane's own instruments:
+
+- numerator (7 fired) from `script/m14/firing-check.ts` through production `parseFile`;
+- denominator (3 measured-absent) from the shared arbiter's instrument A over the
+  grammar's own node inventory and instrument B over the parse tree.
+
+Two different instruments, as the workstream requires. The 3 RULED rows each carry
+an instrument, a probe, a measured count and an overturn condition that the arbiter
+re-measures by itself — which is why `FALSIFIED 0` is a result and not an absence.
