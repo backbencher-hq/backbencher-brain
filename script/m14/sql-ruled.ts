@@ -22,8 +22,8 @@
  * this lane owns, in the gate's own `Ruled` shape, and the supervisor's permanent
  * change is two lines:
  *
- *   import { SQL_RULED } from "../m60/sql-ontology-ruled"
- *   const RULED_BY_LANG: Record<string, Ruled[]> = { bash: BASH_RULED, json: JSON_RULED, sql: SQL_RULED }
+ *   import { SQL_RULED } from "./sql-ruled"
+ *   const RULED_BY_LANG: Record<string, Ruled[]> = { bash: BASH_RULED, json: JSON_RULED, lua: LUA_RULED, toml: TOML_RULED, sql: SQL_RULED }
  *
  * The measurements behind every entry are NOT here. They are in
  * `validation/m14/fixtures/sql/construct-probe.json` (465 distinct node types the
@@ -272,4 +272,71 @@ export const SQL_RULING_CITATIONS = {
   exports: "SQL-D16",
   extends: "SQL-D14",
   implements: "SQL-D16",
+} as const
+
+/**
+ * FALSIFIABILITY AUDIT — the test the round brief applies to every ruling:
+ *
+ *   "Could a CORRECT, COMPLETE implementation meet the overturn condition? If not, it
+ *    is not a falsifiability claim."
+ *
+ * The failure this catches is a condition only a WRONG implementation could satisfy —
+ * the Julia case, where a ruling demanded "a count above the ExportInfo count for the
+ * same corpus" from a path emitting one row per ExportInfo. So each ruling below is
+ * classified by WHICH KIND OF CHANGE could reverse it, and the classification is the
+ * finding rather than a reassurance. Two of the three are honest about being weaker
+ * than the third, and the weakest is named as such.
+ *
+ * `extends` is the strongest of the three and it is NOT a statement about the language.
+ * SQL HAS table inheritance — `INHERITS`, and since PostgreSQL 11 declarative
+ * partitioning, `PARTITION OF` and `ATTACH PARTITION`, which make a child a subtype of a
+ * parent with no `INHERITS` clause at all. All three were PARSED against the wired wasm and
+ * all three put their parent clause inside an `ERROR` (the six-shape battery in
+ * `SQL_GRAMMAR_INVENTORY_FINDINGS.capabilityBattery`). So `extends` is a GRAMMAR GAP, not
+ * an inapplicability, and this lane has already rebuilt the grammar eight times to add rule
+ * groups — which makes the condition meetable by a correct, complete implementation, by
+ * patching `node-types.json` to parse the clause and emitting the edge. That is the honest
+ * classification: `grammar+implementation`, and it means the ruling is FALSIFIABLE IN
+ * PRINCIPLE. It is not shipped because the grammar build and the `validation/m14/grammar-pins.json`
+ * record are shared artefacts (§8) and a rebuild attempt has already produced a parser.c
+ * 111,557 bytes off the wired one. Reported to the supervisor rather than done quietly.
+ *
+ * `implements` is `grammar+implementation` for the same mechanical reason and is the one
+ * ruling here with no counter-example at all: 0 `IMPLEMENTS` tokens in the corpus, no
+ * interface/supertype node among the node types, and SQL has no interface TYPE for a clause
+ * to name. `CREATE DOMAIN d AS t CHECK (…)` is a constraint-carrying alias, not interface
+ * satisfaction, and it is the shape a reader is most likely to raise.
+ *
+ * `exports` is the WEAKEST and is labelled so. Its condition is "a node type expressing a
+ * published surface appears in the inventory", and no implementation change can put one
+ * there — SQL has no export syntax to parse, so a correct implementation cannot emit an
+ * `exports` edge on any corpus. Under the brief's test this condition is therefore NOT
+ * satisfiable by a correct implementation, and calling it falsifiable would be the Julia
+ * mistake. What it IS sensitive to is a real change in the world rather than in the code:
+ * a corpus carrying a construct that publishes a unit's surface to another unit — a build
+ * script concatenating files in a declared order, a control file listing its migrations, a
+ * `.psql` orchestration naming the files it runs. Any of those would be an `exports` edge
+ * under the visibility scope the construct actually has, and the ruling would be wrong. The
+ * corpus count for all of them is 0 today (`exports-grant: 0`, `exports-keyword: 0`,
+ * `exports-node: 0`), and that is the number to re-measure, not the node-type search.
+ */
+export const SQL_RULING_FALSIFIABILITY = {
+  exports: {
+    kind: "corpus-only",
+    correctImplementationCouldMeetIt: false,
+    why: "SQL has no export syntax, so no correct implementation can emit the edge on any corpus. Sensitive to a construct that publishes a unit's surface by CONVENTION (a build script, a control file, an orchestration listing), which a grammar inventory cannot see — the same unsoundness that made the json lane withdraw its `exports` ruling. 0 occurrences of any such construct in the corpus is the measurement to re-run, not the node-type search.",
+    reMeasure: "construct-probe.json zeroProbes: exports-keyword / exports-node / exports-grant, all 0",
+  },
+  extends: {
+    kind: "grammar+implementation",
+    correctImplementationCouldMeetIt: true,
+    why: "SQL HAS the construct — `INHERITS (p)`, `PARTITION OF p`, `ATTACH PARTITION c` — and the wired grammar puts the parent clause inside an ERROR in all three. A correct, complete implementation meets this condition by patching the grammar to parse the clause and emitting the edge. Not shipped here because the grammar build and its pin are shared artefacts (§8).",
+    reMeasure: "capabilityBattery: a parse in which `OF <parent>` or `INHERITS (…)` survives inside a create_table/alter_table with no intervening ERROR",
+  },
+  implements: {
+    kind: "grammar+implementation",
+    correctImplementationCouldMeetIt: true,
+    why: "Mechanically the same as `extends` — the ruling turns on a node type being absent, and a grammar patch could add one — but with no counter-example: 0 `IMPLEMENTS` tokens, no supertype node, and SQL has no interface type for a clause to name. `CREATE DOMAIN … AS t` is an alias, not satisfaction.",
+    reMeasure: "construct-probe.json zeroProbes: implements-keyword / implements-node, both 0",
+  },
 } as const
