@@ -263,13 +263,28 @@ notFired: ["exports"]
 
 `firing-check.ts` is shared machinery and is not on this branch, so it was run from
 a copy of `5a634e17e:script/m14/firing-check.ts` placed at the path its relative
-imports require and removed afterwards; it is not committed here. Its own numbers at
+imports require and removed afterwards; it is not committed here. **Both readings below
+were reproduced on this branch from that same copy**, so the pair is a measurement and
+not a recollection — and the file exists at `5a634e17e`, so the remedy for item 7 is to
+land that commit rather than to write a new instrument. Its own numbers at
 n=120 versus n=400, same instrument, same corpus, same analyzer:
 
 | n | fired | relationships | files | `exports` edges |
 | --- | --- | --- | --- | --- |
 | 120 | 9/10 | 8,290 | 120/120 | **0** |
 | 400 | **10/10** | 53,252 | 400/400 | **9** |
+
+The n=400 run prints, verbatim:
+
+```
+10/10 fired, 53252 edges, 400/400 files
+
+lang       files       fired   rels        degraded  fired types
+dart       400/400     10/10   53,252      0    calls,uses,contains,imports,references,exports,extends,implements,overrides,instantiates
+```
+
+and the n=120 run prints `dart  120/120  9/10  8,290  0` with `exports` absent from the
+fired list — the supervisor's table, reproduced. `degraded` is 0 on both.
 
 At n=400 the arbiter reports `degraded: 0`, `unknownEndpoints: 0`,
 `emptySymbolNames: 0`, `emptyOrUnknownKind: 0`.
@@ -1417,9 +1432,11 @@ same-owner duplicates, which DARTD20 forbids: **zero**.
 - Corpus sample: `validation/m12/results/dart-corpus-sample.txt`
 - Grammar wasm: `wasm/tree-sitter-dart.wasm` (rebuilt from
   `UserNobody14/tree-sitter-dart` `be07cf7`)
-- Regex census: `validation/m12/results/regex-census.json` (0 for this analyzer;
-  re-verified 2026-09-30 — 0 occurrences of `new RegExp`, `.match(`, `.replace(`,
-  `.test(` or a regex split)
+- Regex census: `validation/m12/results/regex-census.json` — **it contains no `dart` key
+  and no `dart` string**, so it is not evidence about this lane in either direction. The
+  number that is evidence is `npx tsx validation/m14/fixtures/dart/regex-census.ts`:
+  0 `RegExpLiteral` nodes and 0 `RegExp` constructions over the 16 lane-owned files, by
+  AST. See §Regex inventory.
 - Analyzer hygiene: `script/m14/verify-analyzer-hygiene.ts` — **Dart clean** (the
   gate's one finding is another lane's elixir node-identity comparison)
 - Spec: `script/m14/spec/dart-completeness.json` — 95 handled / 106 internal-silent
@@ -1430,15 +1447,25 @@ same-owner duplicates, which DARTD20 forbids: **zero**.
 
 ## Known limits of the evidence
 
-1. **40 Dart mutants exist and NONE can execute.** They live in
-   `script/m14/mutate-analyzer.ts`, which does not parse (the
-   `xml/implicit-xml-prefix-unbound` transform has been malformed since
-   `f5f002c6`). Until that shared file is repaired, "40 mutants" is a claim, not a
-   measurement, and it is the single largest gap in this lane's assurance.
-2. **73.6% of the graph has no Dart-derived truth** — see the oracle table above.
+1. **~~40 Dart mutants exist and NONE can execute.~~ RESOLVED — this limit no longer
+   holds and the entry was stale.** It claimed `script/m14/mutate-analyzer.ts` does not
+   parse (the `xml/implicit-xml-prefix-unbound` transform malformed since `f5f002c6`), so
+   "40 mutants" was a claim rather than a measurement. Re-measured on this branch:
+   `BB_MUTANT_ONLY="dart/" bun run script/m14/mutate-analyzer.ts` prints
+   **`all 42 mutants caught - the gates can fail (BB_MUTANT_ONLY="dart/" filtered 1483 -> 42)`**,
+   so the harness parses, the suite runs, and 42 mutants execute and are all caught. The
+   count also moved 40 → 42. Kept as a numbered entry rather than deleted, because a
+   limit that was believed for several waves and then measured away is evidence about how
+   long a stale claim survives without re-derivation.
+2. **73.6% of the graph has no Dart-derived truth** — see the oracle table above. Stated
+   for the pre-M60 position: `contains`, `overrides`, `imports` and `exports` now have
+   Dart-owned oracles and batteries, but `overrides` and `references` are still outside
+   the differential's compared set, which is what the DERIVATION gate reports.
 3. **The differential's 1.000 is five fixture files** against an audit that says it
    predates three analyzer waves.
-4. **No corpus-scale perf figure**, and the corpus is ~3× the sampled size.
+4. **No corpus-scale perf figure** on the declared corpus, and the corpus is ~3× the
+   sampled size — though the live `ProxiCall/lib` figure below is measured on 1,294 real
+   files and is not a projection.
 5. Two recorded suspicions were measured out of existence and are kept as such: a
    pattern binding shadowing a field (the metadata proves a 0.9 local read, not a
    0.6 member read; 0 collisions across 1,294 files) and the assumption that the
@@ -1471,18 +1498,44 @@ load-bearing rather than cosmetic:
 Reading a bare `==` off an `operator_signature` is therefore a bug in either
 implementation, and the fixture battery pins the contract in both directions.
 
-## Final measured state (2026-10-01)
+## Measured state — and a 2026-10-01 reading that no longer reproduces
 
-Both differential lanes, `--dart-deps=direct` plus the vendored Dart SDK library
-tree, from runs reporting `files=` (never `RESUMED from journal`):
+The 2026-10-01 state was: both differential lanes at `--dart-deps=direct` plus the
+vendored Dart SDK library tree, `proxicall:dart` 29,203/29,203 (100%) MISSING 0, and
+`dart-http:dart` 2,288/2,288 (100%) MISSING 0. **That reading does not reproduce on this
+checkout, and the reason is dated.** `script/m14/differential.ts:23153` carries its own
+comment: on **2026-10-02**, a branch consolidation "took the REMOTE side", which drops
+`overrides` from the compared set for dart as well as csharp/swift/cpp/go. The allowlist
+filters the ANALYZER side only, so every `overrides` truth row now lands as a permanent
+MISSING — which is the DERIVATION finding above, showing up in a coverage number.
 
-| lane | coverage | MISSING | unexplained |
-|---|---|---|---|
-| proxicall:dart | **29203 / 29203 (100%)** | **0** | **0** |
-| dart-http:dart | **2288 / 2288 (100%)** | **0** | **0** |
+Re-measured on this branch, both lanes at the default `--dart-deps=none`:
 
-**No residual row.** Every analyzer edge either corpus measures is corroborated by
-independently derived truth, and the truth publishes nothing the analyzer does not.
+| lane | coverage | MISSING | unexplained | re-measured |
+|---|---|---|---|---|
+| proxicall:dart | 6120 / 6220 (98.4%) | **100** | 0 | 2026-10-04 |
+| dart-http:dart | 2263 / 2277 (99.4%) | **14** | 0 | 2026-10-04 |
+
+Both MISSING counts are what §DERIVATION predicts (100 on the 60-file proxicall sample,
+14 on dart-http), and both are entirely the excluded label — the harness prints a capped
+12-row sample and all 12 printed rows are `overrides` on each lane, and `overrides` is
+the only label the allowlist drops for dart, so the remaining rows cannot be anything
+else. `unexplained` is 0 on both lanes, which is the number that means the ANALYZER is
+not at fault: nothing it emits is uncorroborated.
+
+`--dart-deps=direct` on this checkout reports `[project-index] dart deps=direct: +0
+dependency files` — the vendored SDK tree resolves 439 files and 3,574 types (against
+1,012 at `none`), but no package dependency does — and moves dart-http to
+2290/2309 (99.2%) MISSING 19, unexplained 0. **It makes the MISSING count worse, not
+better**, because a larger type index satisfies more override truth rows without
+re-admitting the label. The 100% figure is reachable only by wiring `overrides` into
+the compared set, which is §Shared-machinery item 2.
+
+**What the 2026-10-01 state did establish, and still holds:** `unexplained` is 0 on both
+lanes in every mode measured here, which is the claim that matters — every analyzer edge
+either corpus measures is corroborated by independently derived truth, and the truth
+publishes nothing the analyzer does not. The MISSING rows are the harness refusing to
+compare a label, not a gap in the analyzer.
 
 The last row to go was `CupertinoClientWithProfile._createProfile ->
 CupertinoClient._createProfile`, and it had been misfiled as a reach problem — the
@@ -1505,12 +1558,17 @@ counting, and the count is the only thing anyone reads.
   the opposite direction.
 
 Every analyzer edge either corpus measures is corroborated by independently derived
-truth, and the truth publishes nothing the analyzer does not. No unexplained row and
-no missing row on either corpus.
+truth, and the truth publishes nothing the analyzer does not — `unexplained` is 0 on both
+lanes in every mode measured on this branch. **The "no missing row" half of this sentence
+no longer holds and was correct only before 2026-10-02**: the 100 and 14 MISSING rows
+measured above are `overrides` truth rows the compared-label filter refuses to admit, not
+edges the analyzer failed to emit.
 
-Fixtures **13/13**, `verify-dart-contains.ts` **37/37**, `verify-dart-overrides.ts`
-**14/14**, mutants 42/42, parse 0 errors on 1,294 `lib` files, 2.0 min for the full
-corpus.
+Fixtures **16/16** (13 before this wave added `type-references`,
+`object-interface-override` and `unknown-endpoint-r7`), `verify-dart-contains.ts`
+**37/37**, `verify-dart-overrides.ts` **14/14**, `verify-dart-references.ts` **38/38
+shapes, both sides**, mutants **42/42 caught**, regex census **0 over 16 lane-owned
+files**, parse 0 errors on 1,294 `lib` files, 2.0 min for the full corpus.
 
 Both oracle batteries are DIFFERENTIAL — each case asserts the oracle AND the
 analyzer against the same expected rows. `verify-dart-contains.ts` used to derive
