@@ -121,8 +121,7 @@ counts come from the arbiter's own `parseFile` pass.
 **Those counts are only quotable from a run that printed no `[BB-HANG]`, and that is
 not a formality.** `src/ast/engine.ts:1442` calls `process.exit(1)` after 120 s on one
 file. Over four runs of this corpus it named four different files, each preceded by a
-`[BB-PARSE-ERR] … memory access out of bounds` on the same path, so the trigger is a
-wasm memory fault in the XML grammar rather than a large document. Where it fires
+`[BB-PARSE-ERR] … memory access out of bounds` on the same path. Where it fires
 decides what a run is worth, and both positions occur:
 
 | Where the hang fired | What printed | Measured |
@@ -145,6 +144,21 @@ Nothing inside the table marks the run as short. The table above is from a run a
 `BB_XML_WORKERS=1` that exited 0 with no `[BB-HANG]`, and the runner now prints
 `RUN WAS SHORT, COUNTS UNDERCOUNTED` beside the rows whenever one fires, so the
 distinction cannot be read off a green-looking table.
+
+**Re-measured this pass, the trigger is the worker count and not the file, which
+retracts the grammar attribution in §8 item 3.** Two runs of the same runner over the
+same 11,456-file corpus, differing only in `BB_XML_WORKERS`:
+
+| `BB_XML_WORKERS` | `[BB-PARSE-ERR]` | `[BB-HANG]` | exit | table | `contains` | `references` |
+| ---: | ---: | ---: | ---: | --- | ---: | ---: |
+| **1** | 0 | 0 | 0 | full | 185,979 | 10,411 |
+| **8** | 8 | 3 | 1 | **none** | — | — |
+
+The n=1 row reproduces the committed table exactly, so the numbers below stand. The
+n=8 row is why: not one verdict is quotable from it. Every failing path is 459–1,254
+bytes and the fault is unresolved between reentrancy on the engine's single cached
+`TSParser` and host memory exhaustion — §8 item 3 carries both candidate mechanisms,
+the 603-file probe that came back INCONCLUSIVE, and what would separate them.
 
 | Type | Emitted? | Edges | Files | Both ends resolve | `confidence` < 0.7 |
 | --- | --- | ---: | ---: | ---: | ---: |
@@ -193,6 +207,15 @@ against the 6 `RelationshipType.*` references in the source
 (`Contains` 8, `References` 5, `Imports` 3, `Overrides` 1, `Extends` 1, `Calls` 1)
 and the 4 `no` rows against the absence of `Uses`, `Exports`, `Implements` and
 `Instantiates`.
+
+Re-measured 2026-10-04 with `bun run script/m14/verify-doc-truth-emissions.ts` (it is
+CJS and `__dirname` throws under `tsx`, so `bun` is the invocation): **43 UNDOCUMENTED
+rows across 24 lanes**, and `UNDOCUMENTED [xml] contains` is still among them — the
+defect is unchanged and the row it drops is unchanged. The 43 is not 32 because the two
+counts are not the same measurement: 32 is the number of DOCS whose first row this
+parser drops, and 43 is the number of rows the gate currently reports, which also carries
+the `import-site`/`export-site` payload-channel findings (csharp, elixir, erlang, …) that
+are a different check.
 
 What each type means **in this language**, which is not what it means in general:
 
@@ -562,6 +585,56 @@ implemented instead. **Overturn condition:** a corpus file in an XML vocabulary
 whose specification defines an export or public-interface meaning for an element,
 other than a documentation dialect for another language. That is a semantic
 judgement about a dialect, so it is stated as one and not dressed as a count.
+
+### Are these five rulings actually falsifiable? A self-audit against the bar
+
+The standard applied here is the one the round brief sets: **a ruling whose overturn
+condition cannot be satisfied by a correct implementation is decorative.** A condition
+that only a WRONG implementation could meet is the worst case — it can never fire, so it
+never tests anything while appearing to. Each of the five entries in
+`script/m14/xml-ruled.ts` was re-read against that bar, and the result is not uniform, so
+it is reported per entry rather than as one verdict.
+
+| type | instrument | what would satisfy the overturn condition | verdict |
+| --- | --- | --- | --- |
+| `uses` | B | a non-zero count of `xsl:use-attribute-sets` / `xsl:use-package` on the parse tree | **falsifiable, and reachable by analyzer work** — a complete implementation emits `uses` for these, `observed.n > 0`, and the entry is never consulted |
+| `extends` | B | a derivation site on the tree in a corpus where the analyzer emits 0 `extends` | **falsifiable** — and the entry exists to catch exactly this, which is how it caught the real misattribution |
+| `exports` | A | one of 7 named node types, or any node type containing `export`, at non-zero count | **falsifiable but NOT reachable by analyzer work** — see below |
+| `implements` | A | one of 5 named node types, or a vocabulary element whose semantics are interface satisfaction | **falsifiable, partly** — the count clause is mechanical, the semantics clause is a human judgement |
+| `instantiates` | A | one of 5 named node types, or any node type containing `new` / `instantiat` | **falsifiable but NOT reachable by analyzer work** |
+
+**The limitation this exposes, stated rather than smoothed over: the three
+instrument-A conditions cannot be met by improving this analyzer at all.** They are
+conditions on the GRAMMAR, not on the code. No correct, complete XML analyzer can make
+`tree-sitter-xml` emit an `export_list` node, so those three conditions are only reachable
+by a grammar change or by a corpus that exercises a node type the wired grammar does not
+yet produce. That is a real difference from `uses` and `extends`, whose conditions a
+better analyzer could genuinely trip, and it is the honest reason instrument A is the
+weaker instrument here rather than a matter of taste.
+
+**The substring clauses were tested rather than assumed.** Every one of them was run
+against the grammar inventory the census already measured — **86 distinct node types over
+2,787,237 nodes**, listed in `ontology-census-overrides-gap.json` →
+`instrumentA.nodeTypes`:
+
+```
+export -> []      implement -> []     instantiat -> []    new -> []
+override -> []    extend -> []        use -> []           call -> []      class -> []
+```
+
+All nine are empty, so no overturn clause in this table is already violated by the
+grammar in use. `use -> []` is worth its own line: the wired grammar has **no node type
+containing `use` at all**, which is independent support for the `uses` ruling from the
+instrument-A side that the B probe was preferred over.
+
+**One clause is weaker than a count and is labelled as one.** `implements`'s second
+overturn clause asks for "an element in a vocabulary namespace whose defined semantics
+are interface satisfaction". No probe can decide that; it is a judgement about a
+specification, and `exports`'s own overturn condition is likewise semantic ("a
+specification defines an export or public-interface meaning"). Both are stated as
+semantic conditions in the ruling table rather than dressed as counts, because a count
+that stood in for them would be a number with nothing behind it — the same defect as the
+gate's prose-matching `rulingFor`, in the opposite direction.
 
 ### The six questions, answered for every emitted type
 
@@ -1246,6 +1319,38 @@ run names files that are expected to fail and fails the run if they succeed.
 - Standalone tracked `*.dtd` files are an explicit boundary and are not
   falsely counted as XML documents.
 
+## Gates, and the command behind every number above
+
+Re-run from a clean checkout of `analyzer/XML` with `node_modules` present. Measured
+2026-10-04 while six other lanes shared the same 8-core host at load 18, which is the
+condition §8 item 3 is about — the worker count matters more here than anywhere else in
+the project.
+
+| command | result |
+| --- | --- |
+| `npx tsc --noEmit -p tsconfig.json` | exit 0 |
+| `npx tsx script/m12/verify-regex-census.ts` | gate FAILED project-wide, **0 rows for `real-xml-analyzer.ts`** — the 17 failures are css 11, scss 2, sql 1, svelte 3 |
+| `bun run script/m14/run-fixtures.ts --lang xml` | `{"xml":{"pass":23,"fail":0}}` |
+| `BB_MUTANT_ONLY="xml/" bun run script/m14/mutate-analyzer.ts` | **all 21 caught**, 0 survivors (filtered 1748 → 21) |
+| `npx tsx validation/m14/fixtures/xml/ontology-mutants.mts` | **12/12 caught**, 0 survivors |
+| `BB_XML_WORKERS=1 npx tsx validation/m14/fixtures/xml/ruled-gate.ts` | exit 0, full table, **0 `[BB-PARSE-ERR]`, 0 `[BB-HANG]`** |
+| `npx tsx script/m14/ontology-coverage-gate.ts xml` | **no verdict, exit 2** — `RULED_BY_LANG` has no `xml` entry (§8 item 1). It parses all 11,456 files and builds the full grammar inventory *before* discovering it has nothing to rule with, so it can also die to `[BB-HANG]` first and report nothing at all |
+| `npx tsx script/m14/firing-check.ts --files 120 xml` | **5/10 fired, 1,548 edges, 120/120 files, 0 degraded** |
+| `npx tsx validation/m14/fixtures/xml/concurrent-parser-probe.mts --files 600` | grade **INCONCLUSIVE**, exit 0 (control intact) |
+
+Two of those rows are not passes and are not written as ones. The regex census gate
+FAILS; this lane contributes zero of its 18 findings and the failure belongs to four other
+lanes. And `firing-check` reading 5/10 is the expected shape for this language, not a
+shortfall — the five types it does not fire are the four RULED types plus `overrides`,
+whose 3 corpus edges sit in 3 of 11,456 files and which a 120-file stride sample does not
+reach. Coverage as applicable is **6/10 EMITTED**, and the denominator shrank only by
+RULED verdicts carrying a corpus measurement, taken from the arbiter rather than from this
+lane.
+
+The firing-check edge count is also not comparable with a figure quoted for an earlier
+corpus: the admitted population moved from 11,066 files / 91 repositories to 11,456 /
+110, and this lane's own edge counts moved with it.
+
 ## Evidence pointers
 
 - Fixtures: `validation/m12/fixtures/xml/`
@@ -1286,6 +1391,19 @@ run names files that are expected to fail and fails the run if they succeed.
   residual is declared by file and size and the gate exits 1 if any of it changes
 - Differential corpus coverage: `script/m12/xml-differential-gap.mts` — 43
   unexplained of 250,135 `contains` edges over **8,889 files / all six corpora**
+- Ontology arbiter, run against this lane's ruling table without editing the shared
+  gate: `validation/m14/fixtures/xml/ruled-gate.ts` — full 11,456-file corpus at
+  `BB_XML_WORKERS=1`, exit 0, **emitted 6/10 · ruled-sound 4 · FALSIFIED 0 ·
+  ruled-without-justification 0**, with `XML_B_PROBE_WALK uses walked=11456 unparsed=0
+  occurrences=0` beside the `uses` 0
+- Concurrent-parser probe behind the §8 item 3 retraction:
+  `validation/m14/fixtures/xml/concurrent-parser-probe.mts` →
+  `validation/m14/fixtures/xml/concurrent-parser-probe.json` — 603 files (4
+  known-trapping + 599 discovered) at n=1 and n=8, **0 traps at both levels**,
+  identical 36,852 symbols / 8,452 relationships, grade **INCONCLUSIVE**
+- Ontology census: `validation/m14/fixtures/xml/ontology-census.mts` →
+  `validation/m14/fixtures/xml/ontology-census-overrides-gap.json`; lane mutants
+  `validation/m14/fixtures/xml/ontology-mutants.mts` (**12/12 caught**)
 - Vocabulary-table drift: `script/m12/xml-vocab-tables.ts` — analyzer and oracle
   cover the same 4 namespaces; exit 1 on drift
 - Encoding recovery: `script/m12/xml-encoding-recovery.mts` — 22 files, 1,537
@@ -1443,6 +1561,36 @@ const RULED_BY_LANG: Record<string, Ruled[]> = { …, xml: XML_RULED }
 `validation/m14/fixtures/xml/ruled-gate.ts` applies exactly these to a copy under
 `/tmp` and runs it, printing each patch, so this does not have to be re-derived.
 
+**1a. This should be an extension point, not a one-lane edit, and the round brief is
+what shows it.** The brief asks every lane to "register it in
+`script/m14/ontology-coverage-gate.ts` `RULED_BY_LANG`", and it names 17 lanes with no
+ruling table. A literal map entry per lane is 17 edits to one shared file by 17 agents
+working concurrently — which is how two analyzers end up interleaved in one file. The
+change that serves all of them is a directory scan instead of a literal, in the spirit of
+what `run-fixtures.ts` already does for fixtures:
+
+```ts
+// replace the literal with: import every ./<lang>-ruled module present on disk
+const RULED_BY_LANG: Record<string, Ruled[]> = Object.fromEntries(
+  readdirSync(path.join(import.meta.dirname, "."))
+    .filter((f) => f.endsWith("-ruled.ts"))
+    .map((f) => [f.replace(/-ruled\.ts$/, ""), loadIt(f)]),
+)
+```
+
+with `Ruled` exported from a shared type module so each lane's table typechecks against
+the gate's own shape rather than restating it (this lane restates it at `xml-ruled.ts:146`
+because there was nowhere to import from). A missing table then stays a refusal, which is
+the current correct behaviour, and each lane lands its own file with no shared edit at all.
+
+**1a. The same gate should refuse before it walks, not after.** The
+`if (RULED_BY_LANG[LANG] === undefined)` check sits *below* the `parseFile` worker pool
+and both instrument loops, so an unwired lane pays a full corpus parse and a full grammar
+inventory and then prints `no RULING TABLE`. Moving the check above the corpus walk costs
+nothing and stops the walk from dying to `BB-HANG` first — measured today: run unwired,
+`xml` printed `corpus: 11456 admitted files` and then exited on a hang without ever
+reaching the refusal that was its whole answer.
+
 **2. `script/m14/ontology-coverage-gate.ts` — `rulingFor` must match by identity, not
 by prose.** This is the false-verdict defect measured above. The function selects a
 spec decision by testing its `resolution` text for the type name
@@ -1456,14 +1604,86 @@ the prose test deleted rather than kept as a fallback — a fallback preserves t
 defect. Where no decision names the type, returning `null` is the correct answer and
 yields RULED-UNJUSTIFIED, which is what `calls` and `overrides` already get by luck.
 
-**3. `src/ast/engine.ts:1442` — the per-file self-destruct ends the whole run.** The
-120 s timer calls `process.exit(1)`, so one unparseable file kills every worker and
-prints either no verdict table or an undercounted one (table in §Relationship
-ontology). It needs to abort the FILE, not the process. Four distinct corpus files
-trigger it, each with `[BB-PARSE-ERR] … memory access out of bounds` on the same
-path, so the underlying fault is in the XML grammar's wasm memory and is worth its own
-fix — a parser that faults on a 40 KB SVG cannot be trusted on files nobody has
-measured.
+**3. `src/ast/engine.ts:1442` — the per-file self-destruct ends the whole run, and the
+fault is NOT the XML grammar.** The 120 s timer calls `process.exit(1)`, so one
+unparseable file kills every worker and prints either no verdict table or an
+undercounted one (table in §Relationship ontology).
+
+**This item previously blamed the grammar and that attribution was wrong; it is
+retracted here rather than edited away.** The earlier text said the underlying fault is
+"in the XML grammar's wasm memory" on the evidence that the failing paths repeat and each
+hang is preceded by a parse error on the same path. Two measurements remove that support.
+
+**The sizes do not correlate.** Every corpus file observed tripping either diagnostic is
+between **459 and 1,254 bytes** — measured, and the sizes are in
+`validation/m14/fixtures/xml/concurrent-parser-probe.json` →
+`observedFailingPathBytes`. A 459-byte document cannot exhaust a wasm heap, so
+"pathological input" has nothing to stand on. The earlier text also described "a parser
+that faults on a 40 KB SVG"; no such file appears in any failing set.
+
+**The fault tracks concurrency, not the document.** Same runner, same corpus, same
+patches, one variable:
+
+| `BB_XML_WORKERS` | `[BB-PARSE-ERR]` | `[BB-HANG]` | gate exit | verdict table |
+| --- | ---: | ---: | ---: | --- |
+| 1 | **0** | **0** | 0 | printed, full |
+| 8 | 8 | 3 | 1 | **none printed** |
+
+**What that does and does not settle.** It settles that the trigger is not the file. It
+does NOT settle the mechanism, and the honest report is that I could not separate two
+things that moved together: raising the worker count raises in-process concurrency AND
+raises the process's memory footprint. The host during the 8-worker runs was at 15 GB RAM
+with 13 GB used, 0 free, 8 GB of swap in use and ~38,000 pages/s of major faults at load
+18 on 8 cores — which is also when the earlier standalone measurement of one 459-byte
+"hanging" file took 1.7 s and a 907-byte one took 57 ms.
+
+So the two candidate mechanisms, neither measured to be the cause:
+
+  - **Reentrancy on a shared instance.** `getParser` caches ONE `Parser` per language
+    (`parsers.get(language)!` in the `MAX_PARSER_CACHE_SIZE` map) and `parseFile` calls
+    `parser.parse(content)` on it. `TSParser` is stateful, so concurrent calls on one
+    instance are undefined behaviour, and undefined behaviour inside wasm surfaces as a
+    trap or as a call that never returns — which is exactly the pair of diagnostics seen.
+  - **Use-after-free on the eviction path.** `currentCount >= 500` calls `p.delete()` on
+    the cached parser and drops it from the map while sibling workers may still hold the
+    reference and be inside `parse()`. On an 11,456-file corpus that eviction fires 22
+    times, each with up to 7 siblings in flight.
+
+`validation/m14/fixtures/xml/concurrent-parser-probe.mts` drives the production
+`parseFile` over the 4 known-trapping inputs plus a deterministic discovered sample at
+n=1 and n=8 and grades the result three ways, because a probe that only knows how to
+report the case it was built to find will report its conclusion on a run that found
+nothing. Measured over **603 files** (4 known-trapping + 599 discovered):
+
+```
+serial     n=1 files=603 parsed=603 threw=0 traps=0 recoveryLabels=20 symbols=36852 rels=8452
+concurrent n=8 files=603 parsed=603 threw=0 traps=0 recoveryLabels=20 symbols=36852 rels=8452
+GRADE INCONCLUSIVE: no wasm trap at either level
+```
+
+**INCONCLUSIVE is the result, and it is reported as one.** At n=8 on a host with memory to
+spare, 603 files produced output byte-identical to the serial level — same 36,852 symbols,
+same 8,452 relationships — and none of the four known-trapping inputs trapped. So this
+probe does **not** establish the reentrancy reading, and it must not be quoted as if it
+did. What it does establish is the refutation above: the four files are sound here, at
+both concurrency levels, so the fault is not in them.
+
+Two defects were found while building that probe and are recorded because both would have
+produced a confident wrong answer. It first counted every entry in `result.errors` as a
+failure, which graded `INPUTS UNSOUND` and exited 2 on 20 `Syntax error (unexpected node)`
+entries — those are this analyzer's **recovery labelling** for a tree-sitter ERROR node
+(`AnyFeed.xml`, `JsonInXml.xml` are damaged input by construction; `xml/recovery-labelling`
+pins the behaviour), not traps, and conflating them graded the wrong diagnostic. And its
+600-file discovered sample contained only **1 of the 4** known-trapping paths, because the
+rest sort past the cap — so it graded a claim about files it had never parsed. The failing
+paths are now added to the input set rather than sampled from it, and the probe exits 2 if
+any of them fails to reach the measured set.
+
+The fix needed here is unchanged in direction and different in content: the timer should
+abort the FILE, not the process; the cached `Parser` should not be shared across
+concurrent `parse()` calls nor `delete()`d while in flight; and the trigger still needs its
+own diagnosis, which this lane cannot supply because `engine.ts` is supervisor-owned and
+the two candidate causes cannot be separated without control over host memory.
 
 **4. `script/m14/differential.ts` — `LANG_REPOS` has no `xml` entry.** `--lang xml`
 prints `SKIP xml: no corpus repo mapped` and measures 0 lanes, so **Q3 (Correct) is
@@ -1491,6 +1711,45 @@ for 14 more; `implements` for lua; `references` for protobuf; `extends` for zig)
 `contains` was LEFT in first position in this lane's table on purpose — reordering it
 would move the defect to another type and make this lane look clean while hiding the
 bug.
+
+**6. `src/ast/engine.ts` `resolveWasm` — 20 GB of leaked grammar copies in `/tmp`, and
+the cost was assessed as "only" when it was bytes.** The registry fallback writes the
+grammar to `os.tmpdir()/bb-wasm_<path>_<pid>_<hrtime>` and deliberately does not unlink
+it, because a concurrent process may be reading it. The comment states the trade
+explicitly: *"the per-process tag already makes an unbounded tmpdir growth the only
+cost."* That reasoning holds while the growth is bytes per process. It is no longer a
+per-process cost, because `procTag` is recomputed on **every** call — so a single
+long-running process leaks one copy per parser recreation, and `getParser` recreates the
+parser every 500 parses.
+
+Measured on this host, 2026-10-04:
+
+| | |
+| --- | ---: |
+| leaked `bb-wasm_*` files in `/tmp` | **7,382** |
+| total size | **20 GB** (1,405,135 B per bash copy) |
+| `/tmp` total | 36 GB |
+| root filesystem | **92 % used** (397 GB of 460 GB) |
+| accumulation window | 2026-10-01 04:11 → 2026-10-04 04:54 |
+| distinct writer processes | 7,383 |
+
+By grammar: zig 1,561 · json 1,113 · nim 1,029 · **xml 942** · sql 883 · protobuf 636 ·
+css 292 · bash 234. No lane owns this file, and no lane can fix it from its own worktree.
+
+The fix is small and does not need the unlink that was correctly rejected: the
+per-process tag only needs to be per-process, not per-call. Deriving `procTag` once per
+process (module scope) rather than inside `resolveWasm` makes every call in a process
+resolve to the SAME path, so the write becomes idempotent and the leak stops at one copy
+per process per grammar — roughly 23 processes × 8 grammars instead of 7,382 files. A
+process-exit hook may then unlink its own tags safely, because by definition no sibling
+is still writing them. Alternatively a startup sweep of `bb-wasm_*` files whose owning
+pid is no longer alive is safe by the same argument, and reclaims the 20 GB immediately.
+
+This is filed as §8 rather than fixed here for a second reason: it is the most likely
+contributor to the memory and I/O pressure documented in item 3, and cleaning `/tmp` from
+this lane would risk the exact bug the per-process tag was added to prevent — deleting a
+file another lane's process is mid-`Language.load` on, which silently degrades that lane
+into the 0.4/0.5-confidence regex extractor. It needs an owner.
 
 ## Issue
 
