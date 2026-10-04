@@ -816,7 +816,9 @@ its header and corpus size and then dies on `[BB-HANG] parser stuck 120s`. `run-
 applies the bound that works — 8 shards of whole repos, the arbiter's own admission rule for the
 split, the patched copy run per shard, and the arbiter's own precedence for the merge. Result, all
 8 shards answering all ten rows: **emitted 7/10, ruled-sound 3, FALSIFIED 0,
-ruled-without-justification 0**.
+ruled-without-justification 0**. Re-run at pass 5's HEAD over the same 1,955 files, the per-type
+edge counts came back identical to the census — 3,892 / 9,106 / 11,977 / 52 / 5,996 / 22 / 21 — so
+the arbiter and the census agree on every emitted type at this HEAD, not only on the verdicts.
 
 `arbiter-vs-shard.mts` then diffed the two process shapes **per file**: **11 of 1,955 files
 differ, and every one carries an explicit fallback marker on exactly the side that read lower** —
@@ -1061,7 +1063,7 @@ is part of the row.
 | adversarial probe (`validation/m14/fixtures/sql/adversarial-probe.mts`) | re-run at this HEAD over all 1,955 files, 23 probe populations: **628 qualified invocations emitted**, 52 guard-suppressed, 16 unexplained by this probe's population, **3,892 of 3,892** `calls` tiers and **9,106 of 9,106** `uses` tiers AGREE, A12's 6 verdicts read off node types and fields | **0 files degraded at this HEAD**, against 1 engine-timeout and 6 regex-fallback files at pass 3 — the pass-4 optimization is what removed them. The 16 is not a defect: see the cross-probe note under *`calls` residual* |
 | `overrides` reconciliation (`validation/m14/fixtures/sql/overrides-reconciliation.mts`) | **34 events → 22 per-file edge keys = production's 22 exactly**; the probe's rule reproduces its committed **15**, and the 19-edge difference is **12 multiplicity + 7 visit order = 19, exact**. The probe's 48-char text read of `OR REPLACE` and the analyzer's `keyword_replace` node read disagree on **0 of 4,645 declarations** | closes limitation 14. Its own first version joined pass 2 to pass 1 on line number and produced visit indices of 48 and 216 for a group of two declarations; the fix keys on `startIndex` and that failure is recorded in its header |
 | construct probe (`validation/m14/fixtures/sql/construct-probe.mts`) | **480 distinct node types**, 0 parse failures, **every zero probe 0**, and no node type anywhere contains `export`/`module`/`provide` | `exports-keyword` was 1 and is now 0: the 1 was a COLUMN named `module`, and the old probe counted declaration names |
-| ruling table (`validation/m14/fixtures/sql/run-ruling-table.mts`) | **`emitted 7/10   ruled-sound 3   FALSIFIED 0   ruled-without-justification 0`** | the arbiter on disk is untouched; the copy is written under `node_modules/` and removed. The script's patch anchor was **stale** and exited 2 until pass 3 re-anchored it on the declaration rather than the literal |
+| ruling table (`validation/m14/fixtures/sql/run-ruling-table.mts`) and the 8-shard arbiter (`run-sharded-arbiter.mts`) | **re-run at this HEAD: `emitted 7/10   ruled-sound 3   FALSIFIED 0   ruled-without-justification 0`, with 8/8 shards answering all ten rows** and per-type edge counts identical to the census (3,892 / 9,106 / 11,977 / 52 / 5,996 / 22 / 21) | the arbiter on disk is untouched; the copy is written under `node_modules/` and removed. Its patch anchor was **stale** and exited 2 until pass 3 re-anchored it on the declaration rather than the literal. Its printed node-type count is wrong — see *Instrument A's denominator* |
 | `keepSymbol` census | re-measured at this HEAD: **18,485 symbols emitted by `analyze()` over 1,955 files, 3 refused (0.016 %)** — 2 `function:root`, 1 `property:program` — and **18,485 − 3 = 18,482, exactly the symbol count production `parseFile` publishes**, so `keepSymbol` accounts for the whole analyzer-to-index difference. SQL-G13, filed not fixed | this is the row that settles limitation 19. The pass-3 incoming probe's `0` was not a competing measurement: it reads `parseFile` output, which is already filtered, so a drop is structurally unobservable there. Artifact `measurements/pass5-keep-symbol-census.json` |
 | contract battery (`fixtures/sql/probe/contract-battery.mts`) | **not runnable on this machine** — the directory does not exist here; the recorded 54 / 54 is from 2026-09-27 and is **unverified by this round** | — |
 | node-type gate (`script/m12/sql-node-types-compare.ts`) | **not re-run by this round**, for pass 1's reason: re-running it without `fixtures/sql/probe/dialects` lowers its own observation surface from 6 probe files to 0 and would re-baseline a shared artifact downward | — |
@@ -1089,10 +1091,41 @@ afterwards — and runs the copy. The arbiter on disk is never modified. Its out
 **Two differences between the arbiter's numbers and the census's, both accounted for.** The
 arbiter reports `uses` 9,022 against the census's 9,017, because it does **not** exclude
 `duckdb/extension/tpcds/dsdgen/queries/83.sql` and that file contributes 5 `uses` edges; and it
-reports 480 distinct node types, which is now the SAME figure the construct probe reports, so
-the second difference pass 1 recorded between them is closed. The first survives: Pass 1
-recorded the same 5-edge difference in the other direction and it is a property of the
-`uses` exclusion, not a disagreement.
+reports **256** distinct node types where this lane's own walker measures **480**, and that
+difference is not a rounding of anything — see *Instrument A's denominator, measured three ways*.
+The first difference survives and is accounted: Pass 1 recorded the same 5-edge difference in the
+other direction and it is a property of the `uses` exclusion, not a disagreement.
+
+### Instrument A's denominator, measured three ways — and the arbiter's number is not one of them
+
+Instrument A is a vocabulary count, and a ruling that says "the grammar has no node expressing X"
+rests entirely on how that vocabulary was collected. Three walkers over the same 1,955 admitted
+files, all at this HEAD:
+
+| Walker | Counts | Distinct node types |
+| --- | --- | --- |
+| `construct-probe.mts` (this lane's instrument A) | every node the walk reaches | **480** |
+| a 20-line independent walker written for this check, sharing no code with either | every node | **480** — exact agreement |
+| the same, filtered to `isNamed` | named nodes only | **454** |
+| `descendants-equivalence.mts` | named nodes only | **454** — consistent, and it is why the equivalence figure reads "454 types" |
+| **the sharded arbiter** | — | **256** |
+
+**480 is right for the vocabulary, and the rulings rest on it.** All 480 names were searched for
+`export`, `module` and `provide` as substrings: **0 hits for all three**, which is the whole basis
+of the `exports` ruling. The 454/480 gap is exactly the anonymous-token set — 26 token types such as
+`keyword_create` — and it is worth naming because a vocabulary that excludes anonymous tokens would
+have missed `keyword_module` had the grammar had one, so the larger figure is the correct one for a
+ruling and the smaller is the right one for a query planner.
+
+**The arbiter's 256 is not a measurement of its shard's walk, and the reason is checkable in one
+step: it reports the SAME 256 in all 8 shards, whose file counts range from 19 to 594.** A
+vocabulary collected by walking a shard's own files cannot be identical across eight different file
+sets. So the number the arbiter prints in `the grammar produced ${grammarNodeTypes.size} distinct
+node types across the corpus` does not describe that corpus. This does not overturn a verdict: a
+vocabulary that omits 224 types can only weaken a ruling if one of the omitted 224 expresses the
+construct, and the 480-walker confirms none of them contains `export`, `module` or `provide`. But the
+figure should not be quoted, and `script/m14/ontology-coverage-gate.ts` is supervisor-owned, so it
+is reported rather than touched. §8.
 
 **The arbiter's citations are wrong, and the mechanism is recorded rather than worked around.**
 `rulingFor` matches a type by PROSE — the first RULED decision whose `resolution` mentions the
@@ -1258,6 +1291,16 @@ each specified so it can be applied without re-deriving it.
   (18,485 emitted − 3 refused = 18,482 published), so this is a 0.016 % leak and the `contains`
   edge above is its only graph-visible consequence. Limitation 19's apparent 3-versus-0
   disagreement is closed; see `measurements/pass5-keep-symbol-census.json`.
+- **The arbiter's instrument-A vocabulary count does not describe its own corpus (SQL-G18, new).**
+  `script/m14/ontology-coverage-gate.ts` prints `the grammar produced ${grammarNodeTypes.size}
+  distinct node types across the corpus`; over the same 1,955 files three independent walkers
+  measure **480** (all nodes) and **454** (named only), and the arbiter reports **256** — the same
+  256 in all 8 shards of a run whose shards hold 19 to 594 files each, which a per-shard vocabulary
+  cannot be. Needed: the loop at the `// Instrument A` comment walks `files`, so either `files` is
+  not the shard's admitted set at that point, or `grammarNodeTypes` is not reset between runs and
+  the patched single-process copy inherits a prior count. Which of the two it is, I did not
+  determine, because the file is supervisor-owned. No verdict depends on it — see *Instrument A's
+  denominator, measured three ways* — but the printed figure is currently not the corpus's.
 - **The arbiter needs an `--exclude` for faulting files, and `rulingFor` needs a non-prose citation.**
   The first was pass 2's §8 item and pass 3 shows the name list cannot work — it grew from three to
   seven by being killed. The citation bug is also pass 2's and unchanged: `rulingFor` matches a type by
