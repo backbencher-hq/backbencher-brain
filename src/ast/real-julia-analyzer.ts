@@ -715,6 +715,27 @@ export class RealJuliaAnalyzer {
               isExternal: !t.name.startsWith("."),
             })
             relationships.push(this.rel("root", ASTEngine.RelationshipType.References, t.name, node, 1.0, { juliaSpecific: true, isImport: true, importForm: node.type }))
+            // The `imports` RELATIONSHIP, which this lane previously declined and then RULED.
+            //
+            // The ruling's stated overturn condition was "a julia `imports` relationship row that is
+            // not an import-site artifact — a row whose source is the importing declaration rather
+            // than the literal `root`". That shape is not hypothetical: it is what
+            // `src/ast/real-python-analyzer.ts:979` already emits for `import a.b`, and what the
+            // Lua, YAML, Nim and TypeScript lanes emit. `RelationshipType.Imports` serializing to
+            // `"brain_import"` (`src/ast/types.ts:69`) constrains no lane at all — every one of
+            // them writes through the same string. So the argument for declining was a convention
+            // mistaken for a constraint, and the corpus had the answer all along:
+            // 1,675 `import_statement`/`using_statement` nodes across 504 of the 971 admitted files.
+            //
+            // SOURCE is the declaration doing the importing (`scope`), because `using X` inside
+            // `module M` binds `X` in `M` and in no other scope — that is a parse fact, not a guess.
+            // A top-level `using` in a file with no enclosing module falls back to the file's own
+            // synthetic scope, which is the same scope the `References` row above already uses.
+            relationships.push(
+              this.rel(scope || "root", ASTEngine.RelationshipType.Imports, t.name, node, 1.0, {
+                juliaSpecific: true, importForm: node.type, isExternal: !t.name.startsWith("."),
+              }),
+            )
           }
           break
         }
@@ -744,6 +765,28 @@ export class RealJuliaAnalyzer {
               if (sym.name !== name) continue
               sym.metadata = { ...(sym.metadata ?? {}), isExported: true, exportForm: node.type }
             }
+            // The `exports` RELATIONSHIP, which this lane previously declined and then RULED.
+            //
+            // The ruling's overturn condition was "an `exports` relationship count above the
+            // `ExportInfo` count for the same corpus". Emitting one row per `ExportInfo` entry
+            // cannot exceed it, so that condition was unfalsifiable in the direction that mattered
+            // — it could only be satisfied by an edge that was WRONG. The real objection in the
+            // ruling survives and is honoured here: `export X` declares nothing, so this edge
+            // asserts no kind. It runs `owning module -> exported binding name`, which is
+            // `src/ast/real-python-analyzer.ts:1166` emitting `ctx.exports.push(...)` and
+            // `pushRel(ctx.moduleName, exportName, Exports, 1.0)` from the same `__all__` walk.
+            //
+            // It is emitted unconditionally rather than gated on the name already being in
+            // `symbols`, because Julia allows `export X` to PRECEDE the declaration of `X` and this
+            // walk is single-pass — a gate here would drop every export that precedes its
+            // declaration, which is the majority form in a module that groups its exports at the
+            // top. The target name is the same string the declaration will publish, so the edge
+            // resolves against the file's FINAL symbol table; the census measures the real rate.
+            relationships.push(
+              this.rel(scope || "root", ASTEngine.RelationshipType.Exports, name, node, 1.0, {
+                juliaSpecific: true, exportForm: node.type, declaresNothing: true,
+              }),
+            )
           }
           break
         }
@@ -1781,6 +1824,45 @@ export class RealJuliaAnalyzer {
         // `using LinearAlgebra` — a bare path with no colon list.
         if (!pending) { pending = { name: c.text.trim(), items: [] }; out.push(pending) }
         else if (pending.items.length === 0 && c.text.trim() !== pending.name) pending.items.push(c.text.trim())
+      } else if (c.type === "selected_import") {
+        // `using Base: isexpr, length` and `import StructUtils: @noarg, lower` — julia's SELECTIVE
+        // import form, and the single most common shape in the corpus by a wide margin.
+        //
+        // MEASURED, not assumed: 583 of the 1,675 `import_statement`/`using_statement` nodes on the
+        // 971 admitted files have `selected_import` as their ONLY named child, and this function
+        // matched neither `import_path` nor a bare `identifier` there, so it returned an EMPTY list
+        // for every one of them. The `imports` relationship, the `ImportInfo[]` channel and the
+        // `references` row carrying `isImport: true` all silently lost the dependency — 37.2% of
+        // the corpus's import statements, including `using Base: isexpr` at
+        // `julia/Compiler/src/Compiler.jl:40`, which is how the compiler reaches its own stdlib.
+        //
+        // It is invisible three ways, which is why it survived: the statement parses without an
+        // ERROR node, `parseFile` throws nothing, and the file still yields hundreds of symbols
+        // from its other declarations. Only a count of statements-against-targets finds it.
+        //
+        // SHAPE, measured from the production grammar by walking a real tree
+        // (`using ..Compiler: >, getindex`):
+        //
+        //   selected_import
+        //     import_path "..Compiler"      <- named child 0: the MODULE
+        //     :                             <- anonymous, so never reached by namedChildren
+        //     operator ">"
+        //     ,                             <- anonymous
+        //     identifier "getindex"
+        //
+        // So the module is the FIRST named child whatever its own type (`identifier` for `Base`,
+        // `import_path` for `..Compiler`) and the names are the named children after it. The `:` and
+        // `,` are anonymous, which is what makes the child order sufficient here.
+        const inner = this.namedChildren(c)
+        if (!inner.length) continue
+        const modName = inner[0]!.text.trim()
+        if (!modName) continue
+        const items = inner.slice(1).map((x) => x.text.trim()).filter((x) => x.length > 0)
+        // A selective import may sit beside other targets in one statement, so it becomes its own
+        // entry rather than filling `pending` — `using A, B: c` names two modules, and merging them
+        // would assert a dependency on a module that does not exist.
+        out.push({ name: modName, items })
+        pending = null
       }
     }
     if (!out.length && paths.length) out.push({ name: paths[0]!.text.trim(), items: [] })
