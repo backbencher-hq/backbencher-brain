@@ -353,7 +353,16 @@ this one does:
 
 | | blob / digest |
 | --- | --- |
-| `analyzer/NIM` @ `ab6367afe` | git blob for `src/ast/real-nim-analyzer.ts`, sha256 `a59574036eb9f7fb…` |
+| `analyzer/NIM` @ `c12d7c7c1` | the commit that INTRODUCED the measured blob of `src/ast/real-nim-analyzer.ts`, sha256 `a59574036eb9f7fb…`, unchanged on disk through `ab6367afe` and through HEAD |
+
+The commit is named as the one that introduced the blob rather than as the HEAD at
+writing time, because a digest identifies a blob and a blob has an introducing
+commit. Measured: `git log --format=%h -- src/ast/real-nim-analyzer.ts` with
+`sha256sum` over each commit's copy gives `c12d7c7c1 a59574036eb9f7fb`,
+`47faa4238 b9a73cfda9d826a3`, `ad9edcd72 37112977bad16542`,
+`3dcd4af14 f17b972273aa923d` — so `c12d7c7c1` is the only commit whose analyzer is
+the one every number below was measured on, and *The six questions* below cites the
+same commit for the same reason.
 
 **And this table was WRONG until it was checked against the artifact, which is the
 point of printing the digest.** The revision before this one pinned the same digest
@@ -972,7 +981,7 @@ quoted from an earlier round.
 | `npx tsx validation/m14/fixtures/nim/verify-mutants.ts` | 0 | 15 ontology-round mutants, 15 caught, 0 survived |
 | `npx tsx script/m14/differential.ts --lang nim` | 0 | **`[lane] SKIP nim: no corpus repo mapped in LANG_REPOS`** — measured 0 lanes, M14.0.F5 not written. *Limitations* 18 |
 | `npx tsx validation/m14/fixtures/nim/ruled-gate.ts` | 0 | the arbiter's own verdict loop on a copy: **emitted 9/10, ruled-sound 1, FALSIFIED 0, ruled-without-justification 0**, 204s |
-| `npx tsx script/m60/rel-type-coverage-gate.ts --langs=nim` | 0 | **6 DERIVATION findings**, unchanged: `calls`, `contains`, `exports`, `imports`, `references`, `uses`. CHECK 2/3/4 clean |
+| `npx tsx script/m60/rel-type-coverage-gate.ts --langs=nim` | **1** | **6 DERIVATION findings**: `calls`, `contains`, `exports`, `imports`, `references`, `uses`. CHECK 2/3/4 clean. An earlier revision of this row recorded exit **0**; re-running the command gives **1**, and the reason is in the gate's own last line — `process.exit(regressions.length === 0 ? 0 : 1)` (`script/m60/rel-type-coverage-gate.ts:614`). The 6 are printed under its own heading `REGRESSIONS (not in the recorded debt)`, so a non-zero exit is the gate's verdict on this lane, not a crash. Recording 0 would have been the gate table asserting a clean run the gate does not report |
 | `npx tsx validation/m14/fixtures/nim/census.ts` | **1** | artifact written and digest-pinned, then killed by the shared watchdog — *Limitations* 8 |
 | `npx tsx validation/m14/fixtures/nim/resolution-audit.ts` | **1** | same |
 | `npx tsx validation/m14/fixtures/nim/accent-quoted-endpoints.ts` | **1** | same, on the first attempt; the run was destroyed and repeated |
@@ -981,7 +990,7 @@ quoted from an earlier round.
 | `npx tsx validation/m14/fixtures/nim/oracle-crosscheck.ts` | 0 | MISSING 23 / UNEXPLAINED 18 |
 | `npx tsx validation/m14/fixtures/nim/ambiguity-split.ts` (×2 subtrees) | 0 | irreducible ambiguity 0.5% and 3.6% |
 | `npx tsx script/m14/incoming-check.ts nim <files>` (×2 subtrees) | 0 | the two rows in the incoming table |
-| `bun run script/m14/verify-doc-truth-emissions.ts` | 0 | **0 findings for nim** — no `FALSE_NEGATIVE`, no `FALSE_POSITIVE`, no `UNDOCUMENTED`, no `NO_CLAIM_TABLE`. Under `npx tsx` it cannot run at all: `script/m14/verify-doc-truth-emissions.ts:131` uses `__dirname` in an ES module and dies with `ReferenceError: __dirname is not defined in ES module scope` (*Limitations* 21) |
+| `bun run script/m14/verify-doc-truth-emissions.ts` | **1** | **0 findings attributable to nim** — no `FALSE_NEGATIVE`, no `FALSE_POSITIVE`, no `UNDOCUMENTED`, no `NO_CLAIM_TABLE`; nim is absent from all four finding lists and from `MISSING_DOC`, and its claim table is read at line 357. An earlier revision of this row recorded exit **0**; the gate exits **1** because its verdict is repo-wide (`FALSE_NEGATIVE=7 FALSE_POSITIVE=0 UNDOCUMENTED=41 MISSING_DOC=1 NO_CLAIM_TABLE=16 -> FAIL`), and every one of those 48-analyzer findings belongs to another lane. The gate has no `--lang` selector, so this lane cannot turn that 1 into a 0 and must not claim it has. Under `npx tsx` the gate cannot run at all: `script/m14/verify-doc-truth-emissions.ts:131` uses `__dirname` in an ES module and dies with `ReferenceError: __dirname is not defined in ES module scope` (*Limitations* 21) |
 | `npx tsx script/m12/verify-regex-census.ts` | 1 | gate FAILED, and **this lane contributes 0 of its 51 rows**: 26 MISSING + 25 STALE, all in `css`, `julia`, `clean`, `fsharp`, `javascript`, `python`, `svelte`, `typescript`. `grep -c 'nim'` over the gate's own output is **0**. The analyzer holds no `RegExp`, no `.match(`, `.replace(`, `.test(` and no regex literal, so there is nothing here for this lane to fix |
 | `npx tsx script/m14/ontology-coverage-gate.ts nim` | **2** | unchanged: `RULED_BY_LANG` carries `bash`, `json`, `lua`, `toml` and no `nim`, so the gate walks 4,555 files and refuses to print a verdict. `ruled-gate.ts` supplies the wiring on a copy |
 
