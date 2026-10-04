@@ -165,7 +165,7 @@ the 603-file probe that came back INCONCLUSIVE, and what would separate them.
 | `contains` | yes — EMITTED | 186,270 | 10,847+ | **100.0 %** | 0 |
 | `references` | yes — EMITTED | 10,411 | 391+ | **49.1 %** | 0 |
 | `imports` | yes — EMITTED | 465 | 278+ | 0.0 %, target is a file, by design | 0 |
-| `calls` | yes — EMITTED (was GAP) | **548** | 76+ | **100 %** | 0 |
+| `calls` | yes — EMITTED (was GAP) | **402** | 76+ | **100 %**, and **100 % of sources are declared callers** | 0 |
 | `extends` | yes — EMITTED (was GAP) | **1,429** | 113 | **31.3 %** both ends / **100.0 %** source | 0 |
 | `overrides` | yes — EMITTED (was RULED — the corpus overturned it) | **3** | 3 | **100 %** | 0 |
 | `uses` | no — not emitted. RULED-SOUND, instrument B, probe count **0** | 0 | 0 | — | — |
@@ -483,11 +483,74 @@ new value would not. `xml/extends-source-is-the-derivation-constructor` in
 its constructor and is caught. Verified by reverting the fix in the analyzer: 23/23
 fixtures pass with it, 21/23 without, and the failure is the forbidden edge.
 
+#### The same fabrication was in `calls`, on 90.3 % of its edges, and `calls` hid it at 100 % resolution
+
+Having found the `extends` defect by asking whether an edge's **source** is a name the
+document declares, the obvious next move was to ask the same question of every other
+emitted type. `calls` was the one to ask first: it is the type the lane brief holds up as
+the counterexample to "a high firing score is correctness" (powershell published a
+wildcard as a symbol name), and it resolves at **100 % at both ends** on every corpus
+draw.
+
+| | before | after |
+| --- | ---: | ---: |
+| `calls` edges | 548 | **402** |
+| source is a name the stylesheet **declares** | 53 (9.7 %) | **402 (100 %)** |
+| source is an XSLT vocabulary tag | 201 | **0** |
+| source is an unrelated bare tag (`p`, `pre`, `td`) | 294 | **0** |
+
+The mechanism was `elementOwnerName`, documented as "the owner of the element carrying
+the attribute — one level further out". One level out is not far enough: a
+`<xsl:call-template>` inside `<xsl:for-each>` made the **caller** `xsl:for-each`, and
+inside `<xsl:if>` it made it `xsl:if`. From `libxslt/doc/EXSLT/devhelp/html.xsl`:
+
+```
+"xsl:template" -> "dumptext"      "xsl:for-each" -> "dumptext"      "p" -> "dumptext"
+```
+
+**Why 100 % resolution could not see it.** The analyzer mints a symbol for whatever name
+an edge needs, so `xsl:for-each` resolved perfectly — to a symbol it had invented for the
+purpose. A resolution metric measures whether a name is in the symbol table; it cannot
+measure whether the name was *earned*. This is the sharpest instance on this lane of the
+brief's warning that firing is necessary and not sufficient: `calls` looked like the
+healthiest type in the table on every metric available and 90.3 % of it was fiction.
+
+**The fix** is the same mechanism `extends` was given: `calls` now uses
+`nearestNamedDeclaration`, the nearest ancestor that declares a name in a vocabulary. A
+`<xsl:variable name="seed">` body is an instruction sequence and §6 makes the sequence the
+caller, so a variable **is** a legitimate caller and is published as `seed`; a call at
+stylesheet top level is not executable per §2.4 and yields **no edge**. The 146 dropped
+edges are exactly those with no named enclosing declaration.
+
+**A fixture that passed unchanged against this defect is why the fixture exists.**
+`xml/xslt-named-template-calls` pins three `calls` sources — `outer`, `inner`, `loop` —
+and it passed before and after the fix, because all three calls sit **directly** inside
+`<xsl:template name=...>`, the one shape where "one level out" already gave the right
+answer. Reverting the fix fails only the new
+`xml/xslt-call-source-through-inline-body` (23/24) while the older fixture still passes,
+which is the proof that the older one could not see the defect. The new fixture pins five
+callers: through `xsl:for-each`, through `xsl:if`, inside a variable body, directly in a
+named template, and at top level where no edge may exist. Each of the five fails a
+different over-correction, and the variable row is the one that stops the fix collapsing
+into "nearest enclosing **template** only".
+
+`xml/calls-source-is-a-vocabulary-tag` is the mutant, and it is labelled a **proxy**: a
+transform over the analyzer's output cannot recover which enclosing element the old code
+would have picked. The exact replay is the analyzer-level revert above. The shared
+harness is supervisor-owned (§8), so both new mutants live in this lane's
+`ontology-mutants.mts` — **14/14 caught, 0 survivors**.
+
 #### Payload
 
-`extends` grew 438 → 1,429 (+991) and `contains` 185,979 → 186,270 (+291). Total published
-edges across the six emitted types moved 197,843 → 199,126, **+0.65 %**, with `extends`
-still 0.7 % of the graph. No budgeted lane regressed.
+`extends` grew 438 → 1,429 (+991), `calls` fell 548 → 402 (−146, all of them calls with
+no named enclosing declaration), and `contains` grew 185,979 → 186,270 (+291). Total
+published edges across the six emitted types moved 197,843 → 198,980, **+0.57 %**, with
+`extends` still 0.7 % of the graph and `calls` 0.2 %. No budgeted lane regressed.
+
+The net edge count barely moves and that understates the change: 438 `extends` edges were
+replaced by 1,429 real ones and 495 `calls` edges were replaced by 402 real ones, so
+**1,260 fabricated endpoints were removed and 1,247 correct ones published**. A payload
+metric taken alone would have called this a rounding error.
 
 ### The five not emitted, each with its instrument, probe and overturn condition
 
