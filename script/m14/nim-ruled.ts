@@ -79,7 +79,7 @@
  * express implements" will be wrong about the language, and one who takes the
  * analyzer's 0 edges as "the analyzer does not implement it" will be wrong about
  * the code. The verdict is EMITTED-capable and corpus-silent, and the lane's
- * fixtures pin 6 `implements` edges across both spellings plus 4 forbids.
+ * fixtures pin 6 `implements` edges across both spellings plus 7 forbids.
  *
  * ## WHY INSTRUMENT B AND NOT INSTRUMENT A
  *
@@ -124,8 +124,13 @@
  *   2. `implements` SATISFIANCE is not probed and must not be. Whether an
  *      ordinary `type T = object` satisfies a concept is decided by the compiler's
  *      structural match at instantiation time and has no syntax naming it, so a
- *      probe for it could only count a guess. `nim/concept`'s 4 forbids exist to
- *      catch exactly such a reader.
+ *      probe for it could only count a guess. `nim/concept`'s 7 forbids exist to
+ *      catch exactly such a reader, and 3 of the 7 are this: `Meters` (an
+ *      ordinary object type, so any edge out of it would be an inferred
+ *      satisfaction), and `Number` / `Container` (concepts with no `of` clause,
+ *      which have no named supertype to point at). The other 4 are shape guards
+ *      on the `is` form — the field shape, the concrete-type shape, the
+ *      self-reference, and a call on the parameter.
  */
 type Type = "calls" | "uses" | "contains" | "imports" | "references" | "exports" | "extends" | "implements" | "overrides" | "instantiates"
 
