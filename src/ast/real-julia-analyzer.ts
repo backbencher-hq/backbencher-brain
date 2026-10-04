@@ -734,6 +734,7 @@ export class RealJuliaAnalyzer {
             relationships.push(
               this.rel(scope || "root", ASTEngine.RelationshipType.Imports, t.name, node, 1.0, {
                 juliaSpecific: true, importForm: node.type, isExternal: !t.name.startsWith("."),
+                importRenamed: t.renamed === true,
               }),
             )
           }
@@ -1893,8 +1894,8 @@ export class RealJuliaAnalyzer {
    * ERROR rule is applied to `export`/`public` only and for a different reason** — see the
    * `export_statement` case, where the statement node ITSELF is wrong rather than one part of it.
    */
-  private importTargets(node: Node): { name: string; items: string[] }[] {
-    const out: { name: string; items: string[] }[] = []
+  private importTargets(node: Node): { name: string; items: string[]; renamed?: boolean }[] {
+    const out: { name: string; items: string[]; renamed?: boolean }[] = []
     for (const c of this.namedChildren(node)) {
       if (c.type === "selected_import" || c.type === "import_alias") {
         // `using Base: isexpr, length` and `import StructUtils: @noarg, lower` — julia's SELECTIVE
@@ -1926,8 +1927,22 @@ export class RealJuliaAnalyzer {
         if (!inner.length) continue
         const modName = inner[0]!.text.trim()
         if (!modName) continue
-        const items = inner.slice(1).map((x) => x.text.trim()).filter((x) => x.length > 0)
-        out.push({ name: modName, items })
+        // `selected_import` (`using A: x, y`) brings NAMES out of A, so its trailing children are the
+        // imported items. `import_alias` (`import A as B`) does NOT: it imports the whole module and
+        // `as` only renames the LOCAL binding, so its trailing child is `B` — a name this file
+        // declares, not one it imports. Putting `B` in `items` asserts a dependency on a binding
+        // named `B` inside a module that need not have one, and the corpus's own
+        // `StaticArrays.jl/ext/StaticArraysChainRulesCoreExt.jl` writes `import ChainRulesCore as CRC`.
+        const items = c.type === "selected_import"
+          ? inner.slice(1).map((x) => x.text.trim()).filter((x) => x.length > 0)
+          : []
+        // `renamed` is a PARSE FACT and it is on the edge because the two forms are different
+        // facts about the same dependency: `using A: x` names an item out of A, `import A as B`
+        // renames the local binding and imports the whole module. Without it the two are
+        // indistinguishable on the wire, and the lane-owned mutant that reinstates the pre-fix drop
+        // of the aliased form has nothing to match on — it survived its first run for exactly that
+        // reason, which is recorded in `script/m60/julia-mutants.ts`.
+        out.push({ name: modName, items, renamed: c.type === "import_alias" || undefined })
         continue
       }
       // A bare path with no colon list: `using LinearAlgebra`, `using ..Dep1`, `using Base.GMP.MPZ`,
