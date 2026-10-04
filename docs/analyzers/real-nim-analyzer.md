@@ -305,54 +305,64 @@ walk, so the file set is the same set. 83,051 symbols, 0 empty names, 4 empty
 kinds (see *Limitations* 8), 0 edge types outside the ten, 0 empty endpoints.
 Artifacts: `validation/m14/measurements/nim/ontology-census.{json,txt}`.
 
-**READ THIS BEFORE QUOTING ANY NUMBER IN THIS SECTION: the analyzer these
-numbers describe is NOT this branch's HEAD.** `census.ts` prints
-`sha256(src/ast/real-nim-analyzer.ts)` before the walk and again after it, and
-this run printed **`9e93988f677e8faf` on both sides — unchanged during the
-walk**, so the table is internally consistent. But that digest is the WORKING
-TREE, and the working tree is not HEAD:
+**EVERY NUMBER IN THIS SECTION IS AGAINST A COMMITTED BLOB, not a working
+tree.** `census.ts` prints `sha256(src/ast/real-nim-analyzer.ts)` before the walk
+and again after it, so a run that says "unchanged" is internally consistent, and
+this one does:
 
-| | blob / digest | `runnableExamples` occurrences |
-| --- | --- | --- |
-| this branch's HEAD | git blob `0dba3980c6942f35cc900c969d00612a1c1589cc` | **0** |
-| the tree this census read | sha256 `9e93988f677e8faf…` | **24** |
+| | blob / digest |
+| --- | --- |
+| `analyzer/NIM` @ `c12d7c7c1` | git blob for `src/ast/real-nim-analyzer.ts`, sha256 `a59574036eb9f7fb…` |
 
-A second NIM agent was editing `src/ast/real-nim-analyzer.ts` in this worktree
-throughout (see *Coordination*, below), adding nested-routine symbols and
-`## runnableExamples:` block handling. So these counts describe HEAD **plus**
-that uncommitted work. They will be right once it lands and they are wrong for
-HEAD today, and the only honest way to say so is to say it rather than publish a
-table under a heading that implies otherwise.
+An earlier revision of this section carried a warning that the numbers described
+HEAD *plus* an uncommitted working tree, because two `opencode run --agent build`
+processes had been pointed at `$HOME/mcp/bb-lanes/nim` at the same time
+while the first was mid-corpus-walk. That incident is real and its cost is
+measurable — two runs of the shared arbiter over the SAME 4,555 files returned
+`calls` 80,057 and then 79,041, because the analyzer was edited between them, and
+both numbers were correct for the code that produced them. The state is now
+resolved: the work is committed, the digest is recorded above, and the numbers
+below are for that blob.
 
-The digest field exists because of what the ambiguity cost: two runs of the
-shared arbiter over the SAME 4,555 files returned `calls` 80,057 and then 79,041,
-because the analyzer was edited between them. Both numbers were correct for the
-code that produced them, and quoting either alone would have claimed a file state
-that never existed.
+**THE WORKER COUNT IS PART OF EVERY NUMBER, because the production path is
+non-deterministic under concurrency.** Measured over the same 4,555 files at
+`validation/m14/fixtures/nim/fallback.mts`: **1 worker → 0 fallback files and 0
+empty-kind symbols; 6 workers → 2 fallback files and 4 empty-kind symbols**, and
+across five full-corpus runs at 6 workers the empty-kind count was 11, 4, 3, 63, 0
+— a different set of files each time. The cause is *Limitations* 11. Any figure
+below quoted without its worker count is not reproducible, so the artifact
+records the count its run used.
 
-**Coordination.** Two `opencode run --agent build` processes were pointed at
-`$HOME/mcp/bb-lanes/nim` at the same time — the second started 32
-minutes after the first, while the first was mid-corpus-walk. One worktree, one
-analyzer, two writers. The rule the brief states ("never let two agents share a
-checkout") was broken by the launch, not by either agent, and the cost is
-measurable: any number either agent quotes is against a moving target unless it
-carries a digest.
+| Relationship type | Emitted? | Verdict | Measured on this corpus | Where the number comes from |
+| --- | --- | --- | --- | --- |
+| `calls` | YES | EMITTED | 79,079 edges | `collectCallsAndUses`: the callee branches plus the parenless-UFCS member-leaf branch |
+| `uses` | YES | EMITTED | 30,972 edges | `collectCallsAndUses`, the member-leaf and bare-identifier read branches |
+| `contains` | YES | EMITTED | 21,326 edges | `collectContainment`, from `ownerName` and from `metadata.nimNestedIn` for a nested routine |
+| `references` | YES | EMITTED | 40,336 edges | `collectDeclaredTypeRefAt`, the declared-type sites |
+| `imports` | YES | EMITTED | 9,332 edges | `readImportStatement` / `readImportFromStatement` / `readIncludeStatement`, plus the `ImportInfo[]` channel |
+| `instantiates` | YES | EMITTED | 1,987 edges | `collectInstantiationAt`, a call whose callee is a type this file declares, plus the type argument of a `new` expression |
+| `extends` | YES | EMITTED | 570 edges | `collectInheritance`, from `object_declaration.inherits`, minus the compiler's own roots |
+| `implements` | YES | **implemented, corpus-measured absent** | **0** edges, 216 concepts examined, 0 refinements | `collectContractRefinement`, from `concept_declaration.refines` and from `is X` in a concept body |
+| `overrides` | YES | EMITTED | 48 edges | `collectOverrides`, receiver-qualified `Receiver.method`; the cross-file family additionally needs `overrideCompanion` |
+| `exports` | YES | EMITTED | 399 edges | `readExportStatement`, one edge per OPERAND of `export`, with `except` read positionally as what does NOT leave |
 
 | Type | Verdict | Edges | Both ends resolve | Confidence | evidenceClass |
 | --- | --- | --- | --- | --- | --- |
-| `calls` | EMITTED | 78,992 | 39.3% | 0.85 / 0.9 / 0.75 | `usage_contextual` 78,938, `import_based` 54 |
-| `uses` | EMITTED | 30,823 | 99.7% | 1.0 (51.8% at 0.75) | `usage_contextual` 30,767, `import_based` 56 |
-| `contains` | EMITTED | 21,304 | 99.8% | 1.0 | `structural` |
-| `references` | EMITTED | 39,907 | 45.2% | 0.9 | `reference_qualified` 33,876, `import_based` 6,031 |
-| `imports` | EMITTED | 9,344 | 44.4% | 1.0 | `import_based` |
-| `instantiates` | EMITTED | 1,990 | 100.0% | 0.9 | `usage_contextual` |
+| `calls` | EMITTED | 79,079 | 39.4% | 0.85 / 0.9 / 0.75 | `usage_contextual` 79,024, `import_based` 54, none 1 |
+| `uses` | EMITTED | 30,972 | 99.7% | 1.0 (51.6% at 0.75) | `usage_contextual` 30,916, `import_based` 56 |
+| `contains` | EMITTED | 21,326 | 99.8% | 1.0 | `structural` |
+| `references` | EMITTED | 40,336 | 46.0% | 0.9 | `reference_qualified` 34,189, `import_based` 6,147 |
+| `imports` | EMITTED | 9,332 | 44.5% | 1.0 | `import_based` |
+| `instantiates` | EMITTED | 1,987 | 100.0% | 0.9 | `usage_contextual` |
 | `extends` | EMITTED | 570 | 70.9% | 1.0 | `structural` |
-| `exports` | EMITTED | 408 | 3.9% | 1.0 | `structural` |
+| `exports` | EMITTED | 399 | 4.0% | 1.0 | `structural` |
 | `overrides` | EMITTED | 48 | 100.0% | 1.0 | `structural` |
 | `implements` | **implemented, corpus-measured absent** | **0** | — | 1.0 | `structural` |
 
-183,386 edges. **0 below 0.7** across all of them, so nothing in this lane is a
-heuristic by the honesty contract §4's 0.7 line.
+183,049 edges. **0 below 0.7 from this analyzer.** One `calls` edge sits at 0.5 with
+no `evidenceClass`, and it is not this analyzer's: it comes from the regex fallback
+in shared `pool-worker.ts` described in *Limitations* 11, which is a §8 report and
+is counted here so the table is not read as claiming a clean 0.
 
 ### How the arbiter itself now reports these ten
 
@@ -473,25 +483,197 @@ cannot match prints the same 0 as a construct that does not occur:
    exists, because the site there QUOTES the keyword (`('of'`). It reported 0 and
    looked like corroboration.
 
+### Four defects found by measurement, and what each one cost
+
+None of these was visible in the source. Each is a delta between what the parse
+tree carries and what the run published, and each was found by a script that reads
+the tree independently of the analyzer.
+
+**1. A named nested routine is a declaration, and it was not published.**
+`proc recentlyOpenedAdd(filename: string)` inside `proc closeTab` is a Nim closure
+with a stable name that the parent calls by that name. The analyzer published the
+`calls` edges and no symbol at their far end, so the graph asserted 653 edges it
+could not walk. Now published with `scope` set to the parent — the lua lane's
+convention for this exact shape — plus a `contains` edge read from
+`metadata.nimNestedIn`, because the owner here is a FUNCTION and `ownerName` is the
+family field for a class owner. Deliberately *not* added to `fileCallables`: that
+set is the module-scope callable set, and adding to it would reclassify every
+unqualified reference to that name anywhere in the file.
+
+| | before | after |
+| --- | --- | --- |
+| `calls` edges whose target is declared on the tree and published nowhere | 653 | **17** |
+| callable declaration recall (tree declarations vs published symbols) | 97.5% | **99.97%** (34,455 / 34,466) |
+
+The residue is 11 declarations, and they are `proc _` — Nim's discard name for a
+declaration, which the analyzer suppresses on purpose.
+
+**2. A `runnableExamples:` block's type declarations are declarations.** The Nim
+compiler compiles a `runnableExamples` block as its own unit, so
+`type Sub1 = ref object of Base` inside one is real and yields a real `extends`
+edge. Nine `object_declaration.inherits` occurrences on the corpus parse trees had
+an owner symbol published nowhere; this is **6**. The grammar's part in it is that
+it parses `runnableExamples:` as a `call` whose `argument_list` holds the whole
+example, so the block sits inside the documenting routine's `body` field and the
+C-D1 rule ("a `type` section inside a body is an execution artifact") suppressed
+it — a rule that is right for a body and wrong for a separate compilation unit.
+
+The six that remain are three different things, and none of them is this rule: two
+in `nimsuggest/tests/fixtures/mclass_macro.nim` are a macro that *builds* an
+inheritance clause from two backtick parameters; one in
+`tests/macros/tgettypeinst.nim` is named `_`; and two are a `type` section inside a
+body under `static:` (`tests/stdlib/trepr.nim`) and inside a `template` body
+(`tests/template/template_issues.nim`), which is the C-D1 rule and is deliberate.
+An earlier draft of the code comment claimed this rule emptied the bucket; the
+measurement says 9 → 6 and the comment now says 9 → 6.
+
+Its *value* declarations stay suppressed — `var base: Base = Sub1()` is a local of
+the example exactly as `var` in a routine body is a local of that routine — so the
+two halves of this fix are pinned by opposite halves of one fixture, and a "fix"
+that published them would fail it.
+
+**3. A `runnableExamples:` pragma is not a call.** Because the grammar parses the
+example as the call's `argument_list`, the call branch fired on a keyword and
+published `describe -[calls]-> runnableExamples` with 60 characters of the
+example's source in `callExpression`. No Nim program calls anything by that name,
+so it is an edge the graph can never resolve — the fabrication rule's cheapest
+available instance. 24 such frames in `nim/lib/system.nim` alone. Suppressed on
+the *shape* (the argument must hold a statement list or a block), so a user proc
+of that name is still published.
+
+**4. A method now publishes `qualifiedName`, which is what makes an `overrides`
+endpoint resolvable at all.** `overrides` endpoints are receiver-qualified
+(`Rect.describe`) because the bare name cannot address either end — and no symbol
+published that spelling, so a consumer resolving a target against published names
+had nothing to match. The worker's `scope`-derived fallback cannot recover it,
+because a method's owner is `ownerName`, not `scope`.
+
+`script/m14/incoming-check.ts nim <105 files of nim/lib/pure>`, before and after:
+
+| | edges | distinct targets | ambiguous | **unresolved** |
+| --- | --- | --- | --- | --- |
+| before | 14 | 0 | 0 | **14** |
+| after | 14 | **7** | 0 | **0** |
+
+### The oracle had to be able to disagree, and it caught a defect the analyzer could not see itself
+
+Publishing the nested-routine `contains` family and checking it against nothing is
+the failure this workstream is built on: the analyzer omits a family, the oracle is
+written after the omission, and nothing disagrees with nothing. So
+`script/m14/nim-truth-oracle.ts` now derives it from the **parse tree** — walking
+lexical nesting, reading the `body` FIELD rather than the whole declaration
+subtree, and reading no analyzer metadata at all, because an oracle that read
+`nimNestedIn` would be checking the analyzer against itself.
+
+`contains` MISSING went 126 → 0 on the 400-file oracle sample, and 9 UNEXPLAINED
+appeared. Both directions were adjudicated, and the oracle was wrong twice:
+
+- **`calls -> runnableExamples`, 7 unexplained** across seven stdlib files. The
+  oracle now applies the same shape test. The analyzer was right.
+- **`contains then -> fn` / `-> asyncFact` / `-> main`** at
+  `nim/lib/js/asyncjs.nim:206-216`. A `runnableExamples` block is compiled by
+  `nim doc` as its own unit, so a routine inside it is not lexically inside the
+  proc that documents it, and `then -> fn` states something false. The oracle now
+  clears the enclosing routine at a doc-example argument.
+- **`calls -> rmSpaces` at `nim/lib/packages/docutils/rst.nim:3493` — the
+  analyzer was wrong.** `p.s.idxImports[origFilename.rmSpaces]` is a *parenless
+  UFCS call*: Nim invokes `rmSpaces(origFilename)` with no parentheses and no call
+  node, so the callee is a member leaf. `rmSpaces` is declared at `rst.nim:3491`,
+  **inside** `proc dirImportdoc`, and the parenless-UFCS test read `fileCallables` —
+  the module-scope set that nested routines are deliberately kept out of. Fixed by
+  consulting a second set from that one branch only. An analyzer that read only its
+  own metadata would have agreed with itself and reported nothing, which is the
+  whole argument for a separate walker.
+
+### The resolution audit: external is not the same finding as never indexed
+
+`validation/m14/fixtures/nim/resolution-audit.ts` classifies **every** edge target
+into five measured buckets, because a resolution rate on its own cannot tell a
+correct external edge from a missing declaration, and those are opposite findings.
+Over the same 4,555 files:
+
+| type | edges | local | module stem | builtin | declared in another corpus file | **tree-only** | external |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `calls` | 79,080 | 39.4% | — | — | 58.1% | **17** | 2.4% |
+| `uses` | 31,021 | 99.8% | — | — | — | 53 | 0.1% |
+| `contains` | 21,572 | 99.8% | — | — | — | 23 | — |
+| `imports` | 9,341 | 0.1% | **88.7%** | — | 2.1% | 0 | 9.1% |
+| `references` | 40,534 | 46.1% | — | 1.7% | 49.9% | **0** | 2.3% |
+| `exports` | 408 | 3.9% | — | 0.5% | 70.8% | 0 | 24.8% |
+| `extends` | 570 | 70.9% | — | — | 28.4% | 0 | 0.7% |
+| `overrides` | 48 | **100.0%** | — | — | — | 0 | — |
+| `instantiates` | 1,985 | **100.0%** | — | — | — | 0 | — |
+
+The **tree-only** column is the defect column: the target IS declared on a corpus
+parse tree and no symbol with that name was published anywhere. It is 93 edges
+across the whole corpus, from four distinct names — `destructor`, `root`, `me`,
+`super`, plus `_` — and two of them (`destructor`, `super`) are templates whose
+`contains` edge the production filter deletes (*Limitations* 12).
+
+`exports` at 3.9% local is not a defect and the table says why: `export foo` names
+something the file **imported**, so the target lives in another module by
+construction. 70.8% of them are published by another corpus file and 24.8% are
+outside it.
+
+### The extends delta, accounted to 941/941
+
+`validation/m14/fixtures/nim/gap-hunt.ts` walks every `object_declaration.inherits`
+on the corpus parse trees and buckets each one. 941 occurrences:
+
+| bucket | count | what it is |
+| --- | --- | --- |
+| published as `extends` | **570** | the edges |
+| compiler root (`of RootObj` / `RootRef` / `Object`) | 361 | a name with no referent anywhere; emitting an edge to it guarantees a dangling row |
+| self-named (`type X = object of X`) | 2 | a self-reference, not a supertype — both in `tests/objects/tillegal_recursion{,2}.nim` |
+| owner symbol not published | 6 | *Limitations* 13 |
+| **unmatched** | **2** | both named below |
+| **accounted** | **941 / 941** | |
+
+The two unmatched are `nim/tests/objects/tillegal_recursion3.nim`'s
+`Foo of ref Foo` — a compiler-*rejection* test file, where `ref Foo` is `Foo` and
+the analyzer's self-name filter is right — and
+`nim/tests/overload/toverload_issues.nim:59`'s `B of A`, where `B` is declared
+**twice** in one file (`type B = A[int]` at :165 and `type B = object of A` at :59)
+and name-keyed publication keeps one of them, so the other's base is lost. That is
+the same name-collision shape the incoming walk reports as an ambiguous target,
+seen from the source side, and it is stated here rather than smoothed over.
+
 ### The six questions, per emitted type
 
-Columns 1, 2, 5 and 6 are this pass's census (4,555 files, analyzer
-`sha256:9e93988f677e8faf`). Column 3 is the oracle cross-check, whose sample is
+Columns 1, 2, 5 and 6 are this pass's census (4,555 files, 6 workers, analyzer
+sha256 `a59574036eb9f7fb` = `analyzer/NIM` @ `c12d7c7c1`; the worker count matters,
+see the note above the verdict table). Column 3 is the oracle cross-check (400
+files, deterministic every-10th), whose sample is
 named below and whose instrument is a SEPARATE WALKER — so "agrees" means "the two
 derivations agree", never "the edge is true". Column 4 is adjudicated per type.
 
 | Type | 1 Exists | 2 Fires | 3 Correct (oracle) | 4 Labelled | 5 Resolved | 6 Confident |
 | --- | --- | --- | --- | --- | --- | --- |
-| `calls` | yes | 78,992 | 2,475 vs 2,485; 0 missing, **14 unexplained** | yes | 39.3% | 100% under 1.0; `usage_contextual` |
-| `uses` | yes | 30,823 | 1,026 vs 1,026; 0/0 | yes | 99.7% | 51.8% at 0.75, rest 1.0 |
-| `contains` | yes | 21,304 | 1,314 vs 1,314; 0/0 | yes | 99.8% | 1.0, `structural` |
-| `imports` | yes | 9,344 | 344 vs 344; 0/0 | yes | 44.4% | 1.0, `import_based` |
-| `references` | yes | 39,907 | 638 vs 637; **1 missing**, 0 unexplained | yes | 45.2% | 0.9, `reference_qualified` |
-| `instantiates` | yes | 1,990 | 151 vs 151; 0/0 | yes | 100.0% | 0.9, `usage_contextual` |
-| `extends` | yes | 570 | 20 vs 20; 0/0 | yes | 70.9% | 1.0, `structural` |
-| `overrides` | yes | 48 | 2 vs 2; 0/0 | yes | 100.0% | 1.0, `structural` |
-| `exports` | yes | 408 | **no oracle derivation exists** | yes | 3.9% | 1.0, `structural` |
+| `calls` | yes | 79,079 | 2,519 vs 2,527; 0 missing, **13 unexplained** | yes | 39.4% | 100% under 1.0; `usage_contextual` |
+| `uses` | yes | 30,972 | 825 vs 826; 0/1 | yes | 99.7% | 51.6% at 0.75, rest 1.0 |
+| `contains` | yes | 21,326 | 995 vs 998; 0/**4** | yes | 99.8% | 1.0, `structural` |
+| `imports` | yes | 9,332 | 349 vs 349; 0/0 | yes | 44.5% | 1.0, `import_based` |
+| `references` | yes | 40,336 | 624 vs 622; **3 missing**, 0 unexplained | yes | 46.0% | 0.9, `reference_qualified` |
+| `instantiates` | yes | 1,987 | 124 vs 124; 0/0 | yes | 100.0% | 0.9, `usage_contextual` |
+| `extends` | yes | 570 | 30 vs 30; 0/0 | yes | 70.9% | 1.0, `structural` |
+| `overrides` | yes | 48 | 3 vs 3; 0/0 | yes | 100.0% | 1.0, `structural` |
+| `exports` | yes | 399 | **no oracle derivation exists** | yes | 4.0% | 1.0, `structural` |
 | `implements` | yes | **0** | no oracle, and 0 edges | yes | — | 1.0, `structural` |
+
+**Question 5 is the one this pass moved, and the movement is the result.** The
+`Resolved` column is a rate against the file's own symbol set; the *resolution
+audit* above splits the same edges into local / another-file / builtin / tree-only
+/ external, and `calls` at 39.4% local is 58.1% declared in another corpus file and
+2.4% genuinely external. Before this pass the same measurement read 653 `calls`
+edges in the **tree-only** bucket — a declaration the tree carried and the analyzer
+published nowhere — and it now reads 17.
+
+**Question 6, and the one edge below 0.7.** This analyzer emits **0** edges below
+0.7 on every type, so nothing in the lane is a heuristic by the honesty contract
+§4's line. It emits exactly one edge at 0.5 with no `evidenceClass`, and that edge
+is produced by shared `pool-worker.ts`'s regex fallback, not here — see *Limitations*
+11. The count is stated rather than omitted because a table claiming a clean zero
+would be claiming something the pipeline does not deliver.
 
 **Question 2 — fires.** All nine fire on thousands of edges, and the arbiter's own
 verdict loop confirms it independently of this lane's census (§ above). The
@@ -1208,3 +1390,86 @@ quiet machine will cover all 5,227 through the production path.
     but it does mean an exports-only query scoped to one file returns mostly
     dangling rows, and a consumer that treats resolution as a quality filter will
     discard the family.
+
+11. **`parseFile` silently degrades to a REGEX extractor under concurrency, and the
+    degraded output is indistinguishable in a count from a tree-derived one.**
+    The `fallback: true` branch of `src/ast/pool-worker.ts` calls
+    `extractBasicSymbols` / `extractBasicImports` / `extractBasicRelationships`,
+    and `extractBasicRelationships` matches calls with `/(\w+)\s*\(/g` over raw
+    text. Measured over the same 4,555 files at
+    `validation/m14/fixtures/nim/fallback.mts`:
+
+    | workers | fallback files | symbols with an empty `kind` |
+    | --- | --- | --- |
+    | 1 | **0** | **0** |
+    | 6 | 2 | 4 |
+
+    and across five full-corpus runs at 6 workers the empty-kind count was 11, 4, 3,
+    63, 0 — a **different set of files each time**. That path emits `calls` edges
+    with `source: "this"`, which is not a symbol and so can never resolve at the
+    source end; `confidence: 0.5` with `metadata.method: "regex"` and **no
+    `evidenceClass`**, which the honesty contract §4 requires for any edge under
+    1.0; and symbols with an empty `kind`, which the standing rules forbid. The
+    empty-kind symbols are always in a fallback file, so the two symptoms are one
+    event. Reported, not edited (§8): the fix is to make the degradation LOUD —
+    `fallback: true` is already on the result and nothing consumes it — or to stop
+    matching source text at all.
+12. **The production filter deletes 366 Nim edges whose endpoint is an
+    accent-quoted operator, and publishes the symbol anyway.** In Nim the backtick
+    is the *accent-quoted identifier* syntax — `proc \`-!\``, `` `==` ``, `` `$` ``,
+    `` `mod` `` are how every operator overload is written — and
+    `filterNoiseRelationships` in `src/ast/pool-worker.ts` bans the backtick in a
+    target leaf, on the stated grounds that in JavaScript it marks template-literal
+    garbage. Measured by `validation/m14/fixtures/nim/accent-quoted-endpoints.ts`:
+    1,417 accent-quoted declaration sites on the corpus parse trees; `analyze()`
+    emits 4,509 edges with a backtick endpoint and `parseFile` delivers 4,143, so
+    **366 are deleted (8.1%)** — 231 `calls`, 135 `contains`, 21 `exports`, 8
+    `uses`, 1 `overrides`. The symbol survives, so the result is a declaration the
+    graph holds and no edge can reach: `bb_impact` on `` `-!` `` returns nothing
+    and the reverse walk cannot tell that from a declaration nobody uses. This is
+    the cause of the three `` `-!` ``/`` `lhs` `` `contains` rows the oracle reports
+    as unexplained. Reported (§8): the filter needs a language-scoped exemption for
+    `nim`, on the pattern of its existing `bash` path exemption.
+13. **Six `extends` occurrences have an owner the analyzer does not publish, and
+    they are three different things.** Enumerated in *Four defects* above: two are
+    a macro that *builds* an inheritance clause from backtick parameters
+    (`nimsuggest/tests/fixtures/mclass_macro.nim`), one is named `_` and is
+    suppressed on purpose (`tests/macros/tgettypeinst.nim`), and two are a `type`
+    section inside a body under `static:` (`tests/stdlib/trepr.nim`) or inside a
+    `template` body (`tests/template/template_issues.nim`) — the C-D1 rule, which is
+    deliberate. A `static:` block is not a separate compilation unit the way a
+    `runnableExamples` block is, so the two are not the same case and are not
+    treated as one.
+14. **A doc example's declarations are published at MODULE scope, which is
+    defensible and not the only defensible answer.** A `runnableExamples` block is
+    compiled as its own unit, so its `type` declarations are real and are
+    published; its `value` declarations are suppressed as locals. The `type`
+    declarations get `scope: undefined`, i.e. they read as module-level. The
+    alternative — publishing them with a scope that marks them as example-local —
+    is equally defensible and would need a store-side column to record. The oracle
+    disagrees about the consequence: it derived `then -> fn` containment for the
+    block at `nim/lib/js/asyncjs.nim:206-216`, and that was adjudicated against the
+    oracle (an example is not lexically inside the proc that documents it) while the
+    scope choice itself is recorded here as open.
+15. **The `overrides` cross-file family is gated on the companion index, so a bare
+    corpus census cannot exercise it.** All 48 `overrides` edges on this corpus are
+    same-file. Cross-file resolution needs
+    `ASTEngine.AnalyzeContext.overrideCompanion`, and the corpus walk supplies no
+    context, so the 10 corpus methods whose receiver is declared in another file are
+    counted by `gap-hunt.ts` and never resolved by this lane's own census. The
+    family is demonstrated on a fixture and by `incoming-check.ts`, not by a corpus
+    number.
+16. **Zero corpus occurrences of the receiver-qualified method spelling.**
+    `method Receiver.name()` is standard Nim, and the pinned grammar parses the
+    `Receiver.` prefix as an **ERROR node** with no field, so
+    `methodReceiverTypeLeaf` — which reads the receiver only from the first
+    parameter — finds nothing. Across **4,555 corpus files the spelling occurs 0
+    times** (searched in all 7 repos, both capitalised and lower-case receivers), so
+    this is a corpus-coverage limit and not a measured defect: the branch cannot be
+    exercised by anything in the corpus, and `gap-hunt.ts` reports the count (0)
+    beside the parameter form (141) so the absence is on the record rather than
+    inferred. Fixing it would mean reading an ERROR node, which is a parse artifact
+    rather than a syntax fact, and the corpus cannot tell us whether that reading is
+    right.
+17. **This lane's numbers are not reproducible without the worker count**, for the
+    reason in limitation 11, and the corpus walk in every artifact here uses 6.
