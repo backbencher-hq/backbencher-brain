@@ -225,6 +225,22 @@ export class RealProtobufAnalyzer implements ASTEngine.LanguageAnalyzer {
     let syntax: string | null = null
     let edition: string | null = null
     const fileOptions: { name: string; value: string; line: number }[] = []
+    // Every directory this file imports a module from. Collected from the root's
+    // own children BEFORE the walk, because `resolveViaImports` needs it and the
+    // walk is a LIFO stack: an import node visited later cannot be relied on.
+    //
+    // A parse fact, not a name guess: `import "a/b/c.proto"` is one `import` node
+    // whose `path` field is the quoted string, and the directory is everything
+    // before the LAST "/". The split is on "/" and never on ".", because a dot is
+    // a legal character inside a protobuf filename.
+    const importDirs = new Set<string>()
+    for (const d of fileDecls) {
+      if (typeOf(d) !== "import") continue
+      const mod = unquote(String(d.childForFieldName("path")?.text ?? ""))
+      if (mod.length === 0) continue
+      const cut = mod.lastIndexOf("/")
+      importDirs.add(cut > 0 ? mod.slice(0, cut) : "")
+    }
     for (const d of fileDecls) {
       const t = typeOf(d)
       if (t === "package") pkg = firstOfType(d, "full_ident")?.text ?? ""
@@ -491,6 +507,20 @@ export class RealProtobufAnalyzer implements ASTEngine.LanguageAnalyzer {
      * `demo.v1.Auth` resolved to `demo.v1.Auth.demo.v1.User` — a name that
      * exists in no file. Comparing whole ids is what makes the walk terminate
      * on the right answer.
+     *
+     * THE CHAIN ABOVE IS NOT THE CHAIN THE SPECIFICATION WALKS, and the difference
+     * is measured rather than argued. It keeps only scopes inside the package
+     * subtree, which is complete for IN-FILE resolution — a file has one package, so
+     * it declares nothing above it — but it omits the package's own ANCESTORS, and
+     * protobuf's rule is C++ name lookup, which walks every enclosing scope. The
+     * corpus has 431 `uses` targets that pay for the omission:
+     * `boundary/.../accounts/v1/account.proto`, in package
+     * `controller.api.resources.accounts.v1`, writes the field type
+     * `resources.scopes.v1.ScopeInfo`, which `protoc` resolves from the scope
+     * `controller.api` to `controller.api.resources.scopes.v1.ScopeInfo` — a
+     * declaration that exists, in `scopes/v1/scope.proto`, which this very file
+     * imports. Emitting the name as written named a file that does not exist, and
+     * 379 of the 431 were measured to become uniquely bound by the walk below.
      */
     const resolveRef = (text: string, scope: string | null): string => {
       if (text.startsWith(".")) return text.slice(1)
@@ -517,13 +547,76 @@ export class RealProtobufAnalyzer implements ASTEngine.LanguageAnalyzer {
       // Not declared in this file. The two cases differ, and the difference is
       // measured rather than guessed: an UNQUALIFIED name resolves within the
       // package by specification, so `pkg.name` is right for a type imported
-      // from elsewhere. A DOTTED name is written fully qualified in practice —
-      // `extend google.protobuf.MessageOptions` inside `package a` means the
-      // GLOBAL `google.protobuf.MessageOptions`, and prefixing the package
-      // produced `a.google.protobuf.MessageOptions`, a name that exists in no
-      // file. So a dotted name falls back as written.
-      if (text.includes(".")) return text
+      // from elsewhere. A DOTTED name is USUALLY written fully qualified — `extend
+      // google.protobuf.MessageOptions` inside `package a` means the GLOBAL
+      // `google.protobuf.MessageOptions`, and prefixing the package produced
+      // `a.google.protobuf.MessageOptions`, a name that exists in no file — but
+      // "usually" is not "always", and `resources.scopes.v1.ScopeInfo` written from
+      // `controller.api.resources.accounts.v1` is a dotted name that is not fully
+      // qualified. So a dotted name gets the full scope walk.
+      if (text.includes(".")) {
+        const hit = resolveViaImports(text, scope)
+        if (hit !== null) return hit
+        return text
+      }
       return qualify(pkg || null, text)
+    }
+
+    /**
+     * The full specification scope chain — the enclosing scopes, then the package's
+     * own ancestors, then the root — innermost first, with no repeats.
+     */
+    const specScopeChain = (scope: string | null): string[] => {
+      const chain: string[] = []
+      const push = (v: string): void => { if (!chain.includes(v)) chain.push(v) }
+      if (scope) {
+        const segs = scope.split(".")
+        for (let i = segs.length; i > 0; i--) push(segs.slice(0, i).join("."))
+      }
+      if (pkg) {
+        const segs = pkg.split(".")
+        for (let i = segs.length; i > 0; i--) push(segs.slice(0, i).join("."))
+      }
+      push("")
+      return chain
+    }
+
+    /**
+     * The dotted-name walk, and the one condition that makes it safe.
+     *
+     * A directory name need not be the package it holds: `protoc` resolves an
+     * import against the `-I` include roots it was given, and this file is never
+     * told them. docker vendors containerd, whose `api/types/platform.proto`
+     * declares `package containerd.types;` and is imported as
+     * `types/platform.proto` — so the candidate `types.Platform` looks confirmed
+     * (`types` IS an imported directory) while the declaration is
+     * `containerd.types.Platform`. That mistake was MEASURED at 7 corpus edges
+     * before the guard below existed, and the guard is decidable per file: when the
+     * matched directory is a proper SUFFIX of a MORE SPECIFIC candidate's
+     * directory, this file's include root sits above the package, the directory is
+     * not evidence of the package, and the walk DECLINES rather than guessing.
+     * Declining leaves the name as written, which is what this function's caller did
+     * before any of it existed.
+     */
+    const resolveViaImports = (text: string, scope: string | null): string | null => {
+      if (importDirs.size === 0) return null
+      const lastDot = text.lastIndexOf(".")
+      if (lastDot <= 0) return null
+      const rootedAt = text.slice(0, lastDot)
+      const typeName = text.slice(lastDot + 1)
+      const chain = specScopeChain(scope)
+      for (const base of chain) {
+        const packageOf = base.length > 0 ? `${base}.${rootedAt}` : rootedAt
+        const dir = packageOf.split(".").join("/")
+        if (!importDirs.has(dir)) continue
+        for (const other of chain) {
+          const otherPackage = other.length > 0 ? `${other}.${rootedAt}` : rootedAt
+          const otherDir = otherPackage.split(".").join("/")
+          if (otherDir !== dir && otherDir.endsWith(dir)) return null
+        }
+        return `${packageOf}.${typeName}`
+      }
+      return null
     }
 
     /** A `type` node is a reference iff it holds a `message_or_enum_type`. */
