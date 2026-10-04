@@ -17,7 +17,7 @@
  *
  *   $ npx tsx script/m14/ontology-coverage-gate.ts nim
  *   ontology coverage gate — nim
- *   corpus: 4555 admitted files
+ *   corpus: 6063 admitted files
  *
  *   ontology coverage gate — no RULING TABLE for nim.
  *   Refusing to report: a gate with an empty table would call every un-emitted type
@@ -25,44 +25,104 @@
  *   $ echo $?
  *   2
  *
- * That refusal is measured, not quoted: the run above walks all 4,555 admitted
+ * That refusal is measured, not quoted: the run above walks all 6,063 admitted
  * files through production `parseFile` and then exits 2 without printing a
  * verdict. `validation/m14/fixtures/nim/ruled-gate.ts` applies exactly the two
  * lines to a COPY of the gate in /tmp and runs the copy, so this table is proved
  * rather than asserted.
  *
- * An earlier revision of this header quoted `corpus: 4101 admitted files`, from a
- * run made before the corpus grew. The gate's admission is now 4,555 — the same
- * set the census walks — so the transcript above is the current one. A quoted
- * transcript that has drifted from the command it documents is worse than no
- * transcript, because it is the one line here a reader is likely to believe
- * without re-running anything.
+ * This header has quoted a stale admission twice — `4101`, then `4555`, both from
+ * runs made before the corpus grew. It reads 6,063 now, which is the same set the
+ * census walks. A quoted transcript that has drifted from the command it
+ * documents is worse than no transcript, because it is the one line here a reader
+ * is likely to believe without re-running anything.
  *
- * ## WHY THIS TABLE HAS ONE ROW
+ * ## THIS TABLE IS EMPTY, AND THAT IS THE FINDING
  *
- * Nine of the ten types are EMITTED by production `parseFile` on the corpus, and
- * the gate's verdict loop checks `observed` FIRST, so a row for an emitted type
- * would be dead configuration asserting something false. The nine, re-measured on
- * the committed analyzer blob sha256 9d9ee478e3295c28 over the 4,555-file corpus:
+ * It is empty because every one of the ten relationship types is EMITTED by
+ * production `parseFile` on the corpus, and the gate's verdict loop checks
+ * `observed` FIRST — so a row for an emitted type is not a safety net, it is dead
+ * configuration asserting something false. A table padded to ten rows would look
+ * more finished and be less true.
  *
- *   calls 79,129 | uses 31,063 | contains 21,579 | references 40,559
- *   imports 9,345 | instantiates 1,990 | extends 570 | exports 408 | overrides 48
+ * It was NOT always empty. It carried exactly one row, for `implements`, and that
+ * row has been FALSIFIED and withdrawn. The sequence is recorded here in full
+ * because a ruling that is quietly deleted is indistinguishable from a ruling
+ * that was never made, and the falsifier is the most useful thing in this file.
+ *
+ * ### The falsification, with its numbers
+ *
+ * The row claimed: "a concept REFINEMENT does not occur in this corpus",
+ * instrument B, `refinements 0`, overturn condition "any non-zero count of
+ * `concept_declaration.refines`".
+ *
+ * That condition was met. The corpus gained `nim-lang/nimony` (1,508 admitted
+ * files, 23 MB) — searched for with `gh api 'search/code' -f q='"= concept of"
+ * language:Nim'`, which is what the four earlier clone attempts in this lane's
+ * history should have used instead of guessing repository names from memory. It
+ * holds `tests/nimony/concepts/`, upstream's own concept-inheritance test
+ * directory.
+ *
+ * | | before (4,555 files, 7 repos) | after (6,063 files, 8 repos) |
+ * | --- | --- | --- |
+ * | `concept_declaration` | 216 in 69 files | **337 in 130 files** |
+ * | distinct grammar node types | 209 | **211** |
+ * | `refinement_list` produced | **0** | **38 in 24 files** |
+ * | the table's own probe `withRefinesField` | 0 | **38** |
+ * | the table's own probe, hits pushed | 0 | **51** |
+ * | `implements` edges from production `parseFile` | 0 | **47** |
+ *
+ * (`validation/m14/fixtures/nim/nim-ruled-probe.ts` and
+ * `validation/m14/fixtures/nim/census.ts`, both over 6,063 files, analyzer
+ * sha256 9d9ee478e3295c28 unchanged across both walks.)
+ *
+ * The arbiter flips such a row to FALSIFIED by itself, with no human in the loop,
+ * which is exactly what the row was written to permit. `NIM_RULED` is therefore
+ * `[]`, and the gate reports ten EMITTED rows and consults no ruling at all.
+ *
+ * ### What did NOT change, and is worth as much as the number above
+ *
+ * **The `is` spelling still measures 0.** `refinements` counts BOTH spellings and
+ * is 0 in this row's favour no longer: of the 51 hits, all 51 are the `of` form.
+ * The `is` form is still corpus-absent — 156 `is` expressions inside a concept
+ * body, 13 whose left is a bare concept formal parameter, 0 whose right names a
+ * concept this file declares. So the second spelling is still pinned by fixtures
+ * and still unexercised by real code, which is a limitation that REMAINS and is
+ * stated as one in the doc rather than dissolved by the first spelling arriving.
+ *
+ * **No analyzer code changed.** The blob that measured 0 edges for `implements`
+ * is the blob that measures 47, so this was never a GAP: the reader was correct
+ * and the corpus was silent. That is the cheapest possible way for a ruling to be
+ * overturned and the most instructive, because it means every other lane's
+ * "measured absent" verdict is worth re-testing against a corpus its own authors
+ * did not think to add.
+ *
+ * ### The nine emitted counts, re-measured on the grown corpus
+ *
+ *   calls 118,261 | uses 45,662 | contains 29,361 | references 56,438
+ *   imports 13,364 | instantiates 2,843 | extends 627 | implements 47
+ *   exports 617 | overrides 67
  *
  * (`validation/m14/fixtures/nim/census.ts`, artifacts in
- * `validation/m14/measurements/nim/`.)
- * The tenth, `implements`, is the row below. A table padded to ten rows would
- * look more finished and be less true.
+ * `validation/m14/measurements/nim/`.) These were 79,129 / 31,063 / 21,579 /
+ * 40,559 / 9,345 / 1,990 / 570 / 0 / 408 / 48 on the 4,555-file corpus. Every one
+ * of the nine rose, and none fell: 1,508 more real Nim files cannot remove an
+ * edge. That direction is itself the check that the earlier corpus was not
+ * complete rather than merely different.
  *
- * These nine figures were previously quoted here as 73,234 / 29,196 / 19,323 /
- * 38,170 / 8,004 / 1,905 / 547 / 376 / 48 against a 4,101-file corpus that
- * EXCLUDED `nim-lang-nimble` (435 files) and `dom96-jester` (19). Every one was
- * low, in the same direction, because the two dropped repos are real Nim. The
- * corpus is now the one the census uses and the gate admits, and the numbers
- * above are the pinned ones.
+ * Two earlier rounds of figures were quoted here and both were low in the same
+ * direction, for the same reason: they were measured on corpora that EXCLUDED
+ * real Nim. First 73,234 / 29,196 / 19,323 / 38,170 / 8,004 / 1,905 / 547 / 376 /
+ * 48 against 4,101 files that dropped `nim-lang-nimble` (435) and `dom96-jester`
+ * (19); then 79,129 / 31,063 / 21,579 / 40,559 / 9,345 / 1,990 / 570 / 0 / 408 /
+ * 48 against 4,555 files that dropped `nim-lang/nimony` (1,508) — and that last
+ * omission is the one that produced the falsified ruling above. The corpus is now
+ * the one the census uses and the gate admits, and the numbers above are the
+ * pinned ones.
  *
- * ## WHAT THIS ROW IS NOT
+ * ## WHAT THE WITHDRAWN ROW WAS NOT
  *
- * It is NOT a claim that Nim has no `implements`. Nim HAS the construct, in two
+ * It was never a claim that Nim lacks `implements`. Nim HAS the construct, in two
  * spellings, and this lane's analyzer reads BOTH of them:
  *
  *   type A = concept x of B     # the `of` form  — collectContractRefinement
@@ -72,44 +132,45 @@
  * `nim/compiler/parser.nim:2268` states the production
  * (`conceptDecl = 'concept' COMMENT? (conceptParam ^* ',')? pragma? ('of' typeDesc ^* ',')?`)
  * and implements it at :2275 and :2291, and `nim/doc/manual_experimental.md:1205-1213`
- * documents the two spellings as alternatives for one fact. So this row is a
- * measurement that the CONSTRUCT does not occur in THIS CORPUS — which is a
- * statement about 4,555 files, not about the language and not about the analyzer.
- * The distinction is load-bearing: a reader who takes the row as "nim cannot
- * express implements" will be wrong about the language, and one who takes the
- * analyzer's 0 edges as "the analyzer does not implement it" will be wrong about
- * the code. The verdict is EMITTED-capable and corpus-silent, and the lane's
- * fixtures pin 6 `implements` edges across both spellings plus 7 forbids.
+ * documents the two spellings as alternatives for one fact. So the row was always
+ * a measurement about a corpus and never about the language or the analyzer — and
+ * it has now been measured against a corpus that does contain the construct, which
+ * is the only outcome that could retire it honestly. Upstream's own compiler error
+ * text names the rule the edge encodes:
+ * `nim-lang/nimony/tests/nimony/concepts/tconceptinheritbad.msgs` reads
+ * `Error: concept can only inherit from other concepts`, which is what
+ * `X implements Y` asserts for this language.
  *
  * ## WHY INSTRUMENT B AND NOT INSTRUMENT A
  *
  * Instrument A (grammar inventory) is the right instrument when the construct
  * needs a node type the language DOES NOT HAVE — zig's supertype clause, json's
- * function call. It is the wrong instrument here, and it is wrong in the
- * direction that matters: `concept_declaration` is PRESENT. The grammar produced
- * 209 distinct node types over the corpus and that is one of them, so an
- * inventory read would find the interface-like construct and say nothing about
- * whether anything REFINES one. This is json's `exports` history exactly — a
- * grammar cannot see a relation, only a shape — and the reason the json lane
- * removed that ruling.
+ * function call. It is the wrong instrument for a RELATION, and it is wrong in the
+ * direction that matters: `concept_declaration` is PRESENT (337 times over
+ * 6,063 files, up from 216), so an inventory read finds the interface-like
+ * construct and says nothing about whether anything REFINES one. This is json's
+ * `exports` history exactly — a grammar cannot see a relation, only a shape.
  *
  * Instrument B counts the construct on the parse tree, where a comment and a
- * string literal cannot fake it. That is not a formality here: a text probe on
- * this same corpus returns 3 hits for the `of` spelling and every one is prose —
- * `nim/compiler/concepts.nim:2` (a `##` comment), `nim/compiler/parser.nim` (a
- * diagnostic STRING that quotes the grammar rule), `nim/tests/concepts/tspec.nim`
- * (a trailing comment). A probe built on text would have convicted a correct
- * ruling three times over.
+ * string literal cannot fake it. That was not a formality here, and the grown
+ * corpus proves it: the text probe now finds **61** hits for the `of` spelling,
+ * classified by the node each sits in as **39 `code`, 21 `comment`, 1 `string`** —
+ * so a text-based instrument would have reported 61 refinements where the parse
+ * tree holds 38 `refinement_list` nodes. `nim/compiler/parser.nim:2268` QUOTES the
+ * conceptDecl production in a diagnostic string, and `nim/tests/concepts/tspec.nim:23`
+ * has the spelling in code with only a trailing `##` comment. The 39-vs-38 gap is
+ * that one file. This is why the verdict rests on the tree count and it is the
+ * reason a ruling in this table is never allowed to be argued from a grep.
  *
- * ## WHAT WOULD OVERTURN IT
+ * ## WHAT WOULD OVERTURN IT — WHICH IT DID
  *
- * Any hit from `countNimImplementsConstruct` below, on any corpus. The arbiter
- * flips the row to FALSIFIED by itself and fails, with no human in the loop. The
- * probe pushes on either of the two shapes the analyzer publishes, so the row and
- * the code cannot drift apart: if the analyzer ever emitted an `implements` edge
- * on a corpus, the gate would have reported EMITTED (it checks `observed` first)
- * and never consulted this row at all. A row that could report FALSIFIED for a
- * construct the analyzer already emits would be a tautology pointed the wrong way.
+ * The withdrawn row said: "any hit from `countNimImplementsConstruct` below, on
+ * any corpus". That condition was met on 2026-10-04 and the arbiter's own
+ * mechanism is what met it — a non-zero `hits` count flips the row to FALSIFIED
+ * with no human in the loop. The probe and its two shape tests are kept in this
+ * file, still exported and still run by `nim-ruled-probe.ts`, because a
+ * falsification test that is deleted with the ruling it falsified cannot falsify
+ * anything again.
  *
  * The probe's own limits are stated rather than assumed, because they are the
  * shape of the remaining risk:
@@ -121,6 +182,9 @@
  *      limit by the same reasoning (docs/analyzers/real-nim-analyzer.md
  *      limitation 5), so the two agree by construction rather than by luck — and
  *      `census.ts`'s corpus-wide probe is what carries the cross-file question.
+ *      This matters more now than it did: of the 47 emitted edges, 4 point at a
+ *      concept declared in another module (`Hashable`, `Equatable`, `Stringable`
+ *      in `nimony`), so the cross-file question is no longer hypothetical.
  *   2. `implements` SATISFIANCE is not probed and must not be. Whether an
  *      ordinary `type T = object` satisfies a concept is decided by the compiler's
  *      structural match at instantiation time and has no syntax naming it, so a
@@ -145,13 +209,12 @@ export type Ruled = {
 }
 
 export const NIM_RULED: Ruled[] = [
-  {
-    type: "implements",
-    instrument: "B:parse-tree-count",
-    countOnTree: countNimImplementsConstruct,
-    describe:
-      "a concept REFINEMENT — one contract asserting that it includes another's. MEASURED (validation/m14/fixtures/nim/nim-ruled-probe.ts over 4,555 admitted files: nim 3,968 + nim-lang-nimble 435 + graphql-nim 55 + nimterop 45 + dom96-jester 19 + bigints 21 + Aporia 12; production parseFile; `implements/concept-refines` probe; artifact validation/m14/measurements/nim/ruling-probe.json, analyzer sha256 9d9ee478e3295c28 unchanged): the grammar produced 209 distinct node types and `concept_declaration` IS among them, so instrument A cannot decide this and instrument B is used instead. On the parse tree: 216 `concept_declaration` across 69 files (concepts are everywhere in this corpus) and 0 of them carry a `refines` field, which is the `of` spelling. The `is` spelling: 156 `is` expressions inside a concept body, 143 of them inside an `argument_list` (a constraint passed to a call, not a refinement), leaving 13 whose left is a bare concept formal parameter; of those 13, 8 name an identifier on the right (U x2, int1, int2, PrimitiveBase, IntegerBase, IdBase, string) and 5 have a non-identifier right, and 0 of the 8 name a concept THIS FILE declares — so refinements is 0. That last guard is what excludes nim/tests/concepts/texplain.nim:136 `o.foo is RegularConcept`, where RegularConcept IS declared in the same file at :131: the left side is the dotted `o.foo`, a FIELD constraint rather than a refinement of the contract, so the probe declines it and the decline is the correct answer. The table's own probe, run over the same corpus, examined 174 concepts and pushed 0 hits. Instrument A over the same corpus is what makes the 0 informative rather than vacuous: the construct's OWN node type is present 216 times, so this is a corpus that could express the relation and does not. OVERTURN: any non-zero count of `concept_declaration.refines`, or any `is X` in a concept body whose X is a concept declared in a DIFFERENT file — the second half because the `is`-form guard is deliberately same-file-only, and a cross-file semantic index would lift it.",
-  },
+  // Intentionally empty. All ten types are EMITTED by production `parseFile` on
+  // the corpus, so no row here has anything to rule. The `implements` row that
+  // used to be here was FALSIFIED by its own probe — `withRefinesField 38`,
+  // 51 hits pushed, 47 edges emitted — when the corpus gained `nim-lang/nimony`.
+  // See the header for the sequence and the numbers, and
+  // `validation/m14/fixtures/nim/nim-ruled-probe.ts` for the run.
 ]
 
 // ─────────────────────────────────────── what the probe EXAMINED (not just what it found)
