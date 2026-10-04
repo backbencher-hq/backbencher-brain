@@ -2841,3 +2841,29 @@ The 1 degraded file in the firing row is the same one §8 item 10 names — `zig
 at 10,249,535 bytes, which `pool-worker.ts:779-794` returns empty for WITHOUT running the regex
 extractor, so the instrument's message names the wrong mechanism. It contributes 0 edges, which is
 why 8,445 is unchanged.
+
+### I. §8 item 15 — `verify-doc-truth-emissions.ts` WRITES the shared register, so any lane that runs it corrupts it
+
+Found by running it, which is the only way to find it. `bun run
+script/m14/verify-doc-truth-emissions.ts` is documented (§8 item 13) as the gate a lane should run,
+and it is **not read-only**: it regenerates `docs/DOC-TRUTH-EMISSIONS.md` from the docs on disk in
+the CWD. Run from a lane worktree it overwrote 11 rows of that register with this worktree's older
+copies of six other lanes' docs:
+
+```
+- bash | `calls (relationship)` | line 56      →  line 99
++ powershell | `calls (relationship)` | line 213   (row this worktree's older doc produced)
+- UNDOCUMENTED 40 → 41        - NO_CLAIM_TABLE 19 → 17
+```
+
+**The same damage is available to every lane on the fleet**, and it is silent: the gate's own
+verdict line is the one a lane reports, and it is unaffected by the register it just rewrote. Pass 8
+saw the symptom — a stale line pointer for zig — and attributed it to this doc having grown, which
+is right about the symptom and wrong about the mechanism: **the register is stale because something
+wrote it from a partial tree**, and this lane's own run of the gate is one of those writes.
+
+`git checkout -- docs/DOC-TRUTH-EMISSIONS.md` restores it; this lane reverted its own write and
+committed nothing to that file. The fix is not this lane's: either the gate takes an explicit
+`--out`, or it prints the register and leaves writing to a separate regeneration step run from a
+full checkout. **Until then, a lane that runs the gate from its worktree must revert
+`docs/DOC-TRUTH-EMISSIONS.md` before committing.**
