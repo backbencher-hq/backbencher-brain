@@ -2294,3 +2294,129 @@ All three shared-instrument defects pass 5 reported are **still present**:
 Nothing in `src/ast/real-zig-analyzer.ts` changed in pass 6. The analyzer was
 verified, not edited: fixtures, mutations, the grammar audit and the regex census
 are all read-only checks of a file that has been stable since Z65.
+## Pass 7 — the arbiter adjudicated, and a published number that was one run's luck (2026-10-04)
+
+Pass 6 published `0 BB-PARSE-ERR, 0 BB-HANG, 204 s, exit 0` for the arbiter run and
+re-verified everything else. Re-running the same arbiter at the same commit produced
+`3 BB-PARSE-ERR, 1 BB-HANG, 450 s, exit 1`. So one published number did not survive
+re-reading, and the correction is a measurement rather than an explanation.
+
+### A. What reproduces at HEAD, unchanged
+
+| claim | published | re-measured at HEAD | instrument |
+|---|---|---|---|
+| fixtures | 9 / 9 | **9 / 9**, 0 fail | `run-fixtures.ts --lang zig` |
+| mutants | 50 / 50 | **50 / 50** (50 of 1,748 filtered) | `BB_MUTANT_ONLY="zig/"` |
+| what fires | 7/10, 8,445 edges, 120/120 files, 1 degraded | **7/10, 8,445 edges, 120/120, 1 degraded** | `firing-check.ts --files 120 zig` |
+| the `imports` class | 253 edges, 13 distinct, 1 ambiguous, 159 unresolved | **identical, field for field**; 253 == production | `incoming-check-paired.ts` on the 120-file draw |
+| rule shape vs the gate's `Ruled` | 5 fields identical | **5 fields identical** | `ruled-gate.ts` shape check |
+| the 7 emitted counts | 113,476 / 132,201 / 77,459 / 10,200 / 30,794 / 24,114 / 4,306 | **identical, edge for edge** | the arbiter's own verdict table |
+| doc-truth emission claims | table at line 283, 9 rows | **line 283, 9 rows, 0 FALSE_POSITIVE** | `verify-doc-truth-emissions.ts` |
+| honesty gate | — | **no zig finding**; the only zig line is `ok corpus pins present (… zig, zls)` | `script/m14/verify-honesty.ts` |
+| regex census | 0 zig entries | **0 zig entries** | `script/m12/verify-regex-census.ts` |
+
+### B. The correction: the clean arbiter run was a property of one run
+
+Four full-corpus arbiter runs at this commit, all over the same 3,834 admitted files,
+differing only in the corpus fan-out (`BB_ZIG_RULED_WORKERS` patches
+`Array.from({ length: 8 }, …)` on the copy — the shared file is never touched):
+
+| fan-out | exit | `[BB-PARSE-ERR]` | `[BB-HANG]` | wall clock | verdict table printed |
+|---|---|---|---|---|---|
+| 8 (pass 6) | 0 | 0 | 0 | 204 s | yes |
+| 8 (pass 7) | 1 | 3 | 1 | 450 s | no — aborted |
+| 2 (pass 7) | 1 | 1 | 1 | 556 s | no — aborted |
+| **1 (pass 7)** | **0** | **0** | **0** | **651 s** | **yes** |
+
+**Pass 6's `0 / 0 / 204 s / exit 0` was one run, not a property of the gate on this
+corpus.** Over four runs at one commit, 2 completed clean and 2 aborted. Any single
+figure quoted from one run — including a favourable one — is a sample of size one.
+
+Two things this narrows, stated as narrowings because n = 4:
+
+1. **§8 item 11's mechanism was the wrong variable.** It attributed the crash to
+   *population size* ("3 rounds × 8 workers over 61 files produced no crash at all, so
+   the population size matters"). Here the population is held at 3,834 in all four runs
+   and the fan-out alone separates them: 2 of 2 at fan-out ≥ 2 trapped, 1 of 1 at
+   fan-out 1 did not. Concurrency fits this data and population size does not separate
+   anything in it. That is 4 observations against a claim that had 2, and it is a reason
+   to re-test §8 item 11, not proof that the supervisor's other lanes will agree.
+2. **The file is not identified by anything in the corpus.** The trapping paths were
+   `zig/lib/docs/wasm/markdown/Document.zig` (fan-out 8), `zig/lib/std/process.zig`
+   (fan-out 2) and `zig/lib/std/tar/Writer.zig` + `zig/lib/std/testing/FailingAllocator.zig`
+   in the first pass-7 run. **0 of the 5 observed trapping paths is under
+   `test/cases/compile_errors/`.** The proof runner had asserted that they were
+   compile_errors fixtures; two runs falsified it and the runner now reports the paths it
+   read instead of a mechanism it cannot observe.
+
+### C. The shared arbiter has now ruled on this lane
+
+The clean fan-out-1 run is the **first time `script/m14/ontology-coverage-gate.ts` has
+produced a verdict table for zig at all**, on the full corpus:
+
+```
+type          status        detail
+calls         EMITTED       113,476 edges in 4+ files
+uses          EMITTED       132,201 edges in 4+ files
+contains      EMITTED        77,459 edges in 4+ files
+imports       EMITTED        10,200 edges in 4+ files
+references    EMITTED        30,794 edges in 4+ files
+exports       EMITTED        24,114 edges in 4+ files
+extends       RULED-SOUND   NOT EMITTED; the grammar produced 232 distinct node types across the corpus and NONE expresses it
+implements    RULED-SOUND   NOT EMITTED; the grammar produced 232 distinct node types across the corpus and NONE expresses it
+overrides     RULED-SOUND   NOT EMITTED; the construct occurs 0x on the parse tree
+instantiates  EMITTED         4,306 edges in 4+ files
+--------------------------------------------------------------------
+emitted 7/10   ruled-sound 3   FALSIFIED 0   ruled-without-justification 0
+```
+
+**FALSIFIED 0** is the outcome that matters: the arbiter re-measures instruments A and B
+itself, and it did not overturn any of the three rulings. The runner's field-by-field
+diff also passes — 3 ruled rows × 5 `Ruled` fields, plus every number quoted in each
+`describe` cross-checked against `ZIG.O.1`–`ZIG.O.3` (31, 5 and 33 numbers respectively).
+
+**Coverage is therefore 7/10, reported as applicable and not as a flat 10**: 7 types
+EMITTED with counts from production `parseFile`, 3 RULED-SOUND with a corpus
+measurement and an instrument the arbiter re-ran. Numerator and denominator come from
+different sources — the 7 from `parseFile`, the 3 from the arbiter's own instruments —
+so neither was self-graded.
+
+The gate's `232 distinct node types` and this document's `239` are different
+measurements of different things, not a disagreement: 239 is what the pinned wasm's
+`Language.types` **declares** (including anonymous keyword tokens), 232 is what the
+corpus **produces**. `script/m14/zig-ruled.ts` carries both and names each.
+
+### D. Two defects in this lane's own proof runner, found by running it
+
+Both are committed (`0fcfa70bf`), and both are in the layer that decides what a failed
+run *means*, which is why they survived six passes of writing:
+
+1. It printed `the pinned zig wasm crashed on a compile_errors fixture under this
+   fan-out` unconditionally — a hardcoded claim about the corpus, falsified twice above.
+   It now prints the paths it read and counts how many are really compile_errors.
+2. A missing `type status detail` header was reported as *a change to the shared gate's
+   report shape — a report-to-supervisor item*, **including when the run had aborted**.
+   `[BB-HANG]` exits at `src/ast/engine.ts:1442` during the corpus walk, long before the
+   verdict table, so a hung run prints no header whatever the shape. The two cases mean
+   opposite things — "the gate changed" versus "the gate never got there" — and are now
+   separated by whether a hang was actually observed on stderr.
+
+### E. Still unblocked, still not mine
+
+`script/m14/ontology-coverage-gate.ts:195` still reads
+`{ bash, json, lua, toml, fsharp }` at HEAD and does not import `zig-ruled`, so
+§8 item 1 remains the one line between this lane's table and the real gate. §C is the
+evidence that applying it works: the patched copy reaches
+`emitted 7/10 · ruled-sound 3 · FALSIFIED 0`.
+
+One addition to §8, from §B: **`ontology-coverage-gate.ts:236` hardcodes its fan-out at
+`Array.from({ length: 8 }, …)`, and that literal is the whole difference between a run
+that prints a verdict table and a run that aborts.** A `BB_GATE_WORKERS` env override
+would let every lane that hits the wasm trap run at fan-out 1 and still adjudicate; on
+this lane's corpus that is the difference between `FALSIFIED 0` printed and no verdict
+at all. Re-baselining the arbiter's own budgets is not this lane's file to touch.
+
+Nothing in `src/ast/real-zig-analyzer.ts` changed in pass 7 either. Third consecutive
+pass verified rather than edited: the analyzer has been stable since Z65, and its
+correctness at this commit rests on 9 fixtures, 50 caught mutants, 7 arbiter-emitted
+counts and 3 arbiter-adjudicated rulings.
