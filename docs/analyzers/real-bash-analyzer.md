@@ -123,24 +123,52 @@ that wobble. Both runs agree on the thing the gate exists to decide —
 distinct node types — because a type being emitted at all does not depend on which
 40 files aborted.
 
+**Round 9 corrects the attribution of that mechanism.** The wobble is real and
+repeated, but round 8 explained it as the pinned wasm breaking down progressively
+within one process, on the strength of a probe that borrowed the engine's shared
+parser. The whole-corpus `--all` run puts only **2 files of 4,133** past the
+grammar, so the wasm is not what makes the gate wobble; a probe or gate that
+interleaves two owners of one parser handle is. The wobble is therefore still an
+instrument property and **still not fixed** — it is now known to be a different
+instrument property than the one this file named, and the gate is shared machinery
+(§8) so the fix is reported, not applied.
+
 The **census** column has no such problem and is the number to quote: it goes
 through `parseFile`, reported **0 parse failures** on the same 400 files, and
 round 3 reproduced round 2's denominators exactly (400 files / 48 repositories /
 4,012 admitted / 441,259 tracked). The gate column is quoted as a range for that
 reason and not as a single figure.
 
-| type | emitted? | census: 400 files (round 8) | gate: 4,133 files (2026-10-04 run) | evidence |
+| type | emitted? | **WHOLE CORPUS: 4,133 admitted, production `parseFile` (round 9)** | census: 400 files (round 8) | evidence |
 | --- | --- | --- | --- | --- |
-| `calls` | **EMITTED** | 5,097 | 55,177 | `census-bash-ontology.ts`, gate row |
-| `uses` | **EMITTED** | 7,856 | 81,355 | same |
-| `contains` | **EMITTED** | 3,775 | 38,229 | same |
-| `imports` | **EMITTED** | 44 | 678 | same |
-| `references` | **EMITTED** | 44 | 678 | same |
-| `exports` | **EMITTED** | 210 | 1,926 | same |
-| `overrides` | **EMITTED** | 28 | 138 | same |
+| `calls` | **EMITTED** | **55,231** | 5,097 | `census-bash-ontology.ts --all`, gate row |
+| `uses` | **EMITTED** | **81,529** | 7,856 | same |
+| `contains` | **EMITTED** | **38,278** | 3,775 | same |
+| `imports` | **EMITTED** | **679** | 44 | same |
+| `references` | **EMITTED** | **679** | 44 | same |
+| `exports` | **EMITTED** | **1,929** | 210 | same |
+| `overrides` | **EMITTED** | **138** | 28 | same |
 | `extends` | **RULED — never emitted** | 0 | 0 | instrument A + B below |
 | `implements` | **RULED — never emitted** | 0 | 0 | instrument A + B below |
 | `instantiates` | **RULED — never emitted** | 0 | 0 | instrument A + B below |
+
+**Totals, in prose because the gate grades this table:** the seven emitted types sum
+to **178,463 relationships over 42,418 symbols**, from 4,133 admitted files. (A
+`total` row is not a row in this table: `verify-doc-truth-emissions.ts` parses every
+data row as a relationship type and reports a summary line as
+`NON_ENGINE_KIND [bash] total`, which this lane introduced once and removed.)
+
+**The whole-corpus column exists because round 9 established that it can be
+taken**, and until then this file's numbers were a 400-file sample (9.7% of
+admitted files) beside a gate column that is not reproducible run to run. Round 8
+asserted the opposite — see [Round 9](#round-9-the-whole-corpus-measurement-round-8-said-cannot-be-taken)
+— and the assertion was a defect in a lane probe, not a property of the corpus.
+`--all` runs 4m20s in one process, reads **4,131 of 4,133** files with the
+tree-sitter grammar, answers **2** with `extractFallback`, and takes **0
+relationships** from those 2 — so no per-type total above is contaminated by a file
+the grammar could not read. The census now prints that count on every run, because
+a census that cannot tell "the analyzer found nothing" from "the analyzer never
+ran" cannot support a whole-corpus claim.
 
 **The census column moved in round 8 and the reason is not the analyzer's behaviour.**
 The corpus grew from 4,130 to **4,133** admitted files, and this column is a
@@ -168,14 +196,21 @@ reproduced round 5's figures exactly on the same pinned sample.
 **The gate's own run-to-run spread is measured, and it is why the gate column carries a
 date.** Two runs of `ontology-coverage-gate.ts bash` on one commit against one corpus
 differed by 38 `calls` edges (53,443 / 53,481) and 21 `uses` edges (78,404 / 78,425),
-and the two runs named **no file in common** among the ten the wasm aborted on. The
-whole-corpus numbers that DO have a denominator that does not wobble are in the evidence
-census (`probe-bash-missing-evidence.mts`, every admitted file): `calls` 55,220,
-`uses` 80,851, `contains` 38,273, `imports` 679, `references` 679, `exports`
-1,929, `overrides` 138 — total **137,770 edges, 0 with no `evidenceClass`**. Round 7's
-independent whole-corpus pass agrees on `imports`/`references`/`overrides` exactly and
-reads `calls` 55,218 against the evidence census's 55,220 — a 2-edge difference across
-two instruments, which is the same wasm wobble at a tenth the size.
+and the two runs named **no file in common** among the ten the wasm aborted on.
+
+**The whole-corpus figures this paragraph used to quote are SUPERSEDED, and they were
+wrong for the same reason round 8's were.** `probe-bash-missing-evidence.mts`
+reported `calls` 55,220, `uses` 80,851, `contains` 38,273, `imports` 679,
+`references` 679, `exports` 1,929, `overrides` 138 — total **137,770 edges, 0 with
+no `evidenceClass`** — and presented them as the numbers with "a denominator that
+does not wobble". Round 9 shows that census also walked the borrowed parser and so
+covered ~499 files while calling itself whole-corpus. The figures to quote are now
+`census-bash-ontology.ts --all`: **178,463 edges** on 4,131 grammar-read files, with
+`imports`/`references` 679 and `overrides` 138 — the three types whose whole-corpus
+count the old census got right, because they are rare enough that 499 files happened
+to contain all of them. That is the trap worth naming: the types that survived a
+truncated census are the ones with the fewest edges, so a partial walk looks
+*most* correct exactly where it matters least.
 
 **Coverage is reported as APPLICABLE, not as a flat 7/10.** Three of the ten types
 are RULED with a corpus measurement, so the denominator that remains is 7 and all
@@ -513,9 +548,10 @@ construction site in `src/ast/real-bash-analyzer.ts`.
 **Q2 Fires** — every one of the seven produces edges on the sample; the counts
 above are the measurement. A type reachable only from a branch that never matches
 is invisible to source derivation, which is why this column is measured rather
-than read. The three RULED types read 0 on every admitted file (137,770 edges,
-0 of them of those three types), which is what makes them ruled rather than
-merely absent from a sample.
+than read. The three RULED types read 0 on every admitted file (**178,463** edges,
+0 of them of those three types — the round-9 `--all` figure, which supersedes the
+137,770 the truncated evidence census reported), which is what makes them ruled
+rather than merely absent from a sample.
 
 **Q3 Correct** — `bun run script/m14/differential.ts --lang bash`, on the `otp`
 pin, 60 files: **tree-truth 1,657, covered 1,657, MISSING 0, analyzer-edges 1,608,
@@ -1317,34 +1353,36 @@ exactly one published symbol, the reverse walk is not choosing — which is the
 ambiguity half of the incoming problem, and the resolvable half of it is `overrides`
 at 3 distinct targets and 0 unresolved.
 
-### Whole-corpus attempt, and what it measured instead
+### Whole-corpus attempt, and what it measured instead — RETRACTED IN ROUND 9
 
-The same probe over **every** admitted file (4,133 in **120** repositories — the census's
-"55 repos" is the count inside its 400-file sample) answers the arithmetic question
-only for part of the corpus, and the reason is the instrument limitation this file has
-carried since round 3:
+**Every row of this table is wrong and the section is kept only so the correction is
+traceable.** It reported:
 
 | whole corpus, one process, direct `parser.parse()` | count |
 | --- | --- |
 | admitted files | 4,133 |
 | **files the pinned wasm could not parse** | **3,634 (87.9%)** |
 | files actually walked | **499** |
-| of those: files with an arithmetic `compound_statement` | 41 |
-| arithmetic `compound_statements` / operand name nodes / distinct `(target, line)` pairs | 104 / 150 / **137** |
-| …already published (post-change) | **137 — 0 predicted new** |
-| `compound_statements` the predicate excludes, of which open `((` | 948, of which **0** |
 
-**The 87.9% is a finding, not a footnote.** `parseFile` CATCHES the wasm's
-`memory access out of bounds` and substitutes a degraded result, which is why the
-census reports `parse fail: 0` on the same corpus; a probe that calls the parser
-directly sees the throw. The failures are **progressive within one process** rather
-than a fixed set of poisonous files: the 400-file hash-order prefix — which this same
-probe walks with **0** failures — sits inside the 499 that parsed, so parsing breaks
-down after roughly 500 files in a single process and 3,634 of the remaining 3,733
-fail. That is the mechanism behind limitation 15's run-to-run wobble, now with a
-number for the rate rather than a list of file names, and it bounds what any
-whole-corpus bash figure can claim: **the last ~3,600 files are not measured by a
-single-process run at all.**
+Round 9 established that the probe was borrowing `ASTEngine.getParser("bash")` — the
+engine's shared parser handle — and interleaving two users of it, so it read exactly
+**499 files regardless of corpus size** (at `--sample 900` it reported 401 unparsed;
+900 − 401 = 499, and 4,133 − 3,634 = 499). The corpus and the pinned wasm were never
+the problem. Re-run whole-corpus with a private parser:
+
+| whole corpus, one process, private parser | count |
+| --- | --- |
+| admitted files | 4,133 |
+| **files that could not be parsed** | **0** |
+| files with an arithmetic `compound_statement` | **351** (this table said 41) |
+| arithmetic `compound_statements` / operand name nodes / distinct pairs | **834 / 1,139** / — (this table said 104 / 150 / 137) |
+| …already published (post-change) | **995 — 0 predicted new** (this table said 137, same 0) |
+| `compound_statements` the predicate excludes, of which open `((` | **7,495**, of which **5** (this table said 948, of which 0) |
+
+The "87.9% is a finding, not a footnote" conclusion was wrong in the way this file's
+§27 describes: the absolute count did not move when the corpus changed, and a
+quantity that does not move is not measuring the corpus. See
+[Round 9](#round-9-the-whole-corpus-measurement-round-8-said-cannot-be-taken).
 
 ### Coverage, restated as applicable
 
@@ -1356,7 +1394,175 @@ from 4,130 to **4,133** admitted files, so round 7's census column and this one 
 different 400-file draws and their difference is not evidence about the analyzer. The
 evidence about the change is the A/B pair above, which shares one sample.
 
-## DERIVATION debt: the five unexplained edges are the oracle's blind spot
+## Round 9: the whole-corpus measurement round 8 said cannot be taken
+
+Round 8 closed this lane's largest known GAP and then, in the same commit, published
+a limitation that was **false**, built on a measurement that was not the one it
+claimed to be. Both halves are corrected here, and the correction is the round's
+substance: **every per-type number in this file now has a 100% denominator instead
+of a 400-file sample.**
+
+### What round 8 claimed
+
+> "the pinned wasm aborts with `memory access out of bounds` on whichever files it
+> reaches" … "**files the pinned wasm could not parse: 3,634 (87.9%)** … files
+> actually walked **499**" … "**a whole-corpus bash measurement cannot be taken in
+> one process, and the production path reports that as success**" (limitation 25).
+
+The claim had a consequence the lane would have carried for a long time: it made a
+400-file sample the best available denominator forever, and it attributed the
+shortfall to the grammar rather than to the lane's own instrument.
+
+### The number that falsifies it is a CONSTANT, and a constant is not a corpus
+
+`probe-bash-arithmetic-operands.mts` obtained its parser from
+`ASTEngine.getParser("bash")` — the **engine's shared handle** — and then
+interleaved two users of that one handle: production `parseFile` parsing and
+deleting its own trees through it, while the probe parsed directly and kept its
+trees. Run at two corpus sizes:
+
+| `--sample` | admitted walked | "could not parse" | actually parsed |
+| --- | --- | --- | --- |
+| 900 | 900 | 401 | **499** |
+| 4,400 | 4,133 | 3,634 | **499** |
+
+`900 − 401` and `4,133 − 3,634` are both **499**. Round 8 read that constant as a
+corpus property. It is a fixed capacity in the probe: whatever the corpus size, it
+reads 499 files and stops, and every file after the 499th is counted as a file the
+grammar could not read.
+
+The fix is one line — a private parser, built the way
+`probe-bash-grammar-inventory.mts` already builds one — and the probe now reports
+**0 unparsed over every admitted file**, in 2m58s.
+
+### Three instruments, and they agree the corpus is readable
+
+| instrument | admitted | read with the grammar | failed |
+| --- | --- | --- | --- |
+| production `parseFile`, one process (`census --all`) | 4,133 | **4,131** | **2** answered by `extractFallback` |
+| instrument A, private parser + `delete()` (`probe-bash-grammar-inventory.mts`) | 4,133 | **4,133** | **0** |
+| private parser, no `delete()` at all, 2,500 files (`probe-bash-wasm-tree-lifetime.mts`) | 2,500 | **2,500** | **0**, rss flat at 239 MB |
+
+**The 2 fallback files contributed 0 relationships**, so no per-type total in this
+document is contaminated by a file the grammar could not read. The census now
+prints `grammar-read` and `FALLBACK` on every run for exactly this reason: `parse
+fail: 0` was previously the only line, and it counted files `parseFile` *rejected*
+while saying nothing about files it *answered without the grammar*.
+
+### The hypothesis I proposed first was wrong, and it is recorded because it was wrong
+
+The obvious mechanism for "a tree per file with no `delete()`" is a growing wasm
+heap, and the file did omit `delete()` on every iteration. I fixed it and predicted
+that this was the cause. **It is not.** A private parser that never calls
+`delete()` reads **2,500 of 2,500** files with zero throws and an rss that rises to
+~240 MB and then plateaus, so the trees are being collected without an explicit
+`delete()` and heap exhaustion does not occur at this scale. The `delete()` omission
+was a real defect and is fixed; the cause is the shared handle. Recorded because
+the leak story was plausible, fit the "breaks down after roughly 500 files"
+observation, and was wrong — and the reason it fit is the same reason round 8's
+error was plausible: a constant in the instrument looked like a threshold in the
+corpus.
+
+### What the whole corpus says, per type
+
+`npx tsx validation/m14/fixtures/bash/census-bash-ontology.ts --all`, 4m20s:
+
+| type | edges | resolve at both ends | src-only | neither | ambiguous targets | `<0.7` conf |
+| --- | --- | --- | --- | --- | --- | --- |
+| `calls` | 55,231 | 14,759 **26.7%** | 73.3% | **0** | 236 of 14,759 (1.6%) | 0 |
+| `uses` | 81,529 | 64,532 **79.2%** | 20.8% | **0** | 12,136 of 64,532 (18.8%) | 0 |
+| `contains` | 38,278 | 38,277 **100.0%** | 0.0% (1) | **0** | 6,159 of 38,277 (16.1%) | 0 |
+| `imports` | 679 | **0.0%** | 100% | **0** | — | 0 |
+| `references` | 679 | **0.0%** | 100% | **0** | — | 0 |
+| `exports` | 1,929 | 1,927 **99.9%** | 0.1% | **0** | 96 of 1,927 (5.0%) | 0 |
+| `overrides` | 138 | 138 **100.0%** | 0 | **0** | 138 of 138 (100%) | 0 |
+| `extends` / `implements` / `instantiates` | 0 | n/a | n/a | n/a | — | n/a |
+| **total** | **178,463** | | | | | **0** |
+
+42,418 symbols. Hygiene at corpus scale: **0** empty names, **0** empty/unknown
+kinds, **0** `unknown` endpoints, **0** empty endpoints, **0** edges below 0.7
+confidence in any type, and **0** relationships from a fallback file.
+`SymbolKind` values observed: `module` 4,131, `function` 9,226, `variable` 27,364,
+`constant` 1,697.
+
+Three of these columns are new at this denominator and each settles a question the
+sample could only gesture at:
+
+- **`neither` is 0 on every type.** An edge whose *source* is not a published symbol
+  would be a graph edge asserting something no symbol says; there are none across
+  178,463 edges.
+- **`overrides` resolves 138 of 138 and is 100% ambiguous** — every one of the 138
+  targets names more than one published symbol, because a redefinition's target is
+  by construction a name declared at least twice. This type is fully resolvable and
+  fully ambiguous at the same time, which is the sharpest form of the incoming-edge
+  problem in this lane (a `local` in two functions is two declarations of one name).
+- **`calls` ambiguity is 1.6%, not 0.6%** as the 400-file sample read, and `uses`
+  ambiguity is 18.8% against the sample's 19.0%. The sample was close; the whole
+  corpus is what should be quoted.
+
+### The arithmetic gap closure, re-derived from 7.6× its original population
+
+Round 8 predicted +70 `uses` edges from 126 operand nodes and closed the gap. Those
+numbers came from the 499-file measurement. Re-run over the whole corpus:
+
+| | round 8 (labelled whole corpus, was 499 files) | **round 9 (whole corpus)** |
+| --- | --- | --- |
+| files the wasm could not parse | 3,634 | **0** |
+| files with an arithmetic `compound_statement` | 41 | **351** |
+| arithmetic `compound_statements` | 104 | **834** |
+| operand name nodes | 150 | **1,139** |
+| distinct `(target, line)` pairs | 137 | — |
+| already published as `uses` | 137 | **995** |
+| **predicted new `uses` edges** | 70 | **0** |
+| `compound_statements` the predicate excludes | 948 | **7,495** |
+
+So the round-8 verdict survives a population 7.6× larger: **995 of 995** arithmetic
+operand reads are already published, and the gap is closed at corpus scale, not
+sample scale. The A/B pair (7,786 → 7,856 on one fixed 400-file sample) is
+unaffected and remains the evidence that the *change* added exactly 70 edges.
+
+### Limitation 24's population is 5, not 0 — and the closing test is still correct
+
+Limitation 24 said the `endsWithDoubleParen` half of `isArithmeticCompoundText` has
+an **empty** measured population (0 of 792 excluded `compound_statements` open
+`((`), and therefore that no mutant could cover it. The zero was a 400-file
+artifact. Over the whole corpus the population is **5**:
+
+| | count |
+| --- | --- |
+| `compound_statements` the predicate excludes | 7,495 |
+| …of those, opening `((` but not closing `))` | **5** |
+| …of those, containing an `ERROR` or `MISSING` node | **5 of 5** |
+| …of those, containing **no operand node at all** | **3 of 5** |
+| …of those, whose `variable_name` comes from the arithmetic prefix | **0 of 5** |
+
+The five are `(( $+commands[brew] )) && dir=$(brew --prefix …)` (nodenv, pyenv,
+rbenv), `(( $+commands[brew] )); then` (cask) and
+`(( ! ${+ZSH_AUTOSUGGEST_ORIGINAL_WIDGET_PREFIX} )) &&` (zsh-autosuggestions).
+`$+commands[…]` and `${+VAR}` are **zsh** forms the pinned **bash** grammar cannot
+read, so the operand arrives as a bare `word` inside an `ERROR` and the closing
+`))` is a synthesized `[MISSING]` node. The two that do contain a `variable_name`
+get it from the `&&`/`;` **tail** — `comp_files` at `cask.plugin.zsh:20`,
+`typeset` / `ZSH_AUTOSUGGEST_COMPLETIONS_PTY_NAME` at `config.zsh:95` — both of
+which the main walk already reads as the declaration or command they are.
+
+**So this is not a GAP and no edge is owed.** The closing test refuses precisely the
+damaged shapes, and dropping it would read a damaged tail as arithmetic. A mutant
+for it was written, **survived** the battery, and was deleted with the measurement
+recorded in the header of `mutants-bash-lane.mts`, following the file's existing
+`printf -v` precedent: a mutation with no correct output to change cannot be caught,
+and leaving it would mean a permanently red gate or a fiction. The probe now tallies
+all three counters above on every run, so the next corpus that adds a *readable*
+unterminated `(( … ))` will make the mutant writable instead of requiring someone to
+rediscover this.
+
+### Coverage, restated as applicable
+
+Unchanged: **7/7 applicable, 3 measured-absent (`extends`, `implements`,
+`instantiates`, each with instrument A over all 164 node types plus instrument B),
+0 unaccounted.** What round 9 changes is the denominator every one of the seven is
+measured against: from 400 of 4,133 files (9.7%) to **4,133 of 4,133 (100%)**, with
+the two ungrammatical files named and their 0 relationships stated.
 
 `script/m14/differential.ts --lang bash` reports, on its 60-file `otp` sample
 (`rot 21`, hash `b0549e4c8d9e5e6a`): truth **1,597**, covered **1,597 (100%)**,
@@ -2021,27 +2227,51 @@ verdicts are therefore quoted against 164 and the difference is stated rather th
     and no way to reconcile them, and the reconciliation is three lines of arithmetic.
     The independent confirmation is `incoming-check.ts` over 6 corpus files, where
     `overrides` fires with 24 edges and 3 distinct declarations.
-24. **One condition in the round-8 arithmetic predicate has an empty measured
-    population, so no mutant covers it.** `isArithmeticCompoundText` requires the text
-    to close `))` as well as open `((`. On the 400-file sample the predicate excludes
-    **792** `compound_statements` and **0** of them open `((`; a malformed `(( a < 2`
-    arrives as an `ERROR` node rather than a `compound_statement` (verified on the
-    tree), so `opensWithDoubleParen` alone has no reachable input in this grammar and a
-    mutant dropping the closing test would survive a suite whose stated rule is that a
-    survivor is a failure. The condition is kept — `( (date) )` is a subshell and
-    `((x))` is arithmetic, and `isArithmeticOperandCommand` asks the same question of
-    a `subshell` — and declared at both the call site and here rather than covered by a
-    mutant that cannot fail.
-25. **A whole-corpus bash measurement cannot be taken in one process, and the
-    production path reports that as success.** Over all 4,133 admitted files, a probe
-    calling the pinned parser directly could not parse **3,634 (87.9%)**; the 499 it
-    did parse include the 400-file hash-order prefix, which the same probe walks with 0
-    failures, so the breakdown is progressive within a process rather than a fixed set
-    of poisonous files. `parseFile` catches the same `memory access out of bounds` and
-    substitutes a degraded result, which is why the census prints `parse fail: 0` on
-    the same corpus. Consequence for every whole-corpus figure in this file: it
-    describes the files the wasm reached, and the count of files it did not reach is
-    not printed next to it. Limitation 15 named the wobble; this item gives its rate.
+24. **The closing half of the round-8 arithmetic predicate has a population of 5, not
+    the 0 this entry used to claim, and all 5 are grammar damage.** The previous
+    revision said "the predicate excludes 792 `compound_statements` and **0** of them
+    open `((`, so no mutant covers it". The zero was a 400-file artifact: over every
+    admitted file the predicate excludes **7,495** `compound_statements` and **5** open
+    `((` without closing `))`. That is enough population to write the mutant, so the
+    mutant was written — and **survived**, because the correct answer and the mutated
+    answer are the same on all five. The reason is measured per node rather than
+    argued: **5 of 5** contain an `ERROR` or `MISSING` node with the `(( … ))` operand
+    text inside it, **3 of 5** contain no operand node at all, and **0 of 5** take a
+    `variable_name` from the arithmetic prefix (the two that hold one take it from the
+    `&&`/`;` tail — `comp_files` at `cask.plugin.zsh:20`, `typeset` /
+    `ZSH_AUTOSUGGEST_COMPLETIONS_PTY_NAME` at `config.zsh:95`). The shapes are zsh's
+    `$+commands[…]` and `${+VAR}`, which the pinned **bash** grammar cannot read. The
+    closing test is therefore KEPT — it refuses exactly the damaged shapes — and the
+    mutant is deleted with the measurement recorded in `mutants-bash-lane.mts`'s
+    header, per that file's existing `printf -v` precedent. Three counters
+    (`opensOnlyWithOperand`, `opensOnlyWithoutOperand`, `opensOnlyDamaged`) are printed
+    on every run of `probe-bash-arithmetic-operands.mts`, so a future corpus with a
+    *readable* unterminated `(( … ))` makes the mutant writable instead of leaving the
+    next agent to rediscover this.
+25. **RETRACTED in round 9 — this entry said a whole-corpus bash measurement cannot
+    be taken in one process, and it can.** It is kept because the correction is the
+    evidence, and because the shape of the error is the reusable part. The entry
+    read: over all 4,133 admitted files, a probe calling the pinned parser directly
+    could not parse 3,634 (87.9%), the breakdown was "progressive within one
+    process", and `parseFile` catching the same error and substituting a degraded
+    result was why the census printed `parse fail: 0` — "it describes the files the
+    wasm reached, and the count of files it did not reach is not printed next to it".
+    **None of that holds.** The probe was borrowing `ASTEngine.getParser("bash")`,
+    the engine's shared handle, and interleaving two users of it; it reads exactly
+    **499 files whatever the corpus size** (900 → 401 unparsed, 4,133 → 3,634
+    unparsed), which is a fixed capacity in the instrument, not a threshold in the
+    corpus. With a private parser, production `parseFile` over every admitted file
+    reads **4,131 of 4,133** with the grammar, answers **2** by fallback, and takes
+    **0 relationships** from those two; instrument A reads **4,133 of 4,133** with
+    0 throws. The census now prints `grammar-read` and `FALLBACK` on every run so the
+    "not printed next to it" defect cannot recur. **Method note worth keeping: the
+    plausible mechanism I proposed first — a wasm heap leaked by a missing
+    `tree.delete()` — was also wrong**, and `probe-bash-wasm-tree-lifetime.mts`
+    measures it: a private parser with no `delete()` reads 2,500 of 2,500 files with
+    0 throws and rss flat at 239 MB. Both stories fit "breaks down after roughly 500
+    files", and both were about the instrument. **A constant in a probe is not a
+    threshold in a corpus**, and the way to tell them apart is to run the probe at
+    two corpus sizes and check whether the absolute number moves.
 26. **19.8% of the `uses` edges on arithmetic lines have no oracle counterpart**, so
     the differential cannot vouch for round 8's class
     (`probe-bash-arithmetic-oracle.mts`, 121 edges on 83 operand lines across 32
@@ -2052,6 +2282,18 @@ verdicts are therefore quoted against 164 and the difference is stated rather th
     about what neither read. The justification for those 70 edges is a parse fact — a
     `variable_name` under a `(( … ))` `compound_statement` — and bash's semantics, not
     a second walker.
+27. **A number in this file was wrong because a 400-file sample was labelled as a
+    whole-corpus count, and only a second run at a different size exposed it.** The
+    `compound_statements` the predicate excludes read 948 in a section headed
+    "whole corpus"; it is 7,495, because that run had reached 499 files. The
+    arithmetic-operand table in the same section read 104 compounds and 150 operand
+    nodes against a true 834 and 1,139. A sample is a legitimate denominator when it
+    is labelled one; the failure was a label, and it survived eight rounds of review
+    because every number in the table was individually plausible. The defence that
+    worked was arithmetic, not inspection: 900 − 401 and 4,133 − 3,634 are both 499,
+    and a quantity that does not change when the corpus doubles is not measuring the
+    corpus. **Round 9 re-ran every headline number at `--all` for this reason, and
+    the sample-based column is now labelled as the sample it is.**
 
 ## Complexity envelope and measured performance
 
@@ -2172,7 +2414,10 @@ This round's own measurements, each reproducible from a named file in
 
 | check | command | result |
 | --- | --- | --- |
-| Ontology census, 400 hash-ordered files | `npx tsx validation/m14/fixtures/bash/census-bash-ontology.ts --sample 400` | **ROUND 5**: 4,130 admitted / 458,446 scanned / 48 repos in sample; 7 types emitted, **17,009 relationships**, 4,186 symbols, 0 parse failures, 0 empty names, 0 `unknown` endpoints, 0 empty endpoints, 0 unknown kinds. Per type: calls 5,099 · uses 7,802 · contains 3,782 · imports 44 · references 44 · exports 210 · overrides 28. NOT comparable with round 3's 17,117: different sample (corpus grew 4,012 → 4,130 admitted) |
+| Ontology census, **WHOLE CORPUS** | `npx tsx validation/m14/fixtures/bash/census-bash-ontology.ts --all` | **ROUND 9: 4,133 admitted / 460,452 scanned / 120 repos; 7 types emitted, 178,463 relationships, 42,418 symbols, 0 parse failures, `grammar-read 4,131`, `FALLBACK 2` contributing 0 relationships.** Per type: calls 55,231 · uses 81,529 · contains 38,278 · imports 679 · references 679 · exports 1,929 · overrides 138. Resolution: contains 100.0% · overrides 100.0% · exports 99.9% · uses 79.2% · calls 26.7% · imports/references 0.0%. **`neither` 0 on every type**; 0 empty names, 0 unknown kinds, 0 `unknown`/empty endpoints, 0 edges below 0.7 conf. 4m20s |
+| Ontology census, 400 hash-ordered files | `npx tsx validation/m14/fixtures/bash/census-bash-ontology.ts --sample 400` | **ROUND 5**: 4,130 admitted / 458,446 scanned / 48 repos in sample; 7 types emitted, **17,009 relationships**, 4,186 symbols, 0 parse failures, 0 empty names, 0 `unknown` endpoints, 0 empty endpoints, 0 unknown kinds. Per type: calls 5,099 · uses 7,802 · contains 3,782 · imports 44 · references 44 · exports 210 · overrides 28. **Superseded for every headline figure by the `--all` row above**; retained because it is the sample the A/B pairs share |
+| Whole-corpus arithmetic operands (round 9 re-derivation) | `npx tsx validation/m14/fixtures/bash/probe-bash-arithmetic-operands.mts --sample 4400` | **0 unparsed** (was 3,634); 351 files with an arithmetic `compound_statement` (was 41), **834** `compound_statements` (was 104), **1,139** operand name nodes (was 150), **995 already published** (was 137), **0 predicted new edges**; 7,495 excluded (was 948) of which **5** open `((` unclosed, **5 of 5** ERROR/MISSING, **3 of 5** no operand node, **0 of 5** operand from the arithmetic prefix |
+| Tree-lifetime A/B (the mechanism) | `npx tsx validation/m14/fixtures/bash/probe-bash-wasm-tree-lifetime.mts --files 2500` | **0 threw, rss flat at 239 MB with no `delete()` at all** — falsifies the leaked-heap hypothesis and localises the fault to the shared parser handle. With `--delete` and `BASELINE_THREW`, adjudicates explicitly and exits non-zero if `delete()` does not improve on the baseline |
 | Round-3 adversarial probes | `npx tsx validation/m14/fixtures/bash/adversarial-probes3.ts --sample 400` | duplicate symbols **10**, all `function`, in 5 files, all real re-declarations; self-edges **73** (`calls` 54 / `overrides` 8 / `contains` 10 / `uses` 1); `exports`→symbol 210/210, 0 orphans, `exportForm` function 1 resolving to a function; `overrides` both-declarations-top-level **28/28**; reserved-word leak **0**; `calls`→own-variable **3**, the same 3 pass 2 adjudicated as correct; `INTERPRETED_COMMANDS` command nodes in command position **580**, reaching its gate **0** |
 | Guard F A/B — the defect's cost | `npx tsx validation/m14/fixtures/bash/guard-f-bash-imports.mts --sample 400` and `--sample 1200` | F2 removes **5 edges in 1 file with 0 real calls**, identically at 400 files / 48 repos and 1,200 files / 76 repos; F1 removes 5 but fires on valid bash; F3 removes 20 of which **15 are real** `kube::log::status` calls in gubernator.sh |
 | Guard F soundness — 39 node shapes | `npx tsx validation/m14/fixtures/bash/guard-f-soundness.mts` | F2 fires on **0** valid-parse command nodes; F1 fires on **1** (`awk one two ) three`) and is rejected. Exit code 0 |
@@ -2190,10 +2435,10 @@ This round's own measurements, each reproducible from a named file in
 | Round-5 A/B — did the change alter an edge? | `BB_AB_BASE=b2b6ee090 npx tsx validation/m14/fixtures/bash/ab-round5-targetline.ts --sample 200` | `otp`, 115 pinned files: old 7,813 edges, new 7,813 edges, **ADDED 0, REMOVED 0**, 84 metadata-only changes (`targetLine`/`targetKind`/`targetResolution` × 84 each). **PASS**. Written because the differential could not answer it: its cold-pool rotation drew `rot 21`, two consecutive runs are not comparable, and its lane journal is a shared `/tmp` file this lane does not own |
 | Ambiguity — one edge, N declarations | `npx tsx validation/m14/fixtures/bash/probe-bash-ambiguity.mts --sample 400` | **1,879** ambiguous targets across 5 types; **0 irreducible by line** (100% of candidate sets on distinct `startLine`s); nearest-preceding picks exactly one in **1,830 = 97.4%**, 49 tie. Per type: uses 1,185 (19.0% of 6,239 resolved) · contains 658 (17.4%) · overrides 28 (100%) · calls 6 (0.6%) · exports 2 (1.0%). Denominators match the census exactly, which required copying its 512 KB cap and content-form `detectLanguageFromPath` |
 | DERIVATION debt — class size | `npx tsx validation/m14/fixtures/bash/probe-bash-derivation-debt.ts --sample 400` | implicit-binding symbols published **175** (for 127/71 files, read 48/25 files); `contains` edges naming one **179**, all unexplained by construction; `uses` edges naming one **400**, all resolving |
-| Evidence census, every admitted file | `npx tsx validation/m14/fixtures/bash/probe-bash-missing-evidence.mts` | 4,130 admitted files, **137,770 edges, 0 with no `evidenceClass`** (round 5 reading; round 6 did not re-run it because the round-6 change adds METADATA to existing edges and no edge, so the totals are unchanged by construction). calls 55,220 · uses 80,851 · contains 38,273 · exports 1,929 · imports 679 · references 679 · overrides 138. Confidence: **0 edges below 0.7 in any type**; the 223 `calls` edges at exactly 0.7 are the damaged-region tier |
+| Evidence census, every admitted file | `npx tsx validation/m14/fixtures/bash/probe-bash-missing-evidence.mts` | **SUPERSEDED — do not quote.** Its reading was 4,130 admitted, **137,770 edges, 0 with no `evidenceClass`** (calls 55,220 · uses 80,851 · contains 38,273 · exports 1,929 · imports 679 · references 679 · overrides 138). Round 9 shows this probe also walked the borrowed parser and covered ~499 files, so its "every admitted file" label was false. Use the `--all` row. Its *invariant* — **0 edges with no `evidenceClass`, and 0 below 0.7 confidence** — is re-confirmed at 100% by the `--all` run and is the part worth keeping |
 | Lane regex census | `npx tsx validation/m14/fixtures/bash/probe-bash-no-regex.mts` | **0 regex literals across 0 of 25 lane files** (analyzer + 24 probes/fixtures/mutants). Round 5 fixed the probe's own coverage gap: it had been checking **16** of the lane's 25 files and the 9 it missed now read 0 as well |
 | DERIVATION debt | `npx tsx script/m60/rel-type-coverage-gate.ts --langs=bash` — **read the warning in Q6 first** | CHECK 1 DERIVATION **clean**; `baseline: 104 recorded, 0 NEW, 104 repaid`; and the committed `validation/m60/results/rel-type-coverage.json` carries **0 findings and 0 baseline rows naming bash** |
-| Regex census (project gate) | `npx tsx script/m12/verify-regex-census.ts` | **Re-run round 5: still `FAILED`, with ZERO rows naming bash.** The committed `validation/m12/results/regex-census.json` has `perFile` = 7 files / 26 regex usages and `real-bash-analyzer.ts` is not among them, which is the census recording that the lane has none. The 30 MISSING/STALE rows are **css, julia, clean, fsharp, javascript, python, svelte, typescript** — not this lane's to fix (§8). The lane's own direct measurement is the row above |
+| Regex census (project gate) | `npx tsx script/m12/verify-regex-census.ts` | **Re-run round 9: `regex census gate PASSED`** — 5 entries, HEAD and working-tree scans agree at 5, `missing 0, stale 0, unclassified 0, mislocated 0`. The previous revision of this row said "still `FAILED`, with ZERO rows naming bash" and attributed the 30 MISSING/STALE rows to css, julia, clean, fsharp, javascript, python, svelte and typescript; those are gone from the census and `real-bash-analyzer.ts` is still not among its 5. **This lane's own direct measurement is unchanged and is the one to quote: 0 regex literals across 0 of 31 lane files.** The gate passing is not this lane's work — the lane did not touch the shared census baseline |
 | Doc-truth emissions | `bun run script/m14/verify-doc-truth-emissions.ts` | see the note below — re-run for this revision |
 
 Supporting artifacts:
@@ -2207,29 +2452,36 @@ Supporting artifacts:
 - **Full record** — `reviews/bash/m60-closure.md` (§1–§19a),
   `reviews/bash/resolution.md` (21 claim dispositions, deliberately not `CLOSED`)
 
-**On the honesty gate's 22 failures.** The command is
+**On the honesty gate's 26 failures.** The command is
 `npx tsx script/m14/verify-honesty.ts` — **not** `script/verify-honesty.ts`, which
 the previous revision of this document cited and which does not exist; the file is
 `script/m14/verify-honesty.ts`, and the wrong path fails with
 `ERR_MODULE_NOT_FOUND` before a single check runs, which is the shape of error that
 looks like a broken gate rather than a broken citation.
 
-Re-run in round 3: **22 failures**, the same count as round 2, and
-`src/ast/real-bash-analyzer.ts` appears in **0** lines of the output — so this
-round's analyzer change did not newly stale any evidence. The failures are: three
-banned-term hits in `validation/m14/results/M14.0.F5.json`,
-`M14.0.JS-CENSUS.json` and `fsharp-shape-census.json`; the `M14.0.F7` check on
-`analyzer-hygiene-cpp` and `analyzer-hygiene-elixir`; the `F1`–`F9`
-evidence-freshness sets, which name hundreds of shared files
-(`analysis-exclusions.ts`, `brain-surgical-patcher.ts`, `run-fixtures.ts`,
-`differential.ts`, `mutate-analyzer.ts` and so on) that this lane does not own; and
-the summary check "freshness rule flags every artifact". The only bash-named input
-in any of those sets is `script/m14/spec/bash-completeness.json`, in F8's declared
-inputs — a shared spec this lane does not own and did not touch this round.
-Regenerating any of it is shared work and is reported rather than attempted.
+Re-run in round 9: **26 failures**, against 22 in round 3 — and **not one of the 26
+names a bash file as a banned term or a hygiene failure.** The breakdown, so a reader
+does not have to re-derive it:
 
-Two of the gate's own lines are worth quoting because they are the ones a reader
-would otherwise assume this lane's evidence depends on:
+| count | what | names bash? |
+| --- | --- | --- |
+| 14 | banned-term hits in `validation/m14/fixtures/{c,clean,csharp,html,sql}/…`, `validation/m14/grammar-pins.json`, `validation/m14/results/M14.0.{F5,F11.fsharp,JS-CENSUS}.json`, `fsharp-shape-census.json` | **no** |
+| 1 | `M14.0.F7` non-passing checks `analyzer-hygiene-cpp`, `analyzer-hygiene-elixir` | **no** |
+| 9 | evidence-freshness for F1–F9: "N declared input(s) changed since <commit>" | **structurally yes** |
+| 1 | the derived "freshness rule flags every artifact" — a consequence of the 9 above | no |
+
+The freshness row is the one that needs the qualification, and it is not a bash
+defect. `M14.0.F2` declares its inputs as `["script/m14/", "validation/m14/fixtures/"]`
+— **every lane's fixtures**, not this lane's — so any lane that commits a probe makes
+F2 stale for the whole repository. The nine artifacts live in
+`validation/m14/results/*.json`, which §8 puts outside this lane, and regenerating
+them is shared work. Reported, not attempted. The two lines of this gate that a reader
+would otherwise assume this lane's evidence rests on both pass:
+`ok banned-vocabulary lint over validation/m14 + M14 docs` and
+`ok M14.0.F8 all-green (24 checks)`.
+
+The gate's own lines worth quoting, because they are the ones a reader would
+otherwise assume this lane's evidence depends on:
 `ok banned-vocabulary lint over validation/m14 + M14 docs` and
 `ok M14.0.F8 all-green (24 checks)`.
 
