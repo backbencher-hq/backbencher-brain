@@ -1389,3 +1389,53 @@ All 10 alive, none STALLED, none DEAD: 8 `measuring`, `julia` `working` (+15K),
 `scripts/agent-orchestration/{launch-agent.sh,status.sh,watchdog.sh,AGENT-TEMPLATE.md,repo-facts.md,ruling-table-brief.md}`.
 They were in `/tmp`, so a tmp sweep would have destroyed the entire supervision layer
 with no git history to recover it from.
+
+## The disk hit 100% and took the fleet with it
+
+At 19:04 a routine gate invocation failed with:
+
+```
+npm error syscall write
+npm error errno -28
+npm error nospc ENOSPC: no space left on device, write
+```
+
+`/` was **460G, 437G used, 0 available**. julia was dead and bash had gone silent
+mid-measurement — not agent faults. Every symptom that had looked like an agent
+problem for the previous hour was the disk.
+
+```
+  $HOME/.local/share/opencode/opencode-main.db   114.7 GB
+  $HOME/.npm                                       12   GB
+  $HOME/.cache                                      8.4 GB
+  /tmp/opencode                                               9.9 GB
+```
+
+Reclaimed by clearing `~/.npm` (regenerable by definition): **0 → 59 GB free**, 87%
+used. Both affected lanes recovered — julia revived itself, bash needed an explicit
+TERM (it was alive, holding 22 commits and an uncommitted fixture, so it had to be
+killed and revived rather than left to be declared dead).
+
+### What was deliberately NOT touched
+
+- **`opencode-main.db` (114.7 GB)** — this is the owner's opencode session history, not
+  mine to delete. It has been flagged twice and is now the single largest thing on the
+  disk by a factor of ten. **It will fill the disk again**, and the next occurrence may
+  not be as survivable. It needs an owner decision, and the cheapest safe option is
+  `VACUUM` on the session/message tables rather than deleting the file.
+- **`~/.aws`** — sits inside `~/.cache`'s parent and may hold credentials.
+- **`~/.cache/tree-sitter`** (400M) — in active use by the project.
+- **`~/.cache/puppeteer` / `playwright` / `BraveSoftware` / `mozilla`** — regenerable
+  but expensive to re-download, so they were left as the second line of defence.
+
+### The lesson, which is the same one as the population rule
+
+Every instrument in this programme reported what it was measuring. **Nothing reported
+that the machine had run out of room to write the answer.** An agent going silent, a
+gate failing with a write error, and a census truncating all look like distinct
+defects; they had one cause. The supervisor has been treating agent health as the
+signal and had no floor under it.
+
+So the standing check now includes free space and DB size alongside agent state. A
+fleet that cannot write is not a fleet that is working, no matter how many agents
+report `working`.
