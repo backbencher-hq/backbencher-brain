@@ -164,7 +164,40 @@ export const SQL_KEYWORDS = new Set([
  *                      `storage`, `extensions`), which is real in the file and
  *                      absent from the repository by construction
  */
-const POSTGRES_CATALOG = /^pg_[a-z_]+$/
+/**
+ * Is `t` a PostgreSQL catalog relation name — `pg_class`, `pg_trigger_depth`, `pg_stat_…`?
+ *
+ * WAS `/^pg_[a-z_]+$/`, which was this lane's last regular expression. The brief's rule is that a
+ * regex over analyzer text is a defect the lane owns, and the census
+ * (`script/m12/verify-regex-census.ts`) classified it `needs_review` with an empty justification.
+ *
+ * The substitution is exact rather than approximate, and the difference between the two readings is
+ * worth naming because it is the kind that silently widens a classifier:
+ *   - `^pg_`        → `t.startsWith("pg_")`
+ *   - `[a-z_]+`      → at least one further character, each `a`–`z` or `_`. `t.length > 3` is the
+ *                     `+`, not a `*`: `pg_catalog` matches, a bare `pg_` does NOT, and the loop
+ *                     bounds are `>= 97 && <= 122` on the CHAR CODE so no string comparison is
+ *                     needed per character.
+ *   - `$`            → the loop runs to `t.length`, so a trailing `.` or digit fails.
+ * The input is an identifier already lifted off the parse tree by the caller, never source text, so
+ * the defect class a regex invites here (matching a comment or a string literal, missing nested
+ * syntax) did not apply — but the rule is not "regexes are wrong here", it is "this lane's regexes
+ * are its debt", and a 4-line character scan settles it.
+ *
+ * Pinned by fixture `sqld12-external-targets`, which asserts the classification on both sides of
+ * each boundary: `pg_catalog.pg_class` is `postgresCatalog`, and `pg_` alone, `pg_` followed by a
+ * digit, and `pg_` followed by a dot are not.
+ */
+function isPostgresCatalogName(t: string): boolean {
+  if (t.length <= 3) return false
+  if (!t.startsWith("pg_")) return false
+  for (let i = 3; i < t.length; i++) {
+    const c = t.charCodeAt(i)
+    if (c !== 95 && (c < 97 || c > 122)) return false
+  }
+  return true
+}
+
 const INFORMATION_SCHEMA_VIEWS = new Set([
   "columns", "tables", "views", "routines", "schemata", "sequences", "key_column_usage",
   "table_constraints", "constraint_column_usage", "referential_constraints",
@@ -186,7 +219,7 @@ function classifyExternalTarget(
   const t = target.toLowerCase()
   if (t.startsWith("information_schema.")) return "informationSchema"
   if (INFORMATION_SCHEMA_VIEWS.has(t)) return "informationSchema"
-  if (POSTGRES_CATALOG.test(t)) return "postgresCatalog"
+  if (isPostgresCatalogName(t)) return "postgresCatalog"
   if (t === "public") return "implicitSchema"
   const dot = t.indexOf(".")
   if (dot > 0) {
