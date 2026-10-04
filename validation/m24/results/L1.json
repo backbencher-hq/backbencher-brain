@@ -2,20 +2,34 @@
   "issue": "490",
   "code": "L1",
   "status": "verified",
-  "currentCommit": "a0ed9eade7008de7ce93a312f6b0bd7e182a43a9",
-  "sourceFingerprint": "c272b2968c3e9f7d1cbbfb05ea02fd00992686438739fc9ae54972ba56b217a8",
+  "currentCommit": "a5fd2a1cdd9ab6a7e3a41da2c0718ddf5ca1aa5a",
+  "sourceFingerprint": "5af14abfec29df92dd087ef66de0e626f92c6a2fd4b41a70c51fd6caa2864a4a",
   "verifierCommand": "npx tsx script/m24/verify-server.ts",
   "evidenceFile": "L1.json",
-  "generatedAt": "2026-10-04T22:36:48.500Z",
-  "passed": 85,
+  "generatedAt": "2026-10-04T23:55:57.607Z",
+  "passed": 127,
   "failed": 0,
   "failures": [],
-  "negativeCases": 18,
+  "negativeCases": 24,
   "claimLevel": "I1 (protocol-passed) — reference-client harness, real streams, planted mutants. NOT I2: no index-conformance or position-mapping assertion is made here, and NOT I3: no named editor run is part of this evidence.",
+  "declaredAbsence": {
+    "carriers": [
+      "bb/absence (versioned, server→client notification)",
+      "window/logMessage (the protocol's own channel)"
+    ],
+    "reasons": [
+      "language_not_launched",
+      "not_indexed",
+      "unresolvable_location",
+      "unsupported_language"
+    ],
+    "note": "LSP 3.18 mandates Location|null for definition and Location[] for references, so there is NO field on those results a reason could ride. The standard result shapes are UNCHANGED; the reason travels out of band. An empty standard result on these methods must not be read as 'nothing found'.",
+    "componentContractRead": "navigation.ts exposes evidenceTier at this commit, NOT Lane 4's richer absence record (that commit 04d56ab75 is not an ancestor of this branch — see limitations). The reason is derived from the launch set through its single owner, and the vocabulary matches what Lane 4 publishes, so the seam is correct today and still correct when that field lands."
+  },
   "os": "darwin x64 (v22.14.0)",
   "canFail": {
-    "mutants": 25,
-    "negatives": 19
+    "mutants": 34,
+    "negatives": 25
   },
   "advertisement": {
     "capabilityKeys": [
@@ -29,7 +43,8 @@
       "graphProvider",
       "stalenessProvider",
       "impactProvider",
-      "workspace"
+      "workspace",
+      "absenceProvider"
     ],
     "declaredMethods": [
       "bb/graph",
@@ -49,17 +64,18 @@
   },
   "verdict": {
     "realComponentFailures": 0,
-    "mutantsCaught": 24,
-    "mutantsTotal": 24,
+    "mutantsCaught": 33,
+    "mutantsTotal": 33,
     "mutantsCaughtByLoadFailureOnly": 0,
     "mutantsWithMissingAnchor": [],
-    "negativeCases": 18,
+    "negativeCases": 24,
     "ok": true,
     "note": "`failed` counts real functional failures only; mutant runs are reported separately via the verdict block. A mutant caught ONLY by a load failure is reported but does NOT satisfy the suite."
   },
   "reviewers": {
     "separationOfDuties": "NOT satisfied for this change: the author of the component change wrote the only gate covering it (contract §8.6 requires cross-review where feasible). Owner spot-check (§8.5) is the closure authority.",
-    "crossReview": "requested from script/m26/verify-graph-transport.ts owner: its M5 mutant anchors on the literal graphProvider line in src/lsp/server.ts, which is why that line was preserved rather than replaced by a table lookup."
+    "crossReview": "requested from script/m26/verify-graph-transport.ts owner: its M5 mutant anchors on the literal graphProvider line in src/lsp/server.ts, which is why that line was preserved rather than replaced by a table lookup.",
+    "wave2": "This wave's author also wrote the checks covering it. Three defects were found by the wave's own gates on its own code and are recorded rather than hidden: (1) the G11 schemaVersion check compared two reads of the same constant and could not fail — a mutant survived it and the check was rewritten to read the value the client receives; (2) a blanket-catch mutant was first planted as a syntactically broken rewrite and was 'caught' only by load failure, which the suite correctly refused to count, and was replanted as a behaviour change; (3) G3's frame parser decoded the stream to a string and mis-parsed as soon as the advertisement carried a non-ASCII em dash, which the byte-level rewrite fixed."
   },
   "limitations": [
     "single-root workspaces only (multi-root is a filed decision for later waves); declared on the wire as workspace.workspaceFolders.supported = false",
@@ -68,11 +84,16 @@
     "stdio framing is byte-stream based with Content-Length parsing",
     "bb/staleness and bb/impact use non-standard capability keys; a client that ignores unknown keys cannot discover them from the initialize result",
     "the mutation suite plants into src/lsp/ and deletes the copy in a finally block; a crash mid-run can leave a server.mutant.<pid>.<n>.ts file behind (git status shows untracked files)",
-    "G7 exercises bb/staleness on an UNINDEXED workspace only; the marker shape for a fresh/stale indexed file is freshness.ts's contract, gated by script/m25, not here"
+    "G7 exercises bb/staleness on an UNINDEXED workspace only; the marker shape for a fresh/stale indexed file is freshness.ts's contract, gated by script/m25, not here",
+    "NOT VERIFIED: that any editor renders the bb/absence notice. The channel is proven to be emitted and framed on the wire (G3, G9); nothing here proves a client displays it. Claiming a rendered badge would be a §1/I3 claim this evidence does not support",
+    "NOT VERIFIED: absence notices for bb/graph, bb/impact, and bb/staleness. Those transports own their own loud `bb/…`-prefixed errors by design (the versioning mechanism) and are not registered absentable; their error text already names the reason",
+    "navigation.ts does not yet expose Lane 4's `absence: {reason, language, detail, searchedIndex, totalCount}` record at this commit (04d56ab75 is not an ancestor of lsp/3), so the reason is derived from `evidenceTier` plus the launch set. When that field lands, navigationAbsence() should read it directly; the vocabulary and searchedIndex semantics already match",
+    "the DocumentUnroutable type is defined and handled at the seam, but no component throws it yet — document_highlight.ts still lets ASTEngine's own Error propagate and the seam recognises that message. The declared type is the forward-compatible path for other lanes",
+    "the seam matches ASTEngine's 'Unsupported file type' message prefix to recognise unroutability. That string is a cross-module coupling to src/ast/engine.ts; if the engine rewords it, the seam degrades to -32603 (loud, not silent) and the mutant 'seam: the unroutable-file guard is removed' fails the suite, so the drift is gated rather than silent"
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-04T22:36:48.501Z",
-    "contentSha256": "f304c7ca949c71a433cfca000ab91909e6ca7990b83abd215cde72873b3475b5"
+    "sealedAt": "2026-10-04T23:55:57.608Z",
+    "contentSha256": "4aba2e65538e017f362a61247c6ded7af3191fc962b893f9d9906f98509793bd"
   }
 }
