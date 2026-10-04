@@ -1408,12 +1408,46 @@ the text-pattern gate, and a smaller number is not a better one. The selection i
 pure `startsWith`/`endsWith`, the owned directories are printed, and the file excludes
 itself by name so the exclusion is visible.
 
-`--all` widens the scan to every dart-named `.ts` in the repository. It reports **7**
-regex literals, all in two pre-existing scratch files under `script/m14/tmp/`
+`--all` widens the scan to every dart-named `.ts` in the repository. It used to report
+**7** regex literals, all in two scratch files under `script/m14/tmp/`
 (`dart-container-types.ts:21`, `dart-contains-adjudicate.ts:130,161,162,163,164,175`).
-Those arrived in `d7fb2ee2b`, are in this branch's base, and are not this lane's to
-change — `git diff 8286c7391..HEAD -- script/m14/tmp/` is empty. They are listed so a
-reviewer sees them rather than inheriting a flattering scope.
+An earlier version of this entry declined to touch them because
+`git diff 8286c7391..HEAD -- script/m14/tmp/` is empty — they are in the branch's base.
+**That reasoning was wrong and it is withdrawn.** "Arrived in the base" is a statement
+about a diff, not about ownership: `script/m14/spec/dart-completeness.json:553` cites
+`dart-contains-adjudicate.ts` as the `measured_by` instrument for a spec claim, so the
+file is inside this lane's evidence chain whether or not this lane wrote it. A lane that
+declares a scratch script outside its scope while that script backs one of its own claims
+has drawn the scope to protect the number. Both files are now regex-free:
+
+| was | now |
+|---|---|
+| `/body/.test(x.type)` | `String(x.type).includes("body")` |
+| `/^[a-z]/.test(o)` | `o[0] >= "a" && o[0] <= "z"` |
+| `/^constructor$/.test(t)` | `t === "constructor"` |
+| `/\$\d+$/.test(t)` | `overloadSuffix(t) !== ""` |
+| `/^[A-Z]/.test(t)` | `t[0] >= "A" && t[0] <= "Z"` |
+| `/^[a-z_][A-Za-z0-9_]*$/.test(t)` | `isIdent(t)` — explicit first-char class, then a per-char loop |
+| `t.replace(/\$\d+$/, "")` | `stripOverload(t)` |
+
+`--all` now reports **0 regex literals over 31 files / 8,996 lines** (was 7 over 31).
+Both files typecheck clean and `dart-contains-adjudicate.ts proxicall 12` still runs
+(16 truth rows, 16 agreed, 0 analyzer-only, 0 truth-only).
+
+**The replacement was WRONG on first write, and the way it was found is the part worth
+keeping.** `overloadSuffix` was written as "if the name does not end in `$`, there is no
+suffix" — but the name ends in a DIGIT. Every real overload suffix returned `""`, so
+`stripOverload` returned the name unchanged and every truth-only row would have been
+classified `other:` instead of `overload-suffixed ($N)`: the family the probe exists to
+find would have read as ABSENT, in a probe whose whole purpose is counting families.
+Caught by running the five replacements beside the five regexes they replaced over 19
+names and diffing the results — **95/95 comparisons agree** after the fix, including the
+awkward cases (`"$1"` → suffix `"$1"`, `"name$0$1"` → suffix `"$1"` and strip `"name$0"`,
+`"f9"` and `"x$y"` → no suffix, `""` → no suffix, `"Ünicode"` → not an identifier).
+A comment asserting the rewrite was equivalent would have been worth nothing; the
+diff is the evidence. Note that the comparison itself carries regex literals, so it is
+not committed as a fixture — a self-test that re-derives the regexes would put the seven
+back and make the census read non-zero to prove the census works.
 
 **The `@override` pair was not only a rule violation but a wrong answer**, and the
 measurement is on the node rather than on a row count. For a member whose preceding
