@@ -939,13 +939,14 @@ mislead a reader of the graph.
 
 ## Shared-machinery needs (reported, not edited)
 
-Fourteen changes outside this lane's ownership, each stated so it can be applied
+Fifteen changes outside this lane's ownership, each stated so it can be applied
 without re-deriving it. The files are supervisor-owned per
 `docs/analyzers/ONTOLOGY-WORKSTREAM.md` §Ownership. Items 1–5 predate this pass;
 6–8 come from measuring the incoming direction, 9–10 from removing this lane's
 regexes, 11 from re-running the M60 gate to reproduce the DERIVATION count,
-12 from running the doc-truth-emissions gate over this lane's table, and 13–14 from
-re-running the same gates and watching what they wrote to disk.
+12 from running the doc-truth-emissions gate over this lane's table, 13–14 from
+re-running the same gates and watching what they wrote to disk, and 15 from
+reading `firing-check.ts --json` and finding `files` is per-file, not per-type.
 
 1. **`script/m14/ontology-coverage-gate.ts` — add a `dart` entry to
    `RULED_BY_LANG` (line ~183: `const RULED_BY_LANG: Record<string, Ruled[]> = {
