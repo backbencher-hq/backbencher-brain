@@ -184,13 +184,26 @@ files carry parse errors (counted, listed below, not hidden). 22,861 symbols,
 quietly absorbed.** Pass 1 measured 1,092 admitted files; the shared corpus has
 since grown by 16 (`boundary` 4, `terragrunt` 7, `packer` 4, `nomad` 1, and one
 more `scala3`), so re-running the same census against the same analyzer reads
-1,108. Restated on the grown corpus and BEFORE this pass's fixes, the ten types
+1,108. Restated on the grown corpus and BEFORE pass 2's fixes, the ten types
 were `calls` 67,344, `uses` 64,562, `contains` 21,750, `imports` 556,
 `references` 577, `exports` 113, `extends` 47, `implements` 3, `overrides` 2,
-`instantiates` 1,268 — 156,222 relationships, 22,861 symbols. The table below is
-that population with PS25-PS28 applied. **The percentage columns are the stable
-part**: every rate moved by at most 0.11 points across the corpus growth, which is
-what says the growth was additive rather than a change of population.
+`instantiates` 1,268 — 156,222 relationships, 22,861 symbols.
+
+**Pass 3 re-ran the same census at the same commit with the pass-2 analyzer and
+every number reproduced EXACTLY** — all ten edge counts, all ten `distinctFiles`,
+both resolution columns, both intra-file columns, the heuristic count, the
+missing-line count, the confidence histogram and the `evidenceClass` histogram.
+The admitted set did not move either: the same 1,108 files from the same 20
+repos. That is the answer to "does every number in this document reproduce from a
+clean corpus": for the pass-2 figures, yes, and the corpus did not grow under
+them. The table below is that population with PS25–PS28 applied and then **PS29
+and PS30**, whose delta is `uses` +37, `instantiates` −41, total −4.
+
+**The percentage columns are the stable part**: across the corpus growth every
+rate moved by at most 0.11 points, which is what says the growth was additive
+rather than a change of population. Across PS29 they moved by MORE than that and
+in the direction that needs explaining rather than celebrating — see
+"`instantiates` resolution FELL, and that is the right direction".
 
 `files` below is the exact distinct-file count. The census originally printed a
 400-entry display cap here, which made `calls`, `uses` and `contains` each print
@@ -200,22 +213,42 @@ example list; `distinctFiles` in the census JSON is the uncapped set.
 | Relationship type | Emitted? | Edges | Files | corpusBoth | intraBoth | `conf < 0.7` | Tier | What it means **in PowerShell** |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | `calls` | EMITTED | 67,344 | 963 | 60.66% | 8.23% | **55.38%** | `usage_contextual` | a cmdlet or function invoked by name (`Get-ChildItem`), a method call (`$obj.Method()`), a static call (`[Type]::Static()`), or a script run through an invocation operator (`. ./x.ps1`, `& ./x.ps1`). Flow keywords excluded. |
-| `uses` | EMITTED | 64,562 | 887 | 92.86% | 55.94% | 0.00% | `usage_contextual` | a name READ rather than invoked: a type literal's spec, a variable read, a hashtable key, a cmdlet parameter name, an attribute, and — since the Contract row was corrected — hashtable-literal and array-literal composition. The largest channel after `calls` and the one with the highest corpus-wide resolution rate in the lane. |
-| `contains` | EMITTED | 21,750 | 1,022 | 99.87% | 99.73% | 0.00% | `structural` | lexical nesting: a module contains its functions, a class its members, a function its locals and parameters. The only type whose endpoints resolve at both ends on ~99.9% of edges, because both ends are symbols this same pass declared. |
+| `uses` | EMITTED | 64,599 | 887 | 92.87% | 55.96% | 0.00% | `usage_contextual` | a name READ rather than invoked: a type literal's spec, a variable read, a hashtable key, a cmdlet parameter name, an attribute, hashtable-literal and array-literal composition, and — since PS29 — a `New-Object` **type name held in a variable**. The largest channel after `calls` and the one with the highest corpus-wide resolution rate in the lane. |
+| `contains` | EMITTED | 21,750 | 1,022 | 99.87% | 99.73% | 0.00% | `structural` | lexical nesting: a module contains its functions, a class its members, a function its locals and parameters. The only type whose endpoints resolve at both ends on ~99.9% of edges, because both ends are symbols this same pass declared. **Lexical nesting is not ownership, and the size of the difference is now measured rather than declared open** — see "PS31" below. |
 | `imports` | EMITTED (PS23) | 556 | 207 | 69.42% | 37.77% | 0.00% | `import_based` | one module dependency, from `Import-Module` (361 edges), `using namespace` (105), `#requires` list or hashtable (90). **This is the type the lane did not have** — see below. |
 | `references` | EMITTED | 577 | 223 | 68.98% | 36.40% | 0.00% | `import_based` | the sibling channel for the same module dependency — **every one of the 577 edges is accounted for: 556 `import_sibling` plus 21 `requires_version`** — and nothing else. The Contract's composition claim is false and the measurement is below. |
-| `exports` | EMITTED | 106 | 45 | 98.11% | 95.28% | 0.00% | `structural` | what `Export-ModuleMember -Function`/`-Variable`/`-Alias`/`-Cmdlet` publishes, read from the command's argument list. A wildcard target publishes nothing, which is why the count is 106 and not 113. |
+| `exports` | EMITTED | 106 | 45 | 98.11% | 95.28% | 0.00% | `structural` | what `Export-ModuleMember -Function`/`-Variable`/`-Alias`/`-Cmdlet` publishes, read from the command's argument list. A wildcard target publishes nothing, which is why the count is 106 and not 113. **`metadata.via` names the FLAG since PS30** — before it, every row carried the command name and 0 of 106 named the flag. |
 | `extends` | EMITTED | 47 | 7 | 87.23% | 61.70% | 0.00% | `structural` | the FIRST name in a class header's `: Base, IFoo, IBar` list. The header cannot say which base is a class and which are interfaces — the language resolves that at run time — so position is the only information the grammar carries. |
 | `implements` | EMITTED | 3 | 2 | 83.33% | **0.00%** | 0.00% | `structural` | every name after the first in the same header list. 3 edges over 2 files, both in the `powershell` repo's own inheritance test suite; `intraBoth 0.00%` because a base or interface declared in another file is not declared in the same file — this is the expected rate for a cross-file type reference, not a resolution failure. |
 | `overrides` | EMITTED | 12 | 1 | 100.00% | 100.00% | 0.00% | `inferred` | a subclass member that overrides a member of its resolved base: same name, same kind, base member neither `hidden` nor `static`. PowerShell has no `override` keyword — class methods are virtual by default — so this is the lane's only genuinely INFERRED edge type, which is why it is the only one on tier `inferred` and the only one at 0.9 rather than 1.0. All 12 edges are in ONE file, and pass 1 published 2 of them. |
-| `instantiates` | EMITTED | 1,268 | 259 | 62.78% | 18.69% | 0.00% | `usage_contextual` | an object construction: `[Type]::new(...)` (854 edges), `New-Object -TypeName X`, `New-Object -ComObject ProgID`, and the positional `New-Object X` (414). Type-accelerator names are suppressed — they construct nothing the graph should name. |
+| `instantiates` | EMITTED | 1,227 | 256 | 61.53% | 15.97% | 0.00% | `usage_contextual` | an object construction: `[Type]::new(...)` (854 edges) or `New-Object` in its three spellings (373 after PS29). Type-accelerator names are suppressed — they construct nothing the graph should name — and a **type name held in a VARIABLE is not published as an `instantiates` target at all**, since the edge would assert the variable is a type. |
 
 `corpusBoth` is the share of edges whose BOTH endpoints name a symbol declared in ANY of
-the 1,108 sampled files; `intraBoth` is the share whose both endpoints are declared in the
-SAME file. The second is the rate the analyzer is answerable for (its own symbol table);
-the first is the rate a corpus-wide consumer sees. CSS `references` at 66.8% on both ends
+the 1,108 sampled files; `intraBoth` is the share whose both endpoints are declared in
+the SAME file. The second is the rate the analyzer is answerable for (its own symbol
+table); the first is the rate a corpus-wide consumer sees. CSS `references` at 66.8% on both ends
 is the project's reference point, and this lane's `references` sits at 68.98% corpus-wide
 — 2.2 points above it.
+
+### `instantiates` resolution FELL, and that is the right direction
+
+PS29 removed 41 edges from `instantiates` and the type's `corpusBoth` went
+**62.78% → 61.53%** and `intraBoth` **18.69% → 15.97%**. Every removal rule in this
+lane so far has RAISED a resolution rate — PS25 published that as the signature of
+having removed edges that named nothing — so this one is the opposite and needs the
+explanation, not a victory lap.
+
+The reason is that the 41 removed edges were **better-resolving than average**. Each
+was `New-Object $var` inside a function that also assigns `$var`, so the target was a
+name the same file declares — a high-resolution target by construction. Removing 41 of
+them raises the mean of what is left even though every one of them was wrong. **A
+resolution rate is a property of a population, not a quality score, and a fix that
+removes well-resolving edges will always lower it.** The number that says whether the
+fix worked is the count of edges whose target was a variable node, and that is 41 → 0.
+
+The same applies in the other direction and is worth stating so the two are not
+confused: had the 41 been mislabeled type names that resolved to nothing, the rate
+would have risen and the fix would have looked free.
 
 ### The `imports` type was a GAP, and it is now EMITTED (PS23)
 
@@ -559,7 +592,346 @@ global name map across files and reported 8 pairs against the analyzer's 2 edges
 the 6-pair difference was cross-file pairs the analyzer cannot see by construction.
 Each correction is in the file with the reason.
 
-## Supported constructs
+## Pass 3 — the third instrument: two defects, one settled question, one new grammar limit
+
+Pass 1 established that all ten types are EMITTED. Pass 2 attacked the LABEL of every
+emitted type and found four defects. Pass 3 had two specific jobs and no third:
+
+1. **Settle what pass 2 declared open.** `contains` is the lane's most trusted type at
+   99.87% both-ends resolution, and pass 2's P10 wrote down the strongest argument
+   against it — *lexical nesting is not ownership* — measured only the structural half
+   (0 self-edges) and **declared the nesting-depth half UNSETTLED**. A declared open
+   question is an unfinished measurement, so P12 below is that measurement.
+2. **Ask each type a question pass 2 did not.** Pass 2 wrote the strongest argument it
+   could find per type and stopped. Pass 3 asks a different question of each: not *is the
+   label right for the shape I picked* but *what OTHER shape does this code path accept,
+   and what does the lane do with it*.
+
+The instrument is `validation/m14/fixtures/powershell/pass3-probes.ts` — **seven
+probes**, each carrying its argument, its instrument (A: grammar-inventory, or
+B: parse-tree-count), its count and its overturn condition, in the same shape as pass
+2's eleven. It reads PRODUCTION `parseFile` for edge questions and the pinned wasm
+through `getParser("powershell")` for tree questions, shards both across child
+processes, and **asserts the population before trusting any verdict**: a run whose
+shard population is smaller than the admitted set prints a WARNING and every number
+below it is declared a lower bound. That assertion earned its place — a mid-run
+measurement of P14 read 1,033 `instantiates` edges against the census's 1,227 because
+one of ten shards died on a WASM load race, and the run said so instead of reporting a
+whole-population number.
+
+Final run: **1,108 / 1,108 admitted files on both halves, 0 shard failures**,
+156,221 relationships.
+
+| # | Type | What was wrong | Corpus delta | Where | Verdict |
+| --- | --- | --- | --- | --- | --- |
+| PS29 | `instantiates` | a `New-Object` **type name held in a VARIABLE** was published as an `instantiates` target | **−41 `instantiates`, +37 `uses`, net −4** | the `New-Object` reader; the shape work is reused from `commandArgs` | FIXED |
+| PS30 | `exports` | the edge carried the COMMAND NAME as `via`; 0 of 106 rows named the flag | **0 edges** — metadata only | `addExport`, the `Export-ModuleMember` reader | FIXED |
+| PS31 | `contains` | lexical nesting is not ownership — **now measured** | 950 declaration sites (2.78% of the control) | not a code change | SETTLED, quantified |
+| PS32 | `calls` | the dot-source path cannot reach the store's file-level seam | 38 edges carry no `fileLevel` | `looksLikeModulePath` branch | MEASURED, fix **DECLINED** with a number |
+| PS33 | every type | the pinned grammar has no `clean` block | 46 ERROR nodes across 3 files | upstream of the analyzer | REPORTED |
+| PS34 | `overrides` | the chain-walk's hop-2+ branch is unexercised | 0 transitive pairs exist | `overrideCandidates` loop | UNTESTED AT DEPTH |
+| PS35 | `uses` | does `uses` ever name a declaration? | 151 name collisions, all member reads | not a code change | HOLDS as a name collision |
+
+**Two of PS29's own arms were dead code and were deleted**, which is why the proof script
+re-runs five reverts rather than three: see "PS29's predicate was written with three arms
+and now has one".
+
+### PS29 — `New-Object` published a VARIABLE as a type name
+
+`New-Object`'s constructed name is `comObject ?? typeName ?? positional`, and all three
+readers produce **TEXT**. Nothing asked whether that text came from a `variable` node or
+a literal one, so `New-Object $type` published `instantiates -> type` — an edge asserting
+the target **is** a type, where the source says "constructs whatever that variable
+holds", resolved at run time.
+
+Measured over all 1,108 admitted files through production `parseFile`, cross-referenced
+against the symbol table **of the file that published the edge**: **41 edges** arrived by
+`New-Object` with a variable argument node. `instantiates` 1,268 → 1,227, `uses`
+64,562 → 64,599, total 156,225 → 156,221. The `+37` against the `−41` is the fourth
+edge in the arithmetic and it is not noise: 4 of the 41 became a `uses` edge at a site
+where the variable-read pass had **already** published the same `(source, target, line)`,
+so the relabelled edge merged into an existing one rather than adding a row. Net −4.
+
+**This is the defect class the lane already declares fixed for `calls`.** F9 turned
+`$type::$method()` from `calls -> $method` into `uses -> method` precisely because a
+`$`-prefixed member is a VARIABLE, not a name. `instantiates` is the channel that did
+not get the same treatment, and it is read by the same reasoning. The fix routes the
+variable form to `uses` at the same 0.9, carrying `isDynamicTypeName: true` so a
+consumer can tell "reads the variable holding the type name" from "reads a variable for
+some other reason".
+
+**The shape is not one thing, and the shape work belongs to `commandArgs`, not to the
+predicate that reads it.** Measured on the pinned wasm, a `New-Object` argument always
+arrives wrapped:
+
+| Source | Tree shape | What `commandArgs` hands over | Route |
+| --- | --- | --- | --- |
+| `New-Object $t` | `array_literal_expression > unary_expression > variable` | the `variable` | `uses` |
+| `New-Object "$t"` | `… > string_literal > expandable_string_literal > variable` | the `variable` | `uses` |
+| `New-Object -TypeName $t` | `command_parameter`, then the same wrapper | the `variable` | `uses` |
+| `New-Object -ComObject $p` | `command_parameter`, then the same wrapper | the `variable` | `uses` |
+| `New-Object -TypeName 'lit'` | `… > string_literal > verbatim_string_characters` — **no `variable`** | the `string_literal` | `instantiates` |
+| `New-Object System.Version` | `generic_token` | the `generic_token` | `instantiates` |
+
+`'lit'` and `"$t"` are the pair that decides the implementation: single quotes are a
+literal string in PowerShell and double quotes are an interpolation, and the pinned
+grammar wraps **both** in the same `array_literal_expression > unary_expression >
+string_literal`. They are separated by what is inside — `verbatim_string_characters`
+versus an `expandable_string_literal > variable` chain — so a `$`-in-text test would get
+the single-quoted case backwards. `commandArgs` already makes that distinction, because
+it has to in order to produce the argument's text at all, so the fix reuses it: each
+reader now also reports **the node its text came from**, and the routing test is one
+node-type comparison against `variable`. The text is never consulted.
+
+### PS29's predicate was written with three arms and now has one, and the revert proof is why
+
+The first version of the predicate tested the node for `expandable_string_literal`, then
+for `array_literal_expression || unary_expression` with its own descendant search. **Both
+arms were dead, and the revert proof is the only thing that found them** — reverting
+either one alone left the fixture suite green:
+
+- the `expandable_string_literal` arm is unreachable because the grammar always wraps, so
+  the argument node is never the quoted node;
+- the wrapper arm is unreachable for a sharper reason: **`commandArgs` has already done
+  that descendant search** and pushes the *unwrapped* `variable`, so the first arm answers.
+
+Both were **removed rather than commented**, because a branch that cannot affect any
+output is an L2 dead branch and this file already records two earlier mutants that
+survived because of one. The proof now pins what replaced them: **PS29b** reverts the
+handover to pass the wrapper instead of the variable it unwrapped, and **PS29c** removes
+the handover entirely. Both are caught, along with **PS29a** (the routing condition) and
+**PS30a/b** — **5 / 5 against a control measured at 0 failing fixtures.**
+
+**And the proof script itself had a vacuous pass, which is the fourth time this lane has
+hit one.** Its first version asked "does any fixture fail", so when the control went red
+for an unrelated reason — a fixture comment was edited, which shifted the line numbers
+its own expectation pinned — all five reverts reported CAUGHT against that same
+pre-existing failure. Five green results, none of them evidence. It now captures the
+control's failing set and requires each revert to **ADD** a failure, and prints both
+counts beside every verdict.
+
+### PS30 — `exports` named the command, never the flag
+
+`Export-ModuleMember` publishes a name under one of four flags — `-Function`,
+`-Variable`, `-Alias`, `-Cmdlet` — and the four are not the same kind of thing. A
+`-Cmdlet` target is a name the file cannot declare at all, so a consumer cannot even
+tell whether it should go looking for it.
+
+The reader **computed the flag and threw it away**: `if (!isFlag(flag)) continue` is a
+test on the very string that was then passed to `addExport` as `leaf`, the COMMAND NAME.
+So `via` was the literal `Export-ModuleMember` on every row — measured over all 1,108
+admitted files, **106 of 106 `exports` rows carried `via: "Export-ModuleMember"` and 0
+named the flag**. `via` is now the flag (`-Function`, `-Variable`, `-Alias`,
+`-Cmdlet`) on both the edge and the `exports[]` record, and the unflagged branch keeps
+the command name because there the flag genuinely is not in the source.
+
+**Delta: 0 edges.** PS30 changes one metadata key. Nothing in the census can see it,
+which is why the four mutants for PS29/PS30 and the five source reverts are the evidence.
+
+PS30 is what made P18's question answerable at all: asked to classify the `exports`
+residual by flag, the probe found **no row carried a flag** — and after the fix the same
+probe reads the residual as **3 `-Function` + 2 `-Alias`**, and the two aliases
+(`gfoo`, `gbar` in `PSScriptAnalyzer/Tests/Rules/TestManifest/ManifestBadAliasesWildcard.psm1`)
+are structurally unresolvable because an alias is created by `New-Alias` at run time.
+So 5 of 106 exports targets name nothing their own file declares, and 2 of those 5 are
+that by the language's own rules.
+
+### PS31 — `contains` says lexical nesting, and the size of the gap is now a NUMBER
+
+Pass 2 declared this UNSETTLED. It is settled, and the answer is not zero.
+
+`addContains` reads `top().owner`, and the owner frame is pushed at exactly four node
+types — `function_statement`, `class_statement`, `enum_statement`,
+`class_method_definition` — plus three DSC/interface sites. **`named_block` is not one of
+them**, and `named_block` is how the grammar spells `begin` / `process` / `end` /
+`dynamicparam`. PowerShell runs each of those in its **own scope**: a variable assigned
+in `process` is not visible in `end` without `$script:`. So `contains fn -> x`, where
+`$x` is assigned inside `process`, asserts the function **owns** `x`, and the language
+says the binding ended with the block.
+
+Measured on the parse tree over the whole admitted set (instrument B, 35,474 declaration
+sites located — 28,838 assignment LHS, 5,403 `script_parameter`, 838 `foreach`, 395
+class property):
+
+| | Count |
+| --- | --- |
+| declaration sites inside a `named_block`, i.e. where `contains` crosses a PowerShell scope boundary | **950** |
+| declaration sites in the owner's own body — the control | 34,129 |
+| divergence rate | **2.78%** |
+| `named_block` nodes on the corpus | 277, across 69 files |
+| declaration sites inside a `& { … }` child-scope invocation | **49** |
+| declaration sites inside a `. { … }` same-scope invocation — the control | 31 |
+
+By block: `end` 180+42+9+3, `process` 235+43+30+7, `begin` 16+19+6+1,
+`dynamicparam` 79+12+6. By declaration kind: 880 assignment, 61 `foreach`, 9 parameter.
+
+**`&` and `.` are separated because they mean different things**, and that is the half
+that makes the count a finding rather than a curiosity: `&` invokes in a CHILD scope, so
+a variable assigned inside it does not outlive it; `.` runs in the CURRENT scope, so the
+same edge there is correct. The control (31 same-scope against 49 child-scope) is what
+says the test discriminates.
+
+**No fix, and the reason is a design decision the lane already made.** Attributing a
+declaration to its `begin`/`process`/`end` block requires a SYMBOL for that block, and
+the lane's Contract states "**No synthetic `global` scope symbol is ever emitted**". A
+fix here would introduce exactly the synthetic scope the lane refuses, for 950 of 35,474
+declaration sites, and would make `contains` stop resolving at the 99.87% that makes it
+the lane's most trusted type. So this is stated as a **quantified limitation**, not left
+open: `contains` is lexical nesting, nesting is not ownership, and on this corpus the two
+differ on 2.78% of declaration sites.
+
+**The instrument was wrong twice before it was right, and both corrections are in the
+file.** (i) The first walk had no lower bound, so it reported **89 class properties
+inside a `named_block`** — a shape PowerShell cannot express, because a property is
+declared in a class body and the walk had crossed the class boundary upward. The owner
+node is now the lower bound. (ii) The assignment walk looked for the `variable` as an
+ANCESTOR of `left_assignment_expression`, and it is a DESCENDANT, so it reported **0
+assignments** on a corpus where `$x = 1` is the most common declaration in the language.
+A zero on the dominant shape of the construct is an instrument reporting on itself.
+
+### PS32 — the dot-source cannot reach the file-level seam, and the fix is declined with a number
+
+`. ./lib.ps1` and `& ./run.ps1` publish one `calls` edge carrying
+`metadata.invokationOperator` and nothing else. The store decides an edge is a
+FILE-LEVEL dependency from exactly one key —
+`rel.metadata?.fileLevel === true` at **`src/ast/parallel-indexer.ts:3481`** — and only
+then sets `source_external` to the project-relative path. So a PowerShell file dependency
+expressed by dot-sourcing is invisible to every file-level surface, while the lane's
+`imports` (533), `references` (554) and `exports` (92) edges all carry the key —
+**1,179 edges in this same lane carry `fileLevel` and the 38 dot-source edges carry 0.**
+
+This is an asymmetry **inside the lane**, not a project-wide convention nobody adopted.
+
+**The fix was written, measured, and declined.** The obvious change is to route a
+dot-source through `addImport`, which is what PS23 did for `Import-Module` and what
+bash does for `source ./x.sh`. Measured over the 38 dot-source edges:
+
+| Target shape | Count |
+| --- | --- |
+| `$`-interpolated path (`$PSScriptRoot\tools.ps1`, `$TestDrive\class.ps1`) | **37** |
+| literal path (`.\eng\common\tools.ps1`, `fsharp/eng/common/vmr-sync.ps1`) | **1** |
+| whitespace, parens or quotes | 0 |
+
+So the change would add **2 edges to fix 1** and write **37 `imports[]` rows naming
+things like `$PSScriptRoot\tools.ps1`** — which names no module and resolves to nothing.
+That is the same shape PS24 called out: *a garbage edge killed by shared machinery is
+still a garbage row already written*. The decline is the measurement, not a preference.
+
+`&` is deliberately not included even if the same fix were made: `.` executes in the
+CURRENT scope, which is a dependency, while `&` executes in a child scope, which is a
+script **invocation** and belongs where it already is.
+
+### PS33 — the pinned grammar has no `clean` block, and the corpus carries 31 of them
+
+The declared-limitations table listed 6 grammar limits and `clean` was not one of them.
+It should have been the seventh.
+
+`begin`, `process`, `end` and `dynamicparam` all parse as `named_block` + `block_name`.
+The corpus inventory is **12 distinct spellings and no `clean`** — `Begin`/`begin`/`BEGIN`,
+`Process`/`process`/`PROCESS`, `End`/`end`/`END`, `DynamicParam`/`dynamicparam`/
+`DYNAMICPARAM`. `clean` is not a `block_name` in the pinned wasm, and the ERROR it leaves
+is **not local**: on a controlled two-function input the ERROR consumes the **second**
+function's declaration, so a symbol the file really declares is absent from every channel.
+
+Measured on the corpus: **46 ERROR nodes carrying `clean` across 3 files** — 34 in
+`powershell/test/powershell/Language/Scripting/PipelineBehaviour.Tests.ps1`, 11 in
+`CleanBlockErrorHandling.Tests.ps1`, 1 in `FileSystem.Tests.ps1` — against 31 `clean {`
+occurrences in the corpus. This is a **grammar** defect, so it is reported and not
+attempted: fixing it needs `grammar.js` to emit a word boundary for the block-name
+tokens, a wasm rebuild, and a re-stamp of `validation/m14/grammar-pins.json`, which is a
+cross-lane registry.
+
+### PS34 — `overrides` is UNTESTED AT DEPTH, which is not the same as correct
+
+The `overrides` resolution loop walks `baseClassByClass` up to 8 hops and `break`s at the
+**first** hop that declares the member — which is right, because PowerShell resolves
+`D.GetName` to the nearest declaration in the chain. The question is whether any corpus
+file is deep enough to exercise the hop-2+ branch. It is not:
+
+| | Count |
+| --- | --- |
+| classes whose base chain resolves in-file | 26 (22 at depth 1, 4 at depth 2) |
+| classes at depth 3 or more | **0** |
+| same-name pairs resolved at hop 1 | 12, all 12 published |
+| **transitive pairs — the matching base member 2+ hops up** | **0** |
+
+So the branch exists, is correct by reading, and **has never run on real code**. That is
+a different statement from "correct", and it is the honest one.
+
+**This probe produced a FALSE POSITIVE first, and the correction is the finding.** It
+walked the whole chain and recorded a pair at *every* matching hop, so `class D : C : A`
+with `GetName` on both C and A produced `D -> A`, the join found no such edge, and the
+probe printed `WRONG (under-firing) — 1 of 1 transitive pairs are in the tree and not in
+the output`. The analyzer had published `D -> C` and was right. A probe that does not
+model the rule it audits manufactures a defect, which is the shape honesty contract §5.4
+refuses and the third time this lane has hit it.
+
+### PS35 — `uses` does name declarations, and it is a name collision rather than a mislabel
+
+`uses` is the lane's largest type. Its strongest available counter-example is a `uses`
+edge whose target the same file declares as a function, class or enum. Measured:
+
+| | Count |
+| --- | --- |
+| `uses` edges whose target is declared in their own file | 36,152 |
+| …of which the target is a `function` / `class` / `enum` / `method` / `constructor` | **151** (method 99, class 44, enum 7, function 1) |
+| …naming a local `variable` or `property` — **the control** | **35,957** |
+
+Every sample carries `isMemberAccess: true`: `$x.GetString` publishes `uses -> GetString`,
+and `GetString` also happens to be a method name elsewhere in the file. That is a **member
+leaf colliding with a declaration's name**, and the edge is a correct read of a member. The
+control is what separates "this shape is rare" from "this shape is wrong": a large count
+with a large control is a different finding from a large count with an empty one.
+
+### Two more of this pass's own instrument readings were wrong, and both are corrected in the file
+
+1. **P14 reported 123 defects where there were 41.** It joined every `instantiates` target
+   against the publishing file's variable table, but two routes reach `instantiates` and
+   only one can be wrong: `viaNewObject` reads a command ARGUMENT, while `dotNetNew` reads
+   a `type_literal` node — and a type name can coincide with a variable's name, because
+   `powershell/build.psm1:4053` is `$assemblies = [assemblies]::new()`. **80 of the 123
+   were exactly that**, plus 2 more on the `New-Object` route
+   (`New-Object Point 100,200` constructing `class Point` and assigning it to `$point`).
+   The routes are now counted separately and the collisions are reported as collisions.
+   Accusing 82 correct edges is the fabrication rule running backwards.
+2. **P15's measurement object had a DUPLICATE KEY** — `ofWhichTheAnalyzerPublishes`
+   appeared twice, so the second silently overwrote the first and the hop-1 count was
+   lost from the JSON while the verdict string still printed it. The instrument and its
+   own summary disagreed, which is the only reason it was found. `tsc` does not flag a
+   duplicate key in a field typed `unknown`.
+
+And one driver bug worth recording because it produced a clean-looking file:
+`--only P14` as the FIRST argument selected **nothing** — a guard meant to detect a
+missing value tested `onlyIdx >= 1`, and `P14` is at index 1 of a 0-based argv. The run
+wrote a JSON with an empty `results` array and reported `0 probes recorded`, which on
+disk is indistinguishable from a clean sweep. The run now **exits 7** on zero recorded
+probes.
+
+### One shared-machinery finding from pass 2 is FIXED, and it unblocked this lane's mutation gate
+
+Pass 2 reported that `script/m60/powershell-mutants.ts` (51 mutants) was referenced by
+nothing and that `BB_MUTANT_ONLY="powershell/"` printed `matched 0 of 1521` and exited 3.
+At HEAD that is **fixed**: `script/m14/mutate-analyzer.ts:28` imports `POWERSHELL_MUTANTS`
+and `:2429` spreads it into `MUTANTS`. A scoped run now reports **55 of 55 caught, 0
+survivors** — the original 51 plus the 4 added here for PS29/PS30.
+
+That matters for PS29 and PS30 specifically, because **neither moves an edge count**:
+PS29 relabels and PS30 writes a metadata key, so a count-based expectation cannot tell
+the pre-fix state from the post-fix one. All four new mutants are therefore LABEL
+mutants, and each has a counterpart that fails in the **opposite** direction — relabel
+the variable form as a type name, and downgrade every literal type name to a read;
+put the command name back in `via`, and hardcode `-function`. A fix that simply
+suppressed the wrong behaviour would pass one of each pair.
+
+### Two changes pass 3 considered and did NOT make
+
+- **PS32's dot-source `imports`** — declined with the measurement above (1 literal path
+  against 37 interpolated).
+- **`contains` block-scoped ownership** — declined because it needs synthetic scope
+  symbols, which the lane's own Contract forbids, for 2.78% of declaration sites.
+
+Both are recorded with the number that decided them, which is the difference between a
+declined change and a missing one.
 
 Functions with `param()` blocks, typed/optional parameters, attributes
 (`[CmdletBinding()]`, `[Parameter()]`, `[Validate*()]`), classes with
@@ -589,16 +961,16 @@ under-firing.
 
 | Type | 1 Exists | 2 Fires | 3 Correct | 4 Labelled | 5 Resolved (corpus / intra) | 6 Confident |
 | --- | --- | --- | --- | --- | --- | --- |
-| `calls` | yes | 67,344 | in the compared set | **HOLDS** — 73 edges name a reserved word; read at their own source line, 68 are member accesses on .NET objects whose method name is a keyword, 5 are the `Foreach` alias. 0 in command position name a word the language has ruled silent | 60.66% / 8.23% | **55.38% under 0.7** (0.6:37,296 of 67,344) |
-| `uses` | yes | 64,562 | in the compared set | **HOLDS** — a name READ rather than invoked; the composition channel the Contract mis-attributed to `references` is here, at 0.7–0.9, which is right for a read | **92.86%** / 55.94% | 0 under 0.7 (0.7:3,564 / 0.8:27,140 / 0.9:33,858) |
-| `contains` | yes | 21,750 | in the compared set | **HOLDS** — 0 self-edges, which is the analyzer's own stated rule; lexical nesting is not ownership, and that half is declared UNSETTLED below | **99.87%** / 99.73% | 0 under 0.7 (all 1.0) |
+| `calls` | yes | 67,344 | in the compared set | **HOLDS** — 73 edges name a reserved word; read at their own source line, 68 are member accesses on .NET objects whose method name is a keyword, 5 are the `Foreach` alias. 0 in command position name a word the language has ruled silent. Pass 3 added the file-level question and found an asymmetry, not a mislabel: 38 dot-source edges carry no `metadata.fileLevel` while 1,179 other edges in the lane do (PS32) | 60.66% / 8.23% | **55.38% under 0.7** (0.6:37,296 of 67,344) |
+| `uses` | yes | 64,599 | in the compared set | **HOLDS** — a name READ rather than invoked; the composition channel the Contract mis-attributed to `references` is here, at 0.7–0.9, which is right for a read. Pass 3: 151 edges name a `function`/`class`/`enum`/`method` in their own file and **every one is a member read whose leaf collides with a declaration's name** — a collision against a control of 35,920 (PS35) | **92.87%** / 55.96% | 0 under 0.7 (0.7:3,564 / 0.8:27,140 / 0.9:33,895) |
+| `contains` | yes | 21,750 | in the compared set | **HOLDS structurally, and the semantic half is now a NUMBER** — 0 self-edges, and 950 of 35,474 declaration sites sit inside a construct PowerShell scopes separately, so `contains` says "owns" where the language says the binding ended with the block. Not fixed, and the reason is a design decision the Contract already makes (PS31) | **99.87%** / 99.73% | 0 under 0.7 (all 1.0) |
 | `imports` | yes (PS23) | 556 | **NOT audited** — DERIVATION finding, 556 edges compared against nothing | **QUALIFIED** — 361 `Import-Module`, 90 `#requires`, and **105 `using namespace`**, which is a NAMESPACE and not a module. `metadata.via` names the form on every row, so the type is self-describing, but the row's noun is right for 451 of 556 edges | 69.42% / 37.77% | 0 under 0.7 (all 0.9) |
 | `references` | yes | 577 | in the compared set | **HOLDS** — the accounting closes exactly: 556 `import_sibling` + 21 `requires_version` + **0 other**. The Contract's composition claim measured 0 and the row is corrected | 68.98% / 36.40% | 0 under 0.7 (all 0.9) |
-| `exports` | yes | 106 | in the compared set; **COMPARED WITH NO TRUTH on both differential lanes** (17 comparable, 0 truth; 8 comparable, 0 truth) | **WAS WRONG, now fixed (PS25)** — 7 of 113 edges published a wildcard pattern as a symbol name; 0 do | 98.11% / 95.28% | 0 under 0.7 (all 1.0) |
-| `extends` | yes | 47 | in the compared set, **0 truth**, and **no oracle derivation exists** (see DERIVATION below) | **HOLDS** — the positional rule reads the shape the grammar produces: all 273 `class_statement` headers on the corpus carry at least one `simple_name`, and the enumerated header shapes are the one the rule reads | 87.23% / 61.70% | 0 under 0.7 (all 1.0) |
+| `exports` | yes | 106 | in the compared set; **COMPARED WITH NO TRUTH on both differential lanes** (17 comparable, 0 truth; 8 comparable, 0 truth) | **WAS WRONG, now fixed (PS25, PS30)** — 7 of 113 edges published a wildcard pattern as a symbol name (0 do), and **106 of 106 rows named the COMMAND rather than the flag that published them** (0 do) | 98.11% / 95.28% | 0 under 0.7 (all 1.0) |
+| `extends` | yes | 47 | in the compared set, **0 truth**, and **no oracle derivation exists** (see DERIVATION below) | **HOLDS** — the positional rule reads the shape the grammar produces: all `class_statement` headers on the corpus carry at least one `simple_name`, and the enumerated header shapes are the one the rule reads | 87.23% / 61.70% | 0 under 0.7 (all 1.0) |
 | `implements` | yes | 3 | in the compared set, **0 truth**, and **no oracle derivation exists** | **HOLDS** — 3 edges, every one auditable; all three are a name after the first in a real header | 83.33% / 0.00% | 0 under 0.7 (all 0.85) |
-| `overrides` | yes | 12 | in the compared set; **0 edges fell in either 60-file draw**, so the differential says nothing about it either way | **WAS WRONG twice, now fixed (PS26, PS28)** — the match published overrides of `hidden` and `static` members and across member kinds, and it MISSED 10 of 12 real pairs by resetting on redeclaration and comparing case-sensitively | 100.00% / 100.00% | 0 under 0.7 (all 0.9) |
-| `instantiates` | yes | 1,268 | in the compared set; 60 edges land `unexplained` | **HOLDS** — 854 via `[Type]::new()`, 414 via `New-Object`; 417 distinct targets, of which **0** contain a brace, **0** contain a semicolon, **0** have a comma at bracket depth 0, and **0** equal a type-accelerator name. The 19 commas found on the first pass are all generic type arguments — `Dictionary[string,string]` is one type name | 62.78% / 18.69% | 0 under 0.7 (all 0.9) |
+| `overrides` | yes | 12 | in the compared set; **0 edges fell in either 60-file draw**, so the differential says nothing about it either way | **WAS WRONG twice, now fixed (PS26, PS28)** — the match published overrides of `hidden` and `static` members and across member kinds, and it MISSED 10 of 12 real pairs by resetting on redeclaration and comparing case-sensitively. **Pass 3 adds: the hop-2+ chain branch is UNTESTED, not correct** — 0 transitive pairs exist in the corpus (PS34) | 100.00% / 100.00% | 0 under 0.7 (all 0.9) |
+| `instantiates` | yes | 1,227 | in the compared set; 60 edges land `unexplained` | **WAS WRONG, now fixed (PS29)** — 41 edges published a **variable** as a type name, because all three of `New-Object`'s readers produce text and none asked whether the text came from a `variable` node. The `[Type]::new()` route reads a type node and is untouched: its 80 same-name-as-a-variable rows are a type sharing a variable's name, and they are correct | **61.53%** / 15.97% | 0 under 0.7 (all 0.9) |
 
 **Question 2 changed for one type, and the old number was an under-count.** Pass 1
 recorded `overrides` at 2 edges. The parse-tree census of same-name derived/base
@@ -615,31 +987,36 @@ such a bug, sitting in the wasm both paths read, so no oracle built on this gram
 could have caught it. That is the strongest single argument for the corpus-census
 instrument over the differential, and it is why the ontology workstream exists.
 
-**Question 4 for `contains`, declared UNSETTLED rather than answered.** The strongest
-argument against `contains` is semantic, not structural: lexical nesting is not
-ownership. A local declared inside a NESTED script block is lexically inside the
-function but is not owned by it, and a `contains` edge says owns. The probe measured
-the structural half — 0 self-edges, which is the analyzer's own stated rule and
-holds — and **did not** measure the nesting-depth half. It is reported as unsettled.
-A probe that had settled it is the next piece of work for this lane, and it is not
-claimed here.
+**Question 4 for `contains`, SETTLED WITH A NUMBER rather than declared open.** Pass 2
+recorded this as the largest open question on the lane's most trusted type: lexical
+nesting is not ownership, and the probe had measured only the structural half. Pass 3's
+P12 measures the rest. **950 of 35,474 declaration sites (2.78% of the 34,129-site
+control) sit inside a `named_block` — `begin`, `process`, `end` or `dynamicparam` — which
+PowerShell scopes separately**, plus 49 inside a `& { … }` child-scope invocation against
+a 31-site same-scope control. The gap is real, it is sized, and it is not fixed, because
+fixing it needs a synthetic scope symbol the Contract forbids. The full table is under
+"PS31".
 
-### DERIVATION findings: 1 by the gate's definition, 3 by the measurement
+### DERIVATION findings: 1 by the gate's definition, 3 by the measurement — re-measured at HEAD, unchanged
 
 **By `script/m60/rel-type-coverage-gate.ts` CHECK 1's own definition — an emitted type
 absent from the language's audited set — the count is 1: `imports`.** The gate prints
-`powershell 1 un-audited: ["imports"]`, and that is re-measured at HEAD. CHECKS 2, 3
-and 4 are clean for this lane.
+`powershell 1 un-audited: ["imports"]`, and that is **re-measured at HEAD and unchanged**.
+CHECKS 2, 3 and 4 are clean for this lane.
 
 **By measurement, it is 3, and the gate cannot see two of them.**
-`derivePowershellEdges` (differential.ts:24297-24813) pushes exactly seven labels —
-`contains` (9 sites), `calls` (4), `uses` (5), `exports` (2), `instantiates` (2),
-`references` (1), `overrides` (1) — and pushes **zero** `extends`, **zero**
-`implements`, **zero** `imports`. PowerShell's audited set nevertheless contains 9 of
-the 10 types. So `extends` and `implements` are **audited in name only**: declared
-comparable, with no derivation behind the declaration, which is why the differential
-prints `COMPARED WITH NO TRUTH` for them and why their edges land in `unexplained`
-as confidently as an invented edge would.
+`derivePowershellEdges` (`script/m14/differential.ts:24297-24813`, 517 lines) pushes
+exactly seven labels — `contains` (9 sites), `uses` (5), `calls` (4), `instantiates` (2),
+`exports` (2), `references` (1), `overrides` (1), by `push("…")` count over the function
+body — and pushes **zero** `extends`, **zero** `implements`, **zero** `imports`.
+PowerShell's audited set nevertheless contains 9 of the 10 types. So `extends` and
+`implements` are **audited in name only**: declared comparable, with no derivation behind
+the declaration, which is why the differential prints `COMPARED WITH NO TRUTH` for them
+and why their edges land in `unexplained` as confidently as an invented edge would.
+
+Pass 3 re-derived this by reading the oracle rather than trusting pass 2's count, and the
+numbers are identical. **The lane's DERIVATION count did not change in pass 3, and no
+type was added or removed from it.**
 
 | Label | Edges | In the audited set | Oracle derivations | Verdict |
 | --- | --- | --- | --- | --- |
@@ -659,7 +1036,7 @@ re-measured rather than inherited. It is written against the **pinned product wa
 carries 15 controls specifically so that a limit cannot be "fixed" by breaking the
 ordinary form of the same construct.
 
-### Still broken on the product runtime — 5 of 34 battery cases, plus 1 found pass 2
+### Still broken on the product runtime — 5 of 34 battery cases, plus 2 found after the battery was written
 
 | # | Limit | Construct | Errors | Cause |
 | --- | --- | --- | --- | --- |
@@ -668,7 +1045,8 @@ ordinary form of the same construct.
 | 3 | `multiplier-suffix-case` | `$($_.Length/1KB)` | 1 | suffix listed lowercase-only, fatal in operand position |
 | 4 | `invokation-path-slash` | `& $Destination/pwsh -x` | 2 | `path_command_name_token` allows `\` but not `/` |
 | 5 | `invokation-path-slash-literal` | `& /usr/bin/pwsh` | 2 | same cause; fails with no variable involved |
-| 6 | `class-member-name-split` (PS27, found pass 2) | `[int] StaticOpen() { return 40 }` | 0, but the member is renamed | `caseInsensitive` (grammar.js:1839) emits no word boundary, so the `static` keyword token matches the first 6 characters of the identifier. Measured on a controlled probe: 6 identifiers split, and 2 forms (`Hidden2`, `Static`) are destroyed outright with an ERROR that swallows the next class declaration. **NOT in `powershell-0264-repro-battery.ts`** — adding it is finding 5 |
+| 6 | `class-member-name-split` (PS27, pass 2) | `[int] StaticOpen() { return 40 }` | 0, but the member is renamed | `caseInsensitive` (grammar.js:1839) emits no word boundary, so the `static` keyword token matches the first 6 characters of the identifier. **NOT in the battery** — adding it is finding 6 |
+| 7 | `clean-block-unsupported` (PS33, pass 3) | `function f { clean { … } }` | 1, and **it consumes the NEXT declaration** | `clean` is not a `block_name` in the pinned wasm: the inventory is `begin`/`process`/`end`/`dynamicparam` in 12 spellings and no `clean`. **46 ERROR nodes across 3 corpus files.** **NOT in the battery** — same finding 6 |
 
 **Limits 1, 3, 4 and 5 are already fixed in a candidate stack (G11+G12+G13) that is
 safety-verified but NOT admitted.** Native A/B over the 691-file corpus: 0 clean files
@@ -696,9 +1074,16 @@ double-dash parameter — is **admitted but inert on the product runtime**; see 
 
 ### Corpus damage, measured
 
-`script/m60/powershell-surface-measure.ts` over the production draw: **49 files, 8
-damaged (56 ERROR / 6 MISSING), 2,588 symbols, 12,028 relationships, line coverage
-12,028/12,028, unknownTargets 0, dupKeys 0, reserved 0.**
+`script/m60/powershell-surface-measure.ts` over the production draw, re-run at this
+commit: **49 files, 8 damaged (56 ERROR / 6 MISSING), 2,588 symbols, 12,051
+relationships, line coverage 12,051/12,051, unknownTargets 0, dupKeys 0, reserved 0** —
+against pass 1's 12,028, the difference being PS23's `imports` channel plus PS25–PS30.
+`instantiates` is 78 on this draw and `imports` 20; the `absent` list is down to
+`extends, implements, overrides`, which the draw excludes because it skips `test/` trees.
+**This gate REWRITES `validation/m60/results/powershell-surface.json` as a side effect and
+that file was restored rather than committed**, following pass 1's precedent for
+§8-owned evidence: the numbers are reported here and in the commit message, and the
+artifact is regenerated by whoever owns it.
 
 The repo's own `test/` tree is the PowerShell parser/engine torture suite and
 deliberately embeds invalid syntax as parser-error test data; those files are audited,
@@ -715,15 +1100,20 @@ file in its row; none is carried forward from a previous wave without one.
 
 | Claim | Instrument | Result |
 | --- | --- | --- |
-| Fixtures | `validation/m14/fixtures/powershell/` (15) | **15/15** — 13 from pass 1 plus `overrides-modifiers-psb12` and `overrides-redeclaration-psb13` |
-| Mutation coverage | `script/m60/powershell-mutants.ts` | **51/51 caught, 0 survivors** (pass 1; unchanged — the file is still referenced by nothing, see finding 2) |
-| **The 6 pass-2 fixes, by SOURCE revert** | `validation/m14/fixtures/powershell/mutant-proof-psb12.sh` | **6/6 CAUGHT**, control clean, source restored byte-identical (`7e52026f…` before PS28, `6cbae2a3…` after) |
-| Ontology census | `validation/m14/fixtures/powershell/census.ts` | **10/10 types EMITTED** over 1,108/1,108 admitted files, 156,225 relationships |
-| **Adversarial probes** | `validation/m14/fixtures/powershell/adversarial-probes.ts` | **11 probes**, 4 defects found; each carries its argument, instrument, count and overturn condition |
-| Zero regex | `script/m60/powershell-zero-regex.ts` | **PASS** — 0 operations, 0 literals, 7/7 helpers; verified to FAIL on an injected regex |
-| Relationship line numbers | `script/m60/powershell-surface-measure.ts` | **12,028 / 12,028 = 100%** (pass 1) |
+| Fixtures | `validation/m14/fixtures/powershell/` | **17/17** — 15 at pass 2, plus `new-object-variable-psb14` (PS29) and `export-flag-psb15` (PS30) |
+| Mutation coverage | `script/m60/powershell-mutants.ts`, **now reachable** | **55/55 caught, 0 survivors** — 51 from passes 1-2 plus 4 label mutants added for PS29/PS30. `BB_MUTANT_ONLY="powershell/" npx tsx script/m14/mutate-analyzer.ts`; a scoped run, so it writes no canonical evidence |
+| **The 5 pass-3 fixes, by SOURCE revert** | `validation/m14/fixtures/powershell/mutant-proof-psb14.sh` | **5/5 CAUGHT**, control clean, source restored byte-identical |
+| The 6 pass-2 fixes, by SOURCE revert | `validation/m14/fixtures/powershell/mutant-proof-psb12.sh` | **6/6 CAUGHT** at pass 2; not re-run this pass, and the fixtures it depends on are among the 17 still passing |
+| Ontology census | `validation/m14/fixtures/powershell/census.ts` | **10/10 types EMITTED** over 1,108/1,108 admitted files, **156,221 relationships** (156,225 before PS29/PS30) |
+| Census reproducibility | the same command, re-run at HEAD | **every pass-2 figure reproduced EXACTLY** — 10 edge counts, 10 `distinctFiles`, both resolution columns, both intra columns, the heuristic count, the missing-line count, and both histograms. The admitted set did not move either: the same 1,108 files from the same 20 repos |
+| **Adversarial probes (pass 2)** | `validation/m14/fixtures/powershell/adversarial-probes.ts` | **11 probes**, 4 defects found; each carries its argument, instrument, count and overturn condition |
+| **Adversarial probes (pass 3)** | `validation/m14/fixtures/powershell/pass3-probes.ts` | **7 probes**, 2 defects fixed, 1 declared-open question settled with a number, 1 fix declined with a number, 1 new grammar limit, and **3 of the probe's own readings corrected** (a false positive, a 3x over-count, and a duplicate object key) |
+| Probe population assertion | the same file | `edgePopulationIsWholeAdmittedSet: true`, `treePopulationIsWholeAdmittedSet: true`, **0 shard failures of 10 and 10**. A run with a dead shard reports a lower bound and says so — the assertion caught a real WASM load race mid-measurement |
+| Zero regex | `script/m60/powershell-zero-regex.ts` | **PASS** — 0 operations, 0 literals, 7/7 helpers |
+| Relationship line numbers | `script/m60/powershell-surface-measure.ts` | **12,051 / 12,051 = 100%** |
 | Standing rules, re-measured this pass | census, same population | 0 empty/unknown `SymbolKind`, 0 empty symbol names, 0 `unknown` endpoints, 0 types outside the ontology, 0 relationships missing a line |
-| Grammar limits (battery) | `script/m60/powershell-0264-repro-battery.ts` | 5 broken / 34 cases, **15/15 controls holding** (pass 1; PS27 is a SIXTH limit and is not in the battery — see finding 5) |
+| Typecheck | `npx tsc --noEmit -p tsconfig.json` | clean |
+| Grammar limits (battery) | `script/m60/powershell-0264-repro-battery.ts` | 5 broken / 34 cases, **15/15 controls holding**. PS27 and PS33 are TWO MORE limits and neither is in the battery — see finding 6 |
 
 **The revert proof is the load-bearing evidence for this pass, because three of the
 four defects have a corpus delta of 0.** A fixture that nothing in the corpus can
@@ -824,95 +1214,106 @@ named `interface` and does not publish it as a call. Recorded rather than papere
 
 ### Ontology-lane findings that need shared machinery
 
-Six findings. None is fixed here: `script/m14/differential.ts`,
+Six were reported at pass 2. **Two are FIXED at HEAD and were re-verified by reading the
+shared source, not taken on the lane's word: findings 1 and 2.** The other four are open,
+and pass 3 adds one of its own (finding 7). `script/m14/differential.ts`,
 `script/m14/mutate-analyzer.ts`, `script/m14/run-fixtures.ts` and
 `script/m14/ontology-coverage-gate.ts` are shared, and this lane owns
 `src/ast/real-powershell-analyzer.ts` and this document.
 
-1. **`meta.<key>: null` asserts nothing, in any lane.** In `matchConstraints`
-   (`script/m14/run-fixtures.ts`), the top-level `if (v === null)` branch at line 338 runs
-   BEFORE the `k.startsWith("meta.")` branch at line 358 and `continue`s, so a
-   `meta.isComObject: null` constraint is resolved against the TOP-LEVEL key
-   `actual["meta.isComObject"]`, which never exists on a relationship. Measured through the
-   exported `matchConstraints`, both directions: an edge that DOES carry `isComObject: true`
-   satisfies `{ "meta.isComObject": null }` → `true`, and an edge that does not → `true`.
-   **16 expectation rows across 6 lanes** (yaml 4, vue 1, typescript 1, svelte 1,
-   powershell 1, bash 1) are inert. The array-valued `meta.*` case has the identical
-   routing bug and WAS fixed — the comment at line 320 records it, and two elixir mutants
-   had survived it — so the fix exists and was not applied to `v === null`. The fix is to
-   exclude `meta.` keys from the top-level null branch (`!k.startsWith("meta.")`), which
-   lets the existing `meta.` branch's own null handling take them. Lane-side workaround
-   applied in `new-object-psa3.expectation.json`: the negative assertion is written as a
-   `forbidRelationships` row with a NON-null `meta.isComObject: true`, which routes to the
-   working branch and kills `powershell/com-object-keyed-on-a-dot` (it survived until that
-   row was added).
-2. **`script/m60/*-mutants.ts` is dead code.** `css-mutants.ts` (13), `julia-mutants.ts`
-   (16), `markdown-mutants.ts` (15), `powershell-mutants.ts` (51), `scss-mutants.ts` (18),
-   `solidity-mutants.ts` (49) and `yaml-mutants.ts` (15) — **177 mutants across 7 lanes** —
-   are referenced by nothing: `grep -rn "powershell-mutants" --include=*.ts .` returns no
-   hit outside the file itself, and `BB_MUTANT_ONLY="powershell/" bun run
-   script/m14/mutate-analyzer.ts` prints `matched 0 of 1521 mutants — nothing was verified`
-   (1,483 at pass 1; the mutant pool grew)
-   and exits 3. `mutate-analyzer.ts` imports exactly one external mutant file
-   (`./fsharp-mutants`). The fix is one import per file and a spread into `MUTANTS`:
-   `import { POWERSHELL_MUTANTS } from "../m60/powershell-mutants"` and
-   `const MUTANTS = [..., ...POWERSHELL_MUTANTS]`. Until that lands, the mutation gate's
-   green says nothing about those 7 lanes. This lane's 51/51 was measured through a
-   driver that calls the same `runLang` and the same catch rule
-   (`mutate-analyzer.ts:18836-18846`), unchanged.
-3. **The arbiter cannot report a lane that emits all ten types.**
+0. **FIXED — finding 1, `meta.<key>: null` asserted nothing.** Pass 2 measured through the
+   exported `matchConstraints` that a `meta.x: null` constraint resolved against the
+   TOP-LEVEL key `actual["meta.x"]`, which never exists on a relationship, so the
+   assertion was true for every analyzer. At HEAD the null branch reads
+   `if (v === null && !k.startsWith("meta."))` (`script/m14/run-fixtures.ts:395`) and the
+   comment above it credits this lane. The 16 inert rows across 6 lanes are live again.
+1. **FIXED — finding 2, `script/m60/*-mutants.ts` was dead code.** At HEAD
+   `script/m14/mutate-analyzer.ts:28` reads
+   `import { POWERSHELL_MUTANTS } from "../m60/powershell-mutants"` and `:2429` spreads it
+   into `MUTANTS`. Where pass 2 measured `matched 0 of 1521 — nothing was verified` and
+   exit 3, a scoped run now reports **55 of 55 caught, 0 survivors** over a pool of 1,727.
+   **This lane's mutation gate is live for the first time**, and it is what pins PS29 and
+   PS30, neither of which moves an edge count.
+2. **OPEN — `script/m60/rel-type-coverage-gate.ts` writes its evidence on every run.**
+   Running it unmodified rewrote `validation/m60/results/rel-type-coverage.json`
+   (**+253 / −68 lines**) as a side effect, dropping other lanes' rows from the ledger
+   view. That file was restored with `git checkout --` and **not committed**. The gate
+   needs an `--out` or a `--check` mode that prints without writing, or the discipline has
+   to be repeated by every lane that runs it. Pass 1 and pass 2 both hit this on other
+   files; it is now the third occurrence on this lane.
+3. **OPEN — the arbiter cannot report a lane that emits all ten types.**
    `script/m14/ontology-coverage-gate.ts` exits 2 with "no RULING TABLE for <lang>" when
    `RULED_BY_LANG[LANG] === undefined`, and the table is a hardcoded
-   `{ bash: BASH_RULED, json: JSON_RULED }` with no per-language discovery. An empty table
-   is the correct registration for a lane with zero RULED types — every row then resolves
-   on the EMITTED branch — but registering it is an edit to a shared file. The one-line
-   change is `powershell: []` in that record literal. This lane's ten-type table above was
-   produced by running a copy of the gate with exactly that one change, in `/tmp`, with the
-   real corpus admission and the real `parseFile`.
-4. **3 of the 10 types have no oracle, and the coverage gate can see only 1 of the 3.**
-   `script/m60/rel-type-coverage-gate.ts` CHECK 1 prints
+   `const RULED_BY_LANG: Record<string, Ruled[]> = { bash: BASH_RULED, json: JSON_RULED }`
+   at line 192 with no per-language discovery. An empty table is the correct registration
+   for a lane with zero RULED types — every row then resolves on the EMITTED branch — but
+   registering it is an edit to a shared file. The one-line change is `powershell: []` in
+   that record literal. This lane's ten-type table above was produced by running a copy of
+   the gate with exactly that one change, in `/tmp`, with the real corpus admission and the
+   real `parseFile`. **Unchanged at HEAD.**
+4. **OPEN — 3 of the 10 types have no oracle, and the coverage gate can see only 1 of
+   the 3.** `script/m60/rel-type-coverage-gate.ts` CHECK 1 prints
    `powershell 1 un-audited: ["imports"]` — correct, and incomplete.
    `derivePowershellEdges` (`script/m14/differential.ts:24297-24813`, 517 lines) pushes
-   exactly seven labels — `contains`, `calls`, `uses`, `exports`, `instantiates`,
-   `references`, `overrides` — and pushes **zero** `extends`, **zero** `implements`,
-   **zero** `imports`. PowerShell's audited set nevertheless contains 9 of the 10
-   types, so **`extends` (47 edges) and `implements` (3) are audited IN NAME ONLY**:
-   declared comparable with no derivation behind the declaration. The two symptoms
-   are already visible and are what tipped this off — the differential prints
-   `COMPARED WITH NO TRUTH` for `exports`, and pass 1 recorded the same for `extends`
-   and `implements`, while CHECK 1 counts none of them.
-   **606 edges across 3 types are stored and compared against nothing.**
-   The fix is one derivation per label in `derivePowershellEdges` (shared), and the
-   gate fix is to compare the audited SET against the labels the oracle actually
-   pushes rather than against a hand-maintained list, so an audited label with no
-   derivation cannot read as covered.
-5. **`script/m14/verify-doc-truth-emissions.ts:465-472` drops the first row of every
-   claim table.** `parseClaimTable` skips the header with `if (i === chosen.at)
-   continue`, skips the `---` rule with `if (isRuleRow(cs)) continue`, and then has a
-   third guard — `if (!started) { started = true; continue }` — which consumes the
-   **first body row** and never pushes it. Measured through the exported
-   `parseClaimTable` on this lane's doc: the table at line 200 returns **9 rows for a
-   10-row table**, and the missing one is `calls` at line 202. The same gate reports
+   exactly seven labels — `contains` (9 `push` sites), `uses` (5), `calls` (4),
+   `instantiates` (2), `exports` (2), `references` (1), `overrides` (1) — and pushes
+   **zero** `extends`, **zero** `implements`, **zero** `imports`. PowerShell's audited set
+   nevertheless contains 9 of the 10 types, so **`extends` (47 edges) and `implements` (3)
+   are audited IN NAME ONLY**: declared comparable with no derivation behind the
+   declaration. **606 edges across 3 types are stored and compared against nothing**, and
+   pass 3 re-derived the seven-label count from the source rather than carrying pass 2's
+   figure forward. The fix is one derivation per label in `derivePowershellEdges`
+   (shared), and the gate fix is to compare the audited SET against the labels the oracle
+   actually pushes rather than against a hand-maintained list, so an audited label with no
+   derivation cannot read as covered. **Unchanged at HEAD.**
+5. **OPEN — `script/m14/verify-doc-truth-emissions.ts` drops the first row of every claim
+   table.** `parseClaimTable` skips the header with `if (i === chosen.at) continue`, skips
+   the `---` rule with `if (isRuleRow(cs)) continue`, and then has a third guard —
+   `if (!started) { started = true; continue }` at lines 465-467 — which consumes the
+   **first body row** and never pushes it. Measured through the exported `parseClaimTable`
+   on this lane's doc: the table at line 200 returns **9 rows for a 10-row table**, and
+   the missing one is `calls` at line 202. The same gate reports
    `UNDOCUMENTED [python] calls` — python's first row — which is the same defect seen
-   from another lane. **Every lane's first relationship claim is therefore invisible
-   to the gate, so a FALSE claim in that cell would pass.** The fix is to delete the
+   from another lane. **Every lane's first relationship claim is therefore invisible to
+   the gate, so a FALSE claim in that cell would pass.** The fix is to delete the
    `!started` branch: `chosen.at` and `isRuleRow` already cover the two rows it was
-   standing in for.
-   This lane's ten-type table header was renamed from `| Type | Verdict |` to
-   `| Relationship type | Emitted? |` so the gate can read it at all — before that it
-   reported `NO_CLAIM_TABLE [powershell]`, which is the "no claim is checkable"
-   bucket, and after it 9 of 10 cells are machine-checked and agree with the analyzer
-   (0 FALSE_POSITIVE, 0 FALSE_NEGATIVE for powershell). The tenth is the gate's bug.
-6. **The grammar battery does not know about PS27.**
+   standing in for. This lane's ten-type table header was renamed from
+   `| Type | Verdict |` to `| Relationship type | Emitted? |` so the gate can read it at
+   all — before that it reported `NO_CLAIM_TABLE [powershell]`, which is the "no claim is
+   checkable" bucket, and after it 9 of 10 cells are machine-checked and agree with the
+   analyzer (0 FALSE_POSITIVE, 0 FALSE_NEGATIVE for powershell). The tenth is the gate's
+   bug. **Still present at HEAD and re-measured in pass 3**: the gate's single powershell
+   row is `UNDOCUMENTED [powershell] calls`, and `calls` is at
+   `docs/analyzers/real-powershell-analyzer.md:214` — the first body row of the table.
+   Repo-wide the gate reads `48 analyzers, FALSE_NEGATIVE=7 FALSE_POSITIVE=0
+   UNDOCUMENTED=41 MISSING_DOC=1 NO_CLAIM_TABLE=19 -> FAIL`; the other lanes'
+   `UNDOCUMENTED` rows are bash, c and clojure's `calls`, which is the same defect seen
+   from three more directions.
+6. **OPEN — the grammar battery does not know about PS27 or PS33.**
    `script/m60/powershell-0264-repro-battery.ts` carries 34 cases and 15 controls, and
-   none of them is a class member whose name begins `Static` or `Hidden` — so the
-   defect this pass found was invisible to the battery that exists to enumerate the
-   grammar's limits. The case to add is `[int] StaticOpen() { return 40 }` with a
-   control of `static [int] StaticOpen() { return 40 }`, which isolates the trigger to
-   the ABSENCE of a leading modifier. Fixing it needs `caseInsensitive`
+   none of them is a class member whose name begins `Static` or `Hidden`, nor a `clean`
+   block — so the two defects passes 2 and 3 found were invisible to the battery that
+   exists to enumerate the grammar's limits. The two cases to add are
+   `[int] StaticOpen() { return 40 }` with a control of `static [int] StaticOpen() {…}`,
+   which isolates PS27's trigger to the ABSENCE of a leading modifier, and
+   `function f { clean { $z = 5 } }` with a control of the same function with `end {…}`,
+   which shows PS33's ERROR consuming whatever follows. Fixing PS27 needs `caseInsensitive`
    (`grammars/tree-sitter-powershell/grammar.js:1839`) to emit a word boundary, a wasm
-   rebuild, and a re-stamp of `validation/m14/grammar-pins.json` — a cross-lane
-   registry, so not this lane's to edit.
+   rebuild, and a re-stamp of `validation/m14/grammar-pins.json` — a cross-lane registry,
+   so not this lane's to edit. PS33 is the same shape of fix in the block-name tokens.
+7. **NEW AT PASS 3 — a PowerShell module that publishes an alias cannot be written as a
+   fixture at all.** `script/m14/run-fixtures.ts:1419` runs a global invariant on every
+   fixture in every language: every export name must resolve to a **top-level symbol**,
+   because the export list is the index's importable-unit set. PowerShell's `-Alias` and
+   `-Cmdlet` flags publish names the file cannot declare — an alias is created by
+   `New-Alias` at run time and a cmdlet comes from a module — so `export-flag-psb15` uses
+   only `-Function` and `-Variable`. The first draft used all four flags and would have
+   failed this lane's own gate **for stating a true fact**. The corpus carries 2 `-Alias`
+   exports (`gfoo`, `gbar` in
+   `PSScriptAnalyzer/Tests/Rules/TestManifest/ManifestBadAliasesWildcard.psm1`), so this
+   is not hypothetical. The fix is for the invariant to carry a per-language exemption
+   naming the flags whose targets are not importable units — and PS30 is what makes the
+   exemption expressible, because `metadata.via` now says which flag published the name.
 
 ### Declared limitations of this lane's own coverage
 
@@ -960,12 +1361,51 @@ empty limitations list would be a claim about the world rather than about a pars
   one file is rare outside test suites, so this type's measured population should be
   read as "what test code exercises", and its count will not grow on production code
   the way `calls` and `uses` do.
-- **`contains` says lexical nesting, and lexical nesting is not ownership — UNSETTLED.**
-  A local declared inside a NESTED script block is lexically inside the function but is
-  not owned by it, and `contains` says owns. The structural half is measured (0
-  self-edges, the analyzer's own stated rule, holds); the nesting-DEPTH half is **not
-  measured** and is not claimed. This is the largest open question on the lane's most
-  trusted type, and it is named here rather than left for a reader to assume.
+- **`contains` says lexical nesting, and lexical nesting is not ownership — MEASURED at
+  2.78%, not fixed.** Pass 2 declared this UNSETTLED; pass 3 measured it. A local declared
+  inside a `begin` / `process` / `end` / `dynamicparam` block is lexically inside the
+  function but its binding ended with the block, and PowerShell runs each of those in its
+  own scope. **950 of 35,474 declaration sites (against a 34,129-site control) sit inside
+  one**, plus 49 inside a `& { … }` child-scope invocation against a 31-site `. { … }`
+  same-scope control. The structural half holds (0 self-edges). It is **not fixed**, and
+  the reason is a decision rather than an omission: attributing a declaration to its block
+  requires a SYMBOL for that block, and the Contract states that no synthetic scope symbol
+  is ever emitted. A fix would introduce exactly that synthetic scope, for 2.78% of
+  declaration sites, and would cost `contains` the 99.87% resolution that makes it the
+  lane's most trusted type. Read `contains` as **lexical nesting**, not ownership.
+- **`instantiates` can no longer see a type name held in a variable, and that is a real
+  loss.** Since PS29 a `New-Object $type` publishes `uses -> type`, not
+  `instantiates -> type`, because the edge would assert the variable is a type. So the
+  construction is no longer in the `instantiates` channel at all: a consumer asking "what
+  does this file construct" sees the read of the variable and must resolve it to learn
+  the type. **41 corpus edges are in this state**, all `New-Object` with a variable
+  argument. The alternative — publishing the edge and marking it low-confidence — would
+  put a name in the graph that no symbol can have, which is the fabrication rule.
+- **`New-Object '$literalType'` publishes a target carrying a `$` sigil.**
+  `unquoteTarget` strips quotes but not a sigil, so a single-quoted argument that is not
+  a variable reaches `instantiates -> $literalType`, which names nothing. It is pinned as
+  an `instantiates` row in `new-object-variable-psb14` with the residue named in its
+  comment, and it is **0 on the admitted corpus** (P14 measures
+  `targetsBeginningWithADollarSigil: 0` over 1,227 edges). The reader that should strip
+  the sigil is the invocation-operator one, which this fix does not touch.
+- **`overrides`' hop-2+ chain branch has never run on real code.** The resolution loop
+  walks up to 8 hops and breaks at the first match, which is right, but the corpus has
+  **0 classes at depth 3 or more and 0 transitive pairs** (26 classes resolve in-file, 22
+  at depth 1 and 4 at depth 2). The branch is correct by reading and unexercised by
+  measurement, and those are different statements.
+- **A dot-sourced file dependency does not reach the store's file-level surfaces.** `.`
+  `./lib.ps1` publishes a `calls` edge with no `metadata.fileLevel`, and
+  `src/ast/parallel-indexer.ts:3481` keys the file-level seam on exactly that key, so no
+  file-level surface can answer "what does this file include" for a PowerShell
+  dot-source. **38 edges**, against 1,179 edges elsewhere in the lane that do carry it.
+  Not fixed: **37 of the 38 targets are `$`-interpolated paths** that name no file, and
+  the fix would add 37 unresolvable `imports[]` rows to serve 1 literal path.
+- **The pinned grammar has no `clean` block, and 3 corpus files lose declarations to it.**
+  `clean` is not a `block_name` in the pinned wasm (the inventory is `begin`, `process`,
+  `end`, `dynamicparam` in 12 spellings) and the ERROR it leaves is not local — on a
+  controlled input it consumes the NEXT function declaration. **46 ERROR nodes across 3
+  files** in the corpus. Reported, not fixed: it needs a grammar change and a wasm
+  rebuild.
 - **PowerShell classes have no cross-file inheritance read.** A base class in another
   module is not in the file's parse tree, so `overrides` against it, and `extends` to it,
   are not derivable per file. `imports` is the only channel that carries that dependency,

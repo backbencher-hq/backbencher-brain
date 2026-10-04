@@ -1014,4 +1014,85 @@ export const POWERSHELL_MUTANTS: Mutant[] = [
       return { ...r, relationships: rels, imports: imps }
     },
   },
+
+  // ---------------------------------------------------------------- PS29 / PS30
+  //
+  // These four are a different shape from the 47 above, and the difference is worth
+  // stating rather than leaving to be inferred. Every earlier powershell mutant reverts
+  // a MISSING edge or a WRONG TARGET. These revert a LABEL: the edge exists either way,
+  // it names the same symbol either way, and only the relationship TYPE and one metadata
+  // key differ. A mutant of that shape cannot be caught by a count and cannot be caught
+  // by a resolution rate, because the resolution rate of `instantiates -> typeName` and
+  // `uses -> typeName` against the same file's symbol table is identical — `typeName` is
+  // declared in both cases. They are caught by `forbidRelationships` rows only, which is
+  // the one vocabulary in the fixture schema that can say "this label must NOT be here".
+  //
+  // They are also the only reason the twin rows in psb14 and psb15 exist. Each of the
+  // four has a counterpart that fails in the OPPOSITE direction, and a fix that simply
+  // hardcoded the label would pass one and fail the other.
+
+  {
+    id: "powershell/new-object-variable-published-as-instantiates",
+    language: "powershell",
+    defectClass: "mislabel",
+    description:
+      "PS29 REVERT. `New-Object`'s constructed name is read as text by all three readers, so `New-Object $type` published `instantiates -> type`: an edge asserting the target IS a type, where the source says \"constructs whatever that variable holds\", resolved at run time. Measured over all 1,108 admitted files through production `parseFile`, cross-referenced against the symbol table OF THE FILE THAT PUBLISHED IT: 123 of 1,268 `instantiates` edges — 9.70% — named a `variable` symbol their own file declares.\n\nThis is the class the lane already fixed for `calls`: F9 turned `$type::$method()` from `calls -> $method` into `uses -> method` because a `$`-prefixed member is a VARIABLE, not a name. `instantiates` is the channel that did not get the same treatment.\n\nWHY A COUNT ROW CANNOT CATCH IT. `instantiates == 8` would have held pre-fix and holds post-fix on a file with four of each, because the edge did not move — only its label did. Caught by new-object-variable-psb14's `forbidRelationships` row for `instantiates -> typeName`, which is the only vocabulary that can assert a label is ABSENT.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) =>
+        x.type === "uses" && x.metadata?.isDynamicTypeName === true
+          ? { ...x, type: "instantiates", metadata: { ...x.metadata, isDynamicTypeName: undefined } }
+          : x),
+    }),
+  },
+  {
+    id: "powershell/new-object-literal-downgraded-to-uses",
+    language: "powershell",
+    defectClass: "mislabel",
+    description:
+      "PS29 REVERT, the OTHER DIRECTION, and the one that keeps the fix from being a blanket reclassification. A literal type name read by `New-Object` — `New-Object System.Version`, `-TypeName System.Text.StringBuilder`, `-TypeName 'System.Collections.ArrayList'` — is a CONSTRUCTION, not a name read, so downgrading every `instantiates` row to `uses` would be a different mislabel of the same size and would satisfy every positive row in new-object-variable-psb14.\n\nIt is also the mutant that a text-based implementation would survive: `New-Object $type` and `New-Object System.Version` differ only in the string once it has been `stripQuotes`-ed, so a `$`-in-text test routes the first correctly and cannot tell the second from a fourth literal. Caught by the `uses -> System.Version` and `uses -> System.Collections.ArrayList` forbid rows.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) =>
+        x.type === "instantiates" && x.metadata?.viaNewObject === true
+          ? { ...x, type: "uses" }
+          : x),
+    }),
+  },
+  {
+    id: "powershell/export-flag-via-reverts-to-command-name",
+    language: "powershell",
+    defectClass: "mislabel",
+    description:
+      "PS30 REVERT. `Export-ModuleMember` publishes a name under one of four flags — `-Function`, `-Variable`, `-Alias`, `-Cmdlet` — and the reader COMPUTED the flag (`if (!isFlag(flag)) continue` is a test on the very string it then discarded) but passed `leaf`, the COMMAND NAME, as `via`. So `via` was the literal `Export-ModuleMember` on every row: measured over all 1,108 admitted files, 106 of 106 `exports` rows carried `via: \"Export-ModuleMember\"` and 0 named the flag.\n\nThe four flags are not the same kind of thing, which is what makes the loss a loss: a `-Cmdlet` target is a name the file cannot declare at all, so a consumer cannot tell whether it should go looking for it. This is the argument PS23 made for `imports`, on the sibling channel.\n\nNOT catchable by a count: the edge count is identical either way. Caught by export-flag-psb15's `forbidRelationships` row for `meta.via: \"Export-ModuleMember\"`, on both the edge and the `exports[]` record.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) =>
+        x.type === "exports" && x.metadata?.via !== undefined
+          ? { ...x, metadata: { ...x.metadata, via: "Export-ModuleMember" } }
+          : x),
+      exports: (r.exports ?? []).map((e: any) =>
+        e?.metadata?.via !== undefined
+          ? { ...e, metadata: { ...e.metadata, via: "Export-ModuleMember" } }
+          : e),
+    }),
+  },
+  {
+    id: "powershell/export-flag-hardcoded-to-function",
+    language: "powershell",
+    defectClass: "mislabel",
+    description:
+      "PS30 REVERT, the OTHER DIRECTION. A change that hardcoded `via: \"-function\"` would satisfy every positive row in export-flag-psb15 — both of which are `-Function` or `-Variable`, and the `-Variable` row is the one positive row a hardcode fails. This mutant exists so the fix is pinned as READING the flag rather than writing a constant: it rewrites every `exports` row's `via` to `-function` regardless of the declaration, which is exactly what an implementation that never threaded the flag through would produce.\n\nCaught by export-flag-psb15's `forbidRelationships` row for `exports -> cacheRoot` with `meta.via: \"-function\"`, and by the `expectExports` row for the same target with `meta.via: \"-variable\"`.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) =>
+        x.type === "exports" && x.metadata?.via !== undefined
+          ? { ...x, metadata: { ...x.metadata, via: "-function" } }
+          : x),
+      exports: (r.exports ?? []).map((e: any) =>
+        e?.metadata?.via !== undefined
+          ? { ...e, metadata: { ...e.metadata, via: "-function" } }
+          : e),
+    }),
+  },
 ]
