@@ -1294,3 +1294,247 @@ scss  consul/.../styles/base/icons/debug.scss  1,628,440 bytes · generated spri
 Both are legitimately oversized generated/data files, so **the fallback is correct**.
 The disclosure is the fix. Left as a bare count it would have read as "one file
 failed" rather than "one file is 1.6 MB and the analyzer declined".
+
+## Fleet audit — all 10 lanes verified working, after fixing the instruments that check them
+
+Asked to confirm every co-agent was working "perfectly". The honest answer was that
+**the supervision instruments were themselves wrong in three ways**, and one of them
+was hiding a dead lane. The agents were largely fine; the board was not.
+
+### 1. `kill -0 0` succeeds — a lost PID reads as permanently alive
+
+PID 0 does not mean "no pid" to `kill`; it means **the process group**. So a registry
+row whose pid was lost to `0` passes `kill -0` forever, and a watchdog written as
+`kill -0 "$pid"` never revives that lane. It is exactly backwards: the one state that
+*must* trigger a revive is the one the naive test reports as healthy.
+
+Both `watchdog.sh` and `status.sh` already guarded `pid != 0` in their revive paths,
+which is why nothing was actually lost — but the trap is live for any future check
+written the obvious way.
+
+### 2. The revive log reported `0 commit(s) on ` — with an empty branch name
+
+```bash
+n=$(git -C "$REPO" rev-list --count "$BASE..$BRANCH")   # $BRANCH — an UNSET env var
+echo "$(date -Is) REVIVE $slug (had $n commit(s) on $BRANCH)"
+```
+
+The loop variable is `$branch` (lower case, from the registry); `$BRANCH` is an
+environment variable that does not exist here. So every revive printed **0 commits on
+an empty branch**. The real counts:
+
+```
+JSON 7   BASH 21   JULIA 41   NIM 35   SQL 22
+CSS 18    XML 12    ZIG 84    PROTOBUF 19   DART 34
+```
+
+This is the **population defect again, in the supervisor's own instrumentation**: a
+number that reads as a finding about the agent ("it produced nothing, it must be
+restarting") when it is a readout bug. And a revive log is precisely the moment you
+need to know whether an agent is resuming with real work or starting from nothing.
+
+### 3. `origin/analyzers/ontology-laptop-b` does not exist — so agents' counts read 0
+
+The aggregate branch is **local only**; it has never been pushed. So the natural
+command:
+
+```
+git merge-base HEAD origin/analyzers/ontology-laptop-b    # -> fatal, empty
+```
+
+leaves `BASE=` empty, and every subsequent count is 0 — which looks exactly like "I
+found nothing". The dart lane was visibly stuck on this (`commits ahead: 0`, `base=`).
+
+`scripts/agent-orchestration/repo-facts.md` now states the local branch name, the
+correct `merge-base` invocation, and that an empty base is the likeliest cause of a
+zero count. It is appended to **every** lane's task file, unconditionally and first.
+
+### 4. Log-growth liveness produced FALSE STALLED verdicts
+
+Measuring "is this lane working?" by whether its log grew in the last 5 minutes reports
+a lane running a 25-minute census as **STALLED** — because a long tool call emits
+nothing. Both lanes flagged that way (`json`, `xml`) were in fact healthy: json had
+spent 25m47s wall on `ruling-recheck.ts` using **19m47s of CPU**, and xml was sweeping
+worker counts 1/8/16.
+
+Killing a lane on that signal would have destroyed a healthy 25-minute measurement. So
+`status.sh` is now four-state:
+
+| state | meaning | action |
+|---|---|---|
+| `measuring` | alive, running a child process | **leave alone** |
+| `working` | alive, log growing | fine |
+| `idle` | alive, no growth, no children, young | fine |
+| `STALLED` | alive, no growth, no children, log old ≥20m | kill + revive |
+| `DEAD` | no process | revive now |
+
+Child counting deliberately excludes the long-lived `bb mcp` server every lane has,
+since including it would make every lane look like it was measuring and `STALLED`
+would be unreachable.
+
+### 5. A bug in the fix above, caught by running it twice
+
+My first `growth_of` appended `cur prev` to its state file each call, so the file
+grew a token per invocation and the arithmetic failed on the *second* run — which is
+the run that matters. The status board failing on first use would have been caught
+immediately; failing on the second use would have looked like flaky data.
+
+### Verified state at audit time
+
+All 10 alive, none STALLED, none DEAD: 8 `measuring`, `julia` `working` (+15K),
+`sql` `idle` 1m (just finished a tool). All 10 hold 7–84 commits.
+
+### The scripts now live in the repo
+
+`scripts/agent-orchestration/{launch-agent.sh,status.sh,watchdog.sh,AGENT-TEMPLATE.md,repo-facts.md,ruling-table-brief.md}`.
+They were in `/tmp`, so a tmp sweep would have destroyed the entire supervision layer
+with no git history to recover it from.
+
+## The disk hit 100% and took the fleet with it
+
+At 19:04 a routine gate invocation failed with:
+
+```
+npm error syscall write
+npm error errno -28
+npm error nospc ENOSPC: no space left on device, write
+```
+
+`/` was **460G, 437G used, 0 available**. julia was dead and bash had gone silent
+mid-measurement — not agent faults. Every symptom that had looked like an agent
+problem for the previous hour was the disk.
+
+```
+  $HOME/.local/share/opencode/opencode-main.db   114.7 GB
+  $HOME/.npm                                       12   GB
+  $HOME/.cache                                      8.4 GB
+  /tmp/opencode                                               9.9 GB
+```
+
+Reclaimed by clearing `~/.npm` (regenerable by definition): **0 → 59 GB free**, 87%
+used. Both affected lanes recovered — julia revived itself, bash needed an explicit
+TERM (it was alive, holding 22 commits and an uncommitted fixture, so it had to be
+killed and revived rather than left to be declared dead).
+
+### What was deliberately NOT touched
+
+- **`opencode-main.db` (114.7 GB)** — this is the owner's opencode session history, not
+  mine to delete. It has been flagged twice and is now the single largest thing on the
+  disk by a factor of ten. **It will fill the disk again**, and the next occurrence may
+  not be as survivable. It needs an owner decision, and the cheapest safe option is
+  `VACUUM` on the session/message tables rather than deleting the file.
+- **`~/.aws`** — sits inside `~/.cache`'s parent and may hold credentials.
+- **`~/.cache/tree-sitter`** (400M) — in active use by the project.
+- **`~/.cache/puppeteer` / `playwright` / `BraveSoftware` / `mozilla`** — regenerable
+  but expensive to re-download, so they were left as the second line of defence.
+
+### The lesson, which is the same one as the population rule
+
+Every instrument in this programme reported what it was measuring. **Nothing reported
+that the machine had run out of room to write the answer.** An agent going silent, a
+gate failing with a write error, and a census truncating all look like distinct
+defects; they had one cause. The supervisor has been treating agent health as the
+signal and had no floor under it.
+
+So the standing check now includes free space and DB size alongside agent state. A
+fleet that cannot write is not a fleet that is working, no matter how many agents
+report `working`.
+
+## Published to origin; laptop B at zero regexes; the last FALSIFIED verdict closed
+
+### `main` and the aggregate branch are on the remote
+
+`analyzers/ontology-laptop-b` pushed, then `main` fast-forwarded **after merging
+origin/main in** — main held 5 commits of the owner's own work that my branch predated
+(the laptop master prompts, and two test commits including *"do the relationship types
+actually FIRE? (withdraws the 10/10 claim)"*). Merging rather than pushing over them is
+the only way that keeps them; all 5 verified present afterwards, 0 divergence.
+
+This also retired the `origin/analyzers/ontology-laptop-b`-is-empty trap that cost the
+dart lane a round, so `repo-facts.md` was rewritten — a brief that still says "never on
+origin" is worse than no brief, because a lane reading it will distrust a working ref.
+
+### A gate on `main` was reporting 187 where the truth is 5
+
+`script/m14/no-regex-gate.sh` — inherited from main, never run by this supervisor until
+now — was a **`grep -nE` text scan**, and its own header explains why that is wrong
+before doing it anyway:
+
+> Regex over source text matches comments and string literals, misses nested syntax,
+> and breaks silently on the next grammar version. Everything must go through the
+> tree-sitter AST.
+
+It reported **187** against an AST census of the same tree reporting **5**. Its comment
+filter dropped only lines *starting* with `//`, `*`, or `/*`, so it missed regexes in the
+middle of block comments — and its pattern includes `.split(`, so **`content.split("\n")`
+counted as a regex**. That was the only "hit" on zig:
+
+```
+1133:  linesOfCode: content.split("\n").length,
+```
+
+There is no regex on that line. There is a newline escape in a string.
+
+A gate that cries wolf at 187 against 5 protects nothing: it teaches readers to ignore
+it, and the one real regex it eventually misses is lost in the noise. It now **delegates**
+to the AST census. One arbiter per question.
+
+**Two defects in my own first draft of that fix**, both the population rule written
+earlier the same session — which is decent evidence the rule earns its keep:
+
+1. It took a subdirectory argument and ignored it, printing whole-tree numbers that read
+   as scoped.
+2. Having fixed that, it computed the in-scope population by counting the census's
+   `perFile` entries — which lists only files *that have* a regex (2) — against
+   `analyzersScanned` (48), so it reported "2 of 48 in scope" for a directory containing
+   all 48. Mixing two populations that both happen to be integers.
+
+Both fixed: scope applied, population **derived from the filesystem**. An empty scope now
+exits 2 — "that is an empty population, NOT a pass" — instead of a vacuous PASS.
+
+### Laptop B: 18 regexes -> 0
+
+```
+real-svelte-analyzer.ts:50 / 622 / 1259 / 1445      <- the ONLY 4 left, another laptop's
+```
+
+CSS cleared 11, julia 9, XML 1, SCSS 2 (supervisor), SQL 1. Every removal was verified —
+SCSS's by a 428-case differential plus a whole-corpus A/B hashing the whole emitted graph
+byte-identical.
+
+### TOML: the only FALSIFIED verdict, closed
+
+The arbiter falsified toml's **own** ruling: the lane had ruled `references` inapplicable,
+then measured that the construct was real, and reported the contradiction instead of
+hiding it. Implemented rather than explained away:
+
+```
+  now: libraries.groovy-bom.version.ref -> versions.groovy
+  corpus: 167 references across 5 files, 0 unresolved
+  gate:   emitted 2/10  ruled-sound 8  FALSIFIED 0  ->  exit 0
+```
+
+167 is **exactly** the lane's independent measurement — two derivations agreeing.
+
+Resolving aliases AFTER the walk, not during: an alias may name a key declared later, and
+resolving inline would silently miss every forward reference. An ambiguous alias emits no
+edge and is counted, because picking one of two candidates is a guess.
+
+**And a root-cause bug surfaced that had nothing to do with aliases**: `valueOf(pair)`
+returned the last named child, which for `detekt = "1.23.8"  # comment` is the COMMENT.
+So a commented string reported `valueType: "comment"`; a commented version key was
+invisible to scalar detection (3 of 82 aliases silently unresolved); and — worst — **a key
+holding an inline table plus a trailing comment was never recognised as an inline table,
+so its nested keys were dropped from `metadata.inlineKeys` entirely**. That last one had
+been losing data across the corpus before this change and was not caused by it.
+
+### Agent supervision
+
+All 10 lanes `working`/`measuring`, none `STALLED`, none `DEAD`. The ZIG branch was
+**not** wholesale-merged: of its 87 commits, 53 touch only zig-owned files and 34 touch
+supervisor instruments or other lanes — including a stray `sql pass 2` and copies of
+`firing-check.ts` and `incoming-check.ts`. Cherry-picking the 53 applied 45 cleanly; the 8
+that could not apply are recorded by hash rather than force-pushed. Two of them turned out
+to carry a real fix to my own arbiter (`rulingFor()` read only the spec, so measured
+rulings looked unjustified) which had already arrived by another route and is verified
+present.

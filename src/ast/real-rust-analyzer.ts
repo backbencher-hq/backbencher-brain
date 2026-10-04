@@ -593,6 +593,16 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
     // resolve to any symbol.
     this.extractRustDeclaredTypeRefs(rootNode, ctx)
 
+    // INCOMING_RUST — the three relationship kinds the lane's own corpus
+    // measurement found the language HAS and this analyzer was not reading:
+    // `imports`, `exports` and `overrides`. Each is emitted from a construct the
+    // analyzer already reads (a `use` declaration, a `pub` item, a trait impl),
+    // never from a string the language does not write. See
+    // emitRustModuleSurface / emitRustTraitOverrides for the per-edge contract
+    // and for what is deliberately refused.
+    this.emitRustModuleSurface(rootNode, ctx)
+    this.emitRustTraitOverrides(rootNode, ctx)
+
     // #419-D evidence tiers on EVERY edge.
     this.classifyEvidenceTier(ctx.relationships)
 
@@ -799,6 +809,498 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
   }
 
+  /**
+   * INCOMING_RUST — the MODULE SURFACE: `imports` from `use` declarations and
+   * `exports` from the `pub` surface.
+   *
+   * ## Why both, and why they were missing
+   *
+   * The lane measured 0 `imports` edges and 0 `exports` edges over 110 real
+   * `.rs` files of ripgrep through the production entry, and the two are the
+   * edges an INBOUND query is made of: "who imports this module" and "what does
+   * this module publish". Rust states both explicitly — `use a::b::C;` and
+   * `pub fn f` — and this analyzer was already reading both nodes. It recorded
+   * them as an `ImportInfo` row and an `ExportInfo` row and stopped there, so
+   * `bb_graph`'s file-level reader (`src/lsp/graph_usages.ts` filters
+   * `relationship_type IN ('imports','exports')`) could not see either. The
+   * information existed; nothing joined on it.
+   *
+   * The doc's "no references edge (Java-family contract)" rule stays true and is
+   * why these are their own KIND: a module path is not a symbol name, and putting
+   * `std::io` in a `references` target is the c/#924 defect (a target no
+   * declaration can match). `imports` is the family's label for a dependency.
+   *
+   * ## `imports` — one edge per MODULE PATH
+   *
+   * Target is the path the `use` writes, verbatim: `std::io`, `crate::flags`,
+   * `super::util`, `grep_matcher::Matcher`, `::libc::c_int`. That is a real,
+   * stable Rust path — the same string the compiler resolves — not a leaf, not a
+   * file name, and not a guess. A brace group's PREFIX is the module
+   * (`use std::io::{Read, Write}` → `std::io`) because that is what the group is
+   * a use OF; the leaves are bindings, and a binding is the `exports`/`contains`
+   * surface of wherever it lives, not a dependency edge.
+   *
+   * Source is the enclosing inline module, or `global` at file scope — the same
+   * convention every other rust edge in this analyzer already uses, so an
+   * `imports` row joins with the rest of the file's graph on the same source.
+   *
+   * ## `exports` — one edge per PUBLISHED NAME
+   *
+   * Target is a name this file's own symbol table publishes. The gate is
+   * `publishedNames.has(name)`, not "the export list is non-empty": an export row
+   * whose name is a path prefix (`pub use storage::MemoryStorage` records
+   * `storage`) is a PATH and cannot be a target, and `pub use` of a foreign item
+   * names something this file does not declare. Those are refused rather than
+   * published, which is R7/R10: an unresolvable endpoint is a lie the graph
+   * tells. Re-exported ITEM names are published instead, because the item name is
+   * what a consumer of this module can actually import.
+   *
+   * The one pre-existing `exports` edge — an axum/actix route attribute naming a
+   * URL — is untouched, and is still not counted here: its target is a route, not
+   * a symbol.
+   */
+  private emitRustModuleSurface(rootNode: Node, ctx: RustContext): void {
+    // The M49 export invariant, read from the symbol table rather than restated:
+    // an export must be an IMPORTABLE UNIT, so its name must be a symbol no
+    // member owns. A method is importable only as `Type::method`, so a `pub`
+    // method rides `contains` and never enters this set — which is the same
+    // reason the export LIST gate is `!parent` in every handler.
+    const importableUnits = new Set<string>()
+    for (const s of ctx.symbols) if (s.name && !s.ownerName) importableUnits.add(s.name)
+    /** Distinct keys so a `use` read twice is one dependency, not two. */
+    const importRowByKey = new Map<string, ASTEngine.UniversalRelationship>()
+    const seenExports = new Set<string>()
+    /**
+     * Names already in the export LIST. The M49 invariant demands export names
+     * be unique — a duplicate cannot identify its provider — and a re-export of
+     * a name the file also declares (`pub fn f` plus `pub use self::f`) is two
+     * declarations publishing one unit. One row, both facts: the relationship
+     * carries `relationshipType: re_export`, the row is the unit.
+     */
+    const pushedExportNames = new Set(ctx.exports.map((e) => e.name))
+    const publishExport = (source: string, name: string, line: number | undefined, kind: string, symbolKind: string): void => {
+      if (!name || !importableUnits.has(name)) return
+      const key = `${source}::exports::${name}`
+      if (seenExports.has(key)) return
+      seenExports.add(key)
+      ctx.relationships.push({
+        source,
+        target: name,
+        fromSymbol: source,
+        toSymbol: name,
+        type: ASTEngine.RelationshipType.Exports,
+        confidence: 1.0,
+        ...(line ? { line_number: line } : {}),
+        metadata: { rustSpecific: true, relationshipType: kind, symbolKind },
+      })
+    }
+
+    const walk: Node[] = [rootNode]
+    while (walk.length > 0) {
+      const n = walk.pop()!
+      if (n.type === "use_declaration") {
+        // The enclosing inline module, outermost first — the same walk the R1
+        // read surface uses, so an `imports` source and a `calls` source agree.
+        const mods = this.enclosingMods(n)
+        const source = mods.length > 0 ? mods[mods.length - 1] : "global"
+        const isPublic = this.isUnrestrictedPublic(n)
+        // A `pub use` publishes its RE-BINDS; everything else publishes nothing.
+        const exportSource = isPublic && mods.length === 0 ? "global" : null
+        for (const row of this.rustImportRows(n)) {
+          const key = `${source}::imports::${row.module}`
+          // The names this path makes importable THROUGH this file, recorded
+          // whether or not they resolve: a re-export of a foreign item is the
+          // fact that this module publishes `Flag`, and dropping it silently is
+          // how the export surface lost its re-exports.
+          const reExports = exportSource ? row.items.filter((x) => !!x && x !== "*") : []
+          // The PUBLICATION runs before the dependency dedupe, and that ordering
+          // is load-bearing. `use crate::flags::Flag;` followed by `pub use
+          // crate::flags::Flag;` is ONE dependency read twice, so the second
+          // `use` line dedupes onto the first row — and a dedupe placed BEFORE
+          // this loop would therefore have skipped the publication entirely,
+          // losing every re-export of a path the file already imports. The lane
+          // mutant `rust/incoming-exports-unresolvable-target-published` is what
+          // found it: widening the unit gate produced no new `exports` row at
+          // all, which meant the mutant was measuring a dead branch.
+          if (exportSource) {
+            for (const item of reExports) {
+              publishExport(exportSource, item, row.line, "re_export", "symbol")
+              if (importableUnits.has(item) && !pushedExportNames.has(item)) {
+                pushedExportNames.add(item)
+                ctx.exports.push({
+                  name: item,
+                  type: ASTEngine.SymbolKind.Module,
+                  range: {
+                    startLine: n.startPosition.row + 1, startColumn: n.startPosition.column + 1,
+                    endLine: n.endPosition.row + 1, endColumn: n.endPosition.column + 1,
+                    startIndex: n.startIndex, endIndex: n.endIndex,
+                  },
+                  isType: false,
+                })
+              }
+            }
+          }
+          const existing = importRowByKey.get(key)
+          if (existing) {
+            // One dependency per PATH, however many `use` lines read it. A
+            // re-export that arrives after a plain import of the same path
+            // MERGES onto the row rather than being dropped: `use
+            // crate::flags::Flag;` followed by `pub use crate::flags::Flag;` is
+            // one dependency and one publication, and a dedupe that kept the
+            // first row would have silently lost the second fact.
+            if (reExports.length > 0) {
+              const md = (existing.metadata ?? {}) as Record<string, unknown>
+              md.reExports = [...new Set([...(Array.isArray(md.reExports) ? md.reExports as string[] : []), ...reExports])]
+              existing.metadata = md
+            }
+            continue
+          }
+          importRowByKey.set(key, {
+            source,
+            target: row.module,
+            fromSymbol: source,
+            toSymbol: row.module,
+            type: ASTEngine.RelationshipType.Imports,
+            confidence: 1.0,
+            ...(row.line ? { line_number: row.line } : {}),
+            metadata: {
+              rustSpecific: true,
+              isImport: true,
+              relationshipType: "use_declaration",
+              modulePath: row.module,
+              moduleKind: row.kind,
+              // The names the declaration brings into scope. Carried, not
+              // emitted as edges: a binding is not a dependency, and the same
+              // binding is re-declared by every file that imports it.
+              items: row.items,
+              ...(reExports.length > 0 ? { reExports } : {}),
+            },
+          })
+        }
+      }
+      for (let i = n.namedChildCount - 1; i >= 0; i--) {
+        const c = n.namedChild(i)
+        if (c) walk.push(c)
+      }
+    }
+
+    for (const row of importRowByKey.values()) ctx.relationships.push(row)
+
+    // Every export row the collection pass made: `pub fn`, `pub struct`,
+    // `pub mod`, `pub const`, `#[macro_export]` — the Rust publication surface,
+    // which is what `exports` means in this family. All of them are file scope by
+    // construction (`isUnrestrictedPublic(node) && !parent` in every handler), so
+    // the source is `global`; the module that owns an export is carried on
+    // `metadata.modulePath` for the one case that is not (`pub mod`, which is
+    // itself a top-level unit and needs no owner).
+    for (const e of ctx.exports) {
+      publishExport("global", e.name, e.range?.startLine, "public_item", String(e.type ?? ""))
+    }
+  }
+
+  /**
+   * The `use` declarations of one `use_declaration` node, as
+   * (dependency path, bound names, 1-based line, form) rows.
+   *
+   * Shares no state with `handleUseDeclaration`'s ImportInfo assembly on
+   * purpose: that one answers "what does the index store per BINDING" (a row
+   * per name, module = the prefix), this one answers "what module does this file
+   * DEPEND ON" (a row per PATH, and the leaf is a binding rather than a
+   * dependency). The two therefore disagree about `use std::collections::HashMap`
+   * — one row there, one dependency here — and they must: a binding is
+   * re-declared by every importer, so a binding is not a dependency.
+   *
+   * A path's LEAF is never the dependency. `use crate::flags::Flag` depends on
+   * `crate::flags`; `use serde;` depends on `serde` (a one-segment path is
+   * itself the dependency, and it binds its own name).
+   */
+  private rustImportRows(node: Node): Array<{ module: string; items: string[]; line?: number; kind: string }> {
+    const out: Array<{ module: string; items: string[]; line?: number; kind: string }> = []
+    /** Full path text of a path-shaped node, verbatim including a leading `::`. */
+    const pathOf = (n: Node | null): string | null => {
+      if (!n) return null
+      if (n.type === "identifier" || n.type === "type_identifier") return n.text
+      if (n.type === "crate" || n.type === "super" || n.type === "self") return n.text
+      if (n.type === "scoped_identifier") {
+        const p = n.childForFieldName("path")
+        const name = n.childForFieldName("name") || n.namedChild(n.namedChildCount - 1)
+        // A leading `::` has no `path` field at all: `::libc` is a
+        // scoped_identifier whose only named child is the name itself.
+        if (p) {
+          const base = pathOf(p)
+          if (base === null) return null
+          return `${base}::${name ? name.text : ""}`
+        }
+        // No `path` field: this node IS the whole path and it may be ABSOLUTE.
+        // `::libc` is a scoped_identifier whose only named child is the name, so
+        // its own text already carries the leading `::`. Reading the prefix and
+        // the name separately and joining them with another `::` produced four
+        // colons — a target no path can ever be.
+        return `${n.text.startsWith("::") ? "::" : ""}${name ? name.text : ""}`
+      }
+      return null
+    }
+    /** `a::b::C` -> dependency `a::b`, binding `C`. `a` -> dependency `a`, binding `a`. */
+    const splitLeaf = (full: string): { module: string; item: string } => {
+      const parts = full.split("::")
+      if (parts.length < 2) return { module: full, item: full }
+      return { module: parts.slice(0, -1).join("::"), item: parts[parts.length - 1] }
+    }
+    const pushLeafPath = (full: string | null, alias: string | null, at: Node, kind: string): void => {
+      if (!full) return
+      const { module, item } = splitLeaf(full)
+      if (!module) return
+      out.push({ module, items: [alias ?? item], line: this.nodeLine(at), kind })
+    }
+    /** The leaves of a `use_list`, plus any NESTED group's own dependency. */
+    const groupLeaves = (list: Node | null, base: string): string[] => {
+      const items: string[] = []
+      if (!list || list.type !== "use_list") return items
+      for (let j = 0; j < list.namedChildCount; j++) {
+        const leaf = list.namedChild(j)
+        if (!leaf || leaf.type === ",") continue
+        if (leaf.type === "use_as_clause") {
+          const al = leaf.childForFieldName("alias") || leaf.namedChild(leaf.namedChildCount - 1)
+          if (al) items.push(al.text)
+        } else if (leaf.type === "identifier" || leaf.type === "type_identifier") {
+          items.push(leaf.text)
+        } else if (leaf.type === "self") {
+          const last = base.split("::").filter(Boolean).pop()
+          if (last) items.push(last)
+        } else if (leaf.type === "scoped_identifier") {
+          const inner = pathOf(leaf)
+          if (inner) {
+            const { module, item } = splitLeaf(inner)
+            items.push(item)
+            // `use std::{env, path::PathBuf}` depends on `std` AND on
+            // `std::path`. The inner leaves are bindings; the inner PREFIX is a
+            // dependency of its own and was previously invisible.
+            if (module && module !== base) {
+              out.push({ module: `${base}::${module}`, items: [], line: this.nodeLine(leaf), kind: "nested_group" })
+            }
+          }
+        } else if (leaf.type === "scoped_use_list") {
+          const innerBase = pathOf(leaf.namedChild(0))
+          if (innerBase) {
+            for (const it of groupLeaves(leaf.namedChild(1), innerBase)) items.push(it)
+            if (innerBase !== base) {
+              out.push({ module: innerBase, items: [], line: this.nodeLine(leaf), kind: "nested_group" })
+            }
+          }
+        }
+      }
+      return items
+    }
+
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const c = node.namedChild(i)
+      if (!c || c.type === "visibility_modifier" || c.type === "use" || c.type === "crate") continue
+      if (c.type === "scoped_use_list") {
+        const base = pathOf(c.namedChild(0))
+        if (base) out.push({ module: base, items: groupLeaves(c.namedChild(1), base), line: this.nodeLine(c), kind: "group" })
+        continue
+      }
+      if (c.type === "use_list") {
+        // A top-level group with NO shared prefix: `use {a::X, b::Y};` is two
+        // dependencies, not one path with a comma in it.
+        for (let j = 0; j < c.namedChildCount; j++) {
+          const leaf = c.namedChild(j)
+          if (!leaf || leaf.type === ",") continue
+          if (leaf.type === "scoped_use_list") {
+            const base = pathOf(leaf.namedChild(0))
+            if (base) out.push({ module: base, items: groupLeaves(leaf.namedChild(1), base), line: this.nodeLine(leaf), kind: "top_level_group" })
+            continue
+          }
+          if (leaf.type === "use_as_clause") {
+            pushLeafPath(pathOf(leaf.childForFieldName("path") || leaf.namedChild(0)), leaf.childForFieldName("alias")?.text ?? null, leaf, "top_level_group")
+            continue
+          }
+          pushLeafPath(pathOf(leaf), null, leaf, "top_level_group")
+        }
+        continue
+      }
+      if (c.type === "use_wildcard") {
+        const base = pathOf(c.namedChild(0))
+        if (base) out.push({ module: base, items: ["*"], line: this.nodeLine(c), kind: "wildcard" })
+        continue
+      }
+      if (c.type === "use_as_clause") {
+        pushLeafPath(pathOf(c.childForFieldName("path") || c.namedChild(0)), c.childForFieldName("alias")?.text ?? null, c, "alias")
+        continue
+      }
+      pushLeafPath(pathOf(c), null, c, "path")
+    }
+    return out
+  }
+
+  /**
+   * INCOMING_RUST — `overrides`.
+   *
+   * ## What the language has, and what it does not
+   *
+   * Rust has no `override` keyword. Its override is the trait implementation:
+   * `impl Display for Foo { fn fmt(&self, …) }` REPLACES `Display::fmt` for the
+   * type `Foo`, and the author's writing of both the trait and the method is the
+   * assertion — there is nothing to infer. Measured on this lane's corpus
+   * (110 ripgrep files): 252 `implements` edges over 44 files, so the construct
+   * is not rare, and the previous ruling ("Rust trait impls are captured as
+   * `implements`") was a prose justification for a type the language expresses —
+   * which is the exact failure the ontology gate was built to catch.
+   *
+   * What Rust does NOT have is a second declaration replacing a first. A second
+   * `impl Foo { }` block RE-OPENS the type; it cannot redefine a method (E0592,
+   * duplicate definitions with the same name), so no such edge is derivable and
+   * none is emitted. The corpus found 107 such re-opens across 40 files, which
+   * is the measurement behind that half of the ruling.
+   *
+   * ## Endpoints, and why they are dotted
+   *
+   * `Type.method` → `Trait.method`, the shape java, go and csharp already use,
+   * for one reason that is not cosmetic: `parallel-indexer` resolves a relationship
+   * target by (1) exact `qualified_name`, (2) a bare `name` that is UNIQUE across
+   * the project, (3) everything after the first `.` of a dotted target. This
+   * analyzer publishes no `qualifiedName`, so every rust symbol's stored
+   * `qualified_name` IS its bare name and a bare target can only resolve while it
+   * is project-unique — which for a member name it almost never is. A dotted
+   * target takes strategy 3. A bare `method` target would name the right method
+   * and still not say WHICH type's, so the qualification is what makes the edge
+   * answerable for an incoming query ("who overrides `Trait::method`").
+   *
+   * ## Confidence: two tiers, and the split is the point
+   *
+   *   1.0  `local-trait-signature` — the trait is DECLARED IN THIS FILE, so both
+   *        ends are facts read out of this file's own items.
+   *   0.85 `cross-file-trait-signature` — the trait is not declared here. The
+   *        edge is still what the source says (`impl Display for Foo` + `fn
+   *        fmt`), so it is not a guess, but the target resolves only once the
+   *        whole project is indexed, and it is below the `patterns.ts` default
+   *        threshold, so a thresholded consumer never treats it as ground truth.
+   *
+   * `Drop::drop` is included: `impl Drop for Foo { fn drop(&mut self) }` is
+   * Rust's most common override and a reader asking "who overrides drop" wants
+   * the answer.
+   */
+  private emitRustTraitOverrides(rootNode: Node, ctx: RustContext): void {
+    /** trait name (this file) -> its method names. */
+    const localTraitMethods = new Map<string, Set<string>>()
+    /** impl (type, trait) -> its method names. */
+    const impls: Array<{ type: string; trait: string; methods: Set<string> }> = []
+    const seen = new Set<string>()
+
+    const walk: Node[] = [rootNode]
+    while (walk.length > 0) {
+      const n = walk.pop()!
+      if (n.type === "trait_item") {
+        const nm = n.childForFieldName("name")?.text
+        if (nm) {
+          const ms = new Set<string>()
+          for (let i = 0; i < n.namedChildCount; i++) {
+            const c = n.namedChild(i)
+            if (c?.type !== "declaration_list") continue
+            for (let j = 0; j < c.namedChildCount; j++) {
+              const f = c.namedChild(j)
+              // A trait method with a DEFAULT BODY is still a declaration an impl
+              // can replace, so `function_item` counts alongside the bodiless
+              // `function_signature_item`.
+              if (f?.type === "function_signature_item" || f?.type === "function_item") {
+                const mn = f.childForFieldName("name")?.text
+                if (mn) ms.add(mn)
+              }
+            }
+          }
+          localTraitMethods.set(nm, ms)
+        }
+      } else if (n.type === "impl_item") {
+        const traitNode = n.childForFieldName("trait")
+        const typeNode = n.childForFieldName("type")
+        if (!traitNode || !typeNode) { /* inherent impl: no override, see the header */ }
+        else {
+          const typeName = this.implSelfTypeName(typeNode)
+          const traitName = this.extractTraitName(traitNode)
+          if (typeName && traitName) {
+            const ms = new Set<string>()
+            for (let i = 0; i < n.namedChildCount; i++) {
+              const c = n.namedChild(i)
+              if (c?.type !== "declaration_list") continue
+              for (let j = 0; j < c.namedChildCount; j++) {
+                const f = c.namedChild(j)
+                if (f?.type === "function_item") {
+                  const mn = f.childForFieldName("name")?.text
+                  if (mn) ms.add(mn)
+                }
+              }
+            }
+            impls.push({ type: typeName, trait: traitName, methods: ms })
+          }
+        }
+      }
+      for (let i = n.namedChildCount - 1; i >= 0; i--) {
+        const c = n.namedChild(i)
+        if (c) walk.push(c)
+      }
+    }
+
+    for (const impl of impls) {
+      for (const m of impl.methods) {
+        const declared = localTraitMethods.get(impl.trait)
+        // A trait declared here that does NOT declare this method is not an
+        // override of it — the impl adds a method, which is `contains` plus the
+        // `implements` edge already published. Refusing here is what keeps the
+        // label meaning "displaces a declared member".
+        if (declared && !declared.has(m)) continue
+        const key = `${impl.type}.${m}::${impl.trait}.${m}`
+        if (seen.has(key)) continue
+        seen.add(key)
+        const local = !!declared
+        const line = this.overrideLine(rootNode, impl.type, impl.trait, m)
+        ctx.relationships.push({
+          source: `${impl.type}.${m}`,
+          target: `${impl.trait}.${m}`,
+          type: ASTEngine.RelationshipType.Overrides,
+          confidence: local ? 1.0 : 0.85,
+          ...(line ? { line_number: line } : {}),
+          metadata: {
+            rustSpecific: true,
+            relationshipType: "trait_method_impl",
+            reasonCode: local ? "local-trait-signature" : "cross-file-trait-signature",
+            implementsType: impl.type,
+            trait: impl.trait,
+            method: m,
+          },
+        })
+      }
+    }
+  }
+
+  /** The line of the overriding method, found by re-walking to the same impl. */
+  private overrideLine(rootNode: Node, type: string, trait: string, method: string): number | undefined {
+    const walk: Node[] = [rootNode]
+    while (walk.length > 0) {
+      const n = walk.pop()!
+      if (n.type === "impl_item") {
+        const traitNode = n.childForFieldName("trait")
+        const typeNode = n.childForFieldName("type")
+        if (traitNode && typeNode && this.implSelfTypeName(typeNode) === type && this.extractTraitName(traitNode) === trait) {
+          for (let i = 0; i < n.namedChildCount; i++) {
+            const c = n.namedChild(i)
+            if (c?.type !== "declaration_list") continue
+            for (let j = 0; j < c.namedChildCount; j++) {
+              const f = c.namedChild(j)
+              if (f?.type === "function_item" && f.childForFieldName("name")?.text === method) {
+                return this.nodeLine(f.childForFieldName("name"))
+              }
+            }
+          }
+        }
+      }
+      for (let i = n.namedChildCount - 1; i >= 0; i--) {
+        const c = n.namedChild(i)
+        if (c) walk.push(c)
+      }
+    }
+    return undefined
+  }
+
   /** #419-D evidence-tier classification (family rules). */
   private classifyEvidenceTier(relationships: ASTEngine.UniversalRelationship[]): void {
     for (const r of relationships) {
@@ -808,6 +1310,13 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
       const conf = typeof r.confidence === "number" ? r.confidence : 1
       if (t === "contains" || t === "exports") { md.evidenceClass = "structural"; continue }
       if (t === "references") { md.evidenceClass = md.whereBound ? "reference_qualified" : "import_based"; continue }
+      // INCOMING_RUST: an `imports` edge is the same kind of fact as a
+      // `references` edge with no where-bound — a `use` declaration, written in
+      // the file, naming a module. The family's own mapping (bash, css:
+      // `Imports || References -> import_based`) puts it there; without this it
+      // fell through to `usage_contextual`, which claims the edge came from a
+      // usage rather than from the declaration that states it.
+      if (t === "imports") { md.evidenceClass = "import_based"; continue }
       if (t === "extends" || t === "implements" || t === "overrides") {
         md.evidenceClass = conf >= 1 ? "structural" : conf >= 0.85 ? "usage_contextual" : "inferred"
         continue
@@ -1298,6 +1807,10 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
         source: implName,
         target: this.extractTraitName(traitNode),
         type: ASTEngine.RelationshipType.Implements,
+        // INCOMING_RUST: same absent-confidence defect as `calls` — 252 of 252
+        // `implements` rows on this lane's corpus carried none. 1.0: the
+        // `impl Trait for Type` clause names both ends.
+        confidence: 1.0,
         // M59.A7 (#825): the TRAIT reference's line — the site that names the
         // target, not the implementing type's.
         ...(this.nodeLine(traitNode) ? { line_number: this.nodeLine(traitNode)! } : {}),
@@ -2291,20 +2804,23 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
       })
     }
 
-    // D3: re-exported paths are externally importable only when
-    // unrestricted-pub at true file top level (members ride Contains).
-    if (this.isUnrestrictedPublic(node) && !parent && modulePath) {
-      ctx.exports.push({
-        name: modulePath,
-        type: ASTEngine.SymbolKind.Module,
-        range: {
-          startLine: node.startPosition.row + 1, startColumn: node.startPosition.column + 1,
-          endLine: node.endPosition.row + 1, endColumn: node.endPosition.column + 1,
-          startIndex: node.startIndex, endIndex: node.endIndex,
-        },
-        isType: false,
-      })
-    }
+    // D3 / INCOMING_RUST: a `pub use` publishes the names it RE-BINDS, not the
+    // path it reads. It used to push one export row whose `name` was the module
+    // PREFIX, so `pub use crate::flags::Flag;` published an export named
+    // `crate::flags::Flag` — a name no symbol declares and no importer can bind.
+    // The M49 export invariant (every export name resolves to a TOP-LEVEL
+    // symbol) catches exactly this, and no rust fixture had a top-level
+    // `pub use` to catch it with: `construction-exports` pins `pub use` only
+    // INSIDE a private `mod`, where the `!parent` gate suppressed the row
+    // entirely.
+    //
+    // The re-binds themselves are published by `emitRustModuleSurface`, which
+    // runs after every symbol exists and can therefore gate on a name this file
+    // really declares. A re-export of a FOREIGN item publishes its dependency
+    // (`imports`) and rides `metadata.reExports`; it names no export, because it
+    // declares no top-level symbol here. `modulePath` is read below only to
+    // decide whether the declaration had any path at all.
+    void modulePath
   }
 
   // Extract function calls at any scope (not just inside function bodies)
@@ -2432,6 +2948,15 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
       fromSymbol: source,
       toSymbol: qualified,
       type: ASTEngine.RelationshipType.Calls,
+      // INCOMING_RUST: this edge published NO confidence at all — 17,083 of
+      // 17,083 rows on this lane's corpus read `undefined`. Two consequences,
+      // both invisible from inside the analyzer: `classifyEvidenceTier` defaults
+      // a missing value to 1, so the evidence tier looked right, and every
+      // consumer that computes a heuristic/deterministic ratio (honesty
+      // contract §4) got no number to compute. The call site is a callee NAME
+      // read from the tree, so 1.0 is the honest value and it is the value the
+      // lane's own relationship table already claimed.
+      confidence: 1.0,
       ...(this.nodeLine(calleeNameNode) ? { line_number: this.nodeLine(calleeNameNode)! } : {}),
       metadata,
     })
@@ -2576,6 +3101,9 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
       fromSymbol: source,
       toSymbol: `macro:${macroName}`,
       type: ASTEngine.RelationshipType.Calls,
+      // INCOMING_RUST: same absent-confidence defect as the call edge above —
+      // a macro invocation's NAME is a callee read from the tree, so 1.0.
+      confidence: 1.0,
       ...(this.nodeLine(macroNameNode) ? { line_number: this.nodeLine(macroNameNode)! } : {}),
       metadata,
     })

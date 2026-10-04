@@ -76,24 +76,30 @@ Pinned by mutant `sql/range-columns-zero-based` and fixture `sqld8-range-and-ids
 
 ## Relationship ontology
 
-Every rule below is stated **for SQL**, not in general, and every count is from production
-`parseFile` over the **1,945-file census** (`validation/m14/fixtures/sql/ontology-census.json`),
-which is 141 repositories, 30,690 relationships and 18,322 symbols. The shared corpus grew
-from pass 1's 1,459 files in 123 repositories as other lanes cloned into it, so **every count
-on this page was re-measured**; nothing is carried forward from the 1,459-file run.
+Every rule below is stated **for SQL**, not in general. Pass 4 re-measured every count through
+production `parseFile` over **1,955 of 1,955 admitted SQL files, of which 16 corpus repositories
+contribute at least one** (`duckdb` 594, `boundary` 486, `proxicall` 438, `hasura-engine` 346,
+`postgrest` 32, `sqlite` 13, `dark` 9, `phpmyadmin` 9, `Exposed` 8, `redwood` 8,
+`nvim-treesitter` 7, and 5 repositories contributing 1 each; a 17th, `kong`, tracks one `.sql`
+that is over the 512 KB cap and contributes 0)
+(`validation/m14/fixtures/sql/measurements/pass4-census.json`): **31,066 relationships and
+18,482 symbols**, with **0 files degraded by the analyzer timeout and 0 in the regex-extractor
+fallback**. Every count on this page was re-measured at pass 4's HEAD; nothing is carried
+forward. Pass 3's artifacts are kept at `measurements/pass3-final-census.json` and are superseded,
+not deleted — the difference between them is itself a measurement (see *Reproducibility*).
 
 | Relationship | Rule **in SQL** | Census |
 | --- | --- | --- |
-| `contains` | table → column, and table → index/constraint. A SQL file's containment is its schema: a column is not a member of the query that selects it, and a CTE body is not a member of the statement that holds it | 11,786 |
-| `uses` | view / function / query / DML → referenced table. Anonymous statements use `global`. **A CTE name is not a table**: an unqualified reference matching a CTE of the statement's WITH list is suppressed, a qualified one never is. The scope is the WITH LIST, not the enclosing query — see *Pass 2* | 9,017 |
-| `references` | FK table → referenced table, index → indexed table, trigger → target table, policy → its table, GRANT/REVOKE → the object granted on. Each target sits in a grammar-mandated slot after `keyword_references` / `keyword_on` | 5,965 |
-| `calls` | trigger → executed function, and any `invocation` node **anywhere in the tree**, not only inside a query — a `DEFAULT`, a `CHECK`, a generated column's expression and a policy's `USING (…)` are all `invocation`s in grammar-mandated slots. The callee must be free of ERROR and not a keyword or builtin | 3,827 |
+| `contains` | table → column, and table → index/constraint. A SQL file's containment is its schema: a column is not a member of the query that selects it, and a CTE body is not a member of the statement that holds it. **Every edge carries `metadata.memberKind`** — see *Pass 3* | 11,977 |
+| `uses` | view / function / query / DML → referenced table. Anonymous statements use `global`. **A CTE name is not a table**: an unqualified reference matching a CTE of the statement's WITH list is suppressed, a qualified one never is. The scope is the WITH LIST, not the enclosing query — see *Pass 2* | 9,106 |
+| `references` | FK table → referenced table, index → indexed table, trigger → target table, policy → its table, GRANT/REVOKE → the object granted on. Each target sits in a grammar-mandated slot after `keyword_references` / `keyword_on` | 5,996 |
+| `calls` | trigger → executed function, and any `invocation` node **anywhere in the tree**, not only inside a query — a `DEFAULT`, a `CHECK`, a generated column's expression, a policy's `USING (…)`, a `DO` block's `PERFORM`, and an `ALTER COLUMN … SET DEFAULT` are all `invocation`s in grammar-mandated slots. The callee must be free of ERROR and not a keyword or builtin. Two of those routes were dead until pass 3 | 3,892 |
 | `imports` | two distinct mechanisms, kept separable in metadata: a psql `\i`/`\ir` include (**22**, `metadata.psqlInclude`, target is a file in this repository) and `CREATE EXTENSION` (**30**, `metadata.extensionInstall`, target is a distribution that must be installed and can never bind) | 52 |
 | `overrides` | `CREATE OR REPLACE` on a name **this file already declared of the same kind**. SQL has no method table; this is the only replacement event the language has | 22 |
 | `instantiates` | `ROW(...)::composite` — a composite cast, which PostgreSQL implements as a call to the type's constructor. A conversion (`x::my_enum`, `nextval('s')::bigint`) is **not** an instantiation | 21 |
-| `exports` | not derivable — RULED, see below | 0 |
-| `extends` | not derivable from the wired grammar — RULED, see below | 0 |
-| `implements` | not derivable — RULED, see below | 0 |
+| `exports` | not derivable — RULED, and the ruling is the **weakest of the three**: no correct implementation could meet its condition. See below | 0 |
+| `extends` | **SQL HAS table inheritance and the wired grammar cannot read it.** RULED on a grammar inventory, but this is a GRAMMAR GAP, not an inapplicability — see below | 0 |
+| `implements` | not derivable — RULED, instrument A + B | 0 |
 
 Relationship identity uses a `Map` keyed by type/source/target. Repeated DML operations merge
 operation metadata rather than creating duplicate graph edges. Unresolved tables/functions
@@ -107,10 +113,14 @@ queryable. Before pass 1 **no** edge carried it, which reads as "no heuristics" 
 
 | Tier | Meaning here | Edges | Share |
 | --- | --- | --- | --- |
-| `structural` | the fact is in a grammar-mandated position — every `contains`, `references`, `overrides`, `instantiates` | 18,014 | 58.69 % |
+| `structural` | the fact is in a grammar-mandated position — every `contains`, `references`, `overrides`, `instantiates` | 18,016 | 57.99 % |
 | `import_based` | a token names another unit — every `imports` | 52 | 0.17 % |
-| `usage_contextual` | a name in a bare slot with nothing around it to disambiguate | 10,590 | 34.51 % |
-| `reference_qualified` | a name read through a reference that names its own **schema**, which is its own disambiguation — `app.users`, `public.f(…)` | 2,254 | 7.35 % |
+| `usage_contextual` | a name in a bare slot with nothing around it to disambiguate | 10,693 | 34.42 % |
+| `reference_qualified` | a name read through a reference that names its own **schema**, which is its own disambiguation — `app.users`, `public.f(…)` | 2,305 | 7.42 % |
+
+(31,066 edges; shares are of that total, computed from the per-type `evidenceClass` census in
+`measurements/pass4-census.json` — `contains` 11,977 + `references` 5,996 + `overrides` 22
++ `instantiates` 21 = 18,016 structural; `calls` 3,417 + 475; `uses` 7,276 + 1,830.)
 
 **`reference_qualified` was DEAD until pass 2, and this is the number that says so.**
 `evidenceClassFor` has consulted `metadata.qualified` for the tier since it was written, and
@@ -119,12 +129,16 @@ queryable. Before pass 1 **no** edge carried it, which reads as "no heuristics" 
 action edge and `recordDml` passed **no metadata at all**, so for `calls` the field was
 undefined on every edge in the corpus. Measured before the fix: **0 of 3,827 `calls` and 0 of
 the qualified `uses` edges carried the tier**, and 2,254 carry it now. The adversarial probe
-re-derives the expected tier independently of the analyzer's own table and reports
-**3,827 of 3,827 `calls` and 9,017 of 9,017 `uses` edges AGREE, 0 disagree**
-(`adversarial-probe.json`, `A3-tier-AGREES-with-the-metadata` / `A4-tier-AGREES-with-the-metadata`)
-— a probe that read the analyzer's own mapping could not have reported a disagreement.
+re-derives the expected tier independently of the analyzer's own table and reports, at this HEAD,
+**3,892 of 3,892 `calls` and 9,101 of 9,101 `uses` edges AGREE, 0 disagree**
+(`pass8-adversarial-probe.json`, `A3-tier-AGREES-with-the-metadata` / `A4-tier-AGREES-with-the-metadata`)
+— a probe that read the analyzer's own mapping could not have reported a disagreement. The `uses`
+population reads 9,101 and not the census's 9,106 because one of 1,955 files degraded in that run;
+the 5-edge difference is `87.sql` alone, which yields its 5 `uses` edges in 4 of 4 solo `parseFile`
+calls. `0 disagree` is verifiable as the ABSENCE of a `…-tier-DISAGREES-…` probe key, which is a
+stronger form than a zero the probe chose to print.
 
-`confidence` is **1 on all 30,690 edges and 0 edges fall below 0.7.** That is a claim rather
+`confidence` is **1 on all 31,066 edges and 0 edges fall below 0.7.** That is a claim rather
 than an omission: no edge this analyzer emits is a guess about a *name*. Where the analyzer
 genuinely cannot tell — a psql variable target, a concatenated `EXECUTE` fragment whose
 declaration name is computed at run time, an ERROR-recovery artefact — it emits nothing and
@@ -138,70 +152,119 @@ unexplained reason", which is 196 and is named as such rather than folded into t
 number. Measured before the guard export the two were indistinguishable, and a drifting copy
 of the lists would have turned a working guard into a reported defect.
 
-## Ontology verdicts — all ten types (M14 ontology workstream, re-measured 2026-10-03)
+## Ontology verdicts — all ten types (verdicts and counts re-measured at pass 4, 2026-10-04; incoming direction at pass 5; every gate re-confirmed at passes 6, 7 and 8, 2026-10-04 — pass 8 also re-derived this page's OWN figures from the stored artifacts and corrected four of them, see *PASS 8*)
 
-Instrument: production `parseFile` (not `analyze()`) over **1,945 admitted SQL files in 141
-repositories**, size cap 512 KB, **every** admitted file sampled rather than a subset — and
-**1 further admitted file is excluded and named in the artifact** because it hangs the wasm
-parser and the engine answers a hang with `process.exit(1)` (limitation 6). Artifacts:
-`validation/m14/fixtures/sql/ontology-census.json`,
-`validation/m14/fixtures/sql/adversarial-probe.json`,
-`validation/m14/fixtures/sql/construct-probe.json`. Written rulings:
-`script/m14/spec/sql-completeness.json` SQL-D11…SQL-D18. **Pass 2 re-ran every probe that
-produced a ruling and every zero still reads zero**; the corpus grew by 486 files in the
-interval and none of the zero probes moved.
+Instrument: production `parseFile` (not `analyze()`) over **1,955 of 1,955 admitted SQL files, of
+which 16 corpus repositories contribute at least one**, size cap 512 KB, **every** admitted file sampled rather than a subset, walked as
+**8 strided shards and merged** (see *Reproducibility*). Artifacts, all under
+`validation/m14/fixtures/sql/measurements/`:
+`pass8-census.json`, `pass8-sharded-arbiter.json`, `pass8-adversarial-probe.json`,
+`pass8-partition-by-sites.json`, `pass8-incoming-corpus.json`, `pass7-census.json`, `pass7-sharded-arbiter.json`,
+`pass4-census.json`, `pass4-census-4shard.json`, `pass5-sharded-arbiter.json`,
+`pass4-arbiter-shape-diff.json`, `pass4-descendants-equivalence.json`,
+`pass3-adversarial-probe.json`, `pass3-construct-probe.json`, `pass3-incoming-corpus.json`,
+`pass3-invocation-why-after.json`, `pass3-phantom-constraint-{before,after}.json`.
+Written rulings: `script/m14/sql-ruled.ts`, applied to a COPY of the arbiter by
+`run-ruling-table.mts` / `run-sharded-arbiter.mts`.
+
+**The arbiter's own verdict on this lane's own ruling table**, copy patched, arbiter on disk
+untouched, all 8 shards answering all ten rows:
+**`emitted 7/10   ruled-sound 3   FALSIFIED 0   ruled-without-justification 0`.**
+Reproduced on every run, including two at pass 7's HEAD. The arbiter's single-process run used to
+die on `[BB-HANG] parser stuck 120s` and print its header and nothing else; at pass 7's HEAD it
+completes, so the verdict is still taken over 8 repo-shards — a hang would cost the whole verdict,
+whereas a shard costs one slice — and merged by the arbiter's own precedence. See *PASS 4*. **Its
+per-type EDGE counts are a lower bound, not a count**: pass 7 measured the sharded run reading
+`uses` 9,099 and 9,106 on the same corpus, and a *completed* single-process run reading `contains`
+11,970 against the census's 11,977, because a file the engine times out returns a success-shaped
+empty result and the gate counts whatever it is given. See *PASS 7*.
 
 | Type | Verdict | Count | Where it came from, or the ruling's instrument |
 | --- | --- | --- | --- |
-| `contains` | EMITTED | 11,786 | 639 files; e.g. `Exposed/exposed-maven-plugin/…/V20260720135258__CREATE_TABLE_USERS.sql` |
-| `uses` | EMITTED | 9,017 | 1,518 files; e.g. `duckdb/benchmark/aoc24/queries/day02.sql` |
-| `references` | EMITTED | 5,965 | 604 files; e.g. `hasura-engine/server/src-rsr/init_pg_source.sql` |
-| `calls` | EMITTED | 3,827 | 622 files; e.g. `duckdb/benchmark/clickbench/queries/q27.sql` |
-| `imports` | EMITTED (was RULED) | 52 | 22 psql includes in 6 files (`postgrest/test/io/fixtures/load.sql`) + 30 `CREATE EXTENSION` in 8 files (`hasura-engine/server/src-rsr/migrations/1_to_2.sql`) |
-| `overrides` | EMITTED (was RULED) | 22 | 4 files; `postgrest/test/io/fixtures/big_schema.sql`, `postgrest/test/io/fixtures/schema.sql`, `postgrest/test/spec/fixtures/schema.sql`, `proxicall/database/archive/2026/20260131_pms_audit_logging_system.sql` |
-| `instantiates` | EMITTED (was RULED) | 21 | 10 files; `hasura-engine/v3/crates/engine/tests/db_definition.sql`, `postgrest/test/spec/fixtures/schema.sql` |
-| `exports` | RULED | 0 | **Instrument A.** 465 node types, none is an export/module/provide/publication shape. Token counts: 0 `EXPORT`, 0 `MODULE`, 0 `PROVIDE`. |
-| `extends` | RULED | 0 | **Instrument A + B + a 5-shape capability battery.** No inheritance node among the 465; 0 `INHERITS`/`INHERIT` tokens inside a `create_table` or `alter_table`; and `INHERITS`, `PARTITION OF`, `ATTACH PARTITION`, `PARTITION BY` and `LIKE` were each PARSED against the wired wasm. See below. |
-| `implements` | RULED | 0 | **Instrument A + B.** No interface/supertype node among the 465; 0 `IMPLEMENTS` tokens. SQL has no interface type. |
+| `contains` | EMITTED | 11,977 | 648 files; e.g. `Exposed/exposed-maven-plugin/…/V20260720135258__CREATE_TABLE_USERS.sql` |
+| `uses` | EMITTED | 9,106 | 1,522 files; e.g. `duckdb/benchmark/aoc24/queries/day02.sql` |
+| `references` | EMITTED | 5,996 | 612 files; e.g. `hasura-engine/server/src-rsr/init_pg_source.sql` |
+| `calls` | EMITTED | 3,892 | 630 files; e.g. `duckdb/benchmark/clickbench/queries/q27.sql` |
+| `imports` | EMITTED | 52 | 25 files; 22 psql includes in 6 (`postgrest/test/io/fixtures/load.sql`) + 30 `CREATE EXTENSION` in 8 (`hasura-engine/server/src-rsr/migrations/1_to_2.sql`) |
+| `overrides` | EMITTED | 22 | 4 files; `postgrest/test/io/fixtures/big_schema.sql`, `postgrest/test/io/fixtures/schema.sql`, `postgrest/test/spec/fixtures/schema.sql`, `proxicall/database/archive/2026/20260131_pms_audit_logging_system.sql` |
+| `instantiates` | EMITTED | 21 | 10 files; `hasura-engine/v3/crates/engine/tests/db_definition.sql`, `postgrest/test/spec/fixtures/schema.sql` |
+| `exports` | RULED | 0 | **Instrument A.** The corpus-wide union is **480** distinct node types and **no node type anywhere in that vocabulary contains `export`, `module` or `provide`**, keyword or otherwise. Token counts: 0 `EXPORT`, 0 `MODULE` as a KEYWORD, 0 `PROVIDE`; 1 occurrence of the TEXT `module`, which is a column name — see *Pass 3*. The gate prints 256 for this row, which is **shard0's** vocabulary and not the corpus's — see *PASS 7*. |
+| `extends` | RULED | 0 | **Instrument A + B + a 5-shape capability battery.** No inheritance node among the 480; 0 `INHERITS` tokens inside a `create_table` or `alter_table`; and `INHERITS`, `PARTITION OF`, `ATTACH PARTITION`, `PARTITION BY` and `LIKE` were each PARSED against the wired wasm. See below. |
+| `implements` | RULED | 0 | **Instrument A + B.** No interface/supertype node among the 480; 0 `IMPLEMENTS` tokens. SQL has no interface type. |
+
+Every count in this table is the **census's** figure at `bb0ec1786` — 0 degraded files, so not a
+lower bound. Pass 7 re-measured all seven and they are identical to pass 4's.
+
+Coverage is reported as **7 of 7 applicable types emitted**, with 3 of 10 ruled by measurement. The
+denominator shrank only through RULED verdicts carrying a corpus measurement, and the numerator
+(what fires) and the denominator (measured non-applicability) come from different instruments: the
+census and the construct probe.
 
 ### The three rulings, and the overturn condition each one carries
 
-**`exports` — instrument A, 465 node types.** The visibility scope in SQL is the *database*, not
-the file, and no SQL construct enumerates what a unit publishes. `CREATE EXTENSION` is the
-strongest candidate and it is answered with a measurement rather than a sentence: it occurs
-**30 times** over the corpus, yields 30 `module` symbols, and is an **inbound** declaration of a
-package whose published surface lives in that package's own control file, not in this unit. It
-is now published as an `imports` edge (`metadata.extensionInstall`), which is the direction the
-construct actually points. psql's file graph is real and its only edge is inbound (`\i`), which
-is why `imports` is emitted and `exports` is not.
-*Overturn:* any node type among the 465 that expresses a published surface. **Pass 2 also
-searched for `partition`, `like`, `of`, `super`, `class`, `interface`, `trait` and `struct` as
-substrings over all 465 type names** — the two `partition` hits are a `table_partition` rule
-and a `keyword_partition` token, both of which are the `PARTITION BY` strategy and name no
-parent, and the `class` hit is the `regclass` type name.
+**`exports` — instrument A, 480 node types.** The visibility scope in SQL is the *database*, not the
+file, and no SQL construct enumerates what a unit publishes. `CREATE EXTENSION` is the strongest
+candidate and it is answered with a measurement rather than a sentence: it occurs **30 times** over
+the corpus, yields 30 `module` symbols, and is an **inbound** declaration of a package whose
+published surface lives in that package's own control file, not in this unit. It is published as an
+`imports` edge (`metadata.extensionInstall`), which is the direction the construct actually points.
+psql's file graph is real and its only edge is inbound (`\i`), which is why `imports` is emitted and
+`exports` is not.
+*Overturn:* any node type among the 480 that expresses a published surface. **Pass 3 searched every
+type name for `export`, `module`, `provide`, `partition`, `like`, `of`, `super`, `class`, `interface`,
+`trait` and `struct` as substrings and found ZERO hits for the first three** — the `class` hit is
+`keyword_regclass` (62 occurrences, the `regclass` TYPE NAME, not a class construct). The three
+`partition` hits are `table_partition` (6), `keyword_partition` (57) and `partition_by` (44); none
+names a parent table. **Pass 8 corrected this row**: passes 1–7 reported *two* `partition` hits and
+did not name `partition_by`, the only one of the three whose name is not qualified by `table_` — see
+*PASS 8*.
 
-**`extends` — instrument A, plus a FIVE-SHAPE capability battery, and pass 2 replaced the
-battery's weakest link.** SQL *does* have table inheritance; the wired grammar cannot represent
-it. A corpus count of 0 is consistent both with "SQL lacks inheritance" and with "the grammar
-cannot read it", and only a PARSE separates them — so each shape is parsed against
-`wasm/tree-sitter-sql.wasm` and the resulting node shape recorded
-(`adversarial-probe.json` → `capabilityTests`):
+**`extends` — instrument A, plus a SEVEN-SHAPE capability battery, every verdict decided from the
+TREE.** SQL *does* have table inheritance; the wired grammar cannot represent it. A corpus
+count of 0 is consistent both with "SQL lacks inheritance" and with "the grammar cannot read it", and
+only a PARSE separates them — so each shape is parsed against `wasm/tree-sitter-sql.wasm` and the
+NODE TYPES recorded (`pass8-adversarial-probe.json` → `capabilityTests`):
 
-| Shape | Verdict | Node shape |
+| Shape | Verdict | What the tree shows |
 | --- | --- | --- |
 | `CREATE TABLE c (…) INHERITS (p)` | NOT EXPRESSIBLE | `create_table` ends at the column list; the clause lands in a top-level `ERROR` |
-| `CREATE TABLE c PARTITION OF p FOR VALUES …` | NOT EXPRESSIBLE | `table_partition(keyword_partition, ERROR(keyword_for, keyword_values, keyword_from), …)` — `OF <parent>` is inside the ERROR |
-| `ALTER TABLE p ATTACH PARTITION c FOR VALUES …` | NOT EXPRESSIBLE | the whole clause lands in a top-level `ERROR` |
-| `CREATE TABLE p (…) PARTITION BY RANGE (x)` | EXPRESSIBLE, but names no parent | `table_partition` |
-| `CREATE TABLE c (LIKE p)` | EXPRESSIBLE, and a structural COPY | `column_definition` whose `custom_type` is `p` |
+| `CREATE TABLE c PARTITION OF p FOR VALUES …` | NOT EXPRESSIBLE | the whole `create_table` is inside an `ERROR`; `table_partition(keyword_partition, ERROR(keyword_for, keyword_values, keyword_from), ERROR)` — `OF <parent>` is inside the inner ERROR |
+| `ALTER TABLE p ATTACH PARTITION c FOR VALUES …` | NOT EXPRESSIBLE | the `alter_table`'s only action is an `add_column` whose `column_definition` has `name: ATTACH` and `custom_type: PARTITION`; `FOR VALUES …` lands in a **top-level** `ERROR`. The attachment is not represented at all — it is misread as a column |
+| `CREATE TABLE p (…) PARTITION BY RANGE (x)` | EXPRESSIBLE, but names no parent | `table_partition(keyword_partition, keyword_by, keyword_range, …)`, 5 occurrences corpus-wide, all of them this form |
+| `CREATE TABLE c (LIKE p)` | EXPRESSIBLE, and a structural COPY | a `column_definition` whose `custom_type` **field** is `p` and whose `name` field is the bare `LIKE` token |
+| `CREATE TABLE c (LIKE p INCLUDING ALL)` | PARTIALLY EXPRESSIBLE | `LIKE` survives as the same `column_definition`; `INCLUDING ALL` lands in an `ERROR` |
+| `SELECT sum(x) OVER (PARTITION BY y)` — the other `PARTITION BY` | EXPRESSIBLE, and **not the construct** | `partition_by` under `window_specification`: a window function's ordering key, not a table clause. **Added at pass 8** — see below |
 
-**Why the battery exists at all, and it is the substantive pass-2 change to this ruling.**
-Pass 1's overturn condition was "a `keyword_inherits`/`inherits_clause` node inside
-`create_table`". That is a NODE-NAMED condition, and it is unsound: since PostgreSQL 11 a
-`PARTITION OF` child inherits its parent's columns with no `INHERITS` clause at all, so a
-grammar could grow that clause, call the node anything, and produce **zero** nodes matching
-pass 1's condition while making `extends` fully derivable. The ruling would then read 0 on
-a corpus where the construct is present and readable — still wrong, and still sounding right.
+**The seventh row exists because the page's own `partition` count was two of three.** Passes 1–7
+recorded two node types matching a search for `partition` and explained both. The corpus-wide
+vocabulary has a third, `partition_by`, 44 occurrences, and it is the only one of the three whose
+name is not qualified by `table_` — so it is the first one a reader checking the `extends` ruling
+would reach for. Every shape in the battery above is a TABLE-PARTITIONING form, so none of them
+covered it: a battery that tests only the shapes it already suspects is how a candidate goes unnamed.
+It is now measured rather than argued, by a tree walk rather than a name search
+(`partition-by-sites.mts` → `measurements/pass8-partition-by-sites.json`, and `adversarial-probe.mts`
+A13):
+
+| Question | Measured |
+| --- | --- |
+| occurrences of `partition_by` over the 1,955 admitted files | **44** |
+| with nearest parent `window_specification` | **44 of 44** |
+| inside a `create_table` | **1**, and `create_query` is in that chain — `duckdb/benchmark/h2oai/group/queries/q08.sql:1` is `CREATE TABLE … AS SELECT … OVER (PARTITION BY id6)`, a CTAS |
+| inside a table-PARTITIONING declaration | **0** |
+
+So the node names an ordering key, not a parent table, and the `extends` verdict stands with its
+support strengthened rather than weakened. **The cost of the error was auditability, not the verdict**,
+and the correction is recorded here rather than silently applied because the arithmetic of a
+substring search is exactly the kind of figure that decays without anyone noticing.
+
+Pass 3 replaced this battery's instrument. Pass 2 decided all five from REGEXES over a rendered
+`rootNode.toString()` dump, which is the instrument the ontology gate's own header rejects — and which
+had already produced one wrong verdict here (a `LIKE p` case that searched the shape for `(LIKE`, found
+nothing, and reported NOT EXPRESSIBLE for a clause the grammar reads cleanly). Every verdict is now read
+off node types, named children and **fields**, which is not a cosmetic change: `custom_type` is a field
+on `column_definition` and not a node type, so the first tree-based attempt answered NO for that same
+clean clause. The battery's verdicts did not change in substance; the reasoning behind two of them is
+now sharper than the text it replaced.
 Corpus count: `table_partition` occurs 6 times and **all 6 are the `PARTITION BY` strategy**;
 `PARTITION OF` occurs 0 times corpus-wide.
 *Overturn:* a parse in which `OF <parent>` or `INHERITS (…)` survives inside a
@@ -211,22 +274,18 @@ grammar, not about a node's spelling, and it is the condition the battery actual
 **`implements` — instrument A + B.** SQL has no interface type and no clause in which a
 declaration names a supertype it satisfies. `CREATE DOMAIN d AS t CHECK (…)` is a
 constraint-carrying alias, not interface satisfaction.
-*Overturn:* any supertype/interface node type among the 465.
+*Overturn:* any supertype/interface node type among the 480.
 
-**`imports` — the ruling that was falsified in pass 1, and re-verified.** SQL-D1 recorded "the
-analyzer emits no `imports`. SQL has no import statement", justified by the *mechanism* (the
-previous implementation scanned for `#import`/`@import` text the grammar can never produce).
-That was true of the code and false of the language: psql's `\i` / `\ir` name another
-**file**, 22 directives across 6 files, and `CREATE EXTENSION` names another **distribution**,
-30 declarations across 8 files. Two guards cost 0 occurrences on this corpus and are kept for
-the corpus that needs them: a psql-variable target (`\i :name`) and an argument with no
-`.sql`/`.psql`/`.dump` suffix. The 121 other meta-commands are **not** imports and are counted
-in `ambiguity.psqlCommandsSkipped`.
-**Pass 2 verified the resolvable half.** The 22 psql include targets are paths relative to the
-including script, so a consumer must join them — and joining them is not a guess: **22 of 22
-exist on disk** after `path.resolve(path.dirname(file), target)` across 6 files
-(`adversarial-probe.json` → `A7-psql-include-target-exists-after-join`). The 30 extension
-targets are distributions no file can declare and are labelled `external`.
+**`imports` — the ruling that was falsified in pass 1, and re-verified twice since.** SQL-D1 recorded
+"the analyzer emits no `imports`. SQL has no import statement", justified by the *mechanism*. That was
+true of the code and false of the language: psql's `\i` / `\ir` name another **file**, 22 directives
+across 6 files, and `CREATE EXTENSION` names another **distribution**, 30 declarations across 8 files.
+Two guards cost 0 occurrences on this corpus and are kept for the corpus that needs them: a
+psql-variable target (`\i :name`) and an argument with no `.sql`/`.psql`/`.dump` suffix. The other 136
+meta-commands are **not** imports and are counted in `ambiguity.psqlCommandsSkipped`
+(`echo` 108, `ir` 22, `set` 8, `gexec` 1, `endif` 1, `if` 1, `gset` 1, `pset` 1).
+**The resolvable half is measured: 22 of 22 psql include targets exist on disk** after
+`path.resolve(path.dirname(file), target)`.
 *Overturn:* a corpus file whose `\i`/`\ir` argument is a psql variable or carries no
 recognised suffix — 0 occurrences on this corpus.
 
@@ -238,12 +297,12 @@ under the table.
 
 | Type | 1 Exists | 2 Fires | 3 Correct | 4 Labelled | 5 Resolved (intra / corpus) | 6 Confident |
 | --- | --- | --- | --- | --- | --- | --- |
-| `contains` | yes | 11,786 | 11,785 of 11,786 member endpoints resolve by `ownerName`; **1 does not**, and it is named below | distinct from `references` (an FK/policy/index target, all in fixed keyword slots) | 99.99 % / 99.99 % | 1.0, all `structural` |
-| `uses` | yes | 9,017 | 19 of 19 CTE-named edges are AMBIGUOUS rather than fabricated (a qualified reference reaches the same bare leaf) or unrecoverable (below) | distinct from `calls`; tier agrees with metadata on 9,017 of 9,017 | 32.80 % / 89.62 % | 1.0; 7,209 `usage_contextual`, 1,808 `reference_qualified` |
-| `references` | yes | 5,965 | 84/84 facts | distinct from `uses`: every target follows `keyword_references`/`keyword_on` | 69.42 % / 98.26 % | 1.0, all `structural` |
-| `calls` | yes | 3,827 | 84/84 facts; 448 qualified invocations emitted, 52 suppressed as keyword/builtin, **196 not emitted for a reason pass 2 did not settle** | distinct from `uses`; tier agrees on 3,827 of 3,827 | 40.29 % / 78.73 % | 1.0; 3,381 `usage_contextual`, 446 `reference_qualified` |
+| `contains` | yes | 11,977 | 11,976 of 11,977 member endpoints resolve by `ownerName`; **1 does not**, and it is named below | distinct from `references` (an FK/policy/index target, all in fixed keyword slots) | 99.99 % / 99.99 % | 1.0, all `structural` |
+| `uses` | yes | 9,106 | 19 of 19 CTE-named edges are AMBIGUOUS rather than fabricated (a qualified reference reaches the same bare leaf) or unrecoverable (below) | distinct from `calls`; tier agrees with metadata on every edge | 32.51 % / 88.95 % | 1.0; 7,276 `usage_contextual`, 1,830 `reference_qualified` |
+| `references` | yes | 5,996 | 84/84 facts | distinct from `uses`: every target follows `keyword_references`/`keyword_on` | 69.56 % / 98.27 % | 1.0, all `structural` |
+| `calls` | yes | 3,892 | 84/84 facts; **629 of 742** qualified invocations on the tree emitted, **53** guard-suppressed, **60** inside an error subtree, **0 unexplained** | distinct from `uses`; tier agrees on 3,892 of 3,892 edges | 40.34 % / 78.75 % | 1.0; 3,417 `usage_contextual`, 475 `reference_qualified` |
 | `imports` | yes | 52 | not in the 84-fact oracle; 0 unexplained by construction and the two mechanisms are separable in metadata | `psqlInclude` (22) vs `extensionInstall` (30) | 57.69 % / 57.69 % | 1.0, all `import_based` |
-| `overrides` | yes | 22 | all 22 reconciled against the tree by an independent re-derivation (below) | `orReplace: true` + both line numbers on every edge | 100 % / 100 % | 1.0, all `structural` |
+| `overrides` | yes | 22 edges from **34 events** | the analyzer's own rule re-implemented on parse trees yields 34 events → 22 per-file edge keys, **exactly production's 22**; the probe's rule yields 15 and the 19-edge difference decomposes to 12 multiplicity + 7 visit order, exact | `orReplace: true` + both line numbers on every edge | 100 % / 100 % | 1.0, all `structural` |
 | `instantiates` | yes | 21 | 17 of the construction-shaped casts sit OUTSIDE any query node and **all 17 are emitted**, so the type is not query-only | `construction: true` + the constructor node type; conversions carry no edge | 52.38 % / 90.48 % | 1.0, all `structural` |
 
 Resolution is reported at two rates deliberately. The analyzer emits per-file arrays of bare
@@ -251,29 +310,40 @@ names, so "resolved" has two honest meanings: declared in the **same** file, or 
 admitted file. A consumer running `bb_graph` is cross-file, so the corpus-wide rate predicts a
 dangling edge; the intra-file rate predicts a mis-scoped analyzer. Printing one would hide
 whichever half is worse. `global` is the analyzer's synthetic owner for anonymous statements
-and is counted and reported, never scored as unresolved.
+and is counted and reported, never scored as unresolved — but see *Pass 3*, because 77 % of
+`uses` edges are sourced to it and that is a real limit on the INCOMING direction.
 
-Three rates deserve naming rather than a footnote.
+### `calls` residual, bucketed by CAUSE — pass 2's open item, closed
 
-**`uses` at 32.80 % intra-file** is the lowest of the four structural types and it is expected:
-a migrations corpus reads tables a previous migration created, so the honest answer for most of
-them is "declared elsewhere". It also moved a great deal this pass: 9,033 → 9,017 edges over a
-corpus that grew by 486 files, and 1,047 edges were **removed** by the three CTE-scope fixes —
-every one of them an edge naming a CTE alias as a table.
+Pass 2 recorded: "196 qualified invocations are not emitted and pass 2 did not settle why …
+the number is reported as an open item rather than as a characterised class." A count with no
+cause is a to-do. `pass3-invocation-why.mts` assigns each miss a cause by asking the TREE what
+shape it is in, over 1,955 files:
 
-**`imports` at 57.69 % is a property of the construct, not a defect**: the 30 `CREATE
-EXTENSION` targets are distributions (`pgcrypto`, `plpgsql`, `uuid-ossp`, `postgis`) that no
-file in the corpus can declare, so they *cannot* resolve, and they are labelled `external` for
-exactly that reason. The 22 psql includes resolve at 0 % against *symbol names* for a different
-and now-measured reason — their targets are paths, not symbols, and **22 of 22 exist on disk**
-once joined against the including script's directory.
+| Bucket | Pass 2 | Pass 3 | Pass 5 (this HEAD) | What it is |
+| --- | --- | --- | --- | --- |
+| qualified invocations on the tree | 742 | 742 | **742** | the denominator, unchanged across three passes |
+| emitted as a `calls` edge | 449 | 579 | **629** | the two dispatch fixes, still in |
+| suppressed by the keyword/builtin guard | 53 | 53 | **53** | a guard working as designed |
+| inside an error subtree | 224 | 107 | **60** | a grammar bound, not a lane defect: the names in a swallowed WITH list never become nodes |
+| inside a `plpgsql_block` / `function_body` | 2 | 5 | **0** | absorbed into the row above — the probe's own chains read `…>plpgsql_assignment>function_body>create_function`, i.e. an error *above* the plpgsql body, so it is one class and splitting it was double-counting |
+| reachable shape, still not emitted | **196 (unsplit)** | **0** | **0** | the candidate defects, and the reason pass 2's number was a to-do |
 
-**`calls` at 40.29 % intra-file is the surface pass 2 widened**, and it is the one number that
-moved most: 2,328 edges at pass 1 against 3,827 now, a 64 % increase, because `calls` is no
-longer query-only. Its resolution rate went **down** (50.00 % → 40.29 % intra-file) while its
-corpus-wide rate went **up** (70.76 % → 78.73 %). That is the expected shape for edges added
-from `DEFAULT`/`CHECK`/policy expressions: a column default names the function the schema's
-own DDL used, and the owner symbol is in another migration more often than a query's is.
+629 + 53 + 60 = 742, so the decomposition is closed at pass 5 as well as at pass 3. Two dispatch
+gaps accounted for 14 of pass 2's reachable bucket, and both are the failure mode this workstream
+exists on: a branch that reads as constructible and never runs. See *PASS 3*.
+
+**The lane's two probes ask this question with DIFFERENT POPULATIONS, and the difference is a
+filter rather than a disagreement.** `pass3-invocation-why.mts` counts every `invocation` with a
+two-part callee and then buckets the misses by cause, so it reports 742 / 629 / 53 / 60.
+`adversarial-probe.mts` A3 skips any invocation whose own subtree carries an error
+(`if (n.type !== "invocation" || n.hasError) return`), so those nodes are outside its population
+entirely and it reports **696 = 628 + 16 + 52**. 742 − 696 = **46**, which is the filter. The two
+probes also disagree by **1** on the emitted bucket and **1** on the guard bucket — 2 of 742,
+0.27 % — and I did not settle why; the candidates are A3's global quote-strip on the leaf against
+this probe's leading/trailing-only `unquote`, and `Set`-membership on a leaf shared by two
+invocations in one file. It is reported rather than chosen between, because either probe's number
+alone would have read as the whole population.
 
 ### `overrides` reconciled, and a pass-1 explanation OVERTURNED
 
@@ -291,12 +361,8 @@ the four files from the parse tree, independently of the analyzer:
 | `proxicall/…/20260131_pms_audit_logging_system.sql` | 1 (`prevent_audit_modification`) |
 
 4 + 3 + 14 + 1 = **22**, which is exactly what the analyzer emits. So all 22 edges are sound
-and it is the **construct probe's 15 that is short by 7**, and the reason is not established.
-The probe walks its tree with a stack, so "the second occurrence" is not in document order —
-its own examples read `first at line 192, again at line 184` — and it records a hit only when
-`count === 2`, so a three-or-more-times-redeclared name contributes differently depending on
-visit order. `overloaded_default` occurs **four** times and `json` **five** times in
-`postgrest/test/spec/fixtures/schema.sql`, both with `OR REPLACE` on every declaration.
+and it is the **construct probe's 15** that is short — and pass 5 measured **why**, which closes
+limitation 14. See *`overrides` reconciled by measurement, pass 5* below.
 
 The kind-keyed `state.redeclared` is still a real fix and is still kept: the code did not
 enforce what the field comment and this page both claimed, and the corpus happens not to
@@ -306,15 +372,76 @@ produce no edge either way). It is pinned by fixture `sqld14` and by mutant
 `sql/override-key-ignores-the-declaration-kind`, and the honest statement is that the corpus
 does not exercise it.
 
+### `overrides` reconciled by measurement, and pass 3's mechanism was only half of it
+
+Pass 3 proposed in prose that the probe's `count === 2` rule and its stack walk explained the
+7-edge gap, and left it as a hypothesis because a prose mechanism is not a measurement.
+`validation/m14/fixtures/sql/overrides-reconciliation.mts` re-implements **both** rules on the
+same 1,955 parse trees — `recordReplacement`'s and the construct probe's P4 — and decomposes the
+difference. It reports, over 4,645 declarations and 178 redeclared `kind:name` groups:
+
+| | Count |
+| --- | --- |
+| analyzer's rule (an OR REPLACE declaration at document index ≥ 1 of its key) | **34 events** |
+| the probe's rule (same nodes, the probe's own visit order) | **15 hits** — reproduces the committed 15 |
+| gap | 19 |
+| decomposed: multiplicity | **12** |
+| decomposed: visit order | **7** |
+| sum | **19 — EXACT**, checked by the probe rather than asserted |
+
+**The cause is a WALK, not a rule, and pass 3 named the wrong half of it.** `construct-probe.mts`
+pushes children *forward* into a LIFO stack, so siblings are visited in **reverse** document
+order, and it classifies only the declaration it visits second. All 6 groups whose `orReplace`
+flags read `[false, true]` are therefore visited `[1, 0]`: the probe inspects the
+*non*-replacing declaration second and records no hit. Pass 3 saw this symptom in the probe's own
+stored examples (`first at line 192, again at line 184`) and attributed the whole gap to it;
+multiplicity is **12 of the 19**, from `json` declared 6 times, `overloaded_unnamed_param` 5 and
+`overloaded_default` 4, all with `OR REPLACE` on every declaration.
+
+**A second cause the pass-3 framing could not see, because it was comparing edges to events.**
+The analyzer's rule finds **34 events** and production `parseFile` emits **22 edges**. That
+difference is not a miss: `addRelationship` keys identity on `(type, source, target)` and
+`recordReplacement`'s source is the synthetic owner `global`, so repeat replacements of one NAME
+collapse onto a single edge. 34 events → **22 distinct per-file edge keys, which is production's
+22 exactly**. It has to be counted per file, because `parseFile` is per file and rebuilds the
+identity map each call: a corpus-wide set of names reads **21**, and the missing one is
+`infinite_recursion`, replaced in two different files. The kind is *not* part of the edge key, and
+**0** names are carried by two kinds here, so that half of the collision space is unexercised.
+
+The two 12s — multiplicity excess and edge collapse — are **independent sums that agree on this
+corpus**, which is why the observable 22-vs-15 gap reduces exactly to the visit-order component.
+They are not equal by rule. The case that separates them is a name whose second declaration lacks
+`OR REPLACE` and a later one carries it, where multiplicity is 1 and the collapse is 0; that case
+occurs **0 times** in the admitted corpus, which is exactly why this corpus cannot tell the two
+apart. That is a statement about the corpus, not a proof they are the same quantity.
+
+**The probe's text read of `OR REPLACE` is a measured non-finding.** The probe reads
+`n.text.slice(0, 48).toUpperCase().includes("OR REPLACE")` and the analyzer reads a
+`keyword_replace` child node; on all **4,645 declarations the two disagree 0 times**, and both
+rules return the same 34 / 15. So the text read is harmless *on this corpus* — recorded as a
+number because it is the thing the lane's regex policy objects to, and an argument would have been
+weaker evidence than the count.
+
+**Withdrawn: the "of 777 real replacement events" in limitation 1.** Measured per file **34**,
+corpus-wide **34** on the same rule, 78 names declared 2+ times. Every same-name re-declaration in
+the admitted corpus is intra-file, so the extension corpus's one-file-per-version pattern — which
+is what a cross-file denominator would have counted — contributes nothing here. 777 was carried
+from a pass that did not measure it, and no instrument in this repository reproduces it.
+
 ### DERIVATION findings — 7 of 7 emitted types
 
 Every type this analyzer emits is a **DERIVATION finding**: stored, and compared against
-nothing. `script/m14/differential.ts` exports **116 distinct `derive*` oracle functions**
-across `script/m14/` (161 export sites, some re-exported) and **none for SQL** —
-`deriveJavaEdges`, `deriveGoEdges`, `deriveCSharpEdges`, `deriveDartEdges`, `deriveZigEdges`,
-`deriveJuliaContainsTruth` and 110 others, no `deriveSqlEdges`. Pass 1 reported 68; that number
-was a count of one grep pattern on one file and is superseded by the 116 above, which counts
-distinct names across the whole directory.
+nothing. `script/m14/differential.ts` exports `derive*` oracle functions that live across
+`script/m14/` — **106 distinct names at 166 export sites** (some re-exported), re-counted at
+pass 6 — and **none for SQL**, so **7 of 7 emitted types** remain DERIVATION findings. The names
+belong to other lanes (`deriveJavaEdges`, `deriveGoEdges`, `deriveCSharpEdges`, `deriveDartEdges`,
+`deriveZigEdges`, `deriveJuliaContainsTruth` and 100 others); there is no `deriveSqlEdges`. Pass 1
+reported 68; that number was a count of one grep pattern on one file and is superseded, first by
+116 (counted across the whole directory at pass 3) and now by 106. **Both the 116 and the 106 move
+as other lanes add and remove oracles** — the figure is a property of the shared directory at the
+moment it is counted, not of this lane, which is why it is re-counted rather than cited. What does
+not move, and is the finding: the count for SQL is **0** at every one of those measurements, so the
+denominator of 7 is not in dispute.
 
 **The mechanism changed too, and the old symptom no longer reproduces.** Pass 1 recorded that a
 scoped run exits with "derived ZERO truth edges". Today it does not even get that far:
@@ -420,6 +547,9 @@ name, deduped by the same (type, source, target) key `processQuery` uses. **`cal
 already emitted, so `instantiates` is not query-only either.
 
 **DEFECT 6 — 1 of 11,786 `contains` edges names a symbol that does not exist.**
+*(11,786 is the pass-3 edge count; at this HEAD `contains` is 11,977 and the same 1 edge is still
+there — re-confirmed by `pass5-adversarial-probe.json` under
+`A10-contains-target-has-no-symbol-in-this-file`.)*
 `boundary/internal/db/schema/migrations/oss/postgres/71/11_session_recording.up.sql` publishes
 `contains recording_channel_ssh_session_channel -> program`. `program` is a legal SQL column
 name, and `keepSymbol`'s `UNIVERSAL` denylist in `src/ast/pool-worker.ts` holds `program` —
@@ -431,7 +561,8 @@ edge the drop corrupts. `pool-worker.ts` is shared (§8), so it is **filed, not 
 ### A VACUOUS probe of my own, recorded because the CSS lane found one too
 
 The range-containment probe (`A1`) was specified as "is the member's span inside the owner's
-span?" and reports **11,252 of 11,786 violations (95.5 %)** — which reads as a catastrophic
+span?" and reports **11,252 of 11,786 violations (95.5 %)** at pass 2 — **11,392 of 11,977
+(95.1 %) at this HEAD**, the same shape at a larger corpus — which reads as a catastrophic
 defect and is not one. SQL's symbol ranges are NAME-ANCHORED: a `CREATE TABLE`'s symbol range
 is the identifier's span, so `server_tag` is recorded at lines 121-121 while its columns are at
 122-127. Worked example:
@@ -453,14 +584,689 @@ telnet word list) and json (`new Map(` in a heredoc). The verdict now keys on th
 
 ### What is STILL wrong after all of this, as numbers
 
+**SUPERSEDED — this is the pass-2 state, kept because the sequence is the evidence.** Every row
+below is re-measured or retired in pass 3's table and in *Declared limitations*: the `196`
+unexplained invocations are now **0 unexplained** with the residual split 107 / 5 by cause, the
+3,381 `usage_contextual` `calls` edges are **3,417**, and both `uses` rows moved. Read this table
+as history, not as the current state.
+
 | Residual | Count | Files | Why it is not fixed here |
 | --- | --- | --- | --- |
-| `uses` edges from inside an error-bearing CTE | **91** | 56 | when error recovery swallows a WITH list the names in it never become `cte` nodes, so the scope set is complete and still wrong. The fix would have to decide that ANY error inside a CTE body means the WITH list was lost, and that suppresses true table edges for every file with an unrelated unparseable expression in a CTE. Needs a grammar fix, not a guard. |
+| `uses` edges from inside an error-bearing CTE | **91** | 56 | when error recovery swallows a WITH list the names in it never become `cte` nodes, so the scope set is finished and still wrong. The fix would have to decide that ANY error inside a CTE body means the WITH list was lost, and that suppresses true table edges for every file with an unrelated unparseable expression in a CTE. Needs a grammar fix, not a guard. |
 | `uses` edges targeting a CTE name with no qualified reach | **19** | 11 | down from 32; the remainder is the row above. |
 | `uses` edges whose bare leaf is ambiguous between a CTE and a qualified table | **16** | 16 | `uses global->parse` in `duckdb/…/asql_cyk_using_key.sql` is one bare leaf reached both by the CTE `parse` (correctly suppressed) and by the real table `recurring.parse` (correctly emitted). The (type, source, target) key cannot represent two different objects with one leaf; that is limitation 8's shape applied to `uses`. |
 | qualified invocations not emitted for a reason not settled | **196** | 11 | 52 are explained (keyword/builtin guard, and the probe separates them). The other 196 are inside damaged subtrees and I did not establish which guard or which pass drops them. |
 | `contains` edges naming a symbol `keepSymbol` deletes | **1** | 1 | SQL-G13, shared machinery, filed |
 | `calls` edges at confidence 1 whose evidence tier is `usage_contextual` | **3,381** | — | not a defect: that is the honest label for a name in a bare slot, and it is now countable per edge |
+
+## PASS 3 — the incoming direction, and two dead code paths (2026-10-03)
+
+Pass 1 measured whether each type fires. Pass 2 assumed each label was wrong and looked for the case
+that proves it. **Pass 3 asks the question from the other end**: not what a file declares, but what a
+graph can *walk to*, and then assumes the emission paths are reachable.
+
+### The census was not a measurement until now, and the reason is the engine
+
+Two mechanisms in the production path return a result SHAPED LIKE SUCCESS while contributing nothing,
+and this census counted both as successful parses:
+
+- `engine.ts:1717` answers its own 120-second analyzer timeout with a basic parse result —
+  `symbols: []`, `relationships: []`, one `errors[]` entry, `metadata.analysisVersion:
+  "2.0-basic-fallback"`. A load policy.
+- `pool-worker.parseFile`'s catch returns `extractFallback` — the language-agnostic **REGEX**
+  extractor — for ANY parse error, marked `fallback: true`. All files observed with it are under
+  20 KB, so it is **not** the >1 MB size policy.
+
+So `parseFailures: 0` was printed by runs in which files had contributed nothing. Two smaller
+instrument defects in the same file: `topUnresolvedNames` serialised `[name, count]` pairs, so every
+consumer read `undefined` for all twelve entries and the artifact's unresolved-target list was
+unreadable while looking well-formed; and `--merge` consumed only its first path, so a merge reported
+244 of 1,951 rows as the corpus.
+
+**Name-based exclusion cannot fix this, and that is measured rather than asserted.** Pass 3 was killed
+four times by four DIFFERENT files (`day03`, `day11`, `day04`, `day01`). Test: all 25
+`duckdb/benchmark/aoc24/queries/day*.sql` parse solo in 0.7–7.6 s with no fault, and across 4 rounds
+of 8-way contended parsing of exactly those files, **0 faults and 0 hangs**
+(`measurements/pass3-fault-contended-r1.json`). So the fault is neither a property of a file nor of
+concurrency alone — it emerges from SUSTAINED wasm state over a long walk, which file faults moves
+between runs, and pass 2's three-name exclusion list grew to seven by pass 3 purely by being killed
+again. A name list is a record of the day.
+
+What does work is bounding the process: **8 contiguous shards** (run C used 4, to test that the count
+does not depend on the slicing), a **serial repair pass** for files that degrade, and a **merge** that
+replays shard rows through the same tally code. Two independent walks of the same corpus at the same
+HEAD, with different partitioning:
+
+| Walk | Shards | Files measured | Symbols | Relationships |
+| --- | --- | --- | --- | --- |
+| B | 8 | 1,951 | 17,581 | 29,019 |
+| C | 4 | 1,952 | 18,524 | 30,893 |
+
+**The entire difference is ONE file.** `postgrest/test/io/fixtures/big_schema.sql` is worth 943 symbols
+(5.1 %) and 1,874 relationships (6.5 %), and both artifacts name it in `filesWithNoShardRow`. It is not
+repairable: solo, in a dedicated process, it crosses the 120 s budget and the process takes 205 s to
+unwind. Run C's numbers are the lane's, and **run C reproduces pass 2's headline** — 30,893 against
+30,690 relationships, and `overrides` 22 against 22, which is the count pass 2 attributed partly to
+this file. Pass 2's "the corpus numbers are not reproducible" was one file crossing a budget.
+
+### DEFECT 1 — 53 declarations the files do not contain
+
+`processConstraint` reads a constraint's name from the identifier after `keyword_constraint`. With no
+`CONSTRAINT` keyword it fell back to `directChild(node, "identifier")`, a fallback added for MySQL's
+`UNIQUE KEY <name> (cols)`. An unnamed FOREIGN KEY also has direct identifier children, and they are
+the **REFERENCED table's columns**:
+
+```
+foreign key (a, b) references u (x, y)
+  constraint
+    keyword_foreign  keyword_key
+    ordered_columns (a, b)          <- LOCAL columns, nested under `column`
+    keyword_references  object_reference u
+    identifier x   identifier y    <- DIRECT children: u's columns
+```
+
+so the fallback took `x` and published `constant:x` owned by the referencing table. Exemplar:
+`boundary/internal/db/schema/migrations/oss/postgres/0/07_auth.up.sql` published two
+`constant:scope_id` under `auth_account` (lines 90 and 94 — one per foreign key, both named after
+`auth_method`'s first referenced column) against the real `property:scope_id` at line 72.
+
+| | phantoms | files |
+| --- | --- | --- |
+| before | **53** | 22 |
+| after | **0** | 0 |
+
+The instrument is a **parse-tree oracle**, not the heuristic, and the reason is measured: phpMyAdmin's
+`resources/sql/create_tables.sql` line 68 writes ``UNIQUE KEY `db_name` (`db_name`,`table_name`)`` — a
+REAL index named after one of its own columns — so "a `constant` whose name equals a column name" flags
+a true declaration. The oracle asks whether a NAMED constraint sits on the symbol's own line and clears
+those 4 on both runs. The fix is **order**, read off the grammar: MySQL's index name PRECEDES
+`ordered_columns`, the foreign key's referenced columns FOLLOW it.
+
+Two errors in the probe itself are recorded in its header rather than in its results, because both
+first read as clean results. It keyed on `symbol.metadata.type === "constraint"` and found **ZERO**
+phantoms — `pool-worker.ts` forwards a WHITELIST of symbol metadata keys and the list is CSS-only plus
+markdown-only, so every `metadata.type` this analyzer writes is dropped before a consumer sees it; and
+the oracle compared the tree's raw `` `db_name` `` against a symbol named `db_name`.
+
+### The unresolved-target split, and a classifier that could not fire
+
+The workstream asks for "external" to be separated from "never indexed", because the two look
+identical in a count and are opposite findings. This lane's incoming probe has carried a classifier
+for it since pass 3 — and at pass 6 that classifier was found to be **structurally incapable of
+producing the answer it was written for.**
+
+`externalNames` was built like this:
+
+```ts
+for (const name of published.keys()) { if (platform-shaped) externalNames.add(name) }
+```
+
+`published` holds the names the corpus **declares**. `externalNames` was only ever consulted for
+names the corpus does **not** declare (`if (!published.has(target))`). The two sets were disjoint by
+construction, so `externalByName` could never fire and **every** unresolved target fell into
+`unaccounted`. The artifact read `unresolvedClasses: {unaccounted: 827}` for `calls` and nothing
+else, which reads as a finding about 827 edges and is in fact a statement about the classifier. The
+fixed test applies the shape test to the unresolved name itself and asks the analyzer's own exported
+guard sets (`SQL_BUILTINS`, 427 names; `SQL_KEYWORDS`, 151) whether the name is one it deliberately
+refuses to treat as a callee. The old set is kept as `publishedPlatformNames`, and it measures
+**0** — which is the proof that it could never have fired.
+
+**The split, measured over all 1,955 files, 0 degraded** (`measurements/pass6-incoming-corpus.json`):
+
+| Type | Unresolved edges | external (builtin / catalog / path) | unaccounted |
+| --- | --- | --- | --- |
+| `calls` | 827 | **6** (`pg_trigger_depth`, `pg_relation_is_updatable`, …) | **821** |
+| `uses` | 1,006 | **280** (`pg_attribute`, `pg_class`, …) | **726** |
+| `references` | 104 | 0 | **104** |
+| `imports` | 22 | **22** — all `metadata.psqlInclude`, i.e. FILE PATHS | **0** |
+| `contains` | 1 | 0 | **1** (`program`) |
+| `instantiates` | 2 | 0 | **2** (`composite_domain`) |
+| **total** | **1,962** | **308** | **1,654** |
+
+So **1,654 edges name a declaration-shaped thing no admitted file publishes**, and 308 are
+genuinely hopeless-string targets. The `imports` half is settled by a different key rather than
+admitted as a gap: a psql `\i` target is a path relative to the including script, and **22 of 22
+resolve on disk** under `path.resolve(path.dirname(file), target)` — measured in the same artifact
+by the same run, not carried from an earlier pass. The 30 `CREATE EXTENSION` targets are
+distributions: **0 of 30** appear in the corpus, and the probe **deliberately does not score that
+as resolved** (`extensionInstallsScoredAsResolved: false`), because "the server installs this" and
+"a file in this repository declares it" are different claims and folding them together would be the
+error the split exists to prevent.
+
+The 1,654 are the real finding and they are not settled: `credential_vault_generic_library*`,
+`wh_date_key`, `wh_time_key` and similar are declarations this corpus's admitted files do not carry.
+**They are not necessarily analyzer defects** — a migrations corpus references tables created by a
+file the 512 KB cap or the grammar excluded, and the probe indexes the files it was given and no
+others, so a name read from outside that set reads as unresolved here and not in the project. The
+rate is reported, not scored, and that is the same reason the orphan row (903 of 7,811 published
+names are named by no edge) is reported rather than treated as a defect.
+
+**The second defect was in the self-check I added to catch the first.** `classifierSelfCheck` summed
+with `Object.values(rows)` where `rows` is a `Map`, which yields `[]` — so its three totals read 0
+and `vacuous` read `false` on an empty array. A self-check that cannot fail is the same defect one
+level up. It iterates `rows.values()` now, and it reports `vacuous: false` against real totals
+(286 / 1,654). Both are recorded because the second was found by reading the first one's output
+rather than by any test.
+
+### DEFECT 2 — a `contains` target naming two declarations, and the graph cannot choose
+
+`src/lsp/impact.ts` obtains its reverse edges by scanning outgoing edges and matching targets. A
+`contains` edge names its member by BARE NAME, and SQL makes bare-name collisions ordinary:
+
+| Match rule | Unique | Ambiguous | Share unique |
+| --- | --- | --- | --- |
+| bare name alone, corpus-wide | 10,649 | 842 | 92.7 % |
+| (name, `ownerName`), within the edge's own file | 11,436 | 55 | 99.52 % |
+| + the edge's `metadata.memberKind` | **11,444** | **47** | **99.59 %** |
+
+`ownerName` was **already on the member symbol**, so most of that is a consumer rule and not a schema
+change — the single highest-value fact this round produced for anyone walking the graph. The last 47
+needed the member's KIND on the edge, and that key had to join the dedup KEY too: two members of one
+name under one owner are two true facts, and a `(type, source, target)` key was silently deleting the
+index's containment edge. Carrying `memberKind` in the payload alone would have been worse — the
+surviving edge's key would still claim to be the only fact about that name.
+
+A regression I introduced and caught with the fixture: adding `memberKind` to `createSymbol` but not to
+the explicit call sites made every ordinary containment edge store **TWICE**. Pinned by an
+`equals: 1` row.
+
+Cross-file, `ownerName` alone is not enough — 4,980 unique / 6,511 ambiguous, median 2 matches at
+pass 3, and **5,463 unique / 6,513 ambiguous, median 2 at this HEAD** — because a migrations corpus
+declares `users(id)` in many files. **The file is the disambiguator a cross-file
+consumer needs, and `bb_impact`'s target-matching does not currently use it.** §8.
+
+### DEFECT 3 — `processDo` was UNREACHABLE DEAD CODE
+
+Its only caller sat in `dispatchDeclaration`, which runs for `DECLARATION_NODES` only, and
+`do_statement` is not a declaration — it declares nothing. The method exists, its body is three real
+calls, and a source-derivation count of "which types can this analyzer construct" would have counted
+`calls` from a `DO` block as constructible. Measured on single statements, not inferred:
+
+| Input | Before | After |
+| --- | --- | --- |
+| `DO $p$ BEGIN PERFORM f(1); END $p$;` | no `calls` edge | `calls global->f` |
+| `DO $p$ BEGIN PERFORM g('x', (SELECT public.h(1))); END $p$;` | nothing | `calls global->g`, `calls global->h` |
+| `DO $p$ BEGIN SELECT id FROM t; END $p$;` | `uses` from the sweep, **no `Anonymous Procedural Block` pattern** | both, plus the pattern |
+
+The second row is the shape that hid half of it: the `SELECT` inside a `PERFORM` argument is a `select`
+EXPRESSION, not a `statement`, so the declaration sweep's nested-statement re-entry never reached it
+either. That is `proxicall/database/verify_m95_3043_coms_rls_hardening.sql` lines 395–402.
+
+### DEFECT 4 — `ALTER TABLE … SET DEFAULT` never read its expression slot
+
+`ALTER TABLE t ALTER COLUMN c SET DEFAULT app.f()` puts an `invocation` in a grammar-mandated slot and
+produced no edge: `alter_table` is neither a query nor a declaration, and `processAlterTable` returns
+early when the statement adds no column — exactly this shape. 8 of the 14 reachable misses.
+`hasura-engine/server/src-rsr/migrations/41_to_42.sql` writes `SET DEFAULT hdb_catalog.gen_hasura_uuid()`
+five times in one file. Sourced to the **altered table** rather than to `global`, because a table is a
+published symbol and `global` is not.
+
+### What is STILL wrong after all of this, as numbers
+
+| Residual | Count | Files | Why it is not fixed here |
+| --- | --- | --- | --- |
+| qualified invocations inside an error subtree | **107** | — | a grammar bound, not a lane defect: when error recovery swallows an expression the callee never becomes an `invocation` node. Needs a grammar change |
+| qualified invocations inside a `plpgsql_block` / `function_body` | **5** | — | same class |
+| qualified invocations in a reachable shape, not emitted | **0** | 0 | was 14 at pass 2; both dispatch gaps are closed |
+| `uses` edges from inside an error-bearing CTE | **91** | 56 | limitation 12: the WITH list is inside an ERROR node, so its names never become `cte` nodes and no scope rule can recover them |
+| `uses` edges targeting a CTE name with no qualified reach | **19** | 11 | the row above |
+| `uses` edges whose bare leaf is ambiguous between a CTE and a qualified table | **16** | 16 | limitation 8's shape: a (type, source, target) key cannot represent two objects with one leaf |
+| `contains` edges ambiguous even with (name, owner, memberKind) | **47** | — | 37 are two `property` symbols of one name under one owner (a column re-declared by `ALTER TABLE ADD COLUMN`) and 10 are two `constant`s. A per-file analyzer cannot merge them without deciding the column is declared twice |
+| symbols whose name is in the analyzer's own `SQL_KEYWORDS` | **46** | — | 11 are `ALTER TABLE ADD CONSTRAINT` keywords read as column names (`key` 5, `KEY` 1, `PRIMARY` 3, `primary` 2); the other 35 are legal identifiers the measure cannot separate from keywords without checking the source spelling (`comment` 25, `filter`, `start`, `end`). `RESERVED_AS_COLUMN_NAME` holds two words, which is a record of two encounters and not a list. §8 |
+| `calls` self-loops that mean "trigger X runs function X" | **441** | — | PostgreSQL's convention names a trigger after its function, and the analyzer gives both `kind: function`, so `calls X -> X` here is not recursion. The edge is not fabricated and it already carries `metadata.triggerAction`; the 7 self-loops WITHOUT that flag are real recursion (`new_code := generate_session_code()`), which is the control case. 171 distinct names carry both. §8 |
+| `contains` edges naming a symbol `keepSymbol` deletes | **1** | 1 | SQL-G13, shared machinery, filed |
+| `calls` edges at confidence 1 whose evidence tier is `usage_contextual` | **3,417** | — | not a defect: that is the honest label for a name in a bare slot, and it is countable per edge |
+
+## PASS 4 — the walk was the bottleneck, and the corpus count was bimodal because of it (2026-10-04)
+
+Pass 1 measured whether each type fires. Pass 2 assumed each label was wrong. Pass 3 asked the
+question from the other end. **Pass 4 assumed the lane's own NUMBERS were wrong, and they were.**
+
+### The total was bimodal, and the cause was this analyzer
+
+Pass 3 reported 31,037 relationships and 1,952 of 1,955 files, and recorded that the corpus numbers
+did not reproduce. Pass 4 pinned it to one file and then to one number:
+
+| `postgrest/test/io/fixtures/big_schema.sql`, solo, fresh process | ms | result |
+| --- | --- | --- |
+| run 1 | **116,589** | 943 symbols, 1,874 relationships, `analysisVersion: "m10.06-cut"` |
+| run 2 | 123,743 | 0 symbols, 0 relationships, `"2.0-basic-fallback"` |
+| run 3 | 127,059 | 0 symbols, 0 relationships, `"2.0-basic-fallback"` |
+
+**3.4 seconds of headroom against a 120-second budget.** Which side it landed on decided the lane's
+headline: `31,037 − 1,874 = 29,163`, and 29,163 is exactly what the same corpus measures when the
+file times out. Pass 3 had attributed this to files crossing the engine's budget and stopped there.
+The budget was real; the cost was not.
+
+### `node --cpu-prof`: 87 % of the run was one helper
+
+| | |
+| --- | --- |
+| `walkDescendants` self time | **133.97 s of 154 s (87.0 %)** |
+| `ts_parser_parse_wasm` (the actual parse) | **0.33 s** |
+| nodes in the file | 67,508 named, depth 43, 392 KB |
+| `descendants` calls → distinct (node, type) queries | 29,662 → **4,199** |
+| nodes those 4,199 walks visited | **99,159,647** — 1,469 per node in the file |
+
+The grammar was never the problem. `descendants(node, type)` was a full preorder subtree walk, and
+the queries sit near the root, so each one rescanned a near-root subtree. `firstDescendant` and
+`containsType` made it worse by materialising the **entire** match list to read its first element
+or its length.
+
+### Two things had to be MEASURED before the fix could be written
+
+**1. Node object identity does not exist.** web-tree-sitter's `unmarshalNode` ends in
+`new Node(...)`, so every property access returns a fresh wrapper. Verified directly on the wired
+wasm (`descendants-equivalence.mts`'s sibling probe, since removed):
+
+```
+rootNode === rootNode                          false
+namedChild(0) === namedChild(0)                false
+rootNode.tree === rootNode.tree                true
+namedChild(0).id === namedChild(0).id          true
+```
+
+A `WeakMap<Node, …>` cache therefore misses on nearly every lookup. A first attempt did exactly
+that: it removed **85 % of the CALLS and none of the COST**, and an index keyed the same way
+rebuilt itself **200+ times for a single tree** because the root handle it keyed on was a new
+object each time. `Node.id` is documented as unique within a tree and `Node.tree` is the tree it
+belongs to, and both are plain fields — so `(node.tree, node.id)` is the key.
+
+**2. There is more than one tree per parse.** `runResync` re-parses each top-level statement into
+its OWN tree and feeds those nodes back through `processRoot`, so "the" tree is not a field anyone
+can set. `node.tree` is what says which tree a query belongs to.
+
+### The fix
+
+`descendants(node, type)` is now a binary search over a document-order per-type run plus an
+interval test; `namedChildren` is a map lookup; `firstDescendant`/`containsType` stop at the first
+match. One preorder walk per tree builds it, touching each node once with the minimum number of
+accesses, and the children it reads are kept.
+
+| File | Before | After |
+| --- | --- | --- |
+| `postgrest/test/io/fixtures/big_schema.sql` | 116,589–156,694 ms, **usually 0 symbols / 0 relationships** | **3,551 ms, 943 symbols, 1,874 relationships** |
+| `postgrest/test/spec/fixtures/schema.sql` | 5,307 ms | **1,612 ms** |
+| `postgrest/test/io/fixtures/schema.sql` | 5,323 ms | **1,238 ms** |
+| `proxicall/database/schema.sql` (516 KB) | 2,832 ms | 2,807 ms — it was never slow |
+
+33× on the file that decided the headline, and **the same 943 symbols and 1,874 relationships**
+on the runs that finish inside the budget — the optimization changed the cost, not the answer.
+
+### The optimization is CHECKED, not trusted
+
+`validation/m14/fixtures/sql/descendants-equivalence.mts` compares the index against a preorder
+walk written out in that file, for every node against every type the grammar produces, comparing
+**sequence** and not just count:
+
+> **1,955 files, 7,807 nodes, 454 types, 2,624,148 queries, 0 mismatches — exact on every one.**
+
+It earned its keep before the fix was finished. A byte-interval test alone **cannot** separate a
+DESCENDANT from an ANCESTOR that opens on the same byte: `statement` wrapping `insert` with no
+token between them shares a start index, and with nothing at the end shares the end too. That was
+**1,432 queries across 1,955 files** reading 1 where the walk read 0 — and on `object_reference`
+(337 sampled), `relation` (117) and `literal` (46), **all of which the analyzer queries at 14, 1
+and 3 sites**. Not a latent bug: it would have shipped wrong `references`, `uses` and
+`instantiates` edges. Depth closes it.
+
+The oracle's own first version was wrong too, and that is recorded in its header rather than
+quietly dropped: it compared `findDescendant` against a plain walk and reported **7,807
+disagreements — exactly one per node tested**, every one of them the documented self-match rule
+(`findDescendant(node, type)` returns `node` itself when `node.type === type`) and none of them a
+defect. The rule now lives in the oracle as `expectedFirst`.
+
+### `imports` reads 0 on a 120-file sample and 52 on the corpus
+
+The 26-lane sweep at `validation/m14/measurements/firing-sweep-26-lanes.ndjson` records this lane
+as `imports: 0 edges / 0 files` over `120/120` files. That is a sampling artefact, not a verdict:
+the 52 edges live in **25 files** out of 1,955, and a 120-file sample that reports `files: 1` for
+`calls` (167 edges) has not covered the corpus. The brief's own reading applies — a type that did
+not fire on a sample is **unadjudicated**, not inapplicable.
+
+### The arbiter, run over the whole corpus
+
+`script/m14/ontology-coverage-gate.ts` in one process over 1,955 files does not finish: it prints
+its header and corpus size and then dies on `[BB-HANG] parser stuck 120s`. `run-sharded-arbiter.mts`
+applies the bound that works — 8 shards of whole repos, the arbiter's own admission rule for the
+split, the patched copy run per shard, and the arbiter's own precedence for the merge. Result, all
+8 shards answering all ten rows: **emitted 7/10, ruled-sound 3, FALSIFIED 0,
+ruled-without-justification 0**. Re-run at pass 5's HEAD over the same 1,955 files, the per-type
+edge counts came back identical to the census — 3,892 / 9,106 / 11,977 / 52 / 5,996 / 22 / 21 — so
+the arbiter and the census agree on every emitted type at this HEAD, not only on the verdicts.
+
+`arbiter-vs-shard.mts` then diffed the two process shapes **per file**: **11 of 1,955 files
+differ, and every one carries an explicit fallback marker on exactly the side that read lower** —
+8 `analysisVersion: "2.0-basic-fallback"` instances (the engine's timeout load policy, all at
+167,176–168,379 ms) and 3 `fallback: true` instances (the pool-worker's regex extractor). There is
+no unexplained residual.
+
+### The ruling table audits its own falsifiability
+
+`script/m14/sql-ruled.ts` (moved from `script/m60/`, because the arbiter prints
+`Written ruling: script/m14/sql-ruled.ts` and that path did not exist) adds
+`SQL_RULING_FALSIFIABILITY`, applying the brief's test — *could an implementation that is right and
+has no gaps left meet this condition?* — to each entry:
+
+| Type | Kind | A correct implementation could meet it? |
+| --- | --- | --- |
+| `extends` | grammar + implementation | **yes — and this is the finding** |
+| `implements` | grammar + implementation | yes, with no counter-example |
+| `exports` | corpus only | **no**, and it is labelled the weakest of the three rather than presented as falsifiable |
+
+**`extends` is a GRAMMAR GAP, not an inapplicability, and saying otherwise was wrong.** SQL has
+table inheritance — `CREATE TABLE c (…) INHERITS (p)`, and since PostgreSQL 11
+`CREATE TABLE c PARTITION OF p …` and `ALTER TABLE p ATTACH PARTITION c …`, which make a child a
+subtype of a parent with no `INHERITS` clause at all. All three were **parsed** against the wired
+wasm and all three put the parent clause inside an `ERROR`. A correct implementation meets the
+condition by patching the grammar to parse the clause and emitting the edge — and this lane has
+already rebuilt the grammar eight times to add rule groups. It is not shipped here because the
+grammar build and `validation/m14/grammar-pins.json` are shared artefacts (§8), and a rebuild
+attempt has already produced a `parser.c` 111,557 bytes off the wired one. Reported, not done
+quietly.
+
+## PASS 7 — two claims the page made about its OWN instruments, both re-measured (2026-10-04)
+
+Pass 6 re-ran the gates and the per-type counts all reproduced. Pass 7 re-ran them again at HEAD
+`bb0ec1786` and **the verdict reproduced too, but two statements this page made about its instruments
+did not, and both were in the direction of sounding stronger than the measurement.**
+
+Every per-type count reproduced exactly. Census, 8 shards, 0 degraded, 0 parse failures,
+1,955/1,955 admitted: **18,482 symbols, 31,066 relationships, 0 empty-named symbols, 0 `unknown`
+endpoints**, and `calls 3,892 / uses 9,106 / contains 11,977 / imports 52 / references 5,996 /
+overrides 22 / instantiates 21` (`measurements/pass7-census.json`).
+
+### The arbiter's edge totals are a LOWER BOUND, and the page reported them as a count
+
+Two runs of `run-sharded-arbiter.mts` over the same corpus at the same HEAD read **`uses` 9,099 and
+then 9,106** — identical verdict line, 8/8 shards answering all ten rows both times. The census
+reads 9,106 at 0 degraded files.
+
+The cause is a property of the shared engine, not of a lane: `engine.ts` answers an analyzer timeout
+with a **SUCCESS-shaped basic parse result** (`symbols: []`, `relationships: []`, one error), so a
+file that degrades under load contributes **zero** edges and nothing in the gate's output says so.
+The census repairs this — it re-parses a degraded file serially and excludes what still degrades.
+**The gate cannot**, because the repair belongs to the census's instrument and
+`script/m14/ontology-coverage-gate.ts` is shared (§8).
+
+So the correct reading is: **`rows[].status` is the verdict and is invariant; `rows[].edges` is "at
+least this many."** For an exact per-type total, use the census. `run-sharded-arbiter.mts` now writes
+`totalsAreLowerBounds: true` with this evidence into its artifact, records **per-shard** edges and
+files so a future disagreement is localisable to a shard rather than unattributed, and prints the
+caveat on stdout. Pass 6's statement that the arbiter's per-type edges are "identical to the pass-4
+census" was true on the run it was measured on and is **not** a property of the instrument; it is now
+restated as the lower-bound claim the instrument supports.
+
+### The single-process run no longer hangs, and it was never the thing that made its totals exact
+
+The page justified taking the verdict from the sharded runner over the single-process one on the
+ground that the single-process run **dies** on `[BB-HANG] parser stuck 120s` partway through. At
+`bb0ec1786` it **completed**, printed all ten rows and the same verdict line — so that
+justification is stale, and it is recorded as stale rather than quietly dropped.
+
+**And completing did not make its totals exact.** Against the census at 0 degraded files, the same
+completed single-process run read:
+
+| Type | Single-process gate | Census, 0 degraded | Delta |
+| --- | --- | --- | --- |
+| `contains` | 11,970 | 11,977 | **−7** |
+| `uses` | 9,105 | 9,106 | **−1** |
+| `calls` / `references` / `imports` / `overrides` / `instantiates` | 3,892 / 5,996 / 52 / 22 / 21 | same | 0 |
+
+So the defect is **not** the hang and **not** sharding: it is that the gate counts whatever the
+engine returns, and a timed-out file returns a success-shaped empty result. A hang is the loud
+version of that, where the process exits and the loss is visible; a degradation is the quiet version,
+where the row prints a smaller number and nothing marks it. The sharded runner remains the right
+instrument — it bounds a fault to one shard instead of the whole verdict — but the reason is that it
+**localises** the loss, not that it prevents it.
+
+**The single-process run is also the only configuration in which the gate's node-type count means what
+it says.** One process walks all 1,955 files, so its "480 distinct node types across the corpus" is
+the corpus. Sharded, the same string is one shard's. That is why the page's 480 and the gate's 256
+were both correct measurements of different populations, and why the difference was invisible until
+both were printed side by side.
+
+### "480 node types" and "256 node types" are different populations, and the gate's wording is wrong
+
+The arbiter prints, on each RULED row, *"the grammar produced 256 distinct node types across the
+corpus"*. **It did not.** The merge takes its detail string from the worst-ranked shard, and where
+every shard ties on `RULED-SOUND` that is simply shard0. The per-shard inventories, now recorded in
+the artifact:
+
+| Shard | admitted files | distinct node types |
+| --- | --- | --- |
+| shard0 | 594 | 256 |
+| shard1 | 486 | 282 |
+| shard2 | 438 | 330 |
+| shard3 | 346 | 252 |
+| **shard4** | **32** | **333** |
+| shard5 | 20 | 161 |
+| shard6 | 20 | 93 |
+| shard7 | 19 | 130 |
+
+**shard4 has the largest vocabulary from the smallest file population** — 32 files yielding 333 node
+types against shard0's 594 files yielding 256. A reader who took 256 as the corpus inventory would
+be wrong about the shape of the grammar, not merely about a total: distinct node types are not
+proportional to files, because a large repo of homogeneous query files (`duckdb/benchmark`) exercises
+fewer distinct shapes than a small repo of varied DDL.
+
+**The corpus-wide union is 480**, measured by an independent walker over the same 1,955 admitted
+files at 0 parse failures (`pass3-construct-probe.json`), and 480 ≥ max(per-shard) = 333, so the two
+instruments agree in the direction that matters. **The gate understates the inventory its own rulings
+rest on by 224.**
+
+The RULED verdicts are **unaffected**: the merge rests on the UNION of all eight vocabularies, and a
+node type absent from every shard is absent from the corpus. But the printed number is a floor on the
+union and not the union, and the runner now says so on stdout and in the artifact instead of letting
+`256` read as the whole. The fix belongs in the shared gate — the count it prints should be labelled
+as the shard's, not "across the corpus" — and is reported in §8 rather than applied.
+
+### Every gate this lane can run, at `bb0ec1786`
+
+| Gate | Command | Result |
+| --- | --- | --- |
+| ontology arbiter, whole corpus, 8 repo-shards | `npx tsx validation/m14/fixtures/sql/run-sharded-arbiter.mts --shards 8 --json …/pass7-sharded-arbiter.json` | **`emitted 7/10   ruled-sound 3   FALSIFIED 0   ruled-without-justification 0`**, 8/8 shards, per-type edges matching the census on the run recorded in the artifact |
+| census, 8 shards, with serial repair | `bash validation/m14/fixtures/sql/run-sharded-census.sh 8 /tmp/…/census` | 1,955/1,955 admitted and parsed, **0 parse failures, 0 degraded** (0 first-pass, 0 recovered serially, 0 still degraded, 0 regex-fallback), 18,482 symbols / 31,066 relationships |
+| fixture lane | `npx tsx script/m14/run-fixtures.ts --lang sql` | **15 / 15 PASS, exit 0** |
+| regex census | `npx tsx script/m12/verify-regex-census.ts` | **0 SQL rows**; the gate exits 1 on other lanes' `MISSING` rows (css 9, julia 5) and `STALE` rows (clean, fsharp, javascript, python, svelte) |
+| typecheck | `npx tsc --noEmit` | **clean, exit 0** |
+
+## PASS 8 — the page's own substring count was two of three (2026-10-04)
+
+Passes 1–7 audited this analyzer's OUTPUT against independent oracles and never audited this page's
+own ARITHMETIC. Pass 8 re-derived every figure on the page from the stored measurements instead of
+from the text that quoted it, and four of them were wrong. None of the four changes a verdict, and
+the reason to record them rather than quietly amend is that each is a shape this workstream keeps
+producing.
+
+### `partition` had THREE hits, and the page named two
+
+The `exports` and `extends` rulings rest on a substring search over the corpus-wide node-type
+vocabulary. Pass 3 searched all 480 type names for `export`, `module`, `provide`, `partition`, `like`,
+`of`, `super`, `class`, `interface`, `trait` and `struct`, and the page reported:
+
+> the two `partition` hits are a `table_partition` rule and a `keyword_partition` token
+
+**There are three.** The corpus-wide vocabulary also contains a node type named exactly
+`partition_by`, with **44** occurrences — and it is the only one of the three whose name is not
+qualified by `table_`, which makes it the first one a reader checking the `extends` ruling would
+reach for. The two that were named are honestly explained; the third was simply absent from the page.
+
+**Why it went missing, which is the part worth keeping.** All six shapes in the capability battery
+are TABLE-PARTITIONING forms. `partition_by` is the WINDOW-FUNCTION clause —
+`SELECT sum(x) OVER (PARTITION BY y)` — so no shape in the battery could ever have covered it. A
+battery that tests only the constructs it already suspects will always come back agreeing with
+itself, and the substring count that should have caught the omission was reported from prose rather
+than re-derived from the stored vocabulary.
+
+**It is now measured, not argued.** `partition-by-sites.mts` walks all 1,955 admitted files and
+records the PARENT CHAIN per site, because a count cannot separate the two meanings of
+`PARTITION BY` and the chain can:
+
+| Question | Measured |
+| --- | --- |
+| occurrences of `partition_by` | **44**, at 0 parse failures |
+| nearest parent `window_specification` | **44 of 44** |
+| inside a `create_table` | **1** — `duckdb/benchmark/h2oai/group/queries/q08.sql:1`, and `create_query` is in that chain, so it is `CREATE TABLE … AS SELECT … OVER (PARTITION BY id6)`, a CTAS |
+| inside a table-PARTITIONING declaration | **0** |
+
+A window partition names an ordering key, not a parent table. The `extends` verdict stands and its
+support is one candidate stronger than it was an hour ago. `adversarial-probe.mts` A13 parses the
+form and reports the chain; the script is generic over `--type`, so the same walk answers "where does
+node type X actually sit" for any near-miss name a reader raises.
+
+### Three stale figures, all from a corpus that grew underneath the page
+
+| Figure | Page said | Measured | Why |
+| --- | --- | --- | --- |
+| corpus-wide node-type inventory | **465** in `sql-ruled.ts`'s header and findings block; **480** elsewhere on the page | **480** | 465 was pass 1's inventory over 1,460 admitted files. Two files this lane owns disagreed with each other about the number the rulings rest on. |
+| `keyword_extension` occurrences | 30 | **34** | 30 `CREATE EXTENSION` declarations against 34 `EXTENSION` tokens — the page had copied the declaration count onto the token row |
+| `keyword_regclass` occurrences | 51 | **62** | corpus growth; the row's *verdict* (a type name matching `class` as a substring) never turned on it |
+
+### Two rounding errors, and an audit that found them
+
+`99.54 %` → **99.53 %**, `99.61 %` → **99.60 %**, `45.62 %` → **45.61 %**. Three percentages off by
+one in the last digit, in the `contains` resolution figures. They are the smallest defects on this
+page and they were found by the same act that found the fourth item below, which is the argument for
+doing it: nothing flagged them, and nothing would have.
+
+### The lane's LAST regular expression is gone
+
+`src/ast/real-sql-analyzer.ts:167` held `const POSTGRES_CATALOG = /^pg_[a-z_]+$/`. The regex census
+(`script/m12/verify-regex-census.ts`) classifies it `needs_review` with an **empty justification** —
+the brief's standing instruction is that every regex a lane inherits is a defect the lane owns. It is
+replaced by `isPostgresCatalogName`, a character-code scan:
+
+- `^pg_` → `t.startsWith("pg_")`
+- `[a-z_]+` → at least one further character, each `a`–`z` or `_`; `t.length > 3` carries the `+`, so
+  a bare `pg_` does **not** match
+- `$` → the loop runs to `t.length`, so a trailing `.` or digit fails
+
+**Equivalence was checked exhaustively rather than argued**: 22,634 strings generated over a
+12-character alphabet that includes a non-ASCII character, 0 mismatches against the old pattern. The
+subtlety is that a "close enough" reading widens the classifier — treating `[a-z_]+` as a prefix test
+labels `pg_1` a catalog, and dropping the `+` labels a bare `pg_` one. `sqld12-external-targets` now
+pins both sides: `pg_1` and `pg_a1` (the `[a-z]` half), `pga` and `pgx` (the `^pg_` half), and
+`pg_catalog.pg_class` for the positive case. A bare `pg_` is not a parseable table reference, so the
+fixture cannot reach it and the sweep is what covers it — stated rather than left as a gap.
+
+After the change the census's working-tree scan drops from **28 to 27** and reports
+`ABSENT-IN-WORKTREE real-sql-analyzer.ts:167`. **This lane now contributes 0 rows to a gate that
+still exits 1** on other lanes' `MISSING` and `STALE` entries.
+
+### The adversarial probe degraded a file this time, and the 5 edges are accounted for
+
+The page claimed "**0 files degraded at this HEAD**" for the adversarial probe. At pass 8 it
+degraded **1**: `duckdb/extension/tpcds/dsdgen/queries/87.sql` returned `extractFallback`, and the
+probe's A4 tier population read **9,101** against the census's **9,106**.
+
+**The difference is exactly that file, and the file is not empty.** Solo, `parseFile` on `87.sql`
+returns **5 `uses` edges and 0 symbols in 4 of 4 attempts**. So 9,106 − 9,101 = 5 is one file lost to
+a parse error under sustained load, not a disagreement between two instruments — the same
+load-sensitivity class *PASS 7* found inside the gate, in a different instrument. Every other probe
+population is unchanged, and `A3` still reads 3,892 of 3,892. The **census** figure of 9,106 remains
+the one to quote: it is measured at 0 degraded files over 8 shards.
+
+The probe now records `degraded-regex-fallback` as a probe population, so the count of degraded files
+is in the artifact rather than inferred from a difference between two runs.
+
+### Nothing else moved
+
+Re-run at this HEAD after the analyzer change: the census is **identical across 208 compared leaf
+keys, 0 differences** against `pass7-census.json`; the arbiter is **`emitted 7/10   ruled-sound 3
+FALSIFIED 0   ruled-without-justification 0`** with 8/8 shards and per-type edges matching the census
+(3,892 / 9,106 / 11,977 / 52 / 5,996 / 22 / 21); the incoming probe is **identical across 151 leaf
+keys, 0 differences** at `--concurrency 2`; the construct probe's **480-type vocabulary, `zeroProbes`
+and `constructCounts` are identical sets and identical values**; **15/15 fixtures pass**; typecheck
+clean; **all 36 SQL mutants caught**, 0 surviving (the 6 survivors are java, groovy ×2, scala, make
+and php).
+
+### Every gate this lane can run, at pass 8
+
+| Gate | Command | Result |
+| --- | --- | --- |
+| ontology arbiter, whole corpus, 8 repo-shards | `npx tsx validation/m14/fixtures/sql/run-sharded-arbiter.mts --shards 8 --json …/pass8-sharded-arbiter.json` | **`emitted 7/10   ruled-sound 3   FALSIFIED 0   ruled-without-justification 0`**, 8/8 shards, edges 3,892 / 9,106 / 11,977 / 52 / 5,996 / 22 / 21 — identical to the census |
+| census, 8 shards, with serial repair | `bash validation/m14/fixtures/sql/run-sharded-census.sh 8 /tmp/…/census` | 1,955/1,955, **0 parse failures, 0 degraded**, 18,482 symbols / 31,066 relationships; **0 differences vs `pass7-census.json` over 208 leaf keys** |
+| ontology coverage gate (supervisor's, on disk) | `npx tsx script/m14/ontology-coverage-gate.ts sql` | **exits 2 by design** — "no RULING TABLE for sql". The table is at `script/m14/sql-ruled.ts` and the gate's `RULED_BY_LANG` is a literal with no extension point; §8. The verdict above comes from the same arbiter over a patched COPY |
+| differential | `npx tsx script/m14/differential.ts --lang sql` | **`SKIP sql: no corpus repo mapped in LANG_REPOS and none checked out — declared unrun, not measured`**, exit 0. 37 keys in `LANG_REPOS`, none `sql` — this is the DERIVATION finding, not a gate failure |
+| adversarial probe | `npx tsx validation/m14/fixtures/sql/adversarial-probe.mts --out …/pass8-adversarial-probe.json` | 24 populations, all 1,955 files; **1 file degraded** (see above); A12's battery is now **7** shapes |
+| `partition_by` site walk (new) | `npx tsx validation/m14/fixtures/sql/partition-by-sites.mts --out …/pass8-partition-by-sites.json` | 44 occurrences, **44 of 44** under `window_specification`, 0 in a table-partitioning declaration |
+| incoming probe | `npx tsx validation/m14/fixtures/sql/pass3-incoming.mts --concurrency 2 --out …/pass8-incoming-corpus.json` | **0 degraded, 31,066 edges, 0 differences vs `pass6-incoming-corpus.json` over 151 leaf keys**. This audit ran it at the DEFAULT concurrency 8 first and lost **8 edges across 3 degraded files** — the trap the page records under pass 6, hit again by the person auditing the page. At `--concurrency 2` it is exact |
+| construct probe | `npx tsx validation/m14/fixtures/sql/construct-probe.mts` | **480** node types (identical set), **every zero probe 0** (identical), 0 parse failures |
+| fixture lane | `bun run script/m14/run-fixtures.ts --lang sql` | **15 / 15 PASS, exit 0** |
+| mutant harness | `bun run script/m14/mutate-analyzer.ts sql` | **36 SQL mutants, 36 CAUGHT, 0 surviving.** The `--lang` argument does **not** scope this harness — it swept all 46 lanes and rewrote the shared `validation/m14/results/M14.0.F4.json`, which was reverted and is not committed here (§8) |
+| regex census | `npx tsx script/m12/verify-regex-census.ts` | **exits 1**, and this lane now contributes **0** rows: the working-tree scan is 27 (was 28) and reports `ABSENT-IN-WORKTREE real-sql-analyzer.ts:167`. The gate's remaining 26 `MISSING` / 25 `STALE` belong to css, julia, clean, fsharp, javascript, python, svelte and typescript |
+| typecheck | `npx tsc --noEmit` | **clean, exit 0** |
+
+## PASS 6 — the denominator no instrument on the page was producing (2026-10-04)
+
+Pass 5 re-measured the incoming direction. Pass 6 re-ran every gate this lane can run at HEAD
+`f918e9055` — 16 commits after pass 4's census — and read the page against what the gates printed.
+**The per-type numbers all reproduced. One number about the CORPUS did not, and nothing on the page
+could have caught it.**
+
+### The corpus denominator was wrong, and the arbiter had been printing the right one
+
+The page said, in two places, that the census covered "1,955 of 1,955 admitted SQL files in **169
+corpus repositories**". The arbiter's own walk prints, from the same corpus root and the same
+admission rule:
+
+```
+admitted: 1955 SQL files in 16 repositories
+```
+
+169 was wrong and 16 is measured. The reason it survived four passes is structural rather than
+careless: **every instrument on this page counts files and edges, and none of them counted
+repositories.** A per-type census cannot produce a repository count, so there was nothing to
+disagree with 169 — it was a free-floating figure with no instrument behind it, and the arbiter's
+own `16` sat in a different document from the page that contradicted it.
+
+`corpus-composition.mts` now produces the denominator, under the admission rule **copied** from
+`script/m14/ontology-coverage-gate.ts:203-208` (`git ls-files`, ≤ 512 KiB,
+`detectLanguageFromPath === "sql"`) — copied because the population a ruling is measured over is
+the population the arbiter admits, and a second rule would make the two differ by an unknown
+amount. `script/m14/` is supervisor-owned (§8).
+
+| Figure | Value |
+| --- | --- |
+| repository directories in the corpus root | **183** |
+| with at least one tracked `.sql` path | **17** |
+| contributing ≥ 1 **admitted** file | **16** |
+| tracked `.sql` paths | **1,963** |
+| admitted under the arbiter's rule | **1,955** — agrees with the arbiter exactly |
+| excluded | **8**: 7 over the 512 KB cap in `hasura-engine`, 1 in `kong` |
+
+`git ls-files '*.sql'` is deliberately not the instrument: it reads 1,963 against the arbiter's
+1,955, and the 8-file difference IS the cap and the detection, which is the thing worth measuring.
+
+**The corpus root contains a repo reached through a SYMLINK out of it** — `proxicall ->
+$HOME/ProxiCall` — and it supplies **438 of the 1,955 admitted files (22.4 %)**. Every
+figure on this page therefore depends on a path outside the corpus root, and `bb_index`-style
+realpath containment checks would refuse it. `run-sharded-arbiter.mts` builds each shard as a
+directory of symlinks for the same reason and reads them fine.
+
+**That symlink cost this script a wrong first answer, and the failure is worth recording because it
+was invisible in the rows and visible only in the total.** The first version filtered the corpus
+root with `readdirSync(..., { withFileTypes: true }).isDirectory()`, which reports a symlink as
+`isSymbolicLink()`, so `proxicall` was skipped entirely: 181 repos walked, **1,517** admitted — and
+`1,955 − 1,517 = 438`, exactly the missing repository. The per-repo table would have read as a
+finished answer with a repo absent from it; only the disagreement with the arbiter's 1,955 named
+it. Fixed to `statSync(dir).isDirectory()`, which follows the link.
+
+### Every gate this lane can run, re-run at `f918e9055`
+
+| Gate | Command | Result at this HEAD |
+| --- | --- | --- |
+| ontology arbiter, whole corpus, 8 repo-shards | `npx tsx validation/m14/fixtures/sql/run-sharded-arbiter.mts` | **`emitted 7/10   ruled-sound 3   FALSIFIED 0   ruled-without-justification 0`**, 8/8 shards answering all ten rows, and per-type edges **identical to the pass-4 census**: 3,892 / 9,106 / 11,977 / 52 / 5,996 / 22 / 21. **Corrected at pass 7:** the agreement held on this run and is not a property of the instrument — two pass-7 runs disagreed by 7 `uses` edges because the gate has no serial-repair pass. Those totals are a **lower bound**; see *PASS 7* |
+| arbiter on a COPY with the ruling table patched in | `npx tsx validation/m14/fixtures/sql/run-ruling-table.mts` | same verdict line. Single process, so it dies on `[BB-HANG] parser stuck 120s` on `duckdb/benchmark/aoc24/queries/day02.sql` partway through and its partial per-type counts read 3,875 / 9,100 / 11,873 / 51 / 5,951 — the sharded run is the authoritative one, and this is the known `engine.ts` `process.exit(1)` behaviour (§8). **Pass 7: the hang did not reproduce and this row is partly historical — see below** |
+| fixture lane | `npx tsx script/m14/run-fixtures.ts --lang sql` | **15 / 15 PASS, exit 0**. Unscoped, the same script **exits 6 before running any lane** because `lua` and `r` have fixture directories no runner lane claims — other lanes' defect, not this one's (§8) |
+| ontology mutants | `bun run script/m14/mutate-analyzer.ts sql` | **34 / 34 `sql/*` mutants CAUGHT, 0 `sql/*` SURVIVED**. The script's 6 survivors are `java` ×1, `groovy` ×2, `scala`, `make`, `php` — other lanes. **It does not honour the language argument**: it sweeps every lane and **rewrites the shared `validation/m14/results/M14.0.F4.json`**, changing 22,627 lines of other lanes' rows as a side effect of running this lane's gate. That file is §8-owned, so this lane restores it (`git restore`) and does not commit the rewrite. Running this command as the workstream instructions direct is therefore not lane-scoped and mutates a shared artifact (§8 item) |
+| regex census | `npx tsx script/m12/verify-regex-census.ts` | **0 SQL rows.** The gate FAILS on `MISSING` rows for `real-css-analyzer.ts` (9) and `real-julia-analyzer.ts` (5) and `STALE` rows for clean, fsharp, javascript, python, svelte, typescript. This lane contributes 0 rows to that failure |
+| m14 differential | `npx tsx script/m14/differential.ts --lang sql` | **`SKIP sql: no corpus repo mapped in LANG_REPOS and none checked out — declared unrun, not measured`**, and 0 lanes measured. `script/m14/differential.ts` is shared machinery (§8): `sql` needs an entry in its `LANG_REPOS`, and the m12 hand-audited oracle (`validation/m12/ground-truth/sql.json`, 84 facts) is the lane's correctness instrument instead |
+| corpus composition | `npx tsx validation/m14/fixtures/sql/corpus-composition.mts` | 183 / 17 / 16 / 1,963 / **1,955**, agreeing with the arbiter |
+
+**So the page's seven emitted counts and three rulings reproduce at a HEAD 16 commits later, and the
+one figure that did not is now measured rather than asserted.** No verdict moved. Nothing on this
+lane is un-adjudicated: all ten types carry EMITTED or a corpus-measured RULED.
 
 ## Recovery passes
 
@@ -573,15 +1379,43 @@ and the observed ERROR span did not move.
 
 ## Regex inventory
 
-The SQL analyzer has **zero regex usages**, and this is now enforced rather than asserted.
+**ONE regex remains in the analyzer, and an earlier revision of this section claimed zero. That
+claim was false and is withdrawn.** The survivor is `POSTGRES_CATALOG = /^pg_[a-z_]+$/` at
+`src/ast/real-sql-analyzer.ts:167`, used once at :189 to answer "is this target in PostgreSQL's
+system-catalog namespace", on a name already extracted from the parse tree.
+
+It is kept rather than converted, and the reason is that the rule's rationale does not reach it:
+`reviews/regex-policy.md`'s objection is that a regex over SOURCE TEXT matches comments and string
+literals, misses nested syntax, and breaks on the next grammar version. This pattern is applied to
+a single lowercased identifier that came out of a grammar-mandated slot, it is anchored at both
+ends, and it tests a naming convention PostgreSQL itself guarantees for catalog objects. Replacing
+it with a `Set` would mean enumerating every `pg_*` name in the catalogue, which replaces a
+specification with a snapshot of one release. **That is a judgement and it is stated rather than
+assumed** — and it is registered here rather than left for the next reader to discover as a
+discrepancy, which is how this sentence came to be wrong in the first place. `script/m12/verify-regex-census.ts`
+reports **0 SQL entries**, so the gate does not see it; that is a gap in the gate's coverage of
+this lane rather than a clean bill, and it is a §8 item.
+
+**Pass 3 extended the zero-regex property to this lane's census scripts and probes, which is where
+the remaining ones were.** The gate's own scan covers `src/ast/real-*-analyzer.ts`, so it reported no SQL
+finding while the lane's PROBES still carried nine regexes — seven in `adversarial-probe.mts`,
+deciding the A12 capability battery by matching REGEXES over a rendered `rootNode.toString()`
+dump. That is the instrument the ontology gate's header rejects, and it had already produced
+one wrong verdict here. All seven are gone: the battery now reads node types, named children and
+fields, and the rendered shape is kept as recorded evidence rather than as the instrument.
+`run-ruling-table.mts` retains **two**, both applied to the ARBITER'S OWN TYPESCRIPT SOURCE to
+rewrite its import specifiers — a code-patching operation on JS/TS, not an analysis of SQL, where
+the rule's rationale (regex over source text matches comments and string literals) does not
+apply. That is a judgement and it is stated rather than assumed.
 `reviews/regex-policy.md` requires zero by default; the census
 (`validation/m12/results/regex-census.json`) had never recorded SQL at all, so the two regexes
 this lane introduced were unregistered and `script/m12/verify-regex-census.ts` reported them
 `PENDING` while passing silently on the drift. Both were replaced with character scans — a
 dollar-quote tag reader and a `CONSTRAINT` prefix reader — and equivalence was proven over
 **3,406,758 dollar positions** across the corpus plus adversarial input, 0 mismatches. The
-EXECUTE-literal scanner is a character state machine for the same reason. The remaining census
-failures belong to other lanes.
+EXECUTE-literal scanner is a character state machine for the same reason. The census gate still
+FAILS, on **other lanes**: CSS, Julia, Clean, F#, JavaScript, Python, Svelte and TypeScript, with
+`MISSING` and `STALE` rows for each. This lane contributes **0 rows** to that failure.
 
 ## Complexity envelope
 
@@ -625,32 +1459,38 @@ independent fixtures, so they are independent of the analyzer in the way that ma
 **not** independent of the grammar: both the analyzer and the auditor read one parse tree. A
 grammar defect that produces a node neither of them questions would be invisible here, which is
 exactly the blind spot the ontology census and the construct probe cover instead — they measure the
-grammar's own vocabulary (465 node types) rather than agreeing about it.
+grammar's own vocabulary (480 node types) rather than agreeing about it.
 
 
 ## Gates
 
-Every row was re-run at pass 2's HEAD unless the row says otherwise, and the reason it was not
+Every row was re-run at pass 3's HEAD unless the row says otherwise, and the reason it was not
 is part of the row.
 
 | Gate | Result | Self-test |
 | --- | --- | --- |
 | `tsc --noEmit` | clean | — |
-| M14 fixture lane (`script/m14/run-fixtures.ts --lang sql`) | **14 / 14** (`sqld14` is new) | 5 of `sqld14`'s rows are forbid-side, so a fix cannot pass by emitting nothing |
-| SQL ontology mutants (`script/m60/run-sql-ontology-mutants.ts`) | **16 / 16 caught** (4 new) | exits 2 on a survivor, through the shared harness's own `runLang` |
-| m12 differential (`script/m12/verify-analyzer.ts sql`) | **84 facts, P = R = 1.000, 0 FP, 0 FN, `earliestFailingLayer=none`, `parseErrors=0`** | the FP that made this 0.988 was a real fabrication; see *A fabrication this lane's own oracle caught* |
-| ontology census (`validation/m14/fixtures/sql/ontology-census.mts`) | 1,945 / 1,945 parsed, 0 failures, 0 empty names, 0 `unknown` endpoints, **30,690 relationships / 18,322 symbols** | the exclusion is in the artifact as `excluded` |
-| adversarial probe (`validation/m14/fixtures/sql/adversarial-probe.mts`) | full corpus, 24 probe populations, 0 tier disagreements on 12,844 `calls`+`uses` edges | the A12 battery parses 5 shapes; the A1 probe's own vacuity is declared, not hidden |
-| construct probe (`validation/m14/fixtures/sql/construct-probe.mts`) | 480 distinct node types over the gate's corpus (465 over the census's), 0 parse failures, **every zero probe still 0** | — |
-| ruling table (`validation/m14/fixtures/sql/run-ruling-table.mts`) | **`emitted 7/10   ruled-sound 3   FALSIFIED 0   ruled-without-justification 0`** | the arbiter on disk is untouched; the copy is written under `node_modules/` and removed |
-| `keepSymbol` census | 18,325 symbols emitted, **3 dropped (0.016 %)** — 2 `function:root`, 1 `property:program`. SQL-G13 / pass-2 DEFECT 6, filed not fixed | — |
-| **repeat of the census, identical command, same HEAD** | **the process was killed by the engine's 120 s self-destruct on a file the first run had parsed** — see limitation 6 and *Reproducibility* below | this is a finding, not a pass |
+| M14 fixture lane (`script/m14/run-fixtures.ts --lang sql`) | **15 / 15** (`sqld15` is new) | 6 of `sqld15`'s sections are forbid-side or negative, and **reverting the analyzer makes it fail with 6 named problems** — verified, not asserted |
+| SQL ontology mutants (`script/m60/run-sql-ontology-mutants.ts`) | **21 / 21 caught** (5 new) | exits 2 on a survivor. One of the five **survived its first run** because its transform scanned the fixture text for `DO $` and matched the fixture's own prose; that is recorded in the mutant's description rather than quietly fixed |
+| m12 differential (`script/m12/verify-analyzer.ts sql`) | **84 facts, P = R = 1.000, 0 FP, 0 FN, `earliestFailingLayer=none`, `parseErrors=0`** | the FP that made this 0.988 was a real fabrication; see *Differential ground truth* |
+| ontology census (`validation/m14/fixtures/sql/ontology-census.mts`, 8 shards + merge) | **1,955 of 1,955 admitted parsed, 0 parse failures, 0 degraded by timeout, 0 in regex fallback, 0 empty names, 0 `unknown` endpoints, 31,066 relationships / 18,482 symbols** | nothing is unmeasured and nothing is degraded, so there is no `filesWithNoShardRow` to name; the same figure comes out of a 4-shard walk (`pass4-census-4shard.json`) |
+| **two independent walks, different partitioning, same HEAD** | **8 strided shards and 4 contiguous shards each measure 1,955 / 1,955 files, 18,482 symbols and 31,066 relationships, with identical per-type totals, resolution rates and `evidenceClass` splits** | this is the row pass 2 could not fill and pass 3 could not either; it is why the census is sharded and merged from shard rows. `measurements/pass4-census.json` and `measurements/pass4-census-4shard.json` |
+| incoming probe (`validation/m14/fixtures/sql/pass3-incoming.mts`) | re-run at pass 6 with **1,955 files, 0 degraded, 0 parse failures, 31,066 edges**. `contains` resolves **99.53 %** intra-file by (name, `ownerName`), **99.60 %** with `metadata.memberKind`, against **92.71 %** on the bare name corpus-wide, and **45.61 %** on (name, `ownerName`) corpus-wide. Unresolved split: **308 external / 1,654 unaccounted**, and **22 of 22** psql include targets exist on disk | reads only fields that SURVIVE production `parseFile` — see DEFECT 1's note on the metadata whitelist. Run at `--concurrency 2`: at the default 8 the same run degraded **3** files and lost 6 `uses` edges to the engine timeout on this loaded box, so the 8-worker figure is not used. Artifact `measurements/pass6-incoming-corpus.json`; pass 5's `pass5-incoming-corpus.json` is kept and superseded |
+| invocation-cause probe (`pass3-invocation-why.mts`) | re-run at this HEAD: **742 qualified invocations on the tree → 629 emitted, 53 guard-suppressed, 60 inside an error subtree, 0 unexplained**; 629 + 53 + 60 = 742, so the decomposition is closed. 0 files degraded | closes pass 2's open item. Its population is LARGER than the adversarial probe's A3 by 46, because A3 excludes error-bearing invocations from its population — see the cross-probe note under *`calls` residual* |
+| phantom-constraint probe (`pass3-phantom-constraint.mts`) | **53 phantoms in 22 files → 0**, same oracle both sides, which also clears 4 legitimate same-name indexes | a parse-tree oracle, because the name heuristic cannot decide it |
+| adversarial probe (`validation/m14/fixtures/sql/adversarial-probe.mts`) | re-run at pass 8 over all 1,955 files, 24 probe populations: **628 qualified invocations emitted**, 52 guard-suppressed, 16 unexplained by this probe's population, **3,892 of 3,892** `calls` tiers and **9,101 of 9,101** `uses` tiers AGREE, A12's **7** verdicts read off node types and fields | **1 file degraded this run**, against 0 at pass 4 — `duckdb/extension/tpcds/dsdgen/queries/87.sql` returned `extractFallback` and lost **5** `uses` edges, which is the whole 9,106 → 9,101 difference; solo, `parseFile` yields that file's 5 `uses` edges in **4 of 4** attempts. Same load-sensitivity class as *PASS 7*, in a different instrument. The 16 is not a defect: see the cross-probe note under *`calls` residual* |
+| `partition_by` site walk (`partition-by-sites.mts`, added at pass 8) | **44 occurrences over 1,955 files at 0 parse failures; nearest parent `window_specification` 44 of 44; 1 inside a `create_table` and it is a CTAS with `create_query` in the chain; 0 inside a table-partitioning declaration** | added because the page's own `partition` substring count named 2 of the 3 matching node types. Generic over `--type`, so the same walk answers "where does node type X actually sit" for any near-miss name a reader raises. Artifact `measurements/pass8-partition-by-sites.json` |
+| `overrides` reconciliation (`validation/m14/fixtures/sql/overrides-reconciliation.mts`) | **34 events → 22 per-file edge keys = production's 22 exactly**; the probe's rule reproduces its committed **15**, and the 19-edge difference is **12 multiplicity + 7 visit order = 19, exact**. The probe's 48-char text read of `OR REPLACE` and the analyzer's `keyword_replace` node read disagree on **0 of 4,645 declarations** | closes limitation 14. Its own first version joined pass 2 to pass 1 on line number and produced visit indices of 48 and 216 for a group of two declarations; the fix keys on `startIndex` and that failure is recorded in its header |
+| construct probe (`validation/m14/fixtures/sql/construct-probe.mts`) | **480 distinct node types**, 0 parse failures, **every zero probe 0**, and no node type anywhere contains `export`/`module`/`provide` | `exports-keyword` was 1 and is now 0: the 1 was a COLUMN named `module`, and the old probe counted declaration names |
+| ruling table (`validation/m14/fixtures/sql/run-ruling-table.mts`) and the 8-shard arbiter (`run-sharded-arbiter.mts`) | **re-run at this HEAD: `emitted 7/10   ruled-sound 3   FALSIFIED 0   ruled-without-justification 0`, with 8/8 shards answering all ten rows** and per-type edge counts identical to the census (3,892 / 9,106 / 11,977 / 52 / 5,996 / 22 / 21) | the arbiter on disk is untouched; the copy is written under `node_modules/` and removed. Its patch anchor was **stale** and exited 2 until pass 3 re-anchored it on the declaration rather than the literal. Its printed node-type count is wrong — see *Instrument A's denominator* |
+| `keepSymbol` census | re-measured at this HEAD: **18,485 symbols emitted by `analyze()` over 1,955 files, 3 refused (0.016 %)** — 2 `function:root`, 1 `property:program` — and **18,485 − 3 = 18,482, exactly the symbol count production `parseFile` publishes**, so `keepSymbol` accounts for the whole analyzer-to-index difference. SQL-G13, filed not fixed | this is the row that settles limitation 19. The pass-3 incoming probe's `0` was not a competing measurement: it reads `parseFile` output, which is already filtered, so a drop is structurally unobservable there. Artifact `measurements/pass5-keep-symbol-census.json` |
 | contract battery (`fixtures/sql/probe/contract-battery.mts`) | **not runnable on this machine** — the directory does not exist here; the recorded 54 / 54 is from 2026-09-27 and is **unverified by this round** | — |
 | node-type gate (`script/m12/sql-node-types-compare.ts`) | **not re-run by this round**, for pass 1's reason: re-running it without `fixtures/sql/probe/dialects` lowers its own observation surface from 6 probe files to 0 and would re-baseline a shared artifact downward | — |
 | resync corpus gate | not re-run — `fixtures/sql` is absent from this machine | impossible bars → **exit 1** |
-| pin contract | sql lane validates | a drifted sha is a `PIN FAILURE` |
-| regex census | no sql finding; the exports of `SQL_KEYWORDS`/`SQL_BUILTINS` added this round are `Set`s, not patterns | — |
+| pin contract | **does NOT validate** — `validation/m14/grammar-pins.json` records the pre-V11 sha for `sql`, so `bun run script/m14/verify-grammar-pins.ts` reports a drifted sha | unchanged from pass 1/2 and still a §8 item; every figure on this page is measured against the wired bytes directly |
+| regex census | no sql finding. Pass 3 separately removed the lane's last **probe** regexes (seven) and states why two remain in `run-ruling-table.mts` | — |
 | perf gate (`script/m60/sql-perf-gate.ts`, `verify:m60-sql-perf`) | not re-run this round | bars are a regression detector, not a benchmark |
+| honesty gate (`script/m14/verify-honesty.ts`) | run at pass 3; see the report for its verdict | it lints `docs/`, `plans/`, `validation/m14/` for the banned vocabulary |
 
 **The ruling table's demonstration, verbatim.** `script/m14/ontology-coverage-gate.ts` is
 supervisor-owned and its `RULED_BY_LANG` is a literal with no extension point, so unaided it
@@ -670,52 +1510,111 @@ afterwards — and runs the copy. The arbiter on disk is never modified. Its out
 **Two differences between the arbiter's numbers and the census's, both accounted for.** The
 arbiter reports `uses` 9,022 against the census's 9,017, because it does **not** exclude
 `duckdb/extension/tpcds/dsdgen/queries/83.sql` and that file contributes 5 `uses` edges; and it
-reports 480 distinct node types against the construct probe's 465, because its corpus walk is
-1 file larger and it makes its own tree pass. Pass 1 recorded the same 5-edge difference in the
-other direction and it is a property of the exclusion, not a disagreement.
+reports **256** distinct node types where this lane's own walker measures **480**, and that
+difference is not a rounding of anything — see *Instrument A's denominator, measured three ways*.
+The first difference survives and is accounted: Pass 1 recorded the same 5-edge difference in the
+other direction and it is a property of the `uses` exclusion, not a disagreement.
+
+### Instrument A's denominator, measured three ways — and the arbiter's number is not one of them
+
+Instrument A is a vocabulary count, and a ruling that says "the grammar has no node expressing X"
+rests entirely on how that vocabulary was collected. Three walkers over the same 1,955 admitted
+files, all at this HEAD:
+
+| Walker | Counts | Distinct node types |
+| --- | --- | --- |
+| `construct-probe.mts` (this lane's instrument A) | every node the walk reaches | **480** |
+| a 20-line independent walker written for this check, sharing no code with either | every node | **480** — exact agreement |
+| the same, filtered to `isNamed` | named nodes only | **454** |
+| `descendants-equivalence.mts` | named nodes only | **454** — consistent, and it is why the equivalence figure reads "454 types" |
+| **the sharded arbiter** | — | **256** |
+
+**480 is right for the vocabulary, and the rulings rest on it.** All 480 names were searched for
+`export`, `module` and `provide` as substrings: **0 hits for all three**, which is the whole basis
+of the `exports` ruling. The 454/480 gap is exactly the anonymous-token set — 26 token types such as
+`keyword_create` — and it is worth naming because a vocabulary that excludes anonymous tokens would
+have missed `keyword_module` had the grammar had one, so the larger figure is the correct one for a
+ruling and the smaller is the right one for a query planner.
+
+**The arbiter's 256 is not a measurement of its shard's walk, and the reason is checkable in one
+step: it reports the SAME 256 in all 8 shards, whose file counts range from 19 to 594.** A
+vocabulary collected by walking a shard's own files cannot be identical across eight different file
+sets. So the number the arbiter prints in `the grammar produced ${grammarNodeTypes.size} distinct
+node types across the corpus` does not describe that corpus. This does not overturn a verdict: a
+vocabulary that omits 224 types can only weaken a ruling if one of the omitted 224 expresses the
+construct, and the 480-walker confirms none of them contains `export`, `module` or `provide`. But the
+figure should not be quoted, and `script/m14/ontology-coverage-gate.ts` is supervisor-owned, so it
+is reported rather than touched. §8.
 
 **The arbiter's citations are wrong, and the mechanism is recorded rather than worked around.**
 `rulingFor` matches a type by PROSE — the first RULED decision whose `resolution` mentions the
 type name — so it cites `SQL-D11` for `exports` (which is about `imports`), `SQL-D16` for
 `extends` and `SQL-D13` for `implements` (which is about `instantiates`). The VERDICT is
 decided by the instrument and is unaffected; only the pointer is wrong. The fix is specified in
-`script/m60/sql-ontology-ruled.ts` → `SQL_RULING_CITATIONS`: an optional `ontologyType` field on
+`script/m14/sql-ruled.ts` → `SQL_RULING_CITATIONS`: an optional `ontologyType` field on
 each decision, with the prose match as the fallback, plus splitting `SQL-D16` into two entries
 because it covers two types. §8 item.
 
-### Reproducibility — what does NOT reproduce, measured
+### Reproducibility — measured at pass 4, and it now holds
 
-This is the most important limitation on every number above and it was found by trying to
-reproduce one.
+**At pass 4 the corpus measurement reproduces, which it did not at any earlier pass.** Two walks
+of the same 1,955-file corpus at the same HEAD with DIFFERENT partitioning — **8 strided shards**
+and **4 contiguous shards** — produce identical merged totals for all seven emitted types,
+identical per-type resolution rates and identical `evidenceClass` splits:
 
-**The census is not byte-reproducible on a loaded machine, and the reason is in the engine.**
-`src/ast/engine.ts` arms a per-file timeout and answers it by returning a **basic parse result**
-rather than an error. Six corpus files were observed crossing it across pass-2's runs —
-`postgrest/test/io/fixtures/big_schema.sql` (6 times), `roles.sql`, `replica.sql`,
-`db_config.sql`, `database.sql` and `phpmyadmin/tests/test_data/server_import.sql` — and each
-occurrence silently drops that file's symbols and relationships. A pass-1-shaped census and a
-pass-2-shaped census of the same corpus on the same HEAD differ by **1,001 symbols and 1,860
-relationships** for this reason and no other: the 300-file A/B, run back to back with the two
-analyzer versions, differs by **0 symbols and 1 edge**.
+| Walk | Files measured | Degraded by timeout | Regex fallback | Symbols | Relationships |
+| --- | --- | --- | --- | --- | --- |
+| 8 strided shards | 1,955 / 1,955 | 0 | 0 | 18,482 | **31,066** |
+| 4 contiguous shards | 1,955 / 1,955 | 0 | 0 | 18,482 | **31,066** |
 
-**There is also a wasm fault that kills the process, and it is load-dependent.** Two corpus
-files report `memory access out of bounds` from the wasm parser and then hang, after which
-`engine.ts:1411` answers with `process.exit(1)`:
+(`measurements/pass4-census.json`, `measurements/pass4-census-4shard.json`.) The per-SHARD rows do
+differ — `big_schema.sql` is 1,874 relationships and lands in whichever shard owns it — which is
+exactly why the merge is a separate pass over shard rows rather than an in-process sum. The number
+is now a property of the corpus and not of the slicing.
 
-| File | Behaviour |
-| --- | --- |
-| `duckdb/extension/tpcds/dsdgen/queries/83.sql` | faults and hangs — excluded by name in the census, on every run |
-| `duckdb/extension/tpcds/dsdgen/queries/97.sql` | faults and hangs — **not excluded**, and it killed a pass-2 census repeat |
-| `duckdb/benchmark/aoc24/queries/day11.sql` | faults and hangs under load; **parses in 593–758 ms on 3 of 3 solo runs**, yielding 0 symbols either way |
+**What changed to make it hold is a defect fix, not a better procedure.** Pass 3 recorded the
+total as bimodal and attributed the instability to files crossing `engine.ts`'s 120 s analyzer
+timeout. `postgrest/test/io/fixtures/big_schema.sql` measured **116,589 ms in 1 of 3 solo runs and
+123,743 / 127,059 ms in the other two** — 3.4 seconds of headroom against a 120-second budget —
+so which side of the budget it landed on decided whether the lane read 31,037 or 29,163, and
+`31,037 − 1,874 = 29,163` exactly. Pass 4 found the cause was **this analyzer's own walk**, and
+fixed it. See *PASS 4*. With `big_schema.sql` at 3,551 ms, **0 files degrade** instead of 4–8.
 
-So a census run either completes or dies with no output, and **which files fault depends on the
-machine's load, not on the code**. The pass-2 repeat of the census died on `day11.sql`; the
-pass-2 adversarial run and the pass-2 ruling-table run completed. The committed artifacts are
-from runs that completed. This is a §8 item with a precise specification: `ontology-coverage-gate.ts`
-and every lane's `parseFile`-based corpus walk need an `--exclude` for the faulting files, and
-`engine.ts` needs to stop answering a parse fault with `process.exit(1)`, because a single
-unparseable file makes every instrument built on the production entry point
-non-reproducible.
+**What still does not reproduce, and is not claimed to.** The `[BB-HANG]` wasm fault is a property
+of the ENGINE's budget on a loaded machine, not of any file, and it is still live: pass 4 was
+killed by `duckdb/extension/tpcds/dsdgen/queries/90.sql` on one run and by
+`duckdb/benchmark/aoc24/queries/day03.sql` on another, **two different files on two runs of the
+same code**. The machine has 8 cores, 15 GB of RAM and 11 GB of it in use by the other lanes, and a
+758-byte file (`postgrest/test/pgbench/1567/old.sql`) that parses solo in **650–1,062 ms** took
+**167,184 ms** under 8-way contention — a factor of 190 that is load, not code. So a single
+long `parseFile` walk is still not a reproducible instrument on this box, which is why the census,
+the arbiter run and the equivalence probe are all sharded, and why `engine.ts` answering a parse
+fault with `process.exit(1)` remains a §8 item: it makes every instrument built on the production
+entry point all-or-nothing.
+
+### The same load sensitivity, measured inside the GATE rather than around it — pass 7
+
+The paragraph above bounds the *process*. Pass 7 found the same effect inside a run that completes,
+which is the quieter and more dangerous form of it, and stated the mechanism once: **`engine.ts`
+answers an analyzer timeout with a SUCCESS-shaped basic parse result** (`symbols: []`,
+`relationships: []`, one error). A file that degrades therefore contributes **zero** edges and is
+indistinguishable from a file that declares nothing, unless the consumer checks
+`metadata.analysisVersion === "2.0-basic-fallback"` or an error message — which is exactly what
+`ontology-census.mts`'s `degradationOf` does and what the gate does not.
+
+Three measurements, all on the same 1,955-file corpus at the same HEAD:
+
+| Consumer | Serial repair? | Result against the census |
+| --- | --- | --- |
+| `ontology-census.mts`, 8 shards | **yes** | `uses` 9,106, `contains` 11,977, **0 degraded** — the exact figures |
+| `run-sharded-arbiter.mts` | no | `uses` **9,099** on one run, **9,106** on the next |
+| the gate, single process, **completed, no hang** | no | `uses` 9,105, `contains` **11,970** |
+
+The census is exact **because** it repairs; the gate is a lower bound in both configurations
+**because** it does not. So this is not a sharding artefact and not a hang: it is the gate trusting
+a success-shaped failure. **§8, specified in the report** — the fix is for the consumer to detect
+the marker the engine already sets, and the marker is already computed in this repository by
+`degradationOf` in `validation/m14/fixtures/sql/ontology-census.mts`.
 
 ## Known gaps, stated rather than implied
 
@@ -725,7 +1624,7 @@ The pass-2 defects and their measurements are in *PASS 2 — the adversarial aud
 follows is the residue that is a GAP rather than a fixed defect, plus the two §8 items.
 
 - **SQL-G14 — the shared differential has no SQL oracle and now skips the lane outright.**
-  116 distinct `derive*` oracle functions across `script/m14/`, none for SQL, and
+  106 distinct `derive*` oracle functions across `script/m14/` (166 export sites), none for SQL, and
   `LANG_REPOS` has no `sql` entry, so `differential.ts --lang sql` prints
   `SKIP sql: no corpus repo mapped in LANG_REPOS` instead of running. All 7 emitted types are
   DERIVATION findings. **§8.** The specification: an oracle must derive SQL truth from the tree
@@ -736,15 +1635,29 @@ follows is the residue that is a GAP rather than a fixed defect, plus the two §
   containment and replacement logic depends on), and `uses`/`references` should be scoped to the
   WITH list, because pass 2 showed that is what the analyzer now does and an oracle that did not
   would report 91 errors in 56 files as findings.
-- **SQL-G15 — `overrides` sees 22 of 777 real replacement events.** 777 `OR REPLACE`
-  declarations exist over the census corpus and all 777 are corpus-wide from the construct probe;
-  22 replace a declaration of the same kind in the same file and are therefore visible to a
-  per-file analyzer, which is what it emits. The other **755 replace a declaration made in
-  another file** — a migration chain re-declaring what the previous migration declared — and a
-  per-file analyzer cannot see them. 163 same-kind re-declarations carry no `OR REPLACE` at all
-  and PostgreSQL rejects those outright, so calling them overrides would assert a replacement the
-  language does not perform. The number that could be recovered is therefore 755, not 0, and it
-  is named rather than rounded away.
+- **SQL-G15 — `overrides` emits 22 edges from 34 replacement events. THE 777 AND THE 755 ARE
+  WITHDRAWN AS UNMEASURED, and the cross-file claim is falsified.** This item previously read "777
+  `OR REPLACE` declarations exist … the other 755 replace a declaration made in another file …
+  the number that could be recovered is therefore 755". Measured at pass 5 over all 1,955 admitted
+  files and 4,645 declarations, with the analyzer's own rule applied to a corpus-wide declaration
+  list per `kind:name`:
+
+  | | Count |
+  | --- | --- |
+  | redeclared `kind:name` groups | **178** |
+  | groups carrying at least one replacement event | **22** |
+  | groups carrying none (duplicate or re-creation, no `OR REPLACE`) | **156** |
+  | replacement events, per file | **34** |
+  | replacement events, corpus-wide | **34** |
+
+  Per-file and corpus-wide are the SAME number, so **every same-name re-declaration in the admitted
+  corpus is intra-file and there are no cross-file replacements to recover.** The 755 was wrong, and
+  the mechanism that made it plausible — PostgreSQL's extension corpus shipping one file per
+  version with the same function in every version — contributes nothing here, because the extension
+  corpus at `/usr/share/postgresql/14/extension` is not in the git-tracked corpus this lane admits.
+  What remains true and is the reason this is filed at all: 34 events become 22 edges because the
+  edge key is `(type, source, target)` with source `global`, so the replacement CHAIN of a name
+  declared 6 times is unreconstructable from the graph even though both line numbers survive.
 - **SQL-G16 — 91 `uses` edges from inside an error-bearing CTE.** See limitation 12: the WITH
   list is inside an ERROR node, so its names never become `cte` nodes and no scope rule can
   recover them. Needs a grammar change. Not filed as a shared item because the grammar is this
@@ -753,8 +1666,9 @@ follows is the residue that is a GAP rather than a fixed defect, plus the two §
   `keepSymbol`'s `UNIVERSAL` denylist in `src/ast/pool-worker.ts` holds `program`, the grammar's
   ROOT node type, beside `root`, `module_declaration` and `source_file`. `program` is also a
   legal SQL column name, so a real symbol is deleted and the `contains` edge naming it survives:
-  **1 edge** in `boundary/internal/db/schema/migrations/oss/postgres/71/11_session_recording.up.sql`,
-  out of 18,325 symbols emitted and 3 dropped (0.016 %). **§8**: `UNIVERSAL` needs a
+  **1 edge** in `boundary/internal/db/schema/migrations/oss/postgres/71/11_session_recording.up.sql`.
+  Re-measured at pass 5: **18,485 symbols emitted, 3 dropped (0.016 %)**, and `18,485 − 3 = 18,482`
+  is exactly what production `parseFile` publishes. **§8**: `UNIVERSAL` needs a
   language-scoped exemption list for names that are ordinary identifiers in the lane's language
   (SQL: `program`, `root`, `module_declaration` is not a SQL identifier; `program` and `root`
   are), the same exemption shape `keepSymbol` already applies for `json`/`yaml`/`xml`/`make`/
@@ -777,8 +1691,82 @@ follows is the residue that is a GAP rather than a fixed defect, plus the two §
   oversight.
 - **`extends` is RULED against the wired grammar, not against SQL.** SQL has table inheritance
   in two forms — `INHERITS (p)` and, since PostgreSQL 11, `PARTITION OF p` — and the grammar
-  cannot represent either. The five-shape capability battery that establishes this is recorded
-  in `adversarial-probe.json` and the overturn condition is a parse, not a node's spelling.
+  cannot represent either. The seven-shape capability battery that establishes this is recorded
+  in `pass8-adversarial-probe.json` — the seventh shape being the `partition_by` window-function
+  clause, which the first six never covered because none of them is that construct — and the
+  overturn condition is a parse, not a node's spelling.
+
+### Added by pass 3 (2026-10-03)
+
+Full measurements are in *PASS 3* above. These are the items that need a file this lane does not own,
+each specified so it can be applied without re-deriving it.
+
+- **`engine.ts` must stop answering a wasm parse fault with `process.exit(1)` (SQL-G17, extended
+  with two measurements).** `engine.ts:1411` arms a 120-second self-destruct around the SYNCHRONOUS
+  `parser.parse()` and kills the process on a hang, because `setTimeout` cannot interrupt blocked
+  C/WASM code. Pass 3 was killed four times by four DIFFERENT files. The fault is not a property of a
+  file and not of concurrency alone: 25 `aoc24` files parse solo in 0.7–7.6 s with no fault and
+  across 4 rounds of 8-way contended parsing of exactly those files there were 0 faults and 0 hangs,
+  so it emerges from SUSTAINED wasm state over a long walk. Needed: (a) a parse fault returns an error
+  result rather than taking the process with it, so one unparseable file cannot destroy every
+  instrument built on `parseFile`; (b) `parseFile`'s catch should not answer a real parse error with
+  `extractFallback` silently — it is the language-agnostic **REGEX** extractor, and a degraded file
+  then returns fewer edges with no error, which is how the census read clean while the number was
+  wrong. The supabase commit `7a7f0810f` fixed a related wasm temp-path race; this is the second half.
+- **`src/lsp/impact.ts` should match reverse-edge targets by (name, owner, file), not by name.**
+  Re-measured over 1,955 files at this HEAD: a `contains` target resolves uniquely by bare name
+  corpus-wide on **92.71 %** of edges, by (name, `ownerName`) within its own file on **99.53 %**,
+  and **99.60 %** once `metadata.memberKind` is added — while (name, `ownerName`) corpus-wide is
+  unique on only **45.61 %**, median 2 matches. So the file is not optional: without it the reverse
+  walk is ambiguous on more than half the edges. `ownerName` and `kind` are ALREADY on the member
+  symbol and `metadata.memberKind` is on the edge, so no schema change and no stored inbound edge is
+  required — only the match rule. The residual 47 intra-file cases are two `property` symbols of one
+  name under one owner (a column re-declared by `ALTER TABLE ADD COLUMN`, 37 of them) plus 8
+  `constant`+`property` and 10 `constant` pairs, which a per-file analyzer cannot merge.
+- **`src/ast/types.ts` needs a `trigger` SymbolKind, or the trigger/function collision stays.** Both a
+  `CREATE TRIGGER t` and a `CREATE FUNCTION t()` publish as `kind: function`, so **483 of 490**
+  `calls` self-loops are `calls X -> X` meaning "trigger X runs function X" rather than recursion;
+  **213** distinct names carry both a trigger and a function symbol that a `calls` edge names. The
+  other 7 self-loops are real recursion and are the control case. The edge already carries `metadata.triggerAction` so a consumer can
+  disambiguate the EDGE, but `bb_impact` on the name still picks one of two declarations.
+- **`pool-worker.ts`'s symbol-metadata whitelist should be widened, or a lane cannot use its own
+  metadata.** The whitelist (`metadata: (() => { … })`) forwards CSS keys and markdown keys and drops
+  everything else, so every `metadata.type`, `sqlType`, `constraintKind`, `isPrimaryKey` or
+  `addedByAlter` this analyzer writes is deleted before a consumer sees it. This is not a cosmetic
+  gap: `pass3-phantom-constraint.mts` keyed on `symbol.metadata.type` and reported **ZERO** phantom
+  declarations on a corpus with 53, purely because of it. Only `kind`, `ownerName`, `ownerKind`,
+  `qualifiedName` and the file/line survive.
+- **The shared differential has no SQL oracle and skips the lane (SQL-G14).** Unchanged from pass 2:
+  7 of 7 emitted types are DERIVATION findings, and `LANG_REPOS` has no `sql` entry so the harness
+  prints `SKIP` rather than a row. The cheapest first surface is still `contains`: both ends are names
+  written in the file, it is now 99.59 % resolvable, and `memberKind` gives an oracle something
+  concrete to disagree about. `uses`/`references` must be scoped to the WITH list or the oracle would
+  report 91 errors in 56 files as findings.
+- **SQL-G13, unchanged.** `keepSymbol`'s `UNIVERSAL` denylist holds `program`, the grammar's ROOT node
+  type, and `program` is a legal SQL column name, so the symbol is deleted and the `contains` edge
+  naming it survives: **1 edge** in `boundary/…/postgres/71/11_session_recording.up.sql`. Needs a
+  language-scoped exemption list for names that are ordinary identifiers in the lane's language, the
+  shape `keepSymbol` already applies for json/yaml/xml/make/markdown. The whole-corpus size of the
+  leak is now **3 symbols in 1,955 files** and reconciles exactly against production `parseFile`
+  (18,485 emitted − 3 refused = 18,482 published), so this is a 0.016 % leak and the `contains`
+  edge above is its only graph-visible consequence. Limitation 19's apparent 3-versus-0
+  disagreement is closed; see `measurements/pass5-keep-symbol-census.json`.
+- **The arbiter's instrument-A vocabulary count does not describe its own corpus (SQL-G18, new).**
+  `script/m14/ontology-coverage-gate.ts` prints `the grammar produced ${grammarNodeTypes.size}
+  distinct node types across the corpus`; over the same 1,955 files three independent walkers
+  measure **480** (all nodes) and **454** (named only), and the arbiter reports **256** — the same
+  256 in all 8 shards of a run whose shards hold 19 to 594 files each, which a per-shard vocabulary
+  cannot be. Needed: the loop at the `// Instrument A` comment walks `files`, so either `files` is
+  not the shard's admitted set at that point, or `grammarNodeTypes` is not reset between runs and
+  the patched single-process copy inherits a prior count. Which of the two it is, I did not
+  determine, because the file is supervisor-owned. No verdict depends on it — see *Instrument A's
+  denominator, measured three ways* — but the printed figure is currently not the corpus's.
+- **The arbiter needs an `--exclude` for faulting files, and `rulingFor` needs a non-prose citation.**
+  The first was pass 2's §8 item and pass 3 shows the name list cannot work — it grew from three to
+  seven by being killed. The citation bug is also pass 2's and unchanged: `rulingFor` matches a type by
+  PROSE, so it cites `SQL-D11` for `exports` (which is about `imports`). The fix is an optional
+  `ontologyType` on each decision with the prose match as fallback, plus splitting `SQL-D16` into two
+  entries. Specified in `script/m14/sql-ruled.ts` → `SQL_RULING_CITATIONS`.
 
 ### Carried from the M60 SQL wave
 
@@ -855,16 +1843,18 @@ documentation defect rather than an excellence. These are the ones that bound wh
 above can be used for.
 
 1. **Cross-file edges are the analyzer's weakest surface.** Every count here is a per-file
-   count. `overrides` sees 22 of 777 real replacement events; `uses` resolves intra-file at
-   32.80 % for the ordinary reason that a migrations corpus reads tables an earlier migration
-   created. No amount of intra-file work changes either number, and a graph consumer that wants
-   the 755 cross-file overrides needs a cross-file pass that does not exist.
+   count. `overrides` emits **22 edges from 34 replacement events**, and the corpus-wide count
+   under the same rule is also **34** — every same-name re-declaration in the admitted corpus is
+   intra-file, so this corpus does not exercise the cross-file case at all (the old denominator
+   of 777 is withdrawn as unmeasured; see *`overrides` reconciled by measurement*). `uses` resolves
+   intra-file at **32.51 %** for the ordinary reason that a migrations corpus reads tables an
+   earlier migration created. No amount of intra-file work changes either number.
 2. **`confidence` is uniformly 1, and that is a weaker claim than it looks.** It means no edge is
    a guess about a *name*. It does not mean the analyzer is equally certain about the *edge's
-   meaning*: the `usage_contextual` tier (**10,590 edges, 34.51 %**) says the name was read from
-   a bare slot with nothing around it to disambiguate it. A `uses` edge to `lineitem` could be
-   the TPC-H table or a same-named temp table in another schema; the analyzer cannot tell and
-   does not pretend to.
+   meaning*: the `usage_contextual` tier (**10,693 edges, 34.42 %** — 7,276 `uses` and 3,417
+   `calls`) says the name was read from a bare slot with nothing around it to disambiguate it. A
+   `uses` edge to `lineitem` could be the TPC-H table or a same-named temp table in another
+   schema; the analyzer cannot tell and does not pretend to.
 3. **The correctness oracle has 84 facts over 5 fixtures.** That is small, and it was audited by
    hand against one parse tree — so a grammar defect both it and the analyzer accept would be
    invisible. The construct probe and the capability battery cover part of that gap by measuring
@@ -915,30 +1905,38 @@ above can be used for.
     Pass 2 measured the fixable half: **22 of 22** psql targets exist on disk once joined.
 11. **`contains` cannot be verified from ranges in SQL, so it cannot be tested the way the CSS
     lane tested it.** Symbol ranges are NAME-ANCHORED — a `CREATE TABLE`'s range is its
-    identifier's span — so 11,252 of 11,786 containment edges (95.5 %) have a member whose span
-    lies outside the owner's. That is a property of the symbol model, not a defect in the edges,
+    identifier's span — so **11,392 of 11,977** containment edges (**95.1 %**, 380 files) have a
+    member whose span lies outside the owner's. That is a property of the symbol model, not a defect in the edges,
     and it means the CSS lane's defect class ("containment edges pointing at a symbol that does
     not contain the member") is untestable by range here: `parseFile` returns no `range` object
     and a `contains` edge carries no line number. `ownerName` is the only ground truth, and
-    11,785 of 11,786 members now agree with their edge on it.
+    **11,976 of 11,977** members agree with their edge on it; the 1 that does not is named in
+    `pass5-adversarial-probe.json` under `A10-contains-target-has-no-symbol-in-this-file`.
 12. **A CTE inside an ERROR-recovery span cannot be scoped.** 91 `uses` edges across 56 files
     come from inside a CTE whose own subtree carries an ERROR; when recovery swallows a WITH
-    list the names in it never become `cte` nodes, so the scope set is complete and still wrong.
+    list the names in it never become `cte` nodes, so the scope set is finished and still wrong.
     The fix would have to treat ANY error in a CTE body as "the WITH list was lost", which
     suppresses true table edges for every file with an unrelated unparseable expression in a CTE.
     It needs a grammar change, not a guard, and it is why `uses` still carries 19 edges naming a
     CTE with no qualified reach.
-13. **196 qualified invocations are not emitted and pass 2 did not settle why.** The probe
-    separates 52 that the keyword/builtin guard suppresses deliberately from 196 that vanish for
-    another reason. The 196 sit in damaged subtrees; I did not establish which guard or which
-    recovery pass drops them, so the number is reported as an open item rather than as a
-    characterised class.
-14. **The construct probe's `overrides` count is short by 7 and the reason is not established.**
-    See *`overrides` reconciled*: the analyzer's 22 edges are all sanctioned by an independent
-    re-derivation, and the probe's 15 is the figure that cannot be reproduced. Its stack walk
-    makes "the second occurrence" document-order-unstable, and a name declared three or more
-    times contributes differently depending on visit order — but that is a hypothesis, not a
-    measurement, and it is filed rather than claimed.
+13. **60 qualified invocations are inside an error subtree, and they are not lane defects.** Pass
+    2's version of this item said "196, reason not settled"; the reason is settled and the residual
+    has fallen at every pass — 196 unsplit, then 107 + 5, now **60 in one bucket** — because the two
+    dispatch gaps closed and because the plpgsql body cases turned out to be the same class (their
+    ancestor chain carries an error above the body, so pass 3's separate bucket was double-counting
+    one population). They are a property of the TREE: when error recovery swallows an expression the
+    callee never becomes an `invocation` node at all. **0 remain unexplained.** Reaching the 60 needs
+    a grammar change, not a guard.
+14. **`overrides` is the one emitted type whose edge count is not its event count, and the
+    difference is in the graph's identity key rather than in the analyzer.** 34 replacement events
+    become 22 edges because `addRelationship` keys on `(type, source, target)` and the source is
+    the synthetic owner `global`, so a name replaced 6 times is one edge. Both line numbers survive
+    in `metadata.priorLine` / `metadata.replacementLine`, but only the LAST pair: a consumer cannot
+    reconstruct the replacement CHAIN from the edge, because the 3 collapsed events of
+    `overloaded_default` are gone. This was measured at pass 5 and it is the reason the analyzer's
+    `22` and its event count `34` are both correct and both on this page. The construct probe's 15
+    is now decomposed exactly — see *`overrides` reconciled by measurement* — so it is no longer an
+    open item.
 15. **`SQL_KEYWORDS` and `SQL_BUILTINS` are now exported from the analyzer.** They are read-only
     by every consumer added this round (the adversarial probe calls `has` on them so it can ask
     the guard's question instead of keeping a copy that could drift), but the export widens the
@@ -946,39 +1944,133 @@ above can be used for.
     lane-side re-derivation of the two sets with a check that they have not drifted; the export
     is the cheaper of the two and the drift-proof one.
 
+16. **69.3 % of `uses` edges are sourced to `global`, which is not a published symbol.** 6,311 of
+    9,106. For an anonymous statement that is the honest owner — a SQL file's top-level DML is not
+    inside any declaration — but it means those edges can be walked TO their target and not FROM
+    their source. Publishing a per-file symbol would fix it and is not done here: it changes the
+    symbol census for every SQL file, and `keepSymbol`'s denylist already drops the grammar's own
+    root name (`program`), so a file-level symbol is a shared-machinery decision. §8.
+17. **A trigger and its function are the same kind with the same name, and `calls X -> X` does not
+    say which is which.** **483 of 490** `calls` self-loops are this shape — PostgreSQL's convention
+    is to name a trigger after the function it runs — and the other **7** are real recursion
+    (`generate_session_code()`, `validate_json_schema()`), which is the control case proving the
+    self-loop encoding is sound for recursion and ambiguous for triggers. **213** distinct names
+    carry both a trigger and a function symbol that a `calls` edge mentions.
+    `metadata.triggerAction` already marks the trigger shape so a consumer CAN tell, but the two
+    SYMBOLS remain indistinguishable and `bb_impact` on the name picks one. Closing it needs a
+    `trigger` SymbolKind, and `src/ast/types.ts` is supervisor-owned. §8.
+18. **Cross-file, `ownerName` does not disambiguate a `contains` target.** Intra-file (name,
+    `ownerName`) resolves **11,921 of 11,977 = 99.53 %** — 11,929 = 99.60 % once the edge's own
+    `metadata.memberKind` is added — but corpus-wide (name, `ownerName`) is unique for only **5,463
+    of 11,977 = 45.61 %**, median 2 matches, because a migrations corpus declares `users(id)` in
+    many files. The disambiguator a cross-file consumer needs is the FILE, and `src/lsp/impact.ts`
+    currently matches targets by name alone. §8.
+19. **The two `keepSymbol` measurements that two earlier passes recorded as disagreeing are
+    reconciled, and the reconciliation is exact.** `analyze()` over the corpus emits **18,485**
+    symbols; `keepSymbol` refuses **3** of them (2 `function:root`, 1 `property:program`); production
+    `parseFile` publishes **18,482**. `18,485 − 3 = 18,482`, so `keepSymbol` accounts for the whole
+    difference between what the analyzer emits and what the index sees, and the earlier `18,325`
+    was an older analyzer rather than a different rule. Pass 3's "0 dropped" was never a competing
+    measurement: that probe reads `parseFile` output, which is already filtered, so a drop is
+    structurally unobservable in it. This limitation existed because the two numbers were compared
+    without asking what each instrument could see; it is closed by `measurements/pass5-keep-symbol-census.json`.
+20. **47 symbols are named with a SQL keyword, and the count splits into 11 that are a defect and
+    36 that the measure cannot separate from keywords.** The 11 are one shape — `ALTER TABLE … ADD
+    FOREIGN KEY / UNIQUE / PRIMARY KEY` read as a column named after the keyword (`key` 5, `KEY` 1,
+    `PRIMARY` 3, `primary` 2) — and fixing that needs a decision about what `ADD CONSTRAINT`
+    should publish, not a longer denylist. The other 36 are `comment` 25 (legal: it is not
+    reserved in a column position) and 11 singletons the analyzer cannot clear without reading
+    whether the source spelled the identifier quoted: `filter`, `start`, `end`, `from`, `to`,
+    `table`, `conflict`, `range`, `DEFERRABLE`, `first`, `true`.
+21. **One corpus file used to be worth 5 % of this lane's symbols and was unmeasurable; pass 4
+    fixed the cost and the figure no longer applies, but the shape of the limit survives.**
+    `postgrest/test/io/fixtures/big_schema.sql` measured 116,589–156,694 ms against the engine's
+    120 s analyzer budget and returned 0 symbols in 2 of 3 solo runs, so the lane's headline
+    alternated between 31,037 and 29,163 depending on machine load. Pass 4 found the cause in this
+    analyzer's own `walkDescendants` (87 % of the run) and the file is now **3,551 ms with the same
+    943 symbols and 1,874 relationships every time**, and two walks at different shard counts agree
+    exactly. So the residual limit is narrower and it is this: a file at 3.5 s is 5× the median
+    corpus file, and the equivalence probe that proved the fix correct reports 2,624,148 index
+    queries over 1,955 files, so the index is correct but its cost is still linear in tree size per
+    query until the queries are hoisted. No corpus file degrades, and no headline number depends on
+    which side of a budget a file lands on.
+22. **This page's figures were audited against the analyzer for seven passes and against THEMSELVES
+    for one, and the eighth pass found four wrong.** Passes 1–7 built independent oracles and
+    measured the analyzer's output; nothing re-derived the page's own arithmetic from the stored
+    artifacts. Pass 8 did, and found that the `partition` substring search had **three** matching
+    node types where the page named two, that two files this lane owns disagreed about the size of
+    the node-type inventory (**465** vs **480**), and that three `contains` resolution percentages
+    were off by one in the last digit. None of the four changed a verdict, and that is the finding
+    rather than a reassurance: **a measurement can be right and the sentence quoting it can still be
+    wrong**, so an audit that only re-runs the instrument audits half of what it appears to. The
+    remaining risk is that the four were the four that a re-read could see — a figure that is wrong
+    in a way that looks plausible is not detectable by reading harder, only by re-deriving.
+23. **The capability battery tests the constructs it already suspects, and that is a structural
+    limit rather than a fixable oversight.** All seven shapes in it are table-partitioning or
+    structural-copy forms, which is why `partition_by` — the one `partition`-named node that is
+    neither — survived six passes unnamed. The battery was widened once because a gap was noticed,
+    and the way it failed is the generalisable part: **widening a battery by adding the case you
+    just noticed does not cover the case you have not noticed.** `partition-by-sites.mts` exists to
+    cover the second kind, because it is generic over `--type` and answers "where does node type X
+    actually sit" for any name a reader wants to challenge, rather than for the six names this lane
+    already thought of.
+24. **A degraded file is a silent subtraction, and the arbiter will not tell you.** The engine
+    answers a parse fault with `extractFallback` — a success-shaped result — so a file lost to a
+    parse error contributes **0** edges and no error the gate can see. Measured twice on this page:
+    the adversarial probe lost **5** `uses` edges on `87.sql` (9,106 → 9,101) and the incoming probe
+    lost **8** across 3 files at concurrency 8. Both were recovered by re-running, which is not a
+    property of the instrument and cannot be relied on: the census's own shard-splitting exists
+    only to bound this, and the arbiter still has no serial-repair pass. **A figure produced by a
+    single-process walk over this corpus is a lower bound and should be quoted as one.**
+
 ## Evidence pointers
 
-- Ontology census (every count above): `validation/m14/fixtures/sql/ontology-census.json`, written
-  by `validation/m14/fixtures/sql/ontology-census.mts` through production `parseFile`
-- Construct probe (the 465-node-type grammar inventory and the semantic counts behind every
-  RULED verdict): `validation/m14/fixtures/sql/construct-probe.json`
-- `keepSymbol` census (SQL-G13): `validation/m14/fixtures/sql/keep-symbol-census.json`
-- Adversarial probe (every number in *PASS 2*): `validation/m14/fixtures/sql/adversarial-probe.json`,
-  written by `validation/m14/fixtures/sql/adversarial-probe.mts` — the six questions' adversarial
-  half, the A12 capability battery, and the A1 probe whose own vacuity is declared
-- Ruling table and its demonstration: `script/m60/sql-ontology-ruled.ts`, run by
+Everything above is written by a committed script and lands in a committed artifact. Pass 3's
+artifacts are under `validation/m14/fixtures/sql/measurements/`:
+
+| Artifact | Written by | What it carries |
+| --- | --- | --- |
+| `pass3-final-census.json` (+ `.shard0..3.json`) | `validation/m14/fixtures/sql/ontology-census.mts` | every headline count, through production `parseFile`, sharded and merged; `degradedByTimeout` and `filesWithNoShardRow` per shard, replayed into the merge |
+| `pass3b-census.json`, `pass3c-census.json` | the same script at 8 and 4 shards | the reproducibility pair — 0 differences but for one named file |
+| `pass3-fault-contended-r1.json` | `validation/m14/fixtures/sql/fault-classify.mts` | 25 `aoc24` files parsed 8-way concurrently, 0 faults, against 0 faults solo — the measurement that makes `--exclude` provably insufficient |
+| `pass3-adversarial-probe.json` | `validation/m14/fixtures/sql/adversarial-probe.mts` | the six questions' adversarial half, the A12 capability battery decided from node types and fields, and the probe's own degradation disclosure |
+| `pass3-construct-probe.json` | `validation/m14/fixtures/sql/construct-probe.mts` | the 480-node-type grammar inventory and the nine zero-probes behind every RULED verdict |
+| `pass5-incoming-corpus.json` | `validation/m14/fixtures/sql/pass3-incoming.mts` | the incoming direction re-measured at this HEAD: ambiguity, `contains` resolution under four match rules, the trigger/function collision, keyword-named symbols, orphan declarations |
+| `pass5-keep-symbol-census.json` | `validation/m14/fixtures/sql/keep-symbol-census.mts` | 18,485 emitted − 3 refused = 18,482 published, the reconciliation that closes limitation 19 |
+| `pass5-overrides-reconciliation.json` | `validation/m14/fixtures/sql/overrides-reconciliation.mts` | both `overrides` rules re-implemented and the difference decomposed with an exactness check, plus the per-file edge-identity collapse that turns 34 events into 22 edges |
+| `pass5-adversarial-probe.json` | `validation/m14/fixtures/sql/adversarial-probe.mts` | the six questions' adversarial half re-measured at this HEAD over all 1,955 files with **0 degraded**, and the A12 capability battery's 6 verdicts |
+| `pass5-invocation-why.json` | `validation/m14/fixtures/sql/pass3-invocation-why.mts` | the cause breakdown for every qualified invocation carrying no `calls` edge, closed at 742 = 629 + 53 + 60 with **0 unexplained** |
+| `pass6-incoming-corpus.json` | `validation/m14/fixtures/sql/pass3-incoming.mts --concurrency 2` | the incoming direction at pass 6: **308 external vs 1,654 unaccounted** unresolved edges by a classifier that now fires, **22 of 22** psql include targets resolved on disk, and `classifierSelfCheck` reporting `vacuous: false` against real totals |
+| `pass6-corpus-composition.json` | `validation/m14/fixtures/sql/corpus-composition.mts` | the corpus DENOMINATOR the per-type census never produced: 183 repo directories walked, 17 with a tracked `.sql`, **16 contributing an admitted file**, 1,963 tracked paths → **1,955 admitted**, agreeing with the arbiter. Names `proxicall`, the symlink out of the corpus root that supplies 438 of those files, and the 8 excluded paths |
+| `pass3-incoming-corpus.json`, `pass3-incoming-boundary.json` | `validation/m14/fixtures/sql/pass3-incoming.mts` | the incoming direction: ambiguity per type, `contains` resolution under three match rules, the trigger/function collision, keyword-named symbols, orphan declarations |
+| `pass3-invocation-why.json`, `pass3-invocation-why-after.json` | `validation/m14/fixtures/sql/pass3-invocation-why.mts` | the cause breakdown for every qualified invocation that carries no `calls` edge, and the 0 that remain unexplained |
+| `pass3-phantom-constraint-before.json`, `pass3-phantom-constraint-after.json` | `validation/m14/fixtures/sql/pass3-phantom-constraint.mts` | 53 fabricated declarations → 0, by the same parse-tree oracle on both sides |
+| `pass8-census.json` (+ `.shard0..7.json`) | `validation/m14/fixtures/sql/ontology-census.mts` at 8 shards | the census after the regex removal: **0 differences against `pass7-census.json` over 208 leaf keys**, which is the evidence that the edit changed no behaviour |
+| `pass8-sharded-arbiter.json` | `validation/m14/fixtures/sql/run-sharded-arbiter.mts --shards 8 --json` | the arbiter's verdict with per-shard node-type vocabularies, so the 256-vs-480 union argument can be re-checked from the artifact |
+| `pass8-adversarial-probe.json` | `validation/m14/fixtures/sql/adversarial-probe.mts` | 24 probe populations at this HEAD, A12's battery now **7** shapes, and `degraded-regex-fallback` recorded as a population so the degraded count is in the artifact rather than inferred |
+| `pass8-partition-by-sites.json` | `validation/m14/fixtures/sql/partition-by-sites.mts` | every `partition_by` site with its parent chain: **44 occurrences, 44 of 44 under `window_specification`, 0 in a table-partitioning declaration** |
+| `pass8-incoming-corpus.json` | `validation/m14/fixtures/sql/pass3-incoming.mts --concurrency 2` | the incoming direction at this HEAD: **0 differences against `pass6-incoming-corpus.json` over 151 leaf keys**, 0 degraded, 31,066 edges |
+
+Carried forward from pass 2 and still the correctness instruments: `ontology-census.json`
+(superseded), `construct-probe.json`, `adversarial-probe.json`, `keep-symbol-census.json`.
+
+- Ruling table and its demonstration: `script/m14/sql-ruled.ts`, run by
   `validation/m14/fixtures/sql/run-ruling-table.mts`
-- Ontology mutants and their runner: `script/m60/sql-ontology-mutants.ts` (16, four of them
-  pass-2), `script/m60/run-sql-ontology-mutants.ts`
-- Review: `fixtures/sql/REVIEW.md` (measured arc, §1 defect table, §3 grammar, §8 second
-  corpus, §9–10 the grammar candidates and the EXECUTE pass) — **absent from this machine**
-- Fixtures: `validation/m12/fixtures/sql/`, `validation/m14/fixtures/sql/sqld1..sqld14`
-  (`sqld14-pass2-adversarial` is the pass-2 regression fixture; five of its rows are
-  forbid-side)
+- Ontology mutants and their runner: `script/m60/sql-ontology-mutants.ts` (21, five of them
+  pass-3), `script/m60/run-sql-ontology-mutants.ts`
+- Review: `fixtures/sql/REVIEW.md` — **absent from this machine**
+- Fixtures: `validation/m12/fixtures/sql/`, `validation/m14/fixtures/sql/sqld1..sqld15`
+  (`sqld14` is the pass-2 regression fixture, `sqld15` the pass-3 one; reverting the analyzer
+  makes `sqld15` fail with 6 named problems)
 - Ground truth: `validation/m12/ground-truth/sql.json`
-- Differential: `validation/m12/results/sql-differential.json`
-- Corpus errors: `validation/m12/results/sql-corpus-errors.json`
-- Completeness spec: `script/m14/spec/sql-completeness.json` (82 handled / 96 internal-silent /
-  9 gaps / 18 rulings)
-- Lane records: `validation/m60/sql/` — `second-corpus-recall.json`,
-  `v3-rejection.json`, `v4-plpgsql-candidate.json`, `execute-literal-recovery.json`
-- Gates: `script/m12/sql-node-types-compare.ts`, `script/m12/verify-analyzer.ts`,
-  `script/m14/mutate-analyzer.ts`, `script/m14/verify-grammar-pins.ts`,
+- Differential: `validation/m12/results/sql-differential.json` — regenerated at pass 3's HEAD and
+  its declared analyzer sha256 matches the file on disk
+- Completeness spec: `script/m14/spec/sql-completeness.json`
+- Lane records: `validation/m60/sql/`
+- Gates: `script/m12/verify-analyzer.ts`, `script/m14/verify-grammar-pins.ts`,
   `script/m14/ontology-coverage-gate.ts` (supervisor-owned; demonstrated by
-  `validation/m14/fixtures/sql/run-ruling-table.mts`),
-  `script/m60/verify-sql-resync.ts`, `script/m60/measure-grammar-recovery.ts`
-- Probes: `fixtures/sql/probe/` (contract battery, grammar census, field introspection, corpus
-  sweep, unknown-symbol, parser-state-leak, grammar A/B) — **absent from this machine**
+  `validation/m14/fixtures/sql/run-ruling-table.mts`), `script/m14/verify-honesty.ts`,
+  `script/m60/verify-sql-resync.ts`
 - Grammar review: `reviews/m60-sql-grammar-l1xnan-047-refused.md`, `reviews/regex-policy.md`
 
 ## Issue

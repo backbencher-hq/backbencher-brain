@@ -7,6 +7,19 @@
   },
   "mutants": [
     {
+      "id": "json/dependency-version-is-the-json-type",
+      "language": "json",
+      "defectClass": "dishonest-metadata",
+      "description": "M14 ontology pass-3 regression: a manifest dependency's `metadata.version` publishes the dependency VALUE'S JSON TYPE (`\"string\"`) instead of its version range, because the lookup read the symbol's `returnType` and the real range was in the pair's `value` node. Every `package_dependency` `uses` edge in the corpus carried it — 4,741 dependency `uses` at the last census. Caught by json/manifest/package's `meta.version` pin and its two forbids.",
+      "cleanFail": 0,
+      "mutatedPass": 13,
+      "mutatedFail": 1,
+      "caught": true,
+      "newlyFailingFixtures": [
+        "json/manifest/package"
+      ]
+    },
+    {
       "id": "json/array-item-named-from-bare-array-name",
       "language": "json",
       "defectClass": "wrong-symbol-identity",
@@ -125,6 +138,19 @@
       ]
     },
     {
+      "id": "json/calls-endpoints-are-bare-names",
+      "language": "json",
+      "defectClass": "unresolvable-identity",
+      "description": "M14 ontology pass-3 regression: `calls` reverts to bare script names. Both endpoints are keys of ONE `scripts` object, so a qualified path exists for both — which is what separates this type from `uses` and `exports`, whose targets have no position in the document. Measured on a 449-file sample, 7 of 37 `calls` targets matched more than one published symbol, each one a place the reverse walk picks a winner by a rule nobody chose. Caught by json/manifest/package's four `calls` pins, which each spell the path.",
+      "cleanFail": 0,
+      "mutatedPass": 13,
+      "mutatedFail": 1,
+      "caught": true,
+      "newlyFailingFixtures": [
+        "json/manifest/package"
+      ]
+    },
+    {
       "id": "json/calls-callee-any-token",
       "language": "json",
       "defectClass": "fabricated-edge",
@@ -212,7 +238,7 @@
       ]
     }
   ],
-  "total": 14,
-  "caught": 14,
+  "total": 16,
+  "caught": 16,
   "survivors": 0
 }

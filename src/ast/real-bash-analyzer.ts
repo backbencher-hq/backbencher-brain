@@ -223,6 +223,22 @@ const endsWithDoubleParen = (text: string): boolean => {
   return t.length >= 2 && t.charCodeAt(t.length - 2) === 41 /* ) */ && t.charCodeAt(t.length - 1) === 41
 }
 
+/**
+ * Is this `compound_statement` an ARITHMETIC one — `(( … ))` — rather than a block?
+ *
+ * bash reads `((expr))` as an arithmetic command and `{ … }`, `if …; then … fi`'s
+ * body and `do … done`'s body all reach the analyzer as the same node type, so the
+ * distinction has to be read off the node's own text. `( (date) )` has a space
+ * between the parens and stays a subshell, which is why the CLOSING pair is part of
+ * the test.
+ *
+ * This is one rule in two places — here, and in `isArithmeticOperandCommand`, which
+ * asks the same question of a `subshell` the grammar misparsed — so it is a single
+ * function rather than the same expression written twice.
+ */
+const isArithmeticCompoundText = (text: string): boolean =>
+  opensWithDoubleParen(text) && endsWithDoubleParen(text)
+
 const isCommandNameText = (text: string): boolean => {
   if (text.length === 0) return false
   // A reserved word is never a command name. This is a POSIX fact rather than a
@@ -519,7 +535,49 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
         // That is the gate working: a plausible guess, refused by evidence.
         node.type === "arithmetic_expansion" ||
         node.type === "postfix_expression" ||
-        node.type === "c_style_for_statement"
+        node.type === "c_style_for_statement" ||
+        // `((i < 5))` — an arithmetic COMMAND, whose operands are real reads. The
+        // five node types above cover `$((…))`, `for ((…))` and `((i++))`, and none
+        // of them covers the plain form, because the pinned grammar holds a bare
+        // `(( … ))` in a `compound_statement` wrapping a `binary_expression` /
+        // `unary_expression` / plain `variable_name` — none of which is dispatched.
+        // The asymmetry was a grammar-shape accident rather than a fact about bash:
+        // `((i++))` produced a `uses` edge only because its operand happened to
+        // arrive as a `postfix_expression`, and `((i < 5))` on the same line
+        // produced none. Recorded as limitation 7 and measured before it was
+        // changed: `probe-bash-arithmetic-operands.mts` derives the delta from the
+        // tree BEFORE the edit and predicts +70 `uses` edges on the 400-file
+        // hash-order sample — 89 arithmetic compound_statements in 32 files, 126
+        // operand name nodes, 115 distinct (target, line) pairs, 45 of them
+        // already published through the five dispatched types and 70 not, 54 of
+        // those 70 naming a variable the same file declares. The census then
+        // measured uses 7,786 -> 7,856 and total relationships 16,984 -> 17,054,
+        // which is the 70. NO other type moves: this adds reads, no symbols and no
+        // edges of any other type.
+        //
+        // The first run of that probe predicted 72 and the census said 70, and the
+        // probe was wrong: it deduplicated operands per STATEMENT while `addRel`'s
+        // key carries no statement identity, so `(( i++ )); (( i-- ))` on one line
+        // counted twice. The instrument now dedupes per file.
+        //
+        // The predicate is the node's own text, because `compound_statement` is also
+        // a block: `then <block> fi` and `do <body> done` reach the same node type,
+        // and their reads are already dispatched — `simple_expansion`, `expansion`,
+        // `arithmetic_expansion`, `postfix_expression` and `c_style_for_statement`
+        // all sit under them — so a block contributes no edge a block-read would
+        // duplicate. The guard keeps the claim true rather than preventing a
+        // duplicate, and its own population is measured: 792 compound_statements
+        // are excluded by it on the 400-file sample, of which 0 open `((`.
+        //
+        // That 0 is also why no mutant covers the CLOSING half of the test. A
+        // malformed `(( a < 2` does not arrive as a compound_statement at all — the
+        // grammar produces an ERROR node for it (verified on the tree) — so
+        // `opensWithDoubleParen` alone has an empty reachable population on this
+        // corpus and a mutant dropping `endsWithDoubleParen` would survive. The
+        // condition is kept because `( (date) )` is a subshell and `((x))` is
+        // arithmetic, and it is declared rather than covered by a mutant that
+        // cannot fail.
+        (node.type === "compound_statement" && isArithmeticCompoundText(node.text))
       ) {
         this.emitVariableUses(node, symbols, relSource, addRel, declaredSymbols, functionStack, functionParams, declSites, scriptName)
       } else if (node.type === "for_statement") {
@@ -607,6 +665,234 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
           bashSpecific: true,
         })
       }
+    }
+
+    // Every declaration line per FUNCTION name, for the `calls` attribution below.
+    //
+    // `functionFirstDeclaration` (above) records only the first, because `overrides`
+    // needs the prior one and nothing else. A `calls` edge needs the opposite
+    // question — WHICH of several declarations is the one in effect at the call
+    // site — so it needs all of them.
+    //
+    // It is indexed from the PUBLISHED `symbols`, not from the walk's own
+    // bookkeeping, so a `targetLine` produced from it is a line the store actually
+    // publishes. That is the whole reason it is not `declSites`: `declSites` keys
+    // variables, aliases and locals, never functions, and mixing the two would let
+    // this publish the line of something that is not a function symbol at all.
+    const functionDeclLines = new Map<string, { line: number; kind: string }[]>()
+    // ...and whether the name is ALSO declared as something that is not a function.
+    //
+    // Needed because "ambiguous" and "ambiguous" are not the same question. Among
+    // function declarations alone a name declared once is not ambiguous and the
+    // `calls` edge needs nothing — but the published symbol table may still hold a
+    // VARIABLE of the same name, and a consumer matching reverse edges by target
+    // has two candidates and no way to choose. So the names that need narrowing by
+    // kind are tracked separately from the names that need a line, and the two sets
+    // only overlap by accident. Measured on the whole corpus: 236 name-ambiguous
+    // `calls` edges, of which the redefinition rule alone could answer 131.
+    const namesWithNonFunctionDecl = new Set<string>()
+    for (const sym of symbols) {
+      const name = sym.name
+      if (sym.kind === ASTEngine.SymbolKind.Function) {
+        const line = this.nameLineOf(sym)
+        const list = functionDeclLines.get(name)
+        if (list) {
+          if (!list.some((e) => e.line === line)) list.push({ line, kind: String(sym.kind) })
+        } else functionDeclLines.set(name, [{ line, kind: String(sym.kind) }])
+      } else if (name.length > 0 && !namesWithNonFunctionDecl.has(name)) {
+        namesWithNonFunctionDecl.add(name)
+      }
+    }
+
+    // ------------------------------------------------ attribution, BD11's flag
+    // `isAssignedInFile` answers "DOES THIS FILE ASSIGN THIS NAME", and the answer
+    // belongs here rather than in the walk because `declaredSymbols` is filled BY the
+    // walk. Evaluated during it, the predicate could only see the declarations
+    // already passed, so the answer depended on where the read sat:
+    //
+    //     echo "before: $LATE"    ->  uses -> LATE @1   ABSENT
+    //     LATE=1
+    //     echo "after: $LATE"     ->  uses -> LATE @3   TRUE
+    //
+    // One file, one name, one declaration, two answers. Measured on the 400-file
+    // sample: 37 (file, target) pairs in 25 files carried BOTH, and a further 15
+    // pairs (50 edges) were declared after every read of the name, so no
+    // contradiction showed and they were wrong for the same reason
+    // (`probe-bash-assigned-flag-order.mts`). 243 of 7,856 reads, 3.1%.
+    //
+    // `declaredSymbols` keys are `${owner}\u0000${name}`, and the contract is "under
+    // ANY owner" — a read inside a function reaches a module-level assignment, which
+    // is the case that matters most — so the suffixes are indexed once here. The
+    // pass can only ADD the key: a name present in the finished set was present in
+    // every prefix of it, so no edge that was correct before is changed after.
+    //
+    // Emitted on true only, matching `isShellDefined` and the `targetResolution`
+    // family — ABSENCE MEANS FALSE, and the contract is stated in the spec rather
+    // than left to be inferred from a pattern.
+    const assignedNamesInFile = new Set<string>()
+    for (const k of declaredSymbols) {
+      const i = k.indexOf("\u0000")
+      if (i >= 0) assignedNamesInFile.add(k.slice(i + 1))
+    }
+    for (const rel of relationships) {
+      if (rel.type !== ASTEngine.RelationshipType.Uses) continue
+      const meta = rel.metadata as Record<string, unknown>
+      if (meta.isAssignedInFile !== undefined) continue
+      if (assignedNamesInFile.has(String(rel.target ?? ""))) meta.isAssignedInFile = true
+    }
+
+    // ------------------------------------------------- attribution, second pass
+    // `resolveDeclaration` asks "is this name ambiguous IN THIS FILE?", and at the
+    // moment a `uses` edge is emitted that question is asked against a HALF-BUILT
+    // index: `declSites` is filled by the same walk that emits the edges (see the
+    // `noteDeclaration` call sites), so a use is compared only with the
+    // declarations the walk had already passed. The consequence is that whether an
+    // edge carries an attribution depends on WHERE THE USE SITS IN THE FILE rather
+    // than on what the file declares — a use on the first line of a name declared
+    // forty times is judged unambiguous and published bare, while a use near the
+    // end of the same name is judged ambiguous and disambiguated.
+    //
+    // Measured on all 4,130 admitted files: 4,220 `uses` edges in 400 files name a
+    // target with two or more declarations in their own file and publish no
+    // `targetResolution`, every one of them because of this ordering. The two
+    // outcomes are indistinguishable to a consumer, which is the whole problem:
+    // "this name is unique here" and "the analyzer had not seen the other
+    // declarations yet" are the same published row.
+    //
+    // So the question is asked a second time here, against the FINISHED index, by
+    // the SAME function — one rule, not two, and a fixture that pins the
+    // first-pass outcome keeps pinning it. Only edges that published nothing are
+    // revisited, so an edge whose target really is unique in the file still gains
+    // no keys: the 68,843 genuinely-unique reads on the pinned corpus stay exactly
+    // as small as they were.
+    for (const rel of relationships) {
+      if (rel.type !== ASTEngine.RelationshipType.Uses) continue
+      const meta = rel.metadata as Record<string, unknown>
+      if (meta.targetResolution !== undefined) continue // already decided in the walk
+      const resolved = this.resolveDeclaration(
+        declSites,
+        String(rel.target ?? ""),
+        String(rel.source ?? ""),
+        rel.line_number,
+        scriptName,
+      )
+      if (resolved) Object.assign(meta, resolved)
+    }
+
+    // ------------------------------- attribution, a read that is also a function
+    //
+    // The last measured hole, and it is 4 edges on the 400-file sample — the whole
+    // of what is left. `declSites` keys VARIABLES, aliases and locals, never
+    // functions (see the note above `functionDeclLines`), so a name the file
+    // declares as BOTH a function and a variable looks unique to `declSites` while
+    // the published symbol table holds two declarations of it. The edge then
+    // publishes nothing and a consumer matching by name has two candidates:
+    //
+    //   consul/build-support/functions/10-util.sh:613   uses -> ui_version   function@597 variable@612
+    //   dart-sdk/pkg/vm/tool/shared_functions.sh:58     uses -> host_arch   function@7    variable@56
+    //   dart-sdk/pkg/vm/tool/shared_functions.sh:59     uses -> host_arch   (same)
+    //   ohmyzsh/plugins/rvm/rvm.plugin.zsh:34           uses -> rubies      function@9    variable@16
+    //
+    // `$name` is a parameter expansion. It reads a VARIABLE; a function is not
+    // readable through `$`, so the function symbol is not a candidate for this edge
+    // at all. That is a property of the language, not a preference, which is why
+    // the resolution is published under its own value rather than folded into
+    // `innermostScope`: a consumer that filters candidates on kind must be able to
+    // see that kind is what decided this one.
+    for (const rel of relationships) {
+      if (rel.type !== ASTEngine.RelationshipType.Uses) continue
+      const meta = rel.metadata as Record<string, unknown>
+      if (meta.targetResolution !== undefined) continue
+      const name = String(rel.target ?? "")
+      if (!functionDeclLines.has(name)) continue // no function symbol, so no second candidate
+      const resolved = this.resolveReadAgainstFunctionSymbol(
+        declSites,
+        name,
+        String(rel.source ?? ""),
+        rel.line_number,
+        scriptName,
+      )
+      if (resolved) Object.assign(meta, resolved)
+    }
+
+    // ------------------------------------------- attribution, `calls` second pass
+    //
+    // The same question for the other type that carries the USE SITE's line rather
+    // than the declaration's. `probe-bash-published-resolvability.mts` measured this
+    // by applying every field the edge PUBLISHES to the file's real symbol table.
+    //
+    // Two shapes are here and they are separate defects, which the 400-file sample
+    // could not tell apart because it saw one of each:
+    //
+    //   1. the name is declared as a FUNCTION TWICE (6 edges on the sample,
+    //      kubernetes/third_party/gimme/gimme `_version_sort` at 125 and 127 with
+    //      calls at 535/565/581). `isFunctionCall` cannot answer it: that flag says
+    //      the target IS a local function, not WHICH one, so as a filter it leaves
+    //      zero candidates on 6 of 6.
+    //
+    //   2. the name is declared as a function ONCE and also as something that is
+    //      not a function (105 edges, visible only at whole-corpus scale:
+    //      swift-nio/scripts/nio-diagnose:398 `calls -> nio_pids` against
+    //      variable@136 and function@151; mvdan-sh/syntax/typedjson/testdata/
+    //      roundtrip/file.sh `calls -> foo` against function@19 and variable@20).
+    //      Among functions the name is not ambiguous, so this rule declines — but a
+    //      consumer matching by target still has two candidates.
+    //
+    // Both are answered by the same function, over the FUNCTION candidate set, plus
+    // the knowledge that a name with a non-function declaration needs narrowing by
+    // kind even when the function is unique.
+    for (const rel of relationships) {
+      if (rel.type !== ASTEngine.RelationshipType.Calls) continue
+      const meta = rel.metadata as Record<string, unknown>
+      if (meta.targetResolution !== undefined) continue
+      if (meta.isFunctionCall !== true) continue // an external binary names nothing local
+      const resolved = this.resolveFunctionTarget(
+        functionDeclLines,
+        String(rel.target ?? ""),
+        rel.line_number,
+        namesWithNonFunctionDecl,
+      )
+      if (resolved) Object.assign(meta, resolved)
+    }
+
+    // -------------------------------------------- attribution, `exports` pass
+    //
+    // The one type that was counted as already-closed and is not. Rounds 5 and 9
+    // both stated that `exports` puts the DECLARATION's line on the edge, and both
+    // were reading a coincidence: the edge carries the line of the `export`
+    // STATEMENT, which is the declaration's line only when the two are the same
+    // statement. Measured on the whole corpus, applying the edge's own line to the
+    // published symbol table leaves **29 of 96** ambiguous `exports` edges with
+    // ZERO candidates — an assertion about a declaration that does not exist at
+    // that row, which is worse than publishing nothing:
+    //
+    //   nvm_supports_xz -[exports]-> PATH @37   against constant@8, constant@21
+    //   check_ce2ee -[exports]-> ORG_REPO @625  against variable@116, variable@163, constant@481, constant@606
+    //   gate_workbench_scm -[exports]-> DARK_CONFIG_RUNDIR @65  against constant@31, constant@93, constant@144
+    //
+    // The 400-file sample saw 2 ambiguous `exports` edges and both coincided, which
+    // is the reason the claim survived nine rounds: the sample cannot see the
+    // failure, and a rule the instrument never contradicts is not a verified rule.
+    //
+    // The rule is the same outward scope walk `uses` uses, over `declSites` — an
+    // exported name is a variable, a constant or a function, and the first two are
+    // what `declSites` keys. `export -f fn` targets a function, which `declSites`
+    // never holds, so those edges are left to `resolveFunctionTarget` below rather
+    // than answered from an index that does not contain them.
+    for (const rel of relationships) {
+      if (rel.type !== ASTEngine.RelationshipType.Exports) continue
+      const meta = rel.metadata as Record<string, unknown>
+      if (meta.targetResolution !== undefined) continue
+      const name = String(rel.target ?? "")
+      if (functionDeclLines.has(name)) continue // a function export: resolveFunctionTarget's question
+      const resolved = this.resolveDeclaration(
+        declSites,
+        name,
+        String(rel.source ?? ""),
+        rel.line_number,
+        scriptName,
+      )
+      if (resolved) Object.assign(meta, resolved)
     }
 
     // --------------------------------------------------------------- metrics
@@ -786,6 +1072,137 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
     return { targetResolution: "ambiguousInFile" }
   }
 
+  /**
+   * A `$name` read in a file that also declares `name` as a FUNCTION.
+   *
+   * `resolveDeclaration` declines here, and correctly so: it is asked "is this name
+   * ambiguous in this file?" and `declSites` — variables, aliases and locals, never
+   * functions — says no. The ambiguity a consumer actually faces is against the
+   * PUBLISHED symbol table, which holds both.
+   *
+   * The rule is the language's, not a preference: `$name` is a parameter expansion,
+   * it reads a variable, and a function is not reachable through `$`. So the
+   * function symbol is excluded as a candidate and the SAME outward scope walk
+   * `resolveDeclaration` performs runs over what remains. One walk, called twice
+   * over two different candidate sets — not a second implementation of the walk,
+   * which is how two rules drift apart.
+   *
+   * Declines, publishing no line, when the walk finds nothing at or before the use
+   * site or finds a tie: the same two refusals `resolveDeclaration` makes, for the
+   * same reason. In that case the edge carries `ambiguousInFile`, which is the
+   * honest row — the name is genuinely claimed by two published declarations and
+   * this edge declines to say which.
+   */
+  private resolveReadAgainstFunctionSymbol(
+    declSites: Map<string, { owner: string; line: number; kind: string }[]>,
+    name: string,
+    useOwner: string,
+    useLine: number,
+    fileOwner: string,
+  ): Record<string, unknown> | undefined {
+    const cands = declSites.get(name)
+    if (!cands || cands.length === 0) return undefined // no variable either: nothing to add
+    const scopes: string[] = useOwner === fileOwner ? [fileOwner] : [useOwner, fileOwner]
+    for (const scope of scopes) {
+      const atOrBefore = cands.filter((c) => c.owner === scope && c.line <= useLine)
+      if (atOrBefore.length === 0) continue
+      const nearest = Math.max(...atOrBefore.map((c) => c.line))
+      const winners = atOrBefore.filter((c) => c.line === nearest)
+      if (winners.length !== 1) return { targetResolution: "ambiguousInFile" }
+      return {
+        targetLine: winners[0]!.line,
+        targetKind: winners[0]!.kind,
+        targetResolution: "readCannotBeAFunction",
+      }
+    }
+    return { targetResolution: "ambiguousInFile" }
+  }
+
+  /**
+   * Which FUNCTION does a `calls` edge at `useLine` naming `name` reach?
+   *
+   * The sibling of `resolveDeclaration`, over functions rather than variables, and
+   * deliberately not a shared code path: `declSites` keys variables, aliases and
+   * locals and never functions, so the two indexes have different contents and a
+   * shared body would be a claim about one of them dressed as a claim about both.
+   *
+   * bash has no nested function scope, so the scope chain `resolveDeclaration`
+   * walks does not exist here and is not faked. The language rule is one step:
+   * a name resolves to the most recent definition executed before the call, which
+   * for a script read top to bottom is the latest definition AT OR BEFORE the call
+   * site. `overrides` already publishes that a redefinition happened and both
+   * lines; this publishes which one a given call reaches.
+   *
+   * The three outcomes are the same three `resolveDeclaration` publishes, and they
+   * are distinct on purpose — "resolved", "there is more than one at the same
+   * line" and "every definition is after the call" are different facts, and a
+   * consumer cannot tell them apart if they collapse into one row:
+   *
+   *   latestDefinitionBeforeUse  one candidate — `targetLine` + `targetKind`, so
+   *                              the fact can be checked against the symbol table
+   *                              instead of trusted.
+   *   commandNameIsAFunction     exactly ONE function declaration, and the name is
+   *                              also declared as something that is not a function.
+   *                              Position is irrelevant here and deliberately so: a
+   *                              COMMAND position cannot denote a variable at all,
+   *                              so unlike a `uses` edge there is no "declared
+   *                              after the use site" case to decline. Measured at
+   *                              105 whole-corpus edges (swift-nio/scripts/
+   *                              nio-diagnose:398 `nio_pids` against variable@136
+   *                              and function@151; mvdan-sh/syntax/typedjson/
+   *                              testdata/roundtrip/file.sh `foo` against
+   *                              function@19 and variable@20).
+   *   ambiguousInFile            two declarations on the same line, which the
+   *                              published line cannot separate. No line: picking
+   *                              one would be the invented attribution.
+   *   declaredAfterUse           every definition of the name is below the call
+   *                              site, so none of them is in effect there. bash
+   *                              permits the forward reference — the callee may be
+   *                              defined before the caller's body runs — so this
+   *                              says what was observed and publishes no line
+   *                              rather than pretending the text order settles it.
+   *
+   * The name is only ambiguous at all if there are two or more FUNCTION
+   * declarations of it, or one function plus a declaration of another kind. Fewer
+   * than that and nothing is added: 55,241 `calls` edges on the whole corpus and
+   * only the 236 whose target the published symbol table answers to twice grow a
+   * key.
+   *
+   * `targetKind` is read off the PUBLISHED symbol rather than written as a literal.
+   * The first version wrote the literal `"Function"` and the published kind is
+   * `"function"` (`SymbolKind.Function`, src/ast/types.ts:11), so every edge it
+   * touched carried a `targetKind` that matched nothing: the attribution pointed at
+   * a real line and a kind no symbol carries, and a consumer filtering on kind
+   * discarded the answer. `probe-bash-published-resolvability.mts` caught it as 6
+   * edges where applying the published fields leaves ZERO candidates — which is the
+   * worse outcome, because it reads as a dangling claim rather than a wrong kind.
+   */
+  private resolveFunctionTarget(
+    functionDeclLines: Map<string, { line: number; kind: string }[]>,
+    name: string,
+    useLine: number,
+    namesWithNonFunctionDecl: Set<string>,
+  ): Record<string, unknown> | undefined {
+    const cands = functionDeclLines.get(name)
+    const collidesWithOtherKind = namesWithNonFunctionDecl.has(name)
+    if (!cands) return undefined // not a function declaration at all: nothing local to name
+    if (cands.length < 2) {
+      if (!collidesWithOtherKind) return undefined // unique name: nothing to add
+      const only = cands[0]!
+      return { targetLine: only.line, targetKind: only.kind, targetResolution: "commandNameIsAFunction" }
+    }
+    const atOrBefore = cands.filter((c) => c.line <= useLine)
+    if (atOrBefore.length === 0) return { targetResolution: "declaredAfterUse" }
+    const nearest = Math.max(...atOrBefore.map((c) => c.line))
+    const winners = atOrBefore.filter((c) => c.line === nearest)
+    if (winners.length !== 1) return { targetResolution: "ambiguousInFile" }
+    return {
+      targetLine: nearest,
+      targetKind: winners[0]!.kind,
+      targetResolution: "latestDefinitionBeforeUse",
+    }
+  }
+
   /** Remove quote characters from a path expression. Index arithmetic over the
    *  two quote code points; a path cannot contain either. */
   private dequotePath(text: string): string {
@@ -885,10 +1302,6 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
    * than guesses, which is what made them worth removing rather than labelling.
    */
   private isArithmeticOperandCommand(node: Node): boolean {
-    // `( (` written adjacently is `((`: bash reads it as arithmetic, never as a
-    // nested subshell, so the closing pair is part of the test rather than a
-    // detail. `( (date) )` has a space and stays a real subshell.
-    const isDoubleParen = (t: string): boolean => opensWithDoubleParen(t) && endsWithDoubleParen(t)
     let cur: Node | null = node.parent
     while (cur) {
       // A `command_substitution` decides it. `$((` is the arithmetic expansion
@@ -896,7 +1309,7 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
       // substitution, and `$(wc -l < f)` nested inside `$(( ))` really does run
       // `wc`, so that edge must survive.
       if (cur.type === "command_substitution") return opensWithArithmeticExpansion(cur.text)
-      if (cur.type === "subshell" && isDoubleParen(cur.text)) return true
+      if (cur.type === "subshell" && isArithmeticCompoundText(cur.text)) return true
       cur = cur.parent
     }
     return false
@@ -1101,25 +1514,23 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
     const names: { rawName: string; line: number }[] = []
     this.collectReadNames(node, names)
 
-    // Was this read name ASSIGNED anywhere in this file? `declaredSymbols` is the
-    // one per-file store both the declaration collector and this emitter see, but
-    // its keys are `${owner}\u0000${name}` — a read inside a function cannot
-    // reach a module-level assignment by asking for its own owner, which is
-    // exactly the case that matters most. So the suffixes are indexed once and
-    // the memo is keyed on the set's size, which only ever grows as declarations
-    // are collected.
-    let assignedIndex: { size: number; names: Set<string> } | null = null
-    const assignedInFile = (n: string): boolean => {
-      if (!assignedIndex || assignedIndex.size !== declaredSymbols.size) {
-        const s = new Set<string>()
-        for (const k of declaredSymbols) {
-          const i = k.indexOf("\u0000")
-          if (i >= 0) s.add(k.slice(i + 1))
-        }
-        assignedIndex = { size: declaredSymbols.size, names: s }
-      }
-      return assignedIndex.names.has(n)
-    }
+    // BD11's `isAssignedInFile` is NOT decided here. It used to be, and this is
+    // the second time this walk answered a file-level question against a
+    // half-built index (the first was `resolveDeclaration`, fixed in round 6 by a
+    // post-walk pass). `declaredSymbols` is filled by this same walk, so a
+    // predicate evaluated mid-walk can only see the declarations already passed,
+    // and the answer then depends on WHERE THE READ SITS rather than on what the
+    // file declares:
+    //
+    //     echo "before: $LATE"      ->  uses -> LATE @1   isAssignedInFile ABSENT
+    //     LATE=1
+    //     echo "after: $LATE"       ->  uses -> LATE @3   isAssignedInFile TRUE
+    //
+    // One file, one name, one declaration, two answers, and BD11's published
+    // contract says file-level ("set when the file assigns the name under any
+    // owner"). `probe-bash-assigned-flag-order.mts` measures the population: 37
+    // (file, target) pairs in 25 of 400 files carry BOTH answers. The pass is
+    // below, after the walk, against the finished index.
     for (const { rawName, line } of names) {
       // Read names are trimmed at the single point they are emitted. A zsh
       // `$ _iterm2_command` left the differential reporting
@@ -1151,17 +1562,6 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
           // a consumer can tell `${BASH_SOURCE[0]}` from a project variable
           // instead of seeing 23 undiagnosable edges to one shell name.
           ...(SHELL_DEFINED_VARS.has(name) ? { isShellDefined: true } : {}),
-          ...(declaredSymbols.has(`global\u0000${name}`) ? { isDeclaredGlobal: true } : {}),
-          // BD11. The lane's classification previously stopped at "a symbol, a
-          // known noise leaf, or nothing", and 407 of the `uses` edges on the
-          // pinned corpus fell into the last bucket: the read is real and the
-          // name is honest, but nothing said WHETHER this file assigns it. A
-          // consumer therefore had to guess whether `$TMPDIR` was a project
-          // variable it could not see or an environment-supplied one it never
-          // will. Emitted on true only, matching `isShellDefined` and
-          // `isDeclaredGlobal` above — ABSENCE MEANS FALSE, and the contract is
-          // stated in the spec rather than left to be inferred from a pattern.
-          ...(assignedInFile(name) ? { isAssignedInFile: true } : {}),
           // WHICH declaration, when this file has more than one. A `uses` edge
           // puts the READ's line on the row, which is a different line from the
           // declaration, so without this the declaration is unrecoverable from
@@ -1218,17 +1618,46 @@ private extractAssignment(
   ) {
     for (let i = 0; i < node.namedChildCount; i++) {
       const child = node.namedChild(i)
-      if (child && child.type === "variable_name" && child.text.trim() !== "") {
-        const key = `${owner}\u0000${child.text}`
+      // `name[index]=value` BINDS `name` — if the array does not exist the
+      // assignment creates it, so this is a declaration in exactly the class the
+      // analyzer already recognises for `NAME=value`, a `for` loop variable and a
+      // `read` target. The grammar holds that LHS one level deeper than the bare
+      // case, as `subscript > variable_name`, and this loop only ever looked at a
+      // DIRECT `variable_name` child. So the declaration published nothing, the
+      // file's other reads of the name had nothing to resolve against, and BD11
+      // classified every one of them as environment-supplied.
+      //
+      // The base name is read from the tree, never reconstructed from `node.text`,
+      // and the shape is ENUMERATED by `probe-bash-array-element-binding.mts`, so
+      // "the fix covers `subscript`" is a checked claim rather than a shape I
+      // assumed: every LHS shape `variable_assignment` produces on the corpus is
+      // printed there, and a sibling shape with its own population appears as its
+      // own row. On the 400-file sample that census reads `variable_name` 3298 and
+      // `subscript` 19, with a `variable_name` base on 19 of 19.
+      let nameNode: Node | null = null
+      let elementAssignment = false
+      if (child && child.type === "variable_name") {
+        nameNode = child
+      } else if (child && child.type === "subscript") {
+        const base = child.namedChild(0)
+        if (base && base.type === "variable_name") {
+          nameNode = base
+          elementAssignment = true
+        }
+      }
+      if (nameNode && nameNode.text.trim() !== "") {
+        const key = `${owner}\u0000${nameNode.text}`
         if (declaredSymbols.has(key)) return // reassignment, not a declaration
         declaredSymbols.add(key)
-        this.noteDeclaration(declSites, child.text, owner, node.startPosition.row + 1, "variable")
+        this.noteDeclaration(declSites, nameNode.text, owner, node.startPosition.row + 1, "variable")
         // `arr=(a b c)` — the value is an `array` node; the flag used to be a
         // parameter every caller passed `false`, so `isArray` was constant-false
-        // on every plain assignment. It is now read from the tree.
-        const isArray = this.valueIsArray(node)
+        // on every plain assignment. It is now read from the tree. An ELEMENT
+        // assignment makes the name an array too, whatever the value node is:
+        // `COMPREPLY[i]=…` declares an array and nothing else could.
+        const isArray = elementAssignment || this.valueIsArray(node)
         symbols.push({
-          name: child.text,
+          name: nameNode.text,
           kind: ASTEngine.SymbolKind.Variable,
           range: this.nodeToRange(node),
           scope: owner,
@@ -1955,6 +2384,18 @@ private extractAssignment(
         metadata?: Record<string, unknown>,
       ) => void
       relSource: () => string
+      /**
+       * The set of function names the file declares, collected in a pre-pass.
+       *
+       * M60: this was added so the trap handler's `calls` edge carries the SAME
+       * `isFunctionCall`/`isExternalCommand` classification as the 54,995 edges
+       * the main command site emits. Those two flags are the only thing that tells
+       * a consumer whether a call leaves the file, and this site was the one place
+       * that asserted a call without classifying it — 223 corpus edges, of which
+       * 123 name a function the same file declares. See
+       * `docs/analyzers/real-bash-analyzer.md`, "Round 7".
+       */
+      localFunctions: Set<string>
     },
     patterns: Set<string>,
     nameLine: number,
@@ -1989,9 +2430,18 @@ private extractAssignment(
       const firstToken = this.firstTokenOf(part)
       if (!firstToken || !isCommandNameText(firstToken)) continue
       if (SHELL_BUILTINS.has(firstToken)) continue
+      // The SAME classification the main command site applies, from the SAME
+      // pre-pass. Whether the callee leaves the file is a property of the callee's
+      // name, not of how the name was extracted, so the fact is exactly as sound
+      // here as it is there — and a consumer reading `calls` metadata has one rule
+      // to learn rather than two, one of which is silent on this path.
+      const isLocal = ctx.localFunctions.has(firstToken)
       ctx.addRel(ctx.relSource(), firstToken, ASTEngine.RelationshipType.Calls, 0.7, nameLine, {
         isTrapHandler: true,
         viaTrap: true,
+        isFunctionCall: isLocal,
+        isExternalCommand: !isLocal,
+        resolvedWithinFile: isLocal,
         signals: signals.length > 0 ? signals : ["EXIT"],
         bashSpecific: true,
       })
