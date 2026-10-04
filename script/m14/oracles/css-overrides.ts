@@ -282,7 +282,33 @@ export function deriveCssOverridesTruth(root: any, _moduleName?: string): TruthE
           const c = x.namedChild(i)
           if (!c) continue
           if (c.type === "declaration") decls.push(c)
-          else if (c.type !== "comment") collect(c)
+          // A NESTED `rule_set` / `keyframe_block` is a NEW declaration scope and the
+          // walk stops here. Recursing into it was this oracle's one real defect, and
+          // it was worth 42 phantom edges before it was found.
+          //
+          // What it did: `phoenix/installer/templates/phx_static/default.css` nests
+          // `&.menu-focus, &:focus-visible { … }` inside a long `:where(…)` selector,
+          // and Tailwind writes `--tw-outline-style: none` into the utility class at
+          // line 227 AND into that nested block at 262. Those are DISJOINT scopes — the
+          // nested selector does not inherit-and-override the outer one, it is its own
+          // rule — so 262 does not supersede 227. Flattening them produced a chain
+          // 227→262→273→298 across four unrelated selectors.
+          //
+          // Two things gave it away, and both are parse facts rather than taste. The
+          // chain traversed DECLARATIONS IN DIFFERENT BLOCKS, and every nested block is
+          // also visited on its own by `visitTop`, so each pair was derived once per
+          // ANCESTOR LEVEL — which is why `--btn-border` 401→408 appeared twice in the
+          // surplus. A genuine supersession cannot be counted twice by two different
+          // parents of the same pair.
+          //
+          // The analyzer already scopes to one block, and `css/overrides-custom-property-
+          // block-boundary-widened-to-the-file` is the mutant pinning that. So this was
+          // the ORACLE disagreeing with the analyzer about the language, not the
+          // analyzer dropping 42 edges — which is the opposite conclusion from the one
+          // the unfixed differential reported, and it is why the surplus rows are now
+          // classified instead of being summed into one number.
+          else if (c.type === "comment" || c.type === "rule_set" || c.type === "keyframe_block") continue
+          else collect(c)
         }
       }
       collect(n)
