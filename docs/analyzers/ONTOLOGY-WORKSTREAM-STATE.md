@@ -1075,3 +1075,222 @@ them at file scope. PHP is now 10/10 with 0 ruled.
 
 That is the single strongest argument in this programme for the discipline the
 honesty contract already demands: **a probe that cannot fail is not a measurement.**
+
+## A latent shared defect: two files disagree on one enum value
+
+Found by the zig lane via the bug it exposed in my `incoming-check` instrument.
+
+```
+                        src/ast/types.ts     src/ast/engine.ts
+RelationshipType.Imports        brain_import        imports
+```
+
+Every other one of the 20 members agrees. This is a single-point divergence.
+
+**Which is right?** `engine.ts`. Analyzers import `RelationshipType` from
+`./engine`, the store's `relationship_type` column documents its vocabulary as
+`"calls", "extends", "implements", "uses", "imports", "exports", etc.`, and
+`brain_import` is the name of a **separate table** that holds import records with
+their own columns (`import_path`, `imported_name`, `is_external`). So the two
+strings mean different things and `types.ts` has conflated the table name with the
+edge label.
+
+**Severity: latent, not active.** No analyzer imports `RelationshipType` from
+`./types` — checked across all 50 — so nothing currently emits the wrong label and
+no stored row is wrong today. It becomes active the moment one does.
+
+**Not fixed here, deliberately.** `types.ts` is one of the two files the supervisor
+owns, so this is squarely in scope — but the fix needs a decision about whether the
+`brain_import` TABLE should also be reconciled, and a wrong guess there would change
+what every import query in the product returns. It is recorded with the evidence and
+left for the owner.
+
+**What it already cost:** my own `incoming-check` keyed its table on `brain_import`,
+so it reported `imports` as **0 in every language in the fleet** — a confident zero
+from a table that could never match. Fixed in `e9096830f` by accepting both
+spellings through an alias map rather than by picking one. Measured after:
+clean 153 import edges, haskell 55.
+
+That is the generalisable lesson: **a table keyed on a string that is wrong in a way
+which always reads zero is worse than no table**, because the zero looks like a
+finding about the language rather than a defect in the instrument.
+
+## Dart: the documented command did not reproduce the documented table
+
+The lane's verdict table is a 2,735-file measurement and the command printed beside
+it was `BB_DART_CONC=1 npx tsx validation/m14/fixtures/dart/census.ts` — but the
+harness defaulted to `BB_DART_PER_REPO=250` and so sampled **1,250** files.
+
+Re-running the documented command reproduced **22,436 `calls` against the table's
+43,042** — about **52% of every count**, with nothing in the output saying the two
+disagreed. The default is now 600/repo, which is the sample the table describes, so
+the printed command reproduces the printed table.
+
+**This is the cheapest and most embarrassing class of defect in the programme: a
+number and the command that produces it, side by side, disagreeing by half.** Nothing
+detects it unless someone actually re-runs the command, which is why the lane did.
+
+Two more fields the doc cited and the harness never emitted: `tgtSample` was
+accumulated since the settled-phase fix and never written out, and there was no
+target-in-repo field at all — so the doc's sample/repo figures for `calls` and `uses`
+had **no instrument field behind them**.
+
+## Latency measured by alternating the blobs, not by trusting the artifact
+
+The declared complexity artifact **cannot** answer the budget question: it is sealed
+at 2026-09-14, predates every change in this wave, and `analyzer-complexity-gate`
+scores dart `unscorable` because its corpus row carries no load data (40 of that
+gate's 44 lanes share the state). Its row is also not reproducible from the primary
+corpus — 707 ms/file on /tmp/dart-corpus against 129–165 ms/file on real files.
+
+So the lane measured directly, alternating the two analyzer blobs so the load
+condition is SHARED rather than assumed — 300 files, runs in the order
+AFTER, BEFORE, AFTER, BEFORE:
+
+```
+  this wave's HEAD    49,450 / 50,111 ms   mean 49,781   165.9 ms/file
+  pre-M14 8286c7391   49,390 / 48,532 ms   mean 48,961   163.2 ms/file
+  delta                        +820 ms     +2.7 ms/file    +1.67% wall
+  symbols 15,154 both — unchanged
+  relationships 47,882 -> 48,306  +424 (+0.89%), all of them `references`
+```
+
+Against the declared 400-file budget of 600 s, 400 files at the measured
+165.9 ms/file is **66.4 s — 9.0x inside budget**. Stated as a **projection**, not as
+a measurement of the declared `corpus_subset`, whose file set the lane cannot
+re-derive.
+
+That is the honest form: it says what was measured, over what, and what is
+extrapolated. Note also that the fsharp lane withdrew a +16% latency claim for
+exactly the opposite reason — non-interleaved A/B on a shared box. Alternating the
+blobs is the fix both lanes converged on independently.
+
+## Regex census: 18 -> 5, and the mode that produces it was dead
+
+Two separate defects, and the second is the one that mattered.
+
+**1. `--head` had never worked.** `npx tsx script/m12/regex-census.ts --head` threw
+`usages is not iterable` on the first loop. The `--head` branch was missing its
+`await`, and an `as Promise<typeof usages>` assertion told the compiler the
+un-awaited Promise was fine — so **`npx tsc --noEmit` passed** while the value was a
+Promise at runtime.
+
+That assertion converted a compile-time error into a runtime one. And `--head` is the
+*only* mode that produces a census describing a **commit** rather than whatever the
+working tree happens to carry, which `reviews/regex-policy.md` requires. So the
+reproducible path was dead and the only way left to refresh the census was the
+unreproducible one — which is exactly how the census came to carry ~30 **stale** rows
+claiming regexes that no longer exist, and why the gate could not tell "the census is
+wrong" apart from "the code has regexes".
+
+The general rule, now applied to every assertion in this programme: **a type
+assertion is a claim the compiler cannot check. Where it is false, it does not fail
+the build — it moves the failure somewhere with less context.**
+
+**2. The debt itself, measured at HEAD across 48 analyzers: 7 -> 5.**
+
+```
+  LAPTOP-B  real-scss-analyzer.ts:77   /\s+/g                replace     <- removed 6e0de3897
+  LAPTOP-B  real-scss-analyzer.ts:981  /^%[-\w]*[\w]$/       test        <- removed 6e0de3897
+  LAPTOP-B  real-sql-analyzer.ts:143   /^pg_[a-z_]+$/        other       <- ACTIVE AGENT
+  OTHER     real-svelte-analyzer.ts:50     /line/i
+  OTHER     real-svelte-analyzer.ts:622    /^[A-Za-z_$][A-Za-z0-9_$]*$/
+  OTHER     real-svelte-analyzer.ts:1259   /context=["']module["']/
+  OTHER     real-svelte-analyzer.ts:1445   /^(.*?)\s+(?:then|as)\s+/
+```
+
+From 18 at the start of the wave: the **CSS lane cleared all 11**, the **XML lane its
+last 1**, julia its 9, and the supervisor cleared SCSS's 2 (that lane had no active
+slot). **Laptop B is at 1**, and an agent is on it. The 4 Svelte rows belong to
+another laptop — and Svelte went **3 -> 4** while this work was running, so it
+*added* one. Reported, not edited.
+
+### The SCSS removals were verified, not asserted
+
+Both literals are pure string predicates, so neither needs a pattern engine: `\s`
+became an explicit `JS_WHITESPACE` set and `\w` a char-code range test. The set is
+local rather than imported from `real-css-analyzer` so the two lanes stay independent.
+
+```
+  differential vs the original regexes, 428 cases (every form the analyzer can
+    produce, plus adversarial and fuzzed inputs) ................ 0 disagreements
+  whole-corpus A/B, 120 .scss files, full symbol+relationship output hashed:
+    before 9b451f4d9d8b1c53   after 9b451f4d9d8b1c53   IDENTICAL, 154,348 bytes
+```
+
+Note the shape of that second check: not "the tests still pass" but *the entire
+emitted graph, hashed, before and after*. A regex removal that changed one selector
+name in one file would pass every fixture and still be wrong.
+
+## Firing sweep — 26 lanes, production `parseFile`, 120-file deterministic sample
+
+Artifact: `validation/m14/measurements/firing-sweep-26-lanes.ndjson`
+Analyzer digest verified **stable before and after** each lane's walk.
+
+```
+lane        fired ruled  appl     edges   files      corpus  degraded
+haskell        10      0    10     5,987  120/120      3,702   0
+clean           9      0     9    16,231  120/120        312   0
+dart            9      0     9     8,290  120/120     33,755   0
+fsharp          9      1    10    12,517  120/120     11,809   0
+php             9      0     9     9,454  112/120      4,994   0
+python          9      0     9    11,092   87/120      9,322   0
+groovy          8      0     8     3,883  120/120      8,105   0
+java            8      0     8    12,129  117/120     11,433   0
+julia           8      1     9    18,968  120/120        971   0
+lua             8      1     9     8,593  120/120      3,252   0
+nim             8      1     9     6,438  120/120      4,555   0
+powershell      8      0     8    18,855  119/120      1,180   0
+r               8      0     8     5,284  120/120      2,184   0
+ruby            8      0     8     6,956   56/120        431   0
+scala           8      0     8     3,442  120/120     18,917   0
+bash            6      1     7     4,355  107/120      3,702   0
+json            6      1     7    44,246  115/120     13,181   1
+make            6      0     6     8,656  109/120        755   0
+sql             6      0     6     1,414  120/120      1,963   0
+css             5      0     5    73,369  120/120      1,196   0
+hcl             5      0     5     3,440  120/120      9,329   0
+scss            5      0     5       510  120/120      4,404   1
+xml             5      0     5     1,548  120/120     11,515   0
+yaml            5      0     5    15,030  116/120     17,666   0
+protobuf        3      1     4     2,069   10/120      8,524   0
+toml            1      1     2     1,729  104/120      1,339   0
+------------------------------------------------------------
+TOTAL         180      8   188   304,485
+unknown endpoints 0 · empty symbol names 0 · empty/unknown kinds 0 — ALL 26 lanes
+```
+
+### How to read it
+
+**Only `haskell` fires all ten outright. `fsharp` reaches 10/10 *applicable*** — 9
+fired plus 1 ruled with a written justification that the grammar produces no node
+expressing it.
+
+**The other 24 lanes carry no ruling table, so their applicable figure is a LOWER
+BOUND.** The missing types are **unadjudicated, not inapplicable**. `toml` at 1+1 is
+the clearest: 8 of its 10 types have no ruling at all, so `2/10 applicable` is not a
+claim — it is an absence of adjudication wearing a claim's clothes. The arbiter
+(`ontology-coverage-gate.ts`) covers **9 of 26** lanes, which is the number that
+actually bounds how much of this table is decidable today.
+
+### Two sample caveats that are NOT analyzer defects
+
+- **protobuf parsed 10/120** — only ~8% of its corpus is `.proto`, so a
+  corpus-wide stride samples mostly other languages. Needs a **corpus-scoped**
+  sample, not a wider one.
+- **ruby 56/120** — its corpus is 431 files, too small to stride 120 from.
+
+### The two degraded files, now named
+
+The sweep reported `json: 1 degraded`, `scss: 1 degraded` with an **empty**
+`degradedDetail` — a count that cannot be resolved back to the thing counted, so
+acting on it meant re-running and hoping. The instrument now names each file:
+
+```
+json  vega/docs/data/movies.json                1,399,981 bytes · 3,201-element array
+scss  consul/.../styles/base/icons/debug.scss  1,628,440 bytes · generated sprite
+```
+
+Both are legitimately oversized generated/data files, so **the fallback is correct**.
+The disclosure is the fix. Left as a bare count it would have read as "one file
+failed" rather than "one file is 1.6 MB and the analyzer declined".

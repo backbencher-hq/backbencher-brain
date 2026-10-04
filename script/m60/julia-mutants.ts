@@ -713,4 +713,78 @@ const firstByScope = new Map<string, { scope: string; line: number }>()
       relationships: rels(r).filter((x: any) => !(x.type === "extends" && x.metadata?.isWhereBound === true)),
     }),
   },
+  {
+    id: "julia/imports-source-collapses-to-root",
+    language: "julia",
+    defectClass: "mislabel",
+    description:
+      "REVERT: an `imports` edge's source is the declaration doing the importing, not the file root. " +
+      "This mutant rewrites every `imports` source to `root` and is the REVERT of the exact distinction " +
+      "this lane's own `imports` RULED on: the ruling's overturn condition was 'a julia `imports` " +
+      "relationship row that is not an import-site artifact — a row whose source is the importing " +
+      "declaration rather than the literal `root`'. Emitting `imports` at all was therefore read as " +
+      "refuting the ruling, and the fix that satisfied the condition was mistaken for a violation of " +
+      "it. Measured over the 971 admitted corpus files, 446 of 1,502 `imports` edges carry a real " +
+      "module symbol as their source and 595 carry the file scope; collapsing the two asserts that " +
+      "`module M` depends on packages it never named. Caught by the four `imports` assertions and two " +
+      "`forbidRelationships` in `imports-and-exports`.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: rels(r).map((x: any) => (x.type === "imports" ? { ...x, source: "root" } : x)),
+    }),
+  },
+  {
+    id: "julia/drop-imports-relationships",
+    language: "julia",
+    defectClass: "omission",
+    description:
+      "REVERT: every `imports` relationship is dropped while the `ImportInfo[]` channel keeps filling, " +
+      "which is the pre-M60 state of this lane. The lane recorded the construct on the payload and " +
+      "declined to publish it as an edge, then RULED it non-applicable on the grounds that " +
+      "`RelationshipType.Imports` serializes to `brain_import` and the repo treats `ImportInfo[]` as " +
+      "the import surface — a convention read as a constraint, since `real-python-analyzer.ts:979`, " +
+      "`real-lua-analyzer.ts:569`, `real-yaml-analyzer.ts:1017`, `real-nim-analyzer.ts:1064` and " +
+      "`real-typescript-analyzer.ts:5509` all emit the relationship through the same string. The " +
+      "construct is not rare in julia: 1,675 `import_statement`/`using_statement` nodes across 504 of " +
+      "the 971 admitted files. Caught by the `imports` assertions in `imports-and-exports`.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: rels(r).filter((x: any) => x.type !== "imports"),
+    }),
+  },
+  {
+    id: "julia/drop-exports-relationships",
+    language: "julia",
+    defectClass: "omission",
+    description:
+      "REVERT: every `exports` relationship is dropped while the `ExportInfo[]` channel keeps filling. " +
+      "The ruling this reverts demanded 'an `exports` relationship count above the `ExportInfo` count " +
+      "for the same corpus' — a threshold that emitting one row per `ExportInfo` entry cannot exceed, so " +
+      "the only way to satisfy it was an edge that was WRONG. `real-python-analyzer.ts:1166` emits " +
+      "both channels from one `__all__` walk. Measured: 308 `export_statement`/`public_statement` " +
+      "nodes across 152 of the 971 admitted files, publishing 1,770 export names. Caught by the " +
+      "`exports` assertions in `imports-and-exports`.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: rels(r).filter((x: any) => x.type !== "exports"),
+    }),
+  },
+  {
+    id: "julia/exports-source-collapses-to-root",
+    language: "julia",
+    defectClass: "mislabel",
+    description:
+      "REVERT: an `exports` edge's source is the module doing the exporting. This mutant rewrites every " +
+      "`exports` source to `root`, which is the collapse the `imports` source mutant performs in the " +
+      "other direction: it makes a module's published surface indistinguishable from a file's, so " +
+      "`bb_impact` on a module reports every re-export of every module in the corpus as its own " +
+      "dependents. Measured: 962 of 1,770 `exports` edges carry a real module symbol as their source " +
+      "and 783 carry the file scope, because 71.9% of julia corpus files open no module at all and " +
+      "julia's `public`/`export` are legal at file scope in `Main`. Caught by the `exports` " +
+      "assertions and the two `exports` `forbidRelationships` in `imports-and-exports`.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: rels(r).map((x: any) => (x.type === "exports" ? { ...x, source: "root" } : x)),
+    }),
+  },
 ]
