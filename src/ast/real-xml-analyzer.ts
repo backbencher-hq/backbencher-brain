@@ -788,11 +788,11 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
     // still COUNTS them, because a symbol published from a file the analyzer
     // then reports as erroneous has to say so on the symbol.
 
-    type WorkItem = { node: Node; ownerName?: string; dtdName?: string; bindDepth?: number; nearestNamedSchemaOwner?: string }
+    type WorkItem = { node: Node; ownerName?: string; dtdName?: string; bindDepth?: number; nearestNamedDeclaration?: string }
     const work: WorkItem[] = [{ node: rootNode }]
 
     while (work.length > 0) {
-      const { node, ownerName, dtdName, bindDepth, nearestNamedSchemaOwner } = work.pop()!
+      const { node, ownerName, dtdName, bindDepth, nearestNamedDeclaration } = work.pop()!
       // Leaving an element's subtree: put the outer namespace map back.
       while (bindingScopes.length > (bindDepth ?? 0)) {
         const scope = bindingScopes.pop()!
@@ -823,12 +823,13 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
           const declaredName = declaration?.name
           const symbolName = declaredName ?? name
 
-          // ── THE NEAREST NAMED SCHEMA DECLARATION ABOVE THIS ELEMENT ──────────
+          // ── THE NEAREST NAMED DECLARATION ABOVE THIS ELEMENT ──────────────────
           //
-          // This exists for exactly one edge, and it exists because the obvious owner
-          // was MEASURED to be fabricated on 100% of the corpus.
+          // This exists for two edge types, and it exists because the obvious owner was
+          // MEASURED to be fabricated: 100% of `extends` and 90.3% of `calls`.
           //
-          // `extends` relates two TYPES. XSD writes type derivation as a `base=`
+          // `extends` relates two TYPES and `calls` relates a CALLER TO A CALLEE. XSD writes
+          // type derivation as a `base=`
           // attribute on an inline `<xs:extension>`/`<xs:restriction>` (XSD 1.0 Part 1
           // §3.4.2), and that element carries no `name` of its own — so line 824's
           // `symbolName = declaredName ?? name` falls back to the TAG TEXT, and lines
@@ -856,11 +857,11 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
           // and wrong only for `base=`, because a derivation element is not a named entity.
           // What is being derived is its nearest ancestor that DECLARES a name. So this
           // tracks that ancestor and `extractAttribute` uses it for `base` and nothing else.
-          const isNamedSchemaDeclaration =
+          const isNamedVocabularyDeclaration =
             effectiveNamespace !== undefined
             && RealXmlAnalyzer.DECLARATION_VOCABULARIES[effectiveNamespace]?.has(localName) === true
             && declaredName !== undefined
-          const namedSchemaOwnerForChildren = isNamedSchemaDeclaration ? symbolName : nearestNamedSchemaOwner
+          const namedDeclarationForChildren = isNamedVocabularyDeclaration ? symbolName : nearestNamedDeclaration
 
           const elementSymbol: ASTEngine.UniversalSymbol = {
             name: symbolName,
@@ -966,13 +967,13 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
               callCandidates,
               derivationCandidates,
               ownerName,
-              nearestNamedSchemaOwner,
+              nearestNamedDeclaration,
             )
           }
 
           for (let i = node.namedChildCount - 1; i >= 0; i--) {
             const child = node.namedChild(i)
-            if (child && child !== tagNode) work.push({ node: child, ownerName: symbolName, dtdName, bindDepth: bindingScopes.length, nearestNamedSchemaOwner: namedSchemaOwnerForChildren })
+            if (child && child !== tagNode) work.push({ node: child, ownerName: symbolName, dtdName, bindDepth: bindingScopes.length, nearestNamedDeclaration: namedDeclarationForChildren })
           }
           continue
         }
@@ -1477,14 +1478,14 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
       const childDepth = bindDepth ?? 0
       for (let i = node.namedChildCount - 1; i >= 0; i--) {
         const child = node.namedChild(i)
-        // `nearestNamedSchemaOwner` is PROPAGATED UNCHANGED here, and it has to be: this
+        // `nearestNamedDeclaration` is PROPAGATED UNCHANGED here, and it has to be: this
         // is the generic tail every non-`element` node takes, and an XSD element's
         // children live under a `content` node, so `<xs:sequence>` and every derivation
         // beneath it are reached through here. Omitting it — which the first version of
         // the fix did — left every real derivation with `owner=""` and silently dropped
         // all 438 edges rather than mislabelling them. A fix that turns a wrong answer
         // into no answer is worth noticing precisely because it is quieter.
-        if (child) work.push({ node: child, ownerName, dtdName, bindDepth: childDepth, nearestNamedSchemaOwner })
+        if (child) work.push({ node: child, ownerName, dtdName, bindDepth: childDepth, nearestNamedDeclaration })
       }
     }
 
@@ -2125,7 +2126,7 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
      * vocabulary tag is the fabrication this parameter exists to remove. Undefined is the
      * honest value, and `addRelationship` already refuses a falsy source.
      */
-    nearestNamedSchemaOwner: string | undefined,
+    nearestNamedDeclaration: string | undefined,
   ): void {
     // The OWNER's resolved namespace, carried on every reference candidate. X11:
     // a BARE value names a built-in type only when the element carrying it is
@@ -2277,10 +2278,27 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
       // unprefixed name is the template's own name.
       const colon = value.indexOf(":")
       const local = colon >= 0 ? value.slice(colon + 1) : value
-      // No enclosing declaration means no caller to name, so the site is recorded
-      // nowhere rather than against the instruction's own tag.
-      if (local.length > 0 && local.length <= 256 && elementOwnerName) {
-        callCandidates.push({ ownerName: elementOwnerName, templateName: local, valueNode: node, textNode: valueNode })
+      // No enclosing NAMED declaration means no caller to name, so the site is recorded
+      // nowhere rather than against an instruction's own tag.
+      //
+      // `nearestNamedDeclaration`, NOT `elementOwnerName`, and this is the same defect
+      // `extends` had, found by asking the `extends` question of `calls`:
+      // `elementOwnerName` is the enclosing ELEMENT, so a call inside
+      // `<xsl:for-each>` or `<xsl:if>` was published as
+      // `"xsl:for-each" -> "dumptext"`. Measured over the full admitted corpus that put a
+      // vocabulary tag or an HTML tag on the source of 495 of 548 `calls` edges — 90.3 % —
+      // leaving 53 whose source is a name the stylesheet declares. `calls` resolves at
+      // 100 % at both ends on every draw, which is exactly why this hid: the analyzer
+      // mints a symbol for whatever name the edge needs, so a fabricated source resolves
+      // perfectly.
+      //
+      // A `<xsl:call-template>` directly inside `<xsl:template name="tower">` gives
+      // `"tower"`, and a call inside a top-level `<xsl:variable name="v">` gives `"v"` —
+      // a variable is a legitimate caller, and XSLT 1.0 §6 makes the enclosing
+      // instruction sequence the thing doing the calling. A call at stylesheet top level,
+      // outside any template or variable, is not executable and now yields no edge.
+      if (local.length > 0 && local.length <= 256 && nearestNamedDeclaration) {
+        callCandidates.push({ ownerName: nearestNamedDeclaration, templateName: local, valueNode: node, textNode: valueNode })
       }
       return
     }
@@ -2333,11 +2351,11 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
       // readers see one string and the resolution classes stay identical to the
       // reference pass they were factored from.
       derivationCandidates.push({
-        // `nearestNamedSchemaOwner`, NOT `ownerName`. `ownerName` is the derivation
+        // `nearestNamedDeclaration`, NOT `ownerName`. `ownerName` is the derivation
         // ELEMENT's own symbol, which for `<xs:restriction>` is the tag text — measured at
         // 438 of 438 corpus edges naming a vocabulary constructor instead of a declared
         // type. See the NEAREST NAMED SCHEMA DECLARATION block in the walk above.
-        ownerName: nearestNamedSchemaOwner ?? "",
+        ownerName: nearestNamedDeclaration ?? "",
         value: collapsed,
         binding,
         ownerNs,
