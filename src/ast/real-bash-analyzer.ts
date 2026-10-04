@@ -223,6 +223,22 @@ const endsWithDoubleParen = (text: string): boolean => {
   return t.length >= 2 && t.charCodeAt(t.length - 2) === 41 /* ) */ && t.charCodeAt(t.length - 1) === 41
 }
 
+/**
+ * Is this `compound_statement` an ARITHMETIC one — `(( … ))` — rather than a block?
+ *
+ * bash reads `((expr))` as an arithmetic command and `{ … }`, `if …; then … fi`'s
+ * body and `do … done`'s body all reach the analyzer as the same node type, so the
+ * distinction has to be read off the node's own text. `( (date) )` has a space
+ * between the parens and stays a subshell, which is why the CLOSING pair is part of
+ * the test.
+ *
+ * This is one rule in two places — here, and in `isArithmeticOperandCommand`, which
+ * asks the same question of a `subshell` the grammar misparsed — so it is a single
+ * function rather than the same expression written twice.
+ */
+const isArithmeticCompoundText = (text: string): boolean =>
+  opensWithDoubleParen(text) && endsWithDoubleParen(text)
+
 const isCommandNameText = (text: string): boolean => {
   if (text.length === 0) return false
   // A reserved word is never a command name. This is a POSIX fact rather than a
@@ -519,7 +535,49 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
         // That is the gate working: a plausible guess, refused by evidence.
         node.type === "arithmetic_expansion" ||
         node.type === "postfix_expression" ||
-        node.type === "c_style_for_statement"
+        node.type === "c_style_for_statement" ||
+        // `((i < 5))` — an arithmetic COMMAND, whose operands are real reads. The
+        // five node types above cover `$((…))`, `for ((…))` and `((i++))`, and none
+        // of them covers the plain form, because the pinned grammar holds a bare
+        // `(( … ))` in a `compound_statement` wrapping a `binary_expression` /
+        // `unary_expression` / plain `variable_name` — none of which is dispatched.
+        // The asymmetry was a grammar-shape accident rather than a fact about bash:
+        // `((i++))` produced a `uses` edge only because its operand happened to
+        // arrive as a `postfix_expression`, and `((i < 5))` on the same line
+        // produced none. Recorded as limitation 7 and measured before it was
+        // changed: `probe-bash-arithmetic-operands.mts` derives the delta from the
+        // tree BEFORE the edit and predicts +70 `uses` edges on the 400-file
+        // hash-order sample — 89 arithmetic compound_statements in 32 files, 126
+        // operand name nodes, 115 distinct (target, line) pairs, 45 of them
+        // already published through the five dispatched types and 70 not, 54 of
+        // those 70 naming a variable the same file declares. The census then
+        // measured uses 7,786 -> 7,856 and total relationships 16,984 -> 17,054,
+        // which is the 70. NO other type moves: this adds reads, no symbols and no
+        // edges of any other type.
+        //
+        // The first run of that probe predicted 72 and the census said 70, and the
+        // probe was wrong: it deduplicated operands per STATEMENT while `addRel`'s
+        // key carries no statement identity, so `(( i++ )); (( i-- ))` on one line
+        // counted twice. The instrument now dedupes per file.
+        //
+        // The predicate is the node's own text, because `compound_statement` is also
+        // a block: `then <block> fi` and `do <body> done` reach the same node type,
+        // and their reads are already dispatched — `simple_expansion`, `expansion`,
+        // `arithmetic_expansion`, `postfix_expression` and `c_style_for_statement`
+        // all sit under them — so a block contributes no edge a block-read would
+        // duplicate. The guard keeps the claim true rather than preventing a
+        // duplicate, and its own population is measured: 792 compound_statements
+        // are excluded by it on the 400-file sample, of which 0 open `((`.
+        //
+        // That 0 is also why no mutant covers the CLOSING half of the test. A
+        // malformed `(( a < 2` does not arrive as a compound_statement at all — the
+        // grammar produces an ERROR node for it (verified on the tree) — so
+        // `opensWithDoubleParen` alone has an empty reachable population on this
+        // corpus and a mutant dropping `endsWithDoubleParen` would survive. The
+        // condition is kept because `( (date) )` is a subshell and `((x))` is
+        // arithmetic, and it is declared rather than covered by a mutant that
+        // cannot fail.
+        (node.type === "compound_statement" && isArithmeticCompoundText(node.text))
       ) {
         this.emitVariableUses(node, symbols, relSource, addRel, declaredSymbols, functionStack, functionParams, declSites, scriptName)
       } else if (node.type === "for_statement") {
@@ -923,10 +981,6 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
    * than guesses, which is what made them worth removing rather than labelling.
    */
   private isArithmeticOperandCommand(node: Node): boolean {
-    // `( (` written adjacently is `((`: bash reads it as arithmetic, never as a
-    // nested subshell, so the closing pair is part of the test rather than a
-    // detail. `( (date) )` has a space and stays a real subshell.
-    const isDoubleParen = (t: string): boolean => opensWithDoubleParen(t) && endsWithDoubleParen(t)
     let cur: Node | null = node.parent
     while (cur) {
       // A `command_substitution` decides it. `$((` is the arithmetic expansion
@@ -934,7 +988,7 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
       // substitution, and `$(wc -l < f)` nested inside `$(( ))` really does run
       // `wc`, so that edge must survive.
       if (cur.type === "command_substitution") return opensWithArithmeticExpansion(cur.text)
-      if (cur.type === "subshell" && isDoubleParen(cur.text)) return true
+      if (cur.type === "subshell" && isArithmeticCompoundText(cur.text)) return true
       cur = cur.parent
     }
     return false
