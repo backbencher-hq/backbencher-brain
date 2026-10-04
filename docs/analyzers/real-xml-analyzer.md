@@ -82,11 +82,11 @@ loop to print, per probe, how many files the probe was actually invoked on, and
 refuses to present any instrument-B verdict when that line is absent:
 
 ```
-XML_B_PROBE_WALK uses    instrument=B:parse-tree-count walked=11456 unparsed=0 occurrences=0  hitFiles=0
-XML_B_PROBE_WALK extends instrument=B:parse-tree-count walked=11456 unparsed=0 occurrences=1652 hitFiles=113
+XML_B_PROBE_WALK uses    instrument=B:parse-tree-count walked=11464 unparsed=0 occurrences=0  hitFiles=0
+XML_B_PROBE_WALK extends instrument=B:parse-tree-count walked=11464 unparsed=0 occurrences=1652 hitFiles=113
 ```
 
-11,456 of 11,456 walked, 0 unparsed, so the `uses` 0 is a walked-and-empty 0 on the
+11,464 of 11,464 walked, 0 unparsed, so the `uses` 0 is a walked-and-empty 0 on the
 whole admitted population and not a probe that failed to run. The block that used to
 carry this check was worse than none: it was named `XML_OVERRIDES_EXAMINED`, it
 described `XML_RULED`'s `overrides` entry, and **that entry had been deleted** when
@@ -103,7 +103,8 @@ in it.
 
 Ten types, one verdict each. **The verdict column below is the ARBITER's, not this
 lane's** — `script/m14/ontology-coverage-gate.ts` run against this lane's ruling
-table over the **full 11,456-file admitted population in 110 repositories**, every
+table over the **full admitted population — 11,464 files at the time of this round's
+run, up from 11,456 earlier in the same round and 11,066 at the start of it**, every
 git-tracked file the router hands to the XML analyzer, not a sample:
 
 ```
@@ -140,6 +141,14 @@ references    10,405   run that reported [BB-HANG]
 references    10,411   clean run of the same corpus           -6
 ```
 
+The `references` figure in that block is the **pre-re-base** count. A clean
+`BB_XML_WORKERS=1` run of the same 11,456-file corpus after the re-base prints
+`references 11,094`, and this round's own run at the same worker count printed
+`contains 185,957` against the 185,979 above — a corpus that grew while the round was
+open, so the two columns are not comparable and neither is quoted as the current one.
+What the block still establishes is unchanged and is the point of it: the hang costs
+tens of edges on the two largest rows and marks nothing in the table.
+
 Nothing inside the table marks the run as short. The table above is from a run at
 `BB_XML_WORKERS=1` that exited 0 with no `[BB-HANG]`, and the runner now prints
 `RUN WAS SHORT, COUNTS UNDERCOUNTED` beside the rows whenever one fires, so the
@@ -152,6 +161,7 @@ same 11,456-file corpus, differing only in `BB_XML_WORKERS`:
 | `BB_XML_WORKERS` | `[BB-PARSE-ERR]` | `[BB-HANG]` | exit | table | `contains` | `references` |
 | ---: | ---: | ---: | ---: | --- | ---: | ---: |
 | **1** | 0 | 0 | 0 | full | 185,979 | 10,411 |
+| **1**, re-run after the re-base on a grown corpus | 0 | 0 | 0 | full | **185,957** | **11,094** |
 | **8** | 8 | 3 | 1 | **none** | — | — |
 
 The n=1 row reproduces the committed table exactly, so the numbers below stand. The
@@ -162,8 +172,8 @@ the 603-file probe that came back INCONCLUSIVE, and what would separate them.
 
 | Type | Emitted? | Edges | Files | Both ends resolve | `confidence` < 0.7 |
 | --- | --- | ---: | ---: | ---: | ---: |
-| `contains` | yes — EMITTED | 186,270 | 10,847+ | **100.0 %** | 0 |
-| `references` | yes — EMITTED | 10,411 | 391+ | **49.1 %** | 0 |
+| `contains` | yes — EMITTED | 185,957 | 10,847+ | **100.0 %** | 0 |
+| `references` | yes — EMITTED | **11,094** | 391+ | **48.4 %** target / **100.0 %** source; **93.9 % of sources are names the file writes** (was 84.2 %) | 0 |
 | `imports` | yes — EMITTED | 465 | 278+ | 0.0 %, target is a file, by design | 0 |
 | `calls` | yes — EMITTED (was GAP) | **402** | 76+ | **100 %**, and **100 % of sources are declared callers** | 0 |
 | `extends` | yes — EMITTED (was GAP) | **1,429** | 113 | **31.3 %** both ends / **100.0 %** source | 0 |
@@ -570,21 +580,25 @@ produced a confident wrong number, and each recorded at the point of the fix:
   phases that write them. A probe that dies on its own plumbing teaches nothing about the
   language.
 
-### `references` has the same defect on 1,066 of 10,411 edges, and it is NOT fixed
+### `references` had the same defect on 1,066 of 10,411 edges, and it is now FIXED
 
 The source-authenticity question was put to all three types that resolve below 100 %.
-`references` has it too, at a third the rate:
+`references` had it too, at a third the rate:
 
-| class | edges | share |
-| --- | ---: | ---: |
-| source is a name the file writes on some `name=` | 8,771 | 84.2 % |
-| source is a **vocabulary tag** | **1,066** | **10.2 %** |
-| undeclared (reported, not judged) | 574 | 5.5 % |
+| class | before | after | change |
+| --- | ---: | ---: | ---: |
+| source is a name the file writes on some `name=` | 8,771 | 10,413 | +1,642 |
+| source is a **vocabulary tag** | **1,066** | **111** | **−955 (−89.6 %)** |
+| undeclared (reported, not judged) | 574 | 570 | −4 |
+| total `references` edges | 10,411 | 11,094 | +683 |
 
-From `FSharp.Data/docs/data/po.xsd`, verbatim:
+Both columns are `validation/m14/fixtures/xml/derivation-accounting.mts` over the same
+draw, one with the fix and one with `src/ast/real-xml-analyzer.ts` stashed. From
+`FSharp.Data/docs/data/po.xsd`, the edge that was wrong:
 
 ```
-"xs:element" -> "comment"     (role=attribute_qname_reference)
+BEFORE  "xs:element"           -> "comment"   (role=attribute_qname_reference)
+AFTER   "PurchaseOrderType"    -> "comment"   (role=attribute_qname_reference)
 ```
 
 `<xs:element ref="comment" minOccurs="0"/>` sits inside `<xs:complexType
@@ -593,39 +607,78 @@ so the source is `PurchaseOrderType`; the analyzer published `xs:element`, the a
 constructor's own tag. Same mechanism, third type: `438/438` for `extends`, `495/548` for
 `calls`, `1,066/10,411` for `references`.
 
-**Why this one is reported rather than fixed.** The two fixed cases have a safe rule
-available. For `base=` and `name=` on a call, the owning element is a **known vocabulary
-element**, so `DECLARATION_VOCABULARIES` already says whether the element declares a name
-or names something else. For `references` the carrier can be **any element in any
-vocabulary**, and the question "is this `name` a declaration or a reference?" has no
-general answer in XML: `NAMED_REFERENCE_ELEMENTS` enumerates exactly two exceptions
-(`xsl:apply-templates`, RelaxNG `ref`) across the whole analyzer, and a correct rule would
-have to cover XSLT, XSD, RelaxNG, DocBook, SVG, WSDL and arbitrary application XML.
+#### The round that reported this without fixing it, and what it got wrong
 
-The obvious shortcut — "the owner is the nearest ancestor-or-self carrying a `name`
-attribute" — is wrong for exactly the constructs that make `references` interesting, and
-wrong in the direction that fabricates: on `<xsl:with-param name="select">` the `name` is
-a **parameter name**, not a declaration, so the rule would attribute the reference to
-whatever ancestor happens to be named `select`. That is a different fabricated endpoint,
-not a fix for this one, and it would land on the highest-volume type in the lane. The
-finding is therefore stated with its count and left unfixed. **What a fix needs:** a
-per-vocabulary table saying which elements' `name` attribute DECLARES, in the same shape
-as `DECLARATION_VOCABULARIES` and `NAMED_REFERENCE_ELEMENTS` but covering the reference
-carriers, plus a decision for the 574 `undeclared` sources, which this probe reports and
-does not judge — a `references` source may legitimately be an element the document only
-CONTAINS, since the analyzer publishes inline elements as symbols.
+The previous round left it unfixed on a stated ground: *"is this `name` a declaration or a
+reference?" has no general answer in XML*, because for `references` the carrier can be any
+element in any vocabulary. That question was never the one to ask. `DECLARATION_VOCABULARIES`
+already answers it — it is what makes `<xs:element name="e">` a declaration and
+`<xs:element ref="c">` a reference — and the walk already computed the answer that was
+missing, `nearestNamedDeclaration`, for `base=`. The question that had no general answer
+was *"who is the source when the carrier has no name"*, and there the answer had been
+computed and discarded.
+
+It also rejected a shortcut correctly. "The owner is the nearest ancestor-or-self carrying
+a `name`" is wrong for exactly the constructs that make `references` interesting, and
+wrong in the direction that fabricates: `<xsl:with-param name="select">` carries a
+**parameter** name, so an unconditional walk-up attributes the reference to whatever
+ancestor is named `select`. That reasoning stands, and it is why the rule is two branches
+rather than one:
+
+```
+self declared      the carrier HAS a name of its own, so the reference belongs to THAT
+                   declaration. `<xs:element name="e" type="T"/>` is `e -> T`, and this
+                   branch leaves those edges exactly as they were.
+nearest, else tag  the carrier has NO name, so the declarer is the nearest named
+                   ancestor. Falls back to the enclosing element when there is none.
+```
+
+The fallback is the difference between this and the `extends` fix, which has **no**
+fallback and refuses instead. `references` is emitted for carriers in every vocabulary —
+Spring, SVG, WSDL, DocBook, arbitrary application XML — and most have no named schema
+ancestor, so refusing would delete real edges rather than re-base them. The fallback
+cannot fabricate: it is the value that was there before, so the most it can do is preserve
+the old defect class. `xml/references-source-is-the-declarer` pins all three arms.
+
+#### The residual 111 are sites the language gives no name to
+
+They are not 111 more of the same bug, and the difference is measurable rather than
+asserted. Broken down by the role that carried the edge:
+
+| role | edges |
+| --- | ---: |
+| `entity_reference` | 85 |
+| `xslt_named_template_reference` | 22 |
+| `attribute_qname_reference` | 4 |
+
+Every one of them is a site with **no named declaration in scope**, so there is no declarer
+to name. XSLT 1.0 §5.4 gives a template dispatched by `match=` no `name` attribute at all,
+so `<xsl:if>&gt;</xsl:if>` inside `<xsl:template match="/">` — verbatim from
+`dbeaver/…/siteTemplate/web/site.xsl:12` — has nothing above it that any document declares.
+The fix raised the fraction of correctly-sourced edges from 89.8 % to 99.0 % and the
+remainder is a property of the language at those sites, not of the rule.
 
 #### Payload
 
-`extends` grew 438 → 1,429 (+991), `calls` fell 548 → 402 (−146, all of them calls with
-no named enclosing declaration), and `contains` grew 185,979 → 186,270 (+291). Total
-published edges across the six emitted types moved 197,843 → 198,980, **+0.57 %**, with
-`extends` still 0.7 % of the graph and `calls` 0.2 %. No budgeted lane regressed.
+`references` grew 10,411 → 11,094 (+683, **+6.6 %**), and it is the highest-volume type in
+the lane, so the delta is a payload claim and not a rounding remark. The growth is
+**un-collapsing**, not invention: edge identity is `(source, type, target)`, so before the
+fix every `<xs:element ref="comment"/>` in a file was one edge from the single source
+`xs:element`, and a hundred `ref=` sites across a schema set could only produce as many
+edges as it had distinct targets. After the fix each declaring type contributes its own
+edge. Every added edge has a source the file writes down — `declared-in-file` rose by
+1,642 while `vocabulary-tag` fell by 955 and `undeclared` by 4, so nothing new appeared
+that no file supports.
 
-The net edge count barely moves and that understates the change: 438 `extends` edges were
-replaced by 1,429 real ones and 495 `calls` edges were replaced by 402 real ones, so
-**1,260 fabricated endpoints were removed and 1,247 correct ones published**. A payload
-metric taken alone would have called this a rounding error.
+Resolution went **down** as a ratio and that is the arithmetic of the same change, not a
+regression: `resolvedSource` was 6,750 of 6,750 before and 7,415 of 7,415 after — the
+fabricated sources resolved perfectly, which is why the probe asks the source directly
+rather than trusting a resolution rate. `resolvedTarget` rose 3,312 → 3,591, and the
+denominator rose further, so both-ends went 49.1 % → 48.4 %. The `external` resolvability
+class nearly doubled (375 → 738) for the same reason: distinct declarers make distinct
+edges to the same imported names. No budgeted lane regressed; the lane's share of a
+project graph is unchanged to the third digit because `contains` (185,957 edges) is two
+orders of magnitude larger.
 
 ### The five not emitted, each with its instrument, probe and overturn condition
 
@@ -896,18 +949,21 @@ gate's prose-matching `rulingFor`, in the opposite direction.
 ### The six questions, answered for every emitted type
 
 Rows 2, 4, 5 and 6 are from the 2,500-file family-stratified draw
-(`ontology-census-overrides-gap.json`, 85,102 relationships, 381,890 symbols, 86
-distinct node types over 2,787,237 nodes); the edge counts in the ontology table
+(`ontology-census.json`, 85,747 relationships, 388,365 symbols, 86 distinct node
+types over the same draw, 0 files failed); the edge counts in the ontology table
 above are the arbiter's full-population pass. `overrides` reads **0 in this draw**
-and 3 in the full population, which is stated here rather than averaged over.
+and 3 in the full population, which is stated here rather than averaged over. The
+draw is re-run for every row, so a row that predates the `references` re-base and
+was not re-measured would be a stale claim rather than a history.
 
 | Question | `contains` | `references` | `imports` | `calls` | `extends` | `overrides` |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1. Exists | walk + DTD branches | deferred reference pass | `extractExternalId`, `schemaLocation`, PI `href` | `XSLT_CALL_ELEMENTS` | `xsdDerivationElement` branch | `competingTemplates` + the §5.5 pass |
-| 2. Fires | 77,721 edges / 2,472 files | 6,750 / 195 | 260 / 174 | 17 / 3 | **852 / 93** | **0 / 0 in this draw; 3 / 3 in the full population** |
+| 2. Fires | 77,887 edges / 2,472 files | 7,415 / 195 | 261 / 175 | 2 / 1 | **852 / 93** | **0 / 0 in this draw; 3 / 3 in the full population** |
 | 3. Correct | unmeasured | unmeasured | unmeasured | unmeasured | **1 oracle; 1,615 of 1,652 sites covered, 37 refused, 0 edges without a site** | unmeasured |
-| 4. Labelled | `structural` 77,721 (100 %) | `reference_qualified` 6,750 (100 %) | `import_based` 260 (100 %) | `reference_qualified` 17 (100 %) | `structural` 852 (100 %) | `structural` 3 (100 %) |
-| 5. Resolved | 77,721/77,721 = **100.0 %** | 3,312/6,750 = **49.1 %** | 0/260 = 0 %, target is a file | 17/17 = **100 %** | source **1,429/1,429 = 100.0 %**; both ends 267/852 = 31.3 %, and 56.4 % of bases are built-in or imported | 3/3 = **100 %** |
+| 4. Labelled | `structural` 77,887 (100 %) | `reference_qualified` 7,415 (100 %) | `import_based` 261 (100 %) | `reference_qualified` 2 (100 %) | `structural` 852 (100 %) | `structural` 3 (100 %) |
+| 5. Resolved | 77,887/77,887 = **100.0 %** | source **7,415/7,415 = 100.0 %**; target 3,591/7,415 = **48.4 %** | 0/261 = 0 %, target is a file | 2/2 = **100 %** | source **1,429/1,429 = 100.0 %**; both ends 267/852 = 31.3 %, and 56.4 % of bases are built-in or imported | 3/3 = **100 %** |
+| 5b. Source is a name the file writes | 77,887/77,887 (the parent, read off the tree) | **10,413/11,094 = 93.9 %** — was 8,771/10,411 = 84.2 % | n/a, the target is a file | **402/402 = 100 %** | **1,429/1,429 = 100 %** — was 438/438 = 0 % | 3/3 = **100 %** |
 | 6. Confident | 0 edges < 0.7 | 0 | 0 | 0 | 0 | 0 |
 
 **The two rates below 100 % are a declared resolvability class, not dangling
@@ -916,8 +972,17 @@ carries it per edge:
 
 | type | in-document | builtin | external | unresolved | both-ends rate |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| `references` | 2,795 | 3,574 | 375 | 6 | 49.1 % |
+| `references` | 3,071 | 3,594 | 738 | 12 | 48.4 % target, 100.0 % source |
 | `extends` | 232 | 436 | 184 | 0 | 31.3 % both ends, 100.0 % source |
+
+`references`' both-ends rate went 49.1 % → 48.4 % and that is the arithmetic of the
+re-base rather than a regression: the denominator grew 6,750 → 7,415 (+9.9 %) while the
+resolved-target count grew 3,312 → 3,591 (+8.4 %), and the `external` class nearly doubled
+(375 → 738) because distinct declaring types now produce distinct edges to the same
+imported names. Row 5 splits the two ends apart for exactly this reason, and the **source
+resolves at 100.0 % both before and after** — which is the trap this section exists to
+name: a minted source resolves perfectly, so a resolution rate cannot detect a fabricated
+endpoint, and asking the source directly is the only instrument that can.
 
 XML names far more specification built-ins than the reference point (CSS
 `references` at 66.8 %): `xs:string`, `xs:int`, `xs:positiveInteger` and their
@@ -925,7 +990,10 @@ kind are declared in the XML Schema specification, not in the file being read, s
 they are deliberately not published as in-file symbols. `imports` reads 0 % by
 design for a different reason — **its target is a file path**, which is the one
 case in this analyzer where a value is the right target, and a path is not a
-symbol. Only 6 `references` edges (0.09 %) are genuinely `unresolved`.
+symbol. Only 12 `references` edges (0.16 %) are genuinely `unresolved`, up from 6,
+and the rise is the same un-collapsing: a site that used to share one source with a
+site that resolved now gets an edge of its own, and a distinct declarer can leave a
+name unsatisfied that the shared source satisfied by accident.
 
 **Q3, and the limitation that comes with it.** `script/m14/differential.ts --lang
 xml` **does not run this lane**: it prints `[lane] SKIP xml: no corpus repo mapped
@@ -1137,10 +1205,20 @@ apply are the ones listed.
    template, reached by walking containment back up when the call sits in an inline
    `<xsl:variable>` body. `bb_graph`'s owner-cascade attributes member rows to the
    owner class, so the answer is reachable, but the hop exists and its depth varies.
-7. **A `references` edge from an XSLT instruction carries the instruction's tag as
-   its source, while a `calls` edge carries the caller.** The asymmetry is
-   deliberate and inherited: making the instruction a caller would re-base every
-   XSD-style reference edge, which is a different change.
+7. **111 of 11,094 `references` edges still carry a vocabulary tag as their source,
+   because the site has no named declaration to name.** All three types that resolve
+   below 100 % had this defect and it is now fixed in the two fixed forms: `extends`
+   was 438/438 fabricated, `calls` 495/548, `references` was 1,066/10,411 and is
+   111/11,094 after the re-base. The residue is not a smaller version of the same
+   bug — every one of the 111 sits where **nothing declares a name**: XSLT 1.0 §5.4
+   gives a `match=`-dispatched template no `name`, and an instruction at stylesheet
+   top level is inside no template at all. By role: `entity_reference` 85,
+   `xslt_named_template_reference` 22, `attribute_qname_reference` 4. The honest
+   alternatives are a refusal (which deletes a real edge — the `references` pass
+   emits for every vocabulary, not only XSD) or a synthetic name (which is the
+   fabrication this whole line of work removed). The fallback keeps the value that was
+   there before, so it cannot make the graph worse than it was; it is pinned by
+   `xml/references-source-is-the-declarer` so it cannot be dropped silently either.
 8. **261 Wayland `<interface name=…>` declarations are published under their tag.**
    The vocabulary is absent from `DECLARATION_VOCABULARIES`. Recorded above.
 9. **Standalone `.dtd` files are routed but not representable** by the `xml`
@@ -1259,8 +1337,11 @@ standalone DTD files.
 The XML analyzer has **zero regex usages**, and the machine census agrees.
 `script/m12/verify-regex-census.ts` reports **0 rows mentioning
 `real-xml-analyzer.ts`** — not 0 entries, not 0 missing, but no row at all — and
-the global gate's remaining 17 missing rows belong to css (12), scss (2), sql (1)
-and svelte (2). Verified at this commit, after it.
+the global gate's remaining rows belong to other lanes (css 11, scss 2, sql 1,
+svelte 3, clean 2, fsharp 4, javascript 1, python 1, typescript 6, vue 11; 17
+missing and 25 stale out of a HEAD scan of 18). Verified at this commit, after it,
+and the `references` re-base this round added **no** regex: it is two nullish
+coalescences and one walk already in the traversal.
 
 That agreement was not free, and both times it was reached the doc had claimed it
 before the machine agreed. Recording both, because the pattern is the lesson.
@@ -1589,23 +1670,41 @@ the project.
 | command | result |
 | --- | --- |
 | `npx tsc --noEmit -p tsconfig.json` | exit 0 |
-| `npx tsx script/m12/verify-regex-census.ts` | gate FAILED project-wide, **0 rows for `real-xml-analyzer.ts`** — the 17 failures are css 11, scss 2, sql 1, svelte 3 |
-| `bun run script/m14/run-fixtures.ts --lang xml` | `{"xml":{"pass":23,"fail":0}}` |
+| `npx tsx script/m12/verify-regex-census.ts` | gate FAILED project-wide, **0 rows for `real-xml-analyzer.ts`** — census entries 26, HEAD scan 18, **17 missing + 25 stale**, and every one of the 42 rows belongs to another lane (css 11, scss 2, sql 1, svelte 3, clean 2, fsharp 4, javascript 1, python 1, typescript 6, vue 11). This lane's count is **0 before and 0 after** this round |
+| `bun run script/m14/run-fixtures.ts --lang xml` | `{"xml":{"pass":25,"fail":0}}` |
 | `BB_MUTANT_ONLY="xml/" bun run script/m14/mutate-analyzer.ts` | **all 21 caught**, 0 survivors (filtered 1748 → 21) |
-| `npx tsx validation/m14/fixtures/xml/ontology-mutants.mts` | **12/12 caught**, 0 survivors |
-| `BB_XML_WORKERS=1 npx tsx validation/m14/fixtures/xml/ruled-gate.ts` | exit 0, full table, **0 `[BB-PARSE-ERR]`, 0 `[BB-HANG]`** |
-| `npx tsx script/m14/ontology-coverage-gate.ts xml` | **no verdict, exit 2** — `RULED_BY_LANG` has no `xml` entry (§8 item 1). It parses all 11,456 files and builds the full grammar inventory *before* discovering it has nothing to rule with, so it can also die to `[BB-HANG]` first and report nothing at all |
-| `npx tsx script/m14/firing-check.ts --files 120 xml` | **5/10 fired, 1,548 edges, 120/120 files, 0 degraded** |
+| `npx tsx validation/m14/fixtures/xml/ontology-mutants.mts` | **17/17 caught**, 0 survivors |
+| `BB_XML_WORKERS=1 npx tsx validation/m14/fixtures/xml/ruled-gate.ts` | exit 0, full 10-row table, **0 `[BB-PARSE-ERR]`, 0 `[BB-HANG]`**, `FALSIFIED 0`, `ruled-without-justification 0`. `XML_B_PROBE_WALK uses walked=11464 unparsed=0 occurrences=0` |
+| `npx tsx script/m14/ontology-coverage-gate.ts xml` | **6/10 EMITTED, 4 RULED-SOUND, FALSIFIED 0, ruled-without-justification 0** — exit 0. `contains` 185,957 · `references` 11,094 · `imports` 465 · `extends` 1,429 · `calls` 402 · `overrides` 3 |
+| `npx tsx script/m14/firing-check.ts --files 120 xml` | **4/10 fired, 1,653 edges, 120/120 files, 0 degraded** — `contains, imports, references, extends` |
+| `BB_XML_WORKERS=4 npx tsx validation/m14/fixtures/xml/ontology-census.mts` | 2,500 files, **0 failed**, 388,365 symbols, 85,747 relationships, **0 empty names, 0 `unknown` endpoints** |
+| `npx tsx validation/m14/fixtures/xml/derivation-accounting.mts` | `extends` fabricated **0 of 1,429** · `calls` fabricated **0 of 402** · call-site ledger **481 accepted = 481 occurrences, 0 unrepresented** · `references` fabricated **111 of 11,094** (was 1,066 of 10,411) · **0 edges with no site behind them** |
+
+The `firing-check` row reads **4/10**, where the round brief's table says 5/10 for this
+lane, and the difference is **not** the `references` re-base. Measured both ways on the
+same stride sample, `src/ast/real-xml-analyzer.ts` stashed and restored:
+
+```
+  analyzer stashed   xml  120/120  4/10  1,653 edges  0 degraded
+  analyzer restored  xml  120/120  4/10  1,653 edges  0 degraded
+```
+
+byte-identical, so the re-base neither added nor removed a firing type on this sample. The
+lost type is `calls`, whose 2 edges need an `xsl:call-template` whose target is declared in
+the same file, and the admitted corpus has grown since the brief was written (11,066 files
+/ 91 repositories → 11,456 / 110). The honest reading is that the stride sample no longer
+reaches a `calls` file, which is the same "high score on few files is a warning"
+situation the brief names for protobuf, pointed the other way. `calls` remains EMITTED at
+402 edges on the arbiter's full-corpus run, which is the instrument that counts.
 | `npx tsx validation/m14/fixtures/xml/concurrent-parser-probe.mts --files 600` | grade **INCONCLUSIVE**, exit 0 (control intact) |
 
-Two of those rows are not passes and are not written as ones. The regex census gate
-FAILS; this lane contributes zero of its 18 findings and the failure belongs to four other
-lanes. And `firing-check` reading 5/10 is the expected shape for this language, not a
-shortfall — the five types it does not fire are the four RULED types plus `overrides`,
-whose 3 corpus edges sit in 3 of 11,456 files and which a 120-file stride sample does not
-reach. Coverage as applicable is **6/10 EMITTED**, and the denominator shrank only by
+One of those rows is not a pass and is not written as one. The regex census gate
+FAILS; this lane contributes **zero** of its 18 findings and the failure belongs to four
+other lanes. Coverage as applicable is **6/10 EMITTED**, and the denominator shrank only by
 RULED verdicts carrying a corpus measurement, taken from the arbiter rather than from this
-lane.
+lane. Of the four types the 120-file stride sample does not reach, all four are accounted
+for: three are RULED with a corpus measurement behind the ruling, and the fourth is
+`overrides`, whose 3 corpus edges sit in 3 of 11,456 files.
 
 The firing-check edge count is also not comparable with a figure quoted for an earlier
 corpus: the admitted population moved from 11,066 files / 91 repositories to 11,456 /
@@ -1808,18 +1907,20 @@ an earlier third "defect" that a hand-read of one file had suggested.
 
 Recorded precisely enough to apply without re-deriving. None of these is edited here.
 
-**1. `script/m14/ontology-coverage-gate.ts` — wire the xml ruling table (2 lines).**
-`RULED_BY_LANG` is a literal with no extension point, so run against `xml` the gate
-prints `no RULING TABLE for xml` and exits 2, which is why this lane's RULED verdicts
-were never machine-checked until `script/m14/xml-ruled.ts` existed.
+**1. `script/m14/ontology-coverage-gate.ts` — wire the xml ruling table (2 lines).
+RESOLVED, and the doc is the last artifact still saying otherwise.** `RULED_BY_LANG`
+was a literal with no extension point, so run against `xml` the gate printed
+`no RULING TABLE for xml` and exited 2. It is now wired at lines 49 and 196 and the
+arbiter reports for this lane:
 
 ```
-import { XML_RULED } from "./xml-ruled"
-const RULED_BY_LANG: Record<string, Ruled[]> = { …, xml: XML_RULED }
+emitted 6/10   ruled-sound 4   FALSIFIED 0   ruled-without-justification 0
 ```
 
-`validation/m14/fixtures/xml/ruled-gate.ts` applies exactly these to a copy under
-`/tmp` and runs it, printing each patch, so this does not have to be re-derived.
+`validation/m14/fixtures/xml/ruled-gate.ts` remains useful and still passes — it runs
+the arbiter over the full 11,464-file population at `BB_XML_WORKERS=1` and prints the
+per-probe walk count beside every instrument-B 0, which the shared gate does not. It is
+no longer needed to prove the wiring, only to prove the walk.
 
 **1a. This should be an extension point, not a one-lane edit, and the round brief is
 what shows it.** The brief asks every lane to "register it in
@@ -1843,26 +1944,32 @@ the gate's own shape rather than restating it (this lane restates it at `xml-rul
 because there was nowhere to import from). A missing table then stays a refusal, which is
 the current correct behaviour, and each lane lands its own file with no shared edit at all.
 
-**1a. The same gate should refuse before it walks, not after.** The
-`if (RULED_BY_LANG[LANG] === undefined)` check sits *below* the `parseFile` worker pool
-and both instrument loops, so an unwired lane pays a full corpus parse and a full grammar
-inventory and then prints `no RULING TABLE`. Moving the check above the corpus walk costs
-nothing and stops the walk from dying to `BB-HANG` first — measured today: run unwired,
-`xml` printed `corpus: 11456 admitted files` and then exited on a hang without ever
-reaching the refusal that was its whole answer.
+**1a. The same gate should refuse before it walks, not after. STILL OPEN.** The
+`if (RULED_BY_LANG[LANG] === undefined)` check sits at line 338, *below* the `parseFile`
+worker pool (line 226) and both instrument loops (lines 250, 264), so an unwired lane pays
+a full corpus parse and a full grammar inventory and then prints `no RULING TABLE`.
+Moving the check above the corpus walk costs nothing and stops the walk from dying to
+`BB-HANG` first — measured: run unwired, `xml` printed `corpus: 11456 admitted files` and
+then exited on a hang without ever reaching the refusal that was its whole answer. It no
+longer costs this lane anything, because `xml` is wired; it costs the next lane that is
+not.
 
 **2. `script/m14/ontology-coverage-gate.ts` — `rulingFor` must match by identity, not
-by prose.** This is the false-verdict defect measured above. The function selects a
-spec decision by testing its `resolution` text for the type name
-(``new RegExp(`\\b${t}\\b`)``, plus a backticked variant) and returns the first hit, so
-a type with 0 emitted edges is ruled by whichever decision happens to use its name in
+by prose. HALF RESOLVED, and the half that matters here is now identity.** `rulingFor`
+used to select a spec decision by testing its `resolution` text for the type name
+(``new RegExp(`\\b${t}\\b`)``, plus a backticked variant) and return the first hit, so a
+type with 0 emitted edges was ruled by whichever decision happened to use its name in
 prose. On this lane that graded `extends` RULED-SOUND on `XML-ONTOLOGY-IMPLEMENTS`,
-because that resolution says "an implements/extends clause"; the reach is 4 of the 6
-emitted types (table above). It needs the decision's own `relationship` field, which
-the emitter already writes (`"relationship": "extends"`), compared for equality, with
-the prose test deleted rather than kept as a fallback — a fallback preserves the
-defect. Where no decision names the type, returning `null` is the correct answer and
-yields RULED-UNJUSTIFIED, which is what `calls` and `overrides` already get by luck.
+because that resolution says "an implements/extends clause" — a false verdict on the
+lane's own emitted type. `rulingFor` now checks the lane's `RULED` table FIRST, by
+`r.type === t` (line 292), which is identity. **What is left is the spec path**, which
+is still prose-matched below that line and still reachable for any type this lane does not
+rule in its own table. This lane currently rules all four of its unadjudicated types in
+`script/m14/xml-ruled.ts`, so the spec path is not what grades it and the defect is not
+reachable from here — but it is reachable from a lane whose table is partial. The fix is
+the decision's own `relationship` field, which the emitter already writes
+(`"relationship": "extends"`), compared for equality, with the prose test deleted rather
+than kept as a fallback — a fallback preserves the defect.
 
 **3. `src/ast/engine.ts:1442` — the per-file self-destruct ends the whole run, and the
 fault is NOT the XML grammar.** The 120 s timer calls `process.exit(1)`, so one
