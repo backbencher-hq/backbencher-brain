@@ -391,4 +391,28 @@ export const NIM_MUTANTS: NimMutant[] = [
       ),
     }),
   },
+  {
+    id: "nim/nested-routine-ufcs-call-lost",
+    language: "nim",
+    defectClass: "dropped-relationship-family",
+    description:
+      "A parenless UFCS call of a NESTED routine stops being emitted. `s.trimmed` " +
+      "invokes `trimmed(s)` with no parentheses and no call node, so the callee is a " +
+      "member leaf and the analyzer has to decide it is a callable by name. Testing " +
+      "only the module-scope set loses it, because nested routines are deliberately " +
+      "kept out of that set. Found by script/m14/nim-truth-oracle.ts: one " +
+      "unexplained `calls` edge on the 400-file sample, at " +
+      "nim/lib/packages/docutils/rst.nim:3493 where `rmSpaces` is declared at :3491 " +
+      "inside `proc dirImportdoc`. An analyzer that reads only its own metadata would " +
+      "have agreed with itself and reported nothing. " +
+      "Caught by nim/nested's forbidRelationships {uses, strip -> trimmed} — a mutant " +
+      "that reclassified the call as a read is caught by the same pin, because the " +
+      "shape is what is being asserted.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter(
+        (e: any) => e.metadata?.relationshipType !== "nim_ufcs_member_call",
+      ),
+    }),
+  },
 ]
