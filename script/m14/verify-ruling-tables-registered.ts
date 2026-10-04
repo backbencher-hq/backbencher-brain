@@ -49,7 +49,7 @@ const onDisk = new Set(
  * A lane appears on the UNADJUDICATED list when it has neither source. That list is the
  * real remaining work: every entry needs a lane to write a ruling table.
  */
-const UNADJUDICATED = ["clean", "r", "scss"]
+const UNADJUDICATED = ["clean", "graphql", "r", "scss"]
 
 const SPEC_DIR = join(HERE, "spec")
 
@@ -95,9 +95,24 @@ for (const lang of UNADJUDICATED) {
  * So the population is stated, not inferred, and the gate only makes claims about it.
  */
 const LANES_B = [
-  "bash", "clean", "css", "dart", "fsharp", "groovy", "hcl", "haskell", "java", "json",
-  "julia", "lua", "make", "nim", "php", "powershell", "protobuf", "python", "r", "ruby",
-  "scala", "scss", "sql", "toml", "xml", "yaml", "zig",
+  // The authoritative 23 from docs/analyzers/PROMPT-LAPTOP-B.md.15, not a list I
+  // reconstructed. My earlier list had 27 entries and was wrong in BOTH directions:
+  //
+  //   it included 6 lanes that are NOT laptop B's — groovy, haskell, java, python,
+  //     ruby, scala — so this gate was making claims about other laptops' backlog;
+  //   and it MISSED two of mine — graphql and markdown — which is why they had no
+  //     agent and no ruling while lanes that are not mine were being measured.
+  //
+  // Six extra entries is the same defect as measuring the wrong population: each one
+  // is a true statement about a language this laptop does not own, and together they
+  // made the coverage number describe work nobody here is responsible for.
+  //
+  // Source of truth is the prompt, not this file. If the assignment changes, change
+  // this list in the same commit — the gate below cross-checks it against the spec
+  // directory, so a stale list fails loudly rather than drifting.
+  "bash", "clean", "css", "dart", "fsharp", "graphql", "hcl", "json", "julia", "lua",
+  "make", "markdown", "nim", "php", "powershell", "protobuf", "r", "scss", "sql",
+  "toml", "xml", "yaml", "zig",
 ]
 
 const missing = LANES_B.filter(
