@@ -769,8 +769,15 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     for (const endpoint of ctx.apiEndpointSymbols) {
       ctx.relationships.push({
-        source: endpoint.ownerName || ctx.rootName,
-        target: endpoint.name,
+        // QUALIFIED PATHS on both ends. An endpoint is a KEY of the `paths` object, so it has
+        // a position in the document and a path exists for it — `endpoint.qualifiedName` IS
+        // that path, and `endpoint.scope` is the `paths` object's own path. This is what
+        // separates this site from a manifest dependency's `uses`, whose target is an npm
+        // package name and genuinely has no position: see `classifyUnresolved` in
+        // validation/m14/fixtures/json/namespace-orphan-probe.ts, which reads the two apart
+        // from the discriminator each site publishes.
+        source: endpoint.scope || endpoint.ownerName || ctx.rootName,
+        target: endpoint.qualifiedName || endpoint.name,
         type: ASTEngine.RelationshipType.Uses,
         confidence: 0.8,
         line_number: this.declLine(endpoint),
@@ -781,6 +788,7 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
           // containment is a reading of the OpenAPI document shape, so it is 0.8 with a code.
           reasonCode: "openapi_path_entry_declares_http_method",
           evidenceClass: "usage_contextual",
+          endpoints: "qualified_path",
         },
       })
     }
@@ -1104,6 +1112,22 @@ const bracket = parent.lastIndexOf("[")
     }
     if (declared.size === 0) return
 
+    // Both endpoints are keys of THIS `scripts` object, so both have a position in the
+    // document and both are therefore published by QUALIFIED PATH.
+    //
+    // They were emitted as bare names, which contradicted this lane's own endpoint contract
+    // ("every relationship type emits QUALIFIED PATHS on both ends") and cost exactly what the
+    // contract exists to prevent: a bare script name is not unique in a manifest. lodash is the
+    // corpus's clearest case — `npm run build` in its `build` script invokes `build:main` and
+    // `build:fp`, and `test` invokes `test:main` and `test:fp`, so every one of those targets
+    // is a name shared with the source's own prefix. Measured on a 449-file sample this was
+    // 7 of 37 `calls` targets binding to more than one published symbol, each one a place the
+    // reverse walk picks a winner by a rule nobody chose.
+    //
+    // The path is `<module>.scripts.<name>`, which is the symbol's own `qualifiedName`, so it
+    // matches the resolver exactly rather than approximately.
+    const scriptsPath = this.childPath(ctx.rootName, "scripts")
+
     for (const [name, pair] of declared) {
       const value = pair.childForFieldName("value")
       if (value?.type !== "string") continue
@@ -1111,8 +1135,8 @@ const bracket = parent.lastIndexOf("[")
         if (callee === name) continue
         if (!declared.has(callee)) continue
         ctx.relationships.push({
-          source: name,
-          target: callee,
+          source: this.childPath(scriptsPath, name),
+          target: this.childPath(scriptsPath, callee),
           type: ASTEngine.RelationshipType.Calls,
           confidence: 0.8,
           line_number: pair.startPosition.row + 1,
@@ -1121,6 +1145,9 @@ const bracket = parent.lastIndexOf("[")
             callForm: "npm_run_sibling_script",
             evidenceClass: "usage_contextual",
             reasonCode: "npm_run_sibling_script",
+            endpoints: "qualified_path",
+            scriptName: name,
+            calleeName: callee,
           },
         })
       }
