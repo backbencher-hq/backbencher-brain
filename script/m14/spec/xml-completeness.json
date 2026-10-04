@@ -236,8 +236,8 @@
       },
       {
         "concept": "PEReference",
-        "ruling": "inside an internal subset it is a DeclSep (XML 1.0 s2.4) — a separator, not a use — so it emits nothing",
-        "measured": "24 corpus occurrences, 0 edges; the parameter entity it would name is declared by the PEDecl and IS published",
+        "ruling": "a parameter entity reference IS a use and emits `references`, owned by the DOCTYPE in the internal subset and by the DECLARING ENTITY inside replacement text; the `% name 'value'` VALUE form names nothing and is refused, as is a reference whose semicolon is missing",
+        "measured": "0 PEReference nodes across the FULL 11,456-file admitted population — the 22 admitted files whose text carries `<!ENTITY %` are bare .dtd fragments this grammar cannot root, and the one admitted .xml carries its occurrences inside CDATA. The branch is live on fixtures (4 nodes in 2 files, all published) and pinned by xml/xsd-parameter-entity-refs and xml/pereference-semicolon-required; instrument validation/m14/fixtures/xml/pereference-shape-probe.mts",
         "node_type": "PEReference"
       },
       {
@@ -245,25 +245,61 @@
         "ruling": "declares nothing publishable",
         "measured": "4 corpus occurrences published a symbol named the empty string; 0 now, pinned by the M12 probe",
         "node_type": "Attribute"
+      },
+      {
+        "id": "XML-ONTOLOGY-USES",
+        "concept": "uses — ontology ruling (B:parse-tree-count)",
+        "relationship": "uses",
+        "status": "RULED",
+        "instrument": "B:parse-tree-count",
+        "node_type": "",
+        "ruling": "an element that ADOPTS a named reusable definition it does not declare — XSLT 2.",
+        "resolution": "an element that ADOPTS a named reusable definition it does not declare — XSLT 2.0's `xsl:use-attribute-sets` (§10.6) or `xsl:use-package` (§12.1), the only two in any W3C XML vocabulary that do this. Probe: every element in the XSLT namespace whose local name is one of those two, counted on the parse tree with namespace resolution applied. MEASURED 0 occurrences across the 2,500-file family-stratified draw (86 distinct node types, 2,787,237 nodes, 110 repositories), so the ruling is not falsified by that draw. Instrument B and not A because the string-shaped population here is real and A cannot see it: XSD writes the WORD `use` as an ordinary attribute value (`<xs:attribute use=\"required\">`), and a grammar inventory would be silent about that while a reader reasonably expects it to have been considered. That attribute is a CONSTRAINT keyword whose three values (`required`, `optional`, `prohibited`) name no construct in the document, so it is not a use of anything — but this lane did not MEASURE its corpus frequency, and that is recorded as a declared limitation rather than asserted either way. DECLINED as neighbours: `xsl:import` (already an `imports` edge carrying a file path), `xsl:key` (declares a named key that is then used, so the KEY is the declaration and a query is a `references` edge), and `xs:include`/`xs:import` in XSD (same file-path reasoning). OVERTURN: a non-zero count of either element name in the XSLT namespace on the parse tree.",
+        "measured": "probe and count are in the resolution; instruments in validation/m14/fixtures/xml/ontology-census.mts and validation/m14/fixtures/xml/overrides-probe.mts, executed against the table by validation/m14/fixtures/xml/ruled-gate.ts"
+      },
+      {
+        "id": "XML-ONTOLOGY-EXPORTS",
+        "concept": "exports — ontology ruling (A:grammar-inventory)",
+        "relationship": "exports",
+        "status": "RULED",
+        "instrument": "A:grammar-inventory",
+        "node_type": "export_declaration / export_statement / export_list / module_export / export_spec / exported_item / public_declaration",
+        "ruling": "a declaration that names what a document or module PUBLISHES.",
+        "resolution": "a declaration that names what a document or module PUBLISHES. Instrument A, because an export in any W3C XML vocabulary would be an element in a published specification, and this grammar gives published elements their own node types: it produced 86 distinct node types over 2,787,237 nodes in the 2,500-file draw and NONE of the seven candidates above appears among them. Instrument A is UNSOUND for a construct written as ordinary syntax, and that exposure is real here, so the string-shaped population is measured and carried rather than assumed absent: 611 elements whose local name contains \"export\" across 3 files — 610 `<exports>` in `libxslt/doc/libxslt-api.xml`, `libxslt/doc/EXSLT/libexslt-api.xml` and `ghostty/DoxygenLayout.xml`, which are gtk-doc/Doxygen XML DESCRIBING the exported API of a C library and are documentation payload rather than an XML declaration, plus 1 `<exportedmodules>` in a Doxygen configuration file. The surface that would carry an `exports` edge already exists and is measured: every symbol a document publishes is reachable as a `contains` target, and `contains` resolves at BOTH ends on 100.0% of its 77,721 edges in the same draw. OVERTURN: any of the seven node types above at a non-zero count in the grammar inventory, or — independently, and as a search rather than a list of seven — any node type the grammar produces whose name contains `export` at a non-zero count over the corpus.",
+        "measured": "probe and count are in the resolution; instruments in validation/m14/fixtures/xml/ontology-census.mts and validation/m14/fixtures/xml/overrides-probe.mts, executed against the table by validation/m14/fixtures/xml/ruled-gate.ts"
+      },
+      {
+        "id": "XML-ONTOLOGY-IMPLEMENTS",
+        "concept": "implements — ontology ruling (A:grammar-inventory)",
+        "relationship": "implements",
+        "status": "RULED",
+        "instrument": "A:grammar-inventory",
+        "node_type": "implements_clause / extends_clause / superclass / interface_declaration / interface_implementation",
+        "ruling": "a clause in which a declaration takes on the OBLIGATIONS of another type — an implements/extends clause, a superclass, an interface list.",
+        "resolution": "a clause in which a declaration takes on the OBLIGATIONS of another type — an implements/extends clause, a superclass, an interface list. Instrument A: 86 distinct node types over 2,787,237 nodes in the 2,500-file draw, none of the five candidates above present. The nearest XML construct is XSD type DERIVATION (`<xs:extension base=\"T\">` / `<xs:restriction base=\"T\">`, XSD 1.0 Part 1 §3.4.2), and that is EMITTED as `extends` — 1,033 derivation sites over 95 files in this draw, 354 `extends` edges — because derivation names a base TYPE, which is the relation `extends` carries. What XML has no way to write is an obligation without a base: no element in any W3C XML vocabulary declares that its target satisfies another type's interface. The string-shaped population is measured and carried: 5 elements across 4 files — 2 `<interface>` in `ghostty/src/apprt/gtk/winproto/wayland/protocols/vicinae-hotkey-v1.xml`, which DECLARE a Wayland protocol interface rather than implement one, and 3 `<abstract>` in DocBook (`libxslt/doc/tutorial/libxslttutorial.xml`, `otp/lib/xmerl/doc/examples/xml/xmerl.xml`, `otp/lib/xmerl/doc/examples/xml/xmerl_xs.xml`), which are PROSE about an abstract class in a C++ manual. All five are generic `element` nodes in no vocabulary namespace, which is exactly why instrument A does not fire on them and a local-name probe would have. OVERTURN: any of the five node types above at a non-zero count, or an element in a vocabulary namespace whose defined semantics are interface satisfaction.",
+        "measured": "probe and count are in the resolution; instruments in validation/m14/fixtures/xml/ontology-census.mts and validation/m14/fixtures/xml/overrides-probe.mts, executed against the table by validation/m14/fixtures/xml/ruled-gate.ts"
+      },
+      {
+        "id": "XML-ONTOLOGY-INSTANTIATES",
+        "concept": "instantiates — ontology ruling (A:grammar-inventory)",
+        "relationship": "instantiates",
+        "status": "RULED",
+        "instrument": "A:grammar-inventory",
+        "node_type": "new_expression / object_creation_expression / constructor_invocation / instantiate_expression / class_instantiation",
+        "ruling": "an expression or element that CREATES an instance of a declared construct.",
+        "resolution": "an expression or element that CREATES an instance of a declared construct. Instrument A: 86 distinct node types over 2,787,237 nodes in the 2,500-file draw, none of the five candidates above present, and the inventory contains no construction form of any kind — the 86 are prolog, element, attribute, content, DOCTYPE and its declarations, entity/notation declarations, conditional sections, PI, CDSect/CDATA and the anonymous punctuation tokens. Measured from the other side as well, because instrument A alone would be the json lane's mistake: 0 elements whose local name is new / instantiate / newinstance / create, across the same draw. The nearest XML constructs are an XSD `element` DECLARATION (which declares a type; it does not create a value) and an XSLT `xsl:element` / `xsl:copy-of` instruction (which create an output node from a name attribute, and the name is already a `references` edge) — in both cases the document names something rather than instantiating a declared type, which is the distinction this ruling rests on. OVERTURN: any of the five node types above at a non-zero count, or any node type the grammar produces whose name contains `new` or `instantiat` at a non-zero count over the corpus.",
+        "measured": "probe and count are in the resolution; instruments in validation/m14/fixtures/xml/ontology-census.mts and validation/m14/fixtures/xml/overrides-probe.mts, executed against the table by validation/m14/fixtures/xml/ruled-gate.ts"
       }
     ]
   },
   "notApplicable": [
     {
-      "concept": "calls",
-      "measured": "XML declares no procedure. A DTD entity carries an EntityValue or an ExternalID, never a parameter list, and no corpus file contains anything a call edge could name. The closest construct — an XSLT `call-template` — names a template DECLARATION, and it is emitted as `references`, which is what it is."
+      "concept": "RULED types, and the instrument each ruling rests on",
+      "measured": "Four of the ten ontology types are RULED with a corpus measurement, not with prose, and each names the probe that produced its number and the count that would overturn it. `uses` (instrument B, parse-tree count): 0 occurrences of `xsl:use-attribute-sets` or `xsl:use-package` in the XSLT namespace over a 2,500-file draw. `exports` (instrument A, grammar inventory): none of 7 export-declaration node types among the 86 the wired grammar produces over 2,787,237 nodes, with 611 string-shaped `<exports>`/`<exportedmodules>` elements adjudicated as gtk-doc/Doxygen payload describing a C library's API. `implements` (A): none of 5 supertype-clause node types among the 86, with 5 string-shaped hits adjudicated as 2 Wayland `<interface>` DECLARATIONS and 3 DocBook `<abstract>` prose. `instantiates` (A): none of 5 construction node types among the 86, and 0 elements named new/instantiate/newinstance/create. Overturn conditions are in script/m14/xml-ruled.ts, whose probes are executed by validation/m14/fixtures/xml/ruled-gate.ts."
     },
     {
-      "concept": "extends / implements / overrides / instantiates",
-      "measured": "no type system. An XSD names a type by an ATTRIBUTE VALUE and links to it with a `references` edge: 11,117 resolvable QName references over 511 files. A `complexType` is not a subclass of another, it REFERENCES one by `base` — and publishing that as `extends` would be a category error the M60.R10 class of finding is about."
-    },
-    {
-      "concept": "exports",
-      "measured": "an XML document has no public surface to export. The whole file is the surface and the document element is already a symbol."
-    },
-    {
-      "concept": "PEReference as a use",
-      "measured": "inside an internal subset a PEReference is a DeclSep (XML 1.0 s2.4) — a separator, not a use — so it emits nothing. The parameter entity it would name is declared by the PEDecl instead, and that IS published (85 parameter-entity declarations, 10 with a real file import)."
+      "concept": "calls / extends / overrides — NOT applicable, and this entry is the record of that being WRONG",
+      "measured": "This entry previously claimed all four of `calls`, `extends`, `implements`, `overrides` and `instantiates` inapplicable, on the reasoning that an XSD names a type by an ATTRIBUTE VALUE so `base=` is a `references` edge. The M60 ontology census overturned it by measurement: `calls` is emitted for XSLT `xsl:call-template` (XSLT 1.0 §6, 548 edges), `extends` for XSD `<xs:extension base=>`/`<xs:restriction base=>` type derivation (XSD 1.0 §3.4.2, 438 edges), and `overrides` for XSLT 1.0 §5.5 competing template rules — that last one only after script/m14/ontology-coverage-gate.ts reported this lane's RULED verdict FALSIFIED over 11,456 files (3 sites in 3 files, e.g. libxslt/tests/docbook/fo/toc.xsl lines 180 and 190). The reasoning was not wrong about the SYNTAX: `base=` is an attribute value. It was wrong about the RELATION, because a vocabulary element that defines a relation is a declaration of that relation however its operand is spelled. Kept as a record because a reader comparing this spec against an older one needs to see that the claim changed and why."
     },
     {
       "concept": "standalone .dtd documents",
@@ -274,6 +310,20 @@
     "contains",
     "references",
     "imports"
+  ],
+  "ontologyRelationshipsEmitted": [
+    "contains",
+    "references",
+    "imports",
+    "calls",
+    "extends",
+    "overrides"
+  ],
+  "ontologyRelationshipsRuled": [
+    "uses",
+    "exports",
+    "implements",
+    "instantiates"
   ],
   "kindRulings": {
     "contains": "structural containment read straight off the tree: element->element, element->attribute, element->namespace, DTD->declaration, declaration->content-model member, declaration->notation, PI->target. Every contains TARGET is a published symbol in the same file — enforced structurally, not by convention, and pinned by `xml/dtd-declarations` (`every contains target resolves to a symbol in the same file`).",
