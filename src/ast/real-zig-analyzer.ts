@@ -960,6 +960,9 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
     // (family rules — go/rust/c/cpp all classify; zig did NOT).
     this.classifyEvidenceTier(relationships)
 
+    // Z65: TARGET SCOPE — what a reverse walk can bind this edge to.
+    this.annotateTargetScope(symbols, relationships)
+
     // No References edge for imports (imports stay in the imports array) and
     // no generic `exports module -> X` edge — `module` is not a symbol, so the
     // edge would never resolve (Java-family contract; the exports array and
@@ -2437,6 +2440,75 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
       // pipeline? — not by any gate on this lane.
       if (t === "imports" || t === "exports") { md.evidenceClass = "import_based"; continue }
       md.evidenceClass = "usage_contextual"
+    }
+  }
+
+  /**
+   * Z65 — TARGET SCOPE: state, per edge, whether the target name is a symbol THIS
+   * file publishes, and with which kind.
+   *
+   * WHY. A zig relationship carries six keys and both endpoints are NAME STRINGS.
+   * `src/lsp/impact.ts` obtains inbound edges by scanning outgoing edges and
+   * MATCHING TARGETS — no inbound edge is stored — so an edge's name is all a
+   * reverse walk has, and a name two declarations share is attributed to one of
+   * them by a rule nobody chose. Measured over the whole 3,834-file zig corpus
+   * (draw `sha256:2f3545f9…`, production `parseFile`, 392,550 edges):
+   * **265,887 edges (67.73%) name a target 2+ published symbols share**, and of
+   * those **151,004 (56.79%) have a candidate in the edge's OWN file** — a tie a
+   * per-file rule breaks soundly, because within one file the analyzer knows which
+   * declaration it published.
+   *
+   * WHAT IT ADDS. `metadata.targetScope`, plus `targetKind` when the file
+   * publishes exactly one kind under that name:
+   *   `file-local`     the file publishes a symbol with this exact name. A
+   *                    consumer resolves the edge to THAT symbol and needs no
+   *                    cross-file guess.
+   *   `file-external`  the file publishes none. The edge names something outside
+   *                    it — a `std.*` declaration, a builtin, an import path — and
+   *                    no per-file rule can say which. Stated, not guessed.
+   *   `scope-marker`   the endpoint is one of the literal scope markers
+   *                    (`(global)`, `(file)`, `(declared-type)`), which is a fact
+   *                    about the edge's provenance and not a symbol name.
+   *
+   * It adds NO edge, removes NO edge, and changes NO count — it is a label on
+   * edges that already exist, derived from this analyzer's own output rather than
+   * from a guess about the rest of the repository. A consumer that ignores it
+   * behaves exactly as before, which is why it cannot regress a budgeted lane.
+   *
+   * THE LIMIT, stated because it is the part that cannot be fixed here. This says
+   * whether the target is IN this file, not whether it is the declaration the
+   * author meant: `const Self = @This();` is a file-local name, and 240 edges
+   * resolve against it, while `keepSymbol`'s UNIVERSAL denylist
+   * (`src/ast/pool-worker.ts:449`, shared, §8) refuses to publish ANY symbol
+   * named `Self` — so those edges are labelled `file-external` even though the
+   * name is right there in the file. The denylist is the defect, and it is not
+   * this lane's file.
+   */
+  private annotateTargetScope(
+    symbols: ASTEngine.UniversalSymbol[],
+    relationships: ASTEngine.UniversalRelationship[],
+  ): void {
+    const kindsByName = new Map<string, Set<string>>()
+    for (const s of symbols) {
+      const n = String(s.name ?? "")
+      if (!n) continue
+      const set = kindsByName.get(n) ?? new Set<string>()
+      set.add(String(s.kind ?? ""))
+      kindsByName.set(n, set)
+    }
+    const MARKERS = new Set(["(global)", "(file)", "(declared-type)", "(import)", "(local)"])
+    for (const r of relationships) {
+      const md = r.metadata ?? (r.metadata = {})
+      if (md.targetScope) continue
+      const t = String(r.target ?? "")
+      if (MARKERS.has(t)) { md.targetScope = "scope-marker"; continue }
+      const kinds = kindsByName.get(t)
+      if (!kinds) { md.targetScope = "file-external"; continue }
+      md.targetScope = "file-local"
+      // The kind only when it is unambiguous WITHIN the file: two kinds under one
+      // name here is a real collision, and picking one would be a guess.
+      if (kinds.size === 1) md.targetKind = [...kinds][0]
+      else md.targetKindCount = kinds.size
     }
   }
 

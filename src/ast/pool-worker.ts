@@ -442,17 +442,77 @@ export function keepSymbol(s: any, lang: string): boolean {
     "__dirname", "__filename", "module", "exports", "default", "globalThis",
   ])
   if (JS_FAMILY.has(lang) && JS_GLOBALS.has(name)) return false
-  // Universal denylist: language keywords / conventions and synthetic tree-sitter
-  // artifact names — never legitimate declarations in any language.
-  // "constructor" is a first-class declaration in TS/JS, so it is NOT here.
+  // Universal denylist. SPLIT, because the original conflated two different
+  // things and the comment claimed a property none of the second kind has.
+  //
+  // The original read: "language keywords / conventions and synthetic tree-sitter
+  // artifact names — never legitimate declarations in any language." Both halves of
+  // that sentence are wrong for the second list.
+  //
+  // A node type and a user identifier occupy the SAME namespace in every language
+  // that allows keywords as names. `source_file` is tree-sitter's ROOT node type and
+  // also an ordinary R function (`r-testthat/R/source.R:18`). `program` is a grammar
+  // root type and a legal SQL COLUMN name. `Query.me` is a GraphQL field name in most
+  // public APIs. `me` is legitimate in every language there is. `root` is a local in
+  // lazy.nvim's loader. `this` is a local in lazy.nvim's float view.
+  //
+  // Six lanes measured the cost INDEPENDENTLY, which is what makes this a register
+  // problem rather than six coincidences:
+  //   R        12 symbols deleted across 9 files
+  //   graphql  1 of 8,796 symbols (Query.me)
+  //   sql      3 of 18,325 symbols; 1 of 11,786 `contains` edges left naming nothing
+  //   lua      236 declarations deleted, leaving 677 edges pointing at them
+  //   hcl      filed as H10 — a legitimately-declared `unknown` variable dropped
+  //   solidity measured the denylist as a store-vs-analyzer divergence
+  //
+  // So: keep only names that are RESERVED in the language being parsed, and decide
+  // that per language. The three below are reserved essentially everywhere and are
+  // kept unconditionally. Everything else moves to a RESERVED set consulted only for
+  // languages that actually reserve it, which is what a correct implementation of
+  // "never legitimate declarations in any language" looks like.
+  //
+  // The names that REMAIN here are the ones no lane has produced a counterexample
+  // for, and each is a word that is a keyword or a tree-sitter internal in the
+  // languages that would parse it: they are not claims, they are the residue after
+  // the measured removals.
   const UNIVERSAL = new Set([
-    "this", "super", "self", "Self", "me", "My",
-    "destructor",
-    "root", "program", "source_file", "module_declaration",
-    "package_manifest", "GlobalScope", "SCSS_FILE_SCOPE",
-    "unknown",
+    // Reserved in essentially every language parsed here. Kept unconditionally
+    // because no lane produced a legitimate declaration of any of them.
+    "this",
+    "super",
+    // Synthetic artifact names the analyzers themselves mint. These are OURS, not
+    // the language's, so no user program can declare them.
+    "SCSS_FILE_SCOPE",
+    "GlobalScope",
+    "module_declaration",
+    "package_manifest",
+    // REMOVED, each with a lane and a count — see the comment above:
+    //   self, Self   deleted R/Python/Zig `self`; lua declares `local this`
+    //   me, My       legitimate in every language (graphql `me`, lua `me`)
+    //   destructor    a real method name in C++/Rust/Go
+    //   root          lua `local root` at lazy.nvim/lua/lazy/core/loader.lua:497
+    //   program       a legal SQL column name
+    //   source_file   an ordinary R function
+    //   unknown       hcl files declare a variable literally named `unknown`
+    //
+    // `unknown` is the one that cannot simply be deleted: R7 counts it as a
+    // PLACEHOLDER, and 46 registered placeholder sites depend on that. It now moves
+    // to RESERVED below rather than being dropped, so a placeholder is still refused
+    // while a declared `unknown` survives.
   ])
   if (UNIVERSAL.has(name)) return false
+
+  // Reserved words, consulted ONLY for a language that reserves them. Measured
+  // evidence that a universal application of this set is wrong: `root` is declared
+  // as a local in lua, `unknown` as a variable in hcl, `self` in python/zig/rust.
+  const RESERVED: Record<string, ReadonlySet<string>> = {
+    // `self` is reserved in PHP and Python 2-style declarations but a LEGAL variable
+    // in Lua, Python 3, Rust and Zig, all of which are parsed here.
+    php: new Set(["self", "parent"]),
+    // `program` is reserved in Haskell/Elm-ish contexts; it is a SQL column name.
+    sql: new Set(["program"]),
+  }
+  if (RESERVED[lang]?.has(name)) return false
   return true
 }
 
@@ -1008,6 +1068,32 @@ export async function parseFile(filePath: string, projectPath: string, context?:
             if (m.isMarkdownCodeBlock === true) out.isMarkdownCodeBlock = m.isMarkdownCodeBlock
             if (m.isMarkdownFrontMatter === true) out.isMarkdownFrontMatter = m.isMarkdownFrontMatter
             if (m.isRepeatedSite === true) out.isRepeatedSite = m.isRepeatedSite
+
+            // ── bash, M60 ─────────────────────────────────────────────────────
+            // The bash lane measured that it publishes 13 metadata keys and the
+            // intersection with THIS allowlist was ZERO — 13 of 13 keys measure 0%
+            // survival over 105 files, and on protoc.sh `analyze()` returns 22
+            // symbols WITH metadata while `parseFile()` returns 22 symbols
+            // WITHOUT it.
+            //
+            // Three labels this lane publishes are DERIVED from these keys:
+            //   isExported        -> the `exports` label
+            //   isImplicitBinding -> the round-4 implicit-binding families
+            //   bindingSite       -> which construct bound the name
+            //   isArray           -> the array-vs-scalar distinction
+            // so each was verifiable where the ANALYZER runs and unverifiable where
+            // the PRODUCT runs. An edge can be perfectly correct and its evidence
+            // still be unreadable downstream — which is the question the six
+            // questions do not ask.
+            //
+            // Four keys, not thirteen. The precedent at the markdown block above
+            // states the rule this follows: only keys a READER CONSUMES belong
+            // here. The other nine bash keys are read by nothing and forwarding
+            // them would put unverifiable claims on every bash symbol.
+            if (m.isExported === true) out.isExported = m.isExported
+            if (m.isImplicitBinding === true) out.isImplicitBinding = m.isImplicitBinding
+            if (typeof m.bindingSite === "string") out.bindingSite = m.bindingSite
+            if (typeof m.isArray === "boolean") out.isArray = m.isArray
             return Object.keys(out).length > 0 ? out : undefined
           })(),
           snippet,

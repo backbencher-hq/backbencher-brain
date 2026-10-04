@@ -43,6 +43,15 @@
 import { LANGS, runLang } from "../m14/run-fixtures"
 import { readFileSync, writeFileSync } from "node:fs"
 
+import * as path from "node:path"
+import { fileURLToPath } from "node:url"
+// Derived from this file's own location, NOT hardcoded. Six of this lane's scripts
+// pinned $HOME/backbencher-brain, so in a lane worktree they read a path
+// that does not exist and the gate died with ENOENT instead of reporting a verdict.
+// A gate that cannot execute is not a gate, and the mutant battery looked green
+// only because its failure was being read as a pass.
+const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..")
+
 const LUA = {
   wasm: "tree-sitter-lua.wasm",
   analyzerFile: "real-lua-analyzer",
@@ -91,7 +100,7 @@ async function main() {
   if (missing.length) console.log(`  MISSING fixtures: ${missing.join(", ")}`)
   if (extra.length) console.log(`  UNEXPECTED fixtures: ${extra.join(", ")}`)
 
-  const out = "$HOME/backbencher-brain/validation/m60/results/lua-fixtures-lane.json"
+  const out = `${REPO}/validation/m60/results/lua-fixtures-lane.json"
   writeFileSync(
     out,
     JSON.stringify(
