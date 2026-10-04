@@ -294,6 +294,16 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
     // the vocabulary element IS the declaration of the relation, so the fact needs
     // nothing outside the file, exactly as a parent/child edge does.
     xsd_derivation_base: "structural",
+    // XSLT 1.0 §5.5 competing template rules. `structural`, not `inferred`: both
+    // declarations and the three attributes that make them compete are read straight
+    // off the tree, and the only thing the spec contributes is WHICH of two colliding
+    // declarations wins — a direction, recorded in `metadata.derivation`, not a guess
+    // about whether the relation exists. Leaving this role unmapped let `addRelationship`
+    // label every one of these edges `inferred`, which is the tier the ontology census
+    // counts as heuristic: a deterministic parse fact filed as a guess, and the census
+    // row `tier inferred = 0` would have become false without anything changing in the
+    // analyzer's behaviour.
+    xslt_competing_template_rule: "structural",
     // An entity use is reached through a NAME in the document's own DTD, not
     // through a declared namespace prefix — but it is a reference to a
     // declaration all the same, and `usage_contextual` would say the document is
@@ -513,6 +523,32 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
      * from the vocabulary declaration rule and nothing else.
      */
     const declaredTemplateNames = new Set<string>()
+
+    /**
+     * MATCH-BASED `xsl:template` DECLARATIONS, collected for the `overrides` pass.
+     *
+     * One row per `xsl:template` in the XSLT namespace that carries a `match`
+     * attribute, keyed on the triple XSLT 1.0 §5.5 defines a template rule's identity
+     * by: pattern, mode and priority. Two rows sharing a key are two declarations that
+     * replace one another, which is the only sense this language has an override.
+     *
+     * Collected and not decided, for the same reason as `callCandidates`: a second
+     * template may be declared anywhere later in the file, so a rule that decided on
+     * sight would drop every forward declaration.
+     */
+    const competingTemplates: {
+      key: string
+      /** The `name` attribute's value when the template has one, else "". */
+      declaredName: string
+      match: string
+      mode: string
+      priority: string
+      node: Node
+      /** The `match` attribute node: the line the identity is written on. */
+      anchorNode: Node
+      /** The enclosing element's own symbol, so the derived identity is owned too. */
+      ownerName: string | undefined
+    }[] = []
 
     /**
      * ENTITY USES — M60 M18. `&name;` in content is a real reference to a
@@ -822,6 +858,44 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
           // An `xsl:template name="X"` is the only thing a `calls` edge may name.
           if (declaration && effectiveNamespace === "http://www.w3.org/1999/XSL/Transform" && localName === "template") {
             declaredTemplateNames.add(symbolName)
+          }
+          // A MATCH-BASED `xsl:template`, collected for the `overrides` pass below.
+          //
+          // This is a separate condition from the one above on purpose. A template
+          // carrying `match` and no `name` has `declaration === null`, so
+          // `symbolName` falls back to the TAG name and every match-based template in
+          // a stylesheet publishes the SAME symbol, `xsl:template`. That is correct
+          // for containment and useless for identity: two templates that XSLT 1.0
+          // §5.5 makes replace one another cannot be told apart if they share a name.
+          //
+          // Measured over the full 11,456-file admitted population, 3 sites in 3 files
+          // declare two templates competing at the same match/mode/priority — e.g.
+          // `libxslt/tests/docbook/fo/toc.xsl` lines 180 and 190, both
+          // `<xsl:template match="*" mode="toc.for.section">`. §5.5: "It is an error if
+          // a stylesheet contains more than one template with the same match and same
+          // import precedence", and the later one is the one that runs. The lane had
+          // RULED `overrides` inapplicable; the corpus overturned that ruling and
+          // `script/m14/ontology-coverage-gate.ts` reports it FALSIFIED, so the type
+          // is emitted rather than re-ruled.
+          if (effectiveNamespace === "http://www.w3.org/1999/XSL/Transform" && localName === "template") {
+            const matchAttr = this.findDirectAttribute(tagNode, "match")
+            if (matchAttr) {
+              const matchValue = this.attributeValueOf(tagNode, "match") ?? ""
+              const modeValue = this.attributeValueOf(tagNode, "mode") ?? ""
+              const priorityValue = this.attributeValueOf(tagNode, "priority") ?? ""
+              // The identity XSLT 1.0 §5.5 compares is the (pattern, mode, priority)
+              // triple, and it is the only identity a match-based template HAS.
+              competingTemplates.push({
+                key: `${matchValue}|${modeValue}|${priorityValue}`,
+                declaredName: declaration ? symbolName : "",
+                match: matchValue,
+                mode: modeValue,
+                priority: priorityValue,
+                node,
+                anchorNode: matchAttr,
+                ownerName,
+              })
+            }
           }
 
           if (ownerName) {
@@ -1307,10 +1381,34 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
           // corpus contains both `%xx;` and `% zz '&#60;` and only the first is a
           // use. The semicolon is the discriminator, and requiring it is what stops
           // a literal `%` in replacement text becoming a name.
+          //
+          // MEASURED, not assumed — `validation/m14/fixtures/xml/pereference-shape-probe.mts`
+          // runs three candidate predicates over every `PEReference` node it can
+          // obtain and prints both verdicts per node. The two guards above are BOTH
+          // load-bearing, which the prose here did not previously show:
+          //
+          //   shape                            semicolon  whitespace  published name
+          //   `%pe;`  in an internal subset    yes        no         pe      <- the reference
+          //   `% zz '&#60;`  (value form)      yes        YES        (none)  <- must stay dropped
+          //   `%pe`   in <!ELEMENT %pe EMPTY>  NO         no         (none)  <- must stay dropped
+          //
+          // The third row is why the semicolon test cannot be relaxed: the grammar's
+          // `PEReference` is `"%" Name ";"`, but on `<!ELEMENT %pe EMPTY>` — where the
+          // semicolon is missing — error recovery still yields a `PEReference` node
+          // whose single child is a `Name`. Reading that child publishes a use of `pe`
+          // from a document that never wrote `%pe;`.
+          //
+          // So the whitespace question below stays a question about TEXT, and it is
+          // the last thing in this analyzer that is. The reason is measured too: the
+          // whitespace guard is only reachable on shapes where the recovered node's
+          // structure does NOT decide the answer, which is exactly the case a
+          // tree-walk cannot express. Read on 11 obtainable nodes (4 fixture, 7
+          // synthetic, 0 corpus — see the probe's `corpus.counts`), replacing this
+          // test with `Name`-child lookup disagreed on 3 and was wrong on 2 of them.
           const semi = text.indexOf(";")
           if (semi > 1) {
             const ref = text.slice(1, semi).trim()
-            const isValueForm = ref.length === 0 || /\s/.test(ref)
+            const isValueForm = ref.length === 0 || RealXmlAnalyzer.containsEcmaWhitespace(ref)
             // Is this reference inside an ENTITY'S REPLACEMENT TEXT? It has to be
             // answered by walking UP — the first version asked the `PEReference`
             // node for a direct `EntityValue` child, which a reference never has,
@@ -1570,6 +1668,108 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
         // WHICH template is invoked.
         resolvable: "in-document",
       }, cand.textNode)
+    }
+
+    // ── COMPETING TEMPLATE RULES (XSLT 1.0 §5.5) ────────────────────────────
+    //
+    // Two `xsl:template` declarations in one stylesheet with the same `match`, `mode`
+    // and `priority` are an ERROR in XSLT 1.0 §5.5 — "It is an error if a stylesheet
+    // contains more than one template with the same match and same import precedence"
+    // — and the processor resolves it by running the LATER one. That is an override in
+    // the only sense this language has one, and it is what this lane's `overrides`
+    // verdict now records.
+    //
+    // WHY THIS IS A GAP AND NOT A RULED TYPE: the lane ruled `overrides` inapplicable
+    // on a parse-tree count, and `script/m14/ontology-coverage-gate.ts` reported that
+    // ruling FALSIFIED over the full 11,456-file admitted population — 3 sites in 3
+    // files. The first counter-example found was `libxslt/tests/docbook/fo/toc.xsl`,
+    // which declares `<xsl:template match="*" mode="toc.for.section">` at line 180 and
+    // again at line 190. The gate exists because a differential cannot catch this: the
+    // oracle omitted the type for the same reason the analyzer did, so nothing
+    // disagreed with anything.
+    //
+    // DIRECTION: source is the template that WINS (the later declaration), target is
+    // the one it REPLACES. So the edge answers "what silently took this rule's place",
+    // which is the question a reader of a stylesheet with a duplicated rule has.
+    //
+    // THE ENDPOINT NAMES, and why they are safe. A match-based template has no `name`,
+    // so this analyzer gives it the TAG name `xsl:template` — and then every
+    // match-based template in the file is the same symbol, which is why this could not
+    // be emitted before. A colliding template therefore publishes a DERIVED identity
+    // built from the very triple §5.5 compares: `match=<pattern>|mode=<mode>|priority=
+    // <priority>`. Two properties make that safe rather than inventive:
+    //
+    //   1. It is DISJOINT from every name a document can declare. `|`, `=`, `<` and `>`
+    //    are not NCName characters (XML 1.0 §2.3: NameChar excludes all four), so no
+    //    `xsl:template name="…"` and no declared name in any vocabulary can equal it.
+    //    A derived identity can therefore never shadow, merge with or be mistaken for a
+    //    real name — it can only ever be its own thing.
+    //   2. It is published ONLY for templates that actually collide. 3 sites in 11,456
+    //    files, so the symbol table gains a handful of clearly-marked rows rather than
+    //    one per match-based template in the corpus.
+    //
+    // A template that DOES carry a `name` is published under that name, which is the
+    // better endpoint and is preferred; the derived identity is a fallback for the
+    // nameless case only.
+    {
+      const byKey = new Map<string, typeof competingTemplates>()
+      for (const t of competingTemplates) {
+        const arr = byKey.get(t.key) ?? []
+        arr.push(t)
+        byKey.set(t.key, arr)
+      }
+      for (const group of byKey.values()) {
+        if (group.length < 2) continue
+        // Do the members have DISTINCT declared names? If so those names are the better
+        // endpoints — they are written in the document. If they share one name, or have
+        // none, the declared name cannot separate the two declarations at all: two
+        // templates of one name ARE one name as far as the store is concerned, and an
+        // `overrides first -> first` self-edge carries no information a reader can use.
+        const declared = group.map((t) => t.declaredName)
+        const useDeclaredNames = declared.every((d) => d.length > 0) && new Set(declared).size === declared.length
+        // Document order is the order §5.5 resolves in, and `competingTemplates` is
+        // filled by a walk that visits elements in document order, so index N of a group
+        // is a stable property of the declaration rather than of the parse.
+        const identityOf = (t: (typeof group)[number], index: number): string => {
+          if (useDeclaredNames) return t.declaredName
+          const derived = `xsl:template[match=${t.match}|mode=${t.mode}|priority=${t.priority}]#${index}`
+          ensureTargetSymbol(derived, t.ownerName, ASTEngine.SymbolKind.Class, t.anchorNode, {
+            nodeType: "element",
+            tagName: "xsl:template",
+            isXmlElement: true,
+            // Marked, so a consumer can tell a derived identity from a declared one
+            // instead of inferring it from the punctuation.
+            derivedTemplateIdentity: true,
+            // The `name` attribute is carried here because a colliding pair usually
+            // shares one, or has none: dropping it would lose the only name the
+            // document actually wrote.
+            ...(t.declaredName.length > 0 ? { declaredName: t.declaredName } : {}),
+            templateMatch: t.match,
+            templateMode: t.mode,
+            templatePriority: t.priority,
+            templateOccurrenceInGroup: index,
+          })
+          return derived
+        }
+        const identities = group.map(identityOf)
+        for (let i = 1; i < group.length; i++) {
+          const winner = group[i]
+          const source = identities[i]
+          const target = identities[i - 1]
+          if (source.length === 0 || target.length === 0 || source === target) continue
+          addRelationship(source, target, ASTEngine.RelationshipType.Overrides, {
+            role: "xslt_competing_template_rule",
+            // The three attributes §5.5 compares, carried so a consumer can re-derive
+            // the collision instead of trusting the edge.
+            templateMatch: winner.match,
+            templateMode: winner.mode,
+            templatePriority: winner.priority,
+            derivation: "xslt-5.5-later-template-replaces-earlier",
+            resolvable: "in-document",
+            ...(winner.declaredName.length > 0 ? { declaredName: winner.declaredName } : {}),
+          }, winner.anchorNode)
+        }
+      }
     }
 
     // ── XSD TYPE DERIVATION (XSD 1.0 §3.4.2) ─────────────────────────────────
@@ -2290,6 +2490,73 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
     return parts
   }
 
+  /**
+   * Does `text` contain any code point JavaScript's `\s` matches?
+   *
+   * This is the analyzer's LAST regular expression, deleted. It stood at the
+   * `PEReference` branch as `/\s/.test(ref)` — the predicate separating a parameter
+   * entity REFERENCE (`%name;`) from the VALUE form (`% name '...'`) — and the doc
+   * already claimed zero regex usages while the machine census carried that line as
+   * unremoved. The census and the doc disagreed and the census was right.
+   *
+   * ## Why the class is spelled out and NOT narrowed to XML's own `S`
+   *
+   * The obvious replacement is {@link splitOnWhitespace}, since XML 1.0 §2.3 `S` is
+   * `[ \t\r\n]` and that is the only whitespace a document may use BETWEEN tokens.
+   * Narrowing to it is a behaviour change, and it was measured rather than assumed:
+   * `validation/m14/fixtures/xml/pereference-shape-probe.mts` runs the deleted
+   * predicate (`\s`), the narrowed one (`S`) and a `Name`-child lookup over every
+   * `PEReference` node obtainable from the corpus, the lane's fixtures and eight
+   * synthetic shapes.
+   *
+   *   - corpus: 0 nodes. The branch is not exercised by `$HOME/fixtures`
+   *     at all, so no corpus number can decide this. The 22 admitted files whose
+   *     text contains `<!ENTITY %` are bare `.dtd` fragments, which this grammar
+   *     cannot root (no `document`), and the one admitted `.xml` — libxslt's
+   *     `tests/xmlspec/REC-xml-20001006.xml` — carries its `<!ENTITY %` inside
+   *     `CDSect`/`CDATA`, i.e. documentation ABOUT parameter entities.
+   *   - fixtures: 4 nodes, `\s` and `S` agree on 4 of 4.
+   *   - synthetic: 7 nodes, `\s` and `S` agree on 6 of 7. The one disagreement is
+   *     `%p<U+00A0>e;`, where `\s` drops it and `S` publishes a symbol named
+   *     `p<U+00A0>e` — a name no XML parser would accept, since `Name` is
+   *     `[a-zA-Z_][a-zA-Z0-9_:.·-]*`. On that single node the wider class is the
+   *     better answer, so this keeps it.
+   *
+   * ## Why the code points are listed rather than inherited
+   *
+   * The set is ECMAScript's `WhiteSpace` and `LineTerminator` productions, written
+   * out so the behaviour is pinned to a stated list rather than to a dialect. It is
+   * 25 code points and `isEcmaWhitespace` is total over them, which is what makes
+   * this a replacement rather than an approximation: for any string, the answer is
+   * identical to the deleted expression's, because both ask the same per-character
+   * question and a character class is a per-character question.
+   *
+   * A narrower class WOULD be defensible here on XML grounds, and is recorded as a
+   * limitation rather than shipped, because shipping it would change one measured
+   * verdict on a shape the corpus cannot produce, which is the trade this lane has
+   * no evidence to make.
+   */
+  private static containsEcmaWhitespace(text: string): boolean {
+    for (let i = 0; i < text.length; i++) {
+      if (RealXmlAnalyzer.isEcmaWhitespace(text.charCodeAt(i))) return true
+    }
+    return false
+  }
+
+  /** ECMAScript `\s`: `WhiteSpace` + `LineTerminator`. 25 code points, total. */
+  private static isEcmaWhitespace(c: number): boolean {
+    if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) return true // SP TAB LF CR
+    if (c === 0x0b || c === 0x0c) return true                             // VT FF
+    if (c === 0xa0) return true                                          // NBSP
+    if (c === 0x1680) return true                                        // OGHAM SPACE MARK
+    if (c >= 0x2000 && c <= 0x200a) return true                           // EN QUAD .. HAIR SPACE
+    if (c === 0x2028 || c === 0x2029) return true                        // LS PS
+    if (c === 0x202f || c === 0x205f) return true                        // NNBSP MMSP
+    if (c === 0x3000) return true                                        // IDEOGRAPHIC SPACE
+    if (c === 0xfeff) return true                                        // ZWNBSP
+    return false
+  }
+
   private isSchemaConstruct(name: string): boolean {
     const separator = name.lastIndexOf(":")
     const localName = separator >= 0 ? name.slice(separator + 1) : name
@@ -2390,6 +2657,42 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (child?.type === type) return child
     }
     return null
+  }
+
+  /**
+   * A named `Attribute` child of a tag node, by attribute name.
+   *
+   * Read off the TREE rather than off the tag's text: an attribute name is a `Name`
+   * child inside an `Attribute` node, and three sibling attributes on one tag differ
+   * only in which of their own `Name` children says `match`. Splitting the tag's text
+   * would have to re-tokenise, and would match an attribute NAME that appears inside
+   * another attribute's VALUE.
+   */
+  private findDirectAttribute(tagNode: Node, attrName: string): Node | null {
+    for (let i = 0; i < tagNode.namedChildCount; i++) {
+      const attr = tagNode.namedChild(i)
+      if (attr?.type !== "Attribute") continue
+      const nameNode = this.findDirectChild(attr, "Name")
+      const text = nameNode?.text.trim()
+      if (text === attrName) return attr
+    }
+    return null
+  }
+
+  /**
+   * An attribute's value, unquoted and with the XML Schema `collapse` facet applied.
+   *
+   * `unquote` rather than a pattern, for the reason the rest of this analyzer spells
+   * out: an `AttValue` is `"…"` or `'…'` in the tree, and only the quote characters
+   * need removing. Returns `null` for an attribute written with no value, which is a
+   * different thing from an empty value and must not collapse to `""`.
+   */
+  private attributeValueOf(tagNode: Node, attrName: string): string | null {
+    const attr = this.findDirectAttribute(tagNode, attrName)
+    if (!attr) return null
+    const valueNode = this.findDirectChild(attr, "AttValue")
+    if (!valueNode) return null
+    return RealXmlAnalyzer.collapseWhitespace(this.unquote(valueNode.text.trim()))
   }
 
   private findFirstNamedChild(node: Node, types: Set<string>): Node | null {
