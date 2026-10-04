@@ -49,7 +49,7 @@ silent. Production grammar `wasm/tree-sitter-julia.wasm`, md5 `dbcd79759b4216c80
 routed to the >1 MB structural fallback · **135 of 971 files (13.9%) yield ZERO symbols** and are
 listed by name in the census output · **0 of 971 files unreadable by the production grammar**.
 
-| Relationship type | Verdict | Channel and measured size over 971 files | Files |
+| Relationship type | Emitted? | Verdict, channel and measured size over 971 files | Files |
 |---|---|---|---|
 | `calls` | **EMITTED** | relationship, **86,876** | 926 |
 | `references` | **EMITTED** | relationship, **35,727** | 844 |
@@ -58,8 +58,8 @@ listed by name in the census output · **0 of 971 files unreadable by the produc
 | `instantiates` | **EMITTED** | relationship, **2,830** | 361 |
 | `extends` | **EMITTED** | relationship, **1,821** | 323 |
 | `overrides` | **EMITTED** | relationship, **3** | 3 |
-| `imports` | **RULED** — payload channel only | `ImportInfo[]`, **0 relationship rows**; 1,675 `import`/`using` nodes on the tree across 504 files | — |
-| `exports` | **RULED** — payload channel only | `ExportInfo[]`, **0 relationship rows**; 308 `export`/`public` nodes on the tree across 152 files | — |
+| `imports` | **yes** — on the import-site channel; **RULED** as a relationship | `ImportInfo[]`, **0 relationship rows**; 1,675 `import`/`using` nodes on the tree across 504 files | 504 |
+| `exports` | **yes** — on the export-site channel; **RULED** as a relationship | `ExportInfo[]`, **0 relationship rows**; 308 `export`/`public` nodes on the tree across 152 files | 152 |
 | `implements` | **RULED** | no channel; 0 of 12 named constructs in the grammar inventory; the 325 nearest candidates are published as `extends` | — |
 
 **Coverage is 7 emitted and 3 measured-absent — 7/7 on the emitted side, not 10/10 and not 7/10.**
@@ -86,6 +86,23 @@ language. The same shape is reported against `real-kotlin-analyzer.md`, whose fi
 `calls`. The fix is one line (drop the `continue`) in a shared file, so it is reported rather than
 applied. The row is left FIRST here rather than reordered to make the finding disappear: making this
 lane read clean by exploiting a gate bug would hide it for the lanes that still have it.
+
+**This lane's current state under that gate is exactly one finding, and it is this bug:**
+
+```
+$ bun script/m14/verify-doc-truth-emissions.ts | grep julia
+UNDOCUMENTED [julia] calls (relationship)
+  docs/analyzers/real-julia-analyzer.md:52
+```
+
+`imports` and `exports` were also reported and are now cleared, and the fix was in this table rather
+than in the gate. The gate derives its expected surface from the analyzer source and finds julia
+publishes both on the payload channels, so the doc owes a checkable claim about each; the cells now
+read **"yes — on the import-site/export-site channel; RULED as a relationship"**, because the cell and
+not the surrounding prose is what the gate reads, and a cell that says `RULED — payload channel only`
+is a `NO_MARKER` to it. That is a real requirement of the gate rather than a quirk: a reader — or the
+next agent — extracts the cell, so the affirmative statement has to live there. UNDOCUMENTED across all
+48 lanes went 46 → 44 with this one table edit.
 
 ---
 
@@ -419,14 +436,20 @@ gate that reports a clean bill of health for the wrong reason is worse than one 
 
 ### The differential, and the limitation it cannot cover
 
-`bun run script/m14/differential.ts --lang julia --sample 200 --no-batch`:
+`npx tsx script/m14/differential.ts --lang julia --sample 200 --no-batch` (sample rotates per run,
+so per-rotation counts move; the unexplained rate and the no-truth line are the stable figures):
 
 ```
-[julia] files=200 tree-truth=17503 covered=17051 (97.4%) MISSING=452
-        analyzer-edges=18285 unexplained=1596 (8.7%) heuristic=0
-        unexplained-by-label: calls=975, contains=382, instantiates=98,
-                               extends=74, references=44, uses=23
+[cold-pool] julia:julia: 0/200 fresh (rot 30, corpus 941)
+[julia] julia: COMPARED WITH NO TRUTH: overrides (1 comparable, 0 truth)
+[julia] julia: files=200 tree-truth=19052 covered=18839 (98.9%) MISSING=213
+        analyzer-edges=20221 unexplained=1755 (8.7%) heuristic=0
+        unexplained-by-label: calls=1075, contains=412, instantiates=100, extends=91,
+                               references=53, uses=23, overrides=1
 ```
+
+The `COMPARED WITH NO TRUTH: overrides` line is the harness naming the open DERIVATION finding itself,
+and it is the line the three-line shared-file edit below removes.
 
 Five lane-owned tree-truth oracles in `script/m14/oracles/` — `julia-contains`, `julia-type-edges`,
 `julia-calls`, `julia-refs` — cover every label F5 compares for this language, each written from
@@ -766,8 +789,9 @@ same 60-file sample and **halved** the unexplained rate, which is the opposite o
 comparison usually does and worth stating plainly: the earlier high rate was the analyzer emitting
 real edges the truth side declines to claim, not those edges being wrong.
 
-    F5 julia (200 of 941, ROTATING):  covered 97.4%   unexplained 8.7%
-                                     analyzer-edges=18285 tree-truth=17503 MISSING=452 heuristic=0
+    F5 julia (200 of 941, ROTATING):  covered 98.9%   unexplained 8.7%
+                                     analyzer-edges=20221 tree-truth=19052 MISSING=213 heuristic=0
+                                     + COMPARED WITH NO TRUTH: overrides
     prior 60-file rotation:          covered 99.1%   unexplained 8.5%
     direct 40-file check:            extends 39/39 · instantiates 27/27 · uses 98.8% · references 97.3%
 
