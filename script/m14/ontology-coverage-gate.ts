@@ -49,6 +49,7 @@ import { FSHARP_RULED } from "./fsharp-ruled"
 import { NIM_RULED } from "./nim-ruled"
 import { PROTOBUF_RULED } from "./protobuf-ruled"
 import { ZIG_RULED } from "./zig-ruled"
+import { JULIA_RULED } from "./julia-ruled"
 
 const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
 const LANG = process.argv[2] ?? "bash"
@@ -195,7 +196,7 @@ const JSON_RULED: Ruled[] = [
   },
 ]
 
-const RULED_BY_LANG: Record<string, Ruled[]> = { bash: BASH_RULED, json: JSON_RULED, lua: LUA_RULED, toml: TOML_RULED, fsharp: FSHARP_RULED, nim: NIM_RULED, protobuf: PROTOBUF_RULED, zig: ZIG_RULED }
+const RULED_BY_LANG: Record<string, Ruled[]> = { bash: BASH_RULED, json: JSON_RULED, lua: LUA_RULED, toml: TOML_RULED, fsharp: FSHARP_RULED, nim: NIM_RULED, protobuf: PROTOBUF_RULED, zig: ZIG_RULED, julia: JULIA_RULED }
 const RULED: Ruled[] = RULED_BY_LANG[LANG] ?? []
 
 // ---------------------------------------------------------------- corpus
