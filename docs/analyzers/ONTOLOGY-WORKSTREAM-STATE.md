@@ -1439,3 +1439,102 @@ signal and had no floor under it.
 So the standing check now includes free space and DB size alongside agent state. A
 fleet that cannot write is not a fleet that is working, no matter how many agents
 report `working`.
+
+## Published to origin; laptop B at zero regexes; the last FALSIFIED verdict closed
+
+### `main` and the aggregate branch are on the remote
+
+`analyzers/ontology-laptop-b` pushed, then `main` fast-forwarded **after merging
+origin/main in** — main held 5 commits of the owner's own work that my branch predated
+(the laptop master prompts, and two test commits including *"do the relationship types
+actually FIRE? (withdraws the 10/10 claim)"*). Merging rather than pushing over them is
+the only way that keeps them; all 5 verified present afterwards, 0 divergence.
+
+This also retired the `origin/analyzers/ontology-laptop-b`-is-empty trap that cost the
+dart lane a round, so `repo-facts.md` was rewritten — a brief that still says "never on
+origin" is worse than no brief, because a lane reading it will distrust a working ref.
+
+### A gate on `main` was reporting 187 where the truth is 5
+
+`script/m14/no-regex-gate.sh` — inherited from main, never run by this supervisor until
+now — was a **`grep -nE` text scan**, and its own header explains why that is wrong
+before doing it anyway:
+
+> Regex over source text matches comments and string literals, misses nested syntax,
+> and breaks silently on the next grammar version. Everything must go through the
+> tree-sitter AST.
+
+It reported **187** against an AST census of the same tree reporting **5**. Its comment
+filter dropped only lines *starting* with `//`, `*`, or `/*`, so it missed regexes in the
+middle of block comments — and its pattern includes `.split(`, so **`content.split("\n")`
+counted as a regex**. That was the only "hit" on zig:
+
+```
+1133:  linesOfCode: content.split("\n").length,
+```
+
+There is no regex on that line. There is a newline escape in a string.
+
+A gate that cries wolf at 187 against 5 protects nothing: it teaches readers to ignore
+it, and the one real regex it eventually misses is lost in the noise. It now **delegates**
+to the AST census. One arbiter per question.
+
+**Two defects in my own first draft of that fix**, both the population rule written
+earlier the same session — which is decent evidence the rule earns its keep:
+
+1. It took a subdirectory argument and ignored it, printing whole-tree numbers that read
+   as scoped.
+2. Having fixed that, it computed the in-scope population by counting the census's
+   `perFile` entries — which lists only files *that have* a regex (2) — against
+   `analyzersScanned` (48), so it reported "2 of 48 in scope" for a directory containing
+   all 48. Mixing two populations that both happen to be integers.
+
+Both fixed: scope applied, population **derived from the filesystem**. An empty scope now
+exits 2 — "that is an empty population, NOT a pass" — instead of a vacuous PASS.
+
+### Laptop B: 18 regexes -> 0
+
+```
+real-svelte-analyzer.ts:50 / 622 / 1259 / 1445      <- the ONLY 4 left, another laptop's
+```
+
+CSS cleared 11, julia 9, XML 1, SCSS 2 (supervisor), SQL 1. Every removal was verified —
+SCSS's by a 428-case differential plus a whole-corpus A/B hashing the whole emitted graph
+byte-identical.
+
+### TOML: the only FALSIFIED verdict, closed
+
+The arbiter falsified toml's **own** ruling: the lane had ruled `references` inapplicable,
+then measured that the construct was real, and reported the contradiction instead of
+hiding it. Implemented rather than explained away:
+
+```
+  now: libraries.groovy-bom.version.ref -> versions.groovy
+  corpus: 167 references across 5 files, 0 unresolved
+  gate:   emitted 2/10  ruled-sound 8  FALSIFIED 0  ->  exit 0
+```
+
+167 is **exactly** the lane's independent measurement — two derivations agreeing.
+
+Resolving aliases AFTER the walk, not during: an alias may name a key declared later, and
+resolving inline would silently miss every forward reference. An ambiguous alias emits no
+edge and is counted, because picking one of two candidates is a guess.
+
+**And a root-cause bug surfaced that had nothing to do with aliases**: `valueOf(pair)`
+returned the last named child, which for `detekt = "1.23.8"  # comment` is the COMMENT.
+So a commented string reported `valueType: "comment"`; a commented version key was
+invisible to scalar detection (3 of 82 aliases silently unresolved); and — worst — **a key
+holding an inline table plus a trailing comment was never recognised as an inline table,
+so its nested keys were dropped from `metadata.inlineKeys` entirely**. That last one had
+been losing data across the corpus before this change and was not caused by it.
+
+### Agent supervision
+
+All 10 lanes `working`/`measuring`, none `STALLED`, none `DEAD`. The ZIG branch was
+**not** wholesale-merged: of its 87 commits, 53 touch only zig-owned files and 34 touch
+supervisor instruments or other lanes — including a stray `sql pass 2` and copies of
+`firing-check.ts` and `incoming-check.ts`. Cherry-picking the 53 applied 45 cleanly; the 8
+that could not apply are recorded by hash rather than force-pushed. Two of them turned out
+to carry a real fix to my own arbiter (`rulingFor()` read only the spec, so measured
+rulings looked unjustified) which had already arrived by another route and is verified
+present.
