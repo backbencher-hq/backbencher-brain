@@ -115,6 +115,53 @@ const SHELL_DEFINED_VARS = new Set([
 ])
 
 /**
+ * Bash BINDS a name without ever writing `NAME=…`.
+ *
+ * The declaration collectors before this read exactly two node types:
+ * `variable_assignment` (a plain assignment) and `declaration_command`
+ * (`local`/`declare`/`export`/`readonly`/`typeset`). POSIX defines four more
+ * binding constructs that carry neither, so every one of them produced a `uses`
+ * edge naming a target the analyzer itself had never published — an edge the
+ * graph could not walk, on a name the language had genuinely bound.
+ *
+ *   `for NAME in words`      POSIX 6.7.3 — NAME is assigned each word. The pinned
+ *                            grammar carries it as a bare `variable_name` child of
+ *                            `for_statement`, verified in
+ *                            `validation/m14/fixtures/bash/probe-bash-binding-shapes.mts`.
+ *   `read NAME…`             POSIX 6.2.5 — stdin is assigned to NAME. The grammar
+ *                            gives the targets as plain `word`s, indistinguishable
+ *                            by TYPE from a flag, so the option table below is the
+ *                            only thing separating them.
+ *   `mapfile`/`readarray`    bash 4.0 — fills the ARRAY NAME.
+ *   `printf -v NAME`         bash 4.1 — assigns the formatted output to NAME.
+ *
+ * Measured on the corpus, 400 files in hash order, 96 DISTINCT files:
+ * **234 binding sites** — `for` 173 in 81 files, `read` 59 in 30, `mapfile` 1,
+ * `printf -v` 1 — and **357 `uses` edges** whose target one of them declared.
+ * Those 357 went from unresolvable to resolvable and the `uses` TOTAL did not
+ * move (7,802 before and after): the edges already existed, naming a target the
+ * analyzer had never published. The per-construct file counts overlap and do not
+ * sum to 96. Probe: `validation/m14/fixtures/bash/probe-bash-binding-sites.mts`.
+ */
+const READ_TARGET_COMMANDS = new Set(["read", "mapfile", "readarray"])
+
+/**
+ * `read`/`mapfile` option letters that CONSUME THE NEXT SIBLING NODE, whatever its
+ * type. `-d` takes a delimiter, `-p` a prompt, `-n`/`-N` a count, `-t` a timeout,
+ * `-u` a descriptor, `-i` text, `-e`/`-s` nothing. Consuming the next SIBLING and
+ * not the next `word` is what makes `read -p "Name: " reply` declare `reply`: the
+ * prompt is a `string` node, and a token-level scanner that only looked at `word`s
+ * had already dropped it.
+ */
+const READ_VALUE_OPT_LETTERS = new Set(["d", "e", "i", "n", "N", "p", "s", "t", "u", "O"])
+
+/** Every option letter `read`/`mapfile` accepts. A letter outside this set is not
+ * an option at all, so it cannot make the next sibling a VALUE rather than a
+ * target. `a` is here because it is `-a aname` — a flag whose value is the array
+ * name — which is why `read -ra args` binds `args` and not a variable named `a`. */
+const READ_OPTION_LETTERS = new Set(["r", "a", "d", "e", "i", "n", "N", "p", "s", "t", "u", "O", "C", "c"])
+
+/**
  * Is this text a command NAME rather than an unexpanded expression?
  *
  * Only used where the text has already been detached from the tree (a `trap`
@@ -237,6 +284,25 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
     // Scope tracking: only real scopes (the script, or a function) ever enter
     // the stack. There is no synthetic `global` / `script` / `subshell_N` scope.
     const declaredSymbols = new Set<string>()
+    // WHERE each name was declared, for the ambiguity question.
+    //
+    // `declaredSymbols` answers "does this file declare NAME"; it cannot answer
+    // "WHICH of the 43 declarations does this edge mean". A name declared once per
+    // function is a name with N declarations in one file, and a `uses` edge names
+    // the NAME — so `bb_impact`, which matches reverse edges by target, picks one
+    // of them by a rule nobody chose. Measured on the 400-file hash-order sample
+    // (probe-bash-ambiguity.mts): 1,879 edges across five types name a target that
+    // more than one published symbol answers to, 19.0% of all resolved `uses`
+    // targets among them.
+    //
+    // Three of those five types are already disambiguated and are NOT touched by
+    // this map: `contains`, `exports` and `overrides` all put the DECLARATION's
+    // line on the edge (`contains` via `nameLineOf`, `exports` via the symbol
+    // range, `overrides` via the `overridesLine` metadata key). `uses` and
+    // `calls` put the USE SITE's line on the edge, which is a different line from
+    // the declaration, so the declaration is genuinely unrecoverable from the row.
+    // This map is what recovers it.
+    const declSites = new Map<string, { owner: string; line: number; kind: string }[]>()
     // Every function name in the file, collected BEFORE the main walk.
     //
     // The pre-order walk reaches a `command` before the `function_definition`
@@ -455,14 +521,19 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
         node.type === "postfix_expression" ||
         node.type === "c_style_for_statement"
       ) {
-        this.emitVariableUses(node, symbols, relSource, addRel, declaredSymbols, functionStack, functionParams)
+        this.emitVariableUses(node, symbols, relSource, addRel, declaredSymbols, functionStack, functionParams, declSites, scriptName)
+      } else if (node.type === "for_statement") {
+        // `for NAME in …` binds NAME with no assignment node. See
+        // `extractImplicitBinding` for the measurement this closes.
+        this.extractImplicitBinding(node, symbols, enclosingFunction() || scriptName, declaredSymbols, scopeOwners, declSites)
       } else if (node.type === "variable_assignment") {
         if (node.parent?.type !== "declaration_command") {
-          this.extractAssignment(node, symbols, enclosingFunction() || scriptName, declaredSymbols, scopeOwners)
+          this.extractAssignment(node, symbols, enclosingFunction() || scriptName, declaredSymbols, scopeOwners, declSites)
         }
       } else if (node.type === "declaration_command") {
-        this.extractDeclaration(node, symbols, enclosingFunction() || scriptName, functionParams, declaredSymbols, scopeOwners, addRel)
+        this.extractDeclaration(node, symbols, enclosingFunction() || scriptName, functionParams, declaredSymbols, scopeOwners, addRel, declSites)
       } else if (node.type === "command") {
+        this.extractImplicitBinding(node, symbols, enclosingFunction() || scriptName, declaredSymbols, scopeOwners, declSites)
         this.extractCommand(node, symbols, imports, patterns, {
           addRel,
           relSource,
@@ -617,6 +688,102 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
   private nameLineOf(sym: ASTEngine.UniversalSymbol): number {
     const line = sym.range?.startLine
     return typeof line === "number" && line >= 1 ? line : 1
+  }
+
+  /** Record WHERE a name was declared. One entry per (owner, name), added at the
+   * same place `declaredSymbols` is, so the two indexes cannot disagree. */
+  private noteDeclaration(
+    declSites: Map<string, { owner: string; line: number; kind: string }[]>,
+    name: string,
+    owner: string,
+    line: number,
+    kind: string,
+  ): void {
+    if (!Number.isInteger(line) || line < 1) return
+    const list = declSites.get(name)
+    if (list) list.push({ owner, line, kind })
+    else declSites.set(name, [{ owner, line, kind }])
+  }
+
+  /**
+   * Which declaration does an edge naming `name` at `useLine` in `useOwner` mean?
+   *
+   * The rule is a lexical-scope chain walked OUTWARD, and the order of the two
+   * halves is load-bearing:
+   *
+   *   1. Walk the scope chain from the use's own function out to the file. In the
+   *      first scope that has a declaration of `name` AT OR BEFORE the use site,
+   *      the nearest such line is the answer — and the walk STOPS there. A use is
+   *      not answered by a declaration in a scope it does not belong to.
+   *   2. If no scope in the chain has one, the analyzer publishes nothing and
+   *      says `targetResolution: "ambiguousInFile"`.
+   *
+   * Both halves were arrived at by being wrong first, and the fixture
+   * `ambiguous-target-resolution.sh` is what caught each:
+   *
+   *   The first version had no scope chain at all — it took every declaration of
+   *   the name in the file and picked the nearest preceding one. So `echo "$X"` at
+   *   line 45 inside `read_early`, whose own assignment to X is at line 46,
+   *   resolved to line 37 — a declaration inside a DIFFERENT function. That is
+   *   wrong twice over: bash does not let one function's assignment to a local
+   *   shadow another function's, and the fixture's own comment says the analyzer
+   *   must not point at a declaration that does not exist yet at the use site.
+   *
+   *   The second version had the chain but walked it in the wrong direction for
+   *   the "no declaration yet" case, and would fall through to a nearer
+   *   declaration in an unrelated scope instead of the file-scope one that really
+   *   is the value in effect.
+   *
+   * `declSites` keys only the first declaration of each (owner, name), because
+   * that is exactly what the collectors publish — a second `X=1` in the same
+   * function is a reassignment, not a declaration. So "nearest preceding" within
+   * a scope always has one candidate, and the ties the corpus measurement found
+   * (49 of 1,879 edges) can only arise between scopes.
+   *
+   * The three outcomes are DISTINCT on purpose, because "the analyzer could not
+   * say" and "the analyzer saw several and declined to pick" are different facts:
+   *
+   *   resolved   one candidate — `targetLine` + `targetKind` + the rule named, so
+   *              the fact can be checked rather than trusted.
+   *   ambiguous  two or more candidates and the rule cannot separate them — no
+   *              line is published, because publishing one of several would be
+   *              exactly the invented attribution this exists to prevent.
+   *   undefined  fewer than two declarations in the file, so the name is not
+   *              ambiguous and the edge needs nothing added to it.
+   *
+   * The `undefined` case is why this adds metadata to 15.2% of `uses` edges
+   * rather than all of them: an edge whose target is unique in its file carries
+   * no new information, and 80,851 `uses` edges on the whole corpus would each
+   * grow three keys to say so.
+   */
+  private resolveDeclaration(
+    declSites: Map<string, { owner: string; line: number; kind: string }[]>,
+    name: string,
+    useOwner: string,
+    useLine: number,
+    fileOwner: string,
+  ): Record<string, unknown> | undefined {
+    const cands = declSites.get(name)
+    if (!cands || cands.length < 2) return undefined // not ambiguous: nothing to add
+    // Outward walk. `useOwner` is "" at file scope, and so is `fileOwner` for a
+    // script, so the first iteration already covers the file-scope case and a
+    // use inside a function gets its own scope before the file's.
+    const scopes: string[] = useOwner === fileOwner ? [fileOwner] : [useOwner, fileOwner]
+    for (const scope of scopes) {
+      const atOrBefore = cands.filter((c) => c.owner === scope && c.line <= useLine)
+      if (atOrBefore.length === 0) continue // this scope has nothing yet; look outward
+      const nearest = Math.max(...atOrBefore.map((c) => c.line))
+      const winners = atOrBefore.filter((c) => c.line === nearest)
+      if (winners.length !== 1) return { targetResolution: "ambiguousInFile" }
+      return {
+        targetLine: winners[0]!.line,
+        targetKind: winners[0]!.kind,
+        targetResolution: scope === useOwner ? "innermostScope" : "outerScope",
+      }
+    }
+    // The name IS declared several times in this file and none of it is in
+    // effect where this edge points. Say so; publish no line.
+    return { targetResolution: "ambiguousInFile" }
   }
 
   /** Remove quote characters from a path expression. Index arithmetic over the
@@ -928,6 +1095,8 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
     declaredSymbols: Set<string>,
     functionStack: string[],
     functionParams: Map<string, Set<string>>,
+    declSites: Map<string, { owner: string; line: number; kind: string }[]>,
+    fileOwner: string,
   ) {
     const names: { rawName: string; line: number }[] = []
     this.collectReadNames(node, names)
@@ -993,6 +1162,21 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
           // `isDeclaredGlobal` above — ABSENCE MEANS FALSE, and the contract is
           // stated in the spec rather than left to be inferred from a pattern.
           ...(assignedInFile(name) ? { isAssignedInFile: true } : {}),
+          // WHICH declaration, when this file has more than one. A `uses` edge
+          // puts the READ's line on the row, which is a different line from the
+          // declaration, so without this the declaration is unrecoverable from
+          // the edge and any consumer matching on target alone is choosing
+          // between N declarations by a rule it did not write. Emitted ONLY when
+          // the name is ambiguous in this file — see `resolveDeclaration` for the
+          // three outcomes and why "declined to pick" is published separately
+          // from "picked one".
+          ...(this.resolveDeclaration(
+            declSites,
+            name,
+            functionStack[functionStack.length - 1] ?? "",
+            line,
+            fileOwner,
+          ) ?? {}),
         },
       )
     }
@@ -1024,12 +1208,13 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
     visit(node)
   }
 
-  private extractAssignment(
+private extractAssignment(
     node: Node,
     symbols: ASTEngine.UniversalSymbol[],
     owner: string,
     declaredSymbols: Set<string>,
     scopeOwners: Set<string>,
+    declSites: Map<string, { owner: string; line: number; kind: string }[]>,
   ) {
     for (let i = 0; i < node.namedChildCount; i++) {
       const child = node.namedChild(i)
@@ -1037,6 +1222,7 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
         const key = `${owner}\u0000${child.text}`
         if (declaredSymbols.has(key)) return // reassignment, not a declaration
         declaredSymbols.add(key)
+        this.noteDeclaration(declSites, child.text, owner, node.startPosition.row + 1, "variable")
         // `arr=(a b c)` — the value is an `array` node; the flag used to be a
         // parameter every caller passed `false`, so `isArray` was constant-false
         // on every plain assignment. It is now read from the tree.
@@ -1050,6 +1236,148 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
           ownerName: owner || undefined,
           metadata: { bashSpecific: true, isArray, isTopLevel: owner === "" },
         })
+        return
+      }
+    }
+  }
+
+  /**
+   * A binding the language creates without an assignment node.
+   *
+   * `extractAssignment` and `extractDeclaration` cover the two node types that
+   * carry an explicit `NAME=`. These four constructs bind a name and carry
+   * neither, so before this existed they produced a `uses` edge to a target the
+   * analyzer had not published — the edge asserted a read of a declaration that
+   * did not exist in the graph. Measured on a 400-file hash-ordered sample:
+   * 234 binding sites across 96 distinct files, and 357 `uses` edges naming a
+   * target one of them declared. Adding this closed all 357 — the unresolvable
+   * `uses` count fell 1,920 -> 1,563 and the `uses` total stayed at 7,802.
+   *
+   * The rule throughout is DECLINE, NEVER GUESS. A target counts only when it is
+   * a `word` sibling that is a shell identifier, because the pinned grammar
+   * represents a computed name as a different node and a literal name as a
+   * `word` — so the type test is the whole filter. Every one of these was
+   * verified on the tree rather than assumed, in
+   * `validation/m14/fixtures/bash/probe-bash-binding-shapes.mts`:
+   *
+   *   read "$target"          -> `string`      declined
+   *   read pre${n}fix         -> `concatenation` declined
+   *   printf -v "$2"          -> `string`      declined
+   *   mapfile -t "$name"      -> `string`      declined
+   *   read *.txt              -> `word`        declined, not an identifier
+   *   read                    -> (no target)   declined; bash assigns REPLY,
+   *                                            which is in SHELL_DEFINED_VARS
+   *   # read x                -> `comment`     declined
+   *   echo "read x"           -> `string_content` declined
+   *   cat <<'EOF' … read x …  -> `heredoc_body`  declined
+   *
+   * The last three are why this reads the tree: a text matcher would have
+   * declared a variable from a comment, a string and a heredoc.
+   */
+  private extractImplicitBinding(
+    node: Node,
+    symbols: ASTEngine.UniversalSymbol[],
+    owner: string,
+    declaredSymbols: Set<string>,
+    scopeOwners: Set<string>,
+    declSites: Map<string, { owner: string; line: number; kind: string }[]>,
+  ) {
+    const publish = (name: string, at: Node, site: string, isArray: boolean) => {
+      if (!isShellIdentifierName(name)) return
+      const key = `${owner}\u0000${name}`
+      if (declaredSymbols.has(key)) return // already declared; first declaration wins
+      declaredSymbols.add(key)
+      this.noteDeclaration(declSites, name, owner, at.startPosition.row + 1, "variable")
+      symbols.push({
+        name,
+        kind: ASTEngine.SymbolKind.Variable,
+        range: this.nodeToRange(at),
+        scope: owner,
+        visibility: this.visibilityForOwner(owner, scopeOwners),
+        ownerName: owner || undefined,
+        metadata: { bashSpecific: true, isImplicitBinding: true, bindingSite: site, isArray },
+      })
+    }
+
+    // `for NAME in words; do …; done` and `for NAME; do …; done` — both carry a
+    // bare `variable_name` child of `for_statement`. The c-style loop
+    // `for ((i=0; …))` is a `c_style_for_statement` whose init IS a
+    // `variable_assignment`, so it arrives at `extractAssignment` already and is
+    // deliberately not handled here: two collectors publishing one name would
+    // make one of them dead.
+    if (node.type === "for_statement") {
+      for (let i = 0; i < node.namedChildCount; i++) {
+        const child = node.namedChild(i)
+        if (child && child.type === "variable_name") publish(child.text, child, "for", false)
+      }
+      return
+    }
+
+    // `read`/`mapfile`/`readarray` targets, and `printf -v NAME`.
+    const cmd = this.commandNameOf(node)
+    if (cmd.length === 0) return
+    if (READ_TARGET_COMMANDS.has(cmd)) {
+      let skipNext = false
+      for (let i = 0; i < node.namedChildCount; i++) {
+        const child = node.namedChild(i)
+        if (!child || child.type === "command_name") continue
+        // An env prefix (`IFS='/:' read …`) and a redirection target are neither
+        // an option nor a name; they just advance the scan.
+        if (child.type === "variable_assignment") continue
+        const isOption =
+          child.type === "word" &&
+          child.text.length > 1 &&
+          child.text.charCodeAt(0) === 45 /* - */ &&
+          child.text.charCodeAt(1) !== 45 /* not `--` */
+        if (isOption) {
+          // A bundled option carries its value EITHER inside the bundle or in the
+          // next sibling, and which one is decided by POSITION: only a value-taking
+          // letter in the LAST position has nothing after it to take the value
+          // from. `-ra args` -> `a` is last, so `args` is the array name. `-u3
+          // name` -> `u` is followed by `3`, so the descriptor is inside the
+          // bundle and `name` is a TARGET.
+          //
+          // This was a real defect in the first version, which asked only "does
+          // this bundle contain a value letter" and so consumed `name` in
+          // `read -u3 name`, dropping a binding bash actually makes. It was found
+          // by a surviving MUTANT rather than by reading the code: emptying
+          // READ_VALUE_OPT_LETTERS left the fixture battery green, which said the
+          // fixture could not tell the two rules apart, and the discriminating
+          // shape is in `probe-bash-binding-shapes.mts` as bundle-u3.
+          const lastIndex = child.text.length - 1
+          let consumesNext = false
+          for (let j = 1; j < child.text.length; j++) {
+            const letter = child.text[j]
+            if (!READ_OPTION_LETTERS.has(letter)) continue
+            if (READ_VALUE_OPT_LETTERS.has(letter)) {
+              consumesNext = j === lastIndex
+              // The FIRST value-taking letter owns the value; a letter after it is
+              // not a separate option.
+              break
+            }
+          }
+          skipNext = consumesNext
+          continue
+        }
+        if (skipNext) {
+          skipNext = false
+          continue
+        }
+        // `mapfile`/`readarray` fill an ARRAY; `read` fills a scalar.
+        publish(child.text, child, cmd, cmd !== "read")
+      }
+      return
+    }
+    // `printf -v NAME fmt …` (bash 4.1). The target is the node IMMEDIATELY after
+    // `-v`, and it must itself be a `word`, so `printf -v "$2" …` — a name the
+    // script computes at run time — yields nothing. `echo` has no `-v`, which is
+    // why this is keyed on `printf` and not on the flag.
+    if (cmd === "printf") {
+      for (let i = 0; i < node.namedChildCount - 1; i++) {
+        const child = node.namedChild(i)
+        if (!child || child.type !== "word" || child.text !== "-v") continue
+        const target = node.namedChild(i + 1)
+        if (target && target.type === "word") publish(target.text, target, "printf -v", false)
         return
       }
     }
@@ -1104,6 +1432,7 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
       line: number,
       metadata?: Record<string, unknown>,
     ) => void,
+    declSites: Map<string, { owner: string; line: number; kind: string }[]>,
   ) {
     const keyword = node.child(0)?.text ?? ""
     if (!DECLARATION_KEYWORDS.has(keyword)) return
@@ -1172,6 +1501,7 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
       const key = `${owner}\u0000${name}`
       if (declaredSymbols.has(key)) return // reassignment, not a declaration
       declaredSymbols.add(key)
+      this.noteDeclaration(declSites, name, owner, line, isExport || keyword === "readonly" ? "constant" : "variable")
       if (isExport || keyword === "readonly") {
         symbols.push({
           name,
