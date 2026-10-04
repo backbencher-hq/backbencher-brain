@@ -919,3 +919,50 @@ Both lanes ended with *fewer* things they could assert, not more. ZIG withdrew
 three zeros. R withdrew a green. Neither is a regression in the work — it is the
 first time these lanes could tell the difference between "measured" and "asked a
 question my instrument could not answer".
+
+## keepSymbol — verification of the blast radius, since it touches all 46 lanes
+
+Moving 8 names out of the denylist makes MORE symbols survive for every language,
+so the change needed measuring rather than asserting.
+
+**Per-name, per-language, after the fix:**
+
+| name | status |
+|---|---|
+| `this`, `super` | still refused in **every** language tested |
+| `module_declaration`, `package_manifest`, `GlobalScope`, `SCSS_FILE_SCOPE` | still refused everywhere — these are names OUR analyzers mint, so no user program can declare them |
+| `self`, `Self`, `me`, `My`, `destructor`, `root`, `source_file`, `unknown` | admitted |
+| `program` | admitted EXCEPT in `sql`, where it is reserved |
+| `self` | refused in `php`, admitted in `lua`/`r`/`python`/`typescript`/`zig` — verified to differ by language |
+
+**The R7 risk, closed at runtime rather than in source.** Moving `unknown` out of
+the denylist means a symbol named `unknown` now survives `keepSymbol` — and `keepSymbol`
+only sees the symbol object, never the tree, so it **cannot** distinguish a DECLARED
+`unknown` from a PLACEHOLDER one. `script/m60/sentinel-census.ts` is source-level and
+was byte-identical, which is necessary and not sufficient.
+
+So it was measured on real output: **840 files across 7 repositories, 246,074 symbols
+published, 0 named `unknown`, 0 edges touching one.** The risk is closed empirically.
+A placeholder named `unknown` is therefore prevented by the analyzers not emitting one —
+which is what the sentinel census gates — rather than by `keepSymbol` silently dropping
+every legitimate declaration of that name.
+
+**A gate that printed 15 of 18 failures.** `verify-regex-census.ts` reported
+"missing from census: 18" and printed 15. A reader counting rows saw 15; a reader
+trusting the header saw 18; and the 3 in between (one xml, two extra svelte) belonged
+to no lane in either accounting. Now everything prints, with `BB_REGEX_LIST_CAP` to
+re-introduce a cap that says so rather than truncating silently.
+
+**The real remaining debt: 18 regexes in HEAD.**
+
+| lane | count | mine |
+|---|---|---|
+| css | 11 | yes |
+| svelte | 3 | no |
+| scss | 2 | yes |
+| xml | 1 | yes |
+| sql | 1 | yes |
+
+Laptop B owns **15 of the 18**. julia is clean; two of php's census hits were doc
+comments *describing* a regex that no longer exists, which is the same over-report the
+gate's own scanner avoids.
