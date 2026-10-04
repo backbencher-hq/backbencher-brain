@@ -144,7 +144,7 @@ unexplained reason", which is 196 and is named as such rather than folded into t
 number. Measured before the guard export the two were indistinguishable, and a drifting copy
 of the lists would have turned a working guard into a reported defect.
 
-## Ontology verdicts — all ten types (re-measured at pass 3, 2026-10-03)
+## Ontology verdicts — all ten types (verdicts and counts re-measured at pass 4, 2026-10-04; incoming direction re-measured at pass 5, 2026-10-04)
 
 Instrument: production `parseFile` (not `analyze()`) over **1,955 of 1,955 admitted SQL files in 169
 repositories**, size cap 512 KB, **every** admitted file sampled rather than a subset, walked as
@@ -465,6 +465,12 @@ telnet word list) and json (`new Map(` in a heredoc). The verdict now keys on th
 (`column_definition` with a `custom_type`) and reads EXPRESSIBLE.
 
 ### What is STILL wrong after all of this, as numbers
+
+**SUPERSEDED — this is the pass-2 state, kept because the sequence is the evidence.** Every row
+below is re-measured or retired in pass 3's table and in *Declared limitations*: the `196`
+unexplained invocations are now **0 unexplained** with the residual split 107 / 5 by cause, the
+3,381 `usage_contextual` `calls` edges are **3,417**, and both `uses` rows moved. Read this table
+as history, not as the current state.
 
 | Residual | Count | Files | Why it is not fixed here |
 | --- | --- | --- | --- |
@@ -968,7 +974,7 @@ independent fixtures, so they are independent of the analyzer in the way that ma
 **not** independent of the grammar: both the analyzer and the auditor read one parse tree. A
 grammar defect that produces a node neither of them questions would be invisible here, which is
 exactly the blind spot the ontology census and the construct probe cover instead — they measure the
-grammar's own vocabulary (465 node types) rather than agreeing about it.
+grammar's own vocabulary (480 node types) rather than agreeing about it.
 
 
 ## Gates
@@ -983,14 +989,14 @@ is part of the row.
 | SQL ontology mutants (`script/m60/run-sql-ontology-mutants.ts`) | **21 / 21 caught** (5 new) | exits 2 on a survivor. One of the five **survived its first run** because its transform scanned the fixture text for `DO $` and matched the fixture's own prose; that is recorded in the mutant's description rather than quietly fixed |
 | m12 differential (`script/m12/verify-analyzer.ts sql`) | **84 facts, P = R = 1.000, 0 FP, 0 FN, `earliestFailingLayer=none`, `parseErrors=0`** | the FP that made this 0.988 was a real fabrication; see *Differential ground truth* |
 | ontology census (`validation/m14/fixtures/sql/ontology-census.mts`, 8 shards + merge) | **1,955 of 1,955 admitted parsed, 0 parse failures, 0 degraded by timeout, 0 in regex fallback, 0 empty names, 0 `unknown` endpoints, 31,066 relationships / 18,482 symbols** | nothing is unmeasured and nothing is degraded, so there is no `filesWithNoShardRow` to name; the same figure comes out of a 4-shard walk (`pass4-census-4shard.json`) |
-| **two independent walks, different partitioning, same HEAD** | **8 shards 1,951 files / 29,019 rels and 4 shards 1,952 files / 30,893 rels — the whole difference is ONE named file**, `postgrest/test/io/fixtures/big_schema.sql` | this is the row pass 2 could not fill, and it is the reason the census is sharded |
-| incoming probe (`validation/m14/fixtures/sql/pass3-incoming.mts`) | 1,955 files, 31,037 edges; `contains` resolves **99.59 %** intra-file with (name, owner, memberKind), against 92.7 % on the bare name | reads only fields that SURVIVE production `parseFile` — see DEFECT 1's note on the metadata whitelist |
+| **two independent walks, different partitioning, same HEAD** | **8 strided shards and 4 contiguous shards each measure 1,955 / 1,955 files, 18,482 symbols and 31,066 relationships, with identical per-type totals, resolution rates and `evidenceClass` splits** | this is the row pass 2 could not fill and pass 3 could not either; it is why the census is sharded and merged from shard rows. `measurements/pass4-census.json` and `measurements/pass4-census-4shard.json` |
+| incoming probe (`validation/m14/fixtures/sql/pass3-incoming.mts`) | re-run at this HEAD over 1,955 files: 31,066 edges, 0 parse failures, 0 degraded. `contains` resolves **99.54 %** intra-file by (name, `ownerName`), **99.61 %** with `metadata.memberKind`, against **92.71 %** on the bare name corpus-wide, and **45.62 %** on (name, `ownerName`) corpus-wide | reads only fields that SURVIVE production `parseFile` — see DEFECT 1's note on the metadata whitelist. Artifact `measurements/pass5-incoming-corpus.json` |
 | invocation-cause probe (`pass3-invocation-why.mts`) | 742 qualified invocations on the tree → 579 emitted, 53 guard-suppressed, 112 bucketed by cause, **0 unexplained** | pass 2's open item; it also discloses its own degradation after two runs disagreed |
 | phantom-constraint probe (`pass3-phantom-constraint.mts`) | **53 phantoms in 22 files → 0**, same oracle both sides, which also clears 4 legitimate same-name indexes | a parse-tree oracle, because the name heuristic cannot decide it |
 | adversarial probe (`validation/m14/fixtures/sql/adversarial-probe.mts`) | full corpus, 23 probe populations; **574 qualified invocations emitted**, 0 tier disagreements; A12's 6 verdicts now read off node types and fields | the run disclosed 1 engine-timeout and 6 regex-fallback files, and the A12 battery's instrument is stated above |
 | construct probe (`validation/m14/fixtures/sql/construct-probe.mts`) | **480 distinct node types**, 0 parse failures, **every zero probe 0**, and no node type anywhere contains `export`/`module`/`provide` | `exports-keyword` was 1 and is now 0: the 1 was a COLUMN named `module`, and the old probe counted declaration names |
 | ruling table (`validation/m14/fixtures/sql/run-ruling-table.mts`) | **`emitted 7/10   ruled-sound 3   FALSIFIED 0   ruled-without-justification 0`** | the arbiter on disk is untouched; the copy is written under `node_modules/` and removed. The script's patch anchor was **stale** and exited 2 until pass 3 re-anchored it on the declaration rather than the literal |
-| `keepSymbol` census | 18,325 symbols emitted, **3 dropped (0.016 %)** — 2 `function:root`, 1 `property:program`. SQL-G13 / pass-2 DEFECT 6, filed not fixed | pass 3's incoming probe re-measured this at the corpus scale and found **0** dropped by `keepSymbol` in its run, which contradicts this row; see limitation 16 |
+| `keepSymbol` census | re-measured at this HEAD: **18,485 symbols emitted by `analyze()` over 1,955 files, 3 refused (0.016 %)** — 2 `function:root`, 1 `property:program` — and **18,485 − 3 = 18,482, exactly the symbol count production `parseFile` publishes**, so `keepSymbol` accounts for the whole analyzer-to-index difference. SQL-G13, filed not fixed | this is the row that settles limitation 19. The pass-3 incoming probe's `0` was not a competing measurement: it reads `parseFile` output, which is already filtered, so a drop is structurally unobservable there. Artifact `measurements/pass5-keep-symbol-census.json` |
 | contract battery (`fixtures/sql/probe/contract-battery.mts`) | **not runnable on this machine** — the directory does not exist here; the recorded 54 / 54 is from 2026-09-27 and is **unverified by this round** | — |
 | node-type gate (`script/m12/sql-node-types-compare.ts`) | **not re-run by this round**, for pass 1's reason: re-running it without `fixtures/sql/probe/dialects` lowers its own observation surface from 6 probe files to 0 and would re-baseline a shared artifact downward | — |
 | resync corpus gate | not re-run — `fixtures/sql` is absent from this machine | impossible bars → **exit 1** |
@@ -1017,9 +1023,10 @@ afterwards — and runs the copy. The arbiter on disk is never modified. Its out
 **Two differences between the arbiter's numbers and the census's, both accounted for.** The
 arbiter reports `uses` 9,022 against the census's 9,017, because it does **not** exclude
 `duckdb/extension/tpcds/dsdgen/queries/83.sql` and that file contributes 5 `uses` edges; and it
-reports 480 distinct node types against the construct probe's 465, because its corpus walk is
-1 file larger and it makes its own tree pass. Pass 1 recorded the same 5-edge difference in the
-other direction and it is a property of the exclusion, not a disagreement.
+reports 480 distinct node types, which is now the SAME figure the construct probe reports, so
+the second difference pass 1 recorded between them is closed. The first survives: Pass 1
+recorded the same 5-edge difference in the other direction and it is a property of the
+`uses` exclusion, not a disagreement.
 
 **The arbiter's citations are wrong, and the mechanism is recorded rather than worked around.**
 `rulingFor` matches a type by PROSE — the first RULED decision whose `resolution` mentions the
@@ -1148,16 +1155,20 @@ each specified so it can be applied without re-deriving it.
   then returns fewer edges with no error, which is how the census read clean while the number was
   wrong. The supabase commit `7a7f0810f` fixed a related wasm temp-path race; this is the second half.
 - **`src/lsp/impact.ts` should match reverse-edge targets by (name, owner, file), not by name.**
-  Measured: a `contains` target resolves uniquely by bare name on 82.9 % of edges corpus-wide, by
-  (name, `ownerName`) within its own file on **99.59 %**. `ownerName` and `kind` are ALREADY on the
-  member symbol and `metadata.memberKind` is now on the edge, so no schema change and no stored
-  inbound edge is required — only the match rule. The residual 47 intra-file cases are two `property`
-  symbols of one name under one owner (a column re-declared by `ALTER TABLE ADD COLUMN`), which a
-  per-file analyzer cannot merge.
+  Re-measured over 1,955 files at this HEAD: a `contains` target resolves uniquely by bare name
+  corpus-wide on **92.71 %** of edges, by (name, `ownerName`) within its own file on **99.54 %**,
+  and **99.61 %** once `metadata.memberKind` is added — while (name, `ownerName`) corpus-wide is
+  unique on only **45.62 %**, median 2 matches. So the file is not optional: without it the reverse
+  walk is ambiguous on more than half the edges. `ownerName` and `kind` are ALREADY on the member
+  symbol and `metadata.memberKind` is on the edge, so no schema change and no stored inbound edge is
+  required — only the match rule. The residual 47 intra-file cases are two `property` symbols of one
+  name under one owner (a column re-declared by `ALTER TABLE ADD COLUMN`, 37 of them) plus 8
+  `constant`+`property` and 10 `constant` pairs, which a per-file analyzer cannot merge.
 - **`src/ast/types.ts` needs a `trigger` SymbolKind, or the trigger/function collision stays.** Both a
-  `CREATE TRIGGER t` and a `CREATE FUNCTION t()` publish as `kind: function`, so 441 of 448 `calls`
-  self-loops are `calls X -> X` meaning "trigger X runs function X" rather than recursion; 171
-  distinct names carry both. The edge already carries `metadata.triggerAction` so a consumer can
+  `CREATE TRIGGER t` and a `CREATE FUNCTION t()` publish as `kind: function`, so **483 of 490**
+  `calls` self-loops are `calls X -> X` meaning "trigger X runs function X" rather than recursion;
+  **213** distinct names carry both a trigger and a function symbol that a `calls` edge names. The
+  other 7 self-loops are real recursion and are the control case. The edge already carries `metadata.triggerAction` so a consumer can
   disambiguate the EDGE, but `bb_impact` on the name still picks one of two declarations.
 - **`pool-worker.ts`'s symbol-metadata whitelist should be widened, or a lane cannot use its own
   metadata.** The whitelist (`metadata: (() => { … })`) forwards CSS keys and markdown keys and drops
@@ -1176,9 +1187,11 @@ each specified so it can be applied without re-deriving it.
   type, and `program` is a legal SQL column name, so the symbol is deleted and the `contains` edge
   naming it survives: **1 edge** in `boundary/…/postgres/71/11_session_recording.up.sql`. Needs a
   language-scoped exemption list for names that are ordinary identifiers in the lane's language, the
-  shape `keepSymbol` already applies for json/yaml/xml/make/markdown. Note limitation 19: pass 3's
-  whole-corpus measurement of this rule returned 0 drops where the committed artifact records 3, and
-  I did not settle which is right.
+  shape `keepSymbol` already applies for json/yaml/xml/make/markdown. The whole-corpus size of the
+  leak is now **3 symbols in 1,955 files** and reconciles exactly against production `parseFile`
+  (18,485 emitted − 3 refused = 18,482 published), so this is a 0.016 % leak and the `contains`
+  edge above is its only graph-visible consequence. Limitation 19's apparent 3-versus-0
+  disagreement is closed; see `measurements/pass5-keep-symbol-census.json`.
 - **The arbiter needs an `--exclude` for faulting files, and `rulingFor` needs a non-prose citation.**
   The first was pass 2's §8 item and pass 3 shows the name list cannot work — it grew from three to
   seven by being killed. The citation bug is also pass 2's and unchanged: `rulingFor` matches a type by
@@ -1267,10 +1280,10 @@ above can be used for.
    the 755 cross-file overrides needs a cross-file pass that does not exist.
 2. **`confidence` is uniformly 1, and that is a weaker claim than it looks.** It means no edge is
    a guess about a *name*. It does not mean the analyzer is equally certain about the *edge's
-   meaning*: the `usage_contextual` tier (**10,685 edges, 34.43 %**) says the name was read from
-   a bare slot with nothing around it to disambiguate it. A `uses` edge to `lineitem` could be
-   the TPC-H table or a same-named temp table in another schema; the analyzer cannot tell and
-   does not pretend to.
+   meaning*: the `usage_contextual` tier (**10,693 edges, 34.42 %** — 7,276 `uses` and 3,417
+   `calls`) says the name was read from a bare slot with nothing around it to disambiguate it. A
+   `uses` edge to `lineitem` could be the TPC-H table or a same-named temp table in another
+   schema; the analyzer cannot tell and does not pretend to.
 3. **The correctness oracle has 84 facts over 5 fixtures.** That is small, and it was audited by
    hand against one parse tree — so a grammar defect both it and the analyzer accept would be
    invisible. The construct probe and the capability battery cover part of that gap by measuring
@@ -1355,43 +1368,56 @@ above can be used for.
     lane-side re-derivation of the two sets with a check that they have not drifted; the export
     is the cheaper of the two and the drift-proof one.
 
-16. **77 % of `uses` edges are sourced to `global`, which is not a published symbol.** 6,303 of
-    9,098. For an anonymous statement that is the honest owner — a SQL file's top-level DML is not
+16. **69.3 % of `uses` edges are sourced to `global`, which is not a published symbol.** 6,311 of
+    9,106. For an anonymous statement that is the honest owner — a SQL file's top-level DML is not
     inside any declaration — but it means those edges can be walked TO their target and not FROM
     their source. Publishing a per-file symbol would fix it and is not done here: it changes the
     symbol census for every SQL file, and `keepSymbol`'s denylist already drops the grammar's own
     root name (`program`), so a file-level symbol is a shared-machinery decision. §8.
 17. **A trigger and its function are the same kind with the same name, and `calls X -> X` does not
-    say which is which.** 441 of 448 `calls` self-loops are this shape — PostgreSQL's convention is
-    to name a trigger after the function it runs — and the other 7 are real recursion
-    (`new_code := generate_session_code()`), which is the control case proving the self-loop
-    encoding is sound for recursion and ambiguous for triggers. `metadata.triggerAction` already
-    marks them so a consumer CAN tell, but the two SYMBOLS remain indistinguishable and
-    `bb_impact` on the name picks one. Closing it needs a `trigger` SymbolKind, and
-    `src/ast/types.ts` is supervisor-owned. §8.
-18. **Cross-file, `ownerName` does not disambiguate a `contains` target.** Intra-file it resolves
-    99.59 % of `contains` edges; corpus-wide (name, owner) is unique for only 4,980 of 11,492,
-    median 2 matches, because a migrations corpus declares `users(id)` in many files. The
-    disambiguator a cross-file consumer needs is the FILE, and `src/lsp/impact.ts` currently
-    matches targets by name alone. §8.
-19. **The two `keepSymbol` measurements disagree and I did not settle it.** The committed
-    `keep-symbol-census.json` records 3 symbols dropped of 18,325 emitted; pass 3's incoming probe,
-    which calls the same exported `keepSymbol` across the whole corpus, records **0**. The two ran
-    against different corpora and different analyzer versions, which is the likely cause, but
-    "likely" is not a measurement — so both numbers are shown in the Gates table and this
-    limitation exists because I did not resolve it.
-20. **46 symbols are named with a SQL keyword and about 35 of them are correct.** The measure
-    cannot separate `module TEXT,` (a column) from a keyword token without checking whether the
-    source spelled it quoted. 11 are a real defect of ONE shape — `ALTER TABLE … ADD FOREIGN KEY /
-    UNIQUE / PRIMARY KEY` read as a column named after the keyword — and fixing that needs a
-    decision about what `ADD CONSTRAINT` should publish, not a longer denylist.
-21. **One corpus file is worth 5 % of this lane's symbols and cannot be measured reliably.**
-    `postgrest/test/io/fixtures/big_schema.sql` crosses the engine's 120 s analyzer budget on this
-    machine and takes 205 s to unwind; the difference between two independent walks of the same
-    corpus at the same HEAD is exactly that one file. Both census artifacts name it in
-    `filesWithNoShardRow` rather than reporting a smaller corpus as though it were the whole one,
-    but the honest statement is that ~6 % of this lane's relationships come from a file whose
-    measurability depends on machine load.
+    say which is which.** **483 of 490** `calls` self-loops are this shape — PostgreSQL's convention
+    is to name a trigger after the function it runs — and the other **7** are real recursion
+    (`generate_session_code()`, `validate_json_schema()`), which is the control case proving the
+    self-loop encoding is sound for recursion and ambiguous for triggers. **213** distinct names
+    carry both a trigger and a function symbol that a `calls` edge mentions.
+    `metadata.triggerAction` already marks the trigger shape so a consumer CAN tell, but the two
+    SYMBOLS remain indistinguishable and `bb_impact` on the name picks one. Closing it needs a
+    `trigger` SymbolKind, and `src/ast/types.ts` is supervisor-owned. §8.
+18. **Cross-file, `ownerName` does not disambiguate a `contains` target.** Intra-file (name,
+    `ownerName`) resolves **11,921 of 11,977 = 99.54 %** — 11,929 = 99.61 % once the edge's own
+    `metadata.memberKind` is added — but corpus-wide (name, `ownerName`) is unique for only **5,463
+    of 11,977 = 45.62 %**, median 2 matches, because a migrations corpus declares `users(id)` in
+    many files. The disambiguator a cross-file consumer needs is the FILE, and `src/lsp/impact.ts`
+    currently matches targets by name alone. §8.
+19. **The two `keepSymbol` measurements that two earlier passes recorded as disagreeing are
+    reconciled, and the reconciliation is exact.** `analyze()` over the corpus emits **18,485**
+    symbols; `keepSymbol` refuses **3** of them (2 `function:root`, 1 `property:program`); production
+    `parseFile` publishes **18,482**. `18,485 − 3 = 18,482`, so `keepSymbol` accounts for the whole
+    difference between what the analyzer emits and what the index sees, and the earlier `18,325`
+    was an older analyzer rather than a different rule. Pass 3's "0 dropped" was never a competing
+    measurement: that probe reads `parseFile` output, which is already filtered, so a drop is
+    structurally unobservable in it. This limitation existed because the two numbers were compared
+    without asking what each instrument could see; it is closed by `measurements/pass5-keep-symbol-census.json`.
+20. **47 symbols are named with a SQL keyword, and the count splits into 11 that are a defect and
+    36 that the measure cannot separate from keywords.** The 11 are one shape — `ALTER TABLE … ADD
+    FOREIGN KEY / UNIQUE / PRIMARY KEY` read as a column named after the keyword (`key` 5, `KEY` 1,
+    `PRIMARY` 3, `primary` 2) — and fixing that needs a decision about what `ADD CONSTRAINT`
+    should publish, not a longer denylist. The other 36 are `comment` 25 (legal: it is not
+    reserved in a column position) and 11 singletons the analyzer cannot clear without reading
+    whether the source spelled the identifier quoted: `filter`, `start`, `end`, `from`, `to`,
+    `table`, `conflict`, `range`, `DEFERRABLE`, `first`, `true`.
+21. **One corpus file used to be worth 5 % of this lane's symbols and was unmeasurable; pass 4
+    fixed the cost and the figure no longer applies, but the shape of the limit survives.**
+    `postgrest/test/io/fixtures/big_schema.sql` measured 116,589–156,694 ms against the engine's
+    120 s analyzer budget and returned 0 symbols in 2 of 3 solo runs, so the lane's headline
+    alternated between 31,037 and 29,163 depending on machine load. Pass 4 found the cause in this
+    analyzer's own `walkDescendants` (87 % of the run) and the file is now **3,551 ms with the same
+    943 symbols and 1,874 relationships every time**, and two walks at different shard counts agree
+    exactly. So the residual limit is narrower and it is this: a file at 3.5 s is 5× the median
+    corpus file, and the equivalence probe that proved the fix correct reports 2,624,148 index
+    queries over 1,955 files, so the index is correct but its cost is still linear in tree size per
+    query until the queries are hoisted. No corpus file degrades, and no headline number depends on
+    which side of a budget a file lands on.
 
 ## Evidence pointers
 
