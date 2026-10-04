@@ -162,11 +162,11 @@ the 603-file probe that came back INCONCLUSIVE, and what would separate them.
 
 | Type | Emitted? | Edges | Files | Both ends resolve | `confidence` < 0.7 |
 | --- | --- | ---: | ---: | ---: | ---: |
-| `contains` | yes — EMITTED | 185,979 | 10,847+ | **100.0 %** | 0 |
+| `contains` | yes — EMITTED | 186,270 | 10,847+ | **100.0 %** | 0 |
 | `references` | yes — EMITTED | 10,411 | 391+ | **49.1 %** | 0 |
-| `imports` | yes — EMITTED | 464 | 278+ | 0.0 %, target is a file, by design | 0 |
+| `imports` | yes — EMITTED | 465 | 278+ | 0.0 %, target is a file, by design | 0 |
 | `calls` | yes — EMITTED (was GAP) | **548** | 76+ | **100 %** | 0 |
-| `extends` | yes — EMITTED (was GAP) | **438** | 106+ | **40.1 %** | 0 |
+| `extends` | yes — EMITTED (was GAP) | **1,429** | 113 | **31.3 %** both ends / **100.0 %** source | 0 |
 | `overrides` | yes — EMITTED (was RULED — the corpus overturned it) | **3** | 3 | **100 %** | 0 |
 | `uses` | no — not emitted. RULED-SOUND, instrument B, probe count **0** | 0 | 0 | — | — |
 | `exports` | no — not emitted. RULED-SOUND, instrument A, 611 sites adjudicated | 0 | 0 | — | — |
@@ -294,9 +294,12 @@ be a category error"* (`script/m14/spec/xml-completeness.json`, `notApplicable`)
 and the measurement is what settled it. The construct the ruling assumed absent
 is written by the specification, in the vocabulary's own name, in **111 corpus
 files**: 1,114 `xs:extension` and 534 `xs:restriction` with a `base`, of which
-1,240 carry a prefixed base and 408 a bare one. 434 emit; 1,212 are refused by the
-same rules the reference pass already applied (a prefixed base bound to a namespace
-this file neither declares nor imports points at a name no file supports).
+1,240 carry a prefixed base and 408 a bare one. On the full admitted population
+**1,615 of 1,652 derivation sites emit and 37 are refused**, all of the same class: a
+prefixed base bound to a namespace the file neither declares nor imports, which points
+at a name no file supports. An earlier version of this paragraph claimed "434 emit;
+1,212 are refused"; both halves were wrong, and they were wrong in the direction that
+hid a fabricated source — see the `extends` section below.
 
 | `extends` | meaning | edges |
 | --- | --- | ---: |
@@ -324,17 +327,32 @@ carrying a non-empty `base` — without consulting the analyzer. Two measurement
 | Corpus | probe sites / files | analyzer edges / files |
 | --- | --- | --- |
 | FSharp.Data only, 29 admitted files | 4 sites / 2 files | 4 edges / 2 files |
-| full admitted population, 11,456 files | 1,652 sites / 113 files | 438 edges / 113 files |
+| full admitted population, 11,464 files | 1,652 sites / 113 files | **1,429 edges / 113 files** |
 
-The file counts match to the file at both scales (2 = 2, 113 = 113). The edge counts
-match at the small scale (4 = 4) and not at the full one (438 vs 1,652), which is
-expected and not a disagreement: the probe counts derivation **sites** and the
-analyzer counts **published** edges, and 1,212 of the 1,652 sites are refused by the
-binding rules tabulated above — 1,652 − 1,212 = 440 against 438 emitted, and the
-residual difference is the two sites whose base resolves to a type declared twice in
-one file. So this is a real oracle for Q3 on `extends` and the one emitted type for
-which Q3 is not unmeasured — see the DERIVATION section for why the other five still
-are.
+The file counts match to the file at both scales (2 = 2, 113 = 113). **The edge counts do
+not match, and 1,429 against 1,652 is now explained by measurement rather than by
+argument.** `validation/m14/fixtures/xml/derivation-accounting.mts` classifies every
+derivation site on the tree and matches it against the edges production `parseFile`
+actually emitted:
+
+| class | sites | what it is |
+| --- | ---: | --- |
+| `A-covered` | **1,615** | the site's own `(owner, derivation, base)` triple is in the graph |
+| `I-anonymous-owner` | 0 | no named ancestor to be the source |
+| `E-bare-nonvocabulary` | 0 | — |
+| `F-prefixed-unimported` | **37** | `base="j2ee:string"`, prefix bound to a namespace this file never imports |
+| `G-prefixed-unbound` | 0 | — |
+| `H-bare-undeclared` | 0 | — |
+
+1,615 sites are covered and **37 are refused, all one class**, so 1,652 − 37 = 1,615 and
+the residual against 1,429 published edges is 186 collapses: sites in one file that share
+a `(source, kind, target)` triple, which `addRelationship` folds and counts in
+`metadata.occurrences`. **Edges with no derivation site behind them: 0.**
+
+The previous version of this section explained the same gap the other way — "1,212 of the
+1,652 sites are refused by the binding rules". That was wrong, and it was wrong in the
+direction that flattered the analyzer: only 37 sites are refused. The real reason 438
+edges covered 1,615 sites was the defect below.
 
 **The probe was added to close a false verdict, not to find one.** Running the arbiter
 with the corpus root pointed at a single repository (`BB_CORPUS_ROOT`, libxslt, 1,143
@@ -369,6 +387,107 @@ every RULED decision's prose for each type name:
 Four of six were reachable. `calls` and `overrides` are correct only because no ruling
 in this lane happens to use their names — luck, not design. The gate's mechanism is
 supervisor-owned and is reported, not patched; the one-line shape of the fix is in §8.
+
+### `extends` had a fabricated source on 100 % of its edges, and the fix is 3.26× more edges
+
+`extends` relates two **types**. XSD writes type derivation as a `base=` attribute on an
+inline `<xs:extension>`/`<xs:restriction>` (XSD 1.0 Part 1 §3.4.2), and that element
+carries no `name` of its own — it is a type **constructor**, not a named entity.
+
+The analyzer took an attribute's owner to be the element the attribute sits on, which is
+right for `type=` (`<xs:element name="x" type="T">` really does give `x` the type `T`) and
+wrong for `base=`. `symbolName = declaredName ?? name` therefore fell back to the **tag
+text**, and every derivation edge came out named after the schema vocabulary's own word
+for a constructor. From `FSharp.Data/docs/data/po.xsd`:
+
+```xml
+<xs:simpleType name="SKU">
+ <xs:restriction base="xs:string">              emitted:  "xs:restriction" -> "string"
+<xs:element name="quantity">
+ <xs:simpleType>
+  <xs:restriction base="xs:positiveInteger">    emitted:  "xs:restriction" -> "positiveInteger"
+```
+
+Measured over the full admitted corpus by
+`validation/m14/fixtures/xml/derivation-accounting.mts`:
+
+| | before | after |
+| --- | ---: | ---: |
+| `extends` edges | 438 | **1,429** |
+| sources that are a name the document **declares** | **0** | **1,429** |
+| sources that are an XSD constructor tag | **438 (100 %)** | **0** |
+| sites with their own edge triple (`A-covered`) | 0 | **1,615** |
+| edges with no derivation site behind them | 0 | 0 |
+
+A symbol named `xs:restriction` was published so the edges would have somewhere to hang,
+and every one of the 438 edges shared it. This is the fabrication the lane brief calls the
+most expensive mistake available: `bb_graph`, `bb_impact` and `bb_migrate` presented one
+invented type as the source of the lane's entire subtype relation. The previous fixture
+asserted it — `from: "xs:extension"` was a pinned expectation, annotated as "the extends
+edge's source is an anonymous inline element" with the real type "reachable via `bb_graph`
+owner-cascade". Owner-cascade attributes **member** rows to an owner class; `xs:restriction`
+is not a member of `Derived` in that sense, so the annotation described a recovery path
+rather than a correct endpoint.
+
+**The fix.** The walk now threads `nearestNamedSchemaOwner` — the nearest ancestor in a
+declaration vocabulary that carries a `name` — and `base=` uses it. There is deliberately
+no fallback to the old owner: both fallbacks can hold a vocabulary tag, and `undefined` is
+the honest value because `addRelationship` already refuses a falsy source. Corpus
+measurement: **0 sites fall in `I-anonymous-owner`**, so that fallback is never wanted.
+
+Two implementation facts are recorded because both produced a *silent* wrong answer rather
+than a visible failure:
+
+- The thread must be propagated at the **generic** `work.push` (the tail every non-`element`
+  node takes), not only at the element branch. An XSD element's children live under a
+  `content` node, so threading only the element branch left every real derivation with
+  `owner=""` and silently dropped **all 438 edges** rather than mislabelling them. A fix
+  that turns a wrong answer into no answer is quieter, not safer.
+- Reading the edge endpoints needs `relationship.source` / `relationship.target`. The
+  fields are not `from`/`to`, and reading the absent names yields `undefined -> undefined`
+  on every edge — a fabricated-looking result produced purely by reading fields that do
+  not exist.
+
+#### Both-ends resolution went DOWN, and that is the correct outcome
+
+| | before | after |
+| --- | ---: | ---: |
+| source resolves | **0 %** | **100.0 %** |
+| both ends resolve | 40.1 % | 31.3 % |
+
+Split by the analyzer's own `resolvable` class, over 1,429 edges:
+
+| `resolvable` | edges | source declared in file | target declared in file |
+| --- | ---: | ---: | ---: |
+| `in-document` | 623 | **100.0 %** | **100.0 %** |
+| `builtin` | 622 | **100.0 %** | 5.8 % |
+| `external` | 184 | **100.0 %** | 0.0 % |
+
+Every class resolves its source at 100 %. The both-ends figure falls because **56.4 % of
+derivations target a type this document cannot declare** — 622 bases are XSD Part 2
+built-ins and 184 arrive from an imported namespace. Those are real, declared types; the
+analyzer publishes no symbol for them, because inventing `string` as a declaration of this
+document is the M60.R10 fabrication the reference pass already refuses. Before the fix the
+source "resolved" only because the analyzer had minted a symbol for its own fabrication.
+
+**This is a case where a naive metric got worse while the graph got better**, recorded as
+such because the pull is to revert a fix that a dashboard punishes. The `in-document`
+class — the only one where both ends can name a declaration in the same file — resolves
+at 100.0 % / 100.0 %.
+
+**Regression coverage.** The wrong edge is pinned as a `forbidRelationships` row in
+`xml/declared-name-xsd` and `xml/xsd-type-derivation`, because the wrong edge is the one
+that must never return; a forbid catches a revert that an expectation row rewritten to the
+new value would not. `xml/extends-source-is-the-derivation-constructor` in
+`validation/m14/fixtures/xml/ontology-mutants.mts` rewrites each `extends` source back to
+its constructor and is caught. Verified by reverting the fix in the analyzer: 23/23
+fixtures pass with it, 21/23 without, and the failure is the forbidden edge.
+
+#### Payload
+
+`extends` grew 438 → 1,429 (+991) and `contains` 185,979 → 186,270 (+291). Total published
+edges across the six emitted types moved 197,843 → 199,126, **+0.65 %**, with `extends`
+still 0.7 % of the graph. No budgeted lane regressed.
 
 ### The five not emitted, each with its instrument, probe and overturn condition
 
@@ -647,10 +766,10 @@ and 3 in the full population, which is stated here rather than averaged over.
 | Question | `contains` | `references` | `imports` | `calls` | `extends` | `overrides` |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1. Exists | walk + DTD branches | deferred reference pass | `extractExternalId`, `schemaLocation`, PI `href` | `XSLT_CALL_ELEMENTS` | `xsdDerivationElement` branch | `competingTemplates` + the §5.5 pass |
-| 2. Fires | 77,721 edges / 2,472 files | 6,750 / 195 | 260 / 174 | 17 / 3 | 354 / 93 | **0 / 0 in this draw; 3 / 3 in the full 11,456** |
-| 3. Correct | unmeasured | unmeasured | unmeasured | unmeasured | **1 oracle, agrees 4/2 vs 4/2** | unmeasured |
-| 4. Labelled | `structural` 77,721 (100 %) | `reference_qualified` 6,750 (100 %) | `import_based` 260 (100 %) | `reference_qualified` 17 (100 %) | `structural` 354 (100 %) | `structural` 3 (100 %) |
-| 5. Resolved | 77,721/77,721 = **100.0 %** | 3,312/6,750 = **49.1 %** | 0/260 = 0 %, target is a file | 17/17 = **100 %** | 142/354 = **40.1 %** | 3/3 = **100 %** |
+| 2. Fires | 77,721 edges / 2,472 files | 6,750 / 195 | 260 / 174 | 17 / 3 | **852 / 93** | **0 / 0 in this draw; 3 / 3 in the full population** |
+| 3. Correct | unmeasured | unmeasured | unmeasured | unmeasured | **1 oracle; 1,615 of 1,652 sites covered, 37 refused, 0 edges without a site** | unmeasured |
+| 4. Labelled | `structural` 77,721 (100 %) | `reference_qualified` 6,750 (100 %) | `import_based` 260 (100 %) | `reference_qualified` 17 (100 %) | `structural` 852 (100 %) | `structural` 3 (100 %) |
+| 5. Resolved | 77,721/77,721 = **100.0 %** | 3,312/6,750 = **49.1 %** | 0/260 = 0 %, target is a file | 17/17 = **100 %** | source **1,429/1,429 = 100.0 %**; both ends 267/852 = 31.3 %, and 56.4 % of bases are built-in or imported | 3/3 = **100 %** |
 | 6. Confident | 0 edges < 0.7 | 0 | 0 | 0 | 0 | 0 |
 
 **The two rates below 100 % are a declared resolvability class, not dangling
@@ -660,7 +779,7 @@ carries it per edge:
 | type | in-document | builtin | external | unresolved | both-ends rate |
 | --- | ---: | ---: | ---: | ---: | ---: |
 | `references` | 2,795 | 3,574 | 375 | 6 | 49.1 % |
-| `extends` | 119 | 226 | 9 | 0 | 40.1 % |
+| `extends` | 232 | 436 | 184 | 0 | 31.3 % both ends, 100.0 % source |
 
 XML names far more specification built-ins than the reference point (CSS
 `references` at 66.8 %): `xs:string`, `xs:int`, `xs:positiveInteger` and their
@@ -866,17 +985,20 @@ apply are the ones listed.
    including schema's target namespace, so a bare base or type name may be
    satisfied by either file. 24 `references` edges are `unresolved` for this
    reason, and 103 carry `ambiguousWithBuiltin`.
-5. **1,212 of 1,648 derivations are refused.** A prefixed base bound to a
-   namespace this file neither declares nor imports names a component no file
+5. **37 of 1,652 derivations are refused, all one class.** A prefixed base bound
+   to a namespace this file neither declares nor imports names a component no file
    supports, and from inside one file that is indistinguishable from one an
-   `xs:import` supplies.
-6. **An `extends`/`calls` source is the anonymous inline element.** The owner of a
-   `base=` attribute is the `xs:extension`/`xs:restriction` element and the owner
-   of a `xsl:call-template` site's caller is the enclosing template, so the
-   derived type is reached by walking containment back up (`Derived ->
-   xs:complexContent -> xs:extension`, two hops; `Code -> xs:restriction`, one).
-   `bb_graph`'s owner-cascade attributes member rows to the owner class, so the
-   answer is reachable, but the hop exists and its depth varies.
+   `xs:import` supplies. (This was written as "1,212 of 1,648"; that number was
+   inferred rather than counted and the count is 37.)
+6. **A `calls` source is still the anonymous inline element, and `extends` no
+   longer is.** The owner of a `base=` attribute was the `xs:extension`/
+   `xs:restriction` element itself, which measured as a fabricated source on 438 of
+   438 edges; that is FIXED and the source is now the nearest named schema ancestor.
+   The `calls` case is untouched and still has the shape this paragraph used to
+   describe for both: the owner of a `xsl:call-template` site is the enclosing
+   template, reached by walking containment back up when the call sits in an inline
+   `<xsl:variable>` body. `bb_graph`'s owner-cascade attributes member rows to the
+   owner class, so the answer is reachable, but the hop exists and its depth varies.
 7. **A `references` edge from an XSLT instruction carries the instruction's tag as
    its source, while a `calls` edge carries the caller.** The asymmetry is
    deliberate and inherited: making the instruction a caller would re-base every
