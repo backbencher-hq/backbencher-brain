@@ -468,9 +468,9 @@ the column below were quoting the narrow scope without saying so. Both scopes:
 | Type | Verdict | Edges | Both ends resolve, **intra-file** | **corpus-wide** | Confidence | evidenceClass |
 | --- | --- | --- | --- | --- | --- | --- |
 | `calls` | EMITTED | 118,261 | 38.9% | **98.3%** | 0.85 (113,997) / 0.9 (4,206) / 0.75 (58) | `usage_contextual` 118,203, `import_based` 58 |
-| `uses` | EMITTED | 45,662 | 99.8% | 99.8% | 1.0 (20,558) / 0.75 (25,104) | `usage_contextual` 45,604, `import_based` 58 |
-| `contains` | EMITTED | 29,361 | 99.8% | 99.9% | 1.0 | `structural` |
-| `references` | EMITTED | 56,438 | 45.6% | **96.9%** | 0.9 | `reference_qualified` 48,364, `import_based` 8,074 |
+| `uses` | EMITTED | 45,664 | 99.8% | 99.8% | 1.0 (20,560) / 0.75 (25,104) | `usage_contextual` 45,606, `import_based` 58 |
+| `contains` | EMITTED | 29,362 | 99.8% | 99.9% | 1.0 | `structural` |
+| `references` | EMITTED | 56,445 | 45.6% | **96.9%** | 0.9 | `reference_qualified` 48,371, `import_based` 8,074 |
 | `imports` | EMITTED | 13,364 | 37.1% | 38.6% | 1.0 | `import_based` |
 | `instantiates` | EMITTED | 2,843 | 100.0% | 100.0% | 0.9 | `usage_contextual` |
 | `extends` | EMITTED | 627 | 71.0% | **99.4%** | 1.0 | `structural` |
@@ -483,6 +483,51 @@ The corpus-wide column is `validation/m14/fixtures/nim/resolution-scope.ts` over
 intra-file column reproduces the census figure exactly on all ten types**, which is what
 makes the second column readable as the same edges measured against a wider universe
 rather than as a different measurement.
+
+**This table and the one above it were, until this pass, measured at DIFFERENT WORKER
+COUNTS, and three cells said so.** The verdict table above is the
+`ontology-census` walk (267,287 edges); `resolution-scope.ts` runs at **1 worker**,
+and fan-out is a function of every edge count (*Limitations* 11), so three types
+differ between the two walks:
+
+| type | `ontology-census` (verdict table) | 1-worker (this table) | delta |
+| --- | --- | --- | --- |
+| `uses` | 45,662 | **45,664** | +2 |
+| `contains` | 29,361 | **29,362** | +1 |
+| `references` | 56,438 | **56,445** | +7 |
+| the other seven | — | identical | 0 |
+
+**And the fan-out of that walk was mis-attributed in this document until this pass:
+it was SIX workers, not two.** Three independent records agree and no record
+disagrees. Neither half of the pair carries a count — `ontology-census.json` has no
+`workers` key and `ontology-census.txt` has no `workers` line, because the field did
+not exist yet. The walk was written at 10:55 (commit `1660a655e`), and
+`census.ts` at that commit read `Array.from({ length: 6 }, () => worker())` at line
+283 — a hardcoded six. `BB_NIM_WORKERS` was introduced 93 minutes later
+(`3e30d227d`, 12:28:47 against 10:55:24), so `BB_NIM_WORKERS=2 … census.ts` **cannot** be the command
+that produced this artifact; the variable did not exist. Every OTHER instrument's
+2-worker row in this document is backed by a `workers 2` line in its own artifact
+(`gap-hunt.txt:2`, `resolution-audit.txt:4`, `accent-quoted-endpoints.txt:2`), which
+is what makes this one row detectable at all: it was the only 2-worker claim with no
+`workers` line to check it against, and it was checked only now.
+
+Consequence for the reading: the delta above is a **6-vs-1** spread, not 2-vs-1, and
+the direction is the one *Limitations* 8 predicts — the wider fan-out exhausts the
+WASM heap on a load-dependent set of files, so the wider walk publishes fewer edges
+(267,287 < 267,297). It is not monotone in fan-out, and this document does not claim
+it is: the 2-worker `ruled-gate` reads `calls` 118,242, *below* both census walks'
+118,261. Fan-out is one of three variables (instrument, fan-out, machine load), and
+these two walks differ in one of them.
+
+The percentages are unaffected to the printed precision — `references` reads 45.6% at
+both — so the two tables never disagreed about anything a reader would act on. What they
+did was leave a reader to discover the mismatch with no explanation, and to make the
+sentence above ("reproduces the census figure exactly on all ten types") false against
+the table three lines above it while true against its own artifact. The cells now carry
+the count the instrument that produced this row measured, which is the 1-worker figure
+both instruments agree on: `session6-1w-census` and `session6-resolution-scope` report
+45,664 / 29,362 / 56,445 for these three and are otherwise identical on all ten.
+Nothing about the verdict changes, because no type is at zero at either worker count.
 
 **The four types that do not move are the four whose targets are intra-file by
 construction** — `uses` (a member read), `contains` (an owner to its own member),
@@ -505,8 +550,9 @@ the same walk: 110,060 symbols, **0** empty names, **0** empty kinds, **8** endp
 equal to the literal `unknown` (*Limitations* 9), **0** empty endpoints, **0** edge
 types outside the ten. This walk was CLEAN by the census's own five-part test —
 `parseFile threw: 0`, `raw-parse threw: 0`, 6,063 of 6,063 parsed, 0 empty kinds,
-0 empty names — at 2 workers, so the empty kinds earlier revisions of this document
-reported were a degraded walk and not a property of the analyzer. It still exited 1,
+0 empty names — at the six workers `census.ts` then hardcoded, so the empty kinds
+earlier revisions of this document reported were a degraded walk and not a property
+of the analyzer. It still exited 1,
 on `[BB-HANG]` naming `nim/tests/distinct/tinvalidborrow.nim`, a file that had already
 logged `[BB-PARSE-ERR] … memory access out of bounds` in the same run; *Limitations*
 8 says what causes that and it is in shared `engine.ts`, not here.
@@ -570,8 +616,9 @@ EMITTED. The per-type counts differ from the table above by single digits —
 `calls` 118,256 here against 118,261 in the 1-worker census — and the cause is
 fan-out, not the analyzer: patch 3 of the proof runner lowers the gate's 8-way
 concurrency to 2 because 8 concurrent `parseFile` calls were OOM-killed on this
-box. That is the same 1-vs-2-worker spread the census records, and it is why
-every number in this document carries its worker count.
+box. That is the same order of spread the census records between its 1-worker and
+its 6-worker walks, and it is why every number in this document carries its worker
+count.
 
 **`emitted 10/10`, and the table it consulted is empty.** That is the honest
 shape of a finished lane and not the shape of a lucky one: the denominator is 10
@@ -592,7 +639,7 @@ misreading this document keeps finding in other lanes' prose. It now says so.
 arbiter and the census are different instruments over the same 6,063 files at
 different worker counts, so they do not agree exactly and are not expected to:
 
-| type | arbiter (8 workers) | census (2 workers) | delta |
+| type | arbiter (8 workers) | census (6 workers) | delta |
 | --- | --- | --- | --- |
 | `calls` | 118,242 | 118,261 | 19 |
 | `uses` | 45,656 | 45,662 | 6 |
@@ -611,7 +658,7 @@ cannot show the arbiter's own spread.** Re-run 2026-10-04 14:19, 383s, analyzer
 sha256 `9d9ee478e3295c28` unchanged on both sides of the walk
 (`validation/m14/measurements/nim/reverify-ruled-gate.txt`):
 
-| type | arbiter run 1 | arbiter run 2 | arbiter's own spread | census (2 workers) |
+| type | arbiter run 1 | arbiter run 2 | arbiter's own spread | census (6 workers) |
 | --- | --- | --- | --- | --- |
 | `calls` | 118,242 | 118,133 | 109 | 118,261 |
 | `uses` | 45,656 | 45,573 | 83 | 45,662 |
@@ -1415,9 +1462,11 @@ in the resolution table above, from five names.
 
 ### The six questions, per emitted type
 
-Columns 1, 2, 5 and 6 are this pass's census (6,063 files, 2 workers, analyzer
-sha256 `9d9ee478e3295c28`; the worker count matters, see the note above the
-verdict table). Column 3 is the oracle cross-check (400 of 6,063 discovered
+Columns 1, 2, 5 and 6 are this pass's census (6,063 files, the `ontology-census`
+walk at the six workers `census.ts` then hardcoded, analyzer sha256
+`9d9ee478e3295c28`; the worker count matters, see the note above the verdict table,
+and column 5 is identical to one decimal at 1 worker). Column 3 is the oracle
+cross-check (400 of 6,063 discovered
 files, deterministic every-15th), whose instrument is a SEPARATE WALKER — so
 "agrees" means "the two derivations agree", never "the edge is true". Column 4 is
 adjudicated per type.
@@ -1656,7 +1705,9 @@ quoted from an earlier round.
 | --- | --- | --- |
 | `npx tsx script/m14/ontology-coverage-gate.ts nim` | **2** | `corpus: 6063 admitted files`, then `no RULING TABLE for nim`, exit 2. `RULED_BY_LANG` carries `bash`, `json`, `lua`, `toml` and no `nim`. `ruled-gate.ts` supplies the wiring on a copy, and the next row is the verdict |
 | `npx tsx validation/m14/fixtures/nim/ruled-gate.ts` | 0 | the arbiter's own verdict loop on a copy: **`emitted 10/10  ruled-sound 0  FALSIFIED 0  ruled-without-justification 0`**, 255s, `implements EMITTED 47 edges in 4+ files, e.g. nimony/lib/std/math.nim`. Table rows: 0 |
-| `BB_NIM_WORKERS=2 npx tsx validation/m14/fixtures/nim/census.ts <out>` | **1** | 6,063 files, 6,063 parsed, **0** empty names, **0** empty kinds, 0 throws, 110,060 symbols, **267,287 edges**. Clean by the census's own five-part test, so the artifact was written under its own name; the exit 1 is `[BB-HANG]` naming `nim/tests/distinct/tinvalidborrow.nim`, which had already logged `[BB-PARSE-ERR] … memory access out of bounds` in the same run (*Limitations* 8). At 6 workers this same command degraded on three of three attempts |
+| `BB_NIM_WORKERS=1 npx tsx validation/m14/fixtures/nim/census.ts <out>` | 0 | session 6, the reproduction row: 6,063 files, 6,063 parsed, 0 empty names, 0 empty kinds, 0 throws, **110,076 symbols, 267,297 edges**, digest `9d9ee478e3295c28` unchanged on both sides. `session6-1w-census.txt` is byte-identical to `session3-1w-census.txt` on all **112** lines of report body — the two differ in exactly two respects, and both are known: `session3` carried its 14 `[INFO]` lines inline where `session6` routes them to the `.stderr.txt` beside it, and the last line names its own output file. **At the bare default (6 workers) the same script produced no report at all** — exit 1, zero stdout, `[BB-HANG]` naming `nim/tests/dll/nimhcr_0_2.nim` (*Limitations* 8, row 5) |
+| `BB_NIM_WORKERS=1 npx tsx validation/m14/fixtures/nim/resolution-scope.ts <out>` | 0 | session 6: all ten types identical to `session5-resolution-scope.txt`, 78,838 name spellings, intra and wide columns unchanged. This is the instrument behind the corpus-wide column of the verdict table, and its 1-worker edge counts are the ones that table now carries |
+| `npx tsx validation/m14/fixtures/nim/census.ts <out>` (**no env var — `census.ts` hardcoded 6 workers at this commit; `BB_NIM_WORKERS` did not exist yet**) | **1** | 6,063 files, 6,063 parsed, **0** empty names, **0** empty kinds, 0 throws, 110,060 symbols, **267,287 edges**. Clean by the census's own five-part test, so the artifact was written under its own name; the exit 1 is `[BB-HANG]` naming `nim/tests/distinct/tinvalidborrow.nim`, which had already logged `[BB-PARSE-ERR] … memory access out of bounds` in the same run, the only other parse error in the run being `tests/overload/toverl.nim` (*Limitations* 8). This row was labelled `BB_NIM_WORKERS=2` until this pass; the evidence that it was 6 is in the note above the verdict table. **No `BB_NIM_WORKERS=2` census artifact exists anywhere in this branch** — the one 2-worker attempt on record (`3bf212369`) died on `[BB-HANG]` and wrote nothing |
 | `npx tsx validation/m14/fixtures/nim/nim-ruled-probe.ts <out>` | 0 | the falsifier, run: `concept_declaration` **337 in 130 files**, `refinement_list` **38**, `is`-in-concept-body 156, guard failures `{argumentList:159, leftNotParameter:143, rightNotIdentifier:5, rightNotLocalConcept:8, selfReference:0}`, **`withRefinesField 38`, hits pushed 51**, 211 node types, raw-parse failures 0. The text probe finds 61 `of`-form sites classified 39 code / 21 comment / 1 string against 38 tree nodes |
 | `npx tsx validation/m14/fixtures/nim/oracle-crosscheck.ts <out>` | 0 | 400 of **6,063** discovered (was 400 of 4,075 — the discovery cap, now removed), every-15th, 400 parsed, 0 failures. **MISSING 3 / UNEXPLAINED 26**, and **7 of the 10 labels agree exactly** including `exports` 12/12 and `implements` 3/3, both of which had no derivation before this pass |
 | `BB_NIM_WORKERS=2 npx tsx validation/m14/fixtures/nim/gap-hunt.ts <out>` | 0 | `extends` accounted **1047 / 1047** (was 941/941), published as `extends` **627**; `object_declaration.inherits` 1,047 occurrences in 403 files. `instantiates` 3,830 occurrences, 844 name a type this file declares, 973 have an edge. `overrides`: 230 methods on the tree, 186 with a readable receiver, **67 published** (recv in-file 67, recv out-of-file 0), receiver-qualified spelling 0 |
@@ -1746,26 +1797,37 @@ any instrument ran and unchanged after every one of them. Artifacts:
 
 **The census reproduces to 0.0037%, which is an order of magnitude tighter than
 this document claims, and the reason is the worker count rather than the
-analyzer.** The committed artifact was taken at **2 workers**; this pass's clean
-walk was at **1**. *Limitations* 11 measures 6 workers producing fallback files
-and empty-kind symbols and 1 worker producing none, and that difference — not
-the analyzer — is the whole of the residual. So the +10 edges are not drift in
-the reader: seven of the ten totals are bit-identical across two different
-fan-outs, and the three that moved moved by 2, 1 and 7 edges out of tens of
-thousands.
+analyzer.** The committed artifact was taken at the **six workers `census.ts` then
+hardcoded**; this pass's clean walk was at **1**. *Limitations* 11 measures 6
+workers producing fallback files and empty-kind symbols and 1 worker producing
+none, and that difference — not the analyzer — is the whole of the residual. So the
++10 edges are not drift in the reader: seven of the ten totals are bit-identical
+across two different fan-outs, and the three that moved moved by 2, 1 and 7 edges
+out of tens of thousands.
 
-**The committed 2-worker artifact is deliberately NOT re-baselined onto the
-1-worker one, and the reason is that re-baselining would cost ~90 edits in this
-document to move a number by 0.004%.** The delta is inside the envelope already
-stated here, the artifact is digest-pinned to a blob still on disk, and both
-walks are committed side by side so the pair is checkable. Which figure is
-quoted where is fixed: **the tables in *The ten relationship types* are the
-2-worker artifact** (`validation/m14/measurements/nim/ontology-census.{json,txt}`,
-110,060 symbols / 267,287 edges), and the 1-worker walk is the reproduction
+**The committed artifact is deliberately NOT re-baselined onto the 1-worker one,
+and the reason is that re-baselining would cost ~90 edits in this document to move
+a number by 0.004%.** The delta is inside the envelope already stated here, the
+artifact is digest-pinned to a blob still on disk, and both walks are committed side
+by side so the pair is checkable. Which figure is quoted where is fixed: **the tables
+in *The ten relationship types* are the `ontology-census` artifact**
+(`validation/m14/measurements/nim/ontology-census.{json,txt}`, 110,060 symbols /
+267,287 edges, **six workers**), and the 1-worker walk is the reproduction
 (`reverify-1w-census.{json,txt}`, 110,076 / 267,297). No figure in this document
 mixes the two, and the two walks differ only in `uses`, `contains` and
 `references` — the three types whose resolution depends on how much of the tree
 survived the WASM heap.
+
+**That artifact's worker count was recorded as 2 in four places in this document
+until this pass, and it is 6.** The correction and its evidence are in the note
+above the verdict table: neither half of the pair carries a `workers` field
+(`3bf212369` added it, 4h10m after the artifact was written), `census.ts:283` read
+`Array.from({ length: 6 }, () => worker())` at that commit, and `BB_NIM_WORKERS`
+did not exist until `3e30d227d` (12:28:47 against the artifact's 10:55:24). No number
+changes — 267,287 is 267,287 either way — but a reader who tried to reproduce the
+table above would have run the wrong command, and a document whose whole method is
+"quote the worker count" had four rows where the quoted count was invented rather
+than read.
 
 **What this pass FOUND, as opposed to reproducing: the JSON artifacts did not
 carry the worker count, while this document said they did.** Line 564 and the
@@ -2090,7 +2152,7 @@ all 8 repositories, production `parseFile`, analyzer sha256 `9d9ee478e3295c28`
 verified before the walk and unchanged after
 (`validation/m14/measurements/nim/session4-1w-census.{json,txt}`):
 
-| | session 4, 1 worker | the 2-worker figure the table above carries | delta |
+| | session 4, 1 worker | the `ontology-census` figure the table above carries (6 workers) | delta |
 | --- | --- | --- | --- |
 | symbols | **110,076** | 110,060 | +16 |
 | `calls` | **118,261** | 118,261 | 0 |
@@ -2937,11 +2999,19 @@ quiet machine will cover all 5,227 through the production path.
    | run | artifact | `[BB-HANG]` named | named file's own log line, same run |
    | --- | --- | --- | --- |
    | `census.ts` | written, digest printed | `nim/lib/std/private/ossymlinks.nim` | `[BB-PARSE-ERR] … memory access out of bounds` |
-   | `resolution-audit.ts` | written, digest printed | `nim/tests/ic/mlocalpassc.nim` | `[BB-PARSE-ERR] … memory access out of bounds` |
-   | `accent-quoted-endpoints.ts` | **NOT written** — the walk was destroyed | `nim/lib/std/private/oscommon.nim` | `[BB-PARSE-ERR] … memory access out of bounds` |
+   | `census.ts`, the `ontology-census` walk (**6 workers**, hardcoded — see the note above the verdict table) | written, digest printed | `nim/tests/distinct/tinvalidborrow.nim` | `[BB-PARSE-ERR] … memory access out of bounds`, and the run's only other parse error was `tests/overload/toverl.nim` |
+   | `resolution-audit.ts`, 2 workers | written, digest printed | `nim/tests/ic/mlocalpassc.nim` | `[BB-PARSE-ERR] … memory access out of bounds` |
+   | `accent-quoted-endpoints.ts`, 2 workers | **NOT written** — the walk was destroyed | `nim/lib/std/private/oscommon.nim` | `[BB-PARSE-ERR] … memory access out of bounds` |
    | `census.ts`, session 2, `BB_NIM_WORKERS=2` | **NOT written** — the walk was destroyed, and so was the header line | `nim/tests/async/treturn_await.nim` | `[BB-PARSE-ERR] … memory access out of bounds` |
+   | `census.ts`, session 6, **default `BB_NIM_WORKERS=6`** | **NOT written** — the walk and the header line were both destroyed | `nim/tests/dll/nimhcr_0_2.nim` | `[BB-PARSE-ERR] … memory access out of bounds` |
 
-   The fourth row is the one that generalises the defect. The first three still
+   **Six runs, six different files, at three worker counts.** That is the whole of
+   the discriminating observation, and the `ontology-census` row is what makes it a
+   count rather than an impression: its named file is in the artifact's own first two
+   lines, so it can be checked rather than remembered. One pathological input would
+   name the same file every time.
+
+   The fifth row is the one that generalises the defect. The first three still
    produced a digest-pinned artifact that merely exited 1, so a reader had
    numbers with a warning attached; this one produced **nothing at all**, because
    `process.exit(1)` inside the engine takes the process's buffered stdout with
@@ -2952,6 +3022,28 @@ quiet machine will cover all 5,227 through the production path.
    cause: these are the wasm files whose parse allocates enough to exhaust the
    heap under contention. The same walk at `BB_NIM_WORKERS=1` completed clean, so
    the mitigation available without touching shared code is the fan-out.
+
+   **The sixth row is the one that changes how this lane's own instrument has to be
+   run, because it is the DEFAULT.** `census.ts:70` reads
+   `BB_NIM_WORKERS ?? 6`, so the command as written in the workstream — `npx tsx
+   validation/m14/fixtures/nim/census.ts`, no env var — produced **zero lines of
+   report** on session 6 and had to be re-run with the variable set.
+   **That run's log was not committed — nothing was written, log included — so its
+   parse-error count is the one number in this section no reader can check, and the
+   record disagrees with itself about it**: the commit describing the run
+   (`6362dc82e`) says "five other files" in prose and then names seven paths
+   (`dll/nimhcr_0_2`, `ic/mmodsymadd`, `overload/tuntypedarg`,
+   `nimony/examples/sets_basics`, and three under `nimony/tests/nimony/async/`).
+   Seven is what the list contains and seven is what is quoted here, and the named
+   hang file is one of them. **The hang file differs on every run at every worker
+   count** — six runs, six
+   files: `ossymlinks.nim`, `tinvalidborrow.nim`, `mlocalpassc.nim`, `oscommon.nim`,
+   `treturn_await.nim`, `nimhcr_0_2.nim` — which is the discriminating observation:
+   one pathological input would name the same file every time, so the trigger is
+   load-dependent rather than a property of any file. Every number in this document is
+   therefore quoted at the worker count that produced it, and **the reproduction
+   command for this lane is `BB_NIM_WORKERS=1 npx tsx
+   validation/m14/fixtures/nim/census.ts <out>`, not the bare command.**
 
    So this lane's corpus instruments **exit 1 on results that are finished and
    digest-pinned**, and under load one of them lost its entire walk and had to be
