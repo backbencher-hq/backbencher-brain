@@ -1181,14 +1181,28 @@ Bucket meanings, each of which is a claim with a stated basis:
 - **synthetic scope** — `global` and `root`, this repo's documented synthetic scope names, counted per
   type in the table below rather than excluded from the denominator.
 
-**26,228 `calls`, 7,757 `uses`, 4,020 `global` + 2,667 `root` `references` and 716 `instantiates`
-edges are sourced from `global`/`root`** — and `imports` carries 1,365 more from `root` and `exports`
+**26,228 `calls`, 7,757 `uses`, 4,020 `global` + 3,231 `root` `references` and 716 `instantiates`
+edges are sourced from `global`/`root`** — and `imports` carries 1,653 more from `root` and `exports`
 794, which this sentence previously omitted while claiming to enumerate the synthetic sources. Those
 are dangling sources by construction and are counted as such: a resolution rate that excluded them
-would not be the number a consumer sees. (These six figures are the census's own
-`production.syntheticSources` block, so they move with the corpus and are printed on every run; the
-previous version of this sentence carried 19,022 / 6,234 / 3,234 + 1,371 / 652 from the 971-file
-corpus and was never re-measured, because `doc-tables-check.ts` reads table cells and this is prose.)
+would not be the number a consumer sees.
+
+**Two of those seven figures were stale, in this sentence, for the THIRD time, and this is the one
+place the doc predicted it.** The parenthetical used to end here — "These six figures are the
+census's own `production.syntheticSources` block, so they move with the corpus … was never
+re-measured, because `doc-tables-check.ts` reads table cells and this is prose" — and it named the
+blind spot accurately while sitting in it. `references` from `root` read **2,667** where the corpus
+gives **3,231**, and `imports` from `root` read **1,365** where it gives **1,653**. The other five
+were correct. Both wrong figures are the two that `932a20d27` (which began emitting `imports`) and
+`f2e84906f` (which fixed a 17-module `using` publishing one module) would move, and the census had
+been printing the corrected pair on every run.
+
+A prediction of a defect is not a fix for it, so all seven are now CHECKED CELLS: `doc-tables-check.ts`
+reads `production.syntheticSources` out of the census and requires every figure in this sentence to
+equal it, including the two the sentence must state in the order the census keys them. This is the
+third distinct shape the same root cause has taken in this file — a figure that moves, sits in prose,
+and is read by nobody — and the second and third were both predicted in the first one's own
+correction note without being closed.
 
 ### The ambiguity, and the fact that the edge already carries the answer
 
