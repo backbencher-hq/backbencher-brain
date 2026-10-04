@@ -2994,3 +2994,286 @@ reported rather than done.
 - **The corpus cannot see a group's in-message `extend` scope, and no re-run of this
   corpus will.** That is a property of the corpus, measured above, and it is why
   ROW 2 of the new fixture exists.
+
+# PASS 11 — the band finally has a cause, and it is not this analyzer
+
+Nine passes have quoted a band on every production-side count and none of them could
+say what caused it. Pass 7 named a suspect directory. Pass 8 measured the band at 19
+rounds. Pass 9 falsified the locality. Every one of those instruments asked **where**
+the loss landed and none asked **what produces it**. This pass built the instrument that
+asks the second question, and the answer is that the loss is not a property of any
+protobuf file.
+
+## The question, stated so that it can be answered no
+
+The fault is `[BB-PARSE-ERR] protobuf | <file> | memory access out of bounds`. Two
+causes fit every observation in nine passes of documentation, and they call for
+opposite repairs:
+
+| | cause | what it implies | whose file |
+|---|---|---|---|
+| **A** | the file's CONTENT trips a wasm fault | the vendored grammar has a defect; bump it | a grammar wasm, not this lane's |
+| **B** | the loss is content-INDEPENDENT and LOAD-dependent | a shared runtime arena under 8-way concurrency; the file is a victim | the pool's parser lifetime, not this lane's |
+
+`explain.proto` is **1,725 bytes** and 52 lines of ordinary proto3 — no `group`, no
+`oneof`, no editions, no aggregate literal. Whatever the cause, it is not a construct
+this corpus does not otherwise contain, and size is excluded by the file being tiny.
+
+The instrument is `script/m14/tmp/protobuf/probe/parse-loss-isolation.mts`. It parses
+the seven files nine passes have each named as lost under three regimes that differ
+only in load — `--mode=alone-fresh` (one file, a new parser per repetition, width 1),
+`--mode=alone-shared` (one file, one parser reused), `--mode=census` (the file inside
+the census's own width-8 population of all 821).
+
+## What it measured: 0 alone, 3 in 8,210 under load
+
+| regime | file-parses | losses | rate |
+|---|---|---|---|
+| `alone-fresh`, width 1, fresh parser | **280** (7 files × 40) | **0** | 0% |
+| `alone-fresh`, width 1 (sanity re-run) | 35 | **0** | 0% |
+| `census`, width 8, whole corpus | **8,210** (10 rounds × 821) | **3** | **0.0365%** |
+
+Every one of the 3, with the analyzer's own symbol count for the file, which is what
+makes it a loss rather than an empty file:
+
+| file | rounds lost | analyzer symbols |
+|---|---|---|
+| `docker/extpoints/servicenamegenerator/v0/service_name_generator.proto` | 1 of 10 | 8 |
+| `docker/vendor/github.com/containerd/cgroups/v3/cgroup1/stats/metrics.proto` | 1 of 10 | 115 |
+| `pb-reference/src/google/protobuf/source_context.proto` | 1 of 10 | 3 |
+
+**Verdict: cause B, and cause A is excluded by the alone arm rather than argued
+away.** The files that fail under load were parsed **315 times each-batch at width 1
+without a single failure**. If the fault were a property of those bytes it would fire
+alone. It does not fire alone, ever, and it fires at ~0.04% under concurrency — which
+is the signature of a random per-parse event in shared runtime state.
+
+## The locality hypothesis does not reproduce, on a 23× larger sample
+
+Pass 7 proposed `pb-googleapis/google/api/expr/` as the suspect directory, from six
+losses observed there. **In this pass's 8,210 census file-parses, 0 of the 3 losses
+are in that directory.** Counting every loss observed in this session, across five
+separate runs and two instruments:
+
+| repository | losses observed | how observed |
+|---|---|---|
+| `docker` | 4 | journal (2) + a killed run's stderr (1) + the 8-round run (1) |
+| `boundary` | 5 | the 8-round run, 5 distinct `services/v1` files, 1 each |
+| `pb-reference` | 3 | journal (1) + a killed run's stderr (2) |
+| `kubernetes` | 3 | a killed run's stderr, 3 distinct `staging/…/generated.proto` |
+| `terraform` | 1 | the 8-round run, `tfplugin6.proto`, 504 symbols |
+| **`pb-googleapis/google/api/expr/`** | **0** | in 8,210 file-parses this pass |
+
+Five repositories, eleven losses, one fault string. The directory pass 7 named is not
+where the loss is; it is where pass 7 happened to look first, and 11 of 821 files is
+0.85% of the corpus, which is not distinguishable from a uniform rate at these counts.
+
+## The rate is not stable either, and that is the same finding
+
+Two runs of the same instrument over the same 821 files, same commit:
+
+| run | file-parses | losses | rate |
+|---|---|---|---|
+| 8-round run | 6,568 | 7 | **0.107%** |
+| journal run | 8,210 | 3 | **0.0365%** |
+
+A 2.9× spread between two runs of one instrument on one corpus, on a machine twenty-three
+agents are sharing. A defect in the grammar would not vary with the weather; an arena
+under contention would. **This is the observation that makes the band un-shrinkable by
+adding corpus**: the quantity that moves is not a property of the protobuf files, so no
+corpus size retires it.
+
+## Two defects in the instrument that produced those numbers
+
+Recorded with the symptom that exposed each, because both produced a confident wrong
+number first.
+
+1. **A `syms > 0` criterion scored an empty file as 8 failures in 8 rounds.**
+   `pb-reference/src/google/protobuf/unittest_empty.proto` is 593 bytes of licence
+   header and `syntax = "proto2";` with **nothing declared**, so zero symbols is the
+   correct answer for it and `production.symbols.length > 0` counted the correctness as
+   a fault. The symptom was the shape: one file failing **8 of 8** when every genuine
+   loss in the corpus failed 1 in 10. Corrected to the comparison this lane already
+   established in `lost-parse-locality.mts` — a loss is *the analyzer finding symbols in
+   bytes production published nothing for* — and the independent
+   `dump-contains-io.mts` probe names the same file as the corpus's one file with no
+   production symbols, which is the corroboration.
+2. **`appendFileSync` returns an fd, not a stream.** The first journal implementation
+   wrote rows with `journal.write(...)` on that fd, which silently wrote **nothing**: 1,642
+   file-parses were measured and the journal held 1 byte. Fixed to `openSync` +
+   `writeSync`, which is one open for the run and puts every row on disk at the moment it
+   is measured. The property that matters is not tidiness — it is that **the probe is
+   killed by the fault it measures** (`parseFile`'s 120s watchdog prints `[BB-HANG] …
+   — exiting` and calls `process.exit`, which no `finally` survives), so without a
+   durable journal a long run's totals die with it. Two full runs were lost this way
+   before the journal existed; after it, a run killed at exit 1 still left all 1,642 rows.
+
+## A probe in this lane was aimed at the `node` binary
+
+`script/m14/tmp/protobuf/probe/dump-contains-io.mts:48` read its output path as
+
+```ts
+const at = (f: string): string => process.argv[process.argv.indexOf(f) + 1]
+```
+
+`indexOf` is `-1` for an absent flag, so this evaluated `process.argv[0]` — **the path
+to the `node` executable** — and returned it. Truthy, so the `??` default never fired,
+and `writeFileSync(OUT, …)` aimed a 41,663-line dump at the running interpreter. It
+surfaced only as `ETXTBSY: text file is busy`, and only because `node` happened to be
+executing; a run where it was not would have truncated the interpreter.
+
+**The consequence for this lane's own record: the pass-10 gate-table row that quotes
+this probe as `npx tsx script/m14/tmp/protobuf/probe/dump-contains-io.mts` — no
+`--out`, exactly as printed there — does not run as written.** It crashes. The 40,098 /
+1,561 / 4 figures attributed to it were produced with `--out` supplied. Fixed to guard
+on `i > 0` rather than on the truthiness of the result, and the documented command now
+works and reproduces those three numbers and the member-label histogram from a clean
+invocation.
+
+Seven other sites in this lane use the same `indexOf(…) + 1` idiom. All seven guard it
+with `.includes(…)` first, which makes the index non-negative, so all seven are sound;
+this one was the only unguarded copy.
+
+## The corpus question, priced rather than proposed
+
+`firing-check.ts` reports **10 of 120** files for this lane, and pass 10 attributed that
+to its sampler: `filesForLanguage` builds paths from `git ls-files` and never checks the
+working tree, and **110 of the 120 offered paths are not on disk**. The cause is in the
+corpus, and the corpus is mine to change, so this pass measured the change instead of
+restating the artifact for an eleventh time.
+
+| measurement | value |
+|---|---|
+| corpus repos that are sparse checkouts | **4 of ~180** — `pb-googleapis`, `pb-grpc`, `pb-reference`, `julia` |
+| `.proto` files those three TRACK | **7,984** (7,341 + 166 + 477) |
+| `.proto` files those three HOLD on disk | **281** |
+| mean on-disk `.proto` size | **6.6 KB** |
+| so the missing working tree is worth | **≈51 MB of text** |
+
+Trialled on the smallest repo, `git -C pb-grpc sparse-checkout disable`: 45 → **166**
+on-disk `.proto` in **9.5 s**, `.git` 3.0 M → 22 M, worktree 110 M — and the corpus went
+**7.9 G → 8.1 G**, over the ~8 GB cap this workstream sets, on a root filesystem that
+reached **100%** during this session while other lanes cloned.
+
+**Reverted, and the revert was verified rather than assumed**: `core.sparseCheckout` is
+`true` again, the sparse-checkout file is byte-identical to the pre-trial backup
+(`diff` clean), and 45 `.proto` are on disk again. The materialization is real, it is
+one command per repo, and it is **reported rather than done** because it is a
+corpus-size decision taken on a shared disk, not a lane's to make unilaterally.
+
+## Everything else reproduces at HEAD, bit for bit
+
+| measurement | pass 10 | this pass |
+|---|---|---|
+| analyzer-direct symbols / edges | 41,956 / 55,941 | **41,956 / 55,941** |
+| `uses` / `contains` / `imports` / `exports` / `overrides` | 13,275 / 40,098 / 1,561 / 4 / 1 | **13,275 / 40,098 / 1,561 / 4 / 1** |
+| `contains` member labels | field 26,647, nestedType 8,623, oneof 299, enumValue 2,967, rpc 1,552, groupType 10 | **identical** |
+| descriptor oracle `contains` | 36,022 / 37,042, `unexplained` 0 | **36,022 / 37,042, `unexplained` 0** |
+| descriptor oracle `imports` / `exports` | 1,442 / 1,442 and 4 / 4 | **identical** |
+| `uses` oracle | 11,260 judged, 11,218 agree, 42 wrongName, 99.627% | **identical** |
+| node types observed / declared | 94 / 117 | **94 / 117** |
+| all 5 construct rulings re-probed | 0 | **0** |
+| mutants | 30 caught / 0 survived | **30 caught / 0 survived** |
+| fixtures | 10 pass / 0 fail | **10 pass / 0 fail** |
+| `firing-check --files 120` | 3/10, 2,069 edges, 10/120 | **3/10, 2,069 edges, 10/120** |
+| `ontology-coverage-gate protobuf` | `ruled-sound 3 FALSIFIED 2`, exit 1 | **identical**, exit 1 |
+| regex census | 0 protobuf rows | **0 protobuf rows** |
+| `npx tsc --noEmit` | no diagnostics | **no diagnostics** |
+
+Two production-side numbers did move, both inside the band this pass explains, and both
+on instruments that walk production:
+
+| instrument | pass 10 | this pass | moved |
+|---|---|---|---|
+| `protobuf-census.ts` symbols / edges through `parseFile` | 41,955 / 54,939 | **41,948 / 54,930** | −7 / −9, one file lost to `memory access out of bounds` |
+| incoming audit `contains` in-file-both | 39,787 | **39,735** | −52 |
+| incoming audit `uses` cross-file-ambiguous | 1,461 | **1,460** | −1 |
+
+The analyzer-direct totals did not move at all, which places every one of those three
+deltas in the production path and in neither the analyzer nor the corpus.
+
+## Pass 11 gate table
+
+| Command | Result |
+|---|---|
+| `npx tsc --noEmit` | **no diagnostics** |
+| `npx tsx script/m14/protobuf-census.ts` | 821 ok / 0 fail; analyzer-direct **41,956 / 55,941**; through `parseFile` 41,948 / 54,930 (band); 13,273 / 40,092 / 1,560 / 4 / 1; 0 empty names; 0 bad kinds; 0 `unknown`; 0 self-loops; **0** under 0.7 |
+| `npx tsx script/m14/tmp/protobuf/probe/parse-loss-isolation.mts --mode=alone-fresh --reps=40` | **0 / 280** |
+| `… --mode=census --rounds=2` × 5, journaled | **3 / 8,210**, 0.0365%, 3 files, 2 repos, 3 of 3 outside the suspect dir |
+| `npx tsx script/m14/tmp/protobuf/probe/dump-contains-io.mts` | 40,098 / 1,561 / 4; member labels identical to pass 10 — **and the documented no-`--out` command now runs** |
+| `protoc-descriptor-oracle.py --protoc …/protoc-36/bin/protoc` | **unexplained 0**; `contains` 36,022/37,042, `imports` 1,442/1,442, `exports` 4/4; 781 compiled, 37 rejected |
+| `protoc-oracle.py --protoc …/protoc-36/bin/protoc` | **libprotoc 36.2**; 11,260 judged, **11,218 agree**, 42 wrongName; 899 not-a-type; 35 files rejected, 1,099 unadjudicated |
+| `npx tsx script/m14/protobuf-construct-probes.mts` | **94** observed node types; all 5 rulings still **0**; `block_lit` histogram `{constant: 1909}` |
+| `npx tsx script/m14/protobuf-incoming-audit.mts` | `uses` 1,460 ambiguous + 49 unbound + 4 hopeless; `contains` in-file-both 39,735 (band) |
+| `npx tsx script/m14/run-fixtures.ts --lang protobuf` | **10 pass / 0 fail** |
+| `bun run script/m14/tmp/protobuf/probe/mutant-sweep.mts` | **30 caught / 0 survived** |
+| `npx tsx script/m12/verify-regex-census.ts` | **PASSED** — 0 protobuf rows |
+| `npx tsx script/m14/firing-check.ts --files 120 protobuf` | **3/10 fired, 2,069 edges, 10/120 files**, analyzer digest stable |
+| `npx tsx script/m14/ontology-coverage-gate.ts protobuf` | **exit 1** — `emitted 5/10 ruled-sound 3 FALSIFIED 2`, both rows the missing `differential.ts` `LANGS` entry |
+
+## Files this pass owns
+
+| file | lines | what |
+|---|---|---|
+| `script/m14/tmp/protobuf/probe/parse-loss-isolation.mts` | 337 | new: alone-vs-load, with a durable journal |
+| `script/m14/tmp/protobuf/probe/dump-contains-io.mts` | +14 / −2 | the `indexOf` landmine, guarded |
+
+## §8 items
+
+Unchanged from pass 10, and the supervisor has since applied the first one:
+
+> **APPLIED** — `script/m14/ontology-coverage-gate.ts` now imports `PROTOBUF_RULED`
+> (`f20be135f`), so the arbiter reads this lane's written rulings instead of bash's.
+
+> **OPEN, one line** — `script/m14/differential.ts`, add to `LANGS`:
+> `protobuf: { wasm: "tree-sitter-protobuf.wasm", analyzerFile: "real-protobuf-analyzer", className: "RealProtobufAnalyzer", ext: "proto" },`
+> Why: the gate resolves its grammar at `ontology-coverage-gate.ts:247` as
+> `(LANGS as any)[LANG]?.wasm ?? "tree-sitter-bash.wasm"`, so with `protobuf` absent both
+> grammar-inventory rulings are adjudicated against **bash's** node-type table and the
+> gate reports them FALSIFIED. The gate's own detail string says so:
+> `WRONG GRAMMAR — this probe was handed a tree whose root node is 'program', not
+> 'source_file'`. All four values are already carried at `script/m14/run-fixtures.ts:91`.
+
+**NEW, and it is a pool item rather than a lane item.** The parse loss measured above is
+in the shared runtime, not in protobuf: ~0.04–0.11% of file-parses at width 8 return
+nothing and print `memory access out of bounds`, the rate varies 2.9× between runs of one
+instrument on one corpus, and the files affected are arbitrary across five
+repositories. Any lane whose corpus is walked at concurrency will show the same band and
+may misread it as its own. Two facts a maintainer needs, both measured here:
+`parseFile`'s wasm fault is swallowed into an **empty successful parse**, so a lost file
+is counted `ok` and moves no counter except a total; and the 120s `[BB-HANG]` watchdog
+calls `process.exit`, which discards any in-memory tally.
+
+**NEW, for the corpus rather than for code.** The four vendored-dependency upstreams
+named in pass 10 (`vtprotobuf`, `docker/swarmkit`, `etcd/api/*`, `orca_load_report`)
+would take descriptor-oracle coverage on `contains` from 92.4% toward ~98%. Pass 11 adds
+the other half: the three protobuf corpus repos are **sparse checkouts holding 281 of
+7,984** tracked `.proto` files, which is why the shared arbiter can only offer this lane
+10 readable files in 120. Both are disk decisions against a root filesystem that reached
+100% during this pass, and both are reported rather than taken.
+
+## Declared limitations, pass 11
+
+- **The alone arm cannot see an order-dependent fault.** `--mode=alone` fixes the
+  population at one file, so a fault that needs a specific sequence of prior parses
+  reads 0 there. The alone arm excludes cause A as *the file's own content*; it does not
+  exclude a fault that needs a particular predecessor. Cause B is supported by the alone
+  result plus the load-dependent rate, not by the alone result alone.
+- **The rate is a range, not a value**, and it is quoted as one: **0.0365% – 0.107%**
+  across two runs of one instrument on one corpus. Quoting either endpoint alone would
+  overstate the precision, and the spread is itself the finding.
+- **Ten rounds is a small sample for a 0.04% rate.** The journal makes more rounds
+  cheap and they were not run here: the probe is killed by the fault it measures, and
+  every extra round is another chance to be killed. 8,210 file-parses bounds the rate
+  loosely; it does not pin it.
+- **`unittest_empty.proto` is a declared 0-symbol file, not a coverage gap.** It is
+  named here so a reader who finds it in the `dump-contains-io` "files with no
+  production symbols" line knows it is the corpus testing an empty file rather than this
+  lane failing to read one.
+- **`overrides` remains this lane's one DERIVATION finding** and remains unadjudicable:
+  no `protoc` descriptor field records a doubled field number, and `protoc` rejects the
+  one corpus instance. 1 edge, 1 file, 821 files, unchanged by this pass.
+- **Nothing in this pass changed the analyzer.** `src/ast/real-protobuf-analyzer.ts` is
+  untouched at HEAD and every emitted-type count reproduces pass 10 exactly. The two
+  findings here are an instrument and a probe, and the standing band is now attributed
+  rather than merely bounded.
