@@ -109,24 +109,52 @@ by `validation/m14/fixtures/julia/engine-concurrency-probe.ts` (lane-owned, writ
    | `census.ts:82` | 4 workers | clean — `throw: 0`, `fallback: 0` |
    | `firing-check.ts:290` | sequential `for` | clean — `degraded: 0`, 234,796 edges |
 
-   Interleaved A/B, 400-file stride sample, 3 rounds per arm, so no arm owns the quietest minute:
+   Interleaved A/B, 400-file stride sample, 3 rounds per arm, so no arm owns the quietest minute.
+   **The block below is ONE RECORDED RUN and the trap is PROBABILISTIC, which is a correction to
+   this file.** It previously stood here as a rate — `3 degraded … (3 of 3 rounds)` — and two
+   further runs on 2026-10-04, same binary, same corpus, same sample, did not reproduce it:
 
    ```
+   RECORDED RUN (the one this file quoted)
    width 1: 1,200 parses   0 degraded   0 threw
    width 4: 1,200 parses   0 degraded   0 threw
    width 8: 1,200 parses   3 degraded   0 threw      (3 of 3 rounds)
+   ARMED 10,797  CLEARED 10,794  NEVER CLEARED 3    BOMBS OBSERVED FIRING: 2
 
-   120000 ms timers ARMED 10,797   CLEARED 10,794   NEVER CLEARED 3   <- one per parse error
-   BOMBS OBSERVED FIRING: 2, at +120.0 s and +120.3 s after arming, each naming the file whose
-   parse threw, each calling process.exit(1)
+   RUN A, 2026-10-04, 09:5x  load1 12.61 on 8 cores at start, falling to 7.00 by round 3
+   width 1: 1,200 parses   0 degraded   0 threw
+   width 4: 1,200 parses   0 degraded   0 threw
+   width 8: 1,200 parses   0 degraded   0 threw      (0 of 3 rounds)
+   ARMED 10,800  CLEARED 10,800  NEVER CLEARED 0    BOMBS OBSERVED FIRING: 0
+   probe's own verdict line: "clean. The defect is latent here, not absent."
+
+   RUN B, 2026-10-04, 10:2x, ~20 min later, no other change
+   2 degraded, BOTH seen at width 8 only — Pkg.jl/test/test_packages/Sandbox_PreservePreferences/
+   dev/Foo/test/runtests.jl and julia/base/asyncmap.jl, 1x each
+   ARMED 10,798  CLEARED 10,796  NEVER CLEARED 2    BOMBS OBSERVED FIRING: 1, at +120.1 s after
+   arming, +177.5 s into the run, naming the Pkg.jl file, attempting process.exit(1)
    ```
 
-   The trapped file differs every run — `Pkg.jl/…/TestArguments.jl`, `Aqua.jl/…/UsesTransientTask.jl`,
-   `julia/base/array.jl`, and on earlier runs `Unregistered.jl`, `Aqua.jl/src/ambiguities.jl`,
-   `Aqua.jl/test/pkgs/…/svd.jl` — and each of them parses clean when driven alone, so this is
-   concurrent-parse fragility and **not** a per-file grammar defect. Both files are shared (§8):
-   `engine.ts` needs a `try`/`finally` around `parser.parse`, and the gate needs either a width below
-   the trap threshold or the bomb disarmed before the catch.
+   **So across 6 probe rounds today the width-8 arm degraded in 1 and not in 5**, and the
+   `ontology-coverage-gate.ts julia` run at width 8 trapped twice (`Graphs.jl/test/core.jl`, both
+   times `[BB-PARSE-ERR] … memory access out of bounds` then `[BB-HANG]` then exit 1). Quoting
+   `3 of 3 rounds` as the rate would repeat, on this finding, the error this file corrects three
+   paragraphs above about the arbiter's exit code: a gate that traps on some runs and not others
+   cannot be quoted for a rate, and quoting one was the error. **The part that IS reproducible is
+   narrower and is what §8 row 2 rests on: width 1 and width 4 degraded 0 times in 4,800 parses
+   across all three runs, and every degraded file ever seen was seen at width 8 only.** `load1` is
+   the uncontrolled variable and it is printed by the probe, because "width 8 traps and width 4 does
+   not" would be a cleaner claim if the trap were deterministic, and it is not.
+
+   The trapped file differs every run — `julia/base/asyncmap.jl` is new to this list, and
+   `Pkg.jl/test/test_packages/Sandbox_PreservePreferences/dev/Foo/test/runtests.jl` repeats one already
+   named; earlier runs produced `Pkg.jl/…/TestArguments.jl`, `Aqua.jl/…/UsesTransientTask.jl`,
+   `julia/base/array.jl`, `Unregistered.jl`, `Aqua.jl/src/ambiguities.jl`, `Aqua.jl/test/pkgs/…/svd.jl`
+   — and each parses clean when driven alone, so this is concurrent-parse fragility and **not** a
+   per-file grammar defect. `julia/base/asyncmap.jl` was driven alone on 2026-10-04 and returned
+   `success: true`, 0 errors. Both files are shared (§8): `engine.ts` needs a `try`/`finally` around
+   `parser.parse`, and the gate needs either a width below the trap threshold or the bomb disarmed
+   before the catch.
 
 **None of this moves a verdict, and the reason is worth stating precisely.** `arbiter-census-diff.ts`
 re-measures the same 1,985 files under the arbiter's own counting rule at width 4 and returns
@@ -1877,7 +1905,7 @@ which is why none of them is in this lane's commits.
 | # | file | location | what it must do | why |
 |---|---|---|---|---|
 | 1 | `src/ast/engine.ts` | `:1441-1447` | wrap `parser.parse(content)` in `try`/`finally` so `clearTimeout(parseBomb)` runs on the throwing path too | a throwing parse orphans a 120 s `process.exit(1)` bomb. Measured: 10,797 armed / 10,794 cleared / **3 never cleared**, one per parse error, 2 observed fires. Any language's census can lose its last 2 minutes of work, and any lane scored by a gate loses the gate's verdict table |
-| 2 | `script/m14/ontology-coverage-gate.ts` | `:240` | drop the 8-wide `Promise.all` to the width that is clean (4 is measured clean; 1 and 4 trapped 0/2,400 each, 8 trapped 3/1,200 in 3 of 3 rounds) | `parseFile` traps `memory access out of bounds` at width 8 on this corpus and at no other width tested. With #1 unfixed this costs the gate its exit code; with #1 fixed it still costs edges |
+| 2 | `script/m14/ontology-coverage-gate.ts` | `:240` | drop the 8-wide `Promise.all` to width 4 | `parseFile` traps `memory access out of bounds` at width 8 on this corpus and at no other width tested. **The evidence is the width-1/width-4 CLEANLINESS, not the width-8 rate: width 1 and 4 degraded 0 times in 4,800 parses across 3 probe runs on 2026-10-04, while the width-8 arm degraded in 1 of 6 rounds — so the trap is real (the arbiter itself trapped twice at width 8) but PROBABILISTIC, and a rate must not be quoted for it.** With #1 unfixed a single degraded file costs the gate its exit code; with #1 fixed it still costs edges |
 | 3 | `script/m14/differential.ts` | after `:44`, after `:22863`, beside `:23212-23223` | the three lines that import `deriveJuliaOverridesTruth`, push its rows for `lang === "julia"`, and add `"overrides"` to the F5 label allowlist for julia | clears the last DERIVATION finding this lane can clear itself. The oracle exists (`script/m14/oracles/julia-overrides.ts`), agrees 3/3 when run, and is in no gate |
 | 4 | `script/m14/differential.ts` | `:457-469` in `script/m14/verify-doc-truth-emissions.ts` | drop the `continue` that skips the first body row of a claim table | `parseClaimTable` never compares the first row, so a lane whose table leads with a relationship type cannot fail that gate for it. julia reads `UNDOCUMENTED [julia] calls` while `calls` is its largest emitted type. Same shape reported against `real-kotlin-analyzer.md` |
 | 5 | `script/m14/oracles/` + `differential.ts` | new `julia-imports.ts`, `julia-exports.ts` | independent derivations of "this file imports that module" and "this module exports that binding", sharing no rule with `importTargets()` / `exportableName()` | the last 2 DERIVATION findings. Reusing the functions under test would make the oracle agree by construction — the BD8b failure the gate header records. This is a second derivation of julia's module grammar and cannot be lane-owned |
