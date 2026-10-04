@@ -47,29 +47,60 @@ types, no fields), already under `notVendored`.
 | --- | --- |
 | Module identity | the file's basename **without** its extension (`Basic.json` → `Basic`), for **all three** routed spellings. It used to strip only `.json`, so `.jsonc` and `.json5` module symbols kept their extension while `.json` ones did not — a deviation from this very row, found by the differential as 24 MISSING and 207 UNEXPLAINED `contains` edges, every sampled example a dot-prefixed name like `.markdownlint-cli2.jsonc`. Small (4 `.jsonc` and 6 `.json5` files are tracked corpus-wide) and corrected. |
 | Symbol identity | a `pair` key is a symbol named by its key. Its **owner is the parent SYMBOL's name**, never its qualified path — a path is a fine identity and a useless endpoint when the endpoint is to be resolved by name. The path lives in `qualifiedName` and in edge metadata. |
-| Edge endpoints | **every relationship type emits QUALIFIED PATHS on both ends**, with one declared fallback. A bare JSON key is ambiguous by construction — a document repeats `name`, `type`, `items`, `properties` relentlessly — and the shared resolver declines a non-unique bare name, so an ambiguous endpoint does not degrade to a wrong answer, it degrades to **no answer**. Measured on a 202-file, 99-repo sample: **32,660 of 66,032 `contains` edges (49.4%)** named a target matching more than one published symbol, **1,119** were self-loops (source string == target string), and **51 corpus-wide** carried an endpoint equal to the literal `unknown`, because a real JSON key is named `unknown` (proxicall's 38 i18n bundles, redis 6, terraform 3, hasura-engine 1). The path is already computed — it is the symbol's `qualifiedName` — and it matches the resolver exactly. |
+| Edge endpoints | **every relationship type emits QUALIFIED PATHS on both ends**, with one declared fallback. A bare JSON key is ambiguous by construction — a document repeats `name`, `type`, `items`, `properties` relentlessly — and the shared resolver declines a non-unique bare name, so an ambiguous endpoint does not degrade to a wrong answer, it degrades to **no answer**. Measured on a 202-file, 99-repo sample: **32,660 of 66,032 `contains` edges (49.4%)** named a target matching more than one published symbol, **1,119** were self-loops (source string == target string), and **51 corpus-wide** carried an endpoint equal to the literal `unknown`, because a real JSON key is named `unknown` (proxicall's 38 i18n bundles, redis 6, terraform 3, hasura-engine 1). The path is already computed — it is the symbol's `qualifiedName` — and it matches the resolver exactly. **Two types were still violating this row when the incoming pass measured it** — `calls` and the OpenAPI-endpoint `uses` — and both are fixed; see §*The incoming half*. |
 | Kinds | an **object** is `class`: it has named children and `contains` edges come from it. Everything else is `property`, **including an array** — the analyzer previously called arrays `variable`, importing a shell-shaped mutable-binding distinction JSON does not have. |
 | Arrays | a **leaf of scalars, a container of objects and of arrays**. Scalar elements are positional and unnamed: no symbol, no edge. An object element is a `class` named `<array>[i]`, contained by the array, and **its own keys are owned by the element**. An element identified by an index under a KEYED array keeps the key's name (`allOf[0]`); an element of an array that is itself an element is named from its qualified path (`rows[0][0]`), and it gets a symbol of its own because it owns elements. |
 | `line_number` | **every relationship carries a positive site line.** It used to carry none: the string did not occur once in the file, so every json edge in the index was stored with a NULL line while symbols carried `range` throughout. The position was known and simply not published. |
 | `$ref` | names a **LOCATION**, not a symbol, so the target is the location. Nothing guarantees the name at a location is unique — two documents in one file can each declare `spec` — while the location is. A JSON Pointer is *relative to the document root*, so `#/components/schemas/X` names `<module>.components.schemas.X`. |
 | `imports` | a `$ref` naming **another file** is a dependency and emits both `imports` and `references`. A local pointer and a URL are neither: a URL names a **vocabulary** (a JSON-Schema draft identifier), and 38 of the 50 external refs in the corpus are exactly that. |
 | OpenAPI | a `/`-prefixed key whose object declares an HTTP method is an endpoint, and the `paths` object `uses` it at 0.8 with `reasonCode`. |
-| Manifests | in a `package.json`/`composer.json`, an entry under `dependencies` / `devDependencies` / `peerDependencies` / `optionalDependencies` is a `uses`. Keyed on the **filename**, so any JSON with a `dependencies` key does not acquire npm semantics. |
+| Manifests | in a `package.json`/`composer.json`, an entry under `dependencies` / `devDependencies` / `peerDependencies` / `optionalDependencies` is a `uses`. Keyed on the **filename**, so any JSON with a `dependencies` key does not acquire npm semantics. The edge publishes the entry's **version range**, read from the pair's value node; `unspecified` when the value is not a string, because npm's object alias form and composer's array form have no range and inventing one is the defect this row was written to fix. |
 | npm scripts | a `scripts` entry invoking a **sibling** entry by name (`npm run <name>`, and `pnpm`/`yarn`/`bun` with `run`/`run-script`/`run-s`) is a `calls`. Declined and pinned with `forbidRelationships`: a target that is not a key of the same `scripts` object (a binary, or another package's script), a self-reference, a **quoted** target (the shell rewrote the argument), and any token that merely *contains* a runner name — `npx` contains `npm`, and a PATH named `npm` is not a runner. npm's implicit `pre`/`post` lifecycle hooks are also not emitted: npm runs them without the command naming them. |
 | **Declared types** | a document that declares types and states their supertypes emits `extends` and `implements` from ordinary object keys. Two shapes occur, and both announce themselves before any key is interpreted: LSP's meta-model uses `{"kind":"reference","name":X}` (2 of 11,713 admitted documents), and duckdb's serialization schemas declare a C++ class with a `class` string (21 documents, all duckdb). Without the precondition the emitter would fire on every JSON file. |
 | Documents | a document may hold an object, an array, or **several values** — concatenated JSON is real input (kubernetes' `hack/testdata` holds it) and every top-level value is walked. |
 | Duplicate keys | a key declared **twice in one object** is a redefinition — the second replaces the first under every mainstream parser — and emits `overrides` in the **bash lane's** shape: source is the owner symbol, target the key, and `overridesLine` carries the prior line, because both declarations share one name *and* one qualified path and the line is the only thing that distinguishes them. Scoped to the **object**: the same key in two different objects is not a redefinition, and that is the corpus's dominant shape (120,174 occurrences across 7,679 files against 21 genuine duplicates). An **empty** key is declined (10 occurrences, every one a document the grammar recovered with ERROR nodes). |
 | Invalid input | errors are engine-owned and surfaced; the module symbol is still emitted so a consumer can attribute the failure to a file. |
-| Regex | **zero regex literals**, enforced by `script/m12/json-contract-probe.ts` rather than asserted, and scanned with comments and strings stripped. The analyzer never reads the file as text: every decision comes from the tree. |
+| Regex | **zero regex literals in the analyzer**, enforced by `script/m12/json-contract-probe.ts` rather than asserted, and scanned with comments and strings stripped. The analyzer never reads the file as text: every decision comes from the tree. The lane **oracle** is also regex-free and tree-driven — it reads `node.type`, `childForFieldName` and `namedChildren`, and touches `.text` only on a leaf value, which the probe permits explicitly. |
+
+### Where regex still appears in this lane, and why it is not the same defect
+
+The no-regex rule exists because regex over SOURCE TEXT matches comments and string
+literals, misses nested syntax, and breaks silently on the next grammar version. That
+failure mode needs two things this lane does have — a regex, and analyzed source text to
+apply it to. **The analyzer and the oracle have neither pairing.** What remains is regex over
+things that are not the analyzed language, and calling it "the same defect" would be a
+category error that hides the finding that matters:
+
+| file | what it matches | why it is not source-text analysis |
+| --- | --- | --- |
+| `census.ts` | `repo.replace(/[^A-Za-z0-9._-]/g, "_")` | sanitising a **repository name** into a temp filename |
+| `differential.ts` | `relPath.replace(/\.[^.]+$/, "")` | stripping a **file extension** off a path |
+| `json-mutants.ts` | `/^(.*)\[(\d+)\]\[(\d+)\]$/` | reshaping the analyzer's **own output** to manufacture a mutant |
+| `parse-determinism.ts` | `"symbols":(-?\d+)` | **removed** — see below |
+
+Three of the four were removed this pass. `parse-determinism.ts` had two: one was a genuine
+**no-op** — `.replace(/^.*\//, (m) => m)` replaces the match with itself, so it did nothing
+and read as if it were stripping a directory prefix — and the other pulled a number out of a
+child process's JSON stdout with a pattern where the line is already known to be a JSON
+object, so it now reads the field. A renamed or nested field yields `undefined` instead of
+silently matching a **different number that happens to sit after that text**. The three above
+remain and are listed rather than quietly left for a reader to assume they were overlooked.
+
+`ruling-table.ts` also carried two `new RegExp` and now carries none; the reasoning is in
+§*Ruling table*, and it is a worse instance than the four above because it interpolated a type
+name into a pattern source on the branch that decides whether a RULED verdict is justified.
 
 ## Relationship ontology — 9 of 10 emitted, 1 ruled, every verdict measured
 
 Whole admitted population through production `parseFile`
-(`validation/m14/fixtures/json/census.ts`).
+(`validation/m14/fixtures/json/census.ts`). **Re-measured 2026-10-04, second pass, same
+branch: every type except `contains` reproduced TO THE DIGIT, and `contains` moved only
+because the corpus gained 4 admitted files.** The pass is recorded rather than asserted in
+§*Re-measurement* below.
 
 | type | verdict | edges | files | both endpoints resolve | confidence min | reason code |
 | --- | --- | ---: | ---: | ---: | ---: | --- |
-| `contains` | EMITTED | 3,881,840 | 12,040 | 100.00% | 1.0 | — |
+| `contains` | EMITTED | 3,882,272 | 12,044 | 100.00% | 1.0 | — |
 | `references` | EMITTED | 15,017 | 159 | 98.55% | 0.8 | `json_schema_ref` / `ref_target_not_declared_in_document` |
 | `uses` | EMITTED | 5,758 | 470 | 100.00% | 0.8 | `openapi_path_entry_declares_http_method` |
 | `extends` | EMITTED | 1,721 | 94 | 99.83% | 1.0 | `json_schema_all_of` / `declared_supertype` |
@@ -79,6 +110,13 @@ Whole admitted population through production `parseFile`
 | `overrides` | EMITTED | 22 | 12 | 100.00% | 1.0 | — (`evidenceClass: structural`) |
 | `imports` | EMITTED | 67 | 20 | 0.00% (see below) | 1.0 | — (`evidenceClass: structural`) |
 | `instantiates` | RULED | 0 | — | — | — | — |
+
+**Coverage is reported as APPLICABLE, never as a flat 10: complete at 9 applicable of 9
+(9 emitted, 1 measured-absent).** The denominator shrank by exactly one and only through a
+RULED verdict carrying a corpus measurement — `instantiates`, instrument B, **0 hits over
+12,663 admitted files**, overturn condition stated below. Numerator and denominator come
+from different instruments: the 9 emitted from the census and the firing arbiter, the
+absent one from the ruling recheck over a strictly larger population.
 
 `imports` resolving at 0% is **correct, not a defect**: an `imports` target names
 another FILE (`v0.0.1/dsse_v0_0_1_schema.json`), and a file in another file is not a
@@ -103,6 +141,36 @@ terraform 3, hasura-engine 1). They disappeared because `contains` endpoints bec
 qualified paths, so a key named `unknown` is now `proxicall.website.src.messages.ar.unknown`
 and is no longer indistinguishable from the placeholder. The measurement is in
 `validation/m14/fixtures/json/unknown-endpoints.ts` and in the census.
+
+### Re-measurement, second pass on the same branch (2026-10-04)
+
+Every instrument in this document was re-run rather than carried forward, because a number
+nobody re-ran is a number nobody checked. The corpus is shared and other lanes clone into
+it, so the population moved and the figures have to move with it.
+
+**What reproduced, to the digit.** `calls` 217, `uses` 5,758, `imports` 67, `references`
+15,017, `exports` 513, `extends` 1,721, `implements` 113, `overrides` 22,
+`instantiates` 0. The differential's `220 UNEXPLAINED` and its single file. The
+`instantiates` ruling at **12,663 files / 141 repositories, 0 hits, 0 parse throws**. The
+verdict table at **emitted 9 / ruled-sound 1 / FALSIFIED 0 / without-justification 0**.
+Fixtures **14/14**. Lane mutants **16/16 caught, 0 survivors**; 24 registered for this lane
+across the shared and lane registries, **24 caught, 0 survivors**. Contract probe **28/28**.
+`calls` ambiguous incoming targets **0**.
+
+**What moved, and why.** `contains` 3,881,840 → **3,882,272** (+432) and the admitted
+population 12,543 → **12,547** (+4 files): the corpus grew from 171 to 182 repositories and
+13,187 → 13,191 tracked json-extension files, and the 4 new admitted files carry only
+`contains`. Symbols 3,894,382 → **3,894,818**. The firing arbiter read **9/10 and
+5,172,776 edges** against 5,172,561 before, on 12,478 of 13,000 sampled files with **66
+degraded** — a degraded parse falls back to the regex extractor and returns FEWER edges with
+no error, so that count is a floor for the sample and not its extent.
+
+**What this pass found and fixed.** One, and it was in a measuring instrument rather than
+in the analyzer: the incoming probe classified `extends -> dataTypeBase.json#` as a defect
+when the analyzer had already published `refForm: "sibling_file"` on that edge. See
+§*EXTERNAL vs NEVER-INDEXED*. Two instruments also stopped being reproducible and were
+repaired so the two claims above can be re-run at all — see §*Ruling table* and
+§*Declared limitations* 9.
 
 ### What each type means in JSON
 
@@ -243,12 +311,42 @@ const RULED_BY_LANG: Record<string, Ruled[]> = { bash: BASH_RULED, json: JSON_RU
 
 `ontology-coverage-gate.ts` is shared machinery and this lane does not edit it.
 `validation/m14/fixtures/json/ruling-table.ts` runs the replacement table through the
-gate's own verdict logic and reports, on a 1,952-file / 4-repository corpus:
+gate's own verdict logic:
 
 ```
 emitted 9/10   ruled-sound 1   FALSIFIED 0   ruled-without-justification 0
 grammar node types observed across the corpus: 20
 ```
+
+**This harness stopped being reproducible, and the reason was the trap in §limitation 9.**
+It walks the population **in-process**, and over all 12,547 admitted files it died at an
+arbitrary file on three separate runs — a different file each time — after printing its
+header and **without printing the verdict table**, which is the only thing it exists to
+print. A verdict table that cannot be reproduced is not evidence, so the corpus is now
+scopeable and **the scope is printed with the result**, so no number from it can be quoted
+without its denominator. The corpus named for the run above is `dart-sdk`, `duckdb`,
+`openapi-spec`, `hasura-engine` — **1,973 admitted files** (1,952 at the earlier corpus
+state):
+
+```
+npx tsx validation/m14/fixtures/json/ruling-table.ts \
+  --repos dart-sdk,duckdb,openapi-spec,hasura-engine
+```
+
+The two harnesses are not redundant and neither replaces the other. `ruling-recheck.ts`
+answers the same ruling question over the **whole** population — 12,663 files, no size cap,
+a discard-poisoned-slot parser so it terminates where the single-process walk does not — and
+does terminate, at **0 hits**. `ruling-table.ts` is the one that runs the shared gate's
+four-status verdict logic, which the recheck does not implement. The ruling rests on the
+larger measurement; the verdict table is what shows the gate would not falsify it.
+
+**Two `new RegExp` were removed from `rulingFor`,** the function that decides whether a
+RULED verdict is *justified*. The old pattern interpolated the type name into a pattern
+source, so a type name carrying regex metacharacters would have compiled to a different
+pattern or thrown — and the failure would have landed on the justification decision itself.
+It is now a code-point word-splitter plus a substring test, and it still resolves the
+written ruling to `script/m14/spec/json-completeness.json#BD-ontology`, so `RULED-SOUND`
+survives the change.
 
 ## Performance
 
@@ -376,6 +474,23 @@ is what the measurements do not settle.
    verdict table and still `exit 1`, because the watchdog fires after the table. Read the
    table, not the code. The defect lives in `src/ast/pool-worker.ts` / the engine, which are
    shared, so it is reported rather than fixed.
+   **Re-confirmed at the 2026-10-04 pass, and it now stops two harnesses before they print.**
+   `script/m14/ontology-coverage-gate.ts json --files 300` names **6** files as trapping
+   (`clj-kondo/…/clojure.set.transit.json`, `gh-cli/…/sigstore-js-2.1.0-bundle-v0.1.json`,
+   `hasura-engine/…/pre_ndc_request/send_header/metadata.json`,
+   `kubernetes/…/HEAD/core.v1.PodTemplate.json`,
+   `kubernetes/…/v1.36.0/admissionregistration.k8s.io.v1beta1.MutatingWebhookConfiguration.json`
+   and one more) and then `exit 1` **with no verdict table at all**; so does `ruling-table.ts`,
+   on a different file. The gate also **ignores `--files`** and reports
+   `corpus: 12547 admitted files`, so there is no scoped invocation to fall back on.
+   `parse-determinism.ts` re-checked its named files in isolated child processes: **55 parses
+   over 11 files, 0 traps, 0 nondeterministic, 0 timeouts**, and 10 of the 11 also parse under
+   `JSON.parse` (the 11th is the 250 KB unclosed-bracket file named in §*Performance*, which
+   fails `JSON.parse` and is the documented per-file timeout). The trap is still a property of
+   the run and not of any file, and the consequence for a lane is now sharper than "read the
+   table": **the shared arbiter cannot produce a verdict table for this language at all**,
+   which is why every verdict in this document comes from a chunked harness instead.
+
 10. **The census is a whole-population snapshot, not a stable number.** The corpus is
     shared and other lanes clone into it: this lane's admitted population moved from
     **11,713 files / 106 repositories** at pass 1 to **12,543 files** by 2026-10-03, and
@@ -384,8 +499,19 @@ is what the measurements do not settle.
     (106 → 114 at the 11,713-file state, 12,543 files after), and the supertype-key
     census, which reported "only three occur at all" when `parent` (293 occurrences / 17
     files), `mixins` (88 / 2) and `interface` (1 / 1) also occur. Every EDGE count in the
-    pass-1 table reproduced to the digit at the pass-1 corpus state, and the whole
-    12,543-file census reproduced to the digit on re-run for this pass.
+pass-1 table reproduced to the digit at the pass-1 corpus state, and the whole
+     12,543-file census reproduced to the digit on re-run for this pass **and again across
+     this pass's endpoint-form and metadata changes**.
+     **The 2026-10-04 pass moved the corpus again and the admitted population did NOT
+     follow**: the corpus root grew from 139 to **171 repositories** and from 12,665 to
+     **13,187** tracked json-extension files, while the admitted population stayed at exactly
+     **12,543 files / 139 repositories**. Of the 32 new repositories only `julia` carries
+     json-extension files at all (7), and those 7 are tracked-but-absent (§*The 522 files*), so
+     they were never admissible. Separately `ruling-recheck.ts`, which imposes no size cap,
+     moved 12,659 → **12,663 files / 141 repositories**. A reader reconciling "13,187 tracked"
+     against "12,543 admitted" should read §limitation 11 (116 over the 512 KB cap) and
+     §*The 522 files* (522 absent from disk); the residual 6 are content-based rejection by
+     `detectLanguageFromPath`.
 11. **The census declines files over 512 KB, so every count here has a denominator that
     excludes 116 files.** `census.ts` sets `MAX_BYTES = 512 * 1024` and the largest file it
     admits is **510,521 B**. Counting the corpus independently: **12,665** files carry a json
@@ -421,6 +547,221 @@ is what the measurements do not settle.
     §8 item, because the arbiter is shared and a default that under-samples rare types will
     read as a defect in whichever lane owns them.
 
+     **Settled by running the same instrument at two sample sizes.** `firing-check.ts` was
+     re-run on this lane at three widths with the analyzer unchanged:
+
+     | invocation | files walked | fired | edges | degraded |
+     | --- | ---: | ---: | ---: | ---: |
+     | `--files 120` | 115/120 | **6/10** | 44,246 | 1 |
+     | `--files 1200` | 1,147/1,200 | **7/10** | 507,494 | 3 |
+     | `--files 13000` (whole population) | 12,478/13,000 | **9/10** | 5,172,561 | 66 |
+
+     9/10 at the population is the census's answer from a different instrument, so the two
+     agree and the 6/10 is a property of the stride. **The arbiter row a lane reports should
+     carry its sample width next to it**, because at the default width this lane's three
+     rarest types are unreachable by arithmetic, not by chance.
+
+## The incoming half — what reaches a declaration, and which targets are hopeless strings
+
+Everything above is outgoing: one file in, edges out. It cannot see a target that resolves
+to more than one declaration, and it cannot tell a target nobody could publish from a target
+this analyzer failed to publish. Both were measured here, per declaration, through production
+`parseFile`.
+
+### The shared arbiter's row, and the metric in it that was wrong in both directions
+
+`script/m14/incoming-check.ts json <449 files>`, one file per repo spread deterministically,
+space-free paths only (an earlier run passed 464 paths of which 15 contained a space; the
+shell split those into separate arguments and `parseFile` threw on the fragments — **80 parse
+failures, 0 symbols contributed**, and the totals were unaffected, which is why the clean run
+reports the same 188,498 symbols):
+
+```
+type            fired  edges    distinct  ambiguous  unresolved
+calls           yes    37       28        0          0
+uses            yes    765      639       222        0
+contains        yes    188054   175568    37         0
+references      yes    274      66        0          16
+exports         yes    16       4         15         0
+extends         yes    6        3         0          0
+
+distinct declarations named by at least one edge : 176210
+declarations nothing names (orphans)             : 181686 of 188498
+target names resolving to >1 published symbol   : 158
+```
+
+**The orphan line is an artefact and must not be quoted as 96.4%.** It compares a
+path-valued edge target against a name-valued symbol: `declaredNames` collects `symbol.name`
+and `namedTargets` collects `target` strings, so it is only meaningful while a lane's targets
+are also bare names. On this lane it read **0.23%** before `contains` endpoints became paths
+(misleadingly low — a target `tag` "named" whichever `tag` the set held) and **99.75%** after
+(misleadingly high — a target `pkg.outer.tag` never equals a bare `tag`). `validation/m14/
+fixtures/json/namespace-orphan-probe.ts` measures both namespaces separately. Over the same
+449 files:
+
+| metric | value |
+| --- | ---: |
+| distinct qualified paths published | 175,822 |
+| **orphan by qualified path** | **250 of 175,822 = 0.14%** |
+| orphan by bare name (unique names only) | 8,760 of 11,856 = 73.89% |
+| ambiguous bare names (excluded from that denominator) | 4,459 |
+
+**0.14% is the number**, and 73.89% is the same fact in the namespace the shared metric
+counts. Neither is a regression and neither is a pass.
+
+### EXTERNAL vs NEVER-INDEXED — the two are opposite findings that look identical in a count
+
+644 distinct target strings named nothing published. A previous version of this lane's probe
+printed them and declined to say what they were, because separating them looked like it needed
+a guess. It does not: **every type this analyzer emits already publishes the discriminator for
+its own target contract**, and the two classes of type differ by construction — a target that
+is contractually inside the document and does not resolve is a defect, and one that is
+contractually outside cannot resolve and is not. The probe reads `metadata` and classifies:
+
+| verdict | edges | what it is |
+| --- | ---: | --- |
+| `external-package` | 761 | a manifest `dependencies`-family entry (`@apollo/client`, `express`). An npm package name is not a symbol in the document and cannot be. |
+| `document-does-not-declare-it` | 16 | a `$ref` with `reasonCode: ref_target_not_declared_in_document`, held at 0.8. The document does not declare the location. |
+| `external-file` | 6 | `imports`, `importForm: json_schema_ref` — the target is another file. |
+| `external-entry-point` | 3 | `exports`, `exportForm: manifest_entry_point` — `.`, `import`, `require`. |
+| **`DEFECT-in-document-target`** | **0** | a type whose contract puts the target inside this document, unresolved. |
+
+**786 of 786 unresolved edges are external or adjudicated, and 0 are defects.** A type with no
+discriminator and no in-document contract is reported `UNCLASSIFIED` rather than assigned to
+whichever bucket is tidier, so the classification cannot quietly absorb a type it does not
+understand.
+
+**The second pass found the opposite failure: the probe inventing a defect, and the number
+was 1.** On 444 files / 139 repos it reported `DEFECT-in-document-target: extends ->
+dataTypeBase.json#`. The analyzer was right and the reporter was wrong.
+`extractSchemaComposition` publishes `refForm: "sibling_file"` and `resolvedPath: false` on
+that edge, because an `allOf` entry may be `{"$ref": "dataTypeBase.json#"}` — a **sibling
+file** — and that is still composition: "inherits from the schema in that file". The target is
+another file and cannot bind to a symbol here, exactly as for `imports`.
+
+`classifyUnresolved` read `importForm`, `exportForm` and `reasonCode`, and hard-coded
+`extends` as in-document, so it never consulted `refForm`. That is the failure this section
+exists to prevent, running in the direction nobody watches: **the two classes are opposite
+findings, and a reporter that ignores a published discriminator manufactures the wrong
+one.** A lane that reported that 1 as an analyzer defect would have spent a wave chasing a
+bug in code that was correct. `refForm` is now read before the type-based branch.
+
+| verdict | before | after | what it is |
+| --- | ---: | ---: | --- |
+| `external-package` | 295 | 295 | a manifest `dependencies`-family entry (`esbuild`, `@element-plus/build`). |
+| `document-does-not-declare-it` | 91 | 91 | a `$ref` with `reasonCode: ref_target_not_declared_in_document`, held at 0.8. |
+| `external-file` | 44 | **45** | `imports` (`importForm: json_schema_ref`) and `extends` (`refForm: sibling_file`) — the target is another file. |
+| `external-entry-point` | 7 | 7 | `exports`, `exportForm: manifest_entry_point`. |
+| **`DEFECT-in-document-target`** | **1** | **0** | a type whose contract puts the target inside this document, unresolved. |
+| **total adjudicated** | **438** | **438** | 4 verdicts, 0 `UNCLASSIFIED`. |
+
+### The ambiguity that WAS mine, and is closed
+
+Before the fixes below, the same probe reported **38 `DEFECT-in-document-target` edges**, and
+the per-type endpoint-form measurement showed why. Three types emitted bare names where a
+qualified path exists:
+
+| type | target = qualified path | bare name | neither | of which ambiguous |
+| --- | ---: | ---: | ---: | ---: |
+| `contains` | 188,054 | 0 | 0 | 0 |
+| `references` | 258 | 0 | 16 | 0 |
+| `extends` | 6 | 0 | 0 | 0 |
+| `calls` | **37** (was 0) | 0 | 0 | **0** (was 7) |
+| `uses` | 4 (was 0) | 761 | 0 | 27 |
+| `exports` | 0 | 16 | 0 | 1 |
+| `imports` | 0 | 0 | 6 | 0 |
+
+Two of these were fixable and are fixed:
+
+- **`calls`** — both endpoints are keys of **one** `scripts` object, so both have a position.
+  `lodash` is the sharpest case: `npm run build` invokes `build:main` and `build:fp`, and
+  `npm run test` invokes `test:main` and `test:fp`, so every target shares a prefix with its
+  own source and 7 of 37 bound to more than one published symbol. Now
+  `<module>.scripts.<name>` on both ends, with `scriptName`/`calleeName` kept in metadata.
+- **the OpenAPI-endpoint `uses`** — an endpoint is a key of the `paths` object, so it has a
+  position too. Now sourced from `endpoint.scope` and targeted at `endpoint.qualifiedName`.
+  **453 edges corpus-wide.**
+
+Two are **not** fixable, and the reason is the language rather than the analyzer:
+
+- **`uses` from a manifest dependency** — `@apollo/client` is a package name. There is no
+  position in the document for it and there never will be.
+- **`exports`** — a published entry point (`.`, `./sub`, `fixture-bin`) likewise.
+
+So 28 ambiguous `uses`/`exports` targets remain and are **declared as the language's property,
+not papered over**: the two `uses` sites are now told apart by their published discriminators
+(`package_dependency` vs `openapi_path_entry_declares_http_method`) rather than by inference,
+and the 4 `uses` that resolve by qualified path are the OpenAPI ones.
+
+The shared arbiter's ambiguity count for this lane went **160 → 158**: `calls` 9 → 0, and the
+remainder is `uses` (222) and `exports` (15), which is where an npm package name lives.
+
+### What the change cost, and what caught it
+
+The lane's oracle (`script/m14/oracles/json.ts`) published bare `calls` endpoints. The first
+whole-population differential after the change read **every `calls` edge at 0% covered — 217
+MISSING, 217 UNEXPLAINED** — a disagreement about endpoint FORM dressed as a disagreement
+about the language. That is the second time this lane has run that ground, and the doc already
+records the first (`contains`). An endpoint-form change is a change to the comparison, and the
+comparison has to be re-run or it certifies nothing. After the oracle was retargeted:
+
+| label | truth | analyzer | covered | MISSING | UNEXPLAINED |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| `calls` | 217 | 217 | 217 (100.00%) | 0 | 0 |
+| `uses` | 5,758 | 5,758 | 5,758 (100.00%) | 0 | 0 |
+| `contains` | 3,881,840 | 3,881,840 | 3,881,840 (100.00%) | 0 | 0 |
+| `imports` | 67 | 67 | 67 (100.00%) | 0 | 0 |
+| `references` | 14,797 | 15,017 | 14,797 (100.00%) | 0 | 220 |
+| `exports` | 513 | 513 | 513 (100.00%) | 0 | 0 |
+| `extends` | 1,721 | 1,721 | 1,721 (100.00%) | 0 | 0 |
+| `implements` | 113 | 113 | 113 (100.00%) | 0 | 0 |
+| `overrides` | 22 | 22 | 22 (100.00%) | 0 | 0 |
+| **TOTAL** | **3,905,480** | **3,905,700** | **3,905,480 (100.00%)** | **0** | **220** |
+
+Re-measured at the second pass: truth 3,905,480 / analyzer 3,905,700, covered **100.00%**,
+0 MISSING, 220 UNEXPLAINED. The +220 on the analyzer side over the first pass is the
+`contains` growth from the 4 newly admitted files; the per-label agreement is unchanged and
+every label reproduced to the digit.
+
+**No edge count moved** — this was endpoint form and metadata only, and the census reproduces
+to the digit across it (3,905,268 relationships, 12,543 files, 0 empty names, 0 `unknown`
+endpoints, 0 edges below 0.7).
+
+## The 522 files no instrument in this lane can see
+
+Every harness here enumerates the **on-disk** population, which is the right default and hides
+one class of file silently. Measured on the shared corpus at 2026-10-04 by
+`validation/m14/fixtures/json/absent-files-probe.ts`: **10 repositories are
+`--filter=blob:none` partial clones whose working trees were never checked out**, and
+
+| repo | tracked | absent on disk | absent AND json-extension |
+| --- | ---: | ---: | ---: |
+| pb-googleapis | 9,390 | 9,153 | **456** |
+| pb-grpc | 10,504 | 9,792 | **55** |
+| julia | 2,059 | 1,107 | **7** |
+| pb-reference | 3,678 | 2,797 | **4** |
+| cabal / cloogle.org / duckdb / flutter-packages / helm / hledger | — | 8 | 0 |
+| **total** | | **22,861** | **522** |
+
+The blobs are in the local object store, so the probe reads them into a temp dir and puts them
+through the same production `parseFile` and the same ruling probe. It does **not** check them
+out: six lanes are reading that tree concurrently and materialising 9,153 files underneath them
+would move their denominators mid-run.
+
+```
+materialised 522   over the 512 KB cap 0   rejected by detectLanguage 0
+ADMITTED 522/522   parse failures 0
+symbols 50,947 (empty name 0, empty kind 0)   relationships 50,741
+  contains 50,425/518 files   references 296/2   uses 20/2   other seven types 0
+instantiates ruling probe: 0 hits, 0 files
+```
+
+So the blind spot is **+522 files (4.16% of 12,543) and +50,741 edges (1.30% of 3,905,268)**,
+and **no new relationship type appears in them**, so 9/10 stands. It also extends the
+`instantiates` ruling: `ruling-recheck.ts` admits **12,663 files / 141 repositories** at the
+current corpus state with 0 hits, and these 522 are disjoint from it (they are not on disk),
+so the ruling is measured over **13,185 files**.
+
 ## The structural limit: JSON has no names
 
 This was measured before pass 2 and the shape has not changed, only the endpoints.
@@ -451,11 +792,11 @@ same keys. That part is not a defect and no store-side change closes it.
 ## Evidence
 
 **Whole admitted population**, production `parseFile` on the analyzer side
-(`validation/m14/fixtures/json/census.ts`): **12,543 admitted files**, 3,894,382 symbols,
-**3,905,268 relationships**, 0 parse failures, **0 symbols with an empty name, 0 with an
+(`validation/m14/fixtures/json/census.ts`): **12,547 admitted files**, 3,894,818 symbols,
+**3,905,700 relationships**, 0 parse failures, **0 symbols with an empty name, 0 with an
 empty or unknown kind**, **0 endpoints equal to the literal `unknown`**, 0 edges below the
-0.7 heuristic threshold. Kinds: `property` 2,541,967 / `class` 1,339,873 / `module`
-12,542 — one file short of the population, and the file is named in §*Performance*.
+0.7 heuristic threshold. Kinds: `property` 2,542,322 / `class` 1,339,950 / `module`
+12,546 — one file short of the population, and the file is named in §*Performance*.
 
 **Differential**, production `parseFile` against `deriveJsonEdges` over a fresh parse
 (`validation/m14/fixtures/json/differential.ts`). Two runs, because the second is the one
@@ -463,16 +804,18 @@ that covers the inheritance evidence and the first is the wider corpus:
 
 | | files | truth | covered | MISSING | UNEXPLAINED | files matching exactly |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| **whole admitted population** (139 repositories) | **12,543** | **3,905,048** | **3,905,048 (100.00%)** | **0** | **220** | **12,007 of 12,040** |
+| **whole admitted population** (139 repositories) | **12,547** | **3,905,480** | **3,905,480 (100.00%)** | **0** | **220** | **12,011 of 12,044** |
 | 12 repositories (openapi-spec, postgrest, docker, terraform, kubernetes, svelte, apollo-server, duckdb, otp, vault, graphql-js, vega) | 3,272 | 846,762 | 846,762 (100.00%) | **0** | **200** | 2,878 of 2,897 |
 | 4 repositories (dart-sdk, duckdb, openapi-spec, hasura-engine) | 1,952 | 526,510 | 526,510 (100.00%) | **0** | **65** | 1,891 of 1,909 |
 
 The whole-population row is the one to quote, and it is the run that covers the qualified-path
-endpoint change on every admitted file rather than on 3,272 of them. **All 220 unexplained
+endpoint change on every admitted file rather than on 3,272 of them. **Re-measured at the
+second pass and reproduced**: truth 3,905,480 / analyzer 3,905,700, **covered 100.00%, 0
+MISSING, 220 UNEXPLAINED**, 12,011 of 12,044 files matching exactly. **All 220 unexplained
 edges are one class**: a bare `"$ref": "#"` in
 `docker/vendor/github.com/go-openapi/spec/schemas/jsonschema-draft-04.json`, naming the
 document root. The analyzer emits it and the oracle declines it; the disagreement is 220 edges
-on 12,543 files and it is listed as an unadjudged reading rather than dismissed (§limitation 8 of
+on 12,547 files and it is listed as an unadjudged reading rather than dismissed (§limitation 8 of
 the list below, *One `references` class is unadjudicated*).
 
 Per label on the whole admitted population:
@@ -538,6 +881,15 @@ limitations:
    `debugAdapterProtocol.definitions.Request.allOf -[extends]-> …ProtocolMessage`, and
    `allOf` is a keyword shared by every schema in the file. The array's own path is still
    published, as `meta.compositionSite`.
+5. **The oracle published BARE `calls` and OpenAPI `uses` endpoints**, the same defect as
+   item 2 on two types, found by the same route. After this pass moved `calls` and the
+   OpenAPI `uses` site to qualified paths, the whole-population differential read
+   **`calls` at 0 of 217 covered, 217 MISSING, 217 UNEXPLAINED** and the 453 OpenAPI
+   `uses` likewise. Both retargeted in the oracle, then re-run:
+   **3,905,048 of 3,905,048 = 100.00% covered, 0 MISSING, 220 UNEXPLAINED.** Three
+   endpoint-form changes have now needed an oracle change in this lane (`contains`, `calls`,
+   OpenAPI `uses`), which is the argument for treating an endpoint-form change as
+   automatically invalidating the comparison rather than as a metadata edit.
 
 - **Contract probe** — 28/28 (`script/m12/json-contract-probe.ts`, reads production),
   including the zero-regex check
@@ -548,16 +900,35 @@ limitations:
   `Inherit.lsp.json` and `Inherit.duckdb.json` pin both inheritance shapes and their four
   declined forms; `manifest/package.json` pins `calls`, `exports` and the five `calls`
   shapes that are declined.
-- **Mutants** — 14 lane-owned (`script/m14/json-mutants.ts`), **14 caught, 0 survivors**.
+- **Mutants** — **24 registered for this lane, 24 caught, 0 survivors**, re-measured at the
+  second pass: **16 lane-owned** in `script/m14/json-mutants.ts` (run by
+  `validation/m14/fixtures/json/mutants.ts`, **16/16 caught, 0 survivors**) plus **8 more
+  registered inline in the shared `script/m14/mutate-analyzer.ts`**
+  (`json/edge-lines-dropped`, `json/imports-dropped`, `json/ref-target-is-name`,
+  `json/contains-source-is-path`, `json/array-item-by-path-segment`,
+  `json/array-child-owner-is-array`, `json/extends-dropped`, `json/extends-local-form-only`).
+  The earlier "16" counted only the lane file and understated the registration; the shared
+  harness ignores its language argument and sweeps every lane, so its 6 fleet-wide survivors
+  (`php`, `erlang`, `zig`, `clojure`) are **not** this lane's and are reported in §*Unresolved*.
+  Two new in this pass: `dependency-version-is-the-json-type` (a published `metadata.version`
+  read `"string"` on all 4,625 dependency edges) and `calls-endpoints-are-bare-names`.
+  Two existing ones — `calls-callee-any-token` and `calls-runner-substring` — were emitting
+  bare-name endpoints and so became **invisible** rather than caught when the endpoint form
+  changed; a mutant that cannot fail is indistinguishable from a defect class with no mutant,
+  so both now carry qualified paths.
   Two matter most: `overrides-unscoped-to-file` is worth ~5,700 false edges over the
   corpus, and `array-item-named-from-bare-array-name` is the shape that hid for a whole
   wave behind two agreeing implementations.
 - **Ontology gate** — 9 emitted / 1 ruled-sound / **0 falsified**, via
   `validation/m14/fixtures/json/ruling-table.ts` on a 1,952-file corpus. The shared gate
-  cannot report this lane's table until the wiring in §*Ruling table* lands, and the
-  whole-population run does not finish at all (§limitation 9).
+  cannot report this lane's table until the wiring in §*Ruling table* lands, **and at the
+  2026-10-04 pass it printed no table at all**: `ontology-coverage-gate.ts json --files 300`
+  and `ruling-table.ts` both die on the in-process WASM trap (§limitation 9). The arbiter's
+  firing instrument is the one that does finish, and it reads **9/10 at the whole
+  population** (§*incoming*, the three-width table).
 - **Ruling re-measurement** — `validation/m14/fixtures/json/ruling-recheck.ts`, the whole
-  admitted population, **12,659 files / 139 repositories, 0 hits, 0 parse throws**. It
+  admitted population, **12,663 files / 141 repositories, 0 hits, 0 parse throws**, plus the
+  522 tracked-but-absent files (§*The 522 files*, 0 hits) for **13,185 files** in total. It
   imports the probe from `script/m14/json-ruled.ts` instead of restating it, and uses a
   discard-poisoned-slot parser so it terminates where the single-process walk does not.
 - **Parse determinism** — `validation/m14/fixtures/json/parse-determinism.ts`: the 8 files
@@ -573,6 +944,21 @@ limitations:
   `clj-kondo` was rejected despite 742 files because 729 are `.transit.json`
   (Clojure, not JSON); `shadcn-svelte` because its 2,369 are mostly
   `package-lock`.
+- **Incoming** — `script/m14/incoming-check.ts` (shared arbiter) and
+  `validation/m14/fixtures/json/namespace-orphan-probe.ts` (the lane's own, measuring both
+  namespaces and adjudicating every unresolved target). 449 files / 188,498 symbols /
+  189,158 edges: **orphan by qualified path 250 of 175,822 = 0.14%**; unresolved targets
+  **786 edges → 761 external-package + 16 document-does-not-declare + 6 external-file +
+  3 external-entry-point + 0 DEFECT**; `calls` ambiguous targets **9 → 0**, lane total
+  **160 → 158**. Full numbers and the reasoning in §*The incoming half*.
+- **Absent files** — `validation/m14/fixtures/json/absent-files-probe.ts`: 10 repositories are
+  partial clones with **22,861 tracked files absent, 522 json-extension**. Read from git into
+  a temp dir and run through production `parseFile`: **522 admitted, 0 parse failures, 50,947
+  symbols, 50,741 relationships, `instantiates` probe 0 hits.** The corpus was not modified.
+- **Dependency versions** — measured over 454 manifests through production `parseFile`:
+  **4,625 of 4,625** `package_dependency` edges publish a real version range (caret 2,245 /
+  exact 1,619 / other 603 / tilde 158), 0 `unspecified`, 0 `"string"`, 0 `"unknown"`. Before
+  the fix in this pass all 4,625 carried a wrong value.
 - **Spec** — `script/m14/spec/json-completeness.json`, a written ruling per construct
 - **Full record** — `reviews/json/m60-closure.md`, `reviews/json/resolution.md`
 
@@ -584,11 +970,11 @@ They fail independently, and the numbers are per type rather than per lane.
 | --- | --- | --- | --- | --- | --- | --- |
 | `contains` | yes | 3,881,840 | 522,304/522,304 = 100.00% | containment is the format's only relation; the array-in-array source was wrong and is fixed | 100.00% | 1.0, no reason code needed |
 | `references` | yes | 15,017 | 2,713/2,713 covered; **65 UNEXPLAINED** | `$ref` names a LOCATION — the lane's stated contract; a bare `"$ref": "#"` (220 corpus-wide) targets the document root and both readings are arguable | 98.55%; the 218 misses are pointers to undeclared locations, at 0.8 with a reason code | 1.0 / 0.8, both with `reasonCode` |
-| `uses` | yes | 5,758 | 892/892 = 100.00% | two sites with different warrant: a manifest DEPENDENCY is a use; an OpenAPI endpoint `uses` is arguable — the same pair already has a `contains` edge — and is held at 0.8 for that reason | 100.00% | 1.0 (deps) / 0.8 (endpoints, `openapi_path_entry_declares_http_method`) |
+| `uses` | yes | 5,758 | **5,758/5,758 = 100.00%** | two sites with different warrant: a manifest DEPENDENCY is a use; an OpenAPI endpoint `uses` is arguable — the same pair already has a `contains` edge — and is held at 0.8 for that reason | 100.00%; the OpenAPI site now resolves by **path**, the dependency site cannot (§*The incoming half*) | 1.0 (deps) / 0.8 (endpoints, `openapi_path_entry_declares_http_method`) |
 | `extends` | yes | 1,721 | 421/421 = 100.00% after two fixes (array-in-array, oracle walk order) | `allOf` is the one superset keyword; `anyOf`/`oneOf`/`not` correctly emit nothing. **The strongest argument against the label is the strongest one available**: in type theory `allOf` is an INTERSECTION, so the composed schema is a SUBTYPE, and "extends" reads the other way. It is kept because the workstream's `overrides` precedent accepts the language's own reading of a relation | 99.83% | 1.0, `json_schema_all_of` / `declared_supertype` |
 | `implements` | yes | 113 | 113/113 = 100.00% | LSP `mixins` = interfaces. Held at 0.9 because the mapping is a naming decision, not a parse fact | 100.00% | 0.9, `declared_interface_mixin` |
 | `exports` | yes | 513 | 26/26 = 100.00% | a manifest's published entry point IS an export; the strongest counter is that `main`/`bin` name FILES, so `imports` would fit — declined because a file the manifest does not list as a dependency is not a declared symbol | 100.00% | 1.0, `evidenceClass: structural` |
-| `calls` | yes | 217 | 5/5 = 100.00% | both endpoints are keys of ONE `scripts` object, so this is not a cross-file name guess. The strongest counter is that it is derived from a STRING by a CLI convention, which is why it is 0.8 and not 1.0 | 100.00% | 0.8, `npm_run_sibling_script` |
+| `calls` | yes | 217 | **217/217 = 100.00%** | both endpoints are keys of ONE `scripts` object, so this is not a cross-file name guess. The strongest counter is that it is derived from a STRING by a CLI convention, which is why it is 0.8 and not 1.0 | **100.00% by qualified path**; ambiguous bare names **9 → 0** | 0.8, `npm_run_sibling_script` |
 | `overrides` | yes | 22 | 15/15 = 100.00% | a duplicate key replaces its prior declaration under every mainstream parser; RFC 8259 §4 says only that behaviour is unpredictable | 100.00% | 1.0, `evidenceClass: structural` |
 | `imports` | yes | 67 | 21/21 = 100.00% | a file-naming `$ref` is a file dependency; a URL is a vocabulary and is declined | **0.00% by design** — the target is another FILE, not a symbol in this document | 1.0, `evidenceClass: structural` |
 
@@ -632,12 +1018,86 @@ nothing"* — and it names this lane without being asked:
 | json | terraform | 25 | 233 | 0 | **contains** (233) | — |
       - json/contains: 233 edges unaudited
 
-FAIL — 31 undeclared gap(s) across 18 lane(s); 8573 edges compared by nothing.
+FAIL — 34 undeclared gap(s) across 19 lane(s); 8656 edges compared by nothing.
 ```
+
+**Re-run at the second pass and this lane's row is byte-identical** — `json / terraform /
+25 files / 233 edges / 0 covered / contains (233)`, and `json` still appears in **0** of the
+compared-label allowlists in `script/m14/differential.ts` (grepped across the whole filter
+expression). Only the fleet total moved, 31 → **34** gaps over 18 → **19** lanes and
+8,573 → **8,656** edges, from other lanes adding gaps.
 
 It reports one dropped label for this lane rather than six because its json corpus is
 `terraform`, and `contains` is the only one of the six that terraform's json files actually
 exercise — the other five do not occur there, so there is nothing to drop. The finding is the
 same finding, measured twice: by the lane's own allowlist evaluation, and by a shared gate that
-exists to catch it. The `31 gaps across 18 lanes / 8,573 edges` total is the fleet-wide size of
+exists to catch it. The `34 gaps across 19 lanes / 8,656 edges` total is the fleet-wide size of
 the same defect and is not this lane's to fix.
+## §8 — items owed by the supervisor, specified so they need no re-derivation
+
+Five, all in shared machinery this lane does not edit. Each states file, what it must do,
+and why, so it can be applied without re-running anything in this lane.
+
+**1. `script/m14/differential.ts` — one clause: add `lang === "json"` to the compared-label
+allowlist (~line 23153).** This is the DERIVATION finding above, and it is the only item
+that makes a *canonical* number wrong: `validation/m14/results/M14.0.F5.json` records
+`analyzerEdges: 0, coveragePct: 0, missingInAnalyzer: 27,828` for json, and
+`validation/m14/differential-baseline.json` has **no json row at all**. The oracle is
+invoked (`differential.ts:22888`) so the truth side is complete; the analyzer side is
+filtered to `{extends, implements, instantiates, overrides}` before comparison, so six
+emitted types are dropped. Until it lands, every per-type number in this document comes from
+a different harness than the canonical one.
+
+**2. `script/m14/ontology-coverage-gate.ts` — replace the inline json ruling table with the
+lane's, one import and one map entry.** As §*Ruling table* records: the inline copy carries
+**five** entries, three of them (`calls`, `imports`, `overrides`) for types this lane now
+emits, so they short-circuit and are inert; its `imports` entry carries a `countOnTree` the
+gate *runs* over the whole corpus and never reads; and its two live entries are on
+**instrument A**, the instrument that passed the `implements` ruling the corpus overturned.
+The replacement is `script/m14/json-ruled.ts`.
+
+**3. `script/m14/mutate-analyzer.ts` — the documented scoped invocation CORRUPTS a shared
+artifact. Found by doing it.** The task prompt's §6 lists
+`bun run script/m14/mutate-analyzer.ts json`. That command:
+
+- reads **no positional language argument at all** — `process.argv` appears at line 36 only
+  to locate `ROOT`, and at 18920 only to detect `main`. `json` is silently ignored.
+- narrows by `BB_MUTANT_ONLY` alone (`:18848`), and computes `const scoped = !!mutantFilter`
+  (`:18863`), so a positional argument leaves `scoped === false`;
+- therefore runs **all 1,780 fleet mutants** and **writes
+  `validation/m14/results/M14.0.F4.json`** — a §8 artifact — over a 23,003-line diff;
+- and then `exit 2`, because 6 mutants survive (php, erlang, zig, clojure).
+
+This is the identical hazard `script/m14/run-fixtures.ts` documents for its own `--lang` at
+M49 G8 ("a 4-mutant slice once replaced the 21-language artifact"; here *"the scoped-run
+hazard, found by doing it"*), reproduced in a sibling harness that has no guard at all. What
+it must do: read a language argument and treat it as scoping, exactly as `run-fixtures.ts`
+does — i.e. a language selection that is not the full registry sets `scoped`, prints, and
+writes no evidence. The safe invocation **today**, verified not to write the artifact, is:
+
+```
+BB_MUTANT_ONLY="json/" bun run script/m14/mutate-analyzer.ts
+  -> all 24 mutants caught (filtered 1780 -> 24); M14.0.F4.json unchanged
+```
+
+This lane reverted the overwrite with `git checkout --` and re-verified byte-equality, so no
+damage reached the branch. **Any other agent following that prompt has just corrupted F4.**
+
+**4. `src/ast/pool-worker.ts` / the engine — the in-process WASM parse trap.** §limitation 9
+measures it as a property of the RUN and not of any file (55 parses over 11 named files in
+isolated children: 0 traps, 0 nondeterministic), and it has a sharper consequence than a
+flaky log line: **the shared ontology arbiter cannot produce a verdict table for this
+language at all.** `ontology-coverage-gate.ts json --files 200` exits 1 printing **no table**,
+on a different file each run, and ignores `--files` while reporting the whole population. It
+is the engine's hardcoded watchdog around a synchronous WASM parse.
+
+**5. `validation/m14/results/M14.0.F4.json` — regenerate, but not before item 3's survivors
+are fixed.** F4 declares the **glob** `validation/m14/fixtures/` as an input (see
+`script/m14/verify-honesty.ts:232`), so any lane's probe or fixture change invalidates it —
+this lane's three probe files are the current trigger, and `verify-honesty.ts` reports
+`M14.0.F4: 3 declared input(s) changed`. It must be regenerated by an **unscoped**
+`bun run script/m14/mutate-analyzer.ts`, which cannot currently succeed: the harness
+`exit 2`s while any mutant survives, and the recorded artifact already reads
+`{mutantsRun: 1778, caught: 1772, survived: 6}`. So the ordering is item 3's guard, then the
+6 survivors (`php/drop-external-override-guess`, plus erlang, zig and clojure), then
+regenerate — otherwise the new artifact would certify a red suite.

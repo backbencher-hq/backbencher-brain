@@ -52,27 +52,54 @@ const dropJsonCalls = (r: any) => ({
 /** Accepts a `npm run` target that is NOT a key of the same `scripts` object, so an
  *  edge names a symbol the file never declared. This is the fabricated-edge shape the
  *  ontology workstream calls the most expensive mistake available. Caught by
- *  manifest/package's `external` forbid. */
+ *  manifest/package's `external` forbid.
+ *
+ *  The synthetic edges carry QUALIFIED PATHS because the defect modelled here is the callee
+ *  SELECTION, not the endpoint form. Emitting them as bare names would make the mutant
+ *  invisible rather than caught — it survived an endpoint-form change for exactly that reason,
+ *  and a mutant that cannot fail is indistinguishable from a defect class with no mutant. */
 const npmRunCalleeAnyToken = (r: any) => ({
   ...r,
   relationships: [
     ...(r.relationships ?? []),
     ...(r.symbols ?? [])
       .filter((s: any) => s.ownerName === "scripts")
-      .flatMap((s: any) => [{ source: s.name, target: "not-declared-here", type: "calls", confidence: 0.8, line_number: 0 }]),
+      .flatMap((s: any) => [
+        { source: `package.scripts.${s.name}`, target: "package.scripts.not-declared-here", type: "calls", confidence: 0.8, line_number: 0 },
+      ]),
   ],
 })
 
 /** Reads the runner with a substring test instead of comparing whole tokens, so `npx`
  * and `./scripts/npm` are taken for runners. Caught by manifest/package's `notarunner`
- * and `pathrunner` forbids. */
+ *  and `pathrunner` forbids. Qualified paths for the reason given above. */
 const npmRunSubstringRunner = (r: any) => ({
   ...r,
   relationships: [
     ...(r.relationships ?? []),
-    { source: "notarunner", target: "compile", type: "calls", confidence: 0.8, line_number: 0 },
-    { source: "pathrunner", target: "compile", type: "calls", confidence: 0.8, line_number: 0 },
+    { source: "package.scripts.notarunner", target: "package.scripts.compile", type: "calls", confidence: 0.8, line_number: 0 },
+    { source: "package.scripts.pathrunner", target: "package.scripts.compile", type: "calls", confidence: 0.8, line_number: 0 },
   ],
+})
+
+/** Reverts `calls` endpoints to the BARE script names it emitted before the incoming check.
+   *
+   *  Both endpoints are keys of ONE `scripts` object, so both have a position in the document
+   *  and a qualified path exists for both — which is what distinguishes this type from `uses`
+   *  and `exports`, whose targets (an npm package name, a published entry point) genuinely
+   *  have no position. Emitting bare names contradicted the lane's own endpoint contract and
+   *  cost 7 of 37 `calls` targets binding to more than one published symbol on a 449-file
+   *  sample. Caught by manifest/package's four `calls` pins, which all spell the path. */
+const jsonCallsBareEndpoints = (r: any) => ({
+  ...r,
+  relationships: (r.relationships ?? []).map((x: any) => {
+    if (relType(x) !== "calls") return x
+    const cut = (v: string) => {
+      const i = v.lastIndexOf(".scripts.")
+      return i >= 0 ? v.slice(i + ".scripts.".length) : v
+    }
+    return { ...x, source: cut(String(x.source ?? "")), target: cut(String(x.target ?? "")) }
+  }),
 })
 
 /** Restores the unlined state: `line_number` was absent from the analyzer entirely
@@ -262,7 +289,33 @@ const jsonArrayItemNamedFromBareName = (r: any) => ({
   }),
 })
 
-export const JSON_MUTANTS: Mutant[] = [
+/** Reverts the fix that made `metadata.version` publish the dependency's VERSION RANGE.
+   *
+   *  The defect it reintroduces is the one this lane shipped: `dependencyVersion` looked
+   *  the symbol up in `symbolMap` and read `returnType`, which is the dependency VALUE'S
+   *  JSON TYPE. So every published `metadata.version` on a `package_dependency` edge read
+   *  `"string"` — or `"unknown"` on a lookup miss — while the real range sat in the pair's
+   *  `value` node. A field named `version` carrying the word `string` is a type assertion a
+   *  consumer will believe, which is worse than publishing nothing. Caught by
+   *  json/manifest/package's `meta.version` pin, and by its two forbids. */
+  const jsonDependencyVersionIsTheJsonType = (r: any) => ({
+    ...r,
+    relationships: (r.relationships ?? []).map((x: any) => {
+      const meta = x.metadata ?? {}
+      if (meta.relationshipType !== "package_dependency") return x
+      return { ...x, metadata: { ...meta, version: "string" } }
+    }),
+  })
+
+  export const JSON_MUTANTS: Mutant[] = [
+  {
+    id: "json/dependency-version-is-the-json-type",
+    language: "json",
+    defectClass: "dishonest-metadata",
+    description:
+      "M14 ontology pass-3 regression: a manifest dependency's `metadata.version` publishes the dependency VALUE'S JSON TYPE (`\"string\"`) instead of its version range, because the lookup read the symbol's `returnType` and the real range was in the pair's `value` node. Every `package_dependency` `uses` edge in the corpus carried it — 4,741 dependency `uses` at the last census. Caught by json/manifest/package's `meta.version` pin and its two forbids.",
+    transform: jsonDependencyVersionIsTheJsonType,
+  },
   {
     id: "json/array-item-named-from-bare-array-name",
     language: "json",
@@ -326,6 +379,14 @@ export const JSON_MUTANTS: Mutant[] = [
     description:
       "M14 ontology regression: an npm script running a SIBLING script stops emitting `calls`, restoring the omission the corpus probe measured (12 sibling invocations across the first 300 admitted files, apollo-server/package.json carrying 7 with both endpoints resolving). Caught by json/manifest/package's three `calls` pins.",
     transform: dropJsonCalls,
+  },
+  {
+    id: "json/calls-endpoints-are-bare-names",
+    language: "json",
+    defectClass: "unresolvable-identity",
+    description:
+      "M14 ontology pass-3 regression: `calls` reverts to bare script names. Both endpoints are keys of ONE `scripts` object, so a qualified path exists for both — which is what separates this type from `uses` and `exports`, whose targets have no position in the document. Measured on a 449-file sample, 7 of 37 `calls` targets matched more than one published symbol, each one a place the reverse walk picks a winner by a rule nobody chose. Caught by json/manifest/package's four `calls` pins, which each spell the path.",
+    transform: jsonCallsBareEndpoints,
   },
   {
     id: "json/calls-callee-any-token",
