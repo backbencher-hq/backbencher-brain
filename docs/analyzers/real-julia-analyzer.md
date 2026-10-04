@@ -21,6 +21,9 @@
 ```
 npx tsx validation/m14/fixtures/julia/census.ts --json /tmp/census.json       # the census, 971 files
 npx tsx validation/m14/fixtures/julia/overrides-differential.ts --json /tmp/ov.json
+npx tsx validation/m14/fixtures/julia/direct-oracle-check.ts --files 40      # per-label, deterministic
+npx tsx validation/m14/fixtures/julia/ruled-probe-check.ts                  # the implements ruling's 325/60
+npx tsx validation/m14/fixtures/julia/arbiter-census-diff.ts                 # why the arbiter reads 13 short
 bun  run script/m14/run-fixtures.ts --lang julia
 bun  run validation/m14/fixtures/julia/mutation-check.ts --all
 npx tsx script/m14/ontology-coverage-gate.ts julia                            # exit 2, see below
@@ -142,8 +145,13 @@ lane read clean by exploiting a gate bug would hide it for the lanes that still 
 ```
 $ bun script/m14/verify-doc-truth-emissions.ts | grep julia
 UNDOCUMENTED [julia] calls (relationship)
-  docs/analyzers/real-julia-analyzer.md:52
+  docs/analyzers/real-julia-analyzer.md:96
 ```
+
+`calls` **is** documented — it is the first body row of the verdict table (`| \`calls\` | **EMITTED** |
+relationship, **86,876** | 926 |`) and the gate cannot see it, which is the whole content of the
+finding. The line number is quoted from one run and drifts as this file grows; the row is the durable
+identifier and the gate's own output above is the check.
 
 `imports` and `exports` were also reported and are now cleared, and the fix was in this table rather
 than in the gate. The gate derives its expected surface from the analyzer source, so the doc owes a
@@ -434,15 +442,15 @@ can resolve — but it is a different number and it was published under the wron
 
 | type | EXISTS | FIRES | CORRECT | LABELLED | RESOLVED (both ends) | CONFIDENT |
 |---|---|---|---|---|---|---|
-| `calls` | yes | 86,876 / 926 files | 97.4% covered / 8.7% unexplained, oracle `julia-calls` | `usage_contextual` | **19.8%** (src 78.1 / tgt 23.1 / neither 18.7) | conf 1.0 on all; **0 under 0.7** |
-| `uses` | yes | 26,359 / 821 | oracle `julia-refs` | `usage_contextual` | **25.0%** (src 76.3 / tgt 27.3 / neither 21.4) | conf 0.9; **0 under 0.7** |
-| `contains` | yes | 10,467 / 540 | oracle `julia-contains`, which found a real defect | `structural` | **99.9%** (neither 0.0) | conf 1.0; **0 under 0.7** |
-| `references` | yes | 36,147 / 852 | oracle `julia-refs` | `import_based` | **19.5%** (src 87.3 / tgt 20.7 / neither 11.5) | conf 1.0 ×34,128 + 0.95 ×2,019; **0 under 0.7** |
+| `calls` | yes | 86,876 / 926 files | **76.1% covered / 440 unexplained** of 1,844, oracle `julia-calls`, **target only** | `usage_contextual` | **19.8%** (src 78.1 / tgt 23.1 / neither 18.7) | conf 1.0 on all; **0 under 0.7** |
+| `uses` | yes | 26,359 / 821 | **98.5% / 9 unexplained** of 614, oracle `julia-refs`, **target only** | `usage_contextual` | **25.0%** (src 76.3 / tgt 27.3 / neither 21.4) | conf 0.9; **0 under 0.7** |
+| `contains` | yes | 10,467 / 540 | **86.1% / 55 unexplained** of 395, oracle `julia-contains`, **both ends**; it found a real defect | `structural` | **99.9%** (neither 0.0) | conf 1.0; **0 under 0.7** |
+| `references` | yes | 36,147 / 852 | **95.6% / 27 unexplained** of 620, oracle `julia-refs`, **target only** | `import_based` | **19.5%** (src 87.3 / tgt 20.7 / neither 11.5) | conf 1.0 ×34,128 + 0.95 ×2,019; **0 under 0.7** |
 | `imports` | yes | 1,502 / 504 | **no oracle — see DERIVATION below** | `import_based` | **0.7%** both-ends (src 43.8 / tgt 1.3); target-end 50.0% corpus-only + 11.3% external-by-import | conf 1.0; **0 under 0.7** |
 | `exports` | yes | 1,770 / 151 | **no oracle — see DERIVATION below** | `import_based` | **34.4%** (src 55.8 / tgt 50.7); target-end 87.8% bind somewhere | conf 1.0; **0 under 0.7** |
-| `extends` | yes | 1,821 / 323 | oracle `julia-type-edges` | `structural` | **20.4%** (src 50.0 / tgt 28.7 / neither 41.7) | conf 1.0; **0 under 0.7** |
-| `instantiates` | yes | 2,830 / 361 | oracle `julia-type-edges` | `usage_contextual` | **76.9%** (tgt 100.0, src 76.9) | conf 0.9; **0 under 0.7** |
-| `overrides` | yes | 3 / 3 | **lane-owned oracle, 3/3, 0 unexplained, 0 missing — NOT yet wired into F5** | `structural` | **100.0%** | conf 1.0; **0 under 0.7** |
+| `extends` | yes | 1,821 / 323 | **66.9% / 111 unexplained** of 335, oracle `julia-type-edges`, **both ends** | `structural` | **20.4%** (src 50.0 / tgt 28.7 / neither 41.7) | conf 1.0; **0 under 0.7** |
+| `instantiates` | yes | 2,830 / 361 | **all 43 truth edges covered, 0 missing**, 17 of 60 unexplained, oracle `julia-type-edges`, **target only** | `usage_contextual` | **76.9%** (tgt 100.0, src 76.9) | conf 0.9; **0 under 0.7** |
+| `overrides` | yes | 3 / 3 | **lane-owned oracle, 3/3, 0 unexplained, 0 missing — NOT yet wired into F5.** The 40-file check above does not exercise it (0 edges in that sample); `overrides-differential.ts` covers the type | `structural` | **100.0%** | conf 1.0; **0 under 0.7** |
 
 `contains` at 99.9% and `overrides` at 100.0% are the reference points showing the measurement is not
 simply reporting that most edges are cross-file. The 19.5–25.0% figures for the other four are what a
@@ -955,11 +963,58 @@ real edges the truth side declines to claim, not those edges being wrong.
                                      analyzer-edges=20221 tree-truth=19052 MISSING=213 heuristic=0
                                      + COMPARED WITH NO TRUTH: overrides
     prior 60-file rotation:          covered 99.1%   unexplained 8.5%
-    direct 40-file check:            extends 39/39 · instantiates 27/27 · uses 98.8% · references 97.3%
 
-The sample ROTATES per run, so per-rotation covered and MISSING counts move. The stable figures are
-the unexplained rate and the direct 40-file measurement; a per-rotation count is a sample size, not a
-result.
+The sample ROTATES per run, so per-rotation covered and MISSING counts move: this file's quotes are
+captured runs, not a result to reproduce. A per-rotation count is a sample size.
+
+### The stable per-label figures, and a limit four of the oracles have
+
+```
+npx tsx validation/m14/fixtures/julia/direct-oracle-check.ts --files 40
+```
+
+40 files spaced evenly through the SORTED 971-file population — not a prefix, because a sorted prefix
+is `json_jl` plus one corner of `julia` and would silently drop `nvim-treesitter`. Analyzer side is
+`parseFile`; truth side is all seven lane oracles; the key carries the FILE, so an edge is covered only
+by truth from the file that declares it. Two consecutive runs are byte-identical.
+
+```
+label           verified    truth   analyzer  covered  missing unexplained covered% srcUnverified
+calls           TARGET only 1608    1844      1404     204     440         76.1%    1844
+uses            TARGET only 611     614       605      6       9           98.5%    614
+references      TARGET only 616     620       593      23      27          95.6%    620
+contains        both ends   347     395       340      7       55          86.1%    0
+extends         both ends   259     335       224      35      111         66.9%    0
+instantiates    TARGET only 43      60        43       0       17          71.7%    60
+overrides       n/a         0       0         0        0       0           n/a      0
+TOTAL                       3484    3868      3209     275     659         83.0%
+```
+
+**Four of the seven oracles verify the TARGET only, and that is a limit on 3,138 edges.** `julia-calls`,
+`julia-refs` (both `uses` and `references`) and `julia-type-edges`' `instantiates` emit `from: ""` — they
+never derive the enclosing scope — so for those labels the question answered is "does an independent
+walker agree this file calls/uses/references/constructs this NAME", never "is the edge attached to the
+right enclosing symbol". `contains`, `extends` and `overrides` populate `from` and are compared on both
+ends. The instrument prints which end it checked per label rather than leaving one number to stand for
+both, because the first version of this check keyed all seven labels on `(from, target)`: `""` never
+equals a scope name, so `calls`/`uses`/`references`/`instantiates` all read **0.0% covered**, which
+reads as "four oracles contradict the analyzer" rather than "four oracles do not model the source
+side". That is the wrong-direction failure again — an instrument defect that would have understated
+this lane's coverage rather than flattered it.
+
+**The 440 unexplained `calls` edges are characterised, not just counted.** Bucketed by the edge's own
+metadata over the same 40 files: **285 `isMacroCall`** (a macro invocation is not a call to a declared
+binding and `julia-calls` does not derive macros), **272 with a qualified target** (`JSON.parse`,
+`JSON.json!` — a namespace path, where the oracle's target convention differs), **72 `isForeignCall`**
+(a C symbol, which by this lane's own rule is not a julia binding at all), and **39 plain unqualified
+calls** such as `adjoint`. The first three buckets are oracle NARRONESS, agreed in advance and visible
+in the oracles' own comments. The 39 are the residue worth a reader's attention and are not yet
+separated into real defects and legitimate divergence.
+
+**These per-label figures are NOT comparable to the F5 aggregate above**, though both call the same
+oracles: F5 samples 200 rotating files, this samples 40 fixed ones, and per-file truth density differs
+(the same oracles yield 95 truth rows per file under F5's rotation and 87 under this selection). Put
+the two side by side and the comparison is between two file sets, not two instruments.
 
 ### What independent oracles found that nothing else did
 
@@ -1098,6 +1153,19 @@ can be a fixture asserting things the code does not do, and the fixture is what 
   `type|source->target` with no line, so two declarations of one name under one scope produce one
   `contains` row. Widening it would grow every `contains` edge in every julia payload (10,467 rows
   today), which is a shared payload-budget decision and was not taken unilaterally.
+- **Four of the seven lane oracles verify only the TARGET of an edge, not its source.** 3,138 edges
+  are covered by an oracle that never looks at the enclosing symbol, so for `calls`, `uses`,
+  `references` and `instantiates` this lane can say "an independent walker agrees this file calls this
+  name" and **cannot** say "the edge is attached to the right enclosing declaration". `contains`,
+  `extends` and `overrides` populate `from` and are checked on both ends. Closing this needs the four
+  oracles to derive scope, which is a shared `script/m14/oracles/` effort; `direct-oracle-check.ts`
+  prints the verified side per label so the number is never read as covering more than it does.
+- **39 of the 40-file check's unexplained `calls` edges are plain unqualified calls, and they are not
+  yet separated into defects and legitimate divergence.** The other 629 unexplained `calls` edges
+  bucket cleanly into macro calls, qualified namespace paths and `ccall` C symbols — oracle narrowness
+  agreed in advance. The 39 (`adjoint`, and `!` read as a callee at
+  `julia/JuliaLowering/src/binding_analysis.jl:116` and `:150`) are what a reader should look at, and
+  this lane has not looked.
 - **An oracle is a second walker over one grammar.** A grammar bug shared by the analyzer and all five
   oracles is invisible to every differential in this file, and nothing in them can see a relationship
   type that neither side derives. Only instrument A and instrument B measure the language.
