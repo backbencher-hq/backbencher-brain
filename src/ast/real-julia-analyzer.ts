@@ -19,19 +19,30 @@ import { ASTEngine } from "./engine"
  * The remaining 177 defect files are NOT hidden. They are in the census and the differential,
  * and a construct in one of them is published as far as the tree allows.
  *
- * WHAT JULIA'S SEMANTICS ACTUALLY ARE, because three of the 13 relationship types must be
- * declined rather than faked
- * --------------------------------------------------------------------------------------------
- * `overrides` is **declined**. Julia has multiple dispatch, not overriding: two methods with the
- * same name and different signatures are DIFFERENT METHODS, both live, and neither replaces the
- * other. Emitting an `overrides` edge between them would state a falsehood about the language —
- * the single most common way a multi-language analyzer lies is by importing another language's
- * ontology wholesale and calling the result coverage.
+ * WHAT JULIA'S SEMANTICS ACTUALLY ARE, because two of the 10 relationship types are declined
+ * rather than faked and one of them was declined WRONGLY before this header said so
+ * ----------------------------------------------------------------------------------------------
+ * `implements` is **declined**. Julia has no interfaces to implement: `abstract type` participates
+ * in a TYPE hierarchy (`<:`), not in a protocol-conformance relation. Publishing "S implements I"
+ * for `struct S <: I` would be the managed-OO ontology applied to a language that does not have it.
+ * MEASURED: `wasm/tree-sitter-julia.wasm` produces 149 distinct node types over the 971 admitted
+ * corpus files (4,948,278 nodes) and NONE of the 12 node-type names that would express a protocol
+ * or conformance clause occurs; the nearest corpus construct — a supertype clause naming an
+ * `abstract type` declared in the same file — occurs 325 times across 60 files and every one is a
+ * SUBTYPE relation already published as `extends`. See `validation/m14/fixtures/julia/census.ts`
+ * instrument A and instrument B.
  *
- * `implements` is **declined** for the same reason. Julia has no interfaces to implement:
- * `abstract type` participates in a TYPE hierarchy (`<:`), not in a protocol-conformance relation.
- * Publishing "S implements I" for `struct S <: I` would be the managed-OO ontology applied to a
- * language that does not have it.
+ * `overrides` WAS **declined** here, on the grounds that "Julia has multiple dispatch, not
+ * overriding", and the argument was **sound for the case it names and silent about the case julia
+ * has**. Two methods with the same name and different signatures are DIFFERENT METHODS, both live,
+ * neither replacing the other — true, and irrelevant to the method table. Julia's method table holds
+ * exactly ONE entry per `(name, signature)` pair, so a second declaration of the SAME pair replaces
+ * the first, and julia says so itself: under `--warn-overwrite=yes` it prints
+ * `WARNING: Method definition f(Int) in module Main at line 12 overwritten at line 40`. `overrides`
+ * is emitted, behind four guards, and the guards were each put there by a measurement that removed
+ * edges: 417 redefinition pairs in the corpus, 237 unconditional, 200 not a local binding, 163 in a
+ * genuinely different scope, 44 inside a DECLARED module — and 3 edges. The refusals are counted,
+ * not hidden; `overridesEmit` below and `docs/analyzers/real-julia-analyzer.md` carry the numbers.
  *
  * `extends` is emitted ONLY for `<: Supertype` on an `abstract type` or a `struct`. That is the
  * real subtype edge and nothing else is.
@@ -704,6 +715,27 @@ export class RealJuliaAnalyzer {
               isExternal: !t.name.startsWith("."),
             })
             relationships.push(this.rel("root", ASTEngine.RelationshipType.References, t.name, node, 1.0, { juliaSpecific: true, isImport: true, importForm: node.type }))
+            // The `imports` RELATIONSHIP, which this lane previously declined and then RULED.
+            //
+            // The ruling's stated overturn condition was "a julia `imports` relationship row that is
+            // not an import-site artifact — a row whose source is the importing declaration rather
+            // than the literal `root`". That shape is not hypothetical: it is what
+            // `src/ast/real-python-analyzer.ts:979` already emits for `import a.b`, and what the
+            // Lua, YAML, Nim and TypeScript lanes emit. `RelationshipType.Imports` serializing to
+            // `"brain_import"` (`src/ast/types.ts:69`) constrains no lane at all — every one of
+            // them writes through the same string. So the argument for declining was a convention
+            // mistaken for a constraint, and the corpus had the answer all along:
+            // 1,675 `import_statement`/`using_statement` nodes across 504 of the 971 admitted files.
+            //
+            // SOURCE is the declaration doing the importing (`scope`), because `using X` inside
+            // `module M` binds `X` in `M` and in no other scope — that is a parse fact, not a guess.
+            // A top-level `using` in a file with no enclosing module falls back to the file's own
+            // synthetic scope, which is the same scope the `References` row above already uses.
+            relationships.push(
+              this.rel(scope || "root", ASTEngine.RelationshipType.Imports, t.name, node, 1.0, {
+                juliaSpecific: true, importForm: node.type, isExternal: !t.name.startsWith("."),
+              }),
+            )
           }
           break
         }
@@ -733,6 +765,28 @@ export class RealJuliaAnalyzer {
               if (sym.name !== name) continue
               sym.metadata = { ...(sym.metadata ?? {}), isExported: true, exportForm: node.type }
             }
+            // The `exports` RELATIONSHIP, which this lane previously declined and then RULED.
+            //
+            // The ruling's overturn condition was "an `exports` relationship count above the
+            // `ExportInfo` count for the same corpus". Emitting one row per `ExportInfo` entry
+            // cannot exceed it, so that condition was unfalsifiable in the direction that mattered
+            // — it could only be satisfied by an edge that was WRONG. The real objection in the
+            // ruling survives and is honoured here: `export X` declares nothing, so this edge
+            // asserts no kind. It runs `owning module -> exported binding name`, which is
+            // `src/ast/real-python-analyzer.ts:1166` emitting `ctx.exports.push(...)` and
+            // `pushRel(ctx.moduleName, exportName, Exports, 1.0)` from the same `__all__` walk.
+            //
+            // It is emitted unconditionally rather than gated on the name already being in
+            // `symbols`, because Julia allows `export X` to PRECEDE the declaration of `X` and this
+            // walk is single-pass — a gate here would drop every export that precedes its
+            // declaration, which is the majority form in a module that groups its exports at the
+            // top. The target name is the same string the declaration will publish, so the edge
+            // resolves against the file's FINAL symbol table; the census measures the real rate.
+            relationships.push(
+              this.rel(scope || "root", ASTEngine.RelationshipType.Exports, name, node, 1.0, {
+                juliaSpecific: true, exportForm: node.type, declaresNothing: true,
+              }),
+            )
           }
           break
         }
@@ -1770,6 +1824,45 @@ export class RealJuliaAnalyzer {
         // `using LinearAlgebra` — a bare path with no colon list.
         if (!pending) { pending = { name: c.text.trim(), items: [] }; out.push(pending) }
         else if (pending.items.length === 0 && c.text.trim() !== pending.name) pending.items.push(c.text.trim())
+      } else if (c.type === "selected_import") {
+        // `using Base: isexpr, length` and `import StructUtils: @noarg, lower` — julia's SELECTIVE
+        // import form, and the single most common shape in the corpus by a wide margin.
+        //
+        // MEASURED, not assumed: 583 of the 1,675 `import_statement`/`using_statement` nodes on the
+        // 971 admitted files have `selected_import` as their ONLY named child, and this function
+        // matched neither `import_path` nor a bare `identifier` there, so it returned an EMPTY list
+        // for every one of them. The `imports` relationship, the `ImportInfo[]` channel and the
+        // `references` row carrying `isImport: true` all silently lost the dependency — 37.2% of
+        // the corpus's import statements, including `using Base: isexpr` at
+        // `julia/Compiler/src/Compiler.jl:40`, which is how the compiler reaches its own stdlib.
+        //
+        // It is invisible three ways, which is why it survived: the statement parses without an
+        // ERROR node, `parseFile` throws nothing, and the file still yields hundreds of symbols
+        // from its other declarations. Only a count of statements-against-targets finds it.
+        //
+        // SHAPE, measured from the production grammar by walking a real tree
+        // (`using ..Compiler: >, getindex`):
+        //
+        //   selected_import
+        //     import_path "..Compiler"      <- named child 0: the MODULE
+        //     :                             <- anonymous, so never reached by namedChildren
+        //     operator ">"
+        //     ,                             <- anonymous
+        //     identifier "getindex"
+        //
+        // So the module is the FIRST named child whatever its own type (`identifier` for `Base`,
+        // `import_path` for `..Compiler`) and the names are the named children after it. The `:` and
+        // `,` are anonymous, which is what makes the child order sufficient here.
+        const inner = this.namedChildren(c)
+        if (!inner.length) continue
+        const modName = inner[0]!.text.trim()
+        if (!modName) continue
+        const items = inner.slice(1).map((x) => x.text.trim()).filter((x) => x.length > 0)
+        // A selective import may sit beside other targets in one statement, so it becomes its own
+        // entry rather than filling `pending` — `using A, B: c` names two modules, and merging them
+        // would assert a dependency on a module that does not exist.
+        out.push({ name: modName, items })
+        pending = null
       }
     }
     if (!out.length && paths.length) out.push({ name: paths[0]!.text.trim(), items: [] })
