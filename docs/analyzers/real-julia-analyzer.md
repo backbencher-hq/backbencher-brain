@@ -110,7 +110,7 @@ next agent — extracts the cell, so the affirmative statement has to live there
 
 **Instrument: B, parse-tree count.** Julia expresses module dependencies and the corpus uses them
 heavily: **1,675 `import_statement` / `using_statement` nodes across 504 of the 971 admitted files** —
-`julia/Compiler/src/ssair/EscapeAnalysis.jl:3`, `json_jl/src/JSON.jl:10`. The construct is present
+`julia/Compiler/src/ssair/EscapeAnalysis.jl:3`, `json_jl/src/JSON.jl:4`. The construct is present
 and common, so this is not an absence-of-construct ruling.
 
 It is not emitted as a relationship because `RelationshipType.Imports` serializes to `"brain_import"`
