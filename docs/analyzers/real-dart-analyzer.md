@@ -835,7 +835,7 @@ and 12 from running the doc-truth-emissions gate over this lane's table.
    or better: move the refusal after the observation and refuse only when some type
    is neither observed nor ruled. With that one term, this lane's arbiter run prints
    `emitted 10/10` and exits 0. **But fixing that term is not sufficient at full
-   corpus scale, and the reason is item 13.**
+   corpus scale, and the reason is the first half of item 5.**
 
    **The exit-2 refusal is verified by reading the gate, not by running it at full
    corpus — because the full-corpus run never reaches it.** Measured twice on this
@@ -883,6 +883,18 @@ and 12 from running the doc-truth-emissions gate over this lane's table.
    `fulfilled`, all returning the same 136 relationships. The named file differs
    between the two runs, and so does the set of `memory access out of bounds`
    files (1 file, then 4). A defect in a file would name the same file twice.
+
+   **This CONFIRMS item 5's second bullet rather than competing with it.** In both
+   runs the hang file is also in that same run's `[BB-PARSE-ERR]` set — run 1 on one
+   file, run 2 on one of four — which is the "the hang follows the parse failure
+   rather than being independent" reading, now at corpus scale rather than over
+   5,500 file-parses. What this adds is the other half: the parse failure is not a
+   property of the file either. The same file, same bytes, same production
+   `parseFile`, parses clean one at a time and 8 at a time. So the corrupted WASM
+   state is the cause and the file is the victim — which is why the remedy in item 5
+   (abort that file's parse and return an error) is the right shape, and why an
+   engine that made the failure visible per-file would also have made this
+   diagnosis possible.
 
    What the evidence does support: the failures are in the engine's WASM parse path
    under concurrency, which is the same non-determinism this lane's own census
@@ -962,16 +974,21 @@ and 12 from running the doc-truth-emissions gate over this lane's table.
      including this lane's) currently gets a number that is not reproducible. Why it
      matters beyond this lane: any measurement taken at concurrency > 1 is not a
      measurement, and nothing in the API says so.
-   - **A single file can take the whole process down.** `src/ast/engine.ts` line ~1408
-     arms a 120 s `setTimeout` that writes `[BB-HANG] parser stuck 120s on <file>` and
-     calls `process.exit(1)`. Observed twice in ~5,500 file-parses, on
-     `dart-sdk/pkg/vm_service/test/step_through_call_on_field_in_class_lib.dart` in one
-     run and `riverpod/packages/riverpod/lib/src/core/override_with_value.dart` in
-     another, each preceded by `[BB-PARSE-ERR] … memory access out of bounds` on the
-     SAME file — so the hang follows the parse failure rather than being independent.
-     Rate: 1 file in 2,735 sampled (0.037%). What it must do: abort that file's parse
-     and return an error for it, rather than exiting the process; the indexer is
-     incremental by design and this makes one pathological file lose the whole run.
+    - **A single file can take the whole process down.** `src/ast/engine.ts` line ~1408
+      arms a 120 s `setTimeout` that writes `[BB-HANG] parser stuck 120s on <file>` and
+      calls `process.exit(1)`. Observed twice in ~5,500 file-parses, on
+      `dart-sdk/pkg/vm_service/test/step_through_call_on_field_in_class_lib.dart` in one
+      run and `riverpod/packages/riverpod/lib/src/core/override_with_value.dart` in
+      another, each preceded by `[BB-PARSE-ERR] … memory access out of bounds` on the
+      SAME file — so the hang follows the parse failure rather than being independent.
+      Rate: 1 file in 2,735 sampled (0.037%). **Both of those files, and all four named
+      by the two full-corpus runs under item 1, parse clean in isolation** (33–1,008 ms,
+      real symbols and relationships), so the file is the victim of the corrupted WASM
+      state rather than its cause — see item 1 for the per-file table. What it must do:
+      abort that file's parse and return an error for it, rather than exiting the
+      process; the indexer is incremental by design and this makes one pathological
+      file lose the whole run, which for a measurement gate means the run produces no
+      table at all rather than a partial one.
 6. **`src/ast/pool-worker.ts` `extractBasicRelationships` — the >1 MB fallback
    fabricates `calls` edges from declarations, and the corpus contains the proof.**
    The fallback is a regex extractor (the analyzer is regex-free; this is not) whose
