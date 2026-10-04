@@ -647,6 +647,66 @@ phantoms — `pool-worker.ts` forwards a WHITELIST of symbol metadata keys and t
 markdown-only, so every `metadata.type` this analyzer writes is dropped before a consumer sees it; and
 the oracle compared the tree's raw `` `db_name` `` against a symbol named `db_name`.
 
+### The unresolved-target split, and a classifier that could not fire
+
+The workstream asks for "external" to be separated from "never indexed", because the two look
+identical in a count and are opposite findings. This lane's incoming probe has carried a classifier
+for it since pass 3 — and at pass 6 that classifier was found to be **structurally incapable of
+producing the answer it was written for.**
+
+`externalNames` was built like this:
+
+```ts
+for (const name of published.keys()) { if (platform-shaped) externalNames.add(name) }
+```
+
+`published` holds the names the corpus **declares**. `externalNames` was only ever consulted for
+names the corpus does **not** declare (`if (!published.has(target))`). The two sets were disjoint by
+construction, so `externalByName` could never fire and **every** unresolved target fell into
+`unaccounted`. The artifact read `unresolvedClasses: {unaccounted: 827}` for `calls` and nothing
+else, which reads as a finding about 827 edges and is in fact a statement about the classifier. The
+fixed test applies the shape test to the unresolved name itself and asks the analyzer's own exported
+guard sets (`SQL_BUILTINS`, 427 names; `SQL_KEYWORDS`, 151) whether the name is one it deliberately
+refuses to treat as a callee. The old set is kept as `publishedPlatformNames`, and it measures
+**0** — which is the proof that it could never have fired.
+
+**The split, measured over all 1,955 files, 0 degraded** (`measurements/pass6-incoming-corpus.json`):
+
+| Type | Unresolved edges | external (builtin / catalog / path) | unaccounted |
+| --- | --- | --- | --- |
+| `calls` | 827 | **6** (`pg_trigger_depth`, `pg_relation_is_updatable`, …) | **821** |
+| `uses` | 1,006 | **280** (`pg_attribute`, `pg_class`, …) | **726** |
+| `references` | 104 | 0 | **104** |
+| `imports` | 22 | **22** — all `metadata.psqlInclude`, i.e. FILE PATHS | **0** |
+| `contains` | 1 | 0 | **1** (`program`) |
+| `instantiates` | 2 | 0 | **2** (`composite_domain`) |
+| **total** | **1,962** | **308** | **1,654** |
+
+So **1,654 edges name a declaration-shaped thing no admitted file publishes**, and 308 are
+genuinely hopeless-string targets. The `imports` half is settled by a different key rather than
+admitted as a gap: a psql `\i` target is a path relative to the including script, and **22 of 22
+resolve on disk** under `path.resolve(path.dirname(file), target)` — measured in the same artifact
+by the same run, not carried from an earlier pass. The 30 `CREATE EXTENSION` targets are
+distributions: **0 of 30** appear in the corpus, and the probe **deliberately does not score that
+as resolved** (`extensionInstallsScoredAsResolved: false`), because "the server installs this" and
+"a file in this repository declares it" are different claims and folding them together would be the
+error the split exists to prevent.
+
+The 1,654 are the real finding and they are not settled: `credential_vault_generic_library*`,
+`wh_date_key`, `wh_time_key` and similar are declarations this corpus's admitted files do not carry.
+**They are not necessarily analyzer defects** — a migrations corpus references tables created by a
+file the 512 KB cap or the grammar excluded, and the probe indexes the files it was given and no
+others, so a name read from outside that set reads as unresolved here and not in the project. The
+rate is reported, not scored, and that is the same reason the orphan row (903 of 7,811 published
+names are named by no edge) is reported rather than treated as a defect.
+
+**The second defect was in the self-check I added to catch the first.** `classifierSelfCheck` summed
+with `Object.values(rows)` where `rows` is a `Map`, which yields `[]` — so its three totals read 0
+and `vacuous` read `false` on an empty array. A self-check that cannot fail is the same defect one
+level up. It iterates `rows.values()` now, and it reports `vacuous: false` against real totals
+(286 / 1,654). Both are recorded because the second was found by reading the first one's output
+rather than by any test.
+
 ### DEFECT 2 — a `contains` target naming two declarations, and the graph cannot choose
 
 `src/lsp/impact.ts` obtains its reverse edges by scanning outgoing edges and matching targets. A
@@ -1141,7 +1201,7 @@ is part of the row.
 | m12 differential (`script/m12/verify-analyzer.ts sql`) | **84 facts, P = R = 1.000, 0 FP, 0 FN, `earliestFailingLayer=none`, `parseErrors=0`** | the FP that made this 0.988 was a real fabrication; see *Differential ground truth* |
 | ontology census (`validation/m14/fixtures/sql/ontology-census.mts`, 8 shards + merge) | **1,955 of 1,955 admitted parsed, 0 parse failures, 0 degraded by timeout, 0 in regex fallback, 0 empty names, 0 `unknown` endpoints, 31,066 relationships / 18,482 symbols** | nothing is unmeasured and nothing is degraded, so there is no `filesWithNoShardRow` to name; the same figure comes out of a 4-shard walk (`pass4-census-4shard.json`) |
 | **two independent walks, different partitioning, same HEAD** | **8 strided shards and 4 contiguous shards each measure 1,955 / 1,955 files, 18,482 symbols and 31,066 relationships, with identical per-type totals, resolution rates and `evidenceClass` splits** | this is the row pass 2 could not fill and pass 3 could not either; it is why the census is sharded and merged from shard rows. `measurements/pass4-census.json` and `measurements/pass4-census-4shard.json` |
-| incoming probe (`validation/m14/fixtures/sql/pass3-incoming.mts`) | re-run at this HEAD over 1,955 files: 31,066 edges, 0 parse failures, 0 degraded. `contains` resolves **99.54 %** intra-file by (name, `ownerName`), **99.61 %** with `metadata.memberKind`, against **92.71 %** on the bare name corpus-wide, and **45.62 %** on (name, `ownerName`) corpus-wide | reads only fields that SURVIVE production `parseFile` — see DEFECT 1's note on the metadata whitelist. Artifact `measurements/pass5-incoming-corpus.json` |
+| incoming probe (`validation/m14/fixtures/sql/pass3-incoming.mts`) | re-run at pass 6 with **1,955 files, 0 degraded, 0 parse failures, 31,066 edges**. `contains` resolves **99.54 %** intra-file by (name, `ownerName`), **99.61 %** with `metadata.memberKind`, against **92.71 %** on the bare name corpus-wide, and **45.62 %** on (name, `ownerName`) corpus-wide. Unresolved split: **308 external / 1,654 unaccounted**, and **22 of 22** psql include targets exist on disk | reads only fields that SURVIVE production `parseFile` — see DEFECT 1's note on the metadata whitelist. Run at `--concurrency 2`: at the default 8 the same run degraded **3** files and lost 6 `uses` edges to the engine timeout on this loaded box, so the 8-worker figure is not used. Artifact `measurements/pass6-incoming-corpus.json`; pass 5's `pass5-incoming-corpus.json` is kept and superseded |
 | invocation-cause probe (`pass3-invocation-why.mts`) | re-run at this HEAD: **742 qualified invocations on the tree → 629 emitted, 53 guard-suppressed, 60 inside an error subtree, 0 unexplained**; 629 + 53 + 60 = 742, so the decomposition is closed. 0 files degraded | closes pass 2's open item. Its population is LARGER than the adversarial probe's A3 by 46, because A3 excludes error-bearing invocations from its population — see the cross-probe note under *`calls` residual* |
 | phantom-constraint probe (`pass3-phantom-constraint.mts`) | **53 phantoms in 22 files → 0**, same oracle both sides, which also clears 4 legitimate same-name indexes | a parse-tree oracle, because the name heuristic cannot decide it |
 | adversarial probe (`validation/m14/fixtures/sql/adversarial-probe.mts`) | re-run at this HEAD over all 1,955 files, 23 probe populations: **628 qualified invocations emitted**, 52 guard-suppressed, 16 unexplained by this probe's population, **3,892 of 3,892** `calls` tiers and **9,106 of 9,106** `uses` tiers AGREE, A12's 6 verdicts read off node types and fields | **0 files degraded at this HEAD**, against 1 engine-timeout and 6 regex-fallback files at pass 3 — the pass-4 optimization is what removed them. The 16 is not a defect: see the cross-probe note under *`calls` residual* |
@@ -1651,6 +1711,7 @@ artifacts are under `validation/m14/fixtures/sql/measurements/`:
 | `pass5-overrides-reconciliation.json` | `validation/m14/fixtures/sql/overrides-reconciliation.mts` | both `overrides` rules re-implemented and the difference decomposed with an exactness check, plus the per-file edge-identity collapse that turns 34 events into 22 edges |
 | `pass5-adversarial-probe.json` | `validation/m14/fixtures/sql/adversarial-probe.mts` | the six questions' adversarial half re-measured at this HEAD over all 1,955 files with **0 degraded**, and the A12 capability battery's 6 verdicts |
 | `pass5-invocation-why.json` | `validation/m14/fixtures/sql/pass3-invocation-why.mts` | the cause breakdown for every qualified invocation carrying no `calls` edge, closed at 742 = 629 + 53 + 60 with **0 unexplained** |
+| `pass6-incoming-corpus.json` | `validation/m14/fixtures/sql/pass3-incoming.mts --concurrency 2` | the incoming direction at pass 6: **308 external vs 1,654 unaccounted** unresolved edges by a classifier that now fires, **22 of 22** psql include targets resolved on disk, and `classifierSelfCheck` reporting `vacuous: false` against real totals |
 | `pass6-corpus-composition.json` | `validation/m14/fixtures/sql/corpus-composition.mts` | the corpus DENOMINATOR the per-type census never produced: 183 repo directories walked, 17 with a tracked `.sql`, **16 contributing an admitted file**, 1,963 tracked paths → **1,955 admitted**, agreeing with the arbiter. Names `proxicall`, the symlink out of the corpus root that supplies 438 of those files, and the 8 excluded paths |
 | `pass3-incoming-corpus.json`, `pass3-incoming-boundary.json` | `validation/m14/fixtures/sql/pass3-incoming.mts` | the incoming direction: ambiguity per type, `contains` resolution under three match rules, the trigger/function collision, keyword-named symbols, orphan declarations |
 | `pass3-invocation-why.json`, `pass3-invocation-why-after.json` | `validation/m14/fixtures/sql/pass3-invocation-why.mts` | the cause breakdown for every qualified invocation that carries no `calls` edge, and the 0 that remain unexplained |
