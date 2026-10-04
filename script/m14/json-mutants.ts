@@ -101,10 +101,22 @@ const jsonOverridesUnscoped = (r: any) => {
   const extra: any[] = []
   for (const x of r.relationships ?? []) {
     if (relType(x) !== "contains") continue
-    const k = String(x.target ?? "")
-    if (k.length === 0) continue
-    const prior = byName.get(k)
-    if (prior === undefined) byName.set(k, x.line_number ?? 0)
+    const qualified = String(x.target ?? "")
+    if (qualified.length === 0) continue
+    // The defect class is "the duplicate check is scoped to the FILE, not the OBJECT", and a
+    // JSON key is unique only WITHIN its object. So the KEY is compared across owners, which
+    // after the `contains` endpoint change is the LEAF segment of the qualified target rather
+    // than the whole path.
+    //
+    // Keying on the whole path made this mutant VACUOUS rather than caught: after
+    // `SameKeyDifferentObjects.list[0].tag` and `…list[1].tag` became distinct endpoints, the
+    // permissive version found no collisions and emitted nothing, and the run reported
+    // `SURVIVED json/overrides-unscoped-to-file (0 -> 0 failures)`. A mutant that stops
+    // testing anything is worse than no mutant, because it still reads as a passing check.
+    const dot = qualified.lastIndexOf(".")
+    const leaf = dot >= 0 ? qualified.slice(dot + 1) : qualified
+    const prior = byName.get(leaf)
+    if (prior === undefined) byName.set(leaf, x.line_number ?? 0)
     else extra.push({ ...x, type: "overrides", metadata: { overridesLine: prior, redefinition: true } })
   }
   return { ...r, relationships: [...(r.relationships ?? []), ...extra] }
@@ -180,7 +192,101 @@ const jsonExtendsSourceIsArray = (r: any) => ({
   ),
 })
 
+  /**
+   * Pass-3 mutants — the two endpoint-identity defects the incoming check found.
+   *
+   * `contains` was the last type in this lane still emitting BARE names. Measured on a
+   * 202-file / 99-repo sample: 32,660 of 66,032 `contains` edges (49.4%) named a target
+   * matching more than one published symbol, and the shared resolver
+   * (`src/ast/parallel-indexer.ts` strategy 2) declines a non-unique bare name, so those
+   * edges bound to no declaration. Both mutants below revert one of the two halves of the
+   * fix, and both must be caught.
+   */
+
+  /** Reverts `contains` endpoints to `ownerName -> leaf name`. Caught by every fixture's
+   *  `contains` pins, because each pin spells a qualified path on both ends. */
+  const jsonContainsBareEndpoints = (r: any) => ({
+    ...r,
+    relationships: (r.relationships ?? []).map((x: any) => {
+      if (relType(x) !== "contains") return x
+      const owner = String((x.metadata ?? {}).ownerName ?? "")
+      const target = String(x.target ?? "")
+      const dot = target.lastIndexOf(".")
+      return { ...x, source: owner, target: dot >= 0 ? target.slice(dot + 1) : target }
+    }),
+  })
+
+  /** An array item's owner is the ARRAY, so only the `[i]` comes off the target's path.
+   *  This mutant strips the array's own leaf segment as well, which names the document ROOT
+   *  as the owner of every array element — the exact defect the first version of the fix had,
+   *  and the one 5 fixture pins caught. Caught by json/Arrays' two item pins and
+   *  json/AllOf's `allOf[0]` / `allOf[1]` pins. */
+  const jsonArrayItemOwnerIsRoot = (r: any) => ({
+    ...r,
+    relationships: (r.relationships ?? []).map((x: any) => {
+      if (relType(x) !== "contains") return x
+      const source = String(x.source ?? "")
+      const target = String(x.target ?? "")
+      const bracket = target.lastIndexOf("[")
+      if (bracket < 0) return x
+      const arrayPath = target.slice(0, bracket)
+      if (source !== arrayPath) return x
+      const dot = arrayPath.lastIndexOf(".")
+      if (dot < 0) return x
+      return { ...x, source: arrayPath.slice(0, dot) }
+    }),
+  })
+
+/**
+ * Pass-3 mutant: an array-inside-an-array's elements are named from the array's own NAME again,
+ * which is correct for every array written under a key and wrong for an array that is itself an
+ * ELEMENT — the inner array's name is the outer array's name, so two different objects collide
+ * and `contains` is asserted between objects that are not nested. Caught by
+ * json/ArrayInArray's two forbids and its `rows[0][0]` / `rows[0][1]` pins.
+ */
+const jsonArrayItemNamedFromBareName = (r: any) => ({
+  ...r,
+  symbols: (r.symbols ?? []).map((s: any) => {
+    const q = String(s.qualifiedName ?? "")
+    const m = /^(.*)\[(\d+)\]\[(\d+)\]$/.exec(q)
+    if (!m) return s
+    // `…rows[0][0]` becomes `…rows[0]`: the inner array's items indexed as if they were the
+    // outer array's, which is the pre-fix shape.
+    return { ...s, name: `${m[1]}[${m[2]}]`, qualifiedName: `${m[1]}[${m[2]}]`, ownerName: m[1] }
+  }),
+  relationships: (r.relationships ?? []).map((x: any) => {
+    const t = String(x.target ?? "")
+    const m = /^(.*)\[(\d+)\]\[(\d+)\](.*)$/.exec(t)
+    if (!m) return x
+    return { ...x, target: `${m[1]}[${m[2]}]${m[4]}`, source: String(x.source ?? "").replace(/\[(\d+)\]$/, "") }
+  }),
+})
+
 export const JSON_MUTANTS: Mutant[] = [
+  {
+    id: "json/array-item-named-from-bare-array-name",
+    language: "json",
+    defectClass: "wrong-symbol-identity",
+    description:
+      "M14 ontology pass-3 regression: an array that is itself an ELEMENT names its children from its bare name again, so `rows[0]`'s two elements collide with `rows`' own element namespace and `contains` is asserted between objects that are not nested. Measured over the corpus as 183 UNEXPLAINED `contains` edges that two implementations agreed on, which is the shared-misreading case the honesty contract names. Caught by json/ArrayInArray.",
+    transform: jsonArrayItemNamedFromBareName,
+  },
+  {
+    id: "json/contains-endpoints-are-bare-names",
+    language: "json",
+    defectClass: "unresolvable-identity",
+    description:
+      "M14 ontology pass-3 regression: `contains` reverts to `ownerName -> leaf name`, the two BARE names it emitted before the incoming check. Measured on a 202-file / 99-repo sample that is 32,660 of 66,032 edges (49.4%) naming a target that matches more than one published symbol, and the shared resolver declines a non-unique bare name, so those edges bind to no declaration at all. Caught by every json fixture's `contains` pins.",
+    transform: jsonContainsBareEndpoints,
+  },
+  {
+    id: "json/array-item-owner-is-root",
+    language: "json",
+    defectClass: "dishonest-identity",
+    description:
+      "M14 ontology pass-3 regression: an array item's owner drops the array's own segment as well as its `[i]`, so `objs[0]` reads as contained by the document ROOT instead of by `objs`. This is the defect the first version of the fix had, and 5 fixture pins caught it. Caught by json/Arrays' item pins and json/AllOf's `allOf[0]`/`allOf[1]` pins.",
+    transform: jsonArrayItemOwnerIsRoot,
+  },
   {
     id: "json/implements-dropped",
     language: "json",
