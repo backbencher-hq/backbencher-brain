@@ -304,14 +304,15 @@ closes to 1,039 with **no unexplained remainder**:
 | no declaration node, no directive | 882 | nothing for `contains` to point at |
 | declaration nodes, all member-less | 96 | 211 empty `class_definition`, 28 `type_alias`, 10 `mixin_declaration`, 3 `extension_declaration` — an empty class genuinely contains nothing |
 | directives only (`library`/`part`/`part of`) | 51 | 89 `part_directive` + 22 `part_of_directive` + `library_definition` nodes; a `part` fragment declares nothing of its own |
-| declaration WITH members, >1 MB | 4 | the structural fallback — `parseFile` never routes these to the analyzer, and the census already excludes them (declared limitation 8) |
+| declaration WITH members | 5 | the structural fallback and one parse error — the only row where an edge *should* exist and does not |
 | parse error, no declaration | 5 | 9 ERROR nodes across the population |
-| **total** | **1,038** | one file is both error-bearing and counted above |
+| **total** | **1,039** | the instrument's four mutually exclusive shapes are 882 + 101 + 51 + 5; the 101 splits 96 member-less + 5 with members, and the five rows above are that refinement |
 
 The fourth row is the one that mattered, because it is the only row where an edge
-*should* exist and does not. All four were checked against production `parseFile`
-rather than argued about, and all four return `fallback=true` with symbols that
-carry no `kind` and a `calls` row from the regex extractor:
+*should* exist and does not. All five were checked against production `parseFile`
+rather than argued about. Four return `fallback=true` with symbols that carry no
+`kind` and a `calls` row from the regex extractor; the fifth is a 35-byte
+`ERROR`-bearing parse case:
 
 ```
 native_cupertino_bindings.dart  1,075,261 B  fallback=true  symbols=6    rels={calls:24}
@@ -1573,7 +1574,7 @@ dart lane regex census — instrument: TypeScript AST (ts.createSourceFile), no 
 scope: lane-owned set
 owned dirs: src/ast/real-dart-analyzer.ts | validation/m14/fixtures/dart/* |
             script/m14/oracles/dart-* | script/m14/dart-* | script/m14/verify-dart-*
-files scanned: 17  (8185 lines)   excluded from its own count: …/regex-census.ts
+files scanned: 17  (8186 lines)   excluded from its own count: …/regex-census.ts
 lane-owned files: 17
 
 RESULT: 0 regexes in the lane-owned set.
@@ -1589,12 +1590,21 @@ excludes itself only from the MATCH set (`hits.filter(h => laneOwned(h.file) && 
 which matched no run: the set was 16 files then and is 16 files now, so that figure had
 been carried through at least one file being added and removed.
 
-**The `lines` figure is one per file larger than the files hold.** 8,185 is
+**The `lines` figure is one per file larger than the files hold.** 8,186 is
 `content.split(/\r?\n/).length` summed over 17 files, and every file ends in a newline,
-so each contributes one empty trailing segment: the real total is **8,168**
+so each contributes one empty trailing segment: the real total is **8,169**
 (`wc -l` over the same 17). It is quoted as the instrument prints it because that is
 what a reviewer sees, and the 17-line gap is named here rather than left for someone to
 find.
+
+**Both figures in that block moved once, for a reason worth recording.** They read
+8,185 and 8,168 until commit `b1b02d2b8` added a single line to a lane-owned file
+(`bothInSameRepoPooled: pooledBoth(t),` in `validation/m14/fixtures/dart/census.ts`) —
+a commit about the census's own JSON field, which is not a regex-bearing file and
+carries no regex. A quoted instrument block is a measurement of the tree at a
+commit, and any later commit that touches a scanned file invalidates it silently.
+The `RESULT: 0` did not move and could not: adding a line that contains no
+`RegExpLiteral` adds no match.
 
 **Writing that instrument cost this lane two of its own blind spots, and both were the
 same defect one level up.** The first version selected its file set with regexes and then
@@ -2006,7 +2016,7 @@ and 100 + 14 MISSING, all `overrides`.
 
 **What did not reproduce is recorded as corrected, in the sections that carry it:** the
 `28 further positions` of the type inventory (33 positions exist — this section's "28"),
-the quoted regex-census block (`16 (7881 lines)`, which matched no run — now 17/8,185
+the quoted regex-census block (`16 (7881 lines)`, which matched no run — now 17/8,186
 with the self-count explained), the `document_color_test.dart` row that named a
 basename two tracked files share, and the `[BB-HANG]` run count (n=2 → n=3, with a third
 hang file that is innocent on the same evidence as the first two).
