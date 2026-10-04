@@ -60,18 +60,18 @@
  *
  * That matters here, because the two instruments disagree and both numbers are real:
  *
- *   - INSTRUMENT A (grammar inventory). The grammar produced 149 distinct node types over 971 corpus
+ *   - INSTRUMENT A (grammar inventory). The grammar produced 149 distinct node types over 1,985 corpus
  *     files. The 12 names below are the ones that would express a conformance relation distinct from
  *     subtyping; NONE of them is produced. So "julia has no syntax for implements-as-distinct-from-
  *     extends" is measured, not asserted.
  *
- *   - INSTRUMENT B (parse-tree count). 325 supertype clauses across 60 files name an `abstract type`
+ *   - INSTRUMENT B (parse-tree count). 449 supertype clauses across 87 files name an `abstract type`
  *     or `primitive type` declared in the SAME file — `struct Foo <: MyAbstract end`. An `abstract
- *     type` IS julia's interface, so those 325 are implements-SHAPED. The analyzer publishes all 4,309
+ *     type` IS julia's interface, so those 449 are implements-SHAPED. The analyzer publishes all 5,607
  *     `<:` / `>:` clauses as `extends` without splitting on the supertype's kind.
  *
  * Registering instrument A yields RULED-SOUND. Registering instrument B yields FALSIFIED with
- * "the construct occurs 325x across 60 file(s) on the PARSE TREE — it is derivable, so the ruling is
+ * "the construct occurs 449x across 87 file(s) on the PARSE TREE — it is derivable, so the ruling is
  * wrong." Both outcomes are honest readings of a decision this lane made on semantic grounds, and
  * `JULIA_RULED_INSTRUMENT_B` below is the falsifying table, written out and ready, so the choice is
  * the supervisor's to make with both numbers in hand rather than a lane's.
@@ -79,14 +79,14 @@
  * This lane's position, stated so it can be disagreed with: A is the correct instrument, because the
  * question is whether the language has a SECOND relation and it does not — julia has exactly one
  * subtyping relation, and `abstract type` is a participant in it rather than a separate protocol
- * system. Publishing `implements` as well would add 325 edges that duplicate 325 `extends` edges to
+ * system. Publishing `implements` as well would add 449 edges that duplicate 449 `extends` edges to
  * the same target with a different label, so `bb_graph` on an abstract-typed node would show both to
  * one node. The number is published in the lane doc's verdict cell precisely so this is visible to a
  * reviewer who thinks the mapping should be split.
  *
  * ## Measured provenance
  *
- * Every number here comes from `validation/m14/fixtures/julia/census.ts` over 971 admitted files
+ * Every number here comes from `validation/m14/fixtures/julia/census.ts` over 1,985 admitted files
  * (JuliaLang/julia 941 + json_jl 25 + nvim-treesitter 5, no sampling), production entry point
  * `parseFile` from `src/ast/pool-worker.ts`. Reproduce with:
  *
@@ -105,6 +105,17 @@ export type Ruled = {
   nodeTypesThatWouldMeanIt?: string[]
   /** B: count occurrences on the tree. A: unused. */
   countOnTree?: (root: any, fileLabel: string, hits: string[]) => void
+  /**
+   * B only: the count and file count this ruling PUBLISHES for `countOnTree`, over the corpus the
+   * gate discovers. These are the numbers the ruling is accountable to, and they live HERE so there
+   * is one source of truth — `validation/m14/fixtures/julia/ruled-probe-check.ts` reads these fields
+   * rather than repeating the figures in a string. The first version of that probe hardcoded
+   * `325 occurrences / 60 files` in its own source, so when the corpus grew from 971 to 1,985 files
+   * the probe kept printing the stale pair and reported MISMATCH while exiting 0: a gate that could
+   * not fail and could not be right. Neither is acceptable for a number a ruling stands on.
+   */
+  publishedCount?: number
+  publishedFiles?: number
   describe: string
 }
 
@@ -113,7 +124,7 @@ export const JULIA_RULED: Ruled[] = [
     type: "implements",
     instrument: "A:grammar-inventory",
     // Every one of these 12 was checked against the 149 node types the production grammar actually
-    // produced over the 971 corpus files. Zero present. This list is the census's `wouldMeanImplements`,
+    // produced over the 1,985 corpus files. Zero present. This list is the census's `wouldMeanImplements`,
     // not a hand-picked guess: it is the set of node-type names that other grammars use for a
     // conformance relation, carried over so the gate can falsify this ruling if julia's grammar ever
     // grows one.
@@ -134,11 +145,11 @@ export const JULIA_RULED: Ruled[] = [
     describe:
       "julia has ONE subtyping relation. `abstract type` is a participant in it via `<:`, not a " +
       "separate protocol system, so there is no node expressing conformance-as-distinct-from-" +
-      "extends. Measured: 0 of the 12 node types above among the 149 the grammar produced over 971 " +
-      "files. NEAREST CONSTRUCT, PUBLISHED RATHER THAN HIDDEN: 325 supertype clauses across 60 files " +
-      "name an `abstract type` declared in the same file, and all 4,309 `<:`/`>:` clauses are " +
+      "extends. Measured: 0 of the 12 node types above among the 149 the grammar produced over 1,985 " +
+      "files. NEAREST CONSTRUCT, PUBLISHED RATHER THAN HIDDEN: 449 supertype clauses across 87 files " +
+      "name an `abstract type` declared in the same file, and all 5,607 `<:`/`>:` clauses are " +
       "published as `extends` without splitting on the supertype's kind. Splitting them would add " +
-      "325 edges duplicating 325 existing ones to the same target under a second label. " +
+      "449 edges duplicating 449 existing ones to the same target under a second label. " +
       "Written ruling: script/m14/spec/julia-completeness.json#JUL-D2. To OVERTURN this ruling, " +
       "either (a) the grammar must produce one of the 12 node types above, or (b) julia must grow a " +
       "second subtyping operator — either falsifies it and the gate will say so.",
@@ -149,7 +160,7 @@ export const JULIA_RULED: Ruled[] = [
  * The same ruling registered on instrument B, which the gate will FALSIFY. Present so the
  * falsification is a measured, runnable thing rather than a paragraph — see the header.
  *
- * Counted exactly as `census.ts` counts it (325 occurrences / 60 files): a `binary_expression` whose
+ * Counted exactly as `census.ts` counts it (449 occurrences / 87 files): a `binary_expression` whose
  * operator is `<:` or `>:` and whose RIGHT operand names a type declared in the same file as an
  * `abstract_definition` or a `primitive_definition`. Tree navigation only.
  */
@@ -157,6 +168,8 @@ export const JULIA_RULED_INSTRUMENT_B: Ruled[] = [
   {
     type: "implements",
     instrument: "B:parse-tree-count",
+    publishedCount: 449,
+    publishedFiles: 87,
     countOnTree: (root: any, fileLabel: string, hits: string[]) => {
       const binOp = (n: any): string => {
         for (let i = 0; i < n.childCount; i++) {
@@ -182,7 +195,7 @@ export const JULIA_RULED_INSTRUMENT_B: Ruled[] = [
       /** A declared type's name, read off its `type_head`.
        *
        *  NOT the first `identifier` child of the definition. That was the first version of this probe
-       *  and it found 0 of 325, because the name is not a direct child: `abstract type Foo end` puts
+       *  and it found 0 of 449, because the name is not a direct child: `abstract type Foo end` puts
        *  `Foo` inside a `type_head`, and a parameterised head puts the name behind a
        *  `binary_expression` whose LEFT operand is the bare name. This is the same "scan for a name
        *  before unwrapping the wrapper around it, and you get the wrapper" trap the lane doc records
@@ -227,7 +240,7 @@ export const JULIA_RULED_INSTRUMENT_B: Ruled[] = [
       sup(root)
     },
     describe:
-      "325 supertype clauses across 60 files name an `abstract type` declared in the same file. An " +
+      "449 supertype clauses across 87 files name an `abstract type` declared in the same file. An " +
       "`abstract type` is julia's interface, so these are implements-shaped and the analyzer " +
       "publishes them as `extends` instead. Registering THIS table makes the gate report FALSIFIED.",
   },
