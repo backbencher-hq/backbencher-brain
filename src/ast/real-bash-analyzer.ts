@@ -704,6 +704,43 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
 
+    // ------------------------------------------------ attribution, BD11's flag
+    // `isAssignedInFile` answers "DOES THIS FILE ASSIGN THIS NAME", and the answer
+    // belongs here rather than in the walk because `declaredSymbols` is filled BY the
+    // walk. Evaluated during it, the predicate could only see the declarations
+    // already passed, so the answer depended on where the read sat:
+    //
+    //     echo "before: $LATE"    ->  uses -> LATE @1   ABSENT
+    //     LATE=1
+    //     echo "after: $LATE"     ->  uses -> LATE @3   TRUE
+    //
+    // One file, one name, one declaration, two answers. Measured on the 400-file
+    // sample: 37 (file, target) pairs in 25 files carried BOTH, and a further 15
+    // pairs (50 edges) were declared after every read of the name, so no
+    // contradiction showed and they were wrong for the same reason
+    // (`probe-bash-assigned-flag-order.mts`). 243 of 7,856 reads, 3.1%.
+    //
+    // `declaredSymbols` keys are `${owner}\u0000${name}`, and the contract is "under
+    // ANY owner" — a read inside a function reaches a module-level assignment, which
+    // is the case that matters most — so the suffixes are indexed once here. The
+    // pass can only ADD the key: a name present in the finished set was present in
+    // every prefix of it, so no edge that was correct before is changed after.
+    //
+    // Emitted on true only, matching `isShellDefined` and the `targetResolution`
+    // family — ABSENCE MEANS FALSE, and the contract is stated in the spec rather
+    // than left to be inferred from a pattern.
+    const assignedNamesInFile = new Set<string>()
+    for (const k of declaredSymbols) {
+      const i = k.indexOf("\u0000")
+      if (i >= 0) assignedNamesInFile.add(k.slice(i + 1))
+    }
+    for (const rel of relationships) {
+      if (rel.type !== ASTEngine.RelationshipType.Uses) continue
+      const meta = rel.metadata as Record<string, unknown>
+      if (meta.isAssignedInFile !== undefined) continue
+      if (assignedNamesInFile.has(String(rel.target ?? ""))) meta.isAssignedInFile = true
+    }
+
     // ------------------------------------------------- attribution, second pass
     // `resolveDeclaration` asks "is this name ambiguous IN THIS FILE?", and at the
     // moment a `uses` edge is emitted that question is asked against a HALF-BUILT
@@ -1477,25 +1514,23 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
     const names: { rawName: string; line: number }[] = []
     this.collectReadNames(node, names)
 
-    // Was this read name ASSIGNED anywhere in this file? `declaredSymbols` is the
-    // one per-file store both the declaration collector and this emitter see, but
-    // its keys are `${owner}\u0000${name}` — a read inside a function cannot
-    // reach a module-level assignment by asking for its own owner, which is
-    // exactly the case that matters most. So the suffixes are indexed once and
-    // the memo is keyed on the set's size, which only ever grows as declarations
-    // are collected.
-    let assignedIndex: { size: number; names: Set<string> } | null = null
-    const assignedInFile = (n: string): boolean => {
-      if (!assignedIndex || assignedIndex.size !== declaredSymbols.size) {
-        const s = new Set<string>()
-        for (const k of declaredSymbols) {
-          const i = k.indexOf("\u0000")
-          if (i >= 0) s.add(k.slice(i + 1))
-        }
-        assignedIndex = { size: declaredSymbols.size, names: s }
-      }
-      return assignedIndex.names.has(n)
-    }
+    // BD11's `isAssignedInFile` is NOT decided here. It used to be, and this is
+    // the second time this walk answered a file-level question against a
+    // half-built index (the first was `resolveDeclaration`, fixed in round 6 by a
+    // post-walk pass). `declaredSymbols` is filled by this same walk, so a
+    // predicate evaluated mid-walk can only see the declarations already passed,
+    // and the answer then depends on WHERE THE READ SITS rather than on what the
+    // file declares:
+    //
+    //     echo "before: $LATE"      ->  uses -> LATE @1   isAssignedInFile ABSENT
+    //     LATE=1
+    //     echo "after: $LATE"       ->  uses -> LATE @3   isAssignedInFile TRUE
+    //
+    // One file, one name, one declaration, two answers, and BD11's published
+    // contract says file-level ("set when the file assigns the name under any
+    // owner"). `probe-bash-assigned-flag-order.mts` measures the population: 37
+    // (file, target) pairs in 25 of 400 files carry BOTH answers. The pass is
+    // below, after the walk, against the finished index.
     for (const { rawName, line } of names) {
       // Read names are trimmed at the single point they are emitted. A zsh
       // `$ _iterm2_command` left the differential reporting
@@ -1527,17 +1562,6 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
           // a consumer can tell `${BASH_SOURCE[0]}` from a project variable
           // instead of seeing 23 undiagnosable edges to one shell name.
           ...(SHELL_DEFINED_VARS.has(name) ? { isShellDefined: true } : {}),
-          ...(declaredSymbols.has(`global\u0000${name}`) ? { isDeclaredGlobal: true } : {}),
-          // BD11. The lane's classification previously stopped at "a symbol, a
-          // known noise leaf, or nothing", and 407 of the `uses` edges on the
-          // pinned corpus fell into the last bucket: the read is real and the
-          // name is honest, but nothing said WHETHER this file assigns it. A
-          // consumer therefore had to guess whether `$TMPDIR` was a project
-          // variable it could not see or an environment-supplied one it never
-          // will. Emitted on true only, matching `isShellDefined` and
-          // `isDeclaredGlobal` above — ABSENCE MEANS FALSE, and the contract is
-          // stated in the spec rather than left to be inferred from a pattern.
-          ...(assignedInFile(name) ? { isAssignedInFile: true } : {}),
           // WHICH declaration, when this file has more than one. A `uses` edge
           // puts the READ's line on the row, which is a different line from the
           // declaration, so without this the declaration is unrecoverable from
@@ -1594,17 +1618,46 @@ private extractAssignment(
   ) {
     for (let i = 0; i < node.namedChildCount; i++) {
       const child = node.namedChild(i)
-      if (child && child.type === "variable_name" && child.text.trim() !== "") {
-        const key = `${owner}\u0000${child.text}`
+      // `name[index]=value` BINDS `name` — if the array does not exist the
+      // assignment creates it, so this is a declaration in exactly the class the
+      // analyzer already recognises for `NAME=value`, a `for` loop variable and a
+      // `read` target. The grammar holds that LHS one level deeper than the bare
+      // case, as `subscript > variable_name`, and this loop only ever looked at a
+      // DIRECT `variable_name` child. So the declaration published nothing, the
+      // file's other reads of the name had nothing to resolve against, and BD11
+      // classified every one of them as environment-supplied.
+      //
+      // The base name is read from the tree, never reconstructed from `node.text`,
+      // and the shape is ENUMERATED by `probe-bash-array-element-binding.mts`, so
+      // "the fix covers `subscript`" is a checked claim rather than a shape I
+      // assumed: every LHS shape `variable_assignment` produces on the corpus is
+      // printed there, and a sibling shape with its own population appears as its
+      // own row. On the 400-file sample that census reads `variable_name` 3298 and
+      // `subscript` 19, with a `variable_name` base on 19 of 19.
+      let nameNode: Node | null = null
+      let elementAssignment = false
+      if (child && child.type === "variable_name") {
+        nameNode = child
+      } else if (child && child.type === "subscript") {
+        const base = child.namedChild(0)
+        if (base && base.type === "variable_name") {
+          nameNode = base
+          elementAssignment = true
+        }
+      }
+      if (nameNode && nameNode.text.trim() !== "") {
+        const key = `${owner}\u0000${nameNode.text}`
         if (declaredSymbols.has(key)) return // reassignment, not a declaration
         declaredSymbols.add(key)
-        this.noteDeclaration(declSites, child.text, owner, node.startPosition.row + 1, "variable")
+        this.noteDeclaration(declSites, nameNode.text, owner, node.startPosition.row + 1, "variable")
         // `arr=(a b c)` — the value is an `array` node; the flag used to be a
         // parameter every caller passed `false`, so `isArray` was constant-false
-        // on every plain assignment. It is now read from the tree.
-        const isArray = this.valueIsArray(node)
+        // on every plain assignment. It is now read from the tree. An ELEMENT
+        // assignment makes the name an array too, whatever the value node is:
+        // `COMPREPLY[i]=…` declares an array and nothing else could.
+        const isArray = elementAssignment || this.valueIsArray(node)
         symbols.push({
-          name: child.text,
+          name: nameNode.text,
           kind: ASTEngine.SymbolKind.Variable,
           range: this.nodeToRange(node),
           scope: owner,
