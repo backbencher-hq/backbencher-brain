@@ -41,31 +41,53 @@ npx tsx validation/m14/fixtures/julia/core-wasm-race-probe.ts --rounds 24     # 
 npx tsx script/m14/ontology-coverage-gate.ts julia                            # exit 1 before it prints; see below
 ```
 
-**The arbiter reports this lane, and it now agrees with the census edge for edge.**
+**The arbiter reports this lane, and on this run it agrees with the census edge for edge.**
 `script/m14/ontology-coverage-gate.ts` used to carry ruling tables for `bash` and `json` only and
 exited 2 on julia with *"no RULING TABLE for julia … Refusing to report: a gate with an empty table
-would call every un-emitted type RULED-UNJUSTIFIED and that is a verdict about the TABLE, not about the
-lane."* `script/m14/julia-ruled.ts` exports `JULIA_RULED` (and `JULIA_RULED_INSTRUMENT_B`, the table
+would call every un-emitted type RULED-UNJUSTIFIED and that is a verdict about the TABLE, not about
+the lane."* `script/m14/julia-ruled.ts` exports `JULIA_RULED` (and `JULIA_RULED_INSTRUMENT_B`, the table
 that FALSIFIES the same ruling), and the supervisor has since wired it: `RULED_BY_LANG` at
 `ontology-coverage-gate.ts:199` reads `…, zig: ZIG_RULED, julia: JULIA_RULED`. The §8 edit this lane
-asked for is applied, so the gate runs unmodified:
+asked for is applied, so the gate runs unmodified. Verbatim, `npx tsx
+script/m14/ontology-coverage-gate.ts julia`, **exit 0**, no `[BB-PARSE-ERR]` and no `[BB-HANG]`:
 
 ```
 type          status            detail
 ------------------------------------------------------------------------------------------------------------------------
-calls         EMITTED           122,150 edges in 4+ files, e.g. Aqua.jl/src/exports.jl, Aqua.jl/src/persistent_tasks.jl
-uses          EMITTED           37,087 edges in 4+ files, e.g. Aqua.jl/src/exports.jl, Aqua.jl/src/persistent_tasks.jl
-contains      EMITTED           14,299 edges in 4+ files, e.g. Aqua.jl/src/persistent_tasks.jl, Aqua.jl/src/Aqua.jl
-imports       EMITTED           2,804 edges in 4+ files, e.g. Aqua.jl/docs/changelog.jl, Aqua.jl/src/Aqua.jl
-references    EMITTED           49,586 edges in 4+ files, e.g. Aqua.jl/src/exports.jl, Aqua.jl/src/persistent_tasks.jl
-exports       EMITTED           2,859 edges in 4+ files, e.g. Aqua.jl/src/precompile.jl, Aqua.jl/test/pkgs/PkgWithUndefinedExports.jl
+calls         EMITTED           122,150 edges in 4+ files, e.g. Aqua.jl/docs/make.jl, Aqua.jl/src/ambiguities.jl
+uses          EMITTED           37,087 edges in 4+ files, e.g. Aqua.jl/docs/make.jl, Aqua.jl/src/ambiguities.jl
+contains      EMITTED           14,299 edges in 4+ files, e.g. Aqua.jl/src/Aqua.jl, Aqua.jl/src/persistent_tasks.jl
+imports       EMITTED           3,386 edges in 4+ files, e.g. Aqua.jl/docs/make.jl, Aqua.jl/docs/changelog.jl
+references    EMITTED           50,150 edges in 4+ files, e.g. Aqua.jl/docs/make.jl, Aqua.jl/src/ambiguities.jl
+exports       EMITTED           2,795 edges in 4+ files, e.g. Aqua.jl/src/precompile.jl, Aqua.jl/test/pkgs/PkgWithUndocumentedNames.jl
 extends       EMITTED           2,580 edges in 4+ files, e.g. Aqua.jl/test/pkgs/AquaTesting.jl, Aqua.jl/test/pkgs/PkgWithAmbiguities.jl
 implements    RULED-SOUND       NOT EMITTED; the grammar produced 149 distinct node types across the corpus and NONE expresses it. Written ruling: script/m14/julia-ruled.ts (RULED_BY_LANG.julia)
 overrides     EMITTED           3 edges in 3+ files, e.g. julia/Compiler/test/contextual.jl, julia/test/meta.jl
 instantiates  EMITTED           3,428 edges in 4+ files, e.g. Aqua.jl/test/test_piracy.jl, DataFrames.jl/src/abstractdataframe/iteration.jl
 ------------------------------------------------------------------------------------------------------------------------
-emitted 9/10   ruled-sound 1   FALSIFIED 0   ruled-without-justification 0        exit 0
+emitted 9/10   ruled-sound 1   FALSIFIED 0   ruled-without-justification 0
 ```
+
+**This block replaced a previous one that quoted `imports 2,804`, `references 49,586` and
+`exports 2,859`. Those were not a transcription error — they were the real output of a run taken
+BEFORE the two oracles existed, and they were left in the file after the verdict table moved to
+3,386 / 50,150 / 2,795.** So for one commit this file carried two different values for the same
+type in two tables 380 lines apart, and the gate that reads those tables
+(`doc-tables-check.ts`, 25 cells) was the only thing that noticed. It is recorded here because the
+failure is the interesting part: a quoted gate output is a SNAPSHOT, and the prose around it was
+updated to a newer run while the quote itself was not. **A quoted block is not evidence about the
+present; only a re-run is.** The census run that produced the numbers these tables now carry is
+the one that matters, and it agrees with this block edge for edge.
+
+**An `exit 0` from this arbiter is a property of a RUN, not of the lane.** This run finished with
+exit 0 and no trapped parse. A census run 40 minutes earlier at width 4 on the SAME 1,985 files
+printed `[BB-PARSE-ERR] … memory access out of bounds` for
+`julia/stdlib/LibGit2/src/remote.jl`, degraded that file, and was killed 110 s later by the
+orphaned self-destruct naming the same file. Both runs are recorded below. The arbiter runs at
+width 8 (`ontology-coverage-gate.ts:240`) and the census at width 4 (`census.ts:82`), and the trap
+is probabilistic at both, so **a green arbiter run is not a statement that the lane is
+trap-free — it is a statement that this run was not caught.** §8 rows 1, 2 and 7 are the asks; none
+is mine to apply.
 
 ## The arbiter's exit 0 does not reproduce, and the bomb that ends it is not the file it names
 
@@ -107,7 +129,7 @@ by `validation/m14/fixtures/julia/engine-concurrency-probe.ts` (lane-owned, writ
    |---|---|---|
    | `ontology-coverage-gate.ts:240` | **8 workers** | traps, then the orphan kills the run |
    | `census.ts:82` | 4 workers | clean — `throw: 0`, `fallback: 0` |
-   | `firing-check.ts:290` | sequential `for` | clean — `degraded: 0`, 234,796 edges |
+   | `firing-check.ts:290` | sequential `for` | clean — `degraded: 0`, 235,878 edges |
 
    Interleaved A/B, 400-file stride sample, 3 rounds per arm, so no arm owns the quietest minute.
    **The block below is ONE RECORDED RUN and the trap is PROBABILISTIC, which is a correction to
@@ -158,9 +180,9 @@ by `validation/m14/fixtures/julia/engine-concurrency-probe.ts` (lane-owned, writ
 
 **None of this moves a verdict, and the reason is worth stating precisely.** `arbiter-census-diff.ts`
 re-measures the same 1,985 files under the arbiter's own counting rule at width 4 and returns
-**`throw: 0`, 234,796 rows, `files with r.fallback truthy: 0`**, per-type identical to the census row
-for row — `calls 122,150 · uses 37,087 · contains 14,299 · imports 2,804 · references 49,586 ·
-exports 2,859 · extends 2,580 · implements 0 · overrides 3 · instantiates 3,428`. **The arbiter's
+**`throw: 0`, 235,878 rows, `files with r.fallback truthy: 0`**, per-type identical to the census row
+for row — `calls 122,150 · uses 37,087 · contains 14,299 · imports 3,386 · references 50,150 ·
+exports 2,795 · extends 2,580 · implements 0 · overrides 3 · instantiates 3,428`. **The arbiter's
 counts reproduce exactly; the arbiter no longer reaches the line that prints them.** A reader who
 wants the table should run `arbiter-census-diff.ts`, which is lane-owned, width-4, and writes nothing.
 
@@ -358,13 +380,13 @@ same corpus, same analyzer, same commit — only `--files` differs:
 
 ```
 $ npx tsx script/m14/firing-check.ts --files 120 julia
-8/10 fired, 14204 edges, 120/120 files        <-- note 14,204, not 234,796
-  julia  120/120  8/10  14,204  0 degraded  stable
+8/10 fired, 14263 edges, 120/120 files        <-- note 14,263, not 235,878
+  julia  120/120  8/10  14,263  0 degraded  stable
   types: calls,uses,contains,imports,references,exports,extends,instantiates
 
 $ npx tsx script/m14/firing-check.ts --files 2000 julia
-9/10 fired, 234796 edges, 1985/1985 files
-  julia  1985/1985  9/10  234,796  0 degraded  stable
+9/10 fired, 235878 edges, 1985/1985 files
+  julia  1985/1985  9/10  235,878  0 degraded  stable
   types: calls,uses,contains,imports,references,exports,extends,overrides,instantiates
 ```
 
@@ -389,8 +411,10 @@ rather than `TARGET only` on its 40-file draw for the same reason: with zero edg
 is no evidence about which end an oracle populates, and a default there would print a zero as if it
 were a finding.
 
-Both runs report **`degraded: 0`** (re-verified on current shared machinery: 120 files → 14,204 edges,
-1,985 files → 234,796 edges, exit 0 both times), which is the shared wasm temp-path fix holding.
+Both runs report **`degraded: 0`** (re-verified on current shared machinery 2026-10-04: 120 files →
+14,263 edges, 1,985 files → 235,878 edges, exit 0 both times), which is the shared wasm temp-path fix
+holding. **A width-4 census run the same day DID degrade once** — see the degraded-file accounting
+above; `degraded: 0` is what most runs report, not what every run reports.
 **It holds at `firing-check`'s width, which is a sequential `for` loop** — so this is not evidence
 about concurrent `parseFile`, and the sentence that used to read "holding under concurrency" was
 claiming more than the instrument tests. The width-dependent trap that remains is measured in
@@ -429,8 +453,40 @@ as "1,006 julia files were dropped for size". Measured on this corpus root: **1,
 the two counts separately and labels what each is.
 
 **Production totals.** 36,806 symbols · 235,878 relationships in the ten types · 0 crashes · 0 files
-routed to the >1 MB structural fallback · **365 of 1,985 files (18.4%) yield ZERO symbols** and are
-listed by name in the census output · **0 of 1,985 files unreadable by the production grammar**.
+degraded (`parseFile` returned `fallback: true`) · **365 of 1,985 files (18.4%) yield ZERO symbols** and
+are listed by name in the census output · **0 of 1,985 files unreadable by the production grammar**.
+
+### The totals are a whole-population measurement only when the degraded count is 0 — and saying
+### ">1 MB fallback" was wrong
+
+**This file previously printed "0 files routed to the >1 MB structural fallback", and that sentence
+carried a false label and an unattributable count.** `parseFile` returns `fallback: true` from **four**
+places in `src/ast/pool-worker.ts` — `:390` is `extractFallback`'s own return, reached from the >5 MB
+skip at `:792`, from the 1–5 MB structural read at `:811`, and from **both** branches of the wasm-parse
+catch at `:1234`/`:1236`. A file whose wasm parse threw is not a size case, and on 2026-10-04 a
+census run produced exactly one and it was **`julia/stdlib/LibGit2/src/remote.jl`, 15,857 bytes**,
+which cannot reach any size threshold. The census counted it, called it a size fallback, and
+`continue`d — so its symbols and edges left **every** total while `admitted files` still printed 1,985.
+**The population the totals were measured over was moving, and nothing on screen said so.**
+
+`census.ts` now records each degraded file by name and by cause, prints `files ANALYSED: N of 1,985`
+beside the totals, and states that degraded files are in neither. The sensitivity is now a number:
+
+| run | width | symbols | relationships | degraded | exit |
+|---|---|---|---|---|---|
+| degraded | 4 | 36,782 | 235,688 | 1 | 1 — `[BB-PARSE-ERR]` then `[BB-HANG]` 110 s later, same file |
+| clean | 4 | **36,806** | **235,878** | **0** | 0 |
+
+**One degraded wasm parse costs 190 relationships and 24 symbols**, and the clean run reproduces every
+figure in the verdict table exactly. The two `[BB-*]` lines are **one event, not two**: the throw
+orphans the 120 s self-destruct armed at `engine.ts:1441-1447`, and the orphan fires naming whichever
+file armed the oldest surviving bomb — §8 rows 1 and 7 reproducing, on the same corpus, in one run.
+
+**`degraded: 0` is what most runs report, not what every run reports, and this lane has no rate for
+it.** `firing-check --files 2000`, `arbiter-census-diff` and `ontology-coverage-gate julia` all
+reported `degraded 0` / `fallback: 0` on 2026-10-04; the census reported 1. Both are honest readings of
+a probabilistic event in shared machinery, and quoting either as the lane's property would be wrong.
+§8 rows 1, 2 and 7 are the asks.
 
 **Two of those ten counts moved on 2026-10-04, in OPPOSITE directions, and both moved because an
 independent oracle was written for the type.** `script/m14/oracles/julia-imports.ts` and
@@ -695,7 +751,7 @@ The independent corroboration is in the supervisor's own gate file.
 So the correction had already been made once, on another lane, for the same argument, and this lane
 made it again anyway.
 
-### `imports` — EMITTED, 2,804 edges across 961 files
+### `imports` — EMITTED, 3,386 edges across 961 files
 
 **What the ruling claimed.** Not emitted, because `RelationshipType.Imports` serializes to
 `"brain_import"` (`src/ast/types.ts:69`) and the repo treats the `ImportInfo[]` channel as the import
@@ -722,19 +778,19 @@ declaration rather than the literal `root`"*. That is a real distinction and it 
 shape: **446 of 1,502 edges carry a module symbol as their source and 595 carry the file scope**,
 because most Julia corpus files open no module and a top-level `using` imports into `Main`.
 
-**Resolution, and it is not close.** Target end: **51.8% (1,454) resolve to a declaration elsewhere in
-this corpus**, 10.4% (291) are reachable through the file's own import path, 0.7% (20) resolve
-in-file, and **36.9% (1,036) resolve to nothing** — `Dates`, `UUIDs`, `Printf`, `Test`, and now
+**Resolution, and it is not close.** Target end: **53.5% (1,810) resolve to a declaration elsewhere in
+this corpus**, 10.3% (349) are reachable through the file's own import path, 0.6% (20) resolve
+in-file, and **35.6% (1,204) resolve to nothing** — `Dates`, `UUIDs`, `Printf`, `Test`, and now
 `DataFrames`, `Graphs`, `Flux`, `StaticArrays` and the rest of the ecosystem, none of which is a
 dependency of any other file in this corpus because each package is a separate world. Both-ends is
-**0.5%**. Both ends got slightly worse as the corpus grew and that is the expected direction: adding
+**0.4%**. Both ends got slightly worse as the corpus grew and that is the expected direction: adding
 independent packages adds `using` targets that nothing in the corpus can satisfy. That number is a property of the
 construct, not a defect in the edge: `using Dates` names a module this corpus does not contain, and a
 Python `import numpy` resolves no better inside a Python repository. The honest statement is that
 half of these edges are walkable at project scope and half name things outside the project, and the
 census separates those two buckets rather than averaging them into one number.
 
-### `exports` — EMITTED, 2,859 edges across 209 files
+### `exports` — EMITTED, 2,795 edges across 207 files
 
 **What the ruling claimed.** Not emitted, for the same `brain_export` reason, "and additionally
 because an `export` **declares nothing**".
@@ -751,10 +807,10 @@ emits both channels from a single `__all__` walk and asserts no kind about the e
 it**. The condition could only ever be met by an edge carrying something the channel does not — i.e.
 by a wrong edge. A threshold that only a defect can cross is not a test.
 
-**Resolution.** Target end: **32.2% (921) in-file unique, 48.9% (1,398) resolve elsewhere in the
-corpus, 6.3% (180) in-file ambiguous, 12.2% (350) resolve to nothing**; 87.8% of targets bind
-somewhere. Both-ends is 28.0%, limited by the source end (72.2%): 2,039 edges carry a module symbol,
-794 carry the file scope. In-file unique fell from 41.8% to 32.2% and both-ends from 34.4% to 28.0%
+**Resolution.** Target end: **33.0% (921) in-file unique, 48.2% (1,346) resolve elsewhere in the
+corpus, 6.4% (180) in-file ambiguous, 12.1% (339) resolve to nothing**; 87.9% of targets bind
+somewhere. Both-ends is 28.6%, limited by the source end (71.6%): 2,001 edges carry a module symbol,
+794 carry the file scope. In-file unique fell from 41.8% to 33.0% and both-ends from 34.4% to 28.6%
 purely because the corpus grew: a module in an ecosystem package is more likely to export a name that
 several of its own files also declare than a `Base` module was.
 
@@ -765,8 +821,19 @@ second, independent defect. It is now a standing census output:
 
 ```
 imports   files with the construct: 961   files with >=1 edge: 961   silent: 0
-exports   files with the construct: 210   files with >=1 edge: 209   silent: 1
+exports   files with the construct: 210   files with >=1 edge: 207   silent: 3
 ```
+
+**The three silent `exports` files are named by the instrument, and they are not the
+`selected_import` defect below — they are the four FABRICATED edges being gone.** When
+`script/m14/oracles/julia-exports.ts` was written it disagreed with `exportableName()` on four
+edges, and the analyzer was wrong: they were `public = expr` statements, where `public` is a
+contextual keyword, so `public = 1` declares a *variable* rather than exporting anything. Deleting
+them moved this row from `210 / 209 / 1` to `210 / 207 / 3` — two of the three silent files were
+silent only because their sole edge was one of the four. The remainder are
+`Documenter.jl/src/expander_pipeline.jl`, `julia/stdlib/REPL/src/docview.jl` and
+`julia/test/precompile.jl`, and **they have not been investigated per file.** A construct-present /
+edge-absent pair is the shape a coverage gap has, so it is recorded rather than explained.
 
 **`using Base: isexpr` produced no edge at all.** That form parses as a `selected_import` node, and
 `importTargets` matched neither `import_path` nor a bare `identifier` there, so it returned an empty
@@ -1008,7 +1075,7 @@ file**, because the analyzer is per-file and that is the resolution one file's g
 against a **single union set of every symbol name in the whole corpus** — "is this endpoint a name
 somewhere in the whole corpus" — while the text described them as per-file. Measured against each file's own
 symbol table they are **19.8%, 25.0%, 19.5% and 20.4%** — and on the present 1,985-file corpus they
-are **17.2%, 23.6%, 17.5% and 19.5%**: the old figures overstated per-file resolution by **2.2× to
+are **17.2%, 23.6%, 17.3% and 19.5%**: the old figures overstated per-file resolution by **2.2× to
 3.2×**, and the corpus doubling cost a further 2 to 3 points on every one of the four. The union number is not worthless — it is what a project-wide index
 can resolve — but it is a different number and it was published under the wrong heading.
 
@@ -1017,9 +1084,9 @@ can resolve — but it is a different number and it was published under the wron
 | `calls` | yes | 122,150 / 1,873 files | **75.8% covered / 294 unexplained** of 1,214, oracle `julia-calls`, **target only** | `usage_contextual` | **17.2%** (src 78.5 / tgt 19.8 / neither 19.0) | conf 1.0 on all; **0 under 0.7** |
 | `uses` | yes | 37,087 / 1,480 | **98.9% / 5 unexplained** of 473, oracle `julia-refs`, **target only** | `usage_contextual` | **23.6%** (src 79.1 / tgt 25.6 / neither 19.0) | conf 0.9; **0 under 0.7** |
 | `contains` | yes | 14,299 / 954 | **86.8% / 40 unexplained** of 302, oracle `julia-contains`, **both ends**; it found a real defect | `structural` | **100.0%** (neither 0.0) | conf 1.0; **0 under 0.7** |
-| `references` | yes | 49,586 / 1,662 | **91.4% / 36 unexplained** of 418, oracle `julia-refs`, **target only** | `import_based` | **17.5%** (src 86.5 / tgt 18.5 / neither 12.4) | conf 1.0 ×46,134 + 0.95 ×3,452; **0 under 0.7** |
-| `imports` | yes | 2,804 / 961 | **no oracle — see DERIVATION below** | `import_based` | **0.5%** both-ends (src 51.4 / tgt 0.8); target-end 51.8% corpus-only + 10.4% external-by-import | conf 1.0; **0 under 0.7** |
-| `exports` | yes | 2,859 / 209 | **no oracle — see DERIVATION below** | `import_based` | **28.0%** (src 72.2 / tgt 38.5); target-end 87.2% bind somewhere | conf 1.0; **0 under 0.7** |
+| `references` | yes | 50,150 / 1,662 | **91.4% / 36 unexplained** of 418, oracle `julia-refs`, **target only** | `import_based` | **17.3%** (src 85.5 / tgt 18.3 / neither 13.4) | conf 1.0 ×46,698 + 0.95 ×3,452; **0 under 0.7** |
+| `imports` | yes | 3,386 / 961 | **lane-owned oracle `julia-imports`, 99.8% agreement — NOT yet wired into F5**, so at the F5 level this label is still compared against nothing | `import_based` | **0.4%** both-ends (src 51.2 / tgt 0.7); target-end 53.5% corpus-only + 10.3% external-by-import | conf 1.0; **0 under 0.7** |
+| `exports` | yes | 2,795 / 207 | **lane-owned oracle `julia-exports`, 99.9% agreement — NOT yet wired into F5**, so at the F5 level this label is still compared against nothing | `import_based` | **28.6%** (src 71.6 / tgt 39.4); target-end 87.9% bind somewhere | conf 1.0; **0 under 0.7** |
 | `extends` | yes | 2,580 / 537 | **57.1% / 12 unexplained** of 28, oracle `julia-type-edges`, **both ends** | `structural` | **19.5%** (src 53.6 / tgt 26.1 / neither 39.7) | conf 1.0; **0 under 0.7** |
 | `instantiates` | yes | 3,428 / 535 | **all 19 truth edges covered, 0 missing**, 7 of 26 unexplained, oracle `julia-type-edges`, **target only** | `usage_contextual` | **79.1%** (tgt 100.0, src 79.1) | conf 0.9; **0 under 0.7** |
 | `overrides` | yes | 3 / 3 | **lane-owned oracle, 3/3, 0 unexplained, 0 missing — NOT yet wired into F5.** `overrides-differential.ts` covers the type over the whole corpus, and the 40-file check now exercises it too (1 edge, both ends, 100%) | `structural` | **100.0%** | conf 1.0; **0 under 0.7** |
@@ -1032,7 +1099,7 @@ than one upstream project does, so the per-file number improved for neither reas
 
 ### The heuristic ratio is 0.0% for every type
 
-Every one of the 234,796 rows is at or above 0.9 and `evidenceClass` is set on every one of them.
+Every one of the 235,878 rows is at or above 0.9 and `evidenceClass` is set on every one of them.
 Honesty contract §4 requires the heuristic/deterministic ratio to be a queryable number, and for this
 lane the answer is that there are none to count. That is a property of the design — every edge is a
 syntax fact — and it is worth reading against the resolution column, because "no heuristics" and
@@ -1060,9 +1127,9 @@ that was never indexed, and those are opposite findings.
 | `calls` | 122,150 | 23,232 | 504 | 390 | 1,193 | 5,832 | 79,462 | 1,503 | 10,034 | 0 |
 | `uses` | 37,087 | 7,231 | 334 | 1,906 | 0 | 0 | 20,331 | 2,608 | 4,660 | 17 |
 | `contains` | 14,299 | 10,612 | 0 | 3,681 | 0 | 0 | 0 | 0 | 1 | 5 |
-| `references` | 49,586 | 4,342 | 4,529 | 312 | 0 | 1,732 | 26,240 | 2,593 | 9,838 | 0 |
-| `imports` | 2,804 | 20 | 0 | 3 | 0 | 291 | 1,454 | 0 | 1,036 | 0 |
-| `exports` | 2,859 | 921 | 0 | 180 | 0 | 0 | 1,398 | 10 | 350 | 0 |
+| `references` | 50,150 | 4,342 | 4,529 | 312 | 0 | 1,790 | 26,580 | 2,593 | 10,004 | 0 |
+| `imports` | 3,386 | 20 | 0 | 3 | 0 | 349 | 1,810 | 0 | 1,204 | 0 |
+| `exports` | 2,795 | 921 | 0 | 180 | 0 | 0 | 1,346 | 9 | 339 | 0 |
 | `extends` | 2,580 | 589 | 74 | 11 | 0 | 71 | 1,221 | 120 | 494 | 0 |
 | `overrides` | 3 | 2 | 0 | 1 | 0 | 0 | 0 | 0 | 0 | 0 |
 | `instantiates` | 3,428 | 1,460 | 1,911 | 57 | 0 | 0 | 0 | 0 | 0 | 0 |
@@ -1186,6 +1253,19 @@ no way to produce. Target-end resolution, 5-file draw against corpus-wide:
 | `exports` | 74.2% | 87.8% | 1.2× |
 | `contains` / `instantiates` / `overrides` | 100% | 100% | 1.0× |
 | `extends` | 77.3% | 81.0% | 1.0× |
+
+**The `1,985 files` column is NOT reproducible from any instrument currently in this repo, and it is
+printed here as a SUPERSEDED figure rather than quietly refreshed.** Its definition was "the target
+name appears somewhere in a union set of every symbol name in the whole corpus", measured on the
+PRE-ORACLE corpus (`imports` 2,804 / `references` 49,586 / `exports` 2,859 edges). The census does not
+produce that quantity — its buckets partition the edges rather than resolving them against a union —
+and the arithmetic does not reproduce under any bucket combination tried here (for `references`,
+81.6% against 53.0% `corpus-only` and 75.9% in-file-plus-corpus). So the column is left as the
+historical measurement it is, **the `5 files` column is the reproducible half** (re-run
+`incoming-check.ts` with the same five files), and the reproducible whole-corpus figures are the
+INCOMING table below and the per-type resolution figures in the six questions. A figure whose
+instrument cannot be named cannot be defended, so this one is flagged instead of re-derived on a
+guess.
 
 The three types at 1.0× are the ones whose edges are **in-file by construction** — `contains` names a
 member of the enclosing declaration, `instantiates` and `overrides` name a sibling method — so a
@@ -1655,9 +1735,9 @@ comments, char literals, triple-quoted strings — and all six are clean.
 | | |
 |---|---|
 | admitted files | **1,985** across 14 projects: `julia` 941, `Graphs.jl` 253, `Pkg.jl` 219, `StaticArrays.jl` 111, `Documenter.jl` 101, `Flux.jl` 100, `DataFrames.jl` 73, `LanguageServer.jl` 57, `Aqua.jl` 51, `Query.jl` 30, `json_jl` 25, `GLM.jl` 14, `DifferentialEquations.jl` 5, `nvim-treesitter` 5. **0 `.jl` files excluded over 512 KB**; the 1,007 non-`.jl` large files counted in the same shared root belong to other lanes |
-| symbols / relationships | **36,806 / 234,796** in the ten ontology types |
+| symbols / relationships | **36,806 / 235,878** in the ten ontology types |
 | files yielding ZERO symbols | **365 of 1,985 (18.4%)** — listed by name in the census output |
-| construct-vs-edge reconciliation | `imports` **961 files with the construct / 961 with an edge / 0 silent**; `exports` 210 / 209 / 1 silent (`julia/test/precompile.jl`, interpolated names) |
+| construct-vs-edge reconciliation | `imports` **961 files with the construct / 961 with an edge / 0 silent**; `exports` 210 / 207 / **3 silent** (`Documenter.jl/src/expander_pipeline.jl`, `julia/stdlib/REPL/src/docview.jl`, `julia/test/precompile.jl`) — two of the three went silent when the 4 fabricated edges were deleted; **not investigated per file** |
 | crashes | 0 · structural fallback: 0 files · `parseFile` threw: 0 · **grammar-unreadable: 0** |
 | empty or unknown `SymbolKind` | **0** · empty symbol names: **0** |
 | endpoints equal to the literal `unknown` | 11, all in `julia/JuliaLowering/src/validation.jl`, and **all 11 now resolve** — see [the section on them](#the-unknown-endpoints-resolved-by-a-shared-fix-i-do-not-own) |
@@ -1669,8 +1749,8 @@ By kind: function 21,603 · property 6,339 · constant 3,261 · class 3,069 · m
 variable 472 · interface 362. (Every kind grew with the corpus; `module` grew most in proportion,
 1,146 against 941 files, because ecosystem packages are module-per-package where `JuliaLang/julia`
 is not.)
-By relation: **calls 122,150** · references 49,586 · uses 37,087 · contains 14,299 · imports 2,804 ·
-exports 2,859 · instantiates 3,428 · extends 2,580 · overrides 3. **The independent arbiter agrees with
+By relation: **calls 122,150** · references 50,150 · uses 37,087 · contains 14,299 · imports 3,386 ·
+exports 2,795 · instantiates 3,428 · extends 2,580 · overrides 3. **The independent arbiter agrees with
 all nine to the edge**, and `overrides` is unchanged at 3 because none of the eleven new packages
 declares an unconditional same-scope same-signature redefinition — itself worth stating, since it means
 the guard set has now been asked about 1,014 additional files and answered no.
@@ -2057,7 +2137,7 @@ can be a fixture asserting things the code does not do, and the fixture is what 
   published, but the *edge's source string* is `Src` and the file's symbol table collapses the three
   modules into one `Src`. Cross-file identity for same-named modules is a project-wide question this
   per-file analyzer cannot answer.
-- **10,034 `calls`, 4,660 `uses`, 9,838 `references` and 494 `extends` targets resolve to nothing**,
+- **10,034 `calls`, 4,660 `uses`, 10,004 `references` and 494 `extends` targets resolve to nothing**,
   and this census does not separate "external package", "`Base` builtin", "dynamic dispatch" and
   "a declaration we failed to publish". Those are four different findings and the bucket deliberately
   does not guess a split; separating them needs a Julia runtime, which this lane does not start. The
@@ -2119,7 +2199,7 @@ can be a fixture asserting things the code does not do, and the fixture is what 
   file was `julia/stdlib/LibGit2/test/runtests.jl` and the cost was `calls=9 uses=2 references=1
   imports=1`. `src/ast/engine.ts` now writes to a per-process path and renames atomically. **That fix
   holds** — `firing-check` reports **`degraded: 0` at both 120 and 1,985 files** and
-  `arbiter-census-diff.ts` reports **`throw: 0`, 234,796 rows, `fallback: 0`** with per-type totals
+  `arbiter-census-diff.ts` reports **`throw: 0`, 235,878 rows, `fallback: 0`** with per-type totals
   identical to the census, so every number in this file is measured on a run where no file silently
   degraded. **But the claim that the arbiter itself reports `0 [BB-PARSE-ERR]` and `0 [BB-HANG]` was
   false and is withdrawn:** `parseFile` still traps `memory access out of bounds` at 8-way concurrency
@@ -2134,7 +2214,7 @@ can be a fixture asserting things the code does not do, and the fixture is what 
   parser cannot read leaves no trace in a counter that only counts throws — which is why the trap had
   to be found by differencing two instruments rather than by reading either one's output.
 - **`exports` targets are ambiguous more often than any other new edge, and the edge cannot fix it.**
-  **145 distinct names across 180 of the 2,859 `exports` edges (6.3%)** name more than one symbol the
+  **145 distinct names across 180 of the 2,795 `exports` edges (6.4%)** name more than one symbol the
   analyzer published in the same file — a LOWER share than the 9.0% over the old corpus, because
   ecosystem packages declare fewer colliding short names than `Base` does. Split by cause: **131 names
   / 158 edges (5.5% of all `exports`) are genuine cross-kind collisions** — 93 edges are the
@@ -2142,7 +2222,7 @@ can be a fixture asserting things the code does not do, and the fixture is what 
   `property`/`variable`, `constant`/`function`, `function`/`macro`, `interface`/`module` and other
   pairs — and **14 names / 22 edges are several same-kind declarations of one binding**, which is *not*
   a collision for an export, since a module exports a name once however many methods it has.
-  `imports` is nearly clean: 2 distinct names across 3 of 2,804 edges, of which 1 name / 2 edges
+  `imports` is nearly clean: 2 distinct names across 3 of 3,386 edges, of which 1 name / 2 edges
   (`Bar`, published as both `class` and `module`) is a real collision.
   The edge cannot narrow these, and the reason is the `declaresNothing` property this lane got right:
   `export X` asserts no kind, so there is no kind to narrow by. Adding one would mean guessing. The
