@@ -259,8 +259,20 @@ BB_DART_CONC=1 npx tsx validation/m14/fixtures/dart/census.ts    # the table abo
 npx tsx validation/m14/fixtures/dart/type-position-probe.ts      # the position inventory
 npx tsx script/m14/verify-dart-references.ts                     # 38 shapes, both sides
 BB_DART_PER_REPO=150 npx tsx script/m14/verify-dart-references.ts --corpus
-bun run script/m14/run-fixtures.ts --lang dart                  # 15 fixtures
+bun run script/m14/run-fixtures.ts --lang dart                  # 16 fixtures
 BB_MUTANT_ONLY="dart/" bun run script/m14/mutate-analyzer.ts      # 42/42 caught
+```
+
+The incoming pass (§The incoming direction) has its own instruments, and they use a
+different sample on purpose — a symbol table that is itself a stride cannot answer a
+cross-file resolution question:
+
+```bash
+BB_DART_CONC=1 npx tsx validation/m14/fixtures/dart/incoming-census.ts   # the incoming tables
+bun run validation/m14/fixtures/dart/object-interface-mutant.ts          # 4/4 mutants caught
+bun run script/m14/verify-dart-contains.ts                               # 37 shapes
+bun run script/m14/verify-dart-overrides.ts                              # 14/14 shapes exact
+bun run script/m14/verify-dart-references.ts                             # 38 shapes, both sides
 ```
 
 ### The six questions, per emitted type
@@ -345,6 +357,243 @@ says dart audits 5 labels and has 4 DERIVATION findings; this branch's gate repo
 `imports` and `exports` oracles after that artifact was written. The baseline file
 is supervisor-owned and was not regenerated here.
 
+## The incoming direction: can an emitted edge be walked TO
+
+The tables above measure outgoing edges. This section measures the other direction,
+because `src/lsp/impact.ts` obtains its reverse edges by scanning outgoing edges and
+matching targets — so the reverse walk is exactly as good as that matching, and two
+things follow from it that are not about emission at all:
+
+1. **A target that resolves to more than one published symbol.** The reverse walk
+   picks one by a rule nobody chose, so ONE edge is silently attributed to one of N
+   real declarations and the other N−1 lose a caller they have.
+2. **A hopeless target** — an SDK type, a package type, a member of an external
+   type, a local variable — which in a count is identical to "a declaration in my
+   own corpus the run failed to publish". Those are opposite findings.
+
+Instrument: `validation/m14/fixtures/dart/incoming-census.ts`, driving production
+`parseFile`. **This is a different sample from the tables above and the two are
+never mixed.** The verdict table's 2,735-file census draws a stride from five
+repositories; this census reads three repositories WHOLE and strides two, because
+the questions are about cross-file resolution and a symbol table that is itself a
+stride cannot answer them.
+
+```
+4,788 files   dart-http 335/335, riverpod 1,295/1,295, proxicall 2,351/2,351  (FULL)
+              flutter-packages 404/4,033 (stride 10), dart-sdk 403/25,734 (stride 64)
+337,336 symbols   960,634 analyzer relationships   BB_DART_CONC=1   wall 861,581 ms
+26 files carry 457 ERROR-node parse errors; 4 files >1 MB go to the fallback
+67 edges EXCLUDED as degraded-fallback output (below)
+emptySymbolNames 0   emptyOrUnknownKind 0   symbolsNamedUnknown 0   unknownEndpoints 0
+```
+
+Resolution, per type. `repoFull` is over the three FULL repositories; `sample` is
+over the two strided ones; the columns are never mixed, because a rate quoted over
+the wrong scope answers a question nobody asked.
+
+| Type | emitted | both ends, file | both ends, sample | both ends, repoFull | target unique | target ambiguous (2–5) | target crowded (6+) | target binds to nothing | confidence < 0.7 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| calls | 90,827 | 17,833 19.6% | 55,772 61.4% | 48,111 53.0% | 18,993 20.9% | 15,649 17.2% | 30,478 33.6% | 25,707 28.3% | 0 0.00% |
+| uses | 226,095 | 56,417 25.0% | 158,944 70.3% | 137,653 60.9% | 33,842 15.0% | 32,617 14.4% | 106,083 46.9% | 53,553 23.7% | 25,464 11.26% |
+| contains | 310,925 | 310,923 100.0% | 310,923 100.0% | 292,025 93.9% | 14,197 4.6% | 11,122 3.6% | 285,604 91.9% | 2 0.0% | 0 0.00% |
+| imports | 22,506 | 0 0.0% | 0 0.0% | 0 0.0% | 0 | 0 | 0 | 22,506 100% | 0 0.00% |
+| references | 10,273 | 10,049 97.8% | 10,131 98.6% | 7,468 72.7% | 6,948 67.6% | 947 9.2% | 2,378 23.1% | 0 0.0% | 0 0.00% |
+| exports | 403 | 0 0.0% | 0 0.0% | 0 0.0% | 0 | 0 | 0 | 403 100% | 0 0.00% |
+| extends | 10,317 | 1,542 14.9% | 4,832 46.8% | 4,131 40.0% | 4,543 44.0% | 615 6.0% | 164 1.6% | 4,995 48.4% | 0 0.00% |
+| implements | 2,082 | 397 19.1% | 1,550 74.4% | 1,399 67.2% | 1,444 69.4% | 117 5.6% | 91 4.4% | 430 20.7% | 0 0.00% |
+| overrides | 247,737 | 3,524 1.4% | 232,941 94.0% | 230,467 93.0% | 232,736 93.9% | 505 0.2% | 102 0.0% | 14,394 5.8% | 0 0.00% |
+| instantiates | 39,469 | 4,593 11.6% | 13,597 34.4% | 12,185 30.9% | 13,764 34.9% | 1,443 3.7% | 2,220 5.6% | 22,042 55.8% | 0 0.00% |
+
+### Ambiguity: 490,135 ambiguous targets, 296,854 of them closable
+
+Ambiguity is measured as a SET SIZE — how many distinct `kind|owner|file`
+declarations share the target's name — because a `Set<string>` of names cannot
+answer the question it is being asked: it collapses the collision it exists to
+detect.
+
+| Type | ambiguous targets | closable by the edge's own `<source>.<target>` |
+| --- | --- | --- |
+| contains | 296,726 | **296,726 (100.0%)** |
+| uses | 138,700 | 128 (0.09%) |
+| calls | 46,127 | 0 |
+| instantiates | 3,663 | 0 |
+| references | 3,325 | 0 |
+| extends | 779 | 0 |
+| overrides | 607 | 0 (already qualified at both ends) |
+| implements | 208 | 0 |
+| imports / exports | 0 | n/a — targets are module URIs |
+| **total** | **490,135** | **296,854 (60.6%)** |
+
+**`contains` is closed, and that is arithmetic rather than luck.** The edge publishes
+the OWNER on the source side and the bare member on the target side, so
+`<source>.<target>` is a published spelling for every one of the 296,726 — a consumer
+that binds `contains` by (owner, member) has zero ambiguity over 95.4% of the
+label's rows, which is the largest single-label population in the lane (310,925,
+32.4% of all edges).
+
+**The rest is irreducible in Dart, and the count is the answer rather than an
+apology.** `obj.method()` reduces to the leaf `method`; the receiver's static type
+is discarded at emission, so `add` is `List.add` and `Set.add` and
+`StreamSubscription.add` with nothing on the edge to separate them. Recovering the
+receiver type is a type-inference problem this analyzer does not attempt, and
+inventing a target from a name shape is exactly the fabrication the workstream's
+rule forbids. `uses` has a measured 128 rows where it happens to work anyway, and
+they are counted rather than rounded up to the type.
+
+### Targets that bind to nothing: 144,032 rows, split by cause
+
+Because "external" and "never indexed" are opposite findings that a single count
+conflates, every no-symbol target is filed under a POSITIVE test, in funnel order.
+
+| Bucket | rows | what the test is |
+| --- | --- | --- |
+| `uriEndpoint` | 22,909 | an `imports`/`exports` target — a module path, which is not a bindable name by design (`package:flutter/material.dart:*`, `../core.dart`) |
+| `localNotPublished` | 25,730 | the row carries `isLocalRead`, or is an `imports`/`exports` URI: a BINDING the family contract publishes no symbol for (DARTD8). freezed's generated `map`/`maybeMap` takes the mapping function as a formal parameter named `$default` and calls it, so `calls -> $default` is a real invocation of a parameter |
+| `sdkDeclared` | 12,281 | the name is published by one of the **479 real `.dart` files under `dart-sdk/sdk/lib`**, parsed through the same production entry point — not a hand-written builtin list, which would be a second and drifting definition of the same thing |
+| `packageDeclared` | 79,743 | the file's TRANSITIVE import graph reaches a `package:`/`dart:` URI and the name is in neither the repository nor the SDK |
+| `outsideSample` | 1,540 | the row comes from a strided repository, so absence proves nothing in either direction; counted apart and never in the defect bucket |
+| `unexplained` | **1,829** | none of the above, in a FULL-scope repository: the class that would be a defect |
+
+**The transitive import closure is load-bearing and was a real bug.** Dart's barrel
+convention routes a library's dependencies through one relative `export`, so
+`riverpod/packages/flutter_riverpod/lib/src/core/consumer.dart` declares exactly ONE
+import — `../core.dart` — and reaches `package:flutter/widgets.dart` through it. A
+file-local test therefore files every barrel-imported supertype as a defect. The
+closure follows 10,511 relative hops and finds a package URI reachable from 87.4% of
+files. Its first implementation looked each hop up under a `repo|rel` key while the
+import table was keyed `repo/rel`; every lookup missed, the closure was one hop deep,
+and the entire `packageDeclared` population came out **byte-identical to the run
+before the fix**. Identical numbers across a change are how that was caught.
+
+### The defect this measurement found, and what it cost
+
+**`overrides` named members that do not exist.** Dart's `Object` is the root of every
+class interface, so `toString`, `hashCode`, `runtimeType`, `noSuchMethod` and
+`operator ==` are reachable from every type in the language — which makes `Object`
+the one override target a per-file analyzer can name without the base's own file,
+and the first-heritage-parent fallback was not using it.
+
+```dart
+class ProtocolException implements Exception {
+  @override String toString() => 'protocol';
+}
+```
+
+published `ProtocolException.toString -> Exception.toString`. `Exception` declares
+no `toString`: `dart-sdk/sdk/lib/core/exceptions.dart` publishes 17 symbols through
+the production entry point and `Exception.toString` is not one of them. The edge
+asserted a declaration where there is none.
+
+| | `overrides` rows | unexplained | SDK-declared target | resolves repoFull |
+| --- | --- | --- | --- | --- |
+| before | 247,737 | 2,422 (0.98%) | 51 | 230,666 93.1% |
+| after | 247,737 | 1,670 (0.67%) | 1,167 | 230,467 93.0% |
+| **all ten types, before** | 960,634 | **2,862 (0.298%)** | | |
+| **all ten types, after** | 960,634 | **1,829 (0.190%)** | | |
+
+Repo-scope resolution for `overrides` goes DOWN 199 rows and that is the honest
+direction of the trade: `Object` is not declared in these three repositories, so a
+consumer whose index stops at the project boundary binds 199 fewer rows. A consumer
+that also indexes `dart:core` binds **1,167 more**, because every one of those
+targets is a declaration the Dart SDK publishes. The retarget records the name it
+discarded in `metadata.firstHeritageParent`, so no information is lost, and tags the
+row `isObjectInterfaceBase`.
+
+**What the retarget gives up, stated rather than argued away.** If an out-of-run base
+DOES declare the member, `Base.toString` was the nearest correct target and
+`Object.toString` is one hop further up. The two cases are indistinguishable without
+the base's file. The rule prefers naming a declaration that provably exists over one
+that may not — the same preference the rest of that pass already makes when it
+refuses a refuted fallback — and it is scoped to those five members, so an in-file
+resolution (Pass 1, confidence 0.95) and a refuted fallback are both untouched.
+
+### The residual 1,829, and what it actually is
+
+| Type | unexplained | distinct targets | dominant shape |
+| --- | --- | --- | --- |
+| overrides | 1,670 | 140 | `$FunctionalProvider.debugGetCreateSourceHash` 836, `$NotifierProvider.debugGetCreateSourceHash` 175, `$NotifierProvider.create` 175, `$Notifier.runBuild` 175 |
+| uses | 73 | 38 | `FirstT` 10, `SecondT` 10, `DiagnosticableTreeMixin` 9, `snake` 4, `$2` 3 |
+| instantiates | 41 | 4 | `EqualUnmodifiableListView` 20, `DeepCollectionEquality` 18 |
+| calls | 35 | 10 | `root` 12, `fromMicrosecondsSinceEpoch` 6, `$enumDecodeNullable` 6 |
+| implements | 9 | 1 | `DiagnosticableTreeMixin` 9 |
+| extends | 1 | 1 | `GeneralizingAstVisitor` 1 |
+| contains / imports / references / exports | 0 | — | — |
+
+**The dominant shape is a CORPUS GAP, not an analyzer defect, and the distinction is
+measured.** riverpod 3's `$FunctionalProvider` / `$NotifierProvider` / `$Notifier` /
+`$AsyncNotifier` are GENERATED declarations — 1,502 of the 1,670 `overrides` rows
+(89.9%) name a base whose spelling begins with `$`, and `grep -rl 'FunctionalProvider'
+--include=*.dart` over the whole riverpod checkout returns nothing while the
+SUBCLASSES that extend them are present. So those rows name a declaration this
+checkout does not contain. That is the third thing the "never indexed" bucket has to
+hold apart from "external", and it is a property of the corpus, not of the analyzer:
+sampling is `git ls-files`, which sees tracked files only, and these are not tracked.
+
+The remaining shapes are named limitations rather than defects, each with its count:
+`DiagnosticableTreeMixin` / `GeneralizingAstVisitor` are `package:analyzer` types
+reached through a barrel the closure cannot leave; `DeepCollectionEquality` and
+`EqualUnmodifiableListView` are `package:collection`; `FirstT`/`SecondT` are
+freezed's generic parameters read as values; `$2` is a Dart 3 RECORD positional
+field (`($1, $2).$2`), whose accessor the analyzer does not synthesize because no
+declaration names it.
+
+### 67 edges that are not the analyzer's
+
+`src/ast/pool-worker.ts` routes a file over 1 MB to `extractFallback`, a **regex**
+extractor, whose rows carry `metadata.method === "regex"` and sit at confidence
+0.4/0.5 and whose symbols carry no `kind`. Counting those as analyzer output is how a
+lane quotes a resolution rate for edges no analyzer produced. This census tallies
+them apart and excludes them from every analyzer column: **67 `calls` rows across 4
+files**, of which 20 are in one file, `native_cupertino_bindings.dart` (1.4 MB).
+
+Among them is a fabrication worth naming, and it is in shared machinery:
+`extractBasicRelationships` matched the **declaration**
+`extension type NSCachedURLResponse._(objc.ObjCObject object$)` with its
+`obj.method(` pattern and published `calls NSCachedURLResponse -> _` at 0.4 — a call
+to a symbol named `_`, for a constructor invocation that is a declaration. The same
+row appears 12 times over (`NSLocking`, `NSOperation`, `NSProgressReporting`, …).
+Reported in §Shared-machinery needs; not edited here.
+
+### Four defects in this lane's own harnesses
+
+Each was found by a number that did not move when it should have, which is the only
+instrument that finds this class.
+
+1. `incoming-census.ts` resolved scope, ambiguity and the no-symbol buckets INSIDE
+   the walk, against a symbol table still being filled.
+   `pkgs/http2/lib/src/flowcontrol/window_handler.dart` sorts before
+   `pkgs/http2/lib/src/sync_errors.dart`, so `processWindowUpdate ->
+   FlowControlException` was filed `unexplained` for a class declared 200 lines away
+   in the same FULL repository. All cross-file work is now a settled second phase, so
+   two runs give the same numbers regardless of scheduling.
+2. The import closure's key mismatch, above — byte-identical output across a change.
+3. `census.ts` incremented `tgtSample` under `if (tgtOk)`, so the column reprinted
+   the in-file rate under a sample-scope heading (`references 857 840/857 98.0%
+   857/857 100.0% 840/857 98.0%` — the middle number should have been the sample
+   rate and was the in-file count again), and `bothSample` was order-dependent
+   against a growing set. Both moved to the settled phase.
+4. `census.ts` added the qualified `owner.name` spelling to the per-file table but
+   never to the sample or repo tables. `overrides` is qualified at BOTH ends, so it
+   read **0/7,566 in-sample** on a sample that plainly contained the declaring class.
+   The column was measuring the absence of a spelling, not the absence of a symbol.
+
+### What the incoming pass changed, and what it did not
+
+- Unresolvable is down from 2,862 to 1,829 rows, 0.298% to 0.190% of 960,634.
+- `references` and `contains` bind to nothing at all: **0 rows each**.
+- `imports` and `exports` bind to nothing by DESIGN (a URI is not a symbol), and
+  that is now stated as a design with 22,909 rows behind it rather than left to be
+  discovered downstream as a 0.0% column.
+- Heuristic ratio (confidence < 0.7): `uses` 25,464 of 226,095 (11.26%), all the
+  bare-read surface at 0.6. **Every other type is 0.00%**, and `calls` moved to 0
+  because the sub-0.7 rows it inherited are now counted under `isLocalRead`.
+- NOT fixed, and declared: the leaf-name reduction for `calls`/`uses` (490,135
+  ambiguous targets in total, of which 296,726 are `contains` rows the edge already
+  disambiguates and 193,409 are not closable by any spelling the analyzer emits,
+  save the 128 `uses` rows where `<source>.<target>` happens to be published), the
+  corpus's untracked generated declarations (1,502 rows), and record-type field
+  accessors (`$1`/`$2`).
+
 ## Declared limitations
 
 A blank list on a Turing-complete language is treated as dishonesty, not as
@@ -401,12 +650,42 @@ mislead a reader of the graph.
 10. **`bb`-visible cross-file `overrides` and `references` are unaudited by the
     differential** (DERIVATION, above). Both have oracles and batteries; neither is
     wired into the harness's comparison.
+11. **A receiver's static type is discarded, so `calls` and `uses` targets are leaf
+    names and are irreducibly ambiguous.** `obj.method()` publishes `method`; 46,127
+    `calls` targets and 138,700 `uses` targets match two or more published symbols
+    and 193,409 of them cannot be disambiguated by any spelling the analyzer emits.
+    Recovering the receiver type is type inference this analyzer does not attempt,
+    and inventing a target from a name shape is the fabrication the workstream's
+    rule forbids. Measured, not estimated — see §The incoming direction.
+12. **`imports` and `exports` targets are module URIs and bind to no symbol by
+    design.** 22,909 rows, 100% of both labels. `package:flutter/material.dart:*`
+    and `../core.dart` are paths, not declarations, and the M49 exports invariant
+    deliberately keeps an exported FILE out of the bindable export list. A reader
+    looking for a resolved import target will find none and should read the URI.
+13. **A Dart 3 record's positional field accessor is not synthesized.** `($1, $2).$2`
+    is a real read of a field no declaration names, so it publishes `uses -> $2`
+    with nothing to bind. Measured at 3 rows in the census above; the shape recurs in
+    every record-heavy file.
+14. **An external base's members are unverifiable without the base's own file.**
+    13,160 of 247,737 `overrides` rows are the `isExternalBase` fallback at 0.8, and
+    11,396 of those still name a type declared outside the repository. The
+    `Object`-interface retarget (§The incoming direction) closed the 1,117 rows that
+    named a member provably absent from their base; it cannot close the rest, and a
+    base in another package that declares the member itself is indistinguishable
+    from one that inherits it.
+15. **1,502 `overrides` rows name generated declarations this corpus checkout does
+    not contain.** riverpod 3's `$FunctionalProvider` family is absent from
+    `git ls-files` output while its subclasses are present. This is a corpus
+    property — a `--filter=blob:none` clone plus untracked generated output — and it
+    is counted apart from both "external" and "never indexed" precisely because a
+    reader who filed it as either would be wrong twice.
 
 ## Shared-machinery needs (reported, not edited)
 
-Five changes outside this lane's ownership, each stated so it can be applied
+Eight changes outside this lane's ownership, each stated so it can be applied
 without re-deriving it. The files are supervisor-owned per
-`docs/analyzers/ONTOLOGY-WORKSTREAM.md` §Ownership.
+`docs/analyzers/ONTOLOGY-WORKSTREAM.md` §Ownership. Items 1–5 predate this pass;
+6–8 come from measuring the incoming direction.
 
 1. **`script/m14/ontology-coverage-gate.ts` — add a `dart` entry to
    `RULED_BY_LANG` (line ~183: `const RULED_BY_LANG: Record<string, Ruled[]> = {
@@ -512,6 +791,54 @@ without re-deriving it. The files are supervisor-owned per
      Rate: 1 file in 2,735 sampled (0.037%). What it must do: abort that file's parse
      and return an error for it, rather than exiting the process; the indexer is
      incremental by design and this makes one pathological file lose the whole run.
+6. **`src/ast/pool-worker.ts` `extractBasicRelationships` — the >1 MB fallback
+   fabricates `calls` edges from declarations, and the corpus contains the proof.**
+   The fallback is a regex extractor (the analyzer is regex-free; this is not) whose
+   `obj.method(` pattern matches an `extension type X._(T rep)` DECLARATION and
+   publishes `calls X -> _` at 0.4 — a call to a symbol named `_`. Measured on
+   `dart-http/pkgs/cupertino_http/lib/src/native_cupertino_bindings.dart` (1.4 MB):
+   **20 of its 24 relationships are fallback rows, and 12 of those name `_`** across
+   `NSLocking`, `NSOperation`, `NSProgressReporting`, `NSURLAuthenticationChallenge`
+   and others. Across this lane's 4,788-file census the fallback contributed **67
+   `calls` rows**. What it must do: skip a line that parses as a declaration, or
+   at minimum not treat an `extension type` header as an invocation. Why here and
+   not in the analyzer: no analyzer ever sees these files — `parseFile` diverts
+   them before dispatch — so there is nothing for a lane to fix. Why it matters
+   beyond this lane: a fabricated caller in `bb_graph` is wrong refactoring advice,
+   and the confidence 0.4 is below the 0.7 line the contract uses to separate
+   heuristics from facts while the row is stored beside facts.
+7. **`script/m14/firing-check.ts` and `script/m14/incoming-check.ts` do not exist.**
+   The M14 ontology workstream prompt instructs every lane to run
+   `npx tsx script/m14/firing-check.ts --files 120 <lang>` and
+   `npx tsx script/m14/incoming-check.ts <lang> <files...>`, and names the first as
+   the arbiter that shows which types fire. Neither file is present in this tree
+   (`find` over `script/` returns nothing), so no lane can run either, and the
+   per-type firing table the prompt quotes as "the supervisor's numbers" has no
+   reproducible instrument behind it here. What to do: land both, or amend the
+   prompt. This lane substituted two committed instruments and states them so the
+   substitution is checkable rather than silent:
+   - `validation/m14/fixtures/dart/census.ts` — what FIRES: per-type counts, symbol
+     kinds, empty names, `unknown` endpoints, endpoint resolution. 2,735-file stride
+     sample across 5 repositories.
+   - `validation/m14/fixtures/dart/incoming-census.ts` — what REACHES a declaration:
+     per-type resolution at three scopes, target ambiguity as a set size, and the
+     no-symbol population split by cause. 4,788 files, 3 repositories read whole.
+   Both drive production `parseFile`, both declare `BB_DART_CONC=1` as a
+   precondition, and both are deterministic from a clean corpus.
+8. **`script/m14/verify-honesty.ts` fails project-wide on evidence freshness, and
+   this lane is not the cause.** The run on this branch reports
+   `honesty gate: 23 failure(s) — release blocked`, all of the form
+   `HONESTY-GATE FAIL: M14.0.F<n>: <k> declared input(s) changed since <sha> —
+   regenerate`, plus `evidence freshness: 0 artifact(s) current against their
+   declared inputs`. The failing input sets name files this lane has never touched
+   — `src/ast/analysis-exclusions.ts`, `src/ast/brain-surgical-patcher.ts`,
+   `src/ast/dependency-graph-visualizer.ts`,
+   `src/ast/cross-language-migration-assistant.ts`, and 20 other languages'
+   `script/m14/spec/*-completeness.json` — all verified unchanged between
+   `887f8eb0` and this branch's HEAD. Regeneration is the supervisor's: those
+   artifacts are `validation/m14/results/*.json`, which the honesty contract §5.1
+   reserves for verifier scripts, and regenerating them from one lane would replace
+   the milestone's claim with a single lane's. Reported, not worked around.
 
 ## Supported constructs
 
@@ -735,7 +1062,7 @@ same-owner duplicates, which DARTD20 forbids: **zero**.
   / 6 re-scoped gaps / 33 ruled decisions
 - Reviews: `reviews/dart/` — five documents; `master-review-4.md` is the
   whole-surface pass measured against the live corpus
-- Fixtures (current): `validation/m14/fixtures/dart/` — 12, all green
+- Fixtures (current): `validation/m14/fixtures/dart/` — 16, and the harness reports `summary: {"dart":{"pass":16,"fail":0}}` with no baseline regression
 
 ## Known limits of the evidence
 
