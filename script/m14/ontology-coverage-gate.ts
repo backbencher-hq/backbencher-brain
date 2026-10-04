@@ -373,10 +373,34 @@ if (process.argv.includes("--coverage")) {
 }
 
 if (RULED_BY_LANG[LANG] === undefined) {
-  console.log(`\nontology coverage gate — no RULING TABLE for ${LANG}.`)
-  console.log(`Refusing to report: a gate with an empty table would call every un-emitted type`)
-  console.log(`RULED-UNJUSTIFIED and that is a verdict about the TABLE, not about the lane.`)
-  process.exit(2)
+  // The guard's original reasoning was right — a lane with no ruling source at all
+  // would get every un-emitted type called RULED-UNJUSTIFIED, which is a verdict about
+  // the TABLE rather than about the lane. But it fired on the ABSENCE OF A TABLE alone,
+  // and `rulingFor` legitimately reads TWO places: the table, then
+  // `script/m14/spec/<lang>-completeness.json`.
+  //
+  // So it refused lanes whose spec DOES carry rulings — HCL-D1..D6, MAKE-D1..D5 among
+  // them — discarding real evidence and reporting those lanes as unadjudicated when
+  // they had been adjudicated all along. Measured: 13 of 26 lanes were blocked, and 12
+  // of the 13 have spec rulings that were never consulted.
+  //
+  // The precise guard is this one: refuse only when rulingFor() finds NOTHING for any
+  // un-emitted type, i.e. when neither source can supply a verdict. The original failure
+  // mode is still fully prevented — a lane with neither a table nor spec decisions
+  // still refuses — and the lanes it now lets through are reported with a note saying
+  // their rulings came from the spec, so a spec-only lane is never mistaken for a
+  // corpus-measured one.
+  const unEmittedForGuard = ALL_TYPES.filter((t) => (observed.get(t)?.n ?? 0) === 0)
+  const ruledFromSpec = unEmittedForGuard.filter((t) => rulingFor(t) !== null)
+  if (ruledFromSpec.length === 0) {
+    console.log(`\nontology coverage gate — no RULING SOURCE for ${LANG}.`)
+    console.log(`Refusing to report: with no ruling anywhere, every un-emitted type would be called`)
+    console.log(`RULED-UNJUSTIFIED, and that is a verdict about the absence of evidence, not about the lane.`)
+    console.log(`Neither RULED_BY_LANG.${LANG} nor script/m14/spec/${LANG}-completeness.json supplies one.`)
+    process.exit(2)
+  }
+  console.log(`note: ${LANG} has no ruling TABLE; ${ruledFromSpec.length}/${unEmittedForGuard.length} un-emitted types are ruled from its SPEC.`)
+  console.log(`      a spec ruling is prose; a table ruling is a corpus probe. They are not equally strong.`)
 }
 
 const rows: Row[] = []
