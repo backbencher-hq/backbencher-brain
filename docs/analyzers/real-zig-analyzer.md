@@ -4792,3 +4792,207 @@ declared node-type table — and the 8× replication in §D.
   is not a function of its verdict. *Measured:* 9 of 9 runs, and the named file was never stuck —
   each `[BB-HANG]` names a file its own run already reported as `[BB-PARSE-ERR]`, and parsing those
   files alone is clean. *Not applied here:* `engine.ts` is §8 shared machinery.
+
+## Pass 20 — a control that reads the published KIND, and the GAP it found (2026-10-04)
+
+Pass 19 §H left one item in this lane's own hands: *"`C1` validates the walk against `parseFile`'s
+name SET, not against owner or kind. `C4` covers the owner NAME; nothing checks the published
+`kind` against the site's shape."* Closing it is what produced pass 20's finding, and the finding
+is a real GAP — **162 declarations this analyzer never published**, in 39 files.
+
+### A. C5, and why it existed
+
+`C1` checks the name. `C4` checks the owner's name. Both read a `Set<string>` of names, so a field
+published under the right name with the **wrong kind** passes both, and neither had any way to
+say so. `qualifiedName` is `Owner.member` in the dump, which makes a per-site kind check possible:
+for every field site with a named owner, the kind published under that site's `qualifiedName` must
+be the kind the **container** implies — `enum_member` for an `enum_declaration`, `property`
+otherwise, which is the discriminator `real-zig-analyzer.ts:800` actually uses.
+
+**C5 field-kind agreement: checked 19,715 · violations 0.**
+
+The first run read **26 violations**, and every one was the control's own error — which is what
+the other three controls had already gone through (C4 reported 13,294 before it was gated on
+declaration scope). Chasing them found the real defect.
+
+### B. The GAP — Zig has no reserved words, and the lexer knows what a name *means*
+
+```zig
+pub const Feature  = enum { bool, clamps, coprocessor, … }          // xtensa.zig:8
+pub const TypeId   = enum { bool, … }                               // Build.zig:232
+const  BlockType   = enum(u8) { f64 = 0x7C, f32 = 0x7D, … }          // wasm.zig:663
+pub const Key      = enum(u16) { f16 = …, … }                       // ghostty/src/input/key.zig:263
+pub const SimpleValue = enum(u32) { undefined = …, null = …, true = …, … }  // InternPool.zig:6318
+pub const OptRef   = enum(u32) { …, null = max - 18, … }            // aro/backend/Interner.zig:265
+```
+
+`bool`, `f64`, `noreturn`, `type`, `null`, `true`, `undefined` are **ordinary identifiers in Zig
+declaration position** — the language has no reserved words. The pinned lexer nevertheless spells
+such a name by what it *means*: the `name` field arrives as `builtin_type`, `boolean`, `null` or
+`undefined` rather than `identifier`. `real-zig-analyzer.ts:782` read a field's name only when
+that field was an `identifier`, so **every one of those members was dropped**, and every read of
+one was an edge naming a declaration the parser was holding. `Feature.clamps` was published beside
+an unpublished `Feature.bool` — same enum, same container, the only difference being the lexer's
+spelling.
+
+Measured over the published draw `sha256:2f3545f9…`, 3,834 files:
+
+| population | count | files |
+|---|---|---|
+| name field NOT an `identifier`, any container | 751 of 87,051 sites (0.86%) | — |
+| …of those, `builtin_type` | 468 | 113 |
+| **bound non-local ENUM members — the published set** | **162** | **39** |
+| ├ `builtin_type` | 116 | |
+| ├ `boolean` (`true`/`false`) | 28 | |
+| ├ `null` | 14 | |
+| └ `undefined` | 4 | |
+| bound enum members inside a function (Z22's existing refusal) | 5 | |
+| **previously published** | **0** | |
+
+The four node types are the census's, not a judgement, so adding a fifth needs a census row.
+
+### C. The gate, which is the substance of the fix
+
+Enum bodies have **no positional form**, so a bare token in one is a member name by the language's
+own rules. Struct and union bodies **do** have one:
+
+```zig
+) struct { usize, bool }            // ghostty/src/simd/base64.zig:197   — a TUPLE, names nothing
+const Tuple = struct { []const u8, usize };   // zig/lib/std/json/Stringify.zig:600
+```
+
+That is **332 of the 468** sites, and it is exactly why the earlier blanket refusal — recorded in
+this file's own analyzer at `:760`, and correct for `zls/src/analyser/InternPool.zig`, where
+publishing it fabricated **31 `contains` edges in one file** — was right about its case and wrong
+as a rule. The fix is the gate that refusal lacked: accept a non-`identifier` name field **only
+inside an enum**. A named field whose *type* is a builtin (`usize: u32`) was never the ambiguous
+shape — the type lives in the grammar's separate `type` field.
+
+Reconciliation is exact: **162 published + 5 local (Z22) + 2 unbound/anonymous = 169**, and the
+census moved **+162 symbols / +162 `contains`** — one per newly published member, with no other
+type affected.
+
+### D. Anti-fabrication, per edge
+
+Production `parseFile` against an independent tree walk over the 22 affected files, comparing
+`(owner, name, kind)` per site: **0 fabricated, 0 omitted.** Nothing was published that the tree
+does not contain, and nothing the tree contains went unpublished.
+
+### E. The ladder's own defect, found on the way
+
+`fieldNameOf` deep-searched for an identifier whenever the `name` field was not one, so it reached
+into the field's **value**: on `noreturn = max - 2` (`aro/backend/Interner.zig:219`) it recorded
+the enum member as being named **`max`**. That is 122 real members charged as reads of an unrelated
+declaration — and `C1`'s membership check then passed *on that wrong name*, a control satisfied for
+the wrong reason. The analyzer's own fallback is `anyChild`, which does **not** recurse, so the
+recursion was a divergence of the ladder's own making. The name field is now authoritative whenever
+present, behind the same enum gate.
+
+This is §8 item 26's shape on the field-site path, where item 26 closed only the decl-site path.
+
+### F. The whole population re-measured at this commit
+
+3,834 files, 8 shards, union hash asserted equal to the published draw, **0 fallback**, 131,097
+symbols, **395,967 relationships**. Empty names **0**; kinds outside `SymbolKind` **0**; `unknown`
+endpoints **39**; edges under confidence 0.7 **0 of 395,967 = 0.00%**.
+
+| type | edges | Δ vs pass 19 | tgt file-local | tgt corpus-tier | conf | evidenceClass |
+|---|---|---|---|---|---|---|
+| `calls` | 113,476 | — | 40.13% | 95.55% | 0.85 | `usage_contextual` |
+| `uses` | 132,201 | — | 47.74% | 97.43% | 1 (13,406) / 0.75 (118,795) | `usage_contextual` |
+| `contains` | 80,876 | **+162** | 99.99% | 99.99% | 1 | `structural` |
+| `imports` | 10,200 | — | 29.89% | 33.80% | 0.9 | `import_based` |
+| `references` | 30,794 | — | 44.39% | 74.66% | 1 (10,200) / 0.9 (20,594) | `reference_qualified` |
+| `exports` | 24,114 | — | 100% | 100% | 1 | `import_based` |
+| `instantiates` | 4,306 | — | 85.72% | 96.05% | 1 | `usage_contextual` |
+
+`uses`' file-local target column moved 47.73 → 47.74%: a name that previously resolved to nothing
+in its own file now resolves there. That is the shape a fix like this is supposed to have, and it
+is the only other cell that moved.
+
+### G. A published statement of pass 19's that this pass FALSIFIES
+
+Pass 19 §G reported the doc-truth gate's write as *"12 insertions / 11 deletions, **every row in
+another lane**; reverted"*. Re-measured: **1 of the 9 changed rows is zig's own**, the claim
+table's anchor moving `line 269` → `line 283` because pass 19 §H added 14 net lines above it. The
+claim content is unchanged (`calls contains exports instantiates references uses imports`, 9 rows)
+and the gate still names **0 findings** in zig — only the recorded line number is stale, and the
+register is derived, so it corrects itself on the next regeneration. Stated because the correction
+is to a sentence this lane published as a measurement.
+
+### H. Gates re-run at this commit
+
+| gate | command | result |
+|---|---|---|
+| fixtures | `bun run script/m14/run-fixtures.ts --lang zig` | **12 PASS / 0 FAIL** (11 + the new `zig/enum-primitive-name`) |
+| miss-cause ladder | `npx tsx validation/m14/fixtures/zig/analyzer-owned-miss-cause.ts --dumps …` | **exit 0** — C1 0/22,271 · C2 OK · C3 4/4 · C4 0/21,351 · **C5 0/19,715**; DEFECT 0 in every bucket; analyzer-owned 2,661 cases = 4,508 edges (unmoved) |
+| census, 8 shards | `ontology-census.ts --files-from …` + `shard-merge.py <hash>` | 8/8 exit 0, union hash == published draw, 395,967 edges |
+| firing check | `npx tsx script/m14/firing-check.ts --files 120 zig` | **7/10 fired**, 8,501 edges, 120/120 files, 1 DEGRADED; exits 1 refusing the count (§8 item 10) |
+| ontology arbiter | `BB_CORPUS_ROOT=<1,200-file root> npx tsx validation/m14/fixtures/zig/arbiter-zig-wired.ts zig` | **emitted 7/10 · ruled-sound 3 · FALSIFIED 0 · ruled-without-justification 0** |
+| ruled probe | `npx tsx validation/m14/fixtures/zig/zig-ruled-probe.ts` | exit 0, 10/10 controls ok, gate cell **0**, exclusion split 19/21/0/1 unchanged, instrument A 239 declared / 232 produced |
+| differential | `bun run script/m14/differential.ts --lang zig` | exit 0, `MISSING=0` both lanes; see §I — **its 60-file draw rotates, so its counts are not comparable across runs** |
+| mutation (shared) | `BB_MUTANT_ONLY="zig/" bun run script/m14/mutate-analyzer.ts` | **50 / 50 CAUGHT** (1,748 → 50) |
+| mutation (lane) | `npx tsx validation/m14/fixtures/zig/m13-mutants.mts` | **6 / 6 CAUGHT** |
+| mutation (lane) | `npx tsx validation/m14/fixtures/zig/z65-mutants.mts` | **5 / 5 CAUGHT** |
+| F8 completeness | `npx tsx script/m14/completeness-inventory.ts --lang zig` | 7 of 8 sections pass; **section-b still FAILS** on `requiredKinds` missing `exports` and `instantiates` (§8 item 23's neighbour); section-f **85.5 ms/file** |
+| regex census | `npx tsx script/m12/verify-regex-census.ts` | gate `FAILED` on **43 findings (18 MISSING + 25 STALE) across 11 other analyzers**, **0 zig rows**; this pass adds no regex and `src/ast/real-zig-analyzer.ts` contains **0** |
+| honesty gate | `npx tsx script/m14/verify-honesty.ts` | exit 6, 22 failures, **0 naming this document, `real-zig-analyzer.ts`, or any file under `validation/m14/fixtures/zig/`** |
+| `tsc` | `npx tsc --noEmit -p tsconfig.json` | **0 errors** |
+
+### I. What pass 20 could not settle
+
+- **The differential's per-lane counts move with the draw, and its `unexplained` figure is not a
+  property of the analyzer.** Its 60-file sample rotates per run through a cold pool keyed on a
+  rotation counter, so three fresh runs of the *same commit* read `unexplained` 41, 25 and 26 on
+  zig, and pass 19 §G's `5` was a **journal resume**, not a measurement. Pinning `BB_M14_WORK` to a
+  private root and resetting that root's cold pool makes two runs of the same commit byte-identical
+  (`hash=053fa67f…` both times) — which is how the two states were compared here. A `--repo
+  ghostty` probe could not be used instead: it sweeps every language in the repo and dies on an
+  unrelated **C++ oracle stack overflow** in `pkg/fontconfig/override/fc-genericfamily/
+  fcgenericfamily.h`. So this lane's oracle cross-check for the new edges is the per-edge tree walk
+  in §D, not the differential — stated rather than papered over, because a bound is not a pass.
+- **`imports` at 33.80% and `references` at 74.66% corpus-tier resolution are untouched.** Both
+  target paths; of `imports`' 6,752 unresolved targets **6,621 (98.06%) are paths**. Whether a
+  cross-file path should resolve to a declaration is §8 item 12.
+- **110,271 + 162 = 110,433 of 395,967 edges (27.89%) carry a SCOPE MARKER as their source**, so a
+  reverse walk cannot arrive at them through any declaration. Per type: `exports` / `imports` /
+  `references` 100%, `instantiates` 55.04%, `uses` 22.48%, `calls` 11.53%, `contains` 0%.
+- **C1 still validates the name SET, and C4 the owner's NAME.** C5 now reads the kind, so the
+  published `(name, ownerName, kind)` triple is checked; what no control checks is the published
+  **range**, and a symbol published against the wrong span would pass all five.
+- **C5 does not cover the file-level field path** (`:2621`), whose discriminator is the presence
+  of a `type` field rather than the container's kind, because deriving its `qualifiedName` needs
+  the `@This()` binding. Its uncovered remainder is printed on the C5 line: **0 of 8 candidate
+  sites** in the affected files.
+- **The `[BB-HANG]` → `[BB-PARSE-ERR]` pairing is n=10** with no per-file mechanism (§8 item 27).
+
+### J. §8 items, from this pass
+
+- **Item 28 — `validation/m14/fixture-baseline.json` holds 3 of 48 lanes, and a lane absent from
+  it is exempt from the improvement-forcing gate in BOTH modes.** *File:*
+  `script/m14/run-fixtures.ts:1635`. *What it must do:* treat a lane that is **absent** from the
+  baseline as `0` expected failures rather than skipping it, or print the exemption as an
+  exemption. *Why:* the filter is
+  `currentFail[l] > base[l]` guarded by `base[l] !== undefined`, and the file's only keys are
+  `elixir`, `javascript`, `nim` — so `zig` is excluded from the comparison. Measured here by
+  running two deliberately broken analyzers: each printed a `FAIL` row, then
+  `fixture baseline gate: no regressions`, and **exited 0**. Line 1642's `process.exit(0)` is by
+  design (failures are wave work items), so the exit code cannot be the signal; the printed
+  `no regressions` is the only gate output a reader has, and it is false on a failing run. The
+  scoped-run caveat printed at `:1634` also misattributes the cause — the gate is inert for 45
+  lanes because of the file's contents, not because the run was scoped.
+- **Item 29 — `differential.ts`'s per-lane `unexplained` count is not comparable across runs and
+  nothing in the summary says so.** *File:* `script/m14/differential.ts:902-956`. *What it must do:*
+  print the rotation counter and the draw identity in the lane summary line, so a reader can tell a
+  movement caused by the analyzer from one caused by the draw. *Why:* `coldPoolPick` seeds on
+  `${laneKey}:rot${rotation}:fresh`, so consecutive runs measure different files by design. Three
+  fresh runs of one commit read 41, 25 and 26 here; the resume journal reported 5. The `[cold-pool]
+  N/M fresh (rot K)` line discloses the rotation but the verdict line does not, and the journal's
+  `RESUMED from journal` prefix is the only cue that a number was not measured at all.
+- **Item 30 — a C++ oracle stack overflow kills any `--repo` probe of a mixed repo.**
+  *File:* `script/m14/differential.ts` (the C++ truth walker for
+  `pkg/fontconfig/override/fc-genericfamily/fcgenericfamily.h`, vendored under ghostty). *What it
+  must do:* either bound the oracle's recursion or attribute the skip without aborting the sweep.
+  *Why:* `:23550` throws on any skipped file, which is correct in principle, but it makes
+  `--repo ghostty` unusable for the zig lane, since the sweep covers every language in the repo.
+  Measured, not inferred.
