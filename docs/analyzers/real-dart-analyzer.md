@@ -944,15 +944,16 @@ mislead a reader of the graph.
 
 ## Shared-machinery needs (reported, not edited)
 
-Sixteen changes outside this lane's ownership, each stated so it can be applied
+Seventeen changes outside this lane's ownership, each stated so it can be applied
 without re-deriving it. The files are supervisor-owned per
 `docs/analyzers/ONTOLOGY-WORKSTREAM.md` §Ownership. Items 1–5 predate this pass;
 6–8 come from measuring the incoming direction, 9–10 from removing this lane's
 regexes, 11 from re-running the M60 gate to reproduce the DERIVATION count,
 12 from running the doc-truth-emissions gate over this lane's table, 13–14 from
 re-running the same gates and watching what they wrote to disk, 15 from
-reading `firing-check.ts --json` and finding `files` is per-file, not per-type, and
-16 from comparing the label this analyzer writes against the enum member that names it.
+reading `firing-check.ts --json` and finding `files` is per-file, not per-type,
+16 from comparing the label this analyzer writes against the enum member that names it,
+and 17 from running the mutation gate the way the lane prompt documents it.
 Item 13 was rewritten during the final pass: it first named one gate and now names
 ten, because running the documented `npx tsx` invocation over the whole directory
 showed the failure is the directory's, not one script's.
@@ -1565,6 +1566,50 @@ showed the failure is the directory's, not one script's.
     graph for a language whose edges are all there. `src/ast/types.ts` is
     supervisor-owned, so this is reported.
 
+17. **The mutation gate cannot complete, and the invocation the lane prompt
+    documents is not scoped.** Two defects in one file each, both measured on this
+    branch after `c48f381d1` was merged into `analyzers/ontology-laptop-b`.
+
+    **(a) `script/m14/protobuf-mutants.ts` — one entry has no `language` field.**
+    The entry `id: "protobuf/qualified-id-stopped-being-published"` (line 763) has
+    keys `id, description, transform`; all 29 siblings carry `language: "protobuf"`
+    as well. What it must do: add `language: "protobuf"`. Why it matters is measured,
+    not stylistic: `mutate-analyzer.ts:18844` calls `clean(m.language)` →
+    `runLang(lang)` → `path.join(FIXTURES_DIR, lang)` (`run-fixtures.ts:506`), so a
+    mutant with no `language` makes the harness throw
+    `TypeError [ERR_INVALID_ARG_TYPE]: The "path" argument must be of type string.
+    Received undefined` and the whole run dies. **The entry is at index 80 of
+    `MUTANTS.length === 1,789`, so 80 mutants execute and 1,709 never do** — 44 of the
+    45 languages carrying mutants, including **all 42 of this lane's, which sit at
+    indices 1049–1718.** A full run exits 1 having verified 4.5% of the gate. The
+    languages reached before the throw are `css`, `fsharp`, `nim`, `protobuf`; the
+    41 not reached include `dart`, `java`, `python`, `typescript`, `go`, `rust`,
+    `ruby`, `csharp`, `php`, `cpp`, `sql` and `zig`. A missing required field on one
+    entry is not a lint nit here: it converts the gate from *slow* to *absent*, and
+    the absence is silent in the sense that the 80 green `CAUGHT` lines above it read
+    like a partial pass rather than a crash.
+
+    **(b) `script/m14/mutate-analyzer.ts` — `main()` reads no language argument.**
+    `main()` (`script/m14/mutate-analyzer.ts:18835`) parses only `BB_MUTANT_ONLY`
+    from the environment; it never reads `process.argv`. So the invocation in the
+    lane prompt — `bun run script/m14/mutate-analyzer.ts dart`, annotated "if it
+    supports scoping" — does not scope, and `dart` is a discarded argument. What it
+    must do: accept a positional language (or `--lang=`) and filter `selected` on it
+    the way `BB_MUTANT_ONLY` already does, so a lane can run its own mutants without
+    editing shared machinery. The in-repo answer today is
+    `BB_MUTANT_ONLY="dart/" npx tsx script/m14/mutate-analyzer.ts`, which selects 42
+    of 1,789 and is what produced the 42/42 row in this lane's report; note that
+    `BB_MUTANT_ONLY` is documented in the source as dev-only and prints results
+    **without writing canonical evidence**, which is the correct behaviour for a lane
+    and is why this lane's 42/42 is a scoped figure and not a full-gate one.
+
+    Why both are reported rather than fixed: both files are supervisor-owned per
+    §Ownership. Fixing (a) is a one-line edit that unblocks 1,709 mutants; fixing
+    (b) is the difference between a lane being able to check itself and not. Note
+    that (a) also means this lane's own 42/42 would have been unobtainable from the
+    documented invocation, so the number in this file is evidence for the fix rather
+    than a substitute for it.
+
 ## Supported constructs
 
 - Libraries: `library` directive (no symbol — file-level declaration, metadata only) — all fixtures
@@ -2141,11 +2186,19 @@ reproduced exactly**. What did not:
   its 25 STALE rows are clean/fsharp/javascript/python/svelte/typescript. This lane
   contributes 0 of each, which is the state item 10 asks for and not a pass on the
   gate.
-- **`script/m14/verify-honesty.ts` still fails with 23**, and the breakdown is
-  unchanged: 12 banned-term (in `fixtures/{c,clean,csharp,html,php,sql}`,
-  `grammar-pins.json` and `results/*`), 9 declared-input sets, 1 milestone check, 1
-  freshness rule. **Zero name a dart file**, checked against the current list rather
-  than the earlier one.
+- **`script/m14/verify-honesty.ts` fails with 21, not the 23 recorded above, and the
+  difference is upstream rather than this lane's.** Re-run after the base merge
+  (exit 6): 10 banned-term, 9 declared-input sets, 1 milestone check, 1 freshness
+  rule. The 9 + 1 + 1 shape is unchanged; the banned-term rows fell from 12 to 10
+  because `validation/m14/fixtures/php` and `.../sql` are no longer named — those two
+  fixtures were fixed by the 504 commits the merge brought in. The 10 that remain are
+  `fixtures/{c,clean,csharp,html}` (2 rows in `csharp` and `html`), `grammar-pins.json`
+  (2 rows, `perfect` and `complete`) and `results/{M14.0.F11.fsharp,M14.0.F5,
+  M14.0.JS-CENSUS,fsharp-shape-census}.json`. **Zero name a dart file** — the only
+  `dart` string anywhere in the output is `dart-http` in the passing `corpus pins
+  present` line, which is a corpus repo name and not a finding. The declared-input
+  counts are large (F2 alone reports 2,549) and are a property of the merge, since
+  the merge changed the declared inputs of every artifact in the tree.
 - **`script/m14/verify-doc-truth-emissions.ts` still cannot run under `npx tsx`**
   (`ReferenceError: __dirname is not defined in ES module scope`, exit 1) and still
   reports `UNDOCUMENTED [dart] calls` under `bun run` — item 12's `parseClaimTable`
@@ -2184,6 +2237,42 @@ later commit that touches a file the instrument counts invalidates it silently:
 The two instruments agreed with each other and disagreed with the prose both times,
 which is the argument for reading the instrument's output rather than the file that
 quotes it.
+
+**A fifth pass, on a branch that had fallen 504 commits behind, changed nothing and
+made two things reproducible that were not before.** `origin/analyzers/ontology-laptop-b`
+had advanced past this branch's merge point `c48f381d1` by 504 commits, and the
+supervisor had already merged this lane's work up to that commit. Two consequences,
+both measured before anything else was touched:
+
+- **`script/m14/firing-check.ts` was absent from this branch and present in the
+  base**, so every arbiter figure quoted above — `9/10` at n=120 and `10/10` at
+  n=400 — had been produced against the analyzer *after* the supervisor merged it,
+  not against a tree a reviewer could reconstruct from this branch alone. The base
+  was merged in (`git merge origin/analyzers/ontology-laptop-b`, clean, zero
+  conflicts, and `git diff c48f381d1..origin/analyzers/ontology-laptop-b` over
+  `src/ast/real-dart-analyzer.ts`, this doc and `validation/m14/fixtures/dart/` is
+  empty — no other lane touched this lane's three files). Re-run against the
+  merged tree, **both figures reproduce exactly**: n=120 reads `9/10 fired, 8290
+  edges, 120/120 files, degraded 0` and n=400 reads `10/10 fired, 53252 edges,
+  400/400 files, degraded 0`. The 10/10 is therefore the supervisor's own
+  instrument, reading this analyzer, on this branch — not a figure inherited from a
+  merge.
+- **The census reproduces exactly, including the wall time.** `BB_DART_CONC=1` over
+  the same 2,735 files: all ten counts (43,042 / 110,679 / 119,515 / 10,657 / 5,265 /
+  302 / 4,730 / 758 / 90,352 / 18,374), all ten breadth rows and their five-repo
+  spreads, `filesWithoutContainsCount` 1,039, `symbols` 134,606, `sampleFiles` 2,735,
+  `emptySymbolNames` 0, `emptyOrUnknownKind` 0, `unknownEndpoints` 0,
+  `symbolsNamedUnknown` 20, `parseFailures` 0, `structuralFallbackFiles` 4, and every
+  cell of the nine-column resolution table. `wallMs` 337,371 = 5.62 min, which is the
+  sample-dependent figure the third pass already declined to quote as a constant.
+  Fixtures 16/16 and the scoped mutant run 42/42 with 0 survivors also reproduce.
+
+The one thing this pass found that earlier passes had not is item 17 under
+*Shared-machinery needs*: the mutation gate **cannot complete**, and the invocation
+the lane prompt documents does not scope. It was invisible here for four passes
+because this lane's own mutants were only ever run through
+`BB_MUTANT_ONLY="dart/"`, which filters `selected` before the harness ever reads
+`m.language` — the defect lives in the branch of the harness that a scoped run skips.
 
 **What was NOT re-run, and why.** The latency A/B was not repeated: it alternates two
 analyzer blobs over 300 files × 4 runs, and `src/ast/real-dart-analyzer.ts` has not
