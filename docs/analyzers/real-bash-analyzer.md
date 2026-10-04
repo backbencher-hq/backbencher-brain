@@ -719,6 +719,53 @@ make it larger without making it more true.
 
 ## One edge, N declarations: the incoming-edge half, measured and partly closed
 
+### Round 9: which classes carry enough to disambiguate, and which do not
+
+The task's incoming-edge requirement is that an edge either carries enough to
+disambiguate its target or does not claim a single one. Round 6 built that for
+`uses`; this round measured **which other classes have it**, per type, rather than
+asserting that the mechanism exists.
+
+`incoming-check.ts` over 6 corpus files — 275 symbols, 0 degraded parses, 0 parse
+failures — names 3 targets that resolve to more than one published symbol
+(`fail -> function, variable`, `x -> function, variable`,
+`DARK_CONFIG_RUNDIR -> variable, constant`), and `overrides` fires with 27 edges
+over 6 distinct declarations, **0 ambiguous and 0 unresolved**. Reading the metadata
+on each ambiguous edge directly:
+
+| type | edges whose target has >1 declaration in the same file | disambiguated | carries nothing |
+| --- | --- | --- | --- |
+| `uses` | 118 | **118** — `targetResolution` (`innermostScope`/`outerScope`) + `targetLine` + `targetKind` | **0** |
+| `overrides` | 27 | **27** — `overridesLine` (e.g. 76) + `redefinition: true` | **0** |
+| `calls` | 44 | 0 | **44** |
+| `contains` | 86 | 0 | **86** |
+| `exports` | 1 | 0 | **1** |
+
+`overrides` is worth a second look because its 100%-ambiguous rate at whole-corpus
+scale (138 of 138) looks alarming and is not: a redefinition's target is **by
+construction** a name declared at least twice, so ambiguity is the shape of the
+construct, and `overridesLine` names the prior declaration exactly. It is the one
+type where the ambiguity is definitional rather than a resolution failure.
+
+**The open population is therefore `calls`, `contains` and `exports`**, and at
+whole-corpus scale (`census --all`, target present and matching more than one
+published symbol) that is **236 + 6,159 + 96 = 6,491 edges**. `contains` is 95% of it.
+`resolveDeclaration` is lane-owned and its scope-chain rule would apply unchanged —
+a `contains` edge from owner *O* naming *N* is asking which declaration of *N* *O*
+contains, which is the same question `uses` asks. **This is not fixed and no edge
+is claimed to be fixed.** It is stated as the next actionable item with its size,
+because the honest options were to ship an un-A/B'd change to the largest
+structural type at the end of a session or to name the number. `contains` sits at
+100% endpoint resolution with 0 `neither`, so nothing is dangling; what is missing
+is *which* of several same-named symbols, and a consumer reading a `contains` edge
+today must still pick by a rule nobody chose.
+
+The two `x` cases are a different fact and are named so they are not pooled with the
+above: `x` is declared **once per file** and the collision is **across** the 6 files
+`incoming-check` was given, which is a corpus-level name collision rather than an
+in-file ambiguity. A single-file analyzer cannot see it, exactly like the 256
+`calls` edges in limitation 3.
+
 `src/lsp/impact.ts` obtains its reverse edges by scanning outgoing edges and
 matching targets, so no inbound edge is stored anywhere. Two consequences follow,
 and both are this lane's problem rather than the traversal code's. The incoming
