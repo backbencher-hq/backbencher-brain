@@ -35,6 +35,7 @@ npx tsx script/m14/incoming-check.ts julia <5 files named in the INCOMING sectio
 npx tsx script/m14/differential.ts --lang julia --no-batch  # shared F5, scoped: writes NO canonical artifact
 bun  run script/m14/run-fixtures.ts --lang julia
 bun  run validation/m14/fixtures/julia/mutation-check.ts --all
+npx tsx validation/m14/fixtures/julia/envelope.ts --files 400                     # the time envelope + load context
 npx tsx script/m14/ontology-coverage-gate.ts julia                            # exit 0, 9 emitted / 1 ruled
 ```
 
@@ -96,6 +97,58 @@ run rather than being reported: both are §8 items.
 So the verdicts below are produced by the lane-owned census applying the gate's own two instruments
 and the gate's own verdict algorithm to julia, and the gate's verdict algorithm now has a table to
 read.
+
+## The payload/latency question, and a first measurement of it that was wrong
+
+§6 of the lane brief asks for a regression number against a budgeted lane. **There is no budgeted lane
+to regress: julia is absent from the M60.R6 complexity gate entirely.** `script/m60/analyzer-complexity-gate.ts`
+prints 44 lanes and no julia row; `validation/m60/analyzer-budget-register.json` has no julia entry;
+and the artifact that gate reads, `validation/m12/results/julia-complexity.json`, does not exist. The
+shared M12 harness (`script/m12/measure-analyzer.ts`) exits before timing because
+`validation/m12/fixtures/julia` does not exist, and it writes to a shared results path (§8). So the
+envelope is measured lane-owned, in `validation/m14/fixtures/julia/envelope.ts`, through `parseFile`,
+writing nothing:
+
+```
+$ npx tsx validation/m14/fixtures/julia/envelope.ts --files 400
+file set: 400 of 1985 candidates (stride 4), digest 36cef2786b320821
+byte distribution: min 31 · median 3695 · p90 33378 · max 191504
+load under measurement: load1 11.21 on 8 cores
+39811 ms for 400 files  ->  99.53 ms/file
+symbols 6,970  relationships 46,263  parseFile threw: 0
+throughput: 1337 outputs/s, 115.7 relationships/file
+per-type on this draw: calls=23877 · references=10205 · uses=7132 · contains=2721 ·
+  exports=797 · instantiates=622 · imports=458 · extends=451
+```
+
+**That `99.53 ms/file` and the counterfactual `78.54 ms/file` were taken at load1 11.21 and 13.68, and
+the 27% difference between them is the LOAD, not the code.** #909 records the same trap killing a c-lane
+figure: 145.7ms/file, then 25.8, then 172.6 on the same analyzer minutes apart while three other agents
+sat above 59% CPU. Re-measured properly — two arms INTERLEAVED, three rounds each, so neither arm owns
+the quietest moment — the sign reverses:
+
+| round | `imports`+`exports` emission ON | OFF | load1 (ON / OFF) |
+|---|---|---|---|
+| 1 | 34,868 ms | 35,903 ms | 12.04 / 11.56 |
+| 2 | **33,448 ms** | 34,940 ms | 11.06 / 12.61 |
+| 3 | 34,119 ms | 35,243 ms | 11.24 / 11.60 |
+
+**ON was faster in 3 of 3 rounds**, so the honest reading is that emitting 1,255 additional edges per
+400 files costs nothing measurable — and the reason is structural rather than lucky: `importTargets()`
+and `exportableName()` were **already being called** to fill the `ImportInfo[]` and `ExportInfo[]`
+channels (`real-julia-analyzer.ts:709`, `:746`). The relationships are pushed inside the same loop over
+the same nodes, so the addition is edge-object construction and no second tree walk.
+
+**The counterfactual was measured by gating the two `relationships.push` sites behind an env var, timing,
+and then restoring the file byte-identical from HEAD** — the diff above is empty and
+`git diff --exit-code src/ast/real-julia-analyzer.ts` passes. The gate was not committed: an env-var
+switch in the analyzer is a second behaviour, and the number is reproducible from the committed file by
+doing the same edit. **The lesson worth keeping is the first pair of numbers, not the second**: a
+sequential ON-then-OFF measurement on this shared box manufactured a 27% regression that did not exist,
+in the direction that made this lane's addition look expensive — the flattering direction for the person
+reporting and the opposite of the one an adversarial review expects.
+
+---
 
 ## What FIRES, at two sample sizes — and why the smaller one reads 8/10
 
