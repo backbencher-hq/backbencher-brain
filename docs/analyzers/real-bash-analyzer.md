@@ -129,18 +129,29 @@ round 3 reproduced round 2's denominators exactly (400 files / 48 repositories /
 4,012 admitted / 441,259 tracked). The gate column is quoted as a range for that
 reason and not as a single figure.
 
-| type | emitted? | census: 400 files (round 7) | gate: 4,130 files (2026-10-04 run) | evidence |
+| type | emitted? | census: 400 files (round 8) | gate: 4,133 files (2026-10-04 run) | evidence |
 | --- | --- | --- | --- | --- |
-| `calls` | **EMITTED** | 5,099 | 55,194 | `census-bash-ontology.ts`, gate row |
-| `uses` | **EMITTED** | 7,802 | 80,845 | same |
-| `contains` | **EMITTED** | 3,782 | 38,270 | same |
-| `imports` | **EMITTED** | 44 | 679 | same |
-| `references` | **EMITTED** | 44 | 679 | same |
-| `exports` | **EMITTED** | 210 | 1,927 | same |
+| `calls` | **EMITTED** | 5,097 | 55,177 | `census-bash-ontology.ts`, gate row |
+| `uses` | **EMITTED** | 7,856 | 81,355 | same |
+| `contains` | **EMITTED** | 3,775 | 38,229 | same |
+| `imports` | **EMITTED** | 44 | 678 | same |
+| `references` | **EMITTED** | 44 | 678 | same |
+| `exports` | **EMITTED** | 210 | 1,926 | same |
 | `overrides` | **EMITTED** | 28 | 138 | same |
 | `extends` | **RULED — never emitted** | 0 | 0 | instrument A + B below |
 | `implements` | **RULED — never emitted** | 0 | 0 | instrument A + B below |
 | `instantiates` | **RULED — never emitted** | 0 | 0 | instrument A + B below |
+
+**The census column moved in round 8 and the reason is not the analyzer's behaviour.**
+The corpus grew from 4,130 to **4,133** admitted files, and this column is a
+hash-ordered draw, so round 7's 400 files and round 8's 400 files are different sets —
+limitation 14 is the same property stated as a rule. Round 8's own numbers on its own
+sample: 400 files / 55 repositories / 4,133 admitted / 4,179 symbols / 17,054
+relationships / **0 parse failures**, against round 7's 4,186 symbols and 17,009
+relationships on a smaller corpus. **The only evidence about the round-8 change is the
+A/B pair**, which shares one sample and one corpus: `uses` **7,786 → 7,856**, every
+other type and the symbol count identical. See
+[Round 8](#round-8-the-arithmetic-command-whose-operands-were-invisible-and-what-the-arbiters-say).
 
 **The gate column was re-run for round 7 and is still not a reproducible count**, which
 is the property the round-3 A/B pair measured and the reason it is quoted as a single
@@ -1116,6 +1127,235 @@ only the second is the one a consumer can act on.** `isArray` is the deliberate 
 in the same table — its negative IS forwarded, because a consumer must be able to tell
 an array from a scalar.
 
+## Round 8: the arithmetic command whose operands were invisible, and what the arbiters say
+
+Limitation 7 was the lane's largest known GAP and it is closed. Round 8 also re-ran
+the two arbiters the task names, at three sample sizes, because they disagree with
+each other and the disagreement is arithmetic rather than a defect.
+
+### The gap, stated as the dispatch it was
+
+`emitVariableUses` is reached from five node types: `simple_expansion`,
+`expansion`, `arithmetic_expansion` (`$(( … ))`), `postfix_expression` (`((i++))`)
+and `c_style_for_statement` (`for (( … ))`). The pinned grammar holds a **bare**
+`(( … ))` in a `compound_statement` wrapping a `binary_expression` /
+`unary_expression` / bare `variable_name`, and `compound_statement` was not in the
+list. So:
+
+| written | arrives as | operand node | read published? |
+| --- | --- | --- | --- |
+| `$(( count + 1 ))` | `arithmetic_expansion` → `binary_expression` | `variable_name` | yes |
+| `for (( i = 0; i < n; i++ ))` | `c_style_for_statement` | `variable_name` | yes |
+| `(( count++ ))` | `compound_statement` → **`postfix_expression`** | `variable_name` | yes — by accident |
+| `(( count < limit ))` | `compound_statement` → `binary_expression` | `variable_name` | **no** |
+| `(( --count ))` | `compound_statement` → `unary_expression` | `variable_name` | **no** |
+| `(( arr[0] = count ))` | `compound_statement` → `binary_expression` | `subscript`, `variable_name` | **no** |
+| `(( ${count} + limit ))` | `compound_statement` → `expansion`, `binary_expression` | `variable_name` ×2 | `count` only |
+
+`(( count++ ))` published a read **because its operand happened to be a
+`postfix_expression`** — one of the five dispatched types — while `(( count < limit ))`
+on the line above published nothing. The asymmetry was a grammar-shape accident, not
+a fact about bash, which is the whole of what limitation 7 claimed and it is now
+measured rather than asserted.
+
+### The delta was derived BEFORE the analyzer was touched
+
+`probe-bash-arithmetic-operands.mts` (new) walks the parse tree, collects every
+arithmetic `compound_statement`'s operand names with the same rule the analyzer uses,
+and differences them against the edges production `parseFile` already published. It
+is an independent prediction rather than an after-the-fact census read, so the
+after-run can be **checked** instead of believed. 400-file hash-order sample of
+**4,133** admitted files in 55 repositories:
+
+| | count |
+| --- | --- |
+| files with at least one arithmetic `compound_statement` | **32** |
+| arithmetic `compound_statements` | **89** |
+| operand name nodes under them | **126** |
+| distinct `(target, line)` pairs | **115** |
+| …already published through the five dispatched types | **45** |
+| …**predicted new `uses` edges** | **70** (54 of them, 77%, naming a variable the same file declares) |
+| `compound_statements` the predicate **excludes** | **792**, of which **0** open `((` |
+
+Then the A/B, parent commit's analyzer written over the file and restored
+(`git show HEAD:src/ast/real-bash-analyzer.ts`, never `git stash` — see limitation
+17), same corpus, same hash order, same 400 files:
+
+| | before | after | delta |
+| --- | --- | --- | --- |
+| `uses` | **7,786** | **7,856** | **+70** |
+| total relationships | **16,984** | **17,054** | **+70** |
+| `uses` resolving at both ends | 6,225 (80.0%) | 6,279 (79.9%) | **+54** |
+| `calls` / `contains` / `imports` / `references` / `exports` / `overrides` | 5,097 / 3,775 / 44 / 44 / 210 / 28 | identical | **0** |
+| symbols | 4,179 | 4,179 | **0** |
+
+**The prediction was wrong first, and the census was right.** The probe's first run
+said 72 against a measured 70. The probe deduplicated operands per *statement*, while
+`addRel`'s key is `${source} ${type} ${target} ${line}` and carries no statement
+identity — so `(( i++ )); (( i-- ))` on one line was counted twice. It now dedupes
+per file and predicts 70. Recorded because the alternative reading — "the census is
+noisy, the probe is exact" — was available and wrong: the census reproduced 7,856 on
+two consecutive runs, and the two-edge gap had a cause that named itself.
+
+**Payload.** 70 edges on 7,856 `uses` is +0.89% of the type and +0.41% of the file's
+17,054 relationships; **0 symbols added**, so `bb_graph`'s node count is untouched and
+only link count moves. The new edges carry the same four metadata keys every other
+`uses` edge carries (`evidenceClass: usage_contextual`, `isVariableReference`,
+`bashSpecific`, and `isAssignedInFile` on the 77% whose target this file assigns), so
+the per-edge cost is the same as the class's existing cost rather than a new shape.
+Whole-repository cross-check on the one repository dense in the construct —
+bash-completion's 566 admitted files: `uses` **5,123 → 5,344 (+221)**, every other
+type and the 5,821 symbols unchanged.
+
+### What the fixture pins, and what it fails against
+
+`validation/m14/fixtures/bash/arithmetic-command-operands.sh` pins all five operand
+shapes (binary, postfix, unary, subscript, `${…}`), the two-line `then`-block case, and
+two properties a fix could get wrong the other way:
+
+- `(( count++ )); (( count++ ))` on **one** line is **one** edge — the property the
+  lane's own probe violated.
+- the `then` block is a `compound_statement` that is **not** arithmetic, and it must
+  contribute nothing: `uses -> count` appears on lines 45, 46, 47, 48, 49, 52, 54 and
+  55 and nowhere else. Without the arithmetic test the block would publish its own
+  `echo "$count"` read a second time under a different node type, and the count row of
+  8 is what would catch it.
+- `forbid`: no `calls` edge naming any operand (`((count++))` is not a command — the
+  round-2 fabrication), and no `uses` edge naming `arr[0]`.
+
+**It FAILS against the pre-fix analyzer (23 pass / 2 fail) and passes after**, so it
+pins the gap rather than the fix. The second failure is
+`arithmetic-reads-gap-closure`, whose expectation had pinned the gap **as if it were
+closed**: it asserted `uses -> count` exactly twice when line 8's
+`while (( count < limit ))` published neither name. That expectation is corrected, with
+the reason in its `authoredFrom` — a fixture written to close a gap is itself evidence
+about when the gap closed.
+
+Three mutants, and the lane file is **25 mutants, 25 caught, 0 survived**:
+`…-branch-removed` (the exact defect, costs all 70 corpus edges),
+`…-predicate-inverted` (blocks read as arithmetic **and** real arithmetic unread — the
+pair is why the fixture pins both directions), and `…-line-off-by-one`, which is the
+one a census cannot see: the edge exists, names the right variable, and sits at a line
+where no `(( … ))` was written.
+
+**One condition has no mutant, and the reason is measured.** The predicate is
+`opensWithDoubleParen(text) && endsWithDoubleParen(text)`. Its closing half guards a
+shape this grammar does not produce: **0 of the 792** `compound_statements` the
+predicate excludes open `((` at all, and a malformed `(( a < 2` arrives as an `ERROR`
+node, not a `compound_statement` (verified on the tree). So a mutant dropping
+`endsWithDoubleParen` would survive, and this file's rule is that a survivor is a
+failure. The condition is kept — `( (date) )` is a subshell and `((x))` is arithmetic,
+and `isArithmeticOperandCommand` asks the same question of a `subshell` — and declared
+here and at the call site rather than covered by a mutant that cannot fail.
+
+### Is the new class audited? — 97 of 121, and that is the honest number
+
+`deriveBashEdges` is exported from `script/m14/differential.ts:24815`, so the oracle
+can be asked the narrow question without editing shared machinery and without the
+rotation problem (its cold-pool counter advances per run, so `differential.ts --lang
+bash` twice is not two comparable runs — round 5 established that, and pinning the
+rotation means mutating state this lane does not own).
+`probe-bash-arithmetic-oracle.mts` compares, per file, the analyzer's `uses` edges on
+arithmetic operand lines against the oracle's rows for the same tree:
+
+| | 400-file hash-order sample |
+| --- | --- |
+| files contributing arithmetic operand lines | 32 |
+| arithmetic operand lines located | 83 |
+| analyzer `uses` edges on those lines | **121** |
+| …the oracle publishes the same `(source, uses, target)` row | **97 (80.2%)** |
+| …the oracle does **not** publish it | **24 (19.8%)** |
+
+So the new class is audited for four edges in five and unaudited for one in five, and
+the unaudited rows are named in the probe's output (`uses -> commands`,
+`-> cword`, `-> COMP_CWORD`, `-> probe_named`). **The oracle's `uses` derivation does
+not walk bare arithmetic operands either**, so for those edges agreement with the
+differential is unavailable as evidence. What stands in its place is a parse fact — the
+operand is a `variable_name` node under a `(( … ))` `compound_statement` — and bash's
+semantics, which make `((count < limit))` a read of both. That is a weaker form of
+evidence than a second walker and it is stated as such rather than folded into the
+coverage percentage.
+
+### The two arbiters, at three sample sizes, and why they disagree
+
+`script/m14/firing-check.ts` (production `parseFile`) on this lane:
+
+| `--files` | files parsed | **fired** | relationships | the 7th type |
+| --- | --- | --- | --- | --- |
+| 120 | 106/120 | **6/10** | 4,286 | absent |
+| 400 | 356/400 | **6/10** | 14,782 | absent |
+| 2,400 | 2,382/2,400 | **7/10** | 104,105 | `overrides` |
+| 5,000 (all 3,705 admitted) | 3,311 | **7/10** | 145,425 | `overrides` |
+
+**A reader who runs the arbiter at its documented `--files 120` sees 6/10 and should
+know why.** `overrides` needs a function redefinition, and the census measures those
+at **28 edges in 4 files of 4,133** — 0.097% of admitted files. A 400-file draw
+therefore expects **0.39** such files, and reading zero is the *expected* outcome, not
+a defect. The same file set measured the other way settles it without arithmetic:
+`incoming-check.ts` over 6 corpus files reports `overrides` **fired, 24 edges, 3
+distinct declarations, 0 unresolved**.
+
+`script/m14/incoming-check.ts` on those 6 files (588 symbols, 0 degraded parses,
+0 parse failures) — the incoming side, which no outgoing count can speak to:
+
+| type | fired | edges | distinct declarations named | **ambiguous** | unresolved |
+| --- | --- | --- | --- | --- | --- |
+| `calls` | yes | 446 | 66 | **0** | 310 |
+| `uses` | yes | 1,010 | 197 | **0** | 103 |
+| `contains` | yes | 582 | 356 | **0** | 0 |
+| `imports` | yes | 4 | 0 | 0 | 4 |
+| `references` | yes | 4 | 0 | 0 | 4 |
+| `exports` | yes | 10 | 9 | **0** | 0 |
+| `overrides` | yes | 24 | 3 | **0** | 0 |
+
+**0 ambiguous targets on every type**, and 6 orphan declarations of 588 (1.0%). The
+zero is a **six-file** measurement and is not a lane-wide claim: the census's
+ambiguity table reads 1,187 ambiguous `uses` targets over its 400 files, because a
+`local` in two functions is two declarations of one name and this file set does not
+contain that shape twice. What the six files do establish is that where a target names
+exactly one published symbol, the reverse walk is not choosing — which is the
+ambiguity half of the incoming problem, and the resolvable half of it is `overrides`
+at 3 distinct targets and 0 unresolved.
+
+### Whole-corpus attempt, and what it measured instead
+
+The same probe over **every** admitted file (4,133 in **120** repositories — the census's
+"55 repos" is the count inside its 400-file sample) answers the arithmetic question
+only for part of the corpus, and the reason is the instrument limitation this file has
+carried since round 3:
+
+| whole corpus, one process, direct `parser.parse()` | count |
+| --- | --- |
+| admitted files | 4,133 |
+| **files the pinned wasm could not parse** | **3,634 (87.9%)** |
+| files actually walked | **499** |
+| of those: files with an arithmetic `compound_statement` | 41 |
+| arithmetic `compound_statements` / operand name nodes / distinct `(target, line)` pairs | 104 / 150 / **137** |
+| …already published (post-change) | **137 — 0 predicted new** |
+| `compound_statements` the predicate excludes, of which open `((` | 948, of which **0** |
+
+**The 87.9% is a finding, not a footnote.** `parseFile` CATCHES the wasm's
+`memory access out of bounds` and substitutes a degraded result, which is why the
+census reports `parse fail: 0` on the same corpus; a probe that calls the parser
+directly sees the throw. The failures are **progressive within one process** rather
+than a fixed set of poisonous files: the 400-file hash-order prefix — which this same
+probe walks with **0** failures — sits inside the 499 that parsed, so parsing breaks
+down after roughly 500 files in a single process and 3,634 of the remaining 3,733
+fail. That is the mechanism behind limitation 15's run-to-run wobble, now with a
+number for the rate rather than a list of file names, and it bounds what any
+whole-corpus bash figure can claim: **the last ~3,600 files are not measured by a
+single-process run at all.**
+
+### Coverage, restated as applicable
+
+Unchanged in **kind**, and the arithmetic fix moves no verdict: **7/7 applicable,
+3 measured-absent (`extends`, `implements`, `instantiates`, each with instrument A
+over all 164 node types plus instrument B), 0 unaccounted.** What round 8 changes is
+the size of `uses` and the size of the sample the numbers come from — the corpus grew
+from 4,130 to **4,133** admitted files, so round 7's census column and this one are
+different 400-file draws and their difference is not evidence about the analyzer. The
+evidence about the change is the A/B pair above, which shares one sample.
+
 ## DERIVATION debt: the five unexplained edges are the oracle's blind spot
 
 `script/m14/differential.ts --lang bash` reports, on its 60-file `otp` sample
@@ -1594,25 +1834,25 @@ not excellence. This lane's are measured, not hedged:
    analyzer nor the differential resolves them, so a relationship reachable only
    through them is absent from the graph. That is the residual the three RULED
    types are ruled against, sized rather than asserted.
-7. **Roughly 68 of the `(( … ))` arithmetic operands emit no `uses` edge**, and
-   round 3 corrected the node type in this entry. The previous revision called them
-   "91 `(( … ))` arithmetic **commands**"; they are not commands. A real
-   arithmetic command is a `compound_statement` whose text opens `((` — verified
-   directly on the tree (`if ((x < 5)); then` and a bare `((count++))` both produce
-   `compound_statement`, not `command`), so the counting probe's noun was wrong
-   even though its distribution was usable. What the gap is: the dispatch routes
-   `expansion`, `postfix_expression`, `arithmetic_expansion`, `simple_expansion`
-   and `c_style_for_statement` to `emitVariableUses`, and **`compound_statement` is
-   not among them**, so `((i < 5))` names `i` and `n` and the graph never mentions
-   either, while `((i++))` does produce a `uses` edge because its operand happens to
-   be a `postfix_expression`. The counter-shape that motivated the earlier phrasing
-   is real and round 3 re-confirmed it: `((x))` used to arrive as a `command` and
-   produced a `calls` edge, which is what round 2's guard removed.
-   **Left open deliberately**, with the reason it is not fixed here: closing it
-   **adds** edges, which is a payload change owed its own before/after measurement
-   across the graph and migration consumers, not a by-product of a defect fix. It is
-   the lane's largest known GAP and it is stated with the node type and the
-   dispatch list rather than as a round number.
+7. **CLOSED in round 8 — the `(( … ))` arithmetic operands now emit `uses`, and what
+   remains is the oracle's blindness, not the analyzer's silence.** This entry read
+   "roughly 68 of the `(( … ))` arithmetic operands emit no `uses` edge, and the
+   dispatch routes `expansion`, `postfix_expression`, `arithmetic_expansion`,
+   `simple_expansion` and `c_style_for_statement` to `emitVariableUses` while
+   `compound_statement` is not among them". The dispatch now also takes a
+   `compound_statement` **whose own text opens `((` and closes `))`**: **+70 `uses`
+   edges** on the 400-file sample (`uses` 7,786 → 7,856), **+221** across
+   bash-completion's 566 admitted files, **0** symbols, **0** edges of any other type.
+   The delta was predicted from the tree before the change and matched exactly, after
+   the prediction probe was corrected for a per-statement dedupe that `addRel`'s key
+   does not share.
+   **What is left, measured:** `deriveBashEdges` does not walk bare arithmetic
+   operands either, so **97 of the 121** `uses` edges on those lines are corroborated
+   by the oracle and **24 are not** (`probe-bash-arithmetic-oracle.mts`). For those,
+   agreement is unavailable as evidence and the justification is a parse fact plus
+   bash's semantics. The `((x))`-as-`command` fabrication this entry also names stays
+   removed: `isArithmeticOperandCommand` is unchanged, and the new fixture's `forbid`
+   rows pin that an arithmetic operand never publishes a `calls` edge.
 8. **`overrides` is the weakest label in the lane, and the strongest argument
    against it is that bash has no superclass.** What the measurement settles: all
    **28 of 28** edges point from a later definition to an earlier definition of
@@ -1765,10 +2005,53 @@ not excellence. This lane's are measured, not hedged:
 22. **A ruling in this lane is only as strong as the population instrument A ran on,
     and this lane's usual sample is too small for it.** The 400-file hash-order sample
     yields **144** distinct node types; the whole corpus yields **164**. The three RULED
-    verdicts are therefore quoted against 164 and the difference is stated rather than
-    averaged away. A future corpus that adds a node type expressing a supertype would
-    falsify all three at once, which is the correct behaviour and the reason the gate
-    computes the inventory over every admitted file.
+verdicts are therefore quoted against 164 and the difference is stated rather than
+   averaged away. A future corpus that adds a node type expressing a supertype would
+   falsify all three at once, which is the correct behaviour and the reason the gate
+   computes the inventory over every admitted file.
+23. **The arbiter's headline number depends on its sample size, and at the sample size
+    its own usage line suggests, this lane reads 6/10.** `firing-check.ts --files 120
+    bash` reports `6/10 fired` with `overrides` absent; `--files 400` agrees; at
+    `--files 2400` and at the whole corpus it reports **7/10** with `overrides` firing.
+    The cause is arithmetic, not a defect: `overrides` requires a function
+    redefinition and the census measures those at **28 edges in 4 files of 4,133**
+    admitted (0.097%), so a 400-file draw expects **0.39** such files and reading zero
+    is the expected outcome. Recorded because a reader who runs the arbiter at 120
+    files and compares it with this file's "7/7 applicable" has two correct numbers
+    and no way to reconcile them, and the reconciliation is three lines of arithmetic.
+    The independent confirmation is `incoming-check.ts` over 6 corpus files, where
+    `overrides` fires with 24 edges and 3 distinct declarations.
+24. **One condition in the round-8 arithmetic predicate has an empty measured
+    population, so no mutant covers it.** `isArithmeticCompoundText` requires the text
+    to close `))` as well as open `((`. On the 400-file sample the predicate excludes
+    **792** `compound_statements` and **0** of them open `((`; a malformed `(( a < 2`
+    arrives as an `ERROR` node rather than a `compound_statement` (verified on the
+    tree), so `opensWithDoubleParen` alone has no reachable input in this grammar and a
+    mutant dropping the closing test would survive a suite whose stated rule is that a
+    survivor is a failure. The condition is kept — `( (date) )` is a subshell and
+    `((x))` is arithmetic, and `isArithmeticOperandCommand` asks the same question of
+    a `subshell` — and declared at both the call site and here rather than covered by a
+    mutant that cannot fail.
+25. **A whole-corpus bash measurement cannot be taken in one process, and the
+    production path reports that as success.** Over all 4,133 admitted files, a probe
+    calling the pinned parser directly could not parse **3,634 (87.9%)**; the 499 it
+    did parse include the 400-file hash-order prefix, which the same probe walks with 0
+    failures, so the breakdown is progressive within a process rather than a fixed set
+    of poisonous files. `parseFile` catches the same `memory access out of bounds` and
+    substitutes a degraded result, which is why the census prints `parse fail: 0` on
+    the same corpus. Consequence for every whole-corpus figure in this file: it
+    describes the files the wasm reached, and the count of files it did not reach is
+    not printed next to it. Limitation 15 named the wobble; this item gives its rate.
+26. **19.8% of the `uses` edges on arithmetic lines have no oracle counterpart**, so
+    the differential cannot vouch for round 8's class
+    (`probe-bash-arithmetic-oracle.mts`, 121 edges on 83 operand lines across 32
+    corpus files: 97 corroborated, 24 not). `deriveBashEdges` does not walk bare
+    arithmetic operands either, so this is DERIVATION debt inside a type that is
+    otherwise audited, and it is the same shape as the `for`/`read` implicit-binding
+    debt below: two implementations agree on what they both read and are both silent
+    about what neither read. The justification for those 70 edges is a parse fact — a
+    `variable_name` under a `(( … ))` `compound_statement` — and bash's semantics, not
+    a second walker.
 
 ## Complexity envelope and measured performance
 
