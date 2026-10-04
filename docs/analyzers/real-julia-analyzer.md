@@ -128,7 +128,7 @@ by `validation/m14/fixtures/julia/engine-concurrency-probe.ts` (lane-owned, writ
    | caller | width | outcome on 1,985 files |
    |---|---|---|
    | `ontology-coverage-gate.ts:240` | **8 workers** | traps, then the orphan kills the run |
-   | `census.ts:82` | 4 workers | clean — `throw: 0`, `fallback: 0` |
+   | `census.ts:82` | 4 workers | clean on the runs that finished — **but width 4 is NOT clean, see [§ WIDTH 4 IS NOT CLEAN](#the-arbiters-exit-0-does-not-reproduce-and-the-bomb-that-ends-it-is-not-the-file-it-names)** |
    | `firing-check.ts:290` | sequential `for` | clean — `degraded: 0`, 235,878 edges |
 
    Interleaved A/B, 400-file stride sample, 3 rounds per arm, so no arm owns the quietest minute.
@@ -157,26 +157,80 @@ by `validation/m14/fixtures/julia/engine-concurrency-probe.ts` (lane-owned, writ
    arming, +177.5 s into the run, naming the Pkg.jl file, attempting process.exit(1)
    ```
 
-   **So across 6 probe rounds today the width-8 arm degraded in 1 and not in 5**, and the
-   `ontology-coverage-gate.ts julia` run at width 8 trapped twice (`Graphs.jl/test/core.jl`, both
-   times `[BB-PARSE-ERR] … memory access out of bounds` then `[BB-HANG]` then exit 1). Quoting
-   `3 of 3 rounds` as the rate would repeat, on this finding, the error this file corrects three
-   paragraphs above about the arbiter's exit code: a gate that traps on some runs and not others
-   cannot be quoted for a rate, and quoting one was the error. **The part that IS reproducible is
-   narrower and is what §8 row 2 rests on: width 1 and width 4 degraded 0 times in 4,800 parses
-   across all three runs, and every degraded file ever seen was seen at width 8 only.** `load1` is
-   the uncontrolled variable and it is printed by the probe, because "width 8 traps and width 4 does
-   not" would be a cleaner claim if the trap were deterministic, and it is not.
+**So across 6 probe rounds on those samples the width-8 arm degraded in 1 round and not in 5**, and the
+    `ontology-coverage-gate.ts julia` run at width 8 trapped twice (`Graphs.jl/test/core.jl`, both
+    times `[BB-PARSE-ERR] … memory access out of bounds` then `[BB-HANG]` then exit 1). Quoting
+    `3 of 3 rounds` as the rate would repeat, on this finding, the error this file corrects three
+    paragraphs above about the arbiter's exit code: a gate that traps on some runs and not others
+    cannot be quoted for a rate, and quoting one was the error.
 
-   The trapped file differs every run — `julia/base/asyncmap.jl` is new to this list, and
-   `Pkg.jl/test/test_packages/Sandbox_PreservePreferences/dev/Foo/test/runtests.jl` repeats one already
-   named; earlier runs produced `Pkg.jl/…/TestArguments.jl`, `Aqua.jl/…/UsesTransientTask.jl`,
-   `julia/base/array.jl`, `Unregistered.jl`, `Aqua.jl/src/ambiguities.jl`, `Aqua.jl/test/pkgs/…/svd.jl`
-   — and each parses clean when driven alone, so this is concurrent-parse fragility and **not** a
-   per-file grammar defect. `julia/base/asyncmap.jl` was driven alone on 2026-10-04 and returned
-   `success: true`, 0 errors. Both files are shared (§8): `engine.ts` needs a `try`/`finally` around
-   `parser.parse`, and the gate needs either a width below the trap threshold or the bomb disarmed
-   before the catch.
+    **WIDTH 4 IS NOT CLEAN — the next sentence was wrong, and §8 row 2 rested on it.**
+
+    The previous version ended that discussion with: *"The part that IS reproducible is narrower and is
+    what §8 row 2 rests on: width 1 and width 4 degraded 0 times in 4,800 parses across all three
+    runs, and every degraded file ever seen was seen at width 8 only."* **That is falsified.** Two
+    independent full-population runs, interleaved, 2 rounds each, measured:
+
+    ```
+    FULL POPULATION, 1,985 files, 2 rounds, arms interleaved
+                    width 1                     width 4                     width 8
+    RUN A   3,970 parses  degraded 0 threw 0   3,970 parses degraded 2 threw 0   3,970 parses degraded 3 threw 0
+    RUN B   3,970 parses  degraded 0 threw 0   3,970 parses degraded 2 threw 0   3,970 parses degraded 5 threw 0
+    totals  7,940  0                        7,940  4                        7,940  8
+
+    width-4 failures, run A: DataFrames.jl/src/groupeddataframe/complextransforms.jl
+                           Graphs.jl/test/simplegraphs/simplegraphs.jl
+    width-4 failures, run B: Graphs.jl/test/digraph/transitivity.jl
+                           Graphs.jl/test/degeneracy.jl
+    all 12 degraded files across both runs parsed CLEAN at width 1, in the same run
+    RUN B: 35,723 bombs armed / 35,716 cleared / 7 never cleared / 7 observed fires
+    RUN A: 35,725 armed / 35,720 cleared / 5 never cleared / 5 observed fires
+    ```
+
+    **Width 1 is the only arm that has never degraded: 0 in 9,940 parses across three full runs and a
+    500-file run. Width 4 is 4 in 7,940. Width 8 is 13 in 9,940.** The never-cleared count equals the
+    degraded count equals the observed fires in every run, which is the cleanest confirmation of §8 row
+    1's mechanism available: one orphaned bomb per parse that threw.
+
+    **Why the stride samples read 0 at width 4, measured rather than guessed.**
+    `validation/m14/fixtures/julia/width4-sample-coverage.ts` re-derives the probe's own enumeration
+    and asks, for each of the 12 files a degraded run actually degraded, whether the stride sample could
+    have contained it:
+
+    ```
+    file                                     width  index  stride4(400)  stride3(500)
+    Graphs.jl/test/digraph/transitivity.jl      4     515     skipped        skipped
+    Graphs.jl/test/degeneracy.jl                4     513     skipped        INCLUDED
+    DataFrames.jl/src/groupeddataframe/complextransforms.jl 4  75  skipped        INCLUDED
+    Graphs.jl/test/simplegraphs/simplegraphs.jl 4     576     INCLUDED       INCLUDED
+    Graphs.jl/test/community/modularity.jl      4     503     skipped        skipped
+    Graphs.jl/test/community/louvain.jl         4     502     skipped        skipped
+    ...
+    of the 6 WIDTH-4 failures: 1 reachable at limit 400, 3 at limit 500
+    ```
+
+    **At `--files 400` the sample contained 1 of the 6 width-4 failures, and 2 of all 12.** Reachability
+    is necessary but not sufficient — the one reachable file's arm still read 0, which is the finding
+    that the trap is probabilistic rather than per-file. But an arm that reaches 1 of 6 known-failing
+    files and reports 0 is **weak evidence, and this lane quoted it as the reproducible half of a
+    shared-file ask.** That is the same defect this file documents elsewhere: a per-type count below the
+    sample's resolution cannot distinguish absence from unsampled, which is exactly how the `overrides`
+    stride-8 reading in [§ what FIRES](#what-fires-at-two-sample-sizes--and-why-the-smaller-one-reads-810)
+    was caught. **The probe's default sample is inadequate for this measurement and the full population
+    is the fix**, which is what the doc now cites.
+
+    **The consequence for §8 row 2 is that its ask is wrong as written.** It asks the arbiter to drop
+    from width 8 to width 4, on the evidence that width 4 is clean. Width 4 is not clean. The ask is
+    restated below on the measurement that actually discriminates.
+
+    The trapped file differs every run — `julia/base/asyncmap.jl` is new to this list, and
+    `Pkg.jl/test/test_packages/Sandbox_PreservePreferences/dev/Foo/test/runtests.jl` repeats one already
+    named; earlier runs produced `Pkg.jl/…/TestArguments.jl`, `Aqua.jl/…/UsesTransientTask.jl`,
+    `julia/base/array.jl`, `Unregistered.jl`, `Aqua.jl/src/ambiguities.jl`, `Aqua.jl/test/pkgs/…/svd.jl`
+    — and each parses clean when driven alone, so this is concurrent-parse fragility and **not** a
+    per-file grammar defect. `julia/base/asyncmap.jl` was driven alone on 2026-10-04 and returned
+    `success: true`, 0 errors. Both files are shared (§8): `engine.ts` needs a `try`/`finally` around
+    `parser.parse`, and the gate needs either a sequential walk or the bomb disarmed before the catch.
 
 **None of this moves a verdict, and the reason is worth stating precisely.** `arbiter-census-diff.ts`
 re-measures the same 1,985 files under the arbiter's own counting rule at width 4 and returns
@@ -214,10 +268,12 @@ three screens down — `doc-tables-check.ts` cannot catch it because it reads ta
 the declared limit of that instrument and is the reason the number is quoted here rather than left to
 be re-derived). And its `[BB-HANG]` handler is `process.exit(1)` (`src/ast/engine.ts:1442`), so one
 orphaned timer ends the run rather than being reported: that was an assertion in the previous version
-of this file and is now a measurement — **3 orphaned bombs per 1,200-file run at width 8, 0 at width 4,
-and 2 observed `process.exit(1)` calls** — which makes it an every-language finding, not a julia one:
-any lane whose corpus trips a parse error under the gate's 8 workers loses its verdict table the same
-way. Both are §8 items.
+of this file and is now a measurement — **3 orphaned bombs per 1,200-file run at width 8, 0 at width 4
+on that sample, and 2 observed `process.exit(1)` calls** — which makes it an every-language finding, not
+a julia one: any lane whose corpus trips a parse error under the gate's 8 workers loses its verdict table
+the same way. **The "0 at width 4" half of that sentence was a sample artifact and is corrected in
+[§ WIDTH 4 IS NOT CLEAN](#the-arbiters-exit-0-does-not-reproduce-and-the-bomb-that-ends-it-is-not-the-file-it-names):
+on the full population width 4 orphans bombs too.** Both are §8 items.
 
 ### A THIRD death, before any corpus file is read — and it is the wasm fix, half-applied
 
@@ -470,19 +526,35 @@ which cannot reach any size threshold. The census counted it, called it a size f
 **The population the totals were measured over was moving, and nothing on screen said so.**
 
 `census.ts` now records each degraded file by name and by cause, prints `files ANALYSED: N of 1,985`
-beside the totals, and states that degraded files are in neither. The sensitivity is now a number:
+beside the totals, and states that degraded files are in neither. It also **observes the orphaned bomb
+instead of dying of it** — see the width section below for why that was necessary — so a degraded file
+no longer takes the report with it. The sensitivity is a number, and it is **not one number**:
 
-| run | width | symbols | relationships | degraded | exit |
+| run | width | symbols | relationships | degraded file | cost |
 |---|---|---|---|---|---|
-| degraded | 4 | 36,782 | 235,688 | 1 | 1 — `[BB-PARSE-ERR]` then `[BB-HANG]` 110 s later, same file |
-| clean | 4 | **36,806** | **235,878** | **0** | 0 |
+| clean | 4 | **36,806** | **235,878** | — | — |
+| degraded | 4 | 36,782 | 235,688 | 1 (`remote.jl`) | 190 relationships, 24 symbols |
+| degraded | 4 | 36,806 | 235,865 | 1 (`modularity.jl`) | **13 relationships, 0 symbols** |
+| clean | **1** | **36,806** | **235,878** | — | — |
 
-**One degraded wasm parse costs 190 relationships and 24 symbols**, and the clean run reproduces every
-figure in the verdict table exactly. The two `[BB-*]` lines are **one event, not two**: the throw
-orphans the 120 s self-destruct armed at `engine.ts:1441-1447`, and the orphan fires naming whichever
-file armed the oldest surviving bomb — §8 rows 1 and 7 reproducing, on the same corpus, in one run.
+**Two degraded parses, two different bills: 190 relationships / 24 symbols, and 13 relationships / 0
+symbols.** The earlier version of this file printed the first figure as "the sensitivity", singular,
+which turned one observation into a constant. **The cost is a property of the file that failed** —
+`remote.jl` is a real source file with a real tree and loses everything it declares, while
+`Graphs.jl/test/community/modularity.jl` loses 13 `calls` edges and its symbols still publish — so a
+reader cannot budget for it and must read the degraded list. What survives as generalisable is the
+sign: a degraded file is absent from every total while `admitted files` still prints 1,985.
 
-**Four full-corpus runs on 2026-10-04, and the trap fired in two of them.** This is an OBSERVED count
+**The clean run reproduces every figure in the verdict table exactly, and the last row is the one the
+committed numbers now come from.** The bottom row is a width-**1** run, and it is deliberately not a
+width-4 run that happened to come out clean: the width measurement below shows width 4 is itself
+exposed, so "a clean width-4 run" is a matter of luck while a width-1 run is clean by construction.
+
+The two `[BB-*]` lines are **one event, not two**: the throw orphans the 120 s self-destruct armed at
+`engine.ts:1441-1447`, and the orphan fires naming whichever file armed the oldest surviving bomb —
+§8 rows 1 and 7 reproducing, on the same corpus, in one run.
+
+**Seven full-corpus runs on 2026-10-04, and the trap fired in four of them.** This is an OBSERVED count
 from one session, not a rate — §8 row 2 already warns that a quoted rate for this defect has been an
 artifact before, and this table is here so the claim "the run was clean" is never made without saying
 which run:
@@ -493,6 +565,20 @@ which run:
 | 2 | `census.ts` | 4 | clean, degraded 0, **exit 0** |
 | 3 | `overrides-differential.ts` | seq | `[BB-HANG] repository.jl`, **no** `[BB-PARSE-ERR]` in the run → **exit 1** |
 | 4 | `overrides-differential.ts` | seq | clean → **exit 0** |
+| 5 | `census.ts` | 4 | `[BB-PARSE-ERR] louvain.jl` → **no totals at all**, killed before the report |
+| 6 | `census.ts` | 4 | degraded 1 (`modularity.jl`) → 235,865 relationships, **report printed** |
+| 7 | `census.ts` | **1** | clean, degraded 0, 235,878 relationships, 0 bombs → **exit 0** |
+
+**Run 5 is why the census now observes the bomb.** It is the same width-4 census as runs 1, 2 and 6,
+and the difference is that the orphaned bomb fired before the report — so the run produced no totals,
+no degraded list and no JSON, and the shortfall it represented was unmeasurable. The census stubs the
+engine's `process.exit` for the duration of that callback, records the fire, prints the fire count
+beside the degraded count, and finishes. **Run 6 is the run that fix bought:** the same width, the same
+corpus, and this time the 13-edge shortfall is a number with a filename attached instead of a
+silence.
+
+**Run 7 is the run the committed figures now come from**, and it is width 1 because the probe measured
+width 1 clean and width 4 not.
 
 **Run 3 is the sharper evidence for §8 row 1, because it is the case the mechanism predicts.** There
 was no `[BB-PARSE-ERR]` line anywhere in that run, and the bomb still fired naming
@@ -2452,7 +2538,7 @@ which is why none of them is in this lane's commits.
 | # | file | location | what it must do | why |
 |---|---|---|---|---|
 | 1 | `src/ast/engine.ts` | `:1441-1447` | wrap `parser.parse(content)` in `try`/`finally` so `clearTimeout(parseBomb)` runs on the throwing path too | a throwing parse orphans a 120 s `process.exit(1)` bomb. Measured: 10,797 armed / 10,794 cleared / **3 never cleared**, one per parse error, 2 observed fires. Any language's census can lose its last 2 minutes of work, and any lane scored by a gate loses the gate's verdict table |
-| 2 | `script/m14/ontology-coverage-gate.ts` | `:240` | drop the 8-wide `Promise.all` to width 4 | `parseFile` traps `memory access out of bounds` at width 8 on this corpus and at no other width tested. **The evidence is the width-1/width-4 CLEANLINESS, not the width-8 rate: width 1 and 4 degraded 0 times in 4,800 parses across 3 probe runs on 2026-10-04, while the width-8 arm degraded in 1 of 6 rounds — so the trap is real (the arbiter itself trapped twice at width 8) but PROBABILISTIC, and a rate must not be quoted for it.** With #1 unfixed a single degraded file costs the gate its exit code; with #1 fixed it still costs edges |
+| 2 | `script/m14/ontology-coverage-gate.ts` | `:240` | ~~drop the 8-wide `Promise.all` to width 4~~ **PREMISE FALSIFIED — do not apply as written.** The ask rested on "width 1 and 4 degraded 0 times in 4,800 parses", and width 4 is not clean. Replace the ask with: **drive the gate's walk sequentially (width 1), or disarm the engine's 120 s `parseBomb` before the wasm catch — there is no width between 1 and 4 that has been measured clean.** | Measured on the full admitted population, 2 interleaved rounds per arm, twice: **width 1 → 0 degraded in 7,940 parses; width 4 → 4 in 7,940; width 8 → 8 in 7,940.** Width 1 is the only configuration with no degraded file in 9,940 parses across three full runs. Dropping to width 4 would leave a configuration measured to fail, and with #1 unfixed one degraded file still costs the gate its exit code. The trap is PROBABILISTIC, so no rate is quoted for it; what is quoted is the per-arm degraded count, and the earlier "width 4 is clean" reading is withdrawn — it came from stride samples that contained 1 of the 6 known width-4 failures (see § width 4 is not clean) |
 | 3 | `script/m14/differential.ts` | after `:44`, after `:22863`, beside `:23212-23223` | the three lines that import `deriveJuliaOverridesTruth`, push its rows for `lang === "julia"`, and add `"overrides"` to the F5 label allowlist for julia — **and the same three for `deriveJuliaImportsTruth` / `deriveJuliaExportsTruth`** | clears the last DERIVATION findings this lane cannot clear itself. All three oracles exist (`julia-overrides.ts`, `julia-imports.ts`, `julia-exports.ts`), agree 3/3, 99.8% and 99.9% when run, and are in no gate. This is the WHOLE remaining §8 ask for julia's DERIVATION debt: three oracles, no wiring |
 | 4 | `script/m14/differential.ts` | `:457-469` in `script/m14/verify-doc-truth-emissions.ts` | drop the `continue` that skips the first body row of a claim table | `parseClaimTable` never compares the first row, so a lane whose table leads with a relationship type cannot fail that gate for it. julia reads `UNDOCUMENTED [julia] calls` while `calls` is its largest emitted type. Same shape reported against `real-kotlin-analyzer.md` |
 | 5 | ~~`script/m14/oracles/` + `differential.ts`~~ **DONE 2026-10-04, lane-owned** | new `julia-imports.ts`, `julia-exports.ts` | independent derivations of "this file imports that module" and "this module exports that binding", sharing no rule with `importTargets()` / `exportableName()` | **the lane wrote both files** — `script/m14/oracles/` turned out not to be off-limits, and the previous version of this row asserted it was. They agree 99.8% and 99.9% with the analyzer, and writing them found a 38%-missing-edge defect and 4 fabricated edges. **What is still needed is only the `differential.ts` half of row 3**, applied to both |
