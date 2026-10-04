@@ -272,6 +272,7 @@ async function measure(lang: string, limit: number): Promise<LangResult> {
     filesParsed: 0,
     parseFailures: 0,
     degradedFallbacks: 0,
+    degradedFiles: [],
     symbols: 0,
     relationships: 0,
     emptySymbolNames: 0,
@@ -302,7 +303,15 @@ async function measure(lang: string, limit: number): Promise<LangResult> {
     // A degraded parse substitutes a regex extractor. Its symbols carry no `kind`
     // and its edges sit below 0.7 confidence. Counting it as ordinary output would
     // publish a number about a fallback, not about the analyzer.
-    if (r.fallback === true) res.degradedFallbacks++
+    if (r.fallback === true) {
+      res.degradedFallbacks++
+      // NAME IT. Reporting "1 degraded" tells a reader there is a problem but not
+      // where, so the only way to act on it is to re-run the whole lane hoping to
+      // see it again — and a degraded parse is not guaranteed to reproduce, since it
+      // usually depends on a timeout. This is the same defect as the population rule:
+      // a count that cannot be resolved back to the things it counted.
+      res.degradedFiles.push(file)
+    }
 
     const symbols: any[] = Array.isArray(r.symbols) ? r.symbols : []
     const rels: any[] = Array.isArray(r.relationships) ? r.relationships : []
@@ -433,10 +442,13 @@ async function main(): Promise<void> {
           relationships: r.relationships,
           symbols: r.symbols,
           degraded: r.degradedFallbacks,
+          degradedFiles: r.degradedFiles,
           firedCount: fired.length,
           fired: Object.fromEntries(fired.map((t) => [t, r.types[t].edges])),
           notFired,
-          degradedDetail: {},
+          degradedDetail: Object.fromEntries(
+          r.degradedFiles.map((f) => [f, "fallback: symbols carry no kind, edges below 0.7 confidence"]),
+        ),
           unknownEndpoints: r.unknownEndpoints,
           emptySymbolNames: r.emptySymbolNames,
           emptyOrUnknownKind: r.emptyOrUnknownKind,

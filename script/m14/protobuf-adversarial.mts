@@ -368,11 +368,14 @@ for (const f of []) void f
 // analyzer's own output only, without parseFile, so this pass is fast.
 {
   let j = 0
+  // Membership, not a pattern: these four are the types whose TARGET is a declaration
+  // name rather than a module path, so they are the only ones a symbol lookup can bind.
+  const RESOLVER_TYPES = new Set(["uses", "contains", "imports", "exports"])
   const rows = new Map<string, { n: number; both: number; src: number; tgt: number; neither: number }>()
   const grab = (rr: any): void => {
     for (const x of rr.relationships ?? []) {
       const ty = String(x.type)
-      if (!/^(uses|contains|imports|exports)$/.test(ty)) continue
+      if (!RESOLVER_TYPES.has(ty)) continue
       const r = rows.get(ty) ?? { n: 0, both: 0, src: 0, tgt: 0, neither: 0 }
       r.n++
       const s = globalIds.has(String(x.source))
