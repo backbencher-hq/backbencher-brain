@@ -138,6 +138,43 @@ interface StackFrame {
 // ============================================================================
 // PURE-STRING HELPERS (regex-free)
 // ============================================================================
+//
+// ZERO REGEX, and that is a mechanical property rather than a preference. A regex over
+// node text cannot tell a construct from its own mention: it matches inside a comment,
+// inside a string literal, inside a `url()`, and it silently changes meaning on the
+// next grammar version. Every helper below replaced one, and in every case the
+// information was either IN THE NODE — in which case the node is read instead — or was
+// a token boundary, which is a character test and nothing more. `script/m12/
+// verify-regex-census.ts` is the arbiter and it prints every row.
+//
+// The set below is exactly what JS `\s` matches, not the ASCII five, because a
+// replacement that quietly stops matching a code point is a behaviour change wearing a
+// cleanup's commit message. It is the SAME set the class's own `isSpace` used, so
+// there is now one definition of "whitespace" in this file rather than two.
+//
+// THREE helpers this file does NOT have, and why. `stripSigil` (drop a literal sigil
+// and the whitespace after it), `stripLeadingToken` (drop a sigil and the
+// non-whitespace run after it) and `stripTrailingSemicolon` were each written to
+// replace one anchored pattern, and each was DELETED before this commit: the three
+// call sites turned out to have the boundary in the TREE — `at_keyword`/`@namespace`
+// as one child, `;` and `block` as another — so the string peel was strictly worse than
+// reading `startIndex`/`endIndex` off nodes the parser had already located. See
+// `atRulePrelude` and `collectNamespacePrefixes`. Recording it because "a helper I
+// wrote and then deleted" and "a helper I never needed" look identical in a diff, and
+// only the first is worth a reader's five seconds.
+
+/** Every code point JS `\s` matches: ASCII six, \v, NBSP, the U+2000 block, the
+ *  line/paragraph separators, and the BOM. */
+const JS_WHITESPACE = new Set([
+  " ", "\t", "\n", "\v", "\f", "\r",
+  " ", " ", " ", " ", " ", " ", " ", " ",
+  " ", " ", " ", " ", " ", " ", " ", " ",
+  " ", "　", "﻿",
+])
+
+function isWhitespaceChar(c: string): boolean {
+  return JS_WHITESPACE.has(c)
+}
 
 // Strip ALL quote characters from a string (multi-quote values like
 // `url("theme.css")` inner text). Pure-String scan.
@@ -190,8 +227,82 @@ function replaceAll(text: string, needle: string, replacement: string): string {
  * silently keep returning `""`.
  */
 function leadingCustomIdent(prelude: string): string {
-  const m = /^(--[A-Za-z0-9_-]+)/.exec(prelude.trim())
-  return m ? m[1] : ""
+  const t = prelude.trim()
+  if (t.length < 2 || t.charAt(0) !== "-" || t.charAt(1) !== "-") return ""
+  let i = 2
+  while (i < t.length && isCustomIdentChar(t.charAt(i))) i++
+  return t.slice(0, i)
+}
+
+/**
+ * One code point of a CSS `<custom-ident>` continuation, or false.
+ *
+ * CSS Syntax 3 §3.2: an ident code point is a letter, a non-ASCII code point, a digit,
+ * a hyphen, or an underscore. The non-ASCII and escape arms are not enumerated here
+ * because the only caller reads a name this grammar already lexed as a single
+ * `keyword_query` token, and an escape inside one arrives as `escape_sequence` text.
+ */
+function isCustomIdentChar(c: string): boolean {
+  return (
+    (c >= "a" && c <= "z") ||
+    (c >= "A" && c <= "Z") ||
+    (c >= "0" && c <= "9") ||
+    c === "-" ||
+    c === "_"
+  )
+}
+
+/**
+ * Drop a trailing `:<digits>` occurrence suffix, or return `text` unchanged.
+ *
+ * The suffix a bundler writes to keep two same-named rules distinct: `btn:12`. It is
+ * removed only when the digits run to the end of the string AND a `:` introduces them,
+ * so `a:1b`, `123` and `a:` are all returned untouched.
+ */
+function stripOccurrenceSuffix(name: string): string {
+  let i = name.length
+  while (i > 0) {
+    const c = name.charAt(i - 1)
+    if (c < "0" || c > "9") break
+    i--
+  }
+  if (i === name.length) return name
+  if (i === 0 || name.charAt(i - 1) !== ":") return name
+  return name.slice(0, i - 1)
+}
+
+/**
+ * The LAST `/`- or `\`-separated segment of a path, or the path itself.
+ *
+ * `lastPathSegment("a/b/theme.css")` -> `"theme.css"`. This is how the store spells a
+ * file, and how the module is written in the import itself. A trailing separator yields
+ * `""`, and the caller substitutes the whole path — the same substitution the
+ * `split`-and-take-the-last-element form it replaced made.
+ */
+function lastPathSegment(p: string): string {
+  let cut = -1
+  for (let i = 0; i < p.length; i++) {
+    const c = p.charAt(i)
+    if (c === "/" || c === "\\") cut = i
+  }
+  return cut >= 0 ? p.slice(cut + 1) : p
+}
+
+/**
+ * The first whitespace-delimited token of `text`, or `""`.
+ *
+ * `firstToken("sass:math as math")` -> `"sass:math"`. The one caller passes text that
+ * has already been through `collapseWhitespace`, which trims, so the empty-field case a
+ * raw `split` on leading whitespace would produce cannot arise there — and returning
+ * `""` for it rather than the whole string is the honest answer anyway: a whitespace
+ * run is not a module name.
+ */
+function firstToken(text: string): string {
+  let i = 0
+  while (i < text.length && isWhitespaceChar(text.charAt(i))) i++
+  const start = i
+  while (i < text.length && !isWhitespaceChar(text.charAt(i))) i++
+  return text.slice(start, i)
 }
 
 /**
@@ -347,8 +458,8 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
     // The importing stylesheet's own name, for `@import` edges. Pure-String, and
     // the LAST path segment: `a/b/theme.css` imports as `theme.css`, which is how
     // the module is written in the import itself and how the store spells a file.
-    const segs = filePath.split(/[\\/]/)
-    this.importerName = segs[segs.length - 1] || filePath || "stylesheet"
+    const lastSegment = lastPathSegment(filePath)
+    this.importerName = lastSegment || filePath || "stylesheet"
 
     const ctx: CssContext = {
       symbols: [],
@@ -547,7 +658,7 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (sym.scope) names.add(`${sym.scope}.${sym.name}`)
       }
       const leafOf = (n: string): string => {
-        const segs = n.replace(/:\d+$/, "").split(":").filter((x) => x.length > 0)
+        const segs = stripOccurrenceSuffix(n).split(":").filter((x) => x.length > 0)
         const last = segs[segs.length - 1] ?? ""
         const dots = last.split(".")
         return dots[dots.length - 1]
@@ -727,7 +838,7 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
             for (const item of v) if (!cur.includes(item)) cur.push(item)
           } else if (typeof v === "boolean" && typeof cur === "boolean") {
             out[k] = cur || v
-          } else if (typeof v === "number" && typeof cur === "number" && /specificity|omplexity/.test(k)) {
+          } else if (typeof v === "number" && typeof cur === "number" && (k.includes("specificity") || k.includes("omplexity"))) {
             out[k] = Math.max(cur, v)
           } else if (cur === undefined) {
             out[k] = v
@@ -1069,16 +1180,12 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
    * that quietly stops matching a code point is a behaviour change wearing a
    * cleanup's commit message.
    */
-  private static readonly JS_SPACE = new Set([
-    " ", "\t", "\n", "\v", "\f", "\r",
-    "\u00a0", "\u1680", "\u2000", "\u2001", "\u2002", "\u2003", "\u2004", "\u2005",
-    "\u2006", "\u2007", "\u2008", "\u2009", "\u200a", "\u2028", "\u2029", "\u202f",
-    "\u205f", "\u3000", "\ufeff",
-  ])
+  private static readonly JS_SPACE = JS_WHITESPACE
 
   private isSpace(c: string | undefined): boolean {
     return c !== undefined && RealCssAnalyzer.JS_SPACE.has(c)
   }
+
 
   /**
    * Complexity of a media/supports/container QUERY, in the same spirit as the
@@ -1849,6 +1956,50 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
   }
 
+  /**
+   * Every custom-media name a media query REFERENCES, in source order.
+   *
+   * Custom Media Queries L1: `@media (--narrow)` evaluates a `@custom-media`
+   * declaration, wherever in the query list it appears and however the query is
+   * composed. The grammar marks the reference exactly — a `keyword_query` directly
+   * under a `parenthesized_query`, spelled `--name` — so this reads that shape rather
+   * than recognising a spelling, which is why `@media screen and (--narrow)`,
+   * `@media not (--c)` and `@media (--a), (--b)` are all covered.
+   *
+   * The discriminator is the `--` prefix and NOT the node type alone, because
+   * `keyword_query` is the grammar's node for a bare media type too: `screen` in
+   * `@media screen` and `print` in `@media print and (color)` are the same node type
+   * and neither is a custom-media reference.
+   *
+   * A `parenthesized_query` holding a `feature_query` — `(min-width: 400px)` — has no
+   * `keyword_query` child at all, so it contributes nothing, which is the correct
+   * answer without a special case.
+   */
+  private customMediaRefsIn(queryNode: Node): string[] {
+    const out: string[] = []
+    const stack: Node[] = [queryNode]
+    while (stack.length > 0) {
+      const n = stack.pop() as Node
+      const isRefSite = n.type === "parenthesized_query" || n === queryNode
+      if (isRefSite) {
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (!c || c.type !== "keyword_query") continue
+          const name = leadingCustomIdent(c.text)
+          // `leadingCustomIdent` answers "" for a keyword_query that is not a `--`
+          // name, which is the media-type case, so nothing else has to test the prefix.
+          if (name.length > 0 && out.indexOf(name) === -1) out.push(name)
+        }
+      }
+      // Children are pushed in reverse so `pop` visits them in source order.
+      for (let i = n.namedChildCount - 1; i >= 0; i--) {
+        const c = n.namedChild(i)
+        if (c) stack.push(c)
+      }
+    }
+    return out
+  }
+
   private processMedia(node: Node, ctx: CssContext): string | null {
     // M14 F1 debt repaid 2026-09-26, and it carried a real defect with it.
     //
@@ -1951,8 +2102,22 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
         // animation and font-family edges give: a `@media (--x)` may legitimately
         // come from another stylesheet, and inventing an endpoint for it is the
         // `global` phantom this lane removed once.
-        const declared = leadingCustomIdent(collapseWhitespace(queryNode.text).replace(/^\(/, "").replace(/\)$/, ""))
-        if (declared && ctx.customMediaNames[declared]) {
+        //
+        // READ OFF THE TREE, and the node is exact where the text was not. The
+        // previous version took the query's whole text, peeled one leading `(` and
+        // one trailing `)`, and asked whether what was left began with `--`. That
+        // answers only `@media (--x)`: in `@media screen and (--x)` nothing is
+        // peeled at the front, the string starts with `s`, and the reference is
+        // LOST — even though the grammar hands it over as a `keyword_query` inside
+        // a `parenthesized_query`, unambiguously. It also lost the comma form,
+        // `@media (--a), (--b)`, where one scope genuinely depends on two
+        // declarations. Measured: 0 occurrences of the construct in the admitted
+        // corpus, so this widens a branch no corpus number can speak about and the
+        // fixture `custom-media-in-every-query-shape` is the only evidence for it.
+        // That is stated because "0 in the corpus" is what a broken probe and a
+        // working branch both report.
+        for (const declared of this.customMediaRefsIn(queryNode)) {
+          if (!ctx.customMediaNames[declared]) continue
           ctx.relationships.push({
             source: mediaName,
             target: declared,
@@ -2051,11 +2216,33 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
    * a custom media query name is a `<custom-ident>` followed by a condition.
    */
   private atRulePrelude(node: Node, keyword: string): string {
+    // THE PRELUDE IS THE TEXT BETWEEN TWO NODES, and both are in the tree.
+    //
+    // It used to be recovered by string surgery on `node.text`: `indexOf(keyword) +
+    // keyword.length` for the start, `indexOf(block.text)` for the end, and — for the
+    // block-less form — a pair of anchored patterns to peel `@keyword` and `;` off. All
+    // three are gone, and the reason is not tidiness. `indexOf(block.text)` searches
+    // from offset 0 of the NODE's text, so a prelude that happens to CONTAIN the block's
+    // own text truncated at the wrong place: `@media screen { }` is fine, but a
+    // `@supports` prelude that spells a brace, or any at-rule whose block text occurs
+    // earlier in its own prelude, produced a prelude truncated mid-word. The grammar
+    // already knows where the keyword ends and where the block or the `;` begins, and
+    // a position the parser computed beats a substring search for it.
+    const kwNode =
+      this.findChild(node, (c) => c?.type === "at_keyword") ??
+      // `@namespace` and `@media` carry their keyword as an ANONYMOUS child whose type
+      // IS the keyword text, so the named-node lookup misses them.
+      this.findChild(node, (c) => c?.type === keyword)
     const block = this.findChild(node, (c) => c?.type === "block")
-    const raw = block
-      ? node.text.slice(node.text.indexOf(keyword) + keyword.length, node.text.indexOf(block.text))
-      : node.text.replace(/^@\S+/, "").replace(/;\s*$/, "").trim()
-    return collapseWhitespace(raw)
+    const semi = this.findChild(node, (c) => c?.type === ";")
+    const start = kwNode ? kwNode.endIndex - node.startIndex : keyword.length
+    // A block-less at-rule is terminated by `;`. With neither a block nor a `;` the
+    // node is malformed and the whole text after the keyword is the best available
+    // answer, which is what the old `;\s*$` peel degraded to as well.
+    const terminator = block ?? semi
+    const end = terminator ? terminator.startIndex - node.startIndex : node.text.length
+    if (end <= start) return ""
+    return collapseWhitespace(node.text.slice(start, end))
   }
 
   /**
@@ -2115,8 +2302,14 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (nameNode) {
           const prefix = nameNode.text.trim()
           // the published name is the keyword plus the whole prelude, which is what
-          // the symbol push below builds
-          const prelude = collapseWhitespace(n.text.replace(/^@namespace\s*/, "").replace(/;\s*$/, "").trim())
+          // the symbol push below builds. The prelude is the text BETWEEN the
+          // `@namespace` token and the `;`, and the grammar has both as children, so
+          // it is read off the tree rather than peeled off the string.
+          const kwNode = this.findChild(n, (c) => c?.type === "@namespace")
+          const semi = this.findChild(n, (c) => c?.type === ";")
+          const start = kwNode ? kwNode.endIndex - n.startIndex : "@namespace".length
+          const end = semi ? semi.startIndex - n.startIndex : n.text.length
+          const prelude = end <= start ? "" : collapseWhitespace(n.text.slice(start, end))
           if (prefix && prelude) ctx.namespacePrefixes[prefix] = `@namespace ${prelude}`
         }
       }
@@ -2924,7 +3117,7 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
         // compile-time dependency on another file.
         ctx.relationships.push({
           source: this.importerName,
-          target: stripAllQuotes(namePart.split(/\s+/)[0] ?? namePart),
+          target: stripAllQuotes(firstToken(namePart)),
           type: ASTEngine.RelationshipType.Imports,
           // M59.A7: the module name is the at-rule's prelude, on its own line.
           line_number: this.lineOf(node),
