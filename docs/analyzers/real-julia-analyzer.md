@@ -812,15 +812,22 @@ instantiates    yes    51       12        45         0
 distinct declarations named by at least one edge : 240
 declarations nothing names (orphans)             : 92 of 375
 target names resolving to >1 published symbol      : 8
-  exported -> variable, function      Date       -> class, function
-  Comments -> class, function        Time       -> class, function
-  CommentBlock -> class, function     Parser     -> class, function
-  ParserError -> class, function
+  exported   -> variable, function        Date        -> class, function
+  Time       -> class, function           Comments    -> class, function
+  CommentBlock -> class, function         Parser      -> class, function
+  ParserError -> class, function          DateTime    -> class, function
 ```
+
+**That block was transcribed with only seven of the eight names — `DateTime` was dropped — while the
+count beside it read 8 and the paragraph below argued from all eight.** Re-running the command on
+current shared machinery reproduces all eight rows and every other figure in the block unchanged
+(375 symbols, `degraded parses: 0`, `parse failures: 0`, all ten type rows, 240 named, 92 of 375
+orphans). A quoted block that silently drops a line is worse than a wrong number, because the prose
+built on it is then reasoning about evidence the reader cannot see.
 
 **Seven of the eight ambiguous names are the `class`/`function` pair and the eighth is NOT, so the
 structural property is two properties rather than one.** The seven (`Date`, `Time`, `Comments`,
-`CommentBlock`, `Parser`, `ParserError`) are the case stated below: in julia `struct X … end` and
+`CommentBlock`, `Parser`, `ParserError`, `DateTime`) are the case stated below: in julia `struct X … end` and
 `X() = …` are one binding, so the analyzer publishes two symbols under one name. The eighth,
 `exported`, is a **different** shape and the earlier version of this block asserted it was the same one
 while listing it in its own output — it is `global exported::Int = 1` at
