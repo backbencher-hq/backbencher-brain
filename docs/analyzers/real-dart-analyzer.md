@@ -945,8 +945,11 @@ without re-deriving it. The files are supervisor-owned per
 6–8 come from measuring the incoming direction, 9–10 from removing this lane's
 regexes, 11 from re-running the M60 gate to reproduce the DERIVATION count,
 12 from running the doc-truth-emissions gate over this lane's table, 13–14 from
-re-running the same gates and watching what they wrote to disk, and 15 from
+re-running the same gates and watching what they wrote to disk, 15 from
 reading `firing-check.ts --json` and finding `files` is per-file, not per-type.
+Item 13 was rewritten during the final pass: it first named one gate and now names
+ten, because running the documented `npx tsx` invocation over the whole directory
+showed the failure is the directory's, not one script's.
 
 1. **`script/m14/ontology-coverage-gate.ts` — add a `dart` entry to
    `RULED_BY_LANG` (line ~183: `const RULED_BY_LANG: Record<string, Ruled[]> = {
@@ -1383,14 +1386,46 @@ reading `firing-check.ts --json` and finding `files` is per-file, not per-type.
     evidence. This lane reverted all four files (`git checkout --`) and quotes its
     numbers from the console.
 
-13. **`script/m14/verify-analyzer-hygiene.ts` reads as a PASS under `npx tsx`.** It
-    uses `__dirname` at line 27, which is not defined in ES module scope, so under
-    `npx tsx` it throws `ReferenceError: __dirname is not defined in ES module scope`
-    and exits 1 having printed no findings at all. Under `bun` it reports 3
-    findings, none Dart. A gate that prints nothing and a gate that found nothing look
-    identical in a log, and only one of them is a result. What it must do: resolve
-    ROOT the way `differential.ts` does (`import.meta.dirname`), or print an explicit
-    "no findings" line so an empty output is distinguishable from a crash.
+13. **TEN shared gates cannot run under `npx tsx` at all, and the documented invocation
+    is `npx tsx`.** This started as a one-file observation about
+    `verify-analyzer-hygiene.ts` and is not one file. Every gate in `script/m14/` that
+    resolves `ROOT` from `__dirname` dies at module scope under `npx tsx`, because
+    `__dirname` does not exist in ES module scope:
+
+    | script | line | error under `npx tsx` |
+    | --- | --- | --- |
+    | `owner-spot-check.ts` | 15 | `__dirname is not defined in ES module scope` |
+    | `verify-analyzer-hygiene.ts` | 27 | same |
+    | `verify-attr-line-base-920.ts` | 48 | same |
+    | `verify-corpus-census.ts` | 31 | same |
+    | `verify-doc-truth-emissions.ts` | 131 | same |
+    | `verify-fixture-coverage.ts` | 38 | same |
+    | `verify-parse-success.ts` | 75 | same |
+    | `verify-probe-battery.ts` | 24 | same |
+    | `verify-include-names-924.ts` | 48 | `Cannot determine intended module format` — mixed `require()` and top-level `await`, so it dies EARLIER and never reaches line 48 |
+    | `verify-name-surface-924.ts` | 46 | same |
+
+    **All ten run under `bun`** — verified one by one, each printing no
+    `is not defined` and no `Cannot determine intended module format`. `verify-js-census.ts`
+    is the twelfth file that names `__dirname` and is fine: its occurrence is a string
+    in a list of global names, not a path resolution.
+
+    Two consequences, and the second is the one that costs a lane its evidence. A gate
+    that prints nothing and a gate that found nothing look identical in a log, and only
+    one of them is a result. And a lane following the workstream's own gate list —
+    `npx tsx script/m14/<gate>.ts` — collects a non-zero exit and an empty log from ten
+    gates and cannot tell a crash from a pass. This lane hit it twice: the first
+    version of item 13 named only `verify-analyzer-hygiene.ts`, and the
+    `verify-doc-truth-emissions.ts` run that produced item 12 was itself run under `bun`
+    for this reason without the connection being stated.
+
+    **What it must do:** resolve `ROOT` the way `differential.ts` does
+    (`import.meta.dirname`), or the way `zig-relationship-census.ts` does
+    (`path.dirname(fileURLToPath(import.meta.url))`) — the second is already in this
+    directory and its comment at line 34 records the same wall, so the fix and a note
+    about it are both already written. Failing that, print an explicit "no findings"
+    line so an empty output is distinguishable from a crash. Why not this lane's to fix:
+    `script/m14/` is shared machinery and ten gates are not one lane's files.
 14. **`script/m14/firing-check.ts` never hashes the analyzer, so its drift guard cannot
     fire.** `analyzerDigest` resolves the analyzer at
     `path.join(here, "..", "ast", \`${rel}.ts\`)` where `here` is `script/m14`, giving
