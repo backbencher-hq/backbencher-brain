@@ -954,6 +954,24 @@ either value satisfies one half. **It FAILS against the pre-fix analyzer (23 pas
 with it (`…-inverted`, `…-hardcoded-local`, `…-removed`); the lane file is **22
 mutants, 22 caught, 0 survived**.
 
+**Re-measured over the whole corpus after the fix, the NO FLAG column is empty** —
+the table above was the measurement that found the defect and it is reproduced with the
+defect closed:
+
+| claim ↓ / measured reachability → | resolves in own file | declared by a literal sourced file | external | no flag |
+| --- | --- | --- | --- | --- |
+| `isFunctionCall` | **14,011 (100%)** | 0 | 0 | **0** |
+| `isExternalCommand` | 1 | 256 | 40,878 | **0** |
+| **no flag** | **0** | 0 | **0** | **0** |
+
+The two runs are not the same file set — 55,218 `calls` edges before, 55,146 after,
+because the pinned wasm reaches a different set of files each run (the same wobble the
+gate column above records) — so the honest statement is the one the table supports:
+**the two NO FLAG cells that held 123 and 100 edges are empty, and `isFunctionCall`
+still resolves at 100% of its edges.** Section A of the same probe reproduced its seven
+shapes to the edge on both runs (455 / 133 / 36 / 29 / 25 / 1 / 0 of 679), which is the
+evidence that the two runs are comparable where the numbers are small.
+
 **The one remaining diagonal disagreement is not a defect, and saying so is the
 point.** `ohmyzsh/plugins/mvn/mvn.plugin.zsh:30` calls `mvn`, the analyzer says
 external, and the file publishes a symbol named `mvn` — `alias mvn="mvn-or-mvnw"` at
