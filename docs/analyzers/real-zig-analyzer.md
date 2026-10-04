@@ -3046,3 +3046,31 @@ table against the gate, and the probe against the corpus.
 - **`incoming-check.ts` was not run at the full draw.** It was run on 6 named files (§D) and
   the paired 134-file run is pass 8's. A full-draw incoming figure for zig does not exist, so
   the 6 ambiguous targets in §D are **not** a lane-wide count and must not be quoted as one.
+
+### G. Two more §8 items, from this pass
+
+**16. The honesty lint is scoped to milestone plans, so no lint covers this lane's claims.**
+`docs/M14-HONESTY-CONTRACT.md` §1 names `script/verify-honesty.ts` as the gate and says a
+banned term in an M14 artifact "is itself a gate failure". That path does not exist on this
+branch. The lint is implemented three times and **each copy hardcodes its own two files**:
+`script/m33/verify-governance.ts:208` reads `docs/m33/M33-MASTER-PLAN.md` +
+`validation/m33/results/manifest.json`; `script/m36/verify-governance.ts:199` and
+`script/m41/verify-governance.ts:203` do the same for M36 and M41. **No copy reads
+`docs/analyzers/` or `validation/m14/`.** So the terms are enforced where the plans are and
+nowhere the analyzer docs and lane evidence live, which is where this workstream's numbers
+are. *Needed:* one linter over `docs/analyzers/**` and `validation/m14/fixtures/**`, reading
+the term list from the contract rather than restating it three times — the restatement is
+itself how the three copies drifted onto three different file lists.
+
+**17. `incoming-check.ts` prints a full verdict table over zero parsed files.** Given
+repo-relative paths it reports `6 file(s), 0 symbols`, `parse failures: 6` with an ENOENT line
+per file, and then prints the complete ten-row type table — every row `fired NO, edges 0,
+distinct 0, ambiguous 0, unresolved 0` — followed by `declarations nothing names (orphans): 0
+of 0`. Measured on 2026-10-04 with six real corpus paths given relative. *It must* distinguish
+"the files did not parse" from "the files parsed and produced nothing": with 0 parsed files
+the per-type rows and the orphan ratio are undefined, and an instrument that prints `0 of 0`
+as a ratio next to a table is a shape a reader can quote. A one-line guard — refuse the table
+when `symbols === 0`, the way `ontology-coverage-gate.ts` refuses an empty
+`RULED_BY_LANG` rather than reporting every un-emitted type as unjustified — closes it.
+
+**Neither is a zig file and neither is fixed here.**
