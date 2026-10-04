@@ -189,7 +189,8 @@ const JSON_RULED: Ruled[] = [
   },
 ]
 
-const RULED_BY_LANG: Record<string, Ruled[]> = { bash: BASH_RULED, json: JSON_RULED }
+import { MARKDOWN_RULED } from "./markdown-ruled"
+const RULED_BY_LANG: Record<string, Ruled[]> = { bash: BASH_RULED, json: JSON_RULED, markdown: MARKDOWN_RULED as Ruled[] }
 const RULED: Ruled[] = RULED_BY_LANG[LANG] ?? []
 
 // ---------------------------------------------------------------- corpus
