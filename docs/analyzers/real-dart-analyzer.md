@@ -495,8 +495,8 @@ this lane's own harnesses*), which is why `overrides` was quoted at 0.0% in-repo
 
 | Type | 1 Exists | 2 Fires | 3 Correct | 4 Labelled | 5 Resolved | 6 Confident |
 | --- | --- | --- | --- | --- | --- | --- |
-| calls | ✅ | ✅ 43,042 | ✅ differential, 60-file proxicall sample, **0 unexplained in all four rotations run** (6120/6220, 6062/6162, 17196/29131, 17131/29066 — the swing is `overrides`, an excluded label, and the coverage figure is a property of the draw) | ✅ | src∈file 99.1% · tgt∈file 22.1% · both∈sample 66.6% · both∈repo 50.8% | 35 of 43,042 under 0.7 (0.1%), min 0.4 — sub-threshold `uses`-style reads inherited from the shared bare-read surface |
-| uses | ✅ | ✅ 110,679 | ✅ same run, 0 unexplained | ✅ four surfaces, each pinned by a fixture; no surface borrows another's label | src∈file 99.3% · tgt∈file 25.5% · both∈sample 69.2% · both∈repo 60.1% | 13,325 of 110,679 under 0.7 (12.0%), all the bare-read surface at 0.6 — the largest heuristic class in the lane |
+| calls | ✅ | ✅ 43,042 | ✅ differential, 60-file proxicall sample, **0 unexplained in all four rotations run** (6120/6220, 6062/6162, 17196/29131, 17131/29066 — the swing is `overrides`, an excluded label, and the coverage figure is a property of the draw) | ✅ | src∈file 99.1% · tgt∈file 22.1% · both∈sample 66.7% · both∈repo 50.8% | 35 of 43,042 under 0.7 (0.1%), min 0.4 — sub-threshold `uses`-style reads inherited from the shared bare-read surface |
+| uses | ✅ | ✅ 110,679 | ✅ same run, 0 unexplained | ✅ four surfaces, each pinned by a fixture; no surface borrows another's label | src∈file 99.3% · tgt∈file 25.5% · both∈sample 69.3% · both∈repo 60.2% | 13,325 of 110,679 under 0.7 (12.0%), all the bare-read surface at 0.6 — the largest heuristic class in the lane |
 | contains | ✅ | ✅ 119,515 | ✅ `deriveDartContainsTruth`, 37/37 shapes exact, and 0 unexplained in the differential | ✅ | **both∈file 100.0%, both∈repo 100.0%** — the only label in the lane that resolves at both ends by construction; 3 of 119,515 targets are bare-name and unbound | 0 under 0.7 |
 | imports | ✅ | ✅ 10,657 | ✅ `deriveDartImportsTruth`, 7,340 rows measured EXACT on both corpora | ✅ | src 2.7% / tgt 0.0% both-ends: targets are module URIs (`package:foo/src/x.dart:*`), and a URI is not a symbol in this index | 0 under 0.7 |
 | references | ✅ | ✅ 5,265 | ✅ lane oracle `script/m14/oracles/dart-references.ts` — **1,203/1,203 rows agreed (100.0%), 0 missing, 0 unexplained** over 799 corpus files, and 38/38 shapes exact in the battery | ✅ 14 expect rows name the position they came from; 15 forbid rows cover heritage, construction, type variables (including a constrained one shadowing a same-named class), self-reference, `dynamic` and the resolution gate | src∈file 97.9% · **tgt∈file 100.0% by construction** · both∈file 97.9% · both∈sample 98.7% · both∈repo 98.6% | **0 of 5,265 under 0.7** — all `usage_contextual` at exactly 0.95, min = mean = 0.95 |
@@ -2266,6 +2266,21 @@ both measured before anything else was touched:
   cell of the nine-column resolution table. `wallMs` 337,371 = 5.62 min, which is the
   sample-dependent figure the third pass already declined to quote as a constant.
   Fixtures 16/16 and the scoped mutant run 42/42 with 0 survivors also reproduce.
+
+  **Three cells of the six-questions table above did not reproduce, and all three are
+  rounding, not a change in the graph.** `calls` `both∈sample` 66.6% → **66.7%**
+  (28,692/43,042 = 66.665%), `uses` `both∈sample` 69.2% → **69.3%**
+  (76,660/110,679 = 69.254%) and `uses` `both∈repo` 60.1% → **60.2%**
+  (66,665/110,679 = 60.224%). The edge counts, and every other cell of all ten rows,
+  are byte-identical to the fourth pass — so the earlier three were truncated rather
+  than rounded, and the table now carries what the instrument prints. A reader
+  comparing percentages between runs of this table should expect ±0.1 on cells whose
+  third decimal is near 5, which is a property of the display and not of the analyzer.
+
+  Per-type confidence, which the table summarizes, also reproduces: min/mean is
+  `calls` 0.4/0.9, `uses` 0.6/0.864, `references` 0.95/0.95, `overrides` 0.8/0.804,
+  `instantiates` 0.95/0.95, and exactly 1.0/1.0 for `contains`, `imports`,
+  `exports`, `extends` and `implements`.
 
 The one thing this pass found that earlier passes had not is item 17 under
 *Shared-machinery needs*: the mutation gate **cannot complete**, and the invocation
