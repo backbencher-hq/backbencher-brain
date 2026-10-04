@@ -427,7 +427,56 @@ export class RealProtobufAnalyzer implements ASTEngine.LanguageAnalyzer {
       // reconstructs the WRONG id for a proto2 group, because the group's field
       // and its type share a name — which is how the corpus probe first
       // reported 28 phantom duplicate ids and 48 phantom unresolved endpoints.
-      s.metadata = { ...s.metadata, id: real }
+      //
+      // `qualifiedName` and `metadata.qualifiedName` are the SAME value on two
+      // channels, and both are load-bearing. `s.qualifiedName` is the one the
+      // product reads: it survives pool-worker's symbol projection (metadata.id
+      // does not) and becomes `brain_symbol.qualified_name`, which is the column
+      // `resolveRelationships` strategy 1 matches `target_external` against. The
+      // metadata copy exists because `run-fixtures.ts`'s `CONSTRAINT_KEY_ALLOWLIST`
+      // does not carry `qualifiedName`, so a fixture cannot assert the channel that
+      // decides whether an edge binds — and an assertion that cannot be written is
+      // an assertion nobody can catch a regression with. The `meta.` prefix is the
+      // runner's own documented route for exactly this, and both rows are asserted
+      // by `protobuf/absolute-and-scope-resolution`.
+      s.metadata = { ...s.metadata, id: real, qualifiedName: real }
+      // The id is ALSO `qualifiedName`, and that is a different fix from the one
+      // above. `metadata.id` does not survive pool-worker's symbol projection, so
+      // it never reached the store; `qualifiedName` is the field the projection
+      // carries, and `brain_symbol.qualified_name` is the column
+      // `resolveRelationships` strategy 1 matches `target_external` against.
+      //
+      // Measured end to end through the real indexer and the real store over 40
+      // reference `.proto` files, before this line existed
+      // (script/m14/tmp/protobuf/probe/store-binding.mts), analyzer edges only, two
+      // runs each:
+      //
+      //   before: 3,075 edges, ~3,000 bound, and 0 of 3,075 PROVABLY the declaration
+      //           the edge named. `contains` 0 of 2,565; `uses` 0 of 489.
+      //   after:  3,075 edges, ~3,020 bound, and 2,977 of 3,075 provably named
+      //           (96.81%). `contains` 2,563 of 2,565; `uses` 414 of 489.
+      //   `brain_symbol.qualified_name == name`: 2,603 of 2,603 → 40 of 2,603.
+      //
+      // The cause is not the store. Every endpoint here is dotted and
+      // package-qualified (`google.protobuf.Mixin.root`), and with
+      // `qualified_name` equal to the bare name (`root`) strategy 1 cannot match,
+      // strategy 2 compares the whole dotted string to a bare name, and strategy 3
+      // takes the text after the FIRST dot — `protobuf.Mixin.root`, which the
+      // language cannot declare. What binds instead is the store's leaf-name
+      // fallback, first-wins. So the edge bound, and bound to whichever declaration
+      // happened to be stored first: measured BOUND for `uses` moved between 446 and
+      // 470 across identical runs, and the count of `uses` edges bound to a symbol in
+      // ANOTHER FILE moved between 2 and 26. The provably-named count did not move at
+      // all (414 both runs), which is the point — strategy 1 is deterministic and the
+      // fallback is not.
+      //
+      // That is the "a name collision becomes a wrong refactor" shape `bb_impact`
+      // cannot detect from the stored row. Publishing the id here makes the edge's own
+      // endpoint the column strategy 1 compares, so the binding is exact and the leaf
+      // fallback never runs for a target this analyzer named. It carries the
+      // `#property` suffix too, which is the disambiguator a proto2 group's two
+      // same-named declarations need — `#` cannot occur in a protobuf identifier.
+      s.qualifiedName = real
       metaOf.set(real, s.metadata)
       symbols.push(s)
       return real
