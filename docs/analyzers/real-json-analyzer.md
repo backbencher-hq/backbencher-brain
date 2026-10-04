@@ -194,8 +194,17 @@ number is worth nothing; that is how the gate's own first `extends` probe convic
 
 **Probe:** a `pair` whose key names a constructor and whose value is an OBJECT, inside a
 document that declares types (a `class` string, or a `{"kind":"reference"}` literal).
-**Measured: 0 occurrences over 11,713 admitted files** —
-`validation/m14/fixtures/json/ruling-table.ts`.
+**Measured: 0 occurrences over 12,659 admitted files** —
+`validation/m14/fixtures/json/ruling-table.ts`, re-measured at the current corpus state by
+`validation/m14/fixtures/json/ruling-recheck.ts`, which imports the table from
+`script/m14/json-ruled.ts` rather than restating the rule, so it cannot audit a different
+probe than the one the gate will read.
+
+The population moved, so the ruling was re-measured rather than carried forward: pass 1
+measured 0 over 11,713 admitted files and the corpus is now larger. **12,659 is a superset of
+the census's 12,543** — the census declines files over 512 KB and the recheck does not, which
+is 116 files, 66 of them over 1 MB (§limitation 11). The ruling therefore holds over strictly
+more input than any count quoted elsewhere in this document.
 
 **Overturn condition:** ≥1 such pair. The probe fires the moment a type-declaring
 document carries a constructor-named key bound to an object. That is the whole ruling,
@@ -344,26 +353,73 @@ is what the measurements do not settle.
    `imports` and `references`; the oracle derives the `imports` and declines the
    `references`. 65 unexplained edges on a 1,952-file corpus, every one a sibling-file
    `$ref`. Both readings are arguable and this lane has not adjudicated.
-9. **The parser traps, and the gate's exit code does not mean what it looks like.**
-   Four corpus files make the WASM parser trap `memory access out of bounds`
-   (`clj-kondo/…/java.util.Properties.transit.json`, `ghostty/build.zig.zon.json`, and
-   two kubernetes `testdata` files) — and `rc.json` among them **parses cleanly under
-   `JSON.parse`**, so no validity filter excludes it. A trap leaves the pooled parser
-   unusable and the next parse on it hangs to a hardcoded 120 s `process.exit(1)`.
-   `validation/m14/fixtures/json/trap-scan.ts` enumerates them by discarding a poisoned
-   slot instead of reusing it. Two consequences: **the whole-population ontology gate run
-   does not finish**, and a scoped run can print a passing verdict table and still
-   `exit 1`, because a stale watchdog fires after the table. Read the table, not the
-   code.
+9. **The parser traps, and the trap is a property of the RUN rather than of any file.**
+   Whole-population walks of this lane die with `[BB-PARSE-ERR] … memory access out of
+   bounds` followed by `[BB-HANG] parser stuck 120s … — exiting`, which is the engine's
+   hardcoded watchdog around a synchronous WASM parse. **Four harnesses read the same
+   12,543 admitted files and disagreed about whether it happens**: `census.ts` and
+   `differential.ts` report parse failures **0**, `trap-scan.ts` reports trapping files
+   **0**, and `ruling-table.ts` traps and then hangs.
+
+   That disagreement was settled by measurement rather than by picking the harness that
+   finished. `validation/m14/fixtures/json/parse-determinism.ts` takes the **8 files the
+   production path named as trapping** and parses each **5 times in its own child process**,
+   so a trap in one run cannot affect another: **40 parses, 0 traps, and every one of the 8
+   also parses under `JSON.parse`.** `rc.json` is in that set and is 545 bytes. So the trap
+   is not malformedness, it is not reproducible per file, and no validity filter can exclude
+   it — it appears under sustained in-process load, when a poisoned WASM instance is reused.
+
+   The consequence for this lane's numbers is that **a whole-population in-process walk is
+   not reproducible and a chunked one is**, which is why the census and the differential run
+   per-repo children and why they are the two instruments quoted here. It also means the
+   gate's exit code does not mean what it looks like: a scoped run can print a passing
+   verdict table and still `exit 1`, because the watchdog fires after the table. Read the
+   table, not the code. The defect lives in `src/ast/pool-worker.ts` / the engine, which are
+   shared, so it is reported rather than fixed.
 10. **The census is a whole-population snapshot, not a stable number.** The corpus is
-   shared and other lanes clone into it: this lane's admitted population moved from
-   **11,713 files / 106 repositories** at pass 1 to **12,543 files** by 2026-10-03, and
-   `contains` from 2,107,562 to 3,881,840 edges. Numbers here carry that timestamp.
-   **Two pass-1 figures did not reproduce and are corrected above**: the repository count
-   (106 → 114 at the 11,713-file state, 12,543 files after), and the supertype-key
-   census, which reported "only three occur at all" when `parent` (293 occurrences / 17
-   files), `mixins` (88 / 2) and `interface` (1 / 1) also occur. Every EDGE count in the
-   pass-1 table reproduced to the digit at the pass-1 corpus state.
+    shared and other lanes clone into it: this lane's admitted population moved from
+    **11,713 files / 106 repositories** at pass 1 to **12,543 files** by 2026-10-03, and
+    `contains` from 2,107,562 to 3,881,840 edges. Numbers here carry that timestamp.
+    **Two pass-1 figures did not reproduce and are corrected above**: the repository count
+    (106 → 114 at the 11,713-file state, 12,543 files after), and the supertype-key
+    census, which reported "only three occur at all" when `parent` (293 occurrences / 17
+    files), `mixins` (88 / 2) and `interface` (1 / 1) also occur. Every EDGE count in the
+    pass-1 table reproduced to the digit at the pass-1 corpus state, and the whole
+    12,543-file census reproduced to the digit on re-run for this pass.
+11. **The census declines files over 512 KB, so every count here has a denominator that
+    excludes 116 files.** `census.ts` sets `MAX_BYTES = 512 * 1024` and the largest file it
+    admits is **510,521 B**. Counting the corpus independently: **12,665** files carry a json
+    extension, of which **116 exceed 512 KB** and **66 exceed 1 MB**. Those 116 contribute to
+    no symbol count, no edge count and no resolution rate in this document, and "whole
+    admitted population" therefore means "whole admitted population under the 512 KB cap".
+    The `instantiates` ruling is the one measurement here that is **not** under that cap:
+    `ruling-recheck.ts` imposes no size limit and admits 12,659 files, so the ruling is
+    measured over a strict superset of the population the counts describe.
+12. **The arbiter's stride sample cannot see this lane's rarest types, and reports 6 of 10.**
+    `script/m14/firing-check.ts --files 120 json` prints **6/10 fired** — `calls`, `uses`,
+    `contains`, `references`, `exports`, `extends` — against the census's 9. This is **not a
+    disagreement about the analyzer**; it is a property of the sampler. The arbiter picks a
+    deterministic per-language **stride** over `git ls-files` (stride **104** at
+    `--files 120`), and this lane's three missing types are the three rarest:
+
+    | type | files | share of population | expected inclusions at `--files 120` | P(missed) |
+    | --- | ---: | ---: | ---: | ---: |
+    | `implements` | 1 | 0.0080% | 0.0096 | **0.9905** |
+    | `overrides` | 12 | 0.0957% | 0.1148 | **0.8915** |
+    | `imports` | 20 | 0.1595% | 0.1913 | **0.8257** |
+
+    All three were missed, which is what those probabilities predict (joint ≈ 0.73). The
+    three types the sample *did* see are each ≥0.6% of the population. Establishing a type
+    confined to one file needs a sample whose stride reaches 1, which is the whole
+    population.
+
+    So the two instruments answer different questions and both are right: the census answers
+    **what the analyzer emits over the admitted population**, and the arbiter answers **what
+    a 120-file sample exercises**. A type confined to a handful of files cannot be
+    established by sampling, and a lane reporting its arbiter row as its coverage would be
+    reporting the sampler's reach as if it were its own. Reported to the supervisor as a
+    §8 item, because the arbiter is shared and a default that under-samples rare types will
+    read as a defect in whichever lane owns them.
 
 ## The structural limit: JSON has no names
 
@@ -399,7 +455,7 @@ same keys. That part is not a defect and no store-side change closes it.
 **3,905,268 relationships**, 0 parse failures, **0 symbols with an empty name, 0 with an
 empty or unknown kind**, **0 endpoints equal to the literal `unknown`**, 0 edges below the
 0.7 heuristic threshold. Kinds: `property` 2,541,967 / `class` 1,339,873 / `module`
-12,542 — one file short of the population, and the file is named in §limitation 8.
+12,542 — one file short of the population, and the file is named in §*Performance*.
 
 **Differential**, production `parseFile` against `deriveJsonEdges` over a fresh parse
 (`validation/m14/fixtures/json/differential.ts`). Two runs, because the second is the one
@@ -407,10 +463,34 @@ that covers the inheritance evidence and the first is the wider corpus:
 
 | | files | truth | covered | MISSING | UNEXPLAINED | files matching exactly |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| **whole admitted population** (139 repositories) | **12,543** | **3,905,048** | **3,905,048 (100.00%)** | **0** | **220** | **12,007 of 12,040** |
 | 12 repositories (openapi-spec, postgrest, docker, terraform, kubernetes, svelte, apollo-server, duckdb, otp, vault, graphql-js, vega) | 3,272 | 846,762 | 846,762 (100.00%) | **0** | **200** | 2,878 of 2,897 |
 | 4 repositories (dart-sdk, duckdb, openapi-spec, hasura-engine) | 1,952 | 526,510 | 526,510 (100.00%) | **0** | **65** | 1,891 of 1,909 |
 
-Per label, on the 4-repository run chosen for the inheritance evidence:
+The whole-population row is the one to quote, and it is the run that covers the qualified-path
+endpoint change on every admitted file rather than on 3,272 of them. **All 220 unexplained
+edges are one class**: a bare `"$ref": "#"` in
+`docker/vendor/github.com/go-openapi/spec/schemas/jsonschema-draft-04.json`, naming the
+document root. The analyzer emits it and the oracle declines it; the disagreement is 220 edges
+on 12,543 files and it is listed as an unadjudged reading rather than dismissed (§limitation 8 of
+the list below, *One `references` class is unadjudicated*).
+
+Per label on the whole admitted population:
+
+| label | truth | analyzer | covered | MISSING | UNEXPLAINED |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| `contains` | 3,881,840 | 3,881,840 | 100.00% | 0 | 0 |
+| `references` | 14,797 | 15,017 | 100.00% | 0 | 220 |
+| `uses` | 5,758 | 5,758 | 100.00% | 0 | 0 |
+| `extends` | 1,721 | 1,721 | 100.00% | 0 | 0 |
+| `implements` | 113 | 113 | 100.00% | 0 | 0 |
+| `exports` | 513 | 513 | 100.00% | 0 | 0 |
+| `calls` | 217 | 217 | 100.00% | 0 | 0 |
+| `imports` | 67 | 67 | 100.00% | 0 | 0 |
+| `overrides` | 22 | 22 | 100.00% | 0 | 0 |
+
+The narrower per-label run chosen for the inheritance evidence, kept because the `implements` and
+`declared_supertype` rows are what the endpoint change was re-derived against:
 
 | label | truth | analyzer | covered | MISSING | UNEXPLAINED |
 | --- | ---: | ---: | ---: | ---: | ---: |
@@ -475,7 +555,17 @@ limitations:
 - **Ontology gate** — 9 emitted / 1 ruled-sound / **0 falsified**, via
   `validation/m14/fixtures/json/ruling-table.ts` on a 1,952-file corpus. The shared gate
   cannot report this lane's table until the wiring in §*Ruling table* lands, and the
-  whole-population run does not finish at all (§limitation 8).
+  whole-population run does not finish at all (§limitation 9).
+- **Ruling re-measurement** — `validation/m14/fixtures/json/ruling-recheck.ts`, the whole
+  admitted population, **12,659 files / 139 repositories, 0 hits, 0 parse throws**. It
+  imports the probe from `script/m14/json-ruled.ts` instead of restating it, and uses a
+  discard-poisoned-slot parser so it terminates where the single-process walk does not.
+- **Parse determinism** — `validation/m14/fixtures/json/parse-determinism.ts`: the 8 files
+  the production path names as trapping, 5 isolated parses each, **40 parses / 0 traps /
+  0 timeouts**, all 8 also clean under `JSON.parse`. This is what moved §limitation 9 from
+  "four files trap" to "the trap is a property of the run".
+- **Trap scan** — `validation/m14/fixtures/json/trap-scan.ts`: 12,543 admitted files parsed,
+  **trapping files 0**, 298 files carrying ERROR/missing nodes.
 - **Differential** — enrolled in the shared F5 harness with an independent oracle
   (`script/m14/oracles/json.ts`, lane-owned so the shared file is not a fault line).
   Corpora chosen by measurement: `terraform` primary (415 hand-written files, 12
@@ -532,3 +622,22 @@ whole-population differential measures them — that is the instrument this doc 
 allowlist at `script/m14/differential.ts` (~line 23153). §8, so it is reported, not
 applied. Until it lands, this lane's canonical row reads 0% and 27,828 MISSING, and the
 number in this doc comes from a different harness.
+
+**The shared gate now says the same thing independently**, which is better evidence than this
+lane extracting an expression out of a shared file and evaluating it. `script/m14/verify-label-coverage.ts`
+is built for exactly this question — *"an emitted label the allowlist drops is compared by
+nothing"* — and it names this lane without being asked:
+
+```
+| json | terraform | 25 | 233 | 0 | **contains** (233) | — |
+      - json/contains: 233 edges unaudited
+
+FAIL — 31 undeclared gap(s) across 18 lane(s); 8573 edges compared by nothing.
+```
+
+It reports one dropped label for this lane rather than six because its json corpus is
+`terraform`, and `contains` is the only one of the six that terraform's json files actually
+exercise — the other five do not occur there, so there is nothing to drop. The finding is the
+same finding, measured twice: by the lane's own allowlist evaluation, and by a shared gate that
+exists to catch it. The `31 gaps across 18 lanes / 8,573 edges` total is the fleet-wide size of
+the same defect and is not this lane's to fix.
