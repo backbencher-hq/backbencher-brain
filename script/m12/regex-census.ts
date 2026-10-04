@@ -40,8 +40,18 @@ const OUT = "validation/m12/results/regex-census.json"
  */
 async function main() {
   const fromHead = process.argv.includes("--head")
+  // NOTE the `await` inside the branch. It was missing, and the `as Promise<...>`
+  // cast SILENCED the compiler, so `npx tsc --noEmit` passed while `usages` was a
+  // Promise at runtime and the first `for (const u of usages)` threw
+  // "usages is not iterable". That is the whole of `--head`, the mode the policy
+  // document requires for producing a census that describes a COMMIT rather than
+  // whatever the working tree happens to carry — so the reproducible path was dead
+  // and the only way to refresh the census was the unreproducible one.
+  //
+  // A `as Promise<T>` assertion is a claim about a value the compiler cannot check.
+  // Here it was a false claim, and it converted a type error into a runtime error.
   const usages = fromHead
-    ? ((await import("./census-truth")).scanHeadAnalyzers() as Promise<typeof usages>)
+    ? await (await import("./census-truth")).scanHeadAnalyzers()
     : await scanAnalyzers()
   const perFileMap = new Map<string, typeof usages>()
   for (const u of usages) {
