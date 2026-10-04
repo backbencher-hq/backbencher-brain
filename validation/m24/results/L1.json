@@ -2,31 +2,77 @@
   "issue": "490",
   "code": "L1",
   "status": "verified",
-  "currentCommit": "a871d533a736e8e38cb826d80d986d3cc84022d1",
-  "sourceFingerprint": "686a511db46773a80f0bee24123c9742a499a78426588e82132c6d2f08278033",
+  "currentCommit": "a0ed9eade7008de7ce93a312f6b0bd7e182a43a9",
+  "sourceFingerprint": "c272b2968c3e9f7d1cbbfb05ea02fd00992686438739fc9ae54972ba56b217a8",
   "verifierCommand": "npx tsx script/m24/verify-server.ts",
   "evidenceFile": "L1.json",
-  "generatedAt": "2026-09-20T02:43:09.020Z",
-  "passed": 33,
+  "generatedAt": "2026-10-04T22:36:48.500Z",
+  "passed": 85,
   "failed": 0,
   "failures": [],
-  "negativeCases": 0,
+  "negativeCases": 18,
+  "claimLevel": "I1 (protocol-passed) — reference-client harness, real streams, planted mutants. NOT I2: no index-conformance or position-mapping assertion is made here, and NOT I3: no named editor run is part of this evidence.",
+  "os": "darwin x64 (v22.14.0)",
+  "canFail": {
+    "mutants": 25,
+    "negatives": 19
+  },
+  "advertisement": {
+    "capabilityKeys": [
+      "hoverProvider",
+      "definitionProvider",
+      "referencesProvider",
+      "documentHighlightProvider",
+      "documentSymbolProvider",
+      "workspaceSymbolProvider",
+      "callHierarchyProvider",
+      "graphProvider",
+      "stalenessProvider",
+      "impactProvider",
+      "workspace"
+    ],
+    "declaredMethods": [
+      "bb/graph",
+      "bb/impact",
+      "bb/staleness",
+      "callHierarchy/incomingCalls",
+      "callHierarchy/outgoingCalls",
+      "textDocument/definition",
+      "textDocument/documentHighlight",
+      "textDocument/documentSymbol",
+      "textDocument/hover",
+      "textDocument/prepareCallHierarchy",
+      "textDocument/references",
+      "workspace/symbol"
+    ],
+    "note": "bb/staleness and bb/impact carry non-standard capability keys (LSP 3.18 has no impactProvider). They ride top-level keys exactly as bb/graph already did via graphProvider, each carrying the schemaVersion the handler ENFORCES, so a client can detect a mismatch before sending one. A client that ignores unknown capability keys can still call them; discoverability is the point, not enforcement."
+  },
   "verdict": {
     "realComponentFailures": 0,
-    "mutantsCaught": 10,
-    "mutantsTotal": 10,
+    "mutantsCaught": 24,
+    "mutantsTotal": 24,
+    "mutantsCaughtByLoadFailureOnly": 0,
+    "mutantsWithMissingAnchor": [],
+    "negativeCases": 18,
     "ok": true,
-    "note": "`failed` counts real functional failures only; mutant runs are reported separately via the verdict block."
+    "note": "`failed` counts real functional failures only; mutant runs are reported separately via the verdict block. A mutant caught ONLY by a load failure is reported but does NOT satisfy the suite."
+  },
+  "reviewers": {
+    "separationOfDuties": "NOT satisfied for this change: the author of the component change wrote the only gate covering it (contract §8.6 requires cross-review where feasible). Owner spot-check (§8.5) is the closure authority.",
+    "crossReview": "requested from script/m26/verify-graph-transport.ts owner: its M5 mutant anchors on the literal graphProvider line in src/lsp/server.ts, which is why that line was preserved rather than replaced by a table lookup."
   },
   "limitations": [
-    "single-root workspaces only (multi-root is a filed decision for later waves)",
-    "no completion, diagnostics, or rename (complement stance)",
-    "feature handlers land in L2-L5; capabilities advertise only registered handlers",
-    "stdio framing is byte-stream based with Content-Length parsing"
+    "single-root workspaces only (multi-root is a filed decision for later waves); declared on the wire as workspace.workspaceFolders.supported = false",
+    "no completion, no diagnostics, no rename (complement stance, §7.1)",
+    "no textDocumentSync is advertised, because no textDocument/did* handler exists; the declared sync model is filesystem-side (recursive fs.watch, 300 ms debounce, incremental reindex, scan-on-read fallback) and no latency figure is advertised because this gate measures none",
+    "stdio framing is byte-stream based with Content-Length parsing",
+    "bb/staleness and bb/impact use non-standard capability keys; a client that ignores unknown keys cannot discover them from the initialize result",
+    "the mutation suite plants into src/lsp/ and deletes the copy in a finally block; a crash mid-run can leave a server.mutant.<pid>.<n>.ts file behind (git status shows untracked files)",
+    "G7 exercises bb/staleness on an UNINDEXED workspace only; the marker shape for a fresh/stale indexed file is freshness.ts's contract, gated by script/m25, not here"
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-20T02:43:09.020Z",
-    "contentSha256": "915c7657a6c6b0ecef35c65936b44f89004a51e0837f1cf3c6c3e86753d54d06"
+    "sealedAt": "2026-10-04T22:36:48.501Z",
+    "contentSha256": "f304c7ca949c71a433cfca000ab91909e6ca7990b83abd215cde72873b3475b5"
   }
 }
