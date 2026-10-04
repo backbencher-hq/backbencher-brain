@@ -193,6 +193,31 @@ function filesForLanguage(lang: string, limit: number): { files: string[]; perRe
   return { files: picked.sort(), perRepo, corpusTotal }
 }
 
+/**
+ * sha256 of the ANALYZER UNDER TEST, so a number is tied to the code that produced it.
+ *
+ * The analyzer is resolved from the same registry the differential uses, not
+ * guessed from a filename — guessing would silently hash the wrong file for any
+ * language whose module name is not `real-<lang>-analyzer.ts` (vb is
+ * `real-vb-analyzer` for language `vb`, scala and clojure have no hyphen, and so on).
+ */
+async function analyzerDigest(lang: string): Promise<string> {
+  const { createHash } = await import("node:crypto")
+  const { readFileSync: rf, existsSync: ex } = await import("node:fs")
+  let rel: string | null = null
+  try {
+    const { LANGS } = await import("./differential")
+    rel = (LANGS as Record<string, any>)[lang]?.analyzerFile ?? null
+  } catch {
+    rel = null
+  }
+  if (!rel) rel = `real-${lang}-analyzer`
+  const here = (import.meta as any).dirname ?? "."
+  const full = path.join(here, "..", "ast", `${rel}.ts`)
+  if (!ex(full)) return `MISSING:${full}`
+  return createHash("sha256").update(rf(full)).digest("hex")
+}
+
 // ------------------------------------------------------------------ measurement
 
 type TypeRow = {
@@ -219,6 +244,10 @@ type LangResult = {
   unknownEndpoints: number
   corpusTotal: number
   perRepo: Record<string, number>
+  /** sha256 of the analyzer blob, so a number is tied to the code that produced it. */
+  analyzerDigest: string
+  /** false when the analyzer changed mid-walk; the count is then a MIXTURE. */
+  analyzerStableDuringRun: boolean
   types: Record<string, TypeRow>
 }
 
@@ -250,6 +279,8 @@ async function measure(lang: string, limit: number): Promise<LangResult> {
     unknownEndpoints: 0,
     corpusTotal,
     perRepo,
+    analyzerDigest: "",
+    analyzerStableDuringRun: true,
     types: {},
   }
   for (const t of ALL_TYPES) res.types[t] = blankRow()
@@ -361,7 +392,23 @@ async function main(): Promise<void> {
   const results: LangResult[] = []
   for (const lang of langs) {
     process.stderr.write(`firing-check: ${lang} … `)
+    // Hash the analyzer before and after the walk.
+    //
+    // The nim lane measured this defect in the ontology gate: two runs over the
+    // SAME corpus returned calls 80,057 and then 79,041, because the analyzer was
+    // edited between them. Both numbers were correct for the analyzer that produced
+    // each one, and quoting either alone claims a file state that never existed — or
+    // worse, a run that straddles an edit reports a number belonging to NEITHER
+    // state, which is a mixture presented as a measurement.
+    const digestBefore = await analyzerDigest(lang)
     const r = await measure(lang, SAMPLE)
+    const digestAfter = await analyzerDigest(lang)
+    r.analyzerDigest = digestBefore
+    r.analyzerStableDuringRun = digestBefore === digestAfter
+    if (!r.analyzerStableDuringRun) {
+      r.degradedFallbacks++
+      process.stderr.write(`ANALYZER CHANGED DURING THE RUN (${digestBefore.slice(0, 12)} -> ${digestAfter.slice(0, 12)}) `)
+    }
     results.push(r)
     const fired = ALL_TYPES.filter((t) => r.types[t].firedOnCorpus).length
     process.stderr.write(
@@ -403,7 +450,7 @@ async function main(): Promise<void> {
     console.log(`\nfiring check — production parseFile, ${SAMPLE}-file stride sample per language`)
     console.log(`corpus: ${CR}\n`)
     const w = (s: string, n: number) => (s + " ".repeat(n)).slice(0, n)
-    console.log(w("lang", 11) + w("files", 12) + w("fired", 8) + w("rels", 12) + w("degraded", 10) + "fired types")
+    console.log(w("lang", 11) + w("files", 12) + w("fired", 8) + w("rels", 12) + w("degraded", 10) + w("analyzer", 8) + "fired types")
     console.log("-".repeat(110))
     for (const r of results) {
       const firedList = ALL_TYPES.filter((t) => r.types[t].firedOnCorpus).join(",") || "(none)"
@@ -413,6 +460,7 @@ async function main(): Promise<void> {
           w(`${ALL_TYPES.filter((t) => r.types[t].firedOnCorpus).length}/10`, 8) +
           w(r.relationships.toLocaleString(), 12) +
           w(String(r.degradedFallbacks), 10) +
+          w(r.analyzerStableDuringRun ? "stable" : "CHANGED", 8) +
           firedList,
       )
     }
@@ -421,8 +469,14 @@ async function main(): Promise<void> {
     console.log("A type reading 0 here is a FIRING FACT, not a ruling. Turning 0 into RULED needs a corpus")
     console.log("measurement and a written reason — script/m14/ontology-coverage-gate.ts does that, not this.")
     console.log("A language with corpusTotal 0 is UNMEASURED, which is not the same as failing.")
+    const drifted = results.filter((r) => !r.analyzerStableDuringRun)
+    for (const r of drifted) {
+      console.log("")
+      console.log(`>>> ${r.lang}: the ANALYZER CHANGED DURING THE RUN (sha256 ${r.analyzerDigest.slice(0, 12)}).`)
+      console.log(`    Its counts are a MIXTURE of two analyzer states and belong to neither.`)
+    }
     const degraded = results.filter((r) => r.degradedFallbacks > 0)
-    if (degraded.length > 0) {
+    if (degraded.length > 0 || drifted.length > 0) {
       console.log("")
       console.log(`>>> REFUSING to call these counts trustworthy: ${degraded.length} lane(s) had a degraded run.`)
       for (const r of degraded) {
