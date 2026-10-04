@@ -206,7 +206,13 @@ export const PROTOBUF_MUTANTS: Mutant[] = [
           const oneofName = syms(r).find((s: any) => s?.metadata?.id === tgt)?.metadata?.oneof
           if (typeof oneofName !== "string") return x
           const msgId = String(x.source ?? "")
-          const owner = oneofs.get(`${msgId}.${oneofName}`)
+          // `metadata.oneof` is the oneof's RESOLVED ID as of pass 2; it used to be
+          // the bare name, which made the lookup `message.id + "." + oneofName`. Both
+          // spellings are tried, because a mutant that can no longer fire reports a
+          // hole that does not exist while missing the one that does — the exact
+          // failure this battery was rebuilt to stop, and it is what happened to this
+          // row the moment the oneof key was qualified.
+          const owner = oneofs.get(oneofName) ?? oneofs.get(`${msgId}.${oneofName}`)
           if (!owner) return x
           return { ...x, source: owner.metadata.id }
         }),
@@ -339,6 +345,99 @@ export const PROTOBUF_MUTANTS: Mutant[] = [
     }),
   },
   {
+    id: "protobuf/field-shadows-its-own-type-reference",
+    language: "protobuf",
+    defectClass: "self-edge",
+    description:
+      "A REGRESSION guard for a defect this lane measured and fixed, not a revert of a pre-fix draft. Protobuf resolves a type name through nested scopes, and only TYPES are in that namespace; a field declares no type. The resolver accepted every declaration, so an ordinary field whose NAME equals the type it names answered its own type reference: `message Extra { repeated IPAMStatus IPAMStatus = 1; }` published the field as `pkg.Extra.IPAMStatus` moments before emitting its edge, the innermost scope candidate matched the field, and the edge became `pkg.Extra.IPAMStatus -> pkg.Extra.IPAMStatus`. Measured: 9 self-edges over 606 corpus files — docker/daemon/cluster/convert/netextra/extra.proto:12 and 8 under docker/vendor/github.com/moby/buildkit (api/types/worker.proto:13-14, frontend/gateway/pb/gateway.proto:173/193/197, solver/pb/ops.proto:117/120/317). A self-edge is the shape a fabricated edge takes when two declarations collide on one id, so bb_graph, bb_impact and bb_migrate would each read it as a field whose type is itself. Reverted by resolving against EVERY declaration again — the result's own symbol table gives the containing message of each `property`, and a `uses` edge from that property onto an id with the same leaf name is moved onto it. Caught by protobuf/absolute-and-scope-resolution, whose `SelfNamed.Inner` row pins the top-level type and whose forbid row pins the ABSENCE of the self-edge; the `SelfNamed.shadow` row is the control, since it has no collision for this defect to exploit.",
+    transform: (r: any) => {
+      const propIds = new Set(
+        syms(r).filter((s: any) => s?.kind === "property").map((s: any) => String(s?.metadata?.id ?? "")),
+      )
+      if (propIds.size === 0) return r
+      return {
+        ...r,
+        relationships: rels(r).map((x) => {
+          const t = x.type ?? x.relationshipType
+          if (t !== "uses") return x
+          const src = String(x.source ?? "")
+          const tgt = String(x.target ?? "")
+          // The pre-fix shape exactly: the field answers its own type reference,
+          // so the edge's SOURCE is also its TARGET. That is the whole defect —
+          // the innermost scope candidate that matched was `owner.<fieldName>`,
+          // which is this edge's own source. Matching on the source rather than
+          // on any field sharing a leaf name is what keeps the mutant faithful:
+          // a looser predicate also fires on unrelated fields and would then be
+          // caught by the wrong assertion, which is coverage that reads as
+          // coverage and is not.
+          if (src === tgt) return x
+          const leaf = tgt.includes(".") ? tgt.slice(tgt.lastIndexOf(".") + 1) : tgt
+          if (!src.endsWith(`.${leaf}`) || !propIds.has(src)) return x
+          return { ...x, target: src }
+        }),
+      }
+    },
+  },
+  {
+    id: "protobuf/import-edge-dropped",
+    language: "protobuf",
+    defectClass: "missing-edge",
+    description:
+      "A dependency graph for a schema language that cannot answer `which file does this type come from` is missing the one edge a consumer needs most, and its absence is invisible to a differential because the oracle was written after the same ruling. Measured before this lane's change: 1,117 `import` nodes across 392 of 606 corpus files were recorded into `result.imports` and emitted as NO edge at all. Reverted by dropping every `imports` relationship while leaving the `imports[]` array intact, which is exactly the pre-fix state — the array was already correct, so this mutant is faithful rather than a wholesale deletion. Caught by protobuf/imports-and-editions, which pins all three non-public forms including the editions feature import.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: rels(r).filter((x) => (x.type ?? x.relationshipType) !== "imports"),
+    }),
+  },
+  {
+    id: "protobuf/public-import-recorded-as-a-plain-import",
+    language: "protobuf",
+    defectClass: "wrong-type",
+    description:
+      "`import public` is a RE-EXPORT: this file's own importers reach the imported declarations through it. Recorded as a plain import it becomes an ordinary dependency, the re-export fact is lost, and a consumer asking which of two files importing the same path republishes it gets the same answer for both. Measured: 4 occurrences in 4 files (pb-reference/src/google/protobuf/{cpp_options,json_options,unittest_import,unittest_import_lite}.proto). Reverted by relabelling every `exports` edge as `imports` and dropping its `viaPublicImport` marker — the shape an analyzer that knew about imports but not re-exports produces. Caught by protobuf/imports-and-editions, which pins an `exports` row AND forbids the `imports` row for the same target, so relabelling alone cannot satisfy it.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: rels(r).map((x) => {
+        const t = x.type ?? x.relationshipType
+        if (t !== "exports") return x
+        const { viaPublicImport, ...rest } = (x.metadata ?? {}) as any
+        return { ...x, type: "imports", relationshipType: "imports", metadata: { ...rest, evidenceClass: "import_based" } }
+      }),
+    }),
+  },
+  {
+    id: "protobuf/import-edge-sourced-from-the-imported-path",
+    language: "protobuf",
+    defectClass: "fabricated-edge",
+    description:
+      "The SOURCE of a module edge is the importing file and the TARGET is the path as written. Taking the basename of the IMPORTED path for the source — which a first draft of this change did, before the suite caught it — makes a file appear to depend on ITSELF: `import public \"common/v1/types.proto\"` became `types.proto -> common/v1/types.proto`, an edge whose two endpoints name the same module, which bb_graph reads as a self-dependency and bb_impact reads as a cycle. Reverted by re-sourcing every module edge onto the basename of its own target. Caught by protobuf/imports-and-editions, whose forbid row names the self-import shape explicitly.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: rels(r).map((x) => {
+        const t = x.type ?? x.relationshipType
+        if (t !== "imports" && t !== "exports") return x
+        const tgt = String(x.target ?? "")
+        const self = tgt.includes("/") ? tgt.slice(tgt.lastIndexOf("/") + 1) : tgt
+        return { ...x, source: self }
+      }),
+    }),
+  },
+  {
+    id: "protobuf/evidence-class-dropped",
+    language: "protobuf",
+    defectClass: "missing-field",
+    description:
+      "Every edge this analyzer emits is read off the parse tree — a declaration node, a named child, an anonymous sibling token, a position — so its tier is `structural`, or `import_based` for an import. Measured before this lane's change: 40,562 of 40,562 production edges carried NO `evidenceClass`, so the honesty contract's requirement that a heuristic be COUNTABLE had nothing to count and the graph panel had to infer a tier from the confidence value instead. Reverted by deleting the key from every edge. Caught by protobuf/imports-and-editions, whose rows pin `meta.evidenceClass` on both a `contains` edge and an `imports` edge — the two different tiers, so an analyzer that stamped one constant on everything would fail as well.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: rels(r).map((x) => {
+        if (!x?.metadata || x.metadata.evidenceClass === undefined) return x
+        const { evidenceClass, ...rest } = x.metadata as any
+        return { ...x, metadata: rest }
+      }),
+    }),
+  },
+  {
     id: "protobuf/parse-fact-downgraded-to-a-heuristic",
     language: "protobuf",
     defectClass: "confidence",
@@ -348,6 +447,214 @@ export const PROTOBUF_MUTANTS: Mutant[] = [
       ...r,
       relationships: rels(r).map((x) => ({ ...x, confidence: 0.5 })),
     }),
+  },
+  {
+    id: "protobuf/same-slot-override-collapsed-into-a-duplicate-name",
+    language: "protobuf",
+    defectClass: "dropped-edge",
+    description:
+      "The `overrides` rule pass 1 did not have. What protobuf can express as an override is a field SLOT restated: two declarations in one message claiming the same number. This mutant reverts the rule to the reading pass 1's own probe used — 'a name declared twice in one scope' — which is the reading that fires on a name collision that replaces nothing, because the two claims occupy different slots. Reverted by dropping every `overrides` edge whose two endpoints carry DIFFERENT `metadata.fieldNumber`s, i.e. keeping only the name-and-number shape and deleting the slot shape. That is the pre-fix state: `string legacy = 7; int64 modern = 7;` restates slot 7 under a fresh name and the edge disappears, while `string dup = 3; bool dup = 3;` survives, so the corpus count of 1 that pass 1 measured was a coincidence of one syntax-highlighting fixture rather than a measurement of the construct. Caught by protobuf/slot-and-grouping, whose `Slot.modern -> Slot.legacy` row requires the slot shape. Its `Twin` forbid rows are the other half: they fail an analyzer whose rule is 'a repeated NAME', which is the mutant the fixture exists to keep out.",
+    transform: (r: any) => {
+      const byId = new Map<string, any>(syms(r).map((s: any) => [String(s?.metadata?.id), s]))
+      // The name-collision reading: an override is a name declared twice. Every one
+      // of those also repeats the field number, so the number cannot be the
+      // discriminator — the NAME can. Dropping exactly the edges whose endpoints
+      // carry different names leaves the name-and-number shape standing and deletes
+      // the slot shape, which is the pre-fix behaviour.
+      const dropped = rels(r).filter((x: any) => {
+        if ((x.type ?? x.relationshipType) !== "overrides") return false
+        const a = byId.get(String(x.source))
+        const b = byId.get(String(x.target))
+        return a && b && String(a.name) !== String(b.name)
+      })
+      if (dropped.length === 0) return r
+      const gone = new Set(dropped.map((x: any) => `${x.source}\u0000${x.target}\u0000${x.line_number}`))
+      return {
+        ...r,
+        relationships: rels(r).filter((x: any) => !gone.has(`${x.source}\u0000${x.target}\u0000${x.line_number}`)),
+      }
+    },
+  },
+  {
+    id: "protobuf/override-edge-line-taken-from-the-declaration-being-added",
+    language: "protobuf",
+    defectClass: "wrong-line",
+    description:
+      "The `overrides` edge's `line_number` must be the SOURCE's line, because `line_number` is what `bb_graph` and the store's relId key on. The walk is a LIFO stack and reaches siblings in reverse document order, so the declaration being ADDED when the collision is noticed is usually the EARLIER one — this is measured, not hypothetical: the first version of the rule reported the override of slot 7 at line 26, which is `legacy`, the declaration being overridden, while the source `modern` is line 27. Reverted by rewriting each `overrides` edge's line to the LOWER of its two endpoints' lines, which is the same wrong answer for a forward-declared pair and cannot be told apart from the correct one by an assertion that does not read the source. Caught by protobuf/slot-and-grouping, whose two `overrides` rows pin line 27 and line 36 — the sources — and whose forbid rows name the same two symbol pairs, so an edge with the right endpoints and the wrong line still fails.",
+    transform: (r: any) => {
+      const byId = new Map<string, any>(syms(r).map((s: any) => [String(s?.metadata?.id), s]))
+      return {
+        ...r,
+        relationships: rels(r).map((x: any) => {
+          if ((x.type ?? x.relationshipType) !== "overrides") return x
+          const a = Number(byId.get(String(x.source))?.range?.startLine ?? x.line_number ?? 0)
+          const b = Number(byId.get(String(x.target))?.range?.startLine ?? x.line_number ?? 0)
+          return { ...x, line_number: Math.min(a, b) || x.line_number }
+        }),
+      }
+    },
+  },
+  {
+    id: "protobuf/oneof-grouping-key-downgraded-to-the-bare-name",
+    language: "protobuf",
+    defectClass: "ambiguous-metadata",
+    description:
+      "`metadata.oneof` is how a oneof's grouping travels, since `contains` means ownership only and there is deliberately no edge from the oneof to its fields. It carried the oneof's BARE name, which cannot address a oneof: two messages in one file may each declare `oneof body`, and a consumer grouping fields by that string merges two unrelated discriminated unions. Measured over the corpus before the change: 423 of 1,121 oneof fields (37.73%) sat under a bare name declared by more than one owner — `oneof attrs` in 7 different messages of boundary's session_recording.proto alone. Reverted by truncating every `metadata.oneof` to its last dotted segment, rebuilt from the result's own symbols rather than from a fixture name. Caught by protobuf/slot-and-grouping, which declares `oneof body` in two messages and requires the two fields' keys to be the two RESOLVED ids — an analyzer emitting the bare name fails both rows, and neither row can be satisfied by emitting nothing.",
+    transform: (r: any) => {
+      const declared = new Set<string>(syms(r).map((s: any) => String(s?.metadata?.id)).filter(Boolean))
+      return {
+        ...r,
+        symbols: syms(r).map((s: any) => {
+          const key = s?.metadata?.oneof
+          if (typeof key !== "string") return s
+          const bare = key.split(".").pop() ?? key
+          // only downgrade when a DIFFERENT oneof in this file really does own the
+          // bare name — otherwise the two spellings are the same string and the
+          // transform cannot fire, which would report a hole that does not exist.
+          const owners = new Set<string>()
+          for (const id of declared) {
+            if (id.endsWith(`.${bare}`)) owners.add(id)
+          }
+          if (owners.size < 2) return s
+          return { ...s, metadata: { ...s.metadata, oneof: bare } }
+        }),
+      }
+    },
+  },
+  {
+    id: "protobuf/extension-edge-loses-viaextension",
+    language: "protobuf",
+    defectClass: "missing-field",
+    description:
+      "`viaExtension` was carried on the extension field's SYMBOL and not on the EDGE that adds it to the extended type, so a consumer reading `google.protobuf.MessageOptions -contains-> audit_ticket` could not tell a field added by an `extend` block in another file from one declared in MessageOptions' own body — and this analyzer's own header claimed the edge carried it, which made the header false. Measured over the corpus before the change: 0 of the extension-derived `contains` edges carried `viaExtension`. Reverted by deleting the key from every edge whose metadata has it, leaving the symbol's copy intact — the exact pre-fix shape, in which the two are not derived from each other and the flag can drift. Caught by protobuf/extend-and-group, whose two rows now require `meta.viaExtension` ON THE EDGE. The same fixture's plain-field rows in protobuf/payload-and-ontology forbid the flag there, so stamping it on every edge fails as well.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: rels(r).map((x: any) => {
+        const md = x?.metadata
+        if (!md || md.viaExtension === undefined) return x
+        const { viaExtension, ...rest } = md as any
+        return { ...x, metadata: rest }
+      }),
+    }),
+  },
+  {
+    id: "protobuf/public-import-loses-its-dependency-edge",
+    language: "protobuf",
+    defectClass: "dropped-edge",
+    description:
+      "`import public \"x.proto\"` is BOTH a dependency and a re-export: `protoc` records it as a `FileDescriptorProto` dependency like any other, with `public_dependency` naming its index. Pass 1 emitted `exports` alone, pinned the absence of `imports` with a fixture forbid, and the fixture's stated reason — that emitting both 'would double the module's inbound dependency and lose the re-export fact entirely' — is wrong on both halves: nothing is doubled, because the pair went from ZERO `imports` edges to one, and the re-export fact is what the `exports` edge carries. Reverted by dropping every `imports` edge that also appears as an `exports` edge on the same source and target, which is exactly the pre-fix state. Caught by protobuf/imports-and-editions, whose public-import rows now REQUIRE both labels, so neither reading satisfies the fixture alone.",
+    transform: (r: any) => {
+      const pub = new Set<string>(
+        rels(r)
+          .filter((x: any) => (x.type ?? x.relationshipType) === "exports")
+          .map((x: any) => `${x.source}\u0000${x.target}`),
+      )
+      return {
+        ...r,
+        relationships: rels(r).filter(
+          (x: any) =>
+            !(
+              (x.type ?? x.relationshipType) === "imports" &&
+              pub.has(`${x.source}\u0000${x.target}`)
+            ),
+        ),
+      }
+    },
+  },
+
+  {
+    id: "protobuf/dotted-reference-back-to-the-name-as-written",
+    language: "protobuf",
+    defectClass: "dangling-endpoint",
+    description:
+      "A relative DOTTED type name is resolved through the package's ANCESTOR scopes, because protobuf's rule is C++ name lookup over every enclosing scope and not only the package subtree. The pre-fix behaviour was to emit such a name exactly as written, which is the shape of all 431 corpus edges that named an id no file publishes: `resources.scopes.v1.ScopeInfo` where the declaration is `controller.api.resources.scopes.v1.ScopeInfo`. This transform rewrites a target back to the name as written ONLY where the walk moved ALONG a shared ancestor path — the target's package shares a leading segment with the source's own package but is not equal to it, which is the corpus shape and is what makes the transform fire on the row under test and not on the guard's row. Caught by protobuf/ancestor-scope-resolution, which requires the ancestor-resolved id and forbids the name as written as well as the package-prefixed reading. Nothing is dropped, so a transform that emitted no edge at all would fail the same three rows.",
+    transform: (r: any) => {
+      const declared = new Set<string>(syms(r).map((s: any) => String(s?.metadata?.id)).filter(Boolean))
+      const importedDirs = new Set<string>()
+      for (const x of rels(r)) {
+        if ((x.type ?? x.relationshipType) !== "imports") continue
+        const mod = String((x?.metadata as any)?.modulePath ?? x?.target ?? "")
+        const cut = mod.lastIndexOf("/")
+        importedDirs.add(cut > 0 ? mod.slice(0, cut) : "")
+      }
+      if (importedDirs.size === 0) return r
+      /** The first package segment boundary, or -1 when the two share nothing. */
+      const sharedAncestorDepth = (a: string, b: string): number => {
+        const as = a.split(".")
+        const bs = b.split(".")
+        let i = 0
+        while (i < as.length && i < bs.length && as[i] === bs[i]) i++
+        return i
+      }
+      return {
+        ...r,
+        relationships: rels(r).map((x: any) => {
+          if ((x.type ?? x.relationshipType) !== "uses") return x
+          const tgt = String(x?.target ?? "")
+          if (declared.has(tgt)) return x
+          const tCut = tgt.lastIndexOf(".")
+          if (tCut <= 0) return x
+          const targetPkg = tgt.slice(0, tCut)
+          if (!importedDirs.has(targetPkg.split(".").join("/"))) return x
+          const src = String(x?.source ?? "")
+          const sCut = src.lastIndexOf(".")
+          if (sCut <= 0) return x
+          const sourcePkg = src.slice(0, sCut)
+          if (targetPkg === sourcePkg) return x
+          // Shares a leading segment but is not the source's own package: the walk
+          // went up to a common ancestor and back down into a sibling.
+          if (sharedAncestorDepth(targetPkg, sourcePkg) < 2) return x
+          return { ...x, target: tgt.slice(tgt.indexOf(".") + 1) }
+        }),
+      }
+    },
+  },
+  {
+    id: "protobuf/ancestor-scope-guard-removed",
+    language: "protobuf",
+    defectClass: "dangling-endpoint",
+    description:
+      "The ancestor walk accepts a candidate only when the matched import directory is not a proper SUFFIX of a more specific candidate's directory, and that condition is what a `-I` root ABOVE the package looks like. Dropping it was measured at 7 wrong corpus ids: docker vendors containerd, whose `api/types/platform.proto` declares `package containerd.types;` and is imported as `types/platform.proto`, so a guardless walk answers `types.Platform` where `protoc` answers `containerd.types.Platform`. This transform reproduces the guardless answer for the ONE shape the guard exists for — a reference whose package is a SINGLE segment, so every ancestor candidate is strictly longer and `types` is a proper suffix of all of them — and fires on nothing else. Caught by protobuf/ancestor-scope-resolution alone, and by exactly two of its rows: the `Shifted` requirement (`types.Platform`) goes missing and the innermost-candidate forbid (`corp.api.resources.accounts.v1.types.Platform`) appears instead. Measured rather than described: the walk reaches the MOST SPECIFIC ancestor first, so the id it asserts is that one and not `corp.types.Platform` — which is a second forbid row in the fixture, added so the chain ORDER is pinned independently of the guard. The ancestor-walk row is untouched by this mutant, which is what separates it from the mutant above.",
+    transform: (r: any) => {
+      const declared = new Set<string>(syms(r).map((s: any) => String(s?.metadata?.id)).filter(Boolean))
+      const importedDirs = new Set<string>()
+      for (const x of rels(r)) {
+        if ((x.type ?? x.relationshipType) !== "imports") continue
+        const mod = String((x?.metadata as any)?.modulePath ?? x?.target ?? "")
+        const cut = mod.lastIndexOf("/")
+        importedDirs.add(cut > 0 ? mod.slice(0, cut) : "")
+      }
+      if (importedDirs.size === 0) return r
+      return {
+        ...r,
+        relationships: rels(r).map((x: any) => {
+          if ((x.type ?? x.relationshipType) !== "uses") return x
+          const tgt = String(x?.target ?? "")
+          if (declared.has(tgt)) return x
+          const tCut = tgt.lastIndexOf(".")
+          if (tCut <= 0) return x
+          const rootedAt = tgt.slice(0, tCut)
+          // A SINGLE-segment package: the shape a shifted `-I` root produces, and
+          // the only one on which the guard is decidable without the chain.
+          if (rootedAt.includes(".")) return x
+          if (!importedDirs.has(rootedAt)) return x
+          const src = String(x?.source ?? "")
+          const sCut = src.lastIndexOf(".")
+          if (sCut <= 0) return x
+          const sourcePkg = src.slice(0, sCut)
+          const segs = sourcePkg.split(".")
+          // The most specific ancestor whose directory ends with the matched one,
+          // which is what the guardless walk would have reached.
+          for (let i = segs.length - 1; i > 0; i--) {
+            const longer = [...segs.slice(0, i), ...rootedAt.split(".")].join("/")
+            if (longer.endsWith(rootedAt) && longer !== rootedAt) {
+              return { ...x, target: `${segs.slice(0, i).join(".")}.${rootedAt}.${tgt.slice(tCut + 1)}` }
+            }
+          }
+          return x
+        }),
+      }
+    },
   },
 ]
 

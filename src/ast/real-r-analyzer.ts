@@ -346,6 +346,24 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
     // base class DECLARED IN THIS SAME FILE is a provable override. A base that
     // lives in another package cannot be resolved from syntax, so no edge is
     // invented for it — the scope limit is stated on the edge.
+    //
+    // DIRECTION. This used to push `(base, member)`, which says "the BASE class's
+    // member overrides something". `Child2$render` is what overrides `Base2$render`;
+    // the derived declaration is the override and the base declaration is what it
+    // overrides. Every other analyzer in this repo runs the edge the other way —
+    // real-kotlin-analyzer.ts:537 emits `${ownerName}.${s.name}` -> `${parent}.${s.name}`,
+    // real-java-analyzer.ts:1866 emits the overriding task's FQN -> the overridden
+    // FQN, and script/m60/objc-line-truth.ts:77 states the line contract in as many
+    // words: "an override's line is the overriding declaration". The old direction
+    // also put the answer in metadata (`overriddenBy`) while asserting the opposite
+    // in the source position, and F12-edges.R is the fixture that shows it: three
+    // classes declare `render`, and the single edge read `overrides Base2 -> render`.
+    //
+    // The TARGET stays the bare member name because that is the name R publishes the
+    // method under (`name: "render"`, `ownerName: "Base2"`), and an edge whose target
+    // resolves to nothing is an edge the graph cannot walk. That leaves a real
+    // ambiguity when two classes in one file declare the same member name, so both
+    // qualified names ride in metadata where a consumer can read them.
     for (const [className, bases] of classBases) {
       const own = classMembers.get(className)
       if (!own || !own.length) continue
@@ -354,12 +372,14 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (!inherited) continue
         for (const member of inherited) {
           if (!own.includes(member)) continue
-          this.pushRel(relationships, base, member, ASTEngine.RelationshipType.Overrides, 0.95, {
+          this.pushRel(relationships, className, member, ASTEngine.RelationshipType.Overrides, 0.95, {
             rSpecific: true,
             relationshipSubType: "object_system_method_override",
-            overriddenBy: className,
+            overridingMember: `${className}$${member}`,
+            overriddenMember: `${base}$${member}`,
+            overriddenClass: base,
             reasonCode: "base_class_declared_in_same_file",
-            reason: `base class \`${base}\` is declared in this file, so the shadowing member is provably an override`,
+            reason: `\`${className}$${member}\` shadows \`${base}$${member}\`, whose class is declared in this file, so the shadowing member is provably an override`,
           }, memberLine.get(`${className}\u001f${member}`) ?? classDeclLine.get(className))
         }
       }
@@ -843,7 +863,28 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
           }
         }
       }
-      if (doc && this.roxygenHasTag(doc, "@export")) exports.push({ name: className, kind: ASTEngine.SymbolKind.Class })
+      // The EXPORT names the R BINDING, not the declared class name.
+      //
+      // `#' @export` on `class_logical <- new_base_class("logical")` marks the object
+      // bound on the LEFT for export, so roxygen2 writes `export(class_logical)`. This
+      // line pushed `className`, so it emitted `exports global -> logical` and no
+      // `exports global -> class_logical` — and the symbol layer eleven lines above
+      // had already published BOTH names and linked them with an `s7_class_binding`
+      // edge, so the graph simultaneously asserted that `logical` is not the package's
+      // export and that the package exports `logical`.
+      //
+      // S7's own roxygen-generated NAMESPACE settles which is right, and it is not a
+      // matter of opinion: `export(class_logical)` is at S7/NAMESPACE:66, there are 25
+      // `export(class_*)` lines, and `export(logical)` / `export(double)` /
+      // `export(integer)` appear ZERO times in the file. Found by the lane oracle
+      // (validation/m14/fixtures/r/oracle-r.ts) as 17 UNEXPLAINED `exports` edges.
+      //
+      // The kind follows the symbol actually published under `name`: the binding is a
+      // `Variable` when the declared name differs (line 814) and the `Class` itself when
+      // it does not.
+      if (doc && this.roxygenHasTag(doc, "@export")) {
+        exports.push({ name, kind: declared && declared !== name ? ASTEngine.SymbolKind.Variable : ASTEngine.SymbolKind.Class })
+      }
       return true
     }
 

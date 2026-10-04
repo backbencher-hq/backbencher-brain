@@ -1225,6 +1225,9 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
     // --- Override relationships (implicit PHP overrides) ---
     this.resolveOverrides(symbols, relationships, context)
 
+    // --- `exports`: a name this file PUBLISHES and does not declare ---
+    this.emitDefineExports(rootNode, symbols, relationships, exports, filePath)
+
     // --- Contains relationships from ownerName ---
     for (const s of symbols) {
       if (s.ownerName) {
@@ -1246,6 +1249,163 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
 
     return this.result(symbols, relationships, imports, exports, errors, content, rootNode, detectedFrameworks, patterns)
+  }
+
+  /**
+   * `exports` — a name this file PUBLISHES which no declaration in it writes.
+   *
+   * ## Why this is here, and what it cost to find out
+   *
+   * This lane RULED `exports` inapplicable on a measured parse-tree count, and the
+   * ruling was WRONG. The probe that supported it read `define('NAME', …)` as 0
+   * occurrences over 4,642 corpus files, because it compared `arguments.namedChild(0)`
+   * against `string` / `encapsed_string` and tree-sitter-php puts an `argument` node in
+   * between:
+   *
+   *   function_call_expression
+   *     name "define"
+   *     arguments
+   *       argument          <- what namedChild(0) returned
+   *         encapsed_string <- the node the test wanted
+   *
+   * No corpus could falsify that zero, because no corpus makes it non-zero. A control
+   * corpus containing `define("X", 1);` read 0 as well, until the wrapper was looked at.
+   * With the wrapper descended, the corpus reads 60 occurrences in 20 files
+   * (49 at file scope, 11 nested inside a function), so the construct is real and the
+   * type is a GAP, not a ruling. See validation/m14/fixtures/php/exports-probe-controls.mts.
+   *
+   * ## What counts, and the three tests that decide it
+   *
+   *   1. the callee is EXACTLY the bare name `define` — a `Foo\define` or a variable
+   *      callee is a different function and is not a publication;
+   *   2. the first argument's VALUE node is a `string` / `encapsed_string`, read
+   *      THROUGH the `argument` wrapper. `define($n, …)` publishes a name nobody can
+   *      write down, so there is nothing for an edge to point at (measured: 1 in the
+   *      corpus, and it is left unemitted rather than given an invented endpoint);
+   *   3. the call is at FILE scope — no enclosing function, method, closure or class
+   *      body. A `define()` inside a function body publishes the name only if that
+   *      function runs, so an edge from the FILE would assert something the file does
+   *      not guarantee (measured: 11 such calls in the corpus, all correctly excluded).
+   *      A top-level `if` is NOT a scope: it still executes when the file is included.
+   *
+   * All three are grammar facts read off nodes, so the edge is `confidence: 1` and
+   * carries no name matching anywhere — there is no heuristic here to be honest about.
+   *
+   * ## Why a symbol is published for the name
+   *
+   * The edge needs an endpoint that resolves. `define('CLEANHOME', …)` writes no
+   * declaration anywhere in the file, so without a symbol the target resolves to
+   * nothing and the graph asserts a name that is not there — which is the
+   * hopeless-target failure, not a resolution. `define()` does declare a constant, in
+   * the GLOBAL namespace: PHP resolves the name it writes against the global scope, so
+   * `ownerName` is deliberately left unset here even when the file is inside a
+   * namespace, and the comment on the `const_declaration` branch above (which does set
+   * `ownerName: ns`) is the deliberate contrast. That is also why the symbol is not
+   * `ownerName`-linked and therefore gets no `contains` edge: nothing in this file
+   * contains it.
+   *
+   * ## The source spelling, and what it costs
+   *
+   * `source: "global"` is the spelling PHP's other two file-scoped edge types already
+   * use (`emitUseClause`, `emitInclude`), and consistency inside one analyzer matters
+   * more here than a locally prettier choice: a reader filtering on
+   * `relationship_type IN ('imports','exports')` (src/lsp/graph_request.ts:256) sees one
+   * owner convention for all three. The honest cost is that `global` is not a published
+   * symbol, so the SOURCE end of these edges resolves to no declaration — measured and
+   * reported per type in docs/analyzers/real-php-analyzer.md rather than papered over.
+   * `metadata.file` carries the file identity for any consumer that needs to attribute
+   * the edge: 3 of the 45 distinct names in the corpus are published by more than one
+   * file, and without it those edges are indistinguishable.
+   */
+  private emitDefineExports(
+    rootNode: Node,
+    symbols: ASTEngine.UniversalSymbol[],
+    relationships: ASTEngine.UniversalRelationship[],
+    exports: ASTEngine.ExportInfo[],
+    filePath: string,
+  ): void {
+    // A function, method, closure or class body. Deliberately NOT `if`,
+    // `compound_statement` or `statement`: a top-level conditional still runs when
+    // the file is included, so its `define()` does publish.
+    const SCOPE = new Set([
+      "function_definition", "method_declaration", "anonymous_function", "arrow_function",
+      "class_declaration", "interface_declaration", "trait_declaration", "enum_declaration",
+      "function_static_declaration",
+    ])
+    const isFileLevel = (n: Node): boolean => {
+      let a: Node | null = n.parent
+      let guard = 0
+      while (a && guard++ < 64) {
+        if (SCOPE.has(a.type)) return false
+        if (a.type === "program") return true
+        a = a.parent
+      }
+      return false
+    }
+    const stack: Node[] = [rootNode]
+    while (stack.length > 0) {
+      const n = stack.pop()!
+      if (n.type === "function_call_expression") {
+        const fn = n.childForFieldName("function")
+        if (fn && fn.text === "define" && isFileLevel(n)) {
+          const args = this.findChildByType(n, "arguments")
+          const wrapper = args?.namedChild(0)
+          // THROUGH the `argument` wrapper — see the header: testing the wrapper's own
+          // type is what made this rule report 0 on a corpus that contains 60.
+          const value = wrapper && wrapper.type === "argument" ? this.findChildByType(wrapper, "encapsed_string") ?? this.findChildByType(wrapper, "string") : wrapper
+          if (value && (value.type === "string" || value.type === "encapsed_string")) {
+            const name = value.text.slice(1, -1)
+            // PHP's `define()` accepts ANY string as a constant name — `define('A B', 1)`
+            // is legal and publishes the name `A B` — so no character-shape test belongs
+            // here: inventing one would drop names the language really does publish. The
+            // only names refused are the ones with no nameable content, because an edge
+            // to an empty or whitespace-only endpoint is not an endpoint. (No regex: a
+            // shape test over a name is exactly the text-matching this lane must not do,
+            // and `trim()` is a string operation, not a pattern.)
+            if (name.length > 0 && name.trim().length > 0) {
+              // The symbol spans the NAME, not the quotes — the `const_declaration`
+              // branch above ranges a constant on its `name` node, and a byte range that
+              // included the quotes would disagree with it for the same kind.
+              const nameNode = this.findChildByType(value, "string_content") ?? value
+              symbols.push({
+                name,
+                kind: ASTEngine.SymbolKind.Constant,
+                range: this.nodeToRange(nameNode),
+                visibility: "public",
+                metadata: { phpSpecific: true, isDefinedConstant: true, definedBy: "define", fileLevel: true },
+              })
+              relationships.push({
+                source: "global",
+                target: name,
+                type: ASTEngine.RelationshipType.Exports,
+                confidence: 1,
+                line_number: this.nodeLine(n),
+                metadata: {
+                  phpSpecific: true,
+                  fileLevel: true,
+                  relationshipType: "define_call",
+                  file: filePath,
+                  // The name is GLOBAL even inside a namespace, which is why the symbol
+                  // carries no ownerName. Recorded so a consumer does not re-derive it
+                  // from the file's namespace and get it wrong.
+                  globalName: true,
+                },
+              })
+              exports.push({
+                name,
+                kind: ASTEngine.SymbolKind.Constant,
+                range: this.nodeToRange(nameNode),
+                metadata: { phpSpecific: true, definedBy: "define", fileLevel: true, globalName: true },
+              })
+            }
+          }
+        }
+      }
+      for (let i = n.namedChildCount - 1; i >= 0; i--) {
+        const c = n.namedChild(i)
+        if (c) stack.push(c)
+      }
+    }
   }
 
   // ========================================================================
