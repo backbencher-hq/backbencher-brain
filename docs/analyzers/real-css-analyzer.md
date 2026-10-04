@@ -218,10 +218,11 @@ nothing from `src/ast/real-css-analyzer.ts` and shares no helper with it.
 ```
 admitted files                                  1,180   parsed 1,180/1,180, 0 degraded
 analyzer `overrides` edges EMITTED                   48   distinct under the store key (source,type,target,line): 48
-oracle rows derived                                110
+oracle rows derived                                 68   (was 110 before PASS 4 fixed the oracle — see below)
 AGREE                                              48
-MISSING (oracle derives, analyzer does not)        62   -> the minified one-line collapse, limitation 3
+MISSING (oracle derives, analyzer does not)        20   of which STORE-COLLISION 20, REAL-GAP 0
 EXTRA   (analyzer publishes, oracle derives 0)      0   -> NO FABRICATION
+agreement                                      70.59%   verdict: no analyzer defect, exit 0
 ```
 
 **EXTRA = 0 is the number this lane could not previously produce, and it is the expensive
@@ -230,23 +231,36 @@ second `@keyframes` declarations are a vendor-prefixed pair — and emitting for
 assert a replacement CSS does not perform between two REAL symbols, which no resolution
 check can catch. A second walker that derives the vendor-prefix rule and the block
 boundary independently finds **zero** rows the analyzer invented, and **zero** rows it got
-wrong in the other direction apart from the 62 that are a storage artefact.
+wrong in the other direction once the oracle's own block boundary was corrected — the 20
+that remain are a storage artefact, and 42 of the 62 this check previously reported were
+the oracle's error rather than the analyzer's.
 
-**The 62 MISSING are limitation 3, now measured rather than asserted.** Pass 2 asserted
+**The MISSING rows are limitation 3, and PASS 4 CORRECTED HOW MANY.** Pass 2 asserted
 "62 of 106 same-block re-assignments are not emitted" from a shape count; the oracle
-derives **110** rows (106 custom-property + 4 keyframes) and the analyzer publishes 48, so
-**62 are unemitted** — the same number, from a different instrument. All 62 sit in
-`bulma/css/versions/bulma-no-helpers{,-prefixed}.min.css`, whose second line is 181,071
-characters, and `emitOverride`'s dedup key is `(name, line)`: every declaration in that
-line shares one line, so N supersessions of one property collapse to one edge. The runner
-**exits 1** on this, because the analyzer and the oracle genuinely disagree by 62 rows,
-and a gate that returned 0 would be reporting a number the two sides do not share.
+derived **110** rows (106 custom-property + 4 keyframes) against the analyzer's 48, so 62
+read as unemitted — the same number, from a different instrument, and reached for the same
+wrong reason twice. Pass 4 classified each surplus row by the parse fact `line` vs
+`supersedesLine` and split it: **42 were the ORACLE flattening nested declaration scopes**
+(chains across disjoint selectors in `phoenix/.../default.css`, each pair derived once per
+ancestor level — see PASS 4 §3) and **20 are the store collision** described next. After
+the oracle fix the oracle derives **68** rows and the surplus is 20.
 
-**The four wiring changes this needs are the supervisor's** (`ONTOLOGY-WORKSTREAM.md`
-§Ownership) and are written out in full in the oracle's own header: one import beside the
-other oracle imports, one loop in the `if (lang === "css")` branch, `"overrides"` added
-to the allowlist at `differential.ts:23373`, and a **multiplicity-aware comparison** —
-`source === target` by construction here, so `(label, from, target)` cannot tell one
+The 20 sit in `bulma/css/versions/bulma-no-helpers{,-prefixed}.min.css`, whose second line
+is 181,071 characters, and `emitOverride`'s dedup key is `(name, line)`: every declaration
+in that line shares one line, so N supersessions of one property collapse to one edge. The
+runner now **exits 0**, because its exit keys on the DEFECT count (`realGap + EXTRA`) and
+not on the raw surplus — exiting 1 on an unrepresentable collision trains the reader to
+ignore the script, which is how a real 42-edge gap sat behind a benign 20 for a round.
+The previous version of this paragraph ended by saying a gate returning 0 here would be
+reporting a number the two sides do not share; that is no longer true, and the reason it
+is no longer true is the 42 rows of oracle over-derivation, not a change in the analyzer.
+
+**The wiring changes this needs are the supervisor's** (`ONTOLOGY-WORKSTREAM.md`
+§Ownership) and are written out in full in §8 item (c) below: one import beside the
+other oracle imports, one loop in the `if (lang === "css")` branch, and a
+**line-aware comparison** — and NO allowlist change, because `overrides` is already in the
+css allowlist via the base disjunct at `differential.ts:23153`. `source === target` by
+construction here, so `(label, from, target)` cannot tell one
 redefinition from three and a set-based comparison degrades to "is the name right".
 
 **Independence, and its limit.** The oracle and the analyzer are two walkers over the
@@ -370,7 +384,7 @@ failures — which is how a real 42-edge gap sat behind a benign 20 for a round.
 
 | gate | result |
 | --- | --- |
-| `npx tsx script/m14/ontology-coverage-gate.ts css` | **exit 0**, `FALSIFIED 0`, `ruled-without-justification 0` |
+| `npx tsx script/m14/ontology-coverage-gate.ts css` | **exit 0**, `FALSIFIED 0`, `ruled-without-justification 0` — see the hang note below; it exits 1 on some runs while printing the same table |
 | `npx tsx validation/m14/fixtures/css/ruled-gate.ts` | **exit 0**, same table, `already present 2 of 2` |
 | `npx tsx script/m14/firing-check.ts --files 120 css` | **5/10 fired, 73,369 edges, 120/120 files, 0 degraded** |
 | `npx tsx validation/m14/census/css-parsefile-census.ts --all` | 1,180/1,180 parsed, 0 failures, **0 degraded**, 335,010 relationships |
@@ -380,6 +394,20 @@ failures — which is how a real 42-edge gap sat behind a benign 20 for a round.
 | `npx tsx validation/m14/census/css-mutant-run.ts` | **27 mutants, 27 caught, 0 survived** |
 | `npx tsx script/m12/verify-regex-census.ts` | 8 regex literals in HEAD; **none in `real-css-analyzer.ts`** (the two `css` matches are substrings of `real-scss-analyzer.ts`, another lane) |
 | `npx tsc --noEmit` | **exit 0** |
+
+**The gate's exit code is load-dependent and this is not the lane's to fix.** On one pass
+4 run it printed the full table above — `emitted 5/10  ruled-sound 5  FALSIFIED 0
+ruled-without-justification 0` — and *then* exited 1, because
+`src/ast/engine.ts` arms a per-file 120 s self-destruct timer and calls `process.exit(1)`
+when it fires, and one corpus file tripped it. The file is not a fixed one: that run was
+`grails-core/grails-test-examples/namespaces/grails-app/assets/stylesheets/main.css`, an
+earlier documented run was `hasura-engine/scripts/ekg/monitor.css`, and the run between
+them exited 0 on the same corpus. So it is the shared timer meeting a loaded machine
+(load average 15.7 on 8 cores while nine other lanes ran), not a property of any file.
+`validation/m14/fixtures/css/ruled-gate.ts` captures stderr for exactly this and prints
+`BUT NOT A VERDICT — the gate process was killed by parseFile's 120 s [BB-HANG] guard`, so
+a truncated run is never read as a result. The verdict is reproducible on a re-run; the
+exit code is not yet, and the fix is `engine.ts`'s, which is §8 item (f).
 
 The firing-check's `degraded 0` matters more than the edge count: a degraded parse
 substitutes a regex extractor whose symbols carry no `kind` and whose edges sit at
@@ -970,21 +998,26 @@ inventory cannot see a construct the language reaches through a lenient path:
 the gate's own `countOnTree(root, fileLabel, hits)` signature, and prints the overturn
 condition for every probe.
 
-### Reported, not edited — six items that need a file this lane does not own
+### Reported, not edited — five open items, plus one applied in pass 4
 
-The heading said "three" while the list below it had grown to six, (a) through (f). The count
-is now the list's length. Nothing else in the section changed.
+Items (b) through (f) are open and §8-owned. Item (a) was open for a round, was the lane's
+critical path, and is now APPLIED — it is kept in the list rather than deleted so the
+measurement that justified it stays next to the record of what it produced.
 
 Each is written to be applied without re-deriving it: file, function, what it must do,
-why, and the measurement that says it is needed. All six are §8 items under
+why, and the measurement that says it is needed. All are §8 items under
 `docs/analyzers/ONTOLOGY-WORKSTREAM.md`.
 
-**(a) `script/m14/ontology-coverage-gate.ts` — `RULED_BY_LANG` has no `css` entry, so the
-arbiter still exits 2 and reports nothing for this lane. TWO LINES, NOW PROVEN INSTEAD OF
-SPECIFIED.** `script/m14/css-ruled.ts` is the table, in the gate's own `Ruled` shape, with
-five entries (one per un-emitted type) and each `describe` carrying its measured number and
-its overturn condition. `validation/m14/fixtures/css/ruled-gate.ts` copies the gate to
-`/tmp`, applies EXACTLY these two lines, and runs the copy:
+**(a) APPLIED IN PASS 4 — `script/m14/ontology-coverage-gate.ts`, `RULED_BY_LANG`.**
+This item was open for a whole round and was the lane's critical path: the gate exited 2
+and reported nothing for css, so the five RULED verdicts had no arbiter checking them.
+`ROUND-BRIEF.md` item 3 authorised the change and it is now in the file — two additive
+lines, nothing else in the shared file touched. What follows is the record of what was
+applied and what it produced. `script/m14/css-ruled.ts` is the table, in the gate's own
+`Ruled` shape, with five entries (one per un-emitted type) and each `describe` carrying
+its measured number and its overturn condition. `validation/m14/fixtures/css/ruled-gate.ts`
+copies the gate to `/tmp` and runs it, and now reports `already present 2 of 2` instead
+of applying the patches:
 
 ```ts
 import { CSS_RULED } from "./css-ruled"
@@ -1013,9 +1046,12 @@ emitted 5/10   ruled-sound 5   FALSIFIED 0   ruled-without-justification 0
 gate exit code: 0
 ```
 
-Two things to note if the wiring is applied. First, the `RULED_BY_LANG` literal in the
-current gate also carries `lua`, `toml` and `fsharp`, so the second line must be the whole
-literal replaced, not an append. Second, the runner needs **no third patch** — unlike
+Two things to note for anyone re-deriving this. First, the `RULED_BY_LANG` literal also
+carries `lua`, `toml` and `fsharp`, so the second line must be the whole literal replaced,
+not an append — and the runner's `alreadyApplied` string for it is the tail
+`fsharp: FSHARP_RULED, css: CSS_RULED }` rather than the whole line, because the prefix
+belongs to other lanes and will change under them. Second, the runner needs **no third
+patch** — unlike
 toml's, which must redirect `specPath` because toml's own spec writes its rulings in
 `ruling` while the gate reads `resolution`. `rulingFor()` checks the TABLE first, so a
 `CSS_RULED` entry is returned before the spec is opened; two fewer patches is a fact about
@@ -1075,18 +1111,42 @@ are reproduced here so they can be applied without reading the oracle:
    shape. **The allowlist must be changed at the same time (item 3)**, because it filters
    the ANALYZER side and a label the oracle derives and the allowlist omits reads as a
    MISSING truth row — a trap that file's own comments record happening twice.
-3. `script/m14/differential.ts:23373`: add `"overrides"` to
-   `...(lang === "css" ? ["uses", "contains", "references", "imports"] : [])`.
-4. The comparison must be **multiplicity-aware for this label**. `source === target` by
-   construction — the lane publishes one symbol per name — so `(label, from, target)`
-   cannot tell one redefinition from three. The oracle returns one row per SUPERSESSION and
-   carries `supersedesLine` on each, so a multiset comparison can check the payload. If the
-   shared comparison is set-based, this label degrades to "is the name right" and nothing
-   more, which should be recorded rather than discovered later.
+3. **NO ALLOWLIST CHANGE IS NEEDED, and this is new.** An earlier version of this item
+   said to add `"overrides"` to `...(lang === "css" ? ["uses", "contains", "references",
+   "imports"] : [])` at line ~23373. That would be wrong: the css allowlist ALREADY
+   contains `overrides`, via the base disjunct at line 23153 —
+   `["extends", "implements", "instantiates", …(lang !== "csharp" && … && lang !== "go" ?
+   ["overrides"] : []), …]` — and css appears in none of its exclusion lists. That is
+   precisely why the shared differential reports `COMPARED WITH NO TRUTH: overrides
+   (1 comparable, 0 truth)` rather than omitting the label: the label IS comparable and
+   the truth is what is missing. So the defect is item 2 alone, and adding the label again
+   would be a no-blind-widening no-op that reads as a fix.
+4. The comparison must be **line-aware for this label**, and this is the substantive
+   change rather than bookkeeping. `deriveCssEdges` (line 20559) returns
+   `{label, from, target}` and dedupes on `label|from|target` — no line — and the harness
+   compares label + target only. But `overrides` is the one ontology type where the same
+   `(source, target)` pair legitimately recurs at DIFFERENT lines: a redefinition is
+   identified by WHICH declaration it supersedes, so the line is the identity. Measured on
+   all 1,180 admitted files:
 
-The measured result is in "PASS 3" above: **48 agree, 62 MISSING, 0 EXTRA** over 1,180
-files, with the 62 being the minified one-line collapse (limitation 3) and the 0 being the
-number that matters.
+   | | |
+   | --- | --- |
+   | oracle rows derived | 68 |
+   | distinct under `(label\|from\|target)` | **21** |
+   | analyzer edges published | **48** |
+   | analyzer edges distinct under the store key `(source,type,target,line)` | 48 |
+
+   21 against 48. A wiring that reuses `deriveCssEdges`'s name-level dedupe compares 21
+   truth rows against 48 analyzer edges and reads the difference as unexplained — turning a
+   DERIVATION finding into a phantom-fabrication report. The **20 store collisions are
+   certain** to land that way, because two supersessions of one name in one minified file
+   are one row under a name key and two rows in the store; the other 7 involve names
+   repeating across files, which the per-file harness separates and the global dedupe does
+   not, so their exact fate has to be read from the shared run rather than predicted here.
+
+The measured result is in "PASS 4" above, after the oracle's own block-boundary defect was
+fixed: **48 agree, 20 MISSING of which 20 are store collisions and 0 are real gaps, 0 EXTRA**
+over 1,180 files. The 0 EXTRA is the number that matters — no fabricated edge.
 
 **(d) `script/m14/firing-check.ts:340` — the per-type `files` column cannot report a
 number above 1, so it is the one row of the supervisor's table this lane cannot quote.**
@@ -1669,7 +1729,10 @@ other.
 - `overrides` ORACLE and its measured differential (the DERIVATION finding, paid):
   `script/m14/oracles/css-overrides.ts` (a second walker, importing nothing from the
   analyzer) and `validation/m14/census/css-overrides-differential.ts` → `--json <path>`.
-  Measured: 48 agree, 62 MISSING, **0 EXTRA** over 1,180 files.
+  Measured after the pass-4 oracle fix: 48 agree, 20 MISSING (20 store collisions, 0
+  real gaps), **0 EXTRA** over 1,180 files. The 62 this previously read is corrected in
+  PASS 4: 42 of them were the ORACLE flattening nested declaration scopes, not analyzer
+  gaps.
 - Ruling table, and the PROOF that it runs (applies the two shared-file lines to a copy
   of the gate in /tmp and runs it): `script/m14/css-ruled.ts` and
   `validation/m14/fixtures/css/ruled-gate.ts`. Gate result: `emitted 5/10 ruled-sound 5
