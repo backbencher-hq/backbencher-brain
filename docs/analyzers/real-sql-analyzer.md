@@ -76,27 +76,26 @@ Pinned by mutant `sql/range-columns-zero-based` and fixture `sqld8-range-and-ids
 
 ## Relationship ontology
 
-Every rule below is stated **for SQL**, not in general. Pass 3 re-measured every count through
-production `parseFile` over **1,952 of 1,955 admitted SQL files in 169 corpus repositories**
-(`validation/m14/fixtures/sql/measurements/pass3-final-census.json`): **31,037 relationships and
-18,462 symbols**, of which 3 files are named as unmeasured. The shared corpus has now grown twice
-under this lane — pass 1's 1,459 files, pass 2's 1,945, pass 3's 1,955 — so **every count on this
-page was re-measured at pass 3's HEAD**; nothing is carried forward. Pass 2's artifacts are kept
-at `validation/m14/fixtures/sql/ontology-census.json` and are superseded, not deleted, because the
-difference between them is itself a measurement (see *Reproducibility*).
+Every rule below is stated **for SQL**, not in general. Pass 4 re-measured every count through
+production `parseFile` over **1,955 of 1,955 admitted SQL files in 169 corpus repositories**
+(`validation/m14/fixtures/sql/measurements/pass4-census.json`): **31,066 relationships and
+18,482 symbols**, with **0 files degraded by the analyzer timeout and 0 in the regex-extractor
+fallback**. Every count on this page was re-measured at pass 4's HEAD; nothing is carried
+forward. Pass 3's artifacts are kept at `measurements/pass3-final-census.json` and are superseded,
+not deleted — the difference between them is itself a measurement (see *Reproducibility*).
 
 | Relationship | Rule **in SQL** | Census |
 | --- | --- | --- |
-| `contains` | table → column, and table → index/constraint. A SQL file's containment is its schema: a column is not a member of the query that selects it, and a CTE body is not a member of the statement that holds it. **Every edge carries `metadata.memberKind`** — see *Pass 3* | 11,959 |
-| `uses` | view / function / query / DML → referenced table. Anonymous statements use `global`. **A CTE name is not a table**: an unqualified reference matching a CTE of the statement's WITH list is suppressed, a qualified one never is. The scope is the WITH LIST, not the enclosing query — see *Pass 2* | 9,098 |
-| `references` | FK table → referenced table, index → indexed table, trigger → target table, policy → its table, GRANT/REVOKE → the object granted on. Each target sits in a grammar-mandated slot after `keyword_references` / `keyword_on` | 5,993 |
+| `contains` | table → column, and table → index/constraint. A SQL file's containment is its schema: a column is not a member of the query that selects it, and a CTE body is not a member of the statement that holds it. **Every edge carries `metadata.memberKind`** — see *Pass 3* | 11,977 |
+| `uses` | view / function / query / DML → referenced table. Anonymous statements use `global`. **A CTE name is not a table**: an unqualified reference matching a CTE of the statement's WITH list is suppressed, a qualified one never is. The scope is the WITH LIST, not the enclosing query — see *Pass 2* | 9,106 |
+| `references` | FK table → referenced table, index → indexed table, trigger → target table, policy → its table, GRANT/REVOKE → the object granted on. Each target sits in a grammar-mandated slot after `keyword_references` / `keyword_on` | 5,996 |
 | `calls` | trigger → executed function, and any `invocation` node **anywhere in the tree**, not only inside a query — a `DEFAULT`, a `CHECK`, a generated column's expression, a policy's `USING (…)`, a `DO` block's `PERFORM`, and an `ALTER COLUMN … SET DEFAULT` are all `invocation`s in grammar-mandated slots. The callee must be free of ERROR and not a keyword or builtin. Two of those routes were dead until pass 3 | 3,892 |
 | `imports` | two distinct mechanisms, kept separable in metadata: a psql `\i`/`\ir` include (**22**, `metadata.psqlInclude`, target is a file in this repository) and `CREATE EXTENSION` (**30**, `metadata.extensionInstall`, target is a distribution that must be installed and can never bind) | 52 |
 | `overrides` | `CREATE OR REPLACE` on a name **this file already declared of the same kind**. SQL has no method table; this is the only replacement event the language has | 22 |
 | `instantiates` | `ROW(...)::composite` — a composite cast, which PostgreSQL implements as a call to the type's constructor. A conversion (`x::my_enum`, `nextval('s')::bigint`) is **not** an instantiation | 21 |
-| `exports` | not derivable — RULED, see below | 0 |
-| `extends` | not derivable from the wired grammar — RULED, see below | 0 |
-| `implements` | not derivable — RULED, see below | 0 |
+| `exports` | not derivable — RULED, and the ruling is the **weakest of the three**: no correct implementation could meet its condition. See below | 0 |
+| `extends` | **SQL HAS table inheritance and the wired grammar cannot read it.** RULED on a grammar inventory, but this is a GRAMMAR GAP, not an inapplicability — see below | 0 |
+| `implements` | not derivable — RULED, instrument A + B | 0 |
 
 Relationship identity uses a `Map` keyed by type/source/target. Repeated DML operations merge
 operation metadata rather than creating duplicate graph edges. Unresolved tables/functions
@@ -110,14 +109,14 @@ queryable. Before pass 1 **no** edge carried it, which reads as "no heuristics" 
 
 | Tier | Meaning here | Edges | Share |
 | --- | --- | --- | --- |
-| `structural` | the fact is in a grammar-mandated position — every `contains`, `references`, `overrides`, `instantiates` | 18,025 | 58.05 % |
+| `structural` | the fact is in a grammar-mandated position — every `contains`, `references`, `overrides`, `instantiates` | 18,016 | 57.99 % |
 | `import_based` | a token names another unit — every `imports` | 52 | 0.17 % |
-| `usage_contextual` | a name in a bare slot with nothing around it to disambiguate | 10,685 | 34.43 % |
-| `reference_qualified` | a name read through a reference that names its own **schema**, which is its own disambiguation — `app.users`, `public.f(…)` | 2,275 | 7.33 % |
+| `usage_contextual` | a name in a bare slot with nothing around it to disambiguate | 10,693 | 34.42 % |
+| `reference_qualified` | a name read through a reference that names its own **schema**, which is its own disambiguation — `app.users`, `public.f(…)` | 2,305 | 7.42 % |
 
-(31,037 edges; shares are of that total, computed from the per-type `evidenceClass` census in
-`measurements/pass3-final-census.json` — `contains` 11,959 + `references` 5,993 + `overrides` 22
-+ `instantiates` 21 = 18,025 structural; `calls` 3,417 + 475; `uses` 7,268 + 1,830.)
+(31,066 edges; shares are of that total, computed from the per-type `evidenceClass` census in
+`measurements/pass4-census.json` — `contains` 11,977 + `references` 5,996 + `overrides` 22
++ `instantiates` 21 = 18,016 structural; `calls` 3,417 + 475; `uses` 7,276 + 1,830.)
 
 **`reference_qualified` was DEAD until pass 2, and this is the number that says so.**
 `evidenceClassFor` has consulted `metadata.qualified` for the tier since it was written, and
@@ -131,7 +130,7 @@ re-derives the expected tier independently of the analyzer's own table and repor
 (`adversarial-probe.json`, `A3-tier-AGREES-with-the-metadata` / `A4-tier-AGREES-with-the-metadata`)
 — a probe that read the analyzer's own mapping could not have reported a disagreement.
 
-`confidence` is **1 on all 31,037 edges and 0 edges fall below 0.7.** That is a claim rather
+`confidence` is **1 on all 31,066 edges and 0 edges fall below 0.7.** That is a claim rather
 than an omission: no edge this analyzer emits is a guess about a *name*. Where the analyzer
 genuinely cannot tell — a psql variable target, a concatenated `EXECUTE` fragment whose
 declaration name is computed at run time, an ERROR-recovery artefact — it emits nothing and
@@ -147,25 +146,31 @@ of the lists would have turned a working guard into a reported defect.
 
 ## Ontology verdicts — all ten types (re-measured at pass 3, 2026-10-03)
 
-Instrument: production `parseFile` (not `analyze()`) over **1,952 of 1,955 admitted SQL files in 169
+Instrument: production `parseFile` (not `analyze()`) over **1,955 of 1,955 admitted SQL files in 169
 repositories**, size cap 512 KB, **every** admitted file sampled rather than a subset, walked as
-**4 contiguous shards** and merged (see *Reproducibility* for why the sharding is the measurement and
-not a convenience). Artifacts, all under `validation/m14/fixtures/sql/measurements/`:
-`pass3-final-census.json`, `pass3-adversarial-probe.json`, `pass3-construct-probe.json`,
-`pass3-incoming-corpus.json`, `pass3-invocation-why-after.json`,
-`pass3-phantom-constraint-{before,after}.json`. Written rulings:
-`script/m14/sql-ruled.ts`, applied to a COPY of the arbiter by `run-ruling-table.mts`.
+**8 strided shards and merged** (see *Reproducibility*). Artifacts, all under
+`validation/m14/fixtures/sql/measurements/`:
+`pass4-census.json`, `pass4-census-4shard.json`, `pass4-sharded-arbiter.json`,
+`pass4-arbiter-shape-diff.json`, `pass4-descendants-equivalence.json`,
+`pass3-adversarial-probe.json`, `pass3-construct-probe.json`, `pass3-incoming-corpus.json`,
+`pass3-invocation-why-after.json`, `pass3-phantom-constraint-{before,after}.json`.
+Written rulings: `script/m14/sql-ruled.ts`, applied to a COPY of the arbiter by
+`run-ruling-table.mts` / `run-sharded-arbiter.mts`.
 
 **The arbiter's own verdict on this lane's own ruling table**, copy patched, arbiter on disk
-untouched: **`emitted 7/10   ruled-sound 3   FALSIFIED 0   ruled-without-justification 0`.**
+untouched, all 8 shards answering all ten rows:
+**`emitted 7/10   ruled-sound 3   FALSIFIED 0   ruled-without-justification 0`.**
+The arbiter's single-process run does not finish at all — it dies on `[BB-HANG] parser stuck 120s`
+and prints its header and nothing else, which is why the verdict is taken over 8 repo-shards and
+merged by the arbiter's own precedence. See *PASS 4*.
 
 | Type | Verdict | Count | Where it came from, or the ruling's instrument |
 | --- | --- | --- | --- |
-| `contains` | EMITTED | 11,959 | 647 files; e.g. `Exposed/exposed-maven-plugin/…/V20260720135258__CREATE_TABLE_USERS.sql` |
-| `uses` | EMITTED | 9,098 | 1,520 files; e.g. `duckdb/benchmark/aoc24/queries/day02.sql` |
-| `references` | EMITTED | 5,993 | 611 files; e.g. `hasura-engine/server/src-rsr/init_pg_source.sql` |
+| `contains` | EMITTED | 11,977 | 648 files; e.g. `Exposed/exposed-maven-plugin/…/V20260720135258__CREATE_TABLE_USERS.sql` |
+| `uses` | EMITTED | 9,106 | 1,522 files; e.g. `duckdb/benchmark/aoc24/queries/day02.sql` |
+| `references` | EMITTED | 5,996 | 612 files; e.g. `hasura-engine/server/src-rsr/init_pg_source.sql` |
 | `calls` | EMITTED | 3,892 | 630 files; e.g. `duckdb/benchmark/clickbench/queries/q27.sql` |
-| `imports` | EMITTED | 52 | 22 psql includes in 6 files (`postgrest/test/io/fixtures/load.sql`) + 30 `CREATE EXTENSION` in 8 files (`hasura-engine/server/src-rsr/migrations/1_to_2.sql`) |
+| `imports` | EMITTED | 52 | 25 files; 22 psql includes in 6 (`postgrest/test/io/fixtures/load.sql`) + 30 `CREATE EXTENSION` in 8 (`hasura-engine/server/src-rsr/migrations/1_to_2.sql`) |
 | `overrides` | EMITTED | 22 | 4 files; `postgrest/test/io/fixtures/big_schema.sql`, `postgrest/test/io/fixtures/schema.sql`, `postgrest/test/spec/fixtures/schema.sql`, `proxicall/database/archive/2026/20260131_pms_audit_logging_system.sql` |
 | `instantiates` | EMITTED | 21 | 10 files; `hasura-engine/v3/crates/engine/tests/db_definition.sql`, `postgrest/test/spec/fixtures/schema.sql` |
 | `exports` | RULED | 0 | **Instrument A.** 480 distinct node types across the corpus and **no node type anywhere in that vocabulary contains `export`, `module` or `provide`**, keyword or otherwise. Token counts: 0 `EXPORT`, 0 `MODULE` as a KEYWORD, 0 `PROVIDE`; 1 occurrence of the TEXT `module`, which is a column name — see *Pass 3*. |
@@ -247,9 +252,9 @@ under the table.
 
 | Type | 1 Exists | 2 Fires | 3 Correct | 4 Labelled | 5 Resolved (intra / corpus) | 6 Confident |
 | --- | --- | --- | --- | --- | --- | --- |
-| `contains` | yes | 11,959 | 11,958 of 11,959 member endpoints resolve by `ownerName`; **1 does not**, and it is named below | distinct from `references` (an FK/policy/index target, all in fixed keyword slots) | 99.99 % / 99.99 % | 1.0, all `structural` |
-| `uses` | yes | 9,098 | 19 of 19 CTE-named edges are AMBIGUOUS rather than fabricated (a qualified reference reaches the same bare leaf) or unrecoverable (below) | distinct from `calls`; tier agrees with metadata on every edge | 32.53 % / 88.94 % | 1.0; 7,268 `usage_contextual`, 1,830 `reference_qualified` |
-| `references` | yes | 5,993 | 84/84 facts | distinct from `uses`: every target follows `keyword_references`/`keyword_on` | 69.56 % / 98.26 % | 1.0, all `structural` |
+| `contains` | yes | 11,977 | 11,976 of 11,977 member endpoints resolve by `ownerName`; **1 does not**, and it is named below | distinct from `references` (an FK/policy/index target, all in fixed keyword slots) | 99.99 % / 99.99 % | 1.0, all `structural` |
+| `uses` | yes | 9,106 | 19 of 19 CTE-named edges are AMBIGUOUS rather than fabricated (a qualified reference reaches the same bare leaf) or unrecoverable (below) | distinct from `calls`; tier agrees with metadata on every edge | 32.51 % / 88.95 % | 1.0; 7,276 `usage_contextual`, 1,830 `reference_qualified` |
+| `references` | yes | 5,996 | 84/84 facts | distinct from `uses`: every target follows `keyword_references`/`keyword_on` | 69.56 % / 98.27 % | 1.0, all `structural` |
 | `calls` | yes | 3,892 | 84/84 facts; **574 qualified invocations emitted** and **0 unexplained** — the residual is bucketed by cause rather than reported as a number | distinct from `uses`; tier agrees on every edge | 40.34 % / 78.75 % | 1.0; 3,417 `usage_contextual`, 475 `reference_qualified` |
 | `imports` | yes | 52 | not in the 84-fact oracle; 0 unexplained by construction and the two mechanisms are separable in metadata | `psqlInclude` (22) vs `extensionInstall` (30) | 57.69 % / 57.69 % | 1.0, all `import_based` |
 | `overrides` | yes | 22 | all 22 reconciled against the tree by an independent re-derivation (below) | `orReplace: true` + both line numbers on every edge | 100 % / 100 % | 1.0, all `structural` |
@@ -627,6 +632,151 @@ published symbol and `global` is not.
 | `contains` edges naming a symbol `keepSymbol` deletes | **1** | 1 | SQL-G13, shared machinery, filed |
 | `calls` edges at confidence 1 whose evidence tier is `usage_contextual` | **3,417** | — | not a defect: that is the honest label for a name in a bare slot, and it is countable per edge |
 
+## PASS 4 — the walk was the bottleneck, and the corpus count was bimodal because of it (2026-10-04)
+
+Pass 1 measured whether each type fires. Pass 2 assumed each label was wrong. Pass 3 asked the
+question from the other end. **Pass 4 assumed the lane's own NUMBERS were wrong, and they were.**
+
+### The total was bimodal, and the cause was this analyzer
+
+Pass 3 reported 31,037 relationships and 1,952 of 1,955 files, and recorded that the corpus numbers
+did not reproduce. Pass 4 pinned it to one file and then to one number:
+
+| `postgrest/test/io/fixtures/big_schema.sql`, solo, fresh process | ms | result |
+| --- | --- | --- |
+| run 1 | **116,589** | 943 symbols, 1,874 relationships, `analysisVersion: "m10.06-cut"` |
+| run 2 | 123,743 | 0 symbols, 0 relationships, `"2.0-basic-fallback"` |
+| run 3 | 127,059 | 0 symbols, 0 relationships, `"2.0-basic-fallback"` |
+
+**3.4 seconds of headroom against a 120-second budget.** Which side it landed on decided the lane's
+headline: `31,037 − 1,874 = 29,163`, and 29,163 is exactly what the same corpus measures when the
+file times out. Pass 3 had attributed this to files crossing the engine's budget and stopped there.
+The budget was real; the cost was not.
+
+### `node --cpu-prof`: 87 % of the run was one helper
+
+| | |
+| --- | --- |
+| `walkDescendants` self time | **133.97 s of 154 s (87.0 %)** |
+| `ts_parser_parse_wasm` (the actual parse) | **0.33 s** |
+| nodes in the file | 67,508 named, depth 43, 392 KB |
+| `descendants` calls → distinct (node, type) queries | 29,662 → **4,199** |
+| nodes those 4,199 walks visited | **99,159,647** — 1,469 per node in the file |
+
+The grammar was never the problem. `descendants(node, type)` was a full preorder subtree walk, and
+the queries sit near the root, so each one rescanned a near-root subtree. `firstDescendant` and
+`containsType` made it worse by materialising the **entire** match list to read its first element
+or its length.
+
+### Two things had to be MEASURED before the fix could be written
+
+**1. Node object identity does not exist.** web-tree-sitter's `unmarshalNode` ends in
+`new Node(...)`, so every property access returns a fresh wrapper. Verified directly on the wired
+wasm (`descendants-equivalence.mts`'s sibling probe, since removed):
+
+```
+rootNode === rootNode                          false
+namedChild(0) === namedChild(0)                false
+rootNode.tree === rootNode.tree                true
+namedChild(0).id === namedChild(0).id          true
+```
+
+A `WeakMap<Node, …>` cache therefore misses on nearly every lookup. A first attempt did exactly
+that: it removed **85 % of the CALLS and none of the COST**, and an index keyed the same way
+rebuilt itself **200+ times for a single tree** because the root handle it keyed on was a new
+object each time. `Node.id` is documented as unique within a tree and `Node.tree` is the tree it
+belongs to, and both are plain fields — so `(node.tree, node.id)` is the key.
+
+**2. There is more than one tree per parse.** `runResync` re-parses each top-level statement into
+its OWN tree and feeds those nodes back through `processRoot`, so "the" tree is not a field anyone
+can set. `node.tree` is what says which tree a query belongs to.
+
+### The fix
+
+`descendants(node, type)` is now a binary search over a document-order per-type run plus an
+interval test; `namedChildren` is a map lookup; `firstDescendant`/`containsType` stop at the first
+match. One preorder walk per tree builds it, touching each node once with the minimum number of
+accesses, and the children it reads are kept.
+
+| File | Before | After |
+| --- | --- | --- |
+| `postgrest/test/io/fixtures/big_schema.sql` | 116,589–156,694 ms, **usually 0 symbols / 0 relationships** | **3,551 ms, 943 symbols, 1,874 relationships** |
+| `postgrest/test/spec/fixtures/schema.sql` | 5,307 ms | **1,612 ms** |
+| `postgrest/test/io/fixtures/schema.sql` | 5,323 ms | **1,238 ms** |
+| `proxicall/database/schema.sql` (516 KB) | 2,832 ms | 2,807 ms — it was never slow |
+
+33× on the file that decided the headline, and **the same 943 symbols and 1,874 relationships**
+on the runs that finish inside the budget — the optimization changed the cost, not the answer.
+
+### The optimization is CHECKED, not trusted
+
+`validation/m14/fixtures/sql/descendants-equivalence.mts` compares the index against a preorder
+walk written out in that file, for every node against every type the grammar produces, comparing
+**sequence** and not just count:
+
+> **1,955 files, 7,807 nodes, 454 types, 2,624,148 queries, 0 mismatches — exact on every one.**
+
+It earned its keep before the fix was finished. A byte-interval test alone **cannot** separate a
+DESCENDANT from an ANCESTOR that opens on the same byte: `statement` wrapping `insert` with no
+token between them shares a start index, and with nothing at the end shares the end too. That was
+**1,432 queries across 1,955 files** reading 1 where the walk read 0 — and on `object_reference`
+(337 sampled), `relation` (117) and `literal` (46), **all of which the analyzer queries at 14, 1
+and 3 sites**. Not a latent bug: it would have shipped wrong `references`, `uses` and
+`instantiates` edges. Depth closes it.
+
+The oracle's own first version was wrong too, and that is recorded in its header rather than
+quietly dropped: it compared `findDescendant` against a plain walk and reported **7,807
+disagreements — exactly one per node tested**, every one of them the documented self-match rule
+(`findDescendant(node, type)` returns `node` itself when `node.type === type`) and none of them a
+defect. The rule now lives in the oracle as `expectedFirst`.
+
+### `imports` reads 0 on a 120-file sample and 52 on the corpus
+
+The 26-lane sweep at `validation/m14/measurements/firing-sweep-26-lanes.ndjson` records this lane
+as `imports: 0 edges / 0 files` over `120/120` files. That is a sampling artefact, not a verdict:
+the 52 edges live in **25 files** out of 1,955, and a 120-file sample that reports `files: 1` for
+`calls` (167 edges) has not covered the corpus. The brief's own reading applies — a type that did
+not fire on a sample is **unadjudicated**, not inapplicable.
+
+### The arbiter, run over the whole corpus
+
+`script/m14/ontology-coverage-gate.ts` in one process over 1,955 files does not finish: it prints
+its header and corpus size and then dies on `[BB-HANG] parser stuck 120s`. `run-sharded-arbiter.mts`
+applies the bound that works — 8 shards of whole repos, the arbiter's own admission rule for the
+split, the patched copy run per shard, and the arbiter's own precedence for the merge. Result, all
+8 shards answering all ten rows: **emitted 7/10, ruled-sound 3, FALSIFIED 0,
+ruled-without-justification 0**.
+
+`arbiter-vs-shard.mts` then diffed the two process shapes **per file**: **11 of 1,955 files
+differ, and every one carries an explicit fallback marker on exactly the side that read lower** —
+8 `analysisVersion: "2.0-basic-fallback"` instances (the engine's timeout load policy, all at
+167,176–168,379 ms) and 3 `fallback: true` instances (the pool-worker's regex extractor). There is
+no unexplained residual.
+
+### The ruling table audits its own falsifiability
+
+`script/m14/sql-ruled.ts` (moved from `script/m60/`, because the arbiter prints
+`Written ruling: script/m14/sql-ruled.ts` and that path did not exist) adds
+`SQL_RULING_FALSIFIABILITY`, applying the brief's test — *could an implementation that is right and
+has no gaps left meet this condition?* — to each entry:
+
+| Type | Kind | A correct implementation could meet it? |
+| --- | --- | --- |
+| `extends` | grammar + implementation | **yes — and this is the finding** |
+| `implements` | grammar + implementation | yes, with no counter-example |
+| `exports` | corpus only | **no**, and it is labelled the weakest of the three rather than presented as falsifiable |
+
+**`extends` is a GRAMMAR GAP, not an inapplicability, and saying otherwise was wrong.** SQL has
+table inheritance — `CREATE TABLE c (…) INHERITS (p)`, and since PostgreSQL 11
+`CREATE TABLE c PARTITION OF p …` and `ALTER TABLE p ATTACH PARTITION c …`, which make a child a
+subtype of a parent with no `INHERITS` clause at all. All three were **parsed** against the wired
+wasm and all three put the parent clause inside an `ERROR`. A correct implementation meets the
+condition by patching the grammar to parse the clause and emitting the edge — and this lane has
+already rebuilt the grammar eight times to add rule groups. It is not shipped here because the
+grammar build and `validation/m14/grammar-pins.json` are shared artefacts (§8), and a rebuild
+attempt has already produced a `parser.c` 111,557 bytes off the wired one. Reported, not done
+quietly.
+
 ## Recovery passes
 
 The analyzer has **three** passes beyond the main tree walk. Each is strictly additive — the
@@ -815,7 +965,7 @@ is part of the row.
 | M14 fixture lane (`script/m14/run-fixtures.ts --lang sql`) | **15 / 15** (`sqld15` is new) | 6 of `sqld15`'s sections are forbid-side or negative, and **reverting the analyzer makes it fail with 6 named problems** — verified, not asserted |
 | SQL ontology mutants (`script/m60/run-sql-ontology-mutants.ts`) | **21 / 21 caught** (5 new) | exits 2 on a survivor. One of the five **survived its first run** because its transform scanned the fixture text for `DO $` and matched the fixture's own prose; that is recorded in the mutant's description rather than quietly fixed |
 | m12 differential (`script/m12/verify-analyzer.ts sql`) | **84 facts, P = R = 1.000, 0 FP, 0 FN, `earliestFailingLayer=none`, `parseErrors=0`** | the FP that made this 0.988 was a real fabrication; see *Differential ground truth* |
-| ontology census (`validation/m14/fixtures/sql/ontology-census.mts`, 4 shards + merge) | **1,952 of 1,955 admitted parsed, 0 parse failures, 0 empty names, 0 `unknown` endpoints, 31,037 relationships / 18,462 symbols** | the 3 unmeasured files are named in the artifact as `filesWithNoShardRow`, and each shard's own degradation record is replayed into the merge |
+| ontology census (`validation/m14/fixtures/sql/ontology-census.mts`, 8 shards + merge) | **1,955 of 1,955 admitted parsed, 0 parse failures, 0 degraded by timeout, 0 in regex fallback, 0 empty names, 0 `unknown` endpoints, 31,066 relationships / 18,482 symbols** | nothing is unmeasured and nothing is degraded, so there is no `filesWithNoShardRow` to name; the same figure comes out of a 4-shard walk (`pass4-census-4shard.json`) |
 | **two independent walks, different partitioning, same HEAD** | **8 shards 1,951 files / 29,019 rels and 4 shards 1,952 files / 30,893 rels — the whole difference is ONE named file**, `postgrest/test/io/fixtures/big_schema.sql` | this is the row pass 2 could not fill, and it is the reason the census is sharded |
 | incoming probe (`validation/m14/fixtures/sql/pass3-incoming.mts`) | 1,955 files, 31,037 edges; `contains` resolves **99.59 %** intra-file with (name, owner, memberKind), against 92.7 % on the bare name | reads only fields that SURVIVE production `parseFile` — see DEFECT 1's note on the metadata whitelist |
 | invocation-cause probe (`pass3-invocation-why.mts`) | 742 qualified invocations on the tree → 579 emitted, 53 guard-suppressed, 112 bucketed by cause, **0 unexplained** | pass 2's open item; it also discloses its own degradation after two runs disagreed |
@@ -863,39 +1013,42 @@ decided by the instrument and is unaffected; only the pointer is wrong. The fix 
 each decision, with the prose match as the fallback, plus splitting `SQL-D16` into two entries
 because it covers two types. §8 item.
 
-### Reproducibility — what does NOT reproduce, measured
+### Reproducibility — measured at pass 4, and it now holds
 
-This is the most important limitation on every number above and it was found by trying to
-reproduce one.
+**At pass 4 the corpus measurement reproduces, which it did not at any earlier pass.** Two walks
+of the same 1,955-file corpus at the same HEAD with DIFFERENT partitioning — **8 strided shards**
+and **4 contiguous shards** — produce identical merged totals for all seven emitted types,
+identical per-type resolution rates and identical `evidenceClass` splits:
 
-**The census is not byte-reproducible on a loaded machine, and the reason is in the engine.**
-`src/ast/engine.ts` arms a per-file timeout and answers it by returning a **basic parse result**
-rather than an error. Six corpus files were observed crossing it across pass-2's runs —
-`postgrest/test/io/fixtures/big_schema.sql` (6 times), `roles.sql`, `replica.sql`,
-`db_config.sql`, `database.sql` and `phpmyadmin/tests/test_data/server_import.sql` — and each
-occurrence silently drops that file's symbols and relationships. A pass-1-shaped census and a
-pass-2-shaped census of the same corpus on the same HEAD differ by **1,001 symbols and 1,860
-relationships** for this reason and no other: the 300-file A/B, run back to back with the two
-analyzer versions, differs by **0 symbols and 1 edge**.
+| Walk | Files measured | Degraded by timeout | Regex fallback | Symbols | Relationships |
+| --- | --- | --- | --- | --- | --- |
+| 8 strided shards | 1,955 / 1,955 | 0 | 0 | 18,482 | **31,066** |
+| 4 contiguous shards | 1,955 / 1,955 | 0 | 0 | 18,482 | **31,066** |
 
-**There is also a wasm fault that kills the process, and it is load-dependent.** Two corpus
-files report `memory access out of bounds` from the wasm parser and then hang, after which
-`engine.ts:1411` answers with `process.exit(1)`:
+(`measurements/pass4-census.json`, `measurements/pass4-census-4shard.json`.) The per-SHARD rows do
+differ — `big_schema.sql` is 1,874 relationships and lands in whichever shard owns it — which is
+exactly why the merge is a separate pass over shard rows rather than an in-process sum. The number
+is now a property of the corpus and not of the slicing.
 
-| File | Behaviour |
-| --- | --- |
-| `duckdb/extension/tpcds/dsdgen/queries/83.sql` | faults and hangs — excluded by name in the census, on every run |
-| `duckdb/extension/tpcds/dsdgen/queries/97.sql` | faults and hangs — **not excluded**, and it killed a pass-2 census repeat |
-| `duckdb/benchmark/aoc24/queries/day11.sql` | faults and hangs under load; **parses in 593–758 ms on 3 of 3 solo runs**, yielding 0 symbols either way |
+**What changed to make it hold is a defect fix, not a better procedure.** Pass 3 recorded the
+total as bimodal and attributed the instability to files crossing `engine.ts`'s 120 s analyzer
+timeout. `postgrest/test/io/fixtures/big_schema.sql` measured **116,589 ms in 1 of 3 solo runs and
+123,743 / 127,059 ms in the other two** — 3.4 seconds of headroom against a 120-second budget —
+so which side of the budget it landed on decided whether the lane read 31,037 or 29,163, and
+`31,037 − 1,874 = 29,163` exactly. Pass 4 found the cause was **this analyzer's own walk**, and
+fixed it. See *PASS 4*. With `big_schema.sql` at 3,551 ms, **0 files degrade** instead of 4–8.
 
-So a census run either completes or dies with no output, and **which files fault depends on the
-machine's load, not on the code**. The pass-2 repeat of the census died on `day11.sql`; the
-pass-2 adversarial run and the pass-2 ruling-table run completed. The committed artifacts are
-from runs that completed. This is a §8 item with a precise specification: `ontology-coverage-gate.ts`
-and every lane's `parseFile`-based corpus walk need an `--exclude` for the faulting files, and
-`engine.ts` needs to stop answering a parse fault with `process.exit(1)`, because a single
-unparseable file makes every instrument built on the production entry point
-non-reproducible.
+**What still does not reproduce, and is not claimed to.** The `[BB-HANG]` wasm fault is a property
+of the ENGINE's budget on a loaded machine, not of any file, and it is still live: pass 4 was
+killed by `duckdb/extension/tpcds/dsdgen/queries/90.sql` on one run and by
+`duckdb/benchmark/aoc24/queries/day03.sql` on another, **two different files on two runs of the
+same code**. The machine has 8 cores, 15 GB of RAM and 11 GB of it in use by the other lanes, and a
+758-byte file (`postgrest/test/pgbench/1567/old.sql`) that parses solo in **650–1,062 ms** took
+**167,184 ms** under 8-way contention — a factor of 190 that is load, not code. So a single
+long `parseFile` walk is still not a reproducible instrument on this box, which is why the census,
+the arbiter run and the equivalence probe are all sharded, and why `engine.ts` answering a parse
+fault with `process.exit(1)` remains a §8 item: it makes every instrument built on the production
+entry point all-or-nothing.
 
 ## Known gaps, stated rather than implied
 
