@@ -27,8 +27,21 @@
  *                position + not a label + not an assignment target.
  *   instantiates a call whose callee is a declared type -> `instantiates`; plus
  *                `new(T)`'s type argument.
- *   contains     owner -> owned member (from the analyzer's own owner names,
- *                shared ground truth).
+ *   contains     owner -> owned member. Two SEPARATE derivations, because they
+ *                rest on different evidence and only one of them is shared:
+ *                  (a) owner -> member from the analyzer's own `ownerName`
+ *                      (shared ground truth: the owner assignment is not what
+ *                      the differential is for), and
+ *                  (b) enclosingRoutine -> nestedRoutine, derived HERE from the
+ *                      PARSE TREE by lexical nesting. (b) exists because the
+ *                      analyzer stopped reading `ownerName` for a nested
+ *                      routine — its owner is a FUNCTION, and `ownerName` is the
+ *                      family field for a class owner — and an oracle that
+ *                      derived nothing for the family would agree with the
+ *                      analyzer by saying nothing, which is the blind spot
+ *                      this oracle exists to prevent. Measured on the 400-file
+ *                      sample before (b) existed: 126 `contains` MISSING, every
+ *                      one of them a nested closure.
  *   extends      `ref object of B` -> the base, unless the base is one of the
  *                compiler's roots (RootObj/RootRef/Object), which exist nowhere.
  *   overrides    a method whose receiver is a declared subtype of another
@@ -37,6 +50,14 @@
  *                annotations, return types, `cast[T]`, `ref object of`,
  *                `concept … of`, and a type alias's RHS — constructor AND
  *                type arguments.
+ *
+ * It deliberately does NOT derive `exports` or `implements`. Both are absent
+ * here and that absence is RECORDED rather than silent: `script/m14/nim-ruled.ts`
+ * carries the falsifiable measurement for `implements` (216 concepts examined, 0
+ * refinements) and `exports` is a module-level re-export whose shape is
+ * position-dependent (`except` names what does NOT leave). Deriving either here
+ * without a corpus measurement behind it would be a second opinion nobody
+ * checked.
  *
  * It deliberately does NOT derive the docstring, the range, or the imports
  * array: those are compared by the fixture lane and the pipeline seam gate, and
@@ -327,6 +348,142 @@ function supertypesOf(leaf: string, subtypes: Map<string, Set<string>>): Set<str
 
 // ── the derivation ──
 
+/**
+ * `contains` for a NAMED nested routine, derived from the parse tree alone.
+ *
+ * ## Why this is a separate walk and not a field read
+ *
+ * The `contains` derivation above reads `symbol.ownerName`, which is declared
+ * shared ground truth on the grounds that the owner assignment is not what the
+ * differential is for. That reasoning does not transfer here: a nested routine's
+ * owner is a FUNCTION, and the analyzer deliberately does not put a function in
+ * `ownerName` (the family field is for a class or module owner), so the edge
+ * comes from `metadata.nimNestedIn` — the analyzer's own metadata. An oracle
+ * that read `nimNestedIn` would be checking the analyzer against itself.
+ *
+ * So this walks the tree. The rule is the language's, not the analyzer's: a
+ * routine declared inside another routine's BODY is nested in it. The BODY is
+ * read as the `body` FIELD, because a routine's doc comment is not its body —
+ * which is the same distinction the analyzer's `pushCallableChildren` makes, and
+ * it is stated here independently so a disagreement is still possible.
+ *
+ * ## What is deliberately not derived
+ *
+ * A routine with no name contributes nothing: there is no target to point an edge
+ * at, and inventing one would be the fabrication the workstream treats as its
+ * most expensive mistake. A routine at file scope has no enclosing routine, so it
+ * contributes nothing either.
+ *
+ * ## Comparison basis
+ *
+ * START OFFSETS, never `===`. `childForFieldName` and `namedChild` each allocate
+ * their own JS wrapper for one underlying node, so object identity is false for
+ * the node itself. Two nodes in one tree cannot share a start offset.
+ */
+const ROUTINE_NODES = new Set([
+  "proc_declaration", "func_declaration", "method_declaration",
+  "iterator_declaration", "macro_declaration", "template_declaration",
+  "converter_declaration",
+])
+
+function declaredRoutineName(node: any): string {
+  const nameNode = node.childForFieldName?.("name")
+  if (!nameNode) return ""
+  // `exported_symbol` wraps the identifier and a `*`; the identifier is the name.
+  if (nameNode.type === "exported_symbol") {
+    return nameNode.namedChildCount > 0 ? String(nameNode.namedChild(0).text) : ""
+  }
+  return String(nameNode.text ?? "")
+}
+
+export function deriveNestedRoutineContainment(root: any): [string, string][] {
+  const out: [string, string][] = []
+  const seen = new Set<string>()
+  const stack: { node: any; enclosing: string }[] = [{ node: root, enclosing: "" }]
+  while (stack.length > 0) {
+    const { node, enclosing } = stack.pop()!
+    const isRoutine = ROUTINE_NODES.has(node.type)
+    let selfName = enclosing
+    if (isRoutine) {
+      const name = declaredRoutineName(node)
+      if (name && name !== "_" && enclosing) {
+        const k = `${enclosing}|${name}`
+        if (!seen.has(k)) { seen.add(k); out.push([enclosing, name]) }
+      }
+      // Only a routine with a NAME opens a frame: an anonymous nested routine has
+      // nothing for a deeper one to be contained by.
+      selfName = name || enclosing
+    }
+    const body = isRoutine ? node.childForFieldName?.("body") : null
+    const bodyStart = body ? body.startIndex : -1
+    // A `runnableExamples:` argument is a SEPARATE COMPILATION UNIT, and clearing
+    // the enclosing routine there is an ADJUDICATED disagreement, not a detail.
+    // This oracle derived `then -> fn`, `then -> asyncFact` and `then -> main` for
+    // the block at nim/lib/js/asyncjs.nim:206-216 and the analyzer published
+    // those three routines with no enclosing routine at all; the block is compiled
+    // by `nim doc` as its own unit, so a routine inside it is not lexically inside
+    // the proc that documents it, and `then -> fn` states something false. The
+    // evidence is the tree and the compiler's own treatment of the block; the
+    // analyzer's answer is adopted and the reason is recorded here so the next
+    // reader can overturn it with better evidence rather than by re-deriving.
+    const exampleStart = docExampleArgumentStart(node)
+    for (let i = node.namedChildCount - 1; i >= 0; i--) {
+      const c = node.namedChild(i)
+      if (!c) continue
+      // A routine's BODY is what opens the lexical frame. Its doc comment and its
+      // pragma list are siblings of the body, and a routine written inside a doc
+      // comment is not nested in this routine.
+      if (exampleStart >= 0 && c.startIndex === exampleStart) {
+        stack.push({ node: c, enclosing: "" })
+        continue
+      }
+      stack.push({ node: c, enclosing: bodyStart >= 0 && c.startIndex === bodyStart ? selfName : enclosing })
+    }
+  }
+  return out
+}
+
+/**
+ * The start offset of a `runnableExamples:` call's ARGUMENT LIST, or -1.
+ *
+ * ## The shape, not the word
+ *
+ * The argument must hold a statement list or a block. A user proc named
+ * `runnableExamples` called with an expression is an ordinary call and is not a
+ * doc block, and `runnableExamples` read as a callee is not a call to anything —
+ * see the `isDocExamplePragma` note on the `calls` derivation below, which is the
+ * SAME shape test applied to a different question.
+ *
+ * Read as a NAMED CHILD of that type rather than through `childForFieldName`,
+ * because the pinned grammar does not populate the `argument_list` FIELD here: it
+ * parses `runnableExamples:` as a labelled statement, so the field accessor
+ * returns null while the child is plainly present. Verified on
+ * nim/lib/system.nim:859.
+ */
+function docExampleArgumentStart(node: any): number {
+  if (node.type !== "call") return -1
+  let fn: any = null
+  for (let i = 0; i < node.namedChildCount; i++) {
+    const c = node.namedChild(i)
+    if (c && c.type === "identifier") { fn = c; break }
+  }
+  if (!fn || String(fn.text) !== "runnableExamples") return -1
+  for (let i = 0; i < node.namedChildCount; i++) {
+    const c = node.namedChild(i)
+    if (!c || c.type !== "argument_list") continue
+    for (let k = 0; k < c.namedChildCount; k++) {
+      const g = c.namedChild(k)
+      if (g && (g.type === "statement_list" || g.type === "block")) return c.startIndex
+    }
+  }
+  return -1
+}
+
+/** True when a `call` node is a `runnableExamples:` doc block rather than a call. */
+export function isDocExamplePragma(node: any): boolean {
+  return docExampleArgumentStart(node) >= 0
+}
+
 export function deriveNimEdges(root: any, symbols: any[]): TruthEdge[] {
   const inv = buildInventory(symbols)
   const edges: TruthEdge[] = []
@@ -355,6 +512,15 @@ export function deriveNimEdges(root: any, symbols: any[]): TruthEdge[] {
   for (const s of symbols ?? []) {
     if (s.ownerName) push("contains", s.ownerName, s.name)
   }
+
+  // ── contains: enclosing routine -> nested routine, from the TREE.
+  //
+  // A named nested routine is contained by the routine it is lexically inside,
+  // and the analyzer publishes that edge from `metadata.nimNestedIn` rather than
+  // from `ownerName`. So this derivation cannot read the analyzer's metadata at
+  // all — it walks the parse tree and records the nesting it can see, which is
+  // what makes it a second opinion rather than a restatement.
+  for (const pair of deriveNestedRoutineContainment(root)) push("contains", pair[0], pair[1])
 
   // ── extends / overrides ──
   for (const s of symbols ?? []) {
@@ -624,7 +790,18 @@ export function deriveNimEdges(root: any, symbols: any[]): TruthEdge[] {
 
     if (t === "call") {
       const fn = field(node, "function")
-      if (!(isModifierCall(node) && isTypePosition(node))) {
+      // `runnableExamples:` is a doc-comment PRAGMA, not a call. The grammar
+      // parses the whole example as the call's `argument_list`, so without this
+      // the call branch fires on a keyword. Over the 400-file sample that
+      // produced 7 unexplained `calls -> runnableExamples` edges across
+      // nim/lib/{experimental/diff,js/asyncjs,pure/base64,pure/collections/lists,
+      // pure/complex,pure/encodings,pure/memfiles,pure/parsecsv}.nim — a name no
+      // Nim program can call, asserted seven times. Same shape test the
+      // containment walk uses; stated here too because the two questions are
+      // different and a reader should not have to infer one from the other.
+      if (isDocExamplePragma(node)) {
+        // no edge
+      } else if (!(isModifierCall(node) && isTypePosition(node))) {
         const leaf = fn ? calleeLeaf(fn) : null
         const leafText = leaf ? leaf.text : ""
         const isTypeCtor = !!leafText && inv.types.has(leafText) && !inv.callables.has(leafText)
