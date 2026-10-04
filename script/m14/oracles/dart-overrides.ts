@@ -555,7 +555,7 @@ export function deriveDartOverridesTruth(root: any, companion?: Map<string, Set<
         // method. Gated on the annotation because that is the only evidence in the
         // file that this member is overriding something rather than coincidentally
         // sharing a name.
-        if ((exposed.get(sup) ?? supMethods).has(m)) {
+        if ((exposed.get(sup) ?? new Set(supMethods ?? [])).has(m)) {
             add(`${cls}.${m}`, `${sup}.${m}`)
             resolved = true
             break
