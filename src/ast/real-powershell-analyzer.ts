@@ -207,6 +207,15 @@ const isSpaceCode = (code: number): boolean =>
   code === 0x2028 || code === 0x2029 || code === 0x202f || code === 0x205f ||
   code === 0x3000 || code === 0xfeff
 
+/** `a-zA-Z` on a single already-lowercased or raw character. `text[i]` is `undefined`
+ *  past the end of the string and every comparison below is false for `undefined`, so
+ *  a caller needs no bound check of its own. */
+const isAsciiLetter = (c: string | undefined): boolean => {
+  if (c === undefined) return false
+  const code = c.charCodeAt(0)
+  return (code >= 65 && code <= 90) || (code >= 97 && code <= 122)
+}
+
 /**
  * F9 — could this string be a SYMBOL NAME at all?
  *
@@ -367,6 +376,160 @@ const TYPE_ACCELERATORS = new Set([
   "string", "switch", "timespan", "uint32", "uint64", "uint16", "xml", "void",
 ])
 
+/**
+ * PS26 — one declared class member, as the `overrides` matcher needs to see it.
+ *
+ * A bare name cannot answer "is the base member overridable", and PowerShell
+ * answers that question with two attributes the analyzer already parses. `kind` is
+ * `method` or `property`, matching the grammar node the declaration came from.
+ */
+type MemberFact = {
+  name: string
+  kind: "method" | "property"
+  isStatic: boolean
+  isHidden: boolean
+}
+
+/**
+ * PS26 — can `derived`'s member override `base`'s member of the same name?
+ *
+ * PowerShell class methods are virtual by default and there is no `override`
+ * keyword, so a same-named derived method IS an override — that part is the lane's
+ * standing rule and it is unchanged. Three cases are NOT overrides and the name
+ * match used to publish all three as `overrides`:
+ *
+ *   1. the base member is `hidden` — the attribute's documented meaning is that
+ *      the member is not inherited by derived classes;
+ *   2. the base member is `static` — a static member is not virtually dispatched;
+ *   3. the two members are of different KINDS — a method does not override a
+ *      property, and `classMembers` held both under one key.
+ *
+ * What is deliberately NOT excluded: a derived PROPERTY over a base property of
+ * the same name. PowerShell resolves that to the derived property for a derived
+ * instance, so it shadows in the same observable sense a method overrides, and
+ * adding it as an override CANDIDATE would publish edges for a construct this
+ * corpus carries 0 of. Narrowing and widening are both fabrications; this rule
+ * removes and does not add.
+ */
+const memberOverrides = (derived: MemberFact, base: MemberFact): boolean => {
+  if (base.isHidden) return false
+  if (base.isStatic) return false
+  return derived.kind === base.kind
+}
+
+/**
+ * PS27 — the member's REAL name, when the pinned wasm has split it.
+ *
+ * A PowerShell class member is `[modifiers] [type] Name`, and a modifier is a
+ * `class_attribute` BEFORE the type node. The pinned local-rebuild wasm mis-lexes
+ * a member with NO leading modifier whose name begins with a modifier's letters:
+ *
+ *     [int] StaticOpen() { return 40 }
+ *       -> attribute "[int]" · class_attribute "Static" · simple_name "Open"
+ *
+ * so `findFirstChild(node, "simple_name")` answers `Open` and every channel that
+ * reads the name — the method SYMBOL, its `contains` edge, and the `overrides` name
+ * match — publishes the SUFFIX of a method that exists. Measured on a controlled
+ * 10-class probe through `getParser("powershell")`: `static [int] StaticOpen()`
+ * is CORRECT and `[int] StaticOpen()` is SPLIT, which isolates the trigger to the
+ * ABSENCE of a leading modifier rather than to the identifier's text. `[int]
+ * Stat()` is correct, so the trigger is the `static` / `hidden` KEYWORD, not the
+ * `Static` letters alone.
+ *
+ * The discriminator is POSITION, and it has to be position: a real modifier and a
+ * split name prefix are the same token text, so `text === "static"` cannot tell
+ * them apart, and re-joining on the text alone would turn `static [int] Foo()`
+ * into a method named `staticFoo`. A modifier precedes the type node; a split
+ * prefix follows it. That is the whole test.
+ *
+ * **This mitigates the NAMING half only, and it is deliberately not a repair of the
+ * grammar.** `[int] Hidden() { … }` and `[int] Static2() { … }` are destroyed
+ * outright — the same split leaves an ERROR where the parameter list and body were,
+ * and the damage reaches the NEXT class header — and no analyzer can recover a node
+ * the tree does not contain. Those are a grammar finding, reported with the
+ * reproduction, not something this function pretends to fix. Rebuilding the wasm
+ * would move the pin hash, and the pin record and the wasm are verified together.
+ *
+ * Zero regex: the test is node ORDER, and the join is string concatenation.
+ */
+/**
+ * PS27 — one position scan answering both questions a class member's header asks.
+ *
+ * Returns the member's REAL name and its REAL modifiers, and they are read together
+ * on purpose: the two are the same `class_attribute` node read two ways, so a scan
+ * that answered only one of them got the other wrong.
+ *
+ * **What the pinned wasm does.** `grammars/tree-sitter-powershell/grammar.js:1266`
+ * builds `class_attribute` as `token(reservedWord('hidden'))` or
+ * `token(reservedWord('static'))`, and `reservedWord` (line 1820) is
+ * `alias(reserved(caseInsensitive(word)), word)` — and `caseInsensitive` (line 1839)
+ * emits `[sS][tT][aA][tT][iI][cC]` with NO word boundary. So the token matches the
+ * first six characters of any identifier beginning `Static` or `Hidden`, and
+ * `[int] StaticOpen() { return 40 }` parses as
+ *
+ *     attribute "[int]" · class_attribute "Static" · simple_name "Open"
+ *
+ * The analyzer published a method named `Open`, stamped `isStatic: true` on it, and
+ * matched `overrides` on the suffix. When the remainder starts with a digit or is
+ * empty the split is worse — `[int] Hidden2() { … }` and `[int] Static() { … }` leave
+ * an ERROR where the parameter list and body were, and the ERROR swallows the NEXT
+ * class declaration. Nothing an analyzer does can recover a node the tree does not
+ * contain; that half is a grammar fix and is reported, not repaired here.
+ *
+ * **The discriminator, and how the first attempt got it wrong.** Text cannot decide
+ * it: a genuine modifier and a split name prefix are the same token. The first
+ * version of this scan used "a `class_attribute` after a type node is a name
+ * prefix", and a corpus probe immediately refuted it —
+ * `class C7b { [hashtable] static $x; }` at
+ * powershell/test/powershell/Language/Classes/Scripting.Classes.BasicParsing
+ * .Tests.ps1:35 is a REAL modifier in that position (the test file's own comment
+ * reads "order doesn't matter"), so the rule would have reported one live defect
+ * and, acted on, dropped `isStatic` from a real static property.
+ *
+ * So the scan needs BOTH halves:
+ *
+ *   · a name prefix is immediately preceded by an `attribute`/`type_literal` — a
+ *     real modifier is written BEFORE the type in `class_method_definition`'s own
+ *     `seq`, so `static [int] Foo()` and a bare `static Foo()` both have the
+ *     modifier at index 0 with nothing before it; and
+ *   · a name prefix is immediately followed by a `simple_name`. That is the half
+ *     that separates the two `attribute · class_attribute · X` shapes: a method's
+ *     name is a `simple_name` and a property's is a `variable`, so
+ *     `[hashtable] static $x` stays a modifier and `[int] StaticOpen()` is rejoined.
+ *
+ * KNOWN LIMIT of this rule, stated because it is a rule and not a proof:
+ * `[int] static Foo() { }` — modifier after the type on a METHOD — is structurally
+ * identical to the split shape and would be read as a name prefix. It does not occur
+ * in the admitted corpus (the whole `class_attribute`-after-a-type population is 1
+ * member, the `$x` property above, which the `variable` half handles), so it is
+ * recorded here rather than solved.
+ */
+const memberHeaderFacts = (node: Node, nameNode: Node): { name: string; modifiers: string } => {
+  const named: { type: string; text: string }[] = []
+  for (let i = 0; i < node.childCount; i++) {
+    const c = node.child(i)
+    if (!c || !c.isNamed) continue
+    named.push({ type: c.type, text: c.text })
+  }
+  const modifiers: string[] = []
+  let prefix = ""
+  for (let i = 0; i < named.length; i++) {
+    if (named[i].type !== "class_attribute") continue
+    const prevType = i > 0 ? named[i - 1].type : ""
+    const nextType = named[i + 1]?.type ?? ""
+    const isNamePrefix =
+      (prevType === "attribute" || prevType === "type_literal") && nextType === "simple_name"
+    if (isNamePrefix) prefix = named[i].text
+    // Lowercased because PowerShell keywords are case-insensitive: `[int] STATIC
+    // Foo()` is the same declaration as `[int] static Foo()`, and every caller
+    // tests with `.includes("static")`. The helper this replaced lowercased too, so
+    // dropping it here would be a silent behaviour change rather than a cleanup.
+    else modifiers.push(named[i].text.toLowerCase())
+  }
+  const name = prefix ? prefix + nameNode.text : nameNode.text
+  return { name, modifiers: modifiers.join(" ") }
+}
+
 export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
   analyze(
     rootNode: Node,
@@ -458,10 +621,46 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     /** PS6 — `className → baseClass`, for the `overrides` pass. */
     const baseClassByClass = new Map<string, string>()
-    /** `className → its own declared member names`. */
-    const classMembers = new Map<string, Set<string>>()
+    /**
+     * PS26 — `className → its own declared members`, and a member is no longer a
+     * bare NAME.
+     *
+     * The set held `string`, which made the `overrides` matcher a pure name
+     * comparison and threw away three facts the analyzer had ALREADY read off the
+     * same node: `isStatic` (line 1415) and `isHidden` (line 1416) go onto the
+     * symbol, and the node's own type says whether the member is a method or a
+     * property. PowerShell uses two of those three to say "this is not an
+     * override":
+     *
+     *   `hidden`  — the documented meaning of the attribute is that the member is
+     *               NOT inherited by derived classes. A base member marked `hidden`
+     *               whose name a derived class re-declares is, by the language's own
+     *               rule, a shadow at most. Publishing `overrides` for it is a
+     *               fabricated edge: the language has said no.
+     *   `static`  — a static member is not virtually dispatched, so neither a
+     *               derived instance method nor a derived static method of the same
+     *               name overrides it. Matched on the BASE side, because a base
+     *               static method is the member that cannot be overridden.
+     *   KIND      — a derived METHOD named like a base PROPERTY is two different
+     *               members. `classMembers` was filled from properties as well as
+     *               methods, so that pair published an `overrides` edge naming a
+     *               method that overrides a property.
+     *
+     * **The corpus cannot reach any of the three.** Measured over all 1,108
+     * admitted files through production `parseFile` plus a parse-tree count of
+     * every `class_statement` / `class_method_definition` /
+     * `class_property_definition` (`validation/m14/fixtures/powershell/
+     * adversarial-probes.ts` P1): class members carrying `hidden` = **0**,
+     * carrying `static` = **0**, same-name derived/base pairs whose kinds differ =
+     * **0**. The change is therefore a REMOVAL rule with a measured population of
+     * zero, pinned by `overrides-modifiers` in the fixture suite rather than by the
+     * corpus — and this comment says so, because a fix whose corpus delta is 0 and
+     * which is described as corpus-verified would be the exact lie this lane's
+     * other two false doc rows were.
+     */
+    const classMembers = new Map<string, Set<MemberFact>>()
     /** Subclass member declarations, resolved after the whole file is read. */
-    const overrideCandidates: { className: string; memberName: string; line: number }[] = []
+    const overrideCandidates: { className: string; memberName: string; line: number; fact: MemberFact }[] = []
 
     /**
      * PS2 — every edge carries the line of the node that BEARS ITS NAME, and
@@ -486,6 +685,24 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
      * keyword. Calling that `structural` would overstate it.
      */
     const evidenceClassFor = (type: ASTEngine.RelationshipType, isImport = false): string => {
+      // `imports` is `import_based` through the `isImport` line above, and it is NOT also
+      // given a `case` here — which was the first version of this fix and it was wrong in
+      // the way that matters. Adding `case Imports: return "import_based"` beside the
+      // `References` case looks like the obvious place for a type whose name says
+      // "import", and it is DEAD: `isImport` is true for every `imports` edge `addImport`
+      // emits, so the first line answers and the switch is never reached for that type.
+      //
+      // A branch that cannot affect any output is an L2 dead branch, and here it was
+      // worse than untidy, because a MUTANT written against it SURVIVED twice: once
+      // while `imports` shared a fallthrough return with `references`, and once after
+      // they were split into separate cases with separate returns. Both mutants changed
+      // a line no edge's tier depended on, so both read as "the fixtures do not check the
+      // tier" when what they actually proved is that the tier has a different home.
+      //
+      // The tier is asserted where it is decided, and the mutant that matters deletes the
+      // `isImport` line: `powershell/imports-tier-short-circuit-removed`. That one is
+      // caught by imports-psb12's `meta.evidenceClass` constraint on all six `imports`
+      // rows, which is what makes the tier a check rather than a claim.
       if (isImport) return "import_based"
       switch (type) {
         case ASTEngine.RelationshipType.Contains:
@@ -916,6 +1133,44 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
       findDescendant(node, "variable", 12)
 
     /**
+     * PS29 — is the node an argument's value came from a `variable`?
+     *
+     * The question a string cannot answer. `New-Object System.Version` and
+     * `New-Object $type` are both `stripQuotes`-ed text, and the first is a type name
+     * while the second is a variable holding one — the TEXT alone is `System.Version`
+     * and `type`, which look equally like names. Only the node says which.
+     *
+     * **This predicate was written with THREE arms and now has ONE, and the revert
+     * proof is why.** Both extra arms were dead code that survived being reverted:
+     *
+     *   · an `expandable_string_literal` arm, on the reasoning that `"$t"` is an
+     *     interpolation and `'$t'` is a literal. Unreachable — the pinned grammar always
+     *     wraps a quoted argument in `array_literal_expression > unary_expression >
+     *     string_literal`, so the argument node is never the quoted node itself.
+     *   · an `array_literal_expression || unary_expression` arm doing its own
+     *     `findDescendantVariable` search. Also unreachable, and for a sharper reason:
+     *     **`commandArgs` has already done that search.** It pushes the UNWRAPPED
+     *     `variable` node into `sourceNodes`, not the wrapper it was found under, so the
+     *     node arriving here is the `variable` and the first arm answers. Reverting this
+     *     arm alone left the fixture suite green.
+     *
+     * So the shape table belongs to `commandArgs`, which is where the unwrapping
+     * happens, and this predicate is one node-type test:
+     *
+     *   `New-Object $t`             -> commandArgs pushes `variable "$t"`          -> uses
+     *   `New-Object "$t"`           -> commandArgs pushes `variable "$t"`          -> uses
+     *   `New-Object -TypeName $t`   -> commandArgs pushes `variable "$t"`          -> uses
+     *   `New-Object -TypeName 'lit'`-> commandArgs pushes `string_literal 'lit'`    -> instantiates
+     *   `New-Object System.Version` -> commandArgs pushes `generic_token`           -> instantiates
+     *
+     * A branch that cannot affect any output is an L2 dead branch, and this file
+     * already records two earlier mutants that survived because of one. Both arms were
+     * removed rather than commented, and `mutant-proof-psb14.sh` pins what replaced
+     * them: a revert of the `commandArgs` unwrapping, and a revert of the node handoff.
+     */
+    const nodeIsAVariableReference = (node: Node): boolean => node.type === "variable"
+
+    /**
      * The TYPE CONSTRAINT of a parameter or member, as SOURCE TEXT.
      *
      * Two shapes, and reading only the first is why every `[string]$Name` in the
@@ -1029,41 +1284,21 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
 
     /**
-     * The value token that FOLLOWS the named child at `fromIndex`, skipping the
-     * grammar's `command_argument_sep` separators.
-     *
-     * This is the whole of PS7 and it was the whole bug. Measured shape:
-     * `command_elements` for `Import-Module -Name SqlServer -ErrorAction
-     * SilentlyContinue` is `[sep, command_parameter(-Name), sep, generic_token
-     * (SqlServer), sep, command_parameter(-ErrorAction), sep,
-     * generic_token(SilentlyContinue)]` — so the value sits at `i + 3`, not
-     * `i + 1`. Every implementation that read `namedChild(i + 1)` therefore found
-     * a separator, matched no branch, and read NO two-token parameter value at
-     * all: `Import-Module -Name SqlServer` imported nothing, and
-     * `Export-ModuleMember -Function F` exported nothing.
-     */
-    const valueAfter = (elements: Node, fromIndex: number): Node | null => {
-      for (let i = fromIndex + 1; i < elements.namedChildCount; i++) {
-        const c = elements.namedChild(i)
-        if (!c) continue
-        if (c.type === "command_argument_sep") continue
-        return c
-      }
-      return null
-    }
-
-    /** Is this node a token that can CARRY a value? */
-    const isValueToken = (c: Node | null | undefined): boolean =>
-      !!c && (c.type === "generic_token" || c.type === "string_literal" || c.type === "expandable_string_literal")
-
-    /**
      * PS7 — the POSITIONAL arguments of a command, plus the values of
      * two-token parameters, decided STRUCTURALLY: a `command_parameter`
-     * contributes a value only when the grammar's `argument` field names one
-     * (`-Name:Foo`) or when a value token physically follows it AND that token
-     * is not a switch-argument value (`-ErrorAction Stop`).
+     * contributes a value only when a value token physically follows it AND that
+     * token is not a switch-argument value (`-ErrorAction Stop`).
+     *
+     * `valueAfter` and a module-scope `isValueToken` used to sit directly above this
+     * function and both were DEAD: `valueAfter` had no call site at all (the private
+     * `valueAfterNode` does that job), and the outer `isValueToken` was shadowed by the
+     * identical declaration inside `commandArgs` below, so both of that function's call
+     * sites bound to the inner copy. A duplicate that is never the binding one is the
+     * kind of thing a reader has to re-derive to be sure of, and `grep -c` answers it
+     * only if you count the right string. Removed; the behaviour is unchanged, which is
+     * why removal is safe rather than merely tidy.
      */
-    const commandArgs = (node: Node): string[] => {
+    const commandArgs = (node: Node, sourceNodes?: Node[]): string[] => {
       const out: string[] = []
       const elements = findFirstChild(node, "command_elements")
       if (!elements) return out
@@ -1087,17 +1322,16 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
           const next = elements.namedChild(i + 1)
           if (next && isValueToken(next) && !SWITCH_ARGUMENT_VALUES.has(next.text.toLowerCase())) {
             out.push(this.stripQuotes(next.text))
+            sourceNodes?.push(next)
           }
           continue
         }
-        if (isValueToken(c)) { out.push(this.stripQuotes(c.text)); continue }
+        if (isValueToken(c)) { out.push(this.stripQuotes(c.text)); sourceNodes?.push(c); continue }
         if (c.type === "array_literal_expression" || c.type === "unary_expression") {
           const v = findDescendantVariable(c)
-          if (v) out.push(stripDollar(v.text))
-          else {
-            const lit = this.findQuoted(c)
-            if (lit) out.push(this.stripQuotes(lit.text))
-          }
+          if (v) { out.push(stripDollar(v.text)); sourceNodes?.push(v); continue }
+          const lit = this.findQuoted(c)
+          if (lit) { out.push(this.stripQuotes(lit.text)); sourceNodes?.push(lit) }
         }
       }
       return out
@@ -1129,11 +1363,49 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
         range: this.nodeToRange(node),
         metadata: { powershellSpecific: true, via },
       })
+      // A module dependency carries TWO edges, and the second one is the fix.
+      //
+      // `imports` is the ontology's own type for "this file depends on that module",
+      // and PowerShell states the dependency four ways — `Import-Module`, `using
+      // module`, `using namespace`, `#requires -Module` — all four of which this
+      // function is the single reader for. The lane emitted only `references`, so over
+      // the 1,092-file corpus the `imports` type was EMITTED 0 times: a real
+      // construct, read correctly, recorded in `imports[]`, and absent from the graph
+      // as an `imports` edge. `script/m60/powershell-surface-measure.ts:223` computes
+      // `absent: ONTOLOGY.filter(k => !kinds[k])` and `:243` prints it as the types
+      // "not exercised by this draw (all implemented + gated)" — and a type with zero
+      // edges over the whole 1,092-file corpus is necessarily in that list for every
+      // draw that is a subset of it. That parenthetical is a string literal, so it
+      // asserted `imports` was implemented and gated while `RelationshipType.Imports`
+      // appeared nowhere in this file.
+      //
+      // `references` is KEPT, not replaced. bash is the precedent and the same shape of
+      // fact: `real-bash-analyzer.ts:1299` emits `imports` and `:1304` emits
+      // `references` for one `source ./x.sh`, at the same confidence, because a
+      // file-level dependency answers two different consumers and dropping either loses
+      // an edge something already resolves. Measured, not asserted:
+      // `grep -l 'RelationshipType.Imports' src/ast/real-*-analyzer.ts` names 22 of the
+      // 48 analyzers before this line and 23 after, so PowerShell was one of the 26 that
+      // did not carry the type while filling an `imports[]` array.
+      //
+      // Confidence is 0.9 on BOTH edges and that is not a new number: it is the value
+      // this function has always put on this exact fact. The module NAME is read off the
+      // tree; the module's RESOLUTION to a file on disk happens at run time, so the edge
+      // is a read of a dependency, not a proof of a file on disk. Both edges carry
+      // identical metadata so the two rows cannot come to describe different facts.
+      // `via` is on the ImportInfo already; putting it on the EDGE as well is what
+      // makes a row self-describing — `file -> Module` does not say whether the file
+      // wrote `Import-Module`, `using namespace`, `using module` or `#requires`, and
+      // those four are read by three different grammar branches. PS24 needed the
+      // distinction to be nameable from the result alone, because a `#requires`
+      // HASHTABLE row and a bare `#requires -Module X` row are otherwise identical
+      // in every field the output carries, and the pre-PS24 defect is invisible
+      // without it.
+      const meta = { powershellSpecific: true, import: true, via, fileLevel: atFileScope() }
       // A file-level dependency's source is the importing FILE (M60/#910), so
       // the stored row names an importer a reader can key on.
-      addRel(top().scope, moduleName, ASTEngine.RelationshipType.References, 0.9, line, {
-        powershellSpecific: true, import: true, fileLevel: atFileScope(),
-      })
+      addRel(top().scope, moduleName, ASTEngine.RelationshipType.Imports, 0.9, line, { ...meta })
+      addRel(top().scope, moduleName, ASTEngine.RelationshipType.References, 0.9, line, { ...meta })
     }
 
     /**
@@ -1141,8 +1413,45 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
      * surface. The pre-wave lane hard-coded `exports: []`, so a module's public
      * API was invisible.
      */
+    /**
+     * PS25 — is this export target a POWERShell WILDCARD rather than a name?
+     *
+     * `Export-ModuleMember -Function *` and `Export-ModuleMember -Function
+     * Measure*` are the same kind of declaration: the module publishes every
+     * function matching a PATTERN, and the expansion happens at run time. So
+     * there is no single name to publish, and an edge whose target is a pattern
+     * names a symbol no PowerShell identifier can ever be — `*` is not a legal
+     * character in a function name, so `Measure*` resolves against nothing by
+     * construction rather than by accident.
+     *
+     * The guard was `name.startsWith("*")`, which is POSITIONAL: it caught the
+     * bare `*` and nothing else. Measured over the whole admitted corpus through
+     * production `parseFile` (`validation/m14/fixtures/powershell/
+     * adversarial-probes.ts` P3): `exports` edges carrying a wildcard in ANY
+     * position = **7**, every one of them the target `Measure*`; edges whose
+     * target is exactly `*` = **0**. So the refusal existed and did not fire,
+     * and 7 of the lane's 113 `exports` edges named a wildcard.
+     *
+     * Two places said otherwise and were both wrong, which is why this is a
+     * source fix and not a doc fix: the Contract table and the declared
+     * limitations both claimed `-Function *` "publishes the literal `*`", and a
+     * controlled probe through `parseFile` reads `-Function *` as publishing
+     * NOTHING while `-Variable Get-Foo` and `-Alias 'Get-Bar','Get-Foo'` both
+     * publish. The doc rows are corrected alongside this change; the code was
+     * already right about `*` and wrong about `Measure*`.
+     *
+     * Zero regex: `*` is code 42 and `?` is 63.
+     */
+    const isExportWildcard = (name: string): boolean => {
+      for (let i = 0; i < name.length; i++) {
+        const code = name.charCodeAt(i)
+        if (code === 42 /* * */ || code === 63 /* ? */) return true
+      }
+      return false
+    }
+
     const addExport = (name: string, via: string, line: number) => {
-      if (!name || name.startsWith("*")) return
+      if (!name || isExportWildcard(name)) return
       // A MODULE EXPORTS A NAME ONCE. The pre-G6 reader could only reach one value
       // per flag, so the duplicate case never arose; the G6 comma-list reader walks
       // the whole value list, which means a name can be reachable by two paths in
@@ -1161,7 +1470,7 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
       exportedNames.add(name.toLowerCase())
       exports.push({ name, range: this.lineRange(line), metadata: { powershellSpecific: true, via } })
       addRel(top().scope, name, ASTEngine.RelationshipType.Exports, 1.0, line, {
-        powershellSpecific: true, viaExportModuleMember: true, fileLevel: atFileScope(),
+        powershellSpecific: true, viaExportModuleMember: true, via, fileLevel: atFileScope(),
       })
     }
 
@@ -1318,7 +1627,33 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
           // against its base's members and emit `overrides`. PowerShell class
           // methods are virtual by default; the pre-wave lane emitted ZERO
           // `overrides` edges in the language.
-          classMembers.set(className, new Set())
+          // PS28 — create the set ONCE per class name, do not reset it. This line
+          // used to be `classMembers.set(className, new Set())` on EVERY
+          // class_statement, so a file that declares the same class name twice left
+          // only the LAST declaration's members reachable. The corpus measures
+          // exactly that: in
+          // powershell/test/powershell/Language/Classes/scripting.Classes.inheritance
+          // .tests.ps1 — a Pester file that redeclares `A`, `B`, `C`, `bar`, `baz`,
+          // `MyIntList` and `TestHost` across ~40 `It` blocks — the last `class B`
+          // declares only a constructor, so `classMembers.get("B")` was EMPTY, and
+          // the last `class A` declares only properties `i` and `s`, so
+          // `classMembers.get("A")` held no methods. The parse tree holds 8
+          // same-name derived/base method pairs in that one file; the matcher could
+          // see 2, and the lane published 2 `overrides` edges.
+          //
+          // Accumulating is the honest direction and not the convenient one: every
+          // pair the union exposes is a `class B : A` and a `class A` that BOTH
+          // appear in the SAME file, so `B.GetName` really does override
+          // `A.GetName` under PowerShell's rules. Reset was losing facts, not
+          // suppressing fabrications — the opposite of the usual reason to narrow.
+          //
+          // `baseClassByClass` deliberately does NOT get the same treatment: its
+          // `set` is already inside `if (baseClass)` (line 1351), so a base-less
+          // redeclaration leaves the earlier base in place. That asymmetry is
+          // correct — a redeclaration with no base says nothing about the base of
+          // the earlier one — and it is called out here so the two maps are not
+          // "fixed" together by the next reader.
+          if (!classMembers.has(className)) classMembers.set(className, new Set())
           // PS1 — a top-level declaration is contained by the FILE, which is a
           // real owner. The pre-wave lane emitted no `contains` for a top-level
           // class at all, so nothing tied it to the file that declares it.
@@ -1354,17 +1689,22 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
         case "class_method_definition": {
           const nameNode = findFirstChild(node, "simple_name")
           if (!nameNode) break
+          // PS27 — see `memberHeaderFacts`. Without this the symbol, its `contains`
+          // edge and the `overrides` match all read the suffix the wasm split off.
+          const hdr = memberHeaderFacts(node, nameNode)
+          const memberName = hdr.name
           const className = top().owner
-          const isCtor = nameNode.text === className
+          const isCtor = memberName === className
           const line = nameNode.startPosition.row + 1
           const params = collectParameters(this.findMethodParamList(node))
-          const attrText = this.classAttributeTexts(node)
+          const attrText = hdr.modifiers // PS27 — the same scan, so the name and the
+          // modifiers can never be read with opposite assumptions
           // PS4 — a PowerShell constructor is WRITTEN with the class's own
           // name, so the SYMBOL name is the synthesised `constructor` and the
           // containment edge reads `Class -> constructor`. Naming it after the
           // class made it a self-edge, which the store's M51.A1 guard then
           // refused — so every PowerShell constructor stored ownerless.
-          const symName = isCtor ? "constructor" : nameNode.text
+          const symName = isCtor ? "constructor" : memberName
           const returnType = typeSpecText(node) || (isCtor ? "void" : "any")
           declareSymbol(symName, isCtor ? ASTEngine.SymbolKind.Constructor : ASTEngine.SymbolKind.Method, node, line, {
             isStatic: attrText.includes("static"),
@@ -1374,9 +1714,20 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
             docstring: this.docstringAbove(nameNode.startPosition.row, lines),
           }, params)
           if (!isCtor) {
-            if (classMembers.has(className)) classMembers.get(className)!.add(nameNode.text)
+            if (classMembers.has(className)) {
+              classMembers.get(className)!.add({
+                name: memberName, kind: "method",
+                isStatic: attrText.includes("static"), isHidden: attrText.includes("hidden"),
+              })
+            }
             // Resolved after the file is read: a subclass may precede its base.
-            overrideCandidates.push({ className, memberName: nameNode.text, line })
+            overrideCandidates.push({
+              className, memberName, line,
+              fact: {
+                name: memberName, kind: "method",
+                isStatic: attrText.includes("static"), isHidden: attrText.includes("hidden"),
+              },
+            })
           }
           // PS3 — the method is now the SCOPE. Its OWNER stays the class, so a
           // `contains` edge from inside still names the class.
@@ -1388,7 +1739,7 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
           const varNode = findFirstChild(node, "variable")
           if (!varNode) break
           const line = varNode.startPosition.row + 1
-          const attrText = this.classAttributeTexts(node)
+          const attrText = memberHeaderFacts(node, varNode).modifiers // PS27 — a property name is a `variable`, so the split's `simple_name` half never fires here; the scan is shared so the two cannot drift
           const className = top().owner
           const name = stripDollar(varNode.text)
           const declared = typeSpecText(node)
@@ -1398,7 +1749,12 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
             type: declared || "untyped",
             docstring: this.docstringAbove(varNode.startPosition.row, lines),
           })
-          if (classMembers.has(className)) classMembers.get(className)!.add(name)
+          if (classMembers.has(className)) {
+            classMembers.get(className)!.add({
+              name, kind: "property",
+              isStatic: attrText.includes("static"), isHidden: attrText.includes("hidden"),
+            })
+          }
           // A CLASS-typed member is a type reference, and in PowerShell classes
           // it is how two classes in one file refer to each other:
           // `[EventMessage] $EventMessage` is the only edge between them. The
@@ -1986,22 +2342,76 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
             // spelling of the type: a dotted .NET name and a COM ProgID look alike
             // and mean different things. Caught by the fixture's two metadata rows
             // before it was committed.
-            const comObject = this.parameterValue(node, "ComObject") ?? this.parameterValue(node, "comobject")
-            const typeName = this.parameterValue(node, "TypeName") ?? this.parameterValue(node, "typename")
+            //
+            // PS29 — and the constructed name can be a VARIABLE, which is not a type
+            // name at all. Each reader below now also reports the NODE its text came
+            // from, because `-TypeName System.Version` and `-TypeName $t` produce the
+            // same kind of string and mean different things: the first names a type,
+            // the second names a variable whose VALUE is a type name, resolved at run
+            // time. `instantiates` asserts the target IS a type, so on the second it
+            // was asserting something the source does not say.
+            //
+            // Measured over all 1,108 admitted files through production `parseFile`,
+            // cross-referencing each target against the symbol table of the file that
+            // published it (so a corpus-wide name collision cannot explain it):
+            // **123 of 1,268 `instantiates` edges — 9.70% — name a `variable` symbol
+            // their own file declares.** A further 99 name a `class` / `function` /
+            // `enum` in their own file, and those are CORRECT and are not touched:
+            // `New-Object MyType` genuinely constructs a PowerShell class.
+            //
+            // This is the same defect class the lane already declares fixed for
+            // `calls`. F9 changed `$type::$method()` from `calls -> $method` to
+            // `uses -> method` precisely because a `$`-prefixed member is a VARIABLE,
+            // not a name; `instantiates` is the channel that did not get the same
+            // treatment, and it is read by the same reasoning. So the fix routes the
+            // variable form to `uses` — a name READ — at the same 0.9 the `calls`
+            // route uses for the same shape, carrying `isDynamicTypeName` so a
+            // consumer can tell "reads the variable that holds the type name" from
+            // "reads a variable for some other reason".
+            //
+            // Why the shape reaches the POSITIONAL branch when a flag is present:
+            // `parameterValue` accepts only a `generic_token` / `string_literal` /
+            // `expandable_string_literal`, and the pinned wasm wraps a bare `$t` in an
+            // `array_literal_expression`, so `-TypeName $t` finds no flagged value and
+            // arrives as the first positional. The node that decides is therefore
+            // whichever of the three the `??` chain actually took, which is why the
+            // node is captured per reader rather than re-derived.
+            const comObjectOut: { node: Node | null } = { node: null }
+            const typeNameOut: { node: Node | null } = { node: null }
+            const comObject =
+              this.parameterValue(node, "ComObject", comObjectOut) ??
+              this.parameterValue(node, "comobject", comObjectOut)
+            const typeName =
+              this.parameterValue(node, "TypeName", typeNameOut) ??
+              this.parameterValue(node, "typename", typeNameOut)
             // The POSITIONAL form: `New-Object System.Collections.ArrayList` and
             // `New-Object System.Version`, which is how the cmdlet is written
             // whenever the author did not bother with a flag. `commandArgs` returns
             // values only, having already skipped every `command_parameter`, so the
             // first entry is the positional type name and the flagged forms leave it
-            // empty.
-            const positional = commandArgs(node)[0]
+            // empty. `positionalNodes` carries the node each value was read from.
+            const positionalNodes: Node[] = []
+            const positional = commandArgs(node, positionalNodes)[0]
             const constructed = comObject ?? typeName ?? positional
+            const constructedFrom = comObject
+              ? comObjectOut.node
+              : typeName
+                ? typeNameOut.node
+                : (positionalNodes[0] ?? null)
             if (constructed && !isTypeAccelerator(constructed)) {
-              addRel(top().scope, constructed, ASTEngine.RelationshipType.Instantiates, 0.9, nameLine, {
-                powershellSpecific: true,
-                viaNewObject: true,
-                ...(comObject ? { isComObject: true } : {}),
-              })
+              if (constructedFrom && nodeIsAVariableReference(constructedFrom)) {
+                addRel(top().scope, constructed, ASTEngine.RelationshipType.Uses, 0.9, nameLine, {
+                  powershellSpecific: true,
+                  viaNewObject: true,
+                  isDynamicTypeName: true,
+                  isVariableReference: true,
+                })
+              } else {
+                addRel(top().scope, constructed, ASTEngine.RelationshipType.Instantiates, 0.9, nameLine, {
+                  powershellSpecific: true, viaNewObject: true,
+                  ...(comObject ? { isComObject: true } : {}),
+                })
+              }
             }
             break
           }
@@ -2028,12 +2438,34 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
             const elements = findFirstChild(node, "command_elements")
             if (elements) {
               const isFlag = (t: string) => t === "function" || t === "cmdlet" || t === "variable" || t === "alias"
+              // PS30 — the FLAG is the fact, and it was being thrown away. `via` was
+              // `leaf`, which is the COMMAND NAME and therefore the same string
+              // `Export-ModuleMember` on every row: measured over all 1,108 admitted
+              // files, 106 of 106 `exports` rows carried `via: "Export-ModuleMember"`
+              // and 0 named the flag. So `file -> Get-Foo` did not say whether the
+              // module published that name as a FUNCTION, a VARIABLE, an ALIAS or a
+              // CMDLET, and the four are not the same kind of thing — a `-Cmdlet`
+              // target is a name the file cannot declare at all, so a consumer cannot
+              // even tell whether it should look for it.
+              //
+              // This is the same argument PS23 made for `imports`, applied to the
+              // sibling channel: `file -> Module` does not say which of the four
+              // declarations produced it, so `metadata.via` names the form on every
+              // `imports` row. The `exports` reader already COMPUTES the flag — the
+              // `isFlag(flag)` line above is a test on the very string it then
+              // discarded — so this is a value that was in hand and not written down.
+              //
+              // The unflagged branch below keeps the command name, because there the
+              // flag genuinely is not there: `Export-ModuleMember Get-Foo` with no
+              // `-Function` publishes nothing in PowerShell, so naming a flag would
+              // assert something the source does not state.
               for (let i = 0; i < elements.namedChildCount; i++) {
                 const c = elements.namedChild(i)
                 if (!c) continue
                 if (c.type === "command_parameter") {
                   const flag = stripLeadingDash(stripDollar(c.text)).toLowerCase()
                   if (!isFlag(flag)) continue
+                  const via = `-${flag}`
                   // Walk the whole value list, stopping at the next flag.
                   for (let j = i + 1; j < elements.namedChildCount; j++) {
                     const v = elements.namedChild(j)
@@ -2041,9 +2473,9 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
                     if (v.type === "command_parameter") break
                     if (v.type === "command_argument_sep") continue
                     if (v.type === "generic_token" || v.type === "string_literal" || v.type === "expandable_string_literal") {
-                      addExport(this.stripQuotes(v.text), leaf, v.startPosition.row + 1)
+                      addExport(this.stripQuotes(v.text), via, v.startPosition.row + 1)
                     } else {
-                      for (const t of this.literalTokens(v)) addExport(t, leaf, v.startPosition.row + 1)
+                      for (const t of this.literalTokens(v)) addExport(t, via, v.startPosition.row + 1)
                     }
                   }
                   continue
@@ -2104,8 +2536,8 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
           const text = node.text
           if (text.startsWith("#requires") || text.startsWith("#Requires")) {
             const line = node.startPosition.row + 1
-            const moduleName = this.extractRequiresModule(text)
-            if (moduleName) addImport(moduleName, "#requires", line, node)
+            const moduleNames = this.extractRequiresModules(text)
+            for (const m of moduleNames) addImport(m.name, m.via, line, node)
             const version = this.extractRequiresValue(text, "version")
             if (version) {
               addRel(top().scope, version, ASTEngine.RelationshipType.References, 0.9, line, {
@@ -2132,7 +2564,26 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
       let guard = 0
       while (base && guard++ < 8) {
         const inherited = classMembers.get(base)
-        if (inherited && inherited.has(cand.memberName)) {
+        // PS28 — CASE-INSENSITIVE, because PowerShell identifiers are. Every other
+        // name comparison in this file lowercases before comparing, and
+        // `pushSymbol` says why in so many words: "`$Foo` and `$foo` are ONE
+        // variable". The `overrides` match was the exception, and the corpus
+        // measures the cost on one line of
+        // powershell/test/powershell/Language/Classes/scripting.Classes.inheritance
+        // .tests.ps1: the base declares `foo` and the derived class declares
+        // `fOo`, which are the same member under PowerShell's rules. Case-sensitive,
+        // the last declaration matched nothing and the two edges the lane did publish
+        // came from EARLIER declarations of the same class — so the type fired on a
+        // file where its own final member does not match.
+        const wanted = cand.memberName.toLowerCase()
+        const inheritedFact = inherited
+          ? [...inherited].find((m) => m.name.toLowerCase() === wanted)
+          : undefined
+        // PS26 — the name match is necessary and not sufficient. `memberOverrides`
+        // carries the two attributes and the member kind the name alone cannot see;
+        // see its docstring for the corpus measurement, which is 0 for all three,
+        // so this is a removal rule pinned by fixture and not by the census.
+        if (inheritedFact && memberOverrides(cand.fact, inheritedFact)) {
           addRel(cand.className, base, ASTEngine.RelationshipType.Overrides, 0.9, cand.line, {
             powershellSpecific: true, overridesMember: cand.memberName,
             // The one edge in this lane that is INFERRED rather than read: PowerShell
@@ -2260,7 +2711,7 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   /** The value of a two-token parameter (`-TypeName Foo`) or `-Name:Foo`. */
-  private parameterValue(node: Node, flag: string): string | null {
+  private parameterValue(node: Node, flag: string, out?: { node: Node | null }): string | null {
     const elements = this.findChildByType(node, "command_elements")
     if (!elements) return null
     const wanted = stripLeadingDash(flag).toLowerCase()
@@ -2270,6 +2721,11 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (stripLeadingDash(this.stripQuotes(c.text)).toLowerCase() !== wanted) continue
       const next = this.valueAfterNode(elements, i)
       if (next && (next.type === "generic_token" || next.type === "string_literal" || next.type === "expandable_string_literal")) {
+        // PS29 — the VALUE NODE is reported alongside the text, because whether the value
+        // is a NAME or a VARIABLE holding a name is a property of the node and not of the
+        // string. `-TypeName System.Version` and `-TypeName $t` are both `stripQuotes`-ed
+        // text, and only the second is a variable. See the `New-Object` reader.
+        if (out) out.node = next
         return this.stripQuotes(next.text)
       }
     }
@@ -2341,9 +2797,14 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
     return this.findChildByType(paramDecl, "parameter_list") ?? paramDecl
   }
 
-  private classAttributeTexts(node: Node): string[] {
-    return this.collectChildrenByType(node, "class_attribute").map((a) => a.text.toLowerCase())
-  }
+  // PS27 REMOVED: `classAttributeTexts` had no callers left. It collected EVERY
+  // `class_attribute` on a class member, which is correct for a member and wrong
+  // for the pinned wasm's split — where one of those nodes is the front of the
+  // NAME — and `memberHeaderFacts` replaces it with the position scan. It is
+  // deleted rather than left in place because a private method that reads a
+  // member's modifiers the wrong way is a trap for whoever calls it next, and
+  // `class-inherit-psa2` will not catch a re-introduction: no fixture reads
+  // `isStatic` off a split-shaped member.
 
   /**
    * PS11 — every attribute attached to a declaration, from BOTH places
@@ -2438,8 +2899,168 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
     return text.length > 0 ? text : undefined
   }
 
-  private extractRequiresModule(text: string): string | null {
-    return this.extractRequiresValue(text, "modules") ?? this.extractRequiresValue(text, "module")
+  /**
+   * PS24 — EVERY module name a `#requires -Module[s]` declares, which is not the
+   * same question `extractRequiresValue` answers.
+   *
+   * The reader above stops at the first space, tab or comma, which is right for
+   * `-Version 7.0` and wrong twice for a module list. Measured on the corpus's own
+   * two files that use the hashtable form
+   * (`ansible/.../win_app_control/files/{New-AnsiblePowerShellSignature,
+   * Set-ManifestSignature}.ps1`, both carrying
+   * `#Requires -Modules @{ ModuleName = 'OpenAuthenticode'; ModuleVersion = '0.5.0' }`):
+   * the old reader returned the literal `@{` as the module name, so `imports[]` stored
+   * a row whose `path` was `@{` and `addImport` published `imports`/`references` edges
+   * to `@{`. Those edges died one stage later — `filterNoiseRelationships` in
+   * `src/ast/pool-worker.ts` drops any target whose leaf contains `{` — which is why
+   * the census reads `imports[] 552` against `imports 550`, and the two rows that
+   * vanish are exactly these two files. A garbage edge killed by shared machinery is
+   * still a garbage row already written, and the module it should have named
+   * (`OpenAuthenticode`) is a dependency the file genuinely declares.
+   *
+   * The comma list is the second miss, and rarer than the hashtable:
+   * `#requires -Modules Pester, PoshRSJob` names two modules and the old reader
+   * returned `Pester` alone, because the loop stopped at the comma. Measured over the
+   * 1,092-file admitted corpus: ONE occurrence of a comma-separated `#requires` module
+   * list — `#Requires -Modules PSScriptAnalyzer, PSSA-PSCustomUseLiteralPath` at
+   * `ansible/test/lib/ansible_test/_util/controller/sanity/pslint/pslint.ps1:2` — so
+   * `PSSA-PSCustomUseLiteralPath` was a declared dependency this lane read and dropped.
+   *
+   * MEASURED DELTA, and the population it is measured over. Only a file carrying a
+   * `#requires -Module(s)` directive can be affected, and 59 of the 1,092 admitted files
+   * do, so those 59 are the whole population and the delta is exact rather than
+   * sampled. Through production `parseFile`, before -> after: `imports[]` records
+   * 101 -> 102, `imports` edges 99 -> 102, `references` edges 105 -> 108. The records /
+   * edges gap of 2 that exists BEFORE the fix is the two `@{` rows: they were written
+   * and then dropped by the pool-worker's brace rule, which is why the whole-corpus
+   * census reads `imports[] 552` against `imports 550`.
+   *
+   * Zero regex, like the reader above, for the reason recorded there. Three shapes are
+   * recognized and nothing else: a bare list, a comma-continued bare list, and a
+   * hashtable whose `ModuleName` key names the module. A hashtable with no
+   * `ModuleName` names no module and yields nothing — `@{ ModuleVersion = '1.0' }` is
+   * not a module declaration, and returning the flag's value for it is how `@{`
+   * reached `imports[]` in the first place.
+   */
+  private extractRequiresModules(text: string): Array<{ name: string; via: string }> {
+    const names: Array<{ name: string; via: string }> = []
+    const seen = new Set<string>()
+    // The `via` a row carries is the SHAPE it was declared in, not just the keyword:
+    // `requires_hashtable` and `requires_list` are different grammar — a hashtable's
+    // name is inside `{ ModuleName = '…' }` and a list's is a bare token — and an edge
+    // that does not record which one it came from cannot be told apart from the other
+    // by anything downstream.
+    let via = "requires_list"
+    const lower = text.toLowerCase()
+    const add = (raw: string): void => {
+      const v = this.stripQuotes(raw.trim())
+      if (v.length === 0 || seen.has(v)) return
+      seen.add(v)
+      names.push({ name: v, via })
+    }
+    for (let i = 0; i < text.length; i++) {
+      if (text[i] !== "-") continue
+      // The flag must be the WHOLE word: `-Module` is a prefix of `-Modules`, and a
+      // longer flag that merely begins with it (`-ModulePath`) is a different flag.
+      let j = i + 1
+      while (isAsciiLetter(lower[j])) j++
+      const flag = lower.slice(i + 1, j)
+      if (flag !== "module" && flag !== "modules") continue
+      while (text[j] === " " || text[j] === "\t") j++
+      if (j >= text.length) break
+      // The value is a LIST. Each element is a bare name or a module hashtable, and a
+      // `,` continues it — PowerShell accepts `#requires -Modules @{…}, @{…}` and
+      // `#requires -Modules A, @{ModuleName='B'}`, so the walk is over elements and
+      // not over one token.
+      for (;;) {
+        if (text[j] === "@" && text[j + 1] === "{") {
+          const ht = this.readHashtableModuleName(text, j + 1)
+          via = "requires_hashtable"
+          if (ht) add(ht)
+          // Step past the hashtable's closing brace so neither a `,` nor a `;` inside
+          // it can be read as the list separator.
+          while (text[j] !== undefined && text[j] !== "}") j++
+          if (text[j] === "}") j++
+        } else {
+          let end = j
+          while (text[end] !== undefined && text[end] !== " " && text[end] !== "\t" && text[end] !== "," && text[end] !== ";") end++
+          if (end > j) add(text.slice(j, end))
+          j = end
+        }
+        while (text[j] === " " || text[j] === "\t") j++
+        if (text[j] !== ",") break
+        j++
+        while (text[j] === " " || text[j] === "\t") j++
+        if (j >= text.length) break
+      }
+      i = j - 1
+    }
+    return names
+  }
+
+  /**
+   * PS24 — the `ModuleName` value inside a `#requires -Modules @{ … }` hashtable,
+   * starting at the `{`. Char-scanned and brace-balanced with quote awareness, because
+   * a `}` inside a quoted `ModuleVersion` must not close the hashtable.
+   *
+   * Returns null when the hashtable carries no `ModuleName` key. PowerShell's module
+   * hashtable is `{ ModuleName = 'X'; ModuleVersion | RequiredVersion | GUID = … }`, so
+   * the key is the only thing in it that names a module.
+   */
+  private readHashtableModuleName(text: string, openBrace: number): string | null {
+    const lower = text.toLowerCase()
+    let depth = 0
+    let quote = ""
+    for (let i = openBrace; i < text.length; i++) {
+      const c = text[i]
+      if (quote) {
+        if (c === quote) quote = ""
+        continue
+      }
+      if (c === "'" || c === '"' || c === "`") { quote = c; continue }
+      if (c === "{") { depth++; continue }
+      if (c === "}") {
+        depth--
+        if (depth === 0) return null
+        continue
+      }
+      if (depth !== 1) continue
+      // A KEY is a bare identifier at the hashtable's top level, so the scan can read
+      // one and compare it without knowing where the value ends.
+      if (!isAsciiLetter(c) && c !== "_") continue
+      let e = i
+      while (isAsciiLetter(lower[e]) || lower[e] === "_") e++
+      const key = lower.slice(i, e)
+      let v = e
+      while (text[v] === " " || text[v] === "\t") v++
+      if (text[v] !== "=") { i = e - 1; continue }
+      v++
+      while (text[v] === " " || text[v] === "\t") v++
+      // The VALUE ends at the `;` that separates hashtable entries, at the closing
+      // brace, or at whitespace — and a quoted value may contain both `;` and `}`
+      // without ending, so the scan is quote-aware for the same reason the brace
+      // balance is. A value cut at a `;` inside quotes yields `'Semi`, which is a
+      // garbage module name and worse than no name at all.
+      let vend = v
+      let vq = ""
+      while (vend < text.length) {
+        const vc = text[vend]
+        if (vq) {
+          if (vc === vq) vq = ""
+          vend++
+          continue
+        }
+        if (vc === "'" || vc === '"' || vc === "`") { vq = vc; vend++; continue }
+        if (vc === ";" || vc === "}" || vc === " " || vc === "\t") break
+        vend++
+      }
+      if (key === "modulename") {
+        const val = this.stripQuotes(text.slice(v, vend))
+        return val.length > 0 ? val : null
+      }
+      i = vend - 1
+    }
+    return null
   }
 
   /**

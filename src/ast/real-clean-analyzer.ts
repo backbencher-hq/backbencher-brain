@@ -217,6 +217,20 @@ interface CleanContext {
    * `NSLayoutXAxisAnchor view` calls the `instance NSLayoutAnchor a` method.
    */
   declaredClassNames: Set<string>
+  /**
+   * Class name -> the member names its `class_member` children declare.
+   *
+   * Clean's typeclass system makes `overrides` derivable and this map is what
+   * derives it: a `class_declaration` declares an ABSTRACT member and an
+   * `instance_declaration` supplies it, so an instance member whose name is in its
+   * class's member set is that class member's implementation — the pairing
+   * `docs/analyzers/real-haskell-analyzer.md:57` records as `overrides T.m -> C.m`
+   * for the same construct in the language Clean descends from.
+   *
+   * Read from the class's OWN `class_member` children rather than from `owner`, so
+   * a nested `where` binder can never be mistaken for a class member.
+   */
+  classMembers: Map<string, Set<string>>
   /** Module name set by the header. */
   currentModule: string | undefined
   /** Scoped identity -> index of the symbol that owns that frame, so an
@@ -481,6 +495,7 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
       declaredFieldNames: new Set(),
       declaredConstructors: new Set(),
       declaredClassNames: new Set(),
+      classMembers: new Map(),
       frameSymbolIndex: new Map(),
       currentModule: undefined,
       currentFrame: undefined,
@@ -1103,7 +1118,23 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
         case "class_declaration": {
           const nm = n.childForFieldName("name")
-          if (nm) { ctx.declaredTypeNames.add(nm.text); ctx.declaredClassNames.add(nm.text) }
+          if (nm) {
+            ctx.declaredTypeNames.add(nm.text)
+            ctx.declaredClassNames.add(nm.text)
+            // The class's own members, for `overrides`. Scanned HERE, off the
+            // class's direct `class_member` children, rather than in the
+            // `class_member` case below where the enclosing class would have to be
+            // recovered from the walk's `owner` — which a `where` binder inside a
+            // member body would shadow.
+            const members = new Set<string>()
+            for (let i = 0; i < n.namedChildCount; i++) {
+              const m = n.namedChild(i)
+              if (m?.type !== "class_member") continue
+              const declared = this.memberDeclaredName(m)
+              if (declared) members.add(declared)
+            }
+            if (members.size > 0) ctx.classMembers.set(nm.text, members)
+          }
           nextOwner = nm?.text ?? nextOwner
           break
         }
@@ -1867,6 +1898,71 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
       : ctx.declaredClassNames.has(className)
         ? className
         : (ctx.currentModule ?? className)
+
+    // `overrides`: an instance member that supplies one of its class's members.
+    //
+    // Clean's typeclasses: `class C a where m :: …` declares m ABSTRACT, and
+    // `instance C T where m = …` supplies it. For a call at type T the compiler
+    // selects the instance's m in place of the class's m, which is the relation
+    // every other lane publishes as `overrides` — the F# lane reads the `override`
+    // keyword (`Dog.Speak -> Animal.Speak`, real-fsharp-analyzer.ts:656-669) and
+    // the Haskell lane's own doc records the same construct as `overrides T.m ->
+    // C.m` (real-haskell-analyzer.md:57). Clean has no `override` KEYWORD, so the
+    // keyword probe that settles it elsewhere is unavailable and the pairing is
+    // read off two `name` fields instead.
+    //
+    // The GUARD is the in-file rule this lane applies to every other edge
+    // (`declaredConstructors` for `instantiates`, `declaredFieldNames` for `uses`,
+    // `declaredFunctions` for `calls`), and here it is stricter than it needs to be
+    // on purpose. An `implements` edge survives an external class because its
+    // MEANING does not depend on what the class is. An `overrides` edge DOES: it
+    // claims this member is the implementation OF THAT CLASS MEMBER, so a class
+    // declared in another file is a claim about a declaration this analyzer never
+    // read, and the store cannot bind `C.m` without having read C. Measured at the
+    // 2,181-file corpus: the pairing EXISTS on 1,036 instance members across 78
+    // classes with a corpus-wide class index, and `script/m14/clean-extends-overrides-probe.ts`
+    // reports how much of it is provable in-file.
+    //
+    // Confidence 1.0: both endpoints are `name` fields and the match between them
+    // is a string equality, so there is no inference in this edge at all.
+    const classMem = ctx.classMembers.get(className)
+    if (classMem && classMem.size > 0) {
+      // A POLYMORPHIC instance of a locally-declared class gets
+      // `frameOwner === className` (see the frameOwner comment above), so the
+      // composed endpoints would be `C.m -> C.m` — an edge asserting that a
+      // declaration overrides itself, which is not a relationship and is not what
+      // the rule says. Measured on the corpus BEFORE this guard: 60 such self-edges
+      // over the 2,181-file set, every one from `instance List [] a where
+      // _cons …` in clean-stdlib's _SystemStrictLists.icl.
+      //
+      // The underlying reason is worth stating rather than hiding: the analyzer
+      // attributes a polymorphic instance's members to the CLASS, so the instance
+      // member and the class member SHARE the qualifiedName `List._cons` while the
+      // store still keeps them as distinct rows (its key is fileId:name:lineStart).
+      // That name collision is pre-existing and is reported, not fixed here — it is
+      // the same family as the 42 where-locals that shadow their own frame, and
+      // fixing it means deciding what a polymorphic instance's members are OWNED BY,
+      // which is a naming decision this lane has not made.
+      if (frameOwner !== className) {
+        for (let i = 0; i < node.namedChildCount; i++) {
+          const m = node.namedChild(i)
+          if (m?.type !== "instance_member") continue
+          const memberName = this.memberDeclaredName(m)
+          if (!memberName || !classMem.has(memberName)) continue
+          const nameNode = m.namedChild(0)?.childForFieldName("name") ?? m.namedChild(0)
+          this.pushRel(
+            ctx,
+            `${frameOwner}.${memberName}`,
+            `${className}.${memberName}`,
+            ASTEngine.RelationshipType.Overrides,
+            1.0,
+            { cleanSpecific: true, isTypeClassOverride: true, className, instanceType: frameOwner, member: memberName },
+            this.lineOf(nameNode),
+          )
+        }
+      }
+    }
+
     scopeStack.push({
       node,
       name: frameOwner,
@@ -3480,6 +3576,24 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
       return this.unparenthesize(node.text)
     }
     return node.text
+  }
+
+  /**
+   * The name a `class_member` / `instance_member` wrapper's inner declaration
+   * declares, normalized across all three shapes the two wrappers carry.
+   *
+   * A `type_signature` wraps its name in a `signature_name` (four shapes, see
+   * `declarationName`); an `operator_definition` puts a `parenthesized_operator`
+   * straight in the `name` field; a `function_declaration` puts an `identifier`.
+   * All three are read from the FIELD, never from the first child, for the reason
+   * `declaredName` documents: an uppercase definition's name is typed
+   * `constructor` and a first-child scan publishes the first PARAMETER instead.
+   */
+  private memberDeclaredName(wrapper: Node): string | null {
+    const inner = wrapper.namedChild(0)
+    if (!inner) return null
+    if (inner.type === "type_signature") return this.declarationName(inner)
+    return this.normalizeParenthesized(this.declaredName(inner))
   }
 
   /** module_name children compose dotted names (Data.Map → Data + "." + Map). */

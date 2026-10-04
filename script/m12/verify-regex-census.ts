@@ -112,10 +112,26 @@ async function main() {
   }
   if (requireClean) console.log(`--require-clean: drift entries = ${drift.added.length} added / ${drift.removed.length} removed`)
 
-  for (const k of missingFromCensus.slice(0, 15)) console.log(`MISSING ${k}`)
-  for (const k of staleInCensus.slice(0, 15)) console.log(`STALE ${k}`)
-  for (const e of unclassified.slice(0, 15)) console.log(`UNCLASSIFIED ${e.file}:${e.line} ${e.source.slice(0, 50)}`)
-  for (const e of unjustified.slice(0, 15)) console.log(`UNJUSTIFIED ${e.file}:${e.line} [${e.classification}] ${e.source.slice(0, 50)}`)
+  // A truncated failure list is a SILENT one. This gate reported
+  // "missing from census: 18" and then printed 15 of them, so a reader counting
+  // the rows saw 15 and a reader trusting the header saw 18 — and the 3 in
+  // between belonged to no lane in either accounting. That is the same failure
+  // the honesty contract calls out as "silence is guilt": a check that hides part
+  // of its own output cannot be used to decide what to fix.
+  //
+  // Everything is printed. A long list is a nuisance; a short one is a lie.
+  const CAP = Number(process.env.BB_REGEX_LIST_CAP ?? 0) // 0 = no cap
+  const show = <T,>(xs: T[], label: (x: T) => string): void => {
+    const shown = CAP > 0 ? xs.slice(0, CAP) : xs
+    for (const x of shown) console.log(label(x))
+    if (shown.length < xs.length) {
+      console.log(`… and ${xs.length - shown.length} more ${label(xs[0]).split(" ")[0]} row(s) hidden by BB_REGEX_LIST_CAP=${CAP}`)
+    }
+  }
+  show(missingFromCensus, (k) => `MISSING ${k}`)
+  show(staleInCensus, (k) => `STALE ${k}`)
+  show(unclassified, (e) => `UNCLASSIFIED ${e.file}:${e.line} ${e.source.slice(0, 50)}`)
+  show(unjustified, (e) => `UNJUSTIFIED ${e.file}:${e.line} [${e.classification}] ${e.source.slice(0, 50)}`)
 
   if (!ok) {
     console.error(`regex census gate ${strict ? "(strict) " : ""}FAILED`)

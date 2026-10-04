@@ -64,10 +64,33 @@ const SHELL_BUILTINS = new Set([
 
 const DECLARATION_KEYWORDS = new Set(["export", "local", "declare", "typeset", "readonly"])
 
-// Commands the analyzer interprets itself and therefore does not also emit as
-// Calls: the builtin forms above plus the few whose whole point is a
-// side-effect classification rather than a call target.
-const INTERPRETED_COMMANDS = new Set(["source", ".", "export", "alias", "trap", "set"])
+/**
+ * POSIX/bash RESERVED WORDS. None of them is ever a command word: the shell
+ * consumes them itself, so no script can invoke one. They are listed here
+ * separately from SHELL_BUILTINS because the consequence is different — a builtin
+ * IS a real command (it is simply not a project symbol, so the edge would be
+ * noise), whereas a reserved word is not a command at all, so an edge to one is a
+ * fabrication.
+ *
+ * M60 measurement, 200 hash-ordered corpus files, 2,945 `calls` edges: 30 (1.02%)
+ * carried a reserved word as their target, and every one of the 30 is
+ * `fi`/`esac`/`then`/`elif`/`else`/`do`/`case`/`if` read as a command name by
+ * grammar recovery — e.g. `kubernetes/cluster/gce/config-test.sh:468`, a real
+ * bash file, where `if [[ -n "${LOGROTATE_FILES_MAX_COUNT:-}" ]]; then` emitted
+ * `calls -> if` AND `calls -> then`, and `ohmyzsh/lib/clipboard.zsh:66` emitted
+ * `calls -> elif` and `calls -> then` from one line. Zero of the 30 is a command
+ * any script could run: `./fi` is a command but its name is `./fi`, not `fi`.
+ *
+ * See guard-ab-bash-calls.ts for the A/B this decision rests on, including the
+ * damage-region guard that was measured and REJECTED because it deletes real calls.
+ */
+const SHELL_RESERVED_WORDS = new Set([
+  "if", "then", "else", "elif", "fi", "case", "esac", "for", "select", "while",
+  "until", "do", "done", "in", "function", "time", "{", "}", "!", "[[", "]]",
+  "((", "))", "coproc",
+])
+
+
 
 // $@, $*, $?, $$, $#, $!, $_ — positional/special parameter punctuation. They
 // are tracked as function parameters but are shell bookkeeping, not project
@@ -90,6 +113,53 @@ const SHELL_DEFINED_VARS = new Set([
   "PS2", "PS3", "PS4", "PWD", "RANDOM", "SECONDS", "SHELL", "SHELLOPTS",
   "SRANDOM", "UID", "OTEST",
 ])
+
+/**
+ * Bash BINDS a name without ever writing `NAME=…`.
+ *
+ * The declaration collectors before this read exactly two node types:
+ * `variable_assignment` (a plain assignment) and `declaration_command`
+ * (`local`/`declare`/`export`/`readonly`/`typeset`). POSIX defines four more
+ * binding constructs that carry neither, so every one of them produced a `uses`
+ * edge naming a target the analyzer itself had never published — an edge the
+ * graph could not walk, on a name the language had genuinely bound.
+ *
+ *   `for NAME in words`      POSIX 6.7.3 — NAME is assigned each word. The pinned
+ *                            grammar carries it as a bare `variable_name` child of
+ *                            `for_statement`, verified in
+ *                            `validation/m14/fixtures/bash/probe-bash-binding-shapes.mts`.
+ *   `read NAME…`             POSIX 6.2.5 — stdin is assigned to NAME. The grammar
+ *                            gives the targets as plain `word`s, indistinguishable
+ *                            by TYPE from a flag, so the option table below is the
+ *                            only thing separating them.
+ *   `mapfile`/`readarray`    bash 4.0 — fills the ARRAY NAME.
+ *   `printf -v NAME`         bash 4.1 — assigns the formatted output to NAME.
+ *
+ * Measured on the corpus, 400 files in hash order, 96 DISTINCT files:
+ * **234 binding sites** — `for` 173 in 81 files, `read` 59 in 30, `mapfile` 1,
+ * `printf -v` 1 — and **357 `uses` edges** whose target one of them declared.
+ * Those 357 went from unresolvable to resolvable and the `uses` TOTAL did not
+ * move (7,802 before and after): the edges already existed, naming a target the
+ * analyzer had never published. The per-construct file counts overlap and do not
+ * sum to 96. Probe: `validation/m14/fixtures/bash/probe-bash-binding-sites.mts`.
+ */
+const READ_TARGET_COMMANDS = new Set(["read", "mapfile", "readarray"])
+
+/**
+ * `read`/`mapfile` option letters that CONSUME THE NEXT SIBLING NODE, whatever its
+ * type. `-d` takes a delimiter, `-p` a prompt, `-n`/`-N` a count, `-t` a timeout,
+ * `-u` a descriptor, `-i` text, `-e`/`-s` nothing. Consuming the next SIBLING and
+ * not the next `word` is what makes `read -p "Name: " reply` declare `reply`: the
+ * prompt is a `string` node, and a token-level scanner that only looked at `word`s
+ * had already dropped it.
+ */
+const READ_VALUE_OPT_LETTERS = new Set(["d", "e", "i", "n", "N", "p", "s", "t", "u", "O"])
+
+/** Every option letter `read`/`mapfile` accepts. A letter outside this set is not
+ * an option at all, so it cannot make the next sibling a VALUE rather than a
+ * target. `a` is here because it is `-a aname` — a flag whose value is the array
+ * name — which is why `read -ra args` binds `args` and not a variable named `a`. */
+const READ_OPTION_LETTERS = new Set(["r", "a", "d", "e", "i", "n", "N", "p", "s", "t", "u", "O", "C", "c"])
 
 /**
  * Is this text a command NAME rather than an unexpanded expression?
@@ -132,8 +202,35 @@ const isShellIdentifierName = (text: string): boolean => {
   return true
 }
 
+/** Does `text` open with `((`? bash reads that as arithmetic, never as a nested
+ *  subshell. A char test rather than a regex for the same reason
+ *  `isShellIdentifierName` is one: the M12 regex census asserts this file
+ *  contains NO regex literals, and a literal here is a gate row
+ *  (`MISSING real-bash-analyzer.ts`) as well as a contract the doc states. */
+const opensWithDoubleParen = (text: string): boolean =>
+  text.length >= 2 && text.charCodeAt(0) === 40 /* ( */ && text.charCodeAt(1) === 40
+
+/** Does `text` open with `$((` — the arithmetic EXPANSION, as opposed to `$(` plus
+ *  a subshell? The pinned grammar confuses the two in the two shapes
+ *  `isArithmeticOperandCommand` exists to refuse, so the distinction has to be
+ *  read off the node's own text. */
+const opensWithArithmeticExpansion = (text: string): boolean =>
+  text.length >= 3 && text.charCodeAt(0) === 36 /* $ */ && opensWithDoubleParen(text.slice(1))
+
+/** Does `text` end with `))`, ignoring surrounding whitespace? */
+const endsWithDoubleParen = (text: string): boolean => {
+  const t = text.trim()
+  return t.length >= 2 && t.charCodeAt(t.length - 2) === 41 /* ) */ && t.charCodeAt(t.length - 1) === 41
+}
+
 const isCommandNameText = (text: string): boolean => {
   if (text.length === 0) return false
+  // A reserved word is never a command name. This is a POSIX fact rather than a
+  // heuristic, and it is the single gate for BOTH command paths (the
+  // `command_name` walk and the trap-handler splitter), so one check covers both.
+  // Measured cost of NOT having it: 30 fabricated `calls` edges in 2,945 on a
+  // 200-file hash-ordered sample. See SHELL_RESERVED_WORDS.
+  if (SHELL_RESERVED_WORDS.has(text)) return false
   // A bare NUMBER is never a command name — it is an arithmetic token or an
   // argument fragment. This predicate is the single gate for BOTH command paths
   // (the `command_name` walk and the trap-handler splitter), and it was admitting
@@ -210,7 +307,15 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
     // BD1: the line is part of an edge's identity. Keyed with the line so two
     // sites of one callee are two relationships, and so the store's per-site
     // `relId` has something to key on.
-    const sourceDir = this.dirnameOf(filePath)
+    //
+    // M60: `const sourceDir = this.dirnameOf(filePath)` sat here and was read by
+    // nothing. It existed to feed `normalizeRelative`, the relative-`source`
+    // resolver that BD9 REVERSED — bash resolves a relative `source` against
+    // `$PWD` at run time, not against the script's own directory — and the
+    // function was left behind when the decision was reversed. Its doc comment
+    // still described the reversed behaviour, so the file asserted two
+    // contradictory things about the same construct. Both are deleted rather than
+    // left as decoration.
 
     let cyclomaticComplexity = 1
     // Per-scope decision points. The lane published a FILE-level
@@ -398,6 +503,10 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
         node.type === "c_style_for_statement"
       ) {
         this.emitVariableUses(node, symbols, relSource, addRel, declaredSymbols, functionStack, functionParams)
+      } else if (node.type === "for_statement") {
+        // `for NAME in …` binds NAME with no assignment node. See
+        // `extractImplicitBinding` for the measurement this closes.
+        this.extractImplicitBinding(node, symbols, enclosingFunction() || scriptName, declaredSymbols, scopeOwners)
       } else if (node.type === "variable_assignment") {
         if (node.parent?.type !== "declaration_command") {
           this.extractAssignment(node, symbols, enclosingFunction() || scriptName, declaredSymbols, scopeOwners)
@@ -405,6 +514,7 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
       } else if (node.type === "declaration_command") {
         this.extractDeclaration(node, symbols, enclosingFunction() || scriptName, functionParams, declaredSymbols, scopeOwners, addRel)
       } else if (node.type === "command") {
+        this.extractImplicitBinding(node, symbols, enclosingFunction() || scriptName, declaredSymbols, scopeOwners)
         this.extractCommand(node, symbols, imports, patterns, {
           addRel,
           relSource,
@@ -555,12 +665,6 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
     return base.length > 0 ? base : "script.sh"
   }
 
-  private dirnameOf(filePath: string): string {
-    const normalized = filePath.split("\\").join("/")
-    const cut = normalized.lastIndexOf("/")
-    return cut > 0 ? normalized.slice(0, cut) : "."
-  }
-
   /** The 1-based line a symbol's NAME is written on (M60 #921). */
   private nameLineOf(sym: ASTEngine.UniversalSymbol): number {
     const line = sym.range?.startLine
@@ -636,88 +740,156 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   /**
-   * BD5: a call whose name the grammar cannot vouch for.
+   * Is this `command` node an ARITHMETIC OPERAND that the grammar handed back in
+   * command position?
    *
-   * Two facts, both needed. The first attempt walked UP from the name node
-   * looking for an ERROR or MISSING ancestor and found nothing, because the
-   * damage in the real shape is a SIBLING: `value=${value/]/%5D}` parses as
+   * bash writes an arithmetic expression `$(( ... ))`. The pinned grammar models
+   * it correctly in the ordinary position — `z=$((a + 1))` yields
+   * `arithmetic_expansion` → `binary_expression` → `variable_name`, and there
+   * is no `command` node to misread. It misparses in exactly two shapes, and in
+   * both the operand arrives as a `command` whose `command_name` is a VARIABLE,
+   * so the analyzer was emitting a call to something bash never runs:
    *
-   *   (command (variable_assignment … value: (expansion … (MISSING "}")))
-   *            name: (command_name (concatenation (word) (word) (word))))
+   *   1. as the default operand of a parameter expansion inside a string —
+   *      `last_run="${last_run:-$((attempt + 1))}"` parses as
+   *      `expansion` → `command_substitution` → `subshell` → `command` →
+   *      `command_name: attempt`, i.e. `$(` plus a subshell where `$((` was meant.
+   *   2. under `!` — `! ((force_known_update))` parses as `negated_command` →
+   *      `subshell` → `subshell` → `command` → `command_name`.
    *
-   * so the MISSING token hangs off the assignment on the same command line while
-   * the name's own ancestor chain is `command <- program` — clean. The
-   * fabricated edge was `calls: -> ]/%5D}`, three grammar fragments glued into
-   * something no source declares.
+   * The test is the enclosing node's own text, never the source text: a
+   * `command_substitution` whose text opens `$((` is an arithmetic expansion,
+   * and a `subshell` whose text opens `((` is one too. A real command
+   * substitution is untouched by this — `$(wc -l < f)` inside `$(( ))` opens
+   * `$(w`, so `calls: -> wc` still fires, which is correct, because `wc` really
+   * is run there.
    *
-   * The rule is therefore: the command's SUBTREE is damaged (it holds an ERROR
-   * or MISSING node) AND the name is not a single plain `word` (it is a
-   * concatenation or another derived shape). Both halves are load-bearing.
-   * Damage alone is not enough — refusing every command in a damaged file is
-   * the `#907` swallow class, and it would lose real declarations in a partly
-   * broken script. A glued name alone is not enough either: a legitimately
-   * quoted command is also derived, and it is handled by BD4 rather than here.
+   * Measured on the 400-file census sample: 2 occurrences of shape 1 and 1 of
+   * shape 2. Both edges carried `confidence: 1` and
+   * `evidenceClass: structural`, i.e. they were presented as parse facts rather
+   * than guesses, which is what made them worth removing rather than labelling.
    */
-  private isRecoveredCommandWord(command: Node, nameNode: Node | null): boolean {
+  private isArithmeticOperandCommand(node: Node): boolean {
+    // `( (` written adjacently is `((`: bash reads it as arithmetic, never as a
+    // nested subshell, so the closing pair is part of the test rather than a
+    // detail. `( (date) )` has a space and stays a real subshell.
+    const isDoubleParen = (t: string): boolean => opensWithDoubleParen(t) && endsWithDoubleParen(t)
+    let cur: Node | null = node.parent
+    while (cur) {
+      // A `command_substitution` decides it. `$((` is the arithmetic expansion
+      // the grammar misread as `$(` + subshell; a plain `$(` is a real command
+      // substitution, and `$(wc -l < f)` nested inside `$(( ))` really does run
+      // `wc`, so that edge must survive.
+      if (cur.type === "command_substitution") return opensWithArithmeticExpansion(cur.text)
+      if (cur.type === "subshell" && isDoubleParen(cur.text)) return true
+      cur = cur.parent
+    }
+    return false
+  }
+
+  /**
+   * Is this `command` a `case` arm's PATTERN that the grammar could not close?
+   *
+   * `if ! case "$t" in binary) … ;; source) … ;; esac; then` is a construct the
+   * pinned wasm cannot close, so an arm arrives as
+   *
+   *   command @936 "binary) _try_existing binary"
+   *     command_name → word "binary"     ← the arm's PATTERN, not a command
+   *     ERROR → ")"                      ← the arm terminator the grammar kept
+   *     word "_try_existing"
+   *
+   * The structural fact is a POSIX one, not a heuristic: **a `)` can never
+   * immediately follow a command NAME in valid bash.** `(cmd)` puts the `)` on
+   * the subshell, a sibling of the whole command; `echo )` puts it after an
+   * argument or on its own as a `word`. The only way `)` lands directly between
+   * the name and the first argument is a terminator the grammar could not place.
+   *
+   * This is the narrow half that the rejected damage guard (see
+   * `guard-ab-bash-calls.ts`, guard E) lacked. Guard E refuses a command with ANY
+   * direct `ERROR`/missing child and costs 15 real `kube::log::status` calls in
+   * kubernetes/test/e2e_node/gubernator.sh, because `V=2 kube::log::status "…"`
+   * puts a `variable_assignment` in the command's own slot and the grammar puts an
+   * `ERROR` beside it. Keying on the POSITION — immediately after `command_name` —
+   * and on the CHARACTER `)` costs 0 real calls on 400 hash-ordered corpus files
+   * while removing 5 fabrications.
+   *
+   * The wider predicate was measured too and REJECTED, rather than assumed:
+   * "the command has a direct `ERROR`/missing child whose text is `)`" fires on
+   * `echo one two ) three`, where `)` is an ordinary word argument, so it would
+   * delete a real `calls: -> echo`. `guard-f-soundness.mts` asks both predicates
+   * about 39 node shapes; the positional one fires on 0 valid-parse commands, the
+   * wider one on 1.
+   *
+   * **Why this is worth an edge the `calls` guards were declined.** The `binary`,
+   * `git` and `auto` arms produce `calls` edges naming nothing runnable — the
+   * residuals pass 2 named and declined. The `source` arm's pattern is the word
+   * `source`, so that arm's `command` reaches the `source`/`.` branch, which emits
+   * `imports` AND `references` to its first argument:
+   *
+   *   gimme -[imports]->    _try_existing
+   *   gimme -[references]-> _try_existing
+   *
+   * `_try_existing` is a shell FUNCTION defined at gimme:414, not a file. That is
+   * a fabricated module dependency — the kind `imports` feeds `bb_migrate` and
+   * `bb_impact` — and no prior guard was aimed at it. The shared differential
+   * cannot see it either: `deriveBashEdges` pushes `imports`+`references` for the
+   * same construct, so two walkers over the same tree agree that a function name
+   * is a dependency.
+   */
+  private isCaseArmPatternCommand(node: Node): boolean {
+    const name = this.commandNameNode(node)
+    if (!name) return false
+    const after = name.nextSibling
+    if (!after) return false
+    if (after.type !== "ERROR" && !after.isMissing) return false
+    return after.text.charCodeAt(0) === 41 /* ) */
+  }
+
+  /**
+   * A command's name is a WORD, and a plain `word` name is trusted outright.
+   * The two real-world shapes that put something else in `command_name` are
+   * both fabrications: a zsh `case` arm's alternation, and a quoted string or
+   * number the grammar could not classify. Measured on ohmyzsh's
+   * `tools/changelog.sh` the analyzer emitted `calls: -> ]+` and
+   * `calls: -> \e[2m\1\e[0m`; measured on the 385 extensionless files the
+   * shebang rule had just opened (nvm, rbenv, ohmyzsh, otp) it emitted
+   * `calls: -> 129`, `-> 130`, `-> 141`, `-> 143` and `-> 6` — numeric literals
+   * promoted to callees, 18 rows the independent oracle refused.
+   */
+  private isRecoveredCommandWord(nameNode: Node | null): boolean {
     if (!nameNode) return true
     if (nameNode.isMissing) return true
 
-    // A command's name is a WORD, and a plain `word` name is trusted outright.
-    // The two real-world shapes that put something else in `command_name` are
-    // both fabrications: a zsh `case` arm's alternation, and a quoted string or
-    // number the grammar could not classify. Measured on ohmyzsh's
-    // `tools/changelog.sh` the analyzer emitted `calls: -> ]+` and
-    // `calls: -> \e[2m\1\e[0m`; measured on the 385 extensionless files the
-    // shebang rule had just opened (nvm, rbenv, ohmyzsh, otp) it emitted
-    // `calls: -> 129`, `-> 130`, `-> 141`, `-> 143` and `-> 6` — numeric literals
-    // promoted to callees, 18 rows the independent oracle refused.
     const name: Node = nameNode
     const nameIsPlainWord =
       name.namedChildCount === 0 ||
       (name.namedChildCount === 1 && name.namedChild(0)?.type === "word")
     if (!nameIsPlainWord) {
       // Not a word, and therefore not a name — no callee exists to point at.
-      // The bidirectional damage check below used to be the ONLY thing standing
-      // between this shape and an edge, which meant an UNDAMAGED `number` fell
-      // straight through it and became a callee.
       return true
     }
     // A word that OPENS with a backslash is an escape, not a name. `\.` is what
     // the grammar leaves behind when it splits a sed argument such as
     // `s/\./-/g`, and a command named `\.` is a name no symbol can ever have.
     if (name.text.charCodeAt(0) === 92 /* \ */) return true
-    // A plain word is trusted for its shape. BD5's damage check deliberately
-    // stays scoped to the shapes above: running it for a plain word too costs
-    // 31 calls the independent oracle DOES corroborate, because that oracle is
-    // structure-only and cannot see damage at all. Those rows are the oracle's
-    // blind spot rather than an analyzer error, and "fixing" them would trade a
-    // real call for a phantom one.
-    return false
-  }
-
-  /** Is there an ERROR/MISSING node between `node` and its enclosing statement? */
-  private enclosingStatementIsDamaged(node: Node): boolean {
-    let p: Node | null = node.parent
-    let depth = 0
-    while (p && depth < 8) {
-      if (p.type === "ERROR" || p.isMissing) return true
-      if (p.type === "list" || p.type === "program" || p.type === "compound_statement") return false
-      p = p.parent
-      depth++
-    }
-    return false
-  }
-
-  private subtreeIsDamaged(root: Node): boolean {
-    const stack: Node[] = [root]
-    while (stack.length > 0) {
-      const n = stack.pop()!
-      if (n.type === "ERROR" || n.isMissing) return true
-      for (let i = 0; i < n.childCount; i++) {
-        const c = n.child(i)
-        if (c) stack.push(c)
-      }
-    }
+    // A plain word is trusted for its shape.
+    //
+    // M60, re-measured: the DAMAGE half of BD5 is not implemented, deliberately,
+    // and the two helpers that would have implemented it
+    // (`enclosingStatementIsDamaged`, `subtreeIsDamaged`) were dead code. They
+    // were removed rather than wired up because the A/B is now measured and the
+    // damage guard LOSES. `guard-ab-bash-calls.ts`, 200 hash-ordered corpus files,
+    // 2,945 `calls` edges: refusing every call in a damaged region removes 96
+    // (3.26%), and the removal set contains 15 real calls to
+    // `kube::log::status` in kubernetes/test/e2e_node/gubernator.sh plus real
+    // `print`/`echoti`/`setopt`/`autoload` invocations in
+    // ohmyzsh/lib/termsupport.zsh — a MISSING token anywhere in the file
+    // condemns every command under it, which is the `#907` swallow class this
+    // decision was originally taken to avoid.
+    //
+    // What IS implemented is the narrow half, and it is measured the same way: a
+    // reserved-word name is never a command, so `isCommandNameText` refuses it,
+    // which removes 30 fabrications and 0 real calls.
     return false
   }
 
@@ -930,6 +1102,146 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
           ownerName: owner || undefined,
           metadata: { bashSpecific: true, isArray, isTopLevel: owner === "" },
         })
+        return
+      }
+    }
+  }
+
+  /**
+   * A binding the language creates without an assignment node.
+   *
+   * `extractAssignment` and `extractDeclaration` cover the two node types that
+   * carry an explicit `NAME=`. These four constructs bind a name and carry
+   * neither, so before this existed they produced a `uses` edge to a target the
+   * analyzer had not published — the edge asserted a read of a declaration that
+   * did not exist in the graph. Measured on a 400-file hash-ordered sample:
+   * 234 binding sites across 96 distinct files, and 357 `uses` edges naming a
+   * target one of them declared. Adding this closed all 357 — the unresolvable
+   * `uses` count fell 1,920 -> 1,563 and the `uses` total stayed at 7,802.
+   *
+   * The rule throughout is DECLINE, NEVER GUESS. A target counts only when it is
+   * a `word` sibling that is a shell identifier, because the pinned grammar
+   * represents a computed name as a different node and a literal name as a
+   * `word` — so the type test is the whole filter. Every one of these was
+   * verified on the tree rather than assumed, in
+   * `validation/m14/fixtures/bash/probe-bash-binding-shapes.mts`:
+   *
+   *   read "$target"          -> `string`      declined
+   *   read pre${n}fix         -> `concatenation` declined
+   *   printf -v "$2"          -> `string`      declined
+   *   mapfile -t "$name"      -> `string`      declined
+   *   read *.txt              -> `word`        declined, not an identifier
+   *   read                    -> (no target)   declined; bash assigns REPLY,
+   *                                            which is in SHELL_DEFINED_VARS
+   *   # read x                -> `comment`     declined
+   *   echo "read x"           -> `string_content` declined
+   *   cat <<'EOF' … read x …  -> `heredoc_body`  declined
+   *
+   * The last three are why this reads the tree: a text matcher would have
+   * declared a variable from a comment, a string and a heredoc.
+   */
+  private extractImplicitBinding(
+    node: Node,
+    symbols: ASTEngine.UniversalSymbol[],
+    owner: string,
+    declaredSymbols: Set<string>,
+    scopeOwners: Set<string>,
+  ) {
+    const publish = (name: string, at: Node, site: string, isArray: boolean) => {
+      if (!isShellIdentifierName(name)) return
+      const key = `${owner}\u0000${name}`
+      if (declaredSymbols.has(key)) return // already declared; first declaration wins
+      declaredSymbols.add(key)
+      symbols.push({
+        name,
+        kind: ASTEngine.SymbolKind.Variable,
+        range: this.nodeToRange(at),
+        scope: owner,
+        visibility: this.visibilityForOwner(owner, scopeOwners),
+        ownerName: owner || undefined,
+        metadata: { bashSpecific: true, isImplicitBinding: true, bindingSite: site, isArray },
+      })
+    }
+
+    // `for NAME in words; do …; done` and `for NAME; do …; done` — both carry a
+    // bare `variable_name` child of `for_statement`. The c-style loop
+    // `for ((i=0; …))` is a `c_style_for_statement` whose init IS a
+    // `variable_assignment`, so it arrives at `extractAssignment` already and is
+    // deliberately not handled here: two collectors publishing one name would
+    // make one of them dead.
+    if (node.type === "for_statement") {
+      for (let i = 0; i < node.namedChildCount; i++) {
+        const child = node.namedChild(i)
+        if (child && child.type === "variable_name") publish(child.text, child, "for", false)
+      }
+      return
+    }
+
+    // `read`/`mapfile`/`readarray` targets, and `printf -v NAME`.
+    const cmd = this.commandNameOf(node)
+    if (cmd.length === 0) return
+    if (READ_TARGET_COMMANDS.has(cmd)) {
+      let skipNext = false
+      for (let i = 0; i < node.namedChildCount; i++) {
+        const child = node.namedChild(i)
+        if (!child || child.type === "command_name") continue
+        // An env prefix (`IFS='/:' read …`) and a redirection target are neither
+        // an option nor a name; they just advance the scan.
+        if (child.type === "variable_assignment") continue
+        const isOption =
+          child.type === "word" &&
+          child.text.length > 1 &&
+          child.text.charCodeAt(0) === 45 /* - */ &&
+          child.text.charCodeAt(1) !== 45 /* not `--` */
+        if (isOption) {
+          // A bundled option carries its value EITHER inside the bundle or in the
+          // next sibling, and which one is decided by POSITION: only a value-taking
+          // letter in the LAST position has nothing after it to take the value
+          // from. `-ra args` -> `a` is last, so `args` is the array name. `-u3
+          // name` -> `u` is followed by `3`, so the descriptor is inside the
+          // bundle and `name` is a TARGET.
+          //
+          // This was a real defect in the first version, which asked only "does
+          // this bundle contain a value letter" and so consumed `name` in
+          // `read -u3 name`, dropping a binding bash actually makes. It was found
+          // by a surviving MUTANT rather than by reading the code: emptying
+          // READ_VALUE_OPT_LETTERS left the fixture battery green, which said the
+          // fixture could not tell the two rules apart, and the discriminating
+          // shape is in `probe-bash-binding-shapes.mts` as bundle-u3.
+          const lastIndex = child.text.length - 1
+          let consumesNext = false
+          for (let j = 1; j < child.text.length; j++) {
+            const letter = child.text[j]
+            if (!READ_OPTION_LETTERS.has(letter)) continue
+            if (READ_VALUE_OPT_LETTERS.has(letter)) {
+              consumesNext = j === lastIndex
+              // The FIRST value-taking letter owns the value; a letter after it is
+              // not a separate option.
+              break
+            }
+          }
+          skipNext = consumesNext
+          continue
+        }
+        if (skipNext) {
+          skipNext = false
+          continue
+        }
+        // `mapfile`/`readarray` fill an ARRAY; `read` fills a scalar.
+        publish(child.text, child, cmd, cmd !== "read")
+      }
+      return
+    }
+    // `printf -v NAME fmt …` (bash 4.1). The target is the node IMMEDIATELY after
+    // `-v`, and it must itself be a `word`, so `printf -v "$2" …` — a name the
+    // script computes at run time — yields nothing. `echo` has no `-v`, which is
+    // why this is keyed on `printf` and not on the flag.
+    if (cmd === "printf") {
+      for (let i = 0; i < node.namedChildCount - 1; i++) {
+        const child = node.namedChild(i)
+        if (!child || child.type !== "word" || child.text !== "-v") continue
+        const target = node.namedChild(i + 1)
+        if (target && target.type === "word") publish(target.text, target, "printf -v", false)
         return
       }
     }
@@ -1220,8 +1532,10 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
     // BD1: the edge's line is the line the command NAME is on.
     const nameLine = nameNode.startPosition.row + 1
 
-    // BD5: nothing is emitted out of a damaged region.
-    if (this.isRecoveredCommandWord(node, nameNode)) {
+    // BD5: nothing is emitted out of a recovered name. The shape test is
+    // `nameNode` alone: the damage half is measured and rejected, see
+    // isRecoveredCommandWord.
+    if (this.isRecoveredCommandWord(nameNode)) {
       patterns.add("Recovered Parse Region")
       return
     }
@@ -1229,8 +1543,35 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
     // BD4: a command word that is an unexpanded expression is not a call to a
     // name. The variables inside it are still read, and the expansion walk
     // already emits those Uses edges; there is no callee to point at.
+    //
+    // The refusal itself is ONE gate, `isCommandNameText` — the predicate the
+    // trap-handler path shares, so a reserved word cannot come back through the
+    // other door. The pattern label is derived here rather than gating anything:
+    // a reserved word is not a dynamic command name, it is the grammar handing
+    // back a keyword. Deriving the label instead of testing the word a second
+    // time is a measured choice — with the test duplicated, the mutant
+    // `bash/reserved-word-guard-removed` (which deletes the line in
+    // `isCommandNameText`) SURVIVED, because the duplicate still held the line.
+    // mutants-bash-lane.mts is what said so.
     if (this.containsExpansion(nameNode) || !isCommandNameText(cmdName)) {
-      patterns.add("Dynamic Command Name")
+      patterns.add(SHELL_RESERVED_WORDS.has(cmdName) ? "Recovered Parse Region" : "Dynamic Command Name")
+      return
+    }
+
+    // An arithmetic operand the grammar handed back in command position is not a
+    // callee. `attempt` inside `$((attempt + 1))` is a number being read, not a
+    // program being run, so there is nothing to point a `calls` edge at.
+    if (this.isArithmeticOperandCommand(node)) {
+      return
+    }
+
+    // A `case` arm's PATTERN, read back in command position because the grammar
+    // could not close the construct. This must sit ABOVE the `source`/`.` branch
+    // below, which is the whole point: the `source` arm's pattern IS the word
+    // `source`, so without this guard the arm publishes `imports` + `references`
+    // edges to a shell function. See `isCaseArmPatternCommand`.
+    if (this.isCaseArmPatternCommand(node)) {
+      patterns.add("Recovered Parse Region")
       return
     }
 
@@ -1360,7 +1701,7 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
       patterns.add("Destructive File Operation")
     }
 
-    if (SHELL_BUILTINS.has(cmdName) || INTERPRETED_COMMANDS.has(cmdName)) return
+    if (SHELL_BUILTINS.has(cmdName)) return
     // A `case` arm's commands are ordinary calls — `case $1 in install)
     // apt-get install foo ;; esac` installs something, and a reader asking "what
     // does this script install?" must see it. The arm's PATTERN is a `word` or
@@ -1630,23 +1971,13 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
     return null
   }
 
-  /** Resolve a literal relative `source` target against the sourcing file's own
-   *  directory, so `./env.sh` sourced from `eng/build.sh` is named
-   *  `eng/env.sh` rather than `./env.sh` — the form every other lane's imports
-   *  already take, and the form a reader can act on. */
-  private normalizeRelative(arg: string, sourceDir: string): string {
-    const cleaned = arg.startsWith("./") ? arg.slice(2) : arg
-    if (arg.startsWith("/")) return arg
-    if (cleaned.startsWith("../")) {
-      const segs = sourceDir.split("/").filter((s) => s.length > 0)
-      for (const part of cleaned.split("/")) {
-        if (part === "..") segs.pop()
-        else if (part.length > 0) segs.push(part)
-      }
-      return segs.join("/")
-    }
-    return sourceDir === "." ? cleaned : `${sourceDir}/${cleaned}`
-  }
+  // `normalizeRelative` was DELETED in M60, not merely unused. It resolved a
+  // relative `source` against the sourcing file's own directory, which BD9
+  // reversed as wrong: bash resolves a relative `source` against `$PWD` at run
+  // time, so the rewrite turned `source ./eng/common/tools.sh` inside
+  // `eng/common/` into the nonexistent `eng/common/eng/common/tools.sh`. The
+  // function had no callers, and its doc comment still asserted the reversed
+  // behaviour, so the file described two different contracts for one construct.
 
   private detectFrameworks(patterns: string[]): string[] {
     // The language itself is not a framework. Returning a bare ["Bash"] made

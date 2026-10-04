@@ -27,6 +27,51 @@ interface CssContext {
   frameworks: Record<string, boolean>
   patterns: Record<string, boolean>
   /**
+   * The LIVE declaration of a `@keyframes` name: the at-keyword it was last declared
+   * under, and the line it is on. "Live" rather than "first" because CSS Animations L1
+   * §3 makes the LAST declaration of a name the one that runs — so the third
+   * `@keyframes spin` in a file replaces the SECOND, not the first, and an edge that
+   * claimed otherwise would point at a block that was already dead.
+   *
+   * The KEYWORD is kept beside the line because it is the whole discriminator. CSS
+   * has no `vendor/standard` distinction anywhere else in its grammar, and an
+   * `@-webkit-keyframes` block is not a redeclaration of the `@keyframes` block beside
+   * it: they are two animations and the user agent picks the one it implements.
+   * Measured over the whole admitted corpus (1,114 files, 61 repos): 146 adjacent
+   * same-name declarations, of which **142 are a vendor-prefixed pair** and **4 are
+   * genuine redefinitions**. Emitting for the 142 would have been a fabrication over
+   * 97.3% of the type; emitting for none of the 4 would have been a ruling of `0`
+   * where the count is 4.
+   */
+  keyframeLive: Record<string, { keyword: string; line: number }>
+  /** The live `@property --x` registration's line. Same last-wins rule. */
+  propertyLive: Record<string, number>
+  /**
+   * The `--x` assignments seen so far in the CURRENT declaration block, for `overrides`.
+   *
+   * Keyed by property name, scoped to one `rule_set` / `keyframe_block` — see
+   * `customPropBlockKey` for why the scope is per block and not per file.
+   */
+  customPropInBlock: Record<string, { line: number; important: boolean }>
+  /**
+   * Which declaration block `customPropInBlock` describes: the enclosing
+   * `rule_set` / `keyframe_block`'s start offset, or `""` before one is seen.
+   *
+   * Per FILE would be wrong, and this is the reason the field exists. `:root { --x: 1 }`
+   * then `.dark { --x: 2 }` assigns `--x` twice in one file, but the two declarations
+   * do NOT replace one another — they apply to different elements, and the cascade picks
+   * between them per element. Emitting `overrides` there would claim the second kills the
+   * first, which is false. Two declarations in the SAME block have one origin, one
+   * specificity, one layer and one importance, so there the later one does replace the
+   * earlier one outright (CSS Cascade 5 §6.1, "The last declaration in document order
+   * wins"), which is the shape `recordKeyframesOverride` already implements for
+   * `@keyframes`. So the block, not the file, is the unit.
+   */
+  customPropBlockKey: string
+  /** Emitted `overrides` edges, keyed `name\u0000line`, so a third declaration of one
+   * name emits one edge per supersession rather than one per occurrence. */
+  overrideEdges: Record<string, boolean>
+  /**
    * Whether the stylesheet carries a parse error anywhere. The grammar signals a
    * construct it could not read by emitting an ERROR for that construct's head
    * and re-parsing the remainder as a SIBLING, so the damaged region is only
@@ -43,7 +88,14 @@ interface CssContext {
   declaredProperties: Record<string, string[]>
   /** Distinct media-scope names already published as symbols, and where first seen. */
   mediaScopes: Record<string, boolean>
-  mediaScopeFirstRange: Record<string, ASTEngine.UniversalSymbol["range"]>
+  /**
+   * A published at-rule SCOPE symbol, by name — the handle `widenScopeSymbol` needs.
+   *
+   * This replaces a `mediaScopeFirstRange` map that was written at one site and read at
+   * none, which is the dead-state shape the F1 audits exist to find. The reason a scope
+   * symbol needs a handle at all is `widenScopeSymbol`'s, which is the defect below.
+   */
+  scopeSymbol: Record<string, ASTEngine.UniversalSymbol>
   /**
    * Selector-chain edges, held until every symbol is known. A `contains` edge is
    * a claim about two graph nodes, and a chain leaf is not a node — see the
@@ -280,6 +332,16 @@ function isFoundationClass(cls: string): boolean {
   return false
 }
 
+/**
+ * At-rules that are STRUCTURAL SCOPES: their bodies are attributed to them and they get
+ * `contains` edges, so a second block of the same name has to widen the one published
+ * symbol (see `widenScopeSymbol`). `@font-face`, `@property`, `@counter-style`,
+ * `@custom-media`, `@font-feature-values` and `@mixin` are DECLARATIONS, not scopes —
+ * widening one of those would assert that two declarations of a thing share a location,
+ * which is a different claim and is not made.
+ */
+const STRUCTURAL_SCOPE_AT_RULES = new Set(["@layer", "@container", "@scope"])
+
 export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
   analyze(rootNode: Node, content: string, filePath: string): ASTEngine.ParseResult {
     // The importing stylesheet's own name, for `@import` edges. Pure-String, and
@@ -304,12 +366,17 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
       namespacePrefixes: {},
       layerOrder: [],
       mixinNames: {},
+      keyframeLive: {},
+      propertyLive: {},
+      customPropInBlock: {},
+      customPropBlockKey: "",
+      overrideEdges: {},
       frameworks: {},
       patterns: {},
       fileHasParseError: rootNode.hasError === true,
       declaredProperties: {},
       mediaScopes: {},
-      mediaScopeFirstRange: {},
+      scopeSymbol: {},
       deferredChainEdges: [],
       selectorChains: {},
       fileSelectorComplexity: 0,
@@ -1833,9 +1900,31 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
       // SAME scope, and emitting two symbols with one name would be the identity
       // collision this wave exists to remove (the defect that gave every
       // `@container` the bare name `@container`).
+      //
+      // AND THE DEDUP IS NOT ENOUGH ON ITS OWN — that is a pass-2 finding, and it is
+      // the reason the `else` branch exists. One symbol per name is right; one symbol
+      // per name carrying only the FIRST block's range is not, because every rule of
+      // every LATER block then gets a `contains` edge whose source endpoint sits
+      // somewhere the rule is not. Measured over the whole admitted corpus
+      // (`validation/m14/census/css-boundary-probe.ts`, probe P2): **7,257 of 25,181**
+      // `isMediaScope` containment edges had a contained rule OUTSIDE the source
+      // symbol's line range — 28.8% of the type. Worked example,
+      // `bootstrap/dist/css/bootstrap-grid.css`: the edge
+      // `"@media (min-width: 576px)" contains ".col-sm"` carries `.col-sm`'s line, L284,
+      // while the symbol it names is recorded at L22-L26 — 258 lines earlier, and a
+      // 5-line block. So the edge is true (` .col-sm` IS inside a `@media
+      // (min-width: 576px)`) and its endpoint is at the wrong place, which is what makes
+      // `bb_impact` on that scope name report the wrong rule set.
+      //
+      // `@supports` and `@container` do not have this defect and never had it: they
+      // publish a symbol per OCCURRENCE, and the identity merge at the end of `analyze`
+      // folds same-named ones and takes the maximum `endLine`. `@media` and `@layer`
+      // deduplicate BEFORE publishing, so the merge never sees a second copy. The fix
+      // is therefore to widen the one published symbol across its later blocks, which is
+      // the same convention the merge already uses, applied where the merge cannot reach.
       if (!ctx.mediaScopes[mediaName]) {
         ctx.mediaScopes[mediaName] = true
-        ctx.symbols.push({
+        const published: ASTEngine.UniversalSymbol = {
           name: mediaName,
           kind: ASTEngine.SymbolKind.Module,
           range: this.nodeToRange(node),
@@ -1845,9 +1934,11 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
           metadata: {
             isMediaScope: true,
             mediaCondition: collapseWhitespace(queryNode.text),
+            scopeBlocks: 1,
           },
-        })
-        ctx.mediaScopeFirstRange[mediaName] = this.nodeToRange(node)
+        }
+        ctx.symbols.push(published)
+        ctx.scopeSymbol[mediaName] = published
 
         // `@media (--narrow)` is a REFERENCE to the `@custom-media --narrow`
         // declaration, exactly as `var(--brand)` is a reference to a
@@ -1872,10 +1963,72 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
             metadata: { cssSpecific: true, isCustomMediaRef: true },
           })
         }
+      } else {
+        // The SAME query, a later block. The scope is one node, so its extent has to
+        // cover every block it is the scope of — see the comment on the `if`.
+        this.widenScopeSymbol(ctx.scopeSymbol[mediaName], node)
       }
       return mediaName
     }
     return null
+  }
+
+  /**
+   * Extend an already-published at-rule SCOPE symbol so its recorded extent covers a
+   * further block of the same scope.
+   *
+   * ## What was wrong, and how it was found
+   *
+   * `@media` and `@layer` publish ONE symbol per name, at the FIRST block, and the
+   * identity merge at the end of `analyze` never sees a second copy to fold. So a file
+   * with `@media (min-width: 576px)` three times has one symbol for it, recorded at the
+   * first block, and every rule of the second and third blocks receives a `contains`
+   * edge pointing at that first block. The edge is TRUE — the rule is inside a block of
+   * that query — and its endpoint is somewhere the rule is not.
+   *
+   * Measured over the whole admitted corpus: 7,257 of 25,181 `isMediaScope` edges
+   * (28.8%) and 40 of 505 `isLayerScope` edges (7.9%) carried a contained rule outside
+   * the source symbol's line range. Worked example, `bootstrap-grid.css`: the edge for
+   * `.col-sm` is at L284 and the symbol is recorded at L22-L26.
+   *
+   * A pass-1 probe reported this as 0 violations. That number was VACUOUS — the probe
+   * read the extent as `symbol.range.start.line`, and `parseFile` returns no `range`
+   * object at all (it flattens to top-level `startLine` / `endLine`), so every lookup
+   * missed. The non-zero figure is from the corrected probe, and the correction is
+   * recorded in `validation/m14/census/css-boundary-probe.ts` because a broken probe
+   * reporting zero is indistinguishable from a correct probe reporting zero.
+   *
+   * ## Why widening is the right repair and not publishing a second symbol
+   *
+   * Two symbols with one name is the identity collision this dedup exists to prevent —
+   * an edge naming one of them is ambiguous, and an ambiguous endpoint is the failure
+   * the export invariant convicts. And the NAME is the only identity a consumer has
+   * here: `pool-worker.ts` forwards a narrow allowlist of `metadata` keys and
+   * `isMediaScope` / `mediaCondition` are not on it, so 2,804 of 3,084 at-rule scope
+   * symbols arrive from `parseFile` with NO metadata at all (measured, same probe). A
+   * consumer cannot tell two `@media` nodes apart except by the name, so the name's
+   * extent has to be the union of its blocks. `@supports` and `@container` already get
+   * exactly this from the identity merge.
+   *
+   * ## Only `endLine` moves, and the gap it leaves is stated
+   *
+   * The identity merge widens `endLine` only, and this does the same, so the byte span
+   * (`startIndex`/`endIndex`) still describes the FIRST block while the line extent
+   * describes all of them. A range is therefore not contiguous for a scope with
+   * several blocks. That is the lane's existing convention rather than a new one, and
+   * it is recorded here because a consumer that assumes contiguity will be wrong for
+   * exactly the multi-block scopes this method exists to describe. `scopeBlocks` counts
+   * the blocks — and is itself dropped at the production boundary, for the reason above,
+   * so it is available to a fixture and not to a store consumer.
+   */
+  private widenScopeSymbol(sym: ASTEngine.UniversalSymbol | undefined, block: Node): void {
+    if (!sym || !sym.range) return
+    const r = this.nodeToRange(block)
+    if (r.endLine <= (sym.range.endLine ?? 0)) return
+    sym.range = { ...sym.range, endLine: r.endLine }
+    const md = (sym.metadata ?? {}) as Record<string, unknown>
+    const n = typeof md.scopeBlocks === "number" ? md.scopeBlocks : 1
+    sym.metadata = { ...md, scopeBlocks: n + 1 }
   }
 
   /**
@@ -2079,23 +2232,257 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
       node,
       (c) => c && (c.type === "keyframes_name" || c.type === "identifier" || c.type === "string_value"),
     )
-    if (nameNode) {
-      const name = stripAllQuotes(nameNode.text)
-      ctx.symbols.push({
-        name: name,
-        kind: ASTEngine.SymbolKind.Function,
-        range: this.nodeToRange(node),
-        scope: "",
-        visibility: "public",
-        complexity: 1 + this.countKeyframeStops(node),
-        metadata: {
-          isKeyframes: true,
-          // (the stop-count complexity is set on the symbol above)
-        },
-      })
-      ctx.keyframeNames[name] = true
-      ctx.patterns["CSS Animations"] = true
+    if (!nameNode) return
+    const name = stripAllQuotes(nameNode.text)
+    ctx.symbols.push({
+      name: name,
+      kind: ASTEngine.SymbolKind.Function,
+      range: this.nodeToRange(node),
+      scope: "",
+      visibility: "public",
+      complexity: 1 + this.countKeyframeStops(node),
+      metadata: {
+        isKeyframes: true,
+        // (the stop-count complexity is set on the symbol above)
+      },
+    })
+    ctx.keyframeNames[name] = true
+    ctx.patterns["CSS Animations"] = true
+    // The at-keyword this block was written under. The grammar's
+    // `keyframes_statement` opens with the ANONYMOUS `@keyframes` token OR with an
+    // `at_keyword` aliased from /@[-a-z]+keyframes/ (grammar.js:114-121), so the
+    // vendor prefix exists only on the `at_keyword` child and the default is the
+    // unprefixed keyword. Read from the tree rather than from the node text so a
+    // second spelling of the same prefix cannot split into two answers.
+    const keywordNode = this.findChild(node, (c) => c?.type === "at_keyword")
+    const keyword = keywordNode ? keywordNode.text.trim().toLowerCase() : "@keyframes"
+    this.recordKeyframesOverride(ctx, name, keyword, this.lineOf(node))
+  }
+
+  /**
+   * M14 ONTOLOGY, `overrides` — CSS's only inheritance-like construct, and the one the
+   * lane was silently omitting.
+   *
+   * ## What the construct is
+   *
+   * CSS Animations L1 §3: "If multiple `@keyframes` rules with the same name are
+   * declared, the last one wins." The Properties & Values API says the same for a
+   * re-registered `@property --x`. So a second declaration of a name REPLACES the
+   * first, wholly — the earlier block becomes dead code. This is the same shape the
+   * gate's own header records for bash's 174 redefinition events, and the reason the
+   * differential could not find it here: `deriveCssEdges` derives `contains`, `uses`,
+   * `references` and `imports`, and both walkers said nothing about `overrides`.
+   *
+   * ## What the corpus says, and the number that changed the design
+   *
+   * `validation/m14/census/css-overrides-split.ts` over the whole admitted corpus
+   * (1,114 files, 61 repos) found **146 second declarations of an already-declared
+   * `@keyframes` name in one file** — and **142 of them are a vendor-prefixed pair**,
+   * overwhelmingly Font Awesome's `@-webkit-keyframes fa-spin` / `@keyframes fa-spin`.
+   * A prefixed pair is not a redeclaration: two animations, selected by support. An
+   * `overrides` edge for each would have been a fabrication over 97.3% of the type, on
+   * the strength of an aggregate count.
+   *
+   * The remaining **4** are the real thing: `hasura-engine/frontend/libs/console/
+   * legacy-ce/src/lib/components/Services/ApiExplorer/GraphiQLWrapper/GraphiQL.css`
+   * (`@keyframes rotation` at L1534 and again at L2214) and three in
+   * `vue-element-admin/src/assets/custom-theme/index.css` (`v-modal-in`, `v-modal-out`,
+   * `progress`). Four occurrences in 1,114 files is a thin census and it is reported as
+   * one — but "four" is not "none", and a ruling of `overrides` that said the construct
+   * does not occur would be false by exactly those four.
+   *
+   * THE AGGREGATE ALSO NEEDS A CORRECTION, and the correction is about the instrument
+   * rather than the language. The first version of the split probe bucketed a whole
+   * NAME-GROUP by whether the group mentioned more than one keyword, so `v-modal-in`
+   * — spelled three times, once prefixed and twice not — was filed under
+   * "cross-keyword" on the strength of its first pair and its genuine redefinition was
+   * never counted. It reported 1 where the truth is 4. The rule that decides this is
+   * adjacency, because CSS Animations L1 §3 makes the LAST declaration the live one, so
+   * a declaration is compared against the one it replaces and not against its whole
+   * group. `validation/m14/census/css-overrides-split.ts` now counts adjacent pairs and
+   * agrees with the production census at 4.
+   *
+   * `@property` re-registration is counted at **0** occurrences, because the corpus
+   * cannot speak about it. It is implemented anyway and pinned by a fixture, which is
+   * this lane's standing answer to a construct the corpus does not exercise (see the
+   * `@counter-style` / `@custom-media` / `@font-feature-values` note in
+   * `collectCustomDefinitionNames`): a measured zero means the corpus is silent, not
+   * that the branch is wrong.
+   *
+   * ## Why `source === target`, stated rather than hidden
+   *
+   * The overriding declaration and the overridden one have the SAME NAME, and this
+   * lane publishes ONE symbol per name — the merge at the end of `analyze` is keyed
+   * `(kind, name)` and deliberately so, because "a selector is a MATCH PATTERN, not a
+   * declaration" and the same reasoning makes two `@keyframes spin` blocks two
+   * occurrences of one node. So the edge's two ends are the same string, and what
+   * distinguishes them is the SITE: `line_number` is the superseding declaration's
+   * line and `metadata.supersedesLine` is the declaration it kills.
+   *
+   * That is the shape `real-markdown-analyzer.ts:142` already guards for rather than
+   * forbids — `if (source === target && !distinctSites) return`, whose own comment is
+   * "The two ends name DIFFERENT sites even when they spell the same string". The two
+   * declarations here are two blocks of source text on two lines, so they are two
+   * sites by any reading, and `distinctSites: true` is recorded in the metadata
+   * rather than left for a reader to infer.
+   *
+   * The line is also load-bearing for STORAGE, not only for meaning: a relationship's
+   * store key is (source, type, target, line) — M59 #822, which markdown's own
+   * comment records — so an edge without the superseding line would collide with any
+   * other `spin -> spin` edge in the file and `INSERT OR IGNORE` would keep one.
+   *
+   * ## Confidence
+   *
+   * 1.0. This is not a name-match guess: both ends are read from two `@keyframes`
+   * nodes, the equality test is on the tree's own keyframes-name node, and the
+   * keyword discriminator is the tree's own `at_keyword`. There is no inference in it
+   * to be uncertain about.
+   */
+  private recordKeyframesOverride(
+    ctx: CssContext,
+    name: string,
+    keyword: string,
+    line: number | undefined,
+  ): void {
+    if (!name || !line) return
+    const live = ctx.keyframeLive[name]
+    if (live === undefined) {
+      ctx.keyframeLive[name] = { keyword, line }
+      return
     }
+    // A DIFFERENT KEYWORD is a different animation, not a redeclaration of this one.
+    // This is 142 of the 146 same-name second declarations in the corpus, and the
+    // reason the discriminator is carried at all.
+    if (live.keyword === keyword) {
+      this.emitOverride(ctx, name, line, live.line, {
+        isKeyframesRedefinition: true,
+        atKeyword: keyword,
+      })
+    }
+    // Either way the block just read becomes the live one, so a third declaration
+    // supersedes the second rather than the first.
+    ctx.keyframeLive[name] = { keyword, line }
+  }
+
+  /**
+   * `@property --x` written twice is the same last-wins replacement
+   * (`recordKeyframesOverride`'s rule, from the Properties & Values API rather than
+   * from CSS Animations). Measured at 0 occurrences over 1,114 corpus files, which is
+   * a fact about the corpus and not about the construct — so it is pinned by a fixture
+   * instead of being dropped for want of evidence.
+   */
+  private recordPropertyOverride(ctx: CssContext, name: string, line: number | undefined): void {
+    if (!name || !line) return
+    const prior = ctx.propertyLive[name]
+    if (prior !== undefined) {
+      this.emitOverride(ctx, name, line, prior, { isPropertyReregistration: true })
+    }
+    ctx.propertyLive[name] = line
+  }
+
+  /**
+   * M14 ONTOLOGY PASS 2, `overrides` — a `--custom-property` assigned TWICE inside ONE
+   * declaration block. Found by the pass-2 adversarial probe, not by reading: see
+   * `validation/m14/census/css-boundary-probe.ts` (Q3), which counts the shape on the
+   * parse tree of the whole admitted corpus.
+   *
+   * ## Why this is the same construct `@keyframes` already gets
+   *
+   * Two declarations of one property inside one block share origin, context, layer,
+   * specificity and importance, so nothing about them distinguishes them except their
+   * position, and CSS Cascade 5 §6.1 resolves that: "The last declaration in document
+   * order wins." CSS Variables 1 §2 adds that custom properties are not special here —
+   * "Custom properties are ordinary properties, so they can be declared on any element,
+   * are resolved with the normal inheritance and cascade rules." So the second
+   * assignment REPLACES the first outright and the first is dead, which is exactly what
+   * `recordKeyframesOverride` asserts for a second `@keyframes` of one name.
+   *
+   * The corpus shape is Bulma's minified bundles, where `:root { --bulma-light-l: 90%;
+   * … ; --bulma-light-l: 96%; … }` writes the same token twice inside one block.
+   *
+   * ## The block boundary is load-bearing, and narrower than it looks
+   *
+   * Only declarations in the SAME block produce an edge. `:root { --x: 1 }` followed by
+   * `.dark { --x: 2 }` assigns `--x` twice in one FILE and is NOT an override: the two
+   * apply to different elements and the cascade chooses between them per element, so an
+   * edge claiming the second kills the first would be false. The block is therefore the
+   * unit, tracked by `customPropBlockKey`, and the corpus's much larger
+   * cross-block-assignment shape (which the same probe counts) is deliberately not
+   * emitted. The rule is stated here because the boundary is the whole content of the
+   * claim: "the last one wins" is only unconditional inside one block.
+   *
+   * ## `!important` is respected
+   *
+   * `--x: 1 !important; --x: 2;` does NOT replace — the important declaration wins and
+   * the later one loses. Cascade 5 §6.1 sorts importance above document order, so the
+   * two are not interchangeable and an edge between them would be backwards. Only a pair
+   * of EQUAL importance is emitted, which is the only case where "later wins" is the
+   * whole rule. Measured on the corpus: every occurrence is an equal-importance pair, so
+   * this guard costs nothing there and is recorded because a guard that costs nothing is
+   * indistinguishable from a guard that was never needed.
+   */
+  private recordCustomPropertyOverride(node: Node, name: string, ctx: CssContext): void {
+    const line = this.lineOf(node)
+    if (!name || !line) return
+    // The enclosing declaration block. A `rule_set` and a `keyframe_block` are the two
+    // node types that ARE a declaration list; `@media`/`@supports`/`@layer` bodies are
+    // `rule_set`s and are visited on their own, so walking up to the nearest of the two
+    // is what makes "same block" mean "same block" rather than "same subtree".
+    let block: Node | null = node.parent
+    let key = `decl@${node.startIndex}`
+    while (block) {
+      if (block.type === "rule_set" || block.type === "keyframe_block") {
+        key = `${block.type}@${block.startIndex}`
+        break
+      }
+      block = block.parent
+    }
+    if (ctx.customPropBlockKey !== key) {
+      ctx.customPropBlockKey = key
+      ctx.customPropInBlock = {}
+    }
+    const important = node.text.indexOf("!important") !== -1
+    const prior = ctx.customPropInBlock[name]
+    if (prior && prior.important === important) {
+      this.emitOverride(ctx, name, line, prior.line, {
+        isCustomPropertyRedefinition: true,
+        blockSelector: key,
+      })
+    }
+    ctx.customPropInBlock[name] = { line, important }
+  }
+
+  private emitOverride(
+    ctx: CssContext,
+    name: string,
+    laterLine: number,
+    priorLine: number,
+    extra: Record<string, unknown>,
+  ): void {
+    const key = `${name}\u0000${laterLine}`
+    if (ctx.overrideEdges[key]) return
+    ctx.overrideEdges[key] = true
+    ctx.relationships.push({
+      source: name,
+      target: name,
+      type: ASTEngine.RelationshipType.Overrides,
+      // M59.A7: the name on this edge is the `@keyframes` name, and it is written on
+      // BOTH lines — the superseding one first, because that is the declaration the
+      // edge is about and the one a reader navigates to.
+      line_number: laterLine,
+      confidence: 1.0,
+      metadata: {
+        cssSpecific: true,
+        isOverride: true,
+        redefinition: true,
+        // The declaration this one kills. Carried explicitly so a consumer does not
+        // have to diff the file to find out WHICH earlier block died.
+        supersedesLine: priorLine,
+        // See the header: the two ends are two SITES, not one name twice.
+        distinctSites: true,
+        ...extra,
+      },
+    })
   }
 
   private processSupports(node: Node, ctx: CssContext): string | null {
@@ -2400,9 +2787,35 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
             // symbol per layer, located where its rules are.
             const existing = ctx.symbols.find((sy) => sy.name === `${keyword} ${namePart}`)
             if (existing) {
-              existing.range = this.nodeToRange(node)
               const em = (existing.metadata ?? {}) as Record<string, unknown>
-              existing.metadata = { ...em, hasLayerBlock: true }
+              const blockRange = this.nodeToRange(node)
+              if (em.hasLayerBlock !== true) {
+                // The FIRST block: the symbol moves onto it, because the ordering
+                // statement it replaces declares the layer's ORDER and the block holds
+                // its content. That is the pre-existing rule and it is kept.
+                existing.range = blockRange
+                existing.metadata = { ...em, hasLayerBlock: true, scopeBlocks: 1 }
+              } else {
+                // A SECOND block of a layer that already had one. The extent has to be
+                // the UNION of the blocks, not the latest one — and the reason is that
+                // `@layer base` is written four times in
+                // `phoenix/installer/templates/phx_static/default.css` (L39, L2294,
+                // L2301, L2306). Replacing the range with the last block left every rule
+                // of the FIRST block with a `contains` edge pointing at a symbol recorded
+                // 2,400 lines below it: `html, :host` at L46, `body` at L55, `hr` at L58,
+                // `abbr:where([title])` at L63 and 36 more. Measured before this change:
+                // 40 of 505 `isLayerScope` containment edges carried a contained rule
+                // outside the source symbol's line range, and 0 of 505 for `@supports`
+                // and `@container` — which publish a symbol per OCCURRENCE and are folded
+                // by the identity merge instead of deduplicated before publishing.
+                existing.range = {
+                  ...(existing.range as ASTEngine.UniversalSymbol["range"]),
+                  endLine: Math.max(existing.range?.endLine ?? 0, blockRange.endLine),
+                }
+                const n = typeof em.scopeBlocks === "number" ? em.scopeBlocks : 1
+                existing.metadata = { ...em, scopeBlocks: n + 1 }
+              }
+              ctx.scopeSymbol[`${keyword} ${namePart}`] = existing
             }
             // The SYMBOL is a duplicate — but the SCOPE is not. Returning `{}` here
             // (the first version) silently dropped the layer from the returned
@@ -2414,7 +2827,7 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
           }
           ctx.layerNames[namePart] = true
         }
-        ctx.symbols.push({
+        const atRuleSymbol: ASTEngine.UniversalSymbol = {
           name: publishedName,
           // A declared `@font-face` and a registered `@property` are both
           // declarations of a named thing, which is what `variable` means in this
@@ -2453,7 +2866,25 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
               : {}),
             // (the descriptor-count complexity is set on the symbol above)
           },
-        })
+        }
+        ctx.symbols.push(atRuleSymbol)
+        // The handle `widenScopeSymbol` needs. Only the STRUCTURAL at-rules are scope
+        // symbols with containment edges; a `@font-face` or `@property` is a
+        // declaration, and widening one of those would be a different claim.
+        if (STRUCTURAL_SCOPE_AT_RULES.has(keyword)) ctx.scopeSymbol[publishedName] = atRuleSymbol
+
+        // `@property --x` twice is a RE-REGISTRATION and the second replaces the first
+        // (Properties & Values API). Recorded against `publishedName`, which for a
+        // `@property` is the BARE `--x` and not `@property --x` — the same name a
+        // `var(--x)` read meets and the name the symbol above is published under, so
+        // the edge and the symbol cannot name different things.
+        //
+        // Inside the DECLARING block rather than beside the mixin bookkeeping below,
+        // because `publishedName` is scoped to it and hoisting the name outward would
+        // have put a second spelling of it in the file.
+        if (keyword === "@property") {
+          this.recordPropertyOverride(ctx, publishedName, this.lineOf(node))
+        }
       }
 
       if (keyword === "@layer") ctx.patterns["Cascade Layers (@layer)"] = true
@@ -2619,7 +3050,7 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
           // (the var()-read complexity is set on the symbol above)
         },
       })
-      // contains for the custom property scoped to its selector — emitted
+// contains for the custom property scoped to its selector — emitted
       // here (not by the post-loop) to avoid double-emission with nested
       // selector contains.
       if (currentSelector) {
@@ -2628,14 +3059,15 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
           target: propName,
           type: ASTEngine.RelationshipType.Contains,
           // M59.A7: the name is the custom property, so the line is its
-          // `property_name` node — NOT the `declaration`, which can open on an
-          // earlier line (a leading comment inside the block, or a declaration
+          // `property_name` node — NOT the `declaration`, which can open on
+          // an earlier line (a leading comment inside the block, or a declaration
           // written across lines).
           line_number: this.lineOf(propNode),
           confidence: 1.0,
           metadata: { cssSpecific: true, isCustomPropertyScope: true },
         })
       }
+      this.recordCustomPropertyOverride(node, propName, ctx)
       // Reached only by `--`, so the pattern test needs no prefix guard.
       ctx.patterns["CSS Custom Properties"] = true
     }
