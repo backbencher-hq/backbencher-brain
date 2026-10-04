@@ -430,8 +430,10 @@ CHECK 1 — DERIVATION: every emitted type has an oracle derivation
   (`script/m14/spec/dart-completeness.json` → `label_coverage.declared_gaps`), so
   `verify-label-coverage.ts` reports it as declared rather than undeclared.
 - **`references`** — introduced by this wave, and it is the honest cost of adding a
-  label ahead of its wiring. The oracle exists and the battery is green; the
-  allowlist drops the label, so the 5,265 rows are compared by nothing.
+  label ahead of its wiring. The oracle exists and its battery reports 38/38 shapes
+  exact over 799 corpus files (`bun run script/m14/verify-dart-references.ts`, and
+  `--corpus` for 1,203/1,203 rows agreed); the allowlist drops the label, so the
+  5,265 rows are compared by nothing.
   Declared in the same spec entry with the reason and the `closes_when`.
 
 The recorded baseline (`validation/m60/results/rel-type-coverage.json`, 2026-10-01)
@@ -781,10 +783,11 @@ mislead a reader of the graph.
 
 ## Shared-machinery needs (reported, not edited)
 
-Eight changes outside this lane's ownership, each stated so it can be applied
+Ten changes outside this lane's ownership, each stated so it can be applied
 without re-deriving it. The files are supervisor-owned per
 `docs/analyzers/ONTOLOGY-WORKSTREAM.md` §Ownership. Items 1–5 predate this pass;
-6–8 come from measuring the incoming direction.
+6–8 come from measuring the incoming direction, and 9–10 from removing this lane's
+last regexes.
 
 1. **`script/m14/ontology-coverage-gate.ts` — add a `dart` entry to
    `RULED_BY_LANG` (line ~183: `const RULED_BY_LANG: Record<string, Ruled[]> = {
@@ -938,6 +941,49 @@ without re-deriving it. The files are supervisor-owned per
    artifacts are `validation/m14/results/*.json`, which the honesty contract §5.1
    reserves for verifier scripts, and regenerating them from one lane would replace
    the milestone's claim with a single lane's. Reported, not worked around.
+9. **`script/m14/oracles/dart-overrides.ts` — a gate that is written and never read,
+   and a comment that asserts it is enforced.** Found while removing this lane's last
+   regexes; the code is lane-owned and the dead computation is removed, but the
+   DECISION it was hiding is not this lane's to take.
+   - What is true now: `overrideMembers`/`hasOverrideAnnotation` computed which
+     members carry a real `@override`; the result went into an `overrideOf` map that
+     nothing ever looked up (`grep` for `overrideOf.get` / `overrideOf[` → 0 hits). So
+     the oracle's EXTERNAL resolution pass has never been annotation-gated.
+   - What was claimed: the comment above it asserted the pass IS gated and that an
+     ungated pass "derived 81 `X.props -> Equatable.props` edges the analyzer
+     deliberately does not publish".
+   - What contradicts it: this lane's own battery pins the opposite. The case
+     `an unannotated external member: oracle has evidence, analyzer does not here`
+     (in `script/m14/verify-dart-overrides.ts`) asserts the oracle DOES claim the row
+     with no annotation, on the reasoning that a companion-verified match is evidence
+     rather than a guess, and that `@override` is only a lint (`annotate_overrides`).
+     A comment saying gated and a case saying ungated cannot both describe one pass.
+   - What the owner must decide, and why it is not a refactor: wiring the gate changes
+     published truth rows. Either (a) the companion pass stays ungated and the
+     "81 edges" claim is withdrawn as describing a program that never existed here,
+     or (b) the gate goes live and every unannotated external-base member stops being
+     claimed, which will move MISSING counts on any lane using this oracle. The rule a
+     wired gate needs is already in the file as `isOverrideAnnotation` (gates on
+     `node.type === "annotation"`, reads the identifier child — the rule
+     `RealDartAnalyzer.extractAnnotations` already applies). Measured for reference:
+     the analyzer's own FALLBACK pass is annotation-gated and its COMPANION pass is
+     not, so option (b) makes the oracle match the analyzer exactly.
+   - Verified behaviour-preserving: `run-fixtures.ts --lang dart` 16/16,
+     `verify-dart-overrides` 14/14 before and after, and the differential holds
+     `cov 98.4% / MISSING 100 / unexplained 0` (proxicall) and
+     `cov 99.4% / MISSING 14 / unexplained 0` (dart-http) on every run.
+10. **`script/m12/verify-regex-census.ts` cannot see a regex LITERAL, so a lane whose
+    only regexes are literals is counted clean.** This lane reported 0 regexes for
+    several waves while holding 9 of them, all in that shape — a constant assigned
+    `/…/` and then `.test()`ed through the variable. The gate's patterns
+    (`new RegExp`, `RegExp(`, `.match/.replace/.test/.search(`, `.matchAll`) match a
+    construction site and a call site; none of them matches
+    `const IDENT = /^[A-Za-z_$][A-Za-z0-9_$]*$/`. What it must do: parse the AST and
+    count regex-valued expressions and `new RegExp`/`RegExp()` constructions, so a
+    literal is counted by being a literal. Why it matters beyond this lane: the same
+    shape as the source-derivation error this wave exists to correct — an instrument
+    blind to a construct reports an absence, and the absence is read as a pass. The
+    per-file `m12` census has the same blind spot.
 
 ## Supported constructs
 
@@ -991,7 +1037,8 @@ without re-deriving it. The files are supervisor-owned per
 
 ## Regex inventory
 
-**Zero regexes in this lane, and the census artifact alone does not establish that.**
+**Zero regexes in this lane, and it took a second scan to establish that — the first
+scan was blind to the construct it was looking for.**
 
 `validation/m12/results/regex-census.json` contains no `dart` key and no `dart` string
 at all — `script/m12/verify-regex-census.ts` scans `real-*-analyzer.ts` files, so it
@@ -999,13 +1046,89 @@ reports nothing for Dart and an earlier version of this section read that absenc
 "0 regex usages". Absence of an entry is not a measurement of zero; the gate cannot
 distinguish "scanned and found none" from "never looked at this lane".
 
-So the number that is actually measured here is from a scan over everything this lane
-owns — `src/ast/real-dart-analyzer.ts`, `validation/m14/fixtures/dart/**`,
-`script/m14/oracles/dart-*.ts`, `script/m14/verify-dart-*.ts` — for regex-shaped
-constructs (`new RegExp`, `RegExp(`, `.match/.replace/.test/.search(/`, `.matchAll`).
-That scan found **2**, both in `script/m14/oracles/dart-imports.ts:68`, which the
-census gate does not reach. Both are removed; the count is now 0 by that scan and not
-by the artifact's silence.
+So the number is measured here by a scan over everything this lane owns —
+`src/ast/real-dart-analyzer.ts`, `validation/m14/fixtures/dart/**`,
+`script/m14/oracles/dart-*.ts`, `script/m14/verify-dart-*.ts`. **The first version of
+that scan searched for `new RegExp`, `RegExp(`, `.match/.replace/.test/.search(` and
+`.matchAll`, and reported 2** (both in `script/m14/oracles/dart-imports.ts:68`, since
+removed). **It reported 0 on a second pass, and 0 was wrong: there were 9 more.**
+
+The blind spot is the reason this section exists now. A regex **literal** —
+`/^[A-Za-z_$][A-Za-z0-9_$]*$/` — matches NONE of those five patterns. It is not
+constructed through `RegExp`, and a `.test()` call on it is `.test(` only on the
+variable holding it. A scan that greps for construction sites cannot see a literal
+assigned to a constant. Measured, in `script/m14/oracles/dart-overrides.ts`:
+
+| line | construct | sites |
+| --- | --- | --- |
+| 159 | `const IDENT = /^[A-Za-z_$][A-Za-z0-9_]*$/` | 6 × `IDENT.test()` at 190, 194, 254, 260, 399, 416 |
+| 340 | `/@override\b/` | 1 × `.test()` |
+| 344 | `/@?override\b/` | 1 × `.test()` |
+
+All 9 are removed. `IDENT` became `isIdentifierSpelling`, a `charCodeAt` predicate in
+the same shape as the analyzer's `isCapitalized`. The `@override` pair became
+`isOverrideAnnotation`, which gates on `node.type === "annotation"` and then reads the
+identifier child — the rule the analyzer already applies in `extractAnnotations`
+(`prev.type === "annotation"` before any text comparison).
+
+**The `@override` pair was not only a rule violation but a wrong answer**, and the
+measurement is on the node rather than on a row count. For a member whose preceding
+sibling is a doc comment, the regex tested the comment's TEXT:
+
+```
+/// We do not @override here — prose only.     sibling type documentation_comment
+  OLD /@override\b/.test(sibling.text) = true      NEW structural = false
+@override int get compute => 1;                 sibling type annotation
+  OLD = true    NEW = true                        (unchanged)
+```
+
+That is the failure the workstream names for regexes — matching comments — measured on
+this lane's own oracle.
+
+**A note on what this did and did not change, because the honest answer is "no
+counts".** Removing the regexes changed no emitted edge and no truth row, and I am not
+quoting a count as if it did. Two reasons, and the second is the stronger one:
+
+1. The differing predicate is not reachable through the oracle's public entry. On
+   every shape I could construct the annotation gate does not decide the row.
+2. **`overrideMembers` and `hasOverrideAnnotation` had no reader at all.**
+   `overrideOf` was written at line 531 and never looked up, so the gate was computed
+   per declaration and discarded. That is a static fact (`grep` for `overrideOf.get`
+   and `overrideOf[` returns 0 hits), which is why it is the claim I stand behind
+   rather than a differential comparison.
+
+The differential confirms the invariant that IS comparable — coverage and MISSING,
+which are stable across original and changed code on every run:
+
+```
+proxicall  cov 98.4%  MISSING 100  unexplained 0
+dart-http  cov 99.4%  MISSING  14  unexplained 0
+```
+
+**Absolute totals from that harness are not comparable run-to-run and this document
+quotes none of them as evidence.** The cold-pool rotation advances between runs;
+measured on unmodified HEAD with the resume journal cleared, `dart-http` returned
+`tree-truth` 2253, 2271 and 2277 across three runs and `proxicall` returned 6220 and
+6162. A reader comparing two differential runs row-for-row will see movement that is
+sampling, not change.
+
+### A comment that asserted a guarantee the code did not enforce
+
+The comment above the removed `overrideMembers` claimed the EXTERNAL resolution pass
+is annotation-gated, and that without the gate "an ungated pass derived 81
+`X.props -> Equatable.props` edges the analyzer deliberately does not publish". The
+gate was never wired, so that sentence described a different program.
+
+It also contradicts this lane's own battery, which pins the opposite: the case
+`an unannotated external member: oracle has evidence, analyzer does not here` asserts
+that the oracle DOES claim the row with no annotation, reasoning that a
+companion-verified match is evidence rather than a guess and that `@override` is only
+a lint (`annotate_overrides`). Both cannot be true of the same pass.
+
+Wiring the gate changes published truth rows, so it is not a refactor and not this
+lane's call — it is item 9 under *Shared-machinery needs*. The dead computation and
+the false comment are removed, and `isOverrideAnnotation` is kept because it is the
+rule a wired gate would need.
 
 Historical, for the record: the analyzer itself once carried 8 (5 quote-strip /
 callee-sanitization normalizations + 3 widget-detection `isWidgetTree` / uppercase
@@ -1018,13 +1141,19 @@ One Dart-source file in the lane's fixtures, `payload-and-complexity.dart:158`, 
 `RegExp(r'f6-\w+')`. That is a `RegExp` in the LANGUAGE, held as fixture input for a
 regular-expression field, not a pattern in an instrument.
 
-`script/m12/verify-regex-census.ts` currently FAILS. Its failures are 24 MISSING and 25
-STALE entries, and **not one names a Dart file** — the MISSING entries are
+`script/m12/verify-regex-census.ts` currently FAILS. Its failures are 24 MISSING and
+25 STALE entries, and **not one names a Dart file** — the MISSING entries are
 `real-css-analyzer.ts` (11) and `real-julia-analyzer.ts` (4) plus a perFile/census
 disagreement; the STALE entries are `real-clean-analyzer.ts`, `real-fsharp-analyzer.ts`,
 `real-javascript-analyzer.ts`, `real-python-analyzer.ts`, `real-svelte-analyzer.ts` and
-`real-typescript-analyzer.ts`. This lane contributes 0 to either list and the gate is
+`real-typescript.ts`. This lane contributes 0 to either list and the gate is
 not this lane's to fix.
+
+**The gate's blind spot is general, not specific to this lane.** A lane whose only
+regexes are literals will report 0 from this census and be counted clean. That is the
+same shape as the source-derivation error this wave exists to correct: an instrument
+that cannot see the construct it is measuring reports an absence, and the absence is
+read as a pass.
 
 ## Complexity envelope
 
