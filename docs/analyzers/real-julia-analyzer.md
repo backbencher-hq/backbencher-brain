@@ -1569,12 +1569,16 @@ The census had 10 more of its own, now in `text-util.ts`. `script/m14/oracles/ju
 **0 julia regex usages** (was 9) and `script/m12/verify-regex-census.ts` prints
 `unclassified: 0 · mislocated: 0 · regex census gate PASSED` with julia absent from its 5 entries;
 `bun run script/m14/run-fixtures.ts --lang julia` → **5 pass, 0 fail**;
-`bun run validation/m14/fixtures/julia/mutation-check.ts --all` → **25 killed, 0 survived, of 25**;
-`npx tsc --noEmit` → no error in any julia file. (This paragraph said 4 fixtures and 21 mutants: both
-were true when written and were not re-measured as the `imports`/`exports` work added one fixture and
-four mutants. `doc-tables-check.ts` cannot see this paragraph, which is the same prose-vs-table gap
-costing a figure three separate times in this file — see the census's `production` block for the
-machine-printed equivalents.)
+`bun run validation/m14/fixtures/julia/mutation-check.ts --all` → **28 killed, 0 survived, of 28**;
+`npx tsc --noEmit` → no error in any julia file. (This paragraph said 4 fixtures and 21 mutants, and a
+section 200 lines below still said 4 fixtures and 21 mutants after this one was corrected — the
+figures had moved 21 → 25 → 28 mutants and 4 → 5 fixtures across the `imports`/`exports` and
+`overrides` work, and the prose kept both the first and the second stale value.
+`doc-tables-check.ts` could not see this paragraph **or** that section, because the same prose-vs-table
+gap has now cost a figure three separate times in this file. §`The fixture lane and its mutants`
+records the fix: the fixture count, the four expectation totals and the mutant count are now CHECKED
+CELLS, derived from the expectation JSON and the mutants module on disk, and the check needs no census
+because nothing about them depends on the corpus.)
 
 `text-util.ts`'s **declared limitation**: it is a lexical scanner, not a TypeScript parser. It handles
 comments, strings, template literals with `${ … }` interpolation, and it does **not** disambiguate a
@@ -1584,14 +1588,14 @@ than inferred from a count that quietly moved.
 
 ## The fixture lane and its mutants
 
-Four fixtures, **38 expected symbols, 33 expected relationships, 20 forbidden relationships, 8
-forbidden symbols**; `bun run script/m14/run-fixtures.ts --lang julia` → 4 pass, 0 fail.
+Five fixtures, **49 expected symbols, 46 expected relationships, 32 forbidden relationships, 8
+forbidden symbols**; `bun run script/m14/run-fixtures.ts --lang julia` → 5 pass, 0 fail.
 
-`script/m60/julia-mutants.ts` holds **21 mutants**. It had **zero importers** when this lane started —
+`script/m60/julia-mutants.ts` holds **28 mutants**. It had **zero importers** when this lane started —
 a repo-wide search for `JULIA_MUTANTS` returned only its own declaration — so every one of them was an
 assertion nothing executed. Wiring them into `script/m14/mutate-analyzer.ts`'s `MUTANTS` array is a
 shared-file edit, so it is reported. `validation/m14/fixtures/julia/mutation-check.ts` is the lane-owned
-half and it runs them: **21 killed, 0 survived, of 21**.
+half and it runs them: **28 killed, 0 survived, of 28**.
 
 Five mutants were added for `overrides`, one per guard, and **all five are killed by the fixture
 suite**:
