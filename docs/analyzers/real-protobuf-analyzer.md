@@ -700,7 +700,7 @@ name, or the two spellings are the same string and it silently does nothing.
 | `npx tsx script/m14/run-fixtures.ts --lang protobuf` | **8 pass / 0 fail** (`validation/m14/fixtures/protobuf/`) |
 | `npx tsx script/m14/tmp/protobuf/probe/mutant-sweep.mts` | **26 caught / 0 survived** |
 | `npx tsc --noEmit` | no diagnostics |
-| `npx tsx script/m14/ontology-coverage-gate.ts protobuf` | **exit 2 — "no RULING TABLE for protobuf"**. The arbiter cannot rule for this lane until the wiring below is applied; nothing about the lane is wrong here |
+| `npx tsx script/m14/ontology-coverage-gate.ts protobuf` | **exit 2 — "no RULING TABLE for protobuf"**. The arbiter cannot rule for this lane until the wiring below is applied; nothing about the lane is wrong here | <br>**SUPERSEDED, pass 9:** the supervisor applied that wiring; the gate now rules and exits **1** with `ruled-sound 3 FALSIFIED 2`, both rows the missing `LANGS` entry. See PASS 9 |
 | `npx tsx script/m14/protobuf-ruling-table-proof.mts` | with the wiring applied: **emitted 5/10, ruled-sound 5, FALSIFIED 0, ruled-without-justification 0, exit 0** |
 | `npx tsx script/m14/protobuf-census.ts` | 821/821 parsed, 0 empty names, 0 unknown kinds, 0 `unknown` endpoints, 0 self-loops, 0 duplicate published ids |
 | `npx tsx script/m14/protobuf-adversarial.mts` | 14 probes; the numbers in this document |
@@ -1069,7 +1069,7 @@ FALSIFIED 0  ruled-without-justification 0`, exit 0.** Reproduce with
 | `npx tsx script/m14/protobuf-adversarial.mts` | 14 probes; 628,758 nodes read, **0** lacking `.id`; `uses` corpus-wide **99.58%**; heuristic ratio **0** |
 | `npx tsx script/m14/protobuf-construct-probes.mts` | **94** observed node types, 117 declared; **13 ERROR + 2 MISSING in 1 file**; every ruling re-probed at the current corpus and still reading 0 |
 | `npx tsx script/m14/protobuf-ruling-table-proof.mts` | run **c**: `emitted 5/10 ruled-sound 5 FALSIFIED 0`, exit 0. run **b** (ruling table wired, `LANGS` untouched, so both instruments read the **bash** grammar): **FALSIFIED 2** — `calls` reads `function_definition`, `instantiates` reports `WRONG GRAMMAR: this probe was handed a tree whose root node is \`program\`, not \`source_file\`` |
-| `npx tsx script/m14/ontology-coverage-gate.ts protobuf` | **exit 2 — "no RULING TABLE for protobuf"**. The arbiter refuses to rule for a lane with no table; nothing about the lane is wrong |
+| `npx tsx script/m14/ontology-coverage-gate.ts protobuf` | **exit 2 — "no RULING TABLE for protobuf"**. The arbiter refuses to rule for a lane with no table; nothing about the lane is wrong | <br>**SUPERSEDED, pass 9:** it rules now, exit **1**, `FALSIFIED 2` — both from the missing `LANGS` entry. See PASS 9 |
 | `npx tsc --noEmit` | no diagnostics |
 | fixture sources parse | 8 of 8 at **0 ERROR / 0 MISSING** |
 
@@ -1197,7 +1197,7 @@ The census gate itself still exits 1, on **10 other lanes**: `vue` 12, `css` 7,
 | `npx tsx script/m14/protobuf-census.ts` | **821 ok / 0 fail**; 54,939 edges; 0 empty names; 0 bad kinds; 0 `unknown` endpoints; 0 self-loops |
 | `npx tsx script/m14/protobuf-construct-probes.mts` | **94** observed node types; all 5 rulings re-probed and still reading **0**; 13 ERROR + 2 MISSING in 1 file |
 | `npx tsx script/m14/protobuf-adversarial.mts` | 14 probes; 628,758 nodes, **0** without `.id`; `uses` corpus-wide **99.58%**; edges under 0.7: **0** |
-| `npx tsx script/m14/protobuf-ruling-table-proof.mts` | run **c**: `emitted 5/10 ruled-sound 5 FALSIFIED 0`, exit 0. run **b**: **FALSIFIED 2** — both instruments handed the bash grammar. run **a**: exit 2, no RULING TABLE |
+| `npx tsx script/m14/protobuf-ruling-table-proof.mts` | run **c**: `emitted 5/10 ruled-sound 5 FALSIFIED 0`, exit 0. run **b**: **FALSIFIED 2** — both instruments handed the bash grammar. run **a**: exit 2, no RULING TABLE <br>**pass 9 re-measure:** run (a) is now `emitted 5/10 ruled-sound 3 FALSIFIED 2`, **exit 1** — the ruling table is wired, so (a) and (b) now agree and only (c) passes. See PASS 9 |
 | `npx tsx script/m14/protobuf-incoming-audit.mts` | part 1: 120 sampled, **10 present / 110 absent**. part 2: **1,763** ambiguous, 52 unbound, 4 hopeless; exit 1 on the 2 degraded files |
 | `npx tsx script/m14/firing-check.ts --files 120 protobuf` | **3/10 fired, 2,069 edges, 10/120 files, 0 degraded** — fired types `uses`, `contains`, `imports` |
 | `npx tsx script/m12/verify-regex-census.ts` | exits 1; **0 protobuf rows** |
@@ -1238,8 +1238,14 @@ copies — refusing to splice if any anchor has moved.
   > entry in `differential.ts`'s `LANGS` and no `script/m14/oracles/protobuf-*.ts` — the
   > oracles directory holds 19 files for 8 languages and none for this one, so the
   > shared gate still audits nothing here. Every correctness claim in this document rests on
-  hand-derived expectations, 26 mutants, the protobuf specification, and the probes here.
-  An oracle would live in `script/m14/oracles/`, which is shared machinery.
+  > hand-derived expectations, **28** mutants (pass 4 wrote 26; the battery has grown since),
+  > the protobuf specification, and the probes here.
+  > An oracle would live in `script/m14/oracles/`, which is shared machinery.
+  > **PASS 9: the first half of that is now stale too.** The supervisor wired
+  > `protobuf-ruled.ts` into `ontology-coverage-gate.ts`, so the arbiter **does** now rule
+  > for this lane — it exits **1** with `ruled-sound 3 FALSIFIED 2` rather than exiting 2
+  > with `no RULING TABLE`. Both FALSIFIED rows are the missing `LANGS` entry, so what
+  > still stands is **one** shared line, not two.
 - **1,763 ambiguous endpoints** and **52 targets no file publishes**, from
   `descriptor.proto` being vendored into 4 repositories and from consul's two include
   roots. Closing either needs the include-root map, a project-level fact.
@@ -1412,7 +1418,7 @@ shared file as shipped, which fails.
 | `npx tsx script/m14/protobuf-census.ts` | **821 ok / 0 fail**; 54,939 edges; 0 empty names; 0 bad kinds; 0 `unknown` endpoints; 0 self-loops; **0** edges under 0.7 |
 | `npx tsx script/m14/protobuf-adversarial.mts` | 14 probes; 628,758 nodes, **0** without `.id`; `uses` corpus-wide **99.58%**; heuristic ratio **0** |
 | `npx tsx script/m14/protobuf-construct-probes.mts` | **94** observed node types; all 5 rulings re-probed and still reading **0** |
-| `npx tsx script/m14/protobuf-ruling-table-proof.mts` | run **c**: `emitted 5/10 ruled-sound 5 FALSIFIED 0`, exit 0. run **b**: **FALSIFIED 2**. run **a**: exit 2, no RULING TABLE |
+| `npx tsx script/m14/protobuf-ruling-table-proof.mts` | run **c**: `emitted 5/10 ruled-sound 5 FALSIFIED 0`, exit 0. run **b**: **FALSIFIED 2**. run **a**: exit 2, no RULING TABLE <br>**pass 9 re-measure:** run (a) is now `emitted 5/10 ruled-sound 3 FALSIFIED 2`, **exit 1** — the ruling table is wired, so (a) and (b) now agree and only (c) passes. See PASS 9 |
 | `npx tsx script/m14/protobuf-incoming-audit.mts` | 821 parsed / **0 failed / 0 degraded**; 1,764 ambiguous, 52 unbound, 4 hopeless; 38,551 declarations, 37,113 (96.27%) with an inbound edge |
 | `npx tsx script/m14/firing-check.ts --files 120 protobuf` | **3/10 fired, 2,069 edges, 10/120 files, 0 degraded** — unchanged, and pass 3's part 1 is its diagnosis |
 | `npx tsx script/m14/incoming-check.ts protobuf <40 files>` | `contains` unresolved **2,879 → 0**, distinct 0 → 2,876. `uses` unresolved **635 → 55**, distinct 0 → 243 |
@@ -2221,3 +2227,308 @@ symbols; that is unchanged and remains correct rather than a defect.
   fact as the analyzer's own open item, approached from the other side.
 - **Every production-side count carries a −69 symbol / −100 edge band**, measured at 9
   of 19 corpus-scale rounds, and the band is silent: the run reports `821 ok / 0 fail`.
+
+---
+
+# PASS 9 — the whole battery at merged HEAD, and a pass-8 headline that does not reproduce
+
+Passes 1–8 measured on a branch 90 commits behind `analyzers/ontology-laptop-b`, and two
+of those commits change the instruments rather than the lane. So this pass merged the
+base branch (`f8f1f87ac`, clean, no conflict in any file this lane owns) and re-ran
+every gate rather than re-publishing pass 8's numbers.
+
+**What the merge changed underneath the measurements.**
+
+| shared file | delta | effect on this lane's numbers |
+|---|---|---|
+| `src/ast/pool-worker.ts` | **+26** | four bash metadata keys (`isExported`, `isImplicitBinding`, `bindingSite`, `isArray`). **No protobuf key is involved**, and the census below is byte-identical to pass 8's |
+| `script/m14/firing-check.ts` | **+74** | now hashes the analyzer before and after the walk (`analyzerDigest`, `analyzerStableDuringRun`) and **names** each degraded file. It reported `stable` for this lane |
+| `script/m14/incoming-check.ts` | **+49** | not run: this lane's own `protobuf-incoming-audit.mts` answers the same question with the corpus partition attached |
+| `script/m14/ontology-coverage-gate.ts` | **+6** | **`script/m14/protobuf-ruled.ts` is now wired in.** See below — this is the §8 item pass 4 asked for, applied by the supervisor |
+
+## §8 item 1 is closed; one line in a shared file is what remains
+
+Passes 4 and 5 each reported two shared-file items. Item 1 was *"wire
+`PROTOBUF_RULED` into `ontology-coverage-gate.ts`"*, on the evidence that the gate
+exited **2** with the message `no RULING TABLE for protobuf`, so this lane's five
+rulings had never been read by the arbiter.
+
+**That is no longer the state.** At merged HEAD the untouched gate runs, prints all ten
+rows with `Written ruling: script/m14/protobuf-ruled.ts (RULED_BY_LANG.protobuf)` on
+every RULED row, and exits **1** rather than 2:
+
+```
+$ npx tsx script/m14/ontology-coverage-gate.ts protobuf
+calls         FALSIFIED    NOT EMITTED, but the grammar DOES produce function_definition
+instantiates  FALSIFIED    the construct occurs 1x … WRONG GRAMMAR: this probe was handed
+                          a tree whose root node is `program`, not `source_file`
+emitted 5/10   ruled-sound 3   FALSIFIED 2   ruled-without-justification 0
+```
+
+Both FALSIFIED rows are the **same single cause** and it is item 2: `protobuf` is still
+absent from `LANGS` in `script/m14/differential.ts`, so the gate selects its wasm with
+`(LANGS as any)[LANG]?.wasm ?? "tree-sitter-bash.wasm"` and hands both instruments the
+**bash** grammar. `function_definition` is a real bash node type, and a `program` root is
+not `source_file`. `grep -c protobuf script/m14/differential.ts` → **0** occurrences.
+
+`script/m14/protobuf-ruling-table-proof.mts` proves the distinction mechanically rather
+than by assertion: it splices the entry into a **derived copy** of the shared file, runs
+the real gate, and deletes the copy.
+
+| run | wiring | result |
+|---|---|---|
+| **(a)** | gate as shipped (ruling table now wired) | `emitted 5/10 ruled-sound 3 FALSIFIED 2`, **exit 1** |
+| **(b)** | + `protobuf-ruled`, `LANGS` untouched | `emitted 5/10 ruled-sound 3 FALSIFIED 2`, **exit 1** |
+| **(c)** | + `protobuf` added to `LANGS` | `emitted 5/10 ruled-sound 5 FALSIFIED 0`, **exit 0** |
+
+So the lane's own §8 list is now **one line**, not two:
+
+> `script/m14/differential.ts` — add to `LANGS`:
+> `protobuf: { wasm: "tree-sitter-protobuf.wasm", analyzerFile: "real-protobuf-analyzer", className: "RealProtobufAnalyzer", ext: "proto" },`
+> Why: until this exists, both of the arbiter's instruments read bash's grammar and
+> report two of this lane's five rulings as FALSIFIED. All four values are already
+> carried at `script/m14/run-fixtures.ts:91`, so this copies an existing value rather
+> than inventing one. Proof it is sufficient and necessary: runs (b) and (c) above.
+
+## The pass-8 headline that does not reproduce: 23 targets / 55 edges → 20 / 53
+
+Pass 8's section *"All 23 unresolved targets, every one, with their candidates"* opens
+with **23 distinct targets carrying 55 edges**, 20 name-exists-unbound (51 edges) and 3
+hopeless (4). Re-run at merged HEAD, `probe/unpublished-uses-targets.mts` reads:
+
+| | pass 8 recorded | measured at merged HEAD |
+|---|---|---|
+| distinct unpublished `uses` targets | 23 | **20** |
+| name-exists-unbound | 20 targets / 51 edges | **17 targets / 49 edges** |
+| hopeless | 3 targets / 4 edges | **3 targets / 4 edges** |
+| total | 23 / 55 | **20 / 53** |
+
+**The corpus did not move, and that is measured rather than assumed.** `find … -name
+'*.proto' -newermt '-30 hours'` returns 215 files, which looks alarming until the mtimes
+are read: all five repositories carrying them (`boundary` 127, `consul` 33, `nomad` 10,
+`vault` 24, `waypoint` 21) were written at **2026-10-03 07:02–07:03**, which is the clone
+pass 2 recorded, `git status --porcelain` is empty in all five, and every HEAD predates
+it (`pb-grpc` Sep 28, `consul` Oct 1, `boundary` Sep 28). 821 files in 18 repositories,
+as in every pass since 2.
+
+**So the cause is inside this lane, and it is the same class of defect pass 6 and pass 7
+each found in an earlier pass's own prose: a headline measured before a fix, with the
+prose beside it already describing the post-fix state.** Pass 8's own class table lists
+the third row as `nested declaration, lexical scope — 3 targets / 3 edges — **CLOSED**`.
+The table was written post-fix; the sentence above it, carrying the totals, was not
+restated. 23 − 3 = 20 and 55 − 2 = 53, and the two arithmetic results agree with the
+measurement only if the third class carried 2 edges rather than the 3 the table claims.
+**The table's per-class edge count is the wrong one**, and the honest form is the measured
+one.
+
+One classification was wrong as well, in the opposite direction — a target moved *into*
+the resolvable set:
+
+| target | pass 8 called it | measured | candidates |
+|---|---|---|---|
+| `sls.asfd.asfd.JsonFormat` | hopeless — *"a fixture that references what it never declares"* | **name-exists-unbound** | **2** — `google.protobuf.FeatureSet.JsonFormat`, in `pb-reference/src/google/protobuf/descriptor.proto` and in `dart-sdk/…/protobuf_handler/protos/google/protobuf/descriptor.proto` |
+| `xds.data.orca.v3.OrcaLoadReport` | **not listed** | **hopeless, 2 edges** | 0 — `pb-grpc/src/proto/grpc/testing/{xds/v3/orca_service,echo_messages}.proto` reference an xDS type that pb-grpc does not declare |
+
+`JsonFormat` was never hopeless: a declaration carrying that leaf name exists in the
+corpus twice over, so naming it as a fixture that declares nothing was a claim about the
+corpus made without reading it. That is the failure the empty-`candidates` column should
+have caught, and the column exists.
+
+Every one of the 20 targets, with its edge count and candidate count:
+
+| edges | candidates | target |
+|---|---|---|
+| **16** | 18 | `common.EnterpriseMeta` |
+| 6 | 7 | `common.RaftIndex` |
+| 4 | 5 | `common.Locality` |
+| 4 | 9 | `types.Platform` |
+| 3 | 1 | `NodeSpec.Membership` |
+| 3 | 4 | `types.Metric` |
+| 3 | 4 | `google.protobuf.compiler.FileDescriptorProto` |
+| 1 | 1 | `connect.IssuedCert` |
+| 1 | 1 | `NodeSpec.Availability` |
+| 1 | 2 | `connect.CARoots` |
+| 1 | 2 | `common.QueryMeta` |
+| 1 | 2 | `sls.asfd.asfd.JsonFormat` |
+| 1 | 3 | `grpc.testing.duplicate.EchoResponse` |
+| 1 | 3 | `google.protobuf.compiler.GeneratedCodeInfo` |
+| 1 | 4 | `grpc.testing.duplicate.EchoRequest` |
+| 1 | 12 | `config.Config` |
+| 1 | 34 | `status.Status` |
+| **1** | 0 | **hopeless** `sls.asfd.asfd.CustomType` |
+| **2** | 0 | **hopeless** `xds.data.orca.v3.OrcaLoadReport` |
+| **1** | 0 | **hopeless** `github.com.hashicorp.go.kms.wrapping.v2.types.BlobInfo` |
+
+`status.Status` still has **34** candidates, so no per-file rule can pick a winner for it
+— which is why the fix for these 33 edges is a project-level include-root map and not a
+line in this analyzer. **49 edges unbound + 4 hopeless = 53**, and that is the figure
+`script/m14/protobuf-incoming-audit.mts` reports independently in its own partition
+(`uses … unbound 49  hopeless 4`), from a different code path. Two instruments, one
+number.
+
+## The band, re-measured, and caught inside a single session
+
+`probe/lost-parse-locality.mts --scope=all --rounds=8` at merged HEAD:
+
+| | pass 8 (19 rounds) | this pass (8 rounds) |
+|---|---|---|
+| rounds with ≥1 lost file | 9 of 19 (47%) | **3 of 8 (38%)** |
+| symbol spread | 69 (41,886–41,955) | **53 (41,902–41,955)** |
+| edge spread | 100 (54,839–54,939) | **76 (54,863–54,939)** |
+| distinct files ever lost | 7, across 5 repositories | **5** |
+| losses outside `pb-googleapis/google/api/expr/` | — | **4 of 5 — locality still falsified** |
+| worst round | −69 symbols / −100 edges | **−53 / −76** |
+
+The clean-run totals reproduce exactly: **41,955 symbols / 54,939 edges**, and the
+census below read those numbers on its first attempt. The pass-8 band of −69 / −100
+still bounds this observation, and a smaller sample cannot be expected to reach the
+maximum a larger one found.
+
+**The band was also caught red-handed inside this one session, which is the reason it is
+worth a table rather than a footnote.** Two gate invocations, minutes apart, at the same
+commit, on the same 821 files:
+
+| invocation | `uses` | `contains` | `imports` | sum | reading |
+|---|---|---|---|---|---|
+| `protobuf-ruling-table-proof.mts` run (c) | **13,267** | **40,072** | **1,559** | 54,898 | a round that lost files: **−8 / −26 / −2 = −36 edges** |
+| `ontology-coverage-gate.ts protobuf` | **13,275** | **40,098** | **1,561** | 54,934 | a clean round |
+
+Both report `821 admitted files` and neither reports a fault, because the loss is a wasm
+`memory access out of bounds` that the pipeline turns into an empty parse rather than an
+error. **The verdict counts quoted anywhere in this document are the clean ones, and a
+reader who re-runs a gate and gets 13,267 instead of 13,275 has found this, not a
+regression.** `exports` (4) and `overrides` (1) were identical in both, which is what one
+would expect of a loss that costs whole files rather than whole types.
+
+## Every pass-8 number, re-measured at merged HEAD
+
+| measurement | pass 8 | merged HEAD | moved? |
+|---|---|---|---|
+| census | 821 ok / 0 fail | **821 ok / 0 fail** | no |
+| symbols / edges through `parseFile` | 41,955 / 54,939 | **41,955 / 54,939** | no |
+| `uses` / `contains` / `imports` / `exports` / `overrides` | 13,275 / 40,098 / 1,561 / 4 / 1 | **13,275 / 40,098 / 1,561 / 4 / 1** | no |
+| both-end resolution, `uses` | 72.87% | **72.87%** (9,673 / 13,275) | no |
+| both-end resolution, `contains` | 99.22% | **99.22%** (39,786 / 40,098) | no |
+| edges under 0.7 confidence | **0** | **0** | no |
+| empty names / bad kinds / `unknown` endpoints / self-loops | 0 / 0 / 0 / 0 | **0 / 0 / 0 / 0** | no |
+| node types observed / declared | 94 / 117 | **94 / 117** | no |
+| `block_lit` by-parent histogram | `{constant: 1909}` | **`{constant: 1909}`** | no |
+| `instantiates` construct occurrences | 0 | **0** | no |
+| `firing-check --files 120` | 3/10, 2,069 edges, 10/120 files | **3/10, 2,069 edges, 10/120 files**, `analyzerDigest stable` | no |
+| arbiter's sample absent from disk | 110 of 120 | **110 of 120** | no |
+| incoming: ambiguous / unbound / hopeless on `uses` | 1,461 / 49 / 4 | **1,461 / 49 / 4** | no |
+| `protoc` oracle | 11,250 judged, 11,208 agree, 42 wrong | **11,250 judged, 11,208 agree (99.6267%), 42 wrong** | no |
+| store binding (40 files) | 3,075 edges, 3,012 walkable, 2,977 provable | **3,075 / 3,012 (97.95%) / 2,977 (96.81%)** | no |
+| scope-fix A/B | 6 moved, 0 added, 0 removed | **6 moved, 0 added, 0 removed** | no |
+| duplicate published ids | 0 of 821 | **0 of 821** | no |
+| mutants | 28 caught / 0 survived | **28 caught / 0 survived** | no |
+| fixtures | 9 pass / 0 fail | **9 pass / 0 fail** | no |
+| m12 regex census, protobuf rows | 0 | **0**, and the gate now reports `regex census gate PASSED` | no |
+| **unpublished `uses` targets** | **23 / 55** | **20 / 53** | **YES — see above** |
+
+Twenty-four of twenty-five reproduced. The one that moved moved because the earlier
+number was stale, not because the corpus or the analyzer changed, and both facts are
+measured above rather than argued.
+
+**Two stale counts remain in earlier sections of this document and are corrected by this
+one**, since a reader meets them first:
+
+- **§Pass 2 / §Pass 3 / §Pass 4 gate tables** record the raw arbiter as *exit 2 — "no
+  RULING TABLE for protobuf"*. It now exits **1** and rules; see the table above.
+- **§Still not settled** says *"26 mutants"*. The battery runs **28** — commit
+  `20644c25a` corrected one instance of this and left this one.
+
+## DERIVATION findings: 4, unchanged
+
+No oracle was added and none was removed, so the count is the same four, with the same
+counts: `contains` 40,098, `imports` 1,561, `exports` 4, `overrides` 1. `uses` remains
+adjudicated by `protoc` 36.2 at **99.6267% over 11,250 edges**, re-measured here. The
+three descriptor-readable ones are still not written; that is a statement about this
+lane's remaining session, not about the difficulty.
+
+What changed is one precondition of the claim: **`uses` is the only type in this lane
+whose correctness rests on an implementation that shares no code with this one.** The
+other four rest on hand-derived expectations and a 28-mutant battery, and this pass
+re-ran that battery at HEAD rather than citing it.
+
+## Pass 9 gate table
+
+| Command | Result |
+|---|---|
+| `npx tsc --noEmit` | **no diagnostics** |
+| `npx tsx script/m14/protobuf-census.ts` | 821 ok / 0 fail; 13,275 / 40,098 / 1,561 / 4 / 1; 54,939; 0 empty names; 0 bad kinds; 0 `unknown`; 0 self-loops; **0** under 0.7 |
+| `npx tsx script/m14/firing-check.ts --files 120 protobuf` | **3/10 fired, 2,069 edges, 10/120 files, `analyzerStableDuringRun`** |
+| `npx tsx script/m14/protobuf-incoming-audit.mts` | 821 parsed / 0 failed / 0 degraded; `uses` 1,461 ambiguous + 49 unbound + 4 hopeless; 38,551 ids, 2,702 published by >1 file |
+| `npx tsx script/m14/protobuf-construct-probes.mts` | **94** observed node types; all 5 rulings re-probed, still **0**; `block_lit` histogram `{constant: 1909}` |
+| `npx tsx script/m14/protobuf-ruling-table-proof.mts` | run (c) `emitted 5/10 ruled-sound 5 FALSIFIED 0` **exit 0**; runs (a)/(b) `FALSIFIED 2`, **exit 1** |
+| `npx tsx script/m14/ontology-coverage-gate.ts protobuf` | **exit 1** — `ruled-sound 3 FALSIFIED 2`, both rows the missing `LANGS` entry |
+| `npx tsx script/m14/run-fixtures.ts --lang protobuf` | **9 pass / 0 fail** |
+| `bun run script/m14/tmp/protobuf/probe/mutant-sweep.mts` | **28 caught / 0 survived** |
+| `npx tsx script/m14/tmp/protobuf/probe/scope-fix-ab.mts` | 821 files, 13,275 edges both arms, **6 moved, 0 added, 0 removed** |
+| `npx tsx script/m14/tmp/protobuf/probe/nested-extend-scope.mts` | **PASS** — 3 shapes, ownership unchanged |
+| `npx tsx script/m14/tmp/protobuf/probe/extend-member-id-collision.mts` | **0 of 821** files publish any id twice |
+| `npx tsx script/m14/tmp/protobuf/probe/unpublished-uses-targets.mts` | **20 targets / 53 edges** — 17 + 3, every one listed above |
+| `npx tsx script/m14/tmp/protobuf/probe/store-binding.mts` | 3,075 edges, **3,012 walkable back (97.95%)**, 2,977 provably the one named (96.81%) |
+| `npx tsx script/m14/tmp/protobuf/probe/lost-parse-locality.mts --scope=all --rounds=8` | **3 of 8 rounds** lossy; spread **53 symbols / 76 edges**; **4 of 5 losses outside `expr/`** |
+| `protoc-oracle.py --protoc /tmp/opencode/protoc-36/bin/protoc` | **libprotoc 36.2**; 11,250 judged, **11,208 AGREE (99.6267%)**, 42 WRONG-NAME; 35 files rejected, 1,099 edges unadjudicated |
+| `npx tsx script/m12/verify-regex-census.ts` | **regex census gate PASSED** — 0 protobuf rows |
+| `npx tsx script/m14/verify-honesty.ts` | exit 6 — **0 findings in any protobuf file**; every finding is another lane's fixture or a milestone baseline whose declared inputs moved under the merge |
+
+## One probe in this lane was not reproducible from a clean checkout
+
+`probe/scope-fix-ab.mts` prices the nested-`extend` scope fix by running two arms of the
+analyzer side by side, so it needs the **pre-fix** analyzer as a second import. That blob
+was a file a human had to remember to create first. Pass 9 deleted it, ran the probe, and
+got:
+
+```
+Error [ERR_MODULE_NOT_FOUND]: Cannot find module
+  '/…/src/ast/_ab-before-protobuf-analyzer'
+  imported from …/probe/scope-fix-ab.mts
+```
+
+The named module appears in no source file in the repository, so the error reads as a
+broken probe rather than a missing step — and the probe had been quoted in three gate
+tables across three passes as a reproduction command. The count it produced was never in
+doubt; the ability to produce it again was.
+
+The probe now materialises the arm itself from git, pinned to `dd6b42bc6^`, and defers
+the import until the file exists — a static import cannot do this, because it is resolved
+before any statement in the module runs. Verified by deleting the blob and running it
+cold:
+
+```
+$ rm -f src/ast/_ab-before-protobuf-analyzer.ts
+$ npx tsx script/m14/tmp/protobuf/probe/scope-fix-ab.mts
+files            821
+before arm       dd6b42bc6^ (written from dd6b42bc6^)
+uses edges       before 13275   after 13275   delta 0
+targets MOVED    6
+edges added/removed 0
+```
+
+**This is the same failure shape twice**: a measurement that cannot be re-run reads as a
+measurement that was never taken, and the only symptom is an error message about a path.
+Pass 8 found the same thing in the census, which reported a lost parse as `ok`. The
+generalisation this lane keeps arriving at is that **an instrument has to fail loudly on
+its own missing input**, and "missing" includes its own prerequisites.
+
+## Declared limitations, pass 9
+
+- **The band is the reason two of this lane's own gate rows disagree.** Two runs at one
+  commit read 13,275 and 13,267 `uses` edges, and nothing in either output says why. A
+  consumer that diffs two protobuf runs needs the parse-loss rate, not just the totals.
+- **`overrides` rests on one syntax-highlighting fixture in a file `protoc` rejects.** 1
+  edge, 1 file, out of 821. It is a true statement about the text and there is no
+  corroborating instance anywhere in the corpus.
+- **`exports` rests on 4 occurrences in 4 files**, all in `pb-reference`, and `imports`
+  and `exports` resolve 0% against symbols by design because their endpoints are module
+  paths. Their correctness claims are weaker than `contains` by construction.
+- **4 of 5 types are compared against nothing but this lane's own expectations.** The
+  `protoc` oracle reads a descriptor it already parses and `contains` / `imports` /
+  `exports` are readable from it; those three checks are **not written**. Until they are,
+  a defect in them would be invisible to every instrument this lane owns — which is
+  exactly the failure mode `overrides` had in pass 2.
+- **One shared line stands between this lane and a passing arbiter**, and it is in a
+  file this lane does not own. The lane's own numbers do not depend on it: runs (b) and
+  (c) above differ only in whether the arbiter reads bash's grammar.
