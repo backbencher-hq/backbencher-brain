@@ -1114,3 +1114,53 @@ clean 153 import edges, haskell 55.
 That is the generalisable lesson: **a table keyed on a string that is wrong in a way
 which always reads zero is worse than no table**, because the zero looks like a
 finding about the language rather than a defect in the instrument.
+
+## Dart: the documented command did not reproduce the documented table
+
+The lane's verdict table is a 2,735-file measurement and the command printed beside
+it was `BB_DART_CONC=1 npx tsx validation/m14/fixtures/dart/census.ts` — but the
+harness defaulted to `BB_DART_PER_REPO=250` and so sampled **1,250** files.
+
+Re-running the documented command reproduced **22,436 `calls` against the table's
+43,042** — about **52% of every count**, with nothing in the output saying the two
+disagreed. The default is now 600/repo, which is the sample the table describes, so
+the printed command reproduces the printed table.
+
+**This is the cheapest and most embarrassing class of defect in the programme: a
+number and the command that produces it, side by side, disagreeing by half.** Nothing
+detects it unless someone actually re-runs the command, which is why the lane did.
+
+Two more fields the doc cited and the harness never emitted: `tgtSample` was
+accumulated since the settled-phase fix and never written out, and there was no
+target-in-repo field at all — so the doc's sample/repo figures for `calls` and `uses`
+had **no instrument field behind them**.
+
+## Latency measured by alternating the blobs, not by trusting the artifact
+
+The declared complexity artifact **cannot** answer the budget question: it is sealed
+at 2026-09-14, predates every change in this wave, and `analyzer-complexity-gate`
+scores dart `unscorable` because its corpus row carries no load data (40 of that
+gate's 44 lanes share the state). Its row is also not reproducible from the primary
+corpus — 707 ms/file on /tmp/dart-corpus against 129–165 ms/file on real files.
+
+So the lane measured directly, alternating the two analyzer blobs so the load
+condition is SHARED rather than assumed — 300 files, runs in the order
+AFTER, BEFORE, AFTER, BEFORE:
+
+```
+  this wave's HEAD    49,450 / 50,111 ms   mean 49,781   165.9 ms/file
+  pre-M14 8286c7391   49,390 / 48,532 ms   mean 48,961   163.2 ms/file
+  delta                        +820 ms     +2.7 ms/file    +1.67% wall
+  symbols 15,154 both — unchanged
+  relationships 47,882 -> 48,306  +424 (+0.89%), all of them `references`
+```
+
+Against the declared 400-file budget of 600 s, 400 files at the measured
+165.9 ms/file is **66.4 s — 9.0x inside budget**. Stated as a **projection**, not as
+a measurement of the declared `corpus_subset`, whose file set the lane cannot
+re-derive.
+
+That is the honest form: it says what was measured, over what, and what is
+extrapolated. Note also that the fsharp lane withdrew a +16% latency claim for
+exactly the opposite reason — non-interleaved A/B on a shared box. Alternating the
+blobs is the fix both lanes converged on independently.
