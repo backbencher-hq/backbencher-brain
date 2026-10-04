@@ -2,31 +2,34 @@
   "issue": "494",
   "code": "L5",
   "status": "verified",
-  "currentCommit": "a943047e5cc1e03967e619a9bbc8bf935ec6c369",
-  "sourceFingerprint": "a5a92ec983f3355b9d597e7920588237241159b709ec851538c42683aaa48514",
+  "currentCommit": "a0ed9eade7008de7ce93a312f6b0bd7e182a43a9",
+  "sourceFingerprint": "da701feed70c55cb9cf30760e8cd850c1de7ed5dd61ac9eba42cb145c7b4608b",
   "verifierCommand": "npx tsx script/m24/verify-call-hierarchy.ts",
   "evidenceFile": "L5.json",
-  "generatedAt": "2026-09-26T23:03:54.659Z",
-  "passed": 20,
+  "generatedAt": "2026-10-04T23:51:09.320Z",
+  "passed": 56,
   "failed": 0,
   "failures": [],
-  "negativeCases": 0,
+  "negativeCases": 15,
   "verdict": {
     "realComponentFailures": 0,
-    "mutantsCaught": 5,
-    "mutantsTotal": 5,
+    "mutantsCaught": 10,
+    "mutantsTotal": 10,
+    "mutantsNotJudged": 0,
     "ok": true,
-    "note": "`failed` counts real functional failures only; mutant runs are reported separately via the verdict block."
+    "note": "`failed` counts real functional failures only; mutant runs are reported separately via the verdict block. `mutantsNotJudged` counts a mutant the harness could not judge (missing anchor or an import failure) — an import failure is NOT counted as caught, because the oracle never ran. The pre-lane suite reported 5/5 caught while all five mutants had died on an unrewritten `./signature` import."
   },
   "limitations": [
     "adapter proven against a fixture double reproducing the engine contract; the engine itself is M14-verified and exercised end-to-end by the V1 harness",
     "heuristic edges from the engine are included; their ratio is declared by the engine's provenance",
     "ranges for engine nodes use line-level precision when the engine lacks byte columns",
-    "latency measured on this machine only; cross-platform budgets are M25 scope"
+    "latency measured on this machine only; cross-platform budgets are M25 scope",
+    "the machine-readable absence reason is carried on the component result; src/lsp/server.ts (another lane) maps the wire response and currently returns a bare `null` / bare `[]` — the exact patch is reported",
+    "the declared-absence and staleness vocabulary lives in src/lsp/symbols.ts (this lane owns both files); a dedicated src/lsp/declared_absence.ts owner would be the right home and is reported"
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-26T23:03:54.663Z",
-    "contentSha256": "6c223fa646def3a47d1354c2aff06fc57cccaf39f0bef2940c3f1a48a5980ed5"
+    "sealedAt": "2026-10-04T23:51:09.323Z",
+    "contentSha256": "229a4ee044f9dd385b93ac1bf17eafee2781bdd34516240a359bd33d1c242d7b"
   }
 }
