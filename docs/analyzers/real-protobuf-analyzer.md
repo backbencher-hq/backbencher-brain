@@ -84,8 +84,15 @@ Ids are dotted and package-qualified: `demo.v1.User.Address`.
 ### Relationship ontology
 
 - **`contains`** — declaration → member: message→field, message→nested type,
-  message→oneof, oneof→field, enum→enum_value, service→rpc, extended
-  type→extension field.
+  message→oneof, enum→enum_value, service→rpc, extended
+  type→extension field. There is deliberately **no oneof→field edge**: the message
+  owns the field and the oneof is a sibling grouping, and one edge meaning both
+  membership and grouping would make one edge mean two things. The grouping travels
+  as `metadata.oneof` on the field. *(This line said `oneof→field` until pass 16.
+  It was false — pass 2 had already measured and written down the opposite, and the
+  header was never corrected. Measured now: `amb.v1.Audit -> amb.v1.Audit.source`
+  carries `member: "field"` and `amb.v1.Audit -> amb.v1.Audit.body` carries
+  `member: "oneof"`; there is no edge from `body` to `source`.)*
 - **`uses`** — declaration → referenced type: a field's declared type, a map
   *value* type, a `oneof_field` type, and **both** of an rpc's request and
   response. A **scalar type produces no edge** — `string` and `int32` are
@@ -346,8 +353,8 @@ that is wrong. The fix belongs in the shared file and is a report item.
 | `references` | no | 0 | — | **RULED**, instrument **A**. The construct occurs (10,166 message-typed declarations) and is emitted, as `uses`. FIRST ROW DELIBERATELY: see the note under the gate output above |
 | `contains` | yes | 40,098 | 99.22% per-file, 100% corpus-wide | declaration → member |
 | `uses` | yes | 13,275 | 72.84% per-file, 99.58% corpus-wide, 88.57% corpus-wide to exactly ONE declaration | declaration → referenced type |
-| `imports` | yes | 1,561 | 0% by design | file → a file it depends on |
-| `exports` | yes | 4 | 0% by design | file → a file it re-exports |
+| `imports` | yes | 1,561 | source 99.68%, both ends 0% by design | file → a file it depends on |
+| `exports` | yes | 4 | source 100%, both ends 0% by design | file → a file it re-exports |
 | `overrides` | yes | 1 | 100% analyzer ids | **new in pass 2** — pass 1 ruled this absent at a measured construct count of 1 |
 | `calls` | no | 0 | — | **RULED**, instrument **A** (grammar inventory) |
 | `extends` | no | 0 | — | **RULED**, instrument **A** (grammar inventory) |
@@ -357,10 +364,15 @@ that is wrong. The fix belongs in the shared file and is a report item.
 The `imports`, `exports` and `overrides` resolution figures need their denominators
 stated, or a reader compares two different measurements:
 
-- `imports` and `exports` are **0% by design**, not by defect: both endpoints of a
-  cross-file module edge are module paths, not symbols of the file, which is the
-  convention in `real-css-analyzer.ts` and `real-dart-analyzer.ts`. CSS's 66.8%
-  `references` figure is a different measurement of a different thing.
+- `imports` and `exports` are **0% at BOTH ends by design**, not by defect: the
+  TARGET of a cross-file module edge is an include-root-relative path and the
+  analyzer is never told the root. CSS's 66.8% `references` figure is a different
+  measurement of a different thing. The **SOURCE** half of that sentence was an
+  assumption until pass 16 and was wrong: it was a basename, it resolved at 0 of
+  1,565 edges, and 967 of them hung off a basename another corpus file also used.
+  The source is now the file's `package` namespace and resolves at 1,560 of 1,565
+  (99.68%). So "0% by design" is now true of the target and false of the source, and
+  the two are reported separately rather than as one figure.
 - `overrides` resolves at both ends against the analyzer's published ids (100% of 1)
   and at **0%** against ids a consumer re-derives as `ownerName + "." + name`, because
   the later declaration's id carries `uniqueId`'s `#property` suffix. That is the same
@@ -387,16 +399,35 @@ hardcoded list. A map's key type is a scalar by specification and is never a
 reference.
 
 **`imports` — this file → a file it depends on.** 1,561 `import` nodes across 557
-files. The **source** is the importing file's own module name (its basename) and the
-**target** is the path as written, which is the family's convention rather than a
-protobuf invention: `real-css-analyzer.ts` imports from `importerName` onto the
-imported stylesheet's name and `real-dart-analyzer.ts` from the library name, and the
-store records a non-symbol endpoint as external. `protoc` resolves an import against
-`-I` include roots the analyzer is never told, so the path as written is the most
-faithful name available; the full path is kept in `metadata.filePath` so a consumer
-that knows the include root can do better. The editions feature import
-(`import option`) is an `imports` edge and not an `exports` edge — it resolves an
-option's definition rather than a message.
+files. The **source** is the importing file's own identity — its `package` namespace
+symbol where it declares one, its basename otherwise — and the **target** is the path
+as written. `protoc` resolves an import against `-I` include roots the analyzer is
+never told, so the target is the most faithful name available; the full path is kept
+in `metadata.filePath` so a consumer that knows the include root can do better. The
+editions feature import (`import option`) is an `imports` edge and not an `exports`
+edge — it resolves an option's definition rather than a message.
+
+**The source was a basename until pass 16 and that was an assumption, not a
+measurement.** Both halves of this edge have now been measured, and they came out
+differently (`script/m14/protobuf-module-edge-sources.mts`,
+`script/m14/protobuf-import-target-audit.mts`, 821 files, production `parseFile`):
+
+| | before | after |
+|---|---|---|
+| source resolves to a published symbol id | **0 of 1,565 (0.00%)** | **1,560 of 1,565 (99.68%)** |
+| source basenames shared with another corpus file | **967 of 1,565 (61.8%)** | 5 edges remain basename-spelled |
+| target resolves to a corpus file | not measured | **876 name exactly one; 640 name 2+, of which 634 have every candidate declaring the same package** |
+| target names no corpus file | not measured | **49 (3.13%)** — 30 module-path-shaped, 19 naming a root this corpus lacks |
+
+The source is now the `package` namespace the analyzer already publishes and already
+hangs the file's top-level declarations from, so `contains` and `imports` now agree
+on what owns a file, and 810 of the 1,560 edges share a namespace node that 66
+packages share with another importing file — aggregation, but replacing an
+aggregation that was already happening on a name two unrelated packages shared. The
+11 files that declare no package keep the basename and are marked
+`metadata.moduleOwner: "basename"`, so an external-by-necessity source is
+distinguishable from a name the analyzer failed to publish. The **target** is
+unchanged and stays external; §PASS 16 prices what resolving it would be worth.
 
 **`exports` — this file → a file it re-exports.** `import public` is a re-export:
 this file's *own* importers reach the imported declarations **through** it. That is a
@@ -808,12 +839,30 @@ a consumer to do with the edge. Measured by
   files `protoc` rejects — `grpc/testing/duplicate/echo_duplicate.proto` names
   `EchoRequest` unqualified inside `package grpc.testing.duplicate` and declares
   nothing there.
-- **`imports` and `exports` endpoints do not resolve to symbols**, by design and by
-  family convention. Reported as 0% rather than omitted.
-- **The `imports` source is a basename.** Two files with the same basename in
-  different directories are indistinguishable as edge sources. The full path is in
-  `metadata.filePath`; a consumer needing exactness must read it there. `protoc`'s
-  include-root-relative module name is not derivable from the file alone.
+- **The `imports`/`exports` TARGET does not resolve, by necessity — but "external"
+  was the wrong word for 1,516 of the 1,565 edges, and pass 16 measured it.** A
+  target names an include-root-relative path and the analyzer is never told the root,
+  so it cannot bind one; that part is design. What had never been checked is how many
+  targets name a file the corpus ALREADY HOLDS: **876 name exactly one, 640 name 2+
+  (and 634 of those have every candidate declaring the same package), and only 49
+  name nothing.** So 96.5% of these edges point at a declaration this lane's index
+  holds and does not connect to. Those are not external, they are unconnected, and
+  the two are indistinguishable in a resolution count. Resolving them needs the other
+  files, which `analyze()` is not given; §PASS 16 states the priced §8 item.
+- **The 49 genuinely-external targets are two problems wearing one number.** 30 are
+  MODULE-PATH-shaped (`github.com/docker/swarmkit/api/types.proto` and 6 siblings) —
+  the first segment carries a dot, so this is a Go module path that `protoc` binds
+  through a module proxy, and no include-root mechanism can bind it at all. 19 are
+  ordinary include-root-shaped paths naming a root this corpus lacks (16 under
+  `etcd/api/`, 2 under `xds/data/orca/`, plus `google/protobuf/java_features.proto`).
+  Recoverable by widening the corpus; never by fixing the analyzer.
+- **The `imports`/`exports` source is the file's `package` namespace, or its basename
+  where it declares no package.** *(This limitation said the source was a basename and
+  that two files sharing one were indistinguishable, with no count. Both were true
+  and both are now fixed: 967 of 1,565 edges — 61.8% — hung off a shared basename, and
+  the source resolved at 0 of 1,565. It now resolves at 1,560. The residue is the 11
+  files declaring no package, carrying 5 edges, marked
+  `metadata.moduleOwner: "basename"`.)*
 - **`overrides` has a corpus count of 1, in a file `protoc` rejects.** The edge is
   emitted because a non-zero construct count falsifies a ruling, and the count is
   printed beside the verdict everywhere it appears so no reader can mistake it for a
@@ -4339,3 +4388,235 @@ this and run. Not edited here: shared machinery.
   measurements this lane had already written down. That is the same ratio pass 14
   reported and it is the reason the probe battery exists: an instrument that agrees with
   nothing cannot be caught, and one that agrees with the wrong thing is worse.
+
+# PASS 16 — the last unmeasured endpoint, measured; and 1,516 edges that were not external
+
+Fifteen passes in, every emitted type had its endpoint resolution measured except one:
+`imports` and `exports`, 1,565 edges, recorded since pass 3 as **"0% by design"**.
+This pass measured both halves of that edge and **both halves were wrong** — the
+source half was a defect and the target half was a claim about the language standing
+in for a claim about the corpus.
+
+| | pass 15 | pass 16 |
+|---|---|---|
+| `imports`/`exports` source resolves | 0 of 1,565 (**0.00%**) | **1,560 of 1,565 (99.68%)** |
+| source ambiguous (shared basename) | 967 (**61.8%**) — unmeasured until now, asserted as prose | 5 edges, the files declaring no package |
+| `imports`/`exports` target names a corpus file | not measured | **1,516 of 1,565 (96.87%)** |
+| target names nothing | not measured | **49 (3.13%)** |
+| edge counts | 1,561 / 4 | 1,561 / 4 — unchanged |
+
+Edge counts are unchanged to the unit, which is the check that this was an endpoint
+fix and not a new edge: 41,956 symbols / 55,941 edges analyzer-direct, 41,955 /
+54,939 through `parseFile`, 0 empty names, 0 bad kinds, 0 `unknown` endpoints, 0
+self-loops, 0 duplicate analyzer ids, and `firing-check --files 120` reporting the
+same **2,069 edges from the same 10 of 120 files** it reported before the change.
+
+## The source: a basename, worth 1,560 unresolvable endpoints
+
+`script/m14/protobuf-module-edge-sources.mts`, 821 `.proto` files in 18
+repositories, production `parseFile`:
+
+```
+module edges                                       1,565   (imports 1,561 + exports 4)
+files carrying a module edge                         557
+source resolving to a published symbol id                0   ( 0.00%)
+source resolving after this change                   1,560   (99.68%)
+  ... in the analyzer's metadata.id set              1,560
+  ... in the id a consumer re-derives from the
+      STORED symbol (ownerName.name / qualifiedName) 1,560
+files declaring a package                             810
+files declaring none                                   11
+basenames shared across the corpus                    112   covering 424 files
+module edges whose source basename is shared          967   (61.8%)
+```
+
+The second population is the one that matters. `redrawnIdSet` is measured against
+`ownerName + "." + name` / `qualifiedName` / `name` rather than `metadata.id`, because
+pool-worker's symbol projection (pool-worker.ts:855-895) drops per-symbol `metadata`
+— so `metadata.id` does not survive production and an id set built from it would
+understate what a real consumer can bind. Both sets read 1,560.
+
+The source is now the file's own `package` namespace. This is not a new idea in this
+analyzer: `addSymbol(pkg, { kind: Namespace })` already publishes it and 7,166
+`contains` edges already hang the file's top-level declarations from it, so after this
+change `contains` and `imports` agree about what owns a file. In the fixture
+`imports-and-editions` both label sets now name `imp.v1`.
+
+**What it costs, counted rather than asserted.** 90 packages are declared by more than
+one file; **66** of them by more than one *importing* file, so **810 of the 1,560**
+edges land on a namespace another file's edges also land on:
+
+```
+files per shared importing package
+ 2:34   3:7   4:7   5:3   6:2   7:3   8:3   9:1   12:2   14:1   18:1   20:1   24:1
+```
+
+The widest is `controller.api.services.v1`, 24 files. That is aggregation — and it is
+worth being precise about what it replaces, because "it aggregates" is the objection
+and it was already aggregating: today those same edges are merged onto one
+**unresolvable** basename node, keyed on a spelling that two unrelated packages share
+(112 shared basenames, 424 files). The change makes the merge key published and
+semantically the owner. The alternative — a per-FILE node — would keep the
+granularity exactly, and a `.proto` file is not a protobuf declaration, so minting one
+would be inventing a symbol the language does not have. Declared, not hidden.
+
+**The fallback arm, and why it is a fixture.** 11 of 821 files declare no package and
+carry 5 of the 1,561 `imports` edges; they keep the basename and are marked
+`metadata.moduleOwner: "basename"`, so a consumer can tell an external-by-necessity
+source from a name the analyzer failed to publish without re-deriving it. That arm had
+**no fixture**, because all ten pre-existing protobuf fixtures declare a package — so
+a suite built from them alone would have passed an analyzer that read `pkg`
+unconditionally and published an edge whose source was the empty string, and would
+equally have passed one that had never made this change. `module-edge-source-fallback`
+pins both arms. Its line numbers were first authored as 13/17/18 and the fixture
+**failed**, because the header comment was miscounted rather than the file read; that
+is recorded in the fixture's own rationale, because it is the `authoredBeforeAnalyzerRun`
+discipline working rather than a near miss worth forgetting.
+
+## The target: 96.87% of these edges point at a declaration this lane already holds
+
+`script/m14/protobuf-import-target-audit.mts`, same corpus, matching each target
+against every `.proto`-terminated path **suffix** of every corpus file — never a
+basename, because a target is an include-root-relative path and a basename match would
+manufacture agreement no include root could produce:
+
+```
+module edges                                  1,565
+distinct targets                                255
+target names exactly ONE corpus file           876   (55.97%)
+target names 2+ corpus files                   640   (40.89%)
+  every candidate declares the SAME package    634
+  candidates DISAGREE on the package              6   (3 distinct targets)
+target names NO corpus file                      49   ( 3.13%)
+edges resolvable to ONE published symbol id
+  given a cross-file resolution context       1,510   (96.49%)
+```
+
+**So "external by design" was wrong on 1,516 of 1,565 edges.** Those targets name
+files this lane's index already holds. They are not external — they are unconnected,
+and the two are indistinguishable in a resolution count while being opposite findings.
+This is the separation the incoming workstream asks for, and it is the second time in
+this pass that a recorded "by design" turned out to be an unmeasured assumption.
+
+The 634 agreeing candidates are the interesting half. `helloworld.proto` names 9
+corpus files, `types.proto` names 7, `google/protobuf/descriptor.proto` names 4 — so
+the edge is ambiguous **as a file** while being unambiguous **as a symbol**, because
+all the candidates declare the same package and the graph walks to symbols. The
+converse is the residue, and it is named rather than counted:
+
+| target | candidate packages |
+|---|---|
+| `helloworld.proto` | `hello`, `helloworld` |
+| `types.proto` | `docker.swarmkit.v1`, `forwarding`, `identity`, `mfa`, `proto`, `raft`, `storagepacker` |
+| `any.proto` | `google.protobuf`, `opaqueany` |
+
+Six edges, three targets, and `import "types.proto"` naming a file that seven unrelated
+packages publish. No include-root-blind context can bind those, which is why they are
+counted separately from the 1,510 rather than folded into it.
+
+**The 49 that are genuinely external are two problems wearing one number.** A target
+whose first segment carries a dot is a host-qualified **module path**:
+`github.com/docker/swarmkit/api/types.proto` is how a Go module names a file, and
+`protoc` binds it through a module proxy rather than an include root, so no
+include-root mechanism can bind it however correct.
+
+```
+module-path-shaped    30 edges, 7 targets   github.com/docker/swarmkit/… (27), planetscale (2), hashicorp (1)
+include-root-shaped   19 edges, 7 targets   etcd/api/… (16), xds/data/orca/… (2), google/protobuf/java_features.proto (1)
+```
+
+The 19 are recoverable by widening the corpus and never by fixing the analyzer.
+
+## §8 — the target item, priced rather than proposed
+
+> **`src/ast/types.ts` — `AnalyzeContext` needs a project-level companion index of
+> `import` path → declaring file's package.** The shape already exists on that
+> interface: `overrideCompanion` is a `Map` the caller builds from previously-parsed
+> files and the analyzer reads, and it exists for exactly this reason ("project-level
+> companion index for cross-file override-target resolution"). `real-protobuf-analyzer.ts`
+> would read it to bind an `imports`/`exports` target to the declaring file's package
+> symbol, and would fall back to the path as written when the path is absent.
+>
+> **Why, with the number:** 1,510 of 1,565 module edges resolve to exactly one
+> published symbol id under this rule — 876 with no disambiguation at all, and 634
+> because every candidate file agrees on the package. Without it, 96.49% of these
+> edges point at declarations the index holds and cannot reach, which is the
+> `bb_impact` half of the incoming workstream for this language.
+>
+> **Not done here, deliberately:** `analyze()` receives one file, so the information
+> does not exist inside this lane. Measured by `script/m14/protobuf-import-target-audit.mts`.
+
+## A stale claim in this document's own header, found while checking the above
+
+The `Relationship ontology` section listed `contains` as "message→oneof,
+**oneof→field**". Pass 2 had already measured and written down the opposite — that
+there is deliberately no edge from a oneof to its fields, because membership and
+grouping are different relations — and the header was never corrected, so the two
+sections of the same document contradicted each other eight hundred lines apart.
+Measured now, from `slot-and-grouping.proto`: `amb.v1.Audit -> amb.v1.Audit.source`
+carries `member: "field"` and `amb.v1.Audit -> amb.v1.Audit.body` carries
+`member: "oneof"`, and there is no edge from `body` to `source`. Both the doc and the
+analyzer's own header comment carried the false form; both are corrected here.
+
+This is the fifth claim in this lane's own documentation that measurement contradicted,
+and the second in two passes. The pattern is the same each time and it is not a
+reason to trust the remaining prose: **a claim written at pass N and never
+re-derived at pass N+k is an assertion, and this document is large enough that some of
+its assertions are older than the instruments that could check them.**
+
+## Pass 16 gate table
+
+| Command | Result |
+|---|---|
+| `npx tsc --noEmit` | **no diagnostics** |
+| `npx tsx script/m14/run-fixtures.ts --lang protobuf` | **11 pass / 0 fail** (10 → 11) |
+| `npx tsx script/m14/protobuf-census.ts` | 821 ok / 0 fail; **41,956 / 55,941** analyzer-direct, **41,955 / 54,939** through `parseFile`; **0** empty names / bad kinds / `unknown` / self-loops; `imports` source **1,556/1,561 (99.68%)**, `exports` source **4/4** |
+| `npx tsx script/m14/protobuf-module-edge-sources.mts` | 1,565 module edges; source 0 → **1,560 (99.68%)**; 967 edges on a shared basename |
+| `npx tsx script/m14/protobuf-import-target-audit.mts` | 876 unique / 640 ambiguous (634 agree) / **49 unreachable (30 module-path + 19 include-root)**; **1,510** resolvable with a cross-file context |
+| `npx tsx script/m14/protobuf-construct-probes.mts` | all 5 rulings **0**; 94 observed node types; `uses` construct rows 13,275 / 40,098 / 1,561 / 4 / 1 |
+| `npx tsx script/m12/verify-regex-census.ts` | **PASSED**, 0 protobuf rows |
+| `bun run script/m14/tmp/protobuf/probe/mutant-sweep.mts` | **33 caught, 0 survived** (30 → 33) |
+| `npx tsx script/m14/firing-check.ts --files 120 protobuf` | **3/10 fired, 2,069 edges, 10/120 files**, 0 degraded — identical to pass 15, which is the check that no edge was added |
+| `npx tsx script/m14/ontology-coverage-gate.ts protobuf` | **exit 1** — `emitted 5/10 ruled-sound 3 FALSIFIED 2`, both rows the wrong-grammar cause below |
+| `npx tsx script/m14/protobuf-ruling-table-proof.mts` | run (c) **exit 0** — `emitted 5/10 ruled-sound 5 FALSIFIED 0`, 94 node types |
+| `bun run script/m14/verify-honesty.ts` | exit 6, 26 failures tree-wide; **0 name a protobuf file** (pass 15: 24; the 2 extra are tree-wide `declared inputs changed` rows) |
+
+## §8 items — unchanged, and one new
+
+- **UNCHANGED, and it is the one that matters most:** `src/ast/parallel-indexer.ts:2164-2165`
+  — `insertSymbol` still carries two `VALUES` clauses (31 placeholders then 30), every
+  batch throws, **0 symbols are stored**. Re-confirmed at pass 16's HEAD.
+- **UNCHANGED:** `script/m14/differential.ts` — add
+  `protobuf: { wasm: "tree-sitter-protobuf.wasm", analyzerFile: "real-protobuf-analyzer", className: "RealProtobufAnalyzer", ext: "proto" }`
+  to `LANGS`. Re-measured at this pass: the untouched gate exits 1 with
+  `emitted 5/10 ruled-sound 3 FALSIFIED 2` against **81** node types (bash's), and the
+  derived copy exits 0 with `emitted 5/10 ruled-sound 5 FALSIFIED 0` against **94**
+  (protobuf's). `grep -c protobuf script/m14/differential.ts` → **0**.
+- **NEW:** the `AnalyzeContext` companion index above, priced at **1,510 edges**.
+
+## Declared limitations, pass 16
+
+- **The target of 1,516 module edges is still unconnected, and this lane cannot
+  connect it.** `analyze()` is given one file. The price is measured (1,510 edges
+  resolvable) and the change is specified, but no edge moved: the census's
+  `imports` both-ends rate is still 0%, and reporting it as anything else would be
+  reporting a §8 item as a delivered one.
+- **810 of the 1,560 resolved sources are shared with another importing file.** A
+  consumer asking "which files must I read to compile this one" gets the namespace's
+  union, not one file's list. That is the same loss the basename made and worse in
+  one respect — the basename was shared by 424 files across unrelated packages, while
+  the package is shared by files that at least agree on their namespace — and it is
+  not fixed, only made coherent.
+- **The suffix index is include-root-blind in the permissive direction.** A target
+  matches a corpus file when the corpus file's path ends with the target, so
+  `helloworld.proto` matches 9 files. That is the correct question to ask of a string
+  the analyzer was handed, and it is also why the 6 disagreement edges are counted
+  separately: matching fewer files would raise the "unique" count without making any
+  of them bindable.
+- **`google/protobuf/java_features.proto` is classed include-root-shaped and is
+  really a `protoc`-shipped file.** It is newer than the copy this corpus vendors, so
+  its absence is a corpus fact and not an ecosystem fact. One edge.
+- **The fixture line numbers in `module-edge-source-fallback` were authored wrong
+  once and the fixture caught it.** Recorded because the alternative — rewriting the
+  fixture until it matched the analyzer — is always available and would have left a
+  green suite asserting nothing.
