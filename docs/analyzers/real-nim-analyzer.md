@@ -1743,6 +1743,7 @@ quoted from an earlier round.
 | `BB_NIM_WORKERS=1 npx tsx validation/m14/fixtures/nim/census.ts <out>` | 0 | session 6, the reproduction row: 6,063 files, 6,063 parsed, 0 empty names, 0 empty kinds, 0 throws, **110,076 symbols, 267,297 edges**, digest `9d9ee478e3295c28` unchanged on both sides. `session6-1w-census.txt` is byte-identical to `session3-1w-census.txt` on all **112** lines of report body — the two differ in exactly two respects, and both are known: `session3` carried its 14 `[INFO]` lines inline where `session6` routes them to the `.stderr.txt` beside it, and the last line names its own output file. **At the bare default (6 workers) the same script produced no report at all** — exit 1, zero stdout, `[BB-HANG]` naming `nim/tests/dll/nimhcr_0_2.nim` (*Limitations* 8, row 5) |
 | `BB_NIM_WORKERS=1 npx tsx validation/m14/fixtures/nim/resolution-scope.ts <out>` | 0 | session 6: all ten types identical to `session5-resolution-scope.txt`, 78,838 name spellings, intra and wide columns unchanged. This is the instrument behind the corpus-wide column of the verdict table, and its 1-worker edge counts are the ones that table now carries |
 | `npx tsx validation/m14/fixtures/nim/census.ts <out>` (**no env var — `census.ts` hardcoded 6 workers at this commit; `BB_NIM_WORKERS` did not exist yet**) | **1** | 6,063 files, 6,063 parsed, **0** empty names, **0** empty kinds, 0 throws, 110,060 symbols, **267,287 edges**. Clean by the census's own five-part test, so the artifact was written under its own name; the exit 1 is `[BB-HANG]` naming `nim/tests/distinct/tinvalidborrow.nim`, which had already logged `[BB-PARSE-ERR] … memory access out of bounds` in the same run, the only other parse error in the run being `tests/overload/toverl.nim` (*Limitations* 8). This row was labelled `BB_NIM_WORKERS=2` until this pass; the evidence that it was 6 is in the note above the verdict table. **No `BB_NIM_WORKERS=2` census artifact exists anywhere in this branch** — the one 2-worker attempt on record (`3bf212369`) died on `[BB-HANG]` and wrote nothing |
+| `npx tsx script/m14/incoming-check.ts nim <105 files of nim/lib/pure>` | 0 | session 7, the supervisor's own reverse-direction instrument on the lane's own index: 105 files, **6,912 symbols**, 0 degraded, 0 parse failures. **Every cell of every row is identical to `incoming-audit.ts lib/pure`** — two instruments, no shared counting code. 3,386 distinct targets named, **1,555 orphans (22.50%)**, **184** distinct target names ambiguous. `implements` and `brain_import` do not fire in this subtree (no concept declaration in `lib/pure`; the family's 47 `implements` edges are all in `nimony`) |
 | `npx tsx validation/m14/fixtures/nim/hang-file-arbitration.ts` | 0 | session 7, the arbiter of the §8 report: all **7** files this lane's walks have been aborted on, parsed ALONE through `parseFile` five times each. **35 of 35 parsed, 0 threw.** 16,683 B over 515 lines total, largest 7,828 B, smallest 90 B. Slowest call **6,511 ms cold / 289 ms warm** against the engine's **120,000 ms** watchdog — 18x headroom; a second run reads 3,275 ms cold, 37x. The named input is not the cause of any of the seven exits (`session7-hang-file-arbitration{,-run2}.txt`) |
 | `npx tsx validation/m14/fixtures/nim/nim-ruled-probe.ts <out>` | 0 | the falsifier, run: `concept_declaration` **337 in 130 files**, `refinement_list` **38**, `is`-in-concept-body 156, guard failures `{argumentList:159, leftNotParameter:143, rightNotIdentifier:5, rightNotLocalConcept:8, selfReference:0}`, **`withRefinesField 38`, hits pushed 51**, 211 node types, raw-parse failures 0. The text probe finds 61 `of`-form sites classified 39 code / 21 comment / 1 string against 38 tree nodes |
 | `npx tsx validation/m14/fixtures/nim/oracle-crosscheck.ts <out>` | 0 | 400 of **6,063** discovered (was 400 of 4,075 — the discovery cap, now removed), every-15th, 400 parsed, 0 failures. **MISSING 3 / UNEXPLAINED 26**, and **7 of the 10 labels agree exactly** including `exports` 12/12 and `implements` 3/3, both of which had no derivation before this pass |
@@ -2077,6 +2078,22 @@ same base-branch copy on 6 real corpus files spanning 4 repositories
 distinct declarations are named by at least one edge; **184 of 524** are named by none,
 which for independent modules is the expected shape rather than a defect.
 Unresolved: `calls` 342, `references` 125, `imports` 59, `exports` 9, `implements` 1.
+
+**A second instrument reads the same numbers on a 27x larger index.** The lane's own
+`incoming-audit.ts lib/pure` (105 files, 6,912 symbols) and the supervisor's
+`script/m14/incoming-check.ts nim <the same 105 files>` were written separately and
+share no counting code; session 7 ran both and they agree **on every cell of every
+row** — `calls` 10,196 / 1,776 distinct / 1,202 ambiguous / 2,985 unresolved; `uses`
+5,054 / 1,399 / 823 / 11; `contains` 1,647 / 1,317 / 289 / 1; `references` 3,393 / 327
+/ 219 / 681; `exports` 112 / 42 / 3 / 69; `extends` 43 / 12 / 1 / 21; `overrides` 14 /
+7 / 0 / 0; `instantiates` 110 / 103 / 14 / 0; and 3,386 distinct targets named with
+**1,555 orphans of 6,912 = 22.50%** (`session7-incoming-check-lib-pure.txt`). Two
+instruments, zero disagreement. On this index `incoming-check` counts **184** distinct
+target names resolving to more than one published symbol — `year`, `name`, `max`,
+`len`, `isSorted`, `a`, `i`, `fut` and 176 more — against **10** on the 6-file index
+above, so the ambiguity figure scales with the index and *Limitations* 19 (it discards
+the file, so it counts cross-file collisions the reverse walk separates) is the reason
+those 184 are not a defect count.
 
 **The deliverable-B ambiguity, named per name rather than counted.** **10** target
 names on those 6 files resolve to more than one published symbol: `log` →
