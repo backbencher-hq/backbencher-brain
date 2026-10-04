@@ -34,7 +34,9 @@
  *
  * `analyze()` -> `parseFile` key survival is measured per file here, which is the only
  * place the difference is visible: a fixture calls `parseFile` too, but no fixture
- * asserts a media scope's metadata, which is why the suite is green.
+ * asserts a media scope's metadata. The 15 css fixtures pass while all 2,917 at-rule
+ * scope symbols reach the store with no metadata at all, which is the number this probe
+ * exists to produce.
  *
  * ## The two corrections
  *
@@ -84,8 +86,18 @@ for (const e of readdirSync(CR)) {
     const abs = path.join(dir, rel)
     try {
       if (statSync(abs).size > 512 * 1024) continue
-      if (statSync(abs).size === 0) continue
-      if (detectLanguageFromPath(abs) !== "css") continue
+      // The admission rule below is transcribed argument-for-argument from
+      // script/m14/ontology-coverage-gate.ts. It used to differ from the arbiter's in
+      // two ways, and both were found by RUNNING it rather than reading it: it skipped
+      // zero-byte files, and it called detectLanguageFromPath with ONE argument where
+      // the gate passes the file text as a second. The second is load-bearing — the
+      // text argument changes the verdict — so this admitted a different SET, not a
+      // smaller copy of the same one. Measured cost of the two together: 1,246 admitted
+      // against the arbiter's 1,255 on the same corpus, a 9-file divergence. The same
+      // two defects were found and fixed in css-ontology-probe.ts one pass earlier and
+      // were not propagated here, which is the argument for transcribing the rule
+      // rather than trusting that a sibling probe got it right.
+      if (detectLanguageFromPath(abs, readFileSync(abs, "utf8")) !== "css") continue
     } catch {
       continue
     }
