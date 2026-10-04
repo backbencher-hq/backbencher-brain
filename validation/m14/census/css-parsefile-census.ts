@@ -177,6 +177,16 @@ const symFlags: Record<string, number> = {}
 const relFlags: Record<string, number> = {}
 let emptyNames = 0
 let unknownKind = 0
+/**
+ * The literal a producer publishes when it could not name an endpoint. Declared as a
+ * constant so the comparison is against a named value rather than a bare `"unknown"`
+ * typed at the call site, and so the count has one definition shared by the reader.
+ */
+const UNKNOWN_ENDPOINT = "unknown"
+let unknownEndpointSrc = 0
+let unknownEndpointTgt = 0
+let emptyEndpointSrc = 0
+let emptyEndpointTgt = 0
 let symbols = 0
 let parseFailures = 0
 let degraded = 0
@@ -244,6 +254,13 @@ for (const f of files) {
 
     const src = String(rel?.source ?? rel?.from ?? rel?.fromSymbol ?? "")
     const tgt = String(rel?.target ?? rel?.to ?? rel?.toSymbol ?? "")
+    // An endpoint the producer could not name. Counted per END so the two directions stay
+    // separable: a lane that published `unknown` as a placeholder on the source only would
+    // otherwise hide behind a combined 0.
+    if (src === UNKNOWN_ENDPOINT) unknownEndpointSrc++
+    if (tgt === UNKNOWN_ENDPOINT) unknownEndpointTgt++
+    if (src.length === 0) emptyEndpointSrc++
+    if (tgt.length === 0) emptyEndpointTgt++
     if (published(src)) row.srcPublished++
     if (published(tgt)) row.tgtPublished++
     if (published(src) && published(tgt)) row.bothEndsResolve++
@@ -308,6 +325,11 @@ const report = {
   symbols,
   emptySymbolNames: emptyNames,
   emptyOrUnknownKind: unknownKind,
+  unknownEndpointSrc,
+  unknownEndpointTgt,
+  unknownEndpointEdges: unknownEndpointSrc + unknownEndpointTgt,
+  emptyEndpointSrc,
+  emptyEndpointTgt,
   kindCensus: Object.fromEntries(Object.entries(kinds).sort((a, b) => b[1] - a[1])),
   parseErrorsReported: errorsReported,
   symbolFlagCensus: Object.fromEntries(Object.entries(symFlags).sort((a, b) => b[1] - a[1])),
@@ -342,6 +364,7 @@ console.log(`sampled: ${files.length} files across ${Object.keys(perRepo).length
 console.log(`parsed ${filesParsed}/${files.length}, parse failures ${parseFailures}, DEGRADED (fallback:true) ${degraded}`)
 console.log(`symbols ${symbols.toLocaleString()} (${report.symbolsPerFile}/file), relationships ${report.totalRelationships.toLocaleString()} (${report.relationshipsPerFile}/file), parse errors reported ${errorsReported}`)
 console.log(`empty symbol names ${emptyNames}; empty-or-unknown SymbolKind ${unknownKind}`)
+console.log(`relationship ENDPOINTS equal to the literal "${UNKNOWN_ENDPOINT}": src ${unknownEndpointSrc}, tgt ${unknownEndpointTgt} (${unknownEndpointSrc + unknownEndpointTgt} ends); empty-string endpoints: src ${emptyEndpointSrc}, tgt ${emptyEndpointTgt}`)
 console.log("")
 console.log(`DECLARED RELATIONSHIP BRANCHES (a 0 is a branch no corpus number can speak about; pinned only by a fixture):`)
 for (const f of DECLARED_REL_BRANCHES) {
