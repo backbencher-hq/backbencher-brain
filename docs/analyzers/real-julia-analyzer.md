@@ -31,7 +31,8 @@ npx tsx validation/m14/fixtures/julia/ruled-probe-check.ts                  # th
 npx tsx validation/m14/fixtures/julia/arbiter-census-diff.ts                 # census vs arbiter, per type
 npx tsx script/m14/firing-check.ts --files 120 julia                         # what FIRES, 120-file stride
 npx tsx script/m14/firing-check.ts --files 2000 julia                        # …and over all 971
-npx tsx script/m14/incoming-check.ts julia <file>...                         # the reverse direction, per file set
+npx tsx script/m14/incoming-check.ts julia <5 files named in the INCOMING section>   # the reverse direction
+npx tsx script/m14/differential.ts --lang julia --no-batch  # shared F5, scoped: writes NO canonical artifact
 bun  run script/m14/run-fixtures.ts --lang julia
 bun  run validation/m14/fixtures/julia/mutation-check.ts --all
 npx tsx script/m14/ontology-coverage-gate.ts julia                            # exit 0, 9 emitted / 1 ruled
@@ -372,7 +373,7 @@ second declaration of the *same* pair replaces the first, and Julia says so itse
 
 This is the failure `script/m14/ontology-coverage-gate.ts`'s header records as **BD8b** for bash: a
 type omitted on a prose justification, invisible to the differential because the oracle omitted the
-type too. Two implementations that both say nothing agree perfectly.
+type too. Two implementations that both say nothing agree exactly.
 
 ### What it is in this language
 
@@ -584,33 +585,64 @@ as such: a resolution rate that excluded them would not be the number a consumer
 ### The ambiguity, and the fact that the edge already carries the answer
 
 `script/m14/incoming-check.ts` measures the same property from the other direction, on an explicit file
-set, and its output names the ambiguous targets individually. On the three files that carry this lane's
-only `overrides` edges plus two parse-heavy ones (5 files, 342 symbols, `degraded parses: 0`,
-`parse failures: 0`):
+set, and its output names the ambiguous targets individually. **The set is the three files that carry
+this lane's only `overrides` edges plus the two parse-heaviest files that declare a type, and it is
+named here because the previous version of this block did not name it** — it quoted 342 symbols, 766
+`calls` and 6 ambiguous targets, and no command reproduces those, so the table was not a measurement
+any reader could check. The file set is the one below and it is fixed:
 
 ```
+R=$HOME/fixtures/repositories
+npx tsx script/m14/incoming-check.ts julia \
+  $R/julia/Compiler/test/contextual.jl \
+  $R/julia/test/meta.jl \
+  $R/julia/test/reflection.jl \
+  $R/julia/base/toml/parser.jl \
+  $R/julia/stdlib/Dates/src/types.jl
+```
+
+```
+incoming check — julia, 5 file(s), 375 symbols
+degraded parses: 0   parse failures: 0
+
 type            fired  edges    distinct  ambiguous  unresolved
-calls           yes    766      121       0          534
-uses            yes    302      50        2          143
-contains        yes    161      138       2          0
-imports         yes    51       1         0          50
-references      yes    343      15        56         274
-exports         yes    41       22        2          16
-extends         yes    6        0         0          6
+--------------------------------------------------------------------------
+calls           yes    819      130       0          569
+uses            yes    331      55        6          164
+contains        yes    149      127       5          0
+imports         yes    48       1         0          47
+references      yes    390      21        63         298
+exports         yes    31       20        2          8
+extends         yes    22       9         0          5
 implements      NO     0        0         0          0
 overrides       yes    3        3         0          0
-instantiates    yes    37       10        30         0
-declarations named by >=1 edge : 234      orphans: 72 of 342
-target names resolving to >1 published symbol : 6
-  exported -> variable, function      Comments     -> class, function
-  CommentBlock -> class, function     Parser       -> class, function
-  ParserError -> class, function      DateTime     -> class, function
+instantiates    yes    51       12        45         0
+--------------------------------------------------------------------------
+distinct declarations named by at least one edge : 240
+declarations nothing names (orphans)             : 92 of 375
+target names resolving to >1 published symbol      : 8
+  exported -> variable, function      Date       -> class, function
+  Comments -> class, function        Time       -> class, function
+  CommentBlock -> class, function     Parser     -> class, function
+  ParserError -> class, function
 ```
 
-**All six ambiguous names are the `class`/`function` pair and nothing else**, which is the structural
-property stated below rather than an accident of naming: in julia `struct X … end` and `X() = …` are
-one binding, so the analyzer publishes two symbols under one name. `references` and `instantiates` carry
-the ambiguity (56 and 30 of it) because they assert the type kind and therefore land on type names.
+**Seven of the eight ambiguous names are the `class`/`function` pair and the eighth is NOT, so the
+structural property is two properties rather than one.** The seven (`Date`, `Time`, `Comments`,
+`CommentBlock`, `Parser`, `ParserError`) are the case stated below: in julia `struct X … end` and
+`X() = …` are one binding, so the analyzer publishes two symbols under one name. The eighth,
+`exported`, is a **different** shape and the earlier version of this block asserted it was the same one
+while listing it in its own output — it is `global exported::Int = 1` at
+`julia/test/reflection.jl:297` published as a `variable`, and `exported() = 1` at
+`julia/test/reflection.jl:1465` published as a `function`. **One name, two declaration forms, both
+legitimate, and no metadata on the edge distinguishes them** because neither form asserts a kind. A
+consumer matching this target by name will attach both the `contains` and the `exports` edge to whichever
+it picked first. Corpus-wide this name accounts for 2 `contains` edges and 2 `exports` edges; the census
+lists it under both types (`incoming.ambiguousTargets.contains.exported` and
+`.exports.exported`), which is how the shape was found.
+
+`references` and `instantiates` carry most of the ambiguity (63 and 45 of it) because they assert the
+type kind and therefore land on type names.
 
 **Its `unresolved` column is NOT comparable to the corpus-wide buckets below, and the difference is the
 instrument, not a disagreement.** `incoming-check.ts` resolves only against the files it was handed —
@@ -620,21 +652,25 @@ way to produce. Target-end resolution, 5-file draw against corpus-wide:
 
 | type | 5 files | 971 files | ratio |
 |---|---|---|---|
-| `imports` | 2.0% | 62.6% | **32.0×** |
-| `references` | 20.1% | 82.1% | 4.1× |
-| `calls` | 30.3% | 92.3% | 3.1× |
-| `uses` | 52.6% | 86.0% | 1.6× |
-| `exports` | 61.0% | 87.2% | 1.4× |
+| `imports` | 2.1% | 62.6% | **30.1×** |
+| `references` | 23.6% | 82.1% | 3.5× |
+| `calls` | 30.5% | 92.3% | 3.0× |
+| `uses` | 50.5% | 86.0% | 1.7× |
+| `exports` | 74.2% | 87.2% | 1.2× |
 | `contains` / `instantiates` / `overrides` | 100% | 100% | 1.0× |
-| `extends` | **0 of 6** | 88.7% | — |
+| `extends` | 77.3% | 88.7% | 1.1× |
 
 The three types at 1.0× are the ones whose edges are **in-file by construction** — `contains` names a
 member of the enclosing declaration, `instantiates` and `overrides` name a sibling method — so a
 5-file window loses nothing. Every type that reaches across files loses a great deal, and `imports`
-loses the most because a `using Foo` names a module that lives in another file. `extends` reading 0 of
-6 on this draw is the sharpest illustration: 5 files contain no supertype declaration that any of the
-other 4 declares, so a per-file instrument cannot see the language's inheritance at all. **A single
-number for "resolution rate" is only meaningful alongside the size of the window it was measured in.**
+loses the most because a `using Foo` names a module that lives in another file: 1 of 48 resolves here
+against 940 of 1,502 corpus-wide, **30.1×**. `extends` reads 77.3% on this draw rather than 0% because
+`toml/parser.jl` declares `Parser <: …` and `Dates/src/types.jl` declares `Date <: TimeType` in the same
+window — which is the whole point: **whether a 5-file window can see inheritance at all is a property of
+which five files you picked, not a property of the analyzer.** The previous version of this table
+reported `extends` at 0 of 6 and read it as the sharpest illustration of the effect; the same
+instrument on a different five files reports 17 of 22. **A single number for "resolution rate" is only
+meaningful alongside the size of the window it was measured in AND the names of the files in it.**
 
 **11,101 edges target a name the file publishes under more than one kind or more than once.** The
 concrete case is structural in Julia rather than accidental: `struct Object … end` together with
@@ -774,7 +810,7 @@ Neither of the two is close to paid down the way `overrides` was, and the limit 
 rather than papered over: an oracle for either would have to derive "this file imports that module"
 and "this module exports that binding" from the tree **independently** of `importTargets` and
 `exportableName`. Those are the two functions under test, so reusing them would make the oracle agree
-with the analyzer by construction — the "two implementations that both say nothing agree perfectly"
+with the analyzer by construction — the "two implementations that both say nothing agree exactly"
 failure the gate header records as BD8b. A real oracle means a second derivation of julia's module
 grammar, which is a shared-file effort (`script/m14/oracles/` plus the `differential.ts` wiring) and is
 therefore §8.
@@ -1118,27 +1154,43 @@ same 60-file sample and **halved** the unexplained rate, which is the opposite o
 comparison usually does and worth stating plainly: the earlier high rate was the analyzer emitting
 real edges the truth side declines to claim, not those edges being wrong.
 
-    F5 julia (200 of 941, ROTATING):  covered 98.9%   unexplained 8.7%
+    F5 julia (200 of 941, cold-pool ROTATING):  covered 98.9%   unexplained 8.7%
                                      analyzer-edges=20221 tree-truth=19052 MISSING=213 heuristic=0
                                      + COMPARED WITH NO TRUTH: overrides
-    prior 60-file rotation:          covered 99.1%   unexplained 8.5%
-    2026-10-04, 40 of 971, rot 35:   covered 96.8%   unexplained 9.3%
+    prior 60-file rotation:              covered 99.1%   unexplained 8.5%
+    2026-10-04, 40 of 971, rot 35:       covered 96.8%   unexplained 9.3%
                                      analyzer-edges=4088 tree-truth=4038 MISSING=131 heuristic=0
                                      unexplained-by-label: calls=177 contains=144 instantiates=22
                                                         references=18 extends=11 uses=8
-    2026-10-04, 40 of 971, rot 36:   covered 96.8%   unexplained 9.2%
+    2026-10-04, 40 of 971, rot 36:       covered 96.8%   unexplained 9.2%   hash=3ced448db031430c
                                      analyzer-edges=4163 tree-truth=4106 MISSING=131 heuristic=0
                                      unexplained-by-label: calls=181 contains=144 instantiates=22
                                                         references=18 extends=11 uses=8
 
-The sample ROTATES per run, so per-rotation covered and MISSING counts move: this file's quotes are
-captured runs, not a result to reproduce. A per-rotation count is a sample size. The last two rows are
-consecutive rotations on 2026-10-04 and are printed as a pair because the contrast is the useful part:
-**`MISSING=131` and `covered 96.8%` are IDENTICAL across both rotations while `analyzer-edges` moved
-4,088 → 4,163 and `tree-truth` 4,038 → 4,106.** The rotation changed how many edges were drawn and did
-not change how many the analyzer failed to account for, which is a small piece of evidence that the
-131 are a property of the code rather than of the draw. It is not proof — 131 could be a coincidence of
-two rotations — and it is reported as two runs, not as a rate.
+`MISSING=131` and `covered 96.8%` are IDENTICAL across the rot-35 and rot-36 draws while
+`analyzer-edges` moved 4,088 → 4,163 and `tree-truth` 4,038 → 4,106: the draw changed how many edges were
+compared and did not change how many the analyzer failed to account for, which is a small piece of
+evidence that the 131 are a property of the code rather than of the draw. It is not proof — 131 could be
+a coincidence of two draws — and it is reported as two runs, not as a rate.
+
+**Which of these reproduce depends on the invocation, and the previous version of this file said
+"ROTATES per run" for all of them, which is true of the cold-pool sweep and false of the scoped form.**
+The cold-pool rotation is persisted state (`COLD_POOL_STATE`, a rotation counter per lane, seeded pick
+per rotation — `differential.ts:927-950`) and it only advances on the unscoped sweep. The scoped form
+
+```
+bun run script/m14/differential.ts --repo julia --sample 40
+```
+
+skips the cold pool entirely and is therefore **deterministic**: three consecutive runs on 2026-10-04
+returned `tree-truth=4106 covered=3975 (96.8%) MISSING=131 analyzer-edges=4163 unexplained=384 (9.2%)
+hash=3ced448db031430c` byte for byte, and that row is the rot-36 line above. The printed `hash` is the
+sample set's identity, so a later run that draws different files announces itself. A **scoped** run also
+writes no artifact — the harness refuses (`probe run (--repo julia): … M14.0.F5 NOT written`), because
+the canonical artifact carries a 43-language claim and a one-language run would replace it with a
+smaller one. Note that `--repo julia` selects the *repo*, not the language: it probes every language for
+`.jl` files and prints 33 `files=0 SKIPPED` lines before julia's own row, so `--lang julia` is the
+correct flag when the language is what you mean.
 
 `heuristic=0` is the stable part: no rotation has ever produced an edge under 0.7 confidence. **The
 number to quote is not any of these rows** — it is the per-label table below, which does not rotate.
