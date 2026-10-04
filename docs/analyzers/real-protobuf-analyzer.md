@@ -1455,3 +1455,203 @@ into a rate.
 - **Grammar-version drift.** The grammar is vendored, patched and pinned with 8
   load-bearing patches; the analyzer reads node names a future upstream release could
   rename.
+
+---
+
+# PASS 6 — the last 56, priced: one missing map is worth 38 of them, and the local fix costs 75
+
+Passes 1–5 verified this lane's outgoing edges, its incoming edges, and what the store
+binds. One number was left standing without a measurement behind it. Passes 3 and 5 both
+report that **52** `uses` targets name an id no corpus file publishes and **4** name
+nothing at all, and both explain it as "closing either needs the include-root map, a
+project-level fact". That is true. It is also not a measurement: it does not say how many
+of the 56 one map would close, so a reader cannot tell whether the shortfall is one edge
+or five hundred.
+
+Pass 6 measures it, and then measures the one fix that is available inside this lane.
+
+## The 56, in four disjoint classes that sum to 56
+
+`script/m14/protobuf-package-map-probe.mts` — new in this pass. 821 files in 18
+repositories, production `parseFile`, **13,275** `uses` edges, **13,219** bind somewhere,
+**56** bind nowhere. For each of the 56 it asks the question a project-level pass could
+answer, using only facts such a pass would have: is a candidate on the specification's own
+scope chain a published id, and does the file that publishes it appear in this file's
+imports?
+
+| class | edges | share | what it needs |
+|---|---|---|---|
+| `CLOSABLE-BY-PACKAGE-MAP` | **38** | 67.86% | a map from import path to declared package |
+| `CLOSABLE-BY-ANCESTOR-SCOPE` | **4** | 7.14% | closable by the instrument the analyzer already has — see below, and see why it is not taken |
+| `NOT-CLOSABLE-BY-PACKAGE-MAP` | **4** | 7.14% | a strictly stronger fact: a vendor-rewrite map |
+| `NOT-CLOSABLE` | **14** | 25.00% | nothing. External or fixture-only |
+| | **56** | | |
+
+By repository: consul 31, docker 10, pb-reference 6, pb-grpc 4, kubernetes 2,
+nvim-treesitter 2, vault 1.
+
+## The mechanism, and it is about directory layout, not about protobuf
+
+`resolveViaImports` answers *"is `S.A.B.C` declared in a file this one imports?"* by
+testing whether the **candidate package's dotted path equals an imported module's
+directory**:
+
+```
+consul/proto/private/pbconfigentry/config_entry.proto
+  line 12   import "private/pbcommon/common.proto"   ->  importDirs = { "private/pbcommon" }
+  line 40   common.EnterpriseMeta EnterpriseMeta = 2;
+  candidate package hashicorp.consul.internal.common
+                                        ->  dir = "hashicorp/consul/internal/common"
+```
+
+Those two strings are unrelated. consul's private protos put package
+`hashicorp.consul.internal.common` in a directory called `pbcommon`, so the test can never
+fire and the reference is emitted exactly as written — `common.EnterpriseMeta`, a name no
+file publishes. The declaration is 40 lines away in the file consul imports:
+
+```
+consul/proto/private/pbcommon/common.proto:171   message EnterpriseMeta {
+```
+
+`protoc` resolves the same reference correctly because it builds a descriptor pool from
+the `-I` include roots and never looks at a directory name. In the repositories whose
+layout *does* mirror the package — docker's `api/types/`, kubernetes, boundary,
+pb-googleapis — the analyzer's test is right and it works. That is why **31 of the 38 are
+consul, 6 docker, 1 kubernetes**, and why this reads as a layout property rather than a
+resolution defect.
+
+## The local fix, priced instead of proposed
+
+There is a real defect here, and it is worth naming before pricing it. `qualify(pkg,
+text)` prefixes the package to an **unqualified** reference unconditionally, while
+protobuf's rule is C++ name lookup and falls through to the enclosing scopes.
+`pb-reference/src/google/protobuf/compiler/plugin.proto:71` writes
+
+```
+repeated FileDescriptorProto proto_file = 15;      // in package google.protobuf.compiler
+```
+
+`protoc` resolves that to `google.protobuf.FileDescriptorProto`, declared in
+`descriptor.proto`. The analyzer emits `google.protobuf.compiler.FileDescriptorProto`,
+which **no file declares**. So the analyzer does name a declaration that does not exist,
+and the correction is to run the ancestor walk with the directory test already in the
+analyzer.
+
+Priced over **all 10,289** unqualified cross-file `uses` targets, because in the analyzer
+the walk cannot know whether `pkg.text` exists and would therefore run over the working
+edges too:
+
+| outcome | edges |
+|---|---|
+| walk finds no supported candidate — the emitted name stands | **9,670** |
+| walk reproduces the emitted name (no-op) | **540** |
+| walk moves the name to a **published** id; the edge bound nothing | **4** ← the gain |
+| walk moves the name to a **non-binding** name; the edge **binds today** | **75** ← the loss |
+
+Reconciles to 10,289. **The walk trades 4 gained for 75 destroyed, and is not
+implemented.**
+
+The 75 are one shape. `pb-googleapis/google/api/apikeys/v2/resources.proto` declares
+`package google.api.apikeys.v2` and a field of unqualified type `AndroidApplication`, so
+the emitted target `google.api.apikeys.v2.AndroidApplication` **binds today**. The walk
+tests `google/api/apikeys/v2` — not in the import list, because a file does not import its
+own package directory — then `google/api`, which **is** in the import list
+(`google/api/annotations.proto`), and lands on `google.api.AndroidApplication`, which has
+**0** publishers.
+
+The guard that prevents exactly this exists in `resolveViaImports` and did not fire,
+because its shape is the other way round. It declines when a *more specific* candidate's
+directory **ends with** the matched one (`types` vs `api/types`) — the docker/containerd
+case measured at 7 wrong edges before the guard existed. Here the matched directory is the
+**shorter** one (`google/api`), so `endsWith` is the wrong test and the guard is silent.
+Correcting it means changing a guard that another lane's measurements rest on, to recover
+**4** edges while risking the 10,278 that bind. Not a trade worth making inside this lane,
+and the number is the reason rather than the argument.
+
+## What is left, with a number on each item
+
+| # | item | edges | owner |
+|---|---|---|---|
+| 1 | **a map from import path to declared package**, per project | **38** | shared — a project-level fact no per-file analyzer is told |
+| 2 | a **vendor-rewrite map** on top of item 1 | **4** | shared. `import "github.com/docker/swarmkit/api/specs.proto"` against a file vendored at `github.com/moby/swarmkit/v2/api/specs.proto` |
+| 3 | a corrected ancestor-walk decline guard | 4 gained / 75 at risk | not taken; priced above |
+| 4 | the **14** | 0 | not closeable. See below |
+
+The 14, named rather than counted:
+
+- **10** are the ancestor-fall-through shape where the *emitted* name is already
+  `pkg.name` and the real declaration sits at an ancestor scope, in repositories whose
+  include root also does not mirror the package — `pb-grpc`'s root is `src/proto/`, so
+  `echo_duplicate.proto` imports `src/proto/grpc/testing/echo_messages.proto` (directory
+  `src/proto/grpc/testing`) while the candidate `grpc.testing.EchoRequest` has directory
+  `grpc/testing`. Item 1 closes these too; the local instrument cannot see them.
+- **2** are envoy types absent from this corpus: `xds.data.orca.v3.OrcaLoadReport` in
+  `pb-grpc/src/proto/grpc/testing/echo_messages.proto:56` and `.../xds/v3/orca_service.proto`.
+- **2** are a grammar test fixture that references types it never declares —
+  `nvim-treesitter/tests/query/highlights/proto/test.proto:40` writes
+  `required CustomType Value = 2;` in `package sls.asfd.asfd` and declares neither
+  `CustomType` nor `JsonFormat`.
+- **1** is a non-compiling fixture: `vault/vault/seal/multi_wrap_value.proto:18` writes
+  `repeated github.com.hashicorp.go.kms.wrapping.v2.types.BlobInfo slots = 2;` — a Go
+  import path in a type position. `protoc` rejects the file. The analyzer reads the edge
+  because the grammar accepts it, which is a parse fact, and the target is genuinely
+  unresolvable, which is also a fact.
+
+## Pass 6 gate table
+
+Every gate re-run at this pass's HEAD. Nothing moved.
+
+| Command | Result |
+|---|---|
+| `npx tsc --noEmit` | no diagnostics |
+| `npx tsx script/m14/run-fixtures.ts --lang protobuf` | **8 pass / 0 fail**, no baseline regressions |
+| `bun run script/m14/tmp/protobuf/probe/mutant-sweep.mts` | **27 caught / 0 survived** |
+| `npx tsx script/m14/protobuf-census.ts` | **821 ok / 0 fail**; 13,275 / 40,098 / 1,561 / 4 / 1; 54,939 through `parseFile`; 0 empty names; 0 bad kinds; 0 `unknown` endpoints; 0 self-loops; **0** edges under 0.7 |
+| `npx tsx script/m14/protobuf-construct-probes.mts` | **94** node types; all 5 rulings re-probed and still reading **0** |
+| `npx tsx script/m14/protobuf-adversarial.mts` | 14 probes; 628,758 nodes, **0** without a published id; `uses` corpus-wide **99.58%**; heuristic ratio **0** |
+| `npx tsx script/m14/protobuf-ruling-table-proof.mts` | run **c**: `emitted 5/10 ruled-sound 5 FALSIFIED 0`, exit 0. run **b**: **FALSIFIED 2** |
+| `npx tsx script/m14/protobuf-incoming-audit.mts` | 821 parsed / **0 failed / 0 degraded**; 1,764 ambiguous, 52 unbound, 4 hopeless; 38,551 declarations, 37,113 (96.27%) with an inbound edge |
+| `npx tsx script/m14/firing-check.ts --files 120 protobuf` | **3/10 fired, 2,069 edges, 10/120 files, 0 degraded** |
+| `npx tsx script/m14/incoming-check.ts protobuf <40 files>` | `contains` unresolved **2,879 → 0**; `uses` unresolved **635 → 55** |
+| `npx tsx script/m14/tmp/protobuf/probe/store-binding.mts --files 40` | **2,977 of 3,075 provably named (96.81%)**; 40 of 2,603 symbols carry a qualified id |
+| `npx tsx script/m14/protobuf-package-map-probe.mts` | **56** = 38 + 4 + 4 + 14; the walk prices at **4 gained / 75 destroyed**, reconciling to 10,289 |
+| `npx tsx script/m12/verify-regex-census.ts` | **0** rows naming this lane |
+| `npx tsx script/m14/verify-honesty.ts` | exits 6 on **22 failures, 0 naming a protobuf path** |
+| `bun run script/m14/verify-doc-truth-emissions.ts --no-write` | `FALSE_NEGATIVE=7 FALSE_POSITIVE=0`, none in this lane's rows |
+
+## One number that moved, and it is not this lane's
+
+The pass-2 table records symbols through `parseFile` as **41,938**. Passes 3, 4 and 5
+record **41,955**, and this pass re-measured **41,955**. The **+17** is commit
+`198151c9b` — *"keepSymbol's denylist deleted real declarations in six languages"*,
+another lane's fix, merged into this lane's base. It split `keepSymbol`'s conflated
+denylist into a universal set and a per-language reserved set, and 17 protobuf
+declarations that the old list was deleting now survive the projection. The analyzer's own
+count is unchanged at **41,956**, and no edge count moved. The pass-2 table is left as it
+was written rather than edited, because the movement is corpus-and-machinery history and
+the passes that measured it are the record.
+
+## Declared limitations, pass 6
+
+- **The 38 are not closed, and this lane cannot close them.** One map from import path to
+  declared package is the whole of it, and it is a project-level fact: `parseFile` is
+  handed one file and is told nothing about include roots. The count is 38 of 13,275
+  `uses` edges, **0.29%**.
+- **The ancestor-walk defect is real and is left in place.** The analyzer emits
+  `pkg.name` for an unqualified cross-file reference where `protoc` would fall through to
+  an ancestor scope. Measured at **4** edges where that leaves the edge naming nothing.
+  The correction is priced at **4 gained against 75 destroyed** and is not applied; all
+  75 are the one shape described above, and `script/m14/protobuf-package-map-probe.mts`
+  prints ten of them with their publisher counts so a reader can check the ratio rather
+  than trust it.
+- **The probe re-implements the specification's scope chain** rather than importing the
+  analyzer's `specScopeChain`, because the probe must be able to report what the analyzer
+  *did not* emit and so cannot use the analyzer's own resolution to find out. The two are
+  the same order by construction; if one is edited the probe's chain must be edited with
+  it, and nothing in the probe detects that drift.
+- **The probe prices the walk with the decline guard in the shape that exists**, because
+  that is the shape the analyzer has. The measurement that matters — 75 destroyed — is a
+  consequence of that guard not firing, so a reader who believes a corrected guard would
+  make the walk safe should re-run the probe with the corrected guard rather than take
+  this row as the last word. The **gain** of 4 does not depend on the guard and is
+  unaffected.
