@@ -156,7 +156,38 @@ export interface TruthEdge {
 
 const named = (n: any): any[] => (n?.namedChildren ?? [])
 const field = (n: any, f: string): string | null => n?.childForFieldName?.(f)?.text ?? null
-const IDENT = /^[A-Za-z_$][A-Za-z0-9_$]*$/
+/**
+ * Whether `text` is spelled like a Dart identifier: `A-Z`/`a-z`/`_`/`$` to open,
+ * then `A-Z`/`a-z`/`0-9`/`_`/`$`.
+ *
+ * A String predicate rather than a regex, for the same reason the analyzer's
+ * `isCapitalized` is one: this lane holds zero regexes. A regex LITERAL is
+ * invisible to the census the doc cites, which searches for `new RegExp`,
+ * `RegExp(` and `.test(`/`.match(` — `/^[A-Za-z_$][A-Za-z0-9_$]*$/` is none of
+ * those, so the count read 0 while this line existed.
+ */
+function isIdentifierSpelling(text: string): boolean {
+  if (text.length === 0) return false
+  const head = text.charCodeAt(0)
+  if (!((head >= 65 && head <= 90) || (head >= 97 && head <= 122) || head === 95 || head === 36)) {
+    return false // 'A'..'Z', 'a'..'z', '_', '$'
+  }
+  for (let i = 1; i < text.length; i++) {
+    const c = text.charCodeAt(i)
+    if (
+      !(
+        (c >= 65 && c <= 90) ||
+        (c >= 97 && c <= 122) ||
+        (c >= 48 && c <= 57) ||
+        c === 95 ||
+        c === 36
+      )
+    ) {
+      return false
+    }
+  }
+  return true
+}
 
 /** Declaration types that can OWN methods and can be SUPERTYPES. */
 const DECLS = new Set([
@@ -187,11 +218,11 @@ function stripAlias(raw: string): string {
 
 function declarationName(node: any): string | null {
   const byField = field(node, "name")
-  if (byField && IDENT.test(byField)) return byField
+  if (byField && isIdentifierSpelling(byField)) return byField
   // `mixin_declaration` has no name field — its name is a bare identifier after
   // the `mixin` keyword. Same trap as the contains oracle's mixin arm.
   for (const c of named(node)) {
-    if (c.type === "identifier" && IDENT.test(c.text)) return c.text
+    if (c.type === "identifier" && isIdentifierSpelling(c.text)) return c.text
   }
   return null
 }
@@ -251,13 +282,13 @@ function memberNamesOf(m: any): string[] {
     }
     return false
   }
-  const add = (nm: string | null): void => { if (nm && IDENT.test(nm) && !out.includes(nm)) out.push(nm) }
+  const add = (nm: string | null): void => { if (nm && isIdentifierSpelling(nm) && !out.includes(nm)) out.push(nm) }
   if (m.type === "method_signature") {
     if (isStatic(m)) return out
     for (const w of named(m)) {
       if (!NAME_WRAPPERS.has(w.type)) continue
       const nm = field(w, "name")
-      if (nm && nm !== "operator" && IDENT.test(nm)) add(nm)
+      if (nm && nm !== "operator" && isIdentifierSpelling(nm)) add(nm)
       else if (nm === "operator" || w.type === "operator_signature") {
         for (let i = 0; i < w.childCount; i++) {
           const g = w.child(i)
@@ -296,25 +327,27 @@ function memberNamesOf(m: any): string[] {
   return out
 }
 
-/** Does this member carry an `@override` annotation?
+/**
+ * Does this node name `override` as its annotation identifier?
  *
- *  The annotation is a preceding SIBLING of the member it decorates — the same
- *  shape the analyzer reads off `decorators`, and the reason a member is
- *  overridable at all rather than merely present. Checked on the member and one
- *  hop out, because some shapes nest the annotation one level from the signature. */
-function hasOverrideAnnotation(m: any): boolean {
-  for (let cur = m, hop = 0; cur && hop < 3; hop++) {
-    const sib = cur.previousNamedSibling
-    if (sib) {
-      if (/@override\b/.test(sib.text ?? "")) return true
-      if (sib.type.includes("annotation") || sib.type.includes("metadata")) {
-        for (let i = 0; i < sib.namedChildCount; i++) {
-          const c = sib.namedChild(i)
-          if (c && /@?override\b/.test(c.text ?? "")) return true
-        }
-      }
-    }
-    cur = sib
+ * Structural: the caller has already established that `n` IS an annotation node,
+ * and this reads the IDENTIFIER child rather than the node's text. The shape it
+ * replaced read `/@?override\b/.test(c.text ?? "")` over an arbitrary subtree,
+ * which is the failure this lane's contract names — a regex over source text
+ * matches comments and string literals. Measured on `class D { /// prose saying
+ * @override`\n int get compute => 1; }`: the sibling is a `documentation_comment`
+ * and the regex answered `true` while this answers `false`.
+ *
+ * The sibling walk that used to call this (`hasOverrideAnnotation`) is gone with
+ * the unwired gate below. This predicate is kept because it is the rule the gate
+ * needs when somebody wires it, and it is the rule the ANALYZER already applies
+ * (`extractAnnotations` gates on `prev.type === "annotation"` before any text
+ * comparison).
+ */
+function isOverrideAnnotation(n: any): boolean {
+  if (n?.type !== "annotation" && !String(n?.type ?? "").includes("annotation")) return false
+  for (const c of named(n)) {
+    if (c.type === "identifier" && c.text === "override") return true
   }
   return false
 }
@@ -350,31 +383,36 @@ function methodNames(node: any, bodyType: string): string[] {
   return out
 }
 
-/** Which of a type's members carry an `@override` annotation.
+/**
+ * @override ANNOTATION GATE — NOT WIRED. This function and `hasOverrideAnnotation`
+ * below had no reader: the only caller stored the result in an `overrideOf` map that
+ * nothing ever looked up, so the gate was computed per declaration and discarded.
  *
- *  The EXTERNAL pass of the resolution is annotation-gated — a member of a class
- *  that is not declared in this file is claimed as an override only when the
- *  member says it overrides something. Without this the oracle over-claims on
- *  every generated override: freezed emits `List<Object?> get props => [...]`
- *  with no annotation, so an ungated pass derived 81 `X.props -> Equatable.props`
- *  edges the analyzer deliberately does not publish.
+ * This comment used to assert the opposite — that the EXTERNAL pass is
+ * annotation-gated, and that without it the oracle "derived 81 `X.props ->
+ * Equatable.props` edges the analyzer deliberately does not publish". That claim
+ * was false of this code: the gate never reached a truth row.
  *
- *  Measured, and the direction matters: `class C extends Cubit { @override void
- *  close() {} }` agrees on both sides with a companion index; drop the
- *  annotation and the analyzer publishes nothing while an ungated oracle still
- *  does. The analyzer is right — an unannotated member of a class whose base is
- *  in another repository cannot be proven to override anything from this file
- *  alone, and claiming it is a fabricated edge. */
-function overrideMembers(node: any, bodyType: string): Set<string> {
-  const out = new Set<string>()
-  const body = named(node).find((c: any) => c.type === bodyType)
-  if (!body) return out
-  for (const m of named(body)) {
-    if (!hasOverrideAnnotation(m)) continue
-    for (const nm of memberNamesOf(m)) out.add(nm)
-  }
-  return out
-}
+ * Two findings, both measured, and they contradict each other, so this is left for
+ * the owner of the harness rather than silently resolved:
+ *
+ *   1. The COMPANION pass is ungated, and `verify-dart-overrides.ts` PINS that as
+ *      correct: its case `an unannotated external member: oracle has evidence,
+ *      analyzer does not here` asserts the oracle DOES claim the row with no
+ *      annotation, on the reasoning that a companion-verified match is evidence
+ *      rather than a guess and that `@override` is only a lint
+ *      (`annotate_overrides`).
+ *   2. The 81-edge claim above describes the opposite rule. Both cannot hold.
+ *
+ * Wiring the gate is a BEHAVIOUR CHANGE to published truth rows, not a refactor, so
+ * it is not this lane's call. What is this lane's call is that a reader auditing
+ * this oracle must not read a guarantee the code does not enforce, so the dead
+ * computation is gone and the contradiction is recorded in
+ * `docs/analyzers/real-dart-analyzer.md`.
+ *
+ * Deleting this changed no truth row: the differential reports the same 100 MISSING
+ * on proxicall and 14 on dart-http, 0 unexplained, before and after.
+ */
 
 /**
  * The real type names in one heritage group, with an IMPORT-ALIAS prefix dropped.
@@ -396,7 +434,7 @@ function heritageNames(group: any): string[] {
   for (let i = 0; i < ids.length; i++) {
     if (i + 1 < ids.length && ids[i].text.startsWith("_")) continue // alias prefix
     const base = stripAlias(ids[i].text)
-    if (IDENT.test(base) && !out.includes(base)) out.push(base)
+    if (isIdentifierSpelling(base) && !out.includes(base)) out.push(base)
   }
   return out
 }
@@ -413,7 +451,7 @@ function directSupertypes(node: any): string[] {
   const push = (name: string): void => {
     if (!name) return
     const base = stripAlias(String(name).split("<")[0])
-    if (IDENT.test(base) && !out.includes(base)) out.push(base)
+    if (isIdentifierSpelling(base) && !out.includes(base)) out.push(base)
   }
   // a redirecting/mixin-application class keeps its base elsewhere; handle both
   // `extends Base` and a mixin's `on Base` are the same relationship written with
@@ -473,7 +511,6 @@ export function deriveDartOverridesTruth(root: any, companion?: Map<string, Set<
   // index the file: declaration name -> the methods it declares
   const methodsOf = new Map<string, string[]>()
   const supertypesOf = new Map<string, string[]>()
-  const overrideOf = new Map<string, Set<string>>()
   const collect = (node: any): void => {
     if (!node) return
     if (DECLS.has(node.type)) {
@@ -481,7 +518,6 @@ export function deriveDartOverridesTruth(root: any, companion?: Map<string, Set<
       if (nm) {
         const bodyType = BODY_OF[node.type]
         methodsOf.set(nm, methodNames(node, bodyType))
-        overrideOf.set(nm, overrideMembers(node, bodyType))
         supertypesOf.set(nm, directSupertypes(node))
       }
     }
