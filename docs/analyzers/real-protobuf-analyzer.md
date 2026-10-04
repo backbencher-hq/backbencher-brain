@@ -4060,3 +4060,282 @@ cannot run cannot report a defect, and this lane's own verdict table is exactly 
 artifact it checks. Until it runs, the "Emitted?" column in §"Verdict per type" above is
 **hand-verified and not machine-checked**, and the first-body-row defect pass 2 found in
 it is still live behind a crash.
+
+# PASS 15 — two of this lane's own blocker claims falsified, and 1,763 ambiguous edges priced
+
+Nothing in `src/ast/real-protobuf-analyzer.ts` changed in this pass. Every emitted-type
+count reproduces pass 14 to the unit. All four findings are in instruments, and **three of
+the four were wrong measurements that this lane had already written down.**
+
+---
+
+## The first correction: nine shared gates DO start, and this lane's table is machine-checked
+
+Pass 14 ended with a section headed *"Nine shared gates cannot start at all"*, and with
+this sentence about its own verdict table:
+
+> Until it runs, the "Emitted?" column in §"Verdict per type" above is **hand-verified
+> and not machine-checked**
+
+The reason given was real: `script/m14/verify-doc-truth-emissions.ts` uses a top-level
+`__dirname` and `package.json` declares `"type": "module"`. It was verified under
+`npx tsx` and `node --import tsx`. **Both runners crash. Neither is the runner the gate
+declares.** The gate's own USAGE block reads:
+
+```
+ *   bun run script/m14/verify-doc-truth-emissions.ts             # writes the register, exits 1 on a lie
+```
+
+`protobuf-runner-probe.mts` measures the claim instead of arguing it. The population is
+derived from **TypeScript AST identifier nodes** — an `Identifier` whose text is
+`__dirname` — so comments and string literals are invisible by construction rather than
+by a filter that could be wrong. Each file is then run under both runners.
+
+| measurement | value |
+|---|---|
+| files walked under `script/` | **1,194** |
+| files holding a `__dirname`/`__filename` **identifier node** | **15** |
+| such identifier nodes, total | **15** |
+| those whose own header declares `bun run` | **9** |
+| `bun run` — started | **15 of 15** — `CRASH_DUNDER` **0**, `STARTED_EXITED` 11, `STARTED_RUNNING` 4 |
+| `npx tsx` — started | **7 of 15** — `CRASH_DUNDER` **8**, `STARTED_EXITED` 7 |
+| start under **both** runners | **7** |
+| **start under `bun` only** | **8** — a tsx-only check calls these "cannot start" |
+| start under `tsx` only / neither | **0** / **0** |
+
+The ninth file pass 14 listed, `script/m14/tmp/svelte-heritage-corpus.ts`, sits in a `tmp/`
+directory this probe's walk excludes by design, so it was run directly: **1 identifier
+node at line 16, starts under `bun`, crashes under `npx tsx`.** All nine of pass 14's nine
+start under the runner their own headers name.
+
+**What survives and what does not.** The portability fact is real and worth a §8 line: a
+Node ES module has no `__dirname`, so these files cannot be run under `tsx`/`node`, and
+`verify-js-census.ts` / `verify-orphaned-mutants.ts` in the same directory already carry
+the working `fileURLToPath` form. The **blocker does not survive.** An ESM fix would be a
+portability improvement, not an unblock, and reporting it as the second-highest item in
+this lane would have been wrong.
+
+### And the table it was blocking now runs, on this lane
+
+`protobuf-doc-truth-proof.mts` runs the shared gate and reimplements none of it. Scoping
+uses the gate's own `--root` flag, read from its own USAGE block; `--no-write` keeps the
+shared register `docs/DOC-TRUTH-EMISSIONS.md` untouched.
+
+| run | exit | result |
+|---|---|---|
+| A `--selftest` | **0** | **12 of 12 cases** — it can still report a disagreement |
+| B `--root <this lane> --no-write` | **0** | `1 analyzers, FALSE_NEGATIVE=0 FALSE_POSITIVE=0 UNDOCUMENTED=0 MISSING_DOC=0 NO_CLAIM_TABLE=0 -> PASS` |
+| C whole tree `--no-write` | 1 | `48 analyzers, FALSE_NEGATIVE=7 FALSE_POSITIVE=0 UNDOCUMENTED=43` — **0 lines mention protobuf** |
+| C, `verify-honesty.ts` | 6 | 24 failures tree-wide; **0 name a protobuf file** |
+
+A is run **first**, because a gate that cannot fail and reports nothing is
+indistinguishable from a gate that passes. So the "Emitted?" column is machine-checked
+and it agrees. What a pass here does **not** mean: the gate never looks at a count. It
+compares the emitted surface against the yes/no cells, so it says the column is honest
+about *which types fire*, not that the numbers beside them are right.
+
+### Two defects in the probe that produced them, and one in the proof
+
+| # | the defect | the wrong thing it printed |
+|---|---|---|
+| 1 | the tsx column ran `npx <file>`. `tsx` is a **loader**, not an interpreter, so that asks npx for a binary named after the file | `CRASH_DUNDER 0` for all 15 files — for a file that crashes under `npx tsx <file>` in two seconds |
+| 2 | exit code was read as started-or-not | merged 9 working gates into "OTHER_ERROR", in the direction that makes a working gate look broken |
+| 3 | the proof read the summary off stdout; the gate prints it on `console.error` | "(no summary line)" on exactly the runs that **passed** |
+
+Defect 1 was caught because a zero contradicted a crash any operator can reproduce by
+hand. Defect 3 was caught because the run that passed was the run that said nothing.
+
+---
+
+## The second correction: 1,763 "ambiguous" edges are 222 ids, and 90 of the 2,702 duplicates are packages
+
+The incoming-edge brief names its worst case: *"A TARGET THAT RESOLVES TO MORE THAN ONE
+PUBLISHED SYMBOL. The reverse walk picks one by a rule nobody chose."* The audit measures
+it — `uses` **1,461** edges whose target is published by >1 file, `contains` **302** whose
+source is. `protobuf-duplicate-id-provenance.mts` takes that apart, because a count of
+1,763 is not yet a finding. It can be three different things.
+
+| class | count | what it is |
+|---|---|---|
+| package ids | **90** | `metadata.isProtoPackage`. A package is a **namespace**, and N files declaring `package X;` is correct protobuf. Widest: `proto2_unittest <- 37 files`. Nothing is ambiguous. |
+| declaration ids, one declaration text | **2,390** (91.50%) | the same declaration copied. Widest: `helloworld.Greeter.SayHello <- 8 files`. |
+| declaration ids, **more than one** declaration text | **222** (8.50%) | two genuinely different declarations under one fully-qualified name |
+
+**The discriminator is the declaration's bytes, not the file's.** `range.startIndex` is the
+first non-comment child's start (`real-protobuf-analyzer.ts:204`), so slicing
+`content[startIndex..endIndex]` excludes the license header and the doc comment. That is
+the whole difference between the four `helloworld.proto` copies, and classifying by
+whole-file bytes would have reported **1,169** divergent ids and called **947** of them
+collisions when they are one declaration with four license headers.
+
+| measurement | value |
+|---|---|
+| corpus / files read / failed | 821 `.proto` in 18 repositories / **821 / 0** |
+| symbols seen / with an id / with no usable byte range | 41,956 / **41,956 / 0** |
+| distinct published ids | **38,551** |
+| ids published by >1 file | **2,702** |
+| — by whole-file bytes: one text / more than one | 1,443 / **1,169** |
+| — by DECLARATION bytes: one text / more than one | **2,390 / 222** |
+| declarations duplicated across **>1 repository** | **1,601** (61.29%) |
+| duplicated **within one** repository | **1,011** (38.71%) |
+
+38,551 and 2,702 match `protobuf-incoming-audit.mts` exactly, from an instrument that
+shares no code with it.
+
+### Edge attribution — the number the graph actually walks
+
+Every endpoint of all 55,941 edges, looked up in the class map. This reconciles to the
+unit with `protobuf-census.ts`, which is the check that it was computed from the right
+population: `uses` 26,550 = 13,275 × 2; `imports` 3,122 = 1,561 × 2; `contains` 82,200 =
+41,100 × 2, and 41,100 is the census's analyzer-direct 40,098 **plus the 1,002** the
+shared pipeline drops on name length.
+
+| type | endpoints | unique | package | sameDecl | diffDecl | notPublished |
+|---|---|---|---|---|---|---|
+| `uses` | 26,550 | 21,288 (80.19%) | 0 | 4,253 | **956** | **53** |
+| `contains` | 82,200 | 68,252 (83.03%) | **3,361** | 8,361 | **2,226** | 0 |
+| `imports` | 3,122 | 0 | 0 | 0 | 0 | **3,122 (100%)** |
+| `exports` | 8 | 0 | 0 | 0 | 0 | **8 (100%)** |
+| `overrides` | 2 | 2 | 0 | 0 | 0 | 0 |
+
+Three things fall out of that table, and they answer three of the brief's deliverables.
+
+**C — external versus never indexed, kept apart.** `imports` and `exports` are
+**3,130 endpoints, 100% module paths, 0 missed declarations.** That is external by
+design — both endpoints of a cross-file module edge are paths, not symbols — and it is the
+same convention `real-css-analyzer.ts` and `real-dart-analyzer.ts` use. `contains`' 3,361
+`package` endpoints are the file's `package` holding its top-level declarations, by
+design. The genuine analyzer-side residue is `uses`: **53** endpoints naming nothing
+published, which is the incoming audit's `unbound 49 + hopeless 4` from an independent
+walk. That is the whole of it.
+
+**B — the ambiguity, closed as far as it can be.** 91.50% of the duplicated declarations
+publish **one** declaration text, so there is nothing to disambiguate: the edge already
+carries the fully-qualified id, and every copy is that same declaration. For the remaining
+**222**, protobuf's identity *is* the fully-qualified name, and two upstream releases both
+declare it, so **no analyzer-side rule can separate them** — the ambiguity is in the
+corpus's namespace, not in the resolution logic. The mitigation belongs in the consumer
+layer, which the brief assigns elsewhere. Naming the files rather than the count:
+
+| file declaring a genuinely-ambiguous id | id-mentions | repositories |
+|---|---|---|
+| `descriptor.proto` | **318** | **4** |
+| `raft.proto` | 82 | 2 |
+| `type.proto` | 48 | 2 |
+| `ruby_generated_code_proto2.proto` | 28 | 1 |
+| `ruby_generated_code.proto` | 28 | 1 |
+| … 29 distinct filenames in total | | |
+
+Different releases of the same well-known file vendored into different repositories:
+`kubernetes/third_party/protobuf`, `kong/spec/fixtures/grpc`,
+`dart-sdk/…/protobuf_handler/protos`, and `pb-reference/src/google/protobuf` each ship a
+`descriptor.proto`, and an editions-era one declares a different `FeatureSet` and
+`Edition` from a 3.x one. `protoc` would reject any compilation unit holding two of them;
+each is a correct file in its own right.
+
+### Within-file edge redundancy — the number that was 4,061 and should have been 0
+
+Measured because the first version of this probe reported **4,061** redundant edges, and
+every one of those numbers was wrong for a reason worth recording.
+
+| measurement | value |
+|---|---|
+| byte-identical including metadata — **the same edge emitted twice** | **0** |
+| same ends + line, differing **only** in metadata | **38** — all `uses` |
+| same ends, **different** line | **7** — all `imports` |
+
+The 38 are an rpc whose request and response are the same message: the analyzer writes
+`metadata.role` of `rpcRequest` and `rpcResponse` on the two edges
+(`real-protobuf-analyzer.ts:974`), so they are two facts. The 7 are one file —
+`nvim-treesitter/tests/query/highlights/proto/test.proto` has **8** statements importing
+`github.com/gogo/protobuf/gogoproto/gogo.proto`, so 8 edges at 8 lines is correct.
+
+### Five defects in this probe, each of which printed a confident wrong number first
+
+| # | the defect | the wrong number it printed |
+|---|---|---|
+| 1 | the corpus walk also skipped `vendor` | **686 files** against the census's **821** — docker's 135 vendored protos, gone |
+| 2 | no package/declaration split | `proto2_unittest <- 37 files, 37 distinct hashes` as its widest "collision" |
+| 3 | the dedup key could not see `metadata` | **1,074** redundant `uses` that are 1,074 rpc request/response pairs |
+| 4 | the dedup sets lived for the whole **corpus**, not per file | **3,018** redundant `contains` — `descriptor.proto` vendored 4 ways, each copy emitting the same edge at the same line |
+| 5 | the key read `r.line`; the field is `line_number` (`src/ast/types.ts:143`) | a "same ends, different line" column reading **0 by construction** |
+
+Defect 4 was caught by an independent per-file walk that measured 0 redundant `contains`
+edges — the disagreement between two instruments is what surfaced it. Defect 5 was caught
+by noticing that a column which can only ever be 0 is not a measurement. Both are the
+pass-10 lesson (`6,203` phantom doublings) arriving again in a different instrument.
+
+---
+
+## Pass 15 gate table
+
+| Command | Result |
+|---|---|
+| `npx tsc --noEmit` | **no diagnostics** |
+| `npx tsx script/m14/protobuf-census.ts` | 821 ok / 0 fail; analyzer-direct **41,956 / 55,941**; through `parseFile` 41,902 / 54,863; **0** empty names / bad kinds / `unknown` / self-loops; **0** edges under 0.7 |
+| `npx tsx script/m14/protobuf-construct-probes.mts` | all 5 rulings **0**; `instantiates` **0/0**; 94 observed node types; `uses` construct rows 13,275 / 40,098 / 1,561 / 4 / 1 |
+| `npx tsx script/m14/run-fixtures.ts --lang protobuf` | **10 pass / 0 fail** |
+| `npx tsx script/m12/verify-regex-census.ts` | **PASSED**, 0 protobuf rows |
+| `npx tsx script/m14/tmp/protobuf/probe/mutant-sweep.mts` | **30 caught, 0 survived** |
+| `npx tsx script/m14/firing-check.ts --files 120 protobuf` | **3/10 fired, 2,069 edges, 10/120 files**, 0 degraded |
+| `npx tsx script/m14/ontology-coverage-gate.ts protobuf` | **exit 1** — `emitted 5/10 ruled-sound 3 FALSIFIED 2`, both rows the missing `differential.ts` `LANGS` entry |
+| `npx tsx script/m14/protobuf-ruling-table-proof.mts` | run (c) **exit 0** — `emitted 5/10 ruled-sound 5 FALSIFIED 0` |
+| `npx tsx script/m14/protobuf-incoming-audit.mts` | 8,524 tracked / 120 offered / **10 on disk**; 38,551 ids; **96.27%** with an inbound edge |
+| `npx tsx script/m14/protobuf-duplicate-id-provenance.mts` | 821 files / 41,956 symbols; 38,551 ids; 2,702 duplicated = **90 package + 2,390 one-declaration + 222 multi-declaration**; within-file redundancy **0** |
+| `npx tsx script/m14/protobuf-runner-probe.mts` | 1,194 files walked; 15 with a `__dirname` identifier; **bun 15/15 start, tsx 7/15** |
+| `npx tsx script/m14/protobuf-doc-truth-proof.mts` | A selftest **12/12** exit 0; B this lane **1 analyzers, 0 findings, PASS** exit 0; C whole tree exit 1 with **0 protobuf rows** |
+| `bun run script/m14/verify-honesty.ts` | exit 6, 24 failures tree-wide; **0 name a protobuf file** |
+
+## §8 items — one is WITHDRAWN as a blocker, one is unchanged, one is new
+
+**WITHDRAWN. The nine `__dirname` files are not blocked.** Measured: **15 of 15 start
+under `bun run`**, the runner their own USAGE blocks name; 8 of 15 crash under
+`npx tsx`. The §8 item asking for nine rewrites is downgraded from *the gate cannot run*
+to *these files are not portable to Node ESM*, and the fix is the same one line each:
+`path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..")`.
+`verify-js-census.ts` and `verify-orphaned-mutants.ts` in the same directory already do
+this and run. Not edited here: shared machinery.
+
+**UNCHANGED, re-confirmed at HEAD, and it is the one that matters most:**
+
+> **`src/ast/parallel-indexer.ts:2164-2165`** — `insertSymbol` still carries TWO
+> `VALUES` clauses (31 placeholders then 30). Every batch throws
+> `near "VALUES": syntax error`, **0 symbols are stored**. Laptop C is building the
+> incoming resolution layer and the schema work on top of a store that accepts no
+> symbols.
+
+**NEW, and it is an instrument report rather than a language one:**
+
+> **`script/m14/verify-doc-truth-emissions.ts` reads its summary from a stream that
+> `execFileSync` drops.** It prints the verdict line with `console.error`, so any harness
+> that captures stdout alone reports "(no summary line)" on exactly the runs that
+> **passed**. `protobuf-doc-truth-proof.mts` had this bug and it is the shape a CI wrapper
+> would have. Worth a note in the gate's USAGE block, or the line moved to stdout.
+
+## Declared limitations, pass 15
+
+- **The 222 genuinely-ambiguous ids are not adjudicated, and cannot be from this lane.**
+  Their ambiguity is two upstream releases declaring one fully-qualified name; protobuf's
+  identity is that name. This pass classified them and named the files. It did not
+  disambiguate them and does not claim a rule that would.
+- **The declaration-level hash is a byte slice, not a parse.** Two declarations differing
+  only in a trailing comment or in whitespace hash as **different**, which over-counts
+  divergence — the conservative direction, since it inflates the class a reader should
+  worry about. The 222 is an upper bound on genuine divergence, not a point estimate.
+- **`sameDecl` under-counts too, in the other direction.** If two files declare the same
+  name with the same bytes but different *meanings* because the same text is compiled
+  under different `import` roots, this probe cannot see it: it compares declarations, not
+  name binding.
+- **Id provenance is the analyzer-direct population**, not production. pool-worker's symbol
+  projection drops per-symbol `metadata`, so `metadata.id` does not survive it. Every
+  figure above is labelled, and it reconciles with the census's analyzer-direct column.
+- **The arbiter's own `EMITTED` edge counts still print with no band.** Measured again
+  today across three runs in one process: `uses` 13,275 / 13,275 / 13,267. Pass 14's item
+  stands unchanged.
+- **The parse band is a range and this pass did not narrow it.** Through-`parseFile`
+  figures today are 41,902 symbols / 54,863 edges, inside pass 14's 41,882–41,955 /
+  54,833–54,939. One `expr.proto` parse was lost on this run, as on every run.
+- **This pass changed no analyzer code**, and three of its four findings were wrong
+  measurements this lane had already written down. That is the same ratio pass 14
+  reported and it is the reason the probe battery exists: an instrument that agrees with
+  nothing cannot be caught, and one that agrees with the wrong thing is worse.
