@@ -180,6 +180,21 @@ console.log(`C  two-arg only:   no cap          AND  detect(abs, text)      ${C.
 console.log(`D  one-arg + cap:  size <= 512KB    AND  detect(rel)            ${D.length}`)
 console.log("--------------------------------------------------------------------------------------------------\n")
 
+// THE CORPUS UNDER RULE A — the census/gate set, by repository. Printed because a
+// per-language verdict is only as good as the draw behind it, and "1,255 files" does not
+// say whether that is 79 varied stylesheets or one framework's release directory.
+const repoCount = new Map<string, number>()
+for (const r of A) repoCount.set(r.repo, (repoCount.get(r.repo) ?? 0) + 1)
+const ranked = [...repoCount.entries()].sort((x, y) => y[1] - x[1] || (x[0] < y[0] ? -1 : 1))
+console.log("THE ADMITTED CORPUS BY REPOSITORY (rule A — what every census figure here is over)")
+console.log("--------------------------------------------------------------------------------------------------")
+for (const [r, n] of ranked) console.log(`  ${String(n).padStart(5)}  ${r}`)
+console.log("--------------------------------------------------------------------------------------------------")
+const top5 = ranked.slice(0, 5).reduce((s, [, n]) => s + n, 0)
+console.log(`  ${String(A.length).padStart(5)}  TOTAL across ${ranked.length} repositories`)
+console.log(`  the 5 densest hold ${top5} of ${A.length} files (${Math.round((100 * top5) / A.length)}%)`)
+console.log()
+
 console.log("A vs B — the difference the supervisor's number and this lane's number come from")
 console.log(`  in A not in B: ${only(aKeys, bKeys).length}`)
 console.log(`  in B not in A: ${only(bKeys, aKeys).length}`)

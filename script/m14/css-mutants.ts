@@ -362,4 +362,66 @@ export const CSS_MUTANTS: Mutant[] = [
       }),
     }),
   },
+  {
+    id: "css/import-name-taken-from-any-line-of-the-recovered-statement",
+    language: "css",
+    defectClass: "fabricated-relationship",
+    description:
+      "FABRICATION CLASS, and the guard half of pass 10's `@import` fix. `findImportNameNode` takes a direct `string_value` / `call_expression` child first, and failing that the first such node AT ANY DEPTH whose row equals the `@import` KEYWORD's own row. The row test is load-bearing and the mutant removes it: every quoted span in the file becomes a module the stylesheet imports. The shape it reproduces is measured on the corpus — `Documenter.jl/assets/html/scss/bulma/elements/button.sass` has an `import_statement` node spanning L2..L50 with ELEVEN `string_value` descendants, one at L2 (the real module) and ten at L47 (a `$breakpoints` map's \"mobile\", \"small\", \"normal\", \"medium\", \"large\", \"tablet-only\", ...). An unguarded traversal reaching those ten publishes ten `imports` edges asserting that this partial pulls in ten stylesheets it never names, and `imports` is the type that drives module resolution and the advice `bb_migrate` gives, so the cost lands on refactoring. Caught by css/recovered-import-shape-is-an-import, whose `$map: ( \"a-key\": 1, \"b-key\": 2, )` block puts both decoys INSIDE the `import_statement` node that spans L13..L19, and whose `forbidRelationships` rows refuse `imports` targeting `a-key` and `b-key`.",
+    transform: (r: any, source?: string) => {
+      const rels: any[] = r.relationships ?? []
+      if (typeof source !== "string" || source.length === 0) return r
+      const already = new Set(
+        rels.filter((x: any) => String(x.type).toLowerCase() === "imports").map((x: any) => String(x.target)),
+      )
+      // The unguarded search's reach: every `"…"` span in the file, minus the ones already
+      // published. Pure-String scan — no pattern over raw text anywhere in this lane.
+      const quoted: string[] = []
+      for (let i = 0; i < source.length; i++) {
+        if (source.charAt(i) !== '"') continue
+        let j = i + 1
+        while (j < source.length && source.charAt(j) !== '"' && source.charAt(j) !== "\n") j++
+        if (j >= source.length || source.charAt(j) !== '"') continue
+        const span = source.slice(i + 1, j)
+        if (span.length > 0 && !already.has(span)) {
+          already.add(span)
+          quoted.push(span)
+        }
+        i = j
+      }
+      if (quoted.length === 0) return r
+      const host = rels.find((x: any) => String(x.type).toLowerCase() === "imports")
+      const from = host?.metadata?.importSource ?? host?.source ?? ""
+      return {
+        ...r,
+        relationships: [
+          ...rels,
+          ...quoted.map((t) => ({
+            type: "imports",
+            source: from,
+            target: t,
+            confidence: 1,
+            metadata: { cssSpecific: true, evidenceClass: "import_based", isCssImport: true, isRowGuardDropped: true },
+          })),
+        ],
+      }
+    },
+  },
+  {
+    id: "css/import-name-published-with-its-quotes",
+    language: "css",
+    defectClass: "wrong-payload",
+    description:
+      "PAYLOAD CLASS on the same edge, and the bug a new branch invites. The recovered path returns a `string_value` NODE, and a node's text still carries its quotes; `unwrapUrl` is what turns `\"../utilities/mixins\"` into `../utilities/mixins`. A branch that forgets that call publishes the quoted spelling, which is a DIFFERENT string from the one every other language's import target uses and a different graph node from the unquoted one — so the same partial becomes two nodes and the edge binds to neither. The mutant rewrites every `imports` target to its quoted form, which is the shape of that mistake. Caught by css/recovered-import-shape-is-an-import, whose `forbidRelationships` rows refuse the three quoted spellings, and independently by css/namespace-uri-is-not-an-import, whose `expectRelationships` row requires `target: theme.css` unquoted.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => {
+        if (String(x.type).toLowerCase() !== "imports") return x
+        const t = String(x.target ?? "")
+        if (t.length === 0) return x
+        if (t.charAt(0) === '"') return x
+        return { ...x, target: `"${t}"` }
+      }),
+    }),
+  },
 ]
