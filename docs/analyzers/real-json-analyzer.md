@@ -622,3 +622,22 @@ whole-population differential measures them — that is the instrument this doc 
 allowlist at `script/m14/differential.ts` (~line 23153). §8, so it is reported, not
 applied. Until it lands, this lane's canonical row reads 0% and 27,828 MISSING, and the
 number in this doc comes from a different harness.
+
+**The shared gate now says the same thing independently**, which is better evidence than this
+lane extracting an expression out of a shared file and evaluating it. `script/m14/verify-label-coverage.ts`
+is built for exactly this question — *"an emitted label the allowlist drops is compared by
+nothing"* — and it names this lane without being asked:
+
+```
+| json | terraform | 25 | 233 | 0 | **contains** (233) | — |
+      - json/contains: 233 edges unaudited
+
+FAIL — 31 undeclared gap(s) across 18 lane(s); 8573 edges compared by nothing.
+```
+
+It reports one dropped label for this lane rather than six because its json corpus is
+`terraform`, and `contains` is the only one of the six that terraform's json files actually
+exercise — the other five do not occur there, so there is nothing to drop. The finding is the
+same finding, measured twice: by the lane's own allowlist evaluation, and by a shared gate that
+exists to catch it. The `31 gaps across 18 lanes / 8,573 edges` total is the fleet-wide size of
+the same defect and is not this lane's to fix.
