@@ -1694,6 +1694,166 @@ attributed to the thing being measured.
 corpus.** They are not deleted, because they are what the falsified ruling was
 measured against, and a ruling whose before-state is erased cannot be checked.
 
+#### Session-3 re-verification, 2026-10-04: the supervisor's OWN instruments, run at full corpus
+
+The two passes above re-ran **this lane's** instruments. This one re-ran the
+**supervisor's shared** instruments against this analyzer, because a lane that only
+re-runs its own instruments is measuring itself with its own ruler. Analyzer sha256
+`9d9ee478e3295c28`, verified on disk before any instrument ran and unchanged after
+every one of them. Artifacts: `validation/m14/measurements/nim/session3-*`.
+
+**`script/m14/firing-check.ts` is not on this branch.** It is absent from
+`analyzer/NIM` and from `origin/main` and exists only in the unpushed local base
+`analyzers/ontology-laptop-b`, 205 commits ahead of this branch's merge-base. It was
+run read-only from a `/tmp` copy with its two `src/` imports rewritten to absolute
+paths; **the script is not committed here** (§8). Blob
+`82361438966c8ab3252db065adc2a303acd4fff4`. Artifacts
+`session3-firingcheck-{120,full}.{txt,json}`.
+
+| sample | fired | edges | degraded | verdict |
+| --- | --- | --- | --- | --- |
+| `--files 120` (the file's own documented default) | **8/10** | 4,247 | 0 | `implements`, `overrides` absent |
+| `--files 6063` (the whole corpus) | **10/10** | **267,297** | 0 | all ten fire |
+
+**The 8/10 is a property of the sample, and it is worth stating precisely because the
+number a reader meets first is the smaller one.** `filesForLanguage` takes a stride of
+`floor(6063/120) = 50` over the repo-by-repo concatenation, so the 120 files contain
+roughly 30 from `nimony` — and every one of the 47 `implements` edges lives in
+`nimony`'s concept test suite, in one directory a 1-in-50 stride does not land in.
+`overrides` is receiver-qualified `Receiver.method`, and the 67 edges sit in a
+handful of `nim/lib/pure` modules that the same stride skips. **Nothing about the
+analyzer changed between the two rows**; only how many files were walked. A lane
+verdict read off a 120-file stride would have recorded two of this language's ten
+types as non-firing, and both would have been wrong.
+
+**At full corpus every one of `firing-check`'s ten per-type counts matches this lane's
+own census to the digit** — `calls` 118,261, `uses` 45,664, `contains` 29,362,
+`imports` 13,364, `references` 56,445, `exports` 617, `extends` 627, `implements` 47,
+`overrides` 67, `instantiates` 2,843, total **267,297**, symbols **110,076**. Three
+instruments that share no counting code — this lane's census, its re-run, and the
+supervisor's arbiter — now agree on 267,297 and on 110,076. Artifacts
+`session3-1w-census.{txt,json}`, `session3-firingcheck-full.{txt,json}`.
+
+**Three defects in that shared script, measured and reported rather than fixed (§8).**
+
+1. **The per-type `files` column is structurally always 1.** `filesByType` is declared
+   at line 334 *inside* the per-file loop, and line 380 — which is inside the same
+   loop, which closes at 381 — does `res.types[type].files = set.size`. The set holds
+   only the current file, so `set.size` is 1 and it overwrites the running total on
+   every iteration. Measured: all ten types report `files: 1` over 6,063 files. Fix:
+   hoist `filesByType` to per-language scope beside `res`, and move line 380 to after
+   the loop closes at 381.
+2. **`analyzerDigest` cannot find any analyzer, for any language, ever.** Line 216
+   builds `path.join(here, "..", "ast", …)` where `here` is the script's own directory,
+   `script/m14` — so it resolves to `script/ast/real-nim-analyzer.ts`. The analyzers
+   live at `src/ast/`. `script/ast` does not exist, so the function returns
+   `MISSING:<path>` for every lane, in-tree. It needs `"..", "..", "src", "ast"`.
+   The consequence is worse than the missing digest: line 415 sets
+   `analyzerStableDuringRun = digestBefore === digestAfter`, and two identical
+   `MISSING:` strings compare equal, so the instrument reports `analyzerStableDuringRun:
+   true` **having read no analyzer bytes**. The run in `session3-firingcheck-full.json`
+   carries that `true`, and this document does not rely on it: every digest claim here
+   comes from this lane's own instruments, which hash the analyzer on both sides of
+   the walk and print the verdict. This is the defect commit `614b318e6`
+   (*tie every firing number to an analyzer content hash*) claimed to fix.
+3. **`bothEndsResolveRate` is never computed or emitted.** The file's own header
+   (lines 30–32) promises the rate is "Reported as a count and a rate, because zig
+   measured 759 edges whose source bound to a non-callable symbol while its census
+   read 'dangling 0.00%'". The count is emitted; the rate is absent from the artifact
+   for every type, so a consumer must divide by hand and cannot compare rates across
+   lanes without recomputing them.
+
+A fourth column differs by **definition**, not by defect, and is recorded so the two
+numbers are not diffed as a disagreement: `unknownEndpoints` reads **1** where this
+lane's census reads **8**. `firing-check` increments it only when *neither* end is
+published (`!published.has(src) && !published.has(tgt)`); the census counts any
+endpoint equal to the literal `unknown`. The stricter reading is the more useful one,
+and this lane adopts it.
+
+**`incoming-check` — the direction the reverse walk actually needs.** Run from the
+same base-branch copy on 6 real corpus files spanning 4 repositories
+(`nim/lib/pure/logging.nim`, `nim/lib/pure/unittest.nim`, `nimony/lib/std/math.nim`,
+`nimony/lib/std/tables.nim`, `dom96-jester/jester.nim`, `Aporia/autocomplete.nim`):
+**524 symbols, 0 degraded, 0 parse failures, and all ten types fire inbound** —
+`calls` 683, `references` 255, `uses` 289, `contains` 112, `imports` 61,
+`instantiates` 8, `exports` 9, `overrides` 14, `extends` 5, `implements` 4. **277**
+distinct declarations are named by at least one edge; **184 of 524** are named by none,
+which for independent modules is the expected shape rather than a defect.
+Unresolved: `calls` 342, `references` 125, `imports` 59, `exports` 9, `implements` 1.
+
+**The deliverable-B ambiguity, named per name rather than counted.** **10** target
+names on those 6 files resolve to more than one published symbol: `log` →
+method, macro, function; `colorOutput` → property, function; `testEnded` → method,
+function; `c_fpNormal`, `c_fpSubnormal`, `c_fpZero`, `c_fpNan` → constant, variable.
+Each is one edge the reverse walk attributes to one declaration by a rule nobody
+chose. `ambiguity-split.ts` measures how much of the lane's ambiguity an edge can
+resolve from its own file, and both recorded subtrees reproduce to the digit:
+`nim/compiler` **270 of 50,094 edges = 0.5%** irreducible, `nim/lib/pure` **756 of
+21,235 = 3.6%** (`session3-ambiguity-{compiler,lib-pure}.{txt,json}`). The residue is
+Nim's own: a `const` and a `var` of the same name in one scope, or an overloaded UFCS
+prologue, are two declarations and one name, and no per-file rule separates them. The
+most frequent same-file ambiguous names are `config` (62), `emptyNode` (28), `c` (23),
+`map` (16), `name` (15).
+
+**Deliverable C and D, from `resolution-audit` at 1 worker: 110,076 symbols published,
+54,695 distinct names, and a TREE-ONLY total of 126 edges.** TREE-ONLY is the defect
+column — the target *is* declared on a corpus parse tree and no symbol with that name
+was published anywhere. It is `calls` 19 + `uses` 77 + `contains` 30, and **every other
+type is 0**. As a share of the walk that is **126 of 267,297 edges = 0.047%**. The
+distinction deliverable C asks for is visible per type: `references` and `exports` have
+**zero** TREE-ONLY, and their unresolved mass is `nowhere` (declared on no corpus tree
+at all — external, 1.8% and 24.6%) plus cross-file, which a whole-project index
+resolves. `imports` is 87.5% module-resolvable with 0 TREE-ONLY. On the `compiler`
+subtree the same split reads 654 names / 3,757 edges outside the index universe
+against 134 names / 619 edges on no corpus tree at all.
+
+**Callable declaration recall is 46,960 of 46,971 = 100.0%** of the declarations on
+the parse tree that the run published a symbol for, and the 11 unpublished names are
+`destructor`, `root`, `me`, `super`, `_` — compiler-synthesised names that are not
+user declarations and are the expected residue.
+
+**The reproducibility figure is sharper than the pass above states, and the sharpening
+is the finding.** The pass above concluded this lane's counts are "reproducible to about
+a tenth of a percent at a stated worker count, and not to the digit", on the evidence
+of two runs that differed in fan-out. This pass ran `census.ts` a third time at
+`BB_NIM_WORKERS=1` and it returned **267,297 edges and 110,076 symbols with all ten
+per-type counts identical to session 2's 1-worker walk** — not approximately, to the
+digit. So the spread is not a property of the analyzer at all: **at 1 worker this
+instrument is exact, and the 0.004% figure is entirely the difference between 1 worker
+and 2.** Two walks is a small base for a claim of exactness and this document does not
+generalise from it to other worker counts, which were not re-walked; what it does
+establish is that the residual attributed to "the production path is non-deterministic"
+in *Limitations* 11 is a fan-out effect, and at the fan-out this lane's artifacts were
+taken at, the numbers are stable.
+
+**`incoming-check.ts` on this branch is stale and would misreport this lane.** The copy
+in `analyzer/NIM` still keys its label table on `brain_import` (line 69), which is the
+value `src/ast/types.ts` gives `RelationshipType.Imports` while `src/ast/engine.ts`
+gives the same member `imports`. Analyzers import the enum from `engine`, so a
+relationship row carries `imports`, so **the instrument on this branch would report nim
+`imports` as 0 while the analyzer emits 13,364 of them.** The base branch has already
+fixed this (it accepts both spellings); this branch predates that commit by 205 and
+needs the merge, not a lane edit. §8.
+
+**The two contract obligations that are not about edge counts, re-checked.** The NO
+REGEX obligation: `script/m12/verify-regex-census.ts` **exits 1** — 26 MISSING, 25
+STALE — and the string `nim` appears **zero times** in its entire output; the entries
+belong to css, julia, clean, fsharp, javascript, python, svelte and typescript. The
+committed census records 26 regex usages across 7 files and 43 analyzers scanned, and
+`real-nim-analyzer.ts` is not one of the 7. DERIVATION debt: **0**, re-confirmed — all
+ten types have a `push("<type>")` derivation site in `script/m14/nim-truth-oracle.ts`,
+while `grep -c "nim-truth-oracle\|deriveNimEdges" script/m14/differential.ts` still
+returns **0**, so the shared gate remains silent on this lane for the reason §8
+already records.
+
+**The oracle cross-check reproduces, disagreement included.** 400 of 6,063 files
+(deterministic every-15th), 0 parse failures, 0 oracle throws, **MISSING 3 /
+UNEXPLAINED 26**, 7 of 10 labels with identical counts — the same figures as session 2.
+The 26 unexplained are Nim forms the oracle does not derive and this document names:
+compiler-injected `=destroy` / `=copy` / `=sink` / `=dispose`, the `ctype getClass`
+form, `get procName` / `set procName` accessor pairs, and `$`. The 3 missing are
+`references` → `U`, `Foo` and `T` in two test files.
+
 ## Differential ground truth
 
 Three separate instruments, because the shared one cannot run this lane and the
