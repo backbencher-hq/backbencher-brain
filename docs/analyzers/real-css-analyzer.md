@@ -19,7 +19,7 @@ number — so both are recorded here with the measurements that settle them.
 | `npx tsx validation/m14/census/css-ontology-probe.ts` | 103 node types, 1,255 files / 79 repos, 422 with an ERROR, `var()` **162,470** / 392 files, `@extend` directive **0** / 0, at-keyword **46** / 26, `composes` **0**, `:export` **0**, `@function` declaration **0** | identical | reproduced |
 | `npx tsx validation/m14/census/css-extend-lexability.ts` | **46 / 46 `@extend` keywords inside ERROR nodes**, 0 directives; `ERROR` 32 / `ERROR > ERROR` 8 / `stylesheet > ERROR` 5 / `ERROR > import_statement > binary_expression > ERROR` 1 | identical | reproduced |
 | `npx tsx validation/m14/census/css-overrides-differential.ts` | **exit 0**, 1,255/1,255, 0 degraded; 48 emitted / 48 distinct; oracle 68; **48 agree, 20 MISSING (20 store collisions, 0 real gaps), 0 EXTRA**, `agreement 70.59%` | identical | reproduced |
-| `npx tsx script/m14/differential.ts --lang css --sample 60` | **exit 0**; svelte `tree-truth=85 covered=83 (97.6%) MISSING=2`, **unexplained=1 (2.1%), heuristic=0**; grails-core `477/477`, MISSING=0, **unexplained=0, heuristic=0**; `COMPARED WITH NO TRUTH: overrides (1 comparable, 0 truth)`; `rot 44` | svelte 39/41 `unexplained=0`; grails-core 507/507 (`rot 43`) | **the svelte `unexplained` cell moved 0 → 1, and the probe below says why** |
+| `npx tsx script/m14/differential.ts --lang css --sample 60` | **exit 6**; svelte `tree-truth=85 covered=83 (97.6%) MISSING=2`, **unexplained=1 (2.1%), heuristic=0**; grails-core `477/477`, MISSING=0, **unexplained=0, heuristic=0**; `1 lane(s) COMPARED A LABEL WITH NO TRUTH: overrides (1 comparable, 0 truth)`; `rot 44` | **exit 0**; svelte 39/41 `unexplained=0`; grails-core 507/507 (`rot 43`) | **the svelte `unexplained` cell moved 0 → 1 AND the exit code moved 0 → 6, from the same rotation-dependent fact. Measured below |
 | `npx tsx script/m14/run-fixtures.ts --lang css` | **15 pass / 0 fail**, `fixture baseline gate: no regressions`, `SCOPED run (css of 46 lanes)` | identical | reproduced |
 | `npx tsx validation/m14/census/css-mutant-run.ts` | **27 mutants, 27 CAUGHT, 0 SURVIVED** | identical | reproduced |
 | `npx tsx validation/m14/census/css-admission-diff.ts` | **NEW this pass** — A 1,255 / B 1,266 + 5 absent = 1,271; **sample overlap 27 of 120** | n/a | new §8 item (i) |
@@ -29,27 +29,35 @@ number — so both are recorded here with the measurements that settle them.
 ### The one cell that moved, and why it is a property of the rotating sample
 
 The shared differential's svelte row reads `unexplained=0` at pass 8 (`rot 43`) and
-`unexplained=1 (2.1%)` at pass 9 (`rot 44`). The harness printed the reason on the same run:
+`unexplained=1 (2.1%)` at pass 9 (`rot 44`), **and the process exit code moved with it —
+`0` at pass 8, `6` at pass 9.** The harness printed the reason on the same run:
 
 ```
 [svelte] css: COMPARED WITH NO TRUTH: overrides (1 comparable, 0 truth)
 [svelte] css: … analyzer-edges=47 unexplained=1 (2.1%) … unexplained-by-label: overrides=1
+  1 lane(s) COMPARED A LABEL WITH NO TRUTH — the published coverage for those labels is not coverage:
+    svelte:css  overrides (1 comparable, 0 truth)
 ```
 
 `overrides` is this lane's one emitted type the SHARED oracle does not derive — §8 item
 (c) — so every `overrides` edge in the compared sample is counted `unexplained` by
-construction. Whether the number is 0 or 1 is therefore decided by **whether the rotated
-60-file sample happens to contain an `overrides` edge**, and `rot 44` contains one where
-`rot 43` contained none. Both numbers are the instrument behaving correctly.
+construction, and the harness's **G20 check** (`differential.ts:24025`) sets
+`process.exitCode = 6` whenever a label has real analyzer edges and no truth. Both numbers
+are therefore decided by the same thing: **whether the rotated 60-file sample happens to
+contain an `overrides` edge.** `rot 44` contains one; `rot 43` contained none, which is why
+this lane has an `exit 0` in its own record and a `exit 6` in this one, on one corpus, with
+no code change between them.
 
-**This is not a defect introduced at pass 9, and it is not settled by reading more runs.**
-The coverage of `overrides` is measured by the lane-owned second walker,
-`script/m14/oracles/css-overrides.ts`, over **all 1,255 files**: **48 agree, 20 MISSING of
-which 20 are store collisions and 0 are real gaps, 0 EXTRA**. The shared harness's
-`unexplained` column cannot answer that question and never will, until item (c)'s four
-changes land. So the doc's pass-8 phrasing "`unexplained=0` on both corpora" was a true
-reading of `rot 43` and would have been false on any other rotation; **the honest cell is
-the one above, with `rot` quoted and the overrides share named.**
+**This is the instrument behaving correctly and it is also a DERIVATION finding this lane
+still owns.** G20 exists because four lanes (java, kotlin, php, javascript) reported 0%
+unexplained while comparing edges against nothing, and the fix was to make the hole fail the
+run. For css the hole is item (c) and it is **1 comparable edge out of 47 on this
+rotation** — this lane's `overrides` census is 48 edges in 7 files of 1,255, so most
+rotations will not draw one and the run will be green. **A green differential on this lane
+is therefore not evidence that `overrides` is covered; the lane-owned walker is.** Over all
+1,255 files, `script/m14/oracles/css-overrides.ts` reports **48 agree, 20 MISSING of which
+20 are store collisions and 0 are real gaps, 0 EXTRA** — the 0 EXTRA being the number that
+matters, since it is the fabrication column.
 
 ### 73,369 versus 47,667: two instruments, two corpora, 27 files in common
 
@@ -663,7 +671,7 @@ recorded under §8 rather than acted on.
 | `npx tsx validation/m14/census/css-ontology-probe.ts` | 103 node types, 1,255 files / 79 repos, 422 with an ERROR, `var()` **162,470** / 392 files, `@extend` directive **0** / 0, at-keyword **46** / 26 | identical | reproduced |
 | `npx tsx validation/m14/census/css-extend-lexability.ts` | **46 / 46 `@extend` keywords inside ERROR nodes**, 0 directives, ancestor chains `ERROR` 32 / `ERROR > ERROR` 8 / `stylesheet > ERROR` 5 / `ERROR > import_statement > binary_expression > ERROR` 1 | identical | reproduced |
 | `npx tsx validation/m14/census/css-overrides-differential.ts` | **exit 0**, 1,255/1,255, 48 emitted, **48 agree / 20 MISSING (20 store collisions, 0 real gaps) / 0 EXTRA**, `VERDICT: no analyzer defect` | identical | reproduced |
-| `npx tsx script/m14/differential.ts --lang css --sample 60` | **exit 0**, `unexplained=0` and `heuristic=0` on both corpora, **MISSING=2** (the pinned `@namespace` rows); svelte 39/41, grails-core **507/507** (`rot 43`) | svelte 39/41, grails-core 487/487 (`rot 42`) | reproduced; the `rot` moved, and the row counts moved with it exactly as pass 7 predicted |
+| `npx tsx script/m14/differential.ts --lang css --sample 60` | **exit 0**, `unexplained=0` and `heuristic=0` on both corpora, **MISSING=2** (the pinned `@namespace` rows); svelte 39/41, grails-core **507/507** (`rot 43`) | svelte 39/41, grails-core 487/487 (`rot 42`) | reproduced; the `rot` moved, and the row counts moved with it exactly as pass 7 predicted. **Pass 9 corrected the reading of this row: the `exit 0` and the `unexplained=0` are properties of the ROTATION, not of the lane — at `rot 44` the same command on the same corpus exits 6 with `unexplained=1`, because G20 fires when the rotated sample happens to contain an `overrides` edge. See "PASS 9" above** |
 | `bun run script/m14/run-fixtures.ts --lang css` | **15 pass / 0 fail**, `fixture baseline gate: no regressions` | identical | reproduced |
 | `BB_MUTANT_ONLY="css/" bun run script/m14/mutate-analyzer.ts` | **14 mutants, 14 CAUGHT, 0 surviving** (filtered 1,753 → 14) | identical | reproduced |
 | `npx tsx script/m12/verify-regex-census.ts` | `real-css-analyzer.ts` in **neither** MISSING nor STALE; **lane count 0** | identical | reproduced |
@@ -1409,6 +1417,17 @@ its allowlist comparison runs over four labels, and the wiring is §8 item (c). 
 the same agent that wrote the analyzer, outside the milestone's own harness, is weaker evidence
 than being inside that harness, so this entry stays open at 1 rather than being closed on the
 strength of a script this lane also owns.
+
+**Pass 9 measured what this finding costs the lane in exit codes, and it is not always
+visible.** `differential.ts:24025` sets `process.exitCode = 6` whenever a label has real
+analyzer edges and no truth, so `npx tsx script/m14/differential.ts --lang css --sample 60`
+**exits 6 at `rot 44` and exits 0 at `rot 43`** on one corpus with no code change between
+them — because the label has to be IN the rotated 60-file sample to be counted, and
+`overrides` lives in **7 files of 1,255**. So this lane's differential is **green most of
+the time for a reason that has nothing to do with coverage**, and the only cell in that
+harness that speaks to `overrides` is one that a reader learns to ignore. That is the
+strongest argument for item (c) that this lane has produced, and it is an argument about a
+gate a reader trusts, not about a number in this file.
 
 The oracle this needs is written out under "Reported, not edited" below so it can be
 implemented without re-deriving it.
