@@ -672,6 +672,40 @@ sha256 `9d9ee478e3295c28` unchanged on both sides of the walk
 | `implements` | **47** | **47** | **0** | 47 |
 | verdict | `emitted 10/10` | `emitted 10/10` | — | — |
 
+**A THIRD arbiter run, at ONE worker, and the arbiter's own spread goes to zero.**
+Re-run 2026-10-04, 887s, `BB_NIM_RULED_WORKERS=1`, same analyzer blob
+(`validation/m14/measurements/nim/session7-ruled-gate.txt`):
+
+| type | run 1 (8 workers) | run 2 (2 workers) | **run 3 (1 worker)** | 1-worker census | run 3 vs census |
+| --- | --- | --- | --- | --- | --- |
+| `calls` | 118,242 | 118,133 | **118,261** | 118,261 | **0** |
+| `uses` | 45,656 | 45,573 | **45,664** | 45,664 | **0** |
+| `contains` | 29,357 | 29,327 | **29,362** | 29,362 | **0** |
+| `references` | 56,428 | 56,375 | **56,445** | 56,445 | **0** |
+| `imports` | 13,359 | 13,348 | **13,364** | 13,364 | **0** |
+| `instantiates` | 2,836 | 2,841 | **2,843** | 2,843 | **0** |
+| `extends` | 625 | 626 | **627** | 627 | **0** |
+| `exports` | 617 | 617 | **617** | 617 | 0 |
+| `overrides` | 67 | 67 | **67** | 67 | 0 |
+| `implements` | 47 | 47 | **47** | 47 | 0 |
+| verdict | `emitted 10/10` | `emitted 10/10` | **`emitted 10/10`** | — | — |
+
+**All ten agree with the digit, and the three arbiter counts are MONOTONE in fan-out
+where the previous two runs were not.** 8 → 2 → 1 workers gives `calls`
+118,242 → 118,133 → **118,261**: the 2-worker run reads *lower* than the 8-worker run,
+so run 1 and run 2 were not two samples of one distribution but two different points on
+a curve whose shape depends on how many parses are in flight. Held at one worker, the
+arbiter — a different instrument with its own admitted-file list, its own filter and its
+own probe wiring — reproduces the census exactly on all ten types. That is the strongest
+cross-instrument agreement this lane has measured, and it is only available at the
+fan-out where the WASM heap is not the variable.
+
+**So the 109-edge `calls` spread in the table above is not the arbiter disagreeing with
+itself. It is the arbiter disagreeing with itself at fan-outs where shared code loses
+files.** Three arbiter runs, two of which were recorded in this document as "the
+arbiter's own spread" without that attached, would have read as an instrument with a
+±0.09% noise floor. The noise floor is 0 at one worker and 109 edges at two.
+
 ### Session 5: the digest pin did not cover the entry point, and two arbiter fields are broken
 
 Everything above pins its numbers to the **analyzer** blob `9d9ee478e3295c28`. That is
@@ -1703,11 +1737,13 @@ quoted from an earlier round.
 
 | command | exit | result |
 | --- | --- | --- |
-| `npx tsx script/m14/ontology-coverage-gate.ts nim` | **2** | `corpus: 6063 admitted files`, then `no RULING TABLE for nim`, exit 2. `RULED_BY_LANG` carries `bash`, `json`, `lua`, `toml` and no `nim`. `ruled-gate.ts` supplies the wiring on a copy, and the next row is the verdict |
+| `npx tsx script/m14/ontology-coverage-gate.ts nim` | **1** | session 7, and this row's exit code has MOVED: earlier passes read **2** with `corpus: 6063 admitted files` then `no RULING TABLE for nim`. This pass never reaches the refusal — it prints the header and two `[BB-PARSE-ERR] … memory access out of bounds` lines (`dll/nimhcr_0_6.nim`, `package/stdlib/stdlib.nimble`) and then dies on `[BB-HANG] parser stuck 120s … dll/nimhcr_0_6.nim`. The §8 wiring is unchanged and still the reason the gate would refuse; at 8 workers the shared watchdog now gets there first, so the refusal is no longer the observable outcome. `RULED_BY_LANG` still carries `bash`, `json`, `lua`, `toml` and no `nim` (`session7-arbiter.txt`) |
 | `npx tsx validation/m14/fixtures/nim/ruled-gate.ts` | 0 | the arbiter's own verdict loop on a copy: **`emitted 10/10  ruled-sound 0  FALSIFIED 0  ruled-without-justification 0`**, 255s, `implements EMITTED 47 edges in 4+ files, e.g. nimony/lib/std/math.nim`. Table rows: 0 |
+| `BB_NIM_RULED_WORKERS=1 npx tsx validation/m14/fixtures/nim/ruled-gate.ts` | 0 | session 7, 887s: the same `emitted 10/10  ruled-sound 0  FALSIFIED 0  ruled-without-justification 0`, and **all ten per-type counts identical to the digit with the 1-worker census** — `calls` 118,261, `uses` 45,664, `contains` 29,362, `references` 56,445, `imports` 13,364, `instantiates` 2,843, `extends` 627, `exports` 617, `overrides` 67, `implements` 47. Two instruments, zero disagreement, at fan-out 1 (the three-run table above) |
 | `BB_NIM_WORKERS=1 npx tsx validation/m14/fixtures/nim/census.ts <out>` | 0 | session 6, the reproduction row: 6,063 files, 6,063 parsed, 0 empty names, 0 empty kinds, 0 throws, **110,076 symbols, 267,297 edges**, digest `9d9ee478e3295c28` unchanged on both sides. `session6-1w-census.txt` is byte-identical to `session3-1w-census.txt` on all **112** lines of report body — the two differ in exactly two respects, and both are known: `session3` carried its 14 `[INFO]` lines inline where `session6` routes them to the `.stderr.txt` beside it, and the last line names its own output file. **At the bare default (6 workers) the same script produced no report at all** — exit 1, zero stdout, `[BB-HANG]` naming `nim/tests/dll/nimhcr_0_2.nim` (*Limitations* 8, row 5) |
 | `BB_NIM_WORKERS=1 npx tsx validation/m14/fixtures/nim/resolution-scope.ts <out>` | 0 | session 6: all ten types identical to `session5-resolution-scope.txt`, 78,838 name spellings, intra and wide columns unchanged. This is the instrument behind the corpus-wide column of the verdict table, and its 1-worker edge counts are the ones that table now carries |
 | `npx tsx validation/m14/fixtures/nim/census.ts <out>` (**no env var — `census.ts` hardcoded 6 workers at this commit; `BB_NIM_WORKERS` did not exist yet**) | **1** | 6,063 files, 6,063 parsed, **0** empty names, **0** empty kinds, 0 throws, 110,060 symbols, **267,287 edges**. Clean by the census's own five-part test, so the artifact was written under its own name; the exit 1 is `[BB-HANG]` naming `nim/tests/distinct/tinvalidborrow.nim`, which had already logged `[BB-PARSE-ERR] … memory access out of bounds` in the same run, the only other parse error in the run being `tests/overload/toverl.nim` (*Limitations* 8). This row was labelled `BB_NIM_WORKERS=2` until this pass; the evidence that it was 6 is in the note above the verdict table. **No `BB_NIM_WORKERS=2` census artifact exists anywhere in this branch** — the one 2-worker attempt on record (`3bf212369`) died on `[BB-HANG]` and wrote nothing |
+| `npx tsx validation/m14/fixtures/nim/hang-file-arbitration.ts` | 0 | session 7, the arbiter of the §8 report: all **7** files this lane's walks have been aborted on, parsed ALONE through `parseFile` five times each. **35 of 35 parsed, 0 threw.** 16,683 B over 515 lines total, largest 7,828 B, smallest 90 B. Slowest call **6,511 ms cold / 289 ms warm** against the engine's **120,000 ms** watchdog — 18x headroom; a second run reads 3,275 ms cold, 37x. The named input is not the cause of any of the seven exits (`session7-hang-file-arbitration{,-run2}.txt`) |
 | `npx tsx validation/m14/fixtures/nim/nim-ruled-probe.ts <out>` | 0 | the falsifier, run: `concept_declaration` **337 in 130 files**, `refinement_list` **38**, `is`-in-concept-body 156, guard failures `{argumentList:159, leftNotParameter:143, rightNotIdentifier:5, rightNotLocalConcept:8, selfReference:0}`, **`withRefinesField 38`, hits pushed 51**, 211 node types, raw-parse failures 0. The text probe finds 61 `of`-form sites classified 39 code / 21 comment / 1 string against 38 tree nodes |
 | `npx tsx validation/m14/fixtures/nim/oracle-crosscheck.ts <out>` | 0 | 400 of **6,063** discovered (was 400 of 4,075 — the discovery cap, now removed), every-15th, 400 parsed, 0 failures. **MISSING 3 / UNEXPLAINED 26**, and **7 of the 10 labels agree exactly** including `exports` 12/12 and `implements` 3/3, both of which had no derivation before this pass |
 | `BB_NIM_WORKERS=2 npx tsx validation/m14/fixtures/nim/gap-hunt.ts <out>` | 0 | `extends` accounted **1047 / 1047** (was 941/941), published as `extends` **627**; `object_declaration.inherits` 1,047 occurrences in 403 files. `instantiates` 3,830 occurrences, 844 name a type this file declares, 973 have an edge. `overrides`: 230 methods on the tree, 186 with a readable receiver, **67 published** (recv in-file 67, recv out-of-file 0), receiver-qualified spelling 0 |
@@ -3004,12 +3040,15 @@ quiet machine will cover all 5,227 through the production path.
    | `accent-quoted-endpoints.ts`, 2 workers | **NOT written** — the walk was destroyed | `nim/lib/std/private/oscommon.nim` | `[BB-PARSE-ERR] … memory access out of bounds` |
    | `census.ts`, session 2, `BB_NIM_WORKERS=2` | **NOT written** — the walk was destroyed, and so was the header line | `nim/tests/async/treturn_await.nim` | `[BB-PARSE-ERR] … memory access out of bounds` |
    | `census.ts`, session 6, **default `BB_NIM_WORKERS=6`** | **NOT written** — the walk and the header line were both destroyed | `nim/tests/dll/nimhcr_0_2.nim` | `[BB-PARSE-ERR] … memory access out of bounds` |
+| `ontology-coverage-gate.ts`, session 7, **8 workers** (the shared arbiter, unpatched) | **NOT written** — the gate never reached its verdict table | `nim/tests/dll/nimhcr_0_6.nim` (**90 B, 5 lines**) | `[BB-PARSE-ERR] … memory access out of bounds`; the run's only other parse error was `package/stdlib/stdlib.nimble` |
 
-   **Six runs, six different files, at three worker counts.** That is the whole of
+   **Seven runs, seven different files, at three worker counts.** That is the whole of
    the discriminating observation, and the `ontology-census` row is what makes it a
    count rather than an impression: its named file is in the artifact's own first two
    lines, so it can be checked rather than remembered. One pathological input would
-   name the same file every time.
+   name the same file every time. The last row is also the first one measured rather
+   than inherited, and it is the one that moves this from a pattern to a number — the
+   next paragraph takes it apart.
 
    The fifth row is the one that generalises the defect. The first three still
    produced a digest-pinned artifact that merely exited 1, so a reader had
@@ -3036,16 +3075,43 @@ quiet machine will cover all 5,227 through the production path.
    `nimony/examples/sets_basics`, and three under `nimony/tests/nimony/async/`).
    Seven is what the list contains and seven is what is quoted here, and the named
    hang file is one of them. **The hang file differs on every run at every worker
-   count** — six runs, six
+   count** — seven runs, seven
    files: `ossymlinks.nim`, `tinvalidborrow.nim`, `mlocalpassc.nim`, `oscommon.nim`,
-   `treturn_await.nim`, `nimhcr_0_2.nim` — which is the discriminating observation:
+   `treturn_await.nim`, `nimhcr_0_2.nim`, `nimhcr_0_6.nim` — which is the
+   discriminating observation:
    one pathological input would name the same file every time, so the trigger is
    load-dependent rather than a property of any file. Every number in this document is
    therefore quoted at the worker count that produced it, and **the reproduction
    command for this lane is `BB_NIM_WORKERS=1 npx tsx
    validation/m14/fixtures/nim/census.ts <out>`, not the bare command.**
 
-   So this lane's corpus instruments **exit 1 on results that are finished and
+   **And the named file is not the cause, which the changing name alone could not
+   show.** The observation above is that the named file *changes* between runs.
+   Session 7 adds the other half, by measurement rather than by inference.
+   `validation/m14/fixtures/nim/hang-file-arbitration.ts` takes all seven named files
+   and parses each one ALONE through production `parseFile`, five times, with nothing
+   else running:
+
+   | | |
+   | --- | --- |
+   | named files | **7** |
+   | total size | **16,683 B over 515 lines** |
+   | largest named file | **7,828 B** (`ossymlinks.nim`); smallest **90 B** (`dll/nimhcr_0_6.nim`, 5 lines) |
+   | parses | **35 of 35 succeeded, 0 threw** |
+   | slowest single call | **6,511 ms cold**, 289 ms warm — against the engine's **120,000 ms** watchdog, **18x** headroom (a second run: 3,275 ms cold, 37x) |
+   | warm max across all seven | **289 ms** |
+
+   **`dll/nimhcr_0_6.nim` is 90 bytes and parses in 9 ms.** It is the file the arbiter
+   named as STUCK on session 7, on a run where it had already logged
+   `[BB-PARSE-ERR] … memory access out of bounds`. A 90-byte input cannot exhaust a
+   fixed WASM heap, so "this file is pathological" is not available as an
+   explanation of that exit; and no single-file parse of any of the seven comes within
+   18x of the watchdog. What the probe cannot see is contention — it runs
+   single-threaded by construction — so it does not prove the watchdog is the cause.
+   It does mean the §8 report no longer rests on an inference from the file changing
+   between runs: the named input clears the threshold by a measured margin.
+
+   **So this lane's corpus instruments exit 1 on results that are finished and
    digest-pinned**, and under load one of them lost its entire walk and had to be
    re-run. The message is false on its face — it names a file that threw, not one
    that is stuck, so triage is sent to the wrong file. Reported (§8): the fix is a
