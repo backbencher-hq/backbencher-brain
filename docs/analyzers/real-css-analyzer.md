@@ -491,7 +491,7 @@ ruling cites both instruments rather than resting on the keyword's absence.
 | `npx tsx validation/m14/census/css-ontology-probe.ts` | 103 node types, 1,255 files / 79 repos, 422 with a parse ERROR |
 | `npx tsx script/m14/differential.ts --lang css --sample 60` | **exit 0**. svelte: 60 files, 39/41 truth, 2 MISSING, 24 edges, **unexplained 0 (0%)**, heuristic 0. grails-core: 60 files, **477/477**, 0 MISSING, 367 edges, **unexplained 0**, heuristic 0. Both MISSING are the pinned `@namespace`-as-`imports` over-derivation, not gaps |
 | `bun run script/m14/run-fixtures.ts --lang css` | **15 pass / 0 fail**, `fixture baseline gate: no regressions` |
-| `bun run script/m14/mutate-analyzer.ts css` | **14 css mutants, 14 CAUGHT, 0 surviving** (the runner sweeps every lane; its 6 survivors are all in zig/erlang/clojure) |
+| `bun run script/m14/mutate-analyzer.ts css` | **14 css mutants, 14 CAUGHT, 0 surviving** (the runner sweeps every lane; its 6 survivors are in OTHER lanes — pass 7 re-measured the membership and corrected this parenthetical, which had named zig/erlang/clojure) |
 | `npx tsx script/m12/verify-regex-census.ts` | `real-css-analyzer.ts` appears in **neither** the MISSING nor the STALE list — lane count **0** |
 | `npx tsc --noEmit` | **exit 0** |
 
@@ -639,6 +639,7 @@ unchanged in substance and larger in scope than pass 6 stated it.
 | `npx tsx script/m14/differential.ts --lang css` | **exit 0**, `unexplained=0` and `heuristic=0` on both corpora, 2 MISSING (the pinned `@namespace` rows); svelte tree-truth 41 rows / 39 covered, grails-core **497** rows / 497 covered | reproduced | reproduced; only the rotating sample moved (grails-core 482 → 497) |
 | `bun run script/m14/run-fixtures.ts --lang css` | **15 pass / 0 fail**, `no regressions` | identical | reproduced |
 | `BB_MUTANT_ONLY="css/" bun run script/m14/mutate-analyzer.ts` | **14 mutants, 14 CAUGHT, 0 surviving** (filtered 1,753 → 14) | identical | reproduced |
+| `bun run script/m14/mutate-analyzer.ts` (whole sweep, for the survivors) | **1,745 CAUGHT / 6 SURVIVED**, real exit **2** — **run twice, byte-identical**. The survivors are `java/bare-read-type-attribution`, `groovy/modifier-return-type-loss`, `groovy/ctor-name-revert`, `scala/drop-import-source-rewrite`, `make/swallow-the-rule-after-a-comment`, `php/drop-external-override-guess` — **none in css**, and reported here rather than fixed (§8) | not measured | **corrects pass 5's parenthetical**, which named `zig/erlang/clojure`. That set does not reproduce at this commit, on either of two runs. The membership is a function of other lanes' suites, so it is quoted with the commit rather than as a fixed fact about the harness |
 | `npx tsx script/m12/verify-regex-census.ts` | `real-css-analyzer.ts` in neither MISSING nor STALE; **lane count 0** | identical | reproduced |
 | `npx tsc --noEmit` | exit 0 | identical | reproduced |
 
