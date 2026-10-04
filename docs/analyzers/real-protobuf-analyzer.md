@@ -3457,3 +3457,234 @@ protobuf file; it is not new evidence for the locality hypothesis.
   population goes from 10 to 8,524.
 - **Nothing in this pass changed the analyzer.** `src/ast/real-protobuf-analyzer.ts` is
   untouched, and every emitted-type count reproduces the two previous passes exactly.
+
+# PASS 13 — a claim inside a ruling that nobody had measured, and a 50 GB /tmp leak
+
+Two findings. The first is in this lane's own record: an assertion carried unmeasured
+across twelve passes, and the two rows it was hiding. The second is in shared machinery and
+it is the largest single defect found by any lane in this workstream.
+
+## A ruling asserted a coverage claim instead of measuring it
+
+`script/m14/protobuf-ruled.ts`'s `instantiates` entry argues correctly that protobuf
+declares rather than constructs, and then adds a second sentence:
+
+> "The 10,166 message-TYPED DECLARATIONS the same walk counts are REFERENCES, not
+> constructions … and **every one of them is already emitted as `uses`**."
+
+The first half is an argument and reads correctly. The second half is a coverage claim, and
+it had never been measured. An unmeasured coverage claim inside a ruling is the same defect
+as an unmeasured count anywhere else: it is the shape that makes a settled ruling look
+settled.
+
+`script/m14/tmp/protobuf/probe/message-typed-coverage.mts` measures it, by a
+correspondence rather than a name match. It takes each message-typed `type` node's row from
+the parse tree and each `uses` edge's `line_number` from the analyzer — two sides that
+share no code — and asks whether a declaration at row R has a `uses` edge at row R.
+
+| measurement | value |
+|---|---|
+| `.proto` files on disk corpus-wide | **1,666** |
+| message-typed declarations | **16,207** in 1,199 files |
+| scalar-typed declarations | 27,582 |
+| message-typed declaration rows | 16,204 (3 rows carry 2 declarations) |
+| carrying a `uses` edge at that row | **16,202 — 99.99%** |
+| carrying none | **2 — 0.01%** |
+
+So the claim was true to four decimal places and still needed saying, because the 2 rows it
+missed are the whole of the next finding.
+
+## Both exceptions are the same construct: a custom option naming an extension type
+
+```
+pb-reference/src/google/protobuf/unittest_custom_options.proto:338  option (.proto2_unittest.complex_opt1).foo = 42;
+pb-reference/src/google/protobuf/unittest_custom_options.proto:340  option (.proto2_unittest.complex_opt1).(proto2_unittest.corge).moo = 876;
+```
+
+The parenthesized name in a custom option is an **extension type** the option's value is
+interpreted by, so the file references it. The analyzer reads `option` as metadata and emits
+no edge naming that type. Measured corpus-wide by
+`script/m14/tmp/protobuf/probe/custom-option-refs.mts`:
+
+| measurement | value |
+|---|---|
+| `option` nodes | 17,822 |
+| options naming an extension type | **3,081** (17.29%) |
+| declaration-level (an enclosing symbol exists) | **1,408** — rpc 928, message_body 338, service 80, enum_body 60, oneof 2 |
+| file-level (no enclosing symbol) | 117 |
+| names inside them | 3,088 |
+
+This is a major protobuf construct read nowhere, so it was a GAP and the task is to
+implement it.
+
+## It was implemented, measured, and REVERTED — 0 of 1,531 resolved
+
+The implementation reads the `(` anonymous token among an `option` node's children with the
+node API, takes the dotted name inside it, and emits
+`addRel(enclosingDeclaration, resolveRef(ext, scope), uses, line, { role: "optionType" })`.
+`emitRpc` was also enqueuing its own `option` children, without which the largest bucket
+(rpc, 928 of 1,525) would never have been visited. Resolution went through the analyzer's
+existing `resolveRef`, not a new rule.
+
+The census, same instrument as every other number in this document:
+
+| | before | after |
+|---|---|---|
+| `uses` edges | 13,275 | **14,806** (+1,531) |
+| `uses` resolving at BOTH ends | 9,673 | **9,673** |
+| both-ends rate | 72.87% | **65.33%** |
+
+**All 1,531 new edges resolved at 0%.** They are the exact failure the honesty contract
+names: "an edge the graph cannot walk is a thing the graph asserts that is not there."
+Reverted; `src/ast/real-protobuf-analyzer.ts` is unchanged at HEAD.
+
+### Why they resolve at 0% — a real semantic mismatch, not a bug in the new code
+
+Protobuf addresses an extension field by **its own** fully-qualified name — the package of
+the file declaring it, plus the field name. Verified directly against the corpus:
+
+```
+pb-googleapis/google/api/annotations.proto:28   extend google.protobuf.MethodOptions {
+pb-googleapis/google/api/annotations.proto:30     HttpRule http = 72295728;
+```
+
+`option (google.api.http).get = …` is correct: the file's package is `google.api` and the
+field is `http`. This analyzer publishes that field as **`google.protobuf.MethodOptions.http`**
+— under the EXTENDED TYPE's scope — so the reference misses it by construction. An option
+reference is not an ordinary scoped type reference and cannot be resolved by `resolveRef`.
+
+### What the fix would be worth, measured before proposing it
+
+`script/m14/tmp/protobuf/probe/extension-name-fix-price.mts` asks the parse tree, per file,
+whether a package-qualified extension name is declared inside an `extend` block — the
+declaration protoc would resolve to.
+
+| measurement | value |
+|---|---|
+| `extend` blocks in the corpus | **724** |
+| fields inside them | **996** |
+| distinct `package.field` extension names | **486** |
+| option extension references | 3,088 |
+| would bind if extensions were published as `package.field` | **90 — 2.91%** |
+| would still not bind | **2,998 — 97.09%** |
+
+The 2,998 name extensions this corpus does not hold: `google.api.http`,
+`grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag`,
+`custom_options.v1.domain`, and 2,995 more. The corpus declares 486 extension names and the
+options reference 3,088 names, so the overlap is small — **the missing files are the sparse
+checkouts again**, the same cause as pass 12.
+
+**Verdict: not emitted, and the reason is a number.** Republishing extension fields under
+their protobuf name is a real improvement, but it would make 2.91% of option references
+walkable and move the published id of every extension field — an endpoint of `contains`
+edges, and therefore of `bb_impact` and every reverse walk — for a 2.91% return. It is
+reported as a priced GAP for the supervisor to schedule against a corpus that holds the
+grpc-gateway and googleapis extensions, not taken.
+
+## The harness row that made this readable as a failure — fixed
+
+`script/m14/protobuf-construct-probes.mts` printed its `instantiates` row with
+`count: 10166`, message-typed DECLARATIONS, and an overturn sentence reading "message-typed
+declarations > 0 while the analyzer emits no `instantiates` relationship". Against a row
+reporting the type as ruled, that reads as **"the construct occurs 10,166 times"** — which
+is false, and which contradicts the ruling's own (correct) probe. This pass fell for it
+before checking.
+
+The row now counts the construct the ruling turns on — a `block_lit` whose ancestor chain
+reaches no option/constant — and reads **0 in 0 files**. The 10,166 is retained under the
+key `messageTypedDeclarations_are_references_not_constructions`, and the arithmetic is now
+self-checking: `aggregateLiterals_all_scopes 1909` = `aggregateLiterals_as_option_or_constant_value 1909` + construct `0`.
+
+## 50 GB of leaked grammar copies in /tmp, from 8 lanes
+
+Running these probes filled the root filesystem to **100%** and every write failed with
+`ENOSPC`. The cause is in shared machinery:
+
+```ts
+// src/ast/engine.ts:700-711
+const procTag = `${process.pid}_${(process.hrtime?.bigint?.() ?? BigInt(0)).toString(36)}`
+const base = "bb-wasm_" + relativePath.replace(/\//g, "_").replace(/\\/g, "_")
+const tmp = path.join(os.tmpdir(), `${base}_${procTag}.partial`)
+const final = path.join(os.tmpdir(), `${base}_${procTag}`)
+fs.writeFileSync(tmp, data)
+fs.renameSync(tmp, final)
+// Best-effort cleanup. Another process may still be reading it, so this
+// deliberately does NOT unlink: the per-process tag already makes an
+// unbounded tmpdir growth the only cost, and deleting a file another
+// process is mid-load on would recreate the original bug.
+return final
+```
+
+Every parser initialization writes a fresh uniquely-named copy of the grammar and never
+removes it. The comment prices the cost as "unbounded tmpdir growth the only cost". **Here
+is that cost:**
+
+| measurement | value |
+|---|---|
+| leaked files | **22,083** |
+| total size | **50 GB** |
+| of which this lane's grammar (protobuf) | 1,704 files |
+| bash 7,051 / zig 3,226 / xml 2,264 / nim 2,116 / sql 1,832 / json 1,701 / css 635 / julia 545 / vue 217 | the rest |
+| root filesystem | **100% full**, 0 bytes available |
+
+This is the accepted cost of the zig lane's truncation fix, which was correct: sharing one
+`/tmp` path let a concurrent reader observe a half-written grammar, and the failure was a
+silently degraded parse. The fix traded a correctness bug for unbounded growth and nobody
+counted the growth.
+
+**A safe fix exists and is not the original bug.** The hazard was *truncating a shared path*,
+not *unlinking a file*. On Linux an unlinked file that a reader already has open keeps
+working — the inode survives until the last close — so a process can unlink its OWN copy
+(`procTag` contains its pid) as soon as `Language.load` has resolved, or on exit. That bounds
+the directory per-process with no cross-process window at all. Even a delayed unlink
+(`setTimeout(..., 60_000)`) is safe for the same reason. `src/ast/engine.ts` is shared and
+this lane does not edit it; **§8.**
+
+`find /tmp -maxdepth 1 -name 'bb-wasm_*' -type f -mmin +10 -delete` recovered **50 GB**
+(100% → 89%), leaving 89 in-flight files alone. Unlinking only files older than 10 minutes
+means no parser was mid-initialization when its own copy went.
+
+## Pass 13 gate table
+
+| Command | Result |
+|---|---|
+| `npx tsc --noEmit` | **no diagnostics** |
+| `npx tsx script/m14/run-fixtures.ts --lang protobuf` | **10 pass / 0 fail** |
+| `npx tsx script/m12/verify-regex-census.ts` | **PASSED** — 0 protobuf rows |
+| `npx tsx script/m14/tmp/protobuf/probe/message-typed-coverage.mts` | **16,202 / 16,204 rows covered (99.99%)**, 2 named |
+| `npx tsx script/m14/tmp/protobuf/probe/custom-option-refs.mts` | 3,081 custom options naming a type, 17.29% of options |
+| `npx tsx script/m14/tmp/protobuf/probe/extension-name-fix-price.mts` | 486 extension names / 3,088 references; fix would bind **90 (2.91%)** |
+| `npx tsx script/m14/protobuf-construct-probes.mts` | `instantiates` row now **0 / 0**; all 5 rulings still **0** |
+| `protobuf-census.ts` with the edge implemented, then reverted | `uses` +1,531, both-ends **9,673 → 9,673**; reverted, census back to 13,275 |
+
+## Files this pass owns
+
+| file | lines | what |
+|---|---|---|
+| `script/m14/tmp/protobuf/probe/message-typed-coverage.mts` | 190 | new: measures the `instantiates` ruling's unmeasured cover claim |
+| `script/m14/tmp/protobuf/probe/custom-option-refs.mts` | 232 | new: prices the custom-option construct and its name resolution |
+| `script/m14/tmp/protobuf/probe/extension-name-fix-price.mts` | 253 | new: prices the id fix before proposing it |
+| `script/m14/protobuf-construct-probes.mts` | +38 / −5 | the `instantiates` row counts the construct, not the references |
+| `script/m14/protobuf-ruled.ts` | +1 / −1 | "every one" → the measured 16,202 / 16,204 |
+
+## Declared limitations, pass 13
+
+- **The row correspondence assumes a `type` node's row equals its field's row.** Verified
+  by an agreement rate rather than trusted: 99.99% of `uses` edges land on a `type` row, so
+  a systematic off-by-one would have shown as a low rate, not as plausible coverage. It is
+  still a positional argument, not an identity.
+- **The corpus for these probes is 1,666 files; the census walks 821.** The census admits
+  18 repositories; the on-disk corpus holds protobuf in more. Every cover number in this
+  pass is over 1,666 files and is therefore not comparable to the census's counts without
+  dividing by roughly two. Pass 13 reports both and names which is which.
+- **The 2.91% fix price depends on the sparse corpus.** With the three checkouts
+  materialized the corpus would declare far more of the 3,088 names, and the return would
+  rise. The number is a floor for this corpus, not for the language.
+- **A partial emission is possible and was not taken.** Emitting the option edge only where
+  it resolves would add 90 walkable edges and leave 2,998 references as a measured
+  non-edge. That is defensible; it was not done because a 90-edge addition is inside the
+  parse-loss band this lane cannot currently distinguish from noise (§ pass 11), so its
+  effect could not be verified as a real change.
+- **The 50 GB cleanup was mine to run; the fix is not.** I deleted only files older than
+  10 minutes and only the `bb-wasm_*` pattern, so no other lane's in-flight parser was
+  touched. I did not change `src/ast/engine.ts`, which is shared.

@@ -143,6 +143,15 @@ const addA = (type: string, describe: string, nodeTypesThatWouldMeanIt: string[]
   const nScalarTyped = { n: 0 }
   const nOption = { file: 0, decl: 0, files: new Set<string>(), ex: [] as string[], custom: 0, customFiles: new Set<string>(), customEx: [] as string[], byScope: new Map<string, number>(), customByScope: new Map<string, number>(), declFiles: new Set<string>(), declEx: [] as string[] }
   const nBlock = { n: 0, byScope: new Map<string, number>(), ex: [] as string[] }
+  /**
+   * The `instantiates` CONSTRUCT, counted separately from message-typed declarations.
+   * `block_lit` is a written message VALUE only when no ancestor is an option or a
+   * constant; under one it is a directive payload or a default. Decided by the
+   * ancestor chain, never by text, so a `{ … }` inside a string or comment cannot
+   * register. Measured at pass 12: 1,909 `block_lit`, 1,909 under `constant`, so
+   * this count is 0 — which is the number the `instantiates` ruling turns on.
+   */
+  const nBlockConstruct = { n: 0, files: new Set<string>(), ex: [] as string[] }
   const nExtend = { n: 0, files: new Set<string>(), ex: [] as string[] }
   const nService = { n: 0, files: new Set<string>(), ex: [] as string[] }
   const nMessage = { n: 0 }
@@ -252,6 +261,23 @@ const addA = (type: string, describe: string, nodeTypesThatWouldMeanIt: string[]
         const scope = n.parent?.type ?? "(none)"
         nBlock.byScope.set(scope, (nBlock.byScope.get(scope) ?? 0) + 1)
         if (nBlock.ex.length < 8) nBlock.ex.push(`${f.label}:${n.startPosition.row + 1} [in ${scope}] ${JSON.stringify(n.text).slice(0, 64)}`)
+        // The CONSTRUCT, as opposed to the directive payload: walk the ancestor chain
+        // and ask whether any node is an option or a constant. Same test, same bound
+        // (8 ancestors), as PROTOBUF_RULED's `instantiates` entry, so this harness and
+        // the ruling can only ever move together.
+        const chain: string[] = []
+        let p = n.parent
+        while (p && chain.length < 8) {
+          chain.push(p.type)
+          if (p.type === "option" || p.type === "constant" || p.type === "field_option" || p.type === "enum_value_option") break
+          p = p.parent
+        }
+        const asOptionValue = chain.some((t) => t === "option" || t === "constant" || t === "field_option" || t === "enum_value_option")
+        if (!asOptionValue) {
+          nBlockConstruct.n++
+          nBlockConstruct.files.add(f.label)
+          if (nBlockConstruct.ex.length < 8) nBlockConstruct.ex.push(`${f.label}:${n.startPosition.row + 1} chain=${chain.join(">")} ${JSON.stringify(n.text).slice(0, 60)}`)
+        }
       } else if (n.type === "type") {
         const inner = namedOfType(n, "message_or_enum_type")[0]
         if (inner) { nMsgTyped.n++; nMsgTyped.files.add(f.label); if (nMsgTyped.ex.length < 8) nMsgTyped.ex.push(`${n.parent?.type ?? "?"}: ${inner.text} (${f.label}:${n.startPosition.row + 1})`) }
@@ -302,13 +328,23 @@ const addA = (type: string, describe: string, nodeTypesThatWouldMeanIt: string[]
   })
   probes.push({
     type: "instantiates", instrument: "B:parse-tree-count",
-    describe: "a declaration that PRODUCES a message-typed value — a field, a map value, a oneof case or an rpc payload whose type is a message rather than a scalar keyword",
-    count: nMsgTyped.n, files: nMsgTyped.files.size, examples: nMsgTyped.ex,
-    probe: "count `type` nodes that contain a `message_or_enum_type` child (a reference, i.e. a message-typed declaration) against those that do not (a scalar keyword). This is the same STRUCTURAL test the analyzer uses, so the count cannot disagree with the analyzer by reading text. Overturn: message-typed declarations > 0 while the analyzer emits no `instantiates` relationship.",
+    describe: "a node that WRITES A VALUE of a message type. Protobuf declares; it does not construct — the schema is the artifact and values arrive at run time in a language this analyzer does not read. The nearest construct the grammar HAS is the aggregate literal `block_lit`.",
+    count: nBlockConstruct.n, files: nBlockConstruct.files.size, examples: nBlockConstruct.ex,
+    probe: "count `block_lit` nodes whose ancestor chain (bounded at 8) reaches no `option`, `constant`, `field_option` or `enum_value_option` — an aggregate under one of those is a code-generation directive's payload or a field default, not a written message value. Decided by the ancestor chain, never by text, so a `{ … }` inside a string or a comment cannot register. OVERTURN: any `block_lit` outside an option/constant value.",
     alsoCounted: {
+      // NOT the construct, and deliberately not in `count`. A field whose type is a
+      // message is a REFERENCE — declaring it creates nothing — and every one of these
+      // is already emitted as a `uses` edge. Pass 12 printed this row with
+      // `messageTypedDeclarations: 10166` in `count` and an overturn sentence keyed on
+      // it, so the table read as "the construct occurs 10,166 times" against a row that
+      // reports the type as ruled. A reader could not tell the two quantities apart. Both
+      // numbers are still here; the label is what was wrong.
+      messageTypedDeclarations_are_references_not_constructions: nMsgTyped.n,
+      messageTypedDeclarationFiles: nMsgTyped.files.size,
       scalarTypedDeclarations: nScalarTyped.n,
-      aggregateLiterals: nBlock.n,
-      aggregateLiteralsByParentNode: Object.fromEntries([...nBlock.byScope.entries()].sort((a, b) => b[1] - a[1])),
+      aggregateLiterals_all_scopes: nBlock.n,
+      aggregateLiteralsByImmediateParentNode: Object.fromEntries([...nBlock.byScope.entries()].sort((a, b) => b[1] - a[1])),
+      aggregateLiterals_as_option_or_constant_value: nBlock.n - nBlockConstruct.n,
     },
   })
   probes.push({
