@@ -3,22 +3,22 @@
   "grammar": "tree-sitter-sql.wasm",
   "grammar_provenance": {
     "upstream": "@derekstride/tree-sitter-sql 0.3.11",
-    "upstream_state": "current on its own upstream as of 2026-09-26; every published alternative was adjudicated and REFUSED (reviews/m60-sql-grammar-l1xnan-047-refused.md \u00a70/\u00a77.3: @l1xnan 0.4.7 and tree-sitter-sql-bigquery 0.8.0 both fail G1 damage / G2 identity / G3 output)",
+    "upstream_state": "current on its own upstream as of 2026-09-26; every published alternative was adjudicated and REFUSED (reviews/m60-sql-grammar-l1xnan-047-refused.md §0/§7.3: @l1xnan 0.4.7 and tree-sitter-sql-bigquery 0.8.0 both fail G1 damage / G2 identity / G3 output)",
     "wired": "tree-sitter-sql 0.3.11 PATCHED, built from the upstream source at fixtures/sql/grammar/src",
-    "pin": "pristine 2440507 B sha256 5c2c1f\u2026 (backed up at $HOME/fixtures/sql/grammar/pristine-sql.wasm); patched build retained alongside it, the R lane's grammar/backup pattern",
+    "pin": "pristine 2440507 B sha256 5c2c1f… (backed up at $HOME/fixtures/sql/grammar/pristine-sql.wasm); patched build retained alongside it, the R lane's grammar/backup pattern",
     "patches": [
-      "column-lists.js \u2014 `_constraint_literal` accepts CONSTRAINT <name> UNIQUE | FOREIGN KEY | INDEX. Measured on the shipped build: `CONSTRAINT uq UNIQUE (b)` and `CONSTRAINT fk FOREIGN KEY (b) REFERENCES o (a)` each produced an ERROR and the constraint NAME was lost, while the unnamed forms parsed \u2014 so the gap only ever showed on named constraints, which is the common case in a real schema.",
-      "delete.js \u2014 `DELETE FROM t AS x` and `DELETE FROM t USING o`; both produced an ERROR and the USING table's edge was lost.",
-      "grant.js (new) \u2014 visible `grant_statement` / `revoke_statement`. The shipped build had no `grant`/`revoke`/`keyword_grant` token at all, so `GRANT SELECT ON t TO joe` was 2 ERROR nodes and `REVOKE \u2026 FROM joe` put the ROLE name where the analyzer read a table.",
-      "do-drop-policy.js (new) \u2014 `do_statement` and `drop_policy`. `keyword_do` existed but was wired only to MySQL's ON DUPLICATE KEY DO UPDATE; `DO $$ \u2026 $$` was 3 ERROR nodes.",
-      "create.js \u2014 `index_fields` left MANDATORY. `optional($.index_fields)` was tried so `CREATE INDEX ix ON t;` (no key list) would parse; it leaves an unresolved LR conflict on `\u2026 object_reference \u2022 '('` inside while_statement and `generate` refuses outright. A column-less index is invalid SQL in every major dialect, so the shape stays a documented gap rather than trading a working grammar for it."
+      "column-lists.js — `_constraint_literal` accepts CONSTRAINT <name> UNIQUE | FOREIGN KEY | INDEX. Measured on the shipped build: `CONSTRAINT uq UNIQUE (b)` and `CONSTRAINT fk FOREIGN KEY (b) REFERENCES o (a)` each produced an ERROR and the constraint NAME was lost, while the unnamed forms parsed — so the gap only ever showed on named constraints, which is the common case in a real schema.",
+      "delete.js — `DELETE FROM t AS x` and `DELETE FROM t USING o`; both produced an ERROR and the USING table's edge was lost.",
+      "grant.js (new) — visible `grant_statement` / `revoke_statement`. The shipped build had no `grant`/`revoke`/`keyword_grant` token at all, so `GRANT SELECT ON t TO joe` was 2 ERROR nodes and `REVOKE … FROM joe` put the ROLE name where the analyzer read a table.",
+      "do-drop-policy.js (new) — `do_statement` and `drop_policy`. `keyword_do` existed but was wired only to MySQL's ON DUPLICATE KEY DO UPDATE; `DO $$ … $$` was 3 ERROR nodes.",
+      "create.js — `index_fields` left MANDATORY. `optional($.index_fields)` was tried so `CREATE INDEX ix ON t;` (no key list) would parse; it leaves an unresolved LR conflict on `… object_reference • '('` inside while_statement and `generate` refuses outright. A column-less index is invalid SQL in every major dialect, so the shape stays a documented gap rather than trading a working grammar for it."
     ],
-    "removed_after_measurement": "An opaque whole-`$$ \u2026 $$` token alternative was added to `function_body` and `procedure_body` and then REMOVED as inert. `externals` declares `$._dollar_quoted_string` and the scanner can consume a whole body as one token, but only when the START TAG is not simultaneously valid \u2014 scanner.c tests `valid_symbols[DOLLAR_QUOTED_STRING_START_TAG]` first and returns whenever `state->start_tag == NULL`. Offering both forms in one `choice` makes the opaque branch unreachable. Measured across five shapes: every `dollar_quote` node was the bare two-character tag, opaque (body-spanning) count 0 of 10. The same reasoning is why `do_statement` IS opaque-only \u2014 with no structured alternative competing for the tag, the token becomes reachable and a `DO` body is arbitrary PL/pgSQL anyway, so nothing is lost. The cascade-recovery improvement in the corpus is attributable to the OTHER rules above plus the analyzer's own declaration sweep and resync, each measured separately \u2014 an earlier revision of the patch wrongly credited the opaque branch, and that credit is withdrawn here.",
+    "removed_after_measurement": "An opaque whole-`$$ … $$` token alternative was added to `function_body` and `procedure_body` and then REMOVED as inert. `externals` declares `$._dollar_quoted_string` and the scanner can consume a whole body as one token, but only when the START TAG is not simultaneously valid — scanner.c tests `valid_symbols[DOLLAR_QUOTED_STRING_START_TAG]` first and returns whenever `state->start_tag == NULL`. Offering both forms in one `choice` makes the opaque branch unreachable. Measured across five shapes: every `dollar_quote` node was the bare two-character tag, opaque (body-spanning) count 0 of 10. The same reasoning is why `do_statement` IS opaque-only — with no structured alternative competing for the tag, the token becomes reachable and a `DO` body is arbitrary PL/pgSQL anyway, so nothing is lost. The cascade-recovery improvement in the corpus is attributable to the OTHER rules above plus the analyzer's own declaration sweep and resync, each measured separately — an earlier revision of the patch wrongly credited the opaque branch, and that credit is withdrawn here.",
     "gates": [
-      "M14.0.F11 `script/m14/verify-grammar-leaves.ts --lang sql --candidate <patched.wasm>` \u2014 G1 damage / G2 identity / G3 output",
-      "M60 `script/m60/measure-grammar-recovery.ts --lang sql --candidate <patched.wasm>` \u2014 surviving-structure DISTRIBUTION, the screen the review's \u00a70 correction demands (an aggregate hid the refused candidate's tail)"
+      "M14.0.F11 `script/m14/verify-grammar-leaves.ts --lang sql --candidate <patched.wasm>` — G1 damage / G2 identity / G3 output",
+      "M60 `script/m60/measure-grammar-recovery.ts --lang sql --candidate <patched.wasm>` — surviving-structure DISTRIBUTION, the screen the review's §0 correction demands (an aggregate hid the refused candidate's tail)"
     ],
-    "adjudicated_f11_reading": "F11 reports the candidate INADMISSIBLE, and each of its three verdicts was adjudicated against the trees rather than accepted at face value. G1: 2 newly-damaged files against fixed 34 / improved 146 / worse 21. G2: 5 files clean under the pinned grammar change shape, and all 5 GAIN a `having` node the pinned build dropped (e.g. `HAVING COUNT(p.policyname) = 0`). G3: \u2212177 symbols / \u2212441 pairs against +1813 / +2156, and 138 of the 177 are `property:ENABLE` \u2014 the pinned grammar invents `column_definition` nodes named ENABLE and FORCE out of `ALTER TABLE \u2026 ENABLE/FORCE ROW LEVEL SECURITY`, which the analyzer faithfully published as columns. The repair panel has no bucket for 'the vanished symbol was a grammar-induced phantom' or 'the gained node was a clause the old grammar dropped', which is a real gap in F11's vocabulary and the reason a raw INADMISSIBLE is not the last word."
+    "adjudicated_f11_reading": "F11 reports the candidate INADMISSIBLE, and each of its three verdicts was adjudicated against the trees rather than accepted at face value. G1: 2 newly-damaged files against fixed 34 / improved 146 / worse 21. G2: 5 files clean under the pinned grammar change shape, and all 5 GAIN a `having` node the pinned build dropped (e.g. `HAVING COUNT(p.policyname) = 0`). G3: −177 symbols / −441 pairs against +1813 / +2156, and 138 of the 177 are `property:ENABLE` — the pinned grammar invents `column_definition` nodes named ENABLE and FORCE out of `ALTER TABLE … ENABLE/FORCE ROW LEVEL SECURITY`, which the analyzer faithfully published as columns. The repair panel has no bucket for 'the vanished symbol was a grammar-induced phantom' or 'the gained node was a clause the old grammar dropped', which is a real gap in F11's vocabulary and the reason a raw INADMISSIBLE is not the last word."
   },
   "handled_verified": {
     "_description": "Analyzer-referenced node types with probe- or fixture-verified behavior (real-sql-analyzer.ts at the M60 SQL wave, 2026-09-27). Every entry is pinned by at least one of: a contract-battery case (fixtures/sql/probe/contract-battery.mts, 54 cases), an M14 fixture (validation/m14/fixtures/sql/sqld1..sqld9), a mutant (script/m14/mutate-analyzer.ts, 9 SQL mutants), or the corpus sweep (441 files).",
@@ -107,14 +107,14 @@
       "error"
     ],
     "verified_by": {
-      "contract_battery": "fixtures/sql/probe/contract-battery.mts \u2014 54/54 pass on the wired grammar",
-      "fixtures": "validation/m14/fixtures/sql/{sqld1-column-types,sqld2-trigger-when,sqld3-routine-signature,sqld4-statement-dispatch,sqld5-quoted-and-cte,sqld6-keyword-and-builtin,sqld7-error-honesty,sqld8-range-and-ids,sqld9-declaration-resync} \u2014 9/9 pass",
-      "mutants": "script/m14/mutate-analyzer.ts \u2014 sql/custom-column-type-is-a-foreign-key, sql/parameter-type-reads-the-mode-keyword, sql/trigger-action-read-from-the-when-clause, sql/keyword-becomes-a-relationship-target, sql/cte-shadows-a-qualified-reference, sql/range-columns-zero-based, sql/same-name-declarations-share-an-id, sql/parse-errors-never-reported, sql/unreachable-arms-reinstated \u2014 all 9 caught",
-      "corpus_gate": "script/m60/verify-sql-resync.ts \u2014 the resync pass, measured on the corpus rather than a fixture (see design_decision SQL-D6)"
+      "contract_battery": "fixtures/sql/probe/contract-battery.mts — 54/54 pass on the wired grammar",
+      "fixtures": "validation/m14/fixtures/sql/{sqld1-column-types,sqld2-trigger-when,sqld3-routine-signature,sqld4-statement-dispatch,sqld5-quoted-and-cte,sqld6-keyword-and-builtin,sqld7-error-honesty,sqld8-range-and-ids,sqld9-declaration-resync} — 9/9 pass",
+      "mutants": "script/m14/mutate-analyzer.ts — sql/custom-column-type-is-a-foreign-key, sql/parameter-type-reads-the-mode-keyword, sql/trigger-action-read-from-the-when-clause, sql/keyword-becomes-a-relationship-target, sql/cte-shadows-a-qualified-reference, sql/range-columns-zero-based, sql/same-name-declarations-share-an-id, sql/parse-errors-never-reported, sql/unreachable-arms-reinstated — all 9 caught",
+      "corpus_gate": "script/m60/verify-sql-resync.ts — the resync pass, measured on the corpus rather than a fixture (see design_decision SQL-D6)"
     }
   },
   "internal_silent": {
-    "_description": "Grammar-internal containers, keywords and expression nodes that correctly emit nothing: they carry no declaration and no relationship semantics in the analyzer's contract. The keyword_* family is deliberately silent \u2014 a keyword is never a table and never a function, which is the SQL-D3 ruling below and the reason the analyzer's own SQL_KEYWORDS guard exists.",
+    "_description": "Grammar-internal containers, keywords and expression nodes that correctly emit nothing: they carry no declaration and no relationship semantics in the analyzer's contract. The keyword_* family is deliberately silent — a keyword is never a table and never a function, which is the SQL-D3 ruling below and the reason the analyzer's own SQL_KEYWORDS guard exists.",
     "types": [
       "program",
       "statement",
@@ -215,7 +215,7 @@
     ]
   },
   "gap": {
-    "_description": "Confirmed missing emissions and known grammar limits, numbered SQL-G*. Tracked work items, not gate failures. Each carries the measurement that established it. Two were added 2026-09-27 after a SECOND corpus was found on this machine and the lane had never been run against it; the six below were all written from app-migration files, which is why the plpgsql gap looked smaller than it is.",
+    "_description": "Confirmed missing emissions and known grammar limits, numbered SQL-G*. Tracked work items, not gate failures. Each carries the measurement that established it. Two were added 2026-09-27 after a SECOND corpus was found on this machine and the lane had never been run against it; the six below were all written from app-migration files, which is why the plpgsql gap looked smaller than it is. SQL-G11..SQL-G14 added 2026-10-03 by the ontology workstream; G13 and G14 are shared-machinery findings filed rather than fixed.",
     "gaps": [
       {
         "id": "SQL-G1",
@@ -235,7 +235,7 @@
         "id": "SQL-G3",
         "severity": "low",
         "node_type": "vendor dialects",
-        "missing": "T-SQL, PL/SQL and MySQL vendor syntax is only partly in the grammar. Dialect-battery error nodes on the pinned build: tsql 77, plsql 68, mysql 62, postgres 33, sqlite 25. The patched build improves ddl_advanced (29\u219215) and tsql (77\u219271) but vendor-only surface remains out of reach.",
+        "missing": "T-SQL, PL/SQL and MySQL vendor syntax is only partly in the grammar. Dialect-battery error nodes on the pinned build: tsql 77, plsql 68, mysql 62, postgres 33, sqlite 25. The patched build improves ddl_advanced (29→15) and tsql (77→71) but vendor-only surface remains out of reach.",
         "evidence": "fixtures/sql/probe/grammar-census.mts, six-file dialect battery"
       },
       {
@@ -256,34 +256,62 @@
         "id": "SQL-G6",
         "severity": "medium",
         "node_type": "policy,grant",
-        "missing": "A policy's USING / WITH CHECK expressions and a GRANT's privilege list are not walked for the tables they name. A policy that reads another table through its predicate (`USING (EXISTS (SELECT 1 FROM other_table \u2026))`) yields the policy symbol and its `ON` edge but not the predicate's tables, because the analyzer reads the statement's top-level object_references only.",
+        "missing": "A policy's USING / WITH CHECK expressions and a GRANT's privilege list are not walked for the tables they name. A policy that reads another table through its predicate (`USING (EXISTS (SELECT 1 FROM other_table …))`) yields the policy symbol and its `ON` edge but not the predicate's tables, because the analyzer reads the statement's top-level object_references only.",
         "evidence": "measured while wiring processPolicy; the predicate subtree is reachable but is not yet descended into"
       },
       {
         "id": "SQL-G7",
         "severity": "high",
         "node_type": "function_body,procedure_body,do_statement",
-        "missing": "PL/pgSQL procedural scaffolding is absent from the wired grammar: IF/ELSIF/ELSE/END IF, LOOP, WHILE, FOR ... IN, BEGIN/EXCEPTION/END, assignment, RAISE, EXECUTE, PERFORM, ASSERT and EXIT/CONTINUE. A body is parseable only if every statement in it is ordinary SQL. This is the single largest measured gap in the lane: 56.7% of all CREATE declarations across the three corpora sit inside a dollar-quoted body, and on the PostgreSQL extension corpus function recall is 17.6% (2,095 of 11,883) with 55 of 387 files yielding zero symbols. A complete candidate was written (17 rules, 16 keywords, reusing $._expression and $.statement rather than reimplementing plpgsql expressions) and measured: -36% ProxiCall error nodes, +9.4% named nodes, 0 product change on the first build because it regressed the block-declarations contract case. The regression's cause is diagnosed and the fix is one line plus one declared conflict.",
+        "missing": "PL/pgSQL procedural scaffolding is absent from the wired grammar: IF/ELSIF/ELSE/END IF, LOOP, WHILE, FOR ... IN, BEGIN/EXCEPTION/END, assignment, RAISE, EXECUTE, PERFORM, ASSERT and EXIT/CONTINUE. A body is parseable only if every statement in it is ordinary SQL. This is the single largest measured gap in the lane: 56.7% of all CREATE declarations across the three corpora sit inside a dollar-quoted body, and on the PostgreSQL extension corpus function recall is 17.6% (2,095 of 11,883) with 55 of 387 files yielding zero symbols. A full candidate was written and built (17 rules, 16 keywords, reusing $._expression and $.statement rather than reimplementing plpgsql expressions) and measured: -36% ProxiCall error nodes, +9.4% named nodes, 0 product change on the first build because it regressed the block-declarations contract case. The regression's cause is diagnosed and the fix is one line plus one declared conflict.",
         "evidence": "validation/m60/sql/second-corpus-recall.json, validation/m60/sql/v4-plpgsql-candidate.json, fixtures/sql/REVIEW.md sections 8-9"
       },
       {
         "id": "SQL-G8",
         "severity": "medium",
         "node_type": "literal (inside plpgsql_execute / invocations)",
-        "missing": "DDL handed to the database as a string is now RECOVERED for the shape `EXECUTE [IMMEDIATE] '<sql>'` by the analyzer's text-based EXECUTE-literal pass (shipped 2026-09-27; +156 symbols and +234 relationships on the extension corpus). Two shapes remain out of reach and are named rather than quietly dropped. (a) `EXECUTE format('CREATE TABLE %I', x)`, where the literal does not immediately follow the EXECUTE keyword. (b) CONCATENATED FRAGMENTS \u2014 94% of the extension corpus's EXECUTE literals are `EXECUTE 'CREATE SEQUENCE ' || quote_ident(x) || ...`, where the literal is three words and the declaration's NAME is computed at run time. The pass recovers the KIND; the name is unrecoverable in principle, and no extension of the technique changes that. Only 78 of those literals are standalone statements.",
+        "missing": "DDL handed to the database as a string is now RECOVERED for the shape `EXECUTE [IMMEDIATE] '<sql>'` by the analyzer's text-based EXECUTE-literal pass (shipped 2026-09-27; +156 symbols and +234 relationships on the extension corpus). Two shapes remain out of reach and are named rather than quietly dropped. (a) `EXECUTE format('CREATE TABLE %I', x)`, where the literal does not immediately follow the EXECUTE keyword. (b) CONCATENATED FRAGMENTS — 94% of the extension corpus's EXECUTE literals are `EXECUTE 'CREATE SEQUENCE ' || quote_ident(x) || ...`, where the literal is three words and the declaration's NAME is computed at run time. The pass recovers the KIND; the name is unrecoverable in principle, and no extension of the technique changes that. Only 78 of those literals are standalone statements.",
         "evidence": "validation/m60/sql/execute-literal-recovery.json"
+      },
+      {
+        "id": "SQL-G11",
+        "severity": "low",
+        "node_type": "create_table (keyword_like)",
+        "missing": "`CREATE TABLE archive (LIKE source INCLUDING ALL)` is parsed but not read. Measured corpus-wide: 9 occurrences in 4 files, `keyword_like` 574 nodes over the census corpus (the rest are `GRANT ... ON ALL TABLES IN SCHEMA x LIKE 'pattern'`, which name no table). The clause is a structural COPY, not inheritance - the two tables evolve independently - so it is not an `extends` edge; and the nearest honest label for the dependency it does create is one this analyzer does not currently emit. No edge is published for it, deliberately, rather than published as a relationship whose type would be arguable.",
+        "evidence": "validation/m14/fixtures/sql/construct-probe.json (constructCounts.extends-like = 9, examples name the three proxicall archive tables) and validation/m14/fixtures/sql/sqld13-ontology-types.sql, whose forbidRelationships pins that `LIKE`'s target is NOT edged"
+      },
+      {
+        "id": "SQL-G12",
+        "severity": "low",
+        "node_type": "add_column (column_definition)",
+        "missing": "`ALTER TABLE log ADD KEY useragent_id (useragent_id)` is MySQL's index-adding syntax and the grammar reads it as a column named `KEY` of type `useragent_id`, which the analyzer publishes. Measured at 1 phantom symbol corpus-wide (cloogle.org/db/install.sql line 25). NOT guarded: the tree cannot distinguish it from `ALTER TABLE t ADD key my_type`, which is legal PostgreSQL, so a text guard on `KEY` would delete a real column to remove a phantom. Declared rather than fixed; `LIKE`/`INHERIT` are guarded because those two are reserved in every dialect this grammar serves.",
+        "evidence": "validation/m14/fixtures/sql/construct-probe.json and the phantom probe run over the 1,460-file census (1 occurrence, named file and line)"
+      },
+      {
+        "id": "SQL-G13",
+        "severity": "medium",
+        "node_type": "(harness, not analyzer)",
+        "missing": "`src/ast/pool-worker.ts`'s `NOISE_TARGETS` list contains `root`, so `keepSymbol` deletes a real project symbol with that name on the way to the index. Measured over the 1,460-file census by `validation/m14/fixtures/sql/keep-symbol-census.mts`: 14,851 symbols emitted, 2 dropped (0.013%), both `function:root` - `postgrest/test/io/fixtures/schema.sql` declares `create or replace function root() returns json`. This is the same defect class that file's own comment documents for `type`, `parent` and `firstChild`, and `root` is still on the list. Shared machinery: filed, not edited. An earlier draft of this record said 3 drops from an ad-hoc probe that was not committed; the committed instrument says 2 and the committed number is the one that stands.",
+        "evidence": "validation/m14/fixtures/sql/keep-symbol-census.json (analyzer `analyze` plus the exported pool-worker `keepSymbol`, over the same 1,460 admitted files)"
+      },
+      {
+        "id": "SQL-G14",
+        "severity": "high",
+        "node_type": "(oracle, not analyzer)",
+        "missing": "`script/m14/differential.ts` has no SQL oracle, so every relationship type this lane emits is a DERIVATION finding: stored and compared against nothing. Measured: 68 per-language `derive*Edges` functions exist and none is SQL's; a scoped run against ProxiCall (437 SQL files, 60 sampled) exits with `derived ZERO truth edges`. The lane's own 84-fact hand audit is the only correctness instrument it has, and an audit of 84 facts over 5 fixtures cannot stand in for a differential over a corpus. Shared machinery: filed, not edited.",
+        "evidence": "the gate refusal quoted in SQL-D20; `BB_CORPUS_ROOT=$HOME npx tsx script/m14/differential.ts --repo ProxiCall --lang sql`"
       }
     ]
   },
   "design_decision": {
-    "description": "SQL schema contract (M60 SQL wave, ruled 2026-09-26/27). A SQL file is a SCHEMA, not a program: the declarations are the product, the relationships are containment plus data dependencies, and there is no import graph.",
+    "description": "SQL schema contract (M60 SQL wave, ruled 2026-09-26/27). A SQL file is a SCHEMA, not a program: the declarations are the product, the relationships are containment plus data dependencies, and there is no import graph. ONTOLOGY WORKSTREAM (2026-10-03): SQL-D11..SQL-D18 carry the ten-type verdicts. Three types were newly EMITTED against a corpus measurement (imports, overrides, instantiates), one previous ruling was FALSIFIED by that measurement (SQL-D11), four are RULED with a named instrument and a probe, and the remainder record what the census found about the edges that were already emitted. ONTOLOGY ROUND 2 (2026-10-03, same lane): SQL-D19 records a fabricated `uses` edge the lane's own oracle caught and SQL-D20 records that all seven emitted types are DERIVATION findings because the shared differential has no SQL oracle. `CREATE EXTENSION` was added to `imports` as a second, separately labelled mechanism (27 of the 49 `imports` edges), taking that type from the RULED column to EMITTED.",
     "decisions": [
       {
         "id": "SQL-D1",
         "node_type": "column_definition",
         "status": "RULED",
         "question": "Is a column's declared TYPE a dependency edge? A user-defined type is an `object_reference` in this grammar, exactly like a `REFERENCES` target.",
-        "resolution": "RULED: NO. A foreign key is an `object_reference` that FOLLOWS `keyword_references`; the discriminator is position in the grammar, not a guess. The previous rule (any object_reference child) minted `references t -> my_type` plus the 'Foreign Key Constraints' pattern for every custom-typed column \u2014 measured on the corpus as one phantom FK per custom-typed column.",
+        "resolution": "RULED: NO. A foreign key is an `object_reference` that FOLLOWS `keyword_references`; the discriminator is position in the grammar, not a guess. The previous rule (any object_reference child) minted `references t -> my_type` plus the 'Foreign Key Constraints' pattern for every custom-typed column — measured on the corpus as one phantom FK per custom-typed column.",
         "pinned_by": "validation/m14/fixtures/sql/sqld1-column-types.sql (forbidRelationships) and mutant sql/custom-column-type-is-a-foreign-key"
       },
       {
@@ -299,7 +327,7 @@
         "node_type": "any",
         "status": "RULED",
         "question": "Can a SQL reserved word be a relationship target or a call target?",
-        "resolution": "RULED: NO, never. A keyword is not a table and not a function. The guard is on the emitted edge AND at the call site, so an ERROR-recovery artefact cannot reach the graph from any path. Measured 49 keyword-target edges over 441 corpus files before the guard (`calls global->USING`, `uses global->WITH`, `calls \u2026->FILTER`) and 0 after. Symmetrically, a call to a function SQL itself provides is a language feature, not a dependency the store could ever resolve \u2014 the builtin set covers aggregate, window, numeric, string, date/time, conditional, JSON, array and system functions.",
+        "resolution": "RULED: NO, never. A keyword is not a table and not a function. The guard is on the emitted edge AND at the call site, so an ERROR-recovery artefact cannot reach the graph from any path. Measured 49 keyword-target edges over 441 corpus files before the guard (`calls global->USING`, `uses global->WITH`, `calls …->FILTER`) and 0 after. Symmetrically, a call to a function SQL itself provides is a language feature, not a dependency the store could ever resolve — the builtin set covers aggregate, window, numeric, string, date/time, conditional, JSON, array and system functions.",
         "pinned_by": "validation/m14/fixtures/sql/sqld6-keyword-and-builtin.sql (whose last row is the CONTROL that stops a fix from simply dropping every call) and mutant sql/keyword-becomes-a-relationship-target"
       },
       {
@@ -307,7 +335,7 @@
         "node_type": "cte",
         "status": "RULED",
         "question": "How far does a CTE name shadow?",
-        "resolution": "RULED: only its own UNQUALIFIED reference. Matching on the bare leaf suppressed a real table too \u2014 `WITH a AS (SELECT 1) SELECT * FROM a JOIN s.a ON true` emitted no relationship at all. A qualified reference is never a CTE.",
+        "resolution": "RULED: only its own UNQUALIFIED reference. Matching on the bare leaf suppressed a real table too — `WITH a AS (SELECT 1) SELECT * FROM a JOIN s.a ON true` emitted no relationship at all. A qualified reference is never a CTE.",
         "pinned_by": "validation/m14/fixtures/sql/sqld5-quoted-and-cte.sql and mutant sql/cte-shadows-a-qualified-reference"
       },
       {
@@ -315,7 +343,7 @@
         "node_type": "relationship target",
         "status": "RULED",
         "question": "Should an edge target be the qualified reference (`app.orders`) or the bare leaf (`orders`)?",
-        "resolution": "RULED: the BARE LEAF, with the qualified text preserved in the relationship metadata. Measured on 441 files / 6,917 edges against the store's own three resolution strategies (S1 exact qualified_name, S2 bare name when globally unique, S3 dotted tail): bare resolves 6,180 (0.8935) and qualified 2,132 (0.3082), because most references in a real schema are written unqualified. `decisiveQualifiedRefs: 0` \u2014 no reference in the corpus is both written qualified and ambiguously bare, so qualifying buys nothing measurable.",
+        "resolution": "RULED: the BARE LEAF, with the qualified text preserved in the relationship metadata. Measured on 441 files / 6,917 edges against the store's own three resolution strategies (S1 exact qualified_name, S2 bare name when globally unique, S3 dotted tail): bare resolves 6,180 (0.8935) and qualified 2,132 (0.3082), because most references in a real schema are written unqualified. `decisiveQualifiedRefs: 0` — no reference in the corpus is both written qualified and ambiguously bare, so qualifying buys nothing measurable.",
         "pinned_by": "fixtures/sql/probe/edge-resolvability.mts (screening instrument, not a gate)"
       },
       {
@@ -323,7 +351,7 @@
         "node_type": "program",
         "status": "RULED",
         "question": "How does the analyzer cope with a parse that collapses a whole file into one ERROR?",
-        "resolution": "RULED: two layers, both measured. (1) A full-tree declaration sweep, which finds declarations that error recovery nested inside an unrelated statement \u2014 1,644 of 2,336 corpus declarations against 1,557 for a root-children walk. (2) A statement-level resync that re-parses top-level statement slices with their ranges translated back to file coordinates, and is STRICTLY ADDITIVE: the main pass's declarations are keyed by absolute start index, so a re-parsed slice can only contribute what was missing. The resync fires on cumulative multi-error files and on NO synthetic fixture \u2014 the grammar patch fixed every cascade a minimal fixture is built from \u2014 so it is pinned by a CORPUS gate (script/m60/verify-sql-resync.ts) rather than a mutant, and the mutant suite records that a fixture mutant for it could not be shown to fail. A gate that cannot fail is decoration.",
+        "resolution": "RULED: two layers, both measured. (1) A full-tree declaration sweep, which finds declarations that error recovery nested inside an unrelated statement — 1,644 of 2,336 corpus declarations against 1,557 for a root-children walk. (2) A statement-level resync that re-parses top-level statement slices with their ranges translated back to file coordinates, and is STRICTLY ADDITIVE: the main pass's declarations are keyed by absolute start index, so a re-parsed slice can only contribute what was missing. The resync fires on cumulative multi-error files and on NO synthetic fixture — the grammar patch fixed every cascade a minimal fixture is built from — so it is pinned by a CORPUS gate (script/m60/verify-sql-resync.ts) rather than a mutant, and the mutant suite records that a fixture mutant for it could not be shown to fail. A gate that cannot fail is decoration.",
         "pinned_by": "script/m60/verify-sql-resync.ts (C1 reachability, C2 every firing recovers, C3 recovered ranges are file-absolute 1-based) and validation/m14/fixtures/sql/sqld9-declaration-resync.sql"
       },
       {
@@ -339,7 +367,7 @@
         "node_type": "symbol id",
         "status": "RULED",
         "question": "What is a top-level SQL symbol's identity when two entities share a bare name?",
-        "resolution": "RULED: the name, disambiguated on collision. `id` was `parentId ?? name`, so `CREATE TABLE a.t` and `CREATE TABLE b.t` both got id `t` \u2014 duplicate ids drop nodes from id-keyed graph consumers and conflate two distinct declarations (the family RSD3 class). Relationship endpoints stay NAMES, which is what the store's resolution strategies key on.",
+        "resolution": "RULED: the name, disambiguated on collision. `id` was `parentId ?? name`, so `CREATE TABLE a.t` and `CREATE TABLE b.t` both got id `t` — duplicate ids drop nodes from id-keyed graph consumers and conflate two distinct declarations (the family RSD3 class). Relationship endpoints stay NAMES, which is what the store's resolution strategies key on.",
         "pinned_by": "validation/m14/fixtures/sql/sqld8-range-and-ids.sql (expectUniqueIds) and mutant sql/same-name-declarations-share-an-id"
       },
       {
@@ -347,7 +375,7 @@
         "node_type": "identifier",
         "status": "RULED",
         "question": "Is a quoted identifier's name `\"MyTable\"` or `MyTable`?",
-        "resolution": "RULED: `MyTable`. The delimiter is SQL syntax, not part of the name. The shipped analyzer kept the quotes for `\"\u2026\"`, kept the backticks for `` `\u2026` ``, and lost the column entirely for `\"Id\"` \u2014 the grammar puts a quoted name in a `literal`, never an `identifier` \u2014 so the three quoting styles behaved three different ways and one of them dropped the symbol.",
+        "resolution": "RULED: `MyTable`. The delimiter is SQL syntax, not part of the name. The shipped analyzer kept the quotes for `\"…\"`, kept the backticks for `` `…` ``, and lost the column entirely for `\"Id\"` — the grammar puts a quoted name in a `literal`, never an `identifier` — so the three quoting styles behaved three different ways and one of them dropped the symbol.",
         "pinned_by": "validation/m14/fixtures/sql/sqld5-quoted-and-cte.sql"
       },
       {
@@ -355,8 +383,88 @@
         "node_type": "errors",
         "status": "RULED",
         "question": "What does the analyzer report for a file it cannot parse?",
-        "resolution": "RULED: the ERROR and MISSING nodes, on the analyzer's own channel, with severity `warning` (the value the indexer keys hasSyntaxErrors off). It previously returned `errors: []` unconditionally, so a file it could not parse at all read as a clean 0/0/0 \u2014 and the fixture lane, the mutation harness and the m12 differential all call `analyze` directly, so the analyzer's channel is the one they read.",
+        "resolution": "RULED: the ERROR and MISSING nodes, on the analyzer's own channel, with severity `warning` (the value the indexer keys hasSyntaxErrors off). It previously returned `errors: []` unconditionally, so a file it could not parse at all read as a clean 0/0/0 — and the fixture lane, the mutation harness and the m12 differential all call `analyze` directly, so the analyzer's channel is the one they read.",
         "pinned_by": "validation/m14/fixtures/sql/sqld7-error-honesty.sql and mutant sql/parse-errors-never-reported"
+      },
+      {
+        "id": "SQL-D11",
+        "node_type": "psql_meta_command",
+        "status": "RULED",
+        "question": "ONTOGY / `imports` — this lane previously ruled that \"SQL has no import statement\", on the grounds that the previous implementation scanned for `#import`/`@import` text the grammar can never produce. Does the LANGUAGE have an import?",
+        "resolution": "RULED: the EARLIER RULING IS FALSIFIED and `imports` is now EMITTED. The earlier reasoning was sound about the MECHANISM and wrong about the LANGUAGE, which is exactly the failure a ruling has to be falsifiable to catch. Measured over the 1,460-file census with instrument B (parse-tree semantic count): 143 `psql_meta_command` nodes, of which 22 are `\\i`/`\\ir` naming another file with a literal filename, across 6 files; 121 are `\\echo`(108)/`\\set`(8)/`\\gexec`/`\\if`/`\\endif`/`\\gset`/`\\pset`, none of which names a file; includes with a psql VARIABLE target: 0; includes with no recognisable filename suffix: 0. `\\i` and `\\ir` are imports in the ordinary sense: a file dependency resolved by the psql client before any SQL runs. postgrest/test/io/fixtures/load.sql includes six sibling scripts this way. OVERTURN CONDITION for the guards: a corpus file whose `\\i`/`\\ir` argument is a psql variable or carries no .sql/.psql/.dump suffix would move that event into `ambiguity.includeNonLiteral` and the analyzer would still emit nothing for it — deliberately, since a target invented from a variable name is a fabricated edge. SECOND MECHANISM, added after the extension case was measured rather than argued. `CREATE EXTENSION name` loads a separately DISTRIBUTED unit and the file cannot mean anything without it. `processNamedContainer` recorded the declaration as a `module` symbol and emitted no edge, so over the 1,460-file census 27 declarations in 8 files were 27 symbols with zero dependencies - a real cross-unit dependency invisible in the graph, in the one construct where SQL genuinely has one. It is now published as `imports` with `metadata.extensionInstall: true`, `external: true`, `fileDependency: false`, `scope: \"database\"`, and as an `imports[]` row with `importType: \"sql_extension\"`. The flags are load-bearing rather than documentation: a psql include names a FILE IN THIS REPOSITORY and is resolvable in principle, while an extension names a distribution that can never bind to anything this repository contains, and a consumer that cannot tell them apart will try to resolve `global->hstore` as a path. This is also the strongest candidate against the `exports` ruling (SQL-D16) and it is answered with a measurement: 27 occurrences, and the direction the construct points is inbound. Total `imports` over the census is 49 (22 + 27), and the type resolves at 55.10% because the 27 extension targets cannot resolve by construction.",
+        "pinned_by": "validation/m14/fixtures/sql/sqld13-ontology-types.sql (expectImports, expectRelationshipCount imports=5, forbidImports, forbidRelationships) and mutants sql/psql-meta-command-becomes-an-import, sql/include-variable-target-is-invented, sql/extension-install-is-not-an-import, sql/extension-mislabelled-as-a-file-dependency, sql/extension-targets-collapsed-to-one-name"
+      },
+      {
+        "id": "SQL-D12",
+        "node_type": "create_function, create_procedure, create_view, create_materialized_view",
+        "status": "RULED",
+        "question": "ONTOGY / `overrides` — SQL has no method table, so is there any replacement event at all?",
+        "resolution": "RULED: YES, and it is `CREATE OR REPLACE`. Measured with instrument B over the 1,460-file census: 666 declarations carry `OR REPLACE`; 15 replace a declaration of the SAME KIND in the SAME FILE and are therefore visible to a per-file analyzer, which is what the analyzer now emits; 20 same-kind re-declarations carry NO `OR REPLACE` and PostgreSQL rejects those outright, so calling them overrides would assert a replacement the language does not perform. Declared limit: the other 651 replace a declaration made in ANOTHER file (a migration chain re-declaring the previous migration's function), which a per-file analyzer cannot see and does not claim. OVERTURN CONDITION: a corpus file with two `OR REPLACE` declarations of one name and no intervening `DROP` would add an edge; a same-kind duplicate WITHOUT `OR REPLACE` deliberately will not.",
+        "pinned_by": "validation/m14/fixtures/sql/sqld13-ontology-types.sql (expectRelationshipCount overrides=2, forbidRelationships on d13_only_once and d13_twin) and mutants sql/any-redeclaration-becomes-an-override"
+      },
+      {
+        "id": "SQL-D13",
+        "node_type": "cast",
+        "status": "RULED",
+        "question": "ONTOGY / `instantiates` — SQL has no `new`, so is there any construction of an instance of a declared type?",
+        "resolution": "RULED: YES, and it is a composite-type cast. PostgreSQL implements `ROW(1,2)::my_composite` as a call to that type's constructor. Measured with instrument B over the 1,460-file census: 4,406 `cast` nodes, of which only those carrying a `custom_type` FIELD name a user type (a builtin target such as `::integer` is a bare anonymous token, so no hand-written builtin-type list is needed); 20 are a constructor-shaped value against a type the corpus declares, 4 are a conversion against a declared type, and 67 target a name no file declares (`::row`, `::struct`, `::geometry` — DuckDB inline type specifications and extension types). The analyzer emits `instantiates` only for the construction-shaped case. OVERTURN CONDITION: a corpus cast whose `custom_type` names a declared type and whose value side is a `ROW(...)` invocation or a `list`/`array` node would add an edge; a conversion must not.",
+        "pinned_by": "validation/m14/fixtures/sql/sqld13-ontology-types.sql (expectRelationshipCount instantiates=1, forbidRelationships on d13_never_built and integer) and mutant sql/any-cast-becomes-an-instantiation"
+      },
+      {
+        "id": "SQL-D14",
+        "node_type": "create_table, alter_table",
+        "status": "RULED",
+        "question": "ONTOGY / `extends` — is table inheritance (`CREATE TABLE c (...) INHERITS (p)`, `ALTER TABLE c INHERIT p`) readable from this grammar?",
+        "resolution": "RULED: NOT READABLE, and the ruling is a statement about the wired grammar rather than about SQL. Instrument B over the 1,460-file census: 0 occurrences of an `INHERITS`/`INHERIT` token inside a `create_table` or `alter_table` node. The stronger evidence is a capability probe rather than a corpus count: parsing `CREATE TABLE child (id int) INHERITS (parent);` with the wired wasm yields `create_table` terminated at the column list followed by `ERROR(identifier)` — the grammar has no rule for the clause, so `INHERITS` cannot appear in the tree in any corpus. SQL DOES have this construct, so a grammar that could express it would make `extends` derivable; until one does, emitting the edge would mean inventing it. OVERTURN CONDITION: a `keyword_inherits`/`inherits_clause` node inside `create_table`, or a corpus file where the token survives parse in that position. The adjacent `LIKE` clause IS parsed (`keyword_like`, 574 nodes corpus-wide, 9 of them inside a `create_table`) and is a structural COPY rather than inheritance — the two tables evolve independently — so it is deliberately not an `extends` edge; see SQL-D15.",
+        "pinned_by": "validation/m14/fixtures/sql/sqld13-ontology-types.sql for the LIKE clause's non-extends classification (forbidRelationships contains d13_archive->d13_holder), and validation/m14/fixtures/sql/construct-probe.json for the INHERITS=0 measurement"
+      },
+      {
+        "id": "SQL-D15",
+        "node_type": "column_definition",
+        "status": "RULED",
+        "question": "The wired grammar cannot represent `CREATE TABLE c (LIKE p INCLUDING ALL)`: it parses the pair as `column_definition name:(identifier \"LIKE\") custom_type:(object_reference \"p\")`. Is that a column, and does the LIKE clause's target belong in the graph?",
+        "resolution": "RULED: NOT a column, and the LIKE target is not edged here. Measured corpus-wide with instrument B: 6 `column_definition` nodes named `LIKE` in 2 files, each of which the analyzer published as a column whose fabricated `sqlType` is the source table; the analyzer now suppresses them (`ambiguity.reservedNameSymbolsSuppressed`) and the same shape makes `ALTER TABLE c INHERIT p` a column named `INHERIT`. The guard keys on the name AND on the node being an UNQUOTED `identifier`, because `LIKE` and `INHERIT` are reserved in every dialect this grammar serves while a quoted `\"like\"` column arrives as a `literal` and is legal. NOT fixed: `ALTER TABLE log ADD KEY k (c)` parses identically to `ALTER TABLE t ADD key my_type`, which is legal PostgreSQL, so a text guard would trade one wrong symbol for a missing one; measured at 1 phantom corpus-wide and declared rather than hidden. The LIKE target itself is NOT published as an edge: the clause is a structural copy, the nearest ontology label is a dependency the analyzer does not currently read, and the 9 occurrences do not justify asserting one here — recorded as SQL-G11 rather than silently dropped.",
+        "pinned_by": "validation/m14/fixtures/sql/sqld13-ontology-types.sql (forbidSymbols LIKE, expectSymbolCount LIKE=0 and the quoted like=1, forbidRelationships contains d13_archive->LIKE) and mutant sql/reserved-word-becomes-a-column"
+      },
+      {
+        "id": "SQL-D16",
+        "node_type": "(all relationship types)",
+        "status": "RULED",
+        "question": "ONTOGY / `exports` and `implements` — is either derivable from SQL at all?",
+        "resolution": "RULED: NEITHER, on two independent grounds each. `exports` would need a declaration naming the symbols this unit publishes to other units; SQL's visibility scope is the DATABASE, not the file, and nothing in a SQL file enumerates it. Instrument A: the wired grammar produces 465 distinct node types over the 1,460-file census and NONE is an export/module/provide statement — the full inventory is in validation/m14/fixtures/sql/construct-probe.json so the ruling is checkable without re-running anything. Instrument B: 0 occurrences of an `EXPORT`, `MODULE` or `PROVIDE` token, 0 export-shaped nodes, 0 `grant_statement` in any file that would carry a published surface. psql's file graph is real and its only edge is INBOUND (`\\i`), which is why `imports` is emitted and `exports` is not. `implements` would need a supertype clause; SQL has no interface type and no clause in which a declaration names a supertype it satisfies. Instrument A: no supertype/interface/extends-clause node type among the 465. Instrument B: 0 `IMPLEMENTS` tokens, 0 implements-shaped nodes. `CREATE DOMAIN d AS t CHECK (...)` is a constraint-carrying alias and not interface satisfaction. OVERTURN CONDITION for either: any node type among the 465 inventory that expresses a published surface or a supertype clause, or any corpus token in the positions probed.",
+        "pinned_by": "validation/m14/fixtures/sql/construct-probe.json (grammarVocabulary, 465 types; constructCounts for implements-keyword/implements-node/exports-keyword/exports-node, all 0)"
+      },
+      {
+        "id": "SQL-D17",
+        "node_type": "column_definition, add_column",
+        "status": "RULED",
+        "question": "Are `declarationKeys` / `createSymbol`'s dedup identities safe when three passes produce nodes from RE-PARSED SLICES?",
+        "resolution": "RULED: NO without an explicit file-coordinate key, and that is now fixed. `node.startIndex` is relative to the PARSE that produced the node, and the statement resync pass and the EXECUTE-literal pass both parse a slice, so a slice-local key collides with whatever the main pass consumed at the same offset. Measured both ways over the 1,460-file census: 161 intra-file duplicate symbols (identical kind, name and range emitted twice) across 10 files before, 0 after; and the instant the dedup guard became load-bearing while the key was still slice-local, sqld11 lost `quoted_name`. `state.slice.byteOffset` maps a slice node back to its true position - the raw literal is handed to the parser with its `''` escapes intact precisely so it stays a contiguous substring of the file - so the file coordinate is both correct and unique. Separately, `processStatement` was calling `markDeclaration` and IGNORING the answer, so the sweep dispatched every top-level declaration a second time; no edge doubled (the maps deduplicate) but the work did and so did the counters: one `ROW(1,2)::t` reported `instantiationsEmitted: 2`.",
+        "pinned_by": "validation/m14/fixtures/sql/sqld11-execute-literal.sql (the quoted_name row) and mutants sql/declaration-key-ignores-the-slice-offset, sql/declaration-dispatched-twice"
+      },
+      {
+        "id": "SQL-D18",
+        "node_type": "(all relationship types)",
+        "status": "RULED",
+        "question": "Can the honesty contract's §4 requirement - that the heuristic/deterministic edge ratio be a COUNTABLE number - be answered for this lane?",
+        "resolution": "RULED: NOT BEFORE THIS ROUND, and now it can. The census recorded `evidenceClass` ABSENT on 22,022 of 22,022 edges, which reads as 'no heuristics' and means 'nothing recorded'; an absent field is not the same claim as a uniformly `structural` one, and only one of them was true. Every edge now carries a tier derived from how it was actually derived: `structural` for a fact in a grammar-mandated position (every `contains`, every `imports`, every `overrides`, every `instantiates`, every `references` - the FK target sits after `keyword_references`, the trigger's and policy's table after `keyword_on`), `usage_contextual` for a name in a bare slot (a `uses` from a `from`/`relation` clause, an UNQUALIFIED `calls` callee) and `reference_qualified` for a name read through a QUALIFIED reference. `confidence` stays 1 throughout, and that is now a claim rather than an omission: no edge is a guess about a NAME, and where the analyzer genuinely cannot tell it emits nothing and counts the suppression in `ambiguity` instead.",
+        "pinned_by": "validation/m14/fixtures/sql/sqld13-ontology-types.sql (meta.evidenceClass on an imports, an overrides and an instantiates row) and mutant sql/evidence-class-dropped"
+      },
+      {
+        "id": "SQL-D19",
+        "node_type": "statement (nested in cte)",
+        "status": "RULED",
+        "question": "ONTOGY / `uses` — a CTE name is a local binding, not a table. Does every path that can read an unqualified reference see the CTE scope?",
+        "resolution": "RULED: NO, and it did not. `ParseState.localCtes` is documented as holding the scope of the statement and only the statement, and the main walk honours that because `processRoot` populates it before dispatching. The declaration sweep is a SEPARATE walk with no such step, and it dispatches nested `statement` nodes on purpose (that is what makes a plpgsql body contribute edges at all). It therefore reached a CTE body - itself a `statement` - with BOTH the per-node set built by `processQueryDependencies` and the file-level set empty, and `addTableEdge`'s guard `localCtes.has(leaf) || state.localCtes.has(leaf)` let the edge through. Measured by the lane's own 84-fact hand audit, which had been reporting exactly this and only this since the artifact was written: `FP rel:Queries.sql:uses:global:recent_users`, precision 0.988, `earliestFailingLayer=relationships`. The outer `FROM named_users` was suppressed correctly by the same guard, so the file published exactly the one edge it should not have. FIXED by giving the sweep the CTE scope of the nearest ANCESTOR `statement` and restoring it afterwards, because sibling statements carry their own WITH lists. The differential is now precision 1.000, recall 1.000, 0 FP, 0 FN, `earliestFailingLayer=none`, and the artifact is regenerated against the analyzer this commit ships, which also retires the recorded claim that the current precision was not established by any artifact. OVERTURN CONDITION: a naked unqualified reference inside a CTE body that names a table the same file also declares and that is not a CTE of any enclosing statement.",
+        "pinned_by": "validation/m14/fixtures/sql/sqld5-quoted-and-cte.sql (forbidRelationships on d5_first, expectRelationships on the qualified d5_real so a fix cannot pass by over-suppressing) and mutant sql/declaration-sweep-drops-the-cte-scope"
+      },
+      {
+        "id": "SQL-D20",
+        "node_type": "(oracle coverage, not analyzer)",
+        "status": "RULED",
+        "question": "DERIVATION debt: how many relationship types does this lane emit that no differential ever audits?",
+        "resolution": "RULED: ALL SEVEN. `script/m14/differential.ts` carries 68 per-language `derive*Edges` oracle functions (`deriveJavaEdges`, `deriveGoUses`, `deriveRustDeclaredTypeRefs`, `deriveBashEdges`, …) and NONE for SQL, so `calls`, `uses`, `contains`, `imports`, `references`, `overrides` and `instantiates` are all stored and compared against nothing. Run against the SQL lane the harness says so out loud rather than reporting a clean 0/0: `Error: differential: ProxiCall:sql parsed 60 file(s) and derived ZERO truth edges - the parser or the oracle is dead, not clean (a 0/0 row is a fabricated pass)`. This is the ontology gate's own blind spot one level up - a differential cannot see a type missing from BOTH sides - and it is why the census and the construct probe are the lane's primary instruments. The oracle belongs to shared machinery; the lane's contribution is the specification in its report, not an edit. What the lane CAN audit on its own, it does: the m12 differential against 84 hand-audited facts, which is independent of the analyzer and caught SQL-D19.",
+        "pinned_by": "validation/m14/fixtures/sql/ontology-census.json (7 emitted types) and the gate refusal quoted above; script/m60/sql-ontology-ruled.ts for the arbiter table"
       }
     ],
     "execute_literal_pass": {
@@ -365,7 +473,7 @@
       "invariants": [
         "The RAW between-the-quotes slice is handed to the parser WITH its '' escapes intact, so every recovered range stays byte-exact; unescaping first would shift every range after the first escaped quote.",
         "Comments and nested strings are skipped, so commented-out DDL cannot become a symbol. This is the pass's only false-positive path and it is pinned by a forbidSymbols row and its own mutant.",
-        "Dollar-quoted regions are deliberately NOT skipped \u2014 that is where these literals live.",
+        "Dollar-quoted regions are deliberately NOT skipped — that is where these literals live.",
         "The pass is strictly additive through the same declarationKeys the resync uses, and it reports executeLiterals / executeRecovered / executeSkipped in metadata.ambiguity."
       ],
       "evidence": "validation/m60/sql/execute-literal-recovery.json"
