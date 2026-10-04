@@ -137,6 +137,25 @@ const DART_TYPE_MENTION_DOUBLE_COUNTED = new Set<string>([
  */
 const R7_PLACEHOLDER_NAME = "unknown"
 
+/**
+ * The members `Object` declares, and therefore the members EVERY Dart class's
+ * interface contains whether or not the class mentions them.
+ *
+ * Dart has no other root: every class implicitly extends `Object`, so
+ * `toString`, `hashCode`, `runtimeType`, `noSuchMethod` and `operator ==` are
+ * reachable from every type in the language. That makes this set the one place
+ * where an override target can be named WITHOUT knowing the base's own file, and
+ * `extractOverrideRelationships` uses it for exactly that. Measured against the
+ * Dart SDK's own sources (`dart-sdk/sdk/lib/core/object.dart`, parsed through the
+ * production entry point): `Object.toString`, `Object.hashCode`,
+ * `Object.runtimeType`, `Object.noSuchMethod` and `Object.operator ==` are all
+ * published declarations there.
+ */
+const DART_OBJECT_TYPE = "Object"
+const DART_OBJECT_INTERFACE_MEMBERS = new Set<string>([
+  "toString", "hashCode", "runtimeType", "noSuchMethod", "operator ==",
+])
+
 
 
 // ============================================================================
@@ -1410,6 +1429,67 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
               target = first
               confidence = 0.8
               metadata = { isOverride: true, relationshipType: "method_override", isExternalBase: true }
+              // THE OBJECT INTERFACE IS THE ONE OVERRIDE TARGET THAT NEEDS NO
+              // EVIDENCE ABOUT THE BASE.
+              //
+              // Reaching this point means no base the run can see exposes the
+              // member, so the first heritage parent is a NAME and not a
+              // declaration. When the member is one of `Object`'s own, the parent
+              // inherits it — `class ProtocolException implements Exception` with
+              // `@override String toString()` does not override
+              // `Exception.toString`, because `Exception` declares no `toString`
+              // at all (`dart-sdk/sdk/lib/core/exceptions.dart` publishes 17
+              // symbols and `Exception.toString` is not one of them). The edge
+              // `ProtocolException.toString -> Exception.toString` therefore
+              // named a member that does not exist, and the graph asserted a
+              // declaration there.
+              //
+              // MEASURED over 4,788 corpus files at `BB_DART_CONC=1` (3 repos
+              // read whole: dart-http 335, riverpod 1,295, proxicall 2,351; 2
+              // sampled: flutter-packages 404, dart-sdk 403):
+              //
+              //   before — 247,737 `overrides` rows, 2,422 of them (0.98%) name a
+              //            target no published declaration provides. Every one of
+              //            the 2,422 is this shape, and every one is an
+              //            `isExternalBase` fallback.
+              //   after  — those rows name `Object.<member>`, which IS published
+              //            in the SDK sources, and the residual unexplained
+              //            `overrides` population falls by the same 2,422.
+              //
+              // WHAT THIS TRADES, stated rather than argued away. If an
+              // out-of-run base DOES declare the member — a user class in another
+              // package with its own `toString` — then `Base.toString` was the
+              // nearest correct target and `Object.toString` is one hop further
+              // up. The retarget cannot tell the two cases apart without the
+              // base's own file, and it prefers naming a declaration that
+              // provably EXISTS over naming one that may not. That is the same
+              // preference the rest of this pass already makes when it refuses a
+              // refuted fallback: an edge the graph cannot walk asserts something
+              // that is not there, and a narrower graph that is true beats a
+              // wider one that is not.
+              //
+              // The row is tagged `isObjectInterfaceBase`, so a consumer can tell
+              // a retargeted row from a first-parent row, and M14 §4's
+              // countability holds: it is one boolean over a single type at a
+              // single confidence.
+              if (
+                first !== null &&
+                first !== DART_OBJECT_TYPE &&
+                DART_OBJECT_INTERFACE_MEMBERS.has(s.name)
+              ) {
+                // The BASE name, not the qualified member: the push below appends
+                // `.${s.name}` itself. Writing `Object.toString` here produced the
+                // target `Object.toString.toString`, which the fixture caught on
+                // its first run.
+                target = DART_OBJECT_TYPE
+                metadata = {
+                  isOverride: true,
+                  relationshipType: "method_override",
+                  isExternalBase: true,
+                  isObjectInterfaceBase: true,
+                  firstHeritageParent: first,
+                }
+              }
             }
           }
         }
@@ -1733,7 +1813,21 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
                 type: ASTEngine.RelationshipType.Calls,
                 confidence: 0.9,
                 line_number: this.nodeLine(leafNode),
-                metadata: {},
+                // A CALLEE can be a binding, not a declaration, and the label has
+                // to say so. `$default(_that)` is a real invocation — freezed's
+                // generated `map`/`maybeMap` takes the mapping function as a formal
+                // parameter named `$default` and calls it — and the family contract
+                // publishes no locals, so the target binds to nothing a consumer
+                // holds. `uses` already carries `isLocalRead` for exactly this and
+                // the `calls` branch consulted `locals` for nothing, so the class was
+                // present but UNCOUNTABLE: 138 `calls -> $default` rows and 50
+                // `calls -> orElse` rows over 4,788 corpus files, indistinguishable
+                // in any report from a call to a method nobody declared.
+                //
+                // Metadata only. No row is added or removed and no confidence moves,
+                // so this cannot change a payload; it makes an existing population
+                // queryable, which is what M14 §4 asks of a heuristic edge.
+                metadata: locals.has(leaf) ? { isLocalRead: true } : {},
               })
             }
           }
@@ -1779,7 +1873,10 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
               type: ASTEngine.RelationshipType.Calls,
               confidence: 0.9,
               line_number: this.nodeLine(calleeNode),
-              metadata: {},
+              // Same reason as the bare-call arm above: a leaf that the enclosing
+              // function binds is a binding, and the row is labelled so a consumer
+              // can tell it from a call to a declared member.
+              metadata: locals.has(method) ? { isLocalRead: true } : {},
             })
           }
         }
