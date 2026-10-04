@@ -667,6 +667,29 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
 
+    // Every declaration line per FUNCTION name, for the `calls` attribution below.
+    //
+    // `functionFirstDeclaration` (above) records only the first, because `overrides`
+    // needs the prior one and nothing else. A `calls` edge needs the opposite
+    // question — WHICH of several declarations is the one in effect at the call
+    // site — so it needs all of them.
+    //
+    // It is indexed from the PUBLISHED `symbols`, not from the walk's own
+    // bookkeeping, so a `targetLine` produced from it is a line the store actually
+    // publishes. That is the whole reason it is not `declSites`: `declSites` keys
+    // variables, aliases and locals, never functions, and mixing the two would let
+    // this publish the line of something that is not a function symbol at all.
+    const functionDeclLines = new Map<string, { line: number; kind: string }[]>()
+    for (const sym of symbols) {
+      if (sym.kind !== ASTEngine.SymbolKind.Function) continue
+      const name = sym.name
+      const line = this.nameLineOf(sym)
+      const list = functionDeclLines.get(name)
+      if (list) {
+        if (!list.some((e) => e.line === line)) list.push({ line, kind: String(sym.kind) })
+      } else functionDeclLines.set(name, [{ line, kind: String(sym.kind) }])
+    }
+
     // ------------------------------------------------- attribution, second pass
     // `resolveDeclaration` asks "is this name ambiguous IN THIS FILE?", and at the
     // moment a `uses` edge is emitted that question is asked against a HALF-BUILT
@@ -702,6 +725,76 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
         rel.line_number,
         scriptName,
       )
+      if (resolved) Object.assign(meta, resolved)
+    }
+
+    // ------------------------------- attribution, a read that is also a function
+    //
+    // The last measured hole, and it is 4 edges on the 400-file sample — the whole
+    // of what is left. `declSites` keys VARIABLES, aliases and locals, never
+    // functions (see the note above `functionDeclLines`), so a name the file
+    // declares as BOTH a function and a variable looks unique to `declSites` while
+    // the published symbol table holds two declarations of it. The edge then
+    // publishes nothing and a consumer matching by name has two candidates:
+    //
+    //   consul/build-support/functions/10-util.sh:613   uses -> ui_version   function@597 variable@612
+    //   dart-sdk/pkg/vm/tool/shared_functions.sh:58     uses -> host_arch   function@7    variable@56
+    //   dart-sdk/pkg/vm/tool/shared_functions.sh:59     uses -> host_arch   (same)
+    //   ohmyzsh/plugins/rvm/rvm.plugin.zsh:34           uses -> rubies      function@9    variable@16
+    //
+    // `$name` is a parameter expansion. It reads a VARIABLE; a function is not
+    // readable through `$`, so the function symbol is not a candidate for this edge
+    // at all. That is a property of the language, not a preference, which is why
+    // the resolution is published under its own value rather than folded into
+    // `innermostScope`: a consumer that filters candidates on kind must be able to
+    // see that kind is what decided this one.
+    for (const rel of relationships) {
+      if (rel.type !== ASTEngine.RelationshipType.Uses) continue
+      const meta = rel.metadata as Record<string, unknown>
+      if (meta.targetResolution !== undefined) continue
+      const name = String(rel.target ?? "")
+      if (!functionDeclLines.has(name)) continue // no function symbol, so no second candidate
+      const resolved = this.resolveReadAgainstFunctionSymbol(
+        declSites,
+        name,
+        String(rel.source ?? ""),
+        rel.line_number,
+        scriptName,
+      )
+      if (resolved) Object.assign(meta, resolved)
+    }
+
+    // ------------------------------------------- attribution, `calls` second pass
+    //
+    // The same question for the other type that carries the USE SITE's line rather
+    // than the declaration's. `probe-bash-published-resolvability.mts` measured this
+    // by applying every field the edge PUBLISHES to the file's real symbol table,
+    // and `calls` was the one type no field could answer:
+    //
+    //   type        edges   ambiguous  -> 0 cand   -> 1 cand   -> >1 cand   decided by
+    //   uses        7,856      1,187        0.0%     1,097 92.4%     90  7.6%  targetKind
+    //   contains    3,775        658        0.0%       658 100%       0  0.0%  edgeLine
+    //   overrides      28         28        0.0%        28 100%       0  0.0%  overridesLine
+    //   calls       5,097          6      100.0%        0   0.0%       0  0.0%  (nothing)
+    //
+    // `isFunctionCall: true` is not a discriminator: on all 6 of 6 it leaves ZERO
+    // candidates, because both declarations it could have picked are functions. It
+    // says the target IS a local function, not WHICH one. The example is
+    // kubernetes/third_party/gimme/gimme, where `_version_sort` is defined at 125
+    // and redefined at 127 and three call sites name it — 535, 565, 581.
+    //
+    // bash has no nested function scope: a name resolves to the most recent
+    // definition executed before the call, which for a script read top to bottom is
+    // the latest definition at or before the call site. That is the same rule
+    // `resolveDeclaration` publishes for `uses`, over a different index, and it is
+    // published under its OWN `targetResolution` value so a consumer can tell which
+    // rule answered rather than assuming one rule covers both.
+    for (const rel of relationships) {
+      if (rel.type !== ASTEngine.RelationshipType.Calls) continue
+      const meta = rel.metadata as Record<string, unknown>
+      if (meta.targetResolution !== undefined) continue
+      if (meta.isFunctionCall !== true) continue // an external binary names nothing local
+      const resolved = this.resolveFunctionTarget(functionDeclLines, String(rel.target ?? ""), rel.line_number)
       if (resolved) Object.assign(meta, resolved)
     }
 
@@ -880,6 +973,117 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
     // The name IS declared several times in this file and none of it is in
     // effect where this edge points. Say so; publish no line.
     return { targetResolution: "ambiguousInFile" }
+  }
+
+  /**
+   * A `$name` read in a file that also declares `name` as a FUNCTION.
+   *
+   * `resolveDeclaration` declines here, and correctly so: it is asked "is this name
+   * ambiguous in this file?" and `declSites` — variables, aliases and locals, never
+   * functions — says no. The ambiguity a consumer actually faces is against the
+   * PUBLISHED symbol table, which holds both.
+   *
+   * The rule is the language's, not a preference: `$name` is a parameter expansion,
+   * it reads a variable, and a function is not reachable through `$`. So the
+   * function symbol is excluded as a candidate and the SAME outward scope walk
+   * `resolveDeclaration` performs runs over what remains. One walk, called twice
+   * over two different candidate sets — not a second implementation of the walk,
+   * which is how two rules drift apart.
+   *
+   * Declines, publishing no line, when the walk finds nothing at or before the use
+   * site or finds a tie: the same two refusals `resolveDeclaration` makes, for the
+   * same reason. In that case the edge carries `ambiguousInFile`, which is the
+   * honest row — the name is genuinely claimed by two published declarations and
+   * this edge declines to say which.
+   */
+  private resolveReadAgainstFunctionSymbol(
+    declSites: Map<string, { owner: string; line: number; kind: string }[]>,
+    name: string,
+    useOwner: string,
+    useLine: number,
+    fileOwner: string,
+  ): Record<string, unknown> | undefined {
+    const cands = declSites.get(name)
+    if (!cands || cands.length === 0) return undefined // no variable either: nothing to add
+    const scopes: string[] = useOwner === fileOwner ? [fileOwner] : [useOwner, fileOwner]
+    for (const scope of scopes) {
+      const atOrBefore = cands.filter((c) => c.owner === scope && c.line <= useLine)
+      if (atOrBefore.length === 0) continue
+      const nearest = Math.max(...atOrBefore.map((c) => c.line))
+      const winners = atOrBefore.filter((c) => c.line === nearest)
+      if (winners.length !== 1) return { targetResolution: "ambiguousInFile" }
+      return {
+        targetLine: winners[0]!.line,
+        targetKind: winners[0]!.kind,
+        targetResolution: "readCannotBeAFunction",
+      }
+    }
+    return { targetResolution: "ambiguousInFile" }
+  }
+
+  /**
+   * Which FUNCTION does a `calls` edge at `useLine` naming `name` reach?
+   *
+   * The sibling of `resolveDeclaration`, over functions rather than variables, and
+   * deliberately not a shared code path: `declSites` keys variables, aliases and
+   * locals and never functions, so the two indexes have different contents and a
+   * shared body would be a claim about one of them dressed as a claim about both.
+   *
+   * bash has no nested function scope, so the scope chain `resolveDeclaration`
+   * walks does not exist here and is not faked. The language rule is one step:
+   * a name resolves to the most recent definition executed before the call, which
+   * for a script read top to bottom is the latest definition AT OR BEFORE the call
+   * site. `overrides` already publishes that a redefinition happened and both
+   * lines; this publishes which one a given call reaches.
+   *
+   * The three outcomes are the same three `resolveDeclaration` publishes, and they
+   * are distinct on purpose — "resolved", "there is more than one at the same
+   * line" and "every definition is after the call" are different facts, and a
+   * consumer cannot tell them apart if they collapse into one row:
+   *
+   *   latestDefinitionBeforeUse  one candidate — `targetLine` + `targetKind`, so
+   *                              the fact can be checked against the symbol table
+   *                              instead of trusted.
+   *   ambiguousInFile            two declarations on the same line, which the
+   *                              published line cannot separate. No line: picking
+   *                              one would be the invented attribution.
+   *   declaredAfterUse           every definition of the name is below the call
+   *                              site, so none of them is in effect there. bash
+   *                              permits the forward reference — the callee may be
+   *                              defined before the caller's body runs — so this
+   *                              says what was observed and publishes no line
+   *                              rather than pretending the text order settles it.
+   *
+   * Fewer than two declarations and the name is not ambiguous, so nothing is
+   * added: 55,222 `calls` edges on the whole corpus and only the handful naming a
+   * redefined function grow a key.
+   *
+   * `targetKind` is read off the PUBLISHED symbol rather than written as a literal.
+   * The first version wrote the literal `"Function"` and the published kind is
+   * `"function"` (`SymbolKind.Function`, src/ast/types.ts:11), so every edge it
+   * touched carried a `targetKind` that matched nothing: the attribution pointed at
+   * a real line and a kind no symbol carries, and a consumer filtering on kind
+   * discarded the answer. `probe-bash-published-resolvability.mts` caught it as 6
+   * edges where applying the published fields leaves ZERO candidates — which is the
+   * worse outcome, because it reads as a dangling claim rather than a wrong kind.
+   */
+  private resolveFunctionTarget(
+    functionDeclLines: Map<string, { line: number; kind: string }[]>,
+    name: string,
+    useLine: number,
+  ): Record<string, unknown> | undefined {
+    const cands = functionDeclLines.get(name)
+    if (!cands || cands.length < 2) return undefined
+    const atOrBefore = cands.filter((c) => c.line <= useLine)
+    if (atOrBefore.length === 0) return { targetResolution: "declaredAfterUse" }
+    const nearest = Math.max(...atOrBefore.map((c) => c.line))
+    const winners = atOrBefore.filter((c) => c.line === nearest)
+    if (winners.length !== 1) return { targetResolution: "ambiguousInFile" }
+    return {
+      targetLine: nearest,
+      targetKind: winners[0]!.kind,
+      targetResolution: "latestDefinitionBeforeUse",
+    }
   }
 
   /** Remove quote characters from a path expression. Index arithmetic over the
