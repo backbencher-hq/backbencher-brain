@@ -451,7 +451,13 @@ npx tsx script/m14/firing-check.ts --files 400 dart             # 10/10, 53,252 
 
 `firing-check.ts` and `incoming-check.ts` are shared machinery and are NOT on this
 branch; both were run from a copy under `/tmp` staged at `script/m14/` for the relative
-imports and removed afterwards. Neither is committed by this lane.
+imports and removed afterwards. Neither is committed by this lane. **Two of the arbiter's
+own JSON fields are wrong on every lane and a reader will meet both** — `analyzerDigest`
+is a `MISSING:` path because it looks for `script/ast/` instead of `src/ast/`, which also
+makes `analyzerStableDuringRun` vacuously true, and `types[type].files` is 1 for every
+type because its map is rebuilt per file. Remedies are items 14 and 15 under
+*Shared-machinery needs*. The fired count, the edge count, `degraded`, and the four
+zero-safety fields are unaffected by either, which is why the readings above stand.
 
 The incoming pass (§The incoming direction) has its own instruments, and they use a
 different sample on purpose — a symbol table that is itself a stride cannot answer a
@@ -1361,6 +1367,52 @@ re-running the same gates and watching what they wrote to disk.
     identical in a log, and only one of them is a result. What it must do: resolve
     ROOT the way `differential.ts` does (`import.meta.dirname`), or print an explicit
     "no findings" line so an empty output is distinguishable from a crash.
+14. **`script/m14/firing-check.ts` never hashes the analyzer, so its drift guard cannot
+    fire.** `analyzerDigest` resolves the analyzer at
+    `path.join(here, "..", "ast", \`${rel}.ts\`)` where `here` is `script/m14`, giving
+    **`script/ast/…`** — and every analyzer in this repository lives in **`src/ast/`**.
+    The `existsSync` check therefore fails for all 23 onboarded lanes and the function
+    returns the string `MISSING:/…/script/ast/real-<lang>-analyzer.ts` instead of a
+    sha256. Measured on this lane: `"analyzerDigest":
+    "MISSING:$HOME/mcp/bb-lanes/dart/script/ast/real-dart-analyzer.ts"`,
+    while the file it means to hash is `src/ast/real-dart-analyzer.ts` at
+    `sha256 4d5c584d581658801981573ad19d9c50cba2337a6b2a0981ca63ff362ea0cea7`.
+
+    Two consequences, and the second is the worse one. The header's stated purpose —
+    "sha256 of the ANALYZER UNDER TEST, so a number is tied to the code that produced
+    it" — is not met for any lane: the field identifies nothing. And because
+    `MISSING:…` is a CONSTANT, `digestBefore === digestAfter` always, so
+    `analyzerStableDuringRun` is vacuously `true` and the `ANALYZER CHANGED DURING THE
+    RUN` warning at lines 417-419 and 484-488 is unreachable. A concurrency-sensitive
+    measurement whose whole point is that the analyzer did not move under it has a
+    guard that cannot report movement.
+
+    **What it must do:** add one `..` — `path.join(here, "..", "..", "ast", …)` — and
+    make the absence loud rather than a return value: if the file is missing, report
+    `analyzerDigest: ""` with an explicit `analyzerDigestMissing: true` and exclude the
+    lane from the `analyzerStableDuringRun` claim, so "the digest is absent" cannot be
+    read as "the digest agreed". Why not this lane's to fix: it changes a field every
+    lane's JSON carries, and `script/m14/` is shared machinery.
+
+15. **`script/m14/firing-check.ts` reports `types[type].files` as 1 for every type,
+    always.** `filesByType` is declared at line 334, INSIDE the per-file loop that
+    starts near line 270, and consumed at line 380, also inside it. Each file therefore
+    builds a fresh map holding one path, so `set.size` is 1 for any type that fires in
+    that file, and the assignment overwrites the previous file's 1 with 1. Measured at
+    n=400: **all ten types read `files: 1`**, including `calls` (6,970 edges) and
+    `contains` (11,885), each of which this lane's own census measures across 2,310
+    and 1,696 of 2,735 files respectively.
+
+    The field is not printed by the text report — that prints `r.filesParsed` — so it
+    is only visible in `--json`, and a reader of the JSON sees a plausible small
+    integer with no way to tell it is structural. **What it must do:** hoist the
+    `filesByType` declaration above the file loop and move the
+    `for (const [type, set] of filesByType)` loop out with it, so the set accumulates
+    across files. Alternatively drop the field: a per-type file count that no one
+    computes is worse than none, because `firedOnCorpus` and `edges` already answer
+    what a reader actually asks. Either is a one-line move; the second is honest about
+    the fact that per-type BREADTH is what this lane's `census.ts` exists to measure,
+    and it measures it uncapped.
 
 ## Supported constructs
 
