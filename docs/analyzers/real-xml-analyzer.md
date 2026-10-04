@@ -72,26 +72,41 @@ turned into phantom recovery symbols.
 
 ## Relationship ontology
 
-Ten types, one verdict each, measured through the production entry point
-`parseFile` over **11,066 corpus files in 91 repositories** — every git-tracked
-file the router hands to the XML analyzer, not a sample.
-Instrument: `validation/m14/fixtures/xml/ontology-census.mts`, which walks the
-tree twice (once through `parseFile`, once through the wired wasm for the
-grammar inventory and the semantic probes) and writes
-`validation/m14/fixtures/xml/ontology-census.json`.
+Ten types, one verdict each. **The verdict column below is the ARBITER's, not this
+lane's** — `script/m14/ontology-coverage-gate.ts` run against this lane's ruling
+table over the **full 11,456-file admitted population in 110 repositories**, every
+git-tracked file the router hands to the XML analyzer, not a sample:
+
+```
+emitted 6/10   ruled-sound 4   FALSIFIED 0   ruled-without-justification 0
+```
+
+That gate exits 2 for `xml` because its `RULED_BY_LANG` is a literal with no
+extension point, so these verdicts were uncheckable until
+`script/m14/xml-ruled.ts` existed.
+`validation/m14/fixtures/xml/ruled-gate.ts` applies the two-line wiring to a COPY
+of the arbiter under `/tmp` and runs it, so the table is proven rather than
+asserted. Resolution rates come from the census draw described below; the edge
+counts come from the arbiter's own `parseFile` pass.
 
 | Type | Verdict | Edges | Files | Both ends resolve | `confidence` < 0.7 |
 | --- | --- | ---: | ---: | ---: | ---: |
-| `contains` | EMITTED | 179,605 | 10,847 | 179,604 / 179,605 = **100.0 %** | 0 |
-| `references` | EMITTED | 10,331 | 391 | 5,190 / 10,331 = **50.2 %** | 0 |
-| `imports` | EMITTED | 415 | 278 | 3 / 415 = 0.7 %, by design | 0 |
-| `calls` | EMITTED (was GAP) | **548** | 76 | 548 / 548 = **100 %** | 0 |
-| `extends` | EMITTED (was GAP) | **434** | 106 | 209 / 434 = **48.2 %** | 0 |
-| `uses` | RULED | 0 | 0 | — | — |
-| `exports` | RULED, with 620 adjudicated sites | 0 | 0 | — | — |
-| `implements` | RULED, with 307 adjudicated sites | 0 | 0 | — | — |
-| `overrides` | RULED (per-file) | 0 | 0 | — | — |
-| `instantiates` | RULED | 0 | 0 | — | — |
+| `contains` | EMITTED | 185,979 | 10,847+ | **100.0 %** | 0 |
+| `references` | EMITTED | 10,411 | 391+ | **49.1 %** | 0 |
+| `imports` | EMITTED | 464 | 278+ | 0.0 %, target is a file, by design | 0 |
+| `calls` | EMITTED (was GAP) | **548** | 76+ | **100 %** | 0 |
+| `extends` | EMITTED (was GAP) | **438** | 106+ | **40.1 %** | 0 |
+| `overrides` | EMITTED (was RULED — the corpus overturned it) | **3** | 3 | **100 %** | 0 |
+| `uses` | RULED-SOUND, instrument B, probe count **0** | 0 | 0 | — | — |
+| `exports` | RULED-SOUND, instrument A, 611 sites adjudicated | 0 | 0 | — | — |
+| `implements` | RULED-SOUND, instrument A, 5 sites adjudicated | 0 | 0 | — | — |
+| `instantiates` | RULED-SOUND, instrument A, probe counts **0** and **0** | 0 | 0 | — | — |
+
+Per-type integrity and resolution detail, on a 2,500-file family-stratified draw:
+`validation/m14/fixtures/xml/ontology-census.mts`, artifact
+`validation/m14/fixtures/xml/ontology-census-overrides-gap.json`. The previous
+full-population artifact is kept at `…/ontology-census.json` (11,066 files / 91
+repositories, before the corpus grew to 110).
 
 What each type means **in this language**, which is not what it means in general:
 
@@ -102,8 +117,9 @@ What each type means **in this language**, which is not what it means in general
 | `references` | a QName-valued attribute resolved through a declared prefix → the component it names (`type`, `ref`, `itemType`, `substitutionGroup`, `xsi:type`, …); a RELAX NG `ref` `name`; an `xsl:apply-templates name=` dispatch; an `&entity;` use. The target is the LOCAL name |
 | `calls` | `xsl:call-template name="T"` → the `xsl:template` that declares `T` |
 | `extends` | XSD **type derivation**: `xs:extension base="T"` and `xs:restriction base="T"` → `T` |
+| `overrides` | XSLT 1.0 **§5.5 competing template rules**: two `xsl:template` in one stylesheet carrying the same `match`, `mode` and `priority`, where the LATER declaration replaces the earlier. Source is the declaration that wins |
 | `uses` | not emitted — see the ruling below |
-| `implements`, `instantiates`, `overrides`, `exports` | not emitted — see the rulings below |
+| `implements`, `instantiates`, `exports` | not emitted — see the rulings below |
 | imports array | external DTD `ExternalID` becomes an `ImportInfo` with `importType: xml-doctype` |
 
 Every `contains` target is a symbol published by this analyzer — that is a hard
@@ -267,38 +283,118 @@ nobody had listed. It is a recall gap, not a correctness one, and adding the
 vocabulary is a change to a shared table with 261 corpus sites of blast radius —
 recorded as owed rather than done in passing.
 
-#### `overrides` — RULED per file, and the ruling is a boundary, not an absence
+#### `overrides` — was RULED, the corpus overturned it, and the type is EMITTED
 
-XSLT 1.0 has a section titled **§5.6 Overriding Template Rules**. The construct
-exists, and it is worth being precise about where, because the measurement puts
-it out of reach of a per-file analyzer:
+**This section previously ruled the type inapplicable per file. That ruling was
+wrong, and the arbiter said so.** It is kept below in the form it took, because a
+reader comparing this doc against an older one needs to see the claim change and
+why — and because the reasoning error is the interesting part.
 
-**Probe 1 — a same-file override: two `xsl:template` in one stylesheet with the
-same `match`, `mode` and `priority`. Result: 54 occurrences in 54 files (51 with
-no `match` at all, 2 `match="*"`, 1 `match="/"`).** These are NOT overrides.
-§5.5 Conflict Resolution says: *"It is an error if this leaves more than one
-matching template rule. An XSLT processor may signal the error; if it does not
-signal the error, it must recover by choosing … the one that occurs last in the
-stylesheet."* A same-file template pair with equal match/mode/priority is an
-**error with a defined recovery**, and §6 makes the same statement for names:
-*"It is an error if a stylesheet contains more than one template with the same
-name and same import precedence."* Emitting `overrides` here would label a
-conformance error as an inheritance relation, and 51 of the 54 are libxslt's own
-`tests/REC/` suite probing that error.
+**The old ruling.** "A same-file template pair with equal match/mode/priority is
+an **error with a defined recovery**, and §6 makes the same statement for names.
+Emitting `overrides` here would label a conformance error as an inheritance
+relation."
 
-**Probe 2 — where overrides actually live: `xsl:import`/`xsl:include`/`xs:include`/
-`xs:import`/`xs:redefine` sites, across files. Result: 455 occurrences in 221
-files** (312 `include`, 142 `import`, 1 `redefine`). §2.6.2 is explicit that an
-importing stylesheet's definitions "take precedence over template rules and
-definitions in the imported stylesheet", and §5.6 exists so the overridden rule
-can still be reached with `xsl:apply-imports`. **Both ends of such an edge live in
-two different files**, so no per-file analyzer can emit it, and `imports` edges are
-already there to let a project-level pass build the graph.
+**Why that is wrong.** §5.5 does not merely permit a processor to recover — it
+says what the recovery *is*: *"if it does not signal the error, it must recover by
+choosing … the one that occurs last in the stylesheet."* Choosing the last rule
+**is** the later declaration replacing the earlier one. That is the definition of
+`overrides` in every other lane's terms (the gate's own bash ruling: "a SECOND
+declaration of a name already declared in the same file — it replaces the prior
+one"). Calling the recovery "not an inheritance relation" while emitting nothing
+drew the graph's conclusion from the word *error* rather than from the semantics
+the spec gives the error.
 
-A non-zero count on probe 1 from a **different** construct — a same-file
-declaration that replaces an earlier one at equal import precedence — overturns
-the ruling. A non-zero count on probe 2 does not: it says the construct occurs,
-across files, and names the machinery a project-level pass needs.
+**What the measurement said.**
+`script/m14/ontology-coverage-gate.ts`, run against this lane's table over the
+full 11,456-file admitted population:
+
+```
+overrides  FALSIFIED  NOT EMITTED, but the construct occurs 3x across 3 file(s)
+                       on the PARSE TREE — it is derivable, so the ruling is wrong.
+                       e.g. libxslt/tests/docbook/fo/toc.xsl: 2 xsl:template
+                       competing at match|*|toc.for.section| (lines 180,190)
+```
+
+`libxslt/tests/docbook/fo/toc.xsl` declares
+`<xsl:template match="*" mode="toc.for.section">` at line 180 and again at line
+190. Same pattern, same mode, same (absent) priority, one stylesheet. The second
+runs. Three sites in three files:
+`libxslt/tests/docbook/fo/toc.xsl`, `libxslt/tests/docbook/html/toc.xsl` and one
+more the gate counts but does not name.
+
+**What is emitted.** Role `xslt_competing_template_rule`, `confidence: 1`,
+`evidenceClass: structural`, `metadata.derivation:
+"xslt-5.5-later-template-replaces-earlier"`, plus `templateMatch` /
+`templateMode` / `templatePriority` so a consumer can re-derive the collision
+instead of trusting the edge. **Source is the declaration that wins.**
+
+**The endpoint problem, and why the derived names are safe.** A match-based
+template has no `name`, so this analyzer gives it the TAG name `xsl:template` —
+which means every match-based template in a stylesheet is one symbol, and two
+declarations that replace one another cannot be told apart. A colliding template
+therefore publishes a derived identity:
+
+```
+xsl:template[match=<pattern>|mode=<mode>|priority=<priority>]#<n>
+```
+
+Two properties make that safe rather than inventive. **It is disjoint from every
+name a document can declare**: `[`, `]`, `|`, `=` and `@` are not NCName
+characters (XML 1.0 §2.3 — `NameChar` excludes all of them), so no
+`xsl:template name="…"` and no declared name in any vocabulary can equal it, and a
+derived identity can never shadow or merge with a real one. **It is published only
+for templates that actually collide**, so the corpus cost is 4 rows in 11,456
+files rather than one per match-based template. The `#<n>` occurrence index is
+required and not decoration: the triple is by construction IDENTICAL for the two
+declarations, so an identity built from it alone would make both endpoints one
+name and the edge a self-edge.
+
+**Direction.** Source = later declaration, target = the one it replaced. The
+reverse edge would say the first rule took the second's place, which is the
+opposite of what a processor does; a graph carrying both directions would make
+every override look mutual. Both directions are pinned as forbids in
+`xml/xslt-competing-template-overrides`.
+
+**Cross-file overrides remain out of reach, and that is a boundary rather than an
+absence.** §2.6.2 is explicit that an importing stylesheet's definitions "take
+precedence over template rules and definitions in the imported stylesheet", and
+§5.6 exists so the overridden rule stays reachable via `xsl:apply-imports`. Those
+endpoints live in two different files: 234 include/import/redeclare elements over
+94 files in the census draw (128 `xs:include`, 105 `xsl:import`, 1 `xsl:redefine`),
+each already an `imports` edge carrying the file it pulls in, so the stylesheet
+that brings the overriding rule is recorded as the dependency that brings it.
+Emitting the override itself needs a project-level pass. **Declared, not ruled.**
+
+**A defect this lane's own instrument had, which the arbiter exposed.** The
+ruling above stood on a probe named `same-file-template-override`, and when the
+arbiter asked the same question the probe was found to be wrong. It keyed on
+`match|mode|priority` and **ignored `name`**, so every name-only template reduced
+to the key `||`: 9 legal named templates read as collisions —
+`name="dumptext"` (l.26), `name="generate_general"` (l.498), `name="generate_index"`
+(l.539) in each of libxslt's two `html.xsl`, and `name='transformCALSCell'`
+(l.121), `name='findInheritedAttribute'` (l.216),
+`name='transformInheritedAttribute'` (l.310) in powershell's
+`Maml_HTML_Style.xsl`. Verified by hand; none has a `match`, because a named
+template is INVOKED by `xsl:call-template` and never competes for a node. The
+probe also held `templateKeys` at module scope and reassigned it per file inside
+4 concurrent workers, so one worker's reset can land inside another's file — a
+race that can both invent collisions and lose them.
+
+Both defects are fixed in `validation/m14/fixtures/xml/ontology-census.mts`, which
+now reports the two keys **side by side** so the size of the error is a number in
+the artifact rather than a claim in a commit message:
+
+| probe | occurrences | files |
+| --- | ---: | ---: |
+| `competing-template-rule` (corrected) | **0** | 0 |
+| `name-only-template-key-artifact` (the defect, kept) | **3** | 3 |
+
+and the corrected standalone probe is
+`validation/m14/fixtures/xml/overrides-probe.mts`, which measures 128
+`xsl:template` in the draw — 119 carrying a `match` and therefore able to
+compete, 9 name-only — and **0** competing groups. The 3 real sites are outside
+this draw, which is why only the full-population arbiter sees them.
 
 #### `exports` — RULED, probe count **620 adjudicated to 0**
 
@@ -329,14 +425,37 @@ judgement about a dialect, so it is stated as one and not dressed as a count.
 
 ### The six questions, answered for every emitted type
 
-| Question | `contains` | `references` | `imports` | `calls` | `extends` |
-| --- | --- | --- | --- | --- | --- |
-| 1. Exists | walk + DTD branches | deferred reference pass | `extractExternalId`, `schemaLocation`, PI `href` | `XSLT_CALL_ELEMENTS` | `xsdDerivationElement` branch |
-| 2. Fires | 179,605 edges / 10,847 files | 10,331 / 391 | 415 / 278 | 548 / 76 | 434 / 106 |
-| 3. Correct | differential oracle, see below | — | — | — | — |
-| 4. Labelled | `structural` 179,605 (100 %) | `reference_qualified` 10,331 (100 %) | `import_based` 415 (100 %) | `reference_qualified` 548 (100 %) | `structural` 434 (100 %) |
-| 5. Resolved | 179,604/179,605 = **100.0 %** | 5,190/10,331 = **50.2 %** | 3/415 = 0.7 %, target is a file | 548/548 = **100 %** | 209/434 = **48.2 %** |
-| 6. Confident | 0 edges < 0.7 | 0 | 0 | 0 | 0 |
+Rows 2, 4, 5 and 6 are from the 2,500-file family-stratified draw
+(`ontology-census-overrides-gap.json`, 85,102 relationships, 381,890 symbols, 86
+distinct node types over 2,787,237 nodes); the edge counts in the ontology table
+above are the arbiter's full-population pass. `overrides` reads **0 in this draw**
+and 3 in the full population, which is stated here rather than averaged over.
+
+| Question | `contains` | `references` | `imports` | `calls` | `extends` | `overrides` |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1. Exists | walk + DTD branches | deferred reference pass | `extractExternalId`, `schemaLocation`, PI `href` | `XSLT_CALL_ELEMENTS` | `xsdDerivationElement` branch | `competingTemplates` + the §5.5 pass |
+| 2. Fires | 77,721 edges / 2,472 files | 6,750 / 195 | 260 / 174 | 17 / 3 | 354 / 93 | **0 / 0 in this draw; 3 / 3 in the full 11,456** |
+| 3. Correct | **unmeasured for all six** — see below | — | — | — | — | — |
+| 4. Labelled | `structural` 77,721 (100 %) | `reference_qualified` 6,750 (100 %) | `import_based` 260 (100 %) | `reference_qualified` 17 (100 %) | `structural` 354 (100 %) | `structural` 3 (100 %) |
+| 5. Resolved | 77,721/77,721 = **100.0 %** | 3,312/6,750 = **49.1 %** | 0/260 = 0 %, target is a file | 17/17 = **100 %** | 142/354 = **40.1 %** | 3/3 = **100 %** |
+| 6. Confident | 0 edges < 0.7 | 0 | 0 | 0 | 0 | 0 |
+
+**The two rates below 100 % are a declared resolvability class, not dangling
+edges, and the split is measured rather than asserted.** `metadata.resolvable`
+carries it per edge:
+
+| type | in-document | builtin | external | unresolved | both-ends rate |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| `references` | 2,795 | 3,574 | 375 | 6 | 49.1 % |
+| `extends` | 119 | 226 | 9 | 0 | 40.1 % |
+
+XML names far more specification built-ins than the reference point (CSS
+`references` at 66.8 %): `xs:string`, `xs:int`, `xs:positiveInteger` and their
+kind are declared in the XML Schema specification, not in the file being read, so
+they are deliberately not published as in-file symbols. `imports` reads 0 % by
+design for a different reason — **its target is a file path**, which is the one
+case in this analyzer where a value is the right target, and a path is not a
+symbol. Only 6 `references` edges (0.09 %) are genuinely `unresolved`.
 
 **Q3, and the limitation that comes with it.** `script/m14/differential.ts --lang
 xml` **does not run this lane**: it prints `[lane] SKIP xml: no corpus repo mapped
@@ -438,12 +557,16 @@ than a consequence of the relabel. The `references`/`calls`/`extends` deltas
 reconcile exactly to the construct counts and cannot be produced by a whole-file
 drop.
 
-### DERIVATION findings: 4, and every type this lane emits is unaudited by the shared differential
+### DERIVATION findings: 6, and every type this lane emits is unaudited by the shared differential
 
 A DERIVATION finding is a type the analyzer emits that no differential audits. For
-XML the count is **4 — `references`, `imports`, `calls`, `extends`** — and the
-reason is the one measured above rather than a policy: `differential.ts` does not
-run this lane at all, and has no XML oracle to run.
+XML the count is now **6 of 6 — `contains`, `references`, `imports`, `calls`,
+`extends`, `overrides`** — every type this analyzer emits, stored and compared
+against nothing by the shared differential. The reason is the one measured above
+rather than a policy: `differential.ts` does not run this lane at all, and has no
+XML oracle to run. It was 4 before the M60 ontology pass added `calls` and
+`extends`, and 6 after this pass added `overrides`; the debt grew by exactly the
+work that was supposed to reduce it, which is the shape of the problem.
 
 A 5th type, `contains`, is audited only by a lane-local instrument outside the
 shared differential (`script/m12/xml-differential-gap.mts`, 43 unexplained of
@@ -603,16 +726,76 @@ standalone DTD files.
 
 ## Regex inventory
 
-The XML analyzer has **zero regex usages**, and the machine census agrees: 0 XML
-entries, 0 missing, 0 stale, 0 unclassified, out of 28 classified usages across
-43 analyzers.
+The XML analyzer has **zero regex usages**, and the machine census agrees.
+`script/m12/verify-regex-census.ts` reports **0 rows mentioning
+`real-xml-analyzer.ts`** — not 0 entries, not 0 missing, but no row at all — and
+the global gate's remaining 17 missing rows belong to css (12), scss (2), sql (1)
+and svelte (2). Verified at this commit, after it.
 
-That agreement was not free, and the disagreement is worth recording. This
-section claimed zero while the census reported **1** —
-`value.split(/\s+/)` at the `schemaLocation` handler, classified
+That agreement was not free, and both times it was reached the doc had claimed it
+before the machine agreed. Recording both, because the pattern is the lesson.
+
+**First: `value.split(/\s+/)` at the `schemaLocation` handler**, classified
 `needs_review` with an **empty justification**. The doc had been written when the
 claim was true and never re-checked against the machine that can disprove it; the
 census had been right the whole time and the prose had drifted.
+
+**Second, and it survived the first fix: `const isValueForm = ref.length === 0
+|| /\s/.test(ref)`** at the `PEReference` branch, the analyzer's last regular
+expression. The comment beside it claimed the corpus proved the test necessary, and
+cited measurements from **libxml2's own test suite, which is not in
+`$HOME/fixtures`** — so the number in the comment could not be
+reproduced from the committed corpus. Re-measured: **0 `PEReference` nodes across
+the entire 11,456-file admitted population.** The 22 admitted files whose text
+carries `<!ENTITY %` are bare `.dtd` fragments this grammar cannot root (its
+`document` rule requires a document element), and the one admitted `.xml` —
+libxslt's `tests/xmlspec/REC-xml-20001006.xml` — carries its occurrences inside
+`CDATA`, i.e. documentation *about* parameter entities. The branch is live on
+fixtures (4 nodes in 2 files, all published) and unreachable on the corpus.
+
+**What replaced it, and why not the method the brief prefers.** The brief's rule is
+"where the information is IN THE NODE, a regex over the text is strictly worse",
+and `grammar.json` supports the reading: `PEReference` is the sequence
+`"%" Name ";"` and `Name` is `[a-zA-Z_][a-zA-Z0-9_:.·-]*`, a character class that
+**cannot contain whitespace**. So the whitespace test can never be true for a node
+the grammar built, and reading the `Name` child looks like a clean win.
+
+`validation/m14/fixtures/xml/pereference-shape-probe.mts` ran three candidate
+predicates over every `PEReference` node obtainable and printed both verdicts per
+node. **The `Name`-child lookup LOSES.** It disagreed with the shipped predicate on
+3 of 11 nodes and was **wrong on 2 of them**:
+
+| shape | shipped | `Name` child | which is right |
+| --- | --- | --- | --- |
+| `%pe;` in an internal subset | publish `pe` | publish `pe` | agree |
+| `% zz '&#60;` (the value form the old comment cites) | drop | publish `zz` | **shipped** — a value-form *declaration* is not a use |
+| `%pe` in `<!ELEMENT %pe EMPTY>` | drop | publish `pe` | **shipped** — the document never wrote `%pe;` |
+| `%p<U+00A0>e;` | drop | publish `p` | **shipped** |
+
+Both wrong cases are **error recovery**: the grammar builds a `PEReference` whose
+only child is a `Name` and whose text has no `;`, so the child lookup invents a
+use from a document that never expressed one. That is the fabrication rule's exact
+case. The semicolon guard had **no fixture pin at all**, which is why
+`xml/pereference-semicolon-required` exists and why mutant
+`xml/pereference-semicolon-guard-removed` is in the lane's mutant set.
+
+So the text read stayed and only the regex went: a char walk over the **enumerated
+ECMAScript `\s` code points**, deliberately **not** narrowed to XML's own `S`.
+Narrowing is defensible on XML grounds and would have been a behaviour change on
+exactly one of the 11 measurable nodes — the U+00A0 case, where the wider class
+drops and the narrower one publishes a symbol named `p<U+00A0>e`, a name no XML
+parser would accept. On that single node the wider class is the better answer, so
+it is kept, and the narrowing is recorded here as measured-and-declined rather than
+silently taken.
+
+**Two more regexes left in this lane's census script**, at
+`validation/m14/fixtures/xml/ontology-census.mts`:
+`av.replace(/^["']|["']$/g, "")`, twice. The brief's hard rule covers census scripts
+as well as analyzers, and the arbiter only scans analyzers, so this lane's own
+count was 3 and the arbiter could only see 1 of them. Replaced by an `unquote`
+character test that drops the first character when it is a quote **and** the last
+is the **same** quote, which is what the anchored alternation meant. **This lane's
+regex count: 3 → 0.**
 
 `schemaLocation` is the one attribute whose value is a token list rather than a
 single name, so it is the only place a value has to be cut into words. That is now
