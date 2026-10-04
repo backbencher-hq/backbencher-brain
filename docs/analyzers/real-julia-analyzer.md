@@ -36,7 +36,8 @@ npx tsx script/m14/differential.ts --lang julia --no-batch  # shared F5, scoped:
 bun  run script/m14/run-fixtures.ts --lang julia
 bun  run validation/m14/fixtures/julia/mutation-check.ts --all
 npx tsx validation/m14/fixtures/julia/envelope.ts --files 400                     # the time envelope + load context
-npx tsx script/m14/ontology-coverage-gate.ts julia                            # exit 0, 9 emitted / 1 ruled
+npx tsx validation/m14/fixtures/julia/engine-concurrency-probe.ts --files 400      # why the arbiter cannot finish
+npx tsx script/m14/ontology-coverage-gate.ts julia                            # exit 1 before it prints; see below
 ```
 
 **The arbiter reports this lane, and it now agrees with the census edge for edge.**
@@ -65,6 +66,75 @@ instantiates  EMITTED           3,428 edges in 4+ files, e.g. Aqua.jl/test/test_
 emitted 9/10   ruled-sound 1   FALSIFIED 0   ruled-without-justification 0        exit 0
 ```
 
+## The arbiter's exit 0 does not reproduce, and the bomb that ends it is not the file it names
+
+**The recorded block above is a RECORDED RUN and it no longer reproduces at `exit 0`.** On current shared
+machinery `npx tsx script/m14/ontology-coverage-gate.ts julia` prints a `[BB-PARSE-ERR] … memory
+access out of bounds`, then a `[BB-HANG]` about two minutes later naming the same file, then exits
+**1 without printing the verdict table at all**. Two runs on this machine hit it on two different
+files (`Graphs.jl/test/cycles/basis.jl`, `StaticArrays.jl/test/svd.jl`), so it is not one bad file.
+The previous version of this section reported the opposite — `exit 0`, and "0 `[BB-PARSE-ERR]` and 0
+`[BB-HANG]` lines" — and that was a figure copied from a run that happened not to trip. **A gate that
+finishes on some runs and is killed on others cannot be quoted for its exit code, and quoting one
+was the error.** The counts in the block are not in doubt; the ability of the arbiter to reach the
+line that prints them is.
+
+**The cause is two shared defects, and the second one misattributes its own file.** Both are measured
+by `validation/m14/fixtures/julia/engine-concurrency-probe.ts` (lane-owned, writes nothing):
+
+1. **`src/ast/engine.ts:1441-1447` arms the self-destruct before it parses and clears it after.**
+
+   ```
+   const parseBomb = setTimeout(() => { … process.exit(1) }, 120000)   // :1441
+   const tree = parser.parse(content)                                   // :1446
+   clearTimeout(parseBomb)                                              // :1447
+   ```
+
+   A parse that RETURNS clears its own bomb. A parse that THROWS never reaches `:1447`, so its bomb
+   stays armed; `parseFile` catches the throw, logs `[BB-PARSE-ERR]` (`src/ast/pool-worker.ts:1231`),
+   returns `extractFallback`, and the run carries on until the orphan fires `process.exit(1)`. So
+   **`[BB-HANG] parser stuck 120s on X` does not mean X was slow** — X is whichever file armed the
+   oldest surviving bomb, and the file that actually failed is named by the `[BB-PARSE-ERR]` line
+   above it. Confirmed by timestamps in a real run: the error at `08:19:08`, other files parsed at
+   `08:19:20` and `08:20:58`, and the orphan firing at `08:20:58` — 120 s after arming, naming the
+   file that had already failed.
+
+2. **`parseFile` traps `memory access out of bounds` under concurrency, and width is the only
+   variable between the instruments that disagree.** Same files, same production entry point:
+
+   | caller | width | outcome on 1,985 files |
+   |---|---|---|
+   | `ontology-coverage-gate.ts:240` | **8 workers** | traps, then the orphan kills the run |
+   | `census.ts:82` | 4 workers | clean — `throw: 0`, `fallback: 0` |
+   | `firing-check.ts:290` | sequential `for` | clean — `degraded: 0`, 234,796 edges |
+
+   Interleaved A/B, 400-file stride sample, 3 rounds per arm, so no arm owns the quietest minute:
+
+   ```
+   width 1: 1,200 parses   0 degraded   0 threw
+   width 4: 1,200 parses   0 degraded   0 threw
+   width 8: 1,200 parses   3 degraded   0 threw      (3 of 3 rounds)
+
+   120000 ms timers ARMED 10,797   CLEARED 10,794   NEVER CLEARED 3   <- one per parse error
+   BOMBS OBSERVED FIRING: 2, at +120.0 s and +120.3 s after arming, each naming the file whose
+   parse threw, each calling process.exit(1)
+   ```
+
+   The trapped file differs every run — `Pkg.jl/…/TestArguments.jl`, `Aqua.jl/…/UsesTransientTask.jl`,
+   `julia/base/array.jl`, and on earlier runs `Unregistered.jl`, `Aqua.jl/src/ambiguities.jl`,
+   `Aqua.jl/test/pkgs/…/svd.jl` — and each of them parses clean when driven alone, so this is
+   concurrent-parse fragility and **not** a per-file grammar defect. Both files are shared (§8):
+   `engine.ts` needs a `try`/`finally` around `parser.parse`, and the gate needs either a width below
+   the trap threshold or the bomb disarmed before the catch.
+
+**None of this moves a verdict, and the reason is worth stating precisely.** `arbiter-census-diff.ts`
+re-measures the same 1,985 files under the arbiter's own counting rule at width 4 and returns
+**`throw: 0`, 234,796 rows, `files with r.fallback truthy: 0`**, per-type identical to the census row
+for row — `calls 122,150 · uses 37,087 · contains 14,299 · imports 2,804 · references 49,586 ·
+exports 2,859 · extends 2,580 · implements 0 · overrides 3 · instantiates 3,428`. **The arbiter's
+counts reproduce exactly; the arbiter no longer reaches the line that prints them.** A reader who
+wants the table should run `arbiter-census-diff.ts`, which is lane-owned, width-4, and writes nothing.
+
 **Every one of the nine counts equals this lane's own census, to the edge, and `implements` is the
 arbiter's own RULED-SOUND.** Two instruments, different code paths, same numbers — which is the
 strongest form of agreement available here, because the arbiter reads the corpus and counts rows while
@@ -79,20 +149,24 @@ imports=1`. That attribution was right and the mechanism was a SHARED one: `reso
 grammar to `os.tmpdir()/bb-wasm_<relativePath>`, a path shared by every process on the machine, with
 a plain `writeFileSync`, so a concurrent reader could load a TRUNCATED wasm; `Language.load` then threw
 and `parseFile`'s catch silently substituted `extractFallback`. `src/ast/engine.ts` now writes to a
-per-process path and renames atomically, and the run above reports **0 `[BB-PARSE-ERR]` and 0
-`[BB-HANG]` lines** where the earlier run reported two errors.
-`validation/m14/fixtures/julia/arbiter-census-diff.ts` re-measures the same 1,985 files under the
-arbiter's own counting rule and now returns **`throw: 0`, 234,796 rows, `files with r.fallback truthy:
-0`**, with per-type totals identical to the arbiter's row for row. The diff instrument's reason for
-existing is gone; it is kept because a gate that once disagreed by 13 edges should be able to show that
-it no longer does.
+per-process path and renames atomically, and that specific trap is gone — `julia/stdlib/LibGit2/
+test/runtests.jl` no longer appears in any run. **What replaced it is the width-dependent trap above**,
+which is a different defect with the same error string, so "the wasm temp-path trap is fixed" was true
+about one cause and read as true about the symptom.
 
 **One property of the arbiter's output is an artifact of the shared gate, not a measurement, and it
 applies to every language it scores.** Its file column reads `4+ files` for every large type because
 `ontology-coverage-gate.ts` grows the set with `if (row.files.size < 4)` — the cap is in the gate, so
-`calls in 4+ files` is not a statement about breadth (this lane measures 926). And its
-`[BB-HANG]` handler is `process.exit(1)` (`src/ast/engine.ts:1412`), so a single slow file ends the
-run rather than being reported: both are §8 items.
+`calls in 4+ files` is not a statement about breadth (**this lane measures 1,873**; an earlier version
+of this file said 926, which was the 971-file corpus and contradicted this file's own verdict table
+three screens down — `doc-tables-check.ts` cannot catch it because it reads tables, not prose, which is
+the declared limit of that instrument and is the reason the number is quoted here rather than left to
+be re-derived). And its `[BB-HANG]` handler is `process.exit(1)` (`src/ast/engine.ts:1442`), so one
+orphaned timer ends the run rather than being reported: that was an assertion in the previous version
+of this file and is now a measurement — **3 orphaned bombs per 1,200-file run at width 8, 0 at width 4,
+and 2 observed `process.exit(1)` calls** — which makes it an every-language finding, not a julia one:
+any lane whose corpus trips a parse error under the gate's 8 workers loses its verdict table the same
+way. Both are §8 items.
 
 So the verdicts below are produced by the lane-owned census applying the gate's own two instruments
 and the gate's own verdict algorithm to julia, and the gate's verdict algorithm now has a table to
@@ -189,8 +263,13 @@ rather than `TARGET only` on its 40-file draw for the same reason: with zero edg
 is no evidence about which end an oracle populates, and a default there would print a zero as if it
 were a finding.
 
-Both runs report **`degraded: 0`**, which is the shared wasm temp-path fix holding under concurrency
-(see above); earlier runs of this lane could not make that claim.
+Both runs report **`degraded: 0`** (re-verified on current shared machinery: 120 files → 14,204 edges,
+1,985 files → 234,796 edges, exit 0 both times), which is the shared wasm temp-path fix holding.
+**It holds at `firing-check`'s width, which is a sequential `for` loop** — so this is not evidence
+about concurrent `parseFile`, and the sentence that used to read "holding under concurrency" was
+claiming more than the instrument tests. The width-dependent trap that remains is measured in
+[the next section](#the-arbiters-exit-0-does-not-reproduce-and-the-bomb-that-ends-it-is-not-the-file-it-names);
+earlier runs of this lane could not make the `degraded: 0` claim at all.
 
 ---
 
@@ -685,9 +764,14 @@ Bucket meanings, each of which is a claim with a stated basis:
 - **synthetic scope** — `global` and `root`, this repo's documented synthetic scope names, counted per
   type in the table below rather than excluded from the denominator.
 
-**19,022 `calls`, 6,234 `uses`, 3,234 `global` + 1,371 `root` `references` and 652 `instantiates`
-edges are sourced from `global`/`root`.** Those are dangling sources by construction and are counted
-as such: a resolution rate that excluded them would not be the number a consumer sees.
+**26,228 `calls`, 7,757 `uses`, 4,020 `global` + 2,667 `root` `references` and 716 `instantiates`
+edges are sourced from `global`/`root`** — and `imports` carries 1,365 more from `root` and `exports`
+794, which this sentence previously omitted while claiming to enumerate the synthetic sources. Those
+are dangling sources by construction and are counted as such: a resolution rate that excluded them
+would not be the number a consumer sees. (These six figures are the census's own
+`production.syntheticSources` block, so they move with the corpus and are printed on every run; the
+previous version of this sentence carried 19,022 / 6,234 / 3,234 + 1,371 / 652 from the 971-file
+corpus and was never re-measured, because `doc-tables-check.ts` reads table cells and this is prose.)
 
 ### The ambiguity, and the fact that the edge already carries the answer
 
@@ -1030,10 +1114,16 @@ All 9 were node-text normalisation, and each replacement is a prefix or characte
 The census had 10 more of its own, now in `text-util.ts`. `script/m14/oracles/julia-calls.ts`'s
 `/^@/` was replaced the same way.
 
-**Measured after the change:** the shared scanner finds **0 julia regex usages** (was 9);
-`bun run script/m14/run-fixtures.ts --lang julia` → 4 pass, 0 fail;
-`bun run validation/m14/fixtures/julia/mutation-check.ts --all` → 21 killed, 0 survived, of 21;
-`npx tsc --noEmit` → no error in any julia file.
+**Measured after the change (re-verified on current shared machinery):** the shared scanner finds
+**0 julia regex usages** (was 9) and `script/m12/verify-regex-census.ts` prints
+`unclassified: 0 · mislocated: 0 · regex census gate PASSED` with julia absent from its 5 entries;
+`bun run script/m14/run-fixtures.ts --lang julia` → **5 pass, 0 fail**;
+`bun run validation/m14/fixtures/julia/mutation-check.ts --all` → **25 killed, 0 survived, of 25**;
+`npx tsc --noEmit` → no error in any julia file. (This paragraph said 4 fixtures and 21 mutants: both
+were true when written and were not re-measured as the `imports`/`exports` work added one fixture and
+four mutants. `doc-tables-check.ts` cannot see this paragraph, which is the same prose-vs-table gap
+costing a figure three separate times in this file — see the census's `production` block for the
+machine-printed equivalents.)
 
 `text-util.ts`'s **declared limitation**: it is a lexical scanner, not a TypeScript parser. It handles
 comments, strings, template literals with `${ … }` interpolation, and it does **not** disambiguate a
@@ -1644,18 +1734,25 @@ can be a fixture asserting things the code does not do, and the fixture is what 
 - **`+%` / `-%` and the 177 ERROR-node files are grammar-side**, not analyzer-side.
 - **Macro-generated definitions are visible only when the definition is in source** (`@inline f(x) = x`
   declares `f`; a macro that *synthesises* a name does not).
-- **The wasm temp-path trap that cost this lane 13 edges is FIXED upstream, and this lane's arbiter
-  numbers are now whole.** The previous version of this file carried the whole story as an open
-  limitation: `resolveWasm` wrote each grammar to a path shared by every process on the machine, so a
-  concurrent reader could load a truncated wasm, `Language.load` threw, and `parseFile`'s catch
+- **The wasm temp-path trap that cost this lane 13 edges is fixed upstream, and a DIFFERENT trap with
+  the same error string replaced it.** The previous version of this file carried the whole story as an
+  open limitation: `resolveWasm` wrote each grammar to a path shared by every process on the machine, so
+  a concurrent reader could load a truncated wasm, `Language.load` threw, and `parseFile`'s catch
   silently substituted `extractFallback` — a regex extractor whose symbols carry no kind. The trapped
   file was `julia/stdlib/LibGit2/test/runtests.jl` and the cost was `calls=9 uses=2 references=1
-  imports=1`. `src/ast/engine.ts` now writes to a per-process path and renames atomically. Measured
-  after the fix: the arbiter reports **0 `[BB-PARSE-ERR]` and 0 `[BB-HANG]` lines**, `firing-check`
-  reports **`degraded: 0` at both 120 and 1,985 files**, and `arbiter-census-diff.ts` reports
-  **`throw: 0`, 234,796 rows, `fallback: 0`** with per-type totals identical to the arbiter's.
-  **Every number in this file is therefore measured on a run where no file silently degraded**, which
-  was not true of any earlier version of it. The general lesson is kept because it outlives the bug:
+  imports=1`. `src/ast/engine.ts` now writes to a per-process path and renames atomically. **That fix
+  holds** — `firing-check` reports **`degraded: 0` at both 120 and 1,985 files** and
+  `arbiter-census-diff.ts` reports **`throw: 0`, 234,796 rows, `fallback: 0`** with per-type totals
+  identical to the census, so every number in this file is measured on a run where no file silently
+  degraded. **But the claim that the arbiter itself reports `0 [BB-PARSE-ERR]` and `0 [BB-HANG]` was
+  false and is withdrawn:** `parseFile` still traps `memory access out of bounds` at 8-way concurrency
+  (0 traps at width 1 and 4 over 2,400 parses each), and because `engine.ts:1441-1447` arms the 120 s
+  self-destruct *before* `parser.parse` and clears it *after*, the throw orphans the bomb and kills
+  the arbiter 120 s later naming the file that had already failed. Measured 10,797 timers armed /
+  10,794 cleared / **3 never cleared, one per parse error**, with 2 observed fires. See
+  [§ the arbiter's exit 0](#the-arbiters-exit-0-does-not-reproduce-and-the-bomb-that-ends-it-is-not-the-file-it-names)
+  for the full A/B. Both defects are shared (§8). The lesson is kept because it outlived the first bug
+  and now applies twice:
   `parseFile` CATCHES the wasm trap, so "0 crashes" in this lane means "0 throws", and a file the
   parser cannot read leaves no trace in a counter that only counts throws — which is why the trap had
   to be found by differencing two instruments rather than by reading either one's output.
