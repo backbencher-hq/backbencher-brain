@@ -312,7 +312,28 @@ this one does:
 
 | | blob / digest |
 | --- | --- |
-| `analyzer/NIM` @ `c12d7c7c1` | git blob for `src/ast/real-nim-analyzer.ts`, sha256 `a59574036eb9f7fb…` |
+| `analyzer/NIM` @ `ab6367afe` | git blob for `src/ast/real-nim-analyzer.ts`, sha256 `a59574036eb9f7fb…` |
+
+**And this table was WRONG until it was checked against the artifact, which is the
+point of printing the digest.** The revision before this one pinned the same digest
+`a59574036eb9f7fb…`, but the committed census artifact recorded
+`9e93988f677e8faf` — a different analyzer, and `9e93988f` matches **no commit on
+this branch** (`git log --format=%h -- src/ast/real-nim-analyzer.ts`, sha256 of each
+blob: `a59574036eb9f7fb`, `b9a73cfda9d826a3`, `37112977bad16542`, `f17b972273aa923d`,
+`0d847349a69a170c`, `e2dd026b3b3f47e0`, `dab4e6c068c977d4`, `7e2870e150e86075`,
+`5b5645b4df2abf12`, `14b5a17ffbcebd4a`, `bf41f772b4df402c`, `e3b0c44298fc1c14`). The
+artifact was a working-tree measurement carrying a committed file's name, and the
+table above it carried a THIRD set of numbers belonging to neither. All three are
+gone; what is here is one walk, re-run against the committed analyzer, with the
+artifact regenerated beside it (`validation/m14/measurements/nim/ontology-census.{json,txt}`
+now records `a59574036eb9f7fb` on both sides of the walk).
+
+The same defect was in six sibling instruments — `accent-quoted-endpoints`,
+`gap-hunt`, `nim-ruled-probe`, `resolution-audit`, `ruled-gate`,
+`unknown-endpoint-hunt` carried no digest at all, and the oracle cross-check's only
+artifact was literally named `oracle-crosscheck-workingtree.{json,txt}`. All seven
+now hash the analyzer before and after the walk and print the verdict on both sides,
+so a run that straddles an edit says so instead of looking like a finding.
 
 An earlier revision of this section carried a warning that the numbers described
 HEAD *plus* an uncommitted working tree, because two `opencode run --agent build`
@@ -335,34 +356,37 @@ records the count its run used.
 
 | Relationship type | Emitted? | Verdict | Measured on this corpus | Where the number comes from |
 | --- | --- | --- | --- | --- |
-| `calls` | YES | EMITTED | 79,079 edges | `collectCallsAndUses`: the callee branches plus the parenless-UFCS member-leaf branch |
-| `uses` | YES | EMITTED | 30,972 edges | `collectCallsAndUses`, the member-leaf and bare-identifier read branches |
-| `contains` | YES | EMITTED | 21,326 edges | `collectContainment`, from `ownerName` and from `metadata.nimNestedIn` for a nested routine |
-| `references` | YES | EMITTED | 40,336 edges | `collectDeclaredTypeRefAt`, the declared-type sites |
-| `imports` | YES | EMITTED | 9,332 edges | `readImportStatement` / `readImportFromStatement` / `readIncludeStatement`, plus the `ImportInfo[]` channel |
-| `instantiates` | YES | EMITTED | 1,987 edges | `collectInstantiationAt`, a call whose callee is a type this file declares, plus the type argument of a `new` expression |
-| `extends` | YES | EMITTED | 570 edges | `collectInheritance`, from `object_declaration.inherits`, minus the compiler's own roots |
-| `implements` | YES | **implemented, corpus-measured absent** | **0** edges, 216 concepts examined, 0 refinements | `collectContractRefinement`, from `concept_declaration.refines` and from `is X` in a concept body |
+| `calls` | YES | EMITTED | 79,020 edges | `collectCallsAndUses`: the callee branches plus the parenless-UFCS member-leaf branch |
+| `uses` | YES | EMITTED | 31,010 edges | `collectCallsAndUses`, the member-leaf and bare-identifier read branches |
+| `contains` | YES | EMITTED | 21,561 edges | `collectContainment`, from `ownerName` and from `metadata.nimNestedIn` for a nested routine |
+| `references` | YES | EMITTED | 40,521 edges | `collectDeclaredTypeRefAt`, the declared-type sites |
+| `imports` | YES | EMITTED | 9,324 edges | `readImportStatement` / `readImportFromStatement` / `readIncludeStatement`, plus the `ImportInfo[]` channel |
+| `instantiates` | YES | EMITTED | 1,988 edges | `collectInstantiationAt`, a call whose callee is a type this file declares, plus the type argument of a `new` expression |
+| `extends` | YES | EMITTED | 568 edges | `collectInheritance`, from `object_declaration.inherits`, minus the compiler's own roots |
+| `implements` | YES | **implemented, corpus-measured absent** | **0** edges, 216 `concept_declaration` in 69 files examined, 0 refinements | `collectContractRefinement`, from `concept_declaration.refines` and from `is X` in a concept body |
 | `overrides` | YES | EMITTED | 48 edges | `collectOverrides`, receiver-qualified `Receiver.method`; the cross-file family additionally needs `overrideCompanion` |
-| `exports` | YES | EMITTED | 399 edges | `readExportStatement`, one edge per OPERAND of `export`, with `except` read positionally as what does NOT leave |
+| `exports` | YES | EMITTED | 407 edges | `readExportStatement`, one edge per OPERAND of `export`, with `except` read positionally as what does NOT leave |
 
 | Type | Verdict | Edges | Both ends resolve | Confidence | evidenceClass |
 | --- | --- | --- | --- | --- | --- |
-| `calls` | EMITTED | 79,079 | 39.4% | 0.85 / 0.9 / 0.75 | `usage_contextual` 79,024, `import_based` 54, none 1 |
-| `uses` | EMITTED | 30,972 | 99.7% | 1.0 (51.6% at 0.75) | `usage_contextual` 30,916, `import_based` 56 |
-| `contains` | EMITTED | 21,326 | 99.8% | 1.0 | `structural` |
-| `references` | EMITTED | 40,336 | 46.0% | 0.9 | `reference_qualified` 34,189, `import_based` 6,147 |
-| `imports` | EMITTED | 9,332 | 44.5% | 1.0 | `import_based` |
-| `instantiates` | EMITTED | 1,987 | 100.0% | 0.9 | `usage_contextual` |
-| `extends` | EMITTED | 570 | 70.9% | 1.0 | `structural` |
-| `exports` | EMITTED | 399 | 4.0% | 1.0 | `structural` |
+| `calls` | EMITTED | 79,020 | 39.4% | 0.85 (75,617) / 0.9 (3,349) / 0.75 (54) | `usage_contextual` 78,966, `import_based` 54 |
+| `uses` | EMITTED | 31,010 | 99.7% | 1.0 (15,064) / 0.75 (15,946) | `usage_contextual` 30,954, `import_based` 56 |
+| `contains` | EMITTED | 21,561 | 99.8% | 1.0 | `structural` |
+| `references` | EMITTED | 40,521 | 46.1% | 0.9 | `reference_qualified` 34,363, `import_based` 6,158 |
+| `imports` | EMITTED | 9,324 | 44.5% | 1.0 | `import_based` |
+| `instantiates` | EMITTED | 1,988 | 100.0% | 0.9 | `usage_contextual` |
+| `extends` | EMITTED | 568 | 70.8% | 1.0 | `structural` |
+| `exports` | EMITTED | 407 | 3.9% | 1.0 | `structural` |
 | `overrides` | EMITTED | 48 | 100.0% | 1.0 | `structural` |
 | `implements` | **implemented, corpus-measured absent** | **0** | — | 1.0 | `structural` |
 
-183,049 edges. **0 below 0.7 from this analyzer.** One `calls` edge sits at 0.5 with
+**184,447 edges. 0 below 0.7 from this analyzer.** One `calls` edge sits at 0.5 with
 no `evidenceClass`, and it is not this analyzer's: it comes from the regex fallback
 in shared `pool-worker.ts` described in *Limitations* 11, which is a §8 report and
-is counted here so the table is not read as claiming a clean 0.
+is counted here so the table is not read as claiming a clean 0. Symbol hygiene on
+the same walk: 83,639 symbols, **0** empty names, 21 empty kinds (see *Limitations*
+8), **8** endpoints equal to the literal `unknown` (*Limitations* 9), **0** empty
+endpoints, **0** edge types outside the ten.
 
 ### How the arbiter itself now reports these ten
 
@@ -380,19 +404,20 @@ wiring to a COPY of the gate in `/tmp` and runs the copy. Its output:
 
 ```
 type          status            detail
-calls         EMITTED           79,041 edges in 4+ files
-uses          EMITTED           31,079 edges in 4+ files
-contains      EMITTED           21,579 edges in 4+ files
-imports       EMITTED           9,343 edges in 4+ files
-references    EMITTED           40,559 edges in 4+ files
+calls         EMITTED           79,117 edges in 4+ files
+uses          EMITTED           31,058 edges in 4+ files
+contains      EMITTED           21,515 edges in 4+ files
+imports       EMITTED           9,335 edges in 4+ files
+references    EMITTED           40,548 edges in 4+ files
 exports       EMITTED           408 edges in 4+ files
 extends       EMITTED           570 edges in 4+ files
 implements    RULED-SOUND       NOT EMITTED; the construct occurs 0x on the parse tree.
                                 Written ruling: script/m14/nim-ruled.ts (RULED_BY_LANG.nim)
 overrides     EMITTED           48 edges in 4+ files
-instantiates  EMITTED           1,990 edges in 4+ files
+instantiates  EMITTED           1,989 edges in 4+ files
 emitted 9/10   ruled-sound 1   FALSIFIED 0   ruled-without-justification 0
-exit code 0
+exit code 0   (204s)
+analyzer sha256 across the child's walk : a59574036eb9f7fb  (unchanged)
 ```
 
 So the coverage figure is **9 emitted + 1 measured-absent = 10 of 10
@@ -401,10 +426,21 @@ the numerator from what measurably fires, the denominator from a parse-tree
 measurement of non-applicability. It is not 10/10 emitted, and reporting it as
 such would be the claim-without-coverage class the workstream exists to stop.
 
-Two numbers in that table differ from the census above (`calls` 79,041 vs
-78,992; `references` 40,559 vs 39,907) because the arbiter proof ran against a
-LATER analyzer state — the same effect the digest field was added to catch.
-Each row is correct for its own run; the census run is the one the digest pins.
+The arbiter's counts differ from the census above in the third digit
+(`calls` 79,117 vs 79,020; `references` 40,548 vs 40,521; `contains` 21,515 vs
+21,561) for the reason *Limitations* 11 and 17 give: both walks are over the same
+4,555 files at 6 workers, the production path is non-deterministic under
+concurrency, and the WASM parser loses a load-dependent set of files to heap
+exhaustion. Both runs are digest-pinned to the same analyzer blob and both say
+"unchanged", so the difference is the walk, not the analyzer. `implements` reads 0
+in both, `overrides` reads 48 in both, and `extends` reads 570 in the arbiter
+against 568 in the census — the two-occurrence gap is two of the load-dependent
+parse failures, named in `validation/m14/measurements/nim/ontology-census-stderr.txt`.
+
+**This is the one place in this document where two numbers for the same quantity
+appear side by side**, and neither is corrected to match the other: each is correct
+for its own walk, and the honest statement is that the quantity is
+`79,020 ± ~100` at this corpus size and worker count, not a five-digit fact.
 
 ### `implements`: implemented, and measured absent on this corpus
 
@@ -594,21 +630,24 @@ Over the same 4,555 files:
 
 | type | edges | local | module stem | builtin | declared in another corpus file | **tree-only** | external |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `calls` | 79,080 | 39.4% | — | — | 58.1% | **17** | 2.4% |
-| `uses` | 31,021 | 99.8% | — | — | — | 53 | 0.1% |
-| `contains` | 21,572 | 99.8% | — | — | — | 23 | — |
+| `calls` | 79,113 | 39.4% | — | — | 58.1% | **15** | 2.4% |
+| `uses` | 31,055 | 99.8% | — | — | — | 53 | 0.1% |
+| `contains` | 21,579 | 99.8% | — | — | — | 23 | — |
 | `imports` | 9,341 | 0.1% | **88.7%** | — | 2.1% | 0 | 9.1% |
-| `references` | 40,534 | 46.1% | — | 1.7% | 49.9% | **0** | 2.3% |
+| `references` | 40,558 | 46.2% | — | 1.7% | 49.9% | **0** | 2.3% |
 | `exports` | 408 | 3.9% | — | 0.5% | 70.8% | 0 | 24.8% |
 | `extends` | 570 | 70.9% | — | — | 28.4% | 0 | 0.7% |
 | `overrides` | 48 | **100.0%** | — | — | — | 0 | — |
-| `instantiates` | 1,985 | **100.0%** | — | — | — | 0 | — |
+| `instantiates` | 1,990 | **100.0%** | — | — | — | 0 | — |
 
 The **tree-only** column is the defect column: the target IS declared on a corpus
-parse tree and no symbol with that name was published anywhere. It is 93 edges
-across the whole corpus, from four distinct names — `destructor`, `root`, `me`,
-`super`, plus `_` — and two of them (`destructor`, `super`) are templates whose
-`contains` edge the production filter deletes (*Limitations* 12).
+parse tree and no symbol with that name was published anywhere. It is **91 edges**
+across the whole corpus, from five distinct names — `destructor`, `root`, `me`,
+`super`, `localPassCAnswer` — plus `_`, and two of them (`destructor`, `super`) are
+templates whose `contains` edge the production filter deletes (*Limitations* 12).
+Callable declaration recall over the same walk is **34,456 of 34,466 = 100.0%**,
+and all ten unpublished names are printed with their source line in
+`validation/m14/measurements/nim/resolution-audit.txt`.
 
 `exports` at 3.9% local is not a defect and the table says why: `export foo` names
 something the file **imported**, so the target lives in another module by
@@ -638,6 +677,78 @@ and name-keyed publication keeps one of them, so the other's base is lost. That 
 the same name-collision shape the incoming walk reports as an ambiguous target,
 seen from the source side, and it is stated here rather than smoothed over.
 
+### The incoming direction: what REACHES a declaration, and where it cannot
+
+`script/m14/incoming-check.ts` is the only instrument that measures the reverse
+direction, and `src/lsp/impact.ts` is the consumer that needs it — the reverse walk
+obtains its edges by scanning outgoing edges and matching targets, because no
+inbound edge is stored in the schema at all. Both runs below are production
+`parseFile`, digest `a59574036eb9f7fb`, 0 degraded parses, 0 parse failures.
+
+| index | files | symbols | `calls` edges | `calls` distinct | ambiguous | unresolved | `overrides` |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `nim/compiler` | 182 | 11,363 | 24,291 | 4,671 | 3,150 | 2,246 | 0 edges |
+| `nim/lib/pure` | 105 | 6,912 | 10,196 | 1,776 | 1,202 | 2,985 | 14 edges / 7 distinct / **0 unresolved** |
+
+The `overrides` row is the one to read twice. On `nim/lib/pure` it is **14 edges,
+7 distinct targets, 0 ambiguous and 0 unresolved** — that is the `qualifiedName`
+fix (*Four defects*, 4) holding end to end, and it is the same measurement the
+before/after table quotes as 14 edges moving from 14 unresolved to 0. On
+`nim/compiler` it reads **0 edges at all**: the family fires, but not there, and
+*Limitations* 15 says why (10 corpus methods carry a receiver declared in another
+file, and a bare corpus walk builds no companion).
+
+**The `ambiguous` column is not this lane's ambiguity, and reading it as one would
+be wrong by two orders of magnitude.** `incoming-check.ts:107` keys its
+resolution map on NAME and discards the file, so a name declared once in the
+referring file and once elsewhere in the indexed set counts as ambiguous even
+though the edge's own file settles it. `validation/m14/fixtures/nim/ambiguity-split.ts`
+restores the file dimension and separates the two:
+
+| index | edges | harness "ambiguous" | **irreducible — same file** | overstates by |
+| --- | --- | --- | --- | --- |
+| `nim/compiler` | 50,094 | 12,516 | **270 = 0.5%** | 12,246 |
+| `nim/lib/pure` | 21,235 | 5,990 | **756 = 3.6%** | 5,234 |
+
+Per type on `nim/compiler` the irreducible share is `calls` 0.8%, `uses` 0.6%,
+`contains` 0.4%, and **0.0%** on the other six. The 270 edges come from five names
+in ordinary Nim — `config(62)`, `emptyNode(28)`, `c(23)`, `map(16)`, `name(15)`,
+`add(12)`, `key(11)`, `ensureKind(11)`, `history(10)`, `union(7)` — a file that
+declares the same name twice, which is what overloading and the
+field-versus-accessor collision look like in every language. **This is the place
+the language makes the distinction impossible per-file, stated with its count
+rather than smoothed over: 270 edges over 182 files.** `lib/pure` is 8x worse
+(3.6%) because it is many small files in one package where a name recurs inside a
+file more often, so the figure is a property of the subtree and not of the
+analyzer — which is why both are reported.
+
+**External is separated from never-indexed, per type, and the separation is a
+bound rather than a verdict.** Against an index of 182 files and a corpus of 4,555:
+
+| type | unresolved | on a corpus tree, outside this index | on no corpus tree (external) |
+| --- | --- | --- | --- |
+| `calls` | 2,253 | 2,253 | 0 |
+| `references` | 556 | 556 | 0 |
+| `imports` | 1,536 | 917 | **619** |
+| `uses` | 12 | 12 | 0 |
+| `exports` | 12 | 12 | 0 |
+| `extends` | 4 | 4 | 0 |
+| `contains` | 3 | 3 | 0 |
+
+The named examples say what the columns mean: the most frequent `calls` targets
+absent from this index are `defined(286)`, `default(154)`, `initIntSet(84)`,
+`doAssert(67)`, `raiseAssert(60)` — all declared in `lib/system.nim` and
+`lib/pure`, **neither of which is in the `nim/compiler` index** — and the 619
+`external` edges are module paths (`std/assertions`, `std/strutils`) that the
+corpus does not contain at all.
+
+The first column is therefore **not** called a defect anywhere in this document,
+and the instrument says so in its own output: a 182-file index of a 4,555-file
+corpus cannot establish that a declaration was never published, only that it is
+outside this index. What establishes it is `resolution-audit.ts` with the index
+universe equal to the corpus, and that measurement is the **91 tree-only edges**
+in the resolution table above, from five names.
+
 ### The six questions, per emitted type
 
 Columns 1, 2, 5 and 6 are this pass's census (4,555 files, 6 workers, analyzer
@@ -649,15 +760,15 @@ derivations agree", never "the edge is true". Column 4 is adjudicated per type.
 
 | Type | 1 Exists | 2 Fires | 3 Correct (oracle) | 4 Labelled | 5 Resolved | 6 Confident |
 | --- | --- | --- | --- | --- | --- | --- |
-| `calls` | yes | 79,079 | 2,519 vs 2,527; 0 missing, **13 unexplained** | yes | 39.4% | 100% under 1.0; `usage_contextual` |
-| `uses` | yes | 30,972 | 825 vs 826; 0/1 | yes | 99.7% | 51.6% at 0.75, rest 1.0 |
-| `contains` | yes | 21,326 | 995 vs 998; 0/**4** | yes | 99.8% | 1.0, `structural` |
-| `imports` | yes | 9,332 | 349 vs 349; 0/0 | yes | 44.5% | 1.0, `import_based` |
-| `references` | yes | 40,336 | 624 vs 622; **3 missing**, 0 unexplained | yes | 46.0% | 0.9, `reference_qualified` |
-| `instantiates` | yes | 1,987 | 124 vs 124; 0/0 | yes | 100.0% | 0.9, `usage_contextual` |
-| `extends` | yes | 570 | 30 vs 30; 0/0 | yes | 70.9% | 1.0, `structural` |
+| `calls` | yes | 79,020 | 2,519 vs 2,527; 0 missing, **13 unexplained** | yes | 39.4% | 100% under 1.0; `usage_contextual` |
+| `uses` | yes | 31,010 | 825 vs 826; 0/1 | yes | 99.7% | 50.0% at 0.75, rest 1.0 |
+| `contains` | yes | 21,561 | 995 vs 998; 0/**4** | yes | 99.8% | 1.0, `structural` |
+| `imports` | yes | 9,324 | 349 vs 349; 0/0 | yes | 44.5% | 1.0, `import_based` |
+| `references` | yes | 40,521 | 624 vs 622; **3 missing**, 0 unexplained | yes | 46.1% | 0.9, `reference_qualified` |
+| `instantiates` | yes | 1,988 | 124 vs 124; 0/0 | yes | 100.0% | 0.9, `usage_contextual` |
+| `extends` | yes | 568 | 30 vs 30; 0/0 | yes | 70.8% | 1.0, `structural` |
 | `overrides` | yes | 48 | 3 vs 3; 0/0 | yes | 100.0% | 1.0, `structural` |
-| `exports` | yes | 399 | **no oracle derivation exists** | yes | 4.0% | 1.0, `structural` |
+| `exports` | yes | 407 | **no oracle derivation exists** (20 targets unaudited) | yes | 3.9% | 1.0, `structural` |
 | `implements` | yes | **0** | no oracle, and 0 edges | yes | — | 1.0, `structural` |
 
 **Question 5 is the one this pass moved, and the movement is the result.** The
@@ -666,7 +777,7 @@ audit* above splits the same edges into local / another-file / builtin / tree-on
 / external, and `calls` at 39.4% local is 58.1% declared in another corpus file and
 2.4% genuinely external. Before this pass the same measurement read 653 `calls`
 edges in the **tree-only** bucket — a declaration the tree carried and the analyzer
-published nowhere — and it now reads 17.
+published nowhere — and it now reads 15.
 
 **Question 6, and the one edge below 0.7.** This analyzer emits **0** edges below
 0.7 on every type, so nothing in the lane is a heuristic by the honesty contract
@@ -687,38 +798,33 @@ because it is real: both sides walk the same grammar, so a grammar fact both get
 wrong is invisible to it.** "Agrees" means "the two derivations agree", never
 "the edge is true".
 
-Column 3 above carries the LAST run whose analyzer state is this branch's HEAD
-(400 of 4,056 discovered files, 400 parsed, 0 failures). Re-run this pass against
-the WORKING TREE — `validation/m14/measurements/nim/oracle-crosscheck-workingtree.{json,txt}`
-— the residuals move a long way, and the direction is informative:
+The cross-check is now digest-pinned like the census
+(`validation/m14/measurements/nim/oracle-crosscheck.{json,txt}`,
+`a59574036eb9f7fb`, 400 of 4,075 discovered files, deterministic every-10th, 400
+parsed, 0 parse failures, 0 oracle throws), and the artifact it replaces was named
+`oracle-crosscheck-workingtree.*` and read **MISSING 149 / UNEXPLAINED 32** — a
+working-tree measurement that was still being cited. The pinned run reads:
 
-| Type | HEAD analyzer | working tree | what moved |
-| --- | --- | --- | --- |
-| `calls` | 14 unexplained | **30 unexplained** | 12+ are `calls -> runnableExamples`, i.e. the `## runnableExamples:` doc block being published as a call |
-| `contains` | 0/0 | **126 missing**, 1 unexplained | nested routines are published and the oracle does not derive them |
-| `references` | 1 missing | **3 missing** | — |
-| `uses` | 0/0 | **1 unexplained** | — |
-| `exports` | no derivation | no derivation, 20 targets | unchanged DERIVATION finding |
+**MISSING 23, UNEXPLAINED 18**, and both directions are accounted:
 
-These are **not** defects of HEAD, and this section does not claim them as such:
-they are the cost of measuring an analyzer that was being rewritten underneath
-the measurement. Two of them are worth the supervisor's attention anyway.
-`runnableExamples` is caught by a mutant that already exists
-(`nim/runnable-examples-pragma-published-as-a-call`), so the mutant gate is
-already the right instrument for it; and `contains` at 126 missing says the nim
-ORACLE is now behind the analyzer on nested routines, which is DERIVATION debt
-growing in the other direction. Both residuals are named rather than left as
-counts, and the pre-existing ones are named too:
+| Type | analyzer | oracle | missing | unexplained | reading |
+| --- | --- | --- | --- | --- | --- |
+| `calls` | 2,519 | 2,527 | 0 | 13 | 9 of the 13 are the accent-quoted operator targets the production filter deletes (*Limitations* 12); `=destroy` ×5 and `=sink` ×1 are hook operators; `cast` is a macro-built call |
+| `uses` | 825 | 826 | 0 | 1 | `uses -> type` at `nim/tests/manyloc/named_argument_bug/gui.nim`, an object field literally named `type` |
+| `contains` | 995 | 998 | 0 | 4 | 3 are `` contains -> `-!` ``, `` contains -> lhs `` ×2 — the same filter; 1 is `contains -> type` in the same `gui.nim` |
+| `imports` | 349 | 349 | 0 | 0 | exact agreement |
+| `references` | 624 | 622 | 3 | 0 | `asyncjs.nim -> impl`, `-> default`, `taliassyntax.nim -> U` |
+| `exports` | 20 | 0 | 20 | 0 | the oracle derives **no** `exports` target at all, so all 20 are unaudited — a DERIVATION finding, not 20 defects |
+| `extends` | 30 | 30 | 0 | 0 | exact agreement |
+| `overrides` | 3 | 3 | 0 | 0 | exact agreement |
+| `instantiates` | 124 | 124 | 0 | 0 | exact agreement |
+| `implements` | 0 | 0 | — | — | neither emits any |
 
-- **14 unexplained `calls`** are all operator or magic callees the analyzer's
-  builtin filter drops: `|div|`, `==`, `-`, `+`, `=destroy` (×4), `matchProc`,
-  `visitingProc`, `assignResult?`, `()` (`nim/tests/specialops/tcallops.nim`).
-  The filter is the lane's deliberate rule, not a defect; the oracle counts them
-  and the analyzer declines them.
-- **1 `references` miss** is `nim/tests/types/taliasbugs.nim references -> Rgba8`,
-  which this document already records as genuinely ambiguous
-  (`BlenderRgb[Rgba8]` reads as a type argument; the enclosing test reads as a
-  value index). An independent re-measure reproduced the same single row.
+So **5 of the 10 types agree exactly on a 400-file sample, 4 disagree only where a
+named shared-machinery defect or a recorded ambiguity explains the difference, and
+`exports` has no second opinion at all.** The `references` 3 are the recorded
+`BlenderRgb[Rgba8]`-style ambiguity (a name in a type-argument position reading as
+a value index); each is named with its file in the artifact.
 
 **Question 4 — labelled.** The two confusions this ontology actually risks in Nim
 are both adjudicated with a number rather than a claim. `extends` vs `implements`:
@@ -732,27 +838,30 @@ pass, and the mutant `nim/star-marker-promoted-to-an-exports-edge` covers the
 1,500 files) is a VISIBILITY modifier on a local declaration, not a re-export;
 counting it as `exports` is the mutant above.
 
-**Question 5 — resolved, and the low rates are the finding.** `calls` at 39.3%
-and `references` at 45.2% are cross-module targets: a Nim file calls and names
+**Question 5 — resolved, and the low rates are the finding.** `calls` at 39.4%
+and `references` at 46.1% are cross-module targets: a Nim file calls and names
 types declared in the 3,968-file compiler and its libraries, and the census
 resolves endpoints against the symbols of the file's own draw, so a cross-file
 target reads as unresolved here and resolves in a full index. The diagnosis is in
 the census output rather than asserted — the top unresolved `calls` targets are
-`add(2645)`, `doAssert(2095)`, `defined(1462)`, `len(577)`, `skipTypes(483)`, and
+`add(2642)`, `doAssert(2088)`, `defined(1459)`, `len(577)`, `skipTypes(483)`, and
 the top `references` targets are `PNode(2285)`, `PSym(984)`, `PType(941)`,
 `PContext(675)`, all compiler-internal types from other modules. `exports` at 3.9%
 is the same fact BY CONSTRUCTION and is the sharpest case: its targets are
 re-exports of names declared in ANOTHER module, so a low rate is the honest
 reading of a correct edge. The CSS `references` reference point (66.8%) sits
-between the two classes.
+between the two classes. `overrides` (100.0%), `instantiates` (100.0%),
+`contains` (99.8%) and `uses` (99.7%) sit at the other end: their targets are
+declared in the same file by construction, so those four rates are the ones a
+regression in publication would actually move.
 
-**Question 6 — confident, in one number.** **0 of 183,386 corpus edges fall
+**Question 6 — confident, in one number.** **0 of 184,447 corpus edges fall
 below 0.7**, so nothing in this lane is a heuristic by the honesty contract §4's
 0.7 line, and the ratio is countable rather than a vibe. The sub-1.0 edges are a
 different thing and are countable by type — `calls` 0.85 (usage-inferred callee,
-75,679) and 0.9 (3,259), `imports`-qualified `calls` 0.75 (54), `uses` 0.75
-(15,954 = 51.8% of that family) with the rest at 1.0, `references` 0.9 (39,907),
-`instantiates` 0.9 (1,990), `overrides` companion edges 0.9.
+75,617) and 0.9 (3,349), `imports`-qualified `calls` 0.75 (54), `uses` 0.75
+(15,946 = 51.4% of that family) with the rest at 1.0, `references` 0.9 (40,521),
+`instantiates` 0.9 (1,988), `overrides` companion edges 0.9.
 
 ### DERIVATION debt
 
@@ -808,6 +917,37 @@ https://github.com/nim-lang/Nim` succeeds, so the names were wrong rather than
 the network blocked. The `implements` verdict is therefore reported as measured
 absent on a corpus of 4,555 files that contains 216 concepts, and NOT padded with
 a synthetic file written to make a table look finished.
+
+## Gates re-run on this pass, and what each one answered
+
+Every row is a command, its exit code, and the number it produced. Nothing here is
+quoted from an earlier round.
+
+| command | exit | result |
+| --- | --- | --- |
+| `bun run script/m14/run-fixtures.ts --lang nim` | 0 | **10 fixtures, 10 pass, 0 fail.** Scoped run writes no evidence, by the runner's own guard |
+| `bun run script/m14/mutate-analyzer.ts` (no scoping; the runner has none) | 2 | **58 nim mutants, 58 caught, 0 survived.** Exit 2 is 6 survivors in OTHER lanes — `java/bare-read-type-attribution`, `groovy/modifier-return-type-loss`, `groovy/ctor-name-revert`, `scala/drop-import-source-rewrite`, `make/swallow-the-rule-after-a-comment`, `php/drop-external-override-guess` |
+| `npx tsx validation/m14/fixtures/nim/verify-mutants.ts` | 0 | 15 ontology-round mutants, 15 caught, 0 survived |
+| `npx tsx script/m14/differential.ts --lang nim` | 0 | **`[lane] SKIP nim: no corpus repo mapped in LANG_REPOS`** — measured 0 lanes, M14.0.F5 not written. *Limitations* 18 |
+| `npx tsx validation/m14/fixtures/nim/ruled-gate.ts` | 0 | the arbiter's own verdict loop on a copy: **emitted 9/10, ruled-sound 1, FALSIFIED 0, ruled-without-justification 0**, 204s |
+| `npx tsx script/m60/rel-type-coverage-gate.ts --langs=nim` | 0 | **6 DERIVATION findings**, unchanged: `calls`, `contains`, `exports`, `imports`, `references`, `uses`. CHECK 2/3/4 clean |
+| `npx tsx validation/m14/fixtures/nim/census.ts` | **1** | artifact written and digest-pinned, then killed by the shared watchdog — *Limitations* 8 |
+| `npx tsx validation/m14/fixtures/nim/resolution-audit.ts` | **1** | same |
+| `npx tsx validation/m14/fixtures/nim/accent-quoted-endpoints.ts` | **1** | same, on the first attempt; the run was destroyed and repeated |
+| `npx tsx validation/m14/fixtures/nim/gap-hunt.ts` | 1 | artifact written; extends accounted 941/941 |
+| `npx tsx validation/m14/fixtures/nim/nim-ruled-probe.ts` | 0 | implements 0 refinements over 216 concepts |
+| `npx tsx validation/m14/fixtures/nim/oracle-crosscheck.ts` | 0 | MISSING 23 / UNEXPLAINED 18 |
+| `npx tsx validation/m14/fixtures/nim/ambiguity-split.ts` (×2 subtrees) | 0 | irreducible ambiguity 0.5% and 3.6% |
+| `npx tsx script/m14/incoming-check.ts nim <files>` (×2 subtrees) | 0 | the two rows in the incoming table |
+| `npx tsx script/m14/ontology-coverage-gate.ts nim` | **2** | unchanged: `RULED_BY_LANG` carries `bash`, `json`, `lua`, `toml` and no `nim`, so the gate walks 4,555 files and refuses to print a verdict. `ruled-gate.ts` supplies the wiring on a copy |
+
+**The three exit-1 rows are a shared-machinery defect, not a lane failure, and the
+distinction is measured rather than asserted:** in each case the artifact was
+written and the digest line printed *before* the non-zero exit, and the file the
+watchdog names had already logged `[BB-PARSE-ERR] … memory access out of bounds`
+in the same run (*Limitations* 8). A gate that cannot distinguish "this run failed"
+from "this run finished and the process could not exit" is a gate whose green and
+red are the same colour.
 
 ## Regex inventory
 
@@ -1008,7 +1148,14 @@ comparable across grammar versions.
   lane, and it is why the sweep is a tool in `fixtures/nim/probes/` rather than a
   thing to remember to run.
 - **Mutation** (`script/m14/mutate-analyzer.ts`, `BB_MUTANT_ONLY="nim/"`):
-  **40 mutants, 40 caught, exit 0.** One per symbol kind, per relationship kind,
+  **58 nim mutants registered, 58 caught, 0 survived** under the shared runner
+  `bun run script/m14/mutate-analyzer.ts` (43 inline at `script/m14/mutate-analyzer.ts`,
+  15 in `script/m14/nim-mutants.ts`; per-mutant rows in
+  `validation/m14/measurements/nim/mutant-sweep-nim.txt`). That sweep's exit code
+  is 2 and it reports **6 surviving mutants in other lanes** — `java/bare-read-type-attribution`,
+  `groovy/modifier-return-type-loss`, `groovy/ctor-name-revert`, `scala/drop-import-source-rewrite`,
+  `make/swallow-the-rule-after-a-comment`, `php/drop-external-override-guess` — none of them
+  a nim id, and none of them this lane's to fix (§8). One per symbol kind, per relationship kind,
   per ruled rule in the table below, and per payload row — each a revert of a fix
   this lane actually made, or of a rule this document claims. Five fixtures
   passing is not evidence that the suite can fail; this is. The first run caught
@@ -1027,8 +1174,8 @@ comparable across grammar versions.
   `expectSymbols {fileStem, property}` pins that the field exists, since a fix
   that deleted the field would otherwise satisfy the forbid vacuously.
 - **Ontology-round mutants** (`script/m14/nim-mutants.ts`, run by
-  `npx tsx validation/m14/fixtures/nim/verify-mutants.ts`): **9 mutants, 9
-  caught, exit 0.** This round's own defects, one per failure mode rather than
+  `npx tsx validation/m14/fixtures/nim/verify-mutants.ts`): **15 mutants, 15
+  caught, 0 survived, exit 0.** This round's own defects, one per failure mode rather than
   one per line:
 
   | Mutant | Caught by | failures |
@@ -1350,8 +1497,9 @@ quiet machine will cover all 5,227 through the production path.
    `export_statement` operands parsing as `prefix_expression`.
 8. **A symbol kind can still come back empty, and it is not this analyzer's
    doing.** The count is load-dependent and MOVES BETWEEN RUNS on the same corpus:
-   16 of 77,371 symbols, then 20, then 4 of 83,051 — every one in a file that also
-   logged `[BB-PARSE-ERR] … memory access out of bounds` in the same run
+   16 of 77,371 symbols, then 20, then 4 of 83,051, then 21 of 83,639 — every one
+   in a file that also logged `[BB-PARSE-ERR] … memory access out of bounds` in the
+   same run
    (`nim/lib/std/tempfiles.nim`, `nim/tests/casestmt/tcstring.nim`,
    `nim/tests/manyloc/keineschweine/dependencies/chipmunk/chipmunk.nim`, and
    others), and a re-parse of those files individually yields 0 empty kinds
@@ -1367,6 +1515,25 @@ quiet machine will cover all 5,227 through the production path.
    (`kind: s.kind`, line ~869) then maps `undefined`. Reported, not edited:
    `pool-worker.ts` is not this lane's file. Two fixes would each close it —
    `kind: s.kind ?? s.type`, or a `nim:` entry in that table.
+
+   **The same event now has a second, worse consequence, measured twice this
+   pass.** `src/ast/engine.ts:1441-1444` arms a 120-second watchdog around the
+   synchronous `parser.parse()` and clears it at 1447 — but the `throw` at 1449
+   leaves between those two lines, so a parse that FAILED leaves the watchdog
+   armed. It then fires 120 seconds later and calls `process.exit(1)` printing
+   `[BB-HANG] parser stuck 120s on <file> — exiting`, on a run that did not hang:
+
+   | run | artifact | `[BB-HANG]` named | named file's own log line, same run |
+   | --- | --- | --- | --- |
+   | `census.ts` | written, digest printed | `nim/lib/std/private/ossymlinks.nim` | `[BB-PARSE-ERR] … memory access out of bounds` |
+   | `resolution-audit.ts` | written, digest printed | `nim/tests/ic/mlocalpassc.nim` | `[BB-PARSE-ERR] … memory access out of bounds` |
+   | `accent-quoted-endpoints.ts` | **NOT written** — the walk was destroyed | `nim/lib/std/private/oscommon.nim` | `[BB-PARSE-ERR] … memory access out of bounds` |
+
+   So this lane's corpus instruments **exit 1 on results that are finished and
+   digest-pinned**, and under load one of them lost its entire walk and had to be
+   re-run. The message is false on its face — it names a file that threw, not one
+   that is stuck, so triage is sent to the wrong file. Reported (§8): the fix is a
+   `try`/`finally` around 1446-1450, or clearing the timer before the throw.
 9. **Endpoints equal to the literal `unknown` are 8 on this corpus and every one
    is a real Nim identifier** — measured split `4 × contains`, `4 × uses`, and 0 on
    any other type. (An earlier 4,101-file draw measured 5; the count moved with the
@@ -1422,9 +1589,15 @@ quiet machine will cover all 5,227 through the production path.
     target leaf, on the stated grounds that in JavaScript it marks template-literal
     garbage. Measured by `validation/m14/fixtures/nim/accent-quoted-endpoints.ts`:
     1,417 accent-quoted declaration sites on the corpus parse trees; `analyze()`
-    emits 4,509 edges with a backtick endpoint and `parseFile` delivers 4,143, so
-    **366 are deleted (8.1%)** — 231 `calls`, 135 `contains`, 21 `exports`, 8
-    `uses`, 1 `overrides`. The symbol survives, so the result is a declaration the
+    emits 4,508 edges with a backtick endpoint and `parseFile` delivers 4,132, so
+    **365 are deleted by the filter (8.1%)** — `calls` 210, `contains` 135,
+    `exports` 11, `uses` 8, `overrides` 1, which sums to 365 and the artifact
+    prints the sum beside the total so it can be checked. The 376-edge difference
+    between 4,508 and 4,132 is 365 of filter and **11 that the filter is not
+    responsible for**, which are named in the artifact rather than folded in. (This
+    breakdown was previously published as 231/135/21/8/1 = 396 against a stated
+    366; it came from a 40-row SAMPLE, and the instrument now tallies every
+    deletion by type instead of sampling.) The symbol survives, so the result is a declaration the
     graph holds and no edge can reach: `bb_impact` on `` `-!` `` returns nothing
     and the reverse walk cannot tell that from a declaration nobody uses. This is
     the cause of the three `` `-!` ``/`` `lhs` `` `contains` rows the oracle reports
@@ -1473,3 +1646,61 @@ quiet machine will cover all 5,227 through the production path.
     right.
 17. **This lane's numbers are not reproducible without the worker count**, for the
     reason in limitation 11, and the corpus walk in every artifact here uses 6.
+18. **The shared differential cannot run this lane at all, and its nim entry is
+    now stale in a way that under-reports what the router handles.** Both halves
+    are §8 (`script/m14/differential.ts`), reported and measured, not edited:
+
+    - `$ npx tsx script/m14/differential.ts --lang nim` prints
+      `[lane] SKIP nim: no corpus repo mapped in LANG_REPOS and none checked out`
+      and `probe run (--lang nim): measured 0 lane(s)`, exit 0. `LANG_REPOS`
+      (`script/m14/differential.ts:393`) has no `nim` key, so the arbiter of the
+      six questions is silent for this language and every question-3 number in
+      this document comes from the lane's own oracle instead. What is needed is one
+      entry — `nim: <repo path under CORPUS_ROOT>`, and `nim` itself is a
+      3,968-file clone already at `$HOME/fixtures/repositories/nim` —
+      and one `import { deriveNimEdges } from "./nim-truth-oracle"` with a branch
+      feeding it for `lang === "nim"`. `grep -c "nim-truth-oracle\|deriveNimEdges"
+      script/m14/differential.ts` returns **0**, which is the mechanical form of the
+      same fact.
+    - `script/m14/differential.ts:25174` reads
+      `nim: { … ext: "nim,nims" }` and the comment above it says `.nimble` "is NOT
+      routed to nim and which is therefore not swept". That was true when written
+      and is **false now**: `src/ast/language-detection.ts:53` reads
+      `nim: "nim", nims: "nim", nimble: "nim"`. So the entry's comment and its
+      extension list both need `,nimble`, or the lane under-reports a surface the
+      production router already handles by 171 files (measured: 0 parse errors,
+      26 symbols, 315 relationships, 11 imports — *Limitations* 3).
+19. **`incoming-check.ts` measures an ambiguity this lane does not have, and its
+    number cannot be read as a defect count.** It resolves targets against
+    `const published = new Map<string, string[]>()`
+    (`script/m14/incoming-check.ts:107`, populated at 134-146) keyed on NAME with
+    the **file discarded**, so a name declared once in the referring file and once
+    elsewhere in the indexed set is counted ambiguous — while every edge carries its
+    own file and the reverse walk separates those two by exactly that. Measured on
+    the same runs (`validation/m14/fixtures/nim/ambiguity-split.ts`):
+
+    | index | edges | shared harness "ambiguous" | **irreducible (same-file)** | the harness overstates by |
+    | --- | --- | --- | --- | --- |
+    | `nim/compiler`, 182 files | 50,094 | 12,516 | **270 = 0.5%** | 12,246 |
+    | `nim/lib/pure`, 105 files | 21,235 | 5,990 | **756 = 3.6%** | 5,234 |
+
+    Per type on `nim/compiler` the irreducible share is `calls` 0.8%, `uses` 0.6%,
+    `contains` 0.4%, and **0.0%** on `imports`, `references`, `exports`, `extends`
+    and `instantiates`. The residual 270 edges are ordinary Nim: `config(62)`,
+    `emptyNode(28)`, `c(23)`, `map(16)`, `name(15)`, `add(12)`, `key(11)`,
+    `ensureKind(11)`, `history(10)` — overloading and the field-vs-accessor
+    collision. Where the language makes the distinction impossible per-file, this
+    is that statement, with the count: **270 edges over 182 files**, and no
+    instrument in this lane can reduce it without a qualified name the source does
+    not carry. §8 fix, not applied: key the map `name -> file -> kinds` and the
+    column means what a reader takes it to mean.
+20. **`exports` has no second opinion, and that is one DERIVATION finding rather
+    than 20 defects.** The oracle derives **zero** `exports` targets, so all 20
+    analyzer targets on the 400-file sample are counted MISSING by the
+    cross-check's arithmetic and are unaudited by anything. The label is still
+    pinned in both directions by the fixture (6 expected edges across both
+    spellings, plus 4 forbids, including
+    `nim/export-except-published-as-exported` and
+    `nim/foreign-reexport-listed-as-local-provider`), which is a weaker instrument
+    than an independent walker and is called weaker here rather than counted as
+    coverage.
