@@ -257,7 +257,7 @@ under the table.
 | `references` | yes | 5,996 | 84/84 facts | distinct from `uses`: every target follows `keyword_references`/`keyword_on` | 69.56 % / 98.27 % | 1.0, all `structural` |
 | `calls` | yes | 3,892 | 84/84 facts; **574 qualified invocations emitted** and **0 unexplained** — the residual is bucketed by cause rather than reported as a number | distinct from `uses`; tier agrees on every edge | 40.34 % / 78.75 % | 1.0; 3,417 `usage_contextual`, 475 `reference_qualified` |
 | `imports` | yes | 52 | not in the 84-fact oracle; 0 unexplained by construction and the two mechanisms are separable in metadata | `psqlInclude` (22) vs `extensionInstall` (30) | 57.69 % / 57.69 % | 1.0, all `import_based` |
-| `overrides` | yes | 22 | all 22 reconciled against the tree by an independent re-derivation (below) | `orReplace: true` + both line numbers on every edge | 100 % / 100 % | 1.0, all `structural` |
+| `overrides` | yes | 22 edges from **34 events** | the analyzer's own rule re-implemented on parse trees yields 34 events → 22 per-file edge keys, **exactly production's 22**; the probe's rule yields 15 and the 19-edge difference decomposes to 12 multiplicity + 7 visit order, exact | `orReplace: true` + both line numbers on every edge | 100 % / 100 % | 1.0, all `structural` |
 | `instantiates` | yes | 21 | 17 of the construction-shaped casts sit OUTSIDE any query node and **all 17 are emitted**, so the type is not query-only | `construction: true` + the constructor node type; conversions carry no edge | 52.38 % / 90.48 % | 1.0, all `structural` |
 
 Resolution is reported at two rates deliberately. The analyzer emits per-file arrays of bare
@@ -303,12 +303,8 @@ the four files from the parse tree, independently of the analyzer:
 | `proxicall/…/20260131_pms_audit_logging_system.sql` | 1 (`prevent_audit_modification`) |
 
 4 + 3 + 14 + 1 = **22**, which is exactly what the analyzer emits. So all 22 edges are sound
-and it is the **construct probe's 15 that is short by 7**, and the reason is not established.
-The probe walks its tree with a stack, so "the second occurrence" is not in document order —
-its own examples read `first at line 192, again at line 184` — and it records a hit only when
-`count === 2`, so a three-or-more-times-redeclared name contributes differently depending on
-visit order. `overloaded_default` occurs **four** times and `json` **five** times in
-`postgrest/test/spec/fixtures/schema.sql`, both with `OR REPLACE` on every declaration.
+and it is the **construct probe's 15** that is short — and pass 5 measured **why**, which closes
+limitation 14. See *`overrides` reconciled by measurement, pass 5* below.
 
 The kind-keyed `state.redeclared` is still a real fix and is still kept: the code did not
 enforce what the field comment and this page both claimed, and the corpus happens not to
@@ -317,6 +313,62 @@ files — are `create_function`/`create_view` pairs with no `OR REPLACE` on eith
 produce no edge either way). It is pinned by fixture `sqld14` and by mutant
 `sql/override-key-ignores-the-declaration-kind`, and the honest statement is that the corpus
 does not exercise it.
+
+### `overrides` reconciled by measurement, and pass 3's mechanism was only half of it
+
+Pass 3 proposed in prose that the probe's `count === 2` rule and its stack walk explained the
+7-edge gap, and left it as a hypothesis because a prose mechanism is not a measurement.
+`validation/m14/fixtures/sql/overrides-reconciliation.mts` re-implements **both** rules on the
+same 1,955 parse trees — `recordReplacement`'s and the construct probe's P4 — and decomposes the
+difference. It reports, over 4,645 declarations and 178 redeclared `kind:name` groups:
+
+| | Count |
+| --- | --- |
+| analyzer's rule (an OR REPLACE declaration at document index ≥ 1 of its key) | **34 events** |
+| the probe's rule (same nodes, the probe's own visit order) | **15 hits** — reproduces the committed 15 |
+| gap | 19 |
+| decomposed: multiplicity | **12** |
+| decomposed: visit order | **7** |
+| sum | **19 — EXACT**, checked by the probe rather than asserted |
+
+**The cause is a WALK, not a rule, and pass 3 named the wrong half of it.** `construct-probe.mts`
+pushes children *forward* into a LIFO stack, so siblings are visited in **reverse** document
+order, and it classifies only the declaration it visits second. All 6 groups whose `orReplace`
+flags read `[false, true]` are therefore visited `[1, 0]`: the probe inspects the
+*non*-replacing declaration second and records no hit. Pass 3 saw this symptom in the probe's own
+stored examples (`first at line 192, again at line 184`) and attributed the whole gap to it;
+multiplicity is **12 of the 19**, from `json` declared 6 times, `overloaded_unnamed_param` 5 and
+`overloaded_default` 4, all with `OR REPLACE` on every declaration.
+
+**A second cause the pass-3 framing could not see, because it was comparing edges to events.**
+The analyzer's rule finds **34 events** and production `parseFile` emits **22 edges**. That
+difference is not a miss: `addRelationship` keys identity on `(type, source, target)` and
+`recordReplacement`'s source is the synthetic owner `global`, so repeat replacements of one NAME
+collapse onto a single edge. 34 events → **22 distinct per-file edge keys, which is production's
+22 exactly**. It has to be counted per file, because `parseFile` is per file and rebuilds the
+identity map each call: a corpus-wide set of names reads **21**, and the missing one is
+`infinite_recursion`, replaced in two different files. The kind is *not* part of the edge key, and
+**0** names are carried by two kinds here, so that half of the collision space is unexercised.
+
+The two 12s — multiplicity excess and edge collapse — are **independent sums that agree on this
+corpus**, which is why the observable 22-vs-15 gap reduces exactly to the visit-order component.
+They are not equal by rule. The case that separates them is a name whose second declaration lacks
+`OR REPLACE` and a later one carries it, where multiplicity is 1 and the collapse is 0; that case
+occurs **0 times** in the admitted corpus, which is exactly why this corpus cannot tell the two
+apart. That is a statement about the corpus, not a proof they are the same quantity.
+
+**The probe's text read of `OR REPLACE` is a measured non-finding.** The probe reads
+`n.text.slice(0, 48).toUpperCase().includes("OR REPLACE")` and the analyzer reads a
+`keyword_replace` child node; on all **4,645 declarations the two disagree 0 times**, and both
+rules return the same 34 / 15. So the text read is harmless *on this corpus* — recorded as a
+number because it is the thing the lane's regex policy objects to, and an argument would have been
+weaker evidence than the count.
+
+**Withdrawn: the "of 777 real replacement events" in limitation 1.** Measured per file **34**,
+corpus-wide **34** on the same rule, 78 names declared 2+ times. Every same-name re-declaration in
+the admitted corpus is intra-file, so the extension corpus's one-file-per-version pattern — which
+is what a cross-file denominator would have counted — contributes nothing here. 777 was carried
+from a pass that did not measure it, and no instrument in this repository reproduces it.
 
 ### DERIVATION findings — 7 of 7 emitted types
 
@@ -994,6 +1046,7 @@ is part of the row.
 | invocation-cause probe (`pass3-invocation-why.mts`) | 742 qualified invocations on the tree → 579 emitted, 53 guard-suppressed, 112 bucketed by cause, **0 unexplained** | pass 2's open item; it also discloses its own degradation after two runs disagreed |
 | phantom-constraint probe (`pass3-phantom-constraint.mts`) | **53 phantoms in 22 files → 0**, same oracle both sides, which also clears 4 legitimate same-name indexes | a parse-tree oracle, because the name heuristic cannot decide it |
 | adversarial probe (`validation/m14/fixtures/sql/adversarial-probe.mts`) | full corpus, 23 probe populations; **574 qualified invocations emitted**, 0 tier disagreements; A12's 6 verdicts now read off node types and fields | the run disclosed 1 engine-timeout and 6 regex-fallback files, and the A12 battery's instrument is stated above |
+| `overrides` reconciliation (`validation/m14/fixtures/sql/overrides-reconciliation.mts`) | **34 events → 22 per-file edge keys = production's 22 exactly**; the probe's rule reproduces its committed **15**, and the 19-edge difference is **12 multiplicity + 7 visit order = 19, exact**. The probe's 48-char text read of `OR REPLACE` and the analyzer's `keyword_replace` node read disagree on **0 of 4,645 declarations** | closes limitation 14. Its own first version joined pass 2 to pass 1 on line number and produced visit indices of 48 and 216 for a group of two declarations; the fix keys on `startIndex` and that failure is recorded in its header |
 | construct probe (`validation/m14/fixtures/sql/construct-probe.mts`) | **480 distinct node types**, 0 parse failures, **every zero probe 0**, and no node type anywhere contains `export`/`module`/`provide` | `exports-keyword` was 1 and is now 0: the 1 was a COLUMN named `module`, and the old probe counted declaration names |
 | ruling table (`validation/m14/fixtures/sql/run-ruling-table.mts`) | **`emitted 7/10   ruled-sound 3   FALSIFIED 0   ruled-without-justification 0`** | the arbiter on disk is untouched; the copy is written under `node_modules/` and removed. The script's patch anchor was **stale** and exited 2 until pass 3 re-anchored it on the declaration rather than the literal |
 | `keepSymbol` census | re-measured at this HEAD: **18,485 symbols emitted by `analyze()` over 1,955 files, 3 refused (0.016 %)** — 2 `function:root`, 1 `property:program` — and **18,485 − 3 = 18,482, exactly the symbol count production `parseFile` publishes**, so `keepSymbol` accounts for the whole analyzer-to-index difference. SQL-G13, filed not fixed | this is the row that settles limitation 19. The pass-3 incoming probe's `0` was not a competing measurement: it reads `parseFile` output, which is already filtered, so a drop is structurally unobservable there. Artifact `measurements/pass5-keep-symbol-census.json` |
@@ -1274,10 +1327,12 @@ documentation defect rather than an excellence. These are the ones that bound wh
 above can be used for.
 
 1. **Cross-file edges are the analyzer's weakest surface.** Every count here is a per-file
-   count. `overrides` sees 22 of 777 real replacement events; `uses` resolves intra-file at
-   32.80 % for the ordinary reason that a migrations corpus reads tables an earlier migration
-   created. No amount of intra-file work changes either number, and a graph consumer that wants
-   the 755 cross-file overrides needs a cross-file pass that does not exist.
+   count. `overrides` emits **22 edges from 34 replacement events**, and the corpus-wide count
+   under the same rule is also **34** — every same-name re-declaration in the admitted corpus is
+   intra-file, so this corpus does not exercise the cross-file case at all (the old denominator
+   of 777 is withdrawn as unmeasured; see *`overrides` reconciled by measurement*). `uses` resolves
+   intra-file at **32.51 %** for the ordinary reason that a migrations corpus reads tables an
+   earlier migration created. No amount of intra-file work changes either number.
 2. **`confidence` is uniformly 1, and that is a weaker claim than it looks.** It means no edge is
    a guess about a *name*. It does not mean the analyzer is equally certain about the *edge's
    meaning*: the `usage_contextual` tier (**10,693 edges, 34.42 %** — 7,276 `uses` and 3,417
@@ -1353,14 +1408,16 @@ above can be used for.
     a property of the TREE — when error recovery swallows an expression, the callee never becomes
     an `invocation` node at all — and **0 remain unexplained**. Reaching the 112 needs a grammar
     change, not a guard.
-14. **The construct probe's `overrides` count is short by 7 against the analyzer's 22, and pass 3
-    did not settle the probe's side.** All 22 of the analyzer's edges are sanctioned by an
-    independent re-derivation from the parse tree, so it is the probe's 15 that cannot be
-    reproduced; its stack walk makes "the second occurrence" document-order-unstable, and a name
-    declared three or more times contributes differently depending on visit order. That is a
-    hypothesis, not a measurement, and it stays filed. What pass 3 did establish is that the
-    CORPUS-wide figures pass 2 quoted for this probe (`or-replace-total`) are not what this probe
-    now computes, so no `overrides` conclusion rests on that row.
+14. **`overrides` is the one emitted type whose edge count is not its event count, and the
+    difference is in the graph's identity key rather than in the analyzer.** 34 replacement events
+    become 22 edges because `addRelationship` keys on `(type, source, target)` and the source is
+    the synthetic owner `global`, so a name replaced 6 times is one edge. Both line numbers survive
+    in `metadata.priorLine` / `metadata.replacementLine`, but only the LAST pair: a consumer cannot
+    reconstruct the replacement CHAIN from the edge, because the 3 collapsed events of
+    `overloaded_default` are gone. This was measured at pass 5 and it is the reason the analyzer's
+    `22` and its event count `34` are both correct and both on this page. The construct probe's 15
+    is now decomposed exactly — see *`overrides` reconciled by measurement* — so it is no longer an
+    open item.
 15. **`SQL_KEYWORDS` and `SQL_BUILTINS` are now exported from the analyzer.** They are read-only
     by every consumer added this round (the adversarial probe calls `has` on them so it can ask
     the guard's question instead of keeping a copy that could drift), but the export widens the
@@ -1431,6 +1488,9 @@ artifacts are under `validation/m14/fixtures/sql/measurements/`:
 | `pass3-fault-contended-r1.json` | `validation/m14/fixtures/sql/fault-classify.mts` | 25 `aoc24` files parsed 8-way concurrently, 0 faults, against 0 faults solo — the measurement that makes `--exclude` provably insufficient |
 | `pass3-adversarial-probe.json` | `validation/m14/fixtures/sql/adversarial-probe.mts` | the six questions' adversarial half, the A12 capability battery decided from node types and fields, and the probe's own degradation disclosure |
 | `pass3-construct-probe.json` | `validation/m14/fixtures/sql/construct-probe.mts` | the 480-node-type grammar inventory and the nine zero-probes behind every RULED verdict |
+| `pass5-incoming-corpus.json` | `validation/m14/fixtures/sql/pass3-incoming.mts` | the incoming direction re-measured at this HEAD: ambiguity, `contains` resolution under four match rules, the trigger/function collision, keyword-named symbols, orphan declarations |
+| `pass5-keep-symbol-census.json` | `validation/m14/fixtures/sql/keep-symbol-census.mts` | 18,485 emitted − 3 refused = 18,482 published, the reconciliation that closes limitation 19 |
+| `pass5-overrides-reconciliation.json` | `validation/m14/fixtures/sql/overrides-reconciliation.mts` | both `overrides` rules re-implemented and the difference decomposed with an exactness check, plus the per-file edge-identity collapse that turns 34 events into 22 edges |
 | `pass3-incoming-corpus.json`, `pass3-incoming-boundary.json` | `validation/m14/fixtures/sql/pass3-incoming.mts` | the incoming direction: ambiguity per type, `contains` resolution under three match rules, the trigger/function collision, keyword-named symbols, orphan declarations |
 | `pass3-invocation-why.json`, `pass3-invocation-why-after.json` | `validation/m14/fixtures/sql/pass3-invocation-why.mts` | the cause breakdown for every qualified invocation that carries no `calls` edge, and the 0 that remain unexplained |
 | `pass3-phantom-constraint-before.json`, `pass3-phantom-constraint-after.json` | `validation/m14/fixtures/sql/pass3-phantom-constraint.mts` | 53 fabricated declarations → 0, by the same parse-tree oracle on both sides |
