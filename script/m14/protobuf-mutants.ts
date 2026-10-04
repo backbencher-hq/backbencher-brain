@@ -787,6 +787,183 @@ export const PROTOBUF_MUTANTS: Mutant[] = [
       }),
     }),
   },
+  {
+    id: "protobuf/group-type-owned-by-the-extendee",
+    language: "protobuf",
+    defectClass: "dangling-endpoint",
+    description:
+      "A proto2 `group` declared inside an `extend` block has its TYPE declared at the BLOCK'S OWN " +
+      "SCOPE; only its FIELD belongs to the extendee. `Ctx` carries `scope` (the lexical position) " +
+      "separately from `owner` (the extendee), and the group's type takes `scope` while its field " +
+      "keeps `owner`. This transform reinstates the single value by re-pointing a group's TYPE at the " +
+      "OWNER — the pre-fix behaviour — which is a fabricated declaration: `optional group GroupField " +
+      "= 121` written in a file-scope `extend TestAllTypesProto2` in " +
+      "`pb-reference/src/google/protobuf/test_messages_proto2.proto` produced a nested type " +
+      "`protobuf_test_messages.proto2.TestAllTypesProto2.GroupField`, which `protoc` 36.2's " +
+      "descriptor does not contain anywhere. The extension is recorded in the descriptor's top-level " +
+      "`extension` list with `type_name = .protobuf_test_messages.proto2.GroupField`, so the type is " +
+      "a FILE-SCOPE message and the extendee owns only the field.\n\n" +
+      "MEASURED end to end by `protoc`'s descriptor as an oracle over the corpus " +
+      "(script/m14/tmp/protobuf/probe/protoc-descriptor-oracle.py, 821 files, 781 compiled), not by " +
+      "argument: `contains` agreement 36,017 of 37,042 judged with this mutant against 36,022 of " +
+      "37,042 without it, and the oracle's `unexplained` bucket — the rows its stated rules cannot " +
+      "account for, which is the number that has to be zero — reads 7 with this mutant and 0 " +
+      "without it. The 7 are: the two phantom group TYPES (`…TestAllTypesProto2.GroupField`, " +
+      "`proto2_unittest.ComplexOpt6`), the three group MEMBERS published under them, and the two " +
+      "extension FIELD rows that cannot be matched because the type they name was never published at " +
+      "the scope protoc gives it. 7 corpus `contains` edges move, 0 are added, 0 are removed.\n\n" +
+      "Caught by protobuf/group-in-extend-scope, whose three rows are the three directions. ROW 1 " +
+      "(a file-scope `extend`) loses `gie.demo.Hoisted` and regains the forbidden " +
+      "`gie.demo.Target.Hoisted` groupType row — the corpus defect's shape. ROW 2 (an `extend` " +
+      "nested inside a MESSAGE) loses `gie.demo.Outer.Inner` and regains the forbidden " +
+      "`gie.demo.Outer.Holder.Inner`, which is what stops the rule being satisfiable by 'always " +
+      "hoist to the package' — the companion mutant below is that rule. ROW 3 (a group already " +
+      "inside its owner) is the control in the other direction and is byte-identical in both arms. " +
+      "The field->type `uses` edge is asserted too, because a transform that moved the type's owner " +
+      "while leaving the `uses` target alone would produce one right edge and one wrong one.",
+    transform: (r: any) => {
+      // A group's TYPE is the symbol carrying `isGroupType`, and the group's FIELD is
+      // the property carrying `isGroup`. Both are read off the analyzer's own output
+      // rather than a name list, so editing the fixture cannot silently stop this
+      // mutant from matching.
+      //
+      // The transform is the pre-fix rule stated directly: put the TYPE's id in the
+      // FIELD's owner. Every edge that named the type is re-pointed through an
+      // explicit old->new id map, so the mutant produces a SELF-CONSISTENT wrong
+      // graph rather than a broken one — a mutant whose edges dangled would fail
+      // every fixture for the wrong reason and prove nothing about this rule.
+      const relsOf = (x: any): any[] => (x?.relationships ?? []) as any[]
+      const out = syms(r).map((s: any) => ({ ...s, metadata: { ...(s?.metadata ?? {}) } }))
+      const idOf = (s: any): string => (s.metadata.id ?? s.qualifiedName) as string
+
+      // oldTypeId -> newTypeId, and the member ids hanging off each type.
+      const typeRemap = new Map<string, string>()
+      const ownerOf = (id: string): string => id.slice(0, id.lastIndexOf("."))
+      for (const typeSym of out) {
+        if (!typeSym?.metadata?.isGroupType) continue
+        const oldTypeId = idOf(typeSym)
+        const fieldSym = out.find(
+          (f: any) =>
+            f?.metadata?.isGroup === true &&
+            f?.name === typeSym.name &&
+            ownerOf(idOf(f)) !== oldTypeId.slice(oldTypeId.lastIndexOf(".") + 1),
+        )
+        // The group's FIELD is the `isGroup` property sharing the type's name whose
+        // owner is the EXTENDEE. When the two share an owner (a group not in an
+        // `extend`) there is nothing to re-own and this mutant is a no-op, which is
+        // correct: the pre-fix rule and the post-fix rule agree there.
+        if (!fieldSym) continue
+        const fieldOwner = ownerOf(idOf(fieldSym))
+        if (fieldOwner === ownerOf(oldTypeId)) continue
+        typeRemap.set(oldTypeId, `${fieldOwner}.${typeSym.name}`)
+      }
+      if (typeRemap.size === 0) return r
+
+      // Members of a moved type move with it: `…Type.member` -> `…newType.member`.
+      const remap = (id: string): string => {
+        for (const [oldType, newType] of typeRemap) {
+          if (id === oldType) return newType
+          if (id.startsWith(`${oldType}.`)) return `${newType}${id.slice(oldType.length)}`
+        }
+        return id
+      }
+      for (const s of out) {
+        const before = idOf(s)
+        const after = remap(before)
+        if (after === before) continue
+        s.metadata.id = after
+        s.qualifiedName = after
+        if (typeof s.ownerName === "string") s.ownerName = ownerOf(after)
+      }
+      return {
+        ...r,
+        symbols: out,
+        relationships: relsOf(r).map((e: any) => {
+          const source = remap(e.source as string)
+          const target = remap(e.target as string)
+          return source === e.source && target === e.target ? e : { ...e, source, target }
+        }),
+      }
+    },
+  },
+  {
+    id: "protobuf/group-type-hoisted-to-the-package",
+    language: "protobuf",
+    defectClass: "dangling-endpoint",
+    description:
+      "The COMPANION to `protobuf/group-type-owned-by-the-extendee`, and the reason the fixture has " +
+      "three rows rather than one. Re-hoisting every group's type to the FILE's package satisfies " +
+      "`protobuf/group-type-owned-by-the-extendee`'s corpus evidence — both corpus groups with a " +
+      "misplaced type are inside a file-scope `extend` block, so 'always the package' produces the " +
+      "same 36,022 of 37,042 and the same `unexplained` 0 on this corpus — and is wrong for a group " +
+      "declared inside an `extend` block that is itself nested in a message.\n\n" +
+      "protobuf resolves that case to the ENCLOSING MESSAGE's scope. `protoc` 36.2 on " +
+      "`validation/m14/fixtures/protobuf/group-in-extend-scope.proto` reports, for an `extend " +
+      "Holder` block written inside `message Outer`, the nested message `gie.demo.Outer.Inner` and " +
+      "the in-message extension `inner` with `extendee = .gie.demo.Outer.Holder` and " +
+      "`type_name = .gie.demo.Outer.Inner` — so hoisting to the package would publish " +
+      "`gie.demo.Inner`, which protoc does not define. The corpus contains no such case: measured " +
+      "over all 821 files, every one of the 8 groups sits either directly in a message body or in a " +
+      "file-scope `extend`, so this defect is INVISIBLE to the corpus oracle and is caught only by " +
+      "the fixture. That is the honest reason a fixture exists alongside a corpus oracle, and it is " +
+      "stated here because the alternative — quoting the corpus number as though it covered this — " +
+      "would be the same mistake in a different place.\n\n" +
+      "Caught by protobuf/group-in-extend-scope ROW 2, which loses `gie.demo.Outer.Inner` and " +
+      "regains the explicitly forbidden `gie.demo -> gie.demo.Outer.Inner` groupType row. ROW 1 " +
+      "(file scope) and ROW 3 (already inside its owner) are unaffected by this mutant, which is " +
+      "what makes ROW 2 load-bearing rather than decorative.\n\n" +
+      "MEASURED, and this is the number that makes the fixture necessary: the corpus contains 10 " +
+      "`groupType` edges, of which 2 sit in a file-scope `extend` block (their type's owner is the " +
+      "package), 8 sit directly in a message body (their type's owner is that message), and 0 sit " +
+      "in an `extend` block nested inside a message. So this mutant produces the same 36,022 of " +
+      "37,042 and the same `unexplained` 0 as the correct analyzer on every file in the corpus, " +
+      "while being wrong on every group written in an in-message `extend` block. It is also caught " +
+      "by protobuf/extend-and-group, whose groups live in message bodies and are therefore " +
+      "over-hoisted by it — so two fixtures catch it and one corpus does not.",
+    transform: (r: any) => {
+      const rels = (x: any): any[] => (x?.relationships ?? []) as any[]
+      const pkg = (r?.metadata ?? {}).protoPackage as string | undefined
+      if (!pkg) return r
+      const out = syms(r).map((s: any) => ({ ...s, metadata: { ...(s?.metadata ?? {}) } }))
+      const idOf = (s: any): string => (s.metadata.id ?? s.qualifiedName) as string
+      for (const s of out) {
+        if (!s?.metadata?.isGroupType) continue
+        const cur = idOf(s)
+        const curOwner = cur.slice(0, cur.lastIndexOf("."))
+        // Only groups whose owner is NOT already the package, and whose owner is not
+        // the group's own enclosing scope. The transform is deliberately crude: it
+        // hoists on `isGroupType` alone, which is what makes it a mutant rather than a
+        // second implementation of the rule.
+        if (curOwner === pkg) continue
+        const next = `${pkg}.${s.name}`
+        s.ownerName = pkg
+        s.metadata.id = next
+        s.qualifiedName = next
+      }
+      const byId = new Map<string, any>()
+      for (const s of out) {
+        const id = idOf(s)
+        byId.set(id, s)
+      }
+      const remapped = rels(r).map((e: any) => {
+        const t = e.target as string
+        const s = e.source as string
+        let newTarget = t
+        for (const sym of out) {
+          if (!sym?.metadata?.isGroupType) continue
+          const cur = idOf(sym)
+          const curOwner = cur.slice(0, cur.lastIndexOf("."))
+          if (t === `${curOwner}.${sym.name}` && t !== cur) newTarget = cur
+          if (s === `${curOwner}.${sym.name}` && s !== cur) {
+            return { ...e, source: cur, target: newTarget }
+          }
+        }
+        return { ...e, source: s, target: newTarget }
+      })
+      void byId
+      return { ...r, symbols: out, relationships: remapped }
+    },
+  },
 ]
 
 export default PROTOBUF_MUTANTS
