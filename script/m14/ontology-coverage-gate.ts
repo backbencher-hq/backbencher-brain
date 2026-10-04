@@ -46,18 +46,24 @@ import { LANGS } from "./differential"
 import { LUA_RULED } from "./lua-ruled"
 import { TOML_RULED } from "./toml-ruled"
 import { FSHARP_RULED } from "./fsharp-ruled"
-// Conflict resolution, and the rule for every future one: this file is a REGISTRY,
-// so a conflict here is always "both sides added a lane", and the correct resolution
-// is the UNION. Taking either side would silently delete the other lane's ruling
-// table — and a deleted entry does not fail loudly, it just makes the arbiter exit 2
-// for that lane again, which reads as "nobody has ruled on this yet" rather than
-// "someone's work was dropped in a merge". Silent loss in a registry is the failure
-// mode to fear, so resolve toward MORE here, never fewer.
-import { NIM_RULED } from "./nim-ruled"
+// This file is a REGISTRY, so a merge conflict here is always "both sides added a
+// lane" and the correct resolution is always the UNION. Taking either side deletes the
+// other lane's ruling table SILENTLY, and a deleted entry does not fail loudly — the
+// arbiter just exits 2 for that lane again, which reads as "nobody has ruled on this
+// yet" rather than "someone's work was dropped in a merge". Silent loss in a registry
+// is the failure mode to fear, so resolve toward MORE entries here, never fewer.
+//
+// The same applies to the import block: it is a registry too. Both halves must be
+// present or the map does not compile — which is the one saving grace, because a
+// missing import is a hard error rather than a silent wrong answer.
+import { BASH_RULED } from "./bash-ruled"
+import { JSON_RULED } from "./json-ruled"
 import { PROTOBUF_RULED } from "./protobuf-ruled"
 import { ZIG_RULED } from "./zig-ruled"
 import { JULIA_RULED } from "./julia-ruled"
 import { CSS_RULED } from "./css-ruled"
+import { XML_RULED } from "./xml-ruled"
+import { NIM_RULED } from "./nim-ruled"
 
 const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
 const LANG = process.argv[2] ?? "bash"
@@ -204,6 +210,10 @@ const JSON_RULED: Ruled[] = [
   },
 ]
 
+// Resolved to the UNION — see the note at the imports above. A registry conflict is
+// always "both sides added a lane"; taking one side deletes the other's ruling table
+// silently, and a deleted entry makes the arbiter exit 2 for a lane that WAS ruled,
+// which reads as "unadjudicated" rather than "dropped in a merge".
 const RULED_BY_LANG: Record<string, Ruled[]> = {
   bash: BASH_RULED,
   json: JSON_RULED,
@@ -215,6 +225,7 @@ const RULED_BY_LANG: Record<string, Ruled[]> = {
   zig: ZIG_RULED,
   julia: JULIA_RULED,
   css: CSS_RULED,
+  xml: XML_RULED,
 }
 const RULED: Ruled[] = RULED_BY_LANG[LANG] ?? []
 
