@@ -499,11 +499,21 @@ stride cannot answer them.
 ```
 4,788 files   dart-http 335/335, riverpod 1,295/1,295, proxicall 2,351/2,351  (FULL)
               flutter-packages 404/4,033 (stride 10), dart-sdk 403/25,734 (stride 64)
-337,336 symbols   960,634 analyzer relationships   BB_DART_CONC=1   wall 995,723 ms
+337,336 symbols   960,634 analyzer relationships   BB_DART_CONC=1
 26 files carry 457 ERROR-node parse errors; 4 files >1 MB go to the fallback
 67 edges EXCLUDED as degraded-fallback output (below)
 emptySymbolNames 0   emptyOrUnknownKind 0   symbolsNamedUnknown 0   unknownEndpoints 0
 ```
+
+**Every count in that block reproduced exactly on a second run; the wall time did
+not, and it is quoted here as a range for that reason.** The harness prints
+`wallMs(walk)` and two runs on this machine measured **615,539 ms** and
+**995,723 ms** — a 1.62x spread over an identical input, because the machine is
+shared and this run's load average was 13. A millisecond-precision figure
+presented as a lane property would be a number a reviewer re-runs, fails to
+reproduce, and cannot tell apart from a regression. The stable form of the same
+measurement is throughput: **960,634 analyzer relationships over 4,788 files**,
+which reproduced exactly.
 
 Resolution, per type. `repoFull` is over the three FULL repositories; `sample` is
 over the two strided ones; the columns are never mixed, because a rate quoted over
