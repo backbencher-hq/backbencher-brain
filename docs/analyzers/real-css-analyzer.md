@@ -310,15 +310,31 @@ svg|a { color: green; }
 
 The analyzer emits exactly one edge for it — `references svg|a -> @namespace svg
 url(http://www.w3.org/2000/svg)`, the selector's use of the declared prefix — and no
-`imports`. The oracle derives two `imports` rows, one per `@namespace` URI. **The reading
-is that the analyzer is right and the oracle over-derives:** an `@namespace` URI is an XML
-namespace NAME, a vocabulary identifier the user agent resolves against, while `@import
-url(…)` names a stylesheet the user agent FETCHES. The two are different acts and one is
-not a file dependency. That is an argument, and an argument is not a measurement, so it is
-recorded as a §8 item against `deriveCssEdges` rather than settled here: the oracle is
-supervisor-owned, and the honest state of this row is "two rows the oracle derives that the
-analyzer declines, with a reason, pending the owner's decision". Emitting them would mean
-asserting a fetch CSS does not perform.
+`imports`. The oracle derives two `imports` rows, one per `@namespace` URI.
+
+**The reading is that the analyzer is right and the oracle over-derives,** and this round
+turned that from an argument into a measurement. Production `parseFile` on that exact file
+returns **5 symbols and 1 relationship**: two `module` symbols carrying the two
+declarations verbatim, and the single `references` edge with `isNamespaceRef`. So the
+construct is READ, and the disagreement is about the TYPE alone, not about coverage. An
+`@namespace` URI is an XML namespace NAME, a vocabulary identifier the user agent resolves
+against, while `@import url(…)` names a stylesheet the user agent FETCHES; the two are
+different acts and one is not a file dependency. The analyzer's edge also carries strictly
+more than the oracle's row — it says WHICH selector depends on WHICH declaration, where
+`imports expected.css -> <uri>` says only that the file mentions the URI.
+
+`validation/m14/fixtures/css/namespace-uri-is-not-an-import.{css,expectation.json}` pins
+this decision so it cannot be closed the cheap way. Its `forbidRelationships` rows refuse
+`imports` targeting either URI in both the bare and the prefixed spelling, and it carries a
+real `@import url("theme.css")` so the refusal is about namespaces specifically rather than
+about an `imports` branch that never fires. The mutant
+`css/namespace-uri-published-as-an-import` performs exactly the change that would make
+`MISSING=2` read zero — republish each `@namespace` URI as an `imports` edge — and the
+fixture catches it. This lane therefore still declines the two rows, and the §8 item
+against `deriveCssEdges` stands: the oracle is supervisor-owned, so the honest state of
+this row is "two rows the oracle derives that the analyzer declines, with a measurement and
+a fixture against the alternative, pending the owner's decision". Closing it by emitting
+them would assert a fetch CSS does not perform.
 
 ### The two instruments
 
@@ -1291,13 +1307,14 @@ in the parts of CSS that two corpora happen not to contain.
 
 ### The gates
 
-**PASS 3: 26 mutants, 26 caught, 0 survived.** Baseline 14 fixtures pass, 0 fail, measured
-by `bun run validation/m14/census/css-mutant-run.ts`, which refuses to score anything
+**PASS 4: 27 mutants, 27 caught, 0 survived. 15 fixtures pass, 0 fail**, measured
+by `npx tsx validation/m14/census/css-mutant-run.ts`, which refuses to score anything
 against a red baseline. 13 mutants are the pre-existing `script/m60/css-mutants.ts` set
-and 13 are `script/m14/css-mutants.ts`. Four are new this round:
+and 14 are `script/m14/css-mutants.ts`. Five are new this round:
 
 | mutant | direction | caught by |
 | --- | --- | --- |
+| `css/namespace-uri-published-as-an-import` | FABRICATION — the change that would make the differential's `MISSING=2` read zero, by republishing each `@namespace` URI as `imports` | `css/namespace-uri-is-not-an-import` |
 | `css/custom-media-ref-narrows-to-a-bare-query` | UNDERSHOOT — reinstates the peel-one-paren-each-side reach, so `@media screen and (--x)` loses its edge | `css/custom-media-in-every-query-shape` |
 | `css/custom-media-ref-accepts-a-media-type` | FABRICATION — drops the `--` prefix test, so `@media print` names a device category as a declaration | the same fixture, via its two `forbidRelationships` rows |
 | `css/import-source-taken-from-the-wrong-segment` | ENDPOINT — the `imports` source split on `.` instead of `/`, so the basename loses its extension | `css/scope-conditions-and-custom-properties`, whose two `imports` rows now pin `from` |
@@ -1465,10 +1482,11 @@ other.
   of the gate in /tmp and runs it): `script/m14/css-ruled.ts` and
   `validation/m14/fixtures/css/ruled-gate.ts`. Gate result: `emitted 5/10 ruled-sound 5
   FALSIFIED 0 ruled-without-justification 0`, exit 0.
-- Fixtures: `validation/m14/fixtures/css/` — 14 fixtures, including
+- Fixtures: `validation/m14/fixtures/css/` — 15 fixtures, including
   `keyframes-redefinition-overrides` and `custom-property-redefinition-overrides` for the
-  type `overrides` and its block boundary, and `custom-media-in-every-query-shape` for the
-  one branch with 0 corpus occurrences
+  type `overrides` and its block boundary, `custom-media-in-every-query-shape` for the
+  one branch with 0 corpus occurrences, and `namespace-uri-is-not-an-import` for the
+  `@namespace` type dispute with the shared differential
 - Ground truth: `validation/m12/ground-truth/css.json`
 - Differential: `validation/m12/results/css-differential.json`;
   `bun run script/m14/differential.ts --lang css`
