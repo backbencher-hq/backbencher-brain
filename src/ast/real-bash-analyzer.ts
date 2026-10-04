@@ -680,14 +680,28 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
     // variables, aliases and locals, never functions, and mixing the two would let
     // this publish the line of something that is not a function symbol at all.
     const functionDeclLines = new Map<string, { line: number; kind: string }[]>()
+    // ...and whether the name is ALSO declared as something that is not a function.
+    //
+    // Needed because "ambiguous" and "ambiguous" are not the same question. Among
+    // function declarations alone a name declared once is not ambiguous and the
+    // `calls` edge needs nothing — but the published symbol table may still hold a
+    // VARIABLE of the same name, and a consumer matching reverse edges by target
+    // has two candidates and no way to choose. So the names that need narrowing by
+    // kind are tracked separately from the names that need a line, and the two sets
+    // only overlap by accident. Measured on the whole corpus: 236 name-ambiguous
+    // `calls` edges, of which the redefinition rule alone could answer 131.
+    const namesWithNonFunctionDecl = new Set<string>()
     for (const sym of symbols) {
-      if (sym.kind !== ASTEngine.SymbolKind.Function) continue
       const name = sym.name
-      const line = this.nameLineOf(sym)
-      const list = functionDeclLines.get(name)
-      if (list) {
-        if (!list.some((e) => e.line === line)) list.push({ line, kind: String(sym.kind) })
-      } else functionDeclLines.set(name, [{ line, kind: String(sym.kind) }])
+      if (sym.kind === ASTEngine.SymbolKind.Function) {
+        const line = this.nameLineOf(sym)
+        const list = functionDeclLines.get(name)
+        if (list) {
+          if (!list.some((e) => e.line === line)) list.push({ line, kind: String(sym.kind) })
+        } else functionDeclLines.set(name, [{ line, kind: String(sym.kind) }])
+      } else if (name.length > 0 && !namesWithNonFunctionDecl.has(name)) {
+        namesWithNonFunctionDecl.add(name)
+      }
     }
 
     // ------------------------------------------------- attribution, second pass
@@ -768,33 +782,79 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
     //
     // The same question for the other type that carries the USE SITE's line rather
     // than the declaration's. `probe-bash-published-resolvability.mts` measured this
-    // by applying every field the edge PUBLISHES to the file's real symbol table,
-    // and `calls` was the one type no field could answer:
+    // by applying every field the edge PUBLISHES to the file's real symbol table.
     //
-    //   type        edges   ambiguous  -> 0 cand   -> 1 cand   -> >1 cand   decided by
-    //   uses        7,856      1,187        0.0%     1,097 92.4%     90  7.6%  targetKind
-    //   contains    3,775        658        0.0%       658 100%       0  0.0%  edgeLine
-    //   overrides      28         28        0.0%        28 100%       0  0.0%  overridesLine
-    //   calls       5,097          6      100.0%        0   0.0%       0  0.0%  (nothing)
+    // Two shapes are here and they are separate defects, which the 400-file sample
+    // could not tell apart because it saw one of each:
     //
-    // `isFunctionCall: true` is not a discriminator: on all 6 of 6 it leaves ZERO
-    // candidates, because both declarations it could have picked are functions. It
-    // says the target IS a local function, not WHICH one. The example is
-    // kubernetes/third_party/gimme/gimme, where `_version_sort` is defined at 125
-    // and redefined at 127 and three call sites name it — 535, 565, 581.
+    //   1. the name is declared as a FUNCTION TWICE (6 edges on the sample,
+    //      kubernetes/third_party/gimme/gimme `_version_sort` at 125 and 127 with
+    //      calls at 535/565/581). `isFunctionCall` cannot answer it: that flag says
+    //      the target IS a local function, not WHICH one, so as a filter it leaves
+    //      zero candidates on 6 of 6.
     //
-    // bash has no nested function scope: a name resolves to the most recent
-    // definition executed before the call, which for a script read top to bottom is
-    // the latest definition at or before the call site. That is the same rule
-    // `resolveDeclaration` publishes for `uses`, over a different index, and it is
-    // published under its OWN `targetResolution` value so a consumer can tell which
-    // rule answered rather than assuming one rule covers both.
+    //   2. the name is declared as a function ONCE and also as something that is
+    //      not a function (105 edges, visible only at whole-corpus scale:
+    //      swift-nio/scripts/nio-diagnose:398 `calls -> nio_pids` against
+    //      variable@136 and function@151; mvdan-sh/syntax/typedjson/testdata/
+    //      roundtrip/file.sh `calls -> foo` against function@19 and variable@20).
+    //      Among functions the name is not ambiguous, so this rule declines — but a
+    //      consumer matching by target still has two candidates.
+    //
+    // Both are answered by the same function, over the FUNCTION candidate set, plus
+    // the knowledge that a name with a non-function declaration needs narrowing by
+    // kind even when the function is unique.
     for (const rel of relationships) {
       if (rel.type !== ASTEngine.RelationshipType.Calls) continue
       const meta = rel.metadata as Record<string, unknown>
       if (meta.targetResolution !== undefined) continue
       if (meta.isFunctionCall !== true) continue // an external binary names nothing local
-      const resolved = this.resolveFunctionTarget(functionDeclLines, String(rel.target ?? ""), rel.line_number)
+      const resolved = this.resolveFunctionTarget(
+        functionDeclLines,
+        String(rel.target ?? ""),
+        rel.line_number,
+        namesWithNonFunctionDecl,
+      )
+      if (resolved) Object.assign(meta, resolved)
+    }
+
+    // -------------------------------------------- attribution, `exports` pass
+    //
+    // The one type that was counted as already-closed and is not. Rounds 5 and 9
+    // both stated that `exports` puts the DECLARATION's line on the edge, and both
+    // were reading a coincidence: the edge carries the line of the `export`
+    // STATEMENT, which is the declaration's line only when the two are the same
+    // statement. Measured on the whole corpus, applying the edge's own line to the
+    // published symbol table leaves **29 of 96** ambiguous `exports` edges with
+    // ZERO candidates — an assertion about a declaration that does not exist at
+    // that row, which is worse than publishing nothing:
+    //
+    //   nvm_supports_xz -[exports]-> PATH @37   against constant@8, constant@21
+    //   check_ce2ee -[exports]-> ORG_REPO @625  against variable@116, variable@163, constant@481, constant@606
+    //   gate_workbench_scm -[exports]-> DARK_CONFIG_RUNDIR @65  against constant@31, constant@93, constant@144
+    //
+    // The 400-file sample saw 2 ambiguous `exports` edges and both coincided, which
+    // is the reason the claim survived nine rounds: the sample cannot see the
+    // failure, and a rule the instrument never contradicts is not a verified rule.
+    //
+    // The rule is the same outward scope walk `uses` uses, over `declSites` — an
+    // exported name is a variable, a constant or a function, and the first two are
+    // what `declSites` keys. `export -f fn` targets a function, which `declSites`
+    // never holds, so those edges are left to `resolveFunctionTarget` below rather
+    // than answered from an index that does not contain them.
+    for (const rel of relationships) {
+      if (rel.type !== ASTEngine.RelationshipType.Exports) continue
+      const meta = rel.metadata as Record<string, unknown>
+      if (meta.targetResolution !== undefined) continue
+      const name = String(rel.target ?? "")
+      if (functionDeclLines.has(name)) continue // a function export: resolveFunctionTarget's question
+      const resolved = this.resolveDeclaration(
+        declSites,
+        name,
+        String(rel.source ?? ""),
+        rel.line_number,
+        scriptName,
+      )
       if (resolved) Object.assign(meta, resolved)
     }
 
@@ -1044,6 +1104,17 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
    *   latestDefinitionBeforeUse  one candidate — `targetLine` + `targetKind`, so
    *                              the fact can be checked against the symbol table
    *                              instead of trusted.
+   *   commandNameIsAFunction     exactly ONE function declaration, and the name is
+   *                              also declared as something that is not a function.
+   *                              Position is irrelevant here and deliberately so: a
+   *                              COMMAND position cannot denote a variable at all,
+   *                              so unlike a `uses` edge there is no "declared
+   *                              after the use site" case to decline. Measured at
+   *                              105 whole-corpus edges (swift-nio/scripts/
+   *                              nio-diagnose:398 `nio_pids` against variable@136
+   *                              and function@151; mvdan-sh/syntax/typedjson/
+   *                              testdata/roundtrip/file.sh `foo` against
+   *                              function@19 and variable@20).
    *   ambiguousInFile            two declarations on the same line, which the
    *                              published line cannot separate. No line: picking
    *                              one would be the invented attribution.
@@ -1054,9 +1125,11 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
    *                              says what was observed and publishes no line
    *                              rather than pretending the text order settles it.
    *
-   * Fewer than two declarations and the name is not ambiguous, so nothing is
-   * added: 55,222 `calls` edges on the whole corpus and only the handful naming a
-   * redefined function grow a key.
+   * The name is only ambiguous at all if there are two or more FUNCTION
+   * declarations of it, or one function plus a declaration of another kind. Fewer
+   * than that and nothing is added: 55,241 `calls` edges on the whole corpus and
+   * only the 236 whose target the published symbol table answers to twice grow a
+   * key.
    *
    * `targetKind` is read off the PUBLISHED symbol rather than written as a literal.
    * The first version wrote the literal `"Function"` and the published kind is
@@ -1071,9 +1144,16 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
     functionDeclLines: Map<string, { line: number; kind: string }[]>,
     name: string,
     useLine: number,
+    namesWithNonFunctionDecl: Set<string>,
   ): Record<string, unknown> | undefined {
     const cands = functionDeclLines.get(name)
-    if (!cands || cands.length < 2) return undefined
+    const collidesWithOtherKind = namesWithNonFunctionDecl.has(name)
+    if (!cands) return undefined // not a function declaration at all: nothing local to name
+    if (cands.length < 2) {
+      if (!collidesWithOtherKind) return undefined // unique name: nothing to add
+      const only = cands[0]!
+      return { targetLine: only.line, targetKind: only.kind, targetResolution: "commandNameIsAFunction" }
+    }
     const atOrBefore = cands.filter((c) => c.line <= useLine)
     if (atOrBefore.length === 0) return { targetResolution: "declaredAfterUse" }
     const nearest = Math.max(...atOrBefore.map((c) => c.line))
