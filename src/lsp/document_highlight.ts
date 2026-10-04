@@ -27,6 +27,7 @@
 //   workspace-unique declaration -> queried symbol (cross-file decl)
 //   multiple same-name declarations (overloads) -> tier "ambiguous"
 //   no occurrence under cursor / no declaration -> tier "not_indexed"
+//   unrouteable language / parse throw -> tier "unsupported_language"
 //
 // Declared guarantees (gated by script/m42/verify-highlight.ts):
 //   semantic:   every highlight is an AST occurrence whose innermost
@@ -36,6 +37,13 @@
 //   declared:   the response carries the evidence tier and staleness marker
 //               so the client can label a stale render (§12.2); an
 //               unindexed position returns declared absence.
+//   routed-out: a file the language router cannot claim (or one whose parse
+//               throws) returns declared absence at tier
+//               "unsupported_language" — never a rejection. Gated by the R6
+//               legs of script/m42/verify-highlight.ts; the rule "no LSP
+//               surface calls parseForSafety unguarded" is gated by that
+//               file's R7 source scan, so a third handler cannot re-land
+//               this class silently.
 //   kind:       occurrence inside the queried symbol's own range → Write
 //               kind (3); a connected call/use site → Read kind (2).
 //
@@ -109,7 +117,27 @@ export async function documentHighlight(
   })
 
   // Layer 1: AST-identity occurrences (comments/strings already excluded).
-  const safety = await parseForSafety(request.filePath, content)
+  //
+  // A file whose language the router cannot claim makes ASTEngine.parseTree
+  // throw `Unsupported file type` (engine.ts:1609-1611, reached through
+  // parseForSafety -> safety-primitives.ts:396); a parser timeout or a grammar
+  // that fails to load throws too. This surface must NOT reject over any of
+  // them: contract §11.7 requires DECLARED ABSENCE for a file outside the
+  // launch-language set, and §13.10 names a wire error where the contract
+  // requires honest emptiness a defect. At a0ed9eade this call was unguarded
+  // and the throw reached server.ts's handler as JSON-RPC -32603 — the sibling
+  // hover.ts:245-251 already guards the identical call and this one was missed.
+  //
+  // The tier says WHICH absence: `unsupported_language` states that no claim
+  // was ever made about this file's language, where `not_indexed` would blame
+  // the index for a file the router never routed. A surface cannot honestly
+  // report "no occurrences here" for a file it could not read at all.
+  let safety: Awaited<ReturnType<typeof parseForSafety>>
+  try {
+    safety = await parseForSafety(request.filePath, content)
+  } catch {
+    return absence("unsupported_language")
+  }
 
   // --- Occurrence-first cursor resolution (the H1 law) ----------------------
   // An impossible cursor (past EOF, etc.) is declared absence, not an
