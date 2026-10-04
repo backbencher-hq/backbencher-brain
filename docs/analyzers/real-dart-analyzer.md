@@ -346,6 +346,7 @@ Reproduce the breadth columns and the zero-`contains` accounting:
 BB_DART_CONC=1 BB_DART_OUT=/tmp/c.json npx tsx validation/m14/fixtures/dart/census.ts
 # -> perType.<type>.filesWith and .filesWithByRepo, plus filesWithoutContains
 BB_DART_CENSUS=/tmp/c.json npx tsx validation/m14/fixtures/dart/zero-contains-probe.ts
+# -> the 882 / 101 / 51 / 5 shape split, and filesWithMemberDecls = 5
 ```
 
 ### The supervisor's arbiter reads 9/10 at n=120, and that reading is a sample artifact
@@ -472,6 +473,7 @@ bun run script/m14/verify-dart-overrides.ts                              # 14/14
 bun run script/m14/verify-dart-references.ts                             # 38 shapes, both sides
 npx tsx validation/m14/fixtures/dart/regex-census.ts                     # 0 regexes, AST-measured
 npx tsx validation/m14/fixtures/dart/regex-census.ts --all               # + the 7 pre-existing tmp rows
+npx tsx validation/m14/fixtures/dart/hang-file-innocence.ts             # 5/5 hang files parse clean alone
 ```
 
 ### The six questions, per emitted type
@@ -992,29 +994,57 @@ showed the failure is the directory's, not one script's.
             [BB-PARSE-ERR] dart | dart-sdk/.../get_refactoring_test.dart | memory access out of bounds
             [BB-HANG] parser stuck 120s on dart-sdk/.../get_statement_completion_test.dart — exiting
             exit 1
+   run 5:  corpus: 33692 admitted files   (2026-10-04, fourth re-measurement)
+            [BB-PARSE-ERR] dart | dart-sdk/.../is_postfix_completion_applicable_test.dart | memory access out of bounds
+            [BB-PARSE-ERR] dart | dart-sdk/.../make_return_type_nullable.dart | memory access out of bounds
+            [BB-HANG] parser stuck 120s on dart-sdk/.../is_postfix_completion_applicable_test.dart — exiting
+            exit 1
    ```
 
    Run 3's hang file is one run 2 already listed as a PARSE-ERR, and run 3 is the only
    one of the three whose hang file and parse-error set coincide as a single element —
    which is the correlation below holding for the third time, on the strongest form.
-   **Run 4 names a file no earlier run named**, so the set of files this failure has been
-   observed on is four: `flow_analysis_log.dart`,
-   `list_postfix_completion_templates_test.dart`, `import_elements_test.dart` and
-   `get_statement_completion_test.dart`. Two properties hold across all four runs and
+   **Runs 4 and 5 each name a file no earlier run named**, so the set of files this
+   failure has been observed on is five: `flow_analysis_log.dart`,
+   `list_postfix_completion_templates_test.dart`, `import_elements_test.dart`,
+   `get_statement_completion_test.dart` and `is_postfix_completion_applicable_test.dart`.
+   Two properties hold across all five runs and
    both argue the same way — the hang file is never the same file twice, and it is
    always a member of that run's own PARSE-ERR set. A grammar defect would name the
    same construct every time; a corrupted WASM heap names whatever the next allocation
    lands in.
 
-   Both run-4 files parse cleanly through production `parseFile` one at a time, which
-   is the claim the whole argument rests on:
+   Every hang file is parseable in isolation, and that is now a committed instrument
+   rather than a table someone typed: `validation/m14/fixtures/dart/hang-file-innocence.ts`
+   runs one production `parseFile` per file, prints symbols and relationships, and
+   records for each entry whether that run had also reported the file in its own
+   PARSE-ERR set. **5 of 5 clean**, and the symbol/rel counts agree with the ad-hoc
+   table below on every file they share:
+
+   ```
+   flow_analysis_log.dart                        20,272 B  OK 935 ms — 32 symbols, 136 rels  [hang run 1, also in that run's PARSE-ERR set]
+   list_postfix_completion_templates_test.dart    1,254 B  OK  24 ms —  3 symbols,  20 rels  [hang run 2, also in that run's PARSE-ERR set]
+   import_elements_test.dart                      4,190 B  OK  60 ms —  9 symbols,  84 rels  [hang run 3, also in that run's PARSE-ERR set]
+   get_statement_completion_test.dart             1,715 B  OK  35 ms —  3 symbols,  29 rels  [hang run 4, also in that run's PARSE-ERR set]
+   is_postfix_completion_applicable_test.dart      1,198 B  OK  16 ms —  3 symbols,  20 rels  [hang run 5, also in that run's PARSE-ERR set]
+   ```
+
+   The probe reports `MISSING — not on disk` rather than a pass when a recorded path
+   does not resolve, and it did exactly that on its first run: the path recorded for
+   run 1 carried a `mapped_by_package/` segment that is not in the tree, and
+   `git ls-files` put the file at `pkg/_fe_analyzer_shared/lib/src/flow_analysis/`.
+   An instrument that cannot tell "the file is clean" from "the file is not there"
+   would have reported 5 of 5 on a corpus of 4.
+
+   Run 4's two files parse cleanly through production `parseFile` one at a time,
+   which is the claim the whole argument rests on:
 
    ```
    get_statement_completion_test.dart  ms=967  fallback=false  symbols=3  rels=29  errors=0
    get_refactoring_test.dart            ms=42   fallback=false  symbols=3  rels=36  errors=0
    ```
 
-   So on this corpus the arbiter exits **1**, four times out of four, and never
+   So on this corpus the arbiter exits **1**, five times out of five, and never
    prints a verdict —
    `exit 2` is what `ontology-coverage-gate.ts:289-293` does when it gets there,
    which is a source fact (`RULED_BY_LANG` holds only `bash` and `json`, and the
@@ -1026,8 +1056,9 @@ showed the failure is the directory's, not one script's.
 
    **The `[BB-HANG]` is the CONCURRENT PARSE PATH, and the file it names is
    innocent.** This corrects the reading that a `[BB-HANG]` naming one file is a
-   parser-robustness finding about that file. Every file named across the four runs
-   above parses cleanly through the same production `parseFile`, one at a time. The
+   parser-robustness finding about that file. Every file named across the five runs
+   above parses cleanly through the same production `parseFile`, one at a time — 5 of 5
+   on the committed probe. The
    `document_color_test.dart` row needed a path to be checkable at all, because
    **dart-sdk tracks two files of that name** and the bare filename names neither:
 
@@ -1574,37 +1605,40 @@ dart lane regex census — instrument: TypeScript AST (ts.createSourceFile), no 
 scope: lane-owned set
 owned dirs: src/ast/real-dart-analyzer.ts | validation/m14/fixtures/dart/* |
             script/m14/oracles/dart-* | script/m14/dart-* | script/m14/verify-dart-*
-files scanned: 17  (8186 lines)   excluded from its own count: …/regex-census.ts
-lane-owned files: 17
+files scanned: 18  (8337 lines)   excluded from its own count: …/regex-census.ts
+lane-owned files: 18
 
 RESULT: 0 regexes in the lane-owned set.
 ```
 
-The 16 files that are not the instrument are the whole lane-owned set — 4 oracles,
-3 verifiers, the analyzer and 8 fixture harnesses. **Both numbers in that block are 17,
-not 16, and the difference is the census itself:** it counts itself in both totals and
+The 17 files that are not the instrument are the whole lane-owned set — 4 oracles,
+3 verifiers, the analyzer and 9 fixture harnesses. **Both numbers in that block are 18,
+not 17, and the difference is the census itself:** it counts itself in both totals and
 excludes itself only from the MATCH set (`hits.filter(h => laneOwned(h.file) && h.file
 !== SELF)`), because its own header carries example regex literals inside a comment. So
-17 files are scanned, 16 are evidence, and the RESULT sentence's own "MEASUREMENT over
-17 files" is one file generous. The block above previously read `16 (7881 lines)`,
-which matched no run: the set was 16 files then and is 16 files now, so that figure had
-been carried through at least one file being added and removed.
+18 files are scanned, 17 are evidence, and the RESULT sentence's own "MEASUREMENT over
+18 files" is one file generous. The block above previously read `16 (7881 lines)`,
+which matched no run: the set was 16 files then and is 17 evidence files now, so that
+figure had been carried through at least one file being added and removed.
 
-**The `lines` figure is one per file larger than the files hold.** 8,186 is
-`content.split(/\r?\n/).length` summed over 17 files, and every file ends in a newline,
-so each contributes one empty trailing segment: the real total is **8,169**
-(`wc -l` over the same 17). It is quoted as the instrument prints it because that is
-what a reviewer sees, and the 17-line gap is named here rather than left for someone to
+**The `lines` figure is one per file larger than the files hold.** 8,337 is
+`content.split(/\r?\n/).length` summed over 18 files, and every file ends in a newline,
+so each contributes one empty trailing segment: the real total is **8,319**
+(`wc -l` over the same 18). It is quoted as the instrument prints it because that is
+what a reviewer sees, and the 18-line gap is named here rather than left for someone to
 find.
 
-**Both figures in that block moved once, for a reason worth recording.** They read
-8,185 and 8,168 until commit `b1b02d2b8` added a single line to a lane-owned file
+**Both figures in that block have moved twice, and both moves are the same lesson.** They
+read 8,185 / 8,168 until commit `b1b02d2b8` added a single line to a lane-owned file
 (`bothInSameRepoPooled: pooledBoth(t),` in `validation/m14/fixtures/dart/census.ts`) —
 a commit about the census's own JSON field, which is not a regex-bearing file and
-carries no regex. A quoted instrument block is a measurement of the tree at a
-commit, and any later commit that touches a scanned file invalidates it silently.
-The `RESULT: 0` did not move and could not: adding a line that contains no
-`RegExpLiteral` adds no match.
+carries no regex. They then read 8,186 / 8,169 until this wave added
+`validation/m14/fixtures/dart/hang-file-innocence.ts`, which took the set to 18 files.
+A quoted instrument block is a measurement of the tree at a commit, and any later commit
+that touches a scanned file invalidates it silently. The `RESULT: 0` did not move
+through either change and could not: adding lines that contain no `RegExpLiteral` adds
+no matches. **The count is therefore worth less than the RESULT, and a reader who
+re-runs this should expect the file count to differ by whatever their branch added.**
 
 **Writing that instrument cost this lane two of its own blind spots, and both were the
 same defect one level up.** The first version selected its file set with regexes and then
@@ -2016,10 +2050,33 @@ and 100 + 14 MISSING, all `overrides`.
 
 **What did not reproduce is recorded as corrected, in the sections that carry it:** the
 `28 further positions` of the type inventory (33 positions exist — this section's "28"),
-the quoted regex-census block (`16 (7881 lines)`, which matched no run — now 17/8,186
+the quoted regex-census block (`16 (7881 lines)`, which matched no run — now 18/8,337
 with the self-count explained), the `document_color_test.dart` row that named a
-basename two tracked files share, and the `[BB-HANG]` run count (n=2 → n=3, with a third
-hang file that is innocent on the same evidence as the first two).
+basename two tracked files share, and the `[BB-HANG]` run count (n=2 → n=3 → n=4 → n=5,
+each new run naming a hang file no earlier run named and each innocent on the same
+evidence as the first).
+
+**A third pass, same day, changed two more figures in this file, both from the same
+cause.** A quoted instrument block is a measurement of the tree *at a commit*, and a
+later commit that touches a file the instrument counts invalidates it silently:
+
+- The regex-census line count moved 8,185 → 8,186 (real `wc -l` 8,168 → 8,169) because
+  `b1b02d2b8` added one line to `validation/m14/fixtures/dart/census.ts` — a commit about
+  the census's own JSON field, a file carrying no regex — and then to 8,337 / 8,319 when
+  this wave added `hang-file-innocence.ts` to the lane-owned set. `RESULT: 0 regexes`
+  could not move through either change, because a line with no `RegExpLiteral` adds no
+  match.
+- The `zero-contains` accounting table said `declaration WITH members, >1 MB | 4` and
+  totalled 1,038 with a hand note that one file was double-counted. The probe's own
+  `filesWithMemberDecls` is **5**, and the code block already printed below that table
+  listed 5 files. The 4 counted only the files over 1 MB; the fifth,
+  `patternVariableDeclaration_inClass.dart` (35 B), is an `ERROR`-bearing parse case, so
+  the table counted one population under two criteria and corrected the total by hand.
+  Now 5, totalling 1,039, with the 96 + 5 = 101 split named.
+
+The two instruments agreed with each other and disagreed with the prose both times,
+which is the argument for reading the instrument's output rather than the file that
+quotes it.
 
 **What was NOT re-run, and why.** The latency A/B was not repeated: it alternates two
 analyzer blobs over 300 files × 4 runs, and `src/ast/real-dart-analyzer.ts` has not
