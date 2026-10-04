@@ -282,20 +282,26 @@ given in three scopes because they answer different questions: `file` is this fi
 symbols, `sample` is every sampled file's, and `repo` is every sampled file of the
 SAME repository — the narrowest honest cross-file scope, since a per-file analyzer
 cannot see another file and a type declared in one is a real symbol the edge can
-legitimately name. All figures below are the 2,735-file run.
+legitimately name. All figures below are the 2,735-file run, and every one is a field
+`census.ts` writes to its JSON: `src∈file`, `tgt∈file`, `both∈file`, `tgt∈sample`,
+`both∈sample`, `tgt∈repo`, `both∈repo`. Where this table says "both∈X" it means BOTH
+endpoints bind at that scope; the two tables below used to mix target-only and
+both-ends figures under one word, and two of the numbers below were left over from a
+census run that predated the qualified-spelling fix (defect 4 under *Four defects in
+this lane's own harnesses*), which is why `overrides` was quoted at 0.0% in-repo.
 
 | Type | 1 Exists | 2 Fires | 3 Correct | 4 Labelled | 5 Resolved | 6 Confident |
 | --- | --- | --- | --- | --- | --- | --- |
-| calls | ✅ | ✅ 43,042 | ✅ differential, 60-file proxicall sample: 6,120/6,220 truth rows covered, **0 unexplained** | ✅ | src 99.1% file / tgt 22.1% file / 51.4% sample / 50.8% repo | 35 of 43,042 under 0.7 (0.1%), min 0.4 — sub-threshold `uses`-style reads inherited from the shared bare-read surface |
-| uses | ✅ | ✅ 110,679 | ✅ same run, 0 unexplained | ✅ four surfaces, each pinned by a fixture; no surface borrows another's label | src 99.3% / tgt 25.5% file / 56.2% sample / 60.1% repo | 13,325 of 110,679 under 0.7 (12.0%), all the bare-read surface at 0.6 — the largest heuristic class in the lane |
-| contains | ✅ | ✅ 119,515 | ✅ `deriveDartContainsTruth`, 37/37 shapes exact, and 0 unexplained in the differential | ✅ | **both ends 100.0%** — the only label in the lane that resolves at both ends by construction | 0 under 0.7 |
+| calls | ✅ | ✅ 43,042 | ✅ differential, 60-file proxicall sample: 6,120/6,220 truth rows covered, **0 unexplained** | ✅ | src∈file 99.1% · tgt∈file 22.1% · both∈sample 66.6% · both∈repo 50.8% | 35 of 43,042 under 0.7 (0.1%), min 0.4 — sub-threshold `uses`-style reads inherited from the shared bare-read surface |
+| uses | ✅ | ✅ 110,679 | ✅ same run, 0 unexplained | ✅ four surfaces, each pinned by a fixture; no surface borrows another's label | src∈file 99.3% · tgt∈file 25.5% · both∈sample 69.2% · both∈repo 60.1% | 13,325 of 110,679 under 0.7 (12.0%), all the bare-read surface at 0.6 — the largest heuristic class in the lane |
+| contains | ✅ | ✅ 119,515 | ✅ `deriveDartContainsTruth`, 37/37 shapes exact, and 0 unexplained in the differential | ✅ | **both∈file 100.0%, both∈repo 100.0%** — the only label in the lane that resolves at both ends by construction; 3 of 119,515 targets are bare-name and unbound | 0 under 0.7 |
 | imports | ✅ | ✅ 10,657 | ✅ `deriveDartImportsTruth`, 7,340 rows measured EXACT on both corpora | ✅ | src 2.7% / tgt 0.0% both-ends: targets are module URIs (`package:foo/src/x.dart:*`), and a URI is not a symbol in this index | 0 under 0.7 |
-| references | ✅ | ✅ 5,265 | ✅ lane oracle `script/m14/oracles/dart-references.ts` — **1,203/1,203 rows agreed (100.0%), 0 missing, 0 unexplained** over 799 corpus files, and 38/38 shapes exact in the battery | ✅ 14 expect rows name the position they came from; 15 forbid rows cover heritage, construction, type variables (including a constrained one shadowing a same-named class), self-reference, `dynamic` and the resolution gate | src 97.9% / **tgt 100.0% by construction** / both-ends 97.9% / both-ends-in-repo 98.6% / both-ends-in-sample 98.5% | **0 of 5,265 under 0.7** — all `usage_contextual` at exactly 0.95, min = mean = 0.95 |
+| references | ✅ | ✅ 5,265 | ✅ lane oracle `script/m14/oracles/dart-references.ts` — **1,203/1,203 rows agreed (100.0%), 0 missing, 0 unexplained** over 799 corpus files, and 38/38 shapes exact in the battery | ✅ 14 expect rows name the position they came from; 15 forbid rows cover heritage, construction, type variables (including a constrained one shadowing a same-named class), self-reference, `dynamic` and the resolution gate | src∈file 97.9% · **tgt∈file 100.0% by construction** · both∈file 97.9% · both∈sample 98.7% · both∈repo 98.6% | **0 of 5,265 under 0.7** — all `usage_contextual` at exactly 0.95, min = mean = 0.95 |
 | exports | ✅ | ✅ 302 | ✅ same oracle as imports | ✅ | 0.0% both-ends, same URI shape | 0 under 0.7 |
-| extends | ✅ | ✅ 4,730 | ✅ differential, 0 unexplained | ✅ alias-free leaf resolution (DAD1), pinned by `dart/heritage-alias-not-resolved`'s fixture twin | src 100% / tgt 15.0% file / 27.1% repo | 0 under 0.7 |
-| implements | ✅ | ✅ 758 | ✅ differential, 0 unexplained | ✅ alias-free (DAD2) | src 100% / tgt 29.7% file / 45.1% repo | 0 under 0.7 |
-| overrides | ✅ | ✅ 90,352 | ✅ `verify-dart-overrides` 14/14 shapes exact — **but the differential does not compare this label**, see DERIVATION | ✅ exposer-not-declarer, instance-vs-static, breadth-not-depth, all pinned with a negative twin per rule | src 100% / tgt 2.3% file / **0.0% repo** | 0 under 0.7; 88,211 of 90,352 rows are the external-base form, all at 0.8 |
-| instantiates | ✅ | ✅ 18,374 | ✅ differential, 0 unexplained | ✅ construction only, never a call (DT-A) | src 96.8% / tgt 13.4% file / 22.4% repo | 0 under 0.7 |
+| extends | ✅ | ✅ 4,730 | ✅ differential, 0 unexplained | ✅ alias-free leaf resolution (DAD1), pinned by `dart/heritage-alias-not-resolved`'s fixture twin | src∈file 100% · tgt∈file 15.0% · both∈sample 33.2% · both∈repo 27.1% | 0 under 0.7 |
+| implements | ✅ | ✅ 758 | ✅ differential, 0 unexplained | ✅ alias-free (DAD2) | src∈file 100% · tgt∈file 29.7% · both∈sample 48.0% · both∈repo 45.1% | 0 under 0.7 |
+| overrides | ✅ | ✅ 90,352 | ✅ `verify-dart-overrides` 14/14 shapes exact — **but the differential does not compare this label**, see DERIVATION | ✅ exposer-not-declarer, instance-vs-static, breadth-not-depth, all pinned with a negative twin per rule | src∈file 100% · tgt∈file 2.3% · both∈sample 3.1% · both∈repo 2.9% | 0 under 0.7; 88,211 of 90,352 rows are the external-base form, all at 0.8 |
+| instantiates | ✅ | ✅ 18,374 | ✅ differential, 0 unexplained | ✅ construction only, never a call (DT-A) | src∈file 96.8% · tgt∈file 13.4% · both∈sample 28.2% · both∈repo 22.4% | 0 under 0.7 |
 
 Three things in that table need reading rather than skimming.
 
@@ -316,13 +322,20 @@ construction, because resolution is its gate — and the honest reading of that 
 that it is also the only label that cannot tell you about a dependency this file has
 on a type in another file.
 
-**`overrides` resolves at 0.0% in every cross-file scope, and that is a shape rather
-than a rate.** 88,275 of its 90,352 unresolved targets are `dotted-path`: the edge
-names `State.setState`, not `setState`, so it cannot match a bare symbol name in any
-scope. The 2.3% in-file figure is the honest one for a per-file run. Whether the
-dotted spelling is the right endpoint for a cross-language graph is a question about
-the whole family and not this lane's to answer; it is recorded here because a reader
-of `overrides` for Dart will otherwise read 0.0% as "no base was ever found".
+**`overrides` resolves at 2.9% in-repo, and that low figure is a SHAPE rather than a
+rate.** 88,275 of its 90,352 unresolved targets — 97.7% — are `dotted-path`: the edge
+names `State.setState`, not `setState`, so it binds only where the `owner.name`
+spelling is itself published. An earlier version of this document quoted 0.0% here,
+and that number was the HARNESS's, not the analyzer's: `census.ts` put the qualified
+`owner.name` spelling into the per-file symbol table only, so a label whose source and
+target are both qualified read zero in every cross-file scope on a sample that plainly
+contained the declaring class (defect 4 below). With the spelling in all three tables
+the same run reads 3.1% in-sample and 2.9% in-repo. The 2.3% in-file figure remains the
+honest one for a per-file run. Whether the dotted spelling is the right endpoint for a
+cross-language graph is a question about the whole family and not this lane's to
+answer; it is recorded here because a reader of `overrides` for Dart will otherwise
+read 2.9% as "no base was ever found" — the incoming census below, which resolves
+against whole repositories read in full, puts the same label at 93.0%.
 
 ### DERIVATION findings
 
@@ -381,7 +394,7 @@ stride cannot answer them.
 ```
 4,788 files   dart-http 335/335, riverpod 1,295/1,295, proxicall 2,351/2,351  (FULL)
               flutter-packages 404/4,033 (stride 10), dart-sdk 403/25,734 (stride 64)
-337,336 symbols   960,634 analyzer relationships   BB_DART_CONC=1   wall 861,581 ms
+337,336 symbols   960,634 analyzer relationships   BB_DART_CONC=1   wall 995,723 ms
 26 files carry 457 ERROR-node parse errors; 4 files >1 MB go to the fallback
 67 edges EXCLUDED as degraded-fallback output (below)
 emptySymbolNames 0   emptyOrUnknownKind 0   symbolsNamedUnknown 0   unknownEndpoints 0
@@ -596,7 +609,7 @@ instrument that finds this class.
 
 ## Declared limitations
 
-A blank list on a Turing-complete language is treated as dishonesty, not as
+A blank list on a general-purpose language is treated as dishonesty, not as
 excellence. This is not blank, and the entries are ordered by how much they could
 mislead a reader of the graph.
 
@@ -644,9 +657,12 @@ mislead a reader of the graph.
    1 more file over the 5 MB skip limit, which is never parsed at all). A census
    that counts symbol kinds across such files is measuring the fallback; this
    lane's census counts and reports them apart.
-9. **Parse damage inside an `ERROR` region publishes nothing.** 11 of 1,000 sampled
-   files carried ERROR nodes (88 parse errors), and a type mention inside a damaged
-   region is not a fact about a well-formed program.
+9. **Parse damage inside an `ERROR` region publishes nothing.** 35 of the 2,735
+   sampled files carried ERROR nodes — 580 parse errors between them, 1.28% of the
+   sample — and a type mention inside a damaged region is not a fact about a
+   well-formed program. The earlier figure quoted here (11 of 1,000 files, 88 errors)
+   was measured on a 1,000-file run and understated the rate by an order of
+   magnitude; the 2,735-file figure is the one the rest of this document uses.
 10. **`bb`-visible cross-file `overrides` and `references` are unaudited by the
     differential** (DERIVATION, above). Both have oracles and batteries; neither is
     wired into the harness's comparison.
