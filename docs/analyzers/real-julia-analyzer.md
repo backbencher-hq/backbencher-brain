@@ -279,11 +279,45 @@ writing nothing:
 $ npx tsx validation/m14/fixtures/julia/envelope.ts --files 400
 file set: 400 of 1985 candidates (stride 4), digest 36cef2786b320821
 byte distribution: min 31 · median 3695 · p90 33378 · max 191504
+load under measurement: load1 15.70 on 8 cores
+38999 ms for 400 files  ->  97.50 ms/file
+symbols 6,970  relationships 46,525  parseFile threw: 0
+throughput: 1372 outputs/s, 116.3 relationships/file
+per-type on this draw: calls=23877 · references=10336 · uses=7132 · contains=2721 ·
+  exports=797 · instantiates=622 · imports=589 · extends=451
+```
+
+Same digest and same 400 files as the run below it, so the two ARE differencable: **46,263 → 46,525
+relationships, +0.57%**, of which `imports` 458 → 589 and `references` 10,205 → 10,336 (the same walk
+writes both). `symbols/file` is unchanged at 17.4. Corpus-wide the same work is 234,796 → 235,878,
+**+0.46%**. The 97.50 against the 99.53 below it is noise in the flattering direction — the run above
+measured at load1 15.70 and the one below at 11.21.
+
+**The instrument's own regression basis was a tautology and said so in its output.** It printed
+`REGRESSION BASIS: 116.3 relationships/file` — computed from the run that had just finished, under a
+comment reading "printed above so a later run can difference it". A later run cannot difference against
+that, because nothing was stored: every run agreed with itself. The basis is a committed artifact keyed
+`digest:files` now, the comparison is REFUSED when the digest differs, and the branch was executed
+rather than merely written:
+
+```
+relationships/file  116.3  vs baseline 116.3  -0.00%
+symbols/file         17.4  vs baseline  17.4  +0.00%
+ms/file            111.50  vs baseline 191.46  -41.76%
+```
+
+The −41.76% is the useful output, not an embarrassment: **identical payload, 42% swing in ms/file**
+between two runs minutes apart on a shared box. Recorded and re-baselined to
+`validation/m60/results/julia-envelope-baseline.json`; `--record` replaces the previous figure and says
+so rather than doing it silently.
+
+**The earlier measurement, on the same draw:**
+
+```
 load under measurement: load1 11.21 on 8 cores
 39811 ms for 400 files  ->  99.53 ms/file
-symbols 6,970  relationships 46,263  parseFile threw: 0
-throughput: 1337 outputs/s, 115.7 relationships/file
-per-type on this draw: calls=23877 · references=10205 · uses=7132 · contains=2721 ·
+symbols 6,970  relationships 46,263
+per-type: calls=23877 · references=10205 · uses=7132 · contains=2721 ·
   exports=797 · instantiates=622 · imports=458 · extends=451
 ```
 
@@ -394,9 +428,19 @@ as "1,006 julia files were dropped for size". Measured on this corpus root: **1,
 512 KB, of which 0 are `.jl`.** The julia population was never cut by that rule. The census now prints
 the two counts separately and labels what each is.
 
-**Production totals.** 36,806 symbols · 234,796 relationships in the ten types · 0 crashes · 0 files
+**Production totals.** 36,806 symbols · 235,878 relationships in the ten types · 0 crashes · 0 files
 routed to the >1 MB structural fallback · **365 of 1,985 files (18.4%) yield ZERO symbols** and are
 listed by name in the census output · **0 of 1,985 files unreadable by the production grammar**.
+
+**Two of those ten counts moved on 2026-10-04, in OPPOSITE directions, and both moved because an
+independent oracle was written for the type.** `script/m14/oracles/julia-imports.ts` and
+`julia-exports.ts` are the last two DERIVATION findings paid down; the moment they could disagree with
+the analyzer they did, and the analyzer was wrong on both. `imports` **2,804 → 3,386** (+582, and its
+per-file edges resolve no better: 0.4% both ends, because a module path is declared in the module and
+not in the file that imports it). `exports` **2,859 → 2,795** (−64), and the reduction is the point:
+four of those edges were FABRICATED. `references` rode along, 49,586 → **50,150**, because all three
+channels are written from the one walk. Total 234,796 → 235,878, **+0.46%**. The section that
+measures it is [§ the two oracles](#the-two-orphaned-edges-and-the-instrument-that-found-them).
 
 The zero-symbol share rose from 13.9% to 18.4% and the corpus is to blame, not the analyzer: 230 of the
 365 are in the eleven newly cloned packages, where `test/` fixtures, `docs/` build scripts and
@@ -406,12 +450,12 @@ This is a coverage gap and is declared as one below; it is not a measurement tha
 | Relationship type | Emitted? | Verdict, channel and measured size over 1,985 files | Files |
 |---|---|---|---|
 | `calls` | **EMITTED** | relationship, **122,150** | 1,873 |
-| `references` | **EMITTED** | relationship, **49,586** | 1,662 |
+| `references` | **EMITTED** | relationship, **50,150** | 1,662 |
 | `uses` | **EMITTED** | relationship, **37,087** | 1,480 |
 | `contains` | **EMITTED** | relationship, **14,299** | 954 |
 | `instantiates` | **EMITTED** | relationship, **3,428** | 535 |
-| `imports` | **EMITTED** | relationship **and** `ImportInfo[]`, **2,804** rows | 961 |
-| `exports` | **EMITTED** | relationship **and** `ExportInfo[]`, **2,859** rows | 209 |
+| `imports` | **EMITTED** | relationship **and** `ImportInfo[]`, **3,386** rows | 961 |
+| `exports` | **EMITTED** | relationship **and** `ExportInfo[]`, **2,795** rows | 207 |
 | `extends` | **EMITTED** | relationship, **2,580** | 537 |
 | `overrides` | **EMITTED** | relationship, **3** | 3 |
 | `implements` | **RULED** | no channel; 0 of 12 named constructs in the grammar inventory; the 449 nearest candidates are published as `extends` | — |
@@ -452,7 +496,7 @@ lane read clean by exploiting a gate bug would hide it for the lanes that still 
 ```
 $ bun script/m14/verify-doc-truth-emissions.ts | grep julia
 UNDOCUMENTED [julia] calls (relationship)
-  docs/analyzers/real-julia-analyzer.md:96
+  docs/analyzers/real-julia-analyzer.md:450
 ```
 
 `calls` **is** documented — it is the first body row of the verdict table (`| \`calls\` | **EMITTED** |
@@ -475,6 +519,162 @@ that cannot parse `RULED — payload channel only` will report a lane as undocum
 ruling.** That pressure is a plausible reason the ruling was never re-examined, and it is worth
 recording: the instrument did not merely fail to catch a wrong verdict, it applied steady pressure
 toward keeping it.
+
+---
+
+## The two orphaned edges, and the instrument that found them
+
+`imports` and `exports` were the last two DERIVATION findings in this lane: emitted, stored in the
+graph, and compared against nothing. Both had already been RULED non-applicable and overturned by a
+corpus measurement before this work, which is the uncomfortable part — **the verdicts were right and the
+edges were wrong at the same time**, and no instrument in this lane could tell the difference, because
+`census.ts`, `arbiter-census-diff.ts` and the firing check all read the production path and a filter
+*inside* that path is invisible to all of them by construction.
+
+So the two oracles were written, and they read the TREE:
+
+| | `script/m14/oracles/julia-imports.ts` | `script/m14/oracles/julia-exports.ts` |
+|---|---|---|
+| derives | the module set a statement imports | the binding set a statement exports |
+| structurally differs from | `importTargets()`, which carries a `pending` variable | `exportableName()`, which is first-match |
+| the difference is | stateless per-child classification | a SET, so a list cannot lose its tail |
+| first run | **167 of 440 edges MISSING (38%)** | 3 MISSING, 2 UNEXPLAINED |
+| after the fix | 3,374 / 3,382 covered (**99.8%**) | 2,793 / 2,797 covered (**99.9%**) |
+
+Both oracles share exactly one rule with the analyzer, and it is a rule about the PARSER'S OUTPUT
+rather than about julia's module grammar — see `julia-exports.ts`'s header for why that is not circular.
+Neither calls a function of the code under test, and neither shares a key set, guard list or resolver.
+
+### `using A, B` published one module, and a 17-module statement is one line of `DataFrames.jl`
+
+`importTargets()` walked a statement's named children **in order**, carrying a `pending` variable, and
+one branch read: *"a bare identifier when something is already pending, with no items yet, and a
+different name — that is an ITEM of the pending target."* That branch cannot tell a second **MODULE**
+from an item of the first. `using A, B` names two modules.
+
+`DataFrames.jl/src/DataFrames.jl:3-19` is ONE `using` statement naming **17** modules. The analyzer
+published `Base.Sort` and called the other sixteen items of it. Corpus-wide, measured by the oracle over
+the whole admitted population: **8 `imports` edges were missing on a 200-file draw before the fix and
+1,674 after** — 167 of 440 truth edges, 38% of the type, on a draw that included that one file.
+
+`validation/m14/fixtures/julia/import-export-shapes.ts` is the instrument that says this is not a
+corner: 596 statements in a 400-file draw, **52 distinct shapes**, of which 32 are two-path and 12 are
+three-path. The write is now stateless, and the shape census is what both the oracle and the fix cite
+rather than `grammar.js`'s prose.
+
+Two smaller shapes fell out of the same rewrite:
+
+- **`import A as B` published nothing.** The `import_alias` branch was gated on a `pending` that a
+  statement whose *only* named child is an `import_alias` never had, so
+  `StaticArrays.jl/ext/StaticArraysChainRulesCoreExt.jl`'s `import ChainRulesCore as CRC` was dropped
+  whole. `as` renames the local binding and does not change what is imported, so the edge asserts the
+  MODULE — and `items` no longer carries the alias, which was asserting a dependency on a binding named
+  `B` inside a module that need not have one.
+- **`uses A: x` and `import A as B` were indistinguishable on the wire.** They are different facts about
+  the same dependency, so the edge now carries `importRenamed`. This exists because the lane-owned
+  mutant that reinstates the pre-fix drop **survived its first run**: it matched on a metadata flag the
+  analyzer never set, so it filtered nothing and passed by doing nothing.
+
+### The census could not have found the first one, and that is what its granularity is
+
+`census.ts` reconciles **files carrying the construct** against **files whose edge fired** — 961 against
+961, silent: 0, and it has reported silent: 0 for this type the whole time. A file whose *first* module
+produced an edge passes, so a missing second target is invisible at file granularity no matter how many
+times the reconciliation runs. That is not a defect in the reconciliation; it is the resolution of the
+instrument, and the honest reading is that it answers "does this file have an import edge", not "does
+this file have an import edge for every module it imports". **A differential against an independent
+derivation is a different instrument at a different resolution**, and this is the case for keeping both.
+
+### Four `exports` edges were fabricated, and the grammar is why
+
+`public` and `export` are **contextual keywords** in julia — keywords only when a name list follows. So
+`public = expr` declares a local variable named `public`, and it is not an export of anything. The
+production grammar emits a `public_statement` for it anyway:
+
+```
+Documenter.jl/src/expander_pipeline.jl:632   public = get(fields, :Public, true)
+julia/stdlib/REPL/src/docview.jl:408          public = Base.ispublic(binding.mod, binding.var)
+```
+
+The analyzer published `exports` edges from both: for the local `fields`, the local `private` and a bare
+`:` in the first, and in the second for **`binding`, a function parameter of `summarize`**. A fabricated
+export is a fake dependency — counted `unexplained` by every oracle, and wrong refactoring advice in
+`bb_impact`.
+
+The refusal is *"the first NAMED child of the statement is an `ERROR`"*, and it is **not** "contains an
+ERROR", because the measurement says those are different populations:
+
+| class | count | what it is | what the analyzer does |
+|---|---|---|---|
+| ERROR descendant, any | **49** of 3,570 statements | — | — |
+| legitimate julia the grammar cannot fully parse | **45** | `import .Base.Math.@horner` (`julia/base/special/log.jl:12`, in julia's own stdlib), `import ..test_mod.@old_hyg` (32 in `julia/JuliaLowering/test/scopes.jl`), `import B.@mac as @mac2` | **kept** — the module path around the unparsed part still parses, so the dependency that exists is recorded |
+| the statement node itself is wrong | **2** | `public = expr` | **refused** — no name list was attached, so there is no export |
+| genuine `public` that also carries an ERROR | **2** | `public Test_y, Text_x, …` (55 names, `julia/stdlib/REPL/test/replcompletions.jl:21`); `@compat(public, (…))` (60 names, `Flux.jl/src/Flux.jl:55`) | **kept** — both begin with a real `identifier` |
+
+Refusing on "contains an ERROR" would have deleted 45 real edges to save 2 fabricated ones, and would
+have cost the ~115 genuine exported names those two statements carry. The census reconciliation is the
+independent witness that the refusal landed where it was meant to: `exports` silent files went from 1
+to **3**, and it **names** them — `Documenter.jl/src/expander_pipeline.jl` and
+`julia/stdlib/REPL/src/docview.jl` (the two misparses, now correctly silent) and
+`julia/test/precompile.jl`, whose statement is `export $Foo_module, $FooBase_module` inside generated
+code. An interpolated name is not a binding, so publishing no export edge there is the right answer and
+is stated here rather than left as a silent file in a table.
+
+### Every residual disagreement is about WHICH SCOPE, not about whether
+
+The 20 residual `imports` disagreements (8 oracle-only, 12 analyzer-only) and 4 of the 6 `exports` ones
+are **one phenomenon**: the same dependency, attributed to a nested scope by one side and to the
+enclosing module by the other. `Documenter.jl/test/doctests/fix/tests.jl:45` is
+`include(...); @eval import .Foo` inside `function test_doctest_fix` — the analyzer sources the edge at
+the function, the oracle at `DocTestFixTest`. Julia evaluates `@eval` in the enclosing **module**, so the
+oracle's reading is the better one, but establishing that needs `@eval`'s expansion semantics rather
+than the tree, and one edge is not worth an unmeasured change.
+
+It is also invisible to this instrument by construction: the comparison key is a per-file SET, so once
+both sides have deduplicated, `root|Test` (from `testdefs.jl:3`) and `runtests|Test` (from
+`testdefs.jl:21`, inside `@eval(m, using Test, Random)`) are one entry, and the extra specificity reads
+as an unexplained row with no missing counterpart. **4 of the 12 analyzer-only `imports` rows are this**
+(`old_imp|.Exporter` is the third statement of three in `julia/JuliaLowering/test/import.jl` naming
+`.Exporter`). Reported as a limit of the comparison, not as 20 edges.
+
+### Two `exports` edges this lane cannot get, and the shared rule that takes them
+
+`julia/base/boot.jl:222` and `julia/base/exports.jl:4` both `export <:`, and `<:` is a real julia
+operator with real call sites — `sort!(v, by = <)` is idiomatic. The analyzer publishes the name into
+`ExportInfo[]` and the relationship does not arrive, which is the shape of a FILTER rather than a
+missing branch:
+
+```js
+// src/ast/pool-worker.ts:654, filterNoiseRelationships
+if (/[{}`<>\n\r\t]/.test(leaf)) return false
+```
+
+That rule is there to block HTML-ish garbage (`<tag>`, `<div>`) and it does that. It also deletes every
+relationship whose target is a comparison or shift operator, and `struct Foo{T}` being the norm in
+julia means the containment edges to parametric type names go with it. `validation/m14/fixtures/julia/
+shared-filter-cost.ts` measures the whole cost with the filter's own rules, over all 1,985 files:
+
+```
+relationships emitted by analyze(): 236,084 · kept: 235,878 · DELETED: 206
+  123  deleted by the ANGLE-BRACKET / WHITESPACE rules alone — a well-formed target no other rule
+      in the filter would have touched. Of those, 52 name a symbol this analyzer PUBLISHED in the
+      same file, so the edge pointed at a real declaration.
+  83  deleted by the LENGTH / NEWLINE / LEAF-LENGTH rules, i.e. the target is a source FRAGMENT.
+      For those the filter is right and the defect is upstream.
+```
+
+Per type, the 123: `calls` 53 · `contains` **50** · `uses` 18 · `exports` 2. The 50 `contains` rows are
+`FPVector{T<:FP}`, `StaticMatrixLike{T}`, `StaticArrayNoEltype{S, N, T}`, `Base.:<`, `bits::Vector{UInt64}`
+— real published symbols, so the graph loses containment of parametric type declarations. The 18 `uses`
+rows are `<`, `<=`, `(<<)`, `(>>)`, `>>`, `(<)`, `(<=)`, `(>=)`. **Every other language with `<`/`>`
+operators or generic parameters pays this and none of them has measured it**; §8 carries it as a shared
+file.
+
+The 83 are a different finding and this lane owns them: **the analyzer publishes symbols whose NAME is a
+multi-line source fragment** — `contains` targets like `"data::Vector{Int}\n    count::Int"` and
+`"const matches::Union{MethodMatches,UnionSplitMethodMatches}\n..."`, 43 of them. The filter is right to
+delete those edges; the defect is that the symbol exists. Not investigated per file, and declared as a
+coverage gap rather than a measurement.
 
 ---
 
@@ -1062,9 +1262,17 @@ absent from both, which is precisely how the `overrides` omission survived a dif
 green throughout. Nothing in the differential can see a missing relationship type. Only measuring the
 language can, and that is what the census's instrument B is.
 
-## DERIVATION findings: 2 open in the lane, 1 more open in the F5 harness
+## DERIVATION findings: 0 open in the lane, 3 open in the F5 harness
 
-Three types this lane emits are compared against **no independent oracle**, so they are stored and
+**This count was 3 in the lane and 0 is now true.** `imports` and `exports` have oracles as of
+2026-10-04 (`script/m14/oracles/julia-imports.ts`, `julia-exports.ts`), and writing them found a
+38%-missing-edge defect and four fabricated edges — see
+[§ the two orphaned edges](#the-two-orphaned-edges-and-the-instrument-that-found-them). **What remains
+is entirely supervisor-owned wiring: three types are still compared against nothing by
+`script/m14/differential.ts`, because no lane is allowed to edit it.** The three below are the record of
+why that costs anything, kept because a count with no history behind it is a number nobody can check.
+
+Three types this lane emits were compared against **no independent oracle**, so they were stored and
 audited against nothing. Counting them honestly matters more here than usual: for two of the three the
 absence of an oracle is the direct reason a wrong verdict survived, because `script/m14/differential.ts`'s
 F5 label allowlist admits `imports` and `exports` by default for every language — so the harness
@@ -1097,8 +1305,14 @@ the failure mode the gate header records, and it is why this section can state a
 | type | edges | in F5's compared set | independent oracle | what stands behind it instead |
 |---|---|---|---|---|
 | `overrides` | 3 | **no** | **yes** — `script/m14/oracles/julia-overrides.ts`, 3/3 agreement | paid down below; truth exists but is not pushed into F5 |
-| `imports` | 2,804 | **no** | **no** | fixture `imports-and-exports` + the construct-vs-edge reconciliation (961/961, 0 silent) |
-| `exports` | 2,859 | **no** | **no** | fixture `imports-and-exports`; 209 of 210 files, the shortfall explained by node type |
+| `imports` | 3,386 | **no** | **yes** — `script/m14/oracles/julia-imports.ts`, 3,374/3,382 = 99.8% | paid down 2026-10-04; **it found 167 missing edges on a 200-file draw** |
+| `exports` | 2,795 | **no** | **yes** — `script/m14/oracles/julia-exports.ts`, 2,793/2,797 = 99.9% | paid down 2026-10-04; **it found 4 fabricated edges** |
+
+**The label dump below was run on 2026-10-03 and is the reason those two oracles did not exist.** It is
+kept unedited because the shape of the absence is the finding: the harness admits `imports` and
+`exports` by default for every language, so it compared **zero** julia rows against zero truth rows and
+printed *"COMPARED WITH NO TRUTH — the published coverage for those labels is not coverage."* Every
+figure below is the same run, and the two labels that would have exposed the omission are not in it.
 
 Neither of the two is close to paid down the way `overrides` was, and the limit should be stated
 rather than papered over: an oracle for either would have to derive "this file imports that module"
@@ -1754,6 +1968,33 @@ can be a fixture asserting things the code does not do, and the fixture is what 
 
 ## Known limitations
 
+- **`imports` resolves at both ends on 0.4% of its edges, and that is the right number rather than a
+  defect.** 3,386 edges, 961 files, per-file resolution 0.4% — source 51.2%, target 0.7%, neither 48.5%.
+  A module path is declared in the module and not in the file that imports it, so a per-file graph
+  cannot resolve it by construction; the corpus-wide figure is what matters and the incoming table
+  separates the two (349 `external-by-import`, 1,810 `corpus-only`, 1,204 `unresolvable`, 20
+  `in-file-unique`, 3 residual-ambiguous). **The 1,204 unresolvable are not separated into "external
+  package" / "builtin" / "dynamic dispatch" / "a declaration we failed to publish"**, which are four
+  findings and one count. Growing this type 20.8% did not change its resolution rate, which is the
+  useful part: the fix added real dependencies rather than real resolutions.
+- **The `public = expr` refusal silences the DECLARATION as well as the export, and that is a coverage
+  gap.** `public` and `export` are contextual keywords, so `public = 1` declares a variable — and the
+  grammar emits a `public_statement` rather than an `assignment`, so no binding node exists for the
+  declaration path to read. Refusing the statement removes 4 fabricated edges and publishes no symbol for
+  the binding. Recovering it means re-deriving the left-hand side from an `ERROR` node's tokens, which
+  is the text surgery this lane's oracles exist to distrust; **not attempted, and recorded rather than
+  left as a silent file.**
+- **83 relationships are deleted by the shared noise filter on targets that are SOURCE FRAGMENTS, and
+  the defect under them is this lane's.** 43 of the 83 are `contains` rows whose target is a multi-line
+  string (`"data::Vector{Int}\n    count::Int"`, `"const matches::Union{…}\n…"`), because the analyzer
+  published a symbol whose NAME is the fragment — a `contains` edge carries its target's name by
+  construction, so it looks like a legitimate containment edge until the name is read. The filter is
+  right to delete them. **Not investigated per file and declared as a coverage gap.**
+- **A shared filter in `src/ast/pool-worker.ts:654` deletes 123 well-formed julia edges**, 52 of them to
+  symbols this analyzer published in the same file, including the containment of every `struct Foo{T}`
+  declaration. It is the largest single loss in this lane's graph and this lane cannot fix it; §8 row 9
+  carries the measurement. The one consequence *inside* this lane's verdicts is that `exports -> <:` is
+  unreachable, so the oracle's 4 residual MISSING edges include 2 this analyzer can never emit.
 - **Per-file resolution is 17.2–23.6% for the four large cross-file types**, and that is the number a
   consumer of one file's graph sees. It FELL from 19.5–25.0% when the corpus doubled, and that is the
   honest direction: eleven independent packages add far more cross-file targets than in-file
@@ -1906,10 +2147,11 @@ which is why none of them is in this lane's commits.
 |---|---|---|---|---|
 | 1 | `src/ast/engine.ts` | `:1441-1447` | wrap `parser.parse(content)` in `try`/`finally` so `clearTimeout(parseBomb)` runs on the throwing path too | a throwing parse orphans a 120 s `process.exit(1)` bomb. Measured: 10,797 armed / 10,794 cleared / **3 never cleared**, one per parse error, 2 observed fires. Any language's census can lose its last 2 minutes of work, and any lane scored by a gate loses the gate's verdict table |
 | 2 | `script/m14/ontology-coverage-gate.ts` | `:240` | drop the 8-wide `Promise.all` to width 4 | `parseFile` traps `memory access out of bounds` at width 8 on this corpus and at no other width tested. **The evidence is the width-1/width-4 CLEANLINESS, not the width-8 rate: width 1 and 4 degraded 0 times in 4,800 parses across 3 probe runs on 2026-10-04, while the width-8 arm degraded in 1 of 6 rounds — so the trap is real (the arbiter itself trapped twice at width 8) but PROBABILISTIC, and a rate must not be quoted for it.** With #1 unfixed a single degraded file costs the gate its exit code; with #1 fixed it still costs edges |
-| 3 | `script/m14/differential.ts` | after `:44`, after `:22863`, beside `:23212-23223` | the three lines that import `deriveJuliaOverridesTruth`, push its rows for `lang === "julia"`, and add `"overrides"` to the F5 label allowlist for julia | clears the last DERIVATION finding this lane can clear itself. The oracle exists (`script/m14/oracles/julia-overrides.ts`), agrees 3/3 when run, and is in no gate |
+| 3 | `script/m14/differential.ts` | after `:44`, after `:22863`, beside `:23212-23223` | the three lines that import `deriveJuliaOverridesTruth`, push its rows for `lang === "julia"`, and add `"overrides"` to the F5 label allowlist for julia — **and the same three for `deriveJuliaImportsTruth` / `deriveJuliaExportsTruth`** | clears the last DERIVATION findings this lane cannot clear itself. All three oracles exist (`julia-overrides.ts`, `julia-imports.ts`, `julia-exports.ts`), agree 3/3, 99.8% and 99.9% when run, and are in no gate. This is the WHOLE remaining §8 ask for julia's DERIVATION debt: three oracles, no wiring |
 | 4 | `script/m14/differential.ts` | `:457-469` in `script/m14/verify-doc-truth-emissions.ts` | drop the `continue` that skips the first body row of a claim table | `parseClaimTable` never compares the first row, so a lane whose table leads with a relationship type cannot fail that gate for it. julia reads `UNDOCUMENTED [julia] calls` while `calls` is its largest emitted type. Same shape reported against `real-kotlin-analyzer.md` |
-| 5 | `script/m14/oracles/` + `differential.ts` | new `julia-imports.ts`, `julia-exports.ts` | independent derivations of "this file imports that module" and "this module exports that binding", sharing no rule with `importTargets()` / `exportableName()` | the last 2 DERIVATION findings. Reusing the functions under test would make the oracle agree by construction — the BD8b failure the gate header records. This is a second derivation of julia's module grammar and cannot be lane-owned |
+| 5 | ~~`script/m14/oracles/` + `differential.ts`~~ **DONE 2026-10-04, lane-owned** | new `julia-imports.ts`, `julia-exports.ts` | independent derivations of "this file imports that module" and "this module exports that binding", sharing no rule with `importTargets()` / `exportableName()` | **the lane wrote both files** — `script/m14/oracles/` turned out not to be off-limits, and the previous version of this row asserted it was. They agree 99.8% and 99.9% with the analyzer, and writing them found a 38%-missing-edge defect and 4 fabricated edges. **What is still needed is only the `differential.ts` half of row 3**, applied to both |
 | 6 | `src/ast/language-detection.ts` / arbiter repo config | `LANG_REPOS_SECOND`-style list at `:370-377` | allow a third and subsequent corpus project per language | 3 clone attempts fail from this network (`timholyford/Revise.jl`, `stevehie/StructTypes.jl`, `JuliaMath/Distributions.jl` all return "Repository not found"), so the corpus cannot be widened past 14 projects from inside the lane. No `Revise.jl` means no `eval`-heavy project; no `Distributions.jl`/`StatsBase` means the parametric numeric tower is under-sampled — and the `implements` ruling is measured on 14 projects, not the ecosystem |
 | 7 | `src/ast/engine.ts` | `:1442` | report a hang and continue, or at minimum name the file it is about to abandon, instead of `process.exit(1)` | a single slow file ends any run that touches it. Distinct from #1: #1 is a bomb that should never have been armed, this is the policy for one that legitimately is |
 | 8 | `validation/m12/` harness | `script/m12/measure-analyzer.ts` | create `validation/m12/fixtures/julia` so the shared M12 timing harness can time this lane | julia is absent from `script/m60/analyzer-complexity-gate.ts` (44 lanes, no julia row), from `validation/m60/analyzer-budget-register.json`, and `validation/m12/results/julia-complexity.json` does not exist. **There is therefore no budgeted lane for this lane to regress**, which is why the payload/latency question in this file is answered by a lane-owned envelope measurement instead |
-| 9 | `src/ast/engine.ts` | `:133-137` | key the core-wasm temp path by pid + randomness the way the language path already is, or write a sibling temp file and `rename()` it into place | the path is `path.join(tmpDir, "bb-ts-core.wasm")` — a FIXED name, no pid, no random — and `writeFileSync` truncates before it writes. Measured: 234 short reads of 456,463 over 24 rounds, with the file observed at **0 bytes**; a truncated module yields the arbiter's exact error class. On Linux `os.tmpdir()` and the literal `"/tmp"` in that loop are one path. This is the wasm temp-path trap this lane already recorded as FIXED for grammar wasm; the core module was left behind, so the fix is half-applied and the arbiter dies before it prints for a third reason |
+| 9 | **`src/ast/pool-worker.ts`** | **`:654`** | **do not delete a well-formed relationship target because it contains `<` or `>`. `/[{}`<>\n\r\t]/.test(leaf)` blocks HTML-ish garbage and also every comparison/shift operator and every generic parameter name.** | **measured for julia by `validation/m14/fixtures/julia/shared-filter-cost.ts`: 206 relationships deleted over 1,985 files, of which 123 are deleted by this character class ALONE on a well-formed target and 52 of those name a symbol the analyzer published in the same file. Per type: `contains` 50 (every `struct Foo{T}` containment — `FPVector{T<:FP}`, `StaticMatrixLike{T}`, `Base.:<`), `calls` 53, `uses` 18 (`<`, `<=`, `(<<)`, `(>>)`), `exports` 2 (`<:` in `julia/base/boot.jl` and `julia/base/exports.jl`). It costs every lane whose language has `<`/`>` operators or generic parameters, and this is the first measurement of it. A narrow fix is to keep blocking a leaf that has no identifier content and admit one that does** |
+| 10 | `src/ast/engine.ts` | `:133-137` | key the core-wasm temp path by pid + randomness the way the language path already is, or write a sibling temp file and `rename()` it into place | the path is `path.join(tmpDir, "bb-ts-core.wasm")` — a FIXED name, no pid, no random — and `writeFileSync` truncates before it writes. Measured: 234 short reads of 456,463 over 24 rounds, with the file observed at **0 bytes**; a truncated module yields the arbiter's exact error class. On Linux `os.tmpdir()` and the literal `"/tmp"` in that loop are one path. This is the wasm temp-path trap this lane already recorded as FIXED for grammar wasm; the core module was left behind, so the fix is half-applied and the arbiter dies before it prints for a third reason |
