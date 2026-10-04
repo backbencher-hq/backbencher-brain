@@ -892,8 +892,16 @@ whether or not the blob was ever fetched. Per repository, tracked-versus-present
 | `pb-grpc` | 166 | 45 |
 | the other 15 | 540 | 540 |
 
-**8,703 of the 8,524 paths `firing-check.ts` offers this language are not on disk.** It
-hands each entry to `parseFile`, a path that was never fetched raises `ENOENT`, and the
+**7,703 of the 8,524 paths `firing-check.ts` offers this language are not on disk** —
+**90.4%**. Pass 3 printed `8,703` here, which is larger than the 8,524 it was a fraction
+of; the measured figure is 7,703, and it is the one the arithmetic supports
+(821 + 7,703 = 8,524). The tables above were right in pass 3 and the summary sentence was
+a transposition of one of them — corrected in pass 9, and recorded rather than quietly
+fixed because a transposed digit in a measurement sentence is indistinguishable, to a
+reader, from a fabricated one.
+
+The arbiter hands each entry to `parseFile`, a path that was never fetched raises
+`ENOENT`, and the
 catch increments `parseFailures++` — the same counter a grammar failure increments. The
 arbiter's `10/120` is 10 real files and 110 absent paths.
 
@@ -2437,6 +2445,29 @@ one**, since a reader meets them first:
   RULING TABLE for protobuf"*. It now exits **1** and rules; see the table above.
 - **§Still not settled** says *"26 mutants"*. The battery runs **28** — commit
   `20644c25a` corrected one instance of this and left this one.
+
+## A fifth stale number, and it was arithmetic
+
+Pass 3 wrote *"8,703 of the 8,524 paths `firing-check.ts` offers this language are not on
+disk"* — a count larger than the population it was a fraction of, in a sentence whose
+whole purpose was to be checked. `protobuf-incoming-audit.mts` part 1 re-measures the
+arbiter's sampler at merged HEAD:
+
+| | |
+|---|---|
+| `git ls-files` offered | **8,524** `.proto` paths |
+| of those, on disk | **821** |
+| of those, **NOT** on disk | **7,703** (**90.4%**) |
+| stride (8,524 / 120) | 71 |
+| sampled paths | **120** — 10 present, **110 absent** |
+| absent, by repository | `pb-googleapis` 103, `pb-reference` 6, `pb-grpc` 1 |
+
+821 + 7,703 = 8,524, so the three numbers are consistent and the sentence was not. The
+measurement underneath it was always right — pass 3 diagnosed the arbiter's `10/120`
+correctly, and today's run reproduces the diagnosis exactly — but the number written down
+was a transposition. It is recorded here rather than quietly fixed because **a
+transposed digit in a measurement sentence is indistinguishable, to a reader, from a
+fabricated one**, and the only defence is that both are visible.
 
 ## Fires-in-how-many-files, measured — and a fourth stale number
 
