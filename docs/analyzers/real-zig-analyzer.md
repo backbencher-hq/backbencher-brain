@@ -2561,3 +2561,92 @@ Nothing in `src/ast/real-zig-analyzer.ts` changed in pass 8. Fourth consecutive 
 verified rather than edited, and the reason is now measured rather than asserted: the one
 repair this lane's own file could have made to `imports` resolution would fabricate 2,628
 merges, so the analyzer is right not to make it.
+
+## Pass 9 — §8 item 1 is closed, and the REAL arbiter still prints no verdict (2026-10-04)
+
+Passes 7 and 8 both ended on "§8 item 1 remains the one line between this lane's table and the
+real gate". That is now false, and the correction is worth more than the note it replaces.
+
+### A. The supervisor wired the table; this lane's `zig-ruled.ts` is on main
+
+`script/m14/ontology-coverage-gate.ts` on `analyzers/ontology-laptop-b` (`da00c081e`) reads:
+
+```
+51:  import { ZIG_RULED } from "./zig-ruled"
+199: const RULED_BY_LANG: Record<string, Ruled[]> = { bash: …, lua: …, toml: …, fsharp: …,
+                                                     nim: …, protobuf: …, zig: ZIG_RULED, julia: … }
+```
+
+`script/m14/zig-ruled.ts` is on main at `2818ce3bd`, which is this lane's own commit. So the
+refusal path pass 5 documented (`ontology coverage gate — no RULING TABLE for zig`, exit 2) no
+longer fires, and **§8 item 1 is closed.** This lane's branch is behind on that file — the two
+commits that touched it here (`645bdf7d7`, `55ad8f7e1`) wired fsharp, and were authored before
+`nim-ruled`/`protobuf-ruled`/`julia-ruled` existed — which is why the diff against base looks
+like a removal. It is a lag, not an edit, and this lane has never committed a change to that
+file.
+
+**§8 items 7 and 13-of-pass-8 are the two that remain open, and item 7 is confirmed against
+`main`'s copy.**
+
+### B. Running the REAL arbiter, unwired by me, on the full corpus
+
+```
+cd <main checkout> && npx tsx script/m14/ontology-coverage-gate.ts zig
+```
+
+```
+ontology coverage gate — zig
+corpus: 3834 admitted files
+
+[BB-PARSE-ERR] zig | ghostty/src/lib/types.zig          | memory access out of bounds
+[BB-PARSE-ERR] zig | ghostty/src/lib/tinyio/windows.zig | memory access out of bounds
+[BB-PARSE-ERR] zig | ghostty/src/lib/struct.zig          | memory access out of bounds
+[BB-PARSE-ERR] zig | zig/doc/langref/test_opaque.zig     | memory access out of bounds
+[BB-HANG] parser stuck 120s on ghostty/src/lib/types.zig — exiting
+exit 1
+```
+
+**No verdict table.** So with the ruling table wired, the gate still cannot adjudicate zig at
+its hardcoded fan-out of 8, and the pass-7 measurement (`ontology-coverage-gate.ts:236`
+hardcodes `Array.from({ length: 8 }, …)`) is now confirmed against the real file rather than a
+patched copy: **fan-out 1 → 3 of 3 clean with a verdict table; fan-out ≥ 2 → 3 of 3 abort.**
+The only thing standing between this lane and an arbiter-printed verdict is a `BB_GATE_WORKERS`
+env override, which is pass 7's §8 addition.
+
+### C. The four flagged files have no defect, and the smallest one is 244 bytes
+
+Both messages name a FILE, which reads as a fact about that file. Control probe:
+`validation/m14/fixtures/zig/gate-flagged-files.ts`, taking the four paths above as literals
+and re-parsing each ALONE five times through production `parseFile`. Evidence:
+`measurements/gate-flagged-files-2026-10-04.log`.
+
+| file | bytes | 5 sequential runs | symbols / rels | fallback | 120 s guard vs its slowest own parse |
+|---|---|---|---|---|---|
+| `ghostty/src/lib/types.zig` | 1,203 | 1355, 80, 68, 40, 48 ms | 8 / 19 | false | 89× |
+| `ghostty/src/lib/tinyio/windows.zig` | 28,839 | 493, 444, 508, 289, 244 ms | 46 / 272 | false | 236× |
+| `ghostty/src/lib/struct.zig` | 3,719 | 63, 53, 64, 49, 29 ms | 5 / 30 | false | 1.9k× |
+| `zig/doc/langref/test_opaque.zig` | **244** | 23, 26, 10, 14, 17 ms | 4 / 4 | false | **4.6k×** |
+
+**0 of 4 show any defect alone: 20 of 20 parses returned, 0 throws, 0 `fallback: true`.**
+`zig/doc/langref/test_opaque.zig` is a 244-byte file that the real gate reported as
+`memory access out of bounds` and which parses in 10–26 ms. So the `[BB-PARSE-ERR]` and
+`[BB-HANG]` lines are properties of the shared wasm instance under concurrent fan-out, and no
+one chasing those paths will find a corpus defect, because there is none to find.
+
+This also settles the pass-7 §B narrowing that "the file is not identified by anything in the
+corpus". The file is identified; it is just not the variable. **The variable is concurrency,
+and the control is 20 clean single-file parses against 4 flagged files.**
+
+### D. What this lane's verdicts rest on, stated precisely
+
+The three RULED verdicts have been adjudicated by an arbiter — but by a **copy** carrying the
+two lines §8 item 1 needed, over the full corpus, at fan-out 1: 3 runs, 3 clean, identical
+verdict table each time (`emitted 7/10 · ruled-sound 3 · FALSIFIED 0 · unjustified 0`). The
+seven EMITTED counts come from production `parseFile` and reproduce at n=3.
+
+What this lane has NOT shown is the supervisor's file printing that table at its default
+fan-out, and the reason is measured rather than argued: on this corpus it does not. That is
+§B, and it is a report rather than a lane failure.
+
+Nothing in `src/ast/real-zig-analyzer.ts` changed in pass 9. Fifth consecutive pass verified
+rather than edited.
