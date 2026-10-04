@@ -29,12 +29,56 @@ npx tsx script/m14/ontology-coverage-gate.ts julia                            # 
 **The arbiter has no table for julia and refuses to report.** `script/m14/ontology-coverage-gate.ts`
 carries ruling tables for `bash` and `json` only, and exits 2 with *"no RULING TABLE for julia …
 Refusing to report: a gate with an empty table would call every un-emitted type RULED-UNJUSTIFIED and
-that is a verdict about the TABLE, not about the lane."* Its full output over this corpus is `corpus:
-971 admitted files`, two `[BB-PARSE-ERR] … memory access out of bounds` lines for
-`julia/stdlib/LibGit2/test/online.jl` and `online-tests.jl`, then the refusal. `RULED_BY_LANG` is at
-`ontology-coverage-gate.ts:190` and adding a `JULIA_RULED` table there is a shared-file edit (§8),
-so the verdicts below are produced by the lane-owned census applying the gate's own two instruments
-and the gate's own verdict algorithm to julia.
+that is a verdict about the TABLE, not about the lane."* `RULED_BY_LANG` is at
+`ontology-coverage-gate.ts:192` and adding a `JULIA_RULED` table there is a shared-file edit (§8).
+
+**That edit is now written down and tested, and it is two lines.**
+`script/m14/julia-ruled.ts` exports `JULIA_RULED` (and `JULIA_RULED_INSTRUMENT_B`, the table that
+FALSIFIES the same ruling — see below). The supervisor needs one import after `ontology-coverage-gate.ts`
+line 191 and one key added to `RULED_BY_LANG`; the exact edit is in that file's header. Applied to a
+**scratch copy** at `.bb-tmp-julia-arbiter.ts` (gitignored, since deleted; the shared file was not
+touched), over the same 971 files:
+
+```
+type          status            detail
+calls         EMITTED           86,867 edges in 4+ files
+uses          EMITTED           26,357
+contains      EMITTED           10,467
+imports       EMITTED           1,501
+references    EMITTED           36,146
+exports       EMITTED           1,770
+extends       EMITTED           1,821
+implements    RULED-SOUND       NOT EMITTED; the grammar produced 149 distinct node types
+                                across the corpus and NONE expresses it.
+                                Written ruling: script/m14/spec/julia-completeness.json#JUL-D2
+overrides     EMITTED           3 edges in 3+ files
+instantiates  EMITTED           2,830
+----------------------------------------------------------------------------------------
+emitted 9/10   ruled-sound 1   FALSIFIED 0   ruled-without-justification 0
+```
+
+**Those four counts are 13 edges short of this lane's, and the shortfall is one file, exactly.**
+`calls` 86,867 vs 86,876 · `uses` 26,357 vs 26,359 · `references` 36,146 vs 36,147 · `imports` 1,501
+vs 1,502. The arbiter printed `[BB-PARSE-ERR] … memory access out of bounds` for
+`julia/stdlib/LibGit2/test/runtests.jl` in that same run, and that file emits **precisely**
+`calls=9 uses=2 references=1 imports=1` — 13, matching the deficit edge for edge and type for type.
+`validation/m14/fixtures/julia/arbiter-census-diff.ts` establishes the other half: run SEQUENTIALLY
+under the **arbiter's own counting rule**, the same 971 files give **167,775**, `throw: 0`, and
+`files with r.fallback truthy: 0`, and `BB_JULIA_WORKERS=8` reproduces the census's own numbers
+exactly — so neither the counting rule nor the worker count explains it, and the trapped file does.
+**The lane's headline numbers are the ones that include the file; the arbiter's are the truncated
+ones.** The doc's verdict table is therefore not competing with the arbiter's, it is correcting it.
+
+**Two further properties of the arbiter's output are artifacts of the shared gate, not measurements,
+and apply to every language it scores.** Its file column reads `4+ files` for every large type
+because `ontology-coverage-gate.ts` grows the set with `if (row.files.size < 4)` — the cap is in the
+gate, so `calls in 4+ files` is not a statement about breadth (this lane measures 926). And its
+`[BB-HANG]` handler is `process.exit(1)` (`src/ast/engine.ts:1412`), so a single slow file ends the
+run rather than being reported: both are §8 items.
+
+So the verdicts below are produced by the lane-owned census applying the gate's own two instruments
+and the gate's own verdict algorithm to julia, and the gate's verdict algorithm now has a table to
+read.
 
 ---
 
@@ -1024,12 +1068,18 @@ can be a fixture asserting things the code does not do, and the fixture is what 
 - **`+%` / `-%` and the 177 ERROR-node files are grammar-side**, not analyzer-side.
 - **Macro-generated definitions are visible only when the definition is in source** (`@inline f(x) = x`
   declares `f`; a macro that *synthesises* a name does not).
-- **Two `[BB-PARSE-ERR] … memory access out of bounds` lines appeared under the arbiter's 8-worker run**
-  for `julia/stdlib/LibGit2/test/online.jl` and `online-tests.jl`, and **did not reproduce** under the
-  census's 4-worker run or in a direct single-threaded parse of the same bytes (0 of 971 unreadable).
-  So the trap is a function of parser state under concurrency, not of file content. It is recorded
-  because "0 crashes" in this lane is measured as "0 throws" and `parseFile` CATCHES the wasm trap —
-  a file the parser cannot read leaves no trace in a counter that only counts throws.
+- **A `[BB-PARSE-ERR] … memory access out of bounds` under the arbiter's 8-worker run costs this lane
+  13 edges, and the cost is attributable rather than suspected.** The trapped file is
+  `julia/stdlib/LibGit2/test/runtests.jl`; it emits `calls=9 uses=2 references=1 imports=1`, and the
+  arbiter's four short counts are short by exactly those numbers. `parseFile` CATCHES the wasm trap,
+  so "0 crashes" in this lane is measured as "0 throws" and a file the parser cannot read leaves no
+  trace in a counter that only counts throws — which is why the trap had to be found by differencing
+  two instruments rather than by reading either one's output. **Sequential, the same file parses and
+  all 13 edges are there** (`arbiter-census-diff.ts`: 167,775, `throw: 0`), and so do they at
+  `BB_JULIA_WORKERS=8`, so the trigger is concurrency inside the shared engine. Which file traps
+  varies between runs — an earlier session saw it on `online.jl` and `online-tests.jl` instead, and
+  this session's unpatched arbiter run showed **none at all** — so the deficit is 13 edges in one run
+  and 0 in another. Any julia number taken from the arbiter is short by whatever it lost that day.
 - **`exports` targets are ambiguous more often than any other new edge, and the edge cannot fix it.**
   **128 distinct names across 159 of the 1,770 `exports` edges (9.0%)** name more than one symbol the
   analyzer published in the same file. Split by cause: **113 names / 132 edges (7.5% of all `exports`)
