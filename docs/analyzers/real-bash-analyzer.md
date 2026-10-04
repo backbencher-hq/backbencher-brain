@@ -1867,10 +1867,30 @@ column into the measurement that keeps a verdict honest at a sample size the arb
 actually uses. The `--files 120` arbiter reads **6/10**; the whole corpus reads **7/7
 applicable**, and the difference is the `overrides` row, priced above.
 
+### "External" and "never indexed" are separated, at the whole corpus
+
+The brief asks for these apart, because in a count they are one number and in a finding
+they are opposites: an external binary is not something any analyzer failed to publish.
+The analyzer's own flags partition `calls` exactly — `isFunctionCall` 14,050 +
+`isExternalCommand` 41,172 = 55,222, the whole type, no remainder:
+
+| `calls` edge | count | share | both ends resolve | what it is |
+| --- | --- | --- | --- | --- |
+| `isFunctionCall: true` | **14,050** | 25.4% | **14,050 — 100.0%** | a function this file declares. Every one resolves. |
+| `isExternalCommand: true`, target matches a local symbol | **702** | 1.3% | 702 | **the one class that is a naming collision** — an external command whose name a local declaration also carries. The reverse walk would walk to that local symbol. |
+| `isExternalCommand: true`, target matches nothing | **40,470** | 73.3% | 0 | an external command: `sed`, `git`, `systemctl`. Outside the indexed corpus. |
+
+The 40,470 are measured as external rather than asserted: an independent tree walk finds
+a declaration for **0** of them, and they are 73.3% of the type — which is why `calls`
+reads 26.7% resolution and is **not** a recall shortfall at that number. The 702 are the
+honest residue and are counted here rather than fixed, because the fix is a
+cross-file/layering question (laptop C) and 702 is its size at this denominator.
+
 ### Reported to the supervisor
 
 No analyzer change in this round. `src/ast/real-bash-analyzer.ts` is byte-identical to
-round 9.
+round 9 (`git diff 98bccd9c0..HEAD -- src/ast/real-bash-analyzer.ts` is empty), and to
+round 8's `81f6cbc33` before it.
 
 ## The two fabrications pass 2 found, and the guard that removed them
 
