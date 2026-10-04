@@ -46,9 +46,9 @@ analyzer wrote.
 
 | Relationship type | Emitted? | Edges / files | Both ends resolve | How resolved |
 | --- | --- | --- | --- | --- |
-| contains | yes | 175,171 / 589 | 175,144 / 175,171 (99.98%) | custom-property declaration scope (`:root contains --primary`); at-rule scope (`@layer base contains body`); `@media`/`@supports`/`@container`/`@scope` scope; nested-selector scope; selector-chain edges, emitted only where both chain leaves are published symbols. Sub-shapes by flag at pass 4: `isCustomPropertyScope` 137,315, `isMediaScope` 26,800, `isSelectorChain` 4,882, `isLayerScope` 505, `isNestedSelector` 420, `isSupportsScope` 368, `isContainerScope` 142 |
-| uses | yes | 2,620 / 331 | 2,620 / 2,620 (100.0%) | `animation`/`animation-name` naming a `@keyframes` this file declares (`isAnimationRef` 2,565); `font-family` naming an `@font-face` family this file declares (`isFontFamilyRef` 48) |
-| references | yes | 161,768 / 389 | 159,678 / 161,768 (98.7%) | `var(--x)` reading a custom property (`isVariableRef` 161,737); a selector using a declared `@namespace` prefix (`isNamespaceRef` 1) |
+| contains | yes | 175,171 / 589 | 175,144 / 175,171 (99.98%) | custom-property declaration scope (`:root contains --primary`); at-rule scope (`@layer base contains body`); `@media`/`@supports`/`@container`/`@scope` scope; nested-selector scope; selector-chain edges, emitted only where both chain leaves are published symbols. Sub-shapes by flag on this corpus: `isCustomPropertyScope` 137,867, `isMediaScope` 30,864, `isSelectorChain` 5,005, `isLayerScope` 505, `isNestedSelector` 420, `isSupportsScope` 368, `isContainerScope` 142 |
+| uses | yes | 2,620 / 331 | 2,620 / 2,620 (100.0%) | `animation`/`animation-name` naming a `@keyframes` this file declares (`isAnimationRef` 2,572); `font-family` naming an `@font-face` family this file declares (`isFontFamilyRef` 48) |
+| references | yes | 161,768 / 389 | 159,678 / 161,768 (98.7%) | `var(--x)` reading a custom property (`isVariableRef` 161,767); a selector using a declared `@namespace` prefix (`isNamespaceRef` 1) |
 | imports | yes | 243 / 68 | 0 / 243 (0.0%) | `@import url("x.css")` / `@import "x.css"`, unwrapped by the pure-String `unwrapUrl` (`isCssImport` 243); the `@use`/`@forward` module form (`isSassModuleImport` **0**) |
 | overrides | yes | 48 / 7 | 48 / 48 (100.0%) | `isKeyframesRedefinition` 4; `isCustomPropertyRedefinition` 44. Both audited by a second walker since this round — see "DERIVATION findings" |
 | extends | no — RULED | 0 | — | instrument A: 0 of 103 node types is a type declaration. instrument B: **0** `@extend` at-rules on the tree |
@@ -529,6 +529,130 @@ files) is the one that is a property of the lane. The discrepancy with the super
 26-lane table row for css (73,369) is this same effect and is not a disagreement about
 behaviour.
 
+## PASS 6 — the corpus did NOT move, every gate reproduced, and the ruled table was carrying four pass-4 figures
+
+Pass 5's finding was that the shared corpus grows under the figures, so this round first
+checked whether it had moved again. **It had not**: `$HOME/fixtures/repositories`
+was last written at 06:01 and pass 5 committed at 08:05, so the corpus is the same
+**1,255 files / 79 repositories** pass 5 measured. Every headline figure therefore
+reproduced rather than moved, which is the first time in this lane's history that a pass
+found nothing to re-baseline — and it is also the first pass where the stale figures were
+not in the census but in the ARBITER, which is worse, because the arbiter is what other
+lanes read.
+
+### Every gate reproduced, byte-for-byte where it should
+
+| gate | this round | pass 5 | |
+| --- | --- | --- | --- |
+| `npx tsx script/m14/ontology-coverage-gate.ts css` | `emitted 5/10  ruled-sound 5  FALSIFIED 0  ruled-without-justification 0`, `corpus: 1255 admitted files`, **exit 1** | identical | verdict reproduced; see below — this run's EDGE COUNTS were short and the run was truncated |
+| `npx tsx validation/m14/census/css-parsefile-census.ts --all` | 1,255/1,255 parsed, 0 failures, 0 degraded, 238,536 symbols, 339,850 relationships, 0 empty names, 0 empty/unknown kind, 0 `unknown` endpoints | identical | reproduced |
+| `npx tsx script/m14/firing-check.ts --files 120 css` | 5/10 fired, 47,667 edges, 120/120 files, 0 degraded | identical | reproduced |
+| `npx tsx validation/m14/census/css-ontology-probe.ts` | 103 node types, 1,255 files / 79 repos, 422 with an ERROR, `var()` 162,470 / 392 files, `@extend` directive 0 / 0, at-keyword 46 / 26 | identical | reproduced |
+| `npx tsx script/m14/differential.ts --lang css --sample 60` | **exit 0**, `unexplained=0` and `heuristic=0` on both corpora, 2 MISSING (the pinned `@namespace` rows) | identical except the rotation | reproduced; sample rotated to `rot 40`, so svelte tree-truth read 41 rows and grails-core 482 where pass 5 read 41 and 477 |
+| `bun run script/m14/run-fixtures.ts --lang css` | 15 pass / 0 fail, `no regressions` | identical | reproduced |
+| `BB_MUTANT_ONLY="css/" bun run script/m14/mutate-analyzer.ts` | 14 mutants, 14 CAUGHT, 0 surviving | identical | reproduced |
+| `npx tsx script/m12/verify-regex-census.ts` | `real-css-analyzer.ts` in neither MISSING nor STALE | identical | reproduced; **lane regex count 0** |
+| `npx tsc --noEmit` | exit 0 | identical | reproduced |
+
+**The arbiter's exit code is still not a result, and this round measured HOW MUCH a
+truncated table differs from a whole one.** Four runs of the same command on the same
+corpus at the same commit, and they do not agree:
+
+| run | exit | `uses` | `contains` | `references` | `imports` | `overrides` | verdict line |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| whole corpus (census) | — | **2,620** | **175,171** | 161,768 | 243 | 48 | — |
+| gate, run 1 | 0 | 2,620 | 175,171 | 161,768 | 243 | 48 | identical to census |
+| gate, run 2 | **1** | **2,612** | **175,165** | 161,768 | 243 | 48 | `FALSIFIED 0` — printed anyway |
+| `ruled-gate.ts` | 1 | — | — | — | — | — | refused: `BUT NOT A VERDICT` |
+
+**Run 2 is the finding, and it is the exact hazard §8 item (f) predicts.** It hung on
+`spectre/docs/dist/spectre-exp.css`, after printing all ten rows of the table and the
+summary `emitted 5/10  ruled-sound 5  FALSIFIED 0  ruled-without-justification 0` — and its
+edge counts were **8 `uses` and 6 `contains` edges short of the whole corpus**, because
+the walk was cut off before the last files. A reader checking the table against a summary
+that says `FALSIFIED 0` sees a clean result; the numbers are 0.005% wrong and the exit code
+is the only thing that says so. The truncation landed LATE here, which is luck: pass 4
+recorded the same guard firing early enough that a partial table could read as a pass, and
+nothing in the gate distinguishes the two cases.
+
+The lane's own `ruled-gate.ts` is the mitigation and it works — it captured the same
+condition and printed
+
+```
+gate exit code: 1  BUT NOT A VERDICT — the gate process was killed by parseFile's 120 s
+[BB-HANG] guard (src/ast/engine.ts), so the run was truncated.
+```
+
+so this file quotes the gate's TABLE and not its exit code, and quotes the census for every
+count. That mitigation is a lane-local wrapper around shared machinery; the gate itself
+still needs to distinguish a finished walk from a killed one, which is §8 item (f).
+
+### `script/m14/css-ruled.ts` was carrying four pass-4 figures, and one of them was wrong
+
+The ruling table is what the arbiter prints for every `RULED-SOUND` row, so a stale number
+in it is read by every lane that sweeps the gate. Four were stale and one was false:
+
+| row | said | measured |
+| --- | --- | --- |
+| `calls` | "1,180 admitted files across 76 repositories"; `var` 162,440, `rgba` 18,752, `calc` 15,004, `rgb` 7,347, `url` 4,931 | **1,255 / 79**; `var` 162,470, `rgba` 20,370, `calc` 15,220, `rgb` 7,362, `url` 4,932 |
+| `exports` | "0 … across 1,180 files / 76 repositories" | **1,255 / 79** |
+| `instantiates` | "**162,440** `var()` calls across 386 files" | **162,470 across 392 files** |
+| `extends` | "**0 `@extend` at-rules … and 0 occurrences of the at-keyword itself**, so the directive is not merely absent but unexercised by the corpus" | **0 directives, but the at-keyword occurs 46 times in 26 files** |
+| header | "the corpus's 3 `.sass` + 54 `.less` files" | **67 `.sass`** + 54 `.less` |
+| `CSS_OVERRIDES_EXAMINED` | `admittedFiles: 1180` | **1255** |
+
+**The `extends` row was the one that mattered, and it was wrong in the direction that
+makes a ruling look better than it is.** It claimed the corpus never writes `@extend` at
+all. The corpus writes it 46 times, in 26 files, every one a `.sass` partial — the pinned
+grammar simply routes the at-keyword through the catch-all `at_rule` instead of a
+production of its own, so the text is lexable and the construct is not readable. The
+ruling SURVIVES (0 directives, and instrument A agrees), but the sentence supporting it
+described a corpus that does not exist. The row now carries the 46 and says plainly that
+this ruling rests on instrument B alone: instrument A is silent here BY CONSTRUCTION, which
+is the same structural reason bash's `overrides` needs instrument B. A ruling that quotes
+a corpus number it has not re-measured is the failure this milestone exists to catch, and
+this lane caught it in its own arbiter table rather than being told.
+
+The block at the top of the file quoting the gate's original refusal is left as it was
+written, including its `1196` — that was a real reading at the time, it is simply not the
+current corpus — with a header now saying so, because a measurement record edited to agree
+with the present is not a record.
+
+### The per-branch firing table was counting its own dead branches wrong
+
+`css-parsefile-census.ts --all` prints every declared flag whether it fired or not, and the
+table under "Per-BRANCH firing" was quoting pass-2 counts. Two things were wrong with it.
+The counts were stale, and it claimed **"Eight relationship branches and one symbol
+branch"** have never executed, where the instrument reports **eight relationship branches
+and FOUR symbol branches** — the census has grown symbol flags since pass 2 and the table
+was not tracking them. A table of dead branches that undercounts its own dead branches is
+worse than no table, because it reads as coverage.
+
+Both are corrected and the table now lists every branch the instrument prints. One of the
+four newly-visible dead symbol branches is `@property` registration, which is the shape
+`overrides`' third rule reads — so the type's thinnest branch and the corpus's silence
+about `@property` turn out to be the same fact seen twice.
+
+### `css-boundary-probe.ts` was measuring 9 files fewer than the arbiter, for the second time in this lane
+
+The probe printed `1246 admitted files` where the arbiter printed `1255`. Its admission
+rule had both defects pass 4 found and fixed in `css-ontology-probe.ts`: it skipped
+zero-byte files, and it called `detectLanguageFromPath` with **one** argument where the
+gate passes the file text as a second. The second is load-bearing, so it admitted a
+different SET rather than a smaller copy of the same one. Fixed, and the probe now reads
+**1,255 / 79** — the arbiter's own number.
+
+**The two probes agreed on every measurement afterwards**, which is the result that says
+the fix was a denominator fix and not a behaviour change: dropped-key counts, the 2,917
+scope symbols that arrive with no metadata, and the 106 same-block re-assignments are all
+unchanged. The 9 extra files carried none of these constructs.
+
+This is the second time one probe's transcription of the admission rule has drifted from
+the arbiter's in this lane, and the first time the fix was applied to one probe and not
+the other. That is the argument for transcribing the rule argument-for-argument in every
+probe rather than importing or copying it, and for checking the printed file count against
+the gate's before believing any number a probe reports.
+
 ## M14 ontology verdicts
 
 Scope: the ten types of the workstream ontology, decided for **CSS** (`.css`, plus the
@@ -549,7 +673,7 @@ asserted from a comment or from a spec file.
 | Growth, pass 5 | 1,180 → **1,255 files, 76 → 79 repositories**, again by other lanes cloning into the shared corpus. This lane cloned nothing in pass 5. The +64 `imports` edges are the visible consequence and are attributed under "PASS 5" above |
 | Files the project states as its floor | 200+ per family; the census is 6.3× that |
 | Files parsed | **1,255 of 1,255**; **0 failed**; **0 degraded** (`fallback: true`) |
-| Parse-robustness findings | **422 of 1,255 (33.6%)** carry a tree-sitter ERROR somewhere (`css-ontology-probe.ts`, re-measured in pass 5; 358 of 1,180 / 30.3% at pass 4; 356 of 1,131 / 31.5% at pass 2; 354 of 1,114 / 31.8% at handover). 2 files have been observed tripping `parseFile`'s own 120 s `[BB-HANG]` guard — `svelte/packages/svelte/tests/css/samples/preserve-specificity/expected.css` and, in pass 5, `spectre/dist/spectre.min.css`, which parses in **1.06 s in isolation** and so is a load artefact rather than a property of either file |
+| Parse-robustness findings | **422 of 1,255 (33.6%)** carry a tree-sitter ERROR somewhere (`css-ontology-probe.ts`, re-measured in pass 5 and again in pass 6; 358 of 1,180 / 30.3% at pass 4; 356 of 1,131 / 31.5% at pass 2; 354 of 1,114 / 31.8% at handover). **FIVE** distinct files have now been observed tripping `parseFile`'s own 120 s `[BB-HANG]` guard — `svelte/packages/svelte/tests/css/samples/preserve-specificity/expected.css`, `hasura-engine/scripts/ekg/monitor.css`, `spectre/dist/spectre.min.css` (which parses in **1.06 s in isolation**, so it is a load artefact and not a property of the file) `grails-core/grails-test-examples/namespaces/grails-app/assets/stylesheets/main.css` and `spectre/docs/dist/spectre-exp.css`. The set keeps changing while `spectre.min.css` stays fast, which is the evidence that the population is not a property of the files — see §8 item (f) |
 
 The 31.8% is a **grammar** figure, not an analyzer figure: the pinned tree-sitter-css is
 0.25.0 and range media queries, `@page`, `[attr i]`, `&&` nesting and HTML comments are
@@ -694,7 +818,7 @@ They fail independently, so they are reported per type and not as one verdict.
 | 1 Exists | yes | yes | yes | yes | yes — 2 sub-shapes: `@keyframes` redefinition, `@property` re-registration, and (pass 2) a `--custom-property` assigned twice in one block |
 | 2 Fires | **589 of 1,255 files** | **331** | **389** | **68** | **7** |
 | 3 Correct | differential, pass 5: svelte 60 files, **39 of 41** tree-truth rows covered, **2 MISSING**; grails-core 60 files, **477 of 477** covered, 0 missing. **unexplained 0 (0%) on both, heuristic 0** — the shared oracle finds no fabricated edge. Both MISSING rows are the pinned `@namespace` disagreement, not gaps: `imports expected.css -> http://www.w3.org/1999/xhtml` and `…/2000/svg`, derived by the shared oracle from `@namespace url(...)` lines in `packages/svelte/tests/css/samples/supports-namespace/expected.css`. The analyzer emits `references svg|a -> @namespace svg url(…)` instead, and the mutant that would zero this number by republishing the URI as an `imports` edge is CAUGHT by `css/namespace-uri-is-not-an-import`. **The row count is a function of the rotating 60-file sample**, which is why earlier passes read 67/67 and 398/398: `rot 39` on this run. Quote it with the run | same run | same run | same run | **no oracle — see DERIVATION below.** The differential now says so in its own output: `COMPARED WITH NO TRUTH: overrides (1 comparable, 0 truth)` |
-| 4 Labelled | sub-shapes separable by metadata flag: `isMediaScope` 26,800, `isCustomPropertyScope` 137,315, `isSelectorChain` 4,882, `isNestedSelector` 420, `isLayerScope` 505, `isSupportsScope` 368, `isContainerScope` 142 | `isAnimationRef` 2,565 + `isFontFamilyRef` 48 — no edge carries a second flag, so a mislabelled `uses` would be visible as a third label | `isVariableRef` 161,737 + `isNamespaceRef` 1 | `isCssImport` 243; `isSassModuleImport` 0 | `isKeyframesRedefinition` 4 + `isCustomPropertyRedefinition` 44 |
+| 4 Labelled | sub-shapes separable by metadata flag: `isMediaScope` 30,864, `isCustomPropertyScope` 137,867, `isSelectorChain` 5,005, `isNestedSelector` 420, `isLayerScope` 505, `isSupportsScope` 368, `isContainerScope` 142 | `isAnimationRef` 2,572 + `isFontFamilyRef` 48 — no edge carries a second flag, so a mislabelled `uses` would be visible as a third label | `isVariableRef` 161,767 + `isNamespaceRef` 1 | `isCssImport` 243; `isSassModuleImport` 0 | `isKeyframesRedefinition` 4 + `isCustomPropertyRedefinition` 44 |
 | 5 Resolved, both ends | 175,144/175,171 (99.98%) | 2,620/2,620 (100%) | **159,678/161,768 (98.7%)** | 0/243 (0%) — and pass 2 showed this is a LANE property, not a language one (see the `imports` note above) | 48/48 (100%) |
 | 6 Confident | `evidenceClass: structural`, `confidence` absent on 37,304 of 175,171 → treated as 1.0; **0** edges below 1.0 and **0** below 0.7 | `usage_contextual`, `confidence` absent on all 2,620, 0 below 0.7 | `import_based`, `confidence` absent on all 161,768, 0 below 0.7 | `import_based`, `confidence: 1.0` written explicitly on all 243, 0 below 0.7 | `structural`, `confidence: 1.0` written explicitly on all 48, 0 below 0.7 |
 
@@ -748,35 +872,66 @@ preferred.
 
 ### Per-BRANCH firing, because a type at 100% can hide a branch at 0
 
-Question 2 asked per type is satisfied by `uses` at 2,609 edges. Asked per branch it is
-not, and this is the table that says so:
+Question 2 asked per type is satisfied by `uses` at 2,620 edges. Asked per branch it is
+not, and this is the table that says so. Re-measured at the current corpus (1,255 files /
+79 repositories) by `validation/m14/census/css-parsefile-census.ts --all`, which prints
+every declared flag whether it fired or not. This table previously carried pass-2 counts
+and, worse, counted only ONE zero symbol branch where the instrument reports four — the
+census has grown branches since, and a table of dead branches that undercounts its own
+dead branches is worse than no table.
 
 | branch | corpus occurrences |
 | --- | --- |
-| `uses` ← `isAnimationRef` | 2,561 |
+| `uses` ← `isAnimationRef` | 2,572 |
 | `uses` ← `isFontFamilyRef` | 48 |
 | `uses` ← `isMixinRef` (`@include`) | **0** |
 | `uses` ← `isComposition` (`composes:`) | **0** |
 | `uses` ← `isCounterStyleRef` (`list-style: thumbs`) | **0** |
 | `uses` ← `isFontFeatureValuesRef` | **0** |
+| `references` ← `isVariableRef` | 161,767 |
+| `references` ← `isNamespaceRef` | 1 |
 | `references` ← `isCustomMediaRef` (`@media (--x)`) | **0** |
+| `imports` ← `isCssImport` | 243 |
 | `imports` ← `isSassModuleImport` (`@use`/`@forward`) | **0** |
-| symbols ← `isSelector` | 168,752 |
-| symbols ← `isComplex` | 68,112 |
-| symbols ← `isCustomProperty` | 44,407 |
-| symbols ← `isUtility` | 29,296 |
-| symbols ← `isKeyframes` | 1,123 |
-| symbols ← `isSupports` | 242 |
-| symbols ← `isAtRule` | 134 |
+| `overrides` ← `isKeyframesRedefinition` | 4 |
+| `overrides` ← `isCustomPropertyRedefinition` | 44 |
+| `overrides` ← `isPropertyReregistration` (`@property` twice) | **0** |
+| `contains` ← `isCustomPropertyScope` | 137,867 |
+| `contains` ← `isMediaScope` | 30,864 |
+| `contains` ← `isSelectorChain` | 5,005 |
+| `contains` ← `isLayerScope` | 505 |
+| `contains` ← `isNestedSelector` | 420 |
+| `contains` ← `isSupportsScope` | 368 |
+| `contains` ← `isContainerScope` | 142 |
+| `contains` ← `isScopeScope` (`@scope`) | **0** |
+| symbols ← `isSelector` | 189,383 |
+| symbols ← `isComplex` | 80,971 |
+| symbols ← `isCustomProperty` | 44,731 |
+| symbols ← `isUtility` | 34,402 |
+| symbols ← `isKeyframes` | 1,133 |
+| symbols ← `isSupports` | 243 |
+| symbols ← `isAtRule` | 142 |
 | symbols ← `isCssModule` | **1** |
+| symbols ← `isCounterStyleDeclaration` | **0** |
+| symbols ← `isCustomMediaDeclaration` | **0** |
+| symbols ← `isFontFeatureValuesDeclaration` | **0** |
+| symbols ← `isPropertyRegistration` | **0** |
 
-Eight relationship branches and one symbol branch have never executed on this corpus.
+**Eight relationship branches and FOUR symbol branches have never executed on this
+corpus** — `isMixinRef`, `isComposition`, `isCounterStyleRef`, `isFontFeatureValuesRef`,
+`isCustomMediaRef`, `isSassModuleImport`, `isPropertyReregistration`, `isScopeScope`, and
+`isCounterStyleDeclaration`, `isCustomMediaDeclaration`,
+`isFontFeatureValuesDeclaration`, `isPropertyRegistration`. Two of those four symbol
+branches are `@property` registrations, which is the shape `overrides` third rule would
+read, so the type's thinnest branch and the corpus's silence about `@property` are the
+same fact seen twice.
+
 That is not a claim that they are broken — it is the same situation the lane already
 records for `@counter-style`/`@custom-media`/`@font-feature-values`, and the standing
 answer is a fixture rather than a deletion. It IS a claim that **no corpus number in
-this document is evidence about those nine branches.** They are covered by
+this document is evidence about those twelve branches.** They are covered by
 `validation/m14/fixtures/css/declarations-the-corpus-never-uses.css` and by the
-`overrides` fixture added here, and by nothing else.
+`overrides` fixtures, and by nothing else.
 
 ### PASS 2 — the adversarial half: what pass 1 got wrong about itself
 
@@ -995,23 +1150,27 @@ for this lane. Every item below names the measurement that produced it.
 4. **`imports` resolves at 0% at both ends**, and pass 2 established that this is a
    property of THIS ANALYZER and not of the language: json, yaml and xml all source an
    `imports` edge from a symbol they publish, while css sources it from the file's
-   basename, which css publishes no symbol for. 0 of 177, measured. The fix is a scope
+   basename, which css publishes no symbol for. 0 of 243, measured. The fix is a scope
    decision (see "Reported, not edited") and not a claim that 0% is right.
 5. **Nine branches have zero corpus occurrences** (table above) and are pinned only by
    fixtures.
-6. **The grammar is the ceiling.** 354 of 1,114 files carry an ERROR, and one file
+6. **The grammar is the ceiling.** 422 of 1,255 files carry an ERROR, and one file
    (`preserve-specificity/expected.css`) reports `memory access out of bounds` from the
    wasm and trips `parseFile`'s 120 s guard. Anything inside a damaged region is not
    extracted, and no analyzer change can lift that.
 7. **Resolution is measured per FILE.** A name that binds in one stylesheet does not bind
    across two, so every rate here is a within-file rate. A cross-file `references` claim
    (a `var(--x)` defined in another stylesheet) is deliberately not made.
-8. **`.sass` and `.less` are routed here and the corpus for both is thin.** Pass 2
-   measured 0 files of each and this document said so; pass 3 measures **54 `.less` and 3
-   `.sass`** after other lanes cloned. Three `.sass` files cannot support a claim about
-   indented syntax, and the pinned `wasm/tree-sitter-css.wasm` is not the `.sass` grammar
-   in any case. Every ruling in this file is measured over all 57 dialect files, so the
-   `extends` and `calls` probes are not vacuous — they are simply unexercised.
+8. **`.sass` and `.less` are routed here and the corpus for `.sass` is thin.** Pass 2
+   measured 0 files of each and this document said so; the current corpus admits **1,134
+   `.css`, 67 `.sass` and 54 `.less`** (`css-parsefile-census.ts --all`). Sixty-seven
+   indented-syntax files cannot support a claim about `.sass` as a language, and the
+   pinned `wasm/tree-sitter-css.wasm` is not the `.sass` grammar in any case. Every ruling
+   in this file is measured over all 121 dialect files, so the `extends` and `calls` probes
+   are not vacuous — they are simply unexercised. This matters most for `extends`, because
+   the 46 `@extend` at-keywords the probe finds are all inside those `.sass` partials: the
+   construct is written 46 times in NAME and produced as a DIRECTIVE 0 times, which is a
+   statement about the pinned grammar, not about SCSS.
 9. **`overrides` has no differential oracle**, so its correctness rests on two fixtures,
    eight mutants, a spec sentence and a corpus census of 48 occurrences. That is the
    weakest evidence backing any emitted type in this lane, and it is the DERIVATION
@@ -1026,12 +1185,12 @@ for this lane. Every item below names the measurement that produced it.
     and `endLine` the last, with everything between them not in the block. Only `endLine`
     moves, which keeps the byte span (`startIndex`/`endIndex`) describing the FIRST block.
     A consumer assuming contiguity will be wrong for exactly the multi-block scopes this
-    describes; 2,811 scope symbols over 422 files are in that state.
+    describes; **2,924** scope symbols over **444** files are in that state.
 12. **The `@media` / `@layer` scope extent and its block count are dropped at the
     production boundary.** `pool-worker.ts` forwards a narrow allowlist of CSS `metadata`
     keys; `isMediaScope`, `mediaCondition`, `scopeBlocks`, `hasLayerBlock`,
-    `isLayerOrdering` and `layerIndex` are not on it, so **2,804 of 3,084 at-rule scope
-    symbols arrive from `parseFile` with NO metadata at all**, across 422 files. The NAME
+    `isLayerOrdering` and `layerIndex` are not on it, so **2,917 of 3,198 at-rule scope
+    symbols arrive from `parseFile` with NO metadata at all**, across 444 files. The NAME
     is therefore the only identity a consumer has for a scope, which is why limitation 11
     is the only available repair and why `scopeBlocks` is visible to a fixture and not to
     a store consumer. See "Reported, not edited".
@@ -1185,7 +1344,7 @@ header states the admission rule as "non-empty"; the honest fix is to make the t
 say the same thing rather than to change either.
 
 **(b) `src/ast/pool-worker.ts:960-1011` — the CSS `metadata` allowlist drops every key a
-scope symbol carries, so 2,804 at-rule scope symbols reach the store indistinguishable.**
+scope symbol carries, so 2,917 at-rule scope symbols reach the store indistinguishable.**
 The allowlist is deliberate and its own comment says so ("Deliberately NARROW, and
 deliberately CSS-only … the keys below are the ones the CSS lane's F6/F8/CC1 checks
 read"), and `isAtRule` / `atKeyword` / `isSupports` / `supportsCondition` are on it. What
@@ -1193,17 +1352,17 @@ is missing, measured by `css-boundary-probe.ts` over the whole admitted corpus, 
 
 | key | occurrences dropped | what it carries |
 | --- | --- | --- |
-| `isMediaScope` | 2,804 | this symbol is a media scope |
-| `mediaCondition` | 2,804 | the condition text, which the NAME also carries |
-| `scopeBlocks` | 2,811 | how many blocks the scope spans (new in pass 2) |
+| `isMediaScope` | 2,917 | this symbol is a media scope |
+| `mediaCondition` | 2,917 | the condition text, which the NAME also carries |
+| `scopeBlocks` | 2,924 | how many blocks the scope spans (new in pass 2) |
 | `isPropertyRegistration` | 26 | a `@property --x` is a registration, not a declaration |
 | `isLayerOrdering`, `layerIndex` | 11 each | `@layer` order statements and their index |
 | `hasLayerBlock` | 7 | the symbol is a layer BLOCK, not the ordering statement |
-| `cssSpecific` | 169,349 | the payload is css-specific (every symbol) |
-| `hasPseudoClass`, `hasPseudoElement` | 169,349 each | the selector's shape |
-| `occurrences` | 37,629 | how many sites one name was written at |
-| `firstLine` | 37,629 | the first site, when `startLine` is the merge's |
-| `scopes` | 31,749 | every scope a merged name was written under |
+| `cssSpecific` | 189,383 | the payload is css-specific (every symbol) |
+| `hasPseudoClass`, `hasPseudoElement` | 189,383 each | the selector's shape |
+| `occurrences` | 38,169 | how many sites one name was written at |
+| `firstLine` | 38,169 | the first site, when `startLine` is the merge's |
+| `scopes` | 31,825 | every scope a merged name was written under |
 
 What it must do: add the keys a consumer reads. The minimum that changes behaviour is
 `isMediaScope` + `scopeBlocks` (so a `@media` scope is identifiable as one and a
@@ -1337,9 +1496,15 @@ spectre.min.css -> {"ms":1063,"symbols":640,"rels":100,"errors":0}
 the guard killed the gate on is not slow and not unparseable in isolation, and the
 `[BB-PARSE-ERR] memory access out of bounds` that precedes the hang is a *consequence* of
 the loaded machine rather than a property of the file — the same file parsed clean minutes
-later under the same wasm. Three files have now been observed tripping it across this lane
-(`preserve-specificity/expected.css`, `hasura-engine/…/monitor.css`, `spectre.min.css`) and
-the population is **not a property of the files**. That narrows the fix: this is not
+later under the same wasm. FIVE files have now been observed tripping it across this lane
+(`preserve-specificity/expected.css`, `hasura-engine/…/monitor.css`, `spectre.min.css`,
+`grails-core/…/namespaces/grails-app/assets/stylesheets/main.css`,
+`spectre/docs/dist/spectre-exp.css`) and the population is **not a property of the files**
+— every one of them was observed on a run where a sibling run over the SAME corpus
+completed. Pass 6 also measured the consequence, which is the reason this item is worth
+the supervisor's time rather than a file list: a truncated run still prints the full
+ten-row table and `FALSIFIED 0`, with its edge counts short by 8 `uses` and 6 `contains`.
+See "PASS 6" above for the four-run comparison. That narrows the fix: this is not
 "exclude the three pathological files", it is "a 120 s wall-clock budget applied to
 synchronous WASM on a machine with 8 lanes resident measures machine load, and the
 process it kills is the one holding the result". The measurement that would confirm the
