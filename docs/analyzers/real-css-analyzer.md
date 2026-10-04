@@ -953,6 +953,27 @@ accounting in either direction — `css 11` in the brief, `3` in the old doc, `0
 now — which is the "3 in between belonged to no lane" failure the gate's own header
 records having been fixed by printing every row.
 
+**(f) `src/ast/engine.ts:1439-1444` — a corpus file that hangs the parser makes the whole
+gate process exit 1 AFTER printing its verdict, so a corpus-scale exit code is not a
+result.** The per-file self-destruct timer calls `process.exit(1)` when it fires, because
+`parser.parse()` is synchronous WASM and a timer cannot interrupt it. Observed on
+`hasura-engine/scripts/ekg/monitor.css`, which intermittently reports `memory access out of
+bounds` from the wasm and then runs past 120 s. The consequence is not that a count is
+wrong — it is that the count may never be finished: on this lane's runs of
+`validation/m14/fixtures/css/ruled-gate.ts` the same command returned a complete
+`emitted 5/10 … FALSIFIED 0` table with exit 0 five times and was truncated by the guard
+with exit 1 three times, and a truncation that lands EARLY would print a partial table that
+reads as a pass. What it must do: either scope the exit to the indexer process so a census
+can finish and report which file it skipped, or have the census treat `[BB-HANG]` on stderr
+as an explicit non-result. Why this lane does not do it: `engine.ts` is shared machinery
+(§8), and the fix is a change to how a corpus-scale instrument reports, not to css. What
+this lane did instead: `ruled-gate.ts` now captures stderr and prints
+`gate exit code: N  BUT NOT A VERDICT — … [BB-HANG] …` instead of letting a truncated run
+read as a red, and distinguishes a signal death from an exit code for the same reason. Note
+this is the SECOND corpus file recorded hanging in this lane — `preserve-specificity/
+expected.css` is in the parse-robustness findings above — so the population is at least two,
+and both are recorded as files rather than as a rate.
+
 ## Supported constructs
 
 - Rule selectors → symbols by specificity composition (Theme.css: `:root` →
