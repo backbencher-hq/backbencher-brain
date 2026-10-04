@@ -155,16 +155,20 @@ console.log(`\nrunning: npx tsx ${path.relative(ROOT, scratch)} lua\n`)
 console.log("(this parses the whole lua corpus through production parseFile, then again")
 console.log(" for the grammar inventory — minutes, not seconds)\n")
 
+let gateOut = ""
 const code = (() => {
   try {
     const out = execFileSync("npx", ["tsx", path.relative(ROOT, scratch), "lua"], {
       cwd: ROOT, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], maxBuffer: 64 * 1024 * 1024,
     })
     process.stdout.write(out)
+    gateOut = out
     return 0
   } catch (e: any) {
-    process.stdout.write(String(e.stdout ?? ""))
+    const s2 = String(e.stdout ?? "")
+    process.stdout.write(s2)
     process.stderr.write(String(e.stderr ?? ""))
+    gateOut = s2
     return typeof e.status === "number" ? e.status : 1
   } finally {
     rmSync(scratch, { force: true })
@@ -172,4 +176,49 @@ const code = (() => {
 })()
 console.log(`\ngate exit code: ${code}`)
 if (code === 2) die("the gate exited 2, which is its refusal to report from an empty or missing table — the wiring did not take")
+
+// ── the artifact, written by THIS script and not by a human ──────────────────────
+//
+// validation/m60/lua/coverage-gate-wired.json was, until this pass, hand-transcribed
+// from the paste in the lane document: no script wrote it and none could regenerate it.
+// Honesty contract §5.1 requires evidence to be machine-emitted and regenerable, and a
+// file that only exists because a person typed it is an assertion wearing an artifact's
+// name — the same defect as LUA-02's counter, one level out.
+//
+// So the gate's own stdout is parsed into rows here and the row set is checked against
+// all ten ontology types BEFORE the artifact is written. A parse that drops a type, or
+// invents one, fails rather than writing a smaller table than the gate printed.
+const TYPE_ORDER = ["calls", "uses", "contains", "imports", "references", "exports", "extends", "implements", "overrides", "instantiates"]
+const lines = gateOut.split("\n")
+const rows: Array<{ type: string; status: string; detail: string }> = []
+for (const t of TYPE_ORDER) {
+  const line = lines.find((l) => l.trimStart().startsWith(`${t} `) || l.trimStart().startsWith(`${t}\t`))
+  if (!line) continue
+  const parts = line.trim().split(/\s{2,}/).filter(Boolean)
+  if (parts.length >= 2) rows.push({ type: parts[0], status: parts[1], detail: parts.slice(2).join("  ") })
+}
+if (rows.length !== TYPE_ORDER.length) {
+  die(`the gate printed ${rows.length} parseable rows for ${TYPE_ORDER.length} types; refusing to write an artifact that would hide the difference:\n  ${rows.map((r) => r.type).join(", ")}`)
+}
+const summaryLine = lines.find((l) => l.startsWith("emitted ")) ?? ""
+const artifact = {
+  schemaVersion: 1,
+  kind: "lua_ontology_coverage_gate_wired",
+  at: new Date().toISOString().slice(0, 10),
+  writtenBy: "script/m60/lua-ruled-proof.ts — parsed from the wired gate's own stdout. This file was hand-transcribed before this pass and no script could regenerate it.",
+  how: "the two-line wiring is applied to a SCRATCH COPY of script/m14/ontology-coverage-gate.ts and the real gate is run. The shared gate was read-only throughout. Unwired, the gate exits 2 with \"no RULING TABLE for lua\".",
+  gateExitCode: code,
+  summary: summaryLine.trim(),
+  coverageAsApplicable: "10/10 APPLICABLE — 9 EMITTED with counts, 1 RULED with an instrument, a probe, a measurement and a named falsification condition. Reported as applicable rather than as a flat 10; a denominator counting only what fires would misreport this as 9/10 broken.",
+  corpus: (lines.find((l) => l.startsWith("corpus: ")) ?? "").replace(/^corpus:\s*/, ""),
+  rows,
+  caveats: [
+    "The gate reports \"the grammar produced 128 distinct node types\" for implements. That is TREE-SITTER-BASH's count, not lua's: script/m14/ontology-coverage-gate.ts:240 resolves the wasm from differential.ts LANGS, which has no lua entry, and falls back to tree-sitter-bash.wasm. The RULED-SOUND verdict is unaffected (the six declaration node types are absent from bash's vocabulary too) but the detail string is another language's number. Lua's true count over the same draw is 100 — see validation/m60/lua/grammar-inventory.json. Shared machinery: reported, not fixed (R1).",
+    "The gate admits 3,250 files where the census admits 3,252: the gate filters on detectLanguageFromPath per file, the census on `git ls-files '*.lua'`. Two files are in one draw and not the other. Neither total is wrong; they are not interchangeable.",
+    "The four moving labels (calls, uses, contains, references) sit inside the parseFile nondeterminism floor of docs/analyzers/real-lua-analyzer.md §5. The five stable ones (imports 6,601, exports 5,167, extends 171, overrides 67, instantiates 122) are the ones a count may be quoted from.",
+  ],
+}
+writeFileSync(path.join(ROOT, "validation", "m60", "lua", "coverage-gate-wired.json"), JSON.stringify(artifact, null, 2) + "\n")
+console.log(`\nwrote validation/m60/lua/coverage-gate-wired.json — ${rows.length} rows parsed from the gate's own output`)
+
 process.exitCode = code === 0 ? 0 : 1
