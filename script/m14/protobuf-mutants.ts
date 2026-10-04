@@ -206,7 +206,13 @@ export const PROTOBUF_MUTANTS: Mutant[] = [
           const oneofName = syms(r).find((s: any) => s?.metadata?.id === tgt)?.metadata?.oneof
           if (typeof oneofName !== "string") return x
           const msgId = String(x.source ?? "")
-          const owner = oneofs.get(`${msgId}.${oneofName}`)
+          // `metadata.oneof` is the oneof's RESOLVED ID as of pass 2; it used to be
+          // the bare name, which made the lookup `message.id + "." + oneofName`. Both
+          // spellings are tried, because a mutant that can no longer fire reports a
+          // hole that does not exist while missing the one that does — the exact
+          // failure this battery was rebuilt to stop, and it is what happened to this
+          // row the moment the oneof key was qualified.
+          const owner = oneofs.get(oneofName) ?? oneofs.get(`${msgId}.${oneofName}`)
           if (!owner) return x
           return { ...x, source: owner.metadata.id }
         }),
@@ -441,6 +447,119 @@ export const PROTOBUF_MUTANTS: Mutant[] = [
       ...r,
       relationships: rels(r).map((x) => ({ ...x, confidence: 0.5 })),
     }),
+  },
+  {
+    id: "protobuf/same-slot-override-collapsed-into-a-duplicate-name",
+    language: "protobuf",
+    defectClass: "dropped-edge",
+    description:
+      "The `overrides` rule pass 1 did not have. What protobuf can express as an override is a field SLOT restated: two declarations in one message claiming the same number. This mutant reverts the rule to the reading pass 1's own probe used — 'a name declared twice in one scope' — which is the reading that fires on a name collision that replaces nothing, because the two claims occupy different slots. Reverted by dropping every `overrides` edge whose two endpoints carry DIFFERENT `metadata.fieldNumber`s, i.e. keeping only the name-and-number shape and deleting the slot shape. That is the pre-fix state: `string legacy = 7; int64 modern = 7;` restates slot 7 under a fresh name and the edge disappears, while `string dup = 3; bool dup = 3;` survives, so the corpus count of 1 that pass 1 measured was a coincidence of one syntax-highlighting fixture rather than a measurement of the construct. Caught by protobuf/slot-and-grouping, whose `Slot.modern -> Slot.legacy` row requires the slot shape. Its `Twin` forbid rows are the other half: they fail an analyzer whose rule is 'a repeated NAME', which is the mutant the fixture exists to keep out.",
+    transform: (r: any) => {
+      const byId = new Map<string, any>(syms(r).map((s: any) => [String(s?.metadata?.id), s]))
+      // The name-collision reading: an override is a name declared twice. Every one
+      // of those also repeats the field number, so the number cannot be the
+      // discriminator — the NAME can. Dropping exactly the edges whose endpoints
+      // carry different names leaves the name-and-number shape standing and deletes
+      // the slot shape, which is the pre-fix behaviour.
+      const dropped = rels(r).filter((x: any) => {
+        if ((x.type ?? x.relationshipType) !== "overrides") return false
+        const a = byId.get(String(x.source))
+        const b = byId.get(String(x.target))
+        return a && b && String(a.name) !== String(b.name)
+      })
+      if (dropped.length === 0) return r
+      const gone = new Set(dropped.map((x: any) => `${x.source}\u0000${x.target}\u0000${x.line_number}`))
+      return {
+        ...r,
+        relationships: rels(r).filter((x: any) => !gone.has(`${x.source}\u0000${x.target}\u0000${x.line_number}`)),
+      }
+    },
+  },
+  {
+    id: "protobuf/override-edge-line-taken-from-the-declaration-being-added",
+    language: "protobuf",
+    defectClass: "wrong-line",
+    description:
+      "The `overrides` edge's `line_number` must be the SOURCE's line, because `line_number` is what `bb_graph` and the store's relId key on. The walk is a LIFO stack and reaches siblings in reverse document order, so the declaration being ADDED when the collision is noticed is usually the EARLIER one — this is measured, not hypothetical: the first version of the rule reported the override of slot 7 at line 26, which is `legacy`, the declaration being overridden, while the source `modern` is line 27. Reverted by rewriting each `overrides` edge's line to the LOWER of its two endpoints' lines, which is the same wrong answer for a forward-declared pair and cannot be told apart from the correct one by an assertion that does not read the source. Caught by protobuf/slot-and-grouping, whose two `overrides` rows pin line 27 and line 36 — the sources — and whose forbid rows name the same two symbol pairs, so an edge with the right endpoints and the wrong line still fails.",
+    transform: (r: any) => {
+      const byId = new Map<string, any>(syms(r).map((s: any) => [String(s?.metadata?.id), s]))
+      return {
+        ...r,
+        relationships: rels(r).map((x: any) => {
+          if ((x.type ?? x.relationshipType) !== "overrides") return x
+          const a = Number(byId.get(String(x.source))?.range?.startLine ?? x.line_number ?? 0)
+          const b = Number(byId.get(String(x.target))?.range?.startLine ?? x.line_number ?? 0)
+          return { ...x, line_number: Math.min(a, b) || x.line_number }
+        }),
+      }
+    },
+  },
+  {
+    id: "protobuf/oneof-grouping-key-downgraded-to-the-bare-name",
+    language: "protobuf",
+    defectClass: "ambiguous-metadata",
+    description:
+      "`metadata.oneof` is how a oneof's grouping travels, since `contains` means ownership only and there is deliberately no edge from the oneof to its fields. It carried the oneof's BARE name, which cannot address a oneof: two messages in one file may each declare `oneof body`, and a consumer grouping fields by that string merges two unrelated discriminated unions. Measured over the corpus before the change: 423 of 1,121 oneof fields (37.73%) sat under a bare name declared by more than one owner — `oneof attrs` in 7 different messages of boundary's session_recording.proto alone. Reverted by truncating every `metadata.oneof` to its last dotted segment, rebuilt from the result's own symbols rather than from a fixture name. Caught by protobuf/slot-and-grouping, which declares `oneof body` in two messages and requires the two fields' keys to be the two RESOLVED ids — an analyzer emitting the bare name fails both rows, and neither row can be satisfied by emitting nothing.",
+    transform: (r: any) => {
+      const declared = new Set<string>(syms(r).map((s: any) => String(s?.metadata?.id)).filter(Boolean))
+      return {
+        ...r,
+        symbols: syms(r).map((s: any) => {
+          const key = s?.metadata?.oneof
+          if (typeof key !== "string") return s
+          const bare = key.split(".").pop() ?? key
+          // only downgrade when a DIFFERENT oneof in this file really does own the
+          // bare name — otherwise the two spellings are the same string and the
+          // transform cannot fire, which would report a hole that does not exist.
+          const owners = new Set<string>()
+          for (const id of declared) {
+            if (id.endsWith(`.${bare}`)) owners.add(id)
+          }
+          if (owners.size < 2) return s
+          return { ...s, metadata: { ...s.metadata, oneof: bare } }
+        }),
+      }
+    },
+  },
+  {
+    id: "protobuf/extension-edge-loses-viaextension",
+    language: "protobuf",
+    defectClass: "missing-field",
+    description:
+      "`viaExtension` was carried on the extension field's SYMBOL and not on the EDGE that adds it to the extended type, so a consumer reading `google.protobuf.MessageOptions -contains-> audit_ticket` could not tell a field added by an `extend` block in another file from one declared in MessageOptions' own body — and this analyzer's own header claimed the edge carried it, which made the header false. Measured over the corpus before the change: 0 of the extension-derived `contains` edges carried `viaExtension`. Reverted by deleting the key from every edge whose metadata has it, leaving the symbol's copy intact — the exact pre-fix shape, in which the two are not derived from each other and the flag can drift. Caught by protobuf/extend-and-group, whose two rows now require `meta.viaExtension` ON THE EDGE. The same fixture's plain-field rows in protobuf/payload-and-ontology forbid the flag there, so stamping it on every edge fails as well.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: rels(r).map((x: any) => {
+        const md = x?.metadata
+        if (!md || md.viaExtension === undefined) return x
+        const { viaExtension, ...rest } = md as any
+        return { ...x, metadata: rest }
+      }),
+    }),
+  },
+  {
+    id: "protobuf/public-import-loses-its-dependency-edge",
+    language: "protobuf",
+    defectClass: "dropped-edge",
+    description:
+      "`import public \"x.proto\"` is BOTH a dependency and a re-export: `protoc` records it as a `FileDescriptorProto` dependency like any other, with `public_dependency` naming its index. Pass 1 emitted `exports` alone, pinned the absence of `imports` with a fixture forbid, and the fixture's stated reason — that emitting both 'would double the module's inbound dependency and lose the re-export fact entirely' — is wrong on both halves: nothing is doubled, because the pair went from ZERO `imports` edges to one, and the re-export fact is what the `exports` edge carries. Reverted by dropping every `imports` edge that also appears as an `exports` edge on the same source and target, which is exactly the pre-fix state. Caught by protobuf/imports-and-editions, whose public-import rows now REQUIRE both labels, so neither reading satisfies the fixture alone.",
+    transform: (r: any) => {
+      const pub = new Set<string>(
+        rels(r)
+          .filter((x: any) => (x.type ?? x.relationshipType) === "exports")
+          .map((x: any) => `${x.source}\u0000${x.target}`),
+      )
+      return {
+        ...r,
+        relationships: rels(r).filter(
+          (x: any) =>
+            !(
+              (x.type ?? x.relationshipType) === "imports" &&
+              pub.has(`${x.source}\u0000${x.target}`)
+            ),
+        ),
+      }
+    },
   },
 ]
 
