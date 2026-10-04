@@ -1336,12 +1336,24 @@ for this lane. Every item below names the measurement that produced it.
    `imports` edge from a symbol they publish, while css sources it from the file's
    basename, which css publishes no symbol for. 0 of 243, measured. The fix is a scope
    decision (see "Reported, not edited") and not a claim that 0% is right.
-5. **Nine branches have zero corpus occurrences** (table above) and are pinned only by
-   fixtures.
-6. **The grammar is the ceiling.** 422 of 1,255 files carry an ERROR, and one file
-   (`preserve-specificity/expected.css`) reports `memory access out of bounds` from the
-   wasm and trips `parseFile`'s 120 s guard. Anything inside a damaged region is not
-   extracted, and no analyzer change can lift that.
+5. **Twelve branches have zero corpus occurrences** — **eight** relationship
+   (`isMixinRef`, `isComposition`, `isCounterStyleRef`, `isFontFeatureValuesRef`,
+   `isCustomMediaRef`, `isSassModuleImport`, `isPropertyReregistration`, `isScopeScope`)
+   and **four** symbol (`isCounterStyleDeclaration`, `isCustomMediaDeclaration`,
+   `isFontFeatureValuesDeclaration`, `isPropertyRegistration`) — out of the 22
+   relationship and 12 symbol branches the census prints (table above). They are pinned
+   only by fixtures. **This said "nine" until pass 8**, which is the same defect the
+   per-branch table was already corrected for once: a stale count of dead branches,
+   inherited from a census that had not yet grown the symbol branches.
+6. **The grammar is the ceiling.** 422 of 1,255 files carry an ERROR, and anything inside
+   a damaged region is not extracted, so no analyzer change can lift that. **This used to
+   name `preserve-specificity/expected.css` as a file that "reports `memory access out of
+   bounds` from the wasm and trips `parseFile`'s 120 s guard", and pass 8 withdrew that
+   attribution**: that file parses in **16 ms** in isolation to 2 symbols, and the census
+   prints `parse failures 0` over all 1,255. The file trips the guard only on a loaded
+   machine — see the isolation table under "PASS 8" and §8 item (f). The 422 is a
+   property of the grammar; the hang is a property of the machine, and the limitation
+   previously merged the two.
 7. **Resolution is measured per FILE.** A name that binds in one stylesheet does not bind
    across two, so every rate here is a within-file rate. A cross-file `references` claim
    (a `var(--x)` defined in another stylesheet) is deliberately not made.
