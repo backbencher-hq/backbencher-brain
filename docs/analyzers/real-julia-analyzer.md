@@ -45,28 +45,34 @@ selects: `JuliaLang/julia` 941, `json_jl` 25, `nvim-treesitter` 5. 1,006 further
 excluded for exceeding 512 KB and the exclusion is counted in the census output rather than left
 silent. Production grammar `wasm/tree-sitter-julia.wasm`, md5 `dbcd79759b4216c80de73c17a56255f8`.
 
-**Production totals.** 28,277 symbols · 164,083 relationships in the ten types · 0 crashes · 0 files
+**Production totals.** 28,277 symbols · 167,775 relationships in the ten types · 0 crashes · 0 files
 routed to the >1 MB structural fallback · **135 of 971 files (13.9%) yield ZERO symbols** and are
 listed by name in the census output · **0 of 971 files unreadable by the production grammar**.
 
 | Relationship type | Emitted? | Verdict, channel and measured size over 971 files | Files |
 |---|---|---|---|
 | `calls` | **EMITTED** | relationship, **86,876** | 926 |
-| `references` | **EMITTED** | relationship, **35,727** | 844 |
+| `references` | **EMITTED** | relationship, **36,147** | 852 |
 | `uses` | **EMITTED** | relationship, **26,359** | 821 |
 | `contains` | **EMITTED** | relationship, **10,467** | 540 |
 | `instantiates` | **EMITTED** | relationship, **2,830** | 361 |
+| `imports` | **EMITTED** | relationship **and** `ImportInfo[]`, **1,502** rows | 504 |
+| `exports` | **EMITTED** | relationship **and** `ExportInfo[]`, **1,770** rows | 151 |
 | `extends` | **EMITTED** | relationship, **1,821** | 323 |
 | `overrides` | **EMITTED** | relationship, **3** | 3 |
-| `imports` | **yes** — on the import-site channel; **RULED** as a relationship | `ImportInfo[]`, **0 relationship rows**; 1,675 `import`/`using` nodes on the tree across 504 files | 504 |
-| `exports` | **yes** — on the export-site channel; **RULED** as a relationship | `ExportInfo[]`, **0 relationship rows**; 308 `export`/`public` nodes on the tree across 152 files | 152 |
 | `implements` | **RULED** | no channel; 0 of 12 named constructs in the grammar inventory; the 325 nearest candidates are published as `extends` | — |
 
-**Coverage is 7 emitted and 3 measured-absent — 7/7 on the emitted side, not 10/10 and not 7/10.**
-The denominator shrank by three, and only through RULED verdicts that each carry a corpus
-measurement and a stated overturn condition. Numerator and denominator come from different
-instruments: the seven from `parseFile` through the production path, the three from a tree walk that
-never consults the analyzer.
+**Coverage is 9 emitted and 1 measured-absent — 9/9 on the emitted side, not 10/10 and not 9/10.**
+The denominator shrank by one, and only through a RULED verdict that carries a corpus measurement
+and a stated overturn condition. Numerator and denominator come from different instruments: the nine
+from `parseFile` through the production path, the one from a tree walk that never consults the
+analyzer.
+
+**This table was 7 emitted and 3 ruled one commit ago, and two of those three rulings were wrong.**
+`imports` and `exports` were RULED; they are now EMITTED, and the reasons are in
+[§ `imports` and `exports` — two rulings overturned](#imports-and-exports--two-rulings-overturned).
+A ruling that is later overturned is not a failure of the instrument; a ruling that cannot be
+overturned is a failure of the instrument. Both of these could not be.
 
 ### The doc-truth gate cannot see the first row of this table
 
@@ -96,51 +102,125 @@ UNDOCUMENTED [julia] calls (relationship)
 ```
 
 `imports` and `exports` were also reported and are now cleared, and the fix was in this table rather
-than in the gate. The gate derives its expected surface from the analyzer source and finds julia
-publishes both on the payload channels, so the doc owes a checkable claim about each; the cells now
-read **"yes — on the import-site/export-site channel; RULED as a relationship"**, because the cell and
-not the surrounding prose is what the gate reads, and a cell that says `RULED — payload channel only`
-is a `NO_MARKER` to it. That is a real requirement of the gate rather than a quirk: a reader — or the
-next agent — extracts the cell, so the affirmative statement has to live there. UNDOCUMENTED across all
-48 lanes went 46 → 44 with this one table edit.
+than in the gate. The gate derives its expected surface from the analyzer source, so the doc owes a
+checkable claim per channel, and **the cell and not the surrounding prose is what the gate reads**: a
+reader — or the next agent — extracts the cell. The cells now read **"EMITTED — relationship *and*
+`ImportInfo[]`"** / **"EMITTED — relationship *and* `ExportInfo[]`"**, which names both channels
+because both are now written from one walk.
+
+That cell convention was itself the product of the wrong rulings. When the types were payload-only, the
+cells had to read *"yes — on the import-site/export-site channel; RULED as a relationship"*, because a
+cell saying `RULED — payload channel only` was a `NO_MARKER` to the gate: the gate saw a type the
+analyzer published on no relationship and no channel marker, and reported it UNDOCUMENTED. **A gate
+that cannot parse `RULED — payload channel only` will report a lane as undocumented until the lane stops
+ruling.** That pressure is a plausible reason the ruling was never re-examined, and it is worth
+recording: the instrument did not merely fail to catch a wrong verdict, it applied steady pressure
+toward keeping it.
 
 ---
 
-## `imports` — RULED
+## `imports` and `exports` — two rulings overturned
 
-**Instrument: B, parse-tree count.** Julia expresses module dependencies and the corpus uses them
-heavily: **1,675 `import_statement` / `using_statement` nodes across 504 of the 971 admitted files** —
-`julia/Compiler/src/ssair/EscapeAnalysis.jl:3`, `json_jl/src/JSON.jl:4`. The construct is present
-and common, so this is not an absence-of-construct ruling.
+Both types were RULED non-applicable by this lane. **Both rulings were wrong**, and the reason they
+were wrong is the same shape in both: each named its own overturn condition, and each condition was
+worded so that **doing the right thing could not satisfy it**. That is not a falsifiable condition.
+A falsifiable ruling names a count that a correct implementation would move.
 
-It is not emitted as a relationship because `RelationshipType.Imports` serializes to `"brain_import"`
-(`src/ast/types.ts:69`) and the repo treats the `ImportInfo[]` channel as the import surface.
-`script/m14/differential.ts`'s F5 label allowlist admits `imports` by default for every language, so
-the lane was comparing **zero** julia `imports` relationship rows against zero truth rows, and the
-harness printed *"COMPARED WITH NO TRUTH — the published coverage for those labels is not coverage."*
+The independent corroboration is in the supervisor's own gate file.
+`script/m14/ontology-coverage-gate.ts:143-152` carries this note on the **json** lane's table:
 
-**Probe.** `import_statement` or `using_statement` node on the parse tree. **Measured: 1,675 across
-504 files.** **What would overturn this ruling:** a julia `imports` relationship row that is not an
-import-site artifact — a row whose source is the importing declaration rather than the literal
-`root`. The 951 `references` rows sourced from `root` carry `isImport: true` and are the honest shape
-of the fact today, and a count of `imports` rows above the count of `ImportInfo` entries would mean
-the relationship had started carrying something else.
+> `exports` WAS here and was removed: it was ruled on a grammar inventory ("no export_statement
+> node") and that is the same unsound reasoning that produced the wrong `imports` ruling. […] it is
+> emitted now, and the gate re-measures rather than trusting this note.
 
-## `exports` — RULED
+So the correction had already been made once, on another lane, for the same argument, and this lane
+made it again anyway.
 
-**Instrument: B, parse-tree count.** **308 `export_statement` / `public_statement` nodes across 152
-of the 971 admitted files.** The construct is present.
+### `imports` — EMITTED, 1,502 edges across 504 files
 
-It is not emitted as a relationship for the same reason as `imports`, and additionally because an
-`export` **declares nothing**: `export X` names a binding whose kind depends on what `X` turns out to
-be, and Julia allows the export to precede the declaration. The first version of this lane pushed a
-`SymbolKind.Function` for every `export`, which produced a *second* `Circle` beside the real
-`class:Circle`, and the dedup did not merge them because its key is `kind:owner:name`. The
-`ExportInfo[]` channel records the export and marks nothing.
+**What the ruling claimed.** Not emitted, because `RelationshipType.Imports` serializes to
+`"brain_import"` (`src/ast/types.ts:69`) and the repo treats the `ImportInfo[]` channel as the import
+surface.
 
-**Probe.** `export_statement` or `public_statement` node. **Measured: 308 across 152 files.** **What
-would overturn this ruling:** an `exports` relationship count above the `ExportInfo` count for the
-same corpus, meaning the edge was carrying a declaration claim the channel does not.
+**Why that was wrong.** `"brain_import"` constrains no lane at all. It is the string *every* lane
+writes through when it emits the relationship:
+
+| lane | site | source of the edge |
+|---|---|---|
+| python | `real-python-analyzer.ts:979`, `:1050` | `ctx.moduleName`, conf 1.0 |
+| lua | `real-lua-analyzer.ts:569` | `frame.callable \|\| "global"` |
+| yaml | `real-yaml-analyzer.ts:1017` | `path` |
+| nim | `real-nim-analyzer.ts:1064` | — |
+| typescript | `real-typescript-analyzer.ts:5509` | — |
+
+Python is the exact structural analogue — a dynamic language whose module dependency is an
+`import`/`using` statement — and it emits the relationship **and** fills `ctx.imports` from the same
+walk. A convention was read as a constraint.
+
+**What the ruling got right, and kept.** Its overturn condition was *"a julia `imports`
+relationship row that is not an import-site artifact — a row whose source is the importing
+declaration rather than the literal `root`"*. That is a real distinction and it is now the emitted
+shape: **446 of 1,502 edges carry a module symbol as their source and 595 carry the file scope**,
+because 71.9% of Julia corpus files open no module and a top-level `using` imports into `Main`.
+
+**Resolution, and it is not close.** Target end: **50.0% (751) resolve to a declaration elsewhere in
+this corpus**, 11.3% (170) are reachable through the file's own import path, 1.1% (17) resolve
+in-file, and **37.4% (561) resolve to nothing** — `Dates`, `UUIDs`, `Printf`, `Test`, external
+packages that are not in the corpus at all. Both-ends is **0.7%**. That number is a property of the
+construct, not a defect in the edge: `using Dates` names a module this corpus does not contain, and a
+Python `import numpy` resolves no better inside a Python repository. The honest statement is that
+half of these edges are walkable at project scope and half name things outside the project, and the
+census separates those two buckets rather than averaging them into one number.
+
+### `exports` — EMITTED, 1,770 edges across 151 files
+
+**What the ruling claimed.** Not emitted, for the same `brain_export` reason, "and additionally
+because an `export` **declares nothing**".
+
+**Why that was wrong, in two parts.** The serialization argument fails as above. The
+`declaresNothing` argument was **correct** and is honoured: the emitted edge asserts no kind, no
+symbol is fabricated, and the fixture proves it by exporting `Exported` (a `class`) and
+`export_declare` (a `function`) under one statement. The mistake was promoting a real constraint on
+*what the edge may claim* into a reason for *not emitting the edge at all*. `real-python-analyzer.ts:1166`
+emits both channels from a single `__all__` walk and asserts no kind about the exported name either.
+
+**Why the ruling's condition was unfalsifiable.** *"An `exports` relationship count above the
+`ExportInfo` count for the same corpus."* Emitting one row per `ExportInfo` entry **cannot exceed
+it**. The condition could only ever be met by an edge carrying something the channel does not — i.e.
+by a wrong edge. A threshold that only a defect can cross is not a test.
+
+**Resolution.** Target end: **41.8% (739) in-file unique, 36.0% (637) resolve elsewhere in the corpus,
+9.0% (159) in-file ambiguous, 12.8% (226) resolve to nothing**; 87.8% of targets bind somewhere.
+Both-ends is 34.4%, limited by the source end (55.8%): 962 edges carry a module symbol, 783 carry the
+file scope.
+
+### The construct count vs the edge count — the check that found a live defect
+
+Reconciling *files containing the construct* against *files whose edge fired* is what exposed a
+second, independent defect. It is now a standing census output:
+
+```
+imports   files with the construct: 504   files with >=1 edge: 504   silent: 0
+exports   files with the construct: 152   files with >=1 edge: 151   silent: 1
+```
+
+**`using Base: isexpr` produced no edge at all.** That form parses as a `selected_import` node, and
+`importTargets` matched neither `import_path` nor a bare `identifier` there, so it returned an empty
+list. **583 of the 1,675 import statements across the 971 admitted files** were contributing nothing,
+including `using Base: isexpr` at `julia/Compiler/src/Compiler.jl:40` — how the compiler reaches its
+own standard library.
+
+It was invisible three ways at once: the statements parse without an `ERROR` node, `parseFile` throws
+nothing, and every affected file still publishes hundreds of symbols from its other declarations.
+Only the statements-against-edges count finds it. Fixing it moved `imports` from 399 to 504 files.
+
+The one `exports` shortfall is a **deliberate refusal**, and the census says so where the number is
+printed: `julia/test/precompile.jl:15` is `export $Foo_module, $FooBase_module`, whose names are
+`interpolation_expression` nodes computed at macro-expansion time. There is no name to publish, and
+emitting the literal `$Foo_module` would assert a binding that exists nowhere in the file. The
+alternative — a green 152/152 — would have meant asserting two names it cannot know.
+
+---
 
 ## `implements` — RULED
 
@@ -313,7 +393,9 @@ can resolve — but it is a different number and it was published under the wron
 | `calls` | yes | 86,876 / 926 files | 97.4% covered / 8.7% unexplained, oracle `julia-calls` | `usage_contextual` | **19.8%** (src 78.1 / tgt 23.1 / neither 18.7) | conf 1.0 on all; **0 under 0.7** |
 | `uses` | yes | 26,359 / 821 | oracle `julia-refs` | `usage_contextual` | **25.0%** (src 76.3 / tgt 27.3 / neither 21.4) | conf 0.9; **0 under 0.7** |
 | `contains` | yes | 10,467 / 540 | oracle `julia-contains`, which found a real defect | `structural` | **99.9%** (neither 0.0) | conf 1.0; **0 under 0.7** |
-| `references` | yes | 35,727 / 844 | oracle `julia-refs` | `import_based` | **19.7%** (src 88.3 / tgt 21.0 / neither 10.5) | conf 1.0 ×33,708 + 0.95 ×2,019; **0 under 0.7** |
+| `references` | yes | 36,147 / 852 | oracle `julia-refs` | `import_based` | **19.5%** (src 87.3 / tgt 20.7 / neither 11.5) | conf 1.0 ×34,128 + 0.95 ×2,019; **0 under 0.7** |
+| `imports` | yes | 1,502 / 504 | **no oracle — see DERIVATION below** | `import_based` | **0.7%** both-ends (src 43.8 / tgt 1.3); target-end 50.0% corpus-only + 11.3% external-by-import | conf 1.0; **0 under 0.7** |
+| `exports` | yes | 1,770 / 151 | **no oracle — see DERIVATION below** | `import_based` | **34.4%** (src 55.8 / tgt 50.7); target-end 87.8% bind somewhere | conf 1.0; **0 under 0.7** |
 | `extends` | yes | 1,821 / 323 | oracle `julia-type-edges` | `structural` | **20.4%** (src 50.0 / tgt 28.7 / neither 41.7) | conf 1.0; **0 under 0.7** |
 | `instantiates` | yes | 2,830 / 361 | oracle `julia-type-edges` | `usage_contextual` | **76.9%** (tgt 100.0, src 76.9) | conf 0.9; **0 under 0.7** |
 | `overrides` | yes | 3 / 3 | **lane-owned oracle, 3/3, 0 unexplained, 0 missing — NOT yet wired into F5** | `structural` | **100.0%** | conf 1.0; **0 under 0.7** |
@@ -324,7 +406,7 @@ consumer of one file's graph sees on a corpus that is one upstream project.
 
 ### The heuristic ratio is 0.0% for every type
 
-Every one of the 164,083 rows is at or above 0.9 and `evidenceClass` is set on every one of them.
+Every one of the 167,775 rows is at or above 0.9 and `evidenceClass` is set on every one of them.
 Honesty contract §4 requires the heuristic/deterministic ratio to be a queryable number, and for this
 lane the answer is that there are none to count. That is a property of the design — every edge is a
 syntax fact — and it is worth reading against the resolution column, because "no heuristics" and
@@ -352,7 +434,9 @@ that was never indexed, and those are opposite findings.
 | `calls` | 86,876 | 19,258 | 434 | 336 | 1,184 | 3,819 | 54,004 | 1,140 | 6,701 | 0 |
 | `uses` | 26,359 | 5,384 | 285 | 1,514 | 0 | 0 | 13,683 | 1,803 | 3,683 | 7 |
 | `contains` | 10,467 | 7,771 | 0 | 2,687 | 0 | 0 | 0 | 0 | 7 | 2 |
-| `references` | 35,727 | 3,494 | 3,689 | 302 | 0 | 969 | 18,622 | 2,369 | 6,282 | 0 |
+| `references` | 36,147 | 3,504 | 3,689 | 302 | 0 | 1,044 | 18,776 | 2,369 | 6,463 | 0 |
+| `imports` | 1,502 | 17 | 0 | 3 | 0 | 170 | 751 | 0 | 561 | 0 |
+| `exports` | 1,770 | 739 | 0 | 159 | 0 | 0 | 637 | 9 | 226 | 0 |
 | `extends` | 1,821 | 441 | 71 | 11 | 0 | 49 | 930 | 114 | 205 | 0 |
 | `overrides` | 3 | 2 | 0 | 1 | 0 | 0 | 0 | 0 | 0 | 0 |
 | `instantiates` | 2,830 | 1,224 | 1,549 | 57 | 0 | 0 | 0 | 0 | 0 | 0 |
@@ -462,9 +546,39 @@ absent from both, which is precisely how the `overrides` omission survived a dif
 green throughout. Nothing in the differential can see a missing relationship type. Only measuring the
 language can, and that is what the census's instrument B is.
 
-## DERIVATION findings: 0 in the lane, 1 open in the F5 harness
+## DERIVATION findings: 2 open in the lane, 1 more open in the F5 harness
 
-`overrides` was the lane's one DERIVATION finding — emitted, stored, compared against nothing.
+Three types this lane emits are compared against **no independent oracle**, so they are stored and
+audited against nothing. Counting them honestly matters more here than usual: for two of the three the
+absence of an oracle is the direct reason a wrong verdict survived, because `script/m14/differential.ts`'s
+F5 label allowlist admits `imports` and `exports` by default for every language — so the harness
+compared **zero** julia `imports` rows against zero truth rows and printed *"COMPARED WITH NO TRUTH —
+the published coverage for those labels is not coverage."* A type that is emitted and never compared
+is exactly what a RULED verdict hides.
+
+| type | edges | independent oracle | what stands behind it instead |
+|---|---|---|---|
+| `overrides` | 3 | **yes** — `script/m14/oracles/julia-overrides.ts`, 3/3 agreement | paid down below; not yet wired into F5 |
+| `imports` | 1,502 | **no** | fixture `imports-and-exports` + the construct-vs-edge reconciliation (504/504, 0 silent) |
+| `exports` | 1,770 | **no** | fixture `imports-and-exports`; 151 of 152 files, the shortfall explained by node type |
+
+Neither of the two is close to paid down the way `overrides` was, and the limit should be stated
+rather than papered over: an oracle for either would have to derive "this file imports that module"
+and "this module exports that binding" from the tree **independently** of `importTargets` and
+`exportableName`. Those are the two functions under test, so reusing them would make the oracle agree
+with the analyzer by construction — the "two implementations that both say nothing agree perfectly"
+failure the gate header records as BD8b. A real oracle means a second derivation of julia's module
+grammar, which is a shared-file effort (`script/m14/oracles/` plus the `differential.ts` wiring) and is
+therefore §8.
+
+**What I did instead of an oracle, and its exact limit.** The construct-vs-edge reconciliation in
+`validation/m14/fixtures/julia/census.ts` compares files containing the construct against files whose
+edge fired. It is tree-side and analyzer-independent, and it is what caught `selected_import`. What it
+cannot do is check that an emitted edge is the *right* edge — it would not notice a module name off by
+one segment, or an `exports` row pointing at an imported name instead of an exported one. Those remain
+unaudited.
+
+`overrides` was the lane's first DERIVATION finding — emitted, stored, compared against nothing.
 
 **Paid down.** `script/m14/oracles/julia-overrides.ts` is an independent derivation from Julia's
 method-table rule, sharing no rule set, key set, guard list or resolver with the analyzer, and
@@ -741,20 +855,20 @@ comments, char literals, triple-quoted strings — and all six are clean.
 | | |
 |---|---|
 | admitted files | **971** = `julia` 941 + `json_jl` 25 + `nvim-treesitter` 5; 1,006 further candidates excluded over 512 KB |
-| symbols / relationships | **28,277 / 164,083** in the ten ontology types |
+| symbols / relationships | **28,277 / 167,775** in the ten ontology types |
 | files yielding ZERO symbols | **135 of 971 (13.9%)** — listed by name in the census output |
-| imports / exports nodes on the tree | 1,675 / 308 (`ImportInfo[]` / `ExportInfo[]`, not relationships) |
+| construct-vs-edge reconciliation | `imports` **504 files with the construct / 504 with an edge / 0 silent**; `exports` 152 / 151 / 1 silent (`julia/test/precompile.jl:15`, interpolated names) |
 | crashes | 0 · structural fallback: 0 files · `parseFile` threw: 0 · **grammar-unreadable: 0** |
 | empty or unknown `SymbolKind` | **0** · empty symbol names: **0** |
 | endpoints equal to the literal `unknown` | 11, all in `julia/JuliaLowering/src/validation.jl` — see limitations |
 | determinism | SHA-256 identical across a reused and a fresh analyzer instance |
-| fixtures / mutants | 4 fixtures (38 symbol + 33 relationship assertions, 20 + 8 forbidden) / **21 mutants, 21 killed, 0 survivors** |
+| fixtures / mutants | 5 fixtures / **25 mutants, 25 killed, 0 survivors** |
 | largest single file | 1,818 symbols / 3,890 relationships |
 
 By kind: function 16,833 · property 4,492 · constant 2,684 · class 2,324 · module 755 · macro 465 ·
 variable 441 · interface 283.
-By relation: **calls 86,876** · references 35,727 · uses 26,359 · contains 10,467 · instantiates 2,830 ·
-extends 1,821 · overrides 3.
+By relation: **calls 86,876** · references 36,147 · uses 26,359 · contains 10,467 · imports 1,502 ·
+exports 1,770 · instantiates 2,830 · extends 1,821 · overrides 3.
 
 **Two traps in that table, both of which produced a number that read as a measurement.**
 
