@@ -498,6 +498,9 @@ name, deduped by the same (type, source, target) key `processQuery` uses. **`cal
 already emitted, so `instantiates` is not query-only either.
 
 **DEFECT 6 — 1 of 11,786 `contains` edges names a symbol that does not exist.**
+*(11,786 is the pass-3 edge count; at this HEAD `contains` is 11,977 and the same 1 edge is still
+there — re-confirmed by `pass5-adversarial-probe.json` under
+`A10-contains-target-has-no-symbol-in-this-file`.)*
 `boundary/internal/db/schema/migrations/oss/postgres/71/11_session_recording.up.sql` publishes
 `contains recording_channel_ssh_session_channel -> program`. `program` is a legal SQL column
 name, and `keepSymbol`'s `UNIVERSAL` denylist in `src/ast/pool-worker.ts` holds `program` —
@@ -509,7 +512,8 @@ edge the drop corrupts. `pool-worker.ts` is shared (§8), so it is **filed, not 
 ### A VACUOUS probe of my own, recorded because the CSS lane found one too
 
 The range-containment probe (`A1`) was specified as "is the member's span inside the owner's
-span?" and reports **11,252 of 11,786 violations (95.5 %)** — which reads as a catastrophic
+span?" and reports **11,252 of 11,786 violations (95.5 %)** at pass 2 — **11,392 of 11,977
+(95.1 %) at this HEAD**, the same shape at a larger corpus — which reads as a catastrophic
 defect and is not one. SQL's symbol ranges are NAME-ANCHORED: a `CREATE TABLE`'s symbol range
 is the identifier's span, so `server_tag` is recorded at lines 121-121 while its columns are at
 122-127. Worked example:
@@ -657,8 +661,9 @@ A regression I introduced and caught with the fixture: adding `memberKind` to `c
 the explicit call sites made every ordinary containment edge store **TWICE**. Pinned by an
 `equals: 1` row.
 
-Cross-file, `ownerName` alone is not enough — 4,980 unique / 6,511 ambiguous, median 2 matches — because
-a migrations corpus declares `users(id)` in many files. **The file is the disambiguator a cross-file
+Cross-file, `ownerName` alone is not enough — 4,980 unique / 6,511 ambiguous, median 2 matches at
+pass 3, and **5,463 unique / 6,513 ambiguous, median 2 at this HEAD** — because a migrations corpus
+declares `users(id)` in many files. **The file is the disambiguator a cross-file
 consumer needs, and `bb_impact`'s target-matching does not currently use it.** §8.
 
 ### DEFECT 3 — `processDo` was UNREACHABLE DEAD CODE
@@ -1209,8 +1214,9 @@ follows is the residue that is a GAP rather than a fixed defect, plus the two §
   `keepSymbol`'s `UNIVERSAL` denylist in `src/ast/pool-worker.ts` holds `program`, the grammar's
   ROOT node type, beside `root`, `module_declaration` and `source_file`. `program` is also a
   legal SQL column name, so a real symbol is deleted and the `contains` edge naming it survives:
-  **1 edge** in `boundary/internal/db/schema/migrations/oss/postgres/71/11_session_recording.up.sql`,
-  out of 18,325 symbols emitted and 3 dropped (0.016 %). **§8**: `UNIVERSAL` needs a
+  **1 edge** in `boundary/internal/db/schema/migrations/oss/postgres/71/11_session_recording.up.sql`.
+  Re-measured at pass 5: **18,485 symbols emitted, 3 dropped (0.016 %)**, and `18,485 − 3 = 18,482`
+  is exactly what production `parseFile` publishes. **§8**: `UNIVERSAL` needs a
   language-scoped exemption list for names that are ordinary identifiers in the lane's language
   (SQL: `program`, `root`, `module_declaration` is not a SQL identifier; `program` and `root`
   are), the same exemption shape `keepSymbol` already applies for `json`/`yaml`/`xml`/`make`/
