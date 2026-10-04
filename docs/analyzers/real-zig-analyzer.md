@@ -4113,7 +4113,7 @@ re-measure without the revert, and this lane will not run the destructive form a
 | ontology arbiter, full root, **n=2** | §A and §B2, 3,834 files each | **both runs: 7/10, RULED-SOUND 3, FALSIFIED 0, RULED-WITHOUT-JUSTIFICATION 0**; 232 node types corpus-wide; both process exits 1 from the §D leak, both AFTER the table |
 | ruled probe | `npx tsx validation/m14/fixtures/zig/zig-ruled-probe.ts` | 10 / 10 controls; `overrides` 0 hits, raw 19, split 19/21/0/1; instrument A 239 declared / 232 produced, 0 of 17 supertype names, keyword calibration 11/11 declared |
 | DERIVATION (non-destructive) | §E, `BB_M60_ROOT` scratch | **CHECK 1-4 clean, DERIVATION 0**, shared evidence byte-identical |
-| regex census | `npx tsx script/m12/verify-regex-census.ts` | gate `FAILED` on **43 rows in 8 other analyzers**, **0 zig rows** |
+| regex census | `npx tsx script/m12/verify-regex-census.ts` | gate `FAILED` on **43 rows across 11 other analyzers** (18 `MISSING` + 25 `STALE`; clean, css, fsharp, javascript, python, scss, sql, svelte, typescript, vue, xml), **0 zig rows** |
 | honesty gate | `npx tsx script/m14/verify-honesty.ts` | 22 failures, **0 naming this document or any file under `validation/m14/fixtures/zig/`** |
 | F8 completeness | `npx tsx script/m14/completeness-inventory.ts --lang zig` | 7 of 8 sections pass; **section-b still FAILS** on `requiredKinds` missing `exports` and `instantiates` (§8, unchanged) |
 
