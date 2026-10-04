@@ -810,12 +810,12 @@ mislead a reader of the graph.
 
 ## Shared-machinery needs (reported, not edited)
 
-Ten changes outside this lane's ownership, each stated so it can be applied
+Twelve changes outside this lane's ownership, each stated so it can be applied
 without re-deriving it. The files are supervisor-owned per
 `docs/analyzers/ONTOLOGY-WORKSTREAM.md` §Ownership. Items 1–5 predate this pass;
 6–8 come from measuring the incoming direction, 9–10 from removing this lane's
-last regexes, and 11 from re-running the M60 gate to reproduce the DERIVATION
-count.
+last regexes, 11 from re-running the M60 gate to reproduce the DERIVATION count,
+and 12 from running the doc-truth-emissions gate over this lane's table.
 
 1. **`script/m14/ontology-coverage-gate.ts` — add a `dart` entry to
    `RULED_BY_LANG` (line ~183: `const RULED_BY_LANG: Record<string, Ruled[]> = {
@@ -1035,9 +1035,67 @@ count.
     unscoped runs. Why here and not in this lane: the file is supervisor-owned, and the
     fix must be applied once for every lane — six lanes running this scoped right now
     are each silently truncating the same file. **This lane reverted its own write**
-    (`git checkout -- validation/m60/results/rel-type-coverage.json`) and quotes the
-    number from the console, not from the artifact. `validation/m60/ledger.json` is not
-    touched — only `--update-baseline` writes it, which this lane never passed.
+   (`git checkout -- validation/m60/results/rel-type-coverage.json`) and quotes the
+   number from the console, not from the artifact. `validation/m60/ledger.json` is not
+   touched — only `--update-baseline` writes it, which this lane never passed.
+12. **`script/m14/verify-doc-truth-emissions.ts` — `parseClaimTable` drops the FIRST
+    body row of every claim table, so one `RelationshipType` per language is never
+    compared at all.** This is the gate commissioned to catch a doc claiming an
+    emission the analyzer does not make, and it silently discards one row per table
+    while doing it. `script/m14/verify-doc-truth-emissions.ts:458-481`, loop from
+    `chosen.at`:
+
+    ```ts
+    if (isRuleRow(cs)) continue          // line 465 — eats the `---` row
+    if (!started) { started = true; continue }   // 466-469 — then eats the FIRST BODY ROW
+    ```
+
+    The `---` rule row is consumed by the `isRuleRow` branch and `continue`s before
+    `started` is ever set, so the next row — the table's first real body row — is
+    consumed by the `!started` branch and never pushed. Minimal repro against the
+    exported function:
+
+    ```
+    two body rows:   wrote 2, parsed 1 -> ["uses"]
+    three body rows: wrote 3, parsed 2 -> ["uses","contains"]
+    ```
+
+    **Measured effect on this lane:** the gate reports `UNDOCUMENTED [dart] calls
+    (relationship)`, and that finding is FALSE. This lane's table is at line 52 and
+    its first body row is `calls`; `parseClaimTable` returns 9 rows where the table
+    has 10, and the 9 it returns are `uses, contains, imports, references, exports,
+    extends, implements, overrides, instantiates`. `classifyClaim("✅")` returns
+    `YES`, so the row would compare cleanly — the doc does claim `calls`.
+
+    **What it must do:** set `started` from the rule row instead of from the first
+    body row, i.e. replace lines 465-469 with
+
+    ```ts
+    if (isRuleRow(cs)) { started = true; continue }
+    ```
+
+    and delete the `!started` branch. This is safe because the header detector at
+    line 451 already requires a rule row whose width equals the header's, so a
+    matched table always has one. **Why it is not this lane's to fix:** the change
+    moves findings in every lane's row, and five languages' documents are owned by
+    other lanes.
+
+    **Why it is still worth reporting rather than shrugging at:** the dropped row is
+    dropped from BOTH directions. `claimed` is what the FALSE_NEGATIVE and
+    FALSE_POSITIVE checks iterate, so a first row that reads "not emitted" is never
+    graded either — the gate cannot report the falsehood it was built to find. The 8
+    FALSE_NEGATIVE findings it does report are real and unaffected; this one removes
+    a row, not a verdict.
+
+    **The selftest passes 12/12 and cannot see it**, which is the part worth
+    fixing alongside the parser: its cases assert the SET of disagreement kinds, not
+    the row count, and several expectations have a spurious `UNDOCUMENTED` baked in —
+    `expected [NON_ENGINE_KIND] … got [NON_ENGINE_KIND, UNDOCUMENTED]`,
+    `expected [MIXED_ROW] … got [MIXED_ROW, UNDOCUMENTED]`,
+    `expected [FALSE_POSITIVE] … got [FALSE_POSITIVE, UNDOCUMENTED]`. The extra
+    entries are this bug's output, accepted as expected rather than traced to it. A
+    case asserting `parseClaimTable` returns the row count it was given would fail
+    today.
 
 ## Supported constructs
 
