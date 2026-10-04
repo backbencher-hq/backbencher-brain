@@ -1,0 +1,42 @@
+{
+  "compared": 200,
+  "crashed": 0,
+  "shapes": [
+    {
+      "shape": "bare_type_result",
+      "sites": 262,
+      "filesWithSite": 46,
+      "expectedEdges": 267,
+      "publishedEdges": 257,
+      "examples": []
+    },
+    {
+      "shape": "parenthesised_result",
+      "sites": 156,
+      "filesWithSite": 33,
+      "expectedEdges": 167,
+      "publishedEdges": 162,
+      "examples": []
+    }
+  ],
+  "absentTotal": 15,
+  "absentExamples": [
+    "src/database/sql/sql.go:3476  -> Rows (result node type function_type)",
+    "src/crypto/tls/handshake_server_test.go:1634  -> Config (result node type parameter_list)",
+    "src/crypto/tls/handshake_server_test.go:1642  -> Config (result node type parameter_list)",
+    "src/crypto/tls/handshake_server_test.go:1650  -> Config (result node type parameter_list)",
+    "src/crypto/tls/handshake_server_test.go:1667  -> Config (result node type parameter_list)",
+    "src/crypto/tls/handshake_server_test.go:1690  -> Config (result node type parameter_list)",
+    "src/hash/marshal_test.go:40  -> Hash (result node type qualified_type)",
+    "src/hash/marshal_test.go:41  -> Hash (result node type qualified_type)",
+    "src/hash/marshal_test.go:42  -> Hash (result node type qualified_type)",
+    "src/hash/marshal_test.go:43  -> Hash (result node type qualified_type)",
+    "src/hash/marshal_test.go:44  -> Hash (result node type qualified_type)",
+    "src/hash/marshal_test.go:45  -> Hash (result node type qualified_type)",
+    "src/hash/marshal_test.go:46  -> Hash (result node type qualified_type)",
+    "src/hash/marshal_test.go:47  -> Hash (result node type qualified_type)",
+    "src/hash/marshal_test.go:48  -> Hash (result node type qualified_type)"
+  ],
+  "sampleSize": 200,
+  "corpusRoot": "$HOME/fixtures/repositories/go-stdlib"
+}
