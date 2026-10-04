@@ -40,17 +40,29 @@ by the production router `detectLanguageFromPath`), 48 repositories, out of
 4,012 admitted files from 441,259 tracked files in 141 repositories. The
 **gate** sample is every admitted file — 4,012 of them.
 
-**Every number below was re-measured on 2026-10-03 (round 2) and again in round 3,
-and round 3 moved five of them because round 3 removed five fabricated edges.**
-The pass-1 revision of this table was written against 3,174 admitted files from
-374,996 tracked files in 111 repositories. The corpus is now 4,012 admitted /
-441,259 tracked / 141 repositories (7.3 GB). The census column is a 400-file
-sample in **hash order** (ascending sha256 of `repo/relpath`, admitted by the
-production router `detectLanguageFromPath`), 48 repositories. **A hash-ordered
-sample is reproducible against a PINNED corpus and not against a growing one**, and
-the census figures here reproduce exactly against the current corpus: the round-3
-re-run read 400 files / 48 repositories / 4,012 admitted / 441,259 tracked, the same
-denominators round 2 recorded.
+**Every number below was re-measured on 2026-10-03 (round 2), again in round 3,
+again in round 4, and again in round 5 — and round 5 moved four of them for a
+reason that is not a change to this analyzer.** The pass-1 revision of this table
+was written against 3,174 admitted files from 374,996 tracked files in 111
+repositories. Round 5 reads **4,130 admitted files from 458,446 tracked files in
+54 contributing repositories** (7.4 GB). The census column is a 400-file sample in
+**hash order** (ascending sha256 of `repo/relpath`, admitted by the production
+router `detectLanguageFromPath`), 48 repositories. **A hash-ordered sample is
+reproducible against a PINNED corpus and not against a growing one**, and that is
+exactly what happened: round 5's sample is a *different* 400 files out of a
+corpus 118 admitted files larger, so a difference between the round-3 and round-5
+census columns is not evidence about this analyzer at all.
+
+**What IS evidence about this analyzer is the pair of runs that share a sample.**
+Round 4 measured before-and-after on one unchanged 400-file sample and recorded
+`uses` **7,802 before and after — UNCHANGED**, which is the signature that
+distinguishes "the edges were already there and named a real binding" from "the
+analyzer invented edges". Round 5's census reads `uses` **7,802**, reproducing
+round 4 exactly on a *different* sample of the same corpus, and round 4's
+`binding sites 234 / 96 distinct files / undeclared 1,563 / explained by a binding
+site 0` all reproduce too (`probe-bash-binding-sites.mts`, re-run in round 5). So
+the round-4 conclusion is reproducible; the round-3 column is simply the older
+sample.
 
 Round 3's own delta, edge for edge, from `census-bash-ontology.ts` before and
 after the change in [Round 3](#round-3-what-the-census-was-already-printing):
@@ -62,6 +74,27 @@ after the change in [Round 3](#round-3-what-the-census-was-already-printing):
 | `references` | 45 | **44** | **−1** | the same guard, the twin edge |
 | `uses`, `contains`, `exports`, `overrides` | 7,947 / 3,697 / 210 / 28 | 7,947 / 3,697 / 210 / 28 | 0 | — |
 | **total relationships** | 17,122 | **17,117** | **−5** | matches the A/B's 5 exactly |
+
+**Round 5's column, and the honest way to read the difference between the two.**
+Round 5's sample is not round 3's sample — the corpus grew from 4,012 to 4,130
+admitted files, and a hash-ordered sample of a larger corpus is a different set of
+files. So `calls` 5,147 → 5,099, `uses` 7,947 → 7,802 and `contains` 3,697 →
+3,782 are **three different samples agreeing within 1%, and none of them is a
+defect count**. The per-type total moved by −108 while the sample grew by 118
+admitted files; that is arithmetic, not a finding. The `uses` column is the one
+that cannot be explained away, because it reproduced exactly (7,802) across two
+different samples of the same corpus — and it is also the number round 4 held
+fixed across its own before/after on one fixed sample.
+
+| type | round 3 sample | round 5 sample | attribution |
+| --- | --- | --- | --- |
+| `calls` | 5,147 | **5,099** | different sample; −0.9% |
+| `uses` | 7,947 | **7,802** | different sample, and **identical to round 4's before/after pair** |
+| `contains` | 3,697 | **3,782** | different sample; +2.3% |
+| `imports` / `references` | 44 / 44 | **44 / 44** | unchanged |
+| `exports` / `overrides` | 210 / 28 | **210 / 28** | unchanged |
+| **total** | 17,117 | **17,009** | different sample |
+| files / repos / symbols / parse failures | 400 / 48 / 4,186 / 0 | **400 / 48 / 4,186 / 0** | identical |
 
 The `gate` column is every admitted file. **It is not a reproducible count, and
 round 3 measured how far from reproducible it is.** Two runs of
@@ -96,11 +129,11 @@ round 3 reproduced round 2's denominators exactly (400 files / 48 repositories /
 4,012 admitted / 441,259 tracked). The gate column is quoted as a range for that
 reason and not as a single figure.
 
-| type | emitted? | census: 400 files | gate: 4,012 files (run A / run B) | evidence |
+| type | emitted? | census: 400 files (round 5) | gate: 4,012 files (run A / run B) | evidence |
 | --- | --- | --- | --- | --- |
-| `calls` | **EMITTED** | 5,147 | 53,443 / 53,481 | `census-bash-ontology.ts`, gate row |
-| `uses` | **EMITTED** | 7,947 | 78,404 / 78,425 | same |
-| `contains` | **EMITTED** | 3,697 | 35,743 / 35,769 | same |
+| `calls` | **EMITTED** | 5,099 | 53,443 / 53,481 | `census-bash-ontology.ts`, gate row |
+| `uses` | **EMITTED** | 7,802 | 78,404 / 78,425 | same |
+| `contains` | **EMITTED** | 3,782 | 35,743 / 35,769 | same |
 | `imports` | **EMITTED** | 44 | 637 / 636 | same |
 | `references` | **EMITTED** | 44 | 637 / 636 | same |
 | `exports` | **EMITTED** | 210 | 1,912 / 1,913 | same |
@@ -108,6 +141,24 @@ reason and not as a single figure.
 | `extends` | **RULED — never emitted** | 0 | 0 | instrument A + B below |
 | `implements` | **RULED — never emitted** | 0 | 0 | instrument A + B below |
 | `instantiates` | **RULED — never emitted** | 0 | 0 | instrument A + B below |
+
+**The gate column has NOT been re-run since round 3 and is therefore the weaker
+half of this table.** It is quoted from the round-3 A/B pair because a full gate
+sweep takes minutes per run and its own output is not a reproducible count (§ the
+gate table below measures exactly how far from reproducible). Round 5 replaced
+the census column — the instrument that goes through `parseFile` with 0 parse
+failures — and left the gate column alone rather than quote a stale run beside a
+fresh one. The whole-corpus numbers round 5 *did* re-measure are in the evidence
+census (`probe-bash-missing-evidence.mts`, every admitted file): `calls` 55,220,
+`uses` 80,851, `contains` 38,273, `imports` 679, `references` 679, `exports`
+1,929, `overrides` 138 — total **137,770 edges, 0 with no `evidenceClass`**.
+Those are the numbers to quote for "how big is this lane", because they have a
+denominator that does not wobble.
+
+**Coverage is reported as APPLICABLE, not as a flat 7/10.** Three of the ten types
+are RULED with a corpus measurement, so the denominator that remains is 7 and all
+7 fire: **7/7 applicable, 3 measured-absent, 0 unaccounted.** Reporting 7/10 would
+describe finished work as broken work.
 
 The second column is worded so `script/m14/verify-doc-truth-emissions.ts` can
 grade this table instead of skipping it. That gate reads the first
