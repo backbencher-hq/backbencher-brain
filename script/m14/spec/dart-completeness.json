@@ -560,14 +560,21 @@
     "_description": "Which relationship labels this lane actually COMPARES. script/m14/verify-label-coverage.ts reads the differential allowlist, runs this analyzer over a corpus sample, and reports every label the analyzer EMITS that the allowlist DROPS: such a label is compared by nothing while the lane still prints a percentage. `contains` left this list when the M60 oracle landed.",
     "declared_gaps": [
       {
-        "label": "imports",
-        "reason": "Emitted by the analyzer (65 edges per 15 files on proxicall) and dropped by the allowlist. There is no imports oracle for this lane, so admitting the label today would turn invisible edges into UNEXPLAINED ones rather than into a measurement — the #910 shape in reverse.",
-        "closes_when": "an imports oracle exists; then admit the label and reconcile"
+        "label": "overrides",
+        "reason": "The allowlist omits `overrides` for dart (with csharp, swift, cpp) and carries no note saying why; the analyzer emits it and the oracle (`script/m14/oracles/dart-overrides.ts`, wired as `deriveDartOverridesTruth` since the M60 label-coverage sweep) derives it, but nothing in this file says the label is compared by nothing. Measured: 90,352 overrides edges on a 2,735-file stride sample across 5 repositories (production `parseFile`, `BB_DART_CONC=1`, `validation/m14/fixtures/dart/census.ts`), and `script/m60/rel-type-coverage-gate.ts` reports it as a DERIVATION finding for this lane.",
+        "closes_when": "the differential allowlist admits `overrides` for dart, which the oracle already supports. One term in the filter expression at script/m14/differential.ts:23153 (`lang !== \"dart\"` in the overrides arm)."
       },
       {
-        "label": "overrides",
-        "reason": "One edge per sample. The allowlist omits `overrides` for dart (with csharp, swift, cpp) and carries no note saying why; the analyzer still emits the label. Open question, separate from the contains work.",
-        "closes_when": "the csharp/dart/swift/cpp overrides exclusion is decided"
+        "label": "references",
+        "reason": "Emitted now (M14 ontology wave): a declaration that MENTIONS a type in a type position publishes `references` to that type when the name resolves to a type the run can see. Measured on the same 2,735-file sample: 5,265 edges, 100.0% of targets resolving to a symbol declared in the same file by construction, 97.9% of sources, 0 edges under confidence 0.7 (all at exactly 0.95). Independently derived over 799 corpus files at 1,203/1,203 rows agreed, 0 missing, 0 unexplained. The allowlist drops the label, so those edges are compared by nothing until the harness admits it. The rule is independently derived by `script/m14/oracles/dart-references.ts` and pinned shape-by-shape by `script/m14/verify-dart-references.ts`, so what is missing is the WIRING, not the truth.",
+        "closes_when": "`deriveDartReferencesTruth` is pushed in differential.ts's dart branch next to `deriveDartEdges`, and `references` is added to the dart arm of the compared-label allowlist (script/m14/differential.ts:23186 area). Both halves are required: truth without the allowlist entry reads as a fabricated MISSING, and the allowlist entry without the truth reads every row as unexplained."
+      }
+    ],
+    "_closed_gaps": [
+      {
+        "label": "imports",
+        "was": "Emitted by the analyzer (65 edges per 15 files on proxicall) and dropped by the allowlist. There is no imports oracle for this lane, so admitting the label today would turn invisible edges into UNEXPLAINED ones rather than into a measurement — the #910 shape in reverse.",
+        "closed": "The oracle exists and the label is admitted: `script/m14/oracles/dart-imports.ts` is pushed as `deriveDartImportsTruth` and `imports` is in the dart arm of the allowlist (script/m14/differential.ts:23186). Recorded here rather than deleted, because a gap that closes silently is indistinguishable from one that was never there."
       }
     ]
   }

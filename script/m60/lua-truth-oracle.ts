@@ -545,11 +545,103 @@ function walk(node: any, scope: string, w: Walk, rel: string, fnDepth = 0): void
     }
   }
 
+  // ORA-8: a for-clause BINDS its names, and `visibleInChain` never heard of it, so
+  // the oracle derived a `contains` edge for every re-assignment of a loop variable.
+  // `forBoundVars` is collected per FILE for the LUA-26 exemption, which is why the
+  // gap was invisible there and visible only here.
+  //
+  //   for _, v in ipairs(t) do
+  //     v = f(v)          <- a RE-assignment; no declaration
+  //   end
+  //
+  // Measured on a 200-file kong draw: 18 `contains` edges asserted a declaration that
+  // did not happen — `contains string_to_number -> v`
+  // (kong/clustering/compat/version.lua:36, `for v in isplitn(...)` with
+  // `v = v:match("^(%d+)")` in the body), plus 14 in luarocks, 23 in snacks.nvim and
+  // 1 in plenary.nvim. The analyzer was RIGHT on all of them and the oracle was
+  // inventing truth; the first version of the analyzer-side fix then agreed with this
+  // wrong oracle and the disagreement inverted into 18 MISSING, which is how the
+  // scope bug on THAT side was found.
+  //
+  // The names go into the ENCLOSING scope's `localsIn` for the duration of the loop
+  // and are removed after it, because Lua scopes a loop variable to the loop body:
+  // an assignment to the same name AFTER the loop is a different binding, and the
+  // oracle must derive it. Registering them permanently is the mirror image of the
+  // analyzer bug and produces the same class of false edge.
+  if (node.type === "for_statement") {
+    const clause = node.namedChild(0)
+    const bound: string[] = []
+    if (clause?.type === "for_numeric_clause") {
+      const id = clause.childForFieldName("name")
+      if (id?.type === "identifier") bound.push(id.text)
+    } else if (clause?.type === "for_generic_clause") {
+      for (let i = 0; i < clause.namedChildCount; i++) {
+        const vl = clause.namedChild(i)
+        if (vl?.type !== "variable_list") continue
+        for (let j = 0; j < vl.namedChildCount; j++) {
+          const id = vl.namedChild(j)
+          if (id?.type === "identifier") bound.push(id.text)
+        }
+      }
+    }
+    if (bound.length) {
+      let set = w.localsIn.get(scope)
+      if (!set) w.localsIn.set(scope, (set = new Set()))
+      const already = bound.filter((b) => set!.has(b))
+      for (const b of bound) set!.add(b)
+      for (let i = 0; i < node.namedChildCount; i++) {
+        const c = node.namedChild(i)
+        if (c) walk(c, scope, w, rel, fnDepth)
+      }
+      for (const b of bound) if (!already.includes(b)) set!.delete(b)
+      return
+    }
+  }
+
   if (node.type === "function_declaration") {
     const fn = functionNameOf(node)
     if (fn) {
       // A method belongs to its RECEIVER, not to the enclosing scope.
-      w.edges.push({ label: "contains", from: fn.owner ?? (edgeSource ?? scope), target: fn.name, line: fn.nameNode.startPosition.row + 1, rule: fn.owner ? "method-decl" : "fn-decl", rel })
+      //
+      // ORA-5: SELF-CONTAINMENT, and this branch was the one place the guard was
+      // missing. The `assign-decl` branch 30 lines above already had it
+      // (`if (id.text !== src2) push else selfContainmentSkipped++`); the
+      // declaration branch pushed unconditionally, and a scope LABEL collision then
+      // manufactured a `contains` edge that asserts a false fact.
+      //
+      // The collision is real and it is not rare. A function's scope label is its own
+      // name, so `function M.reveal(opts)` opens a scope called `reveal`, and a
+      // `local function reveal()` inside its body is contained by that scope:
+      //
+      //   function M.reveal(opts)      <- scope label `reveal`, member of M
+      //     local function reveal()    <- a LOCAL, contained by the body
+      //
+      // The oracle derived `contains reveal -> reveal`, which reads as "the method
+      // `reveal` has a member named `reveal`". There is no such member: the method's
+      // member name is `reveal` on OWNER `M`, and the local is a different binding in
+      // a different place. The analyzer skips it, and it is right.
+      //
+      // Measured: 3 false MISSING edges on a 200-file snacks.nvim draw —
+      // `contains reveal -> reveal` (lua/snacks/explorer/init.lua:88),
+      // `contains walk -> walk` (lua/snacks/profiler/tracer.lua:36, inside
+      // `function M.walk`), `contains update -> update` (lua/snacks/scope.lua:652).
+      // Every one of them accused the analyzer of dropping an edge it is right to
+      // drop, in the one label this oracle DOES audit at recall 1.0 — which is the
+      // worst place for a false accusation, because a reader has no reason to doubt
+      // it.
+      //
+      // The guard is scoped to the non-owner case on purpose. `function sum.sum(a, b)`
+      // is a method named `sum` on owner `sum`, and that self-named pair is TRUE and
+      // must be published: a Lua table may carry a member with its own name. Only a
+      // declaration whose container is its ENCLOSING SCOPE and whose name collides
+      // with that scope's label is the artefact.
+      if (fn.owner) {
+        w.edges.push({ label: "contains", from: fn.owner, target: fn.name, line: fn.nameNode.startPosition.row + 1, rule: "method-decl", rel })
+      } else {
+        const src = edgeSource ?? scope
+        if (fn.name !== src) w.edges.push({ label: "contains", from: src, target: fn.name, line: fn.nameNode.startPosition.row + 1, rule: "fn-decl", rel })
+        else w.selfContainmentSkipped++
+      }
       if (!w.localsIn.has(fn.label)) w.localsIn.set(fn.label, new Set())
       for (let i = 0; i < node.namedChildCount; i++) {
         const c = node.namedChild(i)
@@ -883,8 +975,22 @@ async function main(): Promise<void> {
     if (r.errors?.length) parseErrors++
       for (const e of r.relationships ?? []) {
         const k = `${rel}|${e.type}\u001f${e.source}\u001f${e.target}`
-        if (!observed.has(k)) observed.set(k, { ...e, rel })
-        perLabelObs.set(e.type, (perLabelObs.get(e.type) ?? 0) + 1)
+        if (!observed.has(k)) {
+          observed.set(k, { ...e, rel })
+          // ORA-6: the increment belongs INSIDE this guard. It sat outside it, so
+          // `perLabelObs` counted ROWS SEEN rather than DISTINCT EDGES, and for
+          // `exports` a row is seen twice — once in `relationships` and once in the
+          // `exports` array on the result (LUA-14 made the pipeline carry both). The
+          // set-based comparison was unaffected, which is exactly why it went
+          // unnoticed: `byLabel.exports.observed` read 1,184 against a truth of 590,
+          // a clean 2.0x, on kong AND snacks.nvim AND luarocks AND plenary.nvim.
+          // Four repos agreeing on an impossible ratio is what made it read as a
+          // property of the language instead of a property of this counter.
+          //
+          // It reached the document: docs/analyzers/real-lua-analyzer.md §6 published
+          // `exports | 590 | 1,184` as observed. The true observed count is 590.
+          perLabelObs.set(e.type, (perLabelObs.get(e.type) ?? 0) + 1)
+        }
       }
       // M60: the observed side never read `exports`, so this leg had never
       // observed the label at all — and said so as 1,582 MISSING exports on the
@@ -934,8 +1040,12 @@ async function main(): Promise<void> {
           // fact to record, not a number to invent.
           const line = ex.range?.startLine ?? ex.line_number ?? ex.line ?? null
           observed.set(k, { type: "exports", source: "global", target: ex.name, rel, line })
+          // ORA-6: inside the guard, for the reason given at the relationship loop
+          // above. Left outside it, this counter read 2x for `exports` on every repo
+          // measured, because the pipeline carries an export both as a relationship
+          // and as a row on the result.
+          perLabelObs.set("exports", (perLabelObs.get("exports") ?? 0) + 1)
         }
-        perLabelObs.set("exports", (perLabelObs.get("exports") ?? 0) + 1)
       }
     for (const e of deriveLuaTruth(tree.rootNode, rel)) perLabelTruth.set(e.label, (perLabelTruth.get(e.label) ?? 0) + 1)
 
@@ -1225,12 +1335,23 @@ async function main(): Promise<void> {
     const t = [...truth.values()].filter((e) => e.label === L)
     const tCount = t.length
     const mCount = missing.filter((e) => e.label === L).length
-    const uCount = unexplained.filter((e) => e.label === L).length
+    const unexplainedForL = unexplained.filter((e) => e.label === L)
+    const uCount = unexplainedForL.length
     byLabel[L] = {
       truth: tCount,
       observed: perLabelObs.get(L) ?? 0,
       missing: mCount,
       unexplained: uCount,
+      // ORA-7: PER-LABEL unexplained examples. `unexplainedSample` is a flat list
+      // capped at 25, and on this corpus it is filled end to end by `uses` and
+      // `references` — the two labels with NO truth derivation at all. So a residual
+      // in a label that IS audited, which is the only kind worth acting on, arrived as
+      // a bare integer: `contains unexplained=2` with no way to learn which two edges
+      // or which files. A count nobody can act on is the same failure as no count, one
+      // step later. Capped at 5 per label so the dominated labels cannot crowd the
+      // audited ones out again.
+      unexplainedSample: unexplainedForL.slice(0, 5),
+      missingSample: missing.filter((e) => e.label === L).slice(0, 5),
       precision: tCount + uCount === 0 ? null : Number((tCount / (tCount + uCount)).toFixed(4)),
       recall: tCount === 0 ? null : Number(((tCount - mCount) / tCount).toFixed(4)),
     }

@@ -1,4 +1,4 @@
-// Pure-AST F# analyzer — M12 per-analyzer perfection contract.
+// Pure-AST F# analyzer — the M12 per-analyzer contract.
 //
 // Emits exactly the M12 differential contract (mirroring the C# family):
 //   Symbols: namespace, module, class, interface, enum, enum_member,
@@ -24,6 +24,24 @@ const FSHARP_CONSOLE_BUILTINS = new Set([
   "Console.WriteLine", "Console.Write", "Console.Error.WriteLine", "Console.Error.Write",
 ])
 const OBJECT_LEAF_METHODS = new Set(["ToString", "GetHashCode", "Equals", "GetType", "ReferenceEquals"])
+
+/**
+ * Which side of an F# pipeline operator carries the CALLEE, for the operators that APPLY a
+ * function. FS-A6: `x |> f` applies `f`, `f <| x` applies `f`, and the composition
+ * operators (`>>` `>>>` `>=>` `<<<`) are absent because they build a function and call
+ * neither — measured, not taste: 13 bare `>>` in a 300-file corpus draw, every one of them
+ * excluded on that ground.
+ *
+ * Keys are the `infix_op` TOKEN texts the grammar emits, so this is a lookup on a token and
+ * not a pattern over source text.
+ */
+const PIPELINE_CALLEE_SIDE = new Map<string, "left" | "right">([
+  ["|>", "right"],
+  ["|>>", "right"],
+  [">>=", "right"],
+  ["<|", "left"],
+  ["<<", "left"],
+])
 
 /**
  * Every grammar node that WRAPS a written type in F#. The name is always inside one of
@@ -67,8 +85,59 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
      * the time a name is tested, the walk has already published it if it publishes it at all.
      */
     const publishedNames = new Set<string>()
+    /**
+     * FS-P3-1. PUBLISH THE QUALIFIED NAME THE `overrides` EDGE ALREADY USES.
+     *
+     * `overrides` is the only relationship this lane emits whose SOURCE it deliberately
+     * qualifies, because a bare member name is ambiguous and the analyzer knows it:
+     *
+     *     type Disposable() =
+     *         interface System.IDisposable with
+     *             override this.Dispose() = ()
+     *
+     * emits `overrides Disposable.Dispose -> IDisposable.Dispose`, and `Dispose` on its own
+     * would bind to whichever `Dispose` the consumer happened to find first.
+     *
+     * That qualified spelling was, until this rule, a spelling the lane never PUBLISHED.
+     * Measured on Grace/src/Grace.Actors/AccessControl.Actor.fs:
+     *
+     *     stored symbol : name="OnActivateAsync"  qualifiedName="OnActivateAsync"  ownerName="AccessControlActor"
+     *     emitted edge  : source="AccessControlActor.OnActivateAsync"
+     *
+     * The endpoint matches the stored `qualifiedName` at 0 of 63 `overrides` edges in a
+     * 400-file stride sample of the 11,809-file fsharp population. `pool-worker.ts:870`
+     * derives the stored value as `s.qualifiedName || s.metadata?.fqn || (s.scope ? … : name)`,
+     * and this analyzer set none of the three, so `qualified_name` collapsed to the bare name
+     * for every owned symbol in the language.
+     *
+     * Why that is a defect and not a cosmetic difference: `src/ast/parallel-indexer.ts`
+     * documents its own resolution strategies as "a bare `name`, a `qualified_name`
+     * (`Owner.member`), or — for a dotted target — everything after the first `.`", and
+     * `brain_relationship.source_external` is JOINed against `brain_symbol.qualified_name`.
+     * An edge whose endpoint the store publishes under a DIFFERENT key than the symbol's own
+     * is an edge the reverse walk cannot bind, so `bb_impact` on an F# member that overrides
+     * something cannot reach the things that override it, and `src/lsp/impact.ts` — which
+     * obtains reverse edges by scanning outgoing edges and matching targets — inherits the
+     * miss without any way to report it.
+     *
+     * `metadata.fqn` is the field that formula already reads, it is what the C# family sets
+     * for the same purpose (`real-csharp-analyzer.ts` `fqn: fullName`), and nothing else in
+     * this repository reads it for fsharp, so the change is additive. It is minted HERE, in
+     * the single funnel every one of the 15 mint sites passes through, so the edge spelling
+     * and the published spelling cannot drift apart again — which is the failure mode, not the
+     * individual field, that this closes.
+     *
+     * Minted only when there is an owner: with no owner the store's own fallback already
+     * yields `name`, so writing it would add a field that says nothing.
+     */
     const publish = (s: ASTEngine.UniversalSymbol): void => {
       if (s?.name) publishedNames.add(s.name)
+      const owner = String(s?.ownerName ?? "")
+      if (owner.length > 0 && s?.name) {
+        const metadata = (s.metadata ?? {}) as Record<string, any>
+        if (metadata.fqn === undefined) metadata.fqn = `${owner}.${s.name}`
+        s.metadata = metadata
+      }
       symbols.push(s)
     }
 
@@ -655,16 +724,67 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
               }
 
               // Qualified override: source = Owner.method, target = Base.method.
+              //
+              // FS-A2 (M60 pass 2): the `override` TOKEN is not a statement about a base
+              // class, and the token-only rule read it as one. F# has no separate keyword for
+              // an interface member — `override` is what implements one, exactly as in C#:
+              //
+              //     type Disposable() =
+              //         interface System.IDisposable with
+              //             override this.Dispose() = ()      // implements IDisposable
+              //
+              // — so `interface I with override this.M() = …` emits
+              //
+              //     overrides  Disposable.Dispose  ->  Dispose        (no `inherit` anywhere)
+              //     overrides  Disposable.Dispose  ->  Base.Dispose   (`inherit Base()` also present)
+              //
+              // and both are wrong. The first asserts that a member overrides ITSELF, which
+              // binds to nothing a consumer can follow and is the shape of a fabricated edge;
+              // the second attributes an interface implementation to a base-class member that
+              // need not exist. Measured over the whole corpus by
+              // validation/m14/fixtures/fsharp/ontology-probe.ts (probe A1/A2).
+              //
+              // The family's answer is settled and this adopts it: csharp
+              // (`resolveInterfaceImplementations`, C923) emits `overrides M -> I.m` with
+              // `metadata.relationshipType = "interface_member_implementation"`, and the same
+              // shape was measured in java, kotlin, typescript, dart and python. So the edge
+              // STAYS `overrides` — the member does satisfy a declaration above it — and the
+              // TARGET is read from the interface the tree writes, not from the base list.
+              //
+              // And with no interface and no base there is NO target to write, so nothing is
+              // emitted: the type-level `implements` edge above already carries the fact, and a
+              // member-level edge naming nothing would be the fabrication this lane's own
+              // workstream forbids.
               if (isMember && this.firstTokenIs(node, "override")) {
-                const baseName = owner ? baseTypes.get(owner) : undefined
-                pushRel(
-                  owner ? `${owner}.${name}` : name,
-                  baseName ? `${baseName}.${name}` : name,
-                  ASTEngine.RelationshipType.Overrides,
-                  1.0,
-                  { nodeType: type, isOverride: true },
-                  lineOf(node),
-                )
+                const qualifiedSource = owner ? `${owner}.${name}` : name
+                const implementedInterface = this.enclosingInterfaceImplementationLeaf(node)
+                if (implementedInterface) {
+                  pushRel(
+                    qualifiedSource,
+                    `${implementedInterface}.${name}`,
+                    ASTEngine.RelationshipType.Overrides,
+                    1.0,
+                    {
+                      nodeType: type,
+                      isOverride: true,
+                      relationshipType: "interface_member_implementation",
+                      isInterfaceMemberImplementation: true,
+                    },
+                    lineOf(node),
+                  )
+                } else {
+                  const baseName = owner ? baseTypes.get(owner) : undefined
+                  if (baseName) {
+                    pushRel(
+                      qualifiedSource,
+                      `${baseName}.${name}`,
+                      ASTEngine.RelationshipType.Overrides,
+                      1.0,
+                      { nodeType: type, isOverride: true },
+                      lineOf(node),
+                    )
+                  }
+                }
               }
 
               // Calls inside this member/function attribute to it; computed
@@ -874,6 +994,149 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
             })
           }
         }
+        // M60 fsharp lane: `uses` — AN ATTRIBUTE APPLICATION.
+        //
+        // `[<Struct>]`, `[<Obsolete("gone")]`, `[<assembly: TypeProviderAssembly>]`.
+        // This is the construct a `uses` edge is FOR, and it is the only F# construct
+        // that is: it NAMES a type, applies it as a marker, and never invokes it. It is
+        // therefore not a `calls` (no application), not an `implements` (no interface
+        // declaration), not an `extends` (no base), not an `instantiates` (no
+        // construction), and not a `references` (no DECLARED type — nothing here is a
+        // signature; the analyzer's declared-type pass reads type WRITERS, and an
+        // attribute's type is the type of an object construction, not a written
+        // annotation).
+        //
+        // The census measured 0 `uses` edges over 400 real files while the grammar
+        // produces `attribute` nodes throughout them, so the construct was present and
+        // unread. What was already here read only the TypeProvider case, which is 2 of
+        // the node's spellings and about symbol PUBLICATION rather than about the edge.
+        //
+        // The name comes from the TYPE of the object construction, read off the tree:
+        // `attribute` is `seq(optional(seq(field("target", identifier), ":")), _object_construction)`
+        // and `_object_construction` is `seq(_type, optional(_expression))`. The `target`
+        // is a FIELD, so it is excluded by field name and not by position, and the
+        // attribute's ARGUMENT expression is not read at all — `[<Obsolete("x")>]` names
+        // `Obsolete` and nothing in `"x"`, and an argument that happens to contain a
+        // type-shaped word is an argument, not a use.
+        const attrTarget = node.childForFieldName("target")
+        // The `target` is skipped by FIELD NAME, not by object identity. `namedChild(i)`
+        // and `childForFieldName("target")` do not return the same JS object for the same
+        // tree node — web-tree-sitter builds the wrapper on each accessor call — so
+        // `c === attrTarget` is false for the very child it is meant to skip. Measured
+        // cost of getting it wrong: 11 `uses` edges in a 200-file draw whose target was
+        // the literal string `return`, from `[<return: Struct>]` on a `val`, i.e. the
+        // variance annotation read as the dependency. `fieldNameForChild(i)` is the
+        // question that is actually well defined.
+        let attrTypeNode: Node | null = null
+        for (let i = 0; i < node.childCount; i++) {
+          const c = node.child(i)
+          if (!c || !c.isNamed) continue
+          if (node.fieldNameForChild(i) === "target") continue
+          const named = this.typeNameNodeOf(c)
+          if (named) { attrTypeNode = named; break }
+        }
+        const attrName = attrTypeNode ? this.dependencyLeafName(attrTypeNode) : null
+        if (attrName) {
+          // Source = the declaration the attribute decorates. `attributes` is a CHILD of
+          // the declaration, and this walk publishes a declaration's symbol and pushes its
+          // scope BEFORE pushing its children — so `currentScope`'s innermost name is
+          // already the decorated declaration here, and fileScope/Global covers the
+          // file-level spellings (`[<assembly: …>]` above every module).
+          const attrOwner = currentScope.length > 0 ? currentScope[currentScope.length - 1] : undefined
+          pushRel(
+            attrOwner || fileScope || "Global",
+            attrName,
+            ASTEngine.RelationshipType.Uses,
+            1.0,
+            {
+              nodeType: type,
+              relationshipType: "attribute_application",
+              isAttributeUsage: true,
+              ...(attrTarget ? { attributeTarget: attrTarget.text } : {}),
+            },
+            attrTypeNode ? lineOf(attrTypeNode) : lineOf(node),
+          )
+        }
+      } else if (type === "module_abbrev") {
+        // M60 fsharp lane: `imports` — an ALIASED MODULE, `module X = Y`.
+        //
+        // F#'s second import form and the only one whose target lies OUTSIDE the
+        // compilation: `module Diagnostics = FSharp.Compiler.Diagnostic` is how a script
+        // or a signature file names an assembly or a namespace it does not define. The
+        // dependency is on the RIGHT-HAND path; the left-hand `X` is the local alias the
+        // file itself introduces, so naming `X` would make every alias look like a
+        // self-dependency — and DID: a first draft reached for the last `identifier` or
+        // `long_identifier` DESCENDANT, which is the local name, and emitted
+        // `imports Fixture.ImportAndUse -> IO` for `module IO = System.IO`. The grammar
+        // is `seq(optional(attributes), "module", identifier, "=", scoped(long_identifier, ...))`,
+        // so the alias and the path are DIRECT children and the path's own identifiers are
+        // GRANDCHILDREN. Reading direct children is what separates the alias from the thing
+        // it aliases.
+        const aliasNode = this.filterChildren(node, (n) => n.type === "identifier")[0]
+        const pathNode = this.filterChildren(node, (n) => n.type === "long_identifier").pop()
+        if (pathNode && pathNode.text) {
+          const alias = aliasNode?.text
+          imports.push({
+            module: pathNode.text,
+            items: [],
+            isDefault: true,
+            alias,
+            range: this.nodeToRange(node),
+          })
+          const abbrevOwner = currentScope.length > 0 ? currentScope[currentScope.length - 1] : undefined
+          pushRel(
+            abbrevOwner || fileScope || "Global",
+            pathNode.text,
+            ASTEngine.RelationshipType.Imports,
+            1.0,
+            { nodeType: type, relationshipType: "module_alias", ...(alias ? { moduleAlias: alias } : {}) },
+            lineOf(pathNode),
+          )
+        }
+      } else if (type === "fsi_directive_decl") {
+        // M60 fsharp lane: `imports` — a RESOURCE DIRECTIVE, `#r "…"`, `#load "…"`, `#I "…"`.
+        //
+        // The strongest import fact F# has: the string LITERALLY names the file or
+        // assembly this unit will be compiled against. The grammar's
+        // `fsi_directive_decl` covers six keywords and only three of them name a
+        // resource — `#time`, `#help` and `#quit` are REPL controls that touch nothing
+        // outside the file, and emitting an import for those would be an edge to a
+        // resource the language never reads. The keyword is therefore read off the tree
+        // (the first unnamed child token) and the other three are refused, rather than
+        // the whole node being accepted because it is the right node type.
+        const resourceKeywords = new Set(["#r", "#load", "#I"])
+        let directiveKeyword = ""
+        for (let i = 0; i < node.childCount; i++) {
+          const c = node.child(i)
+          if (c && !c.isNamed) { directiveKeyword = c.text; break }
+        }
+        const specifier =
+          this.findChild(node, (n) => n.type === "string" || n.type === "verbatim_string") ??
+          (node.namedChildCount > 0 ? node.namedChild(0) : null)
+        if (specifier && (specifier.type === "string" || specifier.type === "verbatim_string") &&
+            resourceKeywords.has(directiveKeyword)) {
+          const specifierValue = this.stringLiteralValue(specifier)
+          if (specifierValue) {
+            imports.push({
+              module: specifierValue,
+              items: [],
+              isDefault: false,
+              isExternal: true,
+              path: specifierValue,
+              range: this.nodeToRange(node),
+              metadata: { fsharpSpecific: true, directive: directiveKeyword },
+            })
+            const dirOwner = currentScope.length > 0 ? currentScope[currentScope.length - 1] : undefined
+            pushRel(
+              dirOwner || fileScope || "Global",
+              specifierValue,
+              ASTEngine.RelationshipType.Imports,
+              1.0,
+              { nodeType: type, relationshipType: "resource_directive", directive: directiveKeyword },
+              lineOf(specifier),
+            )
+          }
+        }
       } else if (type === "import_decl") {
         // FS-A1 (measured dead branches retired): `open_statement`/`open_decl`
         // never occur — 0 of 363,609 nodes in the shape census — `open X` IS
@@ -905,6 +1168,117 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
             { nodeType: type, isImport: true },
             lineOf(node),
           )
+          // M60 fsharp lane: `imports` — the same directive under the label the
+          // module-dependency pass actually reads.
+          //
+          // ER-D41 is the precedent and it is about THIS language's shape:
+          // `src/intelligence/analysis/dependencies.ts` reads `imports` relationship
+          // edges for file->file module dependencies, relying on them precisely because
+          // `brain_import.resolved_symbol_id` is routinely null. F# emitted only
+          // `references`, so an `open FSharp.Compiler.Diagnostic` was recorded under a
+          // label that reader never looks at — 19 analyzers emit `imports` and this one
+          // stored the fact where nothing was reading it.
+          //
+          // BOTH labels stay, and the asymmetry in confidence is the honest part:
+          // `imports` is 1.0 because the directive NAMES the scope — the tree carries a
+          // `long_identifier` and nothing is inferred — while the `references` edge
+          // above stays at 0.9, which is what it was measured at. Both are parse facts;
+          // the 0.9 is the lane's declared confidence for a file-level mention, and
+          // raising or lowering it here would move a pinned row on a claim this change
+          // has not measured.
+          //
+          // `open type X` is the SAME node (the grammar is `seq("open", optional("type"),
+          // $.long_identifier)`), so the two spellings are distinguished by the token and
+          // recorded in metadata rather than by being two node types.
+          pushRel(
+            owner || fileScope || "Global",
+            targetNode.text,
+            ASTEngine.RelationshipType.Imports,
+            1.0,
+            { nodeType: type, relationshipType: "open_directive", ...(this.nodeHasToken(node, "type") ? { opensTypes: true } : {}) },
+            lineOf(node),
+          )
+        }
+      } else if (type === "infix_expression") {
+        // FS-A6 (M60 pass 2): a BARE PIPELINE — `x |> f` as a WHOLE expression.
+        //
+        // F#'s pipeline operator is the language's defining idiom, and this lane claimed to
+        // read it ("pipe `a |> List.map` -> `map`"). It did not, except by accident. The
+        // `application_expression` branch has an `infix_expression` arm, so a pipeline was
+        // read only when it happened to sit in CALLEE position — `f (x |> g)` — and the shape
+        // F# is actually written in, a `let` whose body IS the pipeline, was dropped whole:
+        //
+        //     let relevant (diags: FSharpDiagnostic array) =
+        //         diags
+        //         |> Array.filter (fun d -> …)      // no `calls relevant -> filter` at all
+        //
+        // Measured on a 300-file draw of the corpus: **1,043** bare `|>` infix nodes, of which
+        // **1,037** carry a NAME on the right, against 580 read in callee position. So the
+        // label was missing roughly 11% of the calls the corpus writes, and it was missing
+        // them in the single most idiomatic F# construct there is.
+        //
+        // WHY NO ORACLE CAUGHT IT, which is the part worth keeping: `script/m14/fsharp-truth-
+        // oracle.ts` reads `application_expression` and `prefixed_expression` and has no
+        // `infix_expression` branch either, so both sides said nothing and nothing disagreed.
+        // That is exactly the failure the workstream document describes — "when a type is
+        // absent from BOTH … both say nothing, and nothing agrees with nothing" — reproduced
+        // inside a single label rather than across the ten.
+        //
+        // THE OPERATOR MAP, and why the composition operators are absent. `|>` `|>>` `>>=`
+        // apply the RIGHT operand to the left one; `<|` `<<` apply the LEFT. The side is a
+        // property of the operator, not of the expression, so it is read off the `infix_op`
+        // TOKEN the grammar emits — there is no text pattern anywhere in this rule.
+        // `>>` `>>>` `>=>` `<<<` are DELIBERATELY NOT HERE: they COMPOSE two functions and
+        // call neither (`let h = f >> g` builds a closure), so an edge from them would be a
+        // fabrication. Measured: 13 bare `>>` in the same 300-file draw, excluded on that
+        // ground and not because they were hard to read.
+        //
+        // LATENCY, measured rather than assumed, and the measurement corrected a claim rather
+        // than confirming one. A first A/B on a 120-file sample of the census's own draw read
+        // 54.5 ms/file before against 63.2 after — +16%, with non-overlapping ranges, which
+        // looked like a real cost for +8.4% more relationships. Re-measured INTERLEAVED on the
+        // same files, because four lanes share this box: BEFORE 65.3 and 76.1, AFTER 77.8 and
+        // 67.9. The ranges overlap almost completely, so the first reading was the load, not
+        // the change, and **no latency claim finer than "inside the run-to-run spread of a
+        // shared box" is supported by these numbers.** Stating the +16% would have been a
+        // fabricated measurement of a shared machine's noise.
+        //
+        // What survives the correction is the code: the operator is read by a loop that breaks
+        // on the token and allocates nothing, and the second pass over the children runs only
+        // for an operator that IS a pipe. The F# compiler corpus is arithmetic-heavy, so
+        // `a + b` and `x = y` reach this branch constantly and the cheapest possible test is
+        // the right one even when its benefit is below the noise floor.
+        let opText = ""
+        for (let i = 0; i < node.childCount; i++) {
+          const c = node.child(i)
+          if (c && c.type === "infix_op") { opText = c.text; break }
+        }
+        const side = PIPELINE_CALLEE_SIDE.get(opText)
+        if (side && callOwner) {
+          // Only NAME children count, which is what makes `x |> List.map (fun y -> y)` work:
+          // the lambda is a sibling of the name, and asking for the last name rather than the
+          // last child is the difference between reading the pipeline and reading its argument.
+          const named = this.filterChildren(
+            node,
+            (n) =>
+              n.type === "long_identifier" ||
+              n.type === "identifier" ||
+              n.type === "long_identifier_or_op" ||
+              n.type === "dot_expression",
+          )
+          const calleeNode = side === "right" ? named[named.length - 1] : named[0]
+          const calleeText = calleeNode?.text ?? ""
+          const leaf = calleeText.split(".").pop() || calleeText
+          if (calleeText.length > 1 && !this.isFSharpBuiltin(calleeText, leaf)) {
+            pushRel(
+              callOwner,
+              leaf,
+              ASTEngine.RelationshipType.Calls,
+              0.8,
+              { nodeType: type, isPipelineCall: true, pipelineOperator: opText },
+              lineOf(calleeNode ?? node),
+            )
+          }
         }
       } else if (type === "application_expression") {
         // Call/instantiation: source = enclosing function/method/constructor,
@@ -928,7 +1302,29 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
             fnName = fnNode.text
           }
         }
-        if (fnName && fnName.length > 1 && callOwner) {
+        // A4 (M60 pass 2): the gate used to be `fnName.length > 1`, which is not a rule
+        // about the program. By the time this branch runs, the grammar has already said the
+        // callee is a NAME — the node it was read from is a `long_identifier`,
+        // `identifier`, `long_identifier_or_op` or `dot_expression` — so the only thing the
+        // length test removed was every call to a ONE-LETTER function, and F# is full of
+        // them: `let f x = …` composed into `f getLines`, `f argv.[!cursor]`.
+        //
+        // Measured, not assumed. Instrument B counts **5,313** one-character applications
+        // over the 6,619-file corpus, in 735 files
+        // (validation/m14/fixtures/fsharp/ontology-probe.ts, probe A4), against a full-extent
+        // `calls` count of 246,327 — 2.2% of the label, dropped for no reason. And the
+        // dropped population is MORE resolvable than the emitted one, which is the number
+        // that decided it: on a 120-file draw of the census's own sample, 32.4% of the
+        // one-character callees name a symbol the SAME file publishes, against 22.2% for
+        // emitted `calls` edges in-file
+        // (validation/m14/fixtures/fsharp/one-char-calls.ts). A gate that removes the
+        // better-resolving edges is not a noise filter, it is an unexamined rule.
+        //
+        // The gate also stood in front of the CONSTRUCTOR-CHAINING `instantiates` below,
+        // which is why that label gained an edge on the 400-file draw when this was removed.
+        // Nothing here infers: `fnName` is still the callee's written name and `leaf` is
+        // still its last segment, and the builtin filter below is unchanged.
+        if (fnName && callOwner) {
           const leaf = fnName.split(".").pop() || fnName
           if (!this.isFSharpBuiltin(fnName, leaf)) {
             // Constructor chaining `new() = Point(0, 0)` — instantiation of the
@@ -962,6 +1358,12 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
             const calleeNode = operand.namedChild(0)
             const calleeText = calleeNode ? calleeNode.text : ""
             const leaf = calleeText.split(".").pop() || calleeText
+            // A4-DISCLOSED: this gate has the same shape as the one removed from `calls`
+            // above and the same lack of a reason — `new` + a name is a construction whatever
+            // the type is called — but it was NOT measured, so it stays. Removing an
+            // unmeasured gate on the strength of a measured one is the same move this lane
+            // criticises elsewhere; the corpus population of a one-letter constructed type is
+            // not established either way, and saying so is cheaper than guessing.
             if (calleeText && calleeText.length > 1 && !this.isFSharpBuiltin(calleeText, leaf)) {
               pushRel(callOwner, leaf, ASTEngine.RelationshipType.Instantiates, 0.95, { nodeType: type, isNewConstruction: true }, lineOf(node))
               for (let i = operand.namedChildCount - 1; i >= 0; i--) {
@@ -1271,6 +1673,45 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
     const idents = this.findDescendants(nameish, (n) => n.type === "identifier", 8)
     const leaf = idents.length ? idents[idents.length - 1]!.text : written
     return { written, leaf: leaf || written }
+  }
+
+  /**
+   * The interface a member IMPLEMENTS, when the member is written inside
+   * `interface I with …` — the LEAF of the interface's written name, or undefined.
+   *
+   * FS-A2. The walk to the nearest `interface_implementation` ancestor is unbounded on
+   * purpose: `findAncestor` cannot distinguish "no interface above this" from "further than
+   * N levels up", and treating both as the first is how the `overrides` rule ended up naming
+   * a base type for a member that implements an interface (see the call site).
+   *
+   * The name is read the SAME WAY the `implements` branch reads it — the first
+   * `long_identifier`/`identifier` descendant of the implementation node, then the leaf of a
+   * dotted path, with R10's spelling rule (`System.IDisposable` declares `IDisposable`). Two
+   * implementations of one rule is the point: a member-level edge and a type-level edge about
+   * the same `interface I with` clause that spell the interface differently would be
+   * indistinguishable downstream from two different interfaces.
+   *
+   * THE OBJECT-EXPRESSION ARM, and it is not a rare shape: `{ new IFoo with override x.M() }`
+   * has NO `interface_implementation` node at all — the grammar puts the interface directly on
+   * the `object_expression` as its own `long_identifier_or_op` child. So a walk that stops at
+   * `interface_implementation` answers "no interface" for every mock in the corpus, and the
+   * corpus is full of them: vsintegration/tests/Salsa/VsMocks.fs alone carries 6 such members
+   * on 2 object expressions. The interface is therefore read a second way, through the SAME
+   * `objectExpressionInterface` the `implements` branch and the symbol publication use, so the
+   * three edges about one object expression cannot spell its interface differently.
+   */
+  private enclosingInterfaceImplementationLeaf(node: Node): string | undefined {
+    let cur: Node | null = node.parent
+    while (cur) {
+      if (cur.type === "interface_implementation") {
+        const written = this.findDescendant(cur, (n) => n.type === "long_identifier" || n.type === "identifier", 3)
+        if (!written?.text) return undefined
+        return written.text.includes(".") ? (written.text.split(".").pop() as string) : written.text
+      }
+      if (cur.type === "object_expression") return this.objectExpressionInterface(cur)?.leaf
+      cur = cur.parent
+    }
+    return undefined
   }
 
   private memberNameOf(decl: Node): string | undefined {
@@ -1772,39 +2213,14 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
     // which is the type the whole expression denotes (`int option` is `option`;
     // `Map<string,int>` is `Map`). This is also the node the edge carries its LINE on
     // (M59.A7), never the wrapper's own start.
-    const nameNodeOf = (t: Node): Node | null => {
-      let cur: Node | null = t
-      for (let guard = 0; guard < 8 && cur; guard++) {
-        if (cur.type === "type_argument") return null // a bound type parameter
-        if (cur.type === "long_identifier") {
-          let leaf: Node | null = null
-          for (let i = 0; i < cur.namedChildCount; i++) {
-            const c = cur.namedChild(i)
-            if (c && (c.type === "identifier" || c.type === "long_identifier")) leaf = c
-          }
-          return leaf ?? cur
-        }
-        if (cur.type === "identifier") return cur
-        let next: Node | null = null
-        for (let i = 0; i < cur.namedChildCount; i++) {
-          const c = cur.namedChild(i)
-          if (
-            c &&
-            (TYPE_WRAPPER_NODES.has(c.type) ||
-              c.type === "type_argument" ||
-              c.type === "type_arguments" ||
-              c.type === "long_identifier" || // the name written DIRECTLY on the wrapper
-              c.type === "identifier")
-          ) {
-            next = c
-            break
-          }
-        }
-        if (!next) return null
-        cur = next
-      }
-      return null
-    }
+    // M60 fsharp lane: the wrapper descent is `typeNameNodeOf` on the class now, shared
+    // with the attribute rule. It was a closure here. That is a pure relocation and it is
+    // MEASURED rather than asserted: the 400-file census over this analyzer is byte-
+    // identical on all seven pre-existing labels before and after (validation/m14/fixtures/
+    // fsharp/ontology-census.ts, `references` 2,358 / `declared_type` 1,669 among them).
+    // Were it not, the declared-type pass would have been the thing that moved, and this
+    // comment would be the place to say so.
+    const nameNodeOf = (t: Node): Node | null => this.typeNameNodeOf(t)
 
     /**
      * Is this node an F# TYPE BINDER — `'T`, `^T` — rather than a named type?
@@ -2164,6 +2580,129 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (OBJECT_LEAF_METHODS.has(leaf)) return true
     if (call === "Console.WriteLine" || call.startsWith("Console.")) return true
     return false
+  }
+
+  /**
+   * Does this node CARRY an unnamed token equal to `text`, anywhere in its children?
+   *
+   * Distinct from `firstTokenIs`, which asks about the FIRST non-trivia token and is
+   * used for a declaration's keyword (`override`, `new`). `open type X` needs the
+   * opposite question — the token is not first, it sits between the keyword and the
+   * path — so it asks for the token's presence rather than its position.
+   */
+  private nodeHasToken(node: Node, text: string): boolean {
+    for (let i = 0; i < node.childCount; i++) {
+      const c = node.child(i)
+      if (c && !c.isNamed && c.type === text) return true
+    }
+    return false
+  }
+
+  /**
+   * The name-bearing node inside a F# type wrapper, or null.
+   *
+   * WRAPPERS NEST (`postfix_type` holds a `simple_type` for its base and a
+   * `long_identifier` for the postfix), so the rule is: descend to the first type-ish
+   * child, then take the LAST `long_identifier`/`identifier` at that level — the name
+   * the wrapper writes LAST, which is the type the whole expression denotes (`int option`
+   * is `option`, `Map<string,int>` is `Map`). This is the extraction the declared-type
+   * pass has always used; it is a METHOD now so the attribute rule reads a wrapper the
+   * same way instead of carrying a second copy of the descent that could drift from it.
+   * A bound type parameter (`type_argument`) yields null: `'T` is a binder, not a name.
+   */
+  private typeNameNodeOf(t: Node): Node | null {
+    let cur: Node | null = t
+    for (let guard = 0; guard < 8 && cur; guard++) {
+      if (cur.type === "type_argument") return null
+      if (cur.type === "long_identifier") {
+        let leaf: Node | null = null
+        for (let i = 0; i < cur.namedChildCount; i++) {
+          const c = cur.namedChild(i)
+          if (c && (c.type === "identifier" || c.type === "long_identifier")) leaf = c
+        }
+        return leaf ?? cur
+      }
+      if (cur.type === "identifier") return cur
+      let next: Node | null = null
+      for (let i = 0; i < cur.namedChildCount; i++) {
+        const c = cur.namedChild(i)
+        if (
+          c &&
+          (TYPE_WRAPPER_NODES.has(c.type) ||
+            c.type === "type_argument" ||
+            c.type === "type_arguments" ||
+            c.type === "long_identifier" ||
+            c.type === "identifier")
+        ) {
+          next = c
+          break
+        }
+      }
+      if (!next) return null
+      cur = next
+    }
+    return null
+  }
+
+  /**
+   * The dependency LEAF a name-bearing node denotes: the last segment of a dotted path.
+   *
+   * `System.Obsolete` is `Obsolete`, which is the spelling a consumer binds by — the
+   * index stores one symbol per name, and `System.Obsolete` binds to nothing while
+   * `Obsolete` binds to the attribute class.
+   *
+   * "Is this a name?" is asked of the NODE and never of the string. This lane's doc
+   * carries a regex inventory whose first two rows are exactly this decision — the
+   * patterns `/^['^]/` and `/^[A-Za-z_][A-Za-z0-9_']*$/` — and both were replaced for
+   * the same reason this method has no pattern: the grammar already makes the
+   * distinction as a node type. `typeNameNodeOf` returns an `identifier` or a
+   * `long_identifier`, so a non-`identifier` node here is not a name, and `_` is
+   * refused because the grammar writes it as an `identifier` with that one spelling
+   * and it names no declaration.
+   */
+  private dependencyLeafName(node: Node): string | null {
+    if (node.type !== "identifier" && node.type !== "long_identifier") return null
+    const raw = (node.text ?? "").trim()
+    if (!raw || raw === "_") return null
+    // a type binder is a TOKEN in the tree: `type_argument "'T"` has an apostrophe child
+    for (let i = 0; i < node.childCount; i++) {
+      const c = node.child(i)
+      if (c && (c.type === "'" || c.type === "^")) return null
+    }
+    const leaf = raw.includes(".") ? (raw.split(".").pop() as string) : raw
+    return leaf && leaf !== "_" ? leaf : null
+  }
+
+  /**
+   * The VALUE inside an F# string-literal node, with the delimiters removed.
+   *
+   * The grammar gives the content no node: `(fsi_directive_decl (string))` — the
+   * `string` node's two children are the two `"` tokens and `namedChildCount` is 0.
+   * So the delimiters are read off the TREE (their `endIndex`/`startIndex` are the
+   * exact byte bounds) and the content is the span between them. Taking `node.text`
+   * instead put the quotes IN the dependency: `imports Fixture.ImportAndUse ->
+   * "nuget: FSharp.Core"`, a target that binds to nothing, which is the shape of a
+   * fabricated edge even though the fact underneath it is real.
+   *
+   * `verbatim_string` (`@"C:\dir\file.fsx"`) has three delimiter tokens: the opening
+   * `@"`, the escape `\`, and the closing `"`. The span between the FIRST and the LAST
+   * is the content. Its one disclosed limit: F# escapes a quote inside a verbatim
+   * string by doubling it, and this does not un-double it, so a specifier containing
+   * `""` keeps both characters. No corpus specifier does (measured over the whole
+   * corpus's 193 `fsi_directive_decl` nodes), and a wrong-but-visible path is better
+   * than a silently truncated one.
+   */
+  private stringLiteralValue(node: Node): string | null {
+    if (node.type !== "string" && node.type !== "verbatim_string") return null
+    if (node.childCount === 0) return null
+    const first = node.child(0)
+    const last = node.child(node.childCount - 1)
+    if (!first || !last) return null
+    const from = first.endIndex - node.startIndex
+    const to = last.startIndex - node.startIndex
+    if (!(to > from)) return null
+    const value = node.text.slice(from, to)
+    return value.length > 0 ? value : null
   }
 
   private firstTokenIs(node: Node, text: string): boolean {
