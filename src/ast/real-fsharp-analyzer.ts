@@ -85,8 +85,59 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
      * the time a name is tested, the walk has already published it if it publishes it at all.
      */
     const publishedNames = new Set<string>()
+    /**
+     * FS-P3-1. PUBLISH THE QUALIFIED NAME THE `overrides` EDGE ALREADY USES.
+     *
+     * `overrides` is the only relationship this lane emits whose SOURCE it deliberately
+     * qualifies, because a bare member name is ambiguous and the analyzer knows it:
+     *
+     *     type Disposable() =
+     *         interface System.IDisposable with
+     *             override this.Dispose() = ()
+     *
+     * emits `overrides Disposable.Dispose -> IDisposable.Dispose`, and `Dispose` on its own
+     * would bind to whichever `Dispose` the consumer happened to find first.
+     *
+     * That qualified spelling was, until this rule, a spelling the lane never PUBLISHED.
+     * Measured on Grace/src/Grace.Actors/AccessControl.Actor.fs:
+     *
+     *     stored symbol : name="OnActivateAsync"  qualifiedName="OnActivateAsync"  ownerName="AccessControlActor"
+     *     emitted edge  : source="AccessControlActor.OnActivateAsync"
+     *
+     * The endpoint matches the stored `qualifiedName` at 0 of 63 `overrides` edges in a
+     * 400-file stride sample of the 11,809-file fsharp population. `pool-worker.ts:870`
+     * derives the stored value as `s.qualifiedName || s.metadata?.fqn || (s.scope ? … : name)`,
+     * and this analyzer set none of the three, so `qualified_name` collapsed to the bare name
+     * for every owned symbol in the language.
+     *
+     * Why that is a defect and not a cosmetic difference: `src/ast/parallel-indexer.ts`
+     * documents its own resolution strategies as "a bare `name`, a `qualified_name`
+     * (`Owner.member`), or — for a dotted target — everything after the first `.`", and
+     * `brain_relationship.source_external` is JOINed against `brain_symbol.qualified_name`.
+     * An edge whose endpoint the store publishes under a DIFFERENT key than the symbol's own
+     * is an edge the reverse walk cannot bind, so `bb_impact` on an F# member that overrides
+     * something cannot reach the things that override it, and `src/lsp/impact.ts` — which
+     * obtains reverse edges by scanning outgoing edges and matching targets — inherits the
+     * miss without any way to report it.
+     *
+     * `metadata.fqn` is the field that formula already reads, it is what the C# family sets
+     * for the same purpose (`real-csharp-analyzer.ts` `fqn: fullName`), and nothing else in
+     * this repository reads it for fsharp, so the change is additive. It is minted HERE, in
+     * the single funnel every one of the 15 mint sites passes through, so the edge spelling
+     * and the published spelling cannot drift apart again — which is the failure mode, not the
+     * individual field, that this closes.
+     *
+     * Minted only when there is an owner: with no owner the store's own fallback already
+     * yields `name`, so writing it would add a field that says nothing.
+     */
     const publish = (s: ASTEngine.UniversalSymbol): void => {
       if (s?.name) publishedNames.add(s.name)
+      const owner = String(s?.ownerName ?? "")
+      if (owner.length > 0 && s?.name) {
+        const metadata = (s.metadata ?? {}) as Record<string, any>
+        if (metadata.fqn === undefined) metadata.fqn = `${owner}.${s.name}`
+        s.metadata = metadata
+      }
       symbols.push(s)
     }
 
