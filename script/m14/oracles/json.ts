@@ -423,14 +423,23 @@ export function deriveJsonEdges(root: any, scriptName: string, opts?: { manifest
       const key = keyText(pair)
       const value = valueOf(pair)
       if (!key || !value) continue
+      const here = parentPath ? `${parentPath}.${key}` : key
       if (key.length > 0) {
         if (declaredHere.has(key)) {
-          if (parentName) edges.push({ label: "overrides", from: parentName, target: key })
+          // Both endpoints are QUALIFIED PATHS, like every other label here. They were the
+          // bare owner name and the bare key, which is the last bare-name edge the analyzer
+          // emitted; the whole-population differential read `overrides` at 0 of 22 covered
+          // after the analyzer moved and this side had not, which is the fourth time this
+          // lane has had to retarget an oracle after an endpoint-form change (`contains`,
+          // `calls`, OpenAPI `uses`, and now `overrides`). A bare key is ambiguous on every
+          // corpus edge: 22 of 22 matched more than one published symbol by name, against
+          // 14 of 22 by path — `FSharp.Data`'s bare `rec2` names both elements of one array
+          // and its bare `1` names four keys.
+          if (parentPath) edges.push({ label: "overrides", from: parentPath, target: here })
         } else {
           declaredHere.add(key)
         }
       }
-      const here = parentPath ? `${parentPath}.${key}` : key
       // CONTAINMENT: the object a key is written in contains that key, and both endpoints are
       // QUALIFIED PATHS. The SOURCE used to be the parent symbol's BARE name, on the reasoning
       // that an edge whose source is not a symbol name resolves to nothing — which is true and
