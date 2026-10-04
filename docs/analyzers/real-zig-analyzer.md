@@ -3288,3 +3288,21 @@ re-running, not asserted.
   whole-draw resolution figures come from `incoming-resolve.ts`, which measures a different thing
   (corpus-tier binding, not the per-file reverse walk). The 28 ambiguous targets are **not** a
   lane-wide count and must not be quoted as one.
+
+### G. One more §8 item, from pass 13
+
+**19. The shared mutation gate's zig count does not include the lane's own mutants.**
+`script/m14/mutate-analyzer.ts` holds **50** zig mutants and reports `50 / 50 CAUGHT` — which is
+true and is not the whole number. This lane also carries mutants it cannot register there, because
+that file is shared machinery: `validation/m14/fixtures/zig/z65-mutants.mts` (5, for the target-scope
+fixture) and `validation/m14/fixtures/zig/m13-mutants.mts` (6, for the two file-as-struct fixtures),
+**11 in total, all CAUGHT, on a harness that imports `matchConstraints` from the shared runner
+rather than restating the comparison.** So a reader who takes "50/50" as this lane's mutation
+coverage is reading **50 of 61**. The gap is structural and not a bookkeeping slip: a lane that
+adds a fixture is expected by the task to add a mutant, and the only registry for it is a file the
+lane does not own.
+*Needed:* either a lane-owned mutant directory the shared runner discovers — `BB_MUTANT_ONLY`
+already filters by an id prefix, so the mechanism exists — or a line in the shared gate's own
+output naming the lane-owned mutants it did not run, so the count it prints is not read as the
+whole. The Z65 file already documents the correct design and why a harness must import the real
+matcher; what is missing is the registration, not the harness.
