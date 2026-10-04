@@ -3420,9 +3420,13 @@ finish at all.
 |---|---|---|
 | typecheck | `npx tsc --noEmit -p tsconfig.json` | clean, exit 0 |
 | fixture suite | `bun run script/m14/run-fixtures.ts --lang zig` | **11 pass / 0 fail**, exit 0, no baseline regression |
+| mutation (shared) | `BB_MUTANT_ONLY="zig/" bun run script/m14/mutate-analyzer.ts` | **50 / 50 CAUGHT** (filtered 1,748 → 50), exit 0 |
+| mutation (lane) | `npx tsx validation/m14/fixtures/zig/m13-mutants.mts` | **6 / 6 CAUGHT**, exit 0 |
 | regex census | `npx tsx script/m12/verify-regex-census.ts` | still `regex census gate FAILED` on 11 other lanes' analyzers — **0 zig rows** |
+| honesty gate | `npx tsx script/m14/verify-honesty.ts` | 22 failures, **0 of them in this document**; the "freshness rule flags every artifact" failure is §8 item 16 |
 | population check | `--from <log>` (literals) | exit **3**, STALE, 0 of 1 covered |
 | population check | `--from <log> --subjects derived` | exit **0**, 1 of 1 covered, 0 defects, both runs |
+| sharded census | 8 × `--sample 3834 --files-from`, then `shard-merge.py … <hash>` | exit 0, **union 3,834 == published hash**, 0 fallback, 0 parse failures |
 
 `src/ast/real-zig-analyzer.ts` did not change in pass 14. Seventh consecutive pass verified rather
 than edited.
