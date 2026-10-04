@@ -207,15 +207,18 @@ psql's file graph is real and its only edge is inbound (`\i`), which is why `imp
 `exports` is not.
 *Overturn:* any node type among the 480 that expresses a published surface. **Pass 3 searched every
 type name for `export`, `module`, `provide`, `partition`, `like`, `of`, `super`, `class`, `interface`,
-`trait` and `struct` as substrings and found ZERO hits for the first three** — the two `partition`
-hits are a `table_partition` rule and a `keyword_partition` token, both the `PARTITION BY` strategy
-and neither naming a parent; the `class` hit is `keyword_regclass`.
+`trait` and `struct` as substrings and found ZERO hits for the first three** — the `class` hit is
+`keyword_regclass` (62 occurrences, the `regclass` TYPE NAME, not a class construct). The three
+`partition` hits are `table_partition` (6), `keyword_partition` (57) and `partition_by` (44); none
+names a parent table. **Pass 8 corrected this row**: passes 1–7 reported *two* `partition` hits and
+did not name `partition_by`, the only one of the three whose name is not qualified by `table_` — see
+*PASS 8*.
 
-**`extends` — instrument A, plus a FIVE-SHAPE capability battery, all six verdicts decided from the
-TREE at pass 3.** SQL *does* have table inheritance; the wired grammar cannot represent it. A corpus
+**`extends` — instrument A, plus a SEVEN-SHAPE capability battery, every verdict decided from the
+TREE.** SQL *does* have table inheritance; the wired grammar cannot represent it. A corpus
 count of 0 is consistent both with "SQL lacks inheritance" and with "the grammar cannot read it", and
 only a PARSE separates them — so each shape is parsed against `wasm/tree-sitter-sql.wasm` and the
-NODE TYPES recorded (`pass3-adversarial-probe.json` → `capabilityTests`):
+NODE TYPES recorded (`pass8-adversarial-probe.json` → `capabilityTests`):
 
 | Shape | Verdict | What the tree shows |
 | --- | --- | --- |
@@ -224,6 +227,30 @@ NODE TYPES recorded (`pass3-adversarial-probe.json` → `capabilityTests`):
 | `ALTER TABLE p ATTACH PARTITION c FOR VALUES …` | NOT EXPRESSIBLE | the `alter_table`'s only action is an `add_column` whose `column_definition` has `name: ATTACH` and `custom_type: PARTITION`; `FOR VALUES …` lands in a **top-level** `ERROR`. The attachment is not represented at all — it is misread as a column |
 | `CREATE TABLE p (…) PARTITION BY RANGE (x)` | EXPRESSIBLE, but names no parent | `table_partition(keyword_partition, keyword_by, keyword_range, …)`, 5 occurrences corpus-wide, all of them this form |
 | `CREATE TABLE c (LIKE p)` | EXPRESSIBLE, and a structural COPY | a `column_definition` whose `custom_type` **field** is `p` and whose `name` field is the bare `LIKE` token |
+| `CREATE TABLE c (LIKE p INCLUDING ALL)` | PARTIALLY EXPRESSIBLE | `LIKE` survives as the same `column_definition`; `INCLUDING ALL` lands in an `ERROR` |
+| `SELECT sum(x) OVER (PARTITION BY y)` — the other `PARTITION BY` | EXPRESSIBLE, and **not the construct** | `partition_by` under `window_specification`: a window function's ordering key, not a table clause. **Added at pass 8** — see below |
+
+**The seventh row exists because the page's own `partition` count was two of three.** Passes 1–7
+recorded two node types matching a search for `partition` and explained both. The corpus-wide
+vocabulary has a third, `partition_by`, 44 occurrences, and it is the only one of the three whose
+name is not qualified by `table_` — so it is the first one a reader checking the `extends` ruling
+would reach for. Every shape in the battery above is a TABLE-PARTITIONING form, so none of them
+covered it: a battery that tests only the shapes it already suspects is how a candidate goes unnamed.
+It is now measured rather than argued, by a tree walk rather than a name search
+(`partition-by-sites.mts` → `measurements/pass8-partition-by-sites.json`, and `adversarial-probe.mts`
+A13):
+
+| Question | Measured |
+| --- | --- |
+| occurrences of `partition_by` over the 1,955 admitted files | **44** |
+| with nearest parent `window_specification` | **44 of 44** |
+| inside a `create_table` | **1**, and `create_query` is in that chain — `duckdb/benchmark/h2oai/group/queries/q08.sql:1` is `CREATE TABLE … AS SELECT … OVER (PARTITION BY id6)`, a CTAS |
+| inside a table-PARTITIONING declaration | **0** |
+
+So the node names an ordering key, not a parent table, and the `extends` verdict stands with its
+support strengthened rather than weakened. **The cost of the error was auditability, not the verdict**,
+and the correction is recorded here rather than silently applied because the arithmetic of a
+substring search is exactly the kind of figure that decays without anyone noticing.
 
 Pass 3 replaced this battery's instrument. Pass 2 decided all five from REGEXES over a rendered
 `rootNode.toString()` dump, which is the instrument the ontology gate's own header rejects — and which
@@ -1038,6 +1065,133 @@ as the shard's, not "across the corpus" — and is reported in §8 rather than a
 | regex census | `npx tsx script/m12/verify-regex-census.ts` | **0 SQL rows**; the gate exits 1 on other lanes' `MISSING` rows (css 9, julia 5) and `STALE` rows (clean, fsharp, javascript, python, svelte) |
 | typecheck | `npx tsc --noEmit` | **clean, exit 0** |
 
+## PASS 8 — the page's own substring count was two of three (2026-10-04)
+
+Passes 1–7 audited this analyzer's OUTPUT against independent oracles and never audited this page's
+own ARITHMETIC. Pass 8 re-derived every figure on the page from the stored measurements instead of
+from the text that quoted it, and four of them were wrong. None of the four changes a verdict, and
+the reason to record them rather than quietly amend is that each is a shape this workstream keeps
+producing.
+
+### `partition` had THREE hits, and the page named two
+
+The `exports` and `extends` rulings rest on a substring search over the corpus-wide node-type
+vocabulary. Pass 3 searched all 480 type names for `export`, `module`, `provide`, `partition`, `like`,
+`of`, `super`, `class`, `interface`, `trait` and `struct`, and the page reported:
+
+> the two `partition` hits are a `table_partition` rule and a `keyword_partition` token
+
+**There are three.** The corpus-wide vocabulary also contains a node type named exactly
+`partition_by`, with **44** occurrences — and it is the only one of the three whose name is not
+qualified by `table_`, which makes it the first one a reader checking the `extends` ruling would
+reach for. The two that were named are honestly explained; the third was simply absent from the page.
+
+**Why it went missing, which is the part worth keeping.** All six shapes in the capability battery
+are TABLE-PARTITIONING forms. `partition_by` is the WINDOW-FUNCTION clause —
+`SELECT sum(x) OVER (PARTITION BY y)` — so no shape in the battery could ever have covered it. A
+battery that tests only the constructs it already suspects will always come back agreeing with
+itself, and the substring count that should have caught the omission was reported from prose rather
+than re-derived from the stored vocabulary.
+
+**It is now measured, not argued.** `partition-by-sites.mts` walks all 1,955 admitted files and
+records the PARENT CHAIN per site, because a count cannot separate the two meanings of
+`PARTITION BY` and the chain can:
+
+| Question | Measured |
+| --- | --- |
+| occurrences of `partition_by` | **44**, at 0 parse failures |
+| nearest parent `window_specification` | **44 of 44** |
+| inside a `create_table` | **1** — `duckdb/benchmark/h2oai/group/queries/q08.sql:1`, and `create_query` is in that chain, so it is `CREATE TABLE … AS SELECT … OVER (PARTITION BY id6)`, a CTAS |
+| inside a table-PARTITIONING declaration | **0** |
+
+A window partition names an ordering key, not a parent table. The `extends` verdict stands and its
+support is one candidate stronger than it was an hour ago. `adversarial-probe.mts` A13 parses the
+form and reports the chain; the script is generic over `--type`, so the same walk answers "where does
+node type X actually sit" for any near-miss name a reader raises.
+
+### Three stale figures, all from a corpus that grew underneath the page
+
+| Figure | Page said | Measured | Why |
+| --- | --- | --- | --- |
+| corpus-wide node-type inventory | **465** in `sql-ruled.ts`'s header and findings block; **480** elsewhere on the page | **480** | 465 was pass 1's inventory over 1,460 admitted files. Two files this lane owns disagreed with each other about the number the rulings rest on. |
+| `keyword_extension` occurrences | 30 | **34** | 30 `CREATE EXTENSION` declarations against 34 `EXTENSION` tokens — the page had copied the declaration count onto the token row |
+| `keyword_regclass` occurrences | 51 | **62** | corpus growth; the row's *verdict* (a type name matching `class` as a substring) never turned on it |
+
+### Two rounding errors, and an audit that found them
+
+`99.54 %` → **99.53 %**, `99.61 %` → **99.60 %**, `45.62 %` → **45.61 %**. Three percentages off by
+one in the last digit, in the `contains` resolution figures. They are the smallest defects on this
+page and they were found by the same act that found the fourth item below, which is the argument for
+doing it: nothing flagged them, and nothing would have.
+
+### The lane's LAST regular expression is gone
+
+`src/ast/real-sql-analyzer.ts:167` held `const POSTGRES_CATALOG = /^pg_[a-z_]+$/`. The regex census
+(`script/m12/verify-regex-census.ts`) classifies it `needs_review` with an **empty justification** —
+the brief's standing instruction is that every regex a lane inherits is a defect the lane owns. It is
+replaced by `isPostgresCatalogName`, a character-code scan:
+
+- `^pg_` → `t.startsWith("pg_")`
+- `[a-z_]+` → at least one further character, each `a`–`z` or `_`; `t.length > 3` carries the `+`, so
+  a bare `pg_` does **not** match
+- `$` → the loop runs to `t.length`, so a trailing `.` or digit fails
+
+**Equivalence was checked exhaustively rather than argued**: 22,634 strings generated over a
+12-character alphabet that includes a non-ASCII character, 0 mismatches against the old pattern. The
+subtlety is that a "close enough" reading widens the classifier — treating `[a-z_]+` as a prefix test
+labels `pg_1` a catalog, and dropping the `+` labels a bare `pg_` one. `sqld12-external-targets` now
+pins both sides: `pg_1` and `pg_a1` (the `[a-z]` half), `pga` and `pgx` (the `^pg_` half), and
+`pg_catalog.pg_class` for the positive case. A bare `pg_` is not a parseable table reference, so the
+fixture cannot reach it and the sweep is what covers it — stated rather than left as a gap.
+
+After the change the census's working-tree scan drops from **28 to 27** and reports
+`ABSENT-IN-WORKTREE real-sql-analyzer.ts:167`. **This lane now contributes 0 rows to a gate that
+still exits 1** on other lanes' `MISSING` and `STALE` entries.
+
+### The adversarial probe degraded a file this time, and the 5 edges are accounted for
+
+The page claimed "**0 files degraded at this HEAD**" for the adversarial probe. At pass 8 it
+degraded **1**: `duckdb/extension/tpcds/dsdgen/queries/87.sql` returned `extractFallback`, and the
+probe's A4 tier population read **9,101** against the census's **9,106**.
+
+**The difference is exactly that file, and the file is not empty.** Solo, `parseFile` on `87.sql`
+returns **5 `uses` edges and 0 symbols in 4 of 4 attempts**. So 9,106 − 9,101 = 5 is one file lost to
+a parse error under sustained load, not a disagreement between two instruments — the same
+load-sensitivity class *PASS 7* found inside the gate, in a different instrument. Every other probe
+population is unchanged, and `A3` still reads 3,892 of 3,892. The **census** figure of 9,106 remains
+the one to quote: it is measured at 0 degraded files over 8 shards.
+
+The probe now records `degraded-regex-fallback` as a probe population, so the count of degraded files
+is in the artifact rather than inferred from a difference between two runs.
+
+### Nothing else moved
+
+Re-run at this HEAD after the analyzer change: the census is **identical across 208 compared leaf
+keys, 0 differences** against `pass7-census.json`; the arbiter is **`emitted 7/10   ruled-sound 3
+FALSIFIED 0   ruled-without-justification 0`** with 8/8 shards and per-type edges matching the census
+(3,892 / 9,106 / 11,977 / 52 / 5,996 / 22 / 21); the incoming probe is **identical across 151 leaf
+keys, 0 differences** at `--concurrency 2`; the construct probe's **480-type vocabulary, `zeroProbes`
+and `constructCounts` are identical sets and identical values**; **15/15 fixtures pass**; typecheck
+clean; **all 36 SQL mutants caught**, 0 surviving (the 6 survivors are java, groovy ×2, scala, make
+and php).
+
+### Every gate this lane can run, at pass 8
+
+| Gate | Command | Result |
+| --- | --- | --- |
+| ontology arbiter, whole corpus, 8 repo-shards | `npx tsx validation/m14/fixtures/sql/run-sharded-arbiter.mts --shards 8 --json …/pass8-sharded-arbiter.json` | **`emitted 7/10   ruled-sound 3   FALSIFIED 0   ruled-without-justification 0`**, 8/8 shards, edges 3,892 / 9,106 / 11,977 / 52 / 5,996 / 22 / 21 — identical to the census |
+| census, 8 shards, with serial repair | `bash validation/m14/fixtures/sql/run-sharded-census.sh 8 /tmp/…/census` | 1,955/1,955, **0 parse failures, 0 degraded**, 18,482 symbols / 31,066 relationships; **0 differences vs `pass7-census.json` over 208 leaf keys** |
+| ontology coverage gate (supervisor's, on disk) | `npx tsx script/m14/ontology-coverage-gate.ts sql` | **exits 2 by design** — "no RULING TABLE for sql". The table is at `script/m14/sql-ruled.ts` and the gate's `RULED_BY_LANG` is a literal with no extension point; §8. The verdict above comes from the same arbiter over a patched COPY |
+| differential | `npx tsx script/m14/differential.ts --lang sql` | **`SKIP sql: no corpus repo mapped in LANG_REPOS and none checked out — declared unrun, not measured`**, exit 0. 37 keys in `LANG_REPOS`, none `sql` — this is the DERIVATION finding, not a gate failure |
+| adversarial probe | `npx tsx validation/m14/fixtures/sql/adversarial-probe.mts --out …/pass8-adversarial-probe.json` | 24 populations, all 1,955 files; **1 file degraded** (see above); A12's battery is now **7** shapes |
+| `partition_by` site walk (new) | `npx tsx validation/m14/fixtures/sql/partition-by-sites.mts --out …/pass8-partition-by-sites.json` | 44 occurrences, **44 of 44** under `window_specification`, 0 in a table-partitioning declaration |
+| incoming probe | `npx tsx validation/m14/fixtures/sql/pass3-incoming.mts --concurrency 2 --out …/pass8-incoming-corpus.json` | **0 degraded, 31,066 edges, 0 differences vs `pass6-incoming-corpus.json` over 151 leaf keys**. This audit ran it at the DEFAULT concurrency 8 first and lost **8 edges across 3 degraded files** — the trap the page records under pass 6, hit again by the person auditing the page. At `--concurrency 2` it is exact |
+| construct probe | `npx tsx validation/m14/fixtures/sql/construct-probe.mts` | **480** node types (identical set), **every zero probe 0** (identical), 0 parse failures |
+| fixture lane | `bun run script/m14/run-fixtures.ts --lang sql` | **15 / 15 PASS, exit 0** |
+| mutant harness | `bun run script/m14/mutate-analyzer.ts sql` | **36 SQL mutants, 36 CAUGHT, 0 surviving.** The `--lang` argument does **not** scope this harness — it swept all 46 lanes and rewrote the shared `validation/m14/results/M14.0.F4.json`, which was reverted and is not committed here (§8) |
+| regex census | `npx tsx script/m12/verify-regex-census.ts` | **exits 1**, and this lane now contributes **0** rows: the working-tree scan is 27 (was 28) and reports `ABSENT-IN-WORKTREE real-sql-analyzer.ts:167`. The gate's remaining 26 `MISSING` / 25 `STALE` belong to css, julia, clean, fsharp, javascript, python, svelte and typescript |
+| typecheck | `npx tsc --noEmit` | **clean, exit 0** |
+
 ## PASS 6 — the denominator no instrument on the page was producing (2026-10-04)
 
 Pass 5 re-measured the incoming direction. Pass 6 re-ran every gate this lane can run at HEAD
@@ -1316,10 +1470,11 @@ is part of the row.
 | m12 differential (`script/m12/verify-analyzer.ts sql`) | **84 facts, P = R = 1.000, 0 FP, 0 FN, `earliestFailingLayer=none`, `parseErrors=0`** | the FP that made this 0.988 was a real fabrication; see *Differential ground truth* |
 | ontology census (`validation/m14/fixtures/sql/ontology-census.mts`, 8 shards + merge) | **1,955 of 1,955 admitted parsed, 0 parse failures, 0 degraded by timeout, 0 in regex fallback, 0 empty names, 0 `unknown` endpoints, 31,066 relationships / 18,482 symbols** | nothing is unmeasured and nothing is degraded, so there is no `filesWithNoShardRow` to name; the same figure comes out of a 4-shard walk (`pass4-census-4shard.json`) |
 | **two independent walks, different partitioning, same HEAD** | **8 strided shards and 4 contiguous shards each measure 1,955 / 1,955 files, 18,482 symbols and 31,066 relationships, with identical per-type totals, resolution rates and `evidenceClass` splits** | this is the row pass 2 could not fill and pass 3 could not either; it is why the census is sharded and merged from shard rows. `measurements/pass4-census.json` and `measurements/pass4-census-4shard.json` |
-| incoming probe (`validation/m14/fixtures/sql/pass3-incoming.mts`) | re-run at pass 6 with **1,955 files, 0 degraded, 0 parse failures, 31,066 edges**. `contains` resolves **99.54 %** intra-file by (name, `ownerName`), **99.61 %** with `metadata.memberKind`, against **92.71 %** on the bare name corpus-wide, and **45.62 %** on (name, `ownerName`) corpus-wide. Unresolved split: **308 external / 1,654 unaccounted**, and **22 of 22** psql include targets exist on disk | reads only fields that SURVIVE production `parseFile` — see DEFECT 1's note on the metadata whitelist. Run at `--concurrency 2`: at the default 8 the same run degraded **3** files and lost 6 `uses` edges to the engine timeout on this loaded box, so the 8-worker figure is not used. Artifact `measurements/pass6-incoming-corpus.json`; pass 5's `pass5-incoming-corpus.json` is kept and superseded |
+| incoming probe (`validation/m14/fixtures/sql/pass3-incoming.mts`) | re-run at pass 6 with **1,955 files, 0 degraded, 0 parse failures, 31,066 edges**. `contains` resolves **99.53 %** intra-file by (name, `ownerName`), **99.60 %** with `metadata.memberKind`, against **92.71 %** on the bare name corpus-wide, and **45.61 %** on (name, `ownerName`) corpus-wide. Unresolved split: **308 external / 1,654 unaccounted**, and **22 of 22** psql include targets exist on disk | reads only fields that SURVIVE production `parseFile` — see DEFECT 1's note on the metadata whitelist. Run at `--concurrency 2`: at the default 8 the same run degraded **3** files and lost 6 `uses` edges to the engine timeout on this loaded box, so the 8-worker figure is not used. Artifact `measurements/pass6-incoming-corpus.json`; pass 5's `pass5-incoming-corpus.json` is kept and superseded |
 | invocation-cause probe (`pass3-invocation-why.mts`) | re-run at this HEAD: **742 qualified invocations on the tree → 629 emitted, 53 guard-suppressed, 60 inside an error subtree, 0 unexplained**; 629 + 53 + 60 = 742, so the decomposition is closed. 0 files degraded | closes pass 2's open item. Its population is LARGER than the adversarial probe's A3 by 46, because A3 excludes error-bearing invocations from its population — see the cross-probe note under *`calls` residual* |
 | phantom-constraint probe (`pass3-phantom-constraint.mts`) | **53 phantoms in 22 files → 0**, same oracle both sides, which also clears 4 legitimate same-name indexes | a parse-tree oracle, because the name heuristic cannot decide it |
-| adversarial probe (`validation/m14/fixtures/sql/adversarial-probe.mts`) | re-run at this HEAD over all 1,955 files, 23 probe populations: **628 qualified invocations emitted**, 52 guard-suppressed, 16 unexplained by this probe's population, **3,892 of 3,892** `calls` tiers and **9,106 of 9,106** `uses` tiers AGREE, A12's 6 verdicts read off node types and fields | **0 files degraded at this HEAD**, against 1 engine-timeout and 6 regex-fallback files at pass 3 — the pass-4 optimization is what removed them. The 16 is not a defect: see the cross-probe note under *`calls` residual* |
+| adversarial probe (`validation/m14/fixtures/sql/adversarial-probe.mts`) | re-run at pass 8 over all 1,955 files, 24 probe populations: **628 qualified invocations emitted**, 52 guard-suppressed, 16 unexplained by this probe's population, **3,892 of 3,892** `calls` tiers and **9,101 of 9,101** `uses` tiers AGREE, A12's **7** verdicts read off node types and fields | **1 file degraded this run**, against 0 at pass 4 — `duckdb/extension/tpcds/dsdgen/queries/87.sql` returned `extractFallback` and lost **5** `uses` edges, which is the whole 9,106 → 9,101 difference; solo, `parseFile` yields that file's 5 `uses` edges in **4 of 4** attempts. Same load-sensitivity class as *PASS 7*, in a different instrument. The 16 is not a defect: see the cross-probe note under *`calls` residual* |
+| `partition_by` site walk (`partition-by-sites.mts`, added at pass 8) | **44 occurrences over 1,955 files at 0 parse failures; nearest parent `window_specification` 44 of 44; 1 inside a `create_table` and it is a CTAS with `create_query` in the chain; 0 inside a table-partitioning declaration** | added because the page's own `partition` substring count named 2 of the 3 matching node types. Generic over `--type`, so the same walk answers "where does node type X actually sit" for any near-miss name a reader raises. Artifact `measurements/pass8-partition-by-sites.json` |
 | `overrides` reconciliation (`validation/m14/fixtures/sql/overrides-reconciliation.mts`) | **34 events → 22 per-file edge keys = production's 22 exactly**; the probe's rule reproduces its committed **15**, and the 19-edge difference is **12 multiplicity + 7 visit order = 19, exact**. The probe's 48-char text read of `OR REPLACE` and the analyzer's `keyword_replace` node read disagree on **0 of 4,645 declarations** | closes limitation 14. Its own first version joined pass 2 to pass 1 on line number and produced visit indices of 48 and 216 for a group of two declarations; the fix keys on `startIndex` and that failure is recorded in its header |
 | construct probe (`validation/m14/fixtures/sql/construct-probe.mts`) | **480 distinct node types**, 0 parse failures, **every zero probe 0**, and no node type anywhere contains `export`/`module`/`provide` | `exports-keyword` was 1 and is now 0: the 1 was a COLUMN named `module`, and the old probe counted declaration names |
 | ruling table (`validation/m14/fixtures/sql/run-ruling-table.mts`) and the 8-shard arbiter (`run-sharded-arbiter.mts`) | **re-run at this HEAD: `emitted 7/10   ruled-sound 3   FALSIFIED 0   ruled-without-justification 0`, with 8/8 shards answering all ten rows** and per-type edge counts identical to the census (3,892 / 9,106 / 11,977 / 52 / 5,996 / 22 / 21) | the arbiter on disk is untouched; the copy is written under `node_modules/` and removed. Its patch anchor was **stale** and exited 2 until pass 3 re-anchored it on the declaration rather than the literal. Its printed node-type count is wrong — see *Instrument A's denominator* |
@@ -1553,9 +1708,9 @@ each specified so it can be applied without re-deriving it.
   wrong. The supabase commit `7a7f0810f` fixed a related wasm temp-path race; this is the second half.
 - **`src/lsp/impact.ts` should match reverse-edge targets by (name, owner, file), not by name.**
   Re-measured over 1,955 files at this HEAD: a `contains` target resolves uniquely by bare name
-  corpus-wide on **92.71 %** of edges, by (name, `ownerName`) within its own file on **99.54 %**,
-  and **99.61 %** once `metadata.memberKind` is added — while (name, `ownerName`) corpus-wide is
-  unique on only **45.62 %**, median 2 matches. So the file is not optional: without it the reverse
+  corpus-wide on **92.71 %** of edges, by (name, `ownerName`) within its own file on **99.53 %**,
+  and **99.60 %** once `metadata.memberKind` is added — while (name, `ownerName`) corpus-wide is
+  unique on only **45.61 %**, median 2 matches. So the file is not optional: without it the reverse
   walk is ambiguous on more than half the edges. `ownerName` and `kind` are ALREADY on the member
   symbol and `metadata.memberKind` is on the edge, so no schema change and no stored inbound edge is
   required — only the match rule. The residual 47 intra-file cases are two `property` symbols of one
@@ -1798,9 +1953,9 @@ above can be used for.
     SYMBOLS remain indistinguishable and `bb_impact` on the name picks one. Closing it needs a
     `trigger` SymbolKind, and `src/ast/types.ts` is supervisor-owned. §8.
 18. **Cross-file, `ownerName` does not disambiguate a `contains` target.** Intra-file (name,
-    `ownerName`) resolves **11,921 of 11,977 = 99.54 %** — 11,929 = 99.61 % once the edge's own
+    `ownerName`) resolves **11,921 of 11,977 = 99.53 %** — 11,929 = 99.60 % once the edge's own
     `metadata.memberKind` is added — but corpus-wide (name, `ownerName`) is unique for only **5,463
-    of 11,977 = 45.62 %**, median 2 matches, because a migrations corpus declares `users(id)` in
+    of 11,977 = 45.61 %**, median 2 matches, because a migrations corpus declares `users(id)` in
     many files. The disambiguator a cross-file consumer needs is the FILE, and `src/lsp/impact.ts`
     currently matches targets by name alone. §8.
 19. **The two `keepSymbol` measurements that two earlier passes recorded as disagreeing are
