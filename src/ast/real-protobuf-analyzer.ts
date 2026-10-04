@@ -376,7 +376,7 @@ export class RealProtobufAnalyzer implements ASTEngine.LanguageAnalyzer {
           ? (s.metadata.fieldNumber as string | null)
           : null
       if (s.kind === ASTEngine.SymbolKind.Property && fieldNumber !== null) {
-        const slotKey = `${String(s.ownerName ?? "")} ${fieldNumber}`
+        const slotKey = `${String(s.ownerName ?? "")}\u0000${fieldNumber}`
         const prev = slotClaims.get(slotKey)
         // Direction is DOCUMENT order, read off the range, because the worklist is
         // LIFO: for two sibling fields the declaration added second here is the
