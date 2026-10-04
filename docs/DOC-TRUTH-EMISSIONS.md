@@ -29,7 +29,7 @@ The export-site: ExportInfo[] channel is live in **41 of 48** analyzers.
 | cpp | `imports (import-site: ImportInfo[])` | `src/ast/real-cpp-analyzer.ts` | 269 | ❌ **never as a relationship** |
 | cpp | `exports (export-site: ExportInfo[])` | `src/ast/real-cpp-analyzer.ts` | 270 | ❌ **never as a relationship** |
 | csharp | `uses (relationship)` | `src/ast/real-csharp-analyzer.ts` | 51 | ❌ (not emitted) |
-| css | `exports (export-site: ExportInfo[])` | `src/ast/real-css-analyzer.ts` | 171 | no — RULED |
+| css | `exports (export-site: ExportInfo[])` | `src/ast/real-css-analyzer.ts` | 348 | no — RULED |
 | go | `exports (export-site: ExportInfo[])` | `src/ast/real-go-analyzer.ts` | 68 | ❌ not emitted |
 | java | `imports (import-site: ImportInfo[])` | `src/ast/real-java-analyzer.ts` | 68 | ❌ **not emitted** |
 | scala | `uses (relationship)` | `src/ast/real-scala-analyzer.ts` | 50 | ❌ (not emitted) |
@@ -51,7 +51,7 @@ This is the population the gate MEASURES rather than blocks. Each row is one ana
 | csharp | `calls (relationship)` | line 44 |
 | csharp | `imports (import-site: ImportInfo[])` | line 44 |
 | csharp | `exports (export-site: ExportInfo[])` | line 44 |
-| css | `contains (relationship)` | line 161 |
+| css | `contains (relationship)` | line 338 |
 | dart | `calls (relationship)` | line 58 |
 | elixir | `contains (relationship)` | line 42 |
 | elixir | `imports (import-site: ImportInfo[])` | line 42 |
@@ -139,7 +139,7 @@ This is the population the gate MEASURES rather than blocks. Each row is one ana
 | clojure | `calls contains extends implements instantiates references uses` | import-site: ImportInfo[], export-site: ExportInfo[] | line 96, 10 rows |
 | cpp | `calls contains extends instantiates overrides references uses` | import-site: ImportInfo[], export-site: ExportInfo[] | line 259, 9 rows |
 | csharp | `calls contains extends implements instantiates overrides references uses` | import-site: ImportInfo[], export-site: ExportInfo[] | line 44, 9 rows |
-| css | `contains overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | line 161, 9 rows |
+| css | `contains overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | line 338, 9 rows |
 | dart | `calls contains exports extends implements instantiates overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | line 58, 9 rows |
 | elixir | `calls contains implements instantiates references` | import-site: ImportInfo[], export-site: ExportInfo[] | line 42, 5 rows |
 | erlang | `calls contains exports implements instantiates references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | line 55, 5 rows |
