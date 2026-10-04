@@ -112,10 +112,12 @@ const splice = (withTable: boolean, withLang: boolean): string => {
   return s
 }
 
+const NOISE_PREFIX = "[INFO]"
+const NOISE_TOKENS = ["BB-PARSE-ERR", "BB-HANG"]
 const clean = (s: string): string =>
   s
     .split("\n")
-    .filter((l) => !/^\[INFO\]/.test(l) && !/BB-PARSE-ERR|BB-HANG/.test(l))
+    .filter((l) => !l.startsWith(NOISE_PREFIX) && !NOISE_TOKENS.some((t) => l.includes(t)))
     .join("\n")
 
 const run = (label: string, code: string, tailOnly = false): string => {
