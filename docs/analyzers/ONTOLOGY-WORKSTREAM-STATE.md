@@ -1221,3 +1221,76 @@ local rather than imported from `real-css-analyzer` so the two lanes stay indepe
 Note the shape of that second check: not "the tests still pass" but *the entire
 emitted graph, hashed, before and after*. A regex removal that changed one selector
 name in one file would pass every fixture and still be wrong.
+
+## Firing sweep — 26 lanes, production `parseFile`, 120-file deterministic sample
+
+Artifact: `validation/m14/measurements/firing-sweep-26-lanes.ndjson`
+Analyzer digest verified **stable before and after** each lane's walk.
+
+```
+lane        fired ruled  appl     edges   files      corpus  degraded
+haskell        10      0    10     5,987  120/120      3,702   0
+clean           9      0     9    16,231  120/120        312   0
+dart            9      0     9     8,290  120/120     33,755   0
+fsharp          9      1    10    12,517  120/120     11,809   0
+php             9      0     9     9,454  112/120      4,994   0
+python          9      0     9    11,092   87/120      9,322   0
+groovy          8      0     8     3,883  120/120      8,105   0
+java            8      0     8    12,129  117/120     11,433   0
+julia           8      1     9    18,968  120/120        971   0
+lua             8      1     9     8,593  120/120      3,252   0
+nim             8      1     9     6,438  120/120      4,555   0
+powershell      8      0     8    18,855  119/120      1,180   0
+r               8      0     8     5,284  120/120      2,184   0
+ruby            8      0     8     6,956   56/120        431   0
+scala           8      0     8     3,442  120/120     18,917   0
+bash            6      1     7     4,355  107/120      3,702   0
+json            6      1     7    44,246  115/120     13,181   1
+make            6      0     6     8,656  109/120        755   0
+sql             6      0     6     1,414  120/120      1,963   0
+css             5      0     5    73,369  120/120      1,196   0
+hcl             5      0     5     3,440  120/120      9,329   0
+scss            5      0     5       510  120/120      4,404   1
+xml             5      0     5     1,548  120/120     11,515   0
+yaml            5      0     5    15,030  116/120     17,666   0
+protobuf        3      1     4     2,069   10/120      8,524   0
+toml            1      1     2     1,729  104/120      1,339   0
+------------------------------------------------------------
+TOTAL         180      8   188   304,485
+unknown endpoints 0 · empty symbol names 0 · empty/unknown kinds 0 — ALL 26 lanes
+```
+
+### How to read it
+
+**Only `haskell` fires all ten outright. `fsharp` reaches 10/10 *applicable*** — 9
+fired plus 1 ruled with a written justification that the grammar produces no node
+expressing it.
+
+**The other 24 lanes carry no ruling table, so their applicable figure is a LOWER
+BOUND.** The missing types are **unadjudicated, not inapplicable**. `toml` at 1+1 is
+the clearest: 8 of its 10 types have no ruling at all, so `2/10 applicable` is not a
+claim — it is an absence of adjudication wearing a claim's clothes. The arbiter
+(`ontology-coverage-gate.ts`) covers **9 of 26** lanes, which is the number that
+actually bounds how much of this table is decidable today.
+
+### Two sample caveats that are NOT analyzer defects
+
+- **protobuf parsed 10/120** — only ~8% of its corpus is `.proto`, so a
+  corpus-wide stride samples mostly other languages. Needs a **corpus-scoped**
+  sample, not a wider one.
+- **ruby 56/120** — its corpus is 431 files, too small to stride 120 from.
+
+### The two degraded files, now named
+
+The sweep reported `json: 1 degraded`, `scss: 1 degraded` with an **empty**
+`degradedDetail` — a count that cannot be resolved back to the thing counted, so
+acting on it meant re-running and hoping. The instrument now names each file:
+
+```
+json  vega/docs/data/movies.json                1,399,981 bytes · 3,201-element array
+scss  consul/.../styles/base/icons/debug.scss  1,628,440 bytes · generated sprite
+```
+
+Both are legitimately oversized generated/data files, so **the fallback is correct**.
+The disclosure is the fix. Left as a bare count it would have read as "one file
+failed" rather than "one file is 1.6 MB and the analyzer declined".
