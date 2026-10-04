@@ -1,0 +1,277 @@
+{
+  "generatedAt": "2026-10-03T23:44:27.946Z",
+  "corpusRoot": "$HOME/fixtures/repositories",
+  "filesScanned": 4642,
+  "pipelineCrossCheckFiles": 4642,
+  "pipelineCrossCheckCompleted": 4642,
+  "pipelineCrossCheckFailed": 0,
+  "pipelineCrossCheckFailures": [],
+  "pipelineCrossCheckUniverse": 4642,
+  "envSkippedForParseBomb": [],
+  "distinctNodeTypes": 277,
+  "probes": {
+    "P1a-global-builtin-import": {
+      "occurrences": 6140,
+      "files": 1506
+    },
+    "P1b-qualified-reexport": {
+      "occurrences": 12,
+      "files": 8
+    },
+    "P2a-file-level-return-no-named-value": {
+      "occurrences": 2,
+      "files": 2
+    },
+    "P2b-file-level-return-named-value": {
+      "occurrences": 28,
+      "files": 20
+    },
+    "P3-alias-call": {
+      "occurrences": 0,
+      "files": 0
+    },
+    "P4-define-literal": {
+      "occurrences": 60,
+      "files": 20
+    },
+    "P4b-define-non-literal": {
+      "occurrences": 1,
+      "files": 1
+    }
+  },
+  "p1Targets": {
+    "distinct": 4,
+    "alreadyPublishedAsImports": 4,
+    "notPublishedAsImports": 0,
+    "notPublishedSample": [],
+    "list": [
+      "FastRoute\\simpleDispatcher",
+      "Foo\\FOO",
+      "Foo\\foo",
+      "PHPUnit\\TestFixture\\Generator\\f"
+    ]
+  },
+  "p1bRedeclaredByFile": {
+    "count": 3,
+    "occurrences": [
+      {
+        "file": "nvim-treesitter/tests/query/highlights/php/keywords.php",
+        "target": "Foo\\foo",
+        "leaf": "foo"
+      },
+      {
+        "file": "nvim-treesitter/tests/query/highlights/php/namespaces.php",
+        "target": "Foo\\foo",
+        "leaf": "foo"
+      },
+      {
+        "file": "nvim-treesitter/tests/query/highlights/php/namespaces.php",
+        "target": "Foo\\foo",
+        "leaf": "foo"
+      }
+    ]
+  },
+  "importTargetsDistinct": 2935,
+  "examples": [
+    {
+      "probe": "P4-define-literal",
+      "file": "FSharp.Formatting/csharp/MarkdownSharpTests/source/php/markdown.php",
+      "detail": "'MARKDOWN_VERSION'  [string]"
+    },
+    {
+      "probe": "P4-define-literal",
+      "file": "FSharp.Formatting/csharp/MarkdownSharpTests/source/php/markdown.php",
+      "detail": "'MARKDOWN_EMPTY_ELEMENT_SUFFIX'  [string]"
+    },
+    {
+      "probe": "P4-define-literal",
+      "file": "FSharp.Formatting/csharp/MarkdownSharpTests/source/php/markdown.php",
+      "detail": "'MARKDOWN_TAB_WIDTH'  [string]"
+    },
+    {
+      "probe": "P4-define-literal",
+      "file": "FSharp.Formatting/csharp/MarkdownSharpTests/source/php/markdown.php",
+      "detail": "'MARKDOWN_WP_POSTS'  [string]"
+    },
+    {
+      "probe": "P4-define-literal",
+      "file": "FSharp.Formatting/csharp/MarkdownSharpTests/source/php/markdown.php",
+      "detail": "'MARKDOWN_WP_COMMENTS'  [string]"
+    },
+    {
+      "probe": "P4-define-literal",
+      "file": "FSharp.Formatting/csharp/MarkdownSharpTests/source/php/markdown.php",
+      "detail": "'MARKDOWN_PARSER_CLASS'  [string]"
+    },
+    {
+      "probe": "P4-define-literal",
+      "file": "cloogle.org/frontend/api.php",
+      "detail": "'SERVER_HOSTNAME'  [string]"
+    },
+    {
+      "probe": "P4-define-literal",
+      "file": "cloogle.org/frontend/api.php",
+      "detail": "'SERVER_PORT'  [string]"
+    },
+    {
+      "probe": "P4-define-literal",
+      "file": "cloogle.org/frontend/api.php",
+      "detail": "'SERVER_TIMEOUT'  [string]"
+    },
+    {
+      "probe": "P4-define-literal",
+      "file": "cloogle.org/frontend/api.php",
+      "detail": "'DOS_INITIAL_BLOCK'  [string]"
+    },
+    {
+      "probe": "P4-define-literal",
+      "file": "cloogle.org/frontend/api.php",
+      "detail": "'DOS_BLOCK_MULTIPLY'  [string]"
+    },
+    {
+      "probe": "P4-define-literal",
+      "file": "cloogle.org/frontend/api.php",
+      "detail": "'DOS_MAX_BLOCK'  [string]"
+    },
+    {
+      "probe": "P4-define-literal",
+      "file": "cloogle.org/frontend/conf.php",
+      "detail": "'CLOOGLE_DB_HOST'  [string]"
+    },
+    {
+      "probe": "P4-define-literal",
+      "file": "cloogle.org/frontend/conf.php",
+      "detail": "'CLOOGLE_DB_USER'  [string]"
+    },
+    {
+      "probe": "P4-define-literal",
+      "file": "cloogle.org/frontend/conf.php",
+      "detail": "'CLOOGLE_DB_NAME'  [string]"
+    },
+    {
+      "probe": "P4-define-literal",
+      "file": "cloogle.org/frontend/conf.php",
+      "detail": "'CLOOGLE_DB_PASS'  [string]"
+    },
+    {
+      "probe": "P4-define-literal",
+      "file": "cloogle.org/frontend/conf.php",
+      "detail": "'CLOOGLE_KEEP_STATISTICS'  [string]"
+    },
+    {
+      "probe": "P4-define-literal",
+      "file": "cloogle.org/frontend/conf.php",
+      "detail": "'E_CLOOGLEDOWN'  [string]"
+    },
+    {
+      "probe": "P4-define-literal",
+      "file": "cloogle.org/frontend/conf.php",
+      "detail": "'E_ILLEGALMETHOD'  [string]"
+    },
+    {
+      "probe": "P4-define-literal",
+      "file": "cloogle.org/frontend/conf.php",
+      "detail": "'E_ILLEGALREQUEST'  [string]"
+    },
+    {
+      "probe": "P4-define-literal",
+      "file": "cloogle.org/frontend/conf.php",
+      "detail": "'E_TIMEOUT'  [string]"
+    },
+    {
+      "probe": "P4-define-literal",
+      "file": "cloogle.org/frontend/conf.php",
+      "detail": "'E_DOSPROTECT'  [string]"
+    },
+    {
+      "probe": "P4-define-literal",
+      "file": "cloogle.org/frontend/conf.php",
+      "detail": "'E_QUERYTOOLONG'  [string]"
+    },
+    {
+      "probe": "P4-define-literal",
+      "file": "cloogle.org/frontend/conf.php",
+      "detail": "'DOS_MAX_REQUESTS_PER_SECOND'  [string]"
+    },
+    {
+      "probe": "P4-define-literal",
+      "file": "cloogle.org/frontend/doc/contents.php",
+      "detail": "'CLEANHOME'  [string]"
+    },
+    {
+      "probe": "P4-define-literal",
+      "file": "cloogle.org/frontend/doc/src.php",
+      "detail": "'CLEANHOME'  [string]"
+    },
+    {
+      "probe": "P4-define-literal",
+      "file": "cloogle.org/frontend/src/lib.php",
+      "detail": "'CLEANHOME'  [string]"
+    },
+    {
+      "probe": "P4-define-literal",
+      "file": "cloogle.org/frontend/src/lib.php",
+      "detail": "'CLEANLIB'  [string]"
+    },
+    {
+      "probe": "P4-define-literal",
+      "file": "cloogle.org/frontend/src/src.php",
+      "detail": "'CLEAN_HOME'  [string]"
+    },
+    {
+      "probe": "P2a-file-level-return-no-named-value",
+      "file": "cloogle.org/frontend/stats/ajax/conf.php",
+      "detail": "return;  [(none)]"
+    },
+    {
+      "probe": "P4-define-literal",
+      "file": "cloogle.org/frontend/stats/ajax/conf.php",
+      "detail": "'SQL_NOT_SILLYUSER'  [string]"
+    },
+    {
+      "probe": "P4-define-literal",
+      "file": "cloogle.org/frontend/stats/ajax/conf.php",
+      "detail": "'SQL_SERVER_ERROR'  [string]"
+    },
+    {
+      "probe": "P2b-file-level-return-named-value",
+      "file": "nvim-treesitter/tests/indent/php/issue-4848.php",
+      "detail": "return ( );  [parenthesized_expression]"
+    },
+    {
+      "probe": "P2a-file-level-return-no-named-value",
+      "file": "nvim-treesitter/tests/indent/php/issue-4848.php",
+      "detail": "return true ;  [boolean]"
+    },
+    {
+      "probe": "P2b-file-level-return-named-value",
+      "file": "nvim-treesitter/tests/indent/php/issue-4848.php",
+      "detail": "return fn () => ( );  [arrow_function]"
+    },
+    {
+      "probe": "P2b-file-level-return-named-value",
+      "file": "nvim-treesitter/tests/indent/php/issue-4848.php",
+      "detail": "return fn ( ) => ( );  [arrow_function]"
+    },
+    {
+      "probe": "P2b-file-level-return-named-value",
+      "file": "nvim-treesitter/tests/indent/php/issue-4848.php",
+      "detail": "return function ( ) { };  [anonymous_function]"
+    },
+    {
+      "probe": "P2b-file-level-return-named-value",
+      "file": "nvim-treesitter/tests/indent/php/issue-4848.php",
+      "detail": "return function () { };  [anonymous_function]"
+    },
+    {
+      "probe": "P2b-file-level-return-named-value",
+      "file": "nvim-treesitter/tests/indent/php/issue-4848.php",
+      "detail": "return match ( ) { };  [match_expression]"
+    },
+    {
+      "probe": "P2b-file-level-return-named-value",
+      "file": "nvim-treesitter/tests/indent/php/issue-4848.php",
+      "detail": "return match () { };  [match_expression]"
+    }
+  ]
+}

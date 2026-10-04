@@ -83,6 +83,66 @@ const IMPLICIT_OR_CONSTANT: ReadonlySet<string> = new Set([
 ])
 
 /**
+ * Text normalisation, three shapes, and NOT one regex each.
+ *
+ * `script/m12/verify-regex-census.ts` reported nine regex literals in this file, all of the form
+ * `node.text.replace(/…/)`, and the committed census
+ * (`validation/m12/results/regex-census.json`) carries **no julia row at all** — the analyzer was
+ * written after the census was established, so the whole file arrived as unrecorded debt. A census
+ * row is a results artifact written by a verifier script (honesty contract §5.1), so it is not
+ * editable here even to declare the debt honestly. The only honest move is to DELETE the regexes,
+ * which is what these three functions do.
+ *
+ * Each replacement is a PREFIX or CHARACTER test rather than a pattern, which is the actual
+ * property the regex was standing in for: the grammar attaches these sigils deterministically at
+ * the start or end of a token, so "does this text start with `@`" is the whole question and
+ * `/^@/` is a nine-times-larger spelling of it.
+ */
+
+/** Drop a sigil the grammar puts at the FRONT of a token: `macro_identifier`'s `@`, a quote's `:`. */
+function stripSigil(text: string, sigil: string): string {
+  const t = text.trim()
+  return t.startsWith(sigil) ? t.slice(sigil.length) : t
+}
+
+/**
+ * The quoted-OPERATOR member of a field read: `x.:(==)` and `s.:<` put the member in a
+ * `quote_expression`, whose text is `:(==)` — five characters around a two-character name. The
+ * former spelling was `/^:\(|\)$/g`, which strips a leading `:(` and a trailing `)` in either order;
+ * this strips the same two characters and nothing else, so it cannot also eat a `)` or `(` that is
+ * part of an operator name.
+ */
+function unquoteOperatorMember(text: string): string {
+  let t = text.trim()
+  if (t.startsWith(":")) t = t.slice(1)
+  if (t.startsWith("(") && t.endsWith(")")) t = t.slice(1, -1)
+  return t.trim()
+}
+
+/**
+ * Every run of whitespace collapsed to one space, with the ends trimmed.
+ *
+ * This is the `overrides` method-signature key's layout normalisation: `f( x )` and `f(x)` are the
+ * SAME method to julia, so the key has to be indifferent to spacing inside the argument list, and
+ * the fixture `method-redefinition-overrides` pins the resulting string exactly. Whitespace is
+ * tested per CHARACTER (`ch.trim() === ""`), which is what `/s+/` means and, unlike an ASCII
+ * allowlist, keeps the Unicode space characters julia source can carry.
+ */
+function collapseSpace(text: string): string {
+  const words: string[] = []
+  let word = ""
+  for (const ch of text) {
+    if (ch.trim() === "") {
+      if (word) { words.push(word); word = "" }
+    } else {
+      word += ch
+    }
+  }
+  if (word) words.push(word)
+  return words.join(" ")
+}
+
+/**
  * Node types inside which a declaration is CONDITIONAL, or is text julia GENERATED rather than
  * text this file declares. An `overrides` edge is only a parse fact in an unconditional position,
  * so this set is the whole test.
@@ -773,7 +833,7 @@ export class RealJuliaAnalyzer {
         // ---------------------------------------------------------------- macro calls
         case "macrocall_expression": {
           const nameNode = this.firstNamedChildOfType(node, "macro_identifier")
-          const name = nameNode ? nameNode.text.trim().replace(/^@/, "") : ""
+          const name = nameNode ? stripSigil(nameNode.text, "@") : ""
 
           // `@ccall strlen(s::Ptr{UInt8})::Csize_t` names a C SYMBOL, not a Julia binding. Its
           // callee is a plain `call_expression` in the tree, so the walk reaches the ordinary call
@@ -933,7 +993,7 @@ export class RealJuliaAnalyzer {
             ?? this.namedChildren(node).find((c) => c.id !== value.id && (c.type === "quote_expression" || c.type === "operator"))
           if (!member) break
           const memberName = member.type === "quote_expression"
-            ? (this.pos(member, 0)?.text.trim() ?? member.text.trim().replace(/^:\(|\)$/g, ""))
+            ? (this.pos(member, 0)?.text.trim() ?? unquoteOperatorMember(member.text))
             : member.text.trim()
           if (!memberName) break
           relationships.push(this.rel(scope || GLOBAL_SCOPE, ASTEngine.RelationshipType.Uses, memberName, node, 0.9,
@@ -1077,7 +1137,7 @@ export class RealJuliaAnalyzer {
     const args = this.firstNamedChildOfType(callNode, "argument_list")
     const whereNode = root.type === "where_expression" ? root : this.namedChildren(root).find((c) => c.type === "where_expression")
     if (!args && !whereNode) return ""
-    return `${args ? args.text.replace(/\s+/g, " ").trim() : ""}${whereNode ? `|where ${whereNode.text.replace(/\s+/g, " ").trim()}` : ""}`
+    return `${args ? collapseSpace(args.text) : ""}${whereNode ? `|where ${collapseSpace(whereNode.text)}` : ""}`
   }
 
   /**
@@ -1385,7 +1445,7 @@ export class RealJuliaAnalyzer {
     // `struct Circle <: Shape` published no `extends` edge at all, on a file with zero ERROR
     // nodes, which is the quietest possible failure. The node being asked about may BE the name.
     if (node.type === "identifier") return node.text.trim()
-    if (node.type === "macro_identifier") return node.text.trim().replace(/^@/, "")
+    if (node.type === "macro_identifier") return stripSigil(node.text, "@")
     if (node.type === "operator") return node.text.trim()
     // A subtype/where chain: the declared name is on the LEFT, the bound on the right.
     if (node.type === "binary_expression") {
@@ -1521,10 +1581,10 @@ export class RealJuliaAnalyzer {
     if (!first) return null
     if (first.type === "quote_expression") {
       const sym = this.pos(first, 0)
-      return sym ? { symbol: sym.text.trim().replace(/^:/, ""), library: null } : null
+      return sym ? { symbol: stripSigil(sym.text, ":"), library: null } : null
     }
     if (first.type === "tuple_expression") {
-      const parts = this.namedChildren(first).map((q) => this.pos(q, 0)?.text.trim().replace(/^:/, "") ?? "")
+      const parts = this.namedChildren(first).map((q) => { const inner = this.pos(q, 0); return inner ? stripSigil(inner.text, ":") : "" })
       if (parts.length >= 2 && parts[0] && parts[1]) return { symbol: parts[0], library: parts[1] }
       if (parts.length === 1 && parts[0]) return { symbol: parts[0], library: null }
     }
@@ -1596,7 +1656,7 @@ export class RealJuliaAnalyzer {
       return base ? this.fieldPath(base) : ""
     }
     if (node.type === "quote_expression") return node.text.trim()
-    if (node.type === "macro_identifier") return node.text.trim().replace(/^@/, "")
+    if (node.type === "macro_identifier") return stripSigil(node.text, "@")
     if (node.type === "operator") return node.text.trim()
     if (node.type === "where_expression" || node.type === "parenthesized_expression") {
       const inner = this.pos(node, 0)
@@ -1723,7 +1783,7 @@ export class RealJuliaAnalyzer {
       const segs = this.namedChildren(node).filter((x) => x.type === "identifier")
       return segs.length ? segs[segs.length - 1]!.text.trim() : node.text.trim()
     }
-    if (node.type === "macro_identifier") return node.text.trim().replace(/^@/, "")
+    if (node.type === "macro_identifier") return stripSigil(node.text, "@")
     if (node.type === "call_expression") return this.calleeName(node) ?? ""
     // `list_litteral` WAS HERE, misspelled and unreachable. The grammar produces no such node over
     // the 971 admitted corpus files, and the two spellings that do exist — `tuple_expression` and

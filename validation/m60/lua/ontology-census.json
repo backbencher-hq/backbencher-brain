@@ -1,14 +1,22 @@
 {
   "schemaVersion": 1,
   "kind": "lua_ontology_census",
-  "at": "2026-10-03T03:45:41.074Z",
-  "commit": "8286c73915f07683e2fe8b9bca846c59cecefabe",
+  "at": "2026-10-03T22:57:11.178Z",
+  "commit": "8db2257ec99f1bb348acde662e6ffd5a7ed6cb7c",
   "corpus": {
     "root": "$HOME/fixtures/repositories",
     "method": "git ls-files '*.lua' per repo, sorted, first all per repo (deterministic, not random)",
-    "filesDrawn": 3250,
+    "filesDrawn": 3252,
     "repos": {
       "Aporia": {
+        "tracked": 0,
+        "drawn": 0
+      },
+      "Argu": {
+        "tracked": 0,
+        "drawn": 0
+      },
+      "Bolero": {
         "tracked": 0,
         "drawn": 0
       },
@@ -16,7 +24,59 @@
         "tracked": 0,
         "drawn": 0
       },
+      "Deedle": {
+        "tracked": 0,
+        "drawn": 0
+      },
       "Exposed": {
+        "tracked": 0,
+        "drawn": 0
+      },
+      "FSharp.Data": {
+        "tracked": 0,
+        "drawn": 0
+      },
+      "FSharp.Formatting": {
+        "tracked": 0,
+        "drawn": 0
+      },
+      "FSharpPlus": {
+        "tracked": 0,
+        "drawn": 0
+      },
+      "FSharpx.Extras": {
+        "tracked": 0,
+        "drawn": 0
+      },
+      "Fabulous": {
+        "tracked": 0,
+        "drawn": 0
+      },
+      "Fake": {
+        "tracked": 0,
+        "drawn": 0
+      },
+      "Falco": {
+        "tracked": 0,
+        "drawn": 0
+      },
+      "FsAutoComplete": {
+        "tracked": 0,
+        "drawn": 0
+      },
+      "FsCheck": {
+        "tracked": 0,
+        "drawn": 0
+      },
+      "FsToolkit.ErrorHandling": {
+        "tracked": 0,
+        "drawn": 0
+      },
+      "Grace": {
+        "tracked": 0,
+        "drawn": 0
+      },
+      "Matrix": {
         "tracked": 0,
         "drawn": 0
       },
@@ -24,7 +84,23 @@
         "tracked": 0,
         "drawn": 0
       },
+      "Paket": {
+        "tracked": 0,
+        "drawn": 0
+      },
       "Prelude": {
+        "tracked": 0,
+        "drawn": 0
+      },
+      "R6": {
+        "tracked": 0,
+        "drawn": 0
+      },
+      "S7": {
+        "tracked": 0,
+        "drawn": 0
+      },
+      "Saturn": {
         "tracked": 0,
         "drawn": 0
       },
@@ -49,6 +125,22 @@
         "drawn": 0
       },
       "bigints": {
+        "tracked": 0,
+        "drawn": 0
+      },
+      "bootstrap": {
+        "tracked": 0,
+        "drawn": 0
+      },
+      "boundary": {
+        "tracked": 0,
+        "drawn": 0
+      },
+      "buckaroo": {
+        "tracked": 0,
+        "drawn": 0
+      },
+      "bulma": {
         "tracked": 0,
         "drawn": 0
       },
@@ -84,7 +176,19 @@
         "tracked": 0,
         "drawn": 0
       },
+      "consul": {
+        "tracked": 0,
+        "drawn": 0
+      },
+      "core": {
+        "tracked": 0,
+        "drawn": 0
+      },
       "cython": {
+        "tracked": 0,
+        "drawn": 0
+      },
+      "dark": {
         "tracked": 0,
         "drawn": 0
       },
@@ -124,6 +228,22 @@
         "tracked": 0,
         "drawn": 0
       },
+      "elmish": {
+        "tracked": 0,
+        "drawn": 0
+      },
+      "equinox": {
+        "tracked": 0,
+        "drawn": 0
+      },
+      "expecto": {
+        "tracked": 0,
+        "drawn": 0
+      },
+      "fantomas": {
+        "tracked": 0,
+        "drawn": 0
+      },
       "flutter-packages": {
         "tracked": 0,
         "drawn": 0
@@ -149,6 +269,10 @@
         "drawn": 0
       },
       "ghostty": {
+        "tracked": 0,
+        "drawn": 0
+      },
+      "giraffe": {
         "tracked": 0,
         "drawn": 0
       },
@@ -220,6 +344,10 @@
         "tracked": 65,
         "drawn": 65
       },
+      "libxslt": {
+        "tracked": 0,
+        "drawn": 0
+      },
       "lodash": {
         "tracked": 0,
         "drawn": 0
@@ -256,6 +384,10 @@
         "tracked": 1,
         "drawn": 1
       },
+      "nomad": {
+        "tracked": 0,
+        "drawn": 0
+      },
       "nvim-cmp": {
         "tracked": 57,
         "drawn": 57
@@ -284,6 +416,22 @@
         "tracked": 0,
         "drawn": 0
       },
+      "packer": {
+        "tracked": 0,
+        "drawn": 0
+      },
+      "pb-googleapis": {
+        "tracked": 0,
+        "drawn": 0
+      },
+      "pb-grpc": {
+        "tracked": 0,
+        "drawn": 0
+      },
+      "pb-reference": {
+        "tracked": 2,
+        "drawn": 2
+      },
       "phoenix": {
         "tracked": 0,
         "drawn": 0
@@ -296,6 +444,10 @@
         "tracked": 0,
         "drawn": 0
       },
+      "pico": {
+        "tracked": 0,
+        "drawn": 0
+      },
       "plenary.nvim": {
         "tracked": 113,
         "drawn": 113
@@ -305,6 +457,10 @@
         "drawn": 0
       },
       "powershell": {
+        "tracked": 0,
+        "drawn": 0
+      },
+      "primer-css": {
         "tracked": 0,
         "drawn": 0
       },
@@ -392,6 +548,10 @@
         "tracked": 51,
         "drawn": 51
       },
+      "sass-spec": {
+        "tracked": 0,
+        "drawn": 0
+      },
       "scala3": {
         "tracked": 0,
         "drawn": 0
@@ -424,11 +584,19 @@
         "tracked": 0,
         "drawn": 0
       },
+      "spectre": {
+        "tracked": 0,
+        "drawn": 0
+      },
       "sqlalchemy": {
         "tracked": 0,
         "drawn": 0
       },
       "sqlite": {
+        "tracked": 0,
+        "drawn": 0
+      },
+      "suave": {
         "tracked": 0,
         "drawn": 0
       },
@@ -441,6 +609,22 @@
         "drawn": 0
       },
       "terraform": {
+        "tracked": 0,
+        "drawn": 0
+      },
+      "terraform-aws-components": {
+        "tracked": 0,
+        "drawn": 0
+      },
+      "terragrunt": {
+        "tracked": 0,
+        "drawn": 0
+      },
+      "tflint": {
+        "tracked": 0,
+        "drawn": 0
+      },
+      "tfsec": {
         "tracked": 0,
         "drawn": 0
       },
@@ -460,6 +644,10 @@
         "tracked": 0,
         "drawn": 0
       },
+      "vault": {
+        "tracked": 0,
+        "drawn": 0
+      },
       "vega": {
         "tracked": 0,
         "drawn": 0
@@ -473,6 +661,14 @@
         "drawn": 0
       },
       "wagtail": {
+        "tracked": 0,
+        "drawn": 0
+      },
+      "water.css": {
+        "tracked": 0,
+        "drawn": 0
+      },
+      "waypoint": {
         "tracked": 0,
         "drawn": 0
       },
@@ -499,15 +695,18 @@
   },
   "production": {
     "entryPoint": "src/ast/pool-worker.ts parseFile",
-    "wallMs": 142252,
-    "filesWithParseErrors": 4,
-    "parseErrorExamples": [],
+    "wallMs": 261850,
+    "filesWithParseErrors": 6,
+    "parseErrorExamples": [
+      "pb-reference/lua/test_upb.lua: threw",
+      "pb-reference/lua/upb.lua: threw"
+    ],
     "relationshipsByType": {
       "calls": {
-        "edges": 57392,
-        "files": 2583,
+        "edges": 57394,
+        "files": 2584,
         "repos": {
-          "hledger": 26,
+          "hledger": 28,
           "kong": 26375,
           "lapis": 1693,
           "lazy.nvim": 2063,
@@ -520,159 +719,158 @@
           "nvim-treesitter": 797,
           "plenary.nvim": 2289,
           "redis": 116,
-          "rocks.nvim": 1108,
           "ripgrep": 1,
+          "rocks.nvim": 1108,
           "snacks.nvim": 7221,
           "trouble.nvim": 1176
         },
-        "bothResolved": 5652,
-        "sourceResolved": 14420,
-        "targetResolved": 16791,
+        "bothResolved": 5651,
+        "sourceResolved": 14423,
+        "targetResolved": 16789,
         "neitherResolved": 31833,
         "targetIsUnknownLiteral": 0,
         "sourceIsUnknownLiteral": 0,
-        "confidenceUnder07": 6,
+        "confidenceUnder07": 5,
         "confidenceValues": {
-          "1": 57386,
-          "0.5": 5,
+          "1": 57389,
+          "0.5": 4,
           "0.4": 1
         },
         "metadataRelationshipType": {
-          "absent": 57392
+          "absent": 57394
         },
         "evidenceClass": {
-          "absent": 6,
-          "structural": 57386
+          "absent": 5,
+          "structural": 57389
         },
-        "lineNumberPresent": 57386,
+        "lineNumberPresent": 57389,
         "unresolvedTargetExamples": [
-          "hledger/tools/pandoc-toc.lua: Header -> insert",
-          "hledger/tools/pandoc-toc.lua: markupLink -> Link",
-          "hledger/tools/pandoc-toc.lua: markupElement -> Plain",
-          "hledger/tools/pandoc-toc.lua: markupElements -> pairs",
-          "hledger/tools/pandoc-toc.lua: markupElements -> insert"
+          "hledger/tools/pandoc-drop-html-blocks.lua: RawBlock -> Null",
+          "hledger/tools/pandoc-dedent-code-blocks.lua: CodeBlock -> Para",
+          "hledger/tools/pandoc-dedent-code-blocks.lua: CodeBlock -> Str",
+          "kong/.ci/luacov-stats-aggregator.lua: global -> dir",
+          "kong/.ci/luacov-stats-aggregator.lua: global -> find"
         ],
         "resolvedExamples": [
           "hledger/tools/pandoc-demote-headers.lua: this -> Header",
           "hledger/tools/pandoc-demote-headers.lua: pandoc -> Header",
           "hledger/tools/pandoc-drop-html-inlines.lua: this -> RawInline",
-          "hledger/tools/pandoc-dedent-code-blocks.lua: this -> CodeBlock",
-          "hledger/tools/pandoc-drop-toc.lua: this -> Para"
+          "hledger/tools/pandoc-drop-toc.lua: this -> Para",
+          "hledger/tools/pandoc-drop-links.lua: this -> Link"
         ],
         "labelShape": {
-          "bare": 57390,
+          "bare": 57392,
           "other": 2
         }
       },
       "uses": {
-        "edges": 133189,
-        "files": 2666,
+        "edges": 54829,
+        "files": 2394,
         "repos": {
-          "hledger": 46,
-          "kong": 61015,
-          "lapis": 4209,
-          "lazy.nvim": 5238,
-          "lspsaga.nvim": 4630,
-          "luarocks": 12596,
-          "luvit": 7231,
-          "nvim-cmp": 2570,
-          "nvim-lspconfig": 5342,
-          "nvim-treesitter": 1428,
-          "plenary.nvim": 5024,
-          "redis": 226,
-          "rocks.nvim": 2224,
-          "ripgrep": 2,
-          "snacks.nvim": 18438,
-          "trouble.nvim": 2970
+          "hledger": 22,
+          "kong": 27209,
+          "lapis": 2526,
+          "lazy.nvim": 1455,
+          "lspsaga.nvim": 1383,
+          "luarocks": 6013,
+          "luvit": 3374,
+          "nvim-cmp": 741,
+          "nvim-lspconfig": 1735,
+          "nvim-treesitter": 562,
+          "plenary.nvim": 2535,
+          "redis": 150,
+          "rocks.nvim": 691,
+          "snacks.nvim": 5505,
+          "trouble.nvim": 928
         },
-        "bothResolved": 14180,
-        "sourceResolved": 33417,
-        "targetResolved": 54704,
-        "neitherResolved": 59248,
+        "bothResolved": 12287,
+        "sourceResolved": 17678,
+        "targetResolved": 39557,
+        "neitherResolved": 9881,
         "targetIsUnknownLiteral": 1,
         "sourceIsUnknownLiteral": 0,
         "confidenceUnder07": 0,
         "confidenceValues": {
-          "0.9": 133189
+          "0.9": 54829
         },
         "metadataRelationshipType": {
-          "lua_name_read": 133189
+          "lua_name_read": 54829
         },
         "evidenceClass": {
-          "usage_contextual": 133189
+          "usage_contextual": 54829
         },
-        "lineNumberPresent": 133189,
+        "lineNumberPresent": 54829,
         "unresolvedTargetExamples": [
-          "hledger/tools/pandoc-drop-links.lua: Link -> content",
-          "hledger/tools/pandoc-toc.lua: Header -> insert",
-          "hledger/tools/pandoc-toc.lua: Header -> h",
-          "hledger/tools/pandoc-toc.lua: markupLink -> identifier",
-          "hledger/tools/pandoc-toc.lua: markupLink -> attributes"
+          "hledger/tools/pandoc-drop-html-blocks.lua: RawBlock -> rb",
+          "kong/.ci/luacov-stats-aggregator.lua: global -> folder",
+          "kong/.ci/luacov-stats-aggregator.lua: global -> stat_data",
+          "kong/.ci/luacov-stats-aggregator.lua: global -> f_name",
+          "kong/.ci/luacov-stats-aggregator.lua: global -> data"
         ],
         "resolvedExamples": [
-          "hledger/tools/pandoc-toc.lua: Header -> headers",
-          "hledger/tools/pandoc-toc.lua: markupLink -> headerId",
-          "hledger/tools/pandoc-toc.lua: markupElement -> hAttr",
-          "hledger/tools/pandoc-toc.lua: markupElement -> hText",
-          "hledger/tools/pandoc-toc.lua: markupElement -> link"
+          "kong/.ci/luacov-stats-aggregator.lua: global -> base_path",
+          "kong/.ci/luacov-stats-aggregator.lua: global -> stats_folders_prefix",
+          "kong/.ci/luacov-stats-aggregator.lua: global -> file_name",
+          "kong/.ci/luacov-stats-aggregator.lua: global -> stats_file",
+          "kong/.ci/luacov-stats-aggregator.lua: global -> loaded"
         ],
         "labelShape": {
-          "bare": 133189
+          "bare": 54829
         }
       },
       "contains": {
-        "edges": 55320,
-        "files": 2500,
+        "edges": 55199,
+        "files": 2501,
         "repos": {
-          "hledger": 23,
-          "kong": 29537,
-          "lapis": 2704,
-          "lazy.nvim": 1390,
-          "lspsaga.nvim": 1342,
-          "luarocks": 5695,
-          "luvit": 3056,
-          "nvim-cmp": 759,
-          "nvim-lspconfig": 1484,
+          "hledger": 24,
+          "kong": 29490,
+          "lapis": 2702,
+          "lazy.nvim": 1378,
+          "lspsaga.nvim": 1339,
+          "luarocks": 5680,
+          "luvit": 3053,
+          "nvim-cmp": 755,
+          "nvim-lspconfig": 1483,
           "nvim-treesitter": 563,
-          "plenary.nvim": 2208,
+          "plenary.nvim": 2204,
           "redis": 122,
           "rocks.nvim": 767,
-          "snacks.nvim": 4809,
-          "trouble.nvim": 861
+          "snacks.nvim": 4783,
+          "trouble.nvim": 856
         },
-        "bothResolved": 25031,
-        "sourceResolved": 25216,
-        "targetResolved": 55078,
+        "bothResolved": 24931,
+        "sourceResolved": 25116,
+        "targetResolved": 54957,
         "neitherResolved": 57,
         "targetIsUnknownLiteral": 1,
         "sourceIsUnknownLiteral": 0,
         "confidenceUnder07": 0,
         "confidenceValues": {
-          "1": 55320
+          "1": 55199
         },
         "metadataRelationshipType": {
-          "absent": 55320
+          "absent": 55199
         },
         "evidenceClass": {
-          "structural": 55320
+          "structural": 55199
         },
-        "lineNumberPresent": 55320,
+        "lineNumberPresent": 55199,
         "unresolvedTargetExamples": [
           "kong/kong/cache/init.lua: new -> self",
           "kong/kong/cluster_events/init.lua: new -> self",
           "kong/kong/cluster_events/strategies/postgres.lua: new -> self",
-          "kong/kong/clustering/data_plane.lua: new -> self",
-          "kong/kong/clustering/control_plane.lua: new -> self"
+          "kong/kong/clustering/control_plane.lua: new -> self",
+          "kong/kong/clustering/data_plane.lua: new -> self"
         ],
         "resolvedExamples": [
-          "hledger/tools/pandoc-drop-links.lua: global -> Link",
-          "hledger/tools/pandoc-toc.lua: global -> headers",
-          "hledger/tools/pandoc-toc.lua: global -> Header",
-          "hledger/tools/pandoc-toc.lua: global -> markupLink",
-          "hledger/tools/pandoc-toc.lua: markupLink -> headerId"
+          "hledger/tools/pandoc-drop-html-blocks.lua: global -> RawBlock",
+          "hledger/tools/pandoc-dedent-code-blocks.lua: global -> CodeBlock",
+          "kong/.ci/luacov-stats-aggregator.lua: global -> luacov_stats",
+          "kong/.ci/luacov-stats-aggregator.lua: global -> luacov_reporter",
+          "kong/.ci/luacov-stats-aggregator.lua: global -> luacov_runner"
         ],
         "labelShape": {
-          "bare": 55320
+          "bare": 55199
         }
       },
       "imports": {
@@ -711,83 +909,81 @@
         },
         "lineNumberPresent": 6601,
         "unresolvedTargetExamples": [
-          "kong/autodoc/pdk/generate.lua: global -> pl.utils",
-          "kong/autodoc/cli/generate.lua: global -> autodoc.cli.data",
-          "kong/autodoc/pdk/ldoc/filters.lua: global -> pl.template",
           "kong/.ci/luacov-stats-aggregator.lua: global -> luacov.stats",
-          "kong/.ci/luacov-stats-aggregator.lua: global -> luacov.reporter"
+          "kong/.ci/luacov-stats-aggregator.lua: global -> luacov.reporter",
+          "kong/.ci/luacov-stats-aggregator.lua: global -> luacov.runner",
+          "kong/autodoc/pdk/generate.lua: global -> pl.utils",
+          "kong/autodoc/cli/generate.lua: global -> autodoc.cli.data"
         ],
         "resolvedExamples": [
+          "kong/.ci/luacov-stats-aggregator.lua: global -> lfs",
           "kong/autodoc/pdk/generate.lua: global -> lfs",
           "kong/autodoc/pdk/generate.lua: global -> cjson",
           "kong/autodoc/cli/generate.lua: global -> lfs",
-          "kong/.ci/luacov-stats-aggregator.lua: global -> lfs",
           "kong/kong/api/api_helpers.lua: global -> cjson"
         ],
         "labelShape": {
-          "bare": 1055,
           "dotted": 5288,
+          "bare": 1055,
           "other": 258
         }
       },
       "references": {
-        "edges": 44755,
-        "files": 2340,
+        "edges": 40014,
+        "files": 2316,
         "repos": {
-          "hledger": 13,
-          "kong": 21245,
-          "lapis": 1286,
-          "lazy.nvim": 2105,
-          "lspsaga.nvim": 1712,
-          "luarocks": 2906,
-          "luvit": 1715,
-          "nvim-cmp": 1278,
-          "nvim-lspconfig": 1635,
-          "nvim-treesitter": 350,
-          "plenary.nvim": 1234,
-          "redis": 22,
-          "rocks.nvim": 673,
+          "hledger": 14,
+          "kong": 19469,
+          "lapis": 1149,
+          "lazy.nvim": 1881,
+          "lspsaga.nvim": 1560,
+          "luarocks": 2599,
+          "luvit": 1371,
+          "nvim-cmp": 892,
+          "nvim-lspconfig": 1586,
+          "nvim-treesitter": 327,
+          "plenary.nvim": 944,
+          "redis": 20,
           "ripgrep": 1,
-          "snacks.nvim": 7451,
-          "trouble.nvim": 1129
+          "rocks.nvim": 591,
+          "snacks.nvim": 6626,
+          "trouble.nvim": 984
         },
-        "bothResolved": 2053,
-        "sourceResolved": 9504,
-        "targetResolved": 10245,
-        "neitherResolved": 27059,
-        "targetIsUnknownLiteral": 1,
+        "bothResolved": 1875,
+        "sourceResolved": 8569,
+        "targetResolved": 9441,
+        "neitherResolved": 23879,
+        "targetIsUnknownLiteral": 0,
         "sourceIsUnknownLiteral": 0,
         "confidenceUnder07": 0,
         "confidenceValues": {
-          "0.9": 44755
+          "0.9": 40014
         },
         "metadataRelationshipType": {
-          "lua_member_read": 44755
+          "lua_member_read": 40014
         },
         "evidenceClass": {
-          "import_based": 44755
+          "import_based": 40014
         },
-        "lineNumberPresent": 44755,
+        "lineNumberPresent": 40014,
         "unresolvedTargetExamples": [
-          "hledger/tools/pandoc-drop-links.lua: Link -> content",
+          "hledger/tools/pandoc-drop-html-blocks.lua: RawBlock -> format",
+          "hledger/tools/pandoc-dedent-code-blocks.lua: CodeBlock -> text",
           "hledger/tools/pandoc-toc.lua: markupLink -> identifier",
           "hledger/tools/pandoc-toc.lua: markupLink -> attributes",
-          "hledger/tools/pandoc-toc.lua: markupElement -> attr",
-          "hledger/tools/pandoc-toc.lua: markupElement -> label"
+          "hledger/tools/pandoc-toc.lua: markupElement -> attr"
         ],
         "resolvedExamples": [
-          "kong/kong/api/arguments.lua: global -> concat",
-          "kong/kong/api/arguments.lua: global -> insert",
-          "kong/kong/api/arguments.lua: global -> lower",
-          "kong/kong/api/arguments.lua: global -> find",
-          "kong/kong/api/arguments.lua: global -> sub"
+          "kong/kong/api/api_helpers.lua: global -> decode_args",
+          "kong/kong/api/api_helpers.lua: global -> header",
+          "kong/kong/api/api_helpers.lua: global -> sub",
+          "kong/kong/api/api_helpers.lua: global -> find",
+          "kong/kong/api/api_helpers.lua: global -> concat"
         ],
         "labelShape": {
-          "bare": 44049,
-          "other": 510,
-          "dotted": 194,
-          "colon": 1,
-          "payload": 1
+          "bare": 39530,
+          "other": 394,
+          "dotted": 90
         }
       },
       "exports": {
@@ -835,10 +1031,10 @@
         ],
         "resolvedExamples": [
           "kong/autodoc/cli/data.lua: global -> data",
-          "kong/kong/api/arguments.lua: global -> load",
-          "kong/kong/api/arguments.lua: global -> infer_value",
-          "kong/kong/api/arguments.lua: global -> decode",
-          "kong/kong/api/endpoints.lua: global -> Endpoints"
+          "kong/kong/api/api_helpers.lua: global -> _M",
+          "kong/kong/admin_gui/init.lua: global -> _M",
+          "kong/kong/admin_gui/utils.lua: global -> _M",
+          "kong/kong/api/arguments.lua: global -> load"
         ],
         "labelShape": {
           "bare": 5099,
@@ -848,20 +1044,20 @@
       },
       "extends": {
         "edges": 171,
-        "files": 132,
+        "files": 130,
         "repos": {
           "kong": 87,
           "lapis": 28,
-          "lazy.nvim": 2,
+          "lazy.nvim": 1,
           "lspsaga.nvim": 10,
-          "luarocks": 16,
+          "luarocks": 18,
           "luvit": 9,
           "nvim-lspconfig": 1,
           "nvim-treesitter": 1,
           "plenary.nvim": 11,
           "redis": 1,
           "rocks.nvim": 1,
-          "trouble.nvim": 4
+          "trouble.nvim": 3
         },
         "bothResolved": 62,
         "sourceResolved": 108,
@@ -871,13 +1067,16 @@
         "sourceIsUnknownLiteral": 0,
         "confidenceUnder07": 0,
         "confidenceValues": {
-          "1": 171
+          "1": 169,
+          "0.95": 2
         },
         "metadataRelationshipType": {
-          "lua_metatable": 171
+          "lua_metatable": 169,
+          "lua_factory_supertype": 2
         },
         "evidenceClass": {
-          "structural": 171
+          "structural": 169,
+          "usage_contextual": 2
         },
         "lineNumberPresent": 171,
         "unresolvedTargetExamples": [
@@ -891,8 +1090,8 @@
           "kong/kong/cache/init.lua: self -> mt",
           "kong/kong/cluster_events/init.lua: self -> mt",
           "kong/kong/cluster_events/strategies/postgres.lua: self -> mt",
-          "kong/kong/clustering/data_plane.lua: self -> _MT",
-          "kong/kong/clustering/control_plane.lua: self -> _MT"
+          "kong/kong/clustering/control_plane.lua: self -> _MT",
+          "kong/kong/clustering/data_plane.lua: self -> _MT"
         ],
         "labelShape": {
           "dotted": 48,
@@ -919,34 +1118,35 @@
         "labelShape": {}
       },
       "overrides": {
-        "edges": 66,
+        "edges": 67,
         "files": 38,
         "repos": {
           "kong": 23,
-          "luarocks": 9,
+          "luarocks": 10,
           "luvit": 29,
           "plenary.nvim": 1,
           "snacks.nvim": 4
         },
-        "bothResolved": 12,
-        "sourceResolved": 12,
-        "targetResolved": 65,
+        "bothResolved": 13,
+        "sourceResolved": 13,
+        "targetResolved": 66,
         "neitherResolved": 1,
         "targetIsUnknownLiteral": 0,
         "sourceIsUnknownLiteral": 0,
         "confidenceUnder07": 0,
         "confidenceValues": {
           "1": 65,
-          "0.95": 1
+          "0.95": 2
         },
         "metadataRelationshipType": {
           "lua_redefinition": 65,
-          "lua_inherited_member": 1
+          "lua_inherited_member": 2
         },
         "evidenceClass": {
-          "structural": 66
+          "structural": 65,
+          "usage_contextual": 2
         },
-        "lineNumberPresent": 66,
+        "lineNumberPresent": 67,
         "unresolvedTargetExamples": [
           "luarocks/vendor/compat53/module.lua: global -> M.io.lines"
         ],
@@ -958,7 +1158,7 @@
           "kong/kong/plugins/oauth2/secret.lua: crypt -> verify"
         ],
         "labelShape": {
-          "bare": 65,
+          "bare": 66,
           "dotted": 1
         }
       },
@@ -1010,39 +1210,37 @@
     },
     "otherRelationshipTypes": {},
     "symbols": {
-      "total": 83917,
+      "total": 83745,
       "kinds": {
-        "undefined": 9,
-        "function": 4225,
-        "variable": 74873,
+        "undefined": 8,
+        "function": 4226,
+        "variable": 74701,
         "method": 4810
       },
       "emptyName": 0,
-      "unknownKind": 9,
+      "unknownKind": 8,
       "examples": {
-        "unknownKind:docker/contrib/wireshark/moby-networkdb.lua:gossip_proto": "kind=undefined ownerName=undefined meta=null",
-        "unknownKind:docker/contrib/wireshark/moby-networkdb.lua:tableevent_proto": "kind=undefined ownerName=undefined meta=null",
         "unknownKind:hledger/tools/pandoc-demote-headers.lua:Header": "kind=undefined ownerName=undefined meta=null",
         "unknownKind:hledger/tools/pandoc-drop-html-inlines.lua:RawInline": "kind=undefined ownerName=undefined meta=null",
-        "unknownKind:hledger/tools/pandoc-dedent-code-blocks.lua:CodeBlock": "kind=undefined ownerName=undefined meta=null",
         "unknownKind:hledger/tools/pandoc-drop-toc.lua:Para": "kind=undefined ownerName=undefined meta=null",
-        "unknownKind:hledger/tools/pandoc-drop-html-blocks.lua:RawBlock": "kind=undefined ownerName=undefined meta=null",
-        "unknownKind:docker/contrib/wireshark/memberlist.lua:memberlist_protocol": "kind=undefined ownerName=undefined meta=null"
+        "unknownKind:hledger/tools/pandoc-drop-links.lua:Link": "kind=undefined ownerName=undefined meta=null",
+        "unknownKind:docker/contrib/wireshark/memberlist.lua:memberlist_protocol": "kind=undefined ownerName=undefined meta=null",
+        "unknownKind:docker/contrib/wireshark/moby-networkdb.lua:gossip_proto": "kind=undefined ownerName=undefined meta=null",
+        "unknownKind:docker/contrib/wireshark/moby-networkdb.lua:tableevent_proto": "kind=undefined ownerName=undefined meta=null"
       }
     },
     "endpointsUnknown": {
-      "edges": 3,
+      "edges": 2,
       "examples": [
         "kong/kong/router/utils.lua: traditional_statistics -[uses]-> unknown",
-        "kong/kong/router/utils.lua: traditional_statistics -[references]-> unknown",
         "kong/kong/router/utils.lua: traditional_statistics -[contains]-> unknown"
       ]
     },
     "fallbackProducer": {
-      "files": 7,
-      "edges": 6,
+      "files": 6,
+      "edges": 5,
       "edgesByType": {
-        "calls": 6
+        "calls": 5
       },
       "note": "Counted separately so no lua number in this artifact is attributed to another component. The `absent` bucket in each type's evidenceClass tally IS this set."
     },
@@ -1053,28 +1251,28 @@
         "data": 1,
         "nav": 1,
         "json": 4,
+        "_M": 149,
         "load": 1,
         "infer_value": 1,
         "decode": 2,
         "_infer": 1,
         "_combine": 1,
-        "Endpoints": 1,
-        "_M": 149,
         "multipart_mt": 1,
         "_decode_arg": 1,
         "_extract_param_keys": 1,
         "_get_param_name_and_keys": 1,
         "_nest_path": 1,
         "_decode_map_array_arg": 1,
+        "Endpoints": 1,
         "app": 5,
+        "/cache/:key": 1,
+        "/cache": 1,
         "/config": 1,
         "/clustering/data-planes": 1,
         "/clustering/status": 1,
         "/certificates/:certificates": 1,
         "/certificates/:certificates/snis": 1,
         "/certificates/:certificates/snis/:snis": 1,
-        "/cache/:key": 1,
-        "/cache": 1,
         "/consumers": 1,
         "routes": 2,
         "/status/dns": 2,
@@ -1089,7 +1287,6 @@
         "/routes/:routes/filters/enabled": 2,
         "/routes/:routes/filters/disabled": 2,
         "/routes/:routes/filters/all": 2,
-        "/status": 1,
         "/": 1,
         "/endpoints": 1,
         "/schemas/:name": 1,
@@ -1100,6 +1297,7 @@
         "/schemas/plugins/:name": 1,
         "/schemas/filters/:name": 1,
         "/timers": 1,
+        "/status": 1,
         "/plugins": 1,
         "/plugins/:plugins": 1,
         "/plugins/schema/:name": 1,
@@ -1112,13 +1310,13 @@
         "/services/:services/plugins/:plugins": 1,
         "/snis/:snis/certificate": 1,
         "/tags/:tags": 1,
-        "api_routes": 1,
         "/targets": 1,
         "/targets/:targets": 1,
         "/targets/:targets/upstream": 1,
+        "api_routes": 1,
         "cache_warmup": 1,
-        "compatible_checkers": 1,
         "off": 3,
+        "compatible_checkers": 1,
         "init": 12,
         "clustering_push_config": 1,
         "validate_deltas": 1,
@@ -1128,15 +1326,15 @@
         "execute": 20,
         "sub_commands": 4,
         "read_all": 1,
-        "compile_confs": 1,
-        "kill": 1,
-        "is_running": 1,
         "up": 1,
         "reset": 1,
         "finish": 1,
         "bootstrap": 1,
         "check_state": 1,
         "NEEDS_BOOTSTRAP_MSG": 1,
+        "kill": 1,
+        "is_running": 1,
+        "compile_confs": 1,
         "get_ulimit": 1,
         "prepare_prefix": 3,
         "prepare_prefixed_interface_dir": 1,
@@ -1177,27 +1375,27 @@
         "_NOP_TOSTRING_MT": 1,
         "LMDB_VALIDATION_TAG": 1,
         "WASM_BUNDLED_FILTERS_PATH": 1,
-        "listeners": 1,
         "get_phase": 1,
         "is_predefined_dhgroup": 1,
         "parse_value": 1,
         "check_and_parse": 1,
         "overrides": 1,
         "parse_nginx_directives": 1,
-        "constants": 3,
+        "listeners": 1,
         "getgrnam": 1,
         "getpwnam": 1,
         "getenv": 1,
         "unsetenv": 5,
+        "constants": 3,
         "Ca_certificates": 1,
         "_Certificates": 1,
-        "keys": 2,
         "key_sets": 1,
+        "keys": 2,
         "Plugins": 3,
-        "Services": 3,
         "_SNIs": 1,
-        "_TARGETS": 1,
+        "Services": 3,
         "Tags": 3,
+        "_TARGETS": 1,
         "Vaults": 1,
         "Workspaces": 1,
         "convert_nulls": 1,
@@ -1222,8 +1420,8 @@
         "delete_entity_for_txn": 1,
         "GLOBAL_WORKSPACE_TAG": 1,
         "DB": 1,
-        "postgres": 77,
         "iteration": 1,
+        "postgres": 77,
         "migrate_path": 1,
         "ws_migrate_plugin": 1,
         "State": 1,
@@ -1234,14 +1432,15 @@
         "transformations": 1,
         "entity_checks": 20,
         "workspaceable": 11,
-        "endpoint_key": 11,
         "db_export": 2,
         "generate_admin_api": 4,
         "admin_api_name": 4,
         "ttl": 3,
+        "endpoint_key": 11,
         "cache_key": 8,
         "subschema_key": 2,
         "subschema_error": 2,
+        "shorthand_fields": 1,
         "http": 2,
         "https": 1,
         "tcp": 1,
@@ -1249,19 +1448,18 @@
         "tls_passthrough": 1,
         "grpc": 1,
         "grpcs": 1,
-        "shorthand_fields": 1,
         "r": 2,
         "table_name": 1,
         "Entity": 1,
         "Schema": 1,
         "MetaSchema": 1,
-        "DeclarativeConfig": 1,
         "type": 5,
-        "plugin_loader": 1,
+        "DeclarativeConfig": 1,
         "schema_topological_sort": 1,
         "typedefs": 1,
-        "vault_loader": 1,
         "Connector": 1,
+        "plugin_loader": 1,
+        "vault_loader": 1,
         "OffConnector": 1,
         "deprecation": 1,
         "hostname_type": 1,
@@ -1294,33 +1492,33 @@
         "AWS_EXTRACTOR": 1,
         "B3_EXTRACTOR": 1,
         "DATADOG_EXTRACTOR": 1,
+        "GCP_EXTRACTOR": 1,
         "INSTANA_EXTRACTOR": 1,
         "JAEGER_EXTRACTOR": 1,
-        "GCP_EXTRACTOR": 1,
         "W3C_EXTRACTOR": 1,
         "OT_EXTRACTOR": 1,
+        "_INJECTOR": 1,
         "inject": 1,
         "clear": 1,
         "propagate": 1,
         "get_plugin_params": 1,
-        "_INJECTOR": 1,
+        "B3_SINGLE_INJECTOR": 1,
         "AWS_INJECTOR": 1,
+        "DATADOG_INJECTOR": 1,
+        "OT_INJECTOR": 1,
         "B3_INJECTOR": 1,
         "GCP_INJECTOR": 1,
-        "B3_SINGLE_INJECTOR": 1,
-        "DATADOG_INJECTOR": 1,
         "INSTANA_INJECTOR": 1,
         "JAEGER_INJECTOR": 1,
-        "OT_INJECTOR": 1,
         "W3C_INJECTOR": 1,
+        "get": 8,
+        "_get_ctx_request_id": 1,
         "FORMATS": 1,
         "from_hex": 1,
         "to_id_size": 1,
         "to_kong_trace_id": 1,
         "to_kong_span_id": 1,
         "parse_baggage_headers": 1,
-        "get": 8,
-        "_get_ctx_request_id": 1,
         "add_trace_id_formats": 1,
         "get_raw_trace_id": 1,
         "set_raw_trace_id": 1,
@@ -1330,22 +1528,25 @@
         "set_flags": 1,
         "_PDK": 1,
         "checks": 1,
+        "init_node_id": 1,
+        "load_node_id": 1,
         "check": 2,
         "check_not": 1,
         "phases": 1,
-        "init_node_id": 1,
-        "load_node_id": 1,
-        "_ACLs": 1,
         "is_reference": 1,
         "parse_reference": 1,
+        "_ACLs": 1,
         "/consumers/:consumers/acls/:acls": 1,
+        "ACLHandler": 1,
         "get_current_consumer_id": 1,
         "get_consumer_groups": 1,
         "get_authenticated_groups": 1,
         "consumer_in_groups": 1,
         "group_in_groups": 1,
         "warmup_groups_cache": 1,
-        "ACLHandler": 1,
+        "/acme": 1,
+        "/acme/certificates": 1,
+        "/acme/certificates/:certificates": 1,
         "create_account": 1,
         "update_certificate": 1,
         "renew_certificate": 1,
@@ -1363,12 +1564,9 @@
         "_set_is_dbless": 1,
         "_create_account": 1,
         "adapter": 4,
-        "/acme": 1,
-        "/acme/certificates": 1,
-        "/acme/certificates/:certificates": 1,
         "ACMEHandler": 1,
-        "schema": 3,
         "reserved_words": 1,
+        "schema": 3,
         "adapt_config": 1,
         "redis_config_adapter": 1,
         "AWSLambdaHandler": 1,
@@ -1386,8 +1584,8 @@
         "CorrelationIdHandler": 1,
         "CorsHandler": 1,
         "DatadogHandler": 1,
-        "FileLogHandler": 1,
         "statsd_mt": 2,
+        "FileLogHandler": 1,
         "deco": 2,
         "grpc_gateway": 1,
         "grpc_web": 1,
@@ -1435,8 +1633,8 @@
         "redis": 2,
         "RedirectHandler": 1,
         "RequestSizeLimitingHandler": 1,
-        "RequestTerminationHandler": 1,
         "RequestTransformerHandler": 1,
+        "RequestTerminationHandler": 1,
         "ResponseRateLimitingHandler": 1,
         "ResponseTransformerHandler": 1,
         "session_metadatas": 2,
@@ -1447,9 +1645,9 @@
         "StatsdHandler": 1,
         "SysLogHandler": 1,
         "TcpLogHandler": 1,
-        "request_tags": 1,
         "UdpLogHandler": 1,
         "ZipkinLogHandler": 1,
+        "request_tags": 1,
         "add_immutable_value": 1,
         "configure_ping": 1,
         "add_ping_value": 1,
@@ -1482,8 +1680,8 @@
         "route_match_stat": 1,
         "is_regex_magic": 1,
         "phonehome_statistics": 1,
-        "balancers_M": 1,
         "consistent_hashing": 1,
+        "balancers_M": 1,
         "healthcheckers_M": 1,
         "after_balance": 1,
         "on_target_event": 1,
@@ -1498,11 +1696,11 @@
         "stop_healthcheckers": 1,
         "set_host_header": 1,
         "set_cookie": 1,
-        "ewma": 1,
         "lc": 1,
-        "targets_M": 1,
         "upstreams_M": 1,
+        "ewma": 1,
         "roundrobin_algorithm": 1,
+        "targets_M": 1,
         "find_certificate": 1,
         "produce_wild_snis": 1,
         "get_certificate": 1,
@@ -1532,11 +1730,11 @@
         "_update_lua_mem": 1,
         "preread": 1,
         "rewrite": 1,
+        "reset_instances_for_plugin": 1,
         "start": 4,
         "stop": 2,
         "load_schema": 1,
         "load_plugin": 1,
-        "reset_instances_for_plugin": 1,
         "index_table": 1,
         "PluginsIterator": 1,
         "set_proxy_next_upstream": 1,
@@ -1545,16 +1743,15 @@
         "fallback_upstream_client_cert": 1,
         "plugins": 1,
         "/status/ready": 1,
-        "load_debugger": 1,
         "Stream": 3,
         "setup_client": 1,
+        "load_debugger": 1,
         "parse_mime_type": 1,
         "includes": 1,
         "protobuf": 1,
+        "config_schema": 1,
         "Queue": 1,
         "ENVIRONMENT": 1,
-        "config_schema": 1,
-        "REQUIRES": 1,
         "validate": 2,
         "validate_safe": 1,
         "validate_function": 1,
@@ -1564,6 +1761,7 @@
         "sandbox_handler": 1,
         "parse": 2,
         "configuration": 1,
+        "REQUIRES": 1,
         "stream_api": 1,
         "get_utc": 1,
         "get_utc_ms": 1,
@@ -1607,8 +1805,8 @@
         "/routes": 1,
         "/services": 1,
         "PRIORITY": 6,
-        "CacheHandler": 1,
         "Plugin": 1,
+        "CacheHandler": 1,
         "CtxCheckerLastHandler": 1,
         "CtxCheckerHandler": 1,
         "CtxTests": 2,
@@ -1632,11 +1830,11 @@
         "CustomDAO": 2,
         "MyHandler": 1,
         "PreserveNullsHandler": 1,
-        "RedisDummy": 1,
         "ReconfigurationCompletionHandler": 1,
+        "RedisDummy": 1,
         "ReferenceCaCertHandler": 1,
-        "/reports/send-ping": 1,
         "ReportsApiHandler": 1,
+        "/reports/send-ping": 1,
         "resp_phase": 1,
         "Rewriter": 1,
         "RpcBatchTestHandler": 1,
@@ -1655,8 +1853,8 @@
         "TranslateBackwardsOlderPlugin": 1,
         "WithMigrationHandler": 1,
         "WorkerEventsHandler": 1,
-        "dc_blueprints": 1,
         "test": 2,
+        "dc_blueprints": 1,
         "PluginFactory": 1,
         "EntitiesFactory": 1,
         "https_server": 2,
@@ -1835,11 +2033,11 @@
         "setup": 3,
         "teardown": 2,
         "run_for_each_deploy": 1,
-        "CONSTANTS": 1,
-        "conf": 1,
         "get_dcbp": 1,
         "clone_plugins_list": 1,
         "truncate_tables": 2,
+        "conf": 1,
+        "CONSTANTS": 1,
         "pack": 2,
         "unpack": 3,
         "lookup": 1,
@@ -1872,13 +2070,13 @@
         "json_params": 1,
         "assert_error": 1,
         "yield_error": 1,
+        "command_runner": 1,
+        "get_command": 1,
         "each_route": 1,
         "each_route_iter": 1,
         "add_route": 1,
         "add_route_verb": 1,
         "add_before_filter": 1,
-        "command_runner": 1,
-        "get_command": 1,
         "AttachedServer": 3,
         "create_server": 1,
         "start_server": 3,
@@ -1910,6 +2108,11 @@
         "package_searchpath": 1,
         "config_module": 1,
         "_tbl_0": 1,
+        "dispatch": 2,
+        "protected_call": 1,
+        "generate_token": 1,
+        "validate_token": 1,
+        "assert_token": 1,
         "NULL": 1,
         "TRUE": 1,
         "FALSE": 1,
@@ -1923,14 +2126,13 @@
         "format_date": 1,
         "build_helpers": 1,
         "gen_index_name": 3,
-        "dispatch": 2,
-        "protected_call": 1,
         "BaseModel": 1,
         "Enum": 4,
         "enum": 4,
-        "generate_token": 1,
-        "validate_token": 1,
-        "assert_token": 1,
+        "create_migrations_table": 1,
+        "run_migrations": 1,
+        "no_transaction": 1,
+        "LapisMigrations": 1,
         "relation_builders": 1,
         "find_relation": 1,
         "clear_loaded_relation": 1,
@@ -1940,10 +2142,6 @@
         "mark_loaded_relations": 1,
         "relation_is_loaded": 1,
         "preload": 4,
-        "create_migrations_table": 1,
-        "run_migrations": 1,
-        "no_transaction": 1,
-        "LapisMigrations": 1,
         "Model": 3,
         "entity_exists": 3,
         "types": 4,
@@ -1968,6 +2166,14 @@
         "is_flow_class": 1,
         "MEMO_KEY": 1,
         "memo": 1,
+        "request": 6,
+        "query": 4,
+        "db_connection": 1,
+        "migration": 1,
+        "migration_summary": 1,
+        "notice": 1,
+        "flatten_params": 1,
+        "set_print": 1,
         "Widget": 1,
         "Buffer": 1,
         "html_writer": 1,
@@ -1980,27 +2186,19 @@
         "serve": 1,
         "load_app": 1,
         "app_cache": 1,
-        "request": 6,
-        "query": 4,
-        "db_connection": 1,
-        "migration": 1,
-        "migration_summary": 1,
-        "notice": 1,
-        "flatten_params": 1,
-        "set_print": 1,
         "class": 1,
         "build_request": 1,
         "build_response": 1,
         "timer_at": 1,
         "is_simulate": 1,
-        "cached": 1,
-        "delete": 1,
-        "delete_path": 1,
-        "delete_all": 1,
         "after_dispatch": 1,
         "run_after_dispatch": 1,
         "increment_perf": 1,
         "set_perf": 1,
+        "cached": 1,
+        "delete": 1,
+        "delete_path": 1,
+        "delete_all": 1,
         "simple": 1,
         "set_proxy_location": 1,
         "ngx_replace_headers": 1,
@@ -2017,6 +2215,7 @@
         "use_test_env": 1,
         "use_test_server": 1,
         "running_in_test": 1,
+        "drop_tables": 1,
         "simulate_request": 1,
         "simulate_action": 1,
         "assert_request": 1,
@@ -2025,7 +2224,6 @@
         "extract_cookies": 1,
         "mock_request": 1,
         "mock_action": 1,
-        "drop_tables": 1,
         "SpecServer": 1,
         "load_test_server": 1,
         "close_test_server": 1,
@@ -2143,20 +2341,20 @@
         "cmake": 2,
         "make": 3,
         "cmd": 411,
-        "cmd_build": 1,
         "config_cmd": 1,
+        "cmd_build": 1,
         "doc": 1,
         "cmd_download": 1,
         "install": 1,
         "lint": 1,
         "new_version": 1,
         "cmd_pack": 1,
-        "path_cmd": 1,
         "purge": 1,
+        "path_cmd": 1,
         "cmd_remove": 1,
         "cmd_search": 1,
-        "cmd_test": 1,
         "show": 1,
+        "cmd_test": 1,
         "upload": 1,
         "which_cmd": 1,
         "write_rockspec": 1,
@@ -2167,15 +2365,15 @@
         "sysdetect": 1,
         "result": 1,
         "rockspec": 1,
-        "util": 3,
         "vers": 1,
-        "deps": 1,
+        "util": 3,
         "deplocks": 1,
+        "deps": 1,
         "download": 1,
         "fetch": 1,
         "cvs": 1,
-        "git": 1,
         "git_file": 1,
+        "git": 1,
         "git_http": 1,
         "git_ssh": 1,
         "hg": 1,
@@ -2197,8 +2395,8 @@
         "repo_writer": 1,
         "repos": 1,
         "results": 1,
-        "search": 1,
         "rockspecs": 1,
+        "search": 1,
         "signing": 1,
         "busted": 1,
         "patch": 1,
@@ -2208,11 +2406,11 @@
         "type_rockspec": 1,
         "type_check": 1,
         "api": 3,
+        "multipart": 1,
         "build_dir": 1,
         "source_dir": 1,
         "include_dir": 1,
         "gen_target": 1,
-        "multipart": 1,
         "argparse": 1,
         "buffer": 2,
         "execFile": 1,
@@ -2246,6 +2444,7 @@
         "loadResolverWin": 1,
         "loadResolverUnix": 1,
         "loadResolver": 1,
+        "e": 1,
         "encoder": 1,
         "decoder": 1,
         "headerMeta": 2,
@@ -2253,7 +2452,6 @@
         "toHeaders": 1,
         "combineHeaders": 1,
         "getHeaders": 1,
-        "e": 1,
         "IncomingMessage": 1,
         "ServerResponse": 1,
         "handleConnection": 1,
@@ -2264,11 +2462,6 @@
         "createConnection": 1,
         "nt": 1,
         "posix": 1,
-        "dependencies": 5,
-        "license": 4,
-        "homepage": 4,
-        "description": 4,
-        "tags": 4,
         "isWindows": 1,
         "getPrefix": 1,
         "splitPath": 1,
@@ -2285,10 +2478,15 @@
         "stdout": 1,
         "stderr": 1,
         "strip": 1,
+        "dependencies": 5,
+        "license": 4,
+        "homepage": 4,
+        "description": 4,
+        "tags": 4,
+        "globalProcess": 1,
         "urldecode": 1,
         "urlencode": 1,
         "stringify": 1,
-        "globalProcess": 1,
         "History": 1,
         "Editor": 1,
         "readLine": 1,
@@ -2302,11 +2500,6 @@
         "ReadableState": 1,
         "WriteReq": 1,
         "WritableState": 1,
-        "join": 1,
-        "equals": 1,
-        "self": 1,
-        "work": 1,
-        "queue": 1,
         "setInterval": 1,
         "clearInterval": 1,
         "clearTimeout": 1,
@@ -2323,6 +2516,11 @@
         "Credential": 1,
         "createCredentials": 2,
         "TLSSocket": 2,
+        "join": 1,
+        "equals": 1,
+        "self": 1,
+        "work": 1,
+        "queue": 1,
         "randomBytes": 2,
         "URL": 1,
         "ustring": 1,
@@ -2330,10 +2528,10 @@
         "private": 1,
         "files": 2,
         "fiber": 1,
+        "exports": 4,
         "luvi": 1,
         "author": 1,
         "contributors": 1,
-        "exports": 4,
         "deepEqual": 1,
         "tap": 1,
         "compare": 1,
@@ -2360,10 +2558,10 @@
         "view": 1,
         "custom_entries_view": 1,
         "docs_view": 1,
-        "native_entries_view": 1,
         "ghost_text_view": 1,
-        "vim_source": 1,
+        "native_entries_view": 1,
         "wildmenu_entries_view": 1,
+        "vim_source": 1,
         "filetypes": 402,
         "root_dir": 62,
         "root_markers": 345,
@@ -2713,19 +2911,21 @@
         "match": 1,
         "mock": 1,
         "spy": 1,
-        "state": 2,
         "stub": 1,
+        "state": 2,
         "bench": 1,
-        "stat": 1,
         "bit": 1,
+        "stat": 1,
         "Object": 1,
-        "context_manager": 1,
         "m": 2,
+        "context_manager": 1,
         "debug_utils": 1,
         "filetype": 1,
         "f": 1,
         "plenary": 1,
         "Job": 1,
+        "is_headless": 1,
+        "lua_jit": 1,
         "lt": 1,
         "le": 1,
         "eq": 1,
@@ -2748,8 +2948,6 @@
         "lor": 1,
         "lnot": 1,
         "truth": 1,
-        "is_headless": 1,
-        "lua_jit": 1,
         "Path": 1,
         "popup": 1,
         "profile": 1,
@@ -2760,16 +2958,16 @@
         "Border": 1,
         "s": 1,
         "hooks": 1,
-        "fzy_adapter": 1,
         "health": 1,
         "rocks": 1,
+        "fzy_adapter": 1,
         "luarocks": 1,
-        "meta": 1,
         "helpers": 1,
-        "MultiMutRocksTomlWrapper": 1,
+        "meta": 1,
         "operations": 2,
-        "pin": 1,
+        "MultiMutRocksTomlWrapper": 1,
         "parser": 1,
+        "pin": 1,
         "prune": 1,
         "unpin": 1,
         "update": 1,
@@ -2788,52 +2986,52 @@
       "topModules": {}
     },
     "perRepo": {
+      "hledger": {
+        "files": 8,
+        "symbols": 28,
+        "relationships": 88,
+        "parseErrorFiles": 0
+      },
       "docker": {
         "files": 2,
         "symbols": 4,
         "relationships": 0,
         "parseErrorFiles": 0
       },
-      "hledger": {
-        "files": 8,
-        "symbols": 28,
-        "relationships": 108,
-        "parseErrorFiles": 0
-      },
       "kong": {
         "files": 1312,
-        "symbols": 51990,
-        "relationships": 143410,
+        "symbols": 51926,
+        "relationships": 107781,
         "parseErrorFiles": 1
       },
       "lapis": {
         "files": 93,
-        "symbols": 5225,
-        "relationships": 10504,
+        "symbols": 5220,
+        "relationships": 8682,
         "parseErrorFiles": 0
       },
       "lazy.nvim": {
         "files": 65,
-        "symbols": 1484,
-        "relationships": 11062,
+        "symbols": 1469,
+        "relationships": 7042,
         "parseErrorFiles": 0
       },
       "lspsaga.nvim": {
         "files": 44,
-        "symbols": 1416,
-        "relationships": 9795,
+        "symbols": 1402,
+        "relationships": 6393,
         "parseErrorFiles": 0
       },
       "luarocks": {
         "files": 162,
-        "symbols": 6649,
-        "relationships": 27652,
+        "symbols": 6634,
+        "relationships": 20750,
         "parseErrorFiles": 0
       },
       "luvit": {
         "files": 199,
-        "symbols": 3724,
-        "relationships": 16211,
+        "symbols": 3720,
+        "relationships": 12007,
         "parseErrorFiles": 0
       },
       "nlohmann-json": {
@@ -2844,56 +3042,56 @@
       },
       "nvim-cmp": {
         "files": 57,
-        "symbols": 1212,
-        "relationships": 5915,
+        "symbols": 1208,
+        "relationships": 3696,
         "parseErrorFiles": 0
       },
       "nvim-lspconfig": {
         "files": 863,
-        "symbols": 1584,
-        "relationships": 13487,
+        "symbols": 1583,
+        "relationships": 9830,
         "parseErrorFiles": 0
       },
       "nvim-treesitter": {
         "files": 79,
         "symbols": 601,
-        "relationships": 3559,
+        "relationships": 2670,
         "parseErrorFiles": 2
       },
       "plenary.nvim": {
         "files": 113,
-        "symbols": 3073,
-        "relationships": 11048,
+        "symbols": 3066,
+        "relationships": 8265,
         "parseErrorFiles": 1
       },
       "redis": {
         "files": 20,
         "symbols": 138,
-        "relationships": 487,
-        "parseErrorFiles": 0
-      },
-      "rocks.nvim": {
-        "files": 51,
-        "symbols": 899,
-        "relationships": 4981,
+        "relationships": 409,
         "parseErrorFiles": 0
       },
       "ripgrep": {
         "files": 1,
         "symbols": 0,
-        "relationships": 4,
+        "relationships": 2,
+        "parseErrorFiles": 0
+      },
+      "rocks.nvim": {
+        "files": 51,
+        "symbols": 899,
+        "relationships": 3366,
         "parseErrorFiles": 0
       },
       "snacks.nvim": {
         "files": 141,
-        "symbols": 5005,
-        "relationships": 38258,
+        "symbols": 4969,
+        "relationships": 24474,
         "parseErrorFiles": 0
       },
       "trouble.nvim": {
         "files": 38,
-        "symbols": 885,
-        "relationships": 6293,
+        "symbols": 878,
+        "relationships": 4100,
         "parseErrorFiles": 0
       },
       "yq": {
