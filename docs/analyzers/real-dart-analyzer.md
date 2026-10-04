@@ -1118,19 +1118,36 @@ and 12 from running the doc-truth-emissions gate over this lane's table.
      no-symbol population split by cause. 4,788 files, 3 repositories read whole.
    Both drive production `parseFile`, both declare `BB_DART_CONC=1` as a
    precondition, and both are deterministic from a clean corpus.
-8. **`script/m14/verify-honesty.ts` fails project-wide on evidence freshness, and
-   this lane is not the cause.** Re-measured on this branch: **23 failure(s), exit 6.**
-   Nine are of the form `HONESTY-GATE FAIL: M14.0.F<n>: <k> declared input(s) changed
-   since <sha> — regenerate` for n = 1…9, one is `freshness rule flags every artifact —
-   it cannot distinguish current from stale`, and the run also prints
-   `evidence freshness: 0 artifact(s) current against their declared inputs`.
-   **No banned-vocabulary check fails**, so the failure set is evidence staleness alone.
-   The failing input sets name files this lane has never touched —
+8. **`script/m14/verify-honesty.ts` fails project-wide, and this lane is not
+   among the causes.** Re-measured on this branch, no scoping flag exists on the
+   script: **23 failure(s), exit 6.** The composition, because a total is not a
+   breakdown and this entry previously carried a total that happened to match while
+   its breakdown did not:
+
+   | kind | count | which |
+   |---|---|---|
+   | banned term in an artifact | **12** | `validation/m14/fixtures/{c,clean,csharp,html,php,sql}/*.expectation.json`, `validation/m14/grammar-pins.json`, `validation/m14/results/M14.0.{F5,F11.fsharp,JS-CENSUS}.json`, `validation/m14/results/fsharp-shape-census.json` |
+   | declared inputs changed since the named commit | 9 | `M14.0.F1`…`F9` |
+   | a milestone check not passing | 1 | `M14.0.F7 has 2 non-passing check(s): analyzer-hygiene-cpp, analyzer-hygiene-elixir` |
+   | the freshness rule itself cannot discriminate | 1 | `freshness rule flags every artifact` |
+
+   **An earlier version of this entry said "No banned-vocabulary check fails, so
+   the failure set is evidence staleness alone." That was wrong, and the total was
+   right by coincidence: 23 matched while 12 of the 23 were banned-term hits.** All
+   12 name files in `c`, `clean`, `csharp`, `html`, `php`, `sql`, `fsharp`, the
+   shared `grammar-pins.json`, or supervisor-owned `validation/m14/results/*.json`.
+   None is under `fixtures/dart/` and none is `real-dart-analyzer.ts`; a scan of
+   this lane's own two M14 files for all eleven banned terms returns 0.
+
+   The declared-input failures name files this lane has never touched —
    `src/ast/analysis-exclusions.ts`, `src/ast/brain-surgical-patcher.ts`,
    `src/ast/dependency-graph-visualizer.ts`,
    `src/ast/cross-language-migration-assistant.ts`, and 20 other languages'
    `script/m14/spec/*-completeness.json` — each verified unchanged by this branch with
    `git diff 8286c7391..HEAD -- <file>` (empty for all four named above).
+   `validation/m14/fixtures/dart/census.ts` is named in **no** declared input set, so
+   this lane's own edits do not add to those counts — checked, because a lane that
+   worsens a gate it is not fixing should say so rather than be counted as innocent.
    Regeneration is the supervisor's: those artifacts are `validation/m14/results/*.json`,
    which the honesty contract §5.1 reserves for verifier scripts, and regenerating them
    from one lane would replace the milestone's claim with a single lane's. Reported, not
@@ -1736,6 +1753,26 @@ Re-measured on this branch, both lanes at the default `--dart-deps=none`:
 |---|---|---|---|---|
 | proxicall:dart | 6120 / 6220 (98.4%) | **100** | 0 | 2026-10-04 |
 | dart-http:dart | 2263 / 2277 (99.4%) | **14** | 0 | 2026-10-04 |
+
+**The two rows above are from DIFFERENT rotations, and only three of their five
+columns are stable.** `script/m14/differential.ts` picks the 60 files per lane with
+`coldPoolPick`, which by design "draws never-sampled files each wave" and advances a
+per-lane rotation counter on every run (`differential.ts:927-950`, seeded per
+rotation so it is reproducible *within* a rotation and different *across* one). Two
+consecutive `--force-fresh` runs on this branch:
+
+| run | proxicall truth/covered | dart-http truth/covered | ratio | MISSING | unexplained |
+|---|---|---|---|---|---|
+| rotation 73 | 6220 / 6120 | 2280 / 2266 | 98.4% / 99.4% | 100 / 14 | 0 / 0 |
+| rotation 74 | 6162 / 6062 | 2277 / 2263 | 98.4% / 99.4% | 100 / 14 | 0 / 0 |
+
+So the truth-row count moved by **58** on proxicall and **3** on dart-http between
+two runs of identical code on an identical corpus, and the table above quotes proxicall
+from rotation 73 and dart-http from rotation 74. What a reviewer re-running will fail
+to reproduce is the *denominator*, not the claim: coverage percentage, MISSING and
+unexplained are identical across both rotations, and those are the three numbers the
+verdict rests on. An earlier reading of this file quoted the same absolutes as if
+they were fixed, which is how a rotating sample becomes a lane property.
 
 Both MISSING counts are what §DERIVATION predicts (100 on the 60-file proxicall sample,
 14 on dart-http), and both are entirely the excluded label — the harness prints a capped
