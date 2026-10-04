@@ -223,6 +223,41 @@ export const SQL_ONTOLOGY_MUTANTS: Mutant[] = [
     },
   },
   {
+    id: "sql/do-statement-is-never-dispatched",
+    language: "sql",
+    defectClass: "dead-branch",
+    description:
+      "`processDo` exists, its body is three real calls (`processQueryDependencies`, `processCalls`, `addPattern`), and it was UNREACHABLE: its only caller sat in `dispatchDeclaration`, which runs for `DECLARATION_NODES` only, and `do_statement` is not a declaration - it declares nothing. A source-derivation count of which relationship types an analyzer can construct would have counted `calls` from a DO block as constructible; it produced nothing. Measured on single statements: `DO $$ BEGIN PERFORM f(1); END $$;` published no `calls` edge, and `DO $$ BEGIN SELECT id FROM t; END $$;` published no `Anonymous Procedural Block` pattern. Settled corpus-wide by validation/m14/fixtures/sql/pass3-invocation-why.mts: 742 qualified invocations on the tree, 449 emitted as `calls` before this round. This mutant reads the analyzer's OWN `metadata.patterns`: the dead dispatch is exactly the absence of `\"Anonymous Procedural Block\"`, so the revert deletes every `calls` edge whose callee the file does not declare as a symbol - the set only the DO path produces, because every other `calls global -> X` path in the fixtures has X declared in the same file. No source scanning: a first version of this mutant scanned the text for `DO $`, and it SURVIVED, because the fixture's own comments quote `DO $$ BEGIN PERFORM f(1); END $$;` and the scanner matched the prose before the code. Caught by sql/sqld15-pass3-adversarial, whose three `calls global -> d15_do_*` rows and whose `calls` count of 4 all fail without the dispatch.",
+    transform: (r: any) => {
+      const patterns: string[] = (r.metadata as any)?.patterns ?? []
+      if (!patterns.some((p: string) => p.includes("Anonymous Procedural Block"))) return r
+      const declared = new Set((r.symbols ?? []).map((s: any) => String(s?.name ?? "")))
+      const removed = (r.relationships ?? []).filter((x: any) =>
+        String(x?.type ?? "").toLowerCase() === "calls" && !declared.has(String(x?.target ?? "")))
+      if (removed.length === 0) return r
+      return {
+        ...r,
+        relationships: (r.relationships ?? []).filter((x: any) => removed.indexOf(x) < 0),
+      }
+    },
+  },
+  {
+    id: "sql/alter-table-never-reads-its-default-expression",
+    language: "sql",
+    defectClass: "recall",
+    description:
+      "An `ALTER TABLE t ALTER COLUMN c SET DEFAULT app.f()` puts an `invocation` in a grammar-mandated expression slot and produced no edge: `alter_table` is neither a query nor a declaration, and `processAlterTable` returns early when the statement adds no column - which is exactly this shape. `hasura-engine/server/src-rsr/migrations/41_to_42.sql` writes `SET DEFAULT hdb_catalog.gen_hasura_uuid()` five times in one file. Of the 14 qualified invocations the corpus probe could not explain away before this round, 8 were this shape. This mutant deletes the `calls` edges whose SOURCE is a table the file also declares, which is the observable consequence of never reading the ALTER's expression slots - every `calls` edge with a table as its source comes from that path, because a table is not something any other route sources a call to. Character scans only, no regex: the table names come from the analyzer's OWN symbol list, not from re-parsing the `ALTER TABLE` text. Caught by sql/sqld15-pass3-adversarial, whose `calls d15_alter_target -> d15_alter_default` row fails without it.",
+    transform: (r: any) => {
+      const rels: any[] = r.relationships ?? []
+      if (!rels.some((x: any) => String(x?.type ?? "").toLowerCase() === "calls" && r.symbols?.some((s: any) => String(s?.name ?? "") === String(x?.source ?? "")))) return r
+      const removed = rels.filter((x: any) =>
+        String(x?.type ?? "").toLowerCase() === "calls" &&
+        (r.symbols ?? []).some((s: any) => String(s?.name ?? "") === String(x?.source ?? "")))
+      if (removed.length === 0) return r
+      return { ...r, relationships: rels.filter((x: any) => removed.indexOf(x) < 0) }
+    },
+  },
+  {
     id: "sql/declaration-key-ignores-the-slice-offset",
     language: "sql",
     defectClass: "recall",
