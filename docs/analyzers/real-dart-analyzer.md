@@ -963,7 +963,7 @@ reading `firing-check.ts --json` and finding `files` is per-file, not per-type.
    corpus scale, and the reason is the first half of item 5.**
 
    **The exit-2 refusal is verified by reading the gate, not by running it at full
-   corpus — because the full-corpus run never reaches it.** Measured three times on this
+   corpus — because the full-corpus run never reaches it.** Measured four times on this
    branch, `npx tsx script/m14/ontology-coverage-gate.ts dart`:
 
    ```
@@ -983,13 +983,34 @@ reading `firing-check.ts --json` and finding `files` is per-file, not per-type.
             [BB-PARSE-ERR] dart | dart-sdk/.../import_elements_test.dart | memory access out of bounds
             [BB-HANG] parser stuck 120s on dart-sdk/.../import_elements_test.dart — exiting
             exit 1
+   run 4:  corpus: 33692 admitted files   (2026-10-04, third re-measurement)
+            [BB-PARSE-ERR] dart | dart-sdk/.../get_statement_completion_test.dart | memory access out of bounds
+            [BB-PARSE-ERR] dart | dart-sdk/.../get_refactoring_test.dart | memory access out of bounds
+            [BB-HANG] parser stuck 120s on dart-sdk/.../get_statement_completion_test.dart — exiting
+            exit 1
    ```
 
    Run 3's hang file is one run 2 already listed as a PARSE-ERR, and run 3 is the only
    one of the three whose hang file and parse-error set coincide as a single element —
    which is the correlation below holding for the third time, on the strongest form.
+   **Run 4 names a file no earlier run named**, so the set of files this failure has been
+   observed on is four: `flow_analysis_log.dart`,
+   `list_postfix_completion_templates_test.dart`, `import_elements_test.dart` and
+   `get_statement_completion_test.dart`. Two properties hold across all four runs and
+   both argue the same way — the hang file is never the same file twice, and it is
+   always a member of that run's own PARSE-ERR set. A grammar defect would name the
+   same construct every time; a corrupted WASM heap names whatever the next allocation
+   lands in.
 
-   So on this corpus the arbiter exits **1**, three times out of three, and never
+   Both run-4 files parse cleanly through production `parseFile` one at a time, which
+   is the claim the whole argument rests on:
+
+   ```
+   get_statement_completion_test.dart  ms=967  fallback=false  symbols=3  rels=29  errors=0
+   get_refactoring_test.dart            ms=42   fallback=false  symbols=3  rels=36  errors=0
+   ```
+
+   So on this corpus the arbiter exits **1**, four times out of four, and never
    prints a verdict —
    `exit 2` is what `ontology-coverage-gate.ts:289-293` does when it gets there,
    which is a source fact (`RULED_BY_LANG` holds only `bash` and `json`, and the
@@ -1001,7 +1022,7 @@ reading `firing-check.ts --json` and finding `files` is per-file, not per-type.
 
    **The `[BB-HANG]` is the CONCURRENT PARSE PATH, and the file it names is
    innocent.** This corrects the reading that a `[BB-HANG]` naming one file is a
-   parser-robustness finding about that file. Every file named across the three runs
+   parser-robustness finding about that file. Every file named across the four runs
    above parses cleanly through the same production `parseFile`, one at a time. The
    `document_color_test.dart` row needed a path to be checkable at all, because
    **dart-sdk tracks two files of that name** and the bare filename names neither:
@@ -1015,6 +1036,8 @@ reading `firing-check.ts --json` and finding `files` is per-file, not per-type.
    | `test/lsp_over_legacy/document_color_test.dart` — the row above is THIS file | |
    | `test/lsp/document_color_test.dart` — the OTHER tracked file of that name | OK 123 ms — 35 symbols, 163 rels |
    | `pkg/dartpad/lib/src/util/environment.dart` (run 3's first hang) | OK 9 ms — 1 symbol, 1 rel |
+| `.../edit/get_statement_completion_test.dart` (run 4's hang) | OK 967 ms — 3 symbols, 29 rels |
+| `.../edit/get_refactoring_test.dart` (run 4's other PARSE-ERR) | OK 42 ms — 3 symbols, 36 rels |
 
    Two readings from that. The 5 symbols / 48 rels recorded for `document_color_test.dart`
    are `test/lsp_over_legacy/`; `test/lsp/` publishes **35 symbols and 163 rels** from
