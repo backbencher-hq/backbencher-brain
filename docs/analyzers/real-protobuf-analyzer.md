@@ -1042,7 +1042,7 @@ the condition that makes the fraction mean something.
 
 | type | verdict | count | where |
 |---|---|---|---|
-| `uses` | **EMITTED** | 13,275 | 609 files; e.g. `boundary/.../accounts/v1/account.proto` |
+| `uses` | **EMITTED** | 13,275 | **675 files** — pass 9 corrected `609` here; e.g. `boundary/.../accounts/v1/account.proto` |
 | `contains` | **EMITTED** | 40,098 | 7,166 of them package→top-level; e.g. `boundary/.../accounts/v1/account.proto` |
 | `imports` | **EMITTED** | 1,561 | 557 files; 3 of them `weak` |
 | `exports` | **EMITTED** | 4 | `pb-reference/src/google/protobuf/{cpp_options,json_options,unittest_import,unittest_import_lite}.proto` |
@@ -2437,6 +2437,37 @@ one**, since a reader meets them first:
   RULING TABLE for protobuf"*. It now exits **1** and rules; see the table above.
 - **§Still not settled** says *"26 mutants"*. The battery runs **28** — commit
   `20644c25a` corrected one instance of this and left this one.
+
+## Fires-in-how-many-files, measured — and a fourth stale number
+
+A count of edges does not say how widely a type fires, and this document had been
+carrying the `uses` **file** count from the wrong instrument. `609` was the number of
+files containing a `message_or_enum_type` node, which is the construct probe's
+population — a *different* set from the files `uses` edges actually fire in. A file that
+declares a message with no field of message type emits no `uses` edge while still holding
+the node, so the construct count is not a firing count.
+
+Measured per type over all 821 files on the analyzer-direct path:
+
+| type | edges | files |
+|---|---|---|
+| `contains` | **41,100** | **814** |
+| `uses` | **13,275** | **675** |
+| `imports` | 1,561 | 557 |
+| `exports` | 4 | 4 |
+| `overrides` | 1 | 1 |
+
+`contains` reads 41,100 here against **40,098** through production, and the 1,002
+difference is the same name-length drop this document has recorded since pass 2 — 1,001
+of them field `contains` edges in two `pb-reference` files. `uses` reads the same 13,275
+on both paths.
+
+**675 is corroborated by a second instrument that shares no code with the one that
+produced it**: the `protoc` oracle's own header field `corpusFilesWithUsesEdges` reads
+**675**, from the TSV dump rather than from a tree walk. So this is two instruments
+agreeing against one stale sentence in this document, which is the same shape as the
+`unpublished-uses-targets` correction above and the reason both are written down rather
+than quietly edited.
 
 ## DERIVATION findings: 4, unchanged
 
