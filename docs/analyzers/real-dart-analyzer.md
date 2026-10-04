@@ -293,6 +293,16 @@ arbiter's own rule and finds **0** export-bearing files in it — consistent wit
 reading, not evidence against it. n ≥ 148 gives a ≥95% chance of at least one; at
 n=400 the expected count is 8.04 and the arbiter measured 9.
 
+**The probe's own printed sentence was wrong about this and understated the surprise.**
+It printed the **per-file** non-export rate — `97.988%` — and attributed the observed 0
+to it. The quantity that predicts a 0 at a sample of 120 is `(1 - p)^120` = **8.73%**,
+an order of magnitude away, and the error ran in the permissive direction: 97.988% makes
+a zero sound expected, so a reader skimming it would have had less reason to go and look
+for the defect the 0 might have been. The probe now prints the base rate, the sample
+probability and the n that reaches P(none) ≤ 5% as three separate, labelled numbers.
+The numbers in the paragraph above are unchanged by the fix; only the sentence that
+explained them was wrong.
+
 **So `exports` is EMITTED and the 9/10 is the sample, not the lane.** The ruling that
 was tempting here — "`library_export` is rare enough that 120 files miss it, so 9/10 is
 the lane's real ceiling" — was available and would have been wrong, and it is wrong in
