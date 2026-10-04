@@ -3074,3 +3074,23 @@ when `symbols === 0`, the way `ontology-coverage-gate.ts` refuses an empty
 `RULED_BY_LANG` rather than reporting every un-emitted type as unjustified — closes it.
 
 **Neither is a zig file and neither is fixed here.**
+
+**18. Second instance of §8 item 15's shape, and `--langs` makes it worse.**
+`script/m60/rel-type-coverage-gate.ts --langs=zig` — the DERIVATION gate this lane is asked to
+run — **writes `validation/m60/results/rel-type-coverage.json` unconditionally.** The committed
+file holds **46 lanes**; the `--langs=zig` run replaced it with **1**, a 1,413-line deletion,
+and its own printed `baseline: 104 recorded, 0 NEW, 104 repaid` was computed against the
+one-lane file it had just written. Reverted here (`git checkout --`), nothing committed to that
+path. The difference from item 15 is that item 15's damage comes from running a gate with no
+scope flag; **this one is the scoped invocation, and the scoping is what makes it look safe.**
+A lane verifying its own DERIVATION count silently deletes the other 45 lanes' rows.
+*Needed:* the same treatment `run-fixtures.ts` already has — a scoped run prints and writes
+nothing, the way its own banner puts it ("SCOPED run … NO evidence is written — the canonical
+… is NOT touched, and `--update-baseline` is refused, because either would shrink the
+milestone's claim to the lanes this run covered"). That reasoning is already written down in
+this repo for a sibling instrument and was not applied here.
+
+**The DERIVATION count itself is unaffected and is read from the committed 46-lane file: zig
+emits 7 types, all 7 are in the audited set, and `regressionsDetail` contains 0 entries
+mentioning `zig`.** 41 of the 46 lanes do have regressions. So this lane's DERIVATION count is
+**0** and that number comes from the shared baseline, not from a run that overwrote it.
