@@ -9,8 +9,12 @@
 - **Symbols**: modules, structs (`class`), `abstract type` (`interface`), functions, macros, struct
   fields (`property`), `const` bindings (`constant`), local bindings (`variable`)
 - **Relationships**: `calls`, `uses`, `references`, `contains`, `extends`, `instantiates`,
-  `overrides`. `imports` and `exports` are carried on the `ImportInfo[]` / `ExportInfo[]` channels and
-  never as relationship rows — each ruled below with its measurement.
+  `overrides`, `imports`, `exports` — **all nine are emitted as relationship rows**, and `imports` /
+  `exports` additionally fill the `ImportInfo[]` / `ExportInfo[]` channels from the same walk. Only
+  `implements` is not emitted, and it is RULED with a corpus measurement. (This line said the
+  opposite for `imports`/`exports` until this pass: it was a leftover from the two rulings that were
+  later overturned, and it contradicted this file's own verdict table. See
+  [§ `imports` and `exports` — two rulings overturned](#imports-and-exports--two-rulings-overturned).)
 - **Payloads**: `declarationForm`, `isExported`, `isForeignCall`/`foreignSymbol`/`foreignLibrary`,
   `isTypeConstruction`, `isMacroCall`, `isTypeReference`, `isSubtype`, `isWhereBound`, `isFieldRead`,
   `isQualifiedReference`, `isOperatorMember`, `evidenceClass`, `replacesLine`, `isMethodRedefinition`,
@@ -23,65 +27,114 @@ npx tsx validation/m14/fixtures/julia/census.ts --json /tmp/census.json       # 
 npx tsx validation/m14/fixtures/julia/overrides-differential.ts --json /tmp/ov.json
 npx tsx validation/m14/fixtures/julia/direct-oracle-check.ts --files 40      # per-label, deterministic
 npx tsx validation/m14/fixtures/julia/ruled-probe-check.ts                  # the implements ruling's 325/60
-npx tsx validation/m14/fixtures/julia/arbiter-census-diff.ts                 # why the arbiter reads 13 short
+npx tsx validation/m14/fixtures/julia/arbiter-census-diff.ts                 # census vs arbiter, per type
+npx tsx script/m14/firing-check.ts --files 120 julia                         # what FIRES, 120-file stride
+npx tsx script/m14/firing-check.ts --files 2000 julia                        # …and over all 971
 bun  run script/m14/run-fixtures.ts --lang julia
 bun  run validation/m14/fixtures/julia/mutation-check.ts --all
-npx tsx script/m14/ontology-coverage-gate.ts julia                            # exit 2, see below
+npx tsx script/m14/ontology-coverage-gate.ts julia                            # exit 0, 9 emitted / 1 ruled
 ```
 
-**The arbiter has no table for julia and refuses to report.** `script/m14/ontology-coverage-gate.ts`
-carries ruling tables for `bash` and `json` only, and exits 2 with *"no RULING TABLE for julia …
-Refusing to report: a gate with an empty table would call every un-emitted type RULED-UNJUSTIFIED and
-that is a verdict about the TABLE, not about the lane."* `RULED_BY_LANG` is at
-`ontology-coverage-gate.ts:192` and adding a `JULIA_RULED` table there is a shared-file edit (§8).
-
-**That edit is now written down and tested, and it is two lines.**
-`script/m14/julia-ruled.ts` exports `JULIA_RULED` (and `JULIA_RULED_INSTRUMENT_B`, the table that
-FALSIFIES the same ruling — see below). The supervisor needs one import after `ontology-coverage-gate.ts`
-line 191 and one key added to `RULED_BY_LANG`; the exact edit is in that file's header. Applied to a
-**scratch copy** at `.bb-tmp-julia-arbiter.ts` (gitignored, since deleted; the shared file was not
-touched), over the same 971 files:
+**The arbiter reports this lane, and it now agrees with the census edge for edge.**
+`script/m14/ontology-coverage-gate.ts` used to carry ruling tables for `bash` and `json` only and
+exited 2 on julia with *"no RULING TABLE for julia … Refusing to report: a gate with an empty table
+would call every un-emitted type RULED-UNJUSTIFIED and that is a verdict about the TABLE, not about the
+lane."* `script/m14/julia-ruled.ts` exports `JULIA_RULED` (and `JULIA_RULED_INSTRUMENT_B`, the table
+that FALSIFIES the same ruling), and the supervisor has since wired it: `RULED_BY_LANG` at
+`ontology-coverage-gate.ts:199` reads `…, zig: ZIG_RULED, julia: JULIA_RULED`. The §8 edit this lane
+asked for is applied, so the gate runs unmodified:
 
 ```
 type          status            detail
-calls         EMITTED           86,867 edges in 4+ files
-uses          EMITTED           26,357
-contains      EMITTED           10,467
-imports       EMITTED           1,501
-references    EMITTED           36,146
-exports       EMITTED           1,770
-extends       EMITTED           1,821
-implements    RULED-SOUND       NOT EMITTED; the grammar produced 149 distinct node types
-                                across the corpus and NONE expresses it.
-                                Written ruling: script/m14/spec/julia-completeness.json#JUL-D2
-overrides     EMITTED           3 edges in 3+ files
-instantiates  EMITTED           2,830
+calls         EMITTED           86,876 edges in 4+ files, e.g. json_jl/benchmarks/benchmarks.jl, json_jl/src/object.jl
+uses          EMITTED           26,359 edges in 4+ files, e.g. json_jl/benchmarks/benchmarks.jl, json_jl/src/object.jl
+contains      EMITTED           10,467 edges in 4+ files, e.g. json_jl/benchmarks/structs.jl, json_jl/benchmarks/benchmarks.jl
+imports       EMITTED           1,502 edges in 4+ files, e.g. json_jl/benchmarks/benchmarks.jl, json_jl/ext/JSONArrowExt.jl
+references    EMITTED           36,147 edges in 4+ files, e.g. json_jl/benchmarks/structs.jl, json_jl/benchmarks/benchmarks.jl
+exports       EMITTED           1,770 edges in 4+ files, e.g. json_jl/src/JSON.jl, julia/Compiler/extras/CompilerDevTools/src/CompilerDevTools.jl
+extends       EMITTED           1,821 edges in 4+ files, e.g. json_jl/src/object.jl, json_jl/ext/JSONArrowExt.jl
+implements    RULED-SOUND       NOT EMITTED; the grammar produced 149 distinct node types across the corpus
+                                and NONE expresses it. Written ruling: script/m14/julia-ruled.ts (RULED_BY_LANG.julia)
+overrides     EMITTED           3 edges in 3+ files, e.g. julia/Compiler/test/contextual.jl, julia/test/meta.jl
+instantiates  EMITTED           2,830 edges in 4+ files, e.g. json_jl/benchmarks/benchmarks.jl, json_jl/src/object.jl
 ----------------------------------------------------------------------------------------
-emitted 9/10   ruled-sound 1   FALSIFIED 0   ruled-without-justification 0
+emitted 9/10   ruled-sound 1   FALSIFIED 0   ruled-without-justification 0        exit 0
 ```
 
-**Those four counts are 13 edges short of this lane's, and the shortfall is one file, exactly.**
-`calls` 86,867 vs 86,876 · `uses` 26,357 vs 26,359 · `references` 36,146 vs 36,147 · `imports` 1,501
-vs 1,502. The arbiter printed `[BB-PARSE-ERR] … memory access out of bounds` for
-`julia/stdlib/LibGit2/test/runtests.jl` in that same run, and that file emits **precisely**
-`calls=9 uses=2 references=1 imports=1` — 13, matching the deficit edge for edge and type for type.
-`validation/m14/fixtures/julia/arbiter-census-diff.ts` establishes the other half: run SEQUENTIALLY
-under the **arbiter's own counting rule**, the same 971 files give **167,775**, `throw: 0`, and
-`files with r.fallback truthy: 0`, and `BB_JULIA_WORKERS=8` reproduces the census's own numbers
-exactly — so neither the counting rule nor the worker count explains it, and the trapped file does.
-**The lane's headline numbers are the ones that include the file; the arbiter's are the truncated
-ones.** The doc's verdict table is therefore not competing with the arbiter's, it is correcting it.
+**Every one of the nine counts equals this lane's own census, to the edge, and `implements` is the
+arbiter's own RULED-SOUND.** Two instruments, different code paths, same numbers — which is the
+strongest form of agreement available here, because the arbiter reads the corpus and counts rows while
+the census walks the same files through `parseFile` and buckets every endpoint.
 
-**Two further properties of the arbiter's output are artifacts of the shared gate, not measurements,
-and apply to every language it scores.** Its file column reads `4+ files` for every large type
-because `ontology-coverage-gate.ts` grows the set with `if (row.files.size < 4)` — the cap is in the
-gate, so `calls in 4+ files` is not a statement about breadth (this lane measures 926). And its
+**The 13-edge shortfall this file previously reported is GONE, and its cause was a shared defect this
+lane diagnosed rather than an arithmetic dispute.** An earlier version of this section recorded the
+arbiter reading `calls` 86,867 · `uses` 26,357 · `references` 36,146 · `imports` 1,501 — exactly 13
+short — and attributed it to `julia/stdlib/LibGit2/test/runtests.jl`, the one file the run reported
+`[BB-PARSE-ERR] … memory access out of bounds` for, which emits precisely `calls=9 uses=2 references=1
+imports=1`. That attribution was right and the mechanism was a SHARED one: `resolveWasm` wrote every
+grammar to `os.tmpdir()/bb-wasm_<relativePath>`, a path shared by every process on the machine, with
+a plain `writeFileSync`, so a concurrent reader could load a TRUNCATED wasm; `Language.load` then threw
+and `parseFile`'s catch silently substituted `extractFallback`. `src/ast/engine.ts` now writes to a
+per-process path and renames atomically, and the run above reports **0 `[BB-PARSE-ERR]` and 0
+`[BB-HANG]` lines** where the earlier run reported two errors.
+`validation/m14/fixtures/julia/arbiter-census-diff.ts` re-measures the same 971 files under the
+arbiter's own counting rule and now returns **`throw: 0`, 167,775 rows, `files with r.fallback truthy:
+0`**, with per-type totals identical to the arbiter's row for row. The diff instrument's reason for
+existing is gone; it is kept because a gate that once disagreed by 13 edges should be able to show that
+it no longer does.
+
+**One property of the arbiter's output is an artifact of the shared gate, not a measurement, and it
+applies to every language it scores.** Its file column reads `4+ files` for every large type because
+`ontology-coverage-gate.ts` grows the set with `if (row.files.size < 4)` — the cap is in the gate, so
+`calls in 4+ files` is not a statement about breadth (this lane measures 926). And its
 `[BB-HANG]` handler is `process.exit(1)` (`src/ast/engine.ts:1412`), so a single slow file ends the
 run rather than being reported: both are §8 items.
 
 So the verdicts below are produced by the lane-owned census applying the gate's own two instruments
 and the gate's own verdict algorithm to julia, and the gate's verdict algorithm now has a table to
 read.
+
+## What FIRES, at two sample sizes — and why the smaller one reads 8/10
+
+`script/m14/firing-check.ts` is the instrument that exists because a previous programme reported
+"14 lanes at 10/10" for a week from SOURCE DERIVATION. It drives `parseFile`, not `analyze()`. Two runs,
+same corpus, same analyzer, same commit — only `--files` differs:
+
+```
+$ npx tsx script/m14/firing-check.ts --files 120 julia
+8/10 fired, 18968 edges, 120/120 files        <-- note 18,968, not 167,775
+  julia  120/120  8/10  18,968  0 degraded  stable
+  types: calls,uses,contains,imports,references,exports,extends,instantiates
+
+$ npx tsx script/m14/firing-check.ts --files 2000 julia
+9/10 fired, 167775 edges, 971/971 files
+  julia  971/971  9/10  167,775  0 degraded  stable
+  types: calls,uses,contains,imports,references,exports,extends,overrides,instantiates
+```
+
+**The 120-file run reads 8/10 and that is a SAMPLING artifact, not a firing failure — provably, not
+probably.** The type it misses is `overrides`, which this lane emits **3 edges across 3 files** in a
+971-file population. `firing-check.ts` picks its sample by a deterministic stride,
+`stride = floor(population / limit)` then indices `0, stride, 2·stride, …` (`firing-check.ts:190-192`),
+so at `--files 120` the stride is 8 and only multiples of 8 are taken. The three files carrying the
+`overrides` edges sit at sorted indices **77, 781 and 867**, and `77 % 8 = 5`, `781 % 8 = 5`,
+`867 % 8 = 3` — **none is a multiple of 8, so all three are excluded by arithmetic.** At
+`--files 2000` the stride is 1, all 971 files are taken, and all three are included. The type is not
+rare-and-alive on a knife edge; it is excluded by a modulus, and the modulus is checkable from the
+file list alone. `implements` is the other zero, and it is RULED with a measurement rather than
+unsampled.
+
+The general point is worth stating because it applies to every lane that reports a fraction: **a
+per-type count below the sample's resolution cannot distinguish "dead code" from "rare construct."**
+The discriminator here is edges-per-file, and `overrides` at 3 edges / 3 files is one edge per file —
+the thinnest signal a type can carry. `overrides-differential.ts` exists because a 3-edge type cannot
+be validated by a rotating sample at all, and `direct-oracle-check.ts` reports `overrides` as `n/a`
+rather than `TARGET only` on its 40-file draw for the same reason: with zero edges in the sample there
+is no evidence about which end an oracle populates, and a default there would print a zero as if it
+were a finding.
+
+Both runs report **`degraded: 0`**, which is the shared wasm temp-path fix holding under concurrency
+(see above); earlier runs of this lane could not make that claim.
 
 ---
 
@@ -92,9 +145,13 @@ selects: `JuliaLang/julia` 941, `json_jl` 25, `nvim-treesitter` 5. 1,006 further
 excluded for exceeding 512 KB and the exclusion is counted in the census output rather than left
 silent. Production grammar `wasm/tree-sitter-julia.wasm`, md5 `dbcd79759b4216c80de73c17a56255f8`.
 
-**Production totals.** 28,277 symbols · 167,775 relationships in the ten types · 0 crashes · 0 files
+**Production totals.** 28,286 symbols · 167,775 relationships in the ten types · 0 crashes · 0 files
 routed to the >1 MB structural fallback · **135 of 971 files (13.9%) yield ZERO symbols** and are
 listed by name in the census output · **0 of 971 files unreadable by the production grammar**.
+
+The relationship total and all nine per-type edge counts are unchanged by this pass. The symbol total
+moved **28,277 → 28,286 (+9)** and the reason is a SHARED change, measured in
+[§ the `unknown` endpoints, resolved](#the-unknown-endpoints-resolved-by-a-shared-fix-i-do-not-own).
 
 | Relationship type | Emitted? | Verdict, channel and measured size over 971 files | Files |
 |---|---|---|---|
@@ -483,9 +540,9 @@ that was never indexed, and those are opposite findings.
 
 | type | edges | in-file unique | multi-symbol, disambiguated | multi-symbol, residual | C `ccall` | external by import | declared in another corpus file | local binding, not a symbol | resolves to nothing | synthetic scope |
 |---|---|---|---|---|---|---|---|---|---|---|
-| `calls` | 86,876 | 19,258 | 434 | 336 | 1,184 | 3,819 | 54,004 | 1,140 | 6,701 | 0 |
-| `uses` | 26,359 | 5,384 | 285 | 1,514 | 0 | 0 | 13,683 | 1,803 | 3,683 | 7 |
-| `contains` | 10,467 | 7,771 | 0 | 2,687 | 0 | 0 | 0 | 0 | 7 | 2 |
+| `calls` | 86,876 | 19,268 | 434 | 336 | 1,184 | 3,819 | 54,004 | 1,140 | 6,691 | 0 |
+| `uses` | 26,359 | 5,386 | 285 | 1,515 | 0 | 0 | 13,684 | 1,803 | 3,679 | 7 |
+| `contains` | 10,467 | 7,775 | 0 | 2,689 | 0 | 0 | 0 | 0 | 1 | 2 |
 | `references` | 36,147 | 3,504 | 3,689 | 302 | 0 | 1,044 | 18,776 | 2,369 | 6,463 | 0 |
 | `imports` | 1,502 | 17 | 0 | 3 | 0 | 170 | 751 | 0 | 561 | 0 |
 | `exports` | 1,770 | 739 | 0 | 159 | 0 | 0 | 637 | 9 | 226 | 0 |
@@ -524,11 +581,33 @@ as such: a resolution rate that excluded them would not be the number a consumer
 
 ### The ambiguity, and the fact that the edge already carries the answer
 
-**10,936 edges target a name the file publishes under more than one kind or more than once.** The
+**11,101 edges target a name the file publishes under more than one kind or more than once.** The
 concrete case is structural in Julia rather than accidental: `struct Object … end` together with
 `Object() = …` is **ONE binding** — the type name *is* the constructor — so the analyzer publishes
 `class:Object` and `function:Object` side by side, and an edge whose target is that bare name names
 two symbols.
+
+**That figure was published wrong here, twice, and both errors are this lane's own.** An earlier
+version of this line said **10,936**, which does not equal the sum of the table above it: adding that
+table's own *disambiguated* and *residual* columns gives **11,098**. So the prose total was not a
+measurement and not the sum of the measurements printed beside it — it was 162 below both, which is
+the signature of a total carried forward across an edit to its own rows. The census prints the total
+itself (`TOTAL ambiguous-target edges:`) and had been printing **11,101** all along; the number in
+this paragraph had been transcribed rather than read. The corrected figure is the instrument's, and
+the table's columns now sum to it exactly:
+
+| | disambiguated | residual | total |
+|---|---|---|---|
+| `calls` | 434 | 336 | 770 |
+| `uses` | 285 | 1,515 | 1,800 |
+| `contains` | 0 | 2,689 | 2,689 |
+| `references` | 3,689 | 302 | 3,991 |
+| `imports` | 0 | 3 | 3 |
+| `exports` | 0 | 159 | 159 |
+| `extends` | 71 | 11 | 82 |
+| `overrides` | 0 | 1 | 1 |
+| `instantiates` | 1,549 | 57 | 1,606 |
+| **sum** | **6,028** | **5,073** | **11,101** |
 
 **The edge's own metadata picks out exactly one candidate in 100% of the multi-symbol cases for
 `calls` (434/434), `uses` (285/285), `references` (3,689/3,689), `extends` (71/71) and `instantiates`
@@ -547,7 +626,7 @@ the edge, and a consumer that matches targets by bare name is discarding it.
 
 The residual is where a consumer must be told rather than shown:
 
-- **`contains`, 2,687 edges.** *Disambiguated by its SOURCE*, not by its target: `Owner -contains->
+- **`contains`, 2,689 edges.** *Disambiguated by its SOURCE*, not by its target: `Owner -contains->
   field` already names one member, and both-ends resolution for `contains` is 99.9%. A bare field NAME
   colliding across structs (`id`, `x`, `val`, 285/121/42 edges) is not something the reverse walk has
   to choose between. It is counted as residual because the *target* alone cannot disambiguate it, and
@@ -911,20 +990,23 @@ comments, char literals, triple-quoted strings — and all six are clean.
 | | |
 |---|---|
 | admitted files | **971** = `julia` 941 + `json_jl` 25 + `nvim-treesitter` 5; 1,006 further candidates excluded over 512 KB |
-| symbols / relationships | **28,277 / 167,775** in the ten ontology types |
+| symbols / relationships | **28,286 / 167,775** in the ten ontology types |
 | files yielding ZERO symbols | **135 of 971 (13.9%)** — listed by name in the census output |
 | construct-vs-edge reconciliation | `imports` **504 files with the construct / 504 with an edge / 0 silent**; `exports` 152 / 151 / 1 silent (`julia/test/precompile.jl:15`, interpolated names) |
 | crashes | 0 · structural fallback: 0 files · `parseFile` threw: 0 · **grammar-unreadable: 0** |
 | empty or unknown `SymbolKind` | **0** · empty symbol names: **0** |
-| endpoints equal to the literal `unknown` | 11, all in `julia/JuliaLowering/src/validation.jl` — see limitations |
+| endpoints equal to the literal `unknown` | 11, all in `julia/JuliaLowering/src/validation.jl`, and **all 11 now resolve** — see [the section on them](#the-unknown-endpoints-resolved-by-a-shared-fix-i-do-not-own) |
 | determinism | SHA-256 identical across a reused and a fresh analyzer instance |
 | fixtures / mutants | 5 fixtures / **25 mutants, 25 killed, 0 survivors** |
 | largest single file | 1,818 symbols / 3,890 relationships |
 
-By kind: function 16,833 · property 4,492 · constant 2,684 · class 2,324 · module 755 · macro 465 ·
-variable 441 · interface 283.
+By kind: function 16,834 · property 4,499 · constant 2,685 · class 2,324 · module 755 · macro 465 ·
+variable 441 · interface 283. (Property +7, function +1, constant +1 against the previous version of
+this file; all 9 from the shared `keepSymbol` split, itemised in
+[that section](#the-unknown-endpoints-resolved-by-a-shared-fix-i-do-not-own).)
 By relation: **calls 86,876** · references 36,147 · uses 26,359 · contains 10,467 · imports 1,502 ·
-exports 1,770 · instantiates 2,830 · extends 1,821 · overrides 3.
+exports 1,770 · instantiates 2,830 · extends 1,821 · overrides 3. **Every one of these nine is
+unchanged**, and the independent arbiter agrees with all nine.
 
 **Two traps in that table, both of which produced a number that read as a measurement.**
 
@@ -963,9 +1045,18 @@ real edges the truth side declines to claim, not those edges being wrong.
                                      analyzer-edges=20221 tree-truth=19052 MISSING=213 heuristic=0
                                      + COMPARED WITH NO TRUTH: overrides
     prior 60-file rotation:          covered 99.1%   unexplained 8.5%
+    2026-10-04, 40 of 971, rot 35:   covered 96.8%   unexplained 9.3%
+                                     analyzer-edges=4088 tree-truth=4038 MISSING=131 heuristic=0
+                                     unexplained-by-label: calls=177 contains=144 instantiates=22
+                                                        references=18 extends=11 uses=8
 
 The sample ROTATES per run, so per-rotation covered and MISSING counts move: this file's quotes are
-captured runs, not a result to reproduce. A per-rotation count is a sample size.
+captured runs, not a result to reproduce. A per-rotation count is a sample size. The third row is the
+2026-10-04 run at `--sample 40`; it is lower than the other two and that is expected, because a
+40-file draw over 971 files is a different and much smaller sample than a 200-file draw over 941, and
+`contains` alone contributes 144 of its 380 unexplained edges. `heuristic=0` is the stable part: no
+rotation has ever produced an edge under 0.7 confidence. **The number to quote is not any of these
+three** — it is the per-label table below, which does not rotate.
 
 ### The stable per-label figures, and a limit four of the oracles have
 
@@ -1037,6 +1128,73 @@ Three of those were the SAME mistake in three places — reading a dotted name w
 rather than one resolver. They now all go through `fieldPath`, and that consolidation is the real fix:
 while N sites each carry their own rule, site N+1 is one corpus file away from shipping the same bug.
 
+## the `unknown` endpoints, resolved by a shared fix I do not own
+
+This section exists because a number in this file moved without a line of the julia analyzer changing,
+and the reason is worth more than the number.
+
+**The measurement.** `keepSymbol` in `src/ast/pool-worker.ts` filters symbols before publication. Its
+UNIVERSAL denylist used to contain `"unknown"` — this codebase's placeholder for "could not
+determine" — on the reasoning that a placeholder is never a real declaration. In julia that reasoning
+is false for a specific and common reason: **`unknown` is a legal julia function name.**
+`julia/JuliaLowering/src/validation.jl:22` declares `unknown() = ValidationResult(false, nothing)`
+and calls it 10 times, so 11 relationship endpoints carried the name `unknown` and bound to nothing,
+while `analyze()` published the symbol and `parseFile` deleted it. The previous version of this file
+carried that as an open cross-language defect.
+
+**What changed.** `src/ast/pool-worker.ts` split the denylist: only names reserved essentially
+everywhere stayed universal, and the rest moved to a per-language `RESERVED` map. `unknown` was
+removed from the universal list. The census, unchanged, now reports:
+
+```
+before:  endpoint === "unknown" that DOES resolve: 0
+         endpoint === "unknown" that does NOT resolve: 11  (julia/JuliaLowering/src/validation.jl)
+after:   endpoint === "unknown" that DOES resolve: 11
+         endpoint === "unknown" that does NOT resolve: 0  (none)
+```
+
+and the corpus symbol count moved **28,277 → 28,286 (+9)**. Probed directly through `parseFile`, the
+9 new symbols are all real julia declarations the denylist had been deleting:
+
+| name | count | kind | where |
+|---|---|---|---|
+| `self` | 5 | `property` | `json_jl/test/json.jl`, `julia/JuliaLowering/src/bindings.jl`, `julia/stdlib/Random/src/Random.jl` ×2, `julia/test/core.jl` |
+| `root` | 2 | `property` | `json_jl/src/parse.jl`, `julia/base/toml/parser.jl` |
+| `source_file` | 1 | `constant` | `julia/test/deprecation_exec.jl` |
+| `unknown` | 1 | `function` | `julia/JuliaLowering/src/validation.jl` |
+
+`self` and `root` as struct fields are idiomatic julia — a mutable struct's field is commonly named
+after what it holds — so the old denylist was deleting ordinary declarations. **No julia code changed;
+the graph got 9 symbols and 11 endpoints more correct.** That is the honest shape of a shared-layer
+fix as seen from a lane: the lane's numbers move, the lane's diff is empty, and the cause is
+attributable to a file it does not own.
+
+**The defect that fix left behind, reported and not edited.** The comment block introducing the split
+states:
+
+> `unknown` is the one that cannot simply be deleted: R7 counts it as a PLACEHOLDER, and 46 registered
+> placeholder sites depend on that. It now moves to RESERVED below rather than being dropped, so a
+> placeholder is still refused while a declared `unknown` survives.
+
+**`unknown` is not in `RESERVED`.** The map below it is exactly:
+
+```ts
+const RESERVED: Record<string, ReadonlySet<string>> = {
+  php: new Set(["self", "parent"]),
+  sql: new Set(["program"]),
+}
+```
+
+So the comment claims a guarantee the code does not implement: a symbol named `unknown` is now
+published in **every** language, including the 46 R7 placeholder sites that the comment says depend on
+it being refused. §8 — this lane does not edit `src/ast/pool-worker.ts`. The change needed is one entry
+(`julia: new Set(["unknown"])` is the wrong shape if the intent is to refuse placeholders generally —
+the placeholder sites are identified by being placeholders, not by their language), and whoever owns
+that file should decide whether R7 marks its placeholders by an explicit flag or by the name, because
+the current code does neither. **The julia symptom is benign** — the one julia declaration of that name
+is a genuine function and publishing it is correct — which is exactly why this belongs in a report
+rather than a fix: a lane that only tested julia would see nothing wrong.
+
 ## What the lane's own gates caught
 
 Mutation testing, not review, is what found most of this — and three of the five mutants that survived
@@ -1089,24 +1247,32 @@ can be a fixture asserting things the code does not do, and the fixture is what 
   published, but the *edge's source string* is `Src` and the file's symbol table collapses the three
   modules into one `Src`. Cross-file identity for same-named modules is a project-wide question this
   per-file analyzer cannot answer.
-- **6,701 `calls`, 3,683 `uses`, 6,463 `references` and 205 `extends` targets resolve to nothing**,
+- **6,691 `calls`, 3,679 `uses`, 6,463 `references` and 205 `extends` targets resolve to nothing**,
   and this census does not separate "external package", "`Base` builtin", "dynamic dispatch" and
   "a declaration we failed to publish". Those are four different findings and the bucket deliberately
   does not guess a split; separating them needs a Julia runtime, which this lane does not start. The
   three buckets it *can* prove — `corpus-only`, `external-by-import`, `foreign-ccall` — account for
   54,004 + 3,819 + 1,184 = 59,007 of the 86,876 `calls` targets.
 - **Julia publishes one binding under two symbol kinds when a type has constructors**, because the type
-  name *is* the constructor. 10,936 edges target such a name. The edge's metadata disambiguates
+  name *is* the constructor. 11,101 edges target such a name. The edge's metadata disambiguates
   100% of the multi-symbol `calls`/`uses`/`references`/`extends`/`instantiates` cases, and
   `contains` is disambiguated by its source, but a consumer matching targets by bare name is
   discarding information the edge carries.
-- **11 relationship endpoints carry the name `unknown` and resolve to nothing**, all in
+- **The 11 `unknown` endpoints are RESOLVED, by a shared fix this lane does not own.** They were a
+  limitation in the previous version of this file and no longer are. All 11 are in
   `julia/JuliaLowering/src/validation.jl`, which declares `unknown() = ValidationResult(false,
-  nothing)` at line 22 and calls it 10 times. `analyze()` publishes the symbol; `parseFile` does not,
-  because `keepSymbol`'s UNIVERSAL denylist (`src/ast/pool-worker.ts:452`) contains `"unknown"` and
-  drops it for **every** language. That is a shared-file defect, reported rather than fixed here: a
-  julia user function called `unknown` is neither a placeholder nor synthetic. Cross-language blast
-  radius is unmeasured from here.
+  nothing)` at line 22 — a real zero-argument julia function — and calls it 10 times. `analyze()`
+  published the symbol but `parseFile` dropped it, because `keepSymbol`'s UNIVERSAL denylist contained
+  `"unknown"` and applied it to every language, so a julia binding whose name happens to equal this
+  codebase's placeholder was deleted. `src/ast/pool-worker.ts` has since split that denylist and
+  removed `unknown` from it, and the census now reports **`endpoint === "unknown"` that DOES resolve:
+  11, that does NOT resolve: 0** where it previously reported the reverse. The same change published
+  **9 more symbols** corpus-wide, all legitimate julia declarations the denylist had been deleting:
+  `self` ×5 and `root` ×2 as struct fields (`property`), `source_file` ×1 (`constant`,
+  `julia/test/deprecation_exec.jl`) and `unknown` ×1 (`function`). Nothing in this lane changed; the
+  counts moved because a shared filter stopped deleting real declarations. See
+  [§ the `unknown` endpoints](#the-unknown-endpoints-resolved-by-a-shared-fix-i-do-not-own) for the
+  per-file measurement and for the one defect that fix left behind.
 - **135 of 971 files (13.9%) yield zero symbols** through the production path. They are named in the
   census output; `julia/test/runtests.jl` and `julia/JuliaLowering/test/arrays_ir.jl` are among them.
   The cause was not investigated and is a coverage gap, not a measurement.
@@ -1123,18 +1289,21 @@ can be a fixture asserting things the code does not do, and the fixture is what 
 - **`+%` / `-%` and the 177 ERROR-node files are grammar-side**, not analyzer-side.
 - **Macro-generated definitions are visible only when the definition is in source** (`@inline f(x) = x`
   declares `f`; a macro that *synthesises* a name does not).
-- **A `[BB-PARSE-ERR] … memory access out of bounds` under the arbiter's 8-worker run costs this lane
-  13 edges, and the cost is attributable rather than suspected.** The trapped file is
-  `julia/stdlib/LibGit2/test/runtests.jl`; it emits `calls=9 uses=2 references=1 imports=1`, and the
-  arbiter's four short counts are short by exactly those numbers. `parseFile` CATCHES the wasm trap,
-  so "0 crashes" in this lane is measured as "0 throws" and a file the parser cannot read leaves no
-  trace in a counter that only counts throws — which is why the trap had to be found by differencing
-  two instruments rather than by reading either one's output. **Sequential, the same file parses and
-  all 13 edges are there** (`arbiter-census-diff.ts`: 167,775, `throw: 0`), and so do they at
-  `BB_JULIA_WORKERS=8`, so the trigger is concurrency inside the shared engine. Which file traps
-  varies between runs — an earlier session saw it on `online.jl` and `online-tests.jl` instead, and
-  this session's unpatched arbiter run showed **none at all** — so the deficit is 13 edges in one run
-  and 0 in another. Any julia number taken from the arbiter is short by whatever it lost that day.
+- **The wasm temp-path trap that cost this lane 13 edges is FIXED upstream, and this lane's arbiter
+  numbers are now whole.** The previous version of this file carried the whole story as an open
+  limitation: `resolveWasm` wrote each grammar to a path shared by every process on the machine, so a
+  concurrent reader could load a truncated wasm, `Language.load` threw, and `parseFile`'s catch
+  silently substituted `extractFallback` — a regex extractor whose symbols carry no kind. The trapped
+  file was `julia/stdlib/LibGit2/test/runtests.jl` and the cost was `calls=9 uses=2 references=1
+  imports=1`. `src/ast/engine.ts` now writes to a per-process path and renames atomically. Measured
+  after the fix: the arbiter reports **0 `[BB-PARSE-ERR]` and 0 `[BB-HANG]` lines**, `firing-check`
+  reports **`degraded: 0` at both 120 and 971 files**, and `arbiter-census-diff.ts` reports
+  **`throw: 0`, 167,775 rows, `fallback: 0`** with per-type totals identical to the arbiter's.
+  **Every number in this file is therefore measured on a run where no file silently degraded**, which
+  was not true of any earlier version of it. The general lesson is kept because it outlives the bug:
+  `parseFile` CATCHES the wasm trap, so "0 crashes" in this lane means "0 throws", and a file the
+  parser cannot read leaves no trace in a counter that only counts throws — which is why the trap had
+  to be found by differencing two instruments rather than by reading either one's output.
 - **`exports` targets are ambiguous more often than any other new edge, and the edge cannot fix it.**
   **128 distinct names across 159 of the 1,770 `exports` edges (9.0%)** name more than one symbol the
   analyzer published in the same file. Split by cause: **113 names / 132 edges (7.5% of all `exports`)
