@@ -4996,3 +4996,270 @@ is to a sentence this lane published as a measurement.
   *Why:* `:23550` throws on any skipped file, which is correct in principle, but it makes
   `--repo ghostty` unusable for the zig lane, since the sweep covers every language in the repo.
   Measured, not inferred.
+
+## Pass 21 — C6 reads the published RANGE, and the ladder's own default was four passes stale (2026-10-04)
+
+Pass 20 §I left exactly one item in this lane's hands: *"C1 still validates the name SET, and
+C4 the owner's NAME. C5 now reads the kind, so the published `(name, ownerName, kind)` triple is
+checked; what no control checks is the published **range**, and a symbol published against the
+wrong span would pass all five."* This pass closes it, and closing it found two defects — both
+in this lane's **instruments**, neither in the analyzer, and one of them a gate that had been
+reporting a failure that was an artifact of a file path.
+
+**No analyzer change in this pass.** Nothing measured here is a construct
+`real-zig-analyzer.ts` fails to read, so nothing in it was edited, and every per-type count
+below is pass 20's, re-measured and unchanged.
+
+### A. C6 — the five rungs, and the four that had never been measured
+
+`validation/m14/fixtures/zig/range-agreement.ts`. Production `parseFile` on the published draw
+`sha256:2f3545f9…`, **3,834 files, 8 shards, 0 fallback, 131,097 symbols** — pass 20's symbol
+count, reached independently through a different instrument.
+
+| rung | invariant | checked | violations |
+|---|---|---|---|
+| C6.1 | the published byte index and the published line agree | 131,097 | **0** |
+| C6.2 | bounds and ordering (`0 ≤ si ≤ ei ≤ length`, lines ascending) | 131,097 | **0** |
+| C6.3 | the published name occurs inside the published span | 131,097 | **0** |
+| C6.4 | two distinct qualified names never share one span | 131,097 | **0** |
+| C6.5 | a `contains` target's span lies within its source's | 52,583 | **3,070** |
+
+`noRange` **0** of 131,097 — every published symbol carries a navigable span. **177 files of the
+draw are non-ASCII**, which §B below makes load-bearing rather than incidental.
+
+C6.1–C6.4 reading 0 violations is a **measurement**, and it is a new one: before this pass no
+control in this lane read a published range at all, so "the spans are right" had never been
+tested by anything. It is now tested at 131,097 symbols and it holds. The gate that makes it
+meaningful is in §C.
+
+### B. The published index coordinate system is UTF-16 code units, not bytes
+
+C6.1's first run reported **1 violation**, and the violation was the instrument's.
+
+`ghostty/src/apprt/gtk/scale.zig` publishes `snappedAxis` at `startLine=116`, `startIndex=3483`.
+Decoded as a **byte** offset, 3483 lands on line **115** — the doc comment
+`/// the same snapped pixels the texture is drawn into.` Decoded as a UTF-16 index it lands on
+line **116**, where `fn snappedAxis(css_origin: f64, …)` starts. The file is 6,373 bytes and
+6,372 UTF-16 code units; it carries exactly one two-byte character, at offsets 3397–3398, before
+the declaration.
+
+Over three files / 279 symbols:
+
+| decode | agrees with the published `startLine` |
+|---|---|
+| UTF-16 code units | **279 / 279 = 100.00%** |
+| raw bytes | 278 / 279 = 99.64% |
+
+The byte reading is not merely close — it is wrong in the one way that hides a real defect, and
+it is wrong on **177 of 3,834 files**. `real-zig-analyzer.ts:2696` copies `node.startIndex` from
+the node, the engine parses a **decoded string**, and the published index is therefore a
+JavaScript string index. A consumer that slices a `Buffer` by a published `startIndex` is one
+byte off in every file with a multi-byte character before the declaration.
+`pool-worker.ts:923` builds snippets from **line numbers**, never from indices, which is why
+nothing downstream tripped over it before a control read the published index directly.
+
+**§8 item 31.** `pool-worker.ts:926-934` — the shared projection `parseFile` returns — copies
+**four** of the six range fields onto the symbol (`startLine`, `endLine`, `startIndex`,
+`endIndex`) and **drops both columns**, so the `+1` column discipline `nodeRange` documents as
+the family standard never reaches a published symbol and byte-exact column navigation is
+unavailable for zig and for every language behind the same projection. *What it must do:*
+publish `startColumn`/`endColumn` beside the four it already copies. *Why it is not mine:*
+`src/ast/pool-worker.ts` is shared machinery (§8). *Measured, not inferred:* the published
+symbol key set contains `startLine`/`endLine`/`startIndex`/`endIndex` and no column.
+
+### C. A control that measures nothing now exits non-zero
+
+The first C6 run printed
+
+```
+C6.1 offset/position agreement : checked 0  violations 0
+```
+
+for a file publishing **205 symbols** — four rungs reporting a clean pass over a population they
+never touched, because they read the analyzer's internal `s.range` while the production
+projection publishes the fields flat (§B). The instrument now reads the published shape, and its
+gate **refuses** any rung that checked 0 over a non-empty population:
+
+```
+gate: REFUSING — C6.1 …, C6.2 … checked 0 over N symbols in M files.
+      A rung that measures nothing is not a pass.
+```
+
+This is recorded because the workstream's own instruction — *"An empty result over a non-empty
+corpus is a failed check, not a pass"* — is a rule an instrument has to enforce about itself,
+and this lane's instruments had no such clause.
+
+### D. C6.5's first two runs were both wrong, and both wrong in the same direction
+
+**Run 1** reported **8 nesting violations in 8 checked edges — 100%**. A 100% rate is the
+signature of a broken control, so it was diagnosed rather than reported. `contains Action ->
+version` in `ghostty/src/cli/ghostty.zig` resolves a target that is **two real declarations**:
+
+```
+qn=version          constant   [276:315]    const version = @import("version.zig");   <- file scope
+qn=Action.version   enum_member[1390:1397]  version                                    <- the member
+```
+
+The control had bound the edge to the first and compared the enum's span against an unrelated
+top-level import.
+
+**Run 2** reported **4,081** and was still wrong. The resolver read
+`byQName.get(tgt) ?? byBare.get(tgt)`, and that short-circuit **defeated the ambiguity guard it
+sat behind**: the qualified-name index holds exactly one `version`, so `length === 1` passed while
+the file also declared `Action.version`. Measured cost of that one short-circuit at the full
+population: **1,011 phantom violations** — `other` 997 and `short-parent` 132, every one a real
+edge bound to the wrong of two real declarations (`EI -> CLASS`, `Kind -> std`, `Foo -> a` are
+the same shape).
+
+Resolved by **bare name across every published symbol in the file, uniqueness required**. An
+endpoint with two declarations is now counted `ambiguous` — **28,285** — which is §B's finding
+and not a range defect. Collapsing the two would have put a false number in this report.
+
+### E. The 3,070 that remain, and the one shape that is not a defect
+
+| shape | count | reading |
+|---|---|---|
+| `this-alias` | **2,830** (92.2%) | Zig's file-struct. **Not a defect** — see below |
+| `other` | 138 (4.5%) | container declared by a `switch`-produced struct or a type alias |
+| `short-parent` | 102 (3.3%) | same, parent span under 64 bytes |
+
+**396 files of 3,834** carry at least one. The dominant shape is not a defect and is not papered
+over. In Zig a **file-level container field** belongs to the implicit file-struct, and the only
+node that names that type is the `@This()` alias:
+
+```zig
+const App = @This();   // ghostty/src/App.zig:4 — published as a 20-char `type` at [174:194]
+
+/// General purpose allocator
+alloc: Allocator,      // :25 — published qn=App.alloc, owner=App
+```
+
+`alloc` **is** a member of the type `App`; the edge `contains App -> alloc` is correct. The type
+has **no node**, so there is no span that could contain the member, and the only published symbol
+named `App` is the 20-character alias. Same shape at `zig/lib/compiler/aro/aro/Preprocessor.zig`
+(`const Preprocessor = @This();`).
+
+The one repair available — widening the alias's span to the whole file — would **fabricate a span
+for a node that does not exist**, which the workstream prices higher than the defect it would
+fix. Left alone, reported with the count.
+
+The `other`/`short-parent` residual is a real misattribution and is named rather than summarised:
+in `zig/lib/std/elf.zig`, `pub const Chdr = switch (@sizeOf(usize)) { 4 => Elf32_Chdr, 8 =>
+Elf64_Chdr, … }` publishes **three** symbols named `Chdr` (`Elf32.Chdr` [34464:34572], `Elf64.Chdr`
+[36614:36752], and the alias [46937:47088]), and `Elf64.Chdr`'s member `reserved` [36679:36697] is
+published with `ownerName = Chdr` — the **innermost** container name only, so the outer `Elf64.`
+qualification is lost and the edge names a name that three declarations hold.
+
+### F. Deliverable B — the endpoint-ambiguity rate, measured per type
+
+An ambiguous target is ONE edge attributed to ONE declaration, and the reverse walk picks one by a
+rule nobody chose. Counted against each file's own symbol table — the tightest reading, and the
+one a reverse walk *inside one file* actually faces. Scope markers (`(global)`, `(file)`,
+`(local)`, `(import)`, `(declared-type)`) are **excluded and the exclusion is stated**: a marker
+names a scope, not a declaration, so counting it would inflate every marker-bearing type with an
+ambiguity that does not exist.
+
+**62,326 of 681,663 declaration endpoints = 9.14%.**
+
+| type | ambiguous / declaration endpoints | rate |
+|---|---|---|
+| `contains` | 31,609 / 161,752 | **19.54%** |
+| `uses` | 18,164 / 234,688 | 7.74% |
+| `instantiates` | 475 / 6,242 | 7.61% |
+| `calls` | 11,232 / 213,873 | 5.25% |
+| `exports` | 496 / 24,114 | 2.06% |
+| `references` | 344 / 30,794 | 1.12% |
+| `imports` | 6 / 10,200 | 0.06% |
+
+`contains` is the worst type by 2.5×, and §E is why: a `contains` target is a **bare member name**,
+so it collides with every other declaration of that name in the file, while `calls`/`uses` targets
+are usually qualified by the expression they were read from.
+
+### G. The ladder's own `--dumps` default was four passes stale, and it reported a FAIL
+
+`validation/m14/fixtures/zig/analyzer-owned-miss-cause.ts:107` read
+`arg("dumps", "/tmp/opencode/zig-inc-p17")` — a hardcoded path to dumps produced at a commit
+**four passes old**. Run with no arguments it reads pass-17 data and prints:
+
+| dumps read | C1 | C2 | analyzer-owned | exit |
+|---|---|---|---|---|
+| `zig-inc-p17` (stale, was the default) | **66 violations** | **FAIL** | 2,662 cases / 4,509 edges | 1 |
+| `zig-inc-p20` | 0 | OK | 2,661 / 4,508 | 0 |
+| `zig-inc-p20c` (newest) | 0 | OK | 2,661 / 4,508 | 0 |
+
+Nothing in the output said the run was reading old data. `popHash` identifies the **file**
+population, and all three directories cover the identical 3,834 files at `sha256:2f3545f9…` — so
+the stale run and the live run **claim the same population** while disagreeing because they ran
+different code. A reader has no way to tell a stale-dump failure from a live defect.
+
+It was not theoretical: the stale run **overwrote the committed artifact in place**, taking
+`measurements/analyzer-owned-miss-cause-2026-10-04.json` from 4,508/2,661 to 4,509/2,662 on disk,
+and this pass committed that before noticing. That is pass 19 §B's defect — four instruments
+naming their artifact with a hardcoded day, one clobbering another's measurement — occurring on
+the **input** side, where nobody had looked. The artifact has been regenerated against the
+correct dumps and the default now resolves to the **newest** `zig-inc-*` directory by mtime, with
+the resolved path, its mtime and the shard count printed **and recorded in the artifact**, because
+the population hash alone cannot date a run.
+
+### H. Gates re-run at this commit
+
+| gate | command | result |
+|---|---|---|
+| fixtures | `bun run script/m14/run-fixtures.ts --lang zig` | **12 PASS / 0 FAIL** |
+| firing check | `npx tsx script/m14/firing-check.ts --files 120 zig` | **7/10 fired**, 8,501 edges, 120/120 files, 1 DEGRADED; exits 1 refusing the count |
+| ontology arbiter | `BB_CORPUS_ROOT=/tmp/opencode/zig-arb-root npx tsx validation/m14/fixtures/zig/arbiter-zig-wired.ts zig` | **emitted 7/10 · ruled-sound 3 · FALSIFIED 0 · ruled-without-justification 0** |
+| ruled probe | `npx tsx validation/m14/fixtures/zig/zig-ruled-probe.ts` | exit 0, 10/10 controls ok, gate cell **0**, exclusion split 19/21/0/1, instrument A 239 declared / 232 produced |
+| miss-cause ladder | `npx tsx validation/m14/fixtures/zig/analyzer-owned-miss-cause.ts` | **exit 0** — C1 0/22,271 · C2 OK · C3 4/4 · C4 0/21,351 · **C5 0/19,715**; analyzer-owned 2,661 = 4,508 edges |
+| **C6 range agreement** | `8× range-agreement.ts --files-from shard-N.txt` + `--aggregate --jsonl-dir` | **4 rungs 0 / 131,097 · C6.5 3,070 / 52,583 · noRange 0** |
+| regex census | `npx tsx script/m12/verify-regex-census.ts` | gate `FAILED` on **43 findings (18 MISSING + 25 STALE) across 11 other analyzers**, **0 zig rows**; this pass adds no regex |
+| `tsc` | `npx tsc --noEmit -p tsconfig.json` | **0 errors** |
+
+The arbiter's exit code is **1** and the table is printed before it: `[BB-HANG]` fires on
+`zig/test/cases/compile_errors/union_calling_inactive_field_as_fn.zig` — the pass 16 §B mechanism,
+where a WASM trap leaves the 120 s bomb armed and the process dies naming a file that already
+failed. The verdict above is the table the gate printed, not the exit code.
+
+### I. What pass 21 could not settle
+
+- **C6 still cannot see a symbol published against the WRONG NODE.** Rungs 1–4 test the span
+  against the *file*, not against the node the analyzer meant to publish. A span can be
+  internally consistent, contain its name and be uniquely held while belonging to a different
+  node. Catching that needs a walk re-deriving each branch's node choice, which is a second
+  implementation of the analyzer and inherits the shadow walk's blindness to a bug both share.
+  C6 is reported as five counts with their populations for that reason, not as a verdict.
+- **The 138 + 102 residual of §E is diagnosed but not fixed.** The `Elf64.Chdr` owner-qualification
+  loss is a real misattribution in `real-zig-analyzer.ts`, and it was left alone deliberately: the
+  fix changes which owner name 240 edges carry, and re-deriving the full-population consequence
+  needs a census re-run this pass could not complete — the disk reached **100% (0 bytes free)**
+  mid-pass and only recovered when another lane released space. A fix landed without its
+  re-measurement would be exactly the unreproducible claim this lane keeps refusing.
+- **`contains` at 19.54% intra-file ambiguity is measured, not reduced.** §B asks for the
+  ambiguity to be closed where it can be; closing it means carrying the qualified name on the
+  edge, and the edge's `target` field is the shared `Relationship` shape (§8), so the change is
+  not this lane's alone.
+- **The 2,830 `this-alias` shape is permanent for this grammar.** It is a property of Zig's
+  file-struct, not of the analyzer, and no measurement at this population will reduce it.
+
+### J. §8 items, from this pass
+
+- **Item 31** — the shared projection drops both range columns. *File:*
+  `src/ast/pool-worker.ts:926-934`. *What it must do:* publish `startColumn`/`endColumn` beside
+  the `startLine`/`endLine`/`startIndex`/`endIndex` it already copies. *Why:* `nodeRange`
+  (`real-zig-analyzer.ts:2696`) computes 1-based columns and documents the `+1` as the family
+  standard, and they are discarded before any consumer sees a symbol — so column-precision
+  navigation is unavailable for zig and for every language behind the same projection. Measured
+  by the published symbol key set, not inferred.
+- **Item 32** — `pool-worker.ts` publishes `startIndex` as a UTF-16 code-unit offset with nothing
+  declaring it, so the coordinate system has to be rediscovered by every consumer. *File:*
+  `src/ast/pool-worker.ts:931-934` and the shared symbol type. *What it must do:* document the
+  coordinate system on the field, or publish byte offsets. *Why:* measured — byte decoding agrees
+  with the published `startLine` on 278/279 symbols and UTF-16 decoding on 279/279, and the two
+  readings differ on **177 of 3,834** corpus files. A consumer slicing a `Buffer` by
+  `startIndex` is one byte off in every one of them, and nothing in the type says so.
+- **Item 33** — the fleet's shared disk reached **100% (0 bytes free)** during this pass, which
+  killed `npx tsx` outright with `ENOSPC` and silently truncated two instrument runs. *Why it is
+  reported rather than fixed:* `/tmp/opencode` is shared by seven concurrent lanes and the large
+  directories in it (`ps-lane` 2.8 GB, `mamba` 2.6 GB) belong to other agents. *What would help:*
+  a per-lane scratch quota, or the census instruments writing side-cars that are pruned after
+  aggregation. This lane's own reclaimable dumps (four superseded 79 MB draw sets) were deleted;
+  its two live draw sets were kept so every number here stays reproducible.
