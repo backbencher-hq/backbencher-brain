@@ -165,12 +165,14 @@ Written rulings: `script/m14/sql-ruled.ts`, applied to a COPY of the arbiter by
 **The arbiter's own verdict on this lane's own ruling table**, copy patched, arbiter on disk
 untouched, all 8 shards answering all ten rows:
 **`emitted 7/10   ruled-sound 3   FALSIFIED 0   ruled-without-justification 0`.**
-Reproduced on every run, including two at pass 7's HEAD. The arbiter's single-process run does not
-finish at all — it dies on `[BB-HANG] parser stuck 120s` and prints its header and nothing else,
-which is why the verdict is taken over 8 repo-shards and merged by the arbiter's own precedence. See
-*PASS 4*. **Its per-type EDGE counts are a lower bound, not a count** — pass 7 measured two runs
-disagreeing by 7 `uses` edges on the same corpus, because the gate has no serial-repair pass for a
-file the engine times out. See *PASS 7*.
+Reproduced on every run, including two at pass 7's HEAD. The arbiter's single-process run used to
+die on `[BB-HANG] parser stuck 120s` and print its header and nothing else; at pass 7's HEAD it
+completes, so the verdict is still taken over 8 repo-shards — a hang would cost the whole verdict,
+whereas a shard costs one slice — and merged by the arbiter's own precedence. See *PASS 4*. **Its
+per-type EDGE counts are a lower bound, not a count**: pass 7 measured the sharded run reading
+`uses` 9,099 and 9,106 on the same corpus, and a *completed* single-process run reading `contains`
+11,970 against the census's 11,977, because a file the engine times out returns a success-shaped
+empty result and the gate counts whatever it is given. See *PASS 7*.
 
 | Type | Verdict | Count | Where it came from, or the ruling's instrument |
 | --- | --- | --- | --- |
@@ -962,6 +964,35 @@ caveat on stdout. Pass 6's statement that the arbiter's per-type edges are "iden
 census" was true on the run it was measured on and is **not** a property of the instrument; it is now
 restated as the lower-bound claim the instrument supports.
 
+### The single-process run no longer hangs, and it was never the thing that made its totals exact
+
+The page justified taking the verdict from the sharded runner over the single-process one on the
+ground that the single-process run **dies** on `[BB-HANG] parser stuck 120s` partway through. At
+`bb0ec1786` it **completed**, printed all ten rows and the same verdict line — so that
+justification is stale, and it is recorded as stale rather than quietly dropped.
+
+**And completing did not make its totals exact.** Against the census at 0 degraded files, the same
+completed single-process run read:
+
+| Type | Single-process gate | Census, 0 degraded | Delta |
+| --- | --- | --- | --- |
+| `contains` | 11,970 | 11,977 | **−7** |
+| `uses` | 9,105 | 9,106 | **−1** |
+| `calls` / `references` / `imports` / `overrides` / `instantiates` | 3,892 / 5,996 / 52 / 22 / 21 | same | 0 |
+
+So the defect is **not** the hang and **not** sharding: it is that the gate counts whatever the
+engine returns, and a timed-out file returns a success-shaped empty result. A hang is the loud
+version of that, where the process exits and the loss is visible; a degradation is the quiet version,
+where the row prints a smaller number and nothing marks it. The sharded runner remains the right
+instrument — it bounds a fault to one shard instead of the whole verdict — but the reason is that it
+**localises** the loss, not that it prevents it.
+
+**The single-process run is also the only configuration in which the gate's node-type count means what
+it says.** One process walks all 1,955 files, so its "480 distinct node types across the corpus" is
+the corpus. Sharded, the same string is one shard's. That is why the page's 480 and the gate's 256
+were both correct measurements of different populations, and why the difference was invisible until
+both were printed side by side.
+
 ### "480 node types" and "256 node types" are different populations, and the gate's wording is wrong
 
 The arbiter prints, on each RULED row, *"the grammar produced 256 distinct node types across the
@@ -1067,7 +1098,7 @@ it. Fixed to `statSync(dir).isDirectory()`, which follows the link.
 | Gate | Command | Result at this HEAD |
 | --- | --- | --- |
 | ontology arbiter, whole corpus, 8 repo-shards | `npx tsx validation/m14/fixtures/sql/run-sharded-arbiter.mts` | **`emitted 7/10   ruled-sound 3   FALSIFIED 0   ruled-without-justification 0`**, 8/8 shards answering all ten rows, and per-type edges **identical to the pass-4 census**: 3,892 / 9,106 / 11,977 / 52 / 5,996 / 22 / 21. **Corrected at pass 7:** the agreement held on this run and is not a property of the instrument — two pass-7 runs disagreed by 7 `uses` edges because the gate has no serial-repair pass. Those totals are a **lower bound**; see *PASS 7* |
-| arbiter on a COPY with the ruling table patched in | `npx tsx validation/m14/fixtures/sql/run-ruling-table.mts` | same verdict line. Single process, so it dies on `[BB-HANG] parser stuck 120s` on `duckdb/benchmark/aoc24/queries/day02.sql` partway through and its partial per-type counts read 3,875 / 9,100 / 11,873 / 51 / 5,951 — the sharded run is the authoritative one, and this is the known `engine.ts` `process.exit(1)` behaviour (§8) |
+| arbiter on a COPY with the ruling table patched in | `npx tsx validation/m14/fixtures/sql/run-ruling-table.mts` | same verdict line. Single process, so it dies on `[BB-HANG] parser stuck 120s` on `duckdb/benchmark/aoc24/queries/day02.sql` partway through and its partial per-type counts read 3,875 / 9,100 / 11,873 / 51 / 5,951 — the sharded run is the authoritative one, and this is the known `engine.ts` `process.exit(1)` behaviour (§8). **Pass 7: the hang did not reproduce and this row is partly historical — see below** |
 | fixture lane | `npx tsx script/m14/run-fixtures.ts --lang sql` | **15 / 15 PASS, exit 0**. Unscoped, the same script **exits 6 before running any lane** because `lua` and `r` have fixture directories no runner lane claims — other lanes' defect, not this one's (§8) |
 | ontology mutants | `bun run script/m14/mutate-analyzer.ts sql` | **34 / 34 `sql/*` mutants CAUGHT, 0 `sql/*` SURVIVED**. The script's 6 survivors are `java` ×1, `groovy` ×2, `scala`, `make`, `php` — other lanes. **It does not honour the language argument**: it sweeps every lane and **rewrites the shared `validation/m14/results/M14.0.F4.json`**, changing 22,627 lines of other lanes' rows as a side effect of running this lane's gate. That file is §8-owned, so this lane restores it (`git restore`) and does not commit the rewrite. Running this command as the workstream instructions direct is therefore not lane-scoped and mutates a shared artifact (§8 item) |
 | regex census | `npx tsx script/m12/verify-regex-census.ts` | **0 SQL rows.** The gate FAILS on `MISSING` rows for `real-css-analyzer.ts` (9) and `real-julia-analyzer.ts` (5) and `STALE` rows for clean, fsharp, javascript, python, svelte, typescript. This lane contributes 0 rows to that failure |
@@ -1400,6 +1431,30 @@ long `parseFile` walk is still not a reproducible instrument on this box, which 
 the arbiter run and the equivalence probe are all sharded, and why `engine.ts` answering a parse
 fault with `process.exit(1)` remains a §8 item: it makes every instrument built on the production
 entry point all-or-nothing.
+
+### The same load sensitivity, measured inside the GATE rather than around it — pass 7
+
+The paragraph above bounds the *process*. Pass 7 found the same effect inside a run that completes,
+which is the quieter and more dangerous form of it, and stated the mechanism once: **`engine.ts`
+answers an analyzer timeout with a SUCCESS-shaped basic parse result** (`symbols: []`,
+`relationships: []`, one error). A file that degrades therefore contributes **zero** edges and is
+indistinguishable from a file that declares nothing, unless the consumer checks
+`metadata.analysisVersion === "2.0-basic-fallback"` or an error message — which is exactly what
+`ontology-census.mts`'s `degradationOf` does and what the gate does not.
+
+Three measurements, all on the same 1,955-file corpus at the same HEAD:
+
+| Consumer | Serial repair? | Result against the census |
+| --- | --- | --- |
+| `ontology-census.mts`, 8 shards | **yes** | `uses` 9,106, `contains` 11,977, **0 degraded** — the exact figures |
+| `run-sharded-arbiter.mts` | no | `uses` **9,099** on one run, **9,106** on the next |
+| the gate, single process, **completed, no hang** | no | `uses` 9,105, `contains` **11,970** |
+
+The census is exact **because** it repairs; the gate is a lower bound in both configurations
+**because** it does not. So this is not a sharding artefact and not a hang: it is the gate trusting
+a success-shaped failure. **§8, specified in the report** — the fix is for the consumer to detect
+the marker the engine already sets, and the marker is already computed in this repository by
+`degradationOf` in `validation/m14/fixtures/sql/ontology-census.mts`.
 
 ## Known gaps, stated rather than implied
 
