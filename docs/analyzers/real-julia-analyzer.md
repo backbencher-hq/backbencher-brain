@@ -384,7 +384,7 @@ file**, because the analyzer is per-file and that is the resolution one file's g
 `calls` 54.8%, `uses` 56.1%, `references` 53.7%, `extends` 64.1%. Those numbers were measured
 against a **single union set of every symbol name in the whole corpus** — "is this endpoint a name
 somewhere in 971 files" — while the text described them as per-file. Measured against each file's own
-symbol table they are **19.8%, 25.0%, 19.7% and 20.4%**: the old figures overstated per-file
+symbol table they are **19.8%, 25.0%, 19.5% and 20.4%**: the old figures overstated per-file
 resolution by **2.2× to 3.2×**. The union number is not worthless — it is what a project-wide index
 can resolve — but it is a different number and it was published under the wrong heading.
 
@@ -401,7 +401,7 @@ can resolve — but it is a different number and it was published under the wron
 | `overrides` | yes | 3 / 3 | **lane-owned oracle, 3/3, 0 unexplained, 0 missing — NOT yet wired into F5** | `structural` | **100.0%** | conf 1.0; **0 under 0.7** |
 
 `contains` at 99.9% and `overrides` at 100.0% are the reference points showing the measurement is not
-simply reporting that most edges are cross-file. The 19.7–25.0% figures for the other four are what a
+simply reporting that most edges are cross-file. The 19.5–25.0% figures for the other four are what a
 consumer of one file's graph sees on a corpus that is one upstream project.
 
 ### The heuristic ratio is 0.0% for every type
@@ -466,9 +466,9 @@ Bucket meanings, each of which is a claim with a stated basis:
 - **synthetic scope** — `global` and `root`, this repo's documented synthetic scope names, counted per
   type in the table below rather than excluded from the denominator.
 
-**19,022 `calls`, 6,234 `uses`, 3,234 + 951 `references` and 652 `instantiates` edges are sourced from
-`global`/`root`.** Those are dangling sources by construction and are counted as such: a resolution
-rate that excluded them would not be the number a consumer sees.
+**19,022 `calls`, 6,234 `uses`, 3,234 `global` + 1,371 `root` `references` and 652 `instantiates`
+edges are sourced from `global`/`root`.** Those are dangling sources by construction and are counted
+as such: a resolution rate that excluded them would not be the number a consumer sees.
 
 ### The ambiguity, and the fact that the edge already carries the answer
 
@@ -616,10 +616,14 @@ That script is shared machinery and is reported rather than edited. The census's
 lane-owned substitute: it extracts the analyzer's node-type **claims** and checks each against the node
 types the production grammar actually produced over the 971 corpus files.
 
-**45 node-type claims, 0 unknown.** The extraction is narrowed to the three positions where a literal
+**46 node-type claims, 0 unknown.** The extraction is narrowed to the three positions where a literal
 IS a node type — a `.type` comparison, a `firstNamedChildOfType` type argument, or a member of a
 node-type `Set` — because an earlier version extracted every snake_case literal and accused 32 names of
 which 30 were relationship-type names, evidence-class names and `IMPLICIT_OR_CONSTANT` members.
+
+The count was **45** until the `imports`/`exports` work added `selected_import` to the analyzer
+(`932a20d27`), and this paragraph was the stale one: a count measured once and reprinted. It is written
+here as the number the census prints on every run for that reason.
 
 It immediately named **three dead branches**:
 
@@ -637,7 +641,7 @@ why the `&&`-branch reachability measurement is reported separately rather than 
 ### The scanner that reads the analyzer's own TypeScript, and a zero that read as a pass
 
 The extraction reads string literals out of `src/ast/real-julia-analyzer.ts`, which needs a lexical
-scanner: `validation/m14/fixtures/julia/text-util.ts`. It reports the same **45 claims / 0 unknown**
+scanner: `validation/m14/fixtures/julia/text-util.ts`. It reports the same **46 claims / 0 unknown**
 as the three regexes it replaced, which is the check that it is equivalent.
 
 It also produced the most instructive failure in this file's history. A first version of the scanner
@@ -876,7 +880,7 @@ The per-type **file count was capped at 6** in an earlier version, to keep the o
 large type printed `files: 6`. The cap is gone: 926 / 844 / 821 / 540 / 361 / 323 / 3.
 
 The **resolution** column was measured against a corpus-wide union of symbol names while the
-surrounding text said "same file" — see *The six questions* above. Per-file resolution is 19.7–25.0%
+surrounding text said "same file" — see *The six questions* above. Per-file resolution is 19.5–25.0%
 for the four large cross-file types, not 53.7–56.1%.
 
 **Performance was the first measurement nobody took on this lane, and it found a defect every
@@ -964,7 +968,7 @@ can be a fixture asserting things the code does not do, and the fixture is what 
 
 ## Known limitations
 
-- **Per-file resolution is 19.7–25.0% for the four large cross-file types**, and that is the number a
+- **Per-file resolution is 19.5–25.0% for the four large cross-file types**, and that is the number a
   consumer of one file's graph sees. The corpus-wide figure — "the name is declared somewhere in 971
   files" — is 53.7–56.1% and is a different measurement; neither is the post-merge project resolution
   a consumer of the indexed graph actually gets, and **nothing in this lane measures that third
@@ -986,7 +990,7 @@ can be a fixture asserting things the code does not do, and the fixture is what 
   published, but the *edge's source string* is `Src` and the file's symbol table collapses the three
   modules into one `Src`. Cross-file identity for same-named modules is a project-wide question this
   per-file analyzer cannot answer.
-- **6,701 `calls`, 3,683 `uses`, 6,282 `references` and 205 `extends` targets resolve to nothing**,
+- **6,701 `calls`, 3,683 `uses`, 6,463 `references` and 205 `extends` targets resolve to nothing**,
   and this census does not separate "external package", "`Base` builtin", "dynamic dispatch" and
   "a declaration we failed to publish". Those are four different findings and the bucket deliberately
   does not guess a split; separating them needs a Julia runtime, which this lane does not start. The
