@@ -27,7 +27,7 @@ npx tsx validation/m14/fixtures/julia/census.ts --json /tmp/census.json       # 
 npx tsx validation/m14/fixtures/julia/doc-tables-check.ts --json /tmp/census.json  # every table CELL vs the census
 npx tsx validation/m14/fixtures/julia/overrides-differential.ts --json /tmp/ov.json
 npx tsx validation/m14/fixtures/julia/direct-oracle-check.ts --files 40      # per-label, deterministic
-npx tsx validation/m14/fixtures/julia/ruled-probe-check.ts                  # the implements ruling's 325/60
+npx tsx validation/m14/fixtures/julia/ruled-probe-check.ts                  # the implements ruling's 449/87
 npx tsx validation/m14/fixtures/julia/arbiter-census-diff.ts                 # census vs arbiter, per type
 npx tsx script/m14/firing-check.ts --files 120 julia                         # what FIRES, 120-file stride
 npx tsx script/m14/firing-check.ts --files 2000 julia                        # …and over all 1,985
@@ -37,6 +37,7 @@ bun  run script/m14/run-fixtures.ts --lang julia
 bun  run validation/m14/fixtures/julia/mutation-check.ts --all
 npx tsx validation/m14/fixtures/julia/envelope.ts --files 400                     # the time envelope + load context
 npx tsx validation/m14/fixtures/julia/engine-concurrency-probe.ts --files 400      # why the arbiter cannot finish
+npx tsx validation/m14/fixtures/julia/core-wasm-race-probe.ts --rounds 24     # why the arbiter can die BEFORE reading a file
 npx tsx script/m14/ontology-coverage-gate.ts julia                            # exit 1 before it prints; see below
 ```
 
@@ -167,6 +168,69 @@ of this file and is now a measurement — **3 orphaned bombs per 1,200-file run 
 and 2 observed `process.exit(1)` calls** — which makes it an every-language finding, not a julia one:
 any lane whose corpus trips a parse error under the gate's 8 workers loses its verdict table the same
 way. Both are §8 items.
+
+### A THIRD death, before any corpus file is read — and it is the wasm fix, half-applied
+
+The two failures above both happen AFTER the corpus is read. A third kills the process in the first
+400 ms, and it is not either of them:
+
+```
+failed to asynchronously prepare wasm: CompileError: WebAssembly.instantiate():
+  section (code 7, "Export") extends past end of the module (length 4257, remaining bytes 2053)
+RuntimeError: Aborted(CompileError: …) at async init (src/ast/engine.ts:148)
+```
+
+**That message is a WASM section parser running off the end of a buffer.** A correct module cannot
+produce it; a truncated one always can. So the crash is a torn read, and the file it names is the
+engine's core module at a path with no key in it — `src/ast/engine.ts:133-137`:
+
+```
+for (const tmpDir of [os.tmpdir(), "/tmp", process.cwd()]) {
+  const tmp = p.join(tmpDir, "bb-ts-core.wasm")   // :135  FIXED name — no pid, no random
+  fsModule.writeFileSync(tmp, coreWasm)           // :136  truncates, then writes 205,488 bytes
+```
+
+`writeFileSync` opens `O_TRUNC`, so the file is **0 bytes** before any byte of the new content lands,
+and on Linux `os.tmpdir()` and the literal `"/tmp"` in that array are the same directory — the loop's
+first two candidates are one path. Every process that initialises `ASTEngine` rewrites it, and six
+lanes share one machine.
+
+`validation/m14/fixtures/julia/core-wasm-race-probe.ts` (lane-owned, reads no corpus, writes nothing
+but that shared path, which it restores byte-for-byte) measures it. Writer = the exact `engine.ts:136`
+call, 24 rounds:
+
+```
+reads at FULL size  456,229        reads SHORT  234
+distinct lengths observed: 0, 131072, 131408, 205488      <- 0 bytes is the O_TRUNC window, caught
+intact 205,488-byte module      -> COMPILES
+truncated to 102,744 bytes      -> section (code 10, "Code") extends past end of the module
+/tmp/bb-ts-core.wasm sha256 == node_modules/web-tree-sitter/tree-sitter.wasm sha256, before and after
+```
+
+**The hash equality is what makes this a diagnosis rather than a guess.** The module on disk is
+byte-identical to the engine's source of truth both before and after, so "the wasm is corrupt" is
+excluded and "the wasm was read mid-write" is what remains. A truncation at 50 % reports section code
+10 where the arbiter reported code 7; same failure class, different cut point, which is what a
+torn read of varying depth looks like.
+
+**This is the wasm temp-path defect this file already records above, HALF-APPLIED, and the half that
+is missing is the core module.** The paragraph above says `resolveWasm` used to publish every grammar
+to an unkeyed shared path with a plain `writeFileSync`, that `src/ast/engine.ts` "now writes to a
+per-process path and renames atomically", and that the trap is gone. That is true of the **language**
+wasm and this lane's own logs show the key it now uses —
+`/tmp/bb-wasm_tree-sitter-julia_tree-sitter-julia.wasm_1604316_5eciyocfza`. The **core** wasm was
+left on the old unkeyed, non-atomic write. So "the wasm temp-path trap is fixed" was true about the
+cause that was fixed and read as true about the path that was not, which is the same shape of error as
+the one that paragraph is correcting.
+
+**Observed once, here, with six lanes resident. No frequency is claimed** — how often the arbiter
+dies this way depends on how many processes initialise the engine in the same instant, which is a
+property of the fleet's scheduling and not of this repository. A frequency claim would need
+instrumentation across lanes and is not this lane's to make.
+
+Shared machinery, so reported and not edited: key the core path the way the language path is keyed,
+or write a sibling temp file and `rename()` it into place. **Until then the arbiter cannot be quoted
+for its exit code on any lane, for a third reason that has nothing to do with julia.**
 
 So the verdicts below are produced by the lane-owned census applying the gate's own two instruments
 and the gate's own verdict algorithm to julia, and the gate's verdict algorithm now has a table to
@@ -1820,3 +1884,4 @@ which is why none of them is in this lane's commits.
 | 6 | `src/ast/language-detection.ts` / arbiter repo config | `LANG_REPOS_SECOND`-style list at `:370-377` | allow a third and subsequent corpus project per language | 3 clone attempts fail from this network (`timholyford/Revise.jl`, `stevehie/StructTypes.jl`, `JuliaMath/Distributions.jl` all return "Repository not found"), so the corpus cannot be widened past 14 projects from inside the lane. No `Revise.jl` means no `eval`-heavy project; no `Distributions.jl`/`StatsBase` means the parametric numeric tower is under-sampled — and the `implements` ruling is measured on 14 projects, not the ecosystem |
 | 7 | `src/ast/engine.ts` | `:1442` | report a hang and continue, or at minimum name the file it is about to abandon, instead of `process.exit(1)` | a single slow file ends any run that touches it. Distinct from #1: #1 is a bomb that should never have been armed, this is the policy for one that legitimately is |
 | 8 | `validation/m12/` harness | `script/m12/measure-analyzer.ts` | create `validation/m12/fixtures/julia` so the shared M12 timing harness can time this lane | julia is absent from `script/m60/analyzer-complexity-gate.ts` (44 lanes, no julia row), from `validation/m60/analyzer-budget-register.json`, and `validation/m12/results/julia-complexity.json` does not exist. **There is therefore no budgeted lane for this lane to regress**, which is why the payload/latency question in this file is answered by a lane-owned envelope measurement instead |
+| 9 | `src/ast/engine.ts` | `:133-137` | key the core-wasm temp path by pid + randomness the way the language path already is, or write a sibling temp file and `rename()` it into place | the path is `path.join(tmpDir, "bb-ts-core.wasm")` — a FIXED name, no pid, no random — and `writeFileSync` truncates before it writes. Measured: 234 short reads of 456,463 over 24 rounds, with the file observed at **0 bytes**; a truncated module yields the arbiter's exact error class. On Linux `os.tmpdir()` and the literal `"/tmp"` in that loop are one path. This is the wasm temp-path trap this lane already recorded as FIXED for grammar wasm; the core module was left behind, so the fix is half-applied and the arbiter dies before it prints for a third reason |
