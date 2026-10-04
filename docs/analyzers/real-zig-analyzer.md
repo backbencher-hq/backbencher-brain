@@ -293,7 +293,7 @@ row is still here for a reader; it is simply the row no script grades.
 | `implements` | no — RULED, ZIG.O.2, instrument A, same tables; Zig models an interface as `opaque` + fn-pointer fields, so there is no conformance clause to name | 0 | 0 | — | — | — | — | — | — |
 | `overrides` | no — RULED, ZIG.O.3, instrument B: 3 duplicate-function, 14 duplicate-binding, 9 duplicate-member occurrences, and every surviving one is a file documenting the compiler's REJECTION | 0 | 0 | — | — | — | — | — | — |
 
-**`script/m14/ontology-coverage-gate.ts zig` does not reach a verdict on this
+**`script/m14/ontology-coverage-gate.ts zig` did not reach a verdict on this
 corpus, and the reason is the shared gate's, not this lane's.** The gate scans the
 whole corpus BEFORE it checks `RULED_BY_LANG`, so it is subject to the same
 single-process WASM degradation as the census: two runs ended in
@@ -307,6 +307,24 @@ statement is corrected here.** The gate is read-only and shared (§8), so this l
 measured the three rulings with its own instruments and the spec decisions
 `ZIG.O.1`–`ZIG.O.4` carry the written reason, the instrument, the probe and the
 overturn condition the gate looks for. See the report item.
+
+**SUPERSEDED BY PASS 15 — the arbiter now prints a verdict for zig, and it is this
+table's verdict.** Both statements above were true of this branch and are kept as the
+record; neither describes the gate as it stands on base `c2f4a136c`, which wires
+`zig: ZIG_RULED` (`ontology-coverage-gate.ts:199`). Running that file byte-for-byte
+against this analyzer, over 1,200 of the 3,834 files:
+
+```
+calls 29588  uses 35867  contains 22649  references 9076  exports 6433  imports 3143
+instantiates 1253  EMITTED each
+extends  implements  overrides  RULED-SOUND each
+emitted 7/10   ruled-sound 3   FALSIFIED 0   ruled-without-justification 0
+```
+
+`FALSIFIED 0` and `ruled-without-justification 0` are the arbiter's own instruments re-probing all
+three rulings without this lane's involvement, and **all seven per-type counts in this table's
+`edges` column are reproduced to the digit** by this lane's independent census on the same 1,200
+files. The population is 31% of the corpus because the full-root run aborts; see §A.
 
 ### The three RULED types, each falsifiable
 
@@ -3541,3 +3559,271 @@ now on the census: concurrency costs time *and* correctness here, and nothing re
   shard-merge.py`) is not established**, and this lane cannot re-derive it because the shard raws were
   untracked at `c479d97b2`. *Needed:* keep the shard raws, or stamp each merged artifact with the
   union hash it verified against, so the chain is checkable after the fact.
+
+## Pass 15 — the arbiter's OWN verdict for zig, and two of this lane's instruments weaker than their comments (2026-10-04)
+
+Pass 14 §H left one item reading *"the arbiter's verdict for zig is still not printed from this
+branch"*, and called it a merge-base artefact. Base has since wired the table, so this pass runs
+the supervisor's current gate against this lane's analyzer. It printed a verdict, and running it
+exposed two defects in **this lane's own instruments** — both of which had been reporting a
+cleaner answer than the one they were entitled to.
+
+### A. The verdict, printed by the gate itself, not by a replica of it
+
+Pass 4 built a lane-local copy of the shared gate with the wiring added, and every number below
+would have come from that copy. It no longer needs to: **the base gate is now wired for zig**
+(`zig: ZIG_RULED` at `ontology-coverage-gate.ts:199`), so it can be run as the supervisor wrote it.
+
+The method, because "I ran the gate" is not reproducible on its own. Base `c2f4a136c`'s
+`script/m14/` was materialised **byte-for-byte** into a scratch tree with `src`, `node_modules` and
+`wasm` symlinked to this worktree and a `{"type":"module"}` `package.json` beside it — the gate uses
+top-level `await`, and without that package.json `tsx` transforms it as CJS and it dies with
+`ERR_REQUIRE_ASYNC_MODULE` before reading a file. `diff` against `git show
+analyzers/ontology-laptop-b:script/m14/ontology-coverage-gate.ts` is empty. **Zero edits.** The
+analyzer under test is this branch's, and it is the only thing the symlinks point at.
+
+Three runs. Two aborted; one completed:
+
+| run | population | outcome |
+|---|---|---|
+| 1 | full root, 3,834 files | `[BB-HANG] parser stuck 120s on zig/doc/langref/test_optional_type.zig` — exit 1, no verdict |
+| 2 | bounded root, 1,200 files | verdict table printed, **then** `[BB-HANG] … undef_shifts_are_illegal.zig` — exit 1 |
+| 3 | bounded root, 1,200 files | **verdict table printed, exit 0, no degraded file** |
+
+Run 3, `validation/m14/fixtures/zig/measurements/arbiter-bounded1200-2026-10-04-p15.log`:
+
+```
+type          status            detail
+--------------------------------------------------------------------------------------------
+calls         EMITTED           29,588 edges in 4+ files, e.g. ghostty/example/c-vt-colors/build.zig, …
+uses          EMITTED           35,867 edges in 4+ files, …
+contains      EMITTED           22,649 edges in 4+ files, …
+imports       EMITTED           3,143 edges in 4+ files, …
+references    EMITTED           9,076 edges in 4+ files, …
+exports       EMITTED           6,433 edges in 4+ files, …
+extends       RULED-SOUND       NOT EMITTED; the grammar produced 231 distinct node types across the
+                                corpus and NONE expresses it. Written ruling: script/m14/zig-ruled.ts
+implements    RULED-SOUND       NOT EMITTED; … 231 distinct node types … NONE expresses it.
+overrides     RULED-SOUND       NOT EMITTED; the construct occurs 0x on the parse tree.
+instantiates  EMITTED           1,253 edges in 4+ files, …
+--------------------------------------------------------------------------------------------
+emitted 7/10   ruled-sound 3   FALSIFIED 0   ruled-without-justification 0
+```
+
+**`FALSIFIED 0` and `ruled-without-justification 0` is the number this lane has never been able to
+produce for itself.** All three rulings were re-probed by the arbiter's own instruments A and B, not
+by this lane's copy of them, and none was overturned. That is the first third-party reading of
+`script/m14/zig-ruled.ts`, and it agrees with `docs/analyzers/real-zig-analyzer.md`.
+
+**The population is 1,200 of 3,834 and the table is over that, not the whole corpus.** The full-root
+run has aborted 3 times in 3 (§G), so the widest arbiter measurement available on this lane is 31%
+of the population. Every per-type count in §A is therefore a 1,200-file count and must not be read
+against §E's 3,834-file table. `231 distinct node types` is likewise the node types observed on
+1,200 files, against the 239 the grammar *declares* — the ruling's own probe in
+`zig-ruled-probe.ts` reads the declaration table, which is corpus-independent.
+
+### B. Two independent instruments, one population, agreement to the digit
+
+§A's counts had to be checked against something this lane did not produce. `arbiter-corpus-root.py`
+built the 1,200-file root and printed its draw hash; this lane's census was then pointed at **the
+same 1,200 files** by name (`--files-from`), and derived the same hash on its own:
+`ontology-census.ts` printed `1200 files sampled (3834 admitted), draw sha256:d60b554a61d7c1ad…`,
+which is the hash `arbiter-corpus-root.py` printed when it built the root. Two derivations, one
+population.
+
+| type | supervisor's arbiter | this lane's census | delta |
+|---|---|---|---|
+| `calls` | 29,588 | 29,588 | 0 |
+| `uses` | 35,867 | 35,867 | 0 |
+| `contains` | 22,649 | 22,649 | 0 |
+| `references` | 9,076 | 9,076 | 0 |
+| `exports` | 6,433 | 6,433 | 0 |
+| `imports` | 3,143 | 3,143 | 0 |
+| `instantiates` | 1,253 | 1,253 | 0 |
+| **total** | **108,009** | **108,009** | **0** |
+
+**All seven agree exactly, over 108,009 relationships, 36,432 symbols, 0 fallback, 0 parse
+failures.** The two instruments share the pinned wasm and nothing else: one is the supervisor's
+`parseFile` sweep at its hardcoded fan-out of 8 with no sharding, the other is this lane's sharded
+census with the union-hash assertion. Agreement to the digit is the strongest statement either can
+make about the other's count, and it is the check pass 14's `files` column needed and did not have.
+
+Before that check was run, a per-repo density extrapolation from the 3,834-file artifact predicted
+the arbiter would see **5–17% MORE** edges per file than the census did on this subset, and
+`imports` matched to 0.3% while `calls` missed by 17%. That gap was a property of the extrapolation
+— 1,200 files in **3 repository clusters** is a very small effective sample — and not of either
+instrument. It is recorded here because the prediction was wrong in a way that looked like a real
+discrepancy, and the only thing that settled it was measuring both on the identical file set.
+
+**The 12-edge difference between runs 2 and 3 of §A is attributed, not assumed.** Run 2 degraded
+exactly one file (`undef_shifts_are_illegal.zig`, `[BB-PARSE-ERR] memory access out of bounds`);
+run 3 degraded none. Run 2 totalled 107,997 and run 3 108,009, a difference of **12**. Parsed alone,
+that file is **4 symbols and 12 relationships** (`trap-second-parse.ts`). The one file that differed
+in degraded status contributes exactly the delta, which is also the total cost of one fallback file
+to this instrument: **12 edges in 108,009 = 0.011%**. That is the contamination a single WASM trap
+does to the arbiter's own count, and the verdict survives it.
+
+### C. The flagged set is now 9 distinct files over 5 runs, and the pairing is 3 of 3
+
+Pass 14 §C recorded 3 runs, 6 distinct files, 0 overlap. Today's runs add three:
+
+| run | outcome | file flagged |
+|---|---|---|
+| pass 14 (3 runs) | 1 completed, 2 aborted | `ghostty/src/lib/types.zig`, `ghostty/src/lib/tinyio/windows.zig`, `ghostty/src/lib/struct.zig`, `zig/doc/langref/test_opaque.zig`, `non_error_sets_used_in_merge_error_sets_operator.zig`, `zig/doc/langref/test_optional_pointer.zig` |
+| pass 15 run 1, full root | abort | `zig/doc/langref/test_optional_type.zig` (368 B) |
+| pass 15 run 2, bounded | verdict then abort | `zig/test/cases/compile_errors/undef_shifts_are_illegal.zig` (193,934 B) |
+| pass 15 run 3, bounded | **verdict, exit 0** | none |
+| pass 15 run 1b, full root | abort | `zig/lib/std/testing/FailingAllocator.zig` (5,625 B) |
+
+**9 distinct files over 5 runs, 0 shared between any two runs**, spanning 244 B to 193,934 B.
+§8 item 20 stands and is now measured over 9 files rather than 6.
+
+**A pattern pass 14's account does not cover: in 3 runs of 3, the file named in `[BB-HANG]` is the
+file named in the `[BB-PARSE-ERR]` line from the same process.** The pairing is WITHIN one file.
+Pass 14 attributed the rotation to concurrent fan-out over a shared wasm instance — a CROSS-file
+account, which says nothing about a file pairing with itself.
+
+What the code actually says, read rather than guessed:
+
+- `src/ast/engine.ts:1440-1448` — the guard is **per `parse()` call**, not per file and not per
+  process. `parseBomb` is armed immediately before `parser.parse(content)` and cleared after, so the
+  name in `[BB-HANG]` is the file whose parse blocked and carries no information about what preceded it.
+- `src/ast/pool-worker.ts:1196-1210` — the handler that prints `[BB-PARSE-ERR]` **returns**
+  `extractFallback(...)`. It does not re-parse and does not rethrow, so a trap on file X cannot by
+  itself re-enter the parser on X.
+
+So the two messages come from different parses, and the gate's loop takes each file index once.
+Either something this lane does not own parses the same file twice, or **n = 3 is coincidence**.
+`trap-second-parse.ts` measures the thing that would make it mechanical — does a file that traps
+once trap again on a second parse in the same process:
+
+```
+test_optional_type.zig          368 B   attempt 1  5,963ms  ok  fallback=false   attempt 2     51ms  ok  fallback=false
+undef_shifts_are_illegal.zig  193,934 B   attempt 1  2,083ms  ok  fallback=false   attempt 2  1,250ms  ok  fallback=false
+```
+
+**0 of 2 trap at all when parsed sequentially, so the instance recovers and there is no poisoned-state
+mechanism to point at.** The pairing stays unexplained by anything in this lane's reach, and this
+pass does not explain it. What the same run settles is the control: with these two, **8 of 8 distinct
+flagged files now parse clean alone, 5 runs each, 0 fallback**, and `gate-flagged-files.ts --from
+<today's log> --subjects derived` exits **0** with the population read from the run that produced it
+(1 of 1 flagged file covered; `FailingAllocator.zig` 5/5 returned, 648 ms against a 120 s guard =
+**185×**). The variable is the concurrent run, not the corpus, over 8 files instead of 2.
+
+### D. The `unknown`-endpoint classifier was passing edges on the strength of the wrong endpoint
+
+The census counts edges with a literal `unknown` endpoint and splits them into declared-in-source
+and PLACEHOLDER, because R7 forbids an invented endpoint and the two produce the same string. The
+code carried this comment:
+
+```ts
+// R7 counts a PLACEHOLDER: an endpoint the analyzer invented because a
+// fallback had nothing truthful to say. A source that really DECLARES a
+// member called `unknown` … produces the same string and is a true name, so the two are counted
+// apart — collapsing them would either convict a truthful edge or excuse a placeholder.
+if (src === "unknown" || tgt === "unknown") {
+  const declared = names.has(src) || names.has(tgt)
+```
+
+`names` is the **file-local** published-name set and the `||` means the edge is called truthful when
+**either** end is a real name. So `contains Kind -> unknown` was convicted by `Kind`, and **a
+genuine placeholder riding on a real source name could not be convicted at all.** The branch existed
+to catch exactly that, and could not. Zig makes the name common: `zig/lib/std/Io/File.zig:28` is
+`unknown,` as an enum member, and `zig/lib/compiler/reduce.zig:36` is
+`const Interestingness = enum { interesting, unknown, boring };`.
+
+Measured on the gate's 1,200-file population, three successively sharper tests:
+
+| test | reads |
+|---|---|
+| `has(src) ‖ has(tgt)`, file-local | 16 declared in source, **0 PLACEHOLDER** — too weak to convict |
+| file-local on the `unknown` ends only | 15 declared, **1 PLACEHOLDER** — convicts a true edge |
+| three-way: local / union / neither | **15 local, 1 elsewhere in the draw, 0 PLACEHOLDER** |
+
+The edge the second test convicts is real and stays. `zig/test/cases/compile_errors/
+field_access_of_slices.zig:4` reads `@TypeOf(slice).unknown` — a member name on an anonymous type,
+in a file that is a **compile-error test case** and is meant not to compile. That file declares
+nothing named `unknown`, but std does, so the corpus tier resolves it. Calling it a placeholder would
+be a false accusation against a truthful edge, and the register that enforces R7 is shrink-only, so
+that error would be permanent.
+
+Classification is now deferred to the post-join pass, because the middle class is not knowable inside
+a worker: it needs the union name set. `shard-merge.py` recomputes all three from the union instead
+of summing shard verdicts — a shard sees 1/8 of the names and would read every cross-shard name as a
+placeholder. Both instruments were wrong in opposite directions, and both are recorded here because
+the first number was only wrong in the direction that flatters.
+
+**Full draw, at this commit: 39 edges with a literal `unknown` endpoint = 37 declared in source +
+2 declared elsewhere in the draw + 0 PLACEHOLDER.** §4's requirement — no invented endpoints — holds
+at **0 in 395,805 edges**, measured by a test that can now convict one.
+
+### E. Every published number reproduces at this commit
+
+8 shards, **sequential**, `--sample 3834`, merged with the published hash as a required argument. The
+assertion pass 14 found unreachable is now running and reporting true:
+
+```
+union of 8 shards: 3834 files  sha256:2f3545f92c470090d61c9a745bb427d8d7dec1630d93d0fbc01cb2acdc5ce1ac
+union hash == published draw hash   <-- running, and equal
+parsed 3834  symbols 130935  relationships 395805
+fallback 0  parseFailures 0  empty-name 0  kinds outside SymbolKind 0  heuristic (<0.7) 0 = 0.0%
+```
+
+| type | edges | files | tgt file-local% | both-ends corpus-tier% | < 0.7 |
+|---|---|---|---|---|---|
+| `uses` | 132,201 | 2,852 | 47.73 | 97.43 | 0 |
+| `calls` | 113,476 | 2,781 | 40.13 | 95.55 | 0 |
+| `contains` | 80,714 | 1,557 | 99.99 | 99.99 | 0 |
+| `references` | 30,794 | 2,966 | 44.39 | 74.66 | 0 |
+| `exports` | 24,114 | 3,164 | 100.00 | 100.00 | 0 |
+| `imports` | 10,200 | 2,693 | 29.89 | 33.80 | 0 |
+| `instantiates` | 4,306 | 530 | 85.72 | 96.05 | 0 |
+| **total** | **395,805** | — | — | **59.09** | **0** |
+
+Identical to passes 13 and 14 on every cell. `src/ast/real-zig-analyzer.ts` did not change in this
+pass — **eighth consecutive pass verified rather than edited.** The two things that changed were
+`ontology-census.ts`'s classifier and `shard-merge.py`'s, and both were found by running them
+against an independent measurement rather than by reading them.
+
+### F. Every gate this lane can run, re-run at this commit
+
+| gate | command | result |
+|---|---|---|
+| typecheck | `npx tsc --noEmit -p tsconfig.json` | clean, exit 0 |
+| fixture suite | `bun run script/m14/run-fixtures.ts --lang zig` | **11 pass / 0 fail**, exit 0, no baseline regression |
+| mutation (shared) | `BB_MUTANT_ONLY="zig/" bun run script/m14/mutate-analyzer.ts` | **50 / 50 CAUGHT** (filtered 1,748 → 50), exit 0 |
+| mutation (lane) | `npx tsx validation/m14/fixtures/zig/m13-mutants.mts` | **6 / 6 CAUGHT**, exit 0 |
+| regex census | `npx tsx script/m12/verify-regex-census.ts` | still `regex census gate FAILED` on 11 other lanes — **0 zig rows** |
+| honesty gate | `npx tsx script/m14/verify-honesty.ts` | 22 failures, **0 of them in this document**; the freshness failure is §8 item 16 |
+| arbiter (supervisor's own gate) | base `c2f4a136c` `script/m14/`, byte-identical | **exit 0**, `emitted 7/10  ruled-sound 3  FALSIFIED 0  ruled-without-justification 0` |
+| population check | `gate-flagged-files.ts --from arbiter-full-…-p15.log --subjects derived` | exit **0**, 1 of 1 covered, 0 defects, 185× margin |
+| sharded census | 8 × `--sample 3834 --files-from`, then `shard-merge.py … <hash>` | exit 0, **union 3,834 == published hash**, 0 fallback, 0 parse failures |
+
+### G. What pass 15 could not settle
+
+- **Why the full-root run aborts and the 1,200-file run does not.** Three full-root runs aborted,
+  two bounded runs printed a verdict, and the bounded runs are 31% of the population. Fan-out is a
+  contributor and not the whole account (pass 14 §E), and nothing measured here separates "smaller
+  population" from "these particular files".
+- **Whether the 3-of-3 `[BB-PARSE-ERR]`→`[BB-HANG]` pairing is mechanical.** n = 3, and the one probe
+  that could have shown a poisoned instance showed a clean recovery instead. §8 item 21 is the
+  prerequisite; this lane does not own the engine.
+- **The provenance of the p11/p13 artifacts**, carried forward unresolved from pass 14 §L. The p15
+  artifact records `unionEqualsPublishedDraw: true` with the hash it verified against, so this
+  chain is checkable after the fact; theirs is not.
+- **Per-type counts at the full 3,834 population from the supervisor's gate**, which would need the
+  gate to shard. The cross-check in §B is at 1,200 files and total agreement there does not license
+  a claim about the other 2,634.
+
+### H. §8 item 21
+
+**21. The two `[BB-PARSE-ERR]` / `[BB-HANG]` messages cannot be attributed to a parser instance.**
+
+Both name a file; the guard is armed per `parse()` call (`engine.ts:1440-1448`) and the trap handler
+returns without re-parsing (`pool-worker.ts:1196-1210`), so the two lines come from different parses
+and nothing printed distinguishes which instance produced either. In 3 runs of 3 they named the same
+file, which is either a mechanism or a coincidence, and this lane cannot tell which because the
+engine emits no instance id, no file index and no parse ordinal. *Needed, in the order that would
+settle it:* stamp each `[BB-PARSE-ERR]` and `[BB-HANG]` with the parser instance id and the parse
+ordinal, so the pairing can be tested for "the trap poisoned the instance" against "the run happened
+to hand it the same file twice". One line in `src/ast/engine.ts`; not this lane's file.
