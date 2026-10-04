@@ -1,5 +1,119 @@
 # real-css-analyzer.md
 
+## PASS 9 — a fifth unmoved corpus, one cell of the differential that is NOT stable, and the
+## 73,369-vs-47,667 edge-count spread between two instruments that both claim to measure this lane
+
+Passes 6, 7 and 8 each found the corpus where the previous pass left it and re-measured
+every gate. This round did the same and found it a fifth time: **1,255 admitted files /
+79 repositories**, and every headline figure below is a fifth reproduction. One cell moved,
+one did not reproduce against the supervisor's table, and the reason is worth more than the
+number — so both are recorded here with the measurements that settle them.
+
+### Every gate, re-run at this commit
+
+| gate | pass 9 | pass 8 | |
+| --- | --- | --- | --- |
+| `npx tsx script/m14/ontology-coverage-gate.ts css` | **exit 0**, all ten rows, `emitted 5/10  ruled-sound 5  FALSIFIED 0  ruled-without-justification 0`; `contains` 175,171 / `uses` 2,620 / `references` 161,768 / `imports` 243 / `overrides` 48 | identical | reproduced, byte-for-byte |
+| `npx tsx validation/m14/census/css-parsefile-census.ts --all` | **1,255/1,255 parsed, 0 failures, 0 degraded**; 238,536 symbols, **339,850 relationships**, 270.8/file; **0** empty names, **0** empty/unknown kind, **0** `unknown` endpoints, **0** empty-string endpoints | identical | reproduced, byte-for-byte |
+| `npx tsx script/m14/firing-check.ts --files 120 css` | **5/10 fired, 47,667 edges, 120/120 files, 0 degraded**; per type `references` 22,750 / `contains` 24,606 / `uses` 279 / `overrides` 19 / `imports` 13; `corpusTotal: 1271` | identical | reproduced — and **the supervisor's table says 73,369**. Measured below |
+| `npx tsx validation/m14/census/css-ontology-probe.ts` | 103 node types, 1,255 files / 79 repos, 422 with an ERROR, `var()` **162,470** / 392 files, `@extend` directive **0** / 0, at-keyword **46** / 26, `composes` **0**, `:export` **0**, `@function` declaration **0** | identical | reproduced |
+| `npx tsx validation/m14/census/css-extend-lexability.ts` | **46 / 46 `@extend` keywords inside ERROR nodes**, 0 directives; `ERROR` 32 / `ERROR > ERROR` 8 / `stylesheet > ERROR` 5 / `ERROR > import_statement > binary_expression > ERROR` 1 | identical | reproduced |
+| `npx tsx validation/m14/census/css-overrides-differential.ts` | **exit 0**, 1,255/1,255, 0 degraded; 48 emitted / 48 distinct; oracle 68; **48 agree, 20 MISSING (20 store collisions, 0 real gaps), 0 EXTRA**, `agreement 70.59%` | identical | reproduced |
+| `npx tsx script/m14/differential.ts --lang css --sample 60` | **exit 0**; svelte `tree-truth=85 covered=83 (97.6%) MISSING=2`, **unexplained=1 (2.1%), heuristic=0**; grails-core `477/477`, MISSING=0, **unexplained=0, heuristic=0**; `COMPARED WITH NO TRUTH: overrides (1 comparable, 0 truth)`; `rot 44` | svelte 39/41 `unexplained=0`; grails-core 507/507 (`rot 43`) | **the svelte `unexplained` cell moved 0 → 1, and the probe below says why** |
+| `npx tsx script/m14/run-fixtures.ts --lang css` | **15 pass / 0 fail**, `fixture baseline gate: no regressions`, `SCOPED run (css of 46 lanes)` | identical | reproduced |
+| `npx tsx validation/m14/census/css-mutant-run.ts` | **27 mutants, 27 CAUGHT, 0 SURVIVED** | identical | reproduced |
+| `npx tsx validation/m14/census/css-admission-diff.ts` | **NEW this pass** — A 1,255 / B 1,266 + 5 absent = 1,271; **sample overlap 27 of 120** | n/a | new §8 item (i) |
+| `npx tsx script/m12/verify-regex-census.ts` | `real-css-analyzer.ts` in **neither** MISSING nor STALE nor working-tree-only — **lane count 0**; the gate prints `FAILED` on **32 rows in 8 other analyzers** (`clean` 1, `fsharp` 5, `javascript` 2, `python` 1, `svelte` 4, `typescript` 5, `vue` 7, plus `scss` 2 / `sql` 1 / `xml` 1 MISSING) | identical | reproduced; **the failure is not this lane's** |
+| `npx tsc --noEmit` | **0 errors** | identical | reproduced |
+
+### The one cell that moved, and why it is a property of the rotating sample
+
+The shared differential's svelte row reads `unexplained=0` at pass 8 (`rot 43`) and
+`unexplained=1 (2.1%)` at pass 9 (`rot 44`). The harness printed the reason on the same run:
+
+```
+[svelte] css: COMPARED WITH NO TRUTH: overrides (1 comparable, 0 truth)
+[svelte] css: … analyzer-edges=47 unexplained=1 (2.1%) … unexplained-by-label: overrides=1
+```
+
+`overrides` is this lane's one emitted type the SHARED oracle does not derive — §8 item
+(c) — so every `overrides` edge in the compared sample is counted `unexplained` by
+construction. Whether the number is 0 or 1 is therefore decided by **whether the rotated
+60-file sample happens to contain an `overrides` edge**, and `rot 44` contains one where
+`rot 43` contained none. Both numbers are the instrument behaving correctly.
+
+**This is not a defect introduced at pass 9, and it is not settled by reading more runs.**
+The coverage of `overrides` is measured by the lane-owned second walker,
+`script/m14/oracles/css-overrides.ts`, over **all 1,255 files**: **48 agree, 20 MISSING of
+which 20 are store collisions and 0 are real gaps, 0 EXTRA**. The shared harness's
+`unexplained` column cannot answer that question and never will, until item (c)'s four
+changes land. So the doc's pass-8 phrasing "`unexplained=0` on both corpora" was a true
+reading of `rot 43` and would have been false on any other rotation; **the honest cell is
+the one above, with `rot` quoted and the overrides share named.**
+
+### 73,369 versus 47,667: two instruments, two corpora, 27 files in common
+
+The supervisor's firing table reads `css 5/10 73,369 edges 120/120 files`. This lane reads
+**47,667** on the same command, on the same machine, at the same corpus, twice — pass 8 and
+pass 9 — and `firing-check.ts` is deterministic by construction (`firing-check.ts:168-193`:
+"the sample is stable across runs and machines without depending on a PRNG seed"), so a 54%
+spread is not sampling noise. `npx tsx validation/m14/census/css-admission-diff.ts` names
+the cause, and all three dimensions of it are attributable:
+
+| rule set | files |
+| --- | --- |
+| **A** census + gate: `size <= 512KB` AND `detect(abs, text)` | **1,255** |
+| **B** `firing-check.ts`: no cap AND `detect(rel)` | **1,266** on disk |
+| **C** two-arg, no cap | 1,266 → **the size cap alone is worth 11** |
+| **D** one-arg, with cap | 1,255 → **the text argument alone is worth 0** |
+| B + tracked-but-absent paths | 1,266 + **5** = **1,271**, and `firing-check --json` printed `corpusTotal: 1271` |
+
+The 11 files are framework bundles over 512 KB — `bulma/docs/assets/css/website.css`
+(1.36 MB), `website.min.css` (1.17 MB), `bulma/css/versions/bulma-prefixed.css` (0.77 MB),
+`bulma/css/bulma.css` (0.73 MB) and seven more in `bulma`, plus
+`consul/agent/uiserver/dist/assets/consul-ui-6998e44e8a8ea2039fda574ce1ac1be5.css`
+(0.56 MB). The 5 absent paths are `cloogle.org/frontend/doc/CleanRep.2.2.css`,
+`julia/doc/src/assets/julia-manual.css`, `pb-grpc/doc/python/sphinx/_static/custom.css`,
+`pb-grpc/tools/package_hosting/dirindex.css`, `pb-grpc/tools/package_hosting/style.css` —
+tracked in their repos, **not on this disk**, and counted by `firing-check.ts` anyway
+because it calls `detectLanguageFromPath(rel)` on `git ls-files` output and never stats the
+path.
+
+**And 11 extra files moved 93 of the 120 sampled files.** The stride is
+`floor(all.length / limit)` taken over a list that grows by *insertion*, so k inserted
+files shift every later pick by k slots and the surviving picks are a function of
+`k mod stride`:
+
+```
+inserted   stride   of 120 picks changed
+     1        10                  120  (100%)
+    11        10                  120  (100%)
+    50        10                    5  (  4%)   <- 50 = 5 whole strides
+   100        11                  109  ( 91%)   <- stride itself moved
+```
+
+The two rules' 120-file draws share **27 files**. So the two edge totals are not two
+readings of one measurement: **77% of the files in this lane's sample are files the
+supervisor's-table number never counted**, and the difference between 47,667 and 73,369 is
+a difference in which files were walked. Item (i) below writes the fix.
+
+**What this lane's number does NOT claim.** 47,667 is not the higher number and not the
+corrected one. It is the reading of a 120-file sample that contains 24 of `pico`'s files and
+19 of `grails-core`'s, and the census over all 1,255 files is the figure this lane's
+verdicts rest on: **339,850 relationships**. A 120-file stride is a firing instrument —
+it answers "does this type fire at all", which is what it is asked — and its edge total is
+not a corpus figure and should never be read as one.
+
+### The disk moved 98% → 100% while this pass ran, and it is the corpus that is filling it
+
+§8 item (h) recorded 9.4 G free of 460 G at 11:55 on 2026-10-04. At 13:40 the same
+`df -h /` reads **2.5 G avail of 460 G, Use% 100%**, with
+`$HOME/fixtures/repositories` at **8.0 GB across 183 repositories**. This lane's
+own admitted set is 1,255 of those files, and every gate above ran at that reading, so the
+figures in this pass are not affected — but the margin for the next lane is gone, and
+`firing-check.ts`'s 120 s hang guard (§8 item (f)) is a wall-clock budget that a machine
+out of memory and out of disk will trip. Still reported, still not this lane's to change.
+
 ## Language
 
 - Analyzer file: `src/ast/real-css-analyzer.ts`
@@ -1490,23 +1604,72 @@ on `@extend` BY CONSTRUCTION because the grammar routes every unrecognised at-ru
 catch-all `at_rule`. Both rows carry their A probe as a secondary check and their B probe as
 the decider. `script/m14/css-ruled.ts` is authoritative.
 
-### Reported, not edited — seven open items, one applied in pass 4, one added in pass 7, one added in pass 8
+### Reported, not edited — eight open items, one applied in pass 4, one added in pass 7, one added in pass 8, one added in pass 9
 
-Items (b) through (g) are open and §8-owned. Item (a) was open for a round, was the lane's
+Items (b) through (i) are open and §8-owned. Item (a) was open for a round, was the lane's
 critical path, and is now APPLIED — it is kept in the list rather than deleted so the
 measurement that justified it stays next to the record of what it produced. Item (g) was added
 in pass 7: it was found by running the gate, and it silently destroys a shared artifact.
-Item (h) was added in pass 8.
+Item (h) was added in pass 8. Item (i) was added in pass 9.
 
 Each is written to be applied without re-deriving it: file, function, what it must do,
 why, and the measurement that says it is needed. All are §8 items under
 `docs/analyzers/ONTOLOGY-WORKSTREAM.md`.
 
+**(i) ADDED IN PASS 9 — `script/m14/firing-check.ts` walks a DIFFERENT corpus from the
+ontology gate and from every lane's census, and its stride sample re-draws itself
+wholesale whenever the corpus grows, so every edge total in the supervisor's firing table
+is a function of when the run happened.**
+
+Three defects, one file, all measured by `npx tsx validation/m14/census/css-admission-diff.ts`
+over 183 tracked repositories:
+
+1. **No size cap.** `filesForLanguage()` (line 172) applies `detectLanguageFromPath(rel)`
+   and nothing else; the gate (`ontology-coverage-gate.ts:209`) and this lane's census
+   (`css-parsefile-census.ts:125`) both skip `size > 512*1024`. Worth **11 files** here —
+   10 in `bulma` (0.51–1.36 MB framework bundles), 1 in `consul` (0.56 MB).
+2. **It never checks the file exists.** `git ls-files` output is passed to
+   `detectLanguageFromPath` without a `statSync`, so **5 tracked css paths that are not on
+   this disk** count toward `corpusTotal` and toward the stride: `cloogle.org/frontend/doc/
+   CleanRep.2.2.css`, `julia/doc/src/assets/julia-manual.css`,
+   `pb-grpc/doc/python/sphinx/_static/custom.css`, `pb-grpc/tools/package_hosting/dirindex.css`,
+   `pb-grpc/tools/package_hosting/style.css`. The arithmetic closes — 1,266 + 5 = the
+   `corpusTotal: 1271` the instrument's own `--json` printed — so the number is
+   reproducible and reproducible is not the same as present. What it must do: `statSync`
+   (or `existsSync`) the path and skip what is missing.
+3. **The stride sample is not stable under corpus growth, and cannot be.** The stride is
+   `Math.floor(all.length / limit)` and the picks are taken at multiples of it, so k
+   inserted files shift every later pick by k slots. Measured: k=1, 2, 5 and 11 each change
+   **120 of 120** picks; k=50 changes 5 (it is 5 whole strides); k=100 changes 109 and the
+   stride itself moves. The two rules' 120-file draws for this lane share **27 files**,
+   which is where `47,667` and the supervisor's `73,369` come from — two readings whose
+   file sets share 23%. What it must do: draw on a key that does not move when the list
+   grows (every k-th path under a stable sort), or record the drawn paths in the artifact
+   so a later run can tell a re-draw from a change. And print `corpusTotal` on the same
+   line as `rels`, so every cell in that table reads as "these edges, over these files, out
+   of this corpus" — together with item (d)'s `files` column on the same instrument.
+
+The reason this is filed rather than absorbed: `firing-check.ts` is the instrument that
+produced the table the whole wave reads, and its own header states the determinism the
+sample does not have — *"Deterministic matters more than clever here: a count nobody can
+reproduce is a number nobody can check."* A stride over a growing list is deterministic and
+still not reproducible, because the list is not fixed by anything the instrument controls.
+This lane did not edit it, and did not quote the table's edge totals as a lane figure: the
+corpus figure for this lane is **339,850 relationships over 1,255 files**, and the 120-file
+number answers only whether a type fires at all.
+
 **(h) ADDED IN PASS 8 — the shared corpus is at 98% of the disk, and the arbiter's hang guard
 is the mechanism that will make that someone's problem first.** Measured at 11:55 on
 2026-10-04 from this lane: `df -h /` reports **9.4 G free of 460 G (98% used)**, and
 `$HOME/fixtures/repositories` holds **183 repositories** against the ~90 the lane
-brief described. Nothing needs to change in the code for this to be fixed — it needs someone
+brief described. **RE-MEASURED IN PASS 9, TWO HOURS LATER, AND IT IS WORSE: `df -h /` reads
+`2.5G avail / 460G / Use% 100%`, and the corpus directory reads 8.0 GB.** So the 9.4 G
+margin was consumed in the time it took one pass to run, by other lanes' clones, and the
+prediction this item made — a gate dying on a 120 s wall-clock guard on a machine that is
+out of memory and out of disk at the same time — is now a margin of 2.5 G rather than a
+prediction. Every gate in this pass ran at that reading and all ten reproduced, so this
+lane's figures are unaffected; what is affected is the next lane's ability to run. Nothing
+needs to change in the code for this to be fixed — it needs someone
 to decide whether the corpus keeps growing, and if so what gets deleted. Two concrete notes
 so the decision does not have to be re-derived: (1) this lane's own admitted set is
 **1,255 files**, so the 183 repositories are mostly *not* css and a css-only lane cannot
