@@ -2,17 +2,122 @@
   "tool": "json lane mutant run",
   "note": "run through the shared runLang; see script/m14/json-mutants.ts for the wiring this lane does not own",
   "clean": {
-    "pass": 11,
+    "pass": 14,
     "fail": 0
   },
   "mutants": [
+    {
+      "id": "json/array-item-named-from-bare-array-name",
+      "language": "json",
+      "defectClass": "wrong-symbol-identity",
+      "description": "M14 ontology pass-3 regression: an array that is itself an ELEMENT names its children from its bare name again, so `rows[0]`'s two elements collide with `rows`' own element namespace and `contains` is asserted between objects that are not nested. Measured over the corpus as 183 UNEXPLAINED `contains` edges that two implementations agreed on, which is the shared-misreading case the honesty contract names. Caught by json/ArrayInArray.",
+      "cleanFail": 0,
+      "mutatedPass": 13,
+      "mutatedFail": 1,
+      "caught": true,
+      "newlyFailingFixtures": [
+        "json/ArrayInArray"
+      ]
+    },
+    {
+      "id": "json/contains-endpoints-are-bare-names",
+      "language": "json",
+      "defectClass": "unresolvable-identity",
+      "description": "M14 ontology pass-3 regression: `contains` reverts to `ownerName -> leaf name`, the two BARE names it emitted before the incoming check. Measured on a 202-file / 99-repo sample that is 32,660 of 66,032 edges (49.4%) naming a target that matches more than one published symbol, and the shared resolver declines a non-unique bare name, so those edges bind to no declaration at all. Caught by every json fixture's `contains` pins.",
+      "cleanFail": 0,
+      "mutatedPass": 3,
+      "mutatedFail": 11,
+      "caught": true,
+      "newlyFailingFixtures": [
+        "json/AllOf",
+        "json/ArrayInArray",
+        "json/Arrays",
+        "json/Dotted.name",
+        "json/DuplicateKey",
+        "json/Imports",
+        "json/Inherit.lsp",
+        "json/Lines",
+        "json/OpenApi",
+        "json/Refs",
+        "json/SameKeyDifferentObjects"
+      ]
+    },
+    {
+      "id": "json/array-item-owner-is-root",
+      "language": "json",
+      "defectClass": "dishonest-identity",
+      "description": "M14 ontology pass-3 regression: an array item's owner drops the array's own segment as well as its `[i]`, so `objs[0]` reads as contained by the document ROOT instead of by `objs`. This is the defect the first version of the fix had, and 5 fixture pins caught it. Caught by json/Arrays' item pins and json/AllOf's `allOf[0]`/`allOf[1]` pins.",
+      "cleanFail": 0,
+      "mutatedPass": 10,
+      "mutatedFail": 4,
+      "caught": true,
+      "newlyFailingFixtures": [
+        "json/AllOf",
+        "json/ArrayInArray",
+        "json/Arrays",
+        "json/Dotted.name"
+      ]
+    },
+    {
+      "id": "json/implements-dropped",
+      "language": "json",
+      "defectClass": "missing-relationship-type",
+      "description": "M14 ontology pass-2 regression: `implements` stops being emitted, restoring the state this lane shipped — RULED on a grammar inventory, with 113 interface mix-in statements in one corpus file unread. Caught by json/Inherit.lsp's four pins.",
+      "cleanFail": 0,
+      "mutatedPass": 13,
+      "mutatedFail": 1,
+      "caught": true,
+      "newlyFailingFixtures": [
+        "json/Inherit.lsp"
+      ]
+    },
+    {
+      "id": "json/inheritance-undeclared-target",
+      "language": "json",
+      "defectClass": "fabricated-edge",
+      "description": "M14 ontology pass-2 regression: an inheritance statement resolves to a target the document never declares, so the edge names a symbol the file does not contain. Measured on the corpus, 16 real statements take exactly this shape and are correctly declined. Caught by json/Inherit.lsp's orphan forbids and json/Inherit.duckdb's `ParseInfo` forbid.",
+      "cleanFail": 0,
+      "mutatedPass": 12,
+      "mutatedFail": 2,
+      "caught": true,
+      "newlyFailingFixtures": [
+        "json/Inherit.duckdb",
+        "json/Inherit.lsp"
+      ]
+    },
+    {
+      "id": "json/inheritance-declaration-marker-dropped",
+      "language": "json",
+      "defectClass": "over-matching-predicate",
+      "description": "M14 ontology pass-2 regression: the supertype is read off any object carrying a `base` string, so a MEMBER DESCRIPTOR counts as a type declaration. duckdb writes `{\"id\":200,\"name\":\"info\",\"type\":\"AlterInfo*\",\"base\":\"ParseInfo\"}` for a FIELD whose C++ class derives from ParseInfo — 16 corpus-wide. Caught by json/Inherit.duckdb's member-descriptor forbids.",
+      "cleanFail": 0,
+      "mutatedPass": 13,
+      "mutatedFail": 1,
+      "caught": true,
+      "newlyFailingFixtures": [
+        "json/Inherit.duckdb"
+      ]
+    },
+    {
+      "id": "json/extends-source-is-allof-array",
+      "language": "json",
+      "defectClass": "mislabeled-source",
+      "description": "M14 ontology pass-2 regression: `extends` is sourced from the `allOf` array rather than the schema object that composes. Measured on a 2,343-file stride sample, that is the difference between 0% and 100% of `extends` endpoints binding by bare name. Caught by json/AllOf's two `extends` pins and its two forbids.",
+      "cleanFail": 0,
+      "mutatedPass": 13,
+      "mutatedFail": 1,
+      "caught": true,
+      "newlyFailingFixtures": [
+        "json/AllOf"
+      ]
+    },
     {
       "id": "json/calls-dropped",
       "language": "json",
       "defectClass": "missing-relationship-type",
       "description": "M14 ontology regression: an npm script running a SIBLING script stops emitting `calls`, restoring the omission the corpus probe measured (12 sibling invocations across the first 300 admitted files, apollo-server/package.json carrying 7 with both endpoints resolving). Caught by json/manifest/package's three `calls` pins.",
       "cleanFail": 0,
-      "mutatedPass": 10,
+      "mutatedPass": 13,
       "mutatedFail": 1,
       "caught": true,
       "newlyFailingFixtures": [
@@ -25,7 +130,7 @@
       "defectClass": "fabricated-edge",
       "description": "M14 ontology regression: a `npm run` target is accepted without checking it is a key of the SAME `scripts` object, so the edge names a symbol the file never declared — the fabricated-edge class the ontology workstream names as the most expensive mistake available. Caught by json/manifest/package's `external` forbid.",
       "cleanFail": 0,
-      "mutatedPass": 10,
+      "mutatedPass": 13,
       "mutatedFail": 1,
       "caught": true,
       "newlyFailingFixtures": [
@@ -38,7 +143,7 @@
       "defectClass": "over-matching-predicate",
       "description": "M14 ontology regression: the runner token is matched by substring instead of compared whole, so `npx` (which contains `npm`) and a PATH named `npm` are taken for package runners. Caught by json/manifest/package's `notarunner` and `pathrunner` forbids.",
       "cleanFail": 0,
-      "mutatedPass": 10,
+      "mutatedPass": 13,
       "mutatedFail": 1,
       "caught": true,
       "newlyFailingFixtures": [
@@ -51,7 +156,7 @@
       "defectClass": "missing-relationship-type",
       "description": "M14 ontology regression: a key declared TWICE in one object stops emitting `overrides`, so the second declaration reads as an ordinary member and the replacement is unstated. 21 named duplicate keys across 11 of 11,713 admitted files. Caught by json/DuplicateKey.",
       "cleanFail": 0,
-      "mutatedPass": 10,
+      "mutatedPass": 13,
       "mutatedFail": 1,
       "caught": true,
       "newlyFailingFixtures": [
@@ -64,7 +169,7 @@
       "defectClass": "fabricated-edge",
       "description": "M14 ontology regression: the duplicate check is scoped to the FILE instead of the OBJECT, so the same key in two different objects reads as a redefinition. A JSON key is unique only within its object, and this is the permissive direction: 120,174 occurrences across 7,679 files against 21 genuine duplicates, so the mutant is worth about 5,700 false edges. Caught by json/SameKeyDifferentObjects, whose forbids exist for exactly this mutant.",
       "cleanFail": 0,
-      "mutatedPass": 10,
+      "mutatedPass": 13,
       "mutatedFail": 1,
       "caught": true,
       "newlyFailingFixtures": [
@@ -77,7 +182,7 @@
       "defectClass": "dishonest-payload",
       "description": "M14 ontology regression: the `overrides` edge is emitted but `overridesLine` is zeroed, and since both declarations share a name AND a qualified path the prior line is the only thing that distinguishes them — the edge then asserts a replacement without saying what was replaced. Caught by json/DuplicateKey's `meta.overridesLine` pin.",
       "cleanFail": 0,
-      "mutatedPass": 10,
+      "mutatedPass": 13,
       "mutatedFail": 1,
       "caught": true,
       "newlyFailingFixtures": [
@@ -90,8 +195,8 @@
       "defectClass": "dishonest-payload",
       "description": "M14 ontology regression: every edge loses its site line, restoring the measured pre-M60 state in which `line_number` occurred ZERO times in the analyzer and every json edge in the index was stored with a NULL line while symbols carried `range` throughout.",
       "cleanFail": 0,
-      "mutatedPass": 3,
-      "mutatedFail": 8,
+      "mutatedPass": 4,
+      "mutatedFail": 10,
       "caught": true,
       "newlyFailingFixtures": [
         "json/AllOf",
@@ -99,13 +204,15 @@
         "json/Dotted.name",
         "json/DuplicateKey",
         "json/Imports",
+        "json/Inherit.duckdb",
+        "json/Inherit.lsp",
         "json/Lines",
         "json/OpenApi",
         "json/Refs"
       ]
     }
   ],
-  "total": 7,
-  "caught": 7,
+  "total": 14,
+  "caught": 14,
   "survivors": 0
 }
