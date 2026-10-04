@@ -1106,6 +1106,21 @@ quoted from an earlier round.
 | `npx tsx script/m14/verify-honesty.ts` | **6** | **22 failures repo-wide, 0 naming nim**, re-measured on this pass; an earlier run of the same command read **19**, so the count moves with the rest of the fleet and the number to quote is the **0**, not the total. Every failure is a shared-artifact staleness or banned-term finding against other lanes' work: `M14.0.F6: 945 declared input(s) changed since 799464551c`, `M14.0.F7: 61 … since 66b9327df0`, `M14.0.F8: 132 … since a943047e5c`, `M14.0.F9: 70 … since 4f7f78ebd6`, plus 11 banned-term hits in other lanes' fixtures and in `M14.0.F5.json` / `M14.0.F11.fsharp.json` / `M14.0.JS-CENSUS.json`. This lane's own contribution to the input sets is `src/ast/real-nim-analyzer.ts`, and it is not among the changed inputs in any of the four. Changing the analyzer blob earlier made the gate report `M14.0.F4: 3 declared input(s) changed since 469ecd1afd` and `M14.0.F7: 1 declared input(s) changed` — both naming this lane's own files — and re-running the two producers (`mutate-analyzer.ts`, `verify-analyzer-hygiene.ts`) cleared them, which is the gate working: it declares evidence stale against the artifact's producer, not against a date. One sub-check is worth quoting because it is a gate limitation rather than a lane result: **`freshness rule flags every artifact — it cannot distinguish current from stale`** (2,522 inputs changed since `65df67e`, and 0 of 9 artifacts read current). A gate in that state cannot be used as evidence either way, so it is reported and not leaned on. **The path the contract gives for this gate — `script/verify-honesty.ts` (honesty contract §42) — does not exist**; the file is at `script/m14/verify-honesty.ts`, and a reader who follows the contract gets `ERR_MODULE_NOT_FOUND`, which is indistinguishable from the gate having nothing to report. §8 |
 | `npx tsx script/m14/ontology-coverage-gate.ts nim` | **2** | unchanged: `RULED_BY_LANG` carries `bash`, `json`, `lua`, `toml` and no `nim`, so the gate walks 4,555 files and refuses to print a verdict. `ruled-gate.ts` supplies the wiring on a copy |
 
+**Two of the gates in that table WRITE SUPERVISOR-OWNED FILES as a side effect of
+being run, which is a cross-lane hazard and cost this lane a near-miss.** Measured
+on this pass: `verify-doc-truth-emissions.ts` rewrote
+`docs/DOC-TRUTH-EMISSIONS.md` and `verify-analyzer-docs.ts` rewrote
+`validation/m14/results/analyzer-docs.json` — **151 insertions, 88 deletions across
+the two**, none of it this lane's. The diff was other lanes' concurrent progress
+surfacing through a shared generator (`FALSE_NEGATIVE` 8→7, `UNDOCUMENTED` 43→41,
+`NO_CLAIM_TABLE` 20→16, `NON_ENGINE_KIND` 26→19). Both files are §8, so both were
+reverted and the branch carries only `real-nim-analyzer.ts`, its doc, and its own
+fixtures — but a gate cannot be both a thing you run for evidence and a thing that
+edits a file you do not own, and the two requirements conflict. §8: either the
+generators take an output path the way `census.ts` does (write nothing without one),
+or the workstream states that running a gate implies committing its output, which
+on a seven-lane branch means every lane commits every other lane's numbers.
+
 **The exit-1 rows from this lane's own instruments are a shared-machinery defect,
 not a lane failure, and the distinction is measured rather than asserted:** in each
 case the artifact was written and the digest line printed *before* the non-zero
