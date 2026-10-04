@@ -960,6 +960,9 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
     // (family rules — go/rust/c/cpp all classify; zig did NOT).
     this.classifyEvidenceTier(relationships)
 
+    // Z65: TARGET SCOPE — what a reverse walk can bind this edge to.
+    this.annotateTargetScope(symbols, relationships)
+
     // No References edge for imports (imports stay in the imports array) and
     // no generic `exports module -> X` edge — `module` is not a symbol, so the
     // edge would never resolve (Java-family contract; the exports array and
@@ -1002,6 +1005,69 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
    * callee emits a `uses` edge to its field leaf. Builtin calls (@import,
    * @intCast, ...) are compile-time intrinsics, NOT user symbols — skipped.
    */
+  /**
+   * Z59 — does this analyzer publish a SYMBOL for `fnNode`, so that naming it as
+   * an edge SOURCE resolves?
+   *
+   * ## The defect this answers
+   *
+   * A `function_declaration` can be a MEMBER of a container the analyzer
+   * deliberately publishes nothing for: a container written inside a function or
+   * test body, a container with no name (`fn GenericStack(…) type { return
+   * struct { fn push(…) } }`), or a container nested in an anonymous one. That is
+   * the Z22 / C-negative contract and it is correct — such a type has no
+   * file-scope identity.
+   *
+   * The three edge passes each took the nearest `function_declaration` /
+   * `test_declaration` identifier as the source name WITHOUT asking whether a
+   * symbol was published for it. So 5.05% of `calls` + `uses` + `instantiates`
+   * edges over the full corpus (11,332 of 224,599) carried a source naming a
+   * declaration the index does not hold: a caller that resolves to nothing.
+   * Measured by `validation/m14/fixtures/zig/dangling-source-census.ts`, whose
+   * residual class is 0, so this is the whole population and not a sample of it.
+   *
+   * ## The rule
+   *
+   * A function is published when it has NO container ancestor (a top-level `fn`),
+   * or when its nearest container ancestor is bound to an identifier at FILE
+   * SCOPE. Named is not sufficient: `const S = struct { … }` inside a test body is
+   * a named LOCAL container and is not published either.
+   *
+   * `test_declaration` is answered separately by the callers: a named test is a
+   * scope with a name (Z39) and NO symbol is published for one, so that class is
+   * still dangling and is declared as a limitation rather than silently reverted.
+   */
+  private zigFunctionScopeIsPublished(fnNode: Node): boolean {
+    let cur: Node | null = fnNode.parent
+    while (cur) {
+      if (ANONYMOUS_CONTAINER_NODES.has(cur.type)) {
+        const binding = cur.parent
+        if (!binding || binding.type !== "variable_declaration") return false
+        let named = false
+        for (let i = 0; i < binding.namedChildCount; i++) {
+          const c = binding.namedChild(i)
+          if (c && c.type === "identifier") { named = true; break }
+        }
+        if (!named) return false
+        // Named AND at file scope: no executable scope and no other container
+        // between the binding and the root.
+        let up: Node | null = binding.parent
+        while (up) {
+          if (
+            up.type === "function_declaration" ||
+            up.type === "test_declaration" ||
+            up.type === "comptime_declaration"
+          ) return false
+          if (ANONYMOUS_CONTAINER_NODES.has(up.type)) return false
+          up = up.parent
+        }
+        return true
+      }
+      cur = cur.parent
+    }
+    return true
+  }
+
   private analyzeZigCodeRelationships(
     rootNode: Node,
     relationships: ASTEngine.UniversalRelationship[],
@@ -1024,7 +1090,17 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
       // three rows, it is every read and call in every named test in the corpus.
       if (n.type === "function_declaration" || n.type === "test_declaration") {
         const nameNode = this.anyChild(n, (c) => c.type === "identifier")
-        if (nameNode) { nextFn = nameNode.text; nextInFn = true }
+        if (nameNode) {
+          nextInFn = true
+          // Z59: only a function the analyzer PUBLISHES may be named as a source.
+          // An unpublished one (a member of a local or anonymous container) leaves
+          // `nextFn` pointing at the nearest published scope further out, so the
+          // walk keeps looking instead of naming a declaration that resolves to
+          // nothing.
+          if (n.type === "test_declaration" || this.zigFunctionScopeIsPublished(n)) {
+            nextFn = nameNode.text
+          }
+        }
       }
       if (n.type === "call_expression") {
         const leafNode = this.zigCalleeLeafNode(n)
@@ -1374,7 +1450,14 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (cur.type === "function_declaration" || cur.type === "test_declaration") {
           for (let i = 0; i < cur.namedChildCount; i++) {
             const c = cur.namedChild(i)
-            if (c && c.type === "identifier") return String(c.text)
+            if (c && c.type === "identifier") {
+              // Z59: same rule as the call/read pass, so an `instantiates` source
+              // cannot disagree with a `calls` source on the same enclosing scope.
+              if (cur.type === "test_declaration" || this.zigFunctionScopeIsPublished(cur)) {
+                return String(c.text)
+              }
+              break
+            }
           }
         }
         cur = cur.parent
@@ -1692,7 +1775,14 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
           }
         }
         const nm = this.anyChild(node, (c) => c.type === "identifier")
-        frame.fnName = nm ? nm.text : null
+        // Z59: `fnName: null` on an UNPUBLISHED function is the fix, not an
+        // omission — the read's source is read off the stack by scanning outward
+        // for the first non-null `fnName`, so a null here makes the read fall
+        // back to the nearest published scope exactly as the other two passes do.
+        frame.fnName =
+          nm && (node.type === "test_declaration" || this.zigFunctionScopeIsPublished(node))
+            ? nm.text
+            : null
         scopeStack.push(frame)
         pushedScope = true
       } else if (t === "block" || t === "block_expression") {
@@ -2350,6 +2440,75 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
       // pipeline? — not by any gate on this lane.
       if (t === "imports" || t === "exports") { md.evidenceClass = "import_based"; continue }
       md.evidenceClass = "usage_contextual"
+    }
+  }
+
+  /**
+   * Z65 — TARGET SCOPE: state, per edge, whether the target name is a symbol THIS
+   * file publishes, and with which kind.
+   *
+   * WHY. A zig relationship carries six keys and both endpoints are NAME STRINGS.
+   * `src/lsp/impact.ts` obtains inbound edges by scanning outgoing edges and
+   * MATCHING TARGETS — no inbound edge is stored — so an edge's name is all a
+   * reverse walk has, and a name two declarations share is attributed to one of
+   * them by a rule nobody chose. Measured over the whole 3,834-file zig corpus
+   * (draw `sha256:2f3545f9…`, production `parseFile`, 392,550 edges):
+   * **265,887 edges (67.73%) name a target 2+ published symbols share**, and of
+   * those **151,004 (56.79%) have a candidate in the edge's OWN file** — a tie a
+   * per-file rule breaks soundly, because within one file the analyzer knows which
+   * declaration it published.
+   *
+   * WHAT IT ADDS. `metadata.targetScope`, plus `targetKind` when the file
+   * publishes exactly one kind under that name:
+   *   `file-local`     the file publishes a symbol with this exact name. A
+   *                    consumer resolves the edge to THAT symbol and needs no
+   *                    cross-file guess.
+   *   `file-external`  the file publishes none. The edge names something outside
+   *                    it — a `std.*` declaration, a builtin, an import path — and
+   *                    no per-file rule can say which. Stated, not guessed.
+   *   `scope-marker`   the endpoint is one of the literal scope markers
+   *                    (`(global)`, `(file)`, `(declared-type)`), which is a fact
+   *                    about the edge's provenance and not a symbol name.
+   *
+   * It adds NO edge, removes NO edge, and changes NO count — it is a label on
+   * edges that already exist, derived from this analyzer's own output rather than
+   * from a guess about the rest of the repository. A consumer that ignores it
+   * behaves exactly as before, which is why it cannot regress a budgeted lane.
+   *
+   * THE LIMIT, stated because it is the part that cannot be fixed here. This says
+   * whether the target is IN this file, not whether it is the declaration the
+   * author meant: `const Self = @This();` is a file-local name, and 240 edges
+   * resolve against it, while `keepSymbol`'s UNIVERSAL denylist
+   * (`src/ast/pool-worker.ts:449`, shared, §8) refuses to publish ANY symbol
+   * named `Self` — so those edges are labelled `file-external` even though the
+   * name is right there in the file. The denylist is the defect, and it is not
+   * this lane's file.
+   */
+  private annotateTargetScope(
+    symbols: ASTEngine.UniversalSymbol[],
+    relationships: ASTEngine.UniversalRelationship[],
+  ): void {
+    const kindsByName = new Map<string, Set<string>>()
+    for (const s of symbols) {
+      const n = String(s.name ?? "")
+      if (!n) continue
+      const set = kindsByName.get(n) ?? new Set<string>()
+      set.add(String(s.kind ?? ""))
+      kindsByName.set(n, set)
+    }
+    const MARKERS = new Set(["(global)", "(file)", "(declared-type)", "(import)", "(local)"])
+    for (const r of relationships) {
+      const md = r.metadata ?? (r.metadata = {})
+      if (md.targetScope) continue
+      const t = String(r.target ?? "")
+      if (MARKERS.has(t)) { md.targetScope = "scope-marker"; continue }
+      const kinds = kindsByName.get(t)
+      if (!kinds) { md.targetScope = "file-external"; continue }
+      md.targetScope = "file-local"
+      // The kind only when it is unambiguous WITHIN the file: two kinds under one
+      // name here is a real collision, and picking one would be a guess.
+      if (kinds.size === 1) md.targetKind = [...kinds][0]
+      else md.targetKindCount = kinds.size
     }
   }
 
