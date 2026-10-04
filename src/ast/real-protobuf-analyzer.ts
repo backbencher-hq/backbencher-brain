@@ -39,6 +39,23 @@ import { ASTEngine } from "./engine"
  *                 map value type, a `oneof_field` type, and BOTH of an rpc's
  *                 request and response types. A SCALAR type is not a reference
  *                 and produces no edge.
+ *   - `imports`   file → a file it depends on. The source is the importing
+ *                 file's own module name (its basename) and the target is the
+ *                 path as written, because `protoc` resolves an import against
+ *                 `-I` include roots this file is never told. Both endpoints are
+ *                 therefore MODULE PATHS rather than symbols, which is the
+ *                 family's convention (`real-css-analyzer.ts`,
+ *                 `real-dart-analyzer.ts`) and not a protobuf invention.
+ *   - `exports`   file → a file it re-exports. `import public "x.proto"` is
+ *                 BOTH a dependency and a republication, so it emits BOTH
+ *                 edges: the two are separate facts, and pass 1's ruling that
+ *                 `exports` alone suffices was overturned in pass 2.
+ *   - `overrides` the later declaration of a FIELD SLOT. Protobuf has no
+ *                 inheritance and no method to replace, so the only sense of
+ *                 `overrides` the language reaches is two declarations in one
+ *                 message claiming the same field number. The discriminator is
+ *                 the NUMBER: same slot under two names is an override attempt,
+ *                 one name across two slots replaces nothing. See `slotClaims`.
  *   - `extends` is deliberately NOT used. Proto's `extend Foo { … }` does not
  *     make the block a subclass of Foo — it adds FIELDS to Foo — so the honest
  *     edge is `Foo -contains-> field` with `metadata.viaExtension = true`, and
@@ -100,6 +117,12 @@ export class RealProtobufAnalyzer implements ASTEngine.LanguageAnalyzer {
       return null
     }
     const lineOf = (n: Node | null): number => (n ? n.startPosition.row + 1 : 0)
+    /** A 1-based line for a byte offset, for the two places a range carries no line. */
+    const lineOfOf = (startIndex: number): number => {
+      let row = 1
+      for (let i = 0; i < startIndex && i < content.length; i++) if (content.charCodeAt(i) === 10) row++
+      return row
+    }
 
     /**
      * Drop one layer of quoting by SLICING, not by a character-class replace.
@@ -301,6 +324,44 @@ export class RealProtobufAnalyzer implements ASTEngine.LanguageAnalyzer {
      * would each read it as a field whose type is itself.
      */
     const declaredTypeIds = new Set<string>()
+    /**
+     * Who has claimed each FIELD SLOT, keyed `<owner>\u0000<fieldNumber>` — the
+     * same-slot override test's input.
+     *
+     * Pass 1 ruled `overrides` on a parse-tree count and MEASURED the construct at
+     * 1, not 0 — while still calling the type absent. That is the exact defect class
+     * `ontology-coverage-gate.ts` exists to catch: its rule is that a ruled type
+     * whose construct probe finds a non-zero count is FALSIFIED. A ruling cannot be
+     * "the construct occurs once, but that once does not count". So the type is
+     * emitted, and this map is what makes the emission a decision rather than a
+     * guess.
+     *
+     * WHAT THE CONSTRUCT IS HERE. Protobuf has no inheritance and no method to
+     * replace, so the only sense of `overrides` the language can reach is a SECOND
+     * DECLARATION OF A FIELD SLOT: two declarations in one message claiming the same
+     * field number, where the later one states what that slot means. That is a fact
+     * about the text and it is decidable on the tree, which is the structural
+     * standard the rest of this analyzer holds to.
+     *
+     * The key is the SLOT and not the name, and the distinction is load-bearing:
+     *
+     *   - same number, either name -> both claim slot N. The second is stating what
+     *     slot N holds. That is an override attempt. Both shapes are counted: the
+     *     corpus's single site duplicates the name AND the number
+     *     (`required string Value = 2; required CustomType Value = 2;`), and a
+     *     file may instead re-typify a slot under a fresh name
+     *     (`string legacy = 7; int64 modern = 7;`), which is the same claim.
+     *   - same name, DIFFERENT number -> two DIFFERENT slots that share a label. The
+     *     second replaces nothing; `protoc` rejects the name collision, but no slot
+     *     is redefined. Corpus count: 0, and `protobuf/slot-and-grouping` pins the
+     *     absence so the rule cannot collapse into "a repeated name is an override".
+     *
+     * A proto2 `group` is excluded by KIND rather than by a special case: the group
+     * declares a nested type `G` (a `class`) and a field `G` of it (a `property`),
+     * and only the property claims a slot. `uniqueId` keeps the two ids apart, so the
+     * pair cannot read as an override of itself.
+     */
+    const slotClaims = new Map<string, { id: string; startIndex: number; name: string }>()
     /** `class` is a message or a group's type and `enum` is a type; a service, a
      *  field, a oneof and an rpc are declarations but NOT types, so none of them
      *  may satisfy a type reference. */
@@ -310,6 +371,37 @@ export class RealProtobufAnalyzer implements ASTEngine.LanguageAnalyzer {
     /** Returns the id actually assigned, which is what relationships must use. */
     const addSymbol = (id: string, s: ASTEngine.UniversalSymbol): string => {
       const real = uniqueId(id, String(s.kind))
+      const fieldNumber =
+        s.metadata && s.metadata.fieldNumber !== undefined
+          ? (s.metadata.fieldNumber as string | null)
+          : null
+      if (s.kind === ASTEngine.SymbolKind.Property && fieldNumber !== null) {
+        const slotKey = `${String(s.ownerName ?? "")}\u0000${fieldNumber}`
+        const prev = slotClaims.get(slotKey)
+        // Direction is DOCUMENT order, read off the range, because the worklist is
+        // LIFO: for two sibling fields the declaration added second here is the
+        // EARLIER of the two.
+        if (prev) {
+          const later = (s.range.startIndex ?? 0) > prev.startIndex
+          // The edge's LINE is the SOURCE's line, not the line of whichever
+          // declaration this call happens to be adding. `line_number` is what
+          // `bb_graph` and the store's relId key on, and for a LIFO worklist those
+          // are two different declarations. Getting it wrong was measured, not
+          // imagined: the first version reported the override of slot 7 at line 26,
+          // which is `legacy` — the declaration being OVERRIDDEN.
+          const srcStart = later ? s.range.startIndex ?? 0 : prev.startIndex
+          if (!collectOnly) {
+            addRel(
+              later ? real : prev.id,
+              later ? prev.id : real,
+              RelationshipTypeOverrides,
+              lineOfOf(srcStart),
+              { role: "fieldSlot", fieldNumber },
+            )
+          }
+        }
+        slotClaims.set(slotKey, { id: real, startIndex: s.range.startIndex ?? 0, name: String(s.name) })
+      }
       usedIds.add(real)
       declaredIds.add(real)
       if (isTypeDeclaring(s.kind)) declaredTypeIds.add(real)
@@ -463,6 +555,15 @@ export class RealProtobufAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (ctx.owner) {
         addRel(ctx.owner, id, RelationshipTypeContains, lineOf(node), {
           member: "field",
+          // `viaExtension` on the EDGE as well as on the symbol. It was on the
+          // symbol only, so a consumer reading `google.protobuf.MessageOptions
+          // -contains-> audit_ticket` could not tell an extension field added in
+          // another file from a field declared in the message's own body — and the
+          // header's claim that the edge carries it was false. Measured over the
+          // corpus before this change: 0 of the extension-derived `contains` edges
+          // carried `viaExtension`, because `addFieldLike` set it on the symbol's
+          // metadata object and the `addRel` call passed only `member`.
+          ...(ctx.viaExtension ? { viaExtension: true } : {}),
         })
       }
       return id
@@ -483,6 +584,7 @@ export class RealProtobufAnalyzer implements ASTEngine.LanguageAnalyzer {
     const RelationshipTypeUses = ASTEngine.RelationshipType.Uses
     const RelationshipTypeImports = ASTEngine.RelationshipType.Imports
     const RelationshipTypeExports = ASTEngine.RelationshipType.Exports
+    const RelationshipTypeOverrides = ASTEngine.RelationshipType.Overrides
 
     const emitField = (node: Node, ctx: Ctx): void => {
       const typeNode = firstOfType(node, "type")
@@ -511,7 +613,7 @@ export class RealProtobufAnalyzer implements ASTEngine.LanguageAnalyzer {
             ownerKind: ctx.ownerKind ?? undefined,
             metadata: { isGroupType: true, ...(ctx.viaExtension ? { viaExtension: true } : {}) },
           })
-          if (ctx.owner) addRel(ctx.owner, typeId, RelationshipTypeContains, lineOf(node), { member: "groupType" })
+          if (ctx.owner) addRel(ctx.owner, typeId, RelationshipTypeContains, lineOf(node), { member: "groupType", ...(ctx.viaExtension ? { viaExtension: true } : {}) })
           const fieldId = addSymbol(qualify(ctx.owner, gname), {
             name: gname,
             kind: SymbolKind.Property,
@@ -526,7 +628,7 @@ export class RealProtobufAnalyzer implements ASTEngine.LanguageAnalyzer {
               ...(ctx.viaExtension ? { viaExtension: true } : {}),
             },
           })
-          if (ctx.owner) addRel(ctx.owner, fieldId, RelationshipTypeContains, lineOf(node), { member: "field" })
+          if (ctx.owner) addRel(ctx.owner, fieldId, RelationshipTypeContains, lineOf(node), { member: "field", ...(ctx.viaExtension ? { viaExtension: true } : {}) })
           addRel(fieldId, typeId, RelationshipTypeUses, lineOf(node), { role: "groupType" })
           // the group's own body
           const inner: Ctx = { ...ctx, owner: typeId, ownerKind: SymbolKind.Class, oneof: null }
@@ -600,7 +702,7 @@ export class RealProtobufAnalyzer implements ASTEngine.LanguageAnalyzer {
           ...(ctx.viaExtension ? { viaExtension: true } : {}),
         },
       })
-      if (ctx.owner) addRel(ctx.owner, id, RelationshipTypeContains, lineOf(node), { member: "enumValue" })
+      if (ctx.owner) addRel(ctx.owner, id, RelationshipTypeContains, lineOf(node), { member: "enumValue", ...(ctx.viaExtension ? { viaExtension: true } : {}) })
     }
 
     const emitRpc = (node: Node, ctx: Ctx): void => {
@@ -642,7 +744,7 @@ export class RealProtobufAnalyzer implements ASTEngine.LanguageAnalyzer {
           serverStreaming,
         },
       })
-      if (ctx.owner) addRel(ctx.owner, id, RelationshipTypeContains, lineOf(node), { member: "rpc" })
+      if (ctx.owner) addRel(ctx.owner, id, RelationshipTypeContains, lineOf(node), { member: "rpc", ...(ctx.viaExtension ? { viaExtension: true } : {}) })
       if (request) addRel(id, resolveRef(request, ctx.owner), RelationshipTypeUses, lineOf(node), { role: "rpcRequest" })
       if (response) addRel(id, resolveRef(response, ctx.owner), RelationshipTypeUses, lineOf(node), { role: "rpcResponse" })
     }
@@ -678,7 +780,7 @@ export class RealProtobufAnalyzer implements ASTEngine.LanguageAnalyzer {
             ownerKind: ctx.ownerKind ?? undefined,
             metadata: { isMessage: true, ...(ctx.viaExtension ? { viaExtension: true } : {}) },
           })
-          if (ctx.owner) addRel(ctx.owner, id, RelationshipTypeContains, lineOf(node), { member: "nestedType" })
+          if (ctx.owner) addRel(ctx.owner, id, RelationshipTypeContains, lineOf(node), { member: "nestedType", ...(ctx.viaExtension ? { viaExtension: true } : {}) })
           const body = firstOfType(node, "message_body")
           if (body) {
             const inner: Ctx = { ...ctx, owner: id, ownerKind: SymbolKind.Class, oneof: null }
@@ -699,7 +801,7 @@ export class RealProtobufAnalyzer implements ASTEngine.LanguageAnalyzer {
             ownerKind: ctx.ownerKind ?? undefined,
             metadata: { isEnum: true, ...(ctx.viaExtension ? { viaExtension: true } : {}) },
           })
-          if (ctx.owner) addRel(ctx.owner, id, RelationshipTypeContains, lineOf(node), { member: "nestedType" })
+          if (ctx.owner) addRel(ctx.owner, id, RelationshipTypeContains, lineOf(node), { member: "nestedType", ...(ctx.viaExtension ? { viaExtension: true } : {}) })
           const body = firstOfType(node, "enum_body")
           if (body) {
             const inner: Ctx = { ...ctx, owner: id, ownerKind: SymbolKind.Enum, oneof: null }
@@ -720,7 +822,7 @@ export class RealProtobufAnalyzer implements ASTEngine.LanguageAnalyzer {
             ownerKind: ctx.ownerKind ?? undefined,
             metadata: { isService: true, ...(ctx.viaExtension ? { viaExtension: true } : {}) },
           })
-          if (ctx.owner) addRel(ctx.owner, id, RelationshipTypeContains, lineOf(node), { member: "nestedType" })
+          if (ctx.owner) addRel(ctx.owner, id, RelationshipTypeContains, lineOf(node), { member: "nestedType", ...(ctx.viaExtension ? { viaExtension: true } : {}) })
           const inner: Ctx = { ...ctx, owner: id, ownerKind: SymbolKind.Interface, oneof: null }
           pushAll(
             kids(node).filter((c) => typeOf(c) !== "service_name"),
@@ -762,7 +864,7 @@ export class RealProtobufAnalyzer implements ASTEngine.LanguageAnalyzer {
             ownerKind: ctx.ownerKind ?? undefined,
             metadata: { isOneof: true },
           })
-          if (ctx.owner) addRel(ctx.owner, id, RelationshipTypeContains, lineOf(node), { member: "oneof" })
+          if (ctx.owner) addRel(ctx.owner, id, RelationshipTypeContains, lineOf(node), { member: "oneof", ...(ctx.viaExtension ? { viaExtension: true } : {}) })
           // Fields inside a oneof are members of the MESSAGE, not of the oneof:
           // the field number lives in the message's own space and
           // `msg.field` is how every protobuf tool refers to them, so
@@ -780,7 +882,18 @@ export class RealProtobufAnalyzer implements ASTEngine.LanguageAnalyzer {
           // edge type mean both. The grouping is carried as `metadata.oneof` on
           // each field, which is queryable and cannot be confused with
           // ownership.
-          const inner: Ctx = { ...ctx, oneof: name }
+          //
+          // `metadata.oneof` is the oneof's RESOLVED ID, not its bare name. It
+          // was the bare `name`, and a bare name cannot address a oneof: two
+          // messages in one file may each declare `oneof attrs`, and a consumer
+          // grouping fields by that string merges them. Measured over the corpus
+          // before this change: 423 of 1,121 oneof fields (37.73%) sat under a
+          // bare name declared by more than one owner — `oneof attrs` in 7
+          // different messages of boundary's session_recording.proto alone. The
+          // resolved id is unique within the file, which is the scope a consumer
+          // can actually group in, and it is what the `contains` edge into the
+          // oneof already uses.
+          const inner: Ctx = { ...ctx, oneof: id }
           pushAll(kids(node), inner)
           return
         }
@@ -898,20 +1011,42 @@ export class RealProtobufAnalyzer implements ASTEngine.LanguageAnalyzer {
             // self-dependency. CSS's `importerName` is the importing file for the
             // same reason.
             const selfMod = filePath.split("/").pop() || filePath
+            const moduleMeta = { modulePath: path, filePath }
             if (modifier === "public") {
-              // `import public` is a RE-EXPORT: this file's own importers reach
-              // the imported declarations THROUGH it, which is a fact about the
-              // module graph and is not derivable from the path — two files can
-              // import the same path and only one of them publish it.
+              // `import public` is BOTH, and this was wrong in pass 1.
+              //
+              // Pass 1 emitted `exports` alone and pinned the absence of `imports`
+              // with a `forbidRelationships` row whose stated reason was that
+              // emitting both "would double the module's inbound dependency and lose
+              // the re-export fact entirely". Neither half survives measurement:
+              // nothing is doubled, because the pair went from ZERO `imports` edges
+              // to one, and the re-export fact is not lost, it is what `exports`
+              // carries. What IS lost by emitting `exports` alone is the dependency
+              // itself: a consumer asking "which files must I read to compile this"
+              // gets an incomplete answer, and `bb_impact` on the imported file
+              // cannot see a file that depends on it through a public import.
+              //
+              // Measured on the corpus: 4 `import public` sites in 4 files, all in
+              // pb-reference (cpp_options.proto:15, json_options.proto:14,
+              // unittest_import.proto, unittest_import_lite.proto). Every other
+              // language in this family that has a re-export emits both edges —
+              // ES modules' `export … from`, and TypeScript's, which the
+              // typescript-oracle file in script/m14/oracles/ checks as a pair.
+              // protoc agrees: a `public` import is a `FileDescriptorProto`
+              // dependency like any other, with `public_dependency` naming its
+              // index. The dependency is a fact; republication is a second fact.
               addRel(selfMod, path, RelationshipTypeExports, lineOf(d), {
-                modulePath: path,
-                filePath,
+                ...moduleMeta,
+                viaPublicImport: true,
+              })
+              addRel(selfMod, path, RelationshipTypeImports, lineOf(d), {
+                ...moduleMeta,
+                ...(modifier ? { modifier } : {}),
                 viaPublicImport: true,
               })
             } else {
               addRel(selfMod, path, RelationshipTypeImports, lineOf(d), {
-                modulePath: path,
-                filePath,
+                ...moduleMeta,
                 ...(modifier ? { modifier } : {}),
                 // The editions FEATURE import resolves an option's definition
                 // rather than a message, which is why it is not a re-export even
@@ -963,6 +1098,7 @@ export class RealProtobufAnalyzer implements ASTEngine.LanguageAnalyzer {
     // over again.
     usedIds.clear()
     metaOf.clear()
+    slotClaims.clear()
     fileRanges.length = 0
     stack.length = 0
     pushAll(fileDecls, root)
