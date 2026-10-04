@@ -486,31 +486,45 @@ logged `[BB-PARSE-ERR] … memory access out of bounds` in the same run; *Limita
 
 ### How the arbiter itself now reports these ten
 
-`npx tsx script/m14/ontology-coverage-gate.ts nim` **exits 2** — it walks all
-6,063 files through `parseFile` and then refuses to print a verdict, because
-`RULED_BY_LANG` in the shared gate carries `bash`, `json`, `lua` and `toml` and
-no `nim`. That is the gate behaving correctly and it is measured, not quoted:
-`corpus: 6063 admitted files`, then `no RULING TABLE for nim`, exit 2.
+**The §8 wiring gap this lane reported for three sessions is CLOSED upstream.**
+`script/m14/nim-ruled.ts` at `analyzers/ontology-laptop-b` is byte-identical to
+this branch's copy (sha256 `0170f0804baec6fa`), and the base's
+`ontology-coverage-gate.ts:66` now reads `import { NIM_RULED } from "./nim-ruled"`
+with `nim: NIM_RULED` as a key of `RULED_BY_LANG` (line 223). So the arbiter
+stops refusing for this language the moment the branch merges, with no further
+lane edit. The base's `src/ast/real-nim-analyzer.ts` is byte-identical to this
+branch's too — same sha256 `9d9ee478e3295c28` — so every digest-pinned number in
+this document is still pinned to the blob the base carries.
 
-This lane's table is `script/m14/nim-ruled.ts` and it now has **zero** rows.
+`npx tsx script/m14/ontology-coverage-gate.ts nim` still **exits 2 on this
+branch**, because this branch's copy of the gate has no nim import; it walks all
+6,063 files through `parseFile` and then refuses to print a verdict, printing
+`corpus: 6063 admitted files` and then `no RULING TABLE for nim`. That is the
+gate behaving correctly, it is measured not quoted
+(`validation/m14/measurements/nim/session4-ontology-coverage-gate.txt`), and the
+cause is the base being 404 commits ahead rather than anything in this analyzer.
+
+This lane's table is `script/m14/nim-ruled.ts` and it has **zero** rows.
 `validation/m14/fixtures/nim/ruled-gate.ts` applies the supervisor's two-line
-wiring to a COPY of the gate in `/tmp` and runs the copy. Its output:
+wiring to a COPY of the gate in `/tmp` and runs the copy, which is how the row
+below was obtained without touching shared machinery. Its output, 2 workers
+(`session4-ruled-gate.txt`):
 
 ```
 corpus: 6063 admitted files
 
 type          status            detail
 ------------------------------------------------------------------------------------------------------------------------
-calls         EMITTED           118,242 edges in 4+ files, e.g. Aporia/CustomStatusBar.nim, Aporia/aporia.nimble
-uses          EMITTED           45,656 edges in 4+ files, e.g. Aporia/CustomStatusBar.nim, Aporia/autocomplete.nim
-contains      EMITTED           29,357 edges in 4+ files, e.g. Aporia/CustomStatusBar.nim, Aporia/processes.nim
-imports       EMITTED           13,359 edges in 4+ files, e.g. Aporia/CustomStatusBar.nim, Aporia/autocomplete.nim
-references    EMITTED           56,428 edges in 4+ files, e.g. Aporia/CustomStatusBar.nim, Aporia/autocomplete.nim
+calls         EMITTED           118,256 edges in 4+ files, e.g. Aporia/CustomStatusBar.nim, Aporia/AboutDialog.nim
+uses          EMITTED           45,662 edges in 4+ files, e.g. Aporia/CustomStatusBar.nim, Aporia/AboutDialog.nim
+contains      EMITTED           29,362 edges in 4+ files, e.g. Aporia/CustomStatusBar.nim, Aporia/AboutDialog.nim
+imports       EMITTED           13,362 edges in 4+ files, e.g. Aporia/CustomStatusBar.nim, Aporia/AboutDialog.nim
+references    EMITTED           56,443 edges in 4+ files, e.g. Aporia/CustomStatusBar.nim, Aporia/AboutDialog.nim
 exports       EMITTED           617 edges in 4+ files, e.g. dom96-jester/jester.nim, graphql-nim/graphql.nim
-extends       EMITTED           625 edges in 4+ files, e.g. Aporia/gtksourceview.nim, Aporia/cfg.nim
+extends       EMITTED           627 edges in 4+ files, e.g. Aporia/cfg.nim, Aporia/gtksourceview.nim
 implements    EMITTED           47 edges in 4+ files, e.g. nimony/lib/std/math.nim, nimony/lib/std/tables.nim
 overrides     EMITTED           67 edges in 4+ files, e.g. nim/lib/pure/logging.nim, nim/lib/pure/unittest.nim
-instantiates  EMITTED           2,836 edges in 4+ files, e.g. Aporia/CustomStatusBar.nim, dom96-jester/jester.nim
+instantiates  EMITTED           2,843 edges in 4+ files, e.g. Aporia/CustomStatusBar.nim, dom96-jester/jester.nim
 ------------------------------------------------------------------------------------------------------------------------
 emitted 10/10   ruled-sound 0   FALSIFIED 0   ruled-without-justification 0
 
@@ -520,8 +534,17 @@ emitted 10/10   ruled-sound 0   FALSIFIED 0   ruled-without-justification 0
   For the corpus-wide figures run: npx tsx validation/m14/fixtures/nim/nim-ruled-probe.ts
 
 analyzer sha256 across the child's walk : 9d9ee478e3295c28  (unchanged)
-exit code 0  (255s)
+exit code 0  (360s)
 ```
+
+**This row is the supervisor's instrument, not this lane's census, and that is
+what it is for.** The two share no counting code, and both put all ten types at
+EMITTED. The per-type counts differ from the table above by single digits —
+`calls` 118,256 here against 118,261 in the 1-worker census — and the cause is
+fan-out, not the analyzer: patch 3 of the proof runner lowers the gate's 8-way
+concurrency to 2 because 8 concurrent `parseFile` calls were OOM-killed on this
+box. That is the same 1-vs-2-worker spread the census records, and it is why
+every number in this document carries its worker count.
 
 **`emitted 10/10`, and the table it consulted is empty.** That is the honest
 shape of a finished lane and not the shape of a lucky one: the denominator is 10
@@ -1877,7 +1900,96 @@ inputs each, because the base branch moved 205 commits) plus fixture files belon
 c, clean, csharp, html, sql and fsharp. **Zero name nim.** The gate also reports its own
 defect in the same run — *freshness rule flags every artifact — it cannot distinguish
 current from stale*, with `evidence freshness: 0 artifact(s) current against their
-declared inputs` — which is §8 and not a lane edit.
+declared inputs* — which is §8 and not a lane edit.
+
+#### Session-4 re-verification, 2026-10-04: the arbiter registration landed, and the walk reproduced
+
+Two passes produced this document before it and neither had written its report, so
+this pass was spent on the two questions a reader actually has about a completed
+lane: does the number still come out, and is the §8 item that was blocking the
+arbiter still open. Both have answers and one of them changed.
+
+**The walk reproduces to the digit.** A fourth full census, 1 worker, 6,063 files,
+all 8 repositories, production `parseFile`, analyzer sha256 `9d9ee478e3295c28`
+verified before the walk and unchanged after
+(`validation/m14/measurements/nim/session4-1w-census.{json,txt}`):
+
+| | session 4, 1 worker | the 2-worker figure the table above carries | delta |
+| --- | --- | --- | --- |
+| symbols | **110,076** | 110,060 | +16 |
+| `calls` | **118,261** | 118,261 | 0 |
+| `uses` | **45,664** | 45,662 | +2 |
+| `contains` | **29,362** | 29,361 | +1 |
+| `imports` | **13,364** | 13,364 | 0 |
+| `references` | **56,445** | 56,438 | +7 |
+| `exports` | **617** | 617 | 0 |
+| `extends` | **627** | 627 | 0 |
+| `implements` | **47** | 47 | 0 |
+| `overrides` | **67** | 67 | 0 |
+| `instantiates` | **2,843** | 2,843 | 0 |
+| **total edges** | **267,297** | 267,287 | +10 |
+
+Seven of the ten types are byte-identical across the two worker counts and the
+whole movement is `uses` +2, `contains` +1, `references` +7, `symbols` +16. That is
+the production path's concurrency nondeterminism (*Limitations* 11) and not an
+analyzer change: **the two walks ran on the same blob**, which is the check that
+makes the spread interpretable. Symbol hygiene on this walk: **0** empty names,
+**0** empty kinds, **0** throws, 6,063 of 6,063 parsed, 8 endpoints equal to the
+literal `unknown` (*Limitations* 9), 0 edge types outside the ten — and no
+`SymbolKind` outside the engine's vocabulary, so no unknown kind is being
+published as if it were a classification.
+
+**The §8 registration gap is CLOSED, and it is closed upstream.** The base's
+`script/m14/nim-ruled.ts` is byte-identical to this branch's (sha256
+`0170f0804baec6fa`), and `analyzers/ontology-laptop-b`'s
+`ontology-coverage-gate.ts` now carries `import { NIM_RULED } from "./nim-ruled"`
+at line 66 with `nim: NIM_RULED` in `RULED_BY_LANG` at line 223. Measured
+consequence, through the proof runner that patches exactly those two lines into a
+`/tmp` copy: **`emitted 10/10   ruled-sound 0   FALSIFIED 0
+ruled-without-justification 0`, exit code 0** over all 6,063 admitted files
+(`session4-ruled-gate.txt`). The base's `src/ast/real-nim-analyzer.ts` is
+byte-identical to this branch's as well — the same `9d9ee478e3295c28` — so every
+digest-pinned number here is pinned to the blob the base actually carries.
+
+**Which of the three open §8 items remain open, re-checked against the base
+rather than against this branch.** Only the arbiter registration landed:
+
+| §8 item | file | status at `analyzers/ontology-laptop-b` |
+| --- | --- | --- |
+| register `NIM_RULED` in `RULED_BY_LANG` | `script/m14/ontology-coverage-gate.ts` | **LANDED** — line 66 import, line 223 map key |
+| add `nim` to `LANG_REPOS` | `script/m14/differential.ts` | **still open** — `grep -nE '^\s+nim: "'` returns nothing |
+| wire `deriveNimEdges` into the differential | `script/m14/differential.ts` | **still open** — `nim-truth-oracle`/`NIM_ORACLE` return nothing |
+| add `nimble` to the swept extension list | `script/m14/differential.ts` | **still open** — `ext: "nim,nims"` while `src/ast/language-detection.ts:53` routes `nimble` |
+
+The consequence of the last three being open is re-measured and is a fact about
+this lane's visibility rather than about its correctness: `--lang nim` still
+prints `[lane] SKIP nim: no corpus repo mapped in LANG_REPOS and none checked
+out — declared unrun, not measured` and measures 0 lanes
+(`session4-differential.txt`). nim IS registered for parsing — `LANGS` line
+25,174 carries the right `analyzerFile` and `className` — so the lane is
+registered for parsing and unregistered for corpus, and those two halves disagree.
+The DERIVATION arithmetic in the section above is unchanged by any of it: 0 by
+this lane's oracle, 6 by a gate that reads the differential's language-agnostic
+default audited list and never opens `nim-truth-oracle.ts`.
+
+**The gates, re-run at HEAD.** Two fail and **neither failure names nim**:
+
+| gate | exit | what it said about this lane |
+| --- | --- | --- |
+| `ontology-coverage-gate.ts nim` | 2 | `no RULING TABLE for nim` — this branch's copy predates the base's registration |
+| `verify-regex-census.ts` | 1 | **27 findings, `grep -in nim` over the whole output returns nothing.** css 5, julia 5, clean 1, fsharp 4, javascript 2, python 1, svelte 4, typescript 1 |
+| `verify-honesty.ts` | 6 | 22 failures, zero naming nim; banned-vocabulary lint over `validation/m14` + M14 docs **passes** |
+| `run-fixtures.ts --lang nim` | 0 | `{"nim":{"pass":10,"fail":0}}`, scoped run wrote no evidence and refused `--update-baseline` |
+| `verify-mutants.ts` (lane's own) | 0 | 17 declared nim mutants run, **17 CAUGHT, 0 survived** |
+| `differential.ts --lang nim --sample 60` | 0 | `[lane] SKIP nim` — the §8 item above, declared unrun rather than measured |
+| `verify-analyzer-docs.ts` | 0 | nim is **absent** from the 13-lane missing-sections list, so all required sections are present |
+
+The 17 here and the 60 in `session3-mutate-analyzer-shared.txt` are not in
+conflict and the difference is worth stating rather than reconciling away: 17 is
+what `script/m14/nim-mutants.ts` **declares** and the lane's `verify-mutants.ts`
+runs; 60 is what the shared `mutate-analyzer.ts` full sweep attributes to nim,
+the extra 43 being the harness's own generated kind-misclassification and
+symbol-drop mutants. Both report 0 survived.
 
 ## Differential ground truth
 
