@@ -149,6 +149,45 @@ open, so the two columns are not comparable and neither is quoted as the current
 What the block still establishes is unchanged and is the point of it: the hang costs
 tens of edges on the two largest rows and marks nothing in the table.
 
+### `contains 185,957` did not reproduce, and the number published here is now 186,270
+
+Commit `84970cf3d` published `contains 185,957` in four places. Re-measured on this
+commit with the same instrument — `ruled-gate.ts`, `BB_XML_WORKERS=1`, the full admitted
+population, exit 0, **0 `[BB-PARSE-ERR]`, 0 `[BB-HANG]`** — **two consecutive runs both
+printed 186,270**, and every other row was byte-identical between them:
+
+| run | admitted files | `contains` | `references` | `imports` | `extends` | `calls` | `overrides` |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| `84970cf3d`, as published | 11,464 | ~~185,957~~ | 11,094 | 465 | 1,429 | 402 | 3 |
+| re-measure 1 | 11,464 | **186,270** | 11,094 | 465 | 1,429 | 402 | 3 |
+| re-measure 2 | 11,473 | **186,270** | 11,094 | 465 | 1,429 | 402 | 3 |
+
+The corpus grew by 9 files between re-measure 1 and re-measure 2 — another lane added a
+repository to the shared corpus root mid-afternoon — and **no row moved**, so the two runs
+are not measuring the same population and are still not interchangeable. They agree, and
+the number they agree on is 313 higher than the published one.
+
+**Why 185,957 was wrong is not established, and that is the honest limit of this
+correction.** Three candidates, none measured:
+
+- a partially-completed corpus walk on the publishing run that raised no `[BB-HANG]` and
+  no `[BB-PARSE-ERR]` — the failure mode §Relationship ontology documents above is a
+  SILENT undercount, and neither marker distinguishes it;
+- an analyzer state between the two commits that differ in `contains` — `84970cf3d` is
+  the `references` re-base and the diff touches owner-minting, so this is possible and
+  was not checked;
+- a third run, never recorded, that 185,957 was copied from.
+
+What IS established: at this commit, on this corpus, with this instrument and no error
+marker set, `contains` is 186,270 on two consecutive runs and 185,957 on none. The
+struck-through figure is left in the table rather than deleted so a reader who has seen
+it published can tell which number it was.
+
+Nothing else in this document depends on the difference. `contains` was already
+decomposed rather than quoted: the payload argument at §The payload argument below uses
+it only as the reason the project graph is unchanged to the third digit, and 186,270 is
+larger than 185,957, so the argument is unaffected.
+
 Nothing inside the table marks the run as short. The table above is from a run at
 `BB_XML_WORKERS=1` that exited 0 with no `[BB-HANG]`, and the runner now prints
 `RUN WAS SHORT, COUNTS UNDERCOUNTED` beside the rows whenever one fires, so the
@@ -161,10 +200,12 @@ same 11,456-file corpus, differing only in `BB_XML_WORKERS`:
 | `BB_XML_WORKERS` | `[BB-PARSE-ERR]` | `[BB-HANG]` | exit | table | `contains` | `references` |
 | ---: | ---: | ---: | ---: | --- | ---: | ---: |
 | **1** | 0 | 0 | 0 | full | 185,979 | 10,411 |
-| **1**, re-run after the re-base on a grown corpus | 0 | 0 | 0 | full | **185,957** | **11,094** |
+| **1**, re-run after the re-base on a grown corpus | 0 | 0 | 0 | full | ~~185,957~~ → **186,270** | **11,094** |
 | **8** | 8 | 3 | 1 | **none** | — | — |
 
-The n=1 row reproduces the committed table exactly, so the numbers below stand. The
+The middle row's `contains` cell carries two numbers because the first did not reproduce;
+the section immediately above measures that. The n=1 row reproduces the committed table
+exactly, so the numbers below stand. The
 n=8 row is why: not one verdict is quotable from it. Every failing path is 459–1,254
 bytes and the fault is unresolved between reentrancy on the engine's single cached
 `TSParser` and host memory exhaustion — §8 item 3 carries both candidate mechanisms,
@@ -172,7 +213,7 @@ the 603-file probe that came back INCONCLUSIVE, and what would separate them.
 
 | Type | Emitted? | Edges | Files | Both ends resolve | `confidence` < 0.7 |
 | --- | --- | ---: | ---: | ---: | ---: |
-| `contains` | yes — EMITTED | 185,957 | 10,847+ | **100.0 %** | 0 |
+| `contains` | yes — EMITTED | **186,270** | 10,847+ | **100.0 %** | 0 |
 | `references` | yes — EMITTED | **11,094** | 391+ | **48.4 %** target / **100.0 %** source; **93.9 % of sources are names the file writes** (was 84.2 %) | 0 |
 | `imports` | yes — EMITTED | 465 | 278+ | 0.0 %, target is a file, by design | 0 |
 | `calls` | yes — EMITTED (was GAP) | **402** | 76+ | **100 %**, and **100 % of sources are declared callers** | 0 |
@@ -219,12 +260,14 @@ and the 4 `no` rows against the absence of `Uses`, `Exports`, `Implements` and
 `Instantiates`.
 
 Re-measured 2026-10-04 with `bun run script/m14/verify-doc-truth-emissions.ts` (it is
-CJS and `__dirname` throws under `tsx`, so `bun` is the invocation): **43 UNDOCUMENTED
-rows across 24 lanes**, and `UNDOCUMENTED [xml] contains` is still among them — the
-defect is unchanged and the row it drops is unchanged. The 43 is not 32 because the two
-counts are not the same measurement: 32 is the number of DOCS whose first row this
-parser drops, and 43 is the number of rows the gate currently reports, which also carries
-the `import-site`/`export-site` payload-channel findings (csharp, elixir, erlang, …) that
+CJS and `__dirname` throws under `tsx`, so `bun` is the invocation): **42 UNDOCUMENTED
+rows across 26 lanes**, and `UNDOCUMENTED [xml] contains` is still among them —
+the defect is unchanged and the row it drops is unchanged. The 43 the earlier run
+reported was 42 on the same day; the aggregate moves as other lanes land and is not this
+lane's number to hold steady. Neither aggregate is 32, and the two counts are not the
+same measurement: 32 is the number of DOCS whose first row this parser drops, and 42 is
+the number of rows the gate currently reports, which also carries the
+`import-site`/`export-site` payload-channel findings (csharp, elixir, erlang, …) that
 are a different check.
 
 What each type means **in this language**, which is not what it means in general:
@@ -677,7 +720,7 @@ rather than trusting a resolution rate. `resolvedTarget` rose 3,312 → 3,591, a
 denominator rose further, so both-ends went 49.1 % → 48.4 %. The `external` resolvability
 class nearly doubled (375 → 738) for the same reason: distinct declarers make distinct
 edges to the same imported names. No budgeted lane regressed; the lane's share of a
-project graph is unchanged to the third digit because `contains` (185,957 edges) is two
+project graph is unchanged to the third digit because `contains` (186,270 edges) is two
 orders of magnitude larger.
 
 ### The five not emitted, each with its instrument, probe and overturn condition
@@ -1232,7 +1275,7 @@ apply are the ones listed.
 
 A `references` target is a local name, a built-in, a name in another file, or a
 name this file does not satisfy — and the four are told apart in
-`metadata.resolvable` rather than left to the reader.
+`metadata.resolvable` rather than left to the reader. Resolving any of the four to
 a phantom local symbol is the M60.R10 lie, and a consumer that resolves a
 built-in, an external or an unresolved reference to a symbol with no declaration
 behind it is worse off than one that is told where to look.
@@ -1674,11 +1717,14 @@ the project.
 | `bun run script/m14/run-fixtures.ts --lang xml` | `{"xml":{"pass":25,"fail":0}}` |
 | `BB_MUTANT_ONLY="xml/" bun run script/m14/mutate-analyzer.ts` | **all 21 caught**, 0 survivors (filtered 1748 → 21) |
 | `npx tsx validation/m14/fixtures/xml/ontology-mutants.mts` | **17/17 caught**, 0 survivors |
-| `BB_XML_WORKERS=1 npx tsx validation/m14/fixtures/xml/ruled-gate.ts` | exit 0, full 10-row table, **0 `[BB-PARSE-ERR]`, 0 `[BB-HANG]`**, `FALSIFIED 0`, `ruled-without-justification 0`. `XML_B_PROBE_WALK uses walked=11464 unparsed=0 occurrences=0` |
-| `npx tsx script/m14/ontology-coverage-gate.ts xml` | **6/10 EMITTED, 4 RULED-SOUND, FALSIFIED 0, ruled-without-justification 0** — exit 0. `contains` 185,957 · `references` 11,094 · `imports` 465 · `extends` 1,429 · `calls` 402 · `overrides` 3 |
+| `BB_XML_WORKERS=1 npx tsx validation/m14/fixtures/xml/ruled-gate.ts` | **run TWICE**, exit 0 both, full 10-row table both, **0 `[BB-PARSE-ERR]`, 0 `[BB-HANG]`** both, `FALSIFIED 0`, `ruled-without-justification 0` both. `XML_B_PROBE_WALK uses walked=11464 / 11473 unparsed=0 occurrences=0`. The two runs differ in admitted population (11,464 → 11,473, another lane added a repository mid-afternoon) and agree on every row — see §`contains 185,957 did not reproduce` |
+| `npx tsx script/m14/ontology-coverage-gate.ts xml` | **6/10 EMITTED, 4 RULED-SOUND, FALSIFIED 0, ruled-without-justification 0** — exit 0. `contains` **186,270** · `references` 11,094 · `imports` 465 · `extends` 1,429 · `calls` 402 · `overrides` 3. **Run through `ruled-gate.ts` at `BB_XML_WORKERS=1`, twice, both exit 0, both 0 `[BB-PARSE-ERR]` and 0 `[BB-HANG]`, both printing these numbers** — the shared gate at its own 8 workers cannot finish this corpus (it self-destructs at 120 s on one file before printing a row), so `ruled-gate.ts` is the instrument the numbers come from. See §`contains 185,957 did not reproduce` |
 | `npx tsx script/m14/firing-check.ts --files 120 xml` | **4/10 fired, 1,653 edges, 120/120 files, 0 degraded** — `contains, imports, references, extends` |
 | `BB_XML_WORKERS=4 npx tsx validation/m14/fixtures/xml/ontology-census.mts` | 2,500 files, **0 failed**, 388,365 symbols, 85,747 relationships, **0 empty names, 0 `unknown` endpoints** |
 | `npx tsx validation/m14/fixtures/xml/derivation-accounting.mts` | `extends` fabricated **0 of 1,429** · `calls` fabricated **0 of 402** · call-site ledger **481 accepted = 481 occurrences, 0 unrepresented** · `references` fabricated **111 of 11,094** (was 1,066 of 10,411) · **0 edges with no site behind them** |
+| `npx tsx validation/m14/fixtures/xml/concurrent-parser-probe.mts --files 600` | grade **INCONCLUSIVE**, exit 0 (control intact) |
+| `npx tsx script/m14/verify-honesty.ts` | gate FAILED project-wide, **23 failures and 0 name an xml file** — 12 banned-term rows in other lanes' fixtures and `validation/` artifacts, `M14.0.F7` non-passing on `analyzer-hygiene-cpp` / `analyzer-hygiene-elixir`, 9 `declared inputs changed since <sha>` regeneration rows, and `freshness rule flags every artifact`. Not one is this lane's |
+| `bun run script/m14/verify-doc-truth-emissions.ts --no-write` | gate FAILED project-wide, `UNDOCUMENTED=42 FALSE_NEGATIVE=7 MISSING_DOC=1 NO_CLAIM_TABLE=16`, and the single xml row is `UNDOCUMENTED [xml] contains` — the shared `parseClaimTable` first-row defect documented above, re-measured, unchanged |
 
 The `firing-check` row reads **4/10**, where the round brief's table says 5/10 for this
 lane, and the difference is **not** the `references` re-base. Measured both ways on the
@@ -1696,7 +1742,6 @@ the same file, and the admitted corpus has grown since the brief was written (11
 reaches a `calls` file, which is the same "high score on few files is a warning"
 situation the brief names for protobuf, pointed the other way. `calls` remains EMITTED at
 402 edges on the arbiter's full-corpus run, which is the instrument that counts.
-| `npx tsx validation/m14/fixtures/xml/concurrent-parser-probe.mts --files 600` | grade **INCONCLUSIVE**, exit 0 (control intact) |
 
 One of those rows is not a pass and is not written as one. The regex census gate
 FAILS; this lane contributes **zero** of its 18 findings and the failure belongs to four
