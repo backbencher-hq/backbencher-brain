@@ -226,7 +226,7 @@ async function main(): Promise<void> {
 
     const r: any = await new RealDartAnalyzer().analyze(t2.rootNode, c.src, "/tmp/verify-dart-overrides.dart")
     const label = c.label.startsWith("containment") ? "contains" : "overrides"
-    const got = [...new Set((r.relationships ?? []).filter((e: any) => e.type === label).map((e: any) => `${e.source}->${e.target}`))].sort()
+    const got: string[] = [...new Set<string>((r.relationships ?? []).filter((e: any) => e.type === label).map((e: any) => `${e.source}->${e.target}`))].sort()
 
     const problems: string[] = []
     for (const want of c.expectTruth) if (!truth.includes(want)) problems.push(`truth missing ${want}; got [${truth.join(" ")}]`)
