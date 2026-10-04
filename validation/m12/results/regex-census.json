@@ -2,19 +2,19 @@
   "schemaVersion": 1,
   "milestone": "M12",
   "purpose": "ast_driven_regex_census_across_wired_analyzers",
-  "generatedAt": "2026-10-04T06:20:56.106Z",
+  "generatedAt": "2026-10-04T06:29:38.628Z",
   "describes": "HEAD blobs (git show HEAD:src/ast/...)",
   "parser": "tree-sitter-typescript (project WASM pipeline)",
   "methodology": "parse analyzer source with tree-sitter; walk for regex literal nodes and RegExp constructors; record location, operation, receiver category, and preliminary classification",
-  "totalRegexUsages": 7,
+  "totalRegexUsages": 5,
   "analyzersScanned": 48,
   "byClassification": {
-    "needs_review": 5,
+    "needs_review": 3,
     "normalization": 2
   },
   "byReceiverCategory": {
-    "identifier": 4,
     "other": 1,
+    "identifier": 2,
     "node_text": 2
   },
   "perFile": [
@@ -62,34 +62,6 @@
           "source": "/^(.*?)\\s+(?:then|as)\\s+/",
           "operation": "test",
           "receiver": "text",
-          "receiverCategory": "identifier",
-          "classification": "needs_review",
-          "justification": ""
-        }
-      ]
-    },
-    {
-      "file": "real-scss-analyzer.ts",
-      "count": 2,
-      "usages": [
-        {
-          "file": "real-scss-analyzer.ts",
-          "line": 77,
-          "column": 23,
-          "source": "/\\s+/g",
-          "operation": "replace",
-          "receiver": "text",
-          "receiverCategory": "identifier",
-          "classification": "needs_review",
-          "justification": ""
-        },
-        {
-          "file": "real-scss-analyzer.ts",
-          "line": 981,
-          "column": 40,
-          "source": "/^%[-\\w]*[\\w]$/",
-          "operation": "test",
-          "receiver": "name",
           "receiverCategory": "identifier",
           "classification": "needs_review",
           "justification": ""
