@@ -656,6 +656,34 @@ export const PROTOBUF_MUTANTS: Mutant[] = [
       }
     },
   },
+  {
+    id: "protobuf/qualified-id-stopped-being-published",
+    description:
+      "The resolved id is published on the symbol through TWO channels — `qualifiedName` (the one " +
+      "pool-worker's projection carries into `brain_symbol.qualified_name`, which is the column " +
+      "`resolveRelationships` strategy 1 matches a relationship's target against) and " +
+      "`metadata.qualifiedName` (the one a fixture can assert, because `run-fixtures.ts`'s " +
+      "`CONSTRAINT_KEY_ALLOWLIST` carries no `qualifiedName`). This transform deletes both, " +
+      "which is the pre-fix state. It reverts the RULE rather than one line: the two " +
+      "assignments are the same value on the two channels a consumer can reach, and reverting " +
+      "one alone would be a mutant of a line while the rule stayed published. Measured cost of " +
+      "the pre-fix state, end to end through the real indexer and the real store over 40 " +
+      "reference `.proto` files (script/m14/tmp/protobuf/probe/store-binding.mts, two runs " +
+      "each): 0 of 3,075 analyzer edges were PROVABLY the declaration the edge named, against " +
+      "2,977 of 3,075 with it — and `contains` 0 of 2,565 against 2,563, `uses` 0 of 489 " +
+      "against 414. A fixture cannot see the store binding, so it pins the published value on " +
+      "both channels and the probe carries the store half.",
+    transform: (r: any) => ({
+      ...r,
+      symbols: syms(r).map((s: any) => {
+        const { qualifiedName: _droppedQualified, ...rest } = s
+        void _droppedQualified
+        const m = { ...(s?.metadata ?? {}) }
+        delete m.qualifiedName
+        return { ...rest, metadata: m }
+      }),
+    }),
+  },
 ]
 
 export default PROTOBUF_MUTANTS
