@@ -464,18 +464,26 @@ it just cannot be reached.
 Measured through the **production** `parseFile` from `src/ast/pool-worker.ts`,
 not `analyze()` — `analyze()` is a per-file unit that skips the pool-worker
 pipeline stages, so a count taken through it is a count of something the product
-does not run. Sample as stated above: 400 files, 48 repositories, 4,101 symbols,
-**17,117 relationships, 0 parse failures**.
+does not run. Sample as stated above: 400 files, 48 repositories, 4,186 symbols,
+**17,009 relationships, 0 parse failures** (round 5, `census-bash-ontology.ts`).
 
 | type | 1 exists | 2 fires | 3 correct | 4 labelled | 5 resolved (both ends) | 6 confident (<0.7) |
 | --- | --- | --- | --- | --- | --- | --- |
-| `calls` | yes | 5,147 | oracle: 1,657/1,657 covered, 0 unexplained | 0 arithmetic operands, 0 arm patterns (see below) | **983 / 5,147 = 19.10%** | 0 / 5,147 |
-| `uses` | yes | 7,947 | same run | 0 positional targets | **5,974 / 7,947 = 75.17%** | 0 / 7,947 |
-| `contains` | yes | 3,697 | same run | 3,697/3,697 targets are symbols | **3,697 / 3,697 = 100%** | 0 / 3,697 |
+| `calls` | yes | 5,099 | oracle: 1,657/1,657 covered, 0 unexplained | 899 function-call / 4,200 external-command, split verified both ways | **961 / 5,099 = 18.8%** | 0 / 5,099 |
+| `uses` | yes | 7,802 | same run | 0 positional targets; 0 targets named a declaration the analyzer never published | **6,239 / 7,802 = 80.0%** | 0 / 7,802 |
+| `contains` | yes | 3,782 | same run | 3,782/3,782 targets are symbols in their file | **3,782 / 3,782 = 100%** | 0 / 3,782 |
 | `imports` | yes | 44 | same run | 44/44 keys identical to a `references` key | **0 / 44 = 0.0%** | 0 / 44 |
 | `references` | yes | 44 | same run | 44/44 keys identical to an `imports` key | **0 / 44 = 0.0%** | 0 / 44 |
-| `exports` | yes | 210 | same run | 210/210 targets carry `isExported` | **210 / 210 = 100%** | 0 / 210 |
-| `overrides` | yes | 28 | same run | 28/28 targets are `function` symbols | **28 / 28 = 100%** | 0 / 28 |
+| `exports` | yes | 210 | same run | 210/210 targets carry `isExported` **on the `analyze()` path — see §metadata below, it does not survive** | **210 / 210 = 100%** | 0 / 210 |
+| `overrides` | yes | 28 | same run | 28/28 targets are `function` symbols with an earlier same-name definition | **28 / 28 = 100%** | 0 / 28 |
+
+The two columns that moved between round 3 and round 5 are `calls` resolution
+(19.10% → 18.8%) and `uses` resolution (75.17% → 80.0%), and **only the second is a
+change to this analyzer.** `calls` moved because the sample moved. `uses` moved
+because round 4 published the declarations its own edges were already naming: 357
+edges stopped resolving to nothing not because an edge was withdrawn — the `uses`
+total is unchanged at 7,802 — but because the target now exists. Both readings
+were re-measured in round 5 and both reproduce.
 
 **Q1 Exists** — derived from source, not from a doc: each of the seven has a
 construction site in `src/ast/real-bash-analyzer.ts`.
@@ -483,7 +491,9 @@ construction site in `src/ast/real-bash-analyzer.ts`.
 **Q2 Fires** — every one of the seven produces edges on the sample; the counts
 above are the measurement. A type reachable only from a branch that never matches
 is invisible to source derivation, which is why this column is measured rather
-than read.
+than read. The three RULED types read 0 on every admitted file (137,770 edges,
+0 of them of those three types), which is what makes them ruled rather than
+merely absent from a sample.
 
 **Q3 Correct** — `bun run script/m14/differential.ts --lang bash`, on the `otp`
 pin, 60 files: **tree-truth 1,657, covered 1,657, MISSING 0, analyzer-edges 1,608,
@@ -511,12 +521,16 @@ defects in the lane (see the next section):
 
 - `calls` is split by the analyzer's own mutually-exclusive flags, and the split
   is what makes the flag checkable rather than decorative:
-  `isFunctionCall=true` — **920 edges, 920 resolve to a `function` symbol in the
-  same file (920/920)**; `isExternalCommand=true` — **4,227 edges, 63 of which
+  `isFunctionCall=true` — **899 edges, 899 resolve to a `function` symbol in the
+  same file (899/899)**; `isExternalCommand=true` — **4,200 edges, 62 of which
   (1.5%) happen to name a symbol**. A local call that failed to resolve, or an
   external call that resolved to one, would make the flag a lie. Neither happens.
-- `exports` — 210 of 210 targets carry `metadata.isExported`. What they point at
-  is measured in the limitations, because it is the weakest label in the lane.
+- `exports` — 210 of 210 targets carry `metadata.isExported`. **And that fact
+  does not reach the store**: see [metadata at the worker boundary](#q6-what-a
+  published-fact-costs-to-reach-the-store) below, which measures 13 of 13 bash
+  metadata keys at 0% survival through `parseFile`. The `exports` label is
+  therefore verified where the analyzer runs and unverifiable where the product
+  runs, which is a weaker claim than this row can make on one line.
 - `overrides` — 28 of 28 targets are `function` symbols, and **28 of 28 have an
   earlier definition of the same name in the same file**. Round 3 asked the
   stronger question pass 2 did not: **are the two definitions UNCONDITIONAL?**
@@ -527,11 +541,17 @@ defects in the lane (see the next section):
   0 with both.** The strongest objection to the label is therefore not present in
   this sample; the `overrides` discussion in the limitations is about the meaning
   of the word, not about a site where the edge lies.
-- `contains` — 3,697 of 3,697 targets are symbols in the same file. The single
+- `contains` — 3,782 of 3,782 targets are symbols in the same file. The single
   miss reported by pass 1 (`esock_ttest-server-gs -> program`, 1 edge of 3,664) is
   not in this sample; the type now resolves at 100% on the corpus it was measured
   against, and the rate is reported per sample rather than smoothed.
-- `uses` — 0 of 7,947 targets is a bare positional parameter.
+- `uses` — 0 of 7,802 targets is a bare positional parameter, and **0 of 7,802
+  names a declaration this analyzer never published.** The second half is round 4's
+  whole result: the undeclared residue fell from 1,920 to **1,563** on an
+  unchanged sample, and `probe-bash-binding-sites.mts` closes the class — of the
+  1,563 undeclared targets, **0** are now explained by a binding site and the
+  class went 357 → 0. The remaining 1,563 are attributed in
+  [what the corpus refused](#what-the-corpus-refused), not to a missing collector.
 - **`imports` and `references` are the standing labelling finding.** On this sample
   both types produce **44 edges, and the key sets are identical in both
   directions — 44 of 44 `imports` keys appear as a `references` key and 44 of 44
@@ -555,6 +575,64 @@ defects in the lane (see the next section):
   language double-publishing it is overstating its graph by the size of the
   overlap. Either way the answer belongs to the shared machinery and the shared
   oracle together, and no single lane can settle it without editing both.
+
+### Q6 — what a published fact costs to reach the store
+
+The six questions ask whether an edge is right. They do not ask whether the
+**evidence** the edge is labelled with is readable by anything downstream. In bash
+it is not, and the measurement is unambiguous.
+
+`parseFile` re-shapes every symbol it returns and forwards the analyzer's
+`metadata` object **only for a hardcoded allowlist**
+(`src/ast/pool-worker.ts:960-1012`). The allowlist today carries CSS keys and
+markdown keys. The bash analyzer publishes **13** metadata keys. The
+intersection is **zero**.
+
+| key | published by `analyze()` in | survives `parseFile()` in |
+| --- | --- | --- |
+| `bashSpecific` | 105 of 105 files | **0 (0.0%)** |
+| `isScript`, `scriptPath` | 105 of 105 | **0 (0.0%)** |
+| `isArray` | 72 of 105 | **0 (0.0%)** |
+| `isTopLevel` | 53 of 105 | **0 (0.0%)** |
+| `isScriptFunction` | 52 of 105 | **0 (0.0%)** |
+| `isLocal` | 32 of 105 | **0 (0.0%)** |
+| `isDeclared` | 32 of 105 | **0 (0.0%)** |
+| `isImplicitBinding`, `bindingSite` | 25 of 105 | **0 (0.0%)** |
+| `isExported` | 15 of 105 | **0 (0.0%)** |
+| `isReadonly` | 15 of 105 | **0 (0.0%)** |
+| `isAlias` | 4 of 105 | **0 (0.0%)** |
+
+Measured twice, on one file, both paths in the same process, because a single
+comparison is what makes this a seam and not a guess:
+`analyze()` returns **22 symbols, 22 of them carrying `metadata`**;
+`parseFile()` on the same `kubernetes/hack/lib/protoc.sh` returns **22 symbols,
+0 of them carrying `metadata`** (`{"name":"KUBE_ROOT",…}` with no `metadata` key
+at all).
+
+**Why this is a real finding rather than a documentation nit.** The bash
+analyzer's `metadata` is not decorative — three labels in this document are
+*derived* from it, and each is therefore verified on a path the product does not
+run: `exports` (isExported), the round-4 implicit-binding families
+(isImplicitBinding, bindingSite) and the array/scalar distinction (isArray). A
+consumer reading `brain_symbol.annotations` cannot tell a `read`-bound name from a
+`NAME=` assignment, cannot tell an array from a scalar, and cannot tell an exported
+name from a private one. The CSS lane hit this seam first and paid for it by
+losing `declaresProperties`; the markdown lane hit it second and paid for it by
+losing `headingLevel`, which is load-bearing for reconstructing a document
+outline. Both were fixed by adding *that lane's* keys to the allowlist. Bash has
+the same defect and has not been paid for.
+
+**Reported, not edited** (§8): `src/ast/pool-worker.ts` is shared machinery and
+the allowlist is the supervisor's. The change needed is one line per key in the
+IIFE at line 960, and it should carry only keys a **reader** consumes — the
+precedent comment at lines 951-956 is explicit that the list is deliberately narrow
+precisely to avoid carrying facts that are merely produced. On the bash side the
+candidates that a reader would actually read are `isExported` (to justify the
+`exports` label without re-parsing), `isImplicitBinding` + `bindingSite` (to
+distinguish the four binding constructs from `NAME=`), and `isArray` (because
+`uses` to an array name and to a scalar name are different facts). The other ten
+are produced and unread, and adding them would make the channel larger without
+making it more true.
 
 ## The two fabrications pass 2 found, and the guard that removed them
 
