@@ -1758,7 +1758,11 @@ private markDeclaration(node: Node, state: ParseState): boolean {
         references,
       },
     )
-    this.addRelationship(ASTEngine.RelationshipType.Contains, table.name, column.name, state)
+    // `memberKind` here as well as in `createSymbol`: this call exists for the paths where
+    // `createSymbol` returned early without emitting (an already-seen identity), and a key without
+    // the disambiguator would NOT dedup against the one `createSymbol` did emit — the same
+    // containment fact stored twice, once with the member's kind and once without.
+    this.addRelationship(ASTEngine.RelationshipType.Contains, table.name, column.name, state, { memberKind: ASTEngine.SymbolKind.Property })
     if (isPrimaryKey) this.addPattern("Primary Key Constraint", state)
     if (isUnique) this.addPattern("Unique Constraint", state)
     if (references && referenceNode) {
@@ -1820,9 +1824,35 @@ private markDeclaration(node: Node, state: ParseState): boolean {
     } else {
       nameNode = node.childForFieldName?.("name") ?? null
     }
-    // MySQL's `UNIQUE KEY <name> (cols)` puts the index name in a `name` field.
+    // MySQL's `UNIQUE KEY <name> (cols)` puts the index name in a direct `identifier` that PRECEDES
+    // the column list.
+    //
+    // ORDER IS THE WHOLE DISCRIMINATOR, and pass 3 found the shape that makes it necessary. A FOREIGN
+    // KEY with no `CONSTRAINT` name also has direct `identifier` children, and they are the
+    // REFERENCED table's columns, sitting AFTER `ordered_columns`:
+    //
+    //   foreign key (a, b) references u (x, y)
+    //     constraint
+    //       keyword_foreign  keyword_key
+    //       ordered_columns (a, b)        <- LOCAL columns, nested under `column`
+    //       keyword_references  object_reference u
+    //       identifier x  identifier y    <- DIRECT children: u's columns
+    //
+    // `directChild(node, "identifier")` returned `x`, so the analyzer published `constant:x` owned by
+    // the referencing table — a declaration the file does not contain. Measured on the corpus at
+    // HEAD before this fix: **57 phantom constants in 23 files**, e.g. two `constant:scope_id` under
+    // `auth_account` in `boundary/.../0/07_auth.up.sql` (lines 90 and 94, one per foreign key, both
+    // named after `auth_method`'s first column) against the real `property:scope_id` at line 72.
+    //
+    // Why it is expensive rather than cosmetic: a fabricated symbol is a row a consumer reads as a
+    // declaration, and it is also what made 51 of the 100 intra-file-ambiguous `contains` targets
+    // ambiguous — the collision `metadata.memberKind` was added for could not be closed while the
+    // second declaration was synthetic.
     if (!nameNode && keywordAt < 0) {
-      nameNode = this.directChild(node, "identifier")
+      const cand = this.directChild(node, "identifier")
+      // The first column list is `ordered_columns`, or a bare `column` in the reduced shape.
+      const cols = children.find((c) => c.type === "ordered_columns" || c.type === "column")
+      if (cand && (!cols || cand.startIndex < cols.startIndex)) nameNode = cand
     }
 
     const hasPrimary = this.containsChildType(node, "keyword_primary")
@@ -1848,7 +1878,7 @@ private markDeclaration(node: Node, state: ParseState): boolean {
           ...(recovered ? { recoveredFromErrorRegion: true } : {}),
         },
       )
-      this.addRelationship(ASTEngine.RelationshipType.Contains, table.name, constraint.name, state)
+      this.addRelationship(ASTEngine.RelationshipType.Contains, table.name, constraint.name, state, { memberKind: ASTEngine.SymbolKind.Constant })
     }
     if (hasPrimary) this.addPattern("Primary Key Constraint", state)
     if (hasUnique) this.addPattern("Unique Constraint", state)
@@ -1921,7 +1951,12 @@ private markDeclaration(node: Node, state: ParseState): boolean {
     this.addPattern("Custom Indexes", state)
     if (tableName) {
       this.addRelationship(ASTEngine.RelationshipType.References, name, tableName, state, { dependency: true, indexOn: tableName })
-      this.addRelationship(ASTEngine.RelationshipType.Contains, tableName, name, state)
+      // `memberKind` here too, because the owner's table may be declared LATER in the file and so
+      // `owner` was null above — `createSymbol` emits no containment edge without a parent, and this
+      // is the edge that survives. An index and a column of the same name under the same table is the
+      // collision `memberKind` exists to resolve; leaving it off this path would leave exactly those
+      // edges ambiguous, which is the case the key was added for.
+      this.addRelationship(ASTEngine.RelationshipType.Contains, tableName, name, state, { memberKind: ASTEngine.SymbolKind.Constant })
       if (state.metadata.performanceScore !== undefined) state.metadata.performanceScore += 10
     }
   }
@@ -2582,7 +2617,7 @@ private markDeclaration(node: Node, state: ParseState): boolean {
         state,
         { type: "column", sqlType: this.columnType(definition, state), addedByAlter: true },
       )
-      this.addRelationship(ASTEngine.RelationshipType.Contains, table, column.name, state)
+      this.addRelationship(ASTEngine.RelationshipType.Contains, table, column.name, state, { memberKind: ASTEngine.SymbolKind.Property })
     }
   }
 
@@ -2991,7 +3026,31 @@ private markDeclaration(node: Node, state: ParseState): boolean {
     symbol.id = id
     state.symbols.push(symbol)
     state.symbolNames.add(name)
-    if (parent) this.addRelationship(ASTEngine.RelationshipType.Contains, parent.name, name, state)
+    /**
+     * `memberKind` — why a containment edge carries the member's kind, which is a fact about the
+     * GRAPH rather than about SQL.
+     *
+     * A `contains` edge names its member by BARE NAME, and SQL's naming conventions make bare names
+     * collide constantly: `CREATE TABLE t (scope_id int)` beside `CREATE INDEX scope_id ON t(...)`
+     * is ordinary, and on the boundary migration corpus **100 of 11,305 `contains` edges** name two
+     * declarations that share a name AND an owner, distinguished only by kind (51 of the 100 are
+     * `constant`+`property`, i.e. index against column).
+     *
+     * `src/lsp/impact.ts` obtains reverse edges by scanning outgoing edges and matching targets, so
+     * an edge whose target names two declarations is an incoming edge attributed to one of them by a
+     * rule nobody chose. The information needed to disambiguate is already on the member symbol —
+     * `ownerName` and `kind` — but a consumer that only reads the edge cannot see it.
+     *
+     * `memberKind` closes that, and it is the minimum that does: combined with the edge's existing
+     * SOURCE (the owner) it is the pair a consumer needs, so no schema change and no stored inbound
+     * edge is required. Measured on the same corpus (`pass3-incoming.mts`): bare name alone resolves
+     * 9,374 of 11,305 (82.9 %), (name, owner) within the file resolves 11,204 (99.1 %), and this key
+     * is what carries the last 100.
+     *
+     * Deliberately NOT added: the owner's name. The edge's source already IS the owner, and
+     * duplicating it would grow every containment edge to carry a fact the consumer can read.
+     */
+    if (parent) this.addRelationship(ASTEngine.RelationshipType.Contains, parent.name, name, state, { memberKind: symbol.kind })
     return symbol
   }
 
@@ -3065,7 +3124,26 @@ private markDeclaration(node: Node, state: ParseState): boolean {
       state.externalTargets![externalKind]++
       metadata = { ...metadata, external: externalKind }
     }
-    const key = `${type}\u0000${source}\u0000${target}`
+    // The dedup key, and why `memberKind` is part of the IDENTITY rather than only of the payload.
+    //
+    // A (type, source, target) key cannot represent two DIFFERENT declarations that share a name
+    // under one owner, and SQL makes that ordinary: `CREATE TABLE t (scope_id int)` beside
+    // `CREATE INDEX scope_id ON t (...)` is legal, and phpMyAdmin's `resources/sql/create_tables.sql`
+    // writes `UNIQUE KEY `db_name` (`db_name`, `table_name`)` — an index named after one of its own
+    // columns. Both produce `contains t -> scope_id`, so the second was silently DROPPED: that index
+    // had no containment edge at all. Carrying `memberKind` in the payload alone would have made it
+    // worse rather than better, because the surviving edge's key would still claim to be the only
+    // fact about that name.
+    //
+    // Two edges with the same source and target and DIFFERENT members are two true facts, not a
+    // duplicate, so the disambiguator belongs in the identity. Read off the metadata rather than
+    // threaded through as a parameter, so a call site cannot forget it: a `contains` edge that does
+    // not say which kind of member it means has not said what it is about.
+    //
+    // Read from `metadata` BEFORE the `external` spread above can add keys, and only `memberKind`
+    // participates — every other type's key is unchanged, which is what keeps this from re-opening
+    // the `uses`-vs-`references` merge behaviour the operations-metadata branch below relies on.
+    const key = `${type}\u0000${source}\u0000${target}\u0000${metadata.memberKind ?? ""}`
     const existing = state.relationshipsByKey.get(key)
     if (existing) {
       if (metadata.operation) {
