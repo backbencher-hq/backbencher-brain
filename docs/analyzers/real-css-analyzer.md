@@ -112,11 +112,37 @@ moved for that reason alone, which is stated wherever a number moved.
 | all relationships | 332,380 | **335,010** (283.9/file) | corpus growth |
 | empty symbol names | 0 | **0** of 222,786 | — |
 | empty / unknown `SymbolKind` | 0 | **0** of 222,786 | — |
-| endpoints equal to `unknown` | 0 | **0** | — |
+| endpoints equal to `unknown` | 0 | **0** of 670,020 ends (335,010 edges x 2), src 0 / tgt 0; empty-string endpoints src 0 / tgt 0 | the instrument did not measure this until this pass — see below |
 | edges below confidence 0.7 | 0 | **0** of 335,010 | — |
 | edges missing `evidenceClass` | 0 | **0** | — |
 | regex literals in the analyzer | 3 (then found to be 11) | **0** | this round; arbiter below |
 | DERIVATION findings | 1 | **1 finding, 1 oracle written, 1 measurement** | paid |
+
+#### The `unknown`-endpoint row was a claim with no instrument behind it, and now has one
+
+The row above read `0` in pass 2 and read `0` in pass 3, and in neither pass anything
+measured it. `css-parsefile-census.ts`'s own header listed "endpoints equal to the literal
+`unknown`" among what it measures, but the relationship loop read `src`/`tgt` and tested
+only `published()` — the string `"unknown"` appeared exactly once in the file, in the
+SymbolKind test (`if (k.length === 0 || k === "unknown") unknownKind++`, line 222), which is
+a different quantity. So the header asserted a check the code did not perform, and the
+document inherited the assertion. That is the same defect class this lane's instruments
+exist to catch, in the lane's own instrument.
+
+Implemented and measured over the whole admitted corpus: the loop now tallies per END, so
+`source`-only and `target`-only publication stay separable, and it tallies the empty string
+beside the sentinel because `String(rel?.source ?? …)` yields `""` for a missing field and
+that is a distinct failure from a placeholder.
+
+```
+relationship ENDPOINTS equal to the literal "unknown": src 0, tgt 0 (0 ends)
+empty-string endpoints: src 0, tgt 0
+```
+
+**The number did not move — it was never measured before, and now it is.** Every other row
+of the table is unchanged by the edit (222,786 symbols, 335,010 relationships, per-type
+counts identical), which is the expected result of adding a counter and is why the fix could
+not be confused with a behaviour change.
 
 **`contains` both-ends is 99.98%, not 100%, and pass 2's 100% was a measurement artefact.**
 Pass 2 read parallel-indexer's insert-time binding rule; pass 3 reads the symbol set the
