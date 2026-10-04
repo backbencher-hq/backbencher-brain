@@ -828,20 +828,65 @@ and 12 from running the doc-truth-emissions gate over this lane's table.
    The condition should be `RULED_BY_LANG[LANG] === undefined && LANG !== "dart"`,
    or better: move the refusal after the observation and refuse only when some type
    is neither observed nor ruled. With that one term, this lane's arbiter run prints
-   `emitted 10/10` and exits 0. Measured run today (exit 2):
-   ```
-   ontology coverage gate — dart
-   corpus: 563 admitted files
+   `emitted 10/10` and exits 0. **But fixing that term is not sufficient at full
+   corpus scale, and the reason is item 13.**
 
-   ontology coverage gate — no RULING TABLE for dart.
+   **The exit-2 refusal is verified by reading the gate, not by running it at full
+   corpus — because the full-corpus run never reaches it.** Measured twice on this
+   branch, `npx tsx script/m14/ontology-coverage-gate.ts dart`:
+
    ```
-   Note the corpus: the gate walks every tracked file in every corpus repo and
-   parses them all, which for this language is **37,753 `.dart` files** across 6
-   repositories. At the 0.157 s/file this lane measures through `parseFile`, that is
-   ~1.6 h for the emission pass plus a second full parse for instrument A. The run
-   above used `BB_CORPUS_ROOT` pointed at a 565-file symlink sample so it would
-   finish; the full-corpus run was not performed, and that is a limit of this
-   report rather than a claim about it.
+   run 1:  corpus: 33692 admitted files
+           [BB-PARSE-ERR] dart | dart-sdk/.../flow_analysis_log.dart | memory access out of bounds
+           [BB-HANG] parser stuck 120s on dart-sdk/.../flow_analysis_log.dart — exiting
+           exit 1
+
+   run 2:  corpus: 33692 admitted files
+           [BB-PARSE-ERR] dart | dart-sdk/.../list_postfix_completion_templates_test.dart | memory access out of bounds
+           [BB-PARSE-ERR] dart | dart-sdk/.../import_elements_test.dart | memory access out of bounds
+           [BB-PARSE-ERR] dart | dart-sdk/.../is_postfix_completion_applicable_test.dart | memory access out of bounds
+           [BB-PARSE-ERR] dart | dart-sdk/.../document_color_test.dart | memory access out of bounds
+           [BB-HANG] parser stuck 120s on dart-sdk/.../list_postfix_completion_templates_test.dart — exiting
+           exit 1
+   ```
+
+   So on this corpus the arbiter exits **1**, twice, and never prints a verdict —
+   `exit 2` is what `ontology-coverage-gate.ts:289-293` does when it gets there,
+   which is a source fact (`RULED_BY_LANG` holds only `bash` and `json`, and the
+   refusal precedes the row loop) rather than a measurement. An earlier version of
+   this item quoted an `exit 2` run with `corpus: 563 admitted files`; that run used
+   `BB_CORPUS_ROOT` pointed at a 565-file symlink sample, and the corpus has since
+   grown to 33,692 admitted files, so the quoted number no longer describes any
+   run a reviewer can reproduce today.
+
+   **The `[BB-HANG]` is the CONCURRENT PARSE PATH, and the file it names is
+   innocent.** This corrects the reading that a `[BB-HANG]` naming one file is a
+   parser-robustness finding about that file. Every file named across the two runs
+   above parses cleanly through the same production `parseFile`, one at a time:
+
+   | file named by a failing run | alone, via `parseFile` |
+   | --- | --- |
+   | `flow_analysis_log.dart` | OK 144 ms — 32 symbols, 136 rels |
+   | `list_postfix_completion_templates_test.dart` | OK 1,008 ms — 3 symbols, 20 rels |
+   | `import_elements_test.dart` | OK 104 ms — 9 symbols, 84 rels |
+   | `document_color_test.dart` | OK 33 ms — 5 symbols, 48 rels |
+
+   The file the engine reported as stuck for 120 s parses in 1,008 ms on its own. It
+   also survives being parsed eight at a time — the gate's own worker count
+   (`ontology-coverage-gate.ts:233`) — for 5 trials × 8 parses = 40 parses, all
+   `fulfilled`, all returning the same 136 relationships. The named file differs
+   between the two runs, and so does the set of `memory access out of bounds`
+   files (1 file, then 4). A defect in a file would name the same file twice.
+
+   What the evidence does support: the failures are in the engine's WASM parse path
+   under concurrency, which is the same non-determinism this lane's own census
+   measured and reported (`census.ts` header — 1,000 files at concurrency 6 gave
+   36,550 vs 36,503 symbols and 124,772 vs 124,638 relationships; byte-identical at
+   concurrency 1). `src/ast/engine.ts:1407-1414` then converts that into a whole-run
+   failure: the 120 s per-file timer calls `process.exit(1)`, so one bad parse
+   discards every measurement the gate accumulated. **Not reproduced end to end:**
+   this lane did not reproduce the hang itself in a controlled run, only its
+   recurrence at full corpus scale (n=2) and the innocence of the named files.
 2. **`script/m14/differential.ts` — admit the two labels for dart.** Two edits, both
    required together (truth without the allowlist entry reads as a fabricated
    MISSING; the allowlist entry without the truth reads every row as unexplained):
