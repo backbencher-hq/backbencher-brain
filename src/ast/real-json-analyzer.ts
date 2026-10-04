@@ -35,6 +35,19 @@ interface JsonContext {
   validationSymbols: ASTEngine.UniversalSymbol[]
   apiEndpointSymbols: ASTEngine.UniversalSymbol[]
   dependencySymbols: ASTEngine.UniversalSymbol[]
+  /** A declared dependency's VERSION RANGE, keyed by the dependency symbol's `fullPath`.
+   *
+   *  This exists because `dependencyVersion` used to look the symbol up in `symbolMap` and
+   *  read its `returnType`, which is the dependency VALUE'S JSON TYPE — so every published
+   *  `metadata.version` on a `package_dependency` edge read `"string"`, or `"unknown"` when
+   *  the lookup missed. `"^4.11.3"` was in the tree the whole time, one node away, in the
+   *  pair's `value`. A metadata field whose name says version and whose value says `string`
+   *  is worse than no field: it is a type assertion a consumer will believe.
+   *
+   *  Populated in the same walk that already holds the pair's `value` node. Recorded there
+   *  rather than re-derived in a later pass because a re-read of the tree to recover a value
+   *  the walk already had is the shape that produced this bug. */
+  dependencyVersions: Map<string, string>
   /** A key declared TWICE inside one object. The second declaration replaces the first
    *  under every mainstream parser, which is the relation the bash lane calls
    *  `overrides`, and RFC 8259 §4 says only that names SHOULD be unique and that a
@@ -126,6 +139,7 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
       validationSymbols: [],
       apiEndpointSymbols: [],
       dependencySymbols: [],
+      dependencyVersions: new Map(),
       overrideCandidates: [],
       usesReferenceLiterals: false,
       usesClassDeclarations: false,
@@ -430,7 +444,16 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (symbol.metadata.isReference) ctx.referenceSymbols.push(symbol)
       if (symbol.metadata.hasValidation) ctx.validationSymbols.push(symbol)
       if (symbol.metadata.isApiEndpoint) ctx.apiEndpointSymbols.push(symbol)
-      if (isDependencyContainerPath(parentPath)) ctx.dependencySymbols.push(symbol)
+      if (isDependencyContainerPath(parentPath)) {
+        ctx.dependencySymbols.push(symbol)
+        // The version range, read from the value node this branch already holds. Only a
+        // string value carries one; npm allows an object (`{"name":…}` alias form) and
+        // composer allows an array, and neither has a range to publish.
+        if (value.type === "string") {
+          const range = this.stripQuotes(String(value.text ?? ""))
+          if (range.length > 0) ctx.dependencyVersions.set(path, range)
+        }
+      }
 
       if (value.type === "object" || value.type === "array") stack.push({ node: value, parentPath: path, parentName: key })
     }
@@ -746,8 +769,15 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     for (const endpoint of ctx.apiEndpointSymbols) {
       ctx.relationships.push({
-        source: endpoint.ownerName || ctx.rootName,
-        target: endpoint.name,
+        // QUALIFIED PATHS on both ends. An endpoint is a KEY of the `paths` object, so it has
+        // a position in the document and a path exists for it — `endpoint.qualifiedName` IS
+        // that path, and `endpoint.scope` is the `paths` object's own path. This is what
+        // separates this site from a manifest dependency's `uses`, whose target is an npm
+        // package name and genuinely has no position: see `classifyUnresolved` in
+        // validation/m14/fixtures/json/namespace-orphan-probe.ts, which reads the two apart
+        // from the discriminator each site publishes.
+        source: endpoint.scope || endpoint.ownerName || ctx.rootName,
+        target: endpoint.qualifiedName || endpoint.name,
         type: ASTEngine.RelationshipType.Uses,
         confidence: 0.8,
         line_number: this.declLine(endpoint),
@@ -758,6 +788,7 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
           // containment is a reading of the OpenAPI document shape, so it is 0.8 with a code.
           reasonCode: "openapi_path_entry_declares_http_method",
           evidenceClass: "usage_contextual",
+          endpoints: "qualified_path",
         },
       })
     }
@@ -1081,6 +1112,22 @@ const bracket = parent.lastIndexOf("[")
     }
     if (declared.size === 0) return
 
+    // Both endpoints are keys of THIS `scripts` object, so both have a position in the
+    // document and both are therefore published by QUALIFIED PATH.
+    //
+    // They were emitted as bare names, which contradicted this lane's own endpoint contract
+    // ("every relationship type emits QUALIFIED PATHS on both ends") and cost exactly what the
+    // contract exists to prevent: a bare script name is not unique in a manifest. lodash is the
+    // corpus's clearest case — `npm run build` in its `build` script invokes `build:main` and
+    // `build:fp`, and `test` invokes `test:main` and `test:fp`, so every one of those targets
+    // is a name shared with the source's own prefix. Measured on a 449-file sample this was
+    // 7 of 37 `calls` targets binding to more than one published symbol, each one a place the
+    // reverse walk picks a winner by a rule nobody chose.
+    //
+    // The path is `<module>.scripts.<name>`, which is the symbol's own `qualifiedName`, so it
+    // matches the resolver exactly rather than approximately.
+    const scriptsPath = this.childPath(ctx.rootName, "scripts")
+
     for (const [name, pair] of declared) {
       const value = pair.childForFieldName("value")
       if (value?.type !== "string") continue
@@ -1088,8 +1135,8 @@ const bracket = parent.lastIndexOf("[")
         if (callee === name) continue
         if (!declared.has(callee)) continue
         ctx.relationships.push({
-          source: name,
-          target: callee,
+          source: this.childPath(scriptsPath, name),
+          target: this.childPath(scriptsPath, callee),
           type: ASTEngine.RelationshipType.Calls,
           confidence: 0.8,
           line_number: pair.startPosition.row + 1,
@@ -1098,6 +1145,9 @@ const bracket = parent.lastIndexOf("[")
             callForm: "npm_run_sibling_script",
             evidenceClass: "usage_contextual",
             reasonCode: "npm_run_sibling_script",
+            endpoints: "qualified_path",
+            scriptName: name,
+            calleeName: callee,
           },
         })
       }
@@ -1165,10 +1215,10 @@ const bracket = parent.lastIndexOf("[")
 
   private dependencyVersion(ctx: JsonContext, dependency: ASTEngine.UniversalSymbol): string {
     const fullPath = String(dependency.metadata?.fullPath || "")
-    const parts = fullPath.split(".")
-    const parent = parts.slice(0, -1).join(".")
-    const version = ctx.symbolMap.get(`${parent}.${dependency.name}`)
-    return version?.returnType || "unknown"
+    const recorded = ctx.dependencyVersions.get(fullPath)
+    if (recorded !== undefined) return recorded
+    // No range to publish, and saying so beats inventing one: the value was not a string.
+    return "unspecified"
   }
 
   /**
