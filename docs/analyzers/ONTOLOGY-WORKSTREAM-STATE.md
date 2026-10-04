@@ -966,3 +966,55 @@ re-introduce a cap that says so rather than truncating silently.
 Laptop B owns **15 of the 18**. julia is clean; two of php's census hits were doc
 comments *describing* a regex that no longer exists, which is the same over-report the
 gate's own scanner avoids.
+
+## Infrastructure: the 98 GB database that was breaking agents
+
+Agents kept dying on `Error: Failed to execute statement`. It was first read as a
+`.bb-data` collision between lanes, which was **wrong**. The real cause:
+
+```
+~/.local/share/opencode/opencode-main.db     97.6 GB
+~/.bb/projects/                               41 GB   (871 derived indexes)
+```
+
+opencode writes every message and tool call to that one SQLite file. At 98 GB with a
+0.4 GB WAL, **ten concurrent agents contend on it** — so the disk pressure and the
+write failures were one cause with two symptoms, not two problems.
+
+Cleared with the owner's authorisation: `~/.bb/projects` staged, verified to contain
+only `brain.db` derived indexes and one stale `.index.lock`, then deleted. Nothing was
+held open by any agent at the time. **22 GB free → 62 GB free; `~/.bb` 41 GB → 391 MB.**
+
+The opencode session database was left alone — it is the owner's session history
+across every project and not the supervisor's to prune.
+
+## R installed the language runtime to adjudicate the analyzer
+
+16 of the R lane's 18 fixtures asserted **nothing**: the runner enumerates
+`*.expectation.json` and F01–F16 had none, so the directory looked like coverage and
+was 16 lines of comment.
+
+Authoring the missing expectations required checking two of them, and both were
+**wrong** — so the lane installed **R 4.6.1** and ran it:
+
+1. F13 asserted "a function bound rightward is a declaration". It is not.
+   `eval(parse(text="function() 1 -> x"), new.env())` leaves `ls()` empty, and
+   tree-sitter-r agrees: the assignment nests inside the function body as
+   `function_definition > binary_operator op="->"`. The analyzer publishing nothing
+   was **right**; the fixture was wrong. The oracle that "verified" it was the wrong
+   instrument.
+
+2. F15 cited `R 4.4.3 accepts "..2dge <- 1; ls()"` as evidence. **`ls()` is the wrong
+   oracle for a dot-prefixed name** — it hides those by default. On R 4.6.1
+   `ls(env)` is empty, `ls(env, all.names=TRUE)` is `"..2dge"`, and
+   `exists("..2dge")` is TRUE. The analyzer is right, and a fixture checked with
+   `ls()` would have **found a defect that does not exist**.
+
+**An oracle can be wrong in the SAME DIRECTION as the analyzer, and the two then
+agree.** That is the differential's declared blind spot made concrete. A second
+tree-sitter walker over the same grammar would have reproduced the same mistake,
+because it would have inherited the same reading of what the construct means. Only
+executing the language adjudicated it.
+
+This is the strongest verification available in this programme, and it is the answer
+to "how do you know the analyzer is right" for the cases where two parsers agree.
