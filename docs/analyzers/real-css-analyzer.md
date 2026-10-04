@@ -960,7 +960,7 @@ result.** The per-file self-destruct timer calls `process.exit(1)` when it fires
 `hasura-engine/scripts/ekg/monitor.css`, which intermittently reports `memory access out of
 bounds` from the wasm and then runs past 120 s. The consequence is not that a count is
 wrong — it is that the count may never be finished: on this lane's runs of
-`validation/m14/fixtures/css/ruled-gate.ts` the same command returned a complete
+`validation/m14/fixtures/css/ruled-gate.ts` the same command returned an untruncated
 `emitted 5/10 … FALSIFIED 0` table with exit 0 five times and was truncated by the guard
 with exit 1 three times, and a truncation that lands EARLY would print a partial table that
 reads as a pass. What it must do: either scope the exit to the indexer process so a census
