@@ -2004,6 +2004,29 @@ NESTED extensions of nse.demo.Nest.Leaf:
    leaf_ref:   extendee=.google.protobuf.FieldOptions  type_name=.nse.demo.Nest.Leaf
 ```
 
+### Why the unresolved-edge count UNDERSTATES this fix by 2
+
+`protobuf-incoming-audit.mts` reports `uses` unbound **52 -> 49**. The oracle found
+**5** flips. Both are right, and the gap between them is the most useful thing in this
+pass.
+
+Three of the five pre-fix names were published by **no** file
+(`proto2_unittest.ComplexOptionType4`, `proto2_unittest.TestExtensionOrderings3`,
+`edition_unittest.TestExtensionOrderings3`), so they appear as dangling and the count
+moves. The other two were **published ids naming a real declaration that is not the
+one written** — `unittest.proto` declares `OptionalGroup_extension` twice, at file
+scope (line 520) and nested in `TestNestedExtension` (line 580), and the extension at
+line 573 writes the bare name from inside `TestNestedExtension`. `protoc` takes the
+nested one; the pre-fix analyzer took the file-scope one. So those edges **resolved,
+and resolved wrong**: they never appear in an unresolved count at all, and the only
+instrument that can see them is one that asks `protoc` what the declaration was.
+
+This is the workstream's own warning — *"a name collision becomes a wrong refactor"* —
+found inside this lane, and it is the concrete argument for judging emitted names
+rather than counting unresolved ones. An unresolved-target rate is a floor on
+correctness, never a measure of it: **2 of the 5 real defects here were invisible to
+it, and a lane that reported only that rate would have shown this fix as worth 3.**
+
 Ownership is unchanged and asserted on both extension members — still the **extended**
 type with `metadata.viaExtension` — so a one-sided fix that moved the resolution scope
 by also moving ownership fails on a `contains` row rather than passing. The new
