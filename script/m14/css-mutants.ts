@@ -312,6 +312,42 @@ export const CSS_MUTANTS: Mutant[] = [
     }),
   },
   {
+    id: "css/namespace-uri-published-as-an-import",
+    language: "css",
+    defectClass: "fabricated-relationship",
+    description:
+      "FABRICATION CLASS, and the one this lane most nearly shipped by agreeing with a tool. `script/m14/differential.ts --lang css` reports 2 MISSING on the svelte sample, both `imports expected.css -> http://www.w3.org/1999/xhtml`, derived from the `@namespace url(...)` lines in `packages/svelte/tests/css/samples/supports-namespace/expected.css`. The cheap way to make that number zero is this mutant: take each `@namespace` declaration the analyzer already publishes and republish its URI as an `imports` edge. The differential would then read 2/2 and every gate would go quiet. The edge is false. A namespace URI is a NAME that a prefixed type selector is compared against; the CSS syntax never dereferences it, so `imports` would assert this stylesheet pulls in an external resource, and `imports` is the relation that drives module resolution and the refactoring advice `bb_migrate` gives. The analyzer's existing edge is `references svg|a -> @namespace svg url(...)`, which says which selector depends on which declaration — strictly more than the file->URI edge the oracle wants. Caught by css/namespace-uri-is-not-an-import, whose `forbidRelationships` rows refuse `imports` targeting either namespace URI, in both the bare and the prefixed spelling. The `@import url(\"theme.css\")` line in that fixture is what makes the refusal mean something: the mutant must still pass the positive `imports` row, so it is the namespace specifically being refused rather than an `imports` branch that never fires.",
+    transform: (r: any) => {
+      const rels: any[] = r.relationships ?? []
+      const syms: any[] = r.symbols ?? []
+      // The file's own name, which is what an `imports` edge leaves from. Taken from
+      // the real `imports` edges when the file has one, so the mutant does not
+      // hardcode a fixture name.
+      const importEdge = rels.find((x: any) => String(x.type).toLowerCase() === "imports")
+      const from = importEdge?.metadata?.importSource ?? importEdge?.source ?? ""
+      const fabricated = syms
+        .filter((s: any) => s.kind === "module" && String(s.name ?? "").startsWith("@namespace "))
+        .map((s: any) => {
+          const name = String(s.name)
+          const open = name.indexOf("url(")
+          if (open < 0) return null
+          const close = name.lastIndexOf(")")
+          if (close <= open + 4) return null
+          return {
+            type: "imports",
+            source: String(from),
+            target: name.slice(open + 4, close),
+            confidence: 1,
+            line_number: s.range?.startLine,
+            metadata: { evidenceClass: "import_based", isCssImport: true },
+          }
+        })
+        .filter((x: any) => x !== null)
+      if (fabricated.length === 0) return r
+      return { ...r, relationships: [...rels, ...fabricated] }
+    },
+  },
+  {
     id: "css/animation-use-relabelled-as-a-call",
     language: "css",
     defectClass: "wrong-relationship-type",
