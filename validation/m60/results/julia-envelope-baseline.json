@@ -1,0 +1,21 @@
+{
+  "key": "36cef2786b320821:400",
+  "digest": "36cef2786b320821",
+  "files": 400,
+  "relationshipsPerFile": 116.313,
+  "symbolsPerFile": 17.425,
+  "msPerFile": 191.46,
+  "relationships": 46525,
+  "symbols": 6970,
+  "perType": {
+    "calls": 23877,
+    "contains": 2721,
+    "exports": 797,
+    "extends": 451,
+    "imports": 589,
+    "instantiates": 622,
+    "references": 10336,
+    "uses": 7132
+  },
+  "note": "Load-dependent ms/file is recorded for completeness and is not a regression signal; relationships/file is the quantity that grows the graph. Re-baseline only with the reason in the commit message."
+}
