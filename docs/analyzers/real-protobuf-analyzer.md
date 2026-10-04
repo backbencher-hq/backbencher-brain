@@ -1589,7 +1589,7 @@ and the number is the reason rather than the argument.
 |---|---|---|---|
 | 1 | **a map from import path to declared package**, per project | **38** | shared — a project-level fact no per-file analyzer is told |
 | 2 | a **vendor-rewrite map** on top of item 1 | **4** | shared. `import "github.com/docker/swarmkit/api/specs.proto"` against a file vendored at `github.com/moby/swarmkit/v2/api/specs.proto` |
-| 3 | a corrected ancestor-walk decline guard | 4 gained / 75 at risk | not taken; priced above |
+| 3 | ~~a corrected ancestor-walk decline guard~~ | 4 gained / 75 at risk | **CLOSED BY PASS 7 — item 3 IS ITEM 1.** The walk was implemented and measured: net **−82** (4 gained, 86 lost). See the pass-7 section |
 | 4 | the **14** | 0 | not closeable. See below |
 
 The 14, named rather than counted:
@@ -1670,3 +1670,164 @@ the passes that measured it are the record.
   make the walk safe should re-run the probe with the corrected guard rather than take
   this row as the last word. The **gain** of 4 does not depend on the guard and is
   unaffected.
+
+---
+
+# PASS 7 — item 3 settled by implementing it, and a census that could not see a lost parse
+
+No verdict moved. 5 emitted, 5 ruled-sound, 0 FALSIFIED; 13,275 / 40,098 / 1,561 / 4 / 1
+and 54,939 through `parseFile` unchanged; 821 ok / 0 fail; 94 node types; 27/27 mutants;
+8/8 fixtures. Two things are new: one instrument defect that made a number move between
+runs, and one open item closed by writing the code rather than pricing it.
+
+## The census reported `821 ok / 0 fail` on a run that lost a whole file
+
+Four runs of `script/m14/protobuf-census.ts` on ONE commit, ONE corpus and ONE pinned wasm
+(`wasm/tree-sitter-protobuf.wasm`, sha256 `4624eb6d`, checked against
+`script/m14/tmp/protobuf/pin.json`) disagreed:
+
+| | symbols through `parseFile` | edges through `parseFile` | analyzer-only |
+|---|---|---|---|
+| 3 of 4 runs | **41,955** | **54,939** | 1,002 |
+| 1 of 4 runs | **41,945** | **54,930** | 1,011 |
+
+The ANALYZER's totals were **41,956 / 55,941** in all four, so the divergence is on the
+production side of the boundary and not in this lane's extractor. The bad run logged two
+lines the good runs did not:
+
+```
+[BB-PARSE-ERR] protobuf | pb-googleapis/google/api/expr/v1beta1/source.proto | memory access out of bounds
+[BB-HANG]     parser stuck 120s on .../source.proto — exiting
+```
+
+`-10 symbols / -9 edges` is that file WHOLE. `source.proto` is 62 lines and 2,154 bytes:
+two messages, seven fields, all `contains`, no `uses` — so losing the whole file moves
+exactly those two totals and nothing else, which is what makes the arithmetic identify it
+rather than merely suggest it. The analyzer's own reading of those same bytes is 10 symbols
+/ 9 `contains` edges, so the parse was fine and the PROJECTION published nothing.
+
+`parseFile` catches the wasm fault internally and RETURNS, so `filesOk++` still runs and all
+four runs printed `821 ok / 0 fail`. **A file-level ok/fail counter cannot see this class of
+loss**, so the number moved between runs instead of being reported. New counter in the
+census, `filesAnalyzerReadProductionPublishedNothing` — the analyzer found symbols in bytes
+whose production result published none:
+
+```
+files the analyzer read and production published NOTHING for  0        <- a good run
+files the analyzer read and production published NOTHING for  1        <- a bad run
+    e.g. pb-googleapis/google/api/expr/v1beta1/source.proto:
+        analyzer 10 symbols / 9 edges, production 0 / 0
+```
+
+Re-run until it was caught: **2 of 7** corpus-scale runs today were bad. So every
+production-side count in this document carries a **±10 symbol / ±9 edge** band from this,
+and the analyzer-direct figures carry none. That band is stated here rather than left for a
+reader to discover by re-running.
+
+`script/m14/tmp/protobuf/probe/parse-variance.mts` isolates the file: **40 sequential + 40
+concurrent** attempts at the census's own width of 8 produced **ONE** outcome (10 symbols /
+9 edges, 80/80). The fault does not reproduce without whole-corpus load, so it is a report
+item for `parseFile`'s wasm handling — it catches the fault, returns an empty result, and
+the caller cannot tell an empty file from a lost one.
+
+## Item 3 was priced, and this pass wrote it: the walk is NET NEGATIVE
+
+Pass 6 left item 3 open at *"4 gained / 75 destroyed, not a trade worth making"*, which is
+a measurement of the probe's own simulation rather than of any implementation. This pass
+implemented it, twice, and measured both against the corpus.
+
+**Why the 75 was not the real cost.** protobuf's rule is C++ name lookup — take the first
+scope that has a match — so a walk must not move an edge whose innermost scope already
+publishes the name. The obvious implementation breaks **75** such edges, and the probe
+priced it there. But **75 of 75** are published **by the referencing file itself**
+(`protobuf-package-map-probe.mts`, new column `declineDecidablePerFile`), and the analyzer's
+existing in-file pre-pass declines those before the walk is ever reached. The 75 measures a
+walk that skipped the in-file step, not a property of the language.
+
+**Implementation A — the message-inclusive scope chain**, which is what the pass-6 probe
+simulated. It moved **95** edges. Its distinct failure: a field inside
+`extend google.protobuf.FieldOptions { … }` carries scope `google.protobuf.FieldOptions`, so
+a directory test over a MESSAGE scope matched `google/protobuf` and rewrote
+
+```
+grpc.gateway.protoc_gen_openapiv2.options.EnumSchema  ->  google.protobuf.EnumSchema
+```
+
+in `docker/vendor/github.com/grpc-ecosystem/grpc-gateway/v2/…/annotations.proto`. The first
+name is declared in the referrer's own package. Directories mirror **packages**; a message
+has no directory, so a directory test over a message scope is evidence of nothing.
+
+**Implementation B — package scopes only**, `pkg`'s own ancestors, the package itself and the
+root skipped. This is the correct restriction and it is still net negative:
+
+| | `uses` targets binding nowhere, corpus-wide |
+|---|---|
+| at HEAD | **56** of 13,275 |
+| with the walk | **138** of 13,275 |
+
+86 edges lost a declaration they had; 4 gained one. `CLOSABLE-BY-ANCESTOR-SCOPE` went 4 → 0
+and `NOT-CLOSABLE` went 10 → 96, which is the same arithmetic from the other end.
+
+**The mechanism, and it is the reason no per-file guard can fix it.** A directory in the
+import list cannot distinguish *"the ancestor package declares this type"* from *"my own
+package declares this type, in a file whose directory I never imported"*. 3,605 of 13,275
+`uses` targets name a type their own file does not declare, and the overwhelming majority are
+same-package references into a sibling file — `apikeys.proto` names `Key`, which
+`resources.proto` declares in the same package `google.api.apikeys.v2`. The walk cannot see
+that publisher, so it fires on the wrong side of the trade for nearly every one of them.
+
+**Settled: the walk is not taken, and the reason is a net −82 rather than a risk.** The
+correct decline condition is publisher availability, which is the same project-level fact as
+item 1, so items 1 and 3 are one item. The 4 edges stay unresolved and are named in the
+table above rather than papered over.
+
+`script/m14/tmp/protobuf/probe/dump-uses-targets.mts` is the instrument that found the
+mechanism, and it carries a defect worth recording because it produced a wrong number first:
+it keyed the dump on `(file, source)`, and an rpc emits **two** `uses` edges — request and
+response — under one source id, so 1,552 rpcs collided and a diff over that key reports "the
+target moved" when one of two edges did. It now numbers occurrences per source. The
+authoritative figures in this section are the probe's corpus-wide binding counts, which are
+computed over distinct target ids and do not depend on that key.
+
+## Pass 7 gate table
+
+Every gate re-run at this pass's HEAD. Nothing moved except the census, which gained a row.
+
+| Command | Result |
+|---|---|
+| `npx tsc --noEmit` | no diagnostics |
+| `npx tsx script/m14/run-fixtures.ts --lang protobuf` | **8 pass / 0 fail**, no baseline regressions |
+| `bun run script/m14/tmp/protobuf/probe/mutant-sweep.mts` | **27 caught / 0 survived** |
+| `npx tsx script/m14/protobuf-census.ts` | **821 ok / 0 fail**; 13,275 / 40,098 / 1,561 / 4 / 1; 54,939 through `parseFile`; 0 empty names; 0 bad kinds; 0 `unknown` endpoints; 0 self-loops; **0** edges under 0.7; **2 of 7 runs** lost one file's parse silently, now counted |
+| `npx tsx script/m14/tmp/protobuf/probe/parse-variance.mts --n=40` | **1** distinct outcome in **80** attempts (10 symbols / 9 edges) — the fault needs corpus load |
+| `npx tsx script/m14/protobuf-construct-probes.mts` | **94** node types; all 5 rulings re-probed and still reading **0** |
+| `npx tsx script/m14/protobuf-adversarial.mts` | 14 probes; 628,758 nodes, **0** without a published id; `uses` corpus-wide **99.58%**; heuristic ratio **0** |
+| `npx tsx script/m14/protobuf-ruling-table-proof.mts` | run **c**: `emitted 5/10 ruled-sound 5 FALSIFIED 0`, exit 0. run **b**: **FALSIFIED 2** |
+| `npx tsx script/m14/protobuf-incoming-audit.mts` | 821 parsed / **0 failed / 0 degraded**; 1,764 ambiguous, 52 unbound, 4 hopeless; 38,551 declarations, 37,113 (96.27%) with an inbound edge |
+| `npx tsx script/m14/protobuf-package-map-probe.mts` | **56** = 38 + 4 + 4 + 10; the walk is **4 gained / 86 lost**, net **+82** unresolvable |
+| `npx tsx script/m14/firing-check.ts --files 120 protobuf` | **3/10 fired, 2,069 edges, 10/120 files, 0 degraded** |
+| `npx tsx script/m14/incoming-check.ts protobuf <40 files>` | `contains` unresolved **2,879 → 0**; `uses` unresolved **635 → 55** |
+| `npx tsx script/m12/verify-regex-census.ts` | exits 1 on 18 MISSING / 25 STALE, **0** rows naming this lane |
+| `npx tsx script/m14/verify-honesty.ts` | exits 6 on **22 failures, 0 naming a protobuf path** |
+| `bun run script/m14/verify-doc-truth-emissions.ts --no-write` | `FALSE_NEGATIVE=7 FALSE_POSITIVE=0`, none in this lane's rows |
+
+## Declared limitations, pass 7
+
+- **Every production-side count in this document has a ±10 symbol / ±9 edge run-to-run
+  band**, measured at 2 of 7 corpus-scale runs, and the band is silent: the run reports
+  `821 ok / 0 fail`. The analyzer-direct counts do not carry it. `parseFile` returns an
+  empty result for a file whose wasm parse threw and the caller cannot distinguish that
+  from an empty file; fixing it means `parseFile` reporting the fault, which is
+  `src/ast/pool-worker.ts` and therefore not this lane's to edit.
+- **No verdict in this document is backed by an independent implementation.** Five DERIVATION
+  findings stand, one per emitted type. The mutant battery and the hand-derived expectations
+  are what stand in for an oracle, and both share this lane's reading of one patched grammar.
+- **The `uses` resolution figures are population-dependent and three of them are quoted with
+  different denominators on purpose** — per-file 72.84%, corpus-wide 99.58%, and 88.57% to
+  exactly one declaration. Comparing any of them to another lane's single figure compares
+  two different questions.
+- **The 38 and the 4 stay open**, and the reason is now measured rather than asserted: both
+  need to know which package a file declares, and `parseFile` is handed one file.
+- **The corpus is 18 repositories and it is not the language.** `descriptor.proto` is vendored
+  into four of them, which is what makes 2,702 ids ambiguous corpus-wide; a corpus with one
+  copy would report 0 ambiguity and would be less informative, not more correct.
