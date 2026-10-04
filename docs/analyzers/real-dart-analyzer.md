@@ -495,7 +495,7 @@ this lane's own harnesses*), which is why `overrides` was quoted at 0.0% in-repo
 
 | Type | 1 Exists | 2 Fires | 3 Correct | 4 Labelled | 5 Resolved | 6 Confident |
 | --- | --- | --- | --- | --- | --- | --- |
-| calls | ✅ | ✅ 43,042 | ✅ differential, 60-file proxicall sample: 6,120/6,220 truth rows covered, **0 unexplained** | ✅ | src∈file 99.1% · tgt∈file 22.1% · both∈sample 66.6% · both∈repo 50.8% | 35 of 43,042 under 0.7 (0.1%), min 0.4 — sub-threshold `uses`-style reads inherited from the shared bare-read surface |
+| calls | ✅ | ✅ 43,042 | ✅ differential, 60-file proxicall sample, **0 unexplained in all four rotations run** (6120/6220, 6062/6162, 17196/29131, 17131/29066 — the swing is `overrides`, an excluded label, and the coverage figure is a property of the draw) | ✅ | src∈file 99.1% · tgt∈file 22.1% · both∈sample 66.6% · both∈repo 50.8% | 35 of 43,042 under 0.7 (0.1%), min 0.4 — sub-threshold `uses`-style reads inherited from the shared bare-read surface |
 | uses | ✅ | ✅ 110,679 | ✅ same run, 0 unexplained | ✅ four surfaces, each pinned by a fixture; no surface borrows another's label | src∈file 99.3% · tgt∈file 25.5% · both∈sample 69.2% · both∈repo 60.1% | 13,325 of 110,679 under 0.7 (12.0%), all the bare-read surface at 0.6 — the largest heuristic class in the lane |
 | contains | ✅ | ✅ 119,515 | ✅ `deriveDartContainsTruth`, 37/37 shapes exact, and 0 unexplained in the differential | ✅ | **both∈file 100.0%, both∈repo 100.0%** — the only label in the lane that resolves at both ends by construction; 3 of 119,515 targets are bare-name and unbound | 0 under 0.7 |
 | imports | ✅ | ✅ 10,657 | ✅ `deriveDartImportsTruth`, 7,340 rows measured EXACT on both corpora | ✅ | src 2.7% / tgt 0.0% both-ends: targets are module URIs (`package:foo/src/x.dart:*`), and a URI is not a symbol in this index | 0 under 0.7 |
@@ -2110,7 +2110,7 @@ and P(none)=8.73% at n=120; `type-position-probe` at 75,769 mentions / 3,460 res
 525 files; and the differential, forced fresh, at 6,120/6,220 covered with 0 unexplained
 and 100 + 14 MISSING, all `overrides`.
 
-**A fourth pass, same day, re-ran every instrument a third time and changed two more
+**A fourth pass, same day, re-ran every instrument a third time and changed four more
 figures in this file.** All ten census counts, every breadth row, all four zero-fields,
 the whole 10×9 incoming table, 144,032 / 490,135 / 296,854 / 1,829, the arbiter at both
 n=120 (9/10, 8,290, 120/120, degraded 0) and n=400 (10/10, 53,252, 400/400, degraded 0),
@@ -2210,8 +2210,8 @@ Re-measured on this branch, both lanes at the default `--dart-deps=none`:
 
 | lane | coverage | MISSING | unexplained | re-measured |
 |---|---|---|---|---|
-| proxicall:dart | 6120 / 6220 (98.4%) | **100** | 0 | 2026-10-04 |
-| dart-http:dart | 2263 / 2277 (99.4%) | **14** | 0 | 2026-10-04 |
+| proxicall:dart | 6120 / 6220 (98.4%) | **100** | 0 | 2026-10-04 (superseded — see below) |
+| dart-http:dart | 2263 / 2277 (99.4%) | **14** | 0 | 2026-10-04 (superseded — see below) |
 
 **CORRECTED 2026-10-04, later the same day: the 98.4% is one of TWO MODES, and
 the second one is 58.9%.** Two further `--force-fresh` runs on this branch, at
