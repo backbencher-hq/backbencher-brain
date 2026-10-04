@@ -717,7 +717,44 @@ export class RealProtobufAnalyzer implements ASTEngine.LanguageAnalyzer {
     // descent would be a stack-overflow waiting for a hostile file.
     type Ctx = {
       pkg: string
+      /**
+       * Who OWNS the declarations emitted from here. For a field inside
+       * `extend Foo { … }` this is `Foo`, because the block's members belong to
+       * the extended type — the ruling this analyzer has always made, and the
+       * one that keeps an extension from publishing a phantom second
+       * declaration of a type that already has one.
+       */
       owner: string | null
+      /**
+       * Where the reference is WRITTEN — the enclosing declaration chain, which
+       * is a different question from `owner` and was the same value until a
+       * nested `extend` proved they differ.
+       *
+       * `protoc` resolves a type reference by C++ name lookup from the point of
+       * use, and an `extend` block does NOT become a scope: the extended type
+       * is where the members go, not where their types are looked up. So for
+       *
+       *   message ComplexOptionType2 {
+       *     message ComplexOptionType4 {
+       *       extend google.protobuf.MessageOptions {
+       *         optional ComplexOptionType4 complex_opt4 = 7633546;
+       *       }
+       *     }
+       *   }
+       *
+       * the reference `ComplexOptionType4` resolves outward from
+       * `proto2_unittest.ComplexOptionType2.ComplexOptionType4` to the
+       * declaration `proto2_unittest.ComplexOptionType2.ComplexOptionType4`.
+       * Passing `owner` instead passed `google.protobuf.MessageOptions`, a scope
+       * the language never established, and the walk found nothing and emitted
+       * `proto2_unittest.ComplexOptionType4` — an id no file publishes.
+       *
+       * The two fields are equal everywhere else: a message, an enum, a service,
+       * a group body and a oneof all set both to the declaration they open. The
+       * ONLY site that separates them is `extend`, and it is where the corpus
+       * found the difference.
+       */
+      scope: string | null
       ownerKind: ASTEngine.SymbolKind | null
       oneof: string | null
       viaExtension: boolean
@@ -773,7 +810,7 @@ export class RealProtobufAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (ctx.owner) addRel(ctx.owner, fieldId, RelationshipTypeContains, lineOf(node), { member: "field", ...(ctx.viaExtension ? { viaExtension: true } : {}) })
           addRel(fieldId, typeId, RelationshipTypeUses, lineOf(node), { role: "groupType" })
           // the group's own body
-          const inner: Ctx = { ...ctx, owner: typeId, ownerKind: SymbolKind.Class, oneof: null }
+          const inner: Ctx = { ...ctx, owner: typeId, scope: typeId, ownerKind: SymbolKind.Class, oneof: null }
           pushAll(kids(body), inner)
           return
         }
@@ -789,7 +826,7 @@ export class RealProtobufAnalyzer implements ASTEngine.LanguageAnalyzer {
         ...(label ? { label } : {}),
       })
       if (fieldId && ref) {
-        addRel(fieldId, resolveRef(ref, ctx.owner), RelationshipTypeUses, lineOf(node), { role: "fieldType" })
+        addRel(fieldId, resolveRef(ref, ctx.scope), RelationshipTypeUses, lineOf(node), { role: "fieldType" })
       }
     }
 
@@ -808,7 +845,7 @@ export class RealProtobufAnalyzer implements ASTEngine.LanguageAnalyzer {
         fieldNumber: numNode?.text ?? null,
       })
       if (fieldId && valRef) {
-        addRel(fieldId, resolveRef(valRef, ctx.owner), RelationshipTypeUses, lineOf(node), {
+        addRel(fieldId, resolveRef(valRef, ctx.scope), RelationshipTypeUses, lineOf(node), {
           role: "mapValueType",
         })
       }
@@ -825,7 +862,7 @@ export class RealProtobufAnalyzer implements ASTEngine.LanguageAnalyzer {
         fieldNumber: firstOfType(node, "field_number")?.text ?? null,
       })
       if (fieldId && ref) {
-        addRel(fieldId, resolveRef(ref, ctx.owner), RelationshipTypeUses, lineOf(node), { role: "oneofFieldType" })
+        addRel(fieldId, resolveRef(ref, ctx.scope), RelationshipTypeUses, lineOf(node), { role: "oneofFieldType" })
       }
     }
 
@@ -887,8 +924,8 @@ export class RealProtobufAnalyzer implements ASTEngine.LanguageAnalyzer {
         },
       })
       if (ctx.owner) addRel(ctx.owner, id, RelationshipTypeContains, lineOf(node), { member: "rpc", ...(ctx.viaExtension ? { viaExtension: true } : {}) })
-      if (request) addRel(id, resolveRef(request, ctx.owner), RelationshipTypeUses, lineOf(node), { role: "rpcRequest" })
-      if (response) addRel(id, resolveRef(response, ctx.owner), RelationshipTypeUses, lineOf(node), { role: "rpcResponse" })
+      if (request) addRel(id, resolveRef(request, ctx.scope), RelationshipTypeUses, lineOf(node), { role: "rpcRequest" })
+      if (response) addRel(id, resolveRef(response, ctx.scope), RelationshipTypeUses, lineOf(node), { role: "rpcResponse" })
     }
 
     /**
@@ -925,7 +962,7 @@ export class RealProtobufAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (ctx.owner) addRel(ctx.owner, id, RelationshipTypeContains, lineOf(node), { member: "nestedType", ...(ctx.viaExtension ? { viaExtension: true } : {}) })
           const body = firstOfType(node, "message_body")
           if (body) {
-            const inner: Ctx = { ...ctx, owner: id, ownerKind: SymbolKind.Class, oneof: null }
+            const inner: Ctx = { ...ctx, owner: id, scope: id, ownerKind: SymbolKind.Class, oneof: null }
             pushAll(kids(body), inner)
           }
           return
@@ -946,7 +983,7 @@ export class RealProtobufAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (ctx.owner) addRel(ctx.owner, id, RelationshipTypeContains, lineOf(node), { member: "nestedType", ...(ctx.viaExtension ? { viaExtension: true } : {}) })
           const body = firstOfType(node, "enum_body")
           if (body) {
-            const inner: Ctx = { ...ctx, owner: id, ownerKind: SymbolKind.Enum, oneof: null }
+            const inner: Ctx = { ...ctx, owner: id, scope: id, ownerKind: SymbolKind.Enum, oneof: null }
             pushAll(kids(body), inner)
           }
           return
@@ -965,7 +1002,7 @@ export class RealProtobufAnalyzer implements ASTEngine.LanguageAnalyzer {
             metadata: { isService: true, ...(ctx.viaExtension ? { viaExtension: true } : {}) },
           })
           if (ctx.owner) addRel(ctx.owner, id, RelationshipTypeContains, lineOf(node), { member: "nestedType", ...(ctx.viaExtension ? { viaExtension: true } : {}) })
-          const inner: Ctx = { ...ctx, owner: id, ownerKind: SymbolKind.Interface, oneof: null }
+          const inner: Ctx = { ...ctx, owner: id, scope: id, ownerKind: SymbolKind.Interface, oneof: null }
           pushAll(
             kids(node).filter((c) => typeOf(c) !== "service_name"),
             inner,
@@ -979,10 +1016,18 @@ export class RealProtobufAnalyzer implements ASTEngine.LanguageAnalyzer {
           const target = firstOfType(node, "full_ident")?.text ?? firstOfType(node, "message_or_enum_type")?.text
           const body = firstOfType(node, "message_body")
           if (!target || !body) return
-          const resolved = resolveRef(target, ctx.owner)
+          const resolved = resolveRef(target, ctx.scope)
           const inner: Ctx = {
             ...ctx,
             owner: resolved,
+            // `scope` is DELIBERATELY NOT `resolved`. The block's members belong
+            // to the extended type, but a type written inside the block is
+            // looked up from where the block is WRITTEN, because `extend` does
+            // not open a scope. Inheriting `ctx.scope` unchanged is what makes a
+            // nested `extend` resolve against the enclosing messages; setting it
+            // to `resolved` would resolve against a type the language never made
+            // a scope of, and the walk would find nothing.
+            scope: ctx.scope,
             ownerKind: SymbolKind.Class,
             oneof: null,
             viaExtension: true,
@@ -1086,7 +1131,7 @@ export class RealProtobufAnalyzer implements ASTEngine.LanguageAnalyzer {
           return
       }
     }
-    const root: Ctx = { pkg, owner: pkg || null, ownerKind: null, oneof: null, viaExtension: false }
+    const root: Ctx = { pkg, owner: pkg || null, scope: pkg || null, ownerKind: null, oneof: null, viaExtension: false }
     // Seed the worklist with the file's own declarations, then DRAIN it. The
     // import/package handling below is folded into the same loop so there is one
     // driver and one dispatch path.
