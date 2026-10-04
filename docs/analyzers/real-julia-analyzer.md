@@ -789,37 +789,6 @@ alternative — a green 152/152 — would have meant asserting two names it cann
 
 ---
 
-## The arbiter's exit 0 reproduced once, and both causes are still unfixed
-
-After the `imports`/`exports` work, `npx tsx script/m14/ontology-coverage-gate.ts julia` ran to
-completion for the first time in this lane's recent history and **agreed with the census to the edge on
-all ten types**:
-
-```
-emitted 9/10   ruled-sound 1   FALSIFIED 0   ruled-without-justification 0
-calls 122,150 · uses 37,087 · contains 14,299 · imports 3,386 · references 50,150 ·
-exports 2,795 · extends 2,580 · overrides 3 · instantiates 3,428 · implements RULED-SOUND
-EXIT=0
-```
-
-**That is a data point about a PROBABILISTIC failure, not a retraction of the finding, and the two
-shared defects that make the gate unreliable are both still in the tree as of this commit** — checked
-in the same run, not taken from the previous version of this file:
-
-- `src/ast/engine.ts:1441-1447` still reads `const tree = parser.parse(content)` immediately followed by
-  `clearTimeout(parseBomb)`, with no `try`/`finally`. §8 row 1 is unactioned, so a throwing parse still
-  orphans a 120 s `process.exit(1)` bomb that names a file which had already failed.
-- `script/m14/ontology-coverage-gate.ts:240` is still `await Promise.all(Array.from({ length: 8 }, …))`.
-  §8 row 2 is unactioned.
-
-So the honest statement is the one this lane already corrected itself to: the 8-way trap is real and
-**probabilistic**, no rate can honestly be quoted for it, the arbiter has now both died naming a file
-that had not failed and exited 0 on the same corpus, and a green arbiter run is **not** evidence that
-the run was clean. The per-type agreement above is worth having and is worth less than it looks: it is
-one sample of a process that has been observed to abort.
-
----
-
 ## `implements` — RULED
 
 **Instrument: A, grammar-inventory.** Julia has no interface-conformance relation. `abstract type`
