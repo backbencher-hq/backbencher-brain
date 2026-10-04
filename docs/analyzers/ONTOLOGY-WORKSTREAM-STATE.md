@@ -1294,3 +1294,98 @@ scss  consul/.../styles/base/icons/debug.scss  1,628,440 bytes · generated spri
 Both are legitimately oversized generated/data files, so **the fallback is correct**.
 The disclosure is the fix. Left as a bare count it would have read as "one file
 failed" rather than "one file is 1.6 MB and the analyzer declined".
+
+## Fleet audit — all 10 lanes verified working, after fixing the instruments that check them
+
+Asked to confirm every co-agent was working "perfectly". The honest answer was that
+**the supervision instruments were themselves wrong in three ways**, and one of them
+was hiding a dead lane. The agents were largely fine; the board was not.
+
+### 1. `kill -0 0` succeeds — a lost PID reads as permanently alive
+
+PID 0 does not mean "no pid" to `kill`; it means **the process group**. So a registry
+row whose pid was lost to `0` passes `kill -0` forever, and a watchdog written as
+`kill -0 "$pid"` never revives that lane. It is exactly backwards: the one state that
+*must* trigger a revive is the one the naive test reports as healthy.
+
+Both `watchdog.sh` and `status.sh` already guarded `pid != 0` in their revive paths,
+which is why nothing was actually lost — but the trap is live for any future check
+written the obvious way.
+
+### 2. The revive log reported `0 commit(s) on ` — with an empty branch name
+
+```bash
+n=$(git -C "$REPO" rev-list --count "$BASE..$BRANCH")   # $BRANCH — an UNSET env var
+echo "$(date -Is) REVIVE $slug (had $n commit(s) on $BRANCH)"
+```
+
+The loop variable is `$branch` (lower case, from the registry); `$BRANCH` is an
+environment variable that does not exist here. So every revive printed **0 commits on
+an empty branch**. The real counts:
+
+```
+JSON 7   BASH 21   JULIA 41   NIM 35   SQL 22
+CSS 18    XML 12    ZIG 84    PROTOBUF 19   DART 34
+```
+
+This is the **population defect again, in the supervisor's own instrumentation**: a
+number that reads as a finding about the agent ("it produced nothing, it must be
+restarting") when it is a readout bug. And a revive log is precisely the moment you
+need to know whether an agent is resuming with real work or starting from nothing.
+
+### 3. `origin/analyzers/ontology-laptop-b` does not exist — so agents' counts read 0
+
+The aggregate branch is **local only**; it has never been pushed. So the natural
+command:
+
+```
+git merge-base HEAD origin/analyzers/ontology-laptop-b    # -> fatal, empty
+```
+
+leaves `BASE=` empty, and every subsequent count is 0 — which looks exactly like "I
+found nothing". The dart lane was visibly stuck on this (`commits ahead: 0`, `base=`).
+
+`scripts/agent-orchestration/repo-facts.md` now states the local branch name, the
+correct `merge-base` invocation, and that an empty base is the likeliest cause of a
+zero count. It is appended to **every** lane's task file, unconditionally and first.
+
+### 4. Log-growth liveness produced FALSE STALLED verdicts
+
+Measuring "is this lane working?" by whether its log grew in the last 5 minutes reports
+a lane running a 25-minute census as **STALLED** — because a long tool call emits
+nothing. Both lanes flagged that way (`json`, `xml`) were in fact healthy: json had
+spent 25m47s wall on `ruling-recheck.ts` using **19m47s of CPU**, and xml was sweeping
+worker counts 1/8/16.
+
+Killing a lane on that signal would have destroyed a healthy 25-minute measurement. So
+`status.sh` is now four-state:
+
+| state | meaning | action |
+|---|---|---|
+| `measuring` | alive, running a child process | **leave alone** |
+| `working` | alive, log growing | fine |
+| `idle` | alive, no growth, no children, young | fine |
+| `STALLED` | alive, no growth, no children, log old ≥20m | kill + revive |
+| `DEAD` | no process | revive now |
+
+Child counting deliberately excludes the long-lived `bb mcp` server every lane has,
+since including it would make every lane look like it was measuring and `STALLED`
+would be unreachable.
+
+### 5. A bug in the fix above, caught by running it twice
+
+My first `growth_of` appended `cur prev` to its state file each call, so the file
+grew a token per invocation and the arithmetic failed on the *second* run — which is
+the run that matters. The status board failing on first use would have been caught
+immediately; failing on the second use would have looked like flaky data.
+
+### Verified state at audit time
+
+All 10 alive, none STALLED, none DEAD: 8 `measuring`, `julia` `working` (+15K),
+`sql` `idle` 1m (just finished a tool). All 10 hold 7–84 commits.
+
+### The scripts now live in the repo
+
+`scripts/agent-orchestration/{launch-agent.sh,status.sh,watchdog.sh,AGENT-TEMPLATE.md,repo-facts.md,ruling-table-brief.md}`.
+They were in `/tmp`, so a tmp sweep would have destroyed the entire supervision layer
+with no git history to recover it from.
