@@ -305,14 +305,38 @@ walk, so the file set is the same set. 83,051 symbols, 0 empty names, 4 empty
 kinds (see *Limitations* 8), 0 edge types outside the ten, 0 empty endpoints.
 Artifacts: `validation/m14/measurements/nim/ontology-census.{json,txt}`.
 
-**The numbers are tied to an analyzer state, and the census now says which.**
-`census.ts` prints `sha256(src/ast/real-nim-analyzer.ts)` before the walk and
-again after it. This run: **`9e93988f677e8faf` on both sides — unchanged**, so
-every figure below is reproducible from that digest and the pinned corpus. The
-reason the field exists is two runs of the shared arbiter over the SAME 4,555
-files returning `calls` 80,057 and then 79,041, because the analyzer was edited
-between them; both numbers were correct for the code that produced them and
-quoting either alone would have claimed a file state that never existed.
+**READ THIS BEFORE QUOTING ANY NUMBER IN THIS SECTION: the analyzer these
+numbers describe is NOT this branch's HEAD.** `census.ts` prints
+`sha256(src/ast/real-nim-analyzer.ts)` before the walk and again after it, and
+this run printed **`9e93988f677e8faf` on both sides — unchanged during the
+walk**, so the table is internally consistent. But that digest is the WORKING
+TREE, and the working tree is not HEAD:
+
+| | blob / digest | `runnableExamples` occurrences |
+| --- | --- | --- |
+| this branch's HEAD | git blob `0dba3980c6942f35cc900c969d00612a1c1589cc` | **0** |
+| the tree this census read | sha256 `9e93988f677e8faf…` | **24** |
+
+A second NIM agent was editing `src/ast/real-nim-analyzer.ts` in this worktree
+throughout (see *Coordination*, below), adding nested-routine symbols and
+`## runnableExamples:` block handling. So these counts describe HEAD **plus**
+that uncommitted work. They will be right once it lands and they are wrong for
+HEAD today, and the only honest way to say so is to say it rather than publish a
+table under a heading that implies otherwise.
+
+The digest field exists because of what the ambiguity cost: two runs of the
+shared arbiter over the SAME 4,555 files returned `calls` 80,057 and then 79,041,
+because the analyzer was edited between them. Both numbers were correct for the
+code that produced them, and quoting either alone would have claimed a file state
+that never existed.
+
+**Coordination.** Two `opencode run --agent build` processes were pointed at
+`$HOME/mcp/bb-lanes/nim` at the same time — the second started 32
+minutes after the first, while the first was mid-corpus-walk. One worktree, one
+analyzer, two writers. The rule the brief states ("never let two agents share a
+checkout") was broken by the launch, not by either agent, and the cost is
+measurable: any number either agent quotes is against a moving target unless it
+carries a digest.
 
 | Type | Verdict | Edges | Both ends resolve | Confidence | evidenceClass |
 | --- | --- | --- | --- | --- | --- |
@@ -475,11 +499,34 @@ tenth reads 0 and the zero is dissected above rather than asserted.
 
 **Question 3 — correct, and its limit.** Instrument:
 `validation/m14/fixtures/nim/oracle-crosscheck.ts` over a deterministic
-every-10th sample (**400 of 4,056** discovered files, 400 parsed, 0 failures)
-against `script/m14/nim-truth-oracle.ts`'s `deriveNimEdges`, compared
-site-agnostically (label + normalized target). **The limit is stated because it
-is real: both sides walk the same grammar, so a grammar fact both get wrong is
-invisible to it.** Both residuals are named rather than left as a count:
+every-10th sample against `script/m14/nim-truth-oracle.ts`'s `deriveNimEdges`,
+compared site-agnostically (label + normalized target). **The limit is stated
+because it is real: both sides walk the same grammar, so a grammar fact both get
+wrong is invisible to it.** "Agrees" means "the two derivations agree", never
+"the edge is true".
+
+Column 3 above carries the LAST run whose analyzer state is this branch's HEAD
+(400 of 4,056 discovered files, 400 parsed, 0 failures). Re-run this pass against
+the WORKING TREE — `validation/m14/measurements/nim/oracle-crosscheck-workingtree.{json,txt}`
+— the residuals move a long way, and the direction is informative:
+
+| Type | HEAD analyzer | working tree | what moved |
+| --- | --- | --- | --- |
+| `calls` | 14 unexplained | **30 unexplained** | 12+ are `calls -> runnableExamples`, i.e. the `## runnableExamples:` doc block being published as a call |
+| `contains` | 0/0 | **126 missing**, 1 unexplained | nested routines are published and the oracle does not derive them |
+| `references` | 1 missing | **3 missing** | — |
+| `uses` | 0/0 | **1 unexplained** | — |
+| `exports` | no derivation | no derivation, 20 targets | unchanged DERIVATION finding |
+
+These are **not** defects of HEAD, and this section does not claim them as such:
+they are the cost of measuring an analyzer that was being rewritten underneath
+the measurement. Two of them are worth the supervisor's attention anyway.
+`runnableExamples` is caught by a mutant that already exists
+(`nim/runnable-examples-pragma-published-as-a-call`), so the mutant gate is
+already the right instrument for it; and `contains` at 126 missing says the nim
+ORACLE is now behind the analyzer on nested routines, which is DERIVATION debt
+growing in the other direction. Both residuals are named rather than left as
+counts, and the pre-existing ones are named too:
 
 - **14 unexplained `calls`** are all operator or magic callees the analyzer's
   builtin filter drops: `|div|`, `==`, `-`, `+`, `=destroy` (×4), `matchProc`,
