@@ -828,10 +828,13 @@ inventory cannot see a construct the language reaches through a lenient path:
 the gate's own `countOnTree(root, fileLabel, hits)` signature, and prints the overturn
 condition for every probe.
 
-### Reported, not edited — three items that need a file this lane does not own
+### Reported, not edited — six items that need a file this lane does not own
+
+The heading said "three" while the list below it had grown to six, (a) through (f). The count
+is now the list's length. Nothing else in the section changed.
 
 Each is written to be applied without re-deriving it: file, function, what it must do,
-why, and the measurement that says it is needed. All three are §8 items under
+why, and the measurement that says it is needed. All six are §8 items under
 `docs/analyzers/ONTOLOGY-WORKSTREAM.md`.
 
 **(a) `script/m14/ontology-coverage-gate.ts` — `RULED_BY_LANG` has no `css` entry, so the
