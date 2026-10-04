@@ -657,6 +657,109 @@ export const PROTOBUF_MUTANTS: Mutant[] = [
     },
   },
   {
+    id: "protobuf/extend-block-used-as-the-resolution-scope",
+    language: "protobuf",
+    defectClass: "dangling-endpoint",
+    description:
+      "A type written inside an `extend` block is resolved from where the block is WRITTEN, because " +
+      "`extend` opens no scope: the extended type is where the block's members GO, not a scope their " +
+      "types are looked up in. `Ctx` therefore carries `scope` (the lexical position) separately " +
+      "from `owner` (the extended type), and the `extend` case inherits `ctx.scope` unchanged. This " +
+      "transform reinstates the single value by re-pointing the SCOPE at the OWNER for every symbol " +
+      "whose owner is an extended type — i.e. the pre-fix behaviour — which is exactly the defect " +
+      "class: a field inside `extend google.protobuf.FieldOptions` had `google.protobuf.FieldOptions` " +
+      "handed to the resolver as its scope, every candidate derived from it fell outside the " +
+      "package subtree and was dropped, and a reference to a type nested in the enclosing messages " +
+      "resolved to nothing.\n\n" +
+      "MEASURED end to end, by two independent instruments and not by argument. Corpus-wide, this " +
+      "transform moves 6 of 13,275 `uses` targets and adds and removes no edge. `protoc` 36.2, run " +
+      "as an oracle over the corpus (`script/m14/tmp/protobuf/probe/protoc-oracle.py`), reads " +
+      "exactly those 6 as disagreements and nothing else: WRONG-NAME 47 before, 42 after, on " +
+      "11,250 judged edges, with 5 verdict flips and 0 new ones. Each flip is a case where `protoc` " +
+      "names a nested declaration the pre-fix analyzer could not see — " +
+      "`proto2_unittest.ComplexOptionType2.ComplexOptionType4`, " +
+      "`proto2_unittest.TestExtensionOrderings2.TestExtensionOrderings3`, " +
+      "`edition_unittest.TestExtensionOrderings2.TestExtensionOrderings3`, " +
+      "`proto2_unittest.TestNestedExtension.OptionalGroup_extension` and " +
+      "`edition_unittest.TestNestedExtension.OptionalGroup_extension`. The 6th moved edge is in " +
+      "`unittest_delimited.proto`, where `protoc` reports two declarations under one owner-qualified " +
+      "name and the oracle records INDISTINCTUISHABLE rather than guessing; read by hand from " +
+      "`protoc`'s descriptor it answers `editions_unittest.LengthPrefixed`, which is the post-fix " +
+      "emitted name.\n\n" +
+      "Caught by protobuf/nested-extend-scope, whose two rows are the two directions: ROW 1 (a block " +
+      "nested inside the type it names) loses `nse.demo.Nest.Leaf` and regains the forbidden " +
+      "`nse.demo.Leaf`; ROW 2 (a FILE-SCOPE block with two declarations named `Twin`) loses " +
+      "`nse.demo.Twin` and regains the forbidden `nse.demo.Dual.Twin`. ROW 2 is what stops this " +
+      "mutant from being satisfiable by 'always prefer the innermost declaration', and ROW 3 (an " +
+      "ordinary field resolving to the nested type) is the control neither direction may break. " +
+      "Ownership is asserted on both extension members, so a transform that moved the resolution " +
+      "scope by also moving ownership would fail on a `contains` row rather than pass.",
+    transform: (r: any) => {
+      // Which ids are EXTENDED TYPES: the source of a `contains` edge carrying
+      // `viaExtension`. Read off the analyzer's own output rather than a name list,
+      // so editing the fixture cannot silently stop the mutant matching.
+      const extendedTypes = new Set<string>()
+      for (const x of rels(r)) {
+        if ((x.type ?? x.relationshipType) !== "contains") continue
+        if (!(x?.metadata as any)?.viaExtension) continue
+        extendedTypes.add(String(x.source))
+      }
+      if (extendedTypes.size === 0) return r
+
+      // Only a TYPE can satisfy a type reference, which is the same restriction the
+      // analyzer's own `declaredTypeIds` applies.
+      const typeIds = new Set<string>()
+      for (const s2 of syms(r)) {
+        const k = String(s2?.kind ?? "")
+        if (k !== "class" && k !== "enum") continue
+        const id = String(s2?.metadata?.id ?? s2?.name ?? "")
+        if (id) typeIds.add(id)
+      }
+      const pkg = syms(r).find((s2: any) => String(s2?.kind ?? "") === "namespace")?.name
+      const pkgStr = typeof pkg === "string" ? pkg : ""
+
+      // The pre-fix resolver, reproduced: given the OWNER of the field — which for
+      // a member of an `extend` block is the EXTENDED type — walk that owner's scope
+      // chain innermost-first for the reference's leaf name, and fall back to the
+      // package plus the name as written.
+      const preFix = (owner: string, leaf: string): string => {
+        const segs = owner.split(".")
+        for (let i = segs.length; i > 0; i--) {
+          const cand = `${segs.slice(0, i).join(".")}.${leaf}`
+          if (typeIds.has(cand)) return cand
+        }
+        if (pkgStr) {
+          const c2 = `${pkgStr}.${leaf}`
+          if (typeIds.has(c2)) return c2
+        }
+        return typeIds.has(leaf) ? leaf : (pkgStr ? `${pkgStr}.${leaf}` : leaf)
+      }
+
+      const ownerOf = new Map<string, string>()
+      for (const s2 of syms(r)) {
+        const id = String(s2?.metadata?.id ?? s2?.name ?? "")
+        const owner = s2?.ownerName
+        if (id && typeof owner === "string") ownerOf.set(id, owner)
+      }
+
+      return {
+        ...r,
+        relationships: rels(r).map((x: any) => {
+          if ((x.type ?? x.relationshipType) !== "uses") return x
+          const src = String(x.source)
+          const owner = ownerOf.get(src)
+          // Only a reference written INSIDE an extend block is affected: that is
+          // the set of fields whose owner is an extended type.
+          if (!owner || !extendedTypes.has(owner)) return x
+          const tgt = String(x.target ?? "")
+          const leaf = tgt.includes(".") ? tgt.slice(tgt.lastIndexOf(".") + 1) : tgt
+          const next = preFix(owner, leaf)
+          return next === tgt ? x : { ...x, target: next }
+        }),
+      }
+    },
+  },
+  {
     id: "protobuf/qualified-id-stopped-being-published",
     description:
       "The resolved id is published on the symbol through TWO channels — `qualifiedName` (the one " +
