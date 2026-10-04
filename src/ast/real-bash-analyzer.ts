@@ -1993,6 +1993,18 @@ private extractAssignment(
         metadata?: Record<string, unknown>,
       ) => void
       relSource: () => string
+      /**
+       * The set of function names the file declares, collected in a pre-pass.
+       *
+       * M60: this was added so the trap handler's `calls` edge carries the SAME
+       * `isFunctionCall`/`isExternalCommand` classification as the 54,995 edges
+       * the main command site emits. Those two flags are the only thing that tells
+       * a consumer whether a call leaves the file, and this site was the one place
+       * that asserted a call without classifying it — 223 corpus edges, of which
+       * 123 name a function the same file declares. See
+       * `docs/analyzers/real-bash-analyzer.md`, "Round 7".
+       */
+      localFunctions: Set<string>
     },
     patterns: Set<string>,
     nameLine: number,
@@ -2027,9 +2039,18 @@ private extractAssignment(
       const firstToken = this.firstTokenOf(part)
       if (!firstToken || !isCommandNameText(firstToken)) continue
       if (SHELL_BUILTINS.has(firstToken)) continue
+      // The SAME classification the main command site applies, from the SAME
+      // pre-pass. Whether the callee leaves the file is a property of the callee's
+      // name, not of how the name was extracted, so the fact is exactly as sound
+      // here as it is there — and a consumer reading `calls` metadata has one rule
+      // to learn rather than two, one of which is silent on this path.
+      const isLocal = ctx.localFunctions.has(firstToken)
       ctx.addRel(ctx.relSource(), firstToken, ASTEngine.RelationshipType.Calls, 0.7, nameLine, {
         isTrapHandler: true,
         viaTrap: true,
+        isFunctionCall: isLocal,
+        isExternalCommand: !isLocal,
+        resolvedWithinFile: isLocal,
         signals: signals.length > 0 ? signals : ["EXIT"],
         bashSpecific: true,
       })
