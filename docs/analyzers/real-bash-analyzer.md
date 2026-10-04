@@ -129,31 +129,42 @@ round 3 reproduced round 2's denominators exactly (400 files / 48 repositories /
 4,012 admitted / 441,259 tracked). The gate column is quoted as a range for that
 reason and not as a single figure.
 
-| type | emitted? | census: 400 files (round 5) | gate: 4,012 files (run A / run B) | evidence |
+| type | emitted? | census: 400 files (round 7) | gate: 4,130 files (2026-10-04 run) | evidence |
 | --- | --- | --- | --- | --- |
-| `calls` | **EMITTED** | 5,099 | 53,443 / 53,481 | `census-bash-ontology.ts`, gate row |
-| `uses` | **EMITTED** | 7,802 | 78,404 / 78,425 | same |
-| `contains` | **EMITTED** | 3,782 | 35,743 / 35,769 | same |
-| `imports` | **EMITTED** | 44 | 637 / 636 | same |
-| `references` | **EMITTED** | 44 | 637 / 636 | same |
-| `exports` | **EMITTED** | 210 | 1,912 / 1,913 | same |
-| `overrides` | **EMITTED** | 28 | 133 / 134 | same |
+| `calls` | **EMITTED** | 5,099 | 55,194 | `census-bash-ontology.ts`, gate row |
+| `uses` | **EMITTED** | 7,802 | 80,845 | same |
+| `contains` | **EMITTED** | 3,782 | 38,270 | same |
+| `imports` | **EMITTED** | 44 | 679 | same |
+| `references` | **EMITTED** | 44 | 679 | same |
+| `exports` | **EMITTED** | 210 | 1,927 | same |
+| `overrides` | **EMITTED** | 28 | 138 | same |
 | `extends` | **RULED — never emitted** | 0 | 0 | instrument A + B below |
 | `implements` | **RULED — never emitted** | 0 | 0 | instrument A + B below |
 | `instantiates` | **RULED — never emitted** | 0 | 0 | instrument A + B below |
 
-**The gate column has NOT been re-run since round 3 and is therefore the weaker
-half of this table.** It is quoted from the round-3 A/B pair because a full gate
-sweep takes minutes per run and its own output is not a reproducible count (§ the
-gate table below measures exactly how far from reproducible). Round 5 replaced
-the census column — the instrument that goes through `parseFile` with 0 parse
-failures — and left the gate column alone rather than quote a stale run beside a
-fresh one. The whole-corpus numbers round 5 *did* re-measure are in the evidence
+**The gate column was re-run for round 7 and is still not a reproducible count**, which
+is the property the round-3 A/B pair measured and the reason it is quoted as a single
+run with its date rather than as a figure. The 2026-10-04 run printed
+`emitted 7/10  ruled-sound 3  FALSIFIED 0  ruled-without-justification 0`, then hit
+`[BB-HANG] parser stuck 120s` and exited, so its per-type totals are truncated by
+whichever files the wasm reached before it died — compare round 3's pair, where run A
+and run B differ by 38 `calls` edges on the same commit, and compare this run's
+`exports` 1,927 against the 1,929 the whole-corpus evidence census reports. Both
+differences are the wasm, not the analyzer. **The census column is the number to
+quote**: it goes through `parseFile`, reports **0 parse failures**, and round 7
+reproduced round 5's figures exactly on the same pinned sample.
+
+**The gate's own run-to-run spread is measured, and it is why the gate column carries a
+date.** Two runs of `ontology-coverage-gate.ts bash` on one commit against one corpus
+differed by 38 `calls` edges (53,443 / 53,481) and 21 `uses` edges (78,404 / 78,425),
+and the two runs named **no file in common** among the ten the wasm aborted on. The
+whole-corpus numbers that DO have a denominator that does not wobble are in the evidence
 census (`probe-bash-missing-evidence.mts`, every admitted file): `calls` 55,220,
 `uses` 80,851, `contains` 38,273, `imports` 679, `references` 679, `exports`
-1,929, `overrides` 138 — total **137,770 edges, 0 with no `evidenceClass`**.
-Those are the numbers to quote for "how big is this lane", because they have a
-denominator that does not wobble.
+1,929, `overrides` 138 — total **137,770 edges, 0 with no `evidenceClass`**. Round 7's
+independent whole-corpus pass agrees on `imports`/`references`/`overrides` exactly and
+reads `calls` 55,218 against the evidence census's 55,220 — a 2-edge difference across
+two instruments, which is the same wasm wobble at a tenth the size.
 
 **Coverage is reported as APPLICABLE, not as a flat 7/10.** Three of the ten types
 are RULED with a corpus measurement, so the denominator that remains is 7 and all
@@ -469,12 +480,12 @@ does not run. Sample as stated above: 400 files, 48 repositories, 4,186 symbols,
 
 | type | 1 exists | 2 fires | 3 correct | 4 labelled | 5 resolved (both ends) | 6 confident (<0.7) |
 | --- | --- | --- | --- | --- | --- | --- |
-| `calls` | yes | 5,099 | oracle: 1,657/1,657 covered, 0 unexplained | 899 function-call / 4,200 external-command, split verified both ways | **961 / 5,099 = 18.8%** | 0 / 5,099 |
+| `calls` | yes | 5,099 | oracle: 1,657/1,657 covered, 0 unexplained | 907 function-call / 4,192 external-command, split verified both ways; 0 unclassified | **961 / 5,099 = 18.8%** | 0 / 5,099 |
 | `uses` | yes | 7,802 | same run | 0 positional targets; 0 targets named a declaration the analyzer never published | **6,239 / 7,802 = 80.0%** | 0 / 7,802 |
 | `contains` | yes | 3,782 | same run | 3,782/3,782 targets are symbols in their file | **3,782 / 3,782 = 100%** | 0 / 3,782 |
 | `imports` | yes | 44 | same run | 44/44 keys identical to a `references` key | **0 / 44 = 0.0%** | 0 / 44 |
 | `references` | yes | 44 | same run | 44/44 keys identical to an `imports` key | **0 / 44 = 0.0%** | 0 / 44 |
-| `exports` | yes | 210 | same run | 210/210 targets carry `isExported` **on the `analyze()` path — see §metadata below, it does not survive** | **210 / 210 = 100%** | 0 / 210 |
+| `exports` | yes | 210 | same run | 210/210 targets carry `isExported`, **on both paths** — see §Q6 | **210 / 210 = 100%** | 0 / 210 |
 | `overrides` | yes | 28 | same run | 28/28 targets are `function` symbols with an earlier same-name definition | **28 / 28 = 100%** | 0 / 28 |
 
 The two columns that moved between round 3 and round 5 are `calls` resolution
@@ -516,21 +527,26 @@ grammar itself creates, and both were found instead by asking what an edge's
 
 **Q4 Labelled** — the label check is per type, because in bash the types resolve
 against different universes and a pooled number would hide that. Re-measured
-adversarially on 2026-10-03, and this is the question that found the two real
-defects in the lane (see the next section):
+adversarially on 2026-10-03, re-measured again in round 7 with the CLAIM on one axis
+of a 2×2 and the MEASUREMENT on the other, and this is the question that found the
+lane's real defects:
 
 - `calls` is split by the analyzer's own mutually-exclusive flags, and the split
   is what makes the flag checkable rather than decorative:
-  `isFunctionCall=true` — **899 edges, 899 resolve to a `function` symbol in the
-  same file (899/899)**; `isExternalCommand=true` — **4,200 edges, 62 of which
-  (1.5%) happen to name a symbol**. A local call that failed to resolve, or an
+  `isFunctionCall=true` — **907 edges, 907 resolve to a `function` symbol in the
+  same file (907/907)**; `isExternalCommand=true` — **4,192 edges, 54 of which
+  (1.3%) happen to name a symbol**. A local call that failed to resolve, or an
   external call that resolved to one, would make the flag a lie. Neither happens.
-- `exports` — 210 of 210 targets carry `metadata.isExported`. **And that fact
-  does not reach the store**: see [metadata at the worker boundary](#q6-what-a
-  published-fact-costs-to-reach-the-store) below, which measures 13 of 13 bash
-  metadata keys at 0% survival through `parseFile`. The `exports` label is
-  therefore verified where the analyzer runs and unverifiable where the product
-  runs, which is a weaker claim than this row can make on one line.
+  **Round 7 measured this over all 55,218 corpus `calls` edges rather than the
+  sample, and the corpus is where the flag was incomplete: 223 edges carried
+  neither flag, 123 of them naming a function their own file declares.** See
+  [Round 7](#round-7-the-flag-that-was-missing-and-the-edges-no-name-resolution-can-reach).
+- `exports` — 210 of 210 targets carry `metadata.isExported`, **on both paths**.
+  §Q6 below measures this per symbol over every file carrying an `exports` edge:
+  144 of 144 keep the affirmative through `parseFile`, 0 are dropped. The earlier
+  caveat on this row — that the fact does not reach the store — described the
+  worker before four keys were forwarded and has been corrected above rather than
+  left in place.
 - `overrides` — 28 of 28 targets are `function` symbols, and **28 of 28 have an
   earlier definition of the same name in the same file**. Round 3 asked the
   stronger question pass 2 did not: **are the two definitions UNCONDITIONAL?**
@@ -602,47 +618,57 @@ round-5 `targetLine`/`targetKind`/`targetResolution` all reach the store. The
 symbol map at `src/ast/pool-worker.ts:960-1012` instead rebuilds `metadata` from a
 hardcoded allowlist that today carries CSS keys and markdown keys.
 
-**So the symbol-side seam is real, and it costs this lane three labels.**
+**The seam was real, it was reported, and it has since been closed for the four keys a
+reader consumes. This section is corrected against the merged tree, because the
+revision above was written when all 13 keys died and 4 of them no longer do.**
 
-| key | published by `analyze()` in | survives `parseFile()` on a SYMBOL |
-| --- | --- | --- |
-| `bashSpecific` | 105 of 105 files | **0 (0.0%)** |
-| `isScript`, `scriptPath` | 105 of 105 | **0 (0.0%)** |
-| `isArray` | 72 of 105 | **0 (0.0%)** |
-| `isTopLevel` | 53 of 105 | **0 (0.0%)** |
-| `isScriptFunction` | 52 of 105 | **0 (0.0%)** |
-| `isLocal` | 32 of 105 | **0 (0.0%)** |
-| `isDeclared` | 32 of 105 | **0 (0.0%)** |
-| `isImplicitBinding`, `bindingSite` | 25 of 105 | **0 (0.0%)** |
-| `isExported` | 15 of 105 | **0 (0.0%)** |
-| `isReadonly` | 15 of 105 | **0 (0.0%)** |
-| `isAlias` | 4 of 105 | **0 (0.0%)** |
+`pool-worker.ts:1093-1095` now forwards exactly the four keys round 5 recommended, on
+exactly the reasoning round 5 gave — carry what a reader consumes, not what a producer
+produces:
 
-13 keys, 13 at zero, against a 512-file two-path comparison in which
-`analyze()` returned **22 symbols with metadata** and `parseFile()` returned **22
-symbols with none** on `kubernetes/hack/lib/protoc.sh` — same file, same process.
+```ts
+if (m.isExported === true) out.isExported = m.isExported
+if (m.isImplicitBinding === true) out.isImplicitBinding = m.isImplicitBinding
+if (typeof m.bindingSite === "string") out.bindingSite = m.bindingSite
+if (typeof m.isArray === "boolean") out.isArray = m.isArray
+```
 
-**What it costs, precisely.** A consumer reading `brain_symbol.annotations` cannot
-tell a `read`-bound name from a `NAME=` assignment (`isImplicitBinding`,
-`bindingSite`), cannot tell an array from a scalar (`isArray`), and cannot tell an
-exported name from a private one (`isExported`). The third of those is why the
-`exports` row of the six-questions table is annotated "on the `analyze()` path":
-the label is verified where the analyzer runs and unreadable where the product
-runs, which is a weaker claim than a bare "210/210" and is why the table says so.
+Measured on the same 105-file sub-sample, and **the census now reports key-presence
+and key-truth as two columns**, because they are two questions (see Round 7 for why the
+earlier version conflated them and what it cost):
 
-The CSS lane hit this seam first and paid for it by losing `declaresProperties`;
-the markdown lane hit it second and lost `headingLevel`, which is load-bearing for
-reconstructing a document outline. Both were fixed by adding *that lane's* keys.
+| key | key present in | survives | …published `true` in | survives |
+| --- | --- | --- | --- | --- |
+| `isArray` | 72 files | 72 (100%) | 10 | **10 (100%)** |
+| `isImplicitBinding` | 25 | 25 (100%) | 25 | **25 (100%)** |
+| `bindingSite` (a string) | 25 | 25 (100%) | — | — |
+| `isExported` | 15 | 13 (86.7%) | 13 | **13 (100%)** |
+| `bashSpecific`, `isScript`, `isTopLevel`, `isScriptFunction`, `isLocal`, `isDeclared`, `isReadonly`, `isAlias` | 105/105/53/52/32/32/15/4 | **0 (0.0%)** each | — | — |
 
-**Reported, not edited** (§8): `src/ast/pool-worker.ts` is shared machinery and
-the allowlist is the supervisor's. The change needed is one line per key inside the
-IIFE at line 960, and it should carry only keys a **reader** consumes — the
-precedent comment at lines 951-956 is explicit that the list is narrow precisely to
-avoid carrying facts that are merely produced. On the bash side the candidates a
-reader would actually read are `isExported` (to justify the `exports` label without
-re-parsing), `isImplicitBinding` + `bindingSite` (to distinguish the four binding
-constructs from `NAME=`), and `isArray`. The other ten are produced and unread, and
-adding them would make the channel larger without making it more true.
+`isExported`'s presence column reads 86.7% and its truth column reads 100%, and the
+difference is the whole of a measurement error this lane made and has corrected:
+`readonly x=1` publishes `isExported: false` — a correct negative, since a readonly
+constant is not exported — and `=== true` declines to forward it.
+
+**So the `exports` row of the six-questions table no longer needs its "on the
+`analyze()` path" caveat, and that is a per-SYMBOL claim over the whole population, not
+a 105-file rate.** `probe-bash-exported-symbol-survival.mts`, every admitted file with
+at least one `exports` edge:
+
+| | count |
+| --- | --- |
+| files with ≥1 `exports` edge | 242 |
+| `exports` edges over them | 786 |
+| distinct targets compared | 148 |
+| `isExported` in **both** paths | **144** (every one a `constant`) |
+| `isExported` in neither | 4 |
+| published and **dropped by the worker** | **0** |
+
+`isArray`'s asymmetry is deliberate and is the one place a negative IS carried:
+`typeof m.isArray === "boolean"` forwards `false`, because a consumer must be able to
+tell an array from a scalar. It does not need to be told a constant is not exported.
+The eight keys still at 0% are produced and unread; widening the channel for them would
+make it larger without making it more true.
 
 ## One edge, N declarations: the incoming-edge half, measured and partly closed
 
@@ -863,6 +889,214 @@ bytes on 15.1% of `uses` edges. The A/B was taken by writing the parent commit's
 analyzer over the file and restoring — and the first attempt at it was invalid,
 because `git stash push` on an already-committed tree is a no-op and the "before"
 run silently measured the fixed analyzer; see limitation 16.
+
+## Round 7: the flag that was missing, and the edges no name resolution can reach
+
+Round 6 ended on metadata. Round 7 asks the two questions that metadata made
+askable, both over **every admitted file** rather than the 400-file sample, because
+both classes turned out to be small and a sample reports a rate for a class of size ten.
+
+### The labelling defect: 223 `calls` edges with no classification at all
+
+Six questions Q4 asks whether an edge carries the type it claims. For `calls` the
+type is carried in two booleans, and the previous check compared the analyzer's own
+`isFunctionCall` count against the sample's resolution rate — both read off the SAME
+side of the comparison, so a flag that was simply **absent** was invisible to it.
+
+Putting the claim on one axis and the measurement on the other
+(`probe-bash-unresolved-targets.mts` section B2, 55,218 `calls` edges over 4,130
+admitted files):
+
+| claim ↓ / measured reachability → | resolves in own file | declared by a literal sourced file | external | no flag |
+| --- | --- | --- | --- | --- |
+| `isFunctionCall` | **13,934 (100%)** | 0 | 0 | 0 |
+| `isExternalCommand` | 1 | **256** | **40,808** | 0 |
+| **no flag** | **123** | 0 | **100** | **223** |
+
+The two diagonal cells are the check that the flags are not decorative: every edge
+claiming to be local resolves locally, and no edge claiming to be external resolves
+locally except one. **223 edges asserted a call and said nothing about it**, and 123
+of those name a function their own file declares — `ansible/test/integration/targets/
+ansible-test-git/collection-tests/git-common.bash:27` calling `uninstall_git`,
+`ansible-test-sanity-import/runme.sh:33` calling `cleanup`.
+
+**Cause: there are two `calls` emission sites and only one of them classified.**
+`real-bash-analyzer.ts:1889` (the main command site) sets `isFunctionCall`,
+`isExternalCommand` and `resolvedWithinFile` on all 54,995 corpus edges.
+`real-bash-analyzer.ts:2030` (the trap handler) set `isTrapHandler`, `viaTrap`,
+`signals` and `bashSpecific` — and no classification, because the handler's command
+name comes from splitting a string rather than from a `command` node, and the
+classification was written at the site that had a `command` node.
+
+**The fix applies the same rule from the same pre-pass.** Whether a callee leaves the
+file is a property of the callee's NAME, not of how the name was extracted, so the
+fact is exactly as sound at the second site; `handleTrap`'s `ctx` type gained
+`localFunctions` and the three keys are set from it.
+
+A/B on the 400-file hash-order sample, same sample both sides
+(`census-bash-ontology.ts`):
+
+| | before | after |
+| --- | --- | --- |
+| `isFunctionCall=true` | 899, resolving 899 (100%) | **907, resolving 907 (100%)** |
+| `isExternalCommand=true` | 4,200, 62 coinciding (1.5%) | **4,192, 54 coinciding (1.3%)** |
+| `calls` / all seven types / total | 5,099 / — / 17,009 | **5,099 / unchanged / 17,009** |
+| edges added / symbols added | — | **0 / 0** |
+
+The 100% resolution property of `isFunctionCall` is the number that matters: the fix
+moved 8 edges between two classes without moving either, and `bb_graph`'s node and
+link counts are untouched.
+
+`validation/m14/fixtures/bash/trap-handler-call-classification.sh` asserts both
+directions — `cleanup`/`sync_now` local, `rm` external — because a fix that hard-coded
+either value satisfies one half. **It FAILS against the pre-fix analyzer (23 pass /
+1 fail) and passes after**, so it pins the defect rather than the fix. Three mutants
+with it (`…-inverted`, `…-hardcoded-local`, `…-removed`); the lane file is **22
+mutants, 22 caught, 0 survived**.
+
+**The one remaining diagonal disagreement is not a defect, and saying so is the
+point.** `ohmyzsh/plugins/mvn/mvn.plugin.zsh:30` calls `mvn`, the analyzer says
+external, and the file publishes a symbol named `mvn` — `alias mvn="mvn-or-mvnw"` at
+line **44**. The analyzer is right: a shell alias does not expand retroactively, so at
+line 30 `mvn` is still the external binary, and the analyzer reaches that answer
+without a rule about aliases at all — `collectFunctionNames` is a pre-pass over
+`function_definition` nodes, so aliases are added during the walk, and line 30 is
+visited before line 44. Right answer, incidental reason. It is recorded because the
+reason is not a rule, and an alias declared *above* its use is classified by a
+different mechanism than one declared below it.
+
+### The residue: `imports`/`references` at 0% is now a shape table, not a rate
+
+679 `imports` edges (679 identical `references` keys), whole corpus, every admitted
+file. The earlier probe answered "does not resolve: 679 of 679". This one asks **what
+the target is**, which is the question a rate hides:
+
+| target shape | edges | share |
+| --- | --- | --- |
+| `unexpanded` — the script computes the path (`${KUBE_ROOT}/hack/lib/init.sh`) | **455** | 67.0% |
+| `resolves to an ADMITTED file** | **133** | 19.6% |
+| `does-not-resolve` (`source virtualenv.sh`, no such file here) | 36 | 5.3% |
+| **resolves to a file the ROUTER declined** | **29** | 4.3% |
+| resolves outside every corpus repo (`/etc/os-release`) | 25 | 3.7% |
+| `~`-prefixed | 1 | 0.1% |
+| absolute-external | 0 | 0.0% |
+
+Of the 133 that name a real admitted file, **133 resolve by name** (the target's
+basename is that file's module symbol) — so those edges are walkable today.
+
+**The 29 are a routing finding, and it is small.** They point at **9 distinct files**
+that exist inside a corpus repository, are tracked, and were not admitted. Running the
+**production parser** over each — not reading it and deciding — gives:
+
+| | count |
+| --- | --- |
+| distinct files a `source` edge names that the router declined | **9** |
+| …of which the pinned bash grammar publishes ≥1 symbol | **1** |
+| `source` edges pointing at them | 29 |
+
+The one is `hasura-engine/scripts/containers/citus`, 1,717 bytes, 3 symbols, and its
+first line is `### This file is not meant to be run directly, but to be sourced from`.
+It has no shebang, so `detectLanguageFromPath` declines it — and the file says in its
+own first line what it is. **Reported, not edited** (§8): `src/ast/language-detection.ts`
+is shared machinery. The change is one clause: an extensionless file with no shebang
+that is the target of a `source`/`.` edge from an admitted bash file is admitted on
+that evidence. The honest size of the prize is 1 file in this corpus, and it is worth
+saying so rather than quoting the 29 edges as 29 missing files.
+
+### What no name resolution can reach: 256 walkable cross-file `calls`
+
+`calls` resolves at both ends 18.8% and 74.1% of its corpus edges name a command that
+is genuinely outside the indexed corpus. In between there is a class that is neither:
+
+| reachability of a `calls` target | edges | share |
+| --- | --- | --- |
+| resolves to a `function` in its own file | 14,058 | 25.5% |
+| **declared by a file this script `source`s by a LITERAL path** | **256** | 0.5% |
+| external | 40,904 | 74.1% |
+| files with ≥1 literal `source` that resolved to a file | **161 of 4,130** | 3.9% |
+
+`consul/test/integration/connect/envoy/run-tests.sh:400` calls `is_set`, which is
+declared in `consul/helpers.bash` — a file `run-tests.sh` sources by a literal path.
+bash's dependency model *is* `source`: the sourced file's functions are defined in the
+sourcing shell, so this call names a real declaration the corpus holds, and the edge is
+walkable today with a cross-file index and not before. All 256 are currently published
+with `isExternalCommand: true`, which is **wrong** for them — 0.5% of `calls` edges
+mislabel a cross-file function as an external binary.
+
+**This cannot be fixed inside the analyzer and the reason is structural**: `analyze()`
+is a per-file unit that never sees another file, and `parseFile` is per-file too. A
+cross-file resolution layer is laptop C's work and duplicating it here would be the
+wrong fix. What the lane owes that layer is the SIZE and the SHAPE of the class, which
+is the table above. The 161-file denominator is stated so the 256 is never read as a
+rate over the corpus: it is 1.6% of the files that have a resolvable literal `source`
+at all.
+
+### The ruling table, and a citation that did not resolve
+
+`script/m14/bash-ruled.ts` did not exist, and the arbiter printed
+`Written ruling: script/m14/bash-ruled.ts (RULED_BY_LANG.bash)` on all three RULED
+rows. A citation to a path that is not on disk is not a weak claim; it is a false one,
+and it was the gate's own output.
+
+The table now exists with the **three** live entries. The gate's inline literal had a
+fourth — `overrides`, instrument B, with a `countOnTree` probe — and it is **dead**:
+the row loop `continue`s the moment a type is observed emitting, and `overrides` is
+EMITTED at 138 corpus edges, so that entry is consulted zero times while reading as
+evidence that `overrides` is inapplicable.
+
+`validation/m14/fixtures/bash/ruled-gate.ts` proves the table instead of asserting it:
+it copies the gate to `/tmp`, applies the three lines the supervisor's permanent fix
+needs, and runs the copy —
+
+```
+extends       RULED-SOUND  NOT EMITTED; 164 distinct node types, NONE expresses it
+implements    RULED-SOUND  NOT EMITTED; 164 distinct node types, NONE expresses it
+instantiates  RULED-SOUND  NOT EMITTED; 164 distinct node types, NONE expresses it
+overrides     EMITTED      138 edges in 4+ files
+emitted 7/10   ruled-sound 3   FALSIFIED 0   ruled-without-justification 0
+```
+
+— and it was **falsified on purpose before being trusted**. Adding `function_definition`
+to the `extends` entry, a node type the grammar does produce, turns the row
+`FALSIFIED`, the summary to `ruled-sound 2  FALSIFIED 1`, and the runner exits 1
+printing `>>> THIS GATE FAILS. extends is claimed inapplicable but is demonstrably
+derivable from real code.`
+
+Two properties of the instruments the runner has to handle rather than trip over:
+
+- **164 is a per-run population, not a constant.** The wasm aborts with `memory access
+  out of bounds` on whichever files it reaches and that differs between runs, so the
+  `extends` detail string's node-type count moves. Byte-equality between two gate runs
+  is not a property this gate has, so the runner asserts statuses and counts instead.
+- **`[BB-HANG]` exits 1 from `engine.ts:1442`** on a parser bomb, so the exit code is 1
+  even on a passing summary. Asserting the exit code alone would report a hung run as a
+  failed ruling table; the runner reads the summary and names the hang.
+
+**A ruling is only as strong as the population it was measured over, and this lane's
+own sample would have been too small.** `probe-bash-grammar-inventory.mts` reports **144**
+distinct node types on the 400-file hash-order sample. The gate's whole-corpus count is
+**164**. So a ruling proved on this lane's usual sample is proved against 144 of the
+grammar's node types and the other 3,730 files hold 20 more — which is why instrument A
+is run over every admitted file, and why the RULED verdicts in the table at the top of
+this file quote the whole-corpus number.
+
+### One correction to this lane's own instrument
+
+`isExported` read `published in 15 files, survives in 13 (86.7%)` for several rounds,
+and the obvious reading — the worker drops the flag — was wrong. `census-bash-ontology.ts`
+collected metadata key NAMES, and `readonly x=1` publishes `isExported: false`, a
+correct negative (`real-bash-analyzer.ts:1552` sets `isExported: isExport`). The worker
+forwards `if (m.isExported === true)`, so the key is absent downstream by design;
+counting presence counted a negative as a publication and then reported the worker's
+correct refusal as a loss.
+
+The census now reports presence and truth as two columns, and the corrected numbers are
+in [§Q6](#q6--what-a-published-fact-costs-to-reach-the-store). The general shape is
+worth naming because it is not bash-specific: **for a boolean flag whose consumer tests
+`=== true`, "the key is present" and "the fact is present" are different questions, and
+only the second is the one a consumer can act on.** `isArray` is the deliberate counter-case
+in the same table — its negative IS forwarded, because a consumer must be able to tell
+an array from a scalar.
 
 ## DERIVATION debt: the five unexplained edges are the oracle's blind spot
 
@@ -1281,36 +1515,53 @@ were wrong. The guard is now measured (guard B above) rather than asserted, and 
 For a Turing-complete language a blank limitations list is treated as dishonesty,
 not excellence. This lane's are measured, not hedged:
 
-1. **Symbol metadata does not survive the production boundary — 0 of 11 keys, 0%.**
-   Measured on a 105-file sub-sample, each file parsed twice and the key sets
-   differenced: `bashSpecific`, `isScript`, `scriptPath`, `isArray`,
-   `isScriptFunction`, `isTopLevel`, `isLocal`, `isDeclared`, `isExported`,
-   `isReadonly` and `isAlias` are all published by `analyze()` and **all 11 arrive
-   at 0% through `parseFile`**. `src/ast/pool-worker.ts` re-shapes every symbol
-   (`range` → `startLine`/`endLine`) and forwards `metadata` only for an allowlist
-   written for CSS, Markdown and generic keys. **Consequence: every fixture in this
-   lane passes while reading a fact the store never sees.** This is the M14 #290
-   failure mode exactly, it is invisible to the fixture suite by construction, and
-   it is why the `exports` labelling check had to be moved to
-   `probe-bash-exports.mts` (which reads `analyze()` directly) after the census
-   first reported 20 of 20 `exports` targets as missing `isExported` — the
-   analyzer was right and the instrument was wrong. **Reported, not fixed**:
-   `pool-worker.ts` is shared machinery (§8).
+1. **Symbol metadata survives for 4 of the 13 keys this lane publishes; the other 9
+   arrive at 0%.** Measured on a 105-file sub-sample, each file parsed twice and the
+   key sets differenced. `pool-worker.ts:1093-1095` now forwards `isExported`,
+   `isImplicitBinding`, `bindingSite` and `isArray`, and each of those four survives
+   its published population (the `isExported` **affirmative** at 13 of 13 files, over
+   144 of 144 symbols in the per-symbol measurement). The nine still at 0% are
+   `bashSpecific`, `isScript`, `scriptPath`, `isTopLevel`, `isScriptFunction`,
+   `isLocal`, `isDeclared`, `isReadonly` and `isAlias`: published by `analyze()`,
+   read by nothing, and deliberately not forwarded — the allowlist's own comment
+   states the rule is to carry what a reader consumes. **Consequence that remains: a
+   fixture in this lane can pass while reading a fact the store never sees**, which is
+   the M14 #290 failure mode and is invisible to the fixture suite by construction.
+   §Q6 has the per-key table; Round 7 records the correction to this item, which
+   previously read "0 of 11 keys" and was written before the four keys were wired.
 2. **A single-file analyzer cannot resolve a `source` target to a symbol**, which
-   is why `imports`/`references` now resolve at both ends on **0 of 44** edges. The
-   edges are real and their `resolution` metadata says which kind of path each is;
-   the binding does not exist at this scope and no single-file analyzer can invent
+   is why `imports`/`references` resolve at both ends on **0 of 44** edges — and
+   round 7 replaces the bare 0% with the shape of the 679 corpus edges, because
+   "does not resolve" is two opposite findings: **455 (67.0%)** carry a path the
+   script computes and no name fix reaches, **133 (19.6%)** name an admitted file
+   and resolve by basename today, 36 name a file that is not there, 29 name a file
+   the router declined, 25 are genuinely outside the corpus, 1 is `~`-prefixed.
+   The binding does not exist at this scope and no single-file analyzer can invent
    it. **Round 3 corrects the reading of the number rather than the number**: the
    previous revision reported 1 of 45 and attributed the shortfall to the
    unbindable targets. Removing the `_try_existing` fabrication took it to 0 of 44,
    which means the one edge that used to resolve resolved *because it was a symbol
    in the same file* — so there is no recall component in this 0% at all. A reader
-   pooling this 0% with `calls`' 19.10% would be pooling two opposites.
-3. **`calls` resolves at both ends on 19.10% of its edges**, and the other 80.90%
-   are calls to names this file does not declare — measured, not assumed: an
-   independent tree walk finds a declaration for **0** of them, so this is not a
-   recall shortfall. The `isFunctionCall`/`isExternalCommand` split is what makes
-   it readable (920/920 and 4,227/63) rather than a defect.
+   pooling this 0% with `calls`' 18.8% would be pooling two opposites.
+3. **`calls` resolves at both ends on 18.8% of its edges**, and round 7 splits the
+   other 81.2% into three populations that a single rate was hiding — over all 55,218
+   corpus edges, not the sample:
+
+   | | edges | share |
+   | --- | --- | --- |
+   | resolves to a `function` in its own file | 14,058 | 25.5% |
+   | **declared by a file this script `source`s by a literal path** | **256** | 0.5% |
+   | external — outside the indexed corpus, unresolvable by any analyzer | 40,904 | 74.1% |
+
+   The external 74.1% is not a recall shortfall and is measured as such: an independent
+   tree walk finds a declaration for **0** of it. The **256 middle rows are the honest
+   residue** — real declarations this corpus holds, currently published with
+   `isExternalCommand: true`, and unreachable from a per-file analyzer because
+   `analyze()` never sees another file. They are counted here rather than fixed
+   because the fix is a cross-file resolution layer (laptop C), and 256 is its size.
+   The `isFunctionCall`/`isExternalCommand` split is what makes the class legible
+   (13,934/13,934 resolve; 40,808 external do not, bar the one alias case Round 7
+   names) rather than a defect in the flag.
 4. **`references` duplicates `imports` on the measured sample** — 44 of 44 keys
    identical in both directions, 0 either way. Two ontology types, one distinct
    fact, and the shared oracle does the same, so no differential can see it. See
@@ -1464,6 +1715,42 @@ not excellence. This lane's are measured, not hedged:
     three mutants, and the before/after corpus counts in
     [Round 6](#round-6-the-attribution-was-a-function-of-where-the-read-sat-in-the-file),
     not the gate.
+19. **The round-7 classification fix is also invisible to the differential**, for the
+    same structural reason and it is worth stating as its own item rather than
+    assuming the reader will connect it to item 18. `deriveBashEdges` publishes no
+    `isFunctionCall` and no `isExternalCommand` on any edge, so adding those keys to
+    223 edges cannot move a coverage number: the edge set is byte-identical before
+    and after, which is exactly what makes the defect dangerous — a tool that
+    compares edge SETS sees nothing. The evidence is the fixture (fails pre-fix at
+    23 pass / 1 fail), the three mutants, and the before/after census row.
+20. **An alias's classification rests on walk order rather than on a rule**, and
+    round 7 found this by looking for a disagreement rather than by reading the code.
+    `collectFunctionNames` is a pre-pass over `function_definition` nodes, so a
+    function is classified correctly wherever it is declared; an **alias** is added to
+    `localFunctions` during the walk (`:1847`), so an alias declared *above* its use is
+    classified by the pre-pass-plus-walk and one declared *below* its use is classified
+    by whichever has been seen so far. In the one corpus case
+    (`ohmyzsh/plugins/mvn/mvn.plugin.zsh`, `alias mvn` at line 44, call at line 30)
+    both mechanisms give the right answer — a shell alias does not expand
+    retroactively — so the class has no measured defect. It is declared because the
+    correctness is incidental, and an alias whose expansion *did* apply retroactively
+    would be misclassified with nothing to catch it.
+21. **The metadata-survival instrument in this lane's own census was wrong for several
+    rounds, and the error ran in the direction that made the lane look worse.** It
+    counted a metadata key's PRESENCE as publication; `readonly x=1` publishes
+    `isExported: false`, a correct negative, so `isExported` read 86.7% when its
+    affirmative survives at 100%. Two consequences worth carrying: an instrument that
+    reports a defect where there is none costs credibility as surely as one that hides
+    a real one, and for a boolean flag whose consumer tests `=== true` the two
+    questions have to be asked separately. The census now reports both columns and
+    `probe-bash-exported-symbol-survival.mts` measures per symbol rather than per file.
+22. **A ruling in this lane is only as strong as the population instrument A ran on,
+    and this lane's usual sample is too small for it.** The 400-file hash-order sample
+    yields **144** distinct node types; the whole corpus yields **164**. The three RULED
+    verdicts are therefore quoted against 164 and the difference is stated rather than
+    averaged away. A future corpus that adds a node type expressing a supertype would
+    falsify all three at once, which is the correct behaviour and the reason the gate
+    computes the inventory over every admitted file.
 
 ## Complexity envelope and measured performance
 
