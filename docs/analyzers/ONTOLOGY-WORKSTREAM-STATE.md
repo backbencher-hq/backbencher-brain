@@ -1164,3 +1164,60 @@ That is the honest form: it says what was measured, over what, and what is
 extrapolated. Note also that the fsharp lane withdrew a +16% latency claim for
 exactly the opposite reason — non-interleaved A/B on a shared box. Alternating the
 blobs is the fix both lanes converged on independently.
+
+## Regex census: 18 -> 5, and the mode that produces it was dead
+
+Two separate defects, and the second is the one that mattered.
+
+**1. `--head` had never worked.** `npx tsx script/m12/regex-census.ts --head` threw
+`usages is not iterable` on the first loop. The `--head` branch was missing its
+`await`, and an `as Promise<typeof usages>` assertion told the compiler the
+un-awaited Promise was fine — so **`npx tsc --noEmit` passed** while the value was a
+Promise at runtime.
+
+That assertion converted a compile-time error into a runtime one. And `--head` is the
+*only* mode that produces a census describing a **commit** rather than whatever the
+working tree happens to carry, which `reviews/regex-policy.md` requires. So the
+reproducible path was dead and the only way left to refresh the census was the
+unreproducible one — which is exactly how the census came to carry ~30 **stale** rows
+claiming regexes that no longer exist, and why the gate could not tell "the census is
+wrong" apart from "the code has regexes".
+
+The general rule, now applied to every assertion in this programme: **a type
+assertion is a claim the compiler cannot check. Where it is false, it does not fail
+the build — it moves the failure somewhere with less context.**
+
+**2. The debt itself, measured at HEAD across 48 analyzers: 7 -> 5.**
+
+```
+  LAPTOP-B  real-scss-analyzer.ts:77   /\s+/g                replace     <- removed 6e0de3897
+  LAPTOP-B  real-scss-analyzer.ts:981  /^%[-\w]*[\w]$/       test        <- removed 6e0de3897
+  LAPTOP-B  real-sql-analyzer.ts:143   /^pg_[a-z_]+$/        other       <- ACTIVE AGENT
+  OTHER     real-svelte-analyzer.ts:50     /line/i
+  OTHER     real-svelte-analyzer.ts:622    /^[A-Za-z_$][A-Za-z0-9_$]*$/
+  OTHER     real-svelte-analyzer.ts:1259   /context=["']module["']/
+  OTHER     real-svelte-analyzer.ts:1445   /^(.*?)\s+(?:then|as)\s+/
+```
+
+From 18 at the start of the wave: the **CSS lane cleared all 11**, the **XML lane its
+last 1**, julia its 9, and the supervisor cleared SCSS's 2 (that lane had no active
+slot). **Laptop B is at 1**, and an agent is on it. The 4 Svelte rows belong to
+another laptop — and Svelte went **3 -> 4** while this work was running, so it
+*added* one. Reported, not edited.
+
+### The SCSS removals were verified, not asserted
+
+Both literals are pure string predicates, so neither needs a pattern engine: `\s`
+became an explicit `JS_WHITESPACE` set and `\w` a char-code range test. The set is
+local rather than imported from `real-css-analyzer` so the two lanes stay independent.
+
+```
+  differential vs the original regexes, 428 cases (every form the analyzer can
+    produce, plus adversarial and fuzzed inputs) ................ 0 disagreements
+  whole-corpus A/B, 120 .scss files, full symbol+relationship output hashed:
+    before 9b451f4d9d8b1c53   after 9b451f4d9d8b1c53   IDENTICAL, 154,348 bytes
+```
+
+Note the shape of that second check: not "the tests still pass" but *the entire
+emitted graph, hashed, before and after*. A regex removal that changed one selector
+name in one file would pass every fixture and still be wrong.
