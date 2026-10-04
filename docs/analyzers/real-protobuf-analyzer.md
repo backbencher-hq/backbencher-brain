@@ -3277,3 +3277,183 @@ the other half: the three protobuf corpus repos are **sparse checkouts holding 2
   untouched at HEAD and every emitted-type count reproduces pass 10 exactly. The two
   findings here are an instrument and a probe, and the standing band is now attributed
   rather than merely bounded.
+
+# PASS 12 — the 3/10 is settled: it is 10 readable files, not 3 firing types
+
+Passes 7, 10 and 11 each recorded that `firing-check.ts --files 120 protobuf` reports
+**10 of 120 files** and attributed it to the sparse checkouts without ever putting the two
+numbers side by side. The workstream's standing instruction says a high score on few files
+is a warning and that "the number is about the parse failures and those need their own count
+before it means anything." **Those parse failures are zero.** The 10 files are the only 10
+that exist.
+
+## The two numbers, side by side, from the same production entry point
+
+| instrument | population | files read | types fired |
+|---|---|---|---|
+| `firing-check.ts --files 120 protobuf` | its stride sample | **10 / 120** | **3** — `uses`, `contains`, `imports` |
+| `protobuf-census.ts` | whole on-disk corpus | **821** | **5** — `uses`, `contains`, `imports`, `exports`, `overrides` |
+
+Both drive `parseFile` from `src/ast/pool-worker.ts`. The difference is entirely the
+population, and the instrument below closes the question by re-running the arbiter's own
+sampler against its own readable subset.
+
+## What the sampler actually offers
+
+`firing-check.ts:172` `filesForLanguage` builds its path list from `git ls-files` and
+never consults the working tree. Measured:
+
+| measurement | value |
+|---|---|
+| `.proto` paths the corpus TRACKS, corpus-wide | **8,524** |
+| paths the stride sampler OFFERS at `--files 120` | **120** |
+| of those, present **on disk** | **10** |
+| of those, **absent** | **110** |
+| `.proto` files on disk corpus-wide | **821** (9.6% of tracked) |
+
+The 110 absent are not spread across the corpus. They are three sparse checkouts:
+
+| repo | tracked `.proto` | on disk | of the 110 absent |
+|---|---|---|---|
+| `pb-googleapis` | 7,341 | 128 | **103** |
+| `pb-reference` | 477 | 108 | 6 |
+| `pb-grpc` | 166 | 42 | 1 |
+| `kubernetes` | 135 | 135 | 0 |
+| `boundary` | 127 | 127 | 0 |
+| `docker` | 109 | 109 | 0 |
+
+Every fully-checked-out repo has **zero** absent paths. The shortfall is 100% attributable
+to three repos that are partial clones.
+
+## The arbiter's own 3/10 reproduces exactly from its own 10 files
+
+`script/m14/tmp/protobuf/probe/firing-gap-attribution.mts` re-implements
+`filesForLanguage` — same corpus walk, same `git ls-files`, same stride — then runs
+production `parseFile` over the on-disk subset:
+
+```
+files parsed 10 / offered-on-disk 10, production-published-nothing 0
+uses 381   contains 1671   imports 17          => 3/10 fired over 10 files
+```
+
+That is the arbiter's own verdict, reproduced from the arbiter's own readable population,
+with **0 lost parses**. The `parseFile` path is not dropping files; `existsSync` is.
+
+## The three unfired types' carrier files are all OUTSIDE the 120-path sample
+
+The census names the files its extra types come from. None is in the sample:
+
+| type | file | in the offered 120? | on disk? |
+|---|---|---|---|
+| `exports` | `pb-reference/src/google/protobuf/cpp_options.proto` | **NO** | YES |
+| `exports` | `pb-reference/src/google/protobuf/json_options.proto` | **NO** | YES |
+| `overrides` | `nvim-treesitter/tests/query/highlights/proto/test.proto` | **NO** | YES |
+
+All three exist and all three fire; the stride simply never lands on them. `nvim-treesitter`
+contributes **1** tracked `.proto` to the whole corpus, so a stride over 8,524 paths lands
+on it with probability ~1/8,524, and the one file that carries this lane's only `overrides`
+edge is that file.
+
+**Verdict: the arbiter's 3/10 is a corpus-availability artifact, measured and reproduced,
+not a firing defect.** The analyzer fires 5 types through production `parseFile` on the
+821 files that exist. No round count changes this, because the missing 110 paths are not
+slow — they are absent.
+
+## The corpus price cannot be determined without paying it
+
+Pass 11 priced the missing working tree at "≈51 MB of text" by extrapolation and reverted
+the trial because the corpus crossed its ~8 GB cap. This pass tried to price it **exactly**
+instead, from the sizes git already records in its tree objects:
+
+```
+git -C pb-googleapis ls-tree -r -l HEAD
+```
+
+On a `--filter=blob:none` partial clone **that command fetches every blob it prints a size
+for.** It is the one git command that turns a partial clone into a full one, and it is why
+the size cannot be read for free. The attempt was aborted; the three repos are
+`git fsck --connectivity-only` clean and the corpus is unchanged at 8.0 G.
+
+What IS knowable without fetching, from the 128 `pb-googleapis` files already on disk:
+
+| measurement | value |
+|---|---|
+| on-disk `.proto` bytes in those 128 files | 1,049,013 (mean **8,195 B**) |
+| so 7,213 missing files of the same mean, as working-tree text | **≈59 MB** |
+| `.git` cost of those blobs | **unknown, and empirically not zero** |
+
+The `.git` figure is the one that decides it, and it is the one that cannot be had. The
+worktree cost is ~59 MB; the object cost requires fetching, which is exactly the
+expenditure under evaluation. Root filesystem free space at the time of writing: **694 MB**,
+on a volume at 100% with eight lanes cloning into it.
+
+**Not done, and the reason is now a number rather than a caution.** Materializing all three
+checkouts would add ~59 MB of text plus an unmeasured object cost to a filesystem with
+694 MB free that eight other agents are also writing to, for a corpus already at its 8.0 GB
+cap. That is a shared-resource decision and it is reported, not taken.
+
+## Everything reproduces at HEAD, bit for bit
+
+Pass 11's table re-run in this pass, unchanged:
+
+| measurement | value |
+|---|---|
+| analyzer-direct symbols / edges | **41,956 / 55,941** |
+| through `parseFile` (band) | 41,955 / 54,939 |
+| `uses` / `contains` / `imports` / `exports` / `overrides` | **13,275 / 40,098 / 1,561 / 4 / 1** |
+| both-ends resolution | `uses` **9,673 (72.87%)**, `contains` **39,787 (99.22%)**, `overrides` 1 (100%), `imports` 0, `exports` 0 |
+| empty names / bad kinds / `unknown` endpoints / self-loops | **0 / 0 / 0 / 0** |
+| edges under 0.7 confidence | **0** |
+| fixtures | **10 pass / 0 fail** |
+| `npx tsc --noEmit` | **no diagnostics** |
+| `firing-check --files 120` | **3/10, 2,069 edges, 10/120 files**, analyzer digest stable |
+| `ontology-coverage-gate protobuf` | **exit 1** — `emitted 5/10 ruled-sound 3 FALSIFIED 2` |
+
+The gate run in this pass also produced, on one file, both a `[BB-PARSE-ERR] … memory
+access out of bounds` and then a `[BB-HANG] parser stuck 120s` on
+`pb-googleapis/google/api/expr/v1beta1/expr.proto` — the same file pass 7 named as the
+suspect directory and pass 11 measured 0 losses for in 8,210 file-parses. Two different
+symptoms on one file, in the directory the hypothesis pointed at, on a run that printed its
+complete table before the watchdog fired. This is consistent with pass 11's finding that
+the fault is a per-parse event in shared runtime state rather than a property of any
+protobuf file; it is not new evidence for the locality hypothesis.
+
+## Pass 12 gate table
+
+| Command | Result |
+|---|---|
+| `npx tsc --noEmit` | **no diagnostics** |
+| `npx tsx script/m14/protobuf-census.ts` | 821 ok / 0 fail; analyzer-direct **41,956 / 55,941**; through `parseFile` 41,955 / 54,939 (band); 0 empty names / 0 bad kinds / 0 `unknown` / 0 self-loops; **0** under 0.7 |
+| `npx tsx script/m14/tmp/protobuf/probe/firing-gap-attribution.mts` | 8,524 tracked / 120 offered / **10 on disk**; reproduces the arbiter's 3/10 with 0 lost parses; all 3 carrier files outside the sample |
+| `npx tsx script/m14/ontology-coverage-gate.ts protobuf` | **exit 1** — `emitted 5/10 ruled-sound 3 FALSIFIED 2`, both rows the missing `differential.ts` `LANGS` entry |
+| `npx tsx script/m14/firing-check.ts --files 120 protobuf` | **3/10 fired, 2,069 edges, 10/120 files**, analyzer digest stable |
+| `npx tsx script/m14/run-fixtures.ts --lang protobuf` | **10 pass / 0 fail** |
+
+## Files this pass owns
+
+| file | lines | what |
+|---|---|---|
+| `script/m14/tmp/protobuf/probe/firing-gap-attribution.mts` | 190 | new: replicates the arbiter's sampler, prices the on-disk shortfall, re-runs production `parseFile` on the readable subset |
+
+## Declared limitations, pass 12
+
+- **The probe replicates `filesForLanguage`, it does not import it.** `firing-check.ts` is
+  shared machinery this lane does not own, so the sampler is re-implemented from its
+  source. It agrees with the arbiter on all three of population, readable count and fired
+  types — but agreement is evidence, not identity, and a future change to the shared
+  sampler would silently diverge from this probe.
+- **The `.proto` extension test is a substitute for `detectLanguageFromPath`.** The probe
+  must not perturb the process the arbiter hashes, and for `.proto` the extension test is
+  language-detection's whole answer. If detection ever keys on anything but the extension,
+  this probe's population would differ from the arbiter's.
+- **8,524 vs 8,694 tracked `.proto`.** The 8,524 is this pass's count and the 8,694 is the
+  figure passes 7–11 quote. The difference is not explained and is probably a
+  `ls-files`/on-disk distinction or a corpus change between passes. Neither number is
+  load-bearing for any verdict here; the denominator that matters for the arbiter is the
+  120 offered and the 10 readable.
+- **"Not done" on the corpus is a disk decision, and disk is a shared resource.** 694 MB
+  free, eight lanes writing, corpus at its 8.0 GB cap. If the supervisor clears either
+  constraint the materialization is one command per repo and the arbiter's readable
+  population goes from 10 to 8,524.
+- **Nothing in this pass changed the analyzer.** `src/ast/real-protobuf-analyzer.ts` is
+  untouched, and every emitted-type count reproduces the two previous passes exactly.
