@@ -148,13 +148,14 @@ unexplained reason", which is 196 and is named as such rather than folded into t
 number. Measured before the guard export the two were indistinguishable, and a drifting copy
 of the lists would have turned a working guard into a reported defect.
 
-## Ontology verdicts — all ten types (verdicts and counts re-measured at pass 4, 2026-10-04; incoming direction at pass 5; every gate re-confirmed at pass 6, 2026-10-04)
+## Ontology verdicts — all ten types (verdicts and counts re-measured at pass 4, 2026-10-04; incoming direction at pass 5; every gate re-confirmed at pass 6 and again at pass 7, 2026-10-04)
 
 Instrument: production `parseFile` (not `analyze()`) over **1,955 of 1,955 admitted SQL files, of
 which 16 corpus repositories contribute at least one**, size cap 512 KB, **every** admitted file sampled rather than a subset, walked as
 **8 strided shards and merged** (see *Reproducibility*). Artifacts, all under
 `validation/m14/fixtures/sql/measurements/`:
-`pass4-census.json`, `pass4-census-4shard.json`, `pass4-sharded-arbiter.json`,
+`pass7-census.json`, `pass7-sharded-arbiter.json`,
+`pass4-census.json`, `pass4-census-4shard.json`, `pass5-sharded-arbiter.json`,
 `pass4-arbiter-shape-diff.json`, `pass4-descendants-equivalence.json`,
 `pass3-adversarial-probe.json`, `pass3-construct-probe.json`, `pass3-incoming-corpus.json`,
 `pass3-invocation-why-after.json`, `pass3-phantom-constraint-{before,after}.json`.
@@ -164,9 +165,12 @@ Written rulings: `script/m14/sql-ruled.ts`, applied to a COPY of the arbiter by
 **The arbiter's own verdict on this lane's own ruling table**, copy patched, arbiter on disk
 untouched, all 8 shards answering all ten rows:
 **`emitted 7/10   ruled-sound 3   FALSIFIED 0   ruled-without-justification 0`.**
-The arbiter's single-process run does not finish at all — it dies on `[BB-HANG] parser stuck 120s`
-and prints its header and nothing else, which is why the verdict is taken over 8 repo-shards and
-merged by the arbiter's own precedence. See *PASS 4*.
+Reproduced on every run, including two at pass 7's HEAD. The arbiter's single-process run does not
+finish at all — it dies on `[BB-HANG] parser stuck 120s` and prints its header and nothing else,
+which is why the verdict is taken over 8 repo-shards and merged by the arbiter's own precedence. See
+*PASS 4*. **Its per-type EDGE counts are a lower bound, not a count** — pass 7 measured two runs
+disagreeing by 7 `uses` edges on the same corpus, because the gate has no serial-repair pass for a
+file the engine times out. See *PASS 7*.
 
 | Type | Verdict | Count | Where it came from, or the ruling's instrument |
 | --- | --- | --- | --- |
@@ -177,9 +181,12 @@ merged by the arbiter's own precedence. See *PASS 4*.
 | `imports` | EMITTED | 52 | 25 files; 22 psql includes in 6 (`postgrest/test/io/fixtures/load.sql`) + 30 `CREATE EXTENSION` in 8 (`hasura-engine/server/src-rsr/migrations/1_to_2.sql`) |
 | `overrides` | EMITTED | 22 | 4 files; `postgrest/test/io/fixtures/big_schema.sql`, `postgrest/test/io/fixtures/schema.sql`, `postgrest/test/spec/fixtures/schema.sql`, `proxicall/database/archive/2026/20260131_pms_audit_logging_system.sql` |
 | `instantiates` | EMITTED | 21 | 10 files; `hasura-engine/v3/crates/engine/tests/db_definition.sql`, `postgrest/test/spec/fixtures/schema.sql` |
-| `exports` | RULED | 0 | **Instrument A.** 480 distinct node types across the corpus and **no node type anywhere in that vocabulary contains `export`, `module` or `provide`**, keyword or otherwise. Token counts: 0 `EXPORT`, 0 `MODULE` as a KEYWORD, 0 `PROVIDE`; 1 occurrence of the TEXT `module`, which is a column name — see *Pass 3*. |
+| `exports` | RULED | 0 | **Instrument A.** The corpus-wide union is **480** distinct node types and **no node type anywhere in that vocabulary contains `export`, `module` or `provide`**, keyword or otherwise. Token counts: 0 `EXPORT`, 0 `MODULE` as a KEYWORD, 0 `PROVIDE`; 1 occurrence of the TEXT `module`, which is a column name — see *Pass 3*. The gate prints 256 for this row, which is **shard0's** vocabulary and not the corpus's — see *PASS 7*. |
 | `extends` | RULED | 0 | **Instrument A + B + a 5-shape capability battery.** No inheritance node among the 480; 0 `INHERITS` tokens inside a `create_table` or `alter_table`; and `INHERITS`, `PARTITION OF`, `ATTACH PARTITION`, `PARTITION BY` and `LIKE` were each PARSED against the wired wasm. See below. |
 | `implements` | RULED | 0 | **Instrument A + B.** No interface/supertype node among the 480; 0 `IMPLEMENTS` tokens. SQL has no interface type. |
+
+Every count in this table is the **census's** figure at `bb0ec1786` — 0 degraded files, so not a
+lower bound. Pass 7 re-measured all seven and they are identical to pass 4's.
 
 Coverage is reported as **7 of 7 applicable types emitted**, with 3 of 10 ruled by measurement. The
 denominator shrank only through RULED verdicts carrying a corpus measurement, and the numerator
@@ -923,6 +930,83 @@ grammar build and `validation/m14/grammar-pins.json` are shared artefacts (§8),
 attempt has already produced a `parser.c` 111,557 bytes off the wired one. Reported, not done
 quietly.
 
+## PASS 7 — two claims the page made about its OWN instruments, both re-measured (2026-10-04)
+
+Pass 6 re-ran the gates and the per-type counts all reproduced. Pass 7 re-ran them again at HEAD
+`bb0ec1786` and **the verdict reproduced too, but two statements this page made about its instruments
+did not, and both were in the direction of sounding stronger than the measurement.**
+
+Every per-type count reproduced exactly. Census, 8 shards, 0 degraded, 0 parse failures,
+1,955/1,955 admitted: **18,482 symbols, 31,066 relationships, 0 empty-named symbols, 0 `unknown`
+endpoints**, and `calls 3,892 / uses 9,106 / contains 11,977 / imports 52 / references 5,996 /
+overrides 22 / instantiates 21` (`measurements/pass7-census.json`).
+
+### The arbiter's edge totals are a LOWER BOUND, and the page reported them as a count
+
+Two runs of `run-sharded-arbiter.mts` over the same corpus at the same HEAD read **`uses` 9,099 and
+then 9,106** — identical verdict line, 8/8 shards answering all ten rows both times. The census
+reads 9,106 at 0 degraded files.
+
+The cause is a property of the shared engine, not of a lane: `engine.ts` answers an analyzer timeout
+with a **SUCCESS-shaped basic parse result** (`symbols: []`, `relationships: []`, one error), so a
+file that degrades under load contributes **zero** edges and nothing in the gate's output says so.
+The census repairs this — it re-parses a degraded file serially and excludes what still degrades.
+**The gate cannot**, because the repair belongs to the census's instrument and
+`script/m14/ontology-coverage-gate.ts` is shared (§8).
+
+So the correct reading is: **`rows[].status` is the verdict and is invariant; `rows[].edges` is "at
+least this many."** For an exact per-type total, use the census. `run-sharded-arbiter.mts` now writes
+`totalsAreLowerBounds: true` with this evidence into its artifact, records **per-shard** edges and
+files so a future disagreement is localisable to a shard rather than unattributed, and prints the
+caveat on stdout. Pass 6's statement that the arbiter's per-type edges are "identical to the pass-4
+census" was true on the run it was measured on and is **not** a property of the instrument; it is now
+restated as the lower-bound claim the instrument supports.
+
+### "480 node types" and "256 node types" are different populations, and the gate's wording is wrong
+
+The arbiter prints, on each RULED row, *"the grammar produced 256 distinct node types across the
+corpus"*. **It did not.** The merge takes its detail string from the worst-ranked shard, and where
+every shard ties on `RULED-SOUND` that is simply shard0. The per-shard inventories, now recorded in
+the artifact:
+
+| Shard | admitted files | distinct node types |
+| --- | --- | --- |
+| shard0 | 594 | 256 |
+| shard1 | 486 | 282 |
+| shard2 | 438 | 330 |
+| shard3 | 346 | 252 |
+| **shard4** | **32** | **333** |
+| shard5 | 20 | 161 |
+| shard6 | 20 | 93 |
+| shard7 | 19 | 130 |
+
+**shard4 has the largest vocabulary from the smallest file population** — 32 files yielding 333 node
+types against shard0's 594 files yielding 256. A reader who took 256 as the corpus inventory would
+be wrong about the shape of the grammar, not merely about a total: distinct node types are not
+proportional to files, because a large repo of homogeneous query files (`duckdb/benchmark`) exercises
+fewer distinct shapes than a small repo of varied DDL.
+
+**The corpus-wide union is 480**, measured by an independent walker over the same 1,955 admitted
+files at 0 parse failures (`pass3-construct-probe.json`), and 480 ≥ max(per-shard) = 333, so the two
+instruments agree in the direction that matters. **The gate understates the inventory its own rulings
+rest on by 224.**
+
+The RULED verdicts are **unaffected**: the merge rests on the UNION of all eight vocabularies, and a
+node type absent from every shard is absent from the corpus. But the printed number is a floor on the
+union and not the union, and the runner now says so on stdout and in the artifact instead of letting
+`256` read as the whole. The fix belongs in the shared gate — the count it prints should be labelled
+as the shard's, not "across the corpus" — and is reported in §8 rather than applied.
+
+### Every gate this lane can run, at `bb0ec1786`
+
+| Gate | Command | Result |
+| --- | --- | --- |
+| ontology arbiter, whole corpus, 8 repo-shards | `npx tsx validation/m14/fixtures/sql/run-sharded-arbiter.mts --shards 8 --json …/pass7-sharded-arbiter.json` | **`emitted 7/10   ruled-sound 3   FALSIFIED 0   ruled-without-justification 0`**, 8/8 shards, per-type edges matching the census on the run recorded in the artifact |
+| census, 8 shards, with serial repair | `bash validation/m14/fixtures/sql/run-sharded-census.sh 8 /tmp/…/census` | 1,955/1,955 admitted and parsed, **0 parse failures, 0 degraded** (0 first-pass, 0 recovered serially, 0 still degraded, 0 regex-fallback), 18,482 symbols / 31,066 relationships |
+| fixture lane | `npx tsx script/m14/run-fixtures.ts --lang sql` | **15 / 15 PASS, exit 0** |
+| regex census | `npx tsx script/m12/verify-regex-census.ts` | **0 SQL rows**; the gate exits 1 on other lanes' `MISSING` rows (css 9, julia 5) and `STALE` rows (clean, fsharp, javascript, python, svelte) |
+| typecheck | `npx tsc --noEmit` | **clean, exit 0** |
+
 ## PASS 6 — the denominator no instrument on the page was producing (2026-10-04)
 
 Pass 5 re-measured the incoming direction. Pass 6 re-ran every gate this lane can run at HEAD
@@ -982,7 +1066,7 @@ it. Fixed to `statSync(dir).isDirectory()`, which follows the link.
 
 | Gate | Command | Result at this HEAD |
 | --- | --- | --- |
-| ontology arbiter, whole corpus, 8 repo-shards | `npx tsx validation/m14/fixtures/sql/run-sharded-arbiter.mts` | **`emitted 7/10   ruled-sound 3   FALSIFIED 0   ruled-without-justification 0`**, 8/8 shards answering all ten rows, and per-type edges **identical to the pass-4 census**: 3,892 / 9,106 / 11,977 / 52 / 5,996 / 22 / 21 |
+| ontology arbiter, whole corpus, 8 repo-shards | `npx tsx validation/m14/fixtures/sql/run-sharded-arbiter.mts` | **`emitted 7/10   ruled-sound 3   FALSIFIED 0   ruled-without-justification 0`**, 8/8 shards answering all ten rows, and per-type edges **identical to the pass-4 census**: 3,892 / 9,106 / 11,977 / 52 / 5,996 / 22 / 21. **Corrected at pass 7:** the agreement held on this run and is not a property of the instrument — two pass-7 runs disagreed by 7 `uses` edges because the gate has no serial-repair pass. Those totals are a **lower bound**; see *PASS 7* |
 | arbiter on a COPY with the ruling table patched in | `npx tsx validation/m14/fixtures/sql/run-ruling-table.mts` | same verdict line. Single process, so it dies on `[BB-HANG] parser stuck 120s` on `duckdb/benchmark/aoc24/queries/day02.sql` partway through and its partial per-type counts read 3,875 / 9,100 / 11,873 / 51 / 5,951 — the sharded run is the authoritative one, and this is the known `engine.ts` `process.exit(1)` behaviour (§8) |
 | fixture lane | `npx tsx script/m14/run-fixtures.ts --lang sql` | **15 / 15 PASS, exit 0**. Unscoped, the same script **exits 6 before running any lane** because `lua` and `r` have fixture directories no runner lane claims — other lanes' defect, not this one's (§8) |
 | ontology mutants | `bun run script/m14/mutate-analyzer.ts sql` | **34 / 34 `sql/*` mutants CAUGHT, 0 `sql/*` SURVIVED**. The script's 6 survivors are `java` ×1, `groovy` ×2, `scala`, `make`, `php` — other lanes. **It does not honour the language argument**: it sweeps every lane and **rewrites the shared `validation/m14/results/M14.0.F4.json`**, changing 22,627 lines of other lanes' rows as a side effect of running this lane's gate. That file is §8-owned, so this lane restores it (`git restore`) and does not commit the rewrite. Running this command as the workstream instructions direct is therefore not lane-scoped and mutates a shared artifact (§8 item) |
