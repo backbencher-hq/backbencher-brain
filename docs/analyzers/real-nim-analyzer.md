@@ -555,6 +555,37 @@ different worker counts, so they do not agree exactly and are not expected to:
 | `instantiates` | 2,836 | 2,843 | 7 |
 | `implements` | **47** | **47** | **0** |
 
+**A SECOND arbiter run, on the same analyzer blob and the same 6,063 files, is
+recorded here because the table above compares two DIFFERENT instruments and so
+cannot show the arbiter's own spread.** Re-run 2026-10-04 14:19, 383s, analyzer
+sha256 `9d9ee478e3295c28` unchanged on both sides of the walk
+(`validation/m14/measurements/nim/reverify-ruled-gate.txt`):
+
+| type | arbiter run 1 | arbiter run 2 | arbiter's own spread | census (2 workers) |
+| --- | --- | --- | --- | --- |
+| `calls` | 118,242 | 118,133 | 109 | 118,261 |
+| `uses` | 45,656 | 45,573 | 83 | 45,662 |
+| `contains` | 29,357 | 29,327 | 30 | 29,361 |
+| `references` | 56,428 | 56,375 | 53 | 56,438 |
+| `imports` | 13,359 | 13,348 | 11 | 13,364 |
+| `instantiates` | 2,836 | 2,841 | 5 | 2,843 |
+| `extends` | 625 | 626 | **1** | 627 |
+| `exports` | **617** | **617** | **0** | 617 |
+| `overrides` | **67** | **67** | **0** | 67 |
+| `implements` | **47** | **47** | **0** | 47 |
+| verdict | `emitted 10/10` | `emitted 10/10` | — | — |
+
+The arbiter's own spread on `calls` is **109 edges, not the 19 the paired
+table implies** — so a single paired comparison understates it by 5.7×, and the
+honest envelope for a single instrument is the ~0.1% figure already quoted, not
+the delta of one pair. The three rows the verdict rests on most sharply
+(`exports`, `overrides`, `implements`) are **bit-identical across both runs and
+both instruments**, and `extends` moved by 1. That is the claim worth keeping:
+the types with no concurrency-sensitive derivation are exactly the types that
+reproduce, which is what one would expect if the movement comes from the
+load-dependent WASM heap exhaustion in *Limitations* 8 rather than from the
+readers themselves.
+
 The four rows the verdict rests on — `exports` 617, `overrides` 67, `implements`
 47, and `extends` within 2 — are stable across both instruments. The rows that
 move are the ones *Limitations* 8 and 11 attribute to the concurrent production
@@ -1490,7 +1521,87 @@ Every headline number in this document was re-measured on the committed blob
 `9d9ee478e3295c28` in one pass, because a number inherited from a previous
 session is a number nobody checked. This pass the corpus itself changed, so the
 re-verification has two halves: what reproduced **despite** the corpus growing,
-and what moved **because** of it.
+and what moved **because** of it. (This is the FIRST of two re-verification
+passes; the second is the `####` subsection immediately below, and the tables
+that follow the subsection belong to this first pass.)
+
+#### Session-2 re-verification, 2026-10-04: every instrument re-run at HEAD
+
+The pass above ran in an earlier session. This one re-ran the instruments at
+`HEAD` = `e4c95ccad` with no analyzer change, because the question a reader has
+about a table of numbers inherited from a previous session is whether they still
+come out, and the only answer that is worth anything is a second walk. Analyzer
+sha256 `9d9ee478e3295c28`, verified on disk against the pinned digest **before**
+any instrument ran and unchanged after every one of them. Artifacts:
+`validation/m14/measurements/nim/reverify-*.{json,txt}`.
+
+| instrument | result | against the recorded figure |
+| --- | --- | --- |
+| `ruled-gate.ts` (the arbiter, on a copy) | **`emitted 10/10  ruled-sound 0  FALSIFIED 0  ruled-without-justification 0`**, 383s | verdict **reproduces**; per-type spread in the arbiter table above |
+| `census.ts`, `BB_NIM_WORKERS=1` | **exit 0**, 6,063 of 6,063 parsed, **0** throws, **0** empty names, **0** empty kinds, **110,076 symbols**, **267,297 edges**, 8 `unknown` endpoints, `degradedWalk: null` | **7 of 10 types identical to the digit**; `uses` +2, `contains` +1, `references` +7, so **+10 edges on 267,287 = +0.0037%**, symbols +16 |
+| `gap-hunt.ts`, 1 worker | `extends` on tree **1,047**, emitted **627**; `instantiates` **3,830** on tree, **844** name a type this file declares, **973** carry an edge; `overrides` **230** methods, **186** readable receiver, **67** emitted | **every figure identical** |
+| `resolution-audit.ts`, 1 worker | **110,076** symbols published; **TREE-ONLY 126** = `calls` 19 + `uses` 77 + `contains` 30; callable recall **46,960 / 46,971** | **identical** (the recorded 110,076 came from this instrument, not the census) |
+| `oracle-crosscheck.ts` | 400 of 6,063, 0 parse failures, **MISSING 3 / UNEXPLAINED 26**, **7 of 10** labels with identical counts | **identical**, digest unchanged both sides |
+| `run-fixtures.ts --lang nim` | **10 fixtures, 10 pass, 0 fail**, `{"nim":{"pass":10,"fail":0}}`, baseline gate clean | **identical** |
+| `verify-mutants.ts` | **17 run, 17 CAUGHT, 0 survived** | **identical** |
+
+**The census reproduces to 0.0037%, which is an order of magnitude tighter than
+this document claims, and the reason is the worker count rather than the
+analyzer.** The committed artifact was taken at **2 workers**; this pass's clean
+walk was at **1**. *Limitations* 11 measures 6 workers producing fallback files
+and empty-kind symbols and 1 worker producing none, and that difference — not
+the analyzer — is the whole of the residual. So the +10 edges are not drift in
+the reader: seven of the ten totals are bit-identical across two different
+fan-outs, and the three that moved moved by 2, 1 and 7 edges out of tens of
+thousands.
+
+**The committed 2-worker artifact is deliberately NOT re-baselined onto the
+1-worker one, and the reason is that re-baselining would cost ~90 edits in this
+document to move a number by 0.004%.** The delta is inside the envelope already
+stated here, the artifact is digest-pinned to a blob still on disk, and both
+walks are committed side by side so the pair is checkable. Which figure is
+quoted where is fixed: **the tables in *The ten relationship types* are the
+2-worker artifact** (`validation/m14/measurements/nim/ontology-census.{json,txt}`,
+110,060 symbols / 267,287 edges), and the 1-worker walk is the reproduction
+(`reverify-1w-census.{json,txt}`, 110,076 / 267,297). No figure in this document
+mixes the two, and the two walks differ only in `uses`, `contains` and
+`references` — the three types whose resolution depends on how much of the tree
+survived the WASM heap.
+
+**What this pass FOUND, as opposed to reproducing: the JSON artifacts did not
+carry the worker count, while this document said they did.** Line 564 and the
+performance section both assert that "`BB_NIM_WORKERS` … each artifact prints the
+count it ran at". That was true of the console line and **false of every JSON**:
+`census.ts`, `gap-hunt.ts`, `resolution-audit.ts` and `accent-quoted-endpoints.ts`
+each read `BB_NIM_WORKERS`, printed `workers : N` to stdout, and wrote a JSON body
+with no such field. So the machine-readable artifact — the one a later reader
+diffs — could not be reproduced from itself, and the `.txt`/`.json` pair could
+disagree about the run that produced them with nothing to detect it. That is the
+same defect class as the un-regenerated `.txt` in this lane's own history
+(`7fc815c61`), one level down: there the pair disagreed, here the pair could not
+disagree because only one of them was ever told. Fixed in all four writers;
+`unknown-endpoint-hunt.ts` needs no change because it writes no JSON, and
+`nim-ruled-probe.ts`, `ambiguity-split.ts` and `incoming-audit.ts` do not read
+`BB_NIM_WORKERS` at all — they are single-threaded walks, so for them there is no
+count to record. Verified by running two of them: `workers: 1` now present in the
+JSON of `accent-quoted-endpoints.ts` and `gap-hunt.ts`.
+
+**And this pass destroyed a census walk outright, which is the fourth measured
+instance of the watchdog defect in *Limitations* 8 and the first against this
+instrument.** `BB_NIM_WORKERS=2` on the same 6,063 files logged
+`[BB-PARSE-ERR] nim | …/tests/async/treturn_await.nim | memory access out of
+bounds` and then, 120 seconds later,
+`[BB-HANG] parser stuck 120s on …/tests/async/treturn_await.nim — exiting`, and
+the process died there: **no artifact of any kind, and not even the header line**,
+because the `process.exit(1)` inside `engine.ts` takes the buffered stdout with
+it. The write-guard never got to decide, so on this occasion it did not protect
+anything — it is a guard against a *degraded* walk, and this was a *destroyed*
+one. The same walk at `BB_NIM_WORKERS=1` completed clean in one pass, which is
+the whole of the difference. **The operational rule this yields, and it is
+measured rather than inferred: for this lane's corpus instruments on a loaded
+box, 1 worker is the setting that returns a result, and 2 is not.** The tables
+in this document were taken at 2 because that is what ran; the reproduction above
+was taken at 1 for this reason.
 
 **What reproduced exactly, with no code change.** These are the checks that say
 the analyzer is unchanged rather than that the corpus is:
@@ -2335,6 +2446,19 @@ quiet machine will cover all 5,227 through the production path.
    | `census.ts` | written, digest printed | `nim/lib/std/private/ossymlinks.nim` | `[BB-PARSE-ERR] … memory access out of bounds` |
    | `resolution-audit.ts` | written, digest printed | `nim/tests/ic/mlocalpassc.nim` | `[BB-PARSE-ERR] … memory access out of bounds` |
    | `accent-quoted-endpoints.ts` | **NOT written** — the walk was destroyed | `nim/lib/std/private/oscommon.nim` | `[BB-PARSE-ERR] … memory access out of bounds` |
+   | `census.ts`, session 2, `BB_NIM_WORKERS=2` | **NOT written** — the walk was destroyed, and so was the header line | `nim/tests/async/treturn_await.nim` | `[BB-PARSE-ERR] … memory access out of bounds` |
+
+   The fourth row is the one that generalises the defect. The first three still
+   produced a digest-pinned artifact that merely exited 1, so a reader had
+   numbers with a warning attached; this one produced **nothing at all**, because
+   `process.exit(1)` inside the engine takes the process's buffered stdout with
+   it, and the census had not yet reached its first `console.log`. The named
+   file is again one that had already thrown rather than one that was stuck —
+   `treturn_await.nim` sits in `nim/tests/async/`, the same directory as the
+   `twinasyncrw.nim` of the 34-empty-kind walk above, which is the shape of the
+   cause: these are the wasm files whose parse allocates enough to exhaust the
+   heap under contention. The same walk at `BB_NIM_WORKERS=1` completed clean, so
+   the mitigation available without touching shared code is the fan-out.
 
    So this lane's corpus instruments **exit 1 on results that are finished and
    digest-pinned**, and under load one of them lost its entire walk and had to be
