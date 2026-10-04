@@ -4144,3 +4144,183 @@ re-measure without the revert, and this lane will not run the destructive form a
   24,114 is 0 degraded files and 24,113 is 1. The census figure is the one published, because it is
   the run that refuses to publish a mixture, but neither is "the" number without naming the
   degradation.
+
+## Pass 17 — the whole-population re-measurement at HEAD, and a published delta overstated by 45% (2026-10-04)
+
+Sixteen passes established the per-type counts. This pass re-measures the whole population through
+the production entry point and checks the **totals built from those counts**, which is the column
+sixteen passes had never re-summed. It found one wrong, and the error was in the direction that
+flattered this lane.
+
+### A. What re-ran, and on what population
+
+Population unchanged and re-derived, not inherited: `shard-draw.py` re-admits by the coverage
+gate's own walk (`git ls-files -- '*.zig'` per repo, ≤512 KiB) and re-orders by
+`sha256(seed|<repo>/<rel>)`, printing **`sha256:2f3545f9…`** — the published draw, equal to the
+digit. **3,834 of 3,834 admitted files, the whole population, 0 truncated.** 8 shards run
+**sequentially** (pass 14 §C: concurrency costs both time and correctness here), each emitting
+**both** outputs the merge needs. Per shard: `480, 480, 479, 479, 479, 479, 479, 479` = 3,834.
+**0 fallback files and 0 parse failures across all eight.** Repos parsed: `zig` 2,938,
+`ghostty` 805, `zls` 90, `nvim-treesitter` 1. `shard-merge.py` asserts the union hash equals the
+published draw hash and prints `unionEqualsPublishedDraw: true`.
+
+### B. All seven per-type counts reproduce to the digit, from two instruments that share no code
+
+The census and the lane's `incoming-check.ts` are separate programs with separate name-resolution
+code, and they agree on the totals exactly: **130,935 symbols and 395,805 edges** from both, over
+the same 3,834 files.
+
+| type | edges | files | srcMarker% | srcDangle% | tgt file-local% | tgt corpus-tier% | evidence class | conf | <0.7 |
+|---|---|---|---|---|---|---|---|---|---|
+| `uses` | 132,201 | 2,852 | 22.48 | **0.00** | 47.73 | 97.43 | `usage_contextual` | 1:13,406 · 0.75:118,795 | 0 |
+| `calls` | 113,476 | 2,781 | 11.53 | **0.00** | 40.13 | 95.55 | `usage_contextual` | 0.85:113,476 | 0 |
+| `contains` | 80,714 | 1,557 | 0.00 | **0.00** | 99.99 | 99.99 | `structural` | 1:80,714 | 0 |
+| `references` | 30,794 | 2,966 | 100.00 | **0.00** | 44.39 | 74.66 | `import_based` 10,200 · `reference_qualified` 20,594 | 1:10,200 · 0.9:20,594 | 0 |
+| `exports` | 24,114 | 3,164 | 100.00 | **0.00** | 100.00 | 100.00 | `import_based` | 1:24,114 | 0 |
+| `imports` | 10,200 | 2,693 | 100.00 | **0.00** | 29.89 | 33.80 | `import_based` | 0.9:10,200 | 0 |
+| `instantiates` | 4,306 | 530 | 55.04 | **0.00** | 85.72 | 96.05 | `structural` | 1:4,306 | 0 |
+
+**0 symbols with an empty name. 0 kinds outside the shared `SymbolKind`. 0 edges below 0.7 —
+a heuristic ratio of 0.00% of 395,805**, on a run where no shard degraded, which is the condition
+pass 11 §B attached to that figure and pass 3 established is per-run and not per-lane.
+**39 edges carry an endpoint equal to the literal `unknown`** (37 declared in their own source
+file, 2 declared elsewhere in the draw, 0 pure placeholders).
+
+### C. THE CORRECTION — pass 13's both-ends row was wrong in all three cells
+
+Corrected in place in §C above and committed separately. The short form: summing
+`byType[*].bothResolvedFileLocal` over four archived full-draw censuses gives **220,556** (p11),
+**233,867** (p13), **233,867** (p15) and **233,867** (this pass), where pass 13's prose published
+**213,207 → 232,499, +19,292**. The `before` cell was low by 7,349, the `after` cell low by 1,368,
+and the **delta was overstated by 5,981 — the change was worth +13,311, not +19,292, so it was
+45% smaller than this lane reported for six passes.** The pass-13 commit message carries the same
+figure and is left unamended.
+
+**Why sixteen passes missed it, which is the transferable part.** Every pass after 13 re-read the
+seven per-type EDGE COUNTS, and those always reproduced exactly. No pass re-summed the row. Seven
+verified numbers agreeing to the digit are consistent with a total built from them being wrong,
+because the error was in the summation's inputs as *recorded*, not in the census. **A column that
+is never re-derived is not verified**, and the column most worth re-deriving is the one that
+aggregates the others.
+
+### D. The supervisor's own arbiter, at the full population, n=3 — and the first clean exit 0
+
+`script/m14/ontology-coverage-gate.ts` from base `c2f4a136c`, which is the commit that wires
+`zig: ZIG_RULED` at line 199, materialised byte-for-byte into a scratch tree with `src`,
+`node_modules` and `wasm` symlinked at this worktree and `{"type":"module"}` beside it (the gate
+uses top-level `await`). `diff` against `git show c2f4a136c:…` is **empty — zero edits**. Full
+root, all 3,834 files, 4 m 14 s:
+
+```
+calls         EMITTED      113,476 edges in 4+ files
+uses          EMITTED      132,201 edges in 4+ files
+contains      EMITTED       80,714 edges in 4+ files
+imports       EMITTED       10,200 edges in 4+ files
+references    EMITTED       30,794 edges in 4+ files
+exports       EMITTED       24,114 edges in 4+ files
+extends       RULED-SOUND   NOT EMITTED; 232 distinct node types, NONE expresses it
+implements    RULED-SOUND   NOT EMITTED; 232 distinct node types, NONE expresses it
+overrides     RULED-SOUND   NOT EMITTED; the construct occurs 0x on the parse tree
+instantiates  EMITTED        4,306 edges in 4+ files
+--------------------------------------------------------------------
+emitted 7/10   ruled-sound 3   FALSIFIED 0   ruled-without-justification 0
+```
+
+**Exit 0, with `0 [BB-PARSE-ERR]` and `0 [BB-HANG]` in stderr.** Pass 16's two full-population runs
+both exited 1 on the leaked-timer condition *after* printing the table; this is the third
+full-population run and the first to exit clean, which is one more data point on §G's first bullet
+and evidence that the exit-1 is not a property of the corpus.
+
+**This settles pass 16 §G's third bullet. `exports` at the full population is 24,114.** The gate —
+a different program from the census, reading the same 3,834 files through the same `parseFile` —
+prints 24,114, and this run had 0 degraded files. So 24,113 and 24,111 are the figures for runs
+that each lost a degraded file, and 24,114 is the corpus figure. **All seven per-type counts from
+the arbiter equal this lane's census to the digit at the full population**, which is the agreement
+pass 15 could only report over a bounded 1,200-file root because the full-root run aborted.
+
+### E. Deliverables B and C at the full population
+
+**B — the ambiguous target, and how much of it is breakable.** `incoming-resolve.ts` over the same
+3,834 files: **271,643 ambiguous edges**, of which **161,553 (59.47%) have a candidate in the
+edge's OWN file** and are therefore resolvable by a per-file rule; **110,090 have no local
+candidate** and no per-file rule can pick them. Per type, the reverse walk's exposure: `contains`
+and `exports` resolve entirely in-file, while `imports` is the worst case at 33.80% corpus-tier
+and `references` at 74.66%. The instrument's own named worst offenders are all generic
+Zig spellings — `std` ×6,157 edges against **2,216 published symbols across 2,214 files**,
+`len` ×4,655, `assert` ×2,971, `init` ×2,671 (617 symbols, 394 files, six kinds), `deinit`
+×2,633. `init` is the sharpest instance of the failure the workstream describes: **one edge, six
+candidate kinds, 617 published symbols** — and `bb_impact` picks one by a rule nobody chose.
+
+**The Z65 annotation, checked against itself at this population.** Read back from production
+metadata, never recomputed: `file-local` **233,839 (59.08%)**, `file-external` 161,966 (40.92%),
+`scope-marker` 0, absent 0. **Of the 233,839 `file-local` edges, 233,826 (99.99%) do have a
+candidate in their own file and 13 (0.01%) do not.** Those 13 were computed independently from the
+dumps and are **`super` ×10 and `this` ×3** — both on the shared `keepSymbol` denylist, and both
+predicted by the Z65 section, which named 9 such names at 320 edges on the pre-pass-13 population.
+The set fell from 320 to 13 because `Self`, `root`, `unknown`, `self`, `destructor`, `source_file`
+and `program` are now published; **the class did not change, its membership did.**
+
+**C — "external" separated from "never indexed", which a single count cannot do.**
+`filelocal-miss-class.ts`, same population, with its C4 control satisfied — **all 7 local-hit
+rates equal the census's for the same type on the same population**, which is what makes the
+ladder a decomposition of the census's number rather than a second measurement wearing its name:
+
+| finding | edges | reading |
+|---|---|---|
+| **analyzer-owned** (`dropped-decl-IN-FILE` + `dropped-field-IN-FILE`) | **4,509** | a declaration in the edge's OWN file, published as nothing. **The analyzer owns this.** |
+| **`external`** (no tree in the draw declares it) | **6,038** | an external package, a `@cImport` header, a builtin the analyzer does not enumerate. Honest name: unexplained. |
+
+The two are opposite findings and the ladder keeps them apart: `uses` contributes 3,977 of the
+4,509 (down from 13,626 before pass 13 — that is the file-as-struct fix, measured), `references`
+156, `calls` 348, `contains` 8, `instantiates` 20, `imports` and `exports` **0**. On the other
+side, `references`' 532 externals and `uses`' 2,516 are dominated by `struct` ×244, `enum` ×163,
+`fn` ×35 and C headers (`ImGui_*`, `msgSend`, `opengl_c`) — genuinely not Zig declarations.
+
+### F. Every gate this lane can run, re-run at this commit
+
+| gate | command | result |
+|---|---|---|
+| typecheck | `npx tsc --noEmit -p tsconfig.json` | exit 0 |
+| fixture suite | `bun run script/m14/run-fixtures.ts --lang zig` | **11 pass / 0 fail**, no baseline regression |
+| mutation (shared) | `BB_MUTANT_ONLY="zig/" bun run script/m14/mutate-analyzer.ts` | **50 / 50 CAUGHT** (1,748 → 50) |
+| mutation (lane) | `npx tsx validation/m14/fixtures/zig/m13-mutants.mts` | **6 / 6 CAUGHT** |
+| census, full pop, 8 shards | §A, 3,834 files | **union hash == published draw hash**; 130,935 symbols, 395,805 edges, 0 fallback |
+| ontology arbiter, full root, **n=3** | §D, 3,834 files | **7/10, RULED-SOUND 3, FALSIFIED 0, RULED-WITHOUT-JUSTIFICATION 0**, **exit 0**, 0 `[BB-PARSE-ERR]`, 0 `[BB-HANG]` |
+| ruled probe | `npx tsx validation/m14/fixtures/zig/zig-ruled-probe.ts` | 10 / 10 controls; `overrides` 0 hits, raw 19, split 19/21/0/1; instrument A 239 declared / 232 produced; keyword calibration 11 / 11 |
+| firing (shared) | `npx tsx script/m14/firing-check.ts --files 120 zig` | **7/10 fired, 8,501 edges, 120/120 files, 1 DEGRADED** — exit 1, the instrument refusing to publish a count that mixes in `extractFallback` |
+| incoming (shared) | `npx tsx script/m14/incoming-check.ts zig <6 corpus-absolute files>` | 318 symbols, 0 degraded, 0 parse failures, 10 orphans of 318, **8 ambiguous targets** |
+| regex census | `npx tsx script/m12/verify-regex-census.ts` | gate `FAILED` on **43 rows across 11 other analyzers**, **0 zig rows** |
+| honesty gate | `npx tsx script/m14/verify-honesty.ts` | 22 failures, exit 6, **0 naming this document or any file under `validation/m14/fixtures/zig/`** |
+| F8 completeness | `npx tsx script/m14/completeness-inventory.ts --lang zig` | 7 of 8 sections pass; **section-b still FAILS** on `requiredKinds` missing `exports` and `instantiates` |
+
+### G. What pass 17 could not settle
+
+- **Whether the `[BB-HANG]` guard has ever fired on its intended condition.** This run exits 0 with
+  zero markers, so the corpus has still produced **zero observed hangs** and the guard remains
+  untested on a real one. Pass 16 §G's first bullet stands unchanged; this is now n=3 clean, n=2
+  leaked-timer.
+- **The 4,509 analyzer-owned misses are still not decomposed by cause.** The ladder separates
+  `dropped-decl-IN-FILE` (**417** across all types) from `dropped-field-IN-FILE` (**4,092**), and
+  4,509 is their sum; but 3,703 of the latter are `uses` on struct fields, and nothing here says
+  which of them a fix would recover.
+- **Which 13 `file-local` edges the Z65 label gets wrong is now known; whether the label should be
+  withheld for denylisted names is not decided.** The analyzer cannot see the store's denylist
+  without importing the store it feeds, which is §8 item 6's boundary and not this lane's call.
+- **`imports` at 33.80% and `references` at 74.66% are unchanged and still not defects this lane
+  can close.** Pass 8 §C measured the merge hazard; nothing has moved it.
+
+### H. §8 items, from this pass
+
+- **Item 23 — `incoming-check.ts` invocations in this document are not reproducible.** §F's row and
+  pass 11's and pass 13's say `<6 corpus files>` and `<6 corpus-absolute files>` without naming
+  them, so pass 13's "520 symbols, 9 orphans, 28 ambiguous targets" cannot be re-derived. This
+  pass substituted a *named* population — the first six files of shard 0 of the published draw —
+  and reports those numbers instead, which is why §F reads 318 symbols and 8 ambiguous targets and
+  not pass 13's. *Needed:* either name the files in the table or replace the per-file instrument in
+  the table with the full-population one in §E, which is reproducible and strictly more informative.
+- **Item 24 — `shard-merge.py` and the census's dual output, now enforced.** Found by running the
+  pipeline: the census writes `--raw` (per-edge records) and `--out` (histograms) and the merge
+  needs both, so a `--out`-only invocation left a `raw-N.json` that is really the report and the
+  merge raised `KeyError: 'drawFiles'` twenty lines in — a traceback naming neither the file nor
+  the flag. Fixed in this lane's own instrument, with both wrong invocations now refusing on
+  distinct exits and naming the command that fixes them.
