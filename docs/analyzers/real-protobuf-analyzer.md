@@ -5,7 +5,7 @@ pinned** grammar.
 
 | | |
 |---|---|
-| Analyzer | `src/ast/real-protobuf-analyzer.ts` (996 lines) |
+| Analyzer | `src/ast/real-protobuf-analyzer.ts` (1,225 lines) |
 | Grammar | `grammars/tree-sitter-proto/` — `amaanq/tree-sitter-proto` @ `e9f6b43f`, 8 patches |
 | Wired WASM | `wasm/tree-sitter-protobuf.wasm` — 81,735 B, sha256 `4624eb6d4b7830dd…` |
 | Replaced WASM | `fixtures/graphql/baseline/tree-sitter-proto-UPSTREAM.wasm` — 72,342 B, sha256 `dbbde8a8f047b6b6…` |
@@ -345,7 +345,7 @@ that is wrong. The fix belongs in the shared file and is a report item.
 |---|---|---|---|---|
 | `references` | no | 0 | — | **RULED**, instrument **A**. The construct occurs (10,166 message-typed declarations) and is emitted, as `uses`. FIRST ROW DELIBERATELY: see the note under the gate output above |
 | `contains` | yes | 40,098 | 99.22% per-file, 100% corpus-wide | declaration → member |
-| `uses` | yes | 13,275 | 72.84% per-file, 96.72% corpus-wide | declaration → referenced type |
+| `uses` | yes | 13,275 | 72.84% per-file, 99.58% corpus-wide, 88.57% corpus-wide to exactly ONE declaration | declaration → referenced type |
 | `imports` | yes | 1,561 | 0% by design | file → a file it depends on |
 | `exports` | yes | 4 | 0% by design | file → a file it re-exports |
 | `overrides` | yes | 1 | 100% analyzer ids | **new in pass 2** — pass 1 ruled this absent at a measured construct count of 1 |
@@ -490,7 +490,7 @@ oracle existed it would be a second walker over the *same* patched grammar, so a
 grammar bug shared by both paths would be invisible to it. What the lane has instead
 is (a) expectations derived by hand from the specification rather than captured from a
 run — `script/m14/tmp/protobuf/probe/contract-battery.mts` states the rule and the
-seven fixtures in `validation/m14/fixtures/protobuf/` follow it; (b) a 24-mutant
+eight fixtures in `validation/m14/fixtures/protobuf/` follow it; (b) a 26-mutant
 battery, below; (c) the probes in this document, each of which is written to be able
 to come back non-zero.
 
@@ -513,7 +513,7 @@ and against the ids production redraws:
 | Type | both ends, analyzer ids | both ends, production ids | corpus-wide, analyzer ids |
 |---|---|---|---|
 | `contains` | **99.22%** (40,098) | 99.11% | **100%** (41,100 of 41,100) |
-| `uses` | **72.84%** (13,275) | 72.68% | **96.72%** (12,840 of 13,275) |
+| `uses` | **72.84%** (13,275) | 72.71% | **99.58%** (13,219 of 13,275) binds somewhere; **88.57%** (11,758) binds to exactly one declaration |
 | `imports` | 0% | 0% | 0% — module-path endpoints by design |
 | `exports` | 0% | 0% | 0% — module-path endpoints by design |
 | `overrides` | **100%** (1) | 0% | 100% (1) |
@@ -525,8 +525,12 @@ false comparison with CSS's 66.8% `references` figure.
   measurement. **Per file, 3,605 of 13,275 (27.16%) `uses` edges name a type this file
   does not declare** — an imported type, which is most of them. Placing all 821 files'
   published ids in one table, so cross-file resolution is possible, the same edges
-  resolve at **96.72%**, the remainder naming a type from a repository outside this
-  corpus. Both numbers are true.
+  resolve at **99.58%** — and that figure was **96.72% before pass 3**, which is the
+  ancestor-scope walk below. "Resolves" and "resolves to exactly ONE declaration" are
+  different questions: at **88.57%** the target names an id exactly one file publishes,
+  and the remaining 11.43% is 1,461 edges whose id **2,702 ids share with other files**
+  plus 52 naming a type no file in the corpus publishes. All four numbers are true and
+  they answer four different questions.
 - **`imports` and `exports` at 0% is by design and is reported rather than omitted.** A
   consumer resolves them against the project's include roots.
 - `overrides` at 0% on production ids is the `uniqueId` projection limit, not a
@@ -638,10 +642,10 @@ the measurement that would expose a broken binding.
 
 | | pass 1 | pass 2 |
 |---|---|---|
-| protobuf mutants | 19 | **24** |
-| caught | 19 | **24** |
+| protobuf mutants | 19 | **26** |
+| caught | 19 | **26** |
 | **survived** | 0 | **0** |
-| fixtures | 6 | **7** |
+| fixtures | 6 | **8** |
 
 Five mutants were added, one per rule this pass changed, and each reverts the exact
 rule rather than a shape near it:
@@ -665,8 +669,8 @@ name, or the two spellings are the same string and it silently does nothing.
 
 | Command | Result |
 |---|---|
-| `npx tsx script/m14/run-fixtures.ts --lang protobuf` | **7 pass / 0 fail** (`validation/m14/fixtures/protobuf/`) |
-| `npx tsx script/m14/tmp/protobuf/probe/mutant-sweep.mts` | **24 caught / 0 survived** |
+| `npx tsx script/m14/run-fixtures.ts --lang protobuf` | **8 pass / 0 fail** (`validation/m14/fixtures/protobuf/`) |
+| `npx tsx script/m14/tmp/protobuf/probe/mutant-sweep.mts` | **26 caught / 0 survived** |
 | `npx tsc --noEmit` | no diagnostics |
 | `npx tsx script/m14/ontology-coverage-gate.ts protobuf` | **exit 2 — "no RULING TABLE for protobuf"**. The arbiter cannot rule for this lane until the wiring below is applied; nothing about the lane is wrong here |
 | `npx tsx script/m14/protobuf-ruling-table-proof.mts` | with the wiring applied: **emitted 5/10, ruled-sound 5, FALSIFIED 0, ruled-without-justification 0, exit 0** |
@@ -674,7 +678,7 @@ name, or the two spellings are the same string and it silently does nothing.
 | `npx tsx script/m14/protobuf-adversarial.mts` | 14 probes; the numbers in this document |
 | `npx tsx script/m14/protobuf-construct-probes.mts` | 94 observed node types, 117 declared; every pass-1 ruling re-probed at the larger corpus and still reading 0 |
 | `npx tsx script/m14/tmp/protobuf/probe/_wasm-fallback.mts` | the wasm-fallback measurement below |
-| fixture sources parse | 7 of 7 at **0 ERROR / 0 MISSING** nodes |
+| fixture sources parse | 8 of 8 at **0 ERROR / 0 MISSING** nodes |
 
 ## The shared gate would have passed this lane on the wrong grammar
 
@@ -758,14 +762,24 @@ a consumer to do with the edge. Measured by
 ## Declared limitations
 
 - **No independent oracle.** Stated in full under question 3. Every correctness claim
-  in this document rests on hand-derived expectations, a 24-mutant battery, and the
+  in this document rests on hand-derived expectations, a 26-mutant battery, and the
   specification — not on a second implementation. **5 DERIVATION findings**, all 54,939
   edges unaudited.
 - **Reference resolution is per-file**, by the declared boundary in the analyzer
   header. Cross-file resolution needs a project index; this lane does not build one.
   **27.16%** of `uses` edges name a type outside the file, and their target is derived
   from protobuf's own resolution rule rather than read. Corpus-wide, against all 821
-  files' ids at once, those edges resolve at **96.72%**.
+  files' ids at once, those edges resolve at **99.58%**, and **88.57%** of all `uses`
+  edges name an id exactly one file publishes.
+- **52 `uses` targets still name an id no file in the corpus publishes**, and the
+  reason is the same shifted-`-I`-root fact as the guard: consul declares
+  `package hashicorp.consul.internal.common;` in `proto/private/pbcommon/common.proto`
+  and imports it as `private/pbcommon/common.proto`, so the directory agrees with
+  neither the package nor any ancestor of it. `protoc` binds these against include
+  roots this analyzer is never told. The 56 ends that publish nothing at all are in
+  files `protoc` rejects — `grpc/testing/duplicate/echo_duplicate.proto` names
+  `EchoRequest` unqualified inside `package grpc.testing.duplicate` and declares
+  nothing there.
 - **`imports` and `exports` endpoints do not resolve to symbols**, by design and by
   family convention. Reported as 0% rather than omitted.
 - **The `imports` source is a basename.** Two files with the same basename in
@@ -809,3 +823,266 @@ a consumer to do with the edge. Measured by
   (`message_or_enum_type`, `block_lit`, `field_number`) that a future upstream release
   could rename. `script/m14/tmp/protobuf/probe/grammar-census.mts` re-derives the
   vocabulary from the wasm's own node-type table on every run.
+
+---
+
+# PASS 3 — the arbiter's 10/120, and what REACHES a declaration
+
+Pass 2 reported 821 of 821 files parsed and 5 of 10 types emitted. The supervisor then
+ran `script/m14/firing-check.ts` over production `parseFile` and got, for this lane,
+**3/10 fired, 2,069 edges, 10 of 120 files**. Both numbers were produced by an
+instrument reading `parseFile`, and they disagree by a factor of 25 in edge count.
+That is not a rounding difference to be averaged: one of them is a statement about this
+analyzer and the other is a statement about the sampler, and the sampler is the one
+that is wrong. This section settles it with counts, then answers the question the
+arbiter was built to ask, which pass 2 did not: **what walks TO a declaration.**
+
+## 10 of 120 — measured, and it is the sampler
+
+`script/m14/protobuf-incoming-audit.mts` part 1 re-derives the arbiter's own sample —
+same corpus walk, same `git ls-files`, same stride — and then asks of every path it
+offered a question that has nothing to do with parsing.
+
+| | |
+|---|---|
+| `git ls-files` offered | **8,524** `.proto` paths |
+| of those, on disk | **821** |
+| of those, **NOT** on disk | **7,703** |
+| stride (8,524 / 120) | 71 |
+| sampled paths | 120 |
+| **present on disk** | **10** |
+| **absent from disk** | **110** |
+
+The 110 are 103 `pb-googleapis`, 6 `pb-reference`, 1 `pb-grpc` — the three repositories
+checked out with `--filter=blob:none`, where `git ls-files` lists every tracked path
+whether or not the blob was ever fetched. Per repository, tracked-versus-present:
+
+| repository | tracked `.proto` | on disk |
+|---|---|---|
+| `pb-googleapis` | 7,341 | 128 |
+| `pb-reference` | 477 | 108 |
+| `pb-grpc` | 166 | 45 |
+| the other 15 | 540 | 540 |
+
+**8,703 of the 8,524 paths `firing-check.ts` offers this language are not on disk.** It
+hands each entry to `parseFile`, a path that was never fetched raises `ENOENT`, and the
+catch increments `parseFailures++` — the same counter a grammar failure increments. The
+arbiter's `10/120` is 10 real files and 110 absent paths.
+
+This lane's own census walks the **working tree**, which is why it read 821/821. Both
+numbers are reproducible; only one of them is about the analyzer. The one-line repair
+is in §Unresolved below, and it is a shared file.
+
+Two consequences for how the arbiter's number should be read, stated because the table
+in the handoff does not say either:
+
+- **The 3/10 is a firing fact about 10 files, not about the language.** The three types
+  it saw fire on 10 files — `uses`, `contains`, `imports` — are the three that fire on
+  almost any `.proto` file. `exports` has a corpus count of **4** and `overrides` **1**,
+  and no 10-file sample drawn from kubernetes, docker and boundary was ever going to
+  contain either. The gate over the full corpus, with the ruling table wired, reads
+  **emitted 5/10, ruled-sound 5, FALSIFIED 0** — the same 5 the supervisor's table would
+  have shown had it parsed the files it drew.
+- **The lane's degraded-parse risk is 0.** Every full-corpus run quoted in this
+  document that carried a `degradedFallbacks` count is stated with it. The runs the
+  headline numbers come from: **821 parsed / 0 failed / 0 degraded**.
+
+## What reaches a declaration — the five classes, kept apart
+
+`src/lsp/impact.ts` obtains reverse edges by scanning outgoing edges and matching
+targets; no inbound edge is stored. So the reverse walk is exactly as good as the
+target-matching, and **"resolves" and "resolves to exactly one declaration" are two
+different questions.** Collapsing them is how a lane reports a flattering rate, so every
+end below is placed in exactly one of five disjoint classes, counted over all 821 files'
+published ids at once:
+
+- **in-file** — the declaring file publishes it
+- **cross-file-unique** — exactly one file in the corpus publishes it
+- **cross-file-ambiguous** — **more than one** file publishes it; `bb_impact` picks a
+  winner by a rule nobody chose
+- **name-exists-unbound** — no file publishes the id, but some declaration in the corpus
+  carries that name: a binding defect
+- **hopeless** — no file publishes it and no declaration in the corpus carries the name:
+  an external dependency or a path
+
+| type | edges | in-file | cross-file-unique | **cross-file-AMBIGUOUS** | unbound | hopeless | binds both ends |
+|---|---|---|---|---|---|---|---|
+| `contains` | 40,098 | 79,884 | 9 | **303** | 0 | 0 | **99.24%** |
+| `uses` | 13,275 | 22,945 | 2,088 | **1,461** | 52 | 4 | **88.57%** |
+| `overrides` | 1 | 2 | 0 | 0 | 0 | 0 | 100% |
+| `imports` | 1,561 | 0 | 0 | 0 | 3,122 | 0 | 0% — module paths by design |
+| `exports` | 4 | 0 | 0 | 0 | 8 | 0 | 0% — module paths by design |
+
+The `in-file` column counts **ends**, not edges: an edge contributes two, which is why
+`contains` has 79,884 in-file ends on 40,098 edges. Declared once, at 821 parsed files /
+0 degraded: **38,551 distinct published ids, of which 2,702 are published by more than
+one file** — so the ambiguity is not a handful of targets, it is **7.0% of every id in
+the language**. Of 38,551 declarations, **37,113 (96.27%)** are named by at least one
+edge and 1,438 are named by none; a declaration nobody names is correct in a language
+of independent schema files and is reported rather than treated as a defect.
+
+**The ambiguity has one shape and it is protobuf's own.** `descriptor.proto` — which
+declares `google.protobuf.FileOptions`, `FieldOptions`, `Timestamp`, `Struct` and the
+rest — is **vendored into four repositories in this corpus**: `pb-reference`,
+`kubernetes/third_party/protobuf`, `dart-sdk/.../protobuf_handler/protos` and
+`kong/spec/fixtures/grpc`. `google.protobuf.FileOptions` is therefore published by **4
+files** and `google.protobuf.Timestamp` by **3**, so every `extend google.protobuf.X`
+block and every well-known-type reference is an ambiguous target. 1,764 edges
+(1,461 `uses` + 303 `contains`) are in that state. Each is **one edge attributed to one
+declaration**; counting it as four is how a name collision becomes a wrong refactor.
+
+**What would close it, and why this lane cannot.** `protoc` disambiguates by include
+root, which it is told on the command line and this analyzer never sees. The one
+per-file signal that exists — *did this file import the declaring one?* — resolves it
+for **1,956 of the 3,605** cross-file targets (54.2%) and provably cannot for the rest:
+consul sets **two** include roots (`proto-private` and `proto-public`) and neither
+agrees with the package it holds, which is why **1,593** cross-file targets are
+correctly named and still not vouched. Closing the remaining 1,764 needs the
+include-root map, which is a project-level fact. **Counted and stated here rather than
+papered over.**
+
+## The one defect pass 3 found, and the fix that survived its own falsification test
+
+Pass 2's declared boundary was "reference resolution is per-file". Measuring the
+incoming side turned that from a boundary into a **defect with a cause**.
+
+`resolveRef` walked only the scopes **inside the package subtree**. That is complete
+for in-file resolution — a file has one package, so it declares nothing above itself —
+but protobuf's rule is **C++ name lookup**, which walks every enclosing scope, and the
+package's own ancestors are enclosing scopes. So `resolveRef`'s dotted-name fallback,
+"the name as written", produced ids that exist in no repository:
+
+```proto
+// boundary/internal/proto/controller/api/resources/accounts/v1/account.proto
+package controller.api.resources.accounts.v1;
+import "controller/api/resources/scopes/v1/scope.proto";   // ← the file that declares it
+message Account {
+  resources.scopes.v1.ScopeInfo scope = 20;   // protoc: controller.api.resources.scopes.v1.ScopeInfo
+}
+```
+
+The emitted edge was `Account.scope -> resources.scopes.v1.ScopeInfo`. **431 `uses`
+targets were in that state.** The fix walks the full chain — enclosing scopes, then the
+package's ancestors, then the root — and accepts a candidate only when the directory
+its package maps to is among the directories **this file** imports, because `protoc`
+searches the imported descriptors and this file knows which descriptors it imported.
+
+| `uses` target ends | before | after |
+|---|---|---|
+| in-file | 22,945 | 22,945 |
+| cross-file-unique | 1,709 | **2,088** |
+| cross-file-ambiguous | 1,461 | 1,461 |
+| **names no file in the corpus** | **431** | **52** |
+| hopeless | 4 | 4 |
+
+**379 edges moved from naming an id that exists nowhere to binding exactly one file.**
+Nothing else moved: 54,939 production edges, 41,955 symbols, 0 self-loops, 0 empty
+names, 0 unknown kinds — all unchanged. `script/m14/protobuf-adversarial.mts` P3, a
+pre-existing probe computed by a different code path, independently reports `uses`
+corpus-wide resolution rising **96.72% → 99.58%**; `12,840 → 13,219` is **+379**, the
+same number the new instrument measures.
+
+**The fix was falsified once before it was accepted, and the falsifying test is in the
+instrument rather than in this sentence.** The first version keyed its evidence on *one*
+module path per directory. A directory holds several imported modules — boundary's
+`account.proto` imports both `google/protobuf/struct.proto` and
+`google/protobuf/timestamp.proto`, and `google.protobuf.Timestamp` is declared in the
+second — so the recorded provenance named a file that does not declare the target at
+**785 of 2,061** derived edges. The ids were right in all 785 and the *evidence* was
+wrong, which is the same defect in a different place. Recording a **directory** fixed
+that and left **7** wrong ids: docker vendors containerd, whose
+`api/types/platform.proto` declares `package containerd.types;` and is imported as
+`types/platform.proto`, so the directory `types` is imported while the declaration is
+`containerd.types.Platform`. The shipped walk now **declines** whenever the matched
+directory is a proper suffix of a more specific candidate's directory, which is exactly
+what a `-I` root above the package looks like. Declining costs those 7 edges and buys
+379 correct ones; the remaining 52 are consul's, where no per-file test can decide.
+
+Both halves are pinned by `protobuf/ancestor-scope-resolution`, and each by a mutant
+that fires on **exactly its own rows** — 26 mutants, 26 caught, 0 survived. Both
+mutants were wrong as first written and are recorded rather than counted: they broke
+the same two rows, so neither isolated its rule.
+
+## Coverage, reported as applicable
+
+**5 of 5 applicable types emitted, 5 of 5 ruled with a corpus measurement. Complete at
+5/5 — not 5/10.** The denominator shrank by RULED verdicts, each carrying an
+instrument, a probe and an overturn condition, and the numerator comes from the
+arbiter's own firing measurement while the denominator comes from the lane's construct
+probes. Numerator and denominator are therefore from different instruments, which is
+the condition that makes the fraction mean something.
+
+| type | verdict | count | where |
+|---|---|---|---|
+| `uses` | **EMITTED** | 13,275 | 609 files; e.g. `boundary/.../accounts/v1/account.proto` |
+| `contains` | **EMITTED** | 40,098 | 7,166 of them package→top-level; e.g. `boundary/.../accounts/v1/account.proto` |
+| `imports` | **EMITTED** | 1,561 | 557 files; 3 of them `weak` |
+| `exports` | **EMITTED** | 4 | `pb-reference/src/google/protobuf/{cpp_options,json_options,unittest_import,unittest_import_lite}.proto` |
+| `overrides` | **EMITTED** | **1** | `nvim-treesitter/tests/query/highlights/proto/test.proto`, in a file `protoc` rejects |
+| `calls` | **RULED** | 0 | instrument **A**, 0 of 10 candidate node types among **94** observed |
+| `extends` | **RULED** | 0 | instrument **A**, 0 of 8; the `extend` block occurs **214** times in **64** files and is read as `contains` with `viaExtension` |
+| `implements` | **RULED** | 0 | instrument **A**, 0 of 6; **259** `service` nodes in **221** files counted so the surface is on the record |
+| `references` | **RULED** | 0 | instrument **A**, 0 of 7; the construct occurs (**10,166** `message_or_enum_type` nodes) and is emitted, as `uses` |
+| `instantiates` | **RULED** | 0 | instrument **B**: **1,909** `block_lit` nodes, by-parent histogram `{constant: 1909}` — one key, so **0** constructions |
+
+**The gate over the full corpus, ruling table wired: `emitted 5/10  ruled-sound 5
+FALSIFIED 0  ruled-without-justification 0`, exit 0.** Reproduce with
+`npx tsx script/m14/protobuf-ruling-table-proof.mts`.
+
+## Pass 3 gates
+
+| Command | Result |
+|---|---|
+| `npx tsx script/m14/firing-check.ts --files 120 protobuf` | **3/10 fired, 2,069 edges, 10/120 files, 0 degraded** — and part 1 above is the diagnosis |
+| `npx tsx script/m14/protobuf-incoming-audit.mts` | 821 parsed / 0 failed / 0 degraded; part 1: 110 of 120 sampled paths absent from disk; part 2: the five classes above |
+| `npx tsx script/m14/protobuf-census.ts` | **821/821 parsed**, 41,956 symbols analyzer-direct / 41,955 through `parseFile`, 54,939 edges, **0** empty names, **0** unknown kinds, **0** `unknown` endpoints, **0** self-loops, **0** duplicate published ids |
+| `npx tsx script/m14/run-fixtures.ts --lang protobuf` | **8 pass / 0 fail** |
+| `npx tsx script/m14/tmp/protobuf/probe/mutant-sweep.mts` | **26 caught / 0 survived** |
+| `npx tsx script/m14/protobuf-adversarial.mts` | 14 probes; 628,758 nodes read, **0** lacking `.id`; `uses` corpus-wide **99.58%**; heuristic ratio **0** |
+| `npx tsx script/m14/protobuf-construct-probes.mts` | **94** observed node types, 117 declared; **13 ERROR + 2 MISSING in 1 file**; every ruling re-probed at the current corpus and still reading 0 |
+| `npx tsx script/m14/protobuf-ruling-table-proof.mts` | run **c**: `emitted 5/10 ruled-sound 5 FALSIFIED 0`, exit 0. run **b** (ruling table wired, `LANGS` untouched, so both instruments read the **bash** grammar): **FALSIFIED 2** — `calls` reads `function_definition`, `instantiates` reports `WRONG GRAMMAR: this probe was handed a tree whose root node is \`program\`, not \`source_file\`` |
+| `npx tsx script/m14/ontology-coverage-gate.ts protobuf` | **exit 2 — "no RULING TABLE for protobuf"**. The arbiter refuses to rule for a lane with no table; nothing about the lane is wrong |
+| `npx tsc --noEmit` | no diagnostics |
+| fixture sources parse | 8 of 8 at **0 ERROR / 0 MISSING** |
+
+## A file this lane could not review, and why that mattered
+
+`src/ast/real-protobuf-analyzer.ts` contained a **raw U+0000 byte** inside a template
+literal — the `<owner>\0<fieldNumber>` slot key. The runtime string is unchanged by
+writing it as an escape, but the raw byte made `file` report the analyzer as `data`,
+`grep` report `binary file matches` for every query against it, and `git diff` print
+`Binary files differ` instead of a hunk. **The lane's analyzer was therefore
+undiffable and ungreppable**, which is the state in which a whole file of relationship
+emissions is invisible to the source-derivation pass that the correction in this
+workstream exists to distrust. Escaped; `tsc` clean.
+
+## Declared limitations, pass 3
+
+- **No independent oracle. Unchanged and still the largest.** No protobuf entry in
+  `differential.ts`'s `LANGS`, no protobuf oracle in `script/m14/oracles/`. **5
+  DERIVATION findings**, one per emitted type, all 54,939 edges unaudited by a second
+  implementation. Every correctness claim here rests on hand-derived expectations, 26
+  mutants, the specification, and the probes in this document.
+- **1,764 edges carry an ambiguous endpoint** and `bb_impact` will attribute each to one
+  of several real declarations. One shape: `descriptor.proto` is vendored into four
+  repositories, so the well-known types have 2–4 publishers each. Closing it needs the
+  include-root map, which is a project-level fact this lane is not given.
+- **1,593 cross-file targets are correct but not vouched**, because consul's two include
+  roots agree with neither the package they hold nor any ancestor of it. The
+  vouching test is a *sufficient* condition, not a necessary one, and is reported as
+  such rather than folded into a resolution rate.
+- **52 `uses` targets still name an id no file publishes**, for the same
+  shifted-include-root reason; 56 ends are in files `protoc` rejects.
+- **`imports` and `exports` endpoints are module paths**, 0% by symbol resolution by
+  design and family convention. A consumer resolves them against include roots.
+- **`overrides` has a corpus count of 1, in a file `protoc` rejects.** Stated beside the
+  verdict everywhere it appears.
+- **Runs under concurrency intermittently report `[BB-HANG]`** on
+  `pb-googleapis/google/api/expr/v1beta1/expr.proto` and report a degraded file rather
+  than failing. Not reproducible in isolation and not this analyzer's — it is why runs
+  differ by up to 22 `uses` edges while the analyzer-direct counts are identical. Every
+  headline number above is from a run reporting **0 degraded**.
+- **Grammar-version drift.** This lane's grammar is vendored, patched and pinned with 8
+  load-bearing patches; the analyzer reads node names a future upstream release could
+  rename. `script/m14/protobuf-construct-probes.mts` re-derives the vocabulary from the
+  wasm's own node-type table on every run.
