@@ -965,6 +965,300 @@ changes are written out in the report so they can be applied without
 re-deriving them. **Nothing in this lane's committed output changed in pass 3
 except the instruments and this document.**
 
+## Pass 4 — the question the analyzer's own vocabulary cannot ask (2026-10-03)
+
+Pass 2's probes each begin from a branch in `real-zig-analyzer.ts`. Pass 3's each
+begin from a suppressor — a branch whose firing is invisible in the output. Both
+are the right way to audit a rule you can SEE, and both still ask the question in
+the analyzer's own words: *does this emitted edge have the right label, endpoint or
+source*. Pass 4 changes the question. It enumerates **what Zig can express** and
+asks whether the ontology has an edge for it, without reference to the analyzer's
+rule inventory. That is the only direction that can find a class the analyzer does
+not know it has — and the workstream's own correction says a source count is not
+evidence, so a rule whose branch never matches greps as loudly as one that fires.
+
+**Population.** 3,834 of 3,834 admitted files, `popHash sha256:2f3545f9…` — the
+hash every other published zig figure in this document names. 8 shards;
+`pass4-merge.py` asserts the union IS the population by re-walking the corpus
+itself, recomputes every ratio from summed primitives, and **refuses** any shard
+reporting `fallback > 0` or a failing precondition. All 8 shards: `fallback 0`,
+**11 of 11 preconditions** ok.
+
+### The five classes, measured
+
+| probe | construct | sites | own line | named at another line (dedup) | NOT named in the file |
+|---|---|---|---|---|---|
+| P10 | generic container instantiation in a TYPE position (`var x: std.ArrayList(u8)`) | **3,086** across 661 files | 2,056 (66.62%) | 1,030 (33.38%) | **0 (0.00%)** |
+| P11 | generic FUNCTION application (`fn make(comptime T: type) T`, called `make(u8)`) | **9,677** across 398 files | 2,097 (21.67%) | 7,580 (78.33%) | **0 (0.00%)** |
+| P12 | call to an in-file `fn … type` — Z32's documented `instantiates` class | **1,528** across 278 files | **1,528 (100.00%)** | 0 | **0 (0.00%)** |
+| P13 | `Self` in a type position | **0** across 0 files | — | — | — |
+| P14 | `@embedFile("…")` | **230** across 52 files | — | — | 0 `imports` edges |
+
+**Three classes that passes 2 and 3 could not see are not defects.** Across 12,765
+generic applications (P10 + P11) not one is unnamed in its file, and the
+`instantiates` class fires at **1,528 of 1,528** — 100% — of the exact construct
+its rule names. P14's 230 `@embedFile` sites carry no edge, and none can: the
+target is a data file, the schema holds no file-level node, and pointing an edge
+at one would mean minting a symbol the language does not declare. Reported, not
+fabricated.
+
+**Zig has no `Self`.** P13's premise was borrowed from a language that has one;
+0 sites across 0 files is the correct reading, and the first revision's
+precondition `p13SelfSites > 0` demanded the impossible, so the instrument's own
+verdict line read `NO` on all eight *clean* runs. The measurable half of P13 is the
+other clause: **a `comptime T: type` parameter is a local binding, not a
+declaration**, it appears in a type position **1,501 times across 219 files**, and
+**268 distinct (file, name) pairs each receive a `declared_type` `references`
+edge**. `T` alone accounts for 818 sites. The edge is a type-position read, which
+is true; the target is a name nothing declares, so a reverse walk resolves it to
+whatever `T` it finds first. `references` here resolves at a rate the table below
+reports, and this is a measurable part of why.
+
+**The dedup column is a property, not a loss.** `calls` keys on
+`${source}->${leaf}` with **no line** (`real-zig-analyzer.ts:1119`), so the 2nd..nth
+call of a name inside one enclosing declaration has no edge of its own *by
+construction*. Reading those as a missing edge is how the first revision of this
+instrument reported a 64.52% loss on a 60-file draw; the corrected three-way
+classifier separates "named here", "named at an earlier occurrence" and "named
+nowhere", and only the third is a gap.
+
+### Three instrument defects, each of which had already produced a verdict
+
+This is the fourth time in this lane that the instrument rather than the analyzer
+manufactured a class, and the third time it did so by reading the analyzer's
+metadata as if its names were its meaning.
+
+1. **P12 was keyed on the wrong bucket entirely.** `isGenericTypeApplication` is
+   pushed at `real-zig-analyzer.ts:1482` for a call to an in-file `fn … type` — a
+   TYPE-RETURNING FUNCTION, not a generic type application — while
+   `isConstructorApplication` (`:1494`) is `TypeName{ … }`. P11, which asks about
+   generic functions, was reading the type-returning-fn bucket; P12, which asks
+   about type-returning functions, was reading the constructor bucket. **P12
+   therefore reported 0 `instantiates` edges over 1,528 sites and read as a clean
+   negative about a class that fires at 100%.** The metadata name is a misnomer in
+   the ANALYZER, which is worth fixing on its own account; the probe now keys on
+   the rule, not the label.
+2. **P11/P12 matched on LINE alone** while the edge keys on `(line, target)`, and
+   **P13 counted edge PRESENCE where it printed a per-site percentage** — one edge
+   per name per file was being credited to every site naming it, which is how P13
+   printed a clean `100.00%` that meant nothing. P13 is now reported at the
+   `(file, name)` granularity the dedup key actually exists at.
+3. **The `Self` precondition**, above.
+
+Two controls gate the file (9 assertions over synthetic snippets, exit 2 on
+failure), and `pass4-merge.py` independently re-derives the population hash rather
+than trusting the shards' agreement.
+
+### What pass 4 could not settle
+
+The two P11/P12 classes are *unlabelled by omission* rather than mislabelled: a
+generic function application receives `calls`, never `instantiates`, and this
+document's own ZIG.O.4 note calls `instantiates` "the type ZIG.D.1 ruled out". Both
+spellings are defensible — a monomorphized call is a call, and `ArrayList(u8)` in a
+type position is a call in Zig's own semantics — so the lane records the split
+rather than choosing it. **What would settle it is a consumer-side decision** about
+whether `instantiates` in this ontology means "generic type application" or
+"monomorphization", and no instrument can decide a question of definition. The
+numbers to decide it with are 3,086 + 9,677 = 12,765 sites.
+
+## The incoming edge — what a reverse walk can actually bind to (2026-10-03)
+
+`src/lsp/impact.ts` does bounded reverse-dependency traversal with declared
+budgets, depth limits, truncation disclosure and verifier gates. It obtains its
+inbound edges by **scanning outgoing edges and matching targets**; no inbound edge
+is stored anywhere, because the schema holds none. So the reverse walk is exactly
+as good as target matching, and this section measures that.
+
+**The two named scripts do not exist.** The workstream's incoming section names
+`script/m14/firing-check.ts` and `script/m14/incoming-check.ts`. `script/m14/` holds
+100 files and neither name is among them; both would be shared machinery under §8.
+The instruments below are the lane-owned equivalents and are what every number here
+comes from: `validation/m14/fixtures/zig/incoming-check.ts` (per-shard dump of
+production `parseFile` output plus a tree-declared-name index) and
+`incoming-resolve.ts` (the resolver, with 2 controls and a non-zero exit).
+`incoming-check.ts` carries control C3 — a top-level `const`, a container field, a
+`comptime` parameter and a function-local of the same shape must classify
+differently — because without it this file cannot tell "the analyzer dropped a
+declaration" from "this is a local variable", which is the whole content of the
+`neverIndexed` claim. **A third refinement was written and withdrawn**, and the
+reason belongs here rather than in a commit message: it split `neverIndexed-field`
+into "a field of an anonymous container" and "a lost field", which needs a
+re-derivation of Z21/Z22, and a control pinning that re-derivation read
+`var anon: struct { orphan: u8 }`'s `orphan` as *owned* — because the struct is the
+payload of a named `variable_declaration` even though the struct type has no name.
+An instrument that re-implements the rule it audits has produced three false
+classes in this lane, so the split is not made and `field` stays one bucket.
+
+### The counts
+
+**392,550 edges and 127,429 published symbols** — an exact, independent
+reproduction of pass 1's census by different code.
+
+| type | edges | files | tgt unique | tgt AMBIGUOUS | tgt zero | MISBIND | of which UNIQUE-in-another-file | UNBIND | src is a symbol | conf < 0.7 |
+|---|---|---|---|---|---|---|---|---|---|---|
+| `calls` | 113,476 | 2,781 | 28.95% | **66.58%** | 4.47% | 62,983 | 16,598 | 5,156 | 88.47% | 0 |
+| `uses` | 132,201 | 2,852 | 15.81% | **77.48%** | 6.71% | 70,239 | 10,002 | 15,377 | 77.52% | 0 |
+| `contains` | 77,459 | 1,474 | 35.33% | 64.47% | 0.20% | **0** | 0 | 314 | 100.00% | 0 |
+| `imports` | 10,200 | 2,693 | 0.15% | 33.37% | 66.48% | 382 | 0 | 6,810 | 0.00% (marker) | 0 |
+| `references` | 30,794 | 2,966 | 15.23% | 58.80% | 25.97% | 9,207 | 1,733 | 8,253 | 0.00% (marker) | 0 |
+| `exports` | 24,114 | 3,164 | 44.31% | 55.68% | 0.01% | **0** | 0 | 6 | 0.00% (marker) | 0 |
+| `instantiates` | 4,306 | 530 | 25.85% | 70.20% | 3.95% | 445 | 40 | 171 | 44.96% | 0 |
+| `extends` | 0 | 0 | — | — | — | — | — | — | — | — |
+| `implements` | 0 | 0 | — | — | — | — | — | — | — | — |
+| `overrides` | 0 | 0 | — | — | — | — | — | — | — | — |
+
+**265,887 of 392,550 edges (67.73%) name a target that two or more published
+symbols share.** Mean candidates per ambiguous edge: `uses` 102.53, `calls` 84.87,
+`references` 337.53; the maximum is 2,216. The worst offenders are the shortest
+names in the language — `std` (2,216 published symbols across 2,214 files),
+`len`, `assert`, `items`, `init`, `deinit`, `mem`, `builtin`, `debug`. **Only
+69,245 edges (17.64%) are in the shape where name matching is sufficient on its
+own: a unique target that is in the edge's own file.**
+
+### Two unresolved targets that look identical and are opposite findings
+
+Both read "not resolved" in a count. They fail differently, and the difference is
+whether the walk produces **wrong** advice or **no** advice.
+
+- **MISBINDABLE — 143,256 edges.** The name IS published somewhere, so the walk
+  *will* bind the edge, and no candidate is in the edge's own file. `calls` 62,983,
+  `uses` 70,239, `references` 9,207, `instantiates` 445, `imports` 382.
+  **The sharp case is 28,373 of them**: the target resolved to exactly ONE
+  declaration, in another file, so the walk is about to be *confident* and wrong.
+- **UNBINDABLE — 36,087 edges.** No symbol carries the name anywhere; the walk
+  finds nothing. `uses` 15,377, `references` 8,253, `calls` 5,156, `imports`
+  6,810, `contains` 314, `instantiates` 171, `exports` 6.
+
+Cause, per type, and the external/never-indexed separation the incoming section
+asks for:
+
+| type | zero | path | external | neverIndexed-decl | neverIndexed-field | declared-local | declared-parameter | non-identifier | builtin-fn | builtin-type |
+|---|---|---|---|---|---|---|---|---|---|---|
+| `calls` | 5,067 | 0 | 2,580 | 51 | 38 | 2,353 | 44 | 1 | 0 | 0 |
+| `uses` | 8,871 | 0 | 1,799 | 151 | **6,355** | 342 | 26 | 198 | 0 | 4 |
+| `contains` | 157 | 0 | 0 | 148 | 9 | 0 | 0 | 0 | 0 | 0 |
+| `imports` | 6,781 | **6,621** | 92 | 28 | 1 | 13 | 0 | 24 | 2 | 0 |
+| `references` | 7,996 | **6,621** | 531 | 205 | 52 | 436 | 116 | 33 | 2 | 0 |
+| `exports` | 3 | 0 | 0 | 3 | 0 | 0 | 0 | 0 | 0 | 0 |
+| `instantiates` | 170 | 0 | 0 | 1 | 0 | 155 | 14 | 0 | 0 | 0 |
+
+`declared-local` and `declared-parameter` are reported apart and are **not**
+`neverIndexed`: this project's model carries a function's signature on the function
+symbol and does not publish a symbol per local, so an edge to one of those names is
+not a dropped declaration. `uses`'s 6,355 `neverIndexed-field` is a field name the
+analyzer publishes no symbol for, and the withdrawal above is why no finer split is
+claimed for it. `instantiates`'s 170 are 155 locals and 14 parameters — the Z22
+anonymous-container rule again, measured from the other side.
+
+**The largest single unresolved name is a defect this lane does not own.**
+`Self` appears in 240 edges and is declared at container or file scope in **169
+files**: `const Self = @This();` is Zig's self-type idiom and a real top-level
+declaration. `keepSymbol`'s `UNIVERSAL` denylist at `src/ast/pool-worker.ts:449`
+lists `"Self"` — a JS/Rust `this`-analogue, not a Zig keyword — so the store
+refuses to publish **any** symbol with that name. The lane's own
+`store-denylist-census.ts` already measured it (262 declarations, 97 published,
+165 never, 167 files); this section is the independent arrival at the same place
+from the edge side. `root` (157 edges, 57 files) and `unknown` (39 edges, 33 files)
+are the same denylist entry. §8.
+
+Also measured, and counter-intuitive: **36 of the 37 names in the analyzer's own
+`ZIG_DECLARED_TYPE_BUILTINS` ARE published symbol names somewhere in this corpus** —
+including `u8`, for `zig/test/behavior/basic.zig`'s `const @"u8" = u16;` and
+`zls/.../Interner.zig`'s `f80`. This is the Z57 rule working, and it is why the
+resolver's builtin rung must be tested on a name that satisfies its own
+precondition: the first revision asserted it on the literal `u8` and failed at
+8/8 scale while passing at 1/8, which is a control asserting a corpus fact rather
+than a rule.
+
+## Z65 — target scope: making the breakable half breakable (2026-10-03)
+
+**265,887 ambiguous edges; 151,004 (56.79%) have a candidate in the edge's OWN file
+and are therefore resolvable by a per-file rule; 114,883 have no local candidate
+and no per-file rule can pick them.** Per type, the breakable share is `contains`
+49,939 (100.00%), `exports` 13,427 (100.00%), `instantiates` 2,618 (86.60%),
+`imports` 3,022 (88.78%), `references` 10,633 (58.72%), `uses` 42,197 (41.19%),
+`calls` 29,168 (38.61%). The 114,883 that no per-file rule can reach are the
+honest remainder and are named as such rather than papered over.
+
+A zig relationship carries six keys — `source`, `target`, `type`, `confidence`,
+`line_number`, `metadata` — and **both endpoints are name strings**, so an edge has
+no room to disambiguate anything. It does have `metadata`, and the analyzer knows
+which names IT published, so `annotateTargetScope` adds a label to every existing
+edge:
+
+- `file-local` — this file publishes a symbol with exactly this name, plus
+  `targetKind` when the file publishes exactly one kind under it, or
+  `targetKindCount` when it publishes several. **A collision inside one file is the
+  case a name-keyed walk gets wrong most confidently**, and this is where the
+  annotation refuses to pick: `const Collide = struct{}` and `fn Collide()` in one
+  file leaves `targetKind` absent and `targetKindCount` at 2.
+- `file-external` — the file publishes none. An external `std.*` name, a builtin, an
+  import path. Stated rather than implied.
+- `scope-marker` — the endpoint is `(global)` / `(file)` / `(declared-type)`.
+
+Measured over the population, read back from production metadata:
+
+| | edges | share |
+|---|---|---|
+| `file-local` | **220,528** | 56.18% |
+| `file-external` | 172,022 | 43.82% |
+| `scope-marker` / absent | 0 / 0 | — |
+
+**And the check on the annotation itself, which is the number that matters:** of the
+220,528 `file-local` edges, **220,208 (99.85%) do have a candidate in their own
+file. 320 (0.15%) do not** — and all 320 are 9 names, every one of them on the
+shared `keepSymbol` denylist: `Self` ×145, `root` ×98, `unknown` ×37, `self` ×23,
+`super` ×10, `this` ×3, `program` ×2, `destructor` ×1, `source_file` ×1. The
+analyzer can see the symbol and the store refuses to keep it, so those 320 edges
+carry a `file-local` label naming something the store will not publish. The
+annotation cannot know the store's denylist without importing it, which would
+couple the analyzer to the store it feeds; §8 carries the fix. **The change is not a
+regression for those 320:** a consumer that follows `file-local` and finds nothing
+gets exactly the outcome it got before, because there was nothing to find.
+
+**It adds no edge, removes no edge, and moves no count.** Verified three ways at
+the full population: 127,429 symbols and 392,550 edges before and after, per-type
+identical; shard 0's per-type counts identical (15,766 / 17,290 / 10,478 / 4,319 /
+1,490 / 672 / 4,237); and the arbiter's emitted counts identical on a bounded
+1,200-file root (29,588 / 35,867 / 21,733 / 3,143 / 9,076 / 6,433 / 1,253). A
+consumer that ignores the label behaves exactly as before, which is why it cannot
+regress a budgeted lane.
+
+**What it does not do.** It says whether the target is *in this file*, not whether
+it is the declaration the author meant. Resolving `x.y.z()` to `z` needs the
+receiver's type, which needs a type index, which is the limitation already declared
+above. And the change is lane-side only: the name→id mapping that turns a target
+string into a symbol happens in `src/ast/engine.ts`, so **nothing consumes
+`targetScope` yet** and no `bb_impact` answer changes until §8 item 6 lands.
+
+### The fixture, and the mutant that survived it
+
+`validation/m14/fixtures/zig/target-scope.zig` +
+`.expectation.json` pin the file-local kind, the in-file collision, the external
+name and the import path, and **9 of 9 zig fixtures pass**.
+
+`validation/m14/fixtures/zig/z65-mutants.mts` injects 5 defects and requires the
+fixture to catch each: `drop-target-scope`, `all-external`, `all-local`,
+`pick-a-kind-on-collision`, `key-on-the-path-not-the-binding`. **5 of 5 CAUGHT.**
+
+Two things about that harness are the point rather than the count. It imports
+`matchConstraints` from `script/m14/run-fixtures.ts` instead of restating the
+comparison, because a mutant harness that reimplements the matcher can pass a mutant
+the real runner would catch and then log "caught" while the suite disagrees — the
+first revision shelled out to `tsx -e` and evaluated the fixture by hand, which is
+that failure one step further out. And **one mutant survived the first run of the
+fixture**: `key-on-the-path-not-the-binding` flips `std` from `file-local` to
+`file-external`, and the fixture had a *forbid* row saying `std` must not be
+external and no *expect* row saying it must be local — so the mutant satisfied the
+forbid and violated nothing. A negative assertion with no positive counterpart is
+satisfied by any behaviour. The missing `expect` row is now in the fixture and the
+mutant is caught. A fixture suite that has never had a mutant survive it has not
+been asked the question.
+
+M5 is deliberately a *realistic* defect rather than a strawman: it is what an
+implementation keying on the import PATH instead of the published binding would do,
+and it is invisible to a fixture that only pins the external cases.
+
 ## Defects this lane found while establishing the ontology (Z59, Z60)
 
 Establishing the ten types is the half of the job that finds things. Two defects
@@ -1161,6 +1455,45 @@ rather than excellence, so each entry below names the number that bounds it.
   chain (`b.build_root.handle.readFileAlloc`), which no type index should resolve.
   Closing the rest needs the index passed INTO `analyze(root, source, filePath)`,
   which has no parameter for it — an API question, not a detection one.
+- **267 of 392,550 edges (0.07%) carry a `file-local` label naming a symbol the
+  store refuses to publish** — Z65's own correctness check, and the one class its
+  measurement found in itself. 320 edges, 9 names, every one on the shared
+  `keepSymbol` UNIVERSAL denylist at `src/ast/pool-worker.ts:449`: `Self` ×145,
+  `root` ×98, `unknown` ×37, `self` ×23, `super` ×10, `this` ×3, `program` ×2,
+  `destructor` ×1, `source_file` ×1. The analyzer publishes the symbol and the
+  store drops it by NAME ALONE, so the label is true of the analyzer and false of
+  the graph. `Self` is the substantive one: it is Zig's self-type idiom,
+  `const Self = @This();`, a real top-level declaration present in **169 of 3,834
+  files**, and 240 edges name it. Fixing it means the denylist needs a per-language
+  exemption, which is shared machinery (§8), not an analyzer change — and an
+  analyzer that imported the store's denylist to compensate would be coupling the
+  thing it feeds to the thing that filters it.
+- **143,256 edges (36.50%) will bind to a declaration in ANOTHER file if a
+  consumer matches targets by name, and 28,373 of those bind to EXACTLY ONE such
+  declaration**, so the walk is confident and wrong rather than merely unsure.
+  Z65 labels 220,528 edges `file-local` and 172,022 `file-external`, which is the
+  honest per-file half; the cross-file half cannot be resolved without a type index
+  and **nothing consumes `targetScope` yet**, so no `bb_impact` answer has changed.
+  The count is the size of the remaining work, not a description of today's
+  behaviour.
+- **1,501 type-position reads across 219 files name a `comptime T: type`
+  parameter — a local binding, not a declaration — and 268 distinct (file, name)
+  pairs each receive a `declared_type` `references` edge** (P13). `T` alone is 818
+  sites. The read is real; the target is a name nothing declares, so a name-keyed
+  reverse walk resolves it to an unrelated `T`. Suppressing it would lose a genuine
+  type dependency, and there is no edge kind for "a type parameter of the
+  enclosing declaration" in the shared schema (§8).
+- **`uses` has 6,355 unresolved field-name targets (36.10% of its zeros) and this
+  lane does NOT split them.** The honest split is "a field of an anonymous
+  container, correctly unpublished under Z21/Z22" against "a field of a named
+  container that went missing" — two opposite findings — and telling them apart
+  requires re-deriving Z21/Z22 inside the instrument. A control pinning that
+  re-derivation read `var anon: struct { orphan: u8 }`'s `orphan` as OWNED, because
+  the struct is the payload of a named `variable_declaration` even though the struct
+  type has no name. An instrument that reimplements the rule it audits has produced
+  three false classes in this lane, so the split is withdrawn and `field` stays one
+  bucket. **The 6,355 is therefore an upper bound on the defect and a lower bound
+  on nothing** — it is not yet a defect count.
 - **Grammar-version drift.** The analyzer reads the `type`, `body`, `name`, `left`,
   `right` and `operator` fields and the anonymous tokens `const`/`var`/`pub`; a
   grammar bump can change what it sees. The grammar pin is a gate, not a comment.
@@ -1473,7 +1806,7 @@ compiler's own duplicate/redeclaration diagnostic naming that identifier, and is
 a duplicate error-set member. The probe pushes only those, so the arbiter flips the
 `overrides` row to FALSIFIED by itself.
 
-### Five items for the supervisor (§8), stated so they can be applied directly
+### Items for the supervisor (§8), stated so they can be applied directly
 
 1. **Wire the table.** `script/m14/ontology-coverage-gate.ts`: add
    `import { ZIG_RULED } from "./zig-ruled"` and the `zig:` entry in
@@ -1505,3 +1838,40 @@ a duplicate error-set member. The probe pushes only those, so the arbiter flips 
    counter beside the corpus line — files parsed, files fallen back — would make the
    difference between a run that measured the analyzer and one that measured a
    mixture visible in the arbiter's own output.
+6. **Nothing consumes `metadata.targetScope`, so Z65 changes no answer yet.**
+   `src/ast/engine.ts` (shared) is where a relationship's `target` STRING becomes a
+   `target_symbol_id`, and it matches by name. Two changes make the label load-bearing
+   and neither is in a lane's file: (a) when `targetScope === "file-local"`,
+   restrict candidate resolution to the edge's own file before falling back to the
+   corpus — this is what converts the measured 151,004 breakable ambiguous edges
+   into resolved ones and it removes the 143,256 misbindings; (b) when
+   `targetScope === "file-external"`, do not resolve by name across the corpus at
+   all, because 172,022 edges name something outside the file and a cross-file
+   name match on them is a guess. `src/lsp/identity.ts`'s resolver is the other
+   candidate site; it already reports `rootMatch.nameMatches`, and the number to
+   compare against is the `tgt AMBIGUOUS` column above.
+7. **`script/m14/firing-check.ts` and `script/m14/incoming-check.ts` DO NOT EXIST.**
+   The workstream's incoming section names both, and `script/m14/` holds 100 files
+   with neither among them, so the instruction to "run the arbiter and report your
+   lane's numbers" via those two paths cannot be followed as written. The lane-owned
+   equivalents are `validation/m14/fixtures/zig/incoming-check.ts` (per-shard dump of
+   production `parseFile` output plus a tree-declared-name index) and
+   `incoming-resolve.ts` (the resolver; 2 controls, non-zero exit on failure). If
+   the shared pair is wanted, it is a lift of these two with the lane-specific
+   knowledge removed: the cause ladder (`path` / `external` / `neverIndexed` /
+   `declared-local` / `declared-parameter` / `builtin-*`) and the four-way
+   target classifier (`unique` / `ambiguous` / `misbindable` / `unbindable`) are the
+   parts worth keeping, and the `neverIndexed` discriminator — a name is only
+   "never indexed" when the TREE declares it and no symbol was published — is the
+   part that must not be simplified to a name lookup, because a name lookup is what
+   makes external and never-indexed look identical.
+8. **`keepSymbol`'s UNIVERSAL denylist needs a per-language exemption for `Self`,
+   `root` and `unknown`** (`src/ast/pool-worker.ts:449`, shared). `Self` is not a Zig
+   keyword: `const Self = @This();` is the language's own self-type idiom and a real
+   top-level declaration, present in **169 of 3,834 corpus files**, and **240 edges
+   name it** — 145 of them now carrying a `file-local` label the store then refuses
+   to honour. `root` (157 edges, 57 files) and `unknown` (39 edges, 33 files) are the
+   same entry. The list reads as a JS/Rust `this`-analogue set, and `module` /
+   `exports` are already handled by a JS_FAMILY guard two lines above; `Self`,
+   `root`, `unknown` and `self` need the same treatment, because in Zig they are
+   ordinary declaration names rather than a receiver.
