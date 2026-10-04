@@ -1218,8 +1218,8 @@ type            fired  edges    distinct  ambiguous  unresolved
 calls           yes    819      130       0          569
 uses            yes    331      55        6          164
 contains        yes    149      127       5          0
-imports         yes    48       1         0          47
-references      yes    390      21        63         298
+imports         yes    50       1         0          49
+references      yes    391      21        63         299
 exports         yes    31       20        2          8
 extends         yes    22       9         0          5
 implements      NO     0        0         0          0
@@ -1234,6 +1234,25 @@ target names resolving to >1 published symbol      : 8
   CommentBlock -> class, function         Parser      -> class, function
   ParserError -> class, function          DateTime    -> class, function
 ```
+
+**This block was ALSO a stale snapshot, and on the one file set where that excuse does not apply.**
+It read `imports 48 … 47` and `references 390 … 298` until this pass; the same five files, whose
+mtimes are all 2026-09-30 and unchanged since before this lane began, now give `imports 50 … 49` and
+`references 391 … 299`. Every other figure in the block — 375 symbols, `degraded parses: 0`,
+`parse failures: 0`, the other eight type rows, 240 named, 92 of 375 orphans, 8 ambiguous names — is
+unchanged, and three consecutive re-runs return the new figures identically. The cause is this lane's
+own work, not the corpus: `932a20d27` began emitting `imports`/`exports` and `f2e84906f` fixed a
+17-module `using` that published one module, and the block was never re-run afterwards.
+
+**A pinned file set is the case where "a quoted block is a snapshot" has no force.** Every other
+snapshot in this file is defended by sampling, rotation or a moving population. This one names five
+specific paths, so a number that moved on it is a code change nobody re-quoted — and the doc asserts
+that exact lesson a few lines above this one while carrying the counter-example. It is now checked:
+`doc-tables-check.ts` §8 re-runs `script/m14/incoming-check.ts` on the file set **parsed out of the
+command above**, so the doc and the check cannot name different files, and compares all 61 cells.
+Negative control, 8 injected drifts, 8 caught: `imports` edges, `imports` unresolved, `extends`
+edges, `instantiates` ambiguous, the symbol count, distinct declarations, orphan count and the
+ambiguous-name count.
 
 **That block was transcribed with only seven of the eight names — `DateTime` was dropped — while the
 count beside it read 8 and the paragraph below argued from all eight.** Re-running the command on
