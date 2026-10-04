@@ -875,7 +875,32 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
             // at the ATTRIBUTE, while `elementRange` below keeps the structural
             // span so a reader can still find the element itself. Before this the
             // two readings shared one field and one of them had to be wrong.
-            range: declaration ? this.nodeToRange(declaration.nameNode) : this.nodeToRange(node),
+            //
+            // M60 (containment ledger, 2026-10-04): the ANCHOR is right about the
+            // line and wrong about the SPAN, and the span is what `contains` is made
+            // of. Anchoring the same-line case to the `name=` Attribute put the
+            // declaration's range INSIDE its own element, so
+            //
+            //   <define name="boolean">      symbol `boolean` @ name="boolean"
+            //     <choice>                   symbol `choice`  @ <choice>…</choice>
+            //
+            // produced the edge `boolean -contains-> choice` — which is TRUE — with a
+            // target that is not inside the source, and the attribute symbol `name`
+            // occupied the identical byte range as the declaration itself.
+            // Measured over 300 corpus files: 194 contains edges unverifiable by span
+            // nesting because two names shared one range, and 280 more whose source
+            // span did not enclose a child the source really does contain. Both are
+            // invisible to a resolution rate, which is 100 % on this type.
+            //
+            // So the all-on-one-line case anchors to the ELEMENT, and the reported LINE
+            // cannot move, because that is exactly the condition under which the
+            // element's row and the attribute's row are the same row. The other two
+            // shapes keep the Attribute / AttValue anchor and M19 exactly as measured —
+            // at the cost of leaving their containment unverifiable, which is 4 of
+            // 19,852 declarations and is declared rather than rounded away.
+            range: declaration
+              ? this.nodeToRange(declaration.allOnOneLine ? node : declaration.nameNode)
+              : this.nodeToRange(node),
             visibility: "public",
             ownerName,
             ownerKind: ownerName ? ASTEngine.SymbolKind.Class : undefined,
@@ -2555,13 +2580,22 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
    * `<xsd:element name=` and carries no part of the name; the AttValue is on
    * 234. Anchoring to the Attribute reported 233, so a search for the name
    * landed one line above the string that spells it.
+   *
+   * `allOnOneLine` says which of the shapes this declaration is, because the shapes
+   * want DIFFERENT spans even where two of them agree on the line. See the call site:
+   * when all three share a line the SYMBOL anchors to the whole element, and the
+   * difference is containment rather than cosmetics.
    */
   private declaredNameOf(
     namespaceUri: string | undefined,
     localName: string,
     tagNode: Node,
   ): { name: string; attribute: string; /** The node the NAME is written on — AttValue when it is on another line. */
-    nameNode: Node } | null {
+    nameNode: Node
+    /** Whether the tag, the `name=` attribute and its value all sit on ONE line. This is
+     *  the switch that decides the SYMBOL's span, and it is a different question from
+     *  which node carries the name's LINE. See the call site. */
+    allOnOneLine: boolean } | null {
     if (!namespaceUri) return null
     const declaring = RealXmlAnalyzer.DECLARATION_VOCABULARIES[namespaceUri]
     if (!declaring || !declaring.has(localName)) return null
@@ -2580,7 +2614,28 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
       // node's line; when they share a line, both give the same answer and the
       // whole Attribute is the wider, more useful anchor.
       const anchor = valueNode.startPosition.row !== node.startPosition.row ? valueNode : node
-      return { name: value, attribute, nameNode: anchor }
+      return {
+        name: value,
+        attribute,
+        nameNode: anchor,
+        // The switch the call site needs is "are the TAG, the ATTRIBUTE and the VALUE
+        // all on ONE line". Either half alone is wrong, and the M19 fixture
+        // `xml/xsd-declared-name-lines` fails on each of them in turn:
+        //
+        //   tag 27 / attribute 28 / value 28   `<xsd:attribute` + `name="X"` on 28
+        //        — attribute and value share a line, the tag does not. Testing the
+        //          value's row alone anchors to the element and reports 27.
+        //   tag 23 / attribute 23 / value 24   `<xsd:element name=` + `"X"` on 24
+        //        — tag and attribute share a line, the value does not. Testing the
+        //          attribute's row alone anchors to the element and reports 23.
+        //
+        // All three on one line is the only shape where the element's row and the
+        // attribute's row are the same row, which is the whole reason the element
+        // anchor is line-safe.
+        allOnOneLine:
+          node.startPosition.row === tagNode.startPosition.row
+          && valueNode.startPosition.row === node.startPosition.row,
+      }
     }
     return null
   }
