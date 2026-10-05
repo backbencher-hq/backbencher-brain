@@ -329,6 +329,30 @@ export type FingerprintState =
  *  changed": an unanswerable question must produce UNEXPLAINED, never STALE. */
 export type MovedSince = (commit: string | undefined, covers: Coverage) => string[] | null
 
+/** The injected "what was the digest of these paths AS OF this commit" probe.
+ *
+ *  THIS IS THE REAL DISCRIMINATOR, and the one above is not sufficient. The
+ *  live proof is why: with an unrelated edit to the verifier sitting uncommitted,
+ *  `movedSince` truthfully reports a move, and two forged values (the record's
+ *  own hash, and a correct digest of `package.json`) were filed as STALE — the
+ *  reassuring verdict, with the fix named as "re-run the verifier". A dirty
+ *  tree launders a forgery into bookkeeping.
+ *
+ *  So the question is not "did something move?" but "WAS THIS VALUE THE DIGEST
+ *  OF THESE BYTES AT THE MOMENT IT WAS SEALED?", asked of the blobs stored in
+ *  git rather than of the working tree. It cannot be faked by an unrelated edit,
+ *  because it never looks at the working tree:
+ *
+ *    digestAtCommit == the record's value  → the value was honest and the
+ *        source has since moved: STALE, and the fix is to re-run.
+ *    otherwise                            → the value was never a digest of the
+ *        declared coverage at any point: UNEXPLAINED, whatever else has changed.
+ *
+ *  `null` when the question cannot be answered (no usable commit, or a covered
+ *  path that did not exist then) — and null means UNEXPLAINED, never STALE.
+ */
+export type DigestAtCommit = (commit: string | undefined, covers: Coverage) => string | null
+
 /** The structural findings that make a value malformed REGARDLESS of the tree's
  *  state — the ones that are true of the value alone. Extracted from
  *  `decorativeVerdict` so the classifier can ask "is this value dishonest?"
@@ -378,10 +402,17 @@ export function valueFindings(args: {
  *   2. coverage structurally broken→ no-coverage   (named, never re-derived)
  *   3. value dishonest on its own  → malformed     (constant, empty, self-hash…)
  *   4. value re-derives            → verifiable    (the only pass)
- *   5. value differs, tree moved   → stale         (real, not dishonest)
- *   6. value differs, tree did not → unexplained   (the invented-number state)
- * Steps 5 and 6 are the F4 discrimination: the SAME predicate, two different
- * injected answers, two different verdicts.
+ *   5. value WAS the digest at the record's own commit, and a covered path has
+ *      moved since                        → stale      (real, not dishonest)
+ *   6. value was NOT the digest at the record's own commit → unexplained (invented)
+ * Steps 5 and 6 are the F4 discrimination, and step 5 consults BOTH probes on
+ * purpose: `digestAtCommit` proves the value was honest WHEN it was sealed, and
+ * `movedSince` proves something actually changed since (otherwise an
+ * unaccountable difference would be filed as routine bookkeeping). Requiring
+ * both is what stops a dirty working tree from laundering a forgery — the defect
+ * the live proof found in the first version of this function, where
+ * `movedSince` alone classified the record's own hash and a digest of
+ * `package.json` as STALE.
  */
 export function classifyFingerprint(args: {
   fingerprint: unknown
@@ -391,8 +422,9 @@ export function classifyFingerprint(args: {
   verifierCommand: string
   evidenceFile?: string
   movedSince: MovedSince
+  digestAtCommit: DigestAtCommit
 }): FingerprintState {
-  const { fingerprint, covers, root, recordCommit, verifierCommand, evidenceFile, movedSince } = args
+  const { fingerprint, covers, root, recordCommit, verifierCommand, evidenceFile, movedSince, digestAtCommit } = args
   const structural = coverageFindings(covers, { root, verifierCommand, ...(evidenceFile === undefined ? {} : { evidenceFile }) })
   if (covers.length === 0 || structural.length > 0) return { state: "no-coverage", findings: structural, covers }
   const dishonest = valueFindings({ fingerprint, root, ...(evidenceFile === undefined ? {} : { evidenceFile }) })
@@ -405,9 +437,14 @@ export function classifyFingerprint(args: {
     return { state: "no-coverage", findings: [`cannot re-derive: ${(e as Error).message}`], covers }
   }
   if (rederived === fp) return { state: "verifiable", fingerprint: fp, covers }
-  // The discriminator. `null` (the commit is unknown or absent from this repo)
-  // is treated as UNEXPLAINED, never as STALE: an unanswerable question must
-  // not produce the reassuring verdict.
+  // The discriminator. BOTH probes must agree before the reassuring verdict:
+  // the value has to have been the real digest at the record's own commit, AND
+  // something covered has to have moved since. Either one alone is gameable —
+  // the first by a forged commit stamp, the second by a dirty tree.
+  const wasHonestAtSeal = digestAtCommit(recordCommit, covers)
+  if (wasHonestAtSeal === null || wasHonestAtSeal !== fp) {
+    return { state: "unexplained", fingerprint: fp, rederived, covers }
+  }
   const moved = movedSince(recordCommit, covers)
   if (moved !== null && moved.length > 0) return { state: "stale", fingerprint: fp, rederived, moved, covers }
   return { state: "unexplained", fingerprint: fp, rederived, covers }
