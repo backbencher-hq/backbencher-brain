@@ -2,31 +2,98 @@
   "issue": "492",
   "code": "L3",
   "status": "verified",
-  "currentCommit": "a871d533a736e8e38cb826d80d986d3cc84022d1",
-  "sourceFingerprint": "b7c9c4a899453bf2f5e8d7001e53129e6c2a7d46c5a2126e4261c6e576aefd50",
+  "currentCommit": "9c25a1dc2384899d2370c0ad05c638b1f362aa17",
+  "sourceFingerprint": "d499decfe16768270aac85bda33321a5e0a58e053081cc71d8a17dcd04d77774",
   "verifierCommand": "npx tsx script/m24/verify-navigation.ts",
   "evidenceFile": "L3.json",
-  "generatedAt": "2026-09-20T02:43:26.620Z",
-  "passed": 27,
+  "generatedAt": "2026-10-05T02:45:33.059Z",
+  "passed": 117,
   "failed": 0,
   "failures": [],
-  "negativeCases": 0,
+  "negativeCases": 12,
   "verdict": {
     "realComponentFailures": 0,
-    "mutantsCaught": 6,
-    "mutantsTotal": 6,
+    "mutantsCaught": 21,
+    "mutantsTotal": 21,
     "ok": true,
-    "note": "`failed` counts real functional failures only; mutant runs are reported separately via the verdict block."
+    "note": "`failed` counts real functional failures only; mutant runs are reported separately via the verdict block.",
+    "mutantsJudgedByBehaviour": 18,
+    "mutantsJudgedByLint": 2,
+    "mutantsJudgedByCrash": 1,
+    "mutantsNotJudged": 0,
+    "mutantsNotJudgedMeans": "mutants whose anchor did not match exactly once, or whose mutated copy failed to load, or whose run was aborted by a harness failure. Every one of those increments `failed` and prints FAIL, so the count cannot be laundered into a catch.",
+    "harnessDefectsFoundAndFixed": [
+      "Every mutant at HEAD was 'caught' as an IMPORT FAILURE: the harness rewrote ./positions and ./hover to absolute paths but not ./relations, so the mutated copy could not load. A load error was counted as a behavioral catch (§8.7: the tautological gate). Fixed by deriving the rewrite from the source's own relative imports and by recording an import failure as a FAILURE of the harness.",
+      "Two mutant anchors matched zero or two occurrences and the harness printed 'SKIP (anchor not found)' and continued — so a rename would silently delete a mutation without changing the verdict. Fixed: a missing or ambiguous anchor is now a FAILURE.",
+      "The oracle returned a bare boolean, so a catch could not say WHICH law broke. Now it returns {caught, detail}, and the log names the law.",
+      "Wave 2 (M62 §2): the 'a stored call-site line past the end of the file is served unverified' mutant SURVIVED its first run, because no fixture row ever reached that branch — a mutant with no fixture is a mutant with no gate. Fixed at the FIXTURE, not by weakening the mutant: `rel-u-past-eof` stores a real line 99 in a six-line file, and the omission counts moved from 1/2 to 2/2 to match.",
+      "Wave 2: three §2 assertions passed VACUOUSLY against the pre-§2 component (a zero-width-range check over an empty set, a 'kind is call-site' check over rows that had no kind, and a 'column appears at most once' check satisfied by zero occurrences). A check that cannot fail is not a check (§8.7), so each now carries an explicit non-emptiness precondition and the column check is `=== 1`, not `<= 1`."
+    ],
+    "declaredAbsenceLaws": [
+      "N0-N8 (§11.7)",
+      "P0-P3 (§15.3)"
+    ],
+    "positionOwnershipLaws": [
+      "S0-S2 (§5 rule 1)",
+      "G5"
+    ],
+    "callSiteMigrationLaws": [
+      "U0 the §2 fixture is adversarial AND honest (the production join shape, two rows on one stored line, four store states, a file that is not on disk, a line past EOF)",
+      "U1 positions are where the thing is (§15.3): the exact rows are served at the store's lines, never at the caller's declaration",
+      "U2 THE DEDUPE REGRESSION: two stored rows on one line stay two locations",
+      "U3 differential against the store's own row plus a check against the source text at the served line (§12.1)",
+      "U4 the four store states end as four declared outcomes, and the two absent ones are counted",
+      "U5 the two omission counters are distinct facts, nothing is fabricated, every stored row is served or counted",
+      "U6 §13.4 the header count equals the rendered rows, and every location states what it is",
+      "U7 includeDeclaration labels itself as a declaration (§15.2)",
+      "U8 §5 plus the M62 discipline: the stored column is read exactly once, as the hand-off to the owner"
+    ],
+    "lintJudgedMutants": 2,
+    "behaviorJudgedMutants": 19,
+    "lintJudgedNote": "Two mutants are invisible to any oracle on results — the hand-rolled byte walk is behaviorally almost right — and are judged by the source-level §5 rule 1 lint instead. That lint is its own script (script/m24/verify-position-arithmetic.ts) so it cannot be edited away with this suite.",
+    "determinismOfMutantJudgement": "No §2 mutant is judged by the lint and none by a load failure: all six are judged by the behavioural oracle (O1-O9 in navMutantOracle), which serves the mutated module the same call-site fixture the U-laws use."
+  },
+  "determinism": {
+    "declaredVolatileFields": [
+      "generatedAt",
+      "bbSeal.sealedAt",
+      "bbSeal.contentSha256"
+    ],
+    "note": "Re-running this verifier at an unchanged commit reproduces every field byte-for-byte EXCEPT the three named above. generatedAt is a wall-clock stamp; bbSeal.sealedAt is the write time; bbSeal.contentSha256 is a sha256 over the record's content, which includes generatedAt, so it changes with it. All three are declared here as volatile (contract §8.2 allows regeneration modulo declared timestamps). No other field is time-, path-, or order-dependent: the fixture is temp-dir based (the temp DIRECTORY is random, but no emitted field contains it), and every emitted collection is sorted or in insertion order.",
+    "measured": "Two consecutive runs of `npx tsx script/m24/verify-navigation.ts` compared after canonicalising the three declared volatile fields: identical. Measured again for wave 2 after the §2 gate was added, with the same result. The same comparison holds for validation/m24/results/POSITION-OWNERSHIP.json across two runs of its own verifier. The CALLSITE-AGREEMENT record additionally names the index path and its mtime, because its numbers are properties of an INPUT (a real index) rather than of this repository — re-indexing changes them, and the record says which index it read."
+  },
+  "callSiteSurfaceLimitations": {
+    "statement": "§2 moved textDocument/references from the referencing symbol's DECLARATION to the store's CALL-SITE line, and from a position-only dedupe key to one location per stored row. Four consequences are declared rather than left for a reader to discover.",
+    "items": [
+      "AN EXACT CALL SITE IS A LINE-ONLY RANGE. brain_relationship stores a line and no column for a call site, so the served range is zero-width at character 0 of the stored line and the editor places the caret at the start of that line. The payload declares this: callSite.kind === 'call-site'. The exact token needs a call-site column in the store, which is M59's lane (A4/A8), not this one.",
+      "THE ADDRESS OWNER'S `file` FIELD CARRIES AN ABSOLUTE PATH HERE. The owner's contract documents it as the RELATIVE path (its graph/hub/MCP consumers render file:line); this surface hands the editor absolute brain_file paths and holds no project root to relativise against. Declared in the payload, asserted by U3, and reported as a gap in the owner's field contract — a renderer printing this address gets an absolute path, which is correct for navigation and differs from the other three surfaces.",
+      "THE STORE'S CALL-SITE COVERAGE IS NOT THIS LANE'S CLAIM. Per-language real-line coverage is M59.A7. On an index where every row carries a real line (measured: 10,267 of 10,267 rows on the corpus this lane indexed), the labelled-substitute branch cannot be exercised from real data and is proven on the fixture instead — declared in the CALLSITE-AGREEMENT record, not implied.",
+      "THE SERVER DOES NOT FORWARD callSite TO THE WIRE. src/lsp/server.ts maps each location through navLocationToWire, which drops callSite, omittedUnresolvable and omittedUnpositionable. The component is honest; the LSP wire cannot carry the declaration under LSP 3.18's Location[] shape. Until that is wired, an editor cannot tell an exact call site from a labelled substitute. See wiringNeededInServerTs."
+    ]
+  },
+  "declaredConflictsWithOtherGates": {
+    "M62_P6_permanence_lint": "script/m62/verify-consumers.ts's P6 lint flags ANY code line in a display surface that names brain_relationship.line_number, with no exception for the hand-off to the address owner. §2 REQUIRES this surface to select the column — the store's line is the only place a call site is recorded — so the honest implementation trips it: A2 now reports TWO P6 findings (src/lsp/navigation.ts:252 and the pre-existing src/lsp/impact.ts:1242) where it reported one. A2's STATUS is unchanged (known-gap, 15/16, before and after), but the finding count rose by one and that is the correct outcome rather than a regression: the alternative was to spell the column so the regex cannot see it, which is obfuscation and a worse lie than the lint violation. Recommended resolution for the lint's owner: narrow P6 to reads that do not feed deriveCallSiteAddress, and pin that exception with its own planted mutant so it cannot widen silently."
   },
   "limitations": [
     "index-sourced only; no compiler-backed go-to-definition (complement stance)",
     "reference sites resolve to relationship edge coordinates; heuristic-edge ratio per language is declared in the master plan",
-    "fixture-backed double for the DB layer; live brain.db path covered by upstream freshness verifiers and the V1 harness",
-    "latency measured on this machine only; cross-platform budgets are M25 scope"
+    "fixture-backed double for the DB layer; the live brain.db leg is script/m24/verify-callsite-agreement.ts (CALLSITE-AGREEMENT.json), which differentials every served position against its OWN stored row on a real index and re-checks the line's own source text",
+    "latency measured on this machine only; cross-platform budgets are M25 scope",
+    "the declared-absence reason reaches the wire only through src/lsp/server.ts, which is not this lane's file — see `wiringNeededInServerTs` below. This gate proves the component carries the reason; it cannot prove the editor receives it.",
+    "the launch gate keys off the file EXTENSION (languageForPath), not brain_file.language. A file whose extension maps to a launch language while its rows say otherwise is served; a file the extension cannot classify is declared absent with language:null.",
+    "§15.3 omission counts are per-response and split into TWO declared facts: omittedUnresolvable (the store names a line the source does not confirm) and omittedUnpositionable (the store names no position at all). The per-row reason is in the owner's note / edgeLocationDetailed's absence, which the references result does not enumerate row by row.",
+    "THE §2 FIXTURE'S PRE-EXISTING ROWS DIVERGE FROM THE PRODUCTION JOIN, and U0 says so out loud. Rows whose source_symbol_id is NULL have their site coordinates served as the source side, which the production LEFT JOIN cannot produce (it yields NULL for every source_* column). Those rows are retained so wave-1's accepted numbers keep their meaning; the §2 rows use the real join. A fixture that quietly laundered both shapes would prove nothing about production.",
+    "no claim is made about call hierarchy: src/lsp/call_hierarchy.ts is another lane's file, actively being edited for the same migration, and was neither read for behaviour nor modified here."
+  ],
+  "wiringNeededInServerTs": [
+    "src/lsp/server.ts:573 (textDocument/definition) — `if (!r.found || r.location === null) return null` discards r.absence. The LSP wire shape for definition is `Location | Location[] | null`, so the reason cannot ride the result; it needs either a window/logMessage carrying the reason, or an accepted deviation recorded here.",
+    "src/lsp/server.ts:607 (textDocument/references) — `return r.locations.map(navLocationToWire)` turns a declared absence into a bare `[]`, which contract §11.7 calls a violation ('silent empty results that look like no references found'). LSP 3.18 requires Location[] for this request, so the honest options are: (a) a window/logMessage with r.absence.detail, or (b) the client reading a custom field — neither is available on this wire shape.",
+    "src/lsp/server.ts:547 (textDocument/hover) — `if (r.contents === null || r.range === null || r.data === null) return null` discards provenance.limitations, which already names the language and the launch set. Same wire constraint as above.",
+    "NEW IN WAVE 2 — src/lsp/server.ts:729 navLocationToWire copies only path/line/character/endLine/endCharacter, so it DROPS loc.callSite. Consequence: the editor receives correct line-only ranges but cannot tell an exact call site from a labelled declaration substitute, and cannot see either omission counter. That is §15.2's identity requirement unmet at the wire. LSP permits extra properties on a Location object, so the fix is available; the wire shape is the server's decision and that file is not this lane's."
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-20T02:43:26.622Z",
-    "contentSha256": "8d36f30ae57be52f3702759f7867bd19da1be50b5450b36b43a9cefd70aaa1fb"
+    "sealedAt": "2026-10-05T02:45:33.060Z",
+    "contentSha256": "5b44c62bd53df1b0fdeda3b5480657ddf9b0aa0a6aa48626bfdbc7cb476a42ec"
   }
 }
