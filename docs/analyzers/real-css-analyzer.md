@@ -1,4 +1,172 @@
 # real-css-analyzer.md
+# real-css-analyzer.md
+
+## PASS 13 — the residual pass 12 left open is 80% a SHARED-MACHINERY deletion and 20% a real
+## identity collision, and the instrument that should have shown it collected the evidence and never printed it
+
+Pass 12 withdrew its bracket and left one number open: **3,446** `rule_set` occurrences sit in a
+named at-rule scope with no published `contains` edge. This pass splits that number into causes,
+finds one of them in a file this lane does not own, fixes the other, and explains why the figure
+survived twelve passes with a number attached and no shape.
+
+### The instrument was gathering the evidence and throwing it away
+
+`css-emitted-coverage.ts` buckets every unmatched occurrence into `resid.containsResidual`. It then
+dumps FIVE residual maps and not that one. `containsResidual` is the sixth and the largest — it is
+the whole 3,446. One line of `dump(...)` added; the breakdown was already computed on every run
+since pass 4 and had never been printed.
+
+```
+validation/m14/census/css-emitted-coverage.ts:1103
++ dump("RESIDUAL: rule_set in a NAMED scope whose selector name was never published", resid.containsResidual)
+```
+
+It prints **231** occurrences, and they are all `processRuleSet` early returns, correctly
+suppressed: 210 `@layer` (210 universal-reset groups `*, ::after, ::before, ::backdrop` in
+`phoenix/installer/templates/phx_static/default.css` plus 17 composed `&`-names), 17 `@media`,
+4 `@supports`. That is a by-design population, not a gap.
+
+So **231 is not the 3,446**, and the 3,446 decomposes as: 231 suppressed by design + **479 that
+the analyzer emitted and the pipeline deleted** + **121 that this pass fixed** + the rest in the
+`isLayerScope` double-count, where published (508) exceeds attributable (329) by 179 because a
+`rule_set` is attributed to every ENCLOSING named scope.
+
+### The 479: `pool-worker.ts:643` deletes CSS `contains` edges whose target is a long selector
+
+`src/ast/pool-worker.ts:643`, inside the universal relationship filter, under the comment
+*"Block garbage targets: source code snippets, malformed names"*:
+
+```ts
+if (target.length > 200 || target.includes("\n")) return false
+```
+
+It runs AFTER the analyzer and BEFORE the store. For CSS the target of a `contains` edge is a
+**SELECTOR**, and a comma group of real selectors passes 200 characters routinely — so the clause
+is not a garbage test for this lane, it is a length test on a string that is supposed to be long.
+
+Minimum reproduction, `pico/css/pico.classless.blue.css:1928-1965` (`@supports selector(:has(*))`),
+5 `rule_set`s, production `parseFile`:
+
+| | `@supports` `contains` edges | target lengths |
+| --- | --- | --- |
+| `analyze()` | **5** | 189, 476, 157, 732, 327 |
+| `parseFile()` | **2** | 189, 157 |
+| deleted | **3** | 476, 732, 327 — every one > 200 |
+
+The boundary was bracketed by construction, not assumed: a generated single-part selector of
+exactly **200** characters survives and **202** does not, and the same holds at 7 parts / 201 chars
+and 40 parts / 228 chars. An edge survives `parseFile` **iff** its target is ≤ 200 characters —
+1:1, no exceptions in the sample.
+
+The corpus cost, measured by comparing both entry points on the same 250 files
+(`validation/m14/census/css-shared-filter-loss.ts`, 78,146 analyzer relationships), with every
+deletion attributed by asking `filterNoiseRelationships` **itself** rather than a reimplementation:
+
+| cause | edges |
+| --- | --- |
+| `TARGET-LEN/NEWLINE` (> 200 chars, or contains a newline) | **531** |
+| `LEAF-CHARS` — leaf contains `>` `<` `{` `}` | **255** |
+| `NOISE_TARGETS` — leaf is `type`/`text`/`parent`/… | **31** |
+| `LEAF-LEN` (leaf 106 / 116 chars > 80) | **13** |
+| **total absent from `parseFile`, all `contains`** | **830** — 2.11% of the type |
+
+**22.0% of files (55 of 250) lose at least one.** `LEAF-CHARS` is the second-largest cause and is
+structurally guaranteed for CSS: `>` is the **child combinator**, and
+`bootstrap/dist/css/bootstrap-grid.min.css` loses `.row-cols-sm-auto>*` to it — a target the filter
+reads as template-literal garbage because `<` and `>` are on its blocklist.
+
+**This is a §8 item and is not edited here.** The lane's verdict is unchanged and the analyzer is
+correct on every one of these 830 edges. What the store receives is 178,084 `contains` edges, and
+every number in this document is measured through `parseFile`, so the tables are the post-deletion
+truth.
+
+### The 121: `@media A, B` published a name carrying only `A`
+
+The grammar does not wrap a comma-separated query LIST in a node. Measured on
+`@media screen and (min-width: 769px),print`, the `media_statement` children are `@media`,
+`binary_query`, `,`, `keyword_query`, `block` — so `findChild` returns the FIRST query term and
+every term after the first comma was discarded from the scope NAME. Two consequences:
+
+1. The name **under-describes** the condition.
+2. It is an **identity collision**: `Documenter.jl/.../catppuccin-mocha.css` and
+   `FSharp.Formatting/docs/content/fsdocs-default.css:192` both publish a name that is a strict
+   prefix of the real condition, so two blocks differing only after the comma merge into one scope
+   symbol together with their rules.
+
+`processMedia` now builds the name from the at-rule's own PRELUDE via the existing
+`atRulePrelude(node, "@media")` — the whole condition by construction, and no node type needed.
+
+**The safety of that change is measured, not asserted**
+(`validation/m14/tmp/css-media-prelude-equivalence.ts`, 400 files, 2,827 `media_statement`s):
+
+| population | total | prelude `===` first term | differs |
+| --- | --- | --- | --- |
+| single-term queries | 2,725 | **2,725** | **0** — no name that was right moves |
+| comma lists | 102 | 0 | **102** — every one corrected |
+
+Overturn condition: one single-term `media_statement` where the two disagree. There were **2** on
+the first run, and both were the instrument's own bug — see below.
+
+### The second half of the same defect: the reference walk also stopped at the comma
+
+`customMediaRefsIn` walks ONE node's subtree, and it was handed the first query term, so for
+`@media (--a), (--b)` it found `--a` and could not see that `--b` sits in a **sibling** query node.
+Fixing only the name would have left the scope named for two declarations while the graph recorded
+one dependency — the same under-description moved from the name to the edges. `customMediaRefsInList`
+now unions the walk over the statement's own DIRECT query children, which cannot descend into the
+block and invent a reference from a declaration value.
+
+**The existing fixture had encoded the defect.** `css/custom-media-in-every-query-shape` asserts
+shape 3 as `@media (--a)` with exactly one `references` edge, while its own comment states the
+intent as *"a comma list, so the scope depends on TWO"*. Its expectation is therefore **corrected,
+not preserved**, and it is now strictly stronger: it fails against the old analyzer on the symbol
+name, on the edge count and on the second endpoint. That fixture is the only evidence for either
+half — `css-media-prelude-equivalence.ts` measures **102 comma lists against 0 `@custom-media`
+declarations** in the admitted corpus, so no corpus number can see this shape.
+
+### Four wrong answers from this pass's own instruments, each with a round number
+
+Every one produced a clean, confident, wrong result, and every one was caught by asking which
+number would be surprising rather than by reading the code:
+
+| probe | reported | the defect |
+| --- | --- | --- |
+| `css-scope-shortfall` v1 | `NAME-MISMATCH 4,757 / 4,757` | read the at-keyword as `keyword_query`, which is the media **type**; built `" @media (min-width:768px)"` and `"print a screen and (min-width: 769px),print"` |
+| v2, after fixing that | `NAME-MISMATCH 4,884 / 4,884` | `at_keyword` does not exist on `media_statement`/`supports_statement` — the `@media` token is **anonymous**; reader returned `""` and the name became `" " + prelude` |
+| v3 | `600 NAME-MISMATCH`, all against `published=(none)` | `parseFile` **drops symbol `metadata`** and keeps relationship `metadata`; scope names must come from `kind` and edge sources |
+| v4 | 2 single-term names "moved", prelude `""` | its `findChild` fell back to a depth-first descent and found a **nested `@page`'s** `at_keyword` at offset 673 while the block starts at 13 |
+
+A probe that cannot return a wrong answer is not a probe. The final numbers are 479, and the
+`NAME-MISMATCH` class is **0**.
+
+### Every gate, re-run at this commit
+
+| gate | pass 13 | pass 12 | |
+| --- | --- | --- | --- |
+| `npx tsx script/m14/ontology-coverage-gate.ts css` | **exit 0**; `emitted 5/10  ruled-sound 5  FALSIFIED 0  ruled-without-justification 0`; `contains` **178,084** / `uses` **2,630** / `references` **164,939** / `imports` **251** / `overrides` **48** | exit 0, identical | **every edge count is unchanged by this pass**, which is the point: the fix moves NAMES, and only 7 of them collided |
+| `npx tsx validation/m14/census/css-parsefile-census.ts --all` | **1,286/1,286 parsed, 0 failures, 0 degraded**; 242,501 symbols (was 242,494), **345,952 relationships** (unchanged); **0** empty names, **0** empty/unknown kind, **0** `unknown` endpoints, **0** empty-string endpoints | identical but 242,494 symbols | **+7 symbols and +0 edges** — exactly the 7 comma lists whose first term collided with another block in the same file |
+| `npx tsx validation/m14/census/css-emitted-coverage.ts` | ATTRIBUTABLE 36,457 / NAMED 36,688 / published 33,242 — **all unchanged**; the new `containsResidual` dump prints **231** by-design early returns | row not printed | the row's denominator is the SELECTOR name, which this pass does not touch, so no re-baselining |
+| `npx tsx validation/m14/census/css-shared-filter-loss.ts 250` | **78,146 analyzer rels; 531 trip the length clause; 830 absent from `parseFile`; all 830 attributed** | new | the §8 finding |
+| `npx tsx validation/m14/tmp/css-media-prelude-equivalence.ts 400` | **2,827 `media_statement`s; 2,725/2,725 single-term agree; 102/102 comma lists differ** | new | the fix's safety measurement |
+| `npx tsx validation/m14/tmp/css-scope-shortfall.ts 120` | deficit **479** — `NAME-MISMATCH 0`, `COMPOSED 0`, `NO-SCOPE-EDGE 479` | 3,446 unexplained | the residual is now **entirely** the shared-machinery deletion |
+| `npx tsx script/m14/firing-check.ts --files 120 css` | **5/10 fired, 46,241 edges, 120/120 files, 0 degraded** | 5/10, 46,241 | bit-identical |
+| `npx tsx script/m14/differential.ts --lang css --sample 60` | **exit 0**; svelte `41 covered 39 (95.1%) MISSING=2`, grails-core `487/487 100%`, MISSING=0, **unexplained=0, heuristic=0**; `rot 50` | exit 0, `rot 49` | grails-core 477→487 is the rotating sample; the two pinned `@namespace` MISSING are unchanged |
+| `npx tsx script/m14/run-fixtures.ts --lang css` | **18 pass / 0 fail** | 17 / 0 | +1 fixture; `custom-media-in-every-query-shape` expectation strengthened |
+| `npx tsx validation/m14/census/css-mutant-run.ts` | **34 mutants, 34 CAUGHT, 0 SURVIVED** | 32 / 32 / 0 | +2 mutants, each caught by the fixture written for it |
+| `npx tsx script/m12/verify-regex-census.ts` | `real-css-analyzer.ts` in **neither** MISSING nor STALE — **lane count 0**; gate `FAILED` on 2 MISSING rows in `real-scss-analyzer.ts` (the scss lane) | identical | the new probes are regex-free and were checked by reading them |
+| `npx tsc --noEmit` | **0 errors** | identical | reproduced |
+
+Corpus unmoved: **199 repositories / 9.1 GB / 1,286 admitted files** (`.css`=1165 `.sass`=67
+`.less`=54), identical to passes 11 and 12.
+
+### What this pass does NOT settle
+
+The **479** is measured, attributed and localised to shared machinery, but it is not CLOSED: the
+lane cannot make `pool-worker.ts` stop deleting `contains` edges whose target is a long selector,
+and it should not make that call unilaterally. Until it is decided, the honest statement is that
+this analyzer emits `contains` edges that production `parseFile` does not deliver, and the rate is
+in the table above rather than asserted in prose.
+
 
 ## PASS 12 — the one row pass 11 called a bound was not a bound, and three hand-typed numbers had drifted from the columns beside them
 
@@ -2197,7 +2365,7 @@ on `@extend` BY CONSTRUCTION because the grammar routes every unrecognised at-ru
 catch-all `at_rule`. Both rows carry their A probe as a secondary check and their B probe as
 the decider. `script/m14/css-ruled.ts` is authoritative.
 
-### Reported, not edited — nine open items, one applied in pass 4, one added in pass 7, one added in pass 8, one added in pass 9, one added in pass 10, one added in pass 11
+### Reported, not edited — eleven open items, one applied in pass 4, one added in pass 7, one added in pass 8, one added in pass 9, one added in pass 10, one added in pass 11, one added in pass 13
 
 Items (b) through (i) are open and §8-owned. Item (a) was open for a round, was the lane's
 critical path, and is now APPLIED — it is kept in the list rather than deleted so the
@@ -2256,6 +2424,59 @@ construct count, print both and their ratio, and fail below 1.0 — with `uses` 
 `contains` at-rule scope carried as **one row and a stated residual**, not as an interval. A gate
 that can be satisfied by printing two numbers is a gate that cannot fail, which is item (d)'s
 defect restated on the EMITTED side.
+
+**(l) ADDED IN PASS 13 — `pool-worker.ts:643` deletes CSS `contains` edges whose target is a long
+selector: 830 of 78,146 analyzer relationships on a 250-file sample, 2.11% of the type, in 22.0%
+of files. The analyzer is correct on every one; the filter is a length test applied to a string
+that is supposed to be long.**
+
+`src/ast/pool-worker.ts:643`, in `filterNoiseRelationships`:
+
+```ts
+if (target.length > 200 || target.includes("\n")) return false
+```
+
+It runs after the analyzer and before the store, so an emitted relationship can be deleted on the
+production path while every analyzer-level instrument still counts it — which is why this lane's
+own tables never saw it and `parseFile`-based censuses cannot report it.
+
+For CSS the target of a `contains` edge is a SELECTOR, and a comma group of real selectors passes
+200 characters routinely. The clause was written to drop source-code snippets pasted where a name
+belongs, and the four clauses around it make the same assumption: a name is short and identifier-
+shaped. Measured on 250 files / 78,146 analyzer relationships, every deletion attributed by calling
+`filterNoiseRelationships` itself:
+
+| clause | deleted | what it rejects in CSS |
+| --- | --- | --- |
+| `target.length > 200` or a newline | **531** | comma groups; longest measured target **2,370** chars |
+| leaf contains `{` `}` `` ` `` `<` `>` | **255** | the **child combinator** — `.row-cols-sm-auto>*` is deleted for containing `>` |
+| leaf is in `NOISE_TARGETS` (`type`, `text`, `parent`, …) | **31** | a selector whose last dot-segment is an ordinary CSS word |
+| `leaf.length > 80` | **13** | a long single-segment leaf |
+
+Reproduction: `pico/css/pico.classless.blue.css:1928-1965` — `analyze()` returns 5 `@supports`
+`contains` edges (targets 189/476/157/732/327) and `parseFile` returns 2 (189/157); an edge survives
+**iff** its target is ≤ 200 characters. The 200 boundary was bracketed by construction, not assumed.
+
+What it should do: the length clause needs a CSS exemption, or the target needs to be something
+other than the whole comma group. The measured options, none of which this lane can take alone:
+
+1. **Exempt `contains` for CSS** the way `imports`/`references` are already exempted for `bash`
+   (pool-worker.ts:637) — smallest change, matches the existing precedent, but loses the garbage
+   check on CSS `contains` entirely.
+2. **Raise or remove the 200 cap** and rely on the leaf clauses. Costs: the cap is also what stops a
+   pasted source snippet, so this should be paired with a check that the target is a selector this
+   file publishes — which the analyzer already guarantees for `contains` (real-css-analyzer.ts emits
+   a `contains` edge only where both ends resolve), so the check is close to free.
+3. **Publish one `contains` edge per comma-group PART** so no target is long. This also splits the
+   store key, which currently collapses repeated groups in minified files. It is the largest change
+   to graph shape and contradicts the documented decision that a comma group is ONE symbol (pinned by
+   `css/repeated-selectors-are-one-symbol`), so it needs that decision revisited rather than assumed.
+
+Option 2 is the smallest change that keeps a garbage check, and the analyzer-side precondition for
+it is already true. Filed rather than absorbed: `pool-worker.ts` is shared machinery.
+
+Reproduce with `npx tsx validation/m14/census/css-shared-filter-loss.ts 250` and the minimum case in
+`/tmp` is `@supports selector(:has(*)) { <a comma group longer than 200 chars> { color: red } }`.
 
 **(k) ADDED IN PASS 11 — the ontology gate's 120 s hang guard now fires on this lane on a
 DIFFERENT FILE each run, and the file it names is not slow; under memory pressure the wasm
