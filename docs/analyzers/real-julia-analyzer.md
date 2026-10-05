@@ -106,6 +106,26 @@ line that prints them is.
 **The cause is two shared defects, and the second one misattributes its own file.** Both are measured
 by `validation/m14/fixtures/julia/engine-concurrency-probe.ts` (lane-owned, writes nothing):
 
+**Re-confirmed on this lane's re-verification, 2026-10-04 20:01 and 20:10 — 2 of 2 runs exited 1, and
+neither printed a verdict table.** Run 1: `[BB-PARSE-ERR] … Graphs.jl/test/cycles/basis.jl`, then
+`[BB-HANG] … basis.jl`. Run 2: `[BB-PARSE-ERR] … StaticArrays.jl/test/testutil.jl`, then `[BB-HANG]
+… testutil.jl`. `testutil.jl` is a **third** file this defect has killed on, after `basis.jl` and
+`StaticArrays.jl/test/svd.jl` above and `remote.jl`, `repository.jl`, `louvain.jl` and
+`modularity.jl` in the census runs — seven distinct files across two instruments. **No rate is quoted
+for any of them**, for the reason §8 row 2 gives: every rate this lane has quoted for this defect has
+been an artifact of which files a sample happened to contain. What is stable is the shape — a
+`memory access out of bounds` from the wasm parser, then `process.exit(1)` 120 s later, then no
+verdict table — and the fact that **the arbiter could not complete a single julia run on this
+machine this session.** That is why every committed figure in this file comes from `census.ts`, which
+observes the bomb instead of dying of it, and not from the arbiter.
+
+Both runs are also the *run-1 shape* rather than the run-3 shape recorded in the degraded-run table
+below: here `[BB-HANG]` named the **same** file as the `[BB-PARSE-ERR]`, whereas run 3 had a
+`[BB-HANG]` with **no** `[BB-PARSE-ERR]` anywhere in the run. So "the hang names the oldest surviving
+bomb" is the mechanism, and the two shapes are what it looks like when the oldest bomb and the most
+recent throw coincide and when they do not. Neither shape makes the hang's file evidence about the
+file it prints.
+
 1. **`src/ast/engine.ts:1441-1447` arms the self-destruct before it parses and clears it after.**
 
    ```
@@ -216,7 +236,7 @@ by `validation/m14/fixtures/julia/engine-concurrency-probe.ts` (lane-owned, writ
     files and reports 0 is **weak evidence, and this lane quoted it as the reproducible half of a
     shared-file ask.** That is the same defect this file documents elsewhere: a per-type count below the
     sample's resolution cannot distinguish absence from unsampled, which is exactly how the `overrides`
-    stride-8 reading in [§ what FIRES](#what-fires-at-two-sample-sizes--and-why-the-smaller-one-reads-810)
+    stride-16 reading in [§ what FIRES](#what-fires-at-two-sample-sizes--and-why-the-smaller-one-reads-810)
     was caught. **The probe's default sample is inadequate for this measurement and the full population
     is the fix**, which is what the doc now cites.
 
@@ -449,15 +469,39 @@ $ npx tsx script/m14/firing-check.ts --files 2000 julia
 
 **The 120-file run reads 8/10 and that is a SAMPLING artifact, not a firing failure — provably, not
 probably.** The type it misses is `overrides`, which this lane emits **3 edges across 3 files** in a
-1,985-file population. `firing-check.ts` picks its sample by a deterministic stride,
-`stride = floor(population / limit)` then indices `0, stride, 2·stride, …` (`firing-check.ts:190-192`),
-so at `--files 120` the stride is 8 and only multiples of 8 are taken. The three files carrying the
-`overrides` edges sit at sorted indices **77, 781 and 867**, and `77 % 8 = 5`, `781 % 8 = 5`,
-`867 % 8 = 3` — **none is a multiple of 8, so all three are excluded by arithmetic.** At
-`--files 2000` the stride is 1, all 1,985 files are taken, and all three are included. The type is not
-rare-and-alive on a knife edge; it is excluded by a modulus, and the modulus is checkable from the
-file list alone. `implements` is the other zero, and it is RULED with a measurement rather than
-unsampled.
+1,985-file population. `firing-check.ts` picks its sample by a deterministic stride over an array
+built in `corpusRepos()` order x `git ls-files` order (`filesForLanguage`, `firing-check.ts:175-192`):
+`stride = max(1, floor(population / limit))`, then indices `0, stride, 2·stride, …`.
+
+**This section previously gave the stride as 8 and the three file indices as 77, 781 and 867, and
+every one of those four numbers was wrong. The stride is 16 — `floor(1985/120) = 16`, not 8 — and the
+indices are 1091, 1795 and 1881.** The conclusion is unaffected and was never the fragile part; the
+arithmetic supporting it was. `stride-predicate.ts` re-derives the array from `firing-check`'s own
+two functions, prints the population fingerprint, and checks the claim:
+
+```
+population hash  sha256(all joined by \0) = 7c540507aa64b86f
+stride           16   (floor(1985/120))
+INDEX ARITHMETIC — order used: corpusRepos() x git ls-files (firing-check's own order)
+  julia/Compiler/test/contextual.jl            1091    3  no
+  julia/test/meta.jl                           1795    3  no
+  julia/test/reflection.jl                     1881    9  no
+all three absent from the 120-sample?  YES — claim holds
+```
+
+`1091 = 16·68 + 3`, `1795 = 16·112 + 3`, `1881 = 16·117 + 9`, so none is a multiple of 16 and all
+three are excluded by arithmetic — not by rarity, not by a predicate. At `--files 2000` the stride is
+1, all 1,985 files are taken, and all three are included. `implements` is the other zero, and it is
+RULED with a measurement rather than unsampled.
+
+Two things this section now states that it did not before. The probe prints the **population hash**,
+because an index is only meaningful while the population holds still — 199 repos share this corpus
+root and other lanes clone into it, so `corpusTotal` is not a constant of this lane. And it prints
+the **alphabetical-sort indices as a contrast**, which for these three files coincide with the
+`git ls-files` ones (1091/1795/1881) because `julia` sorts last among the 14 contributing repos and
+its `git ls-files` output is already sorted; that coincidence is a property of where `julia` sits in
+the ordering, not a general rule, and conflating the two orders is what made the old numbers
+unfalsifiable in the first place.
 
 The general point is worth stating because it applies to every lane that reports a fraction: **a
 per-type count below the sample's resolution cannot distinguish "dead code" from "rare construct."**
@@ -505,8 +549,9 @@ population, and the exclusion it implied never happened.** The counter tallied e
 512 KB in the corpus root — which six other language lanes share — so it was dominated by other lanes'
 `.png`, `.po` and `.so` files, it moved when another agent cloned (1,003 → 1,006 → 1,007 across this
 lane's own runs with no change to the julia file set), and printed beside `admitted files: 971` it read
-as "1,006 julia files were dropped for size". Measured on this corpus root: **1,007 tracked files over
-512 KB, of which 0 are `.jl`.** The julia population was never cut by that rule. The census now prints
+as "1,006 julia files were dropped for size". Measured on this corpus root: **1,176 tracked files over
+512 KB, of which 0 are `.jl`** (1,007 when this sentence was first written; the count is a property of
+the shared root and moves as other lanes clone, which is the reason it is reported separately). The julia population was never cut by that rule. The census now prints
 the two counts separately and labels what each is.
 
 **Production totals.** 36,806 symbols · 235,878 relationships in the ten types · 0 crashes · 0 files
@@ -1957,7 +2002,7 @@ comments, char literals, triple-quoted strings — and all six are clean.
 
 | | |
 |---|---|
-| admitted files | **1,985** across 14 projects: `julia` 941, `Graphs.jl` 253, `Pkg.jl` 219, `StaticArrays.jl` 111, `Documenter.jl` 101, `Flux.jl` 100, `DataFrames.jl` 73, `LanguageServer.jl` 57, `Aqua.jl` 51, `Query.jl` 30, `json_jl` 25, `GLM.jl` 14, `DifferentialEquations.jl` 5, `nvim-treesitter` 5. **0 `.jl` files excluded over 512 KB**; the 1,007 non-`.jl` large files counted in the same shared root belong to other lanes |
+| admitted files | **1,985** across 14 projects: `julia` 941, `Graphs.jl` 253, `Pkg.jl` 219, `StaticArrays.jl` 111, `Documenter.jl` 101, `Flux.jl` 100, `DataFrames.jl` 73, `LanguageServer.jl` 57, `Aqua.jl` 51, `Query.jl` 30, `json_jl` 25, `GLM.jl` 14, `DifferentialEquations.jl` 5, `nvim-treesitter` 5. **0 `.jl` files excluded over 512 KB**; the 1,176 non-`.jl` large files counted in the same shared root belong to other lanes |
 | symbols / relationships | **36,806 / 235,878** in the ten ontology types |
 | files yielding ZERO symbols | **365 of 1,985 (18.4%)** — listed by name in the census output |
 | construct-vs-edge reconciliation | `imports` **961 files with the construct / 961 with an edge / 0 silent**; `exports` 210 / 207 / **3 silent** (`Documenter.jl/src/expander_pipeline.jl`, `julia/stdlib/REPL/src/docview.jl`, `julia/test/precompile.jl`) — two of the three went silent when the 4 fabricated edges were deleted; **not investigated per file** |
@@ -2442,6 +2487,40 @@ can produce exactly.
 
 ## What the lane's own gates caught
 
+**The doc gate compared a DEGRADED census against this file and called the file wrong — 41 false
+mismatches, exit 1.** On 2026-10-04 `doc-tables-check.ts` reported `FAIL — 41 mismatch(es)` with
+every delta NEGATIVE and small: `calls` 122,150 → 122,105, `symbols` 36,806 → 36,803, and one fewer
+file in every type's file column. The census it had read, `/tmp/census.json`, was left by an earlier
+run of the day in which **one** file degraded — `StaticArrays.jl/test/matrix_multiply_add.jl`,
+`wasmParseThrew`, `analysedFiles` 1,984 of 1,985 — and a degraded file leaves every total while
+`admittedFiles` still counts it, so its shortfall arrived at the comparison looking exactly like doc
+drift. **Re-run against the clean census the same gate printed `PASS`, 305 of 305 cells, exit 0.**
+This file was never wrong about a single cell.
+
+The gate's own default is the reason: it reads `/tmp/census.json` **by default**, so it silently
+compared against whatever the last run of the day left there. It now refuses a census whose
+`degradedFiles` is non-empty **or** whose `analysedFiles` disagrees with `admittedFiles`, names the
+file and its cause, prints `REFUSED` and exits **2** — distinct from `FAIL` (1) and from a missing
+census (2) — and offers the width-1 re-run command. The second half of that witness matters on its
+own: a truncated walk leaves no `degradedFiles` entry at all, so `analysedFiles !== admittedFiles`
+is the only thing that catches it. Section 7 (fixture and mutant counts) needs no census, so a
+refused run still reports the 88 cells it can check.
+
+The `cells checked` self-check was census-dependent in the same way and produced a **second** false
+alarm on the refusal path — `the doc claims MORE coverage than the gate delivers`, 305 quoted against
+the 88 census-independent cells such a run reaches — naming a correct doc stale for the second time in
+one session. It now runs only when sections 1-6 ran, and prints `self-count SKIPPED` with the reason
+when they did not.
+
+`doc-tables-check-selftest.ts` is the regression test, on **synthetic** censuses so it runs in
+milliseconds: 9 assertions over four cases — degraded, incomplete-but-unflagged, clean, and a
+lone-degraded-file control that proves the first case is not passing merely because the gate refuses
+everything. **Its first run failed case C and it was right to.** Case C asserted that a clean census
+exits 0; but a synthetic census carries no values from this file, so a *scored* run correctly reports
+mismatches and exits 1. The assertion now tests that a clean census is **SCORED** — reaches the
+comparison and reports `FAIL —` — rather than that it passes, which is the claim the guard actually
+makes and which the original wording got wrong.
+
 Mutation testing, not review, is what found most of this — and three of the five mutants that survived
 the first run were **no-ops returning the result unchanged**, which reads as "the suite cannot detect
 this" when the truth is "the mutant cannot express it". A mutant that cannot fail is decoration.
@@ -2578,7 +2657,7 @@ can be a fixture asserting things the code does not do, and the fixture is what 
   `implements` ruling in particular is measured on 14 projects rather than on the ecosystem at large.
 - **The corpus root is shared with six other agents** and is not pinned. The julia file set is now 14
   projects that this lane added itself and therefore controls; the count of non-`.jl` large files in the
-  same root moved 1,003 → 1,006 → 1,007 across runs because other agents clone, and it is reported
+  same root moved 1,003 → 1,006 → 1,007 → **1,176** across runs because other agents clone, and it is reported
   separately from the julia exclusion count precisely so that it cannot be read as a change to this
   lane's population.
 - **`+%` / `-%` and the 177 ERROR-node files are grammar-side**, not analyzer-side.
