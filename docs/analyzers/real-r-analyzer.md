@@ -443,8 +443,45 @@ neither. A type whose construct occurs 3 times in 1,890 files is not a type the
 language lacks; it is a type a thin corpus cannot see.
 
 **3. Correct** — there is no differential for R (see *What this lane cannot
-claim*), so the only independent check available is the one below, and its limit
-is stated with it.
+claim*), so the only independent check available is this lane's own oracle, and its
+limit is stated with it. Harness `validation/m14/fixtures/r/oracle-r.ts`; committed
+output `validation/m14/fixtures/r/oracle-evidence.json`; **2,058 files, 16 repos**.
+`precision` is `(emitted − unexplained) / emitted`; `recall` is `(oracle −
+missing) / oracle`. Both denominators are that row's own, so each cell is a
+statement about one type's edges.
+
+| Type | oracle derives | analyzer emits | missing | unexplained | precision | recall | rule-coupled |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `calls` | 44,719 | 48,017 | 3,501 | 6,799 | 85.8% | 92.2% | yes |
+| `uses` | 3,773 | 4,769 | 99 | 1,095 | 77.0% | 97.4% | yes |
+| `contains` | 10,536 | 16,734 | 145 | 6,343 | 62.1% | 98.6% | yes |
+| `imports` | 2,149 | 2,052 | 97 | **0** | **100.0%** | 95.5% | no |
+| `references` | 2,171 | 2,094 | 98 | 21 | 99.0% | 95.5% | no |
+| `exports` | 3,615 | 3,591 | 24 | **0** | **100.0%** | 99.3% | no |
+| `extends` | 362 | 350 | 24 | 12 | 96.6% | 93.4% | no |
+| `implements` | 1,654 | 1,125 | **529** | **0** | **100.0%** | **68.0%** | no |
+| `overrides` | 34 | 107 | 2 | 75 | **29.9%** | 94.1% | yes |
+| `instantiates` | 3 | 3 | 2 | 2 | 33.3% | 33.3% | no |
+
+**The two worst cells are the ones to read first, and neither is a fabrication
+count.** `overrides` precision at 29.9% means 75 of 107 emitted edges the oracle
+does not derive — the largest unexplained population of any type after `calls` and
+`contains`, and it is measured on a denominator of 107, where a handful of edges
+moves the rate a long way. `implements` recall at 68.0% means 529 of the oracle's
+1,654 carriers produce no edge, with **0** unexplained, so the analyzer emits
+nothing the oracle contradicts; it is silent on a third of them. Both are stated
+here rather than omitted, because a table of only the seven types that look good
+would move the arbiter's verdict without moving the evidence.
+
+**The `rule-coupled` column bounds the four types it marks, and the declaration is
+the oracle's own.** `calls` attribution is "nearest enclosing named binding", `uses`
+member read is "extract_operator/subset2-string outside callee position",
+`overrides` requires the base declared in the same file, and `contains` models
+file-scope bindings that the analyzer nests. For those four a bug in the shared
+rule is invisible to this check, which is the limitation the workstream brief
+requires be stated rather than glossed. The other six are not rule-coupled and
+their precision and recall are the strongest evidence this lane has for being
+right.
 
 **4. Labelled** — measured, over the population, by keying every emitted edge on
 `(type, relationshipSubType)`. Harness
