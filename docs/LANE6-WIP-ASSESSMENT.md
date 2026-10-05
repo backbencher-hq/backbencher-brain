@@ -175,7 +175,7 @@ actually rendered a hover, so the p95 is not taken over declared absence.
 
 ## What this assessment does not claim
 
-- It does not claim the §14 rule 3 fix is complete. It claims the specific
+- It does not claim the §14 rule 3 fix covers every case. It claims the specific
   measured numbers in the SOUND section, on this fixture, at this commit.
 - It does not claim anything about an editor. No leg here runs VS Code.
 - It does not attribute the two `verify-relations.ts` failures to this lane's
