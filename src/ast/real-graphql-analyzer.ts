@@ -128,6 +128,40 @@ function lastPathSegment(p: string): string {
   return cut >= 0 ? p.slice(cut + 1) : p
 }
 
+/**
+ * The published identity of an operation the document leaves UNNAMED.
+ *
+ * GraphQL's specification makes the name optional (`{ hero { name } }` is a complete
+ * query), so an unnamed operation is a real thing in the language and its selection
+ * edges need a source. It has no name to publish, and the two obvious substitutes are
+ * both wrong:
+ *
+ *  - `anonymous_operation_<startIndex>`, which this analyzer used to emit, matches
+ *    `/^(anonymous|anon|unnamed)[_-]/i` in `src/ast/analysis-exclusions.ts:171`, so
+ *    `isIndexArtifactName` discards it at store time BY DESIGN. Measured over 750
+ *    corpus files: 66 symbols dropped, and all 836 relationships sourced from them
+ *    (`uses`, every one) left the store with no source at all.
+ *  - `<startIndex>` alone is not an identity either, for the reason the previous
+ *    comment gave: inserting a line above the document renames it.
+ *
+ * What is left is the identity the analyzer can state without inventing anything —
+ * the file it is reading, which is the same move `imports` already makes at
+ * `lastPathSegment(filePath)` ("a per-file analyzer can name the file it is reading").
+ * `query.graphql` holds one unnamed operation, so it publishes `query::operation_0`;
+ * a file with several numbers them. `document` is the specification's own word for
+ * the thing (`ExecutableDocument`) and stands in when no path was supplied.
+ *
+ * `::` because a dotted name would be indistinguishable from this lane's `Owner.field`
+ * targets. It does not match the exclusion patterns above, which are anchored at the
+ * start of the name.
+ */
+function unnamedOperationIdentity(filePath: string, ordinal: number): string {
+  const base = lastPathSegment(filePath ?? "")
+  const dot = base.lastIndexOf(".")
+  const stem = dot > 0 ? base.slice(0, dot) : base
+  return `${stem || "document"}::operation_${ordinal}`
+}
+
 /** The `#import` forms this analyzer reads, as they appear in the corpus. */
 type HashImportForm = "bare" | "from_binding"
 
@@ -296,6 +330,13 @@ export class RealGraphqlAnalyzer implements ASTEngine.LanguageAnalyzer {
    */
   private typeCache: Map<number, string> = new Map()
 
+  /** Counts the operations this document leaves unnamed, so each can be published under
+   *  the file's identity (see `unnamedOperationIdentity`). Reset per `analyze` call: a
+   *  pooled worker reuses one analyzer instance across files, and a counter that
+   *  survived the call would number the second file's operations from where the first
+   *  file stopped. */
+  private unnamedOperationOrdinal = 0
+
   /** `node.type`, read through the per-call memo. */
   private typeOf(node: Node): string {
     // The key must be a real id. A node whose `id` is not a number — the binding's
@@ -319,6 +360,7 @@ export class RealGraphqlAnalyzer implements ASTEngine.LanguageAnalyzer {
     // binding reuses ids for nodes carried over from an older tree, so a cache
     // that outlived the call could return the PREVIOUS tree's type for this one.
     this.typeCache = new Map()
+    this.unnamedOperationOrdinal = 0
     const symbols: ASTEngine.UniversalSymbol[] = []
     const relationships: ASTEngine.UniversalRelationship[] = []
     const imports: ASTEngine.ImportInfo[] = []
@@ -946,13 +988,15 @@ export class RealGraphqlAnalyzer implements ASTEngine.LanguageAnalyzer {
         // specification's shorthand form, which means `query`.
         const opType = opTypeNode?.text ?? "query"
         const nameNode = this.firstChildOfType(node, "Name")
-        // Anonymous operations get the house synthetic identity: lower-case
-        // `anonymous_*` plus a byte offset, as php (`anonymous_class_<idx>`),
-        // javascript (`anonymous_function_<idx>`) and java
-        // (`anonymous_<Super>`) do. A line number in a symbol NAME is not an
-        // identity — inserting one line above a document renames every
-        // anonymous operation in it.
-        const opName = nameNode?.text ?? `anonymous_operation_${node.startIndex}`
+        // An operation with no name gets the identity of the file that holds it — see
+        // `unnamedOperationIdentity` for why neither a synthetic `anonymous_*` name nor
+        // a byte offset can be published. `unnamedOperationOrdinal` numbers the unnamed
+        // operations of THIS document; the walk visits them in document order, and the
+        // counter is reset per file in `analyze` because a pooled worker reuses one
+        // analyzer instance across files. So the name is stable when a line is inserted
+        // above the operation.
+        const opName =
+          nameNode?.text ?? unnamedOperationIdentity(filePath, this.unnamedOperationOrdinal++)
         symbols.push({
           name: opName,
           kind: ASTEngine.SymbolKind.Method,

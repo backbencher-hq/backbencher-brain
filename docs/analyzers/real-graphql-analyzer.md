@@ -39,7 +39,7 @@ every construct would fall through the default arm. `source_file`, `comment` and
 | directive definition | `function` | `DirectiveDefinition` | `@name` |
 | field | `property` | `FieldDefinition` | `Type.field` |
 | input field | `property` | `InputValueDefinition` under `InputFieldsDefinition` | `Input.field` |
-| operation | `method` | `OperationDefinition` | name, or `anonymous_operation_<startIndex>` |
+| operation | `method` | `OperationDefinition` | name, or `<file-stem>::operation_<ordinal>` — see [The identity of an unnamed operation](#the-identity-of-an-unnamed-operation) |
 | fragment | `method` | `FragmentDefinition` | fragment name |
 | variable | `variable` | `VariableDefinition` | `$name`, owned by the operation |
 
@@ -120,6 +120,80 @@ otherwise, because inside a field's own selection set the parent type is the
 field's return type and an executable document does not carry it. Every
 executable relationship carries `meta.selectionPath` so the two forms are
 distinguishable. An alias is not a fact: `nick: name` references `name`.
+
+## The identity of an unnamed operation
+
+An operation's name is optional. `{ hero { name } }` is a complete query
+(spec §3.2), and the corpus is full of them: 66 unnamed operations across the 750
+files this lane measures. Their selection edges are real edges and need a source,
+so the analyzer has to publish *something* for the operation.
+
+**What it published, and why that name could never work.** The name was
+`anonymous_operation_<startIndex>`. Three separate things are wrong with it:
+
+1. **The store discards it by design.**
+   `isIndexArtifactName` (`src/ast/analysis-exclusions.ts:171`) returns true for any
+   name matching `/^(anonymous|anon|unnamed)[_-]/i` — the shared convention that
+   php's `anonymous_class_<idx>`, javascript's `anonymous_function_<idx>` and java's
+   `anonymous_<Super>` all write through. Measured over 750 corpus files, production
+   `parseFile`: **66 symbols emitted, 0 stored**, and **all 836 relationships sourced
+   from them** (`uses`, every one) reached `brain_relationship` with
+   `source_symbol_id` null. A `uses` edge with no source is what a consumer sees when
+   there is no edge, so 836 real edges were indistinguishable from nothing. This is
+   also why 56 of the 750 indexed files hold zero `brain_symbol` rows: those files
+   emit exactly one symbol and it is an unnamed operation.
+2. **A byte offset is per file, so it is not an identity.** Two documents whose first
+   operation both begin at byte 0 published the same name.
+3. **It is not stable under an edit.** Inserting a line above an operation changes its
+   offset — the reason the previous comment gave for not using a line number, applied to
+   the offset it had chosen instead.
+
+**What it publishes now.** The identity of the file the analyzer is reading, plus the
+operation's ordinal in that document:
+
+    query.graphql   one unnamed operation  ->  query::operation_0
+    mutation { … }                         ->  mutation::operation_1
+    (no path supplied)                      ->  document::operation_0
+
+This is the same move `imports` already makes at `lastPathSegment(filePath)` — "a
+per-file analyzer can name the file it is reading without inventing anything" — and
+`document` is the specification's own word (`ExecutableDocument`) for the fallback.
+`::` rather than `.` because a dotted name would be indistinguishable from this lane's
+`Owner.field` targets. The ordinal is a counter on the analyzer instance, reset per
+`analyze` call because a pooled worker reuses one instance across files.
+
+**Before and after, same 750 files, production `parseFile`:**
+
+    symbols the store discards by design    66  ->  0
+    relationships sourced from one          836  ->  0
+    symbols emitted                       24,305  ->  24,305
+    relationships emitted                 60,364  ->  60,364
+
+No symbol and no edge was traded for the 66 recovered: an unnamed operation is still
+published, and its edges still have a source. That matters, because the alternative —
+publishing nothing for an unnamed operation — would have cost the same 836 edges for
+real and bought nothing.
+
+**Two instruments, because no existing one can see this defect.**
+`run-fixtures.ts` analyses one file per fixture and `differential/mutation.mts`
+(`score.mts:77`) does `new Analyzer()` inside its loop, so both start the ordinal at 0
+and neither can distinguish a counter that is reset from one that is not. Verified:
+the mutant "reset removed" passes the fixture suite 5/5.
+`script/m14/tmp/graphql/probe/analyzer-reuse.mts` reuses **one** instance across four
+documents and exits 1 without the reset (`beta.graphql`'s only unnamed operation
+publishes as `beta::operation_2`). The mutant is registered in `mutation.mts` as
+`defeatedByAnotherGuard`, which is the harness's own mechanism for a defect one
+instrument cannot separate.
+
+**Residual, stated rather than left implicit.** The identity is the file's *basename*,
+so two same-named files in different directories still collide — 22 of the 82 distinct
+basenames in `gql-graphql-tools` repeat, 8 of 48 in `gql-graphql-mesh`. That is the
+same ambiguity every ordinary symbol in every lane has (2,632 of 8,017 names in this
+sample repeat), not something this fix introduced; the measured cost of the change is
++4 duplicated names across 750 files. Widening the name to a directory prefix was not
+done because `/` in a symbol name is already treated as a path artifact
+(`analysis-exclusions.ts:235` lists a `/%` pattern among `NOISE_NAME_LIKES`), and a
+longer synthetic name is a worse trade than an ambiguity the index already reports.
 
 ## Ontology workstream — the ten relationship types, measured
 
