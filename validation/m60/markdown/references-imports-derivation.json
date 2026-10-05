@@ -1,0 +1,244 @@
+{
+  "instrument": "markdown references/imports DERIVATION payoff (validation/m14/fixtures/markdown/references-imports-derivation.ts)",
+  "whatThisIs": "the two types markdown's differential allowlist (differential.ts:23392 = [\"contains\",\"uses\"]) excludes from the compared set, compared anyway, on the differential's own two corpora, with both sides unfiltered",
+  "whatThisIsNot": "script/m14/differential.ts's output. Both sides are compared here without the allowlist, so a non-zero missingInAnalyzer on a type the differential excludes is that harness's documented one-sided filter (differential.ts:23408), not a finding against the analyzer",
+  "question": "markdown emits imports and references and the allowlist compares neither: do those two types agree with deriveMarkdownEdges when they ARE compared?",
+  "analyzerEntryPoint": "parseFile (src/ast/pool-worker.ts)",
+  "truthEntryPoint": "deriveMarkdownEdges (script/m14/markdown-oracle.ts:280)",
+  "corpusRoot": "$HOME/fixtures/repositories",
+  "corpora": [
+    "scala3",
+    "kubernetes"
+  ],
+  "population": {
+    "admittedFiles": 1334,
+    "sampledFiles": 1334,
+    "method": "the whole admitted population",
+    "admission": "git ls-files '*.md' '*.markdown' under each corpus, size <= 512 KB"
+  },
+  "matchingRule": "strict equality on the triple (type, source, target), no normalisation on either side. Counts and ratios are over DISTINCT keys per file, because a file can emit the same triple twice and an edge count divided by a deduplicated numerator is not a rate.",
+  "limitation": "deriveMarkdownEdges is a second walker over the SAME two grammars, so a node type both walkers misread is invisible to this comparison. A high match rate is evidence the two walkers agree, not evidence the grammar is read correctly.",
+  "parsed": 1334,
+  "parseFailures": 0,
+  "degraded": 1,
+  "unparsedTree": 0,
+  "oracleThrew": 0,
+  "filesWithAnyAnalyzerEdge": 1156,
+  "sharding": {
+    "shards": 8,
+    "concurrencyInsideShard": 8,
+    "why": "src/ast/engine.ts:1411 kills the process on a WASM trap"
+  },
+  "perType": {
+    "calls": {
+      "analyzerEdges": 0,
+      "truthEdges": 0,
+      "analyzerKeys": 0,
+      "truthKeys": 0,
+      "matched": 0,
+      "missingInAnalyzer": 0,
+      "unexplained": 0,
+      "filesWithAnalyzerEdges": 0,
+      "filesWithTruthEdges": 0,
+      "missingExamples": [],
+      "unexplainedExamples": [],
+      "confidenceBelow07": 0
+    },
+    "uses": {
+      "analyzerEdges": 63313,
+      "truthEdges": 33588,
+      "analyzerKeys": 41890,
+      "truthKeys": 33588,
+      "matched": 33506,
+      "missingInAnalyzer": 82,
+      "unexplained": 8384,
+      "filesWithAnalyzerEdges": 805,
+      "filesWithTruthEdges": 806,
+      "missingExamples": [
+        "kubernetes/CHANGELOG/CHANGELOG-1.36.md :: Added -> https://github.com/open-telemetry/opentelemetry-go/commit/a3a5317c5caed1656fb5b301b66dfeb3c4c944e0",
+        "kubernetes/CHANGELOG/CHANGELOG-1.36.md :: Changed -> https://github.com/open-telemetry/opentelemetry-go-contrib/compare/instrumentation/github.com/emicklei/go-restful/otelrestful/v0.44.0...instrumentation/github.com/emicklei/go-restful/otelrestful/v0.65.0",
+        "kubernetes/CHANGELOG/CHANGELOG-1.36.md :: Removed -> https://github.com/open-telemetry/opentelemetry-go/commit/5661ff0ded32cf1b83f1147dae96ca403c198504",
+        "kubernetes/CHANGELOG/CHANGELOG-1.36.md :: API Change -> https://github.com/kubernetes/enhancements/tree/master/keps/sig-api-machinery/5589-gogo-dependency",
+        "kubernetes/CHANGELOG/CHANGELOG-1.21.md :: Kubernetes API Reference Documentation -> https://github.com/kubernetes-sigs/reference-docs/tree/c96658d89fb21037b7d00d27e6dbbe6b32375837/gen-resourcesdocs",
+        "kubernetes/hack/README.md :: Kubernetes hack GuideLines -> ."
+      ],
+      "unexplainedExamples": [
+        "kubernetes/CHANGELOG/CHANGELOG-1.14.md :: v1.14.9 -> https://docs.k8s.io",
+        "kubernetes/CHANGELOG/CHANGELOG-1.14.md :: v1.14.8 -> https://docs.k8s.io",
+        "kubernetes/CHANGELOG/CHANGELOG-1.14.md :: v1.14.7 -> https://docs.k8s.io",
+        "kubernetes/CHANGELOG/CHANGELOG-1.14.md :: Known Issues -> https://github.com/kubernetes/kubernetes/pull/82954",
+        "kubernetes/CHANGELOG/CHANGELOG-1.14.md :: v1.14.6 -> https://docs.k8s.io",
+        "kubernetes/CHANGELOG/CHANGELOG-1.14.md :: v1.14.5 -> https://docs.k8s.io"
+      ],
+      "confidenceBelow07": 0
+    },
+    "contains": {
+      "analyzerEdges": 28822,
+      "truthEdges": 10095,
+      "analyzerKeys": 17502,
+      "truthKeys": 10095,
+      "matched": 9776,
+      "missingInAnalyzer": 319,
+      "unexplained": 7726,
+      "filesWithAnalyzerEdges": 972,
+      "filesWithTruthEdges": 976,
+      "missingExamples": [
+        "kubernetes/cluster/README.md :: Cluster Configuration -> Deprecation Notice: This directory has entered maintenance mode and will not be accepting new providers. Deployments in this directory will continue to be maintained and supported at their current level of support.",
+        "kubernetes/CHANGELOG/CHANGELOG-1.29.md :: Important Security Information -> CVE-2024-9042: Command Injection affecting Windows nodes via nodes/*/logs/query API",
+        "kubernetes/CHANGELOG/CHANGELOG-1.29.md :: Important Security Information -> CVE-2024-5321: Incorrect permissions on Windows containers logs",
+        "kubernetes/CHANGELOG/CHANGELOG-1.29.md :: Important Security Information -> CVE-2024-3177: Bypassing mountable secrets policy imposed by the ServiceAccount admission plugin",
+        "kubernetes/CHANGELOG/CHANGELOG-1.29.md :: Deprecation -> Additional documentation e.g., KEPs (Kubernetes Enhancement Proposals), usage docs, etc.:",
+        "kubernetes/CHANGELOG/CHANGELOG-1.21.md :: Important Security Information -> CVE-2021-25741: Symlink Exchange Can Allow Host Filesystem Access"
+      ],
+      "unexplainedExamples": [
+        "kubernetes/CHANGELOG/CHANGELOG-1.14.md :: Client Binaries -> filename/sha512 hash",
+        "kubernetes/CHANGELOG/CHANGELOG-1.14.md :: Server Binaries -> filename/sha512 hash",
+        "kubernetes/CHANGELOG/CHANGELOG-1.14.md :: Node Binaries -> filename/sha512 hash",
+        "kubernetes/CHANGELOG/CHANGELOG-1.14.md :: Downloads for v1.14.9 -> filename/sha512 hash",
+        "kubernetes/CHANGELOG/CHANGELOG-1.14.md :: Downloads for v1.14.9 -> Client Binaries",
+        "kubernetes/CHANGELOG/CHANGELOG-1.14.md :: Downloads for v1.14.9 -> Server Binaries"
+      ],
+      "confidenceBelow07": 0
+    },
+    "imports": {
+      "analyzerEdges": 1,
+      "truthEdges": 1,
+      "analyzerKeys": 1,
+      "truthKeys": 1,
+      "matched": 1,
+      "missingInAnalyzer": 0,
+      "unexplained": 0,
+      "filesWithAnalyzerEdges": 1,
+      "filesWithTruthEdges": 1,
+      "missingExamples": [],
+      "unexplainedExamples": [],
+      "confidenceBelow07": 0
+    },
+    "references": {
+      "analyzerEdges": 10172,
+      "truthEdges": 3643,
+      "analyzerKeys": 3641,
+      "truthKeys": 3643,
+      "matched": 3565,
+      "missingInAnalyzer": 78,
+      "unexplained": 76,
+      "filesWithAnalyzerEdges": 76,
+      "filesWithTruthEdges": 77,
+      "missingExamples": [
+        "kubernetes/CHANGELOG/CHANGELOG-1.29.md :: document -> CVE-2024-9042: Command Injection affecting Windows nodes via nodes/*/logs/query API",
+        "kubernetes/CHANGELOG/CHANGELOG-1.29.md :: document -> CVE-2024-5321: Incorrect permissions on Windows containers logs",
+        "kubernetes/CHANGELOG/CHANGELOG-1.29.md :: document -> CVE-2024-3177: Bypassing mountable secrets policy imposed by the ServiceAccount admission plugin",
+        "kubernetes/CHANGELOG/CHANGELOG-1.21.md :: document -> CVE-2021-25741: Symlink Exchange Can Allow Host Filesystem Access",
+        "kubernetes/CHANGELOG/CHANGELOG-1.21.md :: document -> `TopologyAwareHints` feature falls back to default behavior",
+        "kubernetes/pkg/proxy/ipvs/README.md :: document -> IPVS vs. IPTABLES"
+      ],
+      "unexplainedExamples": [
+        "kubernetes/CHANGELOG/CHANGELOG-1.14.md :: External Dependencies -> v1.14.0-rc.1",
+        "kubernetes/CHANGELOG/CHANGELOG-1.14.md :: External Dependencies -> v1.14.0-beta.2",
+        "kubernetes/CHANGELOG/CHANGELOG-1.14.md :: External Dependencies -> v1.14.0-beta.1",
+        "kubernetes/CHANGELOG/CHANGELOG-1.14.md :: External Dependencies -> v1.14.0-alpha.3",
+        "kubernetes/CHANGELOG/CHANGELOG-1.14.md :: External Dependencies -> v1.14.0-alpha.2",
+        "kubernetes/CHANGELOG/CHANGELOG-1.14.md :: External Dependencies -> v1.14.0-alpha.1"
+      ],
+      "confidenceBelow07": 0
+    },
+    "exports": {
+      "analyzerEdges": 0,
+      "truthEdges": 0,
+      "analyzerKeys": 0,
+      "truthKeys": 0,
+      "matched": 0,
+      "missingInAnalyzer": 0,
+      "unexplained": 0,
+      "filesWithAnalyzerEdges": 0,
+      "filesWithTruthEdges": 0,
+      "missingExamples": [],
+      "unexplainedExamples": [],
+      "confidenceBelow07": 0
+    },
+    "extends": {
+      "analyzerEdges": 0,
+      "truthEdges": 0,
+      "analyzerKeys": 0,
+      "truthKeys": 0,
+      "matched": 0,
+      "missingInAnalyzer": 0,
+      "unexplained": 0,
+      "filesWithAnalyzerEdges": 0,
+      "filesWithTruthEdges": 0,
+      "missingExamples": [],
+      "unexplainedExamples": [],
+      "confidenceBelow07": 0
+    },
+    "implements": {
+      "analyzerEdges": 0,
+      "truthEdges": 0,
+      "analyzerKeys": 0,
+      "truthKeys": 0,
+      "matched": 0,
+      "missingInAnalyzer": 0,
+      "unexplained": 0,
+      "filesWithAnalyzerEdges": 0,
+      "filesWithTruthEdges": 0,
+      "missingExamples": [],
+      "unexplainedExamples": [],
+      "confidenceBelow07": 0
+    },
+    "overrides": {
+      "analyzerEdges": 0,
+      "truthEdges": 0,
+      "analyzerKeys": 0,
+      "truthKeys": 0,
+      "matched": 0,
+      "missingInAnalyzer": 0,
+      "unexplained": 0,
+      "filesWithAnalyzerEdges": 0,
+      "filesWithTruthEdges": 0,
+      "missingExamples": [],
+      "unexplainedExamples": [],
+      "confidenceBelow07": 0
+    },
+    "instantiates": {
+      "analyzerEdges": 0,
+      "truthEdges": 0,
+      "analyzerKeys": 0,
+      "truthKeys": 0,
+      "matched": 0,
+      "missingInAnalyzer": 0,
+      "unexplained": 0,
+      "filesWithAnalyzerEdges": 0,
+      "filesWithTruthEdges": 0,
+      "missingExamples": [],
+      "unexplainedExamples": [],
+      "confidenceBelow07": 0
+    }
+  },
+  "derivationFindings": [
+    {
+      "type": "imports",
+      "inAllowlist": false,
+      "analyzerEdges": 1,
+      "truthEdges": 1,
+      "matched": 1,
+      "missingInAnalyzer": 0,
+      "unexplained": 0,
+      "distinctAnalyzerKeys": 1,
+      "distinctTruthKeys": 1,
+      "coverageOfTruth": 1,
+      "precisionOfAnalyzer": 1
+    },
+    {
+      "type": "references",
+      "inAllowlist": false,
+      "analyzerEdges": 10172,
+      "truthEdges": 3643,
+      "matched": 3565,
+      "missingInAnalyzer": 78,
+      "unexplained": 76,
+      "distinctAnalyzerKeys": 3641,
+      "distinctTruthKeys": 3643,
+      "coverageOfTruth": 0.9786,
+      "precisionOfAnalyzer": 0.9791
+    }
+  ]
+}
