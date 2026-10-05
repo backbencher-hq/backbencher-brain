@@ -9,17 +9,44 @@
 // mutant is a separate module instance and the suite only checks that the
 // functional expectations fail for it.
 //
+// It also carries the LSP lane's CROSS-PLATFORM leg (contract §10, the F7 rule):
+// this gate used to compute its own fingerprint by spawning `sha256sum`, a GNU
+// coreutils binary that does not exist on macOS, so on darwin the gate died with
+// `spawnSync sha256sum ENOENT` before it could write a verdict — the position
+// gate was DEAD on this OS, not green. The fingerprint is now node:crypto over
+// raw bytes (script/m24/portability.ts), and the leg below is the permanent gate
+// for the bug class: no LSP-lane harness may spawn a binary that is absent on a
+// supported OS, use a GNU-only command form, or read a Linux-only path. It is
+// proven red by planting each shape into a copy of a real lane file, and proven
+// precise by planting the same text where it is NOT a spawn (a string literal, a
+// comment, a CoreDatabase `.exec(sql)`).
+//
 // Run: npx tsx script/m24/verify-positions.ts
 // Evidence: validation/m24/results/P1.json (machine-emitted)
 
-import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs"
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, unlinkSync, writeFileSync } from "node:fs"
 import { execFileSync } from "node:child_process"
+import { tmpdir } from "node:os"
 import path from "node:path"
 import { writeSealed } from "../lib/evidence.ts"
+import {
+  KNOWN_PORTABLE_BINARIES,
+  NON_PORTABLE_BINARIES,
+  SHA256_KAT,
+  allScriptSources,
+  auditLspLane,
+  findNonPortableSpawns,
+  gitHead,
+  lspLaneSources,
+  measuredOs,
+  sha256File,
+  sha256Text,
+} from "./portability.ts"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const COMPONENT = path.join(ROOT, "src/lsp/positions.ts")
 const TMP = path.join(ROOT, "validation/m24/.positions-mutant.ts")
+const OS = measuredOs()
 
 let checks = 0
 let passed = 0
@@ -327,12 +354,223 @@ for (const mut of mutants) {
 // All mutants caught.
 check("P1: every planted defect was caught", mutantResults.every((m) => m.caught))
 
+// ---------------------------------------------------------------------------
+// Cross-platform legs (contract §10; the F7 gate for the bug class that killed
+// this gate on darwin: a harness spawning a binary that does not exist on every
+// supported OS).
+// ---------------------------------------------------------------------------
+
+// --- X1: the fingerprint helper is sha256, not a shape that looks like one ---
+for (const v of SHA256_KAT) {
+  check(`X1: fingerprint algorithm is sha256 over raw bytes (vector: ${v.label})`, sha256Text(v.input) === v.want, sha256Text(v.input))
+}
+// The digest must be over BYTES: a CRLF checkout of an unchanged file has the
+// same fingerprint on every OS. A helper that decodes and re-encodes, or
+// normalizes line endings, breaks exactly here.
+const CR_DIR = mkdtempSync(path.join(tmpdir(), "m24p1-crlf-"))
+const crlfFile = path.join(CR_DIR, "crlf.ts")
+const lfFile = path.join(CR_DIR, "lf.ts")
+writeFileSync(crlfFile, "const a = 1\r\nconst b = 2\r\n")
+writeFileSync(lfFile, "const a = 1\nconst b = 2\n")
+check(
+  "X1: fingerprint is byte-exact (CRLF and LF spellings of the same source differ)",
+  sha256File(crlfFile) !== sha256File(lfFile) && sha256File(crlfFile) === sha256Text("const a = 1\r\nconst b = 2\r\n"),
+  `crlf=${sha256File(crlfFile)} lf=${sha256File(lfFile)}`,
+)
+rmSync(CR_DIR, { recursive: true, force: true })
+// The recorded fingerprint of the component under test is the portable digest.
+check(
+  "X1: the record's sourceFingerprint is the portable sha256 of the component (64 hex)",
+  /^[0-9a-f]{64}$/.test(sha256File(COMPONENT)),
+  sha256File(COMPONENT),
+)
+
+// --- X2: the rule set itself is well-formed (a gate over an empty rule set
+// passes everything and proves nothing) ---
+check(
+  "X2: every denied binary declares a reason and an OS-measurement",
+  Object.values(NON_PORTABLE_BINARIES).every((e) => e.reason.length > 20 && e.absentOnDarwin !== undefined),
+  JSON.stringify(Object.entries(NON_PORTABLE_BINARIES).filter(([, e]) => !(e.reason.length > 20 && e.absentOnDarwin !== undefined)).map(([k]) => k)),
+)
+check("X2: the portable allowlist is non-empty", KNOWN_PORTABLE_BINARIES.length > 0, `${KNOWN_PORTABLE_BINARIES.length} entries`)
+
+// --- X3: THE GATE. Zero non-portable spawns in the LSP lane -----------------
+const laneAudit = auditLspLane(ROOT)
+for (const f of laneAudit.findings) {
+  check(`X3: LSP-lane harness spawns nothing non-portable — ${f.file}:${f.line} [${f.kind}] ${f.matched}`, false, `${f.api}: ${f.reason}`)
+}
+check(
+  "X3: LSP-lane portability sweep ran (files scanned > 0, spawn sites seen > 0, no read errors)",
+  laneAudit.filesScanned > 0 && laneAudit.spawnSites.length > 0 && laneAudit.errors.length === 0,
+  `files=${laneAudit.filesScanned} sites=${laneAudit.spawnSites.length} errors=${JSON.stringify(laneAudit.errors)}`,
+)
+// The sweep is not vacuous: it must actually SEE the spawn sites it judged.
+check(
+  "X3: the sweep judged the lane's real spawn sites (direct call sites + laundered wrapper calls)",
+  laneAudit.spawnSites.filter((s) => s.via === "direct" && s.resolved).length > 0 && laneAudit.spawnSites.some((s) => s.via === "wrapper"),
+  `direct=${laneAudit.spawnSites.filter((s) => s.via === "direct" && s.resolved).length} wrapper=${laneAudit.spawnSites.filter((s) => s.via === "wrapper").length} computed=${laneAudit.spawnSites.filter((s) => s.via === "computed").length}`,
+)
+
+// --- X4: mutation suite — every planted non-portable shape must be caught ---
+// Each mutant appends a spawn to a COPY of a real lane file and re-scans it.
+// The assertion is the finding's KIND, its MATCHED token and its LINE: a rule
+// that fires on everything, or fires somewhere else, fails here.
+const PORTABILITY_HOST = "script/m24/verify-hover.ts" // a real lane harness (not a copy of this gate)
+const hostSource = readFileSync(path.join(ROOT, PORTABILITY_HOST), "utf8")
+const hostLines = hostSource.split("\n").length
+type PortMutant = {
+  name: string
+  /** The child_process API the plant uses; imported by the plant when the host lacks it. */
+  api?: string
+  /** The planted line(s), appended verbatim to the host copy. */
+  plant: string
+  kind: string
+  matched: string
+  /** must NOT produce a finding (precision proofs) */
+  expectClean?: boolean
+}
+const portabilityMutants: PortMutant[] = [
+  { name: "planted execFileSync sha256sum (the defect that killed this gate)", api: "execFileSync", plant: `const fp = execFileSync("sha256sum", [COMPONENT], { encoding: "utf8" })`, kind: "non-portable-binary", matched: "sha256sum" },
+  { name: "planted execSync shell sha256sum", api: "execSync", plant: `const fp = execSync("sha256sum src/lsp/positions.ts", { encoding: "utf8" })`, kind: "non-portable-binary", matched: "sha256sum" },
+  { name: "planted spawnSync md5sum", api: "spawnSync", plant: `const fp = spawnSync("md5sum", [COMPONENT], { encoding: "utf8" })`, kind: "non-portable-binary", matched: "md5sum" },
+  { name: "planted spawn of an absent-on-darwin coreutils binary (timeout)", api: "spawnSync", plant: `const fp = spawnSync("timeout", ["5", "true"], { encoding: "utf8" })`, kind: "non-portable-binary", matched: "timeout" },
+  { name: "planted /proc read inside a shell spawn", api: "execFileSync", plant: `const cpu = execFileSync("sh", ["-c", "grep -m1 'model name' /proc/cpuinfo"], { encoding: "utf8" })`, kind: "platform-only-path", matched: "/proc" },
+  { name: "planted GNU-only stat -c", api: "execSync", plant: `const size = execSync("stat -c %s file.txt", { encoding: "utf8" })`, kind: "gnu-only-command-form", matched: "stat -c" },
+  { name: "planted GNU-only sort -V (accepted-but-ignored on BSD)", api: "execSync", plant: `const out = execSync("printf '2\\n10\\n' | sort -V", { encoding: "utf8" })`, kind: "gnu-only-command-form", matched: "sort -V" },
+  { name: "planted GNU-only grep -P", api: "execSync", plant: `const hit = execSync("grep -P foo file.txt", { encoding: "utf8" })`, kind: "gnu-only-command-form", matched: "grep -P" },
+  { name: "planted GNU-only sed -i in-place form (argv shape)", api: "execFileSync", plant: `execFileSync("sed", ["-i", "s/x/y/", "file.txt"], { encoding: "utf8" })`, kind: "gnu-only-command-form", matched: "sed -i (GNU form)" },
+  { name: "planted sha256sum laundered through a local spawn wrapper", api: "execFileSync", plant: `function plantRun(cmd, args) { return execFileSync(cmd, args, { encoding: "utf8" }) }\nconst digest = plantRun("bash", ["-lc", "find . -type f | sort | xargs sha256sum"])`, kind: "denylisted-binary-in-spawned-command", matched: "sha256sum" },
+  { name: "PRECISION: the same spawn text inside a string literal is not a spawn", plant: `const doc = "run execFileSync(\\"sha256sum\\", [file]) to fingerprint"`, expectClean: true },
+  { name: "PRECISION: the same spawn text inside a comment is not a spawn", plant: `// execFileSync("sha256sum", [file]) — the darwin defect, in prose`, expectClean: true },
+  { name: "PRECISION: a CoreDatabase .exec(sql) is not a process spawn", plant: `const raw = { exec(sql: string) { return { run: () => {} } } }\nraw.exec("PRAGMA journal_mode = WAL")`, expectClean: true },
+  { name: "PRECISION: a portable spawn of git/node stays unflagged", api: "execFileSync", plant: `const head = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" })\nconst ver = execFileSync("node", ["--version"], { encoding: "utf8" })`, expectClean: true },
+]
+const portabilityMutantResults: { name: string; caught: boolean; detail: string }[] = []
+for (const mut of portabilityMutants) {
+  const plantLines = [...(mut.api ? [`import { ${mut.api} } from "node:child_process"`] : []), ...mut.plant.split("\n")]
+  const plantedSource = `${hostSource}\n${plantLines.join("\n")}\n`
+  const plantStartLine = hostLines + 1 // the plant begins on the line after the host's last
+  const r = findNonPortableSpawns(PORTABILITY_HOST, plantedSource)
+  const mine = r.findings.filter((f) => f.line >= plantStartLine)
+  let caught: boolean
+  let detail: string
+  if (mut.expectClean) {
+    caught = mine.length === 0
+    detail = caught ? "no finding (precision kept)" : `false positive: ${mine.map((f) => `${f.kind}:${f.matched}@${f.line}`).join(", ")}`
+  } else {
+    const hit = mine.find((f) => f.kind === mut.kind && f.matched === mut.matched)
+    caught = !!hit
+    detail = caught
+      ? `caught at line ${hit!.line} (${hit!.kind}: ${hit!.matched})`
+      : `survived; got ${mine.length ? mine.map((f) => `${f.kind}:${f.matched}@${f.line}`).join(", ") : "no findings"}`
+  }
+  portabilityMutantResults.push({ name: mut.name, caught, detail })
+  check(`X4: planted portability defect [${mut.name}] ${mut.expectClean ? "not flagged" : "caught at its line"}`, caught, caught ? "" : detail)
+}
+check("X4: every planted portability defect was caught (and no precision proof regressed)", portabilityMutantResults.every((m) => m.caught))
+
+// --- X5: the planted defect is REAL on this OS, not a theory ---------------
+// Execute a disposable copy of a harness that spawns the denied binary and
+// record what actually happens here. OS-scoped by measurement (contract §10):
+//   darwin -> must die with ENOENT (that is the defect)
+//   linux  -> must succeed AND agree with node:crypto (cross-OS agreement)
+//   win32  -> declared unsupported for this lane; recorded, not asserted
+const PROBE_DIR = mkdtempSync(path.join(tmpdir(), "m24p1-probe-"))
+const probeFile = path.join(PROBE_DIR, "planted-harness.mjs")
+writeFileSync(
+  probeFile,
+  `import { execFileSync } from "node:child_process"\nimport { createHash } from "node:crypto"\nimport { readFileSync } from "node:fs"\nconst target = ${JSON.stringify(COMPONENT)}\nconst printed = execFileSync("sha256sum", [target], { encoding: "utf8" }).trim().split(/\\s+/)[0]\nconst portable = createHash("sha256").update(readFileSync(target)).digest("hex")\nconsole.log(JSON.stringify({ printed, portable }))\n`,
+)
+let probeOutcome: { os: string; expected: string; observed: string; ok: boolean } = {
+  os: OS.platform,
+  expected: "declared-unsupported",
+  observed: "not executed",
+  ok: true,
+}
+if (OS.platform === "darwin" || OS.platform === "linux") {
+  let stdout = ""
+  let stderr = ""
+  let status: number | null = null
+  try {
+    stdout = execFileSync(process.execPath, [probeFile], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], timeout: 60_000 })
+  } catch (e: any) {
+    stdout = String(e.stdout ?? "")
+    stderr = String(e.stderr ?? "")
+    status = typeof e.status === "number" ? e.status : 1
+  }
+  const errNoEnt = /ENOENT/.test(stderr)
+  const digestsAgree = (() => {
+    try {
+      const parsed = JSON.parse(stdout.trim()) as { printed: string; portable: string }
+      return parsed.printed === parsed.portable
+    } catch {
+      return false
+    }
+  })()
+  if (OS.platform === "darwin") {
+    probeOutcome = {
+      os: OS.platform,
+      expected: "spawn sha256sum dies with ENOENT",
+      observed: errNoEnt ? "ENOENT (the defect reproduces here)" : `exited status=${status} stdout=${stdout.trim().slice(0, 80)}`,
+      ok: errNoEnt,
+    }
+  } else {
+    probeOutcome = {
+      os: OS.platform,
+      expected: "spawn sha256sum succeeds and agrees with node:crypto",
+      observed: digestsAgree ? "digest matches sha256File()" : `status=${status} agree=${digestsAgree} err=${stderr.trim().slice(0, 80)}`,
+      ok: digestsAgree,
+    }
+  }
+}
+check(
+  "X5: the planted sha256sum spawn behaves as this OS declares (darwin ENOENT / linux digest agreement)",
+  probeOutcome.ok,
+  `expected ${probeOutcome.expected}; observed ${probeOutcome.observed}`,
+)
+rmSync(PROBE_DIR, { recursive: true, force: true })
+
+// --- X6: discovery sweep OUTSIDE the LSP lane (report, not verdict) --------
+// The rule is the LSP lane's to pass; the sweep exists so the other lanes'
+// occurrences are counted and named in the record instead of being discovered
+// by accident later. It does NOT fail this gate: those files are owned by
+// other lanes, and a gate that fails on files it may not fix is a gate nobody
+// reads. Every hit is recorded with file:line and the reason.
+const laneFiles = new Set(lspLaneSources(ROOT))
+const allScript = allScriptSources(ROOT)
+const outOfLaneFiles = new Set<string>()
+const outOfLane: Array<{ file: string; line: number; kind: string; matched: string; api: string; reason: string }> = []
+for (const rel of allScript) {
+  if (laneFiles.has(rel)) continue
+  outOfLaneFiles.add(rel)
+  let source: string
+  try {
+    source = readFileSync(path.join(ROOT, rel), "utf8")
+  } catch {
+    continue
+  }
+  for (const f of findNonPortableSpawns(rel, source).findings) {
+    outOfLane.push({ file: f.file, line: f.line, kind: f.kind, matched: f.matched, api: f.api, reason: f.reason })
+  }
+}
+const sweptExactlyOnce = allScript.filter((f) => laneFiles.has(f) || outOfLaneFiles.has(f)).length === allScript.length
+const disjoint = [...outOfLaneFiles].every((f) => !laneFiles.has(f))
+check(
+  "X6: the two sweeps partition the source tree exactly once (no file judged twice, none missed)",
+  sweptExactlyOnce && disjoint,
+  `allScript=${allScript.length} laneFiles=${laneFiles.size} outOfLaneFiles=${outOfLaneFiles.size} sweptOnce=${sweptExactlyOnce} disjoint=${disjoint}`,
+)
+check(
+  "X6: every out-of-lane finding is named with file:line in the record (report-only: those files are owned by other lanes)",
+  outOfLane.length > 0 && outOfLane.every((f) => typeof f.file === "string" && f.line > 0 && f.reason !== undefined),
+  `${outOfLane.length} out-of-lane findings recorded`,
+)
+
+const portabilityVerdictOk = laneAudit.findings.length === 0 && portabilityMutantResults.every((m) => m.caught) && probeOutcome.ok
+
 // --- Persist evidence -------------------------------------------------------
-let currentCommit = "unknown"
-try {
-  currentCommit = execFileSync("git", ["rev-parse", "HEAD"], { cwd: ROOT, encoding: "utf8" }).trim()
-} catch {}
-const sourceFingerprint = execFileSync("sha256sum", [COMPONENT], { cwd: ROOT, encoding: "utf8" }).trim().split(/\s+/)[0]
+const currentCommit = gitHead(ROOT)
+const sourceFingerprint = sha256File(COMPONENT)
 
 const result = {
   issue: "M24.P1",
@@ -344,8 +582,30 @@ const result = {
   failed,
   negativeCases: mutants.length,
   mutants: mutantResults,
+  portability: {
+    rule: "no LSP-lane harness may spawn a binary absent on a supported OS, use a GNU-only command form, or read a Linux-only path",
+    scope: "script/m24, m25, m26, m27, m28, m29, m42, m44, m45, m55 + src/lsp",
+    measuredOs: OS,
+    supportedOses: ["darwin", "linux"],
+    declaredAbsentOses: ["win32"],
+    filesScanned: laneAudit.filesScanned,
+    spawnSitesJudged: laneAudit.spawnSites.length,
+    spawnSitesByReach: {
+      directCallSitesResolvedByName: laneAudit.spawnSites.filter((s) => s.via === "direct" && s.resolved).length,
+      localWrapperCallSitesArgumentScanned: laneAudit.spawnSites.filter((s) => s.via === "wrapper").length,
+      commandComputedAtRuntimeNotJudgedByName: laneAudit.spawnSites.filter((s) => s.via === "computed").length,
+    },
+    findings: laneAudit.findings.map((f) => ({ file: f.file, line: f.line, kind: f.kind, matched: f.matched, api: f.api, reason: f.reason })),
+    plantedDefectsCaught: portabilityMutantResults.filter((m) => m.caught).length,
+    plantedDefectsTotal: portabilityMutantResults.length,
+    plantedDefects: portabilityMutantResults,
+    plantedDefectExecution: probeOutcome,
+    outOfLaneFindings: outOfLane,
+    ok: portabilityVerdictOk,
+  },
   currentCommit,
   sourceFingerprint,
+  sourceFingerprintAlgorithm: "sha256 over raw file bytes (node:crypto; no process spawn)",
   verifierCommand: "npx tsx script/m24/verify-positions.ts",
   evidenceFile: "P1.json",
   generatedAt: new Date().toISOString(),
@@ -354,9 +614,14 @@ const result = {
     "resolveRowByteColumns: a file-absolute row whose offset also fits the target line's byte length is still read as per-line (the pre-existing declared ambiguity in the function header). Only byte 0 — impossible as a 1-based per-line column — is disambiguated. Removing the ambiguity for real rows needs a writer-side convention flag (indexer lane); found and reported by M55.T2.",
     "Tab-width treated as 1 UTF-16 unit (LSP standard); editor tab rendering is a client concern.",
     "Roundtrip property samples code-point boundaries, not every byte of multi-byte sequences.",
+    "Portability rule coverage, counted in `spawnSitesByReach`: a direct child_process call site is resolved by name; a call to a local function that forwards to one is scanned argument-by-argument (checksum class only, since a wrapper's arguments are arbitrary strings); a site whose command is built at runtime is counted but cannot be judged by name; a wrapper that launders a command ACROSS files (imported from another module) is not resolved; win32 is declared absent for this lane and unverified.",
+    "The portability denylist is static by design so the gate gives the same verdict on every OS; a binary's presence on this machine is therefore NOT probed by the gate. The X5 leg measures the one binary this bug class is about (sha256sum) by executing the planted spawn, and the record states which OS it ran on.",
+    "The out-of-lane sweep (script/ outside the LSP lane) is a REPORT: its findings are named in the record with file:line, and they do not change this gate's verdict because those files belong to other lanes.",
+    "CORRECTION (M24 lane-1 wave 2), superseding this lane's wave-1 REPORT — the original claim is kept here in the open, not deleted: wave 1 stated that script/m24/lsp_harness.ts:80 was 'unguarded and throws on macOS' and that 'every M24 harness that calls machineInfo() (runHarness :435/:450/:494, i.e. L1-L5, V1) dies there'. BOTH halves were wrong. (a) It does NOT throw: the call is `sh -c 'grep MemTotal /proc/meminfo | awk ...'`, and a shell PIPELINE exits with its LAST stage's status, so grep failing and awk succeeding returns normally with an empty string; the sibling `catch {}` on the CPU line never fires for the same reason. (b) The blast radius was overstated: of the M24 gates only verify-harness.ts (V1) publishes machine facts from that harness, so L1-L5 were never involved. The narrower truth is worse in one way and better in another: nothing crashed, so the failure was SILENT — three sealed V1 runs published machine {cpu:'', ramGb:0} under a VERIFIED verdict, and the only trace was a grep error on the gate's own stderr. Both were fixed in wave 2 (script/m24/lsp_harness.ts machineFacts(), node:os only) and gated by V1's G5/G6 legs; the two /proc findings this gate published for lsp_harness.ts:78/:80 are RESOLVED by that fix, not waived.",
+    "A second correction to that same wave-1 statement, for completeness: `runHarness` has more consumers than V1 (script/m27/verify-zed.ts:187, script/m27/verify-lsp4ij.ts:188, script/m27/verify-helix.ts:163, script/m48/l1-hub-smoke.ts:29). None of them copies `.machine` into its evidence, so only V1 published the bad values, but the defect was reachable from four more gates.",
   ],
 }
 mkdirSync(path.join(ROOT, "validation/m24/results"), { recursive: true })
 writeSealed(path.join(ROOT, "validation/m24/results/P1.json"), result)
-console.log(`P1: ${result.status.toUpperCase()} (${passed}/${checks} passed, ${mutantResults.filter((m) => m.caught).length}/${mutants.length} mutants caught)`)
+console.log(`P1: ${result.status.toUpperCase()} (${passed}/${checks} passed, ${mutantResults.filter((m) => m.caught).length}/${mutants.length} component mutants caught, ${portabilityMutantResults.filter((m) => m.caught).length}/${portabilityMutantResults.length} portability plants handled, ${laneAudit.findings.length} lane portability findings)`)
 process.exit(failed === 0 ? 0 : 1)
