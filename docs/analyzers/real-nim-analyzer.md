@@ -3806,3 +3806,134 @@ quiet machine will cover all 5,227 through the production path.
     (`newly walked 1947, resumed 4116`) and its per-type counts — `calls` 45,053,
     `imports` 5,279 — are a fraction of the `--fresh` figures for the same analyzer. The
     10/10 verdict is unaffected; the counts are not comparable to a census's.
+37. **`contains` is the one type the store resolves STRUCTURALLY, and this lane's
+    ambiguity numbers have been reading it as a name.** `parallel-indexer.ts:2354-2360`
+    orders candidates by `(s.file_id = ?) DESC, (s.line_start = ?) DESC` against the line
+    the edge itself carries, and the I13 name-resolution pass **explicitly excludes**
+    `contains` because "its target is pinned to the edge's own line rather than to a
+    name" (`:4109-4110`). So the bare member name is the CORRECT target spelling for this
+    type, and the brief's prescribed cause-A remedy — publish `Owner.member` and target
+    that — would move all 1,079 edges off a rule that places every one of them onto the
+    name-only statement, which mis-places 284 (26.3%).
+
+    Measured by replaying both statements over the same candidate sets, 600 files,
+    analyzer `deeab0756e0c4c1f` (`s19-ambiguity-classify.txt`):
+
+    | | amb | placed | winner's owner IS the edge's owner | winner in another file | decided by TEXT id order |
+    | --- | --- | --- | --- | --- | --- |
+    | `contains`, line-hinted (current) | 1,079 | **1,079** | **1,079** | 0 | **0** |
+    | `contains`, name-only (pre-#612) | 1,079 | 1,079 | 795 | 0 | 500 |
+    | all ten types | 8,175 | 8,175 | n/a | 2,598 | 4,253 (52.0%) |
+
+    **The 16 `contains` edges an earlier cut of that table reported as placed on the wrong
+    owner were the INSTRUMENT's error, and the number was confident.** It read `scope` as
+    the owner, and `scope` is a different field: `real-nim-analyzer.ts:589` publishes
+    `scope: nestedIn || undefined` — the enclosing CALLABLE, empty at file scope — while
+    `:608` puts the receiver type in `ownerName`, which is what `collectContainment`
+    builds the edge's `source` from (`:2068`). A top-level `method` therefore has an owner
+    the instrument could not see. Fixed by carrying `ownerName` through the declaration
+    record and scoring against `owner || scope`; all 16 were on their own file AND their own
+    line, i.e. already correct. The instrument now PRINTS every contradicted edge rather
+    than a count, because naming them is what found this.
+
+38. **Owner-qualification — the round brief's prescribed cause-A fix — is worth 1,006 of
+    8,175 ambiguous edges here (12.3%), and 82 of 7,061 (1.2%) on the four highest-volume
+    name-resolved types.** Measured per edge over the same 600 files, globally, not
+    intra-file: `contains` 924/1,079, `calls` 72/4,084, `uses` 9/1,696, `references`
+    1/1,061, and 0 for `imports`/`exports`/`extends`/`implements`/`instantiates`. The
+    reading is `target!member`: **5,969 of 8,175 edges name a target that is not a member
+    of any owner**, so `Owner.target` is a name nothing publishes — qualifying them
+    produces 0 new resolutions and 0 new failures. This is a fact about Nim's calling
+    convention, not about this analyzer: Nim lets an imported exported symbol be called
+    BARE (`import strutils` then `startsWith(a, b)`), so most call sites name no module at
+    all. Closing the rest needs the import resolved to a file and the file to its declaring
+    module — whole-program work in shared machinery (§8).
+
+    The three anchors compared, on the same edges:
+
+    | anchor | edges settled | share |
+    | --- | --- | --- |
+    | file hint, already applied by the store as its first key | 6,020 | 73.6% |
+    | line equality, extends the file hint | 531 | 6.5% |
+    | owner-qualification, not applied | 1,006 | 12.3% |
+    | unresolved by any per-file rule | **1,624** | **19.9%** |
+
+    The line anchor's 531 is `500 contains` and `31` everything else, and that split is why
+    `parallel-indexer.ts:3492-3495`'s prohibition is right rather than merely cautious: a
+    `calls` edge's line is the SITE that made the call, and it lands on a declaration in 5
+    of 1,061 cases. **A first cut of this table reported 100.0% in the analogous column
+    everywhere and was wrong in the direction that matters** — it counted whether the
+    same-file candidates carry DISTINCT lines, which says a key is possible, and printed
+    it under a heading that read as though the edge's line bound one. 2,155 vs 531. Both
+    columns are now printed and the header states which is which.
+
+39. **This lane's defect column was quoted at 126 and was never a measurement of the
+    corpus — the instrument that produces it died mid-walk and nothing recorded by how
+    much.** `resolution-audit.ts` ran its 6,063-file pass in a bare `Promise.all` worker
+    pool with no checkpoint, and `parseFile` can `process.exit()` the whole process. On
+    2026-10-05 at 2 workers it printed `[BB-PARSE-ERR] … tpolltimeouts.nim … memory access
+    out of bounds`, then `[BB-HANG] … — exiting`, and wrote no table. TREE-ONLY — the
+    column whose entire purpose is "declared on a corpus parse tree, published nowhere" —
+    read **126** on record.
+
+    Pass 1 now runs through `script/m14/resumable-walk.ts` and every table is printed with
+    its POPULATION. The committed artifact records `walked 6063, resumed 0, skippedBad 0,
+    partial false` at analyzer `deeab0756e0c4c1f`. **TREE-ONLY is 1.** The 125 were files
+    the walk never reached, not declarations the analyzer dropped — which is the specific
+    confusion the honesty contract's population rule exists to prevent, reached by the one
+    instrument whose numbers were quoted as whole-corpus.
+
+    Both named files are innocent, measured by adding them to
+    `hang-file-arbitration.ts` (9 for 9 OK, exit 0): `nim/tests/async/tpolltimeouts.nim`
+    is 337 B / 20 lines and parses alone 5/5 in at most **40 ms** against the engine's
+    120,000 ms watchdog — 3,000× headroom — and `nim/tests/overload/tgenericalias.nim` is
+    550 B in at most 71 ms. The `[BB-HANG]` message names the file whose parse threw, not
+    one that is stuck.
+
+40. **The one remaining TREE-ONLY edge is a shared-machinery defect, and it is in
+    `keepSymbol`'s denylist rather than in any analyzer.** `nim/tests/objects/tobject3.nim:20,22`
+    declares `template super(self: TBar): TFoo` and `template super(self: TBar2): TBar`.
+    Nim's grammar reads `super` as an ordinary `identifier` — the probe shows
+    `template_declaration nameField=identifier "super"` — and **this analyzer publishes
+    both** (`kind=macro`, `callableKind=template`, lines 20 and 22). `pool-worker.ts:482`
+    then deletes them, because `"super"` sits in the `UNIVERSAL` denylist that every
+    language is filtered against. The verified chain, calling the analyzer directly to
+    bypass the filter:
+
+    ```
+    BEFORE keepSymbol (analyzer direct) — `super` symbols: 2
+       kind=macro line=20 callableKind=template   keepSymbol(nim)=false
+       kind=macro line=22 callableKind=template   keepSymbol(nim)=false
+    AFTER  keepSymbol (production parseFile) — `super` symbols: 0
+    edges targeting `super`: 1  Foo->super@34
+    ```
+
+    So **one `uses` edge names a symbol the store does not contain** — the defect
+    requirement D calls "an edge the graph cannot walk". §8 item, reported not edited:
+    move `"super"` out of `UNIVERSAL` and into the `RESERVED` map the comment at
+    `:452-480` already describes ("keep only names that are RESERVED in the language
+    being parsed, and decide that per language"). That comment removed `root`, `self`,
+    `me`, `program` and `source_file` on exactly this evidence across six lanes; `super`
+    is the same class and is the one still there — reserved in Java/JavaScript/C++/Python,
+    legal in Nim. Cost of the fix, measured over the corpus: **1 file of 6,063** declares a
+    `super` routine in this language. The same list appears at `analysis-exclusions.ts:238`,
+    `parallel-indexer.ts:2583`, and `pool-worker.ts:132` and `:333`.
+
+41. **Four unpublished callable declarations remain, and all four are correct behaviour.**
+    At the full population, callable recall is 46,971 on the tree against 46,967 published —
+    **100.0%**, and the 4 are `proc _` (`nim/tests/stmt/tmiscunderscore.nim:4,6`, the
+    discard-underscore, which `buildCallableSymbol` refuses by name at `:547`) and the two
+    `super` templates of limitation 40. `type`, `enum_member` and `object_field` read 0 on
+    the tree in this instrument, which is a property of how it enumerates the tree and not
+    a recall claim — the analyzer publishes 3,227 types, 11,688 enum members and 16,549
+    properties over the same corpus.
+
+    Full-population figures at `deeab0756e0c4c1f` (`s19-resolution-audit.txt`): 116,118
+    symbols, 59,739 distinct published names, 0 empty names, 0 empty kinds, 0 raw-parse
+    failures, 0 parse failures. `imports` is 92.0% module-resolved and `exports` 5.2% local
+    / 92.7% other-file; `calls` 38.9% local / 59.4% other-file, with 1 TREE-ONLY and 1.7%
+    `nowhere`. The `nowhere` populations are third-party packages the corpus does not
+    contain (`gtk2`, `gdk2`, `PLabel`, `TTextBuffer`) and are counted separately from
+    TREE-ONLY by design: one is external, the other is a gap, and this instrument has
+    separate columns for them because conflating them is how a 1-edge defect gets reported
+    as 2,038.
