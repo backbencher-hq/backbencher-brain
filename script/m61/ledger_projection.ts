@@ -159,8 +159,39 @@ export function projectEntry(
     "mutantsCaught",
     "mutantsTotal",
   ] as const
+  // A record may report a count at the TOP LEVEL or NESTED under `verdict` —
+  // and the IDE lane uses both shapes (m42.H1 reports
+  // `verdict: { mutantsCaught: 4, mutantsTotal: 4, realComponentFailures: 0 }`
+  // with no top-level mutants at all). Reading only the top level made the
+  // projection report those counts as absent and DROP the ledger's copy, after
+  // which `isClosable` rejected four honest `verified` entries as hollow.
+  //
+  // A gate that cannot see where its own record keeps a number is a gate that
+  // will call truth hollow. Both spellings are read, top level first (the
+  // shallower declaration wins), and the `realFailed` alias for the nested
+  // `realComponentFailures` is honoured for the same reason.
+  const verdict = (record.verdict && typeof record.verdict === "object" ? record.verdict : {}) as Record<string, unknown>
+  const countIn = (key: string): number | undefined => {
+    const direct = num(record[key])
+    if (direct !== undefined) return direct
+    const nested = num(verdict[key])
+    if (nested !== undefined) return nested
+    if (key === "realFailed") {
+      const alias = num(verdict.realComponentFailures)
+      if (alias !== undefined) return alias
+    }
+    if (key === "negativeCases") {
+      // m61 nests its negatives as an object: `negatives: { total, caught }`,
+      // or `{ planned }` in the older shape.
+      const negs = record.negatives
+      if (negs && typeof negs === "object") return num((negs as Record<string, unknown>).total) ?? num((negs as Record<string, unknown>).caught)
+      const scalar = num(record.negatives)
+      if (scalar !== undefined) return scalar
+    }
+    return undefined
+  }
   for (const key of COUNT_KEYS) {
-    const fromRecord = num(record[key])
+    const fromRecord = countIn(key)
     const onLedger = (ev as Record<string, unknown>)[key]
     if (fromRecord === undefined) {
       if (key in ev) {
@@ -232,10 +263,52 @@ export function projectLedger(
   for (const entry of issues) {
     const hollow = hollowBlocked(entry)
     if (hollow) findings.push(hollow)
+    // Rule 7, over the RECORD the entry points at. Read from the record rather
+    // than from the entry so it fires on a lane whose own validator is not
+    // consulted (and so a hand-typed entry cannot satisfy it by asserting a
+    // proof the record does not carry).
+    if (entry.status === "verified") {
+      const record = readRecord(str(entry.evidence?.evidenceFile) ?? `${entry.code}.json`)
+      if (record) {
+        const noProof = missingCanFailProof(record)
+        if (noProof) findings.push(`${entry.code}: ${noProof}`)
+      }
+    }
   }
   const status = laneStatusOf(issues)
   if (ledger.status !== status) findings.push(`lane status: ledger=${String(ledger.status)} derived=${status} (mechanical)`)
   return { ledger: { ...ledger, issues, status }, findings, healed }
+}
+
+/**
+ * Rule 7 — an entry claiming `verified` must carry a can-fail proof.
+ *
+ * Found live: validation/m25/results/E5.json and F-CURSOR.json record 88/88
+ * passing checks with NO mutants, NO negative cases and (for E5) an EMPTY
+ * `limitations` array. A suite of 88 assertions that cannot fail is 88
+ * unverified claims wearing a `verified` badge — the contract §6 case ("if a
+ * mutant survives, the suite fails — not the mutant") with the mutant set
+ * simply absent. The lane's own closure rules already say a non-planned entry
+ * needs a can-fail proof; this is the same rule stated over the RECORD, so the
+ * finding survives even in a lane whose validator is bypassed.
+ *
+ * It is reported rather than repaired: the proof is the gate author's to add,
+ * and a projection that manufactured one would be inventing evidence.
+ */
+export function missingCanFailProof(record: Record<string, unknown>): string | null {
+  if (record.status !== "verified") return null
+  const verdict = (record.verdict && typeof record.verdict === "object" ? record.verdict : {}) as Record<string, unknown>
+  const negs = record.negatives
+  const nestedNegatives =
+    negs && typeof negs === "object"
+      ? (num((negs as Record<string, unknown>).total) ?? num((negs as Record<string, unknown>).caught) ?? num((negs as Record<string, unknown>).planned))
+      : num(negs)
+  const negatives = num(record.negativeCases) ?? num(verdict.negativeCases) ?? nestedNegatives
+  const mutantsCaught = num(record.mutantsCaught) ?? num(verdict.mutantsCaught)
+  const mutantsTotal = num(record.mutantsTotal) ?? num(verdict.mutantsTotal)
+  const mutantProof = mutantsCaught !== undefined && mutantsCaught > 0 && mutantsTotal === mutantsCaught
+  if ((negatives !== undefined && negatives > 0) || mutantProof) return null
+  return `verified with no can-fail proof: negativeCases=${String(negatives ?? "absent")} mutantsCaught=${String(mutantsCaught ?? "absent")}/${String(mutantsTotal ?? "absent")} (contract §6: a suite that cannot fail is not evidence; §8.4: negativeCases is required)`
 }
 
 /**

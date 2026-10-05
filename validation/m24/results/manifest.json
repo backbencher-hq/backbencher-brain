@@ -40,7 +40,7 @@
       ],
       "evidence": {
         "status": "known-gap",
-        "currentCommit": "07e2feed393593c43fcaa638a03548608cfeb699",
+        "currentCommit": "bc09cd791cf54bc93791cb1e457a9731d478bb87",
         "verifierCommand": "npx tsx script/m24/verify-governance.ts",
         "evidenceFile": "G1.json",
         "passed": 23,
@@ -90,7 +90,10 @@
         "passed": 34,
         "failed": 0,
         "negativeCases": 6,
-        "blockedReason": "Watcher exercised through real fs.watch on a temp directory. THIS RUN'S OS IS IN `measuredOs`, and the watcher event classes the claims are scoped to are in `watcherEventClasses`; the per-run event counts are printed to the run log rather than recorded, because they vary between runs of the same commit and evidence must regenerate byte-identically (contract §8.2, §10.2: platform scope is declared per claim, other OSes declared absent, never assumed)."
+        "blockedReason": "Watcher exercised through real fs.watch on a temp directory. THIS RUN'S OS IS IN `measuredOs`, and the watcher event classes the claims are scoped to are in `watcherEventClasses`; the per-run event counts are printed to the run log rather than recorded, because they vary between runs of the same commit and evidence must regenerate byte-identically (contract §8.2, §10.2: platform scope is declared per claim, other OSes declared absent, never assumed).",
+        "realFailed": 0,
+        "mutantsCaught": 6,
+        "mutantsTotal": 6
       },
       "acceptanceCriteria": [
         "watcher triggers incremental reindex with declared debounce",
@@ -127,7 +130,10 @@
         "passed": 127,
         "failed": 0,
         "negativeCases": 24,
-        "blockedReason": "single-root workspaces only (multi-root is a filed decision for later waves); declared on the wire as workspace.workspaceFolders.supported = false"
+        "blockedReason": "single-root workspaces only (multi-root is a filed decision for later waves); declared on the wire as workspace.workspaceFolders.supported = false",
+        "realFailed": 0,
+        "mutantsCaught": 33,
+        "mutantsTotal": 33
       }
     },
     {
@@ -154,7 +160,10 @@
         "passed": 45,
         "failed": 0,
         "negativeCases": 14,
-        "blockedReason": "index-sourced only; no compiler-backed types (complement stance)"
+        "blockedReason": "index-sourced only; no compiler-backed types (complement stance)",
+        "realFailed": 0,
+        "mutantsCaught": 6,
+        "mutantsTotal": 6
       }
     },
     {
@@ -181,7 +190,10 @@
         "passed": 117,
         "failed": 0,
         "negativeCases": 12,
-        "blockedReason": "index-sourced only; no compiler-backed go-to-definition (complement stance)"
+        "blockedReason": "index-sourced only; no compiler-backed go-to-definition (complement stance)",
+        "realFailed": 0,
+        "mutantsCaught": 21,
+        "mutantsTotal": 21
       }
     },
     {
@@ -208,7 +220,10 @@
         "passed": 50,
         "failed": 0,
         "negativeCases": 14,
-        "blockedReason": "index-sourced only; hierarchy depth limited to what the analyzer stored via owner_symbol_id"
+        "blockedReason": "index-sourced only; hierarchy depth limited to what the analyzer stored via owner_symbol_id",
+        "realFailed": 0,
+        "mutantsCaught": 10,
+        "mutantsTotal": 10
       }
     },
     {
@@ -235,7 +250,10 @@
         "passed": 97,
         "failed": 0,
         "negativeCases": 16,
-        "blockedReason": "adapter proven against a fixture double reproducing the engine contract; the engine itself is M14-verified and exercised end-to-end by the V1 harness"
+        "blockedReason": "adapter proven against a fixture double reproducing the engine contract; the engine itself is M14-verified and exercised end-to-end by the V1 harness",
+        "realFailed": 0,
+        "mutantsCaught": 23,
+        "mutantsTotal": 23
       }
     },
     {
@@ -262,7 +280,8 @@
         "passed": 22,
         "failed": 0,
         "negativeCases": 6,
-        "blockedReason": "bun-source leg is blocked in this environment (bun not installed); the harness attempts it every run and records the reason — never a silent skip"
+        "blockedReason": "bun-source leg is blocked in this environment (bun not installed); the harness attempts it every run and records the reason — never a silent skip",
+        "realFailed": 0
       }
     },
     {
@@ -289,7 +308,8 @@
         "passed": 44,
         "failed": 0,
         "negativeCases": 3,
-        "blockedReason": "claim levels capped at I1 (protocol-passed) by design — I3/I4/I5 are M25 scope and declared absent"
+        "blockedReason": "claim levels capped at I1 (protocol-passed) by design — I3/I4/I5 are M25 scope and declared absent",
+        "realFailed": 0
       }
     },
     {
@@ -322,7 +342,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T05:01:11.707Z",
-    "contentSha256": "874dd701fdf72d63fcd67537988529627344693a1cbfbcf82e303f441a7111bd"
+    "sealedAt": "2026-10-05T13:08:00.825Z",
+    "contentSha256": "06bdaec49b090c9fea5fa026ba175365cac7de961564860083dd5c25598858f8"
   }
 }
