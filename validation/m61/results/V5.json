@@ -56,10 +56,10 @@
       "caught": true
     }
   ],
-  "currentCommit": "a0ed9eade7008de7ce93a312f6b0bd7e182a43a9",
+  "currentCommit": "fbd8dd9d9bcc1a037387c0588cebd5d285550d7e",
   "verifierCommand": "npx tsx script/m61/verify-orphan-gates.ts",
   "evidenceFile": "V5.json",
-  "generatedAt": "2026-10-04T23:58:38.833Z",
+  "generatedAt": "2026-10-05T00:00:57.990Z",
   "census": {
     "verifiers": 599,
     "wiredByNpmScripts": 416,
@@ -110,7 +110,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-04T23:58:38.835Z",
-    "contentSha256": "80bdd865a605523533d25a5027c3bbebc50cdbc9d58518ec278dfe4dda4cd8f4"
+    "sealedAt": "2026-10-05T00:00:57.991Z",
+    "contentSha256": "5cf5957b53112eed30cb60d9f7d528a16541821b506c775ee64dfa7fa7a4872c"
   }
 }

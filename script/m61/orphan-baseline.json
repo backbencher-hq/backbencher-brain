@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "generatedBy": "script/m61/verify-orphan-gates.ts",
-  "head": "a0ed9eade7008de7ce93a312f6b0bd7e182a43a9",
+  "head": "fbd8dd9d9bcc1a037387c0588cebd5d285550d7e",
   "note": "The declared-orphan baseline. A verifier listed here is present on disk and reachable from NO npm script and NO closure gate; the reason states why. Adding a new unwired verifier without adding it here fails G1 of script/m61/verify-orphan-gates.ts. Generated content is the census; the `orphans` map is the reviewed declaration.",
   "census": {
     "verifiers": 599,
