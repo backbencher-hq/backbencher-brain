@@ -545,14 +545,27 @@ export function richSitesForSymbol(raw: CoreDatabase, symbolId: string): RichSit
       callLine0 !== null
         ? { path: loc.path, line: callLine0, character: 0, endLine: callLine0, endCharacter: 0 }
         : { path: loc.path, line: loc.line, character: loc.character, endLine: loc.endLine, endCharacter: loc.endCharacter }
-    const key = `${opening.path}:${opening.line}:${opening.character}`
-    // Dedup by location, but NEVER by dropping a kind. A second stored row at
-    // this location adds its relationship kind to the site already there; the
-    // first draft used `continue`, which silently discarded it — so
-    // `reset references items` vanished because `reset uses items` happened to
-    // share its location. One row per location is §13.1; losing a stored
-    // relationship KIND is §13.2's "nothing is merged into silence".
-    const existing = sites.find((x) => `${x.path}:${x.line}:${x.character}` === key)
+    // Dedup by location AND DIRECTION, but never by dropping a kind.
+//
+// Direction is part of the row's identity: `Greeter contains greet` and
+// `greet -> Greeter` (the return type) both name the same far end at the same
+// line, and they are two DIFFERENT relationships — one says something uses
+// greet, the other says greet refers to something. Merging them made the
+// declaration's site inherit `reversed: true` from whichever row sorted first,
+// and a containment row that also carried a non-declaration kind then read as a
+// usage site: the m24 gate measured greet at 4 usages where the vocabulary says
+// 3. A site is "someone uses this" only if it is an INCOMING row, so the key
+// carries the direction.
+//
+// Within one direction, two stored rows of DIFFERENT kinds at one location stay
+// merged — `reset uses items` and `reset references items` are two stored
+// relationships whose far end is the same symbol on the same line, and the first
+// draft kept only the first kind and dropped the second, so a real stored row of
+// a real kind rendered NOWHERE and the coverage audit scored `references` at 0%
+// for a reason that had nothing to do with its verb table. §13.1: one row per
+// symbol per direction; §13.2: multiplicity is named, never merged into silence.
+const key = `${opening.path}:${opening.line}:${opening.character}:${incoming ? "in" : "out"}`
+    const existing = sites.find((x) => `${x.path}:${x.line}:${x.character}:${x.reversed ? "in" : "out"}` === key)
     if (existing !== undefined) {
       if (!existing.relationshipTypes.includes(row.relationship_type)) {
         existing.relationshipTypes.push(row.relationship_type)

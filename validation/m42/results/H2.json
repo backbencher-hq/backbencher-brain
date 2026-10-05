@@ -2,13 +2,16 @@
   "issue": "650",
   "code": "H2",
   "milestone": "M42",
-  "status": "verified",
-  "checks": 40,
-  "passed": 40,
-  "failed": 0,
-  "failures": [],
+  "status": "known-gap",
+  "checks": 47,
+  "passed": 45,
+  "failed": 2,
+  "failures": [
+    "H2/R4: the hover's call-site links DIFFER from the L3 reference lines, and the card states the difference (§14 rules 2+3): 4/5 links equal a reference line (expected 0 — the hover must open the call site, references opens the declaration, and the card must say which is which); card: **usages** — 2 stored references (usage sites only; declaration and callees excluded) — each opens the stored call site\n1. [main —",
+    "H2/R4: the hover opens the CALL SITE, not the caller's declaration: [{\"f\":\"App.java\",\"line0\":14,\"line1\":15},{\"f\":\"Main2.java\",\"line0\":5,\"line1\":6},{\"f\":\"App.java\",\"line0\":14,\"line1\":15},{\"f\":\"Main2.java\",\"line0\":5,\"line1\":6},{\"f\":\"App.java\",\"line0\":6,\"line1\":7}]"
+  ],
   "verdict": {
-    "realComponentFailures": 0,
+    "realComponentFailures": 2,
     "mutantsCaught": 6,
     "mutantsTotal": 6,
     "ok": true
@@ -17,7 +20,7 @@
     "planned": 6
   },
   "fixture": {
-    "root": "$HOME/Documents/Default Project/ishaq/wt/lsp6/.tools/m42-h2-fixture",
+    "root": "$HOME/Documents/Default Project/ishaq/wt/allrels/.tools/m42-h2-fixture",
     "files": [
       "src/main/java/com/demo/App.java",
       "src/main/java/com/demo/Main2.java"
@@ -64,18 +67,18 @@
   "measured": {
     "regime": "warm",
     "samples": 200,
-    "p50Ms": 6.82,
-    "p95Ms": 8.98,
-    "maxMs": 15.88,
-    "meanMs": 6.99,
+    "p50Ms": 6.99,
+    "p95Ms": 11.99,
+    "maxMs": 14.8,
+    "meanMs": 7.34,
     "budgetMs": 50,
-    "coldMs": 71.99,
+    "coldMs": 77.41,
     "note": "A real p95 over a stated sample set. The pre-lane check was a MEAN over 40 compared against this budget and reported as a p95; the substitution was named as a limitation in KNOWN-GAPS.json for three waves instead of being fixed."
   },
-  "currentCommit": "936b66d6d088776c7715e7d1aec492cc9c6d9841",
+  "currentCommit": "39a6b52c0d4618af5af443f88c5f5d6b39e62be6",
   "verifierCommand": "npx tsx script/m42/verify-rich-hover.ts",
   "evidenceFile": "H2.json",
-  "generatedAt": "2026-10-05T02:32:37.401Z",
+  "generatedAt": "2026-10-05T04:58:40.479Z",
   "limitations": [
     "A usage link opens the index-stored CALL SITE when brain_relationship.line_number holds a real line, and the referencing symbol's DECLARATION when it does not — every such row states which, in its own label and in the usages header. The store carries no call-site BYTE COLUMN, so a call-site link opens at character 0: the line is exact, the column is not stored.",
     "A hover renders at most 3 usage links plus a \"+N more\" link, so a symbol with many callers shows three of them on the card and the rest through the hub.",
@@ -83,7 +86,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T02:32:37.403Z",
-    "contentSha256": "8b65169580702bb495b2c06e780d79ee44b21fa58e4aa208b9a46feb70228b12"
+    "sealedAt": "2026-10-05T04:58:40.480Z",
+    "contentSha256": "d9504920d3ff77be220124b458281b5ecdae856bf20bc98bcbeb5180c6c254e2"
   }
 }
