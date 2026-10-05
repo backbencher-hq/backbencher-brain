@@ -2279,7 +2279,53 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
     // search. Measured on libxml2's `err_1.xml` and two libxslt fixtures.
     if (!attributeName) return
     if (isNamespace && namespacePrefix.length === 0) return
-    const name = isNamespace ? namespacePrefix : attributeName
+    // M60: a namespaced attribute is published under its LOCAL name, and the
+    // written spelling (`xml:space`) is kept in metadata as `attributeName` plus
+    // the prefix as `namespacePrefix`. The prefix used to be part of the NAME.
+    //
+    // WHY, and it is not a naming preference — it is a measured resolution
+    // defect. The store reduces an edge target to its last `:`/`.` segment
+    // before any lookup (`parallel-indexer.ts:3375-3390`, `extractLeaf`), so an
+    // edge spelling `xml:space` is looked up as `space`, while the declaration it
+    // names was published as `xml:space`. Nothing matches: no strategy binds it.
+    // Measured on the 120-file draw `08d7fb24a87da7e7` through the REAL indexer
+    // (`validation/m14/fixtures/xml/store-binding-truth.mts`):
+    //
+    //   contains rows 3,803 — unbound 179, bound to ANOTHER FILE 35
+    //   of the 179 unbound, 178 have a project-unique declaration of the LOCAL
+    //   name (`leafUnique`), i.e. the declaration was there the whole time and
+    //   the SPELLING hid it
+    //   the 35 cross-file rows are the worse half: `g -[inkscape:cx]-> circle.cx`
+    //   in one repository's SVG bound to a `circle` element in another
+    //   repository's file, because nothing in the source file was named `cx`
+    //   and `resolveContainsTargetStmt` (`parallel-indexer.ts:2354-2360`) only
+    //   ORDERS same-file first — it does not FILTER to the file. A `contains`
+    //   edge asserting ENCLOSURE then bound a declaration in a file that
+    //   contains neither endpoint.
+    //
+    // The top unbound targets were `xml:space` 13, `rdf:resource` 10,
+    // `xlink:href` 10, `rdf:about` 8, `cc:Work` 7, `dc:format` 7,
+    // `inkscape:window-*` 6 each — every one of them a prefixed attribute.
+    //
+    // This is the SAME convention the reference edges in this file already use
+    // ("the target is the LOCAL NAME ... a prefix never reaches the target",
+    // `:2342-2345`, and `qname: "xml:space"` on the row for `ref="xml:space"`),
+    // so the analyzer stops disagreeing with itself: the declaration and the edge
+    // that names it now carry the same spelling.
+    //
+    // WHAT IT COSTS, stated rather than implied: the prefixed spelling is no
+    // longer a searchable symbol NAME. `attributeName` and `namespacePrefix`
+    // carry it, and `pool-worker.ts:1020-1072`'s allowlist drops both at the
+    // worker boundary, so until that allowlist is widened (§8 item 11) the
+    // written spelling does not survive into the store. Two attributes with the
+    // same local name and DIFFERENT prefixes on the same element now share a
+    // name and are told apart only by `qualifiedName`'s owner — measured on the
+    // corpus as a residual, not asserted away.
+    const colon = isNamespace ? -1 : attributeName.indexOf(":")
+    const attributePrefix = colon > 0 ? attributeName.slice(0, colon) : undefined
+    const attributeLocalName = colon > 0 ? attributeName.slice(colon + 1) : attributeName
+    if (colon > 0 && attributeLocalName.length === 0) return
+    const name = isNamespace ? namespacePrefix : attributeLocalName
     const kind = isNamespace ? ASTEngine.SymbolKind.Namespace : ASTEngine.SymbolKind.Property
 
     symbols.push({
@@ -2312,9 +2358,13 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
         nodeType: node.type,
         isXmlAttribute: !isNamespace,
         isXmlNamespace: isNamespace,
+        // The name AS WRITTEN, prefix included. The symbol's `name` is the local
+        // part, so this is the only place the prefix survives in the analyzer's
+        // output — see the comment on `attributeLocalName` above.
         attributeName,
+        attributeLocalName,
         value,
-        namespacePrefix: isNamespace ? namespacePrefix : undefined,
+        namespacePrefix: isNamespace ? namespacePrefix : attributePrefix,
         namespaceUri: isNamespace ? value : undefined,
       },
     })
