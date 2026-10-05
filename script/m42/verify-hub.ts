@@ -55,6 +55,9 @@ let checks = 0
 let passed = 0
 const failures: string[] = []
 let mutants = { caught: 0, total: 0 }
+/** Named after the law each mutant convicts, so the record can say WHICH
+ *  assertion ran rather than only how many ran (§6). */
+const mutantsCaughtBy: string[] = []
 
 function check(label: string, ok: boolean, detail = ""): void {
   checks++
@@ -502,32 +505,79 @@ console.log("\nM: hub renderer mutants (source-copy, M26.W1 pattern)")
     },
   ]
 
+  // §12.5 — the hub is GENERATED, not hand-drawn, and per-IDE forks of the
+  // hub renderer are banned. This is checked structurally because the law is
+  // structural: the panel must render all three sections by CALLING the one
+  // core, never by building markup of its own.
+  {
+    const hubPanel = readFileSync(path.join(ROOT, "ide/vscode/src/hub-panel.ts"), "utf8")
+    check(
+      "H5/§12.5: the panel renders through the ONE core (renderHubList + renderHubTree imported from graph-core)",
+      /import\s*\{[^}]*renderHubList[^}]*\}\s*from\s*"\.\.\/\.\.\/\.\.\/script\/m26\/graph-core"/.test(hubPanel) &&
+        /import\s*\{[^}]*renderHubTree[^}]*\}\s*from\s*"\.\.\/\.\.\/\.\.\/script\/m26\/graph-core"/.test(hubPanel),
+      hubPanel.split("\n").filter((l) => l.includes("graph-core")).join(" | ").slice(0, 160),
+    )
+    // A fork would DEFINE its own hub row/section/group builders. Naming them
+    // here means a future per-IDE copy fails this gate instead of drifting.
+    const forkSignatures = [/\bfunction\s+renderHubList\s*\(/, /\bfunction\s+renderHubTree\s*\(/, /\bfunction\s+hubSection\s*\(/, /\bfunction\s+groupRow\s*\(/]
+    const found = forkSignatures.filter((re) => re.test(hubPanel))
+    check("H5/§12.5: the panel DEFINES no hub renderer of its own (no list/tree/section/group builder)", found.length === 0, `${found.length} fork signature(s) present`)
+    // Three sections, three core calls — a panel that dropped one would render
+    // less than the stateJson advertises.
+    const coreCalls = (hubPanel.match(/renderHub(List|Tree)\(/g) ?? []).filter((c) => !c.startsWith("import"))
+    check("H5/§12.5: all three sections go through the core (2x list + 1x tree)", coreCalls.length === 3, `${coreCalls.length} core render calls`)
+  }
+
+  /** Named after the law each mutant convicts, so the record can say WHICH
+   *  assertion ran rather than only how many ran (§6). */
   let seq = 0
   for (const mt of defects) {
+    // §8.3 silence is guilt. An anchor that no longer matches means the mutant
+    // was never planted — that is a FAILURE and it says so. This branch used
+    // to print "SKIP (anchor not found)" and continue, which neither failed
+    // the gate nor counted the mutant.
     if (!rawSource.includes(mt.from)) {
-      console.log(`  SKIP (anchor not found): ${mt.name}`)
+      mutant(`${mt.name} — ANCHOR DRIFT: the mutant was never planted`, false, `anchor not in graph-core.ts: ${mt.from.slice(0, 90)}`)
       continue
     }
     seq++
     const mutantPath = path.join(ROOT, "validation/m26", `graph-core.mutant.${Date.now()}.${seq}.ts`)
     writeFileSync(mutantPath, rawSource.replace(mt.from, mt.to))
+    let m: any = null
+    let loadError = ""
     try {
-      const m = await import(mutantPath)
-      const detected = mt.probe(m)
-      mutant(`${mt.name} (detected: ${detected})`, detected, "")
-      if (detected) {
-        let agreed = false
-        try {
-          agreed = mt.agree(m)
-        } catch {
-          agreed = true // mutant crashed the render — a violation
-        }
-        check(`  harness agrees (${mt.label} violated)`, agreed)
-      }
+      m = await import(mutantPath)
     } catch (e) {
-      mutant(`${mt.name} (mutant failed to load — counts as detected)`, true, String(e).slice(0, 160))
+      loadError = String(e instanceof Error ? e.message : e).slice(0, 160)
     } finally {
       rmSync(mutantPath, { force: true })
+    }
+    if (m === null) {
+      // PROVEN HOLE (this gate shipped it): a module that will not import runs
+      // no probe and no harness assertion, and the old catch booked that as a
+      // detected defect. Measured: a mutant whose replacement was a bare syntax
+      // error printed "mutant failed to load — counts as detected" and the gate
+      // still reported 6/6 mutants caught and VERIFIED. Coverage that was never
+      // exercised is not coverage, so this FAILS.
+      mutant(`${mt.name} — the mutant could not be EVALUATED (a load failure is not a catch)`, false, loadError)
+      continue
+    }
+    const detected = mt.probe(m)
+    if (detected) mutantsCaughtBy.push(mt.name)
+    mutant(`${mt.name} (detected: ${detected})`, detected, "")
+    if (detected) {
+      let agreed = false
+      let agreeError = ""
+      try {
+        agreed = mt.agree(m)
+      } catch (e) {
+        // The mutant crashed the RENDER. That is a real violation of the
+        // shape law, but it is not the harness law this check asserts, so it
+        // is reported as such rather than silently folded into agreement.
+        agreeError = `the mutated renderer threw instead of rendering (${String(e instanceof Error ? e.message : e).slice(0, 90)})`
+        agreed = true
+      }
+      check(`  harness agrees (${mt.label} violated)`, agreed, agreeError)
     }
   }
   check("mutation suite: every planted defect is caught", mutants.caught >= mutants.total && mutants.total >= 5, `${mutants.caught}/${mutants.total}`)
@@ -543,8 +593,18 @@ const result = {
   checks,
   passed,
   failed,
+  // WHICH checks failed. The record this gate shipped carried `failed: 6` and
+  // no names, so a reader could see that six laws were broken and not which
+  // six — which is how a 34/40 sat in the ledger long enough to look like a
+  // live product gap when the defect had already been fixed upstream.
+  failures,
   mutantsCaught: mutants.caught,
   mutantsTotal: mutants.total,
+  mutantsCaughtBy,
+  mutantHonesty: {
+    loadFailureIsACatch: false,
+    note: "A mutant whose module will not import runs no probe and no harness assertion. This gate booked that as a detected defect — PROVEN: a mutant whose replacement was a bare syntax error printed 'mutant failed to load — counts as detected' and the gate still reported 6/6 mutants caught and VERIFIED. An unevaluable mutant, and an anchor that no longer matches, are both FAILURES now (§8.3 silence is guilt; the old branch printed the word SKIP and continued).",
+  },
   currentCommit,
   verifierCommand: "npx tsx script/m42/verify-hub.ts",
   evidenceFile: "H5.json",
@@ -552,6 +612,11 @@ const result = {
   fixture: { root: H2_ROOT, files: [H2_REL_APP, H2_REL_MAIN2], symbol: "render", callerFiles: [CALLER_FILE_APP, CALLER_FILE_MAIN2] },
   budgetDeclared: { hubOpenWarmP95Ms: 300 },
   u1Shape: { note: "re-verified under M44.U1 grouped usages (schemaVersion 2); hub renders one row per symbol group" },
+  priorRecord: {
+    was: "known-gap 34/40, currentCommit 93f85b7a3b4d8005e6683d505e49dfe6d28ef8bf",
+    cause: "the committed record was STALE, not the hub. Re-running at that commit's own graph_usages.ts reproduces 34/40 exactly (measured), and all six failures are the caller SET being 5 groups instead of 2: src/lsp/graph_usages.ts was admitting `Greeter contains render` as a caller of render. Commit 84fccdd23 fixed that at the owner by filtering declaration containments with the vocabulary owner's own predicate, and re-running at HEAD with only that file reverted gives the six failures back. So the defect was real, it was upstream of this gate, and it was fixed by another lane's merge — this gate never had a hub-surface defect. The record sat red because it was not re-emitted.",
+    lawThatGoverns: "§14 rule 1 (one surface, one answer) with §13.1: a declaration containment is how a symbol is DECLARED, never who uses it (src/lsp/relations.ts, isDeclarationRelationship).",
+  },
   limitations: [
     "DOM assertions cover structure/classes/data attributes over a stub DOM; CSS/paint and the webview toggle script's runtime are per-editor presentation (the E5 leg covers the real editor).",
     "The usages fixture is single-file-language (java); cross-language usages reuse the M26.W3 surface, not re-tested here.",
