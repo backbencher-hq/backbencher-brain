@@ -315,21 +315,18 @@ type          status            detail
 --------------------------------------------------------------------------------------
 calls         RULED-SOUND       NOT EMITTED; the grammar produced 94 distinct node types
                                  across the corpus and NONE expresses it.
-                                 Written ruling: script/m14/spec/protobuf-completeness.json#PB-REL-1
-uses          EMITTED           13,275 edges in 4+ files
-contains      EMITTED           40,098 edges in 4+ files
-imports       EMITTED           1,561 edges in 4+ files
+                                 Written ruling: script/m14/protobuf-ruled.ts (RULED_BY_LANG.protobuf)
+uses          EMITTED           13,482 edges in 4+ files
+contains      EMITTED           40,631 edges in 4+ files
+imports       EMITTED           1,574 edges in 4+ files
 references    RULED-SOUND       NOT EMITTED; 94 distinct node types, NONE expresses it.
-                                 Written ruling: …#PB-REL-5
+                                 Written ruling: … (RULED_BY_LANG.protobuf)
 exports       EMITTED           4 edges in 4+ files
 extends       RULED-SOUND       NOT EMITTED; 94 distinct node types, NONE expresses it.
-                                 Written ruling: …#PB-REL-2
 implements    RULED-SOUND       NOT EMITTED; 94 distinct node types, NONE expresses it.
-                                 Written ruling: …#PB-REL-3
-overrides     EMITTED           1 edges in 1+ files,
-                                 e.g. nvim-treesitter/tests/query/highlights/proto/test.proto
+overrides     EMITTED           2 edges in 2+ files,
+                                 e.g. gql-ruby/lib/graphql/tracing/perfetto_trace/trace.proto
 instantiates  RULED-SOUND       NOT EMITTED; the construct occurs 0x on the parse tree.
-                                 Written ruling: …#PB-REL-4
 --------------------------------------------------------------------------------------
 emitted 5/10   ruled-sound 5   FALSIFIED 0   ruled-without-justification 0
 ```
@@ -338,6 +335,18 @@ Gate exit code 0. Reproduce with `npx tsx script/m14/protobuf-ruling-table-proof
 — it derives a wired copy of the shared gate mechanically, runs it, and deletes the
 copy, because a hand-written second implementation of an arbiter is a second opinion
 nobody arbitrates between.
+
+**Three populations, three numbers, and the column above is neither of the other two.**
+This table used to quote `uses 13,275 / contains 40,098 / imports 1,561 / overrides 1`,
+which are **analyzer-direct** counts from pass 1 — `analyze()` output, before the shared
+pipeline drops what it drops. The gate reads **847** corpus files and reports the row
+above; pass 20's own walk reads **842** on-disk files through production `parseFile` and
+reports `uses 13,024 / contains 39,674 / imports 1,572 / exports 4 / overrides 2`. The
+spread is the population and the entry point, not a disagreement: pass 15 measured the
+`contains` gap at 1,002 symbols the pipeline drops on name length, which is the order of
+the `contains` difference here. **A reader comparing a number from this table against
+one from the pass-20 walk is comparing two instruments and should expect this
+difference.**
 
 **The first row of the verdict table below is a ruled row on purpose.**
 `parseClaimTable` in `script/m14/verify-doc-truth-emissions.ts` skips the **first body
@@ -5628,8 +5637,12 @@ the two are not interchangeable.
    lane. **Price of the blind spot:** the entire `imports` ambiguity population.
 4. **UNCHANGED from earlier passes:** `src/ast/engine.ts:743` `getParser`'s 500-parse recreate
    racing its own callers (5 traps at parse 502–503 in 17 runs); `script/m14/differential.ts`
-   has no `protobuf` LANGS entry, so 5 DERIVATION findings stay unaudited by the shared oracle
-   (`grep -c protobuf script/m14/differential.ts` → **0**);
+   has no `protobuf` LANGS entry (`grep -c protobuf script/m14/differential.ts` → **0**), so
+   this lane's **one** remaining DERIVATION finding — `overrides` — is unaudited by the shared
+   oracle. The other four emitted types were adjudicated by `protoc` at pass 8 (`uses` 11,218 of
+   11,260) and pass 10 (`contains` 36,022 of 37,042, `imports` 1,442 of 1,442, `exports` 4 of 4);
+   `script/m14/tmp/protobuf/probe/overrides-oracle.mts` reports `doubled slots 2 vs overrides
+   edges 2, every doubled slot carries an edge` at this pass;
    `src/ast/parallel-indexer.ts:2164` `insertSymbol`'s 31-vs-30 `VALUES` clause mismatch;
    `script/m14/run-fixtures.ts` exits 6 on the orphan `r` and `lua` fixture directories on a
    branch that predates their LANGS rows, so this lane's fixture run was scoped to
