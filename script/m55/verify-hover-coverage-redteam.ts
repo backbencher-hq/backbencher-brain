@@ -240,6 +240,12 @@ function dirtyTargets(): string[] {
 }
 
 const dirty = dirtyTargets()
+/** Every mutation target's content at the START of this process, for H5. Taken
+ *  before a single write, so "did anything survive me?" has a reference that
+ *  cannot itself have drifted. */
+const preRunBytes = new Map<string, string>(
+  [...new Set(PLANTS.map((p) => p.file))].map((rel) => [rel, readFileSync(path.join(ROOT, rel), "utf8")]),
+)
 check(
   "H0: every file this harness mutates is CLEAN in the working tree (an un-mutation harness that restores from HEAD destroys uncommitted work — this harness refused to run on a dirty target)",
   dirty.length === 0,
@@ -437,6 +443,74 @@ for (const r of restores) {
   )
   const scratch = spawnSync("sh", ["-c", `find "${tmpdir()}" -maxdepth 1 -type d -name 'bblsp-*redteam*' 2>/dev/null`], { encoding: "utf8" })
   check("H3: no scratch directory left in the OS temp dir", (scratch.stdout ?? "").trim() === "", (scratch.stdout ?? "").trim())
+}
+
+// --- H4: the CLASS gate — a mutant whose ANCHOR text is ABSENT never ran -----
+// This is the whole harness's blind spot in one check. Every plant is a textual
+// substitution, so a plant whose `from` string is not present in the target has
+// not run anything. The harness records that per plant as a failing check, but a
+// per-plant line is easy to read as "one plant was skipped" and easy to skip past
+// in a long log. This asserts the CLASS: no anchor may be absent.
+//
+// It exists because the failure is silent in the worst way. The D1 anchor drifted
+// from its plant text during this lane, the suite printed "SKIP — anchor not
+// found", and the mutant was scored as though a DIFFERENT check had caught it. An
+// absent anchor is not a pass, not a skip, and not a defect-detected; it is a hole
+// in the harness, and the only honest report of a hole is a red gate.
+{
+  const targets = [...new Set(PLANTS.map((p) => p.file))]
+  const absent = PLANTS.filter((p) => !readFileSync(path.join(ROOT, p.file), "utf8").includes(p.from))
+  check(
+    `H4/CLASS: every planted mutant's ANCHOR TEXT IS PRESENT in its target file (an absent anchor means the mutant never ran, so its class is UNTESTED — ${PLANTS.length} plants over ${targets.length} files)`,
+    absent.length === 0,
+    absent.length === 0
+      ? `all ${PLANTS.length} anchors found: ${PLANTS.map((p) => `${p.id}@${p.file}`).join(", ")}`
+      : `ANCHOR ABSENT for ${absent.map((p) => `${p.id} in ${p.file}: ${JSON.stringify(p.from.slice(0, 80))}`).join(" | ")} — these mutants did not run`,
+  )
+  // The half-anchor case: a plant's first line matching while its full multi-line
+  // text does not. `String.replace` would then apply to nothing, the mutated text
+  // equals the original, and the run reports a mutation that changed nothing as
+  // a clean catch.
+  const drifted = PLANTS.filter((p) => {
+    const src = readFileSync(path.join(ROOT, p.file), "utf8")
+    const firstLine = p.from.split("\n")[0]!
+    return src.includes(firstLine) && !src.includes(p.from)
+  })
+  check(
+    "H4/DRIFT: no anchor's first line is present while its full multi-line text is absent (a half-anchored substitution changes nothing and is scored as a clean catch)",
+    drifted.length === 0,
+    drifted.map((p) => `${p.id}: first line matches, full text does not`).join(" | "),
+  )
+}
+
+// --- H5: NO MUTATION MAY SURVIVE THIS PROCESS ------------------------------
+// The per-file restores above each check their own file. This asserts the
+// stronger property, over the whole set at once: every mutation target is
+// byte-identical to what it was when this process STARTED.
+//
+// It is here because of a real leak during this lane. The D1 mutation
+// (DECLARATION_RELATIONSHIPS gaining "uses") was present in the working tree at
+// the end of the lane and survived a commit; it turned m55 T3 from 51/57 to
+// 50/57 by making one of T3's own mutants report "SKIP — anchor not found",
+// which reads like a passing suite with a skipped leg and is neither. Nothing
+// noticed, because the restore checks and the working-tree diff were never
+// compared against EACH OTHER — each was individually satisfied.
+//
+// A harness that leaves a mutation behind does not merely risk a wrong verdict.
+// It makes the next run's numbers an artifact of this one.
+{
+  const leaked: string[] = []
+  for (const rel of targets) {
+    const now = readFileSync(path.join(ROOT, rel), "utf8")
+    if (preRunBytes.get(rel) !== undefined && now !== preRunBytes.get(rel)) leaked.push(rel)
+  }
+  check(
+    "H5/LEAK: every mutation target is byte-identical to its content at the START of this process (a mutation left behind makes the next run's numbers an artifact of this one)",
+    leaked.length === 0,
+    leaked.length === 0
+      ? `no leaked mutation across ${targets.join(", ")}`
+      : `LEAKED MUTATION in: ${leaked.join(", ")} — run \`git diff\` on those files before trusting any run after this one`,
+  )
 }
 
 // --- evidence -------------------------------------------------------------------------
