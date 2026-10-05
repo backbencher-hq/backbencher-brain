@@ -1026,23 +1026,57 @@ comment and stands here: the `reference_qualified` arm's `resolved === false` br
 unreachable in this lane, because every published `uses` edge resolves a destination the
 grammar read out of a node, so that branch is deliberately not invented.
 
-### DERIVATION findings: 0
+### DERIVATION findings: 2 — `references` and `imports`
 
-A DERIVATION finding is a type the analyzer emits that the differential never audits. The
-audited set is fixed at `script/m14/differential.ts:23392`:
+**Corrected 2026-10-05. This section previously read `DERIVATION findings: 0`, and both
+reasons it gave for the 0 were false.** It is kept in the corrected form rather than
+quietly overwritten because the error is instructive: it was a number produced by reading
+the oracle instead of the allowlist.
+
+A DERIVATION finding is a type the analyzer emits that the differential never audits. What
+is in the compared set is fixed at `script/m14/differential.ts:23392` — the allowlist, not
+the oracle:
 
 ```ts
 ...(lang === "markdown" ? ["contains", "uses"] : []),
 ```
 
-The lane emits exactly `contains`, `uses` and `references`, and the audited set is those
-three: the concurrent relabelling added `references` to
-`script/m14/differential.ts`'s markdown entry in the same commit cycle, so **emitted set =
-audited set and this lane's DERIVATION count is 0**, matching the handover figure. It was 0
-before this round, it is 0 after the setext fix (which adds `uses` edges, an audited kind),
-and it is 0 after the relabel — which is the check that matters here, because relabelling a
-type into the audited set without adding oracle truth for it is exactly how a DERIVATION
-finding is born.
+`script/m14/markdown-oracle.ts` derives all four the analyzer emits — `contains`
+(:375/:462/:471/:503), `references` (:530), `imports` (:635), `uses`
+(:702/:708/:729/:741) — and the previous text treated that as sufficient. It is not: the
+allowlist is what puts a kind in the COMPARED set, and it names two. The adjacent comment
+in the shared file asserts the lane "emits no `imports` (markdown has no module system) and
+no `references` (front-matter keys are a declared boundary, not a graph)", which is false
+against the census — `imports` is 105 edges over 74 files and `references` is 16,857 over
+1,136. `git log -S'lang === "markdown" ? ["contains", "uses", "references"]' --
+script/m14/differential.ts` returns **no commit**: no relabelling ever added it.
+
+So emitted = 4, oracle truth = 4, compared = 2, and the gap is **2**:
+
+| type | analyzer edges, whole admitted population | analyzer edges on the differential's OWN corpora | in compared set | consequence, measured |
+| --- | --- | --- | --- | --- |
+| `references` | 16,857 / 1,136 files | **10,172 / 76 files** (kubernetes 10,055 / 58, scala3 117 / 18) | no | **770 MISSING on kubernetes** — `logs/differential.log` |
+| `imports` | 105 / 74 files | **1 / 1 file** (scala3 `docs/_spec/index.md`; kubernetes **0**) | no | **compared against nothing in practice** |
+
+The corpora column is the part that had to be measured and could not be read
+(`differential-corpora-tally.ts`, `differential-corpora-tally.json`: 1,331 files,
+1,331 parsed, 0 failures, upper bound on any 60-file rotating draw). The two findings are
+not the same severity, and the difference is the whole point:
+
+- **`references` is reachable.** 76 of 1,331 files carry one, the pool draws from the same
+  population, and it demonstrably does — that is where the 770 come from. Its exclusion is
+  therefore **loud**: the truth exists, the analyzer rows exist, the allowlist drops the
+  analyzer side, and the shortfall reads as MISSING. A gate that can fail is failing.
+- **`imports` is effectively unreachable.** One edge, in one file, in one corpus, and
+  **zero in kubernetes**, which is where the differential spends half its draw. An oracle
+  can be complete over a kind no sample ever contains, and then the kind is audited in the
+  sense that a light exists and nobody is standing under it. This is the strict sense of the
+  word: stored and compared against nothing.
+
+Both are fixed by adding `"references"` and `"imports"` to that one array literal — measured
+at MISSING=0 and 100% coverage on both lanes with `unexplained` and `heuristic` unchanged at
+0 (`logs/differential-allowlisted-local.log`). The file is shared (§8), so it is reported
+here and **not edited**; `git diff script/m14/differential.ts` is empty.
 
 ### Edge recall: nodes on the tree against edges emitted
 
@@ -1456,18 +1490,41 @@ measurement rather than by assertion. Every edge carries a 1-based `line_number`
   the grammar's silence is why it took a text rule; 68 sites is the population and the
   extension test keeps 1,030+ macro calls out.
 
-### DERIVATION findings: 0, and the price of keeping it at 0
+### The cost of the two DERIVATION findings, and what it was mistaken for
 
 A DERIVATION finding is a label the analyzer emits that the differential never audits. At
-handover this lane had 0, and it has 0 now — **audited set == emitted set**, `contains`,
-`uses`, `references`, `imports` — because `script/m14/markdown-oracle.ts` derives all four
-independently. Keeping it at 0 cost two oracle changes this round, and both were found by
-measurement rather than by reading:
+handover this lane had 0 and published 0 for several rounds. **It is 2** — `references` and
+`imports`, for the reason and with the measurement in the DERIVATION section above. This
+paragraph is left because the reason the 0 was believed is the interesting part: it was
+believed because `script/m14/markdown-oracle.ts` derives all four independently, and that is
+true and not sufficient. The allowlist at `script/m14/differential.ts:23392` is what puts a
+kind in the compared set, and it names two of the four.
+
+What the 0 concealed, per finding:
+
+- **`references`** — the exclusion is loud rather than silent, and the lane had been
+  reading the loud part as a different thing. 770 rows on kubernetes read as MISSING, which
+  was recorded as "one allowlist entry, not 770 missing edges". That reading is correct
+  about the *edges* and wrong about the *state*: the edges were never unaudited, they were
+  audited and reported as a shortfall. The all-clear was inferred from a diagnostic that
+  was in fact an open finding.
+- **`imports`** — genuinely silent, and the silence is a property of the corpora rather
+  than of the oracle: **1 edge in 1 file across 1,331 files, 0 in kubernetes**. So this one
+  would have stayed hidden indefinitely, because there is no draw to expose it. The oracle
+  work below is real and worth doing — it is what makes the kind auditable *in principle* —
+  and it changed nothing observable, which is precisely the point: an oracle can be correct
+  and the kind can still be compared against nothing.
+
+The oracle changes this round were found by measurement rather than by reading, and both
+were necessary to the fix above rather than sufficient to it:
 
 - **`references`** had to be added to the oracle when the analyzer relabelled, or the new
-  edges would have been stored and compared against nothing.
+  edges would have had no truth to be compared against at all.
 - **`imports`** had to be derived from Liquid's tag syntax, independently written (the oracle
   splits the tag into `name`/argument triples; the analyzer sweeps character codes).
+
+Adding both kinds to the oracle without adding them to the allowlist is what left the count
+at a false 0 with a true-looking justification behind it.
 
 **MD-DEFECT-2 — the oracle carried MD-DEFECT-1 too.** The oracle's heading lookup was a
 direct-named-child scan, so it published nothing for a **setext** heading
