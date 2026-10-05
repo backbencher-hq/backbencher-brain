@@ -144,14 +144,8 @@
  */
 
 /** The gate's own `Ruled` shape, restated so this file typechecks standalone. */
+import type { Ruled } from "./ontology-coverage-gate"
 type Instrument = "A:grammar-inventory" | "B:parse-tree-count"
-export type Ruled = {
-  type: string
-  instrument: Instrument
-  nodeTypesThatWouldMeanIt?: string[]
-  countOnTree?: (root: any, fileLabel: string, hits: string[]) => void
-  describe: string
-}
 
 const XSLT_NS = "http://www.w3.org/1999/XSL/Transform"
 const XSD_NS = "http://www.w3.org/2001/XMLSchema"

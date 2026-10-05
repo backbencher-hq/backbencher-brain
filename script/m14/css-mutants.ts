@@ -424,4 +424,111 @@ export const CSS_MUTANTS: Mutant[] = [
       }),
     }),
   },
+  {
+    id: "css/keyframes-owned-var-read-dropped",
+    language: "css",
+    defectClass: "missing-relationship",
+    description:
+      "The mutant that convicts the pass-11 `references` fix from the OTHER side. `currentSelector` is empty inside a `keyframe_block`, and the fix routes such a read to the enclosing `@keyframes` name instead; a revert to the pre-fix guard (`&& currentSelector`) makes every one of them vanish again. Measured over the admitted corpus that is 845 edges in 265 files, which is why this is a mutant and not a refactor: the corpus cannot see it, so the fixture must. Caught by css/keyframes-read-a-custom-property, whose four `expectRelationships` rows each name a keyframes name as the SOURCE and no other fixture in the lane emits an edge with a keyframes source at all.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter((x: any) => (x.metadata ?? {}).isKeyframeScopeRef !== true),
+    }),
+  },
+  {
+    id: "css/keyframes-owned-var-read-sourced-from-the-stop",
+    language: "css",
+    defectClass: "fabricated-relationship",
+    description:
+      "The failure mode of naming an owner that CANNOT resolve. A keyframe STOP is not a name anything binds to — `to`, `50%`, `from` are anonymous positions — so an edge sourced from one names an endpoint the store will never resolve, and `bb_impact` on it returns nothing while claiming a dependency. The mutant re-sources every keyframes-owned read from the stop selector instead of the animation name. Caught by css/keyframes-read-a-custom-property, whose `forbidRelationships` rows refuse `references` from `to`, `50%` and `from`, and by nothing else in the lane.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => {
+        if ((x.metadata ?? {}).isKeyframeScopeRef !== true) return x
+        const line = String(x.line_number ?? "")
+        return { ...x, source: line.length > 0 ? "to" : x.source }
+      }),
+    }),
+  },
+  {
+    id: "css/keyframes-owned-var-read-inherits-the-outer-keyframes",
+    language: "css",
+    defectClass: "wrong-payload",
+    description:
+      "The owner must be the NEAREST enclosing `@keyframes`, and the frame field resets per node rather than carrying (`let nextKeyframeScope = keyframeScope` is a reset, not a `||`). Carrying it would attribute a read inside a LATER keyframes block to the first one, so `@keyframes a { to { opacity: var(--x) } } @keyframes b { to { opacity: var(--y) } }` would emit `a -> --y` as well as `b -> --y` — two edges, one of which names the wrong animation, and the extra edge is a claim about a dependency that does not exist. The mutant makes every keyframes-owned read name a single fixed animation, which is the shape of that mistake. Caught by css/keyframes-read-a-custom-property, whose four rows name FOUR different owners (`slide`, `fade`, `never-declared`, `nested-in-media`) over FOUR different targets.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => {
+        if ((x.metadata ?? {}).isKeyframeScopeRef !== true) return x
+        return { ...x, source: "slide" }
+      }),
+    }),
+  },
+  {
+    id: "css/media-scope-name-falls-back-to-the-first-query-term",
+    language: "css",
+    defectClass: "wrong-payload",
+    description:
+      "The pass-13 `contains` (at-rule scope) fix, reverted. `processMedia` builds the scope NAME from the at-rule's own prelude, so `@media A, B { }` publishes `@media A, B`; the pre-fix code handed `findChild` the FIRST query child and published `@media A`. That is not a cosmetic name: two lists differing only after the comma then share a name, and the identity merge folds two different conditions into one scope symbol together with their rules. The mutant restores the first-term name. Caught by css/media-comma-list-is-one-condition, whose two blocks share a first term and differ only after the comma, and by css/custom-media-in-every-query-shape, whose `@media (--a), (--b)` block the old code named `@media (--a)`. Neither fixture is reachable from a corpus number: `validation/m14/tmp/css-media-prelude-equivalence.ts` measures 102 comma lists against 0 `@custom-media` declarations in the admitted corpus, so a fixture is the only instrument that can see this.",
+    transform: (r: any) => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((x: any) => {
+        const n = typeof x?.name === "string" ? x.name : ""
+        if (!n.startsWith("@media ") || n.indexOf(",") < 0) return x
+        // Keep only the first comma-separated term, which is what the first query
+        // child holds.
+        let depth = 0
+        for (let i = "@media ".length; i < n.length; i++) {
+          const c = n.charAt(i)
+          if (c === "(" || c === "[") depth++
+          else if (c === ")" || c === "]") depth--
+          else if (c === "," && depth === 0) return { ...x, name: n.slice(0, i) }
+        }
+        return x
+      }),
+    }),
+  },
+  {
+    id: "css/custom-media-ref-read-from-the-first-query-term-only",
+    language: "css",
+    defectClass: "missing-relationship",
+    description:
+      "The second half of the pass-13 fix, which the name half alone would have left inconsistent. `customMediaRefsInList` unions the reference walk over the statement's DIRECT query children; the pre-fix code called `customMediaRefsIn` on the first query child alone, so for `@media (--a), (--b)` it found `--a` and could not see that `--b` sits in a SIBLING query node. With only the name mutant applied the scope would be named for both declarations while the graph recorded one dependency — the under-description moved from the name to the edges. Caught by css/custom-media-in-every-query-shape, which now asserts BOTH `references` edges from the one comma-list scope, and by nothing else in the lane.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter((x: any, i: number) => {
+        if ((x.metadata ?? {}).isCustomMediaRef !== true) return true
+        // Drop every custom-media reference except the first one sourced from each
+        // scope, which is what a single-term walk produces.
+        const seen = (r.relationships ?? []).slice(0, i).some(
+          (y: any) => (y.metadata ?? {}).isCustomMediaRef === true && y.source === x.source,
+        )
+        return !seen
+      }),
+    }),
+  },
+  {
+    id: "css/stylesheet-module-symbol-dropped",
+    language: "css",
+    defectClass: "missing-symbol",
+    description:
+      "The stylesheet-module symbol reverted, which is the defect the fix removed. An `imports` edge's SOURCE is the importing stylesheet, and without a symbol carrying that name the store's per-file lookup misses and records `source_external` for an edge whose source is the file the reader is already looking at. This is a MISSING-NODE defect rather than a missing-edge one, and that distinction is why it needs its own mutant: every relationship in the fixture is still present and still correct, so a mutant set that only watches edges passes it. MEASURED over the 600-file window (`validation/m14/census/css-incoming-split.ts`): `imports` same-file-resolved edges 58 of 58 -> 0 of 58, and the whole-corpus `imports` source resolution 251 of 251 -> 0 of 251 (`css-parsefile-census-1286.json`, row `imports` srcPublished). Caught by css/stylesheet-is-the-module-symbol, whose `expectSymbols` row requires the basename with kind `module`.",
+    transform: (r: any) => ({
+      ...r,
+      symbols: (r.symbols ?? []).filter((s: any) => (s.metadata as any)?.isStylesheet !== true),
+    }),
+  },
+  {
+    id: "css/stylesheet-module-symbol-named-by-the-fallback-literal",
+    language: "css",
+    defectClass: "placeholder-in-a-name-bearing-field",
+    description:
+      "The module symbol published under the FALLBACK name instead of the file's basename. `analyze` computes `importerName = lastPathSegment(filePath) || filePath || \"stylesheet\"`, and the third disjunct is a placeholder literal that exists so the `imports` edge always has a source string. Publishing the SYMBOL under that literal puts the placeholder into the symbol table, where every consumer reads it as a real name: `keepSymbol` does not reject it, the store indexes it, and a stylesheet whose path yields no basename would silently merge with every other such stylesheet under one node. This is the M60 R7 rule this analyzer already states about the `imports` source — the same defect, one field over — and it is cheap to reintroduce because the literal is three tokens away in the same expression. Caught by css/stylesheet-is-the-module-symbol, whose `forbidSymbols` row refuses a symbol named `stylesheet` while requiring the basename: a mutation to the fallback satisfies neither, so the fixture is red in both directions.",
+    transform: (r: any) => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) =>
+        (s.metadata as any)?.isStylesheet === true ? { ...s, name: "stylesheet" } : s,
+      ),
+    }),
+  },
 ]

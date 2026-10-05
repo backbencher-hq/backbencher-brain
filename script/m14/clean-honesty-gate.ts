@@ -138,6 +138,20 @@ for (const f of files) {
   const constructors = new Set<string>(r.symbols.filter((s: any) => s.kind === "constructor").map((s: any) => s.name))
   const macros = new Set<string>(r.symbols.filter((s: any) => s.kind === "macro").map((s: any) => s.name))
   const classNames = new Set<string>(r.symbols.filter((s: any) => s.kind === "interface").map((s: any) => s.name))
+  // An operator IS a class name in Clean and the two sites spell it differently: a
+  // DECLARATION publishes `class (==)` — the symbol name keeps the parentheses — while an
+  // INSTANCE reads `==`. So `classNames` alone holds `(==)` and every `implements Thing -> ==`
+  // in a file that declares `==` itself fell through to `classNotDeclaredHere`. Measured: 24
+  // such edges on the 312-file corpus, which made this gate's accepted-cost tally 24 too high
+  // — the same mismatch `isLocallyDeclaredOperatorClass` fixes in the analyzer, and the reason
+  // the tally and the analyzer's own `isExternalClass` disagreed before both were corrected.
+  // Only the parenthesised direction is added, and only for a name that is not a plain
+  // identifier, so `class (===)` never makes `===` resolve when the file really means `===`.
+  for (const n of [...classNames]) {
+    if (/^[A-Za-z_][A-Za-z0-9_']*$/.test(n)) continue
+    const inner = n.startsWith("(") && n.endsWith(")") ? n.slice(1, -1) : null
+    if (inner && !classNames.has(inner)) classNames.add(inner)
+  }
   const typeNames = new Set<string>(r.symbols.filter((s: any) => s.kind === "type").map((s: any) => s.name))
   const functions = new Set<string>(r.symbols.filter((s: any) => s.kind === "function" || s.kind === "method").map((s: any) => s.name))
   const moduleNames = new Set<string>(r.imports.map((i: any) => i.module))
