@@ -2,31 +2,98 @@
   "issue": "490",
   "code": "L1",
   "status": "verified",
-  "currentCommit": "a871d533a736e8e38cb826d80d986d3cc84022d1",
-  "sourceFingerprint": "686a511db46773a80f0bee24123c9742a499a78426588e82132c6d2f08278033",
+  "currentCommit": "5c3191642192207f018c2438a39cea6980007f21",
+  "sourceFingerprint": "4f40bd6129d60adf42c1da5747276246694405a0edc5d786da3b2fea68909c2d",
   "verifierCommand": "npx tsx script/m24/verify-server.ts",
   "evidenceFile": "L1.json",
-  "generatedAt": "2026-09-20T02:43:09.020Z",
-  "passed": 33,
+  "generatedAt": "2026-10-05T17:53:54.589Z",
+  "passed": 142,
   "failed": 0,
   "failures": [],
-  "negativeCases": 0,
+  "negativeCases": 24,
+  "claimLevel": "I1 (protocol-passed) — reference-client harness, real streams, planted mutants. NOT I2: no index-conformance or position-mapping assertion is made here, and NOT I3: no named editor run is part of this evidence.",
+  "declaredAbsence": {
+    "carriers": [
+      "bb/absence (versioned, server→client notification)",
+      "window/logMessage (the protocol's own channel)"
+    ],
+    "reasons": [
+      "language_not_launched",
+      "not_indexed",
+      "unresolvable_location",
+      "unsupported_language"
+    ],
+    "note": "LSP 3.18 mandates Location|null for definition and Location[] for references, so there is NO field on those results a reason could ride. The standard result shapes are UNCHANGED; the reason travels out of band. An empty standard result on these methods must not be read as 'nothing found'.",
+    "componentContractRead": "navigation.ts exposes evidenceTier at this commit, NOT Lane 4's richer absence record (that commit 04d56ab75 is not an ancestor of this branch — see limitations). The reason is derived from the launch set through its single owner, and the vocabulary matches what Lane 4 publishes, so the seam is correct today and still correct when that field lands."
+  },
+  "os": "darwin x64 (v22.14.0)",
+  "canFail": {
+    "mutants": 35,
+    "negatives": 25
+  },
+  "advertisement": {
+    "capabilityKeys": [
+      "hoverProvider",
+      "definitionProvider",
+      "referencesProvider",
+      "documentHighlightProvider",
+      "documentSymbolProvider",
+      "workspaceSymbolProvider",
+      "callHierarchyProvider",
+      "graphProvider",
+      "stalenessProvider",
+      "impactProvider",
+      "workspace",
+      "absenceProvider"
+    ],
+    "declaredMethods": [
+      "bb/graph",
+      "bb/impact",
+      "bb/staleness",
+      "callHierarchy/incomingCalls",
+      "callHierarchy/outgoingCalls",
+      "textDocument/definition",
+      "textDocument/documentHighlight",
+      "textDocument/documentSymbol",
+      "textDocument/hover",
+      "textDocument/prepareCallHierarchy",
+      "textDocument/references",
+      "workspace/symbol"
+    ],
+    "note": "bb/staleness and bb/impact carry non-standard capability keys (LSP 3.18 has no impactProvider). They ride top-level keys exactly as bb/graph already did via graphProvider, each carrying the schemaVersion the handler ENFORCES, so a client can detect a mismatch before sending one. A client that ignores unknown capability keys can still call them; discoverability is the point, not enforcement."
+  },
   "verdict": {
     "realComponentFailures": 0,
-    "mutantsCaught": 10,
-    "mutantsTotal": 10,
+    "mutantsCaught": 34,
+    "mutantsTotal": 34,
+    "mutantsCaughtByLoadFailureOnly": 0,
+    "mutantsWithMissingAnchor": [],
+    "negativeCases": 24,
     "ok": true,
-    "note": "`failed` counts real functional failures only; mutant runs are reported separately via the verdict block."
+    "note": "`failed` counts real functional failures only; mutant runs are reported separately via the verdict block. A mutant caught ONLY by a load failure is reported but does NOT satisfy the suite."
+  },
+  "reviewers": {
+    "separationOfDuties": "NOT satisfied for this change: the author of the component change wrote the only gate covering it (contract §8.6 requires cross-review where feasible). Owner spot-check (§8.5) is the closure authority.",
+    "crossReview": "requested from script/m26/verify-graph-transport.ts owner: its M5 mutant anchors on the literal graphProvider line in src/lsp/server.ts, which is why that line was preserved rather than replaced by a table lookup.",
+    "wave2": "This wave's author also wrote the checks covering it. Three defects were found by the wave's own gates on its own code and are recorded rather than hidden: (1) the G11 schemaVersion check compared two reads of the same constant and could not fail — a mutant survived it and the check was rewritten to read the value the client receives; (2) a blanket-catch mutant was first planted as a syntactically broken rewrite and was 'caught' only by load failure, which the suite correctly refused to count, and was replanted as a behaviour change; (3) G3's frame parser decoded the stream to a string and mis-parsed as soon as the advertisement carried a non-ASCII em dash, which the byte-level rewrite fixed."
   },
   "limitations": [
-    "single-root workspaces only (multi-root is a filed decision for later waves)",
-    "no completion, diagnostics, or rename (complement stance)",
-    "feature handlers land in L2-L5; capabilities advertise only registered handlers",
-    "stdio framing is byte-stream based with Content-Length parsing"
+    "single-root workspaces only (multi-root is a filed decision for later waves); declared on the wire as workspace.workspaceFolders.supported = false",
+    "no completion, no diagnostics, no rename (complement stance, §7.1)",
+    "no textDocumentSync is advertised, because no textDocument/did* handler exists; the declared sync model is filesystem-side (recursive fs.watch, 300 ms debounce, incremental reindex, scan-on-read fallback) and no latency figure is advertised because this gate measures none",
+    "stdio framing is byte-stream based with Content-Length parsing",
+    "bb/staleness and bb/impact use non-standard capability keys; a client that ignores unknown keys cannot discover them from the initialize result",
+    "the mutation suite plants into src/lsp/ and deletes the copy in a finally block; a crash mid-run can leave a server.mutant.<pid>.<n>.ts file behind (git status shows untracked files)",
+    "G7 exercises bb/staleness on an UNINDEXED workspace only; the marker shape for a fresh/stale indexed file is freshness.ts's contract, gated by script/m25, not here",
+    "NOT VERIFIED: that any editor renders the bb/absence notice. The channel is proven to be emitted and framed on the wire (G3, G9); nothing here proves a client displays it. Claiming a rendered badge would be a §1/I3 claim this evidence does not support",
+    "NOT VERIFIED: absence notices for bb/graph, bb/impact, and bb/staleness. Those transports own their own loud `bb/…`-prefixed errors by design (the versioning mechanism) and are not registered absentable; their error text already names the reason",
+    "navigation.ts does not yet expose Lane 4's `absence: {reason, language, detail, searchedIndex, totalCount}` record at this commit (04d56ab75 is not an ancestor of lsp/3), so the reason is derived from `evidenceTier` plus the launch set. When that field lands, navigationAbsence() should read it directly; the vocabulary and searchedIndex semantics already match",
+    "the DocumentUnroutable type is handled at the seam but NO component raises it at this commit: document_highlight.ts and hover.ts each guard their own parseForSafety call and return declared absence (tier unsupported_language / null), so the seam's typed arm has no in-tree producer. It is the path a future handler is meant to use, and it is gated by its own mutant ('seam: the typed unroutable signal is ignored'), which raises the type from a handler and observes the seam mis-handling it when the type test is removed",
+    "the seam ALSO keeps a message-prefix arm for ASTEngine's 'Unsupported file type' throw. It is the backstop for a handler whose own guard is missing: it cannot be typed, because a plain Error from a dependency carries no type to test. Both real handlers guard themselves today, so no in-tree path reaches this arm — it is coverage for a handler that does not exist yet, and that is stated rather than counted as coverage of a live path. The coupling to src/ast/engine.ts is drift-gated by G-unroutable: the prefix is one named constant (ASTENGINE_UNROUTABLE_PREFIX) and the gate fails when engine.ts's throw stops matching it, with the reword planted into a copy to prove the gate can fail"
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-20T02:43:09.020Z",
-    "contentSha256": "915c7657a6c6b0ecef35c65936b44f89004a51e0837f1cf3c6c3e86753d54d06"
+    "sealedAt": "2026-10-05T17:53:54.589Z",
+    "contentSha256": "72635485517aba5993b37a1948742ab83498d5e7bf8bd34096c85f036a2d4219"
   }
 }

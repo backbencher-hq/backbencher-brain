@@ -3,7 +3,7 @@
   "milestone": "M27",
   "githubMilestone": 38,
   "title": "M27: Everywhere (JetBrains/Zed/Neovim/Helix)",
-  "status": "closed",
+  "status": "open",
   "authority": "docs/m27/M27-MASTER-PLAN.md",
   "governingContract": "docs/IDE-HONESTY-CONTRACT.md",
   "evidencePolicy": {
@@ -17,7 +17,7 @@
       "code": "G1",
       "githubIssue": 616,
       "tool": "governance",
-      "status": "verified",
+      "status": "known-gap",
       "scope": "Ledger, governance map, closure gate with mutation-proof rules, and the version-ladder audit: the M26 completion bar re-verified inside this gate before any M27 issue may close.",
       "acceptanceCriteria": [
         "Gate rejects planned-closure, missing evidence, stale-commit, mutant-survival, and forged evidence — each rejection proven by mutation",
@@ -29,14 +29,14 @@
         "Evidence persisted at validation/m27/results/G1.json with commit stamp"
       ],
       "evidence": {
-        "status": "verified",
-        "currentCommit": "see G1.json",
+        "status": "known-gap",
+        "currentCommit": "a0ed9eade7008de7ce93a312f6b0bd7e182a43a9",
         "verifierCommand": "npx tsx script/m27/verify-governance.ts",
         "evidenceFile": "G1.json",
-        "passed": 70,
-        "failed": 0,
+        "passed": 71,
+        "failed": 2,
         "realFailed": 0,
-        "negativeCases": 10
+        "negativeCases": 13
       }
     },
     {
@@ -56,14 +56,15 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "see N1.json",
+        "currentCommit": "ba99e1001f5b6afc40254f74e51b1930290354f0",
         "verifierCommand": "npx tsx script/m27/verify-nvim.ts",
         "evidenceFile": "N1.json",
         "passed": 31,
         "failed": 0,
         "realFailed": 0,
         "mutantsCaught": 4,
-        "mutantsTotal": 4
+        "mutantsTotal": 4,
+        "blockedReason": "nvim not provisioned in .tools/ (D-7 portable layout)"
       }
     },
     {
@@ -110,10 +111,10 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "see Z1.json",
+        "currentCommit": "82cb16e608e5ec3cd68d5d8e63158cb215170f4b",
         "verifierCommand": "npx tsx script/m27/verify-zed.ts",
         "evidenceFile": "Z1.json",
-        "passed": 28,
+        "passed": 29,
         "failed": 0,
         "realFailed": 0,
         "mutantsCaught": 3,
@@ -164,10 +165,10 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "see V1.json",
+        "currentCommit": "a0ed9eade7008de7ce93a312f6b0bd7e182a43a9",
         "verifierCommand": "npx tsx script/m27/verify-matrix.ts",
         "evidenceFile": "V1.json",
-        "passed": 9,
+        "passed": 14,
         "failed": 0,
         "realFailed": 0,
         "mutantsCaught": 2,
@@ -178,7 +179,7 @@
       "code": "X1",
       "githubIssue": 622,
       "tool": "closure-gate",
-      "status": "verified",
+      "status": "known-gap",
       "scope": "Closure gate: full-suite audit at HEAD with per-mutant named records, v3 completion-bar audit with negative probes (>=1 I3 leg, subset proofs, matrix drift gate, M26 bar re-audit), byte-identical regeneration check.",
       "acceptanceCriteria": [
         "100% of suite legs green-or-blocked-with-reason at HEAD",
@@ -190,20 +191,21 @@
         "Evidence persisted at validation/m27/results/X1.json with commit stamp"
       ],
       "evidence": {
-        "status": "verified",
-        "currentCommit": "see X1.json",
+        "status": "known-gap",
+        "currentCommit": "f70ec0734fbae53b25994d7395bb108fd1999343",
         "verifierCommand": "npx tsx script/m27/verify-closure.ts",
         "evidenceFile": "X1.json",
-        "passed": 31,
-        "failed": 0,
+        "passed": 30,
+        "failed": 4,
         "realFailed": 0,
-        "negativeCases": 4
+        "negativeCases": 6
       }
     }
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-14T23:42:48.423Z",
-    "contentSha256": "952c1b2913a513728bc44d2d469f7702680e2821694425c181c987b35a8ea634"
-  }
+    "sealedAt": "2026-10-05T17:40:30.246Z",
+    "contentSha256": "9c7a3a98697d1e52e2465f7a413eb9b77a5e50f30da2635234de24c571a9241d"
+  },
+  "updatedAt": "2026-10-05T17:40:30.246Z"
 }

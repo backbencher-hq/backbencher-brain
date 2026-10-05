@@ -3,11 +3,11 @@
   "code": "Z1",
   "milestone": "M27",
   "status": "verified",
-  "checks": 28,
-  "passed": 28,
+  "checks": 29,
+  "passed": 29,
   "failed": 0,
-  "mutantsCaught": 3,
-  "mutantsTotal": 3,
+  "mutantsCaught": 4,
+  "mutantsTotal": 4,
   "mutantRecords": [
     {
       "name": "Z1 mutant: shim dist-path drift is rejected",
@@ -18,24 +18,28 @@
       "caught": true
     },
     {
-      "name": "Z1 mutant: shim order drift vs oracle is rejected",
+      "name": "Z1 mutant: shim order drift vs oracle is rejected (code, not comment)",
+      "caught": true
+    },
+    {
+      "name": "Z1: a comment renumbering a step is not code drift",
       "caught": true
     }
   ],
-  "currentCommit": "0dbafd74ef4f3d63be8e44dd6caa58833732a7db",
+  "currentCommit": "b5ea6a8b6ff3fc27d67cadba9083ed8bce0da271",
   "build": {
-    "ran": false,
+    "ran": true,
     "ok": false,
-    "reason": "cargo/rust toolchain not provisioned (D-7 portable layout covers nvim/zed binaries; wasm target toolchain ~1 GB not downloaded)"
+    "reason": "cargo build failed: error: rustup could not choose a version of cargo to run, because one wasn't specified explicitly, and no default is configured.\nhelp: run 'rustup default stable' to download the latest stable release of Rust and set it as your default toolchain.\n"
   },
   "verifierCommand": "npx tsx script/m27/verify-zed.ts",
   "evidenceFile": "Z1.json",
-  "generatedAt": "2026-09-20T02:24:10.656Z",
+  "generatedAt": "2026-10-05T17:58:05.358Z",
   "claimLevel": "I2 — extension + shim unit-proven against the real server's wire capabilities; wasm build blocked-with-reason (toolchain boundary per D-7); no editor session driven",
   "blockedLegs": [
     {
       "leg": "wasm shim build",
-      "reason": "cargo/rust toolchain not provisioned (D-7 portable layout covers nvim/zed binaries; wasm target toolchain ~1 GB not downloaded)"
+      "reason": "cargo build failed: error: rustup could not choose a version of cargo to run, because one wasn't specified explicitly, and no default is configured.\nhelp: run 'rustup default stable' to download the latest stable release of Rust and set it as your default toolchain.\n"
     },
     {
       "leg": "in-editor Zed session",
@@ -48,7 +52,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-20T02:24:10.657Z",
-    "contentSha256": "c7c854a483953f20fb1a41677e15166c379f9daa843d22a8201030c8578b5800"
+    "sealedAt": "2026-10-05T17:58:05.360Z",
+    "contentSha256": "9fdc430551d1df6e07e0f3dcc6e580c1e0affebfbf6b5d9c662dff44a14660cf"
   }
 }

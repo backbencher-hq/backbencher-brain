@@ -1,6 +1,13 @@
 # M55: The Hub That Tells the Truth (IDE Program v8)
 
-Status: `open` (filed on GitHub)
+Status: `closed` on GitHub (milestone 55 closed) — **with a live ledger caveat**:
+at commit `a0ed9eade` (this file's last truth pass) `validation/m55/results/T2.json`
+and `T3.json` on disk read `known-gap` and `X1.json` reads `known-gap`, so the
+lane is closed as a milestone while three of its records are red. The governance
+gate now PROJECTS each ledger entry's status from its record (the ledger was
+hand-maintained until this lane's fix), so the ledger and the records cannot
+disagree again. Read this line as a pointer to the records, never as a green
+tick.
 GitHub milestone: `55` (free slot confirmed against the live board, 2026-09-12; the co-agent
 lanes M45 / M49 / M50 / M37 / M14 are untouched)
 Parent program: [IDE Program Decision Record](../IDE-PROGRAM-DECISIONS.md)

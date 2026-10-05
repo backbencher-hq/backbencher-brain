@@ -209,6 +209,7 @@ const PLATFORM_SCHEMAS = new Set(["vault", "auth", "storage", "extensions", "rea
 function classifyExternalTarget(
   target: string,
   qualified?: string,
+  wholeQuotedName = false,
 ): "postgresCatalog" | "informationSchema" | "implicitSchema" | "platform" | null {
   if (qualified) {
     const q = qualified.toLowerCase()
@@ -217,12 +218,27 @@ function classifyExternalTarget(
     if (qdot > 0 && PLATFORM_SCHEMAS.has(q.slice(0, qdot))) return "platform"
   }
   const t = target.toLowerCase()
-  if (t.startsWith("information_schema.")) return "informationSchema"
+  // A dot in a SINGLE QUOTED identifier is part of the NAME, not a schema separator, and
+  // the grammar already said which of the two this is. `SELECT * FROM "vault.secret"`
+  // names one table called `vault.secret`; `SELECT * FROM vault.secret` names table
+  // `secret` in schema `vault`. The first parses to ONE `literal` leaf, the second to two
+  // leaves in an `object_reference`, so the distinction is a parse fact and not a guess.
+  //
+  // WHY IT MATTERS, measured. Before this the two spellings of the same SQL produced
+  // DIFFERENT and both-wrong answers: `vault.secret` gave `uses global -> secret` with
+  // `qualified: "vault.secret"` and `external: "platform"` (right), while `"vault.secret"`
+  // gave `uses global -> vault.secret` with `external: "platform"` and NO qualification —
+  // a project table relabelled as a Supabase vault object because a dot in its own name
+  // was read as a schema. A consumer that reads `external` is being told the repository
+  // talks to a hosted platform's `vault` schema, which is a fact about the file that is
+  // not in the file. `metadata.quotedName` carries the parse fact in from `addTableEdge`
+  // and `processCalls`, the two sites that emit a dotted target from a bare slot.
+  if (!wholeQuotedName && t.startsWith("information_schema.")) return "informationSchema"
   if (INFORMATION_SCHEMA_VIEWS.has(t)) return "informationSchema"
   if (isPostgresCatalogName(t)) return "postgresCatalog"
   if (t === "public") return "implicitSchema"
   const dot = t.indexOf(".")
-  if (dot > 0) {
+  if (!wholeQuotedName && dot > 0) {
     const schema = t.slice(0, dot)
     if (PLATFORM_SCHEMAS.has(schema)) return "platform"
   }
@@ -579,6 +595,7 @@ export class RealSqlAnalyzer implements ASTEngine.LanguageAnalyzer {
         keywordTargetsSuppressed: 0,
         recoveryCallsSuppressed: 0,
         sweepDeclarationsRecovered: 0,
+        sweepStatementsDispatched: 0,
         builtinCallsSuppressed: 0,
         quotedIdentifiers: 0,
         constraintsRecoveredFromError: 0,
@@ -739,6 +756,27 @@ export class RealSqlAnalyzer implements ASTEngine.LanguageAnalyzer {
   private resyncNeeded(rootNode: Node, state: ParseState): boolean {
     if (!rootNode || !rootNode.hasError) return false
     if (state.ambiguity.errorNodes < RESYNC_MIN_ERROR_NODES) return false
+    // THE ROOT IS THE ERROR. When the whole parse collapses, the root node's own type is `ERROR`
+    // and its named children are bare `keyword_*` / `identifier` leaves — so the child loop below
+    // finds no ERROR child, this returns false, and the per-statement re-parse never runs. The
+    // file then publishes nothing at all.
+    //
+    // Measured, minimal repro through `parseFile` (not `analyze`):
+    //   one  dollar-quoted function -> 1 symbol  (`function:repro_c`), 0 error nodes
+    //   two dollar-quoted functions -> 0 symbols, 0 relationships, 3 error nodes,
+    //                                   and `ambiguity.resyncStatements === 0`
+    // The grammar's `dollar_quote` node carries only the `$$` delimiter and not the body between
+    // the delimiters, so with a second body every closing `$$` is left dangling and the parse
+    // collapses to the root. That is a grammar property this analyzer cannot fix; what it CAN fix
+    // is refusing to re-parse a file it already knows is damaged.
+    //
+    // The corpus figure that bounds the exposure, measured 2026-10-05 by
+    // `validation/m14/fixtures/sql/root-error-census.mts` over the whole `.sql` corpus (1,893
+    // files discovered, 1,885 parsed under the 512 KB cap, 19 repositories): 21 files have an
+    // `ERROR` root and they carry 1,115 `CREATE <object>` heads — 1.11 % of files holding 22 % of
+    // the corpus's declarations. So this branch is rare, and every file it fires on is a file
+    // that was publishing nothing.
+    if (rootNode.type === "ERROR") return true
     for (let i = 0; i < rootNode.namedChildCount; i++) {
       const child = rootNode.namedChild(i)
       if (child?.type !== "ERROR") continue
@@ -1364,6 +1402,24 @@ export class RealSqlAnalyzer implements ASTEngine.LanguageAnalyzer {
         state.localCtes = this.cteScope(current, state)
         this.processStatement(current, state, null)
         state.localCtes.clear()
+        /**
+         * This re-entry is the pass's OTHER job and it had no counter, so the pass reported
+         * itself idle while it was working.
+         *
+         * `sweepDeclarationsRecovered` counts only a DECLARATION node nested inside another
+         * DECLARATION node, and that population does not occur on this corpus — it reads 0 over
+         * all 1,962 admitted files. Measured by ablation (`sweep-ablation.mts`, production
+         * `parseFile` with `sweepDeclarations` replaced by a no-op on the prototype, `src/`
+         * untouched): removing the pass loses **3,629 edges and 1,663 symbols**, 0 edges gained,
+         * over **234 of 1,962 files** — and every lost edge the sample printed is `uses` from a
+         * statement this branch is what reaches. On `proxicall/database/schema.sql` the
+         * ablated result is missing the symbol `function trigger_business_inbox_grants_updated_at`,
+         * which `processCalls` publishes for a callee reached only from inside a plpgsql body.
+         *
+         * So the pass was load-bearing and unmeasured: a counter that reads 0 on a pass that
+         * publishes 3,629 edges is a counter naming the wrong job. This one names this job.
+         */
+        state.ambiguity.sweepStatementsDispatched++
         for (const name of saved) state.localCtes.add(name)
       }
       if (DECLARATION_NODES.has(current.type)) {
@@ -2978,9 +3034,24 @@ private markDeclaration(node: Node, state: ParseState): boolean {
     if (parts.length === 0) return
     const leaf = parts[parts.length - 1]
     if (parts.length === 1 && (localCtes.has(leaf) || state.localCtes.has(leaf))) return
+    // ONE quoted leaf means the whole name was quoted, so a dot inside it belongs to the name.
+    // `classifyExternalTarget` needs that fact to keep from reading the part before the dot as
+    // a schema, and the metadata is the carrier so a call site cannot forget it — the same
+    // reasoning `memberKind` is carried for, below.
+    //
+    // It is `wholeQuotedReferenceName`, and NOT the node-type test this replaced. Measured:
+    // the inline `referenceNameNode(object)?.type === "literal"` was FALSE for every quoted
+    // name in this position, because the grammar gives an `identifier` whose TEXT carries the
+    // quotes — `FROM "vault.secret"` is `object_reference(identifier("\"vault.secret\""))`, and
+    // there is no `literal` leaf at all. So the flag was never set, `classifyExternalTarget` ran
+    // with its third argument `false` on every edge, and `"vault.secret"` kept the `platform`
+    // label. An A/B over `parseFile` on the five spellings measured identical output before and
+    // after the node-type version: a change that cannot fire is not a fix.
+    const wholeQuoted = this.wholeQuotedReferenceName(object, parts.length)
     this.addRelationship(ASTEngine.RelationshipType.Uses, source, leaf, state, {
       tableReference: true,
       ...(parts.length > 1 ? { qualified: parts.join(".") } : {}),
+      ...(wholeQuoted ? { quotedName: true } : {}),
     })
   }
 
@@ -3038,8 +3109,16 @@ private markDeclaration(node: Node, state: ParseState): boolean {
       // that names its schema. `addTableEdge` already passed `qualified` for the
       // same reason; the two call sites now agree.
       const parts = object ? this.referenceParts(object, state) : []
-      this.addRelationship(ASTEngine.RelationshipType.Calls, source, target, state,
-        parts.length > 1 ? { qualified: parts.join(".") } : {})
+      // The same quoted-single-identifier fact `addTableEdge` carries, through the same helper,
+      // for the same reason: a dot in `"vault.decrypt"` is part of the callee's name, and reading
+      // it as a schema gave a project function a `platform` label. Measured: this site is
+      // DOUBLE the exposure, because one `vault.decrypt()` inside a routine body emitted the
+      // edge twice (two call shapes, one name) — the mislabel is counted twice per function.
+      const wholeQuoted = object ? this.wholeQuotedReferenceName(object, parts.length) : false
+      this.addRelationship(ASTEngine.RelationshipType.Calls, source, target, state, {
+        ...(parts.length > 1 ? { qualified: parts.join(".") } : {}),
+        ...(wholeQuoted ? { quotedName: true } : {}),
+      })
     }
   }
 
@@ -3217,7 +3296,11 @@ private markDeclaration(node: Node, state: ParseState): boolean {
     // (`vault.decrypted_secrets` -> `decrypted_secrets`), so classification has
     // to look at the qualified name the metadata carries as well, or a platform
     // object is read as a project table.
-    const externalKind = classifyExternalTarget(target, metadata.qualified as string | undefined)
+    const externalKind = classifyExternalTarget(
+      target,
+      metadata.qualified as string | undefined,
+      metadata.quotedName === true,
+    )
     if (externalKind && !state.externalTargets) {
       state.externalTargets = { postgresCatalog: 0, informationSchema: 0, implicitSchema: 0, platform: 0 }
     }
@@ -3366,6 +3449,28 @@ private markDeclaration(node: Node, state: ParseState): boolean {
       return first === '"' ? inner.replaceAll('""', '"') : inner
     }
     return value
+  }
+
+  /**
+   * Is this reference ONE quoted identifier, so a dot inside its text belongs to the NAME?
+   *
+   * NOT `node.type === "literal"`, and the grammar is why. Measured:
+   * `SELECT * FROM "vault.secret"` parses to `object_reference( identifier("\"vault.secret\"") )` —
+   * a single `identifier` whose TEXT carries the quotes — while `SELECT * FROM vault.secret`
+   * parses to `object_reference( identifier("vault"), identifier("secret") )`. So quotedness is a
+   * property of the leaf's text, not of its node type, and a check on the node type reads every
+   * quoted name as unqualified: it passed the fixture's positive case for the wrong reason and
+   * would have left `"vault.secret"` labelled as Supabase's `vault` schema.
+   *
+   * `parts.length === 1` is the other half and it is what makes this safe: `"vault"."secret"` is
+   * two leaves and IS qualified, so a two-part reference is never treated as a whole name.
+   */
+  private wholeQuotedReferenceName(node: Node, parts: number): boolean {
+    if (parts !== 1) return false
+    const nameNode = this.referenceNameNode(node)
+    if (!nameNode) return false
+    if (nameNode.type === "literal") return true
+    return this.stripIdentifierQuotes(nameNode.text) !== nameNode.text
   }
 
   /**
@@ -3715,8 +3820,14 @@ private markDeclaration(node: Node, state: ParseState): boolean {
  * grammar never produces any of them either. script/m12/sql-node-types-compare.ts
  * fails this lane on exactly that class, over the whole corpus plus a declared
  * dialect battery rather than three fixture files.
+ *
+ * Exported so a measurement instrument reads THIS set instead of retyping it. The first version
+ * of `sweep-reachability.mts` recovered the list by running a regular expression over this file's
+ * source, which reaches comments and string literals alike and would silently return a plausible
+ * wrong set on the next edit. `SQL_KEYWORDS` and `SQL_BUILTINS` above are exported for the same
+ * reason. Adding to the set changes the product; reading it changes nothing.
  */
-const DECLARATION_NODES = new Set([
+export const DECLARATION_NODES = new Set([
   "create_table",
   "create_view",
   "create_materialized_view",
