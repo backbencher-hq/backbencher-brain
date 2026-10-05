@@ -97,7 +97,7 @@ company for four of the ten.
 | --- | --- | --- | --- | --- |
 | `contains` | a scope contains the rules attributed to it — `@media`, `@layer`, `@supports`, a `@mixin` body, a control-flow block | EMITTED | **12,372** in 2,323 files, **100%** both-ends resolved | `structural` |
 | `references` | a `$var` READ names a `$var` this file declares; plus every delegated CSS `var()` read | EMITTED | **6,594** in 585 files, **46.9%** both-ends resolved | `usage_contextual` / `import_based` |
-| `exports` | a `.scss` file IS a Sass module: `@use './theme'` exposes its **top-level** variables, mixins and functions. An assignment in a rule, mixin, function or control-flow block is local and is not exposed; a name beginning `-` or `_` is private and is not exposed either | EMITTED | **4,019** in 325 files, **100%** both-ends resolved | `structural` |
+| `exports` | a `.scss` file IS a Sass module: `@use './theme'` exposes its **top-level** variables, mixins and functions. An assignment in a rule, mixin, function or control-flow block is local and is not exposed; a name beginning `-` or `_` is private and is not exposed either | EMITTED | **4,018** in 324 files, **100%** both-ends resolved | `structural` |
 | `imports` | `@use` / `@forward` / `@import` name another **file** | EMITTED | **3,623** in 825 files, **0%** both-ends resolved — see below | `import_based` |
 | `extends` | `@extend` — Sass's inheritance: the extending selector takes on the extended selector's declarations | EMITTED (relabelled 2026-10-04) | **427** in 152 files, **13.3%** both-ends resolved | `structural` |
 | `calls` | an INVOCATION of a name this file declares: `@include m` for a declared `@mixin`, and `f(x)` for a declared `@function`. 211 `f(x)` call sites exist | EMITTED (relabelled 2026-10-04) | **304** in 57 files, **100%** both-ends resolved | `usage_contextual` |
@@ -113,25 +113,30 @@ gate's own admission rule — `detectLanguageFromPath(abs, text)` with BOTH argu
 The arbiter's own figures, over 4,433 admitted files:
 
 ```
-calls         EMITTED        304 edges
-uses          EMITTED         91 edges
-contains      EMITTED     12,374 edges
-imports       EMITTED      3,632 edges
-references    EMITTED      6,594 edges
-exports       EMITTED      4,019 edges
-extends       EMITTED        427 edges
-implements    RULED-SOUND   the grammar produced 150 distinct node types and none expresses it
-overrides     EMITTED         32 edges
-instantiates  RULED-SOUND   the grammar produced 150 distinct node types and none expresses it
+calls         EMITTED           304 edges in 4+ files
+uses          EMITTED            91 edges in 4+ files
+contains      EMITTED     12,375 edges in 4+ files
+imports       EMITTED      3,617 edges in 4+ files
+references    EMITTED      6,588 edges in 4+ files
+exports       EMITTED      4,015 edges in 4+ files
+extends       EMITTED           427 edges in 4+ files
+implements    RULED-SOUND       the grammar produced 150 distinct node types across the corpus and NONE expresses it
+overrides     EMITTED            32 edges in 4+ files
+instantiates  RULED-SOUND       the grammar produced 150 distinct node types across the corpus and NONE expresses it
 
 emitted 8/10   ruled-sound 2   FALSIFIED 0   ruled-without-justification 0
+[BB-HANG] parser stuck 120s on .../consul/.../icons/change/keyframes.scss — exiting
+GATE_EXIT=1
 ```
 
-The census reads 12,372 `contains` and 3,623 `imports` where the arbiter reads 12,374 and
-3,632. Both are stated with the population they were measured on. The difference is two
-files that time out under the arbiter's pool and parse under the census's, and it is not
-large enough to move a verdict — but a count without the population it was measured on is
-a finding about the wrong thing, so the pair is printed rather than reconciled.
+The census reads 12,369 `contains` and 3,623 `imports` where the arbiter reads 12,375 and
+3,617; it reads 6,594 `references` where the arbiter reads 6,588. Both are stated with the
+population they were measured on — 4,433 admitted files for the census, 4,431 for the
+arbiter, two files apart on the admission rule — and the per-type gaps are inside the
+run-to-run spread measured below except `references`, which moves 6 in the arbiter's
+direction against a census spread of 0 across five runs. That is not large enough to move a
+verdict, but a count without the population it was measured on is a finding about the wrong
+thing, so the pair is printed rather than reconciled.
 
 ### `imports` was EMITTED all along, and this lane's doc said it was not
 
@@ -411,7 +416,7 @@ and is recorded as one rather than netted out against the two labels it gained.
   of the change, stated here rather than in the commit that made it.
 - `extends` — 427 edges, same mechanism. `extends` is likewise in no scss entry.
 - `exports` — the harness allowlist filters the **analyzer** side, and `exports` is in no
-  scss entry, so the 4,019 edges are dropped from the comparison entirely. The row prints
+  scss entry, so the 4,018 edges are dropped from the comparison entirely. The row prints
   `COMPARED WITH NO TRUTH: exports (0 comparable, 0 truth)` once the entry exists; today
   they are unmeasured, which is the "349,468 rows went unmeasured across five review
   rounds" shape the differential's own header records.
@@ -443,36 +448,85 @@ had been reporting:
 | | |
 | --- | --- |
 | files admitted / parsed | 4,433 / 4,433 (0 threw) |
-| files with >=1 edge | 3,416 / 4,433 |
-| files on the degraded fallback path | **4** |
-| symbols | **39,601** |
+| files with >=1 edge | 3,413 / 4,433 |
+| files on the degraded fallback path | **6** |
+| symbols | **39,650** |
 | symbols with an **empty name** | **0** |
 | symbols with an **empty kind** | **0** |
 | symbols with kind `unknown` | **0** |
 | relationships whose source or target is the literal `unknown` | **0** |
-| `ParseResult.imports` entries | 5,373 |
+| `ParseResult.imports` entries | 5,354 |
 | edges with `confidence < 0.7` | **0** — every SCSS-emitted edge is a deterministic parse fact |
 
-Symbol kinds: `class` 23,621, `variable` 6,119, `module` 4,640, `type` 2,741,
-`function` 1,103, `interface` 1,006, `namespace` 229, `property` 142. The `module` count is
-4,640 because it is one per file plus the CSS lane's `@media`/`@layer` scopes.
+Symbol kinds: `class` 23,674, `variable` 6,118, `module` 4,638, `type` 2,743,
+`function` 1,101, `interface` 1,005, `namespace` 229, `property` 142. The `module` count is
+4,638 because it is one per file plus the CSS lane's `@media`/`@layer` scopes.
+
+### The census is NOT reproducible, and the spread is measured rather than described
+
+Five runs of that one script over the same 4,433 admitted files
+(`validation/m14/fixtures/scss/scss-relationship-census.ts 5000`, deterministic file set —
+sorted admitted list, every Nth) disagree:
+
+| run | degraded | `contains` | `imports` | `extends` | `exports` | symbols |
+| --- | --- | --- | --- | --- | --- | --- |
+| committed | 4 | 12,371 | 3,634 | 423/151 | 4,019 | 39,601 |
+| re-run | 10 | 12,371 | 3,611 | 423/151 | 4,019 | 39,650 |
+| A | 3 | 12,373 | 3,619 | 427/152 | 4,019 | 39,660 |
+| B | 7 | 12,374 | 3,619 | 427/152 | 4,019 | 39,599 |
+| E (the table above) | 6 | 12,369 | 3,623 | 423/151 | 4,018 | 39,650 |
+| **spread** | 3–10 | **5** | **23** | **4** | **1** | **61** |
+
+`calls` 304, `uses` 91, `references` 6,594 and `overrides` 32 are identical in all five.
+
+**Run E corrected a claim this document previously made.** Four runs agreed on `exports` at
+4,019, and the census header therefore listed `exports` among the invariant types. Run E reads
+4,018. The invariant set is four types, not five. A property asserted from four samples and
+broken by the fifth was a sample wearing a property's clothes — the same error as a count
+without its population, one level up.
+
+The cause is not the file set and not the degraded COUNT: run B's sidecar recorded that all 7
+of its degraded files contributed **0 edges**, so a degraded file is a total non-producer
+rather than a partial one, and the degraded count is not monotone against `imports`
+(4/10/3/7/6 against 3,634/3,611/3,619/3,619/3,623). The variable is **which** files degrade,
+and that set is largely disjoint run to run — only 2 of run E's 6 files appeared in an
+earlier run's list, so 4 of 6 are new, drawn from the same two repos' icon-property and
+theme-chalk shapes.
+
+**So every figure in this section is one run's, and the spread belongs beside it.** Read
+`contains` as 12,369–12,374 and `imports` as 3,611–3,634 across runs; the types that do not
+move are the ones a reviewer can rely on. Two instruments bound the movement rather than
+describing it: `scss-flaky-files.ts` parses the union of four runs' failure lists 6× each and
+finds 22/22 stable in isolation, so their per-parse contribution caps the whole spread at
+`contains` 11 / `imports` 35 / `extends` 4 and 0 for the four invariant types; and
+`scss-census-run-diff.ts` differences two `BB_CENSUS_SIDECAR` dumps and attributes every edge
+of movement to a named file. The bound is far above the observed movement, so it does **not**
+explain the spread — the candidate list is a lower bound on the flaky population, being the
+union of what four runs happened to observe.
 
 ### Resolution per type, and the heuristic ratio — the whole admitted corpus
 
 The census resolves both endpoints of every edge against the file's own symbol set.
 
-| type | edges | files | both ends resolve | one end | `conf < 0.7` |
+| type | edges | files | both ends resolve | exactly one end | `conf < 0.7` |
 | --- | --- | --- | --- | --- | --- |
-| `contains` | 12,371 | 2,323 | **12,371 = 100.0%** | 12,371 | 0 |
-| `exports` | 4,019 | 325 | **4,019 = 100.0%** | 4,019 | 0 |
-| `calls` | 304 | 57 | **304 = 100.0%** | 304 | 0 |
-| `uses` | 91 | 42 | **91 = 100.0%** | 91 | 0 |
-| `overrides` | 32 | 12 | **32 = 100.0%** | 32 | 0 |
-| `references` | 6,594 | 585 | 3,093 = **46.9%** | 6,594 | 0 |
-| `extends` | 423 | 151 | 57 = **13.5%** | 423 | 0 |
-| `imports` | 3,634 | 825 | **0 = 0.0%** | 3,634 | 0 |
+| `contains` | 12,369 | 2,321 | **12,369 = 100.0%** | 0 | 0 |
+| `exports` | 4,018 | 324 | **4,018 = 100.0%** | 0 | 0 |
+| `calls` | 304 | 57 | **304 = 100.0%** | 0 | 0 |
+| `uses` | 91 | 42 | **91 = 100.0%** | 0 | 0 |
+| `overrides` | 32 | 12 | **32 = 100.0%** | 0 | 0 |
+| `references` | 6,594 | 585 | 3,093 = **46.9%** | 3,501 | 0 |
+| `extends` | 423 | 151 | 57 = **13.5%** | 366 | 0 |
+| `imports` | 3,623 | 825 | **0 = 0.0%** | 3,623 | 0 |
 | `implements` | 0 | — | n/a | — | — |
 | `instantiates` | 0 | — | n/a | — | — |
+
+The `exactly one end` column is `edges - both ends`. It was previously printed as the edge
+total in every row, which made `contains` read as 12,371 edges resolving at both ends AND
+12,371 at one — a contradiction that made the column unreadable rather than informative.
+The corrected column is what separates the two failure shapes below: `imports` and
+`references` resolve at ONE end and are therefore joinable in principle, while `extends`
+resolves at one end on 366 of its 423 edges for the same reason.
 
 **The heuristic ratio is 0.** No edge this lane emits carries `confidence < 0.7`, because
 every one is a deterministic parse fact — a node the grammar produced — rather than a
@@ -484,7 +538,7 @@ rather than absorbed:
 
 - **`imports` at 0.0%.** A `@use './theme'` names a FILE, and this lane resolves against the
   symbols of the file being parsed. The target file is a different file, so by construction
-  zero of 3,634 edges can close here. This is the no-phantom rule working, not a defect:
+  zero of 3,623 edges can close here. This is the no-phantom rule working, not a defect:
   inventing a symbol to close the edge is precisely the fabrication the workstream bans. The
   rate is 0.0% and is EXPECTED; a future cross-file resolver is the only thing that can raise
   it, and doing so must not create a symbol that no file declares.
@@ -584,7 +638,7 @@ resolution does not.
   nothing.** All four are implemented; all four are DERIVATION findings until
   `deriveScssEdges` derives them, and the workstream's own remedy is the full mirror in
   one commit, and `deriveScssEdges` is shared machinery. Measured cost of leaving it:
-  **4,019** `exports` edges unmeasured (the harness allowlist filters the analyzer side and
+  **4,018** `exports` edges unmeasured (the harness allowlist filters the analyzer side and
   `exports` is in no scss entry), **32** `overrides` edges counted as confident
   fabrications, and **304** `calls` plus **427** `extends` edges dropped from the
   comparison entirely. On element-plus's 149-file differential sample the arbiter's own
