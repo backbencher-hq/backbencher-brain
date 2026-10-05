@@ -1130,10 +1130,26 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
             for (let i = 0; i < n.namedChildCount; i++) {
               const m = n.namedChild(i)
               if (m?.type !== "class_member") continue
+
               const declared = this.memberDeclaredName(m)
               if (declared) members.add(declared)
             }
-            if (members.size > 0) ctx.classMembers.set(nm.text, members)
+            if (members.size > 0) {
+              ctx.classMembers.set(nm.text, members)
+              // An OPERATOR is a class name in Clean, and the DECLARATION spells it
+              // parenthesised while the INSTANCE spells it bare: `class (==) infix 4 a ::`
+              // (clean-stdlib/StdOverloaded.icl:23) declares `==`, and `instance == Bool`
+              // (clean-stdlib/StdBool.dcl:10) reads it back without the parentheses. So
+              // `nm.text` is `(==)` and the instance's `className` is `==`, and keying
+              // only on the declaration's own spelling silently refused every
+              // `overrides` edge for an operator-named class declared in the SAME file —
+              // 24 `implements` edges on the 312-file corpus carry the same mismatch in
+              // their `isExternalClass` flag. Registering the bare spelling is what makes
+              // the in-file guard mean what it says; the guard is not relaxed, it is
+              // given the name the instance actually reads.
+              const bare = this.unparenthesize(nm.text)
+              if (bare !== null && bare !== nm.text) ctx.classMembers.set(bare, members)
+            }
           }
           nextOwner = nm?.text ?? nextOwner
           break
@@ -1857,7 +1873,16 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
         // Almost every class is imported (`instance Eq Int` names StdEnv's `Eq`),
         // so the flag records the normal case explicitly instead of leaving the
         // reader to infer it from a missing symbol.
-        isExternalClass: !ctx.declaredTypeNames.has(className),
+        //
+        // The second spelling is the operator case, and it is not cosmetic: a class
+        // DECLARATION spells an operator-named class parenthesised (`class (==) infix 4 a ::`,
+        // clean-stdlib/StdOverloaded.icl:23) while the INSTANCE spells it bare
+        // (`instance == Bool`, clean-stdlib/StdBool.dcl:10). `declaredTypeNames` therefore
+        // holds `(==)` and the lookup below held only `==`, so 24 `implements` edges on
+        // the 312-file corpus carried `isExternalClass: true` for a class declared in the
+        // SAME file — a false statement in the one field whose whole job is to say which
+        // of the two it is. `classMembers` gets the same treatment where `overrides` reads it.
+        isExternalClass: !ctx.declaredTypeNames.has(className) && !this.isLocallyDeclaredOperatorClass(ctx, className),
         // The instance's target is a type VARIABLE, so the instance is polymorphic:
         // it publishes no symbol (see above) and this flag says why the edge has no
         // symbol at its source.
@@ -3343,6 +3368,23 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
 
   private unparenthesize(text: string): string | null {
     return unparenthesizeText(text)
+  }
+
+  /**
+   * Is `name` a class this file declares, under the OTHER spelling Clean uses for an
+   * operator-named class?
+   *
+   * A declaration writes `class (==) …` and an instance reads `instance == …`, so
+   * `declaredTypeNames` holds `(==)` while the lookup holds `==`. Only the parenthesised
+   * direction is tried, and only when the bare name is not itself declared, so a file
+   * that declares BOTH `class (===)` and `class ===` still resolves `===` to the
+   * declaration that actually spells it that way. Returns false for any name that is not
+   * a plausible operator, which keeps this from matching an ordinary identifier.
+   */
+  private isLocallyDeclaredOperatorClass(ctx: CleanContext, name: string): boolean {
+    if (name.length === 0 || /^[A-Za-z_][A-Za-z0-9_']*$/.test(name)) return false
+    const parenthesised = `(${name})`
+    return ctx.declaredTypeNames.has(parenthesised) || ctx.declaredClassNames.has(parenthesised)
   }
 
   /**
