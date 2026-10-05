@@ -30,11 +30,11 @@
       ],
       "evidence": {
         "status": "known-gap",
-        "currentCommit": "a0ed9eade7008de7ce93a312f6b0bd7e182a43a9",
+        "currentCommit": "2cd1896802d2be3eca5d7866e2e5a9b7d339125d",
         "verifierCommand": "npx tsx script/m28/verify-governance.ts",
         "evidenceFile": "G1.json",
-        "passed": 71,
-        "failed": 3,
+        "passed": 70,
+        "failed": 4,
         "realFailed": 0,
         "negativeCases": 14
       }
@@ -43,7 +43,7 @@
       "code": "T1",
       "githubIssue": 624,
       "tool": "mcp-read-tools",
-      "status": "known-gap",
+      "status": "verified",
       "scope": "Three new MCP read tools (bb_graph, bb_impact, bb_cross_language) that reuse the exact IDE-side components (graph engine tier rules, src/lsp/impact.ts, src/lsp/cross_language_hover.ts) — the agent door shows what the IDE door shows (D-1/D-2).",
       "acceptanceCriteria": [
         "All three tools registered, validated, executable against a real indexed fixture",
@@ -55,12 +55,12 @@
         "Evidence persisted at validation/m28/results/T1.json with commit stamp"
       ],
       "evidence": {
-        "status": "known-gap",
-        "currentCommit": "a0ed9eade7008de7ce93a312f6b0bd7e182a43a9",
+        "status": "verified",
+        "currentCommit": "d5c265b3a9a185d0927d2167e0cc562f5092d6e9",
         "verifierCommand": "npx tsx script/m28/verify-mcp-tools.ts",
         "evidenceFile": "T1.json",
-        "passed": 23,
-        "failed": 1,
+        "passed": 24,
+        "failed": 0,
         "realFailed": 0,
         "mutantsCaught": 5,
         "mutantsTotal": 5
@@ -70,7 +70,7 @@
       "code": "U1",
       "githubIssue": 625,
       "tool": "union-differential",
-      "status": "known-gap",
+      "status": "verified",
       "scope": "The union differential gate (D-5): one fixture workspace, two doors — MCP tool handlers vs the LSP/IDE components directly; equality asserted on counts, tiers, truncation declarations, and cross-language facts including declared absence.",
       "acceptanceCriteria": [
         "Every differential assertion passes on the shared fixture",
@@ -82,14 +82,14 @@
         "Evidence persisted at validation/m28/results/U1.json with commit stamp"
       ],
       "evidence": {
-        "status": "known-gap",
+        "status": "verified",
         "verifierCommand": "npx tsx script/m28/verify-union.ts",
         "evidenceFile": "U1.json",
-        "passed": 14,
-        "failed": 2,
+        "passed": 24,
+        "failed": 0,
         "mutantsCaught": 4,
         "mutantsTotal": 4,
-        "currentCommit": "a0ed9eade7008de7ce93a312f6b0bd7e182a43a9"
+        "currentCommit": "d5c265b3a9a185d0927d2167e0cc562f5092d6e9"
       }
     },
     {
@@ -148,7 +148,7 @@
       "code": "V1",
       "githubIssue": 628,
       "tool": "mcp-surface-doc",
-      "status": "known-gap",
+      "status": "verified",
       "scope": "docs/m28/MCP-SURFACE.md fully GENERATED from src/mcp/tool-registry.ts descriptors + the evidence ledger (byte-identical drift gate, D1 pattern).",
       "acceptanceCriteria": [
         "Regeneration byte-identical; hand edits fail the gate",
@@ -160,14 +160,14 @@
         "Evidence persisted at validation/m28/results/V1.json with commit stamp"
       ],
       "evidence": {
-        "status": "known-gap",
+        "status": "verified",
         "verifierCommand": "npx tsx script/m28/verify-mcp-surface.ts",
         "evidenceFile": "V1.json",
-        "passed": 12,
-        "failed": 1,
+        "passed": 13,
+        "failed": 0,
         "mutantsCaught": 2,
         "mutantsTotal": 2,
-        "currentCommit": "a0ed9eade7008de7ce93a312f6b0bd7e182a43a9"
+        "currentCommit": "d5c265b3a9a185d0927d2167e0cc562f5092d6e9"
       }
     },
     {
@@ -198,8 +198,8 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-04T23:25:13.058Z",
-    "contentSha256": "54bb665bbc963725e65485d7fb57e63b343062eeba6266a51a685ec4043bfa12"
+    "sealedAt": "2026-10-05T15:35:47.752Z",
+    "contentSha256": "76438cec834bf1e76498b05004e5da5035b09219f5c0c84ecbc8b27e129099db"
   },
-  "updatedAt": "2026-10-04T23:25:13.058Z"
+  "updatedAt": "2026-10-05T15:35:47.752Z"
 }

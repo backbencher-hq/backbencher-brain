@@ -3,15 +3,15 @@
   "code": "X1",
   "milestone": "M27",
   "status": "known-gap",
-  "checks": 31,
-  "passed": 27,
+  "checks": 34,
+  "passed": 30,
   "failed": 4,
   "failures": 4,
-  "negativeCases": 4,
-  "currentCommit": "a0ed9eade7008de7ce93a312f6b0bd7e182a43a9",
+  "negativeCases": 6,
+  "currentCommit": "f70ec0734fbae53b25994d7395bb108fd1999343",
   "verifierCommand": "npx tsx script/m27/verify-closure.ts",
   "barViolations": [
-    "bar1: an adapter leg is not verified (N1/J1/Z1/H1)",
+    "bar1-declared-absence: N1 is blocked with a reason — nvim not provisioned in .tools/ (D-7 portable layout)",
     "bar1: capability subset proofs not all present",
     "bar2: no I3 leg (N1 is the declared slot)"
   ],
@@ -22,10 +22,10 @@
     "H1": [],
     "V1": []
   },
-  "generatedAt": "2026-10-04T23:21:50.667Z",
+  "generatedAt": "2026-10-05T14:22:21.032Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-04T23:21:50.669Z",
-    "contentSha256": "529cd09764ff1009705d9e5267d05f22743e0dde6f37c5095b616efcb9475f6e"
+    "sealedAt": "2026-10-05T14:22:21.033Z",
+    "contentSha256": "5d63854d9136010b266ec9144f090e62d3cc16b7b638ee1c70ea208f270c99eb"
   }
 }

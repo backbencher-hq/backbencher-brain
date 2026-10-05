@@ -7,16 +7,11 @@
   "passed": 71,
   "failed": 2,
   "negativeCases": 13,
-  "currentCommit": "a0ed9eade7008de7ce93a312f6b0bd7e182a43a9",
-  "workingTreeRelevantChanges": [
-    "docs/m27/FORK-CAPABILITY-MATRIX.md",
-    "package.json",
-    "script/m27/verify-governance.ts",
-    "script/m27/verify-matrix.ts"
-  ],
+  "currentCommit": "d8dad6ebbf971c5f724e18275fbd97eb624e7d42",
+  "workingTreeRelevantChanges": [],
   "verifierCommand": "npx tsx script/m27/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-10-04T23:25:12.978Z",
+  "generatedAt": "2026-10-05T15:35:47.334Z",
   "ledger": "validation/m27/results/manifest.json",
   "m26Bar": {
     "ledgerStatus": "closed",
@@ -28,7 +23,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-04T23:25:12.986Z",
-    "contentSha256": "a0cce7b39264936ef503f0a2185233934123e8f28daba776b6f67d8cb535b6f7"
+    "sealedAt": "2026-10-05T15:35:47.338Z",
+    "contentSha256": "406f0acee2fa80b8bdd010b45cda500a076fc55da377c1cae8c0b1ea6e1f1313"
   }
 }
