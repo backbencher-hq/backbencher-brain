@@ -358,12 +358,19 @@ BB_DART_CENSUS=/tmp/c.json npx tsx validation/m14/fixtures/dart/zero-contains-pr
 notFired: ["exports"]
 ```
 
-`firing-check.ts` is shared machinery and is not on this branch, so it was run from
-a copy of `5a634e17e:script/m14/firing-check.ts` placed at the path its relative
-imports require and removed afterwards; it is not committed here. **Both readings below
-were reproduced on this branch from that same copy**, so the pair is a measurement and
-not a recollection — and the file exists at `5a634e17e`, so the remedy for item 7 is to
-land that commit rather than to write a new instrument. Its own numbers at
+**This file said `firing-check.ts` "is not on this branch" for six commits after that
+stopped being true, and the tenth pass corrected it.** The statement was introduced at
+`cdffad991` (2026-10-04 02:45), when the file was genuinely absent from
+`analyzer/DART`; the base merge `3868c4411` (2026-10-04 17:12) brought it in —
+`git cat-file -e HEAD:script/m14/firing-check.ts` succeeds, and
+`git merge-base --is-ancestor 7c8eb5cc8 HEAD` holds. Both readings below were therefore
+re-run this pass **directly from the branch's own copy**, with no staging under `/tmp`
+and nothing removed afterwards, and both reproduced to the edge. The original readings
+were made from a staged copy of `5a634e17e:script/m14/firing-check.ts` and are kept
+because they agree; what is withdrawn is the claim about where the instrument lives.
+A reader told to stage a copy will not know the committed file had moved under them, and
+the second sentence here — that the remedy for item 7 is "to land that commit" — was
+addressed four merges ago without this file noticing. Its own numbers at
 n=120 versus n=400, same instrument, same corpus, same analyzer:
 
 | n | fired | relationships | files | `exports` edges |
@@ -451,10 +458,9 @@ npx tsx validation/m14/fixtures/dart/export-firing-probe.ts     # edges on the 2
 npx tsx script/m14/firing-check.ts --files 400 dart             # 10/10, 53,252 edges
 ```
 
-`firing-check.ts` and `incoming-check.ts` are shared machinery and are NOT on this
-branch; both were run from a copy under `/tmp` staged at `script/m14/` for the relative
-imports and removed afterwards. Neither is committed by this lane. **Two of the arbiter's
-own JSON fields are wrong on every lane and a reader will meet both** — `analyzerDigest`
+Both were run this pass from the branch's own copies, which the corrected paragraph
+above establishes are present. **Two of the arbiter's own JSON fields are wrong on every
+lane and a reader will meet both** — `analyzerDigest`
 is a `MISSING:` path because it looks for `script/ast/` instead of `src/ast/`, which also
 makes `analyzerStableDuringRun` vacuously true, and `types[type].files` is 1 for every
 type because its map is rebuilt per file. Remedies are items 14 and 15 under
@@ -738,6 +744,23 @@ above already names the right variable — ambiguity tracks the SYMBOL TABLE's s
 name variety, not the file count — and this pair is the evidence for it: 5.2× the
 symbols turns a 0 into 14. So the honest form is **"at 274 symbols, 0"**, and a reader
 holding a small file set should expect its own number rather than this one.
+
+**The tenth pass re-ran this exact 7-file set twice on this tree and reads four of those
+cells differently, in both runs identically: 1,429 symbols, 860 distinct declarations
+named by an edge, 13 ambiguous targets, 20 orphans of 1,429** — against the recorded
+1,427 / 876 / 14 / 22. Two runs agreeing with each other and disagreeing with the
+recorded row means the recorded row is a reading of an earlier tree, not a flaky
+measurement. The first five ambiguous names and their collision shapes are reproduced
+exactly and in the same order (`CronetException`, `NetworkException`,
+`immediatelyRetryable`, `wasCached`, `QuicException`, `CallbackException`,
+`CronetEngine`, `useBuiltInDnsResolver`), plus 5 more; `useBuiltInDnsResolver` is listed
+as `method, property` where the table above groups it with the property/method pairs
+unordered. The eighth-collision name `builder` from the recorded run does not appear in
+either current run's printed list. **The argument the pair supports is unchanged and is
+the one that matters: 1,429 symbols reads 13 ambiguous, and 274 symbols reads 0.** The
+per-cell absolutes are superseded, and the recorded row is left in place rather than
+overwritten for the reason the eighth pass gave — a superseded row plus a delta is a
+record two trees can both be read against.
 
 **`contains` is closed, and that is arithmetic rather than luck.** The edge publishes
 the OWNER on the source side and the bare member on the target side, so
@@ -3026,6 +3049,80 @@ with every count byte-identical — a 1.88x spread, the fourth measurement of a
 machine-dependent quantity in this file and the reason none of them is quoted as an analyzer
 property. The incoming census read `wallMs(walk)` 1,582,337 = 26.4 min against 615,539 and
 995,723 previously, a 2.57x spread, with 960,634 relationships reproduced exactly.
+
+### A tenth pass, which found the first defect in this file's own provenance
+
+Every instrument re-run on this tree, in the foreground, sequentially, no polling.
+
+**Reproduced exactly:** the arbiter at n=120 (`9/10 fired, 8290 edges, 120/120 files`,
+`degraded 0`, `exports` absent from the fired list) and at n=400
+(`10/10 fired, 53252 edges, 400/400 files`, `degraded 0`); all ten census counts over
+2,735 files (43,042 / 110,679 / 119,515 / 10,657 / 5,265 / 302 / 4,730 / 758 / 90,352 /
+18,374), 134,606 symbols, 403,674 relationships, all four zero-fields
+(`emptySymbolNames 0`, `emptyOrUnknownKind 0`, `unknownEndpoints 0`,
+`symbolsNamedUnknown 20`), all twelve symbol kinds, all ten breadth rows with their
+five-repo spreads, and every cell of the nine-column resolution table; the incoming
+census at 337,440 symbols / 960,634 relationships / 74 `symbolsNamedUnknown` / 490,292
+ambiguous / 296,855 closable / 143,833 binding to nothing / 1,817 unexplained / 67
+excluded fallback edges / 26 files with 457 error nodes, recomputed here from the
+per-type rows rather than read off a summary; 16/16 fixtures; 42/42 mutants; 37/37,
+14/14 and 38/38 shape batteries; the lane regex census at 0 over 20 files / 8,764 lines;
+the repository regex census `PASSED` at 5/5/5; `rel-type-coverage-gate --langs=dart`
+at 2 un-audited `["overrides","references"]` with checks 2–4 clean;
+`verify-analyzer-docs` with dart's row `missingSections: []`, `ontologyGaps: []`; and
+`verify-honesty` at 21 failures with **zero naming a dart file**.
+
+**The differential ran at rotation 86 (proxicall) and 80 (dart-http), and both reproduce
+the recorded HIGH branch** — proxicall draw hash `d8b3093137451c30`, `6220 / 6120`,
+**98.4%**, MISSING **100**, 5,618 analyzer edges, **unexplained 0**; dart-http draw hash
+`bc95ba8a87ca1bbc`, `2277 / 2263`, **99.4%**, MISSING **14**, 2,106 analyzer edges,
+**unexplained 0**. Neither hash is recorded in this file, and the proxicall denominator
+is back to the 6,220 the rotations 73 and 74 read rather than the 29,131 of the low
+branch. **So the ratio has now read 98.4% at rotations 73, 74, 80 and 86 and 59.0% at 78,
+79 and 81 — four high, three low — and `unexplained` is 0 on all seven.** The MISSING
+counts are 100 and 14, which is what §DERIVATION predicts for these two lanes
+independently, and every one of the 12 printed `proxicall` rows is `overrides` as before.
+
+**What the pass found is a provenance error in this file, and it is the first defect here
+whose subject is the document rather than the analyzer.** For six commits — from
+`cdffad991` (2026-10-04 02:45) through `e0b8d5b36` — this file stated twice that
+`firing-check.ts` and `incoming-check.ts` "are NOT on this branch" and that both were run
+from a copy staged under `/tmp` and removed afterwards. **Both files are tracked, and both
+were run directly from the branch's own copies this pass with no staging at all.**
+`git cat-file -e HEAD:script/m14/firing-check.ts` and `…incoming-check.ts` both succeed;
+`incoming-check.ts` was added at `46bcd17d5` (2026-10-03 18:42) and `firing-check.ts`
+reached this branch through the base merge `3868c4411` (2026-10-04 17:12), four merges
+after the claim was written. The readings the claim supports are unaffected — every
+figure it qualifies reproduced to the edge — but the sentence told a reviewer to stage a
+copy of a file that was already in their tree, and the remedy it offered for item 7 ("land
+that commit") had already been applied four merges earlier without this file noticing.
+That is the same failure the ninth pass recorded for `unknownEndpoints 0` — a reading of
+one state outliving the state it measured — and the mechanism that let it survive six
+commits is that a claim about WHERE AN INSTRUMENT LIVES is checkable in one command, so
+it never needed a corpus sweep to test and so nobody tested it.
+
+The corrected paragraphs are at *the supervisor's arbiter reads 9/10 at n=120* and at
+*Ambiguity*. Both arbiter JSON defects the claim rests on were re-verified mechanically
+rather than quoted, and both still hold: `analyzerDigest` reads
+`MISSING:/…/script/ast/real-dart-analyzer.ts` — the function joins `path.join(here, "..",
+"ast", …)` where `here` is `script/m14`, so it asks for `script/ast/` and never
+`src/ast/` (`firing-check.ts:205-217`), which also makes `analyzerStableDuringRun` true
+vacuously because a missing file cannot change mid-run; and `types[type].files` reads
+**1 for every type that fired and 0 for `exports`**, because `filesByType` is declared
+INSIDE the per-file loop at `firing-check.ts:334` and consumed at `:380`, so each file
+overwrites the previous file's set. The `0` for `exports` is the same bug read from the
+other side: a type that fired nowhere has no set to carry a 1. Neither affects the fired
+count, the edge count, `degraded`, or the four zero-safety fields.
+
+The 7-file ambiguity sample also moved, and is recorded as a superseded row rather than an
+overwritten one — see *Ambiguity*.
+
+**The census wall time moved again and nothing else did:** `wallMs` 441,835 = 7.36 min
+here against 337,371 / 553,290 / 634,711 recorded above, on the same 2,735 files with
+every count byte-identical — a 1.88x spread, the fifth measurement of a machine-dependent
+quantity in this file. The incoming census read `wallMs(walk)` 889,750 = 14.8 min against
+615,539 / 995,723 / 1,582,337 previously, a 2.57x spread, with 960,634 relationships
+reproduced exactly.
 
 ### Two member-predicate rules that must stay scoped to the member
 
