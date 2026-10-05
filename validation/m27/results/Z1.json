@@ -2,10 +2,10 @@
   "issue": "M27.Z1",
   "code": "Z1",
   "milestone": "M27",
-  "status": "known-gap",
-  "checks": 23,
-  "passed": 21,
-  "failed": 2,
+  "status": "verified",
+  "checks": 29,
+  "passed": 29,
+  "failed": 0,
   "mutantsCaught": 4,
   "mutantsTotal": 4,
   "mutantRecords": [
@@ -26,7 +26,7 @@
       "caught": true
     }
   ],
-  "currentCommit": "a8807f81027bd384f2f5d50a2d1bd143463639b8",
+  "currentCommit": "b52c2bc7ad5caade0356f5228c84dc77afd32293",
   "sourceFingerprint": "3d86246aa2b7b0a4300753a43b1f87931ef8a41a86ae9d97337639ae0b05c27a",
   "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
   "sourceFingerprintCovers": [
@@ -36,18 +36,18 @@
     "script/m27/server-caps.ts"
   ],
   "build": {
-    "ran": false,
+    "ran": true,
     "ok": false,
-    "reason": "cargo/rust toolchain not provisioned (D-7 portable layout covers nvim/zed binaries; wasm target toolchain ~1 GB not downloaded)"
+    "reason": "cargo build failed: error: rustup could not choose a version of cargo to run, because one wasn't specified explicitly, and no default is configured.\nhelp: run 'rustup default stable' to download the latest stable release of Rust and set it as your default toolchain.\n"
   },
   "verifierCommand": "npx tsx script/m27/verify-zed.ts",
   "evidenceFile": "Z1.json",
-  "generatedAt": "2026-10-05T22:34:05.590Z",
+  "generatedAt": "2026-10-05T22:41:54.956Z",
   "claimLevel": "I2 — extension + shim unit-proven against the real server's wire capabilities; wasm build blocked-with-reason (toolchain boundary per D-7); no editor session driven",
   "blockedLegs": [
     {
       "leg": "wasm shim build",
-      "reason": "cargo/rust toolchain not provisioned (D-7 portable layout covers nvim/zed binaries; wasm target toolchain ~1 GB not downloaded)"
+      "reason": "cargo build failed: error: rustup could not choose a version of cargo to run, because one wasn't specified explicitly, and no default is configured.\nhelp: run 'rustup default stable' to download the latest stable release of Rust and set it as your default toolchain.\n"
     },
     {
       "leg": "in-editor Zed session",
@@ -60,7 +60,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T22:34:05.592Z",
-    "contentSha256": "916d592fd90e758165ede9caf5f9cc0058eafe3cc9147a319a277c697a8d9abe"
+    "sealedAt": "2026-10-05T22:41:54.958Z",
+    "contentSha256": "4122baf8772bfe8537be2d60ef7a56a8bc43024815075b0cb529118ee90d1046"
   }
 }
