@@ -637,14 +637,14 @@ construction, and the targets of `imports` and `references` are package names:
 
 | Type | target in same file | source shape | target shape |
 | --- | --- | --- | --- |
-| `contains` | 17,630 / 17,634 = 100.0% | `global` 16,665 | declared names |
-| `exports` | 3,591 / 3,592 = 100.0% | `global` 3,592 | declared names |
+| `contains` | 17,628 / 17,632 = 100.0% | `global` 16,663 | declared names |
+| `exports` | 3,589 / 3,590 = 100.0% | `global` 3,590 | declared names |
 | `overrides` | 107 / 107 = 100.0% | class names | member names |
 | `instantiates` | 3 / 3 = 100.0% | `initialize`, `capture_expectations` | class names |
 | `extends` | 258 / 351 = 73.5% | class names | `VIRTUAL` 34, `Reporter` 20, class names |
 | `implements` | 371 / 1,133 = 32.7% | `generic.class` | `vec_ptype2` 86, `vec_cast` 82, `print` 74 |
 | `references` | 46 / 389 = 11.8% | `global` 347 | `testthat` 35, `Rcpp` 27, `Matrix` 23 |
-| `calls` | 5,042 / 48,233 = 10.5% | any symbol | `c` 1,797, `return` 1,399, `length` 1,118 |
+| `calls` | 5,042 / 48,230 = 10.5% | any symbol | `c` 1,797, `return` 1,399, `length` 1,118 |
 | `uses` | 402 / 4,810 = 8.4% | any symbol | `x` 217, `name` 106, `Dim` 93 |
 | `imports` | 13 / 2,095 = 0.6% | `global` 2,095 | `cli` 318, `withr` 254, `utils` 122 |
 
@@ -699,25 +699,47 @@ targets are R data-column and option NAMES**: `val` (55), `package` (26),
 list entries read out of objects the file does not declare — which is the correct
 answer for a member read and not an error in the rule.
 
-**The one ghost `exports` edge is a shared-machinery defect, not an R one.**
-`r-testthat/R/source.R:18` declares
+**EVERY unresolved `contains` and `exports` edge in the population is a
+shared-machinery denylist, and the accounting is complete: 5 edges, 3 names, 4
+files, 0 unexplained.** A dedicated walk of all 2,184 files listing every
+`contains`/`exports` edge whose target is absent from its own file's symbol set
+returns exactly this and nothing else:
 
-```r
-source_file <- function(path, env, chdir, desc, wrap, shuffle, error_call)
-```
+| edge | count | file | what the name is |
+| --- | --- | --- | --- |
+| `exports -to-> super` | 1 | `S7/R/super.R:100` | `super <- function(from, to)`, exported by S7 |
+| `contains -to-> super` | 1 | `S7/R/super.R:100` | the same declaration |
+| `contains -to-> super` | 1 | `Matrix/R/00_Class.R:723` | an S4 slot, `slots = c(super = "integer", …)` |
+| `contains -to-> this` | 1 | `r-cli/tests/testthat/test-progress-variables.R:173` | a `local()` binding read 3× below |
+| `contains -to-> this` | 1 | `r-vctrs/tests/testthat/test-type2.R:26,50` | two `local()` bindings |
 
-and roxygen `@export`s it at line 16. `analyze()` publishes the symbol,
-`ASTEngine.parseFile` publishes it, and production `parseFile` **does not** — and
-the `exports` and `contains` edges naming it survive, because
-`filterNoiseRelationships` consults a different list than the symbol filter does.
-The cause is `keepSymbol`'s `UNIVERSAL` denylist in `src/ast/pool-worker.ts:448`,
-which contains the string `"source_file"` beside `"root"`, `"program"`,
-`"module_declaration"` and `"package_manifest"`. Those are tree-sitter node-type
-names. Not one of the fifteen is an R keyword, and `source_file` is an ordinary R
-function name. Measured over the corpus
-(`validation/m14/fixtures/r/probe-denylist.ts`): **12 R symbols deleted across 9
-files** — `this` 5, `me` 4, `root` 2, `source_file` 1. The file is shared
-machinery (workstream §8), so this is reported and not fixed.
+So `contains` at 17,628/17,632 and `exports` at 3,589/3,590 are not R-rule
+shortfalls with a denylist problem mixed in: the denylist **is** the whole of them.
+Neither `super` nor `this` is reserved in R, and `S7/R/super.R` shows why that
+matters — `super()` is S7's dispatch primitive, and dropping it leaves **13 edges
+naming it in that one file** (11 `calls`, 1 `exports`, 1 `contains`), so the graph
+holds an exported name with no node behind it.
+
+This is the SECOND time this shape has appeared in this lane. The first was
+`source_file`, an ordinary testthat function that `keepSymbol` deleted at 12 symbols
+across 9 files and that has since been removed from the set upstream. The fix split
+the list into a residual `UNIVERSAL` plus a per-language `RESERVED` map, and its
+comment now says the names that remain are "the ones no lane has produced a
+counterexample for" — and this lane has one for two of the four. Measured cost of
+what the fix left: **7 symbols across 4 files.** The file is shared machinery
+(workstream §8), so this is reported and not fixed.
+
+**The `unknown` gap the same fix left.** `pool-worker.ts:499-501` says `unknown`
+"now moves to RESERVED below rather than being dropped, so a placeholder is still
+refused while a declared `unknown` survives". No `RESERVED` set contains `unknown`
+— the map holds only `php {self, parent}` and `sql {program}` — so
+`keepSymbol({name:"unknown"}, lang)` returns `true` for every language, which is the
+opposite of what the comment describes. Measured cost to R over 1,492 files: **0
+symbols named `unknown` reach production**, so the gap is LATENT rather than active;
+the risk is that an analyzer minting `unknown` as a name would have it published
+instead of refused. `probe-denylist.ts` prints this as a live line rather than a note,
+because a comment that describes behaviour the code does not implement is the kind of
+thing a reader trusts.
 
 **6. Confident** — measured over the population with a 0.05-wide histogram,
 because a threshold test cannot tell a lane that sits on 0.7 from a lane with a
@@ -772,9 +794,12 @@ than the number sees one tier for this lane.
   because both walk the same grammar — a grammar bug shared by the two is invisible
   to it, which is the limitation the workstream header requires be stated rather
   than glossed.
-- **The `exports` resolution rate is measured against a file-local set and one of
-  its edges is a ghost.** 3,490 of 3,491 is not 3,491 of 3,491, and the difference
-  is a shared-machinery denylist entry, not an R rule.
+- **The `exports` resolution rate is measured against a file-local set, and every
+  unresolved `exports` and `contains` edge in it is a denylist ghost.** 3,589 of
+  3,590 and 17,628 of 17,632, where the 5 missing edges are 3 names in 4 files and
+  the cause is `keepSymbol`, not an R rule. The accounting is complete rather than
+  partial, which is a stronger statement than the one it replaces: there is no
+  unexplained residue left in either rate.
 - **Corpus totals for R are not bit-reproducible under concurrency.** Every
   production census of this lane logged `[BB-PARSE-ERR] r | <file> | memory access
   out of bounds`, and WHICH files logged it changed between two runs over the
@@ -1473,13 +1498,26 @@ number that bounds it rather than an adjective.
   22,464 in another. `probe-oom.ts` establishes that per-file counts are stable
   (0 of 160 `r-rlang` files varied across 3 passes) and that 15 files legitimately
   publish no symbols. The defect is in which files the wasm parser survives.
-- **A shared-machinery denylist deletes real R symbols.** `keepSymbol`'s
-  `UNIVERSAL` set in `src/ast/pool-worker.ts` contains the tree-sitter node-type
-  name `source_file`, which is also an ordinary R function name that testthat
-  defines and `@export`s. Measured cost over the corpus: **12 symbols across 9
-  files** (`this` 5, `me` 4, `root` 2, `source_file` 1), leaving `exports` and
-  `contains` edges pointing at names the index does not hold. Reported, not fixed:
-  the file is shared machinery.
+- **A shared-machinery denylist still deletes real R symbols, and it accounts for
+  every unresolved `contains` and `exports` edge in the population.** `keepSymbol`'s
+  residual `UNIVERSAL` set in `src/ast/pool-worker.ts` holds `this` and `super`; its
+  own comment says the names that remain are those "no lane has produced a
+  counterexample for", and this lane has one for both. `super` is an exported S7
+  function (`S7/R/super.R:100`) and an S4 slot in Matrix
+  (`Matrix/R/00_Class.R:723`); `this` is a `local()` binding in two testthat files.
+  Measured cost: **7 symbols across 4 files, leaving 5 edges** (4 `contains`,
+  1 `exports`) pointing at names the index does not hold. An earlier, larger instance
+  of the same defect — `source_file`, 12 symbols across 9 files — was measured here
+  and has since been fixed upstream. Reported, not fixed: shared machinery.
+- **`keepSymbol` keeps the name `unknown` for every language, while the comment
+  beside it says a per-language `RESERVED` set should refuse it.**
+  `pool-worker.ts:499-501` states `unknown` "now moves to RESERVED below … so a
+  placeholder is still refused while a declared `unknown` survives", but no
+  `RESERVED` set contains it — the map holds only `php {self, parent}` and
+  `sql {program}`. Measured cost to R over 1,492 files: **0 symbols named `unknown`
+  reach production**, so nothing is wrong in the graph today; the risk is that an
+  analyzer minting `unknown` would have it published rather than refused, which is
+  the case the placeholder accounting in `R7` exists to prevent.
 - **There is no differential for R.** `script/m14/differential.ts` has no
   `LANGS.r` entry, so all nine previously-emitted types are DERIVATION findings —
   stored and compared against nothing. The only independent cross-check available
