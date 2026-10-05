@@ -55,8 +55,8 @@
 (2,181 files, `parseFile`) and `clean-honesty-gate.ts` (312 files, `analyze()`) are
 different code paths over different corpora, so their totals are not comparable and
 are never mixed in one table. The size of the gap is measured rather than waved at:
-on the **same 312 files**, `parseFile` yields **30,744** relationships and `analyze()`
-**31,246** — a difference of **502 edges (1.7%)**, and it is not spread evenly. The delta
+on the **same 312 files**, `parseFile` yields **30,739** relationships and `analyze()`
+**31,241** — a difference of **502 edges (1.7%)**, and it is not spread evenly. The delta
 is UNCHANGED by either of this lane's two `references` fixes: pass 4's per-node signature
 index and pass 5's `&` separator each made BOTH paths gain the same number of edges — 498
 and 59 respectively — which is itself evidence that the edges are read by the analyzer and
@@ -71,11 +71,11 @@ not by a pipeline stage:
 | `imports` | 1,891 | 1,920 | +29 |
 | `calls` | 3,798 | 3,886 | +88 |
 | `implements` | 712 | 772 | +60 |
-| `exports` | 4,839 | 4,937 | +98 |
-| `contains` | 7,511 | 7,730 | +219 |
+| `exports` | 4,837 | 4,935 | +96 |
+| `contains` | 7,508 | 7,727 | +219 |
 
 Both are reproducible: the arbiter, the firing check and the census independently
-report `calls 3,798 / contains 7,511 / imports 1,891 / exports 4,839 / implements 712`
+report `calls 3,798 / contains 7,508 / imports 1,891 / exports 4,837 / implements 712`
 for the same 312 files, and `parseFile` was run twice with identical totals. The delta
 is therefore **the pipeline stages `analyze()` skips**, not run-to-run noise — which is
 the reason every production figure in this document is the `parseFile` one.
@@ -432,10 +432,10 @@ content-deduplicated corpus (`script/m14/clean-wide-manifest.txt`).
 | `extends` | ❌ not emitted | **RULED** — registered in `script/m14/clean-ruled.ts`; instrument B position census, 0 UNCLASSIFIED of 5,567 declarations; corroborated by instrument A | 0 | — | — | 0 | — | — |
 | `calls` | ✅ EMITTED | — | 3,798 | 108 | 98.9% | 27,485 | 99.9% | 809 |
 | `uses` | ✅ EMITTED | — | 1,457 | 27 | 100.0% | 11,864 | 99.8% | 1 |
-| `contains` | ✅ EMITTED | — | 7,511 | 275 | 100.0% | 57,855 | 100.0% | 0 |
+| `contains` | ✅ EMITTED | — | 7,508 | 275 | 100.0% | 57,855 | 100.0% | 0 |
 | `imports` | ✅ EMITTED | — | 1,891 | 236 | 84.2% | 11,878 | 97.6% | 0 |
 | `references` | ✅ EMITTED | **GAP → implemented in pass 4**, and a **second GAP in pass 5**; an instance member's own `\| C a` published nothing, and a context joined by `&` published only its first conjunct | 10,108 | 275 | 89.0% | 81,534 †† | 99.0% | 55 |
-| `exports` | ✅ EMITTED | — | 4,839 | 304 | 100.0% | 37,126 | 100.0% | 293 |
+| `exports` | ✅ EMITTED | — | 4,837 | 304 | 100.0% | 37,126 | 100.0% | 293 |
 | `implements` | ✅ EMITTED | — | 712 | 103 | 97.2% | 2,990 | 97.3% | 0 |
 | `overrides` | ✅ EMITTED | **GAP → implemented in pass 2**; believed missing at handover | 306 | 11 | 100.0% | 582 | 100.0% | 0 |
 | `instantiates` | ✅ EMITTED | — | 122 | 9 | 100.0% | 1,459 | 99.9% | 0 |
@@ -488,11 +488,36 @@ The `files` column is deliberately absent: the census caps its per-type file set
 400, so any type at the cap reads `400` and the number is not a count. Types below the
 cap: `uses` 366 files, `overrides` 40, `instantiates` 167.
 
-PROD totals: **30,744 relationships, 8,288 symbols, 312/312 files parsed, 0 parse
+PROD totals: **30,739 relationships, 8,285 symbols, 312/312 files parsed, 0 parse
 failures, 0 degraded fallbacks, 0 empty names, 0 empty/unknown kinds, 0 `unknown`
 endpoints, 0 edges without a site line.** WIDE totals: **232,773 edges**. Both read
 through `parseFile`; `script/m14/clean-ontology-census.ts` prints the production entry
 point in its own header so a reader cannot mistake one for the other.
+
+**These totals moved DOWN by 5 since the previous revision of this document, and the
+cause is this lane's own commit `4c850ca97`.** That commit withdrew the phantom `type`
+symbol a signature's argument type produces — `widByPtr :: !WID -> Bool` comes back from
+the grammar as a `type_definition` with no body and a name field holding the first
+argument type. The previous revision of this table was published BEFORE that commit and
+was never re-measured after it, so it carried 3 fabricated symbols and the 5 edges that
+bound to them:
+
+| | before `4c850ca97` | measured at this commit | instrument |
+|---|---:|---:|---|
+| `contains` | 7,511 | **7,508** (−3) | `clean-ontology-census.ts` + the arbiter |
+| `exports` | 4,839 | **4,837** (−2) | same, both agreeing |
+| symbols | 8,288 | **8,285** (−3) | `clean-honesty-gate.ts` |
+| total edges | 30,744 | **30,739** (−5) | same, both agreeing |
+| `analyze()` path total | 31,246 | **31,241** (−5) | `clean-honesty-gate.ts` |
+
+**The arithmetic is the whole argument that this is the fix landing and not a
+regression.** 3 symbols withdrawn, and exactly 3 `contains` (one per withdrawn child) plus
+2 `exports` edges unbound: −5 on both paths, and the `parseFile`/`analyze()` gap stays at
+**502** because both paths lost the same edges. Every other type's count is unchanged to
+the edge, and **every resolution rate is unchanged** (`references` 21.6% intra / 89.0%
+corpus, `imports` 2.2% / 84.2%, `calls` 98.1% / 98.9%, `implements` 53.4% / 97.2%, the
+other four 100.0% / 100.0%) — re-measured, not assumed. A genuine coverage loss would
+have moved resolution, because the withdrawn edges resolved. These did not exist.
 
 `extends` leads the table because it is the only type whose absence is a measurement,
 and a ruling is the row a reader needs first.
@@ -768,6 +793,12 @@ Those are pass 4's numbers and pass 5 then moved all three again — `references
 above is left at its pass-4 state because it is the record of what pass 4 did; the current
 figures are the verdict table's and Q5's. Pass 5's own movement is in
 [`&` is a second spelling of `,`](#the-two-spellings-are-one-construct-pass-5).
+**And 30,744 is itself no longer current**: commit `4c850ca97`, which landed after both
+passes, withdrew 3 phantom symbols and the 5 edges bound to them, so the total is now
+**30,739** — [measured, with the arithmetic, at PROD totals](#prod-totals-30739-relationships-8285-symbols-312312-files-parsed-0-parse). The
+rows below that read 8,288 are pass-4/pass-5 snapshots of the same population and are left
+as the record; no `references` count in them moved, and `references` is what these two
+passes were about.
 | every other type | — | **unchanged to the edge** |
 | symbols, empty names, unknown kinds, unknown endpoints, edges without a line, degraded | 8,288 / 0 / 0 / 0 / 0 / 0 | 8,288 / 0 / 0 / 0 / 0 / 0 |
 | `references` self-edges | 54 | **55** |
@@ -1064,7 +1095,7 @@ one the workstream compares against, it is named as WIDE.
 
 ### Q6 — Confident (`evidenceClass` and confidence are right)
 
-Measured over **30,744 edges at PROD (312 files, production `parseFile`)**, re-run at this commit.
+Measured over **30,739 edges at PROD (312 files, production `parseFile`)**, re-run at this commit.
 The previous revision quoted the 2,181-file WIDE population, which could not be re-measured here;
 WIDE's total was 232,773 and its per-type distribution is unchanged for every type except
 `references`, because pass 4 adds edges at 0.95 and touches no other type.
@@ -1073,15 +1104,15 @@ WIDE's total was 232,773 and its per-type distribution is unchanged for every ty
 | --- | --- | --- | --- |
 | `calls` | 0.90 × 3,798 | 0 | `usage_contextual` |
 | `uses` | 0.90 × 1,457 | 0 | `structural` |
-| `contains` | 1.00 × 7,511 | 0 | `structural` |
+| `contains` | 1.00 × 7,508 | 0 | `structural` |
 | `imports` | 1.00 × 1,891 | 0 | `import_based` |
 | `references` | 1.00 × 1,528 · 0.95 × 8,521 | 0 | `reference_qualified` |
-| `exports` | 1.00 × 4,839 | 0 | `structural` |
+| `exports` | 1.00 × 4,837 | 0 | `structural` |
 | `implements` | 1.00 × 712 | 0 | `structural` |
 | `overrides` | 1.00 × 306 | 0 | `reference_qualified` |
 | `instantiates` | 1.00 × 122 | 0 | `structural` |
 
-**Heuristic ratio: 0 of 30,744 edges (0.000%) are below 0.7.** The same ratio holds at WIDE:
+**Heuristic ratio: 0 of 30,739 edges (0.000%) are below 0.7.** The same ratio holds at WIDE:
 0 of 232,773. The honesty contract §4
 requires that ratio to be countable, and it is — as exactly zero. Two honest notes
 attached to that number:
@@ -1177,12 +1208,12 @@ was clean before the doc edits and after them.
 | `npx tsx script/m14/ontology-coverage-gate.ts --coverage` | 14 lanes can be ruled for, `clean` among them | 0 |
 | `npx tsx script/m14/verify-ruling-tables-registered.ts` | **18 tables on disk, 18 registered, `unadjudicated lanes : 0  ()`, `PASS`** — and `clean` is in the on-disk set and in the registry, so this lane is no longer named by any list (§8 item 1, since resolved) | 0 |
 | `npx tsx script/m14/firing-check.ts --files 120 clean` | `9/10 fired, 16416 edges, 120/120 files`, `degraded 0`, 0 parse failures, 0 empty names, 0 unknown kinds, 0 unknown endpoints — **and the digest reads `MISSING:` on every lane, so its `analyzerStableDuringRun: true` is vacuous; see [report item 6](#reported-to-the-supervisor-not-fixed)** | 0 |
-| `npx tsx script/m14/clean-ontology-census.ts` | 312/312 parsed, **30,744** edges, 8,288 symbols, 0 empty names, 0 unknown kinds, 0 unknown endpoints, 0 edges without a line, 0 degraded. `--wide` **ABORTED twice** — see [WIDE is not re-measurable](#wide-is-not-re-measurable-on-this-machine) | 0 |
+| `npx tsx script/m14/clean-ontology-census.ts` | 312/312 parsed, **30,739** edges, 8,285 symbols, 0 empty names, 0 unknown kinds, 0 unknown endpoints, 0 edges without a line, 0 degraded. `--wide` **ABORTED twice** — see [WIDE is not re-measurable](#wide-is-not-re-measurable-on-this-machine) | 0 |
 | `npx tsx script/m14/clean-ontology-census.ts --limit 120` | 120/120 parsed, 16,039 edges — a DIFFERENT 120 files from `firing-check`'s stride sample (first-120-of-sorted vs round-robin-per-repo), which is why the two disagree on totals, and why both populations are named wherever either is quoted | 0 |
 | `npx tsx validation/m14/fixtures/clean/extends-construct-probe.mts` | TRACKED 0 UNCLASSIFIED / WIDE 0 UNCLASSIFIED; instrument A 0 of 39 probed | 0 |
 | `npx tsx validation/m14/fixtures/clean/ampersand-context-probe.mts` | TRACKED 473 contexts, 85 with `&`, conjuncts **62 ADD / 47 DUPLICATE**; WIDE 1,995 contexts, 365 with `&`, **249 ADD / 264 DUPLICATE**; unnamed child types `{&:504, ",":214, \|:1995}` | 0 |
 | `npx tsx validation/m14/fixtures/clean/references-duplicate-probe.mts` | TRACKED 312 files, **10,108** `references` edges, 9,629 distinct (source,target,line) groups, **387** groups with more than one — byte-identical to the `,`-only A/B on both the total and the per-discriminator breakdown | 0 |
-| `bun run script/m14/clean-honesty-gate.ts` | 312 files, 8,288 symbols, **31,246** relationships, **no violations**; `implements.classNotDeclaredHere` **306**, `references.externalTypeOrContext` **7,866** (`analyze()`, see Instruments) | 0 |
+| `bun run script/m14/clean-honesty-gate.ts` | 312 files, 8,285 symbols, **31,241** relationships, **no violations**; `implements.classNotDeclaredHere` **306**, `references.externalTypeOrContext` **7,866** (`analyze()`, see Instruments) | 0 |
 | `bun run script/m14/clean-completeness-gate.ts` | 141 declared named node types, 141 classified, **all checks pass** | 0 |
 | `npx tsx script/m14/clean-mutant-run.ts` | **12 mutants, caught 12/12**, every one made the suite red. The two `&` mutants are caught by `clean/ampersand-class-context` alone and in OPPOSITE directions — `…separator-dropped` fail 0 → 1 with 10 problems, `…repeat-published-per-conjunct` fail 0 → 1 with 4 | 0 |
 | `npx tsx script/m14/run-fixtures.ts --lang clean` | clean: **pass 13, fail 0**, `fixture baseline gate: no regressions` (12 after pass 4 added `instance-member-signature-context`, 13 after pass 5 added `ampersand-class-context`) | 0 |
@@ -1377,7 +1408,7 @@ is the same 312 files — so the movement is the grammar pin moving to **v1.2.8*
 
 | figure | pass 1 recorded | measured now | instrument |
 | --- | --- | --- | --- |
-| symbols (312 files) | 8,336 | **8,288** | `clean-honesty-gate.ts` |
+| symbols (312 files) | 8,336 | **8,285** | `clean-honesty-gate.ts` |
 | relationships (312 files) | 30,558 | **30,689** | `clean-honesty-gate.ts` |
 | `references` (312 files) | 9,568 | **9,559** | `clean-honesty-gate.ts` |
 | `contains` (312 files) | 7,777 | **7,730** | `clean-honesty-gate.ts` |
