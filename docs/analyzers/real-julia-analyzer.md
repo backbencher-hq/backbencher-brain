@@ -38,10 +38,25 @@ bun  run validation/m14/fixtures/julia/mutation-check.ts --all
 npx tsx validation/m14/fixtures/julia/envelope.ts --files 400                     # the time envelope + load context
 npx tsx validation/m14/fixtures/julia/engine-concurrency-probe.ts --files 400      # why the arbiter cannot finish
 npx tsx validation/m14/fixtures/julia/core-wasm-race-probe.ts --rounds 24     # why the arbiter can die BEFORE reading a file
-npx tsx script/m14/ontology-coverage-gate.ts julia                            # exit 1 before it prints; see below
+npx tsx validation/m14/fixtures/julia/arbiter-resume-probe.ts                  # the arbiter's tally is a function of its CHECKPOINT (1 second)
+npx tsx script/m14/ontology-coverage-gate.ts julia --fresh                    # ONLY a --fresh run measures; without it a resumed run prints emitted 0/10
 ```
 
-**The arbiter reports this lane, and on this run it agrees with the census edge for edge.**
+**The arbiter reports this lane, and on this run it agrees with the census edge for edge — but this
+block is only reproducible on a run with NO checkpoint file, and re-running the command as printed
+now prints `emitted 0/10`.** Measured 2026-10-05, same commit, same 1,985-file corpus, three runs:
+run 1 (no checkpoint) prints the table below and exits 0; run 2 (checkpoint complete) prints
+`emitted 0/10` with zero edges and exits 1; run 3 (`--fresh`) dies on the width-8 wasm trap. The
+gate accumulates its tally inside the walk callback and the walk skips every path the checkpoint
+already holds, so a resumed run measures nothing and then prints `1985/1985 files (100.0%)` with
+`partial` false. **The block below is therefore a first-run artifact, and the command printed above it
+does not reproduce it.** §8 row 14 carries the measurement and
+`npx tsx validation/m14/fixtures/julia/arbiter-resume-probe.ts` reproduces the mechanism in a second.
+The lane's own numbers do not depend on the arbiter: `firing-check --files 2000 julia` reports
+**9/10 fired, 235,878 edges, 1,985/1,985 files, 0 degraded**, sequentially and with no checkpoint,
+and `doc-tables-check.ts` holds all 305 cells of this file against the census.
+
+**The recorded run, on a first run with no checkpoint:**
 `script/m14/ontology-coverage-gate.ts` used to carry ruling tables for `bash` and `json` only and
 exited 2 on julia with *"no RULING TABLE for julia … Refusing to report: a gate with an empty table
 would call every un-emitted type RULED-UNJUSTIFIED and that is a verdict about the TABLE, not about
@@ -2805,6 +2820,8 @@ can be a fixture asserting things the code does not do, and the fixture is what 
   type that neither side derives. Only instrument A and instrument B measure the language.
 
 ---
+
+| 14 | **`script/m14/ontology-coverage-gate.ts`** | **`:304-319`, and the table that consumes `observed` at `:472-503`** | **persist the per-type tally in the checkpoint beside the paths, not only the paths. Or: force `--fresh` whenever `walkStats.walked === 0 && walkStats.alreadyDone > 0`. Or minimally: print `ABORTING — a resumed run measures nothing` and exit non-zero, because a reader cannot be left with a table that is a function of a file's prior contents** | **measured 2026-10-05, and this is the largest defect this lane has found in the arbiter.** The gate accumulates `observed` inside the walk's `run` callback (`:307-318`) and `script/m14/resumable-walk.ts:134-138` SKIPS every index whose id is already in the checkpoint. So on any run after the first, `run` is never called, `observed` stays empty, and all ten rows take the `obs && obs.n > 0` false branch. **Three runs, same commit, same 1,985-file corpus, same `parseFile`:** run 1 with no checkpoint printed `emitted 9/10 … calls 122,150 …` and exited 0; run 2 with a complete checkpoint printed `emitted 0/10`, zero edges, every row `NOT EMITTED`, and **exit 1**; run 3 with `--fresh` printed `[BB-PARSE-ERR] … Graphs.jl/test/core.jl`, `[BB-HANG] … core.jl — exiting`, **exit 1**. **`walkStats.partial` is `false` on run 2**, because `walked + alreadyDone === count`, so the one line whose stated job is to disclose an incomplete population discloses a complete one: `walk: 1985/1985 files (100.0%) newly walked 0, resumed 1985`. The comment above the walk says *\"A resumed or partial walk produces the SAME edge counts as a complete one … so without this line a 99% walk reports identically to a 100% one\"* — the line was added for exactly this, and it reports 100.0% for a walk that read zero files. `firing-check` disagrees and is independent of the checkpoint: **9/10 fired, 235,878 edges, 1,985/1,985 files, 0 degraded**, sequential. **This makes the block quoted at the top of this file a FIRST-RUN-ONLY artifact**, which is why it cannot be re-verified by re-running the command the reader is told to run. `validation/m14/fixtures/julia/arbiter-resume-probe.ts` reproduces the mechanism in under a second against the shared `resumableWalk` (run 1 → 9/10 and 54 edges; run 2 → 0/10 and 0 edges, `partial` false) and **exits 1 if the shared gate is fixed**, so this row can be withdrawn rather than left standing. The checkpoint is gitignored (`validation/m14/measurements/walk-*.txt`), so every lane that has run the gate twice since the checkpoint landed reads `0/10 emitted` |
 
 # Shared-file changes this lane needs (§8 — reported, not applied)
 
