@@ -3,7 +3,7 @@
   "milestone": "M24",
   "githubMilestone": 24,
   "title": "bb_lsp — The Server (IDE Program v0)",
-  "status": "closed",
+  "status": "open",
   "authority": "docs/m24/M24-MASTER-PLAN.md",
   "governingContract": "docs/IDE-HONESTY-CONTRACT.md",
   "updatedAt": "2026-08-31T00:00:00.000Z",
@@ -26,7 +26,7 @@
       "code": "G1",
       "githubIssue": 487,
       "tool": "governance",
-      "status": "verified",
+      "status": "known-gap",
       "scope": "authority, ledger, closure gate, npm run verify wiring",
       "acceptanceCriteria": [
         "machine-readable ledger with all 11 M24 issues",
@@ -39,29 +39,31 @@
         "document limitations"
       ],
       "evidence": {
-        "status": "verified",
-        "currentCommit": "see G1.json",
+        "status": "known-gap",
+        "currentCommit": "fe6844fb9d5b77d0c30a7c4da7d16dfa387278d9",
         "verifierCommand": "npx tsx script/m24/verify-governance.ts",
         "evidenceFile": "G1.json",
-        "passed": 21,
-        "failed": 0,
-        "negativeCases": 9
+        "passed": 23,
+        "failed": 1,
+        "negativeCases": 11,
+        "blockedReason": "1 check(s) failed: G1: every non-planned ledger item has matching persisted evidence at the current commit — relevant uncommitted files at measure time: script/m24/verify-governance.ts, script/m24/verify-positions.ts"
       }
     },
     {
       "code": "P1",
       "githubIssue": 488,
       "tool": "lsp-positions",
-      "status": "verified",
+      "status": "known-gap",
       "scope": "LSP 0-based UTF-16 <-> index 1-based lines/byte columns conversion component with mutation suite",
       "evidence": {
-        "status": "verified",
-        "currentCommit": "see P1.json",
+        "status": "known-gap",
+        "currentCommit": "fe6844fb9d5b77d0c30a7c4da7d16dfa387278d9",
         "verifierCommand": "npx tsx script/m24/verify-positions.ts",
         "evidenceFile": "P1.json",
-        "passed": 17,
-        "failed": 0,
-        "negativeCases": 8
+        "passed": 48,
+        "failed": 2,
+        "negativeCases": 11,
+        "blockedReason": "2 check(s) failed: X3: LSP-lane harness spawns nothing non-portable — script/m24/verify-callsite-agreement.ts:373 [non-portable-binary] shasum — execFileSync: BSD/macOS perl checksum tool; the Linux side spells it sha256sum. Ban rests on \"spawn no checksum binary, use node:crypto\"; its absence on this repo's Linux images is declared linux-unverified. | X3: LSP-lane harness spawns nothing non-portable — script/m55/screenshot-protocol.ts:223 [denylisted-binary-in-spawned-command] sha256sum — run(): GNU coreutils checksum tool; macOS ships `shasum -a 256` instead. This exact spawn killed M24.P1 and M24.P2 on darwin with spawnSync sha256sum ENOENT."
       },
       "acceptanceCriteria": [
         "dedicated position mapping component, no inline conversion elsewhere",
@@ -82,13 +84,14 @@
       "scope": "file-watch, incremental reindex, machine-readable stale markers with declared debounce/catch-up guarantees",
       "evidence": {
         "status": "verified",
-        "currentCommit": "see P2.json",
+        "currentCommit": "d3b06b5158f3e5e0860a7e9325f1635867343204",
         "verifierCommand": "npx tsx script/m24/verify-freshness.ts",
         "evidenceFile": "P2.json",
-        "passed": 65,
-        "failed": 11,
+        "passed": 34,
+        "failed": 0,
         "realFailed": 0,
-        "negativeCases": 4
+        "negativeCases": 6,
+        "blockedReason": "Watcher exercised through real fs.watch on a temp directory. THIS RUN'S OS IS IN `measuredOs`, and the watcher event classes the claims are scoped to are in `watcherEventClasses`; the per-run event counts are printed to the run log rather than recorded, because they vary between runs of the same commit and evidence must regenerate byte-identically (contract §8.2, §10.2: platform scope is declared per claim, other OSes declared absent, never assumed)."
       },
       "acceptanceCriteria": [
         "watcher triggers incremental reindex with declared debounce",
@@ -119,15 +122,16 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "see L1.json",
+        "currentCommit": "a5fd2a1cdd9ab6a7e3a41da2c0718ddf5ca1aa5a",
         "verifierCommand": "npx tsx script/m24/verify-server.ts",
         "evidenceFile": "L1.json",
-        "passed": 31,
+        "passed": 127,
         "failed": 0,
         "realFailed": 0,
-        "negativeCases": 0,
+        "negativeCases": 24,
         "mutantsCaught": 9,
-        "mutantsTotal": 9
+        "mutantsTotal": 9,
+        "blockedReason": "single-root workspaces only (multi-root is a filed decision for later waves); declared on the wire as workspace.workspaceFolders.supported = false"
       }
     },
     {
@@ -148,15 +152,16 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "see L2.json",
+        "currentCommit": "936b66d6d088776c7715e7d1aec492cc9c6d9841",
         "verifierCommand": "npx tsx script/m24/verify-hover.ts",
         "evidenceFile": "L2.json",
-        "passed": 20,
+        "passed": 45,
         "failed": 0,
         "realFailed": 0,
-        "negativeCases": 0,
+        "negativeCases": 14,
         "mutantsCaught": 4,
-        "mutantsTotal": 4
+        "mutantsTotal": 4,
+        "blockedReason": "index-sourced only; no compiler-backed types (complement stance)"
       }
     },
     {
@@ -177,15 +182,16 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "see L3.json",
+        "currentCommit": "9c25a1dc2384899d2370c0ad05c638b1f362aa17",
         "verifierCommand": "npx tsx script/m24/verify-navigation.ts",
         "evidenceFile": "L3.json",
-        "passed": 23,
+        "passed": 117,
         "failed": 0,
         "realFailed": 0,
-        "negativeCases": 0,
+        "negativeCases": 12,
         "mutantsCaught": 4,
-        "mutantsTotal": 4
+        "mutantsTotal": 4,
+        "blockedReason": "index-sourced only; no compiler-backed go-to-definition (complement stance)"
       }
     },
     {
@@ -206,15 +212,16 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "see L4.json",
+        "currentCommit": "8ddf19f515070c1b83c15d39c274a9e6d656b125",
         "verifierCommand": "npx tsx script/m24/verify-symbols.ts",
         "evidenceFile": "L4.json",
-        "passed": 18,
+        "passed": 50,
         "failed": 0,
         "realFailed": 0,
-        "negativeCases": 0,
+        "negativeCases": 14,
         "mutantsCaught": 4,
-        "mutantsTotal": 4
+        "mutantsTotal": 4,
+        "blockedReason": "index-sourced only; hierarchy depth limited to what the analyzer stored via owner_symbol_id"
       }
     },
     {
@@ -235,15 +242,16 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "see L5.json",
+        "currentCommit": "8ddf19f515070c1b83c15d39c274a9e6d656b125",
         "verifierCommand": "npx tsx script/m24/verify-call-hierarchy.ts",
         "evidenceFile": "L5.json",
-        "passed": 18,
+        "passed": 97,
         "failed": 0,
         "realFailed": 0,
-        "negativeCases": 0,
+        "negativeCases": 16,
         "mutantsCaught": 4,
-        "mutantsTotal": 4
+        "mutantsTotal": 4,
+        "blockedReason": "adapter proven against a fixture double reproducing the engine contract; the engine itself is M14-verified and exercised end-to-end by the V1 harness"
       }
     },
     {
@@ -264,13 +272,14 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "see V1.json",
+        "currentCommit": "d3b06b5158f3e5e0860a7e9325f1635867343204",
         "verifierCommand": "npx tsx script/m24/verify-harness.ts",
         "evidenceFile": "V1.json",
-        "passed": 9,
+        "passed": 22,
         "failed": 0,
         "realFailed": 0,
-        "negativeCases": 1
+        "negativeCases": 6,
+        "blockedReason": "bun-source leg is blocked in this environment (bun not installed); the harness attempts it every run and records the reason — never a silent skip"
       }
     },
     {
@@ -291,13 +300,14 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "see D1.json",
+        "currentCommit": "a871d533a736e8e38cb826d80d986d3cc84022d1",
         "verifierCommand": "npx tsx script/m24/verify-docs.ts",
         "evidenceFile": "D1.json",
         "passed": 44,
         "failed": 0,
         "realFailed": 0,
-        "negativeCases": 3
+        "negativeCases": 3,
+        "blockedReason": "claim levels capped at I1 (protocol-passed) by design — I3/I4/I5 are M25 scope and declared absent"
       }
     },
     {
@@ -318,19 +328,20 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "see X1.json",
+        "currentCommit": "a871d533a736e8e38cb826d80d986d3cc84022d1",
         "verifierCommand": "npx tsx script/m24/verify-closure.ts",
         "evidenceFile": "X1.json",
-        "passed": 60,
+        "passed": 69,
         "failed": 0,
         "realFailed": 0,
-        "negativeCases": 6
+        "negativeCases": 6,
+        "blockedReason": "Closure audit re-runs the full M24 suite at the current commit; pass 2 proves evidence regenerates byte-identical modulo DECLARED variable fields: the generatedAt timestamp and measured latency samples (p95WarmMs), whose pass/fail verdict must still be identical."
       }
     }
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-14T23:42:48.406Z",
-    "contentSha256": "d8460e442e404667e44c15957092aa37596ac04b9740bd586d826e2e603712c9"
+    "sealedAt": "2026-10-05T04:21:13.545Z",
+    "contentSha256": "3602701debdab95ac4c171af9a44d5996e1790f1c9c58d5765f70329c04aaf18"
   }
 }

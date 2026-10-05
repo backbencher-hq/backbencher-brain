@@ -3,9 +3,10 @@
   "code": "P1",
   "milestone": "M24",
   "status": "known-gap",
-  "checks": 49,
+  "blockedReason": "2 check(s) failed: X3: LSP-lane harness spawns nothing non-portable — script/m24/verify-callsite-agreement.ts:373 [non-portable-binary] shasum — execFileSync: BSD/macOS perl checksum tool; the Linux side spells it sha256sum. Ban rests on \"spawn no checksum binary, use node:crypto\"; its absence on this repo's Linux images is declared linux-unverified. | X3: LSP-lane harness spawns nothing non-portable — script/m55/screenshot-protocol.ts:223 [denylisted-binary-in-spawned-command] sha256sum — run(): GNU coreutils checksum tool; macOS ships `shasum -a 256` instead. This exact spawn killed M24.P1 and M24.P2 on darwin with spawnSync sha256sum ENOENT.",
+  "checks": 50,
   "passed": 48,
-  "failed": 1,
+  "failed": 2,
   "negativeCases": 11,
   "mutants": [
     {
@@ -79,14 +80,22 @@
     "declaredAbsentOses": [
       "win32"
     ],
-    "filesScanned": 154,
-    "spawnSitesJudged": 506,
+    "filesScanned": 166,
+    "spawnSitesJudged": 542,
     "spawnSitesByReach": {
-      "directCallSitesResolvedByName": 207,
-      "localWrapperCallSitesArgumentScanned": 257,
-      "commandComputedAtRuntimeNotJudgedByName": 42
+      "directCallSitesResolvedByName": 229,
+      "localWrapperCallSitesArgumentScanned": 269,
+      "commandComputedAtRuntimeNotJudgedByName": 44
     },
     "findings": [
+      {
+        "file": "script/m24/verify-callsite-agreement.ts",
+        "line": 373,
+        "kind": "non-portable-binary",
+        "matched": "shasum",
+        "api": "execFileSync",
+        "reason": "BSD/macOS perl checksum tool; the Linux side spells it sha256sum. Ban rests on \"spawn no checksum binary, use node:crypto\"; its absence on this repo's Linux images is declared linux-unverified."
+      },
       {
         "file": "script/m55/screenshot-protocol.ts",
         "line": 223,
@@ -102,52 +111,52 @@
       {
         "name": "planted execFileSync sha256sum (the defect that killed this gate)",
         "caught": true,
-        "detail": "caught at line 536 (non-portable-binary: sha256sum)"
+        "detail": "caught at line 1127 (non-portable-binary: sha256sum)"
       },
       {
         "name": "planted execSync shell sha256sum",
         "caught": true,
-        "detail": "caught at line 536 (non-portable-binary: sha256sum)"
+        "detail": "caught at line 1127 (non-portable-binary: sha256sum)"
       },
       {
         "name": "planted spawnSync md5sum",
         "caught": true,
-        "detail": "caught at line 536 (non-portable-binary: md5sum)"
+        "detail": "caught at line 1127 (non-portable-binary: md5sum)"
       },
       {
         "name": "planted spawn of an absent-on-darwin coreutils binary (timeout)",
         "caught": true,
-        "detail": "caught at line 536 (non-portable-binary: timeout)"
+        "detail": "caught at line 1127 (non-portable-binary: timeout)"
       },
       {
         "name": "planted /proc read inside a shell spawn",
         "caught": true,
-        "detail": "caught at line 536 (platform-only-path: /proc)"
+        "detail": "caught at line 1127 (platform-only-path: /proc)"
       },
       {
         "name": "planted GNU-only stat -c",
         "caught": true,
-        "detail": "caught at line 536 (gnu-only-command-form: stat -c)"
+        "detail": "caught at line 1127 (gnu-only-command-form: stat -c)"
       },
       {
         "name": "planted GNU-only sort -V (accepted-but-ignored on BSD)",
         "caught": true,
-        "detail": "caught at line 536 (gnu-only-command-form: sort -V)"
+        "detail": "caught at line 1127 (gnu-only-command-form: sort -V)"
       },
       {
         "name": "planted GNU-only grep -P",
         "caught": true,
-        "detail": "caught at line 536 (gnu-only-command-form: grep -P)"
+        "detail": "caught at line 1127 (gnu-only-command-form: grep -P)"
       },
       {
         "name": "planted GNU-only sed -i in-place form (argv shape)",
         "caught": true,
-        "detail": "caught at line 536 (gnu-only-command-form: sed -i (GNU form))"
+        "detail": "caught at line 1127 (gnu-only-command-form: sed -i (GNU form))"
       },
       {
         "name": "planted sha256sum laundered through a local spawn wrapper",
         "caught": true,
-        "detail": "caught at line 537 (denylisted-binary-in-spawned-command: sha256sum)"
+        "detail": "caught at line 1128 (denylisted-binary-in-spawned-command: sha256sum)"
       },
       {
         "name": "PRECISION: the same spawn text inside a string literal is not a spawn",
@@ -244,12 +253,12 @@
     ],
     "ok": false
   },
-  "currentCommit": "d3b06b5158f3e5e0860a7e9325f1635867343204",
+  "currentCommit": "fe6844fb9d5b77d0c30a7c4da7d16dfa387278d9",
   "sourceFingerprint": "cb86c59603cc4c331526ab1c1fc72a89ce4142f6c4f4cbac2b4832ba6bc65e52",
   "sourceFingerprintAlgorithm": "sha256 over raw file bytes (node:crypto; no process spawn)",
   "verifierCommand": "npx tsx script/m24/verify-positions.ts",
   "evidenceFile": "P1.json",
-  "generatedAt": "2026-10-05T00:39:16.233Z",
+  "generatedAt": "2026-10-05T04:18:57.580Z",
   "limitations": [
     "Fixture-based; does not exercise real analyzer output end-to-end (covered by the V1 harness).",
     "resolveRowByteColumns: a file-absolute row whose offset also fits the target line's byte length is still read as per-line (the pre-existing declared ambiguity in the function header). Only byte 0 — impossible as a 1-based per-line column — is disambiguated. Removing the ambiguity for real rows needs a writer-side convention flag (indexer lane); found and reported by M55.T2.",
@@ -263,7 +272,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T00:39:16.234Z",
-    "contentSha256": "d76316a248b5ba2490cd68e0e713b24ab1bdc60e076ea69194279b7f82674b5f"
+    "sealedAt": "2026-10-05T04:18:57.582Z",
+    "contentSha256": "17d6ce683d171d5d80d1e81eda91231eea1760f8d036cb2d8125b707a61d1b55"
   }
 }

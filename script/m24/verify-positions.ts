@@ -577,6 +577,12 @@ const result = {
   code: "P1",
   milestone: "M24",
   status: failed === 0 ? "verified" : "known-gap",
+  // Contract §8.3: a run that is not green records WHY, in the record itself.
+  // A bare `known-gap` with no reason is a claim an auditor cannot act on — the
+  // ledger's entry for this issue is projected from THIS field, so without it
+  // the projection would have nothing honest to write and the entry's
+  // non-verified state would read as unexplained.
+  ...(failed === 0 ? {} : { blockedReason: `${failed} check(s) failed: ${failures.slice(0, 6).join(" | ")}${failures.length > 6 ? ` | … +${failures.length - 6} more` : ""}` }),
   checks,
   passed,
   failed,
