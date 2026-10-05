@@ -657,6 +657,41 @@ FALSIFIED 0   ruled-without-justification 0`.
 
 ### §8 — the shared change this lane needs, specified so it needs no re-deriving
 
+#### §8.0 `src/ast/engine.ts` — the orphaned `parseBomb` (highest priority; affects every lane)
+
+**File** `src/ast/engine.ts`, function containing line 1441. **What it must do:** clear the
+self-destruct timer on every exit path from the parse, including a throw, and stop
+asserting a hang it cannot observe.
+
+**Why, measured:** a WASM heap fault in `parser.parse` (line 1446) throws, which skips
+`clearTimeout(parseBomb)` at line 1447 and orphans a 120 s timer that then prints a false
+`[BB-HANG]` and calls `process.exit(1)` — converting a completed `FALSIFIED 0` verdict into
+a failed exit code. Reproduced: `validation/m14/fixtures/scss/scss-orphaned-parsebomb-repro.ts`.
+Full evidence in "[BB-HANG] is an ORPHANED TIMER" above. **Every language's lane runs through
+this function**, which is why it is filed first.
+
+```ts
+let done = false
+const parseBomb = setTimeout(() => {
+  process.stderr.write(done
+    ? `[BB-STALE-TIMER] ${filePath} — parse returned but its timer was not cleared\n`
+    : `[BB-HANG] parser exceeded 120s on ${filePath} — exiting\n`)
+  process.exit(1)
+}, 120000)
+let tree: wts.Tree | null
+try {
+  tree = parser.parse(content)
+} finally {
+  done = true
+  clearTimeout(parseBomb)
+}
+```
+
+The `done` flag is what lets a reader tell the two apart, which is the whole defect: today
+both print "stuck".
+
+#### §8.1 `script/m14/differential.ts` — three edits, one commit
+
 `script/m14/differential.ts` is supervisor-owned. Three edits, all in the scss lane's own
 blocks, and all in one commit — the workstream's **full mirror** rule, because half of it
 is the documented failure (java 81 edges, kotlin 54, php 163 and javascript each carried a
@@ -710,31 +745,87 @@ const parseBomb = setTimeout(() => {
 const tree = parser.parse(content)
 ```
 
-**The budget is WALL CLOCK, and the machine is 3.3× oversubscribed.** Load average at the
-start of that run was **29.10 / 28.89 / 28.13 on 8 cores**, with six sibling lanes running.
-And the file it names is not pathological:
+### `[BB-HANG]` is an ORPHANED TIMER, not a hang — and this section previously said otherwise
+
+**This subsection corrects an earlier claim in this document, which was wrong.** It read:
+
+> **The budget is WALL CLOCK, and the machine is 3.3× oversubscribed.** […] A 218-byte file
+> cannot take 120 s to parse. […] the only way the budget is consumed is for the process to
+> be **descheduled** for the duration. What the watchdog measures on a loaded machine is
+> scheduler starvation, not parse cost.
+>
+> 1. **`[BB-HANG]` is not evidence of a pathological file.** It is evidence of load.
+
+Load was measured and is real (25.5 on 8 cores). But it is **not the cause**, and the
+conclusion drawn from it does not hold. A later run falsified it with two lines naming the
+SAME file:
 
 ```
-218 bytes, hasError=false
-65ms / 24ms / 30ms / 32ms   four parses of that exact file, in isolation
+[BB-PARSE-ERR] scss | .../r-pkgdown/.../solarized.scss | memory access out of bounds
+[BB-HANG] parser stuck 120s on .../r-pkgdown/.../solarized.scss — exiting
 ```
 
-A 218-byte file cannot take 120 s to parse. The timer starts when the file is read and is
-cleared when `parser.parse` returns, and `parse` is synchronous WASM, so the only way the
-budget is consumed is for the process to be **descheduled** for the duration. What the
-watchdog measures on a loaded machine is scheduler starvation, not parse cost.
+The first line is a WASM heap fault that **threw and returned**. The second is the
+consequence. `src/ast/engine.ts` arms a hard self-destruct at **1441** and clears it at
+**1447**, with the synchronous parse at **1446** between them:
 
-Two consequences worth the supervisor's attention, both in §8 territory:
+```ts
+1441    const parseBomb = setTimeout(() => {
+1442      process.stderr.write(`[BB-HANG] parser stuck 120s on ${filePath} — exiting\n`)
+1443      process.exit(1)
+1444    }, 120000)
+1446    const tree = parser.parse(content)      // can THROW
+1447    clearTimeout(parseBomb)                 // skipped by that throw
+```
 
-1. **`[BB-HANG]` is not evidence of a pathological file.** It is evidence of load. Three
-   different files were named across three consecutive runs of this same gate —
-   `riverpod/.../DocuCode.scss`, `consul/.../file-check/property-16.scss`,
-   `consul/.../triangle-fill/index.scss` — which is what a load-dependent budget looks
-   like and is not what a bad file looks like.
-2. **`process.exit(1)` from a watchdog converts a completed verdict into a failed exit
-   code**, which is what makes the round brief's "it must exit 0" untestable on a loaded
-   machine. A lane whose arbiter prints `FALSIFIED 0` and exits 1 cannot be distinguished
-   from a lane that failed, by exit code alone.
+`parser.parse` surfaces a WASM heap fault as a JS exception, and **a throw between 1444 and
+1447 skips the `clearTimeout`.** The timer is then ORPHANED: still armed, no parse in
+flight, still closing over `filePath`. `parseFile` then does precisely what it is written to
+do — `pool-worker.ts:1222` catches, logs `[BB-PARSE-ERR]`, returns `extractFallback(...)`
+(the degraded regex extractor, which is what stamps `DEGRADED` on a firing sweep), and the
+caller moves to the next file with no way to tell. **120 s after the parse that already
+returned**, the orphan fires and asserts a hang that did not happen, then `process.exit(1)`
+turns a completed verdict into a failed exit code.
+
+Every part of the message is false in this case: the parser was not stuck, no parse was in
+flight for 120 s, and the file it names is the one that threw minutes ago.
+
+**Reproduced deterministically** — `validation/m14/fixtures/scss/scss-orphaned-parsebomb-repro.ts`
+(~2 min, exits non-zero by design, because the defect IS a non-zero exit):
+
+```
+injecting ONE parse throw for solarized.scss
+[BB-PARSE-ERR] scss | .../solarized.scss | memory access out of bounds
+parseFile RETURNED normally: symbols=0 rels=0 — the caller cannot tell this from a good parse
+  alive at 35s
+  alive at 65s
+  alive at 95s
+[BB-HANG] parser stuck 120s on .../solarized.scss — exiting
+```
+
+This one mechanism accounts for all four observations the earlier revision attributed to
+load, which is why it is worth stating as the cause rather than alongside it:
+
+| earlier observation | under the orphaned-timer reading |
+| --- | --- |
+| exit 1 after `FALSIFIED 0` | `process.exit(1)` from the orphan |
+| 4 runs named 4 different files | each run orphaned a timer on whichever file faulted that run |
+| named files were 205–773 B and parse-clean in isolation | a trap that returns in ms still orphans a 120 s timer |
+| load 25–29 on 8 cores | a co-factor at most; a trap needs no load to orphan a timer |
+
+**What is NOT established: the trigger.** The genuine fault is a WASM heap trap in the
+pinned `wasm/tree-sitter-scss.wasm`, and it does not reproduce outside the gate's
+concurrency — measured in isolation, `solarized.scss` (1,895 B) parses clean at
+**1.7 / 2.1 / 13.8 / 15.0 / 52.3 ms** over 5 runs, and **48 parses at 16-way concurrency**
+over the same directory gave **0 traps, 0 errors**. So the repro injects the throw rather
+than provoking the fault, and the claim is deliberately the narrower one: **when
+`parser.parse` throws, the timer is orphaned, and an orphaned timer produces a false
+`[BB-HANG]` and a `process.exit(1)` from inside an otherwise completed run.** Establishing
+the effect does not require reproducing the cause.
+
+The fix is §8 and touches no code here: move `clearTimeout` into a `finally` around the
+parse, and record completion in the timer so it can say `[BB-STALE-TIMER]` (parse returned,
+timer not cleared) instead of asserting a hang it cannot observe.
 
 The corpus numbers are also load-sensitive for the same reason, and the two arbiter runs
 bracket it: `contains` 12,374 → 12,375 and `imports` 3,632 → 3,615 across two runs of the
