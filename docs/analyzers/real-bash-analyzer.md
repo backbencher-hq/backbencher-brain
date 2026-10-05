@@ -141,8 +141,8 @@ reason and not as a single figure.
 
 | type | emitted? | **WHOLE CORPUS: 4,185 admitted, production `parseFile` (round 14)** | census: 400 files (round 14) | **edges that resolve to ONE declaration** | evidence |
 | --- | --- | --- | --- | --- | --- |
-| `calls` | **EMITTED** | **56,181** | 5,181 | 236 of 15,261 ambiguous; **0 dangling** | `census-bash-ontology.ts --all`, gate row, `probe-bash-published-resolvability.mts --all` |
-| `uses` | **EMITTED** | **83,392** | 8,104 | 12,372 of 12,372 ambiguous; 0 decline; **0 dangling** | same |
+| `calls` | **EMITTED** | **56,181** | 5,181 | 231 of 236 ambiguous decided by `targetLine`; **5 with `resolution=undefined`**; **0 dangling** | `census-bash-ontology.ts --all`, gate row, `probe-bash-published-resolvability.mts --all` |
+| `uses` | **EMITTED** | **83,392** | 8,104 | **11,403 of 12,372** ambiguous decided by `targetLine`; the other **969 are self-declared BARE**; **0 dangling** | same |
 | `contains` | **EMITTED** | **39,083** | 3,889 | **6,263 of 6,263 (100%)** — the edge's own line — **and 1 DANGLING**, see round 14 | same |
 | `imports` | **EMITTED** | **679** | 44 | n/a — the target is a path, 0 present | same |
 | `references` | **EMITTED** | **679** | 44 | n/a — the twin edge, 0 present | same |
@@ -160,6 +160,22 @@ bceda140b2ef111dc170183db9c10ce59bfab3a8c0eba79eeba16c42b81c05fc`, `sampleHash
 census prints its own `setHash` on every run and computes it independently of
 `probe-bash-corpus-pin.mts`; both read the value above, so the two files check
 each other rather than one being trusted.
+
+**The last column is re-measured, and re-measuring it corrected two cells.** Round
+14 ran `probe-bash-published-resolvability.mts --all` against the same pin, and the
+`uses` figure this file had carried — "12,372 of 12,372 ambiguous, 0 decline" — was
+wrong: **11,403 of 12,372** are decided by `targetLine`, and the remaining **969 are
+self-declared BARE**, meaning the edge's own `resolution` field already declines to
+name one target. That decline is the designed behaviour, not a loss. The sharper
+residue is on the other side: **5 `calls` edges carry `resolution=undefined` on a
+target with 2-3 candidates** — `ohmyzsh/plugins/pip/pip.plugin.zsh:107` and `:115`
+(`xargs`), `Paket/completion/paket-completion.zsh:1486` (`key`),
+`kubernetes/cluster/gce/util.sh:3829` and `:4057` (`name`). Those are the only edges
+in the language the analyzer neither resolves nor admits it cannot.
+
+**Over all types, 0 edges leave zero candidates** — the property the column exists to
+state, and it holds. The one exception is the single `contains` edge in round 14's
+defect below, whose target is absent rather than ambiguous.
 
 **Totals, in prose because the gate grades this table:** the seven emitted types sum
 to **182,115 relationships over 43,275 symbols**, from 4,185 admitted files, 0 parse
