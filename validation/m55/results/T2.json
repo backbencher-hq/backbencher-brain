@@ -61,31 +61,9 @@
       "./symbols"
     ]
   },
-<<<<<<< HEAD
-  "currentCommit": "42da053221ba9dd3173faffe2e60913e9de35993",
+  "currentCommit": "5e3e7f6d797097a0c43c7c728adcd60ba6887ecd",
   "workingTreeRelevantChanges": [
-    "validation/m24/results/D1.json",
-    "validation/m24/results/L1.json",
-    "validation/m24/results/L2.json",
-    "validation/m24/results/L3.json",
-    "validation/m24/results/L4.json",
-    "validation/m24/results/L5.json",
-    "validation/m24/results/P1.json",
-    "validation/m24/results/P2.json",
-    "validation/m24/results/V1.json",
-    "validation/m55/results/T3.json"
-  ],
-  "verifierCommand": "npx tsx script/m55/verify-call-hierarchy.ts",
-  "evidenceFile": "T2.json",
-  "generatedAt": "2026-10-05T04:23:52.284Z",
-  "fixture": {
-    "root": "$HOME/Documents/Default Project/ishaq/wt/integrate/validation/m55/fixtures/t2-workspace",
-=======
-  "currentCommit": "0b1f296a291b7a32ee9ff450b94852b9353e4d71",
-  "workingTreeRelevantChanges": [
-    "validation/m24/results/D1.json",
-    "validation/m42/results/H2.json",
-    "validation/m55/results/T2.json"
+    "validation/m42/results/H2.json"
   ],
   "volatileFields": [
     "generatedAt",
@@ -95,10 +73,9 @@
   ],
   "verifierCommand": "npx tsx script/m55/verify-call-hierarchy.ts",
   "evidenceFile": "T2.json",
-  "generatedAt": "2026-10-05T04:22:57.577Z",
+  "generatedAt": "2026-10-05T04:28:38.308Z",
   "fixture": {
-    "root": "$HOME/Documents/Default Project/ishaq/wt/surface/validation/m55/fixtures/t2-workspace",
->>>>>>> close/surface-and-docs
+    "root": "$HOME/Documents/Default Project/ishaq/wt/integrate/validation/m55/fixtures/t2-workspace",
     "files": [
       "src/store.ts",
       "src/loop.ts",
@@ -121,7 +98,7 @@
     "C6: every rendered caller carries a call-site range for a CALLS row (a `contains`/`uses` row must not produce one): 2 rendered entries come from a non-`calls` relationship and carry a fromRange: [{\"name\":\"Store\",\"detail\":\"class · contains · 1 call site\",\"ranges\":[{\"start\":{\"line\":8,\"character\":22},\"end\":{\"line\":8,\"character\":25}}]},{\"name\":\"set\",\"detail\":\"method · uses · 1 call site · position approximate\",\"ranges\":[{\"start\":{\"line\":11,\"character\":2},\"end\":{\"line\":11,\"character\":5}}]}]",
     "C6d: a planted `contains`/`uses` row produces NO rendered range in EITHER direction (hermetic — §15.3): 4 planted non-call row(s) rendered with a range: [{\"direction\":\"incoming\",\"name\":\"Store\",\"detail\":\"class · contains · 1 call site\",\"ranges\":[{\"start\":{\"line\":8,\"character\":22},\"end\":{\"line\":8,\"character\":25}}]},{\"direction\":\"incoming\",\"name\":\"set\",\"detail\":\"method · uses · 1 call site · position approximate\",\"ranges\":[{\"start\":{\"line\":11,\"character\":2},\"end\":{\"line\":11,\"character\":5}}]},{\"direction\":\"outgoing\",\"name\":\"Store\",\"detail\":\"class · contains · 1 call site · position approximate\",\"ranges\":[{\"start\":{\"line\":0,\"character\":13},\"end\":{\"line\":0,\"character\":18}}]},{\"direction\":\"outgoing\",\"name\":\"set\",\"detail\":\"method · uses · 1 call site · position approximate\",\"ranges\":[{\"start\":{\"line\":11,\"character\":2},\"end\":{\"line\":11,\"character\":5}}]}]",
     "C6e: every omitted non-call row is DECLARED with its kind named (omission is declared, never silent — §11.7): []",
-    "C6g: an answer emptied BY the filter says so — the declared absence names the filter instead of implying the store holds no rows (§11.7): {\"rendered\":0,\"absence\":{\"code\":\"symbol_not_at_position\",\"message\":\"every stored caller edge was dropped or declared absent (1 dropped, 0 declared absent) — none is rendered\",\"language\":\"typescript\",\"launchLanguages\":[\"java\",\"groovy\",\"kotlin\",\"scala\",\"typescript\",\"javascript\",\"python\",\"zig\",\"go\",\"rust\",\"c\",\"cpp\",\"vue\",\"svelte\"]},\"dropped\":[{\"name\":\"get\",\"symbolId\":\"309b2f4903c9ab7050107eed93227ada895554f7:src/store.ts:get:8\",\"reason\":\"receiver-qualified self-name call (this.items.get) targets another value, not this symbol\"}]}",
+    "C6g: an answer emptied BY the filter says so — the declared absence names the filter instead of implying the store holds no rows (§11.7): {\"rendered\":0,\"absence\":{\"code\":\"symbol_not_at_position\",\"message\":\"every stored caller edge was dropped or declared absent (1 dropped, 0 declared absent) — none is rendered\",\"language\":\"typescript\",\"launchLanguages\":[\"java\",\"groovy\",\"kotlin\",\"scala\",\"typescript\",\"javascript\",\"python\",\"zig\",\"go\",\"rust\",\"c\",\"cpp\",\"vue\",\"svelte\"]},\"dropped\":[{\"name\":\"get\",\"symbolId\":\"e95d952fba30432b208fe7eb1646c1137063979a:src/store.ts:get:8\",\"reason\":\"receiver-qualified self-name call (this.items.get) targets another value, not this symbol\"}]}",
     "C6f: every expand answer DECLARES the relationship-kind filter it applied, and that filter contains only kinds that can name a call site (§15.1): [{\"filter\":\"(absent)\"},{\"filter\":\"(absent)\"},{\"filter\":\"(absent)\"}]"
   ],
   "c6Disposition": {
@@ -162,12 +139,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-<<<<<<< HEAD
-    "sealedAt": "2026-10-05T04:23:52.286Z",
-    "contentSha256": "69a485406b56540b5c868c8e3b6cbcc60bd5417000c59d8b3f15a9307310d4c6"
-=======
-    "sealedAt": "2026-10-05T04:22:57.579Z",
-    "contentSha256": "5b14613a996870b018619cde47a304cf7045e5b6902cb5cb16b7dd2bbf88e717"
->>>>>>> close/surface-and-docs
+    "sealedAt": "2026-10-05T04:28:38.311Z",
+    "contentSha256": "2306e6acca723346339078c56e652582f3c5dc14c3fd0ce893e6f7083ab592a4"
   }
 }
