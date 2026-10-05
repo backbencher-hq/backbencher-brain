@@ -61,22 +61,22 @@
       "./symbols"
     ]
   },
-  "currentCommit": "659b69f19993b7c8c08f475a0057d987f5875664",
+  "currentCommit": "de5be3160efd761c14fe4222d8af103b83ff9fd1",
   "workingTreeRelevantChanges": [
-    "docs/HOVER-KNOWLEDGE-AUDIT.md",
     "script/m55/verify-call-hierarchy.ts",
-    "validation/m42/results/H1.json",
-    "validation/m42/results/H3.json",
-    "validation/m42/results/H4.json",
-    "validation/m55/results/EVID-TREE.json",
-    "validation/m55/results/HOV-COVERAGE.json",
-    "validation/m55/results/HOV-REDTEAM.json",
-    "validation/m55/results/T2.json",
-    "validation/m55/results/T4.json"
+    "validation/m24/results/D1.json",
+    "validation/m42/results/H2.json",
+    "validation/m55/results/T2.json"
+  ],
+  "volatileFields": [
+    "generatedAt",
+    "bbSeal.sealedAt",
+    "bbSeal.contentSha256",
+    "workingTreeRelevantChanges"
   ],
   "verifierCommand": "npx tsx script/m55/verify-call-hierarchy.ts",
   "evidenceFile": "T2.json",
-  "generatedAt": "2026-10-05T04:04:27.413Z",
+  "generatedAt": "2026-10-05T04:07:05.147Z",
   "fixture": {
     "root": "$HOME/Documents/Default Project/ishaq/wt/surface/validation/m55/fixtures/t2-workspace",
     "files": [
@@ -142,7 +142,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T04:04:27.415Z",
-    "contentSha256": "1ee5103f7000e7d61916324121a05a0c6a78774c68bf1c71a73ca3a20f01acc5"
+    "sealedAt": "2026-10-05T04:07:05.149Z",
+    "contentSha256": "c33607f6769d97906577ebf516795bfd9d5b1c54a09c1a14481dfffbe09a6294"
   }
 }
