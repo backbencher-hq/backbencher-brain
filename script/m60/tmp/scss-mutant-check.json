@@ -18,11 +18,11 @@
     "forbidSymbols",
     "forbidDecorators"
   ],
-  "fixtures": 11,
+  "fixtures": 12,
   "baselineClean": true,
   "baselineDirty": [],
-  "mutants": 23,
-  "caught": 20,
+  "mutants": 26,
+  "caught": 23,
   "survivors": [
     "scss/callable-parameters-dropped",
     "scss/module-imports-dropped",
@@ -43,7 +43,7 @@
     }
   ],
   "genuineSurvivors": [],
-  "verdict": "all 23 SCSS mutants caught within this runner's four checked sections; 3 of them are witnessed only in sections this runner does not check (scss/callable-parameters-dropped -> expectParameters; scss/module-imports-dropped -> expectImports; scss/parse-errors-swallowed -> expectErrorCount); baseline clean on 11 fixtures",
+  "verdict": "all 26 SCSS mutants caught within this runner's four checked sections; 3 of them are witnessed only in sections this runner does not check (scss/callable-parameters-dropped -> expectParameters; scss/module-imports-dropped -> expectImports; scss/parse-errors-swallowed -> expectErrorCount); baseline clean on 12 fixtures",
   "rows": [
     {
       "id": "scss/identically-named-scopes-collapsed",
@@ -107,14 +107,15 @@
       "defectClass": "unresolvable-identity",
       "caught": true,
       "caughtBy": [
-        "functions-return-and-undeclared-uses: expected relationship not found: {\"type\":\"uses\",\"from\":\".a\",\"target\":\"@function double\",\"meta.evidenceClass\":\"usage_contextual\",\"meta.isScssFunctionCall\":true,\"line_number\":11}",
+        "functions-return-and-undeclared-uses: expected relationship not found: {\"type\":\"calls\",\"from\":\".a\",\"target\":\"@function double\",\"meta.evidenceClass\":\"usage_contextual\",\"meta.isScssFunctionCall\":true,\"line_number\":11}",
         "self-referential-assignment-reads-itself: expected relationship not found: {\"type\":\"references\",\"from\":\".a\",\"target\":\"$x\",\"meta.isScssVarRef\":true,\"line_number\":4}",
         "reads-recovered-from-error-regions: expected relationship not found: {\"type\":\"references\",\"from\":\"$red\",\"target\":\"$opacity\",\"meta.isScssVarRef\":true,\"meta.scssRecoveredFromError\":true,\"line_number\":4}",
-        "placeholder-selectors-and-extend: expected relationship not found: {\"type\":\"uses\",\"from\":\".card\",\"target\":\"%badge\",\"meta.isScssExtend\":true,\"meta.scssExtendShape\":\"recovered\",\"meta.scssRecoveredFromError\":true,\"line_number\":10}",
-        "module-system-and-mixins: expected relationship not found: {\"type\":\"uses\",\"from\":\".card\",\"target\":\"@mixin button\",\"meta.evidenceClass\":\"usage_contextual\",\"meta.isScssInclude\":true,\"line_number\":11}",
+        "placeholder-selectors-and-extend: expected relationship not found: {\"type\":\"extends\",\"from\":\".card\",\"target\":\"%badge\",\"meta.isScssExtend\":true,\"meta.scssExtendShape\":\"recovered\",\"meta.scssRecoveredFromError\":true,\"line_number\":10}",
+        "module-system-and-mixins: expected relationship not found: {\"type\":\"calls\",\"from\":\".card\",\"target\":\"@mixin button\",\"meta.evidenceClass\":\"usage_contextual\",\"meta.isScssInclude\":true,\"line_number\":11}",
         "variables-flags-and-identity: expected relationship not found: {\"type\":\"references\",\"from\":\".a\",\"target\":\"$brand\",\"meta.evidenceClass\":\"usage_contextual\",\"meta.isScssVarRef\":true,\"line_number\":7}",
         "module-exports-and-global-overrides: expected relationship not found: {\"type\":\"exports\",\"from\":\"module-exports-and-global-overrides.scss\",\"target\":\"$brand\",\"meta.isScssModuleMember\":true,\"line_number\":4}",
-        "control-flow-and-extend: expected relationship not found: {\"type\":\"uses\",\"from\":\".card\",\"target\":\".btn\",\"meta.evidenceClass\":\"structural\",\"meta.isScssExtend\":true,\"line_number\":16}",
+        "invocation-and-inheritance-labels: expected relationship not found: {\"type\":\"uses\",\"from\":\".fade\",\"target\":\"fade-in\",\"meta.evidenceClass\":\"usage_contextual\",\"meta.isAnimationRef\":true,\"line_number\":31}",
+        "control-flow-and-extend: expected relationship not found: {\"type\":\"extends\",\"from\":\".card\",\"target\":\".btn\",\"meta.evidenceClass\":\"structural\",\"meta.isScssExtend\":true,\"line_number\":16}",
         "scope-containment-and-complexity: expected relationship not found: {\"type\":\"contains\",\"from\":\"@media (min-width: 768px)\",\"target\":\".grid\",\"meta.isMediaScope\":true}"
       ],
       "threw": null
@@ -132,8 +133,9 @@
       "defectClass": "relationship-loss",
       "caught": true,
       "caughtBy": [
-        "placeholder-selectors-and-extend: expected relationship not found: {\"type\":\"uses\",\"from\":\".card\",\"target\":\"%badge\",\"meta.isScssExtend\":true,\"meta.scssExtendShape\":\"recovered\",\"meta.scssRecoveredFromError\":true,\"line_number\":10}",
-        "control-flow-and-extend: expected relationship not found: {\"type\":\"uses\",\"from\":\".card\",\"target\":\".btn\",\"meta.evidenceClass\":\"structural\",\"meta.isScssExtend\":true,\"line_number\":16}"
+        "placeholder-selectors-and-extend: expected relationship not found: {\"type\":\"extends\",\"from\":\".card\",\"target\":\"%badge\",\"meta.isScssExtend\":true,\"meta.scssExtendShape\":\"recovered\",\"meta.scssRecoveredFromError\":true,\"line_number\":10}",
+        "invocation-and-inheritance-labels: expected relationship not found: {\"type\":\"extends\",\"from\":\".inherits\",\"target\":\"%badge\",\"meta.evidenceClass\":\"structural\",\"meta.isScssExtend\":true,\"meta.scssExtendShape\":\"recovered\",\"line_number\":43}",
+        "control-flow-and-extend: expected relationship not found: {\"type\":\"extends\",\"from\":\".card\",\"target\":\".btn\",\"meta.evidenceClass\":\"structural\",\"meta.isScssExtend\":true,\"line_number\":16}"
       ],
       "threw": null
     },
@@ -159,14 +161,15 @@
       "defectClass": "line-provenance",
       "caught": true,
       "caughtBy": [
-        "functions-return-and-undeclared-uses: expected relationship not found: {\"type\":\"uses\",\"from\":\".a\",\"target\":\"@function double\",\"meta.evidenceClass\":\"usage_contextual\",\"meta.isScssFunctionCall\":true,\"line_number\":11}",
+        "functions-return-and-undeclared-uses: expected relationship not found: {\"type\":\"calls\",\"from\":\".a\",\"target\":\"@function double\",\"meta.evidenceClass\":\"usage_contextual\",\"meta.isScssFunctionCall\":true,\"line_number\":11}",
         "self-referential-assignment-reads-itself: expected relationship not found: {\"type\":\"references\",\"from\":\".a\",\"target\":\"$x\",\"meta.isScssVarRef\":true,\"line_number\":4}",
         "reads-recovered-from-error-regions: expected relationship not found: {\"type\":\"references\",\"from\":\"$red\",\"target\":\"$opacity\",\"meta.isScssVarRef\":true,\"meta.scssRecoveredFromError\":true,\"line_number\":4}",
-        "placeholder-selectors-and-extend: expected relationship not found: {\"type\":\"uses\",\"from\":\".card\",\"target\":\"%badge\",\"meta.isScssExtend\":true,\"meta.scssExtendShape\":\"recovered\",\"meta.scssRecoveredFromError\":true,\"line_number\":10}",
-        "module-system-and-mixins: expected relationship not found: {\"type\":\"uses\",\"from\":\".card\",\"target\":\"@mixin button\",\"meta.evidenceClass\":\"usage_contextual\",\"meta.isScssInclude\":true,\"line_number\":11}",
+        "placeholder-selectors-and-extend: expected relationship not found: {\"type\":\"extends\",\"from\":\".card\",\"target\":\"%badge\",\"meta.isScssExtend\":true,\"meta.scssExtendShape\":\"recovered\",\"meta.scssRecoveredFromError\":true,\"line_number\":10}",
+        "module-system-and-mixins: expected relationship not found: {\"type\":\"calls\",\"from\":\".card\",\"target\":\"@mixin button\",\"meta.evidenceClass\":\"usage_contextual\",\"meta.isScssInclude\":true,\"line_number\":11}",
         "variables-flags-and-identity: expected relationship not found: {\"type\":\"references\",\"from\":\".a\",\"target\":\"$brand\",\"meta.evidenceClass\":\"usage_contextual\",\"meta.isScssVarRef\":true,\"line_number\":7}",
         "module-exports-and-global-overrides: expected relationship not found: {\"type\":\"exports\",\"from\":\"module-exports-and-global-overrides.scss\",\"target\":\"$brand\",\"meta.isScssModuleMember\":true,\"line_number\":4}",
-        "control-flow-and-extend: expected relationship not found: {\"type\":\"uses\",\"from\":\".card\",\"target\":\".btn\",\"meta.evidenceClass\":\"structural\",\"meta.isScssExtend\":true,\"line_number\":16}"
+        "invocation-and-inheritance-labels: expected relationship not found: {\"type\":\"uses\",\"from\":\".fade\",\"target\":\"fade-in\",\"meta.evidenceClass\":\"usage_contextual\",\"meta.isAnimationRef\":true,\"line_number\":31}",
+        "control-flow-and-extend: expected relationship not found: {\"type\":\"extends\",\"from\":\".card\",\"target\":\".btn\",\"meta.evidenceClass\":\"structural\",\"meta.isScssExtend\":true,\"line_number\":16}"
       ],
       "threw": null
     },
@@ -175,11 +178,12 @@
       "defectClass": "metadata-loss",
       "caught": true,
       "caughtBy": [
-        "functions-return-and-undeclared-uses: expected relationship not found: {\"type\":\"uses\",\"from\":\".a\",\"target\":\"@function double\",\"meta.evidenceClass\":\"usage_contextual\",\"meta.isScssFunctionCall\":true,\"line_number\":11}",
-        "module-system-and-mixins: expected relationship not found: {\"type\":\"uses\",\"from\":\".card\",\"target\":\"@mixin button\",\"meta.evidenceClass\":\"usage_contextual\",\"meta.isScssInclude\":true,\"line_number\":11}",
+        "functions-return-and-undeclared-uses: expected relationship not found: {\"type\":\"calls\",\"from\":\".a\",\"target\":\"@function double\",\"meta.evidenceClass\":\"usage_contextual\",\"meta.isScssFunctionCall\":true,\"line_number\":11}",
+        "module-system-and-mixins: expected relationship not found: {\"type\":\"calls\",\"from\":\".card\",\"target\":\"@mixin button\",\"meta.evidenceClass\":\"usage_contextual\",\"meta.isScssInclude\":true,\"line_number\":11}",
         "variables-flags-and-identity: expected relationship not found: {\"type\":\"references\",\"from\":\".a\",\"target\":\"$brand\",\"meta.evidenceClass\":\"usage_contextual\",\"meta.isScssVarRef\":true,\"line_number\":7}",
-        "control-flow-and-extend: expected relationship not found: {\"type\":\"uses\",\"from\":\".card\",\"target\":\".btn\",\"meta.evidenceClass\":\"structural\",\"meta.isScssExtend\":true,\"line_number\":16}",
-        "scope-containment-and-complexity: expected relationship not found: {\"type\":\"uses\",\"from\":\".panel\",\"target\":\"@mixin ladder\",\"meta.evidenceClass\":\"usage_contextual\",\"meta.isScssInclude\":true}"
+        "invocation-and-inheritance-labels: expected relationship not found: {\"type\":\"uses\",\"from\":\".fade\",\"target\":\"fade-in\",\"meta.evidenceClass\":\"usage_contextual\",\"meta.isAnimationRef\":true,\"line_number\":31}",
+        "control-flow-and-extend: expected relationship not found: {\"type\":\"extends\",\"from\":\".card\",\"target\":\".btn\",\"meta.evidenceClass\":\"structural\",\"meta.isScssExtend\":true,\"line_number\":16}",
+        "scope-containment-and-complexity: expected relationship not found: {\"type\":\"calls\",\"from\":\".panel\",\"target\":\"@mixin ladder\",\"meta.evidenceClass\":\"usage_contextual\",\"meta.isScssInclude\":true}"
       ],
       "threw": null
     },
@@ -206,8 +210,9 @@
       "defectClass": "recall",
       "caught": true,
       "caughtBy": [
-        "functions-return-and-undeclared-uses: expected relationship not found: {\"type\":\"uses\",\"from\":\".a\",\"target\":\"@function double\",\"meta.evidenceClass\":\"usage_contextual\",\"meta.isScssFunctionCall\":true,\"line_number\":11}",
-        "reads-recovered-from-error-regions: expected relationship not found: {\"type\":\"uses\",\"from\":\".a\",\"target\":\"@function mix\",\"meta.isScssFunctionCall\":true,\"line_number\":10}"
+        "functions-return-and-undeclared-uses: expected relationship not found: {\"type\":\"calls\",\"from\":\".a\",\"target\":\"@function double\",\"meta.evidenceClass\":\"usage_contextual\",\"meta.isScssFunctionCall\":true,\"line_number\":11}",
+        "reads-recovered-from-error-regions: expected relationship not found: {\"type\":\"calls\",\"from\":\".a\",\"target\":\"@function mix\",\"meta.isScssFunctionCall\":true,\"line_number\":10}",
+        "invocation-and-inheritance-labels: expected relationship not found: {\"type\":\"calls\",\"from\":\".call-invoked\",\"target\":\"@function double\",\"meta.evidenceClass\":\"usage_contextual\",\"meta.isScssFunctionCall\":true,\"line_number\":39}"
       ],
       "threw": null
     },
@@ -217,7 +222,7 @@
       "caught": true,
       "caughtBy": [
         "reads-recovered-from-error-regions: expected relationship not found: {\"type\":\"references\",\"from\":\"$red\",\"target\":\"$opacity\",\"meta.isScssVarRef\":true,\"meta.scssRecoveredFromError\":true,\"line_number\":4}",
-        "placeholder-selectors-and-extend: expected relationship not found: {\"type\":\"uses\",\"from\":\".card\",\"target\":\"%badge\",\"meta.isScssExtend\":true,\"meta.scssExtendShape\":\"recovered\",\"meta.scssRecoveredFromError\":true,\"line_number\":10}"
+        "placeholder-selectors-and-extend: expected relationship not found: {\"type\":\"extends\",\"from\":\".card\",\"target\":\"%badge\",\"meta.isScssExtend\":true,\"meta.scssExtendShape\":\"recovered\",\"meta.scssRecoveredFromError\":true,\"line_number\":10}"
       ],
       "threw": null
     },
@@ -226,8 +231,9 @@
       "defectClass": "metadata-loss",
       "caught": true,
       "caughtBy": [
-        "functions-return-and-undeclared-uses: expected relationship not found: {\"type\":\"uses\",\"from\":\".a\",\"target\":\"@function double\",\"meta.evidenceClass\":\"usage_contextual\",\"meta.isScssFunctionCall\":true,\"line_number\":11}",
-        "reads-recovered-from-error-regions: expected relationship not found: {\"type\":\"uses\",\"from\":\".a\",\"target\":\"@function mix\",\"meta.isScssFunctionCall\":true,\"line_number\":10}"
+        "functions-return-and-undeclared-uses: expected relationship not found: {\"type\":\"calls\",\"from\":\".a\",\"target\":\"@function double\",\"meta.evidenceClass\":\"usage_contextual\",\"meta.isScssFunctionCall\":true,\"line_number\":11}",
+        "reads-recovered-from-error-regions: expected relationship not found: {\"type\":\"calls\",\"from\":\".a\",\"target\":\"@function mix\",\"meta.isScssFunctionCall\":true,\"line_number\":10}",
+        "invocation-and-inheritance-labels: expected relationship not found: {\"type\":\"calls\",\"from\":\".call-invoked\",\"target\":\"@function double\",\"meta.evidenceClass\":\"usage_contextual\",\"meta.isScssFunctionCall\":true,\"line_number\":39}"
       ],
       "threw": null
     },
@@ -254,7 +260,8 @@
       "defectClass": "recall",
       "caught": true,
       "caughtBy": [
-        "placeholder-selectors-and-extend: expected relationship not found: {\"type\":\"uses\",\"from\":\".card\",\"target\":\"%badge\",\"meta.isScssExtend\":true,\"meta.scssExtendShape\":\"recovered\",\"meta.scssRecoveredFromError\":true,\"line_number\":10}"
+        "placeholder-selectors-and-extend: expected relationship not found: {\"type\":\"extends\",\"from\":\".card\",\"target\":\"%badge\",\"meta.isScssExtend\":true,\"meta.scssExtendShape\":\"recovered\",\"meta.scssRecoveredFromError\":true,\"line_number\":10}",
+        "invocation-and-inheritance-labels: expected relationship not found: {\"type\":\"extends\",\"from\":\".inherits\",\"target\":\"%badge\",\"meta.evidenceClass\":\"structural\",\"meta.isScssExtend\":true,\"meta.scssExtendShape\":\"recovered\",\"line_number\":43}"
       ],
       "threw": null
     },
@@ -273,6 +280,39 @@
       "caught": true,
       "caughtBy": [
         "module-exports-and-global-overrides: forbidden relationship present: \"exports\"[module-exports-and-global-overrides.scss->$_internal]"
+      ],
+      "threw": null
+    },
+    {
+      "id": "scss/extend-label-reverted-to-uses",
+      "defectClass": "mislabel",
+      "caught": true,
+      "caughtBy": [
+        "placeholder-selectors-and-extend: expected relationship not found: {\"type\":\"extends\",\"from\":\".card\",\"target\":\"%badge\",\"meta.isScssExtend\":true,\"meta.scssExtendShape\":\"recovered\",\"meta.scssRecoveredFromError\":true,\"line_number\":10}",
+        "invocation-and-inheritance-labels: expected relationship not found: {\"type\":\"extends\",\"from\":\".inherits\",\"target\":\"%badge\",\"meta.evidenceClass\":\"structural\",\"meta.isScssExtend\":true,\"meta.scssExtendShape\":\"recovered\",\"line_number\":43}",
+        "control-flow-and-extend: expected relationship not found: {\"type\":\"extends\",\"from\":\".card\",\"target\":\".btn\",\"meta.evidenceClass\":\"structural\",\"meta.isScssExtend\":true,\"line_number\":16}"
+      ],
+      "threw": null
+    },
+    {
+      "id": "scss/include-label-reverted-to-uses",
+      "defectClass": "mislabel",
+      "caught": true,
+      "caughtBy": [
+        "module-system-and-mixins: expected relationship not found: {\"type\":\"calls\",\"from\":\".card\",\"target\":\"@mixin button\",\"meta.evidenceClass\":\"usage_contextual\",\"meta.isScssInclude\":true,\"line_number\":11}",
+        "invocation-and-inheritance-labels: expected relationship not found: {\"type\":\"calls\",\"from\":\".call-included\",\"target\":\"@mixin button-size\",\"meta.evidenceClass\":\"usage_contextual\",\"meta.isScssInclude\":true,\"line_number\":35}",
+        "scope-containment-and-complexity: expected relationship not found: {\"type\":\"calls\",\"from\":\".panel\",\"target\":\"@mixin ladder\",\"meta.evidenceClass\":\"usage_contextual\",\"meta.isScssInclude\":true}"
+      ],
+      "threw": null
+    },
+    {
+      "id": "scss/function-call-label-reverted-to-uses",
+      "defectClass": "mislabel",
+      "caught": true,
+      "caughtBy": [
+        "functions-return-and-undeclared-uses: expected relationship not found: {\"type\":\"calls\",\"from\":\".a\",\"target\":\"@function double\",\"meta.evidenceClass\":\"usage_contextual\",\"meta.isScssFunctionCall\":true,\"line_number\":11}",
+        "reads-recovered-from-error-regions: expected relationship not found: {\"type\":\"calls\",\"from\":\".a\",\"target\":\"@function mix\",\"meta.isScssFunctionCall\":true,\"line_number\":10}",
+        "invocation-and-inheritance-labels: expected relationship not found: {\"type\":\"calls\",\"from\":\".call-invoked\",\"target\":\"@function double\",\"meta.evidenceClass\":\"usage_contextual\",\"meta.isScssFunctionCall\":true,\"line_number\":39}"
       ],
       "threw": null
     }

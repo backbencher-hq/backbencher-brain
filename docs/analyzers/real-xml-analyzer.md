@@ -2944,6 +2944,248 @@ Two things would serve every lane, and neither is this lane's to make:
     (§Relationship ontology). The failure is silent, periodic and self-consistent, so no
     amount of re-running detects it; only a counter can.
 
+**9. The store cannot express a file-scoped identity, so the largest ambiguity bucket is
+unreachable from any analyzer.** B2 cross-file is 9,211 of 14,080 ambiguous edges over 485
+target names, and it is the largest bucket. Deciding which declaration an edge names needs
+the edge's own file in scope, and the identity the store offers for that decision is a
+project-wide PRIMARY KEY: `src/ast/parallel-indexer.ts:3038` writes
+`symbol.qualifiedName || symbol.name` into `qualified_name`, which is the `_res_qname` key.
+A qualified name is unique within a scope; that table is unique across the corpus. So
+`path.fill` declared in 319 files is one key for 319 declarations, which is the same class of
+collision this lane just removed one level up, and no change to
+`src/ast/real-xml-analyzer.ts` can reach it — the analyzer already publishes the owner, and
+the schema has no place to put it.
+
+What would serve every lane: a resolution order that prefers the declaration in the edge's
+own file before the project-wide table. `parallel-indexer.ts:3435-3437` already tries
+`name === target`, then `qualifiedName === target`, then two suffix forms; a
+same-file-preferred step ahead of them is the change, and R3 in
+`validation/m14/fixtures/xml/ambiguity-repairability.mts` is the falsifiable version of it
+(measured: it would leave 8,431 of 14,081, so it is a partial repair and must be reported as
+one). This is a store change and 26 lanes read it, so it is filed rather than made.
+
+**10. `[BB-HANG]` kills the whole measurement process, and the file it names is not the slow
+one.** `src/ast/engine.ts:1441-1444` arms a 120 s timer around the synchronous
+`parser.parse()` and calls `process.exit(1)`. `setTimeout` cannot interrupt a synchronous
+WASM call, so the process is the only unit available to the timer — that part is correct and
+the comment above it says so. The consequence is not.
+
+`npx tsx script/m14/ontology-coverage-gate.ts xml` over the 11,552-file corpus aborted
+before printing its verdict table. Excluding `bulma` (5,284 of its 5,309 admitted files are
+vendored `fontawesome-free-5.15.2-web` SVGs) let the verdict print and then aborted on the
+next repo, `hasura-engine`; excluding that too, it printed and then aborted on
+`cargo/.../stderr.term.svg`. Three different bystanders, one per run.
+
+Each named file parses in well under a second on its own, through the production
+`parseFile`:
+
+| file named by `[BB-HANG]` | bytes | standalone `parseFile` |
+| --- | --- | --- |
+| `bulma/.../svgs/brands/app-store.svg` | 1,038 | 485 ms, 5 symbols |
+| `hasura-engine/.../features/mutations.svg` | 1,091 | 516 ms, 18 symbols |
+| `cargo/.../git_dev/stderr.term.svg` | 1,208 | 759 ms, 41 symbols |
+| `libxslt/tests/general/bug-166.xml` (largest admitted file) | 1,206,342 | 43 ms, 0 symbols |
+| `bulma/.../webfonts/fa-solid-900.svg` | 917,575 | 2,564 ms, 4,697 symbols |
+
+So the stall is load-dependent, and the message attributes it to whichever file the walk
+happened to be holding — which is the same WASM heap contention as items 3, 6 and 8, seen
+from the watchdog's side. Two consequences. A gate whose verdict is emitted before the exit
+is unreachable to automate: `ontology-coverage-gate.ts` printed
+`emitted 6/10, ruled-sound 4, FALSIFIED 0, ruled-without-justification 0` and then exited
+1, so a CI check on the exit code fails on a corpus that measured correctly, while the same
+command on the same corpus can exit 1 before printing anything. And the file named in the
+message is not evidence about that file, so a lane cannot triage from it.
+
+What would serve every lane: run the corpus walk so one stall costs one file rather than the
+process — `script/m14/resumable-walk.ts` already exists for that and the measurement
+instruments do not use it — or have the watchdog report the in-flight file count and the
+elapsed budget so the message says "N files in flight, this one is not individually slow".
+The two verdicts below were produced with `BB_CORPUS_ROOT` pointed at a symlink farm that
+excludes `bulma` and `hasura-engine`, and the population is stated with each number; the
+unmodified invocation over 11,552 files does not reach its table.
+
+| type | status | detail, 6,034 admitted files | detail, 6,250 admitted files |
+| --- | --- | --- | --- |
+| `calls` | EMITTED | 402 edges, 4+ files | 402 edges, 4+ files |
+| `uses` | RULED-SOUND | 0× on the parse tree | 0× on the parse tree |
+| `contains` | EMITTED | 163,088 edges | 166,634 edges |
+| `imports` | EMITTED | 455 edges | 465 edges |
+| `references` | EMITTED | 11,108 edges | 11,108 edges |
+| `exports` | RULED-SOUND | 95 node types, none expresses it | same |
+| `extends` | EMITTED | 1,429 edges | 1,429 edges |
+| `implements` | RULED-SOUND | 95 node types, none expresses it | same |
+| `overrides` | EMITTED | 3 edges, 3+ files | 3 edges, 3+ files |
+| `instantiates` | RULED-SOUND | 95 node types, none expresses it | same |
+
+`calls`, `references`, `extends` and `overrides` carry the same count under both
+populations, so those four do not depend on the excluded repos; `contains` and `imports`
+scale with the admitted file count, which is why the population is stated beside them and
+not once at the top.
+
+## An attribute is a declaration, and it was published under a bare name
+
+### The defect, and the one line that carries it
+
+`src/ast/real-xml-analyzer.ts:2285` publishes every XML attribute and every namespace
+declaration. It set `name`, `ownerName` and `ownerKind` and did not set `qualifiedName`.
+Two pieces of shared machinery then filled the gap in a way that erased the attribute's
+identity:
+
+  - `src/ast/pool-worker.ts:930` — `qualifiedName: s.qualifiedName || s.metadata?.fqn ||
+    (s.scope ? `${s.scope}.${s.name}` : s.name)` — so an unset `qualifiedName` becomes the
+    **bare local name**.
+  - `src/ast/parallel-indexer.ts:3038` — `symbol.qualifiedName || symbol.name` — written
+    into the `qualified_name` column, which is the store's `_res_qname` PRIMARY KEY.
+
+So `<svg fill="…">`, `<path fill="…">` and `<g fill="…">` were three declarations of three
+elements published under one key, `fill`. The store could not tell them apart, and a
+reverse walk asking "what contains `fill`" chose between them using nothing but the name.
+
+The fix is one expression, the one already used for elements at `:790` and `:920`:
+
+    qualifiedName: ownerName ? `${ownerName}.${name}` : name,
+
+Measured on the 600-file draw `099e7a868f7b73ee` — 125 repos, 11,552 admitted files,
+126,940 symbols, production `parseFile`:
+
+| population | count |
+| --- | --- |
+| `property` symbols whose `qualifiedName` was the bare name | 83,454 of 83,454 |
+| `namespace` symbols whose `qualifiedName` was the bare name | 1,002 of 1,002 |
+| declarations named `fill` | 4,627 across 319 files |
+| declarations named `name` | 9,819 across 82 files |
+
+After the edit, on the committed fixture `xml/attribute-qualified-name`:
+`path.fill`, `use.fill`, `g.fill`, `svg.pfx`, `g.transform` — five distinct keys for five
+declarations that previously shared names.
+
+### What it does NOT fix, stated at the call site and not only here
+
+Two instances of the **same** tag still publish the same qualified name, because a
+qualified name is unique within a scope and the distinguishing information — the element's
+ancestry and position — is not in the published name. On the fixture, `<path fill>` at
+lines 22 and 26 both publish `path.fill`. Measured residual for this edit, same draw:
+
+| quantity | value |
+| --- | --- |
+| ambiguous edges | 14,081 |
+| repaired by this edit | 2,195 (15.6 %) |
+| still ambiguous | 11,886 (84.4 %) |
+| mean candidate set per ambiguous edge | 1,669.6 → 17.5 |
+| worst single target's candidate set | 9,819 → 204 |
+
+The candidate-set row is the reason the edit is worth its line, and it is reported
+separately from the ambiguous count because the two move independently: a candidate set of
+17 is a different problem from a candidate set of 1,669, and the binary flag does not
+register the difference.
+
+### The measurement that says the edit does not move the headline number
+
+`validation/m14/measurements/xml/ambiguity-split-before-d1.json` and
+`ambiguity-split-after-d1.json` are **byte-identical** (55,457 bytes each, both drawn
+`099e7a868f7b73ee`, both 600 files / 125 repos / 126,940 symbols). The mechanism is
+structural and worth stating, because "no change" is otherwise indistinguishable from "the
+edit was not applied":
+
+  - `incoming-check.ts:130-134` and `ambiguity-split.mts` build their `published` map under
+    the **bare** `name`, unconditionally, before considering `qualifiedName`
+    (`:140-146`). Publishing a qualified name ADDS a key; it never removes one.
+  - no edge in this analyzer carries a qualified endpoint, so no target name is a qualified
+    name, so no bucket can change.
+
+So the name-keyed instruments are blind to this defect class by construction. D1 is measured
+by `qualified-name-population.mts` and by the candidate-set row above, and by neither
+`incoming-check` nor `ambiguity-split`. A reader who wanted to verify the edit moved the
+ambiguity number would be measuring nothing.
+
+### The ambiguity split, and which bucket is mine
+
+Round brief step 1, on the draw above. An ambiguous edge is ONE edge that the reverse walk
+attributes to N declarations; it is not N edges.
+
+| bucket | meaning | edges | target names | contains | references | extends |
+| --- | --- | --- | --- | --- | --- | --- |
+| B1 same-file | 1 kind, >1 declaration, all in one file | 500 | 271 | 481 | 19 | — |
+| B2 cross-file | 1 kind, >1 declaration, spread over files | 9,211 | 485 | 9,168 | 42 | 1 |
+| B3 cross-kind | >1 kind under one published name | 4,369 | 83 | 4,366 | 3 | — |
+
+Totals: 14,977 edges, 193 self-loops, 110 unresolved, 14,080 ambiguous, 113 orphan
+declarations of 126,940 (0.089 %), 0 empty names, 0 `unknown` endpoints, 0 unlabelled
+labels, 0 degraded parses, 0 parse failures.
+
+**B3 is not this lane's to fix**, and it is the bucket the shared instrument reports:
+`incoming-check.ts:182` calls a target ambiguous when one published key carries more than
+one **kind**, so its 6,007 is a B3-style count. In XML the cause is the language, not the
+analyzer: `fill`, `id`, `width`, `height`, `path` and `style` are each both an element name
+and an attribute name in SVG, and a published name that is not a unique identifier cannot
+be repaired by any change to one analyzer. That is a finding about the published-name
+contract, stated plainly rather than as coverage.
+
+**B2 is the largest bucket and no analyzer edit can move it.** B2 is one name, one kind,
+spread over >1 file. Deciding which declaration an edge means needs the edge's file in
+scope, and the store's identity for that decision is a project-wide PRIMARY KEY
+(`parallel-indexer.ts:3038` → `_res_qname`). A per-file scope is not expressible in that
+schema, so the repair is a store change and is filed as §8 item 9, not made here.
+
+`ambiguity-repairability.mts` computes the overturn count for each candidate rule BEFORE
+implementing it, same draw:
+
+| rule | ambiguous edges it leaves | share left | what would overturn it |
+| --- | --- | --- | --- |
+| R1 qualify both ends (this lane's D1) | 11,886 | 84.4 % | any edge whose qualified endpoint is still published by >1 declaration |
+| R2 bind `(source, target)` as a pair | 13,306 | 94.5 % | any edge where >1 declaration of the target carries that same owner |
+| R3 scope the target to the edge's own file | 8,431 | 59.9 % | any edge whose target has >1 declaration inside the edge's own file |
+| untouched by all three | 7,112 | 50.5 % | — |
+
+840 ambiguous names; 549 repaired by at least one rule; 291 names / 12,131 edges untouched
+by every rule. R1's residual, 11,886, is the same number `qualified-name-population.mts`
+reports as `d1StillAmbiguous` for the shipped edit — two independently written instruments
+agreeing on the same residual, which is the only reason to believe either.
+
+The best rule available still leaves 59.9 %, so the honest statement is that this lane
+repaired 15.6 % of its ambiguity, that the edit's own overturn condition is met
+(2,195 > 0, R1 is not decorative), and that the remaining 84.4 % is a schema question.
+
+### Three tests that could not fail for the reason they existed
+
+All three were found by running the suite after the edit, and all three reported
+themselves as passing.
+
+1. **`attribute-qualified-name.expectation.json` asserted an unmatchable row.** It required
+   a second `contains path -> fill` edge at line 26. Edge identity in this graph is
+   `source|type|target` — a property of the schema, pinned by the passing `xml/edge-collapse`
+   — so two declarations of one pair share ONE edge and `line_number` is the first
+   occurrence. Measured: one edge, `occurrences 2`, `lines [22, 26]`. Replaced by an
+   assertion of exactly that, which is stronger than the row it replaced: it fails if either
+   declaration is dropped, and it fails if a second edge is emitted for a pair the graph
+   cannot represent twice. A row demanding what the schema cannot express is a ruling whose
+   overturn condition no correct implementation can meet.
+2. **The lane-owned property checks selected on metadata the worker drops.**
+   `pool-worker.ts:1020-1072` is a hard-coded allowlist — the CSS keys, the Markdown keys,
+   `nodeType`, `language`, nothing else. Every key the XML analyzer writes into attribute
+   metadata (`isXmlAttribute`, `isXmlNamespace`, `attributeName`, `value`, `namespacePrefix`,
+   `namespaceUri`) is dropped at the worker boundary, so a check filtering on
+   `metadata.isXmlAttribute` matches **zero** symbols through `parseFile` and reports "no
+   attribute symbols were published". Selection is now `kind` + `ownerName`, both published.
+3. **Both `attribute-qualified-name` mutants were no-ops and were reported as survivors.**
+   They carried their own copy of the same broken selector, so the transform matched nothing
+   and each mutant "passed" a suite it never reached. The selector is now one hoisted
+   `isOwnedAttributeLike` shared by the checks and the mutants, so a mutant that stops
+   matching shows up as a changed baseline rather than as a surviving row. A mutant that
+   does not apply is not a weak test; it is the absence of one.
+
+Result after the three fixes: baseline 29 pass / 0 fail / 0 property problems, **23 of 23
+mutants caught, 0 survivors** (was 21/23 with 2 survivors).
+
+### Gates for the numbers above
+
+| command | result |
+| --- | --- |
+| `bun run script/m14/run-fixtures.ts --lang xml` | 29 pass, 0 fail, no regressions |
+| `npx tsx validation/m14/fixtures/xml/ontology-mutants.mts` | 23/23 caught, 0 survivors, exit 0 |
+| `npx tsx script/m14/ontology-coverage-gate.ts xml` | 6/10 emitted, 4 ruled-sound, `FALSIFIED 0`, 0 ruled-without-justification — but exit 1, see §8 item 10 |
+| `npx tsc --noEmit -p tsconfig.json` | clean |
+
 ## Issue
 
 M12.35 / GitHub issue #174.

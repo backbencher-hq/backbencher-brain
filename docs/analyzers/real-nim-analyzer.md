@@ -361,9 +361,10 @@ re-runnable). **Corpus: 6,063 tracked files over 8 repositories** — `nim` 3,96
 `nimony` 1,508, `nim-lang-nimble` 435, `graphql-nim` 55, `nimterop` 45,
 `bigints` 21, `dom96-jester` 19, `Aporia` 12 — sampled by `git ls-files` +
 `detectLanguageFromPath === "nim"` + a 512 KB cap, which is the arbiter's own
-walk, so the file set is the same set. 110,060 symbols, 0 empty names, 0 empty
+walk, so the file set is the same set. **110,043 symbols**, 0 empty names, 0 empty
 kinds, 0 edge types outside the ten, 0 empty endpoints, 0 throws.
-Artifacts: `validation/m14/measurements/nim/ontology-census.{json,txt}`.
+Artifacts: `validation/m14/measurements/nim/session10-1w-census.{json,txt}` at the
+current blob, and `session6-1w-census.{json,txt}` at the previous one.
 
 **`nimony` is the eighth repository and it is the one that moved the verdict.**
 It was added on 2026-10-04 because `gh api 'search/code' -f q='"= concept of'
@@ -381,16 +382,53 @@ this one does:
 
 | | blob / digest |
 | --- | --- |
-| `analyzer/NIM` @ `647a08e3c` | the commit that INTRODUCED the measured blob of `src/ast/real-nim-analyzer.ts`, sha256 `9d9ee478e3295c28…`, unchanged on disk through HEAD |
-| `analyzer/NIM` @ `c12d7c7c1` | the PREVIOUS measured blob, sha256 `a59574036eb9f7fb…`, unchanged on disk from `c12d7c7c1` through `469ecd1af`. Every artifact recorded against it has been re-measured; `ruled-gate-run-2.txt` and `node-identity-ab.txt` are the only two that quote it, and both say so |
+| `analyzer/NIM` @ `1f443af19` | the commit that INTRODUCED the CURRENT blob of `src/ast/real-nim-analyzer.ts`, sha256 `1475e53d0e528d0a…` — the bare-`case` discriminator guard. Measured over the same 6,063 files (`session10-1w-census.txt`, `session11-resolution-scope.txt`) |
+| `analyzer/NIM` @ `647a08e3c` | the PREVIOUS measured blob, sha256 `9d9ee478e3295c28…`. The artifact set below the re-measurement note quotes it, and each says so |
+| `analyzer/NIM` @ `c12d7c7c1` | the blob before that, sha256 `a59574036eb9f7fb…`, unchanged on disk from `c12d7c7c1` through `469ecd1af`. Every artifact recorded against it has been re-measured; `ruled-gate-run-2.txt` and `node-identity-ab.txt` are the only two that quote it, and both say so |
 
 The commit is named as the one that introduced the blob rather than as the HEAD at
 writing time, because a digest identifies a blob and a blob has an introducing
 commit. Measured: `git log --format=%h -- src/ast/real-nim-analyzer.ts` with
-`sha256sum` over each commit's copy gives `647a08e3c 9d9ee478e3295c28`,
-`c12d7c7c1 a59574036eb9f7fb`, `47faa4238 b9a73cfda9d826a3`,
-`ad9edcd72 37112977bad16542`, `3dcd4af14 f17b972273aa923d` — so `647a08e3c` is the
-commit whose analyzer is the one every number below was measured on.
+`sha256sum` over each commit's copy gives `1f443af19 1475e53d0e528d0a`,
+`647a08e3c 9d9ee478e3295c28`, `c12d7c7c1 a59574036eb9f7fb`,
+`47faa4238 b9a73cfda9d826a3`, `ad9edcd72 37112977bad16542`,
+`3dcd4af14 f17b972273aa923d`.
+
+### The blob moved a second time, and the delta is in ONE column
+
+`1f443af19` added the bare-`case` discriminator guard, and it moved the digest
+`9d9ee478e3295c28…` → `1475e53d0e528d0a…`. **It touched no table in this document.**
+The tables were re-measured at the new blob and the delta is confined to `contains`
+and to the symbol count — which is the one thing a guard that stops publishing a
+fabricated field *must* move:
+
+| | @ `9d9ee478e3295c28` | @ `1475e53d0e528d0a` | delta |
+| --- | --- | --- | --- |
+| symbols published | 110,076 | **110,043** | −33 |
+| `contains` | 29,362 | **29,330** | −32 |
+| total edges | 267,297 | **267,265** | −32 |
+| the other nine types | — | identical to the digit | 0 |
+| `calls` both-ends, corpus-wide | 98.3% | **98.2%** | −0.1pp |
+| the other nine corpus-wide rates | — | identical to 0.1pp | — |
+
+`calls` corpus-wide moves only because the universe it resolves against lost the 33
+symbols the guard removed; its own 118,261 edges are untouched, and a rate's
+denominator shrinking is not a resolution regression. **Nine of ten types did not
+move at all, and that is the check that the guard is narrow**: it removed exactly
+the slots it was written to remove and nothing else. The per-slot measurement of
+which slots those were — 20 fabricated slots, 26 declarations, 19 symbols and 18
+`contains` edges the pre-fix blob published and HEAD does not — is
+`validation/m14/measurements/nim/session10-bare-case-delta-{PREFIX,HEAD}.txt`,
+produced by `validation/m14/fixtures/nim/bare-case-corpus-delta.ts` run once per
+blob. The census's −33/−32 counts published symbol INSTANCES; the delta script's
+19/18 counts per SITE. Both are right about their own quantity and the two are not
+meant to be added — the difference is `tsumtype.nim:74`, whose `Nil` was already
+unpublished before the guard for an unrelated reason.
+
+**Everything below the verdict table that still quotes `9d9ee478e3295c28` is
+quoting the blob it was measured on, and is left saying so rather than re-labelled
+to a digest it was not run against.** Re-labelling a historical artifact is the one
+move that would make this document agree with itself and be wrong.
 
 **The blob moved under this section once, and the mechanism that caught it is the
 one that made the move cheap to absorb.** `647a08e3c` changed the analyzer — a
@@ -445,10 +483,10 @@ records the count its run used.
 
 | Relationship type | Emitted? | Verdict | Measured on this corpus | Files | Where the number comes from |
 | --- | --- | --- | --- | --- | --- |
-| **all ten, one row each** | 10 of 10 examined | **10 EMITTED, 0 ruled** | **267,297 edges over 110,076 symbols** | **6,063 admitted** | `validation/m14/measurements/nim/session7-1w-census.txt`, digest-pinned on both sides of the walk, 1 worker |
+| **all ten, one row each** | 10 of 10 examined | **10 EMITTED, 0 ruled** | **267,265 edges over 110,043 symbols** | **6,063 admitted** | `validation/m14/measurements/nim/session10-1w-census.txt`, digest-pinned on both sides of the walk, 1 worker |
 | `calls` | YES | EMITTED | 118,261 edges | **4,903** | `collectCallsAndUses`: the callee branches plus the parenless-UFCS member-leaf branch |
 | `uses` | YES | EMITTED | 45,664 edges | **2,833** | `collectCallsAndUses`, the member-leaf and bare-identifier read branches |
-| `contains` | YES | EMITTED | 29,362 edges | **2,417** | `collectContainment`, from `ownerName` and from `metadata.nimNestedIn` for a nested routine |
+| `contains` | YES | EMITTED | 29,330 edges | **2,415** | `collectContainment`, from `ownerName` and from `metadata.nimNestedIn` for a nested routine |
 | `references` | YES | EMITTED | 56,445 edges | **2,920** | `collectDeclaredTypeRefAt`, the declared-type sites |
 | `imports` | YES | EMITTED | 13,364 edges | **3,429** | `readImportStatement` / `readImportFromStatement` / `readIncludeStatement`, plus the `ImportInfo[]` channel |
 | `instantiates` | YES | EMITTED | 2,843 edges | **1,419** | `collectInstantiationAt`, a call whose callee is a type this file declares, plus the type argument of a `new` expression |
@@ -481,9 +519,9 @@ the column below were quoting the narrow scope without saying so. Both scopes:
 
 | Type | Verdict | Edges | Both ends resolve, **intra-file** | **corpus-wide** | Confidence | evidenceClass |
 | --- | --- | --- | --- | --- | --- | --- |
-| `calls` | EMITTED | 118,261 | 38.9% | **98.3%** | 0.85 (113,997) / 0.9 (4,206) / 0.75 (58) | `usage_contextual` 118,203, `import_based` 58 |
+| `calls` | EMITTED | 118,261 | 38.9% | **98.2%** | 0.85 (113,997) / 0.9 (4,206) / 0.75 (58) | `usage_contextual` 118,203, `import_based` 58 |
 | `uses` | EMITTED | 45,664 | 99.8% | 99.8% | 1.0 (20,560) / 0.75 (25,104) | `usage_contextual` 45,606, `import_based` 58 |
-| `contains` | EMITTED | 29,362 | 99.8% | 99.9% | 1.0 | `structural` |
+| `contains` | EMITTED | 29,330 | 99.8% | 99.9% | 1.0 | `structural` |
 | `references` | EMITTED | 56,445 | 45.6% | **96.9%** | 0.9 | `reference_qualified` 48,371, `import_based` 8,074 |
 | `imports` | EMITTED | 13,364 | 37.1% | 38.6% | 1.0 | `import_based` |
 | `instantiates` | EMITTED | 2,843 | 100.0% | 100.0% | 0.9 | `usage_contextual` |
@@ -493,26 +531,37 @@ the column below were quoting the narrow scope without saying so. Both scopes:
 | `implements` | EMITTED | 47 | 91.5% | **100.0%** | 1.0 | `structural` |
 
 The corpus-wide column is `validation/m14/fixtures/nim/resolution-scope.ts` over the
-6,063-file corpus, one pass, digest `9d9ee478e3295c28` unchanged on both sides. **Its
-intra-file column reproduces the census figure exactly on all ten types**, which is what
-makes the second column readable as the same edges measured against a wider universe
-rather than as a different measurement.
+6,063-file corpus, one pass, digest `1475e53d0e528d0a` unchanged on both sides
+(`session11-resolution-scope.{json,txt}`). **Its intra-file column reproduces the
+census figure exactly on all ten types**, which is what makes the second column
+readable as the same edges measured against a wider universe rather than as a
+different measurement.
 
-**This table and the one above it were, until this pass, measured at DIFFERENT WORKER
-COUNTS, and three cells said so.** The verdict table above is the
-`ontology-census` walk (267,287 edges); `resolution-scope.ts` runs at **1 worker**,
-and fan-out is a function of every edge count (*Limitations* 11), so three types
-differ between the two walks:
+**The two tables above are now BOTH 1-worker walks, and they agree on all ten types
+to the digit** — `uses` 45,664, `contains` 29,330, `references` 56,445, and the
+seven others identical. The delta this section used to carry between them is
+therefore **0**, and it is 0 because the fan-out difference was removed rather than
+because the two instruments agree in general: the verdict table is re-measured at
+the current blob by `session10-1w-census.ts` run at `BB_NIM_WORKERS=1`, which is
+what `resolution-scope.ts` has always used. Compare *intra-file* rates, not totals,
+when checking them — `census.ts` and `resolution-scope.ts` register different
+spelling sets for the same name and differ by construction on `imports`.
 
-| type | `ontology-census` (verdict table) | 1-worker (this table) | delta |
+**What fan-out was worth is retained here as a measurement rather than deleted,
+because it is the reason the delta is now 0 and the reason a future reader must not
+lower the worker count without re-reading it.** At the previous blob the verdict
+table was the SIX-worker `ontology-census` walk (267,287 edges) against a 1-worker
+scope table, and three types differed:
+
+| type | 6-worker `ontology-census` | 1-worker | delta |
 | --- | --- | --- | --- |
 | `uses` | 45,662 | **45,664** | +2 |
 | `contains` | 29,361 | **29,362** | +1 |
 | `references` | 56,438 | **56,445** | +7 |
 | the other seven | — | identical | 0 |
 
-**And the fan-out of that walk was mis-attributed in this document until this pass:
-it was SIX workers, not two.** Three independent records agree and no record
+**And the fan-out of that walk was mis-attributed in this document until an earlier
+pass: it was SIX workers, not two.** Three independent records agree and no record
 disagrees. Neither half of the pair carries a count — `ontology-census.json` has no
 `workers` key and `ontology-census.txt` has no `workers` line, because the field did
 not exist yet. The walk was written at 10:55 (commit `1660a655e`), and
@@ -528,7 +577,8 @@ is what makes this one row detectable at all: it was the only 2-worker claim wit
 Consequence for the reading: the delta above is a **6-vs-1** spread, not 2-vs-1, and
 the direction is the one *Limitations* 8 predicts — the wider fan-out exhausts the
 WASM heap on a load-dependent set of files, so the wider walk publishes fewer edges
-(267,287 < 267,297). It is not monotone in fan-out, and this document does not claim
+(267,287 < 267,297, both totals at blob `9d9ee478e3295c28`). It is not monotone in
+fan-out, and this document does not claim
 it is: the 2-worker `ruled-gate` reads `calls` 118,242, *below* both census walks'
 118,261. Fan-out is one of three variables (instrument, fan-out, machine load), and
 these two walks differ in one of them.
@@ -556,11 +606,11 @@ type whose corpus-wide figure is weak for a separate reason — it rests on a mo
 heuristic rather than a symbol match, and neither instrument resolves a Nim module path
 like `std/strutils` properly (*Session 5*).
 
-**267,287 edges. 0 below 0.7 from this analyzer.** One `calls` edge sits at 0.5 with
+**267,265 edges. 0 below 0.7 from this analyzer.** One `calls` edge sits at 0.5 with
 no `evidenceClass`, and it is not this analyzer's: it comes from the regex fallback
 in shared `pool-worker.ts` described in *Limitations* 11, which is a §8 report and
 is counted here so the table is not read as claiming a clean 0. Symbol hygiene on
-the same walk: 110,060 symbols, **0** empty names, **0** empty kinds, **8** endpoints
+the same walk: 110,043 symbols, **0** empty names, **0** empty kinds, **8** endpoints
 equal to the literal `unknown` (*Limitations* 9), **0** empty endpoints, **0** edge
 types outside the ten. This walk was CLEAN by the census's own five-part test —
 `parseFile threw: 0`, `raw-parse threw: 0`, 6,063 of 6,063 parsed, 0 empty kinds,
@@ -825,13 +875,13 @@ edges against a wider universe:
 
 | type | edges | intra-file (quoted until now) | **corpus-wide** | edges that move |
 | --- | --- | --- | --- | --- |
-| `calls` | 118,261 | 38.9% | **98.3%** | +70,201 |
+| `calls` | 118,261 | 38.9% | **98.2%** | +70,219 |
 | `references` | 56,445 | 45.6% | **96.9%** | +28,957 |
 | `exports` | 617 | 3.7% | **75.4%** | +442 |
 | `extends` | 627 | 71.0% | **99.4%** | +178 |
 | `imports` | 13,364 | 37.1% | 38.6% | +201 |
 | `implements` | 47 | 91.5% | **100.0%** | +4 |
-| `contains` | 29,362 | 99.8% | 99.9% | +10 |
+| `contains` | 29,330 | 99.8% | 99.9% | +10 |
 | `uses` | 45,664 | 99.8% | 99.8% | 0 |
 | `overrides` | 67 | 100.0% | 100.0% | 0 |
 | `instantiates` | 2,843 | 100.0% | 100.0% | 0 |
@@ -1510,10 +1560,10 @@ in the resolution table above, from five names.
 
 ### The six questions, per emitted type
 
-Columns 1, 2, 5 and 6 are this pass's census (6,063 files, the `ontology-census`
-walk at the six workers `census.ts` then hardcoded, analyzer sha256
-`9d9ee478e3295c28`; the worker count matters, see the note above the verdict table,
-and column 5 is identical to one decimal at 1 worker). Column 3 is the oracle
+Columns 1, 2, 5 and 6 are this pass's census (6,063 files, `session10-1w-census.ts`
+at **1 worker**, analyzer sha256 `1475e53d0e528d0a`; column 5 is the intra-file rate,
+and the corpus-wide counterpart is the resolution table above). Column 3 is the
+oracle
 cross-check (400 of 6,063 discovered
 files, deterministic every-15th), whose instrument is a SEPARATE WALKER — so
 "agrees" means "the two derivations agree", never "the edge is true". Column 4 is
@@ -1522,15 +1572,27 @@ adjudicated per type.
 | Type | 1 Exists | 2 Fires | 3 Correct (oracle) | 4 Labelled | 5 Resolved | 6 Confident |
 | --- | --- | --- | --- | --- | --- | --- |
 | `calls` | yes | 118,261 | 2,517 vs 2,528; 0 missing, **15 unexplained** | yes | 38.9% | 100% under 1.0; `usage_contextual` |
-| `uses` | yes | 45,662 | 1,002 vs 1,003; 0/1 | yes | 99.8% | 55.0% at 0.75, rest 1.0 |
-| `contains` | yes | 29,361 | 1,286 vs 1,296; 0/**10** | yes | 99.8% | 1.0, `structural` |
+| `uses` | yes | 45,664 | 1,002 vs 1,003; 0/1 | yes | 99.8% | 55.0% at 0.75, rest 1.0 |
+| `contains` | yes | 29,330 | 1,285 vs 1,295; 0/**10** | yes | 99.8% | 1.0, `structural` |
 | `imports` | yes | 13,364 | 382 vs 382; 0/0 | yes | 37.1% | 1.0, `import_based` |
-| `references` | yes | 56,438 | 694 vs 694; **3 missing**, 0 unexplained | yes | 45.6% | 0.9, `reference_qualified` |
+| `references` | yes | 56,445 | 694 vs 694; **3 missing**, 0 unexplained | yes | 45.6% | 0.9, `reference_qualified` |
 | `instantiates` | yes | 2,843 | 134 vs 134; 0/0 | yes | 100.0% | 0.9, `usage_contextual` |
 | `extends` | yes | 627 | 22 vs 22; 0/0 | yes | 71.0% | 1.0, `structural` |
 | `overrides` | yes | 67 | 1 vs 1; 0/0 | yes | 100.0% | 1.0, `structural` |
 | `exports` | yes | 617 | **12 vs 12 — exact** | yes | 3.7% | 1.0, `structural` |
 | `implements` | yes | **47** | **3 vs 3 — exact** | yes | 91.5% | 1.0, `structural` |
+
+**Column 3 moved on `contains` when the guard landed, and it moved on BOTH sides at
+once, which is the only outcome that says the guard was right.** The oracle is a
+separate walker over the same grammar, so it is blind to the analyzer's guard — it
+derives 1,295 `contains` targets from the 400-file sample and is expected to derive
+the fabricated slot too. The analyzer went 1,286 → **1,285** and the oracle went
+1,296 → **1,295**: one target each, the same one. **A guard that removed a real
+field would have moved the analyzer's count and not the oracle's**, and that is the
+discriminating shape this cross-check is able to see. MISSING stayed 3 and
+UNEXPLAINED stayed 26, and the three MISSING rows are byte-identical to the previous
+run, so the guard introduced no new disagreement between the two derivations.
+(`session11-oracle-crosscheck.txt`, 400 of 6,063, deterministic every-15th.)
 
 **All ten types now have an oracle derivation, and 8 of the 10 agree exactly.**
 That is the substantive change this pass made to question 3, and it came from
@@ -1636,7 +1698,7 @@ caps at 10) and are `destructor`(3), `root`(2), `me`, `super`(2) and `_`(2) — 
 conventional names, not dropped declarations, and 7 of the 11 clear under the base's
 `pool-worker.ts` because that file stopped denylisting them (*Session 5*).
 
-**Question 6 — confident, in one number.** **0 of 267,287 corpus edges fall below
+**Question 6 — confident, in one number.** **0 of 267,265 corpus edges fall below
 0.7**, so nothing in this lane is a heuristic by the honesty contract §4's 0.7
 line, and the ratio is countable rather than a vibe. The sub-1.0 edges are a
 different thing and are countable by type — `calls` 0.85 (usage-inferred callee,
@@ -1753,14 +1815,18 @@ quoted from an earlier round.
 | --- | --- | --- |
 | `npx tsx script/m14/ontology-coverage-gate.ts nim` | **1** | session 7, and this row's exit code has MOVED: earlier passes read **2** with `corpus: 6063 admitted files` then `no RULING TABLE for nim`. This pass never reaches the refusal — it prints the header and two `[BB-PARSE-ERR] … memory access out of bounds` lines (`dll/nimhcr_0_6.nim`, `package/stdlib/stdlib.nimble`) and then dies on `[BB-HANG] parser stuck 120s … dll/nimhcr_0_6.nim`. The §8 wiring is unchanged and still the reason the gate would refuse; at 8 workers the shared watchdog now gets there first, so the refusal is no longer the observable outcome. `RULED_BY_LANG` still carries `bash`, `json`, `lua`, `toml` and no `nim` (`session7-arbiter.txt`) |
 | `npx tsx validation/m14/fixtures/nim/ruled-gate.ts` | 0 | the arbiter's own verdict loop on a copy: **`emitted 10/10  ruled-sound 0  FALSIFIED 0  ruled-without-justification 0`**, 255s, `implements EMITTED 47 edges in 4+ files, e.g. nimony/lib/std/math.nim`. Table rows: 0 |
-| `BB_NIM_RULED_WORKERS=1 npx tsx validation/m14/fixtures/nim/ruled-gate.ts` | 0 | session 7, 887s: the same `emitted 10/10  ruled-sound 0  FALSIFIED 0  ruled-without-justification 0`, and **all ten per-type counts identical to the digit with the 1-worker census** — `calls` 118,261, `uses` 45,664, `contains` 29,362, `references` 56,445, `imports` 13,364, `instantiates` 2,843, `extends` 627, `exports` 617, `overrides` 67, `implements` 47. Two instruments, zero disagreement, at fan-out 1 (the three-run table above) |
-| `BB_NIM_WORKERS=1 npx tsx validation/m14/fixtures/nim/census.ts <out>` | 0 | session 6, the reproduction row: 6,063 files, 6,063 parsed, 0 empty names, 0 empty kinds, 0 throws, **110,076 symbols, 267,297 edges**, digest `9d9ee478e3295c28` unchanged on both sides. `session6-1w-census.txt` is byte-identical to `session3-1w-census.txt` on all **112** lines of report body — the two differ in exactly two respects, and both are known: `session3` carried its 14 `[INFO]` lines inline where `session6` routes them to the `.stderr.txt` beside it, and the last line names its own output file. **At the bare default (6 workers) the same script produced no report at all** — exit 1, zero stdout, `[BB-HANG]` naming `nim/tests/dll/nimhcr_0_2.nim` (*Limitations* 8, row 5) |
-| `BB_NIM_WORKERS=1 npx tsx validation/m14/fixtures/nim/resolution-scope.ts <out>` | 0 | session 6: all ten types identical to `session5-resolution-scope.txt`, 78,838 name spellings, intra and wide columns unchanged. This is the instrument behind the corpus-wide column of the verdict table, and its 1-worker edge counts are the ones that table now carries |
+| **`BB_NIM_RULED_WORKERS=1 npx tsx validation/m14/fixtures/nim/ruled-gate.ts`** | **0** | **session 11, 519s, at the CURRENT blob `1475e53d0e528d0a`: `emitted 10/10  ruled-sound 0  FALSIFIED 0  ruled-without-justification 0`**, 6,063 admitted files, and **all ten per-type counts identical to the digit with the current 1-worker census** — `calls` 118,261, `uses` 45,664, `contains` 29,330, `references` 56,445, `imports` 13,364, `instantiates` 2,843, `extends` 627, `exports` 617, `overrides` 67, `implements` 47. Two instruments, zero disagreement, at fan-out 1 (`session11-ruled-gate.txt`) |
+| `BB_NIM_RULED_WORKERS=1 npx tsx validation/m14/fixtures/nim/ruled-gate.ts` | 0 | session 7, 887s, at the PREVIOUS blob `9d9ee478e3295c28`: the same `emitted 10/10  ruled-sound 0  FALSIFIED 0  ruled-without-justification 0`, with `contains` **29,362** — the one cell the guard moved. Kept rather than deleted, because the two runs together are what shows the arbiter and the census agreeing at two different blobs, and one of them contains a number the other does not |
+| **`BB_NIM_WORKERS=1 npx tsx validation/m14/fixtures/nim/census.ts <out>`** | **0** | **session 10, at `1475e53d0e528d0a`**: 6,063 files, 6,063 parsed, **0 empty names, 0 empty kinds, 0 throws, 0 off-ontology edge types, 8 literal `unknown` endpoints**, **110,043 symbols, 267,265 edges**, `degradedWalk: null` (`session10-1w-census.txt`). This is the walk the verdict table and the six-questions table are built on |
+| **`BB_NIM_WORKERS=1 npx tsx validation/m14/fixtures/nim/resolution-scope.ts <out>`** | **0** | **session 11, at `1475e53d0e528d0a`**: **78,808** name spellings, intra column reproduces the census on all ten types, corpus-wide `calls` **98.2%** / `references` 96.9% / `exports` 75.4% / `extends` 99.4% / `implements` 100.0% / `imports` 38.6%. No negative delta, which is impossible by construction and none appears (`session11-resolution-scope.txt`) |
+| **`npx tsx validation/m14/fixtures/nim/oracle-crosscheck.ts <out>`** | **0** | **session 11, at `1475e53d0e528d0a`**: 400 of 6,063 every-15th, 400 parsed, 0 failures, **MISSING 3 / UNEXPLAINED 26 — unchanged**. `contains` moved on BOTH sides (analyzer 1,286→**1,285**, oracle 1,296→**1,295**), which is the shape that says the guard removed a fabricated target and not a real one (`session11-oracle-crosscheck.txt`) |
+| `BB_NIM_WORKERS=1 npx tsx validation/m14/fixtures/nim/census.ts <out>` | 0 | session 6, at blob `9d9ee478e3295c28`: 6,063 files, 6,063 parsed, 0 empty names, 0 empty kinds, 0 throws, **110,076 symbols, 267,297 edges**, digest `9d9ee478e3295c28` unchanged on both sides. `session6-1w-census.txt` is byte-identical to `session3-1w-census.txt` on all **112** lines of report body — the two differ in exactly two respects, and both are known: `session3` carried its 14 `[INFO]` lines inline where `session6` routes them to the `.stderr.txt` beside it, and the last line names its own output file. **At the bare default (6 workers) the same script produced no report at all** — exit 1, zero stdout, `[BB-HANG]` naming `nim/tests/dll/nimhcr_0_2.nim` (*Limitations* 8, row 5) |
+| `BB_NIM_WORKERS=1 npx tsx validation/m14/fixtures/nim/resolution-scope.ts <out>` | 0 | session 6, at blob `9d9ee478e3295c28`: all ten types identical to `session5-resolution-scope.txt`, **78,838** name spellings, intra and wide columns unchanged (`session6-resolution-scope.txt`) |
 | `npx tsx validation/m14/fixtures/nim/census.ts <out>` (**no env var — `census.ts` hardcoded 6 workers at this commit; `BB_NIM_WORKERS` did not exist yet**) | **1** | 6,063 files, 6,063 parsed, **0** empty names, **0** empty kinds, 0 throws, 110,060 symbols, **267,287 edges**. Clean by the census's own five-part test, so the artifact was written under its own name; the exit 1 is `[BB-HANG]` naming `nim/tests/distinct/tinvalidborrow.nim`, which had already logged `[BB-PARSE-ERR] … memory access out of bounds` in the same run, the only other parse error in the run being `tests/overload/toverl.nim` (*Limitations* 8). This row was labelled `BB_NIM_WORKERS=2` until this pass; the evidence that it was 6 is in the note above the verdict table. **No `BB_NIM_WORKERS=2` census artifact exists anywhere in this branch** — the one 2-worker attempt on record (`3bf212369`) died on `[BB-HANG]` and wrote nothing |
-| `npx tsx script/m14/incoming-check.ts nim <105 files of nim/lib/pure>` | 0 | session 7, the supervisor's own reverse-direction instrument on the lane's own index: 105 files, **6,912 symbols**, 0 degraded, 0 parse failures. **Every cell of every row is identical to `incoming-audit.ts lib/pure`** — two instruments, no shared counting code. 3,386 distinct targets named, **1,555 orphans (22.50%)**, **184** distinct target names ambiguous. `implements` and `brain_import` do not fire in this subtree (no concept declaration in `lib/pure`; the family's 47 `implements` edges are all in `nimony`) |
+| `npx tsx script/m14/incoming-check.ts nim <105 files of nim/lib/pure>` | **0** | **session 11, re-run at blob `1475e53d0e528d0a`: 105 files, 6,912 symbols, 0 degraded, 0 parse failures, and EVERY CELL of every row identical to session 7** — `calls` 10,196 / `uses` 5,054 / `contains` 1,647 / `references` 3,393 / `exports` 112 / `extends` 43 / `overrides` 14 / `instantiates` 110, 3,386 distinct targets named, **1,555 orphans (22.50%)**, **184** distinct target names ambiguous. `implements` and `brain_import` do not fire in this subtree (no concept declaration in `lib/pure`; the family's 47 `implements` edges are all in `nimony`). **The identity is predicted, not lucky**: the guard shipped in `1f443af19` can only move a file that holds a `variant_discriminator_declaration` slot, and all 20 fabricated slots are in `nimony` and `nim/tests` — **zero** in `nim/lib/pure` (`session10-bare-case-delta-HEAD.txt` names every one). A guard that changed a subtree holding none of the slots had better not moved it (`session11-incoming-check-lib-pure.txt`) |
 | `npx tsx validation/m14/fixtures/nim/hang-file-arbitration.ts` | 0 | session 7, the arbiter of the §8 report: all **7** files this lane's walks have been aborted on, parsed ALONE through `parseFile` five times each. **35 of 35 parsed, 0 threw.** 16,683 B over 515 lines total, largest 7,828 B, smallest 90 B. Slowest call **6,511 ms cold / 289 ms warm** against the engine's **120,000 ms** watchdog — 18x headroom; a second run reads 3,275 ms cold, 37x. The named input is not the cause of any of the seven exits (`session7-hang-file-arbitration{,-run2}.txt`) |
 | `npx tsx validation/m14/fixtures/nim/nim-ruled-probe.ts <out>` | 0 | the falsifier, run: `concept_declaration` **337 in 130 files**, `refinement_list` **38**, `is`-in-concept-body 156, guard failures `{argumentList:159, leftNotParameter:143, rightNotIdentifier:5, rightNotLocalConcept:8, selfReference:0}`, **`withRefinesField 38`, hits pushed 51**, 211 node types, raw-parse failures 0. The text probe finds 61 `of`-form sites classified 39 code / 21 comment / 1 string against 38 tree nodes |
-| `npx tsx validation/m14/fixtures/nim/oracle-crosscheck.ts <out>` | 0 | 400 of **6,063** discovered (was 400 of 4,075 — the discovery cap, now removed), every-15th, 400 parsed, 0 failures. **MISSING 3 / UNEXPLAINED 26**, and **7 of the 10 labels agree exactly** including `exports` 12/12 and `implements` 3/3, both of which had no derivation before this pass |
+| `npx tsx validation/m14/fixtures/nim/oracle-crosscheck.ts <out>` | 0 | session 8, at blob `9d9ee478e3295c28`: 400 of **6,063** discovered (was 400 of 4,075 — the discovery cap, now removed), every-15th, 400 parsed, 0 failures. **MISSING 3 / UNEXPLAINED 26**, and **7 of the 10 labels agree exactly** including `exports` 12/12 and `implements` 3/3, both of which had no derivation before this pass |
 | `BB_NIM_WORKERS=2 npx tsx validation/m14/fixtures/nim/gap-hunt.ts <out>` | 0 | `extends` accounted **1047 / 1047** (was 941/941), published as `extends` **627**; `object_declaration.inherits` 1,047 occurrences in 403 files. `instantiates` 3,830 occurrences, 844 name a type this file declares, 973 have an edge. `overrides`: 230 methods on the tree, 186 with a readable receiver, **67 published** (recv in-file 67, recv out-of-file 0), receiver-qualified spelling 0 |
 | `BB_NIM_WORKERS=2 npx tsx validation/m14/fixtures/nim/resolution-audit.ts <out>` | 0 | 6,063 files in 8 repos, **110,076 symbols** published, 0 parse failures. TREE-ONLY **126** = `calls` 19 + `uses` 77 + `contains` 30, rate 0.047% against the previous 90 / 0.049%. Callable declaration recall **46,960 / 46,971 = 100.0%** |
 | `BB_NIM_WORKERS=2 BB_NIM_FILES=1500 npx tsx validation/m14/fixtures/nim/accent-quoted-endpoints.ts <out>` | 0 | 1,500 of 6,063 (deterministic every-4th). **459** accent-quoted declaration sites; 1,285 of 58,725 pre-filter edges carry a backtick endpoint, 1,189 of 58,629 post-filter; **96 deleted by `filterNoiseRelationships`**, split `calls` 73 / `contains` 17 / `exports` 3 / `uses` 2 / `overrides` 1, and the artifact prints the split beside the total so it sums |
@@ -2043,8 +2109,15 @@ own census to the digit** — `calls` 118,261, `uses` 45,664, `contains` 29,362,
 `imports` 13,364, `references` 56,445, `exports` 617, `extends` 627, `implements` 47,
 `overrides` 67, `instantiates` 2,843, total **267,297**, symbols **110,076**. Three
 instruments that share no counting code — this lane's census, its re-run, and the
-supervisor's arbiter — now agree on 267,297 and on 110,076. Artifacts
+supervisor's arbiter — agree on 267,297 and on 110,076. Artifacts
 `session3-1w-census.{txt,json}`, `session3-firingcheck-full.{txt,json}`.
+
+**Those totals are at blob `9d9ee478e3295c28`, not at HEAD.** The current figures are
+**267,265 edges over 110,043 symbols** with `contains` **29,330** and the other nine
+identical — see the verdict table and *The blob moved a second time*. The sentence
+above said "now agree", and "now" is the word that made it read as current; it is
+rewritten to "agree" for that reason, and the numbers are left at the blob that
+produced them.
 
 **Three defects in that shared script, measured and reported rather than fixed (§8).**
 
@@ -2292,29 +2365,36 @@ The DERIVATION arithmetic in the section above is unchanged by any of it: 0 by
 this lane's oracle, 6 by a gate that reads the differential's language-agnostic
 default audited list and never opens `nim-truth-oracle.ts`.
 
-**The gates, re-run at HEAD.** Two fail and **neither failure names nim**:
+**The gates, re-run at HEAD.** Two fail and **neither failure names nim**.
+The rows below marked **(s11)** were re-run at blob `1475e53d0e528d0a` on this pass
+and the rest are the earlier run at `9d9ee478e3295c28`, each carrying its own
+digest; where a number moved, the moved one is marked and the reason is the
+bare-`case` guard rather than a change in counting.
 
 | gate | exit | what it said about this lane |
 | --- | --- | --- |
 | `ontology-coverage-gate.ts nim` | 2 | `no RULING TABLE for nim` — this branch's copy predates the base's registration. The BASE's copy cannot be run in place either: it imports `./fsharp-ruled`, which also post-dates this fork. The verdict below comes from `ruled-gate.ts`, which applies the supervisor's two-line wiring to a copy in `/tmp` and runs the copy |
-| `ruled-gate.ts` (the arbiter, with the wiring applied) | **0** | **`emitted 10/10  ruled-sound 0  FALSIFIED 0  ruled-without-justification 0`**, 6,063 admitted files, 379 s, analyzer digest `9d9ee478e3295c28` unchanged on both sides of the walk |
+| `ruled-gate.ts` (the arbiter, with the wiring applied) | **0** | **(s11)** **`emitted 10/10  ruled-sound 0  FALSIFIED 0  ruled-without-justification 0`**, 6,063 admitted files, **519 s**, analyzer digest `1475e53d0e528d0a` unchanged on both sides of the walk, and all ten per-type counts identical to the current 1-worker census including `contains` 29,330 (`session11-ruled-gate.txt`). The earlier run at `9d9ee478e3295c28` read 379 s and `contains` 29,362 |
 | `firing-check.ts --files 100000 nim` (the arbiter) | **0** | **`10/10 fired, 267,297 edges, 6,063/6,063 files`**, 0 parse failures, 0 degraded fallbacks, 0 empty names, 0 empty kinds. Two of its output fields are broken — *Session 5* |
 | `firing-check.ts --files 120 nim` (its own default) | **0** | **`8/10 fired, 4,247 edges, 120/120`** — reproduces session 3 exactly. `implements` and `overrides` do not fire in a stride sample, for two different and separately documented reasons |
-| `verify-regex-census.ts` | 1 | **27 findings, `grep -in nim` over the whole output returns nothing.** css 5, julia 5, clean 1, fsharp 4, javascript 2, python 1, svelte 4, typescript 1 |
-| `verify-honesty.ts` | 6 | 22 failures, zero naming nim; banned-vocabulary lint over `validation/m14` + M14 docs **passes**. Re-run after this pass's doc edits: still exit 6, still **0** lines matching `nim` |
-| `run-fixtures.ts --lang nim` | 0 | `{"nim":{"pass":10,"fail":0}}`, scoped run wrote no evidence and refused `--update-baseline`. The **unscoped** form exits 6 at `2 fixture director(ies) no runner lane claims: r, lua` and never reaches nim — a repo-wide condition belonging to other lanes, recorded so it is not mistaken for this lane's |
-| `verify-mutants.ts` (lane's own) | 0 | 17 declared nim mutants run, **17 CAUGHT, 0 survived** |
+| `verify-regex-census.ts` | 1 | **(s11)** **28 findings on the working tree, `grep -in nim` over the whole output returns nothing.** css 7, julia 5, clean 1, fsharp 3, javascript 2, python 1, svelte 4, typescript 1, **plus 25 STALE entries the census carries that no longer exist on disk** — a lane's regex deleted but its census row kept. `missing from census: 26`, `stale in census: 25`, `unclassified: 0`, `mislocated: 0` |
+| `verify-honesty.ts` | 6 | **(s11)** **24 failures, zero naming nim.** 22 are cross-lane evidence staleness — `M14.0.F1..F9` each report a changed-input count because six agents are editing the shared inputs they declare — and 2 are `analyzer-hygiene-cpp` and `analyzer-hygiene-elixir`, which fail in other lanes. Also `freshness rule flags every artifact — it cannot distinguish current from stale` (2,531 inputs changed), which is the same shared-input drift seen from the other side. **No `nim` line appears in any of the 24.** `fixture-coverage all-green (27 languages)`, `M14.0.F8/F9/PIPE/WC1/SC1/CENSUS` all-green |
+| `run-fixtures.ts --lang nim` | 0 | **(s11)** **`{"nim":{"pass":11,"fail":0}}`** — 11 fixtures, the eleventh being `nim/bare-case`, added with the guard. Scoped run wrote no evidence and refused `--update-baseline`. **The form without `--lang` exits 6** at `2 fixture director(ies) no runner lane claims: lua, r` and never reaches nim — a repo-wide condition belonging to other lanes, recorded so it is not mistaken for this lane's |
+| `verify-mutants.ts` (lane's own) | 0 | **(s11)** **19 declared: 18 run, 18 CAUGHT, 0 survived, 1 retired.** The retired one is `nim/bare-case-guard-restored-by-keyword-list`, retired in `1f443af19` with a written reason, and the reason is structural: `mutate-analyzer.ts` transforms RESULTS, and a fix that changes which symbols EXIST cannot be undone by transforming the result of the fix. **The verifier did not read the `retired` flag until this pass**, so it executed it, counted it as a survivor and exited 2; the shared harness already honoured the flag. Fixed, and a retirement carrying no reason is now counted as a survivor so the flag cannot be used to hide a failure |
 | `verify-analyzer-hygiene-nim.ts` (lane's own substitute) | 0 | 0 findings on HEAD, and the reverted copy **is caught** by `bare-node-identity-comparison`, so the green is not vacuous |
 | `differential.ts --lang nim --sample 60` | 0 | `[lane] SKIP nim` — the §8 item above, declared unrun rather than measured |
-| `verify-analyzer-docs.ts` | 0 | nim is **absent** from the 13-lane missing-sections list, so all required sections are present |
+| `verify-analyzer-docs.ts` | 0 | **(s11)** nim is **absent** from the missing-sections list, so all required sections are present. **§8: this run rewrites `validation/m14/results/analyzer-docs.json`, which is supervisor-owned, and the rewrite sweeps in other lanes' in-flight drift (`go`, `lua`), so the file was reverted rather than committed. Same for `docs/DOC-TRUTH-EMISSIONS.md` after `verify-doc-truth-emissions.ts`** — which reads **0 findings for nim**, unchanged before and after this pass's doc edits |
 | `verify-grammar-pins.ts` | 3 | the `nim` pin holds — `421369fe6a88`, 5,797,624 B, `ids=377 named=127 anon=205 fields=24`, 19 files vendored. All four `PIN FAILURE` lines are julia's |
 
-The 17 here and the 60 in `session3-mutate-analyzer-shared.txt` are not in
-conflict and the difference is worth stating rather than reconciling away: 17 is
+The 19 here and the 60 in `session3-mutate-analyzer-shared.txt` are not in
+conflict and the difference is worth stating rather than reconciling away: 19 is
 what `script/m14/nim-mutants.ts` **declares** and the lane's `verify-mutants.ts`
-runs; 60 is what the shared `mutate-analyzer.ts` full sweep attributes to nim,
-the extra 43 being the harness's own generated kind-misclassification and
-symbol-drop mutants. Both report 0 survived.
+runs — 18 runnable plus 1 retired; 60 is what the shared `mutate-analyzer.ts` full
+sweep attributes to nim, the extra 41 being the harness's own generated
+kind-misclassification and symbol-drop mutants. Both report 0 survived. The lane
+count moved 17 → 19 because the bare-`case` fix added two mutants (`-guard-removed`,
+live and caught; `-restored-by-keyword-list`, retired) and that was the pass on
+which the verifier started disagreeing with the record.
 
 ## Differential ground truth
 
@@ -3355,7 +3435,7 @@ quiet machine will cover all 5,227 through the production path.
     `UNDOCUMENTED [nim] calls (relationship)`, and `bash` carries the same shape.
 
     This lane's table now opens with a totals row (`**all ten, one row each** |
-    10 of 10 examined | **10 EMITTED, 0 ruled** | 267,297 edges over 110,076
+    10 of 10 examined | **10 EMITTED, 0 ruled** | 267,265 edges over 110,043
     symbols | 6,063 admitted | …`), which states the section's summary and puts the
     drop on a row that makes no per-type claim. The gate then reads **0 findings for nim**. §8, not edited: deleting the third guard is the fix, and
     until it is, every lane's register under-reports its own claims by one row.
@@ -3420,8 +3500,10 @@ quiet machine will cover all 5,227 through the production path.
      clean run and the other is named in the table rather than deleted.
 25. **The digest pin covers the analyzer and NOT the production entry point, and this
     document did not say so until it had been measured.** Every number here is pinned
-    to `sha256(src/ast/real-nim-analyzer.ts) = 9d9ee478e3295c28`, printed before and
-    after each walk. `parseFile` is imported from `src/ast/pool-worker.ts`, which is
+    to `sha256(src/ast/real-nim-analyzer.ts)`, printed before and
+    after each walk — `9d9ee478e3295c28` for the artifact set quoted below, and
+    `1475e53d0e528d0a` for the verdict table, six-questions table and resolution
+    table. `parseFile` is imported from `src/ast/pool-worker.ts`, which is
     production code this lane does not own, and **a digest of the analyzer is not a
     digest of the pipeline that runs it.** The base's copy of that file has since
     changed, and the A/B in *Session 5* is the measurement of what the gap was worth:
@@ -3463,13 +3545,13 @@ quiet machine will cover all 5,227 through the production path.
     — are in *Session 5* and in
     `validation/m14/measurements/nim/session5-firing-check-defects.txt`.
 28. **The corpus-wide resolution figures are a name match against a name universe, not a
-    bind.** `resolution-scope.ts` widens the resolver from one file to 78,838 published
-    name spellings, and `calls` goes from 38.9% to 98.3% — which is a real and important
+    bind.** `resolution-scope.ts` widens the resolver from one file to 78,808 published
+    name spellings, and `calls` goes from 38.9% to 98.2% — which is a real and important
     finding about scope, and it is still a *string* match. A name that appears in the
     corpus but is declared by a different symbol than the edge means is counted resolved,
     and Nim's name reuse (`config`, `emptyNode`, `c`, `map`, `name` — the 36
     same-file-ambiguous names in *The incoming direction*, of which `c` alone accounts
-    for 23 edges) means name equality is a weak identity even inside one file. So 98.3%
+    for 23 edges) means name equality is a weak identity even inside one file. So 98.2%
     is an upper bound on what a graph walk can actually follow, and the gap between
     "resolves by name" and "binds to this declaration" is not measured by anything in
     this lane. Closing it needs the position- and scope-qualified identity the
