@@ -2,23 +2,77 @@
   "issue": "496",
   "code": "D1",
   "status": "known-gap",
-  "currentCommit": "45d5ce4cc5e85d9a612825ef136b05cc257d3012",
+  "currentCommit": "f37bd4cfb09fd9f23a4cd8b5d717d6cbe8111877",
   "sourceFingerprint": "4fe136ceb104bc7523db076bbc1e9fe18316dc685d06aec6d0e5a38e062e5c2e",
   "verifierCommand": "npx tsx script/m24/verify-docs.ts",
   "evidenceFile": "D1.json",
-  "generatedAt": "2026-10-05T03:41:03.900Z",
-  "passed": 42,
+  "generatedAt": "2026-10-05T03:56:59.844Z",
+  "passed": 45,
   "failed": 2,
   "failures": [
     "G1: regenerated tool doc is byte-identical to committed",
     "G2: claim table cites verified evidence for L2"
   ],
-  "negativeCases": 3,
+  "negativeCases": 6,
   "verdict": {
     "realComponentFailures": 2,
     "ok": false,
     "note": "doc fingerprint is the committed TOOL-DOC.md; regeneration byte-identity is the drift gate."
   },
+  "claimSources": [
+    {
+      "code": "L2",
+      "evidenceFile": "validation/m24/results/L2.json",
+      "read": "ok",
+      "status": "known-gap",
+      "currentCommit": "462f620be3ca6097a560b12d314fa9b98d8c6f1a",
+      "generatedAt": "2026-10-05T03:26:43.286Z",
+      "passed": 43,
+      "failed": 2,
+      "upstreamFailures": [
+        "G8/CONTROL: the same stimulus DOES throw when the row is resolved unguarded (so G8 is not vacuous)",
+        "G4/§5.1: no file in src/lsp/ converts an LSP/index line inline (outside the position owner)"
+      ],
+      "verdictOk": false
+    },
+    {
+      "code": "L3",
+      "evidenceFile": "validation/m24/results/L3.json",
+      "read": "ok",
+      "status": "verified",
+      "currentCommit": "462f620be3ca6097a560b12d314fa9b98d8c6f1a",
+      "generatedAt": "2026-10-05T03:25:38.916Z",
+      "passed": 117,
+      "failed": 0,
+      "upstreamFailures": [],
+      "verdictOk": true
+    },
+    {
+      "code": "L4",
+      "evidenceFile": "validation/m24/results/L4.json",
+      "read": "ok",
+      "status": "verified",
+      "currentCommit": "462f620be3ca6097a560b12d314fa9b98d8c6f1a",
+      "generatedAt": "2026-10-05T03:25:40.653Z",
+      "passed": 50,
+      "failed": 0,
+      "upstreamFailures": [],
+      "verdictOk": true
+    },
+    {
+      "code": "L5",
+      "evidenceFile": "validation/m24/results/L5.json",
+      "read": "ok",
+      "status": "verified",
+      "currentCommit": "462f620be3ca6097a560b12d314fa9b98d8c6f1a",
+      "generatedAt": "2026-10-05T03:25:43.893Z",
+      "passed": 97,
+      "failed": 0,
+      "upstreamFailures": [],
+      "verdictOk": true
+    }
+  ],
+  "claimTableIsDerivedFromEvidence": "G5c proves it against decoy evidence directories: the generated claim row changes when a code's status changes, and a generator that hardcodes every claim as verified is rejected. Measured note: with an upstream code known-gap, a hardcoding generator reproduces the COMMITTED doc byte-for-byte, so the drift comparison alone cannot tell an honest generator from a dishonest one — which is why G5c exists rather than being folded into G1.",
   "limitations": [
     "claim levels capped at I1 (protocol-passed) by design — I3/I4/I5 are M25 scope and declared absent",
     "per-language fixture evidence is M25 scope; the claim table states the language-agnostic protocol claim",
@@ -26,7 +80,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T03:41:03.902Z",
-    "contentSha256": "fafefd00d7f857bbebab28f53442ee79c6db5e8a3e6b3bf7a1dc6fe56ec431c9"
+    "sealedAt": "2026-10-05T03:56:59.845Z",
+    "contentSha256": "e2bf672378da97f7dffe1372ff7aed13489c990311804a10f7bf3021aad0a456"
   }
 }
