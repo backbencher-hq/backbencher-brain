@@ -6,7 +6,7 @@
   "status": "open",
   "authority": "docs/m41/M41-MASTER-PLAN.md",
   "governingContract": "docs/M14-HONESTY-CONTRACT.md",
-  "updatedAt": "2026-09-13T22:44:26.944Z",
+  "updatedAt": "2026-10-03T00:05:28.860Z",
   "evidencePolicy": {
     "verifiedRequires": [
       "currentCommit",
@@ -51,10 +51,10 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "fdb1a6f5740a246ecc694120098abac74f1e7741",
+        "currentCommit": "ba14aa18a616211fa5374488e5ad201866ae4e8d",
         "verifierCommand": "npx tsx script/m41/verify-governance.ts",
         "evidenceFile": "G1.json",
-        "generatedAt": "2026-09-13T21:57:27.577Z",
+        "generatedAt": "2026-10-03T00:02:40.002Z",
         "passed": 32,
         "failed": 0,
         "negativeCases": 11
@@ -78,10 +78,10 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "dbb1d5a8a20f6282af535dec735128e7483357e0",
+        "currentCommit": "2d68fe592486728fef8622a4dabe2e5b6370723f",
         "verifierCommand": "npx tsx script/m41/verify-truth-pipeline.ts",
         "evidenceFile": "T1.json",
-        "generatedAt": "2026-09-13T03:14:34.454Z",
+        "generatedAt": "2026-10-02T23:07:59.640Z",
         "passed": 21,
         "failed": 0,
         "negativeCases": 4
@@ -105,10 +105,10 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "dbb1d5a8a20f6282af535dec735128e7483357e0",
+        "currentCommit": "2d68fe592486728fef8622a4dabe2e5b6370723f",
         "verifierCommand": "npx tsx script/m41/verify-site-truth.ts",
         "evidenceFile": "T2.json",
-        "generatedAt": "2026-09-13T03:17:56.750Z",
+        "generatedAt": "2026-10-02T23:17:18.783Z",
         "passed": 58,
         "failed": 0,
         "negativeCases": 3
@@ -132,10 +132,10 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "dbb1d5a8a20f6282af535dec735128e7483357e0",
+        "currentCommit": "2d68fe592486728fef8622a4dabe2e5b6370723f",
         "verifierCommand": "npx tsx script/m41/verify-site-truth.ts --label T3",
         "evidenceFile": "T3.json",
-        "generatedAt": "2026-09-13T03:18:56.115Z",
+        "generatedAt": "2026-10-02T23:27:24.170Z",
         "passed": 58,
         "failed": 0,
         "negativeCases": 3
@@ -159,13 +159,13 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "dbb1d5a8a20f6282af535dec735128e7483357e0",
+        "currentCommit": "2d68fe592486728fef8622a4dabe2e5b6370723f",
         "verifierCommand": "npx tsx script/m41/verify-seo.ts",
         "evidenceFile": "S1.json",
-        "generatedAt": "2026-09-13T03:20:00.344Z",
-        "passed": 65,
+        "generatedAt": "2026-10-02T23:36:51.844Z",
+        "passed": 67,
         "failed": 0,
-        "negativeCases": 10
+        "negativeCases": 11
       }
     },
     {
@@ -216,10 +216,10 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "dbb1d5a8a20f6282af535dec735128e7483357e0",
+        "currentCommit": "2d68fe592486728fef8622a4dabe2e5b6370723f",
         "verifierCommand": "npx tsx script/m41/verify-design.ts",
         "evidenceFile": "D1.json",
-        "generatedAt": "2026-09-13T03:20:01.293Z",
+        "generatedAt": "2026-10-02T23:36:58.597Z",
         "passed": 17,
         "failed": 0,
         "negativeCases": 3,
@@ -253,10 +253,10 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "dbb1d5a8a20f6282af535dec735128e7483357e0",
+        "currentCommit": "2d68fe592486728fef8622a4dabe2e5b6370723f",
         "verifierCommand": "npx tsx script/m41/verify-closure.ts",
         "evidenceFile": "X1.json",
-        "generatedAt": "2026-09-13T03:25:27.341Z",
+        "generatedAt": "2026-10-03T00:02:40.076Z",
         "passed": 36,
         "failed": 0,
         "negativeCases": 13
