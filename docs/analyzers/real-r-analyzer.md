@@ -236,58 +236,93 @@ of any prefix. Over the population:
 
 | Type | Edges | Files | 120-file draw | Verdict |
 | --- | --- | --- | --- | --- |
-| `calls` | 48,233 | 1,294 | fires | EMITTED |
-| `uses` | 4,810 | 584 | fires | EMITTED |
-| `contains` | 17,634 | 1,874 | fires | EMITTED |
-| `imports` | 2,095 | 1,112 | fires | EMITTED |
-| `references` | **2,137** | 1,116 | fires | EMITTED |
-| `exports` | 3,592 | 711 | fires | EMITTED |
+| `calls` | 48,184 | 1,293 | fires | EMITTED |
+| `uses` | 4,808 | 583 | fires | EMITTED |
+| `contains` | 17,630 | 1,873 | fires | EMITTED |
+| `imports` | 2,093 | 1,111 | fires | EMITTED |
+| `references` | **2,135** | 1,115 | fires | EMITTED |
+| `exports` | 3,591 | 710 | fires | EMITTED |
 | `extends` | 351 | 61 | fires | EMITTED |
 | `implements` | 1,133 | 221 | fires | EMITTED |
-| `overrides` | **107** | **9** | **0** | EMITTED |
+| `overrides` | **95** | **8** | **0** | EMITTED |
 | `instantiates` | **3** | **2** | **0** | EMITTED |
 
-Total 80,095 relationships over **29,562** symbols in that run. `references` moved
-389 → 2,137 and the total 78,311 → 80,095 (+2.28%) when `::`/`:::` was given the
-`references` label it should have carried all along; the measurement and the
-reasoning are under **R7** below.
+Total **80,023** relationships over **29,558** symbols in that run, with **0**
+parse failures, 1 degraded parse (`usethis/R/author.R`), **0** symbols with an empty
+name, **0** with an empty or unknown kind, and **0** relationships carrying an empty
+or `unknown` endpoint. `overrides` is 95 edges in **8** files here against 107 in 9
+before `d2fc8626f`; `instantiates` is unchanged at 3.
 
-**The wobble is measured across seven production walks of this same population, and
+`references` moved 389 → 2,137 when `::`/`:::` was given the `references` label it
+should have carried all along; the measurement and the reasoning are under **R7**
+below.
+
+**The wobble is measured across nine production walks of this same population, and
 it is a property of the parser, not of the analyzer.** Each row is the sum of that
 run's own ten per-type rows; the artifacts and the runs whose bytes were not kept
 are named so a reader can check them.
 
+The walks are split into two groups because `d2fc8626f` changed the analyzer between
+them, and `overrides` is the only type it changed. **Every other column is directly
+comparable across the two groups; `overrides` is not.**
+
+Post-fix — every one of these four rows is backed by an artifact in this repository:
+
 | run | instrument | calls | uses | contains | imports | references | exports | extends | implements | overrides | instantiates | total | files lost |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 1 | `ontology-ten-types.txt` | 48,233 | 4,810 | 17,634 | 2,095 | 2,137 | 3,592 | 351 | 1,133 | 107 | 3 | 80,095 | 0 |
-| 2 | `labels-and-resolution.txt` | 48,174 | 4,808 | 17,622 | 2,095 | 2,137 | 3,585 | 351 | 1,133 | 107 | 3 | 80,015 | 1 |
+| 1 | `ontology-ten-types.txt` | 48,184 | 4,808 | 17,630 | 2,093 | 2,135 | 3,591 | 351 | 1,133 | 95 | 3 | 80,023 | 0 |
+| 2 | `labels-and-resolution.txt` | 48,233 | 4,810 | 17,634 | 2,095 | 2,137 | 3,592 | 351 | 1,133 | 95 | 3 | 80,083 | 1 |
+| K | `arbiter/arbiter-r-runK-2026-10-05.txt` | 48,098 | 4,801 | 17,627 | 2,088 | 2,130 | 3,588 | 351 | 1,133 | 95 | 3 | 79,914 | 1 |
+| M | `arbiter/arbiter-r-runM-2026-10-05.txt` | 48,096 | 4,789 | 17,617 | 2,093 | 2,135 | 3,588 | 351 | 1,133 | 95 | 3 | 79,900 | 1 |
+
+Pre-fix — `overrides` read 107 in every one of these five, and is not comparable with
+the column above:
+
+| run | instrument | calls | uses | contains | imports | references | exports | extends | implements | overrides | instantiates | total | files lost |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | F | arbiter, output not captured | 48,082 | 4,789 | 17,550 | 2,087 | 2,129 | 3,525 | 351 | 1,133 | 107 | 3 | 79,756 | 5 |
 | G | `arbiter/arbiter-r-runG-2026-10-05.txt` | 48,028 | 4,803 | 17,601 | 2,087 | 2,129 | 3,581 | 351 | 1,133 | 107 | 3 | 79,823 | 2 |
 | H | `arbiter/arbiter-r-runH-2026-10-05.txt` | 48,206 | 4,810 | 17,629 | 2,093 | 2,135 | 3,588 | 351 | 1,133 | 107 | 3 | 80,055 | 2 |
 | I | `arbiter/arbiter-r-runI-2026-10-05.txt` | 48,215 | 4,806 | 17,632 | 2,095 | 2,137 | 3,590 | 351 | 1,133 | 107 | 3 | 80,069 | 1 |
 | J | `arbiter/arbiter-r-runJ-2026-10-05.txt` | 48,209 | 4,806 | 17,630 | 2,095 | 2,137 | 3,591 | 351 | 1,133 | 107 | 3 | 80,062 | 1 |
 
-The cause is named per run, not asserted: the wasm grammar dies with
-`[BB-PARSE-ERR] … memory access out of bounds` and WHICH files it dies on changes.
-Run 2 lost `usethis/R/badge.R`; run F lost `ggplot2/R/scale-manual.R`,
+Two further pre-fix walks — the arbiter's own two, at 80,095 and 80,015 — were
+captured to `/tmp` before the artifacts directory existed, so they are named here and
+not relied on for a bound.
+
+**`overrides` is the one type in this table with no run-to-run variance at all: 107 in
+five pre-fix walks, 95 in four post-fix walks, with one commit in between and no
+overlap.** Its edges all live in eight hand-written inheritance test files, and a file
+lost to `memory access out of bounds` contributes none of them, so the loss rate that
+moves every other column cannot move this one. That is what makes the 12-edge drop
+attributable to `d2fc8626f` rather than to the parser, and it is also why this type's
+stability says nothing about the stability of the other nine.
+
+The cause of the wobble elsewhere is named per run, not asserted: the wasm grammar
+dies with `[BB-PARSE-ERR] … memory access out of bounds` and WHICH files it dies on
+changes. Run 2 lost `usethis/R/badge.R`; run F lost `ggplot2/R/scale-manual.R`,
 `r-cli/R/width.R`, `r-cli/exec/news.R`, `r-cli/R/zzz.R` and
 `r-testthat/R/expect-equality.R`; run G lost `ggplot2/R/scale-manual.R` and
 `usethis/R/course.R`; run H lost `usethis/R/ci.R` and `usethis/R/citation.R`; run I
-lost `r-testthat/R/expect-invisible.R`; run J lost `r-cli/R/width.R`. A file that
+lost `r-testthat/R/expect-invisible.R`; run J lost `r-cli/R/width.R`; run K lost
+`usethis/R/create.R`; run M lost `r-testthat/R/expect-condition.R`. A file that
 fails to parse contributes no edges, so the totals track the failures. The losses
-cluster — 8 of the 12 across the seven runs are `usethis` (4) or `r-cli` (4) file
-losses, and `r-rlang`'s 160 files were walked by every run without one loss. That
-clustering is weaker than a previous revision of this document claimed: it said 9 of
-11, which had both a wrong numerator (7 at the time, counted file by file from the
+cluster — 8 of the 13 across the seven arbiter walks are `usethis` (4) or `r-cli` (4)
+file losses, and `r-rlang`'s 160 files were walked by every run without one loss.
+That clustering is weaker than a previous revision of this document claimed: it said 9
+of 11, which had both a wrong numerator (7 at the time, counted file by file from the
 committed artifacts) and a wrong denominator (ten losses were on record when 11 was
 written, run I supplied the eleventh and run J the twelfth). Run I is also the first
-loss outside `usethis`, `r-cli` and `ggplot2`. Every total above is correct for the
-files its own run walked and none is correct
-for the admitted population as a whole; **the observed total band for the ten types
-is 79,756–80,095 (Δ339), and every rate in this document inherits that band on its
-denominator.** Run 1 walked all 2,184 files with 0 parse failures and 0 degraded
-parses; run 2 with 0 and 1; runs F, G, H, I and J each reported 1 degraded parse, which
-is the 120-second bomb substituting a regex extractor.
+loss outside `usethis`, `r-cli` and `ggplot2`.
+
+Every total above is correct for the files its own run walked and none is correct for
+the admitted population as a whole. **The post-fix band for the ten types is
+79,900–80,023 on the four rows whose bytes are all on disk, and 79,900–80,083 once
+`labels-and-resolution.txt` is included; the pre-fix band was 79,756–80,095.** Every
+rate in this document inherits that band on its denominator. Run 1 walked all 2,184
+files with **0 parse failures** and 1 degraded parse (`usethis/R/author.R`); runs F
+through M each reported 1 degraded parse, which is the 120-second bomb substituting a
+regex extractor.
 
 Two files are known vulnerable and were lost in two different runs each —
 `ggplot2/R/scale-manual.R` (runs F and G) and `r-cli/R/width.R` (runs F and J) — which
@@ -454,33 +489,56 @@ language lacks; it is a type a thin corpus cannot see.
 **3. Correct** — there is no differential for R (see *What this lane cannot
 claim*), so the only independent check available is this lane's own oracle, and its
 limit is stated with it. Harness `validation/m14/fixtures/r/oracle-r.ts`; committed
-output `validation/m14/fixtures/r/oracle-evidence.json`; **2,058 files, 16 repos**.
-`precision` is `(emitted − unexplained) / emitted`; `recall` is `(oracle −
-missing) / oracle`. Both denominators are that row's own, so each cell is a
-statement about one type's edges.
+output `validation/m14/fixtures/r/oracle-evidence.json` and `.txt`; **2,184 files,
+16 repos, the whole admitted population and no sampling**. `precision` is
+`(emitted − unexplained) / emitted`; `recall` is `(oracle − missing) / oracle`. Both
+denominators are that row's own, so each cell is a statement about one type's edges.
 
 | Type | oracle derives | analyzer emits | missing | unexplained | precision | recall | rule-coupled |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `calls` | 44,719 | 48,017 | 3,501 | 6,799 | 85.8% | 92.2% | yes |
-| `uses` | 3,773 | 4,769 | 99 | 1,095 | 77.0% | 97.4% | yes |
-| `contains` | 10,536 | 16,734 | 145 | 6,343 | 62.1% | 98.6% | yes |
-| `imports` | 2,149 | 2,052 | 97 | **0** | **100.0%** | 95.5% | no |
-| `references` | 2,171 | 2,094 | 98 | 21 | 99.0% | 95.5% | no |
-| `exports` | 3,615 | 3,591 | 24 | **0** | **100.0%** | 99.3% | no |
-| `extends` | 362 | 350 | 24 | 12 | 96.6% | 93.4% | no |
-| `implements` | 1,654 | 1,125 | **529** | **0** | **100.0%** | **68.0%** | no |
-| `overrides` | 34 | 107 | 2 | 75 | **29.9%** | 94.1% | yes |
+| `calls` | 44,931 | 48,210 | 3,548 | 6,827 | 85.8% | 92.1% | yes |
+| `uses` | 3,814 | 4,805 | 104 | 1,095 | 77.2% | 97.3% | yes |
+| `contains` | 10,573 | 17,633 | 146 | 7,206 | 59.1% | 98.6% | yes |
+| `imports` | 2,192 | 2,095 | 97 | **0** | **100.0%** | 95.6% | no |
+| `references` | 2,214 | 2,137 | 98 | 21 | 99.0% | 95.6% | no |
+| `exports` | 3,616 | 3,591 | 25 | **0** | **100.0%** | 99.3% | no |
+| `extends` | 363 | 351 | 24 | 12 | 96.6% | 93.4% | no |
+| `implements` | 1,671 | 1,133 | **538** | **0** | **100.0%** | **67.8%** | no |
+| `overrides` | 96 | 95 | 2 | 1 | **98.9%** | 97.9% | yes |
 | `instantiates` | 3 | 3 | 2 | 2 | 33.3% | 33.3% | no |
 
-**The two worst cells are the ones to read first, and neither is a fabrication
-count.** `overrides` precision at 29.9% means 75 of 107 emitted edges the oracle
-does not derive — the largest unexplained population of any type after `calls` and
-`contains`, and it is measured on a denominator of 107, where a handful of edges
-moves the rate a long way. `implements` recall at 68.0% means 529 of the oracle's
-1,654 carriers produce no edge, with **0** unexplained, so the analyzer emits
-nothing the oracle contradicts; it is silent on a third of them. Both are stated
-here rather than omitted, because a table of only the seven types that look good
-would move the arbiter's verdict without moving the evidence.
+**The worst cell is now `contains`, and it is not a fabrication count.**
+`contains` precision at 59.1% means 7,206 of 17,633 emitted edges the oracle does not
+derive — and the oracle is the one that is wrong about scope, not the analyzer. Its
+`contains` rule keeps only *top-level* bindings (`global → name`), while the analyzer
+nests a symbol under its owner, so every owned symbol is an "unexplained" edge by
+construction. This row is marked RULE-COUPLED for exactly that reason, and 98.6% recall
+is the half of the cell that carries information: the oracle derives 10,573 pairs and
+the analyzer produces 146 fewer than that.
+
+**`overrides` precision moved from 29.9% to 98.9%, and the instrument moved with it.**
+The previous run reported 34 derived / 107 emitted / 75 unexplained. That 75 was a
+stale instrument: the oracle's `overrides` pass iterated a map holding one entry per
+class NAME, so a file that redeclares a name — R6's own `test-clone.R` declares `AC`
+19 times — collapsed 19 classes into 1 and then paired the derived declaration against
+the LAST base declaration in the file, a pairing R never performs. Both walkers now
+resolve the base to the nearest PRECEDING declaration, from R's evaluation order, and
+the same walk derives 96 pairs against 95 emitted with **1** unexplained. **This is
+evidence that the two walkers execute one rule, and it is not evidence that the rule is
+right**: `overrides` is RULE-COUPLED, and the rule itself is argued from R semantics in
+the source at `src/ast/real-r-analyzer.ts:398-405`, not measured against R running.
+
+**`implements` recall at 67.8% is the largest real shortfall in the table.** 538 of the
+oracle's 1,671 carriers produce no edge, with **0** unexplained, so the analyzer emits
+nothing the oracle contradicts; it is silent on a third of them. The gap is
+concentrated in base-generic carriers (`Matrix.getOption`, `dim.x`, `has.x`), where R's
+dotted convention does not imply a real S3 registration on the class.
+
+**`instantiates` is 3 edges on a denominator of 3, and the rate is not a rate.** One
+`instantiates` edge moves either percentage by 33 points. The construct R expresses —
+`new("Cls")` for S4, `Cls$new()` for R6/R5 — occurs twice on the admitted corpus and the
+analyzer finds 2 of the 3 pairs, so the honest reading is that this type is barely
+exercised, not that it is a third correct.
 
 **The `rule-coupled` column bounds the four types it marks, and the declaration is
 the oracle's own.** `calls` attribution is "nearest enclosing named binding", `uses`
@@ -501,15 +559,15 @@ under exactly one type is the label being consistent.
 
 | Type | Subtypes (count) | Straddles another type? |
 | --- | --- | --- |
-| `calls` | `(none)` 44,015 · `closure_call` 1,668 · `s4_method` 1,413 · `r6_method` 793 · `s7_method` 234 · `r5_method` 13 | yes — the four method subtypes, and `(none)` |
-| `uses` | `member_read` 4,799 | **no** |
-| `contains` | `(none)` 16,773 · `r6_method` 418 · `r6_field` 184 · `s7_method` 118 · `s7_property` 103 · `s4_method` 18 · `r5_field` 5 · `r5_method` 1 | yes — the four method subtypes, and `(none)` |
-| `imports` | `namespace_access` 1,746 · `library_import` 290 · `rcpp_source` 46 · `r_source` 8 | yes — `rcpp_source`, `r_source` |
+| `calls` | `(none)` 44,108 · `closure_call` 1,672 · `s4_method` 1,413 · `r6_method` 793 · `s7_method` 234 · `r5_method` 13 | yes — the four method subtypes, and `(none)` |
+| `uses` | `member_read` 4,810 | **no** |
+| `contains` | `(none)` 16,787 · `r6_method` 418 · `r6_field` 184 · `s7_method` 118 · `s7_property` 103 · `s4_method` 18 · `r5_field` 5 · `r5_method` 1 | yes — the four method subtypes, and `(none)` |
+| `imports` | `namespace_access` 1,751 · `library_import` 290 · `rcpp_source` 46 · `r_source` 8 | yes — `rcpp_source`, `r_source` |
 | `references` | `namespace_access` 1,751 · `library_dependency` 290 · `rcpp_source` 46 · `s7_class_binding` 21 · `s4_binding` 21 · `r_source` 8 | yes — `namespace_access`, `rcpp_source`, `r_source` |
-| `exports` | `roxygen_export` 3,581 | no |
-| `extends` | `s4_inherits` 263 · `r6_inherits` 53 · `s7_parent` 33 · `r5_inherits` 1 | no |
+| `exports` | `roxygen_export` 3,592 | no |
+| `extends` | `s4_inherits` 263 · `r6_inherits` 54 · `s7_parent` 33 · `r5_inherits` 1 | no |
 | `implements` | `s3_method` 1,133 | no |
-| `overrides` | `object_system_method_override` 107 | no |
+| `overrides` | `object_system_method_override` 95 | no |
 | `instantiates` | `(none)` 3 | yes — `(none)` |
 
 **The `uses` / `references` confusion is structurally impossible in this lane,
@@ -544,28 +602,28 @@ Recomputed over the same block, per type, against that type's own edge count:
 
 | | edges | carrying a subtype | `(none)` |
 | --- | --- | --- | --- |
-| `calls` | 48,174 | 4,123 | 44,051 |
-| `contains` | 17,622 | 847 | 16,775 |
-| `uses` | 4,808 | 4,808 | · |
+| `calls` | 48,233 | 4,125 | 44,108 |
+| `contains` | 17,634 | 847 | 16,787 |
+| `uses` | 4,810 | 4,810 | · |
 | `imports` | 2,095 | 2,095 | · |
 | `references` | 2,137 | 2,137 | · |
-| `exports` | 3,585 | 3,585 | · |
+| `exports` | 3,592 | 3,592 | · |
 | `extends` | 351 | 351 | · |
 | `implements` | 1,133 | 1,133 | · |
-| `overrides` | 107 | 107 | · |
+| `overrides` | 95 | 95 | · |
 | `instantiates` | 3 | **0** | 3 |
-| **all** | **80,015** | **80,012** | **3** |
+| **all** | **80,083** | **80,080** | **3** |
 
-So the honest figure is **3 of 80,015 edges (0.0%) carry no subtype**, and all 3 are
+So the honest figure is **3 of 80,083 edges (0.0%) carry no subtype**, and all 3 are
 the `instantiates` edges, which do carry `isRConstructor` and `reasonCode`.
 
 The `(none)` rows under `calls` and `contains` are a different and still real finding:
 those edges are subtyped as *unclassified within their own type*, not as *untyped*.
-`calls` at 4,123 of 48,174 (8.6%) and `contains` at 847 of 17,622 (4.8%) carry a
+`calls` at 4,125 of 48,233 (8.6%) and `contains` at 847 of 17,634 (4.8%) carry a
 subtype; the rest carry other metadata and no subtype name. The gap is that the
 analyzer never names a subtype for an ordinary call or an ordinary containment, so a
-consumer filtering `relationshipSubType == "closure_call"` sees 1,670 of 48,174 calls
-and has no way to learn what the other 46,504 are. That is a gap in the vocabulary, not
+consumer filtering `relationshipSubType == "closure_call"` sees 1,672 of 48,233 calls
+and has no way to learn what the other 46,561 are. That is a gap in the vocabulary, not
 in the edges — the edges exist, are typed, and resolve.
 
 **`extends` and `implements` checked against an independent carrier probe.** The
@@ -742,25 +800,23 @@ construction, and the targets of `imports` and `references` are package names:
 
 | Type | target in same file | source shape | target shape |
 | --- | --- | --- | --- |
-| `contains` | 17,618 / 17,622 = 100.0% | `global` 16,653 | declared names |
-| `exports` | 3,584 / 3,585 = 100.0% | `global` 3,585 | declared names |
-| `overrides` | 107 / 107 = 100.0% | class names | member names |
+| `contains` | 17,630 / 17,634 = 100.0% | `global` 16,653 | declared names |
+| `exports` | 3,591 / 3,592 = 100.0% | `global` 3,592 | declared names |
+| `overrides` | 95 / 95 = 100.0% | class names | member names |
 | `instantiates` | 3 / 3 = 100.0% | `initialize`, `capture_expectations` | class names |
 | `extends` | 258 / 351 = 73.5% | class names | `VIRTUAL` 34, `Reporter` 20, class names |
 | `implements` | 371 / 1,133 = 32.7% | `generic.class` | `vec_ptype2` 86, `vec_cast` 82, `print` 74 |
 | `references` | 55 / 2,137 = 2.6% | `global` 2,095 | `cli` 318, `withr` 254, `utils` 122 |
-| `calls` | 5,035 / 48,174 = 10.5% | any symbol | `c` 1,794, `return` 1,398, `length` 1,118 |
-| `uses` | 402 / 4,808 = 8.4% | any symbol | `x` 217, `name` 106, `Dim` 93 |
+| `calls` | 5,042 / 48,233 = 10.5% | any symbol | `c` 1,797, `return` 1,399, `length` 1,118 |
+| `uses` | 402 / 4,810 = 8.4% | any symbol | `x` 217, `name` 106, `Dim` 93 |
 | `imports` | 13 / 2,095 = 0.6% | `global` 2,095 | `cli` 318, `withr` 254, `utils` 122 |
 
 Each denominator above is the edge count **of that row's own run**, read from the
 committed `labels-and-resolution.txt`. That run is one of four over the same
-population and they do not agree to the digit, so a second reading of this table
-gives `calls` 5,042 / 48,230 = 10.5% — a different walk, not a different rate. The
-rates are stable across runs; the denominators are not. An earlier revision of this
-table quoted that second walk's denominators while the artifact held the first, which
-is the same two-sets error the `(none)` table below records, so the row now carries
-the run it came from.
+population and they do not agree to the digit, so the denominators are run-specific and
+the rates are not. An earlier revision of this table quoted one walk's denominators
+while the artifact held another's, which is the same two-sets error the `(none)` table
+below records, so every row now carries the run it came from.
 
 `imports` at 0.6% and `references` at 2.6% are **the structure of the type, not
 a defect rate**: no R source file declares its own package name as a symbol, so a
@@ -827,7 +883,7 @@ returns exactly this and nothing else:
 | `contains -to-> this` | 1 | `r-cli/tests/testthat/test-progress-variables.R:173` | a `local()` binding read 3× below |
 | `contains -to-> this` | 1 | `r-vctrs/tests/testthat/test-type2.R:26,50` | two `local()` bindings |
 
-So `contains` at 17,618/17,622 and `exports` at 3,584/3,585 are not R-rule
+So `contains` at 17,630/17,634 and `exports` at 3,591/3,592 are not R-rule
 shortfalls with a denylist problem mixed in: the denylist **is** the whole of them.
 Neither `super` nor `this` is reserved in R, and `S7/R/super.R` shows why that
 matters — `super()` is S7's dispatch primitive, and dropping it leaves **13 edges
@@ -857,20 +913,20 @@ thing a reader trusts.
 
 **6. Confident** — measured over the population with a 0.05-wide histogram,
 because a threshold test cannot tell a lane that sits on 0.7 from a lane with a
-spread, and both satisfy `>= 0.7`. **0 of 80,095 edges fall below 0.7; 0 carry
+spread, and both satisfy `>= 0.7`. **0 of 80,083 edges fall below 0.7; 0 carry
 a missing or non-numeric confidence.**
 
 | Type | Edges | 1.00 | 0.95 | 0.90 | 0.85 | 0.80 | 0.70 |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `calls` | 48,174 | 46,504 | · | · | · | · | 1,670 |
-| `contains` | 17,622 | 17,622 | · | · | · | · | · |
-| `uses` | 4,808 | 4,572 | · | · | 236 | · | · |
-| `exports` | 3,585 | 3,585 | · | · | · | · | · |
+| `calls` | 48,233 | 46,561 | · | · | · | · | 1,672 |
+| `contains` | 17,634 | 17,634 | · | · | · | · | · |
+| `uses` | 4,810 | 4,574 | · | · | 236 | · | · |
+| `exports` | 3,592 | 3,592 | · | · | · | · | · |
 | `imports` | 2,095 | 1,815 | · | · | · | 280 | · |
 | `implements` | 1,133 | · | · | · | · | 1,133 | · |
 | `references` | 2,137 | 1,857 | · | · | · | 280 | · |
 | `extends` | 351 | 351 | · | · | · | · | · |
-| `overrides` | 107 | · | 107 | · | · | · | · |
+| `overrides` | 95 | · | 95 | · | · | · | · |
 | `instantiates` | 3 | · | · | 3 | · | · | · |
 
 Each sub-1.0 band is one derivation rule, and each carries a machine-readable
@@ -880,7 +936,7 @@ bare-identifier `library(x)` with no string literal
 (`library_bare_identifier`), and the same for `references`, 0.90 is
 `declared_class_constructor`, 0.95 is `base_class_declared_in_same_file`.
 
-**FINDING — `evidenceClass` is absent on 80,095 of 80,095 R edges.** Not one
+**FINDING — `evidenceClass` is absent on 80,083 of 80,083 R edges.** Not one
 edge in the population carries the field. That is legal: `src/lsp/evidence_tier.ts`
 rule 2 derives the tier from confidence when no stored class exists, so with
 every R edge at `>= 0.7` every R edge reads `structural`. It is still an
@@ -909,15 +965,16 @@ than the number sees one tier for this lane.
   to it, which is the limitation the workstream header requires be stated rather
   than glossed.
 - **The `exports` resolution rate is measured against a file-local set, and every
-  unresolved `exports` and `contains` edge in it is a denylist ghost.** 3,584 of
-  3,585 and 17,618 of 17,622, where the 5 missing edges are 3 names in 4 files and
+  unresolved `exports` and `contains` edge in it is a denylist ghost.** 3,591 of
+  3,592 and 17,630 of 17,634, where the 5 missing edges are 3 names in 4 files and
   the cause is `keepSymbol`, not an R rule. The accounting is closed rather than
   partial, which is a stronger statement than the one it replaces: there is no
   unexplained residue left in either rate.
-- **Corpus totals for R are not bit-reproducible under concurrency.** Five
+- **Corpus totals for R are not bit-reproducible under concurrency.** Nine
   production walks of this lane over the identical 2,184-file population logged
-  `[BB-PARSE-ERR] r | <file> | memory access out of bounds` on 0, 1, 5, 2 and 2
-  files respectively, totalling 79,756 to 80,095 edges for the ten types. The
+  `[BB-PARSE-ERR] r | <file> | memory access out of bounds` on 0, 1, 5, 2, 2, 1, 1,
+  1 and 1 files respectively — 13 losses, 11 distinct files — totalling 79,756 to
+  80,095 edges for the ten types pre-fix and 79,900 to 80,083 post-fix. The
   per-run table above carries each walk's own counts. `probe-oom.ts`
   establishes what is *not* wrong: over `r-rlang` (160 files, 3 passes each),
   **0** files had a symbol or relationship count that differed between passes, and
