@@ -68,6 +68,26 @@ check("S1: site builds", buildOk)
 // /privacy and /terms were silently absent from the sitemap before this check
 // existed; a hand-written list on both sides could not have caught that.
 
+// The per-language detail pages. On disk this is ONE route —
+// website/src/app/languages/[slug]/page.tsx — that statically expands to one
+// page per display family. A top-level directory walk cannot see it (and must
+// not: a `[slug]` segment is not itself a URL), so the expansion is read from
+// the one place the URLs are declared: data/language-depth/slugs.ts, which is
+// also what sitemap.ts and generateStaticParams use.
+//
+// Parsed as TEXT, never imported. slugs.ts is a pure declaration precisely so
+// this is possible, and this gate is an independent instrument — it must be
+// able to disagree with the site's own modules rather than inherit their bugs.
+function languageDetailRoutes(): string[] {
+  const src = read("website/src/data/language-depth/slugs.ts")
+  const start = src.indexOf("export const FAMILY_SLUGS")
+  if (start < 0) return []
+  const block = src.slice(start, src.indexOf("\n}", start))
+  return [...block.matchAll(/^\s*(?:"([^"]+)"|([A-Za-z][A-Za-z0-9 #.-]*)):\s*"([a-z0-9-]+)",\s*$/gm)].map(
+    (m) => `/languages/${m[3]}`,
+  )
+}
+
 function discoverRoutes(): string[] {
   const appDir = path.join(SITE, "src/app")
   const routes: string[] = existsSync(path.join(appDir, "page.tsx")) ? [""] : []
@@ -75,6 +95,12 @@ function discoverRoutes(): string[] {
     if (!e.isDirectory() || e.name.startsWith("(") || e.name.startsWith("_")) continue
     if (!existsSync(path.join(appDir, e.name, "page.tsx"))) continue
     routes.push(`/${e.name}`)
+  }
+  // The dynamic segment expands to its concrete URLs, and only when the route
+  // actually exists — a sitemap entry for a page that is not built is the exact
+  // failure this parity check exists to catch.
+  if (existsSync(path.join(appDir, "languages/[slug]/page.tsx"))) {
+    routes.push(...languageDetailRoutes())
   }
   return routes.sort()
 }
@@ -111,9 +137,25 @@ check(
   `declared=${JSON.stringify(DECLARED_REDIRECTS)}`,
 )
 const discoveryMissing = REQUIRED_ROUTES.filter((r) => !REAL_ROUTES.includes(r))
-const discoveryExtra = REAL_ROUTES.filter((r) => !REQUIRED_ROUTES.includes(r) && !REDIRECT_ROUTES.includes(r))
+// The language detail pages are a declared family of routes, not free-form
+// additions: every one of them must come from the single slug declaration. An
+// undeclared route still fails — the exemption is exactly the slug list, so
+// `git add`ing a stray page cannot buy its way past this gate.
+const LANGUAGE_ROUTES = existsSync(path.join(SITE, "src/app/languages/[slug]/page.tsx"))
+  ? languageDetailRoutes()
+  : []
+const discoveryExtra = REAL_ROUTES.filter(
+  (r) => !REQUIRED_ROUTES.includes(r) && !REDIRECT_ROUTES.includes(r) && !LANGUAGE_ROUTES.includes(r),
+)
 check("S1: route discovery finds every required page", discoveryMissing.length === 0, discoveryMissing.join(" "))
 check("S1: no route exists outside the required list", discoveryExtra.length === 0, discoveryExtra.join(" "))
+check(
+  "S1: the language detail pages expand to one route per declared family",
+  !existsSync(path.join(SITE, "src/app/languages/[slug]/page.tsx")) ||
+    (LANGUAGE_ROUTES.length === Object.keys(read("website/src/data/brain-languages.ts").match(/^\s*\{ name: '[^']+', ext:/gm) ?? {}).length &&
+      new Set(LANGUAGE_ROUTES).size === LANGUAGE_ROUTES.length),
+  `detail=${LANGUAGE_ROUTES.length}`,
+)
 
 // --- rendered <head> extraction ------------------------------------------------------
 // M56.S1: /faq and /contact are permanent redirects to /support (their pages
@@ -413,8 +455,27 @@ negative("S1: FAQ question-drift detector is sensitive", (() => {
 negative("S1: required-route detector rejects a discovery that lost a page", !REQUIRED_ROUTES.every((r) => REAL_ROUTES.filter((x) => x !== "/editors").includes(r)))
 
 // N7b (real data): a page outside the contract must be flagged, so a new route
-// cannot slip in without being onboarded.
-negative("S1: undeclared-route detector rejects a page outside the contract", ![...REAL_ROUTES, "/undeclared"].every((r) => REQUIRED_ROUTES.includes(r)))
+// cannot slip in without being onboarded. Exercises the SAME predicate the
+// positive check uses, with one undeclared route added — a stray page is
+// caught whether the required list or the language slug list would have covered
+// it, and adding a page is never free.
+negative("S1: undeclared-route detector rejects a page outside the contract", (() => {
+  const extra = [...REAL_ROUTES, "/undeclared"].filter(
+    (r) => !REQUIRED_ROUTES.includes(r) && !REDIRECT_ROUTES.includes(r) && !LANGUAGE_ROUTES.includes(r),
+  )
+  return extra.length > 0
+})())
+
+// N7c (real data): a language page absent from the sitemap must fail parity.
+// The 45 detail routes are the largest family of indexable URLs on the site, so
+// the "sitemap omits a real page" failure mode is checked against one of them
+// explicitly rather than only against a top-level route.
+negative("S1: route-parity detector rejects a sitemap missing a language page", (() => {
+  const sample = LANGUAGE_ROUTES[0]
+  if (!sample) return true
+  const dropped = expectedUrls.filter((u) => u !== `https://backbencher.cc${sample}`)
+  return JSON.stringify([...sitemapUrls].sort()) !== JSON.stringify([...dropped].sort()) || sitemapUrls.length === 0
+})())
 
 // N7 (real data): route parity must reject a sitemap that omits a real page.
 negative("S1: route-parity detector rejects a missing legal page", (() => {

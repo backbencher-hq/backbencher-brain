@@ -133,11 +133,71 @@ interface StackFrame {
    */
   scope: string
   currentSelector: string
+  /**
+   * The name of the nearest enclosing `@keyframes`, or `""`.
+   *
+   * This is the OWNER of a declaration that `currentSelector` cannot own, and the reason it
+   * exists is measured, not imagined. `@keyframes fade { from { opacity: var(--o) } }` is a
+   * real custom-property read — the animation's behaviour depends on a property declared
+   * elsewhere — and `currentSelector` is EMPTY inside a `keyframe_block`, because the walk
+   * only sets it at a `rule_set` and a keyframe block is not one. So before this field
+   * existed, every `var()` inside `@keyframes` produced no edge at all: measured over the
+   * admitted corpus, **827 of the 1,014 `--x` leaves that reach no `rule_set`** are in a
+   * `keyframes_statement`, across 265 files (`bootstrap/css/bootstrap.css:4933`,
+   * `bulma/.../fontawesome-free-6.5.2-web/css/all.css:330`,
+   * `pico/css/pico.amber.css:2769`). The dependency was real and the graph did not have it.
+   *
+   * The owner is the keyframes NAME because that name is already published as a symbol
+   * (`processKeyframes`, `SymbolKind.Function`, `isKeyframes`), so the edge resolves at both
+   * ends without inventing an endpoint. Nothing here is emitted for a `@theme`/`@apply`/
+   * `@utility` block instead: those are CONSUMING at-rules with deliberately no symbol
+   * (`processAtRule`'s ruling D10 — "a symbol with no declaration behind it is a name with no
+   * referent"), so a `var()` inside one still has no owner to name. That remainder is
+   * counted and declared, not papered over: 167 leaves in 4 files.
+   */
+  keyframeScope: string
 }
 
 // ============================================================================
 // PURE-STRING HELPERS (regex-free)
 // ============================================================================
+//
+// ZERO REGEX, and that is a mechanical property rather than a preference. A regex over
+// node text cannot tell a construct from its own mention: it matches inside a comment,
+// inside a string literal, inside a `url()`, and it silently changes meaning on the
+// next grammar version. Every helper below replaced one, and in every case the
+// information was either IN THE NODE — in which case the node is read instead — or was
+// a token boundary, which is a character test and nothing more. `script/m12/
+// verify-regex-census.ts` is the arbiter and it prints every row.
+//
+// The set below is exactly what JS `\s` matches, not the ASCII five, because a
+// replacement that quietly stops matching a code point is a behaviour change wearing a
+// cleanup's commit message. It is the SAME set the class's own `isSpace` used, so
+// there is now one definition of "whitespace" in this file rather than two.
+//
+// THREE helpers this file does NOT have, and why. `stripSigil` (drop a literal sigil
+// and the whitespace after it), `stripLeadingToken` (drop a sigil and the
+// non-whitespace run after it) and `stripTrailingSemicolon` were each written to
+// replace one anchored pattern, and each was DELETED before this commit: the three
+// call sites turned out to have the boundary in the TREE — `at_keyword`/`@namespace`
+// as one child, `;` and `block` as another — so the string peel was strictly worse than
+// reading `startIndex`/`endIndex` off nodes the parser had already located. See
+// `atRulePrelude` and `collectNamespacePrefixes`. Recording it because "a helper I
+// wrote and then deleted" and "a helper I never needed" look identical in a diff, and
+// only the first is worth a reader's five seconds.
+
+/** Every code point JS `\s` matches: ASCII six, \v, NBSP, the U+2000 block, the
+ *  line/paragraph separators, and the BOM. */
+const JS_WHITESPACE = new Set([
+  " ", "\t", "\n", "\v", "\f", "\r",
+  " ", " ", " ", " ", " ", " ", " ", " ",
+  " ", " ", " ", " ", " ", " ", " ", " ",
+  " ", "　", "﻿",
+])
+
+function isWhitespaceChar(c: string): boolean {
+  return JS_WHITESPACE.has(c)
+}
 
 // Strip ALL quote characters from a string (multi-quote values like
 // `url("theme.css")` inner text). Pure-String scan.
@@ -190,8 +250,82 @@ function replaceAll(text: string, needle: string, replacement: string): string {
  * silently keep returning `""`.
  */
 function leadingCustomIdent(prelude: string): string {
-  const m = /^(--[A-Za-z0-9_-]+)/.exec(prelude.trim())
-  return m ? m[1] : ""
+  const t = prelude.trim()
+  if (t.length < 2 || t.charAt(0) !== "-" || t.charAt(1) !== "-") return ""
+  let i = 2
+  while (i < t.length && isCustomIdentChar(t.charAt(i))) i++
+  return t.slice(0, i)
+}
+
+/**
+ * One code point of a CSS `<custom-ident>` continuation, or false.
+ *
+ * CSS Syntax 3 §3.2: an ident code point is a letter, a non-ASCII code point, a digit,
+ * a hyphen, or an underscore. The non-ASCII and escape arms are not enumerated here
+ * because the only caller reads a name this grammar already lexed as a single
+ * `keyword_query` token, and an escape inside one arrives as `escape_sequence` text.
+ */
+function isCustomIdentChar(c: string): boolean {
+  return (
+    (c >= "a" && c <= "z") ||
+    (c >= "A" && c <= "Z") ||
+    (c >= "0" && c <= "9") ||
+    c === "-" ||
+    c === "_"
+  )
+}
+
+/**
+ * Drop a trailing `:<digits>` occurrence suffix, or return `text` unchanged.
+ *
+ * The suffix a bundler writes to keep two same-named rules distinct: `btn:12`. It is
+ * removed only when the digits run to the end of the string AND a `:` introduces them,
+ * so `a:1b`, `123` and `a:` are all returned untouched.
+ */
+function stripOccurrenceSuffix(name: string): string {
+  let i = name.length
+  while (i > 0) {
+    const c = name.charAt(i - 1)
+    if (c < "0" || c > "9") break
+    i--
+  }
+  if (i === name.length) return name
+  if (i === 0 || name.charAt(i - 1) !== ":") return name
+  return name.slice(0, i - 1)
+}
+
+/**
+ * The LAST `/`- or `\`-separated segment of a path, or the path itself.
+ *
+ * `lastPathSegment("a/b/theme.css")` -> `"theme.css"`. This is how the store spells a
+ * file, and how the module is written in the import itself. A trailing separator yields
+ * `""`, and the caller substitutes the whole path — the same substitution the
+ * `split`-and-take-the-last-element form it replaced made.
+ */
+function lastPathSegment(p: string): string {
+  let cut = -1
+  for (let i = 0; i < p.length; i++) {
+    const c = p.charAt(i)
+    if (c === "/" || c === "\\") cut = i
+  }
+  return cut >= 0 ? p.slice(cut + 1) : p
+}
+
+/**
+ * The first whitespace-delimited token of `text`, or `""`.
+ *
+ * `firstToken("sass:math as math")` -> `"sass:math"`. The one caller passes text that
+ * has already been through `collapseWhitespace`, which trims, so the empty-field case a
+ * raw `split` on leading whitespace would produce cannot arise there — and returning
+ * `""` for it rather than the whole string is the honest answer anyway: a whitespace
+ * run is not a module name.
+ */
+function firstToken(text: string): string {
+  let i = 0
+  while (i < text.length && isWhitespaceChar(text.charAt(i))) i++
+  const start = i
+  while (i < text.length && !isWhitespaceChar(text.charAt(i))) i++
+  return text.slice(start, i)
 }
 
 /**
@@ -236,6 +370,18 @@ function collapseWhitespace(text: string): string {
     out += c
   }
   return out
+}
+
+/**
+ * Is this callee node the CSS `var()` function?
+ *
+ * Character equality after trimming, not a pattern: a node-type or text test has to
+ * distinguish the FUNCTION `var` from a class named `.var`, a property `--var`, or the word
+ * "var" inside a comment, and only the node's own text can answer that. A pattern over the
+ * enclosing statement could not.
+ */
+function fnNameNameIsVar(fnNameNode: Node): boolean {
+  return fnNameNode.text.trim() === "var"
 }
 
 /**
@@ -347,8 +493,8 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
     // The importing stylesheet's own name, for `@import` edges. Pure-String, and
     // the LAST path segment: `a/b/theme.css` imports as `theme.css`, which is how
     // the module is written in the import itself and how the store spells a file.
-    const segs = filePath.split(/[\\/]/)
-    this.importerName = segs[segs.length - 1] || filePath || "stylesheet"
+    const lastSegment = lastPathSegment(filePath)
+    this.importerName = lastSegment || filePath || "stylesheet"
 
     const ctx: CssContext = {
       symbols: [],
@@ -399,10 +545,10 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
     this.collectCustomDefinitionNames(rootNode, ctx)
     this.collectNamespacePrefixes(rootNode, ctx)
 
-    const stack: StackFrame[] = [{ node: rootNode, media: "", supports: "", layer: "", container: "", scope: "", currentSelector: "" }]
+    const stack: StackFrame[] = [{ node: rootNode, media: "", supports: "", layer: "", container: "", scope: "", currentSelector: "", keyframeScope: "" }]
 
     while (stack.length > 0) {
-      const { node, media, supports, layer, container, scope, currentSelector } = stack.pop()!
+      const { node, media, supports, layer, container, scope, currentSelector, keyframeScope } = stack.pop()!
 
       // Record every parse error the tree reports, and NEVER claim otherwise.
       //
@@ -418,7 +564,7 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
       // ERROR/MISSING nodes — grails-core's `docs-core/.../main.css` produces
       // 3,418 of them, and the first spans the ENTIRE 1,217-line file. Skipping
       // error subtrees deleted 883 of that file's 964 lost output lines, i.e. the
-      // whole file, including the rules the grammar had read perfectly well.
+      // whole file, including the rules the grammar had parsed without error.
       //
       // The suppression was also never necessary. Inside a real ERROR node the
       // children are tokens the switch does not match — for the
@@ -456,6 +602,11 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
       let nextContainer = container
       let nextScope = scope
       let nextSelector = currentSelector
+      // The nearest enclosing `@keyframes` OWNS the declarations inside it, so a frame
+      // inherits the name of the one it is inside. Reset per node (not `|| carried`) so a
+      // `keyframes_statement` that publishes no name cannot inherit an outer one: the
+      // nearest owner is the only correct owner.
+      let nextKeyframeScope = keyframeScope
 
       switch (node.type) {
         case "rule_set":
@@ -471,9 +622,11 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
           }
           break
         }
-        case "keyframes_statement":
-          this.processKeyframes(node, ctx)
+        case "keyframes_statement": {
+          const kfName = this.processKeyframes(node, ctx)
+          nextKeyframeScope = kfName
           break
+        }
         case "supports_statement": {
           const newSupports = this.processSupports(node, ctx)
           if (newSupports) nextSupports = newSupports
@@ -509,7 +662,7 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
           break
         }
         case "call_expression":
-          this.processCallExpression(node, currentSelector, ctx)
+          this.processCallExpression(node, currentSelector, keyframeScope, ctx)
           break
       }
 
@@ -524,6 +677,7 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
             container: nextContainer,
             scope: nextScope,
             currentSelector: nextSelector,
+            keyframeScope: nextKeyframeScope,
           })
         }
       }
@@ -547,7 +701,7 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (sym.scope) names.add(`${sym.scope}.${sym.name}`)
       }
       const leafOf = (n: string): string => {
-        const segs = n.replace(/:\d+$/, "").split(":").filter((x) => x.length > 0)
+        const segs = stripOccurrenceSuffix(n).split(":").filter((x) => x.length > 0)
         const last = segs[segs.length - 1] ?? ""
         const dots = last.split(".")
         return dots[dots.length - 1]
@@ -727,7 +881,7 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
             for (const item of v) if (!cur.includes(item)) cur.push(item)
           } else if (typeof v === "boolean" && typeof cur === "boolean") {
             out[k] = cur || v
-          } else if (typeof v === "number" && typeof cur === "number" && /specificity|omplexity/.test(k)) {
+          } else if (typeof v === "number" && typeof cur === "number" && (k.includes("specificity") || k.includes("omplexity"))) {
             out[k] = Math.max(cur, v)
           } else if (cur === undefined) {
             out[k] = v
@@ -886,9 +1040,9 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
    * True when the node IS the parse failure, rather than merely containing one.
    *
    * `Node.hasError` is true for a node with a broken descendant too, so using it
-   * as a suppression test would discard declarations that are perfectly well
-   * formed. A MISSING node is a token the parser inserted where the source had
-   * none, which is equally not a declaration.
+   * as a suppression test would discard declarations that are well formed. A
+   * MISSING node is a token the parser inserted where the source had none,
+   * which is equally not a declaration.
    */
   /**
    * The 1-based line of a node — the M59 convention, matching the symbol
@@ -1069,16 +1223,12 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
    * that quietly stops matching a code point is a behaviour change wearing a
    * cleanup's commit message.
    */
-  private static readonly JS_SPACE = new Set([
-    " ", "\t", "\n", "\v", "\f", "\r",
-    "\u00a0", "\u1680", "\u2000", "\u2001", "\u2002", "\u2003", "\u2004", "\u2005",
-    "\u2006", "\u2007", "\u2008", "\u2009", "\u200a", "\u2028", "\u2029", "\u202f",
-    "\u205f", "\u3000", "\ufeff",
-  ])
+  private static readonly JS_SPACE = JS_WHITESPACE
 
   private isSpace(c: string | undefined): boolean {
     return c !== undefined && RealCssAnalyzer.JS_SPACE.has(c)
   }
+
 
   /**
    * Complexity of a media/supports/container QUERY, in the same spirit as the
@@ -1225,7 +1375,7 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
     // Recovery debris is not a rule. When the pinned grammar cannot read a
     // construct it emits an ERROR node for the construct's HEAD and re-parses
     // the remainder as a sibling of that ERROR — so the fabricated nodes are
-    // perfectly well-formed and no subtree suppression can reach them. The
+    // well-formed and no subtree suppression can reach them. The
     // measured case is `@keyframes "fade" { from {…} to {…} }` (a quoted
     // keyframes name, which the grammar cannot represent):
     //
@@ -1807,8 +1957,64 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
     return selectorText
   }
 
+  /**
+   * The node that NAMES the module an `@import` pulls in, or `null` when the statement
+   * carries none.
+   *
+   * A DIRECT `string_value` / `call_expression` child is the shape the grammar produces for
+   * a well-formed `@import`, and it stays the first thing tried so the 243 edges that were
+   * already published are untouched.
+   *
+   * The DESCENDANT pass exists because pass 10 measured a 7-edge gap on the admitted corpus:
+   * 250 `import_statement` nodes, 243 published `imports` edges
+   * (`validation/m14/census/css-import-coverage.ts`). The 7 are indented-Sass `.sass`
+   * partials, which this pinned CSS grammar cannot parse, and it recovers them into an
+   * ERROR shape — `;+@import+ERROR+binary_expression`, `;+@import+ERROR+ERROR+float_value+
+   * keyword_query` and four siblings — where the quoted specifier is still a real
+   * `string_value` node but sits under the ERROR rather than directly under the statement.
+   * `@import "../utilities/mixins"` is a genuine fetch the user agent performs; publishing
+   * nothing for it is a silent miss, not a ruling.
+   *
+   * **The line guard is what makes the descendant pass safe, and it is not optional.** The
+   * ERROR recovery SWALLOWS the rest of the file into the `import_statement` node:
+   * `Documenter.jl/.../bulma/elements/button.sass` spans L2..L50 and carries ELEVEN
+   * `string_value` descendants — one at L2 (`"../utilities/mixins"`, the module) and ten at
+   * L47 (the `$breakpoints` map's `"mobile"`, `"small"`, `"normal"`, … ). Taking the first
+   * descendant in document order happens to pick the right one there, and would pick the
+   * WRONG one for any statement whose own specifier is not a node. Restricting the search to
+   * the `@import` KEYWORD's own row rejects the L47 ten by construction, so the name is
+   * always the specifier written on the `@import` line and never a string the recovery
+   * swept up from a later line.
+   *
+   * Node-type and position tests only. No pattern over raw text, so a quoted word in a
+   * comment, in a `content:` value or in a class name cannot become a module name.
+   */
+  private findImportNameNode(node: Node): Node | null {
+    const isNameNode = (n: Node): boolean => n.type === "string_value" || n.type === "call_expression"
+    const direct = this.findChild(node, isNameNode)
+    if (direct) return direct
+
+    const keyword = this.findChild(node, (c) => c?.type === "@import")
+    const keywordRow = (keyword ?? node).startPosition.row
+
+    let found: Node | null = null
+    const walk = (n: Node): void => {
+      if (found) return
+      if (n.startPosition.row === keywordRow && isNameNode(n)) {
+        found = n
+        return
+      }
+      for (let i = 0; i < n.childCount; i++) {
+        const child = n.child(i)
+        if (child) walk(child)
+      }
+    }
+    walk(node)
+    return found
+  }
+
   private processImport(node: Node, ctx: CssContext) {
-    const stringNode = this.findChild(node, (c) => c?.type === "string_value" || c?.type === "call_expression")
+    const stringNode = this.findImportNameNode(node)
     if (stringNode) {
       const moduleName = unwrapUrl(stringNode.text)
       ctx.imports.push({
@@ -1849,6 +2055,84 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
   }
 
+  /**
+   * Every custom-media name a media query REFERENCES, in source order.
+   *
+   * Custom Media Queries L1: `@media (--narrow)` evaluates a `@custom-media`
+   * declaration, wherever in the query list it appears and however the query is
+   * composed. The grammar marks the reference exactly — a `keyword_query` directly
+   * under a `parenthesized_query`, spelled `--name` — so this reads that shape rather
+   * than recognising a spelling, which is why `@media screen and (--narrow)`,
+   * `@media not (--c)` and `@media (--a), (--b)` are all covered.
+   *
+   * The discriminator is the `--` prefix and NOT the node type alone, because
+   * `keyword_query` is the grammar's node for a bare media type too: `screen` in
+   * `@media screen` and `print` in `@media print and (color)` are the same node type
+   * and neither is a custom-media reference.
+   *
+   * A `parenthesized_query` holding a `feature_query` — `(min-width: 400px)` — has no
+   * `keyword_query` child at all, so it contributes nothing, which is the correct
+   * answer without a special case.
+   */
+  private customMediaRefsIn(queryNode: Node): string[] {
+    const out: string[] = []
+    const stack: Node[] = [queryNode]
+    while (stack.length > 0) {
+      const n = stack.pop() as Node
+      const isRefSite = n.type === "parenthesized_query" || n === queryNode
+      if (isRefSite) {
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (!c || c.type !== "keyword_query") continue
+          const name = leadingCustomIdent(c.text)
+          // `leadingCustomIdent` answers "" for a keyword_query that is not a `--`
+          // name, which is the media-type case, so nothing else has to test the prefix.
+          if (name.length > 0 && out.indexOf(name) === -1) out.push(name)
+        }
+      }
+      // Children are pushed in reverse so `pop` visits them in source order.
+      for (let i = n.namedChildCount - 1; i >= 0; i--) {
+        const c = n.namedChild(i)
+        if (c) stack.push(c)
+      }
+    }
+    return out
+  }
+
+  /**
+   * The `@custom-media` references of a whole comma-separated query LIST.
+   *
+   * `customMediaRefsIn` walks ONE node's subtree. A comma list is not inside one
+   * node — the grammar leaves the terms as SIBLING query children of the statement —
+   * so the single-term walk cannot see past the first comma. This unions the walk
+   * over the statement's own DIRECT query children, which is what makes
+   * `@media (--a), (--b)` depend on both `--a` and `--b`.
+   *
+   * Direct children only, so the walk cannot descend into the block and read a
+   * declaration value as a reference. For a single-term query there is exactly one
+   * such child, so the result is identical to `customMediaRefsIn(queryNode)` — which
+   * is why this is a widening and not a rewrite.
+   */
+  private customMediaRefsInList(statement: Node): string[] {
+    const out: string[] = []
+    for (let i = 0; i < statement.childCount; i++) {
+      const c = statement.child(i)
+      if (!c) continue
+      if (
+        c.type !== "keyword_query" &&
+        c.type !== "binary_query" &&
+        c.type !== "feature_query" &&
+        c.type !== "parenthesized_query" &&
+        c.type !== "unary_query" &&
+        c.type !== "selector_query"
+      ) {
+        continue
+      }
+      for (const name of this.customMediaRefsIn(c)) if (out.indexOf(name) === -1) out.push(name)
+    }
+    return out
+  }
+
   private processMedia(node: Node, ctx: CssContext): string | null {
     // M14 F1 debt repaid 2026-09-26, and it carried a real defect with it.
     //
@@ -1881,7 +2165,36 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
           c.type === "selector_query"),
     )
     if (queryNode) {
-      const mediaName = `@media ${collapseWhitespace(queryNode.text)}`
+      // The scope's NAME must describe the WHOLE condition, not its first term.
+      //
+      // M60 pass 13. `@media A, B { … }` is a comma-separated query LIST and the
+      // block applies when EITHER term matches. The pinned grammar does not wrap
+      // the list in a node — measured on `@media screen and (min-width: 769px),print`
+      // the `media_statement`'s children are `@media`, `binary_query`, `,`,
+      // `keyword_query`, `block` — so `findChild` above returns the FIRST query
+      // term and every term after the first comma was silently DISCARDED from the
+      // name. Two consequences, both measured on the corpus:
+      //
+      // 1. The published name UNDER-DESCRIBES the scope. `Documenter.jl/assets/html/
+      //    themes/catppuccin-mocha.css` published
+      //    `@media screen and (min-width: 769px)` for a block whose condition is
+      //    `screen and (min-width: 769px),print`, so a reader cannot tell the block
+      //    also applies to print.
+      // 2. It is an IDENTITY COLLISION. `@media screen and (min-width: 769px),print`
+      //    and `@media screen and (min-width: 769px), screen` differ only after the
+      //    comma, and both publish the same name — so the identity merge folds two
+      //    different conditions into one scope symbol and their rules together.
+      //    `FSharp.Formatting/docs/content/fsdocs-default.css:192` is the measured
+      //    case: the block's condition runs to
+      //    `screen and (min-resolution: 120dpi) and (max-width: 767.9px)`.
+      //
+      // The name is therefore built from the at-rule's own PRELUDE — the source text
+      // between the `@media` keyword and the block — which is the whole condition by
+      // construction and needs no node type to wrap it. For a SINGLE-term query the
+      // prelude is byte-identical to `queryNode.text`, so this cannot move a name
+      // that was already right; `css-media-prelude-equivalence` measures that claim
+      // rather than asserting it.
+      const mediaName = `@media ${collapseWhitespace(this.atRulePrelude(node, "@media"))}`
       ctx.patterns["Responsive Design (Media Queries)"] = true
       // RULING (2026-09-26). The comment this replaces read "a media query is a
       // structural scope, not a symbol — it is NOT emitted as a standalone
@@ -1951,8 +2264,34 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
         // animation and font-family edges give: a `@media (--x)` may legitimately
         // come from another stylesheet, and inventing an endpoint for it is the
         // `global` phantom this lane removed once.
-        const declared = leadingCustomIdent(collapseWhitespace(queryNode.text).replace(/^\(/, "").replace(/\)$/, ""))
-        if (declared && ctx.customMediaNames[declared]) {
+        //
+        // READ OFF THE TREE, and the node is exact where the text was not. The
+        // previous version took the query's whole text, peeled one leading `(` and
+        // one trailing `)`, and asked whether what was left began with `--`. That
+        // answers only `@media (--x)`: in `@media screen and (--x)` nothing is
+        // peeled at the front, the string starts with `s`, and the reference is
+        // LOST — even though the grammar hands it over as a `keyword_query` inside
+        // a `parenthesized_query`, unambiguously. It also lost the comma form,
+        // `@media (--a), (--b)`, where one scope genuinely depends on two
+        // declarations. Measured: 0 occurrences of the construct in the admitted
+        // corpus, so this widens a branch no corpus number can speak about and the
+        // fixture `custom-media-in-every-query-shape` is the only evidence for it.
+        // That is stated because "0 in the corpus" is what a broken probe and a
+        // working branch both report.
+        // Every term of the LIST, not just the first. `@media (--a), (--b)` is one
+        // condition depending on TWO declarations, and `customMediaRefsIn` walks the
+        // subtree of the node it is handed — so handing it the first query term found
+        // the `--a` in it and could not see the `--b` that sits in a SIBLING query
+        // node. That left the scope named for both while the graph recorded one
+        // dependency, which is the same under-description the name fix above removed,
+        // one level down: the fixture `custom-media-in-every-query-shape` states the
+        // intent in its own comment ("a comma list, so the scope depends on TWO") and
+        // asserted only ONE edge, so it passed against the loss.
+        //
+        // The terms are the statement's own DIRECT query children, so the walk cannot
+        // descend into the block and invent a reference from a declaration value.
+        for (const declared of this.customMediaRefsInList(node)) {
+          if (!ctx.customMediaNames[declared]) continue
           ctx.relationships.push({
             source: mediaName,
             target: declared,
@@ -2051,11 +2390,33 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
    * a custom media query name is a `<custom-ident>` followed by a condition.
    */
   private atRulePrelude(node: Node, keyword: string): string {
+    // THE PRELUDE IS THE TEXT BETWEEN TWO NODES, and both are in the tree.
+    //
+    // It used to be recovered by string surgery on `node.text`: `indexOf(keyword) +
+    // keyword.length` for the start, `indexOf(block.text)` for the end, and — for the
+    // block-less form — a pair of anchored patterns to peel `@keyword` and `;` off. All
+    // three are gone, and the reason is not tidiness. `indexOf(block.text)` searches
+    // from offset 0 of the NODE's text, so a prelude that happens to CONTAIN the block's
+    // own text truncated at the wrong place: `@media screen { }` is fine, but a
+    // `@supports` prelude that spells a brace, or any at-rule whose block text occurs
+    // earlier in its own prelude, produced a prelude truncated mid-word. The grammar
+    // already knows where the keyword ends and where the block or the `;` begins, and
+    // a position the parser computed beats a substring search for it.
+    const kwNode =
+      this.findChild(node, (c) => c?.type === "at_keyword") ??
+      // `@namespace` and `@media` carry their keyword as an ANONYMOUS child whose type
+      // IS the keyword text, so the named-node lookup misses them.
+      this.findChild(node, (c) => c?.type === keyword)
     const block = this.findChild(node, (c) => c?.type === "block")
-    const raw = block
-      ? node.text.slice(node.text.indexOf(keyword) + keyword.length, node.text.indexOf(block.text))
-      : node.text.replace(/^@\S+/, "").replace(/;\s*$/, "").trim()
-    return collapseWhitespace(raw)
+    const semi = this.findChild(node, (c) => c?.type === ";")
+    const start = kwNode ? kwNode.endIndex - node.startIndex : keyword.length
+    // A block-less at-rule is terminated by `;`. With neither a block nor a `;` the
+    // node is malformed and the whole text after the keyword is the best available
+    // answer, which is what the old `;\s*$` peel degraded to as well.
+    const terminator = block ?? semi
+    const end = terminator ? terminator.startIndex - node.startIndex : node.text.length
+    if (end <= start) return ""
+    return collapseWhitespace(node.text.slice(start, end))
   }
 
   /**
@@ -2115,8 +2476,14 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (nameNode) {
           const prefix = nameNode.text.trim()
           // the published name is the keyword plus the whole prelude, which is what
-          // the symbol push below builds
-          const prelude = collapseWhitespace(n.text.replace(/^@namespace\s*/, "").replace(/;\s*$/, "").trim())
+          // the symbol push below builds. The prelude is the text BETWEEN the
+          // `@namespace` token and the `;`, and the grammar has both as children, so
+          // it is read off the tree rather than peeled off the string.
+          const kwNode = this.findChild(n, (c) => c?.type === "@namespace")
+          const semi = this.findChild(n, (c) => c?.type === ";")
+          const start = kwNode ? kwNode.endIndex - n.startIndex : "@namespace".length
+          const end = semi ? semi.startIndex - n.startIndex : n.text.length
+          const prelude = end <= start ? "" : collapseWhitespace(n.text.slice(start, end))
           if (prefix && prelude) ctx.namespacePrefixes[prefix] = `@namespace ${prelude}`
         }
       }
@@ -2227,12 +2594,23 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
   }
 
-  private processKeyframes(node: Node, ctx: CssContext) {
+  /**
+   * Publishes a `@keyframes` declaration as a symbol and returns the name it published, or
+   * `""` when it published none.
+   *
+   * The RETURN is load-bearing and is new: the caller stores it as the owning scope for the
+   * declarations inside, which is what lets a `var()` inside a `keyframe_block` be emitted
+   * as a `references` edge from the animation instead of being dropped. See
+   * `StackFrame.keyframeScope`. It returns the name rather than `void` so the two can never
+   * disagree — a symbol published under a name the caller has to re-derive is the shape that
+   * produced the bare-`@container` identity collision this lane already had to undo.
+   */
+  private processKeyframes(node: Node, ctx: CssContext): string {
     const nameNode = this.findChild(
       node,
       (c) => c && (c.type === "keyframes_name" || c.type === "identifier" || c.type === "string_value"),
     )
-    if (!nameNode) return
+    if (!nameNode) return ""
     const name = stripAllQuotes(nameNode.text)
     ctx.symbols.push({
       name: name,
@@ -2257,6 +2635,7 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
     const keywordNode = this.findChild(node, (c) => c?.type === "at_keyword")
     const keyword = keywordNode ? keywordNode.text.trim().toLowerCase() : "@keyframes"
     this.recordKeyframesOverride(ctx, name, keyword, this.lineOf(node))
+    return name
   }
 
   /**
@@ -2924,7 +3303,7 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
         // compile-time dependency on another file.
         ctx.relationships.push({
           source: this.importerName,
-          target: stripAllQuotes(namePart.split(/\s+/)[0] ?? namePart),
+          target: stripAllQuotes(firstToken(namePart)),
           type: ASTEngine.RelationshipType.Imports,
           // M59.A7: the module name is the at-rule's prelude, on its own line.
           line_number: this.lineOf(node),
@@ -3225,19 +3604,33 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
   }
 
-  private processCallExpression(node: Node, currentSelector: string, ctx: CssContext) {
+  /**
+   * `keyframeScope` is the nearest enclosing `@keyframes` name, or `""`. A `var()` whose
+   * owner is a keyframe block rather than a rule is emitted from THAT name; see
+   * `StackFrame.keyframeScope` for the measurement that made it necessary.
+   */
+  private processCallExpression(node: Node, currentSelector: string, keyframeScope: string, ctx: CssContext) {
     const fnNameNode = this.findChild(node, (c) => c?.type === "function_name" || c?.type === "identifier")
     if (!fnNameNode) return
 
-    if (fnNameNode.text === "var" && currentSelector) {
+    if (fnNameNameIsVar(fnNameNode) && (currentSelector || keyframeScope)) {
       const argsNode = this.findChild(node, (c) => c?.type === "arguments")
       if (argsNode) {
+        // The OWNER of this read: the rule's selector when there is one, otherwise the
+        // enclosing `@keyframes` name. `currentSelector` wins whenever both are set, which
+        // is the case that keeps the 161,768 existing edges byte-identical — a `var()`
+        // inside a `rule_set` is a rule's read, and the keyframes scope it may sit inside is
+        // a different, weaker claim.
+        const owner = currentSelector || keyframeScope
+        // `isKeyframeScopeRef` is TRUE only for the owner-less case, so a consumer can count
+        // the new sub-shape without re-deriving it, and so the fixture can pin it.
+        const ownedByKeyframes = currentSelector === "" && keyframeScope !== ""
         const argStack = [argsNode]
         while (argStack.length > 0) {
           const n = argStack.pop()!
           if (n.namedChildCount === 0 && n.text.trim().startsWith("--")) {
             ctx.relationships.push({
-              source: currentSelector,
+              source: owner,
               target: n.text.trim(),
               type: ASTEngine.RelationshipType.References,
               // M59.A7: the name is the custom property INSIDE `var()`, so the
@@ -3245,7 +3638,20 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
               // receiver's position, which for `calc(var(--x) * 2)` is the
               // `calc` — a different line whenever the value wraps.
               line_number: this.lineOf(n),
-              metadata: { cssSpecific: true, isVariableRef: true },
+              // A parse fact, written explicitly rather than left absent: the owner is a
+              // node this walk published and the target is an argument node of a `var()`
+              // whose callee node reads `var`. Nothing here is matched by name against a
+              // declared target — that is what `uses` does, and it is why those edges are
+              // the ones that need a lower confidence. `isVariableRef`'s 161,768 siblings
+              // write no confidence at all, which the lane's own census counts as a
+              // distinct claim; this branch states its own instead of inheriting the
+              // absence.
+              ...(ownedByKeyframes ? { confidence: 1.0 } : {}),
+              metadata: {
+                cssSpecific: true,
+                isVariableRef: true,
+                ...(ownedByKeyframes ? { isKeyframeScopeRef: true } : {}),
+              },
             })
             ctx.patterns["CSS Custom Properties"] = true
           }

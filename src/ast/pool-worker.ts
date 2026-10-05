@@ -1068,6 +1068,32 @@ export async function parseFile(filePath: string, projectPath: string, context?:
             if (m.isMarkdownCodeBlock === true) out.isMarkdownCodeBlock = m.isMarkdownCodeBlock
             if (m.isMarkdownFrontMatter === true) out.isMarkdownFrontMatter = m.isMarkdownFrontMatter
             if (m.isRepeatedSite === true) out.isRepeatedSite = m.isRepeatedSite
+
+            // ── bash, M60 ─────────────────────────────────────────────────────
+            // The bash lane measured that it publishes 13 metadata keys and the
+            // intersection with THIS allowlist was ZERO — 13 of 13 keys measure 0%
+            // survival over 105 files, and on protoc.sh `analyze()` returns 22
+            // symbols WITH metadata while `parseFile()` returns 22 symbols
+            // WITHOUT it.
+            //
+            // Three labels this lane publishes are DERIVED from these keys:
+            //   isExported        -> the `exports` label
+            //   isImplicitBinding -> the round-4 implicit-binding families
+            //   bindingSite       -> which construct bound the name
+            //   isArray           -> the array-vs-scalar distinction
+            // so each was verifiable where the ANALYZER runs and unverifiable where
+            // the PRODUCT runs. An edge can be perfectly correct and its evidence
+            // still be unreadable downstream — which is the question the six
+            // questions do not ask.
+            //
+            // Four keys, not thirteen. The precedent at the markdown block above
+            // states the rule this follows: only keys a READER CONSUMES belong
+            // here. The other nine bash keys are read by nothing and forwarding
+            // them would put unverifiable claims on every bash symbol.
+            if (m.isExported === true) out.isExported = m.isExported
+            if (m.isImplicitBinding === true) out.isImplicitBinding = m.isImplicitBinding
+            if (typeof m.bindingSite === "string") out.bindingSite = m.bindingSite
+            if (typeof m.isArray === "boolean") out.isArray = m.isArray
             return Object.keys(out).length > 0 ? out : undefined
           })(),
           snippet,

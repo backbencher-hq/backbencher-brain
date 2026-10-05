@@ -1,0 +1,378 @@
+/**
+ * SQL's entry for `script/m14/ontology-coverage-gate.ts`'s ruling table.
+ *
+ * ## WHY THE TABLE LIVES HERE AND NOT IN THE GATE
+ *
+ * `script/m14/ontology-coverage-gate.ts` is supervisor-owned shared machinery
+ * (`script/m14/` §8 of the lane brief), and its `RULED_BY_LANG` is a literal with
+ * no extension point. Run against `sql` it therefore refuses to report at all:
+ *
+ *   $ npx tsx script/m14/ontology-coverage-gate.ts sql
+ *   ontology coverage gate — sql
+ *   corpus: 1460 admitted files
+ *   ontology coverage gate — no RULING TABLE for sql.
+ *   Refusing to report: a gate with an empty table would call every un-emitted type
+ *   RULED-UNJUSTIFIED and that is a verdict about the TABLE, not about the lane.
+ *   $ echo $?
+ *   2
+ *
+ * That refusal is the gate behaving correctly — an empty table would make it
+ * render a verdict about its own configuration — and it is also the one thing
+ * standing between this lane and a measured verdict. So the table lives in a file
+ * this lane owns, in the gate's own `Ruled` shape, and the supervisor's permanent
+ * change is two lines:
+ *
+ *   import { SQL_RULED } from "./sql-ruled"
+ *   const RULED_BY_LANG: Record<string, Ruled[]> = { bash: BASH_RULED, json: JSON_RULED, lua: LUA_RULED, toml: TOML_RULED, sql: SQL_RULED }
+ *
+ * The measurements behind every entry are NOT here. They are in
+ * `validation/m14/fixtures/sql/construct-probe.json` (**480** distinct node types the
+ * wired grammar actually produces over the 1,955-file census, plus the semantic
+ * counts), and each entry names the probe key that produced its number so the
+ * ruling can be re-derived without re-running the corpus.
+ *
+ * ## WHICH TYPES ARE IN THIS TABLE, AND WHY ONLY THREE
+ *
+ * The table covers the types the analyzer does not emit. `imports`, `overrides`
+ * and `instantiates` are absent from it because the analyzer now emits them —
+ * SQL-D11, SQL-D12 and SQL-D13 in `script/m14/spec/sql-completeness.json`, each
+ * with its own corpus measurement — and a table entry for a type that IS emitted
+ * would be dead configuration. `calls`, `uses`, `contains` and `references` were
+ * already emitted. That leaves exactly the three this table carries:
+ * `exports`, `extends`, `implements`.
+ *
+ * ## WHY ALL THREE ARE INSTRUMENT A, AND WHY THAT IS NOT THE JSON LANE'S MISTAKE
+ *
+ * The json lane removed its `exports` ruling because "a grammar cannot see a
+ * CONVENTION", and that is right for a Node manifest: `exports` and `main` there
+ * are ordinary object keys with no node type of their own, so a grammar inventory
+ * cannot see them. Instrument A is unsound for a construct that is written as
+ * ordinary syntax the grammar already tokenises.
+ *
+ * SQL's three are not that. Each one needs a CLAUSE — a place in a declaration
+ * where the unit names something it extends, implements, or publishes — and a
+ * clause is not an ordinary object key: the grammar would have to have a rule for
+ * it, and the rule's node type would appear in the inventory. So the question
+ * instrument A answers ("does this grammar have a rule for inheritance at all?")
+ * is the right question for all three, and the inventory is not merely suggestive
+ * here, it is decisive: **480** node types, and none of them is an inheritance,
+ * supertype, export, module-publication or interface shape. `CREATE EXTENSION`
+ * and `create_extension` ARE in the vocabulary and are handled by the analyzer
+ * (`Module` symbol), which is the honest counter-example to check — see the
+ * `exports` entry. `partition_by` is the honest counter-example on `extends`, and
+ * it is measured — see the pass-8 correction below.
+ *
+ * ## WHAT PASS 2 ADDED TO `extends`, AND WHY IT MATTERS MORE THAN THE COUNT
+ *
+ * Pass 1's overturn condition was "a `keyword_inherits`/`inherits_clause` node
+ * inside `create_table`". That is a NODE-NAMED condition, and it is unsound in a
+ * specific way: PostgreSQL has a SECOND construct that makes one table a subtype
+ * of another, and since PostgreSQL 11 the child inherits the parent's columns
+ * without any `INHERITS` clause at all —
+ *
+ *   CREATE TABLE c PARTITION OF p FOR VALUES FROM (…) TO (…);
+ *   ALTER TABLE p ATTACH PARTITION c FOR VALUES FROM (…) TO (…);
+ *
+ * A grammar could grow that clause, call the node `table_partition_attached` or
+ * anything else, and produce zero nodes matching pass 1's condition while making
+ * `extends` fully derivable. The ruling would then read 0 on a corpus where
+ * the construct is present and readable — still wrong, and still sounding right.
+ *
+ * So pass 2 PARSED all five shapes against the wired wasm rather than searching
+ * node names, in `validation/m14/fixtures/sql/adversarial-probe.mts`'s A12
+ * section. Result: `INHERITS` is absorbed into an ERROR, `PARTITION OF` has its
+ * `OF <parent>` absorbed into an ERROR, `ATTACH PARTITION` has its whole clause
+ * absorbed into an ERROR, `PARTITION BY RANGE` parses cleanly as `table_partition`
+ * but names no parent, and `LIKE p` parses (while `INCLUDING ALL` does not). The
+ * ruling SURVIVES, and now against the strongest counterexample the language has
+ * rather than only the one pass 1 happened to think of.
+ *
+ * ## THE NUMBERS BELOW, AND WHY THEY ARE FROM A DIFFERENT CORPUS
+ *
+ * `SQL_GRAMMAR_INVENTORY_FINDINGS` quotes the corpus-wide node-type inventory. The shared corpus has
+ * grown across passes — 1,460 admitted files at pass 1, 1,946 at pass 2, **1,955** from pass 3 on —
+ * and the inventory was re-measured at each, so the counts below are not comparable to each other and
+ * are not interchangeable. The three figures that are quoted side by side are labelled with the corpus
+ * they belong to; the artifact is `validation/m14/fixtures/sql/construct-probe.json`, regenerated at
+ * pass 8's HEAD, and the pass-8 companion for the one node type that needed its own walk is
+ * `validation/m14/fixtures/sql/measurements/pass8-partition-by-sites.json`.
+ *
+ * ## PASS 8's CORRECTION: THE `partition` SUBSTRING SEARCH HAD THREE HITS, NOT TWO
+ *
+ * Pass 1 through pass 7 recorded two node types matching a search for `partition` — `table_partition`
+ * (the `PARTITION BY` strategy rule) and `keyword_partition` (the token) — and both are honestly
+ * explained as naming no parent. **The search has a third hit that those pages did not name:
+ * `partition_by`, 44 occurrences corpus-wide, and the only one of the three whose name is not
+ * qualified by `table_`.** It is the strongest candidate a reader could raise against the `extends`
+ * ruling, so it is now measured rather than omitted:
+ *
+ *   - all **44 of 44** occurrences have nearest parent `window_specification`, i.e. the WINDOW
+ *     FUNCTION's `OVER (PARTITION BY x)` clause, which names an ordering key and not a parent table;
+ *   - exactly **1** of the 44 sits inside a `create_table`, and `create_query` is in that site's chain
+ *     — it is `CREATE TABLE … AS SELECT … OVER (PARTITION BY id6)`, a CTAS, so the `create_table` in
+ *     the chain is the table being created and the window clause is inside its query. **0** sit in a
+ *     table-partitioning declaration.
+ *
+ * So the `extends` verdict is unchanged and its support is stronger than it was: the third hit is not
+ * the construct either. The mistake was reporting a substring count without re-deriving it from the
+ * stored vocabulary, and `partition-by-sites.mts` now exists so the count cannot silently drift again.
+ *
+ * The same correction applies to `distinctNodeTypesOverCorpus`: 465 was the pass-1 inventory and the
+ * corpus-wide union is **480** from pass 3 on.
+ */
+type Type = "calls" | "uses" | "contains" | "imports" | "references" | "exports" | "extends" | "implements" | "overrides" | "instantiates"
+
+type Ruled = {
+  type: Type
+  instrument: "A:grammar-inventory" | "B:parse-tree-count"
+  /** A: node types that would express the construct. B: unused. */
+  nodeTypesThatWouldMeanIt?: string[]
+  /** B: count occurrences on the tree. A: unused. */
+  countOnTree?: (root: any, fileLabel: string, hits: string[]) => void
+  describe: string
+}
+
+export const SQL_RULED: Ruled[] = [
+  {
+    type: "extends",
+    instrument: "A:grammar-inventory",
+    nodeTypesThatWouldMeanIt: [
+      "inheritance_specifier",
+      "inherits_clause",
+      "keyword_inherits",
+      "keyword_inherit",
+      "extends_clause",
+      "class_declaration",
+      "class",
+      "interface_declaration",
+      "trait_declaration",
+      "struct_declaration",
+    ],
+    describe: "a declaration naming a type it inherits from — `CREATE TABLE c (...) INHERITS (p)`, `ALTER TABLE c INHERIT p`",
+  },
+  {
+    type: "implements",
+    instrument: "A:grammar-inventory",
+    nodeTypesThatWouldMeanIt: [
+      "implements_clause",
+      "interface_declaration",
+      "interface_implementation",
+      "superclass",
+      "extends_clause",
+      "trait_declaration",
+    ],
+    describe: "a declaration naming a supertype it satisfies — SQL has no interface type and no clause in which to name one",
+  },
+  {
+    type: "exports",
+    instrument: "A:grammar-inventory",
+    nodeTypesThatWouldMeanIt: [
+      "export_statement",
+      "exports_statement",
+      "module_declaration",
+      "provide_statement",
+      "module",
+    ],
+    describe: "a declaration naming the symbols this unit publishes to other units — SQL's visibility scope is the DATABASE, and nothing in a SQL file enumerates what it publishes",
+  },
+]
+
+/**
+ * The node types the corpus-wide inventory was searched for, and the answer for
+ * each, so a reader does not have to run anything to check the three rulings
+ * above. Recorded here rather than left implicit because a ruling whose evidence
+ * lives only in a 74 KB JSON is a ruling nobody can audit.
+ *
+ * The `n` on each hit is the occurrence count over the 1,955-file corpus recorded in
+ * `distinctNodeTypesOverCorpusAtPass3`; the two counts a reader must not confuse are the INVENTORY
+ * SIZE and the OCCURRENCE COUNT, and a substring search answers the second, not the first.
+ *
+ * Source: `validation/m14/fixtures/sql/construct-probe.json`, `grammarVocabulary`
+ * (480 entries) and `zeroProbes`; plus `measurements/pass8-partition-by-sites.json`
+ * for `partition_by`, which needed a tree walk rather than a name search.
+ */
+export const SQL_GRAMMAR_INVENTORY_FINDINGS = {
+  /** Pass 1's inventory, over 1,460 admitted files. Superseded — see the next field. */
+  distinctNodeTypesOverCorpus: 465,
+  /** The corpus-wide union from pass 3 on, over the 1,955 admitted files. This is the live figure. */
+  distinctNodeTypesOverCorpusAtPass3: 480,
+  corpusFiles: 1460,
+  corpusFilesAtPass2: 1946,
+  corpusFilesAtPass3AndAfter: 1955,
+  /** Every entry here was searched for by SUBSTRING over all 480 type names. */
+  substringSearches: {
+    inherit: 0,
+    implements: 0,
+    exports: 0,
+    module: 0,
+    provide: 0,
+    class: 1,
+    interface: 0,
+    trait: 0,
+    struct: 0,
+    super: 0,
+    extension: 2,
+    /**
+     * PASS 8 ADDED `partition_by` TO THIS COUNT, and the count is the correction: passes 1–7 recorded
+     * 2, which named `table_partition` and `keyword_partition` and omitted the third. All three are
+     * explained below and none of them is the construct.
+     */
+    partition: 3,
+  },
+  /** The node types that DID match a substring, and why none of them is the construct. */
+  substringHitsExplained: [
+    { type: "create_extension", matchedOn: "extension", n: 30, why: "`CREATE EXTENSION name` — handled by the analyzer as a `Module` symbol. It is an INBOUND declaration of a package that publishes objects; the publishing set lives in the extension's own control file, not in this unit, so the clause that would express an `exports` edge does not exist here. Named here because it is the strongest candidate a reader could raise against the `exports` ruling, and answering it costs one line." },
+    { type: "keyword_extension", matchedOn: "extension", n: 34, why: "the `EXTENSION` keyword token itself — the token half of the above, so it carries the same meaning at a slightly higher count (30 declarations against 34 tokens)." },
+    { type: "keyword_regclass", matchedOn: "class", n: 62, why: "the `regclass` type name. It matches `class` as a SUBSTRING of a type name, not as a construct, which is the same false-positive shape the gate's own header records for bash (`class voice` inside a telnet IAC word list) and for json (`new Map(` inside a heredoc)." },
+    { type: "table_partition", matchedOn: "partition", n: 6, why: "`CREATE TABLE t (...) PARTITION BY RANGE|HASH|LIST (…)` — a partitioning STRATEGY, which names no parent table and inherits nothing. `adversarial-probe.mts` A12 parses `PARTITION OF p` separately and it is an ERROR." },
+    { type: "keyword_partition", matchedOn: "partition", n: 57, why: "the `PARTITION` keyword token, the token half of the above. Some sit inside a `table_partition`; the rest are `ALTER TABLE … PARTITION BY` and `PARTITION OF` damage." },
+    { type: "partition_by", matchedOn: "partition", n: 44, why: "THE THIRD `partition` HIT, AND THE ONE PASSES 1–7 DID NOT NAME. It is the WINDOW FUNCTION clause: `SELECT sum(x) OVER (PARTITION BY y)`. Measured, not argued — all 44 occurrences have nearest parent `window_specification`; the 1 that sits inside a `create_table` is a CTAS (`create_query` in the chain, `duckdb/benchmark/h2oai/group/queries/q08.sql:1`); 0 sit in a table-partitioning declaration. A window partition names an ordering key, so it names no parent table either. `partition-by-sites.mts` → `measurements/pass8-partition-by-sites.json`; `adversarial-probe.mts` A13 parses the form and reports the parent chain." },
+  ],
+  /** Instrument B counts, from `construct-probe.json` `constructCounts` / `zeroProbes`. */
+  semanticCounts: {
+    "extends-inherits": 0,
+    "implements-keyword": 0,
+    "implements-node": 0,
+    "exports-keyword": 0,
+    "exports-node": 0,
+    "exports-grant": 0,
+  },
+  /**
+   * PASS 2's A12 capability battery — the shapes that would make `extends`
+   * derivable, each PARSED against `wasm/tree-sitter-sql.wasm` rather than
+   * searched for by name. A corpus count of 0 is consistent both with "the
+   * language lacks the construct" and with "the grammar cannot read it", and only
+   * a parse separates them.
+   *
+   * PASS 8 ADDED THE SEVENTH ROW. Six shapes were tested and the page then reported a `partition`
+   * substring count naming two node types; the corpus-wide inventory has a THIRD (`partition_by`,
+   * 44 occurrences) that no shape in this battery covered, because every shape above is a
+   * TABLE-PARTITIONING form and `partition_by` is the WINDOW-FUNCTION clause. A battery that only
+   * tests the shapes one already suspects is how a third candidate goes unnamed, so the row is here
+   * and its verdict is decided by the PARENT CHAIN rather than by the node's name.
+   */
+  capabilityBattery: [
+    { construct: "CREATE TABLE c (…) INHERITS (p)", verdict: "NOT EXPRESSIBLE — the clause does not survive the parse; the create_table ends at the column list and an ERROR holds the rest", nodeType: "ERROR" },
+    { construct: "CREATE TABLE c PARTITION OF p FOR VALUES …", verdict: "NOT EXPRESSIBLE — `OF p FOR VALUES FROM` is absorbed by an ERROR inside table_partition", nodeType: "table_partition(ERROR)" },
+    { construct: "ALTER TABLE p ATTACH PARTITION c FOR VALUES …", verdict: "NOT EXPRESSIBLE — the whole clause lands in a top-level ERROR", nodeType: "ERROR" },
+    { construct: "CREATE TABLE p (…) PARTITION BY RANGE (x)", verdict: "EXPRESSIBLE, but it is a STRATEGY and names no parent, so it is not the construct", nodeType: "table_partition" },
+    { construct: "CREATE TABLE c (LIKE p)", verdict: "EXPRESSIBLE — parsed as a column_definition whose type is `p`, i.e. a structural COPY (PostgreSQL: the two tables evolve independently)", nodeType: "column_definition" },
+    { construct: "CREATE TABLE c (LIKE p INCLUDING ALL)", verdict: "PARTIALLY EXPRESSIBLE — LIKE survives, `INCLUDING ALL` lands in an ERROR", nodeType: "column_definition(ERROR)" },
+    { construct: "SELECT sum(x) OVER (PARTITION BY y) — the OTHER `PARTITION BY`, and the `partition_by` node", verdict: "EXPRESSIBLE, and NOT the construct — the clause is a WINDOW FUNCTION's, parent chain `window_specification > window_function > term > select_expression`, so it names an ordering key. Corpus-wide: 44 of 44 occurrences have nearest parent `window_specification`; the 1 inside a `create_table` is a CTAS with `create_query` in the chain (`duckdb/benchmark/h2oai/group/queries/q08.sql:1`); 0 are in a table-partitioning declaration", nodeType: "partition_by" },
+  ],
+} as const
+
+/**
+ * A KNOWN WEAKNESS IN THE ARBITER'S CITATION STEP, recorded because running the
+ * gate with this table produces three wrong `Written ruling:` pointers.
+ *
+ * `rulingFor` in `script/m14/ontology-coverage-gate.ts` does not read an
+ * explicit per-type id. It walks the spec's RULED decisions in order and returns
+ * the FIRST whose `resolution` prose matches `` /`type`/ `` or `/\<type\>/i` AND
+ * contains one of `ontology|emits|excluded|type`. Prose is a weak key, and the
+ * verdicts come out right while the citations come out wrong:
+ *
+ *   gate output          cites      the ruling that is actually about it
+ *   -------------------  ---------  ---------------------------------------
+ *   exports  RULED-SOUND SQL-D11    SQL-D16  (D11 is about `imports`; it names
+ *                                           D16 in passing as the counter-case)
+ *   extends  RULED-SOUND SQL-D16    SQL-D14
+ *   implements RULED-SOUND SQL-D13  SQL-D16  (D13 is about `instantiates`; the
+ *                                           word appears in its interface clause)
+ *
+ * This does NOT change a verdict: `RULED-SOUND` is decided by the instrument
+ * result, and `rulingFor` only supplies the citation string appended to the
+ * detail. It does mean a reader who follows the pointer lands on the wrong
+ * paragraph, which is worth fixing in the shared file.
+ *
+ * THE FIX, for whoever owns the gate — the reason it is specified rather than
+ * left as a complaint: `rulingFor` should take the type's ruling id from data,
+ * not from prose. The cheapest correct change is an optional `ontologyType`
+ * field on each decision, falling back to the existing prose match:
+ *
+ *   type Ruled = { … ; ontologyType?: Type }
+ *   // in the spec's decisions:
+ *   { id: "SQL-D14", ontologyType: "extends", … }
+ *   { id: "SQL-D16", ontologyType: "exports",  … }
+ *   { id: "SQL-D16", ontologyType: "implements", … }   // needs a second entry, or split D16
+ *   // in rulingFor:
+ *   const explicit = decs.find((d) => d.status === "RULED" && d.ontologyType === t)
+ *   if (explicit) return { reason: explicit.resolution, src: `${specPath}#${explicit.id}` }
+ *
+ * SQL-D16 covers two types, so it either becomes SQL-D16 and SQL-D17 with the
+ * `exports` half and the `implements` half separated, or the explicit field is
+ * allowed to be a list. Splitting is cleaner and costs one edit in a file this
+ * lane owns.
+ */
+export const SQL_RULING_CITATIONS = {
+  exports: "SQL-D16",
+  extends: "SQL-D14",
+  implements: "SQL-D16",
+} as const
+
+/**
+ * FALSIFIABILITY AUDIT — the test the round brief applies to every ruling:
+ *
+ *   "Could a CORRECT, COMPLETE implementation meet the overturn condition? If not, it
+ *    is not a falsifiability claim."
+ *
+ * The failure this catches is a condition only a WRONG implementation could satisfy —
+ * the Julia case, where a ruling demanded "a count above the ExportInfo count for the
+ * same corpus" from a path emitting one row per ExportInfo. So each ruling below is
+ * classified by WHICH KIND OF CHANGE could reverse it, and the classification is the
+ * finding rather than a reassurance. Two of the three are honest about being weaker
+ * than the third, and the weakest is named as such.
+ *
+ * `extends` is the strongest of the three and it is NOT a statement about the language.
+ * SQL HAS table inheritance — `INHERITS`, and since PostgreSQL 11 declarative
+ * partitioning, `PARTITION OF` and `ATTACH PARTITION`, which make a child a subtype of a
+ * parent with no `INHERITS` clause at all. All three were PARSED against the wired wasm and
+ * all three put their parent clause inside an `ERROR` (the six-shape battery in
+ * `SQL_GRAMMAR_INVENTORY_FINDINGS.capabilityBattery`). So `extends` is a GRAMMAR GAP, not
+ * an inapplicability, and this lane has already rebuilt the grammar eight times to add rule
+ * groups — which makes the condition meetable by a correct, complete implementation, by
+ * patching `node-types.json` to parse the clause and emitting the edge. That is the honest
+ * classification: `grammar+implementation`, and it means the ruling is FALSIFIABLE IN
+ * PRINCIPLE. It is not shipped because the grammar build and the `validation/m14/grammar-pins.json`
+ * record are shared artefacts (§8) and a rebuild attempt has already produced a parser.c
+ * 111,557 bytes off the wired one. Reported to the supervisor rather than done quietly.
+ *
+ * `implements` is `grammar+implementation` for the same mechanical reason and is the one
+ * ruling here with no counter-example at all: 0 `IMPLEMENTS` tokens in the corpus, no
+ * interface/supertype node among the node types, and SQL has no interface TYPE for a clause
+ * to name. `CREATE DOMAIN d AS t CHECK (…)` is a constraint-carrying alias, not interface
+ * satisfaction, and it is the shape a reader is most likely to raise.
+ *
+ * `exports` is the WEAKEST and is labelled so. Its condition is "a node type expressing a
+ * published surface appears in the inventory", and no implementation change can put one
+ * there — SQL has no export syntax to parse, so a correct implementation cannot emit an
+ * `exports` edge on any corpus. Under the brief's test this condition is therefore NOT
+ * satisfiable by a correct implementation, and calling it falsifiable would be the Julia
+ * mistake. What it IS sensitive to is a real change in the world rather than in the code:
+ * a corpus carrying a construct that publishes a unit's surface to another unit — a build
+ * script concatenating files in a declared order, a control file listing its migrations, a
+ * `.psql` orchestration naming the files it runs. Any of those would be an `exports` edge
+ * under the visibility scope the construct actually has, and the ruling would be wrong. The
+ * corpus count for all of them is 0 today (`exports-grant: 0`, `exports-keyword: 0`,
+ * `exports-node: 0`), and that is the number to re-measure, not the node-type search.
+ */
+export const SQL_RULING_FALSIFIABILITY = {
+  exports: {
+    kind: "corpus-only",
+    correctImplementationCouldMeetIt: false,
+    why: "SQL has no export syntax, so no correct implementation can emit the edge on any corpus. Sensitive to a construct that publishes a unit's surface by CONVENTION (a build script, a control file, an orchestration listing), which a grammar inventory cannot see — the same unsoundness that made the json lane withdraw its `exports` ruling. 0 occurrences of any such construct in the corpus is the measurement to re-run, not the node-type search.",
+    reMeasure: "construct-probe.json zeroProbes: exports-keyword / exports-node / exports-grant, all 0",
+  },
+  extends: {
+    kind: "grammar+implementation",
+    correctImplementationCouldMeetIt: true,
+    why: "SQL HAS the construct — `INHERITS (p)`, `PARTITION OF p`, `ATTACH PARTITION c` — and the wired grammar puts the parent clause inside an ERROR in all three. A correct, complete implementation meets this condition by patching the grammar to parse the clause and emitting the edge. Not shipped here because the grammar build and its pin are shared artefacts (§8).",
+    reMeasure: "capabilityBattery (now SEVEN rows): a parse in which `OF <parent>` or `INHERITS (…)` survives inside a create_table/alter_table with no intervening ERROR — plus partition-by-sites.mts, which must keep reporting 0 occurrences of `partition_by` inside a table-partitioning declaration, since that is the one `partition`-named node the battery does not cover by shape",
+  },
+  implements: {
+    kind: "grammar+implementation",
+    correctImplementationCouldMeetIt: true,
+    why: "Mechanically the same as `extends` — the ruling turns on a node type being absent, and a grammar patch could add one — but with no counter-example: 0 `IMPLEMENTS` tokens, no supertype node, and SQL has no interface type for a clause to name. `CREATE DOMAIN … AS t` is an alias, not satisfaction.",
+    reMeasure: "construct-probe.json zeroProbes: implements-keyword / implements-node, both 0",
+  },
+} as const
