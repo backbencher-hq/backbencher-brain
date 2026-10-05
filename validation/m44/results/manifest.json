@@ -3,7 +3,7 @@
   "milestone": "M44",
   "githubMilestone": 47,
   "title": "The Understandable Hub (IDE v7)",
-  "status": "closed",
+  "status": "open",
   "authority": "docs/m44/M44-MASTER-PLAN.md (Issue groups table)",
   "governingContract": "docs/IDE-HONESTY-CONTRACT.md (§13 Understanding Rules, M44 amendment)",
   "prerequisite": "M29 + M42 completion bars met — verified at HEAD (re-audited by G1 on every run)",
@@ -12,7 +12,7 @@
       "code": "G1",
       "githubIssue": 687,
       "tool": "m44-governance",
-      "status": "verified",
+      "status": "known-gap",
       "scope": "M44 ledger; closure gate re-auditing the M29+M42 bars; §13 Understanding Rules in the contract doc, machine-gated",
       "acceptanceCriteria": [
         "gate exits 0 at a HEAD where M24→M42 governance all exit 0; exits non-zero when any ledger item lacks evidence or a bar fails (proven by mutant ledger entries)",
@@ -25,14 +25,15 @@
         "verify-chain + CI wiring present (verify:fast and verify)"
       ],
       "evidence": {
-        "status": "verified",
-        "currentCommit": "see G1.json",
+        "status": "known-gap",
+        "currentCommit": "facecf800fff693596604f71bcc8e23cf0152277",
         "verifierCommand": "npx tsx script/m44/verify-governance.ts",
         "evidenceFile": "G1.json",
-        "passed": 26,
-        "failed": 0,
+        "passed": 24,
+        "failed": 2,
         "realFailed": 0,
-        "negativeCases": 9
+        "negativeCases": 9,
+        "blockedReason": "2 check(s) failed: G1: every non-planned ledger item has matching persisted evidence at the current commit; G1: M42 bar — M42 governance gate exits 0 at HEAD (spawned) — relevant uncommitted files at measure time: script/m44/verify-governance.ts"
       }
     },
     {
@@ -53,13 +54,16 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "see U1.json",
+        "currentCommit": "e7564a1b5454b5a7f02eaae428d75ce1e75d59ee",
         "verifierCommand": "npx tsx script/m44/verify-usages-groups.ts",
         "evidenceFile": "U1.json",
         "passed": 20,
         "failed": 0,
         "realFailed": 0,
-        "negativeCases": 6
+        "negativeCases": 6,
+        "mutantsCaught": 6,
+        "mutantsTotal": 6,
+        "blockedReason": "Fixture rows are seeded with the analyzer storage vocabulary; the real indexer's full row production is exercised by the standing H5/wave fixtures."
       }
     },
     {
@@ -80,14 +84,17 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "see U2.json",
+        "currentCommit": "0dbafd74ef4f3d63be8e44dd6caa58833732a7db",
         "verifierCommand": "npx tsx script/m44/verify-hub-list.ts",
         "evidenceFile": "U2.json",
-        "passed": 29,
+        "passed": 41,
         "failed": 0,
         "realFailed": 0,
-        "negativeCases": 7,
-        "note": "U2 is DERIVED: its own owner gate (script/m44/verify-hub-list.ts) derives this record from the m26 webview harness run it names, under six gated laws. The declaration lives in script/m44/u2-declaration.json."
+        "negativeCases": 0,
+        "note": "U2 is DERIVED: its own owner gate (script/m44/verify-hub-list.ts) derives this record from the m26 webview harness run it names, under six gated laws. The declaration lives in script/m44/u2-declaration.json.",
+        "mutantsCaught": 5,
+        "mutantsTotal": 5,
+        "blockedReason": "Visual polish (spacing/palette) is CSS-owned and editor-themed; the DOM contract + affordance honesty are what this evidence pins."
       }
     },
     {
@@ -108,13 +115,14 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "see U3.json",
+        "currentCommit": "a943047e5cc1e03967e619a9bbc8bf935ec6c369",
         "verifierCommand": "npx tsx script/m44/verify-hub-tree.ts",
         "evidenceFile": "U3.json",
-        "passed": 25,
+        "passed": 29,
         "failed": 0,
-        "realFailed": 0,
-        "negativeCases": 5
+        "mutantsCaught": 6,
+        "mutantsTotal": 6,
+        "blockedReason": "The traversal recursion (not a cascade fold) produces this fixture's nesting; the cascade fold (depth-0 rows toward root's class members) is asserted at the harness level in V1."
       }
     },
     {
@@ -135,14 +143,15 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "24f9524dd7064fb726003b48f828ee970ba0dc5b",
+        "currentCommit": "e7564a1b5454b5a7f02eaae428d75ce1e75d59ee",
         "verifierCommand": "npx tsx script/m44/verify-legend.ts",
         "evidenceFile": "U4.json",
         "passed": 25,
         "failed": 0,
         "mutantsCaught": 4,
         "mutantsTotal": 4,
-        "inEditor": "E5 81/81 (5 new U4 checks); W4 19/19 (extended legend assertions); V1 41/41 (AH10/AH11 + 3 liars)"
+        "inEditor": "E5 81/81 (5 new U4 checks); W4 19/19 (extended legend assertions); V1 41/41 (AH10/AH11 + 3 liars)",
+        "blockedReason": "The graph surface's legend is W4's own gate (verify-evidence-badges.ts P3), re-run in the standing chain."
       }
     },
     {
@@ -163,17 +172,17 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "99170ce01521d8cff385c717215787b766336eb3",
+        "currentCommit": "e7564a1b5454b5a7f02eaae428d75ce1e75d59ee",
         "verifierCommand": "npx tsx script/m44/verify-impact-resolution.ts",
         "evidenceFile": "U5.json",
-        "passed": 27,
+        "passed": 33,
         "failed": 0,
-        "mutantsCaught": 4,
-        "mutantsTotal": 4,
-        "negativeCases": 2,
+        "mutantsCaught": 5,
+        "mutantsTotal": 5,
         "inEditor": "E5 83/83 (E5-U5 constructor impact renders with owning-declaration note)",
         "docs": "docs/m44/M44-MASTER-PLAN.md U5 decision; IDE-HONESTY-CONTRACT §13.10",
-        "generatedAt": "2026-09-08T19:49:56Z"
+        "generatedAt": "2026-09-08T19:49:56Z",
+        "blockedReason": "The fallback requires an exact single-name member match and a traversable owner; ambiguous names keep the declared error (documented narrowness, never a guess)."
       }
     },
     {
@@ -203,7 +212,8 @@
         "negativeCases": 2,
         "inEditor": "E5 88/88 (E5-U6 click leg: declared surface + data landing + identity + legacy reveal floor)",
         "docs": "docs/m44/M44-MASTER-PLAN.md U6 decision",
-        "currentCommit": "9c3f8c49fba98379f63c463d1cc6b0c3aa7b4ce4"
+        "currentCommit": "e7564a1b5454b5a7f02eaae428d75ce1e75d59ee",
+        "blockedReason": "The vscode command handler cannot execute headlessly; its wiring is pinned structurally (R3) and executed live by the E5 in-editor leg (click show-all-usages → native peek OR usages fallback, never a bare message)."
       }
     },
     {
@@ -233,15 +243,16 @@
         "launchRecord": "docs/m44/LAUNCH-RECORD.md (12 machine-audited rows)",
         "knownGaps": "validation/m44/results/KNOWN-GAPS.json (machine-compiled, none silent)",
         "spotCheckPack": "validation/m44/results/SPOT-CHECK-PACK.md",
-        "currentCommit": "see X1.json",
-        "note": "see X1.json currentCommit — the evidence is re-pinned to the closure HEAD by the standing sweep procedure before governance runs"
+        "currentCommit": "a871d533a736e8e38cb826d80d986d3cc84022d1",
+        "note": "see X1.json currentCommit — the evidence is re-pinned to the closure HEAD by the standing sweep procedure before governance runs",
+        "blockedReason": "Pass 0 deliberately deviates from the M42 pass order: this closure edits an m25-relevant file (run-fork-e2e.mts), so the editor legs re-run and re-stamp BEFORE the ladder freshness-judges them."
       }
     }
   ],
   "closedAt": "2026-09-09",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-17T01:36:14.721Z",
-    "contentSha256": "8f36ff1b05a0ac03a274678f0c953b220b65b3ea7bca3c9d41e40fc600eb63a4"
+    "sealedAt": "2026-10-05T04:37:12.507Z",
+    "contentSha256": "75592218c68ddd62c8c8de70ac29cad38770a154e470a1f3141a730e7d2e5e09"
   }
 }
