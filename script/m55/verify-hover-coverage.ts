@@ -99,6 +99,7 @@ const PINS = [
   { id: "s-notify", decl: "notifyHub", label: "notifyHub (function: 3 calls IN incl. one enriched, 0 out)" },
   { id: "s-hot", decl: "hotPath", label: "hotPath (function: 5 calls IN — past the 3-link render cap)" },
   { id: "s-silent", decl: "silent", label: "silent (function: 0 stored rows — declared absence, NOT a gap)" },
+  { id: "s-df-src", decl: "dataSource", label: "dataSource (function: 1 data_flow row, no stored evidenceClass — the tier fall-through row)" },
 ].map((p) => {
   // The cursor goes ON the symbol's own declaration line (0-based), derived
   // from the same line table the fixture's rows use — never a hand-typed line,

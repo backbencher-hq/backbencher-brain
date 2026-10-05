@@ -71,6 +71,16 @@ export function busyHub(): string {
 
 export function silent(): void {
 }
+
+/** The TIER-DISCRIMINATING fixture symbols: a pair linked ONLY by a kind this
+ *  repo's own persister writes but no tier table classifies. */
+export function dataSource(): number {
+  return 1
+}
+
+export function dataSink(): number {
+  return 2
+}
 `,
   "src/app.ts": `import { Hub, notifyHub, countHub, hotPath } from "./hub"
 
@@ -184,6 +194,8 @@ export function buildFixture(): Fx {
     ["s-hot", "hotPath", "function", "hotPath"],
     ["s-busy", "busyHub", "function", "busyHub"],
     ["s-silent", "silent", "function", "silent"],
+    ["s-df-src", "dataSource", "function", "dataSource"],
+    ["s-df-snk", "dataSink", "function", "dataSink"],
   ]
   for (const [id, name, type, declName] of hubSyms) {
     const line = HUB_DECL_LINES[declName]!
@@ -284,6 +296,25 @@ export function buildFixture(): Fx {
     r("r-k3", "s-c3", "s-hot", "calls", 1.0, at("app", "c3"), "structural"),
     r("r-k4", "s-c4", "s-hot", "calls", 1.0, at("app", "c4"), "structural"),
     r("r-k5", "s-c5", "s-hot", "calls", 0.8, at("app", "c5"), "structural"),
+    // The TIER DISCRIMINATOR (M55 hover-coverage D3).
+    //
+    // Every kind above is classified by one of evidence_tier.ts's four tables,
+    // so it returns BEFORE the function's fall-through `return "inferred"` — and
+    // the D3 mutant, which rewrites that fall-through, changed NOTHING on this
+    // fixture. The red-team proved it by surviving: a mutation that alters no
+    // output cannot be caught by any check on that output, and a check that
+    // reported green anyway was measuring nothing.
+    //
+    // `data_flow` is not invented for this. src/ast/cross-language-intelligence-
+    // persister.ts:424 writes exactly this kind, and NO tier table classifies
+    // it, so it is the real shape of the row the D3 mutation is about: a stored
+    // row whose kind no table covers, whose honest tier is the fall-through's
+    // `inferred` and whose fabricated tier is parser-fact `structural`.
+    //
+    // It is the ONLY row on dataSource on purpose: the card's `evidence:` line
+    // is a deduplicated SET, so a second row contributing `structural` would mask
+    // the change. One row means the card's whole tier set is this row's tier.
+    r("r-df1", "s-df-src", "s-df-snk", "data_flow", 0.5, at("hub", "return 1"), undefined),
     // The BUSY symbol: BUSY_CALLER_FILES distinct FILES, one stored call row
     // each, all at a real call-site line. This is the shape whose hover cost
     // decides the §3 budget — every distinct file is read and mapped once.
