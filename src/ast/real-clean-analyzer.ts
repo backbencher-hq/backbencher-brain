@@ -1388,10 +1388,32 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   /**
-   * The class names a `|` context constrains on, split at the `,` CHILD nodes.
-   * Measured: `class_context` is `|` followed by a flat comma-separated
-   * constraint list — `| Enum, Ord, Num a` is ONE node with three named children
-   * and two `,` tokens — so the split is a child walk, not a text split.
+   * The class names a `|` context constrains on, split at the `,` and `&` CHILD
+   * nodes. Measured: `class_context` is `|` followed by a flat constraint list —
+   * `| Enum, Ord, Num a` is ONE node with three named children and two `,`
+   * tokens — so the split is a child walk, not a text split.
+   *
+   * **`&` is a second spelling of `,` and was not read.** The two forms produce
+   * the SAME child shape with a different separator token, so this is the
+   * two-spellings-one-handler case, not two constructs:
+   *
+   *     | == a          -> !| operator_compare type_variable
+   *     | == a & UList a -> !| operator_compare type_variable !& constructor type_variable
+   *
+   * (`clean-stdlib/StdOverloadedList.dcl:5,8`.) Reading only `,` published the
+   * first conjunct and dropped the second. Measured over the corpus
+   * (`validation/m14/fixtures/clean/ampersand-context-probe.mts`): 1,995
+   * `class_context` nodes at WIDE carry only the three unnamed child types `|`,
+   * `,` and `&`; 365 contain an `&`; and **226 of them name a conjunct the
+   * analyzer never read, and every one of those 226 names a class different from
+   * the one already published** — zero repeat the first class. That last count is
+   * what makes the fix safe rather than decorative: a conjunct that repeated the
+   * first class would publish a second identical edge on one line, which is a
+   * naming question this lane has not settled, and it occurs 0 times. So each of
+   * the 226 is a genuinely distinct constraint whose edge was missing.
+   *
+   * `&&` is NOT handled: it is 0 of the 1,995 contexts, and handling an unobserved
+   * token would be a claim no measurement supports.
    *
    * A constraint that names no class publishes nothing and emits no edge: 5 of
    * the 474 contexts in the corpus are `*` (a `uniqueness_star` leaf — the
@@ -1403,7 +1425,7 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
       const c = context.child(i)
       if (!c) continue
       if (!c.isNamed) {
-        if (c.type === ",") expectName = true
+        if (c.type === "," || c.type === "&") expectName = true
         continue
       }
       if (!expectName) continue
