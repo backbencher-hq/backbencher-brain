@@ -92,8 +92,11 @@ types while 46,944 of its edges resolve to nothing is worse than a lane emitting
 all resolve** — it looks finished and is not usable for refactoring, navigation or impact
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 >>>>>>> analyzer/MARKDOWN
+=======
+>>>>>>> analyzer/GRAPHQL
 analysis. Optimise resolution, not counts.
 
 ---
@@ -137,8 +140,11 @@ by edge type: {"contains":..., "overrides":..., "uses":...}
 Do the largest type first. Re-run the same command with the same file count and report
 before and after. If the number does not move, say so and say why.
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 analysis. Optimise resolution, not counts.
 >>>>>>> analyzer/SCSS
 =======
 >>>>>>> analyzer/MARKDOWN
+=======
+>>>>>>> analyzer/GRAPHQL
