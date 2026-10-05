@@ -691,6 +691,113 @@ every schema answers them and no schema declares them, so no `brain_symbol` row
 will ever exist and neither store strategy can land them. That is a property of
 the store, not of the edge — the edge names exactly what the document says.
 
+## Incoming ambiguity: the tsv number, and what it is actually counting
+
+`validation/m14/measurements/incoming-whole.tsv` reports, per lane, how many
+relationship targets resolve to more than one published symbol (`ambiguous`) and
+how many to none (`unresolved`). This lane reads `amb 3,710  unres 4,427` at 600
+files. Those two numbers need their instruments attached before they can be acted
+on, and acting on the first one as printed would have been wrong.
+
+**An ambiguous target is ONE edge the reverse walk attributes to N declarations,
+not N edges.** It cannot be lowered by emitting fewer edges and it cannot be
+lowered by implementing another relationship type. It falls only when symbol
+identity becomes sound. `script/m14/tmp/graphql/probe/ambiguity-split.mts`
+separates the causes over the full 1,905 admitted files, first-match so the three
+sum to the total:
+
+| bucket | kind rule | store rule | owner |
+|---|---|---|---|
+| B1 all declarations of the name in ONE file | 32 names / 509 edges | 74 names / 827 edges | lane |
+| B2 the name carries ≥2 kinds across files | 276 / 14,601 | 254 / 13,727 | partly lane |
+| B3 one kind, N declaring types | 0 by construction | 6,566 / 73,262 | published-name contract |
+
+**There are two resolution rules in play and they disagree about what collides.**
+`script/m14/incoming-check.ts` keeps `name -> distinct KINDS`, so `hits.length > 1`
+means the name is published under more than one *kind*; a name declared on 47
+types is one kind and is therefore not ambiguous to it. `parallel-indexer.ts`
+`resolveRelationships` tries a qualified-name exact match first, then accepts a
+bare name only when its **symbol** count is 1. A bare name carried by 1,866
+symbols is ambiguous to the store and invisible to the kind rule. **B3 is
+unreachable under the kind rule by construction**, which is why the tsv's `amb`
+cannot be read as a claim about the same thing the store will experience.
+
+**B1 is not a defect either, and this lane checked rather than assumed.** The 74
+names are one name under two kinds inside one file — which in GraphQL is legal
+and correct: `type Query { bwr_GroupInstances: Bwr_GroupInstancesConnection }`
+declares a **field** named `bwr_GroupInstances` on `Query` *and*, 2,052 lines
+later, an **object type** named `bwr_GroupInstances`. They are two symbols that
+share a spelling, and a bare target cannot separate them. Verified on the two
+largest cases through production `parseFile`:
+
+```
+property  qname=Query.bwr_GroupInstances  L31   <- the field
+class     qname=bwr_GroupInstances        L2083 <- the type
+```
+
+and `introspection.graphql`: `class Album` L33, `property query_root.Album`
+L1545, `property subscription_root.Album` L2027. **Within one document there is
+not "exactly one right answer"** — the premise B1 was built on is false for a
+language whose type system and field namespace are separate vocabularies that
+routinely collide. No repair is available at the bare-name level; separating them
+means publishing a qualified target, which changes what the edge means and
+belongs to the published-name contract, not to this file.
+
+### The unresolved half, and the bucket that looked like a defect and was not
+
+19,066 unresolved targets over 1,905 files, every one classified into exactly one
+of four buckets:
+
+| bucket | edges | share of unresolved | fixable by emitting something |
+|---|---|---|---|
+| S1 spec vocabulary — `__typename`, built-in scalars | 4,586 | 24.1% | no |
+| S2 present in corpus text, claimed by no symbol | 620 | 3.3% | **no — see below** |
+| S3 absent from every admitted file | 6,530 | 34.2% | no |
+| S4 path-shaped — `JiraIssueField.__typename`, `b.graphql` | 7,330 | 38.4% | no |
+
+**S1 + S3 are 58% of every unresolved edge in this lane, and neither is a
+defect.** A GraphQL schema names types it does not define: SDL is split across
+files, an executable query names types a schema file elsewhere declares, and the
+specification defines `__typename` for every schema while no file declares it. An
+edge to a name outside the population is *correct*, and its target cannot resolve
+inside the population. That is the answer to "why is `uses` 38% unresolved".
+
+**S2 was briefly documented here as the only lane-owned bucket. That was wrong,
+and `script/m14/tmp/graphql/probe/decl-inventory.mts` is the correction.** A
+corpus-*text* scan cannot distinguish a declaration from a usage. `story` is S2's
+second-largest name at 27 edges; `grep story` finds it in absinthe's
+`kitchen-sink.graphql` as a **selected field inside an executable query**, not as
+a declared type. All 40 of S2's heaviest names were checked against the
+corpus-wide published-symbol set — 69,230 distinct names — and **all 40 return
+`NO SYMBOL ANYWHERE`**, which is what a usage looks like. S2 measures "this schema
+names something it never defines", which is correct GraphQL.
+
+The question S2 was meant to ask needs the grammar, not the text. `decl-inventory`
+walks the parse tree, collects the name at **every declaration node** — analyzer
+independent — and diffs against the analyzer's symbols:
+
+```
+grammar declaration sites                36,730
+distinct declared names                 11,745
+declared but published by NO symbol          0
+```
+
+**Zero dropped declarations over 1,905 files.** The `imports` family's targets
+are the remaining S2 residue and are path-shaped by design (`#import "b.graphql"`
+names a file, and the store resolves a file, not a symbol).
+
+Three accessors in that probe each returned a **plausible zero** rather than an
+error, which is recorded because an instrument that finds nothing and cannot say
+why is not a pass: `node.type` is `PascalCase` (`ObjectTypeDefinition`), not
+snake_case; the name node is `Name`, capital N; and a field's name is a **direct**
+child, so a last-`Name`-at-any-depth walk descends into the return type and
+`n: String` yields `String` — that one produced 11,745 *wrong* names rather than
+a zero. A fourth correction came from the symbol contract itself: a first working
+run reported 143 names "declared but not published", every one a
+`DirectiveDefinition`, because the contract publishes a directive definition as
+`@name` and `requiresOptIn` ≠ `@requiresOptIn` to a string comparison. **143 is
+exactly what a `@` in a name is worth.**
+
 ## Robustness: degenerate input and pathological depth
 
 Every other gate in this lane feeds the analyzer well-formed, shallow, ASCII
