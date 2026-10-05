@@ -3937,3 +3937,69 @@ quiet machine will cover all 5,227 through the production path.
     TREE-ONLY by design: one is external, the other is a gap, and this instrument has
     separate columns for them because conflating them is how a 1-edge defect gets reported
     as 2,038.
+42. **The analyzer's Regex inventory claimed zero while it held two regexes, both
+    introduced by the module pass, and replacing them cost a predicate narrowing that had
+    to be caught and corrected.**
+
+    `verify-regex-census.ts` named both as MISSING entries — `real-nim-analyzer.ts:1970`
+    `/\\+$/` and `:2031` `/^\s*"?std\s*\//` — and this doc's *Regex inventory* said
+    "Zero. The analyzer contains no `RegExp`, no `.match(`, `.replace(`, `.test(`". Both
+    were `moduleNameOfPath` (stripping a Windows-style trailing `\`) and
+    `isStdlibModulePath` (the `std/` prefix test), added by the pass that published the
+    module symbol. The doc was wrong and the census was right; the census had been read
+    as "no nim row to fix" on at least one earlier pass, which is how the contradiction
+    survived.
+
+    Both are now character scans, and the equivalence is measured rather than asserted:
+    an A/B of old against new over **6,063 corpus paths and 27 constructed cases
+    including `std / syncio`, `  "std/prelude`, tab and newline separators, `std/os`,
+    `STD/os`, `xstd/os` and three Windows-separator paths reads 0 differences on
+    `moduleNameOfPath` and 0 on `isStdlibModulePath`.**
+
+    The narrowing is the part worth recording. A first replacement spelled `\s` as six
+    ASCII code units, and the A/B found one disagreement: `std\u00a0/os` — the old regex's
+    `\s` is UNICODE whitespace, so it accepted a no-break space and my scan did not. A
+    corpus sweep for a non-ASCII space inside an import path found **0 of 6,063 files**, so
+    no published figure moved — and the difference is still a difference. The predicate now
+    spells JavaScript's `\s` out exactly (`WHITESPACE_CODE_UNITS`, the `WhiteSpace` +
+    `LineTerminator` set), because a helper that quietly matches LESS than the one it
+    replaced changes a measurement without its author seeing it.
+
+    **Two of the three mutations aimed at the new predicates SURVIVE, and that is the
+    finding, not a footnote.** With `nim/module-target` extended to carry the two spellings
+    no fixture had:
+
+    | mutation | verdict |
+    | --- | --- |
+    | drop the `skipSpace()` before the separator — kills `std / x` | **CAUGHT**, `nim/module-target` fails |
+    | drop the leading-quote branch | SURVIVES |
+    | drop the trailing-backslash strip | SURVIVES |
+
+    The quote branch survives because it is unreachable on the production path:
+    `readImportFromStatement` strips the quotes before the predicate runs, so the fixture's
+    `include "std/prelude"` row passes with or without it. The branch is KEPT — deleting
+    it would narrow the predicate for any caller that passes literal text, and the old
+    regex accepted the quoted form — but its comment now says it is defensive rather than
+    load-bearing, because a reader would otherwise assume the fixture pins it. The
+    backslash strip survives because **no corpus file has a Windows-style module path**;
+    its 0-hit population is measured (6,063 paths, `a/b/c.nim\` style inputs exercise it
+    directly in the A/B, which is why the A/B exists and the fixture does not).
+
+    A dead-code detector would have caught the first draft of the replacement, which
+    introduced an `isStdSlash` helper whose whitespace branch was unreachable because
+    `skipSpace` had already run — the detector that removes it is the same
+    `bare-node-identity-comparison`-style source gate this lane runs as an A/B
+    (`verify-analyzer-hygiene-nim.ts`, 0 findings on HEAD, reverted copy CAUGHT).
+
+43. **The `imports` marker has two spellings upstream actually writes and no fixture
+    pinned, so the no-regex replacement could have dropped both and stayed green.** The
+    branches are a leading QUOTE — an `include` path is a string literal — and WHITESPACE
+    around the separator. The spaced form is not hypothetical: upstream Nim writes
+    `import std / [strutils, sets]` at `nim/tools/grammar_nanny.nim:4` and
+    `import std / strutils` at `nim/tools/atlas/parse_requires.nim:4`, plus 15 further
+    corpus files, so a predicate that required `std/` with no space marks real upstream
+    source as a local module. `nim/module-target` now carries both
+    (`include "std/prelude"` as a `nim_include` row with the marker asserted TRUE, and
+    `import std / monotimes` with `meta.nimModulePath` keeping the spaces verbatim), and
+    the mutation table in limitation 42 records that one of the two is caught and one is
+    not.
