@@ -40,11 +40,13 @@ import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { readEvidence, writeSealed } from "../lib/evidence.ts"
 import {
+  SHA256_OF_NOTHING,
   classifyFingerprint,
   fingerprintStateLine,
   sha256File,
   sourceFingerprintOf,
   type Coverage,
+  type DigestAtCommit,
   type FingerprintState,
   type MovedSince,
 } from "./source_fingerprint.ts"
@@ -231,6 +233,50 @@ function movedSinceImpl(commit: string | undefined, covers: Coverage): string[] 
 
 const movedSince: MovedSince = movedSinceImpl
 
+/**
+ * `DigestAtCommit`, bound to this repository: recompute the SAME fold the owner
+ * defines, over the blobs as they existed at the record's own commit.
+ *
+ * It reuses the owner's `sourceFingerprintOf` rather than re-implementing the
+ * fold, by materialising the historical blobs into a temp directory and hashing
+ * THAT. Re-deriving the rule here would be a second copy of the rule — the exact
+ * thing this whole file is an argument against — and the two copies would drift
+ * the first time the framing changed.
+ *
+ * `null` (no usable commit, or a covered path that did not exist then) is the
+ * answer that keeps the gate honest: the classifier reads it as UNEXPLAINED, so
+ * an unanswerable question can never produce the reassuring verdict.
+ */
+function digestAtCommitImpl(commit: string | undefined, covers: Coverage): string | null {
+  if (!commit || !/^[0-9a-f]{40}$/.test(commit)) return null
+  try {
+    execFileSync("git", ["cat-file", "-e", `${commit}^{commit}`], { cwd: ROOT, stdio: "ignore" })
+  } catch {
+    return null
+  }
+  const scratch = mkdtempSync(path.join(os.tmpdir(), "m61-v8-atcommit-"))
+  try {
+    for (const rel of covers) {
+      let blob: Buffer
+      try {
+        blob = execFileSync("git", ["show", `${commit}:${rel}`], { cwd: ROOT, maxBuffer: 64 * 1024 * 1024 })
+      } catch {
+        return null // the path did not exist at that commit
+      }
+      const out = path.join(scratch, rel)
+      mkdirSync(path.dirname(out), { recursive: true })
+      writeFileSync(out, blob)
+    }
+    return sourceFingerprintOf(covers, scratch)
+  } catch {
+    return null
+  } finally {
+    rmSync(scratch, { recursive: true, force: true })
+  }
+}
+
+const digestAtCommit: DigestAtCommit = digestAtCommitImpl
+
 /** The coverage a claim is judged against: the DECLARED table is the authority
  *  (script/m61/claim_fingerprints.ts), and the record's own
  *  `sourceFingerprintCovers` is compared against it rather than trusted. A record
@@ -240,9 +286,13 @@ function effectiveCovers(row: ClaimRow): { covers: Coverage; drift: string | nul
   const declared = coverageFor(row.claim)
   if (!declared) return { covers: row.recordCovers ?? [], drift: "the claim is not declared in script/m61/claim_fingerprints.ts" }
   if (row.recordCovers === null) return { covers: declared, drift: null }
-  const a = [...declared].join(" ")
-  const b = [...row.recordCovers].join(" ")
-  if (a !== b) return { covers: declared, drift: `record declares [${row.recordCovers.join(", ")}] but the owner declares [${declared.join(", ")}]` }
+  // Compare ELEMENT-WISE, not as one joined string: a join with a separator
+  // that can appear inside a path would call two different lists equal. The
+  // separator here was a literal NUL in the first form of this function — which
+  // is also why the file read as binary, and a reminder that the separator one
+  // picks is a correctness question, not a style one.
+  const same = declared.length === row.recordCovers.length && declared.every((p, i) => p === row.recordCovers![i])
+  if (!same) return { covers: declared, drift: `record declares [${row.recordCovers.join(", ")}] but the owner declares [${declared.join(", ")}]` }
   return { covers: declared, drift: null }
 }
 
@@ -322,6 +372,7 @@ function main(): void {
       verifierCommand: row.verifierCommand,
       evidenceFile: row.file,
       movedSince,
+      digestAtCommit,
     })
     states.set(row.claim, s)
     statesByKind[s.state].push(row.claim)
@@ -417,15 +468,17 @@ function main(): void {
       const good = sourceFingerprintOf(covers, tree)
 
       // (a) VERIFIABLE — the value IS what the rule computes from the tree.
-      const verifiable = classifyFingerprint({ ...ctx, fingerprint: good, movedSince: realProbe })
+      const verifiable = classifyFingerprint({ ...ctx, fingerprint: good, movedSince: realProbe, digestAtCommit: () => null })
 
-      // (b) STALE — the real half. The component is edited for real, the record
-      // keeps the value it was sealed with, and the probe (a real diff, not a
-      // stub) reports the move. This is what a component change after evidence
-      // is sealed looks like, and it must be filed as bookkeeping to re-run, NOT
-      // as a forged number.
+      // (b) STALE — the real half, and it needs BOTH probes to agree. The
+      // component is edited for real; `digestAtCommit` replays the historical
+      // bytes (here: the snapshot taken before the edit) and confirms the value
+      // WAS the honest digest at seal time; `realProbe` confirms something moved
+      // since. Either probe alone would let a forgery through — see
+      // `DigestAtCommit`'s header — so this leg exercises the conjunction.
       writeFileSync(comp, "export const a = 2\n")
-      const stale = classifyFingerprint({ ...ctx, fingerprint: good, movedSince: realProbe })
+      const replay: DigestAtCommit = () => good
+      const stale = classifyFingerprint({ ...ctx, fingerprint: good, movedSince: realProbe, digestAtCommit: replay })
       const digestAfterEdit = sourceFingerprintOf(covers, tree)
 
       // (c) UNEXPLAINED — a well-formed, non-degenerate digest of an UNRELATED
@@ -442,12 +495,18 @@ function main(): void {
       // which is exactly the claim F4e makes about the split.
       snapshot = snapshotOf()
       const unrelated = createHash("sha256").update("some other file entirely").digest("hex")
-      const unexplained = classifyFingerprint({ ...ctx, fingerprint: unrelated, movedSince: realProbe })
+      const unexplained = classifyFingerprint({ ...ctx, fingerprint: unrelated, movedSince: realProbe, digestAtCommit: () => null })
+      // (c2) THE LAUNDERING LEG — the defect the live proof found. A forged
+      // value plus a probe that REPORTS A MOVE used to be filed as STALE, the
+      // reassuring verdict, because a dirty working tree makes any covered path
+      // look changed. Here the probe claims a move and the replay shows the
+      // value was never the honest digest: the verdict must be UNEXPLAINED.
+      const laundered = classifyFingerprint({ ...ctx, fingerprint: unrelated, movedSince: () => [compRel], digestAtCommit: () => "c".repeat(64) })
       // (d) UNEXPLAINED through the OTHER unanswerable branch: an unanswerable
       //     "did it move?" (null) must never be laundered into STALE. Treating
       //     "unknown" as "no news" is how a forged digest gets a free pass in
       //     any gate that asks git and shrugs when git shrugs.
-      const unknownCommit = classifyFingerprint({ ...ctx, fingerprint: unrelated, movedSince: () => null })
+      const unknownCommit = classifyFingerprint({ ...ctx, fingerprint: unrelated, movedSince: () => null, digestAtCommit: () => null })
 
       check(
         "F4a: a value the rule computes from the declared coverage is VERIFIABLE (the only passing state)",
@@ -474,10 +533,15 @@ function main(): void {
         stale.state !== unexplained.state && stale.state !== verifiable.state && unexplained.state !== verifiable.state,
         `stale=${stale.state} unexplained=${unexplained.state} verifiable=${verifiable.state}`,
       )
+      check(
+        "F4f: a forged value is NOT laundered into STALE by a probe that reports a move (the dirty-tree laundering the live proof found) — STALE requires the value to have been the honest digest AT THE RECORD'S COMMIT",
+        laundered.state === "unexplained",
+        fingerprintStateLine("mXX.T1", laundered),
+      )
     } finally {
       rmSync(tree, { recursive: true, force: true })
     }
-    check("F4f: the temp tree F4 drove is removed after the proof", !existsSync(path.join(os.tmpdir(), "m61-v8-f4-")))
+    check("F4g: the temp tree F4 drove is removed after the proof", !existsSync(path.join(os.tmpdir(), "m61-v8-f4-")))
   }
 
   // --- F2: the out-of-scope census is PUBLISHED, not passed -------------------
@@ -504,6 +568,87 @@ function main(): void {
       .map(([lane]) => lane)
       .join(", "),
   )
+
+  // --- Mutants: the classifier CAN fail ---------------------------------------
+  //
+  // F0-F4 above drive the classifier on REAL records and on a real temp tree.
+  // These drive it with each DECORATIVE FORM the contract names, and assert the
+  // one thing that matters: none of them reaches `verifiable`. A classifier that
+  // passed a constant would make F3 a check that cannot fail — which is the
+  // defect this gate was rebuilt to kill, reintroduced one layer down.
+  console.log("\nMutants: the classifier CAN fail — every decorative form is refused")
+  {
+    const tree = mkdtempSync(path.join(os.tmpdir(), "m61-v8-mut-"))
+    try {
+      const compRel = "src/lsp/thing.ts"
+      const orcRel = "script/mXX/verify-thing.ts"
+      mkdirSync(path.join(tree, "src/lsp"), { recursive: true })
+      mkdirSync(path.join(tree, "script/mXX"), { recursive: true })
+      writeFileSync(path.join(tree, compRel), "export const a = 1\n")
+      writeFileSync(path.join(tree, orcRel), "const checks = 1\n")
+      const covers: Coverage = [compRel, orcRel]
+      const ctx = { covers, root: tree, verifierCommand: `npx tsx ${orcRel}`, evidenceFile: "validation/mXX/results/T1.json" }
+      const good = sourceFingerprintOf(covers, tree)
+      const stateOf = (fingerprint: unknown): FingerprintState["state"] => classifyFingerprint({ ...ctx, fingerprint, movedSince: () => [], digestAtCommit: () => null }).state
+      const passes = (fingerprint: unknown): boolean => stateOf(fingerprint) === "verifiable"
+
+      // M5: a constant. The form that produced the RED PROOF.
+      mutant("M5: a 64-hex CONSTANT does not reach `verifiable`", !passes("a".repeat(64)), `state=${stateOf("a".repeat(64))}`)
+      // M6: the empty string, which the FIRST form of this gate rejected only
+      // by accident (a `length > 0` presence test). It must still be refused
+      // after the classifier was rebuilt around re-derivation.
+      mutant("M6: an EMPTY string does not reach `verifiable`", !passes(""), `state=${stateOf("")}`)
+      // M7: the digest of nothing — a syntactically perfect fingerprint.
+      mutant("M7: sha256 of ZERO BYTES does not reach `verifiable`", !passes(SHA256_OF_NOTHING), `state=${stateOf(SHA256_OF_NOTHING)}`)
+      // M8: the record's OWN hash. The classic self-referential "integrity"
+      // value, and the one that survives every check that only looks at shape.
+      {
+        // A real evidence file inside the temp tree, so the self-reference is a
+        // real digest of a real file rather than a fabricated string.
+        const evRel = "validation/mXX/results/T1.json"
+        mkdirSync(path.join(tree, "validation/mXX/results"), { recursive: true })
+        writeFileSync(path.join(tree, evRel), `{"status":"verified"}\n`)
+        const selfDigest = sha256File(path.join(tree, evRel))
+        const s = classifyFingerprint({ ...ctx, fingerprint: selfDigest, evidenceFile: evRel, movedSince: () => [], digestAtCommit: () => null })
+        mutant("M8: the record's OWN digest does not reach `verifiable`, and is NAMED as the self-reference it is", s.state !== "verifiable" && s.state === "malformed" && s.findings.some((f) => f.reason.includes("its own")), `state=${s.state} reasons=${s.state === "malformed" ? s.findings.map((f) => f.reason).join(" | ") : ""}`)
+      }
+      // M9: a well-formed digest of a file the claim does NOT cover. Passes
+      // every shape check and every self-reference check; only re-derivation
+      // convicts it. This is the form that separates a real re-derivation from
+      // a fancier presence test.
+      {
+        const otherRel = "src/lsp/other.ts"
+        writeFileSync(path.join(tree, otherRel), "export const b = 2\n")
+        const wrongDigest = sha256File(path.join(tree, otherRel))
+        const s = classifyFingerprint({ ...ctx, fingerprint: wrongDigest, movedSince: () => [], digestAtCommit: () => null })
+        mutant("M9: a correct digest of the WRONG file does not reach `verifiable`", s.state !== "verifiable", `state=${s.state}`)
+      }
+      // M10: the control. Without it, M5-M9 would also pass against a
+      // classifier that refused EVERYTHING — which is the failure mode of a
+      // check that cannot tell right from wrong, and the reason a mutation suite
+      // needs a positive case as well as negative ones.
+      mutant("M10: the control — the REAL digest of the declared coverage DOES reach `verifiable` (M5-M9 are not passing because the classifier refuses everything)", passes(good), `state=${stateOf(good)}`)
+      // M11: the coverage floor. A digest over ONE path must be refused even when
+      // that path's digest is computed correctly — a fingerprint over a single
+      // file cannot tell a component change from a comment change.
+      {
+        const onePath: Coverage = [compRel]
+        const s = classifyFingerprint({ ...ctx, covers: onePath, fingerprint: sourceFingerprintOf(onePath, tree), verifierCommand: `npx tsx ${orcRel}`, movedSince: () => [], digestAtCommit: () => null })
+        mutant("M11: a CORRECT digest over a single covered path is still refused (the coverage floor is load-bearing)", s.state === "no-coverage", `state=${s.state}`)
+      }
+      // M12: a coverage that names nothing but the oracle — the "harness digest"
+      // shape, which is a real digest of real bytes and still means nothing
+      // about the component.
+      {
+        const onlyOracle: Coverage = [orcRel]
+        const s = classifyFingerprint({ ...ctx, covers: onlyOracle, fingerprint: sourceFingerprintOf(onlyOracle, tree), verifierCommand: `npx tsx ${orcRel}`, movedSince: () => [], digestAtCommit: () => null })
+        mutant("M12: a CORRECT digest naming ONLY the oracle is refused (a harness hash is not a component hash)", s.state === "no-coverage", `state=${s.state}`)
+      }
+    } finally {
+      rmSync(tree, { recursive: true, force: true })
+    }
+    check("M5-M12: the temp tree the classifier mutants drove is removed after the proof")
+  }
 
   // --- Mutants: the census CAN fail ------------------------------------------
   console.log("\nMutants: the census CAN fail")

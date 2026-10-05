@@ -63,7 +63,7 @@
 // the declaration. The undeclared pair was a real hole: 30 records were declared
 // artifacts and their 31st and 32nd siblings were not.)
 
-import { type Coverage } from "./source_fingerprint.ts"
+import { FINGERPRINT_ALGORITHM, type Coverage, type FingerprintFields, coverageFindings, sourceFingerprintOf } from "./source_fingerprint.ts"
 
 export type ClaimDeclaration = { covers: Coverage } | { unFingerprintable: string; covers?: Coverage }
 
@@ -209,5 +209,68 @@ export function unFingerprintableReason(claim: string): string | null {
  *  vanishes from the table cannot vanish from the count. */
 export function declaredClaims(): string[] {
   return Object.keys(CLAIM_COVERAGE).sort()
+}
+
+/**
+ * THE CALL A VERIFIER MAKES. One line in a record's object literal:
+ *
+ *     const result = { …, currentCommit, ...fingerprintFields(["M62.A1"], ROOT), … }
+ *
+ * It returns the three §8.4 fields for every claim, folded over the claims'
+ * DECLARED coverage — so a verifier cannot invent a digest, cannot ship a
+ * coverage list of its own, and cannot emit one field without the other two.
+ *
+ * WHY THE VERIFIER DOES NOT COMPUTE ITS OWN LIST: a digest is only evidence if
+ * the coverage behind it is auditable. A verifier that hashed "the files I
+ * happen to import" would be a fingerprint nobody could check, and the gate
+ * would have to trust the very source it is auditing. The table is the audit
+ * surface; this function is the only bridge to it.
+ *
+ * MULTI-CLAIM VERIFIERS get ONE digest over the UNION of their claims' coverage,
+ * in the order the claims are named. m24's `verify-closure.ts` emits X1 for one
+ * claim; the m55 gates each emit one; a gate that writes two records from one
+ * run (m26's W3 + W3-pairs) folds both so a change to either subject moves the
+ * value. The union is order-stable because `claims` is the caller's literal.
+ *
+ * IT THROWS rather than returning a placeholder. A missing coverage entry, a
+ * declared-un-fingerprintable claim, a path that is not on disk, or a coverage
+ * that cannot mean anything (no oracle, nothing but the oracle) all abort the
+ * verifier's evidence write. That is deliberate and it is the §8.1 consequence:
+ * a record whose fingerprint could not be computed is NOT written with a
+ * decorative value — the gate fails, and the absence is visible in the console
+ * at the exact line that tried to fake it.
+ */
+export function fingerprintFields(claims: readonly string[], root: string): FingerprintFields {
+  const ordered: string[] = []
+  for (const claim of claims) {
+    const d = CLAIM_COVERAGE[claim]
+    if (!d) throw new Error(`fingerprintFields: claim ${claim} has no declared coverage in script/m61/claim_fingerprints.ts — declare it or stop emitting a digest for it`)
+    if (!("covers" in d) || !d.covers || d.covers.length === 0) {
+      throw new Error(`fingerprintFields: claim ${claim} is declared un-fingerprintable (${d.unFingerprintable ?? "no reason given"}) — it must not carry a sourceFingerprint`)
+    }
+    for (const p of d.covers) if (!ordered.includes(p)) ordered.push(p)
+  }
+  // The structural rules are asserted HERE, at write time, not only at gate
+  // time: a coverage that cannot mean anything should stop the run that is
+  // about to publish a digest over it, while the author is still watching.
+  //
+  // Only the ROLE half is checkable from inside a verifier — the record's
+  // `verifierCommand` does not exist yet at write time, and inferring it from
+  // `import.meta` would be a second, weaker copy of the declaration. So this
+  // asserts what is knowable (the list is non-trivial, exists, is
+  // repo-relative, has no repeats) and the gate asserts the rest (the record's
+  // own oracle is IN the list) against the finished record.
+  const structural = coverageFindings(ordered, { root, verifierCommand: claims.length > 0 ? `script/m61/claim_fingerprints.ts#${claims[0]}` : "" }).filter(
+    (f) => !f.includes("no oracle can be required") && !f.includes("omits the ORACLE"),
+  )
+  const oracleIndependent = ordered.filter((p) => !/^script\/[^/]+\/verify-[^/]*\.(ts|mts|js)$/.test(p))
+  if (ordered.length < 2 || oracleIndependent.length === 0) {
+    throw new Error(`fingerprintFields: coverage for ${claims.join(", ")} cannot discriminate — ${structural.length > 0 ? structural.join("; ") : "it names nothing but the oracle(s)"}`)
+  }
+  return {
+    sourceFingerprint: sourceFingerprintOf(ordered, root),
+    sourceFingerprintAlgorithm: FINGERPRINT_ALGORITHM,
+    sourceFingerprintCovers: ordered,
+  }
 }
 
