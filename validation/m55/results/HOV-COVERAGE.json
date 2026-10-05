@@ -2,17 +2,15 @@
   "issue": "hover-knowledge-gap",
   "code": "HOV-COVERAGE",
   "milestone": "M55",
-  "status": "known-gap",
-  "checks": 25,
-  "passed": 24,
-  "failed": 1,
-  "failures": [
-    "D3: every evidence tier the card renders is justified by a stored relationship row: dataSource (function: 1 data_flow row, no stored evidenceClass — the tier fall-through row): card asserts structural — no stored row justifies it | dataSource (function: 1 data_flow row, no stored evidenceClass — the tier fall-through row): card omits inferred — its own stored rows justify them (§14 rule 1)"
-  ],
-  "currentCommit": "0c8f2137225dd4619775f53dee2dcad28a24cc85",
+  "status": "verified",
+  "checks": 40,
+  "passed": 40,
+  "failed": 0,
+  "failures": [],
+  "currentCommit": "36196ba59b788f3d9f45be8b10fe2e575cb8a623",
   "verifierCommand": "npx tsx script/m55/verify-hover-coverage.ts",
   "evidenceFile": "HOV-COVERAGE.json",
-  "generatedAt": "2026-10-05T04:32:02.186Z",
+  "generatedAt": "2026-10-05T04:54:23.111Z",
   "fixture": {
     "files": [
       "src/hub.ts",
@@ -97,11 +95,11 @@
       "rendered": {
         "claimedUsageCount": 2,
         "renderedUsageRows": [
-          "1. [run — app.ts:4](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-3VSBEM%2Fsrc%2Fapp.ts%22%2C%22line%22%3A3%2C%22character%22%3A0%7D%5D)",
-          "2. [runAgain — app.ts:10](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-3VSBEM%2Fsrc%2Fapp.ts%22%2C%22line%22%3A9%2C%22character%22%3A0%7D%5D)"
+          "1. [run — app.ts:4](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-BQVNCM%2Fsrc%2Fapp.ts%22%2C%22line%22%3A3%2C%22character%22%3A0%7D%5D)",
+          "2. [runAgain — app.ts:10](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-BQVNCM%2Fsrc%2Fapp.ts%22%2C%22line%22%3A9%2C%22character%22%3A0%7D%5D)"
         ],
         "renderedUsageRowCount": 2,
-        "card": "```\npublic class Hub\n```\n\n**Hub** — class, 2 usages _(usage sites only; declaration and callees excluded)_\n\nevidence: structural\n\n**connected**: instantiated by [run](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-3VSBEM%2Fsrc%2Fapp.ts%22%2C%22line%22%3A3%2C%22character%22%3A0%7D%5D), [runAgain](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-3VSBEM%2Fsrc%2Fapp.ts%22%2C%22line%22%3A9%2C%22character%22%3A0%7D%5D)\n\n**usages** — 2 stored references (usage sites only; declaration and callees excluded) — each opens the stored call site\n1. [run — app.ts:4](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-3VSBEM%2Fsrc%2Fapp.ts%22%2C%22line%22%3A3%2C%22character%22%3A0%7D%5D)\n2. [runAgain — app.ts:10](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-3VSBEM%2Fsrc%2Fapp.ts%22%2C%22line%22%3A9%2C%22character%22%3A0%7D%5D)\n\n**contained** — declares 4 members, declared in 0 (declaration containment; never a usage)\ndeclares [items](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-3VSBEM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A4%2C%22character%22%3A0%7D%5D), [add](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-3VSBEM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A6%2C%22character%22%3A0%7D%5D), [count](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-3VSBEM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A10%2C%22character%22%3A0%7D%5D), [reset](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-3VSBEM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A14%2C%22character%22%3A0%7D%5D)\n\n**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22Hub%22%2C%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-3VSBEM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A3%2C%22character%22%3A13%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22Hub%22%2C%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-3VSBEM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A3%2C%22character%22%3A13%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22Hub%22%2C%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-3VSBEM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A3%2C%22character%22%3A13%7D%5D)\n\n_source: bb index ([/var/folders/4j/11tssyqj4kj0f8dfz06jsb700000gn/T/bb-hov-cov-3VSBEM/src/hub.ts:4](command:bb.openDefinition?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-3VSBEM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A3%2C%22character%22%3A13%7D%5D))_",
+        "card": "```\npublic class Hub\n```\n\n**Hub** — class, 2 usages _(usage sites only; declaration and callees excluded)_\n\nevidence: structural\n\n**connected**: instantiated by [run](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-BQVNCM%2Fsrc%2Fapp.ts%22%2C%22line%22%3A3%2C%22character%22%3A0%7D%5D), [runAgain](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-BQVNCM%2Fsrc%2Fapp.ts%22%2C%22line%22%3A9%2C%22character%22%3A0%7D%5D)\n\n**usages** — 2 stored references (usage sites only; declaration and callees excluded) — each opens the stored call site\n1. [run — app.ts:4](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-BQVNCM%2Fsrc%2Fapp.ts%22%2C%22line%22%3A3%2C%22character%22%3A0%7D%5D)\n2. [runAgain — app.ts:10](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-BQVNCM%2Fsrc%2Fapp.ts%22%2C%22line%22%3A9%2C%22character%22%3A0%7D%5D)\n\n**contained** — declares 4 members, declared in 0 (declaration containment; never a usage)\ndeclares [items](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-BQVNCM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A4%2C%22character%22%3A0%7D%5D), [add](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-BQVNCM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A6%2C%22character%22%3A0%7D%5D), [count](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-BQVNCM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A10%2C%22character%22%3A0%7D%5D), [reset](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-BQVNCM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A14%2C%22character%22%3A0%7D%5D)\n\n**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22Hub%22%2C%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-BQVNCM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A3%2C%22character%22%3A13%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22Hub%22%2C%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-BQVNCM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A3%2C%22character%22%3A13%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22Hub%22%2C%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-BQVNCM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A3%2C%22character%22%3A13%7D%5D)\n\n_source: bb index ([/var/folders/4j/11tssyqj4kj0f8dfz06jsb700000gn/T/bb-hov-cov-BQVNCM/src/hub.ts:4](command:bb.openDefinition?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-BQVNCM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A3%2C%22character%22%3A13%7D%5D))_",
         "linkedTargetCount": 8,
         "capReached": false,
         "relationshipKindsNamedInProse": [
@@ -167,11 +165,11 @@
       "rendered": {
         "claimedUsageCount": 2,
         "renderedUsageRows": [
-          "1. [count — hub.ts:12](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-3VSBEM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A11%2C%22character%22%3A0%7D%5D)",
-          "2. [reset — hub.ts:16](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-3VSBEM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A15%2C%22character%22%3A0%7D%5D)"
+          "1. [count — hub.ts:12](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-BQVNCM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A11%2C%22character%22%3A0%7D%5D)",
+          "2. [reset — hub.ts:16](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-BQVNCM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A15%2C%22character%22%3A0%7D%5D)"
         ],
         "renderedUsageRowCount": 2,
-        "card": "```\npublic property items\n```\n\n**items** — property, 2 usages _(usage sites only; declaration and callees excluded)_\n\nevidence: structural, usage_contextual\n\n**connected**: used by [count](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-3VSBEM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A11%2C%22character%22%3A0%7D%5D), [reset](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-3VSBEM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A15%2C%22character%22%3A0%7D%5D); referenced by [reset](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-3VSBEM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A15%2C%22character%22%3A0%7D%5D)\n\n**usages** — 2 stored references (usage sites only; declaration and callees excluded) — each opens the stored call site\n1. [count — hub.ts:12](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-3VSBEM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A11%2C%22character%22%3A0%7D%5D)\n2. [reset — hub.ts:16](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-3VSBEM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A15%2C%22character%22%3A0%7D%5D)\n\n**contained** — declares 0 members, declared in 1 (declaration containment; never a usage)\ndeclared in [Hub](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-3VSBEM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A4%2C%22character%22%3A0%7D%5D)\n\n**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22items%22%2C%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-3VSBEM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A4%2C%22character%22%3A10%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22items%22%2C%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-3VSBEM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A4%2C%22character%22%3A10%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22items%22%2C%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-3VSBEM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A4%2C%22character%22%3A10%7D%5D)\n\n_source: bb index ([/var/folders/4j/11tssyqj4kj0f8dfz06jsb700000gn/T/bb-hov-cov-3VSBEM/src/hub.ts:5](command:bb.openDefinition?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-3VSBEM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A4%2C%22character%22%3A10%7D%5D))_",
+        "card": "```\npublic property items\n```\n\n**items** — property, 2 usages _(usage sites only; declaration and callees excluded)_\n\nevidence: structural, usage_contextual\n\n**connected**: used by [count](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-BQVNCM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A11%2C%22character%22%3A0%7D%5D), [reset](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-BQVNCM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A15%2C%22character%22%3A0%7D%5D); referenced by [reset](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-BQVNCM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A15%2C%22character%22%3A0%7D%5D)\n\n**usages** — 2 stored references (usage sites only; declaration and callees excluded) — each opens the stored call site\n1. [count — hub.ts:12](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-BQVNCM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A11%2C%22character%22%3A0%7D%5D)\n2. [reset — hub.ts:16](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-BQVNCM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A15%2C%22character%22%3A0%7D%5D)\n\n**contained** — declares 0 members, declared in 1 (declaration containment; never a usage)\ndeclared in [Hub](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-BQVNCM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A4%2C%22character%22%3A0%7D%5D)\n\n**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22items%22%2C%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-BQVNCM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A4%2C%22character%22%3A10%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22items%22%2C%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-BQVNCM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A4%2C%22character%22%3A10%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22items%22%2C%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-BQVNCM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A4%2C%22character%22%3A10%7D%5D)\n\n_source: bb index ([/var/folders/4j/11tssyqj4kj0f8dfz06jsb700000gn/T/bb-hov-cov-BQVNCM/src/hub.ts:5](command:bb.openDefinition?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-BQVNCM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A4%2C%22character%22%3A10%7D%5D))_",
         "linkedTargetCount": 6,
         "capReached": false,
         "relationshipKindsNamedInProse": [
@@ -236,11 +234,11 @@
       "rendered": {
         "claimedUsageCount": 2,
         "renderedUsageRows": [
-          "1. [run — app.ts:5](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-3VSBEM%2Fsrc%2Fapp.ts%22%2C%22line%22%3A4%2C%22character%22%3A0%7D%5D)",
-          "2. [runAgain — app.ts:11](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-3VSBEM%2Fsrc%2Fapp.ts%22%2C%22line%22%3A10%2C%22character%22%3A0%7D%5D)"
+          "1. [run — app.ts:5](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-BQVNCM%2Fsrc%2Fapp.ts%22%2C%22line%22%3A4%2C%22character%22%3A0%7D%5D)",
+          "2. [runAgain — app.ts:11](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-BQVNCM%2Fsrc%2Fapp.ts%22%2C%22line%22%3A10%2C%22character%22%3A0%7D%5D)"
         ],
         "renderedUsageRowCount": 2,
-        "card": "```\npublic method add(item: string) → void\n```\n\n**add** — method, 2 usages _(usage sites only; declaration and callees excluded)_\n\nevidence: structural\n\n**connected**: called by [run](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-3VSBEM%2Fsrc%2Fapp.ts%22%2C%22line%22%3A4%2C%22character%22%3A0%7D%5D), [runAgain](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-3VSBEM%2Fsrc%2Fapp.ts%22%2C%22line%22%3A10%2C%22character%22%3A0%7D%5D)\n\n**usages** — 2 stored references (usage sites only; declaration and callees excluded) — each opens the stored call site\n1. [run — app.ts:5](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-3VSBEM%2Fsrc%2Fapp.ts%22%2C%22line%22%3A4%2C%22character%22%3A0%7D%5D)\n2. [runAgain — app.ts:11](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-3VSBEM%2Fsrc%2Fapp.ts%22%2C%22line%22%3A10%2C%22character%22%3A0%7D%5D)\n\n**contained** — declares 0 members, declared in 1 (declaration containment; never a usage)\ndeclared in [Hub](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-3VSBEM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A6%2C%22character%22%3A0%7D%5D)\n\n**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22add%22%2C%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-3VSBEM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A6%2C%22character%22%3A2%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22add%22%2C%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-3VSBEM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A6%2C%22character%22%3A2%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22add%22%2C%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-3VSBEM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A6%2C%22character%22%3A2%7D%5D)\n\n_source: bb index ([/var/folders/4j/11tssyqj4kj0f8dfz06jsb700000gn/T/bb-hov-cov-3VSBEM/src/hub.ts:7](command:bb.openDefinition?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-3VSBEM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A6%2C%22character%22%3A2%7D%5D))_",
+        "card": "```\npublic method add(item: string) → void\n```\n\n**add** — method, 2 usages _(usage sites only; declaration and callees excluded)_\n\nevidence: structural\n\n**connected**: called by [run](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-BQVNCM%2Fsrc%2Fapp.ts%22%2C%22line%22%3A4%2C%22character%22%3A0%7D%5D), [runAgain](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-BQVNCM%2Fsrc%2Fapp.ts%22%2C%22line%22%3A10%2C%22character%22%3A0%7D%5D)\n\n**usages** — 2 stored references (usage sites only; declaration and callees excluded) — each opens the stored call site\n1. [run — app.ts:5](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-BQVNCM%2Fsrc%2Fapp.ts%22%2C%22line%22%3A4%2C%22character%22%3A0%7D%5D)\n2. [runAgain — app.ts:11](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-BQVNCM%2Fsrc%2Fapp.ts%22%2C%22line%22%3A10%2C%22character%22%3A0%7D%5D)\n\n**contained** — declares 0 members, declared in 1 (declaration containment; never a usage)\ndeclared in [Hub](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-BQVNCM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A6%2C%22character%22%3A0%7D%5D)\n\n**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22add%22%2C%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-BQVNCM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A6%2C%22character%22%3A2%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22add%22%2C%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-BQVNCM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A6%2C%22character%22%3A2%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22add%22%2C%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-BQVNCM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A6%2C%22character%22%3A2%7D%5D)\n\n_source: bb index ([/var/folders/4j/11tssyqj4kj0f8dfz06jsb700000gn/T/bb-hov-cov-BQVNCM/src/hub.ts:7](command:bb.openDefinition?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-BQVNCM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A6%2C%22character%22%3A2%7D%5D))_",
         "linkedTargetCount": 5,
         "capReached": false,
         "relationshipKindsNamedInProse": [
@@ -307,10 +305,10 @@
       "rendered": {
         "claimedUsageCount": 1,
         "renderedUsageRows": [
-          "1. [countHub — hub.ts:25](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-3VSBEM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A24%2C%22character%22%3A0%7D%5D)"
+          "1. [countHub — hub.ts:25](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-BQVNCM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A24%2C%22character%22%3A0%7D%5D)"
         ],
         "renderedUsageRowCount": 1,
-        "card": "```\npublic method count() → number\n```\n\n**count** — method, 1 usage _(usage sites only; declaration and callees excluded)_\n\nevidence: structural, usage_contextual, inferred\n\n**connected**: called by [countHub](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-3VSBEM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A24%2C%22character%22%3A0%7D%5D); uses [items](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-3VSBEM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A11%2C%22character%22%3A0%7D%5D)\n\n**usages** — 1 stored reference (usage sites only; declaration and callees excluded) — each opens the stored call site\n1. [countHub — hub.ts:25](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-3VSBEM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A24%2C%22character%22%3A0%7D%5D)\n\n**contained** — declares 0 members, declared in 1 (declaration containment; never a usage)\ndeclared in [Hub](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-3VSBEM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A10%2C%22character%22%3A0%7D%5D)\n\n**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22count%22%2C%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-3VSBEM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A10%2C%22character%22%3A2%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22count%22%2C%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-3VSBEM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A10%2C%22character%22%3A2%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22count%22%2C%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-3VSBEM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A10%2C%22character%22%3A2%7D%5D)\n\n_source: bb index ([/var/folders/4j/11tssyqj4kj0f8dfz06jsb700000gn/T/bb-hov-cov-3VSBEM/src/hub.ts:11](command:bb.openDefinition?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-3VSBEM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A10%2C%22character%22%3A2%7D%5D))_",
+        "card": "```\npublic method count() → number\n```\n\n**count** — method, 1 usage _(usage sites only; declaration and callees excluded)_\n\nevidence: structural, usage_contextual, inferred\n\n**connected**: called by [countHub](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-BQVNCM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A24%2C%22character%22%3A0%7D%5D); uses [items](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-BQVNCM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A11%2C%22character%22%3A0%7D%5D)\n\n**usages** — 1 stored reference (usage sites only; declaration and callees excluded) — each opens the stored call site\n1. [countHub — hub.ts:25](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-BQVNCM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A24%2C%22character%22%3A0%7D%5D)\n\n**contained** — declares 0 members, declared in 1 (declaration containment; never a usage)\ndeclared in [Hub](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-BQVNCM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A10%2C%22character%22%3A0%7D%5D)\n\n**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22count%22%2C%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-BQVNCM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A10%2C%22character%22%3A2%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22count%22%2C%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-BQVNCM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A10%2C%22character%22%3A2%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22count%22%2C%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-BQVNCM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A10%2C%22character%22%3A2%7D%5D)\n\n_source: bb index ([/var/folders/4j/11tssyqj4kj0f8dfz06jsb700000gn/T/bb-hov-cov-BQVNCM/src/hub.ts:11](command:bb.openDefinition?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-BQVNCM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A10%2C%22character%22%3A2%7D%5D))_",
         "linkedTargetCount": 4,
         "capReached": false,
         "relationshipKindsNamedInProse": [
@@ -376,10 +374,10 @@
       "rendered": {
         "claimedUsageCount": 1,
         "renderedUsageRows": [
-          "1. [runAgain — app.ts:12](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-3VSBEM%2Fsrc%2Fapp.ts%22%2C%22line%22%3A11%2C%22character%22%3A0%7D%5D)"
+          "1. [runAgain — app.ts:12](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-BQVNCM%2Fsrc%2Fapp.ts%22%2C%22line%22%3A11%2C%22character%22%3A0%7D%5D)"
         ],
         "renderedUsageRowCount": 1,
-        "card": "```\npublic method reset() → void\n```\n\n**reset** — method, 1 usage _(usage sites only; declaration and callees excluded)_\n\nevidence: structural, usage_contextual\n\n**connected**: called by [runAgain](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-3VSBEM%2Fsrc%2Fapp.ts%22%2C%22line%22%3A11%2C%22character%22%3A0%7D%5D); uses [items](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-3VSBEM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A15%2C%22character%22%3A0%7D%5D); references [items](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-3VSBEM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A15%2C%22character%22%3A0%7D%5D)\n\n**usages** — 1 stored reference (usage sites only; declaration and callees excluded) — each opens the stored call site\n1. [runAgain — app.ts:12](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-3VSBEM%2Fsrc%2Fapp.ts%22%2C%22line%22%3A11%2C%22character%22%3A0%7D%5D)\n\n**contained** — declares 0 members, declared in 1 (declaration containment; never a usage)\ndeclared in [Hub](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-3VSBEM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A14%2C%22character%22%3A0%7D%5D)\n\n**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22reset%22%2C%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-3VSBEM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A14%2C%22character%22%3A2%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22reset%22%2C%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-3VSBEM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A14%2C%22character%22%3A2%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22reset%22%2C%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-3VSBEM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A14%2C%22character%22%3A2%7D%5D)\n\n_source: bb index ([/var/folders/4j/11tssyqj4kj0f8dfz06jsb700000gn/T/bb-hov-cov-3VSBEM/src/hub.ts:15](command:bb.openDefinition?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-3VSBEM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A14%2C%22character%22%3A2%7D%5D))_",
+        "card": "```\npublic method reset() → void\n```\n\n**reset** — method, 1 usage _(usage sites only; declaration and callees excluded)_\n\nevidence: structural, usage_contextual\n\n**connected**: called by [runAgain](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-BQVNCM%2Fsrc%2Fapp.ts%22%2C%22line%22%3A11%2C%22character%22%3A0%7D%5D); uses [items](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-BQVNCM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A15%2C%22character%22%3A0%7D%5D); references [items](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-BQVNCM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A15%2C%22character%22%3A0%7D%5D)\n\n**usages** — 1 stored reference (usage sites only; declaration and callees excluded) — each opens the stored call site\n1. [runAgain — app.ts:12](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-BQVNCM%2Fsrc%2Fapp.ts%22%2C%22line%22%3A11%2C%22character%22%3A0%7D%5D)\n\n**contained** — declares 0 members, declared in 1 (declaration containment; never a usage)\ndeclared in [Hub](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-BQVNCM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A14%2C%22character%22%3A0%7D%5D)\n\n**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22reset%22%2C%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-BQVNCM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A14%2C%22character%22%3A2%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22reset%22%2C%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-BQVNCM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A14%2C%22character%22%3A2%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22reset%22%2C%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-BQVNCM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A14%2C%22character%22%3A2%7D%5D)\n\n_source: bb index ([/var/folders/4j/11tssyqj4kj0f8dfz06jsb700000gn/T/bb-hov-cov-BQVNCM/src/hub.ts:15](command:bb.openDefinition?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-BQVNCM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A14%2C%22character%22%3A2%7D%5D))_",
         "linkedTargetCount": 5,
         "capReached": false,
         "relationshipKindsNamedInProse": [
@@ -443,11 +441,11 @@
       "rendered": {
         "claimedUsageCount": 2,
         "renderedUsageRows": [
-          "1. [run — app.ts:5](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-3VSBEM%2Fsrc%2Fapp.ts%22%2C%22line%22%3A4%2C%22character%22%3A0%7D%5D)",
-          "2. [runAgain — app.ts:11](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-3VSBEM%2Fsrc%2Fapp.ts%22%2C%22line%22%3A10%2C%22character%22%3A0%7D%5D)"
+          "1. [run — app.ts:5](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-BQVNCM%2Fsrc%2Fapp.ts%22%2C%22line%22%3A4%2C%22character%22%3A0%7D%5D)",
+          "2. [runAgain — app.ts:11](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-BQVNCM%2Fsrc%2Fapp.ts%22%2C%22line%22%3A10%2C%22character%22%3A0%7D%5D)"
         ],
         "renderedUsageRowCount": 2,
-        "card": "```\npublic function notifyHub(hub: Hub, message: string) → void\n```\n\n**notifyHub** — function, 2 usages _(usage sites only; declaration and callees excluded)_\n\nevidence: structural, usage_contextual\n\n**connected**: called by [run](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-3VSBEM%2Fsrc%2Fapp.ts%22%2C%22line%22%3A4%2C%22character%22%3A0%7D%5D), [runAgain](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-3VSBEM%2Fsrc%2Fapp.ts%22%2C%22line%22%3A10%2C%22character%22%3A0%7D%5D)\n\n**usages** — 2 stored references (usage sites only; declaration and callees excluded) — each opens the stored call site\n1. [run — app.ts:5](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-3VSBEM%2Fsrc%2Fapp.ts%22%2C%22line%22%3A4%2C%22character%22%3A0%7D%5D)\n2. [runAgain — app.ts:11](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-3VSBEM%2Fsrc%2Fapp.ts%22%2C%22line%22%3A10%2C%22character%22%3A0%7D%5D)\n\n**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22notifyHub%22%2C%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-3VSBEM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A19%2C%22character%22%3A16%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22notifyHub%22%2C%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-3VSBEM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A19%2C%22character%22%3A16%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22notifyHub%22%2C%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-3VSBEM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A19%2C%22character%22%3A16%7D%5D)\n\n_source: bb index ([/var/folders/4j/11tssyqj4kj0f8dfz06jsb700000gn/T/bb-hov-cov-3VSBEM/src/hub.ts:20](command:bb.openDefinition?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-3VSBEM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A19%2C%22character%22%3A16%7D%5D))_",
+        "card": "```\npublic function notifyHub(hub: Hub, message: string) → void\n```\n\n**notifyHub** — function, 2 usages _(usage sites only; declaration and callees excluded)_\n\nevidence: structural, usage_contextual\n\n**connected**: called by [run](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-BQVNCM%2Fsrc%2Fapp.ts%22%2C%22line%22%3A4%2C%22character%22%3A0%7D%5D), [runAgain](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-BQVNCM%2Fsrc%2Fapp.ts%22%2C%22line%22%3A10%2C%22character%22%3A0%7D%5D)\n\n**usages** — 2 stored references (usage sites only; declaration and callees excluded) — each opens the stored call site\n1. [run — app.ts:5](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-BQVNCM%2Fsrc%2Fapp.ts%22%2C%22line%22%3A4%2C%22character%22%3A0%7D%5D)\n2. [runAgain — app.ts:11](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-BQVNCM%2Fsrc%2Fapp.ts%22%2C%22line%22%3A10%2C%22character%22%3A0%7D%5D)\n\n**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22notifyHub%22%2C%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-BQVNCM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A19%2C%22character%22%3A16%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22notifyHub%22%2C%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-BQVNCM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A19%2C%22character%22%3A16%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22notifyHub%22%2C%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-BQVNCM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A19%2C%22character%22%3A16%7D%5D)\n\n_source: bb index ([/var/folders/4j/11tssyqj4kj0f8dfz06jsb700000gn/T/bb-hov-cov-BQVNCM/src/hub.ts:20](command:bb.openDefinition?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-BQVNCM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A19%2C%22character%22%3A16%7D%5D))_",
         "linkedTargetCount": 4,
         "capReached": false,
         "relationshipKindsNamedInProse": [
@@ -508,12 +506,12 @@
       "rendered": {
         "claimedUsageCount": 5,
         "renderedUsageRows": [
-          "1. [c1 — app.ts:16](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-3VSBEM%2Fsrc%2Fapp.ts%22%2C%22line%22%3A15%2C%22character%22%3A0%7D%5D)",
-          "2. [c2 — app.ts:17](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-3VSBEM%2Fsrc%2Fapp.ts%22%2C%22line%22%3A16%2C%22character%22%3A0%7D%5D)",
-          "3. [c3 — app.ts:18](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-3VSBEM%2Fsrc%2Fapp.ts%22%2C%22line%22%3A17%2C%22character%22%3A0%7D%5D)"
+          "1. [c1 — app.ts:16](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-BQVNCM%2Fsrc%2Fapp.ts%22%2C%22line%22%3A15%2C%22character%22%3A0%7D%5D)",
+          "2. [c2 — app.ts:17](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-BQVNCM%2Fsrc%2Fapp.ts%22%2C%22line%22%3A16%2C%22character%22%3A0%7D%5D)",
+          "3. [c3 — app.ts:18](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-BQVNCM%2Fsrc%2Fapp.ts%22%2C%22line%22%3A17%2C%22character%22%3A0%7D%5D)"
         ],
         "renderedUsageRowCount": 3,
-        "card": "```\npublic function hotPath() → string\n```\n\n**hotPath** — function, 5 usages _(usage sites only; declaration and callees excluded)_\n\nevidence: structural\n\n**connected**: called by [c1](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-3VSBEM%2Fsrc%2Fapp.ts%22%2C%22line%22%3A15%2C%22character%22%3A0%7D%5D), [c2](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-3VSBEM%2Fsrc%2Fapp.ts%22%2C%22line%22%3A16%2C%22character%22%3A0%7D%5D), [c3](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-3VSBEM%2Fsrc%2Fapp.ts%22%2C%22line%22%3A17%2C%22character%22%3A0%7D%5D), +2\n\n**usages** — 5 stored references (usage sites only; declaration and callees excluded) — each opens the stored call site\n1. [c1 — app.ts:16](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-3VSBEM%2Fsrc%2Fapp.ts%22%2C%22line%22%3A15%2C%22character%22%3A0%7D%5D)\n2. [c2 — app.ts:17](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-3VSBEM%2Fsrc%2Fapp.ts%22%2C%22line%22%3A16%2C%22character%22%3A0%7D%5D)\n3. [c3 — app.ts:18](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-3VSBEM%2Fsrc%2Fapp.ts%22%2C%22line%22%3A17%2C%22character%22%3A0%7D%5D)\n+2 more — [show all usages](command:bb.showAllUsages?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-3VSBEM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A27%2C%22character%22%3A2%2C%22symbol%22%3A%22hotPath%22%7D%5D)\n\n**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22hotPath%22%2C%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-3VSBEM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A27%2C%22character%22%3A16%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22hotPath%22%2C%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-3VSBEM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A27%2C%22character%22%3A16%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22hotPath%22%2C%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-3VSBEM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A27%2C%22character%22%3A16%7D%5D)\n\n_source: bb index ([/var/folders/4j/11tssyqj4kj0f8dfz06jsb700000gn/T/bb-hov-cov-3VSBEM/src/hub.ts:28](command:bb.openDefinition?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-3VSBEM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A27%2C%22character%22%3A16%7D%5D))_",
+        "card": "```\npublic function hotPath() → string\n```\n\n**hotPath** — function, 5 usages _(usage sites only; declaration and callees excluded)_\n\nevidence: structural\n\n**connected**: called by [c1](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-BQVNCM%2Fsrc%2Fapp.ts%22%2C%22line%22%3A15%2C%22character%22%3A0%7D%5D), [c2](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-BQVNCM%2Fsrc%2Fapp.ts%22%2C%22line%22%3A16%2C%22character%22%3A0%7D%5D), [c3](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-BQVNCM%2Fsrc%2Fapp.ts%22%2C%22line%22%3A17%2C%22character%22%3A0%7D%5D), +2\n\n**usages** — 5 stored references (usage sites only; declaration and callees excluded) — each opens the stored call site\n1. [c1 — app.ts:16](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-BQVNCM%2Fsrc%2Fapp.ts%22%2C%22line%22%3A15%2C%22character%22%3A0%7D%5D)\n2. [c2 — app.ts:17](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-BQVNCM%2Fsrc%2Fapp.ts%22%2C%22line%22%3A16%2C%22character%22%3A0%7D%5D)\n3. [c3 — app.ts:18](command:bb.openUsage?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-BQVNCM%2Fsrc%2Fapp.ts%22%2C%22line%22%3A17%2C%22character%22%3A0%7D%5D)\n+2 more — [show all usages](command:bb.showAllUsages?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-BQVNCM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A27%2C%22character%22%3A2%2C%22symbol%22%3A%22hotPath%22%7D%5D)\n\n**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22hotPath%22%2C%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-BQVNCM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A27%2C%22character%22%3A16%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22hotPath%22%2C%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-BQVNCM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A27%2C%22character%22%3A16%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22hotPath%22%2C%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-BQVNCM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A27%2C%22character%22%3A16%7D%5D)\n\n_source: bb index ([/var/folders/4j/11tssyqj4kj0f8dfz06jsb700000gn/T/bb-hov-cov-BQVNCM/src/hub.ts:28](command:bb.openDefinition?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-BQVNCM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A27%2C%22character%22%3A16%7D%5D))_",
         "linkedTargetCount": 6,
         "capReached": true,
         "relationshipKindsNamedInProse": [
@@ -575,7 +573,7 @@
         "claimedUsageCount": 0,
         "renderedUsageRows": [],
         "renderedUsageRowCount": 0,
-        "card": "```\npublic function silent() → void\n```\n\n**silent** — function, 0 usages _(usage sites only; declaration and callees excluded)_\n\nevidence: none (no indexed relationships)\n\n**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22silent%22%2C%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-3VSBEM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A36%2C%22character%22%3A16%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22silent%22%2C%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-3VSBEM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A36%2C%22character%22%3A16%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22silent%22%2C%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-3VSBEM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A36%2C%22character%22%3A16%7D%5D)\n\n_source: bb index ([/var/folders/4j/11tssyqj4kj0f8dfz06jsb700000gn/T/bb-hov-cov-3VSBEM/src/hub.ts:37](command:bb.openDefinition?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-3VSBEM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A36%2C%22character%22%3A16%7D%5D))_",
+        "card": "```\npublic function silent() → void\n```\n\n**silent** — function, 0 usages _(usage sites only; declaration and callees excluded)_\n\nevidence: none (no indexed relationships)\n\n**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22silent%22%2C%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-BQVNCM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A36%2C%22character%22%3A16%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22silent%22%2C%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-BQVNCM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A36%2C%22character%22%3A16%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22silent%22%2C%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-BQVNCM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A36%2C%22character%22%3A16%7D%5D)\n\n_source: bb index ([/var/folders/4j/11tssyqj4kj0f8dfz06jsb700000gn/T/bb-hov-cov-BQVNCM/src/hub.ts:37](command:bb.openDefinition?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-BQVNCM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A36%2C%22character%22%3A16%7D%5D))_",
         "linkedTargetCount": 0,
         "capReached": false,
         "relationshipKindsNamedInProse": [],
@@ -629,7 +627,7 @@
         "claimedUsageCount": 0,
         "renderedUsageRows": [],
         "renderedUsageRowCount": 0,
-        "card": "```\npublic function dataSource()\n```\n\n**dataSource** — function, 0 usages _(usage sites only; declaration and callees excluded)_\n\nevidence: structural\n\n**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22dataSource%22%2C%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-3VSBEM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A41%2C%22character%22%3A16%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22dataSource%22%2C%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-3VSBEM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A41%2C%22character%22%3A16%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22dataSource%22%2C%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-3VSBEM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A41%2C%22character%22%3A16%7D%5D)\n\n_source: bb index ([/var/folders/4j/11tssyqj4kj0f8dfz06jsb700000gn/T/bb-hov-cov-3VSBEM/src/hub.ts:42](command:bb.openDefinition?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-3VSBEM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A41%2C%22character%22%3A16%7D%5D))_",
+        "card": "```\npublic function dataSource()\n```\n\n**dataSource** — function, 0 usages _(usage sites only; declaration and callees excluded)_\n\nevidence: inferred\n\n**actions**: [Open in graph](command:bb.openGraph?%5B%7B%22symbol%22%3A%22dataSource%22%2C%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-BQVNCM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A41%2C%22character%22%3A16%7D%5D) · [Impact analysis](command:bb.openImpact?%5B%7B%22symbol%22%3A%22dataSource%22%2C%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-BQVNCM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A41%2C%22character%22%3A16%7D%5D) · [Call hierarchy](command:bb.showCallHierarchy?%5B%7B%22symbol%22%3A%22dataSource%22%2C%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-BQVNCM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A41%2C%22character%22%3A16%7D%5D)\n\n_source: bb index ([/var/folders/4j/11tssyqj4kj0f8dfz06jsb700000gn/T/bb-hov-cov-BQVNCM/src/hub.ts:42](command:bb.openDefinition?%5B%7B%22file%22%3A%22%2Fvar%2Ffolders%2F4j%2F11tssyqj4kj0f8dfz06jsb700000gn%2FT%2Fbb-hov-cov-BQVNCM%2Fsrc%2Fhub.ts%22%2C%22line%22%3A41%2C%22character%22%3A16%7D%5D))_",
         "linkedTargetCount": 0,
         "capReached": false,
         "relationshipKindsNamedInProse": [],
@@ -662,6 +660,189 @@
     "enrichedRowsKnown": 1,
     "symbolsPinned": 9
   },
+  "perKindVerbCoverage": {
+    "definition": "stored relationship rows per canonical kind, on the pinned symbols, counted as rendered only when the card emitted a link whose (file, line) equals an index-stored location for that row's far end AND the link sits under the declared verb for that kind and direction. A non-declaration row under a containment word is counted as `mislabelled`, never as covered.",
+    "replaces": "the earlier metric, which scored kinds by grepping the rendered card for English words. That awarded `references` a score on seven cards because the usages header reads 'N stored references', and scored `contains` ZERO because it had no prose word. Kept beside this one as `namedKinds` so the gap between them stays visible.",
+    "perKind": [
+      {
+        "kind": "calls",
+        "storedOutgoing": 1,
+        "storedIncoming": 12,
+        "renderedWithVerb": 10,
+        "renderedAsUsage": 2,
+        "declaredAbsent": 1,
+        "declaredReason": null,
+        "silentGap": 0,
+        "mislabelled": 0,
+        "offTarget": 0,
+        "silentGapExamples": [],
+        "mislabelledExamples": []
+      },
+      {
+        "kind": "extends",
+        "storedOutgoing": 0,
+        "storedIncoming": 0,
+        "renderedWithVerb": 0,
+        "renderedAsUsage": 0,
+        "declaredAbsent": 0,
+        "declaredReason": null,
+        "silentGap": 0,
+        "mislabelled": 0,
+        "offTarget": 0,
+        "silentGapExamples": [],
+        "mislabelledExamples": []
+      },
+      {
+        "kind": "implements",
+        "storedOutgoing": 0,
+        "storedIncoming": 0,
+        "renderedWithVerb": 0,
+        "renderedAsUsage": 0,
+        "declaredAbsent": 0,
+        "declaredReason": null,
+        "silentGap": 0,
+        "mislabelled": 0,
+        "offTarget": 0,
+        "silentGapExamples": [],
+        "mislabelledExamples": []
+      },
+      {
+        "kind": "uses",
+        "storedOutgoing": 2,
+        "storedIncoming": 2,
+        "renderedWithVerb": 4,
+        "renderedAsUsage": 0,
+        "declaredAbsent": 0,
+        "declaredReason": null,
+        "silentGap": 0,
+        "mislabelled": 0,
+        "offTarget": 0,
+        "silentGapExamples": [],
+        "mislabelledExamples": []
+      },
+      {
+        "kind": "instantiates",
+        "storedOutgoing": 0,
+        "storedIncoming": 2,
+        "renderedWithVerb": 2,
+        "renderedAsUsage": 0,
+        "declaredAbsent": 0,
+        "declaredReason": null,
+        "silentGap": 0,
+        "mislabelled": 0,
+        "offTarget": 0,
+        "silentGapExamples": [],
+        "mislabelledExamples": []
+      },
+      {
+        "kind": "overrides",
+        "storedOutgoing": 0,
+        "storedIncoming": 0,
+        "renderedWithVerb": 0,
+        "renderedAsUsage": 0,
+        "declaredAbsent": 0,
+        "declaredReason": null,
+        "silentGap": 0,
+        "mislabelled": 0,
+        "offTarget": 0,
+        "silentGapExamples": [],
+        "mislabelledExamples": []
+      },
+      {
+        "kind": "contains",
+        "storedOutgoing": 4,
+        "storedIncoming": 4,
+        "renderedWithVerb": 8,
+        "renderedAsUsage": 0,
+        "declaredAbsent": 0,
+        "declaredReason": null,
+        "silentGap": 0,
+        "mislabelled": 0,
+        "offTarget": 0,
+        "silentGapExamples": [],
+        "mislabelledExamples": []
+      },
+      {
+        "kind": "references",
+        "storedOutgoing": 1,
+        "storedIncoming": 1,
+        "renderedWithVerb": 2,
+        "renderedAsUsage": 0,
+        "declaredAbsent": 0,
+        "declaredReason": null,
+        "silentGap": 0,
+        "mislabelled": 0,
+        "offTarget": 0,
+        "silentGapExamples": [],
+        "mislabelledExamples": []
+      },
+      {
+        "kind": "imports",
+        "storedOutgoing": 0,
+        "storedIncoming": 0,
+        "renderedWithVerb": 0,
+        "renderedAsUsage": 0,
+        "declaredAbsent": 0,
+        "declaredReason": "an `imports` row is a FILE-level edge: its far end is a module path, not an indexed symbol, so it has no index-stored location to navigate to. It is counted and named as a file-level row, never rendered as a symbol link (§13.5 noise is labelled, not hidden; §12.1 nothing unclickable).",
+        "silentGap": 0,
+        "mislabelled": 0,
+        "offTarget": 0,
+        "silentGapExamples": [],
+        "mislabelledExamples": []
+      },
+      {
+        "kind": "exports",
+        "storedOutgoing": 0,
+        "storedIncoming": 0,
+        "renderedWithVerb": 0,
+        "renderedAsUsage": 0,
+        "declaredAbsent": 0,
+        "declaredReason": null,
+        "silentGap": 0,
+        "mislabelled": 0,
+        "offTarget": 0,
+        "silentGapExamples": [],
+        "mislabelledExamples": []
+      }
+    ],
+    "kindsStoredInFixture": [
+      "calls",
+      "uses",
+      "instantiates",
+      "contains",
+      "references"
+    ],
+    "kindsNotStoredInFixture": [
+      "extends",
+      "implements",
+      "overrides",
+      "imports",
+      "exports"
+    ],
+    "kindsNotStoredNote": "These canonical kinds store no row on the pinned symbols of this fixture, so their denominator is ZERO. They are neither passing nor failing: an unstored row cannot be rendered or missing. Their verbs are still gated by V1a, which asserts the table is total over all ten regardless of whether the fixture exercises it.",
+    "verbRenderedRows": 26,
+    "storedRows": 29,
+    "silentGapRows": 0,
+    "mislabelledRows": 0
+  },
+  "declaredAbsence": [
+    {
+      "kind": "external",
+      "reason": "a stored row whose far end is an external name the index holds no symbol row for cannot be rendered as a link: §12.1 requires every target to equal an index-stored location, and this row stores none. The count is reported, the row is not named as a link."
+    },
+    {
+      "kind": "self",
+      "reason": "a self-loop row (both ends are this symbol) is an analyzer artifact, not a relationship to another symbol; rendering it would make a symbol appear to relate to itself."
+    },
+    {
+      "kind": "unknown-kind",
+      "reason": "a stored kind outside the canonical ten has no declared verb and no declared meaning; it renders nothing rather than being guessed at. The count is reported."
+    },
+    {
+      "kind": "imports",
+      "reason": "an `imports` row is a FILE-level edge: its far end is a module path, not an indexed symbol, so it has no index-stored location to navigate to. It is counted and named as a file-level row, never rendered as a symbol link (§13.5 noise is labelled, not hidden; §12.1 nothing unclickable)."
+    }
+  ],
   "callSiteDifferential": {
     "rowsWithRealCallSite": 17,
     "hoverOpensDeclaration": 0,
@@ -861,21 +1042,21 @@
   },
   "budget": {
     "n": 200,
-    "p50": 30.73,
-    "p95": 39.1,
-    "p99": 46.93,
-    "max": 47.11,
+    "p50": 32.03,
+    "p95": 44.79,
+    "p99": 58.45,
+    "max": 67.72,
     "busyUsageLocations": 32,
     "distinctFiles": 32,
     "manyRowsShape": {
-      "p50": 11.88,
-      "p95": 14.5,
+      "p50": 11.66,
+      "p95": 14.69,
       "storedRows": 40,
       "distinctFiles": 1
     },
     "hotCallerShape": {
-      "p50": 28.68,
-      "p95": 37.36,
+      "p50": 31.5,
+      "p95": 40.36,
       "storedRows": 40,
       "distinctFiles": 1
     },
@@ -885,20 +1066,22 @@
       "kernel": "Darwin 23.6.0",
       "cpus": 12,
       "node": "v22.14.0",
-      "loadAverage": "6:32  up 6 days, 3 hrs, 2 users, load averages: 8.05 8.48 7.90"
+      "loadAverage": "6:54  up 6 days,  3:22, 2 users, load averages: 5.03 5.87 6.66"
     },
     "note": "Measured on a seeded fixture of the same SHAPE as a real busy symbol (one function with stored call rows across many files), not on a corpus census. The per-call location memo in src/lsp/rich_hover.ts is what this number is a verdict on: before it, the collector resolved one location per ROW, re-reading and re-mapping a file per row."
   },
   "limitations": [
     "The fixture is a REAL seeded index (real schema, real files on disk, real hashes) but it is AUTHORED, not a corpus census: the ratio it reports is the ratio this fixture's shape produces, not a corpus-wide rate.",
-    "The ratios are measured against the six pinned symbols only; a symbol with no stored rows renders nothing, which is declared absence and is not counted as a gap.",
+    "The ratios are measured against the pinned symbols only; a symbol with no stored rows renders nothing, which is declared absence and is not counted as a gap.",
+    "The per-kind metric's denominator is the stored rows of the 9 PINNED symbols, not a corpus census: 29 rows in total. It says nothing about kinds this fixture does not store (extends, implements, overrides, imports, exports), which are declared rather than scored because their denominator is zero.",
+    "The per-kind metric attributes a rendered row to a stored row by matching the link's target against the index-stored location of that row's far end. Where two stored rows share one far-end location (two kinds to the same symbol on the same line) the attribution is to the link, and both rows are credited only if a link under each kind's own verb exists — a card that rendered one of them once would score the other as a gap. That is deliberate: it is what made the collector's location dedup visible.",
     "The call-site differential classifies stored lines through src/intelligence/graph/line-address.ts, which is the declared owner; it does not re-derive the rule.",
     "No editor leg: every measurement here is the server component over the wire-less path. The editor render of these same facts is §12.6 E5 scope.",
-    "the warm p95 measured here is 39.1 ms against the declared 50 ms budget, inside it on this machine at this load; the figure is a percentile of 200 timed requests on an AUTHORED fixture, not a corpus rate, and a loaded machine moves it (this lane measured 88.05 ms under load average 12+)."
+    "the warm p95 measured here is 44.79 ms against the declared 50 ms budget, inside it on this machine at this load; the figure is a percentile of 200 timed requests on an AUTHORED fixture, not a corpus rate, and a loaded machine moves it (this lane measured 88.05 ms under load average 12+)."
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T04:32:02.212Z",
-    "contentSha256": "2e19a4278d92941b42af0ad06d6ff6633d2f3cded59ee03c69015a9030494d44"
+    "sealedAt": "2026-10-05T04:54:23.140Z",
+    "contentSha256": "9d0588ae84082cb221101f66b5c5ed8b72558fcbb39e2a1debfb46049bb0a0e6"
   }
 }
