@@ -98,10 +98,10 @@
         "command": "bb.openUsage",
         "block": "connected",
         "label": "main",
-        "target": "$HOME/Documents/Default Project/ishaq/wt/h2oracle/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:14:0",
+        "target": "$HOME/Documents/Default Project/ishaq/wt/integrate/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:14:0",
         "inReferencesSet": true,
         "storedRow": {
-          "id": "f22b805a50da5c052a758eb6d8274ac3e8d61409:rel:f22b805a50da5c052a758eb6d8274ac3e8d61409:src/main/java/com/demo/App.java:main:13:render:calls:15",
+          "id": "bc2225eef423ea99a73b21738d79682f601a4030:rel:bc2225eef423ea99a73b21738d79682f601a4030:src/main/java/com/demo/App.java:main:13:render:calls:15",
           "kind": "calls",
           "branch": "stored-line"
         }
@@ -110,10 +110,10 @@
         "command": "bb.openUsage",
         "block": "connected",
         "label": "main — Main2.java:6",
-        "target": "$HOME/Documents/Default Project/ishaq/wt/h2oracle/.tools/m42-h2-fixture/src/main/java/com/demo/Main2.java:5:0",
+        "target": "$HOME/Documents/Default Project/ishaq/wt/integrate/.tools/m42-h2-fixture/src/main/java/com/demo/Main2.java:5:0",
         "inReferencesSet": true,
         "storedRow": {
-          "id": "f22b805a50da5c052a758eb6d8274ac3e8d61409:rel:f22b805a50da5c052a758eb6d8274ac3e8d61409:src/main/java/com/demo/Main2.java:main:4:render:calls:6",
+          "id": "bc2225eef423ea99a73b21738d79682f601a4030:rel:bc2225eef423ea99a73b21738d79682f601a4030:src/main/java/com/demo/Main2.java:main:4:render:calls:6",
           "kind": "calls",
           "branch": "stored-line"
         }
@@ -122,10 +122,10 @@
         "command": "bb.openUsage",
         "block": "usages",
         "label": "main — App.java:15",
-        "target": "$HOME/Documents/Default Project/ishaq/wt/h2oracle/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:14:0",
+        "target": "$HOME/Documents/Default Project/ishaq/wt/integrate/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:14:0",
         "inReferencesSet": true,
         "storedRow": {
-          "id": "f22b805a50da5c052a758eb6d8274ac3e8d61409:rel:f22b805a50da5c052a758eb6d8274ac3e8d61409:src/main/java/com/demo/App.java:main:13:render:calls:15",
+          "id": "bc2225eef423ea99a73b21738d79682f601a4030:rel:bc2225eef423ea99a73b21738d79682f601a4030:src/main/java/com/demo/App.java:main:13:render:calls:15",
           "kind": "calls",
           "branch": "stored-line"
         }
@@ -134,10 +134,10 @@
         "command": "bb.openUsage",
         "block": "usages",
         "label": "main — Main2.java:6",
-        "target": "$HOME/Documents/Default Project/ishaq/wt/h2oracle/.tools/m42-h2-fixture/src/main/java/com/demo/Main2.java:5:0",
+        "target": "$HOME/Documents/Default Project/ishaq/wt/integrate/.tools/m42-h2-fixture/src/main/java/com/demo/Main2.java:5:0",
         "inReferencesSet": true,
         "storedRow": {
-          "id": "f22b805a50da5c052a758eb6d8274ac3e8d61409:rel:f22b805a50da5c052a758eb6d8274ac3e8d61409:src/main/java/com/demo/Main2.java:main:4:render:calls:6",
+          "id": "bc2225eef423ea99a73b21738d79682f601a4030:rel:bc2225eef423ea99a73b21738d79682f601a4030:src/main/java/com/demo/Main2.java:main:4:render:calls:6",
           "kind": "calls",
           "branch": "stored-line"
         }
@@ -146,10 +146,10 @@
         "command": "bb.openUsage",
         "block": "contained",
         "label": "Greeter",
-        "target": "$HOME/Documents/Default Project/ishaq/wt/h2oracle/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:6:0",
+        "target": "$HOME/Documents/Default Project/ishaq/wt/integrate/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:6:0",
         "inReferencesSet": false,
         "storedRow": {
-          "id": "f22b805a50da5c052a758eb6d8274ac3e8d61409:rel:f22b805a50da5c052a758eb6d8274ac3e8d61409:src/main/java/com/demo/App.java:Greeter:6:render:contains:7",
+          "id": "bc2225eef423ea99a73b21738d79682f601a4030:rel:bc2225eef423ea99a73b21738d79682f601a4030:src/main/java/com/demo/App.java:Greeter:6:render:contains:7",
           "kind": "contains",
           "branch": "stored-line"
         }
@@ -158,7 +158,7 @@
         "command": "bb.openGraph",
         "block": "actions",
         "label": "Open in graph",
-        "target": "$HOME/Documents/Default Project/ishaq/wt/h2oracle/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:6:11",
+        "target": "$HOME/Documents/Default Project/ishaq/wt/integrate/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:6:11",
         "inReferencesSet": false,
         "storedRow": null
       },
@@ -166,7 +166,7 @@
         "command": "bb.openImpact",
         "block": "actions",
         "label": "Impact analysis",
-        "target": "$HOME/Documents/Default Project/ishaq/wt/h2oracle/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:6:11",
+        "target": "$HOME/Documents/Default Project/ishaq/wt/integrate/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:6:11",
         "inReferencesSet": false,
         "storedRow": null
       },
@@ -174,22 +174,22 @@
         "command": "bb.showCallHierarchy",
         "block": "actions",
         "label": "Call hierarchy",
-        "target": "$HOME/Documents/Default Project/ishaq/wt/h2oracle/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:6:11",
+        "target": "$HOME/Documents/Default Project/ishaq/wt/integrate/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:6:11",
         "inReferencesSet": false,
         "storedRow": null
       },
       {
         "command": "bb.openDefinition",
         "block": "footnote",
-        "label": "$HOME/Documents/Default Project/ishaq/wt/h2oracle/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:7",
-        "target": "$HOME/Documents/Default Project/ishaq/wt/h2oracle/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:6:11",
+        "label": "$HOME/Documents/Default Project/ishaq/wt/integrate/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:7",
+        "target": "$HOME/Documents/Default Project/ishaq/wt/integrate/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:6:11",
         "inReferencesSet": false,
         "storedRow": null
       }
     ],
     "storedRows": [
       {
-        "id": "f22b805a50da5c052a758eb6d8274ac3e8d61409:rel:f22b805a50da5c052a758eb6d8274ac3e8d61409:src/main/java/com/demo/App.java:main:13:render:calls:15",
+        "id": "bc2225eef423ea99a73b21738d79682f601a4030:rel:bc2225eef423ea99a73b21738d79682f601a4030:src/main/java/com/demo/App.java:main:13:render:calls:15",
         "kind": "calls",
         "declaration": false,
         "farName": "main",
@@ -198,7 +198,7 @@
         "servedAt": "App.java:14:0"
       },
       {
-        "id": "f22b805a50da5c052a758eb6d8274ac3e8d61409:rel:f22b805a50da5c052a758eb6d8274ac3e8d61409:src/main/java/com/demo/Main2.java:main:4:render:calls:6",
+        "id": "bc2225eef423ea99a73b21738d79682f601a4030:rel:bc2225eef423ea99a73b21738d79682f601a4030:src/main/java/com/demo/Main2.java:main:4:render:calls:6",
         "kind": "calls",
         "declaration": false,
         "farName": "main",
@@ -207,7 +207,7 @@
         "servedAt": "Main2.java:5:0"
       },
       {
-        "id": "f22b805a50da5c052a758eb6d8274ac3e8d61409:rel:f22b805a50da5c052a758eb6d8274ac3e8d61409:src/main/java/com/demo/App.java:Greeter:6:render:contains:7",
+        "id": "bc2225eef423ea99a73b21738d79682f601a4030:rel:bc2225eef423ea99a73b21738d79682f601a4030:src/main/java/com/demo/App.java:Greeter:6:render:contains:7",
         "kind": "contains",
         "declaration": true,
         "farName": "Greeter",
@@ -230,7 +230,7 @@
     "planned": 9
   },
   "fixture": {
-    "root": "$HOME/Documents/Default Project/ishaq/wt/h2oracle/.tools/m42-h2-fixture",
+    "root": "$HOME/Documents/Default Project/ishaq/wt/integrate/.tools/m42-h2-fixture",
     "files": [
       "src/main/java/com/demo/App.java",
       "src/main/java/com/demo/Main2.java"
@@ -275,19 +275,19 @@
     "indexDataDir": "an isolated mkdtemp BB_DATA_DIR, passed to the indexer AND to the server this suite starts (the pre-lane run used the developer's default ~/.bb, so the answer depended on that machine's store)",
     "storedRowsTouchingRender": [
       {
-        "rowId": "f22b805a50da5c052a758eb6d8274ac3e8d61409:rel:f22b805a50da5c052a758eb6d8274ac3e8d61409:src/main/java/com/demo/App.java:main:13:render:calls:15",
+        "rowId": "bc2225eef423ea99a73b21738d79682f601a4030:rel:bc2225eef423ea99a73b21738d79682f601a4030:src/main/java/com/demo/App.java:main:13:render:calls:15",
         "relType": "calls",
         "storedLine": 15,
         "sourceRel": "src/main/java/com/demo/App.java"
       },
       {
-        "rowId": "f22b805a50da5c052a758eb6d8274ac3e8d61409:rel:f22b805a50da5c052a758eb6d8274ac3e8d61409:src/main/java/com/demo/Main2.java:main:4:render:calls:6",
+        "rowId": "bc2225eef423ea99a73b21738d79682f601a4030:rel:bc2225eef423ea99a73b21738d79682f601a4030:src/main/java/com/demo/Main2.java:main:4:render:calls:6",
         "relType": "calls",
         "storedLine": 6,
         "sourceRel": "src/main/java/com/demo/Main2.java"
       },
       {
-        "rowId": "f22b805a50da5c052a758eb6d8274ac3e8d61409:rel:f22b805a50da5c052a758eb6d8274ac3e8d61409:src/main/java/com/demo/App.java:Greeter:6:render:contains:7",
+        "rowId": "bc2225eef423ea99a73b21738d79682f601a4030:rel:bc2225eef423ea99a73b21738d79682f601a4030:src/main/java/com/demo/App.java:Greeter:6:render:contains:7",
         "relType": "contains",
         "storedLine": 7,
         "sourceRel": "src/main/java/com/demo/App.java"
@@ -302,18 +302,18 @@
   "measured": {
     "regime": "warm",
     "samples": 200,
-    "p50Ms": 5.49,
-    "p95Ms": 8.23,
-    "maxMs": 12.73,
-    "meanMs": 5.87,
+    "p50Ms": 6.62,
+    "p95Ms": 9.46,
+    "maxMs": 14.75,
+    "meanMs": 6.96,
     "budgetMs": 50,
-    "coldMs": 60.05,
+    "coldMs": 75.86,
     "note": "A real p95 over a stated sample set. The pre-lane check was a MEAN over 40 compared against this budget and reported as a p95; the substitution was named as a limitation in KNOWN-GAPS.json for three waves instead of being fixed."
   },
-  "currentCommit": "03734944dbb7e6f604ead05f364b7189bea9fc05",
+  "currentCommit": "38ff3264156f48e09247a09551849faad37ceceb",
   "verifierCommand": "npx tsx script/m42/verify-rich-hover.ts",
   "evidenceFile": "H2.json",
-  "generatedAt": "2026-10-05T16:13:00.294Z",
+  "generatedAt": "2026-10-05T16:14:27.289Z",
   "supersededExpectations": [
     {
       "was": "H2/R4: the hover's call-site links DIFFER from the L3 reference lines, and the card states the difference",
@@ -410,7 +410,7 @@
   },
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T16:13:00.295Z",
-    "contentSha256": "0f444eaa372d1c461acc54e6c4ac04e0b23c06ba67a35f63236babfe91f62cc9"
+    "sealedAt": "2026-10-05T16:14:27.292Z",
+    "contentSha256": "a81e71f5f083c407d69786f887724717ff2753689f106e023ec019f7a02f09d2"
   }
 }
