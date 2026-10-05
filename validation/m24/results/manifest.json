@@ -40,7 +40,7 @@
       ],
       "evidence": {
         "status": "known-gap",
-        "currentCommit": "d8dad6ebbf971c5f724e18275fbd97eb624e7d42",
+        "currentCommit": "82cb16e608e5ec3cd68d5d8e63158cb215170f4b",
         "verifierCommand": "npx tsx script/m24/verify-governance.ts",
         "evidenceFile": "G1.json",
         "passed": 23,
@@ -53,17 +53,17 @@
       "code": "P1",
       "githubIssue": 488,
       "tool": "lsp-positions",
-      "status": "known-gap",
+      "status": "verified",
       "scope": "LSP 0-based UTF-16 <-> index 1-based lines/byte columns conversion component with mutation suite",
       "evidence": {
-        "status": "known-gap",
-        "currentCommit": "fe6844fb9d5b77d0c30a7c4da7d16dfa387278d9",
+        "status": "verified",
+        "currentCommit": "ba99e1001f5b6afc40254f74e51b1930290354f0",
         "verifierCommand": "npx tsx script/m24/verify-positions.ts",
         "evidenceFile": "P1.json",
         "passed": 48,
-        "failed": 2,
+        "failed": 0,
         "negativeCases": 11,
-        "blockedReason": "2 check(s) failed: X3: LSP-lane harness spawns nothing non-portable — script/m24/verify-callsite-agreement.ts:373 [non-portable-binary] shasum — execFileSync: BSD/macOS perl checksum tool; the Linux side spells it sha256sum. Ban rests on \"spawn no checksum binary, use node:crypto\"; its absence on this repo's Linux images is declared linux-unverified. | X3: LSP-lane harness spawns nothing non-portable — script/m55/screenshot-protocol.ts:223 [denylisted-binary-in-spawned-command] sha256sum — run(): GNU coreutils checksum tool; macOS ships `shasum -a 256` instead. This exact spawn killed M24.P1 and M24.P2 on darwin with spawnSync sha256sum ENOENT."
+        "blockedReason": "Fixture-based; does not exercise real analyzer output end-to-end (covered by the V1 harness)."
       },
       "acceptanceCriteria": [
         "dedicated position mapping component, no inline conversion elsewhere",
@@ -84,7 +84,7 @@
       "scope": "file-watch, incremental reindex, machine-readable stale markers with declared debounce/catch-up guarantees",
       "evidence": {
         "status": "verified",
-        "currentCommit": "d3b06b5158f3e5e0860a7e9325f1635867343204",
+        "currentCommit": "ba99e1001f5b6afc40254f74e51b1930290354f0",
         "verifierCommand": "npx tsx script/m24/verify-freshness.ts",
         "evidenceFile": "P2.json",
         "passed": 34,
@@ -124,16 +124,16 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "a5fd2a1cdd9ab6a7e3a41da2c0718ddf5ca1aa5a",
+        "currentCommit": "ba99e1001f5b6afc40254f74e51b1930290354f0",
         "verifierCommand": "npx tsx script/m24/verify-server.ts",
         "evidenceFile": "L1.json",
-        "passed": 127,
+        "passed": 142,
         "failed": 0,
         "negativeCases": 24,
         "blockedReason": "single-root workspaces only (multi-root is a filed decision for later waves); declared on the wire as workspace.workspaceFolders.supported = false",
         "realFailed": 0,
-        "mutantsCaught": 33,
-        "mutantsTotal": 33
+        "mutantsCaught": 34,
+        "mutantsTotal": 34
       }
     },
     {
@@ -154,10 +154,10 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "936b66d6d088776c7715e7d1aec492cc9c6d9841",
+        "currentCommit": "ba99e1001f5b6afc40254f74e51b1930290354f0",
         "verifierCommand": "npx tsx script/m24/verify-hover.ts",
         "evidenceFile": "L2.json",
-        "passed": 45,
+        "passed": 58,
         "failed": 0,
         "negativeCases": 14,
         "blockedReason": "index-sourced only; no compiler-backed types (complement stance)",
@@ -184,16 +184,16 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "9c25a1dc2384899d2370c0ad05c638b1f362aa17",
+        "currentCommit": "ba99e1001f5b6afc40254f74e51b1930290354f0",
         "verifierCommand": "npx tsx script/m24/verify-navigation.ts",
         "evidenceFile": "L3.json",
-        "passed": 117,
+        "passed": 122,
         "failed": 0,
         "negativeCases": 12,
         "blockedReason": "index-sourced only; no compiler-backed go-to-definition (complement stance)",
         "realFailed": 0,
-        "mutantsCaught": 21,
-        "mutantsTotal": 21
+        "mutantsCaught": 22,
+        "mutantsTotal": 22
       }
     },
     {
@@ -214,7 +214,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "8ddf19f515070c1b83c15d39c274a9e6d656b125",
+        "currentCommit": "ba99e1001f5b6afc40254f74e51b1930290354f0",
         "verifierCommand": "npx tsx script/m24/verify-symbols.ts",
         "evidenceFile": "L4.json",
         "passed": 50,
@@ -244,7 +244,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "8ddf19f515070c1b83c15d39c274a9e6d656b125",
+        "currentCommit": "ba99e1001f5b6afc40254f74e51b1930290354f0",
         "verifierCommand": "npx tsx script/m24/verify-call-hierarchy.ts",
         "evidenceFile": "L5.json",
         "passed": 97,
@@ -274,10 +274,10 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "d3b06b5158f3e5e0860a7e9325f1635867343204",
+        "currentCommit": "ba99e1001f5b6afc40254f74e51b1930290354f0",
         "verifierCommand": "npx tsx script/m24/verify-harness.ts",
         "evidenceFile": "V1.json",
-        "passed": 22,
+        "passed": 24,
         "failed": 0,
         "negativeCases": 6,
         "blockedReason": "bun-source leg is blocked in this environment (bun not installed); the harness attempts it every run and records the reason — never a silent skip",
@@ -302,12 +302,12 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "a871d533a736e8e38cb826d80d986d3cc84022d1",
+        "currentCommit": "ba99e1001f5b6afc40254f74e51b1930290354f0",
         "verifierCommand": "npx tsx script/m24/verify-docs.ts",
         "evidenceFile": "D1.json",
-        "passed": 44,
+        "passed": 47,
         "failed": 0,
-        "negativeCases": 3,
+        "negativeCases": 6,
         "blockedReason": "claim levels capped at I1 (protocol-passed) by design — I3/I4/I5 are M25 scope and declared absent",
         "realFailed": 0
       }
@@ -342,7 +342,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T15:35:38.639Z",
-    "contentSha256": "375cc94f73a4e2adb8cb10cb2aeb0a7a1c2f5a0472c0fec5c746b888d6bcab15"
+    "sealedAt": "2026-10-05T17:40:20.229Z",
+    "contentSha256": "84b3d2f8d512f4fdde5bb760db74b5193f1e8594c486ce9dd204429d0a652edd"
   }
 }
