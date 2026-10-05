@@ -312,10 +312,26 @@ export const SQL_ONTOLOGY_MUTANTS: Mutant[] = [
     language: "sql",
     defectClass: "duplicate-symbol",
     description:
-      "`processStatement` calls `markDeclaration` and IGNORES the answer, so the declaration sweep — which walks every declaration in the tree, including the ones the root walk already dispatched — ran `dispatchDeclaration` a second time for every top-level declaration. Nothing in the graph doubled because `symbolKeys` and `relationshipsByKey` deduplicate, but the work did, and so did every counter once counters existed: one `ROW(1,2)::t` construction reported `instantiationsEmitted: 2` and one `CREATE OR REPLACE FUNCTION f` pair reported `overridesEmitted: 3`, all from the same single edge. Reverted by re-publishing every symbol the analyzer emitted, keyed on its own name, kind, owner and line, so a file with any declaration at all gains a duplicate and the fixture symbol-count pins fail. Caught by sql/sqld13-ontology-types (`d13_replace_me` equals 2, `d13_only_once` equals 1) and by every symbol-count pin in the lane.",
+      "`processStatement` calls `markDeclaration` and IGNORES the answer, so the declaration sweep — which walks every declaration in the tree, including the ones the root walk already dispatched — ran `dispatchDeclaration` a second time for every top-level declaration. Nothing in the graph doubled because `symbolKeys` and `relationshipsByKey` deduplicate, but the work did, and so did every counter once counters existed: one `ROW(1,2)::t` construction reported `instantiationsEmitted: 2` and one `CREATE OR REPLACE FUNCTION f` pair reported `overridesEmitted: 3`, all from the same single edge. Reverted by re-publishing a symbol the analyzer emitted, keyed on its own name, kind, owner and line, so a file with any declaration at all gains a duplicate and the fixture symbol-count pins fail. Caught by sql/sqld13-ontology-types (`d13_replace_me` equals 2, `d13_only_once` equals 1) and by every symbol-count pin in the lane.",
+    //
+    // WHICH SYMBOL IS COPIED, and why it is not index 0. The pre-fix defect duplicated a
+    // DECLARATION, because the declaration sweep re-dispatched what the root walk had already
+    // dispatched. This transform used to copy index 0, which was a declaration only by accident of
+    // emission order. Pass 13 publishes one `module` symbol per file at the FRONT of the list, so
+    // index 0 became the file's own symbol and the copy landed there instead — which is a
+    // different defect from the one this mutant pins, and it was INVISIBLE: the fixture runner
+    // matches each `expectSymbols` entry against >=1 actual item and tolerates extras, so a
+    // duplicated module symbol is caught only by a count pin, and a file publishes exactly one
+    // module symbol by construction. Measured, both arms: copying index 0 leaves the mutant
+    // SURVIVING (20/21 caught); copying the first non-module symbol, which is the declaration the
+    // defect actually duplicated, restores 21/21. Worth recording that the signal here was the
+    // SURVIVAL — nothing about the passing runs said the transform had stopped describing its
+    // defect, and a mutant that quietly stops being caught is worse than one that was never
+    // written.
     transform: (r: any) => {
       if (!r.symbols?.length) return r
-      return { ...r, symbols: [...r.symbols, { ...r.symbols[0], id: `${r.symbols[0].id}-redispatched` }] }
+      const victim = r.symbols.find((s: any) => String(s?.kind ?? s?.type ?? "") !== "module") ?? r.symbols[0]
+      return { ...r, symbols: [...r.symbols, { ...victim, id: `${victim.id}-redispatched` }] }
     },
   },
   {
