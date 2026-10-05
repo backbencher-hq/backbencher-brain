@@ -362,4 +362,107 @@ export const CSS_MUTANTS: Mutant[] = [
       }),
     }),
   },
+  {
+    id: "css/import-name-taken-from-any-line-of-the-recovered-statement",
+    language: "css",
+    defectClass: "fabricated-relationship",
+    description:
+      "FABRICATION CLASS, and the guard half of pass 10's `@import` fix. `findImportNameNode` takes a direct `string_value` / `call_expression` child first, and failing that the first such node AT ANY DEPTH whose row equals the `@import` KEYWORD's own row. The row test is load-bearing and the mutant removes it: every quoted span in the file becomes a module the stylesheet imports. The shape it reproduces is measured on the corpus — `Documenter.jl/assets/html/scss/bulma/elements/button.sass` has an `import_statement` node spanning L2..L50 with ELEVEN `string_value` descendants, one at L2 (the real module) and ten at L47 (a `$breakpoints` map's \"mobile\", \"small\", \"normal\", \"medium\", \"large\", \"tablet-only\", ...). An unguarded traversal reaching those ten publishes ten `imports` edges asserting that this partial pulls in ten stylesheets it never names, and `imports` is the type that drives module resolution and the advice `bb_migrate` gives, so the cost lands on refactoring. Caught by css/recovered-import-shape-is-an-import, whose `$map: ( \"a-key\": 1, \"b-key\": 2, )` block puts both decoys INSIDE the `import_statement` node that spans L13..L19, and whose `forbidRelationships` rows refuse `imports` targeting `a-key` and `b-key`.",
+    transform: (r: any, source?: string) => {
+      const rels: any[] = r.relationships ?? []
+      if (typeof source !== "string" || source.length === 0) return r
+      const already = new Set(
+        rels.filter((x: any) => String(x.type).toLowerCase() === "imports").map((x: any) => String(x.target)),
+      )
+      // The unguarded search's reach: every `"…"` span in the file, minus the ones already
+      // published. Pure-String scan — no pattern over raw text anywhere in this lane.
+      const quoted: string[] = []
+      for (let i = 0; i < source.length; i++) {
+        if (source.charAt(i) !== '"') continue
+        let j = i + 1
+        while (j < source.length && source.charAt(j) !== '"' && source.charAt(j) !== "\n") j++
+        if (j >= source.length || source.charAt(j) !== '"') continue
+        const span = source.slice(i + 1, j)
+        if (span.length > 0 && !already.has(span)) {
+          already.add(span)
+          quoted.push(span)
+        }
+        i = j
+      }
+      if (quoted.length === 0) return r
+      const host = rels.find((x: any) => String(x.type).toLowerCase() === "imports")
+      const from = host?.metadata?.importSource ?? host?.source ?? ""
+      return {
+        ...r,
+        relationships: [
+          ...rels,
+          ...quoted.map((t) => ({
+            type: "imports",
+            source: from,
+            target: t,
+            confidence: 1,
+            metadata: { cssSpecific: true, evidenceClass: "import_based", isCssImport: true, isRowGuardDropped: true },
+          })),
+        ],
+      }
+    },
+  },
+  {
+    id: "css/import-name-published-with-its-quotes",
+    language: "css",
+    defectClass: "wrong-payload",
+    description:
+      "PAYLOAD CLASS on the same edge, and the bug a new branch invites. The recovered path returns a `string_value` NODE, and a node's text still carries its quotes; `unwrapUrl` is what turns `\"../utilities/mixins\"` into `../utilities/mixins`. A branch that forgets that call publishes the quoted spelling, which is a DIFFERENT string from the one every other language's import target uses and a different graph node from the unquoted one — so the same partial becomes two nodes and the edge binds to neither. The mutant rewrites every `imports` target to its quoted form, which is the shape of that mistake. Caught by css/recovered-import-shape-is-an-import, whose `forbidRelationships` rows refuse the three quoted spellings, and independently by css/namespace-uri-is-not-an-import, whose `expectRelationships` row requires `target: theme.css` unquoted.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => {
+        if (String(x.type).toLowerCase() !== "imports") return x
+        const t = String(x.target ?? "")
+        if (t.length === 0) return x
+        if (t.charAt(0) === '"') return x
+        return { ...x, target: `"${t}"` }
+      }),
+    }),
+  },
+  {
+    id: "css/keyframes-owned-var-read-dropped",
+    language: "css",
+    defectClass: "missing-relationship",
+    description:
+      "The mutant that convicts the pass-11 `references` fix from the OTHER side. `currentSelector` is empty inside a `keyframe_block`, and the fix routes such a read to the enclosing `@keyframes` name instead; a revert to the pre-fix guard (`&& currentSelector`) makes every one of them vanish again. Measured over the admitted corpus that is 845 edges in 265 files, which is why this is a mutant and not a refactor: the corpus cannot see it, so the fixture must. Caught by css/keyframes-read-a-custom-property, whose four `expectRelationships` rows each name a keyframes name as the SOURCE and no other fixture in the lane emits an edge with a keyframes source at all.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter((x: any) => (x.metadata ?? {}).isKeyframeScopeRef !== true),
+    }),
+  },
+  {
+    id: "css/keyframes-owned-var-read-sourced-from-the-stop",
+    language: "css",
+    defectClass: "fabricated-relationship",
+    description:
+      "The failure mode of naming an owner that CANNOT resolve. A keyframe STOP is not a name anything binds to — `to`, `50%`, `from` are anonymous positions — so an edge sourced from one names an endpoint the store will never resolve, and `bb_impact` on it returns nothing while claiming a dependency. The mutant re-sources every keyframes-owned read from the stop selector instead of the animation name. Caught by css/keyframes-read-a-custom-property, whose `forbidRelationships` rows refuse `references` from `to`, `50%` and `from`, and by nothing else in the lane.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => {
+        if ((x.metadata ?? {}).isKeyframeScopeRef !== true) return x
+        const line = String(x.line_number ?? "")
+        return { ...x, source: line.length > 0 ? "to" : x.source }
+      }),
+    }),
+  },
+  {
+    id: "css/keyframes-owned-var-read-inherits-the-outer-keyframes",
+    language: "css",
+    defectClass: "wrong-payload",
+    description:
+      "The owner must be the NEAREST enclosing `@keyframes`, and the frame field resets per node rather than carrying (`let nextKeyframeScope = keyframeScope` is a reset, not a `||`). Carrying it would attribute a read inside a LATER keyframes block to the first one, so `@keyframes a { to { opacity: var(--x) } } @keyframes b { to { opacity: var(--y) } }` would emit `a -> --y` as well as `b -> --y` — two edges, one of which names the wrong animation, and the extra edge is a claim about a dependency that does not exist. The mutant makes every keyframes-owned read name a single fixed animation, which is the shape of that mistake. Caught by css/keyframes-read-a-custom-property, whose four rows name FOUR different owners (`slide`, `fade`, `never-declared`, `nested-in-media`) over FOUR different targets.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => {
+        if ((x.metadata ?? {}).isKeyframeScopeRef !== true) return x
+        return { ...x, source: "slide" }
+      }),
+    }),
+  },
+
 ]

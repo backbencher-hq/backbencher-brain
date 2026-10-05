@@ -54,16 +54,16 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
     Name: "the name-bearing leaf for tags, attributes, PIs, DTD declarations and notations",
     Attribute: "a property of its element, and the source of `references` / `imports` edges for its value",
     doctypedecl: "a Type symbol naming the DTD, plus its ExternalID import",
-    ExternalID: "a file reference on a doctypedecl, entity or notation",
+    ExternalID: "a file reference on a doctypedecl, entity or notation — ONLY when it carries a SystemLiteral",
     SystemLiteral: "the file path inside a SYSTEM ExternalID",
-    PubidLiteral: "the public identifier inside a PUBLIC ExternalID",
+    PubidLiteral: "the public identifier inside a PUBLIC ExternalID; a catalogue name, not a path",
     elementdecl: "a Type symbol for a DTD element declaration; its contentspec is the content model",
     AttlistDecl: "the element whose attributes are declared here",
     AttDef: "a Property symbol plus a `contains` edge from the element it is declared for",
     GEDecl: "a general entity declaration: a Type symbol owned by the DTD, plus its ExternalID import",
     PEDecl: "a parameter entity declaration: a Type symbol owned by the DTD, plus its ExternalID import",
     NotationDecl: "a notation declaration: a Type symbol owned by the DTD, plus its ExternalID import",
-    PublicID: "a file reference on a NotationDecl",
+    PublicID: "a PUBLIC identifier on a NotationDecl; it names NO file, so it publishes no import",
     NDataDecl: "the notation an unparsed entity points at: a `contains` edge",
     contentspec: "the content model of an element declaration; each Name leaf becomes a `contains` edge",
     NotationType: "the notations an attribute may carry: each Name leaf becomes a `contains` edge",
@@ -272,7 +272,20 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
     dtd_attribute_declaration: "structural",
     dtd_content_model: "usage_contextual",
     dtd_notation_reference: "usage_contextual",
-    dtd_ndata_notation: "structural",
+    // NOT `structural`, and the containment ledger is what moved it. XML 1.0 §4.5
+    // writes the clause as "NDATA NotationName", naming a notation that the DTD
+    // declares ELSEWHERE — and necessarily EARLIER, so the notation's declaration is
+    // never inside the entity's. Measured over the full 11,464-file admitted
+    // population: 2 edges, `libxslt/tests/general/bug-21-.xml` (`<!ENTITY test SYSTEM
+    // "test.jpg" NDATA JPEG>` with `<!NOTATION JPEG …>` at 96-130 and the entity at
+    // 131-174) and `libxslt/tests/general/bug-52.xml`, and in both the target's span lies
+    // entirely BEFORE the source's. A `structural` tier is a claim that nesting was
+    // observed, and no nesting was; `usage_contextual` already defines this exact shape
+    // one row up — "a containment the document states through an attribute rather than
+    // through nesting" — and the DTD content model is its precedent. Two edges is not
+    // worth a new relationship type, and relabelling them `references` would be worse:
+    // `references` resolution has four classes and this construct is not one of them.
+    dtd_ndata_notation: "usage_contextual",
     dtd_entity_declaration: "structural",
     dtd_parameter_entity_declaration: "structural",
     dtd_notation_declaration: "structural",
@@ -875,7 +888,32 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
             // at the ATTRIBUTE, while `elementRange` below keeps the structural
             // span so a reader can still find the element itself. Before this the
             // two readings shared one field and one of them had to be wrong.
-            range: declaration ? this.nodeToRange(declaration.nameNode) : this.nodeToRange(node),
+            //
+            // M60 (containment ledger, 2026-10-04): the ANCHOR is right about the
+            // line and wrong about the SPAN, and the span is what `contains` is made
+            // of. Anchoring the same-line case to the `name=` Attribute put the
+            // declaration's range INSIDE its own element, so
+            //
+            //   <define name="boolean">      symbol `boolean` @ name="boolean"
+            //     <choice>                   symbol `choice`  @ <choice>…</choice>
+            //
+            // produced the edge `boolean -contains-> choice` — which is TRUE — with a
+            // target that is not inside the source, and the attribute symbol `name`
+            // occupied the identical byte range as the declaration itself.
+            // Measured over 300 corpus files: 194 contains edges unverifiable by span
+            // nesting because two names shared one range, and 280 more whose source
+            // span did not enclose a child the source really does contain. Both are
+            // invisible to a resolution rate, which is 100 % on this type.
+            //
+            // So the all-on-one-line case anchors to the ELEMENT, and the reported LINE
+            // cannot move, because that is exactly the condition under which the
+            // element's row and the attribute's row are the same row. The other two
+            // shapes keep the Attribute / AttValue anchor and M19 exactly as measured —
+            // at the cost of leaving their containment unverifiable, which is 4 of
+            // 19,852 declarations and is declared rather than rounded away.
+            range: declaration
+              ? this.nodeToRange(declaration.allOnOneLine ? node : declaration.nameNode)
+              : this.nodeToRange(node),
             visibility: "public",
             ownerName,
             ownerKind: ownerName ? ASTEngine.SymbolKind.Class : undefined,
@@ -1195,7 +1233,32 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
             }, nameNode)
           }
 
-          const externalId = this.findDirectChild(node, "ExternalID") || (isNotation ? this.findDirectChild(node, "PublicID") : null)
+          // `PUBLIC "pubid"` WITH NO SYSTEM LITERAL NAMES NO FILE, so it is not an
+          // ExternalID and there is nothing to import. This used to read
+          // `ExternalID || (isNotation ? PublicID : null)`, and the `PublicID` branch is
+          // what produced the corpus's one fabricated `imports` edge:
+          //
+          //   libxslt/tests/general/bug-52.xml
+          //     <!NOTATION GIF PUBLIC "GIF">
+          //     <!ENTITY graphic SYSTEM "graphic.gif" NDATA GIF>
+          //   ->  GIF -imports-> GIF  role=notation_external_id  confidence=1
+          //
+          // The grammar makes the two shapes distinct nodes, and the distinction is the
+          // whole point: `SYSTEM "graphic.gif"` is an `ExternalID` with a `SystemLiteral`,
+          // while `PUBLIC "GIF"` is a `PublicID` with a `PubidLiteral` and nothing else.
+          // XML's own grammar allows `PUBLIC PubidLiteral` with no system literal
+          // precisely so a parser can resolve it from a catalogue — a symbolic name, not
+          // a path. Reading it as one is the same defect the powerShell round removed
+          // from `New-Object $type`: a value that is not a file published as a target.
+          //
+          // Measured both ways by `validation/m14/fixtures/xml/public-id-census.mts`, and
+          // the two agree, which is what makes this fix exactly scoped rather than a
+          // guess: 299 ExternalID/PublicID nodes over 11,552 files, 298 with a
+          // SystemLiteral and 1 without, and 469 `imports` edges of which 298 carry
+          // `externalIdKind: "system"` and 1 carries `"public"` — that same edge. The
+          // SystemLiteral path needs no change; the count matches to the edge.
+          const externalId = this.findDirectChild(node, "ExternalID")
+
           if (externalId) {
             this.extractExternalId(
               externalId,
@@ -2025,6 +2088,21 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
    * path, so the edge's line is the LITERAL's line (M59.A7 / #825) — passing the
    * `ExternalID` node instead points the edge at the `SYSTEM` keyword's line,
    * which is the line of no name in the edge.
+   *
+   * A `SystemLiteral` is REQUIRED and a `PubidLiteral` is not a substitute. The two are
+   * different things and only one of them is a file: `SYSTEM "graphic.gif"` names a path
+   * a parser opens, `PUBLIC "GIF"` names a symbolic identifier a parser matches against a
+   * catalogue. This read was `systemLiteral || pubidLiteral`, so the second stood in for
+   * the first and a public identifier became an edge target — the fabricated
+   * `GIF -imports-> GIF` in `libxslt/tests/general/bug-52.xml`, at `confidence: 1`, on a
+   * tier table that maps `notation_external_id` to `import_based`.
+   *
+   * The invariant lives HERE rather than only at the one caller that broke it, because
+   * this is the single point where the target string is created: any future caller that
+   * hands this a `PublicID` now gets nothing instead of an edge, which is the correct
+   * outcome for a node that carries no file. Measured by
+   * `validation/m14/fixtures/xml/public-id-census.mts` — 298 system-literal nodes and 298
+   * `externalIdKind: "system"` edges agree exactly, so nothing legitimate is lost.
    */
   private extractExternalId(
     externalId: Node,
@@ -2033,9 +2111,7 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
     addRelationship: (source: string, target: string, type: ASTEngine.RelationshipType, metadata: Record<string, any>, node?: Node | null) => void,
     imports: ASTEngine.ImportInfo[],
   ): void {
-    const systemLiteral = this.findDirectChild(externalId, "SystemLiteral")
-    const pubidLiteral = this.findDirectChild(externalId, "PubidLiteral")
-    const literal = systemLiteral || pubidLiteral
+    const literal = this.findDirectChild(externalId, "SystemLiteral")
     if (!literal) return
     const path = this.unquote(literal.text)
     if (!path) return
@@ -2044,11 +2120,11 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
       path,
       importType: "xml-doctype",
       range: this.nodeToRange(literal),
-      metadata: { isDtdExternalId: true, role, systemId: Boolean(systemLiteral) },
+      metadata: { isDtdExternalId: true, role, systemId: true },
     })
     addRelationship(owner, path, ASTEngine.RelationshipType.Imports, {
       role,
-      externalIdKind: systemLiteral ? "system" : "public",
+      externalIdKind: "system",
     }, literal)
   }
 
@@ -2555,13 +2631,22 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
    * `<xsd:element name=` and carries no part of the name; the AttValue is on
    * 234. Anchoring to the Attribute reported 233, so a search for the name
    * landed one line above the string that spells it.
+   *
+   * `allOnOneLine` says which of the shapes this declaration is, because the shapes
+   * want DIFFERENT spans even where two of them agree on the line. See the call site:
+   * when all three share a line the SYMBOL anchors to the whole element, and the
+   * difference is containment rather than cosmetics.
    */
   private declaredNameOf(
     namespaceUri: string | undefined,
     localName: string,
     tagNode: Node,
   ): { name: string; attribute: string; /** The node the NAME is written on — AttValue when it is on another line. */
-    nameNode: Node } | null {
+    nameNode: Node
+    /** Whether the tag, the `name=` attribute and its value all sit on ONE line. This is
+     *  the switch that decides the SYMBOL's span, and it is a different question from
+     *  which node carries the name's LINE. See the call site. */
+    allOnOneLine: boolean } | null {
     if (!namespaceUri) return null
     const declaring = RealXmlAnalyzer.DECLARATION_VOCABULARIES[namespaceUri]
     if (!declaring || !declaring.has(localName)) return null
@@ -2580,7 +2665,28 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
       // node's line; when they share a line, both give the same answer and the
       // whole Attribute is the wider, more useful anchor.
       const anchor = valueNode.startPosition.row !== node.startPosition.row ? valueNode : node
-      return { name: value, attribute, nameNode: anchor }
+      return {
+        name: value,
+        attribute,
+        nameNode: anchor,
+        // The switch the call site needs is "are the TAG, the ATTRIBUTE and the VALUE
+        // all on ONE line". Either half alone is wrong, and the M19 fixture
+        // `xml/xsd-declared-name-lines` fails on each of them in turn:
+        //
+        //   tag 27 / attribute 28 / value 28   `<xsd:attribute` + `name="X"` on 28
+        //        — attribute and value share a line, the tag does not. Testing the
+        //          value's row alone anchors to the element and reports 27.
+        //   tag 23 / attribute 23 / value 24   `<xsd:element name=` + `"X"` on 24
+        //        — tag and attribute share a line, the value does not. Testing the
+        //          attribute's row alone anchors to the element and reports 23.
+        //
+        // All three on one line is the only shape where the element's row and the
+        // attribute's row are the same row, which is the whole reason the element
+        // anchor is line-safe.
+        allOnOneLine:
+          node.startPosition.row === tagNode.startPosition.row
+          && valueNode.startPosition.row === node.startPosition.row,
+      }
     }
     return null
   }
