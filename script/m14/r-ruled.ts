@@ -9,17 +9,26 @@
  * oracle was written after the ruling — nothing agrees with nothing. So the gate needs, per type,
  * either production edges or a corpus-backed ruling. R needs neither for any of the ten:
  *
- *     type           edges    files   instrument
- *     calls         48,136    1,293   production parseFile
- *     uses           4,799      584   production parseFile
- *     contains      17,620    1,873   production parseFile
- *     imports        2,090    1,112   production parseFile
- *     references       389      202   production parseFile
- *     exports        3,581      711   production parseFile
- *     extends          350       60   production parseFile
- *     implements     1,133      221   production parseFile
- *     overrides        107        9   production parseFile
- *     instantiates       3        2   production parseFile
+ *     type           edges (min-max over 5 runs)   files   instrument
+ *     calls             48,028 - 48,233 (Δ205)    1,294   production parseFile
+ *     uses                4,789 -  4,810 (Δ21)      584   production parseFile
+ *     contains          17,550 - 17,634 (Δ84)     1,874   production parseFile
+ *     imports            2,087 -  2,095 (Δ8)      1,112   production parseFile
+ *     references         2,129 -  2,137 (Δ8)      1,116   production parseFile
+ *     exports             3,525 -  3,592 (Δ67)       711   production parseFile
+ *     extends               351 (invariant)          61   production parseFile
+ *     implements          1,133 (invariant)         221   production parseFile
+ *     overrides             107 (invariant)           9   production parseFile
+ *     instantiates            3 (invariant)           2   production parseFile
+ *
+ * Those min-max endpoints are PER-TYPE, each the smallest and largest value one run
+ * observed for that type. They do NOT sum to an observed total: the minimums come from
+ * different runs (run F holds five of them, run G two, run 1 the rest), so adding them
+ * mixes sets — 79,702 is such a sum and is not a number any run printed. The totals
+ * runs actually printed are 80,095 / 80,015 / 79,756 / 79,823 / 80,055 / 80,069 /
+ * 80,062, so the observed TOTAL band is 79,756-80,095 (Δ339). The distinction is the
+ * same two-sets error this header exists to avoid, so it is stated rather than left for
+ * a reader to trip on.
  *
  * Population: every git-tracked file the production ROUTER
  * (`detectLanguageFromPath`) maps to `r` in `$HOME/fixtures/repositories` —
@@ -30,6 +39,81 @@
  *
  * and the committed outputs `validation/m14/fixtures/r/ontology-ten-types.txt` and
  * `validation/m14/fixtures/r/labels-and-resolution.txt`.
+ *
+ * ## Why a RANGE and not a single number — this table's first version was wrong that way
+ *
+ * This header used to print one count per type. Production walks over the SAME 2,184-file
+ * population do not agree on them, so a single figure would be a claim the corpus does not
+ * support. Measured, all seven POST-FIX runs, production `parseFile`:
+ *
+ *     type            run 1     run 2     run F     run G     run H     run I     run J
+ *     calls          48,233    48,174    48,082    48,028    48,206    48,215    48,209
+ *     contains       17,634    17,622    17,550    17,601    17,629    17,632    17,630
+ *     exports         3,592     3,585     3,525     3,581     3,588     3,590     3,591
+ *     imports         2,095     2,095     2,087     2,087     2,093     2,095     2,095
+ *     references      2,137     2,137     2,129     2,129     2,135     2,137     2,137
+ *     uses            4,810     4,808     4,789     4,803     4,810     4,806     4,806
+ *     extends           351       351       351       351       351       351       351
+ *     implements      1,133     1,133     1,133     1,133     1,133     1,133     1,133
+ *     overrides         107       107       107       107       107       107       107
+ *     instantiates        3         3         3         3         3         3         3
+ *     TOTAL           80,095    80,015    79,756    79,823    80,055    80,069    80,062
+ *
+ *   run 1 = validation/m14/fixtures/r/ontology-ten-types.txt   (committed artifact)
+ *   run 2 = validation/m14/fixtures/r/labels-and-resolution.txt (committed artifact)
+ *   run F = script/m14/ontology-coverage-gate.ts r, 2026-10-05 03:42 (output NOT captured)
+ *   run G = validation/m14/fixtures/r/arbiter/arbiter-r-runG-2026-10-05.txt (committed)
+ *   run H = validation/m14/fixtures/r/arbiter/arbiter-r-runH-2026-10-05.txt (committed)
+ *   run I = validation/m14/fixtures/r/arbiter/arbiter-r-runI-2026-10-05.txt (committed)
+ *   run J = validation/m14/fixtures/r/arbiter/arbiter-r-runJ-2026-10-05.txt (committed)
+ *
+ * Runs G, H, I and J are the four arbiter walks whose bytes are on disk; all four printed
+ * `emitted 10/10   ruled-sound 0   FALSIFIED 0   ruled-without-justification 0` and all
+ * four then exited 1 from the 120-second parse bomb, which is shared machinery (§8 of the
+ * workstream). Neither run I nor run J set a new extremum on any type: run J's calls
+ * 48,209 falls inside the existing 48,028-48,233 span, uses 4,806 inside 4,789-4,810,
+ * contains 17,630 inside 17,550-17,634, exports 3,591 inside 3,525-3,592, and its
+ * references 2,137 and imports 2,095 both TIE the observed maximum a second time. The
+ * total band is therefore unchanged at 79,756-80,095 across seven walks.
+ *
+ * Three runs predate the `::`/`:::` fix and reported `references` at 389 — that is a CHANGE,
+ * not variance, and they are kept out of the table above for that reason. Their counts are
+ * preserved because the pre/post comparison is the measurement: `references` 389 → 2,137 and
+ * the total 78,311 → 80,095 (+2.28%), with the lane oracle's `unexplained` unmoved at 21.
+ *
+ * The cause of the spread is measured, not guessed: the wasm parser intermittently dies on R
+ * files with `[BB-PARSE-ERR] … memory access out of bounds`, and WHICH files it dies on
+ * changes run to run. Run F lost 5 files to it (`ggplot2/R/scale-manual.R`,
+ * `r-cli/R/width.R`, `r-cli/exec/news.R`, `r-cli/R/zzz.R`,
+ * `r-testthat/R/expect-equality.R`), run G lost 2 (`ggplot2/R/scale-manual.R`,
+ * `usethis/R/course.R`), run H lost 2 (`usethis/R/ci.R`, `usethis/R/citation.R`), run I
+ * lost 1 (`r-testthat/R/expect-invisible.R`), run J lost 1 (`r-cli/R/width.R`, the same
+ * file run F lost, and in run J also the file the 120-second bomb hung on). A file that
+ * fails to parse contributes no edges, so the totals track the failures.
+ *
+ * The losses cluster — 8 of the 12 across the seven runs are `usethis` (4) or `r-cli` (4)
+ * file losses, and `r-rlang`'s 160 files were walked by all seven runs without one loss.
+ * An earlier revision of this header said "9 of the 11", which was wrong on both numbers:
+ * counted file by file from the committed artifacts the numerator was 7 at the time, and
+ * only ten losses were on record when 11 was written (run I supplied the eleventh, run J the
+ * twelfth). Run I is also the first loss outside `usethis`, `r-cli` and `ggplot2`, so the
+ * clustering is weaker than the old claim and is stated weaker. It remains a statement about
+ * which files exhaust the wasm parser's memory, not about the analyzer, and no analyzer rule
+ * reads a file count.
+ *
+ * The four types that DO NOT MOVE are the informative half of this table. `extends`,
+ * `implements`, `overrides` and `instantiates` are identical in all seven runs, which says the
+ * wobble is confined to the types whose counts are large enough to be sensitive to losing a
+ * handful of files — not that those four are more correct than the others. The spread is a
+ * property of the PARSER, not of the analyzer: no analyzer rule reads a file count, and the
+ * fixture `validation/m14/fixtures/r/probe-oom.ts` shows per-file counts stable to 0 of 160
+ * `r-rlang` files across 3 passes.
+ *
+ * So every count below is a RANGE, and no type's EMITTED verdict depends on which end of it is
+ * true: the smallest observed value of every one of the ten is non-zero, which is what the gate
+ * tests. The delta is reported because a reader planning a re-measure needs to know that two runs
+ * will not agree to the digit, and the DENOMINATOR of every rate printed in
+ * `docs/analyzers/real-r-analyzer.md` inherits the same band.
  *
  * ## Why the table is registered rather than omitted
  *
@@ -55,17 +139,19 @@
  *   1. NO ORACLE IN THE SHARED DIFFERENTIAL. `r` is absent from `LANGS` in
  *      `script/m14/differential.ts`, so all ten types are DERIVATION findings — emitted and compared
  *      against nothing by the project's own auditor. The lane's own oracle
- *      (`validation/m14/fixtures/r/oracle-r.ts`, 2,058 files) reports `unexplained` counts of
- *      calls 6,780 / uses 1,095 / contains 6,334 / overrides 75 / extends 11 / references 21 /
- *      instantiates 2, and it is RULE-COUPLED for calls, uses, contains and overrides by its own
- *      declaration, so it cannot see a bug those four rules share. Correcting that is a
- *      supervisor-owned edit (§8 of the workstream brief).
- *   2. `evidenceClass` IS ABSENT ON 100% OF R EDGES — 78,309 of 78,309. 42 of the 51 analyzer files
- *      set it; R is one of six that do not (clojure, elixir, erlang, fsharp, r, vb). The store
- *      derives the tier from confidence instead (`src/lsp/evidence_tier.ts` rule 2), so every R
- *      edge reads `structural`. Legal, and an outlier.
+ *      (`validation/m14/fixtures/r/oracle-r.ts`, 2,058 files, committed output
+ *      `oracle-evidence.json`) reports `unexplained` counts of calls 6,799 / uses 1,095 /
+ *      contains 6,343 / overrides 75 / extends 12 / references 21 / instantiates 2, and it is
+ *      RULE-COUPLED for calls, uses, contains and overrides by its own declaration, so it cannot
+ *      see a bug those four rules share. Correcting that is a supervisor-owned edit
+ *      (§8 of the workstream brief).
+ *   2. `evidenceClass` IS ABSENT ON 100% OF R EDGES — 80,015 of 80,015. 42 of the 48
+ *      `src/ast/real-*-analyzer.ts` files set it; R is one of six that do not (clojure, elixir,
+ *      erlang, fsharp, r, vb). The store derives the tier from confidence instead
+ *      (`src/lsp/evidence_tier.ts` rule 2), so every R edge reads `structural`. Legal, and an
+ *      outlier.
  *   3. TWO SUBTYPES CARRY TWO LABELS BY DESIGN: `r_source` and `rcpp_source` appear under BOTH
- *      `imports` and `references` (real-r-analyzer.ts:2113-2114 emits the pair deliberately, and the
+ *      `imports` and `references` (real-r-analyzer.ts:1884 and :1907 emit the pair deliberately, and the
  *      comment there says why). A consumer keying on the subtype cannot recover the label.
  *
  * The shape below restates the gate's local `Ruled` type structurally, the same way
