@@ -56,23 +56,25 @@
       "caught": true
     }
   ],
-  "currentCommit": "d8dad6ebbf971c5f724e18275fbd97eb624e7d42",
+  "currentCommit": "de5ff45a42d9fe209c372d7e2737995daac7b1b0",
   "verifierCommand": "npx tsx script/m61/verify-orphan-gates.ts",
   "evidenceFile": "V5.json",
-  "generatedAt": "2026-10-05T15:33:02.776Z",
+  "generatedAt": "2026-10-05T15:46:35.145Z",
   "census": {
     "verifiers": 606,
     "wiredByNpmScripts": 416,
     "wiredIncludingClosureGateBodies": 416,
     "orphans": 190,
     "declaredOrphans": 184,
-    "verifiersNamedBySource": 62,
-    "unprotectedBySource": 11,
+    "verifiersNamedBySource": 66,
+    "unprotectedBySource": 13,
     "declaredSourceNamed": 8,
     "undeclaredSourceNamed": [
       "script/m24/verify-position-arithmetic.ts (named by src/lsp/navigation.ts)",
       "script/m26/verify-graph-transport.ts (named by src/lsp/server.ts)",
-      "script/m55/verify-hover-coverage.ts (named by src/lsp/rich_hover.ts)"
+      "script/m28/verify-surface-parity.ts (named by src/intelligence/documentation/doc-engine.ts)",
+      "script/m42/verify-rich-hover.ts (named by src/lsp/rich_hover.ts)",
+      "script/m55/verify-hover-coverage.ts (named by src/lsp/rich_hover.ts, src/lsp/rich_hover.ts)"
     ]
   },
   "ledgerDrift": [
@@ -87,6 +89,7 @@
     "m20.D1: ledger=verified record=known-gap (D1.json)",
     "m20.D2: ledger=verified record=known-gap (D2.json)",
     "m20.D3: ledger=verified record=known-gap (D3.json)",
+    "m24.D1: ledger=verified record=known-gap (D1.json)",
     "m26.G1: ledger=verified record=known-gap (G1.json)",
     "m62.A2: ledger=verified record=known-gap (A2.json)"
   ],
@@ -107,7 +110,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T15:33:02.780Z",
-    "contentSha256": "6eb058dd11f3a44bd6eb5ac44f8d12819bcbd3f2b954b631906829918b0613e9"
+    "sealedAt": "2026-10-05T15:46:35.147Z",
+    "contentSha256": "4578bfb51c1e856c3317a952517f4831d10e15b25f8bcffa523f0e6cd4e56273"
   }
 }

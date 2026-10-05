@@ -2,11 +2,10 @@
   "issue": "M24.P1",
   "code": "P1",
   "milestone": "M24",
-  "status": "known-gap",
-  "blockedReason": "2 check(s) failed: X3: LSP-lane harness spawns nothing non-portable — script/m24/verify-callsite-agreement.ts:373 [non-portable-binary] shasum — execFileSync: BSD/macOS perl checksum tool; the Linux side spells it sha256sum. Ban rests on \"spawn no checksum binary, use node:crypto\"; its absence on this repo's Linux images is declared linux-unverified. | X3: LSP-lane harness spawns nothing non-portable — script/m55/screenshot-protocol.ts:223 [denylisted-binary-in-spawned-command] sha256sum — run(): GNU coreutils checksum tool; macOS ships `shasum -a 256` instead. This exact spawn killed M24.P1 and M24.P2 on darwin with spawnSync sha256sum ENOENT.",
-  "checks": 50,
+  "status": "verified",
+  "checks": 48,
   "passed": 48,
-  "failed": 2,
+  "failed": 0,
   "negativeCases": 11,
   "mutants": [
     {
@@ -80,83 +79,66 @@
     "declaredAbsentOses": [
       "win32"
     ],
-    "filesScanned": 166,
-    "spawnSitesJudged": 542,
+    "filesScanned": 168,
+    "spawnSitesJudged": 541,
     "spawnSitesByReach": {
-      "directCallSitesResolvedByName": 229,
-      "localWrapperCallSitesArgumentScanned": 269,
-      "commandComputedAtRuntimeNotJudgedByName": 44
+      "directCallSitesResolvedByName": 230,
+      "localWrapperCallSitesArgumentScanned": 266,
+      "commandComputedAtRuntimeNotJudgedByName": 45
     },
-    "findings": [
-      {
-        "file": "script/m24/verify-callsite-agreement.ts",
-        "line": 373,
-        "kind": "non-portable-binary",
-        "matched": "shasum",
-        "api": "execFileSync",
-        "reason": "BSD/macOS perl checksum tool; the Linux side spells it sha256sum. Ban rests on \"spawn no checksum binary, use node:crypto\"; its absence on this repo's Linux images is declared linux-unverified."
-      },
-      {
-        "file": "script/m55/screenshot-protocol.ts",
-        "line": 223,
-        "kind": "denylisted-binary-in-spawned-command",
-        "matched": "sha256sum",
-        "api": "run()",
-        "reason": "GNU coreutils checksum tool; macOS ships `shasum -a 256` instead. This exact spawn killed M24.P1 and M24.P2 on darwin with spawnSync sha256sum ENOENT."
-      }
-    ],
+    "findings": [],
     "plantedDefectsCaught": 14,
     "plantedDefectsTotal": 14,
     "plantedDefects": [
       {
         "name": "planted execFileSync sha256sum (the defect that killed this gate)",
         "caught": true,
-        "detail": "caught at line 1127 (non-portable-binary: sha256sum)"
+        "detail": "caught at line 1385 (non-portable-binary: sha256sum)"
       },
       {
         "name": "planted execSync shell sha256sum",
         "caught": true,
-        "detail": "caught at line 1127 (non-portable-binary: sha256sum)"
+        "detail": "caught at line 1385 (non-portable-binary: sha256sum)"
       },
       {
         "name": "planted spawnSync md5sum",
         "caught": true,
-        "detail": "caught at line 1127 (non-portable-binary: md5sum)"
+        "detail": "caught at line 1385 (non-portable-binary: md5sum)"
       },
       {
         "name": "planted spawn of an absent-on-darwin coreutils binary (timeout)",
         "caught": true,
-        "detail": "caught at line 1127 (non-portable-binary: timeout)"
+        "detail": "caught at line 1385 (non-portable-binary: timeout)"
       },
       {
         "name": "planted /proc read inside a shell spawn",
         "caught": true,
-        "detail": "caught at line 1127 (platform-only-path: /proc)"
+        "detail": "caught at line 1385 (platform-only-path: /proc)"
       },
       {
         "name": "planted GNU-only stat -c",
         "caught": true,
-        "detail": "caught at line 1127 (gnu-only-command-form: stat -c)"
+        "detail": "caught at line 1385 (gnu-only-command-form: stat -c)"
       },
       {
         "name": "planted GNU-only sort -V (accepted-but-ignored on BSD)",
         "caught": true,
-        "detail": "caught at line 1127 (gnu-only-command-form: sort -V)"
+        "detail": "caught at line 1385 (gnu-only-command-form: sort -V)"
       },
       {
         "name": "planted GNU-only grep -P",
         "caught": true,
-        "detail": "caught at line 1127 (gnu-only-command-form: grep -P)"
+        "detail": "caught at line 1385 (gnu-only-command-form: grep -P)"
       },
       {
         "name": "planted GNU-only sed -i in-place form (argv shape)",
         "caught": true,
-        "detail": "caught at line 1127 (gnu-only-command-form: sed -i (GNU form))"
+        "detail": "caught at line 1385 (gnu-only-command-form: sed -i (GNU form))"
       },
       {
         "name": "planted sha256sum laundered through a local spawn wrapper",
         "caught": true,
-        "detail": "caught at line 1128 (denylisted-binary-in-spawned-command: sha256sum)"
+        "detail": "caught at line 1386 (denylisted-binary-in-spawned-command: sha256sum)"
       },
       {
         "name": "PRECISION: the same spawn text inside a string literal is not a spawn",
@@ -233,32 +215,16 @@
         "matched": "sha256sum",
         "api": "execFileSync",
         "reason": "GNU coreutils checksum tool; macOS ships `shasum -a 256` instead. This exact spawn killed M24.P1 and M24.P2 on darwin with spawnSync sha256sum ENOENT."
-      },
-      {
-        "file": "script/m60/powershell-perf.ts",
-        "line": 78,
-        "kind": "platform-only-path",
-        "matched": "/proc",
-        "api": "execSync",
-        "reason": "Linux procfs; absent on macOS and Windows (measured: `ls /proc` -> No such file or directory)."
-      },
-      {
-        "file": "script/m60/yaml-scaling-probe.ts",
-        "line": 277,
-        "kind": "platform-only-path",
-        "matched": "/proc",
-        "api": "execFileSync",
-        "reason": "Linux procfs; absent on macOS and Windows (measured: `ls /proc` -> No such file or directory)."
       }
     ],
-    "ok": false
+    "ok": true
   },
-  "currentCommit": "fe6844fb9d5b77d0c30a7c4da7d16dfa387278d9",
+  "currentCommit": "de5ff45a42d9fe209c372d7e2737995daac7b1b0",
   "sourceFingerprint": "cb86c59603cc4c331526ab1c1fc72a89ce4142f6c4f4cbac2b4832ba6bc65e52",
   "sourceFingerprintAlgorithm": "sha256 over raw file bytes (node:crypto; no process spawn)",
   "verifierCommand": "npx tsx script/m24/verify-positions.ts",
   "evidenceFile": "P1.json",
-  "generatedAt": "2026-10-05T04:18:57.580Z",
+  "generatedAt": "2026-10-05T15:45:34.584Z",
   "limitations": [
     "Fixture-based; does not exercise real analyzer output end-to-end (covered by the V1 harness).",
     "resolveRowByteColumns: a file-absolute row whose offset also fits the target line's byte length is still read as per-line (the pre-existing declared ambiguity in the function header). Only byte 0 — impossible as a 1-based per-line column — is disambiguated. Removing the ambiguity for real rows needs a writer-side convention flag (indexer lane); found and reported by M55.T2.",
@@ -272,7 +238,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T04:18:57.582Z",
-    "contentSha256": "17d6ce683d171d5d80d1e81eda91231eea1760f8d036cb2d8125b707a61d1b55"
+    "sealedAt": "2026-10-05T15:45:34.586Z",
+    "contentSha256": "b400914a8e201218415739ef229e6cf526f8a6e6ad990afc1cf95168d5badb6b"
   }
 }
