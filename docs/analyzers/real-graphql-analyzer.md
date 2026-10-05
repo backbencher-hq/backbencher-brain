@@ -162,15 +162,44 @@ counts are listed in `script/m14/tmp/graphql/out/production-six-questions.json` 
 `population.repos`; the largest are gql-graphql-platform 717, hasura-engine 407,
 gql-graphql-tools 238, gql-gqlgen 143, gql-graphql-mesh 130, genqlient 111.
 
-**91,437 symbols, 156,709 relationships, 0 parse errors, 0 empty symbol names, 0 empty
-kinds, 0 relationship types outside the ten, 68 files with zero relationships.**
+**Coverage is 1,860 of the 1,905 admitted, not 1,905.** 45 files return zero symbols
+*and* zero relationships while reporting `success: true` and holding bytes; they are
+named in `script/m14/tmp/graphql/out/ontology-census.json` under
+`filesThatYieldedNothingDespiteBytes`. Most are legitimately empty — hasura-engine's
+`err/*.graphql` invalid-syntax fixtures, 5–54-byte `__snapshots__` fragments, a 1-byte
+`actions.graphql`. At least two are **grammar rejections, not timeouts**, and both are
+real documents:
+
+| file | bytes | parse time | errors | symbols |
+|---|---|---|---|---|
+| `gql-genqlient/docs/genqlient_directive.graphql` | 10,401 | 1,065 ms | 18 | 0 |
+| `gql-graphql-platform/…/__resources__/kitchen-sink-nullability.graphql` | 2,120 | 46 ms | 50 | 0 |
+
+Both parse in about a second with `BB_FILE_TIMEOUT_MS` raised to 600,000, so they are
+not the 45 s worker self-timeout; the vendored grammar emits `Syntax error (unexpected
+node)` for the whole document and the analyzer reports `success: true` with nothing.
+Two consequences: every count below is a count over **1,860** files, and `parseFile`
+returns no signal that would let a caller tell a rejected document from an empty one.
+The error nodes also carry **no line number**, so a consumer cannot locate them. The
+instruments are `src/ast/pool-worker.ts` and the vendored grammar — §8.
+
+This does not move any verdict: the 45 are error fixtures and snapshot fragments, and
+the two real ones are a directive-definition document and a query, neither of which can
+express `calls`, `extends` or `instantiates`.
+
+**91,437 symbols, 156,709 relationships, 0 empty symbol names, 0 empty kinds,
+0 relationship types outside the ten, 68 files with zero relationships** — the
+six-questions walk. The census walk over the same population reports 91,464 symbols
+and 156,763 relationships. `0 parse errors` is **not** claimed: the six-questions walk
+counts a thrown parse, and `parseFile` throws on none of these files — it *returns*
+zero symbols for 45 of them, which is the coverage correction above.
 
 ### Verdicts
 
 `edges` is the **census walk** (`script/m14/tmp/graphql/probe/ontology-census.mts`,
-1,905 admitted files, production `parseFile`). `files` is **not** from that walk: it is
-`distinctFiles` from the **six-questions walk**
-(`probe/production-six-questions.mts`, same 1,905 files, same entry point). The two
+1,905 admitted files of which **1,860 parse** — see The corpus above). `files` is
+**not** from that walk: it is `distinctFiles` from the **six-questions walk**
+(`probe/production-six-questions.mts`, same admission rule and entry point). The two
 walks disagree by 54 edges in 156,763 (0.034%) and by 1–2 files on four types, so both
 file counts are given. Neither column is the arbiter's 4-file sample.
 
@@ -1021,9 +1050,73 @@ out what is available:
 
 ## Shared-machinery items
 
-Four defects outside `src/ast/real-graphql-analyzer.ts`. None was repaired here; each is
+Five defects outside `src/ast/real-graphql-analyzer.ts`. None was repaired here; each is
 stated with the file, the function and the measurement, so it can be applied without
 re-deriving it.
+
+### 0. `script/m14/ontology-coverage-gate.ts` — **every second run reports 0 emitted and exits 1, for every lane**
+
+This is the most consequential item here because it silently contradicts a correct
+analyzer, and it is not specific to this lane.
+
+The gate accumulates its EMITTED measurement **inside the `run` callback** of
+`resumableWalk`, in an in-memory `Map`:
+
+```
+302: const walkStats = await resumableWalk(CHECKPOINT, files.length, {
+305:   run: async (i) => {
+306:     const r: any = await parseFile(files[i].abs, files[i].dir)
+307:     for (const x of r.relationships ?? []) { … observed.set(t, row) }
+```
+
+`resumableWalk` builds its work list as `todo` = offered files **minus** the ids already
+in the checkpoint (`script/m14/resumable-walk.ts:122`, `loadCheckpoint`), and calls
+`opts.run(i)` only for `todo` entries. The checkpoint persists **file ids only** — there
+is no `observed` state on disk anywhere.
+
+Therefore:
+
+| invocation | `run()` calls | result |
+|---|---|---|
+| first run, or any run with `--fresh` | 1,905 | `emitted 7/10`, exit 0 |
+| any later run without `--fresh` | **0** | `emitted 0/10`, exit 1 |
+
+Measured on this lane, back to back, same worktree, same analyzer:
+
+```
+$ npx tsx script/m14/ontology-coverage-gate.ts graphql --fresh
+walk: 1905/1905 files (100.0%)  newly walked 1905, resumed 0
+emitted 7/10   ruled-sound 3   FALSIFIED 0   ruled-without-justification 0     exit 0
+
+$ npx tsx script/m14/ontology-coverage-gate.ts graphql
+walk: 1905/1905 files (100.0%)  newly walked 0, resumed 1905
+emitted 0/10   ruled-sound 3   FALSIFIED 0   ruled-without-justification 7     exit 1
+```
+
+The resumed run is not measuring anything at all: 7 EMITTED types become
+`RULED-UNJUSTIFIED` purely because the walk did no work. The RULED verdicts survive
+because instruments A and B re-read the corpus directly instead of going through the
+walk, which is why the output still looks plausible. Any lane run twice, and any lane in
+a sequential multi-lane sweep where the sweep is re-run, gets this. It reads as "this
+lane emits nothing", which is the exact false claim the arbiter exists to prevent.
+
+Three ways to fix it, best first:
+
+1. **Persist the measurement beside the checkpoint.** Add an `onResult`/`reduce` hook to
+   `resumableWalk` so each file's contribution is appended to
+   `validation/m14/measurements/walk-<lang>.observed.json` and merged on resume. Keeps
+   resumability, which is the point of the module.
+2. **Fail loudly instead of publishing.** One guard in the gate: if
+   `walkStats.walked === 0 && walkStats.alreadyDone > 0`, refuse to print per-type
+   verdicts and exit non-zero with a message naming `--fresh`. This is the smallest
+   change that removes the false claim, and it is strictly better than the current
+   behaviour even if 1 is never done.
+3. **Default to `--fresh`.** Rejected: it discards the poison-file protection that
+   `resumableWalk` exists for.
+
+I hit this before running anything else, and the first reading of it — "this lane emits
+0/10" — was wrong. It is worth a supervisor-level check that no other lane has already
+committed a `0/10` verdict produced by a resumed walk.
 
 ### 1. `src/ast/engine.ts:1441-1447` — a leaked parse timer overrides a caller's exit code
 
