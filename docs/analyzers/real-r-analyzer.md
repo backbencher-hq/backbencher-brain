@@ -1684,6 +1684,130 @@ anything real R code produces. The superlinear cost there is a characteristic of
 the binding on an input shape that does not occur, not an analyzer defect — but it
 is a real cost and is recorded rather than explained away.
 
+## Incoming resolution — causes A, B and C, adjudicated
+
+`ROUND-BRIEF.md` splits an unresolved/ambiguous target column into three causes and says to
+optimise resolution rather than counts. All three are adjudicated below for R, measured
+before any analyzer edit, so that an edit which does not pay can be declined with numbers
+instead of attempted on the strength of a remedy that reads well.
+
+Instrument: `validation/m14/fixtures/r/r-cause-a-counterfactual.ts`, committed output
+`r-cause-a-counterfactual.txt`. Population: the whole admitted set — **2,184 files across
+16 repositories, no sampling**, corpus set sha256 `953c0314…`, production `parseFile`,
+analyzer sha256 `ecb02eec…`. 79,878 edges, 29,556 symbols, 0 parse failures, 2 files on
+regex fallback.
+
+The instrument scores alternative key spaces **over the same bytes**, so every row below is
+a count over one file set and one analyzer build and the rows are directly comparable.
+
+### B — FORMAT MISMATCH: 0 edges recoverable. The recipe's predicate is unsound in R
+
+`diagnose-incoming.mts`'s B recipe counts a target recoverable when it contains a `.` and
+its final segment is a published name. Over the whole population that is **209 dotted
+targets carrying 2,598 edges** (`r-b-pair-verify.txt`), and the recipe's predicate calls all
+2,598 recoverable. Classified, they are:
+
+| class | pairs | edges | share | same file as the edge | target declared anywhere |
+|---|---|---|---|---|---|
+| INFIX — `is.null`→`null`, `do.call`→`call`, `file.path`→`path` | 170 | 2,488 | 96% | 0 | **0** |
+| LEADING_DOT — `.rows`→`rows` | 21 | 74 | 3% | 1 | 0 |
+| NAMESPACE — `pkg::fn`→`fn` | 18 | 36 | 1% | 0 | 0 |
+
+933 of the 2,598 edges target `is.null`, and the corpus declares `null` in exactly two
+files. Retargeting them resolves 933 `calls` edges onto declarations that never mention
+the target. `targetDeclaredSomewhere` is **0 for all 209 pairs**: nowhere in 2,184 files is
+the dotted form itself published, so there is no positive evidence the two spellings are one
+object. `.` is a legal R identifier character and a leading `.` is the internal-object
+convention, so `.rows` and `rows` are different declarations by the language's own rules.
+**Nothing was changed**, because the recipe would have moved 2,598 edges onto false
+declarations. Overturn: a corpus pair with `targetDeclaredSomewhere = 1` whose two
+declarations share a body. None exists in this population.
+
+### A — NAME IS NOT AN IDENTIFIER: the prescribed fix is a NET LOSS in R
+
+The brief's remedy is "publish an identifier that includes the owner or module". For R the
+owner is the package, and the package is the repository, so the fix specialises to a
+per-repository key. Scored with `incoming-check.ts`'s own test in both columns:
+
+| key space | ambiguous | unresolved |
+|---|---|---|
+| FLAT — what ships today | **11,774** | **24,021** |
+| D2 — per-repository key | **3,541** | **37,810** |
+
+D2 buys 8,233 ambiguous edges and pays **13,789 edges that resolve today becoming
+unresolved**, because the source package declares nothing by that name. It is a net loss on
+the instrument's own two columns, so **the edit was not applied**. The 11,774 partition:
+
+| bucket | edges | meaning |
+|---|---|---|
+| recovered by qualifying the key | 4,424 | the second kind came from *another* package; the source package is kind-clean |
+| lost — ambiguous becomes unresolved | 3,809 | the source package declares nothing by that name |
+| survives any qualification | 3,541 | a genuine two-kind collision *inside* one package |
+
+4,424 + 3,809 + 3,541 = 11,774.
+
+The surviving 3,541 is not a spelling defect. R has no function declaration distinct from a
+variable declaration, so one package can bind `f` to a closure in one file and to a vector
+in another; both are true declarations and one key cannot separate them. Removing *those*
+means choosing one kind for R bindings — the D1 column below — not qualifying a name.
+
+**D1, the kind-collapse bound.** If the function/variable distinction were not published,
+ambiguity would fall 11,774 → **6,625** (−5,149, 43.7%). That is a bound, not a proposal:
+it publishes nothing, and dropping `SymbolKind.Function` is a much larger contract edit than
+the number alone justifies.
+
+**A name-space change provably cannot move the unresolved column.** A per-repository key is
+a *partition* of FLAT, which already indexes every published `name` **and** every published
+`qualifiedName` across all 16 repositories. A target absent from FLAT is therefore absent
+from every one of its partitions, and the instrument confirms it rather than arguing it:
+of 24,021 unresolved edges, **0** have the bare name published in any repository
+(`unresRepoHasBare = 0`). Any proposal claiming a naming fix moves the unresolved column is
+claiming otherwise.
+
+### C — EXTERNAL: 88.6% of the residue, and the marker is not lane-fixable
+
+The same walk buckets the 24,021 unresolved edges over 2,991 distinct target names **by
+target syntax**, so no name list is asserted:
+
+| bucket | edges | names | share | decidable from |
+|---|---|---|---|---|
+| PKG-QUALIFIED | 2,503 | 722 | 10.4% | the target contains `::` or `:::` |
+| DOT-LEADING | 245 | 57 | 1.0% | the target starts with `.` |
+| RESERVED-WORD | 2 | 2 | 0.0% | the target is in `?Reserved` |
+| BARE-RESIDUE | 21,271 | 2,210 | 88.6% | **nothing — not subdivided** |
+
+Three results:
+
+1. **There is no fabricated-edge class.** RESERVED-WORD is 2 edges (`NA`, `next`). R's
+   grammar gives `if`/`for`/`while` their own node types rather than a call with a callee,
+   so the analyzer's call rule cannot reach them. `return` (1,397 edges) and `invisible`
+   (764) are *not* in this bucket because both are real base functions called in call
+   position — those edges are true edges to external symbols, not syntactic artefacts.
+2. **The external marker cannot be an analyzer decision.** Whether `cli` or `utils` is inside
+   the corpus is a fact about the *corpus*, and the analyzer analyses one file: it cannot
+   know which packages the index will contain. Externality must be marked at index time.
+   That is shared machinery (`src/ast/engine.ts` / the indexer), so it is a §8 report item.
+3. **BARE-RESIDUE is left whole on purpose.** Its 21,271 edges are base R, another package
+   or a runtime argument, and nothing in this corpus separates the three: no corpus file
+   *is* base R, and `Rscript` is not installed in this environment, so no authoritative
+   export list can be produced here. A hand-written name list would make the census a
+   statement about that list rather than about R — the substitution
+   `r-ambiguity-split.ts` already refuses. What is needed is **one vendored base-R export
+   list as a shared artifact**: every lane's cause C needs it and no lane can produce it
+   alone.
+
+### One instrument bug, recorded because it read as a finding
+
+The D2 index key was built as `` `${repo}\0${name}` `` — a literal NUL byte, written into
+the file by the editor — while the lookup spelled it `` `${repo}${name}` ``. Every D2 counter
+therefore read 0 and the first run printed "source repo declares nothing by that name
+100.0%", which is indistinguishable from a real finding. One shared `repoKey()` now builds
+both sides, with a separator no repository name or R identifier can contain, so
+`repo + SEP + name` cannot collide the way bare concatenation can (`ab`+`c` against
+`a`+`bc`). **The number in this section is the post-fix number**; the pre-fix run is not
+quoted anywhere.
+
+
 ## Limitations
 
 Declared non-empty because R is Turing-complete, and each entry carries the
@@ -1778,6 +1902,20 @@ number that bounds it rather than an adjective.
   from the edge that the base came from another package. Measured cost: **1
   occurrence** in 2,342 corpus files, so the loss is bounded and named rather
   than fixed.
+- **Cross-package edges cannot be resolved, and a per-package key space would make that
+  worse rather than better.** 13,789 of 79,878 edges name something the source package does
+  not declare, and D2 would move every one of them from resolved to unresolved to buy 8,233
+  fewer ambiguous edges (11,774 → 3,541 against 24,021 → 37,810 unresolved). Measured, not
+  estimated: `r-cause-a-counterfactual.txt`. So the lane publishes a flat key space
+  deliberately, and the 24,021 unresolved edges are the price of the choice rather than an
+  unexamined defect.
+- **External references are not marked, and cannot be from an analyzer.** 21,271 of the
+  24,021 unresolved edges name something no corpus file defines, and whether a given target
+  is inside the corpus is a corpus-level fact a single-file analyzer cannot know. 2,503 of
+  them are decidable from the target string alone (`pkg::fn`), 245 by the leading-dot
+  convention, and the remaining 21,271 are not subdivisible here because this environment
+  has no `Rscript` and therefore no base-R export list. Until an external marker exists at
+  index time, the unresolved column mixes externals with genuine misses.
 - **A class whose name is a runtime expression cannot be published.** 2
   occurrences (`S7/inst/doc/performance.R:68` and `:104`), where the name is a
   `for` variable over generated strings. Correct to omit, but the omission is
