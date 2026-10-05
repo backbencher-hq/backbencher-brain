@@ -86,8 +86,42 @@ function defaultEvidenceLoader(file: string): Record<string, unknown> | null {
   }
 }
 
+/** The verdict a row may publish: derived from the EVIDENCE RECORD, never from
+ *  the hand-maintained ledger.
+ *
+ *  The defect this fixes (found at HEAD a0ed9eade by re-running this gate on a
+ *  machine with no nvim): the cell was `issue.status === "verified" ?
+ *  \`verified (${passed}/${passed})\` : issue.status`. Two lies in one
+ *  expression —
+ *    (a) the DENOMINATOR WAS THE NUMERATOR, so `verified (31/31)` was
+ *        arithmetic about itself, never the record's real check count; and
+ *    (b) the word came from the LEDGER, which no gate projects, so a row read
+ *        `verified` while the record on disk read `blocked`. With nvim absent
+ *        the generator printed `verified (0/0)` — a green cell for a leg that
+ *        ran zero checks. Contract §8.3: silence is guilt, skipped = failed.
+ *  Now: the record's own status decides, a record with ZERO checks can never
+ *  read `verified`, and a `blocked` record prints its reason.
+ */
+function statusCellFor(issue: LedgerIssue | undefined, evidence: Record<string, unknown> | null): string {
+  const checks = Number(evidence?.checks ?? 0)
+  const passed = Number(evidence?.passed ?? 0)
+  const failed = Number(evidence?.failed ?? 0)
+  const recordStatus = typeof evidence?.status === "string" ? evidence.status : null
+  const reason = typeof evidence?.reason === "string" ? evidence.reason : typeof evidence?.blockedReason === "string" ? evidence.blockedReason : null
+  const blockedLegs = ((evidence?.blockedLegs as Array<{ leg: string }>) ?? []).map((b) => b.leg)
+  if (!evidence) return `missing evidence file (ledger says ${issue?.status ?? "no entry"})`
+  if (checks === 0) return `known-gap (0 checks ran — a gate that ran nothing proves nothing; ledger says ${issue?.status ?? "no entry"})`
+  const tally = `${passed}/${checks}`
+  if (recordStatus === "blocked") return `blocked (${tally}): ${reason ?? (blockedLegs.length > 0 ? blockedLegs.join(", ") : "no reason recorded in the evidence file")}`
+  if (recordStatus !== "verified") return `${recordStatus} (${tally})`
+  if (failed !== 0 || passed !== checks) return `known-gap (${tally}, ${failed} failed) — the record does not carry a green verdict`
+  return `verified (${tally})`
+}
+
 function claimLevelFor(issue: LedgerIssue, evidence: Record<string, unknown> | null): string {
-  if (issue.status !== "verified") return "unset (not verified)"
+  if (!evidence) return "unset (no evidence file)"
+  const recordStatus = typeof evidence.status === "string" ? evidence.status : "missing"
+  if (recordStatus !== "verified") return "unset (not verified)"
   const blocked = (evidence?.blockedLegs as Array<{ leg: string }>) ?? []
   if (blocked.length === 0) return "I3 (editor session machine-driven)"
   return `I2 (config + wire capabilities verified; ${blocked.length} blocked leg${blocked.length > 1 ? "s" : ""}: ${blocked.map((b) => b.leg).join(", ")})`
@@ -102,8 +136,7 @@ function generateMatrix(
     const issue = ledger.issues.find((i) => i.code === editor.code)
     const evidenceFile = issue?.evidence?.evidenceFile
     const evidence = evidenceFile ? evidenceLoader(evidenceFile) : null
-    const passed = evidence?.passed ?? issue?.evidence?.passed
-    const status = issue?.status === "verified" ? `verified (${passed}/${passed})` : issue?.status ?? "missing"
+    const status = statusCellFor(issue, evidence)
     rows.push({
       editor: editor.name,
       issue: `#${editor.issue}`,
@@ -148,10 +181,57 @@ function main(): void {
   // --- G1/G2: generation is sourced and honest -----------------------------
   const fresh = generateMatrix(ledger)
   const n1 = ledger.issues.find((i) => i.code === "N1")
-  check("V1: N1 evidence supports an I3 row", n1?.status === "verified" && fresh.includes("Neovim") && /I3 \(editor session machine-driven\)/.test(fresh.split("| Neovim ")[1]?.split("\n")[0] ?? ""))
+  const n1Row = fresh.split("| Neovim ")[1]?.split("\n")[0] ?? ""
+  const n1Record = defaultEvidenceLoader(n1?.evidence?.evidenceFile ?? "N1.json")
+  // An I3 row is earned by the RECORD being verified, never by the ledger
+  // claiming it (see statusCellFor). On a machine with no nvim the record is
+  // `blocked` and the row must say so — never `I3`.
+  const n1RecordVerified = n1Record?.status === "verified"
+  check(
+    "V1: the N1 row's claim level is exactly what the N1 record proves",
+    n1RecordVerified
+      ? /\| #617 \| I3 \(editor session machine-driven\) \|/.test(n1Row)
+      : /\| #617 \| unset \(not verified\) \|/.test(n1Row) && !/verified/.test(n1Row.split("|").slice(-2)[0] ?? ""),
+    `record=${String(n1Record?.status)} row=${n1Row.slice(0, 120)}`,
+  )
   for (const code of ["J1", "Z1", "H1"]) {
     const issue = ledger.issues.find((i) => i.code === code)
-    check(`V1: ${code} row carries an I2 claim (not I3)`, issue?.status === "verified" && new RegExp(`\\| ${code === "J1" ? "JetBrains \\(LSP4IJ\\)" : code === "Z1" ? "Zed" : "Helix"} \\| #\\d+ \\| I2 `).test(fresh), fresh.slice(0, 100))
+    const rec = defaultEvidenceLoader(issue?.evidence?.evidenceFile ?? `${code}.json`)
+    const row = fresh.split(`| ${code === "J1" ? "JetBrains (LSP4IJ)" : code === "Z1" ? "Zed" : "Helix"} `)[1]?.split("\n")[0] ?? ""
+    // I2 (not I3) whenever blocked legs are declared, whatever the ledger says.
+    check(
+      `V1: the ${code} row carries an I2 claim (not I3)`,
+      rec?.status === "verified" && ((rec?.blockedLegs as unknown[]) ?? []).length > 0 && new RegExp(`\\| #\\d+ \\| I2 `).test(row),
+      `record=${String(rec?.status)} blockedLegs=${((rec?.blockedLegs as Array<{ leg: string }>) ?? []).length} row=${row.slice(0, 80)}`,
+    )
+  }
+  // The vacuity guard that the `verified (p/p)` defect walked past: a row may
+  // never read `verified` while its record ran zero checks.
+  {
+    const vacuous: string[] = []
+    for (const editor of EDITORS) {
+      const issue = ledger.issues.find((i) => i.code === editor.code)
+      const rec = defaultEvidenceLoader(issue?.evidence?.evidenceFile ?? `${editor.code}.json`)
+      const cell = fresh.split(`| ${editor.name} `)[1]?.split("\n")[0]?.split("|").slice(-2)[0]?.trim() ?? ""
+      if (/^verified/.test(cell) && Number(rec?.checks ?? 0) === 0) vacuous.push(`${editor.code}: ${cell}`)
+    }
+    check("V1: no row reads `verified` while its evidence ran zero checks", vacuous.length === 0, vacuous.join("; "))
+  }
+  // The denominator honesty guard: the cell's tally must be the record's real
+  // passed/checks, never the old `passed/passed` self-arithmetic.
+  {
+    const fabricated: string[] = []
+    for (const editor of EDITORS) {
+      const issue = ledger.issues.find((i) => i.code === editor.code)
+      const rec = defaultEvidenceLoader(issue?.evidence?.evidenceFile ?? `${editor.code}.json`)
+      const cell = fresh.split(`| ${editor.name} `)[1]?.split("\n")[0] ?? ""
+      const tally = cell.match(/\((\d+)\/(\d+)\)/)
+      if (!tally) continue
+      if (tally[1] !== String(rec?.passed ?? 0) || tally[2] !== String(rec?.checks ?? 0)) {
+        fabricated.push(`${editor.code}: cell ${tally[0]} vs record ${rec?.passed}/${rec?.checks}`)
+      }
+    }
+    check("V1: every status tally equals the record's own passed/checks", fabricated.length === 0, fabricated.join("; "))
   }
   check("V1: every non-baseline row links its evidence file", (fresh.match(/\[([A-Z0-9]+)\.json\]\.\.\/\.\.\/validation/g) ?? []).length >= 4 || (fresh.match(/\.json\)/g) ?? []).length >= 4)
   check("V1: graph delta declared per editor (no silent inheritance)", fresh.includes("VS Code-only in v3") || fresh.includes("NOT in this editor"))
@@ -182,8 +262,35 @@ function main(): void {
   const h1 = missingLedger.issues.find((i) => i.code === "H1")!
   h1.status = "planned"
   delete h1.evidence
-  const missingMatrix = generateMatrix(missingLedger)
-  negative("V1 mutant: planned/missing evidence degrades the row to unset", missingMatrix.includes("unset (not verified)") && missingMatrix.includes("missing"))
+  const missingMatrix = generateMatrix(missingLedger, (f) => (f === "H1.json" ? null : defaultEvidenceLoader(f)))
+  negative("V1 mutant: a missing evidence file degrades the row to unset and says the file is missing", missingMatrix.includes("unset (no evidence file)") && missingMatrix.includes("missing evidence file"))
+
+  // The exact defect that shipped: a ledger claiming `verified` over a record
+  // that ran ZERO checks (nvim absent). The row must NOT read `verified`, and
+  // the mutant must be caught — this is the guard that would have failed when
+  // the cell was `verified (${passed}/${passed})` off the LEDGER's status.
+  {
+    const zeroChecks: Record<string, unknown> = { status: "blocked", checks: 0, passed: 0, failed: 0, reason: "nvim absent" }
+    const vacuousCell = statusCellFor({ code: "N1", githubIssue: 617, status: "verified" }, zeroChecks)
+    negative(
+      "V1 mutant: a verified-LEDGER + zero-check-RECORD row is refused `verified` (the vacuity guard)",
+      !/^verified/.test(vacuousCell) && vacuousCell.includes("0 checks ran"),
+      vacuousCell,
+    )
+    const lyingStatus = statusCellFor({ code: "N1", githubIssue: 617, status: "verified" }, { status: "blocked", checks: 1, passed: 0, failed: 1, reason: "cursor CLI not found" })
+    negative(
+      "V1 mutant: a blocked record over a verified ledger publishes `blocked` with its reason, never `verified`",
+      lyingStatus.startsWith("blocked (0/1)") && lyingStatus.includes("cursor CLI not found") && !lyingStatus.includes("verified ("),
+      lyingStatus,
+    )
+    // Denominator honesty: a record with 31 of 38 checks must print 31/38.
+    const partial = statusCellFor({ code: "N1", githubIssue: 617, status: "verified" }, { status: "verified", checks: 38, passed: 31, failed: 0 })
+    negative(
+      "V1 mutant: a partially-passing record never prints a `verified (p/p)` self-arithmetic tally",
+      !partial.includes("(31/31)") && partial.includes("known-gap") && partial.includes("31/38"),
+      partial,
+    )
+  }
 
   // --- Persist evidence ----------------------------------------------------------
   const failed = checks - passed
@@ -205,6 +312,7 @@ function main(): void {
     claimLevel: "n/a — this issue produces a truth table, not a claim",
     limitations: [
       "The matrix's editor/column shape is declared (4 adapters + the VS Code baseline); every VALUE is generated from the ledger and evidence files.",
+      "A row's Status cell is derived from its EVIDENCE RECORD, never from the ledger entry: the ledger is hand-maintained and no gate projects it, so an editor leg whose record is `blocked` on this machine (no nvim) publishes `blocked` with the record's reason and an unset claim level, not `I3`.",
     ],
   }
   mkdirSync(path.join(ROOT, "validation/m27/results"), { recursive: true })
