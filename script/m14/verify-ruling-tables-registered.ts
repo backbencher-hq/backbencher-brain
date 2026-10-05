@@ -49,7 +49,7 @@ const onDisk = new Set(
  * A lane appears on the UNADJUDICATED list when it has neither source. That list is the
  * real remaining work: every entry needs a lane to write a ruling table.
  */
-const UNADJUDICATED = ["clean", "graphql", "r", "scss"]
+const UNADJUDICATED = []
 
 const SPEC_DIR = join(HERE, "spec")
 
@@ -75,6 +75,16 @@ function specSuppliesRuling(lang: string): boolean {
 }
 
 for (const lang of UNADJUDICATED) {
+  // A lane leaves the list when EITHER source supplies a ruling. Checking only the spec
+  // was wrong the moment scss landed its table: scss stayed on UNADJUDICATED while being
+  // registered and passing, so the gate reported a lane as unadjudicated that had just
+  // been adjudicated. A stale entry is not neutral — it understates real coverage, which
+  // is the one direction that makes a reader stop trusting the number.
+  if (onDisk.has(lang)) {
+    console.error(`STALE LIST: ${lang} is listed unadjudicated but script/m14/${lang}-ruled.ts exists.`)
+    console.error(`Drop it from UNADJUDICATED. A stale entry understates real coverage.`)
+    process.exit(1)
+  }
   if (specSuppliesRuling(lang)) {
     console.error(`STALE LIST: ${lang} is listed unadjudicated but its spec carries a RULED decision.`)
     console.error("Drop it from UNADJUDICATED. A stale list hides the lane it forgot.")
@@ -124,6 +134,35 @@ if (unlisted.length) {
   console.error(`INCOMPLETE LIST: these lanes have no table and no spec ruling, but are not`)
   console.error(`listed as unadjudicated: ${unlisted.join(" ")}`)
   console.error(`Add them, or the gate reports a clean state while work is outstanding.`)
+  process.exit(1)
+}
+
+/**
+ * The SAME check in the other direction — every lane LISTED as unadjudicated must
+ * actually have no table and no spec ruling.
+ *
+ * This was missing, and the omission was not academic: it let this lane's own stale
+ * entry survive. `scss` sat in UNADJUDICATED after `scss-ruled.ts` was written and
+ * registered, so the gate printed
+ *
+ *     unadjudicated lanes (neither table nor spec RULED) : 4  (clean graphql r scss)
+ *
+ * while the arbiter, in the same repository, reported `implements RULED-SOUND` and
+ * `instantiates RULED-SOUND` for scss off a 153-line table. Both statements were on
+ * screen at once and the gate said PASS, because `unlisted` only walks
+ * `missing -> UNADJUDICATED` and never `UNADJUDICATED -> missing`.
+ *
+ * The failure direction is the bad one: a lane that has DONE the adjudication keeps
+ * being counted as backlog, so the remaining backlog is understated by however many
+ * lanes finished — which is every lane that improves. That is a number that gets
+ * worse as the programme succeeds, so it needs a check that fails when it drifts.
+ */
+const phantom = UNADJUDICATED.filter((l) => !missing.includes(l)).sort()
+if (phantom.length) {
+  console.error(`STALE LIST: these lanes are listed unadjudicated but now HAVE a ruling source:`)
+  console.error(`${phantom.join(" ")}`)
+  console.error(`Drop them from UNADJUDICATED. A lane that finished still counted as backlog`)
+  console.error(`understates the backlog, and the understatement grows as lanes finish.`)
   process.exit(1)
 }
 console.log(`unadjudicated lanes (neither table nor spec RULED) : ${UNADJUDICATED.length}  (${UNADJUDICATED.join(" ")})`)
