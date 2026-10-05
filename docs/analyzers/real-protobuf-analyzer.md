@@ -5,7 +5,7 @@ pinned** grammar.
 
 | | |
 |---|---|
-| Analyzer | `src/ast/real-protobuf-analyzer.ts` (1,274 lines) |
+| Analyzer | `src/ast/real-protobuf-analyzer.ts` (1,416 lines) |
 | Grammar | `grammars/tree-sitter-proto/` — `amaanq/tree-sitter-proto` @ `e9f6b43f`, 8 patches |
 | Wired WASM | `wasm/tree-sitter-protobuf.wasm` — 81,735 B, sha256 `4624eb6d4b7830dd…` |
 | Replaced WASM | `fixtures/graphql/baseline/tree-sitter-proto-UPSTREAM.wasm` — 72,342 B, sha256 `dbbde8a8f047b6b6…` |
@@ -4654,3 +4654,225 @@ The audit's unchanged headline is also a small argument for keeping it: it is
 computed from a different end of the edge than the census's resolution rate, and two
 instruments reading different ends agreeing that nothing moved is worth more than
 either alone.
+
+---
+
+# PASS 17 — the exit code is not the verdict, and the corpus is not a constant
+
+Two things this pass set out to check, both of which turned out to be load-bearing, and
+one of them is not this lane's code.
+
+## The arbiter's exit code is not a function of its verdict
+
+`script/m14/ontology-coverage-gate.ts` computes its summary line and its exit code from
+ONE array:
+
+```
+script/m14/ontology-coverage-gate.ts:383-397
+  console.log(`emitted ${emitted.length}/10 … FALSIFIED ${falsified.length} …`)
+  process.exitCode = falsified.length + unjustified.length === 0 ? 0 : 1
+```
+
+So `FALSIFIED 0` with `ruled-without-justification 0` **forces** exit 0, and no code path
+in that file reaches 1 from a passing verdict. Observed anyway. Run (c) of
+`script/m14/protobuf-ruling-table-proof.mts` — the derived gate with this lane's ruling
+table wired in AND `protobuf` added to `LANGS`, so both instruments read the protobuf
+grammar — printed
+
+```
+emitted 5/10   ruled-sound 5   FALSIFIED 0   ruled-without-justification 0
+```
+
+and the process exited **1**. Three full runs of the proof: run (c) exited 1 once and 0
+twice, with a byte-identical verdict line all three times. Load-dependent, which is what
+ten lanes sharing one machine predicts.
+
+### The cause, and it is in a file this lane does not own
+
+`src/ast/engine.ts:1441-1447` arms a per-file self-destruct and disarms it on the line
+immediately after the parse, with no `finally` and no catch in between:
+
+```ts
+const parseBomb = setTimeout(() => {
+  process.stderr.write(`[BB-HANG] parser stuck 120s on ${filePath} — exiting\n`)
+  process.exit(1)
+}, 120000)
+
+const tree = parser.parse(content)
+clearTimeout(parseBomb)      // skipped when parse() THROWS
+```
+
+`parser.parse` is synchronous WASM and a WASM trap **throws**. This lane loses files to
+exactly that trap. `parseFile` catches it (`src/ast/pool-worker.ts:1222-1237`), prints
+`[BB-PARSE-ERR]`, and falls back to `extractFallback` — but the catch cannot reach
+`parseBomb`, because the timer belongs to a frame that has already unwound. The walk
+continues over the remaining files. When 120 s have elapsed since the throwing file, the
+stale timer calls `process.exit(1)` inside a process that already computed and printed
+its verdict.
+
+### Three measured instances, from this pass's own logs
+
+| tool | trap | what printed afterwards | then | exit |
+|---|---|---|---|---|
+| `protobuf-census.ts` | `apikeys/v2/resources.proto`, `google/api/auth.proto` | the full 10-row table **and** `wrote …/census.json` | `[BB-HANG]` naming `apikeys/v2/resources.proto` | **1** |
+| `protobuf-incoming-audit.mts` | `google/api/backend.proto` (log line 10) | `declarations 38877; with >=1 inbound edge 37406 (96.22%); with none 1471` (log line 30) | `[BB-HANG]` naming `backend.proto` | **1** |
+| `protobuf-ruling-table-proof.mts` run (c) | — | `FALSIFIED 0` | — | **1** in 1 of 3 runs |
+
+**The `[BB-HANG]` text is a false attribution in both logged cases.** It claims the parser
+was `stuck 120s` on a file whose parse had already thrown, been caught, been counted, and
+whose tool went on to finish its work and write its output. A file that returned cannot
+be stuck. It names the file whose abandoned frame armed the timer, not a file that hung —
+and in the census case it named a file the same log had already recorded as handled.
+
+### The instrument, and what it got wrong twice before it got it right
+
+`script/m14/protobuf-stale-watchdog.mts`, new and lane-owned.
+
+| mode | what it does | result |
+|---|---|---|
+| `--arm` | reproduces the **shape** of `engine.ts:1441-1447` with a throw injected between the parse and the disarm | `MARKER pid=… verdict=clean-eligible`, then at 120 s `[BB-HANG] … — exiting`, **exit 1** — a code the probe never chose, no error anywhere, correct result already on stdout |
+| corpus arm | all corpus files through production `parseFile`, watching stderr for a trap | **NEGATIVE, reported as one: 0 traps in 847 files, largest-first, and 0 in the same 847 in `protobuf-census.ts`'s own discovery order** |
+
+The corpus arm is a real negative result and it is the informative half: the wasm trap is
+not a property of any single file, and it did not reproduce under two walk orders this
+pass while the census on the same 847 files trapped two. It is load- and order-sensitive,
+which is consistent with pass 11's finding that the rate varies 2.9× between runs of one
+file and that the locality hypothesis does not reproduce on a 23× larger sample.
+
+Two things the probe got wrong before it measured anything, both recorded because the
+alternative is a probe that agrees with whatever it is supposed to test:
+
+- The `--arm` demo first placed `clearTimeout` **outside** the `try`, which is the one
+  place `engine.ts` does not have it. It printed `SURVIVED` and exited 0 — correctly, and
+  proving the opposite of its own claim. The fix was to the shape, not to the assertion.
+- Its CLI read only `--files=N`, so `--files 60` was silently ignored and the run used the
+  default 40 **while its own banner printed the default's number**. A bounded search whose
+  whole value is the bound it used cannot report a bound the caller did not get.
+
+### A second defect, compounding, in this lane's own file
+
+`script/m14/protobuf-ruling-table-proof.mts:115-120` filters `BB-PARSE-ERR` and `BB-HANG`
+out of **both** streams:
+
+```ts
+const NOISE_TOKENS = ["BB-PARSE-ERR", "BB-HANG"]
+```
+
+That is why the failing run (c) above presented as a verdict with no cause: the filter
+removed the only two lines that could explain a non-zero exit. The filter is right for a
+verdict table and wrong for a diagnosis, and it is the same failure shape pass 14 found in
+this lane's probes — an instrument that discards the evidence it needs.
+
+## The corpus is shared, and it moved DURING this pass
+
+The corpus root `$HOME/fixtures/repositories` is shared by ten lanes and it is
+not stable while they work. Measured across this pass:
+
+| when | `.proto` files | repositories |
+|---|---|---|
+| the numbers passes 1–16 were written against | 821 | 18 |
+| this pass's census | **847** | **21** |
+
+Three of the repositories were cloned by **another lane** at 19:11–19:15, i.e. *while this
+pass's construct probe was walking the corpus*: `gql-graphql-mesh` (24 `.proto`),
+`gql-ruby` (1), `gql-gqlgen` (1). They are graphql-language checkouts that happen to carry
+`.proto` files, and they are not protobuf-lane corpus by intent.
+
+This is not a cosmetic note about denominators. It moved a verdict-relevant count:
+
+```
+overrides    1 edge in 1 file  ->  2 edges in 2 files
+  + gql-ruby/lib/graphql/tracing/perfetto_trace/trace.proto
+```
+
+`overrides` was the lane's thinnest EMITTED type, resting on a single edge from a single
+`nvim-treesitter` test file — the weakest possible evidence base for a type the pass-14
+oracle had just been written for. A graphql lane's clone doubled it. The count is now 2,
+in 2 files, and the honest reading is that the second edge arrived by accident of corpus
+composition rather than by design; it is reported at its measured value and not weighted
+as if the two files were chosen.
+
+Every corpus-denominated number in this document therefore carries the corpus it was
+measured on. Where a pass-16 figure and this pass's figure differ, the difference is
+corpus growth unless the text says otherwise — and this document is a log, so the earlier
+figures are left standing with their own denominators rather than silently restated.
+
+## The two gate verdicts, side by side, unchanged in substance
+
+| instrument | grammar actually read | verdict |
+|---|---|---|
+| `ontology-coverage-gate.ts protobuf`, untouched | **bash's** — `protobuf` is absent from `LANGS`, so `(LANGS)[LANG]?.wasm ?? "tree-sitter-bash.wasm"` falls through | exit 1 — `emitted 5/10 ruled-sound 3 FALSIFIED 2`, against **81** node types |
+| `protobuf-ruling-table-proof.mts` run (c) | protobuf's | `emitted 5/10 ruled-sound 5 FALSIFIED 0`, against **94** node types |
+
+`grep -c protobuf script/m14/differential.ts` → **0**. The 2 FALSIFIED rows are the
+fall-through reading a corpus of `.proto` files with the bash grammar, and the lane's own
+`countOnTree` guard reports that as loudly as it can (`WRONG GRAMMAR — this probe was
+handed a tree whose root node is 'program', not 'source_file'`) rather than reporting a
+confident zero. All five rulings re-measured under the correct grammar this pass, on 846
+files: `calls` 0, `extends` 0, `implements` 0, `references` 0 (instrument A, 94 observed
+node types, intersection empty), and `instantiates` 0 (instrument B — 1,909 `block_lit`
+nodes, `aggregateLiteralsByImmediateParentNode` is `{ constant: 1909 }`, one key).
+
+## Pass 17 gate table
+
+| Command | Result |
+|---|---|
+| `npx tsc --noEmit` | **no diagnostics** |
+| `npx tsx script/m14/firing-check.ts --files 120 protobuf` | **3/10 fired, 2,069 edges, 10/120 files**, 0 degraded — bit-identical to pass 15 and 16, which is the check that nothing was added |
+| `npx tsx script/m14/ontology-coverage-gate.ts protobuf` | **exit 1** — `emitted 5/10 ruled-sound 3 FALSIFIED 2` against 81 node types (bash's), both rows the fall-through above |
+| `npx tsx script/m14/protobuf-ruling-table-proof.mts` | run (c) `emitted 5/10 ruled-sound 5 FALSIFIED 0` against **94** node types; run (c) exited 1 in 1 of 3 full runs with an identical verdict line — the false-exit finding above |
+| `npx tsx script/m14/protobuf-construct-probes.mts` | 846 files, **all 5 rulings 0**, 94 observed node types; `instantiates` instrument B: 1,909 `block_lit`, parent map `{ constant: 1909 }` |
+| `npx tsx script/m14/protobuf-census.ts` | 847 ok / 0 fail; `uses` **13,467 @ 73.07%**, `contains` **40,573 @ 99.23%**, `imports` **1,571 @ 0%**, `exports` **4 @ 0%**, `overrides` **2 @ 100%**; 0 empty names / bad kinds / `unknown` / self-loops; **exit 1 from the stale watchdog**, after the table and the output file |
+| `npx tsx script/m14/protobuf-incoming-audit.mts` | 3,629 cross-file targets: 1,979 vouched by a file this one imports, 1,597 published but not imported, 53 published by no file; `declarations 38877; with >=1 inbound edge 37406 (96.22%)`; **exit 1 from the stale watchdog**, naming a file its own log line 10 had already recorded as trapped |
+| `npx tsx script/m14/run-fixtures.ts --lang protobuf` | **11 pass / 0 fail** |
+| `bun run script/m14/tmp/protobuf/probe/mutant-sweep.mts` | **33 caught, 0 survived** |
+| `npx tsx script/m12/verify-regex-census.ts` | **PASSED**, 0 protobuf rows |
+| `npx tsx script/m14/protobuf-stale-watchdog.mts --arm` | **exit 1** after `MARKER … verdict=clean-eligible`, `[BB-HANG]` at 120 s — the mechanism, deterministically |
+| `npx tsx script/m14/protobuf-stale-watchdog.mts --files 847` | **NEGATIVE** — 0 traps in 847 files, largest-first; and 0 again in discovery order |
+| `npx tsx script/m14/protobuf-doc-truth-proof.mts` | gate selftest **12/12**; scoped to this lane **1 analyzer, 0 findings, PASS**; whole tree exit 1 with 7 FALSE_NEGATIVE + 43 UNDOCUMENTED in other lanes, **0 lines mentioning protobuf** |
+| `bun run script/m14/verify-honesty.ts` | exit 6, 26 tree-wide failures, **0 naming a protobuf file** |
+
+## §8 items
+
+- **NEW, and it is the one that matters most:** `src/ast/engine.ts:1441-1447` — disarm
+  `parseBomb` in a `finally`, so the timer cannot outlive a throwing parse. One line, and
+  it removes every false exit recorded above. The `process.exit(1)` is a second and
+  separate question: the watchdog exists to stop an infinite loop, and a parse that has
+  already thrown cannot be one, but the disarm alone is the smaller change and is
+  sufficient. **Affects every language lane**, because every lane's census walks files
+  through the same path and any lane that loses a file to a trap arms the same timer.
+- **NEW:** `script/m14/protobuf-ruling-table-proof.mts:115-120` — this lane's own file.
+  Keep the filter for the verdict table, but print `BB-PARSE-ERR` / `BB-HANG` lines
+  whenever the run it wraps exits non-zero, so a non-zero exit is never presented without
+  its cause.
+- **UNCHANGED:** `script/m14/differential.ts` — add
+  `protobuf: { wasm: "tree-sitter-protobuf.wasm", analyzerFile: "real-protobuf-analyzer", className: "RealProtobufAnalyzer", ext: "proto" }`
+  to `LANGS`. Re-measured at this pass's HEAD: 81 node types and 2 FALSIFIED without it,
+  94 node types and 0 FALSIFIED with it.
+- **UNCHANGED:** `src/ast/parallel-indexer.ts:2164-2165` — `insertSymbol` still carries two
+  `VALUES` clauses (31 placeholders then 30), every batch throws, **0 symbols are stored**.
+- **UNCHANGED:** the `AnalyzeContext` companion index for `import path -> declaring
+  package`, worth **1,510 edges**. Still unconnected: `analyze()` is given one file, so
+  `imports` both-ends resolution is still **0%** on 1,571 edges and is reported as 0%
+  rather than as the 1,510 that a context would make walkable.
+
+## Declared limitations, pass 17
+
+- **The wasm trap did not reproduce under either walk order this pass**, so the causal
+  chain from trap to stale timer to false exit rests on three measured instances of the
+  false exit, the static shape of `engine.ts:1441-1447`, and a deterministic demonstration
+  of that shape — **not** on a reproduced trap. The chain is short and each link is
+  either measured or quoted, but it is assembled, and a reader who wants the trap itself
+  should run the census under load rather than take this pass's word for it.
+- **`overrides` is 2 edges in 2 files, and one of them arrived because another lane cloned
+  a repository mid-pass.** It is the thinnest EMITTED type in this lane and it is
+  reported at its measured value with that history attached. A type resting on two edges
+  is not a type this lane would call well-evidenced.
+- **The corpus denominators in this document are only as stable as a shared directory.**
+  Three repositories appeared during a single probe run. Any number here should be quoted
+  with the corpus it was measured on, and re-measured rather than re-read if it is being
+  used to accept or reject work.
+- **The 49 `imports` targets that resolve to nothing** (30 module-path-shaped, 19
+  include-root-shaped) and the 53 inbound-audit targets published by no file in the corpus
+  are separate populations with separate causes, and neither is fixed. Both are counted
+  rather than folded into a resolution percentage that would hide them.
