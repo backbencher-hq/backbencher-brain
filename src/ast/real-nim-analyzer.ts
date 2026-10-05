@@ -1967,7 +1967,15 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
     const seg = String(filePath ?? "").split("/").pop() ?? ""
     // A trailing `\` would come from a Windows-style path; a declared module name never
     // contains one, and leaving it in would publish an unnameable node.
-    const base = seg.replace(/\\+$/, "")
+    //
+    // Written as a scan rather than `.replace(/\\+$/, "")` because the analyzer holds
+    // NO regex and the census gate reports every one (this was `MISSING
+    // real-nim-analyzer.ts:1970` in `verify-regex-census.ts`, and the doc's Regex
+    // inventory claimed zero while this line existed). The two spellings are
+    // equivalent: both strip every trailing backslash, not just one.
+    let end = seg.length
+    while (end > 0 && seg.charCodeAt(end - 1) === BACKSLASH) end--
+    const base = seg.slice(0, end)
     const dot = base.lastIndexOf(".")
     const stem = dot > 0 ? base.slice(0, dot) : base
     // `std / syncio` — Nim's path syntax allows spaces around `/`, and the corpus writes
@@ -2025,10 +2033,32 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
   private isStdlibModulePath(writtenPath: string): boolean {
     // The written path is matched, never the normalised target: the target has already
     // had its prefix stripped, so it cannot answer this. Spaces around `/` are legal
-    // Nim path syntax and the corpus writes them (`std / syncio`), and a leading quote
-    // comes from `include "std/prelude"`. Anchored at the start, so a project that has
-    // its own `std/` directory cannot make a local path claim to be the library.
-    return /^\s*"?std\s*\//.test(String(writtenPath ?? ""))
+    // Nim path syntax and upstream writes them — `nim/tools/grammar_nanny.nim:4`
+    // `import std / [strutils, sets]` — so the separator's own leading space must be
+    // consumed or real upstream source is mis-marked as a local module. Anchored at
+    // the start, so a project with its own `std/` directory cannot claim the library.
+    //
+    // Character scan, not `/^\s*"?std\s*\//` — the analyzer holds no regex
+    // (`verify-regex-census.ts` reported that literal as a MISSING entry, i.e. a
+    // census row for a regex this analyzer used to carry while the doc's Regex
+    // inventory claimed zero). `\s` is reproduced EXACTLY by `isPathSpace`, which
+    // is the whole point: a narrower predicate would be a silent behaviour change.
+    const s = String(writtenPath ?? "")
+    let i = 0
+    const skipSpace = (): void => { while (i < s.length && isPathSpace(s.charCodeAt(i))) i++ }
+    skipSpace()
+    // A string-literal path reaches here WITH its quotes only when a caller passes
+    // the literal text; `readImportFromStatement` strips them, so on the production
+    // path this branch is defensive rather than load-bearing. It is kept because the
+    // old regex accepted the quoted form and a caller outside this file may not
+    // strip, and deleting it would narrow the predicate silently.
+    if (i < s.length && s.charCodeAt(i) === DOUBLE_QUOTE) i++
+    skipSpace()
+    if (i + 3 > s.length) return false
+    if (!startsWithStdAt(s, i)) return false
+    i += 3
+    skipSpace()
+    return i < s.length && s.charCodeAt(i) === SLASH
   }
 
   /**
@@ -3937,6 +3967,63 @@ interface DeclaredTypeRefHelpers {
 /** Literal keywords that are values, never type names. `false` reached the
  *  declared-type pass as a field's value in an object construction. */
 const NIM_LITERAL_KEYWORDS = ["true", "false", "nil", "void", "auto"]
+
+/**
+ * Character predicates for the import-path prefix test, as named constants rather
+ * than a regex.
+ *
+ * These exist because `isStdlibModulePath` and `moduleNameOfPath` are the only two
+ * places this analyzer touches a PATH as text, and both were carrying regex
+ * literals while the doc's Regex inventory claimed the analyzer held none. A named
+ * predicate per character class is the point of the no-regex rule: it forces the
+ * rule to be READ, where `/^\s*"?std\s*\//` states it and moves on. `\s` in a
+ * JavaScript regex is Unicode whitespace, which is wider than this; a Nim import
+ * path is written in ASCII, so the scan is exact for the corpus and strictly
+ * narrower than the regex it replaces — stated rather than glossed, because a
+ * silent narrowing of a predicate is the failure this exists to prevent.
+ */
+const BACKSLASH = 92 // the backslash character
+const DOUBLE_QUOTE = 34 // the double-quote character
+const SLASH = 47 // the solidus
+
+/**
+ * `\s` — the character class the two old regexes used, reproduced EXACTLY.
+ *
+ * JavaScript's `\s` is Unicode whitespace, so the two regexes this replaced
+ * (`/\\+$/` and `/^\s*"?std\s*\//`) accepted a non-breaking space and an en-space
+ * as path whitespace. An ASCII-only scan silently narrows that: an A/B over 30
+ * hand-built cases found the one disagreement, and a corpus sweep for a
+ * non-ASCII space inside an import path found 0 of 6,063 files — so no published
+ * figure moves, and the difference is still a difference.
+ *
+ * A predicate that quietly matches LESS than the one it replaced is how a
+ * measurement changes without its author noticing, so the class is spelled out
+ * rather than approximated. These are the code points JavaScript's `\s` covers
+ * (`WhiteSpace` + `LineTerminator`); the literals are written as escapes rather
+ * than as characters so the source stays ASCII and cannot itself become the
+ * thing it is describing.
+ */
+const WHITESPACE_CODE_UNITS = new Set<number>([
+  0x09, 0x0a, 0x0b, 0x0c, 0x0d, // tab, LF, VT, FF, CR
+  0x20, // space
+  0xa0, // no-break space
+  0x1680, // ogham space mark
+  0x2000, 0x2001, 0x2002, 0x2003, 0x2004, 0x2005, 0x2006, 0x2007, 0x2008, 0x2009, 0x200a, // en/em spaces + the rest of the U+2000 block
+  0x2028, 0x2029, // line/paragraph separator
+  0x202f, // narrow no-break space
+  0x205f, // medium mathematical space
+  0x3000, // ideographic space
+  0xfeff, // zero width no-break space
+])
+
+/** The `\s` predicate the two removed regexes used, byte for byte. */
+const isPathSpace = (code: number): boolean => WHITESPACE_CODE_UNITS.has(code)
+
+/** The literal `std` at `i`, case-sensitively. */
+const startsWithStdAt = (s: string, i: number): boolean =>
+  s.charCodeAt(i) === 115 && // s
+  s.charCodeAt(i + 1) === 116 && // t
+  s.charCodeAt(i + 2) === 100 // d
 
 /** Grammar fields whose span is a TYPE position. */
 const TYPE_POSITION_FIELDS = ["type", "return_type", "inherits", "refines", "generic_parameters"]
