@@ -1538,3 +1538,50 @@ that could not apply are recorded by hash rather than force-pushed. Two of them 
 to carry a real fix to my own arbiter (`rulingFor()` read only the spec, so measured
 rulings looked unjustified) which had already arrived by another route and is verified
 present.
+
+## Corrected scope: 19 of MY 23 lanes are ruleable, not 13
+
+`docs/analyzers/PROMPT-LAPTOP-B.md:15` is the authoritative assignment: Bash, F#, Zig,
+Lua, Julia, Nim, PHP, PowerShell, R, Dart, SQL, GraphQL, Protobuf, JSON, YAML, CSS, SCSS,
+HCL, Make, TOML, XML, Markdown, Clean.
+
+My working list had **27** entries and was wrong in **both** directions:
+
+- **Included 6 that are not laptop B's** — `groovy`, `haskell`, `java`, `python`, `ruby`,
+  `scala`. The coverage gate was therefore making claims about other laptops' backlog,
+  and I ran the arbiter over python/java/scala in this session before noticing.
+- **Missed 2 of mine** — `graphql` and `markdown`. That is why they had no agent, no
+  ruling table, and no attention, while languages belonging to another team were being
+  measured on this machine.
+
+Six wrong entries is the population defect at the largest scale I have hit it: each is a
+*true* statement about a language this laptop does not own, and together they made the
+headline number describe work nobody here is responsible for. The list in
+`verify-ruling-tables-registered.ts` now quotes the prompt **with its line number**, so
+the next reader can check it rather than trust it.
+
+### Corrected standing over my 23
+
+| ruling source | n | lanes |
+|---|---|---|
+| corpus-measured TABLE | 13 | bash css fsharp json julia lua nim php protobuf sql toml xml zig |
+| SPEC (prose) | 6 | dart hcl make markdown powershell yaml |
+| **UNADJUDICATED** | **4** | **clean graphql r scss** |
+| **ruleable** | **19 / 23** | |
+
+So the honest figure was always 19 of 23, not the 13 I had been reporting. The genuine
+gap is 4 lanes, all of them mine, all of which now have an agent.
+
+### Spec-only lanes verified with the guard relaxed
+
+`hcl    emitted 7/10  ruled-sound 3  FALSIFIED 0`
+`make   emitted 6/10  ruled-sound 4  FALSIFIED 0`
+
+Both were previously unreportable. Neither is falsified, so the earlier `toml` finding
+was a genuine defect rather than a systematic one.
+
+**One measurement caveat worth stating:** the first `hcl` run in a background batch
+printed only its corpus line and no verdict, with no hang and no parse error. It was CPU
+starvation — 15 agents on 8 cores — not a lane fault, and the same lane returned 7/10 in
+the foreground immediately after. **A silent no-output from a measurement is not a
+result**, and under contention it is indistinguishable from one.
