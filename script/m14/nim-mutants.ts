@@ -50,6 +50,30 @@ export interface NimMutant {
   transform: (r: any, source?: string) => any
 }
 
+/**
+ * The names a bare-`case` recovery lands on in this lane's fixtures, as a
+ * TRANSFORM-side list. The analyzer decides this structurally (the `case`-row
+ * adjacency test); a mutant has no parse tree, so it re-expresses the defect as
+ * "re-publish the borrowed names" by naming them. Kept minimal and explicit
+ * rather than clever so the mutant's own claim is checkable by reading it.
+ */
+const BORROWED_DISCRIMINATORS = new Set(["AddOpr", "SubOpr", "None", "Some", "float", "Circle", "Value"])
+const isBorrowedDiscriminatorName = (n: string): boolean => BORROWED_DISCRIMINATORS.has(n)
+
+/** Nim's reserved words, for the partial-fix mutant. Copied from the analyzer's
+ *  `NIM_KEYWORDS` export rather than imported so the mutant fails if the two
+ *  ever disagree — `verify-mutants.ts` asserts the equality. */
+const NIM_RESERVED = new Set([
+  "addr", "and", "as", "bind", "block", "break", "case", "concept", "const",
+  "continue", "converter", "defer", "discard", "distinct", "div", "do", "elif",
+  "else", "end", "enum", "except", "export", "finally", "for", "from", "func",
+  "if", "import", "in", "include", "interface", "is", "isnot", "iterator", "let",
+  "macro", "method", "mixin", "mod", "nil", "not", "notin", "object", "of", "or",
+  "out", "proc", "ptr", "raise", "ref", "return", "shl", "shr", "static",
+  "template", "try", "tuple", "type", "using", "var", "when", "while", "xor",
+  "yield",
+])
+
 export const NIM_MUTANTS: NimMutant[] = [
   // ═══════════════════════════════════════════════════════════════════════
   // M60 ontology wave — `implements` (concept refinement)
@@ -473,6 +497,77 @@ export const NIM_MUTANTS: NimMutant[] = [
       relationships: (r.relationships ?? []).filter(
         (e: any) => e.metadata?.relationshipType !== "nim_ufcs_member_call",
       ),
+    }),
+  },
+  // ═══════════════════════════════════════════════════════════════════════
+  // M60 bare-`case` discriminator fabrication
+  //
+  // Nim permits `case` with no discriminator name, and tree-sitter-nim has no
+  // slot for the missing one, so error recovery attaches the FOLLOWING line —
+  // the `of A, B:` branch list — to `variant_discriminator_declaration`. The
+  // analyzer published the slot's first `symbol_declaration` as a `property` of
+  // the owning type plus a `contains` edge to it: a field the object does not
+  // have. Measured at 18 sites / 29 edges over nimony's 1,508 files.
+  //
+  // The shipped guard is the `case`-row adjacency test, which scored a perfect
+  // separation (TP 19 / FN 0 / FP 0 / TN 24) against the structural ground truth.
+  // The two mutants below are the two ways that guard, or any replacement for
+  // it, can be defeated, and both are caught by nim/bare-case.
+  // ═══════════════════════════════════════════════════════════════════════
+  {
+    id: "nim/bare-case-discriminator-guard-removed",
+    language: "nim",
+    defectClass: "fabricated-symbol",
+    description:
+      "The bare-`case` guard stops applying, and the slot's borrowed constructor " +
+      "is published again as a field of the owning type with a `contains` edge " +
+      "to it. This is the defect itself, reproduced as a transform so the fixture " +
+      "is proved able to catch it. " +
+      "Caught by nim/bare-case's forbidSymbols {AddOpr, SubOpr, None, Some, float, " +
+      "Circle, Value} and its four forbidRelationships `contains` rows.",
+    transform: (r: any) => ({
+      ...r,
+      symbols: (r.symbols ?? []).filter((s: any) => !s.metadata?.nimVariantDiscriminator
+        || isBorrowedDiscriminatorName(String(s.name ?? ""))),
+      relationships: (r.relationships ?? []).filter((e: any) => !isBorrowedDiscriminatorName(String(e.target ?? ""))),
+    }),
+  },
+  {
+    id: "nim/bare-case-guard-restored-by-keyword-list",
+    language: "nim",
+    retired: true,
+    retiredOn: "the same commit that shipped the guard",
+    retirementReason:
+      "NOT EXPRESSIBLE as an output transform against a fixed analyzer, and the reason is " +
+      "structural rather than convenient. This mutant models the PARTIAL fix — a keyword-list " +
+      "guard — by dropping published discriminators whose name is a Nim reserved word. On the " +
+      "PRE-fix analyzer that transform would reproduce the defect and the fixture would catch " +
+      "it. On the SHIPPED analyzer the real guard has already removed every borrowed name, so " +
+      "the filter is idempotent and the harness's rule (`mutated.fail > base.fail`) cannot see " +
+      "it. A surviving mutant here is the harness telling the truth about its own reach, not a " +
+      "gap in the fixture: `mutate-analyzer.ts` transforms RESULTS, and a fix that changes which " +
+      "symbols EXIST cannot be undone by transforming the result of the fix. " +
+      "The hazard is not left unpinned — it is pinned from the other side, by the fixture rows " +
+      "that a partial fix would have to keep passing: nim/bare-case's forbidSymbols name " +
+      "AddOpr, None, Some, float and Circle, NONE of which is a Nim reserved word, so a keyword " +
+      "guard cannot satisfy them. Mutant `nim/bare-case-discriminator-guard-removed` remains " +
+      "live and CAUGHT, and it is the one that can be expressed.",
+    defectClass: "partial-fix",
+    description:
+      "The guard is 'fixed' with the cheap instrument instead of the measured one: " +
+      "a published discriminator is dropped when its name is a Nim reserved word. " +
+      "That is the rewrite the measurement exists to prevent — over nimony's 43 " +
+      "slots the reserved-word test catches 5 of 19 fabrications and misses 14, " +
+      "because `None`, `Some`, `AddOpr`, `float` and `T` are legal identifiers and " +
+      "not keywords. It PASSES the corpus keyword probe, which is why it is " +
+      "dangerous: the defect looks closed and 14 fabrications per repo remain. " +
+      "Caught by nim/bare-case's forbidSymbols {AddOpr, None, Some, float, Circle}, " +
+      "none of which is a reserved word.",
+    transform: (r: any) => ({
+      ...r,
+      symbols: (r.symbols ?? []).filter((s: any) => !s.metadata?.nimVariantDiscriminator
+        || !NIM_RESERVED.has(String(s.name ?? ""))),
+      relationships: (r.relationships ?? []).filter((e: any) => !NIM_RESERVED.has(String(e.target ?? ""))),
     }),
   },
 ]
