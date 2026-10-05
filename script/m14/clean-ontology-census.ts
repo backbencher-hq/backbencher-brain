@@ -383,6 +383,13 @@ if (JSON_OUT) {
     // Sharded-walk inputs, written only when sharding so an un-sharded JSON is
     // unchanged. `typeFiles` is the real list behind the 400-capped `files` count.
     ...(SHARDS > 0 ? {
+      // The shard's own FILE LIST. The driver's degenerate-partition check compares
+      // shards by a digest of this list, and nothing else: a count of parsed files
+      // cannot tell "balanced partition, everything parsed" from "six copies of shard
+      // 0", which is how the earlier driver produced six identical JSONs that summed
+      // to a plausible-looking total. The file set is the one thing a disjoint
+      // partition cannot share.
+      sampleFiles: sample.map((f) => f.rel).sort(),
       typeFiles: Object.fromEntries(ALL_TYPES.map((t) => [t, [...typeFileList[t]].sort()])),
       names: [...shardNames].sort(),
       qnames: [...shardQNames].sort(),
