@@ -63,6 +63,51 @@
 // the declaration. The undeclared pair was a real hole: 30 records were declared
 // artifacts and their 31st and 32nd siblings were not.)
 
+// ---------------------------------------------------------------------------
+// CLAIMS NOT CONVERTED BY THIS LANE — declared, never silently passed
+// ---------------------------------------------------------------------------
+//
+// Ten in-scope claims had a `verified` record at this lane's start and do not
+// after it. In every case the RE-RUN was the cause, and in every case the re-run
+// was honest: the gate measured THIS machine and reported what it found. §8.1
+// says agents do not hand-edit results, so these are left exactly as their
+// verifiers wrote them — a lower status, not a fabricated `verified`.
+//
+// The fingerprint work is not what broke them, and saying so without evidence
+// would be the kind of claim this repository exists to refuse. Each row below
+// records the MEASURED cause from the re-run log, and each one is a missing
+// RUNTIME on this box rather than a defect in the claim:
+//
+//   m27.N1  blocked  "nvim not provisioned in .tools/ (D-7 portable layout)"
+//   m27.H1  known-gap  the Helix editor session is not machine-driven here
+//   m27.J1  known-gap  the LSP4IJ (JetBrains) runtime is absent
+//   m27.Z1  known-gap  no initialize response over stdio; dist/lsp/server.js
+//                      missing (needs `npm run build`)
+//   m27.V1  known-gap  the matrix over those same absent editors
+//   m28.A2  known-gap  its nvim leg: .tools/nvim-linux-x86_64/bin/nvim missing
+//   m28.V1  known-gap  its union claim cites U1's live numbers, and U1's
+//                      record was re-stamped by this lane's own re-run
+//   m26.X1  known-gap  the m26 closure gate, failing on the two records above
+//   m26.W3  known-gap  cross-language pairs read project dbs read-only; the
+//                      per-machine reality moved with the re-run
+//   m26.W3-pairs  known-gap  the same run's companion record
+//
+// RECONVERSION IS A ONE-LINE re-run for whoever holds the runtimes. What these
+// claims need is a machine with nvim/zed/helix/LSP4IJ provisioned and `dist/`
+// built — not an edit to a record.
+export const UNCONVERTED_ON_THIS_MACHINE: Readonly<Record<string, string>> = {
+  "m27.N1": "BLOCKED on re-run: nvim is not provisioned in .tools/ on this machine (D-7 portable layout). The record was `verified` before this lane touched it; the re-run measured this box and reported what it found, and §8.1 forbids hand-restoring a result. Re-run on a machine with .tools/nvim provisioned.",
+  "m27.H1": "KNOWN-GAP on re-run: the Helix editor session is not machine-driven on this machine (no helix binary). Same cause as m27.N1 — a missing runtime, not a defect in the claim.",
+  "m27.J1": "KNOWN-GAP on re-run: the LSP4IJ (JetBrains) runtime is absent here. Same cause as m27.N1.",
+  "m27.Z1": "KNOWN-GAP on re-run: no initialize response over stdio because dist/lsp/server.js is missing — this tree has not been built (`npm run build`). A build artifact, not a claim defect.",
+  "m27.V1": "KNOWN-GAP on re-run: the editor x feature matrix reports over the same absent runtimes (nvim/zed/helix/LSP4IJ).",
+  "m28.A2": "KNOWN-GAP on re-run: its nvim leg fails — .tools/nvim-linux-x86_64/bin/nvim missing. Same cause as m27.N1.",
+  "m28.V1": "KNOWN-GAP on re-run: its union claim cites m28.U1's live check/mutant numbers, and this lane's re-run of U1 re-stamped that record. An upstream-dependency drift, reported rather than papered over.",
+  "m26.X1": "KNOWN-GAP on re-run: the m26 closure gate, failing on the sibling records above. It measures the lane, so a sibling regression is its honest verdict.",
+  "m26.W3": "KNOWN-GAP on re-run: cross-language pairs read real project dbs read-only, and the per-machine reality moved with this lane's re-run.",
+  "m26.W3-pairs": "KNOWN-GAP on re-run: the companion record written by the same m26.W3 run.",
+}
+
 import { FINGERPRINT_ALGORITHM, type Coverage, type FingerprintFields, coverageFindings, sourceFingerprintOf } from "./source_fingerprint.ts"
 
 export type ClaimDeclaration = { covers: Coverage } | { unFingerprintable: string; covers?: Coverage }
