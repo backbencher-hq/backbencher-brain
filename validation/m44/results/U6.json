@@ -2,20 +2,20 @@
   "issue": "693",
   "code": "U6",
   "milestone": "M44",
-  "status": "verified",
+  "status": "known-gap",
   "checks": 25,
-  "passed": 25,
-  "failed": 0,
+  "passed": 24,
+  "failed": 1,
   "negativeCases": 2,
   "mutantsCaught": 4,
   "mutantsTotal": 4,
-  "currentCommit": "a871d533a736e8e38cb826d80d986d3cc84022d1",
+  "currentCommit": "93f85b7a3b4d8005e6683d505e49dfe6d28ef8bf",
   "workingTreeRelevantChanges": [],
   "verifierCommand": "npx tsx script/m44/verify-usages-fallback.ts",
   "evidenceFile": "U6.json",
-  "generatedAt": "2026-09-20T02:50:47.525Z",
+  "generatedAt": "2026-10-05T14:42:41.556Z",
   "fixture": {
-    "root": "$HOME/backbencher-brain/.tools/m44-u6-fixture",
+    "root": "$HOME/Documents/Default Project/ishaq/wt/ledgers/.tools/m44-u6-fixture",
     "files": [
       "src/main/java/com/demo/App.java",
       "src/main/java/com/demo/Extra1.java",
@@ -31,7 +31,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-20T02:50:47.526Z",
-    "contentSha256": "8c59a7e613134892ab11a632555cb78de6df1ae56ae4a536f13668cf8495cd3d"
+    "sealedAt": "2026-10-05T14:42:41.558Z",
+    "contentSha256": "baa9ae5737d9378c185d5f24b01b2b3627d1ec3ad17a0e4fc51950853f969d46"
   }
 }

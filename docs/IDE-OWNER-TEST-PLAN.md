@@ -234,6 +234,13 @@ frame and the wire disagreeing is itself a finding, and the wire wins.
   deciding which one is right.
 - **Windows and macOS legs are unverified in this environment**; the Linux leg
   is the only one with a run behind it.
+- **A "CLOSED" milestone on this page is not a green tick.** M24, M25, M26, M29,
+  M44 and M55 are all closed on GitHub while carrying at least one red evidence
+  record. Read `validation/mXX/results/<CODE>.json`. The gate that enforces this
+  distinction is `npm run verify:gate-wiring` (§6a).
+- **M27 and M28 are honest-red, not broken.** Their `N1`/`A2` legs need nvim,
+  which the last audit host did not have; the records say `blocked` with the
+  reason, which is the correct answer (§8.3).
 
 ---
 
@@ -275,6 +282,42 @@ npx tsx script/m62/verify-consumers.ts    # A2: every consumer renders through t
 npx tsx script/m62/verify-arrival.ts      # A3: the M59 arrival hook + the generated doc
 npx tsx script/m62/verify-closure.ts      # X1: M62 + the whole IDE lane at one HEAD
 ```
+
+## 6a. Gate reachability — check before you trust any "CLOSED" in this program
+
+A gate nothing runs is not a gate, and this program had a long stretch where that
+was true of whole lanes. One command tells you the current state:
+
+```bash
+npm run verify:gate-wiring      # script/m61/verify-orphan-gates.ts
+```
+
+It prints the census (verifiers on disk, how many are wired, how many are
+declared-unwired), reads every lane ledger and reports any that claims `verified`
+over a record that reads `known-gap`/`blocked`, and asserts that the wiring
+`src/lsp/call_hierarchy.ts` and `src/lsp/identity.ts` name as their protecting
+gates is real. Evidence lands in `validation/m61/results/V5.json`; the declared
+orphan list with a reason each is
+[`script/m61/orphan-baseline.json`](../script/m61/orphan-baseline.json).
+
+**When you read a milestone's status in this repo**, read the record, not the
+ledger entry: `cat validation/mXX/results/<CODE>.json | grep '"status"'`. Since
+this program's gate-wiring pass the M27, M28 and M55 ledgers are *projected*
+from their records by their own governance gates, so their entries now tell the
+truth automatically. The M20, M24, M25, M26, M29, M42, M44, M45 and M61 ledgers
+are still hand-maintained and still carry `verified` over red records — treat
+those ledgers as unverified until their lanes project them, and let
+`verify:gate-wiring` tell you which ones.
+
+### The audit host this plan was last checked against (2026-10-05)
+
+macOS 14.8.4, Darwin x86_64, 12 cores / 16 GB, Node v22.14.0, **bun absent**,
+**no VS Code, Cursor, Antigravity or Windsurf installed**, no nvim/zed/helix on
+PATH. On that host: every in-editor leg (A1–J2, K1–K5) is `blocked` — there is
+nothing to click — and `script/m24/verify-harness.ts`'s `bun` leg is `blocked`.
+The M55 frame rig's `pinHonored: false` note in §4 applies: the rig records the
+ambient editor it actually found, which on the owner's Linux box was
+`/usr/bin/code` 1.138.0 rather than the pinned 1.85.0 build.
 
 ## 7. Recording your verdict
 
