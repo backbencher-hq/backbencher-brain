@@ -1053,8 +1053,9 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   private emitExtend(node: Node, lineNode: Node, ctx: ScssContext, recovered: boolean): void {
-    const target = this.extendedSelectorName(node)
-    if (!target) return
+    const found = this.extendedSelectorName(node)
+    if (!found) return
+    const target = found.name
     const owner = this.ownerForNode(node, ctx)
     if (!owner) return
     // `extends`, not `uses`. `@extend` IS Sass's inheritance: the extending selector
@@ -1085,6 +1086,19 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
         cssSpecific: true,
         isScssExtend: true,
         ...(recovered ? { scssRecoveredFromError: true, scssExtendShape: "recovered" } : {}),
+        // The TARGET was read out of a node the grammar built across a damaged region, not
+        // off the selector the statement names. That is a different claim from the statement
+        // having been recovered, and the lane already marks the statement, so it marks this
+        // too rather than letting a consumer read a repaired edge as a clean one. It is not
+        // a confidence reduction: the referent is a `placeholder` node the parser produced,
+        // which is a parse fact either way, and the contract asks for a confidence consistent
+        // with how the edge was DERIVED, not with how much text was damaged around it.
+        //
+        // It also makes the pre-fix defect reproducible from the RESULT, which is what lets
+        // `scss/extend-target-carries-statement-delimiter` be a faithful mutant. Without the
+        // mark, a mutant keyed on "target carries a delimiter" can never fire — the fixed
+        // analyzer emits none — and a mutant that cannot fire is a green that means nothing.
+        ...(found.recoveredTarget ? { scssExtendTargetRecoveredFromBrokenNode: true } : {}),
       },
     })
   }
@@ -1097,7 +1111,7 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
    * maintained against the grammar by hand and goes stale the moment the grammar moves.
    * `.btn` comes out as `.btn`, which is the class symbol the same file publishes.
    */
-  private extendedSelectorName(node: Node): string | undefined {
+  private extendedSelectorName(node: Node): { name: string; recoveredTarget: boolean } | undefined {
     // `type_selector` DOES NOT EXIST in this grammar — the selector types are
     // class_selector, id_selector, universal_selector, attribute_selector,
     // pseudo_class_selector, pseudo_element_selector, nesting_selector,
@@ -1185,7 +1199,7 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
           n.type === "placeholder" &&
           isReadablePlaceholder(collapseWhitespace(n.text)),
       )
-      return inner.length > 0 ? collapseWhitespace(inner[0].text) : undefined
+      return inner.length > 0 ? { name: collapseWhitespace(inner[0].text), recoveredTarget: true } : undefined
     }
     // Second: the interpolated form cuts the placeholder at the interpolation, so its text
     // is a PREFIX that ends on a name boundary: `%responsive-container-#{$bp}` yields
@@ -1201,7 +1215,7 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
     // order reversed, `extends` fell 293 -> 286 and the 7 real `@extend %placeholder`
     // statements went with them.
     if (name.startsWith("%") && !isReadablePlaceholder(name)) return undefined
-    return name.length > 0 ? name : undefined
+    return name.length > 0 ? { name, recoveredTarget: false } : undefined
   }
 
   // ── `@if` / `@each` / `@for` / `@while` ──────────────────────────────────────
