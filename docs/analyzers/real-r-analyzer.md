@@ -217,6 +217,78 @@ cannot claim*. The per-label gate counters were identical across runs
 `unknown` kind. Symbol kinds observed: `variable` 13,267 · `function` 7,458 ·
 `method` 1,407 · `property` 210 · `class` 99 · `constant` 38.
 
+### The population census — 2,184 files, and all ten types firing
+
+The table above is a **sample**: first 250 files per repository, 13
+repositories, 1,890 files. The census below removes the cap and admits every
+git-tracked file the production router maps to `r` — **2,184 files across 16
+repositories**, no sampling, no truncation. Harness
+`validation/m14/fixtures/r/ontology-ten-types.ts`; committed output
+`validation/m14/fixtures/r/ontology-ten-types.txt`.
+
+The reason the sample had to be replaced is a measurement, not a preference.
+`validation/m14/measurements/firing-sweep-26-lanes.ndjson` records this lane at
+**8/10** over a 120-file draw, with `overrides` and `instantiates` at zero
+edges. The draw picked mostly `dplyr` / `testthat` / `ggplot2` files, which are
+functional and carry no in-file class hierarchy; R's object systems live in
+`R6` (27 files), `S7` (61) and `Matrix` (80), and those files are a small share
+of any prefix. Over the population:
+
+| Type | Edges | Files | 120-file draw | Verdict |
+| --- | --- | --- | --- | --- |
+| `calls` | 48,222 | 1,293 | fires | EMITTED |
+| `uses` | 4,810 | 584 | fires | EMITTED |
+| `contains` | 17,626 | 1,873 | fires | EMITTED |
+| `imports` | 2,095 | 1,112 | fires | EMITTED |
+| `references` | 389 | 202 | fires | EMITTED |
+| `exports` | 3,592 | 711 | fires | EMITTED |
+| `extends` | 350 | 60 | fires | EMITTED |
+| `implements` | 1,133 | 221 | fires | EMITTED |
+| `overrides` | **107** | **9** | **0** | EMITTED |
+| `instantiates` | **3** | **2** | **0** | EMITTED |
+
+Total 78,327 relationships over 29,554 symbols. **0 parse failures, 1 degraded
+parse** (`r-cli/R/utils.R`, 120 s parser hang → regex substitution), 0 symbols
+with an empty name, 0 with an empty or `unknown` kind, 0 relationships with an
+empty or `unknown` endpoint.
+
+The two types the draw read as zero are located, not asserted:
+
+| Type | Files | Example edges |
+| --- | --- | --- |
+| `overrides` | `R6/tests/manual/encapsulation.R` (29), `R6/tests/testthat/test-nonportable-inheritance.R` (22), `R6/tests/testthat/test-clone.R` (19), `r-testthat/R/reporter-progress.R` (14), `R6/tests/manual/encapsulation.R` (12), `S7/inst/doc/S7.R` (5), `r-testthat/R/reporter-junit.R` (3), `R6/tests/testthat/test-finalizer.R` (2), `S7/inst/doc/generics-methods.R` (1) | `BC -overrides-> inc_x`, `CC -overrides-> inc_x`, `BC -overrides-> getx` |
+| `instantiates` | `R6/tests/testthat/test-clone.R` (2), `r-testthat/R/reporter-silent.R` (1) | `initialize -instantiates-> AC`, `initialize -instantiates-> BC`, `capture_expectations -instantiates-> SilentReporter` |
+
+Every `overrides` edge carries
+`relationshipSubType: object_system_method_override`, `overriddenClass` and a
+`reasonCode`; every `instantiates` edge carries `isRConstructor: true` and
+`reasonCode: declared_class_constructor`. Three `instantiates` edges over the
+whole population is a real ceiling, and the reason is structural rather than a
+sampling artefact: the rule requires a constructor the FILE declares, so it
+cannot fire on a call into another package's constructor.
+
+**The arbiter's own verdict, independently measured.**
+`script/m14/r-ruled.ts` registers an EMPTY ruling table for this lane, because
+all ten types are emitted and there is nothing left to rule, and
+`script/m14/ontology-coverage-gate.ts` `RULED_BY_LANG` carries the two-line
+registration:
+
+```
+$ npx tsx script/m14/ontology-coverage-gate.ts r
+emitted 10/10   ruled-sound 0   FALSIFIED 0   ruled-without-justification 0
+```
+
+Run twice, and the edge counts differ by 0.2% between the two runs
+(`calls` 48,133 then 48,008) because the wasm grammar exhausts memory on a
+different file each time — `usethis/R/ci.R` in the first run, `r-cli/R/utils.R`
+in the second, each accompanied by `[BB-PARSE-ERR] … memory access out of
+bounds` for other files. The gate process then **exits 1 from
+`src/ast/engine.ts:1442`**, whose 120-second parse bomb calls `process.exit(1)`
+process-wide, *after* the verdict table has printed. Three runs of three
+different instruments hung on three different files (`r-cli/R/utils.R`,
+`r-testthat/R/evaluate-promise.R`, `usethis/R/ci.R`). That is shared machinery
+and is reported, not worked around; the fix belongs in the engine, not here.
+
 ### `uses` was RULED-UNJUSTIFIED, and the measurement overturned it
 
 The previous version of this document ruled `uses` inapplicable in these words:
@@ -330,15 +402,106 @@ language lacks; it is a type a thin corpus cannot see.
 claim*), so the only independent check available is the one below, and its limit
 is stated with it.
 
-**4. Labelled** — the boundary that matters is `uses` / `calls` / `references` /
-`imports`, and it is enforced and pinned in both directions. `F17-uses.R` gives
-the `[` and `[[` cases DIFFERENT member names so the `[` case cannot be satisfied
-by the `[[` one; with one shared name the section would have passed whichever way
-the rule went. `overrides` is `Base -> member` with `overriddenBy: Derived` in
-metadata — the member belongs to the base and the subclass shadows it — and that
-direction is stated rather than left for a reader to infer. `implements` is 100%
-at 0.8 with `reasonCode: s3_dotted_name_convention`: R registers an S3 method by
-writing `generic.class`, and nothing in the FILE proves the generic exists.
+**4. Labelled** — measured, over the population, by keying every emitted edge on
+`(type, relationshipSubType)`. Harness
+`validation/m14/fixtures/r/labels-and-resolution.ts`; committed output
+`validation/m14/fixtures/r/labels-and-resolution.txt`. A subtype that appears
+under two ontology types is a labelling ambiguity and is named as one; a subtype
+under exactly one type is the label being consistent.
+
+| Type | Subtypes (count) | Straddles another type? |
+| --- | --- | --- |
+| `calls` | `(none)` 44,015 · `closure_call` 1,668 · `s4_method` 1,413 · `r6_method` 793 · `s7_method` 234 · `r5_method` 13 | yes — the four method subtypes, and `(none)` |
+| `uses` | `member_read` 4,799 | **no** |
+| `contains` | `(none)` 16,773 · `r6_method` 418 · `r6_field` 184 · `s7_method` 118 · `s7_property` 103 · `s4_method` 18 · `r5_field` 5 · `r5_method` 1 | yes — the four method subtypes, and `(none)` |
+| `imports` | `namespace_access` 1,746 · `library_import` 290 · `rcpp_source` 46 · `r_source` 8 | yes — `rcpp_source`, `r_source` |
+| `references` | `library_dependency` 293 · `rcpp_source` 46 · `s7_class_binding` 21 · `s4_binding` 21 · `r_source` 8 | yes — `rcpp_source`, `r_source` |
+| `exports` | `roxygen_export` 3,581 | no |
+| `extends` | `s4_inherits` 263 · `r6_inherits` 53 · `s7_parent` 33 · `r5_inherits` 1 | no |
+| `implements` | `s3_method` 1,133 | no |
+| `overrides` | `object_system_method_override` 107 | no |
+| `instantiates` | `(none)` 3 | yes — `(none)` |
+
+**The `uses` / `references` confusion is structurally impossible in this lane,
+and that is a measurement rather than a claim.** `uses` carries exactly one
+subtype and `references` carries five, and **no subtype is shared between
+them**. A member read of a value (`obj$member`, `obj@slot`, `df[["col"]]`,
+`pkg::name`) is `uses`; a dependency mention (`library(dplyr)`, `require(x)`,
+`source("f.R")`) and an S4/S7 class binding are `references`. An edge cannot be
+mislabelled across that boundary without also changing its subtype, which makes
+the confusion countable rather than a matter of taste.
+
+**All 15 straddling subtypes are accounted for, and two of them are by design.**
+`r_source` and `rcpp_source` appear under **both** `imports` and `references`
+because `real-r-analyzer.ts:2113-2114` emits the pair on purpose — the comment
+there records that `references` is the generic dependency type while `imports`
+is what `graph_usages` reads to build the imports/exports view and what
+`evidence_tier` classifies as an import kind, so R dependencies were invisible to
+both while existing. The four method subtypes (`r6_method`, `r5_method`,
+`s4_method`, `s7_method`) appear under both `calls` and `contains` because a
+call to a method body and a class→member containment are two different facts
+about one declaration. **A consumer keying on `relationshipSubType` cannot
+recover the label for those six subtypes; it has to read `type`.** That is a
+real constraint on a consumer and it is stated here rather than discovered later.
+
+The `(none)` entries are the evidence-completeness finding: **60,791 of 78,327
+edges (77.6%) carry no `relationshipSubType` at all**, including all 3
+`instantiates` edges, which do carry `isRConstructor` and `reasonCode`. An edge
+with metadata but no subtype cannot be classified by subtype, and a majority of
+them cannot.
+
+**`extends` and `implements` checked against an independent carrier probe.** The
+subtype table says the analyzer is *consistent*; it cannot say the label is
+*right*. So a second instrument reads the same two constructs off the parse tree
+without touching the analyzer's rule table: R's inheritance carriers are named
+arguments (`R6Class(inherit=)`, `setRefClass(contains=)`, `setClass(contains=)`,
+`S7::new_class(parent=)`) and R's generic-implementation carrier is the
+`generic.class <- function(…)` convention.
+
+| Type | Tree carriers | Emitted pairs | Agreement | Carriers with no edge | …inside `if`/`while`/`for` | …unconditional |
+| --- | --- | --- | --- | --- | --- | --- |
+| `extends` | 381 (64 files) | 350 (60 files) | 348 | 33 | 19 | **14** |
+| `implements` | 1,206 (229 files) | 1,133 (221 files) | 1,054 | 152 | 8 | **144** |
+
+The 19 and 8 conditional carriers are `if (FALSE) { … }` bodies, which R never
+evaluates and which the analyzer deliberately skips. The remaining 14 `extends`
+and 144 `implements` unconditional carriers are **not** adjudicated here: the
+examples are dominated by S7 base classes (`S7/R/zzz.R: S7_generic -extends->
+class_function`, `ggplot2/R/margins.R: margin -extends-> simpleUnit`) and by
+backticked names (`` `$.AC` -implements-> `$` ``), which the probe reads as
+dotted S3 names and the analyzer's `name.indexOf(".") > 0` test reads
+differently. Each is a candidate finding; none is confirmed, and a candidate
+list is reported as a candidate list.
+
+### A probe that pointed at correct code, and what that cost
+
+The first version of the carrier probe reported **11 "unconditional implements
+carriers with no edge" in `Matrix/R/Ops.R`** — `Ops.x.x`, `A.M.n`, `diagOdiag`
+and 8 more — and the number was going into this document as a gap. It is wrong,
+and the way it is wrong is worth more than the gap would have been.
+
+All **22** top-level function bindings the probe called missing in that file are
+removed by a top-level `rm(...)` later in the same file: `rm(Ops.x.x)` at
+`Ops.R:775`, `rm(A.M.n, A.n.M)` at 639, `rm(Cmp.Mat.atomic)` at 376,
+`rm(diagOdiag)` at 2029, `rm(diagOtri)` at 2062, and 17 more — 22 for 22, with
+none left over. The analyzer models `rm()` unbinding
+(`removeTopLevelBindings`) and is **right** to drop them: `Ops.x.x` exists only
+to be handed to `setMethod("Ops", …, Ops.x.x)` at `Ops.R:471-479` and R does not
+hold the binding after line 775 either.
+
+The probe was the defective instrument, and an oracle that over-claims is worse
+than no oracle, because its misses aim at correct code and a reader cannot tell
+the difference. It now models `rm()` and reports the 144 above as candidates
+rather than as gaps. Two smaller probe defects were fixed the same way and are
+named here because a probe that is quietly wrong twice is a probe nobody should
+trust: reading the callee of `c(…)` as a base class (75 fabricated "carriers"
+named `c`), and requiring a bare `identifier` inside `rm(x)` when the grammar
+wraps it in an `argument` (0 removals found in 40 files).
+
+The methodology that found the real behaviour was a bisect down the parse tree's
+top-level statements, then a temporary instrumented build of the analyzer that
+printed the walk's function-scope depth at each visit. The build was reverted and
+`git status` is clean of it; the finding it produced is the `rm()` model above.
 
 **5. Resolved** — reported at TWO scopes, because they answer different
 questions and conflating them is how a 40% number reads as 90%. *local* is
@@ -346,6 +509,36 @@ questions and conflating them is how a 40% number reads as 90%. *local* is
 single-file parse can be held to, and the one comparable to CSS `references` at
 66.8% quoted in the workstream header. *corpus* is "resolves to a symbol in some
 file of the sample".
+
+Over the **population** (2,184 files), with the endpoint SHAPE printed alongside
+the rate so a low number is readable rather than merely low — the source of
+`imports`, `references` and `exports` is the literal string `global` by
+construction, and the targets of `imports` and `references` are package names:
+
+| Type | target in same file | source shape | target shape |
+| --- | --- | --- | --- |
+| `contains` | 17,616 / 17,620 = 100.0% | `global` 16,651 | declared names |
+| `exports` | 3,580 / 3,581 = 100.0% | `global` 3,581 | declared names |
+| `overrides` | 107 / 107 = 100.0% | class names | member names |
+| `instantiates` | 3 / 3 = 100.0% | `initialize`, `capture_expectations` | class names |
+| `extends` | 257 / 350 = 73.4% | class names | `VIRTUAL` 34, `Reporter` 20, class names |
+| `implements` | 371 / 1,133 = 32.7% | `generic.class` | `vec_ptype2` 86, `vec_cast` 82, `print` 74 |
+| `references` | 46 / 389 = 11.8% | `global` 347 | `testthat` 35, `Rcpp` 27, `Matrix` 23 |
+| `calls` | 5,032 / 48,136 = 10.5% | any symbol | `c` 1,794, `return` 1,396, `length` 1,116 |
+| `uses` | 402 / 4,799 = 8.4% | any symbol | `x` 217, `name` 105, `Dim` 93 |
+| `imports` | 13 / 2,090 = 0.6% | `global` 2,090 | `cli` 317, `withr` 253, `utils` 121 |
+
+`imports` at 0.6% and `references` at 11.8% are **the structure of the type, not
+a defect rate**: no R source file declares its own package name as a symbol, so a
+same-file symbol lookup cannot bind `cli` or `Matrix` whatever the analyzer does.
+The measurable question for `imports` is whether the named package exists, which
+is a question about CRAN rather than about syntax, and this lane does not answer
+it. Both types' source endpoints being the literal `global` means a "both ends
+resolve" figure for them is **0.0%** and always will be — the earlier table's
+0.7% is the target-side rate, which is the only one of the two that means
+anything for these types.
+
+Over the **1,890-file sample** the same instrument reads:
 
 | Type | local, both ends | local, target | corpus, target | reading |
 | --- | --- | --- | --- | --- |
@@ -406,21 +599,42 @@ function name. Measured over the corpus
 files** — `this` 5, `me` 4, `root` 2, `source_file` 1. The file is shared
 machinery (workstream §8), so this is reported and not fixed.
 
-**6. Confident** — `evidenceClass` and confidence, per type, are in the table
-above. The count the honesty contract §4 asks to be queryable:
+**6. Confident** — measured over the population with a 0.05-wide histogram,
+because a threshold test cannot tell a lane that sits on 0.7 from a lane with a
+spread, and both satisfy `>= 0.7`. **0 of 78,309 edges fall below 0.7; 0 carry
+a missing or non-numeric confidence.**
 
-| | count | share |
-| --- | --- | --- |
-| edges below 0.7 (heuristic by the contract's own threshold) | **0** | 0.00% |
-| edges at exactly 0.7 (closure-attributed `calls` and `uses`) | 1,765 | 2.69% |
-| edges at 0.8 (S3 `implements`, bare-identifier `library`, `references` to a bare identifier) | 1,415 | 2.16% |
-| edges at 0.9 (`instantiates`) | 1 | 0.002% |
-| edges at 0.95 (`overrides`) | 13 | 0.02% |
-| edges at 1.0 | 62,422 | 95.15% |
+| Type | Edges | 1.00 | 0.95 | 0.90 | 0.85 | 0.80 | 0.70 |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `calls` | 48,136 | 46,468 | · | · | · | · | 1,668 |
+| `contains` | 17,620 | 17,620 | · | · | · | · | · |
+| `uses` | 4,799 | 4,563 | · | · | 236 | · | · |
+| `exports` | 3,581 | 3,581 | · | · | · | · | · |
+| `imports` | 2,090 | 1,810 | · | · | · | 280 | · |
+| `implements` | 1,133 | · | · | · | · | 1,133 | · |
+| `references` | 389 | 106 | · | · | · | 283 | · |
+| `extends` | 350 | 350 | · | · | · | · | · |
+| `overrides` | 107 | · | 107 | · | · | · | · |
+| `instantiates` | 3 | · | · | 3 | · | · | · |
 
-**95.15% of the R graph is at confidence 1.0**, and the largest sub-1.0 population
-by type is `implements` at 0.8 — all 1,015 of it a labelled naming-convention
-inference, with the reason on every edge.
+Each sub-1.0 band is one derivation rule, and each carries a machine-readable
+reason on the edge: 0.70 is closure-attributed `calls`/`uses`, 0.80 is the S3
+`generic.class` convention for `implements` (`s3_dotted_name_convention`), a
+bare-identifier `library(x)` with no string literal
+(`library_bare_identifier`), and the same for `references`, 0.90 is
+`declared_class_constructor`, 0.95 is `base_class_declared_in_same_file`.
+
+**FINDING — `evidenceClass` is absent on 78,309 of 78,309 R edges.** Not one
+edge in the population carries the field. That is legal: `src/lsp/evidence_tier.ts`
+rule 2 derives the tier from confidence when no stored class exists, so with
+every R edge at `>= 0.7` every R edge reads `structural`. It is still an
+outlier worth naming — **42 of the 51 `src/ast/*analyzer*.ts` files set
+`evidenceClass`, and the six that do not are `clojure`, `elixir`, `erlang`,
+`fsharp`, `r` and `vb`.** So the store cannot distinguish an R edge that parsed
+from one that was inferred, except by reading the confidence the analyzer already
+wrote. The three bands above are the honest substitute and they are countable;
+`evidenceClass` being absent means a consumer that filters on the tier rather
+than the number sees one tier for this lane.
 
 ### What this lane cannot claim
 

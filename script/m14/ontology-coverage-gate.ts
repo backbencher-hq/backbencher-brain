@@ -67,6 +67,7 @@ import { MARKDOWN_RULED } from "./markdown-ruled"
 import { PHP_RULED } from "./php-ruled"
 import { SQL_RULED } from "./sql-ruled"
 import { CLEAN_RULED } from "./clean-ruled"
+import { R_RULED } from "./r-ruled"
 
 const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
 const LANG = process.argv[2] ?? "bash"
@@ -256,9 +257,13 @@ const RULED_BY_LANG: Record<string, Ruled[]> = {
   xml: XML_RULED,
   php: PHP_RULED,
   sql: SQL_RULED,
+<<<<<<< HEAD
 scss: SCSS_RULED,
 markdown: MARKDOWN_RULED,
 clean: CLEAN_RULED,
+=======
+  r: R_RULED,
+>>>>>>> analyzer/R
 }
 const RULED: Ruled[] = RULED_BY_LANG[LANG] ?? []
 
