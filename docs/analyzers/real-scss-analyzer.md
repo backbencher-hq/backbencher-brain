@@ -425,63 +425,97 @@ they are reported together.
 
 ## What is measured, and what is not
 
-### The production census, 4,394 files / 21 repositories
+### The production census, 4,433 files / 116 repositories — the whole admitted corpus
 
-Every count below comes from `parseFile` (`src/ast/pool-worker.ts`) over the whole
-admitted corpus. Symbol hygiene, which the standing rules make non-negotiable and which no
-count in this lane had been reporting:
+Every count below comes from `parseFile` (`src/ast/pool-worker.ts`), over **every** admitted
+file rather than a sample: `admitted .scss 4433 tracked files`, `sampled 4433`, `repos
+represented 116`. Reproduce with `npx tsx validation/m14/fixtures/scss/scss-relationship-census.ts 5000`.
+
+An earlier revision of this section reported `4,394 files / 21 repositories`. That was a
+narrower walk and it disagreed with the arbiter on `uses` (799 edges there, 91 here) and on
+four other types, so the arbiter's numbers and these are now the same population. Where this
+document quotes a census figure and an arbiter figure as a pair, the residual difference is
+the degraded-file class below.
+
+Symbol hygiene, which the standing rules make non-negotiable and which no count in this lane
+had been reporting:
 
 | | |
 | --- | --- |
-| files admitted / parsed | 4,394 / 4,394 (0 threw) |
-| symbols | **38,262** |
+| files admitted / parsed | 4,433 / 4,433 (0 threw) |
+| files with >=1 edge | 3,416 / 4,433 |
+| files on the degraded fallback path | **4** |
+| symbols | **39,601** |
 | symbols with an **empty name** | **0** |
 | symbols with an **empty kind** | **0** |
 | symbols with kind `unknown` | **0** |
 | relationships whose source or target is the literal `unknown` | **0** |
+| `ParseResult.imports` entries | 5,373 |
 | edges with `confidence < 0.7` | **0** — every SCSS-emitted edge is a deterministic parse fact |
 
-Symbol kinds: `class` 23,074, `variable` 5,558, `module` 4,594, `type` 2,617,
-`function` 1,083, `interface` 964, `namespace` 229, `property` 143. The `module` count is
-4,594 because it is now one per file plus the CSS lane's `@media`/`@layer` scopes.
+Symbol kinds: `class` 23,621, `variable` 6,119, `module` 4,640, `type` 2,741,
+`function` 1,103, `interface` 1,006, `namespace` 229, `property` 142. The `module` count is
+4,640 because it is one per file plus the CSS lane's `@media`/`@layer` scopes.
 
-Two consecutive runs of the same census differ by ±1 file, ±3 symbols and ±1 `contains`
-edge — `38,259`/`11,778` on one run and `38,262`/`11,779` on the next — and the difference
-is SCSS-L14: `consul/.../check-hexagon/property-16.scss` either parses or trips the pooled
-wasm path's 120-second stall, so its 6 symbols and its containment edge are present or
-absent depending on the run. Every other number above is stable across the two runs.
+### Resolution per type, and the heuristic ratio — the whole admitted corpus
 
-### Resolution per type, on the current corpus
+The census resolves both endpoints of every edge against the file's own symbol set.
 
-| type | edges | both ends resolve | one end |
-| --- | --- | --- | --- |
-| `contains` | 11,779 | **11,779 = 100%** | 11,779 |
-| `exports` | 3,465 | **3,465 = 100%** | 3,465 |
-| `overrides` | 16 | **16 = 100%** | 16 |
-| `uses` | 799 | 439 = 54.9% | 799 |
-| `references` | 6,260 | 2,759 = 44.1% | 6,260 |
+| type | edges | files | both ends resolve | one end | `conf < 0.7` |
+| --- | --- | --- | --- | --- | --- |
+| `contains` | 12,371 | 2,323 | **12,371 = 100.0%** | 12,371 | 0 |
+| `exports` | 4,019 | 325 | **4,019 = 100.0%** | 4,019 | 0 |
+| `calls` | 304 | 57 | **304 = 100.0%** | 304 | 0 |
+| `uses` | 91 | 42 | **91 = 100.0%** | 91 | 0 |
+| `overrides` | 32 | 12 | **32 = 100.0%** | 32 | 0 |
+| `references` | 6,594 | 585 | 3,093 = **46.9%** | 6,594 | 0 |
+| `extends` | 423 | 151 | 57 = **13.5%** | 423 | 0 |
+| `imports` | 3,634 | 825 | **0 = 0.0%** | 3,634 | 0 |
+| `implements` | 0 | — | n/a | — | — |
+| `instantiates` | 0 | — | n/a | — | — |
 
-`uses` and `references` are decomposed by construct in the ontology section above; the
-short version is that every edge this lane emits from an SCSS-specific construct resolves
-at both ends except `@extend`, whose targets are 76% cross-file by the language's own
-modularity, and that the `references` shortfall is the delegated CSS `var()` class, which
-is the CSS lane's behaviour meeting a stylesheet set that consumes Element Plus theme
-tokens defined in a different file. The behaviour is identical when identical input is run
-through both lanes.
+**The heuristic ratio is 0.** No edge this lane emits carries `confidence < 0.7`, because
+every one is a deterministic parse fact — a node the grammar produced — rather than a
+name-match guess. That is a property of the derivations, not a coincidence, and it is why the
+count of confidence-0.7-and-below edges is a meaningful zero rather than an unmeasured one.
 
-**Both-ends resolve is a property of the corpus, not of the lane.** On the 244-file corpus
+The two low resolution rates are the two findings this lane reports, and both are explained
+rather than absorbed:
+
+- **`imports` at 0.0%.** A `@use './theme'` names a FILE, and this lane resolves against the
+  symbols of the file being parsed. The target file is a different file, so by construction
+  zero of 3,634 edges can close here. This is the no-phantom rule working, not a defect:
+  inventing a symbol to close the edge is precisely the fabrication the workstream bans. The
+  rate is 0.0% and is EXPECTED; a future cross-file resolver is the only thing that can raise
+  it, and doing so must not create a symbol that no file declares.
+- **`extends` at 13.5%.** `@extend %placeholder` targets a placeholder, and 76% of the
+  placeholders this corpus extends are declared in a different partial than the one extending
+  them. Same cause, same boundary.
+- **`references` at 46.9%**, against the CSS lane's 66.8% reference point, is the delegated
+  `var(--x)` class: the analyzer emits a custom-property read unconditionally, while a token
+  like Element Plus's is defined in a different file. The behaviour is identical when
+  identical input is run through the CSS lane.
+
+**Both-ends-resolve is a property of the corpus, not of the lane.** On the 244-file corpus
 this lane was measured on before `consul`, `vault`, `nomad` and `waypoint` were added, the
-same three numbers were `contains` 2,225/2,225, `uses` 41/41, and `references` 223/223 for
-the lane's own `$var` reads — so the aggregate moves with the corpus while the per-construct
+same three numbers were `contains` 2,225/2,225, `uses` 41/41, and `references` 223/223 for the
+lane's own `$var` reads — so the aggregate moves with the corpus while the per-construct
 resolution does not.
 
 ## Declared limitations
 
-- **95 of 244 files still do not parse.** All modern Sass the 1.0.0 grammar plus two
-  patches cannot represent. The residual is a **long tail** — the largest class is 24
-  error spans and most are under 20, against a single 277-span class before patch 1/2.
-  The largest coherent group remaining is a **namespaced function call**,
-  `map.merge($a, $b)`, at 12 spans. Evidence: `validation/m14/results/scss-grammar-ab.json`.
+- **134 of 1,000 sampled files do not parse clean.** All modern Sass the 1.0.0 grammar plus
+  two patches cannot represent. Measured on **1,000 of the 4,433 admitted files** (every
+  4th of the sorted admitted list, 0 parse failures):
+  `files with a CLEAN tree 866 / 1000 (86.6%)`, `files with >=1 ERROR 134 / 1000 (13.4%)`,
+  `ERROR nodes total 16,922`. An earlier revision of this bullet read `95 of 244`, which was
+  a narrower walk of the same claim and is superseded — two populations for one number is how
+  a reader ends up quoting the wrong one. The residual is a **long tail**: the largest single
+  file is `bootstrap/scss/_variables.scss` at 3,796 ERROR nodes, and the shape is
+  `include_statement` 5.2% in-error, `use_statement` 16.6%, `if_statement` 7.8%,
+  `extend_statement` 7.7% — so most of what the lane needs is modelled cleanly and the loss
+  is concentrated in `@use`/`@include` inside damaged regions. Evidence:
+  `validation/m14/results/scss-grammar-ab.json`.
 - **`@forward 'x' as prefix-*;`** — the *prefix* form of the `as` clause. Supporting it
   needs `repeat1(seq('-', …))` after the name, which tree-sitter reports as an
   unresolved conflict with `binary_expression`. It occurs **zero** times in 40,521 lines
@@ -859,14 +893,45 @@ the full corpus, of the machine's load, or of one dominant repository. The popul
 differs from the numbers quoted elsewhere in this document and is labelled as such
 everywhere: **341 files, not 4,433.**
 
-Four `[BB-HANG]` filenames across four runs, all measured in isolation, all parse-clean:
+Five `[BB-HANG]` filenames across five runs. The first four were measured in isolation and
+are all parse-clean — which is what made this lane misread them as load. The fifth is the one
+that falsified that reading, and a sixth instance below is what makes the mechanism
+unambiguous:
 
-| file named by the watchdog | bytes | parse time | `hasError` |
-| --- | --- | --- | --- |
-| `consul/.../icons/lock/placeholders.scss` | 205 | 19 ms | false |
-| `consul/.../icons/triangle-fill/index.scss` | 218 | 24–65 ms | false |
-| `consul/.../icons/file-check/property-16.scss` | 773 | <1 ms | false |
-| `riverpod/.../legend/DocuCode.scss` | 206 | 3 ms | false |
+| # | file named by the watchdog | bytes | parse time in isolation | `hasError` |
+| --- | --- | --- | --- | --- |
+| 1 | `consul/.../icons/lock/placeholders.scss` | 205 | 19 ms | false |
+| 2 | `consul/.../icons/triangle-fill/index.scss` | 218 | 24–65 ms | false |
+| 3 | `consul/.../icons/file-check/property-16.scss` | 773 | <1 ms | false |
+| 4 | `riverpod/.../legend/DocuCode.scss` | 206 | 3 ms | false |
+| 5 | `r-pkgdown/.../highlight-styles/solarized.scss` | 1,895 | 1.7–52.3 ms | false |
+| 6 | `consul/.../components/inline-alert/debug.scss` | — | — | — |
+
+**#5 is the falsifier.** Its run printed a `[BB-PARSE-ERR]` naming the same file immediately
+before the `[BB-HANG]`:
+
+```
+[BB-PARSE-ERR] scss | .../r-pkgdown/.../solarized.scss | memory access out of bounds
+[BB-HANG] parser stuck 120s on .../r-pkgdown/.../solarized.scss — exiting
+```
+
+**#6 is the corroboration, and it is the stronger of the two.** That was the full-corpus
+census, and it printed its entire result first — the admitted count, the per-type table, the
+symbol-kind table, the per-type file lists:
+
+```
+admitted .scss     4433 tracked files
+…
+contains       12,371   2323      12,371 (100.0%)         0
+…
+[BB-HANG] parser stuck 120s on .../consul/.../components/inline-alert/debug.scss — exiting
+CENSUS_EXIT=1
+```
+
+The measurement was **finished and printed in full** before the process died, on a file the
+census had read long before it printed its table. That is not a hang and cannot be one: a
+hang cannot emit a completed result table. It is the orphaned timer, and it is why the exit
+code is 1 on work that demonstrably succeeded.
 
 ### The lane's ceiling is the pinned grammar, not the analyzer
 
@@ -875,11 +940,16 @@ reading is that the analyzer is thin. Measured, it is not — the pinned
 `wasm/tree-sitter-scss.wasm` cannot read part of its own language:
 
 ```
-$ npx tsx validation/m14/fixtures/scss/scss-parse-health.ts 400
-files with a CLEAN tree  325 / 400  (81.3%)
-files with >=1 ERROR     75 / 400  (18.8%)
-ERROR nodes total        11,442
+$ npx tsx validation/m14/fixtures/scss/scss-parse-health.ts 1000
+files with a CLEAN tree  866 / 1000  (86.6%)
+files with >=1 ERROR     134 / 1000  (13.4%)
+ERROR nodes total        16,922
 ```
+
+(A 400-file run of the same script earlier read 81.3% clean; the 1,000-file figure above is
+the one this document quotes, because 400 files is a sample of a 4,433-file population and
+1,000 is a sample of the same population with the error bar roughly halved. Both populations
+are named at each figure rather than one number being reused for both.)
 
 The worst case is not a pathological file. `bootstrap/scss/_accordion.scss` is valid SCSS:
 
