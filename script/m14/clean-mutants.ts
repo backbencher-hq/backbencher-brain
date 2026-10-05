@@ -218,4 +218,35 @@ export const CLEAN_MUTANTS: Mutant[] = [
       ),
     }),
   },
+  {
+    id: "clean/ampersand-class-context-separator-dropped",
+    language: "clean",
+    defectClass: "missing-relationship-type",
+    description:
+      "TWO-SPELLINGS-ONE-CONSTRUCT CLASS, and the first mutant in this battery that needs the SOURCE TEXT to be reverted faithfully — which is why `transform` receives `source`. `readClassContext` reset `expectName` on a `,` child and on nothing else, so a `|` context joined by `&` published its first conjunct and dropped the rest. `&` is not a second construct: the child shape is identical with the token swapped (`| == a` -> `!| operator_compare type_variable` against `| == a & UList a` -> `!| operator_compare type_variable !& constructor type_variable`, clean-stdlib/StdOverloadedList.dcl:5,8), which is the same two-spellings-one-handler shape the `fixity` field is already handled for. Measured cost of the `,`-only reader (validation/m14/fixtures/clean/ampersand-context-probe.mts): 365 of the 1,995 WIDE `class_context` nodes carry an `&`, and 226 of them name a conjunct that was never read. Nothing is fabricated and nothing is mislabelled — an edge that should exist is silently absent, which is the failure a count-only check cannot see because the lane's `references` total goes DOWN rather than wrong. The mutant re-derives the `,`-only reader off `source`: for a `class_context` edge, take the line, cut the context at its first `|`, split on `&`, and drop the edge when its target appears only in a conjunct after the first. A line with no `|` keeps its edges, so the mutant drops only what it can show the pre-fix code dropped. Caught by clean/ampersand-class-context, whose rows at lines 36, 41, 57, 64, 70 and 72 are exactly the shapes this loses.",
+    transform: (r: any, source?: string) => {
+      if (!source) return r
+      const lines = source.split("\n")
+      const conjunctsOn = (lineNumber: number): string[] | null => {
+        const text = lines[lineNumber - 1]
+        if (!text) return null
+        const bar = text.indexOf("|")
+        if (bar < 0) return null
+        return text.slice(bar).split("&")
+      }
+      return {
+        ...r,
+        relationships: (r.relationships ?? []).filter((x: any) => {
+          if (String(x.type).toLowerCase() !== "references") return true
+          if (x?.metadata?.relationshipType !== "class_context") return true
+          const conjuncts = conjunctsOn(Number(x.line_number))
+          if (!conjuncts || conjuncts.length < 2) return true
+          const target = String(x.target ?? "")
+          if (!target) return true
+          if (conjuncts[0].includes(target)) return true
+          return !conjuncts.slice(1).some((c) => c.includes(target))
+        }),
+      }
+    },
+  },
 ]
