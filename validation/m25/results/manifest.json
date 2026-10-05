@@ -40,14 +40,14 @@
       ],
       "evidence": {
         "status": "known-gap",
-        "currentCommit": "facecf800fff693596604f71bcc8e23cf0152277",
+        "currentCommit": "bc09cd791cf54bc93791cb1e457a9731d478bb87",
         "verifierCommand": "npx tsx script/m25/verify-governance.ts",
         "evidenceFile": "G1.json",
         "passed": 66,
         "failed": 6,
         "realFailed": 0,
         "negativeCases": 11,
-        "blockedReason": "6 check(s) failed: G1: all 11 issue entries are unique and structurally complete; G1: no banned vocabulary in manifest.json (perfect(ion)?\\b); G1: no banned vocabulary in manifest.json (\\bcomplete(ly|d|ness)?\\b); G1: M24 bar — ledger closed with all 11 issues verified (mechanical) … — the relevant tree was clean at measure time"
+        "blockedReason": "6 check(s) failed: G1: all 11 issue entries are unique and structurally complete; G1: no banned vocabulary in manifest.json (perfect(ion)?\\b); G1: no banned vocabulary in manifest.json (\\bcomplete(ly|d|ness)?\\b); G1: M24 bar — ledger closed with all 11 issues verified (mechanical) … — relevant uncommitted files at measure time: script/m25/verify-governance.ts"
       }
     },
     {
@@ -76,7 +76,8 @@
         "mutantsCaught": 3,
         "mutantsTotal": 3,
         "negativeCases": 0,
-        "blockedReason": "Headless module verification: the vscode API layer (activate path) is verified in-editor by E5; this suite covers the pure core, budget/crash declarations, and complement-stance lint."
+        "blockedReason": "Headless module verification: the vscode API layer (activate path) is verified in-editor by E5; this suite covers the pure core, budget/crash declarations, and complement-stance lint.",
+        "realFailed": 0
       }
     },
     {
@@ -105,7 +106,8 @@
         "negativeCases": 5,
         "mutantsCaught": 5,
         "mutantsTotal": 5,
-        "blockedReason": "E2E legs run the real `bb index` CLI on tiny/medium fixtures with BB_DATA_DIR isolation; giant-repo timings are not re-measured here (M19 numbers are the declared reference)."
+        "blockedReason": "E2E legs run the real `bb index` CLI on tiny/medium fixtures with BB_DATA_DIR isolation; giant-repo timings are not re-measured here (M19 numbers are the declared reference).",
+        "realFailed": 0
       }
     },
     {
@@ -134,7 +136,8 @@
         "negativeCases": 4,
         "mutantsCaught": 4,
         "mutantsTotal": 4,
-        "blockedReason": "Rendered states are captured as log evidence here (E3-render-capture.txt); in-editor screenshots of the status bar and panel are E5 editor-verification evidence per the contract's OS-scoped claim rules."
+        "blockedReason": "Rendered states are captured as log evidence here (E3-render-capture.txt); in-editor screenshots of the status bar and panel are E5 editor-verification evidence per the contract's OS-scoped claim rules.",
+        "realFailed": 0
       }
     },
     {
@@ -163,7 +166,8 @@
         "negativeCases": 5,
         "mutantsCaught": 5,
         "mutantsTotal": 5,
-        "blockedReason": "Live OpenVSX publish is honestly blocked awaiting owner credentials (OVSX_PAT); the dry-run records the real packaged artifact and the exact publish command — see E4-openvsx.json."
+        "blockedReason": "Live OpenVSX publish is honestly blocked awaiting owner credentials (OVSX_PAT); the dry-run records the real packaged artifact and the exact publish command — see E4-openvsx.json.",
+        "realFailed": 0
       }
     },
     {
@@ -192,7 +196,8 @@
         "negativeCases": 3,
         "mutantsCaught": 6,
         "mutantsTotal": 6,
-        "blockedReason": "The stdio leg measures the server + core stack; the fully in-editor numbers (extension host included) are E5's vscode-test run at a pinned editor version — same core, same gate, transport swapped."
+        "blockedReason": "The stdio leg measures the server + core stack; the fully in-editor numbers (extension host included) are E5's vscode-test run at a pinned editor version — same core, same gate, transport swapped.",
+        "realFailed": 0
       }
     },
     {
@@ -382,7 +387,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T04:37:00.418Z",
-    "contentSha256": "02cd5170509b6b0ca4a471ecde2304a135c5935d8e293647bf96d0bd6e705e43"
+    "sealedAt": "2026-10-05T13:08:18.705Z",
+    "contentSha256": "5d4a4738c9e20783fc818533cc98c26a6f14e494e84a4d104d1d4b0297e09010"
   }
 }

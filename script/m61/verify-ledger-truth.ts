@@ -70,6 +70,7 @@ import {
   driftLine,
   hollowBlocked,
   laneStatusOf,
+  missingCanFailProof,
   projectEntry,
   projectLedger,
   reasonFromRecord,
@@ -322,6 +323,39 @@ function main(): void {
     statusMismatched.slice(0, 6).join(" | "),
   )
 
+  // --- G3b: no `verified` rests on a suite that cannot fail --------------------
+  // Found live: E5.json and F-CURSOR.json each record 88/88 passing checks with
+  // no mutants, no negative cases, and (for E5) an EMPTY limitations array. A
+  // suite of 88 assertions that cannot fail is 88 unverified claims wearing a
+  // `verified` badge. Contract §6 makes a surviving mutant a failure of the
+  // SUITE; a mutant set that is simply absent is the same hole.
+  console.log("\nG3b: no `verified` record rests on a suite that cannot fail (§6/§8.4)")
+  const noProof: string[] = []
+  for (const lane of claimLanes) {
+    const dir = path.join(ROOT, "validation", lane, "results")
+    const ledgerAbs = path.join(dir, "manifest.json")
+    let entries: ProjectableEntry[] = []
+    try {
+      const read = readEvidence<ProjectableLedger>(ledgerAbs)
+      if (read.ok) entries = read.record.issues ?? []
+    } catch {
+      continue
+    }
+    for (const entry of entries) {
+      if (entry.status !== "verified") continue
+      const file = typeof entry.evidence?.evidenceFile === "string" ? entry.evidence.evidenceFile : `${entry.code}.json`
+      const record = trustedRecord(dir, file)
+      if (!record) continue
+      const finding = missingCanFailProof(record)
+      if (finding) noProof.push(`${lane}.${entry.code} (${file}): ${finding}`)
+    }
+  }
+  check(
+    "G3b: every `verified` record carries a can-fail proof (mutants caught, or declared negative cases)",
+    noProof.length === 0,
+    `${noProof.length} verified-without-proof: ${noProof.slice(0, 6).join(" | ")}${noProof.length > 6 ? ` … +${noProof.length - 6} more` : ""}`,
+  )
+
   // --- G4: mechanical status, from the shared owner --------------------------
   console.log("\nG4: the lane status is mechanical")
   {
@@ -509,16 +543,19 @@ function main(): void {
         JSON.stringify(p.entry.evidence),
       )
     }
-    // M4c: the projection is still a fixpoint with the drop rule in force — the
-    // second pass must report NO change, or the gate would "heal" every run and
-    // the drift finding would be indistinguishable from bookkeeping.
+    // M4c: the drop rule keeps the projection a fixpoint — the second pass must
+    // report no HEAL, or the gate would "heal" every run and drift would be
+    // indistinguishable from bookkeeping. Findings are exempted from this
+    // assertion on purpose: a finding is a standing property of the records
+    // (a missing can-fail proof does not stop being missing), while a heal is a
+    // one-time repair. Only heals must converge.
     {
       const rec = { status: "verified", passed: 10, failed: 0 }
       const once = projectLedger({ status: "closed", issues: [{ code: "A1", status: "verified", evidence: { status: "verified", passed: 10, negativeCases: 4 } }] }, () => rec, {})
       const twice = projectLedger(once.ledger, () => rec, {})
       mutant(
-        "M4c: the drop rule keeps the projection a fixpoint (second pass over the same records changes nothing)",
-        twice.healed.length === 0 && twice.findings.length === 0 && once.ledger.issues?.[0]?.evidence?.negativeCases === undefined,
+        "M4c: the drop rule keeps the projection a fixpoint (the second pass over the same records heals nothing)",
+        twice.healed.length === 0 && once.ledger.issues?.[0]?.evidence?.negativeCases === undefined,
         `once=${JSON.stringify(once.healed)} twice=${JSON.stringify(twice.healed)}`,
       )
     }
@@ -561,6 +598,66 @@ function main(): void {
           writesOnly !== "projected" &&
           neither !== "projected",
         JSON.stringify({ directImport, viaWiring, ownCopy, importedNotApplied, writesOnly, neither }),
+      )
+    }
+    // M4d: a count NESTED under `verdict` must be read, not reported absent. Found
+    // live: the projection read only top-level counts, so m42.H1's
+    // `verdict: { mutantsCaught: 4, mutantsTotal: 4 }` looked unreported, the
+    // ledger's copy was dropped, and `isClosable` then rejected four honest
+    // `verified` entries as `hollow-verified`. A gate that cannot see where its
+    // own record keeps a number will call truth hollow.
+    {
+      const nested = projectEntry(
+        { code: "A1", status: "verified", evidence: { status: "verified", passed: 16, mutantsCaught: 4, mutantsTotal: 4 } },
+        { status: "verified", passed: 16, verdict: { mutantsCaught: 4, mutantsTotal: 4, realComponentFailures: 0 } },
+        {},
+        "A1.json",
+      )
+      const nestedNegative = projectEntry(
+        { code: "A2", status: "verified", evidence: { status: "verified", passed: 9 } },
+        { status: "verified", passed: 9, negatives: { total: 5, caught: 5 } },
+        {},
+        "A2.json",
+      )
+      const topWins = projectEntry(
+        { code: "A3", status: "verified", evidence: { status: "verified", passed: 3, mutantsTotal: 9 } },
+        { status: "verified", passed: 3, mutantsTotal: 7, verdict: { mutantsTotal: 2 } },
+        {},
+        "A3.json",
+      )
+      mutant(
+        "M4d: a count nested under `verdict` (or under a `negatives` object) is READ, and a top-level count wins over a nested one of the same name",
+        // `changed` may be non-empty here and legitimately so: the nested
+        // `realComponentFailures: 0` is surfaced as `realFailed: 0`, which the
+        // ledger entry did not carry. The assertion is that the MUTANT counts
+        // survived the projection - they are the ones that were being dropped.
+        nested.entry.evidence?.mutantsCaught === 4 &&
+          nested.entry.evidence?.mutantsTotal === 4 &&
+          !nested.changed.some((c) => c.startsWith("mutants")) &&
+          nestedNegative.entry.evidence?.negativeCases === 5 &&
+          topWins.entry.evidence?.mutantsTotal === 7,
+        JSON.stringify({ nested: nested.entry.evidence, changed: nested.changed, nestedNegative: nestedNegative.entry.evidence, topWins: topWins.entry.evidence }),
+      )
+    }
+    // M4e: the can-fail rule must DISCRIMINATE — a proven `verified` passes, an
+    // unproven one is reported, and a `known-gap` is not accused of anything
+    // (a red record is not claiming to have passed).
+    {
+      const proven = missingCanFailProof({ status: "verified", negativeCases: 12 })
+      const provenByMutants = missingCanFailProof({ status: "verified", mutantsCaught: 6, mutantsTotal: 6 })
+      const unproven = missingCanFailProof({ status: "verified", passed: 88, failed: 0, checks: [] })
+      const nestedProof = missingCanFailProof({ status: "verified", verdict: { mutantsCaught: 4, mutantsTotal: 4 } })
+      const redRecord = missingCanFailProof({ status: "known-gap" })
+      const partialMutants = missingCanFailProof({ status: "verified", mutantsCaught: 3, mutantsTotal: 6 })
+      mutant(
+        "M4e: the can-fail rule accepts either proof shape, rejects an unproven `verified`, does not accuse a `known-gap`, and rejects a partially-caught mutant set",
+        proven === null &&
+          provenByMutants === null &&
+          nestedProof === null &&
+          unproven !== null &&
+          redRecord === null &&
+          partialMutants !== null,
+        JSON.stringify({ proven, provenByMutants, unproven, nestedProof, redRecord, partialMutants }),
       )
     }
     // M5: an untrusted record must NOT be assumed green.
