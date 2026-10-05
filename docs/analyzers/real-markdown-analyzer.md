@@ -299,15 +299,22 @@ score a row with no `loadRule` and no `corpusManifest` for exactly this reason
 
 ## M60 ontology census — all ten relationship types
 
-Added 2026-10-03. Every number below comes from the production entry point
-`parseFile` (`src/ast/pool-worker.ts`) or from the pinned parse trees, and every one is
-re-derivable by a script named beside it. Corpus root
-`$HOME/fixtures/repositories`: **12,729 admitted `.md`/`.markdown` files across
-138 repositories**, admitted by the same `git ls-files` walk the supervisor's gate uses and
-filtered by `detectLanguageFromPath`. Sampling is a hash order, not a statistical random
-sample, and is not claimed to be one: files are ordered by
-`sha256("<seed>|<repo>/<rel>")` and the first N taken, so a published figure can be
-reproduced from a clean corpus and re-drawn with `--seed`.
+Added 2026-10-03; **whole-corpus figures added 2026-10-04**. Every number below comes from
+the production entry point `parseFile` (`src/ast/pool-worker.ts`) or from the pinned parse
+trees, and every one is re-derivable by a script named beside it. Corpus root
+`$HOME/fixtures/repositories`.
+
+**There is no sample any more.** `whole-corpus-census.ts` walks every file the gate's own
+admission test admits — `detectLanguageFromPath(abs, text) === "markdown"`, the same test,
+over the same `git ls-files` walk — and parses all of them: **17,456 files across 196
+repositories, `populationSha256` `1d079c4fff2092ce`, 0 parse failures, 0 shards lost.**
+Sampling by `sha256("<seed>|<repo>/<rel>")` order is retained only for the older probes named
+below, which say so where their figures appear.
+
+The corpus is a MOVING TARGET under ten concurrent lanes and the growth is visible in this
+branch's own history: the arbiter's two runs each admitted 15,234 files, and the census
+written afterwards admits 17,456. Every figure below therefore names its population, and the
+population hash is in the JSON beside it.
 
 ### The supervisor's arbiter does not report for this lane
 
@@ -341,20 +348,44 @@ it does not, because the arbiter does not run.
 
 ### Verdicts
 
-| Type | Verdict | Edges | Files | Instrument / probe |
+| Type | Verdict | Edges (whole corpus) | Files | Instrument / probe |
 | --- | --- | --- | --- | --- |
-| `contains` | **EMITTED** | 7,603 | 322 | production `parseFile` |
-| `uses` | **EMITTED** | 10,709 | 626 | production `parseFile`, per destination class |
-| `imports` | **EMITTED** (MD-G3) | 1 per file-naming directive | 68 directives corpus-wide | production `parseFile`; 0 in the two pinned repos' 1,334 files |
-| `references` | **EMITTED** | 3,557 | 382 | production `parseFile` (relabelled from `uses` — see below) |
-| `calls` | **RULED** | 0 | 0 | A: grammar inventory, plus the fenced-code and `html_block` populations |
+| `contains` | **EMITTED** | 334,773 | 14,507 | production `parseFile` |
+| `uses` | **EMITTED** | 270,779 | 9,915 | production `parseFile`, per destination class |
+| `references` | **EMITTED** | 16,857 | 1,136 | production `parseFile` (relabelled from `uses` — see below) |
+| `imports` | **EMITTED** (MD-G3) | 105 | 74 | production `parseFile`; 1 per file-naming include directive |
+| `calls` | **RULED** by the analyzer | **0 from the analyzer**; 8 from shared machinery | 2 | A: grammar inventory (108 node types, whole population), plus the fenced-code and `html_block` populations |
 | `exports` | **RULED** | 0 | 0 | A + B: shape and population |
 | `extends` | **RULED** | 0 | 0 | A: grammar inventory |
 | `implements` | **RULED** | 0 | 0 | A: grammar inventory |
 | `overrides` | **RULED** | 0 | 0 | A: grammar inventory, plus 570 redeclarations / 0 displacements |
-| `instantiates` | **RULED** | 0 | 0 | A + B |
+| `instantiates` | **RULED** by the analyzer | **0 from the analyzer**; 3 from shared machinery | 1 | A: grammar inventory, plus the `html_block` capitalised-tag population |
 
-**4 of 10 EMITTED, 6 RULED**, all ten types listed.
+**4 of 10 EMITTED by the analyzer, 6 RULED**, all ten types listed. Population: 17,456 files
+across 196 repositories, `populationSha256` `1d079c4fff2092ce`, every file parsed, 0 parse
+failures.
+
+**The `calls` and `instantiates` rows carry a second number on purpose.** Production
+`parseFile` returns 8 `calls` and 3 `instantiates` edges on this corpus, and **100% of them
+are `src/ast/pool-worker.ts extractFallback` output on a degraded parse** — a regex over the
+file TEXT reading JavaScript inside fenced code blocks in redwoodJS documentation
+(`useMutation`, `hashPassword`, `new NhostClient()`), every source the literal `"this"`,
+confidence 0.5/0.6, `evidenceClass` absent. `real-markdown-analyzer.ts` contains no `Calls`
+and no `Instantiates`. The attribution is an accounting identity rather than a resemblance:
+calling `extractFallback` directly on the files the census names reproduces `calls=8`,
+`instantiates=3` and 50 kind-less symbols exactly, and the fallback emits exactly two
+relationship types, so `degradedParse.relationships == calls + instantiates` in both census
+runs (11 = 8 + 3, and 36 = 33 + 3). See "**The degraded set, and the 11 edges that are not
+this lane's**" below and `validation/m60/markdown/fallback-attribution.json`.
+
+**Why that matters for the coverage number.** The arbiter's `EMITTED` test is "production
+`parseFile` produced it", and it checks emission BEFORE it reads a ruling. So on this corpus
+the arbiter would print `calls` and `instantiates` as EMITTED and never reach the two
+`soundest` rulings in the table. Coverage is therefore reported as **4 EMITTED + 4
+RULED-SOUND = 8 adjudicated types, plus 2 types whose EMITTED status is a shared-machinery
+artifact** — and the adjudicated run's own line is `emitted 6/10  ruled-sound 4  FALSIFIED 0
+ruled-without-justification 0` (`validation/m60/markdown/ruling-table-adjudication.json`).
+Neither number is the lane's coverage on its own; the attribution is what separates them.
 
 Three rows moved since this section was first written, and each movement is recorded below
 with the measurement that caused it rather than adopted silently:
@@ -437,16 +468,23 @@ the rest — was never visited by that walk.
 
 `validation/m14/fixtures/markdown/pass2-labelling-probe.ts` (written concurrently in this
 worktree) records the union over a 1,200-file draw, `sha256=3aed69be…`: **82 distinct block
-node types, 59 distinct inline, 104 in the union.** So the denominator every
-instrument-A ruling below was argued against is 104, not 47.
+node types, 59 distinct inline, 104 in the union.**
+
+**And 104 is itself a draw, not the corpus.** `ruling-table-adjudication.ts` enumerates the
+union over the WHOLE admitted population — all 17,456 files, both grammars, 8 shards, 0 parse
+failures — and gets **108 distinct node types: 84 block, 65 inline**. The draw misses exactly
+four the corpus has: `numeric_character_reference`, `<?`, `<![CDATA[` and `]]>`. Three are
+punctuation tokens of raw HTML passthrough; one is a real grammar node. None expresses any
+construct an A ruling rules on, so no ruling moved — but the denominator a ruling is argued
+against has to be the population's, and the population's is **108**.
 
 **The direction of those rulings is unchanged and the reason is stated rather than assumed:**
 the constructs they name — a type declaration, a supertype or implementation clause, an
 object-creation node, an export node, a reference node — are absent from the union, and the
 inline grammar models formatting and links, which is where they would have had to be. But
 the claim "0 of 47" was made against a list that was not the list its own header named, and
-that is a measurement error worth recording rather than a wording slip. The seven remaining
-rulings should be read against **104**.
+that is a measurement error worth recording rather than a wording slip. The remaining rulings
+should be read against **108**.
 
 ### The four probes
 
@@ -496,6 +534,73 @@ and the standing no-empty-name rule, both counted rather than assumed).
   `markdown_internal_anchor` 389, and **389 of 389 resolve at both ends**. A fragment naming
   a heading in ANOTHER file is the same construct and is not published — resolution is per
   file, which is the declared boundary recorded with the ruling below.
+
+### The degraded set, and the 11 edges that are not this lane's
+
+This is the round's substantive finding, and it is not a markdown finding — it is a
+`pool-worker.ts` finding that markdown is the first lane to measure at corpus scale.
+
+`whole-corpus-census.ts` now records `degradedParse` from the `fallback` flag itself, because
+`extractFallback` returns `errors: []` and a degraded parse is therefore **indistinguishable
+from a clean one to any consumer reading `errors`**. That is why the first whole-corpus run
+reported `parseFailures: 0` while carrying 36 edges no analyzer emitted.
+
+| | run A | run B |
+| --- | --- | --- |
+| shards | 24/24, 0 lost | 24/24, 0 lost |
+| population | `1d079c4fff2092ce` | `1d079c4fff2092ce` (identical) |
+| files parsed | 17,456 / 0 failures | 17,456 / 0 failures |
+| symbols / relationships | 394,804 / 622,586 | 394,765 / 622,525 |
+| files that took the fallback | not recorded | **11 (0.0630%)** |
+| kind-less symbols | 99 | 50 |
+| `calls` / `instantiates` | 33 / 3 | 8 / 3 |
+
+**The degraded set is not reproducible.** Same population hash, same admission test, same
+production entry point — 11 files in one run, a different set in the other, and `calls`
+between 8 and 33. `whole-corpus-census.ts` therefore cannot report a `calls` count for this
+corpus that a reader can reproduce, and this document does not quote one as if it could: the
+figure is reported as a range with the run it came from.
+
+**The attribution is reproducible even though the set is not.**
+`validation/m14/fixtures/markdown/fallback-attribution.ts` takes the census's own list of
+degraded files, calls `extractFallback` on each, and compares:
+
+```
+calls         census 8   reproduced 8   identical
+instantiates  census 3   reproduced 3   identical
+kind-less     census 50  reproduced 50  identical
+relationshipIdentity: fallbackRelationships 11 == calls 8 + instantiates 3
+```
+
+and then runs production `parseFile` on the same files to record what it returns when it is
+NOT degraded: no `calls`, no `instantiates`, `fallback` unset. The three facts together —
+the analyzer's source contains neither type, the fallback reproduces the counts exactly, and
+the clean path emits neither — are what make this an attribution rather than a correlation.
+
+**What a reader of the graph gets if this is not fixed.** A `calls` edge whose source is the
+string `"this"` and whose target is a JavaScript function name that no markdown file
+declares. `bb_graph` would show a document calling `useMutation`; `bb_impact` would offer to
+change that caller. The fabricated-edge failure the brief names, reached here through shared
+machinery rather than through a lane's own invention.
+
+**What is NOT this lane's to fix, precisely** (§8):
+
+- `file`: `src/ast/pool-worker.ts`
+- `fn`: `extractBasicRelationships` (line 266), reached via `extractFallback` (line 364) from
+  `parseFile`'s size early-return (line 751) and its `catch` (lines 1148, 1150)
+- `must do`: either (a) skip `calls` / `instantiates` when the detected language is not a
+  programming language — the same shape as the existing `keepSymbol` exemption at line 434,
+  which already special-cases `markdown` — or (b) return the fallback's own result with
+  `errors: [{ message: "degraded: regex fallback" }]` instead of `errors: []`, so a consumer
+  can tell. (a) alone leaves the invisibility; (b) alone leaves the fabricated edges.
+  Both are one-line changes.
+- `why`: `extractBasicRelationships` reads `/(\w+)\s*\(/g` over the file text, and for a
+  documentation file that text is fenced code in another language. Every language with fenced
+  code in its corpus has this, so the fix is not markdown-specific — which is why it belongs
+  to the supervisor and not to a lane.
+- `not this lane's alternative`: the markdown analyzer cannot suppress these edges. They are
+  added after `analyze()` returns, by `filterNoiseRelationships` on a result the analyzer
+  never sees.
 
 ### The six rulings, each with its instrument, probe and overturn condition
 
@@ -662,17 +767,35 @@ rather than leaving the 6,243 to be discovered as a gap later.
 
 ### The six questions, per emitted type
 
-They fail independently, so they are reported per type and not as one verdict. All figures
-from the 400-file census draw unless stated.
+They fail independently, so they are reported per type and not as one verdict.
 
-| | `contains` | `uses` | `references` |
-| --- | --- | --- | --- |
-| **1. Exists** | yes — five `addRel` call sites | yes — three (inline destination, autolink, reference link / reference-form image) | yes — the resolved-anchor arm, relabelled from `uses` |
-| **2. Fires** | 7,603 edges / 322 files | 3,335 edges / 267 files | 389 edges / 40 files |
-| **3. Correct** | 1,736/1,736 scala3, 11,108/11,108 kubernetes, MISSING=0, unexplained=0 | same rows | same rows; the audited set is now all three |
-| **4. Labelled** | correct — no neighbouring type applies to intra-document containment | correct | **was wrong; relabelled.** The argument and its measurement are under `references` above |
-| **5. Resolved** | **7,603/7,603** both ends, file-local; 7,572/7,603 corpus-wide | **1/3,335 (0.0%)** both ends, file-local | **389/389 (100.0%)** both ends, file-local; 294/389 (75.6%) corpus-wide |
-| **6. Confident** | 7,603/7,603 at 1.0, `structural`, 7,603/7,603 line-numbered, **0 below 0.7** | 3,335/3,335 at 1.0, `reference_qualified`, 3,335/3,335 line-numbered, **0 below 0.7** | 389/389 at 1.0, `reference_qualified`, 389/389 line-numbered, **0 below 0.7** |
+**The figures below are WHOLE-POPULATION**, not a draw: production `parseFile` over all
+17,456 files the gate's admission test admits, across 196 repositories, `populationSha256`
+`1d079c4fff2092ce`, 0 parse failures, 0 shards lost
+(`validation/m60/markdown/whole-corpus-census.json`). The earlier 400-file and 1,200-file
+draw figures are superseded and are not averaged with these. `imports` is a fourth column
+because it is emitted too and the three-column table omitted it.
+
+| | `contains` | `uses` | `references` | `imports` |
+| --- | --- | --- | --- | --- |
+| **1. Exists** | yes — five `addRel` call sites | yes — three (inline destination, autolink, reference link / reference-form image) | yes — the resolved-anchor arm, relabelled from `uses` | yes — the file-naming include directive (MD-G3) |
+| **2. Fires** | **334,773** edges / 14,507 files | **270,779** / 9,915 | **16,857** / 1,136 | **105** / 74 |
+| **3. Correct** | 1,092/1,092 scala3, 8,499/8,499 kubernetes, MISSING=0, unexplained=0 | same rows | same rows, and MISSING=770 → 0 once the allowlist names it | 0 unexplained; never in the compared set at all |
+| **4. Labelled** | correct — no neighbouring type applies to intra-document containment | correct — 269,245 `markdown_link` + 1,534 `markdown_autolink` | correct — 16,857 `markdown_internal_anchor`, 0 rows under any other role | correct — 105 `markdown_template_include`, `import_based` |
+| **5. Resolved** | **334,773/334,773 (100%)** both ends file-local; 333,479 (99.6%) corpus-wide | **1/270,779 (0.0%)** both ends file-local; **258 (0.1%)** corpus-wide — by construction, the target is link text | **16,857/16,857 (100%)** file-local; 6,608 (39.2%) corpus-wide | **82/105 (78.1%)** source; **0/105** target — the target is a PATH |
+| **6. Confident** | 334,773 at 1.0, `structural`, 100% line-numbered, **0 below 0.7** | 270,779 at 1.0, `reference_qualified`, 100% line-numbered, **0 below 0.7** | 16,857 at 1.0, `reference_qualified`, 100% line-numbered, **0 below 0.7** | 105 at 1.0, `import_based`, 100% line-numbered, **0 below 0.7** |
+
+**Whole-corpus hygiene, all four types together**: 394,765 symbols, **0** with an empty
+name, **0** endpoints equal to the literal `unknown`, **0** kinds outside the shared
+`SymbolKind` other than the 50 that arrive on the 11 degraded files (below), and **0** parse
+failures. Every one of the 622,525 relationships is line-numbered.
+
+**Every heuristic edge in this lane is shared machinery's.** The whole population carries
+**11 edges below confidence 0.7** — 8 `calls` at 0.5 and 3 `instantiates` at 0.6 — and all
+11 are `extractFallback` output on 11 degraded files. The analyzer's own four types emit
+**0** edges below 0.7 out of 622,514. That is the honest shape of this lane's confidence
+distribution: it is not that nothing here is guessed, it is that nothing the ANALYZER emits
+is guessed.
 
 **1 Exists** — derived from source. `contains` has five call sites (`heading_hierarchy`,
 `table_under_heading`, `table_column`, `code_block_under_heading`, and the front-matter
@@ -684,16 +807,34 @@ symbol which carries no edge); `uses` has three after the split (`link_destinati
 because "it produced an edge" does not mean "it produced all of them". See the recall
 section below: **analyzer shortfall against the parse tree is 4 edges in 7,630.**
 
-**3 Correct** — `npx tsx script/m14/differential.ts --lang markdown --sample 120`:
+**3 Correct** — `npx tsx script/m14/differential.ts --lang markdown`, this round, 2 lanes x
+60 files:
 
 ```
-[scala3]     markdown: files=120 tree-truth=1736  covered=1736  (100%) MISSING=0 | analyzer-edges=1736  unexplained=0 (0%) heuristic=0
-[kubernetes] markdown: files=120 tree-truth=11108 covered=11108 (100%) MISSING=0 | analyzer-edges=11108 unexplained=0 (0%) heuristic=0
+as shipped     [scala3]     markdown: files=60 tree-truth=1092 covered=1092 (100.0%) MISSING=0    | analyzer-edges=1092 unexplained=0 (0%) heuristic=0
+               [kubernetes] markdown: files=60 tree-truth=8499 covered=7729 (90.9%) MISSING=770 | analyzer-edges=7729 unexplained=0 (0%) heuristic=0
+
+allowlist +2   [scala3]     markdown: files=60 tree-truth=1092 covered=1092 (100.0%) MISSING=0    | analyzer-edges=1092 unexplained=0 (0%) heuristic=0
+               [kubernetes] markdown: files=60 tree-truth=8499 covered=8499 (100.0%) MISSING=0    | analyzer-edges=8499 unexplained=0 (0%) heuristic=0
 ```
 
-12,844 oracle rows, 0 missing, 0 unexplained, 0 heuristic. A scoped run refuses to write
-`M14.0.F5.json`, correctly: that artifact belongs to the 43-language sweep and writing it
-from a two-corpus run would replace the milestone's claim with a smaller one.
+**The 770 MISSING rows are one allowlist entry, not 770 missing edges.**
+`script/m14/differential.ts:23392` compares markdown on `["contains", "uses"]` while
+`deriveMarkdownEdges` also derives `references`, so 770 analyzer rows were dropped from the
+COMPARED set and read as MISSING. Adding `references` and `imports` to that one array gives
+MISSING=0 and 100% coverage on both lanes with `unexplained` and `heuristic` unchanged at 0.
+The shared file was patched for that measurement and restored — `git diff` on it is empty —
+and the log is `validation/m60/markdown/logs/differential-allowlisted-local.log` beside the
+as-shipped `differential.log`.
+
+The samples confirm it by hand: all 770 are `references document -> <link text>` from
+kubernetes CHANGELOGs, and `CHANGELOG-1.11.md` line 2 (`- [v1.11.10](#v11110)`) yields
+`references document -> v1.11.10 role=markdown_internal_anchor` from the analyzer. The edge
+was always there.
+
+9,591 oracle rows, 0 unexplained, 0 heuristic. A scoped run refuses to write `M14.0.F5.json`,
+correctly: that artifact belongs to the 43-language sweep and writing it from a two-corpus
+run would replace the milestone's claim with a smaller one.
 
 **The limitation of this instrument, stated because it is the one that matters here.** The
 oracle is a second walker over the same grammar, so it disagrees when either side is wrong
@@ -1019,17 +1160,23 @@ nobody has watched fail is a claim.
   analyzer's output because the construct has no CommonMark specification to author from,
   and its `forbidRelationships` half — the 1,030+ macro calls that must NOT publish — is the
   part that can catch a fabrication.
-- **Lane mutants (F4)** — **11 in
-  `validation/m14/fixtures/markdown/markdown-mutants.ts`, 11 caught**, each a faithful
-  revert of one real decision: the setext loss, MD-D6's raw-fragment publication, MD-D6's
-  unresolved suppression, the heading-hierarchy self-edge, the repeat-site ordinal, MD-D1's
-  undefined references, the code-span exclusion, the table-column symbol, the `references`
-  relabel, and MD-G3's two halves — the macro-call fabrication and the heading call site.
-  **Two of the eleven change no endpoint and no count.** `internal-anchor-published-as-uses`
-  only moves a label, and `template-include-macro-published` only ADDS edges; between them
-  they are the only mutants that can catch a mislabel and a fabrication, and every other
-  mutant in the file removes or rewrites, so before this round the lane had no mutant for
-  either class.
+- **Lane mutants (F4)** — **15 in `script/m60/markdown-mutants.ts`, 15/15 CAUGHT this
+  round**, each a faithful revert of one real decision, written generically off the emitted
+  fields rather than off a name list.
+  **They do not run in the project gate, and that is now a measured gap rather than an
+  assertion.** `script/m14/mutate-analyzer.ts` builds its `MUTANTS` array from six other lane
+  modules and does not import this one, so `bun run script/m14/mutate-analyzer.ts` never
+  constructs a markdown mutant. Registration is a one-line shared-file change (§8), so
+  `validation/m14/fixtures/markdown/mutant-battery.ts` runs them here through `runLang()`
+  imported from `script/m14/run-fixtures.ts` — the arbiter's own matcher, not a
+  reimplementation. Result: **baseline 10 pass / 0 fail, then 15/15 CAUGHT.** The teeth are
+  the fan-out: `markdown/line-number-dropped` takes the suite 0 → 8 failures,
+  `markdown/closing-run-retained` and `markdown/empty-heading-published` 0 → 7 each,
+  `markdown/repeat-site-name-collapsed` 0 → 5. A mutant set that could only be caught one way
+  would be a weaker claim than this.
+  **Two mutants change no endpoint and no count.** `internal-anchor-published-as-uses` only
+  moves a label, and `template-include-macro-published` only ADDS edges; between them they
+  are the only mutants that can catch a mislabel and a fabrication.
   **Teeth:** `markdown/internal-anchor-unresolved-kept` **SURVIVED its first run**, and that
   is the row that matters — the fixture named ONE broken fragment (`#no-such-heading`) and
   not the second (`#also-missing`), and had no row at all for the forward reference's raw
@@ -1037,7 +1184,8 @@ nobody has watched fail is a claim.
   CAUGHT. The mutant also had an off-by-one that produced `##install-now` and matched nothing;
   that is recorded in its own comment.
   **This document previously said "10, all caught" against the SHARED registry, which holds
-  0 markdown mutants. Retracted; see limitation 14.**
+  0 markdown mutants, and pointed at a file path that does not exist. Both retracted: the set
+  lives at `script/m60/markdown-mutants.ts` and holds 15.**
 - **Differential (F5)** — RESTATED for 2026-10-03, because the earlier figures did not
   reproduce on this corpus and the reason belongs in the record. 60-file rotating draws:
   `scala3@18df09c0` (738 tracked `.md`) reads **MISSING=0, unexplained=0** over 1,092 truth
@@ -1046,11 +1194,15 @@ nobody has watched fail is a claim.
   corpora" is a different rotation (`--sample 120`) and is not restated as current. The 2
   unexplained are MD-DEFECT-2: the oracle shared the setext defect, so the differential was
   blind to it until the analyzer side was fixed — see the pass-2 section.
-  **These figures are CONDITIONAL on the §8 wiring.** With
-  `script/m14/differential.ts`'s compared-label allowlist as it stands,
-  `--lang markdown` reads **770 MISSING** on the kubernetes draw, every row an oracle
-  `references` edge the harness filtered out of the analyzer side. With `references` and
-  `imports` added it reads MISSING=0 at 100% covered.
+  **These figures are CONDITIONAL on the §8 wiring, and this round measured both sides of it
+  again.** With `script/m14/differential.ts`'s compared-label allowlist as it stands
+  (`["contains", "uses"]`), `--lang markdown` on this round's 60-file rotation reads
+  **MISSING=770** on kubernetes (covered 90.9%) and MISSING=0 on scala3 (covered 100%). With
+  `references` and `imports` added to that one array: **MISSING=0 and 100% covered on both**,
+  `unexplained=0` and `heuristic=0` unchanged, 9,591 oracle rows. The shared file was patched
+  only for the measurement and restored; `git diff` on it is empty. Logs:
+  `validation/m60/markdown/logs/differential.log` (as shipped) and
+  `differential-allowlisted-local.log` (patched).
   **And its limit, which no amount of differential testing removes:** it could not see the
   setext defect while the oracle shared it, and it cannot see a shared misreading of
   Liquid's tag syntax behind MD-G3. The whole-repo oracle census is the instrument that
@@ -1266,12 +1418,16 @@ repository reads markdown's field — html's field of the same name has its own 
 
 ### Two measurements that were wrong, and are recorded because they were wrong here first
 
-1. **Instrument A's denominator.** `construct-probe.ts` loads BOTH pinned wasms and its
-   header claims instrument A enumerates "every node type BOTH pinned grammars produce", but
-   its walk is over the BLOCK tree: the 47 node types it recorded are all block types, and
-   `inline_link`, `uri_autolink` and `code_span` are absent. The honest denominator is the
-   **104-type union** (82 block including anonymous tokens, 59 inline, 37 shared),
-   established by `pass2-labelling-probe.ts`. Every A ruling is now stated against 104.
+1. **Instrument A's denominator took two corrections to reach the corpus's, and the second
+   one is this round's.** `construct-probe.ts` loads BOTH pinned wasms and its header claims
+   instrument A enumerates "every node type BOTH pinned grammars produce", but its walk is
+   over the BLOCK tree: the 47 node types it recorded are all block types, and `inline_link`,
+   `uri_autolink` and `code_span` are absent. `pass2-labelling-probe.ts` fixed that to the
+   **104-type union** over a 1,200-file draw — which was still a draw. This round's
+   `ruling-table-adjudication.ts` measures the union over the whole 17,456-file population and
+   gets **108** (84 block, 65 inline). The draw's four missing types are
+   `numeric_character_reference`, `<?`, `<![CDATA[` and `]]>`; none affects a ruling, and every
+   A ruling is now stated against 108 with the draw recorded as the superseded measurement.
 2. **The `overrides` probe.** The bash probe — a second declaration of a name already
    declared in the file — returns 570 same-parent, same-level, same-text heading
    redeclarations in 23 files on markdown, and 2,453 repeated heading texts at any scope in
@@ -1288,9 +1444,20 @@ Not a blank list, and not a list of adjectives. Each item is a fact a consumer c
    destinations in a 1,200-file draw; 822 name a tracked file in the same repository and 503
    do not, and a per-file analyzer cannot tell them apart because production gives a markdown
    analyzer no project index (`PROJECT_INDEX_EXTENSIONS` carries `.sol` only). The same holds
-   for the 68 `imports` paths. A `bb_impact` reading of a markdown document therefore sees
-   its cross-file references as external names, which is honest about what is knowable from
-   one file and incomplete about the repository.
+   for the `imports` paths, and at whole-corpus scale that is **0 of 105 targets resolved** —
+   because an `imports` target is a PATH (`includes/traefik-for-business-applications.md`,
+   `properties.md`, `table-of-contents.yml`, `docs/elements/anchor.html`) and the graph's
+   endpoint vocabulary is symbol NAMES. So `imports` needs a path-resolution tier in the
+   graph/impact path, not a name-resolution one, and no fix inside this analyzer can supply
+   it. A `bb_impact` reading of a markdown document therefore sees its cross-file references
+   as external names, which is honest about what is knowable from one file and incomplete
+   about the repository.
+1b. **`references` resolves 100% file-local and 39.2% corpus-wide, and the gap is
+   concentrated.** 16,857 edges, 6,608 binding to a heading name in some other file of the
+   corpus. kubernetes alone contributes 10,055 of the 16,857, so the corpus-wide rate is
+   mostly a statement about one repository's CHANGELOG TOC convention rather than about the
+   type. Both numbers are reported for that reason and neither is presented as the type's
+   quality on its own.
 2. **`uses` edges to external URLs resolve at 0.0% and always will.** That is not a defect:
    nothing in any corpus declares `https://example.com`. A reader must not read the
    aggregate as a claim about the analyzer's endpoint quality — the per-role table above is
@@ -1327,14 +1494,34 @@ Not a blank list, and not a list of adjectives. Each item is a fact a consumer c
 
 ## Known gaps, in the order they should be closed
 
+0. **`extractFallback` fabricates `calls` and `instantiates` on documentation files.**
+   Shared file, §8, and this round's largest finding. Measured at corpus scale:
+   **11 of 17,456 files (0.0630%)** return `fallback: true` from production `parseFile`, and
+   every one of the 11 relationships they carry is a `calls` or `instantiates` edge read by
+   regex out of fenced code in another language, with the source `"this"`. Both whole-corpus
+   runs satisfy `degradedParse.relationships == calls + instantiates` exactly (11 = 8 + 3 and
+   36 = 33 + 3), and `fallback-attribution.ts` reproduces the counts by calling the producer
+   directly. Two one-line fixes in `src/ast/pool-worker.ts`, both needed: suppress
+   `calls`/`instantiates` for non-programming languages the way `keepSymbol` (line 434)
+   already exempts `markdown`, AND return a non-empty `errors` from `extractFallback` so a
+   degraded parse stops being indistinguishable from a clean one. Every language with fenced
+   code in its corpus has this; markdown is the first lane to measure it. Full detail above
+   under "The degraded set".
 1. **The pipeline deletion (4.33% of edges).** Shared file, §8. The fix is to extend
    `filterNoiseRelationships`' existing `declaredNames` escape to the leaf rules, so a
    target the file **declares** is not judged as an identifier. 1,765 edges per 1,200
    files; 89 `heading_hierarchy` edges per 200 files.
-2. **The lane has 0 mutants in the shared registry.** §8. Two lines —
+2. **The lane's mutants are written, all caught, and never constructed.** §8. Two lines —
    `import { MARKDOWN_MUTANTS }` and `...MARKDOWN_MUTANTS,` in
    `script/m14/mutate-analyzer.ts` — following the fsharp / css / nim / protobuf precedent
-   already in that file.
+   already in that file. **The registration gap is now measured rather than asserted:**
+   `validation/m14/fixtures/markdown/mutant-battery.ts` runs all 15 of them through
+   `runLang()` — the arbiter's own matcher, imported from `script/m14/run-fixtures.ts`, not
+   reimplemented — and reports **15/15 CAUGHT** from a 10-pass / 0-fail baseline. Several are
+   caught by three or more fixtures (`markdown/line-number-dropped` goes 0 → 8 failures).
+   So the fixture suite pins these surfaces and the ONLY thing missing is that
+   `bun run script/m14/mutate-analyzer.ts` never builds a markdown mutant. A survivor would
+   have meant the opposite; there were none.
 3. **The arbiter's ruling table is wired; the arbiter still cannot finish.** §8, and now the
    only reason. `script/m14/markdown-ruled.ts` exports `MARKDOWN_RULED` — six types, each
    with its instrument, probe, measured count and overturn condition — and commit
