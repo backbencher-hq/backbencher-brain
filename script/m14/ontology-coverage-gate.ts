@@ -67,6 +67,7 @@ import { NIM_RULED } from "./nim-ruled"
 import { SCSS_RULED } from "./scss-ruled"
 import { PHP_RULED } from "./php-ruled"
 import { SQL_RULED } from "./sql-ruled"
+import { SCSS_RULED } from "./scss-ruled"
 
 const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
 const LANG = process.argv[2] ?? "bash"
