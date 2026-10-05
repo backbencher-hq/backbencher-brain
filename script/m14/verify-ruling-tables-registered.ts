@@ -49,7 +49,7 @@ const onDisk = new Set(
  * A lane appears on the UNADJUDICATED list when it has neither source. That list is the
  * real remaining work: every entry needs a lane to write a ruling table.
  */
-const UNADJUDICATED = ["clean", "graphql", "r", "scss"]
+const UNADJUDICATED = ["clean", "graphql", "r"]
 
 const SPEC_DIR = join(HERE, "spec")
 
@@ -75,6 +75,16 @@ function specSuppliesRuling(lang: string): boolean {
 }
 
 for (const lang of UNADJUDICATED) {
+  // A lane leaves the list when EITHER source supplies a ruling. Checking only the spec
+  // was wrong the moment scss landed its table: scss stayed on UNADJUDICATED while being
+  // registered and passing, so the gate reported a lane as unadjudicated that had just
+  // been adjudicated. A stale entry is not neutral — it understates real coverage, which
+  // is the one direction that makes a reader stop trusting the number.
+  if (onDisk.has(lang)) {
+    console.error(`STALE LIST: ${lang} is listed unadjudicated but script/m14/${lang}-ruled.ts exists.`)
+    console.error(`Drop it from UNADJUDICATED. A stale entry understates real coverage.`)
+    process.exit(1)
+  }
   if (specSuppliesRuling(lang)) {
     console.error(`STALE LIST: ${lang} is listed unadjudicated but its spec carries a RULED decision.`)
     console.error("Drop it from UNADJUDICATED. A stale list hides the lane it forgot.")
