@@ -2,10 +2,10 @@
   "issue": "M28.V1",
   "code": "V1",
   "milestone": "M28",
-  "status": "known-gap",
+  "status": "verified",
   "checks": 13,
-  "passed": 12,
-  "failed": 1,
+  "passed": 13,
+  "failed": 0,
   "mutantsCaught": 2,
   "mutantsTotal": 2,
   "mutantRecords": [
@@ -18,17 +18,15 @@
       "caught": true
     }
   ],
-  "currentCommit": "a0ed9eade7008de7ce93a312f6b0bd7e182a43a9",
+  "currentCommit": "d5c265b3a9a185d0927d2167e0cc562f5092d6e9",
   "verifierCommand": "npx tsx script/m28/verify-mcp-surface.ts",
   "evidenceFile": "V1.json",
-  "generatedAt": "2026-10-04T23:07:01.304Z",
+  "generatedAt": "2026-10-05T02:50:09.413Z",
   "claimLevel": "n/a — this issue produces a generated truth doc, not a claim",
-  "failures": [
-    "V1: union claim cites the real U1 numbers —  verified via [U1.json](../../validation/m28/results/U1.json) (16/16 checks, 4/4 mutants).\n\n## Annotations (D-3/D-6)\n\nProvenance is schema-enforced (`author_cla"
-  ],
+  "failures": [],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-04T23:07:01.311Z",
-    "contentSha256": "babf1b41a4c55169c009151511efe89fdd06014d71f7f48731373e9c4fd7cc49"
+    "sealedAt": "2026-10-05T02:50:09.415Z",
+    "contentSha256": "4a2b24e6a6b7d5073cdf8f752974d984e4232bf388391efeac556b2d75c6d20a"
   }
 }

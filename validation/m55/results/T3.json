@@ -3,23 +3,23 @@
   "code": "T3",
   "milestone": "M55",
   "status": "known-gap",
-  "checks": 52,
-  "passed": 50,
-  "failed": 2,
-  "realFailed": 2,
+  "checks": 57,
+  "passed": 51,
+  "failed": 6,
+  "realFailed": 6,
   "negativeCases": 3,
   "mutants": {
     "total": 3,
     "caught": 3
   },
-  "currentCommit": "a0ed9eade7008de7ce93a312f6b0bd7e182a43a9",
+  "currentCommit": "d5c265b3a9a185d0927d2167e0cc562f5092d6e9",
   "workingTreeRelevantChanges": [],
   "verifierCommand": "npx tsx script/m55/verify-relations.ts",
   "evidenceFile": "T3.json",
-  "generatedAt": "2026-10-04T22:50:04.392Z",
+  "generatedAt": "2026-10-05T02:52:25.145Z",
   "fixture": {
-    "workspace": "/var/folders/4j/11tssyqj4kj0f8dfz06jsb700000gn/T/m55-t3-ws-hv7iS2",
-    "projectId": "41ccc57cb85aa6a51211165bdfaea877bf27374c",
+    "workspace": "/var/folders/4j/11tssyqj4kj0f8dfz06jsb700000gn/T/m55-t3-ws-zi0Y92",
+    "projectId": "f07e95c8a2889ca9e50d621f97dd6e5323e65ff9",
     "symbols": 7,
     "rows": 12,
     "expect": {
@@ -45,10 +45,14 @@
     "greetSqlCount": 3,
     "greetAllUsageCount": 0,
     "greeterUsageCount": 2,
-    "referencesNoDecl": 3,
-    "referencesWithDecl": 4
+    "referencesNoDecl": 4,
+    "referencesWithDecl": 5
   },
   "failures": [
+    "R2: references(includeDeclaration=false) equals the usage-site count: 4 vs 3",
+    "R2: references(+declaration) adds exactly the declaration site: 5 vs 4",
+    "R3: textDocument/references agrees with the hover count: 4 vs 3",
+    "R3: references(+declaration) adds exactly one site on the wire: 5 vs 4",
     "R3: every bb/graph caller is a usage site or a stored referrer the index cannot locate (the graph declares its own profile): {\"callers\":[\"Greeter\",\"describe\",\"ghost\",\"greetAll\",\"main\"],\"allowed\":[\"describe\",\"ghost\",\"greetAll\",\"main\"]}",
     "R3: the hub's declared difference is exactly the referrers with no resolvable location: {\"extra\":[\"Greeter\",\"ghost\"],\"unresolvable\":[\"ghost\"]}"
   ],
@@ -59,7 +63,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-04T22:50:04.394Z",
-    "contentSha256": "ef392150c70c57d5da097749b67a3992501bc11006e455517ed424ffe5f84174"
+    "sealedAt": "2026-10-05T02:52:25.147Z",
+    "contentSha256": "907f6756992c2a94739074086a61bd95865d73e303fbe6734d1a300a61de2577"
   }
 }
