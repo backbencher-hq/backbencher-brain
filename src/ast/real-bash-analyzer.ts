@@ -335,8 +335,30 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
     // current as aliases are discovered.
     const scopeOwners: Set<string> = localFunctions
     const functionStack: string[] = []
-    // First declaration line per function name, for the BD8b `overrides` edge.
-    const functionFirstDeclaration = new Map<string, number>()
+    // The PRIOR declaration line per function name, for the BD8b `overrides` edge.
+    //
+    // This recorded the FIRST declaration and the map's name said so, which was
+    // true and wrong at once for a name declared more than twice. `overridesLine` is
+    // read by the edge as "the declaration this one replaces", and the declaration a
+    // redefinition replaces is the one IN EFFECT — the latest before it, not the
+    // first. Measured on the 600-file sample: 21 of 30 ambiguous `overrides` edges
+    // published a line that is a real declaration of the name and is NOT the
+    // declaration the edge overrides, every one of them a chain:
+    //
+    //   dart-sdk ... clipcopy declared at 55,58,61,64,67,70,73,76,79,82,85,97
+    //   edge@61  overridesLine=55   the definition in effect is 58
+    //   edge@67  overridesLine=55   the definition in effect is 64
+    //
+    // So a consumer that trusts the key draws an `overrides` edge from 61 to 55
+    // while 58 is the row that definition 61 actually displaces — an edge to a real
+    // declaration, asserted as the wrong one. `probe-bash-contains-overrides-ceiling.mts`
+    // measures it: `overridesLine` picks a declaration 30/30 and names the
+    // immediately-prior one 9/30.
+    //
+    // The map is renamed with the behaviour rather than left to read as a first-line
+    // index, and `functionDeclLines` below no longer needs the comment that explained
+    // why this one recorded only the first.
+    const functionPriorDeclaration = new Map<string, number>()
     const functionParams = new Map<string, Set<string>>()
     const relKeys = new Set<string>()
     // BD1: the line is part of an edge's identity. Keyed with the line so two
@@ -475,7 +497,27 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
           // `overridesLine` carries the prior declaration's line explicitly so a
           // consumer does not have to infer it. `contains` already emits both
           // declarations, so the pair is resolvable.
-          const prior = functionFirstDeclaration.get(name)
+          //
+          // `overridesLine` names the declaration IN EFFECT at the moment of the
+          // redefinition — the immediately prior one — because that is the
+          // declaration this one displaces. In bash the binding a call site uses is
+          // whatever is in effect when it runs, so a later definition does not
+          // override the first one it happens to be preceded by; it overrides the
+          // one the running shell would have called. For a name declared twice the
+          // two readings coincide, which is why the error was invisible until a
+          // name was declared three or more times: `ohmyzsh/lib/clipboard.zsh`
+          // declares `clipcopy` at 55,58,61,64,67,70,73,76,79,82,85,97.
+          //
+          // Measured on the 600-file sample with the previous first-declaration
+          // behaviour: all 30 ambiguous `overrides` edges resolved `overridesLine`
+          // to a real declaration of the name, and only 9 of those 30 were the
+          // immediately prior one — the other 21 named an earlier declaration, so a
+          // consumer reading the key drew `overrides` to a row the definition never
+          // displaced. `probe-bash-contains-overrides-ceiling.mts` is the
+          // instrument, and `validation/m14/fixtures/bash/overrides-prior-line.sh`
+          // is what keeps it fixed — a four-declaration chain, because the two-row
+          // `redefinition-overrides.sh` cannot tell this reading from the old one.
+          const prior = functionPriorDeclaration.get(name)
           if (prior !== undefined) {
             addRel(
               parentFn || scriptName,
@@ -490,9 +532,12 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
                 evidenceClass: "structural",
               },
             )
-          } else {
-            functionFirstDeclaration.set(name, node.startPosition.row + 1)
           }
+          // Set UNCONDITIONALLY, after the edge: the next declaration of this name
+          // must find the one in effect, which is this one. Writing it only on the
+          // branch that emitted no edge would freeze the map at the first
+          // declaration forever, which is the defect this line replaced.
+          functionPriorDeclaration.set(name, node.startPosition.row + 1)
         }
         patterns.add("Function Definition")
       } else if (node.type === "command_substitution") {
@@ -669,10 +714,11 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     // Every declaration line per FUNCTION name, for the `calls` attribution below.
     //
-    // `functionFirstDeclaration` (above) records only the first, because `overrides`
-    // needs the prior one and nothing else. A `calls` edge needs the opposite
-    // question — WHICH of several declarations is the one in effect at the call
-    // site — so it needs all of them.
+    // `functionPriorDeclaration` (above) holds only the most recent declaration of a
+    // name, because that is the only prior declaration an `overrides` edge can
+    // mean, and it keeps none of the earlier ones. A `calls` edge needs the
+    // opposite question — WHICH of several declarations is the one in effect at the
+    // call site — so it needs all of them.
     //
     // It is indexed from the PUBLISHED `symbols`, not from the walk's own
     // bookkeeping, so a `targetLine` produced from it is a line the store actually
