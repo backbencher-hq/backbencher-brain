@@ -3,59 +3,83 @@
   "code": "T2",
   "milestone": "M55",
   "status": "known-gap",
-  "checks": 39,
-  "passed": 37,
+  "checks": 53,
+  "passed": 51,
   "failed": 0,
   "realFailed": 2,
   "mutantsCaught": 5,
   "mutantsTotal": 5,
-  "currentCommit": "a0ed9eade7008de7ce93a312f6b0bd7e182a43a9",
+  "mutantsNotJudged": 0,
+  "mutantsJudged": 5,
+  "mutantVerdicts": [
+    {
+      "name": "call sites: skip the source resolution (stored line / name-token fallback only)",
+      "caught": true,
+      "detail": "{\"rangesOk\":false,\"droppedOk\":true,\"selectionOk\":true,\"declaredOk\":true,\"hopOk\":true}",
+      "caughtBy": "rangesOk"
+    },
+    {
+      "name": "identity: re-admit receiver-qualified self-edges (the pre-M55 behavior)",
+      "caught": true,
+      "detail": "{\"rangesOk\":true,\"droppedOk\":false,\"selectionOk\":true,\"declaredOk\":true,\"hopOk\":true}",
+      "caughtBy": "droppedOk"
+    },
+    {
+      "name": "selection: point selectionRange at the whole body",
+      "caught": true,
+      "detail": "{\"rangesOk\":true,\"droppedOk\":true,\"selectionOk\":false,\"declaredOk\":true,\"hopOk\":true}",
+      "caughtBy": "selectionOk"
+    },
+    {
+      "name": "directness: re-admit transitive hops (the engine's depth > 0 rows)",
+      "caught": true,
+      "detail": "{\"rangesOk\":true,\"droppedOk\":true,\"selectionOk\":true,\"declaredOk\":true,\"hopOk\":false}",
+      "caughtBy": "hopOk"
+    },
+    {
+      "name": "declared: hide the approximation (undeclared substitute)",
+      "caught": true,
+      "detail": "{\"rangesOk\":true,\"droppedOk\":true,\"selectionOk\":true,\"declaredOk\":false,\"hopOk\":true}",
+      "caughtBy": "declaredOk"
+    }
+  ],
+  "mutantHarness": {
+    "importRewriting": "GENERIC: every relative import in the component copy is rewritten to an absolute file URL from what the source ACTUALLY imports (not a hand-written list)",
+    "preLaneDefect": "the pre-lane rewriter was a hand-written list that omitted ./signature (and, since wave 1, ./launch_languages, ./symbols, ../brain/freshness and ../intelligence/graph/line-address); every mutant then died on an import error while being counted \"caught\", so the evidence said 5/5 while the oracle had never run",
+    "importFailureIsNotCaught": true,
+    "componentImportsAtThisRun": [
+      "../brain/database",
+      "../brain/freshness",
+      "../intelligence/contracts",
+      "../intelligence/graph/graph-engine",
+      "../intelligence/graph/line-address",
+      "../project/schema",
+      "./launch_languages",
+      "./navigation",
+      "./positions",
+      "./signature",
+      "./symbols"
+    ]
+  },
+  "currentCommit": "e68fbb6628e9ee217491bcca92d97b67b5f264f4",
   "workingTreeRelevantChanges": [
-    "docs/m25/FORK-CAPABILITY-MATRIX.md",
-    "validation/m24/results/D1.json",
-    "validation/m24/results/L1.json",
-    "validation/m24/results/L2.json",
-    "validation/m24/results/L3.json",
+    "script/m24/verify-call-hierarchy.ts",
+    "script/m55/verify-call-hierarchy.ts",
+    "script/m59/verify-honest-callsite.ts",
+    "src/lsp/call_hierarchy.ts",
     "validation/m24/results/L4.json",
     "validation/m24/results/L5.json",
-    "validation/m24/results/V1.json",
-    "validation/m25/results/D1.json",
-    "validation/m25/results/E1.json",
-    "validation/m25/results/E2.json",
-    "validation/m25/results/E3-render-capture.txt",
-    "validation/m25/results/E3.json",
-    "validation/m25/results/E7-darwin.json",
-    "validation/m25/results/E7-linux.json",
-    "validation/m25/results/E7-windows.json",
-    "validation/m25/results/F-ANTIGRAVITY.json",
-    "validation/m25/results/F-CURSOR.json",
-    "validation/m25/results/F-WINDSURF.json",
-    "validation/m25/results/V1.json",
-    "validation/m25/results/X1.json",
-    "validation/m26/results/D1.json",
-    "validation/m26/results/V1.json",
-    "validation/m26/results/W1.json",
-    "validation/m26/results/W2.json",
-    "validation/m26/results/W3-pairs.json",
-    "validation/m26/results/W3.json",
-    "validation/m26/results/W4.json",
-    "validation/m26/results/W5.json",
-    "validation/m26/results/W6.json",
-    "validation/m27/results/G1.json",
-    "validation/m28/results/G1.json",
-    "validation/m55/results/P1.json",
-    "validation/m55/results/T1.json",
-    "validation/m55/results/T3.json",
-    "validation/m55/results/T4.json",
-    "validation/m61/results/V4.json",
-    "validation/m24/.freshness-mutant.ts",
-    "validation/m26/graph-core.w4mutant.1791154051491.2.ts"
+    "validation/m55/results/T2.json",
+    "validation/m59/results/honest-callsite.json",
+    "script/m55/measure-address-agreement.ts",
+    "validation/m55/fixtures/agreement-workspace/",
+    "validation/m55/results/address-agreement.json"
   ],
   "verifierCommand": "npx tsx script/m55/verify-call-hierarchy.ts",
   "evidenceFile": "T2.json",
-  "generatedAt": "2026-10-04T22:50:40.016Z",
+  "generatedAt": "2026-10-05T02:52:27.635Z",
   "fixture": {
-    "root": "$HOME/Documents/Default Project/ishaq/wt/lsp9/validation/m55/fixtures/t2-workspace",
+    "root": "$HOME/Documents/Default Project/ishaq/wt/lsp5/validation/m55/fixtures/t2-workspace",
     "files": [
       "src/store.ts",
       "src/loop.ts",
@@ -75,7 +99,7 @@
   },
   "failures": [
     "W1: `get` is never called anywhere in the fixture, so it has zero callers (no fabricated ones): [\"Store\",\"set\"]",
-    "C2: resolved call sites are declared, none approximate: {\"resolved\":1,\"approx\":1,\"calls\":2}"
+    "C6: every rendered caller carries a call-site range for a CALLS row (a `contains`/`uses` row must not produce one): 2 rendered entries come from a non-`calls` relationship and carry a fromRange: [{\"name\":\"Store\",\"detail\":\"class · contains · 1 call site\",\"ranges\":[{\"start\":{\"line\":8,\"character\":22},\"end\":{\"line\":8,\"character\":25}}]},{\"name\":\"set\",\"detail\":\"method · uses · 1 call site · position approximate\",\"ranges\":[{\"start\":{\"line\":11,\"character\":2},\"end\":{\"line\":11,\"character\":5}}]}]"
   ],
   "limitations": [
     "the analyzer stores relationship line_number = 0 for every row today; the call-site positions here are derived from the caller's own source, which is why they are exact. The stored-value path (a future analyzer change) is exercised only as a declared fallback.",
@@ -83,7 +107,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-04T22:50:40.018Z",
-    "contentSha256": "abb6caaee6d35c270067662fac55fe7e6c704260ce3a075af40fc8ee4396234d"
+    "sealedAt": "2026-10-05T02:52:27.638Z",
+    "contentSha256": "b00e74b54f4a13c67859b7520c869ab87a1bd2edd404c525fc00f9105786d846"
   }
 }

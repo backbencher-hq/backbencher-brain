@@ -1,0 +1,299 @@
+{
+  "code": "M55.D4",
+  "issue": "D4 — two sources of truth for \"where is this called?\"",
+  "status": "measured",
+  "decision": {
+    "chosen": "(a) cross-check and declare",
+    "rejected": [
+      "(b) source-first with the stored line as the fallback: it makes the stored line a labelled substitute presented as a call site, which is the defect §15.3 names first, and it deletes the labelled name-token fallback this surface already has",
+      "(c) keep the two separate and reconcile in the legend: it defers the reconciliation to a reader, and a reconciliation nobody measures cannot be gated"
+    ],
+    "authority": "docs/m62/CALLSITE-MIGRATION.md §3.1, docs/IDE-HONESTY-CONTRACT.md §15.1"
+  },
+  "measurement": {
+    "scope": "PRESENCE on one purpose-built multi-language fixture indexed fresh by the real indexer. NOT per-language coverage; coverage on real repositories is not claimed (the migration spec §1 makes the same distinction about its own table).",
+    "fixtureRoot": "$HOME/Documents/Default Project/ishaq/wt/lsp5/validation/m55/fixtures/agreement-workspace",
+    "languages": [
+      "groovy",
+      "java",
+      "json",
+      "kt",
+      "py",
+      "scala",
+      "ts"
+    ],
+    "filesIndexed": 12,
+    "storedCallsRows": 16,
+    "rowsCompared": 10,
+    "rowsNotCompared": 6,
+    "buckets": {
+      "agree": 7,
+      "disagree": 1,
+      "source-only": 2,
+      "store-only": 0,
+      "neither": 6
+    },
+    "agreementRate": 0.4375,
+    "agreementRateDenominator": 16,
+    "byDirectness": {
+      "direct": {
+        "agree": 7,
+        "disagree": 1,
+        "source-only": 2,
+        "store-only": 0,
+        "neither": 6,
+        "denominator": 16,
+        "agreementRate": 0.4375
+      },
+      "hop": null,
+      "depthUnstated": {
+        "agree": 7,
+        "disagree": 1,
+        "source-only": 2,
+        "store-only": 0,
+        "neither": 6,
+        "denominator": 16,
+        "agreementRate": 0.4375
+      }
+    },
+    "classes": {
+      "disagree|direct|storeNamesLine=true|scanCount=1": 1
+    },
+    "unplanted": {
+      "rows": 13,
+      "buckets": {
+        "agree": 7,
+        "disagree": 0,
+        "source-only": 0,
+        "store-only": 0,
+        "neither": 6
+      },
+      "agreementRate": 0.5384615384615384
+    },
+    "planted": {
+      "rows": 3,
+      "byClass": {
+        "store-names-no-call-site": {
+          "rows": 1,
+          "buckets": {
+            "agree": 0,
+            "disagree": 0,
+            "source-only": 1,
+            "store-only": 0,
+            "neither": 0
+          }
+        },
+        "legacy-zero-placeholder": {
+          "rows": 1,
+          "buckets": {
+            "agree": 0,
+            "disagree": 0,
+            "source-only": 1,
+            "store-only": 0,
+            "neither": 0
+          }
+        },
+        "store-names-the-containing-type": {
+          "rows": 1,
+          "buckets": {
+            "agree": 0,
+            "disagree": 1,
+            "source-only": 0,
+            "store-only": 0,
+            "neither": 0
+          }
+        }
+      },
+      "buckets": {
+        "agree": 0,
+        "disagree": 1,
+        "source-only": 2,
+        "store-only": 0,
+        "neither": 0
+      }
+    },
+    "plants": [
+      {
+        "class": "store-names-the-containing-type",
+        "storedLine": 1,
+        "why": "the stored line is the file's line 1 while the source invokes the target on line 6 - the store and the text name DIFFERENT lines for one row (disagree)",
+        "landed": true
+      },
+      {
+        "class": "store-names-no-call-site",
+        "storedLine": null,
+        "why": "the stored line is NULL, so the owner's verdict is 'unknown' while the source resolves the invocation - source-only",
+        "landed": true
+      },
+      {
+        "class": "legacy-zero-placeholder",
+        "storedLine": 0,
+        "why": "the stored line is the legacy 0 placeholder, which the owner classifies as unknown and NEVER as line 0",
+        "landed": true
+      }
+    ],
+    "notCompared": {
+      "rows": 6,
+      "reasons": {
+        "the row names no target symbol (an external/unresolved target)": 6
+      },
+      "detail": [
+        {
+          "rowId": "a20d8aac1f582ac54d9ced708b6087ed68b09b0f:rel:a20d8aac1f582ac54d9ced708b6087ed68b09b0f:src/Bridge.ts:BridgeCaller:3:run:calls:5",
+          "from": "src/Bridge.ts:BridgeCaller",
+          "to": "(unresolved)",
+          "storedLine": 5,
+          "reason": "the row names no target symbol (an external/unresolved target)"
+        },
+        {
+          "rowId": "a20d8aac1f582ac54d9ced708b6087ed68b09b0f:rel:a20d8aac1f582ac54d9ced708b6087ed68b09b0f:src/Lam.kt:caller:3:first:calls:3",
+          "from": "src/Lam.kt:caller",
+          "to": "(unresolved)",
+          "storedLine": 3,
+          "reason": "the row names no target symbol (an external/unresolved target)"
+        },
+        {
+          "rowId": "a20d8aac1f582ac54d9ced708b6087ed68b09b0f:rel:a20d8aac1f582ac54d9ced708b6087ed68b09b0f:src/Lam.kt:caller:3:map:calls:3",
+          "from": "src/Lam.kt:caller",
+          "to": "(unresolved)",
+          "storedLine": 3,
+          "reason": "the row names no target symbol (an external/unresolved target)"
+        },
+        {
+          "rowId": "a20d8aac1f582ac54d9ced708b6087ed68b09b0f:rel:a20d8aac1f582ac54d9ced708b6087ed68b09b0f:src/LamCaller.kt:LambdaCaller:3:first:calls:3",
+          "from": "src/LamCaller.kt:LambdaCaller",
+          "to": "(unresolved)",
+          "storedLine": 3,
+          "reason": "the row names no target symbol (an external/unresolved target)"
+        },
+        {
+          "rowId": "a20d8aac1f582ac54d9ced708b6087ed68b09b0f:rel:a20d8aac1f582ac54d9ced708b6087ed68b09b0f:src/LamCaller.kt:LambdaCaller:3:map:calls:3",
+          "from": "src/LamCaller.kt:LambdaCaller",
+          "to": "(unresolved)",
+          "storedLine": 3,
+          "reason": "the row names no target symbol (an external/unresolved target)"
+        },
+        {
+          "rowId": "a20d8aac1f582ac54d9ced708b6087ed68b09b0f:rel:a20d8aac1f582ac54d9ced708b6087ed68b09b0f:src/MacroCaller.scala:MacroCaller:3:summon:calls:3",
+          "from": "src/MacroCaller.scala:MacroCaller",
+          "to": "(unresolved)",
+          "storedLine": 3,
+          "reason": "the row names no target symbol (an external/unresolved target)"
+        }
+      ]
+    },
+    "zeroRateInterrogation": {
+      "disagreementsFound": 1,
+      "sourceOnlyFound": 2,
+      "verdict": "non-zero on the planted population; 9/9 agree (store-only reachable: false) on the unplanted second population",
+      "claimNotMade": "This run does NOT establish that the source-resolved and store-derived positions always agree, nor that they disagree on real repositories. It establishes what happened on this 10-row comparable sample, lists every non-comparable row with its reason, and separates the planted rows from the ones the real indexer wrote.",
+      "whyARateIsNotTheGate": "A rate is a description of one population. What makes the cross-check trustworthy is that a difference CANNOT be absorbed: bucket reachability is asserted on real rows here (a planted disagree and a planted store-only row must both be detected) and again under the fixture double in script/m24/verify-call-hierarchy.ts G13, with 13 mutation legs planting defects in the cross-check and the counts.",
+      "bucketReachabilityProvenHere": "planted disagree >= 1, planted store-only >= 1, planted source-only >= 1 — asserted above",
+      "bucketReachabilityProvenElsewhere": "script/m24/verify-call-hierarchy.ts — G13 asserts each of the five buckets is reachable and distinguishable, with a negative proving store-only and disagree are not the same claim; 13 mutation legs plant defects in the cross-check and the counts.",
+      "coverageNotClaimed": "one purpose-built fixture; per-language coverage on real repositories is NOT measured and NOT claimed"
+    },
+    "secondPopulation": {
+      "why": "a disagreement class that exists only under a hand-written store state is not evidence that the class OCCURS. This population is indexed by the real indexer with NOTHING planted.",
+      "root": "$HOME/Documents/Default Project/ishaq/wt/lsp5/validation/m55/fixtures/t2-workspace",
+      "rows": 9,
+      "rowsCompared": 9,
+      "buckets": {
+        "agree": 9,
+        "disagree": 0,
+        "source-only": 0,
+        "store-only": 0,
+        "neither": 0
+      },
+      "agreementRate": 1,
+      "classes": [],
+      "storeOnlyReachableUnplanted": false,
+      "storeOnlyUnplantedAbsence": {
+        "found": false,
+        "searched": [
+          "validation/m55/fixtures/agreement-workspace - 13 unplanted stored calls rows across groovy, java, json, kt, py, scala, ts",
+          "validation/m55/fixtures/t2-workspace - 9 unplanted stored calls rows (typescript)"
+        ],
+        "why": "no unplanted row in either population carries a call-site line the caller's own text does not show. Every unplanted row's stored line names an invocation the text contains. The class is therefore demonstrated ONLY by (a) the planted store state above and (b) the fixture-double gate in script/m24/verify-call-hierarchy.ts G13 — NOT by the analyzers measured here. Whether the macro / template / dynamic case occurs on real repositories is NOT established by this run."
+      }
+    },
+    "disagreements": [
+      {
+        "bucket": "disagree",
+        "rowId": "a20d8aac1f582ac54d9ced708b6087ed68b09b0f:rel:a20d8aac1f582ac54d9ced708b6087ed68b09b0f:src/Three.ts:ThreeCaller:7:target:calls:8",
+        "from": "src/Three.ts:ThreeCaller",
+        "to": "src/Three.ts:target",
+        "storedLine": 1,
+        "scanLines1": [
+          8
+        ],
+        "depth": 0
+      }
+    ],
+    "zeroDifferenceRateNote": "A zero disagreement rate would NOT mean the two sources always agree: it would more likely mean the compared population is too small or too uniform. This run measured a NON-ZERO disagreement count and lists every row; the denominator is on every figure so a reader can judge the population rather than trust the rate."
+  },
+  "componentCensus": {
+    "totalEdgesRead": 4,
+    "distinctRowsRead": 6,
+    "rowsBothSidesClassified": 3,
+    "rowWiseMismatches": [],
+    "perResponse": [
+      {
+        "root": "target",
+        "direction": "incoming",
+        "edges": 3,
+        "agree": 2,
+        "disagree": 1,
+        "sourceOnly": 0,
+        "storeOnly": 0,
+        "neither": 0
+      },
+      {
+        "root": "target",
+        "direction": "outgoing",
+        "edges": 1,
+        "agree": 0,
+        "disagree": 0,
+        "sourceOnly": 0,
+        "storeOnly": 1,
+        "neither": 0
+      }
+    ]
+  },
+  "lawsAsserted": [
+    "Law 1: the five buckets partition every measured row (a rate over a moving denominator is not a measurement)",
+    "Law 2: ROW-WISE, on every stored row both this script and the component classified, the two verdicts are identical, and a non-agreeing row was declared by the component. The overlap is required to be non-empty and to be more than one row, so the law cannot pass vacuously. §13.4 is asserted on every response driven here",
+    "Law 2 does NOT compare aggregate totals: this script measures every stored row while the component reads only what the engine hands it for the roots driven, and the component dedupes callers. A totals comparison would conflate a population difference with a disagreement."
+  ],
+  "passed": 17,
+  "failed": 0,
+  "failures": [],
+  "currentCommit": "e68fbb6628e9ee217491bcca92d97b67b5f264f4",
+  "workingTreeRelevantChanges": [
+    "script/m24/verify-call-hierarchy.ts",
+    "script/m55/verify-call-hierarchy.ts",
+    "script/m59/verify-honest-callsite.ts",
+    "src/lsp/call_hierarchy.ts",
+    "validation/m24/results/L4.json",
+    "validation/m24/results/L5.json",
+    "validation/m55/results/T2.json",
+    "validation/m59/results/honest-callsite.json",
+    "script/m55/measure-address-agreement.ts",
+    "validation/m55/fixtures/agreement-workspace/",
+    "validation/m55/results/address-agreement.json"
+  ],
+  "sourceFingerprint": "66bd8c7c3a8846be4af7c7fe050f2252f8e4f0e6d3f3fa5cf10a6d17d72fa03f",
+  "verifierCommand": "npx tsx script/m55/measure-address-agreement.ts",
+  "evidenceFile": "validation/m55/results/address-agreement.json",
+  "generatedAt": "2026-10-05T02:52:58.268Z",
+  "limitations": [
+    "one fixture project; per-language coverage on real repositories is NOT measured and NOT claimed",
+    "the resolver is the component's own (imported, not re-implemented) because a second implementation would be a second source of truth - the thing D4 exists to end; the CLASSIFICATION here is written independently so the two verdicts are comparable",
+    "the engine's depth is obtained by traversal; a row no traversal reached is reported as depth 0 (unstated) rather than assumed direct",
+    "the store-only bucket counts rows where the scan cannot see the invocation; attributing such a row to a macro/template/dynamic dispatch is an INFERENCE from the store and the text, not a diagnosis"
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-10-05T02:52:58.271Z",
+    "contentSha256": "b82aa9593fa4414ea4ec787b3f6252afac01014889330ad758719a362b9f7a79"
+  }
+}

@@ -45,6 +45,7 @@ let passed = 0;
 const failures: string[] = [];
 let mutantsCaught = 0;
 let mutantsTotal = 0;
+let mutantsNotJudged = 0;
 
 function check(label: string, ok: boolean, detail = ""): void {
   checks++;
@@ -53,10 +54,44 @@ function check(label: string, ok: boolean, detail = ""): void {
   console.log(`  ${ok ? "✓" : "✗"} ${label}${ok || !detail ? "" : ` — ${detail}`}`);
 }
 
+/**
+ * A mutant is CAUGHT only when the oracle judged it. A mutant that died on an
+ * import error proved nothing — the code under test never ran — and counting it
+ * as caught is how this suite reported 5/5 while all five mutants had failed to
+ * import. Those are tallied separately in `mutantsNotJudged` and reported.
+ */
+/** Every mutant's verdict AND its per-predicate detail, so the evidence shows
+ *  WHICH oracle assertion flipped — not merely that something changed. A count
+ *  with no detail cannot distinguish a behavioural catch from an incidental one. */
+const mutantVerdicts: Array<{ name: string; caught: boolean; detail: string; caughtBy: string }> = [];
+
 function mutant(label: string, caught: boolean, detail = ""): void {
   mutantsTotal++;
   if (caught) mutantsCaught++;
+  // Which of the five predicates flipped — this is what makes "caught" mean
+  // something. Read from the detail the oracle itself computed.
+  let caughtBy = "(none: the mutant changed nothing the oracle measures)";
+  try {
+    const parsed = JSON.parse(detail) as Record<string, boolean>;
+    const flipped = Object.entries(parsed).filter(([, ok]) => !ok).map(([k]) => k);
+    caughtBy = flipped.length > 0 ? flipped.join(", ") : caught ? "(component crash)" : "(no predicate flipped)";
+  } catch { caughtBy = detail.length > 0 ? detail : caughtBy }
+  mutantVerdicts.push({ name: label, caught, detail, caughtBy });
   check(`${label} [mutant]`, caught, detail);
+  console.log(`      caught by: ${caughtBy}`);
+}
+
+/** The component's ACTUAL relative-import specifiers, read from the source. The
+ *  rewriter's correctness is a claim about this list, so the list is published. */
+function relativeImportsOfComponent(): string[] {
+  return [...readFileSync(COMPONENT, "utf8").matchAll(/from\s+"(\.\.?\/[^"]+)"/g)].map((m) => m[1]!).sort();
+}
+
+/** Record a mutant the harness could NOT judge. Never counts as caught. */
+function mutantNotJudged(label: string, detail: string): void {
+  mutantsTotal++;
+  mutantsNotJudged++;
+  console.log(`  ✗ ${label} [mutant NOT JUDGED — the oracle never ran] ${detail}`);
 }
 
 const currentCommit = execFileSync("git", ["rev-parse", "HEAD"], { cwd: ROOT, encoding: "utf8" }).trim();
@@ -361,8 +396,66 @@ try {
     return dropped.length >= 1 && dropped.some((d: any) => String(d.reason).includes("receiver-qualified") && String(d.reason).includes("this.items.get"));
   })(), JSON.stringify(compIncoming.droppedEdges));
   check("C1: the drop count matches the wire (no artifact caller rendered)", compIncoming.calls.length === getIncomingCalls.length, `${compIncoming.calls.length} vs ${getIncomingCalls.length}`);
-  check("C2: resolved call sites are declared, none approximate", compIncoming.callSitesResolved + compIncoming.callSitesApproximate === compIncoming.calls.length && compIncoming.callSitesApproximate === 0, JSON.stringify({ resolved: compIncoming.callSitesResolved, approx: compIncoming.callSitesApproximate, calls: compIncoming.calls.length }));
 
+  // --- C6: A fromRange may only be produced for a `calls` ROW. ---------------
+  //
+  // NEW BUG CLASS, found while measuring D4 and gated here BEFORE any fix (F7).
+  // It is RED on the real index and the cause is not the call-site resolution:
+  //
+  //   The engine's owner cascade folds NON-CALL rows onto the traced symbol. For
+  //   `Store.get` the engine returns `get:contains:8` (from `Store`) and
+  //   `items:uses:13` (from `set`), both with `targetMatch: "owner-cascade"`. The
+  //   component's directness rule only guards `relationshipType === "calls"`, so
+  //   these rows reach the renderer and produce fromRanges: `Store` gets a range
+  //   on line 9 — the `this.items.get(` in `get`'s own body, a call on Map, not on
+  //   `Store.get` — and `set` gets its own name token labelled
+  //   `position approximate`.
+  //
+  // So the surface hands the editor a RANGE for a relation that is not a call at
+  // all (`contains`, `uses`). §15.3: "A range handed to the editor points at the
+  // call site it names, never at a declaration". A range for a `contains` row
+  // names nothing that was called. The relationship type IS visible in the item's
+  // detail line ("class · contains · 1 call site"), which is why this was not a
+  // lie told silently — but a call-site RANGE is still produced.
+  //
+  // The fix is NOT in this wave: it changes which rows the editor sees for every
+  // caller list on every language, and it belongs with the owner cascade's own
+  // contract (`targetMatch: owner-cascade`, src/intelligence/contracts.ts). What
+  // this wave owes is the gate, and the honest verdict is RED.
+  const nonCallRendered = compIncoming.calls.filter((c: any) => !/^calls\b/.test(String(c.from?.detail ?? ""))).map((c: any) => ({
+    name: c.from?.name, detail: c.from?.detail, ranges: c.fromRanges,
+  }))
+  check(
+    "C6: every rendered caller carries a call-site range for a CALLS row (a `contains`/`uses` row must not produce one)",
+    nonCallRendered.length === 0,
+    `${nonCallRendered.length} rendered entries come from a non-` + "`calls`" + ` relationship and carry a fromRange: ${JSON.stringify(nonCallRendered)}`,
+  );
+  // The complementary half, which is what a fix would have to satisfy: the
+  // relationship type must stay VISIBLE, so suppressing a row never becomes
+  // silently relabelling it.
+  check(
+    "C6b: the relationship type is declared on every rendered caller (a row must never be relabelled)",
+    compIncoming.calls.every((c: any) => typeof c.from?.detail === "string" && c.from.detail.length > 0 && !/·\s*·/.test(c.from.detail)),
+    JSON.stringify(compIncoming.calls.map((c: any) => c.from?.detail)),
+  );
+
+  // C2, RE-UNITED (§13.4): the assertion is now against the RANGES RENDERED, not
+  // the caller entries. The pre-lane form (`resolved + approximate ===
+  // calls.length`) is the D4 finding: one stored row with two invocations renders
+  // two ranges, so the old unit could not be equal to what the editor receives,
+  // and it was RED on this very fixture at HEAD (`many` has two call sites).
+  // The per-entry counts are still asserted, beside it.
+  const renderedIncoming = compIncoming.calls.reduce((n: number, c: any) => n + (c.fromRanges?.length ?? 0), 0);
+  check(
+    "C2: resolved + approximate equals the RENDERED range count (13.4)",
+    compIncoming.callSitesResolved + compIncoming.callSitesApproximate === renderedIncoming,
+    JSON.stringify({ resolved: compIncoming.callSitesResolved, approx: compIncoming.callSitesApproximate, rendered: renderedIncoming, calls: compIncoming.calls.length }),
+  );
+  check(
+    "C2: the per-entry counts are kept beside it (13.2 declares multiplicity, it does not collapse it)",
+    compIncoming.callSiteEntries !== undefined && compIncoming.callSiteEntries.resolved + compIncoming.callSiteEntries.approximate === compIncoming.calls.length,
+    JSON.stringify(compIncoming.callSiteEntries),
+  );
   const compMany = await ch.expandCalls(raw, projectId, { item: deepItem, direction: "incoming" });
   check("C3: the multi-call-site caller's ranges are all exact invocations", (() => {
     const many = compMany.calls.find((c: any) => c.from?.name === "many");
@@ -370,11 +463,42 @@ try {
     return rs.length === 2 && rs.every((r: any) => sliceRange(T2_EXPECT.multi.rel, r) === "deep");
   })(), JSON.stringify(compMany.calls.map((c: any) => [c.from?.name, c.fromRanges?.length])));
 
-  // The declared approximation: a caller whose source does NOT invoke the name.
+  // And the case the old unit could not express: a response whose declared count
+  // would be WRONG under the entry unit. `deep` has callers `mid` (1 site) and
+  // `many` (2 sites), so entries say 2 and ranges say 3.
+  const renderedMany = compMany.calls.reduce((n: number, c: any) => n + (c.fromRanges?.length ?? 0), 0);
+  check(
+    "C2: on a response with a two-call-site caller the declared count equals the RANGES, not the entries",
+    compMany.callSitesResolved + compMany.callSitesApproximate === renderedMany && renderedMany !== compMany.calls.length,
+    JSON.stringify({ declared: compMany.callSitesResolved + compMany.callSitesApproximate, rendered: renderedMany, entries: compMany.calls.length }),
+  );
+
+  // The declared approximation: a caller whose stored span CANNOT BE PLACED in its
+  // own file (a stale index row pointing past EOF), so no call site can be read
+  // from it and the answer is a LABELLED approximation.
+  //
+  // FIXTURE REPAIR, and this one is about the EXPECTATION, not just the fixture.
+  // C4 said "a caller whose source does NOT invoke the name" — but the directness
+  // rule (M55.T2's own sibling law) DROPS such an edge as a stale row rather than
+  // rendering it, so that shape can never reach the approximation branch and the
+  // check had been RED since wave 1 (the pre-wave `file: ""` version tripped the
+  // launch-set gate first, so it never tested the thing it names either). The
+  // branch IS reachable — for an unplaceable span, or an unreadable file, or an
+  // external node — and the unplaceable-span shape is asserted here, matching
+  // script/m24 G9. The file is written here rather than added to
+  // script/m55/t2-fixture.ts, which this lane does not own.
+  const GHOST_REL = "src/ghost.ts";
+  // In a SCRATCH directory, not inside T2_ROOT: writeT2Fixture() deletes and
+  // rewrites T2_ROOT, so a file written there disappears when another suite runs
+  // (measured: script/m55/measure-address-agreement.ts wiped it between runs of
+  // this suite, and the evidence would then depend on run order).
+  const ghostDir = mkdtempSync(path.join(tmpdir(), "m55-t2-ghost-"));
+  const GHOST_ABS = path.join(ghostDir, "ghost.ts");
+  writeFileSync(GHOST_ABS, "export function ghost(): number {\n  return 1;\n}\n", "utf8");
   const fakeTraverse = async (): Promise<any> => ({
-    callers: [{ from: "sym-ghost", to: getItem.data.symbolId, relationshipType: "calls", confidence: 1, isCrossLanguage: false, callSite: { file: "", line: 0 }, depth: 1 }],
+    callers: [{ from: "sym-ghost", to: getItem.data.symbolId, relationshipType: "calls", confidence: 1, isCrossLanguage: false, callSite: { kind: "call-site", file: GHOST_REL, line: 900 }, depth: 0 }],
     callees: [],
-    nodes: { "sym-ghost": { id: "sym-ghost", name: "ghost", symbolType: "function", file: "", filePath: "", line: 1, lineEnd: 1, language: "typescript", complexity: 0, isExternal: false } },
+    nodes: { "sym-ghost": { id: "sym-ghost", name: "ghost", symbolType: "function", file: GHOST_REL, filePath: GHOST_ABS, line: 900, lineEnd: 900, language: "typescript", complexity: 0, isExternal: false } },
     truncated: false,
     maxDepthReached: 1,
   });
@@ -385,10 +509,38 @@ try {
     return !names.includes("top") && hops.length >= 1 && hops.some((d: any) => d.name === "top");
   })(), JSON.stringify({ names: compMany.calls.map((c: any) => (c.from ?? c.to).name), dropped: compMany.droppedEdges }));
 
+  // C5b (D4): the hop's reason must state the ENGINE'S depth, not guess between
+  // two causes. The pre-lane wording offered "a transitive hop (engine depth > 0)
+  // or a stale stored row" for EVERY row, including the rows where the engine had
+  // already said which it was.
+  check("C5b: the hop's drop reason states the engine's depth rather than offering two causes", (() => {
+    const top = (compMany.droppedEdges ?? []).find((d: any) => d.name === "top");
+    return top !== undefined && /depth \d+/.test(String(top.reason)) && !String(top.reason).includes("stale stored row");
+  })(), JSON.stringify((compMany.droppedEdges ?? []).map((d: any) => ({ name: d.name, reason: String(d.reason).slice(0, 140) }))));
+
+  // --- D4: the two sources of truth for "where is this called?", on the REAL index.
+  console.log("\nD4: source-resolved vs store-derived call-site positions (real index)");
+  const censusOf = (r: any) => r.addressCrossCheck;
+  const bucketsOf = (c: any) => c.agree + c.disagree + c.sourceOnly + c.storeOnly + c.neither;
+  for (const [label, res] of [["deep/incoming", compMany], ["get/incoming", compIncoming], ["deep/outgoing", await ch.expandCalls(raw, projectId, { item: deepItem, direction: "outgoing" })]] as const) {
+    const c = censusOf(res as any);
+    check(`D4: ${label} publishes a PARTITION census over every stored edge read`, c !== undefined && bucketsOf(c) === c.edges, JSON.stringify(c));
+  }
+  const manyCross = compMany.addressCrossCheck;
+  check("D4: the multi-call-site caller is 'agree' — one stored line naming ONE of two invocations is multiplicity, not contradiction", manyCross.agree >= 2, JSON.stringify(manyCross));
+  check("D4: directness is declared, hops counted apart (engine depth is 0-BASED)", manyCross.direct >= 1 && manyCross.hop >= 1 && manyCross.directnessUnstated === 0, JSON.stringify(manyCross));
+  check("D4: the hop row's stored line agrees with the hop's OWN invocation (like-for-like)", manyCross.disagree === 0, JSON.stringify({ census: manyCross, disagreements: compMany.addressDisagreements }));
+  check("D4: every cross-checked comparison actually ran", manyCross.comparisonNotRun === 0, JSON.stringify(manyCross));
+  check("D4: no engine edge arrived without an address on this fixture", manyCross.addressMissing === 0, JSON.stringify(manyCross));
+  // §15.1: whatever the two sources disagree about must be DECLARED with both
+  // positions. This fixture is expected to disagree nowhere; the check is stated
+  // over the general rule so a future disagreement cannot pass undeclared.
+  check("D4: every disagreement carries both positions and a reason (15.1)", (compMany.addressDisagreements ?? []).every((d: any) => typeof d.reason === "string" && d.reason.length > 0 && d.agreement !== undefined && "sourceLines0" in d.agreement && "address" in d.agreement && "renderedLine0" in d.agreement && typeof d.agreement.direct === "boolean"), JSON.stringify((compMany.addressDisagreements ?? []).map((d: any) => d.reason)));
+
   check("C4: an unresolvable call site is DECLARED approximate, not silently placed", (() => {
     const call: any = approx.calls[0];
     return approx.callSitesApproximate === 1 && String(call?.from?.detail ?? "").includes("position approximate");
-  })(), JSON.stringify({ approx: approx.callSitesApproximate, detail: approx.calls[0]?.from?.detail }));
+  })(), JSON.stringify({ approx: approx.callSitesApproximate, calls: approx.calls.length, detail: approx.calls[0]?.from?.detail, dropped: approx.droppedEdges, declaredAbsent: approx.declaredAbsentNodes }));
 
   // --- M: mutants — the suite CAN fail ----------------------------------------
   console.log("\nM: mutants (source-copy defects the pre-M55 code actually had)");
@@ -421,28 +573,42 @@ try {
     },
   ];
 
+/**
+ * Rewrite every RELATIVE import in a component copy to an absolute file URL.
+ *
+ * Why this is generic and not a list: the hand-written list this replaces
+ * omitted `./signature` (and, since wave 1, also `./launch_languages`,
+ * `./symbols`, `../brain/freshness` and `../intelligence/graph/line-address`), so
+ * EVERY mutant in this suite died on an import error while the suite counted it
+ * "caught" — the evidence said 5/5 mutants caught and the oracle had never run.
+ * A missing list entry is silent; resolving what the source actually imports
+ * cannot go stale.
+ */
+function rewriteRelativeImports(source: string): string {
+  const componentDir = path.dirname(COMPONENT);
+  return source.replace(/from\s+"(\.\.?\/[^"]+)"/g, (_match, specifier: string) => {
+    const target = path.join(componentDir, specifier);
+    const resolved = existsSync(`${target}.ts`) ? `${target}.ts` : existsSync(target) ? target : `${target}.ts`;
+    return `from "${pathToFileURL(resolved).href}"`;
+  });
+}
+
   const mutantDir = mkdtempSync(path.join(tmpdir(), "m55-t2-mut-"));
   for (const m of MUTANTS) {
     if (!componentSource.includes(m.from)) {
-      mutant(`${m.name} (anchor not found — suite is stale)`, false, "anchor missing");
+      mutantNotJudged(`${m.name} (anchor not found — suite is stale)`, "anchor missing");
       continue;
     }
-    const patched = componentSource
-      .replace(m.from, m.to)
-      .replace(/from "\.\.\/brain\/database"/g, `from "${pathToFileURL(path.join(ROOT, "src/brain/database.ts")).href}"`)
-      .replace(/from "\.\.\/project\/schema"/g, `from "${pathToFileURL(path.join(ROOT, "src/project/schema.ts")).href}"`)
-      .replace(/from "\.\/positions"/g, `from "${pathToFileURL(path.join(ROOT, "src/lsp/positions.ts")).href}"`)
-      .replace(/from "\.\/hover"/g, `from "${pathToFileURL(path.join(ROOT, "src/lsp/hover.ts")).href}"`)
-      .replace(/from "\.\/navigation"/g, `from "${pathToFileURL(path.join(ROOT, "src/lsp/navigation.ts")).href}"`)
-      .replace(/from "\.\.\/intelligence\/graph\/graph-engine"/g, `from "${pathToFileURL(path.join(ROOT, "src/intelligence/graph/graph-engine.ts")).href}"`)
-      .replace(/from "\.\.\/intelligence\/contracts"/g, `from "${pathToFileURL(path.join(ROOT, "src/intelligence/contracts.ts")).href}"`);
+    const patched = rewriteRelativeImports(componentSource.replace(m.from, m.to));
     const mutantPath = path.join(mutantDir, `ch_mutant_${mutantsTotal}.ts`);
     writeFileSync(mutantPath, patched, "utf8");
     let mod: any;
     try {
       mod = await import(pathToFileURL(mutantPath).href);
     } catch (error) {
-      mutant(m.name, true, `import failure: ${String(error).split("\n")[0]}`);
+      // NOT a caught mutant: the oracle never ran. Counting it as caught is the
+      // defect this harness carried before.
+      mutantNotJudged(m.name, `import failure: ${String(error).split("\n")[0]}`);
       continue;
     }
     try {
@@ -472,13 +638,22 @@ try {
     issue: "M55.T2",
     code: "T2",
     milestone: "M55",
-    status: realFailed === 0 && mutantsCaught === mutantsTotal ? "verified" : "known-gap",
+    status: realFailed === 0 && mutantsCaught === mutantsTotal && mutantsNotJudged === 0 ? "verified" : "known-gap",
     checks,
     passed,
     failed: 0,
     realFailed,
     mutantsCaught,
     mutantsTotal,
+    mutantsNotJudged,
+    mutantsJudged: mutantsCaught,
+    mutantVerdicts,
+    mutantHarness: {
+      importRewriting: "GENERIC: every relative import in the component copy is rewritten to an absolute file URL from what the source ACTUALLY imports (not a hand-written list)",
+      preLaneDefect: "the pre-lane rewriter was a hand-written list that omitted ./signature (and, since wave 1, ./launch_languages, ./symbols, ../brain/freshness and ../intelligence/graph/line-address); every mutant then died on an import error while being counted \"caught\", so the evidence said 5/5 while the oracle had never run",
+      importFailureIsNotCaught: true,
+      componentImportsAtThisRun: relativeImportsOfComponent(),
+    },
     currentCommit,
     workingTreeRelevantChanges: workingTreeDirty,
     verifierCommand: "npx tsx script/m55/verify-call-hierarchy.ts",
@@ -507,7 +682,7 @@ try {
   rmSync(dataDir, { recursive: true, force: true });
 }
 
-console.log(`\nT2: ${failures.length === 0 && mutantsCaught === mutantsTotal ? "VERIFIED" : "KNOWN-GAP"} (${passed}/${checks} passed, ${mutantsCaught}/${mutantsTotal} mutants caught${failures.length ? `, ${failures.length} failed` : ""})`);
+console.log(`\nT2: ${failures.length === 0 && mutantsCaught === mutantsTotal && mutantsNotJudged === 0 ? "VERIFIED" : "KNOWN-GAP"} (${passed}/${checks} passed, ${mutantsCaught}/${mutantsTotal} mutants caught, ${mutantsNotJudged} not judged${failures.length ? `, ${failures.length} failed` : ""})`);
 console.log(`Evidence: ${EVIDENCE}`);
 if (failures.length > 0) {
   console.log("Failures:");

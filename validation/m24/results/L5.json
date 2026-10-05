@@ -2,31 +2,39 @@
   "issue": "494",
   "code": "L5",
   "status": "verified",
-  "currentCommit": "a943047e5cc1e03967e619a9bbc8bf935ec6c369",
-  "sourceFingerprint": "a5a92ec983f3355b9d597e7920588237241159b709ec851538c42683aaa48514",
+  "currentCommit": "8ddf19f515070c1b83c15d39c274a9e6d656b125",
+  "sourceFingerprint": "66bd8c7c3a8846be4af7c7fe050f2252f8e4f0e6d3f3fa5cf10a6d17d72fa03f",
   "verifierCommand": "npx tsx script/m24/verify-call-hierarchy.ts",
   "evidenceFile": "L5.json",
-  "generatedAt": "2026-09-26T23:03:54.659Z",
-  "passed": 20,
+  "generatedAt": "2026-10-05T02:54:20.566Z",
+  "passed": 97,
   "failed": 0,
   "failures": [],
-  "negativeCases": 0,
+  "negativeCases": 16,
   "verdict": {
     "realComponentFailures": 0,
-    "mutantsCaught": 5,
-    "mutantsTotal": 5,
+    "mutantsCaught": 23,
+    "mutantsTotal": 23,
+    "mutantsNotJudged": 0,
+    "mutantsJudged": 23,
+    "mutantGroups": {
+      "callHierarchy": 10,
+      "d4CrossCheck": 13
+    },
     "ok": true,
-    "note": "`failed` counts real functional failures only; mutant runs are reported separately via the verdict block."
+    "note": "`failed` counts real functional failures only; mutant runs are reported separately via the verdict block. `mutantsNotJudged` counts a mutant the harness could not judge (missing anchor or an import failure) — an import failure is NOT counted as caught, because the oracle never ran. The pre-lane suite reported 5/5 caught while all five mutants had died on an unrewritten `./signature` import."
   },
   "limitations": [
     "adapter proven against a fixture double reproducing the engine contract; the engine itself is M14-verified and exercised end-to-end by the V1 harness",
     "heuristic edges from the engine are included; their ratio is declared by the engine's provenance",
     "ranges for engine nodes use line-level precision when the engine lacks byte columns",
-    "latency measured on this machine only; cross-platform budgets are M25 scope"
+    "latency measured on this machine only; cross-platform budgets are M25 scope",
+    "the machine-readable absence reason is carried on the component result; src/lsp/server.ts (another lane) maps the wire response and currently returns a bare `null` / bare `[]` — the exact patch is reported",
+    "the declared-absence and staleness vocabulary lives in src/lsp/symbols.ts (this lane owns both files); a dedicated src/lsp/declared_absence.ts owner would be the right home and is reported"
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-26T23:03:54.663Z",
-    "contentSha256": "6c223fa646def3a47d1354c2aff06fc57cccaf39f0bef2940c3f1a48a5980ed5"
+    "sealedAt": "2026-10-05T02:54:20.568Z",
+    "contentSha256": "aa3fb503e781b1cc38b9646ac17ba00391af961dbca655a23f829f08567721cd"
   }
 }
