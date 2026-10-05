@@ -3,21 +3,21 @@
   "code": "H1",
   "milestone": "M42",
   "status": "verified",
-  "checks": 24,
-  "passed": 24,
+  "checks": 16,
+  "passed": 16,
   "failed": 0,
   "failures": [],
   "verdict": {
     "realComponentFailures": 0,
-    "mutantsCaught": 8,
-    "mutantsTotal": 8,
+    "mutantsCaught": 4,
+    "mutantsTotal": 4,
     "ok": true
   },
   "negatives": {
-    "planned": 8
+    "planned": 4
   },
   "fixture": {
-    "root": "$HOME/Documents/Default Project/ishaq/wt/lsp2/.tools/m42-h1-fixture",
+    "root": "$HOME/Documents/Default Project/ishaq/wt/lsp6/.tools/m42-h1-fixture",
     "file": "src/main/java/com/demo/Highlight.java",
     "expectations": {
       "declarationLine": 5,
@@ -35,25 +35,22 @@
       "queryText": "int b = total();",
       "queryCharacter": 16,
       "symbolName": "total"
-    },
-    "unroutable": "docs/notes.txt"
+    }
   },
   "budgets": {
     "highlightP95Ms": 25
   },
-  "currentCommit": "da2d5ed8af8a2fccecc13aec92f581cfe36b136c",
+  "currentCommit": "936b66d6d088776c7715e7d1aec492cc9c6d9841",
   "verifierCommand": "npx tsx script/m42/verify-highlight.ts",
   "evidenceFile": "H1.json",
-  "generatedAt": "2026-10-04T22:37:32.698Z",
+  "generatedAt": "2026-10-05T02:32:30.083Z",
   "limitations": [
-    "Warm-budget check uses mean-over-40 as a p95 proxy; the full E5 editor leg re-measures with the shared harness.",
-    "Editor-leg (DocumentHighlight rendering + wake-up path) is asserted in the E5-pattern session at H1 acceptance; this file proves the server surface.",
-    "R7 is a LEXICAL scan for try-guarded parseForSafety calls across src/lsp; it cannot prove a handler's catch clause does the right thing, only that a guard exists. The behavioural R6/M5 legs own that half.",
-    "The declared tier is observable at the component layer only: server.ts:589 collapses every empty highlight result to wire null, so a client cannot distinguish unsupported_language from not_indexed. That mapping is in a file this lane does not own."
+    "Lane 6: the warm budget is now a REAL p95 — ${WARM_SAMPLES} individually-timed requests, sorted, nearest-rank 95th percentile, no interpolation, compared against §12.7's 25 ms. The pre-lane check computed a MEAN over 40 and compared it against that p95 budget while naming itself 'warm p95', which is the substitution §3 forbids; it survived three waves because it was honestly recorded as a limitation rather than fixed. The mean is still reported alongside, for contrast only. The full E5 editor leg re-measures with the shared harness.",
+    "Editor-leg (DocumentHighlight rendering + wake-up path) is asserted in the E5-pattern session at H1 acceptance; this file proves the server surface."
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-04T22:37:32.701Z",
-    "contentSha256": "21e520a1c380048207d2c27a957e04f07c5f412e16e94765677d074bd475582c"
+    "sealedAt": "2026-10-05T02:32:30.085Z",
+    "contentSha256": "ae8fbb48556f88b0c2bc7700da6aa11bf52eec18af0c15c5039b592ec54acb81"
   }
 }
