@@ -64,9 +64,22 @@
  * shape. Registration is one import and one map entry, and it is recorded in
  * `docs/analyzers/real-scss-analyzer.md` as the supervisor-side step.
  *
- * `Ruled` is declared here rather than imported because the gate's own copy is not
- * exported. It is a structural copy of the gate's, so a divergence in the shape is a
- * compile error at the registration point rather than a silent pass.
+ * ## THE SHAPE IS IMPORTED, NOT RESTATED — because restating it hid a change
+ *
+ * This file used to declare its own `Ruled` and its own ten-name `Type` union, on the
+ * reasoning that the gate's copy was not exported and "a structural copy diverging is a
+ * compile error at the registration point rather than a silent pass". That reasoning was
+ * half right and it was wrong in the half that mattered. A structural copy DOES fail to
+ * compile when the gate's shape changes incompatibly — the gate's own header records
+ * julia-ruled and xml-ruled failing exactly that way — but it does NOT fail when the gate
+ * GAINS a field, and the gate has since gained two: `publishedCount` / `publishedFiles`,
+ * which hold the numbers a ruling publishes so the arbiter can check them instead of
+ * trusting prose. A restatement is blind to exactly the class of change that matters most,
+ * because an added field is backwards-compatible to every consumer that never sets it.
+ *
+ * The gate exports `Ruled` now, so this file imports it. Nothing else about the table
+ * changed: both entries are instrument A, so both new fields stay unset, and the gate does
+ * not read them for instrument A.
  *
  * ## THE MEASUREMENT BEHIND BOTH ENTRIES IS PRINTED, NOT ASSERTED
  *
@@ -106,16 +119,7 @@
  *    own output. Both are a fact about the GRAMMAR: produce one of these node types and the
  *    arbiter flips the row itself, with no change to any lane.
  */
-export type Ruled = {
-  type: Type
-  instrument: "A:grammar-inventory" | "B:parse-tree-count"
-  /** A: node types that would express the construct. B: unused. */
-  nodeTypesThatWouldMeanIt?: string[]
-  /** B: count occurrences on the tree. A: unused. */
-  countOnTree?: (root: any, fileLabel: string, hits: string[]) => void
-  describe: string
-}
-type Type = "calls" | "uses" | "contains" | "imports" | "references" | "exports" | "extends" | "implements" | "overrides" | "instantiates"
+import type { Ruled } from "./ontology-coverage-gate"
 
 // ─────────────────────────────────────────────────────────────────────── implements
 //
