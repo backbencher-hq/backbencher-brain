@@ -49,7 +49,7 @@ const onDisk = new Set(
  * A lane appears on the UNADJUDICATED list when it has neither source. That list is the
  * real remaining work: every entry needs a lane to write a ruling table.
  */
-const UNADJUDICATED = ["clean", "graphql", "r", "scss"]
+const UNADJUDICATED = ["clean", "graphql", "r"]
 
 const SPEC_DIR = join(HERE, "spec")
 
@@ -124,6 +124,35 @@ if (unlisted.length) {
   console.error(`INCOMPLETE LIST: these lanes have no table and no spec ruling, but are not`)
   console.error(`listed as unadjudicated: ${unlisted.join(" ")}`)
   console.error(`Add them, or the gate reports a clean state while work is outstanding.`)
+  process.exit(1)
+}
+
+/**
+ * The SAME check in the other direction — every lane LISTED as unadjudicated must
+ * actually have no table and no spec ruling.
+ *
+ * This was missing, and the omission was not academic: it let this lane's own stale
+ * entry survive. `scss` sat in UNADJUDICATED after `scss-ruled.ts` was written and
+ * registered, so the gate printed
+ *
+ *     unadjudicated lanes (neither table nor spec RULED) : 4  (clean graphql r scss)
+ *
+ * while the arbiter, in the same repository, reported `implements RULED-SOUND` and
+ * `instantiates RULED-SOUND` for scss off a 153-line table. Both statements were on
+ * screen at once and the gate said PASS, because `unlisted` only walks
+ * `missing -> UNADJUDICATED` and never `UNADJUDICATED -> missing`.
+ *
+ * The failure direction is the bad one: a lane that has DONE the adjudication keeps
+ * being counted as backlog, so the remaining backlog is understated by however many
+ * lanes finished — which is every lane that improves. That is a number that gets
+ * worse as the programme succeeds, so it needs a check that fails when it drifts.
+ */
+const phantom = UNADJUDICATED.filter((l) => !missing.includes(l)).sort()
+if (phantom.length) {
+  console.error(`STALE LIST: these lanes are listed unadjudicated but now HAVE a ruling source:`)
+  console.error(`${phantom.join(" ")}`)
+  console.error(`Drop them from UNADJUDICATED. A lane that finished still counted as backlog`)
+  console.error(`understates the backlog, and the understatement grows as lanes finish.`)
   process.exit(1)
 }
 console.log(`unadjudicated lanes (neither table nor spec RULED) : ${UNADJUDICATED.length}  (${UNADJUDICATED.join(" ")})`)
