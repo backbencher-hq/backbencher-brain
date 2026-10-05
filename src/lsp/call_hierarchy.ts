@@ -1512,17 +1512,36 @@ export async function expandCalls(
     absence: calls.length === 0
       ? absenceWith(
           "symbol_not_at_position",
-          // §11.7 + §15.1: BOTH branches name the filter. An answer emptied BY the
-            // filter is a different claim from an answer emptied because the
-            // STORE holds no row, and only the filter declaration tells the two
-            // apart. Measured: the engine still returns the depth-0 `calls`
-            // row for this symbol even under `relationshipTypes: ["calls"]`
-            // (the receiver-qualified artifact), so the "no edges at all"
-            // branch is NOT the branch a filtered empty answer takes — a
-            // reword confined to it would leave this answer implying the store
-            // holds nothing, which is false here (it holds `contains` and
-            // `uses` rows for the same symbol).
-            `no stored ${direction === "callers" ? "caller" : "callee"} CALL row of this symbol is rendered. This surface reads the ${CALL_HIERARCHY_RELATIONSHIP_TYPES.length} relationship kind(s) ${JSON.stringify(CALL_HIERARCHY_RELATIONSHIP_TYPES)} only and declares that filter on every response (§15.1): ${edges.length === 0 ? "no stored row of any kind reached this answer" : `${edges.length} stored CALL row(s) were read and ${droppedEdges.length} dropped or declared absent`} — rows of other kinds ARE stored for this symbol and are not ${direction === "callers" ? "callers" : "callees"} here, so this answer is "no stored call rendered", not "no stored relationship"`,
+          // §11.7 + §15.1: the absence names the filter, because an answer
+          // emptied BY the filter is a different claim from an answer emptied
+          // because the STORE holds no row.
+          //
+          // TWO BRANCHES, and MEASUREMENT decided which sentence goes where. The
+          // engine still returns the depth-0 `calls` row for a symbol with no
+          // genuine caller even under `relationshipTypes: ["calls"]` — the
+          // receiver-qualified artifact (measured on the T2 fixture: callers
+          // .length 1, not 0) — so an answer that the filter emptied does NOT
+          // take a "no rows at all" branch. A reword confined to that branch
+          // left the branch actually taken still implying the store holds
+          // nothing, which is false there (it holds `contains` and `uses` rows
+          // for the same symbol). Both are stated now.
+          //
+          // WHAT EACH BRANCH MAY CLAIM, kept strictly to what this answer read:
+          //   edges.length === 0   no stored row of ANY kind reached this answer.
+          //                        "none stored" is a claim about the kind this
+          //                        surface read, and that is all it says.
+          //   edges.length >  0    this many stored CALL rows were read and this
+          //                        many were dropped or declared absent. A
+          //                        non-call row the surface DID see is named in
+          //                        `droppedEdges` with its kind, so a reader can
+          //                        find the rows this answer declined rather than
+          //                        being told they do not exist.
+          //
+          // DELIBERATELY NOT CLAIMED: that the store holds no relationship row of
+          // any kind. This surface cannot know that — it asked for one kind.
+          edges.length === 0
+            ? `the engine returned no stored ${direction === "callers" ? "caller" : "callee"} edge of any kind for this symbol (none stored). This surface reads the ${CALL_HIERARCHY_RELATIONSHIP_TYPES.length} relationship kind(s) ${JSON.stringify(CALL_HIERARCHY_RELATIONSHIP_TYPES)} and declares that filter (§15.1), so "none stored" is a statement about ${JSON.stringify(CALL_HIERARCHY_RELATIONSHIP_TYPES)} only — it is NOT a statement that the store holds no relationship row of any other kind`
+            : `no stored ${direction === "callers" ? "caller" : "callee"} CALL row of this symbol is rendered. This surface reads the ${CALL_HIERARCHY_RELATIONSHIP_TYPES.length} relationship kind(s) ${JSON.stringify(CALL_HIERARCHY_RELATIONSHIP_TYPES)} only and declares that filter on every response (§15.1): ${edges.length} stored CALL row(s) were read and ${droppedEdges.length} were dropped or declared absent, each with its reason and kind named — rows of other kinds may be stored for this symbol and are not ${direction === "callers" ? "callers" : "callees"} here, so this answer is "no stored call rendered", not "no stored relationship"`,
           rootRow.filePath,
         )
       : null,
