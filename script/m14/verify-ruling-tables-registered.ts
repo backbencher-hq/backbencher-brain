@@ -49,7 +49,10 @@ const onDisk = new Set(
  * A lane appears on the UNADJUDICATED list when it has neither source. That list is the
  * real remaining work: every entry needs a lane to write a ruling table.
  */
-const UNADJUDICATED = ["graphql"]
+// Typed explicitly. An empty array literal infers `any[]` under this config, and this
+// file is the gate that decides whether the fleet's rulings are registered — a gate that
+// can silently degrade to untyped is the last place to allow it.
+const UNADJUDICATED: string[] = []
 
 const SPEC_DIR = join(HERE, "spec")
 
