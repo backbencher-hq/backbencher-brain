@@ -116,6 +116,66 @@ export const NIM_MUTANTS: NimMutant[] = [
     },
   },
   {
+    id: "nim/concept-generic-target-read-as-the-type-argument",
+    language: "nim",
+    defectClass: "fabricated-endpoint",
+    description:
+      "`of Source[T]` publishes the type ARGUMENT `T` instead of the refined " +
+      "contract `Source`. `refinement_list` is `sep1($.type_expression, \",\")` and a " +
+      "generic instantiation is a `bracket_expression` whose FIRST named child is the " +
+      "constructor while its `argument_list` holds the type arguments, so a reader that " +
+      "takes the last name under the list lands on the argument. " +
+      "This is 2 of the family's 47 corpus edges — nimony's " +
+      "`tconceptinheritnotgeneric.nim:7 Bar = concept of Foo[T]` and " +
+      "`tconceptinvocationbody.nim:39 MutableIndexable*[T] = concept of Indexable[T]` — " +
+      "and it was unpinned until that repo entered the corpus on 2026-10-04. " +
+      "The edge it produces is a FABRICATION, not a mislabel: `T` is a generic " +
+      "parameter, it resolves at neither end, and `bb_impact` on it is wrong refactoring " +
+      "advice. This lane's own oracle made exactly this mistake on its first pass and " +
+      "the oracle cross-check caught it one round after the code was written. " +
+      "Caught by nim/concept's forbidRelationships {implements, Wrapped -> T}, whose " +
+      "sibling positive row {implements, Wrapped -> Source} has no other way to fail.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) =>
+        x.type === "implements" && String(x.source) === "Wrapped"
+          ? { ...x, target: "T" }
+          : x,
+      ),
+    }),
+  },
+  {
+    id: "nim/concept-self-cycle-published",
+    language: "nim",
+    defectClass: "fabricated-relationship",
+    description:
+      "`type Cycle = concept of Cycle` publishes `Cycle implements Cycle`. A concept " +
+      "refining itself is not a relationship, and this is a REAL corpus file rather than " +
+      "a synthetic one: nimony/tests/nimony/concepts/tconceptcycle.nim is exactly that " +
+      "one line, and upstream ships tconceptcycle.msgs reading `Error: concept " +
+      "inheritance cycle detected`. " +
+      "The guard already exists for this family, on both spellings, but only the `is`-form " +
+      "half was pinned by a fixture — so a change that kept `r is Recursive` suppressed " +
+      "while dropping the `of`-form guard would have passed the suite. " +
+      "Caught by nim/concept's forbidRelationships {implements, from: Cycle}, which has no " +
+      "sibling row: `Cycle` refines nothing else.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: [
+        ...(r.relationships ?? []),
+        ...(r.symbols ?? [])
+          .filter((s: any) => String(s.name) === "Cycle")
+          .map((s: any) => ({
+            source: "Cycle",
+            target: "Cycle",
+            type: "implements",
+            confidence: 1,
+            metadata: { relationshipType: "nim_concept_refinement" },
+          })),
+      ],
+    }),
+  },
+  {
     id: "nim/concept-satisfaction-invented",
     language: "nim",
     defectClass: "fabricated-relationship",
@@ -280,5 +340,139 @@ export const NIM_MUTANTS: NimMutant[] = [
         }))
       return { ...r, relationships: [...(r.relationships ?? []), ...extra] }
     },
+  },
+  {
+    id: "nim/nested-routine-symbol-dropped",
+    language: "nim",
+    defectClass: "unpublished-declaration",
+    description:
+      "A NAMED nested routine stops being published, which is the exact defect this lane " +
+      "fixed: 653 `calls` edges over 4,555 corpus files named a declaration the parse tree " +
+      "carried and the run published nowhere, because a `calls` EDGE was emitted while its " +
+      "far end had no symbol. The analyzer is a per-file walker with no second pass, so the " +
+      "regression is invisible in any edge count — only the symbol is missing. " +
+      "Caught by nim/nested's expectSymbols {recentlyOpenedAdd, scope: closeTab} and by its " +
+      "expectRelationships {contains, closeTab -> recentlyOpenedAdd}.",
+    transform: (r: any) => ({
+      ...r,
+      symbols: (r.symbols ?? []).filter((s: any) => s.scope === undefined || s.scope === ""),
+    }),
+  },
+  {
+    id: "nim/nested-routine-scope-lost",
+    language: "nim",
+    defectClass: "scope-misattribution",
+    description:
+      "The nested routine keeps its symbol but loses `scope`, so it reads as a module " +
+      "procedure. The lua lane measured why this is a real defect and not cosmetics: `scope` " +
+      "is what a consumer reads to decide where a symbol belongs, and a closure declared " +
+      "inside `closeTab` does not belong to the file's module scope. It also breaks the " +
+      "`qualifiedName` the worker derives from `scope`, so `closeTab.recentlyOpenedAdd` " +
+      "stops resolving for the incoming walk. " +
+      "Caught by nim/nested's expectSymbols scope assertion.",
+    transform: (r: any) => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) => (s.scope ? { ...s, scope: undefined } : s)),
+    }),
+  },
+  {
+    id: "nim/doc-example-values-published",
+    language: "nim",
+    defectClass: "phantom-symbol",
+    description:
+      "A `runnableExamples` block's VALUE declarations are published as module symbols. " +
+      "`var base: Base = Sub1()` is a local of the example unit exactly as `var` in a routine " +
+      "body is a local of that routine, so this is `LocalsAreNotSymbols` violated in the " +
+      "opposite direction from the nested-routine fix — the two must be fixed together or the " +
+      "first fix reintroduces the second defect. " +
+      "Caught by nim/nested's forbidSymbols {exampleOnlyLocal}, a name the fixture " +
+      "declares nowhere else so the forbid cannot be satisfied by a coincidence.",
+    transform: (r: any) => ({
+      ...r,
+      symbols: [
+        ...(r.symbols ?? []),
+        {
+          name: "exampleOnlyLocal",
+          kind: "variable",
+          visibility: "private",
+          range: { startLine: 56, startColumn: 5, endLine: 56, endColumn: 30, startIndex: 0, endIndex: 0 },
+        },
+      ],
+    }),
+  },
+  {
+    id: "nim/runnable-examples-pragma-published-as-a-call",
+    language: "nim",
+    defectClass: "fabricated-edge",
+    description:
+      "The `runnableExamples:` doc pragma is published as a `calls` edge. This is the " +
+      "fabrication rule's cheapest available instance: the grammar parses the whole example " +
+      "as the call's `argument_list`, so the call branch fires on a keyword, and the edge " +
+      "lands on an identifier no Nim program can call — a name the graph can never resolve. " +
+      "Measured before the fix: 24 such frames in nim/lib/system.nim alone. " +
+      "Caught by nim/nested's forbidRelationships {calls, describe -> runnableExamples}.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: [
+        ...(r.relationships ?? []),
+        {
+          source: "describe",
+          target: "runnableExamples",
+          type: "calls",
+          confidence: 0.85,
+          line_number: 1,
+          metadata: { relationshipType: "nim_call", evidenceClass: "usage_contextual" },
+        },
+      ],
+    }),
+  },
+  {
+    id: "nim/method-qualified-name-dropped",
+    language: "nim",
+    defectClass: "unresolvable-endpoint",
+    description:
+      "A method stops publishing `qualifiedName`, so every `overrides` endpoint — which is " +
+      "receiver-qualified (`Rect.describe`) because the bare name cannot address either end — " +
+      "fails to resolve for the incoming walk. Measured with `script/m14/incoming-check.ts` on " +
+      "nim/lib/pure (105 files, 6,638 symbols) before the fix: 14 of 14 `overrides` edges " +
+      "reported as UNRESOLVED targets, every one a correct edge. The worker's `qualifiedName` " +
+      "fallback cannot recover it, because a method's owner is `ownerName`, not `scope`. " +
+      "Caught by nim/contract's expectSymbols {describe, meta.fqn: Shape.describe}. The pin is " +
+      "on `meta.fqn` rather than on `qualifiedName` because run-fixtures.ts cannot assert the " +
+      "latter — it is missing from CONSTRAINT_KEY_ALLOWLIST, so a row carrying it is reported as " +
+      "an INERT assertion. `pool-worker.ts:870` reads `s.qualifiedName || s.metadata?.fqn`, so " +
+      "both carry the same fact and the metadata one is the assertable channel.",
+    transform: (r: any) => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) =>
+        s.kind === "method" && s.ownerName
+          ? { ...s, qualifiedName: undefined, metadata: { ...(s.metadata ?? {}), fqn: undefined } }
+          : s,
+      ),
+    }),
+  },
+  {
+    id: "nim/nested-routine-ufcs-call-lost",
+    language: "nim",
+    defectClass: "dropped-relationship-family",
+    description:
+      "A parenless UFCS call of a NESTED routine stops being emitted. `s.trimmed` " +
+      "invokes `trimmed(s)` with no parentheses and no call node, so the callee is a " +
+      "member leaf and the analyzer has to decide it is a callable by name. Testing " +
+      "only the module-scope set loses it, because nested routines are deliberately " +
+      "kept out of that set. Found by script/m14/nim-truth-oracle.ts: one " +
+      "unexplained `calls` edge on the 400-file sample, at " +
+      "nim/lib/packages/docutils/rst.nim:3493 where `rmSpaces` is declared at :3491 " +
+      "inside `proc dirImportdoc`. An analyzer that reads only its own metadata would " +
+      "have agreed with itself and reported nothing. " +
+      "Caught by nim/nested's forbidRelationships {uses, strip -> trimmed} — a mutant " +
+      "that reclassified the call as a read is caught by the same pin, because the " +
+      "shape is what is being asserted.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter(
+        (e: any) => e.metadata?.relationshipType !== "nim_ufcs_member_call",
+      ),
+    }),
   },
 ]

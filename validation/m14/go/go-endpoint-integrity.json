@@ -1,0 +1,223 @@
+{
+  "compared": 400,
+  "packageDirs": 1013,
+  "buckets": {
+    "calls": {
+      "edges": 10629,
+      "sourceFileLocal": 10628,
+      "sourcePackageWide": 0,
+      "sourceUnresolved": 1,
+      "targetFileLocal": 2709,
+      "targetPackageWide": 2518,
+      "targetUnresolved": 5402,
+      "targetStdlibResolvable": 2518,
+      "placeholderEndpoints": 0,
+      "emptyEndpoints": 0,
+      "sourceEqualsTarget": 122,
+      "examples": [
+        "lib/time/mkzip.go: usage -> Fprintf",
+        "lib/time/mkzip.go: usage -> Exit",
+        "lib/time/mkzip.go: main -> SetPrefix",
+        "lib/time/mkzip.go: main -> SetFlags"
+      ]
+    },
+    "extends": {
+      "edges": 56,
+      "sourceFileLocal": 56,
+      "sourcePackageWide": 0,
+      "sourceUnresolved": 0,
+      "targetFileLocal": 56,
+      "targetPackageWide": 0,
+      "targetUnresolved": 0,
+      "targetStdlibResolvable": 0,
+      "placeholderEndpoints": 0,
+      "emptyEndpoints": 0,
+      "sourceEqualsTarget": 2,
+      "examples": [
+        "src/cmd/go/internal/modfetch/codehost/vcs.go: deleteCloser -> File",
+        "src/cmd/go/internal/modload/query.go: result -> QueryResult",
+        "src/compress/flate/inflate.go: Reader -> Reader",
+        "src/compress/flate/inflate.go: Reader -> ByteReader"
+      ]
+    },
+    "implements": {
+      "edges": 40,
+      "sourceFileLocal": 40,
+      "sourcePackageWide": 0,
+      "sourceUnresolved": 0,
+      "targetFileLocal": 40,
+      "targetPackageWide": 0,
+      "targetUnresolved": 0,
+      "targetStdlibResolvable": 0,
+      "placeholderEndpoints": 0,
+      "emptyEndpoints": 0,
+      "sourceEqualsTarget": 0,
+      "examples": [
+        "src/cmd/go/internal/modload/query.go: emptyRepo -> versionRepo",
+        "src/cmd/go/internal/modload/query.go: replacementRepo -> versionRepo",
+        "src/compress/flate/inflate.go: decompressor -> Resetter",
+        "src/crypto/tls/common.go: lruSessionCache -> ClientSessionCache"
+      ]
+    },
+    "uses": {
+      "edges": 7907,
+      "sourceFileLocal": 7889,
+      "sourcePackageWide": 2,
+      "sourceUnresolved": 5,
+      "targetFileLocal": 3349,
+      "targetPackageWide": 1300,
+      "targetUnresolved": 3258,
+      "targetStdlibResolvable": 1300,
+      "placeholderEndpoints": 11,
+      "emptyEndpoints": 0,
+      "sourceEqualsTarget": 112,
+      "examples": [
+        "lib/time/mkzip.go: usage -> Stderr",
+        "lib/time/mkzip.go: main -> Store",
+        "lib/time/mkzip.go: main -> usage",
+        "src/bytes/iter.go: FieldsSeq -> RuneSelf"
+      ]
+    },
+    "brain_import": {
+      "edges": 0,
+      "sourceFileLocal": 0,
+      "sourcePackageWide": 0,
+      "sourceUnresolved": 0,
+      "targetFileLocal": 0,
+      "targetPackageWide": 0,
+      "targetUnresolved": 0,
+      "targetStdlibResolvable": 0,
+      "placeholderEndpoints": 0,
+      "emptyEndpoints": 0,
+      "sourceEqualsTarget": 0,
+      "examples": []
+    },
+    "exports": {
+      "edges": 3743,
+      "sourceFileLocal": 3743,
+      "sourcePackageWide": 0,
+      "sourceUnresolved": 0,
+      "targetFileLocal": 3743,
+      "targetPackageWide": 0,
+      "targetUnresolved": 0,
+      "targetStdlibResolvable": 0,
+      "placeholderEndpoints": 0,
+      "emptyEndpoints": 0,
+      "sourceEqualsTarget": 0,
+      "examples": [
+        "src/bytes/iter.go: bytes -> Lines",
+        "src/bytes/iter.go: bytes -> SplitSeq",
+        "src/bytes/iter.go: bytes -> SplitAfterSeq",
+        "src/bytes/iter.go: bytes -> FieldsSeq"
+      ]
+    },
+    "contains": {
+      "edges": 2989,
+      "sourceFileLocal": 2989,
+      "sourcePackageWide": 0,
+      "sourceUnresolved": 0,
+      "targetFileLocal": 2989,
+      "targetPackageWide": 0,
+      "targetUnresolved": 0,
+      "targetStdlibResolvable": 0,
+      "placeholderEndpoints": 0,
+      "emptyEndpoints": 0,
+      "sourceEqualsTarget": 0,
+      "examples": [
+        "src/cmd/cgo/gcc.go: File -> ProcessCgoDirectives",
+        "src/cmd/cgo/gcc.go: Package -> addToFlag",
+        "src/cmd/cgo/gcc.go: File -> loadDebug",
+        "src/cmd/cgo/gcc.go: Package -> Translate"
+      ]
+    },
+    "references": {
+      "edges": 4931,
+      "sourceFileLocal": 4906,
+      "sourcePackageWide": 2,
+      "sourceUnresolved": 22,
+      "targetFileLocal": 2113,
+      "targetPackageWide": 1304,
+      "targetUnresolved": 1514,
+      "targetStdlibResolvable": 1304,
+      "placeholderEndpoints": 1,
+      "emptyEndpoints": 0,
+      "sourceEqualsTarget": 46,
+      "examples": [
+        "lib/time/mkzip.go: main -> Buffer",
+        "lib/time/mkzip.go: main -> DirEntry",
+        "src/bytes/iter.go: Lines -> Seq",
+        "src/bytes/iter.go: splitSeq -> Seq"
+      ]
+    },
+    "overrides": {
+      "edges": 2,
+      "sourceFileLocal": 2,
+      "sourcePackageWide": 0,
+      "sourceUnresolved": 0,
+      "targetFileLocal": 2,
+      "targetPackageWide": 0,
+      "targetUnresolved": 0,
+      "targetStdlibResolvable": 0,
+      "placeholderEndpoints": 0,
+      "emptyEndpoints": 0,
+      "sourceEqualsTarget": 0,
+      "examples": [
+        "src/testing/testing.go: T.Setenv -> common.Setenv",
+        "src/testing/testing.go: T.Chdir -> common.Chdir"
+      ]
+    },
+    "instantiates": {
+      "edges": 953,
+      "sourceFileLocal": 948,
+      "sourcePackageWide": 0,
+      "sourceUnresolved": 4,
+      "targetFileLocal": 447,
+      "targetPackageWide": 410,
+      "targetUnresolved": 96,
+      "targetStdlibResolvable": 410,
+      "placeholderEndpoints": 1,
+      "emptyEndpoints": 0,
+      "sourceEqualsTarget": 31,
+      "examples": [
+        "lib/time/mkzip.go: main -> FileHeader",
+        "src/cmd/cgo/gcc.go: loadDebug -> fileTypedefs",
+        "src/cmd/cgo/gcc.go: loadDebug -> Name",
+        "src/cmd/cgo/gcc.go: guessKinds -> Name"
+      ]
+    },
+    "imports": {
+      "edges": 1305,
+      "sourceFileLocal": 1305,
+      "sourcePackageWide": 0,
+      "sourceUnresolved": 0,
+      "targetFileLocal": 4,
+      "targetPackageWide": 35,
+      "targetUnresolved": 1266,
+      "targetStdlibResolvable": 35,
+      "placeholderEndpoints": 0,
+      "emptyEndpoints": 0,
+      "sourceEqualsTarget": 0,
+      "examples": [
+        "lib/time/mkzip.go: main -> archive/zip",
+        "lib/time/mkzip.go: main -> bytes",
+        "lib/time/mkzip.go: main -> flag",
+        "lib/time/mkzip.go: main -> fmt"
+      ]
+    }
+  },
+  "placeholderExamples": [
+    "references source=\"_\" in test/fixedbugs/issue6671.go",
+    "instantiates source=\"_\" in src/syscall/syscall_unix_test.go",
+    "uses source=\"_\" in src/syscall/syscall_unix_test.go",
+    "uses source=\"_\" in src/syscall/syscall_unix_test.go",
+    "uses source=\"_\" in src/syscall/syscall_unix_test.go",
+    "uses source=\"_\" in src/syscall/syscall_unix_test.go",
+    "uses source=\"_\" in src/syscall/syscall_unix_test.go",
+    "uses source=\"_\" in src/syscall/syscall_unix_test.go",
+    "uses source=\"_\" in src/syscall/syscall_unix_test.go",
+    "uses source=\"_\" in src/syscall/syscall_unix_test.go",
+    "uses source=\"_\" in src/syscall/syscall_unix_test.go",
+    "uses source=\"_\" in src/syscall/syscall_unix_test.go",
+    "uses source=\"_\" in src/syscall/syscall_unix_test.go"
+  ]
+}

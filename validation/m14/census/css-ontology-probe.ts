@@ -12,13 +12,19 @@
  *      at; and
  *   2. the corpus the instrument runs over.
  *
- * The table holds `bash` and `json` only. It is SHARED machinery this lane does not
- * own (ONTOLOGY-WORKSTREAM.md §Ownership), so the gate exits 2 for `css` and reports
- * nothing — a verdict about the TABLE, not about the lane. This file is the
- * measurement half, written so the table entry can be DERIVED from it rather than
- * guessed, and committed so the derivation is reproducible. What the supervisor has
- * to paste into `CSS_RULED` is written out per type in the report, with the exact
- * `nodeTypesThatWouldMeanIt` list or the exact `countOnTree` body.
+ * The table lives in `script/m14/css-ruled.ts` and is REGISTERED in the gate's
+ * `RULED_BY_LANG`, so `npx tsx script/m14/ontology-coverage-gate.ts css` now reports
+ * all ten types instead of exiting 2 with "no RULING TABLE for css". This file is the
+ * MEASUREMENT half of that table: the gate re-measures every row on every run, and the
+ * counts below are the ones each row's number is derived from. It prints the full
+ * grammar vocabulary so every instrument-A claim is checkable rather than asserted, and
+ * it prints each probe's occurrence and file count so a probe that returns 0 because
+ * it cannot return non-zero is visible as such rather than indistinguishable from a
+ * probe that found nothing.
+ *
+ * Its corpus must be the gate's corpus, or the table's numbers describe a population
+ * the arbiter never sees. The admission rule below is transcribed from the gate for
+ * exactly that reason, and the transcription is load-bearing down to the argument list.
  *
  * ## The two instruments, and why a text regex is not one of them
  *
@@ -56,7 +62,18 @@ const WASM = path.join(process.cwd(), "wasm", "tree-sitter-css.wasm")
 // The admission rule is `ontology-coverage-gate.ts`'s, copied rather than imported:
 // the gate is shared machinery and may change under this lane, and a census whose
 // file set silently drifts with someone else's edit is not a census. git-tracked, a
-// real directory, <= 512 KB, and `detectLanguageFromPath(abs) === "css"`.
+// real directory, <= 512 KB, and `detectLanguageFromPath(abs, text) === "css"`.
+//
+// The TWO-ARGUMENT call is load-bearing and was originally written with one. Measured
+// consequence: the gate admitted 1,180 files where this probe admitted 1,171, and the
+// 9-file gap was not corpus growth — it was the signature. `detectLanguageFromPath`
+// takes the file text as a second argument and uses it, so dropping it admits a
+// different SET, not a smaller copy of the same one. Every number in
+// `script/m14/css-ruled.ts` is a function of this file set, so a set that is not the
+// arbiter's makes those numbers uncheckable by the one instrument that is supposed to
+// check them. It also dropped zero-byte files, which the gate keeps.
+//
+// So the rule is now transcribed argument-for-argument, and the two counts agree.
 const files: { repo: string; rel: string; abs: string; text: string }[] = []
 for (const e of readdirSync(CR)) {
   const dir = path.join(CR, e)
@@ -82,12 +99,11 @@ for (const e of readdirSync(CR)) {
     let text: string
     try {
       if (statSync(abs).size > 512 * 1024) continue
-      if (statSync(abs).size === 0) continue
-      if (detectLanguageFromPath(abs) !== "css") continue
       text = readFileSync(abs, "utf8")
     } catch {
       continue
     }
+    if (detectLanguageFromPath(abs, text) !== "css") continue
     files.push({ repo: e, rel, abs, text })
   }
 }
