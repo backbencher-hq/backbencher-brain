@@ -1686,7 +1686,74 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
    * 3 `list_type`, 1 `type_paren`, 1 `unit_type` and 71 bare `constructor`
    * (synonym / enumerated).
    */
+  /**
+   * Is this `type_definition` the PARSER'S RECOVERY OF A SIGNATURE rather than a
+   * declaration? A Clean signature such as `widByPtr :: !WID -> Bool` is not a
+   * `type_signature` to the pinned grammar: it comes back as a `type_definition` with no
+   * `body`, no `rhs`, a `name` field holding the FIRST ARGUMENT TYPE, and text that stops
+   * there (`:: !WID`). Publishing that row puts a fabricated `type` in the symbol set and
+   * makes every edge that mentions the argument type point at it.
+   *
+   * MEASURED over the 2,179-file WIDE manifest (`validation/m14/measurements/clean/
+   * type-definition-recovery-2179.txt`, regenerable with
+   * `npx tsx .tmp-probe/tdef-rule.mts`), production wasm, node shapes only:
+   *
+   *   type_definition with a body or rhs      3,930
+   *   with NEITHER                               447   (10.21% of all type_definitions)
+   *
+   * Of the 447, 74 carry a uniqueness marker (`!`, `#`) or an `ERROR` as the child
+   * immediately after the `::`, and reading all 74 sites shows every one of them is a
+   * signature. The other 373 are real declarations the rule must not touch: 293 `:: ErrPrefs`
+   * (an abstract type in a `.dcl`), 32 `:: Conversions a`, 25 `:: *TTY` (an abstract unique
+   * class) and 23 with a trailing `;` or a body the grammar filed under `uniqueness_type`.
+   *
+   * 74 IS NOT THE WITHDRAWABLE SET, and the reason is the trap this function exists to
+   * avoid. `eastwood/test/suite-default/GoToModule1.dcl:89` is `:: !*AbstractTypeSynonym`
+   * and `:92` is `:: !*EastwoodAbstractNewType` — two REAL declarations whose child shape
+   * `[:: ! ERROR constructor]` is byte-identical to the phantom at
+   * `Libraries/Hilde/FamkeConcurrentClean.dcl:8` (`:: !(*World`). No node-INTERNAL rule
+   * separates them; every child, field and name is the same. So the discriminator is
+   * POSITIONAL and uses node positions only: a signature's `::` follows the callable's name
+   * on the same row, a definition's `::` begins its own row. Measured on the same
+   * population, that withdraws 72 and keeps exactly those 2.
+   *
+   * NO TEXT AND NO REGEX. The test is whether the nearest preceding NAMED sibling ENDS on
+   * this node's start row, so no string can be mistaken for a construct and no file-path
+   * convention can stand in for one.
+   */
+  private isSignatureRecoveryTypeDefinition(node: Node): boolean {
+    if (node.childForFieldName("body") || node.childForFieldName("rhs")) return false
+    // The child immediately after the `::` decides it. Anonymous nodes included: `!` and
+    // `#` are tokens, and skipping them would leave only the ERROR case standing.
+    let afterColonColon = ""
+    for (let i = 0; i < node.childCount; i++) {
+      const c = node.child(i)
+      if (!c || c.type !== "::") continue
+      const next = node.child(i + 1)
+      if (next) afterColonColon = next.type
+      break
+    }
+    if (afterColonColon !== "!" && afterColonColon !== "#" && afterColonColon !== "ERROR") return false
+    // Positional: is the `::` preceded on its own row by a named sibling?
+    const parent = node.parent
+    if (!parent) return false
+    let index = -1
+    for (let i = 0; i < parent.childCount; i++) {
+      const c = parent.child(i)
+      if (c && c.id === node.id) { index = i; break }
+    }
+    if (index < 0) return false
+    for (let i = index - 1; i >= 0; i--) {
+      const sibling = parent.child(i)
+      if (!sibling || !sibling.isNamed) continue
+      return sibling.endPosition.row === node.startPosition.row
+    }
+    // Nothing named before it on its row: the `::` opens the declaration.
+    return false
+  }
+
   private processTypeDefinition(node: Node, ctx: CleanContext, scopeStack: Scope[]): boolean {
+    if (this.isSignatureRecoveryTypeDefinition(node)) return false
     // The name comes from the `name` FIELD. The old version used
     // `findChild(node, n => n.type === "constructor")`, which reads the FIRST
     // constructor child; 5 `type_definition`s carry an `rhs` constructor as a
