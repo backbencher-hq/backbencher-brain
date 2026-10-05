@@ -2559,6 +2559,36 @@ the gate's own shape rather than restating it (this lane restates it at `xml-rul
 because there was nowhere to import from). A missing table then stays a refusal, which is
 the current correct behaviour, and each lane lands its own file with no shared edit at all.
 
+**1b. `script/m14/ontology-coverage-gate.ts:237` — the worker count is a literal, so the
+gate cannot be asked to run cleanly. OPEN, and this lane's whole measurement setup
+depends on it.** Line 237 is `await Promise.all(Array.from({ length: 8 }, () => worker()))`.
+There is no environment override, so `BB_XML_WORKERS` has no effect on the shared gate
+whatever it is set to. Measured on this corpus, this round, running exactly the command
+the round brief specifies:
+
+```
+$ BB_XML_WORKERS=1 npx tsx script/m14/ontology-coverage-gate.ts xml
+corpus: 11552 admitted files
+[BB-PARSE-ERR] ... bulma/docs/assets/vendor/fontawesome-free-5.15.2-web/svgs/brands/apper.svg | memory access out of bounds
+[BB-PARSE-ERR] ... bulma/.../uniregistry.svg | memory access out of bounds
+[BB-PARSE-ERR] ... bulma/.../unsplash.svg | memory access out of bounds
+[BB-PARSE-ERR] ... bulma/.../svgs/solid/sort-numeric-up-alt.svg | memory access out of bounds
+[BB-PARSE-ERR] ... dbeaver/plugins/org.jkiss.dbeaver.ext.trino/pom.xml | memory access out of bounds
+[BB-PARSE-ERR] ... dbeaver/plugins/org.jkiss.dbeaver.ext.trino/plugin.xml | memory access out of bounds
+[BB-HANG] parser stuck 120s on .../svgs/brands/apper.svg — exiting
+exit 1, NO verdict table printed
+```
+
+The env var is set to 1 and the gate still runs 8 workers, because it never reads it. The
+fix is the one line `validation/m14/fixtures/xml/ruled-gate.ts:268` already applies to
+its patched copy: `Array.from({ length: Number(process.env.BB_GATE_WORKERS ?? 8) })`.
+Giving the gate an override costs nothing and is what lets a lane on a corpus that trips
+the concurrency fault (§8 item 3) obtain a verdict from the shared gate at all, rather
+than only through a lane-local copy of it. Until then, every number in this lane's
+ontology table comes from `ruled-gate.ts`, which is a weaker position than the arbiter
+grading the lane and a stronger one than not measuring — stated so a reader knows which
+instrument produced what.
+
 **1a. The same gate should refuse before it walks, not after. STILL OPEN.** The
 `if (RULED_BY_LANG[LANG] === undefined)` check sits at line 338, *below* the `parseFile`
 worker pool (line 226) and both instrument loops (lines 250, 264), so an unwired lane pays
