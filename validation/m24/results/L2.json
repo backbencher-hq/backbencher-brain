@@ -2,12 +2,12 @@
   "issue": "491",
   "code": "L2",
   "status": "verified",
-  "currentCommit": "936b66d6d088776c7715e7d1aec492cc9c6d9841",
+  "currentCommit": "462f620be3ca6097a560b12d314fa9b98d8c6f1a",
   "sourceFingerprint": "08cae55c9091af3ad3ef2d78ecb9307056b0434645779a16292fb9ea3bc3b051",
   "verifierCommand": "npx tsx script/m24/verify-hover.ts",
   "evidenceFile": "L2.json",
-  "generatedAt": "2026-10-05T02:32:16.253Z",
-  "passed": 45,
+  "generatedAt": "2026-10-05T04:11:02.573Z",
+  "passed": 58,
   "failed": 0,
   "failures": [],
   "negativeCases": 14,
@@ -36,11 +36,14 @@
     "index-sourced only; no compiler-backed types (complement stance)",
     "evidence tiers describe relationship data quality, not symbol truth",
     "fixture-backed double for the DB layer; live brain.db path covered by upstream freshness verifiers and the V1 harness",
-    "latency measured on this machine only; cross-platform budgets are M25 scope"
+    "latency measured on this machine only; cross-platform budgets are M25 scope",
+    "the unresolvable-row defence is TWO layers deep, and this is measured, not assumed: rich_hover.ts's `locationOf` catches PositionError, and navigation.ts's `edgeLocationDetailed` also catches it and returns a declared absence. Removing EITHER guard alone changes nothing observable (all four combinations were run against the real collector over the real unresolvable row: both present = no throw; each alone removed = no throw; both removed = PositionError). The resilience mutant therefore plants BOTH edits, because the defect it names — 'one unresolvable stored row kills the hover' — exists only when both guards are gone. A single-site mutant here would report SURVIVED while measuring redundancy, not coverage",
+    "G8's stimulus is a fixture double, not a real index. The 11.5%-of-symbols measurement in the header was taken on a real index by the lane that introduced the guard; this gate re-establishes the stimulus on a fixture and cannot re-measure the rate. The control asserts the stimulus is genuinely refused by the position owner, so G8 is not vacuous, but the rate itself is not re-measured here",
+    "the anchor-drift gate covers anchors that are ABSENT, empty, no-op, or unresolvable, and RECORDS (without failing) anchors that occur more than once. It cannot see the failure this file's resilience mutant actually had — an anchor that still matches, planted into a guard that another lane had superseded upstream. That failure is only observable by an assertion, which is why it is recorded as a measured fact in the mutant's own comment rather than claimed as gated"
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T02:32:16.254Z",
-    "contentSha256": "a9541cded92d19df8219bdfa1036dcc442974fbc863b27f4b180189a5a63a115"
+    "sealedAt": "2026-10-05T04:11:02.573Z",
+    "contentSha256": "ed3479546e212b3b8b16d89f93614202ec8221a6fbcbe1f092136424974e5ea7"
   }
 }
