@@ -3006,6 +3006,78 @@ multi-declaration edges those three types contribute. **If a shadow-aware qualif
 shared step, the honest prediction is that no column moves at all** — that is the control, and it is why the
 step is the ask.
 
+## The instrument that produced every number above had a width-dependent population — found, priced, and fixed in this lane
+
+`validation/m14/fixtures/julia/ambiguity-split.ts` drove `Promise.all` at
+`BB_JULIA_WORKERS ?? 4`. It is a per-file loop, so width only chooses how many `parseFile` calls are
+in flight — and **the trap this lane has documented twice in §8 is that a degraded parse is
+probabilistic in width**. Measured 2026-10-05 on this file's own sample, same commit, same corpus,
+same 600 files (`sampleHash 1c76a52a3ba9c16c`), one arm per width:
+
+| arm | files good | degraded | symbols | edges | `ambSym` | unresolved |
+|---|---|---|---|---|---|---|
+| **width 1** | **600 / 600** | **0** | **10,681** | **70,959** | **19,938** | **27,735** |
+| width 4 | 599 / 600 | 1 | 10,656 | 70,702 | 19,801 | 27,636 |
+
+One file's worth of population — **257 edges, 137 ambiguous targets, 99 unresolved** — depends on
+which of two widths the operator happened to leave in the environment. **Every figure in the section
+above is the width-1 row**, and a second width-4 run degraded a *different* file
+(`julia/stdlib/LibGit2/src/strarray.jl`, against `.../repository.jl` in the first), so the file that
+degrades is itself a sample from a distribution: no rate is quoted for it, only the per-arm degraded
+count, which is what §8 row 2 already argued for the shared arbiter.
+
+**The committed record was re-derived at width 1 and every number in this file reproduces to the
+digit** — `validation/m14/measurements/julia-ambiguity-before.json`, `parseFromCache: false`,
+`workerWidth: 1`, `degraded: []`, and `total`/`finePartitionCheck`/`perFilePartitionCheck`/
+`attribPartitionCheck`/`dedupPartitionCheck` all byte-identical to the previously committed record.
+So the figures were not wrong; the **instrument that produced them did not carry the fact that makes
+them reproducible**, and it would have produced a different population silently on any other machine.
+
+Three defects fixed in the lane-owned harness rather than reported, because the file is mine:
+
+1. **The cache key omitted the width.** It was `analyzerHash + sample mtimes`, so a degraded
+   width-4 parse was a valid cache hit for a width-1 run — a reduced population would have been
+   replayed as a clean claim, and `parseFromCache: true` is not something a reader would interrogate.
+   The key now carries the width; verified by two cache entries existing for one sample at two widths.
+2. **The artifact did not record the width.** A count whose population depends on a worker count the
+   artifact does not carry is not reproducible. `workerWidth` is now a record field and is printed on
+   the `parse:` line. This is the same lesson as the fleet's "the census artifact's worker count was
+   6, not 2, in four places", paid once here.
+3. **A degraded population printed a complete table and exited 0.** All four partitions are asserted
+   against `ambSym`, so a degraded population still summed exactly while being one file short of the
+   sample: the table looked whole and was not. The harness now ends with a population gate —
+   **exit 3**, a `POPULATION NOT CLEAN` banner naming each degraded file, and the
+   `population clean: N/N files at width W` line printed **only** when it is true. `--allow-degraded`
+   publishes the reduced population without erasing the evidence.
+
+**The gate has a deterministic regression test**, which it could not have had before: the condition
+it tests is probabilistic, so `validation/m14/fixtures/julia/ambiguity-split-population-gate.ts` drives
+`BB_JULIA_FAULT_INJECT=N` — a hook that forces N sampled files degraded and **bypasses the cache in
+both directions**, so a faulted parse can neither be replayed nor poison a real record. The probe
+asserts 10 properties over a 24-file sample (seconds): a degraded population exits 3 and not 0; the
+banner prints and the `population clean` line does not; the degraded file is named in the artifact and
+the artifact records that it was faulted; `--allow-degraded` exits 0 with the degraded list still
+present; and a clean run after a faulted run parses fresh with an empty degraded list.
+
+```
+bun run validation/m14/fixtures/julia/ambiguity-split-population-gate.ts
+  10 of 10 checks hold — exit 0
+```
+
+It caught a real defect while being written: its own P4 arm asserted that a *faulted* subprocess
+returned a clean record, because it passed the injection variable into the run it was checking for
+cleanliness — an inherited environment variable making a faulted run stand in for a measured one,
+which is the exact failure P4 exists to detect. Fixed by having the probe's `run()` unset the variable
+unless the call asks for it.
+
+**The shared-machinery half of this is §8 rows 2, 13 and 14, and this is the lane-side statement of
+what a fix there looks like**: an instrument that measures a population must (a) key any cache on
+every parameter that changes the population, (b) record the parameters in the artifact, and (c) fail
+rather than print a whole-population table over a population it knows is short. The shared
+`ontology-coverage-gate.ts` has all three defects at once, which is why its own output can be
+`emitted 9/10` on one run and `emitted 0/10` on the next with no line on screen saying which
+population either run measured.
+
 ## Gates re-run on current shared machinery, 2026-10-05
 
 Every number this file publishes was re-derived on this date, on this commit, against the corpus the
@@ -3024,6 +3096,9 @@ earlier run.
 | the `implements` ruling | `ruled-probe-check.ts` | **MATCH — 449 occurrences in 87 files**, equal to `publishedCount`/`publishedFiles` inside the ruling |
 | `overrides` differential | `overrides-differential.ts` | **COVERED 3, MISSING 0, UNEXPLAINED 0, 100.0%**; both sides 3 edges in 3 files, 0 threw, 0 bombs fired |
 | per-label oracle, deterministic | `direct-oracle-check.ts --files 40` | 2,478 truth / 2,068 comparable / 188 missing / 410 unexplained = **83.5% covered**; `calls` 75.8%, `uses` 98.9%, `references` 88.0%, `contains` 86.8%, `extends` 57.1%, `instantiates` 73.1%, `overrides` 100.0% |
+| the ambiguity split, re-derived | `ambiguity-split.ts --json …` at `BB_JULIA_WORKERS=1` | **exit 0**, `600/600 files at width 1, 0 degraded, 0 threw`; `total` and all four partition checks byte-identical to the committed record |
+| the ambiguity split at width 4 | same, `BB_JULIA_WORKERS=4` | **exit 3** — `POPULATION NOT CLEAN`, degraded `.../strarray.jl`; the arm above |
+| its population gate, 10 properties | `ambiguity-split-population-gate.ts` | **10 of 10 hold, exit 0** — 24-file sample, `BB_JULIA_FAULT_INJECT=2` |
 | fixture lane | `run-fixtures.ts --lang julia` | **5 pass, 0 fail**; a scoped run writes no canonical artifact |
 | mutants | `mutation-check.ts --all` | **28 killed, 0 survived, of 28** |
 | type check | `npx tsc --noEmit` | **0 errors naming a julia file** |
@@ -3061,4 +3136,6 @@ which is why none of them is in this lane's commits.
 | 13 | **`script/m14/ontology-coverage-gate.ts`** | **`:274`, and the per-type tally that consumes each worker result** | **count `fallback: true` from `parseFile` and print `files ANALYSED: N of M admitted` beside the verdict table, the way `validation/m14/fixtures/julia/census.ts` does; do not `continue` past a degraded file silently** | **measured 2026-10-05, the first run of this gate at its own configured width against the corpus this lane now has.** The gate drives 8 concurrent `parseFile` calls and has **no** degraded-file accounting: `grep -n "fallback\|degraded\|BB-PARSE-ERR" script/m14/ontology-coverage-gate.ts` returns nothing. Its run printed `[BB-PARSE-ERR] … LibGit2/src/utils.jl` and `[BB-HANG] … utils.jl — exiting`, then printed `corpus: 1985 admitted files` and a complete ten-row table — and that table was **32 relationships short** of the clean census (`calls` 122,129 vs 122,150; `uses` 37,083 vs 37,087; `references` 50,143 vs 50,150; the other six types identical). **A verifier's own totals were over a population one file smaller than the number it printed, with nothing on screen saying so.** The same gate at 8-wide on 2026-10-04 reported `fallback: 0`, so a reader has two runs of this gate disagreeing by 32 edges and no way to tell which population either measured. This is a **verifier** defect and not a census defect: the arbiter is what the fleet reads, and its per-type `EMITTED` counts get quoted as whole-population figures |
 | 14 | **`script/m14/ontology-coverage-gate.ts`** | **`:304-319`, and the table that consumes `observed` at `:472-503`** | **persist the per-type tally in the checkpoint beside the paths, not only the paths. Or: force `--fresh` whenever `walkStats.walked === 0 && walkStats.alreadyDone > 0`. Or minimally: print `ABORTING — a resumed run measures nothing` and exit non-zero, because a reader cannot be left with a table that is a function of a file's prior contents** | **measured 2026-10-05, and this is the largest defect this lane has found in the arbiter.** The gate accumulates `observed` inside the walk's `run` callback (`:307-318`) and `script/m14/resumable-walk.ts:134-138` SKIPS every index whose id is already in the checkpoint. So on any run after the first, `run` is never called, `observed` stays empty, and all ten rows take the `obs && obs.n > 0` false branch. **Three runs, same commit, same 1,985-file corpus, same `parseFile`:** run 1 with no checkpoint printed `emitted 9/10 … calls 122,150 …` and exited 0; run 2 with a complete checkpoint printed `emitted 0/10`, zero edges, every row `NOT EMITTED`, and **exit 1**; run 3 with `--fresh` printed `[BB-PARSE-ERR] … Graphs.jl/test/core.jl`, `[BB-HANG] … core.jl — exiting`, **exit 1**. **`walkStats.partial` is `false` on run 2**, because `walked + alreadyDone === count`, so the one line whose stated job is to disclose an incomplete population discloses a complete one: `walk: 1985/1985 files (100.0%) newly walked 0, resumed 1985`. The comment above the walk says *\"A resumed or partial walk produces the SAME edge counts as a complete one … so without this line a 99% walk reports identically to a 100% one\"* — the line was added for exactly this, and it reports 100.0% for a walk that read zero files. `firing-check` disagrees and is independent of the checkpoint: **9/10 fired, 235,878 edges, 1,985/1,985 files, 0 degraded**, sequential. **This makes the block quoted at the top of this file a FIRST-RUN-ONLY artifact**, which is why it cannot be re-verified by re-running the command the reader is told to run. `validation/m14/fixtures/julia/arbiter-resume-probe.ts` reproduces the mechanism in under a second against the shared `resumableWalk` (run 1 → 9/10 and 54 edges; run 2 → 0/10 and 0 edges, `partial` false) and **exits 1 if the shared gate is fixed**, so this row can be withdrawn rather than left standing. The checkpoint is gitignored (`validation/m14/measurements/walk-*.txt`), so every lane that has run the gate twice since the checkpoint landed reads `0/10 emitted` |
 | 15 | `script/m12/verify-regex-census.ts` | the census's language list / the `analyzer-complexity` input set | **add a `julia` entry so the shared NO REGEX gate has something to test in this lane** | the gate **PASSES** on this lane today and that is vacuous: it reports `census entries: 4` and julia is not one of them, so a lane that had regex everywhere would pass it identically. julia has no entry for the same reason it has no row in `script/m60/analyzer-complexity-gate.ts` and no `validation/m12/fixtures/julia` (§8 row 8) — the shared M12 harness was never extended to this lane. The lane's own substitute is the **46 node-type claims / 0 unknown** check in the L2 section, which is an AST-walk and not a regex census |
+| 17 | **`script/m14/verify-honesty.ts`** | **`:40-62`** — `collectProse` + the `BANNED` loop, and the unconditional `pass("banned-vocabulary lint …")` at `:62`** | **two changes, and the first is the urgent one: (a) derive the lint's own verdict from the number of findings instead of calling `pass()` unconditionally; (b) distinguish a harvested identifier from a prose claim — scan the artifact's prose, or exempt a declared set of data fields — and report the finding COUNT rather than the first match per pattern** | **measured 2026-10-05, and this lane is one of the artifacts it fails.** The lint reads every `.md`/`.json` under `validation/m14/` plus `docs/*M14*` as **raw bytes** and applies the prose word-boundary regexes, with exactly two hardcoded filename exemptions (`:56-57`) and no way to mark a span as data. So an artifact that records **corpus-harvested identifiers** fails the lint for containing them: this lane's `julia-ambiguity-before.json` holds **10 occurrences**, every one a real harvested binding — `complete` (`julia/base/stat.jl:313`, `complete = true`) and `incomplete_tag` (`Base.incomplete_tag()`) — and they are reported as **ONE** finding, because `text.match(re)` at `:58` keeps only the first match per pattern per file. The same class appears in `fsharp-shape-census.json` (`identifier "Completed"`) and `declaration-forms.expectation.json` (`analysisVersion: 12.0.0-clean-ast-complete`), while `csharp/field-initializer-read.expectation.json` is a **genuine prose violation** (`so a perfect analyzer passes every fi…`) and the `grammar-pins.json` hits are quoted third-party README text and a code excerpt. **So the lint is neither wholly false-positive nor wholly true-positive, and adding seven more filenames to the exemption list would not fix that — it needs the data/prose distinction.** Urgent half: at `:62` the `pass(...)` call is reached whether `fail()` fired 0 times or 11, so this run printed **11 `HONESTY-GATE FAIL: banned term` lines and then `ok   banned-vocabulary lint over validation/m14 + M14 docs` for the same check** — a reader scanning per-check verdicts reads the lint as passing. **This lane does not strip the identifiers to satisfy it:** the names are the evidence, and renaming them would leave a correct-looking artifact that no longer records what was measured. This lane's gate count is therefore 1 known, understood, and declared |
+
 | 16 | **`src/ast/parallel-indexer.ts`** | **`:3500`, in front of `resolveTargetStmt` (`:2239`); the alias map is built at `:2758-2762`** | **give the TARGET half the exact-spelling lookup the SOURCE half already has at `:3430` — `nameToSymbol.get(targetName) ??` in front of the SQL, falling back to today's `targetLeaf` when it misses. One clause, same-file only (`nameToSymbol` is built from the current file's `result.symbols`), so it cannot reach a cross-file target and cannot make an edge that resolves today stop resolving** | **measured 2026-10-05, and it is the reason no julia-side fix can move an ambiguous target.** `extractLeaf` at `:3393` reduces every emitted target to its leaf BEFORE the `:3500` lookup, so a module-qualified target resolves exactly as if the bare name had been emitted: qualification moves the store by zero. The asymmetry is one line apart in the same loop — `:3430` reads `nameToSymbol.get(sourceName) ?? nameToSymbol.get(sourceLeaf)` and `nameToSymbol` holds `${sScope}.${nm}` for every symbol with a scope (`:2758`), so an elixir-style `Scope.name` source resolves to exactly one symbol, while the target half of the same loop goes straight to SQL on the leaf. Population it would reach on this lane, measured on 600 files (`sampleHash 1c76a52a3ba9c16c`): the **3,485 `attribInFileMulti` edges** whose referring file declares the target name >=2 times — `contains` 827, `references` 1,343, `instantiates` 357, `calls` 246, `uses` 665, `exports` 33, `extends` 14 — today attributed by TEXT-ordered line inside `s.id`. The 13,123 `attribCrossFile` edges are out of reach of any same-file step and need laptop C's inbound edge. **Precondition for the lane half:** emitting `Owner.name` for a BARE reference is only correct when no local binding shadows the name at that site (this lane has 21,693 deliberately unpublished local bindings), so the shared step must land before a shadow-aware emission, not after |
