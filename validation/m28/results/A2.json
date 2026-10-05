@@ -34,15 +34,15 @@
       "caught": true
     }
   ],
-  "currentCommit": "1590b45ff3a246db4d1e6b3b8775141a439e378e",
+  "currentCommit": "6f4868818dfdbff34b792c45e036737c53c12fcc",
   "verifierCommand": "npx tsx script/m28/verify-annotation-ui.ts",
   "evidenceFile": "A2.json",
-  "generatedAt": "2026-10-05T14:17:08.778Z",
+  "generatedAt": "2026-10-05T17:46:16.859Z",
   "claimLevel": "verified — annotations render in the real editor hover (author-labeled) and ride bb/graph; component rules mutation-gated",
   "failures": [],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T14:17:08.778Z",
-    "contentSha256": "ff68c0367c7001f34a3608e25de9aa9199c0ec330c6682abb9f23e9d3c95ec4b"
+    "sealedAt": "2026-10-05T17:46:16.859Z",
+    "contentSha256": "263a869e0a22d0cfbf9c51dfaf5113a789b05b63e0b040233bb253561fed85fb"
   }
 }
