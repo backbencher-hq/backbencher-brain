@@ -40,13 +40,13 @@
       ],
       "evidence": {
         "status": "known-gap",
-        "currentCommit": "bc09cd791cf54bc93791cb1e457a9731d478bb87",
+        "currentCommit": "726fd632ff2fedf92d7d3d60a31b214a0cd4055b",
         "verifierCommand": "npx tsx script/m24/verify-governance.ts",
         "evidenceFile": "G1.json",
         "passed": 23,
         "failed": 1,
         "negativeCases": 11,
-        "blockedReason": "1 check(s) failed: G1: every non-planned ledger item has matching persisted evidence at the current commit — relevant uncommitted files at measure time: script/m24/verify-governance.ts"
+        "blockedReason": "1 check(s) failed: G1: every non-planned ledger item has matching persisted evidence at the current commit — the relevant tree was clean at measure time"
       }
     },
     {
@@ -342,7 +342,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T13:08:00.825Z",
-    "contentSha256": "06bdaec49b090c9fea5fa026ba175365cac7de961564860083dd5c25598858f8"
+    "sealedAt": "2026-10-05T14:30:52.460Z",
+    "contentSha256": "e2244f6d13c5c7c19687e040ffe98b3089a2fbe017f906070ad78639983683fd"
   }
 }

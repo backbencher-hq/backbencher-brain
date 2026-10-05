@@ -3,17 +3,17 @@
   "code": "G1",
   "milestone": "M25",
   "status": "known-gap",
-  "checks": 77,
+  "checks": 79,
   "passed": 69,
-  "failed": 8,
+  "failed": 10,
   "negativeCases": 11,
-  "currentCommit": "bc09cd791cf54bc93791cb1e457a9731d478bb87",
+  "currentCommit": "726fd632ff2fedf92d7d3d60a31b214a0cd4055b",
   "workingTreeRelevantChanges": [
-    "script/m25/verify-governance.ts"
+    "script/m25/verify-cross-platform.ts"
   ],
   "verifierCommand": "npx tsx script/m25/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-10-05T13:08:18.650Z",
+  "generatedAt": "2026-10-05T14:30:57.072Z",
   "ledger": "validation/m25/results/manifest.json",
   "m24Bar": {
     "ledgerStatus": "open",
@@ -23,10 +23,10 @@
     "This gate validates governance metadata, mutation response, and the M24 bar; it does not verify extension features.",
     "A run with relevant uncommitted M25 files is recorded as known-gap; verified status requires a clean relevant tree."
   ],
-  "blockedReason": "8 check(s) failed: G1: all 11 issue entries are unique and structurally complete; G1: no banned vocabulary in manifest.json (perfect(ion)?\\b); G1: no banned vocabulary in manifest.json (\\bcomplete(ly|d|ness)?\\b); G1: M24 bar — ledger closed with all 11 issues verified (mechanical) ... - relevant uncommitted files at measure time: script/m25/verify-governance.ts",
+  "blockedReason": "10 check(s) failed: G1: all 11 issue entries are unique and structurally complete; G1: no banned vocabulary in manifest.json (perfect(ion)?\\b); G1: no banned vocabulary in manifest.json (\\bcomplete(ly|d|ness)?\\b); G1: M24 bar — ledger closed with all 11 issues verified (mechanical) ... - relevant uncommitted files at measure time: script/m25/verify-cross-platform.ts - 2 ledger-projection finding(s)",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T13:08:18.714Z",
-    "contentSha256": "cbee2c78b7394b78fc1b46e4f002f5ff0fa942c2a93768aaaa511b42764f3008"
+    "sealedAt": "2026-10-05T14:30:57.100Z",
+    "contentSha256": "0405a5805a7262bdf86af95af9923841ed8cd6d7cd40fd9fb2bec467eaabc9c5"
   }
 }

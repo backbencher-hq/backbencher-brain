@@ -31,7 +31,7 @@
       ],
       "evidence": {
         "status": "known-gap",
-        "currentCommit": "facecf800fff693596604f71bcc8e23cf0152277",
+        "currentCommit": "726fd632ff2fedf92d7d3d60a31b214a0cd4055b",
         "verifierCommand": "npx tsx script/m29/verify-governance.ts",
         "evidenceFile": "G1.json",
         "passed": 64,
@@ -154,7 +154,10 @@
         "verifierCommand": "npx tsx script/m29/verify-precision-ledger.ts",
         "evidenceFile": "R4-verify.json",
         "passed": 19,
-        "failed": 0
+        "failed": 0,
+        "realFailed": 0,
+        "mutantsCaught": 6,
+        "mutantsTotal": 6
       }
     },
     {
@@ -179,7 +182,10 @@
         "verifierCommand": "npx tsx script/m29/verify-precision-improvements.ts",
         "evidenceFile": "R5-verify.json",
         "passed": 20,
-        "failed": 0
+        "failed": 0,
+        "realFailed": 0,
+        "mutantsCaught": 4,
+        "mutantsTotal": 4
       }
     },
     {
@@ -205,7 +211,10 @@
         "evidenceFile": "V1-verify.json",
         "passed": 14,
         "failed": 0,
-        "blockedReason": "W2/W3 execute the runner and drift gates only; the nvim-dependent editor legs (S6) and giant-index legs (R3) are covered by their own verifiers and are out of scope here."
+        "blockedReason": "W2/W3 execute the runner and drift gates only; the nvim-dependent editor legs (S6) and giant-index legs (R3) are covered by their own verifiers and are out of scope here.",
+        "realFailed": 0,
+        "mutantsCaught": 5,
+        "mutantsTotal": 5
       }
     },
     {
@@ -231,7 +240,10 @@
         "evidenceFile": "D1-verify.json",
         "passed": 13,
         "failed": 0,
-        "blockedReason": "The listing's shipped claim table is intentionally at the conservative I1 floor (M25's drift gate owns it); D1 checks it never rises above the machine ledger, not that it equals it."
+        "blockedReason": "The listing's shipped claim table is intentionally at the conservative I1 floor (M25's drift gate owns it); D1 checks it never rises above the machine ledger, not that it equals it.",
+        "realFailed": 0,
+        "mutantsCaught": 3,
+        "mutantsTotal": 3
       }
     },
     {
@@ -265,7 +277,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T04:37:12.312Z",
-    "contentSha256": "c2de9c2207eb9f635c5ef487f9a2d1a4a9fe50612a945f04c4725a6dc70ec782"
+    "sealedAt": "2026-10-05T14:31:05.767Z",
+    "contentSha256": "501a4878153ed3a78e246173c35bab74d1ccf3d5264720eb24d31accbbc6ac64"
   }
 }
