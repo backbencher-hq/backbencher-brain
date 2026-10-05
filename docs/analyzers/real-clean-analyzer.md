@@ -951,6 +951,33 @@ derives no row for, so on a like-for-like rotation pass 5 would be expected to R
 `unexplained` by up to 59 — and this run cannot show that, because the rotation moved too.
 **That expectation is not measured and is not claimed as a result.**
 
+**Two more rotations measured at this commit, and the point is now a range rather than an
+anecdote.** Same command, same analyzer, minutes apart, and the rotation counter now reads
+`rot 2` (the counter lives in a state file outside the repo and was evidently reset between
+rounds, which is itself a reason not to quote any of these as a fixed figure):
+
+| | Clyde | clean-stdlib |
+| --- | --- | --- |
+| rotation | `rot 2` | `rot 2` |
+| tree truth edges | 1,316 | 658 |
+| covered by the analyzer | 875 (66.5%) | 618 (93.9%) |
+| MISSING | **441** | **40** |
+| analyzer edges | 1,384 | 924 |
+| UNEXPLAINED | 661 (47.8%) | 419 (45.3%) |
+| heuristic | **0** | **0** |
+| unexplained by label | `references=478, calls=175, overrides=5, instantiates=3` | `references=200, calls=143, implements=41, overrides=35` |
+
+An earlier invocation in the same session, on the same commit, gave Clyde `MISSING 527` and
+`clean-stdlib MISSING 49`. So Clyde's MISSING has now been observed at **441 / 477 / 492 /
+527** and clean-stdlib's at **23 / 40 / 49** across six runs of one commit — a spread wider
+than any analyzer change this lane has made. Consolidated, the quantities that are **stable
+across every rotation measured here** are the ones worth reading: the lane is RED on both
+repos; `heuristic` is **0** on both; `overrides` is `COMPARED WITH NO TRUTH` on both, with
+0 truth rows; and `overrides`+`instantiates` account for every `MISSING` row printed in the
+per-lane samples on both repos — i.e. the whole `MISSING` population is the
+`declinedInstantiations` family below, not a construct the analyzer fails to read. The
+*rates* move with the sample; the *shape* does not.
+
 **The oracle's declared limitation, stated rather than glossed.** `deriveCleanEdges` is a
 separate walker over the SAME grammar, so a grammar bug present in both paths is
 invisible to it. This lane's 30.1% parse-failure rate (limitation 0 below) is exactly
@@ -1146,9 +1173,9 @@ was clean before the doc edits and after them.
 | command | result | exit |
 | --- | --- | --- |
 | `npx tsc --noEmit -p tsconfig.json` | no output | 0 |
-| `npx tsx script/m14/ontology-coverage-gate.ts clean` | `emitted 9/10   ruled-sound 1   FALSIFIED 0   ruled-without-justification 0` over 312 admitted files | **0** |
+| `npx tsx script/m14/ontology-coverage-gate.ts clean --fresh` | `walk: 312/312 files (100.0%)  newly walked 312, resumed 0` then `emitted 9/10   ruled-sound 1   FALSIFIED 0   ruled-without-justification 0` — **re-run at this commit, `--fresh` is mandatory, see [the arbiter's false 0/10](#what-the-arbiter-reported-and-why-it-was-wrong)** | **0** |
 | `npx tsx script/m14/ontology-coverage-gate.ts --coverage` | 14 lanes can be ruled for, `clean` among them | 0 |
-| `npx tsx script/m14/verify-ruling-tables-registered.ts` | 14 tables on disk, 14 registered, `PASS` | 0 |
+| `npx tsx script/m14/verify-ruling-tables-registered.ts` | **18 tables on disk, 18 registered, `unadjudicated lanes : 0  ()`, `PASS`** — and `clean` is in the on-disk set and in the registry, so this lane is no longer named by any list (§8 item 1, since resolved) | 0 |
 | `npx tsx script/m14/firing-check.ts --files 120 clean` | `9/10 fired, 16416 edges, 120/120 files`, `degraded 0`, 0 parse failures, 0 empty names, 0 unknown kinds, 0 unknown endpoints — **and the digest reads `MISSING:` on every lane, so its `analyzerStableDuringRun: true` is vacuous; see [report item 6](#reported-to-the-supervisor-not-fixed)** | 0 |
 | `npx tsx script/m14/clean-ontology-census.ts` | 312/312 parsed, **30,744** edges, 8,288 symbols, 0 empty names, 0 unknown kinds, 0 unknown endpoints, 0 edges without a line, 0 degraded. `--wide` **ABORTED twice** — see [WIDE is not re-measurable](#wide-is-not-re-measurable-on-this-machine) | 0 |
 | `npx tsx script/m14/clean-ontology-census.ts --limit 120` | 120/120 parsed, 16,039 edges — a DIFFERENT 120 files from `firing-check`'s stride sample (first-120-of-sorted vs round-robin-per-repo), which is why the two disagree on totals, and why both populations are named wherever either is quoted | 0 |
@@ -1164,7 +1191,7 @@ was clean before the doc edits and after them.
 | `npx tsx validation/m14/fixtures/clean/extends-probe-roles-regen.mts` | idempotent: regeneration leaves the expectation byte-identical, 0 notes dropped | 0 |
 | `npx tsx script/m60/rel-type-coverage-gate.ts --langs=clean` | 4 DERIVATION findings (`contains`, `exports`, `imports`, `uses`), 3 NEW; checks 2/3/4 pass — **and it OVERWRITES the repository-wide results file, see report item 8**; restored with `git checkout --` in the same minute, nothing committed from it | 1 |
 | `bash script/m14/no-regex-gate.sh` | `real-clean-analyzer.ts` contributes **0** of the tree's 4 regex literals (all 4 are `real-svelte-analyzer.ts`), and the census half prints `regex census gate PASSED` | **1** — the script's last line is `sys.exit(1 if rows else 0)` over `src/ast` as a whole, so the exit is **1 because of another lane's file**, not clean's. The previous revision of this row recorded 0, which this script cannot return while any analyzer in scope carries a literal; the per-file attribution above is the part that is clean's to answer |
-| `npx tsx script/m14/differential.ts --lang clean --sample 60` | **RED, exit 6, five runs at this commit** — and the figures MOVE between runs because the gate rotates its 60-file sample (`coldPoolPick`, differential.ts:927). Run A (pre-pass-4): Clyde `truth=1314 covered=787 (59.9%) MISSING=527 \| edges=1322 unexplained=671 (50.8%)`, clean-stdlib `truth=667 covered=618 MISSING=49 \| edges=972 unexplained=482 (49.6%)`. Run B (pre-pass-4): Clyde `truth=1177 covered=700 MISSING=477 \| edges=1214 unexplained=610 (50.2%)`, clean-stdlib `truth=655 covered=606 MISSING=49 \| edges=941 unexplained=462 (49.1%)`. Run C (post-pass-4, rot 22/23): Clyde `truth=1314 covered=787 MISSING=527 \| edges=1322 unexplained=671 (50.8%)`, clean-stdlib `truth=664 covered=615 (92.6%) MISSING=49 \| edges=985 unexplained=488 (49.5%)`. `heuristic=0` and `COMPARED WITH NO TRUTH: overrides` on all five. **Pass 4 RAISED clean-stdlib's `unexplained` 462 → 488 and its edges 941 → 985: the oracle `deriveCleanEdges` has no rule for a member signature's class context, so the 498 new edges are counted as unexplained. That is the correct label given the oracle's coverage and it is a DERIVATION gap, named below.** See [Q3](#q3--correct-an-independent-oracle-agrees). Writes no artifact on a scoped run, by design | **6** |
+| `npx tsx script/m14/differential.ts --lang clean --sample 60` | **RED, exit 6, seven runs at this commit** — and the figures MOVE between runs because the gate rotates its 60-file sample (`coldPoolPick`, differential.ts:927). Run A (pre-pass-4): Clyde `truth=1314 covered=787 (59.9%) MISSING=527 \| edges=1322 unexplained=671 (50.8%)`, clean-stdlib `truth=667 covered=618 MISSING=49 \| edges=972 unexplained=482 (49.6%)`. Run B (pre-pass-4): Clyde `truth=1177 covered=700 MISSING=477 \| edges=1214 unexplained=610 (50.2%)`, clean-stdlib `truth=655 covered=606 MISSING=49 \| edges=941 unexplained=462 (49.1%)`. Run C (post-pass-4, rot 22/23): Clyde `truth=1314 covered=787 MISSING=527 \| edges=1322 unexplained=671 (50.8%)`, clean-stdlib `truth=664 covered=615 (92.6%) MISSING=49 \| edges=985 unexplained=488 (49.5%)`. Runs D/E (this round, rot 2): Clyde `truth=1316 covered=875 (66.5%) MISSING=441 \| edges=1384 unexplained=661 (47.8%)`, clean-stdlib `truth=658 covered=618 (93.9%) MISSING=40 \| edges=924 unexplained=419 (45.3%)`. `heuristic=0` and `COMPARED WITH NO TRUTH: overrides` on all seven. **Clyde MISSING has now been observed at 441/477/492/527 and clean-stdlib's at 23/40/49 across six runs of ONE commit — the spread is wider than any change this lane has made, which is what makes the rotating sample unusable for a per-label claim (§8 item 4 in the Q3 discussion).** **Pass 4 RAISED clean-stdlib's `unexplained` 462 → 488 and its edges 941 → 985: the oracle `deriveCleanEdges` has no rule for a member signature's class context, so the 498 new edges are counted as unexplained. That is the correct label given the oracle's coverage and it is a DERIVATION gap, named below.** See [Q3](#q3--correct-an-independent-oracle-agrees). Writes no artifact on a scoped run, by design | **6** |
 | `bun run script/m14/verify-doc-truth-emissions.ts` | repository `FAIL` (7 FALSE_NEGATIVE / 42 UNDOCUMENTED / 15 NO_CLAIM_TABLE) — **`clean` in none of them**; its row reads 9 types at line 424 and is byte-unchanged by pass 4 | 0 |
 
 **Q3 is red, and the red is not new — but "reproduces to the digit" was wrong and is
@@ -1220,30 +1247,27 @@ than an error — and the `lua`/`r` orphan finding it surfaces is **not** clean'
 
 ## Reported to the supervisor, not fixed
 
-8 findings outside this lane's ownership. Each is stated so it can be applied
-without re-deriving it. None was worked around silently.
+9 findings outside this lane's ownership. Each is stated so it can be applied
+without re-deriving it. None was worked around silently. One of them (1) has since been
+fixed by the supervisor and is kept for the failure mode; the other eight are open.
 
-1. **`script/m14/verify-ruling-tables-registered.ts` cannot see a lane that has shipped
-   a table.** Its `UNADJUDICATED` list is still `["clean","graphql","r","scss"]` after
-   this round added `script/m14/clean-ruled.ts`, and the gate still prints
-   `PASS`. The stale-list check at lines 77-83 tests each entry with `specSuppliesRuling`
-   only — never against the `onDisk` set built at line 33 — so a lane whose spec happens
-   to carry a `RULED` decision passes the staleness check forever. `clean`'s spec
-   carries **no** `RULED` decision (6 decisions, 0 with that status), so the lane slips
-   through on a different accident: the check reads `decisions` under
-   `design_decision`, and if that path ever does match, `clean` will be reported stale
-   for a table it has. Fix: add `if (onDisk.has(lang)) { … exit 1 … }` to the same loop,
-   or drop `clean` from the list. **Not edited** — shared machinery.
-
-   **Re-verified independently at this commit, and the gate's own output states the
-   contradiction inside one invocation**: `unadjudicated lanes (neither table nor spec RULED)
-   : 4  (clean graphql r scss)` on the same run that prints `ruling tables on disk : 14  (bash
-   clean css fsharp json julia lua nim php protobuf sql toml xml zig)` and `registered in arbiter
-   : 14` with the same 14. So the list the file's own header calls "the real remaining work"
-   names a lane that is adjudicated twice over. The `INCOMPLETE LIST` check does cover the
-   opposite direction — a lane with neither source that is ABSENT from the list exits 1 — so
-   the gap is specifically over-inclusion, which is the direction that makes a finished lane
-   look unfinished.
+1. **RESOLVED, by the supervisor, in `11825cff1` — kept here because the failure mode was
+   real and the fix is worth reading.** `script/m14/verify-ruling-tables-registered.ts`
+   used to keep a hand-written `UNADJUDICATED` list and test each entry with
+   `specSuppliesRuling` only, never against the `onDisk` set it had already built. So a
+   lane that HAD shipped `script/m14/clean-ruled.ts` stayed on that list forever, and the
+   gate printed `PASS` on the same run that named it: `unadjudicated lanes … : 4  (clean
+   graphql r scss)` beside `ruling tables on disk : 14` and `registered in arbiter : 14`.
+   `clean`'s spec carries **no** `RULED` decision (6 decisions, 0 with that status), so it
+   slipped through on a second accident — the check read `decisions` under
+   `design_decision`, a path that could have started matching and convicted a finished lane
+   of being stale. The fix replaces the list with the structural check the file's own header
+   argues for: the set of `*-ruled.ts` on disk must EQUAL the set of `RULED_BY_LANG` keys,
+   failing in **either** direction. Re-run at this commit: `18 tables on disk`, `18
+   registered` (bash clean css fsharp graphql json julia lua markdown nim php protobuf r
+   scss sql toml xml zig), `unadjudicated lanes : 0  ()`, `cross-check: 0 lane(s) with no
+   source, all listed — none`, `PASS`, exit 0. **Not edited by this lane** — shared
+   machinery.
 2. **`script/m14/verify-doc-truth-emissions.ts` needs `bun`.** See the gate table above:
    `__dirname` under `npx tsx`, and a 0 exit on the crash. **Not edited.**
 3. **The shared differential still audits no clean oracle for four emitted types.**
@@ -1309,6 +1333,40 @@ without re-deriving it. None was worked around silently.
    minute and **nothing was committed from it**. A scoped `--langs` run should either
    write to a per-lane path or refuse to write when the lane set is not the full set.
    **Not edited** — `validation/m60/` is supervisor-owned.
+
+9. **MEASURED THIS ROUND, AND IT IS FLEET-WIDE: every process writes the tree-sitter
+   core to ONE fixed filename in the SHARED `/tmp`, non-atomically, so a concurrent
+   process reads a half-written wasm and the whole run dies.** `src/ast/engine.ts:135-140`
+   does `writeFileSync(path.join(tmpDir, "bb-ts-core.wasm"), coreWasm)` for the first
+   writable dir in `[os.tmpdir(), "/tmp", process.cwd()]`, then hands that path to
+   `initFn({ locateFile })` — which reads it **asynchronously**. The write truncates the
+   file before it fills it, and the path carries no PID and no atomic rename, so any
+   second process doing the same thing in that window reads a prefix. Observed verbatim:
+
+   ```
+   failed to asynchronously prepare wasm: CompileError: WebAssembly.instantiate():
+     section (code 10, "Code") extends past end of the module (length 181644, remaining
+     bytes 63861) @+5351
+   Aborted(CompileError: …)  →  src/ast/engine.ts:148  →  node exits 1
+   ```
+
+   This is not a hypothesis: it killed the first `--fresh` arbiter invocation of this
+   round, and the identical command run 11 minutes later succeeded unchanged, with no
+   edit in between. The arithmetic in the message is the diagnosis — the code section
+   claims 181,644 bytes with 63,861 remaining in a 205,488-byte file. **The file on disk
+   is not corrupt**: after the failure, `/tmp/bb-ts-core.wasm` and
+   `node_modules/web-tree-sitter/tree-sitter.wasm` were both 205,488 bytes with md5
+   `77057bf71325bc9e0e36102da9585c90`, byte-identical, so what the reader saw was a
+   transient prefix of a file that was being rewritten under it. With 12+ lanes running
+   concurrently and every corpus walk initialising the core, this window is hit
+   routinely and it presents as **"the gate failed"**, which is the most expensive way to
+   lose a measurement. Note the per-language grammars already do this correctly —
+   `engine.ts:702-710` writes `<base>_<procTag>.partial` then renames, with a per-process
+   tag — so the fix for the core is the two lines the language path already has: include
+   `process.pid` in the filename and write-then-rename. **Not edited** —
+   `src/ast/engine.ts` is §8. Recorded here because the cost is shared: a lane that hits
+   it has no way to tell a transient infrastructure fault from a real analyzer defect,
+   and the honest response to a red gate is to report it, which this round did.
 
 ## Figures that moved, and why
 
