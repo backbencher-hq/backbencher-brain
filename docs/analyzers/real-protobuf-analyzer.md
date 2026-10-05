@@ -5380,3 +5380,281 @@ input.
 - **Nothing outside protobuf was measured for the 500-parse trap.** The mechanism is in
   shared code and is language-agnostic by construction, but this lane ran `.proto` files
   only, so "every lane is affected" is an inference and is labelled as one.
+
+---
+
+# PASS 20 — the ambiguity split, and 650 import edges no id-keyed measure can see
+
+The round brief moved the work from coverage to scoping: split each type's ambiguous-target
+count into the three classes that have different fixes, say which the lane controls, fix the
+largest one, and re-measure. This pass did the split, found the lane's own controllable
+bucket down to 45 edges, priced why 42 of those 45 are not repairable inside one analyzer, and
+found two blind spots in the **shared** instruments that together hide the lane's largest
+ambiguity population.
+
+One instrument, one walk, production entry point:
+
+```
+npx tsx script/m14/protobuf-ambiguity-split.mts
+```
+
+842 of 842 on-disk `.proto` files parsed, **0 parse failures, 0 degraded, 485 symlinks
+skipped and declared**, 41,582 symbols, 54,276 relationships, **0 empty names, 0 `unknown`
+endpoints**.
+
+## 1. The three classes, on the id the edge actually carries
+
+| measurement | value |
+|---|---|
+| distinct published ids (`qualifiedName`) | **38,876** |
+| ids published by **more than one file** | **1,974** |
+| **A** — edges naming a bare name instead of an id | **45** (12 targets) |
+| **B** — more than one declaration text under one id | **246** ids: **50** within one repository, **196** across repositories |
+| **C** — one declaration text, many files | **1,728** ids |
+
+**Class A is 45 edges and it is the whole of the analyzer's contribution to this question.**
+It is measured as an edge count rather than as a count of colliding bare names, and the
+distinction is the measurement: 5,446 bare names in this corpus span more than one qualified
+id — `name` alone spans 728 — and every one of those collisions is CORRECT, because
+`corp.a.v1.Account.name` and `corp.b.v1.Account.name` are two declarations in two scopes that
+the analyzer publishes under their own ids. A bare-name collision becomes a defect only when
+the **analyzer emits the bare name on an edge**, and a bare name is by construction absent
+from the published-id set. That is exactly what the 45 count, and it is the number the brief's
+class A is asking for.
+
+**Class B is the corpus's namespace, not this analyzer's.** 196 of the 246 ids are the same
+well-known file vendored into different repositories at two upstream releases — `descriptor.proto`
+in `pb-reference`, `kubernetes/third_party/protobuf`, `kong/spec/fixtures/grpc` and
+`dart-sdk/.../protobuf_handler/protos` — and protobuf's identity IS the fully-qualified name, so
+two releases both declaring it is a fact about the corpus. `protoc` would reject any single
+compilation unit holding both; each file is correct in its own right. **Class C is the
+published-name contract**: one declaration copied into 1,728 ids' worth of files, so any
+winner the reverse walk picks is the same declaration.
+
+**No analyzer-side rule can move B or C, and the brief's own arithmetic says so**: an ambiguous
+target is ONE edge attributed to ONE declaration, so it cannot be reduced by emitting fewer
+edges and it cannot be reduced by implementing another relationship type.
+
+## 2. The two blind spots in the shared instruments
+
+Both were found by asking what the shared numbers cannot see, and both are silent.
+
+**The shared instrument scores most of this population as resolved and unique.**
+`script/m14/incoming-check.ts` builds `published` as `name -> kinds[]` and appends a kind only
+`if (!arr.includes(kind))`, so a target counts as ambiguous only when one NAME is published
+under two or more different KINDS. Two messages sharing a fully-qualified id across two files
+are both kind `class`, so `arr.length === 1` and the edge scores resolved-and-unique. Measured
+side by side over the same 54,276 edges:
+
+| type | edges | ambiguous, **shared** definition (cross-KIND) | ambiguous, **this lane** (multi-FILE) |
+|---|---|---|---|
+| `uses` | 13,024 | **1,551** | **2,517** |
+| `contains` | 39,674 | **4,959** | **4,152** |
+| `overrides` | 2 | 1 | **0** |
+
+Neither definition is wrong; they answer different questions. But the round brief's question
+is "which declaration will the reverse walk pick between", and that is the multi-FILE count,
+because the reverse walk matches on the id and not on the kind. The shared number is not a
+lie, it is an answer to a narrower question than the one being asked — which is the same shape
+as the exit-code-is-not-the-verdict finding in pass 17, one level up.
+
+**Every id-keyed measure skips `imports` and `exports` entirely, and they are the lane's
+largest ambiguity population.** A module-path target is `google/protobuf/any.proto`; no corpus
+file publishes a symbol with that name, so the target misses the id set, is scored unresolved,
+and is then skipped by every ambiguity test. The supervisor's whole-corpus sweep reads
+`protobuf 600 files, fired 4, ambiguous 3, unresolved 1486` — the `3` is a count over targets
+that resolve, so it cannot contain a path.
+
+| measurement | value |
+|---|---|
+| distinct module-path targets | **257** |
+| of those, naming **more than one** corpus file | **36** |
+| basenames shared by more than one corpus file | **111** |
+| `imports` edges, by how many corpus files the path names | **873** name exactly 1 · **650** name 2+ · **49** name none |
+| widest shared basenames | `generated.proto` **79** files · `plugin.proto` **27** · `api.proto` **24** · `policy.proto` 9 · `service.proto` 8 |
+
+**650 of 1,572 `imports` edges — 41.4% — name a path that 2+ corpus files answer to.** This is
+the brief's class C applied to file paths, and it is inherent to protobuf rather than to this
+analyzer: `import "generated.proto"` is resolved by `protoc` against the `-I` include roots the
+analyzer is never told, so path and file are independent and the emitted target is the only
+string available. It is reported rather than fixed, and no canonicalisation is attempted —
+guessing an include root would fabricate a file binding on 650 edges.
+
+## 3. Unresolved, partitioned — and only 45 of it is a defect this lane owns
+
+| class | meaning | `uses` | `contains` | `imports` | `exports` |
+|---|---|---|---|---|---|
+| **U1** | module path naming a corpus file | 0 | 0 | **1,523** | 4 |
+| **U2** | module path naming no corpus file | 0 | 0 | 49 | 0 |
+| **U3** | **leaf declared under a DIFFERENT id** | **45** | 0 | 0 | 0 |
+| **U4** | leaf declared nowhere in the corpus | **4** | 1 | 0 | 0 |
+
+`uses` resolves at both ends on **12,975 of 13,024 (99.62%)**; `contains` on **39,673 of 39,674
+(99.997%)**; `overrides` 2 of 2. `imports` and `exports` resolve at neither end **by
+construction** — both endpoints of a cross-file module edge are paths — and the brief's
+instruction not to chase unresolved targets that name a file outside the window applies
+directly: 1,523 of 1,572 `imports` targets name a real corpus file.
+
+**U3 = 45 edges on 15 distinct targets, and every one is the same defect.** protoc resolves a
+relative type name by C++ scope lookup over the enclosing package chain. This analyzer cannot,
+because the file it is reading has never been parsed together with the file that declares the
+package being walked up into. The corpus case, 26 occurrences in one file:
+
+```
+config_entry.proto  package hashicorp.consul.internal.configentry
+common.proto        package hashicorp.consul.internal.common
+config_entry.proto  import "private/pbcommon/common.proto";
+                    common.EnterpriseMeta EnterpriseMeta = 2;
+```
+
+`common` and `configentry` are SIBLING packages under `hashicorp.consul.internal`, so protoc
+resolves the written name at scope level 1. The analyzer emits it as written, because
+`private/pbcommon` is not any prefix of any package name and `resolveViaImports`' directory
+guard therefore declines — correctly, since an import path is relative to an include root the
+analyzer is never told.
+
+Each row was adjudicated by running **protoc's own first-segment rule** against the shorthand
+the classifier uses, and the two **disagree on 0 of 15 rows**:
+
+| scope level protoc lands on | distinct targets | edges |
+|---|---|---|
+| own package's sub-package (level 0) | 2 | **4** |
+| walked up an enclosing scope | 10 | **38** |
+| **no scope in the chain holds it** — protoc fails too | 3 | **3** |
+
+So **42 edges on 12 targets are protoc-resolvable and this analyzer is not; the other 3 are
+unresolvable for protoc as well** and are not a defect in anything. U4's 4 edges are named in
+the probe's output and are a syntax-highlighting fixture with undefined types
+(`nvim-treesitter/.../test.proto` writes `CustomType` and `JsonFormat` under
+`package sls.asfd.asfd`), a fixture whose types live nowhere, and two files referencing
+`xds.data.orca.v3.OrcaLoadReport` and `controller.custom_options.v1.MaskMapping.this`.
+
+**This bucket is now a §8 item with a price, not a lane change.** `AnalyzeContext` already
+carries a project-wide `projectIndex` (`src/ast/engine.ts:2097-2135`) and `pool-worker.ts:1277`
+deserialises it into `{ projectIndex }` — but `src/ast/parallel-indexer.ts:1300` builds it for
+`PROJECT_INDEX_EXTENSIONS = { ".sol": "solidity" }` and `wasmByLang` holds one entry, so protobuf
+is sent no context at all and this analyzer reads nothing even when one is present.
+
+## 4. A name-based heuristic was measured, not assumed
+
+The tempting repair is a basename rule: "the import ends in `scope.proto`, so try the ancestor
+scope". Over the 42 edges it would resolve 26 and misresolve the rest — `types.Platform` is
+imported as `.../api/types/platform.proto`, where the basename is `platform`, the declaration is
+`containerd.types.Platform`, and protoc's answer is at scope level 3, so the rule finds no
+evidence exactly where protoc finds the answer. A rule that fixes 26 edges by guessing and is
+wrong on 16 is the fabrication the brief names, so it was not written.
+
+What WAS written is the refusal, as a fixture with a regression mutant:
+`protobuf/dotted-relative-sibling-package` pins the target staying exactly as written, and
+`protobuf/dotted-relative-name-package-prefixed` prefixes the file's own package onto every
+dotted name the guard declines. That mutant is caught by **5** fixtures. The pairing is
+deliberate and neither fixture is sufficient alone: `protobuf/ancestor-scope-resolution` pins
+the same dotted climb **succeeding** (its import path's directory IS its package path), so an
+always-declines mutant is caught there and the package-prefixing mutant is caught here.
+
+## 5. Three defects in the measuring probe itself, each caught by its own output
+
+| # | the defect | the wrong thing it printed |
+|---|---|---|
+| 1 | `statSync` **follows symlinks**, so a repository holding a symlinked directory had every file under it walked twice | **1,692** `.proto` where `find -name '*.proto' -type f` reports **842**; every number inflated by the duplicate |
+| 2 | excluding `vendor`/`dist`/`build`/`node_modules` on the grounds they are build output | **712** files — it silently dropped **130** real sources, because `nomad/vendor` and `terraform/.terraform` carry protobuf |
+| 3 | a file's package taken as the LONGEST self-published dotted prefix | `refPkg` for `consul/.../config_entry.proto` printed as `hashicorp.consul.internal.configentry.ServiceResolverPrioritizeByLocality` — a nested **message**. A longest-prefix rule cannot tell a package from a message; `kind` survives pool-worker's projection, so the `Namespace` symbol is read instead |
+
+Defect 3 is the one worth carrying forward: it was invisible until the scope classifier started
+comparing against a package, because a nested message's id and its package's id are both dotted
+prefixes of the same declarations and only one of them is a package.
+
+## 6. A mutant in this lane that crashed the shared gate instead of testing anything
+
+`protobuf/qualified-id-stopped-being-published` carried keys `id`, `description` and `transform`
+and **no `language`**. `mutate-analyzer.ts:18869` calls `clean(m.language)`; `runLang(undefined)`
+throws `TypeError: The "paths[1]" property must be of type string, got undefined`.
+
+So the mutant had never run, and worse it took the F4 gate **down** rather than failing it: a
+crash is not a verdict, and every mutant after it in the array goes unrun.
+
+| | before | after |
+|---|---|---|
+| protobuf mutants reaching a verdict | **30 of 34**, then `exit 1` | **34 of 34**, `exit 0` |
+| survivors | — | **0** |
+| gate's own words | — | `all 34 mutants caught - the gates can fail` |
+
+Found by importing the array and asking it about itself —
+`PROTOBUF_MUTANTS.filter(m => !m.language).map(m => m.id)` returned exactly that one id. A crash
+inside a long run reads as infrastructure failure, which is why it survived the earlier passes
+that reported a mutant count. The repaired mutant is caught by
+`protobuf/absolute-and-scope-resolution`, which is the right catcher: it is the only fixture
+asserting the published id on both channels.
+
+## 7. Gate table, pass 20
+
+| gate | command | result |
+|---|---|---|
+| ruling table, wired | `protobuf-ruling-table-proof.mts` run (c) | **exit 0** — `emitted 5/10 ruled-sound 5 FALSIFIED 0` |
+| construct probes | `protobuf-construct-probes.mts` | **exit 0** — 94 node types observed, `calls`/`extends`/`implements`/`references` intersections **0**, `instantiates` **0** `block_lit` outside an option value |
+| fixtures | `run-fixtures.ts` | **13 of 13 pass, exit 0** |
+| mutants | `BB_MUTANT_ONLY="protobuf/"` | **34 of 34 CAUGHT, 0 SURVIVED, exit 0** |
+| regex census | `script/m12/verify-regex-census.ts` | **PASSED** — 0 entries name protobuf |
+| doc truth | `protobuf-doc-truth-proof.mts` B, scoped | **exit 0** — `1 analyzers, 0 findings of any kind` |
+| doc truth | same, whole tree | exit 1 — 48 analyzers, **0 lines mention protobuf** |
+| honesty | `script/m14/verify-honesty.ts` | **exit 6, 26 failures, 0 naming protobuf** |
+| firing | `firing-check.ts --files 600 protobuf` | `51/600 files, 3/10 fired, 3,259 edges, 0 degraded` |
+
+**The firing row is a measurement of the sampler, not of the lane.** `firing-check` draws its
+file list from `git ls-files`, and three of this corpus's checkouts are sparse
+(`--filter=blob:none`), so it offers 8,550 paths of which 847 are on disk. At `--files 600` a
+stride over 8,550 lands on 600 positions and **51 of them are on disk** — which is why the
+arbiter reads 3 of 10 types firing: `exports` (4 edges) and `overrides` (2 edges) exist in the
+corpus and do not appear in a 51-file draw. The 842-file walk above is the lane's own number and
+the two are not interchangeable.
+
+## 8. §8 — shared machinery this lane needs, with the price
+
+1. **`src/ast/parallel-indexer.ts:1300`** — add `".proto": "protobuf"` to
+   `PROJECT_INDEX_EXTENSIONS` and `wasm/tree-sitter-protobuf.wasm` to `wasmByLang`, and add a
+   protobuf declaration spec to `src/ast/project-index.ts`. `pool-worker.ts` already
+   deserialises the index and hands it to `analyze()` as `context.projectIndex`, so the transport
+   needs no change. **Why:** it is the only way a per-file analyzer resolves a relative type name
+   whose declaration is in a package the file has not read. **Price, measured:** 42 edges on 12
+   distinct targets across 12 files, of 13,024 `uses` (0.32%).
+2. **`script/m14/incoming-check.ts`** — the ambiguity test should be offered on the id the edge
+   carries, not only on `name -> kinds[]`, because the two differ by **966 edges on `uses`**
+   (2,517 multi-file against 1,551 cross-kind) and by **4,152 against 4,959 on `contains`**.
+   **Why:** the reverse walk matches targets by id, so cross-KIND ambiguity is not the quantity
+   `bb_impact` suffers from.
+3. **`script/m14/incoming-check.ts` / `firing-check.ts`** — report module-path targets as their
+   own class. 650 `imports` edges name a path 2+ corpus files answer to and are invisible to
+   every id-keyed measure, which is why the whole-corpus sweep reads `ambiguous 3` for this
+   lane. **Price of the blind spot:** the entire `imports` ambiguity population.
+4. **UNCHANGED from earlier passes:** `src/ast/engine.ts:743` `getParser`'s 500-parse recreate
+   racing its own callers (5 traps at parse 502–503 in 17 runs); `script/m14/differential.ts`
+   has no `protobuf` LANGS entry, so 5 DERIVATION findings stay unaudited by the shared oracle
+   (`grep -c protobuf script/m14/differential.ts` → **0**);
+   `src/ast/parallel-indexer.ts:2164` `insertSymbol`'s 31-vs-30 `VALUES` clause mismatch;
+   `script/m14/run-fixtures.ts` exits 6 on the orphan `r` and `lua` fixture directories on a
+   branch that predates their LANGS rows, so this lane's fixture run was scoped to
+   `BB_M14_ROOT` containing only protobuf fixtures (13 of 13, exit 0).
+
+## Declared limitations, pass 20
+
+- **The three-class split is measured on ids, and ids are what this analyzer publishes.** If the
+  right notion of identity for protobuf is finer than the fully-qualified name, classes B and C
+  are both miscounted and the right measure is the published-name contract's, not this probe's.
+  246 and 1,728 are the counts under the id the edge carries, and that is stated rather than
+  assumed to be the only identity question.
+- **Class B's cross-repository half is attributed to upstream releases on the evidence of four
+  vendored `descriptor.proto` files, not by running `protoc` on both versions.** The claim is
+  that each is a correct file in its own right, which is checkable per file and was not checked
+  per file here.
+- **The 45-edge U3 bucket is priced from one walk on one corpus.** It is 0.32% of `uses`, so a
+  corpus twice this size would move it by tens of edges, not by a different order.
+- **The scope-level adjudication uses protoc's first-segment rule as implemented in this probe,
+  not protoc itself.** The two formulations agreeing on 15 of 15 rows shows the classifier is
+  self-consistent and matches the specification rule as this lane reads it; it does not
+  substitute for running `protoc`, which the pass-8 oracle did for the `uses` targets it covers.
+- **`imports` path ambiguity is reported, not closed, and 49 edges whose path names no corpus
+  file are not adjudicated at all** — the corpus does not contain the file, so there is nothing
+  to check them against.
+- **Nothing outside protobuf was re-measured this pass.** The `statSync`/symlink, `vendor`
+  exclusion and longest-prefix-package defects in §5 are all defects of MY probe, but the first
+  two are generic enough that other lanes' corpus walks may share them.
