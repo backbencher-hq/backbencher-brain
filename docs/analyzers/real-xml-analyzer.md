@@ -1518,7 +1518,7 @@ stated rather than averaged over.
 | 2. Fires | **78,656** edges / 2,475 files (was 77,882 / 2,471) | **7,423** / 197 (was 7,415 / 195) | **263** / 177 (was 261 / 175) | 2 / 1 | **851** / 92 (was 852 / 93) | **0 / 0 in this draw; 3 / 3 in the full population** |
 | 3. Correct | **full population: 188,219 of 188,224 edges CONFIRMED = 99.997 %.** The 5 that are not: `C-source-symbol-absent` 1, `D-spans-disjoint` 3, `G-explained-by-a-collision` 1. Recall direction: **787,972 candidate span pairs, 20 with no edge** | **no ledger; `unmeasured`** | **full population: 468 tree sites, 468 edges, 0 sites with no edge, 0 edges with no site, 0 of the misses carrying a URI scheme** | **site ledger; 481 accepted sites, 481 occurrences, 0 unrepresented** | **full population: 1,615 of 1,652 sites covered, 37 refused, 0 edges without a site, coverage 97.76 %** | **no ledger; 3 probe sites in 3 files against 3 edges in 3 files, per-file identity only** |
 | 4. Labelled | `structural` 78,656 (100 %) | `reference_qualified` 7,423 (100 %) | `import_based` 263 (100 %) | `reference_qualified` 2 (100 %) | `structural` 851 (100 %) | `structural` 3 (100 %) |
-| 5. Resolved | **78,656/78,656 = 100.0 %** at both ends | source **7,423/7,423 = 100.0 %**; target 3,588/7,423 = **48.3 %** | source 263/263; target 0/263 = 0 %, target is a file | 2/2 = **100 %** | source **851/851 = 100.0 %**; both ends 267/851 = **31.4 %**, and 72.7 % of bases are built-in or external | 3/3 = **100 %** |
+| 5. Resolved | **78,656/78,656 = 100.0 %** at both ends | source **7,423/7,423 = 100.0 %**; target 3,588/7,423 = **48.3 %** | source 263/263; target 0/263 = 0 %, and **0 of 263 carried any class before §`imports` now says what it is`** — now `file` 153 / `external` 107 / `in-document` 3 | 2/2 = **100 %** | source **851/851 = 100.0 %**; both ends 267/851 = **31.4 %**, and 72.7 % of bases are built-in or external | 3/3 = **100 %** |
 | 5b. Source is a name the file writes | full population, the parent read off the tree: 188,219 of 188,224 | **93.9 %** at the full population (10,427/11,108) | n/a, the target is a file | **402/402 = 100 %** | **1,429/1,429 = 100 %**, 0 fabricated sources | 3/3 = **100 %** |
 | 5c. The claim is expressible in the ranges the analyzer publishes | **9 byte ranges held by 2+ names, in 5 files** — was 253 before the span fix | n/a | n/a | n/a | n/a | n/a |
 | 6. Confident | 0 edges < 0.7 | 0 | 0 | 0 | 0 | 0 |
@@ -1539,10 +1539,11 @@ cannot ask whether the symbol's span is on the right side of the other one's.
 edges, and the split is measured rather than asserted.** `metadata.resolvable`
 carries it per edge:
 
-| type | in-document | builtin | external | unresolved | both-ends rate |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| `references` | 3,068 | 3,604 | 739 | 12 | 48.3 % target, 100.0 % source |
-| `extends` | 232 | 435 | 184 | 0 | 31.4 % both ends, 100.0 % source |
+| type | in-document | builtin | external | file | unresolved | both-ends rate |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| `references` | 3,068 | 3,604 | 739 | — | 12 | 48.3 % target, 100.0 % source |
+| `extends` | 232 | 435 | 184 | — | 0 | 31.4 % both ends, 100.0 % source |
+| `imports` | 3 | — | 107 | 153 | 0 | 0 % by construction — the target is a path or a URI, and the store's identity is a symbol |
 
 Those two rows are the census draw `3bd539410d1a9189`; the figures they replace were the
 draw `c38110881a301dae` column of the same instrument and are within 0.1 pp of each
@@ -1563,13 +1564,18 @@ endpoint, and asking the source directly is the only instrument that can.
 XML names far more specification built-ins than the reference point (CSS
 `references` at 66.8 %): `xs:string`, `xs:int`, `xs:positiveInteger` and their
 kind are declared in the XML Schema specification, not in the file being read, so
-they are deliberately not published as in-file symbols. `imports` reads 0 % by
-design for a different reason — **its target is a file path**, which is the one
-case in this analyzer where a value is the right target, and a path is not a
-symbol. Only 12 `references` edges (0.16 %) are genuinely `unresolved`, up from 6,
-and the rise is the same un-collapsing: a site that used to share one source with a
-site that resolved now gets an edge of its own, and a distinct declarer can leave a
-name unsatisfied that the shared source satisfied by accident.
+they are deliberately not published as in-file symbols. `imports` reads 0 % for a
+different reason — **its target is a path or a URI**, which is the one case in this
+analyzer where a value is the right target, and a path is not a symbol. Only 12
+`references` edges (0.16 %) are genuinely `unresolved`, up from 6, and the rise is
+the same un-collapsing: a site that used to share one source with a site that
+resolved now gets an edge of its own, and a distinct declarer can leave a name
+unsatisfied that the shared source satisfied by accident.
+
+**That paragraph used to end the discussion of `imports` at "0 % by design", which
+was a declaration standing where a measurement belonged, and the round brief's cause
+C is exactly that complaint.** It now carries a class per edge and the split is a
+number — see §`imports` says what kind of thing its target is.
 
 **Q3, and the limitation that comes with it.** `script/m14/differential.ts --lang
 xml` **does not run this lane**: it prints `[lane] SKIP xml: no corpus repo mapped
@@ -3101,7 +3107,7 @@ a lost run, and item 10's fix does not reach every instrument.** Recorded becaus
 proposal — `script/m14/resumable-walk.ts` — exists and the lane's own instruments still do
 not use it: `ontology-census.mts`, `containment-ledger.mts`, `store-binding-truth.mts` and
 `ruled-gate.ts` all drive `parseFile` over their own file list. At this commit the census at
-`BB_XML_WORKERS=8` exited 1 on a terminal `[BB-HANG]` after writing a complete JSON, and the
+`BB_XML_WORKERS=8` exited 1 on a terminal `[BB-HANG]` after writing the full JSON, and the
 same draw at `BB_XML_WORKERS=1` exited 0 with 0 hangs and 87,195 relationships against
 87,077 — so the worker count is a workaround for a shared-engine defect, not a property of
 the corpus, and **a lane that reports one run's counts without the worker count has reported
@@ -3146,6 +3152,111 @@ survive a store that actually stored the rows.
 machinery fails SILENTLY at this lane's scale.** Nothing in the run said "the store rejected
 your insert"; the run said "no index for project", which is the same message a lane gets
 when its corpus path is wrong.
+
+## `imports` says what kind of thing its target is
+
+Round brief cause C: *"emit them with an explicit external marker so they are
+countable and excluded, instead of silently unresolved."* `imports` is this lane's
+version of that problem and it was the only one of the three causes still open.
+
+### The measurement, and the instrument that made it
+
+`validation/m14/fixtures/xml/imports-target-classes.mts`, on the census draw
+`3bd539410d1a9189` — the same 2,500 files and the same **263** `imports` edges the
+six-questions table quotes, so no new denominator is introduced. It walks the
+filesystem itself, which is what makes it an oracle for this question and not
+another restatement of the analyzer:
+
+| class the analyzer stamps | edges | share | what the corpus says about the same target |
+| --- | ---: | ---: | --- |
+| `file` | 153 | 58.2 % | **130** name a file this very draw admits as xml, **21** resolve to nothing on disk, **2** exist but are not admitted |
+| `external` | 107 | 40.7 % | carries a URI scheme |
+| `in-document` | 3 | 1.1 % | `#transform` — a location in the same file |
+| **before the change** | **0 of 263 carried any class** | | the census reported the whole type as `resolvability: {"<none>": 263}` |
+
+84 distinct targets across the 263 edges. `disagree` in
+`analyzerVsCorpus` is **0**: the analyzer's class and the probe's filesystem-derived
+class agree on **263 of 263**, and the probe records the cross-tab rather than
+asserting agreement, so a future edit that breaks it shows up as a non-zero cell.
+
+**What the number does NOT claim.** The analyzer is a per-file pure unit and does no
+filesystem access, so `file` says *this target is a path* and deliberately does not
+say the file exists. The 130 / 21 / 2 split is the corpus's answer to give and the
+probe gives it; a consumer that needs it must ask the corpus, not the edge. Had the
+analyzer stamped `file` and `missing` it would have been claiming a fact it cannot
+have, which is the fabrication class this lane treats as the most expensive mistake
+available.
+
+### The edit
+
+One pure string helper beside the predicate it reuses,
+`real-xml-analyzer.ts` `importTargetClass`, and three call sites:
+
+```
+  in-document   target.startsWith("#")
+  external      this.isRemoteUri(target)
+  file          otherwise
+```
+
+`isRemoteUri` is the **same** test `schemaLocation` already applies a few lines above
+its own `addRelationship`, so this file does not grow a second definition of "remote"
+that can disagree with the first. That reuse has a consequence the fixture pins as a
+forbid row rather than an expectation: `schemaLocation` drops remote URIs before
+emitting, so **`external` is unreachable from that emitter**, and a fixture row
+asserting one would demand an edge the analyzer is right not to publish.
+
+All three `addRelationship` sites are stamped — the PI `href`, `extractExternalId`,
+and `schemaLocation` — because a marker on two of them is a marker on two thirds of
+the type, and `xml/imports-target-class` asserts all three classes against all three
+emitters so that a partial edit fails rather than passing.
+
+### Before and after, same draw, same instrument, same 2,500 files
+
+| | before | after |
+| --- | ---: | ---: |
+| `imports` edges | 263 | **263** |
+| edges carrying a class | **0** | **263** |
+| census `resolvability` for `imports` | `{"<none>": 263}` | `{"file": 153, "external": 107, "in-document": 3}` |
+| every other count in the census | 87,195 relationships; `contains` 78,656, `references` 7,423, `extends` 851, `calls` 2 | **identical** |
+
+The point of the identical row is that the change is metadata-only and provably so:
+it added no edge, removed no edge, renamed nothing and moved no count. It is also
+why no count-based assertion in the suite could see this feature missing, and why
+`xml/imports-target-class-removed` — which strips the key and changes nothing else —
+is the mutant that matters most here.
+
+`file` is a new member of the `in-document` / `builtin` / `external` / `unresolved`
+vocabulary `references` and `extends` already use. Nothing outside this file switches
+on it: `grep -rn resolvable src/ script/` returns no consumer outside
+`real-xml-analyzer.ts`, checked rather than assumed.
+
+### Gates
+
+| command | result |
+| --- | --- |
+| `npx tsx script/m14/run-fixtures.ts --lang xml` | **31 pass, 0 fail** — `xml/imports-target-class` is the new one |
+| `npx tsx validation/m14/fixtures/xml/ontology-mutants.mts` | **27/27 caught, 0 survivors, exit 0** — three new: `-removed` (whole-feature revert, 1 fixture), `-collapsed-to-one-value` (the over-correction: everything `external`, which would mislabel 58.2 % of the type), `-absolute-path-read-as-external` (the boundary error only the `/absolute/rooted.xsd` row notices) |
+| `BB_XML_WORKERS=1 npx tsx validation/m14/fixtures/xml/imports-target-classes.mts` | exit 0, draw `3bd539410d1a9189`, 263 edges, `hasResolvableMarker` 263, `disagree` 0 |
+| `npx tsc --noEmit -p tsconfig.json` | clean |
+
+### What this does not settle
+
+The class is countable and the class is honest; **whether the store should then
+BIND a `file` target to the file it names is a different question and is not
+answered here.** Binding it needs a file identity in the store's resolution order,
+which is §8 item 9 — a schema question, not an analyzer one. So the honest before
+and after for the round brief's cause C is:
+
+```
+C: targets now marked external    0 -> 263   (file 153, external 107, in-document 3)
+   of which the corpus confirms    130 name a file it holds, 21 name nothing, 2 name
+                                   a file it does not admit
+   and the marker's own accuracy  263/263 agree with an independent filesystem walk
+```
+
+The recovery this unlocks — 130 edges becoming resolvable — is **not** claimed, and
+`store-binding-truth.mts` still reads `imports` at 6 of 6 store rows unbound, because
+a class on the edge is not a binding in the store.
 
 ## An attribute is a declaration, and it was published under a bare name
 
@@ -3306,8 +3417,8 @@ mutants caught, 0 survivors** (was 21/23 with 2 survivors).
 
 | command | result |
 | --- | --- |
-| `npx tsx script/m14/run-fixtures.ts --lang xml` | **30 pass, 0 fail**, no regressions |
-| `npx tsx validation/m14/fixtures/xml/ontology-mutants.mts` | **24/24 caught, 0 survivors, exit 0** |
+| `npx tsx script/m14/run-fixtures.ts --lang xml` | **31 pass, 0 fail**, no regressions |
+| `npx tsx validation/m14/fixtures/xml/ontology-mutants.mts` | **27/27 caught, 0 survivors, exit 0** |
 | `npx tsx script/m14/ontology-coverage-gate.ts xml` | the shared gate at its own 8 workers **self-destructs before the verdict loop** — `[BB-HANG] … square-poll-horizontal.svg — exiting`, 8 m 47 s, no table, exit 1; §8 item 10 |
 | `BB_XML_WORKERS=1 npx tsx validation/m14/fixtures/xml/ruled-gate.ts` | **6/10 emitted, 4 ruled-sound, `FALSIFIED 0`, 0 ruled-without-justification, exit 0**, 11,552 admitted files, 0 `[BB-PARSE-ERR]`, 0 `[BB-HANG]`; rows `contains` 188,224 · `references` 11,108 · `imports` 468 · `extends` 1,429 · `calls` 402 · `overrides` 3 |
 | `BB_XML_WORKERS=1 npx tsx validation/m14/fixtures/xml/containment-ledger.mts` | **exit 0**, full 11,552-file population, `contains` 188,224 / 188,219 confirmed, `imports` 468 / 468 sites / 0 / 0 |
