@@ -236,30 +236,30 @@ of any prefix. Over the population:
 
 | Type | Edges | Files | 120-file draw | Verdict |
 | --- | --- | --- | --- | --- |
-| `calls` | 48,222 | 1,293 | fires | EMITTED |
+| `calls` | 48,233 | 1,294 | fires | EMITTED |
 | `uses` | 4,810 | 584 | fires | EMITTED |
-| `contains` | 17,626 | 1,873 | fires | EMITTED |
+| `contains` | 17,634 | 1,874 | fires | EMITTED |
 | `imports` | 2,095 | 1,112 | fires | EMITTED |
-| `references` | 389 | 202 | fires | EMITTED |
+| `references` | **2,137** | 1,116 | fires | EMITTED |
 | `exports` | 3,592 | 711 | fires | EMITTED |
 | `extends` | 351 | 61 | fires | EMITTED |
 | `implements` | 1,133 | 221 | fires | EMITTED |
 | `overrides` | **107** | **9** | **0** | EMITTED |
 | `instantiates` | **3** | **2** | **0** | EMITTED |
 
-Total 78,311 relationships over 29,557 symbols. (`extends` is 351 rather
-than the 350 of the previous census, and 78,311 rather than 78,327: the
-difference is the one namespace-qualified base class added below, and the
-±0.05% difference on the totals is the 120-second parse bomb killing one
-file per run — see the note on run-to-run variance below. A total with no
-statement of which file the run lost is a total about the wrong set.
+Total 80,095 relationships over 29,557 symbols. `references` moved 389 → 2,137
+and the total 78,311 → 80,095 (+2.28%) when `::`/`:::` was given the `references`
+label it should have carried all along; the measurement and the reasoning are under
+**R7** below.
 
-Two instruments over the same population disagree by 36 edges
-(`calls` 48,205 vs 48,233, `contains` 17,629 vs 17,634, `imports` 2,094 vs
-2,095, `exports` 3,590 vs 3,592) because each run loses a DIFFERENT file to
-that hang: `ontology-ten-types.ts` lost `ggplot2/R/scale-hue.R`, and
-`labels-and-resolution.ts` lost none. Both totals are correct for the files
-they walked, and neither is correct for the admitted population as a whole.
+The remaining wobble is the same one, and it is stated here rather than absorbed:
+four production walks over this same 2,184-file population disagree by up to 94
+edges on `calls` and 12 on `contains`, because the 120-second parse bomb kills a
+DIFFERENT file each run — `ggplot2/R/scale-hue.R` on the run that produced
+`ontology-ten-types.txt`'s predecessor, `ggplot2/R/scale-manual.R` on the arbiter
+run, `usethis/R/badge.R` on the labels run. Both totals above are correct for the
+files they walked, and neither is correct for the admitted population as a whole.
+A total with no statement of which file the run lost is a total about the wrong set.
 The population figure is **78,311 ± 36**.) **0 parse failures, 1 degraded
 parse** (`r-cli/R/utils.R`, 120 s parser hang → regex substitution), 0 symbols
 with an empty name, 0 with an empty or `unknown` kind, 0 relationships with an
@@ -428,7 +428,7 @@ under exactly one type is the label being consistent.
 | `uses` | `member_read` 4,799 | **no** |
 | `contains` | `(none)` 16,773 · `r6_method` 418 · `r6_field` 184 · `s7_method` 118 · `s7_property` 103 · `s4_method` 18 · `r5_field` 5 · `r5_method` 1 | yes — the four method subtypes, and `(none)` |
 | `imports` | `namespace_access` 1,746 · `library_import` 290 · `rcpp_source` 46 · `r_source` 8 | yes — `rcpp_source`, `r_source` |
-| `references` | `library_dependency` 293 · `rcpp_source` 46 · `s7_class_binding` 21 · `s4_binding` 21 · `r_source` 8 | yes — `rcpp_source`, `r_source` |
+| `references` | `namespace_access` 1,751 · `library_dependency` 290 · `rcpp_source` 46 · `s7_class_binding` 21 · `s4_binding` 21 · `r_source` 8 | yes — `namespace_access`, `rcpp_source`, `r_source` |
 | `exports` | `roxygen_export` 3,581 | no |
 | `extends` | `s4_inherits` 263 · `r6_inherits` 53 · `s7_parent` 33 · `r5_inherits` 1 | no |
 | `implements` | `s3_method` 1,133 | no |
@@ -457,11 +457,39 @@ about one declaration. **A consumer keying on `relationshipSubType` cannot
 recover the label for those six subtypes; it has to read `type`.** That is a
 real constraint on a consumer and it is stated here rather than discovered later.
 
-The `(none)` entries are the evidence-completeness finding: **60,898 of 78,347
-edges (77.7%) carry no `relationshipSubType` at all**, including all 3
-`instantiates` edges, which do carry `isRConstructor` and `reasonCode`. An edge
-with metadata but no subtype cannot be classified by subtype, and a majority of
-them cannot.
+**The `(none)` entries are a DENOMINATOR error in this document, corrected.** An
+earlier revision of this line read "**60,898 of 78,347 edges (77.7%) carry no
+`relationshipSubType` at all**". The 60,898 is the sum of the `(none)` rows under
+`calls` and `contains` alone, divided by the edge count of the WHOLE population. Two
+different sets, so the ratio described nothing.
+
+Recomputed over the same block, per type, against that type's own edge count:
+
+| | edges | carrying a subtype | `(none)` |
+| --- | --- | --- | --- |
+| `calls` | 48,174 | 4,123 | 44,051 |
+| `contains` | 17,622 | 847 | 16,775 |
+| `uses` | 4,808 | 4,808 | · |
+| `imports` | 2,095 | 2,095 | · |
+| `references` | 2,137 | 2,137 | · |
+| `exports` | 3,585 | 3,585 | · |
+| `extends` | 351 | 351 | · |
+| `implements` | 1,133 | 1,133 | · |
+| `overrides` | 107 | 107 | · |
+| `instantiates` | 3 | **0** | 3 |
+| **all** | **80,015** | **80,012** | **3** |
+
+So the honest figure is **3 of 80,015 edges (0.0%) carry no subtype**, and all 3 are
+the `instantiates` edges, which do carry `isRConstructor` and `reasonCode`.
+
+The `(none)` rows under `calls` and `contains` are a different and still real finding:
+those edges are subtyped as *unclassified within their own type*, not as *untyped*.
+`calls` at 4,123 of 48,174 (8.6%) and `contains` at 847 of 17,622 (4.8%) carry a
+subtype; the rest carry other metadata and no subtype name. The gap is that the
+analyzer never names a subtype for an ordinary call or an ordinary containment, so a
+consumer filtering `relationshipSubType == "closure_call"` sees 1,670 of 48,174 calls
+and has no way to learn what the other 46,504 are. That is a gap in the vocabulary, not
+in the edges — the edges exist, are typed, and resolve.
 
 **`extends` and `implements` checked against an independent carrier probe.** The
 subtype table says the analyzer is *consistent*; it cannot say the label is
@@ -643,12 +671,12 @@ construction, and the targets of `imports` and `references` are package names:
 | `instantiates` | 3 / 3 = 100.0% | `initialize`, `capture_expectations` | class names |
 | `extends` | 258 / 351 = 73.5% | class names | `VIRTUAL` 34, `Reporter` 20, class names |
 | `implements` | 371 / 1,133 = 32.7% | `generic.class` | `vec_ptype2` 86, `vec_cast` 82, `print` 74 |
-| `references` | 46 / 389 = 11.8% | `global` 347 | `testthat` 35, `Rcpp` 27, `Matrix` 23 |
+| `references` | 55 / 2,137 = 2.6% | `global` 2,095 | `cli` 318, `withr` 254, `utils` 122 |
 | `calls` | 5,042 / 48,230 = 10.5% | any symbol | `c` 1,797, `return` 1,399, `length` 1,118 |
 | `uses` | 402 / 4,810 = 8.4% | any symbol | `x` 217, `name` 106, `Dim` 93 |
 | `imports` | 13 / 2,095 = 0.6% | `global` 2,095 | `cli` 318, `withr` 254, `utils` 122 |
 
-`imports` at 0.6% and `references` at 11.8% are **the structure of the type, not
+`imports` at 0.6% and `references` at 2.6% are **the structure of the type, not
 a defect rate**: no R source file declares its own package name as a symbol, so a
 same-file symbol lookup cannot bind `cli` or `Matrix` whatever the analyzer does.
 The measurable question for `imports` is whether the named package exists, which
@@ -743,19 +771,19 @@ thing a reader trusts.
 
 **6. Confident** — measured over the population with a 0.05-wide histogram,
 because a threshold test cannot tell a lane that sits on 0.7 from a lane with a
-spread, and both satisfy `>= 0.7`. **0 of 78,309 edges fall below 0.7; 0 carry
+spread, and both satisfy `>= 0.7`. **0 of 80,095 edges fall below 0.7; 0 carry
 a missing or non-numeric confidence.**
 
 | Type | Edges | 1.00 | 0.95 | 0.90 | 0.85 | 0.80 | 0.70 |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `calls` | 48,136 | 46,468 | · | · | · | · | 1,668 |
-| `contains` | 17,620 | 17,620 | · | · | · | · | · |
-| `uses` | 4,799 | 4,563 | · | · | 236 | · | · |
-| `exports` | 3,581 | 3,581 | · | · | · | · | · |
-| `imports` | 2,090 | 1,810 | · | · | · | 280 | · |
+| `calls` | 48,174 | 46,504 | · | · | · | · | 1,670 |
+| `contains` | 17,622 | 17,622 | · | · | · | · | · |
+| `uses` | 4,808 | 4,572 | · | · | 236 | · | · |
+| `exports` | 3,585 | 3,585 | · | · | · | · | · |
+| `imports` | 2,095 | 1,815 | · | · | · | 280 | · |
 | `implements` | 1,133 | · | · | · | · | 1,133 | · |
-| `references` | 389 | 106 | · | · | · | 283 | · |
-| `extends` | 350 | 350 | · | · | · | · | · |
+| `references` | 2,137 | 1,857 | · | · | · | 280 | · |
+| `extends` | 351 | 351 | · | · | · | · | · |
 | `overrides` | 107 | · | 107 | · | · | · | · |
 | `instantiates` | 3 | · | · | 3 | · | · | · |
 
@@ -766,7 +794,7 @@ bare-identifier `library(x)` with no string literal
 (`library_bare_identifier`), and the same for `references`, 0.90 is
 `declared_class_constructor`, 0.95 is `base_class_declared_in_same_file`.
 
-**FINDING — `evidenceClass` is absent on 78,309 of 78,309 R edges.** Not one
+**FINDING — `evidenceClass` is absent on 80,095 of 80,095 R edges.** Not one
 edge in the population carries the field. That is legal: `src/lsp/evidence_tier.ts`
 rule 2 derives the tier from confidence when no stored class exists, so with
 every R edge at `>= 0.7` every R edge reads `structural`. It is still an
@@ -817,13 +845,65 @@ than the number sees one tier for this lane.
   named symbol. 5 of the 6 `Declared$new()` sites are at file scope in
   `r-Rcpp/inst/tinytest/`. That is the same file-scope limitation `calls` declares,
   applied consistently rather than worked around.
-- **`references` does not carry namespace-qualified reads.** 5,674
-  `namespace_operator` nodes occur in the corpus; 5,260 are a call's callee and
-  already produce a `calls` edge to the qualified target plus an `imports` edge to
-  the package; 414 are not, and none produces a `references` edge. Declared as an
-  asymmetry rather than fixed, because the label it would take is a judgement call
-  about `uses` versus `references` that belongs to the supervisor's ontology, not
-  to one lane.
+- **`references` did not carry namespace-qualified reads — CORRECTED, this was wrong
+  and it was fixable here.** An earlier revision of this list declared the gap as
+  unfixable "because the label it would take is a judgement call about `uses` versus
+  `references` that belongs to the supervisor's ontology, not to one lane". Both halves
+  of that were wrong. The frame was `uses` versus `references`; the actual asymmetry was
+  `imports` versus `references` **for a dependency**, and `src/ast/types.ts:72` already
+  decides it — `DependsOn = "references"`. And the fix needed no shared edit, because the
+  answer was already written down.
+
+  The gap was 1,751 edges and it was the largest single miss the lane's oracle found.
+  Measured before and after, same 2,058-file oracle population:
+
+  | | oracle derives | analyzer emits | missing | unexplained | precision | recall |
+  |---|---|---|---|---|---|---|
+  | before | 2,171 | 387 | **1,805** | 21 | 94.6% | **16.9%** |
+  | after | 2,171 | 2,094 | 98 | 21 | 99.0% | **95.5%** |
+
+  `unexplained` is 21 in both rows. That is the check that matters for a change this
+  size: 1,707 edges were recovered and none of them is a fabrication.
+
+  A `::`/`:::` access is a hard dependency — R must load the namespace to evaluate it —
+  and the analyzer already published both labels for the other three dependency forms it
+  reads (`library()`/`require()` at `real-r-analyzer.ts:2066,2085`, `source()`/
+  `sourceCpp()` at `:2117-2118`). Only namespace access published `imports` alone. The
+  `references` edge is now pushed beside it at the same confidence (1.0 — a deterministic
+  parse fact) and under the same `namespace_access` subtype, so a consumer keying on the
+  subtype sees the pair, exactly as it already sees `rcpp_source` and `r_source`.
+
+  Cost: `references` 389 → 2,137, the lane total 78,311 → 80,095 (+2.28%). Pinned by
+  `F21-namespace-depends-on` (21 fixtures now) and by two source mutants,
+  `src-namespace-drops-dependson` and `src-namespace-target-is-the-function`, both of
+  which that fixture rejects. 17 mutants, 17 caught, 0 survivors.
+
+- **THE DEDUP KEY HAS NO LINE, so 67% of namespace accesses never reach the graph.**
+  `real-r-analyzer.ts:422` keys a relationship on `` `${type}\u001f${source}\u001f${target}` ``.
+  The comment above it says the intent — "Preserve one edge per semantic fact even when
+  the same call appears in multiple AST wrappers" — and the intent is sound, because one
+  call reached through two wrappers is one call. The key cannot tell that from two
+  different use sites, because both reduce to the same triple. The survivor carries the
+  **first** site's line.
+
+  Minimal reproducer, four lines, no corpus needed:
+
+  ```r
+  utils::globalVariables(".my_var")
+  utils::head(x)
+  utils::tail(x)
+  ```
+
+  Production `parseFile` returns one `imports` edge and one `references` edge, both at
+  line 1. Lines 2 and 3 are gone and nothing reports the loss. Measured on a 400-file
+  sequential sample (`probe-dedup-collapse.ts`): **682 `namespace_operator` nodes on the
+  tree, 225 edges emitted — 67.0% collapsed.** Nine lines below the offending comment,
+  `imports` as an `ImportInfo` list is keyed by `(module, range)` and keeps every site,
+  so the same dependency is complete as a list and truncated as an edge.
+
+  Not fixed here. The key is in this lane's file, but the `line_number` it would have to
+  join is shared with every other lane's edges, and re-keying it changes edge counts
+  everywhere — a supervisor decision, reported with the instrument attached.
 
 ### R6, R5, S4 and S7 — why instrument A is the wrong instrument here
 
