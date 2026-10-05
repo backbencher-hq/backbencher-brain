@@ -257,13 +257,10 @@ const RULED_BY_LANG: Record<string, Ruled[]> = {
   xml: XML_RULED,
   php: PHP_RULED,
   sql: SQL_RULED,
-<<<<<<< HEAD
-scss: SCSS_RULED,
-markdown: MARKDOWN_RULED,
-clean: CLEAN_RULED,
-=======
+  scss: SCSS_RULED,
+  markdown: MARKDOWN_RULED,
+  clean: CLEAN_RULED,
   r: R_RULED,
->>>>>>> analyzer/R
 }
 const RULED: Ruled[] = RULED_BY_LANG[LANG] ?? []
 
