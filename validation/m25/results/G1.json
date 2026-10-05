@@ -3,15 +3,17 @@
   "code": "G1",
   "milestone": "M25",
   "status": "known-gap",
-  "checks": 72,
-  "passed": 66,
-  "failed": 6,
+  "checks": 77,
+  "passed": 69,
+  "failed": 8,
   "negativeCases": 11,
-  "currentCommit": "facecf800fff693596604f71bcc8e23cf0152277",
-  "workingTreeRelevantChanges": [],
+  "currentCommit": "bc09cd791cf54bc93791cb1e457a9731d478bb87",
+  "workingTreeRelevantChanges": [
+    "script/m25/verify-governance.ts"
+  ],
   "verifierCommand": "npx tsx script/m25/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-10-05T04:37:00.397Z",
+  "generatedAt": "2026-10-05T13:08:18.650Z",
   "ledger": "validation/m25/results/manifest.json",
   "m24Bar": {
     "ledgerStatus": "open",
@@ -21,10 +23,10 @@
     "This gate validates governance metadata, mutation response, and the M24 bar; it does not verify extension features.",
     "A run with relevant uncommitted M25 files is recorded as known-gap; verified status requires a clean relevant tree."
   ],
-  "blockedReason": "6 check(s) failed: G1: all 11 issue entries are unique and structurally complete; G1: no banned vocabulary in manifest.json (perfect(ion)?\\b); G1: no banned vocabulary in manifest.json (\\bcomplete(ly|d|ness)?\\b); G1: M24 bar — ledger closed with all 11 issues verified (mechanical) … — the relevant tree was clean at measure time",
+  "blockedReason": "8 check(s) failed: G1: all 11 issue entries are unique and structurally complete; G1: no banned vocabulary in manifest.json (perfect(ion)?\\b); G1: no banned vocabulary in manifest.json (\\bcomplete(ly|d|ness)?\\b); G1: M24 bar — ledger closed with all 11 issues verified (mechanical) ... - relevant uncommitted files at measure time: script/m25/verify-governance.ts",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T04:37:00.404Z",
-    "contentSha256": "ca4f4c2569bda4f9558b0fbe33f76d40dbe633e19ea6c672c3b7ecaaa9ec9292"
+    "sealedAt": "2026-10-05T13:08:18.714Z",
+    "contentSha256": "cbee2c78b7394b78fc1b46e4f002f5ff0fa942c2a93768aaaa511b42764f3008"
   }
 }
