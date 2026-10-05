@@ -154,15 +154,34 @@ const STORED_LINE_ALIASES = ["stored_call_line", "line_number", "lineNumber", "c
 //   - the pre-M62 model (the referencing symbol's DECLARATION, which is what
 //     this surface served for every row): all eight rows resolve to caller's
 //     line 1, so a position-only dedupe key collapses them to 1 location;
-//   - the §2 position with the OLD key (`path:line:character`): stored lines
-//     2, 3, 4, 4 -> the two line-4 rows collapse -> the count is one short of
-//     what the store recorded. Still a lie, in the other direction;
-//   - the §2 position with `path:line:rowId`: one location per stored row.
+//   - the §2 position with `path:line:rowId` (shipped in wave 2, corrected at
+//     the M55.T3 integration): the two line-4 rows become TWO locations at the
+//     SAME file/line/character — one per stored row.
 //
-// So asserting a single total is NOT enough to catch the old dedupe key — a
-// count-only test passes with either key. Every count assertion below is paired
-// with a shape assertion about which rows survived, and U1's regression check
-// is on the line-4 PAIR specifically.
+// THE INTEGRATION CORRECTION, and what this battery now asserts.
+//
+// Wave 2 read the line-4 pair as "two call sites in one function are two
+// usages" and keyed the dedupe on `path:line:rowId`. Measurement on five real,
+// populated indexes found that key's ONLY effect was to serve byte-identical
+// duplicate locations: 8,285 (818db37d), 2,417 (064be526) and 684 (99c211a1)
+// served positions each carrying two or more rows, 99.5% of them two rows of
+// DIFFERENT relationship kinds for one caller at one stored line. The store
+// cannot produce two rows at one stored line through its primary writer — the
+// row id keys on the call-site LINE (src/ast/parallel-indexer.ts:4147,
+// INSERT OR IGNORE) — so the honest read of a same-position pair is: ONE
+// PLACE the index can put a caret, plus the multiplicity declared.
+//
+// So the law is ONE LOCATION PER SERVED POSITION, and the rows that share a
+// position are COUNTED in `coalescedRows` rather than served twice or dropped
+// (§13.2: nothing is merged into silence; §13.1: a symbol appearing several
+// times only because it owns several stored rows is a rendering defect).
+// Nothing is lost: two call sites on DIFFERENT stored lines are two different
+// positions and are still two locations — which is the genuine §13.4 case, and
+// `rel-u-a`/`rel-u-b` (stored lines 2 and 3) assert it.
+//
+// What U2 asserts below is therefore restated: the line-4 pair yields ONE
+// location, the pair's second row is DECLARED coalesced, and no two served
+// locations share a position.
 //
 // The source side comes from a REAL JOIN: every row here names a source
 // SYMBOL, so the double serves `source_*` from that symbol's own indexed range
@@ -986,18 +1005,34 @@ async function testCallSiteMigration(): Promise<void> {
   // --- U1 §15.3: POSITIONS ARE WHERE THE THING IS
   const servedLines = servedExact.map((l) => l.line).sort((a, b) => a - b)
   check(
-    "U1: the exact rows are served at the STORE's call-site lines (1-based 2,3,4,4 -> 0-based 1,2,3,3)",
-    servedLines.join(",") === "1,2,3,3",
+    "U1: the exact rows are served at the STORE's DISTINCT call-site lines (1-based 2,3,4 -> 0-based 1,2,3; the two rows on line 4 share one position)",
+    servedLines.join(",") === "1,2,3",
     `served 0-based lines=${JSON.stringify(servedLines)}`,
+  )
+  // The row count and the location count are DIFFERENT facts and both are on
+  // the payload: four stored rows carry a real call site; three of them name
+  // distinct positions. Asserting the DISTINCT lines here and the coalesced
+  // count at U2 is what keeps the pair from being quietly dropped (the §13.2
+  // duty) without being double-served (§13.1's duty).
+  check(
+    "U1: the store holds FOUR rows with a real call-site line, naming THREE distinct lines, and exactly those three are served",
+    exact.length === 4 && servedExact.length === 3,
+    `stored exact rows=${exact.length} served locations=${servedExact.length} (the shared row's accounting is asserted by U2/U5)`,
   )
   // The declaration law, stated as it actually holds: a row with a REAL stored
   // line is never served at the caller's declaration. (A row with no stored
   // line IS served there — as a labelled `declaration` substitute, which U4
   // checks. The distinction is the whole point of §2.)
+  // The regression this law exists for: before the call-site migration every row
+  // was served at the caller's declaration, so all four exact rows landed on
+  // 0-based line 0. The law is that NO exact row is served there, and that the
+  // three DISTINCT store lines are the served positions. The fourth row shares a
+  // position with the third — its accounting is U2's and U5's, stated there so
+  // one assertion does not carry two facts.
   check(
     "U1: no row with a real stored call-site line is served at the caller's DECLARATION line (0-based 0) — positions are where the thing is",
-    servedExact.every((l) => l.line !== 0) && servedExact.length === exact.length,
-    `${servedExact.length} exact rows served at lines ${JSON.stringify(servedExact.map((l) => l.line).sort())}; ${exact.length} stored exact rows`,
+    servedExact.every((l) => l.line !== 0) && servedExact.length === 3 && exact.every((r) => r.line_number !== CALLSITE_SYMBOLS[0]!.line_start),
+    `${servedExact.length} exact locations served at lines ${JSON.stringify(servedExact.map((l) => l.line).sort())}; ${exact.length} stored exact rows; none at the caller's declaration line ${CALLSITE_SYMBOLS[0]!.line_start - 1}`,
   )
   check(
     "U1: every served §2 location is inside the caller's OWN file (no row is served at some other file's line)",
@@ -1005,24 +1040,40 @@ async function testCallSiteMigration(): Promise<void> {
     JSON.stringify(uLocs.map((l) => String(l.path).replace(dir, ""))),
   )
 
-  // --- U2 THE DEDUPE REGRESSION, with the number spelled out
+  // --- U2 THE DEDUPE LAW, restated on the evidence (see the fixture note above)
   const onLine4 = uLocs.filter((l) => l.callSite?.kind === "call-site" && l.line === 3)
   check(
-    "U2: the two stored rows on line 4 remain TWO locations (path:line:rowId, not path:line:character)",
-    onLine4.length === 2,
+    "U2: the two stored rows on line 4 produce ONE location, not two identical ones (§13.1 — the eye cannot tell them apart)",
+    onLine4.length === 1,
     `${onLine4.length} location(s) on 0-based line 3; rows ${JSON.stringify(line4)}`,
   )
   check(
-    "U2: both line-4 rows are present by identity, so the count is not produced by two rows for one location",
-    line4.every((id) => servedFor(id) !== undefined),
-    JSON.stringify(locsOf(all).map((l) => l.callSite?.rowId).sort()),
+    "U2: exactly one of the two line-4 rows is served and the other is DECLARED coalesced (§13.2 — not merged into silence)",
+    line4.filter((id) => servedFor(id) !== undefined).length === 1 && all.coalescedRows >= 1,
+    `served on line 4: ${JSON.stringify(line4.filter((id) => servedFor(id) !== undefined))}; coalescedRows=${String(all.coalescedRows)} (the fixture's TOTAL, which also covers the substitution pair — U5 asserts the exact total)`,
   )
-  // The stored rows that produce an exact call site: 4. Each must contribute
-  // exactly one location, so the served count is the STORE's count.
   check(
-    "U2: every stored row with a real call-site line is served, and none is duplicated",
-    servedExact.length === exact.length && new Set(servedExact.map((l) => l.callSite?.rowId)).size === servedExact.length,
-    `${servedExact.length} served vs ${exact.length} stored; ids=${JSON.stringify(servedExact.map((l) => l.callSite?.rowId).sort())}`,
+    "U2: no two served locations share a file/line/character (the defect the rowId key shipped)",
+    new Set(locsOf(all).map((l) => `${l.path}:${l.line}:${l.character}`)).size === locsOf(all).length,
+    JSON.stringify(locsOf(all).map((l) => [String(l.path).replace(dir, ""), l.line, l.character, l.callSite?.rowId])),
+  )
+  // The genuine §13.4 case is NOT lost by the position key: two call sites on
+  // DIFFERENT stored lines are two different positions. rel-u-a (line 2) and
+  // rel-u-b (line 3) are that pair, and they must both be served.
+  check(
+    "U2: two call sites on two DIFFERENT stored lines remain TWO locations (§13.4 survives the position key)",
+    servedFor("rel-u-a")?.line === 1 && servedFor("rel-u-b")?.line === 2,
+    JSON.stringify(["rel-u-a", "rel-u-b"].map((id) => [id, servedFor(id)?.line])),
+  )
+  // Every stored row with a real call-site line is either served or counted as
+  // coalesced — the §13.2 account, closed over the rows the owner calls exact.
+  const exactServedIds = new Set(servedExact.map((l) => l.callSite?.rowId))
+  check(
+    "U2: every stored row with a real call-site line is served or declared coalesced, and none is duplicated",
+    servedExact.length === 3 &&
+      new Set(servedExact.map((l) => l.callSite?.rowId)).size === servedExact.length &&
+      exact.filter((r) => !exactServedIds.has(r.id)).length === 1,
+    `${servedExact.length} served locations from ${exact.length} stored exact rows; ids=${JSON.stringify(servedExact.map((l) => l.callSite?.rowId).sort())}`,
   )
 
   // --- U3 DIFFERENTIAL against the store, plus a check against the SOURCE.
@@ -1049,9 +1100,17 @@ async function testCallSiteMigration(): Promise<void> {
       }
       continue
     }
+    // A row whose position ANOTHER exact row already occupies is not "not
+    // served at all": its place IS served, and the payload says how many stored
+    // rows share it (`coalescedRows`). Treating that as absence would assert the
+    // §13.1 defect instead of the §13.2 account — U2 asserts the count that makes
+    // this acceptance honest, so the acceptance cannot hide a dropped row.
     if (served === undefined) {
-      diffFail++
-      diffDetail = `${rel.id}: not served at all (owner says ${expected.kind})`
+      const sharesAPositionWithAnotherExactRow = exact.some((other) => other.id !== rel.id && other.line_number === rel.line_number)
+      if (!sharesAPositionWithAnotherExactRow) {
+        diffFail++
+        if (diffDetail === "") diffDetail = `${rel.id}: not served at all (owner says ${expected.kind}, and no other exact row holds its position)`
+      }
       continue
     }
     // KIND and LINE are the owner's verdict, compared as-is. `file` is
@@ -1087,10 +1146,27 @@ async function testCallSiteMigration(): Promise<void> {
     JSON.stringify(legacy),
   )
   const nullLine = servedFor("rel-u-null")?.callSite
+  // `rel-u-legacy` (stored 0) and `rel-u-null` (stored NULL) are BOTH declared
+  // unknown states, so BOTH take the caller's declaration as their substitute —
+  // which is the SAME file/line/character. Under the position law that is one
+  // place served once and one row declared coalesced, and the substituted
+  // declaration's DIFFERENT stored columns (the legacy check above asserts the
+  // range) mean the two rows do not even have identical ranges. Asserting both
+  // are served at their own positions would assert two locations at one caret
+  // position; asserting neither is served would assert a dropped row.
   check(
-    "U4: a NULL stored line yields the DECLARATION substitute too (both are the store's DECLARED unknown states)",
-    nullLine?.kind === "declaration" && nullLine?.note === owner.ADDRESS_NOTES.substitute,
-    JSON.stringify(nullLine),
+    "U4: a NULL stored line takes the DECLARATION substitute too (both are the store's DECLARED unknown states), and shares the legacy row's one position",
+    nullLine === undefined &&
+      legacy?.kind === "declaration" &&
+      legacy?.note === owner.ADDRESS_NOTES.substitute &&
+      servedFor("rel-u-legacy")?.line === 0 &&
+      servedFor("rel-u-legacy")?.character === 9,
+    `rel-u-null served=${JSON.stringify(nullLine)}; rel-u-legacy served at ${JSON.stringify([servedFor("rel-u-legacy")?.line, servedFor("rel-u-legacy")?.character])}`,
+  )
+  check(
+    "U4: the second of the two substitution rows is DECLARED coalesced — the account covers the substitute branch as well as the exact branch",
+    all.coalescedRows === 2,
+    `coalescedRows=${String(all.coalescedRows)}, expected 2 (one exact pair + one substitution pair on the caller's declaration)`,
   )
   check(
     "U4: the substitute's note NEGATES the call-site claim in words, so a reader of the rendered string is not misled either",
@@ -1123,6 +1199,15 @@ async function testCallSiteMigration(): Promise<void> {
     all.omittedUnresolvable === 2 && all.omittedUnpositionable === 2,
     `unresolvable=${all.omittedUnresolvable} (expected 2: the file not on disk + the line past EOF) unpositionable=${String(all.omittedUnpositionable)} (expected 2)`,
   )
+  // §13.2's "nothing is merged into silence" needs its own counter check: a
+  // payload that serves the right places and never says a stored row shares one
+  // of them has told the client something false by omission. The M55.T3
+  // integration's M6 mutant plants exactly this.
+  check(
+    "U5: the coalesced-row counter is PRESENT, is a number, and counts both shared positions (a dropped field is the §13.2 defect)",
+    typeof all.coalescedRows === "number" && all.coalescedRows === 2,
+    `coalescedRows=${String(all.coalescedRows)} (expected 2: one exact pair on line 4 + one substitution pair on the caller's declaration)`,
+  )
   check(
     "U5: a REAL stored line that is past the end of its file is omitted, not served — §12.1 makes an unverifiable target a guessed link",
     servedFor("rel-u-past-eof") === undefined,
@@ -1133,14 +1218,15 @@ async function testCallSiteMigration(): Promise<void> {
     !locsOf(all).some((l) => String(l.path).includes("ghost.ts")),
     JSON.stringify(locsOf(all).map((l) => String(l.path).replace(dir, ""))),
   )
-  // Every §2 row that was stored is accounted for: served, or counted. Nothing
-  // disappears between the index and the payload without appearing in one of
-  // the two counters — the §11.7 discipline applied to the reference loop.
+  // Every §2 row that was stored is accounted for: served, coalesced onto a
+  // served position, or omitted-and-counted. Nothing disappears between the
+  // index and the payload without appearing in one of the three counters — the
+  // §11.7 discipline applied to the reference loop. The account is CLOSED over
+  // the stored row count, which is what makes it a check rather than a tally.
   check(
-    "U5: every stored §2 row is either served or counted (nothing is dropped between the index and the payload)",
-    CALLSITE_RELS.every((r) => servedFor(r.id) !== undefined || all.omittedUnresolvable + all.omittedUnpositionable > 0) &&
-      servedExact.length + (uLocs.filter((l) => l.callSite?.kind === "declaration").length) + all.omittedUnresolvable + all.omittedUnpositionable === CALLSITE_RELS.length + CALLSITE_GHOST_RELS.length,
-    `served exact=${servedExact.length} served substitutes=${uLocs.filter((l) => l.callSite?.kind === "declaration").length} unresolvable=${all.omittedUnresolvable} unpositionable=${String(all.omittedUnpositionable)} of ${CALLSITE_RELS.length + CALLSITE_GHOST_RELS.length} stored §2 rows`,
+    "U5: every stored §2 row is served, coalesced, or omitted-and-counted — the account is CLOSED (nothing is dropped between the index and the payload)",
+    servedExact.length + (uLocs.filter((l) => l.callSite?.kind === "declaration").length) + all.coalescedRows + all.omittedUnresolvable + all.omittedUnpositionable === CALLSITE_RELS.length + CALLSITE_GHOST_RELS.length,
+    `served exact=${servedExact.length} served substitutes=${uLocs.filter((l) => l.callSite?.kind === "declaration").length} coalesced=${String(all.coalescedRows)} unresolvable=${all.omittedUnresolvable} unpositionable=${String(all.omittedUnpositionable)} = ${servedExact.length + (uLocs.filter((l) => l.callSite?.kind === "declaration").length) + all.coalescedRows + all.omittedUnresolvable + all.omittedUnpositionable}, of ${CALLSITE_RELS.length + CALLSITE_GHOST_RELS.length} stored §2 rows`,
   )
   check(
     "U5: a served §2 location on line 0 is ALWAYS labelled a declaration — a call-site row is never clamped to the first line",
@@ -1573,8 +1659,8 @@ const NAV_MUTANTS: Array<{ name: string; from: string; to: string; oracle?: Muta
     // location is still correct and the list still looks complete — only the
     // explicit count assertion sees the difference.
     name: "declared absence: unresolvable reference rows silently dropped (count lost)",
-    from: "    absence: null,\n    omittedUnresolvable,\n    omittedUnpositionable,\n  };",
-    to: "    absence: null,\n    omittedUnresolvable: 0,\n    omittedUnpositionable,\n  };",
+    from: "    absence: null,\n    omittedUnresolvable,\n    omittedUnpositionable,\n    coalescedRows,\n  };",
+    to: "    absence: null,\n    omittedUnresolvable: 0,\n    omittedUnpositionable,\n    coalescedRows,\n  };",
   },
   {
     // M62 §2 (permanent, F7 rule): THE pre-§2 defect. The address owner is
@@ -1587,14 +1673,31 @@ const NAV_MUTANTS: Array<{ name: string; from: string; to: string; oracle?: Muta
     to: "  if (false && isExactAddress(address)) {\n    const line0 = addressLine0(address);",
   },
   {
-    // M62 §2 (permanent, F7 rule): THE dedupe-key defect. The key goes back to
-    // `path:line:character`, so two stored rows on one line — `greet(); greet()`
-    // — collapse into ONE location. The list then under-reports what the index
-    // holds, which is §13.4's count lie, and the user cannot reach the second
-    // call site from it.
-    name: "references: the old path:line:character dedupe key restored (two call sites on one line collapse)",
-    from: "    const key = `${loc.path}:${loc.line}:${edge.id}`;",
-    to: "    const key = `${loc.path}:${loc.line}:${loc.character}`;",
+    // M55.T3 integration (permanent, F7 rule): THE `path:line:rowId` key comes
+    // back — what wave 2 shipped, and what the integration measured to be wrong.
+    // Its only effect on five real, populated indexes was to serve byte-identical
+    // duplicate locations: 8,285 such positions on 818db37d, 2,417 on 064be526,
+    // 684 on 99c211a1, and 99.5% of them were two rows of DIFFERENT
+    // relationship kinds for one caller at one stored line. The store cannot
+    // write two rows at one stored line through its primary writer (the row id
+    // keys on the call-site line — src/ast/parallel-indexer.ts:4147, INSERT OR
+    // IGNORE), so such a pair is one place with a declared multiplicity, not two
+    // places. An editor cannot show two entries at the same file/line/character:
+    // this is §13.1's rendering defect and §13.4's count lie at once. Caught by
+    // U2's "no two served locations share a position" (the fixture's two pairs).
+    name: "references: the rowId dedupe key restored (byte-identical duplicate locations served for one place)",
+    from: "    const key = `${loc.path}:${loc.line}:${loc.character}`;",
+    to: "    const key = `${loc.path}:${loc.line}:${edge.id}`;",
+  },
+  {
+    // M55.T3 integration (permanent, F7 rule): the DECLARED COLLAPSE counter is
+    // dropped. Every served location is still correct and the list still looks
+    // complete — only the §13.2 accounting sees it, which is precisely the class
+    // of defect a count-free assertion cannot catch. Caught by U5's closed
+    // account and by M6 in script/m55/verify-relations.ts.
+    name: "declared absence: the coalesced-row counter is dropped (shared positions merged into silence, §13.2)",
+    from: "      coalescedRows++;",
+    to: "      /* the collapse is not counted */",
   },
   {
     // M62 §2 (permanent, F7 rule): a FABRICATED position for a row the index
@@ -1611,8 +1714,8 @@ const NAV_MUTANTS: Array<{ name: string; from: string; to: string; oracle?: Muta
     // absent rows vanish from the payload's accounting, so a client showing 6 of
     // 8 has no way to know the other two were dropped on purpose.
     name: "declared absence: unpositionable rows silently dropped (count lost)",
-    from: "    absence: null,\n    omittedUnresolvable,\n    omittedUnpositionable,\n  };",
-    to: "    absence: null,\n    omittedUnresolvable,\n    omittedUnpositionable: 0,\n  };",
+    from: "    absence: null,\n    omittedUnresolvable,\n    omittedUnpositionable,\n    coalescedRows,\n  };",
+    to: "    absence: null,\n    omittedUnresolvable,\n    omittedUnpositionable: 0,\n    coalescedRows,\n  };",
   },
   {
     // M62 §2 (permanent, F7 rule): the stored line is CHECKED against the
@@ -1923,23 +2026,40 @@ async function navMutantOracle(mod: any): Promise<{ caught: boolean; detail: str
     if (csLocs.some((l) => typeof l.callSite?.rowId !== "string")) {
       return { caught: true, detail: "a served reference location carries no callSite.rowId" }
     }
-    // O2 THE DEDUPE REGRESSION. The store holds two rows on line 4; the old
-    // position-only key serves one location for them.
+    // O2 THE DEDUPE LAW, on the fixture's two pairs. The store holds two rows on
+    // stored line 4 and two rows whose substitute is the caller's declaration.
+    // Both pairs resolve to ONE position each, so the oracle expects ONE
+    // location per pair and a coalesced count of 2 — and it expects NO two
+    // served locations to share a file/line/character, which is where the
+    // rowId-key defect shows up (§13.1).
     const csLine4 = csU.filter((l) => l.callSite?.kind === "call-site" && l.line === 3)
-    if (csLine4.length !== 2) {
-      return { caught: true, detail: `${csLine4.length} location(s) on stored line 4; the store records 2 rows there` }
+    if (csLine4.length !== 1) {
+      return { caught: true, detail: `${csLine4.length} location(s) on stored line 4; two stored rows share that ONE position, so exactly 1 must be served` }
     }
-    // O3 THE DECLARATION DEFECT. Four stored rows name real call sites on
-    // lines 2, 3, 4 and 4; none may be served at the caller's declaration.
+    const csPositions = new Set(csLocs.map((l) => `${l.path}:${l.line}:${l.character}`))
+    if (csPositions.size !== csLocs.length) {
+      return { caught: true, detail: `${csLocs.length} served locations over ${csPositions.size} distinct positions — byte-identical duplicates (§13.1)` }
+    }
+    if (typeof csRefs.coalescedRows !== "number" || csRefs.coalescedRows !== 2) {
+      return { caught: true, detail: `coalescedRows = ${String(csRefs.coalescedRows)}, expected 2 (the line-4 pair + the substitution pair)` }
+    }
+    // O3 THE DECLARATION DEFECT. Four stored rows name real call sites on lines
+    // 2, 3, 4 and 4; the three DISTINCT positions must be served at the store's
+    // lines and none at the caller's declaration.
     const csExact = csU.filter((l) => l.callSite?.kind === "call-site")
-    if (csExact.length !== 4) {
-      return { caught: true, detail: `${csExact.length} exact call sites served; the store records 4` }
+    if (csExact.length !== 3) {
+      return { caught: true, detail: `${csExact.length} exact call sites served; the store's 4 exact rows name 3 distinct lines` }
     }
     if (csExact.some((l) => l.line === 0)) {
       return { caught: true, detail: `an exact call site was served at the caller's declaration (line ${JSON.stringify(csExact.map((l) => l.line))})` }
     }
-    if (csExact.map((l) => l.line).sort().join(",") !== "1,2,3,3") {
-      return { caught: true, detail: `exact call sites served at lines ${JSON.stringify(csExact.map((l) => l.line).sort())}; the store says 1,2,3,3 (0-based)` }
+    if (csExact.map((l) => l.line).sort().join(",") !== "1,2,3") {
+      return { caught: true, detail: `exact call sites served at lines ${JSON.stringify(csExact.map((l) => l.line).sort())}; the store says 1,2,3 (0-based, distinct)` }
+    }
+    // O3b the genuine §13.4 case survives the position key: two call sites on
+    // two DIFFERENT stored lines are two locations.
+    if (csExact.filter((l) => l.line === 1 || l.line === 2).length !== 2) {
+      return { caught: true, detail: "two call sites on two different stored lines did not stay two locations (§13.4)" }
     }
     // O4 the two absent rows are omitted AND counted, apart from the one
     // unreadable file. A fabricated fallback or a lost count dies here.
@@ -1962,24 +2082,32 @@ async function navMutantOracle(mod: any): Promise<{ caught: boolean; detail: str
         return { caught: true, detail: `${id} (no position) was served at ${JSON.stringify(csU.find((l) => l.callSite?.rowId === id)?.callSite)}` }
       }
     }
-    // O6 the two labelled substitutes exist, carry the OWNER's note, and sit on
-    // the caller's own stored columns rather than at a call site.
-    for (const id of ["rel-u-legacy", "rel-u-null"]) {
-      const sub = csU.find((l) => l.callSite?.rowId === id)
-      if (sub?.callSite?.kind !== "declaration") {
-        return { caught: true, detail: `${id} is served as ${JSON.stringify(sub?.callSite?.kind)}, expected a labelled declaration substitute` }
-      }
-      if (typeof sub.callSite.note !== "string" || sub.callSite.note.length === 0) {
-        return { caught: true, detail: `${id} is served as a declaration with no note` }
-      }
-      if (sub.line !== 0 || sub.character !== 9) {
-        return { caught: true, detail: `${id} is served at ${sub.line}:${sub.character}, expected the caller's own name token at 0:9` }
-      }
+    // O6 the labelled substitute exists, carries the OWNER's note, and sits on
+    // the caller's own stored columns rather than at a call site. Only ONE of
+    // the two substitution rows is served: `rel-u-legacy` and `rel-u-null` are
+    // both declared-unknown states, so both take the SAME declaration as their
+    // substitute and that is ONE served position (asserted by the
+    // coalescedRows check above). Asserting both were served would assert two
+    // locations at one caret position.
+    const legacySubRow = csU.find((l) => l.callSite?.rowId === "rel-u-legacy")
+    if (legacySubRow?.callSite?.kind !== "declaration") {
+      return { caught: true, detail: `rel-u-legacy is served as ${JSON.stringify(legacySubRow?.callSite?.kind)}, expected a labelled declaration substitute` }
+    }
+    if (typeof legacySubRow.callSite.note !== "string" || legacySubRow.callSite.note.length === 0) {
+      return { caught: true, detail: "rel-u-legacy is served as a declaration with no note" }
+    }
+    if (legacySubRow.line !== 0 || legacySubRow.character !== 9) {
+      return { caught: true, detail: `rel-u-legacy is served at ${legacySubRow.line}:${legacySubRow.character}, expected the caller's own name token at 0:9` }
+    }
+    // The account must name BOTH substitution rows: served + coalesced. If a
+    // component served `rel-u-null` as well it would be double-serving one
+    // position; if it served neither it would be dropping a row.
+    if (csU.filter((l) => l.callSite?.kind === "declaration").length !== 1) {
+      return { caught: true, detail: `${csU.filter((l) => l.callSite?.kind === "declaration").length} declaration substitutes served; the two substitution rows share ONE position` }
     }
     // O7 the substitute must not be laundered into a bare call site.
-    const legacySub = csU.find((l) => l.callSite?.rowId === "rel-u-legacy")
-    if (/^as call site/i.test(String(legacySub?.callSite?.note)) || legacySub?.callSite?.note === "") {
-      return { caught: true, detail: `the substitute note does not say what it is: ${JSON.stringify(legacySub?.callSite?.note)}` }
+    if (/^as call site/i.test(String(legacySubRow?.callSite?.note)) || legacySubRow?.callSite?.note === "") {
+      return { caught: true, detail: `the substitute note does not say what it is: ${JSON.stringify(legacySubRow?.callSite?.note)}` }
     }
     // O8 includeDeclaration labels itself, so a declaration is never rendered
     // as a usage.
@@ -2085,13 +2213,15 @@ async function main(): Promise<void> {
         "The oracle returned a bare boolean, so a catch could not say WHICH law broke. Now it returns {caught, detail}, and the log names the law.",
         "Wave 2 (M62 §2): the 'a stored call-site line past the end of the file is served unverified' mutant SURVIVED its first run, because no fixture row ever reached that branch — a mutant with no fixture is a mutant with no gate. Fixed at the FIXTURE, not by weakening the mutant: `rel-u-past-eof` stores a real line 99 in a six-line file, and the omission counts moved from 1/2 to 2/2 to match.",
         "Wave 2: three §2 assertions passed VACUOUSLY against the pre-§2 component (a zero-width-range check over an empty set, a 'kind is call-site' check over rows that had no kind, and a 'column appears at most once' check satisfied by zero occurrences). A check that cannot fail is not a check (§8.7), so each now carries an explicit non-emptiness precondition and the column check is `=== 1`, not `<= 1`.",
+        "M55.T3 INTEGRATION: U2 asserted the WRONG law, and the suite was green on it. It read the fixture's two rows at stored line 4 as 'two call sites in one function are two usages' and required `path:line:rowId`. Measurement on five real, populated indexes found that key's only effect was byte-identical duplicate locations: 8,285 such positions on project 818db37d, 2,417 on 064be526, 684 on 99c211a1, of which 99.5% are two rows of DIFFERENT relationship kinds for one caller at one stored line. The store cannot write two rows at one stored line through its primary writer (row id keys on the call-site line, src/ast/parallel-indexer.ts:4147, INSERT OR IGNORE) — verified by indexing a real source with two calls to one callee: two calls on ONE line produce ONE row; two calls on DIFFERENT lines produce two rows and two locations. So U2 was asserting a law the store cannot produce, and the real multi-call-site case it was meant to protect is asserted instead on the DIFFERENT-lines pair (rel-u-a/rel-u-b). The shared-position rows are now DECLARED in `coalescedRows` (§13.2) rather than double-served (§13.1), U5's account is closed over the stored rows instead of merely being non-zero, and the reverse mutation (planting the rowId key) plus a dropped-counter mutation are both in the suite.",
+        "M55.T3 INTEGRATION: the same fixture's `rel-u-legacy` (stored 0) and `rel-u-null` (stored NULL) BOTH take the caller's declaration as their substitute, so they share one served position. U4 originally required both to be served, which is the same defect as the U2 one at the other end of the fixture. It now asserts one served substitute and the coalesced count that names the other.",
       ],
       declaredAbsenceLaws: ["N0-N8 (§11.7)", "P0-P3 (§15.3)"],
       positionOwnershipLaws: ["S0-S2 (§5 rule 1)", "G5"],
       callSiteMigrationLaws: [
         "U0 the §2 fixture is adversarial AND honest (the production join shape, two rows on one stored line, four store states, a file that is not on disk, a line past EOF)",
-        "U1 positions are where the thing is (§15.3): the exact rows are served at the store's lines, never at the caller's declaration",
-        "U2 THE DEDUPE REGRESSION: two stored rows on one line stay two locations",
+        "U1 positions are where the thing is (§15.3): the exact rows are served at the store's DISTINCT lines, never at the caller's declaration",
+        "U2 THE DEDUPE LAW: two stored rows sharing one served position produce ONE location and a declared coalesced row; two call sites on two DIFFERENT stored lines stay two locations; no two served locations share a position",
         "U3 differential against the store's own row plus a check against the source text at the served line (§12.1)",
         "U4 the four store states end as four declared outcomes, and the two absent ones are counted",
         "U5 the two omission counters are distinct facts, nothing is fabricated, every stored row is served or counted",
@@ -2114,8 +2244,10 @@ async function main(): Promise<void> {
     },
     callSiteSurfaceLimitations: {
       statement:
-        "§2 moved textDocument/references from the referencing symbol's DECLARATION to the store's CALL-SITE line, and from a position-only dedupe key to one location per stored row. Four consequences are declared rather than left for a reader to discover.",
+        "§2 moved textDocument/references from the referencing symbol's DECLARATION to the store's CALL-SITE line. The M55.T3 integration then corrected the DEDUPE law from one-location-per-stored-row to one-location-per-served-POSITION, with the shared rows declared in `coalescedRows`. Five consequences are declared rather than left for a reader to discover.",
       items: [
+        "ONE LOCATION PER SERVED POSITION, AND THE MULTIPLICITY IS COUNTED, NOT SERVED TWICE. Two stored rows that resolve to the same file/line/character are ONE place the index can put a caret, so one location is served and the other row is counted in `coalescedRows` (§13.1's rendering rule, §13.2's accounting rule). The law this replaced — one location per stored row, keyed `path:line:rowId` — was measured on five real indexes and its only effect was byte-identical duplicate locations: 8,285 such positions on 818db37d, 2,417 on 064be526, 684 on 99c211a1; 99.5% were two rows of different relationship kinds for one caller at one stored line. `references`, the hover's list and the SQL count now all count served positions, which is why they agree without any of them declaring a filter. The genuine multi-call-site case is unaffected: two call sites on two DIFFERENT stored lines are two positions and are served as two locations (asserted by U2 and by R5 in script/m55/verify-relations.ts).",
+        "`coalescedRows` DOES NOT REACH THE WIRE, and neither do the other two counters — see wiringNeededInServerTs. The three-surface count agreement that §14 rule 1 requires is therefore visible to a COMPONENT-level reader and to this gate, not to an editor. That is the same limitation wave 2 declared for `callSite`, extended to the new field.",
         "AN EXACT CALL SITE IS A LINE-ONLY RANGE. brain_relationship stores a line and no column for a call site, so the served range is zero-width at character 0 of the stored line and the editor places the caret at the start of that line. The payload declares this: callSite.kind === 'call-site'. The exact token needs a call-site column in the store, which is M59's lane (A4/A8), not this one.",
         "THE ADDRESS OWNER'S `file` FIELD CARRIES AN ABSOLUTE PATH HERE. The owner's contract documents it as the RELATIVE path (its graph/hub/MCP consumers render file:line); this surface hands the editor absolute brain_file paths and holds no project root to relativise against. Declared in the payload, asserted by U3, and reported as a gap in the owner's field contract — a renderer printing this address gets an absolute path, which is correct for navigation and differs from the other three surfaces.",
         "THE STORE'S CALL-SITE COVERAGE IS NOT THIS LANE'S CLAIM. Per-language real-line coverage is M59.A7. On an index where every row carries a real line (measured: 10,267 of 10,267 rows on the corpus this lane indexed), the labelled-substitute branch cannot be exercised from real data and is proven on the fixture instead — declared in the CALLSITE-AGREEMENT record, not implied.",
@@ -2133,7 +2265,8 @@ async function main(): Promise<void> {
       "latency measured on this machine only; cross-platform budgets are M25 scope",
       "the declared-absence reason reaches the wire only through src/lsp/server.ts, which is not this lane's file — see `wiringNeededInServerTs` below. This gate proves the component carries the reason; it cannot prove the editor receives it.",
       "the launch gate keys off the file EXTENSION (languageForPath), not brain_file.language. A file whose extension maps to a launch language while its rows say otherwise is served; a file the extension cannot classify is declared absent with language:null.",
-      "§15.3 omission counts are per-response and split into TWO declared facts: omittedUnresolvable (the store names a line the source does not confirm) and omittedUnpositionable (the store names no position at all). The per-row reason is in the owner's note / edgeLocationDetailed's absence, which the references result does not enumerate row by row.",
+      "§15.3 omission counts are per-response and split into TWO declared facts: omittedUnresolvable (the store names a line the source does not confirm) and omittedUnpositionable (the store names no position at all). A THIRD declared fact, coalescedRows (M55.T3 integration), counts rows whose position another row already occupies — not an omission, a declared multiplicity. The per-row reason is in the owner's note / edgeLocationDetailed's absence, which the references result does not enumerate row by row.",
+      "THE HOVER'S COLLECTOR STILL SERVES A CALL-SITE LINE PAST THE END OF THE FILE (known gap, found by the M55.T3 integration, NOT fixed here). rich_hover.ts's richSitesForSymbol does not bound the address owner's line against the file's line count, so a stored line the source cannot confirm renders as a usage link. Measured on the integration's R5 fixture (a three-line target with two usage rows stored at lines 40 and 41): this surface serves 0 locations and declares omittedUnresolvable = 2; the hover's collector returns 2 sites at lines 40 and 41. That is a §12.1 / §14 rule 1 disagreement between two surfaces, in another lane's file, whose fix's blast radius is three gates this integration must not regress. Recorded as knownGaps[0] in script/m55/verify-relations.ts with its numbers, and gated there so the future fix cannot land unverified (contract F7).",
       "THE §2 FIXTURE'S PRE-EXISTING ROWS DIVERGE FROM THE PRODUCTION JOIN, and U0 says so out loud. Rows whose source_symbol_id is NULL have their site coordinates served as the source side, which the production LEFT JOIN cannot produce (it yields NULL for every source_* column). Those rows are retained so wave-1's accepted numbers keep their meaning; the §2 rows use the real join. A fixture that quietly laundered both shapes would prove nothing about production.",
       "no claim is made about call hierarchy: src/lsp/call_hierarchy.ts is another lane's file, actively being edited for the same migration, and was neither read for behaviour nor modified here.",
     ],
@@ -2142,6 +2275,7 @@ async function main(): Promise<void> {
       "src/lsp/server.ts:607 (textDocument/references) — `return r.locations.map(navLocationToWire)` turns a declared absence into a bare `[]`, which contract §11.7 calls a violation ('silent empty results that look like no references found'). LSP 3.18 requires Location[] for this request, so the honest options are: (a) a window/logMessage with r.absence.detail, or (b) the client reading a custom field — neither is available on this wire shape.",
       "src/lsp/server.ts:547 (textDocument/hover) — `if (r.contents === null || r.range === null || r.data === null) return null` discards provenance.limitations, which already names the language and the launch set. Same wire constraint as above.",
       "NEW IN WAVE 2 — src/lsp/server.ts:729 navLocationToWire copies only path/line/character/endLine/endCharacter, so it DROPS loc.callSite. Consequence: the editor receives correct line-only ranges but cannot tell an exact call site from a labelled declaration substitute, and cannot see either omission counter. That is §15.2's identity requirement unmet at the wire. LSP permits extra properties on a Location object, so the fix is available; the wire shape is the server's decision and that file is not this lane's.",
+      "NEW IN THE M55.T3 INTEGRATION — the same navLocationToWire also drops `coalescedRows`, the counter the integration added. Consequence at the wire: an editor showing a find-references list cannot learn that two stored rows share one of the served places. The wire count (`locations.length`) is still correct and still equals hover's count, so §14 rule 1's numeric requirement holds on the wire; what is missing is the multiplicity declaration. One line in server.ts, outside this lane's ownership.",
     ],
   }
 

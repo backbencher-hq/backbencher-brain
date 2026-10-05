@@ -18,8 +18,11 @@
 //      ONE group, never two rows with the same name.
 //   L2 multiplicity declared: every group states relationshipTypes (type +
 //      stored-row occurrences) and occurrences (== rows.length).
-//   L3 nothing dropped:       every stored row id in the input appears in
-//      exactly one group's rows (the verifier diffs against the db).
+//   L3 nothing dropped:       every stored row id the SERVED input carries
+//      appears in exactly one group's rows (the verifier diffs against the db).
+//      The rows this surface declares it does not serve at all — self-loops and
+//      declaration containments — are named in `declaredExclusions` on the
+//      payload, so "dropped" is a declared filter and never a silent one.
 //   L4 file-level + external rows live in DECLARED, labeled sections — never
 //      merged into symbol rows, never dropped (Understanding Rules §13.5).
 //   L5 deterministic order:   groups sort by file, then name — a stable
@@ -29,6 +32,37 @@
 // the mutation suite and every consumer exercise it through the same code.
 
 import type { CallSiteAddress, GraphEdge, GraphNode, GraphTraversalResult } from "../intelligence/contracts"
+// M55.T3 (§14 Truth Rule 1): the ONE relation vocabulary. The hub answers the
+// same question hover and `textDocument/references` answer, so it reads the same
+// rule rather than keeping a private filter — a second filter is a second answer.
+import { isDeclarationRelationship, USAGE_COUNT_UNIT_LABEL } from "./relations"
+
+/** The relationship kinds this surface DECLARES it does not serve as a usage,
+ *  in the payload's own vocabulary (Understanding Rules §15.1: a surface that
+ *  filters differently states its filter). Machine-readable, never prose-only:
+ *  a client can diff these against its own traversal and say why a stored row
+ *  it holds is not in the list. */
+export const USAGES_DECLARED_EXCLUSIONS = {
+  /** A stored row whose BOTH ends are this symbol — an analyzer artifact, not a
+   *  use of anything. Already excluded before this wave (the self-loop fix). */
+  selfReferentialRows: "an analyzer artifact: the row's source and target are the same symbol",
+  /** `contains`/`exports` — how a symbol is DECLARED, never who uses it.
+   *  `Greeter contains greet` is not `Greeter` USING `greet`; it is `greet` being
+   *  a member of `Greeter`. Serving the declaration containment as a caller
+   *  listed a class among the users of its own member, which is the exact
+   *  inversion the vocabulary exists to prevent (src/lsp/relations.ts:
+   *  "a declaration is never a usage"). Found live by the M55.T3 gate on the
+   *  merged branch: `Greeter` was rendered as a caller of `greet`.
+   *
+   *  WHY HERE AND NOT IN THE ENGINE'S DEFAULT TYPE LIST: the traversal must walk
+   *  `contains` — a graph rooted at a class cannot reach that class's own
+   *  methods without it (src/intelligence/graph/graph-engine.ts:28-30, where
+   *  dropping it was measured as structural damage). The exclusion is a property
+   *  of the USAGES vocabulary, not of the walk, so it belongs at the usages
+   *  grouping — the module the codebase already calls "the SINGLE owner of the
+   *  grouping" — and `mode: "graph"` keeps serving every stored kind. */
+  declarationContainments: "declaration containments (contains/exports) declare a symbol; they are never usages of it",
+} as const
 
 /** One stored relationship row as it survives grouping. Nothing about the
  *  row is dropped: rowId keeps it traceable, evidenceClass/enrichment ride
@@ -152,6 +186,24 @@ export interface GroupedUsages {
     truncationReason?: string
     crossLanguageGroups: number
   }
+  /** §14 Truth Rule 1, second half: this surface filters, and says so ON THE
+   *  WIRE. Every stored row the traversal returned and this payload does not
+   *  serve is named here with its reason, so a client holding a row this list
+   *  omits can tell "not a usage" from "not reached". Absent before this wave,
+   *  which is why the hub's caller count could disagree with hover's without
+   *  either surface being able to say why. */
+  declaredExclusions?: typeof USAGES_DECLARED_EXCLUSIONS
+  /**
+   * M55.T3 integration: what a hub COUNT counts, in the payload beside `counts`.
+   * `counts.callerGroups` is groups (symbols) and `counts.callerRows` is stored
+   * rows; NEITHER is "usages" — the hub's list is one group per symbol, while the
+   * hover's is one row per place. A client that renders either number under the
+   * bare word "callers" makes a claim §14 rule 1 does not license, and this
+   * field is what lets it render the right one. The sentence is the vocabulary
+   * owner's single copy (USAGE_COUNT_UNIT_LABEL in src/lsp/relations.ts), so no
+   * surface can paraphrase the unit into its own dialect.
+   */
+  countUnit?: string
   annotations?: GraphTraversalResult["annotations"]
 }
 
@@ -240,16 +292,21 @@ export function groupUsagesEdges(result: GraphTraversalResult): { callers: Usage
   // X calls root). Callee edge X→Y: group Y (the callee), parent X (X calls
   // Y, root calls X). Depth-0 rows therefore parent to the root symbol id.
   //
-  // M55.T3 (§14 Truth Rule 1): a SELF-REFERENTIAL row (from === to) is an
-  // analyzer artifact, not a usage — it must not appear as the symbol's own
-  // caller in the hub. The same row is excluded by the hover's collector
-  // (rich_hover) and by the SQL count (relations.countUsageSites); the hub
-  // answers the same question, so it applies the same rule. Found live by the
-  // T3 gate: the graph listed `greet` among greet's callers.
-  const noSelfLoops = <T extends { from: string; to: string }>(edges: readonly T[]): T[] =>
-    edges.filter((e) => e.from !== e.to)
-  const callerMap = groupSide(noSelfLoops(result.callers ?? []), result.nodes ?? {}, (e) => e.from, (e) => e.to)
-  const calleeMap = groupSide(noSelfLoops(result.callees ?? []), result.nodes ?? {}, (e) => e.to, (e) => e.from)
+  // M55.T3 (§14 Truth Rule 1): TWO exclusions, ONE vocabulary
+  // (src/lsp/relations.ts). Both are declared in the payload
+  // (`USAGES_DECLARED_EXCLUSIONS`), so neither is a silent thinning:
+  //   - a SELF-REFERENTIAL row (from === to) is an analyzer artifact, not a
+  //     usage. Found live by the T3 gate: the graph listed `greet` among
+  //     greet's own callers.
+  //   - a DECLARATION CONTAINMENT (`contains`/`exports`) is how a symbol is
+  //     DECLARED, never who uses it. Found live by the same gate: `Greeter`
+  //     (the class that CONTAINS `greet`) was rendered as a caller of `greet`.
+  //     The predicate is the vocabulary owner's, not a local type list, so this
+  //     surface cannot drift from hover's or references'.
+  const usageRowsOnly = <T extends { from: string; to: string; relationshipType: string }>(edges: readonly T[]): T[] =>
+    edges.filter((e) => e.from !== e.to && !isDeclarationRelationship(e.relationshipType))
+  const callerMap = groupSide(usageRowsOnly(result.callers ?? []), result.nodes ?? {}, (e) => e.from, (e) => e.to)
+  const calleeMap = groupSide(usageRowsOnly(result.callees ?? []), result.nodes ?? {}, (e) => e.to, (e) => e.from)
   return { callers: finalize(callerMap), callees: finalize(calleeMap) }
 }
 
@@ -280,6 +337,8 @@ export function buildGroupedUsages(
       truncationReason: result.summary.truncationReason,
       crossLanguageGroups,
     },
+    declaredExclusions: USAGES_DECLARED_EXCLUSIONS,
+    countUnit: USAGE_COUNT_UNIT_LABEL,
     annotations: result.annotations,
   }
 }

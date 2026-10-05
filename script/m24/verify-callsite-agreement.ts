@@ -219,9 +219,16 @@ const DISAGREEMENT_PLANTS: Array<{ name: string; from: string; to: string; caugh
     // cannot place. Zeroing a counter that is already zero is a no-op, and
     // calling that a "survivor" would be the same error as a load failure
     // counted as a catch: reporting a gate that was never engaged.
+    // M55.T3 integration: the anchor carries the payload's full tail, because the
+    // surface grew a THIRD counter after this plant was written (`coalescedRows`,
+    // §13.2's declared multiplicity). The plant is unchanged in what it tests —
+    // zeroing an omission counter so a row vanishes with nothing declared — but
+    // an anchor that no longer matches is a HARNESS FAILURE, which is what this
+    // gate reported until the anchor was updated. A stale anchor that silently
+    // stops testing anything is worse than a red one.
     name: "an omission counter is zeroed, so a row vanishes with nothing declared",
-    from: "    omittedUnpositionable,\n  };",
-    to: "    omittedUnpositionable: 0,\n  };",
+    from: "    omittedUnpositionable,\n    coalescedRows,\n  };",
+    to: "    omittedUnpositionable: 0,\n    coalescedRows,\n  };",
     caughtBy: "A2-STORE",
     needsUnpositionableRows: true,
   },
@@ -640,7 +647,14 @@ async function main(): Promise<void> {
       const stored = graphUsageRows(db, resolved.id).length
       const result = resolveReferences(db, { filePath: target.path, line: target.line, character: target.character, includeDeclaration: false })
       if (result.absence !== null) { declaredAbsent++; continue }
-      if (result.totalCount + result.omittedUnresolvable + result.omittedUnpositionable === stored) rowCountAgreements++
+      // M55.T3 integration: the account has FOUR terms, not three. `coalescedRows`
+      // counts stored rows whose served position another row already occupies —
+      // they are neither served nor omitted, and reading them as unaccounted is
+      // the same mistake as the launch-gate one above in the opposite direction
+      // (before this term, every real index with two rows at one stored line
+      // would have reported a false disagreement).
+      const accounted = result.totalCount + result.omittedUnresolvable + result.omittedUnpositionable + result.coalescedRows
+      if (accounted === stored) rowCountAgreements++
       else {
         rowCountDisagreements++
         if (rowCountExamples.length < 20) {
@@ -651,7 +665,8 @@ async function main(): Promise<void> {
             servedRows: result.totalCount,
             omittedUnresolvable: result.omittedUnresolvable,
             omittedUnpositionable: result.omittedUnpositionable,
-            unaccounted: stored - result.totalCount - result.omittedUnresolvable - result.omittedUnpositionable,
+            coalescedRows: result.coalescedRows,
+            unaccounted: stored - accounted,
           })
         }
       }
