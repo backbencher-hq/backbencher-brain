@@ -632,4 +632,177 @@ export const NIM_MUTANTS: NimMutant[] = [
       }),
     }),
   },
+  // ═══════════════════════════════════════════════════════════════════════
+  // M60 cause C — the standard-library marker, in both directions
+  //
+  // Two mutants rather than one, because "never marked" and "always marked" are
+  // opposite defects and a pin written for either one alone is satisfied by the
+  // other. The corpus sizes the gap between them: 485 `imports` edges are declared
+  // nowhere in the corpus, of which 66 carry a `std/` prefix and 419 do not
+  // (validation/m14/measurements/nim/s18-import-probe.txt).
+  // ═══════════════════════════════════════════════════════════════════════
+  {
+    id: "nim/stdlib-marker-dropped",
+    language: "nim",
+    defectClass: "missing-metadata",
+    description:
+      "The `std/` prefix stops being recognised, so every standard-library import is " +
+      "emitted indistinguishably from a local one. The edges are still correct and " +
+      "still resolve where the corpus contains the module — this removes a LABEL, not " +
+      "an edge, which is exactly why it needs its own pin: the resolution census is " +
+      "blind to it. `nim/module-target` pins `meta.nimStdlibModule: true` on the three " +
+      "`std/` rows (`os`, `strutils`, `globs`).",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((e: any) => {
+        if (!e?.metadata || e.metadata.nimStdlibModule === undefined) return e
+        const { nimStdlibModule: _dropped, ...rest } = e.metadata
+        return { ...e, metadata: rest }
+      }),
+    }),
+  },
+  {
+    id: "nim/stdlib-marker-over-applied",
+    language: "nim",
+    defectClass: "fabricated-metadata",
+    description:
+      "The marker is applied to EVERY `imports` edge, which is the fabrication this " +
+      "workstream calls its most expensive mistake: it asserts that a local module is " +
+      "part of the standard library. `import ../shared` and `import ./helpers` would " +
+      "both be marked, and 309 of the 485 unbindable corpus edges are BARE names — a " +
+      "local module, a `lib/pure` module (`import re`) and a typo are the same string in " +
+      "one file and nothing per-file separates them. Caught by nim/module-target's " +
+      "`meta.nimStdlibModule: null` row on the `../shared` edge, which the runner reads " +
+      "as \"must not carry this key\". The first version of this mutant was verified by " +
+      "hand before registration: marking every import made nim/module-target FAIL on " +
+      "that row alone.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((e: any) =>
+        String(e?.type ?? "").toLowerCase() === "imports"
+          ? { ...e, metadata: { ...(e.metadata ?? {}), nimStdlibModule: true } }
+          : e,
+      ),
+    }),
+  },
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // M60 module identity, PART 2 — re-arming three guards the target
+  // normalisation silently disarmed
+  //
+  // Three nim mutants live in `script/m14/mutate-analyzer.ts` (shared machinery,
+  // workstream §8) whose transforms select edges by their PATH-SHAPED target:
+  // `String(x.target).startsWith("../")`, `String(x.target).split("/").length > 2`,
+  // and `x.target === "std/os" || x.target === "std/strutils"`. The module pass
+  // normalised every target to its last segment, so all three filters now match
+  // NOTHING, each transform is a no-op, and all three SURVIVE:
+  //
+  //   SURVIVED nim/relative-import-lost              (0 -> 0 failures)
+  //   SURVIVED nim/deep-import-path-lost             (0 -> 0 failures)
+  //   SURVIVED nim/module-list-collapsed-to-one-edge (0 -> 0 failures)
+  //   (s18-mutants.txt, BB_MUTANT_ONLY=nim/)
+  //
+  // A mutant that can no longer express its defect is not a passing mutant, so
+  // each is re-expressed below against the CURRENT contract — selecting on
+  // `meta.nimModulePath`, which the pass preserved deliberately, so the guard
+  // survives the next normalisation too. The shared copies are reported, not
+  // edited.
+  //
+  // A fourth shared mutant, `nim/cross-file-macro-called-without-an-import`, is
+  // HALF disarmed: its `imports[].module !== "./mac"` half still fires (that array
+  // keeps the written path) but its `x.target === "./mac"` half is a no-op. It is
+  // still CAUGHT, by the imports half alone, and that is stated rather than left
+  // to look intact.
+  // ═══════════════════════════════════════════════════════════════════════
+  {
+    id: "nim/relative-import-edge-dropped-v2",
+    language: "nim",
+    defectClass: "relationship-loss",
+    description:
+      "A relative import publishes no edge — the replacement for the disarmed " +
+      "`nim/relative-import-lost`. The pre-fix rule only read the infix path shape, " +
+      "so the leading `./` — a PREFIX operator, not a path segment — made every " +
+      "`import ./sibling` vanish, and a three-file module whose files all import each " +
+      "other relatively measured 0 imports. Selected on `meta.nimModulePath`, which " +
+      "keeps the written `./helpers` and `../shared` the old filter looked for, while " +
+      "the target is the module name. Caught by nim/contract's expectRelationships " +
+      "{imports -> helpers} and {imports -> shared}, and by nim/module-target's " +
+      "{imports -> shared} row.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter((e: any) => {
+        if (String(e?.type ?? "") !== "imports") return true
+        const w = String(e?.metadata?.nimModulePath ?? "")
+        return !(w.startsWith("./") || w.startsWith("../"))
+      }),
+    }),
+  },
+  {
+    id: "nim/deep-import-path-edge-dropped-v2",
+    language: "nim",
+    defectClass: "relationship-loss",
+    description:
+      "A path deeper than two segments publishes no edge — the replacement for the " +
+      "disarmed `nim/deep-import-path-lost`. The grammar models the separator as a " +
+      "NAMED `operator` node whose text is the whole token (`/`, or `/../` fused with " +
+      "a parent hop), so `op.type` is never `/` and an identifier/identifier test never " +
+      "matched: 171 deep-path imports across 141 corpus files and 434 multi-segment " +
+      "relative imports across 299 files published nothing, and because the whole path " +
+      "vanished there was no dangling target to surface it. Caught by nim/contract's " +
+      "expectImports {module: std/private/globs} AND its expectRelationships sibling " +
+      "{imports -> globs} — both, because the imports half and the edge half fail " +
+      "independently and pinning only one leaves the other unguarded.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter((e: any) => {
+        if (String(e?.type ?? "") !== "imports") return true
+        const w = String(e?.metadata?.nimModulePath ?? "")
+        return w.split("/").length <= 2
+      }),
+    }),
+  },
+  {
+    id: "nim/module-list-collapsed-to-one-edge-v2",
+    language: "nim",
+    defectClass: "relationship-loss",
+    description:
+      "`import std/[os, strutils]` publishes ONE edge for the whole list instead of one " +
+      "per element, so a two-module import becomes a single dependency on a name no " +
+      "file has — the replacement for the disarmed " +
+      "`nim/module-list-collapsed-to-one-edge`, which matched the old target strings " +
+      "`std/os`/`std/strutils` and therefore matched nothing once the targets became " +
+      "`os`/`strutils`. Caught by nim/module-target's two rows for `os` and `strutils` " +
+      "and nim/contract's expectImports {module: std/os} + {module: std/strutils}: one " +
+      "pin alone would pass, which is why both are there.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter((e: any) => {
+        if (String(e?.type ?? "") !== "imports") return true
+        const w = String(e?.metadata?.nimModulePath ?? "")
+        return !(w === "std/os" || w === "std/strutils")
+      }),
+    }),
+  },
+  {
+    id: "nim/from-import-edge-dropped-without-its-imports-row",
+    language: "nim",
+    defectClass: "dangling-edge",
+    description:
+      "A from-import keeps its `imports[]` row and loses only its `imports` EDGE — the " +
+      "half of `nim/cross-file-macro-called-without-an-import` that the target " +
+      "normalisation disarmed, isolated so it can be caught on its own. Its shared " +
+      "twin still passes because its `imports[].module` half fires; this one fires only " +
+      "the dead half, and before this entry it was the state of the shared mutant: a " +
+      "guard whose edge clause could not fail. A file-dependency consumer reads the " +
+      "EDGE, so an imports row with no edge is exactly the invisible-dependency defect " +
+      "the family `imports` type exists to prevent. Caught by nim/contract's " +
+      "expectRelationships {imports -> mac} and nim/module-target's four rows.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter((e: any) => {
+        if (String(e?.type ?? "") !== "imports") return true
+        return String(e?.metadata?.nimModulePath ?? "") !== "./mac"
+      }),
+    }),
+  },
 ]
