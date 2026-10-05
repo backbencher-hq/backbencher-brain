@@ -272,6 +272,12 @@ interface KindCoverage {
   declaredReason: string | null
   /** stored rows that are neither rendered nor declared — a SILENT GAP */
   silentGap: number
+  /** stored rows rendered under a verb that contradicts the row's own class —
+   *  a LABEL LIE (a `uses` row captioned "declares"). Tracked apart from
+   *  silentGap because it is the mirror defect: the row IS on the card, under
+   *  the wrong words, which is worse than absent. */
+  mislabelled: number
+  mislabelledExamples: string[]
   /** the renders that were claimed but whose target is NOT an index-stored
    *  location for the row (a guessed link — §12.1) */
   offTarget: number
@@ -321,8 +327,10 @@ for (const kind of CANONICAL_RELATIONSHIP_KINDS) {
     declaredAbsent: 0,
     declaredReason: DECLARED_ABSENCE.find((d) => d.kind === kind)?.reason ?? null,
     silentGap: 0,
+    mislabelled: 0,
     offTarget: 0,
     silentGapExamples: [],
+    mislabelledExamples: [],
   })
 }
 for (const [alias, canonical] of Object.entries(RELATIONSHIP_KIND_ALIASES)) {
@@ -391,13 +399,33 @@ for (const pin of PINS) {
     // target under a label that says the wrong fact is a defect, not coverage.
     const want = verbFor(row.kind, row.direction)
     const declaration = isDeclarationRelationship(row.kind)
-    const verbed = atTarget.some((l) => {
+    // The verb must agree with the row's CLASS in BOTH directions.
+    //
+    // Checking only "a declaration renders under some containment word" is half
+    // a law, and the half that was missing let the D1 mutant survive: it moved
+    // `uses` into relations.ts's declaration set, so `uses` rows stopped being
+    // usage sites and started rendering under the word `declares` — and a
+    // metric that accepted any containment word scored them 100% covered. That
+    // card is a LIE in the exact direction the owner's decision names: a usage
+    // relabelled as a declaration. So a NON-declaration row rendering under a
+    // containment word counts as NOTHING, and it is reported as its own class of
+    // defect rather than folded into the silent-gap count.
+    const mislabelled = atTarget.some((l) => isContainmentVerb(l.verb) && !declaration)
+    const verbed = !mislabelled && atTarget.some((l) => {
       const v = l.verb
       if (v === "") return false
       if (declaration) return isContainmentVerb(v)
       return want !== null && v === want
     })
     if (verbed) entry.renderedWithVerb++
+    else if (mislabelled) {
+      entry.mislabelled++
+      if (entry.mislabelledExamples.length < 3) {
+        entry.mislabelledExamples.push(
+          `${row.direction} ${row.id} ${row.kind} rendered under the containment word ${JSON.stringify(atTarget.map((l) => l.verb))} — a ${row.kind} row is not a declaration`,
+        )
+      }
+    }
     else {
       // A link is present but carries no verb, or a verb the kind does not
       // declare. That is the unlabelled-render defect the owner's decision
@@ -420,9 +448,10 @@ for (const e of kindTable) {
   const pctStr = stored === 0 ? "  n/a (kind not stored in this fixture)" : `  ${((100 * e.renderedWithVerb) / stored).toFixed(1)}%`
   console.log(
     `  ${e.kind.padEnd(13)} stored ${String(stored).padStart(2)} (out ${e.storedOutgoing}, in ${e.storedIncoming})` +
-      `  verb ${String(e.renderedWithVerb).padStart(2)}${pctStr}  usage-list ${e.renderedAsUsage}  declared ${e.declaredAbsent}  SILENT ${e.silentGap}`,
+      `  verb ${String(e.renderedWithVerb).padStart(2)}${pctStr}  usage-list ${e.renderedAsUsage}  declared ${e.declaredAbsent}  MISLABELLED ${e.mislabelled}  SILENT ${e.silentGap}`,
   )
   for (const ex of e.silentGapExamples) console.log(`       gap: ${ex}`)
+  for (const ex of e.mislabelledExamples) console.log(`       MISLABELLED: ${ex}`)
 }
 const storedAllKinds = sum((e) => (e.known.distinctIncomingKinds.length + e.known.distinctOutgoingKinds.length))
 const verbRowsAllKinds = kindTable.reduce((n, e) => n + e.renderedWithVerb, 0)
@@ -469,7 +498,15 @@ function storedKindsOnPins(): Set<string> {
   return kinds
 }
 
-/** D1's predicate: a stored kind that neither renders nor is declared.
+/** D1's predicate: a stored kind that neither renders nor is declared, or that
+ *  renders only under a label contradicting its own class.
+ *
+ *  The mislabelled half is what makes this the check that owns D1's defect. D1
+ *  moves a kind into relations.ts's declaration set: the rows stop being usage
+ *  sites and reappear in the containment section under the word `declares`. A
+ *  predicate that asked only "does the kind render somewhere" scored that 100%
+ *  covered and D1 survived — verified by the red-team, which is the only thing
+ *  that could have found it.
  *
  *  `table` is a parameter so the mutant leg can hand it a doctored measurement.
  *  Re-reading the index here would make the leg unable to describe a mutation
@@ -478,7 +515,8 @@ function undeclaredKinds(kinds: Iterable<string>, table: Map<string, KindCoverag
   return [...kinds].filter((kind) => {
     const e = table.get(kind)
     if (e === undefined) return false
-    return e.renderedWithVerb + e.renderedAsUsage === 0 && e.declaredAbsent === 0
+    const rendered = e.renderedWithVerb + e.renderedAsUsage
+    return (rendered === 0 && e.declaredAbsent === 0) || e.mislabelled > 0
   })
 }
 
@@ -519,21 +557,66 @@ function unjustifiedTiers(entries: Iterable<{ label: string; tiers: readonly str
   return out
 }
 
-const { classifyStoredRow } = await import(path.join(ROOT, "src/lsp/evidence_tier.ts")) as {
-  classifyStoredRow: (row: { relationship_type: string; confidence: number | null; metadata?: string | null }) => string
+// --- D3's oracle: an INDEPENDENT derivation, written HERE --------------------
+//
+// The first version of this check called `classifyStoredRow` — the very function
+// the D3 mutant rewrites — and compared its answer against the card's tier line.
+// That is the tautological oracle §8.7 names: when the planted defect changes the
+// function, the oracle changes with it, the two sides agree, and the check
+// reports green. The red-team proved it by surviving the mutation.
+//
+// So the expected tiers are derived HERE, from the stored row's own columns,
+// with this gate's own tables. It is a second implementation of the declared
+// rule — deliberately, and stated as one: an independent oracle is the only kind
+// that can disagree with the implementation. It reads `metadata.evidenceClass`
+// and the stored kind/confidence directly out of the index, so a mutation in
+// src/lsp/evidence_tier.ts cannot reach it.
+//
+// The rule it implements (src/lsp/evidence_tier.ts, header):
+//   1. a stored evidenceClass that is one of the five legend tiers wins;
+//   2. a structural kind at confidence >= 0.7 is `structural`, below the floor it
+//      is `inferred`;
+//   3. imports -> import_based; reference/references/use/uses/usage ->
+//      usage_contextual; references_qualified -> reference_qualified;
+//   4. anything else -> inferred.
+const LEGEND_TIERS = new Set(["structural", "import_based", "usage_contextual", "reference_qualified", "inferred"])
+const STRUCTURAL_KINDS = new Set(["call", "calls", "extends", "inherits", "implements", "overrides", "override", "contains", "exports", "instantiates"])
+const IMPORT_KINDS = new Set(["import", "imports"])
+const USAGE_CONTEXT_KINDS = new Set(["reference", "references", "use", "uses", "usage"])
+const REFERENCE_QUALIFIED_KINDS = new Set(["references_qualified", "reference_qualified"])
+const STRUCTURAL_FLOOR = 0.7
+
+/** THIS GATE's derivation of the tier a stored row justifies. Deliberately a
+ *  second implementation, not a call into the module under test. */
+function independentTier(row: { relationship_type: string; confidence: number | null; metadata: string | null }): string {
+  const stored = (() => {
+    if (row.metadata === null || row.metadata === undefined) return null
+    try {
+      const parsed = JSON.parse(row.metadata) as { evidenceClass?: unknown }
+      return typeof parsed.evidenceClass === "string" ? parsed.evidenceClass : null
+    } catch {
+      return null
+    }
+  })()
+  if (stored !== null && LEGEND_TIERS.has(stored)) return stored
+  const t = row.relationship_type.trim().toLowerCase()
+  if (STRUCTURAL_KINDS.has(t)) return (row.confidence ?? 0) >= STRUCTURAL_FLOOR ? "structural" : "inferred"
+  if (IMPORT_KINDS.has(t)) return "import_based"
+  if (USAGE_CONTEXT_KINDS.has(t)) return "usage_contextual"
+  if (REFERENCE_QUALIFIED_KINDS.has(t)) return "reference_qualified"
+  return "inferred"
 }
 
-/** The tiers the INDEX justifies for a symbol — the owner's own derivation over
- *  the stored rows, read with independent SQL. This is the D3 oracle: it reads
- *  the STORE, while the rendered tiers are read off the CARD. Two different
- *  reads, so a card that invents a tier cannot inherit the invention. */
+/** The tiers the INDEX justifies for a symbol, from the stored rows' own
+ *  columns. The rendered side is read off the CARD, so the two sides are two
+ *  different reads of two different things. */
 function justifiedTiersFor(symbolId: string): Set<string> {
   const rows = raw
     .prepare(
       "SELECT relationship_type, confidence, metadata FROM brain_relationship WHERE source_symbol_id = ? UNION SELECT relationship_type, confidence, metadata FROM brain_relationship WHERE target_symbol_id = ?",
     )
     .all(symbolId, symbolId) as Array<{ relationship_type: string; confidence: number | null; metadata: string | null }>
-  const set = new Set(rows.map((row) => classifyStoredRow(row)))
+  const set = new Set(rows.map(independentTier))
   set.add("unknown")
   return set
 }
@@ -564,26 +647,45 @@ const tierEntries = PINS.map((pin) => ({
   )
 }
 // D1/MUTANT: the SAME predicate, on a doctored measurement that reproduces D1's
-// shape — a stored kind whose rows render nowhere and which nobody declared. If
-// this predicate returns that kind, the check above is real; if it returns
-// nothing, the check above cannot fail and D1 is uncaught.
+// shape. D1 has TWO shapes and the predicate must reject both:
+//
+//   (a) the kind renders nowhere — the classic "dropped kind";
+//   (b) the kind renders ONLY under a label contradicting its class — D1's
+//       actual effect, since moving a kind into the declaration set moves its
+//       rows into the containment section under the word `declares` rather than
+//       deleting them. A predicate that tested only (a) let D1 survive, which
+//       the red-team demonstrated.
+//
+// A leg that only exercised (a) would have kept that hole open while reporting
+// the mutation caught, which is the failure this block exists to prevent.
 {
-  // The doctored table: `uses` loses every rendered row, exactly as the planted
-  // mutation makes it. Nothing else is touched, so a violation reported here is
-  // attributable to that one change.
-  const doctored = new Map<string, KindCoverage>(
-    [...kindCoverage].map(([k, v]) => [k, { ...v }]),
-  )
-  const usesEntry = doctored.get("uses")
-  if (usesEntry !== undefined) {
-    usesEntry.renderedWithVerb = 0
-    usesEntry.renderedAsUsage = 0
+  const clone = (): Map<string, KindCoverage> => new Map([...kindCoverage].map(([k, v]) => [k, { ...v }]))
+  // (a) renders nowhere
+  const dropped = clone()
+  const droppedUses = dropped.get("uses")
+  if (droppedUses !== undefined) {
+    droppedUses.renderedWithVerb = 0
+    droppedUses.renderedAsUsage = 0
   }
-  const caught = undeclaredKinds(new Set(["uses"]), doctored)
+  const caughtA = undeclaredKinds(new Set(["uses"]), dropped)
   check(
-    "D1/MUTANT: the D1 predicate reports a stored kind that renders nowhere (a check that could not fail would return nothing here)",
-    caught.includes("uses"),
-    `predicate returned [${caught.join(", ")}] for a doctored table where \`uses\` renders 0 rows and is undeclared`,
+    "D1/MUTANT (a): the D1 predicate reports a stored kind that renders nowhere",
+    caughtA.includes("uses"),
+    `predicate returned [${caughtA.join(", ")}] for a doctored table where \`uses\` renders 0 rows and is undeclared`,
+  )
+  // (b) renders only under a label that contradicts its class
+  const relabelled = clone()
+  const relabelledUses = relabelled.get("uses")
+  if (relabelledUses !== undefined) {
+    // Still "rendered", but every row carries a containment word.
+    relabelledUses.mislabelled = relabelledUses.renderedWithVerb
+    relabelledUses.renderedWithVerb = 0
+  }
+  const caughtB = undeclaredKinds(new Set(["uses"]), relabelled)
+  check(
+    "D1/MUTANT (b): the D1 predicate REJECTS a kind rendered only under a label contradicting its class (D1's real effect — the rows reappear in the containment section, so testing only 'renders nowhere' misses it)",
+    caughtB.includes("uses"),
+    `predicate returned [${caughtB.join(", ")}] for a doctored table where \`uses\` renders 4 rows captioned \`declares\``,
   )
 }
 
@@ -653,14 +755,53 @@ const tierEntries = PINS.map((pin) => ({
   )
 }
 // D3/MUTANT: the SAME predicate, on a card whose tier line carries a tier the
-// index never stored.
+// index never stored. Two legs, because D3 is a FABRICATION and the first leg
+// only proved the predicate notices an invented word:
+//
+//   (a) an invented tier name on the card;
+//   (b) the REAL fabrication: a row the index stored no evidenceClass for,
+//       rendered at parser-fact tier. The oracle here is this gate's OWN
+//       derivation over the stored columns, so a mutation of
+//       src/lsp/evidence_tier.ts cannot move the expectation with it — which is
+//       exactly how the first version of this check survived D3.
 {
   const doctored = tierEntries.map((e) => ({ ...e, tiers: [...e.tiers, "structural-v2"] }))
   const caught = unjustifiedTiers(doctored)
   check(
-    "D3/MUTANT: the D3 predicate reports a tier the index never stored",
+    "D3/MUTANT (a): the D3 predicate reports a tier name the index never stored",
     caught.length > 0,
-    caught.length > 0 ? `reported: ${caught[0]}` : "the predicate accepted a fabricated tier, so it cannot catch D3",
+    caught.length > 0 ? `reported: ${caught[0]}` : "the predicate accepted an invented tier name, so it cannot catch D3",
+  )
+  // (b) The real shape. The fixture must store a row whose OWN columns justify a
+  // NON-structural tier, and the card must not claim parser-fact `structural` on
+  // the strength of it. `structural` is a REAL tier name, so only an oracle
+  // independent of the mutated function can reject this; that independence is
+  // the whole point of `independentTier` above.
+  //
+  // Two checks, and the first is what stops the second passing for the wrong
+  // reason: without a victim row, "the predicate rejects a structural claim" is
+  // trivially true because there is nothing to claim about.
+  const nonStructuralRows = (raw
+    .prepare(
+      "SELECT relationship_type, confidence, metadata FROM brain_relationship",
+    )
+    .all() as Array<{ relationship_type: string; confidence: number | null; metadata: string | null }>)
+    .map((row) => ({ kind: row.relationship_type, tier: independentTier(row) }))
+    .filter((x) => x.tier !== "structural")
+  check(
+    "D3/MUTANT (b)/PRECONDITION: the fixture stores rows that justify a NON-structural tier, so the fabrication this leg simulates has a real row to corrupt",
+    nonStructuralRows.length > 0,
+    `rows justifying a non-structural tier: ${nonStructuralRows.length} (e.g. ${nonStructuralRows.slice(0, 3).map((x) => `${x.kind}→${x.tier}`).join(", ")})`,
+  )
+  // A card that justifies ONLY a weaker tier, claiming `structural` for it.
+  const onlyUsageContextual = tierEntries.find((e) => e.justified.has("usage_contextual") && e.justified.size === 1)
+  const victim = onlyUsageContextual ?? tierEntries.find((e) => e.justified.size === 1 && !e.justified.has("structural"))
+  check(
+    "D3/MUTANT (b): the D3 predicate rejects a card claiming parser-fact `structural` over a store that justifies only a weaker tier",
+    victim !== undefined && unjustifiedTiers([{ label: victim.label, tiers: ["structural"], justified: victim.justified }]).length > 0,
+    victim === undefined
+      ? "no card on this fixture justifies a single non-structural tier, so the fabrication has no victim and this leg would pass vacuously"
+      : `card ${victim.label} justifies exactly [${[...victim.justified].sort().join(", ")}]; a ` + "`structural` claim over that store must be reported",
   )
 }
 // --- R4: the call-site differential -----------------------------------------------------
