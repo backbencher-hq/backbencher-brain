@@ -531,7 +531,21 @@ whole corpus and subtracts them:
 `B \ A` is a fabricated edge and `A \ B` is a lost edge, deduped as the store dedups
 on `(source, target, type, line)`.
 
-**set A = 7,890. set B = 7,890. fabricated 0, lost 0.**
+**set A = 7,890. set B = 7,890. fabricated 0, lost 0.** On the full production corpus —
+1,905 files, production `parseFile` — the same probe reads
+**set A = 47,642, set B = 47,642, fabricated 0, lost 0**, and getting there took three
+more corrections, every one of them on the probe's side and two of them turning a
+analyzer defect into a measurement of the walk:
+
+| what the probe reported | what it was |
+|---|---|
+| `NON-ZERO — 0 fabricated, 39 lost` | **not the analyzer.** All 39 sat in **two** files, one of them the file the same run logged `[BB-HANG] parser stuck 120s` on. Re-parsed alone through the same production entry point: `introspection.graphql` → **632 `references` in 637 symbols**, which is exactly the 632 the gate called lost. The count is also **not stable** on an unchanged corpus and an unchanged analyzer — 39 in one run, 639 in the next — because which files hang is a function of machine load, and ten lanes share this machine. A count that moves 16× with no code change is a count about the walk |
+| …then `NON-ZERO — 0 fabricated, 639 lost`, 632 of them in that one file | the walk loses the file, the caller gets an **empty relationship list, and nothing throws** — `parseFile` threw on **0 of 1,905** files, so a `catch`-based guard catches none of it. Set A is now staged per file and merged only for files production emitted references for; the excluded files are counted and named in the artifact rather than silently narrowing the subtraction |
+| …then `NON-ZERO — 0 fabricated, 5 lost`, 1 edge in each of 5 files | **not the analyzer either.** All 5 are a directive definition's argument type attributed to the directive symbol — the convention this probe already encodes. The cause is a **grammar gap**: a directive application on a directive *definition's* argument (`directive @foo(arg: String! @tag(name: "x")) @tag(name: "y") on QUERY`) parses with an `ERROR` node swallowing `@foo(arg: …)`, after which the parser reads the *applied* `@tag(name: "y") on QUERY` as the definition's own name, arguments and locations. The analyzer published `@tag` because `tag` **is** the first direct `Name` child of the node the grammar produced, and it refused the declared-type edge because that `ArgumentsDefinition`'s `Type` node carries MISSING text — which is REVIEW.md finding B2's guard working. The probe climbed out of the ERROR and attributed the damaged `arg: String!` to the healthy definition above it. It now stops at an `ERROR` or a MISSING node, and counts what it declines to assert: **6 declarations sit under a parse ERROR across the corpus** |
+
+The probe has now accused the analyzer of fabricating edges **five** times and been
+wrong five times, and that ratio is the reason its conventions are written down rather
+than assumed.
 
 Getting to a clean 0/0 took four corrections, all on the probe's side, each of which
 had accused the analyzer of fabricating edges that were real:
