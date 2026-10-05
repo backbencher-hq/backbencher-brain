@@ -140,3 +140,25 @@ export function countUsageSites(db: UsageCountDb, symbolId: string): number {
     .get(symbolId) as { c: number } | undefined
   return row?.c ?? 0
 }
+
+/**
+ * The SAME eligibility rule, in the collector's shape — for the audit and for
+ * any caller that must answer "would this row render?" without materializing
+ * the site. It exists because lane 6 measured the collector DROPPING a row the
+ * SQL count still counts (a stored byte column landing mid-code-point, where
+ * navigation.edgeLocation throws instead of returning null), and a count that
+ * disagrees with the list is exactly the defect §14 rule 1 names. A caller
+ * comparing the two MUST apply the same predicate to both sides.
+ */
+export function isResolvableUsageSiteRow(
+  row: { otherName?: string | null; otherPath?: string | null; byteStart?: number | null; byteEnd?: number | null; lineStart?: number | null; lineEnd?: number | null },
+): boolean {
+  return (
+    typeof row.otherName === "string" && row.otherName.length > 0 &&
+    typeof row.otherPath === "string" && row.otherPath.length > 0 &&
+    row.byteStart !== null && row.byteStart !== undefined &&
+    row.byteEnd !== null && row.byteEnd !== undefined &&
+    row.lineStart !== null && row.lineStart !== undefined &&
+    row.lineEnd !== null && row.lineEnd !== undefined
+  )
+}

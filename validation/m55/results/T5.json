@@ -3,8 +3,8 @@
   "code": "T5",
   "milestone": "M55",
   "status": "verified",
-  "checks": 68,
-  "passed": 68,
+  "checks": 74,
+  "passed": 74,
   "failed": 0,
   "realFailed": 0,
   "negativeCases": 7,
@@ -12,14 +12,20 @@
     "total": 7,
     "caught": 7
   },
-  "currentCommit": "9d53dc8f3d900e24276fc2837b1bf8122a0ce70a",
-  "workingTreeRelevantChanges": [],
+  "currentCommit": "a0ed9eade7008de7ce93a312f6b0bd7e182a43a9",
+  "workingTreeRelevantChanges": [
+    "script/m55/verify-relations.ts",
+    "src/lsp/hover.ts",
+    "src/lsp/relations.ts",
+    "src/lsp/rich_hover.ts",
+    "script/m55/verify-hover-coverage.ts"
+  ],
   "verifierCommand": "npx tsx script/m55/verify-tiers.ts",
   "evidenceFile": "T5.json",
-  "generatedAt": "2026-09-19T02:54:13.841Z",
+  "generatedAt": "2026-10-05T00:04:36.580Z",
   "fixture": {
-    "workspace": "/tmp/m55-t5-ws-0jpxiI",
-    "projectId": "81a0c8fb0cce542809c489e2ca101f33ee0e66c9",
+    "workspace": "/var/folders/4j/11tssyqj4kj0f8dfz06jsb700000gn/T/m55-t5-ws-LDe3Nu",
+    "projectId": "f85c0d1a76c3e36d86dbd50bcce73cd48afedf07",
     "symbols": 7,
     "rows": 9
   },
@@ -67,7 +73,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-19T02:54:13.842Z",
-    "contentSha256": "205c22df1d4c110c355430b3ce5deb2b20638f079206b78ada4cccd636bd210a"
+    "sealedAt": "2026-10-05T00:04:36.581Z",
+    "contentSha256": "576eb5c53a56960cddcdae67fac2554804fa760c42cb366b3135487c7c314331"
   }
 }

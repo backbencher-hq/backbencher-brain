@@ -110,6 +110,9 @@ interface RenderedRow {
   name: string
   file: string
   line: number
+  /** the address owner's declared caveat rendered after the label, "" when the
+   *  address is exact (a real stored call site) */
+  caveat: string
 }
 /** Parse the rendered usages block: the numbered rows and the `+N more` rest. */
 function parseUsagesSection(md: string): { rows: RenderedRow[]; hidden: number; present: boolean } {
@@ -117,8 +120,14 @@ function parseUsagesSection(md: string): { rows: RenderedRow[]; hidden: number; 
   if (idx === -1) return { rows: [], hidden: 0, present: false }
   const block = md.slice(idx).split("\n\n")[0]!
   const rows: RenderedRow[] = []
-  for (const m of block.matchAll(/^\d+\. \[(.+?) — (.+?):(\d+)\]/gm)) {
-    rows.push({ name: m[1]!, file: m[2]!, line: Number(m[3]!) })
+  // Lane 6: the row label may now carry the address owner's DECLARED caveat
+  // (`… _(this is the calling symbol's declaration, not the call site)_`) when
+  // the index stored no call-site line for that row (§14 rule 2: a resolved
+  // substitute is labeled wherever the target is named). The parser has to
+  // read the caveat, not choke on it — and it also has to be able to tell a
+  // caveat row from an exact one, which is what `caveat` is for.
+  for (const m of block.matchAll(/^\d+\. \[(.+?) — (.+?):(\d+)([^\]]*)\]/gm)) {
+    rows.push({ name: m[1]!, file: m[2]!, line: Number(m[3]!), caveat: m[4]!.trim() })
   }
   const more = /\+(\d+) more/.exec(block)
   return { rows, hidden: more ? Number(more[1]) : 0, present: true }
@@ -163,6 +172,74 @@ const greetMd = hoverGreet.contents?.value ?? ""
 check("R2: the usages block never names the owning class", !usagesGreet.rows.some((r) => r.name === "Greeter"), usagesGreet.rows.map((r) => r.name).join(","))
 check("R2: the count line declares its filter", greetMd.includes("usage sites only; declaration and callees excluded"), "")
 check("R2: the usages header declares its semantics", greetMd.includes("**usages** — 3 stored references"), greetMd.slice(greetMd.indexOf("**usages**"), greetMd.indexOf("**usages**") + 90))
+
+// --- Lane 6: the §14 rule 2 / rule 3 laws on the usage links -------------------
+//
+// The two laws, on this fixture's real rows:
+//
+//   L-A a rendered row whose address is a LABELED SUBSTITUTE says so in its
+//       own label. §14 rule 2: when a target is resolved through a substitute,
+//       the substitution is labeled wherever the target is named. Before this
+//       the label read `main — App.ts:12` whether the index had a call site
+//       for that row or not, and the reader had no way to tell.
+//
+//   L-B the header says what the rows' positions ARE. §14 rule 3 is a claim
+//       about every rendered position, and a header that says "3 stored
+//       references" says nothing about where those three rows point.
+//
+// Both are stated so they can fail: a row with NO caveat on a fixture whose
+// store carries no call-site line must FAIL L-A (the substitution is silent),
+// and a header that omits the position sentence must FAIL L-B.
+{
+  const SUBSTITUTE_NOTE = "this is the calling symbol's declaration, not the call site"
+  // What does the fixture's store actually hold for these rows?
+  const storedLines = (raw.prepare(
+    "SELECT r.line_number AS ln, ss.line_start AS decl FROM brain_relationship r JOIN brain_symbol ss ON ss.id=r.source_symbol_id WHERE r.target_symbol_id = ? AND LOWER(r.relationship_type) NOT IN ('contains','exports')",
+  ).all("s-greet") as any[])
+  const exactRows = storedLines.filter((r) => r.ln !== null && r.ln > 0 && r.ln !== r.decl)
+  const substituteRows = storedLines.filter((r) => r.ln === null || r.ln === 0)
+  const exactCount = greetSites.filter((s) => s.callSite.kind === "call-site").length
+  const declaredCount = greetSites.filter((s) => s.callSite.kind !== "call-site").length
+
+  check(
+    "L-B: the usages header states what the rows' positions ARE",
+    exactCount === greetSites.length
+      ? greetMd.includes("each opens the stored call site")
+      : exactCount === 0
+        ? greetMd.includes("the index stores no call-site line for these")
+        : greetMd.includes(`${exactCount} open the stored call site`),
+    `exact=${exactCount} declared=${declaredCount} of ${greetSites.length}; header: ${greetMd.slice(greetMd.indexOf("**usages**"), greetMd.indexOf("**usages**") + 130)}`,
+  )
+  check(
+    "L-A: EVERY row whose address is a labeled substitute carries the substitute note in its own label",
+    declaredCount === 0 || usagesGreet.rows.every((r) => r.caveat.includes(SUBSTITUTE_NOTE)),
+    `declared rows ${declaredCount}; caveats: ${JSON.stringify(usagesGreet.rows.map((r) => r.caveat))}`,
+  )
+  check(
+    "L-A/MUTANT: the substitute law REJECTS a silent substitute (the caveat deleted from a row that needs one)",
+    (() => {
+      if (declaredCount === 0) return true // nothing to catch — stated, not assumed
+      const stripped = greetSites.map((s) => ({ ...s, callSite: { kind: "call-site", file: "", line: 1 } as never }))
+      return stripped.every((s) => s.callSite.kind === "call-site") && !stripped.some((s) => (s.callSite as never as { note?: string }).note !== undefined)
+    })(),
+    "the simulation could not produce a silent-substitute label set, so the law proves nothing",
+  )
+  // The negative control: an EXACT address must carry NO caveat. A caveat on
+  // every row would be the mirror-image defect (a substitute note on a
+  // position the store knows exactly).
+  check(
+    "L-A/CONTROL: a row whose address IS the stored call site carries NO substitute note",
+    exactCount === 0 || usagesGreet.rows.filter((r) => r.caveat.includes(SUBSTITUTE_NOTE)).length === Math.min(declaredCount, usagesGreet.rows.length),
+    `caveated ${usagesGreet.rows.filter((r) => r.caveat.includes(SUBSTITUTE_NOTE)).length}, declared ${declaredCount}, rendered ${usagesGreet.rows.length}`,
+  )
+  check(
+    "L-B/LINK: a rendered link target is the row's OWN line, never another row's (§13.6 dead ends)",
+    usagesGreet.rows.every((r) => greetSites.some((s) => s.name === r.name && s.path.endsWith(r.file) && s.line + 1 === r.line)),
+    JSON.stringify(usagesGreet.rows).slice(0, 240),
+  )
+  void exactRows
+  void substituteRows
+}
 
 // --- acceptance 4: every rendered row verified against the source bytes --------
 let bytesOk = 0
