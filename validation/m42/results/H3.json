@@ -17,17 +17,17 @@
     "planned": 5
   },
   "fixture": {
-    "root": "$HOME/Documents/Default Project/ishaq/wt/ledgers/.tools/m42-h2-fixture",
+    "root": "$HOME/Documents/Default Project/ishaq/wt/integrate/.tools/m42-h2-fixture",
     "file": "src/main/java/com/demo/App.java"
   },
   "budgets": {
     "enrichmentReadOverheadP95Ms": 5,
     "hoverP95Ms": 55
   },
-  "currentCommit": "93f85b7a3b4d8005e6683d505e49dfe6d28ef8bf",
+  "currentCommit": "de5ff45a42d9fe209c372d7e2737995daac7b1b0",
   "verifierCommand": "npx tsx script/m42/verify-enrichment-surface.ts",
   "evidenceFile": "H3.json",
-  "generatedAt": "2026-10-05T14:42:03.408Z",
+  "generatedAt": "2026-10-05T15:46:09.680Z",
   "limitations": [
     "Enrichment presence depends on the index enrichment pass running (bb index runs it); an index built with enrichment disabled would show honest absence.",
     "Multi-site verb groups render no per-site hover annotation by design (bounded hover); per-edge enrichment always surfaces on graph edges.",
@@ -35,7 +35,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T14:42:03.410Z",
-    "contentSha256": "de5e3d01b30ad99680e1e7df3f229e28a4bfb87277402c1062c989f70f24465b"
+    "sealedAt": "2026-10-05T15:46:09.682Z",
+    "contentSha256": "9acfc1fd43335715559aa5baa17e207cb6d98eac07ed8929dd66ff69f3001398"
   }
 }
