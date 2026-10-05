@@ -3,12 +3,17 @@
   "date": "2026-10-05",
   "why": "This lane's previous round recorded that the arbiter did not run for markdown. It now runs. Two defects were found by running it, both of which change what its output MEANS, and both are in shared machinery (workstream §8) so neither was edited.",
   "whatChangedUnderneath": "script/m14/resumable-walk.ts now exists and the arbiter calls it, so the walk checkpoints per file path into validation/m14/measurements/walk-markdown.txt. Two prior arbiter runs died before printing any verdict; four runs on 2026-10-05 completed the 17,456-file population and printed a verdict.",
-
   "reproduction": {
     "walkCompleted": {
       "command": "npx tsx script/m14/ontology-coverage-gate.ts markdown",
       "attempts": 4,
-      "checkpointProgression": [4400, 8200, 11612, 15016, 17456],
+      "checkpointProgression": [
+        4400,
+        8200,
+        11612,
+        15016,
+        17456
+      ],
       "finalWalkLine": "walk: 17456/17456 files (100.0%)  newly walked 2440, resumed 15016",
       "corpus": 17456,
       "admittedBy": "detectLanguageFromPath(abs, text) === \"markdown\" — the arbiter's own test, over its own git ls-files walk",
@@ -17,7 +22,6 @@
       "note": "FALSIFIED 0 and ruled-without-justification 0 are STABLE across every run in this audit. The emitted/ruled SPLIT is not — see defect 1."
     }
   },
-
   "defects": [
     {
       "id": "MD-ARB-1",
@@ -28,15 +32,30 @@
       "measured": [
         {
           "population": "17,456 files, 8 workers, 0 parse failures — validation/m60/markdown/whole-corpus-census.json",
-          "uses": 270779, "contains": 334773, "references": 16857, "imports": 105, "calls": 8, "instantiates": 3
+          "uses": 270779,
+          "contains": 334773,
+          "references": 16857,
+          "imports": 105,
+          "calls": 8,
+          "instantiates": 3
         },
         {
           "population": "the arbiter's tally over the 2,440 files it newly walked on its final run (15,016 resumed)",
-          "uses": 30696, "contains": 32034, "references": 342, "imports": 69, "calls": 0, "instantiates": 0
+          "uses": 30696,
+          "contains": 32034,
+          "references": 342,
+          "imports": 69,
+          "calls": 0,
+          "instantiates": 0
         },
         {
           "population": "the arbiter's tally after the checkpoint was complete — `newly walked 0`",
-          "uses": 0, "contains": 0, "references": 0, "imports": 0, "calls": 0, "instantiates": 0
+          "uses": 0,
+          "contains": 0,
+          "references": 0,
+          "imports": 0,
+          "calls": 0,
+          "instantiates": 0
         }
       ],
       "theInvertedVerdict": {
@@ -44,7 +63,12 @@
         "walkLine": "walk: 17456/17456 files (100.0%)  newly walked 0, resumed 17456",
         "verdictLine": "emitted 0/10   ruled-sound 7   FALSIFIED 0   ruled-without-justification 3",
         "exitCode": 1,
-        "typesFlippedToRULEDUNJUSTIFIED": ["uses", "contains", "imports", "references"],
+        "typesFlippedToRULEDUNJUSTIFIED": [
+          "uses",
+          "contains",
+          "imports",
+          "references"
+        ],
         "whyItMatters": "A lane that emits 4 types over 622,525 edges is reported by the arbiter as emitting 0 of 10 and as having 3 unjustified rulings. The four types flipped are EXACTLY the four the analyzer emits, so the failure is not noise — it inverts the lane's verdict on precisely the types it gets right."
       },
       "theFix": "Persist the tally with the checkpoint: have `run` append `<abs path>\\t<type>\\t<n>` to a sidecar beside `walk-<LANG>.txt` BEFORE the next file starts (append-before, for the same reason resumable-walk appends before it parses — a `process.exit()` inside a parse cannot flush at the end), and rebuild `observed` from that sidecar on startup, summing per type and unioning per-type file sets. Then a resumed run reports the union of all runs, and `newly walked 0` reports the whole population instead of nothing.",
@@ -60,7 +84,11 @@
       "measured": {
         "arbiterInstrumentA": 84,
         "thisLaneUnionOverWholePopulation": 108,
-        "breakdown": { "block": 83, "inline": 64, "union": 108 },
+        "breakdown": {
+          "block": 83,
+          "inline": 64,
+          "union": 108
+        },
         "population": "17,456 admitted files, 0 parse failures, both pinned grammars — validation/m60/markdown/ruling-table-adjudication.json instrumentA",
         "source": "validation/m60/markdown/ruling-table-adjudication.json"
       },
@@ -68,9 +96,33 @@
       "whyItMatters": "An A-instrument ruling is a claim about the grammar's whole vocabulary. For markdown the claim is printed over 84 of the 108 node types the corpus's grammars produce. No markdown ruling moves — none of the four ruled constructs (exports/extends/implements/overrides) is expressible in the inline grammar either, and this lane measured that union — but a construct that is INLINE-ONLY would be falsely ruled by a lane whose arbiter inherits this. The union is the only denominator that cannot do that.",
       "affectsEveryLane": "every lane listed in audit-analyzer-grammar.ts EXTRA_GRAMMARS",
       "doesNotMoveARuling": true
+    },
+    {
+      "id": "MD-ARB-3",
+      "severity": "the spec ruling lookup matches the ruling PROSE, so a decision that merely mentions a type in passing is returned as that type's ruling — it manufactures justification and destroys it in the same function",
+      "file": "script/m14/ontology-coverage-gate.ts",
+      "function": "rulingFor(t) — the spec branch, the loop at lines ~384-391",
+      "whatIsWrong": "After the RULED_BY_LANG table misses, the fallback scans `script/m14/spec/<lang>-completeness.json` for a decision with `status: RULED` and accepts the first whose `resolution` PROSE matches /\\b<t>\\b/i (plus a weak `/ontology|emits|excluded|type/i` subject heuristic). The spec already carries a machine-readable subject — `node_type` — and the loop does not read it. A decision about one type that happens to name another while explaining itself is read as the named type's ruling.",
+      "measured": [
+        {
+          "population": "script/m14/spec/markdown-completeness.json, 12 decisions, all status RULED"
+        },
+        {
+          "falsePositive": "MD-D7 declares `node_type: \"ontology:extends\"` and its resolution text contains the word `contains` — 'a section is CONTAINED in a section, which this lane emits as `contains`'. The loop matches it and returns MD-D7 as the ruling for `contains`. Observed in logs/arbiter-run4-full-checkpoint.stdout: `contains  RULED-SOUND  ... Written ruling: script/m14/spec/markdown-completeness.json#MD-D7`."
+        },
+        {
+          "falseNegative": "MD-D12 declares `node_type: \"ontology:calls\"` and its resolution never uses the word `calls`. The same loop therefore returns nothing for `calls`, so the spec path alone would report RULED-UNJUSTIFIED for a type the spec rules. Currently masked because `calls` is row 6 of MARKDOWN_RULED and the table is checked first — so the lane's own table is what hides this, not the spec."
+        },
+        {
+          "everyRow": "MD-D7 prose matches contains+extends; MD-D8/D9/D10/D11 match only themselves; MD-D12 matches nothing; MD-D1..MD-D6 carry non-`ontology:` node_types (link_reference_definition, atx_heading, pipe_table_row, html_block, section, same-document link fragment) and are handled_verified decisions rather than relationship rulings."
+        }
+      ],
+      "direction": "opposite to MD-ARB-1. MD-ARB-1 under-reports emission; MD-ARB-3 over-reports justification. Both move the gate's verdict without moving any evidence, in opposite directions, which is why neither is visible from the other.",
+      "theFix": "Read the subject instead of the prose: `if (dec.node_type === `ontology:${t}`) return ...`, and keep the prose scan only as a fallback for specs that predate the field — logging that the fallback was used so a prose-matched ruling is distinguishable from a declared one. Six of markdown's twelve decisions already carry `ontology:` and the other six carry a bare node_type, so the field is present on every row and the fallback would never fire here.",
+      "affectsEveryLane": true,
+      "whyEveryLane": "The loop is language-agnostic and every lane's spec is scanned the same way. Any lane whose spec explains a ruling by naming a neighbouring type inherits the false positive, and any lane whose decision body does not repeat its own type name inherits the false negative."
     }
   ],
-
   "measuredInTheSameRunsAndNotDefects": {
     "wasmTrapFiles": {
       "distinctFilesTrappingWithMemoryAccessOutOfBounds": 14,
@@ -91,7 +143,12 @@
         "usethis/tests/testthat/_snaps/tibble.md"
       ],
       "rootPaths": "$HOME/fixtures/repositories/",
-      "loadAtTheTime": {"cores": 8, "loadAverage": 18.1, "memAvailableGB": 2, "diskUsedPct": 94},
+      "loadAtTheTime": {
+        "cores": 8,
+        "loadAverage": 18.1,
+        "memAvailableGB": 2,
+        "diskUsedPct": 94
+      },
       "isItLoadDependent": "Yes, and measured: the checkpoint finished 17,456/17,456 with 0 `!` bad markers, so every one of these 14 files parsed successfully on some invocation. None is a permanently unparseable file.",
       "whyItIsInThisArtifact": "It is the reason a corpus walk needs four invocations, which is what exposes MD-ARB-1. The mechanism was isolated by this lane in an earlier round — src/ast/engine.ts:1410 arms the 120s parse bomb and :1416 clearTimeout runs only when parse RETURNS, so a WASM trap that throws past it leaves the timer armed and it exits the process ~120s later NAMING A FILE THAT ALREADY FAILED FAST. Four runs died naming four different files for that reason.",
       "seeAlso": "validation/m60/markdown/hang-probe.json, trap-sweep-8k.json, trap-sweep-8k-conc1.json"
@@ -103,13 +160,15 @@
       "doesNotNeedAFix": true
     }
   },
-
   "stateLeftBehind": {
     "checkpoint": "validation/m14/measurements/walk-markdown.txt, 17,456 unique lines, 0 bad markers — the population IS fully walked",
     "hazard": "Left in place, the NEXT arbiter run for markdown prints `newly walked 0`, reports emitted 0/10 and exits 1 (see MD-ARB-1). That is a false verdict about this lane, produced by a tool cache rather than by any code change.",
     "recommendation": "Either fix MD-ARB-1 first, or delete the checkpoint so the next run starts a fresh whole-population walk. This lane MOVED the file to validation/m60/markdown/walk-markdown.txt.complete rather than deleting it, so nothing is lost and the false verdict is not left armed.",
     "movedBy": "analyzer/MARKDOWN"
   },
-
-  "tsc": {"command": "npx tsc --noEmit -p tsconfig.json", "result": "clean", "exitCode": 0}
+  "tsc": {
+    "command": "npx tsc --noEmit -p tsconfig.json",
+    "result": "clean",
+    "exitCode": 0
+  }
 }
