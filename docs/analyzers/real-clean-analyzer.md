@@ -44,6 +44,8 @@
 | `script/m14/run-fixtures.ts --lang clean` | 11 fixtures | fixtures |
 | `script/m14/clean-mutant-run.ts` | 9 mutants, judged by the shared harness's own rule | fixtures |
 | `validation/m14/fixtures/clean/extends-probe-roles-check.mts` | the ruling census's slot ROLES, per declaration, importing the census from the ruling table | the one fixture |
+| `validation/m14/fixtures/clean/operator-class-spelling-probe.mts` | the spelling defect's own count: operator-shaped `implements` edges where the flag disagrees with the file | 312 tracked files, `analyze()` |
+| `validation/m14/fixtures/clean/extends-probe-roles-regen.mts` | regenerates the probe expectation, preserving every hand-written note | the one fixture |
 | `script/m60/rel-type-coverage-gate.ts --langs=clean` | DERIVATION — which emitted types an oracle actually audits | 1 lane |
 | `script/m14/differential.ts --lang clean --sample 60` | Q3 — the second-opinion oracle | Clyde + clean-stdlib, 60 files each |
 
@@ -890,6 +892,8 @@ was clean before the doc edits and after them.
 | `npx tsx script/m14/clean-mutant-run.ts` | 9 mutants, **caught 9/9**, every one made the suite red | 0 |
 | `npx tsx script/m14/run-fixtures.ts clean` | clean: **pass 11, fail 0, problems 0** | 0 |
 | `npx tsx validation/m14/fixtures/clean/extends-probe-roles-check.mts` | **PASS** — 18 declarations, 23 (declaration, child) pairs, 0 unclassified, 0 ERROR, 0 MISSING | 0 |
+| `npx tsx validation/m14/fixtures/clean/operator-class-spelling-probe.mts` | 772 `implements`, 198 operator-shaped, 174 external (correct), **0 external-but-local** (read 24 before the fix), 0 instances reading a parenthesised class name | 0 |
+| `npx tsx validation/m14/fixtures/clean/extends-probe-roles-regen.mts` | idempotent: regeneration leaves the expectation byte-identical, 0 notes dropped | 0 |
 | `npx tsx script/m60/rel-type-coverage-gate.ts --langs=clean` | 4 DERIVATION findings, 3 NEW; checks 2/3/4 pass — **and it OVERWRITES the repository-wide results file, see report item 5** | 0 |
 | `bash script/m14/no-regex-gate.sh` | `real-clean-analyzer.ts` contributes **0** of the tree's 4 regex literals (all 4 are `real-svelte-analyzer.ts`) | 0 |
 | `npx tsx script/m14/differential.ts --lang clean --sample 60` | **RED, and reproduced exactly.** Clyde: `tree-truth=1314 covered=787 (59.9%) MISSING=527 \| analyzer-edges=1322 unexplained=671 (50.8%) heuristic=0`. clean-stdlib: `tree-truth=655 covered=606 (92.5%) MISSING=49 \| analyzer-edges=941 unexplained=462 (49.1%) heuristic=0`. `COMPARED WITH NO TRUTH: overrides` on both (6 and 39 edges). Writes no artifact on a scoped run, by design | 0 |
