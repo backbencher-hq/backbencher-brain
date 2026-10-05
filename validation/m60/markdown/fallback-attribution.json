@@ -152,6 +152,6 @@
     "files": 11,
     "of": 17456,
     "pct": "0.0630%",
-    "note": "counted by whole-corpus-census.ts from the `fallback` flag itself. Candidates listed here are the census's `exampleFiles`, which it caps at 4 per type — so this script's file list is a LOWER BOUND on the degraded set and the census's `degradedParse.files` is the measured count."
+    "note": "counted by whole-corpus-census.ts from the `fallback` flag itself. This script's candidate set is the census's `degradedParse.examples` UNION its per-type `exampleFiles`, so it covers every file the census attributed an edge to; the census's `degradedParse.files` remains the measured count."
   }
 }
