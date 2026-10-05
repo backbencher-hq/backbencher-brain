@@ -27,16 +27,19 @@
  * ## Why instrument B and not A
  *
  * Instrument A is the right instrument for a construct that needs a node type the grammar
- * does not have, and Clean has no inheritance keyword: 0 of 24 probed words
- * (`extends`, `implements`, `inherit`, `superclass`, …) is among the pinned wasm's 290
- * declared node types, and none of its 30 declared FIELD names is a supertype slot.
+ * does not have, and Clean has no inheritance keyword: 0 of the 39 probed names (22
+ * node-type names — `extends_clause`, `superclass`, `mixin`, … — and 17 bare words —
+ * `extends`, `implements`, `inherit`, `superclass`, …) is among the pinned wasm's 290
+ * declared node types, and none of its 29 declared FIELD names is a supertype slot.
  *
  * But a bare instrument-A ruling for Clean would be hiding the strongest counter-argument
  * rather than answering it. Clean HAS a `class` declaration carrying a `class_context`, and
  * `class_context` is the node a reader will point at: `class Ord a | Eq a` names another
  * class inside a class declaration, and `instance Ord Int with Eq Int` does the same on an
- * instance. `class_declaration` and `class_context` are both among the 8 node types the
- * pinned grammar declares whose name contains "class", so a table that listed them would be
+ * instance. `class_declaration` and `class_context` are both among the 7 declared node
+ * types whose name contains "class" (`class`, `class_method_name`, `class_context`,
+ * `class_declaration`, `class_name`, `class_member`, `instance_class` — read off
+ * `grammar.types`), so a table that listed them would be
  * falsified by the arbiter and a table that omitted them without saying why would be
  * decoration. This table therefore rules on B, and states the position measurement that
  * decides the question A cannot:
@@ -53,10 +56,14 @@
  * It does not claim Clean has no way to relate one class to another. It claims the language
  * has no SUPERTYPE relation: `Ord` is not a kind of `Eq`, `a` is merely required to have
  * both dictionaries, and `with` composes dictionaries rather than inheriting members from a
- * base type. Every one of those 1,817 `class_context` sites is already published as
- * `references` by the analyzer — the label the construct actually earns. Re-labelling them
- * `extends` would assert a subtyping relationship the language never writes, and that is the
- * one edge in this table the project must not fabricate.
+ * base type. Those `class_context` sites are already published as `references` by the
+ * analyzer — the label the construct actually earns. At the PROD population (312 files,
+ * `clean-ontology-census.ts`) 436 `references` edges carry the `class_context`
+ * discriminator; the 20 class contexts the analyzer does not read are named under
+ * [Q5](#q5--resolved-both-endpoints-bind-to-a-real-symbol) and are a `references` GAP, not
+ * a supertype edge. Re-labelling any of them `extends` would assert a subtyping
+ * relationship the language never writes, and that is the one edge in this table the
+ * project must not fabricate.
  *
  * ## The measurements
  *
@@ -64,8 +71,12 @@
  * `git ls-files` alone admits 312):
  *
  *   A. grammar inventory   199 distinct node types PRODUCED across 3,107,897 nodes; 0 of
- *                          the 16 inheritance-shaped names present. Grammar's own table:
- *                          290 declared node types, 30 declared field names, 0 supertype.
+ *                          the 39 probed inheritance-shaped names present (22 node-type
+ *                          names + 17 words). Grammar's own table:
+ *                          290 declared node types, 29 declared field names, 0 supertype.
+ *                          22 of the 23 probed Clean keywords are present as declared
+ *                          types; only `deriving` is absent (the tree-sitter-clean
+ *                          spelling of the keyword).
  *   B. parse-tree count    3,572 declarations (423 class, 2,539 instance, 610 derive) and
  *                          1,995 class_context nodes; 0 children UNCLASSIFIED.
  *
@@ -345,6 +356,6 @@ export const CLEAN_RULED: Ruled[] = [
     instrument: "B:parse-tree-count",
     countOnTree: countCleanExtendsConstruct,
     describe:
-      "a SUPERTYPE relation — a declaration that names another type as its base, from which it inherits members. MEASURED, instrument B (parse-tree position census, THIS probe, over the 2,181-file content-deduplicated corpus; evidence validation/m14/fixtures/clean/extends-construct-probe.json): 3,572 declarations walked — 423 class_declaration, 2,539 instance_declaration, 610 derive_declaration — plus 1,995 class_context nodes, and **0 direct named children UNCLASSIFIED**. Every slot those nodes expose is accounted for by role: name (class_name, instance_class, constructor, identifier, class_method_name), member (class_member, instance_member), context (class_context), parameter (type_variable, type_function, type_paren, type_application, list_type, tuple_type, array_type, dotted_type, fixity_annotation, generic_kind_type, uniqueness_star), body (code_expression), comment (line_comment, block_comment), parse-error (ERROR, reported apart and not counted as a construct). UNCLASSIFIED is the only bucket a supertype clause could occupy, and it is empty. The 11 dotted_type children of class_declaration are kind annotations on a type parameter (`class List .l e` → `.(a .e)`), measured by reading all 11 sites, not inferred from the node name. CORROBORATED by instrument A: the grammar produced 199 distinct node types across 3,107,897 nodes and 0 of the 22 probed supertype node types is among them; the pinned wasm's OWN tables declare 290 node types and 30 field names, 23 of 24 probed Clean keywords present as declared types (`class`, `instance`, `where`, `with`, `derive`, `import`, `definition`, `implementation`, `infix`, `special`, `generic`, `if`, `case`, `let`, `export`, `qualified`, `as`, `from`, `module`, `of`, `export`, `::`, `|` — only `deriving` absent, the tree-sitter-clean spelling of the keyword) and 0 of the 30 field names is a supertype slot, so the negative is a property of the grammar and not of the corpus. WHAT THIS IS NOT: Clean does relate one class to another — `class Ord a | Eq a` constrains a type parameter with another class, and `instance Ord Int with Eq Int` composes two — and all 1,817 such class_context sites are already published as `references`. The claim is not that the relation is absent, it is that it is a DICTIONARY REQUIREMENT and not a SUPERTYPE: `Ord` is not a kind of `Eq`, and `a` is merely required to have both dictionaries. The pinned grammar does not record the difference between `| Eq a` and `with Eq Int` — same `class_context` node, same fields — which is why this ruling rests on the absence of a supertype SLOT rather than on the presence of a constraint. OVERTURN (satisfiable by a correct implementation, which is what makes it falsifiable): this probe pushing a single hit, i.e. any class_declaration / instance_declaration / derive_declaration / class_context carrying a named child outside the measured slots above — which is what a grammar that added a supertype clause would produce on the first file that used it; OR a tree-sitter-clean release that declares a node type or field name among the 22 and 30 probed above; OR a corpus file in which a class names another class in a position that is not class_context. `extends` was measured 0 on both instruments at 2,181 files and 0 through production `parseFile` on the arbiter's 312 admitted files.",
+      "a SUPERTYPE relation — a declaration that names another type as its base, from which it inherits members. MEASURED, instrument B (parse-tree position census, THIS probe, over the 2,181-file content-deduplicated corpus; evidence validation/m14/fixtures/clean/extends-construct-probe.json): 3,572 declarations walked — 423 class_declaration, 2,539 instance_declaration, 610 derive_declaration — plus 1,995 class_context nodes, and **0 direct named children UNCLASSIFIED**. Every slot those nodes expose is accounted for by role: name (class_name, instance_class, constructor, identifier, class_method_name), member (class_member, instance_member), context (class_context), parameter (type_variable, type_function, type_paren, type_application, list_type, tuple_type, array_type, dotted_type, fixity_annotation, generic_kind_type, uniqueness_star), body (code_expression), comment (line_comment, block_comment), parse-error (ERROR, reported apart and not counted as a construct). UNCLASSIFIED is the only bucket a supertype clause could occupy, and it is empty. The 11 dotted_type children of class_declaration are kind annotations on a type parameter (`class List .l e` → `.(a .e)`), measured by reading all 11 sites, not inferred from the node name. CORROBORATED by instrument A: the grammar produced 199 distinct node types across 3,107,897 nodes and 0 of the 22 probed supertype node types is among them; the pinned wasm's OWN tables declare 290 node types and 29 field names, 22 of the 23 probed Clean keywords present as declared types (`class`, `instance`, `where`, `with`, `derive`, `import`, `definition`, `implementation`, `infix`, `special`, `generic`, `if`, `case`, `let`, `export`, `qualified`, `as`, `from`, `module`, `of`, `::`, `|`; only `deriving` is absent — the tree-sitter-clean spelling of the keyword) and 0 of the 29 field names is a supertype slot, so the negative is a property of the grammar and not of the corpus. WHAT THIS IS NOT: Clean does relate one class to another — `class Ord a | Eq a` constrains a type parameter with another class, and `instance Ord Int with Eq Int` composes two — and 436 such class_context sites are already published as `references` at the PROD population (312 files). The claim is not that the relation is absent, it is that it is a DICTIONARY REQUIREMENT and not a SUPERTYPE: `Ord` is not a kind of `Eq`, and `a` is merely required to have both dictionaries. The pinned grammar does not record the difference between `| Eq a` and `with Eq Int` — same `class_context` node, same fields — which is why this ruling rests on the absence of a supertype SLOT rather than on the presence of a constraint. OVERTURN (satisfiable by a correct implementation, which is what makes it falsifiable): this probe pushing a single hit, i.e. any class_declaration / instance_declaration / derive_declaration / class_context carrying a named child outside the measured slots above — which is what a grammar that added a supertype clause would produce on the first file that used it; OR a tree-sitter-clean release that declares a node type or field name among the 22 node-type names and 17 words probed above, or any of the grammar's 29 declared field names; OR a corpus file in which a class names another class in a position that is not class_context. `extends` was measured 0 on both instruments at 2,181 files and 0 through production `parseFile` on the arbiter's 312 admitted files.",
   },
 ]
