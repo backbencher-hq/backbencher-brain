@@ -41,8 +41,8 @@
 | `script/m14/clean-label-probe.mts` | Q4 — whether each edge's TYPE label is provable against an independent walk of the same tree | 312 files |
 | `script/m14/clean-honesty-gate.ts` | resolution, empty names, unknown kinds, ownerless members, crash files — through **`analyze()`** | 312 files |
 | `script/m14/clean-completeness-gate.ts` | the grammar's named node types against the spec's buckets | fixtures |
-| `script/m14/run-fixtures.ts --lang clean` | 11 fixtures | fixtures |
-| `script/m14/clean-mutant-run.ts` | 9 mutants, judged by the shared harness's own rule | fixtures |
+| `script/m14/run-fixtures.ts --lang clean` | 12 fixtures | fixtures |
+| `script/m14/clean-mutant-run.ts` | 10 mutants, judged by the shared harness's own rule | fixtures |
 | `validation/m14/fixtures/clean/extends-probe-roles-check.mts` | the ruling census's slot ROLES, per declaration, importing the census from the ruling table | the one fixture |
 | `validation/m14/fixtures/clean/operator-class-spelling-probe.mts` | the spelling defect's own count: operator-shaped `implements` edges where the flag disagrees with the file | 312 tracked files, `analyze()` |
 | `validation/m14/fixtures/clean/extends-probe-roles-regen.mts` | regenerates the probe expectation, preserving every hand-written note | the one fixture |
@@ -53,15 +53,17 @@
 (2,181 files, `parseFile`) and `clean-honesty-gate.ts` (312 files, `analyze()`) are
 different code paths over different corpora, so their totals are not comparable and
 are never mixed in one table. The size of the gap is measured rather than waved at:
-on the **same 312 files**, `parseFile` yields **30,187** relationships and `analyze()`
-**30,689** — a difference of **502 edges (1.7%)**, and it is not spread evenly:
+on the **same 312 files**, `parseFile` yields **30,685** relationships and `analyze()`
+**31,187** — a difference of **502 edges (1.7%)**, and it is not spread evenly. The delta
+is UNCHANGED by this round's `references` work: both paths gained the same 498 edges, which
+is itself evidence that the edges are read by the analyzer and not by a pipeline stage:
 
 | type | `parseFile` (production) | `analyze()` (per-file unit) | delta |
 | --- | --- | --- | --- |
 | `uses` | 1,457 | 1,457 | 0 |
 | `overrides` | 306 | 306 | 0 |
 | `instantiates` | 122 | 122 | 0 |
-| `references` | 9,551 | 9,559 | +8 |
+| `references` | 10,049 | 10,057 | +8 |
 | `imports` | 1,891 | 1,920 | +29 |
 | `calls` | 3,798 | 3,886 | +88 |
 | `implements` | 712 | 772 | +60 |
@@ -421,18 +423,25 @@ the set `script/m14/ontology-coverage-gate.ts` and `script/m14/firing-check.ts` 
 measured through production `parseFile` at this commit. `WIDE` is the 2,181-file
 content-deduplicated corpus (`script/m14/clean-wide-manifest.txt`).
 
-| type | emitted | verdict | PROD edges (312 files) | PROD corpus resolution | WIDE edges (2,181 files) | WIDE corpus resolution | self-edges (PROD) |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| `extends` | ❌ not emitted | **RULED** — registered in `script/m14/clean-ruled.ts`; instrument B position census, 0 UNCLASSIFIED of 5,567 declarations; corroborated by instrument A | 0 | — | 0 | — | — |
-| `calls` | ✅ EMITTED | — | 3,798 | 98.9% | 27,485 | 99.9% | 809 |
-| `uses` | ✅ EMITTED | — | 1,457 | 100.0% | 11,864 | 99.8% | 1 |
-| `contains` | ✅ EMITTED | — | 7,511 | 100.0% | 57,855 | 100.0% | 0 |
-| `imports` | ✅ EMITTED | — | 1,891 | 84.2% | 11,878 | 97.6% | 0 |
-| `references` | ✅ EMITTED | — | 9,551 | 88.3% | 81,534 | 99.0% | 54 |
-| `exports` | ✅ EMITTED | — | 4,839 | 100.0% | 37,126 | 100.0% | 293 |
-| `implements` | ✅ EMITTED | — | 712 | 97.2% | 2,990 | 97.3% | 0 |
-| `overrides` | ✅ EMITTED | **GAP → implemented in pass 2**; believed missing at handover | 306 | 100.0% | 582 | 100.0% | 0 |
-| `instantiates` | ✅ EMITTED | — | 122 | 100.0% | 1,459 | 99.9% | 0 |
+| type | emitted | verdict | PROD edges (312 files) | PROD files | PROD corpus resolution | WIDE edges (2,181 files) | WIDE corpus resolution | self-edges (PROD) |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `extends` | ❌ not emitted | **RULED** — registered in `script/m14/clean-ruled.ts`; instrument B position census, 0 UNCLASSIFIED of 5,567 declarations; corroborated by instrument A | 0 | — | — | 0 | — | — |
+| `calls` | ✅ EMITTED | — | 3,798 | 108 | 98.9% | 27,485 | 99.9% | 809 |
+| `uses` | ✅ EMITTED | — | 1,457 | 27 | 100.0% | 11,864 | 99.8% | 1 |
+| `contains` | ✅ EMITTED | — | 7,511 | 275 | 100.0% | 57,855 | 100.0% | 0 |
+| `imports` | ✅ EMITTED | — | 1,891 | 236 | 84.2% | 11,878 | 97.6% | 0 |
+| `references` | ✅ EMITTED | **GAP → implemented in pass 4**; an instance member's own `\| C a` published nothing | 10,049 | 275 | 88.9% | 81,534 † | 99.0% | 55 |
+| `exports` | ✅ EMITTED | — | 4,839 | 304 | 100.0% | 37,126 | 100.0% | 293 |
+| `implements` | ✅ EMITTED | — | 712 | 103 | 97.2% | 2,990 | 97.3% | 0 |
+| `overrides` | ✅ EMITTED | **GAP → implemented in pass 2**; believed missing at handover | 306 | 11 | 100.0% | 582 | 100.0% | 0 |
+| `instantiates` | ✅ EMITTED | — | 122 | 9 | 100.0% | 1,459 | 99.9% | 0 |
+
+**† the WIDE column predates this round and was NOT re-measured — see
+[WIDE is not re-measurable on this machine](#wide-is-not-re-measurable-on-this-machine).**
+Every WIDE cell except `references` is unaffected by pass 4 by construction: the change adds
+edges only under an `instance_member` signature and a `where`-block `local_binding`, and no
+other type's count moved by one. The `references` WIDE cell WILL move and its old value
+(81,534) must not be quoted as current.
 
 The `emitted` column is machine-graded by `script/m14/verify-doc-truth-emissions.ts`,
 which reads this table and compares each row against the `RelationshipType.*` aliases
@@ -684,6 +693,107 @@ the file's other two character predicates. The gate is load-bearing and this is 
 second time on this lane it has caught something (the first is in
 [Hygiene](#hygiene-zero-regex-and-what-it-is-checked-against)).
 
+### A dictionary requirement on a member's own signature — pass 4, a GAP found by asking the coverage question
+
+**The question no instrument in this lane was asking.** Every existing census answers "how many
+edges of each type does the analyzer emit". None answers "of the constructs the grammar produces,
+how many does the analyzer READ". Those come apart, and the gap between them is invisible to a
+count, because a construct that is read and thrown away and a construct that is never read both
+contribute nothing to a tally.
+
+Asked directly, at PROD (312 files): **473 `class_context` nodes, 113 of them publishing no edge
+carrying a `*_context` discriminator, and 20 of those publishing NO edge at all.** The 20 are a
+dictionary requirement written on a member's own signature — `instance C [!a] | Ord a` says it on
+the instance, `cmp :: ![!a] ![!a] -> Bool | Ord a` says it again on the member, and the second
+statement is the one that travels with the member's type:
+
+| grandparent of the `class_context` | unread at PROD | shape |
+| --- | --- | --- |
+| `instance_member` | 13 (8 after the fix) | `instance C T where m :: … \| C a` |
+| `local_binding` | 6 (6 after the fix; the `where`-block form reads through a different route) | `stolacc :: … \| fromChar a` inside a member's body |
+| `ERROR` | 1 | a parse-error region; damage, and declared as such |
+
+**The defect was a KEY, not a missing branch.** Both passes file a signature under
+`declarationKey(frame, owner, name)` — a string each derives independently — and for an instance
+member they disagree. Traced by instrumenting both sides, diagnostics removed before the commit:
+
+```
+DIAG decl L11 name=== key=|::==      owner=-       the declaration pass does not know the instance's target
+DIAG sig  L11 name=== key=|[a]::==   existing=…    the emitting pass is inside the instance's scope
+```
+
+The lookup missed, `applySignature` never ran, and the signature's types **and** its class context
+were read and then discarded. This is why the population of unread constructs was invisible: the
+reading code was already written and already correct — it was being handed nothing.
+
+**The fix indexes signatures by the node's own id** (`signaturesByNode`), an identity the two
+passes cannot disagree about. `processTypeSignature` reads the node index first and falls back to
+the key; `joinParameters` keeps the key lookup, because it is handed a definition node and not the
+signature. `ctx.signatures` keeps its first-per-key contract, so nothing reading by key moved.
+
+**A first attempt at this was wrong, and the fixture caught it.** Filling the node index from
+`ctx.signatures.get(key)` gave the second and third `cmp` members the FIRST one's info — one member
+emitted three signatures' edges and two members emitted none (52 relationships instead of 56).
+Reading once per NODE fixes it. `readSignature` is never called twice for one node, and it IS called
+once per node where two nodes share a key, because a colliding key is the failure the index exists
+to survive.
+
+**Measured, PROD, 312 files, production `parseFile`:**
+
+| | before | after |
+| --- | --- | --- |
+| `references` | 9,551 | **10,049** (+498) |
+| `references` corpus resolution | 88.3% | **88.9%** |
+| total edges | 30,187 | **30,685** (+498) |
+| every other type | — | **unchanged to the edge** |
+| symbols, empty names, unknown kinds, unknown endpoints, edges without a line, degraded | 8,288 / 0 / 0 / 0 / 0 / 0 | 8,288 / 0 / 0 / 0 / 0 / 0 |
+| `references` self-edges | 54 | **55** |
+
+**The one new self-edge is stated rather than smoothed.** `clean-stdlib/StdList.icl:16` reads
+`== -> ==`: the member is named `==`, it implements the operator class `==`, and its context is
+`| == a`, so the edge is TRUE and the label is right. It is still a self-loop, and `references`
+already carries 54 of them from another branch. A guard that removed this one alone would leave the
+other 54, so the guard belongs with them and is **not** part of this change — reported, not fixed.
+
+**What is still unread, with the count.** 8 sites remain under `instance_member` and 6 under
+`local_binding`, and they are a SECOND defect with a different mechanism, not a remainder of this
+one: their `class_context` is not being read because `readClassContext` splits a constraint list
+at `,` CHILD nodes only, and the corpus also writes `&`. Measured on the node shapes:
+`|\tEq a & Eq b` is `[\"|\"*, constructor, type_variable, "&\"*, constructor, type_variable]` — a
+six-child list whose separator is `&`, which `readClassContext` does not treat as a boundary, so
+`Eq` after the first `&` is dropped. That is why 5 of the 8 `instance_member` sites that pass 4
+recovered are the single-constraint ones and the multi-constraint ones did not. The `&` fix is
+one token in one predicate and is NOT made here, because reading `| Eq a & Eq b` as two
+constraints emits **two identical `references` edges on one line** — `== -> Eq` twice — and
+whether that should be deduped or is a true multiplicity is a naming decision this lane has not
+made. Recorded as a limitation with its measurement, not left as an unstated gap.
+
+### WIDE is not re-measurable on this machine
+
+The 2,181-file census was attempted twice at this commit and **both attempts aborted**. Load
+average 28.07 on 8 cores, with ten lanes running:
+
+```
+attempt 1  [BB-PARSE-ERR] …/ObjectIO Examples/life/LifeGameExample.icl  memory access out of bounds
+           [BB-PARSE-ERR] …/Libraries/ObjectIO/ObjectIO/world.icl         memory access out of bounds
+attempt 2  (nice -n 19)  [BB-PARSE-ERR] …/ObjectIO Examples/life/Life.icl  memory access out of bounds
+           [BB-HANG] parser stuck 120s on …/ObjectIO Examples/life/Life.icl — exiting
+```
+
+**This is NOT the parser-robustness finding the previous round recorded, and the correction
+matters.** That round recorded the file as varying "each run"; today both runs died in the same
+directory, `clean-libraries/Examples/ObjectIO/ObjectIO Examples/life/`. And the file is not
+pathological: `Life.icl` parses through production `parseFile` **in isolation in 1,519 ms** with 46
+symbols and 199 relationships. 1.5 seconds of work cannot take 120 seconds. A wasm
+`memory access out of bounds` on work that completes standalone is a resource-contention artifact
+of the shared machine, and the previous round's attribution to "a different file each run" was
+reading noise as signal.
+
+Consequence, stated: **the WIDE column of the verdict table is not re-verified at this commit** and
+one of its cells (`references`, 81,534) is known to be stale. The arbiter's own population — the
+312 admitted files — was measured end to end at this commit with no degradation, and the PROD column
+is what every verdict rests on.
+
 ## The six questions, per emitted type
 
 The questions fail independently, so each is answered with its own instrument and its
@@ -778,45 +888,61 @@ instance-level `implements` edge already exists. The mutant
 
 Two rates per type, because resolving only inside the emitting file would convict every
 edge to an imported symbol. `intra` = both ends bind in the emitting file; `corpus` =
-both ends bind anywhere in the 2,181-file sample, under the store's own three strategies
+both ends bind anywhere in the sample, under the store's own three strategies
 (bare name, `Owner.member`, leaf after the first `.`).
 
+**The rates below are PROD — all 312 admitted files, re-measured at this commit through production
+`parseFile`.** The previous revision quoted the 2,181-file WIDE population, which
+[could not be re-measured](#wide-is-not-re-measurable-on-this-machine) at this commit, so quoting
+it would have meant publishing a number this commit cannot reproduce. Where a WIDE figure is the
+one the workstream compares against, it is named as WIDE.
+
 - **100.0% intra and corpus:** `contains`, `exports`, `overrides`, `instantiates`
-- **99.8–99.9% both:** `calls`, `uses`
-- **`implements` 43.6% intra / 97.3% corpus.** The intra gap is by design: 318
+- **98.9% `calls` corpus, 99.9% WIDE; `uses` 100.0% corpus, 99.8% WIDE**
+- **`implements` 53.4% intra / 97.2% corpus** (WIDE: 97.3%). The intra gap is by design: 306
   `implements` edges name a class this file does not declare, because almost every Clean
   class is imported. `clean-honesty-gate.ts` counts them as
   `implements.classNotDeclaredHere` and accepts them explicitly rather than leaving a
   reader to infer the reason from a missing symbol.
-- **`references` 19.3% intra / 99.0% corpus.** The intra figure is the honest one for a
-  reader: 7,734 edges name a type or context this file does not declare
+- **`references` 21.7% intra / 88.9% corpus** (WIDE, pre-pass-4: 19.3% / 99.0%). The
+  corpus rate at PROD is 88.9% and the WIDE rate is 99.0%, and the gap between them is a
+  statement about the populations, not a contradiction: PROD is 312 files and an
+  edge whose target type is declared in a file outside that 312 cannot resolve. The
+  intra figure is the honest one for a
+  reader: 7,866 edges name a type or context this file does not declare
   (`references.externalTypeOrContext`, counted by the honesty gate). This is the
   reference point the workstream names — CSS `references` resolves at both ends on 66.8%
   of its edges; clean's `references` resolves at 99.0% corpus-wide and **19.3%
   intra-file**, and both numbers are published because a reader asking "does this edge
   bind?" and a reader asking "does this edge bind *in this file*?" get different answers.
-- **`imports` 1.4% intra / 97.6% corpus.** The intra figure is near zero **by
+- **`imports` 2.2% intra / 84.2% corpus** (WIDE: 97.6%). The intra figure is near zero **by
   construction and correctly so**: an `imports` edge's target is `<module>:<item>`, a
-  name bound in ANOTHER file. An intra-file rate near 100% (11,878 of 11,878) here would mean the analyzer
-  was resolving imports to the importing file, which would be wrong.
+  name bound in ANOTHER file. An intra-file rate near 100% here would mean the analyzer
+  was resolving imports to the importing file, which would be wrong. The PROD corpus rate
+  (84.2%) is below the WIDE rate (97.6%) for the same reason `references` is: the
+  exporting module is frequently outside a 312-file sample and inside a 2,181-file one.
 
 ### Q6 — Confident (`evidenceClass` and confidence are right)
 
-Measured over 232,773 edges at the 2,181-file corpus:
+Measured over **30,685 edges at PROD (312 files, production `parseFile`)**, re-run at this commit.
+The previous revision quoted the 2,181-file WIDE population, which could not be re-measured here;
+WIDE's total was 232,773 and its per-type distribution is unchanged for every type except
+`references`, because pass 4 adds edges at 0.95 and touches no other type.
 
-| type | confidence distribution | edges < 0.7 | `evidenceClass` the pipeline assigned |
+| type | confidence distribution (PROD) | edges < 0.7 | `evidenceClass` the pipeline assigned |
 | --- | --- | --- | --- |
-| `calls` | 0.90 × 27,485 | 0 | `usage_contextual` |
-| `uses` | 0.90 × 11,864 | 0 | `structural` |
-| `contains` | 1.00 × 57,855 | 0 | `structural` |
-| `imports` | 1.00 × 11,878 | 0 | `import_based` |
-| `references` | 1.00 × 10,029 · 0.95 × 71,505 | 0 | `reference_qualified` |
-| `exports` | 1.00 × 37,126 | 0 | `structural` |
-| `implements` | 1.00 × 2,990 | 0 | `structural` |
-| `overrides` | 1.00 × 582 | 0 | `reference_qualified` |
-| `instantiates` | 1.00 × 1,459 | 0 | `structural` |
+| `calls` | 0.90 × 3,798 | 0 | `usage_contextual` |
+| `uses` | 0.90 × 1,457 | 0 | `structural` |
+| `contains` | 1.00 × 7,511 | 0 | `structural` |
+| `imports` | 1.00 × 1,891 | 0 | `import_based` |
+| `references` | 1.00 × 1,528 · 0.95 × 8,521 | 0 | `reference_qualified` |
+| `exports` | 1.00 × 4,839 | 0 | `structural` |
+| `implements` | 1.00 × 712 | 0 | `structural` |
+| `overrides` | 1.00 × 306 | 0 | `reference_qualified` |
+| `instantiates` | 1.00 × 122 | 0 | `structural` |
 
-**Heuristic ratio: 0 of 232,773 edges (0.000%) are below 0.7.** The honesty contract §4
+**Heuristic ratio: 0 of 30,685 edges (0.000%) are below 0.7.** The same ratio holds at WIDE:
+0 of 232,773. The honesty contract §4
 requires that ratio to be countable, and it is — as exactly zero. Two honest notes
 attached to that number:
 
@@ -830,7 +956,7 @@ attached to that number:
    and it is recorded here because a reader looking for a symbol-level evidence tier will
    not find one.
 
-### DERIVATION findings: **4**
+### DERIVATION findings: **4 types + 1 sub-family**
 
 `script/m60/rel-type-coverage-gate.ts --langs=clean`, **re-run and reproduced at this
 commit** (pass 3):
@@ -845,6 +971,16 @@ REGRESSIONS (not in the recorded debt):
   DERIVATION|clean|emits `imports` but the differential audits ["calls","extends","implements","instantiates","overrides","references"]
   DERIVATION|clean|emits `uses`    but the differential audits ["calls","extends","implements","instantiates","overrides","references"]
 ```
+
+**A fifth, narrower finding that the gate cannot see because it counts TYPES, not
+sub-families.** The differential DOES audit `references`, and pass 4's 498 new edges are
+counted `unexplained` because `deriveCleanEdges` has no rule for a member signature's
+dictionary context. Measured on clean-stdlib at this commit: edges 941 → 985 and
+unexplained 462 → 488 across three rotations, with `MISSING` unmoved at 49. So the
+sub-family `references.class_context`-on-an-`instance_member`-signature is emitted,
+stored and compared against nothing — the same condition as the four types above, one
+level down. The rule that would close it belongs in `deriveCleanEdges` in the shared
+`script/m14/differential.ts`; **not edited** (§8).
 
 **Three of the four are NEW, not recorded.** The gate's own baseline line says so:
 `3 NEW`. Only `contains` appears in `validation/m60/ledger.json`'s recorded debt, so
@@ -900,20 +1036,21 @@ was clean before the doc edits and after them.
 | `npx tsx script/m14/ontology-coverage-gate.ts clean` | `emitted 9/10   ruled-sound 1   FALSIFIED 0   ruled-without-justification 0` over 312 admitted files | **0** |
 | `npx tsx script/m14/ontology-coverage-gate.ts --coverage` | 14 lanes can be ruled for, `clean` among them | 0 |
 | `npx tsx script/m14/verify-ruling-tables-registered.ts` | 14 tables on disk, 14 registered, `PASS` | 0 |
-| `npx tsx script/m14/firing-check.ts --files 120 clean` | `9/10 fired, 16231 edges, 120/120 files`, `degraded 0`, analyzer digest `stable` | 0 |
-| `npx tsx script/m14/clean-ontology-census.ts` | 312/312 parsed, 30,187 edges, 8,288 symbols, 0 empty names, 0 unknown kinds, 0 unknown endpoints, 0 degraded | 0 |
+| `npx tsx script/m14/firing-check.ts --files 120 clean` | `9/10 fired, 16416 edges, 120/120 files`, `degraded 0`, 0 parse failures, 0 empty names, 0 unknown kinds, 0 unknown endpoints — **and the digest reads `MISSING:` on every lane, so its `analyzerStableDuringRun: true` is vacuous; see [report item 6](#reported-to-the-supervisor-not-fixed)** | 0 |
+| `npx tsx script/m14/clean-ontology-census.ts` | 312/312 parsed, **30,685** edges, 8,288 symbols, 0 empty names, 0 unknown kinds, 0 unknown endpoints, 0 edges without a line, 0 degraded. `--wide` **ABORTED twice** — see [WIDE is not re-measurable](#wide-is-not-re-measurable-on-this-machine) | 0 |
+| `npx tsx script/m14/clean-ontology-census.ts --limit 120` | 120/120 parsed, 16,039 edges — a DIFFERENT 120 files from `firing-check`'s stride sample (first-120-of-sorted vs round-robin-per-repo), which is why the two disagree on totals, and why both populations are named wherever either is quoted | 0 |
 | `npx tsx validation/m14/fixtures/clean/extends-construct-probe.mts` | TRACKED 0 UNCLASSIFIED / WIDE 0 UNCLASSIFIED; instrument A 0 of 39 probed | 0 |
-| `bun run script/m14/clean-honesty-gate.ts` | 312 files, 8,288 symbols, 30,689 relationships, **no violations**; `implements.classNotDeclaredHere` 318 → 306 after this round's correction (`analyze()`, see Instruments) | 0 |
+| `bun run script/m14/clean-honesty-gate.ts` | 312 files, 8,288 symbols, **31,187** relationships, **no violations**; `implements.classNotDeclaredHere` **306**, `references.externalTypeOrContext` **7,866** (`analyze()`, see Instruments) | 0 |
 | `bun run script/m14/clean-completeness-gate.ts` | 141 declared named node types, 141 classified, **all checks pass** | 0 |
-| `npx tsx script/m14/clean-mutant-run.ts` | 9 mutants, **caught 9/9**, every one made the suite red | 0 |
-| `npx tsx script/m14/run-fixtures.ts --lang clean` | clean: **pass 11, fail 0**, `fixture baseline gate: no regressions` | 0 |
+| `npx tsx script/m14/clean-mutant-run.ts` | **10 mutants, caught 10/10**, every one made the suite red. `clean/signature-lookup-by-derived-key-only` is caught by `clean/instance-member-signature-context` (fail 0 → 1, 7 problems) | 0 |
+| `npx tsx script/m14/run-fixtures.ts --lang clean` | clean: **pass 12, fail 0**, `fixture baseline gate: no regressions` (11 before pass 4 added `instance-member-signature-context`) | 0 |
 | `npx tsx validation/m14/fixtures/clean/extends-probe-roles-check.mts` | **PASS** — 18 declarations, 23 (declaration, child) pairs, 0 unclassified, 0 ERROR, 0 MISSING | 0 |
 | `npx tsx validation/m14/fixtures/clean/operator-class-spelling-probe.mts` | 772 `implements`, 198 operator-shaped, 174 external (correct), **0 external-but-local** (read 24 before the fix), 0 instances reading a parenthesised class name | 0 |
 | `npx tsx validation/m14/fixtures/clean/extends-probe-roles-regen.mts` | idempotent: regeneration leaves the expectation byte-identical, 0 notes dropped | 0 |
-| `npx tsx script/m60/rel-type-coverage-gate.ts --langs=clean` | 4 DERIVATION findings, 3 NEW; checks 2/3/4 pass — **and it OVERWRITES the repository-wide results file, see report item 5** | 0 |
+| `npx tsx script/m60/rel-type-coverage-gate.ts --langs=clean` | 4 DERIVATION findings (`contains`, `exports`, `imports`, `uses`), 3 NEW; checks 2/3/4 pass — **and it OVERWRITES the repository-wide results file, see report item 8**; restored with `git checkout --` in the same minute, nothing committed from it | 1 |
 | `bash script/m14/no-regex-gate.sh` | `real-clean-analyzer.ts` contributes **0** of the tree's 4 regex literals (all 4 are `real-svelte-analyzer.ts`) | 0 |
-| `npx tsx script/m14/differential.ts --lang clean --sample 60` | **RED, exit 6, reproduced twice at this commit** — and the figures MOVE between runs because the gate rotates its 60-file sample (`coldPoolPick`, differential.ts:927). Run A: Clyde `truth=1314 covered=787 (59.9%) MISSING=527 \| edges=1322 unexplained=671 (50.8%)`, clean-stdlib `truth=667 covered=618 MISSING=49 \| edges=972 unexplained=482 (49.6%)`. Run B: Clyde `truth=1177 covered=700 MISSING=477 \| edges=1214 unexplained=610 (50.2%)`, clean-stdlib `truth=655 covered=606 MISSING=49 \| edges=941 unexplained=462 (49.1%)`. `heuristic=0` and `COMPARED WITH NO TRUTH: overrides` on all four. See [Q3](#q3--correct-an-independent-oracle-agrees). Writes no artifact on a scoped run, by design | **6** |
-| `bun run script/m14/verify-doc-truth-emissions.ts` | repository `FAIL` (7 FALSE_NEGATIVE / 42 UNDOCUMENTED / 15 NO_CLAIM_TABLE) — **`clean` in none of them**; its row reads 9 types | 0 |
+| `npx tsx script/m14/differential.ts --lang clean --sample 60` | **RED, exit 6, three runs at this commit** — and the figures MOVE between runs because the gate rotates its 60-file sample (`coldPoolPick`, differential.ts:927). Run A (pre-pass-4): Clyde `truth=1314 covered=787 (59.9%) MISSING=527 \| edges=1322 unexplained=671 (50.8%)`, clean-stdlib `truth=667 covered=618 MISSING=49 \| edges=972 unexplained=482 (49.6%)`. Run B (pre-pass-4): Clyde `truth=1177 covered=700 MISSING=477 \| edges=1214 unexplained=610 (50.2%)`, clean-stdlib `truth=655 covered=606 MISSING=49 \| edges=941 unexplained=462 (49.1%)`. Run C (post-pass-4, rot 22/23): Clyde `truth=1314 covered=787 MISSING=527 \| edges=1322 unexplained=671 (50.8%)`, clean-stdlib `truth=664 covered=615 (92.6%) MISSING=49 \| edges=985 unexplained=488 (49.5%)`. `heuristic=0` and `COMPARED WITH NO TRUTH: overrides` on all five. **Pass 4 RAISED clean-stdlib's `unexplained` 462 → 488 and its edges 941 → 985: the oracle `deriveCleanEdges` has no rule for a member signature's class context, so the 498 new edges are counted as unexplained. That is the correct label given the oracle's coverage and it is a DERIVATION gap, named below.** See [Q3](#q3--correct-an-independent-oracle-agrees). Writes no artifact on a scoped run, by design | **6** |
+| `bun run script/m14/verify-doc-truth-emissions.ts` | repository `FAIL` (7 FALSE_NEGATIVE / 42 UNDOCUMENTED / 15 NO_CLAIM_TABLE) — **`clean` in none of them**; its row reads 9 types at line 424 and is byte-unchanged by pass 4 | 0 |
 
 **Q3 is red, and the red is not new — but "reproduces to the digit" was wrong and is
 withdrawn.** Earlier revisions of this document claimed the 527/49 MISSING counts and the
@@ -968,7 +1105,7 @@ than an error — and the `lua`/`r` orphan finding it surfaces is **not** clean'
 
 ## Reported to the supervisor, not fixed
 
-Four findings outside this lane's ownership. Each is stated so it can be applied
+Seven findings outside this lane's ownership. Each is stated so it can be applied
 without re-deriving it. None was worked around silently.
 
 1. **`script/m14/verify-ruling-tables-registered.ts` cannot see a lane that has shipped
@@ -987,7 +1124,7 @@ without re-deriving it. None was worked around silently.
 3. **The shared differential still audits no clean oracle for four emitted types.**
    `contains`, `exports`, `imports`, `uses` — and the gate now reports **3 of them as
    NEW regressions** against `validation/m60/ledger.json`. The four derivations are
-   written out in [DERIVATION findings](#derivation-findings-4) and need
+   written out in [DERIVATION findings](#derivation-findings-4-types--1-sub-family) and need
    `script/m14/differential.ts`'s `deriveCleanEdges` (exported at line 16735) plus one
    `…CLEAN_TRUTH` import. **Not edited.**
 4. **`script/m14/verify-doc-truth-emissions.ts`'s `parseClaimTable` drops the first body
@@ -995,7 +1132,49 @@ without re-deriving it. None was worked around silently.
    note](#the-10-relationship-types-one-verdict-each) and unchanged by this round;
    it is why `extends` is ordered first in this lane's table, which is disclosed rather
    than relied on. **Not edited.**
-5. **`script/m60/rel-type-coverage-gate.ts --langs=<one>` DESTROYS the repository-wide
+5. **`script/m14/firing-check.ts` reports a per-type FILE COUNT that is the count for ONE
+   file, not for the sample.** `measure()` declares `const filesByType = new Map()` INSIDE
+   `for (const file of files)` (line ~344) and closes the loop with
+   `for (const [type, set] of filesByType) res.types[type].files = set.size` — an
+   ASSIGNMENT, not an accumulation. So `types.calls.files` is how many files in the LAST
+   file of the sample produced a `calls` edge. Measured for `clean` at `--files 120`:
+   **every one of the 10 types reports `files: 1`**, which for a type that fired in 275 of
+   312 files is a number a reader would quote. The correct values are in the verdict
+   table's `PROD files` column, measured by `clean-ontology-census.ts` over all 312
+   admitted files (`calls` 108, `uses` 27, `contains` 275, `imports` 236, `references`
+   275, `exports` 304, `implements` 103, `overrides` 11, `instantiates` 9). Fix: hoist
+   `filesByType` above the loop. **Not edited** — shared machinery.
+
+6. **`script/m14/firing-check.ts`'s analyzer-digest stability check is a tautology on
+   every lane, so "analyzer digest verified stable" verifies nothing.**
+   `analyzerDigest()` (line 204) builds `path.join(here, "..", "ast", \`${rel}.ts\`)` where
+   `here` is `script/m14`, giving `script/ast/real-<lang>-analyzer.ts`. Analyzers live in
+   `src/ast/`. There is no `script/ast/` directory, so the function returns
+   `MISSING:<path>` for all 43 entries in `LANGS`, and `analyzerStableDuringRun` compares
+   `MISSING:x` with `MISSING:x` — always true. Measured at this commit: `clean`'s run
+   printed `analyzerDigest: "MISSING:/…/script/ast/real-clean-analyzer.ts"` while
+   `analyzerStableDuringRun: true`; I then checked all 43 lanes and **0 of 43 resolve**.
+   This matters because the digest is the only guard the sweep has against the exact
+   failure `firing-check.ts`'s own header documents (the nim lane measuring `calls` 80,057
+   and then 79,041 because the analyzer was edited between runs), and the 26-lane sweep
+   reports the digest as verified. Fix: `path.join(here, "..", "..", "src", "ast", …)` —
+   one path segment. **Not edited** — shared machinery.
+
+7. **`src/ast/engine.ts` kills the whole process on one unparseable file, so a
+   multi-thousand-file census cannot complete on a loaded machine.** `engine.ts:1442`
+   arms a 120 s `setTimeout` and calls `process.exit(1)` — the whole census, not one file.
+   Measured twice at this commit under load average 28.07 on 8 cores: both attempts died
+   with `[BB-PARSE-ERR] … memory access out of bounds` followed by `[BB-HANG] parser stuck
+   120s` on a file in `clean-libraries/Examples/ObjectIO/ObjectIO Examples/life/`, and the
+   same file **parses through production `parseFile` in isolation in 1,519 ms**. So the
+   wasm heap is failing under memory contention, not the parser failing on the input. The
+   previous round of this lane recorded the victim as "a different file each run" and read
+   that as parser robustness; it is contention, and the correction is recorded in
+   [WIDE is not re-measurable](#wide-is-not-re-measurable-on-this-machine). A per-file
+   child process, or a census that catches the exit and skips the file, would make the
+   WIDE population measurable again. **Not edited** — `src/ast/engine.ts` is §8.
+
+8. **`script/m60/rel-type-coverage-gate.ts --langs=<one>` DESTROYS the repository-wide
    evidence file it reports from.** Run scoped, it overwrites
    `validation/m60/results/rel-type-coverage.json` with the single lane's result.
    Measured here: the file went from its committed content to **1,445 changed lines,
@@ -1261,24 +1440,45 @@ import { CLEAN_MUTANTS } from "./clean-mutants"
    60-file draw on every run (`coldPoolPick`, differential.ts:927), so two runs at one
    commit disagree; the RED verdict and the label composition do not. The oracle is
    shared (`script/m14/differential.ts`) and was not modified.
-8. **`overrides` is emitted but has no oracle, so the differential calls all 45 sampled
+8. **A `|` constraint list joined with `&` is read up to the first `&`.**
+   `readClassContext` splits a `class_context` at `,` CHILD nodes only, and the corpus
+   writes `&` too: `|\tEq a & Eq b` is a six-child node
+   `[|, constructor, type_variable, &, constructor, type_variable]`, so `Eq` after the
+   first `&` is dropped. Measured: 8 sites at PROD remain unread for this reason, all
+   under an `instance_member` signature, plus 6 under a `where`-block `local_binding`
+   read through a different route. **Not fixed**, and the reason is a decision rather
+   than a difficulty: reading `| Eq a & Eq b` as two constraints emits **two identical
+   `references` edges on one line**, and whether that is a duplicate to collapse or a
+   true multiplicity to keep is a naming question this lane has not answered. Naming it
+   here is the alternative to shipping a silent doubling.
+9. **One `references` self-edge is new and a family of 54 pre-existed.**
+   `clean-stdlib/StdList.icl:16` reads `== -> ==` — an operator class's member requiring
+   its own class. The edge is true and correctly labelled; it is a self-loop. A guard
+   that removed it alone would leave the other 54, so the guard belongs with them and is
+   not part of pass 4.
+10. **`references.class_context` on an instance member's own signature has no oracle.**
+   The differential DOES audit `references`, so the type is not in the four-type DERIVATION
+   list, but `deriveCleanEdges` derives no row for it: measured on clean-stdlib across
+   three rotations, edges 941 → 985 and unexplained 462 → 488 with `MISSING` unmoved at
+   49. One level below the type the gate counts. The oracle is shared and not modified.
+11. **`overrides` is emitted but has no oracle, so the differential calls all 45 sampled
    edges fabrications.** The harness prints `COMPARED WITH NO TRUTH: overrides` and its
    own message names that state "a confident fabrication". They are not — the Q4 probe
    verifies every `overrides` target is a real `class_member` in the same file — but the
    differential cannot know it, because `deriveCleanEdges` derives no `overrides` rows.
    Implementing the type made this lane's differential **redder**. The oracle is shared
    (`script/m14/differential.ts`) and was not modified; the derivation needed is written
-   out in [DERIVATION findings](#derivation-findings-4).
-9. **Four of the lane's types are compared against nothing**: `contains`, `exports`,
+   out in [DERIVATION findings](#derivation-findings-4-types--1-sub-family).
+12. **Four of the lane's types are compared against nothing**: `contains`, `exports`,
    `imports`, `uses` — **118,723 edges, 50.8% of the payload**. The DERIVATION count is
    4 and the four types are named; what is missing is four oracles in shared
    `script/m14/differential.ts`, each specified in
-   [DERIVATION findings](#derivation-findings-4).
-10. **`extends` is audited by name only.** The differential's clean audited set lists
+   [DERIVATION findings](#derivation-findings-4-types--1-sub-family).
+13. **`extends` is audited by name only.** The differential's clean audited set lists
     `extends`, and `deriveCleanEdges` derives none, so the type compares 0/0 and agrees
     with itself. That is the structural defect class `ontology-coverage-gate.ts` exists
     for, and it is invisible precisely because both sides are empty.
-11. **The `overrides` in-file guard leaves 454 measured instances unexpressed.** The
+14. **The `overrides` in-file guard leaves 454 measured instances unexpressed.** The
     corpus-wide pairing is 1,036 occurrences across 78 classes; the analyzer emits 582.
     The 454 difference is instances whose class is declared in another file. That gap is
     deliberate (see the guard's rationale) and is a LIMITATION of the graph, not a
@@ -1289,7 +1489,7 @@ import { CLEAN_MUTANTS } from "./clean-mutants"
     and non-zero only in a file using the `where` form, which is why
     `clean/extends-probe-roles` exists. The 454 is therefore still 454, and the reason is
     now a measured fact rather than an assumption.
-12. **11 instance `Class` symbols across 3 files are named after a TYPE EXPRESSION rather
+15. **11 instance `Class` symbols across 3 files are named after a TYPE EXPRESSION rather
     than an identifier.** `instance Array {#} {#.a}` (`clean-core/Sources/_SystemArray.icl`
     L189), `instance Array {#} {!.a}` (L233), `instance Show {!a}` /
     `instance Eq {!a}` / `instance Ord {!a}` / `instance Appendable {!a}`
@@ -1303,21 +1503,30 @@ import { CLEAN_MUTANTS } from "./clean-mutants"
     Pre-existing (the "253-defect" family), **not fixed here**, and reported: the fix
     requires deciding what such an instance should be called, which is a naming decision
     this lane has not made.
-13. **A polymorphic instance's members share the class member's `qualifiedName`.** With
+16. **A polymorphic instance's members share the class member's `qualifiedName`.** With
     `instance List [] a where _cons …` and `class List a where _cons :: …` in one file,
     both members carry `qualifiedName: List._cons` while the store keeps them as
     distinct rows (distinct `lineStart`). This is why 60 self-edges had to be refused
     rather than emitted. The same family as the 42 where-locals that shadow their own
     frame. **Not fixed here**, and reported.
-14. **The pinned wasm parser crashes on real Clean files.** `[BB-PARSE-ERR] memory
+17. **The pinned wasm parser crashes on real Clean files.** `[BB-PARSE-ERR] memory
     access out of bounds` was observed on at least four distinct corpus files across
     this round's runs — `clean-libraries/Libraries/Gtk/gtk_tree_model.icl`,
     `clean-libraries/Examples/ObjectIO/…/Life.dcl`, `Prelude/Data/List.dcl` and
     `Prelude/Data/List.icl`, the last two in the MAIN corpus. A separate
-    `[BB-HANG] parser stuck 120s` watchdog fires on a different file per run under load,
-    which is the measured cause of this document's 0.03% run-to-run drift. Not a lane
-    defect; a parser-robustness finding for whoever owns `wasm/tree-sitter-clean.wasm`.
-15. **An operator-named class still resolves under only one of its two spellings outside
+    `[BB-HANG] parser stuck 120s` watchdog calls `process.exit(1)` and kills the whole
+    census, which is the measured cause of this document's 0.03% run-to-run drift.
+    **CORRECTED this round: the "different file per run" reading was wrong.** Two attempts
+    at the 2,181-file census, one of them at `nice -n 19`, both died in the SAME directory
+    (`clean-libraries/Examples/ObjectIO/ObjectIO Examples/life/`), and the victim file
+    **parses through production `parseFile` in isolation in 1,519 ms** with 46 symbols and
+    199 relationships. A wasm `memory access out of bounds` on work that completes
+    standalone in 1.5 s is memory/CPU contention across ten concurrent lanes (load average
+    28.07 on 8 cores measured during both attempts), not the parser failing on the input.
+    The previous attribution named a parser-robustness defect that the isolation test does
+    not support. Not a lane defect; a scheduler and `engine.ts` finding — see
+    [report item 7](#reported-to-the-supervisor-not-fixed).
+18. **An operator-named class still resolves under only one of its two spellings outside
     this file.** `isLocallyDeclaredOperatorClass` and the honesty gate's `classNames` both
     correct the BARE→parenthesised direction, because that is the direction the corpus
     produces (a declaration parenthesised, an instance bare). The reverse — a file that
@@ -1326,7 +1535,7 @@ import { CLEAN_MUTANTS } from "./clean-mutants"
     without a measurement. Both call sites are guarded so the untried direction cannot
     produce a false positive, and `class (===)` coexisting with `class ===` in one file
     resolves to the declaration that actually spells each name.
-16. **The differential's oracle is a second walker over the SAME grammar**, so a grammar
+19. **The differential's oracle is a second walker over the SAME grammar**, so a grammar
     bug in both paths is invisible to it. With 30.1% of real Clean files not parsing
     (limitation 0), that is not a theoretical caveat: it is the largest single blind spot
     on this lane, and no amount of differential testing closes it.
