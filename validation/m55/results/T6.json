@@ -1,0 +1,411 @@
+{
+  "issue": "M55.T6",
+  "code": "T6",
+  "milestone": "M55",
+  "status": "verified",
+  "checks": 116,
+  "passed": 116,
+  "failed": 0,
+  "realFailed": 0,
+  "negativeCases": 31,
+  "mutants": {
+    "total": 8,
+    "caught": 8
+  },
+  "anchorDrift": 0,
+  "currentCommit": "747f97945ec7622dd7c03e010274a73b80c51fe9",
+  "workingTreeRelevantChanges": [
+    "script/m55/verify-type-inference.ts"
+  ],
+  "verifierCommand": "npx tsx script/m55/verify-type-inference.ts",
+  "evidenceFile": "T6.json",
+  "generatedAt": "2026-10-05T22:56:42.677Z",
+  "volatileFields": [
+    "generatedAt — the wall clock of the run",
+    "bbSeal — seals generatedAt, so it moves with it",
+    "fixture.workspace — an OS temp directory, different every run",
+    "fixture.projectId — derived by sha1 over realpathSync(workspace), so it is a function of that temp path",
+    "latency — measured p95/p50 timings",
+    "machine.loadavg — the machine's load at run time"
+  ],
+  "fixture": {
+    "workspace": "/var/folders/4j/11tssyqj4kj0f8dfz06jsb700000gn/T/m55-t6-ws-hG26Ro",
+    "projectId": "fa5ca322f2e7b29ba2f59084e802ba5a4df01a04",
+    "symbols": 10
+  },
+  "observed": {
+    "t6-literal": {
+      "provenance": "inferred",
+      "text": "string",
+      "confidence": 1,
+      "withheld": null,
+      "engine": {
+        "name": "string",
+        "confidence": 1,
+        "kind": "primitive",
+        "inferredAtCount": 0
+      },
+      "coverage": {
+        "language": "typescript",
+        "covered": true,
+        "matchedNodeTypes": [
+          "function_declaration"
+        ]
+      }
+    },
+    "t6-void": {
+      "provenance": "inferred",
+      "text": "void",
+      "confidence": 1,
+      "withheld": null,
+      "engine": {
+        "name": "void",
+        "confidence": 1,
+        "kind": "void",
+        "inferredAtCount": 0
+      },
+      "coverage": {
+        "language": "typescript",
+        "covered": true,
+        "matchedNodeTypes": [
+          "function_declaration"
+        ]
+      }
+    },
+    "t6-stored": {
+      "provenance": "stored",
+      "text": "void",
+      "confidence": null,
+      "withheld": null,
+      "engine": null,
+      "coverage": {
+        "language": "typescript",
+        "covered": false,
+        "matchedNodeTypes": []
+      }
+    },
+    "t6-unresolvable": {
+      "provenance": "unknown",
+      "text": "unknown",
+      "confidence": null,
+      "withheld": "no-witness-in-tree",
+      "engine": {
+        "name": "unknown",
+        "confidence": 0,
+        "kind": "unknown",
+        "inferredAtCount": 0
+      },
+      "coverage": {
+        "language": "typescript",
+        "covered": true,
+        "matchedNodeTypes": [
+          "function_declaration"
+        ]
+      }
+    },
+    "t6-pattern-table": {
+      "provenance": "unknown",
+      "text": "unknown",
+      "confidence": null,
+      "withheld": "witness-disagrees-with-engine",
+      "engine": {
+        "name": "string",
+        "confidence": 1,
+        "kind": "primitive",
+        "inferredAtCount": 0
+      },
+      "coverage": {
+        "language": "typescript",
+        "covered": true,
+        "matchedNodeTypes": [
+          "function_declaration"
+        ]
+      }
+    },
+    "t6-scala": {
+      "provenance": "unknown",
+      "text": "unknown",
+      "confidence": null,
+      "withheld": "engine-reported-void-without-valueless-return",
+      "engine": {
+        "name": "void",
+        "confidence": 1,
+        "kind": "void",
+        "inferredAtCount": 0
+      },
+      "coverage": {
+        "language": "scala",
+        "covered": true,
+        "matchedNodeTypes": [
+          "def",
+          "function_definition"
+        ]
+      }
+    },
+    "t6-kotlin": {
+      "provenance": "unknown",
+      "text": "unknown",
+      "confidence": null,
+      "withheld": "no-engine-answer",
+      "engine": null,
+      "coverage": {
+        "language": "kotlin",
+        "covered": true,
+        "matchedNodeTypes": [
+          "function_declaration"
+        ]
+      }
+    },
+    "t6-svelte": {
+      "provenance": "unknown",
+      "text": "unknown",
+      "confidence": null,
+      "withheld": "language-not-covered",
+      "engine": null,
+      "coverage": {
+        "language": "svelte",
+        "covered": false,
+        "matchedNodeTypes": []
+      }
+    },
+    "t6-over-ceiling": {
+      "provenance": "unknown",
+      "text": "unknown",
+      "confidence": null,
+      "withheld": "file-too-large-for-witness",
+      "engine": null,
+      "coverage": {
+        "language": "typescript",
+        "covered": false,
+        "matchedNodeTypes": []
+      }
+    },
+    "t6-not-callable": {
+      "provenance": "unknown",
+      "text": "unknown",
+      "confidence": null,
+      "withheld": "not-a-function-symbol",
+      "engine": null,
+      "coverage": {
+        "language": "typescript",
+        "covered": false,
+        "matchedNodeTypes": []
+      }
+    }
+  },
+  "wireTypeLines": {
+    "t6-literal": {
+      "provenance": "inferred",
+      "text": "string",
+      "confidence": 1,
+      "reason": "witnessed in the tree: 1 return expression(s) of kind string at function_declaration",
+      "withheld": null,
+      "withheldText": null,
+      "storedProvenanceUnknown": false,
+      "stale": false,
+      "witness": {
+        "nodeType": "function_declaration",
+        "startLine": 2,
+        "endLine": 4,
+        "returnExpressionsSeen": 1,
+        "returnKinds": [
+          "string"
+        ],
+        "corroborated": true
+      }
+    },
+    "t6-void": {
+      "provenance": "inferred",
+      "text": "void",
+      "confidence": 1,
+      "reason": "witnessed in the tree: 1 valueless return expression(s) at function_declaration",
+      "withheld": null,
+      "withheldText": null,
+      "storedProvenanceUnknown": false,
+      "stale": false,
+      "witness": {
+        "nodeType": "function_declaration",
+        "startLine": 7,
+        "endLine": 9,
+        "returnExpressionsSeen": 1,
+        "returnKinds": [
+          "valueless"
+        ],
+        "corroborated": true
+      }
+    },
+    "t6-stored": {
+      "provenance": "stored",
+      "text": "void",
+      "confidence": null,
+      "reason": "type as stored in the index; the index records no marker of whether the analyzer read it from an explicit annotation or inferred it, so its own provenance is unstated",
+      "withheld": null,
+      "withheldText": null,
+      "storedProvenanceUnknown": true,
+      "stale": false,
+      "witness": null
+    },
+    "t6-unresolvable": {
+      "provenance": "unknown",
+      "text": "unknown",
+      "confidence": null,
+      "reason": "the engine proposed `unknown`, which is outside the narrow proven subset (a bare primitive literal type only)",
+      "withheld": "no-witness-in-tree",
+      "withheldText": "unknown",
+      "storedProvenanceUnknown": false,
+      "stale": false,
+      "witness": {
+        "nodeType": "function_declaration",
+        "startLine": 2,
+        "endLine": 4,
+        "returnExpressionsSeen": 1,
+        "returnKinds": [],
+        "corroborated": false
+      }
+    },
+    "t6-pattern-table": {
+      "provenance": "unknown",
+      "text": "unknown",
+      "confidence": null,
+      "reason": "the engine proposed `string` but the tree's return expressions read no recognizable literal",
+      "withheld": "witness-disagrees-with-engine",
+      "withheldText": "string",
+      "storedProvenanceUnknown": false,
+      "stale": false,
+      "witness": {
+        "nodeType": "function_declaration",
+        "startLine": 12,
+        "endLine": 14,
+        "returnExpressionsSeen": 1,
+        "returnKinds": [],
+        "corroborated": false
+      }
+    },
+    "t6-scala": {
+      "provenance": "unknown",
+      "text": "unknown",
+      "confidence": null,
+      "reason": "the engine answered `void` at high confidence, but the tree shows no valueless return and no explicit void annotation — that answer means the grammar's return form was not recognized, so it is withheld",
+      "withheld": "engine-reported-void-without-valueless-return",
+      "withheldText": "void",
+      "storedProvenanceUnknown": false,
+      "stale": false,
+      "witness": {
+        "nodeType": "function_definition",
+        "startLine": 2,
+        "endLine": 2,
+        "returnExpressionsSeen": 0,
+        "returnKinds": [],
+        "corroborated": false
+      }
+    },
+    "t6-kotlin": {
+      "provenance": "unknown",
+      "text": "unknown",
+      "confidence": null,
+      "reason": "the engine returned no entry for this function; no type is asserted",
+      "withheld": "no-engine-answer",
+      "withheldText": null,
+      "storedProvenanceUnknown": false,
+      "stale": false,
+      "witness": null
+    },
+    "t6-svelte": {
+      "provenance": "unknown",
+      "text": "unknown",
+      "confidence": null,
+      "reason": "the inference engine has no node-type coverage for svelte; it returned nothing rather than a type",
+      "withheld": "language-not-covered",
+      "withheldText": null,
+      "storedProvenanceUnknown": false,
+      "stale": false,
+      "witness": null
+    },
+    "t6-over-ceiling": {
+      "provenance": "unknown",
+      "text": "unknown",
+      "confidence": null,
+      "reason": "the file is 60 KiB, over the declared 48 KiB ceiling for witnessing (measured: p95 rises past the 50 ms hover budget above that size), so no type was inferred",
+      "withheld": "file-too-large-for-witness",
+      "withheldText": null,
+      "storedProvenanceUnknown": false,
+      "stale": false,
+      "witness": null
+    },
+    "t6-not-callable": {
+      "provenance": "unknown",
+      "text": "unknown",
+      "confidence": null,
+      "reason": "not a callable symbol; no return type exists to report",
+      "withheld": "not-a-function-symbol",
+      "withheldText": null,
+      "storedProvenanceUnknown": false,
+      "stale": false,
+      "witness": null
+    }
+  },
+  "latency": {
+    "perShape": {
+      "ts-literal": {
+        "p95": 6.163162000004377,
+        "p50": 4.6661759999988135,
+        "n": 200
+      },
+      "ts-void": {
+        "p95": 6.155723000003491,
+        "p50": 4.5047579999954905,
+        "n": 200
+      },
+      "scala": {
+        "p95": 6.058399000001373,
+        "p50": 4.243690000002971,
+        "n": 200
+      },
+      "kotlin": {
+        "p95": 5.17962899999111,
+        "p50": 2.890060000005178,
+        "n": 200
+      },
+      "over-ceiling": {
+        "p95": 15.40276799997082,
+        "p50": 11.045978000038303,
+        "n": 200
+      }
+    },
+    "loadAtStart": [
+      3.45556640625,
+      3.76513671875,
+      4.44140625
+    ],
+    "loadAtEnd": [
+      2.728515625,
+      3.4462890625,
+      4.19921875
+    ]
+  },
+  "machine": {
+    "platform": "darwin",
+    "release": "23.6.0",
+    "cpus": 12,
+    "ramGB": 17.2,
+    "loadavg": [
+      2.73,
+      3.45,
+      4.2
+    ]
+  },
+  "failures": [],
+  "limitations": [
+    "The proven inferred subset is deliberately narrow: a bare primitive literal type (string/number/boolean) whose every return expression in the tree agrees, or `void` witnessed by a valueless return or an explicit void/Unit annotation. Anything else renders the declared unknown marker. Measured coverage on the fixture: 2 of 8 cases (both typescript).",
+    "MEASURED engine coverage is 0 for vue and svelte (no declared node type matches), and 'covered but no entry' for kotlin, rust, c and cpp (getFunctionBody finds no body field). Those absences are DECLARED with distinct reasons, never rendered as an empty type.",
+    "MEASURED engine dishonesty: scala, groovy and zig get `void` at confidence 1.0 for expression-bodied functions that return String. The facade withholds all three. This is a defect in src/ast/type-inference.ts (read-only to this lane); the API needed to fix it is recorded in docs/M55-T6-TYPE-INFERENCE.md.",
+    "The index's own return_type column carries NO marker of explicit-vs-inferred (measured across 735 brain.db indexes / 985,094 symbols: 38,924 carry a type, and 62% of the typescript ones do not appear verbatim at the declaration line). The `stored` class therefore declares `storedProvenanceUnknown: true` on the wire rather than resolving it by guessing.",
+    "Latency is measured over a four-file fixture workspace. The p95 is a real nearest-rank p95 over 200 samples per shape with the load average recorded, but the fixture is small; no large-file hover leg is measured here.",
+    "No editor leg (I3) and no fork leg (I4) is measured. This is an I2-surface claim at best: the component and the wire are exercised, not a pinned editor."
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-10-05T22:56:42.681Z",
+    "contentSha256": "a19f2a0e86344dd881b9c2cb7da44a802062bc6e1c28e7e66d1bcb65b9064454"
+  }
+}
