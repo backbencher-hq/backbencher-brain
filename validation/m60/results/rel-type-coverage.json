@@ -1,5 +1,5 @@
 {
-  "at": "2026-10-03T17:24:34.951Z",
+  "at": "2026-10-05T20:03:46.469Z",
   "enumValues": [
     "calls",
     "contains",
@@ -14,28 +14,22 @@
   ],
   "lanes": [
     {
-      "lang": "go",
+      "lang": "graphql",
       "emitted": [
-        "calls",
         "contains",
         "exports",
         "extends",
         "implements",
         "imports",
-        "instantiates",
         "overrides",
         "references",
         "uses"
       ],
       "audited": [
-        "calls",
-        "contains",
         "extends",
         "implements",
-        "imports",
         "instantiates",
-        "references",
-        "uses"
+        "overrides"
       ]
     }
   ],
@@ -54,24 +48,40 @@
   "findings": [
     {
       "check": "DERIVATION",
-      "lang": "go",
-      "detail": "emits `exports` but the differential audits [\"calls\",\"contains\",\"extends\",\"implements\",\"imports\",\"instantiates\",\"references\",\"uses\"] — the type is stored and compared against nothing"
+      "lang": "graphql",
+      "detail": "emits `contains` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing"
     },
     {
       "check": "DERIVATION",
-      "lang": "go",
-      "detail": "emits `overrides` but the differential audits [\"calls\",\"contains\",\"extends\",\"implements\",\"imports\",\"instantiates\",\"references\",\"uses\"] — the type is stored and compared against nothing"
+      "lang": "graphql",
+      "detail": "emits `exports` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing"
+    },
+    {
+      "check": "DERIVATION",
+      "lang": "graphql",
+      "detail": "emits `imports` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing"
+    },
+    {
+      "check": "DERIVATION",
+      "lang": "graphql",
+      "detail": "emits `references` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing"
+    },
+    {
+      "check": "DERIVATION",
+      "lang": "graphql",
+      "detail": "emits `uses` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing"
     }
   ],
   "inputErrors": [],
   "inputErrorLanes": [],
   "baseline": {
     "recorded": 104,
-    "regressions": 2,
-    "repaid": 104,
+    "regressions": 3,
+    "repaid": 102,
     "regressionsDetail": [
-      "DERIVATION|go|emits `exports` but the differential audits [\"calls\",\"contains\",\"extends\",\"implements\",\"imports\",\"instantiates\",\"references\",\"uses\"] — the type is stored and compared against nothing",
-      "DERIVATION|go|emits `overrides` but the differential audits [\"calls\",\"contains\",\"extends\",\"implements\",\"imports\",\"instantiates\",\"references\",\"uses\"] — the type is stored and compared against nothing"
+      "DERIVATION|graphql|emits `exports` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing",
+      "DERIVATION|graphql|emits `imports` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing",
+      "DERIVATION|graphql|emits `references` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing"
     ]
   }
 }
