@@ -79,6 +79,57 @@ const mutantVerdicts: Array<{ name: string; caught: boolean; detail: string; cau
  */
 const CALL_SITE_CAPABLE_KINDS = new Set(["calls", "call", "instantiates", "overrides"]);
 
+/**
+ * The relationship kind a RENDERED entry came from, read off its own detail line.
+ *
+ * WHY THIS IS NOT A REGEX ON THE WHOLE STRING — measured, and it changes the
+ * verdict. The component builds that line as
+ * `${node.symbolType} · ${edge.relationshipType} · ${…}`, so it never STARTS
+ * with the relationship kind. The predecessor of this helper tested
+ * `/^calls\b/.test(detail)` and therefore flagged EVERY rendered entry,
+ * including genuine `calls` rows. Measured over the real index on this
+ * fixture's `deep/incoming` answer: both rendered callers (`mid`, `many`) carry
+ * `function · calls · 1 call site`, and the old test called both of them
+ * "non-call rows". It reported C6 red at HEAD for the right REASON and C6/C6d
+ * vacuously GREEN after the fix for the WRONG one — the check could not tell a
+ * `calls` row from a `contains` row, so it never tested the law it names
+ * (script/m55/verify-call-hierarchy.ts, C6d's `plantedRendered`).
+ *
+ * The segments are ` · `-delimited and the kind is the SECOND one. This helper
+ * is stated over the DETAIL rather than over an internal field because the wire
+ * carries the detail and not the row: a check the wire could not satisfy would
+ * be checking something the editor never sees.
+ */
+function renderedRelationshipKind(detail: unknown): string {
+  return String(detail ?? "").split(" · ")[1] ?? "";
+}
+
+/**
+ * §15.1 read as a COHERENCE law rather than a presence law: every relationship
+ * kind this answer says it DECLINED must be a kind its own declared filter
+ * admits it read.
+ *
+ * This is the predicate that convicts "the surface stopped asking the engine for
+ * call rows but kept declaring that it reads only them". Measured on the real
+ * index, with the engine request present the answer declines 1 row (the
+ * receiver-qualified `calls` artifact) and `relationshipTypes` is `["calls"]`;
+ * with the request removed the very same answer declines 8 rows, 6 of them
+ * `contains`/`uses`, while still declaring `["calls"]` — a declaration the
+ * answer's own drop list contradicts.
+ *
+ * Why not assert the request itself: the request is not observable from the
+ * response. `defaultTraverse` receives `GraphTraversalOptions`, and nothing the
+ * surface returns echoes them, so no check here can distinguish "passed the
+ * option" from "ignored it". This predicate states the weaker thing that IS
+ * observable and is a real defect on its own — a self-contradicting answer.
+ */
+function declinedKindsOutsideDeclaredFilter(answer: any): string[] {
+  const declared = new Set<string>(Array.isArray(answer.relationshipTypes) ? answer.relationshipTypes : []);
+  return (answer.droppedEdges ?? [])
+    .map((d: any) => /the stored row is a "([^"]+)" relation/.exec(String(d.reason ?? ""))?.[1])
+    .filter((k: string | undefined): k is string => k !== undefined && !declared.has(k));
+}
+
 function mutant(label: string, caught: boolean, detail = ""): void {
   mutantsTotal++;
   if (caught) mutantsCaught++;
@@ -453,8 +504,8 @@ try {
   // this check and W1 true and leaves the receiver-qualified `get -> get`
   // artifact dropped-and-declared with its reason (C1 unchanged). That file is
   // another lane's, so this gate stays honestly RED with the reason recorded.
-  const nonCallRendered = compIncoming.calls.filter((c: any) => !/^calls\b/.test(String(c.from?.detail ?? ""))).map((c: any) => ({
-    name: c.from?.name, detail: c.from?.detail, ranges: c.fromRanges,
+  const nonCallRendered = compIncoming.calls.filter((c: any) => renderedRelationshipKind(c.from?.detail) !== "calls").map((c: any) => ({
+    name: c.from?.name, kind: renderedRelationshipKind(c.from?.detail), detail: c.from?.detail, ranges: c.fromRanges,
   }))
   check(
     "C6: every rendered caller carries a call-site range for a CALLS row (a `contains`/`uses` row must not produce one)",
@@ -524,8 +575,8 @@ try {
   }));
   const plantedRendered = (answer: any, side: "from" | "to") =>
     (answer.calls ?? [])
-      .filter((c: any) => !/^calls\b/.test(String((c[side] ?? {}).detail ?? "")))
-      .map((c: any) => ({ name: c[side]?.name, detail: c[side]?.detail, ranges: c.fromRanges }));
+      .filter((c: any) => renderedRelationshipKind((c[side] ?? {}).detail) !== "calls")
+      .map((c: any) => ({ name: c[side]?.name, kind: renderedRelationshipKind((c[side] ?? {}).detail), detail: c[side]?.detail, ranges: c.fromRanges }));
   const plantedBoth = [
     ...plantedRendered(nonCallAnswer, "from").map((r: any) => ({ direction: "incoming", ...r })),
     ...plantedRendered(nonCallOutAnswer, "to").map((r: any) => ({ direction: "outgoing", ...r })),
@@ -548,6 +599,18 @@ try {
   // exact `Store contains get` row and a cascaded `uses` row. A reader told
   // "no stored callers" would conclude the class has no relationship to its own
   // method, which is the opposite of what the store says.
+  //
+  // READ THE SHAPE OF THIS STIMULUS, because it is the reason the check is
+  // worth having. `callsOnly` is the engine asked for CALL rows only, which is
+  // exactly what the shipped component now asks for — so this leg can no longer
+  // tell a surface that filters BY ASKING from one that filters BY DROPPING.
+  // It still measures something real and false-if-broken: it forces the filter
+  // at the engine boundary and asserts the ANSWER says which rows it read.
+  // With the filter applied the engine still returns the depth-0 `calls` row for
+  // this symbol (the receiver-qualified artifact — measured, not assumed:
+  // callers.length 1, not 0), so the answer is empty via the drop path and its
+  // absence is the one a reader sees. The `relationshipTypes` declaration is
+  // asserted separately by C6f over three answers.
   const { defaultTraverse: realTraverse } = await import(COMPONENT);
   const callsOnly = async (pid: any, root: any, options: any) =>
     realTraverse(pid, root, { ...options, relationshipTypes: ["calls"] });
@@ -559,6 +622,37 @@ try {
       /call/i.test(String((filteredReal.absence as any).message ?? "")) &&
       /relationship|kind|type|filter/i.test(String((filteredReal.absence as any).message ?? "")),
     JSON.stringify({ rendered: (filteredReal.calls ?? []).length, absence: filteredReal.absence, dropped: filteredReal.droppedEdges }),
+  );
+  // The absence must not make a CLAIM ABOUT THE STORE'S CONTENTS that the
+  // surface cannot support. Stated negatively and tightly, because the two loose
+  // halves above are satisfied by almost any sentence that mentions the word
+  // "kind": once a surface filters, "the engine returned no stored caller edge"
+  // is a claim about rows it never asked for, and on this index it is false (the
+  // store holds `Store:contains:get` and a cascaded `uses` row). This is the
+  // exact wording the pre-fix code emitted, so this assertion is falsifiable by
+  // the pre-fix code itself.
+  const absenceMustNotClaimStoreEmpty = (message: string): boolean =>
+    !/the engine returned no stored/i.test(message);
+  check(
+    "C6g: the absence does not assert that the engine returned no stored edge — a filtered surface never asked for the other kinds (§11.7)",
+    absenceMustNotClaimStoreEmpty(String((filteredReal.absence as any)?.message ?? "")) &&
+      absenceMustNotClaimStoreEmpty(String((compIncoming.absence as any)?.message ?? "")),
+    JSON.stringify({
+      filtered: String((filteredReal.absence as any)?.message ?? ""),
+      shipped: String((compIncoming.absence as any)?.message ?? ""),
+    }),
+  );
+  // The half C6g's stimulus cannot reach, stated over the SHIPPED path: the
+  // answer the editor actually receives must declare its filter too, or §15.1's
+  // "a surface that filters differently states its filter" holds only on a path
+  // no client reaches.
+  check(
+    "C6g: the SHIPPED answer (no injected traverse) also names the filter in its empty-answer absence (§11.7)",
+    (compIncoming.calls ?? []).length === 0 &&
+      compIncoming.absence !== null &&
+      /call/i.test(String((compIncoming.absence as any).message ?? "")) &&
+      /relationship|kind|type|filter/i.test(String((compIncoming.absence as any).message ?? "")),
+    JSON.stringify({ rendered: (compIncoming.calls ?? []).length, absence: compIncoming.absence }),
   );
 
   // C2, RE-UNITED (§13.4): the assertion is now against the RANGES RENDERED, not
@@ -710,24 +804,100 @@ try {
       from: "      ? { ...expanded, detail: `${expanded.detail} · position approximate` }",
       to: "      ? { ...expanded }",
     },
+    // The three below plant the defects this lane's fix introduced the MEANS to
+    // commit, and each is convicted by its OWN predicate rather than by one
+    // shared with the five above: a shared predicate lets one mutant's failure
+    // vouch for another's, which is the oracle/implementation sharing §8.7
+    // names. A6 removes the defence in depth; A7 removes the engine request
+    // (the pre-fix state) — the two are separate because only the second can
+    // convict A7: with the drop in place a surface that forgets to ask the
+    // engine is still honest, and saying otherwise would be a false claim.
+    {
+      name: "filter: render a non-call row anyway (defence in depth removed)",
+      from: '    if (!(CALL_HIERARCHY_RELATIONSHIP_TYPES as readonly string[]).includes(edge.relationshipType)) {',
+      to: "    if (false) {",
+    },
+    {
+      name: "filter: ask the engine for every relationship kind again (the pre-fix request)",
+      from: "    relationshipTypes: [...CALL_HIERARCHY_RELATIONSHIP_TYPES],\n  });",
+      to: "  });",
+    },
+    {
+      name: "declared: answer without the relationship-kind filter (§15.1)",
+      from: "    relationshipTypes: [...CALL_HIERARCHY_RELATIONSHIP_TYPES],\n  };\n}",
+      to: "    relationshipTypes: [],\n  };\n}",
+    },
+    {
+      // The WHOLE message is reverted, not its first clause. MEASURED why the
+      // smaller anchor is worthless here: reverting only the opening clause
+      // leaves "This surface reads the 1 relationship kind(s) … only and declares
+      // that filter" behind, and the predicate that asks for the word "kind" is
+      // then satisfied by the mutant itself — it SURVIVED the first run of this
+      // table for exactly that reason. The claim being planted is the claim
+      // about the store, so the whole sentence that makes it must go.
+      name: "absence: imply the store holds no rows when the FILTER emptied the answer (§11.7)",
+      // Anchor the EXACT current text of the `edges.length > 0` branch. The
+      // component carries TWO absence sentences (the "no rows at all" branch and
+      // the "read some, rendered none" branch), and only the second is on this
+      // path: with the filter applied the engine still returns the depth-0
+      // `calls` row for this symbol (measured, callers.length 1), so a filtered
+      // empty answer never reaches the first.
+      from: '`no stored ${direction === "callers" ? "caller" : "callee"} CALL row of this symbol is rendered. This surface reads the ${CALL_HIERARCHY_RELATIONSHIP_TYPES.length} relationship kind(s) ${JSON.stringify(CALL_HIERARCHY_RELATIONSHIP_TYPES)} only and declares that filter on every response (§15.1): ${edges.length} stored CALL row(s) were read and ${droppedEdges.length} were dropped or declared absent, each with its reason and kind named — rows of other kinds may be stored for this symbol and are not ${direction === "callers" ? "callers" : "callees"} here, so this answer is "no stored call rendered", not "no stored relationship"`',
+      to: '`the engine returned no stored ${direction === "callers" ? "caller" : "callee"} edge for ${rootRow.name} (this is an indexed, served symbol: the answer is "none stored", not "unknown")`',
+    },
   ];
   /**
-   * MUTANTS DELIBERATELY NOT ADDED, and why — the reader needs this as much as
-   * the verdicts.
+   * THE FILTER MUTANT IS NOW IN THE LIST, and this is the record of why it could
+   * not be before.
    *
-   * The obvious sixth mutant is "filter: ask the engine for every relationship
-   * kind again". It is NOT in the list, and the reason is the oracle, not
-   * laziness: the only predicate that can catch it is "the answer declares a
-   * call-site-capable filter" (C6f), and C6f is RED on the real component. A
+   * The pre-fix suite deliberately omitted it (comment preserved in the lane
+   * report): its only oracle predicate was "the answer declares a
+   * call-site-capable filter" (C6f), and C6f was RED on the real component. A
    * mutant oracle must be evaluated against a baseline in which every predicate
-   * holds; adding a permanently-false predicate to this set would make all five
-   * existing mutants report "caught by filterOk" while saying nothing about the
-   * defect each one plants. That is the tautology §8.7 names.
+   * HOLDS; adding a permanently-false predicate would have made all five
+   * existing mutants report `caught by filterOk` while judging nothing about
+   * the defect each one plants — the tautology §8.7 names.
    *
-   * The filter's falsifiability is demonstrated instead by the four C6 checks
-   * being red on the real component at this commit. A check observed to be red
-   * has, by construction, been observed to fail — a stronger statement than a
-   * mutation test that must first be planted.
+   * The predicate set below has a baseline in which all nine hold (verified:
+   * the suite reports every new mutant as NOT-judged-free and the unchanged
+   * five still convicted by their own predicates), so the filter mutants are
+   * now judged rather than argued.
+   *
+   * WHAT EACH NEW MUTANT IS CONVICTED BY, stated so a reader can check the
+   * oracle rather than trust it:
+   *
+   *   defence in depth removed     `nonCallRenderedOk` — the real-index answer
+   *                                renders an entry whose detail is
+   *                                `class · contains · 1 call site`, and that
+   *                                entry carries a range. This is the pre-fix
+   *                                C6 failure verbatim.
+   *   every relationship kind again `filterDeclaredOk` (declaration) AND
+   *                                `plantedOk`. Removing only the engine request
+   *                                leaves the surface HONEST — the rows are read
+   *                                and omitted with their kind named — so the
+   *                                honest statement is that this defect is a
+   *                                §15.1 declaration failure, not a §15.3 range
+   *                                failure, and the predicate says so. It is
+   *                                convicted because the response still DECLARES
+   *                                it read only `calls` while the engine handed
+   *                                it `contains` and `uses`: measured on the real
+   *                                index, with the request removed the engine
+   *                                returns 8 caller rows of which 6 are
+   *                                non-`calls` (script/m55/c6-cascade-probe.ts).
+   *                                Note what is NOT claimed: the request is not
+   *                                observable from the response, so this suite
+   *                                cannot prove the option was passed. It proves
+   *                                the response does not LIE about it.
+   *   no declared filter           `filterDeclaredOk` — `relationshipTypes: []`
+   *                                is the declared shape of a response that
+   *                                read nothing; the predicate requires a
+   *                                non-empty call-site-capable list.
+   *   absence implies empty store  `absenceOk` — the reverted wording says
+   *                                "the engine returned no stored caller edge",
+   *                                which on this index is FALSE (it holds
+   *                                `Store:contains:get`), and the predicate
+   *                                requires the message to name both the call
+   *                                kind and the filter.
    */
 
 /**
@@ -751,6 +921,58 @@ function rewriteRelativeImports(source: string): string {
 }
 
   const mutantDir = mkdtempSync(path.join(tmpdir(), "m55-t2-mut-"));
+
+  /**
+   * THE CONTROL, and it is the check that makes the whole mutant table mean
+   * anything. Every predicate below is evaluated against the UNMUTATED component
+   * first; if any one of them is FALSE there, the table is reporting "caught" by
+   * a predicate that never held, and every verdict it produces is free.
+   *
+   * This control is NOT decorative, and this suite is the proof: adding the four
+   * filter/declaration predicates in this lane initially left `selectionOk`
+   * reading `incomp.calls[0]` — and because the fix legitimately empties `get`'s
+   * caller list, `incomp.calls` was empty, `selectionOk` was FALSE in the
+   * baseline, and the run reported four of the nine mutants "caught by
+   * selectionOk" for free. The predicate is now read off an answer that renders,
+   * and this control is what would have said so automatically. §8.7's tautology,
+   * caught by measurement instead of shipped.
+   */
+  const baselinePredicates = (await (async () => {
+    const incomp = await ch.expandCalls(raw, projectId, { item: getItem, direction: "incoming" });
+    const mult = await ch.expandCalls(raw, projectId, { item: deepItem, direction: "incoming" });
+    const approxCase = await ch.expandCalls(raw, projectId, { item: getItem, direction: "incoming" }, fakeTraverse);
+    const planted = await ch.expandCalls(raw, projectId, { item: getItem, direction: "incoming" }, nonCallTraverse);
+    const absent = await ch.expandCalls(raw, projectId, { item: getItem, direction: "incoming" }, callsOnly);
+    const manyMod = mult.calls.find((c: any) => c.from?.name === "many");
+    const selectionEntry = mult.calls[0];
+    const absenceMessage = String((absent.absence as any)?.message ?? "");
+    return {
+      rangesOk: (manyMod?.fromRanges ?? []).length === 2 &&
+        (manyMod?.fromRanges ?? []).every((r: any) => sliceRange(T2_EXPECT.multi.rel, r) === "deep"),
+      droppedOk: (incomp.droppedEdges ?? []).length >= 1 && incomp.calls.every((c: any) => c.from?.name !== "get"),
+      selectionOk: selectionEntry !== undefined &&
+        sliceRange(relOf(selectionEntry.from?.uri ?? ""), selectionEntry.from?.selectionRange) === String(selectionEntry.from?.name ?? "\u0000"),
+      declaredOk: approxCase.callSitesApproximate === 1 && String(approxCase.calls[0]?.from?.detail ?? "").includes("position approximate"),
+      hopOk: !mult.calls.some((c: any) => c.from?.name === "top") &&
+        (mult.droppedEdges ?? []).some((d: any) => String(d.reason).includes("transitive hop")),
+      nonCallRenderedOk: [...(incomp.calls ?? []), ...(mult.calls ?? [])]
+        .every((c: any) => renderedRelationshipKind((c.from ?? c.to)?.detail) === "calls"),
+      filterDeclaredOk: Array.isArray(incomp.relationshipTypes) && incomp.relationshipTypes.length > 0 &&
+        incomp.relationshipTypes.every((k: unknown) => typeof k === "string" && CALL_SITE_CAPABLE_KINDS.has(k)),
+      plantedOk: planted.calls.length === 0 &&
+        ["contains", "uses"].every((kind) => (planted.droppedEdges ?? []).some((d: any) => String(d.reason).includes(kind))),
+      absenceOk: absent.calls.length === 0 && /call/i.test(absenceMessage) &&
+        /relationship|kind|type|filter/i.test(absenceMessage),
+      filterCoherentOk: declinedKindsOutsideDeclaredFilter(incomp).length === 0,
+    };
+  })());
+  const baselineFalse = Object.entries(baselinePredicates).filter(([, ok]) => !ok).map(([k]) => k);
+  check(
+    "M/CONTROL: every mutant-oracle predicate HOLDS on the UNMUTATED component (no free verdicts — §8.7)",
+    baselineFalse.length === 0,
+    `predicate(s) false in the baseline: ${JSON.stringify(baselineFalse)} — every mutant reading "caught by" one of these is convicted for free`,
+  );
+
   for (const m of MUTANTS) {
     if (!componentSource.includes(m.from)) {
       mutantNotJudged(`${m.name} (anchor not found — suite is stale)`, "anchor missing");
@@ -775,13 +997,68 @@ function rewriteRelativeImports(source: string): string {
       const rangesOk = (manyMod?.fromRanges ?? []).length === 2 &&
         (manyMod?.fromRanges ?? []).every((r: any) => sliceRange(T2_EXPECT.multi.rel, r) === "deep");
       const droppedOk = (incomp.droppedEdges ?? []).length >= 1 && incomp.calls.every((c: any) => c.from?.name !== "get");
-      const selectionOk = sliceRange(T2_EXPECT.store.rel, incomp.calls[0]?.from?.selectionRange ?? { start: { line: 0, character: 0 }, end: { line: 0, character: 0 } }) !== "";
+      // Read off `mult` (deep/incoming), NOT off `incomp` (get/incoming). MEASURED
+      // why that matters now: `get` is genuinely never called in this fixture, so
+      // the fix empties its caller list (that is the W1 law), `incomp.calls[0]` is
+      // undefined, and a predicate reading it was FALSE in the baseline — which
+      // is the tautology §8.7 names: every mutant then reads as "caught by
+      // selectionOk" for free while selectionOk says nothing about selection.
+      // `deep/incoming` renders two callers (`mid`, `many`), so the predicate has
+      // something real to read in the baseline and can fail when selection is
+      // broken.
+      const selectionEntry = mult.calls[0];
+      // The law this predicate states is "selectionRange is the NAME token in the
+      // caller's OWN source" — the same law W1 asserts on the wire — so it reads
+      // the caller's own file by URI rather than a fixture constant. It held
+      // only a non-emptiness test against a FIXED path before, which would have
+      // passed for a body-wide range on any non-empty line.
+      const selectionOk = selectionEntry !== undefined &&
+        sliceRange(relOf(selectionEntry.from?.uri ?? ""), selectionEntry.from?.selectionRange) === String(selectionEntry.from?.name ?? "\u0000");
       const approxCase = await mod.expandCalls(raw, projectId, { item: getItem, direction: "incoming" }, fakeTraverse);
       const declaredOk = approxCase.callSitesApproximate === 1 && String(approxCase.calls[0]?.from?.detail ?? "").includes("position approximate");
       const hopOk = !mult.calls.some((c: any) => c.from?.name === "top") &&
         (mult.droppedEdges ?? []).some((d: any) => String(d.reason).includes("transitive hop"));
-      const caught = !(rangesOk && droppedOk && selectionOk && declaredOk && hopOk);
-      mutant(m.name, caught, JSON.stringify({ rangesOk, droppedOk, selectionOk, declaredOk, hopOk }));
+      // The three filter/declaration predicates. Each is stated over a REAL
+      // answer of the MUTANT module, so a mutant cannot pass by declaring
+      // something the oracle never reads.
+      //
+      // `nonCallRenderedOk` is the same law C6 states, re-expressed against the
+      // mutant: a rendered entry whose detail does not begin `calls` came from a
+      // row that names no call site, and it is carrying a range.
+      const nonCallRenderedOk = [...(incomp.calls ?? []), ...(mult.calls ?? [])]
+        .every((c: any) => renderedRelationshipKind((c.from ?? c.to)?.detail) === "calls");
+      // A surface that forgets to ASK the engine still reads the engine's
+      // default ten-kind superset. With the defence in depth in place those rows
+      // are omitted and DECLARED, which is honest — so the predicate that
+      // convicts this mutant is the DECLARED filter matching what was asked
+      // for, which is what §15.1 is about. The declaration is not evidence of
+      // the request, so this mutant is convicted by comparing the engine's own
+      // caller rows against the kinds the response says it read: if a non-call
+      // kind was read, the response's declaration is false.
+      const declaredKinds = incomp.relationshipTypes;
+      const filterDeclaredOk = Array.isArray(declaredKinds) && declaredKinds.length > 0 &&
+        declaredKinds.every((k: unknown) => typeof k === "string" && CALL_SITE_CAPABLE_KINDS.has(k));
+      // The hermetic leg: with a traverse that hands back a planted
+      // `contains`/`uses` row (bypassing the engine option entirely), nothing
+      // may render and both kinds must be named in the drop list.
+      const plantedMod = await mod.expandCalls(raw, projectId, { item: getItem, direction: "incoming" }, nonCallTraverse);
+      const plantedOk = plantedMod.calls.length === 0 &&
+        ["contains", "uses"].every((kind) => (plantedMod.droppedEdges ?? []).some((d: any) => String(d.reason).includes(kind)));
+      // C6g's law: an answer emptied BY the filter must say so, and must not
+      // claim the store holds nothing. The second half is stated negatively and
+      // tightly (see `absenceMustNotClaimStoreEmpty` at the C6g checks): the
+      // two positive halves are satisfied by almost any sentence containing the
+      // word "kind", so on their own they do not convict the reverted wording.
+      const absentMod = await mod.expandCalls(raw, projectId, { item: getItem, direction: "incoming" }, callsOnly);
+      const absenceMessage = String((absentMod.absence as any)?.message ?? "");
+      const absenceOk = absentMod.calls.length === 0 && /call/i.test(absenceMessage) &&
+        /relationship|kind|type|filter/i.test(absenceMessage) &&
+        !/the engine returned no stored/i.test(absenceMessage);
+      // §15.1 coherence: the answer may not decline a row of a kind its own
+      // declared filter excludes. Convicts the pre-fix request.
+      const filterCoherentOk = declinedKindsOutsideDeclaredFilter(incomp).length === 0;
+      const caught = !(rangesOk && droppedOk && selectionOk && declaredOk && hopOk && nonCallRenderedOk && filterDeclaredOk && plantedOk && absenceOk && filterCoherentOk);
+      mutant(m.name, caught, JSON.stringify({ rangesOk, droppedOk, selectionOk, declaredOk, hopOk, nonCallRenderedOk, filterDeclaredOk, plantedOk, absenceOk, filterCoherentOk }));
     } catch {
       mutant(m.name, true, "component crash under the mutant");
     }
@@ -807,6 +1084,14 @@ function rewriteRelativeImports(source: string): string {
     mutantVerdicts,
     mutantHarness: {
       importRewriting: "GENERIC: every relative import in the component copy is rewritten to an absolute file URL from what the source ACTUALLY imports (not a hand-written list)",
+      baselineControl: {
+        law: "every predicate the mutant table uses is evaluated against the UNMUTATED component first, and the run FAILS if any one of them is false there (check `M/CONTROL`). A predicate that never held convicts every mutant for free; §8.7 names that the tautology.",
+        predicatesAtThisRun: baselinePredicates,
+        falseInBaseline: baselineFalse,
+        caughtByThisControl: "this lane added the four filter/declaration predicates while `selectionOk` still read `incomp.calls[0]`. The fix legitimately empties `get`'s caller list (that is the W1 law), so that entry was undefined, `selectionOk` was FALSE in the baseline, and four mutants reported `caught by: selectionOk` for free. Measured, then fixed: the predicate now reads an answer that renders (`deep/incoming`), asserts the NAME token in the caller's OWN file rather than non-emptiness against a fixed path, and M/CONTROL is what makes that class of defect fail loudly instead of quietly.",
+      },
+      relationshipKindReadCorrected:
+        "C6, C6d's `plantedRendered` and the mutant predicate all read the relationship kind with `/^calls\\b/.test(detail)`. The component's detail line is `${symbolType} · ${relationshipType} · …`, so it never STARTS with the kind: measured on the real index, BOTH rendered callers of `deep` carry `function · calls · 1 call site` and the old test called both of them non-call rows. The check reported the pre-fix failure for the right reason and would have gone vacuously green afterwards for the wrong one — it could not tell a `calls` row from a `contains` row. Corrected to read the SECOND ` · `-delimited segment (`renderedRelationshipKind`). This is a correction to a check, justified by measurement, and it TIGHTENS the gate: the pre-fix component is still red under it (verified by re-running the suite against the unmutated pre-fix source through the same predicate).",
       preLaneDefect: "the pre-lane rewriter was a hand-written list that omitted ./signature (and, since wave 1, ./launch_languages, ./symbols, ../brain/freshness and ../intelligence/graph/line-address); every mutant then died on an import error while being counted \"caught\", so the evidence said 5/5 while the oracle had never run",
       importFailureIsNotCaught: true,
       componentImportsAtThisRun: relativeImportsOfComponent(),
@@ -848,7 +1133,17 @@ function rewriteRelativeImports(source: string): string {
      * script/m55/c6-cascade-probe.ts over this same fixture's real index.
      */
     c6Disposition: {
-      decision: "(c) gate it precisely: this surface asks the graph engine for CALL rows, DECLARES that filter on every response (§15.1), and drops+declares any non-call row that still arrives. The change is one call site plus one declared field in src/lsp/call_hierarchy.ts, which is another lane's file, so this gate is honestly RED.",
+      decision: "(c) gate it precisely: this surface asks the graph engine for CALL rows, DECLARES that filter on every response (§15.1), and drops+declares any non-call row that still arrives. APPLIED in src/lsp/call_hierarchy.ts on branch fix/c6-call-site-filter (gated RED here first, per F7: W1, C6, C6d, C6e, C6f and C6g all failed at 51/57 before the change and all pass at 58/58 after).",
+      regressionCaught:
+        "Sibling gate L5 (script/m24/verify-call-hierarchy.ts, this component's own M24 gate) went verified 97/97 -> known-gap 96/97 on the FIRST run of this patch, and its G7 check is the sibling law of the sentence this lane rewrote: G7 asserts the empty-answer absence contains \"none stored\". The first reword dropped that phrase and left L5 red. Fixed in the COMPONENT, not by touching L5: the absence now carries TWO sentences, one per branch, and the branch that answers \"the engine returned no rows at all\" keeps the \"none stored\" wording L5 asserts while stating that the claim is scoped to the kind(s) this surface reads. L5 re-runs at 97/97 with 23/23 mutants. Recorded because a fix that silently moves a sibling gate from verified to known-gap is a regression even when the failing check belongs to another milestone, and because the honest fix was in the wording, not in the other lane's assertion.",
+    landed: {
+        component: "src/lsp/call_hierarchy.ts",
+        constant: "CALL_HIERARCHY_RELATIONSHIP_TYPES = [\"calls\"] as const, passed into the engine's traverse options",
+        defenceInDepth: "a non-call row that still arrives is omitted and DECLARED with its kind named, placed AFTER the D4 tally so the census still partitions every stored edge read",
+        declaration: "relationshipTypes on every ExpandResult, including all three early returns and the normal answer (§15.1)",
+        absence: "TWO sentences, one per branch, because measurement showed a filtered empty answer does not take the \"no rows at all\" branch. Both name the filter; the first keeps the \"none stored\" wording M24 G7 asserts and scopes it to the kinds this surface reads, the second reports what was read and what was dropped with its kind.",
+        specDrift: "the handoff patch spec (PATCHES.md) had three gaps against the file at HEAD, each measured rather than assumed: (1) it added relationshipTypes to the three early returns but NOT to the normal return, so tsc rejected the build (TS2741) and C6f stayed RED; (2) it reworded ONLY the `edges.length === 0` branch of the absence, which a filtered empty answer never takes — measured: the engine still returns the depth-0 `calls` row for this symbol under relationshipTypes [\"calls\"] (callers.length 1), so the taken branch was the other one and C6g stayed RED; (3) it placed the defence-in-depth drop correctly after the D4 tally, and that part was accurate.",
+      },
       causeMeasured:
         "For Store.get / callers the engine returns 8 edges: 2 exact, 6 owner-cascade. The row behind the headline range (Store rendered as a caller of get) is the EXACT depth-0 row `Store:contains:get` — the store genuinely holds 'Store contains get'. The pre-lane comment in this file said both non-call rows arrived via the cascade; that is wrong for the contains row and is corrected above. One level down the claim holds in substance: every rule in the component is keyed on `relationshipType === \"calls\"`, so the engine's default TEN-KIND superset feeds membership and lexical rows to a renderer that must emit call-site ranges.",
       rejected: {
@@ -857,27 +1152,22 @@ function rewriteRelativeImports(source: string): string {
       },
       measuredBlastRadius:
         "Run twice over the same index and the same component with one option changed: the receiver-qualified `get -> get` artifact is still dropped AND declared with its reason (C1 unchanged, droppedEdges keeps the 'receiver-qualified ... this.items.get' entry); rendered non-call entries go 2 -> 0 (C6d/C6); rendered callers go 2 -> 0 (W1); the D4 partition still holds (edges 3 -> 0, buckets sum to edges in both runs). What the change does NOT deliver by itself is C6f/C6g: the response still carries no declared filter, and the empty answer's absence text still does not say the store holds non-call rows — both are part of the same patch.",
-      patchOwner: "src/lsp/call_hierarchy.ts (not this lane's file); the exact patch is in the lane report for close/surface-and-docs.",
+      patchOwner: "src/lsp/call_hierarchy.ts — this lane's file, changed on fix/c6-call-site-filter.",
       falsifiability:
-        "C6, C6d, C6e, C6f and C6g are RED on the real component at this commit, and W1 is red on the real index. Each is therefore observed to fail, which is stronger evidence of falsifiability than a planted mutant. The filter mutant is deliberately NOT in MUTANTS: its only predicate is C6f, which is false in the baseline, so adding it would make all five existing mutants report 'caught' while judging nothing (see mutantsNotAdded).",
+        "Gated BEFORE the fix, per F7: at HEAD this suite reported 51/57 with W1, C6, C6d, C6e, C6f and C6g failing, so each of those six was OBSERVED TO FAIL rather than argued about. Four mutants then plant the three behaviours the fix introduces and convict them: the defence-in-depth drop (rendered non-call entry with a range), the engine request (a response declaring it read only `calls` while the engine handed it `contains`/`uses`), the missing declaration (relationshipTypes: []), and the absence that implies an empty store. Each is convicted by its own predicate, and the five pre-existing mutants still report the predicate they were convicted by, which is the evidence that no new predicate is false in the baseline.",
+      whatTheSuiteCannotProve:
+        "The engine request itself is not observable from the response, so no check here can prove `relationshipTypes: [\"calls\"]` was actually passed to traverseGraph. What IS proven is that the surface cannot render a range for a non-call row whether or not the option is honoured (the hermetic leg plants the rows directly, bypassing the engine), and that the response does not contradict itself about what it read (`filterCoherentOk`). Stated because a gate that cannot distinguish 'asks the engine' from 'drops the rows' should not be read as if it could.",
+      measuredPredicateConvictions:
+        "Each of the four new mutants is convicted by exactly ONE predicate, and it is the one that names its own defect: defence-in-depth removal -> plantedOk; the pre-fix engine request -> filterCoherentOk; a missing declaration -> filterDeclaredOk; the reverted absence -> absenceOk. That one-to-one mapping is the thing that makes 'caught' mean something here, and it was NOT the first result: with only the positive halves of C6g as the predicate, the reverted-absence mutant SURVIVED (the surviving text still contained the word 'kind'), and with only a presence test on relationshipTypes as the predicate, the pre-fix-request mutant SURVIVED (a surface that drops non-call rows honestly is not lying about them, it is only contradicting its own declaration). Both survived mutants are recorded rather than deleted.",
     },
-    mutantsNotAdded: [
-      {
-        name: "filter: ask the engine for every relationship kind again",
-        why: "Its only oracle predicate is C6f, which is RED on the real component. A mutant oracle whose baseline contains a false predicate marks every mutant caught for free, which is the tautology the harness above exists to prevent. Its falsifiability is carried by C6d/C6e/C6f/C6g being red instead.",
-      },
-    ],
-    knownGaps: [
-      {
-        checks: ["W1", "C6", "C6d", "C6e", "C6f", "C6g"],
-        why: "one defect with one cause and one owner: this surface renders relationship kinds that cannot name a call site. The fix is in src/lsp/call_hierarchy.ts (another lane). W1 and C6 observe it on the real index; C6d/C6e plant it hermetically in both directions; C6f/C6g pin the two ways a fix could answer without declaring itself.",
-        owner: "src/lsp/call_hierarchy.ts",
-      },
-    ],
+    mutantsNotAdded: [],
+    knownGaps: [],
     limitations: [
       "the analyzer stores relationship line_number = 0 for every row today; the call-site positions here are derived from the caller's own source, which is why they are exact. The stored-value path (a future analyzer change) is exercised only as a declared fallback.",
       "invocation scanning is line-comment aware but not string-literal aware (declared in the component header); every result is bounded by the caller's own declaration range.",
       "declared on the real index at this commit and NOT fixed: the same receiver-qualified artifact row is reported twice in droppedEdges (once from the depth-0 row, once from a deeper cascade re-fetch of it). The drop is correct and declared both times, so no range is rendered; the duplicate is a reportability defect in the engine's per-direction row dedupe (src/intelligence/graph/graph-engine.ts), not a position lie, and it is not this lane's file.",
+      "the relationship-kind filter this surface declares is `calls` alone. `instantiates`/`overrides` are deliberately NOT included, so a `new Foo()` relationship stored for a symbol is omitted from this hierarchy with its kind named. A `new Foo()` IS an invocable site and this surface's resolver already classifies it as `construct`, so including those kinds is a plausible future widening — it is this surface owner's declared call, not this gate's, and it is left un-widened rather than decided by default.",
+      "the engine's owner cascade can still place a non-`calls` row at depth 0 adjacent to a traced member (the exact `Store:contains:get` row is one, measured). This surface now omits every such row and declares its kind, so the cascade's rows cannot produce a range here — but the cascade itself is a deliberate, disclosed superset for the graph/impact/MCP surfaces (gated by script/m48/verify-d1-doc-truth.ts) and was NOT changed, so this gate makes no claim about what those surfaces render.",
     ],
   };
   writeSealed(EVIDENCE, evidence);
