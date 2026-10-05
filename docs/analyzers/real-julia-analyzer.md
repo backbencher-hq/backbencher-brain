@@ -54,7 +54,7 @@ does not reproduce it.** §8 row 14 carries the measurement and
 `npx tsx validation/m14/fixtures/julia/arbiter-resume-probe.ts` reproduces the mechanism in a second.
 The lane's own numbers do not depend on the arbiter: `firing-check --files 2000 julia` reports
 **9/10 fired, 235,878 edges, 1,985/1,985 files, 0 degraded**, sequentially and with no checkpoint,
-and `doc-tables-check.ts` holds all 305 cells of this file against the census.
+and `doc-tables-check.ts` holds all 308 cells of this file against the census.
 
 **The recorded run, on a first run with no checkpoint:**
 `script/m14/ontology-coverage-gate.ts` used to carry ruling tables for `bash` and `json` only and
@@ -2459,7 +2459,7 @@ the current code does neither. **The julia symptom is benign** — the one julia
 is a genuine function and publishing it is correct — which is exactly why this belongs in a report
 rather than a fix: a lane that only tested julia would see nothing wrong.
 
-## A gate that reads this file's own tables — 305 cells
+## A gate that reads this file's own tables — 308 cells
 
 The defect that motivated this pass was not a wrong measurement. It was a right measurement in the
 wrong slot: the prose said **10,936** ambiguous-target edges while the table above it summed to
@@ -2475,11 +2475,11 @@ figure against `census.json`:
 $ npx tsx validation/m14/fixtures/julia/doc-tables-check.ts --json /tmp/census.json
 doc tables check — docs/analyzers/real-julia-analyzer.md
   (mutant-count scan: 4 current-state figure(s) checked, 5 historical citation(s) exempted by an explicit past-tense marker)
-cells checked: 305
+cells checked: 308
 PASS — every table cell equals the instrument's value
 ```
 
-**305 cells** across six tables: the 10-row verdict table (edge count + file count per type, with
+**308 cells** across six tables: the 10-row verdict table (edge count + file count per type, with
 RULED rows held to "emitted 0" instead of being read as an edge count), the 9-row incoming bucket
 table (all 9 buckets per type), the residual-ambiguity table including the requirement that each
 row's total equals its own two columns and that the column sum equals the instrument's total, the
@@ -2584,7 +2584,7 @@ file in every type's file column. The census it had read, `/tmp/census.json`, wa
 run of the day in which **one** file degraded — `StaticArrays.jl/test/matrix_multiply_add.jl`,
 `wasmParseThrew`, `analysedFiles` 1,984 of 1,985 — and a degraded file leaves every total while
 `admittedFiles` still counts it, so its shortfall arrived at the comparison looking exactly like doc
-drift. **Re-run against the clean census the same gate printed `PASS`, 305 of 305 cells, exit 0.**
+drift. **Re-run against the clean census the same gate printed `PASS`, 305 of 305 cells, exit 0.** (305 is that run's figure; the gate now checks 308, the growth being this pass's gate table and the §8 rows it reads.)
 This file was never wrong about a single cell.
 
 The gate's own default is the reason: it reads `/tmp/census.json` **by default**, so it silently
@@ -2821,7 +2821,37 @@ can be a fixture asserting things the code does not do, and the fixture is what 
 
 ---
 
-| 14 | **`script/m14/ontology-coverage-gate.ts`** | **`:304-319`, and the table that consumes `observed` at `:472-503`** | **persist the per-type tally in the checkpoint beside the paths, not only the paths. Or: force `--fresh` whenever `walkStats.walked === 0 && walkStats.alreadyDone > 0`. Or minimally: print `ABORTING — a resumed run measures nothing` and exit non-zero, because a reader cannot be left with a table that is a function of a file's prior contents** | **measured 2026-10-05, and this is the largest defect this lane has found in the arbiter.** The gate accumulates `observed` inside the walk's `run` callback (`:307-318`) and `script/m14/resumable-walk.ts:134-138` SKIPS every index whose id is already in the checkpoint. So on any run after the first, `run` is never called, `observed` stays empty, and all ten rows take the `obs && obs.n > 0` false branch. **Three runs, same commit, same 1,985-file corpus, same `parseFile`:** run 1 with no checkpoint printed `emitted 9/10 … calls 122,150 …` and exited 0; run 2 with a complete checkpoint printed `emitted 0/10`, zero edges, every row `NOT EMITTED`, and **exit 1**; run 3 with `--fresh` printed `[BB-PARSE-ERR] … Graphs.jl/test/core.jl`, `[BB-HANG] … core.jl — exiting`, **exit 1**. **`walkStats.partial` is `false` on run 2**, because `walked + alreadyDone === count`, so the one line whose stated job is to disclose an incomplete population discloses a complete one: `walk: 1985/1985 files (100.0%) newly walked 0, resumed 1985`. The comment above the walk says *\"A resumed or partial walk produces the SAME edge counts as a complete one … so without this line a 99% walk reports identically to a 100% one\"* — the line was added for exactly this, and it reports 100.0% for a walk that read zero files. `firing-check` disagrees and is independent of the checkpoint: **9/10 fired, 235,878 edges, 1,985/1,985 files, 0 degraded**, sequential. **This makes the block quoted at the top of this file a FIRST-RUN-ONLY artifact**, which is why it cannot be re-verified by re-running the command the reader is told to run. `validation/m14/fixtures/julia/arbiter-resume-probe.ts` reproduces the mechanism in under a second against the shared `resumableWalk` (run 1 → 9/10 and 54 edges; run 2 → 0/10 and 0 edges, `partial` false) and **exits 1 if the shared gate is fixed**, so this row can be withdrawn rather than left standing. The checkpoint is gitignored (`validation/m14/measurements/walk-*.txt`), so every lane that has run the gate twice since the checkpoint landed reads `0/10 emitted` |
+
+## Gates re-run on current shared machinery, 2026-10-05
+
+Every number this file publishes was re-derived on this date, on this commit, against the corpus the
+router selects now — 1,985 admitted files across 14 projects. Nothing in this table is quoted from an
+earlier run.
+
+| gate | command | result |
+|---|---|---|
+| this file's own table cells | `doc-tables-check.ts --json /tmp/census.json` | **PASS — 308 cells**; census clean, 1,985 of 1,985 analysed, 0 degraded |
+| what FIRES, whole population | `firing-check.ts --files 2000 julia` | **9/10 fired, 235,878 edges, 1,985/1,985 files, 0 degraded** — `calls,uses,contains,imports,references,exports,extends,overrides,instantiates` |
+| what FIRES, 120-file stride | `firing-check.ts --files 120 julia` | **8/10 fired, 14,263 edges, 120/120 files, 0 degraded** — the missing type is `overrides`, excluded by stride arithmetic, not by rarity |
+| the arbiter, resumed run | `ontology-coverage-gate.ts julia` | **FAILS AS A MEASUREMENT — prints `emitted 0/10`, zero edges, exit 1.** §8 row 14 |
+| the arbiter, `--fresh` | `ontology-coverage-gate.ts julia --fresh` | **[BB-PARSE-ERR] `Graphs.jl/test/core.jl`, then [BB-HANG] 120 s later, exit 1**, no table printed |
+| the arbiter's mechanism, 1 s | `arbiter-resume-probe.ts` | **REPRODUCED** — run 1: 9/10 and 54 edges; run 2: 0/10 and 0 edges with `partial` false. Exits 1 if the shared gate is fixed |
+| INCOMING, 5 pinned files | `incoming-check.ts julia <the 5 files named above>` | 375 symbols, **0 degraded, 0 parse failures**; 240 declarations named, 92 of 375 orphans, **8 ambiguous names**; all ten type rows reproduce |
+| the `implements` ruling | `ruled-probe-check.ts` | **MATCH — 449 occurrences in 87 files**, equal to `publishedCount`/`publishedFiles` inside the ruling |
+| `overrides` differential | `overrides-differential.ts` | **COVERED 3, MISSING 0, UNEXPLAINED 0, 100.0%**; both sides 3 edges in 3 files, 0 threw, 0 bombs fired |
+| per-label oracle, deterministic | `direct-oracle-check.ts --files 40` | 2,478 truth / 2,068 comparable / 188 missing / 410 unexplained = **83.5% covered**; `calls` 75.8%, `uses` 98.9%, `references` 88.0%, `contains` 86.8%, `extends` 57.1%, `instantiates` 73.1%, `overrides` 100.0% |
+| fixture lane | `run-fixtures.ts --lang julia` | **5 pass, 0 fail**; a scoped run writes no canonical artifact |
+| mutants | `mutation-check.ts --all` | **28 killed, 0 survived, of 28** |
+| type check | `npx tsc --noEmit` | **0 errors naming a julia file** |
+| no regex (shared M12 gate) | `verify-regex-census.ts` | **PASSED** — 4 census entries, 0 missing, 0 stale, 0 unclassified, 0 mislocated. **julia has no entry, so this is not evidence about this lane** — see below |
+
+**The M12 regex gate passing is not a julia result, and it will not be presented as one.**
+`verify-regex-census.ts` reports 4 census entries and no `julia` among them, so the shared gate tests
+nothing in this lane. This lane's "no regex" property is instead held structurally — the analyzer's
+text handling is `validation/m14/fixtures/julia/text-util.ts`, a character-level scanner with its own
+fixtures, and the analyzer's own node-type claims are checked against the 149 node types the grammar
+actually produces. **A shared gate that passes while containing no entry for the lane is a gap in the
+gate, not a clean bill for the analyzer**, and it is reported as §8 row 15.
 
 # Shared-file changes this lane needs (§8 — reported, not applied)
 
@@ -2845,3 +2875,5 @@ which is why none of them is in this lane's commits.
 | 11 | `script/m14/differential.ts` | the 40-file scoped sample picker (`--repo X --sample N`) | **print the sample-selection rule next to the hash, and keep the hash stable across a corpus that has not changed** | measured on an unchanged corpus — the five pinned incoming-check files still carry 2026-09-30 mtimes, census still 1,985 admitted — `--repo julia --sample 40` moved from `hash=3ced448db031430c` to `hash=ecef1a0f0244ce6f` between 2026-10-04 runs on shared machinery this lane does not own, and `MISSING` moved 131 -> 42 with it. **A third run on 2026-10-04 read `hash=3ced448db031430c` and `MISSING=131` again — back to the first value, so the movement is NOT a one-way drift and the hash is not a monotone function of shared-machinery state.** A reader comparing hashes would see "changed, changed back" and could not tell whether anything was stable in between. The run is deterministic, so nothing announces a change at all except a reader who compares hashes. Every lane doc that quotes a scoped figure is now stale or was already, and none of them can tell which without diffing a hash. This is the same defect as §7 (a fixed-name shared temp file observed at 0 bytes): a shared path whose identity is implicit |
 | 12 | `script/m14/verify-honesty.ts` | the artifact-freshness rule (the check that prints "declared input(s) changed since <sha> — regenerate") | **make the freshness rule able to say WHICH inputs changed and whether the artifact is stale because of a real edit or because the rule compares against a base that moved** — and stop it flagging every artifact unconditionally | measured 2026-10-04: the gate reports **26 failures** and its own last line is `freshness rule flags every artifact — it cannot distinguish current from stale`. Six of the failures are `M14.0.F1`–`F9` "declared input(s) changed" (F2 names 2,395; F6 1,091; F3 1,051; F4 646; F8 133; F9 70; F1 64; F7 61), and a rule that fires on all of them carries no information — a lane cannot tell a real regression from a base that moved under it. **None of the 26 is a julia file**, so nothing in this lane's verdicts is affected; the other findings are banned-term hits in other lanes' fixtures (`c`, `clean`, `csharp`, `html`, `sql`) and in shared `validation/m14/results/*.json`. The banned-term half of the gate works and is not what this row is about |
 | 13 | **`script/m14/ontology-coverage-gate.ts`** | **`:274`, and the per-type tally that consumes each worker result** | **count `fallback: true` from `parseFile` and print `files ANALYSED: N of M admitted` beside the verdict table, the way `validation/m14/fixtures/julia/census.ts` does; do not `continue` past a degraded file silently** | **measured 2026-10-05, the first run of this gate at its own configured width against the corpus this lane now has.** The gate drives 8 concurrent `parseFile` calls and has **no** degraded-file accounting: `grep -n "fallback\|degraded\|BB-PARSE-ERR" script/m14/ontology-coverage-gate.ts` returns nothing. Its run printed `[BB-PARSE-ERR] … LibGit2/src/utils.jl` and `[BB-HANG] … utils.jl — exiting`, then printed `corpus: 1985 admitted files` and a complete ten-row table — and that table was **32 relationships short** of the clean census (`calls` 122,129 vs 122,150; `uses` 37,083 vs 37,087; `references` 50,143 vs 50,150; the other six types identical). **A verifier's own totals were over a population one file smaller than the number it printed, with nothing on screen saying so.** The same gate at 8-wide on 2026-10-04 reported `fallback: 0`, so a reader has two runs of this gate disagreeing by 32 edges and no way to tell which population either measured. This is a **verifier** defect and not a census defect: the arbiter is what the fleet reads, and its per-type `EMITTED` counts get quoted as whole-population figures |
+| 14 | **`script/m14/ontology-coverage-gate.ts`** | **`:304-319`, and the table that consumes `observed` at `:472-503`** | **persist the per-type tally in the checkpoint beside the paths, not only the paths. Or: force `--fresh` whenever `walkStats.walked === 0 && walkStats.alreadyDone > 0`. Or minimally: print `ABORTING — a resumed run measures nothing` and exit non-zero, because a reader cannot be left with a table that is a function of a file's prior contents** | **measured 2026-10-05, and this is the largest defect this lane has found in the arbiter.** The gate accumulates `observed` inside the walk's `run` callback (`:307-318`) and `script/m14/resumable-walk.ts:134-138` SKIPS every index whose id is already in the checkpoint. So on any run after the first, `run` is never called, `observed` stays empty, and all ten rows take the `obs && obs.n > 0` false branch. **Three runs, same commit, same 1,985-file corpus, same `parseFile`:** run 1 with no checkpoint printed `emitted 9/10 … calls 122,150 …` and exited 0; run 2 with a complete checkpoint printed `emitted 0/10`, zero edges, every row `NOT EMITTED`, and **exit 1**; run 3 with `--fresh` printed `[BB-PARSE-ERR] … Graphs.jl/test/core.jl`, `[BB-HANG] … core.jl — exiting`, **exit 1**. **`walkStats.partial` is `false` on run 2**, because `walked + alreadyDone === count`, so the one line whose stated job is to disclose an incomplete population discloses a complete one: `walk: 1985/1985 files (100.0%) newly walked 0, resumed 1985`. The comment above the walk says *\"A resumed or partial walk produces the SAME edge counts as a complete one … so without this line a 99% walk reports identically to a 100% one\"* — the line was added for exactly this, and it reports 100.0% for a walk that read zero files. `firing-check` disagrees and is independent of the checkpoint: **9/10 fired, 235,878 edges, 1,985/1,985 files, 0 degraded**, sequential. **This makes the block quoted at the top of this file a FIRST-RUN-ONLY artifact**, which is why it cannot be re-verified by re-running the command the reader is told to run. `validation/m14/fixtures/julia/arbiter-resume-probe.ts` reproduces the mechanism in under a second against the shared `resumableWalk` (run 1 → 9/10 and 54 edges; run 2 → 0/10 and 0 edges, `partial` false) and **exits 1 if the shared gate is fixed**, so this row can be withdrawn rather than left standing. The checkpoint is gitignored (`validation/m14/measurements/walk-*.txt`), so every lane that has run the gate twice since the checkpoint landed reads `0/10 emitted` |
+| 15 | `script/m12/verify-regex-census.ts` | the census's language list / the `analyzer-complexity` input set | **add a `julia` entry so the shared NO REGEX gate has something to test in this lane** | the gate **PASSES** on this lane today and that is vacuous: it reports `census entries: 4` and julia is not one of them, so a lane that had regex everywhere would pass it identically. julia has no entry for the same reason it has no row in `script/m60/analyzer-complexity-gate.ts` and no `validation/m12/fixtures/julia` (§8 row 8) — the shared M12 harness was never extended to this lane. The lane's own substitute is the **46 node-type claims / 0 unknown** check in the L2 section, which is an AST-walk and not a regex census |
