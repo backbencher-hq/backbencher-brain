@@ -1193,8 +1193,9 @@ a top-level binding — checked by reading them, not assumed.
 
 ### What the repository's own arbiter says about R
 
-`npx tsx script/m14/ontology-coverage-gate.ts r` admits **747 files** and then
-exits **2** with:
+This section previously recorded a refusal, and it is kept because the refusal is the
+reason the registration exists. Before `script/m14/r-ruled.ts` was written and
+registered, the gate admitted **747 files** and exited **2**:
 
 ```
 ontology coverage gate — no RULING TABLE for r.
@@ -1202,14 +1203,20 @@ Refusing to report: a gate with an empty table would call every un-emitted type
 RULED-UNJUSTIFIED and that is a verdict about the TABLE, not about the lane.
 ```
 
-That refusal is the gate behaving correctly, and it is also the whole problem: the
-R lane's ten verdicts cannot be printed by the repository's own arbiter because
-`RULED_BY_LANG` has no `r` entry, and `script/m14/spec/r-completeness.json` does
-not exist. Both files are shared machinery. The exact change needed is in
-`validation/m14/fixtures/r/rulings.json` under `_report_to_supervisor`; in short,
-`RULED_BY_LANG.r` should be `[]` (all ten types are emitted, so no ruling is
-needed) and a `BD-ontology` decision should be added to a new
-`script/m14/spec/r-completeness.json`.
+That refusal was the gate behaving correctly, and it was also the whole problem: the R
+lane's ten verdicts could not be printed by the repository's own arbiter because
+`RULED_BY_LANG` had no `r` entry and `script/m14/spec/r-completeness.json` did not
+exist. Both are shared machinery, so the fix was a lane-owned file plus a two-line
+registration. `script/m14/r-ruled.ts` now exists and `RULED_BY_LANG` carries `r:
+R_RULED`, and the gate admits **2,184 files** and prints ten `EMITTED` rows. The
+admitted-file count rose from 747 to 2,184 because the corpus itself grew, not because
+the router changed; the run table above is the current population.
+
+The one shared-file change this lane still wants is small and is stated in full in
+`validation/m14/fixtures/r/rulings.json` under `_report_to_supervisor`: a `BD-ontology`
+decision in a new `script/m14/spec/r-completeness.json`. It is not required for the gate
+to pass — the table is checked first and this lane's rows all resolve through it — so it
+is a completeness want rather than a blocker, and it is filed as one.
 
 Two further shared-file facts, measured rather than assumed:
 
@@ -1225,20 +1232,34 @@ Two further shared-file facts, measured rather than assumed:
 
 ### Fixtures and mutants
 
-`validation/m14/fixtures/r/*.expectation.json` — **21 files**, `F01` through
-`F21` — executed by `npx tsx validation/m14/fixtures/r/run-r-fixtures.ts`
-through production `parseFile`, plus the **17**-mutant battery behind
+`validation/m14/fixtures/r/*.expectation.json` — **22 files**, `F01` through
+`F22` — executed by `npx tsx validation/m14/fixtures/r/run-r-fixtures.ts`
+through production `parseFile`, plus the **19**-mutant battery behind
 `--mutants`:
 
 ```
-fixtures: 21 passed, 0 failed
-MUTATION — 17 mutants, each in ONE child running all 21 fixture(s)
-mutants: 17 caught by >=1 of 21 fixture(s), 0 survived by every fixture,
-         0 harness faults, of 17 mutants
+fixtures: 22 passed, 0 failed
+MUTATION — 19 mutants, each in ONE child running all 22 fixture(s); a mutant no fixture rejects fails this run
+mutants: 19 caught by >=1 of 22 fixture(s), 0 survived by every fixture,
+         0 harness faults, of 19 mutants
 analyzer restored: src/ast/real-r-analyzer.ts is byte-identical to its pre-run content
 ```
 
-Four of the seventeen are OUTPUT transforms and thirteen are SOURCE edits, and the
+The restore claim is checked, not asserted: the analyzer is
+`sha256 ecb02eecda7bf54b3996b55a2a6e10d054edd95cdc1c72a73b9d96d82175ea4e`
+before and after the battery, and `git status` on it is clean afterwards. That digest
+is also the one recorded in `validation/m14/fixtures/r/r-cause-a-counterfactual.txt`,
+so the corpus walks that produced the cause A/B/C adjudication ran against this exact
+analyzer.
+
+`F22-redeclared-class-name` is the fixture that pins the `overrides` base-resolution
+change, and four mutants hang off it (`src-overrides-base-is-last-declaration`,
+`src-overrides-base-is-name-union`, `src-overrides-direction`,
+`src-overrides-drops-qualification`). Those four are the reason the 107 → 95 drop is
+attributable to `d2fc8626f` and not to the parser: each mutant reinstates one of the
+two wrong base-resolution rules, and a fixture rejects each.
+
+Four of the nineteen are OUTPUT transforms and fifteen are SOURCE edits, and the
 split is not cosmetic: a gate's whole behaviour is to emit nothing, so no transform of the
 emitted edges can express a defect in one. **Three were no-ops on their
 first version and were refused rather than counted** — one returned its input
