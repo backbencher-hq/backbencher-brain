@@ -188,6 +188,14 @@
       "reason": "per-language ramp measurement produced by the declared ramp runner \u2014 measurement data, judged by the ramp gate"
     },
     {
+      "record": "validation/m29/results/wave-java.json",
+      "reason": "per-language wave-execution record produced by the declared runner script/m29/wave-execute.ts (its verdict records belong to the wave harness gate) \u2014 declared by this lane: its 26 per-language siblings already carried the declaration and this one did not, which was a hole in the artifact list"
+    },
+    {
+      "record": "validation/m44/results/KNOWN-GAPS.json",
+      "reason": "the milestone's known-gaps register \u2014 a declaration of what is NOT done, not a gate verdict (the m42 twin of the same artifact already carries this declaration)"
+    },
+    {
       "record": "validation/m29/results/wave-1-approval.json",
       "reason": "owner approval record (approvedBy/approvedAt) \u2014 a human decision, not a gate verdict"
     },
@@ -422,6 +430,10 @@
     {
       "gate": "script/m53/verify-r1-ladder.ts",
       "reason": "the lane integration ladder (41 gates, ~15 min) \u2014 run deliberately, not per edit"
+    },
+    {
+      "gate": "script/m61/verify-claim-fingerprints.ts",
+      "reason": "the \u00a78.4 source-fingerprint gate (M61.V8): walks every validation/ record and re-derives each in-scope fingerprint from its declared coverage on disk. Read-only but repo-wide, so it is run deliberately rather than per edit; package.json wiring is outside the write scope of the lane that added it."
     }
   ]
 }

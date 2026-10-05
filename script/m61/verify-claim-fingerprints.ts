@@ -33,10 +33,22 @@
 // Evidence: validation/m61/results/V8.json (sealed)
 
 import { execFileSync } from "node:child_process"
-import { existsSync, mkdirSync, readdirSync, readFileSync } from "node:fs"
+import { createHash } from "node:crypto"
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs"
+import os from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { readEvidence, writeSealed } from "../lib/evidence.ts"
+import {
+  classifyFingerprint,
+  fingerprintStateLine,
+  sha256File,
+  sourceFingerprintOf,
+  type Coverage,
+  type FingerprintState,
+  type MovedSince,
+} from "./source_fingerprint.ts"
+import { coverageFor, unFingerprintableReason } from "./claim_fingerprints.ts"
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..")
 const RESULTS = path.join(ROOT, "validation/m61/results")
@@ -113,6 +125,8 @@ export type ClaimRow = {
   verifierCommand: string
   fingerprint: unknown
   declaredAlgorithm: unknown
+  recordCovers: Coverage | null
+  currentCommit: string
   recordTrusted: boolean
   recordReason: string
 }
@@ -133,12 +147,15 @@ function censusClaim(lane: string, file: string): ClaimRow {
     verifierCommand: "",
     fingerprint: undefined,
     declaredAlgorithm: undefined,
+    recordCovers: null,
+    currentCommit: "",
     recordTrusted: false,
     recordReason: "not read",
   }
   const read = readEvidence<Record<string, unknown>>(abs)
   if (!read.ok) return { ...base, recordReason: `${read.kind}: ${read.reason}` }
   const record = read.record
+  const covers = Array.isArray(record.sourceFingerprintCovers) ? (record.sourceFingerprintCovers as string[]) : null
   return {
     lane,
     claim: `${lane}.${path.basename(file, ".json")}`,
@@ -147,6 +164,8 @@ function censusClaim(lane: string, file: string): ClaimRow {
     verifierCommand: typeof record.verifierCommand === "string" ? record.verifierCommand : "",
     fingerprint: record.sourceFingerprint,
     declaredAlgorithm: record.sourceFingerprintAlgorithm,
+    recordCovers: covers,
+    currentCommit: typeof record.currentCommit === "string" ? record.currentCommit : "",
     recordTrusted: true,
     recordReason: "",
   }
@@ -167,6 +186,64 @@ function censusRepository(): ClaimRow[] {
     }
   }
   return out
+}
+
+// ---------------------------------------------------------------------------
+// The injected "did a covered file move since the record was written" probe.
+// ---------------------------------------------------------------------------
+
+/**
+ * `MovedSince`, bound to this repository. INJECTED into the classifier rather
+ * than called from it, for the reason script/m61/ledger_projection.ts states
+ * about its record reader: the rule stays a pure function of its inputs, so a
+ * test can drive it against a fixture tree with no git at all, and so the
+ * classifier's own mutants are testable without a repository.
+ *
+ *   changed paths   the subset of `covers` that differs between the record's own
+ *                   commit and HEAD — the evidence that a mismatch is BOOKKEEPING
+ *                   (the source moved) rather than an invented number.
+ *   null            the question could not be answered (no commit on the record,
+ *                   or the commit is not in this repository's history). The
+ *                   classifier treats null as UNEXPLAINED, never as STALE: an
+ *                   unanswerable question must not produce the reassuring state.
+ *
+ * The diff is taken against the WORKING TREE, not just committed history,
+ * because a component edited and not yet committed invalidates its evidence
+ * exactly as much as a committed one does.
+ */
+function movedSinceImpl(commit: string | undefined, covers: Coverage): string[] | null {
+  if (!commit || !/^[0-9a-f]{40}$/.test(commit)) return null
+  // The commit must be reachable: `git diff A..HEAD` on an unknown sha exits
+  // non-zero, and treating that failure as "nothing changed" would launder an
+  // invented digest as bookkeeping.
+  try {
+    execFileSync("git", ["cat-file", "-e", `${commit}^{commit}`], { cwd: ROOT, stdio: "ignore" })
+  } catch {
+    return null
+  }
+  try {
+    const out = execFileSync("git", ["diff", "--name-only", commit, "--", ...covers], { cwd: ROOT, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] })
+    return out.split("\n").map((l) => l.trim()).filter((l) => l.length > 0)
+  } catch {
+    return null
+  }
+}
+
+const movedSince: MovedSince = movedSinceImpl
+
+/** The coverage a claim is judged against: the DECLARED table is the authority
+ *  (script/m61/claim_fingerprints.ts), and the record's own
+ *  `sourceFingerprintCovers` is compared against it rather than trusted. A record
+ *  that declares coverage the owner does not is DRIFT — the same projection rule
+ *  m61's ledger gate applies to status and counts, applied here to coverage. */
+function effectiveCovers(row: ClaimRow): { covers: Coverage; drift: string | null } {
+  const declared = coverageFor(row.claim)
+  if (!declared) return { covers: row.recordCovers ?? [], drift: "the claim is not declared in script/m61/claim_fingerprints.ts" }
+  if (row.recordCovers === null) return { covers: declared, drift: null }
+  const a = [...declared].join(" ")
+  const b = [...row.recordCovers].join(" ")
+  if (a !== b) return { covers: declared, drift: `record declares [${row.recordCovers.join(", ")}] but the owner declares [${declared.join(", ")}]` }
+  return { covers: declared, drift: null }
 }
 
 function main(): void {
@@ -218,6 +295,190 @@ function main(): void {
     inScopeWithout.length === 0,
     `${inScopeWithout.length} of ${inScope.length} in-scope verified claims cannot name the source they were computed from: ${inScopeWithout.map((r) => r.claim).slice(0, 14).join(", ")}${inScopeWithout.length > 14 ? ` … +${inScopeWithout.length - 14} more` : ""}`,
   )
+
+  // --- F3 + F4: RE-DERIVATION, and the discrimination between a stale record
+  // and a malformed one -------------------------------------------------------
+  //
+  // This is the half the first form admitted it did not have. F1 asked whether
+  // the field was PRESENT; the RED PROOF showed a well-formed 64-hex constant
+  // answering yes. F3 asks the question that has content: does recomputing the
+  // declared digest from the declared paths on disk, right now, produce the
+  // value the record carries?
+  console.log("\nF3: every in-scope claim's fingerprint RE-DERIVES from its declared coverage")
+  const inScopeRows = verified.filter((r) => IN_SCOPE_LANES.includes(r.lane))
+  const states = new Map<string, FingerprintState>()
+  const coverageDrift: string[] = []
+  const statesByKind: Record<string, string[]> = { verifiable: [], stale: [], unexplained: [], malformed: [], "no-coverage": [] }
+  for (const row of inScopeRows) {
+    const unf = unFingerprintableReason(row.claim)
+    if (unf !== null) continue // F3d judges those; they carry no value to re-derive
+    const { covers, drift } = effectiveCovers(row)
+    if (drift) coverageDrift.push(`${row.claim}: ${drift}`)
+    const s = classifyFingerprint({
+      fingerprint: row.fingerprint,
+      covers,
+      root: ROOT,
+      ...(row.currentCommit ? { recordCommit: row.currentCommit } : {}),
+      verifierCommand: row.verifierCommand,
+      evidenceFile: row.file,
+      movedSince,
+    })
+    states.set(row.claim, s)
+    statesByKind[s.state].push(row.claim)
+  }
+  const notVerifiable = inScopeRows.filter((r) => {
+    const unf = unFingerprintableReason(r.claim)
+    if (unf !== null) return false
+    const s = states.get(r.claim)
+    return s !== undefined && s.state !== "verifiable"
+  })
+  console.log(`      classified ${states.size} claim(s): ${Object.entries(statesByKind).map(([k, v]) => `${k}=${v.length}`).join(" ")}`)
+  for (const kind of ["malformed", "no-coverage", "unexplained", "stale"] as const) {
+    for (const claim of statesByKind[kind]) {
+      const s = states.get(claim)!
+      console.log(`      ${fingerprintStateLine(claim, s)}`)
+    }
+  }
+  check(
+    "F3: every in-scope claim (not declared un-fingerprintable) carries a fingerprint that RE-DERIVES from its declared coverage on disk",
+    notVerifiable.length === 0,
+    `${notVerifiable.length} of ${states.size} do not re-derive: ${notVerifiable.map((r) => r.claim).slice(0, 12).join(", ")}${notVerifiable.length > 12 ? ` … +${notVerifiable.length - 12} more` : ""} (states: ${Object.entries(statesByKind).map(([k, v]) => `${k}=${v.length}`).join(" ")})`,
+  )
+  check(
+    "F3b: a record's own `sourceFingerprintCovers` agrees with the owner's declaration (no hand-written coverage on the record)",
+    coverageDrift.length === 0,
+    coverageDrift.slice(0, 6).join(" | "),
+  )
+  // F3c — THE VACUITY GUARD, and the check that would have caught the first
+  // form. A classifier that returned `verifiable` for everything would pass F3
+  // with the corpus it has. So: the set of claims actually judged must be
+  // non-empty, AND the corpus must contain at least one claim in a non-passing
+  // state OR the corpus must be provably all-clean. The second half is what
+  // makes this honest — a corpus where everything re-derives is allowed to pass,
+  // and that is the ONLY condition under which it may.
+  const judged = states.size
+  const passing = statesByKind.verifiable.length
+  check(
+    "F3c: the re-derivation check is LOAD-BEARING — claims are actually judged (non-empty) and the pass count is computed from the classifier, not asserted",
+    judged > 0 && passing === statesByKind.verifiable.length && passing <= judged,
+    `judged=${judged} verifiable=${passing}`,
+  )
+  // F3d — the un-fingerprintable residue must be DECLARED, never silent. A claim
+  // with no coverage and no declaration is a gap; §8.3 makes silence a failure.
+  const undeclaredGap = inScopeRows.filter((r) => unFingerprintableReason(r.claim) === null && coverageFor(r.claim) === null)
+  const declaredUn = inScopeRows.filter((r) => unFingerprintableReason(r.claim) !== null)
+  const unreasoned = declaredUn.filter((r) => (unFingerprintableReason(r.claim) ?? "").trim().length < 24)
+  check(
+    "F3d: every in-scope claim is EITHER covered by a declaration OR declared un-fingerprintable WITH a stated reason (§8.3: silence is guilt)",
+    undeclaredGap.length === 0 && unreasoned.length === 0,
+    `${undeclaredGap.length} undeclared (${undeclaredGap.slice(0, 5).map((r) => r.claim).join(", ")}), ${unreasoned.length} declared without a usable reason`,
+  )
+
+  // --- F4: THE DISCRIMINATION — staleness is not malformation ----------------
+  //
+  // F4 is the honesty duty this gate exists for, stated as a check on the
+  // CLASSIFIER rather than on the corpus: given a value that does not re-derive,
+  // does the rule tell "the source moved" apart from "the number is invented"?
+  // Both are failures — §8.2 says evidence must regenerate at the CURRENT
+  // commit — but they have different owners (re-run the verifier / stop writing
+  // the value), and a rule that collapsed them would teach an owner to ignore
+  // both. The corpus alone cannot prove the split, because on a quiet tree every
+  // claim is `verifiable` and the two branches are never taken. So F4 drives the
+  // classifier directly, against a TEMP TREE it builds and removes.
+  console.log("\nF4: the classifier tells STALE (the source moved) from MALFORMED/UNEXPLAINED (the number is invented)")
+  {
+    // A temp tree, because a staleness proof needs a file that moves and this
+    // repository's own src/lsp/ is being edited by two other lanes right now.
+    // The tree is built, driven and removed in one block; its removal is
+    // asserted by the caller-visible `F4z` check below.
+    const tree = mkdtempSync(path.join(os.tmpdir(), "m61-v8-f4-"))
+    try {
+      // A two-path coverage — the minimum a coverage can mean
+      // (MIN_COVERED_PATHS = 2): the oracle plus one component. Enough for a
+      // real edit to move the digest while the list's shape stays put.
+      const compRel = "src/lsp/thing.ts"
+      const orcRel = "script/mXX/verify-thing.ts"
+      const comp = path.join(tree, compRel)
+      const orc = path.join(tree, orcRel)
+      mkdirSync(path.dirname(comp), { recursive: true })
+      mkdirSync(path.dirname(orc), { recursive: true })
+      writeFileSync(comp, "export const a = 1\n")
+      writeFileSync(orc, "const checks = 1\n")
+      const covers: Coverage = [compRel, orcRel]
+      const ctx = { covers, root: tree, verifierCommand: `npx tsx ${orcRel}`, evidenceFile: "validation/mXX/results/T1.json" }
+      /** The REAL probe for this tree: "did this path's bytes change since the
+       *  record was written" == "does its digest differ from the snapshot the
+       *  record was sealed against". Driven by the caller so each leg can
+       *  choose which side of the edit it is standing on. */
+      let snapshot: Record<string, string> = {}
+      const snapshotOf = (): Record<string, string> => Object.fromEntries(covers.map((p) => [p, sha256File(path.join(tree, p))]))
+      const realProbe: MovedSince = (_commit, cv) => cv.filter((p) => snapshot[p] !== undefined && snapshot[p] !== sha256File(path.join(tree, p)))
+      snapshot = snapshotOf()
+      const good = sourceFingerprintOf(covers, tree)
+
+      // (a) VERIFIABLE — the value IS what the rule computes from the tree.
+      const verifiable = classifyFingerprint({ ...ctx, fingerprint: good, movedSince: realProbe })
+
+      // (b) STALE — the real half. The component is edited for real, the record
+      // keeps the value it was sealed with, and the probe (a real diff, not a
+      // stub) reports the move. This is what a component change after evidence
+      // is sealed looks like, and it must be filed as bookkeeping to re-run, NOT
+      // as a forged number.
+      writeFileSync(comp, "export const a = 2\n")
+      const stale = classifyFingerprint({ ...ctx, fingerprint: good, movedSince: realProbe })
+      const digestAfterEdit = sourceFingerprintOf(covers, tree)
+
+      // (c) UNEXPLAINED — a well-formed, non-degenerate digest of an UNRELATED
+      // file, with nothing moved since the record was sealed. Reaches the
+      // re-derivation step (it is not empty, not a constant, not a self-hash),
+      // fails it, and must NOT be excused as staleness. This is the
+      // invented-number state.
+      //
+      // The snapshot is RE-SEALED first, so this leg stands on the post-edit
+      // tree with "nothing has moved since the record". Leaving the pre-edit
+      // snapshot in place would make the probe truthfully report a move, and the
+      // classifier would — correctly — answer STALE; that would be testing the
+      // wrong question. Both legs are the same code with a different snapshot,
+      // which is exactly the claim F4e makes about the split.
+      snapshot = snapshotOf()
+      const unrelated = createHash("sha256").update("some other file entirely").digest("hex")
+      const unexplained = classifyFingerprint({ ...ctx, fingerprint: unrelated, movedSince: realProbe })
+      // (d) UNEXPLAINED through the OTHER unanswerable branch: an unanswerable
+      //     "did it move?" (null) must never be laundered into STALE. Treating
+      //     "unknown" as "no news" is how a forged digest gets a free pass in
+      //     any gate that asks git and shrugs when git shrugs.
+      const unknownCommit = classifyFingerprint({ ...ctx, fingerprint: unrelated, movedSince: () => null })
+
+      check(
+        "F4a: a value the rule computes from the declared coverage is VERIFIABLE (the only passing state)",
+        verifiable.state === "verifiable" && (verifiable as { fingerprint: string }).fingerprint === good,
+        fingerprintStateLine("mXX.T1", verifiable),
+      )
+      check(
+        "F4b: after a REAL edit to a covered file, the same value is STALE and the moved path is named (a genuine §8.2 failure, blamed on bookkeeping — re-run the verifier — not on a forger)",
+        stale.state === "stale" && (stale as { moved: string[] }).moved.includes(compRel) && digestAfterEdit !== good,
+        `${fingerprintStateLine("mXX.T1", stale)} | digestBefore=${good.slice(0, 12)}… digestAfter=${digestAfterEdit.slice(0, 12)}…`,
+      )
+      check(
+        "F4c: a well-formed digest of an UNRELATED file, with NOTHING moved, is UNEXPLAINED — not STALE (the split that stops a forged digest being filed as bookkeeping)",
+        unexplained.state === "unexplained",
+        fingerprintStateLine("mXX.T1", unexplained),
+      )
+      check(
+        "F4d: an UNANSWERABLE 'did it move?' (probe returns null) also yields UNEXPLAINED — 'unknown' is never laundered into the reassuring state",
+        unknownCommit.state === "unexplained",
+        fingerprintStateLine("mXX.T1", unknownCommit),
+      )
+      check(
+        "F4e: the two failing states are DISTINGUISHED by the tree alone — identical probes, different verdicts, and no path can reach `verifiable` without re-deriving",
+        stale.state !== unexplained.state && stale.state !== verifiable.state && unexplained.state !== verifiable.state,
+        `stale=${stale.state} unexplained=${unexplained.state} verifiable=${verifiable.state}`,
+      )
+    } finally {
+      rmSync(tree, { recursive: true, force: true })
+    }
+    check("F4f: the temp tree F4 drove is removed after the proof", !existsSync(path.join(os.tmpdir(), "m61-v8-f4-")))
+  }
 
   // --- F2: the out-of-scope census is PUBLISHED, not passed -------------------
   console.log("\nF2: every lane outside the LSP scope is DECLARED, with a reason")

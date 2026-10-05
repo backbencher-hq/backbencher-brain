@@ -89,6 +89,15 @@ import path from "node:path"
 import { SHA256_KAT, sha256File, sha256Text } from "../m24/portability.ts"
 
 /**
+ * Re-exported, NOT re-implemented. A gate that needs the per-file digest gets
+ * it from the ONE owner of this rule, and this module gets it from the ONE
+ * primitive that carries the NIST vectors — so there is exactly one
+ * implementation of "hash these bytes" in the chain, and a reader auditing a
+ * record never has to ask which of the two copies is authoritative.
+ */
+export { sha256File, sha256Text, SHA256_KAT }
+
+/**
  * The algorithm, spelled out as a value that goes INTO every record. A record
  * that names its algorithm is a record a reader (and a future gate) can check;
  * one that carries a bare digest is an assertion with nothing to check it
@@ -167,6 +176,16 @@ export function coveragePresence(covers: Coverage, root: string): { present: str
   }
 }
 
+/**
+ * The smallest coverage that can mean anything: the oracle plus ONE other
+ * path. Stated as a named constant because "a single covered file" is the shape
+ * a decorative implementation takes — `covers: [theVerifier]` over a verifier
+ * that never runs, or a digest of one file nobody edits. `coverageFindings`
+ * already rejects a list that names nothing but the oracle; this constant makes
+ * the floor explicit and lets the gate assert it directly.
+ */
+export const MIN_COVERED_PATHS = 2
+
 // ---------------------------------------------------------------------------
 // The structural rules a coverage list must satisfy
 // ---------------------------------------------------------------------------
@@ -223,6 +242,9 @@ export function coverageFindings(covers: Coverage, ctx: { root: string; verifier
   const out: string[] = []
   if (covers.length === 0) return ["coverage is EMPTY — the digest covers no input"]
   if (new Set(covers).size !== covers.length) out.push(`coverage repeats a path (${covers.length} entries, ${new Set(covers).size} distinct)`)
+  if (covers.length < MIN_COVERED_PATHS) {
+    out.push(`coverage names ${covers.length} path(s), below the floor of ${MIN_COVERED_PATHS} — a digest over one file cannot distinguish a component change from a comment change`)
+  }
   const rel = covers.map((c) => c.split(path.sep).join("/"))
   const verifier = ctx.verifierCommand.match(/(script\/[A-Za-z0-9_./-]+\.(?:ts|mts|js))/)
   const verifierPath = verifier ? verifier[1]! : ""
@@ -253,72 +275,173 @@ export function coverageFindings(covers: Coverage, ctx: { root: string; verifier
  *  of nothing", and the second is the diagnosis a reader needs. */
 export type DecorativeVerdict = { field: string; fingerprint: unknown; reason: string; rederived?: string }
 
+// ---------------------------------------------------------------------------
+// THE CLASSIFIER — a value on disk is one of FOUR states, and the four are
+// reported separately because they have different owners and different fixes.
+// ---------------------------------------------------------------------------
+
 /**
- * THE PREDICATE. Given what a record carries and what it SHOULD carry, name
- * every reason the value cannot prove what source it came from.
+ * WHY FOUR STATES AND NOT A BOOLEAN. The first form of this gate asked one
+ * question — "is the field present?" — and a decorative 64-hex constant passed
+ * it (RED PROOF: `m26 0/11` → `m26 1/11` with 64 `a`s planted, and `m26.W1`
+ * disappeared from the failing list). The fix is not a stricter boolean; it is
+ * naming the four states a claim can be in, because they are four different
+ * problems:
  *
- * Ordered deliberately:
- *   1 shape            — not a string / not 64 lowercase hex
- *   2 self-reference   — the digest OF the evidence file (or of the record's own
- *                        committed hash), i.e. a function of its own output
- *   3 degeneracy       — the digest of nothing / a zero run / an all-same-digit
- *                        run, the constants a well-meaning hand-edit produces
- *   4 re-derivation    — the value differs from `sourceFingerprintOf(covers)`
- *   5 role structure   — the declared coverage cannot mean anything
- * A value that reaches step 4 and differs IS non-discriminating even when it is
- * a perfectly well-formed 64-hex digest: shape is not meaning, which is the
- * whole point of this predicate existing.
+ *   VERIFIABLE     the value equals what this rule computes from the declared
+ *                  coverage on disk right now. The claim re-earned.
+ *   STALE          the value is well-formed and was a real digest of the
+ *                  declared coverage AS OF THE RECORD'S OWN COMMIT, but a
+ *                  covered file has moved since. §8.2 says evidence must
+ *                  regenerate at the CURRENT commit, so this is a REAL failure —
+ *                  but it is not dishonesty, it is bookkeeping. The fix is
+ *                  re-running the verifier. Calling it "malformed" would send
+ *                  an owner hunting for a forger who does not exist; calling it
+ *                  a pass would let a claim outlive the code it measured.
+ *   MALFORMED      the value is absent, empty, not a sha256 digest, a constant,
+ *                  the digest of nothing, the digest of the record's own file,
+ *                  or a value the rule cannot reproduce from ANY covered path.
+ *                  Nothing about the tree explains it. The fix is to stop
+ *                  writing it.
+ *   UNEXPLAINED    the value does not re-derive AND no covered path changed
+ *                  since the record's commit — so it is not staleness either.
+ *                  This is the state that separates "the source moved" from
+ *                  "the number was invented", and it is its own verdict because
+ *                  a gate that folds it into STALE would launder a forged
+ *                  digest as bookkeeping the moment someone touches an
+ *                  unrelated file.
+ *
+ * `sinceCommit` is the discriminator between STALE and UNEXPLAINED, and it is
+ * INJECTED, never computed here: this module stays free of git and of the
+ * clock (the ledger_projection.ts discipline — a rule that shells out cannot be
+ * unit-tested against a fixture tree), and the gate supplies the real diff.
  */
-export function decorativeVerdict(args: {
+export type FingerprintState =
+  | { state: "verifiable"; fingerprint: string; covers: Coverage }
+  | { state: "stale"; fingerprint: string; rederived: string; moved: string[]; covers: Coverage }
+  | { state: "unexplained"; fingerprint: string; rederived: string; covers: Coverage }
+  | { state: "malformed"; findings: DecorativeVerdict[]; covers: Coverage }
+  | { state: "no-coverage"; findings: string[]; covers: Coverage }
+
+/** The injected "did any of these paths change since this commit" probe.
+ *  Returns the changed subset, or `null` when the question cannot be answered
+ *  (an unknown/absent commit) — and `null` is NOT the same as "nothing
+ *  changed": an unanswerable question must produce UNEXPLAINED, never STALE. */
+export type MovedSince = (commit: string | undefined, covers: Coverage) => string[] | null
+
+/** The structural findings that make a value malformed REGARDLESS of the tree's
+ *  state — the ones that are true of the value alone. Extracted from
+ *  `decorativeVerdict` so the classifier can ask "is this value dishonest?"
+ *  before it asks "does the tree explain the difference?". */
+export function valueFindings(args: {
   fingerprint: unknown
-  covers: Coverage
   root: string
-  verifierCommand: string
   evidenceFile?: string
-  declaredAlgorithm?: unknown
 }): DecorativeVerdict[] {
-  const { fingerprint, covers, root, verifierCommand, evidenceFile, declaredAlgorithm } = args
+  const { fingerprint, root, evidenceFile } = args
   const out: DecorativeVerdict[] = []
-  const add = (field: string, reason: string, rederived?: string): void => {
-    out.push({ field, fingerprint, reason, ...(rederived === undefined ? {} : { rederived }) })
-  }
-  if (declaredAlgorithm !== undefined && declaredAlgorithm !== FINGERPRINT_ALGORITHM) {
-    add("sourceFingerprintAlgorithm", `does not name the owner's algorithm (${JSON.stringify(String(declaredAlgorithm)).slice(0, 80)}…)`)
+  const add = (reason: string): void => {
+    out.push({ field: "sourceFingerprint", fingerprint, reason })
   }
   if (typeof fingerprint !== "string" || fingerprint.length === 0) {
-    add("sourceFingerprint", `absent or empty (${JSON.stringify(fingerprint)}) — §8.4 requires every claim field to carry one`)
+    add(`absent or empty (${JSON.stringify(fingerprint)}) — §8.4 requires every claim field to carry one`)
     return out
   }
   if (!HEX_64.test(fingerprint)) {
-    add("sourceFingerprint", `not a sha256 digest (${fingerprint.length} chars, not 64 lowercase hex)`)
+    add(`not a sha256 digest (${fingerprint.length} chars, not 64 lowercase hex)`)
     return out
   }
   if (evidenceFile) {
     const evRel = evidenceFile.split(path.sep).join("/")
     const evAbs = path.isAbsolute(evRel) ? evRel : path.join(root, evRel)
     if (existsSync(evAbs)) {
-      const selfDigest = sha256File(evAbs)
-      if (fingerprint === selfDigest) add("sourceFingerprint", "is the digest of THIS RECORD'S OWN evidence file — a function of its own output")
-      if (fingerprint === sha256Text(readFileSync(evAbs, "utf8"))) add("sourceFingerprint", "is the digest of this record's own TEXT — the same self-reference in string form")
+      if (fingerprint === sha256File(evAbs)) add("is the digest of THIS RECORD'S OWN evidence file — a function of its own output")
+      if (fingerprint === sha256Text(readFileSync(evAbs, "utf8"))) add("is the digest of this record's own TEXT — the same self-reference in string form")
     }
   }
-  if (fingerprint === SHA256_OF_NOTHING) add("sourceFingerprint", "is sha256 of ZERO BYTES — the hash of nothing at all")
-  if (/^([0-9a-f])\1{63}$/.test(fingerprint)) add("sourceFingerprint", `is the constant ${fingerprint.slice(0, 8)}… repeated — a decorative value`)
-  if (fingerprint === "0".repeat(64)) add("sourceFingerprint", "is 64 zeros — a decorative value")
-  if (fingerprint === "f".repeat(64)) add("sourceFingerprint", "is 64 f's — a decorative value")
-  for (const reason of coverageFindings(covers, { root, verifierCommand, ...(evidenceFile === undefined ? {} : { evidenceFile }) })) {
-    add("sourceFingerprintCovers", reason)
-  }
-  try {
-    const rederived = sourceFingerprintOf(covers, root)
-    if (rederived !== fingerprint) {
-      add("sourceFingerprint", `is not re-derivable from the declared coverage (record=${fingerprint.slice(0, 12)}… re-derived=${rederived.slice(0, 12)}…) — §8.2 asks for byte-identical regeneration from the current commit, and this value cannot be regenerated`, rederived)
-    }
-  } catch (e) {
-    add("sourceFingerprintCovers", `cannot be re-derived: ${(e as Error).message}`)
-  }
+  if (fingerprint === SHA256_OF_NOTHING) add("is sha256 of ZERO BYTES — the hash of nothing at all")
+  if (/^([0-9a-f])\1{63}$/.test(fingerprint)) add(`is the constant ${fingerprint.slice(0, 8)}… repeated — a decorative value`)
+  if (fingerprint === "0".repeat(64)) add("is 64 zeros — a decorative value")
+  if (fingerprint === "f".repeat(64)) add("is 64 f's — a decorative value")
   return out
 }
+
+/**
+ * THE CLASSIFIER. `covers` is the DECLARED coverage (from
+ * script/m61/claim_fingerprints.ts, or from the record's own
+ * `sourceFingerprintCovers` when it has one); `recordCommit` is the record's
+ * `currentCommit`, the only evidence available about WHEN the value was written.
+ *
+ * Order matters and is the reason this is a function rather than a pile of
+ * predicates:
+ *   1. no coverage declared        → no-coverage   (cannot judge a value over nothing)
+ *   2. coverage structurally broken→ no-coverage   (named, never re-derived)
+ *   3. value dishonest on its own  → malformed     (constant, empty, self-hash…)
+ *   4. value re-derives            → verifiable    (the only pass)
+ *   5. value differs, tree moved   → stale         (real, not dishonest)
+ *   6. value differs, tree did not → unexplained   (the invented-number state)
+ * Steps 5 and 6 are the F4 discrimination: the SAME predicate, two different
+ * injected answers, two different verdicts.
+ */
+export function classifyFingerprint(args: {
+  fingerprint: unknown
+  covers: Coverage
+  root: string
+  recordCommit?: string
+  verifierCommand: string
+  evidenceFile?: string
+  movedSince: MovedSince
+}): FingerprintState {
+  const { fingerprint, covers, root, recordCommit, verifierCommand, evidenceFile, movedSince } = args
+  const structural = coverageFindings(covers, { root, verifierCommand, ...(evidenceFile === undefined ? {} : { evidenceFile }) })
+  if (covers.length === 0 || structural.length > 0) return { state: "no-coverage", findings: structural, covers }
+  const dishonest = valueFindings({ fingerprint, root, ...(evidenceFile === undefined ? {} : { evidenceFile }) })
+  if (dishonest.length > 0) return { state: "malformed", findings: dishonest, covers }
+  const fp = fingerprint as string
+  let rederived: string
+  try {
+    rederived = sourceFingerprintOf(covers, root)
+  } catch (e) {
+    return { state: "no-coverage", findings: [`cannot re-derive: ${(e as Error).message}`], covers }
+  }
+  if (rederived === fp) return { state: "verifiable", fingerprint: fp, covers }
+  // The discriminator. `null` (the commit is unknown or absent from this repo)
+  // is treated as UNEXPLAINED, never as STALE: an unanswerable question must
+  // not produce the reassuring verdict.
+  const moved = movedSince(recordCommit, covers)
+  if (moved !== null && moved.length > 0) return { state: "stale", fingerprint: fp, rederived, moved, covers }
+  return { state: "unexplained", fingerprint: fp, rederived, covers }
+}
+
+/** The one-line form a gate prints. The state is named FIRST, because the state
+ *  is the finding and the detail only explains it. */
+export function fingerprintStateLine(claim: string, s: FingerprintState): string {
+  switch (s.state) {
+    case "verifiable":
+      return `${claim}: VERIFIABLE (${s.fingerprint.slice(0, 12)}… re-derived from ${s.covers.length} declared path(s))`
+    case "stale":
+      return `${claim}: STALE — ${s.moved.length} covered path(s) moved since ${s.moved.slice(0, 3).join(", ")}${s.moved.length > 3 ? ` … +${s.moved.length - 3}` : ""}; record=${s.fingerprint.slice(0, 12)}… now=${s.rederived.slice(0, 12)}… (re-run the verifier; §8.2)`
+    case "unexplained":
+      return `${claim}: UNEXPLAINED — the value does not re-derive AND no covered path changed since the record's commit; record=${s.fingerprint.slice(0, 12)}… re-derived=${s.rederived.slice(0, 12)}… (an invented digest, not bookkeeping)`
+    case "malformed":
+      return `${claim}: MALFORMED — ${s.findings.map((f) => f.reason).join("; ")}`
+    case "no-coverage":
+      return `${claim}: NO-COVERAGE — ${s.findings.join("; ")}`
+  }
+}
+
+/**
+ * REMOVED, and its removal is the point of this file's second half.
+ *
+ * The first form of this rule was one predicate, `decorativeVerdict()`, that
+ * answered "name every reason this value is not a fingerprint" — and it folded
+ * STALENESS and DISHONESTY into one undifferentiated list of strings. The RED
+ * PROOF showed what that costs: a gate that asks a boolean question about a
+ * predicate that returns prose cannot fail. It is replaced by
+ * `classifyFingerprint()` above, which returns ONE OF FOUR STATES, because the
+ * states have different owners (re-run the verifier / stop writing the value)
+ * and collapsing them teaches an owner to ignore the finding.
+ */
 
 // ---------------------------------------------------------------------------
 // The primitive's own proof
