@@ -1,19 +1,22 @@
 {
   "issue": "491",
   "code": "L2",
-  "status": "verified",
-  "currentCommit": "936b66d6d088776c7715e7d1aec492cc9c6d9841",
+  "status": "known-gap",
+  "currentCommit": "462f620be3ca6097a560b12d314fa9b98d8c6f1a",
   "sourceFingerprint": "08cae55c9091af3ad3ef2d78ecb9307056b0434645779a16292fb9ea3bc3b051",
   "verifierCommand": "npx tsx script/m24/verify-hover.ts",
   "evidenceFile": "L2.json",
-  "generatedAt": "2026-10-05T02:32:16.253Z",
-  "passed": 45,
-  "failed": 0,
-  "failures": [],
+  "generatedAt": "2026-10-05T03:26:43.286Z",
+  "passed": 43,
+  "failed": 2,
+  "failures": [
+    "G8/CONTROL: the same stimulus DOES throw when the row is resolved unguarded (so G8 is not vacuous)",
+    "G4/§5.1: no file in src/lsp/ converts an LSP/index line inline (outside the position owner)"
+  ],
   "negativeCases": 14,
   "verdict": {
-    "realComponentFailures": 0,
-    "mutantsCaught": 6,
+    "realComponentFailures": 2,
+    "mutantsCaught": 5,
     "mutantsTotal": 6,
     "mutantsByComponent": {
       "hover": {
@@ -22,12 +25,12 @@
         "anchorDrift": 0
       },
       "rich_hover": {
-        "caught": 2,
+        "caught": 1,
         "total": 2,
         "anchorDrift": 0
       }
     },
-    "ok": true,
+    "ok": false,
     "anchorDrift": 0,
     "anchorDriftNote": "A mutant whose anchor no longer exists, or whose module fails to load, no longer tests what this gate names. It is reported as NOT-CAUGHT and forces known-gap — §8.3: silence is guilt, and a skip is not a pass.",
     "note": "`failed` counts real functional failures only; mutant runs are reported separately via the verdict block."
@@ -40,7 +43,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T02:32:16.254Z",
-    "contentSha256": "a9541cded92d19df8219bdfa1036dcc442974fbc863b27f4b180189a5a63a115"
+    "sealedAt": "2026-10-05T03:26:43.287Z",
+    "contentSha256": "b3d0d4f38f5f80387d0c8e634a459636ffcb8caae132fc74136ea060fd51b5ce"
   }
 }
