@@ -523,9 +523,11 @@ console.log("\nM: hub renderer mutants (source-copy, M26.W1 pattern)")
     const found = forkSignatures.filter((re) => re.test(hubPanel))
     check("H5/§12.5: the panel DEFINES no hub renderer of its own (no list/tree/section/group builder)", found.length === 0, `${found.length} fork signature(s) present`)
     // Three sections, three core calls — a panel that dropped one would render
-    // less than the stateJson advertises.
-    const coreCalls = (hubPanel.match(/renderHub(List|Tree)\(/g) ?? []).filter((c) => !c.startsWith("import"))
-    check("H5/§12.5: all three sections go through the core (2x list + 1x tree)", coreCalls.length === 3, `${coreCalls.length} core render calls`)
+    // less than the stateJson advertises. The regex requires the open paren,
+    // so the import line (which names the functions without calling them)
+    // cannot inflate the count.
+    const coreCalls = hubPanel.match(/renderHub(?:List|Tree)\(/g) ?? []
+    check("H5/§12.5: all three sections go through the core (2x list + 1x tree)", coreCalls.length === 3, `${coreCalls.length} core render calls: ${coreCalls.join(", ")}`)
   }
 
   /** Named after the law each mutant convicts, so the record can say WHICH
