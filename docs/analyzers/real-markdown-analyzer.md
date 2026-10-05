@@ -403,6 +403,41 @@ inherits this. The fix already exists elsewhere: `script/m14/audit-analyzer-gram
 declares `EXTRA_GRAMMARS = { markdown: ["tree-sitter-markdown_inline.wasm"] }` for precisely
 this reason. Instrument A should union over that map.
 
+**MD-ARB-3 — the spec ruling lookup matches the ruling PROSE, so a decision that merely names
+a type while explaining itself is returned as that type's ruling.** `rulingFor(t)`
+(`script/m14/ontology-coverage-gate.ts:384-391`) takes the table miss, scans
+`script/m14/spec/markdown-completeness.json` for a `status: RULED` decision, and accepts the
+first whose `resolution` **prose** matches `/\b<t>\b/i` plus a weak
+`/ontology|emits|excluded|type/i` subject heuristic. The spec already carries a
+machine-readable subject — `node_type` — and the loop never reads it. Measured against this
+lane's 12 decisions, all `RULED`:
+
+| decision | `node_type` | prose matches | consequence |
+| --- | --- | --- | --- |
+| MD-D7 | `ontology:extends` | `contains`, `extends` | **false positive** — returns the `extends` ruling as `contains`'s |
+| MD-D12 | `ontology:calls` | *(nothing)* | **false negative** — `calls` gets no spec ruling despite MD-D12 |
+| MD-D8/9/10/11 | `ontology:{implements,exports,overrides,instantiates}` | own type only | correct |
+| MD-D1..MD-D6 | bare node types (`atx_heading`, `html_block`, `section`, …) | — | `handled_verified` decisions, not relationship rulings |
+
+The false positive is observable in the committed log:
+`logs/arbiter-run4-full-checkpoint.stdout` prints
+`contains  RULED-SOUND  … Written ruling: script/m14/spec/markdown-completeness.json#MD-D7`,
+an `extends` decision cited as the justification for `contains`. It only became reachable
+through MD-ARB-1 — with `contains` tallying 0 on that run the gate fell through to the spec —
+which is why the two defects had to be found together.
+
+**This one moves the verdict in the opposite direction to MD-ARB-1**, which is why neither is
+visible from the other: MD-ARB-1 under-reports emission, MD-ARB-3 over-reports justification.
+The false negative is currently masked by this lane's own table — `calls` is row 6 of
+`MARKDOWN_RULED`, and the table is checked first — so it is the lane's table, not the spec,
+that keeps `calls` honest.
+
+The fix is to read the declared subject instead of the prose: `dec.node_type ===
+\`ontology:${t}\``, keeping the prose scan only as a fallback for specs predating the field
+and logging that the fallback fired, so a prose-matched ruling stays distinguishable from a
+declared one. All twelve of this lane's decisions already carry `node_type`, so the fallback
+would never fire here. Affects every lane: the loop is language-agnostic.
+
 **What made four invocations necessary**, recorded because it is what exposed MD-ARB-1:
 **14 distinct corpus files trap the WASM parser with `memory access out of bounds`**, and each
 run dies at `[BB-HANG]` ~120s after the first one it meets — naming a file that had *already*
@@ -854,7 +889,7 @@ because it is emitted too and the three-column table omitted it.
 | --- | --- | --- | --- | --- |
 | **1. Exists** | yes — five `addRel` call sites | yes — three (inline destination, autolink, reference link / reference-form image) | yes — the resolved-anchor arm, relabelled from `uses` | yes — the file-naming include directive (MD-G3) |
 | **2. Fires** | **334,773** edges / 14,507 files | **270,779** / 9,915 | **16,857** / 1,136 | **105** / 74 |
-| **3. Correct** | 1,092/1,092 scala3, 8,499/8,499 kubernetes, MISSING=0, unexplained=0 | same rows | same rows, and MISSING=770 → 0 once the allowlist names it | 0 unexplained; never in the compared set at all |
+| **3. Correct** | 1,092/1,092 scala3, 8,499/8,499 kubernetes, MISSING=0, unexplained=0 | same rows | same rows, and MISSING=770 → 0 once the allowlist names it | 0 unexplained; **never in the compared set at all** — and measurably so: **1 edge in 1 file** across the differential's own 1,331-file corpora, **0 in kubernetes** |
 | **4. Labelled** | correct — no neighbouring type applies to intra-document containment | correct — 269,245 `markdown_link` + 1,534 `markdown_autolink` | correct — 16,857 `markdown_internal_anchor`, 0 rows under any other role | correct — 105 `markdown_template_include`, `import_based` |
 | **5. Resolved** | **334,773/334,773 (100%)** both ends file-local; 333,479 (99.6%) corpus-wide | **1/270,779 (0.0%)** both ends file-local; **258 (0.1%)** corpus-wide — by construction, the target is link text | **16,857/16,857 (100%)** file-local; 6,608 (39.2%) corpus-wide | **82/105 (78.1%)** source; **0/105** target — the target is a PATH |
 | **6. Confident** | 334,773 at 1.0, `structural`, 100% line-numbered, **0 below 0.7** | 270,779 at 1.0, `reference_qualified`, 100% line-numbered, **0 below 0.7** | 16,857 at 1.0, `reference_qualified`, 100% line-numbered, **0 below 0.7** | 105 at 1.0, `import_based`, 100% line-numbered, **0 below 0.7** |
