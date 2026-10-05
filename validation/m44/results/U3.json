@@ -2,17 +2,20 @@
   "issue": "M44.U3",
   "code": "U3",
   "milestone": "M44",
-  "status": "verified",
+  "status": "known-gap",
   "checks": 29,
-  "passed": 29,
-  "failed": 0,
-  "failures": [],
+  "passed": 27,
+  "failed": 2,
+  "failures": [
+    "R3: real-server grouped response renders clean under AH1–AH9: session did not complete: bb/graph: workspace is not indexed — run `bb index` first (declared error: an unindexed workspace has no graph to serve)",
+    "R3: wire caller groups carry the nesting fixture (make/draw/render): session did not complete: bb/graph: workspace is not indexed — run `bb index` first (declared error: an unindexed workspace has no graph to serve)"
+  ],
   "mutantsCaught": 6,
   "mutantsTotal": 6,
-  "currentCommit": "a943047e5cc1e03967e619a9bbc8bf935ec6c369",
+  "currentCommit": "93f85b7a3b4d8005e6683d505e49dfe6d28ef8bf",
   "verifierCommand": "npx tsx script/m44/verify-hub-tree.ts",
   "evidenceFile": "U3.json",
-  "generatedAt": "2026-09-26T23:16:24.889Z",
+  "generatedAt": "2026-10-05T14:42:24.073Z",
   "fixture": {
     "root": "Widget (file-1:Widget)",
     "nesting": "callers: render -> make -> Widget; callees: Widget -> util -> deep; external callee push"
@@ -30,7 +33,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-26T23:16:24.890Z",
-    "contentSha256": "dcb2afb788cdb59a4a538a10a816902100c463ec11df51ef4dbe09bb4ea3df7d"
+    "sealedAt": "2026-10-05T14:42:24.074Z",
+    "contentSha256": "2c3a48bf45f21f645ce5e758413d89e008589e0bf9741c2c7344a74ae0930bff"
   }
 }

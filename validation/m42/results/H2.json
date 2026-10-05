@@ -66,18 +66,18 @@
   "measured": {
     "regime": "warm",
     "samples": 200,
-    "p50Ms": 6.87,
-    "p95Ms": 11.8,
-    "maxMs": 47.38,
-    "meanMs": 7.46,
+    "p50Ms": 6.79,
+    "p95Ms": 9.61,
+    "maxMs": 15.36,
+    "meanMs": 7.07,
     "budgetMs": 50,
-    "coldMs": 68.76,
+    "coldMs": 72.49,
     "note": "A real p95 over a stated sample set. The pre-lane check was a MEAN over 40 compared against this budget and reported as a p95; the substitution was named as a limitation in KNOWN-GAPS.json for three waves instead of being fixed."
   },
-  "currentCommit": "726fd632ff2fedf92d7d3d60a31b214a0cd4055b",
+  "currentCommit": "93f85b7a3b4d8005e6683d505e49dfe6d28ef8bf",
   "verifierCommand": "npx tsx script/m42/verify-rich-hover.ts",
   "evidenceFile": "H2.json",
-  "generatedAt": "2026-10-05T14:31:14.058Z",
+  "generatedAt": "2026-10-05T14:41:58.565Z",
   "limitations": [
     "A usage link opens the index-stored CALL SITE when brain_relationship.line_number holds a real line, and the referencing symbol's DECLARATION when it does not — every such row states which, in its own label and in the usages header. The store carries no call-site BYTE COLUMN, so a call-site link opens at character 0: the line is exact, the column is not stored.",
     "A hover renders at most 3 usage links plus a \"+N more\" link, so a symbol with many callers shows three of them on the card and the rest through the hub.",
@@ -85,7 +85,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T14:31:14.060Z",
-    "contentSha256": "d1fe26196a3edbe9cb1494abf89db3f4665670e39490cb5727c31e4d0bfef774"
+    "sealedAt": "2026-10-05T14:41:58.567Z",
+    "contentSha256": "c251b3c7dceebace5c9cd1a8df6d40c7f07aed787c82cdb80582ad8c9765a8f4"
   }
 }

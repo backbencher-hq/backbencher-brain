@@ -3,17 +3,15 @@
   "code": "G1",
   "milestone": "M25",
   "status": "known-gap",
-  "checks": 79,
+  "checks": 78,
   "passed": 69,
-  "failed": 10,
+  "failed": 9,
   "negativeCases": 11,
-  "currentCommit": "726fd632ff2fedf92d7d3d60a31b214a0cd4055b",
-  "workingTreeRelevantChanges": [
-    "script/m25/verify-cross-platform.ts"
-  ],
+  "currentCommit": "93f85b7a3b4d8005e6683d505e49dfe6d28ef8bf",
+  "workingTreeRelevantChanges": [],
   "verifierCommand": "npx tsx script/m25/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-10-05T14:30:57.072Z",
+  "generatedAt": "2026-10-05T14:41:41.498Z",
   "ledger": "validation/m25/results/manifest.json",
   "m24Bar": {
     "ledgerStatus": "open",
@@ -23,10 +21,10 @@
     "This gate validates governance metadata, mutation response, and the M24 bar; it does not verify extension features.",
     "A run with relevant uncommitted M25 files is recorded as known-gap; verified status requires a clean relevant tree."
   ],
-  "blockedReason": "10 check(s) failed: G1: all 11 issue entries are unique and structurally complete; G1: no banned vocabulary in manifest.json (perfect(ion)?\\b); G1: no banned vocabulary in manifest.json (\\bcomplete(ly|d|ness)?\\b); G1: M24 bar — ledger closed with all 11 issues verified (mechanical) ... - relevant uncommitted files at measure time: script/m25/verify-cross-platform.ts - 2 ledger-projection finding(s)",
+  "blockedReason": "9 check(s) failed: G1: all 11 issue entries are unique and structurally complete; G1: no banned vocabulary in manifest.json (perfect(ion)?\\b); G1: no banned vocabulary in manifest.json (\\bcomplete(ly|d|ness)?\\b); G1: M24 bar — ledger closed with all 11 issues verified (mechanical) ... - the relevant tree was clean at measure time - 1 ledger-projection finding(s)",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T14:30:57.100Z",
-    "contentSha256": "0405a5805a7262bdf86af95af9923841ed8cd6d7cd40fd9fb2bec467eaabc9c5"
+    "sealedAt": "2026-10-05T14:41:41.520Z",
+    "contentSha256": "9be3cfb5e87b93bb8fdbe896e386af7bd78a54f134aac4190c8590b43980761b"
   }
 }
