@@ -1404,13 +1404,29 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
    * first conjunct and dropped the second. Measured over the corpus
    * (`validation/m14/fixtures/clean/ampersand-context-probe.mts`): 1,995
    * `class_context` nodes at WIDE carry only the three unnamed child types `|`,
-   * `,` and `&`; 365 contain an `&`; and **226 of them name a conjunct the
-   * analyzer never read, and every one of those 226 names a class different from
-   * the one already published** — zero repeat the first class. That last count is
-   * what makes the fix safe rather than decorative: a conjunct that repeated the
-   * first class would publish a second identical edge on one line, which is a
-   * naming question this lane has not settled, and it occurs 0 times. So each of
-   * the 226 is a genuinely distinct constraint whose edge was missing.
+   * `,` and `&`; 365 contain an `&`; and the conjuncts a `,`-only reader dropped
+   * split **249 that would ADD a row** against **264 that would name a class
+   * already published on that same line** — `| toReal a & toReal b & toReal c`
+   * (Clyde/Clyde/timeprofile.icl:337) is the shape, and at TRACKED the split is
+   * 62 against 47.
+   *
+   * The 264 are NOT a doubling, and the reason is `pushRel`'s own key rather than
+   * a judgement made here: it collapses on `source|type|target|line`, so a repeated
+   * conjunct cannot produce a second identical edge on one line. Measured as an A/B
+   * on the TRACKED population, reverting only the `&` in this line
+   * (`validation/m14/fixtures/clean/references-duplicate-probe.mts`):
+   *
+   *                references edges   distinct (source,target,line)   groups with >1
+   *     `,` only            10,049                    9,570                      387
+   *     `,` and `&`         10,108                    9,629                      387
+   *
+   * Both columns of the third are identical, per discriminator, so the fix adds 59
+   * edges and 59 NEW groups and changes the duplicate count by zero. The previous
+   * round declined to ship this fix precisely because it could not show that, and
+   * named the duplicate-vs-multiplicity question as the blocker; the question is
+   * answered by a key that was already in the file. `249` is the WIDE count of rows
+   * this adds, not a measured edge delta — WIDE is not re-measurable on this
+   * machine, so only the TRACKED `+59` is a measurement of the output.
    *
    * `&&` is NOT handled: it is 0 of the 1,995 contexts, and handling an unobserved
    * token would be a claim no measurement supports.

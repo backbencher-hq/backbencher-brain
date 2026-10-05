@@ -223,7 +223,7 @@ export const CLEAN_MUTANTS: Mutant[] = [
     language: "clean",
     defectClass: "missing-relationship-type",
     description:
-      "TWO-SPELLINGS-ONE-CONSTRUCT CLASS, and the first mutant in this battery that needs the SOURCE TEXT to be reverted faithfully — which is why `transform` receives `source`. `readClassContext` reset `expectName` on a `,` child and on nothing else, so a `|` context joined by `&` published its first conjunct and dropped the rest. `&` is not a second construct: the child shape is identical with the token swapped (`| == a` -> `!| operator_compare type_variable` against `| == a & UList a` -> `!| operator_compare type_variable !& constructor type_variable`, clean-stdlib/StdOverloadedList.dcl:5,8), which is the same two-spellings-one-handler shape the `fixity` field is already handled for. Measured cost of the `,`-only reader (validation/m14/fixtures/clean/ampersand-context-probe.mts): 365 of the 1,995 WIDE `class_context` nodes carry an `&`, and 226 of them name a conjunct that was never read. Nothing is fabricated and nothing is mislabelled — an edge that should exist is silently absent, which is the failure a count-only check cannot see because the lane's `references` total goes DOWN rather than wrong. The mutant re-derives the `,`-only reader off `source`: for a `class_context` edge, take the line, cut the context at its first `|`, split on `&`, and drop the edge when its target appears only in a conjunct after the first. A line with no `|` keeps its edges, so the mutant drops only what it can show the pre-fix code dropped. Caught by clean/ampersand-class-context, whose rows at lines 36, 41, 57, 64, 70 and 72 are exactly the shapes this loses.",
+      "TWO-SPELLINGS-ONE-CONSTRUCT CLASS, and the first mutant in this battery that needs the SOURCE TEXT to be reverted faithfully — which is why `transform` receives `source`. `readClassContext` reset `expectName` on a `,` child and on nothing else, so a `|` context joined by `&` published its first conjunct and dropped the rest. `&` is not a second construct: the child shape is identical with the token swapped (`| == a` -> `!| operator_compare type_variable` against `| == a & UList a` -> `!| operator_compare type_variable !& constructor type_variable`, clean-stdlib/StdOverloadedList.dcl:5,8), which is the same two-spellings-one-handler shape the `fixity` field is already handled for. Measured cost of the `,`-only reader (validation/m14/fixtures/clean/ampersand-context-probe.mts): 365 of the 1,995 WIDE `class_context` nodes carry an `&`, and the conjuncts such a reader drops split 249 that would ADD a row against 264 that name a class already published on the same line. Nothing is fabricated and nothing is mislabelled — an edge that should exist is silently absent, which is the failure a count-only check cannot see because the lane's `references` total goes DOWN rather than wrong. The mutant re-derives the `,`-only reader off `source`: for a `class_context` edge, take the line, cut the context at its first `|`, split on `&`, and drop the edge when its target appears only in a conjunct after the first. A line with no `|` keeps its edges, so the mutant drops only what it can show the pre-fix code dropped. Caught by clean/ampersand-class-context, whose rows at lines 36, 41, 57, 64, 70 and 72 are exactly the shapes this loses.",
     transform: (r: any, source?: string) => {
       if (!source) return r
       const lines = source.split("\n")
@@ -247,6 +247,36 @@ export const CLEAN_MUTANTS: Mutant[] = [
           return !conjuncts.slice(1).some((c) => c.includes(target))
         }),
       }
+    },
+  },
+  {
+    id: "clean/ampersand-repeat-published-per-conjunct",
+    language: "clean",
+    defectClass: "duplicate-edge",
+    description:
+      "THE OPPOSITE ERROR TO THE ONE ABOVE, and the reason the dedupe is pinned by a COUNT row rather than by prose. `pushRel` collapses on `source|type|target|line`, so `| Ord Int & Ord Int & Size Int` publishes one edge to `Ord` and one to `Size` — two rows for three conjuncts. The mutant models the alternative that was live before this round settled it: publish one row per conjunct, so the repeated conjunct yields a SECOND identical `references` edge on the same line. Nothing is fabricated about the class — `Ord` really is required — and the edge is still correctly labelled; what is wrong is that the payload carries no multiplicity field, so the second row says nothing the first did not, and `bb_graph`'s edge count and `bb_impact`'s dependent count both rise for a file that did not change. 264 conjuncts at WIDE and 47 at TRACKED have this shape, so it is not a synthetic case: `| toReal a & toReal b & toReal c` is Clyde/Clyde/timeprofile.icl:337. Measured as an A/B on TRACKED (validation/m14/fixtures/clean/references-duplicate-probe.mts) the fix itself changed the count of `references` groups holding more than one edge by ZERO — 387 before, 387 after, identical per discriminator — which is the evidence that the shipped code does not do this. Caught by clean/ampersand-class-context through `expectRelationshipCount` on `repeated -> Ord` at line 96, `equals 1`: under this mutant the real count is 2.",
+    transform: (r: any, source?: string) => {
+      if (!source) return r
+      const lines = source.split("\n")
+      const repeatsOn = (lineNumber: number, target: string): boolean => {
+        const text = lines[lineNumber - 1]
+        if (!text) return false
+        const bar = text.indexOf("|")
+        if (bar < 0) return false
+        const conjuncts = text.slice(bar).split("&")
+        if (conjuncts.length < 2) return false
+        return conjuncts.slice(1).filter((c) => c.includes(target)).length > 0
+      }
+      const extra: any[] = []
+      for (const x of (r.relationships ?? [])) {
+        if (String(x.type).toLowerCase() !== "references") continue
+        if (x?.metadata?.relationshipType !== "class_context") continue
+        const target = String(x.target ?? "")
+        if (!target) continue
+        if (!repeatsOn(Number(x.line_number), target)) continue
+        extra.push({ ...x })
+      }
+      return { ...r, relationships: [...(r.relationships ?? []), ...extra] }
     },
   },
 ]
