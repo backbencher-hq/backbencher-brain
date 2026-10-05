@@ -257,7 +257,7 @@ before `d2fc8626f`; `instantiates` is unchanged at 3.
 should have carried all along; the measurement and the reasoning are under **R7**
 below.
 
-**The wobble is measured across nine production walks of this same population, and
+**The wobble is measured across ten production walks of this same population, and
 it is a property of the parser, not of the analyzer.** Each row is the sum of that
 run's own ten per-type rows; the artifacts and the runs whose bytes were not kept
 are named so a reader can check them.
@@ -266,7 +266,7 @@ The walks are split into two groups because `d2fc8626f` changed the analyzer bet
 them, and `overrides` is the only type it changed. **Every other column is directly
 comparable across the two groups; `overrides` is not.**
 
-Post-fix — every one of these four rows is backed by an artifact in this repository:
+Post-fix — every one of these five arbiter rows is backed by an artifact in this repository:
 
 | run | instrument | calls | uses | contains | imports | references | exports | extends | implements | overrides | instantiates | total | files lost |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -274,6 +274,15 @@ Post-fix — every one of these four rows is backed by an artifact in this repos
 | 2 | `labels-and-resolution.txt` | 48,233 | 4,810 | 17,634 | 2,095 | 2,137 | 3,592 | 351 | 1,133 | 95 | 3 | 80,083 | 1 |
 | K | `arbiter/arbiter-r-runK-2026-10-05.txt` | 48,098 | 4,801 | 17,627 | 2,088 | 2,130 | 3,588 | 351 | 1,133 | 95 | 3 | 79,914 | 1 |
 | M | `arbiter/arbiter-r-runM-2026-10-05.txt` | 48,096 | 4,789 | 17,617 | 2,093 | 2,135 | 3,588 | 351 | 1,133 | 95 | 3 | 79,900 | 1 |
+| N | `arbiter/arbiter-r-runN-2026-10-05.txt` | 48,037 | 4,799 | 17,584 | 2,091 | 2,133 | 3,557 | 351 | 1,133 | 95 | 3 | 79,783 | 8 |
+
+Run N is the only walk in either group taken with `--fresh`, so it is the only one
+that parsed all 2,184 admitted files inside one process with no checkpoint behind
+it, and the only one independent of the resume defect recorded below. It is also
+the run that lost the most files — 8, against 1 for every other post-fix walk — and
+every one of its ten counts still falls inside the band, which is the strongest
+evidence available here that the wobble is bounded by the file-loss rate rather
+than open-ended.
 
 Pre-fix — `overrides` read 107 in every one of these five, and is not comparable with
 the column above:
@@ -291,7 +300,7 @@ captured to `/tmp` before the artifacts directory existed, so they are named her
 not relied on for a bound.
 
 **`overrides` is the one type in this table with no run-to-run variance at all: 107 in
-five pre-fix walks, 95 in four post-fix walks, with one commit in between and no
+five pre-fix walks, 95 in five post-fix walks, with one commit in between and no
 overlap.** Its edges all live in eight hand-written inheritance test files, and a file
 lost to `memory access out of bounds` contributes none of them, so the loss rate that
 moves every other column cannot move this one. That is what makes the 12-edge drop
@@ -305,36 +314,74 @@ changes. Run 2 lost `usethis/R/badge.R`; run F lost `ggplot2/R/scale-manual.R`,
 `r-testthat/R/expect-equality.R`; run G lost `ggplot2/R/scale-manual.R` and
 `usethis/R/course.R`; run H lost `usethis/R/ci.R` and `usethis/R/citation.R`; run I
 lost `r-testthat/R/expect-invisible.R`; run J lost `r-cli/R/width.R`; run K lost
-`usethis/R/create.R`; run M lost `r-testthat/R/expect-condition.R`. A file that
+`usethis/R/create.R`; run M lost `r-testthat/R/expect-condition.R`; run N lost
+`ggplot2/R/scale-hue.R`, `scale-identity.R`, `scale-linewidth.R`, `scale-manual.R`,
+`scale-shape.R`, `r-cli/R/utils.R`, `r-cli/R/vt.R` and `r-cli/R/width.R`. A file that
 fails to parse contributes no edges, so the totals track the failures. The losses
-cluster — 8 of the 13 across the seven arbiter walks are `usethis` (4) or `r-cli` (4)
+cluster — 9 of the 17 distinct lost files are `usethis` (4) or `r-cli` (5)
 file losses, and `r-rlang`'s 160 files were walked by every run without one loss.
-That clustering is weaker than a previous revision of this document claimed: it said 9
+Run N also settled that `ggplot2` is a family and not one unlucky file: all five of
+its losses are members of the `ggplot2/R/scale-*.R` series, and run N lost four of
+them in a single walk. That clustering is weaker than a previous revision of this
+document claimed: it said 9
 of 11, which had both a wrong numerator (7 at the time, counted file by file from the
 committed artifacts) and a wrong denominator (ten losses were on record when 11 was
 written, run I supplied the eleventh and run J the twelfth). Run I is also the first
-loss outside `usethis`, `r-cli` and `ggplot2`.
+loss outside `usethis`, `r-cli` and `ggplot2`. The per-run, per-file tally is in
+`validation/m14/fixtures/r/arbiter/README.md`.
 
 Every total above is correct for the files its own run walked and none is correct for
 the admitted population as a whole. **The post-fix band for the ten types is
-79,900–80,023 on the four rows whose bytes are all on disk, and 79,900–80,083 once
-`labels-and-resolution.txt` is included; the pre-fix band was 79,756–80,095.** Every
+79,783–80,023 on the five arbiter rows whose bytes are all on disk, and 79,783–80,083
+once the two `*.txt` harnesses are included; the pre-fix band was 79,756–80,095.** Every
 rate in this document inherits that band on its denominator. Run 1 walked all 2,184
 files with **0 parse failures** and 1 degraded parse (`usethis/R/author.R`); runs F
-through M each reported 1 degraded parse, which is the 120-second bomb substituting a
+through N each reported 1 degraded parse, which is the 120-second bomb substituting a
 regex extractor.
 
-Two files are known vulnerable and were lost in two different runs each —
-`ggplot2/R/scale-manual.R` (runs F and G) and `r-cli/R/width.R` (runs F and J) — which
+Two files are known vulnerable and were lost in more than one run each —
+`ggplot2/R/scale-manual.R` (runs F, G and N) and `r-cli/R/width.R` (runs F, J and N) —
+which
 is the evidence that WHICH file the parser dies on is not stable even for a file
 already known to die. Run J is additionally the first run whose `[BB-PARSE-ERR]` file is
 the SAME file the 120-second bomb then hung on, so counting parse-error lines in a
 run's bytes would double that run's loss column.
 
-`extends`, `implements`, `overrides` and `instantiates` are **identical in all seven
-runs**, which says the wobble is confined to the types whose counts are large enough
-to be sensitive to losing a handful of files — not that those four are more correct
-than the others.
+`extends`, `implements` and `instantiates` are **identical in all ten walks**, which
+says the wobble is confined to the types whose counts are large enough
+to be sensitive to losing a handful of files — not that those three are more correct
+than the others. `overrides` was in that group until `d2fc8626f` moved it out by
+changing the code rather than the parse rate; its zero variance is now measured rather
+than assumed, because run N lost eight files and `overrides` stayed at 95.
+
+### A defect that turns this lane's 10/10 into a reported 0/10
+
+Running the arbiter WITHOUT `--fresh` against a checkpoint that already lists all
+2,184 files prints:
+
+```
+walk: 2184/2184 files (100.0%)  newly walked 0, resumed 2184
+calls   RULED-UNJUSTIFIED NOT EMITTED and its construct is absent, but NO written ruling was found in the spec
+...    (all ten rows identical)
+emitted 0/10   ruled-sound 0   FALSIFIED 0   ruled-without-justification 10
+```
+
+Every one of those ten types is EMITTED, on the same tree, minutes earlier — run N in
+the table above is that measurement. The cause is structural, in
+`script/m14/ontology-coverage-gate.ts`: the `observed` map is populated inside the
+`run:` callback handed to `resumableWalk`, and `resumableWalk` never calls `run` for a
+path the checkpoint already holds, so a fully-resumed walk parses zero files and
+observes zero edges. Nothing in the output distinguishes that from a lane that emits
+nothing.
+
+It is worse for this lane specifically. Because `script/m14/r-ruled.ts` is legitimately
+empty, the observed-empty state falls through to the ruling branch, finds no ruling, and
+prints `RULED-UNJUSTIFIED` for all ten — so a resume artifact converts a 10/10 lane into
+one that appears to have ruled on nothing. A lane carrying a complete ruling table does
+not have this failure mode, which means the defect hides on exactly the lanes most
+likely to be re-run. Both files are shared machinery (workstream §8): reported, not
+worked around. The workaround is `--fresh`, which is why run N is the run this lane's
+current numbers rest on.
 
 Integrity on run 1, which walked the whole population: **0** parse failures, **0**
 degraded parses, **0** symbols with an empty name, **0** with an empty or `unknown`
