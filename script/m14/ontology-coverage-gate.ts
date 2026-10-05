@@ -255,14 +255,29 @@ console.log(`corpus: ${files.length} admitted files\n`)
 
 // ---------------------------------------------------------------- what is emitted
 const observed = new Map<Type, { n: number; files: Set<string> }>()
-let idx = 0
-async function worker() {
-  while (true) {
-    const i = idx++
-    if (i >= files.length) return
+
+// Resumable, because `parseFile` can kill this process outright: parser.parse() is
+// synchronous WASM and a grammar that loops on a pathological input cannot be
+// interrupted, so ASTEngine answers a hang with process.exit(). The 120s guard's own
+// comment claims "the indexer is incremental - re-running resumes", which is true of the
+// indexer and false of every tool that walks a corpus in ONE process, including this
+// one. Measured consequence, repeatedly: nim, scss and hcl each lost an entire corpus
+// walk to a single file (a 1.6 MB generated sprite, a tree-sitter-nim fault, a terraform
+// testdata file), and because the file is always in the corpus, every re-run lost it
+// again.
+//
+// So the walk checkpoints. `--fresh` starts over; without it a second run resumes where
+// the last one died, and a file that hangs is recorded as bad and never retried.
+const { resumableWalk, resetCheckpoint } = await import("./resumable-walk")
+const CHECKPOINT = `validation/m14/measurements/walk-${LANG}.txt`
+if (process.argv.includes("--fresh")) resetCheckpoint(CHECKPOINT)
+
+const walkStats = await resumableWalk(CHECKPOINT, files.length, {
+  id: (i) => files[i].abs,
+  concurrency: 8,
+  run: async (i) => {
     const f = files[i]
-    let r: any
-    try { r = await parseFile(f.abs, f.dir) } catch { continue }
+    const r: any = await parseFile(f.abs, f.dir)
     for (const x of r.relationships ?? []) {
       const t = String(x.type ?? x.relationshipType ?? "").toLowerCase() as Type
       if (!ALL_TYPES.includes(t)) continue
@@ -271,9 +286,8 @@ async function worker() {
       if (row.files.size < 4) row.files.add(`${f.repo}/${f.rel}`)
       observed.set(t, row)
     }
-  }
-}
-await Promise.all(Array.from({ length: 8 }, () => worker()))
+  },
+})
 
 // ---------------------------------------------------------------- measure with the right instrument
 const wts: any = await import("web-tree-sitter")
@@ -404,6 +418,26 @@ if (RULED_BY_LANG[LANG] === undefined) {
   console.log(`note: ${LANG} has no ruling TABLE; ${ruledFromSpec.length}/${unEmittedForGuard.length} un-emitted types are ruled from its SPEC.`)
   console.log(`      a spec ruling is prose; a table ruling is a corpus probe. They are not equally strong.`)
 }
+
+// The population this verdict is actually about. A resumed or partial walk produces the
+// SAME edge counts as a complete one over the files it did see — the counts do not know
+// they are smaller — so without this line a 99% walk reports identically to a 100% one and
+// the reader cannot tell. Stated before the table, not in a footnote.
+const walkedPct = walkStats.total === 0 ? 0 : ((walkStats.walked + walkStats.alreadyDone) / walkStats.total) * 100
+console.log(
+  `walk: ${walkStats.walked + walkStats.alreadyDone}/${walkStats.total} files ` +
+    `(${walkedPct.toFixed(1)}%)  newly walked ${walkStats.walked}, resumed ${walkStats.alreadyDone}` +
+    (walkStats.skippedBad > 0 ? `  SKIPPED-BAD ${walkStats.skippedBad}` : ``) +
+    (walkStats.partial ? `  PARTIAL` : ``),
+)
+if (walkStats.partial) {
+  console.log(
+    `      every edge count below is over ${walkedPct.toFixed(1)}% of the corpus. ` +
+      `${walkStats.skippedBad} file(s) hang or cannot be parsed and are excluded; re-run to resume, ` +
+      `--fresh to start over. Checkpoint: ${walkStats.checkpoint}`,
+  )
+}
+console.log()
 
 const rows: Row[] = []
 for (const t of ALL_TYPES) {
