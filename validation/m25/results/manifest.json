@@ -40,14 +40,14 @@
       ],
       "evidence": {
         "status": "known-gap",
-        "currentCommit": "726fd632ff2fedf92d7d3d60a31b214a0cd4055b",
+        "currentCommit": "93f85b7a3b4d8005e6683d505e49dfe6d28ef8bf",
         "verifierCommand": "npx tsx script/m25/verify-governance.ts",
         "evidenceFile": "G1.json",
         "passed": 66,
         "failed": 6,
         "realFailed": 0,
         "negativeCases": 11,
-        "blockedReason": "6 check(s) failed: G1: all 11 issue entries are unique and structurally complete; G1: no banned vocabulary in manifest.json (perfect(ion)?\\b); G1: no banned vocabulary in manifest.json (\\bcomplete(ly|d|ness)?\\b); G1: M24 bar — ledger closed with all 11 issues verified (mechanical) … — relevant uncommitted files at measure time: script/m25/verify-cross-platform.ts"
+        "blockedReason": "6 check(s) failed: G1: all 11 issue entries are unique and structurally complete; G1: no banned vocabulary in manifest.json (perfect(ion)?\\b); G1: no banned vocabulary in manifest.json (\\bcomplete(ly|d|ness)?\\b); G1: M24 bar — ledger closed with all 11 issues verified (mechanical) … — the relevant tree was clean at measure time"
       }
     },
     {
@@ -240,7 +240,7 @@
       "code": "E6",
       "githubIssue": 504,
       "tool": "fork-verification",
-      "status": "verified",
+      "status": "blocked",
       "scope": "separate I4 runs in each available fork at pinned versions, same assertion core; a fork we cannot run locally is recorded blocked with reason — never omitted, never claimed by inheritance",
       "acceptanceCriteria": [
         "per-fork evidence: version, OS, workspace, per-feature assertions",
@@ -253,8 +253,8 @@
         "owner spot-check scheduled"
       ],
       "evidence": {
-        "status": "verified",
-        "currentCommit": "a871d533a736e8e38cb826d80d986d3cc84022d1",
+        "status": "blocked",
+        "currentCommit": "93f85b7a3b4d8005e6683d505e49dfe6d28ef8bf",
         "verifierCommand": "npx tsx script/m25/run-fork-e2e.mts",
         "evidenceFile": "F-CURSOR.json",
         "forks": {
@@ -286,8 +286,8 @@
           "L3: definition outside index is honest empty (per fork)",
           "G1: forged fork claim in the capability matrix is detected (mutation proof)"
         ],
-        "failed": 0,
-        "total": 52
+        "total": 52,
+        "blockedReason": "cursor CLI not found on PATH — install or record the waiver (E6 honest blocked state)"
       }
     },
     {
@@ -382,7 +382,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T14:30:57.095Z",
-    "contentSha256": "c467961d300f8b359300f74d627cf7103908a45c73bdfed2f79be147d3d7ebf0"
+    "sealedAt": "2026-10-05T14:41:41.517Z",
+    "contentSha256": "0d6cd304fb36a110fe3fc1aa1aede3127776196c661b2b31756328d28997f8c2"
   }
 }
