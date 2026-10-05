@@ -114,11 +114,32 @@ const splice = (withTable: boolean, withLang: boolean): string => {
 
 const NOISE_PREFIX = "[INFO]"
 const NOISE_TOKENS = ["BB-PARSE-ERR", "BB-HANG"]
-const clean = (s: string): string =>
-  s
-    .split("\n")
-    .filter((l) => !l.startsWith(NOISE_PREFIX) && !NOISE_TOKENS.some((t) => l.includes(t)))
-    .join("\n")
+/**
+ * Drop the runtime's per-file chatter so the verdict TABLE stays readable.
+ *
+ * The two token filters were unconditional until this pass, and that is the same
+ * failure shape pass 14 found in this lane's other probes: an instrument that
+ * discards the evidence it needs. `BB-PARSE-ERR` and `BB-HANG` are the only two
+ * lines that can explain a non-zero exit — the shared gate computes
+ * `process.exitCode` from its verdict array and reaches 1 only when it also traps
+ * (see `script/m14/protobuf-stale-watchdog.mts`), so filtering them unconditionally
+ * is filtering out precisely the diagnosis whenever there is one. Pass 17 measured
+ * run (c) printing `FALSIFIED 0` and exiting 1 with no cause on the page.
+ *
+ * `keepCause` therefore defaults to FALSE — a passing run keeps the table clean — and
+ * is set by the caller on the error path. A pass never gains lines; a FAIL always
+ * gains them.
+ */
+const clean = (s: string, keepCause = false): string => {
+  const lines = s.split("\n")
+  const kept = keepCause
+    ? lines.filter((l) => !l.startsWith(NOISE_PREFIX))
+    : lines.filter((l) => !l.startsWith(NOISE_PREFIX) && !NOISE_TOKENS.some((t) => l.includes(t)))
+  const suppressed = lines.filter((l) => NOISE_TOKENS.some((t) => l.includes(t)))
+  return suppressed.length > 0 && !keepCause
+    ? `${kept.join("\n")}\n(${suppressed.length} runtime line(s) suppressed — BB-PARSE-ERR / BB-HANG; re-run a FAILING pass to see them)`
+    : kept.join("\n")
+}
 
 const run = (label: string, code: string, tailOnly = false): string => {
   writeFileSync(DERIVED_GATE, code)
@@ -130,10 +151,25 @@ const run = (label: string, code: string, tailOnly = false): string => {
       stdio: ["ignore", "pipe", "pipe"],
     })
     const noise = clean(out)
-    return `${label}\n${tailOnly ? noise.split("\n").slice(-6).join("\n") : noise}`
+    return `${label} (exit 0)\n${tailOnly ? noise.split("\n").slice(-6).join("\n") : noise}`
   } catch (e: any) {
-    const noise = clean(`${e.stdout ?? ""}${e.stderr ?? ""}`)
-    return `${label} (exit ${e.status})\n${tailOnly ? noise.split("\n").slice(-6).join("\n") : noise}`
+    // A non-zero exit is a RESULT, so the cause travels with it. `keepCause` keeps
+    // every BB-PARSE-ERR / BB-HANG line: on the exit path the readable table is worth
+    // less than the diagnosis, and a reader who cannot see why a run failed will read
+    // the number as the verdict.
+    const raw = `${e.stdout ?? ""}${e.stderr ?? ""}`
+    const noise = clean(raw, true)
+    const traps = raw
+      .split("\n")
+      .filter((l) => NOISE_TOKENS.some((t) => l.includes(t)))
+    return [
+      `${label} (exit ${e.status})`,
+      traps.length > 0
+        ? `  RUNTIME CAUSE — ${traps.length} line(s) the clean filter would have hidden:`
+        : "  RUNTIME CAUSE — none in the child streams; the exit code is not explained by a parse trap.",
+      ...traps.map((l) => `    ${l}`),
+      tailOnly ? noise.split("\n").slice(-6).join("\n") : noise,
+    ].join("\n")
   } finally {
     if (!KEEP) {
       rmSync(DERIVED_GATE, { force: true })

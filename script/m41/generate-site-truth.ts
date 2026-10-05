@@ -103,16 +103,26 @@ const blockEndRel = engineSrc.slice(blockStart).search(/^  \}/m)
 if (blockEndRel < 0) fail("SUPPORTED_LANGUAGES block has no closing brace")
 const block = engineSrc.slice(blockStart, blockStart + blockEndRel)
 
-const languageNames: string[] = []
-let dedicated = 0
+// A JS object literal keeps the LAST value for a repeated key, so this parser
+// must do the same or it counts a language the engine never resolves.
+// `SUPPORTED_LANGUAGES` currently declares `nim` twice — `tree-sitter-nim` at
+// src/ast/engine.ts:282 under the heading "a real parser each", then
+// `__generic__` at :301 — so a line-counting parser published 51 languages and
+// 50 dedicated parsers while the engine resolves 50 keys and 49 grammars, and
+// put `nim` in TRUTH.languages.names twice. Counting a shadowed declaration is
+// the same failure as reading the first of two CSS custom properties: it
+// certifies a value nothing actually uses.
+const languageGrammar = new Map<string, string>()
 for (const line of block.split("\n")) {
   const m = line.match(/^\s{4}(?:"([a-z-]+)"|([a-z-]+)):\s*"(.+)",\s*$/)
   if (!m) continue
   const name = m[1] ?? m[2]
   if (!name) continue
-  languageNames.push(name)
-  if (m[3] !== "__generic__") dedicated++
+  languageGrammar.set(name, m[3]!)
 }
+const languageNames: string[] = [...languageGrammar.keys()]
+let dedicated = 0
+for (const grammar of languageGrammar.values()) if (grammar !== "__generic__") dedicated++
 if (languageNames.length === 0) fail("SUPPORTED_LANGUAGES parsed to zero languages")
 languageNames.sort((a, b) => a.localeCompare(b))
 
