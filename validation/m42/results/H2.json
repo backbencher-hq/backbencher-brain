@@ -101,18 +101,18 @@
   "measured": {
     "regime": "warm",
     "samples": 200,
-    "p50Ms": 7.52,
-    "p95Ms": 11.05,
-    "maxMs": 16.51,
-    "meanMs": 7.74,
+    "p50Ms": 7.54,
+    "p95Ms": 11.24,
+    "maxMs": 29.16,
+    "meanMs": 7.92,
     "budgetMs": 50,
-    "coldMs": 91.32,
+    "coldMs": 77.82,
     "note": "A real p95 over a stated sample set. The pre-lane check was a MEAN over 40 compared against this budget and reported as a p95; the substitution was named as a limitation in KNOWN-GAPS.json for three waves instead of being fixed."
   },
-  "currentCommit": "659b69f19993b7c8c08f475a0057d987f5875664",
+  "currentCommit": "de5be3160efd761c14fe4222d8af103b83ff9fd1",
   "verifierCommand": "npx tsx script/m42/verify-rich-hover.ts",
   "evidenceFile": "H2.json",
-  "generatedAt": "2026-10-05T04:04:36.153Z",
+  "generatedAt": "2026-10-05T04:05:47.210Z",
   "supersededExpectations": [
     {
       "was": "H2/R4: the hover's call-site links DIFFER from the L3 reference lines, and the card states the difference",
@@ -130,7 +130,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T04:04:36.154Z",
-    "contentSha256": "9d1b587c06896ad724ad22f7902cda5503956e49ba08814f6fe5ea886b82ca31"
+    "sealedAt": "2026-10-05T04:05:47.211Z",
+    "contentSha256": "83e5549f80061d6901a8feb1c236f856ae4e846642118bc107ed5cd6679db930"
   }
 }

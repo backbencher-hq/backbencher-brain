@@ -813,6 +813,20 @@ function rewriteRelativeImports(source: string): string {
     },
     currentCommit,
     workingTreeRelevantChanges: workingTreeDirty,
+    /**
+     * §8.2 — "byte-identical modulo timestamps declared as such" is only
+     * meaningful if the record says WHICH fields those are. Declared here so a
+     * byte-identity checker does not have to guess, and so an undeclared
+     * difference is a finding rather than a judgement call.
+     *
+     * Measured at commit 462f620be with a clean tree: two consecutive runs of
+     * this suite differ ONLY in `generatedAt`, the seal that hashes it, and
+     * `workingTreeRelevantChanges`. The last is self-referential — it lists the
+     * dirty files at run time, and writing this record dirties it — so it cannot
+     * be stable by construction. Everything else, including every count, every
+     * mutant verdict and the whole disposition block, is stable.
+     */
+    volatileFields: ["generatedAt", "bbSeal.sealedAt", "bbSeal.contentSha256", "workingTreeRelevantChanges"],
     verifierCommand: "npx tsx script/m55/verify-call-hierarchy.ts",
     evidenceFile: "T2.json",
     generatedAt: new Date().toISOString(),
