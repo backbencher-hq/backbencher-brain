@@ -3,11 +3,11 @@
   "code": "Z1",
   "milestone": "M27",
   "status": "verified",
-  "checks": 28,
-  "passed": 28,
+  "checks": 29,
+  "passed": 29,
   "failed": 0,
-  "mutantsCaught": 3,
-  "mutantsTotal": 3,
+  "mutantsCaught": 4,
+  "mutantsTotal": 4,
   "mutantRecords": [
     {
       "name": "Z1 mutant: shim dist-path drift is rejected",
@@ -18,25 +18,25 @@
       "caught": true
     },
     {
-      "name": "Z1 mutant: shim order drift vs oracle is rejected",
+      "name": "Z1 mutant: shim order drift vs oracle is rejected (code, not comment)",
+      "caught": true
+    },
+    {
+      "name": "Z1: a comment renumbering a step is not code drift",
       "caught": true
     }
   ],
-  "currentCommit": "f70ec0734fbae53b25994d7395bb108fd1999343",
+  "currentCommit": "82cb16e608e5ec3cd68d5d8e63158cb215170f4b",
   "build": {
-    "ran": false,
-    "ok": false,
-    "reason": "cargo/rust toolchain not provisioned (D-7 portable layout covers nvim/zed binaries; wasm target toolchain ~1 GB not downloaded)"
+    "ran": true,
+    "ok": true,
+    "reason": "wasm shim built"
   },
   "verifierCommand": "npx tsx script/m27/verify-zed.ts",
   "evidenceFile": "Z1.json",
-  "generatedAt": "2026-10-05T14:22:09.146Z",
-  "claimLevel": "I2 — extension + shim unit-proven against the real server's wire capabilities; wasm build blocked-with-reason (toolchain boundary per D-7); no editor session driven",
+  "generatedAt": "2026-10-05T17:39:36.411Z",
+  "claimLevel": "I2 — extension + shim unit-proven, wasm built; editor-session leg blocked-with-reason (no display session driven)",
   "blockedLegs": [
-    {
-      "leg": "wasm shim build",
-      "reason": "cargo/rust toolchain not provisioned (D-7 portable layout covers nvim/zed binaries; wasm target toolchain ~1 GB not downloaded)"
-    },
     {
       "leg": "in-editor Zed session",
       "reason": "Zed GUI session not machine-driven on this display-less environment; extension + server proven at their respective levels"
@@ -48,7 +48,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T14:22:09.149Z",
-    "contentSha256": "e907bf7dbdd754a57703f539a49edda87795ff4a61f1a000d066c2104c4f689e"
+    "sealedAt": "2026-10-05T17:39:36.415Z",
+    "contentSha256": "c2e6cb0c8458f4ccf219d2fcc2ed269d7a79f055f8dec27ce1fee33766ce6bdd"
   }
 }
