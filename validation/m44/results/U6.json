@@ -2,20 +2,36 @@
   "issue": "693",
   "code": "U6",
   "milestone": "M44",
-  "status": "known-gap",
-  "checks": 25,
-  "passed": 24,
-  "failed": 1,
+  "status": "verified",
+  "checks": 29,
+  "passed": 29,
+  "failed": 0,
   "negativeCases": 2,
-  "mutantsCaught": 4,
-  "mutantsTotal": 4,
-  "currentCommit": "93f85b7a3b4d8005e6683d505e49dfe6d28ef8bf",
-  "workingTreeRelevantChanges": [],
+  "mutantsCaught": 6,
+  "mutantsTotal": 6,
+  "mutantsCaughtBy": [
+    "M1 message-only regression (fallback downgraded to reveal floor)",
+    "M2 parse accepts an empty symbol (client-side guessing re-enters)",
+    "M3 native handoff ignored (fallback must stay secondary)",
+    "M4 hover link drops the symbol (fallback could not query)",
+    "dead end while the native references surface is available (handoff ok -> reveal floor)",
+    "dead end on the unavailable branch (the hub fallback replaced by the reveal floor)"
+  ],
+  "mutantHonesty": {
+    "loadFailureIsACatch": false,
+    "note": "A mutant whose module will not import exercises no §13.6 path. This gate booked that as a catch — PROVEN twice: a mutant whose replacement was a bare syntax error printed 'mutant caught', and M4 (the hover-link mutant, written to validation/m44/ where src/lsp/rich_hover.ts's relative imports do not resolve) could never load at all, so the one mutant that proves the link carries the symbol had ZERO coverage while the record read 4/4. Mutants are now written beside the module they mutate, and an unevaluable mutant, a probe that cannot run, and an anchor that no longer matches are all FAILURES (§8.3 silence is guilt)."
+  },
+  "failures": [],
+  "currentCommit": "14a1d9c75911e6d7ff69f626e347e7038e5db787",
+  "workingTreeRelevantChanges": [
+    "M script/m44/u6-fixture.ts",
+    "M script/m44/verify-usages-fallback.ts"
+  ],
   "verifierCommand": "npx tsx script/m44/verify-usages-fallback.ts",
   "evidenceFile": "U6.json",
-  "generatedAt": "2026-10-05T14:42:41.556Z",
+  "generatedAt": "2026-10-05T22:09:15.674Z",
   "fixture": {
-    "root": "$HOME/Documents/Default Project/ishaq/wt/ledgers/.tools/m44-u6-fixture",
+    "root": "$HOME/Documents/Default Project/ishaq/wt/hubgap/.tools/m44-u6-fixture",
     "files": [
       "src/main/java/com/demo/App.java",
       "src/main/java/com/demo/Extra1.java",
@@ -23,7 +39,19 @@
     ],
     "symbol": "render",
     "shownLinks": 3,
-    "hiddenMore": 1
+    "hiddenMore": 2,
+    "usagePlaces": 5,
+    "placeUnit": "one per served position — a stored call-site line, else the referencing declaration (src/lsp/relations.ts)",
+    "places": [
+      "App.java:6 (main)",
+      "App.java:19 (ExtraCalls.both)",
+      "App.java:20 (ExtraCalls.both)",
+      "Extra1.java:5 (main)",
+      "Extra2.java:5 (main)"
+    ],
+    "excluded": [
+      "App.java:11 Greeter contains render — a DECLARATION, never a usage (§14 rule 1, M55.T3)"
+    ]
   },
   "limitations": [
     "The vscode command handler cannot execute headlessly; its wiring is pinned structurally (R3) and executed live by the E5 in-editor leg (click show-all-usages → native peek OR usages fallback, never a bare message).",
@@ -31,7 +59,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T14:42:41.558Z",
-    "contentSha256": "baa9ae5737d9378c185d5f24b01b2b3627d1ec3ad17a0e4fc51950853f969d46"
+    "sealedAt": "2026-10-05T22:09:15.675Z",
+    "contentSha256": "9fa7022975677eaf19e8845197c93bfb32dabbfb60fe0dba97f447990293165a"
   }
 }
