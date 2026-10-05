@@ -3,7 +3,7 @@
   "milestone": "M25",
   "githubMilestone": 25,
   "title": "The Extension (IDE Program v1)",
-  "status": "closed",
+  "status": "open",
   "authority": "docs/m25/M25-MASTER-PLAN.md",
   "governingContract": "docs/IDE-HONESTY-CONTRACT.md",
   "updatedAt": "2026-09-02T00:00:00.000Z",
@@ -26,7 +26,7 @@
       "code": "G1",
       "githubIssue": 498,
       "tool": "governance",
-      "status": "verified",
+      "status": "known-gap",
       "scope": "M25 ledger, closure gate, verify wiring; standing M24 completion-bar re-audit; contract vocabulary lint over M25 artifacts",
       "acceptanceCriteria": [
         "ledger + gate + verify wiring as in M24.G1",
@@ -39,14 +39,15 @@
         "clean rerun recorded"
       ],
       "evidence": {
-        "status": "verified",
-        "currentCommit": "see G1.json",
+        "status": "known-gap",
+        "currentCommit": "2cd1896802d2be3eca5d7866e2e5a9b7d339125d",
         "verifierCommand": "npx tsx script/m25/verify-governance.ts",
         "evidenceFile": "G1.json",
-        "passed": 71,
-        "failed": 0,
+        "passed": 69,
+        "failed": 3,
         "realFailed": 0,
-        "negativeCases": 11
+        "negativeCases": 11,
+        "blockedReason": "3 check(s) failed: G1: M24 bar — ledger closed with all 11 issues verified (mechanical); G1: M24 bar — M24 governance gate exits 0 at HEAD (spawned); G1: every non-planned ledger item has matching persisted evidence at the current commit — the relevant tree was clean at measure time"
       }
     },
     {
@@ -67,13 +68,15 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "see E1.json",
+        "currentCommit": "0dbafd74ef4f3d63be8e44dd6caa58833732a7db",
         "verifierCommand": "npx tsx script/m25/verify-extension-skeleton.ts",
         "evidenceFile": "E1.json",
-        "passed": 34,
+        "passed": 44,
         "failed": 0,
         "mutantsCaught": 3,
-        "mutantsTotal": 3
+        "mutantsTotal": 3,
+        "negativeCases": 0,
+        "blockedReason": "Headless module verification: the vscode API layer (activate path) is verified in-editor by E5; this suite covers the pure core, budget/crash declarations, and complement-stance lint."
       }
     },
     {
@@ -94,13 +97,15 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "see E2.json",
+        "currentCommit": "0dbafd74ef4f3d63be8e44dd6caa58833732a7db",
         "verifierCommand": "npx tsx script/m25/verify-auto-index.ts",
         "evidenceFile": "E2.json",
         "passed": 43,
         "failed": 0,
-        "realFailed": 0,
-        "negativeCases": 5
+        "negativeCases": 5,
+        "mutantsCaught": 5,
+        "mutantsTotal": 5,
+        "blockedReason": "E2E legs run the real `bb index` CLI on tiny/medium fixtures with BB_DATA_DIR isolation; giant-repo timings are not re-measured here (M19 numbers are the declared reference)."
       }
     },
     {
@@ -121,13 +126,15 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "see E3.json",
+        "currentCommit": "0dbafd74ef4f3d63be8e44dd6caa58833732a7db",
         "verifierCommand": "npx tsx script/m25/verify-status-surface.ts",
         "evidenceFile": "E3.json",
         "passed": 32,
         "failed": 0,
-        "realFailed": 0,
-        "negativeCases": 4
+        "negativeCases": 4,
+        "mutantsCaught": 4,
+        "mutantsTotal": 4,
+        "blockedReason": "Rendered states are captured as log evidence here (E3-render-capture.txt); in-editor screenshots of the status bar and panel are E5 editor-verification evidence per the contract's OS-scoped claim rules."
       }
     },
     {
@@ -148,13 +155,15 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "see E4.json",
+        "currentCommit": "0dbafd74ef4f3d63be8e44dd6caa58833732a7db",
         "verifierCommand": "npx tsx script/m25/verify-packaging.ts",
         "evidenceFile": "E4.json",
-        "passed": 28,
+        "passed": 56,
         "failed": 0,
-        "realFailed": 0,
-        "negativeCases": 4
+        "negativeCases": 5,
+        "mutantsCaught": 5,
+        "mutantsTotal": 5,
+        "blockedReason": "Live OpenVSX publish is honestly blocked awaiting owner credentials (OVSX_PAT); the dry-run records the real packaged artifact and the exact publish command — see E4-openvsx.json."
       }
     },
     {
@@ -175,13 +184,15 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "see V1.json",
+        "currentCommit": "0dbafd74ef4f3d63be8e44dd6caa58833732a7db",
         "verifierCommand": "npx tsx script/m25/verify-harness-core.ts",
         "evidenceFile": "V1.json",
-        "passed": 24,
+        "passed": 27,
         "failed": 0,
-        "realFailed": 0,
-        "negativeCases": 5
+        "negativeCases": 3,
+        "mutantsCaught": 6,
+        "mutantsTotal": 6,
+        "blockedReason": "The stdio leg measures the server + core stack; the fully in-editor numbers (extension host included) are E5's vscode-test run at a pinned editor version — same core, same gate, transport swapped."
       }
     },
     {
@@ -202,10 +213,10 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "see E5.json",
-        "verifierCommand": "E5_OUT=<dir> npx tsx script/m25/run-vscode-e2e.mts",
+        "currentCommit": "a871d533a736e8e38cb826d80d986d3cc84022d1",
+        "verifierCommand": "npx tsx script/m25/run-vscode-e2e.mts",
         "evidenceFile": "E5.json",
-        "passed": 26,
+        "passed": 88,
         "total": 26,
         "inEditor": true,
         "pinnedEditor": "vscode-1.85.0",
@@ -213,7 +224,6 @@
         "declaredBudgetMs": 150,
         "liveStalenessLoop": true,
         "failed": 0,
-        "negativeCases": 3,
         "negativeCaseNames": [
           "L2: hover outside index is declared absent",
           "L3: definition outside index is honest empty",
@@ -239,7 +249,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "see F-*.json",
+        "currentCommit": "a871d533a736e8e38cb826d80d986d3cc84022d1",
         "verifierCommand": "npx tsx script/m25/run-fork-e2e.mts",
         "evidenceFile": "F-CURSOR.json",
         "forks": {
@@ -265,14 +275,12 @@
         },
         "perForkEvidence": true,
         "noInheritance": true,
-        "negativeCases": 4,
         "negativeCaseNames": [
           "F-WINDSURF.json: unavailable fork recorded blocked with reason (a fork claim without a run would fail the matrix drift gate)",
           "L2: hover outside index is declared absent (per fork)",
           "L3: definition outside index is honest empty (per fork)",
           "G1: forged fork claim in the capability matrix is detected (mutation proof)"
         ],
-        "passed": 52,
         "failed": 0,
         "total": 52
       }
@@ -295,12 +303,11 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "see E7-linux.json",
+        "currentCommit": "a871d533a736e8e38cb826d80d986d3cc84022d1",
         "verifierCommand": "npx tsx script/m25/verify-cross-platform.ts",
         "evidenceFile": "E7-linux.json",
-        "passed": 39,
+        "passed": 53,
         "failed": 0,
-        "realFailed": 0,
         "negativeCases": 0,
         "mutantsCaught": 4,
         "mutantsTotal": 4,
@@ -309,7 +316,8 @@
           "E7-darwin.json",
           "E7-windows.json"
         ],
-        "scopeNote": "linux verified; darwin/win32 honestly blocked (no runners on this machine) — two-OS acceptance stays open for X1/owner"
+        "scopeNote": "linux verified; darwin/win32 honestly blocked (no runners on this machine) — two-OS acceptance stays open for X1/owner",
+        "blockedReason": "Native Linux leg executed on this machine (linux); the other two OSes are machine-emitted blocked records (E7-darwin.json, E7-windows.json) — the OS-matrix workflow (.github/workflows/os-matrix.yml) runs each OS's native leg on its GitHub-hosted runner and uploads the evidence artifact for the owner to persist."
       }
     },
     {
@@ -330,18 +338,18 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "see D1.json",
+        "currentCommit": "0dbafd74ef4f3d63be8e44dd6caa58833732a7db",
         "verifierCommand": "npx tsx script/m25/verify-listing.ts",
         "evidenceFile": "D1.json",
-        "passed": 39,
+        "passed": 21,
         "failed": 0,
-        "realFailed": 0,
         "negativeCases": 4,
         "installFollowAlong": {
           "verifierCommand": "npx tsx script/m25/verify-install-docs.ts",
           "evidenceFile": "D1-install.json",
           "passed": 18
-        }
+        },
+        "blockedReason": "The lint is lexical: it proves the listing avoids banned phrasing, not that every sentence is strategically perfect (that word is banned too)."
       }
     },
     {
@@ -362,19 +370,19 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "see X1.json",
+        "currentCommit": "0dbafd74ef4f3d63be8e44dd6caa58833732a7db",
         "verifierCommand": "npx tsx script/m25/verify-closure.ts",
         "evidenceFile": "X1.json",
         "passed": 37,
         "failed": 0,
-        "realFailed": 0,
-        "negativeCases": 3
+        "negativeCases": 3,
+        "blockedReason": "Editor-leg regeneration is 're-runs green at the same HEAD', not byte-identity: E5/E6/D1-install evidence embeds live timings and machine data by design; their freshness at HEAD is the governance stale-commit gate's contract."
       }
     }
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-14T23:42:48.418Z",
-    "contentSha256": "2ef1c4b067b126e1ff7935acae88415c9b6f66ca873ec9839ff67d2f5e91fa12"
+    "sealedAt": "2026-10-05T04:29:38.853Z",
+    "contentSha256": "87954bdd7767214d95da1ef7e019262b3b797946821db4a556606faf4e28f870"
   }
 }
