@@ -495,6 +495,11 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
     // the module is written in the import itself and how the store spells a file.
     const lastSegment = lastPathSegment(filePath)
     this.importerName = lastSegment || filePath || "stylesheet"
+    // Whether that name is a REAL basename or the fallback above. The stylesheet module
+    // symbol is published only for a real basename: publishing one named `stylesheet`
+    // would put a placeholder literal in a name-bearing field, which is the M60 R7 rule
+    // this file already states about the `imports` source and would contradict.
+    this.hasRealModuleName = lastSegment.length > 0
 
     const ctx: CssContext = {
       symbols: [],
@@ -544,6 +549,47 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
     this.collectFontFaceNames(rootNode, ctx)
     this.collectCustomDefinitionNames(rootNode, ctx)
     this.collectNamespacePrefixes(rootNode, ctx)
+
+    // THE STYLESHEET IS THE MODULE, and it is published FIRST so a member's owner can name
+    // it. This is not an invention: `real-scss-analyzer.ts:273` publishes the Sass module
+    // under exactly this rule, and the bash lane publishes its script (BD2). CSS was the
+    // one language in that family WITHOUT it, and the cost was measurable rather than
+    // cosmetic:
+    //
+    //   `imports` resolution was 0 of 251 at BOTH ends over the 1,286-file corpus
+    //   (`validation/m14/measurements/css-parsefile-census-1286.json`, row `imports`:
+    //   srcPublished 0, tgtPublished 0). The TARGET is an external specifier and
+    //   `target_external` is the correct record for it. The SOURCE was the defect: the
+    //   `@import` edge names `this.importerName`, and no symbol in the file carried that
+    //   name, so the store recorded `source_external` for an edge whose source is not
+    //   external at all — it is this file.
+    //
+    // The name is the file's own basename WITH the extension, for the reason the bash and
+    // scss lanes give: deterministic (no machine path, so the index fingerprint is
+    // stable), and it cannot collide with anything else this analyzer publishes — a class
+    // selector is `.btn`, an id is `#x`, a custom property is `--x`, a bare type selector
+    // cannot contain a dot, and no at-rule name is written `theme.css`.
+    //
+    // It deliberately carries NO `contains` edges to the file's own rules. That would be
+    // true and it would be expensive: the admitted corpus publishes 178,084 `contains`
+    // edges, and adding one per top-level rule is a large-graph regression bought for a
+    // node that already has the `imports` edges pointing at it. The node exists so those
+    // edges resolve, not to restate the file's contents.
+    if (this.hasRealModuleName) {
+      ctx.symbols.unshift({
+        name: this.importerName,
+        kind: ASTEngine.SymbolKind.Module,
+        range: this.nodeToRange(rootNode),
+        scope: "",
+        visibility: "public",
+        complexity: 1,
+        metadata: {
+          cssSpecific: true,
+          isStylesheet: true,
+          stylesheetPath: filePath,
+        },
+      })
+    }
 
     const stack: StackFrame[] = [{ node: rootNode, media: "", supports: "", layer: "", container: "", scope: "", currentSelector: "", keyframeScope: "" }]
 
@@ -1187,6 +1233,9 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
 
   /** The importing stylesheet's name; set per `analyze` run. */
   private importerName = "stylesheet"
+
+  /** Whether `importerName` is a real basename rather than the fallback literal. */
+  private hasRealModuleName = false
 
   private determineSelectorKind(
     hasId: boolean,
