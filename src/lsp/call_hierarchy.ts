@@ -74,6 +74,40 @@
 //   launch set:  read from src/lsp/launch_languages.ts, the single owner — not
 //                through hover's re-export chain.
 //
+// D4 = TWO SOURCES OF TRUTH FOR "WHERE IS THIS CALLED?", decided as (a)
+// CROSS-CHECK AND DECLARE (docs/m62/CALLSITE-MIGRATION.md §3.1):
+//   This surface resolves positions from the CALLER'S OWN SOURCE and never
+//   reads the stored `line_number`. Since M62.A1 the rest of the program reads
+//   that column through its single owner
+//   (src/intelligence/graph/line-address.ts: deriveCallSiteAddress,
+//   addressLine0, isExactAddress). Two answers to one question is what §15.1
+//   names: they must agree, or carry the declared reason they differ.
+//   Measured on real indexed data (see the census on every response, and
+//   script/m55/measure-address-agreement.ts):
+//     agree        the store names one of the lines the source scan resolved.
+//     disagree     the store names a DIFFERENT real call site for the same row.
+//     source-only  the scan resolved it; the store names no call site.
+//     store-only   the store names a call site the source cannot see (macro,
+//                  template, dynamic dispatch).
+//     neither      neither side has a call-site position (the declared
+//                  approximate fallback).
+//   `addressCrossCheck` is the partition on every response (the buckets sum to
+//   `edges`), `addressDisagreements` carries both positions and the reason for
+//   each non-agreeing row, and the store's verdict is READ from the owner, never
+//   re-derived here. The comparison is LIKE-FOR-LIKE: a row is scanned for its
+//   OWN target name in its OWN source symbol's text, and `direct` separates a
+//   direct relation from a deeper hop. REJECTED: (b) source-first with the
+//   stored line as the fallback — it would make the stored line a substitute
+//   dressed as a call site (exactly what §15.3 forbids) and would delete the
+//   labelled name-token fallback this surface has; (c) keep them apart and say
+//   so in the legend — it defers the reconciliation to a reader, and a
+//   reconciliation nobody measures cannot be gated.
+//   §13.4 RE-UNIT: `callSitesResolved` / `callSitesApproximate` count RANGES, so
+//   they equal the `fromRanges` this response renders; the previous unit counted
+//   CALLER ENTRIES, which reported 1 while rendering 2 ranges on a real caller
+//   with two call sites. `callSiteEntries` keeps the per-entry counts so the
+//   re-unit loses nothing (§13.2 declares multiplicity, it does not collapse it).
+//
 // Mutation gates (script/m55/verify-call-hierarchy.ts): dropping the call-site
 // resolution, re-admitting receiver-qualified self-edges, re-admitting
 // transitive hops, returning a body selectionRange, and swallowing an
@@ -99,8 +133,14 @@ import {
 } from "./symbols";
 import { renderSignature } from "./signature";
 import { findIndexedSymbol } from "./navigation";
-import { traverseGraph } from "../intelligence/graph/graph-engine";
+import { traverseGraph } from "../intelligence/graph/graph-engine"
+// The stored-line ADDRESS OWNER (M62.A1, Lane 7's module — read-only here).
+// D4 (a) needs its verdict, never a re-implementation of its rules: the whole
+// point of the cross-check is that a second derivation of "what a stored line
+// means" would be the defect the migration is trying to remove.
+import { addressLine0, isExactAddress } from "../intelligence/graph/line-address";
 import type {
+  CallSiteAddress,
   GraphEdge,
   GraphNode,
   GraphTraversalOptions,
@@ -225,6 +265,112 @@ export interface DeclaredAbsentNode {
   reason: string;
 }
 
+/**
+ * D4 (a) — how the SOURCE-resolved position and the STORE-derived address relate
+ * for one edge.
+ *
+ * There are two independent answers to "where is the call": this surface scans
+ * the caller's own source (exact UTF-16 columns through the position owner,
+ * never reads the stored column), while the graph / hub / impact / MCP surfaces
+ * read the stored `line_number` through its single owner,
+ * `src/intelligence/graph/line-address.ts` (`deriveCallSiteAddress`,
+ * `addressLine0`, `isExactAddress`). They can disagree, and when they do BOTH are
+ * right about different things.
+ *
+ * Contract §15.1 requires that difference to be DECLARED — not averaged away,
+ * not silently resolved by picking one side. Each bucket below is a distinct
+ * fact about the same stored row, not an error:
+ *
+ *   agree       the store names one of the lines the source scan resolved.
+ *   disagree    the store names a real call site and the source scan resolved a
+ *               DIFFERENT line — the two owners contradict each other here.
+ *   source-only the source scan resolved it; the store names NO call site (its
+ *               address is the owner's declared `declaration` substitute, or
+ *               `unknown`).
+ *   store-only  the store names a real call site the source scan cannot see — the
+ *               macro / template / dynamic-invocation case the truth table in
+ *               docs/m62/CALLSITE-MIGRATION.md §1 predicts exists.
+ *   neither     neither side has a call-site position (the declared approximate
+ *               fallback, which renders the caller's own name token).
+ *
+ * THE COMPARISON MUST BE LIKE-FOR-LIKE, and that is the whole difficulty. A
+ * stored row says "`edge.from` invokes `edge.to`". Measured on the real M55
+ * fixture: the row for `top` in the incoming set of `deep` carries `depth: 2` and
+ * a stored call site of line 4 — which is `top`'s own invocation of `mid`, on
+ * `chain.ts:4`, exactly where the store says it is. Comparing that line against
+ * "does `top`'s source invoke `deep`" reports a contradiction where the store is
+ * RIGHT and the predicate was wrong; an earlier revision of this cross-check did
+ * exactly that and re-labelled a transitive hop as "an invocation the source scan
+ * cannot see". So every row is scanned for ITS OWN target name in ITS OWN source
+ * symbol's text, and `direct` says whether the row is about the expanded symbol
+ * (depth 1) or about a hop (depth > 1) — a different claim, declared as such.
+ */
+export type CallSiteAgreementKind =
+  | "agree"
+  | "disagree"
+  | "source-only"
+  | "store-only"
+  | "neither";
+
+export interface CallSiteAgreement {
+  agreement: CallSiteAgreementKind;
+  /** Every 0-based LSP line the source scan resolved. §13.2: one stored row may
+   *  name several invocation sites, so this is a LIST and the multiplicity is
+   *  declared rather than collapsed. */
+  sourceLines0: number[];
+  /** The address OWNER's verdict for this edge, verbatim — never re-derived
+   *  here (line-address.ts L5: pure, single-owner). null when the engine
+   *  attached none, which is a store-contract violation and is counted as such
+   *  rather than read as "the store knows no call site". */
+  address: CallSiteAddress | null;
+  /** The 0-based LSP line the editor was actually handed, or null when none was. */
+  renderedLine0: number | null;
+  /** The name THIS row is about (`edge.to`'s own name), not necessarily the name
+   *  the answer was asked about. */
+  edgeTargetName: string;
+  /** True when the row is a DIRECT relation of the expanded symbol (engine depth
+   *  1). False = a deeper hop: the stored line names that hop's invocation, so a
+   *  difference from the expanded symbol's own call sites is not a contradiction. */
+  direct: boolean;
+  /** The engine's own depth for the row, carried verbatim. */
+  depth: number;
+}
+
+/** The §13.4 census over every stored edge this answer read. */
+export interface AddressCrossCheck {
+  /** Stored edges cross-checked (including the ones this surface drops). */
+  edges: number;
+  agree: number;
+  disagree: number;
+  sourceOnly: number;
+  storeOnly: number;
+  neither: number;
+  /** Edges the engine returned WITHOUT an address — a store-contract violation,
+   *  declared here instead of being read as "the store names no call site". */
+  addressMissing: number;
+  /** Rows that are a direct relation of the expanded symbol (depth 1). */
+  direct: number;
+  /** Rows about a deeper hop (depth > 1) — a different claim about a different
+   *  relation, counted apart so an agreement rate is never averaged across two
+   *  populations. */
+  hop: number;
+  /** Rows whose `depth` is not a positive integer, so directness could not be
+   *  established. Declared, never assumed in either direction. */
+  directnessUnstated: number;
+  /** Rows whose source span or name could not be read, so NO comparison ran.
+   *  These are tallied as `neither` as well; the separate counter exists so a
+   *  reader can subtract them and get the population a rate was computed over. */
+  comparisonNotRun: number;
+}
+
+export interface AddressDisagreement {
+  name: string;
+  symbolId: string;
+  /** Why the two sources did not agree, in one sentence. */
+  reason: string;
+  agreement: CallSiteAgreement;
+}
+
 export interface ExpandResult {
   calls: Array<CallHierarchyIncomingCall | CallHierarchyOutgoingCall>;
   /** Engine truncation carried verbatim — never swallowed. */
@@ -233,9 +379,19 @@ export interface ExpandResult {
   maxDepthReached: number;
   /** Declared provenance. */
   evidenceTier: "indexed" | "not_indexed";
-  /** M55.T2: call sites resolved from source / entries that had to fall back. */
+  /**
+   * M55.T2, re-unit-ed for §13.4. This counts RANGES, not caller entries:
+   * `callSitesResolved + callSitesApproximate` equals the number of `fromRanges`
+   * this response renders — the assertion §13.4 asks for, which nothing
+   * asserted before. It used to count CALLER ENTRIES, so one stored row with two
+   * invocations reported 1 while rendering 2 ranges: a header count the eye
+   * could not verify against the list.
+   */
   callSitesResolved: number;
   callSitesApproximate: number;
+  /** The per-CALLER-ENTRY counts the previous unit expressed, kept so the
+   *  re-unit loses nothing (§13.2 declares multiplicity, it does not collapse it). */
+  callSiteEntries: { resolved: number; approximate: number };
   /** M55.T2: edges dropped as not-genuine, each with its reason. */
   droppedEdges: DroppedEdge[];
   /** §11.7: why `calls` is empty, as a machine-readable code. */
@@ -244,6 +400,10 @@ export interface ExpandResult {
   declaredAbsentNodes: DeclaredAbsentNode[];
   /** §4: machine-readable staleness marker for every file this answer used. */
   staleness: StalenessMarker;
+  /** D4 (a): the two sources of truth for "where is the call", cross-checked. */
+  addressCrossCheck: AddressCrossCheck;
+  /** §15.1: every edge whose two sources did not agree, with BOTH positions. */
+  addressDisagreements: AddressDisagreement[];
 }
 
 /** Injectable traversal — the default wraps the real M14 engine. */
@@ -317,6 +477,126 @@ function lspLineWindow(
  */
 function unresolvableRange(): LspRange {
   return { start: { line: 0, character: 0 }, end: { line: 0, character: 0 } };
+}
+
+/**
+ * A cross-check census over ZERO edges — the honest value for an answer that read
+ * no stored row at all. It is NOT the same as "0 disagreements found": `edges: 0`
+ * says nothing was cross-checked, and a caller that renders it must say so.
+ */
+function emptyCrossCheck(): AddressCrossCheck {
+  return {
+    edges: 0,
+    agree: 0,
+    disagree: 0,
+    sourceOnly: 0,
+    storeOnly: 0,
+    neither: 0,
+    addressMissing: 0,
+    direct: 0,
+    hop: 0,
+    directnessUnstated: 0,
+    comparisonNotRun: 0,
+  };
+}
+
+/**
+ * D4 (a) — cross-check one stored row's address against a LIKE-FOR-LIKE source
+ * scan, and classify the relation.
+ *
+ * `sourceLines0` MUST be the invocation lines of the row's OWN target name in the
+ * row's OWN source symbol's text (see the note on `CallSiteAgreementKind`); for a
+ * depth-1 row that is the scan the answer already renders, so no second pass is
+ * needed and no extra file is read.
+ *
+ * The store's verdict is read from the owner (`isExactAddress` / `addressLine0`),
+ * never re-derived: a second derivation of "what a stored line means" is the
+ * defect this migration exists to remove. The classification is a partition — each
+ * edge lands in exactly one bucket — so the census sums to `edges`.
+ */
+function crossCheckEdge(
+  edge: GraphEdge,
+  sourceLines0: number[],
+  renderedLine0: number | null,
+  edgeTargetName: string,
+): CallSiteAgreement {
+  const address = (edge as { callSite?: CallSiteAddress }).callSite ?? null;
+  const sourceLines = [...new Set(sourceLines0)].sort((a, b) => a - b);
+  const storedLine0 = address === null ? null : addressLine0(address);
+  const storeNamesCallSite = address !== null && isExactAddress(address);
+  const depth = typeof edge.depth === "number" ? edge.depth : Number.NaN;
+  // The engine's depth is 0-BASED: an edge ADJACENT to the traced symbol is
+  // `depth: 0`, and `depth >= 1` is about a symbol the traversal DISCOVERED
+  // (src/intelligence/contracts.ts, the `deeperCallers` note). Reading "direct"
+  // as `depth === 1` is off by one against the real engine and would classify
+  // every direct row as a hop — measured on a real 12-row index, where the
+  // engine returned depth 0 for all six caller rows and 1 for the one deeper row.
+  const direct = depth === 0;
+  let agreement: CallSiteAgreementKind;
+  if (storeNamesCallSite && storedLine0 !== null && sourceLines.includes(storedLine0)) {
+    // The store named one of the lines the scan found. When the scan found
+    // several, that is a multiplicity (§13.2), not a disagreement.
+    agreement = "agree";
+  } else if (storeNamesCallSite && storedLine0 !== null && sourceLines.length > 0) {
+    agreement = "disagree";
+  } else if (storeNamesCallSite && storedLine0 !== null) {
+    // The store names a real call site for THIS ROW that the row's own source
+    // does not show. On a direct row that is the macro / template / dynamic
+    // invocation case; on a hop it is a row whose scan could not run, and both
+    // are declared with `direct` so the reader knows which population it is in.
+    agreement = "store-only";
+  } else if (sourceLines.length > 0) {
+    agreement = "source-only";
+  } else {
+    agreement = "neither";
+  }
+  return { agreement, sourceLines0: sourceLines, address, renderedLine0, edgeTargetName, direct, depth };
+}
+
+/** Fold one cross-check verdict into the census. A partition: the buckets sum to
+ *  `edges`, which is what makes the agreement rate a rate over a known
+ *  denominator rather than a number nobody can check. */
+function tallyCrossCheck(census: AddressCrossCheck, agreement: CallSiteAgreement, addressPresent: boolean): void {
+  census.edges++;
+  if (!addressPresent) census.addressMissing++;
+  const depth = agreement.depth;
+  if (depth === 0) census.direct++;
+  else if (Number.isInteger(depth) && depth >= 1) census.hop++;
+  else census.directnessUnstated++;
+  switch (agreement.agreement) {
+    case "agree": census.agree++; break;
+    case "disagree": census.disagree++; break;
+    case "source-only": census.sourceOnly++; break;
+    case "store-only": census.storeOnly++; break;
+    case "neither": census.neither++; break;
+  }
+}
+
+/**
+ * The invoked name's DECLARATION token, when the invoked symbol is declared in
+ * this very file at `declLine1`.
+ *
+ * A declaration is not an invocation. §15.3's first named prohibition is a range
+ * that points at a declaration, and this is where that defect lived on real data:
+ * on the M55 fixture, `Store`'s own body contains `get(key: string): T | undefined`
+ * — the DECLARATION of `get` — which the name scan read as an invocation, so
+ * `Store` was rendered as a caller of `get` with a range pointing at its own
+ * member's signature (measured: `script/m55/verify-call-hierarchy.ts` W1, red on
+ * real data at HEAD). The occurrence is excluded only on the declaration line of
+ * the invoked symbol itself; DECLARED LIMITATION — an unrelated symbol with the
+ * same name declared in the scanned span is still read as an invocation, because
+ * deciding that needs a name-resolution pass this surface does not have.
+ */
+function declarationTokenOf(
+  sourceText: string,
+  mapper: ReturnType<typeof createPositionMapper>,
+  name: string,
+  declLine1: number,
+): { line: number; character: number } | undefined {
+  const window = lspLineWindow(mapper, declLine1, declLine1);
+  if (window === null) return undefined;
+  const token = nameTokenRange(sourceText, name, { start: window.start, end: window.start });
+  return token === null ? undefined : token.start;
 }
 
 /** §4: a staleness marker for an answer that read no indexed file. */
@@ -496,11 +776,20 @@ export function resolveInvocations(
   /** The caller's own names (simple name + owning type): a receiver that names
    *  one of these is the symbol itself, not another value. */
   ownNames: ReadonlySet<string> = new Set<string>(),
+  /** The INVOKED symbol's own declaration token, when it is declared in the
+   *  scanned text. A LIST, because the two exclusions are different facts and
+   *  neither may shadow the other: the caller's declaration makes a self-edge's
+   *  signature readable as recursion, and the invoked symbol's declaration makes
+   *  a containing type's member signature readable as a call of that member
+   *  (measured on the real M55 fixture — `Store` was a caller of `Store.get`
+   *  through its own `get(key: string)` signature). */
+  skipDeclarations: ReadonlyArray<{ line: number; character: number }> = [],
 ): ResolvedInvocation[] {
   if (targetName.length === 0) return [];
   const mapper = createPositionMapper(sourceText);
   const out: ResolvedInvocation[] = [];
   const last = Math.min(callerLines0.end, mapper.lineTexts.length - 1);
+  const excluded = skip === undefined ? skipDeclarations : [skip, ...skipDeclarations];
   for (let line0 = Math.max(0, callerLines0.start); line0 <= last; line0++) {
     const line = codeBeforeComment(mapper.lineTexts[line0] ?? "");
     let from = 0;
@@ -509,7 +798,7 @@ export function resolveInvocations(
       if (at === -1) break;
       from = at + targetName.length;
       if (isWordChar(line[at - 1]) || isWordChar(line[at + targetName.length])) continue;
-      if (skip !== undefined && skip.line === line0 && skip.character === at) continue;
+      if (excluded.some((p) => p.line === line0 && p.character === at)) continue;
       // A call: the name is followed by `(`, or preceded by `new`.
       let k = at + targetName.length;
       while (k < line.length && /\s/.test(line[k]!)) k++;
@@ -795,6 +1084,9 @@ export async function expandCalls(
       ),
       declaredAbsentNodes: [],
       staleness: unknownStaleness(),
+      callSiteEntries: { resolved: 0, approximate: 0 },
+      addressCrossCheck: emptyCrossCheck(),
+      addressDisagreements: [],
     };
   }
   // Re-resolve the root row from the index for the engine's root shape.
@@ -844,6 +1136,9 @@ export async function expandCalls(
       ),
       declaredAbsentNodes: [],
       staleness: unknownStaleness(),
+      callSiteEntries: { resolved: 0, approximate: 0 },
+      addressCrossCheck: emptyCrossCheck(),
+      addressDisagreements: [],
     };
   }
   // §11.7: the ROOT's own file decides whether this surface serves the request
@@ -862,6 +1157,9 @@ export async function expandCalls(
       absence: rootScope,
       declaredAbsentNodes: [],
       staleness: unknownStaleness([rootRow.filePath]),
+      callSiteEntries: { resolved: 0, approximate: 0 },
+      addressCrossCheck: emptyCrossCheck(),
+      addressDisagreements: [],
     };
   }
 
@@ -901,9 +1199,15 @@ export async function expandCalls(
   const seenFrom = new Set<string>();
   const droppedEdges: DroppedEdge[] = [];
   const declaredAbsentNodes: DeclaredAbsentNode[] = [];
+  const addressDisagreements: AddressDisagreement[] = [];
   const edgePaths: string[] = [];
+  // §13.4: these count RANGES, so the header count equals the rendered list. The
+  // per-ENTRY counts live beside them so the re-unit loses nothing.
   let callSitesResolved = 0;
   let callSitesApproximate = 0;
+  let resolvedEntries = 0;
+  let approximateEntries = 0;
+  const crossCheck: AddressCrossCheck = emptyCrossCheck();
 
   for (const edge of edges) {
     const otherId = direction === "callers" ? edge.from : edge.to;
@@ -950,9 +1254,26 @@ export async function expandCalls(
     const callerNamePos = callerSource === null || callerLines0 === null
       ? undefined
       : nameTokenRange(callerSource, callerOwnName, callerLines0)?.start;
+    // §15.3: the invoked symbol's own DECLARATION token, when it is declared in
+    // the scanned file. A signature `get(key: string): T | undefined` is a
+    // declaration, not a call, and reading it as a call is what made `Store` a
+    // caller of `Store.get` on the real M55 fixture.
+    const scannedPath = direction === "callers" ? nodePath : rootRow.filePath;
+    const targetDeclLine1 = direction === "callers" ? rootRow.line : node.line;
+    const targetDeclPath = direction === "callers" ? rootRow.filePath : nodePath;
+    const targetDeclPos = callerSource === null || scannedPath !== targetDeclPath
+      ? undefined
+      : declarationTokenOf(callerSource, createPositionMapper(callerSource), invokedName, targetDeclLine1);
     const invocations = callerSource === null || callerLines0 === null
       ? []
-      : resolveInvocations(callerSource, invokedName, callerLines0, callerNamePos, ownNames);
+      : resolveInvocations(
+          callerSource,
+          invokedName,
+          callerLines0,
+          callerNamePos,
+          ownNames,
+          targetDeclPos === undefined ? [] : [targetDeclPos],
+        );
 
     const isSelfEdge = otherId === item.data.symbolId;
     if (isSelfEdge) {
@@ -976,6 +1297,53 @@ export async function expandCalls(
     // whose own source never invokes this name is a deeper hop of the engine's
     // traversal (depth > 0) or a stale row — dropped and DECLARED, never
     // rendered as a caller with an approximate position.
+    // D4 (a): cross-check BEFORE that rule decides this edge's fate, over every
+    // stored edge the answer read including the ones it drops — a census that
+    // only counted rendered edges could not see a disagreement.
+    const scanLines0 = invocations.map((i) => i.range.start.line);
+    const edgeTarget = result.nodes[edge.to];
+    const edgeTargetName = edgeTarget?.name ?? "";
+    const edgeSource = result.nodes[edge.from];
+    const likeForLike = edge.depth === 0 && edgeTargetName === invokedName && edgeSource !== undefined;
+    let crossLines0 = scanLines0;
+    let crossScanRan = true;
+    if (!likeForLike) {
+      // The row's own source symbol: a second, narrow scan of ONE more file
+      // (already cached per expand). An unavailable source or span is NOT an
+      // absence of invocations; it is a comparison that could not run, declared
+      // as such and never counted as agreement.
+      crossScanRan = false;
+      const hopPath = edgeSource === undefined ? "" : edgeSource.filePath !== "" ? edgeSource.filePath : edgeSource.file;
+      const hopSource = hopPath === "" ? null : readSource(hopPath);
+      if (hopSource !== null && edgeSource !== undefined && edgeTargetName !== "") {
+        const hopMapper = createPositionMapper(hopSource);
+        const hopWindow = lspLineWindow(hopMapper, edgeSource.line, edgeSource.lineEnd);
+        if (hopWindow !== null) {
+          const hopTargetPath = edgeTarget === undefined ? "" : edgeTarget.filePath !== "" ? edgeTarget.filePath : edgeTarget.file;
+          const hopDeclPos = hopTargetPath !== "" && hopPath === hopTargetPath
+            ? declarationTokenOf(hopSource, hopMapper, edgeTargetName, edgeTarget!.line)
+            : undefined;
+          crossLines0 = resolveInvocations(
+            hopSource,
+            edgeTargetName,
+            hopWindow,
+            undefined,
+            new Set<string>(),
+            hopDeclPos === undefined ? [] : [hopDeclPos],
+          ).map((i) => i.range.start.line);
+          crossScanRan = true;
+        }
+      }
+    }
+    const agreement = crossCheckEdge(edge, crossLines0, scanLines0[0] ?? null, edgeTargetName);
+    // An unrunnable comparison is not a bucket the census may quietly claim: it
+    // is tallied as `neither` (nothing was compared) plus a declared
+    // `comparisonNotRun`, so no rate is ever computed over a denominator that
+    // silently included rows nobody compared.
+    if (!crossScanRan) agreement.agreement = "neither";
+    tallyCrossCheck(crossCheck, agreement, agreement.address !== null);
+    if (!crossScanRan) crossCheck.comparisonNotRun++;
+
     if (
       invocations.length === 0 &&
       callerSource !== null &&
@@ -983,11 +1351,33 @@ export async function expandCalls(
       !node.isExternal &&
       edge.relationshipType === "calls"
     ) {
-      droppedEdges.push({
-        name: node.name,
-        symbolId: otherId,
-        reason: `${node.name} does not invoke ${invokedName} in its own source — a transitive hop (engine depth > 0) or a stale stored row, not a direct ${direction === "callers" ? "caller" : "callee"}`,
-      });
+      // The cause is the ENGINE'S OWN depth when it states one, not a guess:
+      // depth > 1 IS a transitive hop (an LSP list is direct edges), and depth 1
+      // with no invocation in the caller's own source is a stored row the text
+      // does not support. The previous wording offered BOTH possibilities for
+      // every row, including the rows where the engine had already answered.
+      // The engine's depth is 0-based (an adjacent edge is depth 0), so a hop is
+      // `depth >= 1`. Declared rather than assumed: an absent or non-integer
+      // depth is `directnessUnstated` in the census and falls through to the
+      // store-vs-text reasons below instead of being called a hop.
+      const hop = Number.isInteger(edge.depth) && edge.depth >= 1;
+      const storeLine = agreement.address !== null && isExactAddress(agreement.address)
+        ? agreement.address.line
+        : null;
+      const reason = hop
+        ? `${node.name} does not invoke ${invokedName} in its own source; the engine reports this row at depth ${edge.depth}, so it is a transitive hop (${node.name} reaches ${invokedName} through an intermediate symbol), not a direct ${direction === "callers" ? "caller" : "callee"}`
+        : storeLine !== null
+          ? `${node.name} does not invoke ${invokedName} anywhere in its own source, yet the stored row names call site line ${storeLine} - the store and the caller's own text disagree about this DIRECT row; this surface renders the source-resolved position and declares the difference (contract 15.1), because rendering the stored line would be rendering a position this surface cannot verify (15.3)`
+          : `${node.name} does not invoke ${invokedName} in its own source and the stored row names no call site for it - a stale stored row, not a direct ${direction === "callers" ? "caller" : "callee"}`;
+      droppedEdges.push({ name: node.name, symbolId: otherId, reason });
+      if (agreement.agreement !== "neither") {
+        addressDisagreements.push({
+          name: node.name,
+          symbolId: otherId,
+          reason,
+          agreement,
+        });
+      }
       continue;
     }
     seenFrom.add(otherId);
@@ -1009,10 +1399,15 @@ export async function expandCalls(
     let fromRanges: LspRange[];
     if (invocations.length > 0) {
       fromRanges = invocations.map((i) => i.range);
-      callSitesResolved++;
+      // §13.4: count what is RENDERED. One stored row with two invocations renders
+      // two ranges, so it counts 2 — and §13.2's multiplicity is declared by the
+      // per-entry counter beside it, not collapsed away.
+      callSitesResolved += invocations.length;
+      resolvedEntries++;
     } else {
       fromRanges = [expanded.selectionRange];
-      callSitesApproximate++;
+      callSitesApproximate += 1;
+      approximateEntries++;
     }
     const withPosition = invocations.length === 0
       ? { ...expanded, detail: `${expanded.detail} · position approximate` }
@@ -1022,6 +1417,25 @@ export async function expandCalls(
       calls.push({ from: withPosition, fromRanges });
     } else {
       calls.push({ to: withPosition, fromRanges });
+    }
+    if (agreement.agreement !== "agree" && agreement.agreement !== "neither") {
+      // §15.1: the difference is DECLARED with both positions and the reason it
+      // exists. The population (`direct` vs `hop`) rides along, because a
+      // difference on a hop row is a fact about a different relation and a reader
+      // must not read it as a contradiction about the symbol they asked for.
+      const storeLineText = agreement.address !== null && isExactAddress(agreement.address)
+        ? `${agreement.address.file}:${agreement.address.line}`
+        : agreement.address === null ? "no address at all" : `address kind "${agreement.address.kind}"`;
+      addressDisagreements.push({
+        name: node.name,
+        symbolId: otherId,
+        reason: agreement.agreement === "disagree"
+          ? `the store names call site ${storeLineText} while a like-for-like scan of ${agreement.edgeTargetName} in the row's own source resolved ${JSON.stringify(agreement.sourceLines0.map((l) => l + 1))} (1-based) - the two sources of truth contradict each other for this ${agreement.direct ? "direct" : `depth-${agreement.depth} hop`} row, and this surface renders the source-resolved position`
+          : agreement.agreement === "store-only"
+            ? `the store names call site ${storeLineText} and a like-for-like scan of ${agreement.edgeTargetName} in the row's own source resolves nothing - the invocation is not in the text this surface reads (a macro, a template or a dynamic dispatch), on a ${agreement.direct ? "direct" : `depth-${agreement.depth} hop`} row`
+            : `a like-for-like scan resolved ${JSON.stringify(agreement.sourceLines0.map((l) => l + 1))} (1-based) while the store's address is ${storeLineText} - the store names no call site for this row`,
+        agreement: { ...agreement, renderedLine0: fromRanges[0]?.start.line ?? null },
+      });
     }
   }
 
@@ -1033,6 +1447,7 @@ export async function expandCalls(
     evidenceTier: "indexed",
     callSitesResolved,
     callSitesApproximate,
+    callSiteEntries: { resolved: resolvedEntries, approximate: approximateEntries },
     droppedEdges,
     absence: calls.length === 0
       ? absenceWith(
@@ -1045,6 +1460,8 @@ export async function expandCalls(
       : null,
     declaredAbsentNodes,
     staleness: expandStaleness(raw, rootRow.fileId ?? null, rootRow.filePath, edgePaths),
+    addressCrossCheck: crossCheck,
+    addressDisagreements,
   };
 }
 

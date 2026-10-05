@@ -2,20 +2,25 @@
   "issue": "494",
   "code": "L5",
   "status": "verified",
-  "currentCommit": "1edf6fd75fb7803cd0d44547c5c0276a4af40b63",
-  "sourceFingerprint": "da701feed70c55cb9cf30760e8cd850c1de7ed5dd61ac9eba42cb145c7b4608b",
+  "currentCommit": "e68fbb6628e9ee217491bcca92d97b67b5f264f4",
+  "sourceFingerprint": "66bd8c7c3a8846be4af7c7fe050f2252f8e4f0e6d3f3fa5cf10a6d17d72fa03f",
   "verifierCommand": "npx tsx script/m24/verify-call-hierarchy.ts",
   "evidenceFile": "L5.json",
-  "generatedAt": "2026-10-04T23:52:50.428Z",
-  "passed": 56,
+  "generatedAt": "2026-10-05T02:48:19.305Z",
+  "passed": 97,
   "failed": 0,
   "failures": [],
-  "negativeCases": 15,
+  "negativeCases": 16,
   "verdict": {
     "realComponentFailures": 0,
-    "mutantsCaught": 10,
-    "mutantsTotal": 10,
+    "mutantsCaught": 23,
+    "mutantsTotal": 23,
     "mutantsNotJudged": 0,
+    "mutantsJudged": 23,
+    "mutantGroups": {
+      "callHierarchy": 10,
+      "d4CrossCheck": 13
+    },
     "ok": true,
     "note": "`failed` counts real functional failures only; mutant runs are reported separately via the verdict block. `mutantsNotJudged` counts a mutant the harness could not judge (missing anchor or an import failure) — an import failure is NOT counted as caught, because the oracle never ran. The pre-lane suite reported 5/5 caught while all five mutants had died on an unrewritten `./signature` import."
   },
@@ -29,7 +34,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-04T23:52:50.429Z",
-    "contentSha256": "5e83dcc9b6c937bcb91b18feea74ae02ce93e6896277b1984b3ceeb42036f710"
+    "sealedAt": "2026-10-05T02:48:19.307Z",
+    "contentSha256": "a5a0db9b865b0153b0bfe90960cb99d7f3d7cb19777a391d4621d57b451ee47d"
   }
 }
