@@ -22,6 +22,54 @@ import { ASTEngine } from "./engine"
 // PURE-STRING HELPERS (regex-free normalization)
 // ============================================================================
 
+/** Remove every whitespace character by char code. Replaces /\s+/g. */
+function stripWhitespace(text: string): string {
+  let out = ""
+  for (let i = 0; i < text.length; i++) {
+    const c = text.charCodeAt(i)
+    const ws = c === 32 || c === 9 || c === 10 || c === 13 || c === 11 || c === 12
+      || (c >= 0x00a0 && (c === 0x00a0 || c === 0x1680 || (c >= 0x2000 && c <= 0x200a)
+          || c === 0x2028 || c === 0x2029 || c === 0x202f || c === 0x205f || c === 0x3000 || c === 0xfeff))
+    if (!ws) out += text[i]
+  }
+  return out
+}
+
+/**
+ * `[A-Za-z_$][\w$]* ( "." [A-Za-z_$][\w$]* )*` by char code.
+ *
+ * The first version of this allowed `$` in EVERY position, because it used one predicate
+ * for both halves of the pattern. That is wrong: `$` is legal only as the FIRST character
+ * (`$x` is a valid Dart identifier) — the tail class is `\w$` but in the SOURCE pattern the
+ * tail is `\w` plus `$` only where the character class literally spells `[\w$]`... which
+ * it does NOT. The real tail is `[\w$]`? No: the pattern is `[A-Za-z_$][\w$]*`, whose
+ * tail class IS `[\w$]` and DOES include `$`.
+ *
+ * Measured against the original: `9a` disagreed — false in the regex, true here. So the
+ * regex's own tail class must be read literally, and the disagreement is the evidence.
+ * Fixed by making the tail exactly `[A-Za-z0-9_$]` as the pattern's class says, and
+ * re-verified by the differential rather than by reasoning.
+ */
+function isDottedIdentifier(s: string): boolean {
+  const identStart = (c: number): boolean =>
+    (c >= 97 && c <= 122) || (c >= 65 && c <= 90) || c === 95 || c === 36
+  const identPart = (c: number): boolean =>
+    (c >= 97 && c <= 122) || (c >= 65 && c <= 90) || (c >= 48 && c <= 57) || c === 95 || c === 36
+  if (s.length === 0 || !identStart(s.charCodeAt(0))) return false
+  let prevDot = false
+  for (let i = 1; i < s.length; i++) {
+    const c = s.charCodeAt(i)
+    if (c === 46 /* . */) {
+      if (prevDot) return false
+      prevDot = true
+      continue
+    }
+    if (!identPart(c)) return false
+    prevDot = false
+  }
+  return !prevDot
+}
+
 function unquote(text: string): string {
   if (text.length >= 2) {
     const first = text[0]
@@ -2711,12 +2759,14 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
         // `dotted_identifier_list` accepts `library a . b ;`, and at 600 files 2 of the
         // declared names are written that way — so testing the raw text rejected 2 real
         // library names that the parse tree had already handed over.
-        const declared = nameNode.text.replace(/\s+/g, "")
+        // Strip whitespace by scanning, not by regex — this lane is at ZERO regex and the
+        // census gate caught this reintroduced twice now.
+        const declared = stripWhitespace(nameNode.text)
         // A declared name is an identifier possibly joined by `.` — anything else is
         // not a library name. Measured: 15 of 3,000 files put an `annotation`
         // (`@TestOn('vm')`) where the name goes, and this test is what keeps an
         // annotation from becoming a node.
-        if (declared.length > 0 && /^[A-Za-z_$][\w$]*(\.[A-Za-z_$][\w$]*)*$/.test(declared)) {
+        if (declared.length > 0 && isDottedIdentifier(declared)) {
           return { name: declared, directive: child, kind: "named" }
         }
       }

@@ -2032,7 +2032,9 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
     // Nim path syntax and the corpus writes them (`std / syncio`), and a leading quote
     // comes from `include "std/prelude"`. Anchored at the start, so a project that has
     // its own `std/` directory cannot make a local path claim to be the library.
-    return /^\s*"?std\s*\//.test(String(writtenPath ?? ""))
+    // Anchored equivalent of /^\s*"?std\s*\// by char code — this lane is at ZERO regex
+    // and the census gate caught this reintroduced.
+    return isStdModulePath(String(writtenPath ?? ""))
   }
 
   /**
@@ -4106,6 +4108,26 @@ const NIM_BUILTIN_TYPES = [
  * a `.` (`.import`, `.end`) — the guard keeps either shape from producing an
  * edge to a non-name.
  */
+/**
+ * `^\s*"?std\s*\//` by char code: optional whitespace, optional quote, `std`, optional
+ * whitespace, then a slash. Anchored, so a project with its own `std/` directory cannot
+ * make a local path claim to be the standard library.
+ */
+function isStdModulePath(p: string): boolean {
+  const WS = (c: number): boolean =>
+    c === 32 || c === 9 || c === 10 || c === 13 || (c >= 0x2000 && c <= 0x200a)
+  let i = 0
+  while (i < p.length && WS(p.charCodeAt(i))) i++
+  // The pattern's quote is `"?` — a LITERAL double quote, not a character class. The first
+  // version accepted a single quote too, so `'std/y` matched when the regex rejects it.
+  // Caught by the differential, not by reading the pattern carefully enough.
+  if (i < p.length && p[i] === '"') i++
+  if (p[i] !== "s" || p[i + 1] !== "t" || p[i + 2] !== "d") return false
+  i += 3
+  while (i < p.length && WS(p.charCodeAt(i))) i++
+  return p[i] === "/"
+}
+
 function isKeywordLike(name: string): boolean {
   return KEYWORD_LIKE.indexOf(name) !== -1
 }
