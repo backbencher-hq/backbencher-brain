@@ -34,18 +34,27 @@ import { ASTEngine } from "./engine"
  * ## Relationship ontology
  *
  *   - `contains`  declaration → member. message→field, message→nested type,
- *                 message→oneof, oneof→field, enum→enum_field, service→rpc.
+ *                 message→oneof, enum→enum_field, service→rpc. There is
+ *                 deliberately NO oneof→field edge: the message owns the field
+ *                 and the oneof is a sibling grouping, so one edge meaning both
+ *                 membership and grouping would make one edge mean two things. The
+ *                 grouping travels as `metadata.oneof` on the field.
  *   - `uses`      declaration → referenced type. A field's declared type, a
  *                 map value type, a `oneof_field` type, and BOTH of an rpc's
  *                 request and response types. A SCALAR type is not a reference
  *                 and produces no edge.
  *   - `imports`   file → a file it depends on. The source is the importing
- *                 file's own module name (its basename) and the target is the
+ *                 file's own identity — its `package` namespace symbol where it
+ *                 declares one, its basename otherwise — and the target is the
  *                 path as written, because `protoc` resolves an import against
- *                 `-I` include roots this file is never told. Both endpoints are
- *                 therefore MODULE PATHS rather than symbols, which is the
- *                 family's convention (`real-css-analyzer.ts`,
- *                 `real-dart-analyzer.ts`) and not a protobuf invention.
+ *                 `-I` include roots this file is never told, so the TARGET is a
+ *                 module path and is external by necessity. The SOURCE was
+ *                 measured rather than assumed (pass 16): it was a basename,
+ *                 which resolved at 0 of 1,565 module edges and was shared with
+ *                 another corpus file on 967 of them. It is now the `package`
+ *                 namespace this analyzer already publishes, so 1,560 of 1,565
+ *                 (99.68%) resolve, and `metadata.moduleOwner` says which
+ *                 spelling an edge used.
  *   - `exports`   file → a file it re-exports. `import public "x.proto"` is
  *                 BOTH a dependency and a republication, so it emits BOTH
  *                 edges: the two are separate facts, and pass 1's ruling that
@@ -1236,16 +1245,57 @@ export class RealProtobufAnalyzer implements ASTEngine.LanguageAnalyzer {
           // basename for the same reason CSS uses one, with the full path kept in
           // metadata so a consumer that knows the include root can do better.
           if (path) {
-            // The SOURCE is the importing file's own module name and the TARGET
-            // is the path as written. Taking the basename of the IMPORTED path
-            // for the source instead — which a first draft did — makes a file
-            // appear to import ITSELF: `import public "common/v1/types.proto"`
-            // became `types.proto -> common/v1/types.proto`, an edge whose two
-            // endpoints name the same module and which `bb_graph` would read as a
+            // The SOURCE is the importing file's own identity, and until this pass
+            // it was the file's BASENAME. Two measurements killed that, both from
+            // `script/m14/protobuf-module-edge-sources.mts` over 821 `.proto` files:
+            //
+            //   1. THE SOURCE RESOLVED AT 0%. 0 of 1,561 `imports` and 0 of 4
+            //      `exports` edges had a source that is a published symbol id. Every
+            //      one asserted a node the index does not hold, so `bb_graph` could
+            //      not walk outward from any of them.
+            //   2. THE SOURCE WAS AMBIGUOUS FOR THE MAJORITY. 112 basenames are
+            //      shared across the corpus, 424 files sit on one, and 967 of the
+            //      1,565 module edges (61.8%) hang off a basename another file also
+            //      uses — so two unrelated files named `types.proto` produced
+            //      indistinguishable edges.
+            //
+            // The file's own `package` is the substitute, and it is not a new idea:
+            // this analyzer ALREADY publishes it as a `Namespace` symbol and already
+            // hangs the file's top-level declarations off it (7,166 `contains`
+            // edges). Measured, that substitution resolves 1,556 of 1,561 `imports`
+            // and 4 of 4 `exports` — 1,560 of 1,565, 99.68% — and the 5 that do
+            // not are the edges of the 11 files that declare no package at all,
+            // which keep the basename spelling.
+            //
+            // WHAT IT COSTS, counted rather than assumed: 90 packages are declared
+            // by more than one file, 66 of them by more than one IMPORTING file, so
+            // 810 of the 1,560 edges would land on a namespace another file's edges
+            // also land on (widest: `controller.api.services.v1`, 24 files). That is
+            // aggregation — but it is aggregation that replaces ANONYMOUS
+            // aggregation: today those same edges are already merged onto one
+            // unresolvable basename node, keyed on a spelling two unrelated
+            // packages share. The change makes the merge key published and
+            // semantically the owner, and it is still the node `contains` hangs the
+            // same file's declarations from. A per-FILE node would be the only way
+            // to keep the granularity, and a file is not a protobuf declaration, so
+            // minting one would be inventing a symbol the language does not have.
+            //
+            // The basename is still carried, in `metadata.filePath`, so a consumer
+            // that wants the old spelling takes the last segment of it. The TARGET
+            // is unchanged and still unresolved by design: `protoc` resolves an
+            // import against `-I` include roots this analyzer is never told.
+            //
+            // Taking the basename of the IMPORTED path for the source instead —
+            // which a first draft did — makes a file appear to import ITSELF:
+            // `import public "common/v1/types.proto"` became
+            // `types.proto -> common/v1/types.proto`, an edge whose two endpoints
+            // name the same module and which `bb_graph` would read as a
             // self-dependency. CSS's `importerName` is the importing file for the
-            // same reason.
-            const selfMod = filePath.split("/").pop() || filePath
-            const moduleMeta = { modulePath: path, filePath }
+            // same reason, and CSS is also where the divergence is earned: a
+            // stylesheet has no package declaration, so it has no file-level symbol
+            // to hang the edge on and a basename is the only name it has.
+            const selfMod = pkg.length > 0 ? pkg : filePath.split("/").pop() || filePath
+            const moduleMeta = { modulePath: path, filePath, ...(pkg.length > 0 ? { moduleOwner: "package" } : { moduleOwner: "basename" }) }
             if (modifier === "public") {
               // `import public` is BOTH, and this was wrong in pass 1.
               //

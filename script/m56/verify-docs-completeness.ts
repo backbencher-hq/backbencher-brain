@@ -111,7 +111,17 @@ check(
   generatorOk,
   generatorOut.split("\n").filter(Boolean).slice(-3).join(" | "),
 )
-check("D1: the generator reports its shape", /DOCS DATA: PASS \(11 commands, \d+ flags, \d+ skip dirs\)/.test(generatorOut), generatorOut.trim().slice(0, 160))
+// The command count is not written down here. It used to be the literal 11, and
+// when the CLI gained `onboard` the generator started reporting 12 while this
+// gate kept demanding 11 — so the gate would have failed on a correct
+// regeneration. The count is checked against `bb --help` further down, which is
+// the independent instrument; here only the SHAPE of the report is asserted.
+const reportedCommands = Number(generatorOut.match(/PASS \((\d+) commands,/)?.[1] ?? 0)
+check(
+  "D1: the generator reports its shape",
+  /DOCS DATA: PASS \(\d+ commands, \d+ flags, \d+ skip dirs\)/.test(generatorOut),
+  generatorOut.trim().slice(0, 160),
+)
 
 const generatedSrc = existsSync(GENERATED) ? readFileSync(GENERATED, "utf8") : ""
 const facts = (await import(GENERATED)) as { DOCS_FACTS: any }
@@ -151,6 +161,11 @@ check(
   "D1: the CLI's own command list matches the generated reference exactly",
   JSON.stringify([...cliCommands].sort()) === JSON.stringify([...generatedCommands].sort()),
   `cli=${cliCommands.join(",")} generated=${generatedCommands.join(",")}`,
+)
+check(
+  "D1: the generator's reported command count matches the CLI's own help output",
+  reportedCommands > 0 && reportedCommands === cliCommands.length,
+  `reported=${reportedCommands} cli=${cliCommands.length}`,
 )
 
 const flagMismatches: string[] = []

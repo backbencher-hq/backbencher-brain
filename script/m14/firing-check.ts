@@ -237,6 +237,20 @@ type LangResult = {
   filesParsed: number
   parseFailures: number
   degradedFallbacks: number
+  /**
+   * The files that fell back, named.
+   *
+   * A count alone cannot be acted on: "1 degraded" tells a reader there is a problem but
+   * not where, so the only response is to re-run the whole lane hoping to see it again —
+   * and a degraded parse is not guaranteed to reproduce, since it usually depends on a
+   * timeout or a size threshold. Same defect as the population rule: a number that
+   * cannot be resolved back to the things it counted.
+   *
+   * Declared here because it was USED (pushed to, read, serialised) without ever being
+   * declared, which `tsc` could not see: script/ was not in tsconfig's `include`, so the
+   * whole instruments tree had never been type-checked. Found the moment it was added.
+   */
+  degradedFiles: string[]
   symbols: number
   relationships: number
   emptySymbolNames: number

@@ -1,4 +1,134 @@
-# Ontology Workstream — laptop B (23 languages)
+# ONTOLOGY WORKSTREAM — the contract every agent on both laptops obeys
+
+<!-- MERGED 2026-10-04. This file was independently created on two lines that had
+     diverged for 600 commits: origin/main carried a laptop-B-scoped version, the
+     relationship-ontology branch carried the general two-laptop contract. Neither
+     was discarded. Part 1 is the general contract; Part 2 is Laptop B's scope and
+     its per-language detail, kept verbatim. Both laptops' agents read THIS file. -->
+
+# Part 1 — the general contract
+
+The goal is **not** "add every relationship type to every analyzer". It is to
+reach, for every (analyzer × type) pair, one of three verdicts that are
+**measured**:
+
+| verdict | requirement |
+|---|---|
+| **EMITTED** | production `parseFile` produced it on a real corpus, with a **count** and **the files it came from** |
+| **RULED** | a written reason **AND a corpus measurement** proving the construct that would produce it never occurs. Falsifiable: a probe finding a non-zero count overturns the ruling |
+| **GAP** | the language HAS the construct and the analyzer is not reading it → implement it |
+
+`script/m14/ontology-coverage-gate.ts` is the arbiter. Its header records why it
+exists: `overrides` was missing from Bash for a whole wave and the differential
+stayed green, because the analyzer omitted it and the oracle was written after
+that ruling — *"nothing agrees with nothing perfectly"*. Only measuring the
+LANGUAGE found it.
+
+**Absence without a measurement is a defect.** So is presence without one.
+
+---
+
+## Part 1 — verify what already exists (half the job)
+
+For each type a language **already** emits, answer six independent questions.
+Source derivation only answers the first.
+
+1. **Exists** — the analyzer can construct it.
+2. **Fires** — it produces edges on a real corpus. A branch that never matches is
+   dead code and derivation cannot see it.
+3. **Correct** — an independent oracle agrees. The oracle is a separate walker
+   over the *same grammar*, so a grammar bug shared by both paths is invisible.
+   Say so in the report rather than claiming more than the harness can support.
+4. **Labelled** — the right type, not a neighbour.
+5. **Resolved** — both endpoints bind to real symbols. CSS `references`
+   currently resolve at both ends 66.8% of the time.
+6. **Confident** — `evidenceClass` and confidence are right; anything under 0.7
+   is a heuristic, not a fact.
+
+### Existing debt to clear
+
+- **100 DERIVATION findings** — types an analyzer *emits* that the differential
+  *never audits*: "stored and compared against nothing". Only 12 lanes are
+  clean: `bash, css, fsharp, go, html, kotlin, markdown, powershell, ruby, scss,
+  toml, zig`. This is as valuable as adding anything, because an unverified edge
+  ships a bug invisibly.
+- 4 unknown grammar literals in `cpp`/`rust` (`script/m14/audit-analyzer-grammar.ts`).
+- 46 placeholder-name sites under standing rule R7 (`validation/m60/ledger.json`).
+- 4 mutation survivors in `scala`/`csharp`/`elixir`.
+
+---
+
+## Part 2 — resolve what is missing
+
+- Never invent an edge the language cannot express. A fabricated edge is counted
+  as `unexplained`/fabrication and poisons `bb_graph`, `bb_impact`, `bb_migrate`.
+- A missing type is usually a fact about the **format**. A heading cannot call
+  anything. A TOML value is a string in a format that defines no include, import
+  or reference — TOML's own contract says its vocabulary *is* `contains` and
+  "inventing one would be worse than a thin graph". Prove that with a corpus
+  probe; do not manufacture the edge.
+- Where the construct genuinely exists, implement it and measure it.
+
+### Adding edges is not free downstream
+
+Payloads and latency are budgeted and measured. `bb_graph`'s un-narrowed
+`relationshipTypes` default is 2.5–4.8× a filtered one (lodash 487 KiB vs
+101 KiB, ripgrep 795 vs 321). **Re-run your lane's payload/latency check.** If an
+addition regresses a green budget, report it — do not quietly re-baseline.
+
+---
+
+## Honesty
+
+`docs/M14-HONESTY-CONTRACT.md` §1 bans: **perfect, complete, fully done,
+production-ready, bulletproof, rock-solid, battle-tested, extensively tested,
+thoroughly reviewed, should work, expected to pass, green**, and unscoped
+**"100% coverage"**. A claim is scoped or it is false.
+
+---
+
+## Ownership
+
+| owned by the language agent | owned by MASTER only |
+|---|---|
+| `src/ast/real-<lang>-analyzer.ts` | `script/m14/differential.ts`, `mutate-analyzer.ts`, shared `script/m14/**` machinery |
+| `docs/analyzers/real-<lang>-analyzer.md` | `validation/m14/differential-baseline.json`, `validation/m14/results/*.json` |
+| that lane's fixtures | `validation/m60/ledger.json`, `rel-type-coverage*.json` |
+| | `ontology-coverage-gate.ts`, `rel-type-coverage-gate.ts` |
+| | `src/ast/types.ts`, `src/ast/engine.ts` |
+| | `website/src/data/brain-languages.ts` — its `emits` array is **derived**, never hand-edited |
+| | `package.json` scripts |
+
+An agent that needs a shared change **reports the need**; the master makes it.
+
+## Corpus
+
+`$HOME/fixtures/repositories/` — real git repos, indexed through the
+production entry. A ruling with no corpus is worthless. Disk is tight: check
+`df -h /`, clone shallow (`--depth 1`), delete build artifacts, never source.
+
+## Branch strategy
+
+`origin/main` → laptop branch → one branch per language (`analyzer/JAVA`) →
+merged into the laptop branch as each completes. **Never merge to `main`**; the
+owner does that when both laptops are done. Re-merge `origin/main` before
+starting a language that is weeks old — it carries harness repairs.
+
+## Definition of done, per language
+
+- Every one of the 10 types has a verdict with a **number** behind it.
+- Existing emitted types answer all six questions in Part 1.
+- No unknown symbols, no empty names, no placeholder-literal edge endpoints.
+- Fixtures assert the new behaviour (a mutant must die).
+- The lane's mutation, differential and payload/latency checks re-run, with
+  results.
+- `docs/analyzers/real-<lang>-analyzer.md` updated: what each type means here,
+  what was ruled and the measurement that rules it.
+- Committed on its own language branch, reported to master with numbers.
+
+---
+
+# Part 2 — Laptop B scope and detail
 
 Companion to `docs/M14-HONESTY-CONTRACT.md`. Read both before writing code.
 

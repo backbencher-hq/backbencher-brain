@@ -563,6 +563,58 @@ export const PROTOBUF_MUTANTS: Mutant[] = [
   },
 
   {
+    id: "protobuf/module-edge-source-back-to-the-basename",
+    language: "protobuf",
+    defectClass: "wrong-source",
+    description:
+      "Pass 16 measured that the `imports`/`exports` SOURCE resolved against published ids at 0 of 1,561 + 4 edges, and that 967 of 1,565 (61.8%) hung off a basename another corpus file also uses. The source is now the file's own `package` namespace, which the analyzer already publishes. This mutant is the pre-pass-16 state, reproduced GENERICALLY: any `imports`/`exports` edge whose `metadata.moduleOwner` is `package` has its source replaced by `path.basename(metadata.filePath)`. Caught by protobuf/imports-and-editions and protobuf/ancestor-scope-resolution, whose module-edge rows name the package as the source, and by protobuf/module-edge-source-fallback, which pins the other arm so the transform cannot be satisfied by always emitting a basename either.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: rels(r).map((x: any) => {
+        const t = x.type ?? x.relationshipType
+        if ((t !== "imports" && t !== "exports") || x?.metadata?.moduleOwner !== "package") return x
+        const fp = String(x?.metadata?.filePath ?? "")
+        const base = fp.split("/").pop()
+        if (!base) return x
+        const { moduleOwner, ...rest } = x.metadata as any
+        return { ...x, source: base, metadata: rest }
+      }),
+    }),
+  },
+  {
+    id: "protobuf/module-edge-source-the-empty-package",
+    language: "protobuf",
+    defectClass: "unknown-endpoint",
+    description:
+      "The same rule read `pkg` without checking it, which is what happens to a file declaring no `package`: 11 of 821 corpus files, carrying 5 of the 1,561 `imports` edges. The edge is published with the EMPTY STRING as its source, which is an endpoint the index cannot hold and the graph cannot walk from. Reverted generically: any `imports`/`exports` edge whose `metadata.moduleOwner` is `basename` — which is exactly the set of edges whose file declared no package — has its source emptied. Caught by protobuf/module-edge-source-fallback, whose fallback row names the basename and whose `forbidRelationships` carries `{type: \"imports\", from: \"\"}` for this shape. No other fixture can catch it: all ten other protobuf fixtures declare a package.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: rels(r).map((x: any) => {
+        const t = x.type ?? x.relationshipType
+        if ((t !== "imports" && t !== "exports") || x?.metadata?.moduleOwner !== "basename") return x
+        const { moduleOwner, ...rest } = x.metadata as any
+        return { ...x, source: "", metadata: rest }
+      }),
+    }),
+  },
+  {
+    id: "protobuf/module-edge-source-loses-which-spelling-it-used",
+    language: "protobuf",
+    defectClass: "missing-field",
+    description:
+      "`metadata.moduleOwner` is the only thing that tells a consumer whether an unresolvable module-edge source is a file that declares no package — an external-by-necessity endpoint — or a name the analyzer simply failed to publish. Without it the two are indistinguishable, which is the same confusion this lane separates everywhere else (an external package versus a declaration it failed to publish). Reverted by deleting the key from every edge that carries it. Caught by protobuf/module-edge-source-fallback, which asserts `meta.moduleOwner: \"basename\"` on its fallback row, and by protobuf/imports-and-editions and protobuf/ancestor-scope-resolution, which assert it on the package arm.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: rels(r).map((x: any) => {
+        const md = x?.metadata
+        if (!md || md.moduleOwner === undefined) return x
+        const { moduleOwner, ...rest } = md as any
+        return { ...x, metadata: rest }
+      }),
+    }),
+  },
+
+  {
     id: "protobuf/dotted-reference-back-to-the-name-as-written",
     language: "protobuf",
     defectClass: "dangling-endpoint",
