@@ -40,14 +40,14 @@
       ],
       "evidence": {
         "status": "known-gap",
-        "currentCommit": "bc09cd791cf54bc93791cb1e457a9731d478bb87",
+        "currentCommit": "726fd632ff2fedf92d7d3d60a31b214a0cd4055b",
         "verifierCommand": "npx tsx script/m25/verify-governance.ts",
         "evidenceFile": "G1.json",
         "passed": 66,
         "failed": 6,
         "realFailed": 0,
         "negativeCases": 11,
-        "blockedReason": "6 check(s) failed: G1: all 11 issue entries are unique and structurally complete; G1: no banned vocabulary in manifest.json (perfect(ion)?\\b); G1: no banned vocabulary in manifest.json (\\bcomplete(ly|d|ness)?\\b); G1: M24 bar — ledger closed with all 11 issues verified (mechanical) … — relevant uncommitted files at measure time: script/m25/verify-governance.ts"
+        "blockedReason": "6 check(s) failed: G1: all 11 issue entries are unique and structurally complete; G1: no banned vocabulary in manifest.json (perfect(ion)?\\b); G1: no banned vocabulary in manifest.json (\\bcomplete(ly|d|ness)?\\b); G1: M24 bar — ledger closed with all 11 issues verified (mechanical) … — relevant uncommitted files at measure time: script/m25/verify-cross-platform.ts"
       }
     },
     {
@@ -294,7 +294,7 @@
       "code": "E7",
       "githubIssue": 544,
       "tool": "cross-platform",
-      "status": "verified",
+      "status": "blocked",
       "scope": "extension end-to-end verified on Linux, macOS, Windows (OS-matrix runners); every claim records the OS it was measured on (contract §10); platform bug classes (BB_DATA_DIR home-dir nondeterminism, path-separator bugs) get dedicated mutation cases",
       "acceptanceCriteria": [
         "extension end-to-end verified on at least two OSes; the third is either verified or blocked with reason",
@@ -307,22 +307,17 @@
         "no banned vocabulary in the issue thread"
       ],
       "evidence": {
-        "status": "verified",
-        "currentCommit": "a871d533a736e8e38cb826d80d986d3cc84022d1",
+        "status": "blocked",
+        "currentCommit": "726fd632ff2fedf92d7d3d60a31b214a0cd4055b",
         "verifierCommand": "npx tsx script/m25/verify-cross-platform.ts",
         "evidenceFile": "E7-linux.json",
-        "passed": 53,
-        "failed": 0,
-        "negativeCases": 0,
-        "mutantsCaught": 4,
-        "mutantsTotal": 4,
         "os": "linux",
         "blockedRecords": [
           "E7-darwin.json",
           "E7-windows.json"
         ],
         "scopeNote": "linux verified; darwin/win32 honestly blocked (no runners on this machine) — two-OS acceptance stays open for X1/owner",
-        "blockedReason": "Native Linux leg executed on this machine (linux); the other two OSes are machine-emitted blocked records (E7-darwin.json, E7-windows.json) — the OS-matrix workflow (.github/workflows/os-matrix.yml) runs each OS's native leg on its GitHub-hosted runner and uploads the evidence artifact for the owner to persist."
+        "blockedReason": "No Linux hardware or runner on this machine (process.platform is darwin); the OS-matrix workflow (.github/workflows/os-matrix.yml) executes the Linux native leg on its GitHub-hosted runner and uploads the E7-linux.json artifact for the owner to persist. Recorded blocked locally, never claimed."
       }
     },
     {
@@ -387,7 +382,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T13:08:18.705Z",
-    "contentSha256": "5d4a4738c9e20783fc818533cc98c26a6f14e494e84a4d104d1d4b0297e09010"
+    "sealedAt": "2026-10-05T14:30:57.095Z",
+    "contentSha256": "c467961d300f8b359300f74d627cf7103908a45c73bdfed2f79be147d3d7ebf0"
   }
 }
