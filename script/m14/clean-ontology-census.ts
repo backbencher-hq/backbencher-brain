@@ -81,9 +81,24 @@ import { execFileSync } from "node:child_process"
 import { detectLanguageFromPath } from "../../src/ast/language-detection"
 import { parseFile } from "../../src/ast/pool-worker"
 
-const ROOT = process.cwd()
 const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
-const WIDE_MANIFEST = path.join(ROOT, "script", "m14", "clean-wide-manifest.txt")
+
+/**
+ * The manifest is located from THIS FILE, never from `process.cwd()`.
+ *
+ * It used to be `path.join(process.cwd(), "script/m14/clean-wide-manifest.txt")`, which
+ * made the POPULATION a function of the caller's shell: run this from any directory
+ * other than the repo root and `--wide` silently measures only the 312 git-tracked
+ * corpus files instead of 2,181, prints an ordinary-looking report, and — because
+ * shards are `index % N` over the sorted list — produces a set of files that OVERLAPS
+ * other shards' sets. That is not hypothetical: a driver launched from an output
+ * directory produced four shards on the 312-file basis which a later run's `--resume`
+ * accepted, and the aggregate stopped with `PARTITION OVERLAP: 60 file(s) claimed by
+ * more than one shard`. A wrong population and a broken partition from one `cd`, with
+ * no error anywhere. Resolved from the module's own URL, which is the only location
+ * that cannot be changed by the caller.
+ */
+const WIDE_MANIFEST = path.join(path.dirname(new URL(import.meta.url).pathname), "clean-wide-manifest.txt")
 
 const argv = process.argv.slice(2)
 const arg = (k: string) => { const i = argv.indexOf(k); return i >= 0 ? argv[i + 1] : "" }
@@ -165,6 +180,9 @@ if (SKIP.size) {
 
 console.log(`clean ontology census`)
 console.log(`corpus root: ${CR}`)
+if (WANT_WIDE && !fs.existsSync(WIDE_MANIFEST)) {
+  console.error(`--wide was asked for and ${WIDE_MANIFEST} does not exist: this run measures the ${nNarrow} git-tracked corpus files ONLY, which is a different population, not a smaller sample of the same one.`)
+}
 console.log(`admitted clean files: ${nNarrow} (git-tracked) ${WANT_WIDE ? `+ ${nFilesAll - nNarrow} from the committed wide manifest` : ""} = ${nFilesAll}`)
 console.log(`sampled: ${sample.length}${LIMIT > 0 ? ` (deterministic FIRST ${LIMIT} of the sorted absolute path list — a stated slice, not a ranking)` : " (all)"}\n`)
 
