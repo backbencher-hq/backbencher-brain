@@ -66,6 +66,7 @@ import { SCSS_RULED } from "./scss-ruled"
 import { MARKDOWN_RULED } from "./markdown-ruled"
 import { PHP_RULED } from "./php-ruled"
 import { SQL_RULED } from "./sql-ruled"
+import { GRAPHQL_RULED } from "./graphql-ruled"
 
 const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
 const LANG = process.argv[2] ?? "bash"
@@ -257,6 +258,7 @@ const RULED_BY_LANG: Record<string, Ruled[]> = {
   sql: SQL_RULED,
   scss: SCSS_RULED,
   markdown: MARKDOWN_RULED,
+  graphql: GRAPHQL_RULED,
 }
 const RULED: Ruled[] = RULED_BY_LANG[LANG] ?? []
 
