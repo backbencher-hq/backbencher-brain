@@ -12,27 +12,24 @@
     "total": 6,
     "caught": 6
   },
-  "currentCommit": "936b66d6d088776c7715e7d1aec492cc9c6d9841",
+  "currentCommit": "659b69f19993b7c8c08f475a0057d987f5875664",
   "workingTreeRelevantChanges": [
-    "validation/m24/results/L2.json",
     "validation/m42/results/H1.json",
-    "validation/m42/results/H2.json",
     "validation/m42/results/H3.json",
     "validation/m42/results/H4.json",
-    "validation/m55/results/T3.json",
     "validation/m55/results/T4.json"
   ],
   "verifierCommand": "npx tsx script/m55/verify-evidence-tree-clean.ts",
   "evidenceFile": "EVID-TREE.json",
-  "generatedAt": "2026-10-05T02:33:07.760Z",
+  "generatedAt": "2026-10-05T03:59:33.708Z",
   "observed": {
     "rule": {
       "id": "epoch-suffixed-mutant-scratch",
       "statement": "a basename matching /(?:^|[^A-Za-z0-9])v?\\d*mutant\\.\\d/i — 'mutant' as a delimited token, then '.', then digits",
       "pattern": {}
     },
-    "scannedFiles": 4657,
-    "trackedFiles": 4657,
+    "scannedFiles": 4674,
+    "trackedFiles": 4674,
     "untrackedInValidation": [],
     "c1CountedUntracked": [],
     "selfExempt": [
@@ -120,7 +117,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T02:33:07.761Z",
-    "contentSha256": "6f65c491f966cab20d966977e9afdb79ba5ddfe50fe40459d078fb0431e881d5"
+    "sealedAt": "2026-10-05T03:59:33.710Z",
+    "contentSha256": "ce630332559e03a6f83b3ff3a8dc182030609506336511025a20e0a2fec7072a"
   }
 }
