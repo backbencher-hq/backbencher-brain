@@ -17,6 +17,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { writeSealed } from "../lib/evidence.ts"
+import { fingerprintFields } from "../m61/claim_fingerprints.ts"
 import { ADDRESS_SAMPLES } from "./a2-fixture.ts"
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..")
@@ -169,6 +170,7 @@ function main(): void {
       mutantsCaught: 0,
       mutantsTotal: 0,
       currentCommit,
+      ...fingerprintFields(["m62.D1"], ROOT),
       verifierCommand: "npx tsx script/m62/verify-docs.ts",
       evidenceFile: "D1.json",
       generatedAt: new Date().toISOString(),

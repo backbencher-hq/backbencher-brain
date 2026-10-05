@@ -2,13 +2,33 @@
   "issue": "516",
   "code": "X1",
   "milestone": "M26",
-  "status": "verified",
+  "status": "known-gap",
   "checks": 50,
-  "passed": 50,
-  "failed": 0,
-  "failures": [],
+  "passed": 48,
+  "failed": 2,
+  "failures": [
+    "X1: W3 verifier passes at HEAD",
+    "X1: W3 regeneration run passes"
+  ],
   "negativeCases": 3,
-  "currentCommit": "0dbafd74ef4f3d63be8e44dd6caa58833732a7db",
+  "currentCommit": "a8807f81027bd384f2f5d50a2d1bd143463639b8",
+  "sourceFingerprint": "1c876aa8331c70d902baf6afa4366898014e49012827950171a4033e32846cc1",
+  "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
+  "sourceFingerprintCovers": [
+    "script/m26/verify-closure.ts",
+    "docs/m26/GRAPH-TRANSPORT.md",
+    "docs/m26/GRAPH.md",
+    "ide/vscode/src/extension.ts",
+    "script/m25/run-fork-e2e.mts",
+    "script/m26/verify-content-security.ts",
+    "script/m26/verify-cross-language-hover.ts",
+    "script/m26/verify-evidence-badges.ts",
+    "script/m26/verify-graph-docs.ts",
+    "script/m26/verify-graph-transport.ts",
+    "script/m26/verify-impact-mode.ts",
+    "script/m26/verify-webview-core.ts",
+    "script/m26/verify-webview-harness.ts"
+  ],
   "verifierCommand": "npx tsx script/m26/verify-closure.ts",
   "barViolations": [],
   "perMutantRecords": {
@@ -122,7 +142,59 @@
         "caught": true
       },
       {
-        "name": "M4 differential break (containment dropped from total)",
+        "name": "M4 differential break (cascade dropped from the total count)",
+        "caught": true
+      },
+      {
+        "name": "M4b kinds dropped from the total count (a contains row counts as a dependency)",
+        "caught": true
+      },
+      {
+        "name": "M4c transitive collapse (the count stops at depth 0)",
+        "caught": true
+      },
+      {
+        "name": "M6 root listed as its own dependent (cycle)",
+        "caught": true
+      },
+      {
+        "name": "M14 evidence re-read disabled (one row's evidence published at another row's depth)",
+        "caught": true
+      },
+      {
+        "name": "M15 the depth correction removed (the engine's first trace is published as the shortest path)",
+        "caught": true
+      },
+      {
+        "name": "M12 how-each-dependent-is-a-dependent erased (every row claims to be exact)",
+        "caught": true
+      },
+      {
+        "name": "M13 the cascade composition stops being declared",
+        "caught": true
+      },
+      {
+        "name": "M7 fabricated total when the ceiling is hit (a partial count as a total)",
+        "caught": true
+      },
+      {
+        "name": "M8 non-exact name rendered as an exact hit (silent substitution in the panel)",
+        "caught": true
+      },
+      {
+        "name": "M16 a range-folded dependent rendered like a real member",
+        "caught": true
+      },
+      {
+        "name": "M17 an unattributed evidence block rendered as if it were quoted",
+        "caught": true
+      },
+      {
+        "name": "M18 the exemption removed (an exact, unambiguous constant is refused again)",
+        "caught": true
+      },
+      {
+        "name": "M19 the ambiguity check dropped (a name several symbols share is answered about one of them)",
         "caught": true
       },
       {
@@ -181,10 +253,10 @@
       }
     ]
   },
-  "generatedAt": "2026-09-20T02:23:20.505Z",
+  "generatedAt": "2026-10-05T22:31:24.288Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-20T02:23:20.506Z",
-    "contentSha256": "17330ceefef465dded3756691a23dc73d34a1db9e64d84eea2e3de055a01aca7"
+    "sealedAt": "2026-10-05T22:31:24.290Z",
+    "contentSha256": "df615637ac66734087d166f3fdaa61e5025f157b1142dea7fd5b7e3e06ae3848"
   }
 }

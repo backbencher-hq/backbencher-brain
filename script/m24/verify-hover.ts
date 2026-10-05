@@ -40,6 +40,7 @@ const LAUNCH_EXTS = [
   ".cpp", ".cc", ".cxx", ".hpp", ".vue", ".svelte",
 ]
 import { writeSealed } from "../lib/evidence.ts"
+import { fingerprintFields } from "../m61/claim_fingerprints.ts"
 // The ANCHOR-DRIFT class gate (script/m24/mutant-anchor-gate.ts), shared with
 // script/m24/verify-server.ts so the class is gated by ONE implementation. Its
 // own history is in this file: two mutants on this suite were silently skipped
@@ -1330,7 +1331,7 @@ async function main(): Promise<void> {
     code: "L2",
     status,
     currentCommit,
-    sourceFingerprint,
+    ...fingerprintFields(["m24.L2"], ROOT),
     verifierCommand: "npx tsx script/m24/verify-hover.ts",
     evidenceFile: "L2.json",
     generatedAt: new Date().toISOString(),

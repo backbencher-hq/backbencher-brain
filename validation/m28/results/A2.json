@@ -2,12 +2,12 @@
   "issue": "M28.A2",
   "code": "A2",
   "milestone": "M28",
-  "status": "verified",
-  "checks": 23,
-  "passed": 23,
-  "failed": 0,
-  "mutantsCaught": 6,
-  "mutantsTotal": 6,
+  "status": "known-gap",
+  "checks": 13,
+  "passed": 12,
+  "failed": 1,
+  "mutantsCaught": 5,
+  "mutantsTotal": 5,
   "mutantRecords": [
     {
       "name": "A2 mutant: author-label-dropping renderer is caught by the label rule",
@@ -28,21 +28,27 @@
     {
       "name": "A2 mutant: annotation-less model renders NO badge, annotated model renders exactly one author-labeled badge (real DOM rules)",
       "caught": true
-    },
-    {
-      "name": "A2 mutant: lying in-editor driver is caught by the assertion set",
-      "caught": true
     }
   ],
-  "currentCommit": "5c3191642192207f018c2438a39cea6980007f21",
+  "currentCommit": "a8807f81027bd384f2f5d50a2d1bd143463639b8",
+  "sourceFingerprint": "df461e1f9fd355639234b72d8e42ee8ad2ebf65d69790fad647456c7d05f7fee",
+  "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
+  "sourceFingerprintCovers": [
+    "script/m28/verify-annotation-ui.ts",
+    "src/lsp/annotation_ui.ts",
+    "src/lsp/graph_request.ts",
+    "src/lsp/hover.ts"
+  ],
   "verifierCommand": "npx tsx script/m28/verify-annotation-ui.ts",
   "evidenceFile": "A2.json",
-  "generatedAt": "2026-10-05T17:53:36.896Z",
+  "generatedAt": "2026-10-05T22:34:11.527Z",
   "claimLevel": "verified — annotations render in the real editor hover (author-labeled) and ride bb/graph; component rules mutation-gated",
-  "failures": [],
+  "failures": [
+    "A2: nvim provisioned — .tools/nvim-linux-x86_64/bin/nvim missing"
+  ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T17:53:36.896Z",
-    "contentSha256": "5be9b61a1d761fad79ef0002d9f89c2e4dc6fac382ef5f0de8e86b66a82b6efb"
+    "sealedAt": "2026-10-05T22:34:11.527Z",
+    "contentSha256": "57fb46b59539643f454ce31b84578850c6aaf76bad85fa44159da3a88dca329a"
   }
 }

@@ -27,6 +27,7 @@ import path from "node:path"
 import { fetchServerCapabilities } from "./server-caps.ts"
 import { runHarness } from "../m24/lsp_harness.ts"
 import { writeSealed } from "../lib/evidence.ts"
+import { fingerprintFields } from "../m61/claim_fingerprints.ts"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const TEMPLATE = path.join(ROOT, "ide", "lsp4ij", "bb-lsp", "template.json")
@@ -225,6 +226,7 @@ async function main(): Promise<void> {
     mutantsTotal,
     mutantRecords,
     currentCommit,
+    ...fingerprintFields(["m27.J1"], ROOT),
     verifierCommand: "npx tsx script/m27/verify-lsp4ij.ts",
     evidenceFile: "J1.json",
     generatedAt: new Date().toISOString(),

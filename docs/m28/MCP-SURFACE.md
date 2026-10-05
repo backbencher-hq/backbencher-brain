@@ -28,11 +28,11 @@ Tool count: 16 (11 pre-existing + 5 added by M28).
 
 ## The union claim (machine-checked)
 
-One fixture, two doors: agent (MCP) and developer (IDE) receive machine-proven identical answers — graph edge multisets with tiers, impact sets with declared truncation, cross-language facts with declared absence. Claim: known-gap via [U1.json](../../validation/m28/results/U1.json) (14/14 checks, 4/4 mutants).
+One fixture, two doors: agent (MCP) and developer (IDE) receive machine-proven identical answers — graph edge multisets with tiers, impact sets with declared truncation, cross-language facts with declared absence. Claim: verified via [U1.json](../../validation/m28/results/U1.json) (24/24 checks, 4/4 mutants).
 
 ## Annotations (D-3/D-6)
 
 Provenance is schema-enforced (`author_class` NOT NULL; tool writes are hardcoded `agent`): verified via [A1.json](../../validation/m28/results/A1.json). Annotations render where the human reads — hover section + graph badge, author-labeled: known-gap via [A2.json](../../validation/m28/results/A2.json) (includes a real headless-editor leg).
 
-The three new read tools reuse their IDE-side components (D-1) — verified known-gap via [T1.json](../../validation/m28/results/T1.json).
+The three new read tools reuse their IDE-side components (D-1) — verified verified via [T1.json](../../validation/m28/results/T1.json).
 

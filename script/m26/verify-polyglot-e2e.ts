@@ -34,6 +34,7 @@ import { tmpdir } from "node:os"
 import { dirname, join, resolve } from "node:path"
 import { pathToFileURL, fileURLToPath } from "node:url"
 import { writeSealed } from "../lib/evidence.ts"
+import { fingerprintFields } from "../m61/claim_fingerprints.ts"
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..")
 const FIXTURES = join(ROOT, "test/fixtures/polyglot")
@@ -233,6 +234,7 @@ async function main(): Promise<void> {
     },
     currentCommit: commit,
     verifierCommand: "npx tsx script/m26/verify-polyglot-e2e.ts",
+    ...fingerprintFields(["m26.A1"], ROOT),
     evidenceFile: "A1.json",
     generatedAt: new Date().toISOString(),
   }
