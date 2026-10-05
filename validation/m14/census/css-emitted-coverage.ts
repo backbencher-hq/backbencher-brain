@@ -960,7 +960,7 @@ rec.push({
     `the analyzer NORMALISES a selector group before publishing it (real-css-analyzer.ts joins with ", "), ` +
     `so comparing a published name to the grammar's raw text undercounts every comma group in a minified file. ` +
     `On \`selectorGroupKey\` this row is ${containsAttributed.toLocaleString("en-US")} against ${containsPublishedScope.toLocaleString("en-US")} published, ` +
-    `a residual of ${(containsPublishedScope - containsAttributed).toLocaleString("en-US")}. ` +
+    `so published falls ${(containsAttributed - containsPublishedScope).toLocaleString("en-US")} short of it (the delta column, which counts the other way round, reads +${(containsAttributed - containsPublishedScope).toLocaleString("en-US")}). ` +
     `This row was labelled "LOWER BOUND on the denominator" while published EXCEEDED it — a lower bound cannot be ` +
     `exceeded by the quantity it bounds, so the label and the interval PASS 11 reported from it were both wrong.`,
 })
