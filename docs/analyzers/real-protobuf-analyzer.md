@@ -6700,3 +6700,120 @@ pass 23; the commit adds one probe and its evidence.
   847.** §1 explains the gap and it is not a `head` cutoff, but every number in §2 and §3
   would move slightly on the full 847. Nothing in §3's verdicts turns on the missing 5:
   they are 3 copies of a `helloworld.proto` example and terraform's two plugin schemas.
+
+---
+
+# Pass 25 — the authoritative firing row is stale for this lane, and it understates it
+
+## 1. What triggered this
+
+The round brief names `validation/m14/measurements/firing-sweep-26-lanes.ndjson` as
+authoritative for this lane's `fired`, `relationships`, `files`, `corpusTotal`,
+`degraded`, `unknownEndpoints` and per-type breakdown, and says to read the row rather
+than re-measure. Its protobuf row is:
+
+```
+files "10/120"   relationships 2069   symbols 1693   corpusTotal 8524
+firedCount 3      unknownEndpoints 0   emptySymbolNames 0   emptyOrUnknownKind 0
+uses        381 edges  bothEndsResolve     0   sourcePublished    0  sourceExternal  381
+contains   1671 edges  bothEndsResolve     0   sourcePublished  247  sourceExternal 1424
+imports     17 edges  bothEndsResolve     0   sourcePublished    0  sourceExternal   17
+```
+
+**Two of its columns do not reproduce at HEAD.** Same instrument
+(`script/m14/firing-check.ts`), same `--files 120`, same corpus root:
+
+| column | committed row | HEAD re-run | denominator |
+|---|---|---|---|
+| `contains.bothEndsResolve` | **0 of 1671** = 0.00% | **722 of 722** = **100.00%** | edges of the type, same instrument |
+| `contains.sourceExternal` | **1424 of 1671** = 85.22% | **0 of 722** = 0.00% | edges of the type |
+| `uses.bothEndsResolve` | **0 of 381** = 0.00% | **193 of 223** = **86.55%** | edges of the type |
+| `uses.sourcePublished` | 0 of 381 | 223 of 223 | edges of the type |
+| `imports.bothEndsResolve` | 0 of 17 = 0.00% | **0 of 14** = 0.00% | agrees, and pass 23 §8a explains why |
+| `filesParsed` | 10/120 | 12/120 | 120 |
+| `corpusTotal` | 8524 | 8550 | corpus `.proto` files |
+
+HEAD output: `validation/m14/measurements/protobuf/firing-check-120-head-p25.json`,
+reproduced by `npx tsx script/m14/firing-check.ts protobuf --files 120 --json`.
+
+**The rates are the comparable figures, not the edge counts.** The corpus grew by 26
+`.proto` files between the two runs (`corpusTotal` 8524 → 8550) and the sample admitted
+2 more, so 1671 vs 722 edges is partly population. The RATE cannot be population: it
+moves from 0.00% to 100.00% on `contains`, and no change in which files were sampled
+turns a per-file resolution of every `contains` edge into none.
+
+## 2. The cause, dated
+
+The sweep was committed at `7c8eb5cc8`, and its protobuf row was measured on a tree that
+does not contain `9a88a6634` — the pass-5 commit that publishes the qualified id:
+
+```
+$ git merge-base --is-ancestor 9a88a6634 7c8eb5cc8 ; echo $?
+1                      # the fix is NOT an ancestor of the sweep
+```
+
+`9a88a6634` is `fix(m60): protobuf published no qualified id, so 0 of 3,075 edges bound to
+the declaration they named`, and it is the commit that added
+`s.qualifiedName = real` and `s.metadata = { ...s.metadata, id: real, qualifiedName: real }`
+(`src/ast/real-protobuf-analyzer.ts`). Its own commit message records the measurement on
+both sides of that change: **0 of 3,075** edges provably named their declaration with a
+bare published name, **2,977 of 3,075 (96.81%)** with the id published.
+
+So the row's `sourceExternal 1424` and `bothEndsResolve 0` are a record of the defect that
+commit fixed. `firing-check.ts:322-332` builds its `published` set from `s.name` **and**
+`s.qualifiedName`, so the instrument itself was never wrong; the tree it ran against was.
+
+**Which means the row is not a measurement of this lane at HEAD, and the brief's
+instruction not to re-measure would have propagated a fixed defect as a live number.**
+
+## 3. Confirmed directly on a corpus file, without the shared instrument
+
+One file through production `parseFile`, resolving both ends against that file's own
+published set — `boundary/internal/bsr/proto/ssh/v1/ssh_chunks.proto`:
+
+```
+symbols 107   relationships 106   contains 106 edges, 106 resolve at both ends
+with qualifiedName 107/107        with metadata.qualifiedName 0/107
+with metadata.id 0/107
+```
+
+The published edge carries the id on both channels the store reads:
+
+```json
+{"source":"ssh.v1.CancelTCPIPForwardRequest","target":"ssh.v1.CancelTCPIPForwardRequest.port_to_bind",
+ "type":"contains","line_number":367,"confidence":1,"metadata":{"evidenceClass":"structural","member":"field"}}
+```
+
+`metadata.qualifiedName` and `metadata.id` are **0** on every symbol: pool-worker's symbol
+projection drops them. This is pass 22 §2's finding, confirmed at HEAD, and it is why a
+correction has to survive on `s.qualifiedName` alone.
+
+## 4. What this lane does NOT claim about the row
+
+- **The `3` vs `5` fired count is not a defect and the row is not wrong about it.** The row
+  admits 10 `.proto` of 120 attempted files because only ~8% of the corpus is `.proto`, which
+  the sweep's own commit message already records ("protobuf parsed 10/120 … Both need a
+  corpus-scoped sample, not a wider one"). `exports` has 4 edges and `overrides` 2 across
+  the whole 847-file corpus, and neither had a file inside the 10-file sample. At 847
+  files this lane measures **5 fired**; on a 10-file sample 3 is the right answer to a
+  different question.
+- **The corpus is shared and moved between the two runs** (8524 → 8550). The `filesParsed`
+  and `corpusTotal` columns are therefore not re-baselined here — they are recorded as two
+  observations of a moving population, and only the rates are compared.
+- **This is not a §8 item for the supervisor's sweep.** Nothing in `firing-check.ts` needs
+  to change; the instrument was right. What the row needs is a **re-run on a tree that
+  includes `9a88a6634`**, which is the supervisor's file to regenerate, and the reason is
+  one commit hash.
+
+## 5. Gate table, pass 25
+
+| gate | command | result |
+|---|---|---|
+| typecheck | `npx tsc --noEmit -p tsconfig.json` | **exit 0** |
+| ontology arbiter | `npx tsx script/m14/ontology-coverage-gate.ts protobuf` | **exit 0**, `emitted 5/10  ruled-sound 5  FALSIFIED 0  ruled-without-justification 0`, 847 files, 4,235 probe calls, 94 distinct node types |
+| fixtures | `BB_M14_ROOT=<repo> npx tsx script/m14/run-fixtures.ts --lang protobuf` | **13 pass / 0 fail**, `no regressions`, exit 0 |
+| mutants | `BB_MUTANT_ONLY="protobuf/" npx tsx script/m14/mutate-analyzer.ts` | **35 of 35 CAUGHT**, 0 survived, exit 0 |
+| firing re-run | `npx tsx script/m14/firing-check.ts protobuf --files 120 --json` | exit 0 — `contains` 722/722 resolve, `uses` 193/223, `imports` 0/14 |
+
+No analyzer change this pass. `src/ast/real-protobuf-analyzer.ts` is byte-identical to
+pass 24; the commit adds one measurement and the finding it contradicts.
