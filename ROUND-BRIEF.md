@@ -1,84 +1,134 @@
-# Round: the real problem is SCOPING, not coverage
+# The highest-value work available: fix B, then A, then C
 
-## What changed underneath you
+## Start here
 
-A whole-corpus `incoming-check` sweep just completed for **all 23 lanes** at 600 files
-each (`validation/m14/measurements/incoming-whole.tsv`). It replaces the 30-file sample,
-which could not answer the question — the question is *precisely* whether edges reach
-declarations in OTHER files, so a 30-file window systematically undercounts resolution.
-
-The result changes what the remaining work is:
-
-```
-lane        files fired   AMBIGUOUS  UNRESOLVED
-fsharp        600     9      40,791     33,339
-zig           600     7      19,962     14,461
-powershell    600     9      18,665     46,944
-nim           600     8      12,491      9,424
-lua           600     9       7,409      6,663
-xml           600     3       6,007          72
-dart          600    10       4,673     14,515
-php           600    10       4,606     17,784
-hcl           600     5       3,800      8,417
-graphql       600     6       3,710      4,427
-clean         164     9       3,520      3,097
-bash          600     6         623      5,084
-sql           600     6         198        973
-yaml          600     5         135        225
-toml          600     1          45          0
-json          600     5          71          0
-r             21     7           8        190
-make          129     6           0      1,636
-scss          600     8           0      1,185
+```bash
+npx tsx script/m14/diagnose-incoming.mts <yourlang> <ext> 80 $HOME/fixtures/repositories
 ```
 
-**ZERO of 23 lanes have fully-resolving incoming. Not one.**
+That prints YOUR lane's split. "Ambiguous and unresolved are high" is not actionable —
+it is three different defects that look identical, and their costs differ by two orders of
+magnitude.
 
-## The distinction that decides your next move
+## B — FORMAT MISMATCH. Do this first. It is nearly free.
 
-**An ambiguous edge is ONE edge that the reverse walk attributes to N declarations.** It
-is not N edges. So:
+**The symptom:** a large `unresolved` count, most targets containing a `.`, and almost all
+of them having their FINAL SEGMENT as a published name.
 
-- You cannot reduce ambiguity by emitting fewer edges.
-- You cannot reduce it by implementing another relationship type.
-- It falls only when **symbol identity becomes sound** — when the analyzer can say which
-  of several same-named symbols it meant.
+**The cause:** the edge target and the published symbol name are built by different code
+and spell the same symbol differently.
 
-Coverage is close to finished and it is the shallow work. Ambiguity is the deep work and
-it is where the remaining value is.
+**graphql, measured:** 6,451 unresolved targets, 99% dotted, and **100% of those had their
+final segment published**. So **8,637 edges** (contains 6,531, overrides 1,941, uses 165)
+were resolvable the whole time and failed only on a string convention.
 
-## What to do
+The concrete bug in graphql, for reference:
 
-1. **Measure your own ambiguity split.** For each type, separate:
-   - targets ambiguous because **N declarations share a name in different scopes**
-     (a real scoping failure you may be able to fix);
-   - targets ambiguous because a name is declared in **>1 table/module and the analyzer
-     does not model which one is in scope**;
-   - targets ambiguous because **two different symbols legitimately share a published
-     name** and the published name is not a unique identifier.
-   These three have different fixes and only the first two are yours to repair. Report
-   the split with counts. If most of your ambiguity is the third kind, that is a finding
-   about the **published-name contract**, not about your analyzer — say so plainly.
+```ts
+const ownerSymbol = `${owner.name}.${fieldName}`      // qualified
+symbols.push({ name: fieldName, ... })               // published BARE  <-- mismatch
+addRelationship(owner.name, ownerSymbol /* qualified */, Contains, ...)
+```
 
-2. **Then fix the largest single bucket your lane controls**, and re-measure the ambiguous
-   count with `incoming-check` at the same 600 files so the before/after is comparable.
-   State both numbers. If your ambiguous count does not move, say that too — a rule whose
-   overturn condition you cannot meet is decorative, not falsifiable.
+**Verified fix:** publish the same string you target. Publishing `ownerSymbol` took
+graphql from 6,451 unresolved to 1,608 — **a 75% reduction**, `tsc` clean.
 
-3. **Do not chase `unresolved` by widening your sample.** An unresolved target naming a
-   file outside the window is not a defect. Only report an unresolved count as a defect
-   when you have checked the target genuinely does not exist.
+**It was then reverted** because it broke 3 of graphql's 4 fixtures: they encode the
+bare-name contract (`expectSymbols: ["field"]` vs published `Doc.field`). That is a naming
+CONTRACT decision and it is yours. Two ways, both legitimate:
 
-## Reference points
+1. **Target the bare name** — publish `field`, emit `contains` → `field`. `source` already
+   carries the owner, so containment survives. Smallest blast radius; fixtures keep passing.
+2. **Publish the qualified name** — publish `Doc.field`. Also fixes cause A below, because
+   the name becomes unique. Requires updating your fixtures and telling whoever consumes
+   your name surface.
 
-- `json` and `toml` reach **0 unresolved**. `scss` and `make` reach **0 ambiguous**.
-  Read `script/m14/json-ruled.ts` and the scss lane's notes for how they got there.
-- `resumable-walk.ts` exists so a poison file costs one file instead of the whole walk —
-  use it for any new corpus measurement.
-- Your lane's ruling table is registered and a gate enforces it. If you write another
-  type's ruling into your table, register it; an unregistered table is invisible.
+Pick one, say which and why in the commit, and re-measure. **If your lane's fixtures fail,
+that is information about your contract, not an obstacle to route around.**
 
-## Reporting
+## A — NAME IS NOT AN IDENTIFIER. The real work.
 
-Per type: emitted or ruled, ambiguous count, unresolved count, and the ambiguity split
-from step 1. Numbers with their populations. No adjectives.
+**The symptom:** `ambiguous` is high, and nearly every ambiguous target has NO distinct
+`qualifiedName`.
+
+**Measured:** sql 118/118 (100%), python 61/61, graphql 67/67, lua 266/300 (89%).
+
+**The cause:** the published name carries no file or owner identity, so N files declaring
+`version` collapse into one node and every edge to it is ambiguous. Distribution is mostly
+2-way — it is not deep shadowing, it is simply "two unrelated files both define `version`".
+
+graphql's worst: 22 files declare `Query`, 15 declare `f`, 10 declare `name`.
+
+**Fix:** publish an identifier that includes the owner or module — the qualified path, or
+`file::name`. This is per-language design work and it is why this column moves slowly. It
+is also the only thing that makes an edge mean one specific thing.
+
+## C — EXTERNAL. Bookkeeping, but it stops the number lying.
+
+`os:*`, `re:*`, `getcwd`, `join`, `sqlite_master`, `pg_trigger_depth` — stdlib, BCL and
+database catalogs. Legitimately outside the corpus, but emitted indistinguishably from a
+local reference, so they inflate `unresolved` and make the column unreadable.
+
+Emit them with an explicit external marker so they are countable and excluded, instead of
+silently unresolved.
+
+## What to report
+
+Per cause, before and after, from the same command and the same file count:
+
+```
+B: unresolved before N -> after M      (edges recovered)
+A: ambiguous  before N -> after M      (names that became unique)
+C: targets now marked external         (previously counted as failures)
+```
+
+If a number does not move, say so. A rule whose overturn condition you cannot meet is
+decorative rather than falsifiable, and two of this programme's lanes shipped exactly that.
+
+## The bar
+
+Outgoing coverage is close to finished and is the shallow half. **A lane emitting all ten
+types while 46,944 of its edges resolve to nothing is worse than a lane emitting five that
+all resolve** — it looks finished and is not usable for refactoring, navigation or impact
+analysis. Optimise resolution, not counts.
+
+---
+
+## PROVEN RECIPE — copy this for cause B
+
+`graphql` is fixed and the fix is verified. It took two edges' target strings.
+
+**The defect:** the edge target was built as `${owner.name}.${fieldName}` (qualified)
+while the symbol published `name: fieldName` (bare). Same symbol, two spellings, so the
+edge resolved to nothing.
+
+**The fix — change the TARGET, not the published name:**
+
+```ts
+// before — targets a string nothing publishes
+addRelationship(owner.name, ownerSymbol /* `${owner.name}.${fieldName}` */, Contains, ...)
+
+// after — targets exactly what symbols.push({ name: fieldName }) published
+addRelationship(owner.name, fieldName, Contains, ...)
+```
+
+Result on 60 files: **unresolved 6,451 → 1,016 (-84%)**, tsc clean, lane fixtures
+unchanged (3/4 before and after), name surface unchanged, containment unchanged because
+`source` already carries the owner.
+
+**Why target the bare name rather than publishing the qualified one.** Publishing the
+qualified path also worked (-75%) but broke 3 of the lane's 4 fixtures and changes the
+name surface every downstream consumer sees. Retargeting has no blast radius. Same
+defect, one-line-per-edge, no contract change.
+
+**So for your lane:** find edges whose target string does not equal a published
+`name`, and make the target equal the published name. `diagnose-incoming.mts` tells you
+how many edges that is worth before you touch anything:
+
+```
+EDGES RECOVERABLE by fixing the name function: N
+by edge type: {"contains":..., "overrides":..., "uses":...}
+```
+
+Do the largest type first. Re-run the same command with the same file count and report
+before and after. If the number does not move, say so and say why.
