@@ -149,6 +149,27 @@ export const SQL_ONTOLOGY_MUTANTS: Mutant[] = [
       for (const s of syms) {
         if (s.kind === "property" && s.ownerName) columns.add(`${s.ownerName}|${s.name}`)
       }
+      // The duplicate has to be spelled the way the CURRENT analyzer spells a containment target.
+      //
+      // It used to be `target: s.name`, and it was CAUGHT. It stopped being caught when `contains`
+      // began targeting the member's qualified name (`<file>::<owner>.<member>`): the fixture's
+      // `expectRelationshipCount` rows key on an exact target string, so a duplicate spelled with
+      // the OLD bare target no longer matched the count and the assertion read 2 against a real 3.
+      // The mutant went green while the defect it names was still present — a survivor produced by a
+      // contract change rather than by a gap in the fixtures, which is the one shape a passing run
+      // cannot report.
+      //
+      // So the phantom is injected against the REAL edge's target string. That is also the more
+      // faithful defect: a regressed dedup key drops `memberKind` from the identity and emits a
+      // second edge for the same member, which would carry the same target — not a differently
+      // spelled one.
+      const realTarget = new Map<string, string>()
+      for (const x of rels) {
+        if (x.type !== "contains") continue
+        const tail = String(x.target).split("::").pop() ?? String(x.target)
+        const leaf = tail.slice(tail.lastIndexOf(".") + 1)
+        realTarget.set(`${x.source}|${leaf}`, x.target)
+      }
       const seen = new Set<string>()
       for (const s of syms) {
         if (s.kind !== "constant" || !s.ownerName) continue
@@ -167,7 +188,7 @@ export const SQL_ONTOLOGY_MUTANTS: Mutant[] = [
         extraRels.push({
           type: "contains",
           source: s.ownerName,
-          target: s.name,
+          target: realTarget.get(`${s.ownerName}|${s.name}`) ?? s.name,
           confidence: 1,
           weight: 1,
           metadata: { memberKind: "constant", evidenceClass: "structural" },
@@ -521,6 +542,29 @@ export const SQL_ONTOLOGY_MUTANTS: Mutant[] = [
       }
       if (extra.length === 0) return r
       return { ...r, relationships: [...(r.relationships ?? []), ...extra] }
+    },
+  },
+  {
+    id: "sql/contains-target-reverts-to-the-bare-member-name",
+    language: "sql",
+    defectClass: "ambiguity",
+    description:
+      "`retargetContainmentEdges` rewrites every `contains` target to the member's qualified name (`<file>::<owner>.<member>`), which is the only spelling the store's resolution pass 1 matches exactly (`parallel-indexer.ts:3773`, `target_external = _res_qname.qualified_name`; pass 2 needs a bare name unique in the project and pass 3 needs a dot). Measured at the 600-file population of `validation/m14/fixtures/sql/contains-fqn-probe.mts`, a bare member name is unique for 2,067 of 5,552 `contains` targets and ambiguous for 3,485 (62.8%) — so the revert does not lose edges, it makes 62.8% of them bind by a rule the store chose rather than by an exact match. This mutant strips the qualification back off every `contains` target, reproducing the pre-pass spelling. Caught by the lane's fixtures, whose `contains` targets are pinned qualified: sqld15's `expectRelationshipCount` rows stop matching, and sqld14's forbid rows stop forbidding.",
+    transform: (r: any) => {
+      const rels: any[] = r.relationships ?? []
+      if (!rels.some((x: any) => x.type === "contains" && typeof x.target === "string" && x.target.includes("::"))) return r
+      const out = rels.map((x: any) => {
+        if (x.type !== "contains" || typeof x.target !== "string" || !x.target.includes("::")) return x
+        const tail = x.target.slice(x.target.indexOf("::") + 2)
+        const leaf = tail.slice(tail.lastIndexOf(".") + 1)
+        // The label goes too: leaving `qualifiedTarget: true` on an edge whose target is bare would
+        // be a payload that asserts something false, and the next consumer to read the flag would
+        // believe it.
+        const meta = { ...(x.metadata ?? {}) }
+        delete meta.qualifiedTarget
+        return { ...x, target: leaf, metadata: meta }
+      })
+      return { ...r, relationships: out }
     },
   },
 ]

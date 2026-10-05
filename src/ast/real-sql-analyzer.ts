@@ -597,6 +597,24 @@ function fileModuleNameFor(filePath: string): string {
   return base.length > 0 ? base : "migration.sql"
 }
 
+/**
+ * A symbol's qualified name — ONE function, called by the publisher and by the edge retargeter.
+ *
+ * WHY IT IS EXTRACTED. `publishQualifiedNames` and `retargetContainmentEdges` must not be able to
+ * disagree about the string: the whole mechanism is that an edge's `target_external` and a symbol's
+ * `qualified_name` are compared for EQUALITY by the store's resolution pass 1
+ * (`parallel-indexer.ts:3773`, `target_external = _res_qname.qualified_name` — the only exact match
+ * it owns). Two spellings would produce the same defect this lane spent a pass removing, in the
+ * other direction: a target no symbol publishes, so an edge that resolves to nothing. The
+ * graphql lane's format mismatch was exactly this shape and cost it 84% of its `unresolved` column.
+ *
+ * The `Module` arm is the file itself, whose `ownerName` is unset; a module's qualified name is its
+ * own name, and it is the one symbol whose qualified name is NOT distinct from its bare name.
+ */
+function qualifiedNameFor(file: string, name: string, ownerName: string | undefined, kind: ASTEngine.SymbolKind): string {
+  return name === file && kind === ASTEngine.SymbolKind.Module ? file : `${file}::${ownerName ? `${ownerName}.${name}` : name}`
+}
+
 export class RealSqlAnalyzer implements ASTEngine.LanguageAnalyzer {
   public analyze(
     rootNode: Node,
@@ -660,6 +678,8 @@ export class RealSqlAnalyzer implements ASTEngine.LanguageAnalyzer {
         reservedNameSymbolsSuppressed: 0,
         indexOwnersAdopted: 0,
         indexOwnersExternalToFile: 0,
+        containmentRetargeted: 0,
+        containmentRetargetSkipped: 0,
       },
     }
 
@@ -695,6 +715,10 @@ export class RealSqlAnalyzer implements ASTEngine.LanguageAnalyzer {
     this.adoptLateDeclaredIndexOwners(state)
 
     this.publishQualifiedNames(state)
+
+    // The sixth pass. Rewrites `contains` TARGETS to the qualified name of the member, so the
+    // store's exact-match resolution can bind them. See `retargetContainmentEdges`.
+    this.retargetContainmentEdges(state)
 
     const tables = state.symbols.filter((s) => s.metadata?.type === "table")
     if (tables.length > 2) state.metadata.architecturalInsights!.push("Complex schema detected")
@@ -787,9 +811,7 @@ export class RealSqlAnalyzer implements ASTEngine.LanguageAnalyzer {
     const file = state.fileModuleName
     for (const s of state.symbols) {
       if (!s.name) continue
-      const fqn = s.name === file && s.kind === ASTEngine.SymbolKind.Module
-        ? file
-        : `${file}::${s.ownerName ? `${s.ownerName}.${s.name}` : s.name}`
+      const fqn = qualifiedNameFor(file, s.name, s.ownerName, s.kind)
       // BOTH FIELDS, and the second one is not redundant. `pool-worker.ts:930` derives the
       // stored value as `s.qualifiedName || s.metadata?.fqn || (s.scope ? … : s.name)`, so writing
       // `fqn` alone is enough FOR THE WORKER — and invisible everywhere else, because
@@ -807,6 +829,90 @@ export class RealSqlAnalyzer implements ASTEngine.LanguageAnalyzer {
       // same way; the two agree by construction because both are written from `fqn` here.
       s.qualifiedName = fqn
       s.metadata = { ...s.metadata, fqn }
+    }
+  }
+
+  /**
+   * Rewrites every `contains` edge's TARGET to the qualified name of its member.
+   *
+   * ## WHY THIS IS THE CHANGE AND NOT THE OTHER ONE
+   *
+   * `pass13-ambiguity-split-AFTER.json` measured `K3_qname` EQUAL to `K0_bare` on all six firing
+   * types — 651/651, 2,512/2,512, 4,364/4,364 — for one reason: every symbol carried a qualified
+   * name and no edge targeted one, so the identifier existed and nothing used it. The store's
+   * resolution pass 1 (`parallel-indexer.ts:3773`) matches `target_external = qualified_name`, which
+   * is the only EXACT match it owns; pass 2 needs the bare name to be unique in the project and pass 3
+   * needs a dot. A bare member name meets none of the three in a migration corpus.
+   *
+   * `contains` is the ONE type where the qualified name is a fact rather than a guess, and that is
+   * what makes this safe to do here and not on the other five:
+   *
+   *   - The member was declared INSIDE the owner, in THIS parse result. `createSymbol` pushes the
+   *     member and emits `contains owner -> member` in the same walk. So the target's identity is
+   *     derivable from this file alone — no guessing which file declares it.
+   *   - `calls`, `uses` and `references` name something in ANOTHER file and the analyzer does not
+   *     know which. Emitting a qualified name there would be inventing the file, which is the
+   *     fabrication the M14 contract forbids and which the oracle counts as `unexplained`. Those
+   *     targets stay bare, and the report says so.
+   *
+   * ## WHY IT IS SELF-VERIFYING
+   *
+   * The candidate is admitted only if it is in the set of qualified names THIS parse result
+   * published. So the pass cannot introduce a target string no symbol publishes — the exact defect
+   * the graphql lane shipped and had to revert. A candidate that fails the check is left bare and
+   * counted in `containmentRetargetSkipped`, which is the falsifier: a non-zero value means the
+   * edge's (owner, member) pair does not name a symbol this file publishes, and the number of
+   * those is the cost.
+   *
+   * ## WHY THE SOURCE STAYS BARE
+   *
+   * Only the target is rewritten. The store resolves a relationship's SOURCE by exact name match
+   * over the symbols of the file being stored (`nameToSymbol.get(sourceName)`), so a qualified
+   * source would stop resolving — `store-resolution.mts` currently reads `src_unres: 200` on
+   * `contains` and this pass must not make it worse. Containment survives on the target alone,
+   * because the member's qualified name already contains the owner.
+   *
+   * ## WHAT IT DOES NOT CLAIM
+   *
+   * This does not make an edge resolve that did not resolve. Measured over the admitted corpus at
+   * the 600-file population of `validation/m14/fixtures/sql/contains-fqn-probe.mts`:
+   *
+   *   contains edges                                   5,552
+   *   target qualified name is a symbol this file published   5,552  (100.0%)
+   *   bare name today: unique                          2,067  (37.2%)
+   *   bare name today: ambiguous                       3,485  (62.8%)
+   *   qualified names published by >1 symbol              195   <- the falsifier
+   *   contains edges landing on such a name                 85   (1.5%)
+   *
+   * So the projected move is 62.8% of `contains` targets from "the reverse walk picks a winner by a
+   * rule nobody chose" to an exact bind, with 85 edges still landing on a name that is not unique —
+   * which is the residue `memberKind` already separates on the edge, and the honest limit of this
+   * change.
+   */
+  private retargetContainmentEdges(state: ParseState): void {
+    const published = new Set<string>()
+    for (const s of state.symbols) {
+      const fqn = typeof s.qualifiedName === "string" ? s.qualifiedName : s.metadata?.fqn
+      if (typeof fqn === "string" && fqn.length > 0) published.add(fqn)
+    }
+    const file = state.fileModuleName
+    for (const rel of state.relationships) {
+      if (rel.type !== ASTEngine.RelationshipType.Contains) continue
+      const owner = rel.source
+      const member = rel.target
+      if (!owner || !member) continue
+      // The member is never the file's own Module symbol on a `contains` edge — `addRelationship`
+      // drops `source === target` for this type, and the Module's own name is the file's. The kind
+      // is passed as the member's own kind so the Module arm of `qualifiedNameFor` cannot fire on a
+      // member that happens to share the file's basename.
+      const candidate = qualifiedNameFor(file, member, owner, ASTEngine.SymbolKind.Property)
+      if (!published.has(candidate)) {
+        state.ambiguity.containmentRetargetSkipped++
+        continue
+      }
+      rel.target = candidate
+      rel.metadata = { ...rel.metadata, qualifiedTarget: true }
+      state.ambiguity.containmentRetargeted++
     }
   }
 
