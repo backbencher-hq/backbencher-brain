@@ -3957,6 +3957,287 @@ write entirely on a scoped run the way `script/m14/differential.ts` already does
 with a smaller one"). The precedent is in the codebase already; this is the only
 writer that ignores it.
 
+## Rounds 18–21: the ambiguity column, adjudicated
+
+These four rounds are recorded here because they changed no line of the analyzer except in
+round 21, and a doc that only carries the rounds which changed code reads as though the
+others did not happen.
+
+### Round 18 — every ambiguous edge closes from a field this lane already publishes
+
+`probe-bash-ambiguity.mts`, production `parseFile`, 600 files / 4,185 admitted / 501,320
+scanned / 127 repos, 6,272 symbols, 0 failures, 0 degraded. All **7** emitted types, not the
+two round 16 measured:
+
+```
+in-file ambiguous   calls 52 · uses 1,569 · contains 901 · exports 7 · overrides 30
+                    = 2,559 of 25,134 edges (10.2%)
+closes              2,444 (95.5%)   picks ZERO 0 · picks MANY 0 · no binding 0
+declined by choice    115 (4.5%)    targetResolution: ambiguousInFile
+STILL OPEN              0 (0.0%)
+by field              contains 901 source+line · overrides 30 overridesLine
+                      uses 1,454 targetLine · exports 7 targetLine
+                      calls 50 targetLine + 2 verdict
+corpus universe      2,559 ambiguous · 2,559 in-file · FOREIGN-ONLY 0
+```
+
+**The first version of this probe reported 2 STILL OPEN and was wrong.** Both were the
+`ohmyzsh/plugins/pip/pip.plugin.zsh` `calls -> xargs` edges at 107/115, which carry
+`targetResolution: commandNameIsExternal` **and** `collidesWithLocalDeclaration: true`. The
+analyzer is saying the edge names NO local declaration, so the correct candidate set is
+**empty**, not unknown. The probe fell through to the two-key rule, found no `targetLine`,
+and counted "no binding", which reads as "had a declaration and published nothing". The
+verdict rule is now checked before any line lookup. A rule the instrument cannot see is not
+a verified rule.
+
+### Round 19 — a decomposition that was wrong, and the probe that was wrong
+
+`probe-bash-declines.mts` on the same 115: **69 forced, 46 chosen, 0 tie**. Then the 46
+turned out to be the probe's own bug — `31d9237bf` records the real count as **0**. Nothing
+is declined by choice; the 115 are 69 structurally forced (`ambiguousInFile`) and 46 a
+consequence of the probe mis-reading a verdict the analyzer had already published. The
+corrected arm is the one quoted in the round-18 table above, where the 115 are all
+`targetResolution: ambiguousInFile`.
+
+### Round 20 — the A/B/C split, and why two "incoming" numbers disagree
+
+`probe-bash-abc.mts --sample 600 --ext sh --order path --entry pool`: 600 files / 18 repos,
+production `parseFile`, 2,697 symbols, **12,352 edges**, relationship digest
+`6d5542aa6d6640e2`. It reproduces `validation/m14/measurements/incoming-whole.tsv`'s bash row
+(`600 6 623 5084`) as **unresolved 5,084 == 5,084 exact**, ambiguous 618 vs 623, a residue of
+5 edges (0.08%). The definitions differ, which is the finding:
+
+- `incoming-check.ts:238-256` counts per **edge**; `diagnose-incoming.mts` counts per
+  **distinct target**. 319 distinct targets carry the 5,084 edges.
+- `incoming-check.ts:141-149` keys ambiguity on **distinct kinds at one name**, so
+  `REQUIRED_SERVICES` declared in 52 files is NOT ambiguous to it, while a name published
+  once as `variable` and once as `function` is.
+- `--entry ast` returns a **byte-identical** relationship digest to the production entry, so
+  the pool stages change no edge count in this lane. One field does differ and is
+  load-bearing: `qualifiedName` is populated by `pool-worker.ts:930`
+  (`s.qualifiedName || s.metadata.fqn || scope.name`) and **never by the analyzer**, so the
+  shared tool's sub-line "NO distinct qualifiedName" reads 227/227 = 100% through
+  `ASTEngine.parseFile` and **0/227 = 0%** through the production entry.
+
+### Round 21 — the C bucket is not what the brief assumed, and 602 edges had no marker
+
+The brief's cause C is "emit them with an explicit external marker so they are countable and
+excluded". Measured on the C residue first: **754 of 5,084 unresolved edges name a
+declaration that EXISTS in another file** — `DEFAULT_REQUIRED_SERVICES`
+(`consul/.../defaults.sh`), `HOME` (`fsharp/eng/common/tools.sh`), `CASE_DIR`, `CLUSTER`,
+`XDS_TARGET` (`consul/.../run-tests.sh`). Marking those external would be a false claim
+about a real edge, so the field that was missing was narrower:
+
+`meta.variableDeclaredInFile` — **does this file bind the read name as a variable**, yes or
+no. Before, `resolveDeclaration` published nothing whenever the file bound the name zero
+times, so a read that binds nothing was byte-identical on the row to one that binds
+ambiguously. The 602 affected edges are exactly every `uses` edge in the residue: ENV_VAR
+490, CROSS_FILE_READ 101, UNRESOLVED_READ 11.
+
+```
+                              before marked/none    after marked/none    field
+EXTERNAL_BINARY              3456 / 0             3456 / 0             isExternalCommand
+CROSS_FILE_CALL               653 / 0              653 / 0             isExternalCommand
+ENV_VAR                         0 / 490             490 / 0             variableDeclaredInFile
+NAME_COLLISION                223 / 0              223 / 0             isExternalCommand
+FILE_PATH                      148 / 0              148 / 0             isSourceImport etc
+CROSS_FILE_READ                 0 / 101             101 / 0             variableDeclaredInFile
+UNRESOLVED_READ                 0 /  11              11 / 0             variableDeclaredInFile
+POSITIONAL_PARAM                 2 / 0                2 / 0             isSourceImport etc
+                            -----------          -----------
+TOTAL                       4482 / 602          5084 / 0
+```
+
+Same command, same 600-file window, production `parseFile`; the BEFORE arm is a real re-run
+with the analyzer reverted, not a reconstruction. Analyzer digest `6d5542aa6d6640e2` in both
+runs. No edge added, none dropped, none retargeted — metadata only.
+
+`CROSS_FILE_READ` gets the same field with the value `false`, deliberately: the fact is about
+THIS file and is true of both. The field says *variable* because `declSites` holds variables,
+aliases and locals and never functions — a `$name` read cannot denote a function — so
+`variableDeclaredInFile: false` is true and useful where `declaredInFile` would be
+false-as-stated.
+
+## Round 22: the ambiguity column is not the defect; the store's rule is
+
+Cause A is the last of the brief's three causes this lane had not adjudicated, and it cannot
+be adjudicated from the analyzer, because **an ambiguous target is only a defect if the
+CONSUMER cannot pick a declaration.** The consumer is not `incoming-check.ts`.
+
+### What the store actually does with a bash edge
+
+`src/ast/parallel-indexer.ts`, quoted:
+
+- insert time — `resolveTargetStmt:2239-2245`: `WHERE project_id = ? AND s.name = ?` with
+  `ORDER BY (s.file_id = ?) DESC, is_declaration ASC, (f.language = ?) DESC, s.id LIMIT 1`.
+  The match is by **bare name, project-wide**, and the tie-break **prefers the edge's own
+  file**. A `contains` edge takes `resolveContainsTargetStmt:2354-2360`, ordered by
+  `line_start = relLine DESC`, because a contains edge's line is the child's own naming line
+  (#921), not a site.
+- second pass — strategy 1 `_res_qname` exact `qualified_name`; strategy 2 `_res_name_unique`,
+  name-only `HAVING COUNT(*) = 1` (:3764, :3780-3792); strategy 3 dotted partial `MIN(sym.id)`
+  (:3794-3833); strategy 4 the import form.
+
+`probe-bash-store-resolution.mts` models that rule exactly and counts what it does. Whole
+corpus, 3,748 router-admitted files (3,354 parsed, 394 failed), 121 repos, 149,008 edges,
+production `parseFile`, relationship digest `fac6ece76dbb5f48`. The corpus arm resolves
+across repository boundaries, which no index does, so the second arm measures **one
+repository as the scope**, which is what a project root is:
+
+```
+                          corpus scope                one-repo scope
+type           same   other  null           same   other   s1    s2   null
+calls         10498  14947  17937           10498   4960    80  2358  27833
+contains      32365     35      7           32365     17     0   193      1
+exports        1667      1      1            1667      1     0     0      1
+imports           0     18    503               0      5    50     0    516
+overrides        77      0      0              77      0     0     0      0
+references        0     18    503               0      5    50     0    516
+uses           53623   7582   6526           53623   6179     0     0   7929
+TOTAL          98230  22601  25477           98230  11167   180  2551  36796
+(self-loops: 84 in both, 50 of them `calls`)
+```
+
+Same-file resolution is scope-independent, as it must be, and `null` moves the other way for
+the same reason: a name declared in repo A is not a declaration when only repo B is in scope.
+**11,434 of the corpus arm's 22,601 cross-file attachments were crossing a repository
+boundary and cannot happen in a real index.** The population that can is **11,167**, and the
+kind of declaration each landed on is the part that needs no marker to read:
+
+```
+one-repo scope, insert_other_file -> kind of the declaration it was attached to
+  4,137  uses    -> variable        1,893  uses    -> constant
+  2,956  calls   -> variable        2,004  calls   -> function
+    149  uses    -> function           17  contains-> function|variable
+     10  imports/references -> variable    1  exports  -> function
+```
+
+**bash cannot call a variable.** 2,956 `calls` edges were attached to one. One is enough to
+state the shape:
+
+```
+ansible/windows.sh:18 -[calls]-> python @ ansible/cloud.sh:9   (same repo, never sourced)
+ansible/cloud.sh:32    -[uses]->  COVERAGE @ ansible/run-tests.sh:12
+```
+
+`windows.sh` calls the `python` **binary**; the store attached the edge to a `python`
+**variable** in another file of the same repo. A `bb_impact` answer built on that row is a
+caller list for a variable.
+
+### Four results, and what each does to the brief's remedy
+
+**1. Cause A for bash is 11,167 edges, not 227 targets or 3,019 edges.** The 3,019 is a
+property of a *global* name map. The store matches a bare name project-wide and prefers the
+edge's own file, so a bash target is never ambiguous to it — it is resolved, or it is not.
+
+**2. The brief's A-remedy — "publish an identifier that includes the owner or module" — is a
+no-op on this path, structurally.** `extractLeaf` (:3377-3387) strips `:\d+`, takes the last
+`:` segment, then the last `.` segment, and `resolveTargetStmt` is handed that leaf. **Any
+qualified spelling of a name still ends in the bare name**, so publishing `file::name` cannot
+change what insert-time resolution matches. It would move the 3,019 and nothing else. That is
+worth knowing before seven lanes spend a round on it.
+
+**3. 11,149 of the 11,167 already carry a marker saying the target is not local** — the 18
+that carry none are the entire unmarked population, and they are 17 `contains` plus 1
+`exports`. The marker *split* is measured on the corpus arm, which is the same bucket with a
+wider scope: 14,947 `isExternalCommand`, 7,582 `variableDeclaredInFile: false`, 36
+`resolution`, 36 UNMARKED. The analyzer has published its claim on 99.84% of the rows the
+store then attached elsewhere. **The claim is what the store does not read**, which is a
+shared-machinery item, not a lane item.
+
+**4. `s2_name_unique` is 0 in the corpus arm and that is a fact about the MODEL, declared as
+one.** Strategy 2 only fills rows still NULL, but insert-time resolution already scans the
+same project by the same bare name, so any name strategy 2 could match was taken. A real
+parallel run inserts edges before some files' symbols exist, so strategy 2 is reachable
+there; it is reachable in the per-repo arm for the same reason. The 0 is not evidence about
+the store and is not quoted as such.
+
+### The 18 unmarked edges are a real `extractLeaf` defect, and they are not the lane's to fix
+
+Bash function names may contain colons — kubernetes declares
+`kube::build::is_osx`, `kube::etcd::stop`, and this lane reads them deliberately (the 15 real
+`kube::log::status` calls in `kubernetes/test/e2e_node/gubernator.sh` are named at
+`real-bash-analyzer.ts:1471,1546,2445`). The colon is **part of the identifier** in bash,
+where it is a scope separator in most other languages. So `extractLeaf` truncates:
+
+```
+kubernetes/etcd.sh:76  [etcd.sh -> kube::etcd::start] lands on kubernetes/run_iscsi_target.sh:24
+kubernetes/etcd.sh:122 [etcd.sh -> kube::etcd::stop]  lands on kubernetes/run_iscsi_target.sh:45
+kubernetes/etcd.sh:146 [etcd.sh -> kube::etcd::cleanup] lands on kubernetes/update-openapi-spec.sh:37
+```
+
+187 of kubernetes' `contains` edges miss insert-time resolution for this reason; **170 of them
+land on the right declaration anyway** via strategy 2, and 15 land on a different function.
+Across the corpus at one-repo scope it is 18 edges. The lane's `contains` edge is correct in
+every one of these rows — `etcd.sh` really does define `kube::etcd::stop`.
+
+**Reported, not edited** (`src/ast/parallel-indexer.ts` is §8). In `extractLeaf`, when the
+target contains `:` and the **full** string matches a stored symbol name exactly, prefer that
+exact match over the leaf. Measured population: 18 edges at one-repo scope, 17 `contains` and
+1 `exports`, in kubernetes (15) and ohmyzsh (3).
+
+### What this round could not settle
+
+The store's rule is **read from SQL, not executed**. Every number above is this lane's model
+of `parallel-indexer.ts`, and the header lists what is not modelled with the direction each
+one moves the numbers: `isIndexArtifactName`, `is_declaration`, and the fact that a corpus is
+not a project. The decisive measurement — index one repo for real and read
+`target_symbol_id IS NULL` — needs a writable brain database and a CLI index run, neither of
+which this lane has. What is *not* modelled is a resolution the model could have invented:
+`is_cross_file` is set from the resolved row, so an edge attached to another file already
+carries `is_cross_file = 1`, and the graph layer can see that these are cross-file. What no
+consumer currently does is read the analyzer's marker and drop the attachment.
+
+### The arbiter's exit code is not its verdict, and a 120 s parser decides it
+
+```
+$ npx tsx script/m14/ontology-coverage-gate.ts bash
+type          status            detail
+calls         EMITTED           56,217 edges in 4+ files
+uses          EMITTED           83,419 edges in 4+ files
+contains      EMITTED           39,068 edges in 4+ files
+imports       EMITTED             679 edges in 4+ files
+references    EMITTED             679 edges in 4+ files
+exports       EMITTED           1,967 edges in 4+ files
+overrides     EMITTED             138 edges in 4+ files
+extends       RULED-SOUND       grammar produced 164 distinct node types, NONE expresses it
+implements    RULED-SOUND       grammar produced 164 distinct node types, NONE expresses it
+instantiates  RULED-SOUND       grammar produced 164 distinct node types, NONE expresses it
+emitted 7/10   ruled-sound 3   FALSIFIED 0   ruled-without-justification 0
+$ echo $?
+1
+```
+
+**FALSIFIED 0, ruled-without-justification 0, and the process still exits 1.** The verdict line
+is printed at `ontology-coverage-gate.ts:392` and `process.exitCode` is set at `:397` to
+`falsified + unjustified === 0 ? 0 : 1`, which on this run is 0. The 1 comes from
+`src/ast/engine.ts:1441-1444` — the per-file parse watchdog, which fires after 120 s and calls
+`process.exit(1)` — and it fires AFTER the table:
+
+```
+[BB-PARSE-ERR] bash | ohmyzsh/plugins/meteor/meteor.plugin.zsh          memory access out of bounds
+[BB-PARSE-ERR] bash | redis/deps/jemalloc/test/integration/cpp/infallible_new_false.sh
+[BB-HANG] parser stuck 120s on …/meteor.plugin.zsh — exiting
+```
+
+So **a lane cannot obtain exit 0 from the arbiter if any single file in its corpus takes the
+parser past 120 s**, and the exit code reports a parser-robustness finding in a language's
+grammar while saying nothing about the coverage verdict that was just printed. Both files are
+recorded here as the known findings they are; `redis/deps/jemalloc/test/integration/cpp/
+infallible_new_false.sh` is a C test fixture that happens to carry a `.sh` extension.
+
+**Reported, not edited** (`src/ast/engine.ts` and the gate are §8), in the shape needed to
+apply it:
+
+- `src/ast/engine.ts`, the `parseBomb` timer at :1441 — write the marker and **throw** a
+  catchable error instead of `process.exit(1)`, so the caller's own exit code stands and the
+  abandoning file is attributable. `parseFile` in `pool-worker.ts` already has a per-file
+  failure path that counts the file and continues; `ASTEngine.parseFile` does not.
+- `script/m14/ontology-coverage-gate.ts` — after the table, report the number of files the
+  walk abandoned and label the verdict INCOMPLETE rather than letting a watchdog decide it.
+  Every other arbiter in this programme is a read-only walk over a corpus, so this is the one
+  place where a grammar's worst input becomes a lane's coverage verdict.
+
 ## Complexity envelope and measured performance
 
 One iterative pre-order walk with a constant-time function-scope stack, a Map of
