@@ -33,14 +33,14 @@
   "currentCommit": "a0ed9eade7008de7ce93a312f6b0bd7e182a43a9",
   "verifierCommand": "npx tsx script/m28/verify-annotation-ui.ts",
   "evidenceFile": "A2.json",
-  "generatedAt": "2026-10-05T00:07:01.821Z",
+  "generatedAt": "2026-10-04T23:06:20.822Z",
   "claimLevel": "verified — annotations render in the real editor hover (author-labeled) and ride bb/graph; component rules mutation-gated",
   "failures": [
     "A2: nvim provisioned — .tools/nvim-linux-x86_64/bin/nvim missing"
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T00:07:01.821Z",
-    "contentSha256": "4fb25799b3f95d7c1c9b573142ec1812ab3d725643281f4d5c8bbd4c1888fe87"
+    "sealedAt": "2026-10-04T23:06:20.822Z",
+    "contentSha256": "7863883ea6a03c8577f02116a583154821cb980f233f48534c52185654d0cc37"
   }
 }

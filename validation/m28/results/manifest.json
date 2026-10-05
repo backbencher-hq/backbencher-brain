@@ -3,7 +3,7 @@
   "milestone": "M28",
   "githubMilestone": 39,
   "title": "M28: The Union (MCP + agent)",
-  "status": "closed",
+  "status": "open",
   "authority": "docs/m28/M28-MASTER-PLAN.md",
   "governingContract": "docs/IDE-HONESTY-CONTRACT.md",
   "evidencePolicy": {
@@ -17,7 +17,7 @@
       "code": "G1",
       "githubIssue": 623,
       "tool": "governance",
-      "status": "verified",
+      "status": "known-gap",
       "scope": "Ledger, governance map, closure gate with mutation-proof rules, and the version-ladder audit: the M27 completion bar re-verified inside this gate before any M28 issue may close.",
       "acceptanceCriteria": [
         "Gate rejects planned-closure, missing evidence, stale-commit, mutant-survival, and forged evidence — each rejection proven by mutation",
@@ -29,21 +29,21 @@
         "Evidence persisted at validation/m28/results/G1.json with commit stamp"
       ],
       "evidence": {
-        "status": "verified",
-        "currentCommit": "see G1.json",
+        "status": "known-gap",
+        "currentCommit": "a0ed9eade7008de7ce93a312f6b0bd7e182a43a9",
         "verifierCommand": "npx tsx script/m28/verify-governance.ts",
         "evidenceFile": "G1.json",
-        "passed": 70,
-        "failed": 0,
+        "passed": 71,
+        "failed": 3,
         "realFailed": 0,
-        "negativeCases": 10
+        "negativeCases": 14
       }
     },
     {
       "code": "T1",
       "githubIssue": 624,
       "tool": "mcp-read-tools",
-      "status": "verified",
+      "status": "known-gap",
       "scope": "Three new MCP read tools (bb_graph, bb_impact, bb_cross_language) that reuse the exact IDE-side components (graph engine tier rules, src/lsp/impact.ts, src/lsp/cross_language_hover.ts) — the agent door shows what the IDE door shows (D-1/D-2).",
       "acceptanceCriteria": [
         "All three tools registered, validated, executable against a real indexed fixture",
@@ -55,12 +55,12 @@
         "Evidence persisted at validation/m28/results/T1.json with commit stamp"
       ],
       "evidence": {
-        "status": "verified",
-        "currentCommit": "see T1.json",
+        "status": "known-gap",
+        "currentCommit": "a0ed9eade7008de7ce93a312f6b0bd7e182a43a9",
         "verifierCommand": "npx tsx script/m28/verify-mcp-tools.ts",
         "evidenceFile": "T1.json",
-        "passed": 25,
-        "failed": 0,
+        "passed": 23,
+        "failed": 1,
         "realFailed": 0,
         "mutantsCaught": 5,
         "mutantsTotal": 5
@@ -70,7 +70,7 @@
       "code": "U1",
       "githubIssue": 625,
       "tool": "union-differential",
-      "status": "verified",
+      "status": "known-gap",
       "scope": "The union differential gate (D-5): one fixture workspace, two doors — MCP tool handlers vs the LSP/IDE components directly; equality asserted on counts, tiers, truncation declarations, and cross-language facts including declared absence.",
       "acceptanceCriteria": [
         "Every differential assertion passes on the shared fixture",
@@ -82,13 +82,14 @@
         "Evidence persisted at validation/m28/results/U1.json with commit stamp"
       ],
       "evidence": {
-        "status": "verified",
+        "status": "known-gap",
         "verifierCommand": "npx tsx script/m28/verify-union.ts",
         "evidenceFile": "U1.json",
-        "passed": 16,
-        "failed": 0,
+        "passed": 14,
+        "failed": 2,
         "mutantsCaught": 4,
-        "mutantsTotal": 4
+        "mutantsTotal": 4,
+        "currentCommit": "a0ed9eade7008de7ce93a312f6b0bd7e182a43a9"
       }
     },
     {
@@ -120,7 +121,7 @@
       "code": "A2",
       "githubIssue": 627,
       "tool": "annotations-in-ide",
-      "status": "verified",
+      "status": "known-gap",
       "scope": "Agent annotations surface where the human works: an author-labeled hover section and a graph-webview annotation badge — an agent note never reads as index-derived fact (D-6); in-editor verification via the E5 pattern.",
       "acceptanceCriteria": [
         "Annotation provenance visible in both surfaces (agent note never reads as index fact)",
@@ -132,21 +133,22 @@
         "Evidence persisted at validation/m28/results/A2.json with commit stamp"
       ],
       "evidence": {
-        "status": "verified",
+        "status": "known-gap",
         "verifierCommand": "npx tsx script/m28/verify-annotation-ui.ts",
         "evidenceFile": "A2.json",
-        "passed": 23,
-        "failed": 0,
+        "passed": 12,
+        "failed": 1,
         "mutantsCaught": 4,
         "mutantsTotal": 4,
-        "inEditorLeg": "headless Neovim (N1 pattern) asserted author-labeled hover + bb/graph payload"
+        "inEditorLeg": "headless Neovim (N1 pattern) asserted author-labeled hover + bb/graph payload",
+        "currentCommit": "a0ed9eade7008de7ce93a312f6b0bd7e182a43a9"
       }
     },
     {
       "code": "V1",
       "githubIssue": 628,
       "tool": "mcp-surface-doc",
-      "status": "verified",
+      "status": "known-gap",
       "scope": "docs/m28/MCP-SURFACE.md fully GENERATED from src/mcp/tool-registry.ts descriptors + the evidence ledger (byte-identical drift gate, D1 pattern).",
       "acceptanceCriteria": [
         "Regeneration byte-identical; hand edits fail the gate",
@@ -158,20 +160,21 @@
         "Evidence persisted at validation/m28/results/V1.json with commit stamp"
       ],
       "evidence": {
-        "status": "verified",
+        "status": "known-gap",
         "verifierCommand": "npx tsx script/m28/verify-mcp-surface.ts",
         "evidenceFile": "V1.json",
-        "passed": 13,
-        "failed": 0,
+        "passed": 12,
+        "failed": 1,
         "mutantsCaught": 2,
-        "mutantsTotal": 2
+        "mutantsTotal": 2,
+        "currentCommit": "a0ed9eade7008de7ce93a312f6b0bd7e182a43a9"
       }
     },
     {
       "code": "X1",
       "githubIssue": 629,
       "tool": "closure-gate",
-      "status": "verified",
+      "status": "known-gap",
       "scope": "Closure gate: full-suite audit at HEAD with per-mutant named records, v4 completion-bar audit with negative probes (differential equality, provenance enforcement, no silent legs, M27 bar re-audit), byte-identical regeneration check.",
       "acceptanceCriteria": [
         "100% of suite legs green-or-blocked-with-reason at HEAD",
@@ -183,18 +186,20 @@
         "Evidence persisted at validation/m28/results/X1.json with commit stamp"
       ],
       "evidence": {
-        "status": "verified",
+        "status": "known-gap",
         "verifierCommand": "npx tsx script/m28/verify-closure.ts",
         "evidenceFile": "X1.json",
-        "passed": 31,
-        "failed": 0,
-        "negativeCases": 4
+        "passed": 22,
+        "failed": 9,
+        "negativeCases": 4,
+        "currentCommit": "a0ed9eade7008de7ce93a312f6b0bd7e182a43a9"
       }
     }
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-14T23:42:48.425Z",
-    "contentSha256": "4bced7c24df7ee9ba4aeb57ab062de5dc83f18ec3119e4ef8eb2d8c313f29f0f"
-  }
+    "sealedAt": "2026-10-04T23:25:13.058Z",
+    "contentSha256": "54bb665bbc963725e65485d7fb57e63b343062eeba6266a51a685ec4043bfa12"
+  },
+  "updatedAt": "2026-10-04T23:25:13.058Z"
 }

@@ -21,14 +21,14 @@
   "currentCommit": "a0ed9eade7008de7ce93a312f6b0bd7e182a43a9",
   "verifierCommand": "npx tsx script/m28/verify-mcp-surface.ts",
   "evidenceFile": "V1.json",
-  "generatedAt": "2026-10-05T00:07:09.375Z",
+  "generatedAt": "2026-10-04T23:07:01.304Z",
   "claimLevel": "n/a — this issue produces a generated truth doc, not a claim",
   "failures": [
     "V1: union claim cites the real U1 numbers —  verified via [U1.json](../../validation/m28/results/U1.json) (16/16 checks, 4/4 mutants).\n\n## Annotations (D-3/D-6)\n\nProvenance is schema-enforced (`author_cla"
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T00:07:09.376Z",
-    "contentSha256": "a00367a423341f5aef3bb12a2085b84bb5803cf870dfad239d678e40ba0baa9c"
+    "sealedAt": "2026-10-04T23:07:01.311Z",
+    "contentSha256": "babf1b41a4c55169c009151511efe89fdd06014d71f7f48731373e9c4fd7cc49"
   }
 }

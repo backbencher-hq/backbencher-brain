@@ -2,15 +2,19 @@
   "issue": "622",
   "code": "X1",
   "milestone": "M27",
-  "status": "verified",
+  "status": "known-gap",
   "checks": 31,
-  "passed": 31,
-  "failed": 0,
-  "failures": 0,
+  "passed": 27,
+  "failed": 4,
+  "failures": 4,
   "negativeCases": 4,
-  "currentCommit": "0dbafd74ef4f3d63be8e44dd6caa58833732a7db",
+  "currentCommit": "a0ed9eade7008de7ce93a312f6b0bd7e182a43a9",
   "verifierCommand": "npx tsx script/m27/verify-closure.ts",
-  "barViolations": [],
+  "barViolations": [
+    "bar1: an adapter leg is not verified (N1/J1/Z1/H1)",
+    "bar1: capability subset proofs not all present",
+    "bar2: no I3 leg (N1 is the declared slot)"
+  ],
   "perMutantRecords": {
     "N1": [],
     "J1": [],
@@ -18,10 +22,10 @@
     "H1": [],
     "V1": []
   },
-  "generatedAt": "2026-09-20T02:24:17.548Z",
+  "generatedAt": "2026-10-04T23:21:50.667Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-20T02:24:17.549Z",
-    "contentSha256": "8cc3f95172666a3a2292b61be183118d5558aa292a4302f44504f9d4d9a1f752"
+    "sealedAt": "2026-10-04T23:21:50.669Z",
+    "contentSha256": "529cd09764ff1009705d9e5267d05f22743e0dde6f37c5095b616efcb9475f6e"
   }
 }
