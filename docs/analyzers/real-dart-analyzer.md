@@ -3454,6 +3454,64 @@ one overwritten.** At n=120 it is absent from the fired list and the lane reads 
 n=400 it fires with 9 edges and the lane reads 10/10. Nine edges in 400 files is a real
 but thin population, and a reader should treat 10/10 as holding at the larger sample.
 
+#### The incoming arbiter at n=117, and the one column that explains itself
+
+`incoming-check.ts` is the second instrument the workstream names and this pass had not
+run it. It is READ-ONLY and takes explicit files, so the sample is stated rather than
+implied: every `.dart` file under `proxicall`, `dart-http` and `riverpod` in the corpus,
+sorted, then every 14th — **117 files of a 1,630-file population**, 1,981 symbols,
+**0 degraded, 0 parse failures**.
+
+| type | fired | edges | distinct targets | ambiguous | unresolved | self-loops |
+|---|---|---|---|---|---|---|
+| uses | yes | 2,274 | 258 | 66 | 1,372 | 47 |
+| calls | yes | 1,323 | 197 | 8 | 816 | 29 |
+| contains | yes | 1,175 | 352 | **207** | **0** | 0 |
+| instantiates | yes | 531 | 88 | 0 | 378 | 0 |
+| imports | yes | 429 | **0** | 0 | **429** | 0 |
+| overrides | yes | 411 | 15 | 0 | 394 | 0 |
+| extends | yes | 329 | 14 | 0 | 306 | 0 |
+| references | yes | 269 | 96 | **0** | **0** | 0 |
+| implements | yes | 18 | 5 | 2 | 11 | 0 |
+| exports | yes | 7 | **0** | 0 | **7** | 0 |
+
+`distinctIncomingTargets 629`, `orphanDeclarations 337` of 1,981 declarations,
+**orphanRate 0.170**.
+
+**All ten types fire here, `exports` among them at 7 edges** — a third independent
+reading that `exports` is a live type rather than a constructible one, and the first at a
+sample where it is not the last row of the table.
+
+**The `unresolved` column is not noise and it is not a defect rate; it measures how far
+outside the window the target lives, and it does so almost exactly.** `contains` and
+`references` resolve at 0 unresolved, and they are the two types whose target is in the
+SAME FILE by construction — a container holds what the file declares, and a type
+reference names a declaration in the file being read. Every type whose target is
+definitionally elsewhere is high: `imports` and `exports` at **100%** (a module URI is
+not a declaration any file publishes), `overrides` at **95.9%** (the base is another
+file), `extends` at **93.0%**, `instantiates` at **71.2%**, `calls` at **61.7%**, `uses` at
+**60.3%**. So this column separates into two populations that must not be summed: the
+module-URI rows, which no window can ever close, and the cross-file rows, which a
+full-corpus window can. **Within a 117-file window of a 1,630-file population, an
+`unresolved` count on a cross-file type is a statement about the window, not about the
+analyzer** — the same discipline the outgoing section applies to module targets.
+
+**`contains` carries the lane's ambiguity, and it is not close.** 207 of 352 distinct
+targets are ambiguous (**58.8%**) — the highest of any type, against `calls` at 8 of 197
+(4.1%) and `uses` at 66 of 258 (25.6%). `contains` targets are members, and Dart reuses
+member names across classes, so a member name is the least identifying string the
+analyzer publishes. The named ambiguous targets are exactly what that predicts:
+`build`, `method`, `first`, `exists`, `provider`, `root`, `duration`, `foo`. **`build`
+and `provider` are Flutter-wide conventions, not defects in the corpus.** This is the
+per-type breakdown of the ambiguity the incoming section reports at corpus scale, and it
+says where a qualified name would buy the most: not on `calls`, which is nearly
+unambiguous, but on `contains`, where 58.8% of distinct targets are shared by more than
+one declaration. `references` and `imports`/`exports` have **0** ambiguous targets.
+
+**29 `calls` and 47 `uses` self-loops** are recorded as their own column rather than
+folded into a rate. A self-loop is an edge from a symbol to itself, which is a different
+defect from a dangling target and would be hidden by counting it as merely unresolved.
+
 #### Two arbiter defects re-verified mechanically, both still open in shared machinery
 
 Neither is in this lane and neither is edited here; both are stated with file, function
