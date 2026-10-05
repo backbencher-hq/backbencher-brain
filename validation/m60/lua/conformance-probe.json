@@ -1,0 +1,115 @@
+{
+  "schemaVersion": 1,
+  "kind": "lua_conformance_probe",
+  "at": "2026-10-03T18:32:49.569Z",
+  "commit": "210504a128e60bdade1c334fad02c0cf7b27e84e",
+  "corpus": {
+    "root": "$HOME/fixtures/repositories",
+    "filesParsed": 3250,
+    "sampling": "every tracked *.lua, sorted, no cap"
+  },
+  "grammarWasm": "wasm/tree-sitter-lua.wasm",
+  "ruledTypeUnderTest": "implements",
+  "instrument": "B:parse-tree-count (a TREE walk: every bucket is anchored on a node type and a field, so a string literal cannot fake a hit)",
+  "buckets": {
+    "b1_namedSuperclassCall": {
+      "occurrences": 4,
+      "files": 1,
+      "examples": [
+        "luarocks/vendor/argparse.lua:249: class(<non-literal>, {\n   args = 3,\n   typechecked(\"name\", \"s) supertypeArg=other"
+      ]
+    },
+    "b2_conformanceAssert": {
+      "occurrences": 288,
+      "files": 99,
+      "examples": [
+        "kong/kong/clustering/config_helper.lua:301: assert(type(x) == \"...\")",
+        "kong/kong/clustering/control_plane.lua:99: assert(type(x) == \"...\")",
+        "kong/kong/clustering/data_plane.lua:47: assert(type(x) == \"...\")",
+        "kong/kong/clustering/rpc/json_rpc_v2.lua:35: assert(type(x) == \"...\")",
+        "kong/kong/clustering/rpc/manager.lua:247: assert(type(x) == \"...\")",
+        "kong/kong/clustering/rpc/socket.lua:408: assert(type(x) == \"...\")",
+        "kong/kong/clustering/services/sync/rpc.lua:300: assert(type(x) == \"...\")",
+        "kong/kong/conf_loader/init.lua:162: assert(type(x) == \"...\")",
+        "kong/kong/conf_loader/listeners.lua:44: assert(type(x) == \"...\")",
+        "kong/kong/db/declarative/import.lua:108: assert(type(x) == \"...\")",
+        "kong/kong/db/schema/init.lua:1196: assert(type(x) == \"...\")",
+        "kong/kong/db/schema/json.lua:31: assert(type(x) == \"...\")"
+      ]
+    },
+    "b3_guardedTypeError": {
+      "occurrences": 322,
+      "files": 87,
+      "examples": [
+        "kong/kong/cache/init.lua:58: if type(x) ~= \"...\" then error(...) end",
+        "kong/kong/cluster_events/init.lua:65: if type(x) ~= \"...\" then error(...) end",
+        "kong/kong/cluster_events/strategies/postgres.lua:65: if type(x) ~= \"...\" then error(...) end",
+        "kong/kong/clustering/rpc/json_rpc_v2.lua:29: if type(x) ~= \"...\" then error(...) end",
+        "kong/kong/cmd/utils/log.lua:59: if type(x) ~= \"...\" then error(...) end",
+        "kong/kong/concurrency.lua:19: if type(x) ~= \"...\" then error(...) end",
+        "kong/kong/db/dao/init.lua:51: if type(x) ~= \"...\" then error(...) end",
+        "kong/kong/db/declarative/import.lua:355: if type(x) ~= \"...\" then error(...) end",
+        "kong/kong/db/declarative/init.lua:93: if type(x) ~= \"...\" then error(...) end",
+        "kong/kong/db/errors.lua:136: if type(x) ~= \"...\" then error(...) end",
+        "kong/kong/db/init.lua:41: if type(x) ~= \"...\" then error(...) end",
+        "kong/kong/db/migrations/state.lua:54: if type(x) ~= \"...\" then error(...) end"
+      ]
+    },
+    "b4_namedConformanceApi": {
+      "occurrences": 14,
+      "files": 3,
+      "examples": [
+        "kong/kong/db/dao/plugins.lua:200: implements(...)",
+        "luvit/deps/buffer.lua:251: instanceof(...)",
+        "luvit/tests/test-instanceof.lua:29: instanceof(...)"
+      ]
+    },
+    "b5_typeStringCompare": {
+      "occurrences": 2337,
+      "files": 605,
+      "examples": [
+        "kong/kong/api/api_helpers.lua:44: type(type)",
+        "kong/kong/api/arguments.lua:112: type(type)",
+        "kong/kong/api/arguments_decoder.lua:112: type(type)",
+        "kong/kong/api/endpoints.lua:59: type(type)",
+        "kong/kong/api/init.lua:60: type(type)",
+        "kong/kong/api/routes/cache.lua:16: type(type)",
+        "kong/kong/api/routes/certificates.lua:63: type(type)",
+        "kong/kong/api/routes/config.lua:28: type(type)",
+        "kong/kong/api/routes/consumers.lua:15: type(type)",
+        "kong/kong/api/routes/debug.lua:32: type(type)",
+        "kong/kong/api/routes/kong.lua:157: type(type)",
+        "kong/kong/api/routes/plugins.lua:31: type(type)"
+      ]
+    },
+    "b6_metatableIndex": {
+      "occurrences": 349,
+      "files": 236,
+      "examples": [
+        "kong/kong/cache/init.lua:50: __index = _M",
+        "kong/kong/cluster_events/init.lua:49: __index = _M",
+        "kong/kong/cluster_events/strategies/postgres.lua:61: __index = _M",
+        "kong/kong/clustering/control_plane.lua:2: __index = _M",
+        "kong/kong/clustering/data_plane.lua:2: __index = _M",
+        "kong/kong/clustering/init.lua:2: __index = _M",
+        "kong/kong/clustering/rpc/callbacks.lua:2: __index = _M",
+        "kong/kong/clustering/rpc/concentrator.lua:2: __index = _M",
+        "kong/kong/clustering/rpc/future.lua:2: __index = _M",
+        "kong/kong/clustering/rpc/manager.lua:2: __index = _M",
+        "kong/kong/clustering/rpc/queue.lua:13: __index = _M",
+        "kong/kong/clustering/rpc/socket.lua:7: __index = _M"
+      ]
+    }
+  },
+  "b1SupertypeArgumentShape": {
+    "name": 0,
+    "string": 0,
+    "other": 4
+  },
+  "filesWithAnyHit": 693,
+  "overturnCondition": "b1_name > 0 — a WRITTEN supertype argument to a class call. It would then be a candidate for extends (Lua's convention reads argument 2 as the PARENT) or for implements, and which one cannot be settled from the call alone, so a non-zero count is a finding about extends' coverage.",
+  "reading": [
+    "b2+b3 are RUNTIME duck typing: an object is checked against a shape and no type is named. There is no written clause for an edge to carry, which is the ruling's reason.",
+    "b6 is Lua's one written type relation, and `extends` already publishes it. b6 > 0 with b1 == 0 is the measurement that says the relation is singular."
+  ]
+}

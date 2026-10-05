@@ -63,12 +63,48 @@ export interface TruthEdge {
 
 const named = (n: any): any[] => (n?.namedChildren ?? [])
 
-/** First `string_literal` in document order, quotes stripped by text. */
+/**
+ * Strip one layer of surrounding quotes, by character test rather than by pattern.
+ *
+ * This was `/^['"]/` then `/['"]$/` — the last two regexes in this lane. It is
+ * replaced because a regex over node text is the wrong instrument here for a
+ * reason that is not about taste: it is two passes over the string to express one
+ * comparison, and the pattern form invites the next edit to widen it into a shape
+ * match, at which point it is matching source text rather than the grammar's
+ * `string_literal` node. The grammar already told us this is a literal; all that
+ * is left is the delimiter.
+ *
+ * Same shape as `unquote` in src/ast/real-dart-analyzer.ts, so the oracle and the
+ * analyzer strip delimiters identically rather than by two independently-drifting
+ * rules. Behaviour on every input this oracle sees is unchanged, and the
+ * differential's 7,340-row agreement is the check.
+ */
+function unquote(text: string): string {
+  if (text.length >= 2) {
+    const first = text[0]
+    if ((first === '"' || first === "'") && text[text.length - 1] === first) {
+      return text.slice(1, -1)
+    }
+  }
+  return text
+}
+
+/**
+ * First `string_literal` in document order, quotes stripped.
+ *
+ * ITERATIVE. The recursive form is one stack frame per tree level, and this
+ * descends an entire file subtree from whatever node it is handed; on deeply
+ * nested input it overflows, and an oracle that throws reports nothing for that
+ * file — which the differential reads as agreement rather than as absence. The
+ * explicit stack below cannot overflow.
+ */
 function firstStringLiteral(node: any): string | null {
-  if (node.type === "string_literal") return node.text.replace(/^['"]/, "").replace(/['"]$/, "")
-  for (const c of named(node)) {
-    const hit = firstStringLiteral(c)
-    if (hit) return hit
+  const stack: any[] = [node]
+  while (stack.length > 0) {
+    const n = stack.pop()
+    if (n?.type === "string_literal") return unquote(String(n.text ?? ""))
+    const kids = named(n)
+    for (let i = kids.length - 1; i >= 0; i--) stack.push(kids[i])
   }
   return null
 }
