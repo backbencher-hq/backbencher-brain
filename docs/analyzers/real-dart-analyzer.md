@@ -2993,6 +2993,33 @@ being `operator <`, `>`, `<=`, `>=`).
 The census's `unknownEndpoints 0` is likewise a reading of the analyzer's own filter rather
 than of the pipeline's, which is how a filter that deletes true edges reports a clean zero.
 
+**The incoming census re-ran at 4,788 files and reproduced all four aggregate totals to the
+unit**, recomputed here from the per-type columns rather than read off a summary:
+`960,634` relationships, `337,440` symbols, `symbolsNamedUnknown 74`, `emptySymbolNames 0`,
+`emptyOrUnknownKind 0`, `unknownEndpoints 0`, 67 degraded-fallback `calls` edges excluded,
+`4,788` files with `26` carrying parse errors (`457` error nodes). The four figures the
+delta table below is built on, summed from the per-type rows: ambiguous **490,292**
+(= 63,015 at 2–5 + 427,277 at 6+), closable by `<source>.<target>` **296,855**
+(= 296,727 `contains` + 128 `uses`, and the two agree: `contains` reads 296,727 ambiguous
+AND 296,727 qualified-by-source, i.e. every ambiguous `contains` target is already
+disambiguated by its owner), no-symbol **143,833**, `unexplained` **1,817**
+(23 `calls`, 73 `uses`, 1 `extends`, 9 `implements`, 1,670 `overrides`, 41 `instantiates`).
+
+**Deliverable C's split is unchanged and is the honest version of "143,833 unresolvable".**
+Of the no-symbol population, only the `unexplained` 1,817 is the class that would be a defect;
+the rest, summed here over the per-type rows: `packageDeclared` **79,629** are names in an
+imported `package:`/`dart:` dependency, `localNotPub` **25,657** are tagged `isLocalRead` — a
+binding the family contract does not publish (DARTD8) — `uriEndpoint` **22,909** are
+`imports`/`exports` module paths by design, `sdkDeclared` **12,281** are published by files
+under `dart-sdk/sdk/lib` that this run does not index, and `outsideSample` **1,540** are in
+SAMPLE-scope repos where absence proves nothing. `25,657 + 22,909 + 79,629 + 12,281 + 1,540 +
+1,817 = 143,833`, so the split accounts for the population exactly with nothing unattributed —
+which is the property that makes "143,833 unresolvable" a reportable number rather than a
+symptom of a broken count.
+**The `overrides` unexplained population is 1,670 of 14,356 no-symbol targets (11.6%) and is
+the largest single defect class in the lane** — see §Shared-machinery item 18 for the
+measurement and why it is a missing edge rather than a wrong one.
+
 The census wall time moved again and nothing else did: `wallMs` 634,711 = 10.58 min here
 against 337,371 = 5.62 min and 553,290 = 9.22 min recorded above, on the same 2,735 files
 with every count byte-identical — a 1.88x spread, the fourth measurement of a
