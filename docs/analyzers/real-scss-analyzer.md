@@ -742,6 +742,41 @@ identical command on the identical corpus. The type verdicts did not move; the c
 That is the reason this document quotes the census figure and the arbiter figure as a pair
 rather than picking whichever is larger.
 
+**The verdict itself exits 0, and here is the run that shows it.** On an independent
+population — `BB_CORPUS_ROOT` pointed at a 7-repository symlink farm, **341 admitted
+files**, no repository in common with the full corpus's largest contributors:
+
+```
+$ BB_CORPUS_ROOT=/tmp/opencode/scss/subset npx tsx script/m14/ontology-coverage-gate.ts scss
+corpus: 341 admitted files
+
+calls         EMITTED         47 edges     extends       EMITTED        20 edges
+uses          EMITTED         15 edges     implements    RULED-SOUND   141 node types, none expresses it
+contains      EMITTED      3,359 edges     overrides     EMITTED         5 edges
+imports       EMITTED        318 edges     instantiates  RULED-SOUND   141 node types, none expresses it
+references    EMITTED      1,143 edges
+exports       EMITTED      1,415 edges
+
+emitted 8/10   ruled-sound 2   FALSIFIED 0   ruled-without-justification 0
+$ echo $?
+0
+```
+
+All eight EMITTED types fire on a population with a different repository mix, including the
+two rarest — `uses` at 15 edges and `overrides` at 5. So the verdict is not an artefact of
+the full corpus, of the machine's load, or of one dominant repository. The population
+differs from the numbers quoted elsewhere in this document and is labelled as such
+everywhere: **341 files, not 4,433.**
+
+Four `[BB-HANG]` filenames across four runs, all measured in isolation, all parse-clean:
+
+| file named by the watchdog | bytes | parse time | `hasError` |
+| --- | --- | --- | --- |
+| `consul/.../icons/lock/placeholders.scss` | 205 | 19 ms | false |
+| `consul/.../icons/triangle-fill/index.scss` | 218 | 24–65 ms | false |
+| `consul/.../icons/file-check/property-16.scss` | 773 | <1 ms | false |
+| `riverpod/.../legend/DocuCode.scss` | 206 | 3 ms | false |
+
 ### The lane's ceiling is the pinned grammar, not the analyzer
 
 The firing sweep reads `scss 5/10 fired, 510 edges, 120/120 files, DEGRADED`. The obvious
