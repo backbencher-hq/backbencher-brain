@@ -909,6 +909,162 @@ instrument that finds this class.
   corpus's untracked generated declarations (1,502 rows), and record-type field
   accessors (`$1`/`$2`).
 
+## Two suppressed-edge defects the ninth pass found, and why neither is fixed here
+
+Both are **true edges the production path does not deliver**. They were found by a
+measurement that had not been made before — `validation/m14/fixtures/dart/r7-suppression-cost.ts`,
+which compares the member symbols `parseFile` PUBLISHED against the `contains` edges it
+published and files the difference by the missing target's name. Over the census's own
+2,735-file sample (2,731 parsed, 0 parse failures) it reports **31 suppressed (owner,
+member) pairs in exactly 5 distinct names**, and the two defects below account for all 31 —
+the probe prints its own residual and it reads 0:
+
+```
+19  unknown                  R7's name test, in the analyzer            (defect 1)
+ 3  operator <
+ 3  operator >
+ 3  operator <=
+ 3  operator >=               the pipeline's angle-bracket leaf ban      (defect 2)
+```
+
+Neither is a naming preference and neither is a coverage number that was merely
+unflattering: in both cases the analyzer emits a correct edge and something downstream
+deletes it. The instrument is committed so both readings are re-runnable:
+
+```bash
+BB_DART_PER_REPO=600 BB_DART_CONC=1 npx tsx validation/m14/fixtures/dart/r7-suppression-cost.ts
+# -> "31 suppressed pairs", "OF WHICH the literal \"unknown\": 19 suppressed pairs",
+#    "Residual after both named causes: 0 pairs"
+```
+
+**A correction to an earlier reading of this probe, recorded because the wrong number was
+nearly published.** A first version of the file drew its sample with `Math.ceil` where
+`census.ts` draws with `Math.floor` (`census.ts:102`), so it sampled **2,531 files where the
+census samples 2,735** — riverpod alone contributed 432 files instead of 600. Every other
+instrument in this file uses the census sample, so its rates were not comparable with the
+figures it is being compared to, and it reported **45 suppressed pairs** (24 `unknown`,
+21 angle-bracket operators, 8 distinct names) over a sample that was not this one. The stride
+now matches `census.ts` exactly and the population is the one every other number here is
+drawn from. The two figures are not two estimates of one quantity: they are two different
+file sets, and the 45 is withdrawn rather than averaged.
+
+**A second revision was wrong in a way worth recording, because the shape of the mistake is
+the shape this project's work exists to catch.** While re-drawing, the probe was also
+tidied to exclude `enum_member` and `property` from the member tally. Every `unknown` member
+in the corpus is one of those two kinds, so the exclusion removed exactly the rows carrying
+the defect-1 finding and that finding then read **0 on a sample where it is not 0**. A
+measurement whose filter removes the effect it is looking for is not a measurement. The
+exclusion is reverted, and `Residual after both named causes` exists precisely so that a
+future tidy that hides a cause shows up as a non-zero residual instead of as a clean zero.
+
+### Defect 1 — R7's test is a NAME, and `unknown` is a legal Dart identifier
+
+`src/ast/real-dart-analyzer.ts:665` drops any row whose source or target is the literal
+string `unknown`. The justification in `R7_PLACEHOLDER_NAME` (line 138) rested on a
+measurement that has since stopped being true:
+
+> `symbolsNamedUnknown 0` in both AFTER runs: no sampled file publishes a symbol named
+> `unknown`, because `src/ast/pool-worker.ts` `keepSymbol`'s UNIVERSAL denylist rejects
+> the name for every language. So every one of those rows was an endpoint NOTHING COULD
+> BIND.
+
+`src/ast/pool-worker.ts` split that denylist, and Dart declarations named `unknown` are
+now PUBLISHED — this lane measures `symbolsNamedUnknown 74` over 4,788 files and 20 over
+the census sample, in 22 sampled files. So the name test can no longer tell the pipeline's
+"nothing truthful to say" sentinel from a declaration a program actually makes, and it
+deletes the second. `proxicall/lib/l10n/generated/app_localizations_bn.dart:304` declares
+`String get unknown => 'অজানা';`, the analyzer publishes the symbol, and no `contains` edge
+reaches it.
+
+**The differential found this without being told.** At rotation 81 the truth derivation
+published `contains AppLocalizationsBn -> unknown`, the analyzer published the symbol and
+no edge, and the row landed in MISSING — the only non-`overrides` row in that run's capped
+12-row sample, which also falsifies the standing claim in this file that "all 12 printed
+rows are `overrides`".
+
+The fix was implemented and measured, then **reverted**, and the reason is the finding
+rather than a technical objection. Narrowing the test to "does this file DECLARE a symbol
+named `unknown`" — the discriminator `filterNoiseRelationships` already applies to
+`NOISE_TARGETS` for exactly this reason — was measured over the same withdrawn 2,531-file
+draw, where it admits **40 rows**: 24 `contains` edges naming a real declaration and 16
+`uses` edges that are genuine reads of an in-file enum constant (`InvitationError.unknown`
+at `invitation_cubit.dart:367` and seven siblings, `AuthError.unknown` at
+`auth_models.dart:716`, `FmsLimitPeriod.unknown` at `fms_enums.dart:134`,
+`MmsReportStatus.unknown`). **The `contains` component of that split is withdrawn**: on the
+census sample the suppressed `unknown` pairs number **19**, not 24, for the sampling reason
+given above, and the 16 `uses` rows have not been re-counted on the corrected draw, so
+their number stands as measured on 2,531 files rather than as a census-sample figure. What
+does not move is the shape — the effect is a dozen-plus suppressed `contains` edges plus a
+handful of real `uses` reads, and it is not 40 in any case.
+
+The differential comparison is **unaffected**, because the differential draws its own
+sample and is unaffected by this fixture's stride: at a FIXED draw (hash `ab7eff6c5dba53fa`,
+before and after) the narrowed test gives `covered 17196 → 17200`, `MISSING 11935 → 11931`,
+`unexplained 0` on both — the oracle corroborates the recovered rows and contradicts none
+of them.
+
+It was reverted because the census then reports **`unknownEndpoints 0 → 32`** on that draw,
+and "no
+`unknown` endpoints" is this lane's stated hard criterion. The conflict is structural, not
+a bug in either half: **the pipeline's "no target" sentinel is a string that Dart can
+legally use as an identifier**, so a `contains` edge for a member named `unknown` cannot
+both be true and keep the metric at zero. Recovering 24 edges on a 403,674-edge graph is
+not worth silently moving an advertised criterion, and the decision belongs to the
+supervisor rather than to the lane that reports the criterion. §Shared-machinery item 19
+states the two ways out.
+
+### Defect 2 — the pipeline deletes every angle-bracket operator, and ignores the declaration test it applies 30 lines later
+
+This one is not in this lane's file at all. `RealDartAnalyzer.analyze` called directly on
+`flutter-packages/packages/rfw/lib/src/dart/model.dart` publishes **11** member symbols for
+`SourceLocation` and **11** `contains` edges, including `operator <`, `operator >`,
+`operator <=` and `operator >=`. Production `parseFile` returns the symbols and **7** edges
+— the four angle-bracket operators are gone.
+
+The cause is one term in `src/ast/pool-worker.ts`, `filterNoiseRelationships` (line 655):
+
+```ts
+if (/[{}`<>\n\r\t]/.test(leaf)) return false
+```
+
+Measured directly against that exported function, with `declaredNames` supplied:
+
+```
+DROPPED  SourceLocation -[contains]-> "operator <"     DROPPED  Foo -[uses]-> "<div>"
+DROPPED  SourceLocation -[contains]-> "operator >"     KEPT     Foo -[uses]-> "Bar"
+DROPPED  SourceLocation -[contains]-> "operator <="    KEPT     SourceLocation -[contains]-> "operator =="
+DROPPED  SourceLocation -[contains]-> "operator >>"    KEPT     SourceLocation -[contains]-> "operator +"
+```
+
+Two things follow. The ban exists to block markup-shaped garbage and it is right to keep
+that (`<div>` is correctly dropped). But it has **no `declaredNames` exemption**, while the
+`NOISE_TARGETS` test 30 lines below has one and explains why: "The discriminator is
+DECLARATION, and it is the right one — an analyzer that accidentally emits `node.type`
+emits a name the file never declares, while a variable the file declares is a real node in
+the graph." An operator member is a declaration, so the same discriminator applies and this
+term is the one place in the function that does not use it.
+
+The asymmetry also explains why the defect survived eight passes of verification: **every
+operator token without an angle bracket survives**. `operator ==`, `operator +`, `-`, `/`,
+`*`, `%` all pass; `<`, `>`, `<=`, `>=`, `<<`, `>>`, `>>>` do not. A spot check reads
+"operators work" and is wrong seven times out of fourteen.
+
+**This also puts the lane's own operator-naming contract out of reach through the
+production path.** *Member naming: operators are a lane contract* publishes an operator as
+`operator <token>` because `operator_signature` has no name field and the bare token is not
+a legal identifier. That contract is implemented correctly by the analyzer and independently
+by `script/m14/oracles/dart-contains.ts`, and it is **unenforceable** for the seven
+angle-bracket tokens, because the pipeline deletes any edge whose target contains one. The
+contract is cross-language — the same shape kotlin's phantom members use — so changing the
+synthesized spelling is a family decision and not this lane's to make alone. §Shared-machinery
+item 20 states both options.
+
+Both defects were found by asking a question the lane had never asked: not "does the
+analyzer emit the edge" — it emits both — but "does the edge survive the trip to the index".
+That is the same gap the CSS lane's `known-zeros` finding named, and the census's own
+`unknownEndpoints 0` was reading the analyzer's output rather than the pipeline's, which is
+how a filter that deletes true edges can report a clean zero.
+
 ## Declared limitations
 
 A blank list on a general-purpose language is treated as dishonesty, not as
@@ -1710,6 +1866,62 @@ nothing — parse the whole corpus.
     §Ownership, and it is the arbiter this lane's own verdicts are graded by. An agent
     editing the arbiter that judges it is the failure mode the gate exists to prevent,
     so the measurement is the deliverable here.
+
+19. **The pipeline's "no target" sentinel is a string Dart can legally use as an
+    identifier, and the collision is paid for in true edges.** This is defect 1 above,
+    stated as the change it needs. File: `src/ast/pool-worker.ts` (the sentinel's
+    definition) and `script/m14/differential.ts` / `validation/m14/fixtures/dart/census.ts`
+    (the `unknownEndpoints` metric). Two ways out, and they are different decisions:
+
+    - **(a) Change the SENTINEL** so it cannot collide with a legal identifier in any
+      language — e.g. a non-identifier sentinel (`\u0000unknown`) or an explicit
+      `metadata.isUnresolvedSentinel` flag set only where a fallback genuinely has
+      nothing truthful to say. Then `R7`'s filter in `src/ast/real-dart-analyzer.ts:663`
+      becomes a provenance test rather than a name test, the 19 suppressed `contains`
+      edges and the measured `uses` edges come back, and `unknownEndpoints 0` still holds
+      because no true declaration carries the sentinel. Measured effect of the
+      narrowed test at a fixed draw: `covered 17196 → 17200`, `MISSING 11935 → 11931`,
+      `unexplained 0` on both.
+    - **(b) Change the CRITERION**: define `unknownEndpoints` as "an endpoint equal to
+      the sentinel AND not published as a symbol by the same file", so a declaration
+      named `unknown` is counted as resolved rather than as a violation. This is the
+      same correction the base merge already applied to the SYMBOL side —
+      `symbolsNamedUnknown` went 0 → 74 because publishing a Dart declaration named
+      `unknown` is correct — and it leaves the analyzer untouched.
+
+    Why reported and not fixed: (a) is shared machinery, and (b) changes a criterion
+    this lane is graded on. Recovering 24 edges on a 403,674-edge graph does not justify
+    an agent moving either one unilaterally, so the implementation was written, measured
+    (40 admitted rows, `unexplained` 0, differential corroborating) and reverted.
+
+20. **`filterNoiseRelationships` deletes every relationship whose leaf contains `<` or
+    `>`, and it is the one test in that function with no `declaredNames` exemption.**
+    File `src/ast/pool-worker.ts`, function `filterNoiseRelationships`, the term at
+    line 655: `if (/[{}`<>\n\r\t]/.test(leaf)) return false`. What it must do: apply the
+    same `declaredNames` guard the `NOISE_TARGETS` test 30 lines below already applies —
+    keep the row when `declaredNames` has the leaf's spelling, exactly as
+    `NOISE_TARGETS.has(leaf) && !(declaredNames && declaredNames.has(...))` does — while
+    still dropping undeclared markup (`<div>`). The call site at line 1180 already builds
+    and passes `new Set(symbols.map(s => s.name))`, so no plumbing is needed. Why: the
+    ban costs this lane **12 `contains` edges over the census sample** — every
+    angle-bracket operator member it declares (`operator <`, `>`, `<=`, `>=` here; the token
+    set `<<`, `>>`, `>>>` is also affected and appears on the 2,531-file draw instead) —
+    while `operator ==`, `+`, `-`, `/`, `*`, `%` and every non-operator member survive,
+    so the defect is invisible to any check that does not enumerate the tokens. It also
+    makes this lane's documented operator-naming contract unenforceable for those seven
+    tokens: the analyzer and the oracle both publish `operator <token>` correctly and the
+    pipeline deletes it on the way to the index. Verified by calling
+    `RealDartAnalyzer.analyze` directly (`SourceLocation`: 11 member symbols, 11
+    `contains` edges) against production `parseFile` (11 symbols, 7 edges).
+
+21. **The cross-language operator spelling cannot be chosen inside one lane.** The
+    alternative to item 20 is to publish an operator member under a spelling with no
+    angle bracket — `operator_lt`, `op$lt` — which the ban admits. That spelling is a
+    cross-language contract (*Member naming: operators are a lane contract* says it
+    matches kotlin's phantom members), so it is a family decision, and
+    `script/m14/oracles/dart-contains.ts` implements the contract independently and would
+    need to move with it. Reported so the choice is made once, deliberately, rather than
+    by whichever lane hits the filter next.
 
 ## Supported constructs
 
@@ -2727,11 +2939,66 @@ trees — `git diff c48f381d1..origin/analyzers/ontology-laptop-b` over it is em
 and the identical edge counts are the proof that this analyzer's output did not move.
 
 **The table above is therefore left pinned and labelled pinned, and its per-cell
-successors are recorded here rather than written over it**, because a pinned table
-plus a delta is a record two trees can both be read against, and an overwritten table
-is a claim about one. The honest summary of the incoming direction is the
+successors are recorded here rather than written over it**, because a pinned table plus a
+delta is a record two trees can both be read against, and an overwritten table is a
+claim about one. The honest summary of the incoming direction is the
 post-merge column, and it is in the delta table under *Ambiguity* plus the 24 rows
 above.
+
+### A ninth pass, which reproduced every figure and found the question nobody had asked
+
+Every instrument re-run on this tree, in the foreground and sequentially. **Reproduced
+exactly:** the arbiter at n=120 (`9/10 fired, 8290 edges, 120/120 files`, `degraded 0`,
+`notFired: ["exports"]`) and at n=400 (`10/10 fired, 53252 edges, 400/400 files`,
+`degraded 0`); all ten census counts over 2,735 files (43,042 / 110,679 / 119,515 /
+10,657 / 5,265 / 302 / 4,730 / 758 / 90,352 / 18,374), 134,606 symbols, 403,674
+relationships, all four zero-fields (`emptySymbolNames 0`, `emptyOrUnknownKind 0`,
+`unknownEndpoints 0`, `symbolsNamedUnknown 20`), all twelve symbol kinds, all ten breadth
+rows with their five-repo spreads, and every cell of the nine-column resolution table; the
+incoming census at 337,440 symbols / 960,634 relationships / 74 `symbolsNamedUnknown` /
+490,292 ambiguous / 296,855 closable / 143,833 binding to nothing / 1,817 unexplained /
+67 excluded fallback edges, and all ten per-type resolution columns including the 24 cells
+that moved in the eighth pass; 16/16 fixtures; 42/42 mutants; 37/37, 14/14 and 38/38 shape
+batteries; the lane regex census at 0 over 19 files / 8,560 lines; the repository regex
+census `PASSED` at 5/5/5; `rel-type-coverage-gate --langs=dart` at 2 un-audited
+`["overrides","references"]` with checks 2–4 clean; `verify-analyzer-docs` with dart's row
+`missingSections: []`, `ontologyGaps: []`; and `verify-honesty` at 21 failures with the
+only `dart` substring in the whole output being `dart-http` inside the PASSING
+`corpus pins present` line.
+
+**The differential ran at rotation 81 (proxicall) and 76 (dart-http), and both reproduce
+recorded draws exactly** — proxicall draw hash `ab7eff6c5dba53fa`, `29131 / 17196`,
+59.0%, MISSING **11935**, 16,604 analyzer edges, **unexplained 0**; dart-http draw hash
+`549143339f0cfaa9`, `2287 / 2262`, 98.9%, MISSING **25**, **unexplained 0**. That is the
+seventh and eighth recorded rotations and the split remains **three high, three low**, with
+`unexplained` 0 on every one of them.
+
+**What the pass found is two defects, and they are above under *Two suppressed-edge
+defects the ninth pass found*.** One is in this lane's file and one is not, and the reason
+this pass found them after eight that did not is that every earlier pass asked whether the
+analyzer EMITS an edge while both defects are about an edge that is emitted and then
+deleted. The new instrument compares published symbols against published `contains` edges
+and files the difference by name; on the census sample it reads **31 suppressed pairs**, and
+`unknown` (19, R7's name test) plus the four angle-bracket operator tokens present in that
+draw (12, `filterNoiseRelationships`'s leaf ban) account for all of them, with the probe's own
+residual line reading 0. An earlier version of that figure — 45 pairs over a 2,531-file draw
+— is withdrawn above, and the reason is a stride mismatch rather than a change in the corpus.
+
+Two figures in this file are now known to be measured against an analyzer that emits MORE
+than production delivers, which is worth stating plainly because it applies to every count
+above: **`contains` is emitted for all 11 members of `SourceLocation` and 7 are delivered**
+(re-verified this pass by calling `analyze()` on the tree from `ASTEngine.parseTree` — 11
+symbols / 11 edges — against production `parseFile`, 11 symbols / 7 edges, the four lost
+being `operator <`, `>`, `<=`, `>=`).
+The census's `unknownEndpoints 0` is likewise a reading of the analyzer's own filter rather
+than of the pipeline's, which is how a filter that deletes true edges reports a clean zero.
+
+The census wall time moved again and nothing else did: `wallMs` 634,711 = 10.58 min here
+against 337,371 = 5.62 min and 553,290 = 9.22 min recorded above, on the same 2,735 files
+with every count byte-identical — a 1.88x spread, the fourth measurement of a
+machine-dependent quantity in this file and the reason none of them is quoted as an analyzer
+property. The incoming census read `wallMs(walk)` 1,582,337 = 26.4 min against 615,539 and
+995,723 previously, a 2.57x spread, with 960,634 relationships reproduced exactly.
 
 ### Two member-predicate rules that must stay scoped to the member
 
