@@ -242,12 +242,25 @@ of any prefix. Over the population:
 | `imports` | 2,095 | 1,112 | fires | EMITTED |
 | `references` | 389 | 202 | fires | EMITTED |
 | `exports` | 3,592 | 711 | fires | EMITTED |
-| `extends` | 350 | 60 | fires | EMITTED |
+| `extends` | 351 | 61 | fires | EMITTED |
 | `implements` | 1,133 | 221 | fires | EMITTED |
 | `overrides` | **107** | **9** | **0** | EMITTED |
 | `instantiates` | **3** | **2** | **0** | EMITTED |
 
-Total 78,327 relationships over 29,554 symbols. **0 parse failures, 1 degraded
+Total 78,311 relationships over 29,557 symbols. (`extends` is 351 rather
+than the 350 of the previous census, and 78,311 rather than 78,327: the
+difference is the one namespace-qualified base class added below, and the
+±0.05% difference on the totals is the 120-second parse bomb killing one
+file per run — see the note on run-to-run variance below. A total with no
+statement of which file the run lost is a total about the wrong set.
+
+Two instruments over the same population disagree by 36 edges
+(`calls` 48,205 vs 48,233, `contains` 17,629 vs 17,634, `imports` 2,094 vs
+2,095, `exports` 3,590 vs 3,592) because each run loses a DIFFERENT file to
+that hang: `ontology-ten-types.ts` lost `ggplot2/R/scale-hue.R`, and
+`labels-and-resolution.ts` lost none. Both totals are correct for the files
+they walked, and neither is correct for the admitted population as a whole.
+The population figure is **78,311 ± 36**.) **0 parse failures, 1 degraded
 parse** (`r-cli/R/utils.R`, 120 s parser hang → regex substitution), 0 symbols
 with an empty name, 0 with an empty or `unknown` kind, 0 relationships with an
 empty or `unknown` endpoint.
@@ -444,8 +457,8 @@ about one declaration. **A consumer keying on `relationshipSubType` cannot
 recover the label for those six subtypes; it has to read `type`.** That is a
 real constraint on a consumer and it is stated here rather than discovered later.
 
-The `(none)` entries are the evidence-completeness finding: **60,791 of 78,327
-edges (77.6%) carry no `relationshipSubType` at all**, including all 3
+The `(none)` entries are the evidence-completeness finding: **60,898 of 78,347
+edges (77.7%) carry no `relationshipSubType` at all**, including all 3
 `instantiates` edges, which do carry `isRConstructor` and `reasonCode`. An edge
 with metadata but no subtype cannot be classified by subtype, and a majority of
 them cannot.
@@ -503,6 +516,113 @@ top-level statements, then a temporary instrumented build of the analyzer that
 printed the walk's function-scope depth at each visit. The build was reverted and
 `git status` is clean of it; the finding it produced is the `rm()` model above.
 
+### Two instrument bugs, and the one real gap they were hiding
+
+The probe above was itself wrong three times before it was right, and the third
+time it was wrong it was pointing at a **real defect in the analyzer**. Both
+bugs are recorded because an instrument's own error rate is the thing a reader
+needs most and the thing a document never states.
+
+**1. `rhs === n` is false for the same node.** web-tree-sitter materialises a
+*fresh* JS wrapper on every `childForFieldName` call, so object identity cannot
+be used to ask "is this call the right-hand side of that assignment?" Verified
+directly: `rhs === n` evaluates `false` while `rhs.id === n.id` evaluates
+`true`. The probe's enclosing-assignment lookup therefore **never fired** and
+silently fell through to the first-argument fallback. The consequence was two
+rows of BLOCK B wrong from one operator: `class_ggplot -extends-> class_gg`
+was printed as *an edge with no tree carrier* and `ggplot -extends-> class_gg`
+as *a carrier with no edge*, when both are the same declaration written at
+`ggplot2/R/all-classes.R:322`. Comparing by `.id` fixed it.
+
+**2. The diff demanded one spelling per declaration.** R names a class twice
+when the name is written as a string: `class_labels <- new_class("labels",
+parent = class_S3_gg)` binds `class_labels` **and** declares the class `labels`,
+and the analyzer publishes the declared name plus a `References` edge back to
+the binding. A set diff keyed on a single spelling calls half of every such
+declaration a disagreement. The unit is now the **declaration**, carrying a set
+of spellings, and the report states which spelling matched: **405 under the
+binding, 8 under the declared string**, with **0 edges carrying no tree
+declaration** (it was 2).
+
+With the probe fixed, one UNADJUDICATED declaration was left in
+`R6/tests/manual/test-inheritance.R:126`:
+
+```r
+BC <- R6Class(
+  inherit = R6testA::AC,
+  public = list(y = 2)
+)
+```
+
+`extractNamedArguments` read only `identifier` and `string` values, so a
+`namespace_operator` value — `pkg::Parent` — produced **no edge at all**. R6
+documents this spelling and it is the only way to inherit a class across a
+package boundary without exporting a constructor call. This is a genuine gap:
+the language expresses the construct and the analyzer was not reading it.
+
+Census of every class-constructor call in the admitted corpus — **738** across
+2,342 R files (`new_class` 283, `R6Class` 229, `setClass` 201, `new_base_class`
+12, `setRefClass` 9) — found exactly **one** qualified base class, so this is a
+**one-edge gap** and is written up as one rather than dressed up. All four
+carriers sit behind that one helper (`R6Class(inherit=)`, `setRefClass(contains=)`,
+`setClass(contains=)`, `new_class(parent=)`), so all four were fixed by the one
+read and `F20-qualified-base-class` asserts all four: a fixture that exercised
+only R6 would have passed with S4, R5 and S7 still broken.
+
+The edge carries the **bare** class name. `pkg::Parent` names the class
+`Parent`, which is what `class(x)` returns and what dispatch keys on, and no
+symbol named `R6testA::AC` binds in any file. `F20` pins that with five
+`forbidRelationships` entries, so a later change that keeps the qualifier
+fails. `namedArgumentNode` was widened with the same read: it used
+`nodeAsName`, which returns `""` for a `namespace_operator`, so the first
+version of this edge published **with no line number** — real but
+unattributable. It now stamps 127.
+
+**The naming convention that is NOT a gap.** Production reads the class name
+from the *positional* string and ignores the `name =` spelling, so
+`class_ggplot <- S7::new_class(name = "ggplot", parent = class_gg)` publishes
+the class under `class_ggplot` while `class_ggplot <- new_class("ggplot_built",
+parent = class_gg)` publishes it under `ggplot_built`. That looks like an
+inconsistency and is measured here rather than asserted: **5 of the 283**
+`new_class` calls in the corpus write the class name as `name =` (plus 1
+`setRefClass(Class =)`), and in the only production source among them — ggplot2 —
+the package's own code refers to the class by the **binding** in **50** places
+(`S7::method(grid.draw, class_ggplot)` at `R/save.R:378`,
+`plot = class_ggplot` at `R/all-classes.R:396`,
+`class_ggplot | class_ggplot_built` at 421). So the binding is the name that
+binds, and renaming the symbol to the declared string would **break** those 50
+in-file references rather than fix them. Left alone, with the measurement
+recorded.
+
+**The last reason code.** `S7/inst/doc/performance.R:68` and `:104` both write
+
+```r
+assign(x, new_class(x, parent = parent), env)
+```
+
+inside a `bench::press({...})` block. `x` is the `for` variable over
+`gen_character(num_classes, …)`'s randomly generated strings, so the class name
+is the **runtime value of an expression** and is not nameable statically; and
+`x` in that one file is also an S7 object (line 14) and a `do.call` result
+(line 76), so publishing `x -extends-> parent` would attach a class edge to a
+name that means three different things. The probe now records whether any
+spelling came from a string literal and codes the rest
+`CLASS_NAME_IS_AN_EXPRESSION` — 2 occurrences.
+
+**The adjudicated result, whole population, 2,184 files, no sampling:**
+
+| | tree declarations | emitted | agree | no edge | edge with no declaration |
+| --- | --- | --- | --- | --- | --- |
+| `extends` | 449 in 65 files | 351 in 61 | 413 | 36 | **0** |
+| `implements` | 1,206 in 229 files | 1,133 in 221 | 1,133 | 73 | **0** |
+
+Reason codes for the 36 and the 73: `TARGET_NOT_DECLARED_IN_THIS_FILE` 21 and
+72, `SOURCE_NOT_DECLARED_IN_THIS_FILE` 13 and 1, `CLASS_NAME_IS_AN_EXPRESSION`
+2, and 20 + 8 whose declaring call sits inside an `if`/`while`/`for` body.
+**`UNADJUDICATED` is 0 for both types**, which is the claim: there is no
+`extends` and no `implements` gap left in this lane, and every tree declaration
+and every tree carrier is accounted for by a reason read off the tree.
+
 **5. Resolved** — reported at TWO scopes, because they answer different
 questions and conflating them is how a 40% number reads as 90%. *local* is
 "resolves to a symbol in the file that emitted the edge", the only scope a
@@ -517,16 +637,16 @@ construction, and the targets of `imports` and `references` are package names:
 
 | Type | target in same file | source shape | target shape |
 | --- | --- | --- | --- |
-| `contains` | 17,616 / 17,620 = 100.0% | `global` 16,651 | declared names |
-| `exports` | 3,580 / 3,581 = 100.0% | `global` 3,581 | declared names |
+| `contains` | 17,630 / 17,634 = 100.0% | `global` 16,665 | declared names |
+| `exports` | 3,591 / 3,592 = 100.0% | `global` 3,592 | declared names |
 | `overrides` | 107 / 107 = 100.0% | class names | member names |
 | `instantiates` | 3 / 3 = 100.0% | `initialize`, `capture_expectations` | class names |
-| `extends` | 257 / 350 = 73.4% | class names | `VIRTUAL` 34, `Reporter` 20, class names |
+| `extends` | 258 / 351 = 73.5% | class names | `VIRTUAL` 34, `Reporter` 20, class names |
 | `implements` | 371 / 1,133 = 32.7% | `generic.class` | `vec_ptype2` 86, `vec_cast` 82, `print` 74 |
 | `references` | 46 / 389 = 11.8% | `global` 347 | `testthat` 35, `Rcpp` 27, `Matrix` 23 |
-| `calls` | 5,032 / 48,136 = 10.5% | any symbol | `c` 1,794, `return` 1,396, `length` 1,116 |
-| `uses` | 402 / 4,799 = 8.4% | any symbol | `x` 217, `name` 105, `Dim` 93 |
-| `imports` | 13 / 2,090 = 0.6% | `global` 2,090 | `cli` 317, `withr` 253, `utils` 121 |
+| `calls` | 5,042 / 48,233 = 10.5% | any symbol | `c` 1,797, `return` 1,399, `length` 1,118 |
+| `uses` | 402 / 4,810 = 8.4% | any symbol | `x` 217, `name` 106, `Dim` 93 |
+| `imports` | 13 / 2,095 = 0.6% | `global` 2,095 | `cli` 318, `withr` 254, `utils` 122 |
 
 `imports` at 0.6% and `references` at 11.8% are **the structure of the type, not
 a defect rate**: no R source file declares its own package name as a symbol, so a
@@ -808,24 +928,33 @@ Two further shared-file facts, measured rather than assumed:
 
 ### Fixtures and mutants
 
-`validation/m14/fixtures/r/F17-uses.R` with `F17-uses.expectation.json`, executed by
-`npx tsx validation/m14/fixtures/r/run-r-fixtures.ts` through production
-`parseFile`, plus the ten-mutant battery behind `--mutants`:
+`validation/m14/fixtures/r/*.expectation.json` — **20 files**, `F01` through
+`F20` — executed by `npx tsx validation/m14/fixtures/r/run-r-fixtures.ts`
+through production `parseFile`, plus the **15**-mutant battery behind
+`--mutants`:
 
 ```
-fixtures: 1 passed, 0 failed
-mutants: 10 caught, 0 survived or refused, of 10
+fixtures: 20 passed, 0 failed
+mutants: 15 caught by >=1 of 20 fixture(s), 0 survived by every fixture,
+         0 harness faults, of 15 mutants
+analyzer restored: src/ast/real-r-analyzer.ts is byte-identical to its pre-run content
 ```
 
-Four of the ten are OUTPUT transforms and six are SOURCE edits, and the split is
+Four of the fifteen are OUTPUT transforms and eleven are SOURCE edits, and the split is
 not cosmetic: a gate's whole behaviour is to emit nothing, so no transform of the
-emitted edges can express a defect in one. **Three of the ten were no-ops on their
+emitted edges can express a defect in one. **Three were no-ops on their
 first version and were refused rather than counted** — one returned its input
 unchanged, one matched a target shape the analyzer had already normalised, and one
 edited a helper the walk never consults. A mutant that cannot fail is worse than
 no mutant, because it inflates the denominator of a ratio; the runner now refuses
 a mutant whose edits leave the file byte-identical, and whose anchor does not occur
 exactly once.
+
+`F20-qualified-base-class` is the fixture for the one gap this round closed; it
+asserts all four carriers and forbids the package-qualified endpoint in five
+directions, and its two mutants are the ones that pin the fix in place
+(`src-qualified-base-class-dropped`) and the way the target is written
+(`src-qualified-base-class-keeps-package`).
 
 A source mutant rewrites a tracked file, so it runs in a CHILD PROCESS: ESM caches
 modules by resolved URL, and re-importing `pool-worker` with a cache-busting query
@@ -1364,3 +1493,20 @@ number that bounds it rather than an adjective.
 - **`[BB-PARSE-ERR]` files are excluded from nothing.** They are counted as
   parsed with whatever the pipeline recovered, which is why the symbol totals
   differ between runs.
+- **An instrument's own error rate is not in this document's own tables.** The
+  BLOCK B probe above carried three defects before it was right (a `===` that
+  web-tree-sitter makes always false, a diff that demanded one spelling per
+  declaration, and a missing symbol-set check), and each one produced a
+  confident wrong number. Any probe in this lane — including the two that
+  adjudicated it — has an unmeasured error rate of its own, and the count that
+  would measure it does not exist yet.
+- **A base class named with its package loses the package.** `inherit =
+  pkg::Parent` publishes `extends -> Parent`, not `-> pkg::Parent`, because no
+  symbol named `pkg::Parent` binds in any file. A graph consumer cannot tell
+  from the edge that the base came from another package. Measured cost: **1
+  occurrence** in 2,342 corpus files, so the loss is bounded and named rather
+  than fixed.
+- **A class whose name is a runtime expression cannot be published.** 2
+  occurrences (`S7/inst/doc/performance.R:68` and `:104`), where the name is a
+  `for` variable over generated strings. Correct to omit, but the omission is
+  indistinguishable in the graph from the class not existing.
