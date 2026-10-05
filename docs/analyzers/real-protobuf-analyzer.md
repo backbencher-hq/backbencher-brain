@@ -5671,3 +5671,205 @@ the two are not interchangeable.
 - **Nothing outside protobuf was re-measured this pass.** The `statSync`/symlink, `vendor`
   exclusion and longest-prefix-package defects in §5 are all defects of MY probe, but the first
   two are generic enough that other lanes' corpus walks may share them.
+
+---
+
+# PASS 21 — both FALSIFIED verdicts located in one line of shared code, and instrument B measured
+
+This pass had one question left to settle: the shared arbiter exits 1 on
+`FALSIFIED 2` for protobuf, and the brief requires exit 0 with `FALSIFIED 0`. It is
+established here **which of the two numbers the arbiter's exit code is reporting** —
+the lane's rulings, or the gate's grammar wiring — by parsing the same corpus under
+both grammars and running both instruments on both.
+
+One instrument, one walk, the arbiter's own population:
+
+```
+npx tsx script/m14/protobuf-arbiter-grammar-wiring.mts
+```
+
+## 1. The wiring, quoted
+
+`script/m14/ontology-coverage-gate.ts:247`:
+
+```ts
+const wasmPath = (LANGS as any)[LANG]?.wasm ?? "tree-sitter-bash.wasm"
+```
+
+`grep -c protobuf script/m14/differential.ts` → **0**, so `protobuf` is not a key of
+`LANGS` (declared at `script/m14/differential.ts:740`) and the expression takes its
+**default branch**. Every instrument the gate owns — instrument A's whole-corpus node
+inventory and instrument B's parse-tree counts alike — is handed the bash grammar and a
+corpus of `.proto` files.
+
+## 2. Measured on 847 files, which is the arbiter's own population
+
+The walk is reproduced rather than re-chosen: same corpus root, same `git ls-files`
+walk, same 512 KB size cut, same `detectLanguageFromPath(abs, text) !== "protobuf"`
+admission test. The probe prints its file count beside the arbiter's 847 and
+`samePopulation: true`.
+
+| measurement | `tree-sitter-bash.wasm` | `tree-sitter-protobuf.wasm` |
+|---|---|---|
+| distinct node types (what instrument A intersects) | **81** | **94** |
+| parse errors | 0 | 0 |
+| trees carrying `ERROR` | **736 of 847** | **2 of 847** |
+| root node types | `{"program":836,"ERROR":11}` | `{"source_file":847}` |
+| `function_definition` | **1** | **0** |
+
+Vocabulary difference: **64** node types exist only under bash, **77** only under
+protobuf, **17** shared. The arbiter's own `ruled-sound 3` detail line reads *"the
+grammar produced 81 distinct node types"* — that is bash's inventory of protobuf
+files, and protobuf's own is 94.
+
+Both predictions this pass stated in advance held. `function_definition` is a real
+**bash** node type and is observed once across 847 `.proto` files under bash and zero
+times under protobuf; and `program` is bash's root rule while protobuf's is
+`source_file`, which is the `instantiates` row's complaint stated as though it were a
+defect in the corpus file.
+
+## 3. What the wiring does to each of the gate's five A-instrument verdicts
+
+| type | arbiter (bash) | correct (protobuf) | flips on the wiring alone |
+|---|---|---|---|
+| `calls` | **FALSIFIED** | clean | **YES** |
+| `extends` | clean | clean | no |
+| `implements` | clean | clean | no |
+| `overrides` | clean | clean | no |
+| `instantiates` | clean | clean | no |
+
+## 4. Instrument B, measured rather than inferred
+
+The second FALSIFIED row is **not** an instrument-A verdict, so an A-only measurement
+could not account for it and the claim would have been half-measured. This probe
+imports `PROTOBUF_RULED` from `script/m14/protobuf-ruled.ts` and calls each
+instrument-B ruling's **own** `countOnTree` on both grammars' trees in the same walk,
+so the probe cannot drift from the ruling table.
+
+| type | arbiter (bash) | correct (protobuf) | flips | bash hits / files / **refusals** / constructs | protobuf hits |
+|---|---|---|---|---|---|
+| `instantiates` | **FALSIFIED** | clean | **YES** | **1 / 1 / 1 / 0** | **0** / 0 files / 0 constructs |
+
+The single bash hit is `apollo-server/packages/usage-reporting-protobuf/src/reports.proto`:
+a `guardWrongGrammar` **refusal**, not a construction. `protobuf-ruled.ts:95` checks
+`rootNode.type === "source_file"` and, when it is not, pushes a `WRONG GRAMMAR — …`
+line and returns instead of reporting a zero. The gate counts **every** line in `hits`
+as one occurrence of the construct (`ontology-coverage-gate.ts:359-364`), so a probe
+declining to grade a foreign tree is graded as the construct being derivable — and the
+arbiter prints it in a message that names the wiring defect and files it against a
+corpus file.
+
+**So both FALSIFIED verdicts come from the same line.** Under the protobuf grammar the
+same table yields `FALSIFIED 0`.
+
+## 5. The arbiter at HEAD, verbatim
+
+```
+ontology coverage gate — protobuf
+corpus: 847 admitted files
+
+calls         FALSIFIED      NOT EMITTED, but the grammar DOES produce function_definition — the construct exists. Instrument A.
+uses          EMITTED        13,482 edges in 4+ files
+contains      EMITTED        40,631 edges in 4+ files
+imports       EMITTED        1,574 edges in 4+ files
+references    RULED-SOUND    NOT EMITTED; the grammar produced 81 distinct node types across the corpus and NONE expresses it.
+exports       EMITTED        4 edges in 4+ files
+extends       RULED-SOUND    NOT EMITTED; the grammar produced 81 distinct node types across the corpus and NONE expresses it.
+implements    RULED-SOUND    NOT EMITTED; the grammar produced 81 distinct node types across the corpus and NONE expresses it.
+overrides     EMITTED        2 edges in 2+ files, e.g. gql-ruby/lib/graphql/tracing/perfetto_trace/trace.proto, nvim-treesitter/tests/query/highlights/proto/test.proto
+instantiates  FALSIFIED      NOT EMITTED, but the construct occurs 1x across 1 file(s) on the PARSE TREE — it is derivable, so the ruling is wrong. e.g. … WRONG GRAMMAR — this probe was handed a tree whose root node is `program`, not `source_file`.
+
+emitted 5/10   ruled-sound 3   FALSIFIED 2   ruled-without-justification 0
+EXIT=1
+```
+
+`uses` 13,482 and `contains` 40,631 are **higher** than pass 20's 13,024 and 39,674 on
+the same 847 files, and the movement is the two commits since that pass changed what an
+extension member publishes — not a different sample. The two `overrides` edges and the
+four `exports` edges are below any sample that will show them; see pass 20 §7 on why
+the sampler reads `3/10 fired`.
+
+## 6. Two defects in this pass's own probe, each of which had stopped it running
+
+| # | defect | what it did |
+|---|---|---|
+| 1 | line 242 was `` console.log(` + backtick + `") `` — one character corrupted, opening an unterminated template literal | `TransformError` at `protobuf-arbiter-grammar-wiring.mts:244:15` in 1.6 s; nothing ran |
+| 2 | the report object referenced `protobufOnly`, never declared; the variable is `pbOnly` | `ReferenceError` after a 4 m 20 s corpus walk, so the whole walk was spent to produce no output |
+
+Both were found by running the file, and the first is why **no number in §2–§4 existed
+before this pass** despite the file carrying a complete header: the header claimed a
+measurement that the file had never performed. A probe that crashes on its first run is
+not evidence of anything, and neither is a header describing a walk that never
+happened. Backtick parity per line is now the check that finds defect 1.
+
+## 7. A stale claim in a file this lane owns
+
+`script/m14/protobuf-ruling-table-proof.mts`'s header asserted *"`protobuf` is not in
+that map, so it exits 2 with 'no RULING TABLE for protobuf'"*. `f20be135f` ("wire the
+protobuf ruling table; the arbiter now covers 7 of 23 lanes") put
+`protobuf: PROTOBUF_RULED` into `RULED_BY_LANG`, and the arbiter rules for this lane
+today — `ruled-sound 3`. The header is corrected rather than deleted, because its run
+(a) still executes the shared gate untouched and what that run prints is the
+**wired-table, unwired-grammar** state. The remaining wiring is **one line in one
+shared file**, and the header now says which half of its earlier block is applied.
+
+## 8. Gate table, pass 21
+
+| gate | command | result |
+|---|---|---|
+| shared arbiter | `npx tsx script/m14/ontology-coverage-gate.ts protobuf` | **exit 1** — `emitted 5/10 ruled-sound 3 FALSIFIED 2`; both FALSIFIED rows attributed to `ontology-coverage-gate.ts:247` by §2–§4 |
+| ruling table, wired + grammar | `protobuf-ruling-table-proof.mts --only=c` | see §9 |
+| grammar wiring | `protobuf-arbiter-grammar-wiring.mts` | **exit 0** — 847 files, P1 and P2 hold, A flips `calls`, B flips `instantiates` |
+| fixtures | `npx tsx script/m14/run-fixtures.ts --lang protobuf` | **13 pass / 0 fail**, `no regressions`, **exit 0** |
+| mutants | `BB_MUTANT_ONLY="protobuf/" bun run script/m14/mutate-analyzer.ts` | **35 of 35 CAUGHT**, 0 survived, **exit 0** (pass 20 recorded 34; the 35th is `extension-member-id-rebuilt-from-the-extendee`) |
+| typecheck | `npx tsc --noEmit -p tsconfig.json` | see §9 |
+
+## 9. §8 — the one line that unblocks this lane
+
+**`script/m14/differential.ts`, the `LANGS` record at line 740.** Add the key protobuf
+with the four fields `script/m14/run-fixtures.ts:91` already carries for this lane:
+
+```ts
+protobuf: { wasm: "tree-sitter-protobuf.wasm", analyzerFile: "real-protobuf-analyzer", className: "RealProtobufAnalyzer", ext: "proto" },
+```
+
+**Why, measured on 847 files:** it is the only difference between `FALSIFIED 2` and
+`FALSIFIED 0`. It flips instrument A on `calls` (bash's `function_definition` ×1 → 0)
+and instrument B on `instantiates` (1 refusal → 0 hits). Every other of this lane's
+§8 items is unchanged and is restated in pass 20 §8: `src/ast/engine.ts:743` (the
+500-parse trap), `src/ast/parallel-indexer.ts:1300` (no `AnalyzeContext` for protobuf,
+worth 42 edges), `src/ast/parallel-indexer.ts:2164` (`insertSymbol`'s 31-vs-30
+`VALUES` mismatch), `script/m14/incoming-check.ts` (ambiguity keyed on `name -> kinds[]`
+and blind to module-path targets).
+
+**Second item, and it is a defect in the arbiter rather than in this lane's ruling.**
+`ontology-coverage-gate.ts` grades a `guardWrongGrammar` refusal as a construct
+occurrence, because it counts `hits.length` without reading the lines. A lane that
+probes defensively — as this one does, for the reason its own header gives — is
+penalised for it. Either the gate should treat a hit whose text carries an explicit
+foreign-grammar refusal as a **gate** failure rather than a **ruling** failure, or the
+defaulting `?? "tree-sitter-bash.wasm"` should fail loudly when the lane is absent from
+`LANGS`. The second is the smaller change and fixes the cause: an unregistered lane
+would be reported instead of silently measured on bash.
+
+## Declared limitations, pass 21
+
+- **This pass locates the cause of the two FALSIFIED verdicts; it does not clear
+  them.** The arbiter still exits 1 at HEAD and §8's one line is in a file this lane
+  does not own. The claim is that the line is the whole difference, measured by running
+  both instruments on both grammars — not that the lane is passing.
+- **"The same table yields `FALSIFIED 0` under the protobuf grammar" is measured for
+  the five ruling-table types and the two instruments, not for the emitted types.**
+  Emitted counts come from `parseFile`, which is unaffected by the gate's wasm choice,
+  so no claim is made that the line changes any edge this analyzer publishes.
+- **The probe reproduces the arbiter's corpus by re-implementing its admission walk**,
+  which is 6 lines of shared code. It agrees on the file count (847) and on the node-type
+  count (81) with the arbiter's own output above, which is the check that it is the same
+  population; a future change to the arbiter's walk would need this probe re-checked.
+- **`function_definition` occurs exactly once under bash across 847 files.** One
+  occurrence is enough to flip an inventory intersection and therefore to flip the
+  verdict, so the `calls` FALSIFIED is one node deep. It is reproduced here by direct
+  parse rather than taken from the arbiter, and it is not evidence that `.proto` files
+  are remotely parseable as bash — 736 of 847 trees carry `ERROR`.
+- **Nothing outside protobuf was measured**, and the 64 bash-only node types are bash's
+  vocabulary, so the generalisation to other unregistered lanes is not measured here.
