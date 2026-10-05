@@ -2,11 +2,11 @@
   "issue": "M55.HOV-REDTEAM",
   "code": "HOV-REDTEAM",
   "milestone": "M55",
-  "status": "known-gap",
-  "checks": 12,
-  "passed": 9,
-  "failed": 3,
-  "realFailed": 3,
+  "status": "verified",
+  "checks": 13,
+  "passed": 13,
+  "failed": 0,
+  "realFailed": 0,
   "negativeCases": 3,
   "plants": [
     {
@@ -14,32 +14,31 @@
       "file": "src/lsp/relations.ts",
       "defect": "a relationship kind the INDEX holds is DROPPED FROM THE HOVER: every incoming `uses` row is reclassified as a declaration containment and vanishes from the usages list while the index still stores it",
       "clause": "§14 rule 1 (one surface, one answer); the audit's own question — index knows X, hover renders Y",
-      "expectedFailedCheck": "a check asserting every stored relationship kind reaches the card or is declared absent"
+      "expectedFailedCheck": "D1: every stored relationship kind is rendered with a verb or DECLARED absent with a reason"
     },
     {
       "id": "D2",
       "file": "src/lsp/rich_hover.ts",
       "defect": "a COUNT that disagrees with the RENDERED LIST: the usages header claims one more usage than the list it headlines actually contains",
       "clause": "§13.4 (counts equal what is rendered); §14 rule 1",
-      "expectedFailedCheck": "a check asserting the usages-section header number equals the rows beneath it"
+      "expectedFailedCheck": "D2: every section header's stated count equals the rows beneath it"
     },
     {
       "id": "D3",
       "file": "src/lsp/evidence_tier.ts",
       "defect": "a FABRICATED TIER: a stored row the index never classified is rendered at parser-fact tier ('structural') instead of its declared absence",
       "clause": "§12.3 (enrichment/inference never at parser-fact tier); §14 rule 3",
-      "expectedFailedCheck": "a check asserting each rendered evidence tier is one the index stored"
+      "expectedFailedCheck": "D3: every evidence tier the card renders is justified by a stored relationship row"
     }
   ],
-  "currentCommit": "68a5d327d55fb98b36d92efe4876ed4848e97ec0",
+  "currentCommit": "0c8f2137225dd4619775f53dee2dcad28a24cc85",
   "workingTreeRelevantChanges": [
-    "validation/m42/results/H1.json",
     "validation/m55/results/HOV-COVERAGE.json",
     "validation/m55/results/HOV-REDTEAM.json"
   ],
   "verifierCommand": "npx tsx script/m55/verify-hover-coverage-redteam.ts",
   "evidenceFile": "HOV-REDTEAM.json",
-  "generatedAt": "2026-10-05T02:25:57.793Z",
+  "generatedAt": "2026-10-05T04:32:09.584Z",
   "observed": {
     "cleanTreeVerdict": "VERIFIED",
     "cleanTreeExit": 0,
@@ -50,30 +49,26 @@
       {
         "file": "src/lsp/relations.ts",
         "ok": true,
-        "detail": "byte-identical to HEAD"
+        "detail": "byte-identical to the pre-mutation bytes this harness read"
       },
       {
         "file": "src/lsp/rich_hover.ts",
         "ok": true,
-        "detail": "byte-identical to HEAD"
+        "detail": "byte-identical to the pre-mutation bytes this harness read"
       },
       {
         "file": "src/lsp/evidence_tier.ts",
         "ok": true,
-        "detail": "byte-identical to HEAD"
+        "detail": "byte-identical to the pre-mutation bytes this harness read"
       },
       {
         "file": "src/lsp/relations.ts",
         "ok": true,
-        "detail": "byte-identical to HEAD"
+        "detail": "byte-identical to the pre-mutation bytes this harness read"
       }
     ]
   },
-  "failures": [
-    "D1: planting \"a relationship kind the INDEX holds is DROPPED FROM THE HOVER: every incoming `uses` row…\" makes the EXPECTED check fail: exit=0 verdict=VERIFIED expectedOne=\"a check asserting every stored relationship ki\" hit=NO newFailures=[]",
-    "D2: planting \"a COUNT that disagrees with the RENDERED LIST: the usages header claims one more usage t…\" makes the EXPECTED check fail: exit=0 verdict=VERIFIED expectedOne=\"a check asserting the usages-section header nu\" hit=NO newFailures=[]",
-    "D3: planting \"a FABRICATED TIER: a stored row the index never classified is rendered at parser-fact ti…\" makes the EXPECTED check fail: exit=0 verdict=VERIFIED expectedOne=\"a check asserting each rendered evidence tier \" hit=NO newFailures=[]"
-  ],
+  "failures": [],
   "limitations": [
     "Each planted defect is a TEXTUAL mutation of a real source file, chosen because it is a real defect shape. It proves the gate's checks fire on that shape; it does not prove the gate catches every mutation of that file, and it says nothing about defects in files this lane does not own.",
     "The oracle is the gate subprocess, so a planted defect that makes the gate CRASH is reported as not-caught (H1 proves that classification works). That is deliberate: this program's repeated lesson is that a mutant caught only by a load failure is not caught, and a crash here would otherwise read as a pass.",
@@ -82,7 +77,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T02:25:57.796Z",
-    "contentSha256": "8b6970871984e4f7280301a37f84dda319ea931d23a6a207e8bff41ed82be108"
+    "sealedAt": "2026-10-05T04:32:09.585Z",
+    "contentSha256": "e989712bf1e332f17c8181f968dd4ed2e38633ae41fb28ec973ee3d7909a1753"
   }
 }
