@@ -234,9 +234,29 @@ export function projectsItsLedger(lane: string, root: string): { gate: string | 
   // the write half was not. The halves are decided independently below.
   const writes =
     /writeSealed\(\s*[^)]*manifest\.json/.test(src) || /writeSealed\(\s*LEDGER_PATH\b/.test(src) || /projectLaneLedger\(\s*\{/.test(src)
-  // Does this gate APPLY the projection rule? Directly, through the shared
-  // wiring, or (for m61/m55, which predate it) with its own in-gate projection.
-  const applies = /projectLedger\(/.test(src) || /projectLaneLedger\(/.test(src)
+  // Does this gate APPLY the projection rule? Four real shapes exist:
+  //   - `projectLedger(...)`   — the shared core, called directly
+  //   - `projectLaneLedger(...)` — the shared WIRING, which calls it
+  //   - `entryDrift(...)` / `issueStatusDrift(...)` — m61's own pre-existing
+  //     projection, which compares each entry against the derivation of its
+  //     record and rewrites it (`script/m61/governance_core.ts` IS that rule;
+  //     the gate here is its first caller)
+  //   - m55's inline projection, which re-derives each entry from its record's
+  //     own status/counts and rewrites the manifest
+  // The last two were missed at first, which reported m55 and m61 as
+  // "not projecting" on a tree where both do — a false red.
+  const applies =
+    /projectLedger\(/.test(src) ||
+    /projectLaneLedger\(/.test(src) ||
+    /entryDrift\(/.test(src) ||
+    /issueStatusDrift\(/.test(src) ||
+    /ledgerEntryFrom\(/.test(src) ||
+    // m55's inline projection: a `.map` over `ledger.issues` that reads each
+    // entry's own record and rebuilds the entry from it. Matched on the
+    // conjunction — iterating the issues AND reading a per-entry record AND
+    // assigning an entry's status FROM that record's status — because any one
+    // of the three alone is a different thing (a loop, a reader, a rename).
+    (/ledger\.issues\.map\(/.test(src) && /(const|let)\s+recordStatus\s*=/.test(src) && /status:\s*nextStatus/.test(src))
   return { gate: `script/${lane}/verify-governance.ts`, importsOwner: applies, writes }
 }
 
@@ -580,6 +600,11 @@ function main(): void {
       const directImport = mk('import { projectLedger } from "../m61/ledger_projection.ts"\nconst r = projectLedger(l, r, {})\nwriteSealed(LEDGER_PATH, projected)\n')
       const viaWiring = mk('import { projectLaneLedger } from "../m61/ledger_gate_wiring.ts"\nprojectLaneLedger({ ledgerPath, writeLedger: (l) => writeSealed(ledgerPath, l) })\n')
       const ownCopy = mk('function x(){ const p = projectLedger(a,b,{}) ; writeSealed(LEDGER_PATH, p.ledger) ; return p }\n')
+      // The two shapes m61 and m55 actually use, which the first version of this
+      // detector missed and so reported both lanes as "not projecting" on a tree
+      // where both do. A census whose red is false is worse than no census.
+      const m61Shape = mk('function x(){ const d = entryDrift(e, ledgerEntryFrom(rec, p)) ; return d.length ? e : { ...e, evidence: ledgerEntryFrom(rec, p) } }\nwriteSealed(LEDGER_PATH, ledger)\n')
+      const m55Shape = mk('const entries = ledger.issues.map((i) => { const r = readRecord(i.evidence.evidenceFile); const recordStatus = typeof r.status === "string" ? r.status : null; const nextStatus = recordStatus; return { ...i, status: nextStatus } })\nwriteSealed(LEDGER_PATH, { ...ledger, issues: entries })\n')
       // An import that is never APPLIED: the rule is named and the manifest is
       // written by hand. This is the shape a "fix" takes when someone adds the
       // import to satisfy a census instead of projecting anything, and it must
@@ -594,10 +619,12 @@ function main(): void {
         directImport === "projected" &&
           viaWiring === "projected" &&
           ownCopy === "projected" &&
+          m61Shape === "projected" &&
+          m55Shape === "projected" &&
           importedNotApplied !== "projected" &&
           writesOnly !== "projected" &&
           neither !== "projected",
-        JSON.stringify({ directImport, viaWiring, ownCopy, importedNotApplied, writesOnly, neither }),
+        JSON.stringify({ directImport, viaWiring, ownCopy, m61Shape, m55Shape, importedNotApplied, writesOnly, neither }),
       )
     }
     // M4d: a count NESTED under `verdict` must be read, not reported absent. Found
