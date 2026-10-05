@@ -1,18 +1,22 @@
 {
   "schemaVersion": 1,
   "generatedBy": "script/m61/verify-orphan-gates.ts",
-  "head": "fbd8dd9d9bcc1a037387c0588cebd5d285550d7e",
+  "head": "97b1bcae9d2e4b1fba0a1323fa93826cacb87684",
   "note": "The declared-orphan baseline. A verifier listed here is present on disk and reachable from NO npm script and NO closure gate; the reason states why. Adding a new unwired verifier without adding it here fails G1 of script/m61/verify-orphan-gates.ts. Generated content is the census; the `orphans` map is the reviewed declaration.",
   "census": {
-    "verifiers": 599,
+    "verifiers": 606,
     "wiredByNpmScripts": 416,
     "wiredIncludingClosureGateBodies": 416,
-    "orphans": 183,
-    "declaredOrphans": 183,
-    "verifiersNamedBySource": 57,
-    "unprotectedBySource": 8,
+    "orphans": 190,
+    "declaredOrphans": 184,
+    "verifiersNamedBySource": 62,
+    "unprotectedBySource": 11,
     "declaredSourceNamed": 8,
-    "undeclaredSourceNamed": []
+    "undeclaredSourceNamed": [
+      "script/m24/verify-position-arithmetic.ts (named by src/lsp/navigation.ts)",
+      "script/m26/verify-graph-transport.ts (named by src/lsp/server.ts)",
+      "script/m55/verify-hover-coverage.ts (named by src/lsp/rich_hover.ts)"
+    ]
   },
   "orphans": {
     "script/a3-relationship-enrichment/verify-embedding-integrity.ts": "A3 relationship-enrichment workstream gate — no milestone ledger in validation/ claims it (lane a3-relationship-enrichment)",
@@ -197,7 +201,8 @@
     "script/verify-pool-doctor.ts": "root-level pool-doctor gate; a pre-M10-era verifier with no milestone ledger, invoked by hand (lane root)",
     "script/verify-pool-workers.ts": "root-level pool-worker reliability gate (injected fs/env/execPath); a pre-M10-era verifier with no milestone ledger, invoked by hand (lane root)",
     "script/verify-setup.mjs": "root-level setup e2e probe that spawns the production MCP path exactly as .vscode/mcp.json does (.mjs); a pre-M10-era verifier with no milestone ledger, invoked by hand (lane root)",
-    "script/verify-untyped-index-path.ts": "root-level untyped-index-path guard; a pre-M10-era verifier with no milestone ledger, invoked by hand (lane root)"
+    "script/verify-untyped-index-path.ts": "root-level untyped-index-path guard; a pre-M10-era verifier with no milestone ledger, invoked by hand (lane root)",
+    "script/m61/verify-ledger-truth.ts": "DECLARED UNWIRED, pending the package.json edit this lane may not make. It is the ledger-truth gate (the enforcement half of the census script/m61/verify-orphan-gates.ts G5 reports): G2 fails on any ledger=verified over a non-verified record, G3b fails on any verified record with no can-fail proof. package.json is outside this lane's write scope, so wiring is reported here as a review surface rather than silently omitted. It runs standalone: npx tsx script/m61/verify-ledger-truth.ts"
   },
   "sourceNamedUnwired": {
     "script/a3-relationship-enrichment/verify-embedding-integrity.ts": "co-agent A3 relationship-enrichment workstream gate — no milestone ledger in validation/ claims it and its lane owns the wiring decision (lane a3-relationship-enrichment)",

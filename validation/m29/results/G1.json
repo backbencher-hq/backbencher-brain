@@ -7,11 +7,11 @@
   "passed": 67,
   "failed": 8,
   "negativeCases": 10,
-  "currentCommit": "93f85b7a3b4d8005e6683d505e49dfe6d28ef8bf",
+  "currentCommit": "97b1bcae9d2e4b1fba0a1323fa93826cacb87684",
   "workingTreeRelevantChanges": [],
   "verifierCommand": "npx tsx script/m29/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-10-05T14:41:50.258Z",
+  "generatedAt": "2026-10-05T14:46:01.487Z",
   "ledger": "validation/m29/results/manifest.json",
   "m28Bar": {
     "ledgerStatus": "open",
@@ -24,7 +24,7 @@
   "blockedReason": "8 check(s) failed: G1: all 9 issue entries are unique and structurally complete; G1: no banned vocabulary in manifest.json (\\bcomplete(ly|d|ness)?\\b); G1: M28 bar — ledger closed with all 7 issues verified (mechanical); G1: M28 bar — closure-gate evidence verified at an ancestor-or-equal commit ... - the relevant tree was clean at measure time",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T14:41:50.277Z",
-    "contentSha256": "19bbd206dca06f7f80f36981214342210cdbee5b482ad9c9e99a2e8f9cece061"
+    "sealedAt": "2026-10-05T14:46:01.508Z",
+    "contentSha256": "61da67644f611d48f1adc27993b76b1078879990d9e6965222881a270a97a994"
   }
 }

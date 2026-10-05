@@ -1,116 +1,214 @@
 {
-  "issue": "M61.V5",
+  "issue": "M61.V5 claim pins (issue #846)",
   "code": "V5",
   "milestone": "M61",
   "status": "known-gap",
-  "checks": 15,
-  "passed": 14,
-  "failed": 1,
-  "realFailed": 1,
-  "negativeCases": 11,
-  "mutantsTotal": 11,
-  "mutantsCaught": 11,
-  "mutantRecords": [
+  "checks": 37,
+  "passed": 33,
+  "failed": 4,
+  "realFailed": 4,
+  "failures": [
+    "C2: no published claim has drifted from its ledger — m25-issues: published 0 row(s), expected \"| v1 | M25 | The Extension | **CLOSED** (8/11 verified)\" | m27-issues: published 0 row(s), expected \"| v3 | M27 | Everywhere (JetBrains/Zed/Neovim/Helix) | **CLOSED** (4/7 verified)\" | m28-issues: published 0 row(s), expected \"| v4 | M28 | The Union (MCP + agent) | **CLOSED** (4/7 verified)\" | m29-issues: published 0 row(s), expected \"| v5 | M29 | Precision Waves | **CLOSED** (8/9 verified)\"",
+    "M: stale-row (a stale row beside a correct one is drift, not a passing pin) — outcome=drifted published=0 mismatched=1",
+    "M: pin-blind — the mutant did NOT manifest the defect — the suite could not fail",
+    "M: stale-row-blind — the mutant did NOT manifest the defect — the suite could not fail"
+  ],
+  "checksList": [
+    "ok: C0: no registry problems",
+    "ok: C0: the registry pins a non-trivial number of claims",
+    "ok: C0: the registry covers at least one published doc",
+    "ok: C0: more than one derivation kind is exercised",
+    "ok: C1: no claim is blocked (every cited source resolves)",
+    "ok: C1: every claim's derivation yields numbers",
+    "FAIL: C2: no published claim has drifted from its ledger — m25-issues: published 0 row(s), expected \"| v1 | M25 | The Extension | **CLOSED** (8/11 verified)\" | m27-issues: published 0 row(s), expected \"| v3 | M27 | Everywhere (JetBrains/Zed/Neovim/Helix) | **CLOSED** (4/7 verified)\" | m28-issues: published 0 row(s), expected \"| v4 | M28 | The Union (MCP + agent) | **CLOSED** (4/7 verified)\" | m29-issues: published 0 row(s), expected \"| v5 | M29 | Precision Waves | **CLOSED** (8/9 verified)\"",
+    "ok: C2: the pins are live (at least one row was found for every claim)",
+    "ok: C3: every declared doc exists and honors its coverage status",
+    "ok: C3: the audit set covers README, the website and the docs end to end",
+    "ok: C3: the pinned doc really publishes lane counts (the scan is live, not vacuous)",
+    "ok: C3: the coverage set declares a pinned doc and at least one enforced exclusion",
+    "ok: core: render substitutes every declared key",
+    "ok: core: render leaves an unknown key literal",
+    "ok: core: classify — a blocked derivation is blocked, whatever else is true",
+    "ok: core: classify — an unfilled template is blocked, never compared",
+    "ok: core: classify — a found row is pinned",
+    "ok: core: classify — no found row is drift",
+    "ok: core: classify — a stale row beside a correct one is drift",
+    "ok: core: claimAnchor — the longest literal segment no other claim shares",
+    "ok: core: claimAnchor — a segment shared with another claim is never the anchor",
+    "ok: core: claimAnchor — an all-placeholder template has no anchor",
+    "ok: core: claimAnchor — no unique segment means no anchor",
+    "ok: core: claimAnchor — short segments are never anchors",
+    "ok: core: claimAnchor — the most specific candidate wins over the longest",
+    "ok: M: pin-blind (a doc that no longer states the claim reports as drifted)",
+    "FAIL: M: stale-row (a stale row beside a correct one is drift, not a passing pin) — outcome=drifted published=0 mismatched=1",
+    "FAIL: M: pin-blind — the mutant did NOT manifest the defect — the suite could not fail",
+    "FAIL: M: stale-row-blind — the mutant did NOT manifest the defect — the suite could not fail",
+    "ok: M: blocked-as-ok",
+    "ok: M: unfilled-as-ok",
+    "ok: M: render-blind",
+    "ok: M: registry-blind",
+    "ok: M: scan-blind",
+    "ok: M: coverage-blind",
+    "ok: M: unpinned-blind",
+    "ok: R: this verifier's own evidence is a sealed record"
+  ],
+  "currentCommit": "97b1bcae9d2e4b1fba0a1323fa93826cacb87684",
+  "verifierCommand": "npx tsx script/m61/verify-claims.ts",
+  "evidenceFile": "V5.json",
+  "generatedAt": "2026-10-05T15:02:54.708Z",
+  "claims": [
     {
-      "name": "M1: a NEW undeclared orphan is reported by the inventory predicate",
-      "caught": true
+      "id": "m25-issues",
+      "doc": "docs/IDE-PROGRAM-STATUS.md",
+      "outcome": "drifted",
+      "rendered": "| v1 | M25 | The Extension | **CLOSED** (8/11 verified)",
+      "published": 0,
+      "reason": "1 published row(s) state the claim (\"| v1 | M25 | The Extension | **CLOSED** (\") without the ledger's numbers: expected \"| v1 | M25 | The Extension | **CLOSED** (8/11 verified)\""
     },
     {
-      "name": "M2: a declared orphan that is actually wired is reported (the list cannot rot into an allowlist)",
-      "caught": true
+      "id": "m26-issues",
+      "doc": "docs/IDE-PROGRAM-STATUS.md",
+      "outcome": "pinned",
+      "rendered": "| v2 | M26 | The Graph | **CLOSED** (11/11 verified)",
+      "published": 1
     },
     {
-      "name": "M3: an absent verify:m55 is reported by the C6 predicate",
-      "caught": true
+      "id": "m27-issues",
+      "doc": "docs/IDE-PROGRAM-STATUS.md",
+      "outcome": "drifted",
+      "rendered": "| v3 | M27 | Everywhere (JetBrains/Zed/Neovim/Helix) | **CLOSED** (4/7 verified)",
+      "published": 0,
+      "reason": "1 published row(s) state the claim (\"| v3 | M27 | Everywhere (JetBrains/Zed/Neovim/Helix) | **CLOSED** (\") without the ledger's numbers: expected \"| v3 | M27 | Everywhere (JetBrains/Zed/Neovim/Helix) | **CLOSED** (4/7 verified)\""
     },
     {
-      "name": "M4: the root scan is load-bearing — a root-less core leaves the delegated gate unwired",
-      "caught": true
+      "id": "m28-issues",
+      "doc": "docs/IDE-PROGRAM-STATUS.md",
+      "outcome": "drifted",
+      "rendered": "| v4 | M28 | The Union (MCP + agent) | **CLOSED** (4/7 verified)",
+      "published": 0,
+      "reason": "1 published row(s) state the claim (\"| v4 | M28 | The Union (MCP + agent) | **CLOSED** (\") without the ledger's numbers: expected \"| v4 | M28 | The Union (MCP + agent) | **CLOSED** (4/7 verified)\""
     },
     {
-      "name": "M5: an extra root (a closure-gate body) opens a dependency the npm scripts do not",
-      "caught": true
+      "id": "m29-issues",
+      "doc": "docs/IDE-PROGRAM-STATUS.md",
+      "outcome": "drifted",
+      "rendered": "| v5 | M29 | Precision Waves | **CLOSED** (8/9 verified)",
+      "published": 0,
+      "reason": "1 published row(s) state the claim (\"| v5 | M29 | Precision Waves | **CLOSED** (\") without the ledger's numbers: expected \"| v5 | M29 | Precision Waves | **CLOSED** (8/9 verified)\""
     },
     {
-      "name": "M6: a source-named, unwired, undeclared verifier is reported by the protection predicate",
-      "caught": true
+      "id": "m42-issues",
+      "doc": "docs/IDE-PROGRAM-STATUS.md",
+      "outcome": "drifted",
+      "rendered": "| v6 | M42 | The Interactive Hover | **CLOSED** (4/8 verified)",
+      "published": 0,
+      "reason": "1 published row(s) state the claim (\"| v6 | M42 | The Interactive Hover | **CLOSED** (\") without the ledger's numbers: expected \"| v6 | M42 | The Interactive Hover | **CLOSED** (4/8 verified)\""
     },
     {
-      "name": "M6b: the same verifier stops being reported once it is wired (the check is not unconditional)",
-      "caught": true
+      "id": "m44-x1",
+      "doc": "docs/IDE-PROGRAM-STATUS.md",
+      "outcome": "drifted",
+      "rendered": "closure gate verified (X1 36/49 at HEAD)",
+      "published": 0,
+      "reason": "published row does not match the ledger: expected to find \"closure gate verified (X1 36/49 at HEAD)\""
     },
     {
-      "name": "M7: an empty reason is reported by the triage predicate",
-      "caught": true
+      "id": "m26-mutants",
+      "doc": "docs/IDE-PROGRAM-STATUS.md",
+      "outcome": "drifted",
+      "rendered": "52 mutants caught across 9 suites | [m26 ledger]",
+      "published": 0,
+      "reason": "1 published row(s) state the claim (\" suites | [m26 ledger]\") without the ledger's numbers: expected \"52 mutants caught across 9 suites | [m26 ledger]\""
     },
     {
-      "name": "M7b: a real stated reason is not reported (the triage is not unconditional)",
-      "caught": true
+      "id": "m27-mutants",
+      "doc": "docs/IDE-PROGRAM-STATUS.md",
+      "outcome": "drifted",
+      "rendered": "16 mutants caught across 4 suites | [m27 ledger]",
+      "published": 0,
+      "reason": "1 published row(s) state the claim (\" suites | [m27 ledger]\") without the ledger's numbers: expected \"16 mutants caught across 4 suites | [m27 ledger]\""
     },
     {
-      "name": "M8: only the verified-over-non-verified pair drifts (the predicate discriminates)",
-      "caught": true
+      "id": "m28-mutants",
+      "doc": "docs/IDE-PROGRAM-STATUS.md",
+      "outcome": "drifted",
+      "rendered": "24 mutants caught across 6 suites | [m28 ledger]",
+      "published": 0,
+      "reason": "1 published row(s) state the claim (\" suites | [m28 ledger]\") without the ledger's numbers: expected \"24 mutants caught across 6 suites | [m28 ledger]\""
     },
     {
-      "name": "M9: a REAL planted orphan file is seen by the live census and refused by G1",
-      "caught": true
+      "id": "m26-timeline",
+      "doc": "docs/IDE-PROGRAM-STATUS.md",
+      "outcome": "pinned",
+      "rendered": "M26 closed: 11/11 issues verified",
+      "published": 1
+    },
+    {
+      "id": "m26-x1",
+      "doc": "docs/IDE-PROGRAM-STATUS.md",
+      "outcome": "pinned",
+      "rendered": "X1 closure gate 50/50 with per-mutant records",
+      "published": 1
     }
   ],
-  "currentCommit": "fbd8dd9d9bcc1a037387c0588cebd5d285550d7e",
-  "verifierCommand": "npx tsx script/m61/verify-orphan-gates.ts",
-  "evidenceFile": "V5.json",
-  "generatedAt": "2026-10-05T00:00:57.990Z",
-  "census": {
-    "verifiers": 599,
-    "wiredByNpmScripts": 416,
-    "wiredIncludingClosureGateBodies": 416,
-    "orphans": 183,
-    "declaredOrphans": 183,
-    "verifiersNamedBySource": 57,
-    "unprotectedBySource": 8,
-    "declaredSourceNamed": 8,
-    "undeclaredSourceNamed": []
-  },
-  "ledgerDrift": [
-    "m20.M2: ledger=verified record=known-gap (M2.json)",
-    "m20.M3: ledger=verified record=known-gap (M3.json)",
-    "m20.P1: ledger=verified record=known-gap (P1.json)",
-    "m20.P2: ledger=verified record=known-gap (P2.json)",
-    "m20.P3: ledger=verified record=known-gap (P3.json)",
-    "m20.S1: ledger=verified record=known-gap (S1.json)",
-    "m20.S2: ledger=verified record=known-gap (S2.json)",
-    "m20.S3: ledger=verified record=known-gap (S3.json)",
-    "m20.D1: ledger=verified record=known-gap (D1.json)",
-    "m20.D2: ledger=verified record=known-gap (D2.json)",
-    "m20.D3: ledger=verified record=known-gap (D3.json)",
-    "m24.G1: ledger=verified record=known-gap (G1.json)",
-    "m25.G1: ledger=verified record=known-gap (G1.json)",
-    "m26.G1: ledger=verified record=known-gap (G1.json)",
-    "m29.G1: ledger=verified record=known-gap (G1.json)",
-    "m42.G1: ledger=verified record=known-gap (G1.json)",
-    "m44.G1: ledger=verified record=known-gap (G1.json)",
-    "m45.G1: ledger=verified record=known-gap (G1.json)",
-    "m61.V4: ledger=verified record=known-gap (V4.json)",
-    "m61.V5: ledger=verified record=known-gap (V5.json)"
+  "coverage": [
+    {
+      "doc": "docs/IDE-PROGRAM-STATUS.md",
+      "status": "pinned",
+      "published": 16,
+      "pinned": 12
+    },
+    {
+      "doc": "README.md",
+      "status": "out-of-scope",
+      "published": 0,
+      "pinned": 0
+    },
+    {
+      "doc": "website/src/app/editors/page.tsx",
+      "status": "out-of-scope",
+      "published": 0,
+      "pinned": 0
+    },
+    {
+      "doc": "website/src/app/docs/page.tsx",
+      "status": "out-of-scope",
+      "published": 0,
+      "pinned": 0
+    },
+    {
+      "doc": "docs/website/TOOLS.md",
+      "status": "out-of-scope",
+      "published": 0,
+      "pinned": 0
+    },
+    {
+      "doc": "website/faq.md",
+      "status": "out-of-scope",
+      "published": 0,
+      "pinned": 0
+    },
+    {
+      "doc": "website/index-commands.md",
+      "status": "out-of-scope",
+      "published": 0,
+      "pinned": 0
+    },
+    {
+      "doc": "website/README.md",
+      "status": "out-of-scope",
+      "published": 0,
+      "pinned": 0
+    }
   ],
-  "sourceNamedExemptions": {
-    "script/a3-relationship-enrichment/verify-embedding-integrity.ts": "co-agent A3 relationship-enrichment workstream gate — no milestone ledger in validation/ claims it and its lane owns the wiring decision (lane a3-relationship-enrichment)",
-    "script/m14/tmp/c-audit/verify-c-lane.ts": "scratch probe under script/m14/tmp named from src/ast/real-c-analyzer.ts; it is an ad-hoc investigation file, not a promoted gate — M14 owns delete-or-promote (lane m14)",
-    "script/m14/verify-dart-references.ts": "co-agent M14 per-language analyzer oracle gate, invoked by M14's wave harness rather than by this repo's npm chains (lane m14)",
-    "script/m21/verify-embedding-provider.ts": "co-agent M21 (Tools) embedding-provider gate; M21's own ladder is its entry point (lane m21)",
-    "script/m21/verify-w1-worker-lifecycle.ts": "co-agent M21 worker-lifecycle gate; M21's own ladder is its entry point (lane m21)",
-    "script/m59/verify-865-metadata-survival.ts": "co-agent M59 (Call-Site Truth) metadata-survival gate; M59's own entry point runs it (lane m59)",
-    "script/m59/verify-rel-multiplicity.ts": "co-agent M59 relationship-multiplicity gate; M59's own entry point runs it (lane m59)",
-    "script/m60/verify-vue-no-regex.ts": "co-agent M60 (grammar migration) Vue no-regex gate; M60's survey/preflight scripts are its entry point (lane m60)"
-  },
   "limitations": [
-    "Reachability is derived by parsing package.json script strings and closure-gate source text for `script/…` references. A gate invoked by a mechanism this parser does not model (a shell script, a CI workflow file, a Makefile, a `.mjs` runner that spawns by computed path) would be reported as an orphan. Every declared orphan in the baseline therefore carries a stated reason, and the baseline is the review surface for that judgement.",
-    "The G5 ledger-vs-disk check reads `status` from each record; a lane whose governance gate never writes its manifest is only reported, not corrected, by this gate.",
-    "This gate reports; it does not repair. Wiring a gate into package.json and projecting a ledger are lane-owner actions."
+    "The tool pins the claims DECLARED in script/m61/claims.json, and coverage (#846's audit set: README + website + docs) is enforced by the scan — an out-of-scope doc that publishes a lane count fails. The residue on the pinned doc is reported as the `coverage` census rather than hidden: a count-claim line not covered by a pin is visible in the record and is the registry's next extension.",
+    "Byte-gated REGENERATION is the D1 pattern already owned by the generated docs (docs/m26/GRAPH.md via verify-graph-docs, docs/m29/* via verify-m29-docs). The claims doc pinned here is hand-written, so it is PINNED rather than regenerated: the pin fails the moment the prose and the ledger disagree, which is the same protection without rewriting the doc body.",
+    "Derivations read the records' own fields; a claim whose source stops exposing a field BLOCKS (loudly) rather than comparing against a silent zero."
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T00:00:57.991Z",
-    "contentSha256": "5cf5957b53112eed30cb60d9f7d528a16541821b506c775ee64dfa7fa7a4872c"
+    "sealedAt": "2026-10-05T15:02:54.708Z",
+    "contentSha256": "4f7d584ed45a6580710067200fa118bb1dda6a17b6ac2573943a23ee8181275b"
   }
 }
