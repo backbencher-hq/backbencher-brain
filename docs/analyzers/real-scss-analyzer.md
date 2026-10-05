@@ -7,7 +7,7 @@ ERROR nodes. It now has its own grammar, its own analyzer and its own fixtures.
 
 - Analyzer file: `src/ast/real-scss-analyzer.ts`
 - Parser: `tree-sitter-scss@1.0.0` (vendored at `grammars/tree-sitter-scss/`, two
-  local patches), wasm `wasm/tree-sitter-scss.wasm` (sha256 `729731fb83e4…`, 206,409 B,
+  local patches), wasm `wasm/tree-sitter-scss.wasm` (sha256 `67b77cd800bead98…`, 207,571 B,
   195 ids / 84 named / 7 fields), pinned in `validation/m14/grammar-pins.json`
 - Language detection: `.scss` → `scss` in `src/ast/language-detection.ts`
 - Wired in: `engine.ts getAnalyzer` → `RealScssAnalyzer`
@@ -880,9 +880,40 @@ claim than the instrument behind that row.
 
 ## Verification
 
-- **grammar**: `script/m14/verify-grammar-pins.ts` — source↔wasm exact on all 84 declared
-  names; A/B at `validation/m14/results/scss-grammar-ab.json` (76 fixed, 0 regressed,
-  3 regression controls unchanged-clean).
+- **grammar**: `script/m14/verify-grammar-pins.ts` — **the wired surface matches the pin
+  exactly and the gate as a whole does NOT pass for this lane, and both facts are stated
+  here rather than only the one that reads well.**
+
+  What passes: the gate prints `scss 67b77cd800be 207571 B ids= 195 named= 84 anon= 103
+  fields= 7 copies: vendored:11 files`, which is byte-for-byte the `wired.sha256` and every
+  count `validation/m14/grammar-pins.json` records. That is the check that matters for a
+  consumer — the analyzer was written against 195 ids / 84 named / 7 fields and the wired
+  bytes still have them.
+
+  What fails, and why, measured: the gate reports **60 drift(s)** across all lanes and does
+  not honour `--lane` as a scope — `cpp`, `vb` and `powershell` failures appear alongside
+  scss's. For scss itself, after `tree-sitter generate` (CLI 0.26.9) in the vendored
+  directory, three vendored digests differ: the src tree digest, `src/grammar.json`
+  (`a625a134…` → `4a8669a3…`) and `src/parser.c` (`c3bf6146…` → `db76f8fe…`). **Before**
+  that generate it reported seven further failures of the form `vendored file removed:
+  src/parser.c (recorded true → actual false)`, because `.gitignore:46` excludes
+  `grammars/tree-sitter-*/src/*` and the generated tree is simply absent from a fresh
+  worktree.
+
+  So this lane's pin is **not** verified green in this worktree and this document does not
+  claim it is. The generated outputs are toolchain-dependent — the pin file's own records
+  for julia, objc and c say so in terms ("A rebuild's sha is not a function of its source
+  across toolchain versions (M49 W19)"), and julia's record names CLI 0.26.9 for exactly
+  this regeneration — so a `src/grammar.json` digest recorded under one CLI is not expected
+  to match one produced by another, and the mismatch is not evidence that the wired wasm is
+  a build of something other than the committed `grammar.js`. What would settle it: a
+  rebuild of the committed source on the recording toolchain, compared by **id-order and
+  named-type digests** rather than by file sha, which is the comparison the C and Julia
+  records describe. Not run here — an emscripten wasm build was out of budget this round —
+  and it is recorded as not run rather than as passed.
+  The A/B evidence for the two grammar patches is unchanged and independent of all of this:
+  `validation/m12/results/scss-grammar-ab.json`, 76 files fixed, 0 regressed, 3 regression
+  controls unchanged-clean.
 - **fixtures**: **12 / 12** in `run-fixtures.ts --lang scss`, exit 0, `fixture baseline
   gate: no regressions`. Expectations are authored
   from the rulings, never transcribed from analyzer output — which is the only reason they
