@@ -3136,7 +3136,11 @@ earlier run.
 | what FIRES, whole population | `firing-check.ts --files 2000 julia` | **9/10 fired, 235,878 edges, 1,985/1,985 files, 0 degraded** — `calls,uses,contains,imports,references,exports,extends,overrides,instantiates` |
 | what FIRES, 120-file stride | `firing-check.ts --files 120 julia` | **8/10 fired, 14,263 edges, 120/120 files, 0 degraded** — the missing type is `overrides`, excluded by stride arithmetic, not by rarity |
 | the arbiter, resumed run | `ontology-coverage-gate.ts julia` | **FAILS AS A MEASUREMENT — prints `emitted 0/10`, zero edges, exit 1.** §8 row 14 |
-| the arbiter, `--fresh` | `ontology-coverage-gate.ts julia --fresh` | **[BB-PARSE-ERR] `Graphs.jl/test/core.jl`, then [BB-HANG] 120 s later, exit 1**, no table printed |
+| the arbiter, `--fresh` | `ontology-coverage-gate.ts julia --fresh` | **re-run 2026-10-05 later the same day: exits 0 — `emitted 9/10, ruled-sound 1, FALSIFIED 0, ruled-without-justification 0`, `1985/1985 files (100.0%) newly walked 1985, resumed 0`, no [BB-PARSE-ERR], no [BB-HANG]**, and its nine per-type counts equal `firing-check` and the scope oracle to the edge (table above). The earlier `[BB-PARSE-ERR] Graphs.jl/test/core.jl` + [BB-HANG] death in this cell did NOT reproduce; the arm is width 8 and width 8 is measured to degrade 8 files per 7,940 parses, so one clean run is one draw from a probabilistic trap and not a fix |
+| unfreed trees, two arms | `tree-lifetime-probe.ts` | **PROCESS property** — retain 1,928 of 1,985 files throw by pass 3 (first at cumulative parse 4,028), free 0 of 1,985 over the same 5,955 parses; RSS 587→649 MB vs 124→78 MB |
+| the two fixed walkers that publish numbers | `shared-filter-cost.ts` | **re-run after the fix, 1,985 of 1,985 analysed: 236,084 emitted, 235,878 kept, 206 deleted, 123 by the character class alone, 52 of those naming a published symbol — every figure identical to §8 row 9**, and the per-type buckets identical (`contains` 50, `calls` 37+35+4+16, `uses` 18, `exports` 2) |
+| | `import-export-differential.ts` | **re-run after the fix, 1,985 of 1,985 at width 4, threw 0, degraded 0: `imports` 3,374 of 3,382 covered = 99.8%, `exports` 2,793 of 2,797 = 99.9% — identical to the published figures**, so the leak had not reached either walker and is still a leak |
+| | `import-export-shapes.ts` | not re-run; its population is a stride sample, and no number downstream of it is published in this file |
 | the arbiter's mechanism, 1 s | `arbiter-resume-probe.ts` | **REPRODUCED** — run 1: 9/10 and 54 edges; run 2: 0/10 and 0 edges with `partial` false. Exits 1 if the shared gate is fixed |
 | INCOMING, 5 pinned files | `incoming-check.ts julia <the 5 files named above>` | 375 symbols, **0 degraded, 0 parse failures**; 240 declarations named, 92 of 375 orphans, **8 ambiguous names**; all ten type rows reproduce |
 | the `implements` ruling | `ruled-probe-check.ts` | **MATCH — 449 occurrences in 87 files**, equal to `publishedCount`/`publishedFiles` inside the ruling |
@@ -3185,6 +3189,7 @@ which is why none of them is in this lane's commits.
 | 17 | **`script/m14/verify-honesty.ts`** | **`:40-62`** — `collectProse` + the `BANNED` loop, and the unconditional `pass("banned-vocabulary lint …")` at `:62`** | **two changes, and the first is the urgent one: (a) derive the lint's own verdict from the number of findings instead of calling `pass()` unconditionally; (b) distinguish a harvested identifier from a prose claim — scan the artifact's prose, or exempt a declared set of data fields — and report the finding COUNT rather than the first match per pattern** | **measured 2026-10-05, and this lane is one of the artifacts it fails.** The lint reads every `.md`/`.json` under `validation/m14/` plus `docs/*M14*` as **raw bytes** and applies the prose word-boundary regexes, with exactly two hardcoded filename exemptions (`:56-57`) and no way to mark a span as data. So an artifact that records **corpus-harvested identifiers** fails the lint for containing them: this lane's `julia-ambiguity-before.json` holds **10 occurrences**, every one a real harvested binding — `complete` (`julia/base/stat.jl:313`, `complete = true`) and `incomplete_tag` (`Base.incomplete_tag()`) — and they are reported as **ONE** finding, because `text.match(re)` at `:58` keeps only the first match per pattern per file. The same class appears in `fsharp-shape-census.json` (`identifier "Completed"`) and `declaration-forms.expectation.json` (`analysisVersion: 12.0.0-clean-ast-complete`), while `csharp/field-initializer-read.expectation.json` is a **genuine prose violation** (`so a perfect analyzer passes every fi…`) and the `grammar-pins.json` hits are quoted third-party README text and a code excerpt. **So the lint is neither wholly false-positive nor wholly true-positive, and adding seven more filenames to the exemption list would not fix that — it needs the data/prose distinction.** Urgent half: at `:62` the `pass(...)` call is reached whether `fail()` fired 0 times or 11, so this run printed **11 `HONESTY-GATE FAIL: banned term` lines and then `ok   banned-vocabulary lint over validation/m14 + M14 docs` for the same check** — a reader scanning per-check verdicts reads the lint as passing. **This lane does not strip the identifiers to satisfy it:** the names are the evidence, and renaming them would leave a correct-looking artifact that no longer records what was measured. This lane's gate count is therefore 1 known, understood, and declared |
 
 | 16 | **`src/ast/parallel-indexer.ts`** | **`:3500`, in front of `resolveTargetStmt` (`:2239`); the alias map is built at `:2758-2762`** | **give the TARGET half the exact-spelling lookup the SOURCE half already has at `:3430` — `nameToSymbol.get(targetName) ??` in front of the SQL, falling back to today's `targetLeaf` when it misses. One clause, same-file only (`nameToSymbol` is built from the current file's `result.symbols`), so it cannot reach a cross-file target and cannot make an edge that resolves today stop resolving** | **measured 2026-10-05, and it is the reason no julia-side fix can move an ambiguous target.** `extractLeaf` at `:3393` reduces every emitted target to its leaf BEFORE the `:3500` lookup, so a module-qualified target resolves exactly as if the bare name had been emitted: qualification moves the store by zero. The asymmetry is one line apart in the same loop — `:3430` reads `nameToSymbol.get(sourceName) ?? nameToSymbol.get(sourceLeaf)` and `nameToSymbol` holds `${sScope}.${nm}` for every symbol with a scope (`:2758`), so an elixir-style `Scope.name` source resolves to exactly one symbol, while the target half of the same loop goes straight to SQL on the leaf. Population it would reach on this lane, measured on 600 files (`sampleHash 1c76a52a3ba9c16c`): the **3,485 `attribInFileMulti` edges** whose referring file declares the target name >=2 times — `contains` 827, `references` 1,343, `instantiates` 357, `calls` 246, `uses` 665, `exports` 33, `extends` 14 — today attributed by TEXT-ordered line inside `s.id`. The 13,123 `attribCrossFile` edges are out of reach of any same-file step and need laptop C's inbound edge. **Precondition for the lane half:** emitting `Owner.name` for a BARE reference is only correct when no local binding shadows the name at that site (this lane has 21,693 deliberately unpublished local bindings), so the shared step must land before a shadow-aware emission, not after |
+| 19 | **`script/m14/ontology-coverage-gate.ts`** | **`:500-502` (`const basis`) and `:386-390` (`rulingFor`'s tiebreak)** | **two changes. (a) `basis` must not choose the instrument-B sentence when the type has no table entry: when `ruled` is `undefined` print `no probe was run for this type` instead of `the construct occurs 0x on the parse tree`, or gate the sentence on `treeHits.get(t)` actually existing. (b) `rulingFor` must not cite a decision that merely mentions the type as a bare word: require the type to appear in the decision's own `types`/`resolution` subject position, or have the spec decisions carry the type they rule on as a field rather than leaving it to be found by regex over prose** | **measured 2026-10-05, two runs of the same command on the same commit and corpus minutes apart. The resumed run prints `extends RULED-SOUND … the construct occurs 0x on the parse tree. Written ruling: script/m14/spec/julia-completeness.json#JUL-D2`, and both halves of that line are text rather than measurement: `treeHits` is populated only from table entries that declare instrument B (`:337-346`), so no probe ran for `extends` and the `0` is a format string; and `#JUL-D2` is the `implements` decision per this lane's own `script/m14/julia-ruled.ts:47-51`, reached because `:389`'s tiebreak regex `/ontology|emits|excluded|type/i` matches any decision that discusses the ontology. The number named in (a) is the exact number that would falsify the ruling, so a verdict line carries a fabricated 0 in the position a reader trusts. Neither is julia-specific: both fire for every lane whose table does not cover a non-emitted type, which is most of them**
 
 ## An unfreed tree is a measurement that shrinks with the parse count, and four lane walkers did it
 
@@ -3284,6 +3289,63 @@ column at all. The true figures are `calls` **2,702 wrong of 5,996 decided** and
 **482 wrong of 1,361 decided**, as tabulated above. The header now names `viaIncl` and `decided` for
 those two columns. A table whose header does not name the quantity under it is the cheapest defect in
 this file to carry and the most expensive to read.
+
+### The arbiter now exits 0 for this lane on `--fresh`, and the same command without it exits 1
+
+Both runs below are this commit, this corpus, minutes apart, `npx tsx script/m14/ontology-coverage-gate.ts julia`:
+
+| invocation | walk line | verdict table | exit |
+|---|---|---|---|
+| `--fresh` | `1985/1985 files (100.0%)  newly walked 1985, resumed 0` | **emitted 9/10, ruled-sound 1, FALSIFIED 0, ruled-without-justification 0** — `implements` RULED-SOUND on instrument A, the other nine EMITTED | **0** |
+| no flag | `1985/1985 files (100.0%)  newly walked 0, resumed 1985` | **emitted 0/10**, seven rows `RULED-UNJUSTIFIED`, exit 1 | **1** |
+
+§8 row 14 is therefore confirmed live on today's shared machinery, and row 14's `--fresh` DEATH did
+not reproduce: the run above walked all 1,985 with no `[BB-PARSE-ERR]` and no `[BB-HANG]`, having died
+on 2026-10-05 with both. The gate drives width 8 (`:305`) and this lane has measured width 8 degrading
+8 files per 7,940 parses (§ width 1 is not clean), so one clean `--fresh` is one draw from a
+probabilistic trap and not a fix. Both facts are reported because the alternative — quoting today's
+exit 0 as though the arbiter were reliable — is the claim this file exists to prevent.
+
+The `--fresh` per-type counts are the third independent agreement in this programme, to the edge:
+
+| type | arbiter `--fresh` | `firing-check --files 2000` | scope oracle `--whole-corpus` |
+|---|---|---|---|
+| `calls` | 122,150 | 122,150 | 122,150 |
+| `uses` | 37,087 | 37,087 | 37,087 |
+| `contains` | 14,299 | 14,299 | 14,299 |
+| `imports` | 3,386 | 3,386 | 3,386 |
+| `references` | 50,150 | 50,150 | 50,150 |
+| `exports` | 2,795 | 2,795 | 2,795 |
+| `extends` | 2,580 | 2,580 | 2,580 |
+| `overrides` | 3 | 3 | 3 |
+| `instantiates` | 3,428 | 3,428 | 3,428 |
+| **total** | **235,878** | **235,878** | **235,878** |
+
+Three instruments that share no accumulator — the arbiter's `observed` map, `firing-check`, and the
+scope oracle's own walk — produce the same nine numbers and the same total over the same 1,985 files.
+
+### Two more defects in the resumed run's verdict lines, both about text that is not a measurement
+
+The resumed table is not merely wrong about the counts. Two of its sentences assert measurements that
+were never taken, and both are in the line a reader takes as the verdict:
+
+1. **`extends` and `overrides` are reported `RULED-SOUND` on the basis `the construct occurs 0x on the
+   parse tree`, and no probe for either ever ran.** `basis` at `:500-502` picks the instrument-B
+   sentence whenever the type has no entry in the lane's ruling table, because the `else` branch is
+   reached whenever `ruled?.instrument !== "A:grammar-inventory"` — which includes `ruled === undefined`.
+   `treeHits` is populated only from table entries that declare instrument B (`:337-346`), so for
+   these two types `hit` is `undefined` and the count in that sentence is the literal `0` in a format
+   string. **A verifier's verdict line currently states a corpus count it did not measure**, and the
+   count it names is the one number that would have falsified the ruling.
+2. **`extends`'s written ruling is cited as `script/m14/spec/julia-completeness.json#JUL-D2`, which
+   this lane's own `script/m14/julia-ruled.ts:47-51` identifies as the `implements` decision.**
+   `rulingFor` at `:386-390` accepts the first `status: RULED` decision whose body mentions the type
+   as a bare word and then applies the tiebreak `/ontology|emits|excluded|type/i` to that same body —
+   so a decision about `implements` that happens to discuss the ontology is cited as the ruling for
+   `extends`. The gate reads a ruling for a type it never measured, from a decision about another type.
+
+Neither is julia-specific: both fire for every lane whose table does not cover a non-emitted type.
+This is §8 row 19.
 
 ### The same shape in 49 other files, and where it does NOT occur
 
