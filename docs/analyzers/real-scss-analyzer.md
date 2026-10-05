@@ -687,6 +687,61 @@ store keeps the correct labels. `exports` and `overrides` want the same treatmen
 paying those down removes the 10 `overrides` edges the differential currently calls
 confident fabrications.
 
+### The arbiter's exit code is 1 on a verdict of FALSIFIED 0, and the cause is shared code
+
+`npx tsx script/m14/ontology-coverage-gate.ts scss` prints its verdict and then exits
+**1**:
+
+```
+emitted 8/10   ruled-sound 2   FALSIFIED 0   ruled-without-justification 0
+[BB-HANG] parser stuck 120s on .../consul/.../icons/triangle-fill/index.scss — exiting
+EXIT_CODE=1
+```
+
+Those two lines are not in conflict, and the second one is not this lane's. The gate sets
+`process.exitCode = falsified.length + unjustified.length === 0 ? 0 : 1` from the line it
+printed, so it asks for 0. What overrides it is `src/ast/engine.ts:1441`:
+
+```ts
+const parseBomb = setTimeout(() => {
+  process.stderr.write(`[BB-HANG] parser stuck 120s on ${filePath} — exiting\n`)
+  process.exit(1)
+}, 120000)
+const tree = parser.parse(content)
+```
+
+**The budget is WALL CLOCK, and the machine is 3.3× oversubscribed.** Load average at the
+start of that run was **29.10 / 28.89 / 28.13 on 8 cores**, with six sibling lanes running.
+And the file it names is not pathological:
+
+```
+218 bytes, hasError=false
+65ms / 24ms / 30ms / 32ms   four parses of that exact file, in isolation
+```
+
+A 218-byte file cannot take 120 s to parse. The timer starts when the file is read and is
+cleared when `parser.parse` returns, and `parse` is synchronous WASM, so the only way the
+budget is consumed is for the process to be **descheduled** for the duration. What the
+watchdog measures on a loaded machine is scheduler starvation, not parse cost.
+
+Two consequences worth the supervisor's attention, both in §8 territory:
+
+1. **`[BB-HANG]` is not evidence of a pathological file.** It is evidence of load. Three
+   different files were named across three consecutive runs of this same gate —
+   `riverpod/.../DocuCode.scss`, `consul/.../file-check/property-16.scss`,
+   `consul/.../triangle-fill/index.scss` — which is what a load-dependent budget looks
+   like and is not what a bad file looks like.
+2. **`process.exit(1)` from a watchdog converts a completed verdict into a failed exit
+   code**, which is what makes the round brief's "it must exit 0" untestable on a loaded
+   machine. A lane whose arbiter prints `FALSIFIED 0` and exits 1 cannot be distinguished
+   from a lane that failed, by exit code alone.
+
+The corpus numbers are also load-sensitive for the same reason, and the two arbiter runs
+bracket it: `contains` 12,374 → 12,375 and `imports` 3,632 → 3,615 across two runs of the
+identical command on the identical corpus. The type verdicts did not move; the counts did.
+That is the reason this document quotes the census figure and the arbiter figure as a pair
+rather than picking whichever is larger.
+
 ### The lane's ceiling is the pinned grammar, not the analyzer
 
 The firing sweep reads `scss 5/10 fired, 510 edges, 120/120 files, DEGRADED`. The obvious
