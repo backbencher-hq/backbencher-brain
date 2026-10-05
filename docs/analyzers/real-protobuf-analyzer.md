@@ -5,10 +5,10 @@ pinned** grammar.
 
 | | |
 |---|---|
-| Analyzer | `src/ast/real-protobuf-analyzer.ts` (1,416 lines) |
+| Analyzer | `src/ast/real-protobuf-analyzer.ts` (1,475 lines) |
 | Grammar | `grammars/tree-sitter-proto/` — `amaanq/tree-sitter-proto` @ `e9f6b43f`, 8 patches |
 | Wired WASM | `wasm/tree-sitter-protobuf.wasm` — 81,735 B, sha256 `4624eb6d4b7830dd…` |
-| Replaced WASM | `fixtures/graphql/baseline/tree-sitter-proto-UPSTREAM.wasm` — 72,342 B, sha256 `dbbde8a8f047b6b6…` |
+| Replaced WASM | 72,342 B, sha256 `dbbde8a8f047b6b6…` — **not a stored artifact.** `ensureBaseline()` in `script/m14/tmp/protobuf/paths.mts:93` rebuilds it from `.upstream-revision` and checks the sha. *(This cell previously named `fixtures/graphql/baseline/tree-sitter-proto-UPSTREAM.wasm`; that directory was deleted, and the header kept naming a path with nothing behind it while the body had already recorded the relocation.)* |
 | Probes | `script/m14/tmp/protobuf/` — `run-all.sh` runs every gate. `probe/store-binding.mts` indexes a scratch project through the real store (pass 5). `probe/protoc-oracle.py` adjudicates every `uses` target against `protoc` (pass 8) |
 | Review | `reviews/protobuf/master-review.md` |
 
