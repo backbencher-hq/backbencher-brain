@@ -270,25 +270,72 @@ function languageForMessage(params: any): string | null {
 }
 
 /**
+ * The message `ASTEngine.parseTree` throws when `detectLanguage` returns null
+ * (src/ast/engine.ts, the throw lane 2 hit live). Named here as ONE constant
+ * because the seam's foreign-error arm is the only coupling between the LSP
+ * transport and the analyzer's error TEXT, and a coupling that lives in one
+ * named place can be drift-gated. It is: script/m24/verify-server.ts asserts
+ * this constant still prefixes the message engine.ts actually throws, and turns
+ * RED the day it does not. Before that gate existed, this was a string literal
+ * buried in a boolean expression with a prose limitation describing the risk —
+ * which is a comment, and a gate that reads a comment cannot fail.
+ */
+const ASTENGINE_UNROUTABLE_PREFIX = "Unsupported file type"
+
+/**
+ * Classify a fault raised inside an `absentable` handler as unroutability, or
+ * as not-unroutable. Returns the DECLARED TYPE (`DocumentUnroutable | null`)
+ * rather than a boolean, so the seam's decision is a type test on the one
+ * place the type is produced, and a future handler that KNOWS its document is
+ * unroutable can raise the type directly instead of relying on a message.
+ *
+ * Two arms, and the distinction between them is the whole point:
+ *
+ *   1. `error instanceof DocumentUnroutable` — the TYPED path. A component that
+ *      knows the answer raises the declared type. This arm cannot be broken by
+ *      a reword in engine.ts, and it is the arm every new handler should use.
+ *
+ *   2. the engine's own message prefix — the BACKSTOP, for a handler whose
+ *      guard was forgotten. This arm exists because the alternative is a
+ *      user-visible -32603 on a file the server simply does not serve, which
+ *      contract §11.7 calls a violation. It cannot be typed: a plain
+ *      `Error("…")` from a dependency carries no type to test. Its one known
+ *      weakness — coupling to a foreign message — is drift-gated by the check
+ *      named on `ASTENGINE_UNROUTABLE_PREFIX` above.
+ *
+ * A fault that is NEITHER is a bug (TypeError, null dereference, parser
+ * timeout) and returns null, so the dispatch catch keeps its -32603.
+ */
+export function asDocumentUnroutable(error: unknown): DocumentUnroutable | null {
+  if (error instanceof DocumentUnroutable) return error
+  if (error instanceof Error && typeof error.message === "string" && error.message.startsWith(ASTENGINE_UNROUTABLE_PREFIX)) {
+    // Translate the foreign Error into the DECLARED type here, so everything
+    // downstream of this function is a type test and nothing else has to know
+    // that engine.ts phrases its throw the way it does.
+    return new DocumentUnroutable(error.message)
+  }
+  return null
+}
+
+/**
  * The unroutability seam at the REGISTRATION boundary, so a fourth handler
  * repeating lane 2's defect is stopped structurally rather than by convention.
  *
- * The problem lane 2 hit: `parseForSafety` → `ASTEngine.parseTree` throws a
- * plain `Error("Unsupported file type: …")` when `detectLanguage` returns null,
- * and the call site must guard it. Fixing one call site fixes ONE handler; the
- * next one that forgets reproduces it, and the user gets -32603. Guarding at
- * the seam means a handler does not have to remember.
+ * The problem lane 2 hit: `parseForSafety` → `ASTEngine.parseTree` throws when
+ * `detectLanguage` returns null, and the call site must guard it. Fixing one
+ * call site fixes ONE handler; the next one that forgets reproduces it, and the
+ * user gets -32603. Guarding at the seam means a handler does not have to
+ * remember.
  *
  * Why a WRAPPER rather than a catch: the seam only knows a file is unroutable
  * by looking at the request's URI, and it can only do that for the standard
  * `textDocument.uri` shape. It must NOT pre-answer on that basis alone —
  * `workspace/symbol` and the `bb/` transports legitimately carry no URI, and a
  * handler given no document may still have real work to do. So the wrapper
- * LAUNCHES the handler, and only converts a fault it recognises as
- * unroutability (by the declared `DocumentUnroutable` type, or by the engine's
- * own message). Everything else propagates untouched to the dispatch catch,
- * which keeps its -32603. A seam that pre-answered would also swallow genuine
- * faults in routable files, which is the dishonesty this design exists to avoid.
+ * LAUNCHES the handler, and only converts a fault `asDocumentUnroutable`
+ * recognises. Everything else propagates untouched to the dispatch catch, which
+ * keeps its -32603. A seam that pre-answered would also swallow genuine faults
+ * in routable files, which is the dishonesty this design exists to avoid.
  */
 function guardUnroutableDocument(
   method: string,
@@ -300,14 +347,11 @@ function guardUnroutableDocument(
     try {
       return await handler(params)
     } catch (error: any) {
-      // Recognised unroutability ONLY: the declared type, or the engine's own
-      // message from ASTEngine.parseTree (src/ast/engine.ts, the throw that
-      // lane 2 hit live). Anything else is rethrown for the dispatch catch to
-      // classify — a TypeError here must stay a -32603, never an absence.
-      const unroutable =
-        error instanceof DocumentUnroutable ||
-        (error instanceof Error && typeof error.message === "string" && error.message.startsWith("Unsupported file type"))
-      if (!unroutable) throw error
+      // Recognised unroutability ONLY, by the declared type (see
+      // asDocumentUnroutable). Anything else is rethrown for the dispatch
+      // catch to classify — a TypeError here must stay a -32603, never an
+      // absence.
+      if (asDocumentUnroutable(error) === null) throw error
       throw new DeclaredAbsenceThrow({
         method,
         reason: "language_not_launched",

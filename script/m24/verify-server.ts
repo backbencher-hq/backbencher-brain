@@ -74,10 +74,24 @@ import {
 // the fact this gate checks against the owner-approved wave records below.
 import { LAUNCH_LANGUAGES } from "../../src/lsp/launch_languages"
 import { canFailFromChecks, writeSealed } from "../lib/evidence.ts"
+// The ANCHOR-DRIFT class gate (script/m24/mutant-anchor-gate.ts). Shared with
+// script/m24/verify-hover.ts so the class is gated by ONE implementation.
+import {
+  anchorDriftReport,
+  anchorGateSelfTest,
+  describeAmbiguousAnchors,
+  describeAnchorDrift,
+  type AnchoredMutation,
+  type SourceReader,
+} from "./mutant-anchor-gate.ts"
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..")
 const COMPONENT = join(ROOT, "src", "lsp", "server.ts")
 const LANGUAGES_COMPONENT = join(ROOT, "src", "lsp", "launch_languages.ts")
+/** The analyzer whose throw the seam's backstop arm recognises. Read by the
+ *  drift gate so a reword there turns THIS gate red instead of silently
+ *  degrading the seam. */
+const ENGINE_COMPONENT = join(ROOT, "src", "ast", "engine.ts")
 const EVIDENCE_PATH = join(ROOT, "validation", "m24", "results", "L1.json")
 
 let passed = 0
@@ -1266,6 +1280,19 @@ type Mutant = {
   name: string
   from: string
   to: string
+  /**
+   * An optional SECOND edit in the same target file, applied after the first.
+   *
+   * It exists for one measured reason, recorded at its only use site: some
+   * guards are enforced at TWO places in this file, so removing one leaves the
+   * behaviour unchanged and the mutant "survives" while measuring nothing. When
+   * the DEFECT being named is "the guard is not enforced anywhere", the honest
+   * mutation removes it from everywhere. A single-site mutant for a two-site
+   * guard is not a stricter test — it is an unobservable one, and §8.3 counts
+   * unobservable as failed, not as passed.
+   */
+  alsoFrom?: string
+  alsoTo?: string
   target?: "server" | "launch-languages"
   oracle: (mod: any) => Promise<boolean>
 }
@@ -1717,23 +1744,106 @@ const MUTANTS: Mutant[] = [
       }),
   },
   {
-    // The opposite failure: the seam's per-method opt-in is dropped, so a
-    // handler that was supposed to degrade now leaks -32603 (lane 2's defect).
-    name: "seam: the unroutable-file guard is removed (lane 2's defect returns)",
-    from: 'typeof error.message === "string" && error.message.startsWith("Unsupported file type")',
+    // WHY THIS MUTANT WAS REPLANTED, and the finding behind it.
+    //
+    // The previous version of this entry removed the seam's message match and
+    // drove `textDocument/documentHighlight` at a `.txt` file, expecting
+    // -32603. It SURVIVED on the merged tree, and the reason is a real
+    // finding rather than a broken anchor (the anchor was present; the
+    // mutation applied; the oracle simply could not observe the defect):
+    //
+    //   document_highlight.ts catches `parseForSafety` ITSELF and returns
+    //   declared absence, so ASTEngine never throws `Unsupported file type` on
+    //   that path any more. The component fixed the defect at its own call
+    //   site, the seam's message arm became unreachable through this handler,
+    //   and there was nothing left for the mutant to remove. A mutant that
+    //   cannot fail is worse than no mutant — it reports coverage.
+    //
+    // What the seam's message arm is FOR, now that it is stated as a fact:
+    // it is the BACKSTOP for a handler that forgets its own guard. Both real
+    // handlers guard themselves today, so nothing reaches it — but nothing
+    // stops a THIRD handler from forgetting, and the arm is what stops that
+    // user's -32603. The mutant therefore drives a handler that reproduces
+    // lane 2's ORIGINAL defect shape (an unguarded parse inside an absentable
+    // handler), which is the class the arm exists to catch.
+    //
+    // The stimulus is the REAL engine error, obtained by asking the engine
+    // itself, not a hand-written string. An oracle that constructed its own
+    // `new Error("Unsupported file type")` would pass even if the engine
+    // reworded — the §8.7 tautological check, in a new coat.
+    name: "seam: the unroutable-file backstop is removed (an unguarded handler's parse fault leaks -32603)",
+    from: 'error.message.startsWith(ASTENGINE_UNROUTABLE_PREFIX)',
     to: "false",
     oracle: (mod) =>
       withServer(mod, async (server) => {
-        mod.wireFeatures(server)
+        // The pre-lane-2 shape: a handler that calls the parse WITHOUT a guard.
+        server.register(
+          "bb/test-unguarded-parse",
+          async (params: any) => {
+            const { parseForSafety } = await import("../../src/ast/safety-primitives")
+            const filePath = params?.textDocument?.path ?? ""
+            const content = readFileSync(filePath, "utf8")
+            const safety = await parseForSafety(filePath, content)
+            return safety.occurrences.length
+          },
+          { absentable: true },
+        )
         await initialized(mod, server)
         writeFileSync(join(server.context.root, "notes.txt"), "hello\n")
         const res: any = await server.handleMessage({
           jsonrpc: "2.0",
           id: 2,
-          method: "textDocument/documentHighlight",
-          params: { textDocument: { uri: "file://" + join(server.context.root, "notes.txt") }, position: { line: 0, character: 0 } },
+          method: "bb/test-unguarded-parse",
+          params: { textDocument: { uri: "file://" + join(server.context.root, "notes.txt"), path: join(server.context.root, "notes.txt") } },
         })
-        return res?.error?.code === -32603
+        // The defect is observed: the engine's own "Unsupported file type"
+        // reached the client as an internal error.
+        return res?.error?.code === ErrorCodes.InternalError
+      }),
+  },
+  {
+    // The TYPED arm, which is the one every new handler is meant to use, gets
+    // its own mutant. Without it the typed path could be deleted and only the
+    // message arm would keep the suite green — the class "the seam recognises
+    // unroutability by type" would be reported by no assertion at all.
+    //
+    // The stimulus is the declared TYPE raised by a handler, which is exactly
+    // how a future component is meant to signal, so this mutant fails if the
+    // `error instanceof DocumentUnroutable` test is dropped or narrowed.
+    //
+    // MEASURED, and it is why this mutant plants TWO edits: the typed signal
+    // is recognised in TWO places — the registration wrapper
+    // (`asDocumentUnroutable`, which converts it to a DeclaredAbsenceThrow) and
+    // the dispatch catch (which answers it directly). Removing only ONE of the
+    // two changes nothing observable, because the other still answers the
+    // request with declared absence. A mutant that plants one edit and watches
+    // the wire not change is not a caught mutant; it is a measurement of the
+    // seam's redundancy. The DEFECT this names is "the typed signal is not
+    // recognised anywhere", so the mutation removes it from both sites, which
+    // is the only shape in which the defect exists.
+    name: "seam: the typed unroutable signal is ignored (a handler raising DocumentUnroutable leaks -32603)",
+    from: "if (error instanceof DocumentUnroutable) return error",
+    to: "if (error instanceof TypeError) return error",
+    // The second site, applied after the first. See the comment above: the
+    // defect requires removing the recognition from BOTH.
+    alsoFrom: "if (absentable && error instanceof DocumentUnroutable) {",
+    alsoTo: "if (absentable && error instanceof TypeError) {",
+    oracle: (mod) =>
+      withServer(mod, async (server) => {
+        server.register(
+          "bb/test-typed-unroutable",
+          () => {
+            // Built from the MUTANT MODULE's own class, so `instanceof` in the
+            // seam resolves against the same constructor. A class imported
+            // from the pristine module would make `instanceof` false and the
+            // oracle would be measuring nothing.
+            throw new mod.DocumentUnroutable("this file type is outside the routed set")
+          },
+          { absentable: true },
+        )
+        await initialized(mod, server)
+        const res: any = await server.handleMessage({ jsonrpc: "2.0", id: 2, method: "bb/test-typed-unroutable", params: {} })
+        return res?.error?.code === ErrorCodes.InternalError
       }),
   },
   {
@@ -1830,6 +1940,176 @@ async function loadCopyBesideOriginal(target: "server" | "launch-languages", sou
 }
 let copySeq = 0
 
+/** The source text of the file a mutant claims to mutate, resolved from the
+ *  mutant's own `target`. A mutant that names no target mutates server.ts. */
+const mutantTargetReader: SourceReader = (mutant) => {
+  const target = (mutant as unknown as { target?: string }).target
+  return readFileSync(target === "launch-languages" ? LANGUAGES_COMPONENT : COMPONENT, "utf8")
+}
+
+/**
+ * G-UNROUTABLE-TYPED — the seam recognises unroutability by TYPE, and the one
+ * foreign-message arm it keeps is drift-gated.
+ *
+ * The defect this gates, in the order it actually happened here:
+ *
+ *   1. The seam recognised unroutability only by matching
+ *      `ASTEngine.parseTree`'s message text. That is a string literal in
+ *      another module, and nothing checked that the two stayed in step. The
+ *      gate's own limitations entry DESCRIBED the coupling — which is a
+ *      comment, and a gate that reads a comment cannot fail (the same mistake
+ *      as the anchor that matches nothing, one layer up).
+ *   2. The mutation that was supposed to catch it could not, because the
+ *      handler it drove had fixed the defect at its own call site and the seam's
+ *      arm was no longer reachable through it. So the suite reported a coverage
+ *      number for a class nothing observed.
+ *
+ * So this asserts the thing that can actually break, as a structural fact:
+ *   (a) `server.ts` classifies unroutability through ONE named function
+ *       (`asDocumentUnroutable`) whose TYPED arm tests the declared class —
+ *       proven by planting a `TypeError` test in place of it and requiring the
+ *       assertion to fire;
+ *   (b) the foreign-message arm is a NAMED constant, not an inline literal,
+ *       and that constant still prefixes the message `ASTEngine.parseTree`
+ *       actually throws in src/ast/engine.ts — proven by planting a reworded
+ *       engine and requiring the assertion to fire.
+ *
+ * Both self-tests are the F7 rule: the assertion is mutation-tested, so a green
+ * here means "this class is gated", not "nothing was checked".
+ */
+function testUnroutableTypedSignal(): void {
+  console.log("\nG-unroutable: the seam classifies unroutability by TYPE, and its message arm is drift-gated")
+  const serverSource = readFileSync(COMPONENT, "utf8")
+
+  // (a) The typed arm exists and is what the classifier tests first.
+  const TYPED_ARM = "if (error instanceof DocumentUnroutable) return error"
+  check(
+    "G-unroutable: the seam's classifier recognises the declared DocumentUnroutable TYPE (not only a message)",
+    serverSource.includes(TYPED_ARM),
+    `the typed arm is absent from ${COMPONENT} — the seam recognises unroutability by string alone again`,
+  )
+  // Self-test: narrow the typed arm to a different class and the assertion must
+  // fire. Without this the check above is a grep that cannot fail.
+  {
+    const planted = serverSource.replace(TYPED_ARM, "if (error instanceof TypeError) return error")
+    const fired = !planted.includes(TYPED_ARM)
+    check(
+      "G-unroutable/SELFTEST: narrowing the typed arm to another class is detected (the assertion can fail)",
+      fired && planted !== serverSource,
+      "the planted narrowing did not change the source, so the assertion cannot observe it",
+    )
+  }
+
+  // (b) The message arm is a named constant, and it matches the engine's throw.
+  const PREFIX_DECL = 'const ASTENGINE_UNROUTABLE_PREFIX = "Unsupported file type"'
+  check(
+    "G-unroutable: the foreign-message arm is ONE named constant, not a literal buried in the classifier",
+    serverSource.includes(PREFIX_DECL),
+    `${PREFIX_DECL} is absent from ${COMPONENT}`,
+  )
+  const engineSource = readFileSync(ENGINE_COMPONENT, "utf8")
+  const prefix = /const ASTENGINE_UNROUTABLE_PREFIX = "([^"]+)"/.exec(serverSource)?.[1] ?? null
+  /** Every place engine.ts throws the unroutable message. There is more than
+   *  one (parseTree AND parseFile), so this counts rather than takes the first:
+   *  a reword applied to one site and not the other is exactly the drift this
+   *  gate exists to catch, and a `.replace()` that touches only the first
+   *  occurrence would hide it. */
+  const engineThrowSites = (src: string): number => src.split(`throw new Error(\`${prefix ?? ""}`).length - 1
+  const sites = engineThrowSites(engineSource)
+  check(
+    "G-unroutable: the seam's message arm still matches the message ASTEngine.parseTree actually throws",
+    prefix !== null && sites > 0,
+    `server prefix=${JSON.stringify(prefix)} engine throw sites=${sites} — the backstop no longer recognises the engine's own error`,
+  )
+  check(
+    "G-unroutable/CONTROL: the engine's unroutable throw site was actually FOUND (a gate matching nothing is not a gate)",
+    sites > 0 && engineSource.includes("Unsupported file type"),
+    `found ${sites} throw site(s) in ${ENGINE_COMPONENT}`,
+  )
+  // Self-test: reword EVERY throw site into a copy and the assertion must fire.
+  // This is the leg that makes the coupling gate a gate. `split/join` rather
+  // than `.replace()`, because a single-site reword left the other site intact
+  // and the assertion kept passing — a self-test that cannot fail.
+  {
+    const rewordedEngine = engineSource.split("Unsupported file type").join("Cannot route this artifact")
+    const plantedSites = engineThrowSites(rewordedEngine)
+    const fired = plantedSites === 0
+    check(
+      "G-unroutable/SELFTEST: rewording EVERY engine throw site into a copy is detected (the drift gate can fail)",
+      fired && rewordedEngine !== engineSource && plantedSites < sites,
+      `after rewording, ${plantedSites} of ${sites} throw site(s) still match — the planted drift was not observed`,
+    )
+  }
+}
+
+/**
+ * G-ANCHOR-DRIFT — the CLASS gate, ahead of every mutation result.
+ *
+ * The defect it exists for is not hypothetical. On the merged LSP tree two
+ * mutants in this milestone's sibling verifier had already died this way, and
+ * the ones this gate was written for died the same way: the mutant's `from`
+ * text no longer existed in the file it claimed to mutate, the replacement
+ * matched nothing, the mutant never ran, and the suite reported SURVIVED.
+ * A surviving mutant reports coverage it does not have — worse than no mutant,
+ * because the number in the evidence says the class is gated.
+ *
+ * Three legs, all load-bearing:
+ *   1. the gate's own self-test (it must be able to flag a stale anchor);
+ *   2. the REAL MUTANTS list — any drift here is a loud FAIL, never a skip;
+ *   3. a PLANTED stale anchor injected into a copy of the REAL list, asserted
+ *      to be caught. Leg 3 is the one that matters: legs 1 and 2 can both pass
+ *      on a gate that is wired up but never consulted for a planted fault.
+ */
+function testAnchorDriftGate(): void {
+  console.log("\nAnchor-drift gate: a mutant whose anchor is absent must FAIL loudly")
+
+  for (const leg of anchorGateSelfTest()) check(`M-anchor-drift/${leg.label}`, leg.ok, leg.detail)
+
+  // Each mutant's edits become anchored mutations for the drift gate, and each
+  // one CARRIES its own mutant's `target` — so a second edit is resolved
+  // against the same file as its first, and a mutant that targets
+  // launch_languages.ts is never checked against server.ts. Resolving every
+  // edit against the file its OWN mutant names is the whole point of the gate;
+  // an earlier draft dropped the target here and reported drift for two
+  // working mutants, which is the false-positive direction that gets a gate
+  // ignored. A stale SECOND anchor is exactly the silent unobservability this
+  // gate exists to prevent, so the second edit is gated as its own entry.
+  const anchoredList: Array<AnchoredMutation & { target?: string }> = MUTANTS.flatMap((m) => {
+    const first = { name: m.name, from: m.from, to: m.to, target: m.target }
+    return m.alsoFrom !== undefined
+      ? [first, { name: `${m.name} [second edit]`, from: m.alsoFrom, to: m.alsoTo ?? "", target: m.target }]
+      : [first]
+  })
+  const real = anchorDriftReport(anchoredList, mutantTargetReader)
+  check(
+    "M-anchor-drift: every mutant's anchor text is present in the file it claims to mutate, and every replacement changes the file",
+    real.drift.length === 0,
+    describeAnchorDrift(real.drift),
+  )
+  // Stated, not silent: an anchor that occurs more than once plants at the
+  // FIRST occurrence, which is not necessarily the site the mutant names. It
+  // does not fail the suite (several mutants here legitimately share a
+  // prefix) and it is recorded so it cannot be forgotten.
+  console.log(`  note: shared anchors (advisory, not a failure): ${describeAmbiguousAnchors(real.ambiguous) || "none"}`)
+
+  // The planted stale anchor: `from` is text this file has never contained, so
+  // the mutant cannot run — the exact defect that produced both survivors.
+  const plantedName = "PLANTED: a stale anchor that matches nothing"
+  const planted = anchorDriftReport(
+    [
+      ...anchoredList,
+      { name: plantedName, from: "  } catch (unroutable) {\n    throw unroutable\n  }", to: "  } catch (unroutable) {" },
+    ],
+    mutantTargetReader,
+  ).drift
+  const caughtPlanted = planted.some((d) => d.name === plantedName && d.kind === "anchor-absent")
+  check(
+    "M-anchor-drift: a PLANTED stale anchor in this suite's own mutant list is caught (the gate is consulted, not merely present)",
+    caughtPlanted && planted.length === real.drift.length + 1,
+    `planted findings=${JSON.stringify(planted.map((d) => `${d.name}:${d.kind}`))} real findings=${real.drift.length}`,
+  )
+}
+
 async function runMutants(): Promise<{ caught: number; loadFailures: number; anchorsMissing: string[] }> {
   console.log("Mutation suite: planting defects into a copy of the component")
 
@@ -1858,14 +2138,26 @@ async function runMutants(): Promise<{ caught: number; loadFailures: number; anc
   for (const mutant of MUTANTS) {
     const source =
       mutant.target === "launch-languages" ? readFileSync(LANGUAGES_COMPONENT, "utf8") : readFileSync(COMPONENT, "utf8")
-    if (!source.includes(mutant.from)) {
+    // The anchor-drift gate (M-anchor-drift above) has already asserted that
+    // every anchor is present. This re-checks it at the point of use, so a
+    // mutant can never be skipped without the suite recording a failure — the
+    // §8.3 rule applied locally as well as globally. Both edits are checked,
+    // not just the first: a missing SECOND anchor would leave the guard half
+    // removed and the mutant would "survive" for the wrong reason.
+    const missing =
+      !source.includes(mutant.from) ||
+      (mutant.alsoFrom !== undefined && !source.includes(mutant.alsoFrom))
+    if (missing) {
       // Contract §8.3: a skipped mutant is a failed mutant. Counted, never
       // silently dropped.
       anchorsMissing.push(mutant.name)
-      record(`FAIL: M: ${mutant.name} — anchor not found in source`)
+      record(
+        `FAIL: M: ${mutant.name} — anchor not found in source${mutant.alsoFrom !== undefined && !source.includes(mutant.alsoFrom) ? " (second edit)" : ""}`,
+      )
       continue
     }
-    const mutantSource = source.replace(mutant.from, mutant.to)
+    let mutantSource = source.replace(mutant.from, mutant.to)
+    if (mutant.alsoFrom !== undefined) mutantSource = mutantSource.replace(mutant.alsoFrom, mutant.alsoTo!)
     let observed = false
     let loadFailed = false
     try {
@@ -1913,6 +2205,8 @@ async function main(): Promise<void> {
   await testAbsenceReasonIsNotConflated()
   await testDispatchSeamBoundary()
   await testAbsenceCapabilityAdvertised()
+  testUnroutableTypedSignal()
+  testAnchorDriftGate()
 
   const { caught, loadFailures, anchorsMissing } = await runMutants()
 
@@ -1985,8 +2279,8 @@ async function main(): Promise<void> {
       "NOT VERIFIED: that any editor renders the bb/absence notice. The channel is proven to be emitted and framed on the wire (G3, G9); nothing here proves a client displays it. Claiming a rendered badge would be a §1/I3 claim this evidence does not support",
       "NOT VERIFIED: absence notices for bb/graph, bb/impact, and bb/staleness. Those transports own their own loud `bb/…`-prefixed errors by design (the versioning mechanism) and are not registered absentable; their error text already names the reason",
       "navigation.ts does not yet expose Lane 4's `absence: {reason, language, detail, searchedIndex, totalCount}` record at this commit (04d56ab75 is not an ancestor of lsp/3), so the reason is derived from `evidenceTier` plus the launch set. When that field lands, navigationAbsence() should read it directly; the vocabulary and searchedIndex semantics already match",
-      "the DocumentUnroutable type is defined and handled at the seam, but no component throws it yet — document_highlight.ts still lets ASTEngine's own Error propagate and the seam recognises that message. The declared type is the forward-compatible path for other lanes",
-      "the seam matches ASTEngine's 'Unsupported file type' message prefix to recognise unroutability. That string is a cross-module coupling to src/ast/engine.ts; if the engine rewords it, the seam degrades to -32603 (loud, not silent) and the mutant 'seam: the unroutable-file guard is removed' fails the suite, so the drift is gated rather than silent",
+      "the DocumentUnroutable type is handled at the seam but NO component raises it at this commit: document_highlight.ts and hover.ts each guard their own parseForSafety call and return declared absence (tier unsupported_language / null), so the seam's typed arm has no in-tree producer. It is the path a future handler is meant to use, and it is gated by its own mutant ('seam: the typed unroutable signal is ignored'), which raises the type from a handler and observes the seam mis-handling it when the type test is removed",
+      "the seam ALSO keeps a message-prefix arm for ASTEngine's 'Unsupported file type' throw. It is the backstop for a handler whose own guard is missing: it cannot be typed, because a plain Error from a dependency carries no type to test. Both real handlers guard themselves today, so no in-tree path reaches this arm — it is coverage for a handler that does not exist yet, and that is stated rather than counted as coverage of a live path. The coupling to src/ast/engine.ts is drift-gated by G-unroutable: the prefix is one named constant (ASTENGINE_UNROUTABLE_PREFIX) and the gate fails when engine.ts's throw stops matching it, with the reword planted into a copy to prove the gate can fail",
     ],
   }
 
