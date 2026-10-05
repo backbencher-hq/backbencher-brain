@@ -1416,12 +1416,11 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
         type: ASTEngine.RelationshipType.Imports,
         confidence: 1,
         line_number: moduleNode ? moduleNode.startPosition.row + 1 : n.startPosition.row + 1,
-        // The path AS WRITTEN is kept here and in `imports[].module`, which is what
-        // `brain_import` and the file-dependency engine read. Only the edge TARGET is
-        // normalised, and only so that it can equal the module symbol's name — the two
-        // spellings drifted apart, which is what left 8,404 of 13,364 `imports` edges
-        // with no candidate to bind to.
-        metadata: { relationshipType: "nim_import", isImport: true, fileLevel: true, nimModulePath: module },
+        // Only the edge TARGET is normalised, and only so that it can equal the module
+        // symbol's name — the two spellings drifted apart, which is what left 8,404 of
+        // 13,364 `imports` edges with no candidate to bind to. The path AS WRITTEN
+        // survives in `imports[].module` and on `meta.nimModulePath`.
+        metadata: this.moduleEdgeMetadata("nim_import", module),
       })
     }
   }
@@ -1455,7 +1454,7 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
         type: ASTEngine.RelationshipType.Imports,
         confidence: 1,
         line_number: n.startPosition.row + 1,
-        metadata: { relationshipType: "nim_include", isImport: true, fileLevel: true, nimModulePath: text },
+        metadata: this.moduleEdgeMetadata("nim_include", text),
       })
     }
   }
@@ -1706,17 +1705,11 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
           type: ASTEngine.RelationshipType.Imports,
           confidence: 1,
           line_number: site.startPosition.row + 1,
-          metadata: {
-            relationshipType: "nim_import",
-            isImport: true,
-            fileLevel: true,
-            // The written path, kept. See readImportFromStatement: only the TARGET is
-            // normalised so it can equal the module symbol's published name.
-            nimModulePath: path,
+          metadata: this.moduleEdgeMetadata("nim_import", path, {
             ...(parsed.isPathList ? { nimModuleList: true } : {}),
             ...(alias ? { nimAlias: alias } : {}),
             ...(qualifier ? { nimQualifier: qualifier } : {}),
-          },
+          }),
         })
       }
     }
@@ -1915,16 +1908,22 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
    * the two strings equal. This is the same "publish the string you target" shape the
    * graphql lane measured at a 75% reduction, applied to the construct nim actually has.
    *
-   * ## What is deliberately NOT published
+* ## What is deliberately NOT published
    *
    *   - `.nims`. A NimScript file is `include`d into another module; it is not a module
    *     and nothing can `import` it. Publishing one would be a node the language cannot
-   *     name. `include` therefore keeps its existing verbatim path target, which is what
-   *     the corpus actually writes.
+   *     name. So `include`'s edge target is normalised by the SAME rule, and that is
+   *     measured rather than assumed: 458 `nim_include` edges over the corpus resolve
+   *     at both ends on 96.9% in-file and 98.0% in-corpus, and reverting them to the
+   *     verbatim path would bind **0** of the 14 they currently leave unresolved
+   *     (`import-resolution-probe.mts`, `s18-import-probe.txt`). An earlier draft of
+   *     this comment asserted the opposite — that `include` keeps the written path —
+   *     while the code normalised it; the measurement decided which of the two was
+   *     true and the comment was corrected to match.
    *   - A renamed module. `module Foo` inside `bar.nim` declares module `Foo`, and the
    *     pinned grammar has NO node for it — `grammars/tree-sitter-nim/grammar.js`
-   *     mentions "module" twice and neither is a declaration, so there is nothing on the
-   *     tree to read. The symbol is therefore named after the FILE. This is a real
+   *     mentions "module" twice and neither is a declaration, so there is nothing on
+   *     the tree to read. The symbol is therefore named after the FILE. This is a real
    *     inaccuracy and it is bounded: the corpus measurement is in the doc, and a file
    *     that renames its module gets a module symbol no `import` will ever name.
    *   - An empty basename. A path that yields no name publishes nothing rather than an
@@ -1977,6 +1976,85 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
     const parts = stem.split("/")
     const last = (parts[parts.length - 1] ?? "").trim()
     return last
+  }
+
+  /**
+   * Is this written module path Nim's own STANDARD LIBRARY?
+   *
+   * ## What the marker is for, and the number that sizes it
+   *
+   * After the module-symbol pass the residual `imports` population that is declared
+   * NOWHERE in the corpus — the population cause C is about — is 485 edges: 476 on
+   * `nim_import` and 9 on `nim_include`. Measured by
+   * `validation/m14/fixtures/nim/import-resolution-probe.mts` over the same 6,063
+   * files, same analyzer digest (`s18-import-probe.txt`):
+   *
+   *     bare name          309   (301 import + 8 include)
+   *     other path         103   (102 + 1)
+   *     std/ path prefix    66   (66 + 0)
+   *     parent-relative       8   (7 + 1)
+   *
+   * 66 of 485 — 13.6% — is identifiable from the spelling alone, and this is that
+   * identification. A `std/`-prefixed path is Nim's standard-library root by the
+   * language's own rule, so `nimStdlibModule` is a fact about the PATH, not a guess
+   * about where the declaration lives.
+   *
+   * ## Why the other 419 are NOT marked, which is the honest part
+   *
+   * 309 are BARE names. Per file, `import re` is three indistinguishable things: a
+   * module in this project, a module in `lib/pure` (which is how Nim spells `re`,
+   * `parseutils`, `algorithm`, `math` — no path prefix at all), or a typo. Nothing in
+   * one file separates them, and marking them external would assert that a local module
+   * is not local — the fabricated-edge failure the workstream brief calls the most
+   * expensive mistake available. 103 are paths with some other prefix (a `nimble`
+   * package name, a sibling directory) and 8 are `../`, which is local by definition.
+   *
+   * Separating the bare cases needs whole-program import resolution: for each bare
+   * target, find the file this project declares by that name and ask whether its path
+   * lies under the Nim library roots. That is shared machinery (workstream §8), so the
+   * need is reported rather than built.
+   *
+   * ## Why the key is `nimStdlibModule` and not the family's `isExternalTarget`
+   *
+   * 15 other analyzers write `isExternalTarget`, and in every one of them it means "the
+   * target is NOT declared in this file". For an `imports` edge that is vacuously true
+   * of every edge — a module is never declared in the file that imports it — so the
+   * family key would carry no information here and would be read as if it did. The key
+   * says what is actually known: the path names the standard library.
+   */
+  private isStdlibModulePath(writtenPath: string): boolean {
+    // The written path is matched, never the normalised target: the target has already
+    // had its prefix stripped, so it cannot answer this. Spaces around `/` are legal
+    // Nim path syntax and the corpus writes them (`std / syncio`), and a leading quote
+    // comes from `include "std/prelude"`. Anchored at the start, so a project that has
+    // its own `std/` directory cannot make a local path claim to be the library.
+    return /^\s*"?std\s*\//.test(String(writtenPath ?? ""))
+  }
+
+  /**
+   * The metadata block every `imports` edge carries, built from ONE argument so the
+   * written path and the stdlib marker can never be derived from different strings.
+   *
+   * This is the same one-function discipline `moduleNameOfPath` exists for, applied to
+   * the metadata: the defect being paid down is two pieces of code spelling one module
+   * differently, and a marker computed from a different string than the path it
+   * describes is that defect a second time.
+   */
+  private moduleEdgeMetadata(
+    relationshipType: "nim_import" | "nim_include",
+    writtenPath: string,
+    extra?: Record<string, unknown>,
+  ): Record<string, unknown> {
+    return {
+      relationshipType,
+      isImport: true,
+      fileLevel: true,
+      // The path AS WRITTEN. `brain_import` and the file-dependency engine read this,
+      // and so does anyone asking which file on disk is meant.
+      nimModulePath: writtenPath,
+      ...(this.isStdlibModulePath(writtenPath) ? { nimStdlibModule: true } : {}),
+      ...(extra ?? {}),
+    }
   }
 
   // ═══════════════════════════════════════════════════════════════════════
