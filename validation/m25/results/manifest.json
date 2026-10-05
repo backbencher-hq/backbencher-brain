@@ -40,14 +40,14 @@
       ],
       "evidence": {
         "status": "known-gap",
-        "currentCommit": "0709f04b2a920cc87718aab5c40b9afea0d465e2",
+        "currentCommit": "facecf800fff693596604f71bcc8e23cf0152277",
         "verifierCommand": "npx tsx script/m25/verify-governance.ts",
         "evidenceFile": "G1.json",
-        "passed": 67,
-        "failed": 5,
+        "passed": 66,
+        "failed": 6,
         "realFailed": 0,
         "negativeCases": 11,
-        "blockedReason": "5 check(s) failed: G1: all 11 issue entries are unique and structurally complete; G1: no banned vocabulary in manifest.json (perfect(ion)?\\b); G1: M24 bar — ledger closed with all 11 issues verified (mechanical); G1: M24 bar — M24 governance gate exits 0 at HEAD (spawned) … — the relevant tree was clean at measure time"
+        "blockedReason": "6 check(s) failed: G1: all 11 issue entries are unique and structurally complete; G1: no banned vocabulary in manifest.json (perfect(ion)?\\b); G1: no banned vocabulary in manifest.json (\\bcomplete(ly|d|ness)?\\b); G1: M24 bar — ledger closed with all 11 issues verified (mechanical) … — the relevant tree was clean at measure time"
       }
     },
     {
@@ -382,7 +382,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T04:32:27.771Z",
-    "contentSha256": "31db8b15fae8c2971bc89cb0cffbf0f7d71c67b81522ea5dfd1c9fe9a89f3195"
+    "sealedAt": "2026-10-05T04:37:00.418Z",
+    "contentSha256": "02cd5170509b6b0ca4a471ecde2304a135c5935d8e293647bf96d0bd6e705e43"
   }
 }
