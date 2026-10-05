@@ -700,17 +700,33 @@ type that produces nothing, and it is RULED rather than dead.
 ### Q3 — Correct (an independent oracle agrees)
 
 `script/m14/differential.ts --lang clean --sample 60`, the lane's existing read oracle
-(`deriveCleanEdges`), 60 files each from Clyde and clean-stdlib:
+(`deriveCleanEdges`), 60 files each from Clyde and clean-stdlib.
 
-| | Clyde | clean-stdlib |
-| --- | --- | --- |
-| tree truth edges | 1,177 | 702 |
-| covered by the analyzer | 700 (59.5%) | 653 (93.0%) |
-| MISSING (truth derives, analyzer does not) | 477 | 49 |
-| analyzer edges | 1,214 | 1,021 |
-| UNEXPLAINED (analyzer emits, truth does not) | 610 (50.2%) | 496 (48.6%) |
-| heuristic (confidence < 1.0) | 0 | 0 |
-| unexplained by label | `references=368, calls=234, overrides=6, instantiates=2` | `calls=208, references=207, implements=42, overrides=39` |
+**Every figure below is a statement about ONE ROTATION's 60 files, not about the
+corpus, and consecutive runs on an unchanged commit do not agree.** The gate's
+`coldPoolPick` (differential.ts:927) increments `state.rotations[laneKey]` on every run
+and seeds its draw with `${laneKey}:rot${rotation}:fresh`, preferring never-sampled
+files; the counter lives in a state file outside the repo, so it advances across
+invocations. Two runs at this commit, both exit 6, both `files=60`:
+
+| | Clyde run A | Clyde run B | clean-stdlib run A | clean-stdlib run B |
+| --- | --- | --- | --- | --- |
+| rotation | `rot 20` | `rot 21` | `rot 20` | `rot 21` |
+| tree truth edges | 1,314 | 1,177 | 667 | 655 |
+| covered by the analyzer | 787 (59.9%) | 700 (59.5%) | 618 (92.7%) | 606 (92.5%) |
+| MISSING (truth derives, analyzer does not) | 527 | 477 | 49 | 49 |
+| analyzer edges | 1,322 | 1,214 | 972 | 941 |
+| UNEXPLAINED (analyzer emits, truth does not) | 671 (50.8%) | 610 (50.2%) | 482 (49.6%) | 462 (49.1%) |
+| heuristic (confidence < 1.0) | 0 | 0 | 0 | 0 |
+| unexplained by label | `references=383, calls=278, overrides=6, implements=2, instantiates=2` | `references=368, calls=234, overrides=6, instantiates=2` | `calls=208, references=191, implements=44, overrides=39` | `references=196, calls=191, overrides=39, implements=36` |
+
+The two `clean-stdlib` unexplained-by-label rows are also not the same set of labels in
+the same order, which is the point: one repo, one commit, two runs, two different
+answers. **The stable readings are the ones that did not move** — `MISSING` 49 on both
+clean-stdlib rotations, `heuristic` 0 on all four, `COMPARED WITH NO TRUTH: overrides`
+on all four, and `overrides` 6 comparable on Clyde / 39 on clean-stdlib in both. Clyde's
+MISSING moves 477↔527 with the rotation, so **the 24,986-site `instantiates` argument
+below holds at any rotation and its exact count does not.**
 
 **The oracle's declared limitation, stated rather than glossed.** `deriveCleanEdges` is a
 separate walker over the SAME grammar, so a grammar bug present in both paths is
@@ -719,8 +735,8 @@ such a class: a shape neither walker can read is a shape neither can disagree ab
 
 **This differential is RED on the lane, and the disagreements are named rather than
 smoothed.** The `instantiates` half is the 24,986-site row below: the oracle derives an
-`instantiates` from every `constructor`-headed application, so 477 MISSING on Clyde is
-the oracle asserting constructions the analyzer declines to invent. The
+`instantiates` from every `constructor`-headed application, so Clyde's 477–527 MISSING
+is the oracle asserting constructions the analyzer declines to invent. The
 `references`/`calls` unexplained halves are the oracle's stricter name-matching, not
 fabrications — see Q4, where an independent tree walk finds **0** label violations.
 
@@ -896,20 +912,36 @@ was clean before the doc edits and after them.
 | `npx tsx validation/m14/fixtures/clean/extends-probe-roles-regen.mts` | idempotent: regeneration leaves the expectation byte-identical, 0 notes dropped | 0 |
 | `npx tsx script/m60/rel-type-coverage-gate.ts --langs=clean` | 4 DERIVATION findings, 3 NEW; checks 2/3/4 pass — **and it OVERWRITES the repository-wide results file, see report item 5** | 0 |
 | `bash script/m14/no-regex-gate.sh` | `real-clean-analyzer.ts` contributes **0** of the tree's 4 regex literals (all 4 are `real-svelte-analyzer.ts`) | 0 |
-| `npx tsx script/m14/differential.ts --lang clean --sample 60` | **RED, and reproduced exactly.** Clyde: `tree-truth=1314 covered=787 (59.9%) MISSING=527 \| analyzer-edges=1322 unexplained=671 (50.8%) heuristic=0`. clean-stdlib: `tree-truth=655 covered=606 (92.5%) MISSING=49 \| analyzer-edges=941 unexplained=462 (49.1%) heuristic=0`. `COMPARED WITH NO TRUTH: overrides` on both (6 and 39 edges). Writes no artifact on a scoped run, by design | 0 |
+| `npx tsx script/m14/differential.ts --lang clean --sample 60` | **RED, exit 6, reproduced twice at this commit** — and the figures MOVE between runs because the gate rotates its 60-file sample (`coldPoolPick`, differential.ts:927). Run A: Clyde `truth=1314 covered=787 (59.9%) MISSING=527 \| edges=1322 unexplained=671 (50.8%)`, clean-stdlib `truth=667 covered=618 MISSING=49 \| edges=972 unexplained=482 (49.6%)`. Run B: Clyde `truth=1177 covered=700 MISSING=477 \| edges=1214 unexplained=610 (50.2%)`, clean-stdlib `truth=655 covered=606 MISSING=49 \| edges=941 unexplained=462 (49.1%)`. `heuristic=0` and `COMPARED WITH NO TRUTH: overrides` on all four. See [Q3](#q3--correct-an-independent-oracle-agrees). Writes no artifact on a scoped run, by design | **6** |
 | `bun run script/m14/verify-doc-truth-emissions.ts` | repository `FAIL` (7 FALSE_NEGATIVE / 42 UNDOCUMENTED / 15 NO_CLAIM_TABLE) — **`clean` in none of them**; its row reads 9 types | 0 |
 
-**Q3 is red, and the red is not new.** The 527/49 MISSING counts and the 50.8%/49.1%
-unexplained rates reproduce the figures already recorded under
-[Known limits](#known-limits-stated) 7 and 8 to the digit, so this round neither
-introduced nor repaired them. What the red is made of is named per label:
-`unexplained-by-label` is `references=383, calls=278, overrides=6, implements=2,
-instantiates=2` on Clyde and `references=196, calls=191, overrides=39, implements=36`
-on clean-stdlib. Two of those five labels are not analyzer defects at all —
-`overrides` has no oracle by construction (limitation 8), and the `instantiates`
-MISSING rows are the 24,986-site row's `declinedInstantiations` family, where the
-analyzer deliberately declines to name a receiver it cannot type. The oracle is shared
-(`script/m14/differential.ts`) and was not modified.
+**Q3 is red, and the red is not new — but "reproduces to the digit" was wrong and is
+withdrawn.** Earlier revisions of this document claimed the 527/49 MISSING counts and the
+50.8%/49.1% unexplained rates "reproduce the figures already recorded … to the digit".
+Two runs at this commit do not: Clyde moved 527→477 MISSING and clean-stdlib moved
+462→482 unexplained, because the gate rotates its sample (`coldPoolPick`,
+differential.ts:927). The claim being withdrawn is not a rounding matter — it asserted a
+determinism the instrument does not have, and a reader checking it would have found two
+different answers and no explanation. What survives is the qualitative reading, and it is
+the same at both rotations: the lane is RED, and the red is composed of the same labels.
+`unexplained-by-label` at rotation 21 is `references=368, calls=234, overrides=6,
+instantiates=2` on Clyde and `references=196, calls=191, overrides=39, implements=36` on
+clean-stdlib; at rotation 20 it was `references=383, calls=278, overrides=6, implements=2,
+instantiates=2` and `calls=208, references=191, implements=44, overrides=39`. Two of those
+labels are not analyzer defects at all — `overrides` has no oracle by construction
+(limitation 8), and the `instantiates` MISSING rows are the 24,986-site row's
+`declinedInstantiations` family, where the analyzer deliberately declines to name a
+receiver it cannot type. The oracle is shared (`script/m14/differential.ts`) and was not
+modified.
+
+**A rotating sample is the wrong instrument for a per-label claim, and that is a
+reportable defect in shared machinery.** A figure that answers a different question on
+each run cannot settle whether a label is fabricated, and `MISSING` on Clyde moving 10%
+between adjacent rotations is larger than most of the effects a reader would use this
+gate to judge. The fix is in `coldPoolPick` or in its caller: pin the rotation for a
+scoped `--lang` run (or seed from the lane key alone, dropping `rot${rotation}`), so a
+scoped probe is deterministic while the full-sweep rotation keeps its never-repeat
+property. **Not edited** — `script/m14/differential.ts` is supervisor-owned.
 
 
 **The one gate that must be run with `bun`, not `npx tsx`.**
@@ -1223,8 +1255,11 @@ import { CLEAN_MUTANTS } from "./clean-mutants"
    at column 0 after an indented `where` body is absorbed INTO that block. A blank
    line does not close it. A declaration between the two is required, which is what
    the corpus does and what `afterWhere` in the fixture does.
-7. **The M14.0.F5 differential is red on this lane** (527 MISSING on the Clyde
-   draw, 49 on clean-stdlib) for the reason in the 24,986-site row. The oracle is
+7. **The M14.0.F5 differential is red on this lane** (Clyde MISSING 477 or 527 depending
+   on the rotation, 49 on clean-stdlib at both) for the reason in the 24,986-site row.
+   **The count is a property of the rotation, not of the lane** — the gate rotates its
+   60-file draw on every run (`coldPoolPick`, differential.ts:927), so two runs at one
+   commit disagree; the RED verdict and the label composition do not. The oracle is
    shared (`script/m14/differential.ts`) and was not modified.
 8. **`overrides` is emitted but has no oracle, so the differential calls all 45 sampled
    edges fabrications.** The harness prints `COMPARED WITH NO TRUTH: overrides` and its
