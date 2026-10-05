@@ -3744,6 +3744,191 @@ call, not this lane's. And the flag is a position fact, not a verdict — round 
 measured 427 function names whose `name:` field sits inside an ERROR span and every
 one is a real declaration, so the flag never removes anything by design.
 
+## Round 17: a binding that named a real declaration, and not the right one
+
+Round 16 left 933 edges ambiguous that publish no binding — 901 `contains` and 30
+`overrides`. Those are the largest bucket this lane controls, so round 17 measured
+what the best available answer is for each, and fixed the half that was wrong.
+
+### The ceiling, measured before the change
+
+`probe-bash-contains-overrides-ceiling.mts`, production `parseFile`, 600 files, and
+the same corpus admission and `--sample 600` as round 16 so the two share a
+denominator:
+
+```
+admitted 4185 / repos 127
+
+CONTAINS — can a consumer re-discover the child from (source, line_number)?
+  edges                          5668
+  ambiguous in own file           901  15.9% of edges
+  source (owner) alone closes     850  94.3%
+  line_number alone closes        901 100.0%
+  owner AND line closes           901 100.0%
+  STILL OPEN after both             0   0.0%
+
+OVERRIDES — the edge already publishes overridesLine; is it right?
+  edges                             30
+  ambiguous in own file             30 100.0%
+  no overridesLine key at all        0
+  overridesLine picks ZERO           0   0.0%
+  overridesLine picks MANY           0   0.0%
+  overridesLine closes               30 100.0%
+  ...and IS the immediately-prior   30 100.0%
+  ...but names an EARLIER one         0   0.0%
+```
+
+**The `contains` half needs no analyzer change and gets none.** Its 901 open
+bindings are already closed 901/901 by two fields the edge publishes today — its own
+`source` is the child's owner and its own `line_number` is `nameLineOf(sym)`, the
+line the child's NAME is written on. `contains` is emitted from the child symbol
+itself, so at emission the analyzer holds the exact `UniversalSymbol` it means; what
+was missing was a consumer applying `(owner, name-line)`. Publishing a third
+redundant field would have added payload to 5,668 edges to re-state what two existing
+fields already carry. The fix here is a rule in the incoming resolution layer, which
+is Laptop C's (§8), so this lane reports the measurement and the rule instead of
+adding the field.
+
+### The `overrides` half WAS wrong, and the A/B is the finding
+
+`overrides` runs from the later definition to the earlier one and both endpoints
+carry the same name, so `overridesLine` is the only published field telling the two
+apart. It recorded the FIRST declaration of a name.
+
+A redefinition displaces the definition the running shell would have called — the
+most recent one before it — not the first one it happens to follow. For a name
+declared twice the two readings are the same row, which is exactly why no fixture
+caught it: `redefinition-overrides.sh` declares `greet` twice and passes under both.
+
+The map is now written unconditionally after the edge instead of only on the branch
+that emitted none. Measured on the same 600-file sample, both analyzers over the same
+bytes:
+
+| | BEFORE (first-declaration) | AFTER (prior-declaration) |
+| --- | --- | --- |
+| `overridesLine` closes the edge | 30 / 30 | 30 / 30 |
+| ...and IS the immediately-prior declaration | **9 (30.0%)** | **30 (100%)** |
+| ...but names an earlier declaration | **21 (70.0%)** | **0** |
+| picks ZERO declarations | 0 | 0 |
+| picks MANY declarations | 0 | 0 |
+
+`picks ZERO` was 0 in both columns and that is the reason the defect survived: every
+wrong row named a line that IS a real declaration of the name, so nothing about the
+edge was malformed and no shape check could see it. `ohmyzsh/lib/clipboard.zsh`
+declares `clipcopy` at 55,58,61,64,67,70,73,76,79,82,85,97 and every one of its 12
+`overrides` rows read 55:
+
+```
+edge@61 overridesLine=55  the definition in effect is 58
+edge@67 overridesLine=55  the definition in effect is 64
+```
+
+A consumer that trusts the key drew an `overrides` edge to a row the definition never
+replaced — an edge to a real declaration, asserted as the wrong one, which the
+honesty contract ranks above a missing edge.
+
+### Whole corpus: 0 edges and 0 symbols moved, 64 values did
+
+`ab-round17-overrides-line.mts`, `BB_AB_BASE=9b7cb8a7d --all`, both analyzers over
+the same bytes through one private tree handle, 4,185 admitted / 501,320 scanned /
+127 repos, **0 degraded**:
+
+```
+relationships  old 182268  new 182268   ADDED 0  REMOVED 0
+symbols        old  43296  new  43296   ADDED 0  REMOVED 0
+metadata GAINED (none)   metadata LOST (none)
+
+ROUND 17 — `overrides` edges compared 138
+  overridesLine CHANGED           64
+  overridesLine unchanged         74
+  key gained / lost               0 / 0
+  moved TOWARD the edge's line    64
+  moved AWAY from it               0
+  at or PAST the edge's own line   0
+```
+
+**The 74 unchanged are the whole of the invisibility.** A name declared exactly twice
+has first == prior, so 74 of 138 whole-corpus `overrides` edges read the same value
+before and after — the change is correct on every edge and is observable on 46% of
+them. The 21/30 in the 600-file sample and the 64/138 here are the same population at
+two scales.
+
+This A/B's first version **asserted the wrong direction and FAILED on a correct
+change**: it required `overridesLine` to move to a SMALLER line, on the reasoning that
+"the prior declaration is earlier". The declaration in effect before line N is the
+CLOSEST declaration before N, so the correct value is the largest line strictly below
+N and the value moves UP (55 → 58 for an edge at 61). The invariant is now stated
+against the edge's own line, which is what makes it checkable at all: `overridesLine`
+must be strictly less than `line_number`, and the A/B reports the count that violates
+it (0) rather than a direction taken on taste.
+
+### Why the fixture is a chain and a control, not two rows
+
+`overrides-prior-line.sh` declares `f` four times and `g` twice. `expectRelationships`
+is a positive existential — an entry passes if ANY edge matches — so a fixture that
+only asserted the correct values would still fail loudly here, but it could not say
+WHICH mistake was present. Four `forbidRelationships` rows pin the wrong answers, so
+the failure distinguishes "published the first declaration" from "published nothing
+at all", which are different bugs with different fixes:
+
+| row | pins | catches |
+| --- | --- | --- |
+| `line_number: 33` / `overridesLine: 23` | third `f` names the root | the defect |
+| `line_number: 40` / `overridesLine: 23` | fourth `f` names the root | the defect, second site |
+| `line_number: 52` / `overridesLine: 52` | `g` names itself | the OPPOSITE mistake |
+| `line_number: 33` / `overridesLine: 33` | third `f` names itself | the invariant |
+
+The two `g` rows are the control and they fail the other direction: a rule taking the
+latest declaration overall, or one that never advances its map, would publish 52 and
+draw `g` overriding itself. A chain-only fixture cannot catch that. `h` is declared
+across both spellings (`h() {` and `function h() {`) to state that the two forms are
+one binding and not two.
+
+**The measurement that the old fixture cannot discriminate:** run against `HEAD`'s
+analyzer, `overrides-prior-line` FAILS and `redefinition-overrides` PASSES (30 pass /
+1 fail). The new fixture pins the defect, not the current behaviour.
+
+### Three mutants, and one of them was wrong before it was run
+
+`bash/overrides-line-is-first-declaration` reproduces the pre-fix shape by moving the
+unconditional write onto the no-edge branch. It is caught by **`overrides-prior-line`
+alone** — not by `redefinition-overrides`, which is the reason the fixture exists.
+`bash/overrides-line-is-the-declaration-itself` advances the map before the edge, so
+every `overrides` edge claims to override itself; that one is wrong even for a name
+declared twice, so `redefinition-overrides` catches it too.
+`bash/overrides-line-never-recorded` removes the binding outright, leaving
+`greet -> greet` at two lines with no disambiguator — a shape the old fixture's
+wildcard rows could not see, since `expectRelationships` treats unspecified fields as
+wildcards.
+
+The first version of the first-declaration mutant did NOT reproduce the defect it
+described: it gated the edge on `if (false)`, which emits no `overrides` edge at all,
+so it was caught by `redefinition-overrides` too and its description was false. It was
+rewritten to move the write rather than suppress the edge, and the rewrite is what
+makes the "caught by the new fixture alone" claim true. Recorded because the mutant
+file's own rule is that a survivor fails it, and a mutant whose description does not
+match its transform is the same failure wearing a different hat.
+
+### The evidence row that was not reproducible
+
+The round-15 row claimed **31/31 fixtures pass**. Measured: 30 fixtures existed at
+`6d0526a99`, the round-15 doc commit — `git ls-tree` reads 30 at
+`e42a64c71`, at `9b7cb8a7d`, and at `HEAD~1`. This round's fixture brings the true
+count to 31, so the number the row asserted is now correct and was not when written.
+The fixtures were 28 at `e00509857` (round 12), which the round-12 row's "28/28" does
+match.
+
+### What this round could not settle
+
+`targetLine` and `targetKind` are published by this lane on 11,532 whole-corpus edges
+and read by **nothing** in `src/` — `src/lsp/impact.ts` resolves reverse edges from
+`r.target_symbol_id` in the store, and `grep -rn targetLine src/` matches only
+`real-bash-analyzer.ts`. So the round-16 and round-17 evidence that "the edge's own
+published binding closes N" is evidence that a consumer CAN close it, not evidence
+that any consumer DOES. Whether the metadata should be read, promoted into
+`target_symbol_id` at ingest, or dropped for being unread is a schema decision
+(Laptop C's), reported here rather than acted on.
+
 ## Complexity envelope and measured performance
 
 One iterative pre-order walk with a constant-time function-scope stack, a Map of
@@ -3884,14 +4069,17 @@ This round's own measurements, each reproducible from a named file in
 | Pass-2 adversarial probes | `npx tsx validation/m14/fixtures/bash/adversarial-probes.ts --sample 400` | unresolved-target decomposition: **0 missed declarations** on `calls` and on `uses`; 0 bash builtins named by a call; `imports`/`references` overlap **44/44 both ways**; `overrides` **28/28** have an earlier definition; `exports` targets by kind constant 183 / variable 26 / function 1; confidence `calls` {1.0: 5129, 0.7: 18}, `uses` {0.8: 7947} |
 | Lane source mutants | `npx tsx validation/m14/fixtures/bash/mutants-bash-lane.mts` | **ROUND 10 re-run: 25 mutants, 25 caught, 0 survived, 0 did not apply** (round 6 read 19/19) |
 | Shared mutant registry, bash slice | `BB_MUTANT_ONLY="bash/" bun run script/m14/mutate-analyzer.ts` | filtered 1,723 → **23, all 23 caught, 0 survivors** |
-| Ontology coverage gate | `npx tsx script/m14/ontology-coverage-gate.ts bash` | **7/10 emitted, 3 RULED-SOUND, 0 FALSIFIED, 0 ruled-without-justification** — **ROUND 15, re-measured**: calls 56,158 · uses 83,357 · contains 39,053 · imports 679 · references 679 · exports 1,966 · overrides 138; all three RULED rows cite 164 grammar node types and `script/m14/bash-ruled.ts`. Round 12 read 55,240 / 81,531 / 38,325 / 677 / 677 / 1,929 / 138 on 4,133 admitted files, and the **+918 calls / +1,826 uses** are the corpus growing, not this round's change — the change moved 0 edges (see the A/B row). **8 `[BB-PARSE-ERR] … memory access out of bounds`** this run (was 1) plus **1 `[BB-HANG] parser stuck 120s`** on `bash-completion/completions-core/iconv.bash` — rounds 3, 7, 9, 11 and 14 each recorded the same class on a different file, which is the instrument property rather than a lane verdict, so its per-type totals sit under the census on the same corpus. See limitation 15 |
+| Ontology coverage gate | `npx tsx script/m14/ontology-coverage-gate.ts bash` | **7/10 emitted, 3 RULED-SOUND, 0 FALSIFIED, 0 ruled-without-justification** — **ROUND 17, re-measured**: calls 56,205 · uses 83,402 · contains 39,078 · imports 678 · references 678 · exports 1,967 · overrides 138; all three RULED rows cite 164 grammar node types and `script/m14/bash-ruled.ts`. **The counts move with the corpus and not with the round**: round 15 read 56,158 / 83,357 / 39,053 / 679 / 679 / 1,966 / 138, so this round's +47 calls / +45 uses / +25 contains is the corpus growing. The round-17 change alters a metadata VALUE on 64 of 138 whole-corpus `overrides` edges and adds/removes **0 edges and 0 symbols** — the A/B row states it. **1 `[BB-PARSE-ERR] … memory access out of bounds`** on `ohmyzsh/plugins/lighthouse/lighthouse.plugin.zsh` and **1 `[BB-HANG] parser stuck 120s`** on `bash-completion/completions-core/htop.bash` this run (a different file from round 15's `iconv.bash`) — rounds 3, 7, 9, 11, 14 and 15 each recorded the same class on a different file, which is the instrument property rather than a lane verdict, so its per-type totals sit under the census on the same corpus. See limitation 15 |
 | Firing check, bash only | `npx tsx script/m14/firing-check.ts --files 120 bash` | **ROUND 15**: **6/10 fired**, 3,547 edges, **108/120 files**, 0 degraded, analyzer stable. Fires `calls,uses,contains,imports,references,exports`; reads 0 for `extends`/`implements`/`overrides`/`instantiates` at 120 files. `overrides` reading 0 here is arithmetic, not a verdict — 138 whole-corpus edges over 48 files is a population a 120-file stride sample cannot reliably hit, which the `--all` gate settles |
 | Incoming check, the 3 residual files | `npx tsx script/m14/incoming-check.ts bash <3 files>` | **ROUND 15**, on `ohmyzsh/plugins/pip/pip.plugin.zsh`, `Paket/completion/paket-completion.zsh`, `kubernetes/cluster/gce/util.sh`: 531 symbols, 0 degraded, 0 parse failures. calls 976 edges / 79 distinct / **0 ambiguous** / 446 unresolved · uses 2,215 / 272 / **0 ambiguous** / 903 unresolved · contains 528 / 397 / **0** / 0 · exports 4 / 4 / **0** / 0 · imports+references 6 each, all unresolved by nature (a path names no declaration in the file). **Distinct declarations named by ≥1 edge 397, orphans 3 of 531.** `→>1` is **0 on every type**, which is the whole point of round 15: the two `xargs` edges used to be ambiguous here and no longer are. The `unresolved` cells are external binaries and PATH strings, not unindexed declarations — see the §C separation below |
 | Published resolvability, whole corpus (round 15) | `npx tsx validation/m14/fixtures/bash/probe-bash-published-resolvability.mts --all` | **4,185 admitted / 501,320 scanned / 127 repos, production `parseFile`, 0 parse failures.** `calls` 56,217 edges → 236 ambiguous → 231 one-candidate / 5 said-so / **3 bare (was 5)** / **0 zero-candidate**. `uses` 83,421 → 12,372 ambiguous → 11,403 one / 969 said-so / **0 bare** / **0 zero**. `contains` 39,101 → 6,263 → **6,263 one (100%)**. `exports` 1,968 → 100 → **100 (100%)**. `overrides` 138 → **138 (100%)**. `imports`/`references` 679 each, 0 name-ambiguous. **`→0 cand` is 0 on every type** |
 | Unresolved-edge shapes, whole corpus (round 15) | `npx tsx validation/m14/fixtures/bash/probe-bash-unresolved-edges.mts --all` | **4,185 files, production `parseFile` + a PRIVATE tree handle, node API only, no regex.** 105,318 command nodes carry a `command_name` among their named children. Cost of each candidate guard over **every** published `calls` edge: clean **53,271** · errorDescendant **2,891** · errorSiblingBefore **36** · both **19**. The 3 bare ambiguous `calls` edges are **3 of 3 `errorDescendant`**. Re-measured with the analyzer's OWN `commandNameNode` selector (scans all named children); the probe's first version read `namedChild(0)` and so walked a different population than the code under test |
 | Round-15 A/B — did the change alter an edge? | `BB_AB_BASE=25eb3bc91 npx tsx validation/m14/fixtures/bash/ab-round15-collision.mts --all` | **WHOLE CORPUS, 4,185 files / 127 repos, 0 degraded, both analyzers over the SAME bytes through one private tree handle.** relationships **182,268 → 182,268, ADDED 0, REMOVED 0**; symbols **43,296 → 43,296, ADDED 0, REMOVED 0**. Per type identical on all seven. metadata GAINED, LOST **none**. `collidesWithLocalDeclaration` **675** · `targetResolution` **675** · `commandInErrorRecovery` key present on 55,989 and **true on 2,913**. **0 edges carry both the label and the flag.** The change is metadata-only at corpus scale, as claimed |
 | Round-15 A/B — the three numbers in that row that are not what they look like | same run | **THE LABEL REACHED 675 EDGES, NOT 2.** The 2 `xargs` edges are the *ambiguous* population; the label is published on every `calls` edge whose command name collides with a local non-function declaration, and the one-declaration case is the commoner of the two — which is exactly the point the `ripgrep` fixture row makes. A count of bare edges would have reported this change as worth 2 edges; it is worth 675. Examples: `consul/build-support/functions/10-util.sh:430` and `:511` (`set_changelog_version -[calls]-> date` against a local `date` variable) and `nvm/test/fast/Unit tests/nvm_download_artifact:12..50`, where the file both declares and calls `nvm_download_artifact`. **2,913 = 2,891 + 19 + 3**, which closes against the probe's shape census exactly: the error-descendant and both populations plus the 3 residual bare edges. **The `commandInErrorRecovery` KEY is present on 55,989 edges and TRUE on 2,913** — it is written as `isInsideErrorNode(node) \|\| undefined`, so `Object.keys` sees it on every `calls` edge while the value is `undefined`. JSON serialisation drops an `undefined` value, so nothing reaches the store, but a consumer reading `Object.keys(metadata)` sees the key on 55,989 edges and must test the value. Recorded rather than "fixed" by omitting the key: the other 13 keys this lane publishes are written the same way, and changing one to a conditional spread would make it inconsistent with all of them |
-| Round-15 fixtures + mutants | `bun run script/m14/run-fixtures.ts --lang bash` and `npx tsx validation/m14/fixtures/bash/mutants-bash-lane.mts` | **31/31 fixtures pass, 46/46 mutants caught, 0 survived, 0 did not apply** — 5 added this round. Two of the five die on rows that assert ABSENCE (`curl` unlabelled, `greet` not labelled), which is why the fixture carries a forbid row per shape rather than only present rows. Round 12 read 28/28 and 40/40 |
+| Round-15 fixtures + mutants | `bun run script/m14/run-fixtures.ts --lang bash` and `npx tsx validation/m14/fixtures/bash/mutants-bash-lane.mts` | **SUPERSEDED by the round-17 row below.** Round 15 as written: **31/31 fixtures pass, 46/46 mutants caught, 0 survived, 0 did not apply** — 5 added that round. Two of the five die on rows that assert ABSENCE (`curl` unlabelled, `greet` not labelled), which is why the fixture carries a forbid row per shape rather than only present rows. Round 12 read 28/28 and 40/40. **The 31 was not reproducible: 30 fixtures existed at this commit**, which round 17 corrects |
+| **Round-17 A/B — did the change alter an edge?** | `BB_AB_BASE=9b7cb8a7d npx tsx validation/m14/fixtures/bash/ab-round17-overrides-line.mts --all` | **WHOLE CORPUS, 4,185 admitted / 501,320 scanned / 127 repos, 0 degraded, both analyzers over the SAME bytes through one private tree handle, the old one materialised as a SIBLING module from `git show` (never `git stash`, limitation 17).** relationships **182,268 → 182,268, ADDED 0, REMOVED 0**; symbols **43,296 → 43,296, ADDED 0, REMOVED 0**; metadata GAINED **none**, LOST **none**. Of **138** `overrides` edges: **`overridesLine` CHANGED 64, unchanged 74**, key gained/lost **0/0**, moved toward the edge's line **64**, away **0**, **at or past the edge's own line 0**. **The 74 unchanged are names declared exactly twice, where first == prior — the change is correct on every edge and observable on 46% of them.** Re-checks round 15's claim on the same run: collision label gained on 675, `commandInErrorRecovery` true on 2,913, **both on one edge 0**. **Its first version FAILED on this correct change** by requiring the value to move to a SMALLER line; the declaration in effect before N is the closest one before N, so it moves UP. The invariant is now stated against the edge's own line |
+| **Round-17 fixtures + mutants** | `npx tsx script/m14/run-fixtures.ts --lang bash` and `npx tsx validation/m14/fixtures/bash/mutants-bash-lane.mts` | **31/31 fixtures pass (31 `.expectation.json` files, counted); 49/49 mutants caught, 0 survived, 0 did not apply** — 3 added (`overrides-line-is-first-declaration`, `overrides-line-is-the-declaration-itself`, `overrides-line-never-recorded`). `overrides-prior-line` is the only fixture that catches the first-declaration mutant, and it **FAILS against `9b7cb8a7d`'s analyzer while `redefinition-overrides` PASSES** — the two readings stated as a result, not asserted |
+| **Round-17 `contains`/`overrides` binding ceiling** | `npx tsx validation/m14/fixtures/bash/probe-bash-contains-overrides-ceiling.mts [--sample 600]` | **600 files / 4,185 admitted / 127 repos, production `parseFile`, published fields only.** `contains` 5,668 edges, 901 ambiguous in own file (15.9%); **owner AND line closes 901 (100%), still open 0** — no analyzer change made, the two fields already carry it. `overrides` 30 edges, 30 ambiguous; `overridesLine` picks ZERO 0, MANY 0, closes 30, **is the immediately-prior 30 (100%)** against **9 (30.0%)** measured on the same sample with the first-declaration behaviour |
 | m12 regex census gate | `npx tsx script/m12/verify-regex-census.ts` | **PASSED**: entries 5, HEAD scan 5, working-tree scan 5, missing 0, stale 0, unclassified 0, mislocated 0. **bash contributes 0 entries** and `scanAnalyzers("src/ast")` reads bash 0. The three regex literals round 2 added are gone (limitation in "Regex inventory") |
 | m60 relationship-type coverage gate | `bun run script/m60/rel-type-coverage-gate.ts --langs=bash` | **CHECK 1 DERIVATION clean** · CHECK 2 REACHABILITY clean (10 of 10 traversal default) · CHECK 3 AGREEMENT clean · CHECK 4 ENUM clean; **baseline: 104 recorded, 0 NEW, 104 repaid**. The committed `validation/m60/results/rel-type-coverage.json` carries **0 findings and 0 baseline rows naming bash** |
 | Shared mutant registry, bash slice | `BB_MUTANT_ONLY="bash/" bun run script/m14/mutate-analyzer.ts` | 23 shared mutants, **all 23 caught, 0 survivors** (`bash/owner-sentinel-global`, `module-owner-dropped`, `call-site-line-dropped`, `edge-lines-dropped`, `assigned-in-file-label-dropped`, `overrides-edge-dropped`, `arithmetic-read-dropped`, `isarray-always-false`, `readonly-claimed-as-export`, `case-arm-suppressed`, `dynamic-command-call-emitted`, `recovered-command-emitted`, `unset-edge-emitted`, `trap-signal-as-source`, `call-flags-always-both`, …). **The unscoped run reports 6 SURVIVING mutants, none of them bash** — see "Broken outside your language" |
