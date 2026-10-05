@@ -1668,20 +1668,32 @@ without reading a 24,000-line file's control flow:
 ```
 $ BB_LABEL_DUMP=julia bun run script/m14/differential.ts --repo julia --sample 40
 [label-dump] julia: truth-vs-comparable per label
-[label-dump]   calls          truth=  1875  comparable=  2094
-[label-dump]   contains       truth=   649  comparable=   450
-[label-dump]   extends        truth=    41  comparable=    27
-[label-dump]   instantiates   truth=    42  comparable=    64
-[label-dump]   references     truth=   592  comparable=   612
-[label-dump]   uses           truth=   907  comparable=   916
+[label-dump]   calls          truth=  1832  comparable=  2044
+[label-dump]   contains       truth=   647  comparable=   448
+[label-dump]   extends        truth=    40  comparable=    26
+[label-dump]   instantiates   truth=    41  comparable=    63
+[label-dump]   references     truth=   582  comparable=   608
+[label-dump]   uses           truth=   896  comparable=   905
 ```
 
-**Six labels are compared and three of the nine emitted types are absent from the list entirely** —
-`imports`, `exports` and `overrides` appear in neither column. The harness prints **no
-`COMPARED WITH NO TRUTH` line**, which is the correct behaviour and worth distinguishing from coverage:
-every label it *does* compare has truth behind it, and the three it cannot compare are not counted as
-covered at all rather than being counted against zero. That is the difference between an honest gap and
-the failure mode the gate header records, and it is why this section can state a count.
+**The per-label COUNTS in that block are a snapshot of a ROTATING sample and they move — an earlier
+run of the same command on the same commit printed `calls truth=1875 comparable=2094`, `contains
+647/450`, `extends 41/27`, `instantiates 42/64`, `references 592/612`, `uses 907/916`.** F5 draws its
+sample per run, so every figure in the block is expected to drift downward or upward with the draw and
+**none of them is the claim.** The claims are structural and both reproduce exactly on 2026-10-04:
+**six labels are compared**, the same six names every time; and **three of the nine emitted types are
+absent from both columns entirely** — `imports`, `exports` and `overrides` appear in neither. This
+file's rule is that a quoted snapshot is defended by sampling, rotation or a moving population, and
+this block was carrying rotating numbers without saying so — the same "a right measurement in the
+wrong slot" defect the doc keeps finding one level down. The stable figures are named here
+explicitly: the SET of compared labels, the SET of absent types, and the absence of a
+`COMPARED WITH NO TRUTH` line.
+
+The harness prints **no `COMPARED WITH NO TRUTH` line**, which is the correct behaviour and worth
+distinguishing from coverage: every label it *does* compare has truth behind it, and the three it
+cannot compare are not counted as covered at all rather than being counted against zero. That is the
+difference between an honest gap and the failure mode the gate header records, and it is why this
+section can state a count.
 
 | type | edges | in F5's compared set | independent oracle | what stands behind it instead |
 |---|---|---|---|---|
