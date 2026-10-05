@@ -121,7 +121,7 @@ const PLANTS: Planted[] = [
     // OVER-claim direction (rendered > known); nothing guards the UNDER-claim
     // direction — the index holds a row, the hover silently renders nothing,
     // and the gate reports itself verified.
-    expectFailedCheck: "a check asserting every stored relationship kind reaches the card or is declared absent",
+    expectFailedCheck: "D1: every stored relationship kind is rendered with a verb or DECLARED absent with a reason",
     clause: "§14 rule 1 (one surface, one answer); the audit's own question — index knows X, hover renders Y",
   },
   {
@@ -139,7 +139,7 @@ const PLANTS: Planted[] = [
     // usages` headline line — and counts list rows with /^\d+\. \[/. It never
     // compares the two against each other, and never parses the usages SECTION
     // header (`**usages** — N stored references`) at all.
-    expectFailedCheck: "a check asserting the usages-section header number equals the rows beneath it",
+    expectFailedCheck: "D2: every section header's stated count equals the rows beneath it",
     clause: "§13.4 (counts equal what is rendered); §14 rule 1",
   },
   {
@@ -155,7 +155,7 @@ const PLANTS: Planted[] = [
       '  return "structural"',
     // NO CHECK IN THE GATE OWNS THIS DEFECT CLASS. No check anywhere in the gate
     // compares a rendered evidence tier against the tier the index stored.
-    expectFailedCheck: "a check asserting each rendered evidence tier is one the index stored",
+    expectFailedCheck: "D3: every evidence tier the card renders is justified by a stored relationship row",
     clause: "§12.3 (enrichment/inference never at parser-fact tier); §14 rule 3",
   },
 ]
