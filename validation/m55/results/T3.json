@@ -3,23 +3,23 @@
   "code": "T3",
   "milestone": "M55",
   "status": "verified",
-  "checks": 52,
-  "passed": 52,
+  "checks": 87,
+  "passed": 87,
   "failed": 0,
   "realFailed": 0,
-  "negativeCases": 3,
+  "negativeCases": 7,
   "mutants": {
-    "total": 3,
-    "caught": 3
+    "total": 7,
+    "caught": 7
   },
-  "currentCommit": "c53a90abfc4d4042c3e8d260168f8fbdec274b3b",
+  "currentCommit": "ba99e1001f5b6afc40254f74e51b1930290354f0",
   "workingTreeRelevantChanges": [],
   "verifierCommand": "npx tsx script/m55/verify-relations.ts",
   "evidenceFile": "T3.json",
-  "generatedAt": "2026-09-19T02:54:03.575Z",
+  "generatedAt": "2026-10-05T16:54:30.880Z",
   "fixture": {
-    "workspace": "/tmp/m55-t3-ws-79bzNK",
-    "projectId": "3a25404dc80611745f7c76bdd878593dcf1d7b77",
+    "workspace": "/var/folders/4j/11tssyqj4kj0f8dfz06jsb700000gn/T/m55-t3-ws-L0wEG8",
+    "projectId": "823235f7280266180efa253b2a32ef7412be91c8",
     "symbols": 7,
     "rows": 12,
     "expect": {
@@ -33,8 +33,38 @@
         "main",
         "describe"
       ]
+    },
+    "r5": {
+      "note": "the second, seeded fixture — rows carrying REAL stored call-site lines, which the R1 fixture cannot express",
+      "storedUsageRows": 7,
+      "sources": [
+        "src/caller.ts",
+        "src/target.ts",
+        "src/other.ts"
+      ],
+      "shapes": {
+        "F1": "two call sites on two distinct stored lines from one caller -> two served places (§13.4)",
+        "F2": "two stored lines past the end of the source, on their OWN target symbol -> omitted and counted (§12.1); kept off r5-target so the count differential is not blocked by a defect in another lane's file (see knownGaps)",
+        "F3": "one caller, one stored line, two relationship kinds -> one place, one declared coalesced row (§13.2)",
+        "F4": "a different caller at the same stored line -> its own served place"
+      },
+      "targets": {
+        "r5Target": "src/target.ts (F1, F3, F4)",
+        "r5Target2": "src/target2.ts (F2, three lines, stored lines 40 and 41)"
+      }
     }
   },
+  "knownGaps": [
+    {
+      "id": "M55.T3-INTEGRATION-1",
+      "law": "§14 rule 1 / §13.4 / §12.1 — the hover's usage collector serves a stored call-site line the source cannot confirm.",
+      "where": "src/lsp/rich_hover.ts (richSitesForSymbol)",
+      "measured": "On the R5 fixture's `target2` (a three-line file with two usage rows stored at lines 40 and 41): textDocument/references serves 0 locations and declares omittedUnresolvable = 2; the hover's collector returns 2 usage sites at lines 40 and 41. So the hover renders two usage links that open past the end of the file, and hover's count (2) disagrees with references' (0) on the same index.",
+      "whyNotFixedHere": "rich_hover.ts is another lane's file. Its collector also lacks the line-bounds check that navigation.ts performs (`line0 >= createPositionMapper(sourceText).lineTexts.length`), and the fix's blast radius is three gates this integration was told not to regress (H2 rich-hover, the M24 hover gate, CALLSITE-AGREEMENT). Landed here it would be an unowned change to someone else's surface.",
+      "gateStatus": "GATED, not merely noted: the R5 section asserts the law on the surface this lane owns (references omits and counts), asserts the CONTROL that the fixture can fail it, and carries the hover's numbers in `observed.r5` so the gap is visible in the record. Under contract F7 the gate exists before any future fix, so the fix cannot land unverified.",
+      "firstMeasuredAt": "M55.T3 integration, branch integration/lsp-truth"
+    }
+  ],
   "observed": {
     "greetUsageCount": 3,
     "greetRenderedRows": [
@@ -46,17 +76,66 @@
     "greetAllUsageCount": 0,
     "greeterUsageCount": 2,
     "referencesNoDecl": 3,
-    "referencesWithDecl": 4
+    "referencesWithDecl": 4,
+    "referencesCoalescedRows": 1,
+    "r5": {
+      "storedUsageRows": 7,
+      "servedLocations": 4,
+      "coalescedRows": 1,
+      "omittedUnresolvable": 0,
+      "hoverRenderedSites": 4,
+      "sqlCount": 4,
+      "referencesLocations": 4,
+      "preFixKeyCount": 2,
+      "pastEof": {
+        "servedLocations": 0,
+        "omittedUnresolvable": 2,
+        "collectorSites": 2,
+        "collectorLines": [
+          40,
+          41
+        ]
+      }
+    }
   },
+  "governingLaw": {
+    "unitOfOneUsage": "A USAGE SITE is a stored relationship row whose TARGET is the symbol and whose kind is not a declaration containment (src/lsp/relations.ts, unchanged by this integration).",
+    "unitOfOneCount": "A COUNT is a count of SERVED POSITIONS — the places the index can put an editor caret — not of stored rows and not of symbols. hover's count, references' totalCount and countUsageSites are all that same number, which is why they agree without any of them declaring a filter.",
+    "why": "Integration measurement settled this. textDocument/references keyed its dedupe on path:line:rowId ('one location per stored row'), while hover and the SQL count keyed on the served position. On five real, populated indexes the rowId key's ONLY effect was to serve byte-identical duplicate locations: 8,285 (818db37d), 2,417 (064be526), 684 (99c211a1) served positions each carrying two or more rows, 99.5% of them two rows of DIFFERENT relationship kinds for one caller at one stored line. An editor cannot show two entries at the same file/line/column, so that was §13.1's rendering defect and §13.4's count lie on two surfaces at once. The two keys agree on every genuine multi-call-site case, because the store's row identity keys on the call-site LINE (src/ast/parallel-indexer.ts:4147): verified by indexing a real source with two calls to one callee — two calls on ONE line produce ONE stored row, two calls on DIFFERENT lines produce two rows and two served locations.",
+    "declaredNotHidden": "The rows that share a served position are neither served twice nor dropped: `ReferencesResult.coalescedRows` counts them (§13.2 'nothing is merged into silence'), and the account served + coalesced + omittedUnresolvable + omittedUnpositionable == stored is asserted closed over the fixture's rows (R2) and R5's (R5).",
+    "declaredFilters": "Two surfaces legitimately answer a narrower or wider question, and both now say so in the payload. (1) `textDocument/references` with includeDeclaration adds exactly one entry, labelled `callSite.kind: 'declaration'` with DECLARATION_ENTRY_NOTE, so it can never read as a usage. (2) The hub (`bb/graph` mode 'usages') carries `declaredExclusions` naming the two stored-row classes it does not serve — self-referential rows and declaration containments — so its caller list can differ from hover's without either surface being unable to say why. (3) Every surface that prints a usage count states its UNIT, from the single copy USAGE_COUNT_UNIT_LABEL: hover's usages header and the hub's `countUnit` both quote it verbatim (asserted by differential, so no surface can paraphrase the unit into its own dialect). `NavigationCallSite.rowId` remains on the payload but is no longer part of any dedupe key — it is the traceability field naming the stored row a served place came from."
+  },
+  "gateFindings": [
+    "R2's differential ('the independent SQL count agrees with the collection') was VACUOUS before this integration. t3-fixture.ts leaves line_number unset on every seeded row, so every address is the caller's declaration substitute and the SQL's dedupe key coincides with the collector's key — two keys that cannot differ cannot disagree. MEASURED: with the pre-fix key planted in src/lsp/relations.ts this gate still reported 57/57 VERIFIED. R5 now carries rows with distinct stored call-site lines, and M4 plants the pre-fix key against them.",
+    "The R1 fixture's r4/r5 pair (same source, same target, same kind, no stored line) is not a row set the production indexer can write: the row id is `projectId:rel:source:targetName:relType:relLine` under INSERT OR IGNORE (src/ast/parallel-indexer.ts:4147-4150), so the second insert is ignored. The pair is retained as a COLLAPSE case — two rows, one served position, one declared coalesced row — which is a real shape, and its source/target/kind triple is stated in R1 so the fiction is visible rather than load-bearing.",
+    "Measured on this repository's own index and three others: `(source, target, type, line)` tuples that DO repeat exist (802 on 818db37d, 442 on 99c211a1) even though the primary writer's identity forbids them — the snapshot-repair writer (repairInEdges) uses a different id shape. So the store is not a hard guarantee of one row per (source, target, type, line); the collapse path is a live case, not a hypothetical one."
+  ],
   "failures": [],
+  "determinism": {
+    "declaredVolatileFields": [
+      "generatedAt",
+      "fixture.workspace",
+      "fixture.projectId",
+      "bbSeal.sealedAt",
+      "bbSeal.contentSha256"
+    ],
+    "whyTheseAndNoOthers": "fixture.workspace is a mkdtemp path — the fixture needs an isolated workspace and an isolated BB_DATA_DIR per run, and a fixed path would make concurrent runs collide on one sqlite file. fixture.projectId is the sha1 of that same path (how BrainDatabase derives the project directory), so it moves with it. Neither is a claim about the program under test: every number in this record is a property of the SEEDED ROWS (T3_ROWS / the R5 rows declared above), which are fixed, and of the components, which are fixed. Asserted rather than assumed: this record also carries `fixture.expect`, the row set's own expectation, and every count is checked against the components rather than against a stored number from a previous run.",
+    "measuredAt": "two consecutive runs at commit 462f620be, compared field by field"
+  },
   "limitations": [
-    "The analyzers of the confirmatory languages store line_number = 0 for call rows (verified on the demo index: every TypeScript/Java usage row carries 0), so a usage row's file:line is the REFERENCING symbol's indexed location — where the call is — and the rendered copy says so. Invocation-column precision needs the analyzers to store call-site lines; the gate asserts the stored-line case only if the index carries one (it does not today).",
-    "The wire legs run the real dist server against a real seeded index in an isolated BB_DATA_DIR; a stale dist is rebuilt first (lsp-wire.ts), never silently used.",
-    "bb/graph declares its own traversal profile (calls/callers by default): the gate asserts callers are a SUBSET of the usage-site set and equality where the usage sites are all `calls` rows — a graph row that is not a stored usage site would fail."
+    "The analyzers of the confirmatory languages DID stop storing line_number = 0 for call rows: measured on a real `bb index` run of this repository's own sources, every TypeScript call row carries a real call-site line (rows for `main`, `twiceOneLine`, `twiceTwoLines` stored lines 4, 10, 13 and 14). The prior limitation text ('verified on the demo index: every TypeScript/Java usage row carries 0') is STALE and is corrected here. Per-language coverage of a real call-site line is M59.A7's claim; on the five real indexes read for this integration, real lines dominate (e.g. 765,602 of 766,227 rows on 818db37d; 99c211a1 is 160,007 of 160,007) but NULL lines exist (625 on 818db37d, 384 on 6f461b7b) and are what the labelled-declaration-substitute branch is for.",
+    "AN EXACT CALL SITE IS A LINE-ONLY RANGE. brain_relationship stores a line and no column for a call site, so a served call site is zero-width at character 0 of the stored line. Two different callers on one stored line therefore share one served position and are counted as one place with a declared collapse — the multiplicity is in the store and in `coalescedRows`, not in the range. Invocation-column precision needs the analyzers to store call-site columns.",
+    "THE SERVER DOES NOT FORWARD THE DECLARED COUNTERS TO THE WIRE. src/lsp/server.ts maps each location through navLocationToWire and returns Location[], so `coalescedRows`, `omittedUnresolvable`, `omittedUnpositionable` and `callSite` do not reach the editor. The component is honest and this gate proves the component carries them; it cannot prove the editor receives them. The wire shape is the server's decision and that file is not this lane's. LSP permits extra properties on a Location object, so the wiring is available.",
+    "THE WIRE LEGS CANNOT SEE `coalescedRows` EITHER, for the same reason — R3's references assertions compare the served Location[] against the hover count, which is the right comparison for a wire that carries only positions. The collapse counter is gated at the component level (R2) and by mutant M6.",
+    "countUsageSites RESTATES THE ADDRESS RULE IN SQL and therefore cannot read the source. A row whose stored byte columns do not convert against the file on disk is counted by the SQL and dropped by the collector; `isResolvableUsageSiteRow` exists so a caller can see that difference. That case is measured and declared. It is NOT the case fixed here, which was a 30-35% systematic shortfall on every real index measured.",
+    "THE R5 FIXTURE IS SEEDED, NOT INDEXED. Its rows are written with the production schema through BrainDatabase, and its byte columns are computed from the sources on disk, but they are hand-authored rather than produced by `bb index` — the indexer was measured separately (and its findings are in `governingLaw.why` and `gateFindings`), and the R5 fixture reproduces the row SHAPE that measurement found. A seeded fixture cannot prove the analyzer keeps producing that shape; script/m59/verify-honest-callsite.ts is the leg that owns that.",
+    "bb/graph declares its own traversal profile (all ten stored kinds by default, src/intelligence/graph/graph-engine.ts:45) because a traversal rooted at a class cannot reach its own methods without `contains`. The hub therefore excludes declaration containments at the USAGES GROUPING (src/lsp/graph_usages.ts), not in the engine. `mode: 'graph'` still serves every stored kind, and this gate does not assert anything about that shape — an agent-facing walk that lists a parent edge is a different question from 'who uses this symbol'.",
+    "The bb_graph MCP tool (src/mcp/tool-handlers.ts) answers `direction: callers` from the engine's raw edges and is NOT covered by this gate. Whether it admits declaration containments as callers is therefore UNVERIFIED here; it was left unchanged because it is a different door answering a different question, and changing it was out of this integration's measured scope.",
+    "Evidence-tree freshness (EVID-TREE) and the other milestone gates were re-run for regression only; their records are not this lane's to re-seal."
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-19T02:54:03.577Z",
-    "contentSha256": "04503387eb26832eef10c081064977aa96dbe89886212fa7639fa0b375849864"
+    "sealedAt": "2026-10-05T16:54:30.882Z",
+    "contentSha256": "4f29529710a2c57cdb3370942c944578e0076afd6270dae0b29b967b1939cf4e"
   }
 }

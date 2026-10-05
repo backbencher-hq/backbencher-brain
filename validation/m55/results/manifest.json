@@ -3,7 +3,7 @@
   "milestone": "M55",
   "githubMilestone": 55,
   "title": "The Hub That Tells the Truth (IDE v8)",
-  "status": "closed",
+  "status": "open",
   "authority": "docs/m55/M55-MASTER-PLAN.md (Issue groups table)",
   "governingContract": "docs/IDE-HONESTY-CONTRACT.md (§15 Truth Rules, M55 amendment — landed by G1)",
   "prerequisite": "M44 + M53 completion bars met — re-audited by G1 on every run; blocked (never green) when the external fixture or the display tooling is absent",
@@ -20,7 +20,7 @@
       "code": "G1",
       "githubIssue": 773,
       "tool": "m55-governance",
-      "status": "verified",
+      "status": "known-gap",
       "scope": "M55 ledger; closure gate (script/m55/verify-governance.ts); §15 Truth Rules in the contract doc, machine-gated; the screenshot protocol pinned; M44 + M53 bars re-audited on every run",
       "acceptanceCriteria": [
         "gate exits 0 at a HEAD where the M44 and M53 gates also exit 0; exits non-zero for each planted mutant ledger (missing evidence file, stale commit pin, no acceptance criteria, a closable issue behind a planned prerequisite)",
@@ -33,15 +33,16 @@
         "verify-chain + CI verify:fast wiring present (machine-read from package.json)"
       ],
       "evidence": {
-        "status": "verified",
+        "status": "known-gap",
         "verifierCommand": "npx tsx script/m55/verify-governance.ts",
         "evidenceFile": "G1.json",
-        "passed": 14,
+        "passed": 15,
         "failed": 0,
         "realFailed": 0,
         "mutantsCaught": null,
         "mutantsTotal": null,
-        "negativeCases": 6
+        "negativeCases": 8,
+        "currentCommit": "a0ed9eade7008de7ce93a312f6b0bd7e182a43a9"
       }
     },
     {
@@ -69,14 +70,15 @@
         "failed": 0,
         "realFailed": 0,
         "mutantsCaught": 5,
-        "mutantsTotal": 5
+        "mutantsTotal": 5,
+        "currentCommit": "a0ed9eade7008de7ce93a312f6b0bd7e182a43a9"
       }
     },
     {
       "code": "T2",
       "githubIssue": 771,
       "tool": "lsp-call-hierarchy-truth",
-      "status": "verified",
+      "status": "known-gap",
       "scope": "call hierarchy on the same relationship truth as the hub: call-site ranges, no self-references, expand never errors, declared depth/cycle policy",
       "acceptanceCriteria": [
         "fixture-first: a fixture with a mutual pair, a self-recursive method and a 3-deep chain is authored before the change",
@@ -91,21 +93,22 @@
         "the previous -32603 expand error reproduced as a permanent mutant"
       ],
       "evidence": {
-        "status": "verified",
+        "status": "known-gap",
         "verifierCommand": "npx tsx script/m55/verify-call-hierarchy.ts",
         "evidenceFile": "T2.json",
-        "passed": 39,
+        "passed": 37,
         "failed": 0,
         "realFailed": 0,
         "mutantsCaught": 5,
-        "mutantsTotal": 5
+        "mutantsTotal": 5,
+        "currentCommit": "a0ed9eade7008de7ce93a312f6b0bd7e182a43a9"
       }
     },
     {
       "code": "T3",
       "githubIssue": 772,
       "tool": "lsp-usage-vocabulary",
-      "status": "verified",
+      "status": "known-gap",
       "scope": "ONE relation vocabulary: 'usages' means stored usage sites; hover count, hover list, bb/graph callers/references and textDocument/references agree or each state their declared filter",
       "acceptanceCriteria": [
         "fixture-first: a fixture with a symbol having zero callers, a callee, an owning class and multiple call sites",
@@ -120,15 +123,16 @@
         "no lane violations"
       ],
       "evidence": {
-        "status": "verified",
+        "status": "known-gap",
         "verifierCommand": "npx tsx script/m55/verify-relations.ts",
         "evidenceFile": "T3.json",
-        "passed": 52,
-        "failed": 0,
+        "passed": 50,
+        "failed": 2,
         "realFailed": 0,
         "mutantsCaught": null,
         "mutantsTotal": null,
-        "negativeCases": 3
+        "negativeCases": 3,
+        "currentCommit": "a0ed9eade7008de7ce93a312f6b0bd7e182a43a9"
       }
     },
     {
@@ -157,7 +161,8 @@
         "realFailed": 0,
         "mutantsCaught": null,
         "mutantsTotal": null,
-        "negativeCases": 4
+        "negativeCases": 4,
+        "currentCommit": "a0ed9eade7008de7ce93a312f6b0bd7e182a43a9"
       }
     },
     {
@@ -186,7 +191,8 @@
         "realFailed": 0,
         "mutantsCaught": null,
         "mutantsTotal": null,
-        "negativeCases": 7
+        "negativeCases": 7,
+        "currentCommit": "9d53dc8f3d900e24276fc2837b1bf8122a0ce70a"
       }
     },
     {
@@ -215,7 +221,8 @@
         "failed": 0,
         "realFailed": 0,
         "mutantsCaught": 4,
-        "mutantsTotal": 4
+        "mutantsTotal": 4,
+        "currentCommit": "a0ed9eade7008de7ce93a312f6b0bd7e182a43a9"
       }
     },
     {
@@ -244,14 +251,15 @@
         "realFailed": 0,
         "mutantsCaught": null,
         "mutantsTotal": null,
-        "negativeCases": 17
+        "negativeCases": 17,
+        "currentCommit": "0a613abadfafecb33045b6f66c41f49a29c45fd0"
       }
     },
     {
       "code": "X1",
       "githubIssue": 778,
       "tool": "m55-closure",
-      "status": "verified",
+      "status": "known-gap",
       "scope": "program closure audit M24→M55 at one HEAD; the owner's v8 verdict pack (every claim with its frame); the cross-language false-positive hand-off note to the analyzer lane; the v9 statement",
       "acceptanceCriteria": [
         "every M55 issue's evidence exists at the audit HEAD (a stale pin fails G1's ladder)",
@@ -265,22 +273,23 @@
         "no lane violations"
       ],
       "evidence": {
-        "status": "verified",
+        "status": "known-gap",
         "verifierCommand": "npx tsx script/m55/verify-closure.ts",
         "evidenceFile": "X1.json",
-        "passed": 40,
-        "failed": 0,
+        "passed": 37,
+        "failed": 4,
         "realFailed": 0,
         "mutantsCaught": null,
         "mutantsTotal": null,
-        "negativeCases": 5
+        "negativeCases": 5,
+        "currentCommit": "a0ed9eade7008de7ce93a312f6b0bd7e182a43a9"
       },
       "handoffIssue": 816
     }
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-14T23:42:48.587Z",
-    "contentSha256": "be8d5083ba1286544dac08d3039bef3292ee73a2419ac8d61f28fe870e5dbb72"
+    "sealedAt": "2026-10-04T23:56:57.394Z",
+    "contentSha256": "75047ee48f65c55c86ccb47000d20107f89cc048661c1b1cc294d79ead0cd5a4"
   }
 }

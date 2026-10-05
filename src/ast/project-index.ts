@@ -462,16 +462,39 @@ export async function buildProjectIndexStreaming(
   parser.setLanguage(language)
   const index = emptyProjectIndex()
   let done = 0
+  // Both forms report the same accounting. The streaming form previously left
+  // `stats.files` at 0 and never touched `stats.damaged`, so a caller comparing
+  // the two forms saw `{"files":0,"damaged":0}` against `{"files":2,"damaged":0}`
+  // — two APIs documented as equivalent disagreeing, with no error. Measured.
+  //
+  // A file that cannot be read, or whose parser returns null, is a SHORTFALL. It
+  // is counted in `damaged` rather than skipped silently: a caller cannot tell
+  // "indexed everything" from "indexed what it could reach" if both report the
+  // same thing, which is the failure the collecting form refuses with a thrown
+  // error. Here the tree is already being streamed, so the honest middle is to
+  // finish and report the count.
+  let damaged = 0
   for (const f of files) {
     let text: string
-    try { text = fs.readFileSync(f, "utf8") } catch { continue }
+    try {
+      text = fs.readFileSync(f, "utf8")
+    } catch {
+      damaged++
+      done++
+      continue
+    }
     let tree: any = null
     try {
       tree = parser.parse(text)
-      if (tree?.rootNode) indexTree(tree.rootNode, index, spec)
+      if (tree?.rootNode) {
+        indexTree(tree.rootNode, index, spec)
+      } else {
+        damaged++
+      }
     } catch {
       // A file that will not parse contributes no declarations, exactly as in the
-      // collecting form. Skipping it is recorded by the caller's own skip accounting.
+      // collecting form. Recorded, not hidden.
+      damaged++
     } finally {
       // The whole point: free the tree before the next parse.
       try { tree?.delete?.() } catch { /* an aborted instance refuses politely */ }
@@ -479,6 +502,7 @@ export async function buildProjectIndexStreaming(
     done++
     if (onProgress && done % 500 === 0) onProgress(done, files.length)
   }
+  index.stats = { files: done - damaged, damaged }
   return index
 }
 

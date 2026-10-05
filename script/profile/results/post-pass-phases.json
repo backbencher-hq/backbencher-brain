@@ -1,0 +1,329 @@
+{
+  "corpus": {
+    "srcProjectId": "818db37d8f54173ad1357ab24627373da2e9418c",
+    "before": {
+      "tag": "before",
+      "files": 8126,
+      "symbols": 453476,
+      "relationships": 630467,
+      "attached": 597059,
+      "enriched": 630467,
+      "taints": 9496,
+      "embeddings": 94484
+    },
+    "after": {
+      "tag": "after",
+      "files": 8126,
+      "symbols": 453476,
+      "relationships": 630467,
+      "attached": 597530,
+      "enriched": 630467,
+      "taints": 9496,
+      "embeddings": 94484
+    }
+  },
+  "wallMs": 1378179,
+  "reportedTotalMs": 1372669,
+  "phases": [
+    {
+      "name": "relationships",
+      "ms": 1157541,
+      "outcome": "ok"
+    },
+    {
+      "name": "enrichment",
+      "ms": 58917,
+      "outcome": "ok"
+    },
+    {
+      "name": "gravity",
+      "ms": 79397,
+      "outcome": "ok"
+    },
+    {
+      "name": "taint",
+      "ms": 468,
+      "outcome": "ok"
+    },
+    {
+      "name": "health",
+      "ms": 2715,
+      "outcome": "ok"
+    },
+    {
+      "name": "integrity",
+      "ms": 17166,
+      "outcome": "ok"
+    },
+    {
+      "name": "vectorBlobs",
+      "ms": 807,
+      "outcome": "ok"
+    },
+    {
+      "name": "analyze",
+      "ms": 37377,
+      "outcome": "ok"
+    }
+  ],
+  "profilerSnapshotMs": 18805,
+  "profilerSnapshotCalls": 13,
+  "peakRssMiB": 592,
+  "rssAtPhaseEdgesMiB": [
+    {
+      "tag": "Resolving cross-file relationships...",
+      "rssMiB": 284
+    },
+    {
+      "tag": "✓ resolved in 1157542ms",
+      "rssMiB": 97
+    },
+    {
+      "tag": "Enriching relationships with architectural context...",
+      "rssMiB": 101
+    },
+    {
+      "tag": "✅ Enriched 107,138 relationships (736 patterns) in 58917",
+      "rssMiB": 585
+    },
+    {
+      "tag": "Computing gravity scores...",
+      "rssMiB": 585
+    },
+    {
+      "tag": "✓ gravity in 79397ms",
+      "rssMiB": 586
+    },
+    {
+      "tag": "Analyzing taint flows & security...",
+      "rssMiB": 586
+    },
+    {
+      "tag": "✓ taint(468ms) + health(2715ms)",
+      "rssMiB": 591
+    },
+    {
+      "tag": "✓ health check in 17166ms",
+      "rssMiB": 592
+    },
+    {
+      "tag": "⚠️  Index health: 85% — 2 warnings (run bb_health(integr",
+      "rssMiB": 592
+    },
+    {
+      "tag": "❌ Index Completeness: The indexer recorded this run's st",
+      "rssMiB": 592
+    },
+    {
+      "tag": "✓ vector blobs: 0/0 promoted in 807ms",
+      "rssMiB": 592
+    },
+    {
+      "tag": "✓ planner stats (ANALYZE) in 37377ms",
+      "rssMiB": 592
+    }
+  ],
+  "snapshots": [
+    {
+      "tag": "Resolving cross-file relationships...",
+      "files": 8126,
+      "symbols": 453476,
+      "relationships": 630467,
+      "attached": 597059,
+      "enriched": 630467,
+      "taints": 9496,
+      "embeddings": 94484
+    },
+    {
+      "tag": "✓ resolved in 1157542ms",
+      "files": 8126,
+      "symbols": 453476,
+      "relationships": 630467,
+      "attached": 597530,
+      "enriched": 630467,
+      "taints": 9496,
+      "embeddings": 94484
+    },
+    {
+      "tag": "Enriching relationships with architectural context...",
+      "files": 8126,
+      "symbols": 453476,
+      "relationships": 630467,
+      "attached": 597530,
+      "enriched": 630467,
+      "taints": 9496,
+      "embeddings": 94484
+    },
+    {
+      "tag": "✅ Enriched 107,138 relationships (736 patterns) in 58917",
+      "files": 8126,
+      "symbols": 453476,
+      "relationships": 630467,
+      "attached": 597530,
+      "enriched": 630467,
+      "taints": 9496,
+      "embeddings": 94484
+    },
+    {
+      "tag": "Computing gravity scores...",
+      "files": 8126,
+      "symbols": 453476,
+      "relationships": 630467,
+      "attached": 597530,
+      "enriched": 630467,
+      "taints": 9496,
+      "embeddings": 94484
+    },
+    {
+      "tag": "✓ gravity in 79397ms",
+      "files": 8126,
+      "symbols": 453476,
+      "relationships": 630467,
+      "attached": 597530,
+      "enriched": 630467,
+      "taints": 9496,
+      "embeddings": 94484
+    },
+    {
+      "tag": "Analyzing taint flows & security...",
+      "files": 8126,
+      "symbols": 453476,
+      "relationships": 630467,
+      "attached": 597530,
+      "enriched": 630467,
+      "taints": 9496,
+      "embeddings": 94484
+    },
+    {
+      "tag": "✓ taint(468ms) + health(2715ms)",
+      "files": 8126,
+      "symbols": 453476,
+      "relationships": 630467,
+      "attached": 597530,
+      "enriched": 630467,
+      "taints": 9496,
+      "embeddings": 94484
+    },
+    {
+      "tag": "✓ health check in 17166ms",
+      "files": 8126,
+      "symbols": 453476,
+      "relationships": 630467,
+      "attached": 597530,
+      "enriched": 630467,
+      "taints": 9496,
+      "embeddings": 94484
+    },
+    {
+      "tag": "⚠️  Index health: 85% — 2 warnings (run bb_health(integr",
+      "files": 8126,
+      "symbols": 453476,
+      "relationships": 630467,
+      "attached": 597530,
+      "enriched": 630467,
+      "taints": 9496,
+      "embeddings": 94484
+    },
+    {
+      "tag": "❌ Index Completeness: The indexer recorded this run's st",
+      "files": 8126,
+      "symbols": 453476,
+      "relationships": 630467,
+      "attached": 597530,
+      "enriched": 630467,
+      "taints": 9496,
+      "embeddings": 94484
+    },
+    {
+      "tag": "✓ vector blobs: 0/0 promoted in 807ms",
+      "files": 8126,
+      "symbols": 453476,
+      "relationships": 630467,
+      "attached": 597530,
+      "enriched": 630467,
+      "taints": 9496,
+      "embeddings": 94484
+    },
+    {
+      "tag": "✓ planner stats (ANALYZE) in 37377ms",
+      "files": 8126,
+      "symbols": 453476,
+      "relationships": 630467,
+      "attached": 597530,
+      "enriched": 630467,
+      "taints": 9496,
+      "embeddings": 94484
+    }
+  ],
+  "logTimeline": [
+    {
+      "atMs": 5510,
+      "text": "  Resolving cross-file relationships..."
+    },
+    {
+      "atMs": 1164929,
+      "text": "  ✓ resolved in 1157542ms"
+    },
+    {
+      "atMs": 1171754,
+      "text": "  Enriching relationships with architectural context..."
+    },
+    {
+      "atMs": 1172587,
+      "text": "enriching reading 0%"
+    },
+    {
+      "atMs": 1175277,
+      "text": "enriching counting 0%"
+    },
+    {
+      "atMs": 1203907,
+      "text": "enriching enriching 25%"
+    },
+    {
+      "atMs": 1231495,
+      "text": "enriching done 100%"
+    },
+    {
+      "atMs": 1231495,
+      "text": "  ✅ Enriched 107,138 relationships (736 patterns) in 58917ms"
+    },
+    {
+      "atMs": 1232379,
+      "text": "  Computing gravity scores..."
+    },
+    {
+      "atMs": 1312600,
+      "text": "  ✓ gravity in 79397ms"
+    },
+    {
+      "atMs": 1313297,
+      "text": "  Analyzing taint flows & security..."
+    },
+    {
+      "atMs": 1317169,
+      "text": "  ✓ taint(468ms) + health(2715ms)"
+    },
+    {
+      "atMs": 1335163,
+      "text": "  ✓ health check in 17166ms"
+    },
+    {
+      "atMs": 1336268,
+      "text": "  ⚠️  Index health: 85% — 2 warnings (run bb_health(integrity=true) for details)"
+    },
+    {
+      "atMs": 1337381,
+      "text": "    ❌ Index Completeness: The indexer recorded this run's status as \"partial\" — 1000 file(s) errored during the run. An index marked partial"
+    },
+    {
+      "atMs": 1339304,
+      "text": "  ✓ vector blobs: 0/0 promoted in 807ms"
+    },
+    {
+      "atMs": 1377603,
+      "text": "  ✓ planner stats (ANALYZE) in 37377ms"
+    }
+  ],
+  "integrityHealth": 85
+}

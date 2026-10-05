@@ -16,9 +16,10 @@
 // If the checkout's file set matches a previously indexed project's file set,
 // the DB can be adopted instead of reindexing from zero.
 import { createHash } from "crypto"
-import { readFile, readdir, stat } from "fs/promises"
+import { readFile, readdir, stat, open } from "fs/promises"
 import { existsSync } from "fs"
 import path from "node:path"
+import { ParallelIndexerConfig, parallelIndexerCliSkipPatterns } from "./parallel-indexer"
 
 /** sha1 of a sorted, de-duplicated relative-path set. */
 export function relativePathFingerprint(sortedRel: string[]): string {
@@ -60,15 +61,24 @@ const largeSourceExtensions = new Set([".js", ".ts", ".jsx", ".tsx", ".mjs", ".c
 const skipDirNames = new Set([".git", ".svn", ".hg", ".cache", ".nyc_output", ".venv", ".next", ".nuxt", ".svelte-kit", ".turbo"])
 const compiledDirTokens = ["/perf/", "/Microbenchmarks/", "/wwwroot/", "/coverage/", "/node_modules/", "/dist/", "/build/", "/.git/", "/obj/", "/bin/", "/testData/"]
 
-// Skipped regardless of language/extension (shouldSkipCli parity).
-const cliSkipPatterns: RegExp[] = [
-  /\/node_modules\//, /\/dist\//, /\/build\//, /\/\.git\//,
-  /\/storybook-static\//, /\/\.turbo\//, /\/\.next\//,
-  /\/coverage\//, /\/__pycache__\//, /\/\.cache\//,
-  /.*\.min\./, /.*-min\./, /.*\.bundle\./, /.*\.chunk\./,
-  /snapshot\.json$/, /openapi\.json$/, /package-lock\.json$/,
-  /yarn\.lock$/, /bun\.lockb$/,
-]
+// Skipped regardless of language/extension.
+//
+// This list used to be a hand-maintained COPY, and it had drifted by 21 directory
+// names discovery skips — including `generated`, `bower_components`, `out`, `bin`,
+// `test`, `vendor`, `platforms` and `wwwroot`. The walk therefore counted files
+// discovery would never index, so the two fingerprints disagreed on an UNCHANGED
+// tree and every index looked permanently stale. Measured on a fixture with 6
+// deliberately divergent files: walk 9, indexed 3.
+//
+// It is now DERIVED from the two lists discovery actually consults, rather than
+// copied again — a third copy is exactly what rots. Note those two lists do not
+// agree with each other either: `snapshot.json` is in the CLI skip list but not
+// in `skipPatterns`, and `schema.json` is in `skipPatterns` but not the CLI list.
+// So the union is used, because the question the walk has to answer is "will
+// discovery index this?", and the honest answer is "no, if EITHER list says so".
+const cliSkipPatterns: RegExp[] = Array.from(
+  new Set([...ParallelIndexerConfig.skipPatterns, ...parallelIndexerCliSkipPatterns()]),
+)
 
 async function loadIgnores(root: string, ownPath: string, parentIg: any): Promise<any> {
   try {
@@ -95,6 +105,29 @@ const DEFAULT_IGNORE_PATTERNS = [
   "**/perf/**", "**/Microbenchmarks/**", "**/wwwroot/**", "**/testassets/**",
   "**/benchmarkapps/**", "**/coverage/**", "**/testData/**",
 ]
+
+/**
+ * The first line of a file, for shebang detection — and nothing more.
+ *
+ * Bounded so this can never read a large file into memory: the walk touches
+ * every extensionless entry in a tree, and some of those are device nodes or
+ * multi-gigabyte blobs. A shebang is on line 1, so 256 bytes is generous; a file
+ * that opens with a BOM or whitespace before `#!` still fits.
+ */
+async function readShebang(p: string): Promise<string> {
+  try {
+    const fh = await open(p, "r")
+    try {
+      const buf = Buffer.alloc(256)
+      const { bytesRead } = await fh.read(buf, 0, 256, 0)
+      return buf.subarray(0, bytesRead).toString("utf8")
+    } finally {
+      await fh.close()
+    }
+  } catch {
+    return ""
+  }
+}
 
 async function walk(root: string, dir: string, ig: any, depth: number, rel: string[]): Promise<void> {
   if (depth > 50) return
@@ -128,7 +161,33 @@ async function walk(root: string, dir: string, ig: any, depth: number, rel: stri
       continue
     }
     if (!entry.isFile()) continue
-    if (!detectLanguageFromPath(fullPath)) continue
+    // `detectLanguageFromPath` takes optional CONTENT, and content is REQUIRED to
+    // resolve an EXTENSIONLESS file: `nvm`, `libexec/rbenv` and `rbenv-init` are
+    // indexable only by their shebang — the whole reason the shebang rule exists
+    // (M14 #277: measured over five bash corpora, 385 extensionless files carry
+    // one and 97.7% parse clean).
+    //
+    // Passing no content made this walk MISS every one of them while discovery
+    // indexed them, so the two fingerprints disagreed on a tree that had not
+    // changed — measured walk=4 files vs index=5 rows, permanently. Every index
+    // then looked stale forever and the "did anything change" signal became
+    // meaningless.
+    //
+    // Only the first bytes are read, and only when the name carries no extension:
+    // a recognised extension always wins, so sniffing those would be wasted I/O
+    // on every file in the tree.
+    const baseName = entry.name
+    const hasExt = baseName.lastIndexOf(".") > 0
+    let detected: string | null = null
+    if (hasExt) {
+      detected = detectLanguageFromPath(fullPath)
+    } else {
+      // A basename can be a language on its own (Rakefile, Makefile); that needs
+      // no content. Otherwise fall back to the shebang.
+      detected = detectLanguageFromPath(fullPath)
+      if (!detected) detected = detectLanguageFromPath(fullPath, await readShebang(fullPath))
+    }
+    if (!detected) continue
     if (cliSkipPatterns.some((p) => p.test(normPath))) continue
     jobs.push(
       (async () => {

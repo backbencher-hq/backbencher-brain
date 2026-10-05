@@ -89,11 +89,30 @@
 //                  row AT that path, and a row that is only in the set because
 //                  the cascade range widened is marked as such on the payload
 //                  and in the panel (M63.T2)
+//   G7 addressed:   every position this surface publishes about a USAGE is the
+//                  address owner's `CallSiteAddress` for the row this entry
+//                  quotes (M62, §15.3). The dependent's own declaration is a
+//                  separate, separately-named field. There is no path by which a
+//                  stored `0`, a NULL or a declaration reaches the wire wearing
+//                  the name of a call site — and the two absences that look alike
+//                  (the store carries no line; no row could be attributed) carry
+//                  different notes, because they are different investigations.
+//                  Gated by script/m62/verify-consumers.ts (A2, R6).
 
 import { graphTraversal } from "../intelligence/graph/graph-engine"
+// M62 (§15.3): the address owner. This surface derives NO position of its own —
+// it reads the ENGINE's address for the row it quotes, and for the depth-
+// corrected path it re-reads the stored column through the owner's declared
+// select/adapter pair (line-address.ts § L6), never as a raw value.
+import {
+  STORED_LINE_SELECT,
+  deriveCallSiteAddress,
+  storedLineFromRow,
+  unattributedAddress,
+} from "../intelligence/graph/line-address"
 import { AnalysisExclusions } from "../ast/analysis-exclusions"
 import { classifyTier, type EvidenceTier } from "./evidence_tier"
-import type { GraphNode } from "../intelligence/contracts"
+import type { CallSiteAddress, GraphNode } from "../intelligence/contracts"
 
 export const IMPACT_BUDGET = {
   /** maximum reverse-dependency nodes in one impact set */
@@ -277,7 +296,35 @@ export interface ImpactDependent {
   name: string
   file: string
   filePath: string
-  line: number
+  /** §15.3 (Truth Rule 3) — the address owner's answer for the ONE stored row
+   *  this entry quotes (the row at `evidenceAtDepth`, not the engine's
+   *  first-trace row). This is the surface's ONLY position claim about WHERE
+   *  THE USAGE IS, and it is derived by the single owner
+   *  (`src/intelligence/graph/line-address.ts`), never here.
+   *
+   *  It was absent before this field existed, and the surface published the
+   *  dependent symbol's own DECLARATION line under the bare name `line` — a
+   *  range labelled as a position that pointed at a declaration, plus (on the
+   *  depth-corrected path) the raw stored column passed straight through, so a
+   *  stored `0` reached the wire as `line: 0`. Both are the defect §15.3 names.
+   *  Now: `kind: "call-site"` is the exact stored site; `kind: "declaration"` is
+   *  the labeled substitute; `kind: "unknown"` has NO position and its note says
+   *  which of the three absences it is. A reader narrows on `isExactAddress`,
+   *  never on a raw line. */
+  callSite: CallSiteAddress
+  /** The `brain_relationship` row this entry's evidence is quoted from — the
+   *  row at `evidenceAtDepth`, which is the engine's first-trace row only when
+   *  the two depths agree. Published so the position claim is CHECKABLE against
+   *  the store by anything downstream (the M62.A2 differential gate does
+   *  exactly that): an address nobody can trace to a row is an address nobody
+   *  can audit. */
+  rowId?: string
+  /** The DEPENDENT SYMBOL'S OWN declaration line (1-based) — an index-stored
+   *  location, and a real one, but NOT where the usage is. Renamed from `line`
+   *  because the old name was what let a declaration read as a call site. A
+   *  surface that wants "where is this symbol defined" asks for this; a surface
+   *  that wants "where is it used" asks for `callSite`. */
+  declarationLine: number
   symbolType: string
   language: string
   depth: number
@@ -900,7 +947,14 @@ export async function computeImpact(
       name: node?.name ?? nodeId,
       file: node?.file ?? "",
       filePath: node?.filePath ?? "",
-      line: node?.line ?? 0,
+      // §15.3: the ENGINE's address for this edge, served whole. The engine
+      // derived it from the same stored row this entry quotes (provisional
+      // evidence at the engine's first-trace depth; the re-read below replaces
+      // it whenever the depth moves). A dependent's DECLARATION is not a
+      // position claim about the usage, so it goes in its own declared field.
+      callSite: edge.callSite,
+      rowId: edge.rowId,
+      declarationLine: node?.line ?? 0,
       symbolType: node?.symbolType ?? "",
       language: node?.language ?? "",
       depth: edge.depth,
@@ -1076,6 +1130,11 @@ export async function computeImpact(
         entry.bridgeMechanism = null
         entry.confidence = null as never
         entry.evidenceAtDepth = null
+        // §15.3: the engine's address is then a claim about a row this entry no
+        // longer quotes, so it goes with the rest of the evidence — as the
+        // declared `unattributed` absence, NOT left standing as the engine's
+        // first-trace position.
+        entry.callSite = unattributedAddress(entry.file)
         continue
       }
       const key = `${entry.id} ${parent}`
@@ -1088,13 +1147,20 @@ export async function computeImpact(
         entry.bridgeMechanism = null
         entry.confidence = null as never
         entry.evidenceAtDepth = null
+        entry.callSite = unattributedAddress(entry.file)
         continue
       }
       entry.relationshipType = row.relationshipType
       entry.confidence = row.confidence
       entry.isCrossLanguage = row.isCrossLanguage
       entry.bridgeMechanism = row.bridgeMechanism
-      entry.line = row.line
+      // The address OWNER decides what the re-read row's stored line is. The
+      // surface never sees a raw value: a legacy `0` and a NULL both become
+      // declared unknowns-or-a-labeled-substitute, and only a real positive line
+      // can be an exact call site. Before this, the stored column was published
+      // as `entry.line` verbatim — so a stored `0` reached the wire as the
+      // number 0, wearing a field name that said "position".
+      entry.callSite = row.callSite
       // The ONE server-side classifier, on the row being quoted (M55.T5's law: a
       // second derivation here would be the defect that module exists to prevent).
       entry.tier = classifyTier({
@@ -1218,7 +1284,17 @@ export async function computeImpact(
  *  Null when there is no such row, which is a finding and not a failure: the
  *  answer then publishes no evidence for that entry rather than evidence from
  *  the wrong path. `evidenceClass` is lifted out of the row's metadata so the
- *  ONE classifier decides the tier, from the row being quoted. */
+ *  ONE classifier decides the tier, from the row being quoted.
+ *
+ *  M62 §15.3: the row's stored call-site line is NOT returned as a number. It is
+ *  read through the address owner's declared select/adapter pair and handed
+ *  straight to the owner, which returns a `CallSiteAddress` — so a legacy `0`, a
+ *  NULL and a store-contract violation can only leave here as DECLARED states.
+ *  Before this, the raw value went to the wire as `line`, so a stored `0` was
+ *  published as `line: 0` (the exact defect the address owner exists to end) and
+ *  a real call site was published with no statement that it was a call site at
+ *  all. The two joins below are what the owner's declared substitute needs: the
+ *  CALLING symbol's own file and declaration line. */
 function storedRowEvidence(
   db: ImpactDb,
   projectId: string,
@@ -1231,7 +1307,7 @@ function storedRowEvidence(
       confidence: number
       isCrossLanguage: boolean
       bridgeMechanism: string | null
-      line: number
+      callSite: CallSiteAddress
       evidenceClass: string | null
     }
   | null {
@@ -1239,12 +1315,17 @@ function storedRowEvidence(
     const row = db
       .prepare(
         "SELECT r.relationship_type AS relType, r.confidence AS confidence, r.is_cross_language AS isCross, " +
-          "r.bridge_mechanism AS bridge, r.line_number AS line, r.metadata AS meta " +
-          "FROM brain_relationship r WHERE r.project_id = ? AND r.source_symbol_id = ? AND r.target_symbol_id = ? " +
+          "r.bridge_mechanism AS bridge, r.metadata AS meta, " +
+          STORED_LINE_SELECT + ", " +
+          "COALESCE(f.relative_path, f.path, '') AS srcFile, s.line_start AS srcLine " +
+          "FROM brain_relationship r " +
+          "LEFT JOIN brain_symbol s ON s.id = r.source_symbol_id " +
+          "LEFT JOIN brain_file f ON f.id = s.file_id " +
+          "WHERE r.project_id = ? AND r.source_symbol_id = ? AND r.target_symbol_id = ? " +
           "AND r.relationship_type IN (" + relTypes.map(() => "?").join(",") + ") LIMIT 1",
       )
       .get(projectId, dependentId, parentId, ...relTypes) as
-      | { relType: string; confidence: number | null; isCross: number | null; bridge: string | null; line: number | null; meta: string | null }
+      | { relType: string; confidence: number | null; isCross: number | null; bridge: string | null; meta: string | null; srcFile: string | null; srcLine: number | null }
       | undefined
     if (!row) return null
     let evidenceClass: string | null = null
@@ -1261,7 +1342,15 @@ function storedRowEvidence(
       confidence: typeof row.confidence === "number" ? row.confidence : 0,
       isCrossLanguage: row.isCross === 1,
       bridgeMechanism: row.bridge ?? null,
-      line: typeof row.line === "number" ? row.line : 0,
+      // The address OWNER decides what this row's stored line IS. This function
+      // never sees a raw number to publish: a legacy `0` and a NULL both leave
+      // here as declared states, and only a real positive line can be an exact
+      // call site.
+      callSite: deriveCallSiteAddress({
+        storedLine: storedLineFromRow(row as unknown as Record<string, unknown>),
+        file: row.srcFile,
+        callerDeclaration: { line: row.srcLine },
+      }),
       evidenceClass,
     }
   } catch {

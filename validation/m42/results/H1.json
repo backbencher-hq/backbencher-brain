@@ -3,21 +3,21 @@
   "code": "H1",
   "milestone": "M42",
   "status": "verified",
-  "checks": 15,
-  "passed": 15,
+  "checks": 25,
+  "passed": 25,
   "failed": 0,
   "failures": [],
   "verdict": {
     "realComponentFailures": 0,
-    "mutantsCaught": 4,
-    "mutantsTotal": 4,
+    "mutantsCaught": 8,
+    "mutantsTotal": 8,
     "ok": true
   },
   "negatives": {
-    "planned": 4
+    "planned": 8
   },
   "fixture": {
-    "root": "$HOME/backbencher-brain/.tools/m42-h1-fixture",
+    "root": "$HOME/Documents/Default Project/ishaq/wt/integrate/.tools/m42-h1-fixture",
     "file": "src/main/java/com/demo/Highlight.java",
     "expectations": {
       "declarationLine": 5,
@@ -35,22 +35,25 @@
       "queryText": "int b = total();",
       "queryCharacter": 16,
       "symbolName": "total"
-    }
+    },
+    "unroutable": "docs/notes.txt"
   },
   "budgets": {
     "highlightP95Ms": 25
   },
-  "currentCommit": "a871d533a736e8e38cb826d80d986d3cc84022d1",
+  "currentCommit": "38ff3264156f48e09247a09551849faad37ceceb",
   "verifierCommand": "npx tsx script/m42/verify-highlight.ts",
   "evidenceFile": "H1.json",
-  "generatedAt": "2026-09-20T02:50:16.904Z",
+  "generatedAt": "2026-10-05T16:14:20.173Z",
   "limitations": [
-    "Warm-budget check uses mean-over-40 as a p95 proxy; the full E5 editor leg re-measures with the shared harness.",
-    "Editor-leg (DocumentHighlight rendering + wake-up path) is asserted in the E5-pattern session at H1 acceptance; this file proves the server surface."
+    "Lane 6: the warm budget is now a REAL p95 — ${WARM_SAMPLES} individually-timed requests, sorted, nearest-rank 95th percentile, no interpolation, compared against §12.7's 25 ms. The pre-lane check computed a MEAN over 40 and compared it against that p95 budget while naming itself 'warm p95', which is the substitution §3 forbids; it survived three waves because it was honestly recorded as a limitation rather than fixed. The mean is still reported alongside, for contrast only. The full E5 editor leg re-measures with the shared harness.",
+    "Editor-leg (DocumentHighlight rendering + wake-up path) is asserted in the E5-pattern session at H1 acceptance; this file proves the server surface.",
+    "R7 is a LEXICAL scan for try-guarded parseForSafety calls across src/lsp; it cannot prove a handler's catch clause does the right thing, only that a guard exists. The behavioural R6/M5 legs own that half.",
+    "The declared tier is observable at the component layer only: server.ts:589 collapses every empty highlight result to wire null, so a client cannot distinguish unsupported_language from not_indexed. That mapping is in a file this lane does not own."
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-20T02:50:16.905Z",
-    "contentSha256": "a915300ce90575c3c4d778d6f3eec7d2d54487e28fecd5a7e95f7ca66aaf8b83"
+    "sealedAt": "2026-10-05T16:14:20.176Z",
+    "contentSha256": "4d89587711d0b739935aa25a3c5abc42e499e45df89abb862aa60d2fabd29d8c"
   }
 }

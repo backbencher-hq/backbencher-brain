@@ -3,32 +3,45 @@
   "code": "V1",
   "milestone": "M27",
   "status": "verified",
-  "checks": 9,
-  "passed": 9,
+  "checks": 14,
+  "passed": 14,
   "failed": 0,
-  "mutantsCaught": 2,
-  "mutantsTotal": 2,
+  "mutantsCaught": 5,
+  "mutantsTotal": 5,
   "mutantRecords": [
     {
       "name": "V1 mutant: forged evidence (stripped blockedLegs) produces a lying I3 row and fails the byte-gate",
       "caught": true
     },
     {
-      "name": "V1 mutant: planned/missing evidence degrades the row to unset",
+      "name": "V1 mutant: a missing evidence file degrades the row to unset and says the file is missing",
+      "caught": true
+    },
+    {
+      "name": "V1 mutant: a verified-LEDGER + zero-check-RECORD row is refused `verified` (the vacuity guard)",
+      "caught": true
+    },
+    {
+      "name": "V1 mutant: a blocked record over a verified ledger publishes `blocked` with its reason, never `verified`",
+      "caught": true
+    },
+    {
+      "name": "V1 mutant: a partially-passing record never prints a `verified (p/p)` self-arithmetic tally",
       "caught": true
     }
   ],
-  "currentCommit": "0dbafd74ef4f3d63be8e44dd6caa58833732a7db",
+  "currentCommit": "f70ec0734fbae53b25994d7395bb108fd1999343",
   "verifierCommand": "npx tsx script/m27/verify-matrix.ts",
   "evidenceFile": "V1.json",
-  "generatedAt": "2026-09-20T02:24:17.522Z",
+  "generatedAt": "2026-10-05T14:22:21.006Z",
   "claimLevel": "n/a — this issue produces a truth table, not a claim",
   "limitations": [
-    "The matrix's editor/column shape is declared (4 adapters + the VS Code baseline); every VALUE is generated from the ledger and evidence files."
+    "The matrix's editor/column shape is declared (4 adapters + the VS Code baseline); every VALUE is generated from the ledger and evidence files.",
+    "A row's Status cell is derived from its EVIDENCE RECORD, never from the ledger entry: the ledger is hand-maintained and no gate projects it, so an editor leg whose record is `blocked` on this machine (no nvim) publishes `blocked` with the record's reason and an unset claim level, not `I3`."
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-20T02:24:17.522Z",
-    "contentSha256": "47f90539170f4f7f68bb00629db6bd271379327316688bfa5a424855d4e9bd0e"
+    "sealedAt": "2026-10-05T14:22:21.008Z",
+    "contentSha256": "7fa65eff2a0064c6e99c71589220fd22432a6e20ec9076e71a77c923f33b93d1"
   }
 }

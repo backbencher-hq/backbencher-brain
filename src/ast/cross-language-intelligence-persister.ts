@@ -1,7 +1,4 @@
-// @ts-nocheck — ported file.
-// Cross-Language Intelligence Persister
-// Persists ALL cross-language intelligence to the brain database
-// INTEGRATION: Seamlessly connects cross-language analysis with brain storage
+
 
 import { BrainDatabase } from "../brain/database"
 import type { ProjectID } from "../project/schema"
@@ -10,7 +7,7 @@ import { CrossLanguageIntelligence } from "./cross-language-intelligence"
 import { BrainSymbolTable, BrainRelationshipTable, BrainFileTable, BrainProjectHealthTable } from "../brain/brain.sql"
 import { eq, and } from "drizzle-orm"
 import { randomUUID } from "crypto"
-import type { SQLiteBunDatabase } from "drizzle-orm/bun-sqlite"
+import type { BunSQLiteDatabase } from "drizzle-orm/bun-sqlite"
 
 const log = Log.create({ service: "cross-language-persister" })
 
@@ -101,7 +98,7 @@ export namespace CrossLanguageIntelligencePersister {
    * Creates or updates symbols with cross-language metadata
    */
   async function persistCrossLanguageSymbols(
-    db: SQLiteBunDatabase,
+    db: BunSQLiteDatabase,
     projectId: ProjectID,
     symbols: CrossLanguageIntelligence.CrossLanguageSymbol[],
     fileMap: Map<string, string>,
@@ -200,7 +197,7 @@ export namespace CrossLanguageIntelligencePersister {
    * Creates relationships with cross-language metadata
    */
   async function persistCrossLanguageRelationships(
-    db: SQLiteBunDatabase,
+    db: BunSQLiteDatabase,
     projectId: ProjectID,
     relationships: CrossLanguageIntelligence.CrossLanguageRelationship[],
     fileMap: Map<string, string>,
@@ -321,7 +318,7 @@ export namespace CrossLanguageIntelligencePersister {
    * Creates service-level architecture metadata
    */
   async function persistServiceTopology(
-    db: SQLiteBunDatabase,
+    db: BunSQLiteDatabase,
     projectId: ProjectID,
     topology: CrossLanguageIntelligence.ServiceTopology,
     result: PersistenceResult,
@@ -407,7 +404,7 @@ export namespace CrossLanguageIntelligencePersister {
    * Creates data flow tracking metadata
    */
   async function persistDataFlowAnalysis(
-    db: SQLiteBunDatabase,
+    db: BunSQLiteDatabase,
     projectId: ProjectID,
     dataFlow: CrossLanguageIntelligence.DataFlowAnalysis,
     result: PersistenceResult,
@@ -461,7 +458,7 @@ export namespace CrossLanguageIntelligencePersister {
    * Creates API documentation and testing coverage metadata
    */
   async function persistAPICoverage(
-    db: SQLiteBunDatabase,
+    db: BunSQLiteDatabase,
     projectId: ProjectID,
     apiCoverage: CrossLanguageIntelligence.APICoverageAnalysis,
     result: PersistenceResult,
@@ -523,7 +520,7 @@ export namespace CrossLanguageIntelligencePersister {
    * Creates security vulnerability metadata
    */
   async function persistSecurityAnalysis(
-    db: SQLiteBunDatabase,
+    db: BunSQLiteDatabase,
     projectId: ProjectID,
     security: CrossLanguageIntelligence.CrossLanguageSecurityAnalysis,
     result: PersistenceResult,
@@ -586,7 +583,7 @@ export namespace CrossLanguageIntelligencePersister {
    * Creates performance issue metadata
    */
   async function persistPerformanceAnalysis(
-    db: SQLiteBunDatabase,
+    db: BunSQLiteDatabase,
     projectId: ProjectID,
     performance: CrossLanguageIntelligence.CrossLanguagePerformanceAnalysis,
     result: PersistenceResult,
@@ -649,7 +646,7 @@ export namespace CrossLanguageIntelligencePersister {
    * Populates the BrainProjectHealthTable used by security and health tools
    */
   async function persistProjectHealth(
-    db: SQLiteBunDatabase,
+    db: BunSQLiteDatabase,
     projectId: ProjectID,
     analysis: CrossLanguageIntelligence.PolyglotProjectAnalysis,
     result: PersistenceResult,
@@ -710,7 +707,7 @@ export namespace CrossLanguageIntelligencePersister {
    * Find symbol by file location
    */
   async function findSymbolByLocation(
-    db: SQLiteBunDatabase,
+    db: BunSQLiteDatabase,
     projectId: ProjectID,
     fileId: string,
     range?: { startLine?: number; startColumn?: number; endLine?: number; endColumn?: number },
@@ -735,7 +732,7 @@ export namespace CrossLanguageIntelligencePersister {
   /**
    * Find or create file ID
    */
-  async function findOrCreateFileId(db: SQLiteBunDatabase, projectId: ProjectID, filePath: string): Promise<string> {
+  async function findOrCreateFileId(db: BunSQLiteDatabase, projectId: ProjectID, filePath: string): Promise<string> {
     const results = await db
       .select()
       .from(BrainFileTable)

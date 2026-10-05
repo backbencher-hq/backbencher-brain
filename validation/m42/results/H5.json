@@ -2,18 +2,18 @@
   "issue": "M42.H5",
   "code": "H5",
   "milestone": "M42",
-  "status": "verified",
+  "status": "known-gap",
   "checks": 40,
-  "passed": 40,
-  "failed": 0,
+  "passed": 34,
+  "failed": 6,
   "mutantsCaught": 5,
   "mutantsTotal": 5,
-  "currentCommit": "a871d533a736e8e38cb826d80d986d3cc84022d1",
+  "currentCommit": "93f85b7a3b4d8005e6683d505e49dfe6d28ef8bf",
   "verifierCommand": "npx tsx script/m42/verify-hub.ts",
   "evidenceFile": "H5.json",
-  "generatedAt": "2026-09-20T02:50:30.846Z",
+  "generatedAt": "2026-10-05T14:42:15.537Z",
   "fixture": {
-    "root": "$HOME/backbencher-brain/.tools/m42-h2-fixture",
+    "root": "$HOME/Documents/Default Project/ishaq/wt/ledgers/.tools/m42-h2-fixture",
     "files": [
       "src/main/java/com/demo/App.java",
       "src/main/java/com/demo/Main2.java"
@@ -37,7 +37,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-20T02:50:30.847Z",
-    "contentSha256": "df3ee633c23423b32bf011c4810b6e10f2d478fa12c08232cfad069f6d31ad82"
+    "sealedAt": "2026-10-05T14:42:15.539Z",
+    "contentSha256": "5facbe508da744a19a651ba3c5bc26edcc9574d117d3807b21365114bca7fba9"
   }
 }
