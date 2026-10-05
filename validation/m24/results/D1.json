@@ -1,34 +1,24 @@
 {
   "issue": "496",
   "code": "D1",
-<<<<<<< HEAD
-  "status": "verified",
-  "currentCommit": "42da053221ba9dd3173faffe2e60913e9de35993",
-  "sourceFingerprint": "4fe136ceb104bc7523db076bbc1e9fe18316dc685d06aec6d0e5a38e062e5c2e",
-  "verifierCommand": "npx tsx script/m24/verify-docs.ts",
-  "evidenceFile": "D1.json",
-  "generatedAt": "2026-10-05T04:20:32.850Z",
-  "passed": 44,
-  "failed": 0,
-  "failures": [],
-  "negativeCases": 3,
-=======
   "status": "known-gap",
-  "currentCommit": "0b1f296a291b7a32ee9ff450b94852b9353e4d71",
+  "currentCommit": "5e3e7f6d797097a0c43c7c728adcd60ba6887ecd",
   "sourceFingerprint": "4fe136ceb104bc7523db076bbc1e9fe18316dc685d06aec6d0e5a38e062e5c2e",
   "verifierCommand": "npx tsx script/m24/verify-docs.ts",
   "evidenceFile": "D1.json",
-  "generatedAt": "2026-10-05T04:23:08.723Z",
-  "passed": 45,
-  "failed": 2,
+  "generatedAt": "2026-10-05T04:28:40.455Z",
+  "passed": 42,
+  "failed": 5,
   "failures": [
     "G1: regenerated tool doc is byte-identical to committed",
-    "G2: claim table cites verified evidence for L2"
+    "G2: claim table cites verified evidence for L2",
+    "G2: claim table cites verified evidence for L3",
+    "G2: claim table cites verified evidence for L4",
+    "G2: claim table cites verified evidence for L5"
   ],
   "negativeCases": 6,
->>>>>>> close/surface-and-docs
   "verdict": {
-    "realComponentFailures": 2,
+    "realComponentFailures": 5,
     "ok": false,
     "note": "doc fingerprint is the committed TOOL-DOC.md; regeneration byte-identity is the drift gate."
   },
@@ -36,53 +26,50 @@
     {
       "code": "L2",
       "evidenceFile": "validation/m24/results/L2.json",
-      "read": "ok",
-      "status": "known-gap",
-      "currentCommit": "462f620be3ca6097a560b12d314fa9b98d8c6f1a",
-      "generatedAt": "2026-10-05T03:26:43.286Z",
-      "passed": 43,
-      "failed": 2,
-      "upstreamFailures": [
-        "G8/CONTROL: the same stimulus DOES throw when the row is resolved unguarded (so G8 is not vacuous)",
-        "G4/§5.1: no file in src/lsp/ converts an LSP/index line inline (outside the position owner)"
-      ],
-      "verdictOk": false
+      "read": "refused",
+      "status": "(trusted read refused: Error: M61 trusted read refused L2.json: evidence file is not valid JSON: $HOME/Documents/Default Project/ishaq/wt/integrate/validation/m24/results/L2.json (Expected double-quoted property name in JSON at position 36 (line 4 column 1)) (kind=unparseable))",
+      "currentCommit": null,
+      "generatedAt": null,
+      "passed": null,
+      "failed": null,
+      "upstreamFailures": [],
+      "verdictOk": null
     },
     {
       "code": "L3",
       "evidenceFile": "validation/m24/results/L3.json",
-      "read": "ok",
-      "status": "verified",
-      "currentCommit": "462f620be3ca6097a560b12d314fa9b98d8c6f1a",
-      "generatedAt": "2026-10-05T03:25:38.916Z",
-      "passed": 117,
-      "failed": 0,
+      "read": "refused",
+      "status": "(trusted read refused: Error: M61 trusted read refused L3.json: evidence file is not valid JSON: $HOME/Documents/Default Project/ishaq/wt/integrate/validation/m24/results/L3.json (Expected double-quoted property name in JSON at position 60 (line 5 column 1)) (kind=unparseable))",
+      "currentCommit": null,
+      "generatedAt": null,
+      "passed": null,
+      "failed": null,
       "upstreamFailures": [],
-      "verdictOk": true
+      "verdictOk": null
     },
     {
       "code": "L4",
       "evidenceFile": "validation/m24/results/L4.json",
-      "read": "ok",
-      "status": "verified",
-      "currentCommit": "462f620be3ca6097a560b12d314fa9b98d8c6f1a",
-      "generatedAt": "2026-10-05T03:25:40.653Z",
-      "passed": 50,
-      "failed": 0,
+      "read": "refused",
+      "status": "(trusted read refused: Error: M61 trusted read refused L4.json: evidence file is not valid JSON: $HOME/Documents/Default Project/ishaq/wt/integrate/validation/m24/results/L4.json (Expected double-quoted property name in JSON at position 60 (line 5 column 1)) (kind=unparseable))",
+      "currentCommit": null,
+      "generatedAt": null,
+      "passed": null,
+      "failed": null,
       "upstreamFailures": [],
-      "verdictOk": true
+      "verdictOk": null
     },
     {
       "code": "L5",
       "evidenceFile": "validation/m24/results/L5.json",
-      "read": "ok",
-      "status": "verified",
-      "currentCommit": "462f620be3ca6097a560b12d314fa9b98d8c6f1a",
-      "generatedAt": "2026-10-05T03:25:43.893Z",
-      "passed": 97,
-      "failed": 0,
+      "read": "refused",
+      "status": "(trusted read refused: Error: M61 trusted read refused L5.json: evidence file is not valid JSON: $HOME/Documents/Default Project/ishaq/wt/integrate/validation/m24/results/L5.json (Expected double-quoted property name in JSON at position 60 (line 5 column 1)) (kind=unparseable))",
+      "currentCommit": null,
+      "generatedAt": null,
+      "passed": null,
+      "failed": null,
       "upstreamFailures": [],
-      "verdictOk": true
+      "verdictOk": null
     }
   ],
   "claimTableIsDerivedFromEvidence": "G5c proves it against decoy evidence directories: the generated claim row changes when a code's status changes, and a generator that hardcodes every claim as verified is rejected. Measured note: with an upstream code known-gap, a hardcoding generator reproduces the COMMITTED doc byte-for-byte, so the drift comparison alone cannot tell an honest generator from a dishonest one — which is why G5c exists rather than being folded into G1.",
@@ -93,12 +80,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-<<<<<<< HEAD
-    "sealedAt": "2026-10-05T04:20:32.853Z",
-    "contentSha256": "38593404ef1524be6c560565e0e89b787fd9b2da3ad39628a88917665a591cb4"
-=======
-    "sealedAt": "2026-10-05T04:23:08.723Z",
-    "contentSha256": "0be9564ac6065704f708e131d5d64a5c8f8eb414ea35e4242cd6cc6eaf12423a"
->>>>>>> close/surface-and-docs
+    "sealedAt": "2026-10-05T04:28:40.455Z",
+    "contentSha256": "a00f47d25cba4f329e99d8fd09a9f9d8ff518b818b1f8d41b5f62937037053ae"
   }
 }
