@@ -23,6 +23,11 @@ import { readFileSync } from "node:fs"
 import path from "node:path"
 import { BrainDatabase } from "../../brain/database"
 import { checkFileFreshness, resolveRowsFreshnessDetailed } from "../../brain/freshness"
+// §15.4 / M55.T4: the RENDERED signature and parameter list belong to
+// src/lsp/signature.ts. bb_doc is text a developer reads, so it renders through
+// the owner rather than keeping a second renderer — see the header on
+// `renderSignature` below for what delegating replaced and why.
+import { renderParameterList, renderSignature as renderOwnerSignature, UNKNOWN_PARAMETER_LIST } from "../../lsp/signature"
 import { semanticVectorSearch } from "../search/semantic-search"
 import { languageExtensionEntries } from "../../ast/language-detection"
 
@@ -578,7 +583,7 @@ async function discoverFeatureSymbols(raw: any, projectId: string, request: DocR
   const target = String(request.target ?? "").toLowerCase()
   const lexical = queryRows(
     raw,
-    `SELECT s.*, f.path, f.relative_path, f.id AS source_file_id FROM brain_symbol s JOIN brain_file f ON f.id=s.file_id
+    `SELECT s.*, f.path, f.relative_path, f.language AS file_language, f.id AS source_file_id FROM brain_symbol s JOIN brain_file f ON f.id=s.file_id
      WHERE s.project_id=? AND (lower(s.name) LIKE ? OR lower(COALESCE(s.docstring,'')) LIKE ? OR lower(COALESCE(s.qualified_name,'')) LIKE ?)
      ORDER BY s.gravity_score DESC, s.line_start LIMIT ?`,
     projectId, `%${target}%`, `%${target}%`, `%${target}%`, limit,
@@ -597,7 +602,7 @@ async function discoverFeatureSymbols(raw: any, projectId: string, request: DocR
     if (ids.length) {
       const semantic = queryRows(
         raw,
-        `SELECT s.*, f.path, f.relative_path, f.id AS source_file_id FROM brain_symbol s JOIN brain_file f ON f.id=s.file_id
+        `SELECT s.*, f.path, f.relative_path, f.language AS file_language, f.id AS source_file_id FROM brain_symbol s JOIN brain_file f ON f.id=s.file_id
          WHERE s.project_id=? AND s.id IN (${ids.map(() => "?").join(",")}) ORDER BY s.gravity_score DESC, s.line_start LIMIT ?`,
         projectId, ...ids, limit,
       )
@@ -618,7 +623,7 @@ async function targetSymbols(raw: any, projectId: string, request: DocRequest, f
   if (request.mode === "symbol") {
     const symbols = queryRows(
       raw,
-      "SELECT s.*, f.path, f.relative_path, f.id AS source_file_id FROM brain_symbol s JOIN brain_file f ON f.id=s.file_id WHERE s.project_id=? AND (s.name=? OR s.qualified_name=? OR s.name=? OR s.qualified_name=?) ORDER BY s.line_start LIMIT ?",
+      "SELECT s.*, f.path, f.relative_path, f.language AS file_language, f.id AS source_file_id FROM brain_symbol s JOIN brain_file f ON f.id=s.file_id WHERE s.project_id=? AND (s.name=? OR s.qualified_name=? OR s.name=? OR s.qualified_name=?) ORDER BY s.line_start LIMIT ?",
       projectId, target, target, target.split(".").pop() ?? target, target.split("::").pop() ?? target, limit,
     )
     return { symbols, feature: null }
@@ -632,7 +637,7 @@ async function targetSymbols(raw: any, projectId: string, request: DocRequest, f
     return {
       symbols: queryRows(
         raw,
-        `SELECT s.*, f.path, f.relative_path, f.id AS source_file_id, f.framework_type FROM brain_symbol s JOIN brain_file f ON f.id=s.file_id
+        `SELECT s.*, f.path, f.relative_path, f.language AS file_language, f.id AS source_file_id, f.framework_type FROM brain_symbol s JOIN brain_file f ON f.id=s.file_id
          WHERE s.project_id=?
            AND (s.api_contract_path IS NOT NULL
                 OR lower(s.symbol_type) IN ('route','endpoint','controller')
@@ -652,7 +657,7 @@ async function targetSymbols(raw: any, projectId: string, request: DocRequest, f
     return {
       symbols: queryRows(
         raw,
-        `SELECT s.*, f.path, f.relative_path, f.id AS source_file_id FROM brain_symbol s JOIN brain_file f ON f.id=s.file_id
+        `SELECT s.*, f.path, f.relative_path, f.language AS file_language, f.id AS source_file_id FROM brain_symbol s JOIN brain_file f ON f.id=s.file_id
          WHERE s.project_id=? AND s.file_id IN (${files.map(() => "?").join(",")}) ORDER BY f.relative_path, s.line_start LIMIT ?`,
         projectId, ...files.map((file) => file.id), limit * 2,
       ),
@@ -766,52 +771,88 @@ function symbolTypesWithParameters(raw: any, projectId: string): ReadonlySet<str
   }
 }
 
-function renderSignature(kind: string, name: string, parameters: string | null): string {
-  return parameters === null ? `${kind} ${name}` : `${kind} ${name}(${parameters})`
+/** The stored `parameters` column as the owner's renderer wants it: the raw
+ *  text, or null when the column is absent. Whitespace is collapsed because the
+ *  column is TEXT and several analyzers store it with embedded newlines; the
+ *  owner's parser trims anyway, so this only keeps the two renderers reading the
+ *  same bytes. */
+function storedParameters(raw: unknown): string | null {
+  const text = raw === null || raw === undefined ? "" : collapse(raw)
+  return text === "" ? null : text
 }
 
 /**
- * The parameter list a signature shows, as the index records it.
+ * The rendered signature — the OWNER's, delegated to once from the raw stored
+ * column.
  *
- * The index stores a JSON list of `{name, type, isOptional}` for 5 021 of the
- * 6 067 entries measured across the eight corpora -- 82.8% -- and the renderer
- * was reading `name` and dropping the rest. So `Join(s S)` was documented as
- * `Join(s)`: the section named Inputs and outputs was reporting the NAMES of the
- * inputs and nothing about their types, while the types sat in the row it had
- * just read. Discarding evidence you have already loaded is the same defect as
- * rendering a claim the index does not support, in the opposite direction.
+ * WHAT THIS REPLACES. `return parameters === null ? \`${kind} ${name}\` :
+ * \`${kind} ${name}(${parameters})\`` plus a private `formatParameters` decision
+ * table. The two disagreed with the LSP owner on every stored shape that is not
+ * the analyzer's happy path, which script/m28/verify-surface-parity.ts measures
+ * over nine shapes by seeding each into the fixture index and reading the
+ * markdown line a developer sees:
  *
- * Three rules, each from what the data holds:
- *  - a recorded type is shown, and an absent one is omitted rather than guessed;
- *  - `isOptional` is stated in words, because `name?: type` is TypeScript syntax
- *    and would be wrong in a Go or Java document (17 entries, so the wording costs
- *    nothing and discards nothing);
- *  - a plain string list and a raw text list render as they always did, so no
- *    analyzer's existing shape changes.
+ *   stored `{"name":"names","type":"string[]"}`   (a JSON OBJECT, not an array)
+ *     here:  method count({"name":"names","type":"string[]"})   <- raw JSON
+ *     owner: method count(…)                     <- declared absence
+ *   stored `[{"type":"string[]"}]`                (an entry with no name)
+ *     here:  method count(?): string[]                      <- a GUESSED name
+ *     owner: method count(…)
+ *   stored `[1,2,3]`                              (an array of non-objects)
+ *     here:  method count                             <- the list vanishes
+ *     owner: method count(…)
+ *   stored `(int a, int b)`                       (already-rendered text)
+ *     here:  method count((int a, int b))              <- doubled parens
+ *     owner: method count(int a, int b)
+ *
+ * Three §15.4 violations in one function: serialization in human text, a
+ * parameter name the index never stored, and an absence that over-claims
+ * ("takes no arguments") where the index stored something unrenderable.
+ *
+ * WHY IT TAKES THE RAW COLUMN AND NOT A PRE-RENDERED STRING. The obvious shape —
+ * render the list, then hand the rendered text to the owner's signature
+ * renderer — renders the same value TWICE and is measurably lossy: the owner's
+ * `renderParameterList` is re-run over text that is no longer the stored column,
+ * so its `RAW_JSON_SHAPE` guard can now fire on OUR OWN output. Measured:
+ *
+ *   stored `[]`                                    once -> ""      twice -> "…"
+ *   stored `[{"name":"opts","type":"{a: number}"]` once -> "opts: {a: number}"   twice -> "…"
+ *
+ * The second line is a resolvable parameter list turned into a false absence by
+ * a type that merely contains braces — the same defect class as the one this
+ * change removes, reintroduced one layer down. The owner is called here exactly
+ * the way hover.ts:601 and call_hierarchy.ts:1002 call it: with the raw stored
+ * column and the symbol's real language.
+ *
+ * `return_type` and `visibility` are deliberately NOT passed: this engine
+ * renders the return type itself (as `: T`, appended by the caller) and states
+ * visibility as its own sentence, so handing them over would print them twice.
  */
-function formatParameters(raw: unknown): string | null {
-  const text = collapse(raw)
-  if (!text || text === "[]" || text === "null") return null
-  if (text.startsWith("[")) {
-    try {
-      const parsed = JSON.parse(text)
-      if (Array.isArray(parsed)) {
-        const rendered = parsed
-          .map((item: any) => {
-            if (typeof item === "string") return item
-            if (!item || typeof item !== "object") return ""
-            const name = String(item.name ?? item.parameter ?? "")
-            const type = item.type == null ? "" : collapse(item.type)
-            if (!name && !type) return ""
-            const shown = type ? `${name || "?"}: ${type}` : name
-            return item.isOptional === true ? `${shown} (optional)` : shown
-          })
-          .filter(Boolean)
-        return rendered.length ? rendered.join(", ") : null
-      }
-    } catch { /* not JSON after all — fall through to the raw text */ }
-  }
-  return text.replace(/^\(|\)$/g, "") || null
+function renderSignature(kind: string, name: string, rawParameters: unknown, language: string | null): string {
+  return renderOwnerSignature({ name, symbol_type: kind, parameters: storedParameters(rawParameters) }, language)
+}
+
+/**
+ * The parameter list as prose (`inputs-outputs` says "takes …"), or null when
+ * there is nothing to say.
+ *
+ * This used to be a private decision table: it read `name` off each entry and
+ * DROPPED the type, which is why `Join(s S)` was documented as `Join(s)` — the
+ * types were in the row it had just read. It also stated `isOptional` in words,
+ * because `name?: type` is TypeScript syntax. Both of those concerns are now the
+ * owner's, and the owner does not drop the type.
+ *
+ * The one thing this still owns is the null: the owner's declared unknown marker
+ * `(…)` means the index stored nothing this can describe, and `null` is what the
+ * callers read as "no parameter list" — the caveat at the call site and the
+ * `takes` clause both branch on it. An EMPTY stored list (`[]`) is a real fact
+ * ("the index recorded no parameters"), and it was `null` before this change, so
+ * it stays `null` here: changing that would put a new sentence in every
+ * zero-argument document.
+ */
+function formatParameters(raw: unknown, language: string | null): string | null {
+  const rendered = renderParameterList(storedParameters(raw), language)
+  return rendered === UNKNOWN_PARAMETER_LIST || rendered === "" ? null : rendered
 }
 
 function addSymbolFacts(raw: any, reader: SourceReader, resolver: FreshnessResolver, symbols: Row[], citations: DocCitation[], unknowns: DocUnknown[], includeTests: boolean, includeLimitations: boolean, typesWithParameters: ReadonlySet<string>): { api: DocFact[]; behavior: DocFact[]; tests: DocFact[]; limitations: DocFact[] } {
@@ -837,8 +878,19 @@ function addSymbolFacts(raw: any, reader: SourceReader, resolver: FreshnessResol
       lineStart: start || undefined, lineEnd: end || undefined,
       evidence: `Indexed ${symbol.symbol_type} ${symbol.name}`, fileId: String(symbol.source_file_id ?? ""),
     }, resolver)
-    const parameters = formatParameters(symbol.parameters)
-    const signature = renderSignature(String(symbol.symbol_type), String(symbol.name), parameters)
+    // §15.1: the SAME stored signature must not render two ways on two
+    // surfaces. hover.ts:601 passes `file.language` and call_hierarchy.ts:1002
+    // passes `languageForPath(symbol.path)`, so this passes the file's real
+    // language too. Measured: with the empty-string fallback instead, a Java
+    // document printed `names: string[]` where hover printed
+    // `java.lang.String[] names`, and `...args: string` where hover printed
+    // `string... args` — 9 disagreements over four stored shapes and four
+    // languages. A NULL language still renders in the owner's declared TS/JS
+    // notation, which is the same fallback the LSP surfaces use when the index
+    // records no language, so an unrecorded file agrees with them too.
+    const language = symbol.file_language == null ? null : String(symbol.file_language)
+    const parameters = formatParameters(symbol.parameters, language)
+    const signature = renderSignature(String(symbol.symbol_type), String(symbol.name), symbol.parameters, language)
     const returns = symbol.return_type ? `: ${collapse(symbol.return_type)}` : ""
     // The caveat rides on the signature itself, not in a separate fact and not
     // only in `limitations`: this fact is rendered as symbol mode's API and as
@@ -970,8 +1022,11 @@ function addEndpointFacts(symbols: Row[], citations: DocCitation[], resolver: Fr
     const rel = String(symbol.relative_path ?? "")
     const start = Number(symbol.line_start ?? 0)
     const end = Number(symbol.line_end ?? start)
-    const parameters = formatParameters(symbol.parameters)
-    const signature = renderSignature(String(symbol.symbol_type), String(symbol.name), parameters)
+    // §15.1, as in addSymbolFacts: the file's real language, the same one the LSP
+    // owner is given by hover.ts:601, so one stored signature renders one way.
+    const language = symbol.file_language == null ? null : String(symbol.file_language)
+    const parameters = formatParameters(symbol.parameters, language)
+    const signature = renderSignature(String(symbol.symbol_type), String(symbol.name), symbol.parameters, language)
     const framework = String(symbol.framework_type ?? "")
     const id = addCitation(citations, {
       kind: "symbol", idParts: [rel, symbol.name, `${start}-${end}`], relPath: rel, symbol: String(symbol.name ?? ""),
