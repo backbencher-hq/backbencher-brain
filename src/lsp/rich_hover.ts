@@ -22,7 +22,7 @@
 import type { CoreDatabase } from "../brain/database"
 import { edgeLocation } from "./navigation"
 import { PositionError } from "./positions"
-import { usageSites, USAGE_SITE_FILTER_LABEL } from "./relations"
+import { usageSites, USAGE_COUNT_UNIT_LABEL, USAGE_SITE_FILTER_LABEL } from "./relations"
 import {
   ADDRESS_NOTES,
   addressLine0,
@@ -491,6 +491,13 @@ export function usagesSection(sites: RichSite[], total: number, forSymbol: strin
     : exact === 0
       ? ` — the index stores no call-site line for these, so each opens the referencing declaration`
       : ` — ${exact} open the stored call site, ${usage.length - exact} open the referencing declaration (no call-site line stored)`
+  // M55.T3 integration, §14 rule 1 second half. This number is a count of
+  // SERVED POSITIONS — one per place the link can open — and `textDocument/
+  // references` counts the same thing. Saying so here is what makes the two
+  // surfaces' agreement checkable by a reader instead of inferred: before this,
+  // a reader who found four stored rows behind three links had no way to tell
+  // whether one row had been dropped or whether the count had a different unit.
+  lines[0] += ` _(${USAGE_COUNT_UNIT_LABEL})_`
   const shown = usage.slice(0, MAX_USAGE_LINKS)
   shown.forEach((s, i) => {
     lines.push(`${i + 1}. [${siteLabel(s)}](${openUsageUri(s)})`)

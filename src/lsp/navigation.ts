@@ -38,9 +38,23 @@
 //                 referencing symbol's DECLARATION for every row, silently —
 //                 the editor's find-references landed on `function main()`
 //                 when the user asked where `greet` is called.
-//   dedupe:       one location per STORED ROW (`path:line:rowId`), because two
-//                 call sites inside one function are two usages. The old
-//                 `path:line:character` key collapsed them into one.
+//   dedupe:       ONE LOCATION PER SERVED POSITION — the same key the hover's
+//                 collector uses (`path:line:character`), because §14 rule 1
+//                 admits one answer per fact. Stored rows that resolve to a
+//                 position another row already holds are COUNTED in
+//                 `coalescedRows` (§13.2: nothing merged into silence) and never
+//                 served twice (§13.1: a symbol shown several times only because
+//                 it owns several stored rows is a rendering defect). M55.T3
+//                 integration: this key previously read `path:line:rowId`
+//                 ("one location per stored row"), which measurement on five
+//                 real indexes showed served only byte-identical duplicates —
+//                 8,285 such positions on project 818db37d, 2,417 on 064be526,
+//                 684 on 99c211a1, 99.5% of them two rows of DIFFERENT kinds for
+//                 one caller at one stored line. The genuine §13.4 case is not
+//                 lost: two call sites on two DIFFERENT stored lines are two
+//                 positions and are served as two locations (gated by U2 in
+//                 script/m24/verify-navigation.ts and by R5 in
+//                 script/m55/verify-relations.ts).
 //
 // Position handling is delegated exclusively to the P1 component
 // (src/lsp/positions.ts). All coordinates in the index are 1-based lines
@@ -114,12 +128,17 @@ export interface NavigationLocation {
   callSite?: NavigationCallSite;
 }
 
-/** The address owner's verdict for one stored row, plus the row's identity.
+/** The address owner's verdict for one served place, plus the identity of the
+ *  stored row that opened it.
  *
  *  `CallSiteAddress` is the owner's type and is never widened here; `rowId` is
- *  this surface's, because the dedupe key is one-location-per-STORED-ROW and a
- *  row id is the only identity that distinguishes two call sites sharing a
- *  line. Two rows, one line: two usages the store recorded, two rows here. */
+ *  this surface's, and its purpose changed with the M55.T3 integration. It is no
+ *  longer part of the dedupe key (which is the served position); it is now the
+ *  TRACEABILITY field — the `brain_relationship` row a location came from, so a
+ *  client can quote the evidence for a place it is about to navigate to
+ *  (contract §15.3: a target nobody can check is a guessed link). A position
+ *  several rows share is served once and names ONE of them here; how many share
+ *  it is `ReferencesResult.coalescedRows`. */
 export type NavigationCallSite = CallSiteAddress & { rowId: string };
 
 /** The note the `includeDeclaration` entry carries. It is NOT the owner's
@@ -196,6 +215,19 @@ export interface ReferencesResult {
    *  happened. There is no third silent path: a row that cannot be positioned
    *  is counted here, never served at a guessed line. */
   omittedUnpositionable: number;
+  /** M55.T3 — stored usage rows whose served position was ALREADY occupied by
+   *  another row, so they add no location. Counted, never merged into silence
+   *  (Understanding Rules §13.2: "nothing is merged into silence, and no stored
+   *  row is dropped … from differential counts").
+   *
+   *  This is the count that makes the dedupe law legible: `locations.length` is
+   *  the number of PLACES the index can put an editor caret, and
+   *  `coalescedRows` is the number of stored rows behind those places that the
+   *  store kept separately. A client that shows the list and the number can
+   *  then say "3 places, 4 stored rows" — which is the truth — instead of
+   *  either serving the same range twice or pretending the extra row is not
+   *  there. */
+  coalescedRows: number;
 }
 
 interface SymbolRow {
@@ -777,6 +809,7 @@ export function resolveReferences(
   const seen = new Set<string>();
   let omittedUnresolvable = 0;
   let omittedUnpositionable = 0;
+  let coalescedRows = 0;
   // One read per distinct source file for the whole response (a references
   // result routinely names the same caller file from many rows).
   const sourceCache = new Map<string, string | null>();
@@ -825,15 +858,49 @@ export function resolveReferences(
       continue;
     }
     const loc = placed.location;
-    // ONE LOCATION PER STORED ROW. The key is `path:line:rowId`, not
-    // `path:line:character`: the store can record two call sites inside one
-    // function on the SAME line (`greet(); greet()`), and the old
-    // position-only key collapsed them into one location — a references list
-    // that said 1 where the index holds 2, which is the §13.4 count lie this
-    // key change ends. The row id is the identity the store gives a row; a
-    // position cannot be, because two usages may legitimately share a line.
-    const key = `${loc.path}:${loc.line}:${edge.id}`;
-    if (seen.has(key)) continue;
+    // ONE LOCATION PER SERVED POSITION — the SAME key the hover's collector
+    // uses (`richSitesForSymbol`: `${opening.path}:${opening.line}:${opening.character}`),
+    // because §14 Truth Rule 1 admits exactly one answer per fact and two keys
+    // are two answers waiting to drift.
+    //
+    // HISTORY, because the reasoning is not obvious and the wrong version was
+    // shipped first. This key was `path:line:rowId` ("one location per STORED
+    // ROW", on the argument that two call sites in one function are two
+    // usages). Measured on five real, populated indexes, that key's only
+    // effect was to serve byte-IDENTICAL duplicate locations:
+    //
+    //     project   usage rows   served-position   groups where >=2 stored
+    //                                      collisions      rows share ONE place
+    //     064be526        25,129           2,417                    2,417
+    //     818db37d       157,524           8,285                    8,285
+    //     99c211a1        93,837             684                      684
+    //
+    // and 99.5% of them are the same two rows carrying two DIFFERENT
+    // relationship kinds (`uses` + `references`, `calls` + `uses`) for one
+    // caller at one stored line. An editor cannot show two entries that are the
+    // same file, line and column, so that is §13.1's rendering defect ("a
+    // symbol that appears multiple times only because it owns several stored
+    // relationship rows is a rendering defect, not data richness") and §13.4's
+    // count lie, on two surfaces, at once.
+    //
+    // What the rowId key was supposed to protect is ALREADY delivered by the
+    // call-site address above, and was verified by measurement rather than
+    // argued: on a real index built by `bb index` from a source with two calls
+    // to one callee, the store writes ONE row for two calls on one line (the
+    // row id keys on the call-site LINE — src/ast/parallel-indexer.ts:4147 —
+    // so same-line calls are one row by construction) and TWO rows with two
+    // DIFFERENT lines for calls on different lines. Two different lines are two
+    // different positions, which this key serves as two locations, and the
+    // hover's count and this surface's count both rise with them. The genuine
+    // two-call-site case never depended on the row id.
+    //
+    // The rows that do collapse are COUNTED, not dropped (§13.2): see
+    // `coalescedRows` on the result.
+    const key = `${loc.path}:${loc.line}:${loc.character}`;
+    if (seen.has(key)) {
+      coalescedRows++;
+      continue;
+    }
     seen.add(key);
     if (locations.length < limit) {
       locations.push(loc);
@@ -880,6 +947,7 @@ export function resolveReferences(
     absence: null,
     omittedUnresolvable,
     omittedUnpositionable,
+    coalescedRows,
   };
 }
 
@@ -988,6 +1056,7 @@ function referencesAbsent(absence: NavigationAbsence, limit: number): References
     absence: { ...absence, totalCount: 0 },
     omittedUnresolvable: 0,
     omittedUnpositionable: 0,
+    coalescedRows: 0,
   };
 }
 
