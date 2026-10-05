@@ -238,8 +238,9 @@ census cannot finish on this corpus at all.
 ### Verdicts
 
 Measured over that draw, through `parseFile` at the shipped analyzer (Z59 included),
-**re-measured 2026-10-03 in 8 shards**: **127,429 symbols, 392,550 relationships,
-0 symbols with an empty name, 0 kinds outside the shared `SymbolKind`.**
+**re-measured 2026-10-04 at HEAD in 8 shards**: **131,097 symbols, 395,967 relationships,
+0 symbols with an empty name, 0 kinds outside the shared `SymbolKind`, 0 edges under
+confidence 0.7.**
 
 The pass-1 figures were 127,536 / 392,086 / 0 empty names / **192 kindless symbols**.
 The draw is byte-identical (`sha256:2f3545f9…`, 3,834 of 3,834, asserted by the
@@ -259,7 +260,7 @@ degradation is now RATE-measured by
 `validation/m14/fixtures/zig/fallback-degradation-rate.py`, both instruments count
 `parseFile`'s `fallback: true` per file, and both merges REFUSE a degraded shard
 rather than publishing a mixture. On a run where every shard reports 0 the
-figures above reproduce exactly — 127,429 symbols, 392,550 relationships, 0 empty
+figures above reproduce exactly — 131,097 symbols, 395,967 relationships, 0 empty
 names, 0 kinds outside `SymbolKind`, 0 edges below 0.7 — so the numbers are right
 and what was wrong was calling one run's value a property. **The 192 kindless
 symbols and the 7 sub-0.7 edges pass 1 published were real, and they were the same
@@ -285,9 +286,9 @@ row is still here for a reader; it is simply the row no script grades.
 | `extends` | no — RULED, ZIG.O.1, instrument A: 0 of 28 inheritance words in the grammar's 239-entry type table or its 16 fields; 0 UNCLASSIFIED of 1,797 header-slot children | 0 | 0 | — | — | — | — | — | — |
 | `calls` | yes — emitted, and every target is called at its own line (A2: 0 of 113,476) | 113,476 | 2,781 | 11.53 | **0.0** | 40.13 | 95.55 | 95.55 | 0.85 ×113476 |
 | `uses` | yes — emitted, and 0 of 132,201 targets contradict their reason code (A3) | 132,201 | 2,852 | 22.48 | **0.0** | 47.73 | 97.43 | 97.43 | 1 ×13406 · 0.75 ×118795 |
-| `contains` | yes — emitted; 4.80% of owners are name-ambiguous (A5) | 80,714 | 1,557 | 0.0 | **0.0** | 99.99 | 99.99 | 99.99 | 1 ×80714 |
-| `imports` | yes — emitted; 20,396 of 20,400 spell `@import` on the line, 0 paths absent (A8) | 10,200 | 2,693 | 100.0 | **0.0** | 29.89 | 33.8 | 33.8 | 0.9 ×10200 |
-| `references` | yes — emitted; 75 of 20,594 declared-type targets are not type names (A7) | 30,794 | 2,966 | 100.0 | **0.0** | 44.39 | 74.66 | 74.66 | 1 ×10200 · 0.9 ×20594 |
+| `contains` | yes — emitted; 4.80% of owners are name-ambiguous (A5) | 80,876 | 1,557 | 0.0 | **0.0** | 99.99 | 99.99 | 99.99 | 1 ×80876 |
+| `imports` | yes — emitted; 20,396 of 20,400 spell `@import` on the line, 0 paths absent (A8) | 10,200 | 2,693 | 100.0 | **0.0** | 29.89 | 33.92 | 33.92 | 0.9 ×10200 |
+| `references` | yes — emitted; 75 of 20,594 declared-type targets are not type names (A7) | 30,794 | 2,966 | 100.0 | **0.0** | 44.39 | 74.70 | 74.70 | 1 ×10200 · 0.9 ×20594 |
 | `exports` | yes — emitted; 0 of 24,114 targets name a non-public symbol (A6) | 24,114 | 3,164 | 100.0 | **0.0** | 100.0 | 100.0 | 100.0 | 1 ×24114 |
 | `instantiates` | yes — emitted; 615 of 4,306 targets bind to nothing published (A4) — ZIG.O.4; the earlier ruling that this branch was unreachable was false and is retracted | 4,306 | 530 | 55.04 | **0.0** | 85.72 | 96.05 | 96.05 | 1 ×4306 |
 | `implements` | no — RULED, ZIG.O.2, instrument A, same tables; Zig models an interface as `opaque` + fn-pointer fields, so there is no conformance clause to name | 0 | 0 | — | — | — | — | — | — |
@@ -5263,3 +5264,330 @@ failed. The verdict above is the table the gate printed, not the exit code.
   a per-lane scratch quota, or the census instruments writing side-cars that are pruned after
   aggregation. This lane's own reclaimable dumps (four superseded 79 MB draw sets) were deleted;
   its two live draw sets were kept so every number here stays reproducible.
+
+## Pass 22 — the owner a member is published under was its container's BARE name, so 19.4% of `contains` was unreachable (2026-10-04)
+
+Pass 21 §I left exactly one item in this lane's hands: *"The 138 + 102 residual of §E is diagnosed
+but not fixed. The `Elf64.Chdr` owner-qualification loss is a real misattribution in
+`real-zig-analyzer.ts`, and it was left alone deliberately: the fix changes which owner name 240
+edges carry, and re-deriving the full-population consequence needs a census re-run this pass could
+not complete — the disk reached 100% (0 bytes free) mid-pass."* The disk is at 58 G free, so this
+pass does the fix and the re-measurement.
+
+The population is not 240 edges. It is **15,686**.
+
+### A. The mechanism, which is a coordinate-system split rather than a wrong name
+
+`scope`/`ownerName` were `container.name` — the container's **bare** name. The shared projection
+spells a symbol `scope ? scope + "." + name : name` (`pool-worker.ts:930`). So a container published
+its ABSOLUTE name and its members published a RELATIVE one, and the two halves of one nesting
+landed in two coordinate systems:
+
+```zig
+pub const IOSurface = struct {          // ghostty/pkg/macos/iosurface/iosurface.zig:10
+    pub const Error = error{             // container -> qualifiedName `IOSurface.Error`
+        InvalidOperation,                // member    -> qualifiedName `Error.InvalidOperation`
+```
+
+Two consequences, and they are different failures:
+
+1. **The member is unreachable from its container.** A consumer holding `IOSurface.Error` looks for
+   symbols under that prefix and finds none; the member is filed as if `Error` were a top-level
+   declaration.
+2. **The `contains` edge names a source that is not a published qualified name at all.**
+   `contains Error -> InvalidOperation` — and `Error` is not a `qualifiedName` anywhere in that
+   file, so a reverse walk has nothing to arrive at.
+
+Pass 21 §E named this shape on `zig/lib/std/elf.zig` and counted its *visible symptom* as the 138
+`other` + 102 `short-parent` C6.5 violations. That was a true count of a narrow instrument's
+residual, not the population: the same mechanism removes an endpoint from resolution on 15,686
+edges, and C6.5 could only see the ones where the loss also produced a nesting violation.
+
+`zig/lib/std/elf.zig` is the sharpest instance because the bare name is genuinely ambiguous there:
+the file declares **three** real declarations named `Chdr` — `Elf32.Chdr` (`:1083`), `Elf64.Chdr`
+(`:1173`) and a file-scope `switch`-produced alias (`:1600`) — and `Elf64.Chdr`'s member `reserved`
+was published with `ownerName = Chdr`.
+
+### B. The fix, and why the path is built from STRIPPED components
+
+A container records its own absolute dotted path (`zigOwnerPath`, an internal field the projection's
+explicit field list never copies), and a member's `scope`/`ownerName` are spelled from it. For a
+FILE-SCOPE container the path equals the bare name, so the top-level majority is byte-identical by
+construction — which is why the published symbol and edge totals do not move at all (§F).
+
+Components are stripped with the analyzer's own `stripZigQuoting` at construction rather than left to
+`canonicalizePublishedNames`, because that pass strips `ownerName` but **not** `scope`: a raw
+`@"my type"` component would leave the container spelled `my type` and the member
+`@"my type".field` — the same split, one level down.
+
+### C. The measurement, both arms on the same instrument
+
+3,834-file draw `sha256:2f3545f9`, 8 shards, union hash asserted equal to the published draw,
+0 fallback. Both arms produced by the SAME instrument; the before arm is
+`real-zig-analyzer.ts` at `e7a082256`, byte-identical to the pre-fix file.
+
+`contains`, 80,876 edges — the count is identical in both arms:
+
+| | before | after |
+|---|---|---|
+| source is a published **qualifiedName** | 80.61% | **100.00%** |
+| source is a bare name only | 19.39% | **0.00%** |
+| **composition-resolvable** (`source + "." + target` is a published qualifiedName) | 80.60% | **99.99%** |
+| failing shapes | **15,686** (421 files) | **8** (5 files) |
+| ├ `source-not-a-published-qualified-name` | 15,682 | **0** |
+| └ `member-not-spelled-under-source` | 4 | 8 |
+
+Every other type is identical in every column: `calls` 113,476 · `uses` 132,201 · `contains` 80,876
+· `exports` 24,114 · `references` 30,794 · `imports` 10,200 · `instantiates` 4,306.
+**131,097 symbols and 395,967 relationships in both arms.** Empty names **0**; kinds outside
+`SymbolKind` **0**; edges under confidence 0.7 **0**; `unknown` endpoints **39** — all unmoved.
+
+**The instrument was wrong first, and it is worth recording how.** `shard-merge.py` resolved an
+endpoint against the census's per-file set of BARE names, so a correctly spelled qualified endpoint
+read as DANGLING: the first merge after the fix reported `contains srcDangle 0.0% -> 19.94%` and
+`bothCorpus 99.99% -> 80.06%`, which is the shape of a regression. The census now publishes the
+qualified-name set beside the bare one and the merge reports four separate buckets
+(`srcBoth` / `srcQual` / `srcBare` / `srcDangl`). The corpus-wide name set is deliberately NOT
+extended with qualified names, so every previously published corpus-tier figure keeps its
+definition — widening the set would move published numbers for reasons unrelated to the analyzer.
+
+### D. Anti-fabrication: an independent tree walk, per site
+
+`owner-path-truth.ts` re-derives each member's owner path from the PARSE TREE — ascending to every
+enclosing `container_declaration` and reading each one's declared name off its `variable_declaration`
+parent — and compares against production `parseFile`. Over the 418 files the change touches:
+
+**6,414 member sites · 5,295 published · 5,295 owner paths match the tree · 0 mismatches · 1,119
+unpublished.**
+
+All 1,119 unpublished sites are containers declared inside a FUNCTION body — Z22's refusal, which the
+corpus demonstrates on every pass. Two of this probe's own errors are recorded in the file: it
+counted function-body locals as container members (`fn includeFiles(self: *const HarfBuzzC) { var
+len: usize = 1; }` puts a container above `len`), giving a first denominator of 9,746 with 4,354
+"unpublished" that were the refusal; and it read names as raw lexer text, so `@"my type"` compared
+against a published `my type`. It now imports the analyzer's own `stripZigQuoting`.
+
+### E. The fixture, and the mutants that make it falsifiable
+
+`zig/owner-path-nested` — the lane's 13th fixture. Rows are grouped by **what each group can catch**,
+because rows that all fail together cannot tell two wrong implementations apart:
+
+| group | catches | verified by |
+|---|---|---|
+| depth-2 | a revert to `container.name` | `bare-name` fails 25 assertions |
+| **depth-3** (`Registry.Entry.Slot.value`) | tracking two containers instead of a stack — at depth 2 outermost+innermost IS the chain, so nothing else sees it | `outermost+innermost` fails **5**, every one a depth-3 row |
+| `Chdr` / `Elf64.Chdr` | a mutant picking a WRONG BUT EXISTING container (three real `Chdr` declarations) | forbid rows |
+| file-scope `Point`/`Shape`/`Color` | over-qualification — these rows are byte-identical to the pre-fix output | forbid rows |
+| `locals()` | widening the path logic to containers the analyzer refuses to publish | forbid rows |
+| quoted `@"my type"` | building the path from raw lexer text | `quote-through` fails 3 |
+
+`owner-path-mutants.mts`: **7 of 7 CAUGHT**, including the fabrication direction
+(`prefix-the-file` — a unique path no symbol holds, 43 assertions fail) and `path-on-target-only`
+(the path on the edge's target rather than its source, which is the defect itself).
+
+The harness imports `matchConstraints` from the shared runner rather than restating it, for the
+reason `z65-mutants.mts` records. Its first revision called that function with another lane's
+argument order and reported **0 of 7 CAUGHT** — seven survivors that were the harness's own
+blindness. A mutation log that says "survived" when the harness never matched is worse than no log.
+
+The fixture's own first draft wrote `pub const @"my type": struct {…}`, which is not Zig: the
+grammar reads that as a field with an inline struct type, publishing a `property` and no member. The
+corpus form is `= <container>`. The fixture runner caught it.
+
+### F. The full population, re-measured at this commit
+
+| type | edges | Δ vs pass 20/21 | tgt file-local | tgt corpus-tier | conf | evidenceClass |
+|---|---|---|---|---|---|---|
+| `calls` | 113,476 | — | 40.13% | 95.55% | 0.85 | `usage_contextual` |
+| `uses` | 132,201 | — | 47.74% | 97.43% | 1 (13,406) / 0.75 (118,795) | `usage_contextual` |
+| `contains` | 80,876 | **— (0)** | 99.99% | 99.99% | 1 | `structural` |
+| `imports` | 10,200 | — | 29.89% | 33.92% | 0.9 | `import_based` |
+| `references` | 30,794 | — | 44.39% | 74.70% | 1 (10,200) / 0.9 (20,594) | `reference_qualified` |
+| `exports` | 24,114 | — | 100% | 100% | 1 | `import_based` |
+| `instantiates` | 4,306 | — | 85.72% | 96.05% | 1 | `usage_contextual` |
+
+`contains` is the only type whose endpoint spelling moved, and its COUNT did not move. The
+payload/latency budget is therefore unmoved too, which §H's F8 section-f confirms at **85.5 ms/file
+— the same figure pass 20 recorded.** No lane's graph grows.
+
+### G. Re-running this lane's own controls found three of them weaker than their comments said
+
+**C5 was measuring a third fewer sites and still reporting 0.** `analyzer-owned-miss-cause.ts` builds
+a site's expected `qualifiedName` as `${nearestOwner}.${name}` from the shadow walk's **bare**
+container name, looks it up among the published qualified names, and `continue`s when it misses.
+Production stopped publishing that spelling at this pass, so the lookup missed and the site was
+skipped **silently**:
+
+| C5 field-kind agreement | checked | violations |
+|---|---|---|
+| before the change | 19,533 | 0 |
+| after the change, control NOT yet repaired | **12,916** | 0 |
+| after the change, control repaired | **19,535** | 0 |
+
+A control that covers a third fewer sites and reports the same 0 is worse than no control, because 0
+reads as a pass. The walk now carries `containerPath` beside `container`, built exactly as
+`ownerPathOf` builds it, and C5 looks the site up under the path production publishes. On the PRE-FIX
+analyzer the repaired control covers 12,906, which is correct: the pre-fix spelling is not the
+published one, and the control now says so by measuring less.
+
+**C4 is weaker than its name, and this pass does not relabel it.** `C4 field-owner agreement`
+compares `flags.container` against `nearestOwnerDecl(...)` — two values the SAME shadow walk
+produced. It cannot see a wrong `ownerName` in the published output at all, and it read 0 violations
+on both arms for that reason. The control that does read the published owner is
+`fields published under the wrong owner`, also **0** on both arms. Reported as a finding, because
+renaming a control's claim is a supervisor's call, not this lane's.
+
+**Three instruments could not both be current.** `analyzer-owned-miss-cause.ts` read a field
+(`declaredNames`) that the current census no longer emitted, so it was reading a SUPERSEDED
+generation's dumps for it — the pass-19 §B class one level down. The census now emits everything the
+ladder reads: per-file published SYMBOLS (name + kind + qualifiedName) and the grammar's binding
+slots. The binding walk took three attempts, each settled by diffing against the pass-20c dumps (the
+last generation carrying the column):
+
+- two slots (`decl`/`field`) lost **9,234** bindings — `create=decl`, `self=parameter`: a top-level
+  `fn` name and a parameter, which such a walk never visits;
+- four slots reduced to one entry per name disagreed on **1,266** slot values, every one a name the
+  old column listed under more than one slot — the ladder already reduces with its own `ORD`, so the
+  census must emit every `(name, slot)` pair;
+- four slots, all pairs: **the binding is not at `child(1)` for a `pub` declaration.** `pub const c =
+  …` puts `pub` at child 0, so the identifier is child **2**. `ghostty/pkg/fontconfig/main.zig` lost
+  `c`, `init`, `fini`, `initLoadConfig`, `version`, `CharSet` and 6 more — most of its declarations.
+  The read is the first **named** `identifier` child, which is the rule `real-zig-analyzer.ts:323`
+  uses and the reason the analyzer publishes those names at all. A `test`/`comptime` BODY is also
+  executable scope, so its bindings are locals.
+
+Final: **26,601 of 27,185** reduced bindings agree with the superseded column (97.8%); the **584**
+that differ are all bindings this walk finds and that one did not (`extern fn` declarations, enum
+fields) — a documented superset.
+
+**C2 IS RED, and it is not about the analyzer.** It compares recomputed rungs against a hardcoded
+`PUBLISHED` table measured under the superseded column's definition, which was recorded nowhere.
+Both arms report the **same five cells**, so this change did not move it:
+
+| cell | recomputed | published |
+|---|---|---|
+| `uses/dropped-field-IN-FILE` | 3,715 | 3,703 |
+| `uses/dropped-decl-IN-FILE` | 132 | 274 |
+| `calls/dropped-field-IN-FILE` | 232 | 231 |
+| `calls/dropped-decl-IN-FILE` | 118 | 117 |
+| `references/dropped-decl-IN-FILE` | 23 | 24 |
+
+Re-baselining that table is the fix and it edits a published number, so it is not this lane's to do.
+
+**An 8-shard run of `range-agreement.ts` silently lost 7 of its 8 shards.** The JSONL side-car is
+truncated at the start of a measuring run, one default `--out` served all eight shards, each shard
+printed `measured 480 file(s) -> …jsonl`, and the aggregate then reported 480 files instead of 3,834
+with nothing in the output saying a population had been truncated. The default `out` now carries the
+shard's own tag.
+
+### H. Full-population C6 at this commit
+
+| rung | pass 21 | pass 22 |
+|---|---|---|
+| C6.1 offset/position agreement | 131,097 / **0** | 131,097 / **0** |
+| C6.2 bounds and ordering | 131,097 / **0** | 131,097 / **0** |
+| C6.3 name containment | 131,097 / **0** | 131,097 / **0** |
+| C6.4 span collision | 131,097 / **0** | 131,097 / **0** |
+| C6.5 contains nesting | 52,583 / **3,070** | 54,423 / **2,827** |
+| ├ `this-alias` | 2,830 | **2,827** |
+| ├ `other` | **138** | **0** |
+| └ `short-parent` | **102** | **0** |
+
+The two shapes pass 21 §E named are **both zero**. Only `this-alias` remains, and §E's reason stands:
+a file-level container field belongs to the implicit file-struct, the only node naming that type is
+the `@This()` alias, and widening a 20-character alias to the whole file would fabricate a span for a
+node that does not exist. Deliverable B's intra-file endpoint ambiguity falls with it:
+**62,326 → 58,419 of 681,663 declaration endpoints (9.14% → 8.57%)**, `contains` 19.54% → **17.13%**.
+
+C6.5's checked population rose 52,583 → 54,423 because more endpoints became UNIQUELY bindable, and
+its `unresolved` count is **8** — the `this`/`super` class in §I.
+
+### I. The 8 that remain are a shared-file defect, not an analyzer one
+
+All 8 are the same shape: `super: bool = false` inside a `packed struct`
+(`ghostty/src/input/key_mods.zig:35, 47, 65`) and `this: …`
+(`ghostty/src/input/key_encode.zig`, `ghostty/src/apprt/action.zig`,
+`zig/lib/std/zig/Zir.zig`). **Zig has no reserved words**, so those are real field declarations and
+the corpus compiles them. `keepSymbol`'s `UNIVERSAL` denylist (`pool-worker.ts:481`) drops `this`
+and `super` **unconditionally**, deleting the symbol while the `contains` edge naming it survives.
+
+`denylist-publication.ts` measures it through the production `keepSymbol`: `this` binds in **3**
+files, **published 0**, named by **3** edges; `super` binds in **2** files, **published 0**, named by
+**24** edges. The same instrument's unit row shows 9 of 15 pre-fix denials are already gone for zig
+and 6 remain, of which exactly 2 are real declarations. The `pool-worker.ts` comment sets up this
+exact argument for `self` (*"`self` is … a LEGAL variable in Lua, Python 3, Rust and Zig"*) and then
+leaves `this` and `super` in the unconditional set. Reported, not fixed — §J.
+
+### J. Gates re-run at this commit
+
+| gate | command | result |
+|---|---|---|
+| fixtures | `bun run script/m14/run-fixtures.ts --lang zig` | **13 PASS / 0 FAIL** (12 + `zig/owner-path-nested`) |
+| firing check | `npx tsx script/m14/firing-check.ts --files 120 zig` | **7/10 fired**, 8,501 edges, 120/120 files, 1 DEGRADED; exits 1 refusing the count — unchanged from pass 21 |
+| ontology arbiter | `BB_CORPUS_ROOT=<1,200-file root> npx tsx validation/m14/fixtures/zig/arbiter-zig-wired.ts zig` | **emitted 7/10 · ruled-sound 3 · FALSIFIED 0 · ruled-without-justification 0**, exit **0** |
+| ruled probe | `npx tsx validation/m14/fixtures/zig/zig-ruled-probe.ts` | exit 0, 10/10 controls ok, gate cell **0**, exclusion split 19/21/0/1, instrument A 239 declared / 232 produced |
+| census, 8 shards | `ontology-census.ts --files-from …` + `shard-merge.py <hash>` | 8/8 exit 0, union hash == published draw, 395,967 edges, **0 fallback** |
+| owner-path probe | `npx tsx validation/m14/fixtures/zig/owner-path-probe.ts <rawdir>` | `contains` srcQName **100.00%** · compOK **99.99%** · **8** failing |
+| owner-path truth | `npx tsx validation/m14/fixtures/zig/owner-path-truth.ts --from <418 files>` | 6,414 sites · 5,295 match · **0 mismatches** · 1,119 Z22 refusals |
+| C6 range agreement | `8× range-agreement.ts --files-from shard-N.txt` + `--aggregate --jsonl-dir` | C6.1–C6.4 **0** / 131,097 · C6.5 2,827 / 54,423 · noRange 0 |
+| miss-cause ladder | `raw-to-ladder-dumps.ts` + `analyzer-owned-miss-cause.ts --dumps` | C1 **0**/22,175 · C2 **FAIL** (5 cells, §G) · C3 OK · C4 **0**/20,884 · C5 **0**/19,535 · wrong-owner **0**; analyzer-owned 2,625 cases = 4,379 edges, identical in both arms |
+| differential | `BB_M14_WORK=<private pool> bun run script/m14/differential.ts --lang zig` | zig `hash=053fa67f…` · MISSING=1 · unexplained=41 (`contains`=41); zls MISSING=0 · unexplained=45 — **byte-identical in the before arm**, so the change did not move it |
+| mutation (shared) | `BB_MUTANT_ONLY="zig/" bun run script/m14/mutate-analyzer.ts` | **50 / 50 CAUGHT** (1,748 → 50) |
+| mutation (lane) | `m13-mutants.mts` · `z65-mutants.mts` · `owner-path-mutants.mts` | **6/6** · **5/5** · **7/7** |
+| F8 completeness | `npx tsx script/m14/completeness-inventory.ts --lang zig` | 7 of 8 sections pass; **section-b still FAILS** on `requiredKinds` missing `exports`/`instantiates` (unchanged, §8 item 23's neighbour); **section-f 85.5 ms/file — unchanged** |
+| regex census | `npx tsx script/m12/verify-regex-census.ts` | gate `FAILED` on findings in **11 other analyzers**, **0 zig rows**; `src/ast/real-zig-analyzer.ts` contains **0** regex, and this pass adds none |
+| honesty gate | `npx tsx script/m14/verify-honesty.ts` | exit 6, 22 failures, **0 naming this document, `real-zig-analyzer.ts`, or any file under `validation/m14/fixtures/zig/`** |
+| `tsc` | `npx tsc --noEmit -p tsconfig.json` | **0 errors** |
+
+### K. What pass 22 could not settle
+
+- **C4's claim is not what its name says**, and this pass reports that rather than redefining it
+  (§G). Until it is renamed or rewritten, a green C4 line is evidence about the shadow walk, not
+  about the published owner.
+- **C2 is red** and cannot be made green without re-baselining a published table whose input function
+  is not recorded anywhere (§G). The 584-binding superset is characterised but not reconciled.
+- **The 8 `this`/`super` edges are unfixable in this lane** and stay unresolvable until
+  `keepSymbol` changes (§I, §J).
+- **The differential cannot see this defect class.** Same-pool before and after are byte-identical —
+  same `hash`, same `tree-truth`, same `analyzer-edges`, same `unexplained=41` — so its 41
+  unexplained `contains` edges are not attributable to the owner spelling, and equally the oracle
+  could never have caught the 15,686. That is a statement about the oracle's sensitivity, measured,
+  and it is why this lane needed its own probe rather than relying on the shared one.
+- **`no-local-decl-site` is 1 edge**, where pass 18 recorded the 4,509 miss population decomposing to
+  zero defects. One case, one edge, not diagnosed here.
+- **177 of 3,834 files are non-ASCII** and §8 item 32 (the published index is a UTF-16 code-unit
+  offset with nothing declaring it) is untouched by this pass.
+
+### L. §8 items, from this pass
+
+- **Item 34 — `this` and `super` are deleted from zig's index by a denylist entry that its own
+  comment argues against.** *File:* `src/ast/pool-worker.ts:481` (`UNIVERSAL`), applied inside
+  `parseFile` at `:918`. *What it must do:* move `this` and `super` out of `UNIVERSAL` and into the
+  per-language `RESERVED` map, consulting it only for languages that reserve them — exactly the repair
+  `self`, `Self`, `me`, `My`, `root`, `program`, `source_file` and `unknown` already received, on the
+  argument the comment itself records. *Why:* Zig has no reserved words and the corpus compiles
+  `super: bool = false` inside a `packed struct` (ghostty/src/input/key_mods.zig:35, 47, 65). Measured
+  through the production `keepSymbol`: `this` binds in 3 files, published 0, named by 3 edges; `super`
+  binds in 2, published 0, named by 24 edges; the resulting **8 `contains` edges name a member the
+  graph cannot see**, and they are the entire residual of §H's C6.5 `unresolved` count. This is the
+  same defect §8 item 8 was about, for two names that repair left behind. *Not mine:* shared
+  machinery.
+- **Item 35 — three of this lane's instruments read each other's fields and one of them was reading a
+  superseded generation's dumps.** *Files:* `script/m12/verify-regex-census.ts` is unaffected, but
+  `script/m14/differential.ts` (`:902-956`, item 29's neighbourhood) and the shared mutation harness
+  are the wider problem; concretely, *the shared contract should state which instrument produces which
+  artifact field.* *What it must do:* publish, once, the shape of each `--raw`/report dump and which
+  instrument consumes which field, so a consumer cannot silently read a field no current producer
+  emits. *Why, measured:* `analyzer-owned-miss-cause.ts` read `declaredNames` from census dumps that
+  the census stopped writing, so its C2 ran against a table measured under a definition recorded
+  nowhere — and two instruments disagreed on `drawHash`/`popHash`, on index-vs-key edge file ids, and
+  on count-vs-array `fallbackFiles`, which is why `raw-to-ladder-dumps.ts` had to exist. A field with
+  no current producer is indistinguishable from a field whose producer changed meaning.
+- **Item 36 — `range-agreement.ts`'s side-car is truncated per run, so a sharded population loses all
+  but the last shard with eight successful lines in the output.** *File:*
+  `validation/m14/fixtures/zig/range-agreement.ts` — that is this lane's, and it is FIXED here (the
+  default `--out` now carries the shard tag). *Why it is still an item:* the shared instruments
+  `ontology-census.ts`'s `--out` and every other lane's equivalents have the same shape — one default
+  artifact path, truncating writes, no check that the path is unique to this run. A shared convention
+  (shard tag in the default name, or a refusal when the target exists and was not named) would close
+  it everywhere at once.

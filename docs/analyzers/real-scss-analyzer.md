@@ -1698,3 +1698,183 @@ in code that had already been committed:
 3. **A `@return` emitted a self-edge.** `contains` from a function to itself makes a
    relationship count look like evidence while connecting nothing. It is recorded as
    `scssReturns` on the function symbol instead.
+
+---
+
+## The incoming/ambiguity question, measured (round: scoping, not coverage)
+
+The whole-corpus sweep `validation/m14/measurements/incoming-whole.tsv` records one row per
+lane. This lane's row is `scss  600  8  0  1,185`: eight types fired, **zero** ambiguous,
+1,185 unresolved. The brief asks for the ambiguity split, then for the largest bucket this
+lane controls to be repaired. Both answers are below, and the second one is "none", with the
+arithmetic that says so.
+
+### Population, stated before every number
+
+| | |
+| --- | --- |
+| corpus root | `$HOME/fixtures/repositories` |
+| admitted | **4,433** `.scss` files across **25** repositories |
+| admission rule | git-tracked, `< 512 KB`, `detectLanguageFromPath(abs, text) === "scss"` |
+| **concentration** | **consul alone is 3,042 of 4,433 (68.6%)**; bulma 179, element-plus 170, wagtail 133, bootstrap 122, primer-css 113, vault 108, nomad 98 |
+| walk | whole admitted corpus through production `parseFile`: **39,688 symbols, 30,263 edges, 0 thrown, 3 fallback, 0 degraded** |
+| window for every split below | **600 files, every 7th of the sorted admitted list** — the same stride, so it is comparable to the published tsv row |
+| in-window edges | **3,521** |
+
+The concentration is the first thing a reader should hold onto. 68.6% of this corpus is one
+vendor's generated icon set, so any per-file rate computed over it is mostly a statement
+about consul. Artifacts: `scss-incoming-walk-full.ndjson` is a dump, not committed (13.8 MB);
+the arithmetic over it is, and is byte-reproducible.
+
+### 1. The ambiguity split
+
+`incoming-check.ts` calls a target ambiguous when a name maps to more than one distinct
+**kind**. The reverse walk in `src/lsp/impact.ts` matches on **target strings**, and this
+lane publishes endpoints as names, never as symbol ids. So the candidate count is the number
+of **declarations**, not the number of kinds, and both are reported because the smaller one
+must not stand in for the larger.
+
+Over **3,521 edges from 600 of 4,433 files**:
+
+| | edges | share |
+| --- | --- | --- |
+| ambiguous by distinct kind (the sweep's definition) | **3** | 0.1% |
+| ambiguous by declaration count (what `impact.ts` chooses between) | **284** | 8.1% |
+
+and the 284 decompose:
+
+| bucket | meaning | owner | count |
+| --- | --- | --- | --- |
+| **S1** | every declaration of the name is in the edge's own file — a scoping failure | this lane, repairable | **3** |
+| **S2** | >1 file, one kind — the published name is not a unique identifier | published-name contract | **281** |
+| **S3** | >1 file, >1 kind — the kind signal narrows and does not close | both | **0** |
+
+Per type: `contains` 3 kind-ambiguous / 191 instance-ambiguous (S1 3, S2 188),
+`references` 0 / 63 (S2 63), `exports` 0 / 29 (S2 29), `extends` 0 / 1 (S2 1),
+`calls` `uses` `imports` `overrides` 0 / 0. Source endpoint resolves in its own file on
+**3,521 / 3,521**.
+
+**99.0% of this lane's ambiguity is S2**, and S2 is not an analyzer defect: `.btn` in two
+stylesheets is two rules that both call themselves `.btn`, and no amount of edge-cutting
+changes it. It is a statement about names, not about edges — which is what the brief
+predicts when it says ambiguity falls only when symbol identity becomes sound.
+
+### 2. The unresolved split
+
+| | edges | share of 1,174 |
+| --- | --- | --- |
+| **U1** declared by a file outside the 600-file window | **313** | 26.7% |
+| **U2** published by no file in the 4,433 walked | **861** | 73.3% |
+
+Per type: `imports` 567 unresolved (U1 4, U2 563), `references` 543 (257 / 286),
+`extends` 64 (52 / 12). `calls` `uses` `contains` `exports` `overrides` **0**.
+
+The brief says not to report an unresolved count as a defect without checking the target
+genuinely does not exist, so U2 is decomposed by **target shape**, which is what decides
+ownership (`scss-u2-classify.ts`):
+
+| shape | edges | share | what it is |
+| --- | --- | --- | --- |
+| **MODULE-PATH** | **520** | 60.4% | `@use './placeholders'`, `@forward './property-24'` — a filesystem path |
+| **CUSTOM-PROP** | **286** | 33.2% | `var(--color-border-default)` |
+| **BARE-IDENT** | **55** | 6.4% | `@import 'variables'`, `@extend %csv` |
+
+MODULE-PATH and BARE-IDENT are one fact in two shapes: both are a **module specifier**. No
+analyzer can resolve a path to a declaration, because nothing is declared under that name.
+Only **6** of the 520 path-shaped targets have a basename some symbol does publish; the other
+**514 have no referent by construction**. Publishing a symbol named `./placeholders` would be
+a name with no referent, and the edge would then "resolve" to nothing.
+
+That leaves CUSTOM-PROP as the only shape with a live counterfactual, because this lane —
+through the CSS analyzer it delegates to — **does** publish custom-property declarations: the
+dump carries **2,122 symbols named `--*` over 1,395 distinct names**.
+
+### 3. The custom-property counterfactual, at corpus scale
+
+Whole corpus, all 4,433 files: **3,296** `var(--x)` edges read a property that **no walked
+file publishes**, over **1,121** distinct names. Asking who declares them
+(`scss-custom-prop-ownership.ts`):
+
+| declaring file class | names | edges | what it means |
+| --- | --- | --- | --- |
+| a walked `.scss` | 101 | **369** | the only cell that could be a defect |
+| a `.css` file | 89 | 360 | the walk admits `.scss` only — an admission artifact |
+| nowhere in the corpus | 931 | 2,567 | a token set by a JS theme or a build script |
+
+The 369 decompose by cause, read from the declaring files rather than guessed:
+
+| cause | names | edges | verdict |
+| --- | --- | --- | --- |
+| `INTERPOLATED` — the declaration is `--#{$name}: v` | 69 | 240 | not statically knowable |
+| `COMMENTED` — no declaration exists to publish | 12 | 57 | probe false positive |
+| `PLAIN` — a bare `--x: v` in a walked file | 20 | **72** | the only candidates |
+
+**All 72 PLAIN edges sit in 4 files carrying 171, 234, 471 and 1,917 ERROR spans**, from
+which the walk publishes 83 symbols in total. `bulma/docs/website.scss` alone: 1,917 error
+spans, 29 symbols. So the declaration exists at a byte offset inside a region the grammar
+turned into ERROR, no `declaration` node is produced, and there is nothing to publish.
+
+**Confirmed analyzer omissions in the custom-property population: 0.**
+
+Two of the earlier candidate cases were the probe's fault and are recorded because both would
+have shipped as findings:
+
+- `element-plus/.../mixins/_var.scss:11` is `// --el-color-primary: red;` — a **commented**
+  line in a file the walk did parse. The analyzer is right to skip it.
+- `hasura-engine/.../default-fonts-and-colors.scss` parses with **0** error spans and
+  publishes 131 symbols, and `--ifm-color-gray-500` / `-600` looked like clean omissions
+  until the source was read: they sit on lines 167-168 inside a `/* … */` block that opens
+  on line 165. A cause classifier that only reads the line a name is on cannot see that, and
+  it charged the analyzer 3 edges it did not owe.
+
+### 4. Confidence and evidence labels
+
+Over the 3,521 in-window edges: **0** carry `confidence < 0.7`. `confidence` is **absent** on
+**1,622 (46.1%)** — recorded as absence, not as 1.0, which is the fix over the previous
+census's `typeof c === "number" ? c : 1`. `evidenceClass` per type: `contains`/`exports`/
+`extends`/`overrides` all `structural`; `imports` all `import_based`; `references` is
+**`import_based` 669 + `usage_contextual` 421**, because the CSS half arrives by delegation;
+`calls`/`uses` `usage_contextual`.
+
+### 5. The largest bucket this lane controls
+
+**There is none, and the arithmetic is the finding rather than a shortfall of effort.**
+
+| bucket | edges | this lane's? |
+| --- | --- | --- |
+| S2 cross-file one-kind ambiguity | 281 | no — published-name contract |
+| U2 module-path / bare-ident | 575 | no — a path is not a declaration |
+| U2 custom-property, all causes | 286 | **0 confirmed** |
+| S1 same-file ambiguity | **3** | yes — and 3 of 3,521 is 0.09% |
+
+S1 at 3 edges is real and repairable, and repairing it would move the ambiguity count by
+0.09% while adding code that could not be shown to help. Per the brief's own rule — report a
+number that does not move — the honest entry is that this lane has no ambiguity bucket to
+fix, and the two items below are reported rather than repaired because they are not this
+lane's files.
+
+### 6. Report-to-me items (shared machinery, §8 — not edited here)
+
+1. **`ontology-coverage-gate.ts` exit code is dominated by a load-dependent timeout.**
+   `--fresh` prints its whole verdict — `emitted 8/10  ruled-sound 2  FALSIFIED 0
+   ruled-without-justification 0` — and then exits **1** on
+   `[BB-HANG] parser stuck 120s on .../plus-square-fill/keyframes.scss`. That file is
+   **317 bytes** and parses in **721 ms** isolated (median 18 ms), and a repeat run at 3
+   iterations separates that number into what it is: **1,244 / 18 / 15 ms** — the first call
+   in a process pays the lazy WASM load, and the same 317 bytes then parse in **15 ms**. A
+   file whose own parse costs 15 ms cannot be what spent 120 s. The file named changes
+   between runs on identical bytes (`informed-action/index.scss` at `efd47f068`,
+   `plus-square-fill/keyframes.scss` now, plus `layout.scss` and `zenburn.scss` as
+   `memory access out of bounds`). Measured isolated maxima: 721 / 45 / 23 / 20 / 47 ms
+   against a 120,000 ms guard — a factor of 166 on the worst. `validation/m14/fixtures/scss/scss-hang-isolation.ts`
+   is the instrument. The brief makes exit 0 an acceptance condition, and no correct lane
+   can meet it while the guard is a wall-clock budget over a parallel walk.
+2. **`engine.ts` turns `ImportInfo` into an `imports` edge whose target is the module path**,
+   so all **3,636** `imports` edges are unresolvable by construction. Not a defect to repair
+   inside an analyzer; it is a fact a consumer should be told, and `bb_impact` will read those
+   targets as missing forever.
+3. **A resumed arbiter run reports `emitted 0/10` for this lane** — `walk: newly walked 0,
+   resumed 4433` and every emitted type reads `RULED-UNJUSTIFIED` against a corpus that
+   yields 30,263 edges. Re-running without `--fresh` is a false negative. Prior round's
+   artifact already records it; it is repeated here because the verdict is the acceptance
+   signal and the resumed form is the one that looks authoritative.
