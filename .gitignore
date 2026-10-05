@@ -265,3 +265,10 @@ _data2_poly/
 # is the floor the VB lane's "no 32 % regression" claim rests on, with the wasm
 # hash it was taken against). Only the candidate is regenerated.
 grammars/_vendored/vbnet/grammar-candidate.json
+
+# Resumable corpus-walk checkpoints (script/m14/resumable-walk.ts). These are
+# machine-local progress state, not evidence: they record WHICH files a walk has
+# covered, so committing them would put a per-developer, per-machine file list in the
+# history and make diffs enormous and meaningless. The MEASUREMENT that results is
+# committed separately; the path walked to get there is reproducible from the corpus.
+validation/m14/measurements/walk-*.txt
