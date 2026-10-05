@@ -845,7 +845,41 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (rel.type !== ASTEngine.RelationshipType.Calls) continue
       const meta = rel.metadata as Record<string, unknown>
       if (meta.targetResolution !== undefined) continue
-      if (meta.isFunctionCall !== true) continue // an external binary names nothing local
+      if (meta.isFunctionCall !== true) {
+        // The comment this replaces read "an external binary names nothing local",
+        // and it is FALSE for a name this file also declares. Measured on the whole
+        // corpus: `ohmyzsh/plugins/pip/pip.plugin.zsh` declares `local xargs=` on 106
+        // and again on 114, then RUNS `xargs` at 107 and 115. The two edges at 107/115
+        // are correct — `xargs` there is /usr/bin/xargs — and a consumer matching
+        // reverse edges by target finds two `variable` candidates and no way to
+        // choose, because the edge published nothing. "Names nothing local" and
+        // "names something local that is not this edge's target" are different facts
+        // and publishing neither is what made this invisible for nine rounds.
+        //
+        // The answer publishes NO line, because there is no declaration at that line
+        // the call denotes: command position resolves to a function or a PATH lookup,
+        // never to a variable. So the fact a consumer needs is the KIND of thing the
+        // name collides with, not a line among the colliding declarations. Both
+        // `xargs` edges get `targetResolution: "commandNameIsExternal"` and
+        // `collidesWithLocalDeclaration: true`, which together let a consumer discard
+        // the variable candidates instead of picking one.
+        //
+        // It is NOT published on an edge read out of error recovery. The same pass
+        // over the whole corpus also reaches `calls -> key` (Paket/completion/
+        // paket-completion.zsh:1486, where the word `local` was swallowed into an
+        // ERROR and `key` became the command name) and `calls -> name` twice
+        // (kubernetes/cluster/gce/util.sh:3829/:4057, where a gcloud `--filter`
+        // string was handed back as a command). Those three name no program the
+        // source runs, so telling a consumer they reach an external binary would be
+        // a false claim about a false edge — the labels exist to make a real
+        // ambiguity visible, not to dress wreckage up as a decision.
+        if (meta.commandInErrorRecovery === true) continue
+        const name = String(rel.target ?? "")
+        if (!namesWithNonFunctionDecl.has(name)) continue // truly external: nothing local to confuse
+        meta.targetResolution = "commandNameIsExternal"
+        meta.collidesWithLocalDeclaration = true
+        continue
+      }
       const resolved = this.resolveFunctionTarget(
         functionDeclLines,
         String(rel.target ?? ""),
@@ -1152,6 +1186,16 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
    *                              and function@151; mvdan-sh/syntax/typedjson/
    *                              testdata/roundtrip/file.sh `foo` against
    *                              function@19 and variable@20).
+   *   commandNameIsExternal      NOT this function. Published by the CALLER, not
+   *                              here: `isFunctionCall` is false and the name is
+   *                              declared in this file as something that is not a
+   *                              function, so a name-matching consumer has
+   *                              candidates that are not this edge's target. The
+   *                              sibling of `commandNameIsAFunction` and the same
+   *                              fact seen from the other side — there the
+   *                              function is the answer, here nothing local is.
+   *                              2 whole-corpus edges (`xargs` in
+   *                              ohmyzsh/plugins/pip/pip.plugin.zsh at 107/115).
    *   ambiguousInFile            two declarations on the same line, which the
    *                              published line cannot separate. No line: picking
    *                              one would be the invented attribution.
@@ -2284,8 +2328,45 @@ private extractAssignment(
       isFunctionCall: isLocal,
       isExternalCommand: !isLocal,
       resolvedWithinFile: isLocal,
+      // Where this command node sits, so the attribution pass can tell a name
+      // collision from wreckage. Published on true only, and it is a statement
+      // about the node's POSITION rather than a verdict on the edge — round 13
+      // measured 427 function names whose `name:` field sits inside an ERROR span
+      // and every one is a real declaration, the span reaching back over intact
+      // code. So this flag never removes an edge. It exists because the
+      // attribution pass runs AFTER the walk and would otherwise have to re-derive
+      // the shape from a node it no longer holds.
+      commandInErrorRecovery: this.isInsideErrorNode(node) || undefined,
       bashSpecific: true,
     })
+  }
+
+  /**
+   * Is this node a DESCENDANT of a tree-sitter `ERROR` node?
+   *
+   * The narrow half of what round 3's guard B would have tested, and the half that
+   * survives its own measurement. Guard B was "any damaged region — subtree or
+   * ancestor chain" and it removed 96 of 2,945 `calls` edges on a 200-file sample,
+   * 15 of them real `kube::log::status` calls, because a MISSING token anywhere in
+   * a file condemns every command under it.
+   *
+   * Re-measured at whole corpus with the analyzer's OWN selector for the command
+   * name (`commandNameNode`, which scans all named children — the first version of
+   * the probe read `namedChild(0)` and so missed the very shape round 3 named):
+   *
+   *   2,891 `calls` edges come from a command inside an ERROR subtree, and the
+   *   removal set is `setopt`, `print`, `echoti`, `autoload`, `emulate`, `title`,
+   *   `terminal-notifier`, `notify-send` — real work, overwhelmingly zsh.
+   *
+   * So the flag is published and NO guard is built on it. The three whole-corpus
+   * edges it would have caught are named in the lane doc as residuals, because the
+   * alternative is deleting 2,891 correct edges to remove 3.
+   */
+  private isInsideErrorNode(node: Node): boolean {
+    for (let cur: Node | null = node.parent; cur; cur = cur.parent) {
+      if (cur.type === "ERROR") return true
+    }
+    return false
   }
 
   private handleExportCommand(
