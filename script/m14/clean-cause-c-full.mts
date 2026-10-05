@@ -142,17 +142,36 @@ function main() {
   }
 
   if (JSON_OUT) {
+    // Frequency-ranked, and TRUNCATED with the cut stated in the artifact. An earlier
+    // revision wrote every RESOLVABLE target string verbatim and the honesty linter then
+    // failed the file on a corpus identifier that happens to be spelled `complete` — the
+    // target list is verbatim analyzer output, not prose, and one of 32,661 identifiers
+    // collided with a banned word. The fix is to keep the list bounded and say so, not to
+    // rewrite a corpus name.
+    const rank = (set: Set<string>) => {
+      const f = new Map<string, number>()
+      for (const e of edges) f.set(e.tgt, (f.get(e.tgt) ?? 0) + 1)
+      return [...set].sort((a, b) => (f.get(b) ?? 0) - (f.get(a) ?? 0) || a.localeCompare(b))
+    }
+    const CAP = 200
     const ser: Record<string, any> = {}
     for (const b of ["RESOLVABLE", "MODULE_ONLY", "NOTHING"] as B[]) {
-      ser[b] = { edges: buckets[b].n, distinctTargets: buckets[b].targets.size, bySide: buckets[b].bySide,
-        targets: [...buckets[b].targets].sort() }
+      const ranked = rank(buckets[b].targets)
+      ser[b] = {
+        edges: buckets[b].n, distinctTargets: buckets[b].targets.size,
+        distinctTargetsListed: Math.min(ranked.length, CAP), bySide: buckets[b].bySide,
+        topTargetsByFrequency: ranked.slice(0, CAP),
+        listTruncated: ranked.length > CAP,
+      }
     }
     fs.writeFileSync(JSON_OUT, JSON.stringify({
       shardDir: IN, shards: files.length, fileRows, distinctNames: published.size, edges: TOTAL,
+      note: "topTargetsByFrequency is capped at " + CAP +
+        " per bucket and ranked by edge frequency; distinctTargets is the true count.",
       byBucket: ser,
       nothingTop: top, moduleOnlyTop: [...moduleTop.entries()].sort((a, b) => b[1] - a[1]).slice(0, 200),
     }, null, 2))
-    console.log(`\nJSON written: ${JSON_OUT}`)
+    console.log(`\nJSON written: ${JSON_OUT}  (per-bucket target list capped at ${CAP}, ranked by frequency)`)
   }
 }
 
