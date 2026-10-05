@@ -680,13 +680,27 @@ resolution does not.
 - **grammar**: `script/m14/verify-grammar-pins.ts` — source↔wasm exact on all 84 declared
   names; A/B at `validation/m14/results/scss-grammar-ab.json` (76 fixed, 0 regressed,
   3 regression controls unchanged-clean).
-- **fixtures**: **11 / 11** in `run-fixtures.ts --lang scss`. Expectations are authored
+- **fixtures**: **12 / 12** in `run-fixtures.ts --lang scss`, exit 0, `fixture baseline
+  gate: no regressions`. Expectations are authored
   from the rulings, never transcribed from analyzer output — which is the only reason they
-  could fail. Two are new (2026-10-03): `module-exports-and-global-overrides` and
-  `placeholder-selectors-and-extend`.
-- **mutants**: **23 in the registry, 0 survivors**, via
+  could fail. The unscoped invocation **cannot** verify them: it exits 6 on the orphan-lane
+  gate having run nothing, because the `r` and `lua` fixture directories are not in `LANGS`
+  (§8.3). Two are new (2026-10-03): `module-exports-and-global-overrides` and
+  `placeholder-selectors-and-extend`; one is new since (2026-10-04):
+  `invocation-and-inheritance-labels`, which pins the `calls`/`extends` labels themselves.
+- **mutants**: **26 in the registry, 0 survivors** within this runner's four checked
+  sections, via
   `bun run script/m60/scss-mutant-check.ts` → `script/m60/tmp/scss-mutant-check.json`.
-  Five are new (S11–S15) and all five are caught by the fixtures above. Four survived the
+  Re-measured this round: **12 fixtures, 26 mutants, 23 caught, 0 genuine survivors**, the
+  committed artifact reproducing byte for byte. The three the runner reports as OUT-OF-SCOPE
+  are out of scope **by construction** rather than uncaught — `callable-parameters-dropped`
+  → `expectParameters`, `module-imports-dropped` → `expectImports`, `parse-errors-swallowed`
+  → `expectErrorCount` — because it checks `expectSymbols`/`expectRelationships`/
+  `forbidSymbols`/`forbidDecorators` only. Three are new and all three are caught:
+  `extend-label-reverted-to-uses`, `include-label-reverted-to-uses`,
+  `function-call-label-reverted-to-uses`, which is what makes the relabelling of §"the
+  relabelling, and what it cost" a pinned property rather than a claim in prose.
+  Five more are new (S11–S15) and all five are caught by the fixtures above. Four survived the
   first run in an earlier wave and all four were gaps in the suite: two were **bugs in the
   mutants** (one rewrote only already-resolved sources, so it was a no-op; one wrote
   `{...s, ...rest}` after destructuring `parameters` out, which **restores** the key), and
@@ -709,6 +723,15 @@ resolution does not.
   `script/m14/tmp/scss-extend-tree-witness.ts`.
 - **census**: `script/m14/tmp/scss-analyzer-census.ts` →
   `validation/m14/results/scss-analyzer-census.json`.
+- **firing check**: `npx tsx script/m14/firing-check.ts --files 120 scss` → **`7/10` fired,
+  2,151 edges, 120/120 files, degraded 0**, exit 0. The committed 26-lane sweep
+  (`validation/m14/measurements/firing-sweep-26-lanes.ndjson`) records this lane at
+  `5/10`, 510 edges, `degraded 1`; the two types it gained are `calls` and `extends`, which
+  is exactly what the relabelling did — they were `uses` before, and `uses` was already
+  firing, so a type moved from one label to another and a second label started firing.
+  `overrides` reads 0 here and is **not** a defect: it fires on 32 edges across 12 files of
+  the 4,433 admitted corpus, and 120 files sampled at a stride does not reach 12 of them.
+  `degraded 0` against the sweep's `1` is the load, not the lane.
 
 ### The shared ontology gate now runs this lane, and reports 10/10
 
@@ -809,6 +832,67 @@ store keeps the correct labels. `exports` and `overrides` want the same treatmen
 (`emitModuleExports` and the `!global` emitter in `src/ast/real-scss-analyzer.ts`), and
 paying those down removes the 10 `overrides` edges the differential currently calls
 confident fabrications.
+
+#### §8.2 `script/m14/differential.ts:21618` — the batch child drops the TS loader, so the whole sweep dies (affects every lane)
+
+**File** `script/m14/differential.ts`, the batch spawn at line 21618. **What it must do:**
+invoke the child with the same TypeScript loader the parent is running under, rather than
+re-executing `process.argv[1]` with bare `node`.
+
+```ts
+spawnSync(process.execPath, [process.argv[1], ...args], { … })
+```
+
+`process.argv[1]` is a `.ts` file and `process.execPath` is `node`. The parent works because
+`npx tsx` injects a loader; the child inherits `process.env` (line 21618 spreads it) but not
+the loader, so it dies on the first extensionless relative import:
+
+```
+Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/…/src/ast/js-builtin-prototypes'
+  imported from /…/script/m14/differential.ts
+Error: differential: batch 0/9 exited 1 — a lane in it failed; NOT writing evidence from an incomplete sweep
+    at main (…/script/m14/differential.ts:21620:35)
+```
+
+**Why this is filed above the lane-specific items:** it is not scss. `src/ast/js-builtin-prototypes.ts`
+exists and is tracked (`git ls-files` confirms); the import at `differential.ts:28` is simply
+extensionless, which `tsx` resolves and bare `node` does not. **Batch 0 of 9 fails, so the
+sweep writes no evidence for any of the 66 lanes** — the gate is doing the right thing by
+refusing to write from an incomplete sweep, and the whole instrument is dark. Confirmed by
+causation rather than inference: the identical command with the loader injected into the
+environment the child already inherits runs the sweep.
+
+```bash
+NODE_OPTIONS="--import tsx" npx tsx script/m14/differential.ts --lang scss --sample 40
+```
+
+With that, scss measures: `element-plus:scss: files=40 tree-truth=342 covered=306 (89.5%)
+MISSING=36 | analyzer-edges=94 unexplained=7 (7.4%) heuristic=0`, and the run still exits 6
+because of the `overrides`-with-no-truth finding in §DERIVATION above — a second, separate
+defect in the same lane.
+
+#### §8.3 `script/m14/run-fixtures.ts` — the orphan-lane gate exits 6 before running any lane
+
+**File** `script/m14/run-fixtures.ts`, the orphan check at lines 1576–1585. **What it must
+do:** report the orphan lanes as a WARNING and still run every lane the caller named, or
+require an explicit flag to make them fatal.
+
+Unscoped, the runner exits **6 having executed zero fixtures**:
+
+```
+fixture-lane gate: 2 fixture director(ies) no runner lane claims: r, lua
+  r: 18 expectation file(s) — evidence nothing executes.
+  lua: 12 expectation file(s) — evidence nothing executes.
+```
+
+Neither `r` nor `lua` is this lane's, and `scss` **is** in `LANGS` (line 209), so this lane
+is collateral damage: one unrelated lane's un-registered fixture directory prevents 46 lanes
+from being verified. The scoped invocation exists and works —
+`bun run script/m14/run-fixtures.ts --lang scss` → `{"scss":{"pass":12,"fail":0}}`,
+`fixture baseline gate: no regressions`, exit 0 — which is the evidence that the fixtures are
+healthy and the gate is the only thing standing in the way. Worth noting the runner already
+distinguishes a scoped run from a full one in its output; the orphan gate just does not
+respect that distinction.
 
 ### The arbiter's exit code is 1 on a verdict of FALSIFIED 0, and the cause is shared code
 
