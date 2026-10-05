@@ -1,0 +1,106 @@
+diff --git a/src/intelligence/documentation/doc-engine.ts b/src/intelligence/documentation/doc-engine.ts
+index 413777dfd..3af76b0d9 100644
+--- a/src/intelligence/documentation/doc-engine.ts
++++ b/src/intelligence/documentation/doc-engine.ts
+@@ -23,6 +23,8 @@ import { readFileSync } from "node:fs"
+ import path from "node:path"
+ import { BrainDatabase } from "../../brain/database"
+ import { checkFileFreshness, resolveRowsFreshnessDetailed } from "../../brain/freshness"
++// §15.4: the rendered signature and parameter list are the LSP owner's (M55.T4).
++import { renderParameterList, renderSignature as renderOwnerSignature, UNKNOWN_PARAMETER_LIST } from "../../lsp/signature"
+ import { semanticVectorSearch } from "../search/semantic-search"
+ import { languageExtensionEntries } from "../../ast/language-detection"
+ 
+@@ -766,8 +768,11 @@ function symbolTypesWithParameters(raw: any, projectId: string): ReadonlySet<str
+   }
+ }
+ 
+-function renderSignature(kind: string, name: string, parameters: string | null): string {
+-  return parameters === null ? `${kind} ${name}` : `${kind} ${name}(${parameters})`
++function renderSignature(kind: string, name: string, parameters: string | null, language: string | null): string {
++  // §15.4: the rendered signature is the owner's, so a class never renders a
++  // parameter list and an unresolvable type renders the declared `unknown`
++  // marker instead of being dropped.
++  return renderOwnerSignature({ name, symbol_type: kind, parameters }, language)
+ }
+ 
+ /**
+@@ -789,29 +794,33 @@ function renderSignature(kind: string, name: string, parameters: string | null):
+  *  - a plain string list and a raw text list render as they always did, so no
+  *    analyzer's existing shape changes.
+  */
+-function formatParameters(raw: unknown): string | null {
+-  const text = collapse(raw)
+-  if (!text || text === "[]" || text === "null") return null
+-  if (text.startsWith("[")) {
+-    try {
+-      const parsed = JSON.parse(text)
+-      if (Array.isArray(parsed)) {
+-        const rendered = parsed
+-          .map((item: any) => {
+-            if (typeof item === "string") return item
+-            if (!item || typeof item !== "object") return ""
+-            const name = String(item.name ?? item.parameter ?? "")
+-            const type = item.type == null ? "" : collapse(item.type)
+-            if (!name && !type) return ""
+-            const shown = type ? `${name || "?"}: ${type}` : name
+-            return item.isOptional === true ? `${shown} (optional)` : shown
+-          })
+-          .filter(Boolean)
+-        return rendered.length ? rendered.join(", ") : null
+-      }
+-    } catch { /* not JSON after all — fall through to the raw text */ }
+-  }
+-  return text.replace(/^\(|\)$/g, "") || null
++function formatParameters(raw: unknown, language: string | null): string | null {
++  // §15.4 / M55.T4: the RENDERED parameter list is the LSP owner's job. This
++  // engine used to render it a second way, and the two ways disagreed on every
++  // stored shape that is not the analyzer's happy path — measured by
++  // script/m28/verify-surface-parity.ts over all nine shapes it probes:
++  //
++  //   stored `{"name":"names","type":"string[]"}`  (a JSON OBJECT, not an array)
++  //     here:  method count({"name":"names","type":"string[]"})   <- raw JSON
++  //     owner: method count(…)                                <- declared absence
++  //   stored `[{"type":"string[]"}]`             (an entry with no name)
++  //     here:  method count(?): string[]                      <- a GUESSED name
++  //     owner: method count(…)
++  //   stored `[1,2,3]`                           (an array of non-objects)
++  //     here:  method count                             <- the list vanishes
++  //     owner: method count(…)
++  //   stored `(int a, int b)`                  (already-rendered text)
++  //     here:  method count((int a, int b))              <- doubled parens
++  //     owner: method count(int a, int b)
++  //
++  // A serialized object reaching a developer as `{"name":…}` is the raw-JSON
++  // leak Truth Rule 4 names, and a vanished list is a false absence.
++  // Delegating removes the second renderer instead of patching its branches,
++  // which is the m63 CL1 lesson: the copy is what breaks.
++  const rendered = renderParameterList(raw == null ? null : String(raw), language)
++  // The owner's declared unknown marker `(…)` means the index stored nothing
++  // this renderer can describe. That is absence, and absence was `null` here.
++  return rendered === UNKNOWN_PARAMETER_LIST || rendered === "" ? null : rendered
+ }
+ 
+ function addSymbolFacts(raw: any, reader: SourceReader, resolver: FreshnessResolver, symbols: Row[], citations: DocCitation[], unknowns: DocUnknown[], includeTests: boolean, includeLimitations: boolean, typesWithParameters: ReadonlySet<string>): { api: DocFact[]; behavior: DocFact[]; tests: DocFact[]; limitations: DocFact[] } {
+@@ -837,8 +846,8 @@ function addSymbolFacts(raw: any, reader: SourceReader, resolver: FreshnessResol
+       lineStart: start || undefined, lineEnd: end || undefined,
+       evidence: `Indexed ${symbol.symbol_type} ${symbol.name}`, fileId: String(symbol.source_file_id ?? ""),
+     }, resolver)
+-    const parameters = formatParameters(symbol.parameters)
+-    const signature = renderSignature(String(symbol.symbol_type), String(symbol.name), parameters)
++    const parameters = formatParameters(symbol.parameters, String(symbol.language ?? ""))
++    const signature = renderSignature(String(symbol.symbol_type), String(symbol.name), parameters, String(symbol.language ?? ""))
+     const returns = symbol.return_type ? `: ${collapse(symbol.return_type)}` : ""
+     // The caveat rides on the signature itself, not in a separate fact and not
+     // only in `limitations`: this fact is rendered as symbol mode's API and as
+@@ -970,8 +979,8 @@ function addEndpointFacts(symbols: Row[], citations: DocCitation[], resolver: Fr
+     const rel = String(symbol.relative_path ?? "")
+     const start = Number(symbol.line_start ?? 0)
+     const end = Number(symbol.line_end ?? start)
+-    const parameters = formatParameters(symbol.parameters)
+-    const signature = renderSignature(String(symbol.symbol_type), String(symbol.name), parameters)
++    const parameters = formatParameters(symbol.parameters, String(symbol.language ?? ""))
++    const signature = renderSignature(String(symbol.symbol_type), String(symbol.name), parameters, String(symbol.language ?? ""))
+     const framework = String(symbol.framework_type ?? "")
+     const id = addCitation(citations, {
+       kind: "symbol", idParts: [rel, symbol.name, `${start}-${end}`], relPath: rel, symbol: String(symbol.name ?? ""),
