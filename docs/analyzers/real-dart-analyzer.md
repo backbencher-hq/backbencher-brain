@@ -1000,7 +1000,7 @@ mislead a reader of the graph.
 
 ## Shared-machinery needs (reported, not edited)
 
-Seventeen changes outside this lane's ownership, each stated so it can be applied
+Eighteen changes outside this lane's ownership, each stated so it can be applied
 without re-deriving it. The files are supervisor-owned per
 `docs/analyzers/ONTOLOGY-WORKSTREAM.md` §Ownership. Items 1–5 predate this pass;
 6–8 come from measuring the incoming direction, 9–10 from removing this lane's
@@ -1012,7 +1012,10 @@ reading `firing-check.ts --json` and finding `files` is per-file, not per-type,
 and 17 from running the mutation gate the way the lane prompt documents it.
 Item 13 was rewritten during the final pass: it first named one gate and now names
 ten, because running the documented `npx tsx` invocation over the whole directory
-showed the failure is the directory's, not one script's.
+showed the failure is the directory's, not one script's. Item 18 comes from reading
+`ontology-coverage-gate.ts` for item 1 and finding the corpus walk is a top-level
+`await` above *both* of its exits, which makes `--coverage` — documented as parsing
+nothing — parse the whole corpus.
 
 1. **`script/m14/ontology-coverage-gate.ts` — add a `dart` entry to
    `RULED_BY_LANG` (line ~183: `const RULED_BY_LANG: Record<string, Ruled[]> = {
@@ -1673,6 +1676,41 @@ showed the failure is the directory's, not one script's.
     documented invocation, so the number in this file is evidence for the fix rather
     than a substitute for it.
 
+18. **`script/m14/ontology-coverage-gate.ts` — `--coverage` is documented as not
+    parsing a corpus, and it parses the corpus. This is the same defect as item 1 and
+    it is larger than item 1 states.** Item 1 reports that the `RULED_BY_LANG[LANG] ===
+    undefined` refusal sits *after* the corpus walk, so a full-corpus dart run never
+    reaches it. Reading the source for this pass found the cause is not the position
+    of that one check: **the entire corpus walk is a top-level `await`.**
+    `ontology-coverage-gate.ts:251-270` builds `observed` with
+    `await Promise.all(Array.from({length: 8}, () => worker()))` over `parseFile`, then
+    `:276` initialises web-tree-sitter and `:292-303` builds `treeHits` — all at module
+    top level, with no guard. Every `process.exit` in the file is below that:
+    `--coverage` at `:368` and the RULING TABLE refusal at `:375`.
+
+    So the flag's own comment is false. It reads, at `:351-353`: "`--coverage` reports
+    which lanes this gate can actually rule for, and **does NOT parse a corpus**."
+    Measured on this branch: `timeout 45 npx tsx script/m14/ontology-coverage-gate.ts
+    dart --coverage` wrote **0 bytes to stdout and was killed by the timeout (exit
+    124)**. A flag whose stated contract is "print a table of lanes, parse nothing"
+    cannot print that table for any language whose corpus walk exceeds the timeout,
+    and `--coverage` is the one mode of this gate that would have told the supervisor
+    which lanes it can rule for at all — which is the question item 1 needs answered.
+
+    What it must do, precisely enough to apply: wrap the corpus walk in a function and
+    call it only when the run is actually going to rule — i.e. gate `:251-303` behind
+    `const WANT_COVERAGE = process.argv.includes("--coverage")` and the absence of
+    `RULED_BY_LANG[LANG]`, so `--coverage` returns at `:368` and an unruled lane still
+    reaches `:375`, both without touching `parseFile`. That is two guards, not a
+    refactor. It makes item 1's proposed fix observable, because with the walk skipped
+    the exit-2 refusal prints instead of hanging, and the reviewer can read the refusal
+    rather than infer it from source.
+
+    Why reported and not fixed: `ontology-coverage-gate.ts` is supervisor-owned per
+    §Ownership, and it is the arbiter this lane's own verdicts are graded by. An agent
+    editing the arbiter that judges it is the failure mode the gate exists to prevent,
+    so the measurement is the deliverable here.
+
 ## Supported constructs
 
 - Libraries: `library` directive (no symbol — file-level declaration, metadata only) — all fixtures
@@ -2222,8 +2260,10 @@ edges, 120/120, `degraded 0`) and n=400 (10/10, 53,252, 400/400, `degraded 0`); 
 census counts over 2,735 files (43,042 / 110,679 / 119,515 / 10,657 / 5,265 / 302 /
 4,730 / 758 / 90,352 / 18,374); every breadth row; all four zero-fields
 (`emptySymbolNames`, `emptyOrUnknownKind`, `unknownEndpoints`, `degradedFallbacks`);
-every cell of the 10×9 incoming table; the 144,032 unresolvable rows across all six
-buckets; the 490,135 ambiguous targets; the 1,829 residual split six ways; the
+the 10×9 incoming table AS PINNED AT `c48f381d1` — **not** as a reading of this tree,
+which 24 of its 90 cells no longer match, so the 144,032 unresolvable rows across all
+six buckets, the 490,135 ambiguous targets and the 1,829 residual split six ways are
+three more pinned figures and three more corrections; the
 `zero-contains` accounting (882 + 101 + 51 + 5 = 1,039); the 2.0117% export base rate
 and P(none)=8.73% at n=120; `type-position-probe` at 75,769 mentions / 3,460 resolvable
 / 4.57%; the `references` oracle at 1,203/1,203 over 799 files; 16/16 fixtures;
@@ -2593,6 +2633,92 @@ and read that node's children, so `static Future<...> _hasData` rendered the ord
 `_createProfile` after it static too, and the oracle's index held six of the class's
 eight methods. A gate that misidentifies its subject does not fail loudly: it stops
 counting, and the count is the only thing anyone reads.
+
+### An eighth pass, and the one instrument that did not reproduce is this file's own table
+
+Run in this pass, on this branch, every instrument above. **Reproduced exactly:** the
+arbiter at n=120 (`9/10 fired, 8290 edges, 120/120 files`, `degraded 0`,
+`notFired: ["exports"]`) and at n=400 (`10/10 fired, 53252 edges, 400/400 files`,
+`degraded 0`); all ten census counts over 2,735 files (43,042 / 110,679 / 119,515 /
+10,657 / 5,265 / 302 / 4,730 / 758 / 90,352 / 18,374), 134,606 symbols, 403,674
+relationships, all four zero-fields, all twelve symbol kinds and all ten breadth rows;
+the `zero-contains` accounting at 1,039; `export-population-probe` at 33,753 files /
+679 (2.012%) / 2,040 nodes / 1 in ERROR / base rate 2.0117% / P(none)=0.0873 /
+n≥148 and 0 export-bearing files in the arbiter's own 120-file draw;
+`type-position-probe` at 75,769 mentions / 3,460 resolvable / 4.57% over 816 names /
+1,000 files / 325 node types; the `references` oracle at 1,203/1,203 over 799 files
+with missing 0 and unexplained 0; `hang-file-innocence` at 7 of 7 clean with every
+symbol/rel count identical (32/136, 3/20, 9/84, 3/29, 3/20, 27/27, 3/21); 16/16
+fixtures; 42/42 mutants; the 37/37, 14/14 and 38/38 shape batteries; the lane regex
+census at 0 over 19 files / 8,560 lines and the repository census PASSED at 5/5/5;
+`rel-type-coverage-gate --langs=dart` at 2 un-audited `["overrides","references"]`
+with checks 2, 3 and 4 clean; `verify-honesty` at 21 failures with **zero naming a
+dart file**; `differential-rotation-instability` at 38 of 2,351 files, 5,353 per file
+and P(at least one) = 0.6238; and `incoming-census` at 337,440 symbols, 960,634
+relationships, 74 `symbolsNamedUnknown`, 490,292 ambiguous, 296,855 closable,
+143,833 binding to nothing and 1,817 unexplained.
+
+**The differential reproduced rotation 78 to the row** — proxicall `29131 / 17196`,
+**59.0%**, MISSING **11935**, 16,604 analyzer edges, **unexplained 0**, draw hash
+`ab7eff6c5dba53fa` — and `dart-http` at `2287 / 2262`, 98.9%, MISSING **25**,
+unexplained 0. That is the sixth recorded rotation and it lands on the 58.9–59.0%
+branch again, so the bimodality claim now reads 98.4% at rotations 73, 74 and 80 and
+59.0% at 78, 79 and this one.
+
+**What did not reproduce is this file's own 10×9 incoming table, and the failure is
+the one this file has now made three times: a quoted instrument block is a
+measurement of the tree at a commit, and it was quoted as a reading of HEAD.** The
+edge population is still byte-identical — all ten per-type `emitted` counts match to
+the unit, as they did in the sixth pass — and **66 of the 90 resolution cells still
+match exactly**, with `imports`, `exports`, `extends`, `implements` and
+`instantiates` unchanged in all nine columns each. The other **24 cells moved**, all
+toward resolving:
+
+| type | cell | pinned `c48f381d1` | this pass | Δ |
+|---|---|---|---|---|
+| calls | both ends, sample | 55,772 | 55,786 | +14 |
+| calls | both ends, repoFull | 48,111 | 48,125 | +14 |
+| calls | target unique | 18,993 | 18,995 | +2 |
+| calls | target crowded | 30,478 | 30,497 | +19 |
+| calls | target binds to nothing | 25,707 | 25,686 | −21 |
+| uses | both ends, file | 56,417 | 56,465 | +48 |
+| uses | both ends, sample | 158,944 | 159,039 | +95 |
+| uses | both ends, repoFull | 137,653 | 137,748 | +95 |
+| uses | target unique | 33,842 | 33,843 | +1 |
+| uses | target crowded | 106,083 | 106,220 | +137 |
+| uses | target binds to nothing | 53,553 | 53,415 | −138 |
+| contains | both ends, file | 310,923 | 310,925 | +2 |
+| contains | both ends, sample | 310,923 | 310,925 | +2 |
+| contains | both ends, repoFull | 292,025 | 292,027 | +2 |
+| contains | target unique | 14,197 | 14,198 | +1 |
+| contains | target crowded | 285,604 | 285,605 | +1 |
+| contains | target binds to nothing | 2 | 0 | −2 |
+| references | both ends, file | 10,049 | 10,050 | +1 |
+| references | both ends, sample | 10,131 | 10,132 | +1 |
+| references | both ends, repoFull | 7,468 | 7,469 | +1 |
+| overrides | both ends, sample | 232,941 | 232,979 | +38 |
+| overrides | both ends, repoFull | 230,467 | 230,505 | +38 |
+| overrides | target unique | 232,736 | 232,774 | +38 |
+| overrides | target binds to nothing | 14,394 | 14,356 | −38 |
+
+**Two of those 24 were already recorded in the delta table under *Ambiguity* — the two
+`overrides` rows it names — and 22 were not.** The six totals that section corrected
+(symbols, `symbolsNamedUnknown`, ambiguous, closable, noSymbol, unexplained) were
+correct on the sixth pass and are correct again here, to the unit; what it under-
+reported was the per-cell movement underneath them. The direction is uniform and is
+the same one the sixth pass measured: `src/ast/pool-worker.ts` stopped dropping nine
+names that are only reserved in *some* languages, every one of them a legal Dart
+identifier, so declarations carrying them are published and targets that bound to
+nothing now bind. `src/ast/real-dart-analyzer.ts` is byte-identical across the two
+trees — `git diff c48f381d1..origin/analyzers/ontology-laptop-b` over it is empty —
+and the identical edge counts are the proof that this analyzer's output did not move.
+
+**The table above is therefore left pinned and labelled pinned, and its per-cell
+successors are recorded here rather than written over it**, because a pinned table
+plus a delta is a record two trees can both be read against, and an overwritten table
+is a claim about one. The honest summary of the incoming direction is the
+post-merge column, and it is in the delta table under *Ambiguity* plus the 24 rows
+above.
 
 ### Two member-predicate rules that must stay scoped to the member
 
