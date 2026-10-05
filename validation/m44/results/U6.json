@@ -22,13 +22,11 @@
     "note": "A mutant whose module will not import exercises no §13.6 path. This gate booked that as a catch — PROVEN twice: a mutant whose replacement was a bare syntax error printed 'mutant caught', and M4 (the hover-link mutant, written to validation/m44/ where src/lsp/rich_hover.ts's relative imports do not resolve) could never load at all, so the one mutant that proves the link carries the symbol had ZERO coverage while the record read 4/4. Mutants are now written beside the module they mutate, and an unevaluable mutant, a probe that cannot run, and an anchor that no longer matches are all FAILURES (§8.3 silence is guilt)."
   },
   "failures": [],
-  "currentCommit": "47195021476965e85941a153a9cec8a11bf404f9",
-  "workingTreeRelevantChanges": [
-    "M script/m44/verify-usages-fallback.ts"
-  ],
+  "currentCommit": "d5f2ea6d64aecf7e0728c205a9c3eb518344b30b",
+  "workingTreeRelevantChanges": [],
   "verifierCommand": "npx tsx script/m44/verify-usages-fallback.ts",
   "evidenceFile": "U6.json",
-  "generatedAt": "2026-10-05T22:26:55.577Z",
+  "generatedAt": "2026-10-05T22:31:40.716Z",
   "fixture": {
     "root": "$HOME/Documents/Default Project/ishaq/wt/hubgap/.tools/m44-u6-fixture",
     "files": [
@@ -58,7 +56,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T22:26:55.579Z",
-    "contentSha256": "28cf10f2aacde42534c0c59ea0c7439f374d0a9f5a8d6f1497a074d0eac16070"
+    "sealedAt": "2026-10-05T22:31:40.718Z",
+    "contentSha256": "26665fa2202ab253b243e4ce59d7d3ca8134fb7b914b3a70d2d02ad5540af033"
   }
 }
