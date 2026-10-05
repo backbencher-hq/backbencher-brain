@@ -6,7 +6,7 @@
 import { readFileSync, readdirSync, statSync } from "node:fs"
 import { join } from "node:path"
 const REPO = "$HOME/backbencher-brain"
-const CORPUS = "$HOME/fixtures/repositories"
+const CORPUS = process.env.BB_CORPUS || "$HOME/fixtures/repositories"
 
 const LANES = {
   RUST:        ["rust", "real-rust-analyzer", "ripgrep"],
@@ -38,12 +38,12 @@ const LANES = {
 function pickFiles(dir, exts, want, cap = 400) {
   const out = []
   const walk = (d, depth) => {
-    if (out.length >= want || depth > 7) return
+    if (out.length >= want || depth > 20) return
     let ents; try { ents = readdirSync(d, { withFileTypes: true }) } catch { return }
     for (const e of ents) {
       if (out.length >= want) return
       const p = join(d, e.name)
-      if (e.isDirectory()) { if (!/node_modules|\.git|testdata|fixtures/.test(e.name)) walk(p, depth + 1) }
+      if (e.isDirectory()) { if (!/node_modules|\.git/.test(e.name)) walk(p, depth + 1) }
       else if (exts.some((x) => e.name.endsWith(x))) {
         try { if (statSync(p).size < 400_000) out.push(p) } catch {}
       }
