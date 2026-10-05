@@ -316,35 +316,109 @@ branch's own history: the arbiter's two runs each admitted 15,234 files, and the
 written afterwards admits 17,456. Every figure below therefore names its population, and the
 population hash is in the JSON beside it.
 
-### The supervisor's arbiter does not report for this lane
+### The supervisor's arbiter now runs for this lane — and what it printed
 
-`npx tsx script/m14/ontology-coverage-gate.ts markdown` prints
+**Corrected 2026-10-05.** The section this replaces said the arbiter does not report for
+markdown. It no longer does not: it gained `resumableWalk` (`script/m14/resumable-walk.ts`)
+and the ruling table is wired (`RULED_BY_LANG.markdown`, line 261). Four invocations walked
+the whole admitted population and the fifth printed a verdict:
 
 ```
-ontology coverage gate — markdown
-corpus: 12729 admitted files
+walk: 17456/17456 files (100.0%)  newly walked 2440, resumed 15016
+
+type          status            detail
+------------------------------------------------------------------------------------------------
+calls         RULED-SOUND       NOT EMITTED; the grammar produced 84 distinct node types ...
+uses          EMITTED           30,696 edges in 4+ files
+contains      EMITTED           32,034 edges in 4+ files
+imports       EMITTED           69 edges in 4+ files
+references    EMITTED           342 edges in 4+ files
+exports       RULED-SOUND       NOT EMITTED; the grammar produced 84 distinct node types ...
+extends       RULED-SOUND       NOT EMITTED; the grammar produced 84 distinct node types ...
+implements    RULED-SOUND       NOT EMITTED; the grammar produced 84 distinct node types ...
+overrides     RULED-SOUND       NOT EMITTED; the grammar produced 84 distinct node types ...
+instantiates  RULED-SOUND       NOT EMITTED; the grammar produced 84 distinct node types ...
+------------------------------------------------------------------------------------------------
+emitted 4/10   ruled-sound 6   FALSIFIED 0   ruled-without-justification 0
 ```
 
-and then stops, twice over, for two independent reasons. Both are §8 items and neither is
-this lane's to fix:
+**Exit 0, `FALSIFIED 0`, `ruled-without-justification 0`** — which is what
+`script/m14/markdown-ruled.ts` is for, and the reason the wiring is a supervisor item rather
+than one of mine. **Those two zeros are the trustworthy part of that output.** The `emitted`
+split is not, and the reason is a defect in shared machinery that this lane must report
+rather than edit (§8). Two are recorded in `validation/m60/markdown/arbiter-findings.json`:
 
-1. **`src/ast/engine.ts:1412` kills the process.** The per-file self-destruct timer is
-   `setTimeout(..., 120000)` followed by `process.exit(1)`, and one corpus file trips it:
-   `[BB-HANG] parser stuck 120s on
-   $HOME/fixtures/repositories/dart-sdk/pkg/analysis_server/doc/implementation/lsp.md
-   — exiting`. The verdict table is never reached. The same run also reports four
-   `[BB-PARSE-ERR] … memory access out of bounds` on `dart-sdk`, `element-plus` and
-   `flutter-packages` markdown files, which are grammar-level findings and are recorded
-   here rather than treated as this lane's failures.
-2. **There is no ruling table for markdown.** `RULED_BY_LANG` in that file carries `bash`
-   and `json` and nothing else, so the gate's own guard fires:
-   *"no RULING TABLE for markdown. Refusing to report: a gate with an empty table would
-   call every un-emitted type RULED-UNJUSTIFIED and that is a verdict about the TABLE, not
-   about the lane."* That refusal is the gate behaving correctly.
+**MD-ARB-1 — the tally is not persisted, so a resumed run's counts cover only the files it
+re-parsed.** `observed` is populated inside the `run` callback passed to `resumableWalk`, and
+`resumableWalk` calls `run` only for paths not already in the checkpoint. So the counts above
+describe **the 2,440 files that run newly walked**, while the line above them reads
+`17456/17456 files (100.0%)`. Measured against the whole-population census:
 
-So the four probes below stand in for it, applying the same two instruments under the same
-discipline. The first version of this section used the arbiter's own header as its warrant;
-it does not, because the arbiter does not run.
+| Type | Whole population, 17,456 files | Arbiter's tally, over its 2,440 newly-walked files |
+| --- | --- | --- |
+| `uses` | 270,779 | 30,696 |
+| `contains` | 334,773 | 32,034 |
+| `references` | 16,857 | 342 |
+| `imports` | 105 | 69 |
+| `calls` | 8 | 0 |
+| `instantiates` | 3 | 0 |
+
+The subset is not a sample of the population either: files arrive in `readdirSync` order, so
+the tail is whichever repositories sort last, which is why `references` is off by 49× and
+`imports` by only 1.5×.
+
+The endpoint of that defect is worth stating plainly, because it inverts the lane's verdict
+on precisely the types the lane gets right. With the checkpoint complete, one more run printed:
+
+```
+walk: 17456/17456 files (100.0%)  newly walked 0, resumed 17456
+emitted 0/10   ruled-sound 7   FALSIFIED 0   ruled-without-justification 3
+```
+
+exit 1 — with `uses`, `contains`, `imports` and `references` reported **RULED-UNJUSTIFIED**.
+A lane that emits 4 types over 622,525 edges is told by the gate that it emits none of ten and
+has three unjustified rulings, because a tool cache was complete. The fix is to persist the
+tally beside the checkpoint (`<path>\t<type>\t<n>`, appended **before** the next file starts,
+for the same reason `resumable-walk` appends before it parses) and rebuild `observed` from it
+on startup.
+
+Because leaving a complete checkpoint in `validation/m14/measurements/walk-markdown.txt` arms
+that false verdict for the next run, this lane **moved** it to
+`validation/m60/markdown/walk-markdown.txt.complete` — 17,456 unique lines, 0 bad markers, the
+population genuinely walked — rather than deleting it. Nothing is lost and nothing is armed.
+
+**MD-ARB-2 — instrument A's denominator is 84 node types where the corpus's grammars produce
+108.** Instrument A loads one grammar, `LANGS[LANG].wasm` = `tree-sitter-markdown.wasm`, the
+BLOCK grammar. The analyzer reads a second: `src/ast/engine.ts:1277` loads the
+`tree-sitter-markdown-inline` companion and `real-markdown-analyzer.ts:6,13` consumes it. The
+arbiter never loads it, so its grammar inventory is blind to the entire inline vocabulary —
+`inline`, `emphasis`, `strong_emphasis`, `code_span`, `link_destination`, `strikethrough`,
+`pipe_table_*`, `image`, `uri_autolink`, `entity_reference` and the rest. Measured union over
+the whole population: **83 block + 64 inline = 108**, against the arbiter's 84.
+
+No markdown ruling moves — none of `exports`/`extends`/`implements`/`overrides` is expressible
+in the inline grammar either, and this lane measured that union rather than the block subset —
+but a construct that is **inline-only** would be falsely ruled by any lane whose arbiter
+inherits this. The fix already exists elsewhere: `script/m14/audit-analyzer-grammar.ts:176`
+declares `EXTRA_GRAMMARS = { markdown: ["tree-sitter-markdown_inline.wasm"] }` for precisely
+this reason. Instrument A should union over that map.
+
+**What made four invocations necessary**, recorded because it is what exposed MD-ARB-1:
+**14 distinct corpus files trap the WASM parser with `memory access out of bounds`**, and each
+run dies at `[BB-HANG]` ~120s after the first one it meets — naming a file that had *already*
+failed fast, because `src/ast/engine.ts:1410` arms the 120s bomb and `:1416 clearTimeout` runs
+only when parse RETURNS, so a trap that throws past it leaves the timer armed. The four runs
+died naming four different files. **The checkpoint finished 17,456/17,456 with 0 `!` bad
+markers, so none of the 14 is permanently unparseable** — the trap is load-dependent (load
+average 18.1 on 8 cores, 2 GB RAM available, disk 94% full, ten lanes sharing the machine),
+which is the same finding as the heap cliff recorded below.
+
+**Why the four probes below still stand in for the arbiter.** Not because it fails, and not
+because of MD-ARB-1: because the arbiter's own counts cannot be compared against a
+whole-population figure until MD-ARB-1 is fixed, and because MD-ARB-2 means the denominator it
+prints beside every A ruling is 24 node types short of this corpus's grammar. The adjudication
+below applies the arbiter's two instruments to the whole admitted population and states its
+own denominators.
 
 ### Verdicts
 
