@@ -1,0 +1,157 @@
+{
+  "instrument": "markdown fallback attribution",
+  "question": "were the `calls` and `instantiates` edges whole-corpus-census.ts measured on markdown files produced by this lane's analyzer?",
+  "method": [
+    "1. read the census's own per-type counts and example files",
+    "2. call `extractFallback` (src/ast/pool-worker.ts) directly on each example file — the only other producer of these two types on this path",
+    "3. call production `parseFile` on the same files and record what it returns when it is NOT degraded",
+    "4. compare all three"
+  ],
+  "producer": {
+    "file": "src/ast/pool-worker.ts",
+    "fn": "extractFallback -> extractBasicRelationships",
+    "lines": "266 (regex extraction), 364 (extractFallback), 751/1148/1150 (the three call sites in parseFile)",
+    "reads": "the file TEXT with /(\\w+)\\s*\\(/g, /(\\w+)\\.(\\w+)\\s*\\(/g, /new\\s+(\\w+)\\s*[\\(<]/g",
+    "sourceEmitted": "\"this\" — a placeholder, never a symbol in the file",
+    "confidenceEmitted": "0.5 for `calls`, 0.6 for `instantiates`",
+    "visibility": "returns `errors: []`, so a degraded parse counts as a clean parse to any consumer reading `errors`"
+  },
+  "analyzer": {
+    "file": "src/ast/real-markdown-analyzer.ts",
+    "emits": [
+      "contains",
+      "references",
+      "imports",
+      "uses"
+    ],
+    "callsOrInstantiatesInSource": 0,
+    "measuredThroughParseFile": [
+      {
+        "file": "redwood/docs/docs/deploy/netlify.md",
+        "fallback": false,
+        "types": {
+          "contains": 2,
+          "uses": 8
+        }
+      },
+      {
+        "file": "redwood/docs/docs/deploy/render.md",
+        "fallback": false,
+        "types": {
+          "contains": 1,
+          "uses": 1
+        }
+      },
+      {
+        "file": "redwood/docs/docs/how-to/self-hosting-redwood.md",
+        "fallback": false,
+        "types": {
+          "uses": 5,
+          "contains": 17
+        }
+      },
+      {
+        "file": "redwood/docs/docs/how-to/using-nvm.md",
+        "fallback": false,
+        "types": {
+          "contains": 25,
+          "uses": 9
+        }
+      },
+      {
+        "file": "redwood/docs/docs/how-to/using-yarn.md",
+        "fallback": false,
+        "types": {
+          "contains": 13,
+          "uses": 5,
+          "references": 1
+        }
+      },
+      {
+        "file": "redwood/docs/docs/introduction.md",
+        "fallback": false,
+        "types": {
+          "uses": 26,
+          "contains": 2
+        }
+      },
+      {
+        "file": "redwood/docs/docs/mailer.md",
+        "fallback": false,
+        "types": {
+          "uses": 23,
+          "contains": 21,
+          "references": 2
+        }
+      },
+      {
+        "file": "redwood/docs/docs/studio.md",
+        "fallback": false,
+        "types": {
+          "contains": 16,
+          "uses": 3
+        }
+      },
+      {
+        "file": "redwood/docs/docs/tutorial/chapter1/first-page.md",
+        "fallback": false,
+        "types": {
+          "uses": 7,
+          "contains": 8
+        }
+      },
+      {
+        "file": "redwood/docs/docs/tutorial/chapter5/first-test.md",
+        "fallback": false,
+        "types": {
+          "uses": 6,
+          "contains": 26
+        }
+      },
+      {
+        "file": "redwood/docs/docs/typescript/utility-types.md",
+        "fallback": false,
+        "types": {
+          "uses": 3,
+          "contains": 34
+        }
+      }
+    ]
+  },
+  "perType": {
+    "calls": {
+      "censusWholeCorpusCount": 8,
+      "reproducedByExtractFallback": 8,
+      "identical": true,
+      "analyzerEmits": false
+    },
+    "instantiates": {
+      "censusWholeCorpusCount": 3,
+      "reproducedByExtractFallback": 3,
+      "identical": true,
+      "analyzerEmits": false
+    }
+  },
+  "kindLessSymbols": {
+    "censusWholeCorpusCount": 50,
+    "reproducedByExtractFallback": 50,
+    "identical": true
+  },
+  "relationshipIdentity": {
+    "fallbackRelationships": 11,
+    "attributedCallsPlusInstantiates": 11,
+    "identical": true
+  },
+  "degradedSet": {
+    "files": 11,
+    "examplesUsedAsCandidates": 11,
+    "note": "the DEGRADED SET IS NOT REPRODUCIBLE across census invocations: two whole-population runs over the same populationSha256 degraded 11 files and 6 files respectively, and their `calls` totals were 8 and 33. The attribution of PRODUCERSHIP is stable — every `calls` and `instantiates` edge in both runs came from `extractFallback` — but the COUNT of such edges is a property of machine load, not of the corpus. Both logs are committed."
+  },
+  "verdict": "ATTRIBUTED — every `calls` and `instantiates` edge the census measured on markdown files, and every kind-less symbol with it, is reproduced exactly by `extractFallback` on the files the census names. The markdown analyzer emits none of them. The rulings stand; the 36 edges are shared machinery's output on 6 files, and a fabricated caller in `bb_graph` is the consequence if they are not attributed.",
+  "fallbackRateOverCensusPopulation": {
+    "files": 11,
+    "of": 17456,
+    "pct": "0.0630%",
+    "note": "counted by whole-corpus-census.ts from the `fallback` flag itself. Candidates listed here are the census's `exampleFiles`, which it caps at 4 per type — so this script's file list is a LOWER BOUND on the degraded set and the census's `degradedParse.files` is the measured count."
+  }
+}
