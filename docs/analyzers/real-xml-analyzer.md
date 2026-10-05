@@ -3488,4 +3488,72 @@ mutants caught, 0 survivors** (was 21/23 with 2 survivors).
 
 ## Issue
 
-M12.35 / GitHub issue #174.
+## The arbiter died once, silently, and the runner hid it
+
+### The observation, and why it is not a verdict
+
+`BB_XML_WORKERS=1 npx tsx validation/m14/fixtures/xml/ruled-gate.ts` is the only
+instrument that produces a MEASURED verdict for this lane, and it produced two different
+outcomes from one unchanged tree, minutes apart, with no edit between them:
+
+| run | exit | verdict rows | `[BB-PARSE-ERR]` | `[BB-HANG]` | child stderr |
+| --- | ---: | ---: | ---: | ---: | --- |
+| A | **1** | **0 — no table at all** | 0 | 0 | not recoverable |
+| B | 0 | 10 | 0 | 0 | clean |
+| C | 0 | 10 | 0 | 0 | clean |
+| D | 0 | 10 | 0 | 0 | clean |
+| E | 0 | 10 | 0 | 0 | clean |
+
+Run A stopped after `corpus: 11552 admitted files`, so the child died inside
+`await Promise.all(…worker())` — the walk itself, before instrument A and before either
+instrument-B probe. **No verdict is claimed from run A, and none is claimed from the four
+that succeeded beyond what they printed.** The count of runs is 5; the count of failures is
+1; **n is too small to state a rate** and the cause is not identified.
+
+### Why the cause is not identified, which is the part that was fixable
+
+The runner filtered the child's stderr down to `[BB-PARSE-ERR]` and `[BB-HANG]` lines and
+dropped everything else. Run A carried neither, so the runner's own output for it was
+`patched gate exit status: 1` and silence. An unhandled exception, an OOM kill, a thrown
+assertion and a gate that declined to answer were four identical outputs. The evidence did
+not survive the instrument that produced it, and no amount of re-running could have
+recovered it after the fact.
+
+`ruled-gate.ts` now writes the whole stderr to
+`/tmp/opencode/xml-ruled-proof/child-exit<N>.log` and prints its last 25 lines whenever the
+child exits non-zero with no table and no `[BB-HANG]`, and says plainly that there is no
+result in that run. It does not convert a failure into a verdict, and it does not retry.
+
+### What the code says can happen, offered as hypotheses and not as findings
+
+Three exits in the shared gate reach `process.exit(1)` or set `exitCode = 1`: `:335`
+(exit 0), `:342` (exit 2) and `:394` (`exitCode = falsified.length + unjustified.length ===
+0 ? 0 : 1`). `:394` runs *after* the verdict loop, so it cannot produce a run with no
+table. That leaves a death inside the walk, and `worker()` wraps its only fallible call
+(`try { r = await parseFile(f.abs, f.dir) } catch { continue }`, `:226`), so a rejection
+thrown there is caught. What is **not** caught is a top-level `await` rejection escaping the
+module — `await Promise.all(…)` at `:237` has no `.catch` — which in an ESM module exits 1
+with the error on stderr, and `process.exit(1)` from `src/ast/engine.ts:1442` fires only
+with its `[BB-HANG]` line, which run A did not have.
+
+**These are three candidate mechanisms, not a diagnosis.** Distinguishing them needs the
+stderr of a failing run, which is exactly what the runner could not previously produce, and
+which it now writes. Until a failing run is captured, this lane's claim is exactly the
+narrow one: *the arbiter can die silently, and before this commit it took its evidence with
+it.*
+
+### Why this is filed as §8 item 10 and not fixed here
+
+The defect is in shared machinery this lane does not own — `script/m14/ontology-coverage-gate.ts`
+has no per-file resilience in its walk, and there is no
+`resumable-walk.ts` call in it, although one exists and other lanes use it. The two
+workarounds in the runner (patch 4 lowers the worker count; patch 5 measures the B walk) are
+declared in its header as lane-local and temporary for that reason.
+
+**A cross-check that does support the existing item 3 conclusion and narrows it.** §8 item 3
+measured that the fault tracks concurrency and not the document, at n=8 with the result
+recorded INCONCLUSIVE. Run A happened at `BB_XML_WORKERS=1` — the lowest count the runner
+offers — on a tree that had just produced a clean run at the same count. So the trigger is
+not this lane's worker count alone. Host load was not measured, and with six to twenty-three
+lanes sharing one 8-core box it is the obvious next variable; stating it as the next
+variable is not the same as showing it, and it is not shown.
