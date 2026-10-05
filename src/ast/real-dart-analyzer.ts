@@ -137,6 +137,25 @@ const DART_TYPE_MENTION_DOUBLE_COUNTED = new Set<string>([
  */
 const R7_PLACEHOLDER_NAME = "unknown"
 
+/**
+ * The members `Object` declares, and therefore the members EVERY Dart class's
+ * interface contains whether or not the class mentions them.
+ *
+ * Dart has no other root: every class implicitly extends `Object`, so
+ * `toString`, `hashCode`, `runtimeType`, `noSuchMethod` and `operator ==` are
+ * reachable from every type in the language. That makes this set the one place
+ * where an override target can be named WITHOUT knowing the base's own file, and
+ * `extractOverrideRelationships` uses it for exactly that. Measured against the
+ * Dart SDK's own sources (`dart-sdk/sdk/lib/core/object.dart`, parsed through the
+ * production entry point): `Object.toString`, `Object.hashCode`,
+ * `Object.runtimeType`, `Object.noSuchMethod` and `Object.operator ==` are all
+ * published declarations there.
+ */
+const DART_OBJECT_TYPE = "Object"
+const DART_OBJECT_INTERFACE_MEMBERS = new Set<string>([
+  "toString", "hashCode", "runtimeType", "noSuchMethod", "operator ==",
+])
+
 
 
 // ============================================================================
@@ -515,10 +534,17 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
         case "declaration": {
           const sig = this.findSignatureIn(node)
           if (sig) {
+            // DARTD22: a constructor-SHAPED signature that is not named after
+            // its owner is an UNTYPED METHOD (the grammar has no node for one) —
+            // see `isRealConstructor`. It was published as a `constructor` named
+            // `constructor`, which both lost the method's own name and collapsed
+            // every untyped method in a class onto one published name.
             if (this.isConstructorSignature(sig.type)) {
               const owner = scopeOwnerName(scopeStack)
-              if (owner) {
+              if (owner && this.isRealConstructor(sig, owner)) {
                 this.processConstructor(node, sig, owner, symbols, relationships, patterns)
+              } else if (owner) {
+                this.processFunctionOrMethod(node, sig, symbols, scopeStack, patterns, seenMembers, nameLines)
               }
             } else {
               this.processFunctionOrMethod(node, sig, symbols, scopeStack, patterns, seenMembers, nameLines)
@@ -563,7 +589,10 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
           // Factories surface as `method_signature > factory_constructor_signature`
           // — dispatch constructors to processConstructor.
           const inner = this.findInnerSignature(node)
-          if (owner && this.isConstructorSignature(inner.type)) {
+          // DARTD22: the same node TYPE covers an UNTYPED METHOD; the NAME
+          // decides. `method_signature` is the wrapper the grammar uses for
+          // BOTH, so the wrapper cannot.
+          if (owner && this.isConstructorSignature(inner.type) && this.isRealConstructor(inner, owner)) {
             this.processConstructor(node, inner, owner, symbols, relationships, patterns)
           } else if (owner || t === "function_declaration") {
             this.processFunctionOrMethod(node, node, symbols, scopeStack, patterns, seenMembers, nameLines)
@@ -587,8 +616,12 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
           const ptype = node.parent?.type
           if (ptype === "declaration" || ptype === "method_signature") break
           const owner = scopeOwnerName(scopeStack)
-          if (owner) {
+          // DARTD22: node type alone does not decide — an UNTYPED METHOD
+          // parses as a `constructor_signature`. See `isRealConstructor`.
+          if (owner && this.isRealConstructor(node, owner)) {
             this.processConstructor(node, node, owner, symbols, relationships, patterns)
+          } else if (owner) {
+            this.processFunctionOrMethod(node, node, symbols, scopeStack, patterns, seenMembers, nameLines)
           }
           break
         }
@@ -1410,6 +1443,67 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
               target = first
               confidence = 0.8
               metadata = { isOverride: true, relationshipType: "method_override", isExternalBase: true }
+              // THE OBJECT INTERFACE IS THE ONE OVERRIDE TARGET THAT NEEDS NO
+              // EVIDENCE ABOUT THE BASE.
+              //
+              // Reaching this point means no base the run can see exposes the
+              // member, so the first heritage parent is a NAME and not a
+              // declaration. When the member is one of `Object`'s own, the parent
+              // inherits it — `class ProtocolException implements Exception` with
+              // `@override String toString()` does not override
+              // `Exception.toString`, because `Exception` declares no `toString`
+              // at all (`dart-sdk/sdk/lib/core/exceptions.dart` publishes 17
+              // symbols and `Exception.toString` is not one of them). The edge
+              // `ProtocolException.toString -> Exception.toString` therefore
+              // named a member that does not exist, and the graph asserted a
+              // declaration there.
+              //
+              // MEASURED over 4,788 corpus files at `BB_DART_CONC=1` (3 repos
+              // read whole: dart-http 335, riverpod 1,295, proxicall 2,351; 2
+              // sampled: flutter-packages 404, dart-sdk 403):
+              //
+              //   before — 247,737 `overrides` rows, 2,422 of them (0.98%) name a
+              //            target no published declaration provides. Every one of
+              //            the 2,422 is this shape, and every one is an
+              //            `isExternalBase` fallback.
+              //   after  — those rows name `Object.<member>`, which IS published
+              //            in the SDK sources, and the residual unexplained
+              //            `overrides` population falls by the same 2,422.
+              //
+              // WHAT THIS TRADES, stated rather than argued away. If an
+              // out-of-run base DOES declare the member — a user class in another
+              // package with its own `toString` — then `Base.toString` was the
+              // nearest correct target and `Object.toString` is one hop further
+              // up. The retarget cannot tell the two cases apart without the
+              // base's own file, and it prefers naming a declaration that
+              // provably EXISTS over naming one that may not. That is the same
+              // preference the rest of this pass already makes when it refuses a
+              // refuted fallback: an edge the graph cannot walk asserts something
+              // that is not there, and a narrower graph that is true beats a
+              // wider one that is not.
+              //
+              // The row is tagged `isObjectInterfaceBase`, so a consumer can tell
+              // a retargeted row from a first-parent row, and M14 §4's
+              // countability holds: it is one boolean over a single type at a
+              // single confidence.
+              if (
+                first !== null &&
+                first !== DART_OBJECT_TYPE &&
+                DART_OBJECT_INTERFACE_MEMBERS.has(s.name)
+              ) {
+                // The BASE name, not the qualified member: the push below appends
+                // `.${s.name}` itself. Writing `Object.toString` here produced the
+                // target `Object.toString.toString`, which the fixture caught on
+                // its first run.
+                target = DART_OBJECT_TYPE
+                metadata = {
+                  isOverride: true,
+                  relationshipType: "method_override",
+                  isExternalBase: true,
+                  isObjectInterfaceBase: true,
+                  firstHeritageParent: first,
+                }
+              }
             }
           }
         }
@@ -1582,7 +1676,16 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
       if (sig) {
         const inner = this.findInnerSignature(sig)
-        if (this.isConstructorSignature(sig.type) || this.isConstructorSignature(inner.type)) return "constructor"
+        // DARTD22: the node TYPE does not decide — a method with no return type
+        // parses as a `constructor_signature` (see `isRealConstructor`). Reading
+        // the type alone named the source of every edge in an untyped method's
+        // body the literal string `constructor`, a name 662 declarations in a
+        // 600-file sample carry. The method's own name is the source.
+        if (
+          this.isConstructorSignature(sig.type) || this.isConstructorSignature(inner.type)
+        ) {
+          if (this.isRealConstructor(inner, this.enclosingTypeName(inner))) return "constructor"
+        }
         const nm = this.signatureName(inner)
         if (nm) return nm
       }
@@ -1733,7 +1836,21 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
                 type: ASTEngine.RelationshipType.Calls,
                 confidence: 0.9,
                 line_number: this.nodeLine(leafNode),
-                metadata: {},
+                // A CALLEE can be a binding, not a declaration, and the label has
+                // to say so. `$default(_that)` is a real invocation — freezed's
+                // generated `map`/`maybeMap` takes the mapping function as a formal
+                // parameter named `$default` and calls it — and the family contract
+                // publishes no locals, so the target binds to nothing a consumer
+                // holds. `uses` already carries `isLocalRead` for exactly this and
+                // the `calls` branch consulted `locals` for nothing, so the class was
+                // present but UNCOUNTABLE: 138 `calls -> $default` rows and 50
+                // `calls -> orElse` rows over 4,788 corpus files, indistinguishable
+                // in any report from a call to a method nobody declared.
+                //
+                // Metadata only. No row is added or removed and no confidence moves,
+                // so this cannot change a payload; it makes an existing population
+                // queryable, which is what M14 §4 asks of a heuristic edge.
+                metadata: locals.has(leaf) ? { isLocalRead: true } : {},
               })
             }
           }
@@ -1779,7 +1896,10 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
               type: ASTEngine.RelationshipType.Calls,
               confidence: 0.9,
               line_number: this.nodeLine(calleeNode),
-              metadata: {},
+              // Same reason as the bare-call arm above: a leaf that the enclosing
+              // function binds is a binding, and the row is labelled so a consumer
+              // can tell it from a call to a declared member.
+              metadata: locals.has(method) ? { isLocalRead: true } : {},
             })
           }
         }
@@ -2663,7 +2783,19 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
       ptype === "enum_constant" ||
       // DARTD21: an extension type's container name AND its representation
       // field name (`extension type X._(T object$)`) are declarations.
-      ptype === "extension_type_declaration" || ptype === "representation_declaration"
+      ptype === "extension_type_declaration" || ptype === "representation_declaration" ||
+      // DARTD22: a signature's OWN name binds, and the constructor-shaped
+      // signatures were the one family missing from this set. A constructor
+      // `Real()` and an UNTYPED METHOD `untypedMethod()` parse into the same
+      // node, and in both the leading `identifier` is the declared name — so
+      // without this row every one of them published a bare read of ITSELF
+      // (`uses untypedMethod -> untypedMethod` at 0.6). Before DARTD22 the same
+      // node was published as a member called `constructor`, so the read was
+      // invisible: the source and the target were two different wrong names and
+      // cancelled out. Fixing only the symbol left the self-loop visible, which
+      // is why the row belongs here and not in the constructor dispatch.
+      ptype === "constructor_signature" || ptype === "factory_constructor_signature" ||
+      ptype === "constant_constructor_signature" || ptype === "redirecting_factory_constructor_signature"
   }
 
   /**
@@ -2853,6 +2985,107 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
       type === "constructor_signature" || type === "factory_constructor_signature" ||
       type === "constant_constructor_signature" || type === "redirecting_factory_constructor_signature"
     )
+  }
+
+  /**
+   * Is this constructor-shaped signature actually a CONSTRUCTOR, or is it a
+   * METHOD the grammar has no node for?
+   *
+   * ## The shape the grammar cannot distinguish
+   *
+   * `tree-sitter-dart` has no node for a method declared WITHOUT a return
+   * type. `class A { noRetType() { } }` parses as
+   *
+   *     method_signature
+   *       constructor_signature      <- an UNTYPED METHOD
+   *         identifier  noRetType
+   *         formal_parameter_list
+   *
+   * which is structurally identical to a real constructor `A()`. Reading the
+   * node TYPE alone therefore publishes every untyped method in the corpus as a
+   * `constructor` symbol named `constructor`, and the method's own name is never
+   * published at all. MEASURED over a 600-file stride sample of the corpus at
+   * 35,090 `.dart` files: 1,197 constructor-shaped signatures, of which 521
+   * (43.5%) are untyped methods, spread over 56 files — and one file,
+   * `dart-sdk/pkg/analyzer/test/src/summary/elements/type_inference_test.dart`,
+   * holds 91 of them, all collapsed onto the single name
+   * `TypeInferenceElementTest.constructor`. `validation/m14/fixtures/dart/
+   * untyped-method-census.ts` is the census and the discriminator cross-tab.
+   *
+   * ## Why the PARENT is not the test
+   *
+   * "Is the inner signature's parent a `method_signature`?" looks like the
+   * discriminator and is not: the grammar ALSO wraps real constructors that
+   * way (`A.named(int a)`, `factory A.f() = A.named`), so it would misclassify
+   * 559 real constructors as methods. The cross-tab in the census prints both.
+   *
+   * ## The test that IS exact — the language's own naming rule
+   *
+   * A constructor is named after its class, and the unnamed one is spelled
+   * `.new`. A MEMBER may not share its class's name — that is a compile error —
+   * so
+   *
+   *     lead === ownerName  ||  lead === "new"
+   *
+   * holds for every constructor and for no method. It is a property of the
+   * declaration's own text, not of the grammar's node choice, so it survives a
+   * grammar upgrade that re-shapes the wrapper.
+   *
+   * The census measures it as exact on both classes: 662 constructors and 535
+   * untyped methods, with no cell of the contingency table requiring a choice.
+   *
+   * ## An ownerless signature is NOT decided here
+   *
+   * An `extension type` declares constructors too (`Ext1.name1(this i);`), and
+   * `scopeOwnerName` resolves no enclosing type for one. Returning true there
+   * would keep the current behaviour — a constructor published without an owner
+   * — which is right, and is not this method's business to change. The 14
+   * ownerless rows in the census are counted, not silently folded into either
+   * class.
+   */
+  private isRealConstructor(sig: Node, owner: string | undefined): boolean {
+    if (!owner) return true
+    const lead = this.signatureName(sig)
+    if (lead === null) return true
+    return lead === "new" || lead === owner
+  }
+
+  /**
+   * The name of the type a signature is declared in, read from the PARENT chain.
+   *
+   * The symbol pass has a `scopeStack` already carrying this, so it passes the
+   * owner in. The relationship passes have no scope stack — they walk with
+   * their own `current`/`owner` cursors — so they need it derived from the tree.
+   * The two must agree or an edge's source and the symbol it names are decided
+   * by different rules, which is how `resolveCurrent` came to publish the
+   * literal `constructor` for every untyped method's body while the symbol pass
+   * published the method under its own name.
+   *
+   * The owner resolution is the analyzer's, not the grammar's: `class_definition`
+   * and `enum_declaration` carry a `name` FIELD, while `mixin_declaration` and
+   * `extension_declaration` carry a direct `identifier` child. A lookup that read
+   * only the name field would resolve no owner for a mixin and send every
+   * untyped mixin method down the ownerless path.
+   */
+  private enclosingTypeName(node: Node): string | undefined {
+    let n: Node | null = node
+    let guard = 0
+    while (n && guard++ < 64) {
+      const t = n.type
+      if (
+        t === "class_definition" || t === "enum_declaration" ||
+        t === "mixin_declaration" || t === "extension_declaration" ||
+        t === "extension_type_declaration"
+      ) {
+        const named = n.childForFieldName("name")
+        if (named) return named.text
+        const id = this.findChildByType(n, "identifier")
+        if (id) return id.text
+        return undefined
+      }
+      n = n.parent
+    }
+    return undefined
   }
 
   private signatureName(inner: Node): string | null {

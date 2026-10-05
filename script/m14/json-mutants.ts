@@ -29,10 +29,14 @@
  * ## The defect classes these cover
  *
  * `npm-run-callee-any-token` and `npm-run-substring-runner` are the two mistakes the
- * new `calls` pass can make that a positive-only fixture would not catch: reading the
+ * `calls` pass can make that a positive-only fixture would not catch: reading the
  * runner out of a token with a substring test (`npx` contains `npm`, and a PATH named
  * `npm` is not a runner), and accepting a target that is not a key of the same
  * `scripts` object. The manifest fixture's `forbidRelationships` carry both shapes.
+ *
+ * The pass-2 group covers the inheritance emitter: `implements` disappearing, an
+ * inheritance edge to an undeclared target, a member descriptor accepted as a type
+ * declaration, and the `extends` source regressing to the `allOf` array.
  */
 import type { Mutant } from "./mutate-analyzer"
 
@@ -48,27 +52,54 @@ const dropJsonCalls = (r: any) => ({
 /** Accepts a `npm run` target that is NOT a key of the same `scripts` object, so an
  *  edge names a symbol the file never declared. This is the fabricated-edge shape the
  *  ontology workstream calls the most expensive mistake available. Caught by
- *  manifest/package's `external` forbid. */
+ *  manifest/package's `external` forbid.
+ *
+ *  The synthetic edges carry QUALIFIED PATHS because the defect modelled here is the callee
+ *  SELECTION, not the endpoint form. Emitting them as bare names would make the mutant
+ *  invisible rather than caught — it survived an endpoint-form change for exactly that reason,
+ *  and a mutant that cannot fail is indistinguishable from a defect class with no mutant. */
 const npmRunCalleeAnyToken = (r: any) => ({
   ...r,
   relationships: [
     ...(r.relationships ?? []),
     ...(r.symbols ?? [])
       .filter((s: any) => s.ownerName === "scripts")
-      .flatMap((s: any) => [{ source: s.name, target: "not-declared-here", type: "calls", confidence: 0.8, line_number: 0 }]),
+      .flatMap((s: any) => [
+        { source: `package.scripts.${s.name}`, target: "package.scripts.not-declared-here", type: "calls", confidence: 0.8, line_number: 0 },
+      ]),
   ],
 })
 
 /** Reads the runner with a substring test instead of comparing whole tokens, so `npx`
  * and `./scripts/npm` are taken for runners. Caught by manifest/package's `notarunner`
- * and `pathrunner` forbids. */
+ *  and `pathrunner` forbids. Qualified paths for the reason given above. */
 const npmRunSubstringRunner = (r: any) => ({
   ...r,
   relationships: [
     ...(r.relationships ?? []),
-    { source: "notarunner", target: "compile", type: "calls", confidence: 0.8, line_number: 0 },
-    { source: "pathrunner", target: "compile", type: "calls", confidence: 0.8, line_number: 0 },
+    { source: "package.scripts.notarunner", target: "package.scripts.compile", type: "calls", confidence: 0.8, line_number: 0 },
+    { source: "package.scripts.pathrunner", target: "package.scripts.compile", type: "calls", confidence: 0.8, line_number: 0 },
   ],
+})
+
+/** Reverts `calls` endpoints to the BARE script names it emitted before the incoming check.
+   *
+   *  Both endpoints are keys of ONE `scripts` object, so both have a position in the document
+   *  and a qualified path exists for both — which is what distinguishes this type from `uses`
+   *  and `exports`, whose targets (an npm package name, a published entry point) genuinely
+   *  have no position. Emitting bare names contradicted the lane's own endpoint contract and
+   *  cost 7 of 37 `calls` targets binding to more than one published symbol on a 449-file
+   *  sample. Caught by manifest/package's four `calls` pins, which all spell the path. */
+const jsonCallsBareEndpoints = (r: any) => ({
+  ...r,
+  relationships: (r.relationships ?? []).map((x: any) => {
+    if (relType(x) !== "calls") return x
+    const cut = (v: string) => {
+      const i = v.lastIndexOf(".scripts.")
+      return i >= 0 ? v.slice(i + ".scripts.".length) : v
+    }
+    return { ...x, source: cut(String(x.source ?? "")), target: cut(String(x.target ?? "")) }
+  }),
 })
 
 /** Restores the unlined state: `line_number` was absent from the analyzer entirely
@@ -97,10 +128,22 @@ const jsonOverridesUnscoped = (r: any) => {
   const extra: any[] = []
   for (const x of r.relationships ?? []) {
     if (relType(x) !== "contains") continue
-    const k = String(x.target ?? "")
-    if (k.length === 0) continue
-    const prior = byName.get(k)
-    if (prior === undefined) byName.set(k, x.line_number ?? 0)
+    const qualified = String(x.target ?? "")
+    if (qualified.length === 0) continue
+    // The defect class is "the duplicate check is scoped to the FILE, not the OBJECT", and a
+    // JSON key is unique only WITHIN its object. So the KEY is compared across owners, which
+    // after the `contains` endpoint change is the LEAF segment of the qualified target rather
+    // than the whole path.
+    //
+    // Keying on the whole path made this mutant VACUOUS rather than caught: after
+    // `SameKeyDifferentObjects.list[0].tag` and `…list[1].tag` became distinct endpoints, the
+    // permissive version found no collisions and emitted nothing, and the run reported
+    // `SURVIVED json/overrides-unscoped-to-file (0 -> 0 failures)`. A mutant that stops
+    // testing anything is worse than no mutant, because it still reads as a passing check.
+    const dot = qualified.lastIndexOf(".")
+    const leaf = dot >= 0 ? qualified.slice(dot + 1) : qualified
+    const prior = byName.get(leaf)
+    if (prior === undefined) byName.set(leaf, x.line_number ?? 0)
     else extra.push({ ...x, type: "overrides", metadata: { overridesLine: prior, redefinition: true } })
   }
   return { ...r, relationships: [...(r.relationships ?? []), ...extra] }
@@ -116,7 +159,283 @@ const jsonOverridesLineLost = (r: any) => ({
   ),
 })
 
-export const JSON_MUTANTS: Mutant[] = [
+/**
+ * Reverts `overrides` to BARE-NAME endpoints — the state before the third endpoint-form
+ * change on this lane. This is the mutant that class needed and did not have: the suite had
+ * three `overrides` mutants (dropped, unscoped-to-file, prior-line-lost) and none of them
+ * tested the endpoint FORM, so the endpoint change passed 16/16 and 24/24 without a single
+ * registered check objecting. That is the same trap this file already records twice for
+ * `calls` (`calls-callee-any-token`, `calls-runner-substring` became INVISIBLE rather than
+ * caught when `calls` endpoints became paths).
+ *
+ * Caught by json/DuplicateKey, whose `overrides` pins were migrated to `DuplicateKey.repeated`
+ * and whose `forbidRelationships` were migrated with them — leaving the forbids as bare names
+ * would have made the negative control vacuous, since a bare-named forbid can never match a
+ * path-named edge.
+ *
+ * Corpus cost of the bare form, measured by
+ * `validation/m14/fixtures/json/overrides-endpoint-probe.ts` over the whole admitted
+ * population: 22 of 22 targets and 8 of 22 sources stop being qualified paths, and 2 of 22
+ * sources become name-ambiguous (0 under the path form).
+ */
+const jsonOverridesEndpointsAreBareNames = (r: any) => ({
+  ...r,
+  relationships: (r.relationships ?? []).map((x: any) => {
+    if (relType(x) !== "overrides") return x
+    const meta = x.metadata ?? {}
+    const src = typeof meta.ownerName === "string" ? meta.ownerName : String(x.source ?? "")
+    const tgt = typeof meta.key === "string" ? meta.key : String(x.target ?? "")
+    return { ...x, source: src, target: tgt }
+  }),
+})
+
+/**
+ * Pass-2 mutants. Four defects the pass-1 suite could not have caught, because the code they
+ * break did not exist: the `implements` emitter, the `extends` source, and the two
+ * document-level preconditions that keep the inheritance emitter from firing everywhere.
+ */
+
+/** Drops every `implements` edge — restoring the state this lane shipped, where `implements`
+ *  was RULED and the corpus was never asked. Caught by json/Inherit.lsp's four pins. */
+const dropJsonImplements = (r: any) => ({
+  ...r,
+  relationships: (r.relationships ?? []).filter((x: any) => relType(x) !== "implements"),
+})
+
+/**
+ * Emits an inheritance edge whose target the document never declares — the fabricated-edge
+ * class, and the one the ontology workstream names as the most expensive mistake available.
+ * Measured on the corpus, 16 real statements take this shape (duckdb naming a superclass
+ * declared in a sibling file). Caught by json/Inherit.lsp's `NotDeclaredAnywhere` /
+ * `AlsoNotDeclared` forbids and json/Inherit.duckdb's `ParseInfo` forbid.
+ */
+const jsonInheritanceAnyTarget = (r: any) => ({
+  ...r,
+  relationships: [
+    ...(r.relationships ?? []),
+    { source: "Inherit.lsp.structures[6]", target: "Inherit.lsp.structures[6].extends[0]", type: "extends", confidence: 1, line_number: 0 },
+    { source: "Inherit.duckdb[5]", target: "Inherit.duckdb[0]", type: "extends", confidence: 1, line_number: 0 },
+  ],
+})
+
+/**
+ * Reads the supertype off ANY object with a `base` string, dropping the `class` declaration
+ * marker. This is the permissive direction and it is the one that matters: duckdb writes
+ * `{ "id": 200, "name": "info", "type": "AlterInfo*", "base": "ParseInfo" }` for a FIELD,
+ * 16 corpus-wide, and a member descriptor is not a type declaration. Caught by
+ * json/Inherit.duckdb's two member-descriptor forbids.
+ */
+const jsonInheritanceUnmarkedDeclaration = (r: any) => ({
+  ...r,
+  relationships: [
+    ...(r.relationships ?? []),
+    { source: "Inherit.duckdb[4].members[0]", target: "Inherit.duckdb[0]", type: "extends", confidence: 1, line_number: 0 },
+    { source: "Inherit.duckdb[4].members[1]", target: "Inherit.duckdb[0]", type: "extends", confidence: 1, line_number: 0 },
+  ],
+})
+
+/**
+ * Sources an `extends` edge from the `allOf` ARRAY again instead of the schema object that
+ * composes. Caught by json/AllOf's two `extends` pins plus its two forbids. The array is a
+ * keyword shared by every schema in the file, so this is what a name-resolving consumer
+ * binds to an arbitrary schema.
+ */
+const jsonExtendsSourceIsArray = (r: any) => ({
+  ...r,
+  relationships: (r.relationships ?? []).map((x: any) =>
+    relType(x) === "extends" && x.metadata?.composition === "allOf"
+      ? { ...x, source: String(x.metadata?.compositionSite ?? x.source) }
+      : x,
+  ),
+})
+
+  /**
+   * Pass-3 mutants — the two endpoint-identity defects the incoming check found.
+   *
+   * `contains` was the last type in this lane still emitting BARE names. Measured on a
+   * 202-file / 99-repo sample: 32,660 of 66,032 `contains` edges (49.4%) named a target
+   * matching more than one published symbol, and the shared resolver
+   * (`src/ast/parallel-indexer.ts` strategy 2) declines a non-unique bare name, so those
+   * edges bound to no declaration. Both mutants below revert one of the two halves of the
+   * fix, and both must be caught.
+   */
+
+  /** Reverts `contains` endpoints to `ownerName -> leaf name`. Caught by every fixture's
+   *  `contains` pins, because each pin spells a qualified path on both ends. */
+  const jsonContainsBareEndpoints = (r: any) => ({
+    ...r,
+    relationships: (r.relationships ?? []).map((x: any) => {
+      if (relType(x) !== "contains") return x
+      const owner = String((x.metadata ?? {}).ownerName ?? "")
+      const target = String(x.target ?? "")
+      const dot = target.lastIndexOf(".")
+      return { ...x, source: owner, target: dot >= 0 ? target.slice(dot + 1) : target }
+    }),
+  })
+
+  /** An array item's owner is the ARRAY, so only the `[i]` comes off the target's path.
+   *  This mutant strips the array's own leaf segment as well, which names the document ROOT
+   *  as the owner of every array element — the exact defect the first version of the fix had,
+   *  and the one 5 fixture pins caught. Caught by json/Arrays' two item pins and
+   *  json/AllOf's `allOf[0]` / `allOf[1]` pins. */
+  const jsonArrayItemOwnerIsRoot = (r: any) => ({
+    ...r,
+    relationships: (r.relationships ?? []).map((x: any) => {
+      if (relType(x) !== "contains") return x
+      const source = String(x.source ?? "")
+      const target = String(x.target ?? "")
+      const bracket = target.lastIndexOf("[")
+      if (bracket < 0) return x
+      const arrayPath = target.slice(0, bracket)
+      if (source !== arrayPath) return x
+      const dot = arrayPath.lastIndexOf(".")
+      if (dot < 0) return x
+      return { ...x, source: arrayPath.slice(0, dot) }
+    }),
+  })
+
+/**
+ * Pass-3 mutant: an array-inside-an-array's elements are named from the array's own NAME again,
+ * which is correct for every array written under a key and wrong for an array that is itself an
+ * ELEMENT — the inner array's name is the outer array's name, so two different objects collide
+ * and `contains` is asserted between objects that are not nested. Caught by
+ * json/ArrayInArray's two forbids and its `rows[0][0]` / `rows[0][1]` pins.
+ */
+const jsonArrayItemNamedFromBareName = (r: any) => ({
+  ...r,
+  symbols: (r.symbols ?? []).map((s: any) => {
+    const q = String(s.qualifiedName ?? "")
+    const m = /^(.*)\[(\d+)\]\[(\d+)\]$/.exec(q)
+    if (!m) return s
+    // `…rows[0][0]` becomes `…rows[0]`: the inner array's items indexed as if they were the
+    // outer array's, which is the pre-fix shape.
+    return { ...s, name: `${m[1]}[${m[2]}]`, qualifiedName: `${m[1]}[${m[2]}]`, ownerName: m[1] }
+  }),
+  relationships: (r.relationships ?? []).map((x: any) => {
+    const t = String(x.target ?? "")
+    const m = /^(.*)\[(\d+)\]\[(\d+)\](.*)$/.exec(t)
+    if (!m) return x
+    return { ...x, target: `${m[1]}[${m[2]}]${m[4]}`, source: String(x.source ?? "").replace(/\[(\d+)\]$/, "") }
+  }),
+})
+
+/** Reverts the module-prefix strip to the fixed `slice(rootName.length + 1)`, for the one
+ *  path shape where the character at `rootName.length` is `[` rather than `.`.
+ *
+ *  This models the defect this lane measured and fixed: a document whose TOP LEVEL is an
+ *  array has no key to name it, so the MODULE is the only thing that can, the qualified path
+ *  hangs off the module by an index, and a strip that assumes the dot eats the bracket. The
+ *  published name becomes `0].tags[0]` where the contract says `[0].tags[0]` — a `]` with no
+ *  `[` before it, a family no keyed form (`Statement[0]`) and no element form produces.
+ *
+ *  The predicate is `name.startsWith("[")`, which is SOUND rather than convenient: after the
+ *  fix a symbol name begins with `[` if and only if `afterModuleImpl` took its bracket branch,
+ *  so this transforms exactly the population the defect affected and nothing else. It is a
+ *  plain character comparison — no pattern matching — unlike several transforms above it.
+ *
+ *  Caught by json/TopLevelArray's three `forbidSymbols` (`0].tags[0]`, `0].tags[1]`,
+ *  `0].tags`) and by its two `expectSymbols` pins on the bracket form.
+ */
+const jsonTopLevelArrayNameTruncatesBracket = (r: any) => ({
+  ...r,
+  symbols: (r.symbols ?? []).map((s: any) => {
+    const name = String(s.name ?? "")
+    if (!name.startsWith("[")) return s
+    const owner = String(s.ownerName ?? "")
+    return {
+      ...s,
+      name: name.slice(1),
+      // The owner's name is derived from the child's by cutting at the last `[`, so it
+      // carries the same truncation and must be reverted together or the fixture would
+      // catch a half-applied defect.
+      ownerName: owner.startsWith("[") ? owner.slice(1) : owner,
+    }
+  }),
+})
+
+/** Reverts the fix that made `metadata.version` publish the dependency's VERSION RANGE.
+   *
+   *  The defect it reintroduces is the one this lane shipped: `dependencyVersion` looked
+   *  the symbol up in `symbolMap` and read `returnType`, which is the dependency VALUE'S
+   *  JSON TYPE. So every published `metadata.version` on a `package_dependency` edge read
+   *  `"string"` — or `"unknown"` on a lookup miss — while the real range sat in the pair's
+   *  `value` node. A field named `version` carrying the word `string` is a type assertion a
+   *  consumer will believe, which is worse than publishing nothing. Caught by
+   *  json/manifest/package's `meta.version` pin, and by its two forbids. */
+  const jsonDependencyVersionIsTheJsonType = (r: any) => ({
+    ...r,
+    relationships: (r.relationships ?? []).map((x: any) => {
+      const meta = x.metadata ?? {}
+      if (meta.relationshipType !== "package_dependency") return x
+      return { ...x, metadata: { ...meta, version: "string" } }
+    }),
+  })
+
+  export const JSON_MUTANTS: Mutant[] = [
+  {
+    id: "json/dependency-version-is-the-json-type",
+    language: "json",
+    defectClass: "dishonest-metadata",
+    description:
+      "M14 ontology pass-3 regression: a manifest dependency's `metadata.version` publishes the dependency VALUE'S JSON TYPE (`\"string\"`) instead of its version range, because the lookup read the symbol's `returnType` and the real range was in the pair's `value` node. Every `package_dependency` `uses` edge in the corpus carried it — 4,741 dependency `uses` at the last census. Caught by json/manifest/package's `meta.version` pin and its two forbids.",
+    transform: jsonDependencyVersionIsTheJsonType,
+  },
+  {
+    id: "json/array-item-named-from-bare-array-name",
+    language: "json",
+    defectClass: "wrong-symbol-identity",
+    description:
+      "M14 ontology pass-3 regression: an array that is itself an ELEMENT names its children from its bare name again, so `rows[0]`'s two elements collide with `rows`' own element namespace and `contains` is asserted between objects that are not nested. Measured over the corpus as 183 UNEXPLAINED `contains` edges that two implementations agreed on, which is the shared-misreading case the honesty contract names. Caught by json/ArrayInArray.",
+    transform: jsonArrayItemNamedFromBareName,
+  },
+  {
+    id: "json/contains-endpoints-are-bare-names",
+    language: "json",
+    defectClass: "unresolvable-identity",
+    description:
+      "M14 ontology pass-3 regression: `contains` reverts to `ownerName -> leaf name`, the two BARE names it emitted before the incoming check. Measured on a 202-file / 99-repo sample that is 32,660 of 66,032 edges (49.4%) naming a target that matches more than one published symbol, and the shared resolver declines a non-unique bare name, so those edges bind to no declaration at all. Caught by every json fixture's `contains` pins.",
+    transform: jsonContainsBareEndpoints,
+  },
+  {
+    id: "json/array-item-owner-is-root",
+    language: "json",
+    defectClass: "dishonest-identity",
+    description:
+      "M14 ontology pass-3 regression: an array item's owner drops the array's own segment as well as its `[i]`, so `objs[0]` reads as contained by the document ROOT instead of by `objs`. This is the defect the first version of the fix had, and 5 fixture pins caught it. Caught by json/Arrays' item pins and json/AllOf's `allOf[0]`/`allOf[1]` pins.",
+    transform: jsonArrayItemOwnerIsRoot,
+  },
+  {
+    id: "json/implements-dropped",
+    language: "json",
+    defectClass: "missing-relationship-type",
+    description:
+      "M14 ontology pass-2 regression: `implements` stops being emitted, restoring the state this lane shipped — RULED on a grammar inventory, with 113 interface mix-in statements in one corpus file unread. Caught by json/Inherit.lsp's four pins.",
+    transform: dropJsonImplements,
+  },
+  {
+    id: "json/inheritance-undeclared-target",
+    language: "json",
+    defectClass: "fabricated-edge",
+    description:
+      "M14 ontology pass-2 regression: an inheritance statement resolves to a target the document never declares, so the edge names a symbol the file does not contain. Measured on the corpus, 16 real statements take exactly this shape and are correctly declined. Caught by json/Inherit.lsp's orphan forbids and json/Inherit.duckdb's `ParseInfo` forbid.",
+    transform: jsonInheritanceAnyTarget,
+  },
+  {
+    id: "json/inheritance-declaration-marker-dropped",
+    language: "json",
+    defectClass: "over-matching-predicate",
+    description:
+      "M14 ontology pass-2 regression: the supertype is read off any object carrying a `base` string, so a MEMBER DESCRIPTOR counts as a type declaration. duckdb writes `{\"id\":200,\"name\":\"info\",\"type\":\"AlterInfo*\",\"base\":\"ParseInfo\"}` for a FIELD whose C++ class derives from ParseInfo — 16 corpus-wide. Caught by json/Inherit.duckdb's member-descriptor forbids.",
+    transform: jsonInheritanceUnmarkedDeclaration,
+  },
+  {
+    id: "json/extends-source-is-allof-array",
+    language: "json",
+    defectClass: "mislabeled-source",
+    description:
+      "M14 ontology pass-2 regression: `extends` is sourced from the `allOf` array rather than the schema object that composes. Measured on a 2,343-file stride sample, that is the difference between 0% and 100% of `extends` endpoints binding by bare name. Caught by json/AllOf's two `extends` pins and its two forbids.",
+    transform: jsonExtendsSourceIsArray,
+  },
   {
     id: "json/calls-dropped",
     language: "json",
@@ -124,6 +443,14 @@ export const JSON_MUTANTS: Mutant[] = [
     description:
       "M14 ontology regression: an npm script running a SIBLING script stops emitting `calls`, restoring the omission the corpus probe measured (12 sibling invocations across the first 300 admitted files, apollo-server/package.json carrying 7 with both endpoints resolving). Caught by json/manifest/package's three `calls` pins.",
     transform: dropJsonCalls,
+  },
+  {
+    id: "json/calls-endpoints-are-bare-names",
+    language: "json",
+    defectClass: "unresolvable-identity",
+    description:
+      "M14 ontology pass-3 regression: `calls` reverts to bare script names. Both endpoints are keys of ONE `scripts` object, so a qualified path exists for both — which is what separates this type from `uses` and `exports`, whose targets have no position in the document. Measured on a 449-file sample, 7 of 37 `calls` targets matched more than one published symbol, each one a place the reverse walk picks a winner by a rule nobody chose. Caught by json/manifest/package's four `calls` pins, which each spell the path.",
+    transform: jsonCallsBareEndpoints,
   },
   {
     id: "json/calls-callee-any-token",
@@ -166,11 +493,27 @@ export const JSON_MUTANTS: Mutant[] = [
     transform: jsonOverridesLineLost,
   },
   {
+    id: "json/overrides-endpoints-are-bare-names",
+    language: "json",
+    defectClass: "ambiguous-endpoint",
+    description:
+      "M14 ontology regression: `overrides` reverts to bare-name endpoints, violating the lane's own contract row that every relationship type emits QUALIFIED PATHS on both ends. Measured over the whole admitted population, 22 of 22 targets and 8 of 22 sources stop being paths, and 2 of 22 sources become name-ambiguous. The suite had three other `overrides` mutants and none tested endpoint FORM, so the change passed 16/16 and 24/24 with nothing objecting. Caught by json/DuplicateKey, whose `overrides` pins AND `forbidRelationships` were both migrated to the path form.",
+    transform: jsonOverridesEndpointsAreBareNames,
+  },
+  {
     id: "json/edge-lines-dropped",
     language: "json",
     defectClass: "dishonest-payload",
     description:
       "M14 ontology regression: every edge loses its site line, restoring the measured pre-M60 state in which `line_number` occurred ZERO times in the analyzer and every json edge in the index was stored with a NULL line while symbols carried `range` throughout.",
     transform: stripJsonEdgeLines,
+  },
+  {
+    id: "json/top-level-array-name-truncates-bracket",
+    language: "json",
+    defectClass: "wrong-symbol-identity",
+    description:
+      "M60 regression, MEASURED AND FIXED THIS LANE: the module-prefix strip is a fixed `slice(rootName.length + 1)`, which assumes the character at `rootName.length` is the dot separating a module from its first key. In a document whose TOP LEVEL is an array that character is `[`, so the `+1` ate it and `mod[0].tags[0]` published the name `0].tags[0]` — a `]` with no `[` before it, a spelling no keyed form (`Statement[0]`) and no element form (`rows[0][0]`) can produce. Over a 514-file stride sample of the 2,569 admitted corpus documents whose top level is an array: 17,803 such names in 215 of 514 files, 14.8% of the 120,464-symbol population; after the fix 0, with the 17,803 reappearing as the bracket form and the other three spelling buckets and the total symbol count unchanged to the digit. Measured to be SPELLING-ONLY and not a graph defect: edge count, both-ends resolution (120,464 of 120,464), containment soundness (120,464 of 120,464) and declared-owner agreement (85,670 of 85,670) are byte-identical on both sides of the fix, and the lane's own differential reports the same 363,344 contains edges covered with 0 unexplained either way — the oracle reads qualified PATHS, so it is structurally blind to a defect that lives only in the symbol NAME. That blindness is why this mutant exists. Caught by json/TopLevelArray.",
+    transform: jsonTopLevelArrayNameTruncatesBracket,
   },
 ]
