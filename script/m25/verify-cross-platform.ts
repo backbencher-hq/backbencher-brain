@@ -265,6 +265,15 @@ const thisResult = {
   code: evidenceCode,
   milestone: "M25",
   status: legStatus === "verified" && failed === 0 ? "verified" : legStatus === "blocked" ? "blocked" : "known-gap",
+  // §8.3: a run that is not green records WHY. The host's own leg wrote a bare
+  // `known-gap` with a `failures` array beside it - a claim an auditor has to
+  // re-derive by reading the array's shape. The reason states it, and is read by
+  // the m42 closure gate's declared-absence audit.
+  ...(legStatus === "verified" && failed === 0
+    ? {}
+    : {
+        blockedReason: `${failed} check(s) failed on ${nativeLabel} (process.platform=${runningOs}): ${failures.slice(0, 4).join(" | ")}${failures.length > 4 ? ` | ... +${failures.length - 4} more` : ""}`,
+      }),
   os: runningOs,
   checks,
   passed,
@@ -272,7 +281,13 @@ const thisResult = {
   failures,
   mutantsCaught,
   mutantsTotal: MUTANTS.length,
-  negativeCases: 0,
+  // The can-fail proof this leg DOES carry is its platform mutation suite (the
+  // two historical bug classes: path-separator heterogeneity and home-dir
+  // nondeterminism). It was previously written as `negativeCases: 0`, which read
+  // as "this suite cannot fail" and cost the leg its `verified` standing under
+  // the closure rule that a non-planned entry needs a can-fail proof. The count
+  // is the mutants this run caught, derived from the run - not typed.
+  negativeCases: mutantsCaught,
   leg: {
     runtime: "node-dist (shipped server)",
     assertionCount: assertionResults.length,

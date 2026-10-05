@@ -4,10 +4,13 @@ version = "0.1.0"
 edition = "2021"
 
 [lib]
+# [lib] name is left at Cargo's default (package name with dashes normalised:
+# bb_lsp) so the artifact is target/<triple>/release/bb_lsp.wasm — Cargo's
+# convention for a Zed extension, matching the extension template.
+path = "src/bb-lsp.rs"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 zed_extension_api = "0.6"
-serde_json = "1"
 
 [workspace]

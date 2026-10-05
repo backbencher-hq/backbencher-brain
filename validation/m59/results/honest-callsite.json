@@ -1,45 +1,105 @@
 {
   "gate": "M59.O4",
   "issue": "#823",
-  "at": "2026-09-19T03:11:14.146Z",
-  "atCommit": "295f6fa09b52e19afa71549216c99e19f106e448",
-  "treeModifiedInputs": 52,
+  "at": "2026-10-05T02:35:03.701Z",
+  "atCommit": "e68fbb6628e9ee217491bcca92d97b67b5f264f4",
+  "treeModifiedInputs": 7,
   "command": "npx tsx script/m59/verify-honest-callsite.ts",
   "status": "pass",
-  "fixture": "/tmp/m59-honest-noo5B2/fixture",
+  "fixture": "/var/folders/4j/11tssyqj4kj0f8dfz06jsb700000gn/T/m59-honest-N50rvX/fixture",
   "checks": [
     {
-      "name": "null-stays-null",
+      "name": "fixture-shape",
       "passed": true,
-      "detail": "1 unknown-line edges audited, 0 fabricated"
+      "detail": "known row 1ccefa784aa404d27a2dca7f96586be78ed8c6bb:rel:1ccefa784aa404d27a2dca7f96586be78ed8c6bb:Repo.kt:run:8:Repo:instantiates:9 carries line 9; the unknown row 1ccefa784aa404d27a2dca7f96586be78ed8c6bb:rel:1ccefa784aa404d27a2dca7f96586be78ed8c6bb:Repo.kt:run:8:load:calls:10 was DECLARED to carry none by planting NULL in this throwaway index (the analyzers measured at this commit emit real lines on every row, so waiting for a NULL would abort the gate)"
+    },
+    {
+      "name": "no-call-site-row-never-becomes-a-call-site",
+      "passed": true,
+      "detail": "2 unknown-line edges audited, 0 fabricated (restated for the M62.A1 address union: a row with no stored call site may yield a LABELLED substitute, never a call-site and never a clamped line)"
+    },
+    {
+      "name": "every substitute for an unknown line carries the owner's note (L2)",
+      "passed": true,
+      "detail": "2 labelled substitutes, 0 unlabelled"
     },
     {
       "name": "known-stays-true",
       "passed": true,
-      "detail": "2 known-line edges audited, 0 misreported"
+      "detail": "6 known-line edges audited, 0 misreported"
     },
     {
-      "name": "lsp-ranges-finite",
+      "name": "lsp-ranges-point-at-an-invocation",
       "passed": true,
-      "detail": "0 bad ranges"
+      "detail": "2 ranges point at an invocation in the caller's own text, 2 are DECLARED approximations (15.3 permits these), 0 point at a declaration UNDECLARED, 0 undecidable from one line of text, 0 non-finite"
     },
     {
-      "name": "lsp-no-fabricated-ranges",
+      "name": "lsp-ranges-point-at-an-invocation actually EXAMINED ranges (a vacuous pass is a failure)",
       "passed": true,
-      "detail": "every emitted range derives from a real DB line (null-1 would be NaN → caught above)"
+      "detail": "verified=2 — with zero verified ranges the check above proves nothing, whatever it reports"
+    },
+    {
+      "name": "the declared-approximation count equals the number of ranges rendered",
+      "passed": true,
+      "detail": "declaredOnResponses=2 rangesNotPointingAtAnInvocation=2 (responses may carry several; equality is asserted per response in script/m24 G12)"
+    },
+    {
+      "name": "NEGATIVE the invocation predicate convicts a planted DECLARATION line (spec 3.3 test 1)",
+      "passed": true,
+      "detail": "a TypeScript/Kotlin signature matches the naive name( rule; only the declaration test convicts it (classified: declaration)",
+      "negative": true
+    },
+    {
+      "name": "NEGATIVE the invocation predicate convicts planted declarations across the fixture languages' syntaxes",
+      "passed": true,
+      "detail": "fun / def / public void / export function / accessor declarations all classify as declarations",
+      "negative": true
+    },
+    {
+      "name": "NEGATIVE the invocation predicate ACCEPTS real invocations (so the negatives above are not passing for the wrong reason)",
+      "passed": true,
+      "detail": "five real invocation shapes (receiver call, assignment, construction, chained call, unqualified call) classify as invocations, so the predicate discriminates rather than rejecting everything",
+      "negative": true
+    },
+    {
+      "name": "NEGATIVE a bare `name()` alone on a line is reported UNDECIDABLE, never guessed (declared limitation)",
+      "passed": true,
+      "detail": "one line of text cannot separate a bare call from a body-less signature; the predicate says so instead of picking a side — classified: undecidable",
+      "negative": true
     },
     {
       "name": "mutation-caught",
       "passed": true,
-      "detail": "corrupted DB value is visible through the engine; per-row audit reacts to divergence"
+      "detail": "corrupted store value is visible to a GATE CHECK, not only to the UPDATE: served42=1 servedNullAfterMutation=0 postViolation=0 censusDisagree=1 censusEdges=2"
     }
   ],
   "audit": {
-    "auditedKnown": 2,
-    "auditedUnknown": 1,
+    "auditedKnown": 6,
+    "auditedUnknown": 2,
     "fabricated": 0,
     "misreportedKnown": 0,
-    "lspFabricated": 0
+    "lspRangesVerified": 2,
+    "lspPointedAtDeclaration": 0,
+    "lspDeclaredApproximations": 2,
+    "lspUndecidable": 0,
+    "lspFabricated": 0,
+    "lspChecks": [],
+    "lspKnownOk": 1
   },
+  "gateDefectsFixed": [
+    {
+      "defect": "§3.3a — `lsp-ranges-finite` and `lsp-no-fabricated-ranges` asserted the SAME variable (lspFabricated, incremented only on !isFinite || line < 0), so a fromRange pointing at a DECLARATION passed both",
+      "replacement": "`lsp-ranges-point-at-an-invocation`: each range is read back out of the caller's own file and must slice to the invoked name, be followed by `(` or preceded by `new`, AND fail a declaration test (a signature like `get(key: string)` also matches `name(`)",
+      "replacementHasNegativeCase": true,
+      "negativeCaseDetail": "two planted declarations are convicted by the same predicate, including the exact live shape `get(key: string): T | undefined`",
+      "lspRangesFiniteDeletedAsSubsumed": true,
+      "subsumptionArgument": "a non-finite or negative line cannot slice to the invoked name, so the invocation predicate fails it; the count is still reported (lspFabricated) rather than dropped silently"
+    },
+    {
+      "defect": "§3.3b — `mutation-caught` asserted only that SQLite accepted the UPDATE (`rowNow.ln === 42`); no check was re-run and `postFabricated` was computed then discarded by `void postFabricated`",
+      "replacement": "the mutation must make a GATE CHECK red: after corrupting the row, the engine must serve the corrupted value (proving it reads the store) and the component's own D4 cross-check must classify the row as a disagreement (proving the corruption is visible to a check rather than absorbed)",
+      "verdictIs": "a gate check turning false, not the database accepting a write"
+    }
+  ],
   "scope": "one kotlin+python fixture project, fresh index; excludes corpus-scale languages"
 }

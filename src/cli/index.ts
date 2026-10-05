@@ -6,10 +6,12 @@
 //   bb version
 import { Command } from "commander"
 import { createHash } from "crypto"
+import { fileURLToPath } from "url"
 import { existsSync, mkdirSync, realpathSync, renameSync, statSync } from "fs"
 import path from "path"
 import { BrainDatabase } from "../brain/database"
 import { indexProjectParallel } from "../ast/parallel-indexer"
+import { IndexProgressRenderer, SUPPORT_EMAIL } from "./index-progress"
 import { acquireIndexLock, IndexLockHeldError, type IndexLockHandle } from "../ast/index-lock"
 import { BrainTools } from "../ast/tools"
 import { BACKBENCHER_BRAIN_VERSION } from "../version"
@@ -21,26 +23,11 @@ import { FRESHNESS_REMEDIATION } from "../brain/freshness"
 import { collectStaleFiles, maybeAutoRefresh, autoRefreshLine } from "../ast/auto-refresh"
 import { resolveRowsFreshnessDetailed } from "../brain/freshness"
 
-export function getProjectId(projectPath: string): string {
-  const resolved = path.resolve(projectPath)
-  let canonical = resolved
-  try {
-    canonical = realpathSync.native(resolved)
-  } catch {
-    // Nonexistent paths retain deterministic lexical identity for validation.
-  }
-  const canonicalId = createHash("sha1").update(canonical).digest("hex").substring(0, 40)
-  if (canonical !== resolved) {
-    const legacyId = createHash("sha1").update(resolved).digest("hex").substring(0, 40)
-    const legacyDir = path.join(bbProjectsDir(), legacyId)
-    const canonicalDir = path.join(bbProjectsDir(), canonicalId)
-    if (existsSync(legacyDir) && !existsSync(canonicalDir)) {
-      mkdirSync(bbProjectsDir(), { recursive: true })
-      try { renameSync(legacyDir, canonicalDir) } catch {}
-    }
-  }
-  return canonicalId
-}
+// Re-exported from a leaf module: `src/mcp/server.ts` needs this, and importing
+// it from here created a cycle that broke `bb mcp` on the source entry only.
+// See src/util/project-id.ts.
+export { getProjectId } from "../util/project-id"
+import { getProjectId } from "../util/project-id"
 
 function requireDir(p: string): string {
   const abs = path.resolve(p)
@@ -51,20 +38,10 @@ function requireDir(p: string): string {
   return abs
 }
 
-// M22.V1: remaining-time estimate from a live progress sample. Honest rule:
-// no ETA is produced before there is at least one second of elapsed time and a
-// non-zero processed rate; otherwise it returns "…". elapsedSeconds is the
-// wall-clock ms elapsed since the run started (see parallel-indexer enrichment).
-function formatETA(s: { processedFiles: number; totalFiles: number; elapsedSeconds?: number }): string {
-  const elapsedS =
-    s.elapsedSeconds !== undefined && s.elapsedSeconds > 0 ? s.elapsedSeconds / 1000 : 0
-  if (elapsedS < 1 || s.processedFiles <= 0 || s.totalFiles <= 0) return "…"
-  const perFileS = elapsedS / s.processedFiles
-  const remaining = Math.max(0, (s.totalFiles - s.processedFiles) * perFileS)
-  if (remaining < 60) return `${Math.round(remaining)}s`
-  if (remaining < 3600) return `${Math.floor(remaining / 60)}m${Math.round(remaining % 60)}s`
-  return `${Math.floor(remaining / 3600)}h${Math.floor((remaining % 3600) / 60)}m`
-}
+// Remaining-time estimation moved to index-progress.ts (`estimateRemainingMs` +
+// `formatDuration`). The old local `formatETA` is gone: it took a stats shape the
+// progress callback no longer supplies, and keeping two ETA formatters invited
+// the two to disagree on screen.
 
 async function cmdIndex(
   dir: string | undefined,
@@ -239,21 +216,28 @@ async function cmdIndex(
   // M22.V1: render a live single-line progress update on stderr (never stdout,
   // so stdout stays clean for any consuming process). Clears the line on the
   // terminal without disturbing the final summary on stdout.
-  let lastProgressT = 0
+  // Live progress. Rendering lives in index-progress.ts so the terminal and
+  // log-file cases can be handled properly: a bare `\r` redraw is correct only
+  // on a real TTY, and produced an unreadable smear in pipes and CI logs.
+  const progress = new IndexProgressRenderer({
+    stream: process.stderr,
+    isTTY: Boolean(process.stderr.isTTY),
+    startedAt: t,
+    totalFiles: 0,
+  })
   indexOpts.onProgress = (s: any) => {
-      const now = Date.now()
-      if (now - lastProgressT < 80) return
-      lastProgressT = now
-      const total = s.totalFiles > 0 ? s.totalFiles : s.processedFiles
-      const pct =
-        s.totalFiles > 0 ? Math.floor((s.processedFiles / s.totalFiles) * 100) : 0
-      const fps = typeof s.filesPerSecond === "number" ? s.filesPerSecond.toFixed(1) : "?"
-      const file = s.currentFile ?? ""
-      const pw = process.stderr.isTTY ? `\r` : `\r[progress] `
-      process.stderr.write(
-        `${pw}${s.processedFiles}/${total} files (${pct}%) ${fps}/s ETA ${formatETA(s)} ${file ? `— ${file}` : ""}`,
-      )
-    }
+    progress.update({
+      processedFiles: Number(s.processedFiles ?? 0),
+      totalFiles: Number(s.totalFiles ?? 0),
+      skippedFiles: Number(s.skippedFiles ?? 0),
+      errorFiles: Number(s.errorFiles ?? 0),
+      currentFile: s.currentFile ?? "",
+      filesPerSecond: typeof s.filesPerSecond === "number" ? s.filesPerSecond : undefined,
+      symbols: typeof s.symbols === "number" ? s.symbols : undefined,
+      relationships: typeof s.relationships === "number" ? s.relationships : undefined,
+      embeddings: typeof s.embeddings === "number" ? s.embeddings : undefined,
+    })
+  }
   // M21.R3: cooperative cancellation — Ctrl+C stops the run gracefully instead
   // of killing the process mid-write. The abort signal makes the indexer stop
   // dispatching new batches and drain in-flight work; the live status file gets
@@ -287,18 +271,92 @@ async function cmdIndex(
   }
   process.removeAllListeners("SIGINT")
   process.removeAllListeners("SIGTERM")
-  if (process.stderr.isTTY) process.stderr.write("\r\x1b[K")
-  else process.stderr.write("\n")
+  progress.clear()
   const secs = ((Date.now() - t) / 1000).toFixed(1)
   const db = await BrainDatabase.getRawInstance(pid)
   const files = (db.prepare("SELECT COUNT(*) c FROM brain_file").get() as any).c
   const symbols = (db.prepare("SELECT COUNT(*) c FROM brain_symbol").get() as any).c
   const rels = (db.prepare("SELECT COUNT(*) c FROM brain_relationship").get() as any).c
   const emb = (db.prepare("SELECT COUNT(*) c FROM brain_semantic_embedding").get() as any).c
-  console.log(`✓ indexed ${files} files, ${symbols} symbols, ${rels} relationships, ${emb} embeddings in ${secs}s`)
+  // A run that indexed nothing new is a success, but "✓ indexed 0 files" reads
+  // like a failure to anyone who ran `bb index` expecting work to happen. Say
+  // what actually happened instead: the project is already current.
+  const parsedNothing = Number(stats.summary?.newlyParsed ?? 0) === 0 && !stats.cancelled
+  if (parsedNothing) {
+    const unchanged = Number(stats.summary?.unchanged ?? 0)
+    const skipped = Number(stats.summary?.skipped ?? 0)
+    console.log(
+      `✓ nothing to index — already up to date (${unchanged} unchanged, ${skipped} skipped, ${secs}s)`,
+    )
+  } else {
+    console.log(`✓ indexed ${files} files, ${symbols} symbols, ${rels} relationships, ${emb} embeddings in ${secs}s`)
+  }
   console.log(`  stats: ${JSON.stringify({ totalFiles: stats.totalFiles, processed: stats.processedFiles, errors: stats.errorFiles })}`)
+  // Embedding outcomes and the models present in the index.
+  //
+  // Embeddings are produced after parsing, in the background, so a provider
+  // outage can zero them out while every number above still reads clean. These
+  // counters were accumulated and printed nowhere, so "search returns nothing
+  // useful" had no visible cause. Likewise a MIXED-model index: when the
+  // provider dies partway, earlier chunks keep the API model and later ones get
+  // the local fallback, and `bb_ask` reads the index under a single label — so
+  // part of the index silently stops being searched.
+  const embOutcome = stats.summary?.embedOutcome
+  if (embOutcome && (embOutcome.failed > 0 || embOutcome.invalid > 0 || embOutcome.dropped > 0)) {
+    const parts: string[] = []
+    if (embOutcome.embedded > 0) parts.push(`${embOutcome.embedded} embedded`)
+    if (embOutcome.failed > 0) parts.push(`${embOutcome.failed} failed`)
+    if (embOutcome.invalid > 0)
+      parts.push(`${embOutcome.invalid} discarded as malformed (non-finite or empty)`)
+    if (embOutcome.dropped > 0) parts.push(`${embOutcome.dropped} dropped (queue cap)`)
+    console.log(`  embeddings incomplete: ${parts.join(", ")}`)
+    console.log(`    semantic search is degraded — run \`bb doctor\` to check the embedding provider`)
+  }
+  const embModels = stats.summary?.embedModels ?? []
+  if (embModels.length > 1) {
+    console.log(
+      `  ⚠ index holds ${embModels.length} embedding models — bb_ask searches only one, so the rest are ignored:`,
+    )
+    for (const m of embModels) {
+      console.log(`      ${m.model} (${m.dimension}d): ${m.count.toLocaleString()} vectors`)
+    }
+    console.log(`    fix: reindex with one provider — \`bb index --force\``)
+  } else if (embModels.length === 1) {
+    console.log(`  embeddings: ${embModels[0].model} (${embModels[0].dimension}d)`)
+  }
+  // Vector-integrity census. `vector_dimension` is written as `vec.length`, so a
+  // corrupt vector records a dimension that agrees with itself — these counts
+  // are the only place a bad row can show up. Reported only when non-zero: a
+  // healthy index should print nothing here.
+  const integ = stats.summary?.embeddingIntegrity
+  if (integ) {
+    if (integ.unusableEmbeddings > 0) {
+      console.log(
+        `  ⚠ ${integ.unusableEmbeddings} of ${integ.total.toLocaleString()} vectors are unusable ` +
+          `(${integ.dimensionMismatches} length mismatch, ${integ.malformedVectors} malformed)`,
+      )
+      console.log(
+        `    these are counted as coverage but unreachable by search — fix: \`bb index --force\``,
+      )
+    }
+    if (integ.truncated) {
+      console.log(
+        `    (integrity census scanned ${(integ.scanned ?? 0).toLocaleString()} of ${integ.total.toLocaleString()} vectors)`,
+      )
+    }
+  }
+  // Close the loop the way the product promises: say how long it took, and when
+  // that is long enough that the user should suspect a hang, tell them who to
+  // tell. Skipped entirely for a cancelled run — a cancelled index did not
+  // "finish", so it must not receive completion messaging.
+  progress.finish({
+    ok: !stats.cancelled,
+    totalFiles: Number(stats.totalFiles ?? 0),
+    errorCount: Number(stats.errorFiles ?? 0),
+    cancelled: Boolean(stats.cancelled),
+  })
   if (stats.cancelled) {
-    console.log("⏸ index cancelled — progress saved. Resume with: bb index --resume")
+    console.log(`⏸ index cancelled after ${secs}s — progress saved. Resume with: bb index --resume`)
   }
   if (stats.summary) {
     const s = stats.summary
@@ -316,7 +374,15 @@ async function cmdIndex(
     // assert "parsed with the worker pool (unknown)" — a claim the line had just
     // admitted it could not support. Say what is actually known instead.
     const parseMode = s.parseMode
-    if (parseMode === "in-process") {
+    // A run that parsed NOTHING did not use any parser, so claiming a parse mode
+    // is a claim about something that did not happen. `bb index` on an empty
+    // directory printed "parsed with the worker pool" — the fork probe had
+    // succeeded, so `parseMode` was set, but no file was ever handed to a
+    // worker. Same failure class as the phantom "unresolved relationships".
+    const parsedAnything = Number(s.newlyParsed ?? 0) > 0
+    if (!parsedAnything) {
+      console.log("  parsed nothing — no files needed parsing, so no parse mode was used")
+    } else if (parseMode === "in-process") {
       console.log("  parsed in-process — the worker pool was unavailable, so this run was serial and is correspondingly slower")
     } else if (parseMode === "worker-pool") {
       console.log("  parsed with the worker pool")
@@ -365,12 +431,21 @@ async function cmdIndex(
       process.exitCode = 1
     }
     if (unresolved === 0) {
-      console.log("  consistency: 0 unresolved relationships — every stored relationship is attached to a symbol")
+      console.log(
+        "  consistency: every internal relationship is attached to a symbol (external references are attached to an external identity, which is correct)",
+      )
     } else if (unresolved > 0) {
       // Present as rows, absent as edges: traversal reads these as missing, so
       // they UNDER-report, and the relationship count does not show it.
+      //
+      // This counts only relationships with no symbol AND no external identity
+      // on either end. External references are excluded because a null
+      // target_symbol_id is how an external edge is correctly represented —
+      // the previous wording counted those as failures and advised `bb index
+      // --post`, which cannot resolve them. On a healthy 7,220-file index that
+      // printed 28,139 phantom "unresolved relationships".
       console.log(
-        `  consistency: ${unresolved} relationship(s) are not attached to a symbol — they are counted above but read as edges by no traversal. Run: bb index --post`,
+        `  consistency: ${unresolved} internal relationship(s) are attached to neither a symbol nor an external reference — they are counted above but read as edges by no traversal. Run: bb index --post`,
       )
     } else {
       // The count is absent (a run persisted before this measurement existed).
@@ -413,6 +488,24 @@ async function cmdSearch(query: string, opts: { dir?: string; limit?: number; la
     console.error(`✗ unknown search mode "${opts.mode}" (known: symbols, content, symbol, file)`)
     process.exit(1)
   }
+
+  // An unknown --language used to return "no results" with exit 0, which reads
+  // as "this code has none of that language" when the truth is "that is not a
+  // language bb knows". A typo silently narrowing a search is worse than an
+  // error. Same shape as the --mode rejection above, and validated against the
+  // languages the engine actually registers rather than a hand-kept list — a
+  // second list would drift from SUPPORTED_LANGUAGES the way verify-rate-limit's
+  // label did.
+  if (opts.language !== undefined) {
+    const { ASTEngine } = await import("../ast/engine")
+    if (!ASTEngine.isSupportedLanguage(opts.language)) {
+      console.error(
+        `✗ unknown language "${opts.language}". Run \`bb index --help\` for supported languages, ` +
+          `or \`bb projects\` to see which are in this index.`,
+      )
+      process.exit(1)
+    }
+  }
   const mode = opts.mode ?? "symbols"
   if (mode !== "symbols") {
     const { createToolHandlers } = await import("../mcp/tool-handlers")
@@ -442,7 +535,23 @@ async function cmdSearch(query: string, opts: { dir?: string; limit?: number; la
     } else if (mode === "symbol") {
       for (const m of parsed.matches ?? []) {
         const stale = m.stale ? " ⚠stale" : ""
-        console.log(`  ${m.name} [${m.type}] (${m.language ?? ""}, ${m.fileId ?? m.file ?? ""}:${m.line ?? "?"})${stale}`)
+        // Field names come from the bb_search `symbol` mode payload, which is
+        // `symbolType`/`lineStart` — NOT `type`/`line`. The renderer read the
+        // wrong names, so every symbol-mode result printed
+        //   alpha0 [undefined] (, /abs/path/m.ts:?)
+        // i.e. it silently discarded the type, the language and the line number
+        // that the handler had already computed. Read the real names, and keep
+        // the old ones as a fallback so a different payload shape still renders.
+        const symType = m.symbolType ?? m.type
+        const line = m.lineStart ?? m.line
+        // `fileId` is an absolute path here (unlike the default mode, where it is
+        // a repo-relative one) — print the basename so the two modes agree.
+        const file = m.fileId ?? m.file ?? ""
+        // The symbol payload carries no language; the file row does. Prefer a
+        // language on the match, and do not print an empty pair when absent.
+        const lang = m.language ?? ""
+        const loc = lang ? `${lang}, ${path.posix.basename(String(file))}:${line ?? "?"}` : `${path.posix.basename(String(file))}:${line ?? "?"}`
+        console.log(`  ${m.name}${symType ? ` [${symType}]` : ""} (${loc})${stale}`)
       }
       const env = parsed.freshness ?? {}
       if (env.stale != null) console.log(`\nfreshness: ${env.fresh} fresh / ${env.stale} stale / ${env.missing} missing — ${env.remediation ?? ""}`)
@@ -517,9 +626,13 @@ async function cmdStats(dir: string | undefined) {
   const { composeStatus } = await import("../ast/index-status")
   const s = await composeStatus(pid)
   if (!s.hasIndex) {
-    console.log(`no index for ${abs}. Run: bb index "${abs}"`)
-    return
-  }
+        // Exit non-zero: "there is no index here" is a failure to answer the
+        // question asked, and `bb stats "$d" || fail` must not read this as success.
+        // Matches the `bb health` path (line ~691), which already does this.
+        console.error(`no index for ${abs}. Run: bb index "${abs}"`)
+        process.exitCode = 1
+        return
+      }
   let embeddings = 0
   try {
     const r = await BrainDatabase.getRawInstance(pid)
@@ -566,9 +679,13 @@ async function cmdStatus(dir: string | undefined) {
   const { composeStatus } = await import("../ast/index-status")
   const s = await composeStatus(pid)
   if (!s.hasIndex) {
-    console.log(`no index for ${abs}. Run: bb index "${abs}"`)
-    return
-  }
+        // Exit non-zero: "there is no index here" is a failure to answer the
+        // question asked, and `bb stats "$d" || fail` must not read this as success.
+        // Matches the `bb health` path (line ~691), which already does this.
+        console.error(`no index for ${abs}. Run: bb index "${abs}"`)
+        process.exitCode = 1
+        return
+      }
   const ms = (v?: number) => (typeof v === "number" ? `${v}ms` : "n/a")
   if (s.isRunning && s.live) {
     const l = s.live
@@ -664,6 +781,55 @@ export async function runCli(argv: string[]): Promise<void> {
   program.showSuggestionAfterError(true)
   program.showHelpAfterError("(run 'bb --help' for a list of commands)")
 
+  // `bb help <unknown>` used to print the TOP-LEVEL usage and exit 0 — the same
+  // output as `bb --help`, with nothing saying the command was not found. A user
+  // who mistypes a command is told nothing, and a script checking the exit code
+  // sees success. Commander's built-in `help` accepts any string, so register our
+  // own: commander resolves a user-defined command ahead of the implicit one, and
+  // `program.commands` is read-only in this version so it cannot be swapped out.
+  program
+    .command("help")
+    .description("display help for a command, or list all commands")
+    // VARIADIC, so `bb help setup show` reaches the subcommand. With a single
+    // `[command]` argument commander stopped at "setup" and treated "show" as a
+    // stray extra, so the descent below never ran.
+    .argument("[command...]", "command to describe; include a subcommand for `bb help <cmd> <sub>` (omit for the command list)")
+    .action((commandArg: string[] | undefined) => {
+      const parts = (Array.isArray(commandArg) ? commandArg : [commandArg]).filter(Boolean)
+      const commandName = parts[0]
+      if (!commandName) {
+        program.outputHelp()
+        return
+      }
+      const target = program.commands.find((c) => c.name() === commandName)
+      if (!target) {
+        const known = program.commands.map((c) => c.name()).sort()
+        const near = known.filter((n) => n.startsWith(commandName.slice(0, 2)))
+        console.error(`bb help: unknown command "${commandName}" — no such command.`)
+        if (near.length) console.error(`did you mean: ${near.join(", ")}?`)
+        console.error(`known commands: ${known.join(", ")}`)
+        process.exitCode = 1
+        return
+      }
+      // `bb help setup show` — the man page documents this form, and `setup show`
+      // IS a real subcommand. Without descending, help printed the PARENT's usage
+      // ("Usage: bb setup [options] [command]"), which looks like the subcommand
+      // does not exist. Follow the space-separated path.
+      let cmd: Command = target
+      for (const part of parts.slice(1)) {
+        const next: Command | undefined = cmd.commands.find((c) => c.name() === part)
+        if (!next) {
+          const subs = cmd.commands.map((c) => c.name()).sort()
+          console.error(`bb help: unknown subcommand "${part}" of "${cmd.name()}" — no such subcommand.`)
+          if (subs.length) console.error(`its subcommands: ${subs.join(", ")}`)
+          process.exitCode = 1
+          return
+        }
+        cmd = next
+      }
+      cmd.outputHelp()
+    })
+
   program
     .command("tool")
     .description("run one of the public tools with JSON arguments")
@@ -689,9 +855,18 @@ Examples:
   $ bb index                 # index the current directory
   $ bb index ../my-project   # index another directory
   $ bb index --changed       # reindex only changed files
+  $ bb index --resume        # continue an interrupted run from its checkpoint
   $ bb index --file src/a.ts # reindex a single file
+  $ bb index --post          # re-run derived phases only (no re-parse)
   $ bb index --force         # wipe and rebuild in place
   $ bb index import --db <path>  # adopt an existing DB for a moved project
+
+Interrupted a run? Re-run with --resume; it re-parses only what is missing or
+changed. Nothing to do? --changed costs seconds where a full run costs minutes.
+Indexing far slower than expected? Run \`bb status\` for per-phase timings and
+\`bb doctor\` to check the worker pool.
+
+Full reference: man bb, or docs/indexing/ in the repository.
 `)
     .action(async (dir: string | undefined, opts: any) => {
       await cmdIndex(dir, opts)
@@ -738,6 +913,134 @@ Examples:
       if (!report.healthy) process.exitCode = 1
     })
 
+  /**
+ * Report the upgrade path. bb installs via `npm install -g backbencher-brain`,
+ * so npm owns the files and this command deliberately does NOT replace them —
+ * a self-updater would fight the package manager and break on read-only or
+ * root-owned global prefixes.
+ *
+ * It answers the question a user actually has ("is my bb stale, and how do I
+ * update it?") and is honest when it cannot: no network is a distinct, named
+ * outcome, not a silent "you are up to date".
+ */
+async function cmdUpgrade(opts: { check?: boolean; to?: string }) {
+  const { BACKBENCHER_BRAIN_VERSION: current, PKG_NAME } = await import("../version")
+  const range = opts.to ?? "latest"
+  const spec = `${PKG_NAME}@${range}`
+  console.log(`bb ${current}`)
+
+  // 20s bound: an upgrade check that hangs is worse than one that gives up.
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), 20_000)
+  let latest: string | null = null
+  let registryError: string | null = null
+  try {
+    // The URL must carry the RANGE, not a hardcoded `/latest`. It did, which made
+    // `--to <range>` silently meaningless: `bb upgrade --to 4.17.21` still asked
+    // the registry for `backbencher-brain@latest` and reported 404. A flag that
+    // is accepted and ignored is worse than one that is rejected.
+    //
+    // Endpoint form matters, and was measured rather than assumed:
+    //   /<name>/latest        -> 200, the `latest` dist-tag   (a dist-tag ONLY)
+    //   /<name>/<version>      -> 404 — npm does NOT serve versions at this path
+    //   /<name>                -> 200, full packument with a `versions` map
+    //
+    // So a concrete version must come from the PACKUMENT, and only a dist-tag can
+    // use the short form. `/<name>/<version>` returning 404 was verified against
+    // two real packages before choosing this.
+    const encoded = encodeURIComponent(range)
+    const isDistTag = /^[a-z][a-z0-9._-]*$/i.test(range) && !/^\d/.test(range)
+    const url = isDistTag
+      ? `https://registry.npmjs.org/${PKG_NAME}/${encoded}`
+      : `https://registry.npmjs.org/${PKG_NAME}`
+    const res = await fetch(url, {
+      signal: controller.signal,
+      headers: { accept: "application/json" },
+    })
+    if (!res.ok) {
+      registryError = `registry returned HTTP ${res.status}`
+    } else {
+      const body = (await res.json()) as {
+        version?: string
+        versions?: Record<string, unknown>
+        "dist-tags"?: Record<string, string>
+      }
+      if (isDistTag) {
+        // The short form returns the resolved version directly.
+        latest = typeof body.version === "string" ? body.version : null
+      } else {
+        // The packument: resolve a concrete version, or the highest satisfying a
+        // range. Deliberately simple — `bb upgrade --to` is for "compare against
+        // this release line", not a full semver solver. If the range is not a
+        // plain version, fall back to the `latest` dist-tag rather than
+        // pretending to have solved a range it did not.
+        const exact = body.versions?.[range]
+        if (exact) {
+          latest = range
+        } else {
+          const tag = body["dist-tags"]?.latest
+          latest = typeof tag === "string" ? tag : null
+        }
+      }
+      if (!latest) registryError = "registry response had no version field"
+    }
+  } catch (e: any) {
+    registryError = e?.name === "AbortError" ? "registry request timed out after 20s" : (e?.message ?? String(e))
+  } finally {
+    clearTimeout(timer)
+  }
+
+  if (!latest) {
+    // Say the check did NOT succeed. Reporting "up to date" here would be a
+    // claim we cannot support — the whole point of this command is honesty
+    // about state, and an unreachable registry means the state is unknown.
+    console.log(`could not check for updates: ${registryError}`)
+    console.log(`compare manually:  npm view ${spec} version`)
+    console.log(`update with:      npm install -g ${spec}`)
+    process.exitCode = 1
+    return
+  }
+
+  if (latest === current) {
+    console.log(`✓ up to date (latest published is ${latest})`)
+    return
+  }
+
+  console.log(`update available: ${current} -> ${latest}`)
+  console.log(`update with:      npm install -g ${spec}`)
+  if (!opts.check) {
+    console.log(`\nthen re-index so the new version's analysis applies:`)
+    console.log(`  bb index --changed`)
+  }
+}
+
+program
+    .command("upgrade")
+    .description("check for a newer bb and report exactly how to install it")
+    .option("--check", "only report whether a newer version exists; change nothing")
+    // Deliberately NOT `--version`: commander gives the program-level
+    // `-v, --version` precedence, so `bb upgrade --version 1.2.3` printed the
+    // installed version and silently ignored the argument. Measured. `--to` reads
+    // as "compare up to this" and cannot collide.
+    .option("--to <dist-tag-or-range>", "npm dist-tag or version range to compare against (default: latest)")
+    .addHelpText(
+      "after",
+      `
+bb is installed with \`npm install -g backbencher-brain\`, so npm owns the
+install and bb does not replace its own files. This command reports the installed
+version, the newest published version, and the command to run — it never mutates
+an install behind npm's back.
+
+  $ bb upgrade --check    # is there a newer version? (no network writes)
+  $ bb upgrade            # same report, plus the exact command to run
+
+After upgrading, re-index:  $ bb index --changed
+`,
+    )
+    .action(async (opts: any) => {
+      await cmdUpgrade(opts)
+    })
+
   program
     .command("stats")
     .description("query index counts anytime: files/symbols/relationships/embeddings (default: cwd)")
@@ -773,7 +1076,13 @@ Examples:
   program
     .command("search")
     .description("search the index (modes: symbols [default], content, symbol, file — parity with the MCP bb_search tool)")
-    .argument("<query>", "query text; in file mode, the file path to print")
+    // OPTIONAL, not required: `--symbol-name` and `--file-path` are documented as
+    // OVERRIDING "the positional query", and the help's own example
+    // (`bb search --mode symbol --symbol-name handleRequest`) passes no
+    // positional at all. With a required argument that example exited 1 with
+    // "missing required argument 'query'". The argument is therefore optional
+    // and the action below rejects a search that supplies neither.
+    .argument("[query]", "query text; in file mode, the file path to print (omit when --symbol-name or --file-path is given)")
     .option("--mode <mode>", "retrieval mode: symbols (default), content, symbol, or file")
     .option("--file-path <path>", "file target for --mode file (overrides the positional query)")
     .option("--symbol-name <name>", "exact symbol name for --mode symbol (overrides the positional query)")
@@ -785,10 +1094,21 @@ Examples:
     // --no-auto-refresh answers from existing data with the staleness footer.
     .option("--no-auto-refresh", "answer from the existing index with the staleness footer instead of auto-refreshing stale files within budget")
     .addHelpText("after", `\nExamples:\n  $ bb search handleRequest                 # symbol listing (default)\n  $ bb search --mode content "findUser("    # content matches with snippets\n  $ bb search --mode symbol --symbol-name handleRequest\n  $ bb search --mode file src/app.ts        # print an indexed file's content\n  $ bb search --no-auto-refresh query      # never auto-refresh on read\n`)
-    .action(async (query: string, opts: any) => {
+    .action(async (query: string | undefined, opts: any) => {
       // Commander negation: `--no-auto-refresh` sets opts.autoRefresh = false
       // (default true); translate to the option cmdSearch reads.
-      await cmdSearch(query, { ...opts, noAutoRefresh: opts.autoRefresh === false, limit: parseInt(opts.limit, 10) })
+      // A search with neither a query nor an override has nothing to look for.
+      // Say that rather than issuing a query for `undefined` and reporting "no
+      // results" — which reads as "the symbol is absent" when in fact nothing
+      // was asked.
+      if (!query && !opts.symbolName && !opts.filePath) {
+        console.error(
+          "bb search: nothing to search for. Pass a query, or --symbol-name <name>, or --file-path <path>.",
+        )
+        process.exitCode = 1
+        return
+      }
+      await cmdSearch(query as string, { ...opts, noAutoRefresh: opts.autoRefresh === false, limit: parseInt(opts.limit, 10) })
     })
 
   program
@@ -854,7 +1174,43 @@ Examples:
 // M23.P3: allow running the CLI module directly (bun src/cli/index.ts <args>).
 // Without this entry the module only defines runCli, so direct invocation is a
 // silent no-op — a real trap for scripts and verifiers.
-if (import.meta.main) {
+//
+// `import.meta.main` alone is NOT sufficient. It is true under `node file.mjs` and
+// under bun, but UNDEFINED under `node --import tsx src/cli/index.ts` (measured:
+// tsx loads the entry as a child, so Node does not mark it as main). That made
+// `node --import tsx src/cli/index.ts mcp` produce no output at all and exit 13,
+// while `node bin/bb mcp` worked — the two entries silently diverged, and only
+// agent 6's cli-surface suite compared them.
+//
+// So: use `import.meta.main` when it is defined, and otherwise fall back to
+// comparing the resolved entry path against this module's own path. The second
+// test is what covers loaders that do not set `main`.
+const isDirectRun = (() => {
+  const m = import.meta as unknown as { main?: boolean; url?: string }
+  if (typeof m.main === "boolean") return m.main
+  try {
+    const entry = process.argv[1] ? path.resolve(process.argv[1]) : null
+    if (!entry) return false
+    const self = fileURLToPath(m.url ?? import.meta.url)
+    // BOTH sides go through realpath. On macOS the entry arrives as `/tmp/...`
+    // while `import.meta.url` resolves to `/private/tmp/...`, so a plain string
+    // compare says "not the entry" and the CLI silently does nothing. Measured,
+    // not assumed — the first version of this check failed for exactly that
+    // reason and reproduced the bug it was meant to fix.
+    const real = (p: string) => {
+      try {
+        return realpathSync.native(p)
+      } catch {
+        return p
+      }
+    }
+    return real(entry) === real(self)
+  } catch {
+    return false
+  }
+})()
+
+if (isDirectRun) {
   try {
     await runCli(process.argv.slice(2))
   } catch (error) {

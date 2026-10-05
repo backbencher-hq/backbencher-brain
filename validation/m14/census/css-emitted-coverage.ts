@@ -148,11 +148,39 @@ function unquote(t: string): string {
 
 const isDashed = (t: string): boolean => t.trim().startsWith("--")
 
-/** The at-keyword a scoped `at_rule` carries, read from the `at_keyword` child. */
+/**
+ * The at-rule's own keyword.
+ *
+ * Two node shapes carry one, and reading only `at_keyword` misses the second:
+ *
+ *   at_rule / layer_statement   a NAMED `at_keyword` child holds "@layer"
+ *   media_statement             NO named keyword child exists — measured on
+ *   supports_statement          `@media (min-width:768px){…}` the children are
+ *                               `feature_query`, `block`, because the `@media`
+ *                               token is ANONYMOUS. An `at_keyword`-only reader
+ *                               returns "" and every media/supports scope name it
+ *                               builds is `" " + prelude` — e.g.
+ *                               `" (min-width:768px)"` — which names no scope at all.
+ *
+ * Discovered while measuring PASS 13's shortfall, where the same mistake in a
+ * SEPARATE probe reported NAME-MISMATCH on 4,757 of 4,757 occurrences. Here the
+ * consequence was confined to the `distinct` row's KEY, because the ATTRIBUTABLE and
+ * NAMED rows key on the SELECTOR name and never ask for a scope name — so the row's
+ * COUNT was unaffected (measured: 14,007 before and after this change) while the key
+ * was wrong. A wrong key that happens not to move a count is still a wrong key.
+ *
+ * The anonymous token is taken from the first child INCLUDING unnamed ones and is
+ * accepted only when it begins with `@` — a character test, no pattern.
+ */
 function atKeywordOf(n: any): string {
   for (let i = 0; i < n.namedChildCount; i++) {
     const c = n.namedChild(i)
     if (c && c.type === "at_keyword") return c.text.trim().toLowerCase()
+  }
+  const first = n.child(0)
+  if (first) {
+    const t = first.text.trim().toLowerCase()
+    if (t.length > 0 && t.charAt(0) === "@") return t
   }
   return ""
 }
@@ -1100,6 +1128,7 @@ dump("RESIDUAL: `var()` shapes that yield no edge at all", resid.varLeafResidual
 dump("RESIDUAL: per-file shortfall, grammar `--x` leaves minus published isVariableRef", resid.varPerFileShortfall)
 dump("RESIDUAL: import_statement shapes the analyzer cannot reach", resid.importResidual)
 dump("RESIDUAL: same keyframes name under more than one keyword (NOT an override by design)", resid.keyframeResidual)
+dump("RESIDUAL: rule_set in a NAMED scope whose selector name was never published", resid.containsResidual)
 
 say()
 say("published edges per type, from production parseFile:")

@@ -116,6 +116,7 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
       genericParamNames,
       declaredSubtypes,
     })
+    this.publishModuleSymbol(rootNode, filePath, symbols)
     this.collectContainment(symbols, relationships)
     this.collectInheritance(symbols, relationships, fileTypes)
     this.collectContractRefinement(rootNode, symbols, relationships)
@@ -991,6 +992,34 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
     return false
   }
 
+  /** True when this `variant_discriminator_declaration` holds an author-written
+   *  discriminator rather than a branch list the parser absorbed.
+   *
+   *  A genuine discriminator is written adjacent to `case` — `case kind: Kind` —
+   *  so its name node shares a source row with the `case` token. The bare form
+   *  has no name to write, recovery attaches the following `of A, B:` line to the
+   *  slot, and that line is on a later row by construction.
+   *
+   *  The `case` token is looked up among the owning `variant_declaration`'s
+   *  children rather than through a field name, because the grammar exposes it as
+   *  an anonymous `case` token. A missing token is answered pessimistically
+   *  (NOT adjacent), so an unexpected tree drops the field instead of publishing a
+   *  fabricated one — the asymmetry is deliberate: a lost field is recoverable,
+   *  a fabricated edge poisons `bb_graph`, `bb_impact` and `bb_migrate`. */
+  private discriminatorIsAdjacentToCase(node: Node): boolean {
+    const owner = node.parent
+    if (!owner || owner.type !== "variant_declaration") return false
+    let caseTok: Node | null = null
+    for (let i = 0; i < owner.childCount; i++) {
+      const c = owner.child(i)
+      if (c && c.type === "case") { caseTok = c; break }
+    }
+    if (!caseTok) return false
+    // Compare against the SLOT's own first row, not the name node's: the slot is
+    // what recovery re-parents, and the name node is its first declaration.
+    return caseTok.startPosition.row === node.startPosition.row
+  }
+
   private buildFieldSymbols(
     node: Node,
     owner: ASTEngine.UniversalSymbol,
@@ -1022,6 +1051,44 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
     // Inside an OBJECT there is no unnamed element, so the ancestor test is what
     // separates `tuple[int, string]` from `case isCircle`.
     if (!typeNode && this.hasAncestorOfType(node, "tuple_type")) return out
+    // ── the bare-`case` fabrication guard ────────────────────────────────────
+    // Nim writes a discriminator as `case <name>`, adjacent. It ALSO permits the
+    // bare form, in which there is no name to write and the following line is the
+    // branch list:
+    //
+    //     type Node = ref object
+    //       case
+    //       of AddOpr, SubOpr:
+    //         a, b: Node
+    //
+    // tree-sitter-nim gives that bare form no slot to put a name in, so error
+    // recovery attaches the NEXT LINE to `variant_discriminator_declaration`. The
+    // slot then holds a `symbol_declaration_list` whose first entry is a
+    // CONSTRUCTOR, and the loop below would publish it as a `property` of the
+    // owning type plus a `contains` edge to it — a field the object does not have.
+    //
+    // The node SHAPE cannot tell the two apart, and this was measured rather than
+    // assumed (`variant-discriminator.ts`, 43 slots over 1,508 nimony files):
+    //
+    //   tcaseobjectrange.nim:15  `case kind: Kind`     symbol_declaration_list,
+    //                                                          decls=1, errInSlot=0
+    //   opt.nim:33-34            bare `case`/`of None:` symbol_declaration_list,
+    //                                                          decls=1, errInSlot=0
+    //
+    // Identical. ERROR position cannot either — the recovery ERROR is a CHILD of
+    // `variant_declaration` in msumtype.nim and a SIBLING under
+    // `field_declaration_list` in tsumtype.nim, so an ERROR test catches 14 of 19
+    // and misses 5. A reserved-word test catches 5 of 19 and misses 14, because
+    // `None`, `Some`, `AddOpr`, `float` and `T` are all perfectly legal
+    // identifiers and are not keywords.
+    //
+    // What DOES separate them is the ROW: a genuine discriminator is adjacent to
+    // `case`, and an absorbed line is necessarily on a later one. Measured as a
+    // perfect separator on the same 43 slots — TP 19, FN 0, FP 0, TN 24 — which
+    // is the only reason this guard is shippable.
+    if (node.type === "variant_discriminator_declaration" && !this.discriminatorIsAdjacentToCase(node)) {
+      return out
+    }
     const doc = docCommentByStartLine.get(node.startPosition.row + 1)
     for (let i = 0; i < list.namedChildCount; i++) {
       const decl = list.namedChild(i)
@@ -1345,11 +1412,16 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
       for (const seg of this.moduleSegments(module)) qualifiers.add(seg)
       relationships.push({
         source: "(global)",
-        target: module,
+        target: this.moduleNameOfPath(module),
         type: ASTEngine.RelationshipType.Imports,
         confidence: 1,
         line_number: moduleNode ? moduleNode.startPosition.row + 1 : n.startPosition.row + 1,
-        metadata: { relationshipType: "nim_import", isImport: true, fileLevel: true },
+        // The path AS WRITTEN is kept here and in `imports[].module`, which is what
+        // `brain_import` and the file-dependency engine read. Only the edge TARGET is
+        // normalised, and only so that it can equal the module symbol's name — the two
+        // spellings drifted apart, which is what left 8,404 of 13,364 `imports` edges
+        // with no candidate to bind to.
+        metadata: { relationshipType: "nim_import", isImport: true, fileLevel: true, nimModulePath: module },
       })
     }
   }
@@ -1379,11 +1451,11 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
       })
       relationships.push({
         source: "(global)",
-        target: text,
+        target: this.moduleNameOfPath(text),
         type: ASTEngine.RelationshipType.Imports,
         confidence: 1,
         line_number: n.startPosition.row + 1,
-        metadata: { relationshipType: "nim_include", isImport: true, fileLevel: true },
+        metadata: { relationshipType: "nim_include", isImport: true, fileLevel: true, nimModulePath: text },
       })
     }
   }
@@ -1630,7 +1702,7 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
         for (const seg of this.moduleSegments(path)) qualifiers.add(seg)
         relationships.push({
           source: "(global)",
-          target: path,
+          target: this.moduleNameOfPath(path),
           type: ASTEngine.RelationshipType.Imports,
           confidence: 1,
           line_number: site.startPosition.row + 1,
@@ -1638,6 +1710,9 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
             relationshipType: "nim_import",
             isImport: true,
             fileLevel: true,
+            // The written path, kept. See readImportFromStatement: only the TARGET is
+            // normalised so it can equal the module symbol's published name.
+            nimModulePath: path,
             ...(parsed.isPathList ? { nimModuleList: true } : {}),
             ...(alias ? { nimAlias: alias } : {}),
             ...(qualifier ? { nimQualifier: qualifier } : {}),
@@ -1804,6 +1879,108 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
       return { paths: [{ path: this.nodeText(node), site: node }], isPathList: false }
     }
     return null
+  }
+
+  /**
+   * The MODULE this file defines, as one `SymbolKind.Module` symbol.
+   *
+   * ## Why this is a symbol and not a scope name
+   *
+   * A Nim `.nim` file IS a module, it has a name, it is the unit `import`
+   * names, and it is the unit `export` publishes from. Every one of those is a
+   * fact about a declaration, and before this pass the graph had no node for it:
+   * every `imports` edge named a module that existed nowhere in the symbol set.
+   *
+   * MEASURED, 6,063 corpus files, production `parseFile` (`census.ts`, artifacts in
+   * `validation/m14/measurements/nim/`): `imports` resolved its target on **37.1%** of
+   * 13,364 edges, and the unresolved population is the module path as written —
+   * `std/assertions`(823) `std/syncio`(671) `std/strutils`(386) `std/os`(297)
+   * `std/tables`(240). 8,404 of 13,364 edges named a module the graph could not bind
+   * to. It was not a resolution failure: there was no candidate to fail to find.
+   *
+   * The store cannot rescue it either, and that is checked rather than assumed. Its
+   * insert-time target resolver matches `brain_symbol.name` (`parallel-indexer.ts:2239`)
+   * and its three post-pass strategies match a bare `name`, a `qualified_name`, or —
+   * for a DOT target — everything after the first `.` (`parallel-indexer.ts:3755-3774`).
+   * `std/assertions` is none of those, and the fourth strategy, `resolveImportTargets`,
+   * is scoped to the `<module>:<item>` form that javascript/typescript/python emit —
+   * nim writes a bare path, so it never reaches that planner.
+   *
+   * ## Why the NAME is the last path segment, and why that is the module
+   *
+   * Nim resolves `import std/assertions` to the module `assertions` in
+   * `lib/std/assertions.nim`; the `std/` prefix is a directory on the module search
+   * path, not part of the module's name. So the symbol is named after the file's
+   * basename and the edge target is normalised to the same rule, which is what makes
+   * the two strings equal. This is the same "publish the string you target" shape the
+   * graphql lane measured at a 75% reduction, applied to the construct nim actually has.
+   *
+   * ## What is deliberately NOT published
+   *
+   *   - `.nims`. A NimScript file is `include`d into another module; it is not a module
+   *     and nothing can `import` it. Publishing one would be a node the language cannot
+   *     name. `include` therefore keeps its existing verbatim path target, which is what
+   *     the corpus actually writes.
+   *   - A renamed module. `module Foo` inside `bar.nim` declares module `Foo`, and the
+   *     pinned grammar has NO node for it — `grammars/tree-sitter-nim/grammar.js`
+   *     mentions "module" twice and neither is a declaration, so there is nothing on the
+   *     tree to read. The symbol is therefore named after the FILE. This is a real
+   *     inaccuracy and it is bounded: the corpus measurement is in the doc, and a file
+   *     that renames its module gets a module symbol no `import` will ever name.
+   *   - An empty basename. A path that yields no name publishes nothing rather than an
+   *     empty-named symbol.
+   *
+   * The range is the whole `source_file` node, so the symbol covers what it contains.
+   * A file whose root is not a `source_file` falls back to line 1, never to a line 0 —
+   * a line-0 symbol reads as a missed line to every consumer that checks.
+   */
+  private publishModuleSymbol(rootNode: Node, filePath: string, symbols: ASTEngine.UniversalSymbol[]): void {
+    const name = this.moduleNameOfPath(filePath)
+    if (!name) return
+    const lower = filePath.toLowerCase()
+    // A NimScript file is a script, not a module. See the header.
+    if (lower.endsWith(".nims")) return
+    const src = rootNode.type === "source_file" ? rootNode : null
+    symbols.push({
+      name,
+      kind: ASTEngine.SymbolKind.Module,
+      visibility: "public",
+      range: src
+        ? this.nodeRange(src)
+        : { startLine: 1, startColumn: 0, endLine: 1, endColumn: 0, startIndex: 0, endIndex: 0 },
+      // The module name is the whole identity here, so `qualifiedName` carries it too:
+      // the store's second resolution strategy matches `qualified_name`, and a row that
+      // is correct under one spelling should not be unreachable because it took another.
+      qualifiedName: name,
+      metadata: { nimModule: true, nimModuleName: name },
+    })
+  }
+
+  /**
+   * The module name a file path denotes: its basename without the extension, which is
+   * Nim's own rule for the name a file has unless it renames the module inside.
+   *
+   * It is also the LAST SEGMENT of an import path, and both spellings go through here so
+   * the publisher and the emitter cannot drift apart — the whole defect this pass exists
+   * to fix is two pieces of code spelling one symbol differently.
+   */
+  private moduleNameOfPath(filePath: string): string {
+    const seg = String(filePath ?? "").split("/").pop() ?? ""
+    // A trailing `\` would come from a Windows-style path; a declared module name never
+    // contains one, and leaving it in would publish an unnameable node.
+    // Strip trailing backslashes without a regex. This lane is at ZERO regex by policy and
+    // by census; `/\\+$/` was reintroduced and the census gate caught it on the next run,
+    // which is the gate doing exactly its job.
+    let base = seg
+    while (base.length > 0 && base.charCodeAt(base.length - 1) === 92 /* \\ */) base = base.slice(0, -1)
+    const dot = base.lastIndexOf(".")
+    const stem = dot > 0 ? base.slice(0, dot) : base
+    // `std / syncio` — Nim's path syntax allows spaces around `/`, and the corpus writes
+    // it (823 of the unresolved imports are `std/X`, and `std / syncio` is among them).
+    // The last segment of the path is the module name either way.
+    const parts = stem.split("/")
+    const last = (parts[parts.length - 1] ?? "").trim()
+    return last
   }
 
   // ═══════════════════════════════════════════════════════════════════════

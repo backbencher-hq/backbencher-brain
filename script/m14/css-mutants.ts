@@ -464,5 +464,103 @@ export const CSS_MUTANTS: Mutant[] = [
       }),
     }),
   },
-
+  {
+    id: "css/media-scope-name-falls-back-to-the-first-query-term",
+    language: "css",
+    defectClass: "wrong-payload",
+    description:
+      "The pass-13 `contains` (at-rule scope) fix, reverted. `processMedia` builds the scope NAME from the at-rule's own prelude, so `@media A, B { }` publishes `@media A, B`; the pre-fix code handed `findChild` the FIRST query child and published `@media A`. That is not a cosmetic name: two lists differing only after the comma then share a name, and the identity merge folds two different conditions into one scope symbol together with their rules. The mutant restores the first-term name. Caught by css/media-comma-list-is-one-condition, whose two blocks share a first term and differ only after the comma, and by css/custom-media-in-every-query-shape, whose `@media (--a), (--b)` block the old code named `@media (--a)`. Neither fixture is reachable from a corpus number: `validation/m14/tmp/css-media-prelude-equivalence.ts` measures 102 comma lists against 0 `@custom-media` declarations in the admitted corpus, so a fixture is the only instrument that can see this.",
+    transform: (r: any) => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((x: any) => {
+        const n = typeof x?.name === "string" ? x.name : ""
+        if (!n.startsWith("@media ") || n.indexOf(",") < 0) return x
+        // Keep only the first comma-separated term, which is what the first query
+        // child holds.
+        let depth = 0
+        for (let i = "@media ".length; i < n.length; i++) {
+          const c = n.charAt(i)
+          if (c === "(" || c === "[") depth++
+          else if (c === ")" || c === "]") depth--
+          else if (c === "," && depth === 0) return { ...x, name: n.slice(0, i) }
+        }
+        return x
+      }),
+    }),
+  },
+  {
+    id: "css/custom-media-ref-read-from-the-first-query-term-only",
+    language: "css",
+    defectClass: "missing-relationship",
+    description:
+      "The second half of the pass-13 fix, which the name half alone would have left inconsistent. `customMediaRefsInList` unions the reference walk over the statement's DIRECT query children; the pre-fix code called `customMediaRefsIn` on the first query child alone, so for `@media (--a), (--b)` it found `--a` and could not see that `--b` sits in a SIBLING query node. With only the name mutant applied the scope would be named for both declarations while the graph recorded one dependency — the under-description moved from the name to the edges. Caught by css/custom-media-in-every-query-shape, which now asserts BOTH `references` edges from the one comma-list scope, and by nothing else in the lane.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter((x: any, i: number) => {
+        if ((x.metadata ?? {}).isCustomMediaRef !== true) return true
+        // Drop every custom-media reference except the first one sourced from each
+        // scope, which is what a single-term walk produces.
+        const seen = (r.relationships ?? []).slice(0, i).some(
+          (y: any) => (y.metadata ?? {}).isCustomMediaRef === true && y.source === x.source,
+        )
+        return !seen
+      }),
+    }),
+  },
+  {
+    id: "css/stylesheet-module-symbol-dropped",
+    language: "css",
+    defectClass: "missing-symbol",
+    description:
+      "The stylesheet-module symbol reverted, which is the defect the fix removed. An `imports` edge's SOURCE is the importing stylesheet, and without a symbol carrying that name the store's per-file lookup misses and records `source_external` for an edge whose source is the file the reader is already looking at. This is a MISSING-NODE defect rather than a missing-edge one, and that distinction is why it needs its own mutant: every relationship in the fixture is still present and still correct, so a mutant set that only watches edges passes it. MEASURED over the 600-file window (`validation/m14/census/css-incoming-split.ts`): `imports` same-file-resolved edges 58 of 58 -> 0 of 58, and the whole-corpus `imports` source resolution 251 of 251 -> 0 of 251 (`css-parsefile-census-1286.json`, row `imports` srcPublished). Caught by css/stylesheet-is-the-module-symbol, whose `expectSymbols` row requires the basename with kind `module`.",
+    transform: (r: any) => ({
+      ...r,
+      symbols: (r.symbols ?? []).filter((s: any) => (s.metadata as any)?.isStylesheet !== true),
+    }),
+  },
+  {
+    id: "css/stylesheet-module-symbol-named-by-the-fallback-literal",
+    language: "css",
+    defectClass: "placeholder-in-a-name-bearing-field",
+    description:
+      "The module symbol published under the FALLBACK name instead of the file's basename. `analyze` computes `importerName = lastPathSegment(filePath) || filePath || \"stylesheet\"`, and the third disjunct is a placeholder literal that exists so the `imports` edge always has a source string. Publishing the SYMBOL under that literal puts the placeholder into the symbol table, where every consumer reads it as a real name: `keepSymbol` does not reject it, the store indexes it, and a stylesheet whose path yields no basename would silently merge with every other such stylesheet under one node. This is the M60 R7 rule this analyzer already states about the `imports` source — the same defect, one field over — and it is cheap to reintroduce because the literal is three tokens away in the same expression. Caught by css/stylesheet-is-the-module-symbol, whose `forbidSymbols` row refuses a symbol named `stylesheet` while requiring the basename: a mutation to the fallback satisfies neither, so the fixture is red in both directions.",
+    transform: (r: any) => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) =>
+        (s.metadata as any)?.isStylesheet === true ? { ...s, name: "stylesheet" } : s,
+      ),
+    }),
+  },
+  {
+    id: "css/import-target-stays-the-raw-specifier",
+    language: "css",
+    defectClass: "wrong-endpoint",
+    description:
+      "The `imports` target reverted to the verbatim specifier — the defect the fix removed, and the reason one edge had its two ends spelled by two different rules. The source is `lastPathSegment(filePath)` (`layout.css`); the target was `styles/layout.css`. No stylesheet symbol in the store carries a path separator, so the store's `WHERE project_id = ? AND name = ?` lookup can never join them. MEASURED over the 600-file window (`validation/m14/census/css-import-specifier-names.ts`, 58 import edges): 11 edges named a file that exists under the basename with that basename unique in its own repo, and all 11 were unreachable. Re-measured after the fix with `css-incoming-split.ts` at the same window: `imports` byEdge `U4-absent-corpus` 56 -> 33 edges, and the store outcome row `crossFileUnique` 0 -> 6. Caught by css/import-specifier-names-its-target, whose `expectRelationships` require `layout.css`, `theme.css` and `other.scss` while six `forbidRelationships` rows refuse the multi-segment spellings — so a partial fix that recovers only slash-bearing specifiers with a `.css` extension is still red on `other.scss`.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((rel: any) => {
+        const md = rel.metadata as any
+        if (md?.isCssImport !== true || typeof md?.importSpecifier !== "string") return rel
+        return { ...rel, target: md.importSpecifier }
+      }),
+    }),
+  },
+  {
+    id: "css/import-target-reduces-a-url-specifier",
+    language: "css",
+    defectClass: "fabricated-relationship",
+    description:
+      "Every specifier reduced to its last segment, with no test for whether that segment names a stylesheet. This is the failure mode the extension test exists to prevent, and it is the dangerous direction of this fix because it makes MORE edges resolve: `https://fonts.googleapis.com/css?family=Lato:400,400i` becomes `Lato:400,400i`, `@fontsource-variable/figtree/index.css` becomes `index.css`, and each then binds to whatever unrelated same-named file its project happens to hold. An edge that resolves to the wrong stylesheet is worse than one that resolves to nothing, because nothing downstream can tell them apart — `bb_graph`, `bb_impact` and `bb_migrate` all read a resolved edge as a fact. MEASURED in the same 58-edge window: 10 URL edges, 1 package subpath. The two exclusions are also what stop the fix being a fabrication generator at scale: 24 bare package names, and `tailwindcss` in particular DOES collide with a real file in this corpus, so recovering it would resolve to the wrong thing. Caught by css/import-specifier-names-its-target, whose `forbidRelationships` rows refuse `Lato:400,400i`, `figtree/index.css` and `index.css` — an implementation that recovers everything satisfies all eight `expectRelationships` and is caught only by these six.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((rel: any) => {
+        const md = rel.metadata as any
+        if (md?.isCssImport !== true || typeof rel.target !== "string") return rel
+        const slash = (rel.target as string).lastIndexOf("/")
+        if (slash < 0) return rel
+        return { ...rel, target: (rel.target as string).slice(slash + 1) }
+      }),
+    }),
+  },
 ]

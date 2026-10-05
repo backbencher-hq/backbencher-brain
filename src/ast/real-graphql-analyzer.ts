@@ -110,6 +110,160 @@ interface DirectiveApplication {
 }
 
 /**
+ * The LAST `/`- or `\`-separated segment of a path, or the path itself.
+ *
+ * `lastPathSegment("a/b/schema.graphql")` -> `"schema.graphql"`. This is how a module is
+ * written inside an import and how the store spells a file, and it is the source this
+ * lane uses for a file-level edge. Copied from `real-css-analyzer.ts:305` rather than
+ * imported, because that one is a module-private function in another lane's file and §8
+ * makes another analyzer off-limits; the two must not drift, and if a shared helper is
+ * ever wanted this is the third copy to fold into it.
+ */
+function lastPathSegment(p: string): string {
+  let cut = -1
+  for (let i = 0; i < p.length; i++) {
+    const c = p.charAt(i)
+    if (c === "/" || c === "\\") cut = i
+  }
+  return cut >= 0 ? p.slice(cut + 1) : p
+}
+
+/** The `#import` forms this analyzer reads, as they appear in the corpus. */
+type HashImportForm = "bare" | "from_binding"
+
+interface HashImport {
+  /** The quoted module path, verbatim as written. */
+  target: string
+  form: HashImportForm
+  /**
+   * The names the directive binds, for the `from` form; `["*"]` for `import * from`.
+   * Empty for the bare form, which binds the document as a whole. Recorded because the
+   * binding NAMES are real GraphQL identifiers in the importing document's scope, and
+   * a reader asking "what did this file pull in" wants them.
+   */
+  bindings: string[]
+}
+
+const HASH_IMPORT_KEYWORD = "import"
+/** `"`, `'` and the backtick — the three quotes a module path is written with. */
+const isQuote = (code: number): boolean => code === 0x22 || code === 0x27 || code === 0x60
+/** Horizontal space and tab only: a `#import` directive is a comment, so it is one line. */
+const isInlineSpace = (code: number): boolean => code === 0x20 || code === 0x09
+const isWordByte = (code: number): boolean =>
+  (code >= 0x41 && code <= 0x5a) || (code >= 0x61 && code <= 0x7a) || (code >= 0x30 && code <= 0x39) || code === 0x5f
+
+/**
+ * A `#import "<path>"` file-inclusion directive, or null.
+ *
+ * ## Why `imports` is here and was not
+ *
+ * GraphQL's specification has NO import syntax, and the honest first measurement said so:
+ * `A:import_node: 0` across 882,672 nodes and 98 distinct node types on 1,905 files
+ * (script/m14/tmp/graphql/out/ontology-census.json, instrumentA). Ruling `imports` on
+ * that inventory would have been exactly the reasoning the gate's own comment records as
+ * json's wrong `exports` ruling — "a grammar cannot see a CONVENTION" — and the json lane
+ * corrected that by EMITTING the edge, not by ruling it.
+ *
+ * The convention is real and it is not hypothetical. `graphql-import-node` and
+ * `graphql-tools`' `import` preprocessor both read it, and the corpus uses it:
+ * **170 directives across 131 files**, of which 158 are well-formed and **144 of those
+ * 158 name a file that exists on disk in the same repository**
+ * (script/m14/tmp/graphql/out/imports-and-calls.json). The other 14 are module
+ * specifiers a bundler or a loader resolves instead — `shared`, `@b-schema`,
+ * `require:./a.graphql` — which are dependencies of a different kind and are not counted
+ * as file targets here.
+ *
+ * ## Why it is parseable with no regular expression
+ *
+ * The directive lives in a `comment` node, and the grammar DOES produce those
+ * (`A:comment_node: 4,510` nodes across 269 files), so this reads a named AST node's own
+ * text — the same class of operation as reading a `Name` node's text — rather than
+ * scanning a file. `script/m12/verify-regex-census.ts` compares the committed census of
+ * regex usages against the committed analyzer blobs, so a pattern added here would fail
+ * that gate on the next commit, and this file's own header promises none. Hence the
+ * explicit `charCodeAt` comparisons.
+ *
+ * ## The two shapes, and the negative case
+ *
+ *     #import "./fragments/bar-fragment.gql"                  -> bare
+ *     # import FooFields from "./fragments/bar-fragment.gql"   -> from_binding
+ *
+ * Anything else returns null, INCLUDING a comment whose first word is not `import`. The
+ * first version of the measuring probe had no negative case and reported
+ * `hashImportDirectives: 4,510` — every comment in the corpus, because "first word is not
+ * import" fell through to an "unrecognised" bucket that was itself counted as a hit. A
+ * classifier with no way to say "no" counts its own input.
+ */
+function parseHashImport(text: string): HashImport | null {
+  let i = 0
+  while (i < text.length && isInlineSpace(text.charCodeAt(i))) i++
+  if (text.charCodeAt(i) !== 0x23) return null // not a `#` comment
+  i++
+  while (i < text.length && isInlineSpace(text.charCodeAt(i))) i++
+  for (let k = 0; k < HASH_IMPORT_KEYWORD.length; k++) {
+    if (text.charCodeAt(i + k) !== HASH_IMPORT_KEYWORD.charCodeAt(k)) return null
+  }
+  i += HASH_IMPORT_KEYWORD.length
+  // `imported`, `imports` and `important` are ordinary words, not directives.
+  if (i < text.length && isWordByte(text.charCodeAt(i))) return null
+
+  const skipSpace = () => {
+    while (i < text.length && isInlineSpace(text.charCodeAt(i))) i++
+  }
+  const quoted = (): string | null => {
+    skipSpace()
+    const q = text.charCodeAt(i)
+    if (!isQuote(q)) return null
+    i++
+    const start = i
+    while (i < text.length && text.charCodeAt(i) !== q) i++
+    if (i >= text.length) return null // unterminated quote: not a directive
+    const value = text.slice(start, i)
+    i++
+    return value.length > 0 ? value : null
+  }
+  const word = (): string => {
+    skipSpace()
+    const s = i
+    // A comma terminates a binding name as well as whitespace: `# import First, Second
+    // from "x"` is 12 of the corpus's 170 directives, and a reader that stopped only at
+    // whitespace swallowed the comma into the name, got `["First,"]`, then read `Second`
+    // where it expected `from`, and returned null — so the one form it failed on was
+    // silently the form that could not be expressed at all.
+    while (i < text.length && !isInlineSpace(text.charCodeAt(i)) && !isQuote(text.charCodeAt(i)) && text.charCodeAt(i) !== 0x2c) i++
+    return text.slice(s, i)
+  }
+
+  const first = quoted()
+  if (first !== null) {
+    // `#import "x"` and `#import "x" as Name`. Anything else after the path is not a
+    // form this convention defines, so it is not read as one.
+    const after = word()
+    if (after.length === 0) return { target: first, form: "bare", bindings: [] }
+    return after === "as" ? { target: first, form: "bare", bindings: [word()] } : null
+  }
+
+  // `#import <bindings> from "<path>"`. The binding list may be `*`, one name, or a
+  // comma-separated list — `# import C1, C2 from "c.graphql"` is 12 of the corpus's 170
+  // directives, so stopping at the first name would drop a real seventh of them.
+  const bindings: string[] = []
+  for (;;) {
+    const w = word()
+    if (w.length === 0) return null
+    bindings.push(w)
+    if (text.charCodeAt(i) === 0x2c) {
+      i++ // ','
+      continue
+    }
+    break
+  }
+  if (word() !== "from") return null
+  const target = quoted()
+  if (target === null) return null
+  return { target, form: "from_binding", bindings }
+}
+
+/**
  * The `Directive` node each application came from, in a side table.
  *
  * The emitter needs the node to reach a directive argument's VALUE, because a
@@ -393,6 +547,8 @@ export class RealGraphqlAnalyzer implements ASTEngine.LanguageAnalyzer {
     // `extend type` form.
     const extensionSymbols: Array<{ index: number; name: string; kindKey: string; typeNode: string }> = []
     const rootOperationNames = new Set<string>()
+    /** Every `#import "<file>"` directive in this document, in source order. */
+    const hashImports: Array<HashImport & { line: number }> = []
 
     const stack: Array<{ node: Node; owner: Owner; sel: SelectionContext; inExtension: boolean }> = [
       { node: rootNode, owner: {}, sel: { path: [] }, inExtension: false },
@@ -685,7 +841,7 @@ export class RealGraphqlAnalyzer implements ASTEngine.LanguageAnalyzer {
             },
           })
           const fieldNameNode = this.firstChildOfType(node, "Name")
-          addRelationship(owner.name, ownerSymbol, ASTEngine.RelationshipType.Contains, this.lineOf(fieldNameNode ?? node), "contains", {
+          addRelationship(owner.name, fieldName, ASTEngine.RelationshipType.Contains, this.lineOf(fieldNameNode ?? node), "contains", {
             ...(inExtension ? { extension: true } : {}),
           })
           // The member list of `owner.name`, for the `overrides` post-pass. Recorded
@@ -757,7 +913,10 @@ export class RealGraphqlAnalyzer implements ASTEngine.LanguageAnalyzer {
               ...(this.directiveMetadata(directivesOf(node))),
             },
           })
-          addRelationship(owner.name, ownerSymbol, ASTEngine.RelationshipType.Contains, this.lineOf(this.firstChildOfType(node, "Name") ?? node), "contains", {
+          // Target the PUBLISHED name, not the qualified `ownerSymbol`. This arm
+          // publishes `name: fieldName` while the edge targeted `${owner.name}.${fieldName}`,
+          // so emitter and publisher disagreed on the symbol's identity.
+          addRelationship(owner.name, fieldName, ASTEngine.RelationshipType.Contains, this.lineOf(this.firstChildOfType(node, "Name") ?? node), "contains", {
             ...(inExtension ? { extension: true } : {}),
           })
           // `color: Color = RED` — the node states its own type, so the value's
@@ -971,6 +1130,20 @@ export class RealGraphqlAnalyzer implements ASTEngine.LanguageAnalyzer {
         continue
       }
 
+      // ---- `#import "<file>"` -----------------------------------------------
+      //
+      // The one construct GraphQL expresses OUTSIDE its grammar: a file-inclusion
+      // directive written as a comment, read by `graphql-import-node` and by
+      // `graphql-tools`. 170 across 131 files on the corpus, 144 of the 158 well-formed
+      // ones naming a file that exists on disk. A comment node carries no declaration,
+      // so it is collected here and the edges are emitted after the walk — the source is
+      // the FILE, and the emitter needs `filePath`, which the walk does not carry.
+      if (t === "comment") {
+        const parsed = parseHashImport(node.text)
+        if (parsed) hashImports.push({ ...parsed, line: node.startPosition.row + 1 })
+        continue // a comment has no named children in this grammar; nothing to descend
+      }
+
       // ---- default: descend through wrappers ---------------------------------
       pushChildren(node, owner, sel, inExtension)
     }
@@ -1016,6 +1189,36 @@ export class RealGraphqlAnalyzer implements ASTEngine.LanguageAnalyzer {
           supertype: h.iface,
           supertypeKind: h.ifaceKind ?? "undeclared_in_this_document",
           member,
+        })
+      }
+    }
+
+    // `imports` is emitted for the `#import "<file>"` convention, and AFTER the walk for
+    // two reasons that are both about honesty rather than convenience.
+    //
+    // The SOURCE is the importing file's own last path segment — `schema.graphql` — which
+    // is what an import is FROM and how the target is written. It is deliberately NOT the
+    // literal `"(file)"` this file's `exports` edges use: CSS moved off that literal for
+    // `imports` for exactly this reason (`real-css-analyzer.ts:2029-2038` — a magic source
+    // names no symbol in any document, so every edge was unjoinable), and a per-file
+    // analyzer can name the file it is reading without inventing anything.
+    //
+    // The TARGET is the module path verbatim. It is not a symbol in this document and
+    // cannot be: the path names ANOTHER file, and this analyzer sees one file. So these
+    // edges are `source_external` at the target end by construction, which is the same
+    // shape every other lane's cross-file import has and is why the measurement below is
+    // reported rather than assumed.
+    if (hashImports.length > 0) {
+      const importer = lastPathSegment(filePath) || filePath
+      for (const hi of hashImports) {
+        addRelationship(importer, hi.target, ASTEngine.RelationshipType.Imports, hi.line, "imports", {
+          isGraphqlImport: true,
+          importSource: importer,
+          importForm: hi.form,
+          // The bound names are real GraphQL identifiers in this document's scope; `[]`
+          // on a bare directive means "the document as a whole", which is not the same
+          // as "no names" and is distinguished by `importForm` rather than by omission.
+          ...(hi.bindings.length > 0 ? { importBindings: hi.bindings } : {}),
         })
       }
     }

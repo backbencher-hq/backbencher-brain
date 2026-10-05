@@ -35,8 +35,43 @@
 //      `addressLine0` is drift-gated against src/lsp/positions.ts by A2
 //   L5 pure: no fs, no clock, no db — every consumer and every mutant exercises
 //      the same code, and the verdict cannot differ by caller
+//   L6 the COLUMN NAME is owned here too. A surface that must re-read a stored
+//      row at a depth the engine did not quote (src/lsp/impact.ts) needs the
+//      raw column, and that is the one read that puts a position on the wire
+//      outside the engine. So the column is named in exactly ONE file in the
+//      repository and every such surface selects it through these two
+//      constants; the permanence lint in script/m62/verify-consumers.ts stays a
+//      blunt token lint over the display surfaces and cannot be weakened by a
+//      second reader appearing.
 
 import type { CallSiteAddress } from "../contracts"
+
+/** The store's own column name, declared ONCE (§ L6). Pair it with
+ *  {@link storedLineFromRow} in the same SELECT; never spell it literally in a
+ *  display surface. */
+export const STORED_LINE_COLUMN = "r.line_number" as const
+
+/** The alias {@link STORED_LINE_COLUMN} must be read under. Chosen so it is
+ *  not the store's own name: a surface that reads the RAW column directly
+ *  cannot accidentally resolve one of these by typo. */
+export const STORED_LINE_ALIAS = "bb_stored_call_line" as const
+
+/** The SELECT-list entry for the stored call-site line: `"r.line_number AS
+ *  bb_stored_call_line"`. Build the statement around it rather than naming the
+ *  column (§ L6). */
+export const STORED_LINE_SELECT = `${STORED_LINE_COLUMN} AS ${STORED_LINE_ALIAS}` as const
+
+/** Read the stored line out of a row fetched with {@link STORED_LINE_SELECT}.
+ *
+ *  Returns the value UNCHANGED — including `null` and `undefined`, which are
+ *  two different facts the owner classifies differently (`not-stored`), and
+ *  including the store-contract violations (`unusable`). This function never
+ *  substitutes, clamps or defaults: the whole point of the owner's laws is that
+ *  a value that is not a position never becomes one on the way to a surface. */
+export function storedLineFromRow(row: Record<string, unknown> | null | undefined): number | null | undefined {
+  if (row === null || row === undefined) return undefined
+  return row[STORED_LINE_ALIAS] as number | null | undefined
+}
 
 /** What a stored `brain_relationship.line_number` actually is. The first two
  *  are the store's declared states (M59); `unusable` is a store-contract
@@ -51,6 +86,13 @@ export const ADDRESS_NOTES = {
   notStored: "call site not stored (no line_number in the index)",
   unusable: "call site not stored (unusable line_number in the index)",
   substitute: "this is the calling symbol's declaration, not the call site",
+  /** L3's FOURTH reason, and it is not a store state: the store may well carry
+   *  the line — this surface could not read the ROW that carries it. The
+   *  distinct wording is load-bearing. A reader told "not stored" checks the
+   *  index; a reader told "could not be read" checks the walk that quoted the
+   *  evidence, and those are different investigations. Collapsing the two is
+   *  how a declared absence starts reading as a store fact (M62.A2, §15.3). */
+  unattributed: "call site not read (no relationship row at this depth could be attributed)",
 } as const
 
 /** Every address kind, in the declared order the doc generator lists them. */
@@ -129,4 +171,12 @@ export function addressLine0(a: CallSiteAddress): number | null {
  *  rendering surface is expected to narrow on (never on a raw line value). */
 export function isExactAddress(a: CallSiteAddress): boolean {
   return a.kind === "call-site"
+}
+
+/** The address a surface must publish when it could not attribute a stored row
+ *  at all. Never a substitute and never a bare file: the surface has no row to
+ *  read, so it has no position to show, and the declared note says which of the
+ *  two absences this is. */
+export function unattributedAddress(file: string | null | undefined): CallSiteAddress {
+  return { kind: "unknown", file: typeof file === "string" ? file : "", line: null, note: ADDRESS_NOTES.unattributed }
 }

@@ -2,18 +2,18 @@
   "schemaVersion": 1,
   "milestone": "M12",
   "purpose": "ast_driven_regex_census_across_wired_analyzers",
-  "generatedAt": "2026-10-04T21:08:13.926Z",
+  "generatedAt": "2026-10-05T18:23:31.751Z",
   "describes": "HEAD blobs (git show HEAD:src/ast/...)",
   "parser": "tree-sitter-typescript (project WASM pipeline)",
   "methodology": "parse analyzer source with tree-sitter; walk for regex literal nodes and RegExp constructors; record location, operation, receiver category, and preliminary classification",
-  "totalRegexUsages": 4,
+  "totalRegexUsages": 5,
   "analyzersScanned": 48,
   "byClassification": {
-    "needs_review": 2,
+    "needs_review": 3,
     "normalization": 2
   },
   "byReceiverCategory": {
-    "identifier": 2,
+    "identifier": 3,
     "node_text": 2
   },
   "perFile": [
@@ -61,6 +61,23 @@
           "source": "/^(.*?)\\s+(?:then|as)\\s+/",
           "operation": "test",
           "receiver": "text",
+          "receiverCategory": "identifier",
+          "classification": "needs_review",
+          "justification": ""
+        }
+      ]
+    },
+    {
+      "file": "real-ruby-analyzer.ts",
+      "count": 1,
+      "usages": [
+        {
+          "file": "real-ruby-analyzer.ts",
+          "line": 317,
+          "column": 65,
+          "source": "/\\\\/g",
+          "operation": "replace",
+          "receiver": "filePath",
           "receiverCategory": "identifier",
           "classification": "needs_review",
           "justification": ""
