@@ -14,7 +14,8 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
 import { execFileSync } from "node:child_process"
 import path from "node:path"
 import { readEvidenceAllowingLegacy, writeSealed } from "../lib/evidence.ts"
-import { projectLedger, type ProjectableLedger } from "../m61/ledger_projection.ts"
+import { projectLaneLedger } from "../m61/ledger_gate_wiring.ts"
+import type { ProjectableLedger } from "../m61/ledger_projection.ts"
 
 type Issue = {
   code: string
@@ -543,103 +544,43 @@ function main(): void {
   // any number of green runs.
   //
   // The record is the authority (IDE Honesty Contract §8.4). Every entry except
-  // G1 and X1 is re-derived from its own record; G1 is projected from THIS run's
+  // G1 is re-derived from its own record; G1 is projected from THIS run's
   // measured verdict (its record is written above), and X1 from the closure
   // gate's record (written by a DIFFERENT gate, so it is projected like any
-  // other). The projection is a fixpoint — it writes every derived field on
-  // every run, not only when the status differs — so a second run over the same
-  // records changes nothing and cannot be mistaken for a heal.
-  {
-    const readRecord = (file: string): Record<string, unknown> | null => {
-      const abs = path.join(ROOT, "validation/m24/results", file)
-      if (!existsSync(abs)) return null
-      // Read through the SAME trusted path the cross-check above uses: a
-      // projection that healed toward a TAMPERED record's status would be worse
-      // than no projection at all (the m55 lesson, recorded in its own source).
-      const read = readEvidenceAllowingLegacy<Record<string, unknown>>(abs)
-      return read.ok ? read.record : null
-    }
-    // G1 is exempt from the RECORD projection because its record belongs to this
-    // run, not a prior one; it is filled from this run's verdict below. It is
-    // NOT exempt from the drift check — that is the exemption that made
-    // `G1: verified` self-fulfilling.
-    const projected = projectLedger(ledger as unknown as ProjectableLedger, readRecord, { selfOwned: ["G1"] })
-    const healed = projected.healed
-    // The lane-status finding is EXPECTED on the first run over a hand-maintained
-    // ledger — the whole point is that the projection REPAIRS it. It is reported
-    // in `healed` (and in the record), not failed: failing here would make the
-    // fix unreachable, since the check that heals cannot also be the check that
-    // condemns its own repair. What IS failed below is the POST-projection
-    // verification, read back from disk. HOLLOW findings are different: a
-    // non-verified entry with no reason is never repairable by projection, so
-    // those fail.
-    const hollowFindings = projected.findings.filter((f) => f.includes("no recorded reason"))
-    for (const finding of hollowFindings) check("G1: every non-verified ledger entry carries the reason it is non-verified", false, finding)
-    for (const finding of projected.findings.filter((f) => f.startsWith("lane status:"))) {
-      healed.push(`${finding} — repaired by this projection`)
-    }
-    for (const entry of projected.ledger.issues ?? []) {
-      if (entry.code === "G1") continue
-      const rec = readRecord(String(entry.evidence?.evidenceFile ?? `${entry.code}.json`))
-      // A record that could not be trusted keeps its entry AND raises a finding
-      // above; never assume green for a record nobody could verify.
-      if (rec === null) check(`G1: entry ${entry.code}'s record is trusted`, false, `${String(entry.evidence?.evidenceFile)} could not be read through the trusted path`)
-    }
-    writeSealed(ledgerPath, projected.ledger as unknown as Record<string, unknown>)
-    const verifyRead = readEvidenceAllowingLegacy<ProjectableLedger>(ledgerPath)
-    const persistedLedger = verifyRead.ok ? verifyRead.record : undefined
-    check(
-      "G1: the ledger is projected from its records (no entry claims a status its record contradicts)",
-      persistedLedger !== undefined &&
-        (persistedLedger.issues ?? []).every((i) => {
-          if (i.code === "G1") return true
-          const rec = readRecord(String(i.evidence?.evidenceFile ?? `${i.code}.json`))
-          return rec === null || typeof rec.status !== "string" || i.status === rec.status
-        }),
-    )
-    check(
-      "G1: the lane status is mechanical (`closed` only when every entry is verified)",
-      persistedLedger?.status === ((persistedLedger?.issues ?? []).length > 0 && (persistedLedger?.issues ?? []).every((i) => i.status === "verified") ? "closed" : "open"),
-      `status=${String(persistedLedger?.status)}`,
-    )
-    if (healed.length > 0) console.log(`      ledger healed from records: ${healed.join(" | ")}`)
+  // other). The projection is a fixpoint - verified by running this gate twice
+  // and seeing no second heal - and every derived field is written on every run,
+  // so a heal cannot be mistaken for normal bookkeeping.
+  //
+  // The three steps below (project; state the reason in the record; project the
+  // gate's own entry LAST) are owned by script/m61/ledger_gate_wiring.ts, which
+  // the m25/m29/m42/m44/m45 gates also call. They were hand-copied here first;
+  // three copies of the rule that decides what a program claims about itself is
+  // two too many.
+  const readM24Record = (file: string): Record<string, unknown> | null => {
+    const abs = path.join(ROOT, "validation/m24/results", file)
+    if (!existsSync(abs)) return null
+    // Read through the SAME trusted path the cross-check above uses: a
+    // projection that healed toward a TAMPERED record's status would be worse
+    // than no projection at all (the m55 lesson, recorded in its own source).
+    const read = readEvidenceAllowingLegacy<Record<string, unknown>>(abs)
+    return read.ok ? read.record : null
   }
-
-  // G1's own entry is projected from THIS run's verdict and written last, so it
-  // can never read `verified` while the run that produced it is red.
-  {
-    const readNow = readEvidenceAllowingLegacy<Ledger>(ledgerPath)
-    const ledgerNow = (readNow.ok ? readNow.record : ledger) as unknown as ProjectableLedger
-    const g1Status = finalResult.status
-    const withG1 = {
-      ...ledgerNow,
-      issues: (ledgerNow.issues ?? []).map((i) =>
-        i.code === "G1"
-          ? {
-              ...i,
-              status: g1Status,
-              evidence: {
-                ...(i.evidence ?? {}),
-                status: g1Status,
-                currentCommit,
-                passed: finalResult.passed,
-                failed: finalResult.failed,
-                negativeCases: negatives,
-                evidenceFile: "G1.json",
-                verifierCommand: finalResult.verifierCommand,
-                // The reason travels with the status (§8.3) — read from THIS
-                // run's record rather than typed here, so the ledger cannot
-                // state a reason the record does not carry.
-                ...(typeof finalResult.blockedReason === "string" ? { blockedReason: finalResult.blockedReason } : {}),
-              },
-            }
-          : i,
-      ),
-    }
-    const laneStatus = (withG1.issues ?? []).length > 0 && (withG1.issues ?? []).every((i) => i.status === "verified") ? "closed" : "open"
-    writeSealed(ledgerPath, { ...withG1, status: laneStatus } as unknown as Record<string, unknown>)
-    console.log(`      ledger G1 entry projected from this run: ${g1Status} (lane ${laneStatus})`)
-  }
+  projectLaneLedger({
+    ledgerPath,
+    resultsDir: path.join(ROOT, "validation/m24/results"),
+    readRecord: readM24Record,
+    readLedgerBack: () => {
+      const read = readEvidenceAllowingLegacy<ProjectableLedger>(ledgerPath)
+      return read.ok ? read.record : undefined
+    },
+    ledger: ledger as unknown as ProjectableLedger,
+    g1Status: finalResult.status,
+    g1Record: finalResult as unknown as Record<string, unknown>,
+    writeLedger: (l) => writeSealed(ledgerPath, l as Record<string, unknown>),
+    onFinding: (detail) => check("G1: the projected ledger agrees with its records", false, detail),
+    onPass: (detail) => check(detail, true),
+    onHealed: (message) => console.log(`      ${message}`),
+  })
 
   console.log(`G1: ${finalResult.status.toUpperCase()} (${passed}/${checks} passed, ${negatives} negative)`)
   process.exit(finalFailed2 === 0 ? 0 : 1)
