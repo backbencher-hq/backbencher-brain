@@ -450,7 +450,19 @@ export function deriveJsonEdges(root: any, scriptName: string, opts?: { manifest
       if (parentName) edges.push({ label: "contains", from: parentPath, target: here })
       pathToName.set(here, key)
       // OpenAPI path entry: a `/`-prefixed key whose object declares an HTTP method.
-      if (key.length > 1 && key.startsWith("/") && isObject(value)) {
+      //
+      // The guard used to read `key.length > 1`, which excluded the ROOT path `/` — and the
+      // root path is a legal OpenAPI path key, so that condition declined a valid edge. The
+      // OpenAPI 3.0 Paths Object requires each path name to BEGIN with a forward slash, and
+      // `/` does; `gql-graphql-mesh/packages/loaders/openapi/tests/fixtures/blockfrost.json`
+      // declares `paths["/"]` with a `get` returning a 200 describing the service root, so the
+      // whole-population differential read the edge as 1 UNEXPLAINED `uses` against an
+      // analyzer that was right. Found by that disagreement, not by a fixture.
+      //
+      // The condition is now exactly the rule this comment states — non-empty, starts with `/`,
+      // value is an object, and the object declares an HTTP method — with no length floor,
+      // because nothing in the document shape imposes one.
+      if (key.length > 0 && key.startsWith("/") && isObject(value)) {
         const methods = (value.namedChildren ?? []).filter((c: any) => c.type === "pair").map((c: any) => keyText(c))
         if (methods.some((m: string | null) => !!m && HTTP_METHOD_KEYS.has(m))) {
           endpoints.push({ from: parentPath, target: here })
