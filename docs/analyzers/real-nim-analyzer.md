@@ -1948,6 +1948,7 @@ quoted from an earlier round.
 | `npx tsx script/m14/ontology-coverage-gate.ts nim` | **1** |
 | `BB_NIM_WORKERS=1 npx tsx validation/m14/fixtures/nim/census.ts <out>` | **0** | **session 18, at `deeab0756e0c4c1f`** (the module pass + the `std/` marker): 6,063 files, 6,063 parsed, **0 empty names, 0 empty kinds, 0 throws, 0 off-ontology edge types, 8 literal `unknown` endpoints**, **116,127 symbols**, of which **6,012 `module`** — the population the pass added, and it is 6,012 against 6,063 files because 51 corpus files are `.nims` and are deliberately not published. `imports` **92.0%** intra-file (was 37.1%); **all nine other types byte-identical to session 10**, which is the check that the pass touched one column and no finding (`s18-1w-census.txt`) |
 | `npx tsx validation/m14/fixtures/nim/import-resolution-probe.mts <out>` | **0** | **session 18, new instrument, at `deeab0756e0c4c1f`**: 6,063 files, 1 worker, 0 empty names, **0 empty-KIND symbols** (the guard that detects a degraded walk — `parseFile` does NOT throw on a WASM heap loss, it logs `[BB-PARSE-ERR]` and returns fewer edges, which is how an early version of this probe read 13,363 edges against the census's 13,365 without knowing why). `nim_import` 12,907 at 91.8% intra / 96.3% corpus-wide, `nim_include` 458 at 96.9% / 98.0%; **normalisation changed 364 targets and reverting binds 0**; `meta.nimStdlibModule: true` on **5,389** edges, **66** of the 485 declared nowhere in the corpus (`s18-import-probe.txt`) |
+| `BB_NIM_RULED_WORKERS=1 npx tsx validation/m14/fixtures/nim/ruled-gate.ts` | **0** | **session 18: the arbiter's own verdict loop on a patched COPY, and the runner itself needed three fixes before it could run at all.** The verdict is `corpus: 6063 admitted files`, `walk: 6063/6063 files (100.0%)  newly walked 6063, resumed 0`, and **`emitted 10/10  ruled-sound 0  FALSIFIED 0  ruled-without-justification 0`** at analyzer `deeab0756e0c4c1f` unchanged across the child's walk (`s18-ruled-gate.txt`). Three runner defects, all found by RUNNING it and all of the same shape — a proof runner demanding a state the shared gate has moved past: (1) the fan-out patch targeted `Array.from({ length: 8 }, () => worker())`, a hand-rolled pool the gate no longer has, so it exited 2 with "worker patch did not apply" on a correctly-wired gate — it now matches `concurrency: 8,` and DETECTS rather than demands; (2) the copy lives in /tmp and the gate's new `await import("./resumable-walk")` did not resolve, `ERR_MODULE_NOT_FOUND` before the corpus was admitted, so nothing was measured; (3) same for the static `from "./differential"`, which the lane-table pattern deliberately cannot match because it requires a `-ruled` suffix |
 | `BB_NIM_BEFORE=<ref> npx tsx validation/m14/fixtures/nim/imports-edge-delta.mts <out>` | **0** | **session 18, new instrument, run twice**: `1475e53d0e528d0a` → `deeab0756e0c4c1f` reads **13,364 → 13,364, delta 0, 0 of 6,063 files differing**; `2426fdda15f9960e` → `deeab0756e0c4c1f` reads **13,365 → 13,365, delta 0, 0 differing**. The module pass adds and removes no `imports` edge anywhere in the corpus, so the census's +1 is walk non-determinism between two CLEAN walks (0 threw, 0 empty-kind on both sides), not an edge the pass created. Each swap is digest-verified and a `finally` restores the tree — the artifact records the digest actually walked beside the one the caller expected, because `HEAD~1` silently became the wrong blob once the pass was itself committed (`s18-imports-edge-delta-{1475e53d,HEAD1}.{txt,json}`) |
 | `npx tsx script/m14/diagnose-incoming.mts nim nim 600 <corpus>` | **0** | **session 18, before and after, same command and same 600 files**: unresolved targets **1,859 → 1,289** (-570, -30.7%); ambiguous targets 1,112 → 1,145 (+33, and the reason is stated below); B's recoverable count **3 → 0** — which is the point, not a null result. The `+33` on ambiguity is the honest cost of the pass: it published 600 module symbols in this window, 36 of which collide by basename, and `submodule.nim` alone is the basename of 16 files. **A gain of 570 resolutions bought with 33 newly ambiguous targets is a trade, and it is reported as one** (`s18-diagnose-BEFORE.txt`, `s18-diagnose-AFTER.txt`) |
 | `npx tsx script/m14/ontology-coverage-gate.ts nim` | **1** | session 18, at `deeab0756e0c4c1f`: `corpus: 6063 admitted files`, `walk: 6063/6063 files (100.0%)`, and the verdict **`emitted 10/10  ruled-sound 0  FALSIFIED 0  ruled-without-justification 0`** — printed BEFORE the exit, so the gate's verdict is recorded even though the process then dies on `[BB-HANG] parser stuck 120s on nimony/lib/std/stripes.nim`. That hang is the known robustness finding (*Limitations* 8) and it names a **different file on each run** (`session16-arbiter.txt` names `nim/tests/distinct/typeclassborrow.nim`, this one names `stripes.nim`), which is itself the evidence that it is a heap-exhaustion race rather than one bad input. Exit 1 is the hang, not the verdict (`s18-arbiter.txt`) | session 7, and this row's exit code has MOVED: earlier passes read **2** with `corpus: 6063 admitted files` then `no RULING TABLE for nim`. This pass never reaches the refusal — it prints the header and two `[BB-PARSE-ERR] … memory access out of bounds` lines (`dll/nimhcr_0_6.nim`, `package/stdlib/stdlib.nimble`) and then dies on `[BB-HANG] parser stuck 120s … dll/nimhcr_0_6.nim`. The §8 wiring is unchanged and still the reason the gate would refuse; at 8 workers the shared watchdog now gets there first, so the refusal is no longer the observable outcome. `RULED_BY_LANG` still carries `bash`, `json`, `lua`, `toml` and no `nim` (`session7-arbiter.txt`) |
@@ -3774,3 +3775,34 @@ quiet machine will cover all 5,227 through the production path.
     clean walks of the same input, which this lane has NOT reduced further. It is 0.008%
     of the type and it is reported rather than rounded away — an unexplained 1 is a
     smaller problem than an unexplained 1,859, and larger than nothing.
+36. **The arbiter's verdict depends on a gitignored checkpoint, and a resumed run reports
+    every type unadjudicated.** MEASURED, and it is the most consequential thing this pass
+    found. `script/m14/ontology-coverage-gate.ts` hands its walk to `resumableWalk`, which
+    keeps a checkpoint at `validation/m14/measurements/walk-nim.txt` — and that path is
+    **gitignored** (`.gitignore:274`, `validation/m14/measurements/walk-*.txt`), so it is
+    not part of the committed evidence. Its consequence:
+
+    | gate invocation | checkpoint state | what it printed |
+    | --- | --- | --- |
+    | no `--fresh`, after an earlier full walk | 6,063 files marked done | `walk: 6063/6063 (100.0%)  newly walked 0, resumed 6063` — then **`emitted 0/10  ruled-sound 3  FALSIFIED 0  ruled-without-justification 7`** |
+    | `--fresh` | reset | `newly walked 6063, resumed 0` — **`emitted 10/10  ruled-sound 0  FALSIFIED 0  ruled-without-justification 0`** |
+
+    **The first row is a fully-resumed walk reporting that nim emits nothing.** Every
+    relationship type read zero, and the gate — correctly following its own rules —
+    converted seven of those zeros into `RULED-UNJUSTIFIED`, because with no observed
+    edges there is no evidence a type fires and no written ruling to cover it. The
+    per-type `observed` map is built in the same process as the walk, so a resumed walk
+    walks nothing and observes nothing while the header still prints
+    `6063/6063 files (100.0%)`. **A percentage that reports 100% of a population the run
+    did not look at is the exact shape of a fabricated measurement**, and here it is in
+    shared machinery rather than in this lane.
+
+    Two consequences a reader must carry. First, **the arbiter's per-type counts are not
+    reproducible from a clean clone**: two `--fresh` runs minutes apart on the same
+    analyzer read `calls` 118,208 then 118,187 and `imports` 13,356 then 13,350, which is
+    the same ±1-to-20 parser non-determinism as *Limitations* 8 and 35, at six figures.
+    Second, **this lane's committed arbiter row must say which invocation produced it**,
+    or it is not evidence: `s18-arbiter.txt` is a partially-resumed run
+    (`newly walked 1947, resumed 4116`) and its per-type counts — `calls` 45,053,
+    `imports` 5,279 — are a fraction of the `--fresh` figures for the same analyzer. The
+    10/10 verdict is unaffected; the counts are not comparable to a census's.
