@@ -327,7 +327,7 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
     while (stack.length > 0) {
       const { node, parentPath } = stack.pop()!
       if (node.type === "document") {
-        this.pushNamedChildren(stack, node, parentPath)
+        this.pushTopLevelValues(stack, node, parentPath, ctx.rootName)
         continue
       }
       if (node.type === "object") {
@@ -373,7 +373,12 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
       const frame = stack.pop()!
       const { node, parentPath, parentName } = frame
       if (node.type === "document") {
-        this.pushNamedChildren(stack, node, parentPath)
+        // The SAME positional rule `collectSchemaFacts` uses, and it has to be the same:
+        // `requiredByObject` is keyed on the parent path, so a `$required` list read under
+        // `<module>` would not match a symbol now published under `<module>[i]`, and
+        // `isRequired` would silently answer false for every key in a multi-value file.
+        // Two rules that disagree is how a fix trades one defect for another.
+        this.pushTopLevelValues(stack, node, parentPath, parentName)
         continue
       }
       if (node.type === "object") {
@@ -1600,6 +1605,77 @@ const bracket = parent.lastIndexOf("[")
     for (let i = node.namedChildCount - 1; i >= 0; i--) {
       const child = node.namedChild(i)
       if (child) stack.push({ node: child, parentPath, parentName, duplicateKeys })
+    }
+  }
+
+  /**
+   * The node types that are JSON VALUES. A `comment` is a named child of `document` in
+   * this grammar and is not a value: it introduces no key and cannot publish a name. An
+   * `ERROR` node is the grammar's recovery shape and says nothing about how many documents
+   * the file really holds.
+   */
+  private isValueNode(node: Node): boolean {
+    const t = node.type
+    return t === "object" || t === "array" || t === "string" || t === "number" || t === "true" || t === "false" || t === "null"
+  }
+
+  /**
+   * Push a document's top-level values, giving each one its OWN position when the file
+   * holds more than one.
+   *
+   * ## The defect
+   *
+   * Concatenated JSON is real input — cargo/rustfix's recorded compiler diagnostics are
+   * sequences of 2 to 5 top-level objects in one file — and this grammar parses that as ONE
+   * `document` node with N named children. `pushNamedChildren` gave every one of them the
+   * SAME `parentPath`, so all N published `<module>.<key>` and the qualified name stopped
+   * identifying anything:
+   *
+   *     name=code kind=class    qn=str-lit-type-mismatch.code  line 3
+   *     name=code kind=class    qn=str-lit-type-mismatch.code  line 73
+   *     name=code kind=class    qn=str-lit-type-mismatch.code  line 143
+   *     name=code kind=property qn=str-lit-type-mismatch.code  line 213
+   *
+   * Four symbols under one name, the fourth of a different kind — so the shared arbiter
+   * counts it AMBIGUOUS and the reverse walk picks a winner that is simply the wrong line.
+   * This is the whole of bucket A in the 601-file ambiguity split.
+   *
+   * ## Why the position is conditional
+   *
+   * A document with ONE value keeps `<module>` as its parent path, unchanged. That is 13,835
+   * of 13,951 admitted files and it is the contract every fixture encodes. 358 more hold
+   * one value beside comments or ERROR nodes, and `comment+object` is the commonest
+   * multi-child shape in the corpus at 24 files — gating on `namedChildCount > 1` would
+   * rename all of them for no reason. `top-level-value-positions.ts` measures the split:
+   * 45 files have >=2 values, 358 have 1 value plus extras, 13,477 have exactly one child.
+   *
+   * ## Why the spelling is `<module>[i]` and not a new separator
+   *
+   * It is the spelling `arrayItemName` already gives a top-level array's elements, and a
+   * concatenated document is the same shape written without brackets: N values in sequence
+   * rather than N elements in an array. Reusing it means one convention, not two, and
+   * `afterModuleImpl` already handles the `[` boundary.
+   */
+  private pushTopLevelValues(stack: PathFrame[], node: Node, parentPath: string, parentName: string): void {
+    let valueCount = 0
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const child = node.namedChild(i)
+      if (child && this.isValueNode(child)) valueCount++
+    }
+    if (valueCount <= 1) {
+      // The ordinary case, and the overwhelming majority: one root, addressed by the
+      // module name exactly as before.
+      this.pushNamedChildren(stack, node, parentPath, parentName)
+      return
+    }
+    let position = 0
+    for (let i = node.namedChildCount - 1; i >= 0; i--) {
+      const child = node.namedChild(i)
+      if (!child) continue
+      if (!this.isValueNode(child)) continue
+      const name = `${parentPath}[${position}]`
+      stack.push({ node: child, parentPath: name, parentName: name, emitObject: child.type === "object" })
+      position++
     }
   }
 
