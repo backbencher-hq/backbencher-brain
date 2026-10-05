@@ -507,4 +507,28 @@ export const CSS_MUTANTS: Mutant[] = [
       }),
     }),
   },
+  {
+    id: "css/stylesheet-module-symbol-dropped",
+    language: "css",
+    defectClass: "missing-symbol",
+    description:
+      "The stylesheet-module symbol reverted, which is the defect the fix removed. An `imports` edge's SOURCE is the importing stylesheet, and without a symbol carrying that name the store's per-file lookup misses and records `source_external` for an edge whose source is the file the reader is already looking at. This is a MISSING-NODE defect rather than a missing-edge one, and that distinction is why it needs its own mutant: every relationship in the fixture is still present and still correct, so a mutant set that only watches edges passes it. MEASURED over the 600-file window (`validation/m14/census/css-incoming-split.ts`): `imports` same-file-resolved edges 58 of 58 -> 0 of 58, and the whole-corpus `imports` source resolution 251 of 251 -> 0 of 251 (`css-parsefile-census-1286.json`, row `imports` srcPublished). Caught by css/stylesheet-is-the-module-symbol, whose `expectSymbols` row requires the basename with kind `module`.",
+    transform: (r: any) => ({
+      ...r,
+      symbols: (r.symbols ?? []).filter((s: any) => (s.metadata as any)?.isStylesheet !== true),
+    }),
+  },
+  {
+    id: "css/stylesheet-module-symbol-named-by-the-fallback-literal",
+    language: "css",
+    defectClass: "placeholder-in-a-name-bearing-field",
+    description:
+      "The module symbol published under the FALLBACK name instead of the file's basename. `analyze` computes `importerName = lastPathSegment(filePath) || filePath || \"stylesheet\"`, and the third disjunct is a placeholder literal that exists so the `imports` edge always has a source string. Publishing the SYMBOL under that literal puts the placeholder into the symbol table, where every consumer reads it as a real name: `keepSymbol` does not reject it, the store indexes it, and a stylesheet whose path yields no basename would silently merge with every other such stylesheet under one node. This is the M60 R7 rule this analyzer already states about the `imports` source — the same defect, one field over — and it is cheap to reintroduce because the literal is three tokens away in the same expression. Caught by css/stylesheet-is-the-module-symbol, whose `forbidSymbols` row refuses a symbol named `stylesheet` while requiring the basename: a mutation to the fallback satisfies neither, so the fixture is red in both directions.",
+    transform: (r: any) => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) =>
+        (s.metadata as any)?.isStylesheet === true ? { ...s, name: "stylesheet" } : s,
+      ),
+    }),
+  },
 ]
