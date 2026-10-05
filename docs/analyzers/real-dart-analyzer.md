@@ -479,7 +479,7 @@ bun run script/m14/verify-dart-overrides.ts                              # 14/14
 bun run script/m14/verify-dart-references.ts                             # 38 shapes, both sides
 npx tsx validation/m14/fixtures/dart/regex-census.ts                     # 0 regexes, AST-measured
 npx tsx validation/m14/fixtures/dart/regex-census.ts --all               # + the 7 pre-existing tmp rows
-npx tsx validation/m14/fixtures/dart/hang-file-innocence.ts             # 6/6 hang files parse clean alone
+npx tsx validation/m14/fixtures/dart/hang-file-innocence.ts             # 8/8 hang files parse clean alone
 npx tsx validation/m14/fixtures/dart/differential-rotation-instability.ts  # 38/2351 files, 5353 each
 bun run script/m14/differential.ts --lang dart --force-fresh          # 2 lanes, unexplained=0
 ```
@@ -1211,7 +1211,7 @@ nothing — parse the whole corpus.
    corpus scale, and the reason is the first half of item 5.**
 
    **The exit-2 refusal is verified by reading the gate, not by running it at full
-   corpus — because the full-corpus run never reaches it.** Measured seven times on
+   corpus — because the full-corpus run never reaches it.** Measured eight times on
    this
    branch, `npx tsx script/m14/ontology-coverage-gate.ts dart`:
 
@@ -1252,25 +1252,40 @@ nothing — parse the whole corpus.
            [BB-PARSE-ERR] dart | dart-sdk/pkg/analyzer/lib/dart/analysis/analysis_context_collection.dart | memory access out of bounds
            [BB-HANG] parser stuck 120s on dart-sdk/pkg/analysis_server/test/lsp_over_legacy/execute_command_test.dart — exiting
            exit 1
+   run 8:  (2026-10-05, seventh re-measurement)
+           [BB-PARSE-ERR] dart | dart-sdk/pkg/analysis_server/test/src/services/correction/fix/convert_to_package_import_test.dart | memory access out of bounds
+           [BB-PARSE-ERR] dart | dart-sdk/pkg/analyzer/lib/analysis_rule/pubspec.dart | memory access out of bounds
+           [BB-HANG] parser stuck 120s on dart-sdk/pkg/analysis_server/test/src/services/correction/fix/convert_to_package_import_test.dart — exiting
+           exit 1
    ```
+
+   **Run 8 extends the population to eight files and it is the first hang file outside
+   `dart-sdk/pkg/analysis_server/test/`** — the first two runs were under
+   `dart-sdk/pkg/_fe_analyzer_shared/`, so the dart-sdk-analyser-shape localization run 6
+   reported still holds, and this one widens the `analysis_server` subtree from
+   `integration_test/`, `test/lsp_over_legacy/` and `lib/src/services/correction/` to
+   `test/src/services/correction/fix/`. Run 8's second parse-error file,
+   `pkg/analyzer/lib/analysis_rule/pubspec.dart`, is likewise a file no earlier run
+   named.
 
 
    Run 3's hang file is one run 2 already listed as a PARSE-ERR, and run 3 is the only
    one of the three whose hang file and parse-error set coincide as a single element —
    which is the correlation below holding for the third time, on the strongest form.
-   **Runs 4, 5 and 6 each name a file no earlier run named**, so the set of files this
-   failure has been observed on is six: `flow_analysis_log.dart`,
+   **Runs 4–8 each name a file no earlier run named**, so the set of files this
+   failure has been observed on is eight: `flow_analysis_log.dart`,
    `list_postfix_completion_templates_test.dart`, `import_elements_test.dart`,
-   `get_statement_completion_test.dart`, `is_postfix_completion_applicable_test.dart`
-   and `flow_analysis_operations.dart`.
+   `get_statement_completion_test.dart`, `is_postfix_completion_applicable_test.dart`,
+   `flow_analysis_operations.dart`, `execute_command_test.dart` and
+   `convert_to_package_import_test.dart`.
    **Run 6 also localizes the population, which five files could not.** Runs 1 and 6 are
-   both under `dart-sdk/pkg/_fe_analyzer_shared/lib/src/flow_analysis/`; runs 2–5 are all
-   under `dart-sdk/pkg/analysis_server/`. Five of six sit in two dart-sdk subtrees
-   rather than spreading across 33,692 admitted files, so the trigger is
-   dart-sdk-analyser-shaped and not a property of large files or of concurrency — the
+   both under `dart-sdk/pkg/_fe_analyzer_shared/lib/src/flow_analysis/`; runs 2–5 and
+   7–8 are all under `dart-sdk/pkg/analysis_server/`. Seven of eight sit in two
+   dart-sdk subtrees rather than spreading across 33,692 admitted files, so the trigger
+   is dart-sdk-analyser-shaped and not a property of large files or of concurrency — the
    two explanations the earlier runs invited, neither of which the directory evidence
    supports.
-   Two properties hold across all six runs and
+   Two properties hold across all eight runs and
    both argue the same way — the hang file is never the same file twice, and it is
    always a member of that run's own PARSE-ERR set. A grammar defect would name the
    same construct every time; a corrupted WASM heap names whatever the next allocation
@@ -1280,16 +1295,19 @@ nothing — parse the whole corpus.
    rather than a table someone typed: `validation/m14/fixtures/dart/hang-file-innocence.ts`
    runs one production `parseFile` per file, prints symbols and relationships, and
    records for each entry whether that run had also reported the file in its own
-   PARSE-ERR set. **6 of 6 clean**, and the symbol/rel counts agree with the ad-hoc
-   table below on every file they share:
+   PARSE-ERR set. **8 of 8 clean**, and the symbol/rel counts agree with the ad-hoc
+   table below on every file they share. The two rows that had no prior ad-hoc entry,
+   re-measured at this pass:
 
    ```
-   flow_analysis_log.dart                        20,272 B  OK 1690 ms — 32 symbols, 136 rels  [hang run 1, also in that run's PARSE-ERR set]
-   list_postfix_completion_templates_test.dart    1,254 B  OK   44 ms —  3 symbols,  20 rels  [hang run 2, also in that run's PARSE-ERR set]
-   import_elements_test.dart                      4,190 B  OK  162 ms —  9 symbols,  84 rels  [hang run 3, also in that run's PARSE-ERR set]
-   get_statement_completion_test.dart             1,715 B  OK   51 ms —  3 symbols,  29 rels  [hang run 4, also in that run's PARSE-ERR set]
-   is_postfix_completion_applicable_test.dart      1,198 B  OK   35 ms —  3 symbols,  20 rels  [hang run 5, also in that run's PARSE-ERR set]
-   flow_analysis_operations.dart                   6,787 B  OK   43 ms — 27 symbols,  27 rels  [hang run 6, also in that run's PARSE-ERR set]
+   flow_analysis_log.dart                        20,272 B  OK 1241 ms — 32 symbols, 136 rels  [hang run 1, also in that run's PARSE-ERR set]
+   list_postfix_completion_templates_test.dart    1,254 B  OK   33 ms —  3 symbols,  20 rels  [hang run 2, also in that run's PARSE-ERR set]
+   import_elements_test.dart                      4,190 B  OK   66 ms —  9 symbols,  84 rels  [hang run 3, also in that run's PARSE-ERR set]
+   get_statement_completion_test.dart             1,715 B  OK   55 ms —  3 symbols,  29 rels  [hang run 4, also in that run's PARSE-ERR set]
+   is_postfix_completion_applicable_test.dart      1,198 B  OK   26 ms —  3 symbols,  20 rels  [hang run 5, also in that run's PARSE-ERR set]
+   flow_analysis_operations.dart                   6,787 B  OK   44 ms — 27 symbols,  27 rels  [hang run 6, also in that run's PARSE-ERR set]
+   execute_command_test.dart                       1,173 B  OK   30 ms —  3 symbols,  21 rels  [hang run 7, also in that run's PARSE-ERR set]
+   convert_to_package_import_test.dart              3,659 B  OK   52 ms — 16 symbols,  43 rels  [hang run 8, also in that run's PARSE-ERR set]
    ```
 
    The probe reports `MISSING — not on disk` rather than a pass when a recorded path
@@ -1327,8 +1345,8 @@ nothing — parse the whole corpus.
 
    **The `[BB-HANG]` is the CONCURRENT PARSE PATH, and the file it names is
    innocent.** This corrects the reading that a `[BB-HANG]` naming one file is a
-   parser-robustness finding about that file. Every file named across the six runs
-   above parses cleanly through the same production `parseFile`, one at a time — 6 of 6
+   parser-robustness finding about that file. Every file named across the eight runs
+   above parses cleanly through the same production `parseFile`, one at a time — 8 of 8
    on the committed probe. The
    `document_color_test.dart` row needed a path to be checkable at all, because
    **dart-sdk tracks two files of that name** and the bare filename names neither:
@@ -1344,6 +1362,9 @@ nothing — parse the whole corpus.
    | `pkg/dartpad/lib/src/util/environment.dart` (run 3's first hang) | OK 9 ms — 1 symbol, 1 rel |
 | `.../edit/get_statement_completion_test.dart` (run 4's hang) | OK 967 ms — 3 symbols, 29 rels |
 | `.../edit/get_refactoring_test.dart` (run 4's other PARSE-ERR) | OK 42 ms — 3 symbols, 36 rels |
+| `test/lsp_over_legacy/execute_command_test.dart` (run 7's hang) | OK 30 ms — 3 symbols, 21 rels |
+| `.../correction/fix/convert_to_package_import_test.dart` (run 8's hang) | OK 52 ms — 16 symbols, 43 rels |
+| `pkg/analyzer/lib/analysis_rule/pubspec.dart` (run 8's other PARSE-ERR) | OK 1111 ms — 46 symbols, 78 rels |
 
    Two readings from that. The 5 symbols / 48 rels recorded for `document_color_test.dart`
    are `test/lsp_over_legacy/`; `test/lsp/` publishes **35 symbols and 163 rels** from
