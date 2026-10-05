@@ -2,10 +2,10 @@
   "issue": "M24.P1",
   "code": "P1",
   "milestone": "M24",
-  "status": "known-gap",
-  "checks": 49,
+  "status": "verified",
+  "checks": 48,
   "passed": 48,
-  "failed": 1,
+  "failed": 0,
   "negativeCases": 11,
   "mutants": [
     {
@@ -79,75 +79,66 @@
     "declaredAbsentOses": [
       "win32"
     ],
-    "filesScanned": 154,
-    "spawnSitesJudged": 506,
+    "filesScanned": 166,
+    "spawnSitesJudged": 537,
     "spawnSitesByReach": {
-      "directCallSitesResolvedByName": 207,
-      "localWrapperCallSitesArgumentScanned": 257,
-      "commandComputedAtRuntimeNotJudgedByName": 42
+      "directCallSitesResolvedByName": 227,
+      "localWrapperCallSitesArgumentScanned": 266,
+      "commandComputedAtRuntimeNotJudgedByName": 44
     },
-    "findings": [
-      {
-        "file": "script/m55/screenshot-protocol.ts",
-        "line": 223,
-        "kind": "denylisted-binary-in-spawned-command",
-        "matched": "sha256sum",
-        "api": "run()",
-        "reason": "GNU coreutils checksum tool; macOS ships `shasum -a 256` instead. This exact spawn killed M24.P1 and M24.P2 on darwin with spawnSync sha256sum ENOENT."
-      }
-    ],
+    "findings": [],
     "plantedDefectsCaught": 14,
     "plantedDefectsTotal": 14,
     "plantedDefects": [
       {
         "name": "planted execFileSync sha256sum (the defect that killed this gate)",
         "caught": true,
-        "detail": "caught at line 536 (non-portable-binary: sha256sum)"
+        "detail": "caught at line 1127 (non-portable-binary: sha256sum)"
       },
       {
         "name": "planted execSync shell sha256sum",
         "caught": true,
-        "detail": "caught at line 536 (non-portable-binary: sha256sum)"
+        "detail": "caught at line 1127 (non-portable-binary: sha256sum)"
       },
       {
         "name": "planted spawnSync md5sum",
         "caught": true,
-        "detail": "caught at line 536 (non-portable-binary: md5sum)"
+        "detail": "caught at line 1127 (non-portable-binary: md5sum)"
       },
       {
         "name": "planted spawn of an absent-on-darwin coreutils binary (timeout)",
         "caught": true,
-        "detail": "caught at line 536 (non-portable-binary: timeout)"
+        "detail": "caught at line 1127 (non-portable-binary: timeout)"
       },
       {
         "name": "planted /proc read inside a shell spawn",
         "caught": true,
-        "detail": "caught at line 536 (platform-only-path: /proc)"
+        "detail": "caught at line 1127 (platform-only-path: /proc)"
       },
       {
         "name": "planted GNU-only stat -c",
         "caught": true,
-        "detail": "caught at line 536 (gnu-only-command-form: stat -c)"
+        "detail": "caught at line 1127 (gnu-only-command-form: stat -c)"
       },
       {
         "name": "planted GNU-only sort -V (accepted-but-ignored on BSD)",
         "caught": true,
-        "detail": "caught at line 536 (gnu-only-command-form: sort -V)"
+        "detail": "caught at line 1127 (gnu-only-command-form: sort -V)"
       },
       {
         "name": "planted GNU-only grep -P",
         "caught": true,
-        "detail": "caught at line 536 (gnu-only-command-form: grep -P)"
+        "detail": "caught at line 1127 (gnu-only-command-form: grep -P)"
       },
       {
         "name": "planted GNU-only sed -i in-place form (argv shape)",
         "caught": true,
-        "detail": "caught at line 536 (gnu-only-command-form: sed -i (GNU form))"
+        "detail": "caught at line 1127 (gnu-only-command-form: sed -i (GNU form))"
       },
       {
         "name": "planted sha256sum laundered through a local spawn wrapper",
         "caught": true,
-        "detail": "caught at line 537 (denylisted-binary-in-spawned-command: sha256sum)"
+        "detail": "caught at line 1128 (denylisted-binary-in-spawned-command: sha256sum)"
       },
       {
         "name": "PRECISION: the same spawn text inside a string literal is not a spawn",
@@ -224,32 +215,16 @@
         "matched": "sha256sum",
         "api": "execFileSync",
         "reason": "GNU coreutils checksum tool; macOS ships `shasum -a 256` instead. This exact spawn killed M24.P1 and M24.P2 on darwin with spawnSync sha256sum ENOENT."
-      },
-      {
-        "file": "script/m60/powershell-perf.ts",
-        "line": 78,
-        "kind": "platform-only-path",
-        "matched": "/proc",
-        "api": "execSync",
-        "reason": "Linux procfs; absent on macOS and Windows (measured: `ls /proc` -> No such file or directory)."
-      },
-      {
-        "file": "script/m60/yaml-scaling-probe.ts",
-        "line": 277,
-        "kind": "platform-only-path",
-        "matched": "/proc",
-        "api": "execFileSync",
-        "reason": "Linux procfs; absent on macOS and Windows (measured: `ls /proc` -> No such file or directory)."
       }
     ],
-    "ok": false
+    "ok": true
   },
-  "currentCommit": "d3b06b5158f3e5e0860a7e9325f1635867343204",
+  "currentCommit": "697bd5e296e3ea8b49237a14ebfac5006618f835",
   "sourceFingerprint": "cb86c59603cc4c331526ab1c1fc72a89ce4142f6c4f4cbac2b4832ba6bc65e52",
   "sourceFingerprintAlgorithm": "sha256 over raw file bytes (node:crypto; no process spawn)",
   "verifierCommand": "npx tsx script/m24/verify-positions.ts",
   "evidenceFile": "P1.json",
-  "generatedAt": "2026-10-05T00:39:16.233Z",
+  "generatedAt": "2026-10-05T04:00:27.816Z",
   "limitations": [
     "Fixture-based; does not exercise real analyzer output end-to-end (covered by the V1 harness).",
     "resolveRowByteColumns: a file-absolute row whose offset also fits the target line's byte length is still read as per-line (the pre-existing declared ambiguity in the function header). Only byte 0 — impossible as a 1-based per-line column — is disambiguated. Removing the ambiguity for real rows needs a writer-side convention flag (indexer lane); found and reported by M55.T2.",
@@ -263,7 +238,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T00:39:16.234Z",
-    "contentSha256": "d76316a248b5ba2490cd68e0e713b24ab1bdc60e076ea69194279b7f82674b5f"
+    "sealedAt": "2026-10-05T04:00:27.818Z",
+    "contentSha256": "70fe190998dbe273dd6d4e7ec0701fa78f4dec4574b2094f77b6dcecb320bea7"
   }
 }
