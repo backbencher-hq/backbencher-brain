@@ -1400,6 +1400,7 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
             addRelationship(label, value, ASTEngine.RelationshipType.Imports, {
               role: "processing_instruction_href",
               attributeName,
+              resolvable: this.importTargetClass(value),
             }, valueNode)
             imports.push({
               module: value,
@@ -2125,6 +2126,7 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
     addRelationship(owner, path, ASTEngine.RelationshipType.Imports, {
       role,
       externalIdKind: "system",
+      resolvable: this.importTargetClass(path),
     }, literal)
   }
 
@@ -2411,6 +2413,7 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
           role: "schema_location",
           attributeName,
           namespace: paired ? parts[i - 1] : undefined,
+          resolvable: this.importTargetClass(target),
         }, valueNode)
         emitted++
       }
@@ -2639,6 +2642,40 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (c === ":") return true
     }
     return false
+  }
+
+  /**
+   * WHAT KIND OF THING an `imports` target is, so the edge carries a class a consumer
+   * can count instead of reading as a dangling name.
+   *
+   * `imports` is the only relationship type this analyzer emits whose target is not a
+   * symbol, and until this existed the type reported 0 % resolution with nothing on the
+   * edge to say why — which is the state the round brief's cause C calls "silently
+   * unresolved". Measured on the census draw `3bd539410d1a9189` by
+   * `validation/m14/fixtures/xml/imports-target-classes.mts`: 263 edges, 84 distinct
+   * targets, **0 of 263 carrying any class**. The same probe splits them 153 path-shaped,
+   * 107 scheme-bearing, 3 in-document fragments.
+   *
+   * Three classes, and each is a claim this function can actually keep:
+   *
+   *   `in-document` — the target starts with `#`, so it names a location in THIS file.
+   *     The one `imports` shape whose target can resolve to a symbol here.
+   *   `external`    — `isRemoteUri`, the SAME test `schemaLocation` already applies, so
+   *     this file does not grow a second notion of "remote" that disagrees with the
+   *     first. Outside the corpus by construction.
+   *   `file`        — a path. **Not a claim that the file exists.** The analyzer is a
+   *     per-file pure unit and does no filesystem access, so existence is a corpus
+   *     question it cannot answer; the probe answers it for one draw and the honest
+   *     split of the 153 is 130 admitting as xml, 21 present nowhere, 2 present but not
+   *     admitted. A consumer that needs that split must ask the corpus, not the edge.
+   *
+   * `file` is a new member of the vocabulary `references` and `extends` already use
+   * (`in-document` / `builtin` / `external` / `unresolved`); nothing outside this file
+   * switches on it, which was checked rather than assumed.
+   */
+  private importTargetClass(target: string): "in-document" | "file" | "external" {
+    if (target.startsWith("#")) return "in-document"
+    return this.isRemoteUri(target) ? "external" : "file"
   }
 
   /**
