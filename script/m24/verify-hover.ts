@@ -692,6 +692,48 @@ function narrowCatchLawHolds(source: string): boolean {
   return /catch \(error\) \{\s*\n\s*if \(!\(error instanceof PositionError\)\) throw error\s*\n\s*loc = null/.test(source)
 }
 
+/**
+ * Lane 6: the mutation-scratch owner. One directory, created lazily, OUTSIDE
+ * the evidence tree, removed on exit and on the signals a CI kill sends.
+ *
+ * Why this exists rather than an inline `mkdtempSync` per mutant: a per-mutant
+ * directory can only be cleaned by the code path that created it, and the code
+ * path that created it is exactly what a crash skips. Owning ONE directory for
+ * the whole process means there is a single place to register cleanup against
+ * `process.on("exit")`, which fires on a normal exit AND on an unhandled throw
+ * — the two ways this harness used to leave scratch behind.
+ */
+let mutantScratch: string | null = null
+let mutantSeq = 0
+
+export function mutantScratchDir(): string {
+  if (mutantScratch === null) {
+    mutantScratch = mkdtempSync(join(tmpdir(), "bblsp-hover-mutant-"))
+    const dir = mutantScratch
+    const drop = (): void => {
+      try { rmSync(dir, { recursive: true, force: true }) } catch {}
+    }
+    process.on("exit", drop)
+    // SIGINT/SIGTERM are how CI and a supervisor stop a run. Without these the
+    // scratch survives a normal-looking cancellation, which is the case that
+    // actually produced the committed leak.
+    for (const sig of ["SIGINT", "SIGTERM", "SIGHUP"] as const) {
+      process.on(sig, () => {
+        drop()
+        process.exit(130)
+      })
+    }
+  }
+  return mutantScratch
+}
+
+/** Remove the scratch tree now (used by the gate's own teardown). */
+export function dropMutantScratch(): void {
+  if (mutantScratch === null) return
+  try { rmSync(mutantScratch, { recursive: true, force: true }) } catch {}
+  mutantScratch = null
+}
+
 /** Run the rich_hover mutation suite. The oracle is the SAME stimulus the G8
  *  test uses: drive the MUTANT's collector over the unresolvable row. A mutant
  *  that throws is caught; a load failure is reported as a load failure and
@@ -708,7 +750,32 @@ async function runRichHoverMutants(): Promise<{ caught: number; total: number; a
       continue
     }
     const mutantSource = source.replace(mutant.from, mutant.to)
-    const mutantPath = join(ROOT, "validation", "m24", `richhover.mutant.${Date.now()}.ts`)
+    // Lane 6, the mutation-scratch leak class (gated by
+    // script/m55/verify-evidence-tree-clean.ts).
+    //
+    // This path USED to be `join(ROOT, "validation", "m24",
+    // `richhover.mutant.${Date.now()}.ts`)` — a mutated copy of PRODUCT SOURCE
+    // written INSIDE the evidence tree. Two independent failures came from that:
+    //
+    //   1. `Date.now()` has millisecond resolution and this loop writes one
+    //      file per mutant, so two mutants in the same millisecond landed on
+    //      the SAME path. The first mutant's `rmSync` then deleted the file the
+    //      second was about to `import`, and on a filesystem that resolves the
+    //      import lazily the second mutant reported a LOAD FAILURE. A mutant
+    //      caught by a load failure is not caught.
+    //   2. The `rmSync` calls are on the happy path only. A SIGKILL, a dropped
+    //      connection, or an Error thrown between the `writeFileSync` and the
+    //      first `rmSync` leaves the file behind — inside `validation/`, where
+    //      it is later committed as though it were evidence. That is exactly
+    //      what happened: `validation/m24/richhover.mutant.*.ts` was found
+    //      committed in this tree, and the same shape was independently found
+    //      committed under `validation/m26/`.
+    //
+    // Both are fixed by not writing scratch into the evidence tree at all. The
+    // mutants live in a mkdtemp under the OS temp dir, the filename carries a
+    // monotonic counter instead of a clock, and the whole directory is removed
+    // in a `finally` plus on process exit and on the signals a CI kill sends.
+    const mutantPath = join(mutantScratchDir(), `richhover.mutant.${Date.now()}.${mutantSeq++}.ts`)
     const absImport = mutantSource.replace(/from "(\.\.\/(?:brain|ast|intelligence)\/[\w\/-]+|\.\/[a-z0-9_-]+)"/g, (_m, spec: string) => {
       const rel = spec.startsWith("../ast/")
         ? `src/ast/${spec.slice(7)}.ts`
@@ -1043,7 +1110,15 @@ async function main(): Promise<void> {
   if (!ok) process.exitCode = 1
 }
 
+// Lane 6: the mutation-scratch leak. `mutantScratchDir()` registers its own
+// exit + signal cleanup, but dropping it HERE as well means the happy path
+// leaves nothing behind even if the signal handlers are somehow not installed
+// (an embedded runner can override process.on). script/m55/
+// verify-evidence-tree-clean.ts C4 asserts this property on the real tree.
+dropMutantScratch()
+
 main().catch((error) => {
   console.error("verifier crashed:", error)
+  dropMutantScratch()
   process.exit(1)
 })
