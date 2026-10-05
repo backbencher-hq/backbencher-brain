@@ -61,13 +61,14 @@
       "./symbols"
     ]
   },
-  "currentCommit": "45d5ce4cc5e85d9a612825ef136b05cc257d3012",
+  "currentCommit": "f37bd4cfb09fd9f23a4cd8b5d717d6cbe8111877",
   "workingTreeRelevantChanges": [
-    "script/m42/verify-rich-hover.ts"
+    "script/m24/verify-docs.ts",
+    "validation/m42/results/H2.json"
   ],
   "verifierCommand": "npx tsx script/m55/verify-call-hierarchy.ts",
   "evidenceFile": "T2.json",
-  "generatedAt": "2026-10-05T03:41:01.696Z",
+  "generatedAt": "2026-10-05T03:54:53.322Z",
   "fixture": {
     "root": "$HOME/Documents/Default Project/ishaq/wt/surface/validation/m55/fixtures/t2-workspace",
     "files": [
@@ -133,7 +134,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T03:41:01.698Z",
-    "contentSha256": "747e7947017f635b810092beae647589ef693865c9ea70e576c6ba841814d3de"
+    "sealedAt": "2026-10-05T03:54:53.323Z",
+    "contentSha256": "742c3e34819240ff4f9634adb2481596440d72c9738d181d125590d2e3beb6c6"
   }
 }
