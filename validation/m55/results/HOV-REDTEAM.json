@@ -3,8 +3,8 @@
   "code": "HOV-REDTEAM",
   "milestone": "M55",
   "status": "verified",
-  "checks": 13,
-  "passed": 13,
+  "checks": 16,
+  "passed": 16,
   "failed": 0,
   "realFailed": 0,
   "negativeCases": 3,
@@ -31,19 +31,22 @@
       "expectedFailedCheck": "D3: every evidence tier the card renders is justified by a stored relationship row"
     }
   ],
-  "currentCommit": "0c8f2137225dd4619775f53dee2dcad28a24cc85",
+  "currentCommit": "fad1500bd9beb2b0e30b96a0b993ea8860ddf91b",
   "workingTreeRelevantChanges": [
-    "validation/m55/results/HOV-COVERAGE.json",
-    "validation/m55/results/HOV-REDTEAM.json"
+    "validation/m55/results/HOV-COVERAGE.json"
   ],
   "verifierCommand": "npx tsx script/m55/verify-hover-coverage-redteam.ts",
   "evidenceFile": "HOV-REDTEAM.json",
-  "generatedAt": "2026-10-05T04:32:09.584Z",
+  "generatedAt": "2026-10-05T13:01:58.459Z",
   "observed": {
-    "cleanTreeVerdict": "VERIFIED",
-    "cleanTreeExit": 0,
-    "cleanTreeFailures": [],
-    "baselineFailures": [],
+    "cleanTreeVerdict": "KNOWN-GAP",
+    "cleanTreeExit": 1,
+    "cleanTreeFailures": [
+      "R6/§3: warm hover p95 is under the declared 50 ms budget on ALL THREE busy shapes — worst p95=79.82ms — §3: a budget miss is a failed gate, not a footnote"
+    ],
+    "baselineFailures": [
+      "R6/§3: warm hover p95 is under the declared 50 ms budget on ALL THREE busy shapes — worst p95=79.82ms — §3: a budget miss is a failed gate, not a footnote"
+    ],
     "judgedBy": "SET DIFFERENCE of failing checks, never the exit code — on a loaded machine the gate's own §3 latency check is legitimately red, and an exit-code oracle would call every mutant detected for the wrong reason",
     "restores": [
       {
@@ -77,7 +80,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T04:32:09.585Z",
-    "contentSha256": "e989712bf1e332f17c8181f968dd4ed2e38633ae41fb28ec973ee3d7909a1753"
+    "sealedAt": "2026-10-05T13:01:58.463Z",
+    "contentSha256": "73b18b8279e52618b50379da3275a7178052306eece61796eaa6fd2707116dbe"
   }
 }
