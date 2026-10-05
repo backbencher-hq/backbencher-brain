@@ -890,7 +890,7 @@ was clean before the doc edits and after them.
 | `bun run script/m14/clean-honesty-gate.ts` | 312 files, 8,288 symbols, 30,689 relationships, **no violations**; `implements.classNotDeclaredHere` 318 → 306 after this round's correction (`analyze()`, see Instruments) | 0 |
 | `bun run script/m14/clean-completeness-gate.ts` | 141 declared named node types, 141 classified, **all checks pass** | 0 |
 | `npx tsx script/m14/clean-mutant-run.ts` | 9 mutants, **caught 9/9**, every one made the suite red | 0 |
-| `npx tsx script/m14/run-fixtures.ts clean` | clean: **pass 11, fail 0, problems 0** | 0 |
+| `npx tsx script/m14/run-fixtures.ts --lang clean` | clean: **pass 11, fail 0**, `fixture baseline gate: no regressions` | 0 |
 | `npx tsx validation/m14/fixtures/clean/extends-probe-roles-check.mts` | **PASS** — 18 declarations, 23 (declaration, child) pairs, 0 unclassified, 0 ERROR, 0 MISSING | 0 |
 | `npx tsx validation/m14/fixtures/clean/operator-class-spelling-probe.mts` | 772 `implements`, 198 operator-shaped, 174 external (correct), **0 external-but-local** (read 24 before the fix), 0 instances reading a parenthesised class name | 0 |
 | `npx tsx validation/m14/fixtures/clean/extends-probe-roles-regen.mts` | idempotent: regeneration leaves the expectation byte-identical, 0 notes dropped | 0 |
@@ -921,6 +921,18 @@ it as a pass. Two lanes' worth of honesty gate is in that trap. The file is shar
 machinery and was not modified; the fix is `import { fileURLToPath } from "node:url"`
 plus `const __dirname = path.dirname(fileURLToPath(import.meta.url))`, or a `.cts`
 rename.
+
+**The fixture gate takes `--lang`, and a bare language argument is silently ignored.**
+`script/m14/run-fixtures.ts` reads its lane list from `process.argv.includes("--lang")`
+at line 1532 and from nothing else, so `run-fixtures.ts clean` does **not** scope to
+clean: it runs every lane and exits **6**, on a finding about two *other* lanes —
+`fixture-lane gate: 2 fixture director(ies) no runner lane claims: lua, r`, 12 and 18
+expectation files respectively that nothing executes. Measured at this commit. The
+correct invocation is `npx tsx script/m14/run-fixtures.ts --lang clean`, which prints
+`summary: {"clean":{"pass":11,"fail":0}}`, `fixture baseline gate: no regressions`, and
+exits 0. The bare form is the more dangerous of the two errors this document records,
+because the output it produces is a real gate result about someone else's lane rather
+than an error — and the `lua`/`r` orphan finding it surfaces is **not** clean's to fix.
 
 ## Reported to the supervisor, not fixed
 
