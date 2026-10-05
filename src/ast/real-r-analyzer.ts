@@ -1893,10 +1893,12 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
         // IS this ontology's dependsOn type, and `base::det` (Matrix/R/kappa.R:19) is a
         // dependsOn exactly as `library(base)` is — R must load the namespace to evaluate
         // it, so it is a hard dependency, not a mention. The asymmetry was measurable:
-        // library()/require() (:2066,:2085) and source()/sourceCpp() (:2117-2118) each
+        // library()/require() (:2108) and source()/sourceCpp() (:2141) each
         // emitted the pair, and namespace access did not, which left `references` at 387
-        // edges where the independent oracle derives 2,171 — recall 16.9%, the lowest of
-        // the ten types by a factor of four.
+        // edges on the oracle's 2,058-file sample where the independent oracle derives
+        // 2,171 — recall 16.9%, the lowest of the ten types by a factor of four. (387 is
+        // that sample's count; over the full 2,184-file admitted population the same
+        // pre-fix walk read 389, and both are correct for their own population.)
         //
         // Same confidence (1.0) and the same `namespace_access` subtype as the `imports`
         // edge beside it, deliberately: `rcpp_source` and `r_source` are already carried
