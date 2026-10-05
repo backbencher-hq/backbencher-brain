@@ -79,8 +79,17 @@ async function main() {
     for (const r of raw.prepare(
       "SELECT relationship_type AS t, COUNT(*) AS n FROM brain_relationship WHERE project_id = ? AND target_external IS NOT NULL AND target_symbol_id IS NULL GROUP BY t",
     ).all(pid) as any[]) byType[r.t] = r.n
+    const impRows = (raw.prepare(
+      "SELECT COUNT(*) AS n FROM brain_import WHERE project_id = ?",
+    ).get(pid) as any).n
+    const impDistinct = (raw.prepare(
+      "SELECT COUNT(DISTINCT import_path) AS n FROM brain_import WHERE project_id = ?",
+    ).get(pid) as any).n
+    const files = (raw.prepare(
+      "SELECT COUNT(*) AS n FROM brain_file WHERE project_id = ?",
+    ).get(pid) as any).n
     runs.push({ edges: e, unattached: u, symbols: st.symbolsExtracted, byType })
-    console.log(`run ${i + 1}: edges ${String(e).padStart(6)}   unattached ${String(u).padStart(6)}   symbols ${st.symbolsExtracted}   indexer-reported unresolvedRelationships ${st.summary?.unresolvedRelationships}`)
+    console.log(`run ${i + 1}: edges ${String(e).padStart(6)}   unattached ${String(u).padStart(6)}   symbols ${st.symbolsExtracted}   brain_import ${impRows} (${impDistinct} distinct paths)   brain_file ${files}   indexer-reported unresolvedRelationships ${st.summary?.unresolvedRelationships}`)
     console.log(`         per type: ${JSON.stringify(byType)}`)
     fs.rmSync(workdir, { recursive: true, force: true })
   }
