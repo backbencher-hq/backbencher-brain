@@ -56,25 +56,26 @@
       "caught": true
     }
   ],
-  "currentCommit": "de5ff45a42d9fe209c372d7e2737995daac7b1b0",
+  "currentCommit": "d3108fc04e89a991cc59b44fcd24156ef64ce9df",
   "verifierCommand": "npx tsx script/m61/verify-orphan-gates.ts",
   "evidenceFile": "V5.json",
-  "generatedAt": "2026-10-05T15:46:35.145Z",
+  "generatedAt": "2026-10-05T21:43:45.408Z",
   "census": {
-    "verifiers": 606,
+    "verifiers": 609,
     "wiredByNpmScripts": 416,
     "wiredIncludingClosureGateBodies": 416,
-    "orphans": 190,
+    "orphans": 193,
     "declaredOrphans": 184,
-    "verifiersNamedBySource": 66,
-    "unprotectedBySource": 13,
+    "verifiersNamedBySource": 67,
+    "unprotectedBySource": 14,
     "declaredSourceNamed": 8,
     "undeclaredSourceNamed": [
       "script/m24/verify-position-arithmetic.ts (named by src/lsp/navigation.ts)",
       "script/m26/verify-graph-transport.ts (named by src/lsp/server.ts)",
       "script/m28/verify-surface-parity.ts (named by src/intelligence/documentation/doc-engine.ts)",
       "script/m42/verify-rich-hover.ts (named by src/lsp/rich_hover.ts)",
-      "script/m55/verify-hover-coverage.ts (named by src/lsp/rich_hover.ts, src/lsp/rich_hover.ts)"
+      "script/m55/verify-hover-coverage.ts (named by src/lsp/rich_hover.ts, src/lsp/rich_hover.ts)",
+      "script/m60/verify-lua-dedupe-invariant.ts (named by src/ast/real-lua-analyzer.ts)"
     ]
   },
   "ledgerDrift": [
@@ -89,7 +90,6 @@
     "m20.D1: ledger=verified record=known-gap (D1.json)",
     "m20.D2: ledger=verified record=known-gap (D2.json)",
     "m20.D3: ledger=verified record=known-gap (D3.json)",
-    "m24.D1: ledger=verified record=known-gap (D1.json)",
     "m26.G1: ledger=verified record=known-gap (G1.json)",
     "m62.A2: ledger=verified record=known-gap (A2.json)"
   ],
@@ -110,7 +110,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T15:46:35.147Z",
-    "contentSha256": "4578bfb51c1e856c3317a952517f4831d10e15b25f8bcffa523f0e6cd4e56273"
+    "sealedAt": "2026-10-05T21:43:45.410Z",
+    "contentSha256": "0b94271178d4728fee909488a3ec0eaef2ffbb04bd8fc45cc5c67b551bbf1a00"
   }
 }
