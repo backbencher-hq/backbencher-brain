@@ -3,8 +3,8 @@
   "code": "U6",
   "milestone": "M44",
   "status": "verified",
-  "checks": 29,
-  "passed": 29,
+  "checks": 31,
+  "passed": 31,
   "failed": 0,
   "negativeCases": 2,
   "mutantsCaught": 6,
@@ -22,11 +22,13 @@
     "note": "A mutant whose module will not import exercises no §13.6 path. This gate booked that as a catch — PROVEN twice: a mutant whose replacement was a bare syntax error printed 'mutant caught', and M4 (the hover-link mutant, written to validation/m44/ where src/lsp/rich_hover.ts's relative imports do not resolve) could never load at all, so the one mutant that proves the link carries the symbol had ZERO coverage while the record read 4/4. Mutants are now written beside the module they mutate, and an unevaluable mutant, a probe that cannot run, and an anchor that no longer matches are all FAILURES (§8.3 silence is guilt)."
   },
   "failures": [],
-  "currentCommit": "614e885393b16c2337a15132bb67ea4d8effd68a",
-  "workingTreeRelevantChanges": [],
+  "currentCommit": "47195021476965e85941a153a9cec8a11bf404f9",
+  "workingTreeRelevantChanges": [
+    "M script/m44/verify-usages-fallback.ts"
+  ],
   "verifierCommand": "npx tsx script/m44/verify-usages-fallback.ts",
   "evidenceFile": "U6.json",
-  "generatedAt": "2026-10-05T22:23:30.529Z",
+  "generatedAt": "2026-10-05T22:26:55.577Z",
   "fixture": {
     "root": "$HOME/Documents/Default Project/ishaq/wt/hubgap/.tools/m44-u6-fixture",
     "files": [
@@ -56,7 +58,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T22:23:30.531Z",
-    "contentSha256": "3b702b5cc94295c2c917da80ececb0e8673e26785dab2ee8135d9bb28c780df6"
+    "sealedAt": "2026-10-05T22:26:55.579Z",
+    "contentSha256": "28cf10f2aacde42534c0c59ea0c7439f374d0a9f5a8d6f1497a074d0eac16070"
   }
 }
