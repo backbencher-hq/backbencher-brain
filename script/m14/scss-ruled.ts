@@ -10,20 +10,21 @@
  * The other eight are EMITTED and the gate counts them from production `parseFile`, so
  * they take no row here. Measured over the lane's whole admitted corpus — 4,433 tracked
  * `.scss` files across 116 repositories, every one of them, through `parseFile`
- * (`validation/m14/fixtures/scss/scss-relationship-census.ts 5000`, 0 parse failures):
+ * (`validation/m14/fixtures/scss/scss-relationship-census.ts 5000`, 0 parse failures; run
+ * F committed at `validation/m14/measurements/scss-census-run-F.txt`):
  *
- *   contains     12,369 edges / 2,321 files    both ends resolved 100.0%
- *   references    6,594 edges /   585 files    both ends resolved  46.9%
- *   exports       4,018 edges /   324 files    both ends resolved 100.0%
- *   imports       3,623 edges /   825 files    both ends resolved   0.0%
- *   extends         423 edges /   151 files    both ends resolved  13.5%
+ *   contains     12,375 edges / 2,324 files    both ends resolved 100.0%
+ *   references    9,350 edges / 1,179 files    both ends resolved  33.1%
+ *   exports       4,019 edges /   325 files    both ends resolved 100.0%
+ *   imports       3,621 edges /   824 files    both ends resolved   0.0%
+ *   extends         427 edges /   152 files    both ends resolved  13.3%
  *   calls           304 edges /    57 files    both ends resolved 100.0%
- *   uses             91 edges /    42 files    both ends resolved 100.0%
  *   overrides        32 edges /    12 files    both ends resolved 100.0%
+ *   uses             91 edges /    42 files    both ends resolved 100.0%
  *                                         -------------------------
- *                                         27,454 edges
+ *                                         30,219 edges
  *
- * No edge this lane emits carries `confidence < 0.7` (0 of 27,454), because each is a
+ * No edge this lane emits carries `confidence < 0.7` (0 of 30,219), because each is a
  * deterministic parse fact rather than a name-match guess.
  *
  * The total is written as a sum on purpose. It previously read `0 of 28,068`, which is 600
@@ -31,12 +32,24 @@
  * not reconcile with its own parts is not a measurement, and a reader who had summed the
  * table would have had no way to tell which of the nine numbers was the invented one.
  *
- * The census is NOT byte-reproducible and these figures are one run's. Five runs over the
- * same file set move `contains` 12,369-12,374, `imports` 3,611-3,634, `extends` 423-427 and
- * `exports` 4,018-4,019, while `calls` 304, `uses` 91, `references` 6,594 and `overrides` 32
- * are identical in all five. The spread is measured rather than described in
- * `docs/analyzers/real-scss-analyzer.md` and in the census harness header; the cause is
- * WHICH files take the degraded extractor, and that set differs per run.
+ * These are the figures of the CURRENT branch, and the branch's `references` figure is the
+ * one most likely to be quoted wrongly. It was 6,594 edges / 585 files / 46.9% resolved
+ * before this lane merged the aggregate, and it moved because this lane DELEGATES its CSS
+ * half to `src/ast/real-css-analyzer.ts` and that file changed. The movement is measured and
+ * its most useful property is that the resolved count did NOT move: 3,093 before, 3,093
+ * after, so the 2,756 added edges resolve at both ends on 0 of them.
+ *
+ * The census is NOT byte-reproducible and these figures are one run's. Five runs on this
+ * code over the same file set move `contains` 12,370-12,375, `imports` 3,618-3,636,
+ * `references` 9,336-9,353, `exports` 4,019-4,048 and `extends` 423-427, while `calls` 304,
+ * `uses` 91 and `overrides` 32 are identical in all five. The spread is measured rather than
+ * described in `docs/analyzers/real-scss-analyzer.md` and in the census harness header; the
+ * cause is WHICH files take the degraded extractor, and that set differs per run.
+ *
+ * That cause is INCOMPLETE, and the incompleteness is measured in the same document:
+ * 728 of the 4,433 files carry at least one parse error and 134 of those carry errors AND
+ * zero relationships with neither `fallback` nor `degraded` set, so part of the movement is
+ * attributable to files that no flag names.
  *
  * Reproduce with `npx tsx validation/m14/fixtures/scss/scss-relationship-census.ts 5000`,
  * which takes the same admission rule the gate takes — `detectLanguageFromPath(abs, text)`
@@ -159,13 +172,13 @@ export const SCSS_RULED: Ruled[] = [
     instrument: "A:grammar-inventory",
     nodeTypesThatWouldMeanIt: SCSS_SUPERTYPE_NODE_TYPES,
     describe:
-      "a SUPERTYPE CLAUSE — a declaration that names a type it satisfies or a base it takes. MEASURED (validation/m14/fixtures/scss/scss-grammar-vocabulary.ts over 1,200 of the 4,433 admitted files, every 3rd of the sorted admitted list): the grammar PRODUCES 134 distinct node types across that sample and 0 of the 30 clause/relation names below is among them. The probe is calibrated in the same run — 15 of 15 names that must appear do (`stylesheet` 1,164, `rule_set` 3,143, `declaration` 8,670, `mixin_statement` 55, `include_statement` 773, `use_statement` 252, `forward_statement` 24, `function_statement` 30, `class_selector` 2,502, `variable` 3,297, `call_expression` 3,565, `arguments` 4,500, `block` 4,132, `comment` 1,278, `identifier` 18,176) — so the 30 zeroes are absences and not a probe that finds nothing. The full 134-name vocabulary is printed by that script rather than summarised, because \"0 of the 30 I probed\" is weaker evidence than \"there is no supertype node in the 134 the grammar produces\". WHY: Sass has no interface, no class and no type hierarchy; what it has instead is `@mixin`, and `@include` is a CALL to it (which the lane emits as `calls`, 304 edges over 57 files) and never a conformance claim. The one reading that would make this a GAP is `@use` + `@include` described as \"implementing\" a module — that is a module dependency plus a call, i.e. `imports` (3,623 edges) and `calls`, and mapping it onto `implements` would assert a subtyping relation Sass does not have and would make `bb_impact` report that editing a module changes its consumers' type conformance. OVERTURN: any one of the 30 names produced by the grammar on this corpus. A correct and exhaustive `implements` implementation cannot satisfy this condition without the grammar changing, because there is no supertype clause in the file to read one from.",
+      "a SUPERTYPE CLAUSE — a declaration that names a type it satisfies or a base it takes. MEASURED (validation/m14/fixtures/scss/scss-grammar-vocabulary.ts over 1,200 of the 4,433 admitted files, every 3rd of the sorted admitted list): the grammar PRODUCES 134 distinct node types across that sample and 0 of the 30 clause/relation names below is among them. The probe is calibrated in the same run — 15 of 15 names that must appear do (`stylesheet` 1,164, `rule_set` 3,143, `declaration` 8,670, `mixin_statement` 55, `include_statement` 773, `use_statement` 252, `forward_statement` 24, `function_statement` 30, `class_selector` 2,502, `variable` 3,297, `call_expression` 3,565, `arguments` 4,500, `block` 4,132, `comment` 1,278, `identifier` 18,176) — so the 30 zeroes are absences and not a probe that finds nothing. The full 134-name vocabulary is printed by that script rather than summarised, because \"0 of the 30 I probed\" is weaker evidence than \"there is no supertype node in the 134 the grammar produces\". WHY: Sass has no interface, no class and no type hierarchy; what it has instead is `@mixin`, and `@include` is a CALL to it (which the lane emits as `calls`, 304 edges over 57 files) and never a conformance claim. The one reading that would make this a GAP is `@use` + `@include` described as \"implementing\" a module — that is a module dependency plus a call, i.e. `imports` (3,621 edges) and `calls`, and mapping it onto `implements` would assert a subtyping relation Sass does not have and would make `bb_impact` report that editing a module changes its consumers' type conformance. OVERTURN: any one of the 30 names produced by the grammar on this corpus. A correct and exhaustive `implements` implementation cannot satisfy this condition without the grammar changing, because there is no supertype clause in the file to read one from.",
   },
   {
     type: "instantiates",
     instrument: "A:grammar-inventory",
     nodeTypesThatWouldMeanIt: SCSS_CONSTRUCTOR_NODE_TYPES,
     describe:
-      "a CONSTRUCTOR CALL — an expression that creates a value of a type. MEASURED (same run, same script): 0 of the 10 construction names below is among the 134 node types the grammar produces, on the same calibration of 15 of 15. WHY: Sass has no `new` and no value type. The two constructs that could be mistaken for one are both something else, and saying so is the substance of the ruling rather than a footnote. `@function double($n)` is invoked by `double(4px)`, which CONSTRUCTS nothing — it is a call on a name this file declares, and the lane emits it as `calls` (both syntaxes: `@include name` and `name(x)`, 304 edges over 57 files, both ends resolved on 100.0% of them). `@extend %badge` adds `%badge` to an existing rule's selector list at compile time; it creates no value and no instance, and the lane emits it as `extends` (423 edges over 151 files), which is the label that says what happened. The argument that a placeholder is therefore \"instantiated\" is an argument about the LABEL, not about the count, and it loses on the same ground the lua lane records for `uses` vs `calls`: the ontology already has the type that means inheritance, and using `instantiates` for it would leave `extends` with nothing to carry. OVERTURN: any one of the 10 names produced by the grammar on this corpus — which in Sass would mean the language acquired a constructor form, since no rearrangement of the existing 134 node types can express one.",
+      "a CONSTRUCTOR CALL — an expression that creates a value of a type. MEASURED (same run, same script): 0 of the 10 construction names below is among the 134 node types the grammar produces, on the same calibration of 15 of 15. WHY: Sass has no `new` and no value type. The two constructs that could be mistaken for one are both something else, and saying so is the substance of the ruling rather than a footnote. `@function double($n)` is invoked by `double(4px)`, which CONSTRUCTS nothing — it is a call on a name this file declares, and the lane emits it as `calls` (both syntaxes: `@include name` and `name(x)`, 304 edges over 57 files, both ends resolved on 100.0% of them). `@extend %badge` adds `%badge` to an existing rule's selector list at compile time; it creates no value and no instance, and the lane emits it as `extends` (427 edges over 152 files), which is the label that says what happened. The argument that a placeholder is therefore \"instantiated\" is an argument about the LABEL, not about the count, and it loses on the same ground the lua lane records for `uses` vs `calls`: the ontology already has the type that means inheritance, and using `instantiates` for it would leave `extends` with nothing to carry. OVERTURN: any one of the 10 names produced by the grammar on this corpus — which in Sass would mean the language acquired a constructor form, since no rearrangement of the existing 134 node types can express one.",
   },
 ]
