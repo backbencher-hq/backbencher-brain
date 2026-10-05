@@ -2,13 +2,15 @@
   "issue": "650",
   "code": "H2",
   "milestone": "M42",
-  "status": "verified",
+  "status": "known-gap",
   "checks": 40,
-  "passed": 40,
-  "failed": 0,
-  "failures": [],
+  "passed": 39,
+  "failed": 1,
+  "failures": [
+    "H2/R4: the hover's call-site links DIFFER from the L3 reference lines, and the card states the difference (§14 rules 2+3): 4/4 links equal a reference line (expected 0 — the hover must open the call site, references opens the declaration, and the card must say which is which); card: **usages** — 2 stored references (usage sites only; declaration and callees excluded) — each opens the stored call site _(counted "
+  ],
   "verdict": {
-    "realComponentFailures": 0,
+    "realComponentFailures": 1,
     "mutantsCaught": 6,
     "mutantsTotal": 6,
     "ok": true
@@ -17,7 +19,7 @@
     "planned": 6
   },
   "fixture": {
-    "root": "$HOME/Documents/Default Project/ishaq/wt/lsp6/.tools/m42-h2-fixture",
+    "root": "$HOME/Documents/Default Project/ishaq/wt/integrate/.tools/m42-h2-fixture",
     "files": [
       "src/main/java/com/demo/App.java",
       "src/main/java/com/demo/Main2.java"
@@ -64,18 +66,18 @@
   "measured": {
     "regime": "warm",
     "samples": 200,
-    "p50Ms": 6.82,
-    "p95Ms": 8.98,
-    "maxMs": 15.88,
-    "meanMs": 6.99,
+    "p50Ms": 9.71,
+    "p95Ms": 15.56,
+    "maxMs": 24.34,
+    "meanMs": 10.21,
     "budgetMs": 50,
-    "coldMs": 71.99,
+    "coldMs": 100.97,
     "note": "A real p95 over a stated sample set. The pre-lane check was a MEAN over 40 compared against this budget and reported as a p95; the substitution was named as a limitation in KNOWN-GAPS.json for three waves instead of being fixed."
   },
-  "currentCommit": "936b66d6d088776c7715e7d1aec492cc9c6d9841",
+  "currentCommit": "42da053221ba9dd3173faffe2e60913e9de35993",
   "verifierCommand": "npx tsx script/m42/verify-rich-hover.ts",
   "evidenceFile": "H2.json",
-  "generatedAt": "2026-10-05T02:32:37.401Z",
+  "generatedAt": "2026-10-05T04:27:04.148Z",
   "limitations": [
     "A usage link opens the index-stored CALL SITE when brain_relationship.line_number holds a real line, and the referencing symbol's DECLARATION when it does not — every such row states which, in its own label and in the usages header. The store carries no call-site BYTE COLUMN, so a call-site link opens at character 0: the line is exact, the column is not stored.",
     "A hover renders at most 3 usage links plus a \"+N more\" link, so a symbol with many callers shows three of them on the card and the rest through the hub.",
@@ -83,7 +85,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T02:32:37.403Z",
-    "contentSha256": "8b65169580702bb495b2c06e780d79ee44b21fa58e4aa208b9a46feb70228b12"
+    "sealedAt": "2026-10-05T04:27:04.151Z",
+    "contentSha256": "27479c9930880b2c1c2bccb25b8e78792ed483db99ed63a33cfda7a576d32695"
   }
 }
