@@ -4137,13 +4137,12 @@ qualified spelling of a name still ends in the bare name**, so publishing `file:
 change what insert-time resolution matches. It would move the 3,019 and nothing else. That is
 worth knowing before seven lanes spend a round on it.
 
-**3. 11,149 of the 11,167 already carry a marker saying the target is not local** — the 18
-that carry none are the entire unmarked population, and they are 17 `contains` plus 1
-`exports`. The marker *split* is measured on the corpus arm, which is the same bucket with a
-wider scope: 14,947 `isExternalCommand`, 7,582 `variableDeclaredInFile: false`, 36
-`resolution`, 36 UNMARKED. The analyzer has published its claim on 99.84% of the rows the
-store then attached elsewhere. **The claim is what the store does not read**, which is a
-shared-machinery item, not a lane item.
+**3. 11,149 of the 11,167 already carry a marker saying the target is not local** —
+6,179 `variableDeclaredInFile: false`, 4,960 `isExternalCommand`, 8 `resolution=dynamic`,
+2 `resolution=literal`, and **18 with none**, which are 17 `contains` and 1 `exports`. The
+analyzer has published its claim on 99.84% of the rows the store then attached elsewhere.
+**The claim is what the store does not read**, which is a shared-machinery item, not a lane
+item.
 
 **4. `s2_name_unique` is 0 in the corpus arm and that is a fact about the MODEL, declared as
 one.** Strategy 2 only fills rows still NULL, but insert-time resolution already scans the
