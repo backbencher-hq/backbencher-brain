@@ -207,15 +207,36 @@ export function nonClaimLanes(root: string): string[] {
 
 /** The governance-gate source that OWNS each lane's manifest. A lane whose
  *  manifest is written by a gate is projected; one whose manifest no gate
- *  writes is hand-maintained BY DESIGN and must be named as such. The lookup is
- *  deliberately literal (the gate file declares its own LEDGER_PATH) rather than
- *  guessed, so a lane cannot be credited with a projection it does not do. */
-export function projectsItsLedger(lane: string, root: string): { gate: string | null; importsOwner: boolean } {
+ *  writes is hand-maintained BY DESIGN and must be named as such.
+ *
+ *  The projection check follows the IMPORT GRAPH one hop, because the lanes do
+ *  not all import the rule the same way: some call `projectLedger` from
+ *  script/m61/ledger_projection.ts directly (m61), and the rest go through
+ *  script/m61/ledger_gate_wiring.ts, which is what stopped this from being a
+ *  fifth hand-copy of the same three steps. A detector that only matched a
+ *  literal import of one filename reported all eight in-scope lanes as
+ *  "not projecting" on a tree where all eight project - a census whose red is
+ *  false is worse than no census.
+ *
+ *  The `writes` half is load-bearing and separate: importing the rule without
+ *  writing the manifest is not a projection, it is an unused import. */
+export function projectsItsLedger(lane: string, root: string): { gate: string | null; importsOwner: boolean; writes: boolean } {
   const gateAbs = path.join(root, "script", lane, "verify-governance.ts")
-  if (!existsSync(gateAbs)) return { gate: null, importsOwner: false }
+  if (!existsSync(gateAbs)) return { gate: null, importsOwner: false, writes: false }
   const src = readFileSync(gateAbs, "utf8")
-  const writes = /writeSealed\(\s*[^)]*manifest\.json/.test(src) || /writeSealed\(\s*LEDGER_PATH\b/.test(src)
-  return { gate: `script/${lane}/verify-governance.ts`, importsOwner: /ledger_projection\.ts/.test(src) && writes }
+  // Does this gate WRITE its lane's manifest? Three real shapes exist: a direct
+  // `writeSealed(…manifest.json)` / `writeSealed(LEDGER_PATH)`, and the shared
+  // wiring's `projectLaneLedger({ … writeLedger … })` which performs the write
+  // on the gate's behalf. Matching only the first two credited six lanes that
+  // write through the wiring - and, worse, a probe that merely IMPORTED the
+  // rule was counted as projecting, because the import half was satisfied while
+  // the write half was not. The halves are decided independently below.
+  const writes =
+    /writeSealed\(\s*[^)]*manifest\.json/.test(src) || /writeSealed\(\s*LEDGER_PATH\b/.test(src) || /projectLaneLedger\(\s*\{/.test(src)
+  // Does this gate APPLY the projection rule? Directly, through the shared
+  // wiring, or (for m61/m55, which predate it) with its own in-gate projection.
+  const applies = /projectLedger\(/.test(src) || /projectLaneLedger\(/.test(src)
+  return { gate: `script/${lane}/verify-governance.ts`, importsOwner: applies, writes }
 }
 
 function main(): void {
@@ -338,9 +359,9 @@ function main(): void {
     projection.push({
       lane,
       gate: p.gate,
-      importsOwner: p.importsOwner,
+      importsOwner: p.importsOwner && p.writes,
       inScope: IN_SCOPE_PROJECTION_LANES.includes(lane),
-      status: p.gate ? (p.importsOwner ? "projected" : "gate-writes-but-hand-authored") : "hand-maintained",
+      status: p.gate ? (p.importsOwner && p.writes ? "projected" : "gate-writes-but-hand-authored") : "hand-maintained",
     })
   }
   const inScope = projection.filter((p) => p.inScope)
@@ -499,6 +520,47 @@ function main(): void {
         "M4c: the drop rule keeps the projection a fixpoint (second pass over the same records changes nothing)",
         twice.healed.length === 0 && twice.findings.length === 0 && once.ledger.issues?.[0]?.evidence?.negativeCases === undefined,
         `once=${JSON.stringify(once.healed)} twice=${JSON.stringify(twice.healed)}`,
+      )
+    }
+    // M10: the projection detector must DISCRIMINATE, on both halves. Found live: a
+    // detector matching only a literal `from "…/ledger_projection.ts"` import
+    // reported all eight in-scope lanes as "not projecting" on a tree where all
+    // eight project (six go through ledger_gate_wiring.ts). A census whose red is
+    // false is worse than no census, so both the import half and the write half
+    // are asserted — including the "imports the rule but never writes the
+    // manifest" case, which is an unused import, not a projection.
+    {
+      const mk = (src: string): string => {
+        const dir = path.join(ROOT, "script", "mZZ-detector-probe")
+        mkdirSync(dir, { recursive: true })
+        writeFileSync(path.join(dir, "verify-governance.ts"), src)
+        try {
+          return projectsItsLedger("mZZ-detector-probe", ROOT).importsOwner ? "projected" : "not-projecting"
+        } finally {
+          rmSync(path.join(ROOT, "script", "mZZ-detector-probe"), { recursive: true, force: true })
+        }
+      }
+      const directImport = mk('import { projectLedger } from "../m61/ledger_projection.ts"\nconst r = projectLedger(l, r, {})\nwriteSealed(LEDGER_PATH, projected)\n')
+      const viaWiring = mk('import { projectLaneLedger } from "../m61/ledger_gate_wiring.ts"\nprojectLaneLedger({ ledgerPath, writeLedger: (l) => writeSealed(ledgerPath, l) })\n')
+      const ownCopy = mk('function x(){ const p = projectLedger(a,b,{}) ; writeSealed(LEDGER_PATH, p.ledger) ; return p }\n')
+      // An import that is never APPLIED: the rule is named and the manifest is
+      // written by hand. This is the shape a "fix" takes when someone adds the
+      // import to satisfy a census instead of projecting anything, and it must
+      // not be credited.
+      const importedNotApplied = mk('import { projectLedger } from "../m61/ledger_projection.ts"\nexport const ref = projectLedger\nwriteSealed(LEDGER_PATH, handTypedLedger)\n')
+      // A write that never projects: the manifest is rewritten, but from a
+      // hand-typed object rather than from the records.
+      const writesOnly = mk('writeSealed(LEDGER_PATH, ledger)\n')
+      const neither = mk('export const x = 1\n')
+      mutant(
+        "M10: the projection detector recognises all three real shapes (direct import, the shared wiring, an in-gate projection) and rejects an import that is never applied plus a write that never projects",
+        directImport === "projected" &&
+          viaWiring === "projected" &&
+          ownCopy === "projected" &&
+          importedNotApplied !== "projected" &&
+          writesOnly !== "projected" &&
+          neither !== "projected",
+        JSON.stringify({ directImport, viaWiring, ownCopy, importedNotApplied, writesOnly, neither }),
       )
     }
     // M5: an untrusted record must NOT be assumed green.
