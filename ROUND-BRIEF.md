@@ -91,3 +91,44 @@ Outgoing coverage is close to finished and is the shallow half. **A lane emittin
 types while 46,944 of its edges resolve to nothing is worse than a lane emitting five that
 all resolve** — it looks finished and is not usable for refactoring, navigation or impact
 analysis. Optimise resolution, not counts.
+
+---
+
+## PROVEN RECIPE — copy this for cause B
+
+`graphql` is fixed and the fix is verified. It took two edges' target strings.
+
+**The defect:** the edge target was built as `${owner.name}.${fieldName}` (qualified)
+while the symbol published `name: fieldName` (bare). Same symbol, two spellings, so the
+edge resolved to nothing.
+
+**The fix — change the TARGET, not the published name:**
+
+```ts
+// before — targets a string nothing publishes
+addRelationship(owner.name, ownerSymbol /* `${owner.name}.${fieldName}` */, Contains, ...)
+
+// after — targets exactly what symbols.push({ name: fieldName }) published
+addRelationship(owner.name, fieldName, Contains, ...)
+```
+
+Result on 60 files: **unresolved 6,451 → 1,016 (-84%)**, tsc clean, lane fixtures
+unchanged (3/4 before and after), name surface unchanged, containment unchanged because
+`source` already carries the owner.
+
+**Why target the bare name rather than publishing the qualified one.** Publishing the
+qualified path also worked (-75%) but broke 3 of the lane's 4 fixtures and changes the
+name surface every downstream consumer sees. Retargeting has no blast radius. Same
+defect, one-line-per-edge, no contract change.
+
+**So for your lane:** find edges whose target string does not equal a published
+`name`, and make the target equal the published name. `diagnose-incoming.mts` tells you
+how many edges that is worth before you touch anything:
+
+```
+EDGES RECOVERABLE by fixing the name function: N
+by edge type: {"contains":..., "overrides":..., "uses":...}
+```
+
+Do the largest type first. Re-run the same command with the same file count and report
+before and after. If the number does not move, say so and say why.
