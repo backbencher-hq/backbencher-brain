@@ -120,11 +120,29 @@ export function isUsageSite(site: ClassifiableSite): boolean {
   return site.reversed === true && !isDeclarationRelationship(site.relationshipType)
 }
 
+/** The same rule over a site that carries SEVERAL stored kinds (rich_hover's
+ *  `relationshipTypes`). A location reached by both a declaration row and a
+ *  usage row IS a usage site — the usage row is the fact that makes it one — and
+ *  the declaration is rendered by the containment section beside it rather than
+ *  being merged into silence (§13.2). One rule, two shapes: the single-kind form
+ *  delegates here so the two can never disagree.
+ *
+ *  Before this, a collected site kept only its FIRST stored kind, so a location
+ *  reached by `uses` and then `contains` was classified by whichever row the
+ *  collector happened to read first — row ORDER deciding the vocabulary, which
+ *  is the mirror of the two-surfaces-one-answer defect §14 rule 1 names. */
+export function isUsageSiteAnyKind(site: ClassifiableSite & { relationshipTypes?: readonly string[] }): boolean {
+  const kinds = site.relationshipTypes
+  if (site.reversed !== true) return false
+  if (kinds === undefined || kinds.length === 0) return isUsageSite(site)
+  return kinds.some((k) => !isDeclarationRelationship(k))
+}
+
 /** THE collection: the usage sites of a symbol, in the input's stored order.
  *  Every count and every list on every surface is this array (or its
  *  length) — there is no second filter in the codebase. */
-export function usageSites<T extends ClassifiableSite>(sites: readonly T[]): T[] {
-  return sites.filter(isUsageSite)
+export function usageSites<T extends ClassifiableSite & { relationshipTypes?: readonly string[] }>(sites: readonly T[]): T[] {
+  return sites.filter(isUsageSiteAnyKind)
 }
 
 /** The copy every surface uses to declare WHAT it counted, so a surface that
