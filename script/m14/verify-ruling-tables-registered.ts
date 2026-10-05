@@ -49,7 +49,7 @@ const onDisk = new Set(
  * A lane appears on the UNADJUDICATED list when it has neither source. That list is the
  * real remaining work: every entry needs a lane to write a ruling table.
  */
-const UNADJUDICATED = ["graphql"]
+const UNADJUDICATED = []
 
 const SPEC_DIR = join(HERE, "spec")
 
