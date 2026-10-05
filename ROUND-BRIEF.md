@@ -91,6 +91,9 @@ Outgoing coverage is close to finished and is the shallow half. **A lane emittin
 types while 46,944 of its edges resolve to nothing is worse than a lane emitting five that
 all resolve** — it looks finished and is not usable for refactoring, navigation or impact
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> analyzer/MARKDOWN
 analysis. Optimise resolution, not counts.
 
 ---
@@ -133,6 +136,9 @@ by edge type: {"contains":..., "overrides":..., "uses":...}
 
 Do the largest type first. Re-run the same command with the same file count and report
 before and after. If the number does not move, say so and say why.
+<<<<<<< HEAD
 =======
 analysis. Optimise resolution, not counts.
 >>>>>>> analyzer/SCSS
+=======
+>>>>>>> analyzer/MARKDOWN
