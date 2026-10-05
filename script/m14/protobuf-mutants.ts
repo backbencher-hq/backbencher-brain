@@ -860,9 +860,9 @@ export const PROTOBUF_MUTANTS: Mutant[] = [
     description:
       "A proto2 `group` declared inside an `extend` block has its TYPE declared at the BLOCK'S OWN " +
       "SCOPE; only its FIELD belongs to the extendee. `Ctx` carries `scope` (the lexical position) " +
-      "separately from `owner` (the extendee), and the group's type takes `scope` while its field " +
-      "keeps `owner`. This transform reinstates the single value by re-pointing a group's TYPE at the " +
-      "OWNER — the pre-fix behaviour — which is a fabricated declaration: `optional group GroupField " +
+      "separately from `owner` (the extendee), and the group's type takes `scope`. This transform " +
+      "reinstates the single value by re-pointing a group's TYPE at the EXTENDEE — the pre-fix " +
+      "behaviour — which is a fabricated declaration: `optional group GroupField " +
       "= 121` written in a file-scope `extend TestAllTypesProto2` in " +
       "`pb-reference/src/google/protobuf/test_messages_proto2.proto` produced a nested type " +
       "`protobuf_test_messages.proto2.TestAllTypesProto2.GroupField`, which `protoc` 36.2's " +
@@ -909,19 +909,39 @@ export const PROTOBUF_MUTANTS: Mutant[] = [
         if (!typeSym?.metadata?.isGroupType) continue
         const oldTypeId = idOf(typeSym)
         const fieldSym = out.find(
-          (f: any) =>
-            f?.metadata?.isGroup === true &&
-            f?.name === typeSym.name &&
-            ownerOf(idOf(f)) !== oldTypeId.slice(oldTypeId.lastIndexOf(".") + 1),
+          (f: any) => f?.metadata?.isGroup === true && f?.name === typeSym.name,
         )
-        // The group's FIELD is the `isGroup` property sharing the type's name whose
-        // owner is the EXTENDEE. When the two share an owner (a group not in an
-        // `extend`) there is nothing to re-own and this mutant is a no-op, which is
-        // correct: the pre-fix rule and the post-fix rule agree there.
         if (!fieldSym) continue
-        const fieldOwner = ownerOf(idOf(fieldSym))
-        if (fieldOwner === ownerOf(oldTypeId)) continue
-        typeRemap.set(oldTypeId, `${fieldOwner}.${typeSym.name}`)
+        // WHICH declaration the group's FIELD belongs to, read off the analyzer's own
+        // output rather than off an id prefix. This had to be rewritten when pass 21
+        // moved the extension FIELD's published id onto the block's own scope: the old
+        // trigger compared the field id's PREFIX with the type id's parent, and from
+        // pass 21 on those two are the SAME string for a group inside an `extend` —
+        // `ownerOf(field.id)` is now the block's scope, which is also `ownerOf(type.id)` —
+        // so the guard `fieldOwner === ownerOf(oldTypeId)` below turned this mutant into
+        // a NO-OP and it SURVIVED with 0 -> 0 failures. A mutant that cannot fire is
+        // worse than no mutant: the gate reads a green it did not earn.
+        //
+        // The extendee is still published, on the field's `contains` EDGE: membership
+        // did not move when the published identity did, so the edge's SOURCE is the
+        // extendee and its `metadata.viaExtension` is what distinguishes this edge from
+        // the `groupType` membership edge, which runs from the block's own scope.
+        if (fieldSym?.metadata?.viaExtension !== true) continue
+        const fieldId = idOf(fieldSym)
+        const fieldEdge = relsOf(r).find(
+          (e: any) =>
+            (e?.type ?? e?.relationshipType) === "contains" &&
+            String(e.target) === fieldId &&
+            (e?.metadata as any)?.viaExtension === true,
+        )
+        if (!fieldEdge) continue
+        const extendee = String(fieldEdge.source)
+        if (!extendee) continue
+        // A group outside an `extend` carries no `viaExtension`, so it is skipped
+        // above; a group whose block scope IS the extendee has nothing to re-own, and
+        // there the pre-fix rule and the post-fix rule agree, so the no-op is correct.
+        if (extendee === ownerOf(oldTypeId)) continue
+        typeRemap.set(oldTypeId, `${extendee}.${typeSym.name}`)
       }
       if (typeRemap.size === 0) return r
 
@@ -1028,6 +1048,119 @@ export const PROTOBUF_MUTANTS: Mutant[] = [
       })
       void byId
       return { ...r, symbols: out, relationships: remapped }
+    },
+  },
+  {
+    id: "protobuf/extension-member-id-rebuilt-from-the-extendee",
+    language: "protobuf",
+    defectClass: "dangling-endpoint",
+    description:
+      "An extension member's PUBLISHED ID is built from the block's own enclosing declaration " +
+      "chain plus the member's own name. The EXTENDEE is a separate descriptor field " +
+      "(`extendee`), never part of the name, so an id carrying it is a name no compiler defines. " +
+      "This transform reinstates the single value by re-building every extension member's id from " +
+      "the EXTENDED TYPE that the `contains` edge already names as its source — the pre-pass-21 " +
+      "behaviour, reproduced generically from the analyzer's own `metadata.viaExtension` flag and " +
+      "its `contains` edges, so editing a fixture cannot silently stop it matching.\n\n" +
+      "It leaves the `contains` edge's SOURCE and the symbol's `ownerName` alone: membership is " +
+      "unchanged and `contains` means membership, so only the edge's TARGET is re-pointed along " +
+      "with the id. That is what makes the mutant SELF-CONSISTENT — a mutant whose edges dangled " +
+      "would fail every fixture for the wrong reason and prove nothing about this rule. A group's " +
+      "FIELD moves with the other members, because its published id is the member id plus the " +
+      "`#property` disambiguator and its `contains` edge carries `viaExtension` like any other " +
+      "extension member's. A group's TYPE does NOT move, and the mutant does not pretend " +
+      "otherwise: that id already took the block's own scope before pass 21 (it is the same value " +
+      "the sibling mutant `protobuf/group-type-owned-by-the-extendee` reinstates a violation of), " +
+      "so pass 21 left it alone and reverting pass 21 leaves it alone too.\n\n" +
+      "MEASURED by `protoc` as the discriminator, not by argument. Pass 20 reported 50 colliding " +
+      "ids within one repository as a bare count; `script/m14/protobuf-classb-protoc-adjudication.mts` " +
+      "ran libprotoc 35.1 over those 50 and read its own duplicate-symbol diagnostic: 41 REJECTED " +
+      "the set (a corpus fact — no compilation unit holds both files, so the id is correct in " +
+      "each), 4 inconclusive (an unresolved import, so the compiler never reached the check), and " +
+      "5 ACCEPTED it. Those 5 are one symbol the analyzer published as two, and every one is an " +
+      "extension member, in one repository: `google.protobuf.FeatureSet.test` " +
+      "(`unittest_features.proto:32` declares " +
+      "`test = 9999` in package `pb`; `unittest_custom_features.proto:14` declares `test = 9995` in " +
+      "package `custom_features`), `google.protobuf.FieldOptions.field_opt1`, " +
+      "`google.protobuf.FileOptions.file_opt1` and `google.protobuf.MessageOptions.message_opt1` " +
+      "between `unittest_custom_options.proto` and `unittest_custom_options_unlinked.proto`, and " +
+      "`google.protobuf.MessageOptions.custom_option_lifetimes_message` between " +
+      "`unittest_custom_options.proto` and `unittest_features.proto`. Re-running that same probe " +
+      "over the same 842 files with this analyzer at HEAD reads 50 rows and 5 ACCEPTED, and with the " +
+      "fix reads 45 rows and 0 ACCEPTED, with 38,876 distinct published ids before and 38,881 " +
+      "after: the five removed rows are exactly the five protoc accepted, and no row was added. " +
+      "Read back from `protoc`'s " +
+      "descriptor on the fixtures, the names it defines are `ext.v1.extra`, `ext.v1.counts`, " +
+      "`ext.v1.audit_ticket`, `gie.demo.Hoisted`, `gie.demo.Outer.Inner`, `nse.demo.which_twin` " +
+      "and `nse.demo.Nest.Leaf.leaf_ref` — every one the span this transform reverts.\n\n" +
+      "Caught by three fixtures, and each is load-bearing. protobuf/extend-and-group loses " +
+      "`ext.v1.extra` and regains the forbidden `ext.v1.Container.extra`, so an analyzer that " +
+      "hoists only to the PACKAGE cannot pass by accident. protobuf/group-in-extend-scope loses " +
+      "`gie.demo.Hoisted#property` and regains the forbidden `gie.demo.Target.Hoisted#property`; " +
+      "its ROW 2 is the guard, so the rule cannot be satisfied by 'always the file's package'. " +
+      "protobuf/nested-extend-scope covers the third depth — a block nested inside the type whose " +
+      "name it references — losing `nse.demo.Nest.Leaf.leaf_ref` and `nse.demo.which_twin`. " +
+      "The `uses` rows matter as much as the `contains` ones: a transform that moved the member id " +
+      "but left the field->type edge alone would produce one right edge and one wrong one.",
+    transform: (r: any) => {
+      // Which ids are EXTENDED TYPES: the source of a `contains` edge carrying
+      // `viaExtension`. Read off the analyzer's own output, not a name list.
+      const extendedTypes = new Set<string>()
+      for (const x of rels(r)) {
+        if ((x.type ?? x.relationshipType) !== "contains") continue
+        if (!(x?.metadata as any)?.viaExtension) continue
+        extendedTypes.add(String(x.source))
+      }
+      if (extendedTypes.size === 0) return r
+
+      // The member set: every symbol the `contains` edge adds to an extended type. The
+      // edge's TARGET is the member id as published now; re-sourcing the same edge onto
+      // `extendee + "." + leaf` is the pre-fix identity, so no name is hardcoded.
+      const remap = new Map<string, string>()
+      for (const x of rels(r)) {
+        if ((x.type ?? x.relationshipType) !== "contains") continue
+        if (!(x?.metadata as any)?.viaExtension) continue
+        const src = String(x.source)
+        if (!extendedTypes.has(src)) continue
+        const tgt = String(x.target)
+        const cut = tgt.lastIndexOf(".")
+        if (cut <= 0) continue
+        remap.set(tgt, `${src}${tgt.slice(cut)}`)
+      }
+      // Nothing else to remap. An earlier draft of this transform carried a second pass over
+      // the symbol list "to catch the group's TYPE as a symbol whose owner differs from its
+      // id's parent"; it was a NO-OP — both ternary arms built the same string, so it mapped
+      // every id to itself and moved nothing while looking like it reached the group. It was
+      // deleted rather than repaired, because there is nothing there to reach: the group's
+      // TYPE id already carries the block's scope, and the group's FIELD id is already the
+      // target of a `viaExtension` `contains` edge, so the loop above covers it.
+      if (remap.size === 0) return r
+
+      const map = (id: string): string => remap.get(id) ?? id
+      const out = syms(r).map((s2: any) => {
+        const before = String(s2?.metadata?.id ?? s2?.qualifiedName ?? "")
+        const after = map(before)
+        if (after === before) return s2
+        const cut = after.lastIndexOf(".")
+        return {
+          ...s2,
+          qualifiedName: after,
+          metadata: { ...(s2?.metadata ?? {}), id: after, qualifiedName: after },
+          ...(typeof s2?.ownerName === "string" ? { ownerName: after.slice(0, cut) } : {}),
+        }
+      })
+      return {
+        ...r,
+        symbols: out,
+        relationships: rels(r).map((e: any) => {
+          const source = map(String(e.source))
+          const target = map(String(e.target))
+          // The `contains` edge's SOURCE is the extendee and is already correct; only
+          // its target moves, and only where it is the member.
+          if (source === e.source && target === e.target) return e
+          return { ...e, source, target }
+        }),
+      }
     },
   },
   {
