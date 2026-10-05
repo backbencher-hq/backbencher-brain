@@ -892,6 +892,84 @@ to a symbol named `_`, for a constructor invocation that is a declaration. The s
 row appears 12 times over (`NSLocking`, `NSOperation`, `NSProgressReporting`, …).
 Reported in §Shared-machinery needs; not edited here.
 
+### Module targets: external vs unpublished
+
+The incoming table above reports `imports` and `exports` at **0 resolved and 100%
+binding to nothing**, and declared limitation 12 explained that as "paths, not
+declarations". That explanation is named for two examples — `dart:core` and
+`package:flutter/material.dart` — and **the examples are not the population.**
+`package:http/http.dart` names a file that is in this corpus, at
+`dart-http/pkgs/http/lib/http.dart`. A target that names a file this checkout tracks
+and still binds to nothing is not external; it is an unpublished local file, and the
+workstream's incoming brief requires the two to be counted apart because "these look
+identical in a count and are opposite findings".
+
+`validation/m14/fixtures/dart/module-target-resolution.ts` resolves every module target
+against the corpus's own file tree. Package identity comes from the FILE SYSTEM, not
+from the path: every tracked `.dart` file is attributed to its nearest ancestor holding a
+`pubspec.yaml`, which is what lets a monorepo's `pkgs/http/lib/http.dart` answer to
+`package:http/http.dart`. The index is built over the FULL tracked set, not the stride
+sample — a stride would answer "not in my sample" for a file that is present, which is
+the ambiguity being removed. The population is the analyzer's own emitted targets, read
+off the relationship list, so it is the analyzer's edges and not a re-derivation.
+
+```
+2,735 files sampled (the census's own stride: 600/repo x 4 + all 335 of dart-http)
+7,849 tracked .dart files attributed to a pubspec package
+275 distinct package NAMES, 2 of them held by more than one package directory
+4 degraded (>1 MB, to the fallback) — their targets are excluded, not counted
+module targets emitted: 10,959   = imports 10,657 + exports 302, to the row
+```
+
+| bucket | rows | share | what it is |
+| --- | --- | --- | --- |
+| `inCorpus` | **7,203** | **65.7%** | names a `.dart` file this checkout tracks — an UNPUBLISHED local file |
+| `frameworkSdk` | 1,327 | 12.1% | `package:flutter/…`, `flutter_test`, `sky_engine` — not in this corpus, not clonable from it |
+| `transitive` | 1,452 | 13.2% | a package or file this checkout does not track — a corpus property |
+| `sdk` | 977 | 8.9% | `dart:` URIs — no corpus checkout contains them, ever |
+
+`transitive` splits by cause, because the remedies differ: **1,396 name a package this
+corpus never cloned** (`package:firebase_core`, `package:equatable`, `package:intl`) and
+**56 name a file inside a package that IS present but untracked** — generated output,
+or a path the checkout does not carry. So **34.3% is genuinely unreachable and 65.7%
+is not**, and the number that was quoted as "100% by design" was wrong on the majority.
+
+**Both ends are unbindable, and that is the part that is not a URI problem.** The
+`imports` SOURCE is `moduleName` — `path.basename` without extension
+(`real-dart-analyzer.ts:251`), so `client.dart` is `client` — and the analyzer publishes
+no symbol for the file itself. Measured: `client.dart` publishes 13 symbols
+(`Client`, `Client.constructor`, `Client.head` … `runWithClient`, `zoneClient`) and
+**nothing named `client`**. The arbiter sees this from the other side and reports
+`imports` at `sourcePublished 6, sourceExternal 374, bothEndsResolve 0` on its
+120-file dart-http draw. An edge from an unpublished file name to an unresolvable URI is
+one-directional at both ends, which is why this label reads 100% in every resolution
+column rather than merely resolving poorly.
+
+Closing it needs two changes and **neither is lane-local**:
+
+1. **A published `Module` symbol per file**, named `moduleName`. `SymbolKind.Module`
+   already exists (`src/ast/types.ts:25`) and no Dart analyzer emits it — `grep -c
+   "SymbolKind.Module" src/ast/real-dart-analyzer.ts` is 0. This would also make the
+   file-level SOURCE of every top-level `calls`/`uses` row resolve, which currently
+   does not.
+2. **A URI→module-name map.** `ProjectIndex` (`src/ast/project-index.ts:66-79`) is
+   name-keyed — `typeKinds`, `typeMembers`, `typeBases`, `symbolNames`, `damagedFiles` —
+   and carries **no file path and no module URI**, so nothing in the index can answer
+   "which file does `package:proxicall/core/supabase_config.dart` name". `references`
+   resolves through `typeKinds` because a type mention is already a bare name; a module
+   URI is not.
+
+Reported as item 21; not made here, because (1) changes this lane's symbol population
+and every resolution rate in the tables above, and (2) is `src/ast/`, which this lane
+does not own. **No edge was invented to make the number look better.**
+
+Reproduce:
+
+```bash
+BB_DART_CONC=1 npx tsx validation/m14/fixtures/dart/module-target-resolution.ts
+# -> the 7,203 / 1,327 / 1,452 / 977 split, and the 1,396 + 56 transitive causes
+```
+
 ### Four defects in this lane's own harnesses
 
 Each was found by a number that did not move when it should have, which is the only
@@ -1154,11 +1232,15 @@ mislead a reader of the graph.
     Recovering the receiver type is type inference this analyzer does not attempt,
     and inventing a target from a name shape is the fabrication the workstream's
     rule forbids. Measured, not estimated — see §The incoming direction.
-12. **`imports` and `exports` targets are module URIs and bind to no symbol by
-    design.** 22,909 rows, 100% of both labels. `package:flutter/material.dart:*`
-    and `../core.dart` are paths, not declarations, and the M49 exports invariant
-    deliberately keeps an exported FILE out of the bindable export list. A reader
-    looking for a resolved import target will find none and should read the URI.
+12. **`imports` and `exports` targets are module URIs, and 65.7% of them name a file
+    this corpus checkout tracks.** The targets bind to no symbol, and the reason is
+    structural rather than final — see *Module targets: external vs unpublished* below
+    for the measured split. 10,959 rows on the 2,735-file census population, 22,909 on
+    the 4,788-file incoming population, 100% of both labels in both. The M49 exports
+    invariant deliberately keeps an exported FILE out of the bindable export list, and
+    the `${uri}:*` module-leaf spelling is a cross-lane convention (`@vue/shared:*`,
+    `./extra.js:*`), not this lane's to change. A reader looking for a resolved import
+    target will find none and should read the URI.
 13. **A Dart 3 record's positional field accessor is not synthesized.** `($1, $2).$2`
     is a real read of a field no declaration names, so it publishes `uses -> $2`
     with nothing to bind. Measured at 3 rows in the census above; the shape recurs in
@@ -1179,7 +1261,7 @@ mislead a reader of the graph.
 
 ## Shared-machinery needs (reported, not edited)
 
-Eighteen changes outside this lane's ownership, each stated so it can be applied
+Twenty-two changes outside this lane's ownership, each stated so it can be applied
 without re-deriving it. The files are supervisor-owned per
 `docs/analyzers/ONTOLOGY-WORKSTREAM.md` §Ownership. Items 1–5 predate this pass;
 6–8 come from measuring the incoming direction, 9–10 from removing this lane's
@@ -1189,6 +1271,9 @@ re-running the same gates and watching what they wrote to disk, 15 from
 reading `firing-check.ts --json` and finding `files` is per-file, not per-type,
 16 from comparing the label this analyzer writes against the enum member that names it,
 and 17 from running the mutation gate the way the lane prompt documents it.
+Item 22 is new at this pass and is the only one with a measured majority behind it:
+65.7% of this lane's module targets name a file the corpus tracks, so the "100%
+unresolved by design" limitation was wrong on the majority.
 Item 13 was rewritten during the final pass: it first named one gate and now names
 ten, because running the documented `npx tsx` invocation over the whole directory
 showed the failure is the directory's, not one script's. Item 18 comes from reading
@@ -1966,6 +2051,27 @@ nothing — parse the whole corpus.
     `script/m14/oracles/dart-contains.ts` implements the contract independently and would
     need to move with it. Reported so the choice is made once, deliberately, rather than
     by whichever lane hits the filter next.
+22. **`ProjectIndex` cannot resolve a module URI, so `imports`/`exports` cannot
+    resolve in ANY lane — 65.7% of this lane's 10,959 targets name a file the corpus
+    tracks.** Two changes, in this order:
+    - **`src/ast/project-index.ts`, `ProjectIndex` interface (line 66-79).** Add a
+      file-path → published-module-name map, e.g.
+      `moduleNamesByPath: Map<string, string>` plus `moduleNameOfPath(path)`. Today the
+      index is name-keyed only (`typeKinds`, `typeMembers`, `typeBases`, `symbolNames`,
+      `damagedFiles`) and carries no path, so nothing can answer "which file does
+      `package:proxicall/core/supabase_config.dart` name". `references` resolves through
+      `typeKinds` precisely because a type mention is already a bare name; a module URI
+      is not, which is why that lane-local gate does not transfer here.
+    - **`src/ast/real-dart-analyzer.ts`, `analyze()` (line 251).** Publish the file
+      itself as a `SymbolKind.Module` symbol named `moduleName`, so the `imports`
+      SOURCE resolves, and resolve relative URIs with `path.resolve` against the
+      importing file's directory so their TARGET resolves without an index. `SymbolKind.Module`
+      already exists (`src/ast/types.ts:25`) and no analyzer emits it.
+    **Why this lane does not do it unilaterally:** the first change is `src/ast/`, which
+    this lane does not own; the second changes this lane's symbol population by one per
+    file and would move every resolution rate in the tables above, which is a
+    re-baselining decision and not a bug fix. Measured evidence is *Module targets:
+    external vs unpublished*. **No edge was fabricated to close the gap.**
 
 ## Supported constructs
 
