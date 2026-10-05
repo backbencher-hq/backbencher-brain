@@ -5591,3 +5591,356 @@ leaves `this` and `super` in the unconditional set. Reported, not fixed — §J.
   artifact path, truncating writes, no check that the path is unique to this run. A shared convention
   (shard tag in the default name, or a refusal when the target exists and was not named) would close
   it everywhere at once.
+
+---
+
+## Pass 23 — the arbiter's second run is a false verdict, and causes B/C are now priced (2026-10-05)
+
+Two things this pass settles. One is a defect in shared machinery that makes the supervisor's own
+arbiter report the opposite of the truth, and it is reproducible in one minute on two files. The
+other is the A/B/C split `ROUND-BRIEF.md` asks every lane for, measured on one draw through
+production `parseFile` — where the headline "56 recoverable edges" turns out to be 0.
+
+### A. §8 item 37 — `ontology-coverage-gate.ts` publishes `emitted 0/10` on its second run
+
+The gate walks the corpus through `resumableWalk`, which appends each walked path to
+`validation/m14/measurements/walk-<lang>.txt` and **skips** any path an earlier run recorded. The
+edge tally (`observed`) is accumulated inside the walk's `run` callback, in memory. So a resumed file
+contributes its **path** to the checkpoint and its **edges** to nothing.
+
+`validation/m14/fixtures/zig/arbiter-resume-repro.sh` builds its own two-repo corpus root under
+`/tmp`, so it measures nothing about the real corpus and depends on nothing outside this lane. Both
+runs, same command, same files, the checkpoint the only difference:
+
+| run | walk line | `calls`…`exports` | summary | exit |
+|---|---|---|---|---|
+| 1, no checkpoint | `2/2 files (100.0%)  newly walked 2, resumed 0` | **EMITTED** | `emitted 6/10  ruled-sound 4  FALSIFIED 0  unjustified 0` | **0** |
+| 2, checkpoint records both | `2/2 files (100.0%)  newly walked 0, resumed 2` | `calls` `uses` `contains` `references` **RULED-SOUND**, `imports` `exports` **RULED-UNJUSTIFIED** | `emitted 0/10  ruled-sound 8  FALSIFIED 0  unjustified 2` | **1** |
+
+Both cover 100.0% of the same two files, and the walk line says so in both. Run 2 asserts the
+construct does not occur, derived from a tally that was never populated because no file was parsed.
+The damage is not confined to the count: `imports` and `exports` lose their **table** ruling and fall
+through to `script/m14/spec/zig-completeness.json#ZIG.D.1`, which is prose — the exact downgrade the
+gate's own header warns about, reached by a different road.
+
+Seen at the real population and the same defect, not a small-corpus artefact:
+
+| run | population | walk line | verdict | exit |
+|---|---|---|---|---|
+| 1 | 3,834 files | `3834/3834 (100.0%)  newly walked 2731, resumed 1103` | `emitted 7/10  ruled-sound 3  FALSIFIED 0  unjustified 0` | forced to 1 by `[BB-HANG]` (§G) |
+| 2 | 3,834 files, unchanged | `3834/3834 (100.0%)  newly walked 0, resumed 3834` | `emitted 0/10  ruled-sound 8  FALSIFIED 0  unjustified 2` | **1** |
+
+Run 2 took 20 minutes to reach that answer. The checkpoint is gitignored (`.gitignore:274`,
+`validation/m14/measurements/walk-*.txt`), so a fresh clone starts clean and run 1 is right; every
+**subsequent** run on the same machine is wrong with the corpus unchanged between them. This
+document's pass-17 §D "n=3, exit 0" is reproducible only while each of the three runs re-walks.
+
+*Repair, precisely enough to apply without re-deriving it.* **File:**
+`script/m14/ontology-coverage-gate.ts`, the `resumableWalk(...)` call at `:306-319`, together with
+the verdict loop at `:473-511`. **What it must do:** when `walkStats.walked === 0 &&
+walkStats.alreadyDone > 0`, refuse to publish the `emitted` column — the per-file data the column
+would need was never recorded — print that, and exit non-zero. That converts a false verdict into an
+honest refusal and is about five lines. The fuller repair persists each file's per-type counts **in
+the checkpoint line** (`<path>\t<type>:<n>,…`) and replays them for resumed files, in
+`script/m14/resumable-walk.ts` (`resumableWalk`, the `appendFileSync` at `:168`). **Why:** a
+measurement that reports the wrong number for the right population is worse than one that reports
+nothing, and this one also demotes a corpus probe to prose while doing it. *Not mine:* §8 shared
+machinery.
+
+### B. Cause B is 0, and the tool's own count of 56 is not a prize
+
+`script/m14/diagnose-incoming.mts zig zig 80` prints:
+
+```
+B  unresolved targets: 595   containing '.': 150 (25%)
+   final segment IS a published name: 17 (11%)   <- these resolve if both sides use one function
+   EDGES recoverable by fixing the name function: 56   {"uses":37,"calls":16,"references":3}
+```
+
+56 reads as a free win. `validation/m14/fixtures/zig/incoming-abc-class.ts` re-applies the tool's
+own rule on the same draw, then partitions the population by a fact production already records —
+`metadata.zigExternalRef` / `zigImportAlias` / `zigImportModule`, the fields Z66 writes on exactly
+the qualified edges:
+
+| cell | edges | of 17 distinct targets |
+|---|---|---|
+| rule-B population (production arm) | **56** | 17 |
+| … carrying `metadata.zigExternalRef` | **56** | 17 |
+| … carrying nothing — a genuine format mismatch | **0** | **0** |
+
+And the marked cell is not merely marked, it is correct: **56 of 56** pass all three of bare module
+path (`zigImportModule` has no `/`, `:` or `.`), spelled verbatim in the file's
+whitespace-collapsed source, and alias token present in the file. Partition identity holds.
+
+So all 56 are `std.debug.assert`, `std.testing`, `builtin.os.tag`, `apple_sdk.addPaths`,
+`translate_c.addImportToModule` and their neighbours — targets Z66 qualified **because** the alias
+is an external `@import`. Retargeting them to the leaf is the fabrication Z66 declined: it binds a
+stdlib member to a same-named local declaration. **Cause B for zig is 0**, and the shared tool's
+number is an upper bound over a population of marked externals, not a work queue.
+
+The two arms were compared because they are usually different populations:
+`diagnose-incoming.mts` reads `ASTEngine.parseFile` (the analyzer's own per-file unit) and
+production is `parseFile` from `src/ast/pool-worker` (pool, timeouts, truncation, enhancements,
+`keepSymbol`). On this draw they are **identical** — 744 published names, 3,645 edges, 1,322
+distinct targets, 595 unresolved, 150 dotted, 17 hits, 56 recoverable on both — so for zig the arms
+do not explain anything here. An earlier revision of the instrument reported **22** edges for the
+same population; the cause was the instrument's own bug, classifying each edge against a name index
+that was still being filled, so edges in early files were tested against a partial population. The
+22 was published in commit `b09cc6664` before the bug was found, and is corrected here.
+
+### C. Cause A — 799 edges on an ambiguous target, and where the fix belongs
+
+A target is ambiguous when more than one file publishes that name. What a consumer must disambiguate
+is the **edges**, so that is what is priced, and each is partitioned by whether its own metadata says
+it names a **module** (`zigImport` — already marked, already excludable) or a **declaration** that
+merely shares a name. Production arm, same 80-file draw:
+
+| cell | edges | per type |
+|---|---|---|
+| ambiguous targets | **86** (47 with no distinct `qualifiedName`) | — |
+| edges on an ambiguous target | **799** | — |
+| … naming a MODULE (`metadata.zigImport`) | **164** | already marked external |
+| … naming a LOCAL declaration | **635** | `uses 242, exports 127, calls 114, contains 106, references 45, instantiates 1` |
+| partition identity holds | **true** | |
+
+The largest colliding names, with the split per name — `quals` is how many distinct
+`qualifiedName`s the name has across its declaring files:
+
+| name | files | quals | edges | module | local |
+|---|---|---|---|---|---|
+| `std` | 66 | 0 | 200 | 140 | 60 |
+| `c` | 32 | 1 | 63 | 0 | 63 |
+| `build` | 39 | 0 | 39 | 0 | 39 |
+| `cval` | 9 | 9 | 33 | 0 | 33 |
+| `init` | 8 | 3 | 22 | 0 | 22 |
+| `destroy` | 10 | 10 | 20 | 0 | 20 |
+| `create` | 9 | 9 | 20 | 0 | 20 |
+| `Error` | 13 | 0 | 16 | 0 | 16 |
+| `translate_c` | 7 | 0 | 15 | 14 | 1 |
+
+**The split that decides where the work is.** An ambiguous edge is recoverable by a **per-file
+resolver** when the edge's own file publishes the target — the only file where the name is not a
+guess. An edge with no same-file candidate cannot be recovered that way at all, and only a name
+carrying file identity can:
+
+| of the 635 local-declaration edges | count | per type |
+|---|---|---|
+| the edge's OWN file publishes the target | **563 (88.66%)** | `uses 201, exports 127, contains 106, calls 83, references 45, instantiates 1` |
+| no same-file candidate | **72 (11.34%)** | `uses 41, calls 31` |
+
+So **cause A is overwhelmingly not this lane's to fix**: 563 of 635 are a resolver's work, and a
+resolver is shared machinery. Publishing a file-scoped `qualifiedName` would address the 72 — and
+the `quals` column says most colliding names already have several distinct qualified names, so the
+`qualifiedName` field is not empty; it is not being used as the identity. Changing the published name
+would change the name surface every downstream consumer sees and would break this lane's fixtures,
+which encode the bare-name contract. This pass does neither, and §H item 38 states the decision.
+
+### D. Cause C — what is now marked external, priced in targets
+
+`diagnose-incoming` prices C in targets, so the marked set is priced that way too. Production arm,
+same draw:
+
+| marker | edges | per type | targets |
+|---|---|---|---|
+| `metadata.zigExternalRef` (Z66) | **255** | `uses 111, calls 97, references 47` | 124 distinct, **all 124 unresolved**, of 595 unresolved targets (20.84%) |
+| `metadata.zigImport` | **386** | `imports 193, references 193` | — |
+
+Every `zigExternalRef` edge is dotted (255 of 433 dotted edges): the marker is on the qualified
+member reads Z66 introduced, and nowhere else, which is what it was introduced for.
+
+**The residue, measured rather than asserted.** 20 unresolved targets carry **neither** marker, so
+neither A nor C explains them and they are a third thing:
+`requireZig`, `readFileAlloc`, `build_root`, `graph`, `limited`, `option`, `SharedDeps`,
+`GhosttyZig`, `step`, `GhosttyI18n`, `GhosttyExe`, `GhosttyResources`, `i18n`, `GhosttyDocs`,
+`emit_docs`, `install`, `isDarwin`, `installDummy`, `getInstallStep`, `GhosttyWebdata`. The
+`Ghostty*` cluster is the shape worth naming: `root.zig` publishes `pub const GhosttyExe = …` and a
+submodule references it, so these name real declarations this lane does not publish under that
+spelling. Not diagnosed here — §G.
+
+### E. Every gate this lane can run, re-run at this commit
+
+| gate | command | result |
+|---|---|---|
+| typecheck | `npx tsc --noEmit -p tsconfig.json` | **0 errors** |
+| fixture suite | `bun run script/m14/run-fixtures.ts --lang zig` | **15 pass / 0 fail**, no baseline regression |
+| mutation (shared) | `BB_MUTANT_ONLY="zig/" bun run script/m14/mutate-analyzer.ts` | **50 / 50 CAUGHT** (1,815 → 50), exit 0 |
+| mutation (lane, m13) | `npx tsx validation/m14/fixtures/zig/m13-mutants.mts` | **6 / 6 CAUGHT** |
+| mutation (lane, z65) | `npx tsx validation/m14/fixtures/zig/z65-mutants.mts` | **5 / 5 CAUGHT** |
+| mutation (lane, z66) | `npx tsx validation/m14/fixtures/zig/z66-mutants.mts` | **5 / 5 CAUGHT** |
+| ruled probe, full pop | `npx tsx validation/m14/fixtures/zig/zig-ruled-probe.ts` | **10 / 10 controls**; `overrides` 0 hits, RAW 19, split 19/21/0/1; instrument A 239 declared / 232 produced, 0 of 17 supertype names, keyword calibration 11/11 declared, 10/11 produced |
+| ontology arbiter, full root, run 1 | `npx tsx script/m14/ontology-coverage-gate.ts zig` | walk **3834/3834 (100.0%)**, **7/10 EMITTED, RULED-SOUND 3, FALSIFIED 0, unjustified 0**; `calls` 87,401 · `uses` 100,414 · `contains` 66,284 · `imports` 5,728 · `references` 20,354 · `exports` 19,612 · `instantiates` 3,384 |
+| ontology arbiter, full root, run 2 | same command, corpus unchanged | **§A — `emitted 0/10`, exit 1, false** |
+| arbiter resume repro | `bash validation/m14/fixtures/zig/arbiter-resume-repro.sh` | §A table reproduces, ~1 min |
+| A/B/C classification | `npx tsx validation/m14/fixtures/zig/incoming-abc-class.ts $HOME/fixtures/repositories 80` | §B, §C, §D |
+| honesty gate | `npx tsx script/m14/verify-honesty.ts` | 36 failures, exit 6; **0 naming this document or any of this pass's four new files**. The failures are shared-artifact lineage (`M14.0.F1`…`F9`) and banned-term hits in **other lanes'** artifacts plus this lane's own **pre-existing** `measurements/p23/raw-*.json`, `p27/raw-*.json`, `ambiguity-split-p27.json` |
+
+### F. Z66, restated with this pass's numbers
+
+Commit `bd52de1a0` shipped the fix whose measurement this pass prices. At 300 corpus files through
+production `parseFile`, before it: 18,612 distinct `(uses|calls|references)` `(source,target)`
+pairs, of which **3,688 (20%)** named the leaf of a dotted path rooted at an `@import` of a bare
+module path, and **1,009** of those carried a leaf that some declaration in the window publishes —
+so they bound to the wrong declaration. After: **3,351 edges** (12.89% of 26,001) carry
+`zigExternalRef` + `zigImportAlias` + `zigImportModule` and the path as written
+(`uses 1901, calls 1240, references 210`), and anti-fabrication holds **3,351 / 3,351** — every
+qualified target occurs verbatim in its own file's whitespace-collapsed source. Two refusals, both
+pinned by `validation/m14/fixtures/zig/alias-receiver.zig`: a name bound by `@import` somewhere and
+to a non-import RHS somewhere is dropped from the alias map, and a local module path (relative, a
+separator, `.zig`/`.zon`) is never qualified.
+
+§B is the other side of the same fix, measured at 80 files: it moved the shared tool's unresolved
+count **565 → 595** and its dotted-target count **26 → 150**, while leaving recoverable edges at 0.
+Those 30 edges are the price of not binding a stdlib member to a same-named local declaration.
+
+### G. What pass 23 could not settle
+
+- **Run 1's exit code at the full population was forced to 1 by `[BB-HANG]`, not by the gate's own
+  verdict.** One corpus file, `zig/test/cases/compile_errors/comptime_slice_of_undefined_pointer_non-zero_len.zig`,
+  logs `[BB-PARSE-ERR] … memory access out of bounds` and 120 s later trips the engine's guard,
+  which is `process.exit(1)` in shared machinery. The table prints `FALSIFIED 0` before that, and the
+  gate's own line is `process.exitCode = 0`, but the process dies at 1 — so **the run-1 row in §A is
+  `FALSIFIED 0` with exit 1, not exit 0.** That ordering is unexplained: nothing in the gate parses
+  after the table is printed, and the gate file ends at line 522. Not diagnosed here.
+- **The 20 unmarked unresolved targets of §D are not diagnosed.** The `Ghostty*` cluster is the
+  largest and the most likely to be a real publication gap; one pass is not enough to tell a
+  publication gap from a genuinely absent declaration without reading each site.
+- **Cause A's 72 file-less ambiguous edges are counted, not fixed**, and this pass does not establish
+  that a file-scoped `name` is the right remedy — only that 563 of 635 do not need one.
+- **The A/B/C numbers are an 80-file draw**, `find <root> -name '*.zig' | sort | head -80`, which is
+  `diagnose-incoming.mts`'s own draw so the comparison is like-for-like. They are not a
+  full-population statement. Pass 17 §B measured the ambiguity classes at 3,834 files and the classes
+  are the same ones; the proportions at 80 files are not yet measured at 3,834.
+- **`[BB-HANG]` has still never fired on its intended condition** at this population (§A shows a file
+  that fails to parse, not one that hangs on its own).
+
+### H. §8 items, from this pass
+
+- **Item 37 — the arbiter's second run is a false verdict.** *File:*
+  `script/m14/ontology-coverage-gate.ts:306-319` and `:473-511`, with
+  `script/m14/resumable-walk.ts:168`. *What it must do:* refuse to publish the `emitted` column when
+  `walkStats.walked === 0 && walkStats.alreadyDone > 0`, and exit non-zero saying the per-file data
+  was not recorded; the fuller repair persists per-type counts in the checkpoint line and replays them
+  on resume. *Why, measured:* §A — same two files, same command, `emitted 6/10` exit 0 versus
+  `emitted 0/10` exit 1, and at the full population `7/10` versus `0/10`. It also demotes two table
+  rulings to spec prose while doing it. *Reproduction:*
+  `bash validation/m14/fixtures/zig/arbiter-resume-repro.sh`, ~1 minute, no dependency outside this
+  lane. *Not mine:* shared machinery.
+- **Item 38 — 88.66% of this lane's ambiguous edges are a resolver's work, and the resolver is
+  shared.** *File:* the edge-attribution path in `src/ast/pool-worker.ts` / `src/ast/engine.ts` — the
+  code that turns a `target` string into a stored symbol row. *What it must do:* prefer a candidate
+  published by the **edge's own file** when the name is published by more than one file, and record
+  which rule chose the row so a consumer can see it was a rule and not a fact. *Why, measured:* §C —
+  563 of 635 ambiguous local-declaration edges have a same-file candidate, and 72 do not. A rule that
+  cannot see file identity cannot separate those two populations, and `bb_impact` currently picks one
+  by a rule nobody chose (pass 17 §B: `init`, 1 edge, 6 candidate kinds, 617 published symbols). *Not
+  mine:* shared machinery. **This lane's decision, recorded because it is a contract decision and not
+  only a measurement:** do **not** change the published `name` to a file-scoped path. 563 of 635 need
+  no name change, the 72 that do are 11.34% of the cell, and a name change breaks this lane's
+  fixtures and every downstream consumer's name surface. Revisit if the 72 grows.
+- **Item 39 — 20 unresolved targets carry no external marker and no ambiguity finding.** *Files:*
+  `src/ast/real-zig-analyzer.ts` (publication) and the shared miss-classification ladder. *What it
+  must do:* either publish the `Ghostty*` module constants under the spelling their readers use, or
+  record why they are absent. *Why, measured:* §D — `GhosttyZig`, `GhosttyExe`, `GhosttyI18n`,
+  `GhosttyResources`, `GhosttyDocs`, `GhosttyWebdata`, `GhosttyI18n` among them, all in one corpus
+  repo, all named by edges and published by nothing. A publication gap and a genuinely absent
+  declaration look identical from outside, which is why this is an item and not a fix.
+
+### Addendum to pass 23 — the draw is one repo's build scripts, and it corrected two claims above
+
+§B–§D priced the three causes on `diagnose-incoming.mts`'s own draw at `N=80`. Before quoting any of
+it, the draw itself was measured, and it is not a sample of the corpus:
+
+| draw | files | repos present | of which named `build.zig` |
+|---|---|---|---|
+| `head -80` of the sorted `.zig` path list | 80 | **1 — `ghostty`** | **39** |
+| `head -400` | 400 | **1 — `ghostty`** | 52 |
+
+Sorted by absolute path, every `.zig` file under `ghostty/` precedes every `.zig` file under any other
+repo, so both draws are one repository, and half of the smaller one is build scripts. Every A/B/C
+number in §B–§D is therefore a statement about **ghostty's build scripts**, and this document should
+not let it be read as a statement about zig. §G's last bullet understated this; it is restated with
+numbers here. The population is printed by the instrument on every run, which is how it was caught.
+
+Re-run at `N=400`, production arm, same instrument and the same rules:
+
+| quantity | `N=80` | `N=400` |
+|---|---|---|
+| published names | 744 | 4,571 |
+| edges | 3,645 | 35,596 |
+| unresolved targets | 595 | 3,383 |
+| rule-B edges / marked / unmarked | 56 / **56** / **0** | 2,189 / **2,189** / **0** |
+| ambiguous targets | 86 | 976 |
+| edges on an ambiguous target | 799 | 15,971 |
+| … naming a module | 164 | 1,302 |
+| … naming a local declaration | 635 | **14,669** |
+| … with a same-file candidate | 563 (88.66%) | **10,409 (70.95%)** |
+| … with no same-file candidate | 72 (11.34%) | **4,260 (29.05%)** |
+| `zigExternalRef` edges / distinct unresolved targets | 255 / 124 (20.84%) | 5,009 / 1,039 (**30.71%**) |
+| unmarked unresolved targets | 438 | 1,885 |
+
+**Cause B is 0 at 5× the sample** — 2,189 of 2,189 marked, 0 unmarked — so §B was not a
+small-population accident.
+
+**§H item 38's 88.66% was optimistic and is corrected here.** The share of ambiguous local edges a
+per-file resolver can reach **falls** from 88.66% to 70.95% as the population grows, because a
+wider population publishes more colliding names and more of the colliding edges come from files that
+do not declare the target. Two draws are not a trend, so the honest statement is the direction and
+its direction is against the resolver's reach: at 3,834 files the per-file share is unknown and this
+pass did not measure it. The decision recorded in item 38 — do not change the published `name` — is
+**not** overturned by this, because it was made on the ground that 563 of 635 need no name change,
+and 10,409 of 14,669 is still 71%. What changes is the size of the class a name change would address:
+29.05% at `N=400`, not 11.34%.
+
+**§H item 39's premise is falsified and the item is withdrawn.** The 80-file residue's `Ghostty*`
+cluster was a draw artefact. `ghostty/src/build/main.zig` — which declares `pub const GhosttyExe`,
+`GhosttyI18n`, `GhosttyZig`, `GhosttyResources`, `GhosttyDocs`, `GhosttyWebdata` and `SharedDeps` at
+lines 13 ff. — is **not in the `N=80` draw and is in the `N=400` draw** (line 314 of the sorted list).
+Parsed alone through production `parseFile`, that file publishes 24 symbols including all seven names,
+each with an `exports` edge carrying `exportKind: "type"`, `targetScope: "file-local"`. The names
+disappear from the residue at `N=400`: **6 of 6 present at 80, 0 of 6 present at 400.** So there was
+no publication gap and this lane published those declarations correctly all along.
+
+The 400-file residue is a different and better-characterised thing, and its shape is legible:
+`dependOn`, `addSystemCommand`, `addFileArg`, `addError`, `addInstallLibFile`, `addInstallDirectory`,
+`addRunArtifact`, `addArgs`, `setEnvironmentVariable`, `getInstallPath`, `isWasm`, `isDarwin`,
+`pathFromRoot`, `cpu`, `fmt`. These are **`std.Build.Step` and `std.Build` methods reached through a
+value of a type declared outside the corpus** — `b.step.dependOn(…)` in a `build.zig`. The analyzer
+publishes `step` (the field read) and has no edge for `dependOn` to attach to, because `dependOn` is
+a member of a type the corpus does not declare and this analyzer does not infer the receiver's type.
+That is an honest limitation of a declaration-site analyzer, stated here rather than filed as a defect
+of this lane.
+
+### Addendum — per-type resolution and the heuristic ratio, production arm, `N=400`
+
+Two tiers, and the difference between them is the whole of cause A: **file-local** means the edge's
+own file publishes the target, the only tier where the name is not a guess; **corpus-tier** means some
+file in the population publishes it, which is what a consumer indexing one whole project reaches.
+**marked** is the share carrying `zigExternalRef` or `zigImport`, i.e. already declared external.
+
+| type | edges | file-local | corpus-tier | marked external | conf < 0.7 | no conf field |
+|---|---|---|---|---|---|---|
+| `uses` | 11,220 | 41.08% | 61.84% | 26.04% | 0 | 0 |
+| `calls` | 10,640 | 27.20% | 53.58% | 16.17% | 0 | 0 |
+| `contains` | 5,878 | **99.98%** | **99.98%** | 0% | 0 | 0 |
+| `references` | 4,284 | 38.19% | 49.51% | 52.94% | 0 | 0 |
+| `imports` | 1,902 | 30.34% | 34.70% | **100%** | 0 | 0 |
+| `exports` | 1,540 | **100%** | **100%** | 0% | 0 | 0 |
+| `instantiates` | 132 | 91.67% | 92.42% | 0% | 0 | 0 |
+| **all** | **35,596** | — | — | — | **0 (0.00%)** | **0** |
+
+**The heuristic ratio is 0 of 35,596 and every edge carries a confidence field.** Question 6 of the
+workstream's six is answered for zig without a caveat: no edge this analyzer emits is a
+below-0.7 heuristic, and none is published without the number. That is consistent with pass 17 §F,
+which recorded `uses` at 1.0 and 0.75 and `calls` at 0.85 — all at or above the threshold — and it is a
+property of the construction rather than of the sample: every edge here comes from a parse fact
+(node type, field name, position) rather than from a name-shape guess.
+
+**These corpus-tier percentages must not be compared with pass 22 §F's.** Pass 22 measured 3,834 files
+across ~20 repos and 130,935 published symbols and reported `uses` at 97.43% corpus-tier; this is 400
+files from one repo and 4,571 published symbols, at 61.84%. The populations differ by 9.6× in
+published names, so the gap between the two numbers measures the populations, **not** Z66. Z66's own
+effect is measured directly and is the `marked` column: 26.04% of `uses` and 52.94% of `references`
+now carry an explicit external marker, which is what makes them excludable rather than silently
+unresolved. Whether Z66 moved the raw corpus-tier rate, and by how much, is **not measured here** —
+that needs the full-population census, which needs disk this machine does not have (`/` was at 96%,
+21 G free).
