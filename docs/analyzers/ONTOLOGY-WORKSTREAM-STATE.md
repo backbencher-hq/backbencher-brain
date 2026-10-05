@@ -1585,3 +1585,69 @@ printed only its corpus line and no verdict, with no hang and no parse error. It
 starvation — 15 agents on 8 cores — not a lane fault, and the same lane returned 7/10 in
 the foreground immediately after. **A silent no-output from a measurement is not a
 result**, and under contention it is indistinguishable from one.
+
+## "10/10 with incoming" — measured across all 23 of my lanes
+
+`incoming-check` over a 30-file sample per lane, all 23 lanes, 0 failures.
+
+```
+lane        files fired ruled appl   edges targets   AMBIG   UNRES
+dart          30    10     0   10    5292    1632      15    2368
+clean         24     9     0    9    3608    1424     171     677
+fsharp        30     9     1   10    5238    1025     192    3373
+php           30     9     1   10    1404     251       1     958
+julia         30     8     1    9    2690     267      71    2202
+lua           30     8     1    9    5298    1913     251     933
+nim           30     8     1    9    3941     991      70    1663
+bash          30     6     1    7     608     188       3     224
+graphql       30     6     0    6     845     411       3     241
+make          19     6     0    6     822     289       0     369
+powershell    30     6     0    6    4680     710     155    2169
+scss          30     6     1    7     379     181       0      32
+zig           30     6     1    7    1403     540     181     546
+hcl           30     5     0    5    1607    1200      82     291
+r              3     5     0    5      29      12       0      16
+sql           30     5     1    6     322     154       0     111
+css           30     4     1    5   20301    6776       0      54
+yaml          30     4     0    4    3918    3821       0      16
+markdown      30     3     1    4    3053     207       2    2746
+protobuf      30     3     1    4    1635    1371       0     231
+xml           30     2     1    3     534     110     124       6
+json          30     1     1    2     739     650       0       0
+toml          30     1     1    2     247     144       2       0
+
+10/10 OUTGOING APPLICABLE ................ 3 of 23   (dart, fsharp, php)
+10/10 APPLICABLE *AND* incoming resolves  0 of 23
+```
+
+### But the 30-file sample CONFOUNDS the unresolved column, and here is the proof
+
+An edge to a symbol declared in the 31st file is "unresolved" inside a 30-file sample. So
+the unresolved column is partly an artifact of the population — the same defect as every
+other one in this programme, in the last place it could hide. Measured on `sql`:
+
+```
+                     30 files            400 files (13x)
+  uses          106 edges   75 unres (71%)   2180 edges  110 unres (5.0%)
+  references     66 edges   21 unres (32%)   1556 edges   20 unres (1.3%)
+  calls          42 edges   15 unres (36%)   1265 edges  457 unres (36%)
+```
+
+Read that carefully, because the three rows say different things:
+
+- **`uses` and `references` unresolved were mostly SAMPLING.** 71% -> 5.0% and 32% ->
+  1.3% with 13x the files. These are cross-file references whose target simply was not in
+  the sample. The 30-file number overstated them by more than an order of magnitude.
+- **`calls` unresolved did NOT improve: 36% -> 36%.** 457 call targets resolve to nothing
+  even with 400 files in scope. **That is a real defect, not a population artifact.**
+
+So the honest position on "how many are 10/10 with incoming" is: **0 of 23 as measured,
+and the measurement is not yet good enough to make that number mean what it appears to
+mean.** A 30-file sample cannot answer the question, because the question is precisely
+about whether edges reach declarations that live in OTHER files.
+
+The defensible claim today is narrower: **3 of 23 lanes are 10/10 on outgoing
+applicability; zero of 23 have been shown to have fully-resolving incoming, and the one
+type where the sample bias is ruled out — `calls` — has a real unresolved population in at
+least one lane.** Whole-corpus incoming runs, lane by lane, are the outstanding work, and
+`resumable-walk` is what makes them affordable.
