@@ -61,21 +61,13 @@
       "./symbols"
     ]
   },
-  "currentCommit": "462f620be3ca6097a560b12d314fa9b98d8c6f1a",
+  "currentCommit": "45d5ce4cc5e85d9a612825ef136b05cc257d3012",
   "workingTreeRelevantChanges": [
-    "script/m55/verify-call-hierarchy.ts",
-    "validation/m24/results/D1.json",
-    "validation/m24/results/L2.json",
-    "validation/m24/results/L3.json",
-    "validation/m24/results/L4.json",
-    "validation/m24/results/L5.json",
-    "validation/m42/results/H2.json",
-    "validation/m55/results/T2.json",
-    "script/m55/c6-cascade-probe.ts"
+    "script/m42/verify-rich-hover.ts"
   ],
   "verifierCommand": "npx tsx script/m55/verify-call-hierarchy.ts",
   "evidenceFile": "T2.json",
-  "generatedAt": "2026-10-05T03:35:53.870Z",
+  "generatedAt": "2026-10-05T03:41:01.696Z",
   "fixture": {
     "root": "$HOME/Documents/Default Project/ishaq/wt/surface/validation/m55/fixtures/t2-workspace",
     "files": [
@@ -141,7 +133,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T03:35:53.871Z",
-    "contentSha256": "f0b93956b740d5c9e42a64732f51638866468cc9f2f7e44193de1e3cafc6cbbd"
+    "sealedAt": "2026-10-05T03:41:01.698Z",
+    "contentSha256": "747e7947017f635b810092beae647589ef693865c9ea70e576c6ba841814d3de"
   }
 }

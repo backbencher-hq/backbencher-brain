@@ -29,8 +29,10 @@
 
 import { execFileSync } from "node:child_process"
 import { spawn } from "node:child_process"
-import { existsSync, readFileSync, writeFileSync } from "node:fs"
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs"
+import { tmpdir } from "node:os"
 import path from "node:path"
+import { pathToFileURL } from "node:url"
 import { H2_EXPECT, H2_FILE_APP, H2_FILE_MAIN2, H2_REL_APP, H2_REL_MAIN2, H2_ROOT, writeH2Fixture } from "./h2-fixture.ts"
 import {
   connectedGroups,
@@ -53,7 +55,10 @@ const BB = path.join(ROOT, "bin/bb")
 let checks = 0
 let passed = 0
 const failures: string[] = []
-let mutants = { caught: 0, total: 0 }
+/** `notJudged` counts a plant that never reached the oracle (no anchor, or the
+ *  copy failed to import). It is reported beside `caught`, never folded into it:
+ *  a dead plant is not a catch (§8.7). */
+const mutants = { caught: 0, total: 0, notJudged: 0, verdicts: [] as Array<{ name: string; caughtBy: string; detail: string }> }
 let negativesPlanned = 0
 /** The measured warm-budget record (§3). Set by R5; null means R5 did not
  *  complete, which the evidence states rather than leaving the old shape. */
@@ -64,12 +69,6 @@ function check(label: string, ok: boolean, detail = ""): void {
   if (ok) passed++
   else failures.push(detail ? `${label}: ${detail}` : label)
   console.log(`  ${ok ? "✓" : "✗"} ${label}${ok || !detail ? "" : ` — ${detail}`}`)
-}
-function mutant(label: string, caught: boolean, detail = ""): void {
-  mutants.total++
-  if (caught) mutants.caught++
-  negativesPlanned++
-  check(`${label} [mutant]`, caught, detail)
 }
 
 const currentCommit = execFileSync("git", ["rev-parse", "HEAD"], { cwd: ROOT, encoding: "utf8" }).trim()
@@ -138,6 +137,24 @@ class StdioLsp {
 }
 
 /** Extract {command, args} pairs from hover markdown command links. */
+/** The real hover's `bb.openUsage` links, kept so the post-session negative can
+ *  re-judge them through the same predicate the gate used. */
+const hoverUsageLinks: Array<{ command: string; args: { file: string; line: number; character: number } }> = []
+/** The reference locations the session measured, for the same reason. */
+let refLocsForNegative: ReadonlySet<string> = new Set<string>()
+
+/** THE DIFFERENTIAL, as one function so the gate and its negative judge the same
+ *  thing: every link target equals an index-stored location, exactly. A gate that
+ *  re-implements its own predicate for its negative is a gate whose negative can
+ *  pass for a different reason than the gate fails. */
+function linksEqualStoredLocations(
+  links: Array<{ args: { file: string; line: number; character: number } }>,
+  locations: ReadonlySet<string>,
+): { ok: boolean; equal: number } {
+  const equal = links.filter((l) => locations.has(`${l.args.file}:${l.args.line}:${l.args.character}`)).length
+  return { ok: links.length > 0 && equal === links.length, equal }
+}
+
 function commandLinks(markdown: string): Array<{ command: string; args: { file: string; line: number; character: number } }> {
   const out: Array<{ command: string; args: { file: string; line: number; character: number } }> = []
   const re = /\]\(command:(bb\.[a-zA-Z]+)\?([^)]+)\)/g
@@ -266,37 +283,50 @@ try {
     JSON.stringify([...refLocs]),
   )
   const usageLinks = commandLinks(md).filter((l) => l.command === "bb.openUsage")
-  const targetInRefs = (t: { file: string; line: number; character: number }) => refLocs.has(`${t.file}:${t.line}:${t.character}`)
-  // Lane 6 (§14 rule 1 / rule 3): the differential that used to read "every
-  // hover link target equals an L3 reference location" was asserting the DEFECT
-  // this lane removed — `textDocument/references` navigates to the referencing
-  // symbol's declaration (navigation.ts, which M62.A2 deliberately kept free of
-  // the stored call-site column), so "equal to a reference location" meant
-  // "opens the declaration". The contract now is the honest one:
+  // Hoisted so the negative below (which runs OUTSIDE the session, after the LSP
+  // child is disposed) can re-judge the real links through the real predicate.
+  hoverUsageLinks.push(...usageLinks)
+  // Lane 6 (§14 rule 1 / rule 3): the differential that used to read "every hover
+  // link target equals an L3 reference location" was asserting the DEFECT this
+  // lane removed — `textDocument/references` navigated to the referencing
+  // symbol's DECLARATION, so "equal to a reference location" meant "opens the
+  // declaration". Lane 6 therefore weakened it to a FILE comparison and added a
+  // second check asserting the two surfaces must DISAGREE.
   //
-  //   every hover usage link names a SITE the references surface also names
-  //   (same file — one site, one answer), and where the two lines differ, the
-  //   difference is exactly the declared call-site substitution, and the card
-  //   says so.
+  // That second check is WITHDRAWN, and the reason is a law, not a preference:
+  // §15.1 — "One surface, one answer… Counts of the same thing never differ" —
+  // forbids two surfaces from disagreeing about where a call site is, so an
+  // expectation that REQUIRES the disagreement asserts a violation. It was
+  // written against the superseded navigation; the call-site migration
+  // (9c25a1dc2, "fix(lsp/navigation): references land on the call site, and on
+  // every stored row") moved `textDocument/references` onto the stored call site
+  // for every row.
   //
-  // So each link must land on a line the references surface knows about for
-  // that file, and the card must carry the position sentence. A link that
-  // names a file the references surface never mentions is a dead end (§13.6).
-  const refFiles = new Set([...refLocs].map((l) => l.split(":")[0]!))
-  const linksNamedByRefs = usageLinks.filter((l) => refFiles.has(l.args.file))
+  // MEASURED on this fixture at this commit: references answers App.java:15 and
+  // Main2.java:6 (1-based) — the two `render()` invocations, not `main`'s
+  // declarations on lines 13 and 4 — and all four hover usage links are exactly
+  // those two locations. The surfaces agree, which is what the contract wants.
+  //
+  // What replaces it is STRICTLY STRONGER than either predecessor: lane 6's
+  // fallback compared FILES only, which would have passed a link on the wrong
+  // line of the right file. §12.1 requires exact equality with an index-stored
+  // location — path, line and character.
+  const differential = linksEqualStoredLocations(usageLinks, refLocs)
+  refLocsForNegative = refLocs
   check(
-    "H2/R4: every usage link names a site the references surface also names (one site, one answer — §14 rule 1)",
-    usageLinks.length > 0 && linksNamedByRefs.length === usageLinks.length,
-    `${linksNamedByRefs.length}/${usageLinks.length} links on a file references names; refs: ${JSON.stringify([...refLocs])}`,
+    "H2/R4: every hover usage link target EQUALS an index-stored location the references surface returns — exact path:line:character, one location owner (§12.1 + §15.1)",
+    differential.ok,
+    `${differential.equal}/${usageLinks.length} links are index-stored locations; refs: ${JSON.stringify([...refLocs])}; links: ${JSON.stringify(usageLinks.map((l) => ({ f: l.args.file.split("/").pop(), l0: l.args.line, c: l.args.character })))}`,
   )
-  const declarationLinked = usageLinks.filter((l) => refLocs.has(`${l.args.file}:${l.args.line}:${l.args.character}`))
+  // §14 rule 2/3: identity is STATED wherever a target is named. The card has to
+  // say which position each row opens, because the store's call-site line and the
+  // referencing declaration are different places and a reader cannot tell from a
+  // file:line label alone. (Kept separate from the differential above: the
+  // differential says the target is REAL, this says the card says so.)
   check(
-    "H2/R4: the hover's call-site links DIFFER from the L3 reference lines, and the card states the difference (§14 rules 2+3)",
-    // Every link must be a call-site link (none may equal a reference line,
-    // which would mean the hover regressed to the declaration), and the card
-    // must carry the sentence saying so.
-    declarationLinked.length === 0 && md.includes("each opens the stored call site"),
-    `${declarationLinked.length}/${usageLinks.length} links equal a reference line (expected 0 — the hover must open the call site, references opens the declaration, and the card must say which is which); card: ${md.slice(md.indexOf("**usages**"), md.indexOf("**usages**") + 130)}`,
+    "H2/R4: the card states WHERE each usage link opens (§14 rules 2+3 — a real target the card does not describe is still a misread link)",
+    md.includes("each opens the stored call site"),
+    md.slice(md.indexOf("**usages**"), md.indexOf("**usages**") + 130),
   )
   // And the specific case, stated numerically: the pre-lane gate proved the
   // hover opened the declaration. The new gate proves it opens the call site.
@@ -455,59 +485,238 @@ check(
   "the simulation produced a header that reads as compliant, so the law above cannot fail",
 )
 
-// --- Mutants: the suite CAN fail ---------------------------------------------------------
+// --- Mutants: the suite CAN fail ------------------------------------------------
+//
+// WHAT THIS BLOCK WAS BEFORE, because the difference is the point. The pre-lane
+// M1..M6 were reported in the evidence as `mutantsCaught: 6 / mutantsTotal: 6`.
+// Measured, only TWO of the six planted anything: M1 fabricated a target and
+// checked it was absent from the reference set, and M6 injected a self-loop row
+// through a fake database. M2, M3, M4 and M5 each RESTATED a check already
+// asserted verbatim a few lines above them (`connectedSummarySection(
+// connectedGroups([containsOnly])) === ""`, `usagesSection([], …) === ""`,
+// `usagesSection([3 sites], …).length > 0`, `md.includes("bb.openDefinition?")`).
+// A duplicate cannot fail when the original passes, so four of the six "mutants"
+// could never have been anything but green, and the count said 6.
+//
+// §6 requires planted defects that FAIL verifiers. So the block now plants real
+// ones into a COPY of the component under test (src/lsp/rich_hover.ts), with
+// the same generic-import-rewriting discipline script/m55/verify-call-hierarchy
+// .ts uses: the rewriter resolves what the source ACTUALLY imports rather than a
+// hand-written list, and an import failure is recorded as NOT JUDGED, never as a
+// catch.
 console.log("\nM: mutants")
-// M1: a FABRICATED usage target (off-by-one line) must fail the differential
-// gate — prove distinguishability against the real references set.
-{
-  const p = new StdioLsp(H2_ROOT)
-  let fabricatedIsRealRef = true
-  try {
-    await p.request("initialize", { processId: null, rootUri: `file://${H2_ROOT}`, capabilities: {} })
-    const r = await p.request("textDocument/references", { textDocument: { uri: appUri }, position: renderPos, context: { includeDeclaration: false } })
-    const list: Array<{ uri: string; range: { start: { line: number; character: number } } }> = Array.isArray(r) ? r : []
-    const locs = new Set(list.map((l) => `${filePathOf(l.uri)}:${l.range.start.line}:${l.range.start.character}`))
-    const fabricated = { file: H2_FILE_APP, line: renderPos.line + 1, character: 4 }
-    fabricatedIsRealRef = locs.has(`${fabricated.file}:${fabricated.line}:${fabricated.character}`)
-  } finally {
-    p.dispose()
-  }
-  mutant("M1: a fabricated link target (off-by-one line) fails the differential gate", !fabricatedIsRealRef, "fabricated target must NOT be a real reference")
+
+// A `raw` double over the REAL fixture files, with byte columns computed from
+// those files, so the component's own position owner resolves them. The oracle
+// therefore reads the same rows the real index holds for this fixture, with the
+// same three kinds a real hover must survive: two call rows with a real stored
+// call-site line, and one declaration containment with none.
+const byteColumnOf = (text: string, line1: number, char0: number): number =>
+  Buffer.byteLength((text.split("\n")[line1 - 1] ?? "").slice(0, char0), "utf8") + 1
+const spanOf = (file: string, line1: number, needle: string) => {
+  const text = readFileSync(file, "utf8")
+  const line = text.split("\n")[line1 - 1] ?? ""
+  const at = line.indexOf(needle)
+  if (at === -1) throw new Error(`H2 mutant oracle: "${needle}" not found on line ${line1} of ${file}`)
+  // The keys are the collector's own (`src_bs`, `src_be`, `src_ls`, `src_le`).
+  // Returning `bs/be/ls/le` instead leaves the row's own null columns in place, the
+  // collector skips every row as unplaceable, and the oracle reads a
+  // declared-absence answer as a verdict — which is exactly what happened on the
+  // first run of this block.
+  return { src_bs: byteColumnOf(text, line1, at), src_be: byteColumnOf(text, line1, at + needle.length), src_ls: line1, src_le: line1 }
 }
-// M2: leaking a contains row into the connected summary fails R6.
-mutant("M2: contains rows leaked into the connected summary fail R6", connectedSummarySection(connectedGroups([containsOnly])) === "")
-// M3: fabricating a section from empty rows fails R6.
-mutant("M3: fabricating a connected section from empty rows fails R6", connectedSummarySection([]) === "" && usagesSection([], 0, "render", "/w/x.java", 0, 0) === "")
-// M4: dropping the usages section when sites exist fails R3 (renderer must
-// produce content for a non-empty site list).
-mutant("M4: dropping the usages section when rows exist fails R3", usagesSection([callSite, callSite, callSite], 3, "render", "/w/App.java", 6, 4).length > 0)
-// M5: dropping the definition link fails R4 (nothing unclickable §12.1) —
-// a plain-text footnote yields no bb.openDefinition link in the real hover.
-mutant("M5: definition link present in the real hover (nothing unclickable)", md.includes("bb.openDefinition?"), "definition footnote must be a link")
-// M6: a degenerate SELF-LOOP relationship row (analyzer artifact: both ends
-// the same symbol) must never become a usage or connection fact — prove the
-// collection layer excludes it with a CoreDatabase-shaped double.
-{
-  const self = { id: "r-self", relationship_type: "calls", confidence: 0.5, source_symbol_id: "sym-S", target_symbol_id: "sym-S" }
-  const real = { id: "r-real", relationship_type: "calls", confidence: 0.7, source_symbol_id: "sym-main", target_symbol_id: "sym-S" }
-  const fakeRaw = {
-    prepare(_sql: string) {
-      return {
-        all(_sid: string) {
-          // Collection query shape: rows where source OR target = S. The
-          // double returns the self-loop + one real row (paths on disk exist
-          // for edgeLocation's read — use the fixture files).
-          return [
-            { ...self, src_name: "S", src_type: "method", src_bs: 4, src_be: 12, src_ls: 1, src_le: 1, src_path: H2_FILE_APP, tgt_name: "S", tgt_type: "method", tgt_bs: 4, tgt_be: 12, tgt_ls: 1, tgt_le: 1, tgt_path: H2_FILE_APP },
-            { ...real, src_name: "main", src_type: "method", src_bs: 4, src_be: 12, src_ls: 2, src_le: 2, src_path: H2_FILE_APP, tgt_name: "S", tgt_type: "method", tgt_bs: 4, tgt_be: 12, tgt_ls: 1, tgt_le: 1, tgt_path: H2_FILE_APP },
-          ]
-        },
-      }
-    },
+// TWO line conventions meet here and mixing them is the trap: `appMainDeclLine`
+// and `main2MainDeclLine` come from `lineOf()` and are ALREADY 1-based human
+// lines, while `H2_EXPECT.*.declLine` comes from the fixture module and is 0-BASED
+// LSP. The index stores 1-based lines and 1-based byte columns, so only the
+// latter goes through `indexLine`. A double that mixed the two would fail to
+// resolve, and the oracle would then read "declared absence" as a verdict.
+const indexLine = (lsp0: number): number => lsp0 + 1
+const appMain = spanOf(H2_FILE_APP, appMainDeclLine, "main")
+const main2Main = spanOf(H2_FILE_MAIN2, main2MainDeclLine, "main")
+const greeterClass = spanOf(H2_FILE_APP, indexLine(H2_EXPECT.greeter.declLine), "Greeter")
+const appClass = spanOf(H2_FILE_APP, indexLine(H2_EXPECT.greeter.declLine) + 6, "App")
+const row = (o: Partial<Record<string, unknown>>) => ({
+  id: "r", relationship_type: "calls", confidence: 0.9, source_symbol_id: "sym-x", target_symbol_id: "sym-render",
+  line_number: 0, src_name: null, src_type: null, src_bs: null, src_be: null, src_ls: null, src_le: null,
+  src_path: null, src_decl: null, src_rel: null, tgt_name: "render", tgt_type: "method", tgt_bs: 1, tgt_be: 2,
+  tgt_ls: indexLine(H2_EXPECT.render.declLine), tgt_le: indexLine(H2_EXPECT.render.declLine), tgt_path: H2_FILE_APP,
+  tgt_decl: indexLine(H2_EXPECT.render.declLine), tgt_rel: H2_REL_APP, metadata: null, time_updated: null, ...o,
+})
+const MUTANT_ROWS = [
+  // A call row whose stored line IS the call site: the link must open line 15.
+  row({ id: "r-app", source_symbol_id: "sym-app-main", target_symbol_id: "sym-render", line_number: appCallLine,
+    src_name: "main", src_type: "method", ...appMain, src_path: H2_FILE_APP, src_rel: H2_REL_APP, src_decl: appMainDeclLine }),
+  row({ id: "r-main2", source_symbol_id: "sym-main2-main", target_symbol_id: "sym-render", line_number: main2CallLine,
+    src_name: "main", src_type: "method", ...main2Main, src_path: H2_FILE_MAIN2, src_rel: H2_REL_MAIN2, src_decl: main2MainDeclLine }),
+  // The declaration containment: a usage row's ABSENCE (M55.T3), with no stored
+  // call-site line of its own — the shape that must render no connection fact.
+  row({ id: "r-greeter", relationship_type: "contains", source_symbol_id: "sym-greeter", target_symbol_id: "sym-render",
+    line_number: indexLine(H2_EXPECT.greeter.declLine), src_name: "Greeter", src_type: "class", ...greeterClass,
+    src_path: H2_FILE_APP, src_rel: H2_REL_APP, src_decl: indexLine(H2_EXPECT.greeter.declLine) }),
+  // A row whose stored call-site line is the indexer's legacy 0: the address
+  // owner returns a labelled SUBSTITUTE, and the row must SAY so (§14 rule 2).
+  // Without this row the label law is untestable — the first run of this block
+  // proved it: the M5 plant SURVIVED, because every row in the double carried a
+  // real line, so every label was already caveat-free and dropping the caveat
+  // changed nothing observable. A gate whose fixture cannot express the state it
+  // names is a gate that cannot fail.
+  row({ id: "r-legacy", relationship_type: "uses", source_symbol_id: "sym-app", target_symbol_id: "sym-render",
+    line_number: 0, src_name: "App", src_type: "class", ...appClass,
+    src_path: H2_FILE_APP, src_rel: H2_REL_APP, src_decl: indexLine(H2_EXPECT.greeter.declLine) + 6 }),
+]
+const rawDouble = {
+  prepare(_sql: string) {
+    return { all: () => MUTANT_ROWS }
+  },
+} as any
+
+/** The five things the pre-lane suite never actually checked, as predicates over
+ *  one component's answer for a fixed set of rows. */
+function verdictsFor(mod: any): Record<string, boolean> {
+  const collected = mod.richSitesForSymbol(rawDouble, "sym-render") as RichSite[]
+  const usage = collected.filter((s) => s.reversed && !/^(contains|exports)$/i.test(s.relationshipType))
+  const section = mod.usagesSection(collected, collected.length, "render", H2_FILE_APP, H2_EXPECT.render.declLine, 11)
+  const header = /(\d+) stored reference/.exec(section)
+  const rows = section === "" ? 0 : section.split("\n").filter((l) => /^\d+\. \[/.test(l)).length
+  const groups = mod.connectedGroups(collected) as Array<{ verb: string; sites: RichSite[] }>
+  const flat = groups.flatMap((g) => g.sites)
+  // The rendered link target for a row, read back out of the rendered markdown —
+  // the same way a reader reads it, not from the intermediate object.
+  const linkTargets = commandLinks(section).map((l) => `${l.args.file}:${l.args.line}:${l.args.character}`)
+  const refTargets = usage.map((s) => `${s.path}:${s.line}:${s.character}`)
+  const exactSites = usage.filter((s) => s.callSite?.kind === "call-site")
+  const substituteSites = usage.filter((s) => s.callSite !== undefined && s.callSite !== null && s.callSite.kind !== "call-site")
+  const labels = usage.map((s) => mod.siteLabel(s))
+  lastOracleTrace = {
+    collected: collected.map((s) => ({ name: s.name, kind: s.relationshipType, reversed: s.reversed, path: `${s.path}:${s.line}:${s.character}`, callSite: s.callSite ?? null })),
+    headerCount: header === null ? null : Number(header[1]),
+    renderedRows: rows,
+    linkTargets,
+    refTargets,
+    labels,
+    expectedCallSites: [`${H2_FILE_APP}:${appCallLine - 1}:0`, `${H2_FILE_MAIN2}:${main2CallLine - 1}:0`],
+    groups: groups.map((g) => ({ verb: g.verb, names: g.sites.map((s) => s.name) })),
+    section,
   }
-  const collected = richSitesForSymbol(fakeRaw as any, "sym-S")
-  const selfLoopExcluded = collected.length === 1 && collected[0]!.name === "main"
-  mutant("M6: self-loop rows are excluded from sites (analyzer artifact)", selfLoopExcluded, JSON.stringify(collected.map((s) => ({ n: s.name, l: s.line }))))
+  return {
+    // §12.1 / §14 rule 3: a link opens the stored CALL SITE (line 15 / line 6),
+    // not the referencing declaration (13 / 4) and not a neighbour of it.
+    position: linkTargets.length === 3 && refTargets.every((t) => linkTargets.includes(t)) &&
+      linkTargets.includes(`${H2_FILE_APP}:${appCallLine - 1}:0`) && linkTargets.includes(`${H2_FILE_MAIN2}:${main2CallLine - 1}:0`),
+    // §13.4: the header count IS the rendered list. Off-by-one fails here.
+    count: header !== null && Number(header[1]) === rows && rows === 3,
+    // §6 "dropped edge": every collected row still reaches the section.
+    edge: collected.length === 4 && rows === 3 && collected.some((s) => s.name === "Greeter"),
+    // §13.5 / M55.T3: a declaration containment is not a connection fact.
+    contains: groups.length === 1 && groups[0]!.verb === "called by" && flat.length === 2 &&
+      !flat.some((s) => s.name === "Greeter"),
+    // §14 rule 2: a row whose position is a LABELLED SUBSTITUTE says so in its own
+    // label, and a row the store knows exactly carries NO caveat (a caveat on an
+    // exact position is the mirror defect).
+    label: exactSites.length === 2 && substituteSites.length === 1 &&
+      exactSites.every((s) => !/declaration/.test(mod.siteLabel(s))) &&
+      substituteSites.every((s) => /declaration/.test(mod.siteLabel(s))),
+  }
+}
+/** What the oracle actually SAW on its last run. A control that fails without
+ *  showing its input is a check nobody can act on. */
+let lastOracleTrace: Record<string, unknown> = {}
+
+const COMPONENT_SOURCE = path.join(ROOT, "src/lsp/rich_hover.ts")
+
+/** Rewrite every RELATIVE import in a component copy to an absolute file URL,
+ *  resolving what the source actually imports. A missing list entry is silent;
+ *  this cannot go stale. */
+function rewriteRelativeImports(source: string, componentDir: string): string {
+  return source.replace(/from\s+"(\.\.?\/[^"]+)"/g, (_m, specifier: string) => {
+    const target = path.join(componentDir, specifier)
+    const resolved = existsSync(`${target}.ts`) ? `${target}.ts` : target
+    return `from "${pathToFileURL(resolved).href}"`
+  })
+}
+
+const MUTANTS: Array<{ name: string; from: string; to: string }> = [
+  {
+    name: "M1: wrong position — the link opens a line adjacent to the stored call site (±1)",
+    from: "        ? { path: loc.path, line: callLine0, character: 0, endLine: callLine0, endCharacter: 0 }",
+    to: "        ? { path: loc.path, line: callLine0 + 1, character: 0, endLine: callLine0 + 1, endCharacter: 0 }",
+  },
+  {
+    name: "M2: wrong count — the usages header is one more than the list it headlines",
+    from: '`**usages** — ${usage.length} stored reference${usage.length === 1 ? "" : "s"}',
+    to: '`**usages** — ${usage.length + 1} stored reference${usage.length === 1 ? "" : "s"}',
+  },
+  {
+    name: "M3: dropped edge — the last collected row never reaches the section",
+    from: "  for (const row of rows) {",
+    to: "  for (const row of rows.slice(0, -1)) {",
+  },
+  {
+    name: "M4: a declaration containment leaks into the connected summary",
+    from: "    if (verb === null) continue",
+    to: "    if (verb === null) { /* planted: admit every relationship kind */ }",
+  },
+  {
+    name: "M5: undeclared substitution — the row label drops the caveat that says which position it opens",
+    from: "  return addressNoteSuffix(site.callSite) === null ? label : `${label} ${addressNoteSuffix(site.callSite)}`",
+    to: "  return label",
+  },
+]
+
+// The CONTROL every mutant suite needs and this one lacked: the oracle must hold
+// on the REAL component. If any predicate is false here, a mutant that fails it
+// proves nothing, so the suite says so loudly instead of reporting 6/6.
+const realVerdicts = verdictsFor({ richSitesForSymbol, usagesSection, connectedGroups, siteLabel })
+const realOracleHolds = Object.values(realVerdicts).every(Boolean)
+check(
+  "H2/M: the mutant oracle HOLDS on the real component (a predicate false here would mark every mutant caught for free)",
+  realOracleHolds,
+  `${JSON.stringify(realVerdicts)} — oracle saw ${JSON.stringify(lastOracleTrace)}`,
+)
+
+const componentSource = readFileSync(COMPONENT_SOURCE, "utf8")
+const mutantDir = mkdtempSync(path.join(tmpdir(), "m42-h2-mut-"))
+for (const m of MUTANTS) {
+  if (!componentSource.includes(m.from)) {
+    mutants.total++
+    mutants.notJudged++
+    console.log(`  ✗ ${m.name} — NOT JUDGED: the plant anchor is not in the component (${m.from.slice(0, 60)}…)`)
+    continue
+  }
+  const patched = rewriteRelativeImports(componentSource.replace(m.from, m.to), path.dirname(COMPONENT_SOURCE))
+  const p = path.join(mutantDir, `rich_hover_mutant_${mutants.total}.ts`)
+  writeFileSync(p, patched, "utf8")
+  let mod: any
+  try {
+    mod = await import(pathToFileURL(p).href)
+  } catch (error) {
+    // NOT a catch: the code under test never ran (§8.7).
+    mutants.total++
+    mutants.notJudged++
+    console.log(`  ✗ ${m.name} — NOT JUDGED: import failure ${String(error).split("\n")[0]}`)
+    continue
+  }
+  const verdicts = verdictsFor(mod)
+  const flipped = Object.entries(verdicts).filter(([, ok]) => !ok).map(([k]) => k)
+  mutants.caught += flipped.length > 0 ? 1 : 0
+  mutants.total++
+  mutants.verdicts.push({ name: m.name, caughtBy: flipped.join(", ") || "(none: the mutant changed nothing the oracle measures)", detail: JSON.stringify(verdicts) })
+  const label = `${m.name}${flipped.length > 0 ? ` [caught by: ${flipped.join(", ")}]` : " [SURVIVED]"}`
+  check(label, flipped.length > 0, JSON.stringify(verdicts))
+}
+rmSync(mutantDir, { recursive: true, force: true })
+
+// A NEGATIVE, not a mutant: the differential must REJECT a fabricated target.
+// Run the real predicate against a link whose line was shifted by one — the
+// pre-lane M1 asserted only that the fabricated target was absent from the set,
+// which is a fact about the data; this asserts that the GATE rejects it.
+{
+  const tampered = hoverUsageLinks.map((l, i) => (i === 0 ? { ...l, args: { ...l.args, line: l.args.line + 1 } } : l))
+  const t = linksEqualStoredLocations(tampered, refLocsForNegative)
+  negativesPlanned++
+  check("H2/R4 [negative]: the differential REJECTS a link shifted by one line (a fabricated target cannot pass it)", t.ok === false,
+    `shifted the first of ${tampered.length} links by +1; differential still said ok=${t.ok} (${t.equal}/${tampered.length} equal)`)
 }
 
 // --- Evidence -----------------------------------------------------------------------------
@@ -521,7 +730,23 @@ const result = {
   passed,
   failed,
   failures,
-  verdict: { realComponentFailures: failed, mutantsCaught: mutants.caught, mutantsTotal: mutants.total, ok: mutants.caught === mutants.total },
+  verdict: {
+    realComponentFailures: failed,
+    mutantsCaught: mutants.caught,
+    mutantsTotal: mutants.total,
+    mutantsNotJudged: mutants.notJudged,
+    ok: failed === 0 && mutants.caught === mutants.total && mutants.notJudged === 0,
+  },
+  mutants: {
+    ...mutants,
+    whatTheseAre:
+      "source-copy plants inside src/lsp/rich_hover.ts, judged by per-predicate verdicts computed against the REAL fixture files (byte columns read off the files on disk, so the component's own position owner resolves them) and read back out of the RENDERED markdown rather than from an intermediate object.",
+    preLaneDefect:
+      "the pre-lane M1..M6 reported 6/6 caught while only TWO planted anything. M2, M3, M4 and M5 each restated a check already asserted verbatim above them (connectedSummarySection(connectedGroups([containsOnly])) === \"\", usagesSection([], …) === \"\", usagesSection([3 sites], …).length > 0, md.includes(\"bb.openDefinition?\")), so four of the six could never have been anything but green. A duplicate cannot fail when the original passes.",
+    oracleControl:
+      "the suite asserts its oracle HOLDS on the real component before judging any plant; a predicate that is false on the real component would mark every mutant caught for free.",
+    importFailureIsNotCaught: true,
+  },
   negatives: { planned: negativesPlanned },
   fixture: { root: H2_ROOT, files: [H2_REL_APP, H2_REL_MAIN2], expectations: H2_EXPECT },
   budgets: { hoverP95Ms: 50 },
@@ -530,6 +755,20 @@ const result = {
   verifierCommand: "npx tsx script/m42/verify-rich-hover.ts",
   evidenceFile: "H2.json",
   generatedAt: new Date().toISOString(),
+  /**
+   * Expectations this lane WITHDREW, with the law that now governs each. Left in
+   * the record rather than deleted: a reader who remembers the old number needs
+   * to know which law replaced it, and a gate comment is not an audit trail.
+   */
+  supersededExpectations: [
+    {
+      was: "H2/R4: the hover's call-site links DIFFER from the L3 reference lines, and the card states the difference",
+      why: "superseded by the call-site migration (9c25a1dc2, src/lsp/navigation.ts now emits a per-stored-row `callSite` and textDocument/references lands on the call site for every row). It required two surfaces to DISAGREE about where a call is, which §15.1 forbids outright ('One surface, one answer').",
+      governingLaw: "§15.1 + §12.1 — the two surfaces must agree, and every navigation target must equal an index-stored location, differentially checked.",
+      replacedBy: "H2/R4: every hover usage link target EQUALS an index-stored location the references surface returns — exact path:line:character. Strictly stronger than lane 6's fallback, which compared FILES only and would have passed a link on the wrong line of the right file.",
+      measured: "references answers App.java:15 and Main2.java:6 (1-based) — the two `render()` invocations — and all four hover usage links are exactly those two locations.",
+    },
+  ],
   limitations: [
     // GAP 1 (M42 HONESTY GAP H2, header count vs the rendered list) — CLOSED
     // by M55.T3 and restated here rather than inherited. The pre-T3
@@ -555,6 +794,7 @@ const result = {
     // real limitation is the byte column: a call-site ADDRESS carries a line,
     // not a column, so those links open at character 0.
     "A usage link opens the index-stored CALL SITE when brain_relationship.line_number holds a real line, and the referencing symbol's DECLARATION when it does not — every such row states which, in its own label and in the usages header. The store carries no call-site BYTE COLUMN, so a call-site link opens at character 0: the line is exact, the column is not stored.",
+    "Declared residual, unchanged by this lane: textDocument/references and the hover card now agree EXACTLY on the call site (both open the stored line at character 0), so there is no second answer left to reconcile on this surface. The agreement is what §15.1 asks for; the shared limit is the missing byte column, above.",
     // The render cap: MAX_USAGE_LINKS is 3. A symbol with more usage sites
     // shows 3 and a `+N more` link — declared, not silently dropped.
     `A hover renders at most ${MAX_USAGE_LINKS} usage links plus a "+N more" link, so a symbol with many callers shows three of them on the card and the rest through the hub.`,
@@ -562,5 +802,5 @@ const result = {
   ],
 }
 writeSealed(EVIDENCE, result)
-console.log(`\nH2: ${result.status.toUpperCase()} (${passed}/${checks} passed, ${mutants.caught}/${mutants.total} mutants)`)
+console.log(`\nH2: ${result.status.toUpperCase()} (${passed}/${checks} passed, ${mutants.caught}/${mutants.total} mutants caught, ${mutants.notJudged} not judged)`)
 if (failed > 0) process.exitCode = 1
