@@ -1,0 +1,111 @@
+{
+  "issue": "M28.U2",
+  "code": "U2",
+  "milestone": "M28",
+  "status": "known-gap",
+  "checks": 39,
+  "passed": 38,
+  "failed": 1,
+  "mutantsCaught": 5,
+  "mutantsTotal": 5,
+  "mutantRecords": [
+    {
+      "name": "U2 M1: an inline drifted tier copy in the agent door is OBSERVED diverging",
+      "caught": true,
+      "verdict": "observed",
+      "observed": "365 of 2170 shapes diverge; uses conf=1 stored=\"\": surface=inferred owner=usage_contextual ;; references conf=0 stored=\"indexed\": surface=inferred owner=usage_contextual ;; override conf=0.7 stored=\"nonsense-tier\": surface=inferred owner=structural"
+    },
+    {
+      "name": "U2 M2: a clone-anchored gate CONCLUDES DIFFERENTLY from the owner-anchored one (the gate is not CL5's 'two doors, one bug')",
+      "caught": true,
+      "verdict": "observed",
+      "observed": "owner-anchored reports 0, clone-anchored reports 365 — a gate anchored on a copy of the surface's rule would report 365 instead"
+    },
+    {
+      "name": "U2 M3: a serialized stored parameter value rendered verbatim is OBSERVED as a raw-JSON leak in bb_doc's human line",
+      "caught": true,
+      "verdict": "observed",
+      "observed": "real line: -  _(100%)_ method count({\"name\":\"names\",\"type\":\"string\\[\\]\"}): int is defined in src/main/java/com/demo/Inventory.java at lines 4 || mutated line: method count({\"name\":\"names\",\"type\":\"string[]\"}): int is defined in src/main/java/com/demo/Inventory.java at lines 4-4."
+    },
+    {
+      "name": "U2 M4: bb_impact stopping short of naming the member/owner substitution is OBSERVED as a silent relabel",
+      "caught": true,
+      "verdict": "observed",
+      "observed": "{\"through\":\"owning-declaration\"}"
+    },
+    {
+      "name": "U2 M5: bb_graph naming a different symbol than it resolved is OBSERVED as a silent relabel",
+      "caught": true,
+      "verdict": "observed",
+      "observed": "bb_graph resolved root.name=count (src/main/java/com/demo/Inventory.java:count:4) but published root.name=Inventory, and root.match still reads \"exact\" with no substitution declared"
+    }
+  ],
+  "currentCommit": "a0ed9eade7008de7ce93a312f6b0bd7e182a43a9",
+  "sourceFingerprint": {
+    "src/mcp/tool-handlers.ts": "a2b91b7d013c5e153a115a2693f76c1e51b4ea8daae84550e757395a8c10f426",
+    "src/lsp/evidence_tier.ts": "4cc88ae81056af0f65e977d0c613121a2d8d545ff275afda13096e6294b0c5ce",
+    "src/lsp/cross_language_hover.ts": "4834862d382354263c5626bbefad8a50449854b4f1f27c2bec679aa513309a4c",
+    "src/lsp/signature.ts": "027723d744f52f4c2746fcb27b020d4fe62af625c2c707ca35f0f5d29ca16e7d",
+    "src/lsp/identity.ts": "8700844c11a8d70a844459f674252e3834759e2bfc314b770b09eb32aa53f2b8",
+    "src/intelligence/documentation/doc-engine.ts": "3de546d39ea31849349e9b6a0b8fdb97f84da2552cc959e62b634b7fd66a89c5",
+    "script/m28/verify-surface-parity.ts": "4f05759f85c781ec16f842e098d347a7c4a9d9b4671726756bffced55ebba70d"
+  },
+  "verifierCommand": "npx tsx script/m28/verify-surface-parity.ts",
+  "evidenceFile": "U2.json",
+  "generatedAt": "2026-10-05T00:10:28.268Z",
+  "counts": {
+    "seededRelationshipShapes": 2170,
+    "seededShapesReturnedByBbGraph": 2170,
+    "hubEdgesRead": 8,
+    "hubTierDivergences": 0,
+    "seedTierDivergences": 0,
+    "crossLanguageFacts": 1,
+    "hoverCrossLanguageFacts": 1,
+    "parameterShapesProbed": 9,
+    "rawJsonLeaksInHumanText": 1
+  },
+  "negativeCases": [
+    {
+      "name": "U2 M1: an inline drifted tier copy in the agent door is OBSERVED diverging",
+      "verdict": "observed",
+      "observed": "365 of 2170 shapes diverge; uses conf=1 stored=\"\": surface=inferred owner=usage_contextual ;; references conf=0 stored=\"indexed\": surface=inferred owner=usage_contextual ;; override conf=0.7 stored=\"nonsense-tier\": surface=inferred owner=structural"
+    },
+    {
+      "name": "U2 M2: a clone-anchored gate CONCLUDES DIFFERENTLY from the owner-anchored one (the gate is not CL5's 'two doors, one bug')",
+      "verdict": "observed",
+      "observed": "owner-anchored reports 0, clone-anchored reports 365 — a gate anchored on a copy of the surface's rule would report 365 instead"
+    },
+    {
+      "name": "U2 M3: a serialized stored parameter value rendered verbatim is OBSERVED as a raw-JSON leak in bb_doc's human line",
+      "verdict": "observed",
+      "observed": "real line: -  _(100%)_ method count({\"name\":\"names\",\"type\":\"string\\[\\]\"}): int is defined in src/main/java/com/demo/Inventory.java at lines 4 || mutated line: method count({\"name\":\"names\",\"type\":\"string[]\"}): int is defined in src/main/java/com/demo/Inventory.java at lines 4-4."
+    },
+    {
+      "name": "U2 M4: bb_impact stopping short of naming the member/owner substitution is OBSERVED as a silent relabel",
+      "verdict": "observed",
+      "observed": "{\"through\":\"owning-declaration\"}"
+    },
+    {
+      "name": "U2 M5: bb_graph naming a different symbol than it resolved is OBSERVED as a silent relabel",
+      "verdict": "observed",
+      "observed": "bb_graph resolved root.name=count (src/main/java/com/demo/Inventory.java:count:4) but published root.name=Inventory, and root.match still reads \"exact\" with no substitution declared"
+    }
+  ],
+  "claimLevel": "known-gap",
+  "limitations": [
+    "The shape corpus is SEEDED into the fixture index (one symbol, one edge per kind x confidence bucket x stored class). It covers every kind and stored class the owner declares plus the fixture's own; it is a shape matrix, not a corpus sample, so the per-corpus divergence COUNT is reported in the lane report and not by this gate.",
+    "bb_doc's markdown signature line is located by matching the engine's documented prose shape ('is defined in'). If that prose changes the §15.4 probe is UNREACHABLE and the run FAILS — it never passes silently.",
+    "The seeded shapes live in a temporary BB_DATA_DIR removed in a finally block; the project directory list is compared before and after the mutant phase so a leaked fixture cannot change a later measurement while reporting success."
+  ],
+  "notes": [
+    "fixture relationship kinds: calls,contains,references",
+    "seeded 2170 relationship shapes across 73 probe symbols (2170 kind x confidence x stored-class combinations)",
+    "seed reachability: 2170 rows returned for 2170 seeded; 73 of 73 pages declared a filter in truncationReason (the filter the probe asked for)",
+    "seeded a member-through-owner shape: u2SeedMember (field) owned by Barcode (class)"
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-10-05T00:10:28.269Z",
+    "contentSha256": "820a15a26e2fd75420b1edee50bcdd41df45dcaad17c013d6f1d3386601177f2"
+  }
+}

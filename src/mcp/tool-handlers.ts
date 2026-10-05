@@ -27,6 +27,11 @@ import { graphTraversal } from "../intelligence/graph/graph-engine"
 // M48.P1 (#696): bb_analyze impact aggregates the SAME canonical calculator
 // (computeImpact + its declared budget) so the two doors cannot disagree.
 import { computeImpact, IMPACT_BUDGET } from "../lsp/impact"
+// M55.T5 / §15.1: the ONE owner of the evidence-tier vocabulary and derivation.
+// The agent door CALLS it. It used to carry a drifted copy of the rule — see the
+// `tierFor` delegation in bb_graph below and docs/m63/CL1.md for the shape of
+// defect a copy-projection is.
+import { classifyTier } from "../lsp/evidence_tier"
 import { tierForCrossLanguageEdge, factsFromRows, storedCrossLanguageRows, storedCrossLanguageFactsByName, CROSS_LANGUAGE_DEFAULT_LIMIT, CROSS_LANGUAGE_MAX_LIMIT } from "../lsp/cross_language_hover"
 import { getProjectStats } from "../intelligence/analysis/project-stats"
 import { getFileDependencies, dependencyProvenance, dependencyPageProvenance, normalizeScopePath, scopeFileCount } from "../intelligence/analysis/dependencies"
@@ -1930,17 +1935,28 @@ const handlers: Record<string, ToolHandler> = {
     } catch (error) {
       return textResult(`bb_graph: ${error instanceof Error ? error.message : String(error)}`, true)
     }
-    const tierFor = (e: { relationshipType: string; confidence: number; metadata?: { evidenceClass?: string } }): string => {
-      // Identical tier derivation to the webview core (script/m26/graph-core.ts
-      // tierForEdge) and the hover gloss — M28.U1 drift-gates the copies.
-      const STRUCTURAL = new Set(["calls", "inherits", "implements", "overrides"])
-      const IMPORT = new Set(["imports", "import"])
-      const stored = e.metadata?.evidenceClass
-      if (stored && ["structural", "import_based", "usage_contextual", "reference_qualified", "inferred"].includes(stored)) return stored
-      if (STRUCTURAL.has(e.relationshipType)) return e.confidence >= 0.7 ? "structural" : "inferred"
-      if (IMPORT.has(e.relationshipType)) return "import_based"
-      return "inferred"
-    }
+    // M55.T5 / §15.1: the tier derivation is the ONE owner's (src/lsp/
+    // evidence_tier.ts). It used to be a COPY living here, and the copy had
+    // drifted: its structural set held four kinds where the owner holds ten
+    // (call, extends, override, contains, exports, instantiates all fell
+    // through to `inferred`), it had no usage/reference branch at all
+    // (reference/references/use/uses/usage read `inferred` here and
+    // `usage_contextual` everywhere else), and it did not trim or lowercase the
+    // stored kind, so a row written `CALLS` read `inferred` here and
+    // `structural` on every other surface.
+    //
+    // Measured on the three largest indexes on this machine, streaming EVERY
+    // stored relationship row through both derivations (script/m28/
+    // verify-surface-parity.ts U2, and the counts in the lane report):
+    //   484,508 of 766,227 rows disagreed on one 18-language corpus (63.2%),
+    //   1,433 of 145,511 (1.0%) and 3,850 of 160,007 (2.4%) on two others.
+    //
+    // The reason nobody saw it is the m63 CL1 shape: `script/m28/verify-union.ts`
+    // derived this door's expectation with a COPY OF THE SAME COPY, so the two
+    // agreed by construction. Two doors, one bug. That gate is now anchored to
+    // the owner (M28.U2).
+    const tierFor = (e: { relationshipType: string; confidence: number | null; metadata?: { evidenceClass?: string | null } }): string =>
+      classifyTier({ relationshipType: e.relationshipType, confidence: e.confidence ?? null, evidenceClass: e.metadata?.evidenceClass ?? null })
     // Every edge names its two endpoints by symbol id, and a symbol id is
     // `<projectId>:<file>:<name>:<line>`. That is decodable, but an agent
     // reading 36 callee edges should not have to parse a string to learn that
