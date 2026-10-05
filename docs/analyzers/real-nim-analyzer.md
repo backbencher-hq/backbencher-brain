@@ -1948,6 +1948,7 @@ quoted from an earlier round.
 | `npx tsx script/m14/ontology-coverage-gate.ts nim` | **1** |
 | `BB_NIM_WORKERS=1 npx tsx validation/m14/fixtures/nim/census.ts <out>` | **0** | **session 18, at `deeab0756e0c4c1f`** (the module pass + the `std/` marker): 6,063 files, 6,063 parsed, **0 empty names, 0 empty kinds, 0 throws, 0 off-ontology edge types, 8 literal `unknown` endpoints**, **116,127 symbols**, of which **6,012 `module`** — the population the pass added, and it is 6,012 against 6,063 files because 51 corpus files are `.nims` and are deliberately not published. `imports` **92.0%** intra-file (was 37.1%); **all nine other types byte-identical to session 10**, which is the check that the pass touched one column and no finding (`s18-1w-census.txt`) |
 | `npx tsx validation/m14/fixtures/nim/import-resolution-probe.mts <out>` | **0** | **session 18, new instrument, at `deeab0756e0c4c1f`**: 6,063 files, 1 worker, 0 empty names, **0 empty-KIND symbols** (the guard that detects a degraded walk — `parseFile` does NOT throw on a WASM heap loss, it logs `[BB-PARSE-ERR]` and returns fewer edges, which is how an early version of this probe read 13,363 edges against the census's 13,365 without knowing why). `nim_import` 12,907 at 91.8% intra / 96.3% corpus-wide, `nim_include` 458 at 96.9% / 98.0%; **normalisation changed 364 targets and reverting binds 0**; `meta.nimStdlibModule: true` on **5,389** edges, **66** of the 485 declared nowhere in the corpus (`s18-import-probe.txt`) |
+| `BB_NIM_BEFORE=<ref> npx tsx validation/m14/fixtures/nim/imports-edge-delta.mts <out>` | **0** | **session 18, new instrument, run twice**: `1475e53d0e528d0a` → `deeab0756e0c4c1f` reads **13,364 → 13,364, delta 0, 0 of 6,063 files differing**; `2426fdda15f9960e` → `deeab0756e0c4c1f` reads **13,365 → 13,365, delta 0, 0 differing**. The module pass adds and removes no `imports` edge anywhere in the corpus, so the census's +1 is walk non-determinism between two CLEAN walks (0 threw, 0 empty-kind on both sides), not an edge the pass created. Each swap is digest-verified and a `finally` restores the tree — the artifact records the digest actually walked beside the one the caller expected, because `HEAD~1` silently became the wrong blob once the pass was itself committed (`s18-imports-edge-delta-{1475e53d,HEAD1}.{txt,json}`) |
 | `npx tsx script/m14/diagnose-incoming.mts nim nim 600 <corpus>` | **0** | **session 18, before and after, same command and same 600 files**: unresolved targets **1,859 → 1,289** (-570, -30.7%); ambiguous targets 1,112 → 1,145 (+33, and the reason is stated below); B's recoverable count **3 → 0** — which is the point, not a null result. The `+33` on ambiguity is the honest cost of the pass: it published 600 module symbols in this window, 36 of which collide by basename, and `submodule.nim` alone is the basename of 16 files. **A gain of 570 resolutions bought with 33 newly ambiguous targets is a trade, and it is reported as one** (`s18-diagnose-BEFORE.txt`, `s18-diagnose-AFTER.txt`) |
 | `npx tsx script/m14/ontology-coverage-gate.ts nim` | **1** | session 18, at `deeab0756e0c4c1f`: `corpus: 6063 admitted files`, `walk: 6063/6063 files (100.0%)`, and the verdict **`emitted 10/10  ruled-sound 0  FALSIFIED 0  ruled-without-justification 0`** — printed BEFORE the exit, so the gate's verdict is recorded even though the process then dies on `[BB-HANG] parser stuck 120s on nimony/lib/std/stripes.nim`. That hang is the known robustness finding (*Limitations* 8) and it names a **different file on each run** (`session16-arbiter.txt` names `nim/tests/distinct/typeclassborrow.nim`, this one names `stripes.nim`), which is itself the evidence that it is a heap-exhaustion race rather than one bad input. Exit 1 is the hang, not the verdict (`s18-arbiter.txt`) | session 7, and this row's exit code has MOVED: earlier passes read **2** with `corpus: 6063 admitted files` then `no RULING TABLE for nim`. This pass never reaches the refusal — it prints the header and two `[BB-PARSE-ERR] … memory access out of bounds` lines (`dll/nimhcr_0_6.nim`, `package/stdlib/stdlib.nimble`) and then dies on `[BB-HANG] parser stuck 120s … dll/nimhcr_0_6.nim`. The §8 wiring is unchanged and still the reason the gate would refuse; at 8 workers the shared watchdog now gets there first, so the refusal is no longer the observable outcome. `RULED_BY_LANG` still carries `bash`, `json`, `lua`, `toml` and no `nim` (`session7-arbiter.txt`) |
 | `npx tsx validation/m14/fixtures/nim/ruled-gate.ts` | 0 | the arbiter's own verdict loop on a copy: **`emitted 10/10  ruled-sound 0  FALSIFIED 0  ruled-without-justification 0`**, 255s, `implements EMITTED 47 edges in 4+ files, e.g. nimony/lib/std/math.nim`. Table rows: 0 |
@@ -3750,12 +3751,26 @@ quiet machine will cover all 5,227 through the production path.
     `nim-mutants.ts` restore the coverage inside this lane's own files and are CAUGHT,
     but the shared copies still run and still pass vacuously in every full-repo mutation
     gate until they are updated to select on `metadata.nimModulePath`.
-35. **`imports` gained 1 edge (13,364 → 13,365) and that is unexplained.** The census
-    and the probe agree on the total and on the split (12,907 + 458), so it is not a
-    disagreement between instruments; it is one edge that exists at `deeab0756e0c4c1f`
-    and did not at `2426fdda15f9960e`. The change in that range was the `std/` marker,
-    which adds metadata and no edge, so the edge count should not have moved — and it
-    moved anyway. **The most likely explanation is the walk itself**: the WASM parser's
-    heap exhaustion is load-dependent (*Limitations* 8), and a lost file costs edges
-    without raising an error. This lane has NOT established which file, so the +1 is
-    recorded as unexplained rather than attributed.
+35. **`imports` gained 1 edge (13,364 → 13,365) across the module pass, and it is NOT
+    the analyzer's doing.** MEASURED by `imports-edge-delta.mts`, which walks both
+    analyzer digests over the same 6,063 files and compares per file:
+
+    | comparison | before | after | delta | files differing |
+    | --- | --- | --- | --- | --- |
+    | `1475e53d0e528d0a` → `deeab0756e0c4c1f` (across the pass) | 13,364 | **13,364** | **0** | **0 of 6,063** |
+    | `2426fdda15f9960e` → `deeab0756e0c4c1f` (across the marker) | 13,365 | **13,365** | **0** | **0 of 6,063** |
+
+    **The module pass changes ZERO files' edge counts.** It publishes symbols and
+    retargets 364 edges; it adds and removes no `imports` edge anywhere in the corpus,
+    and the per-file comparison confirms it file by file rather than in aggregate.
+
+    So the +1 is not an edge the pass created — it is the SAME analyzer producing 13,364
+    in one walk and 13,365 in another. Two of this lane's own walks on the identical blob
+    and the identical file list disagree by one edge, which is the same non-determinism
+    *Limitations* 8 records for the WASM parser's heap and which the census's
+    degraded-walk guard exists to catch. **It is caught here**: the delta harness counts
+    empty-`kind` symbols, not throws, and both sides read **0 threw and 0 empty-kind**, so
+    the difference is not a lost file either. That leaves a one-edge difference between two
+    clean walks of the same input, which this lane has NOT reduced further. It is 0.008%
+    of the type and it is reported rather than rounded away — an unexplained 1 is a
+    smaller problem than an unexplained 1,859, and larger than nothing.
