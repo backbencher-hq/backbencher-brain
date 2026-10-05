@@ -148,11 +148,39 @@ function unquote(t: string): string {
 
 const isDashed = (t: string): boolean => t.trim().startsWith("--")
 
-/** The at-keyword a scoped `at_rule` carries, read from the `at_keyword` child. */
+/**
+ * The at-rule's own keyword.
+ *
+ * Two node shapes carry one, and reading only `at_keyword` misses the second:
+ *
+ *   at_rule / layer_statement   a NAMED `at_keyword` child holds "@layer"
+ *   media_statement             NO named keyword child exists — measured on
+ *   supports_statement          `@media (min-width:768px){…}` the children are
+ *                               `feature_query`, `block`, because the `@media`
+ *                               token is ANONYMOUS. An `at_keyword`-only reader
+ *                               returns "" and every media/supports scope name it
+ *                               builds is `" " + prelude` — e.g.
+ *                               `" (min-width:768px)"` — which names no scope at all.
+ *
+ * Discovered while measuring PASS 13's shortfall, where the same mistake in a
+ * SEPARATE probe reported NAME-MISMATCH on 4,757 of 4,757 occurrences. Here the
+ * consequence was confined to the `distinct` row's KEY, because the ATTRIBUTABLE and
+ * NAMED rows key on the SELECTOR name and never ask for a scope name — so the row's
+ * COUNT was unaffected (measured: 14,007 before and after this change) while the key
+ * was wrong. A wrong key that happens not to move a count is still a wrong key.
+ *
+ * The anonymous token is taken from the first child INCLUDING unnamed ones and is
+ * accepted only when it begins with `@` — a character test, no pattern.
+ */
 function atKeywordOf(n: any): string {
   for (let i = 0; i < n.namedChildCount; i++) {
     const c = n.namedChild(i)
     if (c && c.type === "at_keyword") return c.text.trim().toLowerCase()
+  }
+  const first = n.child(0)
+  if (first) {
+    const t = first.text.trim().toLowerCase()
+    if (t.length > 0 && t.charAt(0) === "@") return t
   }
   return ""
 }
@@ -163,6 +191,89 @@ function kids(n: any): any[] {
   for (let i = 0; i < n.namedChildCount; i++) {
     const c = n.namedChild(i)
     if (c) out.push(c)
+  }
+  return out
+}
+
+function isOpenChar(c: string): boolean {
+  return c === "(" || c === "[" || c === "{"
+}
+function isCloseChar(c: string): boolean {
+  return c === ")" || c === "]" || c === "}"
+}
+
+/**
+ * Split a selector into its TOP-LEVEL comma-separated parts, each whitespace-collapsed.
+ * Depth is tracked across (), [], {} and quotes so a comma nested inside `:has(a, b)`,
+ * `:not(x, y)` or `[href="a,b"]` stays inside its part. Character walk, not a pattern.
+ */
+function topLevelParts(s: string): string[] {
+  const parts: string[] = []
+  let depth = 0
+  let quote = ""
+  let start = 0
+  for (let i = 0; i < s.length; i++) {
+    const c = s.charAt(i)
+    if (quote !== "") {
+      if (c === "\\") {
+        i++
+        continue
+      }
+      if (c === quote) quote = ""
+      continue
+    }
+    if (c === '"' || c === "'") {
+      quote = c
+      continue
+    }
+    if (isOpenChar(c)) depth++
+    else if (isCloseChar(c)) depth--
+    else if (c === "," && depth === 0) {
+      parts.push(collapseSpace(s.slice(start, i)))
+      start = i + 1
+    }
+  }
+  parts.push(collapseSpace(s.slice(start)))
+  return parts
+}
+
+/**
+ * The key the `contains` attribution test compares on: the comma group with EVERY space
+ * removed from every part.
+ *
+ * ## Why the attribution test needs this, and why the first version was wrong
+ *
+ * This test asks whether a published `contains` edge's TARGET is a name this file also
+ * publishes as a symbol. Comparing the two as plain strings reported 31,732 attributable
+ * against 33,242 published — and the row was labelled "LOWER BOUND on the denominator".
+ * A lower bound cannot be exceeded by the quantity it bounds, so the label was wrong and
+ * so was the reading of the number built on it. PASS 11 reported the resulting interval
+ * [31,732, 36,688] as a BRACKET and declared the branch UNSETTLED on the strength of it.
+ *
+ * The cause is that the two sides are not the same KIND of string. `real-css-analyzer.ts`
+ * line 1522 publishes a group as `resolvedSelectors.join(", ")`, so a minified
+ * `.container,.container-sm` is published as `.container, .container-sm`. The grammar's
+ * `selectors` node text is the SOURCE text. String equality therefore fails on every
+ * comma group in every minified stylesheet, by construction, however correct the edge is.
+ * The same join lands inside a nested functional too, because the name is rebuilt from the
+ * selectors node's children: `pico/css/pico.classless.indigo.min.css` reads
+ * `:has(button:focus,[type=submit]:focus,...)` on the grammar side and
+ * `:has(button:focus, [type=submit]:focus, ...)` as published.
+ *
+ * Collapsing whitespace RUNS is not enough — it was measured at 99.49% with 35 residual
+ * edges. Removing every space is what closes it. Depth tracking still matters, so that a
+ * part cannot be split in half and rejoined into a string that accidentally matches.
+ *
+ * What this does NOT do is replicate `processRuleSet`. It reads only the published name and
+ * the grammar text, so it can still DISAGREE with the analyzer — which is the property the
+ * instrument's header requires and the reason it is not simply an import.
+ */
+function selectorGroupKey(s: string): string {
+  const joined = topLevelParts(s).join(" ")
+  let out = ""
+  for (const ch of joined) {
+    if (ch === " " || ch === "\t" || ch === "\n" || ch === "\r" || ch === "\f") continue
+    out += ch
   }
   return out
 }
@@ -440,9 +551,19 @@ for (const f of files) {
   // the PUBLISHED table rather than a re-implementation of `processRuleSet`'s six
   // early-return guards: re-implementing them would make this a copy of the analyzer, and
   // a copy cannot disagree with what it copies.
+  //
+  // Two sets, not one. `symbolNames` compares a name AS TEXT; `symbolNameKeys` compares it
+  // on `selectorGroupKey`, which is what makes the attribution test survive the analyzer's
+  // `join(", ")` normalisation. Both are kept and both are printed, because the gap between
+  // them is the measurement: 31,732 attributable by text against 33,242 published was read
+  // as a gap, and it is not one — see `selectorGroupKey`.
   const symbolNames = new Set<string>()
+  const symbolNameKeys = new Set<string>()
   for (const sy of syms) {
-    if (typeof sy.name === "string" && sy.name.length > 0) symbolNames.add(collapseSpace(sy.name))
+    if (typeof sy.name === "string" && sy.name.length > 0) {
+      symbolNames.add(collapseSpace(sy.name))
+      symbolNameKeys.add(selectorGroupKey(sy.name))
+    }
   }
   const rels: any[] = Array.isArray(r.relationships) ? r.relationships : []
   let pfVar = 0
@@ -636,6 +757,7 @@ for (const f of files) {
             const line = rs.startPosition.row + 1
             const selText = collapseSpace((kids(rs).find((c) => c.type === "selectors") ?? { text: "" }).text)
             if (symbolNames.has(selText)) g.scopeAttributed[key]++
+            else if (symbolNameKeys.has(selectorGroupKey(selText))) g.scopeAttributed[key]++
             else {
               g.scopeNoSymbol[key]++
               bucket(
@@ -672,6 +794,7 @@ for (const f of files) {
               const line = rs.startPosition.row + 1
               const selText = collapseSpace((kids(rs).find((c) => c.type === "selectors") ?? { text: "" }).text)
               if (symbolNames.has(selText)) g.scopeAttributed[key]++
+              else if (symbolNameKeys.has(selectorGroupKey(selText))) g.scopeAttributed[key]++
               else {
                 g.scopeNoSymbol[key]++
                 bucket(
@@ -832,7 +955,7 @@ rec.push({
   published: containsPublishedScope,
   delta: containsGrammar - containsPublishedScope,
   gapCandidate: true,
-  note: "superseded by the subtree row; kept because the direct count is what a reader reaches for first and it is 212 short of the subtree count",
+  note: `superseded by the subtree row; kept because the direct count is what a reader reaches for first, and it is ${(containsGrammarDeep - containsGrammar).toLocaleString("en-US")} short of the subtree count`,
 })
 rec.push({
   type: "contains (at-rule scope, subtree)",
@@ -849,12 +972,25 @@ const containsNamed = SCOPE_KEYS.reduce((t, k) => t + g.scopeReachable[k], 0)
 const containsAttributed = SCOPE_KEYS.reduce((t, k) => t + g.scopeAttributed[k], 0)
 rec.push({
   type: "contains (at-rule scope, ATTRIBUTABLE)",
-  mapping: "1:N per rule_set in a named scope whose SELECTOR NAME was published as a symbol",
+  mapping: "1:N per rule_set in a named scope whose SELECTOR NAME was published as a symbol, compared on the comma group with whitespace removed",
   grammar: containsAttributed,
   published: containsPublishedScope,
   delta: containsAttributed - containsPublishedScope,
   gapCandidate: true,
-  note: "LOWER BOUND on the denominator: it counts only rule_sets whose selector NAME was published verbatim, so it misses every rule whose published name was normalised (reset selectors dropped, nesting composed). Published exceeds it by 1,454",
+  // Every number in this note is computed from the values on this row. The previous
+  // version HAND-TYPED them, and three of the four notes on these rows disagreed with the
+  // delta column printed beside them once the corpus moved: this row said 1,454 where the
+  // column said 1,510, the NAMED row said 3,409 where the column said 3,446, and the
+  // distinct row quoted a published count of 31,879 that was two corpus moves stale. A
+  // note that restates a measurement instead of deriving it is a second number to keep
+  // wrong, so these are template literals now and cannot drift from the column again.
+  note:
+    `the analyzer NORMALISES a selector group before publishing it (real-css-analyzer.ts joins with ", "), ` +
+    `so comparing a published name to the grammar's raw text undercounts every comma group in a minified file. ` +
+    `On \`selectorGroupKey\` this row is ${containsAttributed.toLocaleString("en-US")} against ${containsPublishedScope.toLocaleString("en-US")} published, ` +
+    `so published falls ${(containsAttributed - containsPublishedScope).toLocaleString("en-US")} short of it (the delta column, which counts the other way round, reads +${(containsAttributed - containsPublishedScope).toLocaleString("en-US")}). ` +
+    `This row was labelled "LOWER BOUND on the denominator" while published EXCEEDED it — a lower bound cannot be ` +
+    `exceeded by the quantity it bounds, so the label and the interval PASS 11 reported from it were both wrong.`,
 })
 rec.push({
   type: "contains (at-rule scope, NAMED)",
@@ -863,7 +999,10 @@ rec.push({
   published: containsPublishedScope,
   delta: containsNamed - containsPublishedScope,
   gapCandidate: true,
-  note: "UPPER BOUND: every rule_set in a named scope, including the ones processRuleSet declines at one of its six early returns. Published falls 3,409 short of it",
+  note:
+    `every rule_set in a named scope, including the ones processRuleSet declines at one of its six early returns. ` +
+    `Published falls ${(containsNamed - containsPublishedScope).toLocaleString("en-US")} short of it. This is a true UPPER bound: ` +
+    `it counts occurrences the analyzer had every opportunity to emit an edge for and did not.`,
 })
 rec.push({
   type: "contains (at-rule scope, distinct)",
@@ -872,7 +1011,10 @@ rec.push({
   published: containsPublishedScope,
   delta: containsDistinct - containsPublishedScope,
   gapCandidate: true,
-  note: "collapses far too hard (13,974 vs 31,879 published), which is the measurement that shows the analyzer emits per OCCURRENCE and not per distinct pair",
+  note:
+    `collapses far too hard (${containsDistinct.toLocaleString("en-US")} against ${containsPublishedScope.toLocaleString("en-US")} published), ` +
+    `which is the measurement that shows the analyzer emits per OCCURRENCE and not per distinct pair — the store key ` +
+    `collapses the repeats a minified file is made of.`,
 })
 rec.push({
   type: "contains (custom-property branch)",
@@ -928,9 +1070,15 @@ for (const r of rec) say(`  ${r.type}: ${r.note}`)
 
 const containsLo = containsAttributed
 const containsHi = containsNamed
-if (containsLo <= containsPublishedScope && containsPublishedScope <= containsHi) {
+if (containsLo > containsPublishedScope) {
   say()
-  say(`CONTAINS at-rule-scope is a BRACKET, not a delta: published ${containsPublishedScope} sits inside [${containsLo}, ${containsHi}],`)
+  say(`CONTAINS at-rule-scope, SETTLED: published ${containsPublishedScope} vs ${containsLo} attributable rule_sets whose selector name this file publishes.`)
+  say(`Delta ${containsLo - containsPublishedScope}. The interval PASS 11 reported as a BRACKET is WITHDRAWN: its lower endpoint was this row,`)
+  say(`labelled a lower bound while published exceeded it, which no lower bound can do. See \`selectorGroupKey\`.`)
+  say(`The remaining ceiling is the NAMED row: ${containsHi - containsPublishedScope} rule_set occurrences sit in a named scope with no published edge.`)
+} else {
+  say()
+  say(`CONTAINS at-rule-scope: published ${containsPublishedScope} sits inside [${containsLo}, ${containsHi}],`)
   say(`so this instrument CANNOT say whether the ${containsHi - containsPublishedScope} unattributed occurrences are declined rules or skipped edges.`)
   say(`Reported as UNSETTLED with both bounds. Closing it needs the published SELECTOR-NAME mapping, not another count.`)
 }
@@ -980,6 +1128,7 @@ dump("RESIDUAL: `var()` shapes that yield no edge at all", resid.varLeafResidual
 dump("RESIDUAL: per-file shortfall, grammar `--x` leaves minus published isVariableRef", resid.varPerFileShortfall)
 dump("RESIDUAL: import_statement shapes the analyzer cannot reach", resid.importResidual)
 dump("RESIDUAL: same keyframes name under more than one keyword (NOT an override by design)", resid.keyframeResidual)
+dump("RESIDUAL: rule_set in a NAMED scope whose selector name was never published", resid.containsResidual)
 
 say()
 say("published edges per type, from production parseFile:")

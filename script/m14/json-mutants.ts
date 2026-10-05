@@ -319,6 +319,40 @@ const jsonArrayItemNamedFromBareName = (r: any) => ({
   }),
 })
 
+/** Reverts the module-prefix strip to the fixed `slice(rootName.length + 1)`, for the one
+ *  path shape where the character at `rootName.length` is `[` rather than `.`.
+ *
+ *  This models the defect this lane measured and fixed: a document whose TOP LEVEL is an
+ *  array has no key to name it, so the MODULE is the only thing that can, the qualified path
+ *  hangs off the module by an index, and a strip that assumes the dot eats the bracket. The
+ *  published name becomes `0].tags[0]` where the contract says `[0].tags[0]` — a `]` with no
+ *  `[` before it, a family no keyed form (`Statement[0]`) and no element form produces.
+ *
+ *  The predicate is `name.startsWith("[")`, which is SOUND rather than convenient: after the
+ *  fix a symbol name begins with `[` if and only if `afterModuleImpl` took its bracket branch,
+ *  so this transforms exactly the population the defect affected and nothing else. It is a
+ *  plain character comparison — no pattern matching — unlike several transforms above it.
+ *
+ *  Caught by json/TopLevelArray's three `forbidSymbols` (`0].tags[0]`, `0].tags[1]`,
+ *  `0].tags`) and by its two `expectSymbols` pins on the bracket form.
+ */
+const jsonTopLevelArrayNameTruncatesBracket = (r: any) => ({
+  ...r,
+  symbols: (r.symbols ?? []).map((s: any) => {
+    const name = String(s.name ?? "")
+    if (!name.startsWith("[")) return s
+    const owner = String(s.ownerName ?? "")
+    return {
+      ...s,
+      name: name.slice(1),
+      // The owner's name is derived from the child's by cutting at the last `[`, so it
+      // carries the same truncation and must be reverted together or the fixture would
+      // catch a half-applied defect.
+      ownerName: owner.startsWith("[") ? owner.slice(1) : owner,
+    }
+  }),
+})
+
 /** Reverts the fix that made `metadata.version` publish the dependency's VERSION RANGE.
    *
    *  The defect it reintroduces is the one this lane shipped: `dependencyVersion` looked
@@ -473,5 +507,13 @@ const jsonArrayItemNamedFromBareName = (r: any) => ({
     description:
       "M14 ontology regression: every edge loses its site line, restoring the measured pre-M60 state in which `line_number` occurred ZERO times in the analyzer and every json edge in the index was stored with a NULL line while symbols carried `range` throughout.",
     transform: stripJsonEdgeLines,
+  },
+  {
+    id: "json/top-level-array-name-truncates-bracket",
+    language: "json",
+    defectClass: "wrong-symbol-identity",
+    description:
+      "M60 regression, MEASURED AND FIXED THIS LANE: the module-prefix strip is a fixed `slice(rootName.length + 1)`, which assumes the character at `rootName.length` is the dot separating a module from its first key. In a document whose TOP LEVEL is an array that character is `[`, so the `+1` ate it and `mod[0].tags[0]` published the name `0].tags[0]` — a `]` with no `[` before it, a spelling no keyed form (`Statement[0]`) and no element form (`rows[0][0]`) can produce. Over a 514-file stride sample of the 2,569 admitted corpus documents whose top level is an array: 17,803 such names in 215 of 514 files, 14.8% of the 120,464-symbol population; after the fix 0, with the 17,803 reappearing as the bracket form and the other three spelling buckets and the total symbol count unchanged to the digit. Measured to be SPELLING-ONLY and not a graph defect: edge count, both-ends resolution (120,464 of 120,464), containment soundness (120,464 of 120,464) and declared-owner agreement (85,670 of 85,670) are byte-identical on both sides of the fix, and the lane's own differential reports the same 363,344 contains edges covered with 0 unexplained either way — the oracle reads qualified PATHS, so it is structurally blind to a defect that lives only in the symbol NAME. That blindness is why this mutant exists. Caught by json/TopLevelArray.",
+    transform: jsonTopLevelArrayNameTruncatesBracket,
   },
 ]
