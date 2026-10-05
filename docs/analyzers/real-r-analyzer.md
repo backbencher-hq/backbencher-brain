@@ -247,23 +247,44 @@ of any prefix. Over the population:
 | `overrides` | **107** | **9** | **0** | EMITTED |
 | `instantiates` | **3** | **2** | **0** | EMITTED |
 
-Total 80,095 relationships over 29,557 symbols. `references` moved 389 → 2,137
-and the total 78,311 → 80,095 (+2.28%) when `::`/`:::` was given the `references`
-label it should have carried all along; the measurement and the reasoning are under
-**R7** below.
+Total 80,095 relationships over **29,562** symbols in that run. `references` moved
+389 → 2,137 and the total 78,311 → 80,095 (+2.28%) when `::`/`:::` was given the
+`references` label it should have carried all along; the measurement and the
+reasoning are under **R7** below.
 
-The remaining wobble is the same one, and it is stated here rather than absorbed:
-four production walks over this same 2,184-file population disagree by up to 94
-edges on `calls` and 12 on `contains`, because the 120-second parse bomb kills a
-DIFFERENT file each run — `ggplot2/R/scale-hue.R` on the run that produced
-`ontology-ten-types.txt`'s predecessor, `ggplot2/R/scale-manual.R` on the arbiter
-run, `usethis/R/badge.R` on the labels run. Both totals above are correct for the
-files they walked, and neither is correct for the admitted population as a whole.
-A total with no statement of which file the run lost is a total about the wrong set.
-The population figure is **78,311 ± 36**.) **0 parse failures, 1 degraded
-parse** (`r-cli/R/utils.R`, 120 s parser hang → regex substitution), 0 symbols
-with an empty name, 0 with an empty or `unknown` kind, 0 relationships with an
-empty or `unknown` endpoint.
+**The wobble is measured across four production walks of this same population, and
+it is a property of the parser, not of the analyzer.** Each row is the sum of that
+run's own ten per-type rows; the two harness files and the two arbiter runs are named
+so a reader can check the bytes.
+
+| run | instrument | calls | uses | contains | imports | references | exports | extends | implements | overrides | instantiates | total | files lost |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 1 | `ontology-ten-types.txt` | 48,233 | 4,810 | 17,634 | 2,095 | 2,137 | 3,592 | 351 | 1,133 | 107 | 3 | 80,095 | 0 |
+| 2 | `labels-and-resolution.txt` | 48,174 | 4,808 | 17,622 | 2,095 | 2,137 | 3,585 | 351 | 1,133 | 107 | 3 | 80,015 | 1 |
+| F | arbiter, output not captured | 48,082 | 4,789 | 17,550 | 2,087 | 2,129 | 3,525 | 351 | 1,133 | 107 | 3 | 79,756 | 5 |
+| G | `arbiter/arbiter-r-runG-2026-10-05.txt` | 48,028 | 4,803 | 17,601 | 2,087 | 2,129 | 3,581 | 351 | 1,133 | 107 | 3 | 79,823 | 2 |
+
+The cause is named per run, not asserted: the wasm grammar dies with
+`[BB-PARSE-ERR] … memory access out of bounds` and WHICH files it dies on changes.
+Run 2 lost `usethis/R/badge.R`; run F lost `ggplot2/R/scale-manual.R`,
+`r-cli/R/width.R`, `r-cli/exec/news.R`, `r-cli/R/zzz.R` and
+`r-testthat/R/expect-equality.R`; run G lost `ggplot2/R/scale-manual.R` and
+`usethis/R/course.R`. A file that fails to parse contributes no edges, so the totals
+track the failures. Every total above is correct for the files its own run walked and
+none is correct for the admitted population as a whole; **the population figure for
+the ten types is 79,756–80,095 (Δ339), and every rate in this document inherits that
+band on its denominator.** Run 1 walked all 2,184 files with 0 parse failures and 0
+degraded parses; run 2 with 0 and 1; runs F and G each reported 1 degraded parse,
+which is the 120-second bomb substituting a regex extractor.
+
+`extends`, `implements`, `overrides` and `instantiates` are **identical in all four
+runs**, which says the wobble is confined to the types whose counts are large enough
+to be sensitive to losing a handful of files — not that those four are more correct
+than the others.
+
+Integrity on run 1, which walked the whole population: **0** parse failures, **0**
+degraded parses, **0** symbols with an empty name, **0** with an empty or `unknown`
+kind, **0** relationships with an empty or `unknown` endpoint.
 
 The two types the draw read as zero are located, not asserted:
 
@@ -446,8 +467,8 @@ the confusion countable rather than a matter of taste.
 
 **All 15 straddling subtypes are accounted for, and two of them are by design.**
 `r_source` and `rcpp_source` appear under **both** `imports` and `references`
-because `real-r-analyzer.ts:2113-2114` emits the pair on purpose — the comment
-there records that `references` is the generic dependency type while `imports`
+because `real-r-analyzer.ts:2108` emits the pair on purpose, and the comment
+above it records that `references` is the generic dependency type while `imports`
 is what `graph_usages` reads to build the imports/exports view and what
 `evidence_tier` classifies as an import kind, so R dependencies were invisible to
 both while existing. The four method subtypes (`r6_method`, `r5_method`,
@@ -665,16 +686,25 @@ construction, and the targets of `imports` and `references` are package names:
 
 | Type | target in same file | source shape | target shape |
 | --- | --- | --- | --- |
-| `contains` | 17,628 / 17,632 = 100.0% | `global` 16,663 | declared names |
-| `exports` | 3,589 / 3,590 = 100.0% | `global` 3,590 | declared names |
+| `contains` | 17,618 / 17,622 = 100.0% | `global` 16,653 | declared names |
+| `exports` | 3,584 / 3,585 = 100.0% | `global` 3,585 | declared names |
 | `overrides` | 107 / 107 = 100.0% | class names | member names |
 | `instantiates` | 3 / 3 = 100.0% | `initialize`, `capture_expectations` | class names |
 | `extends` | 258 / 351 = 73.5% | class names | `VIRTUAL` 34, `Reporter` 20, class names |
 | `implements` | 371 / 1,133 = 32.7% | `generic.class` | `vec_ptype2` 86, `vec_cast` 82, `print` 74 |
 | `references` | 55 / 2,137 = 2.6% | `global` 2,095 | `cli` 318, `withr` 254, `utils` 122 |
-| `calls` | 5,042 / 48,230 = 10.5% | any symbol | `c` 1,797, `return` 1,399, `length` 1,118 |
-| `uses` | 402 / 4,810 = 8.4% | any symbol | `x` 217, `name` 106, `Dim` 93 |
+| `calls` | 5,035 / 48,174 = 10.5% | any symbol | `c` 1,794, `return` 1,398, `length` 1,118 |
+| `uses` | 402 / 4,808 = 8.4% | any symbol | `x` 217, `name` 106, `Dim` 93 |
 | `imports` | 13 / 2,095 = 0.6% | `global` 2,095 | `cli` 318, `withr` 254, `utils` 122 |
+
+Each denominator above is the edge count **of that row's own run**, read from the
+committed `labels-and-resolution.txt`. That run is one of four over the same
+population and they do not agree to the digit, so a second reading of this table
+gives `calls` 5,042 / 48,230 = 10.5% — a different walk, not a different rate. The
+rates are stable across runs; the denominators are not. An earlier revision of this
+table quoted that second walk's denominators while the artifact held the first, which
+is the same two-sets error the `(none)` table below records, so the row now carries
+the run it came from.
 
 `imports` at 0.6% and `references` at 2.6% are **the structure of the type, not
 a defect rate**: no R source file declares its own package name as a symbol, so a
@@ -728,7 +758,7 @@ list entries read out of objects the file does not declare — which is the corr
 answer for a member read and not an error in the rule.
 
 **EVERY unresolved `contains` and `exports` edge in the population is a
-shared-machinery denylist, and the accounting is complete: 5 edges, 3 names, 4
+shared-machinery denylist, and the accounting is closed: 5 edges, 3 names, 4
 files, 0 unexplained.** A dedicated walk of all 2,184 files listing every
 `contains`/`exports` edge whose target is absent from its own file's symbol set
 returns exactly this and nothing else:
@@ -741,7 +771,7 @@ returns exactly this and nothing else:
 | `contains -to-> this` | 1 | `r-cli/tests/testthat/test-progress-variables.R:173` | a `local()` binding read 3× below |
 | `contains -to-> this` | 1 | `r-vctrs/tests/testthat/test-type2.R:26,50` | two `local()` bindings |
 
-So `contains` at 17,628/17,632 and `exports` at 3,589/3,590 are not R-rule
+So `contains` at 17,618/17,622 and `exports` at 3,584/3,585 are not R-rule
 shortfalls with a denylist problem mixed in: the denylist **is** the whole of them.
 Neither `super` nor `this` is reserved in R, and `S7/R/super.R` shows why that
 matters — `super()` is S7's dispatch primitive, and dropping it leaves **13 edges
@@ -823,9 +853,9 @@ than the number sees one tier for this lane.
   to it, which is the limitation the workstream header requires be stated rather
   than glossed.
 - **The `exports` resolution rate is measured against a file-local set, and every
-  unresolved `exports` and `contains` edge in it is a denylist ghost.** 3,589 of
-  3,590 and 17,628 of 17,632, where the 5 missing edges are 3 names in 4 files and
-  the cause is `keepSymbol`, not an R rule. The accounting is complete rather than
+  unresolved `exports` and `contains` edge in it is a denylist ghost.** 3,584 of
+  3,585 and 17,618 of 17,622, where the 5 missing edges are 3 names in 4 files and
+  the cause is `keepSymbol`, not an R rule. The accounting is closed rather than
   partial, which is a stronger statement than the one it replaces: there is no
   unexplained residue left in either rate.
 - **Corpus totals for R are not bit-reproducible under concurrency.** Every
@@ -867,11 +897,12 @@ than the number sees one tier for this lane.
 
   A `::`/`:::` access is a hard dependency — R must load the namespace to evaluate it —
   and the analyzer already published both labels for the other three dependency forms it
-  reads (`library()`/`require()` at `real-r-analyzer.ts:2066,2085`, `source()`/
-  `sourceCpp()` at `:2117-2118`). Only namespace access published `imports` alone. The
-  `references` edge is now pushed beside it at the same confidence (1.0 — a deterministic
-  parse fact) and under the same `namespace_access` subtype, so a consumer keying on the
-  subtype sees the pair, exactly as it already sees `rcpp_source` and `r_source`.
+  reads (`library()`/`require()` at `real-r-analyzer.ts:2108`, `source()`/
+  `sourceCpp()` at `:2141`). Only namespace access published `imports` alone. The
+  `references` edge is now pushed beside it at `:1907`, at the same confidence (1.0 — a
+  deterministic parse fact) and under the same `namespace_access` subtype, so a consumer
+  keying on the subtype sees the pair, exactly as it already sees `rcpp_source` and
+  `r_source`.
 
   Cost: `references` 389 → 2,137, the lane total 78,311 → 80,095 (+2.28%). Pinned by
   `F21-namespace-depends-on` (21 fixtures now) and by two source mutants,
@@ -980,7 +1011,7 @@ a differential and the table says what each can and cannot see.
 | `probe-grammar.ts` | grammar's own `nodeTypeForId` table, read at run time | that every node type and field the `uses` surface reads is declared by the shipped wasm | the other 20 node types the analyzer touches, which are pre-existing and covered by `audit-analyzer-grammar.ts` |
 | `probe-denylist.ts` | `keepSymbol` called directly | what the shared symbol filter costs this language | — |
 | `probe-oom.ts` | production `parseFile`, repeated | whether per-file counts are stable, and which files legitimately publish nothing | why the wasm parser exhausts memory on some files |
-| `run-r-fixtures.ts` | production `parseFile` | fixture pass/fail, and 10 mutants | anything the shared `run-fixtures.ts` asserts that this copy does not |
+| `run-r-fixtures.ts` | production `parseFile` | fixture pass/fail, and 17 mutants | anything the shared `run-fixtures.ts` asserts that this copy does not |
 
 **`probe-grammar.ts` result: 0 unknown node types, 0 undeclared fields.** The
 grammar's own table declares 137 node types; the nine the `uses` surface reads are
@@ -1033,20 +1064,21 @@ Two further shared-file facts, measured rather than assumed:
 
 ### Fixtures and mutants
 
-`validation/m14/fixtures/r/*.expectation.json` — **20 files**, `F01` through
-`F20` — executed by `npx tsx validation/m14/fixtures/r/run-r-fixtures.ts`
-through production `parseFile`, plus the **15**-mutant battery behind
+`validation/m14/fixtures/r/*.expectation.json` — **21 files**, `F01` through
+`F21` — executed by `npx tsx validation/m14/fixtures/r/run-r-fixtures.ts`
+through production `parseFile`, plus the **17**-mutant battery behind
 `--mutants`:
 
 ```
-fixtures: 20 passed, 0 failed
-mutants: 15 caught by >=1 of 20 fixture(s), 0 survived by every fixture,
-         0 harness faults, of 15 mutants
+fixtures: 21 passed, 0 failed
+MUTATION — 17 mutants, each in ONE child running all 21 fixture(s)
+mutants: 17 caught by >=1 of 21 fixture(s), 0 survived by every fixture,
+         0 harness faults, of 17 mutants
 analyzer restored: src/ast/real-r-analyzer.ts is byte-identical to its pre-run content
 ```
 
-Four of the fifteen are OUTPUT transforms and eleven are SOURCE edits, and the split is
-not cosmetic: a gate's whole behaviour is to emit nothing, so no transform of the
+Four of the seventeen are OUTPUT transforms and thirteen are SOURCE edits, and the
+split is not cosmetic: a gate's whole behaviour is to emit nothing, so no transform of the
 emitted edges can express a defect in one. **Three were no-ops on their
 first version and were refused rather than counted** — one returned its input
 unchanged, one matched a target shape the analyzer had already normalised, and one
@@ -1494,13 +1526,16 @@ refuses a hand edit.
   line, 0 land on a line that does not contain their target; 8,410 symbols, all
   range/line/column/byteIndex self-consistent; 0 names that the grammar did not
   produce.**
-- **Mutation (L4)** — 15 mutants, each re-introducing one reviewed defect as a
+- **Mutation (L4)** — 17 mutants, each re-introducing one reviewed defect as a
   source edit (`npx tsx validation/m14/fixtures/r/run-r-fixtures.ts --mutants`):
-  **15 caught, 0 survivors, 0 harness faults**. A surviving mutant fails the issue.
-  This line previously said 23. The battery is 15 mutants; the count is the number
-  the runner prints, and the runner refuses a mutant whose edits leave the analyzer
-  byte-identical, so it cannot inflate its own denominator. `src/ast/real-r-analyzer.ts`
-  is restored byte-identical after each run and the runner asserts it.
+  **17 caught, 0 survivors, 0 harness faults**. A surviving mutant fails the issue.
+  The count has moved twice and both moves are recorded here: it said 23 when the
+  battery held 15, one site was corrected to 15, and the `::`/`:::` dependsOn fix then
+  added `src-namespace-drops-dependson` and `src-namespace-target-is-the-function`,
+  making it 17. The number is the one the runner prints, and the runner refuses a
+  mutant whose edits leave the analyzer byte-identical, so it cannot inflate its own
+  denominator. `src/ast/real-r-analyzer.ts` is restored byte-identical after each run
+  and the runner asserts it.
 - **Corpus** — `validation/m12/results/r-corpus-errors.json`: 1,174 files,
   16,467 symbols, 39,128 relationships, 2 files with parse errors (both correct).
 - **A/B against the previous analyzer** — +3,313 relationship instances, 601
