@@ -495,7 +495,7 @@ this lane's own harnesses*), which is why `overrides` was quoted at 0.0% in-repo
 
 | Type | 1 Exists | 2 Fires | 3 Correct | 4 Labelled | 5 Resolved | 6 Confident |
 | --- | --- | --- | --- | --- | --- | --- |
-| calls | ✅ | ✅ 43,042 | ✅ differential, 60-file proxicall sample, **0 unexplained in all four rotations run** (6120/6220, 6062/6162, 17196/29131, 17131/29066 — the swing is `overrides`, an excluded label, and the coverage figure is a property of the draw) | ✅ | src∈file 99.1% · tgt∈file 22.1% · both∈sample 66.7% · both∈repo 50.8% | 35 of 43,042 under 0.7 (0.1%), min 0.4 — sub-threshold `uses`-style reads inherited from the shared bare-read surface |
+| calls | ✅ | ✅ 43,042 | ✅ differential, 60-file proxicall sample, **0 unexplained in every rotation run, five so far** (6120/6220, 6062/6162, 17196/29131, 17131/29066, 17196/29131 again at this pass's rotation 78 — the swing is `overrides`, an excluded label, and the coverage figure is a property of the draw) | ✅ | src∈file 99.1% · tgt∈file 22.1% · both∈sample 66.7% · both∈repo 50.8% | 35 of 43,042 under 0.7 (0.1%), min 0.4 — sub-threshold `uses`-style reads inherited from the shared bare-read surface |
 | uses | ✅ | ✅ 110,679 | ✅ same run, 0 unexplained | ✅ four surfaces, each pinned by a fixture; no surface borrows another's label | src∈file 99.3% · tgt∈file 25.5% · both∈sample 69.3% · both∈repo 60.2% | 13,325 of 110,679 under 0.7 (12.0%), all the bare-read surface at 0.6 — the largest heuristic class in the lane |
 | contains | ✅ | ✅ 119,515 | ✅ `deriveDartContainsTruth`, 37/37 shapes exact, and 0 unexplained in the differential | ✅ | **both∈file 100.0%, both∈repo 100.0%** — the only label in the lane that resolves at both ends by construction; 3 of 119,515 targets are bare-name and unbound | 0 under 0.7 |
 | imports | ✅ | ✅ 10,657 | ✅ `deriveDartImportsTruth`, 7,340 rows measured EXACT on both corpora | ✅ | src 2.7% / tgt 0.0% both-ends: targets are module URIs (`package:foo/src/x.dart:*`), and a URI is not a symbol in this index | 0 under 0.7 |
@@ -2460,12 +2460,16 @@ again.** `--force-fresh`, one lane per invocation:
 | `dart-http:dart` | 75 | 2277 / 2263 | **99.4%** | **14** | 2,106 | **0** | 0 |
 
 So the ratio has now read 98.4% at rotations 73, 74 and 80 and 58.9% at 78 and 79 —
-**four of five recorded rotations are the high branch**, which strengthens the bimodal
-reading rather than softening it, and the truth-row denominators moved again (6,220 →
+**four of five recorded rotations were the high branch** at the time of this pass,
+which strengthened the bimodal reading rather than softening it, and the truth-row
+denominators moved again (6,220 →
 6,162 on proxicall, 2,280 → 2,277 on dart-http) exactly as the denominator-stability
 paragraph above predicts. Every printed MISSING row on both lanes is `overrides`, which
 is §DERIVATION predicting the residue by label rather than by count. `unexplained` is 0
 on both lanes at both rotations, and that is the fifth consecutive reading of 0.
+**The eighth pass added rotation 81 on the low branch, so the split is now 3 high to
+3 low and "four of five" is superseded rather than merely extended** — see the eighth
+pass below.
 
 **Item 17 was re-verified mechanically rather than quoted, and both halves hold.**
 The array was walked in declaration order with the spread files resolved through their
@@ -2583,9 +2587,9 @@ rotation counter is not the only thing that moved between sessions. **The absolu
 in this section are not reproducible across sessions; the claim under them is.**
 
 What survives every rotation and both sessions, and is what the verdict rests on:
-**`unexplained` is 0 on both lanes in all four runs.** That is the number that says
-the analyzer emits nothing uncorroborated, and it has never moved. Coverage
-percentage and MISSING are properties of the draw.
+**`unexplained` is 0 on both lanes in all six `--force-fresh` runs recorded here.**
+That is the number that says the analyzer emits nothing uncorroborated, and it has
+never moved. Coverage percentage and MISSING are properties of the draw.
 
 The same caveat applies to the denominator's own stability, for the same reason.
 `script/m14/differential.ts` picks the 60 files per lane with `coldPoolPick`, which
@@ -2658,12 +2662,21 @@ and P(at least one) = 0.6238; and `incoming-census` at 337,440 symbols, 960,634
 relationships, 74 `symbolsNamedUnknown`, 490,292 ambiguous, 296,855 closable,
 143,833 binding to nothing and 1,817 unexplained.
 
-**The differential reproduced rotation 78 to the row** — proxicall `29131 / 17196`,
-**59.0%**, MISSING **11935**, 16,604 analyzer edges, **unexplained 0**, draw hash
-`ab7eff6c5dba53fa` — and `dart-http` at `2287 / 2262`, 98.9%, MISSING **25**,
-unexplained 0. That is the sixth recorded rotation and it lands on the 58.9–59.0%
-branch again, so the bimodality claim now reads 98.4% at rotations 73, 74 and 80 and
-59.0% at 78, 79 and this one.
+**The differential ran at rotation 81 (proxicall) and 76 (dart-http) and reproduced
+rotation 78's row exactly** — proxicall `29131 / 17196`, **59.0%**, MISSING **11935**,
+16,604 analyzer edges, **unexplained 0**, draw hash `ab7eff6c5dba53fa`, and
+`dart-http` at `2287 / 2262`, 98.9%, MISSING **25**, unexplained 0, draw hash
+`549143339f0cfaa9`. **A rotation three apart drawing the identical 60 files, to the
+analyzer-edge count, is not what "advances a per-lane rotation counter" predicts**, and
+this file should say so rather than leave the reader to assume the counter varies the
+draw on every tick: `differential.ts:927-950` seeds per rotation, and seeds 78 and 81
+evidently select the same set. The doc's own bimodality argument does not depend on it
+— what matters is that both branches were observed and `unexplained` was 0 on each —
+but a reader checking the mechanism will find this. That is the sixth recorded
+rotation and it lands on the 58.9–59.0% branch again, so the ratio has now read
+**98.4% at rotations 73, 74 and 80 and 59.0% at 78, 79 and 81** — three high, three
+low, which is the bimodality with an equal split rather than the 4-of-5 the seventh
+pass could claim.
 
 **What did not reproduce is this file's own 10×9 incoming table, and the failure is
 the one this file has now made three times: a quoted instrument block is a
