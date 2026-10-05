@@ -13,6 +13,30 @@ type SqlRelationship = ASTEngine.UniversalRelationship
 type Slice = { byteOffset: number; rowOffset: number; columnOffset: number }
 const IDENTITY: Slice = { byteOffset: 0, rowOffset: 0, columnOffset: 0 }
 
+/**
+ * One tree, indexed once.
+ *
+ * `byType` holds every node of each type in DOCUMENT ORDER, which makes it sorted by
+ * `startIndex` — the property `descendants` needs to turn "is this node inside that subtree"
+ * from a walk into a binary search plus a bounded forward scan.
+ *
+ * `nodes` is keyed by `Node.id`, which web-tree-sitter documents as unique within a tree. It
+ * carries the three things that would otherwise be recomputed per access: the node's children in
+ * index order, its depth, and its `descendants` answer per type.
+ *
+ * `depth` is load-bearing rather than incidental. Byte ranges alone cannot separate a DESCENDANT
+ * from an ANCESTOR that opens on the same byte: `statement` wrapping `insert` with no token
+ * between them shares a start index, and when the wrapper adds nothing at the end it shares the
+ * end too, so `start >= node.start && end <= node.end` accepts the wrapper as its own child's
+ * descendant. Measured on the corpus before `depth` was added: **1,432 such queries in 1955
+ * files**, every one an indexed count of 1 against a walked count of 0. Depth closes it, because
+ * in a tree a candidate that starts no earlier, ends no later, and is DEEPER must be inside — a
+ * candidate that is not inside is either shallower (an ancestor) or in a disjoint subtree, and a
+ * disjoint subtree fails the interval test by construction.
+ */
+type TreeIndexNode = { children: Node[]; depth: number; descendants?: Map<string, Node[]> }
+type TreeIndex = { byType: Map<string, Node[]>; nodes: Map<number, TreeIndexNode> }
+
 type ParseState = {
   symbols: SqlSymbol[]
   relationships: SqlRelationship[]
@@ -140,7 +164,40 @@ export const SQL_KEYWORDS = new Set([
  *                      `storage`, `extensions`), which is real in the file and
  *                      absent from the repository by construction
  */
-const POSTGRES_CATALOG = /^pg_[a-z_]+$/
+/**
+ * Is `t` a PostgreSQL catalog relation name — `pg_class`, `pg_trigger_depth`, `pg_stat_…`?
+ *
+ * WAS `/^pg_[a-z_]+$/`, which was this lane's last regular expression. The brief's rule is that a
+ * regex over analyzer text is a defect the lane owns, and the census
+ * (`script/m12/verify-regex-census.ts`) classified it `needs_review` with an empty justification.
+ *
+ * The substitution is exact rather than approximate, and the difference between the two readings is
+ * worth naming because it is the kind that silently widens a classifier:
+ *   - `^pg_`        → `t.startsWith("pg_")`
+ *   - `[a-z_]+`      → at least one further character, each `a`–`z` or `_`. `t.length > 3` is the
+ *                     `+`, not a `*`: `pg_catalog` matches, a bare `pg_` does NOT, and the loop
+ *                     bounds are `>= 97 && <= 122` on the CHAR CODE so no string comparison is
+ *                     needed per character.
+ *   - `$`            → the loop runs to `t.length`, so a trailing `.` or digit fails.
+ * The input is an identifier already lifted off the parse tree by the caller, never source text, so
+ * the defect class a regex invites here (matching a comment or a string literal, missing nested
+ * syntax) did not apply — but the rule is not "regexes are wrong here", it is "this lane's regexes
+ * are its debt", and a 4-line character scan settles it.
+ *
+ * Pinned by fixture `sqld12-external-targets`, which asserts the classification on both sides of
+ * each boundary: `pg_catalog.pg_class` is `postgresCatalog`, and `pg_` alone, `pg_` followed by a
+ * digit, and `pg_` followed by a dot are not.
+ */
+function isPostgresCatalogName(t: string): boolean {
+  if (t.length <= 3) return false
+  if (!t.startsWith("pg_")) return false
+  for (let i = 3; i < t.length; i++) {
+    const c = t.charCodeAt(i)
+    if (c !== 95 && (c < 97 || c > 122)) return false
+  }
+  return true
+}
+
 const INFORMATION_SCHEMA_VIEWS = new Set([
   "columns", "tables", "views", "routines", "schemata", "sequences", "key_column_usage",
   "table_constraints", "constraint_column_usage", "referential_constraints",
@@ -162,7 +219,7 @@ function classifyExternalTarget(
   const t = target.toLowerCase()
   if (t.startsWith("information_schema.")) return "informationSchema"
   if (INFORMATION_SCHEMA_VIEWS.has(t)) return "informationSchema"
-  if (POSTGRES_CATALOG.test(t)) return "postgresCatalog"
+  if (isPostgresCatalogName(t)) return "postgresCatalog"
   if (t === "public") return "implicitSchema"
   const dot = t.indexOf(".")
   if (dot > 0) {
@@ -484,6 +541,9 @@ export class RealSqlAnalyzer implements ASTEngine.LanguageAnalyzer {
     content: string,
     filePath: string,
   ): Omit<ASTEngine.ParseResult, "language" | "metadata"> & { metadata: Partial<ASTEngine.FileMetadata> } {
+    // One index per parse. See the field comment on `treeIndexes` for the key, the measurement
+    // that forced the index, and why the lifetime is stated here rather than left to the collector.
+    this.treeIndexes = new WeakMap()
     const state: ParseState = {
       nestedStatements: new Set<number>(),
       localCtes: new Set<string>(),
@@ -3393,6 +3453,85 @@ private markDeclaration(node: Node, state: ParseState): boolean {
     return null
   }
 
+  /**
+   * Per-parse memo for `namedChildren`, and a per-TREE document-order index for `descendants`.
+   *
+   * WHY THIS EXISTS, measured rather than guessed. `node --cpu-prof` on
+   * `postgrest/test/io/fixtures/big_schema.sql` (392 KB, 67,508 named nodes, depth 43) put
+   * **134 of 154 seconds** inside `walkDescendants` — 87 % of the whole run — against
+   * `ts_parser_parse_wasm` at **0.33 s**. The grammar was never the problem; the walk was.
+   * The file then crossed `engine.ts`'s 120 s analyzer timeout, returned
+   * `analysisVersion: "2.0-basic-fallback"` with 0 symbols and 0 relationships, and in 2 of 3
+   * solo runs. That is what made this lane's corpus total BIMODAL (see the docs page).
+   *
+   * The blowup is arithmetic, and it is not subtle once counted: 29,662 `descendants` calls
+   * collapsed to 4,199 distinct (node, type) queries, and those 4,199 walks visited
+   * **99,159,647 nodes** — 1,469 visits per node in the file. The queries sit near the root, so
+   * each one rescanned a near-root subtree: the memo alone removed 85 % of the CALLS and none of
+   * the COST.
+   *
+    * WHY AN INDEX RATHER THAN A SMALLER WALK. "Is node X of type T inside subtree S" is an
+    * interval question, and tree-sitter already gives every node a byte range. So one preorder
+    * walk per tree groups nodes by type in document order, and a query becomes a binary search for
+    * the first node of type T at or after S's start, then a forward scan while candidates begin
+    * before S's end, keeping those that also END inside it. Cost becomes proportional to the
+    * matches inside the subtree rather than to the subtree — the difference between 23,617 visits
+    * per query and a handful.
+    *
+    * WHY THE KEY IS `(node.tree, node.id)` AND NOT THE NODE OBJECT. This is the load-bearing
+    * detail, and it was measured rather than assumed, because the obvious key is wrong:
+    * web-tree-sitter's `unmarshalNode` ends in `new Node(...)`, so **every** property access
+    * returns a FRESH wrapper. Verified directly on the wired wasm (`_ident.mts` in this lane's
+    * fixtures): `rootNode === rootNode` is false, `namedChild(0) === namedChild(0)` is false, while
+    * `rootNode.tree === rootNode.tree` is true and `namedChild(0).id === namedChild(0).id` is true.
+    * A `WeakMap<Node, …>` therefore misses on essentially every lookup — which is exactly what a
+    * first attempt did: it removed 85 % of the `descendants` CALLS and none of the COST, and an
+    * index built the same way rebuilt itself **200+ times for one tree** because the root handle
+    * it keyed on was a new object each time. `Node.id` is documented as unique within a tree and
+    * `Node.tree` is the tree it belongs to, and both are plain fields, so together they are a
+    * stable identity.
+    *
+    * WHY PER TREE, LAZILY. `runResync` re-parses each top-level statement into its OWN tree and
+    * feeds those nodes back through `processRoot`, so there is more than one tree per parse and
+    * "the" tree is not a field anyone can set — `node.tree` is what says which. The build is lazy
+    * because a file that asks no subtree question should not pay for it.
+    */
+  private treeIndexes = new WeakMap<object, TreeIndex>()
+
+  /** This tree's index, built on first use. One preorder walk, then O(1) thereafter. */
+  private indexFor(node: Node): TreeIndex {
+    const tree = node.tree as unknown as object
+    const existing = this.treeIndexes.get(tree)
+    if (existing) return existing
+    const byType = new Map<string, Node[]>()
+    const nodes = new Map<number, TreeIndexNode>()
+    // Reversed pushes so the stack pops left to right: document order, which is what makes
+    // `byType` sorted by startIndex and therefore binary-searchable.
+    const stack: { node: Node; depth: number }[] = [{ node: node.tree.rootNode as unknown as Node, depth: 0 }]
+    while (stack.length) {
+      const { node: current, depth } = stack.pop()!
+      // One `namedChildCount` and one `namedChild(i)` per node — the floor for touching a tree
+      // once — and the children are kept, so `namedChildren` never asks again.
+      const count = current.namedChildCount
+      const children: Node[] = []
+      for (let i = 0; i < count; i++) {
+        const child = current.namedChild(i)
+        if (child) children.push(child)
+      }
+      const entry = nodes.get(current.id)
+      if (entry) { entry.children = children; entry.depth = depth }
+      else nodes.set(current.id, { children, depth })
+      const bucket = byType.get(current.type)
+      if (bucket) bucket.push(current)
+      else byType.set(current.type, [current])
+      for (let i = children.length - 1; i >= 0; i--) stack.push({ node: children[i], depth: depth + 1 })
+    }
+    const index: TreeIndex = { byType, nodes }
+    this.treeIndexes.set(tree, index)
+    return index
+  }
+
+
   private firstIdentifier(node: Node | null, state?: ParseState): Node | null {
     if (!node) return null
     void state
@@ -3440,39 +3579,96 @@ private markDeclaration(node: Node, state: ParseState): boolean {
   }
 
   private containsType(node: Node, type: string): boolean {
-    return node.type === type || this.descendants(node, type).length > 0
+    return this.findDescendant(node, type) !== null
+  }
+
+  /**
+   * The first descendant of `type` in DOCUMENT order, or null.
+   *
+   * Same order `descendants` produces — children pushed in reverse so the stack pops left to
+   * right — but it STOPS at the first match. `descendants(node, type)[0]` walked the entire
+   * subtree and then threw all but one node away, and `containsType` above did the same to ask
+   * a yes/no question; both were hot enough to show in the profile.
+   */
+  /**
+   * The first DESCENDANT of `type` in document order, or null.
+   *
+   * `findDescendant` stops at the first match; `descendants` cannot, because it returns a list.
+   * Both read the same index, so a `null` here and an empty array there mean the same thing.
+   */
+  private findDescendant(node: Node, type: string): Node | null {
+    if (node.type === type) return node
+    const index = this.indexFor(node)
+    const depth = index.nodes.get(node.id)!.depth
+    const candidates = index.byType.get(type)
+    if (!candidates) return null
+    for (let i = this.lowerBound(candidates, node.startIndex); i < candidates.length; i++) {
+      const candidate = candidates[i]
+      if (candidate.startIndex > node.endIndex) break
+      if (candidate.endIndex <= node.endIndex && index.nodes.get(candidate.id)!.depth > depth) return candidate
+    }
+    return null
+  }
+
+  /** The first entry of a document-order array whose `startIndex` is >= the given one. */
+  private lowerBound(sorted: Node[], startIndex: number): number {
+    let lo = 0
+    let hi = sorted.length
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1
+      if (sorted[mid].startIndex < startIndex) lo = mid + 1
+      else hi = mid
+    }
+    return lo
   }
 
   private firstDescendant(node: Node, type: string): Node | null {
-    if (node.type === type) return node
-    return this.descendants(node, type)[0] ?? null
+    return this.findDescendant(node, type)
   }
 
-  private descendants(node: Node, type?: string): Node[] {
-    const result: Node[] = []
-    const stack: Node[] = []
-    for (let i = node.namedChildCount - 1; i >= 0; i--) {
-      const child = node.namedChild(i)
-      if (child) stack.push(child)
+  /**
+   * Every DESCENDANT of `type` in `node`'s subtree, in document order.
+   *
+   * `type` is REQUIRED, not optional. The walk this replaced had an optional type and an untyped
+   * branch, and all 14 call sites passed one — so the untyped branch was unreachable code that a
+   * source count would have called a feature. Requiring the argument turns that from a claim into
+   * a compile error if a caller ever wants the untyped walk.
+   */
+  private descendants(node: Node, type: string): Node[] {
+    const index = this.indexFor(node)
+    // Non-null because `indexFor` inserts an entry for EVERY node it walks, and `node` came from
+    // this tree. An absent entry would mean the index and the node disagree about the tree, and
+    // the honest response to that is a crash rather than an empty list that reads as "no matches".
+    const entry = index.nodes.get(node.id)!
+    let memo = entry.descendants
+    if (!memo) { memo = new Map(); entry.descendants = memo }
+    const hit = memo.get(type)
+    if (hit) return hit
+    const found = this.withinType(index, node, type)
+    memo.set(type, found)
+    return found
+  }
+
+  /** Every node of `type` strictly inside `node`'s subtree, in document order. */
+  private withinType(index: TreeIndex, node: Node, type: string): Node[] {
+    const candidates = index.byType.get(type)
+    if (!candidates) return []
+    const depth = index.nodes.get(node.id)!.depth
+    const found: Node[] = []
+    for (let i = this.lowerBound(candidates, node.startIndex); i < candidates.length; i++) {
+      const candidate = candidates[i]
+      if (candidate.startIndex > node.endIndex) break
+      // Three tests, and all three are needed. The interval pair says "not in a disjoint subtree";
+      // the DEPTH is what says "not an ancestor", because a wrapper that adds no token shares its
+      // child's byte range exactly and would otherwise pass as its own descendant.
+      if (candidate.endIndex <= node.endIndex && index.nodes.get(candidate.id)!.depth > depth) found.push(candidate)
     }
-    while (stack.length) {
-      const current = stack.pop()!
-      if (!type || current.type === type) result.push(current)
-      for (let i = current.namedChildCount - 1; i >= 0; i--) {
-        const child = current.namedChild(i)
-        if (child) stack.push(child)
-      }
-    }
-    return result
+    return found
   }
 
   private namedChildren(node: Node): Node[] {
-    const result: Node[] = []
-    for (let i = 0; i < node.namedChildCount; i++) {
-      const child = node.namedChild(i)
-      if (child) result.push(child)
-    }
-    return result
+    // Same non-null reasoning as `descendants`: the index walks every node of the tree.
+    return this.indexFor(node).nodes.get(node.id)!.children
   }
 
   /**

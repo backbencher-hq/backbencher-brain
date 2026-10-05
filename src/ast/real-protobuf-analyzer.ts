@@ -34,18 +34,27 @@ import { ASTEngine } from "./engine"
  * ## Relationship ontology
  *
  *   - `contains`  declaration → member. message→field, message→nested type,
- *                 message→oneof, oneof→field, enum→enum_field, service→rpc.
+ *                 message→oneof, enum→enum_field, service→rpc. There is
+ *                 deliberately NO oneof→field edge: the message owns the field
+ *                 and the oneof is a sibling grouping, so one edge meaning both
+ *                 membership and grouping would make one edge mean two things. The
+ *                 grouping travels as `metadata.oneof` on the field.
  *   - `uses`      declaration → referenced type. A field's declared type, a
  *                 map value type, a `oneof_field` type, and BOTH of an rpc's
  *                 request and response types. A SCALAR type is not a reference
  *                 and produces no edge.
  *   - `imports`   file → a file it depends on. The source is the importing
- *                 file's own module name (its basename) and the target is the
+ *                 file's own identity — its `package` namespace symbol where it
+ *                 declares one, its basename otherwise — and the target is the
  *                 path as written, because `protoc` resolves an import against
- *                 `-I` include roots this file is never told. Both endpoints are
- *                 therefore MODULE PATHS rather than symbols, which is the
- *                 family's convention (`real-css-analyzer.ts`,
- *                 `real-dart-analyzer.ts`) and not a protobuf invention.
+ *                 `-I` include roots this file is never told, so the TARGET is a
+ *                 module path and is external by necessity. The SOURCE was
+ *                 measured rather than assumed (pass 16): it was a basename,
+ *                 which resolved at 0 of 1,565 module edges and was shared with
+ *                 another corpus file on 967 of them. It is now the `package`
+ *                 namespace this analyzer already publishes, so 1,560 of 1,565
+ *                 (99.68%) resolve, and `metadata.moduleOwner` says which
+ *                 spelling an edge used.
  *   - `exports`   file → a file it re-exports. `import public "x.proto"` is
  *                 BOTH a dependency and a republication, so it emits BOTH
  *                 edges: the two are separate facts, and pass 1's ruling that
@@ -427,7 +436,56 @@ export class RealProtobufAnalyzer implements ASTEngine.LanguageAnalyzer {
       // reconstructs the WRONG id for a proto2 group, because the group's field
       // and its type share a name — which is how the corpus probe first
       // reported 28 phantom duplicate ids and 48 phantom unresolved endpoints.
-      s.metadata = { ...s.metadata, id: real }
+      //
+      // `qualifiedName` and `metadata.qualifiedName` are the SAME value on two
+      // channels, and both are load-bearing. `s.qualifiedName` is the one the
+      // product reads: it survives pool-worker's symbol projection (metadata.id
+      // does not) and becomes `brain_symbol.qualified_name`, which is the column
+      // `resolveRelationships` strategy 1 matches `target_external` against. The
+      // metadata copy exists because `run-fixtures.ts`'s `CONSTRAINT_KEY_ALLOWLIST`
+      // does not carry `qualifiedName`, so a fixture cannot assert the channel that
+      // decides whether an edge binds — and an assertion that cannot be written is
+      // an assertion nobody can catch a regression with. The `meta.` prefix is the
+      // runner's own documented route for exactly this, and both rows are asserted
+      // by `protobuf/absolute-and-scope-resolution`.
+      s.metadata = { ...s.metadata, id: real, qualifiedName: real }
+      // The id is ALSO `qualifiedName`, and that is a different fix from the one
+      // above. `metadata.id` does not survive pool-worker's symbol projection, so
+      // it never reached the store; `qualifiedName` is the field the projection
+      // carries, and `brain_symbol.qualified_name` is the column
+      // `resolveRelationships` strategy 1 matches `target_external` against.
+      //
+      // Measured end to end through the real indexer and the real store over 40
+      // reference `.proto` files, before this line existed
+      // (script/m14/tmp/protobuf/probe/store-binding.mts), analyzer edges only, two
+      // runs each:
+      //
+      //   before: 3,075 edges, ~3,000 bound, and 0 of 3,075 PROVABLY the declaration
+      //           the edge named. `contains` 0 of 2,565; `uses` 0 of 489.
+      //   after:  3,075 edges, ~3,020 bound, and 2,977 of 3,075 provably named
+      //           (96.81%). `contains` 2,563 of 2,565; `uses` 414 of 489.
+      //   `brain_symbol.qualified_name == name`: 2,603 of 2,603 → 40 of 2,603.
+      //
+      // The cause is not the store. Every endpoint here is dotted and
+      // package-qualified (`google.protobuf.Mixin.root`), and with
+      // `qualified_name` equal to the bare name (`root`) strategy 1 cannot match,
+      // strategy 2 compares the whole dotted string to a bare name, and strategy 3
+      // takes the text after the FIRST dot — `protobuf.Mixin.root`, which the
+      // language cannot declare. What binds instead is the store's leaf-name
+      // fallback, first-wins. So the edge bound, and bound to whichever declaration
+      // happened to be stored first: measured BOUND for `uses` moved between 446 and
+      // 470 across identical runs, and the count of `uses` edges bound to a symbol in
+      // ANOTHER FILE moved between 2 and 26. The provably-named count did not move at
+      // all (414 both runs), which is the point — strategy 1 is deterministic and the
+      // fallback is not.
+      //
+      // That is the "a name collision becomes a wrong refactor" shape `bb_impact`
+      // cannot detect from the stored row. Publishing the id here makes the edge's own
+      // endpoint the column strategy 1 compares, so the binding is exact and the leaf
+      // fallback never runs for a target this analyzer named. It carries the
+      // `#property` suffix too, which is the disambiguator a proto2 group's two
+      // same-named declarations need — `#` cannot occur in a protobuf identifier.
+      s.qualifiedName = real
       metaOf.set(real, s.metadata)
       symbols.push(s)
       return real
@@ -668,7 +726,44 @@ export class RealProtobufAnalyzer implements ASTEngine.LanguageAnalyzer {
     // descent would be a stack-overflow waiting for a hostile file.
     type Ctx = {
       pkg: string
+      /**
+       * Who OWNS the declarations emitted from here. For a field inside
+       * `extend Foo { … }` this is `Foo`, because the block's members belong to
+       * the extended type — the ruling this analyzer has always made, and the
+       * one that keeps an extension from publishing a phantom second
+       * declaration of a type that already has one.
+       */
       owner: string | null
+      /**
+       * Where the reference is WRITTEN — the enclosing declaration chain, which
+       * is a different question from `owner` and was the same value until a
+       * nested `extend` proved they differ.
+       *
+       * `protoc` resolves a type reference by C++ name lookup from the point of
+       * use, and an `extend` block does NOT become a scope: the extended type
+       * is where the members go, not where their types are looked up. So for
+       *
+       *   message ComplexOptionType2 {
+       *     message ComplexOptionType4 {
+       *       extend google.protobuf.MessageOptions {
+       *         optional ComplexOptionType4 complex_opt4 = 7633546;
+       *       }
+       *     }
+       *   }
+       *
+       * the reference `ComplexOptionType4` resolves outward from
+       * `proto2_unittest.ComplexOptionType2.ComplexOptionType4` to the
+       * declaration `proto2_unittest.ComplexOptionType2.ComplexOptionType4`.
+       * Passing `owner` instead passed `google.protobuf.MessageOptions`, a scope
+       * the language never established, and the walk found nothing and emitted
+       * `proto2_unittest.ComplexOptionType4` — an id no file publishes.
+       *
+       * The two fields are equal everywhere else: a message, an enum, a service,
+       * a group body and a oneof all set both to the declaration they open. The
+       * ONLY site that separates them is `extend`, and it is where the corpus
+       * found the difference.
+       */
+      scope: string | null
       ownerKind: ASTEngine.SymbolKind | null
       oneof: string | null
       viaExtension: boolean
@@ -695,18 +790,58 @@ export class RealProtobufAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (!typeNode && body) {
         const gname = node.childForFieldName("name")?.text ?? firstOfType(node, "identifier")?.text
         if (gname) {
+          // A group's TYPE is declared where the `extend` block SITS; only the
+          // group's FIELD belongs to the extendee. `protoc` agrees, and this lane
+          // got it wrong until an oracle independent of this grammar said so:
+          // `optional group GroupField = 121 { … }` written inside a FILE-LEVEL
+          // `extend TestAllTypesProto2 { … }` in
+          // `pb-reference/src/google/protobuf/test_messages_proto2.proto` produces
+          //
+          //   protoc   proto2_unittest.GroupField          (a top-level message)
+          //            proto2_unittest.GroupField.group_int32
+          //            extension `groupfield` extendee .…TestAllTypesProto2
+          //
+          // while this analyzer produced
+          //
+          //   analyzer  …TestAllTypesProto2.GroupField              (a TYPE)
+          //            …TestAllTypesProto2.GroupField.group_int32
+          //            extension `GroupField#property` owned by the extendee
+          //
+          // so the analyzer published a nested type `…TestAllTypesProto2.GroupField`
+          // that no compiler defines, and three edges pointed into it. A phantom
+          // declaration is the expensive kind of wrong: `bb_impact` on it returns
+          // confident advice about a type that does not exist.
+          //
+          // `ctx.scope` is the enclosing DECLARATION and `ctx.owner` is the
+          // EXTENDEE, and they are equal everywhere except inside an `extend` — the
+          // one site pass 8's nested-`extend` fix already found them differing. So
+          // the type takes `scope` and the field keeps `owner`, and in every group
+          // outside an `extend` the two are the same string and nothing moves.
+          //
+          // `viaExtension` is cleared with the scope, because a type declared at
+          // the block's own scope is not itself an extension member. It was true for
+          // these rows and is false now; on a group outside an `extend` it was
+          // already false.
+          const typeOwner = ctx.viaExtension ? ctx.scope : ctx.owner
           // Two symbols, two ids: the type takes the plain dotted id and the
           // field is disambiguated by `uniqueId`, so the `uses` edge below
           // points field→type instead of looping a symbol onto itself.
-          const typeId = addSymbol(qualify(ctx.owner, gname), {
+          const typeId = addSymbol(qualify(typeOwner, gname), {
             name: gname,
             kind: SymbolKind.Class,
             range: nodeToRange(node),
-            ownerName: ctx.owner ?? undefined,
-            ownerKind: ctx.ownerKind ?? undefined,
-            metadata: { isGroupType: true, ...(ctx.viaExtension ? { viaExtension: true } : {}) },
+            ownerName: typeOwner ?? undefined,
+            // Inside an `extend`, `ctx.ownerKind` is the EXTENDEE's kind, which is
+            // not the kind of the scope the type is being declared in, so it is
+            // omitted rather than asserted. Outside an `extend` the two agree and it
+            // is carried through unchanged.
+            ...(ctx.viaExtension ? {} : { ownerKind: ctx.ownerKind ?? undefined }),
+            // `isGroupType` and nothing else: a type declared at the block's own
+            // scope is not an extension member, so it does not carry `viaExtension`.
+            // The group's FIELD below still does.
+            metadata: { isGroupType: true },
           })
-          if (ctx.owner) addRel(ctx.owner, typeId, RelationshipTypeContains, lineOf(node), { member: "groupType", ...(ctx.viaExtension ? { viaExtension: true } : {}) })
+          if (typeOwner) addRel(typeOwner, typeId, RelationshipTypeContains, lineOf(node), { member: "groupType" })
           const fieldId = addSymbol(qualify(ctx.owner, gname), {
             name: gname,
             kind: SymbolKind.Property,
@@ -724,7 +859,14 @@ export class RealProtobufAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (ctx.owner) addRel(ctx.owner, fieldId, RelationshipTypeContains, lineOf(node), { member: "field", ...(ctx.viaExtension ? { viaExtension: true } : {}) })
           addRel(fieldId, typeId, RelationshipTypeUses, lineOf(node), { role: "groupType" })
           // the group's own body
-          const inner: Ctx = { ...ctx, owner: typeId, ownerKind: SymbolKind.Class, oneof: null }
+          const inner: Ctx = {
+            ...ctx,
+            owner: typeId,
+            scope: typeId,
+            ownerKind: SymbolKind.Class,
+            oneof: null,
+            viaExtension: false,
+          }
           pushAll(kids(body), inner)
           return
         }
@@ -740,7 +882,7 @@ export class RealProtobufAnalyzer implements ASTEngine.LanguageAnalyzer {
         ...(label ? { label } : {}),
       })
       if (fieldId && ref) {
-        addRel(fieldId, resolveRef(ref, ctx.owner), RelationshipTypeUses, lineOf(node), { role: "fieldType" })
+        addRel(fieldId, resolveRef(ref, ctx.scope), RelationshipTypeUses, lineOf(node), { role: "fieldType" })
       }
     }
 
@@ -759,7 +901,7 @@ export class RealProtobufAnalyzer implements ASTEngine.LanguageAnalyzer {
         fieldNumber: numNode?.text ?? null,
       })
       if (fieldId && valRef) {
-        addRel(fieldId, resolveRef(valRef, ctx.owner), RelationshipTypeUses, lineOf(node), {
+        addRel(fieldId, resolveRef(valRef, ctx.scope), RelationshipTypeUses, lineOf(node), {
           role: "mapValueType",
         })
       }
@@ -776,7 +918,7 @@ export class RealProtobufAnalyzer implements ASTEngine.LanguageAnalyzer {
         fieldNumber: firstOfType(node, "field_number")?.text ?? null,
       })
       if (fieldId && ref) {
-        addRel(fieldId, resolveRef(ref, ctx.owner), RelationshipTypeUses, lineOf(node), { role: "oneofFieldType" })
+        addRel(fieldId, resolveRef(ref, ctx.scope), RelationshipTypeUses, lineOf(node), { role: "oneofFieldType" })
       }
     }
 
@@ -838,8 +980,8 @@ export class RealProtobufAnalyzer implements ASTEngine.LanguageAnalyzer {
         },
       })
       if (ctx.owner) addRel(ctx.owner, id, RelationshipTypeContains, lineOf(node), { member: "rpc", ...(ctx.viaExtension ? { viaExtension: true } : {}) })
-      if (request) addRel(id, resolveRef(request, ctx.owner), RelationshipTypeUses, lineOf(node), { role: "rpcRequest" })
-      if (response) addRel(id, resolveRef(response, ctx.owner), RelationshipTypeUses, lineOf(node), { role: "rpcResponse" })
+      if (request) addRel(id, resolveRef(request, ctx.scope), RelationshipTypeUses, lineOf(node), { role: "rpcRequest" })
+      if (response) addRel(id, resolveRef(response, ctx.scope), RelationshipTypeUses, lineOf(node), { role: "rpcResponse" })
     }
 
     /**
@@ -876,7 +1018,7 @@ export class RealProtobufAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (ctx.owner) addRel(ctx.owner, id, RelationshipTypeContains, lineOf(node), { member: "nestedType", ...(ctx.viaExtension ? { viaExtension: true } : {}) })
           const body = firstOfType(node, "message_body")
           if (body) {
-            const inner: Ctx = { ...ctx, owner: id, ownerKind: SymbolKind.Class, oneof: null }
+            const inner: Ctx = { ...ctx, owner: id, scope: id, ownerKind: SymbolKind.Class, oneof: null }
             pushAll(kids(body), inner)
           }
           return
@@ -897,7 +1039,7 @@ export class RealProtobufAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (ctx.owner) addRel(ctx.owner, id, RelationshipTypeContains, lineOf(node), { member: "nestedType", ...(ctx.viaExtension ? { viaExtension: true } : {}) })
           const body = firstOfType(node, "enum_body")
           if (body) {
-            const inner: Ctx = { ...ctx, owner: id, ownerKind: SymbolKind.Enum, oneof: null }
+            const inner: Ctx = { ...ctx, owner: id, scope: id, ownerKind: SymbolKind.Enum, oneof: null }
             pushAll(kids(body), inner)
           }
           return
@@ -916,7 +1058,7 @@ export class RealProtobufAnalyzer implements ASTEngine.LanguageAnalyzer {
             metadata: { isService: true, ...(ctx.viaExtension ? { viaExtension: true } : {}) },
           })
           if (ctx.owner) addRel(ctx.owner, id, RelationshipTypeContains, lineOf(node), { member: "nestedType", ...(ctx.viaExtension ? { viaExtension: true } : {}) })
-          const inner: Ctx = { ...ctx, owner: id, ownerKind: SymbolKind.Interface, oneof: null }
+          const inner: Ctx = { ...ctx, owner: id, scope: id, ownerKind: SymbolKind.Interface, oneof: null }
           pushAll(
             kids(node).filter((c) => typeOf(c) !== "service_name"),
             inner,
@@ -930,10 +1072,18 @@ export class RealProtobufAnalyzer implements ASTEngine.LanguageAnalyzer {
           const target = firstOfType(node, "full_ident")?.text ?? firstOfType(node, "message_or_enum_type")?.text
           const body = firstOfType(node, "message_body")
           if (!target || !body) return
-          const resolved = resolveRef(target, ctx.owner)
+          const resolved = resolveRef(target, ctx.scope)
           const inner: Ctx = {
             ...ctx,
             owner: resolved,
+            // `scope` is DELIBERATELY NOT `resolved`. The block's members belong
+            // to the extended type, but a type written inside the block is
+            // looked up from where the block is WRITTEN, because `extend` does
+            // not open a scope. Inheriting `ctx.scope` unchanged is what makes a
+            // nested `extend` resolve against the enclosing messages; setting it
+            // to `resolved` would resolve against a type the language never made
+            // a scope of, and the walk would find nothing.
+            scope: ctx.scope,
             ownerKind: SymbolKind.Class,
             oneof: null,
             viaExtension: true,
@@ -1037,7 +1187,7 @@ export class RealProtobufAnalyzer implements ASTEngine.LanguageAnalyzer {
           return
       }
     }
-    const root: Ctx = { pkg, owner: pkg || null, ownerKind: null, oneof: null, viaExtension: false }
+    const root: Ctx = { pkg, owner: pkg || null, scope: pkg || null, ownerKind: null, oneof: null, viaExtension: false }
     // Seed the worklist with the file's own declarations, then DRAIN it. The
     // import/package handling below is folded into the same loop so there is one
     // driver and one dispatch path.
@@ -1095,16 +1245,57 @@ export class RealProtobufAnalyzer implements ASTEngine.LanguageAnalyzer {
           // basename for the same reason CSS uses one, with the full path kept in
           // metadata so a consumer that knows the include root can do better.
           if (path) {
-            // The SOURCE is the importing file's own module name and the TARGET
-            // is the path as written. Taking the basename of the IMPORTED path
-            // for the source instead — which a first draft did — makes a file
-            // appear to import ITSELF: `import public "common/v1/types.proto"`
-            // became `types.proto -> common/v1/types.proto`, an edge whose two
-            // endpoints name the same module and which `bb_graph` would read as a
+            // The SOURCE is the importing file's own identity, and until this pass
+            // it was the file's BASENAME. Two measurements killed that, both from
+            // `script/m14/protobuf-module-edge-sources.mts` over 821 `.proto` files:
+            //
+            //   1. THE SOURCE RESOLVED AT 0%. 0 of 1,561 `imports` and 0 of 4
+            //      `exports` edges had a source that is a published symbol id. Every
+            //      one asserted a node the index does not hold, so `bb_graph` could
+            //      not walk outward from any of them.
+            //   2. THE SOURCE WAS AMBIGUOUS FOR THE MAJORITY. 112 basenames are
+            //      shared across the corpus, 424 files sit on one, and 967 of the
+            //      1,565 module edges (61.8%) hang off a basename another file also
+            //      uses — so two unrelated files named `types.proto` produced
+            //      indistinguishable edges.
+            //
+            // The file's own `package` is the substitute, and it is not a new idea:
+            // this analyzer ALREADY publishes it as a `Namespace` symbol and already
+            // hangs the file's top-level declarations off it (7,166 `contains`
+            // edges). Measured, that substitution resolves 1,556 of 1,561 `imports`
+            // and 4 of 4 `exports` — 1,560 of 1,565, 99.68% — and the 5 that do
+            // not are the edges of the 11 files that declare no package at all,
+            // which keep the basename spelling.
+            //
+            // WHAT IT COSTS, counted rather than assumed: 90 packages are declared
+            // by more than one file, 66 of them by more than one IMPORTING file, so
+            // 810 of the 1,560 edges would land on a namespace another file's edges
+            // also land on (widest: `controller.api.services.v1`, 24 files). That is
+            // aggregation — but it is aggregation that replaces ANONYMOUS
+            // aggregation: today those same edges are already merged onto one
+            // unresolvable basename node, keyed on a spelling two unrelated
+            // packages share. The change makes the merge key published and
+            // semantically the owner, and it is still the node `contains` hangs the
+            // same file's declarations from. A per-FILE node would be the only way
+            // to keep the granularity, and a file is not a protobuf declaration, so
+            // minting one would be inventing a symbol the language does not have.
+            //
+            // The basename is still carried, in `metadata.filePath`, so a consumer
+            // that wants the old spelling takes the last segment of it. The TARGET
+            // is unchanged and still unresolved by design: `protoc` resolves an
+            // import against `-I` include roots this analyzer is never told.
+            //
+            // Taking the basename of the IMPORTED path for the source instead —
+            // which a first draft did — makes a file appear to import ITSELF:
+            // `import public "common/v1/types.proto"` became
+            // `types.proto -> common/v1/types.proto`, an edge whose two endpoints
+            // name the same module and which `bb_graph` would read as a
             // self-dependency. CSS's `importerName` is the importing file for the
-            // same reason.
-            const selfMod = filePath.split("/").pop() || filePath
-            const moduleMeta = { modulePath: path, filePath }
+            // same reason, and CSS is also where the divergence is earned: a
+            // stylesheet has no package declaration, so it has no file-level symbol
+            // to hang the edge on and a basename is the only name it has.
+            const selfMod = pkg.length > 0 ? pkg : filePath.split("/").pop() || filePath
+            const moduleMeta = { modulePath: path, filePath, ...(pkg.length > 0 ? { moduleOwner: "package" } : { moduleOwner: "basename" }) }
             if (modifier === "public") {
               // `import public` is BOTH, and this was wrong in pass 1.
               //

@@ -914,10 +914,16 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (!target) return
     const owner = this.ownerForNode(node, ctx)
     if (!owner) return
+    // `calls`, not `uses`. The lane already resolved the callee to a mixin or function
+    // THIS FILE DECLARES — `target` is `@mixin name` or `@function name` and nothing else
+    // gets here — so this is a resolved invocation, and the ontology's rule for a
+    // resolved invocation is the one the lua lane states (`real-lua-analyzer.md:647`):
+    // "a member that is called is not merely read". `uses` was the neighbour, and it is
+    // the same label `@extend` carried until the change measured in `emitExtend`.
     ctx.relationships.push({
       source: owner,
       target,
-      type: ASTEngine.RelationshipType.Uses,
+      type: ASTEngine.RelationshipType.Calls,
       // M59.A7: the name is the mixin's own line, which is the VALUE's line for a
       // namespaced call and the statement's line otherwise. The value is the more
       // specific of the two and survives reformatting better.
@@ -993,10 +999,28 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (!target) return
     const owner = this.ownerForNode(node, ctx)
     if (!owner) return
+    // `extends`, not `uses`. `@extend` IS Sass's inheritance: the extending selector
+    // takes on the extended selector's declarations, and the ontology has a type for
+    // exactly that. `uses` is the neighbour that loses the meaning — with the edge
+    // labelled `uses`, a consumer cannot tell an inheritance edge from a variable read,
+    // which is the whole question `@extend` exists to answer.
+    //
+    // MEASURED COST, and it is a cost rather than a free correction. Relabelling this
+    // edge and the `@include` edge below moves the lane's differential from
+    // `covered=1558 (96.5%) MISSING=56` to `covered=1514 (93.8%) MISSING=100` on the
+    // canonical 149-file element-plus sample. The 44 new MISSING rows are the ORACLE's
+    // mislabelling, not a recall loss: `script/m14/differential.ts`'s `deriveScssEdges`
+    // pushes `uses` for both constructs, so the truth rows now have no analyzer row to
+    // match. `unexplained` is UNCHANGED at 13 across both runs, because the scss
+    // compared-label allowlist filters the ANALYZER side, so a relabelled edge is
+    // dropped from the comparison rather than counted as a fabrication. The oracle
+    // change is a §8 report-to-supervisor item and is specified in
+    // docs/analyzers/real-scss-analyzer.md; it is not applied here because
+    // script/m14/differential.ts is shared machinery.
     ctx.relationships.push({
       source: owner,
       target,
-      type: ASTEngine.RelationshipType.Uses,
+      type: ASTEngine.RelationshipType.Extends,
       line_number: this.lineOf(lineNode),
       metadata: {
         evidenceClass: "structural",
@@ -1319,6 +1343,11 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
       // hand audit found precisely that, as the single false negative in the first
       // run of this lane against it (9 expected, 8 observed, recall 0.889).
       //
+      // `calls`, and for the same reason as `@include`: an invocation of a declared
+      // `@function` is a call whether the syntax is `name(x)` or `@include name`. One
+      // syntax carrying `uses` and the other `calls` would make the label a function of
+      // the surface syntax rather than of what happened.
+      //
       // BOTH ends must resolve, which is the whole discipline: the name is looked up
       // in `functionNames`, so only a function this file DECLARES produces an edge.
       // That is what keeps `calc(100% - 2px)`, `var(--x)`, `rgba(0,0,0,.1)`,
@@ -1342,7 +1371,7 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
             ctx.relationships.push({
               source: owner,
               target: declared,
-              type: ASTEngine.RelationshipType.Uses,
+              type: ASTEngine.RelationshipType.Calls,
               line_number: this.lineOf(n),
               metadata: {
                 evidenceClass: "usage_contextual",

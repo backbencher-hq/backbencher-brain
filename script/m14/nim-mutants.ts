@@ -116,6 +116,66 @@ export const NIM_MUTANTS: NimMutant[] = [
     },
   },
   {
+    id: "nim/concept-generic-target-read-as-the-type-argument",
+    language: "nim",
+    defectClass: "fabricated-endpoint",
+    description:
+      "`of Source[T]` publishes the type ARGUMENT `T` instead of the refined " +
+      "contract `Source`. `refinement_list` is `sep1($.type_expression, \",\")` and a " +
+      "generic instantiation is a `bracket_expression` whose FIRST named child is the " +
+      "constructor while its `argument_list` holds the type arguments, so a reader that " +
+      "takes the last name under the list lands on the argument. " +
+      "This is 2 of the family's 47 corpus edges — nimony's " +
+      "`tconceptinheritnotgeneric.nim:7 Bar = concept of Foo[T]` and " +
+      "`tconceptinvocationbody.nim:39 MutableIndexable*[T] = concept of Indexable[T]` — " +
+      "and it was unpinned until that repo entered the corpus on 2026-10-04. " +
+      "The edge it produces is a FABRICATION, not a mislabel: `T` is a generic " +
+      "parameter, it resolves at neither end, and `bb_impact` on it is wrong refactoring " +
+      "advice. This lane's own oracle made exactly this mistake on its first pass and " +
+      "the oracle cross-check caught it one round after the code was written. " +
+      "Caught by nim/concept's forbidRelationships {implements, Wrapped -> T}, whose " +
+      "sibling positive row {implements, Wrapped -> Source} has no other way to fail.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) =>
+        x.type === "implements" && String(x.source) === "Wrapped"
+          ? { ...x, target: "T" }
+          : x,
+      ),
+    }),
+  },
+  {
+    id: "nim/concept-self-cycle-published",
+    language: "nim",
+    defectClass: "fabricated-relationship",
+    description:
+      "`type Cycle = concept of Cycle` publishes `Cycle implements Cycle`. A concept " +
+      "refining itself is not a relationship, and this is a REAL corpus file rather than " +
+      "a synthetic one: nimony/tests/nimony/concepts/tconceptcycle.nim is exactly that " +
+      "one line, and upstream ships tconceptcycle.msgs reading `Error: concept " +
+      "inheritance cycle detected`. " +
+      "The guard already exists for this family, on both spellings, but only the `is`-form " +
+      "half was pinned by a fixture — so a change that kept `r is Recursive` suppressed " +
+      "while dropping the `of`-form guard would have passed the suite. " +
+      "Caught by nim/concept's forbidRelationships {implements, from: Cycle}, which has no " +
+      "sibling row: `Cycle` refines nothing else.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: [
+        ...(r.relationships ?? []),
+        ...(r.symbols ?? [])
+          .filter((s: any) => String(s.name) === "Cycle")
+          .map((s: any) => ({
+            source: "Cycle",
+            target: "Cycle",
+            type: "implements",
+            confidence: 1,
+            metadata: { relationshipType: "nim_concept_refinement" },
+          })),
+      ],
+    }),
+  },
+  {
     id: "nim/concept-satisfaction-invented",
     language: "nim",
     defectClass: "fabricated-relationship",
