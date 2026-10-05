@@ -443,19 +443,33 @@ across five full-corpus runs at 6 workers the empty-kind count was 11, 4, 3, 63,
 below quoted without its worker count is not reproducible, so the artifact
 records the count its run used.
 
-| Relationship type | Emitted? | Verdict | Measured on this corpus | Where the number comes from |
-| --- | --- | --- | --- | --- |
-| **all ten, one row each** | 10 of 10 examined | **10 EMITTED, 0 ruled** | **267,287 edges over 110,060 symbols** | `validation/m14/measurements/nim/ontology-census.txt`, digest-pinned on both sides of the walk |
-| `calls` | YES | EMITTED | 118,261 edges | `collectCallsAndUses`: the callee branches plus the parenless-UFCS member-leaf branch |
-| `uses` | YES | EMITTED | 45,662 edges | `collectCallsAndUses`, the member-leaf and bare-identifier read branches |
-| `contains` | YES | EMITTED | 29,361 edges | `collectContainment`, from `ownerName` and from `metadata.nimNestedIn` for a nested routine |
-| `references` | YES | EMITTED | 56,438 edges | `collectDeclaredTypeRefAt`, the declared-type sites |
-| `imports` | YES | EMITTED | 13,364 edges | `readImportStatement` / `readImportFromStatement` / `readIncludeStatement`, plus the `ImportInfo[]` channel |
-| `instantiates` | YES | EMITTED | 2,843 edges | `collectInstantiationAt`, a call whose callee is a type this file declares, plus the type argument of a `new` expression |
-| `extends` | YES | EMITTED | 627 edges | `collectInheritance`, from `object_declaration.inherits`, minus the compiler's own roots |
-| `implements` | YES | **EMITTED** | **47 edges** — *was 0, and the ruling that said 0 was falsified* | `collectContractRefinement`, from `concept_declaration.refines`; all 47 in `nimony` |
-| `overrides` | YES | EMITTED | 67 edges | `collectOverrides`, receiver-qualified `Receiver.method`; the cross-file family additionally needs `overrideCompanion` |
-| `exports` | YES | EMITTED | 617 edges | `readExportStatement`, one edge per OPERAND of `export`, with `except` read positionally as what does NOT leave |
+| Relationship type | Emitted? | Verdict | Measured on this corpus | Files | Where the number comes from |
+| --- | --- | --- | --- | --- | --- |
+| **all ten, one row each** | 10 of 10 examined | **10 EMITTED, 0 ruled** | **267,297 edges over 110,076 symbols** | **6,063 admitted** | `validation/m14/measurements/nim/session7-1w-census.txt`, digest-pinned on both sides of the walk, 1 worker |
+| `calls` | YES | EMITTED | 118,261 edges | **4,903** | `collectCallsAndUses`: the callee branches plus the parenless-UFCS member-leaf branch |
+| `uses` | YES | EMITTED | 45,664 edges | **2,833** | `collectCallsAndUses`, the member-leaf and bare-identifier read branches |
+| `contains` | YES | EMITTED | 29,362 edges | **2,417** | `collectContainment`, from `ownerName` and from `metadata.nimNestedIn` for a nested routine |
+| `references` | YES | EMITTED | 56,445 edges | **2,920** | `collectDeclaredTypeRefAt`, the declared-type sites |
+| `imports` | YES | EMITTED | 13,364 edges | **3,429** | `readImportStatement` / `readImportFromStatement` / `readIncludeStatement`, plus the `ImportInfo[]` channel |
+| `instantiates` | YES | EMITTED | 2,843 edges | **1,419** | `collectInstantiationAt`, a call whose callee is a type this file declares, plus the type argument of a `new` expression |
+| `extends` | YES | EMITTED | 627 edges | **299** | `collectInheritance`, from `object_declaration.inherits`, minus the compiler's own roots |
+| `implements` | YES | **EMITTED** | **47 edges** — *was 0, and the ruling that said 0 was falsified* | **23** | `collectContractRefinement`, from `concept_declaration.refines`; all 47 in `nimony` |
+| `overrides` | YES | EMITTED | 67 edges | **36** | `collectOverrides`, receiver-qualified `Receiver.method`; the cross-file family additionally needs `overrideCompanion` |
+| `exports` | YES | EMITTED | 617 edges | **154** | `readExportStatement`, one edge per OPERAND of `export`, with `except` read positionally as what does NOT leave |
+
+**The FILES column is new, and it exists because the instrument that produces it was
+wrong until this pass.** `census.ts:264` capped the example list at six entries *on the
+same Set that answered "how many files"*, so all ten rows of all ten artifacts on
+record read `files: 6` — the same number on every row, by construction, and
+indistinguishable from a measurement. `Row.filesAll` now carries the count and
+`Row.files` the capped list, with `filesListed` beside `files` in the JSON. Re-walked
+at 1 worker: **exactly 20 lines of the report differ from the previous artifact** — the
+ten type rows, once each way — and in every one the only change is this column. Every
+edge count, resolution percentage, `<0.7`, `<1.0` and `evidenceClasses` tally is
+byte-identical, so the fix moved a column and no finding. The denominators it buys are
+the ones the small types needed: `implements` fires in **23** files and `overrides` in
+**36**, which makes both corpus-wide facts rather than the two or three files an
+eyeball would have sampled. (`cc3b5202d`.)
 
 **READ THE "Both ends resolve" COLUMN AS AN INTRA-FILE RATE.** It answers *can this
 file's own graph be walked from this edge*, not *does this edge bind in the index*. Both
@@ -3341,9 +3355,9 @@ quiet machine will cover all 5,227 through the production path.
     `UNDOCUMENTED [nim] calls (relationship)`, and `bash` carries the same shape.
 
     This lane's table now opens with a totals row (`**all ten, one row each** |
-    10 of 10 examined | **10 EMITTED, 0 ruled** | 267,287 edges over 110,060
-    symbols | …`), which states the section's summary and puts the drop on a row
-    that makes no per-type claim. The gate then reads **0 findings for nim**. §8, not edited: deleting the third guard is the fix, and
+    10 of 10 examined | **10 EMITTED, 0 ruled** | 267,297 edges over 110,076
+    symbols | 6,063 admitted | …`), which states the section's summary and puts the
+    drop on a row that makes no per-type claim. The gate then reads **0 findings for nim**. §8, not edited: deleting the third guard is the fix, and
     until it is, every lane's register under-reports its own claims by one row.
 21. **`verify-doc-truth-emissions.ts` cannot be run with `tsx`, only with `bun`.**
     Line 131 is `const REPO_ROOT = path.resolve(__dirname, "..", "..")` in a file
