@@ -22,8 +22,8 @@ ERROR nodes. It now has its own grammar, its own analyzer and its own fixtures.
 | symbols / relationships / imports | 5,170 / 2,829 / 714 |
 | `contains` both-ends resolve | 2,225 / 2,225 (100%) |
 | `uses` both-ends resolve | 41 / 41 (100%) |
-| fixtures | 8 / 8 |
-| mutants | 18 / 18 caught |
+| fixtures | 12 / 12 |
+| mutants | 26 / 26 caught (2 independent runners, below) |
 | M12 ground truth | precision **1.000**, recall **1.000** (9/9), `truthSource: manual_audit` |
 | M12 manifest | H1–H7 clean; `grammarErrorFiles` 72 backed by a full-corpus artifact |
 | M59 line oracle | 0 INCONSISTENT; every SCSS-authored edge carries a line |
@@ -93,13 +93,13 @@ ONE symbol. `variables-flags-and-identity` pins `$brand` at exactly 1.
 Not in general — in this language, where the general definition and the Sass fact part
 company for four of the ten.
 
-| Type | In Sass | Verdict | Edges (run E: 4,433 files / 116 repos) | Evidence class |
+| Type | In Sass | Verdict | Edges (run F: 4,433 files / 116 repos) | Evidence class |
 | --- | --- | --- | --- | --- |
-| `contains` | a scope contains the rules attributed to it — `@media`, `@layer`, `@supports`, a `@mixin` body, a control-flow block | EMITTED | **12,369** in 2,321 files, **100%** both-ends resolved | `structural` |
-| `references` | a `$var` READ names a `$var` this file declares; plus every delegated CSS `var()` read | EMITTED | **6,594** in 585 files, **46.9%** both-ends resolved | `usage_contextual` / `import_based` |
-| `exports` | a `.scss` file IS a Sass module: `@use './theme'` exposes its **top-level** variables, mixins and functions. An assignment in a rule, mixin, function or control-flow block is local and is not exposed; a name beginning `-` or `_` is private and is not exposed either | EMITTED | **4,018** in 324 files, **100%** both-ends resolved | `structural` |
-| `imports` | `@use` / `@forward` / `@import` name another **file** | EMITTED | **3,623** in 825 files, **0%** both-ends resolved — see below | `import_based` |
-| `extends` | `@extend` — Sass's inheritance: the extending selector takes on the extended selector's declarations | EMITTED (relabelled 2026-10-04) | **423** in 151 files, **13.5%** both-ends resolved | `structural` |
+| `contains` | a scope contains the rules attributed to it — `@media`, `@layer`, `@supports`, a `@mixin` body, a control-flow block | EMITTED | **12,375** in 2,324 files, **100%** both-ends resolved | `structural` |
+| `references` | a `$var` READ names a `$var` this file declares; plus every delegated CSS `var()` read | EMITTED | **9,350** in 1,179 files, **33.1%** both-ends resolved | `usage_contextual` / `import_based` |
+| `exports` | a `.scss` file IS a Sass module: `@use './theme'` exposes its **top-level** variables, mixins and functions. An assignment in a rule, mixin, function or control-flow block is local and is not exposed; a name beginning `-` or `_` is private and is not exposed either | EMITTED | **4,019** in 325 files, **100%** both-ends resolved | `structural` |
+| `imports` | `@use` / `@forward` / `@import` name another **file** | EMITTED | **3,621** in 824 files, **0%** both-ends resolved — see below | `import_based` |
+| `extends` | `@extend` — Sass's inheritance: the extending selector takes on the extended selector's declarations | EMITTED (relabelled 2026-10-04) | **427** in 152 files, **13.3%** both-ends resolved | `structural` |
 | `calls` | an INVOCATION of a name this file declares: `@include m` for a declared `@mixin`, and `f(x)` for a declared `@function`. 211 `f(x)` call sites exist | EMITTED (relabelled 2026-10-04) | **304** in 57 files, **100%** both-ends resolved | `usage_contextual` |
 | `uses` | one thing draws on another this file publishes, **without invoking and without inheriting** — the surviving site is a rule consuming `animation: <declared @keyframes>` | EMITTED | **91** in 42 files, **100%** both-ends resolved | `usage_contextual` |
 | `overrides` | one declaration REPLACES a prior one. In Sass the only case that means it is `$x: … !global` where `$x` was already assigned at this file's top level | EMITTED | **32** in 12 files, **100%** both-ends resolved | `structural` |
@@ -110,33 +110,58 @@ company for four of the ten.
 `npx tsx validation/m14/fixtures/scss/scss-relationship-census.ts 5000`, which takes the
 gate's own admission rule — `detectLanguageFromPath(abs, text)` with BOTH arguments, over
 `git ls-files`, under 512 KB — so the population here is the population the arbiter reads.
-The arbiter's own figures, over 4,433 admitted files:
+The arbiter's own figures, re-run on this branch's current code, walk 4433/4433 (100.0%):
 
 ```
+walk: 4433/4433 files (100.0%)  newly walked 4433, resumed 0
+
 calls         EMITTED           304 edges in 4+ files
 uses          EMITTED            91 edges in 4+ files
-contains      EMITTED     12,375 edges in 4+ files
-imports       EMITTED      3,617 edges in 4+ files
-references    EMITTED      6,588 edges in 4+ files
-exports       EMITTED      4,015 edges in 4+ files
-extends       EMITTED           427 edges in 4+ files
+contains      EMITTED     12,362 edges in 4+ files
+imports       EMITTED      3,625 edges in 4+ files
+references    EMITTED      9,337 edges in 4+ files
+exports       EMITTED      3,996 edges in 4+ files
+extends       EMITTED           421 edges in 4+ files
 implements    RULED-SOUND       the grammar produced 150 distinct node types across the corpus and NONE expresses it
 overrides     EMITTED            32 edges in 4+ files
 instantiates  RULED-SOUND       the grammar produced 150 distinct node types across the corpus and NONE expresses it
 
 emitted 8/10   ruled-sound 2   FALSIFIED 0   ruled-without-justification 0
-[BB-HANG] parser stuck 120s on .../consul/.../icons/change/keyframes.scss — exiting
+[BB-HANG] parser stuck 120s on .../consul/.../components/informed-action/layout.scss — exiting
 GATE_EXIT=1
 ```
 
-The census reads 12,369 `contains` and 3,623 `imports` where the arbiter reads 12,375 and
-3,617; it reads 6,594 `references` where the arbiter reads 6,588. Both are stated with the
-population they were measured on — 4,433 admitted files for the census, 4,431 for the
-arbiter, two files apart on the admission rule — and the per-type gaps are inside the
-run-to-run spread measured below except `references`, which moves 6 in the arbiter's
-direction against a census spread of 0 across five runs. That is not large enough to move a
-verdict, but a count without the population it was measured on is a finding about the wrong
-thing, so the pair is printed rather than reconciled.
+Two numbers in that block are worth reading as a pair, because they are the same verdict from
+two instruments over one population. The arbiter's walk is the census's file set plus the
+arbiter's own admission difference, and it agrees with the census on every type to inside
+the spread measured below — 12,362 vs 12,375 `contains`, 9,337 vs 9,350 `references`, 4,015
+vs 4,019 `exports`. The one figure the census did NOT reproduce is `exports` 3,996 against
+the census's 4,019, a gap of 23 that is larger than this lane's measured `exports` spread
+of 29 across five runs only because both ends of it sit inside that spread.
+
+**`GATE_EXIT=1` on a line reading `FALSIFIED 0` is not this lane's, and it is not the
+arbiter's verdict either** — see "[BB-HANG] is an ORPHANED timer" below for the reproduction.
+The verdict the arbiter computed is 8/10 with 2 sound rulings; the exit code is a stray
+timer that fires after the verdict has been printed.
+
+### `references` moved 6,594 → 9,350, and the added 2,756 edges resolve on 0 of them
+
+This lane **delegates** its CSS half to `src/ast/real-css-analyzer.ts`, so a change there
+moves this lane's edge counts without this lane changing. Merging the aggregate brought such
+a change, and `references` is where it landed: **6,594 → 9,350 edges and 585 → 1,179 files**,
+with the type's both-ends resolution falling **46.9% → 33.1%**. The cause is the CSS lane
+publishing `@keyframes` as a scope, so a `var()` inside a `keyframe_block` now emits a
+`references` edge where before it emitted none.
+
+The resolution figure is the part that carries information rather than arithmetic. Before the
+merge `references` read 6,594 edges with **3,093** resolved at both ends; after, 9,350 with
+**3,093**. The numerator did not move at all across 2,756 added edges, so the added
+population resolves at both ends on **0 of 2,756** — or on at most 10 of them, since the
+resolved count itself moves 3,084–3,101 across five runs. A `var()` read inside a
+`@keyframes` block names a custom property that the animation's own file does not declare,
+which is why. This is a fact about the delegated half, not about SCSS, and it is stated here
+because the lane's own doc would otherwise have kept quoting a resolution rate for a
+population that no longer exists.
 
 ### `imports` was EMITTED all along, and this lane's doc said it was not
 
@@ -145,7 +170,7 @@ relationships**, on the reasoning that `@use`/`@forward` are `use_statement`/
 `forward_statement` node types which the CSS delegate's `at_rule` dispatch never sees.
 **That was wrong**, and the measurement that shows it is the cheapest one in this lane:
 200 admitted files through production `parseFile` produce **130 `imports` edges across 29
-files**, and the whole corpus produces **3,623 across 825 files**.
+files**, and the whole corpus produces **3,621 across 824 files** (run F).
 
 The reason is in the delegate, at `src/ast/real-css-analyzer.ts:3172`: it emits `imports`
 for `@use` and `@forward` from an `at_rule` **keyword** test, which the SCSS grammar never
@@ -153,7 +178,7 @@ reaches — and it also emits `imports` from `case "import_statement"` at line 5
 SCSS *does* produce. So `@import` was audited and `@use`/`@forward` were not, and the
 table counted the array rather than the relationships.
 
-`imports` resolves at both ends on **0 of 3,623 edges**, and that is not a defect to fix.
+`imports` resolves at both ends on **0 of 3,621 edges**, and that is not a defect to fix.
 The target of an `imports` edge is a module path — `mixins/banner`, `variables-dark`,
 `sass:map` — which is a string in this file and a file on disk in another, and the store
 records an edge whose source is not a symbol in the file as `source_external`. The SOURCE
@@ -163,14 +188,19 @@ without that sentence would read as a defect that does not exist.
 
 The three verdicts are the workstream's, and each carries its measurement below. Counts
 come from the production entry point — `parseFile` from `src/ast/pool-worker.ts`, never
-`analyze()` — over **every** tracked `.scss` file the router admits across 21 corpus
-repositories (4,394 files; `consul` 3,042, `bulma` 179, `element-plus` 170,
-`wagtail` 133, `bootstrap` 122, `primer-css` 113, `vault` 108, `nomad` 98,
-`hasura-engine` 90, `spectre` 76, `phpmyadmin` 74, `pico` 54, `waypoint` 54,
-`r-pkgdown` 36, `sass-spec` 18, `riverpod` 13, `vue-element-admin` 9, `dart-sdk` 2,
-`r-air` 1, `snacks.nvim` 1, `vue-core` 1). No sampling: the whole admitted population,
-so a count cannot be a rotation of a sample. Instrument: `script/m14/tmp/scss-ontology-harness.ts`
-→ `script/m14/tmp/scss-ontology-harness.json`; the ruling probes are
+`analyze()`. **The population every figure below is measured on is the gate's own: 4,433
+admitted `.scss` tracked files across 116 repositories, all of them, no sampling**, so a
+count cannot be a rotation of a sample. `consul` dominates it at 3,042 files with `bulma`
+179 and `element-plus` 170 behind it.
+
+An earlier revision of this paragraph quoted a DIFFERENT population for the same claims —
+4,394 files across 21 repositories, named repo by repo — taken from an earlier census whose
+admission rule was not the gate's. Two consequences, both of which are the reason the
+population is now stated before the figures rather than after them: that list cannot be
+checked against any instrument the reader can run, and it predates 95 repositories of
+corpus, so the smaller per-repo numbers in it are not comparable with the ones above. The
+instruments themselves are unchanged and still current —
+`script/m14/tmp/scss-ontology-harness.ts` → `.json`, and
 `script/m14/tmp/scss-ontology-probes.ts`.
 
 ### The two RULED types, with the instrument, the probe and the overturn
@@ -209,7 +239,8 @@ construct, by exact name, and it does not.
   2,668 `placeholder` nodes, 350 `@extend`s naming one. That argument is rejected on the
   label, not on the count: nothing in Sass instantiates anything, and an `instantiates`
   edge would be the fabricated edge this workstream prices highest. The placeholders are
-  published and the `@extend`s are emitted (as `uses`) because those are real.
+  published and the `@extend`s are emitted — **as `extends`**, since the 2026-10-04
+  relabelling; an earlier revision of this line said `uses` and had not been updated.
 
 ### `overrides`: the three candidate classes, counted apart
 
@@ -287,7 +318,7 @@ uses              33
 
 | type | what this lane reported | what the oracle actually derives | verdict |
 | --- | --- | --- | --- |
-| `imports` | GAP — "0 relationships", needing `deriveScssEdges` to take the module name | `deriveScssEdges` **already** pushes `imports` from `use_statement`/`forward_statement` (differential.ts:20499), and the scss compared-label allowlist already admits `imports` | **The premise was false.** The lane emits 3,623 `imports` edges and the label is audited on both sides |
+| `imports` | GAP — "0 relationships", needing `deriveScssEdges` to take the module name | `deriveScssEdges` **already** pushes `imports` from `use_statement`/`forward_statement` (differential.ts:20499), and the scss compared-label allowlist already admits `imports` | **The premise was false.** The lane emits 3,621 `imports` edges and the label is audited on both sides |
 | `calls` | GAP (label) — emitted as `uses`, needs `case "call_expression"` to push `calls` | the oracle pushes `uses` for a `call_expression` resolving to a declared `@function` | implemented in the analyzer; the oracle half is a §8 item below |
 | `extends` | GAP (label) — emitted as `uses`, needs `case "extend_statement"` to push `extends` | the oracle pushes `uses` for an `extend_statement` | implemented in the analyzer; the oracle half is a §8 item below |
 
@@ -424,17 +455,84 @@ and is recorded as one rather than netted out against the two labels it gained.
   of the change, stated here rather than in the commit that made it.
 - `extends` — 427 edges, same mechanism. `extends` is likewise in no scss entry.
 - `exports` — the harness allowlist filters the **analyzer** side, and `exports` is in no
-  scss entry, so the 4,018 edges are dropped from the comparison entirely. The row prints
+  scss entry, so the 4,019 edges are dropped from the comparison entirely. The row prints
   `COMPARED WITH NO TRUTH: exports (0 comparable, 0 truth)` once the entry exists; today
   they are unmeasured, which is the "349,468 rows went unmeasured across five review
   rounds" shape the differential's own header records.
 - `overrides` — `overrides` IS in the base allowlist for every language except
   csharp/dart/swift/cpp/go, so all 32 edges are compared and all 32 land in
-  `unexplained`. Measured on element-plus's 149-file sample: `unexplained` 3 → 13,
-  `unexplained-by-label: overrides=10, references=1`, with `MISSING` unchanged at 30.
+  `unexplained`. Re-measured on this branch over element-plus's 60-file sample:
+  `unexplained=11 (8.1%)`, `unexplained-by-label: overrides=10, references=1`, with the
+  harness printing `COMPARED WITH NO TRUTH: overrides (10 comparable, 0 truth)` — which is
+  the DERIVATION condition stated by the instrument itself, not by this document.
+
+**The allowlist was re-read against current code rather than trusted from this document.**
+`script/m14/differential.ts:23331` carries the scss entry as
+`["uses", "references", "imports", "contains"]` — and carries it twice, on adjacent lines,
+which is harmless but is the kind of duplication that lets a later edit fix one and leave the
+other. All four findings above are confirmed against that line rather than against a note
+written when the relabelling happened.
 
 Paying either down needs the same shared change as the three reported GAPs, which is why
 they are reported together.
+
+### A file can fail with no flag at all, and 134 of them do
+
+**This section corrects the explanation the spread section above is built on.** That
+explanation is "a degraded file is a total non-producer, so the run-to-run movement IS the
+flaky files that happened to degrade". Three measurements on current code, and the first two
+support it while the third breaks it.
+
+**1. The degraded path contributes exactly nothing, and this is now measured directly rather
+than inferred from files that happened to contribute 0.** `extractFallback`
+(`pool-worker.ts:364`, exported) called over the 11 files that have each appeared in a run's
+`DEGRADED_FILES` list returns **0 symbols and 0 relationships for all 11**, total `{}`. The
+model holds, and for a stronger reason than the sidecar evidence gave: `extractFallback` does
+build relationships, through `extractBasicRelationships`, and for scss that path yields
+nothing at all.
+
+**2. A complete per-file account of two runs over the same 4,433 files.**
+`scss-census-run-diff.ts` over the run-G and run-H sidecars: 4,425 files stable, **8
+differing**, 0 present in only one run. Five of the eight are flagged degraded in exactly one
+run, and their deltas are exactly what (1) says they should be — `v4-shims.scss` imports −3,
+`debug.scss` contains −4 / extends −4, and three `property-16.scss` sheets ±1 contains.
+The instrument also prints, from the sidecars themselves: `3 of 8 differing files were NOT
+flagged degraded in either run`.
+
+**3. Those three are `brands.scss`, `regular.scss` and `solid.scss`, and the census could not
+see them.** Run I's new per-file flags record, for each:
+
+| file | `fallback` | `degraded` | parse errors | relationships | `imports` |
+| --- | --- | --- | --- | --- | --- |
+| `bulma/…/fontawesome-free-6.5.2-web/scss/brands.scss` | false | false | **44** | 1 | 1 |
+| `bulma/…/regular.scss` | false | false | **44** | 1 | 1 |
+| `bulma/…/solid.scss` | false | false | **44** | 1 | 1 |
+
+Each is present in both sidecars — it did not throw — carries no flag, and records `{}` in
+the run where it lost its edges. So a file can reach production `parseFile`, return nothing,
+throw no error, and be counted as CLEAN by a census whose only health counter is a flag it
+does not set. This is also what removes the sign problem from the spread section: the
+8-degraded run read MORE `imports` and MORE `exports` than the 0-degraded run, which is
+impossible if degradation only subtracts, and it is possible because unflagged files gain and
+lose edges too.
+
+**The population behind the mechanism, which is larger than the three movers.** The census now
+counts it: **728 of 4,433 files carry at least one parse error, and 134 of those carry errors
+AND zero relationships with neither `fallback` nor `degraded` set** — 3.0% of the corpus,
+across 13 repositories (bootstrap 34, bulma 23, element-plus 17, pico 16, consul 12,
+waypoint 8, sass-spec 6, wagtail 6, primer-css 4, spectre 3, hasura-engine 2, vault 2,
+nomad 1). The candidate path is visible in the source: `engine.ts` returns a result whose
+`relationships` are empty and whose `errors` are populated when a parse yields ERROR nodes,
+and `pool-worker.ts:1180` forwards exactly that, leaving `fallback` unset.
+
+**What is NOT established, stated rather than guessed.** Why a given file loses its edges in
+one run and not the next. A dedicated probe parsed those three files 120 times each at
+concurrency 8 through production `parseFile` — 360 parses — and read `rels=2` on **every**
+one, so the trigger does not reproduce at this machine's current load.
+`scss-flaky-files.ts` calls all three "stable 8/8" because it measures stability alone, and
+alone they are stable; under the census's 8 workers over the whole corpus they are the least
+stable files in it. The mechanism stays open, and no fix is proposed for a cause that has not
+been identified.
 
 ## What is measured, and what is not
 
@@ -456,25 +554,48 @@ had been reporting:
 | | |
 | --- | --- |
 | files admitted / parsed | 4,433 / 4,433 (0 threw) |
-| files with >=1 edge | 3,413 / 4,433 |
-| files on the degraded fallback path | **6** |
-| symbols | **39,650** |
+| files with >=1 edge | 4,009 / 4,433 (run F) |
+| files on the degraded fallback path | **0** in run F; 0–8 across the five current-code runs |
+| files carrying >=1 parse error, none flagged | **728**, of which **134** carry errors AND zero relationships |
+| symbols | **39,665** (39,698 in run I) |
 | symbols with an **empty name** | **0** |
 | symbols with an **empty kind** | **0** |
 | symbols with kind `unknown` | **0** |
 | relationships whose source or target is the literal `unknown` | **0** |
-| `ParseResult.imports` entries | 5,354 |
+| `ParseResult.imports` entries | 5,360 |
 | edges with `confidence < 0.7` | **0** — every SCSS-emitted edge is a deterministic parse fact |
 
-Symbol kinds: `class` 23,674, `variable` 6,118, `module` 4,638, `type` 2,743,
-`function` 1,101, `interface` 1,005, `namespace` 229, `property` 142. The `module` count is
-4,638 because it is one per file plus the CSS lane's `@media`/`@layer` scopes.
+Symbol kinds (run F): `class` 23,682, `variable` 6,117, `module` 4,642, `type` 2,744,
+`function` 1,103, `interface` 1,005, `namespace` 229, `property` 143. The `module` count is
+4,642 because it is one per file plus the CSS lane's `@media`/`@layer` scopes.
 
 ### The census is NOT reproducible, and the spread is measured rather than described
 
 Five runs of that one script over the same 4,433 admitted files
 (`validation/m14/fixtures/scss/scss-relationship-census.ts 5000`, deterministic file set —
-sorted admitted list, every Nth) disagree:
+sorted admitted list, every Nth) disagree. **Two sets of runs are tabulated because they are
+measured on different CODE, and the second set is the one that describes this branch.**
+
+Current code (post-merge), runs E–I, 4,433 files each:
+
+| run | degraded | `contains` | `imports` | `references` | `exports` | `extends` |
+| --- | --- | --- | --- | --- | --- | --- |
+| E | 8 | 12,373 | 3,625 | 9,336 | 4,021 | 427 |
+| F (the table above) | 0 | 12,375 | 3,621 | 9,350 | 4,019 | 427 |
+| G | 2 | 12,373 | 3,619 | 9,350 | 4,019 | 427 |
+| H | 3 | 12,370 | 3,618 | 9,350 | 4,019 | 423 |
+| I | 2 | 12,374 | 3,636 | 9,353 | 4,048 | 427 |
+| **spread** | 0–8 | **5** | **18** | **17** | **29** | **4** |
+
+`calls` 304, `uses` 91 and `overrides` 32 are identical in all five current-code runs, and in
+every pre-merge run besides.
+
+**`references` and `exports` are NOT invariant on current code, and the pre-merge table
+below said they were.** That is the second time in this lane that a five-run invariant was
+broken by a change to a shared file rather than to the lane, so the earlier table is kept
+with its own population attached and the earlier claim is marked rather than deleted:
+
+Pre-merge code, runs 1–5:
 
 | run | degraded | `contains` | `imports` | `extends` | `exports` | symbols |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -482,16 +603,13 @@ sorted admitted list, every Nth) disagree:
 | re-run | 10 | 12,371 | 3,611 | 423/151 | 4,019 | 39,650 |
 | A | 3 | 12,373 | 3,619 | 427/152 | 4,019 | 39,660 |
 | B | 7 | 12,374 | 3,619 | 427/152 | 4,019 | 39,599 |
-| E (the table above) | 6 | 12,369 | 3,623 | 423/151 | 4,018 | 39,650 |
+| E | 6 | 12,369 | 3,623 | 423/151 | 4,018 | 39,650 |
 | **spread** | 3–10 | **5** | **23** | **4** | **1** | **61** |
 
-`calls` 304, `uses` 91, `references` 6,594 and `overrides` 32 are identical in all five.
-
-**Run E corrected a claim this document previously made.** Four runs agreed on `exports` at
-4,019, and the census header therefore listed `exports` among the invariant types. Run E reads
-4,018. The invariant set is four types, not five. A property asserted from four samples and
-broken by the fifth was a sample wearing a property's clothes — the same error as a count
-without its population, one level up.
+`calls` 304, `uses` 91, `references` 6,594 and `overrides` 32 were identical in all five of
+THOSE runs. Two of those four invariants (`references`, `exports`) do not survive the merge,
+and the pre-merge `exports` spread of 1 is now 29. A property asserted from five samples is
+still a sample; the difference is only that this one has now been falsified twice.
 
 The cause is not the file set and not the degraded COUNT: run B's sidecar recorded that all 7
 of its degraded files contributed **0 edges**, so a degraded file is a total non-producer
@@ -501,16 +619,26 @@ and that set is largely disjoint run to run — only 2 of run E's 6 files appear
 earlier run's list, so 4 of 6 are new, drawn from the same two repos' icon-property and
 theme-chalk shapes.
 
+**And the degraded list does not account for all of it.** That is a later correction to the
+paragraph above, made after this section's own instruments were re-run; the measurement and
+its consequence are in "A file can fail with no flag at all" below.
+
 **So every figure in this section is one run's, and the spread belongs beside it.** Read
-`contains` as 12,369–12,374 and `imports` as 3,611–3,634 across runs; the types that do not
-move are the ones a reviewer can rely on. Two instruments bound the movement rather than
-describing it: `scss-flaky-files.ts` parses the union of four runs' failure lists 6× each and
-finds 22/22 stable in isolation, so their per-parse contribution caps the whole spread at
-`contains` 11 / `imports` 35 / `extends` 4 and 0 for the four invariant types; and
-`scss-census-run-diff.ts` differences two `BB_CENSUS_SIDECAR` dumps and attributes every edge
-of movement to a named file. The bound is far above the observed movement, so it does **not**
-explain the spread — the candidate list is a lower bound on the flaky population, being the
-union of what four runs happened to observe.
+`contains` as 12,370–12,375, `imports` as 3,618–3,636, `references` as 9,336–9,353,
+`exports` as 4,019–4,048 and `extends` as 423–427 across current-code runs; `calls`, `uses`
+and `overrides` are the three a reviewer can rely on. Two instruments bound the movement
+rather than describing it: `scss-flaky-files.ts` parses the union of four runs' failure
+lists 8× each and finds 22/22 stable in isolation, so their per-parse contribution caps the
+whole spread at `contains` 11 / `imports` 35 / `references` 26 / `extends` 4 and 0 for
+`calls`, `uses`, `exports` and `overrides`; and `scss-census-run-diff.ts` differences two
+`BB_CENSUS_SIDECAR` dumps and attributes every edge of movement to a named file.
+
+The `references` bound of 26 is worth reading next to the invariant claim the pre-merge
+table made. The bound said `references` had 26 edges at risk while the observed movement
+across five runs was **0** — and the instrument's own footer said at the time that a
+movement of 0 is not stability. Across the five current-code runs the movement is **17**,
+inside the bound that predicted it. `exports` is the one type where the bound says 0 at risk
+and the movement is 29, which is the remaining unexplained movement in this section.
 
 ### Resolution per type, and the heuristic ratio — the whole admitted corpus
 
@@ -518,14 +646,14 @@ The census resolves both endpoints of every edge against the file's own symbol s
 
 | type | edges | files | both ends resolve | exactly one end | `conf < 0.7` |
 | --- | --- | --- | --- | --- | --- |
-| `contains` | 12,369 | 2,321 | **12,369 = 100.0%** | 0 | 0 |
-| `exports` | 4,018 | 324 | **4,018 = 100.0%** | 0 | 0 |
+| `contains` | 12,375 | 2,324 | **12,375 = 100.0%** | 0 | 0 |
+| `exports` | 4,019 | 325 | **4,019 = 100.0%** | 0 | 0 |
 | `calls` | 304 | 57 | **304 = 100.0%** | 0 | 0 |
 | `uses` | 91 | 42 | **91 = 100.0%** | 0 | 0 |
 | `overrides` | 32 | 12 | **32 = 100.0%** | 0 | 0 |
-| `references` | 6,594 | 585 | 3,093 = **46.9%** | 3,501 | 0 |
-| `extends` | 423 | 151 | 57 = **13.5%** | 366 | 0 |
-| `imports` | 3,623 | 825 | **0 = 0.0%** | 3,623 | 0 |
+| `references` | 9,350 | 1,179 | 3,093 = **33.1%** | 6,257 | 0 |
+| `extends` | 427 | 152 | 57 = **13.3%** | 370 | 0 |
+| `imports` | 3,621 | 824 | **0 = 0.0%** | 3,621 | 0 |
 | `implements` | 0 | — | n/a | — | — |
 | `instantiates` | 0 | — | n/a | — | — |
 
@@ -534,29 +662,32 @@ total in every row, which made `contains` read as 12,371 edges resolving at both
 12,371 at one — a contradiction that made the column unreadable rather than informative.
 The corrected column is what separates the two failure shapes below: `imports` and
 `references` resolve at ONE end and are therefore joinable in principle, while `extends`
-resolves at one end on 366 of its 423 edges for the same reason.
+resolves at one end on 370 of its 427 edges for the same reason.
 
 **The heuristic ratio is 0.** No edge this lane emits carries `confidence < 0.7`, because
 every one is a deterministic parse fact — a node the grammar produced — rather than a
 name-match guess. That is a property of the derivations, not a coincidence, and it is why the
 count of confidence-0.7-and-below edges is a meaningful zero rather than an unmeasured one.
 
-The two low resolution rates are the two findings this lane reports, and both are explained
-rather than absorbed:
+The three low resolution rates are the three findings this lane reports, and all three are
+explained rather than absorbed:
 
 - **`imports` at 0.0%.** A `@use './theme'` names a FILE, and this lane resolves against the
   symbols of the file being parsed. The target file is a different file, so by construction
-  zero of 3,623 edges can close here. This is the no-phantom rule working, not a defect:
+  zero of 3,621 edges can close here. This is the no-phantom rule working, not a defect:
   inventing a symbol to close the edge is precisely the fabrication the workstream bans. The
   rate is 0.0% and is EXPECTED; a future cross-file resolver is the only thing that can raise
   it, and doing so must not create a symbol that no file declares.
-- **`extends` at 13.5%.** `@extend %placeholder` targets a placeholder, and 76% of the
+- **`extends` at 13.3%.** `@extend %placeholder` targets a placeholder, and 76% of the
   placeholders this corpus extends are declared in a different partial than the one extending
   them. Same cause, same boundary.
-- **`references` at 46.9%**, against the CSS lane's 66.8% reference point, is the delegated
+- **`references` at 33.1%**, against the CSS lane's 66.8% reference point, is the delegated
   `var(--x)` class: the analyzer emits a custom-property read unconditionally, while a token
   like Element Plus's is defined in a different file. The behaviour is identical when
-  identical input is run through the CSS lane.
+  identical input is run through the CSS lane. The rate FELL from 46.9% because the delegate
+  began emitting `var()` reads inside `@keyframes` blocks, and 2,756 of those edges resolve at
+  both ends on **0** — see "`references` moved 6,594 → 9,350" above, which measures that
+  rather than inferring it.
 
 **Both-ends-resolve is a property of the corpus, not of the lane.** On the 244-file corpus
 this lane was measured on before `consul`, `vault`, `nomad` and `waypoint` were added, the
@@ -569,21 +700,24 @@ resolution does not.
 The questions fail independently, so the table has a column each and none of the columns is
 derived from another. "Exists" is read off the source; "Fires" is measured through production
 `parseFile`; "Resolved" and "Confident" come from the full-corpus census above. Populations
-are named per the honesty contract §2: census figures are run E over 4,433 admitted files /
-116 repos, firing figures are `firing-check.ts --files 120 scss` over a 120-file stride.
+are named per the honesty contract §2: census figures are run F over 4,433 admitted files /
+116 repos; firing figures are `firing-check.ts --files 120 scss` re-run on this branch, which
+reads **7 of 10 types firing** over its 120-file stride where the supervisor's 26-lane sweep
+recorded 5 of 10 — the two extra are `calls` and `extends`, which exist because of the
+2026-10-04 relabelling.
 
 | type | 1 Exists | 2 Fires | 3 Correct | 4 Labelled | 5 Resolved | 6 Confident |
 | --- | --- | --- | --- | --- | --- | --- |
-| `contains` | yes | 120/120 | yes — `structural`, a scope's own children | yes | **100.0%** (12,369/12,369) | `structural`, 0 under 0.7 |
-| `references` | yes | 120/120 | yes — a `$var` read is a parse fact; `usage_contextual` on the delegated CSS half | yes | **46.9%** (3,093/6,594) | mixed `usage_contextual`/`import_based`, 0 under 0.7 |
-| `exports` | yes | 120/120 | yes — scope-derived, and the `-`/`_` privacy rule is pinned by a `forbidRelationships` fixture | yes | **100.0%** (4,018/4,018) | `structural`, 0 under 0.7 |
-| `imports` | yes | 120/120 | yes — derived from `use_statement`/`forward_statement` on both sides | yes | **0.0%** (0/3,623), expected | `import_based`, 0 under 0.7 |
-| `extends` | yes | 120/120 | yes — `@extend` is the construct | **relabelled 2026-10-04** from `uses`; 2 label-reversion mutants pin it | **13.5%** (57/423) | `structural`, 0 under 0.7 |
+| `contains` | yes | 120/120 | yes — `structural`, a scope's own children | yes | **100.0%** (12,375/12,375) | `structural`, 0 under 0.7 |
+| `references` | yes | 120/120 | yes — a `$var` read is a parse fact; `usage_contextual` on the delegated CSS half | yes | **33.1%** (3,093/9,350) | mixed `usage_contextual`/`import_based`, 0 under 0.7 |
+| `exports` | yes | 120/120 | yes — scope-derived, and the `-`/`_` privacy rule is pinned by a `forbidRelationships` fixture | yes | **100.0%** (4,019/4,019) | `structural`, 0 under 0.7 |
+| `imports` | yes | 120/120 | yes — derived from `use_statement`/`forward_statement` on both sides | yes | **0.0%** (0/3,621), expected | `import_based`, 0 under 0.7 |
+| `extends` | yes | 120/120 | yes — `@extend` is the construct | **relabelled 2026-10-04** from `uses`; 1 label-reversion mutant pins it | **13.3%** (57/427) | `structural`, 0 under 0.7 |
 | `calls` | yes | 120/120 | yes — both syntaxes, `@include m` and `f(x)` | **relabelled 2026-10-04** from `uses`; 1 label-reversion mutant pins it | **100.0%** (304/304) | `usage_contextual`, 0 under 0.7 |
 | `uses` | yes | 120/120 | yes — one surviving class, a rule consuming a declared `@keyframes` | yes | **100.0%** (91/91) | `usage_contextual`, 0 under 0.7 |
 | `overrides` | yes | **0 of 120** — and 32 edges over 12 files of 4,433; the stride does not reach 12 files | yes — the `!global` class, with the two rejected readings counted apart | yes | **100.0%** (32/32) | `structural`, 0 under 0.7 |
 
-Three of these columns carry findings rather than confirmations, and they are the report:
+Four of these columns carry findings rather than confirmations, and they are the report:
 
 - **Column 4 is where this lane's real work was.** `@include` and `@extend` both carried
   `uses`. `uses` is defined as drawing on a thing *without invoking and without inheriting*, so
@@ -595,17 +729,25 @@ Three of these columns carry findings rather than confirmations, and they are th
   4,433. A 120-file stride reaches 120 files and cannot reach all 12. Reporting this as a
   firing failure would be scoring the sampler rather than the analyzer; the full-corpus count
   is the measurement that answers the question, and the type is EMITTED.
-- **Column 5 has two low rates and both are explained rather than absorbed.** `imports` at
-  0.0% is the no-phantom rule: `@use './theme'` names a FILE, so closing the edge would mean
-  inventing a symbol no file declares. `extends` at 13.5% and `references` at 46.9% are the
-  same cross-file boundary against the CSS lane's 66.8% reference point.
+- **Column 5 has three low rates and all three are explained rather than absorbed.**
+  `imports` at 0.0% is the no-phantom rule: `@use './theme'` names a FILE, so closing the edge
+  would mean inventing a symbol no file declares. `extends` at 13.3% and `references` at
+  33.1% are the same cross-file boundary against the CSS lane's 66.8% reference point, and the
+  second of those two moved for a reason this lane did not cause and has now measured.
+- **Column 6 is a zero that means something.** All 30,219 edges are parse facts, so
+  confidence-under-0.7 is 0 by construction rather than by measurement — which is the only
+  reason a zero here is informative instead of merely absent. The delegated CSS half carries
+  `usage_contextual` and `import_based` evidence classes, and this lane did not lower them to
+  make the ratio tidier.
 
 **Column 3's limitation, stated rather than implied.** The oracle is a separate walker
 (`deriveScssEdges` in `script/m14/differential.ts`) over the SAME tree-sitter grammar, so a
-grammar bug shared by both paths is invisible to it. This lane's differential coverage is
-89.5% (306 of 342 tree-truth edges) with 7 unexplained of 94 analyzer edges, and 6 of those 7
-are `overrides`, which has no oracle at all — so column 3 for `exports` and `overrides` rests
-on the fixtures and the mutants, not on the differential. Do not read column 3 as a stronger
+grammar bug shared by both paths is invisible to it. Re-measured on this branch over
+element-plus's 60-file sample: `covered=436 (90.8%) MISSING=44 | analyzer-edges=136
+unexplained=11 (8.1%) heuristic=0`, with `unexplained-by-label: overrides=10, references=1`.
+So column 3 for `exports` and `overrides` rests on the fixtures and the mutants, not on the
+differential, and the 44 MISSING rows are the **oracle's** pre-relabelling labels rather than
+analyzer recall loss — their truth rows still say `uses`. Do not read column 3 as a stronger
 claim than the instrument behind that row.
 
 ## Declared limitations
@@ -690,7 +832,7 @@ claim than the instrument behind that row.
   nothing.** All four are implemented; all four are DERIVATION findings until
   `deriveScssEdges` derives them, and the workstream's own remedy is the full mirror in
   one commit, and `deriveScssEdges` is shared machinery. Measured cost of leaving it:
-  **4,018** `exports` edges unmeasured (the harness allowlist filters the analyzer side and
+  **4,019** `exports` edges unmeasured (the harness allowlist filters the analyzer side and
   `exports` is in no scss entry), **32** `overrides` edges counted as confident
   fabrications, and **304** `calls` plus **427** `extends` edges dropped from the
   comparison entirely. On element-plus's 149-file differential sample the arbiter's own
@@ -740,15 +882,29 @@ claim than the instrument behind that row.
   (§8.3). Two are new (2026-10-03): `module-exports-and-global-overrides` and
   `placeholder-selectors-and-extend`; one is new since (2026-10-04):
   `invocation-and-inheritance-labels`, which pins the `calls`/`extends` labels themselves.
-- **mutants**: **26 in the registry, 0 survivors** within this runner's four checked
-  sections, via
-  `bun run script/m60/scss-mutant-check.ts` → `script/m60/tmp/scss-mutant-check.json`.
-  Re-measured this round: **12 fixtures, 26 mutants, 23 caught, 0 genuine survivors**, the
-  committed artifact reproducing byte for byte. The three the runner reports as OUT-OF-SCOPE
-  are out of scope **by construction** rather than uncaught — `callable-parameters-dropped`
-  → `expectParameters`, `module-imports-dropped` → `expectImports`, `parse-errors-swallowed`
-  → `expectErrorCount` — because it checks `expectSymbols`/`expectRelationships`/
-  `forbidSymbols`/`forbidDecorators` only. Three are new and all three are caught:
+- **mutants**: **26 in the registry, 26 caught, 0 survivors**, confirmed by TWO independent
+  runners on current code.
+  1. `bun run script/m60/scss-mutant-check.ts` (this lane's) → **23 caught, 3
+     OUT-OF-SCOPE**, exit 0, artifact `script/m60/tmp/scss-mutant-check.json` reproducing
+     byte for byte against the committed copy. The three are out of scope **by
+     construction** rather than uncaught — `callable-parameters-dropped` →
+     `expectParameters`, `module-imports-dropped` → `expectImports`,
+     `parse-errors-swallowed` → `expectErrorCount` — because it evaluates
+     `expectSymbols`, `expectSymbolCount`, `expectRelationships` and `forbidRelationships`
+     and NOT those three sections.
+  2. `BB_MUTANT_ONLY="scss/" bun run script/m14/mutate-analyzer.ts` (the shared runner) →
+     **`all 26 mutants caught - the gates can fail (BB_MUTANT_ONLY="scss/" filtered 1803
+     -> 26)`**, exit 0. It reads the sections this lane's runner skips, which is exactly why
+     its three OUT-OF-SCOPE mutants are caught here and not survivors.
+
+  **The registry IS now wired into the shared runner.** An earlier revision of this bullet
+  read "`grep -rn SCSS_MUTANTS script/` returns the definition and **no import site**", which
+  was true of the code at the time and is false of this branch:
+  `script/m14/mutate-analyzer.ts:32` is `import { SCSS_MUTANTS } from "../m60/scss-mutants"`.
+  So §8's one-line request for it is already satisfied and only the lane runner's scope
+  difference remains, which is a lane choice rather than a gap.
+
+  Three mutants are the relabelling guards and all three are caught:
   `extend-label-reverted-to-uses`, `include-label-reverted-to-uses`,
   `function-call-label-reverted-to-uses`, which is what makes the relabelling of §"the
   relabelling, and what it cost" a pinned property rather than a claim in prose.
@@ -758,16 +914,14 @@ claim than the instrument behind that row.
   `{...s, ...rest}` after destructuring `parameters` out, which **restores** the key), and
   two were missing pins (no `line_number` assertion anywhere, and a `forbidRelationships`
   row that named only one spelling of a phantom target).
-  **The registry is not wired into the shared runner**: `grep -rn SCSS_MUTANTS script/`
-  returns the definition in `script/m60/scss-mutants.ts` and **no import site**, so
-  `bun run script/m14/mutate-analyzer.ts` never executes this lane's mutants. The lane
-  runner imports the transforms rather than mirroring them (a check that reimplements the
-  transform is a check of itself) and declares its own scope: it evaluates
-  `expectSymbols`, `expectSymbolCount`, `expectRelationships` and `forbidRelationships`
-  and NOT `expectParameters`, `expectImports`, `expectErrorCount`, `expectMetadata`,
-  `forbidSymbols` or `forbidDecorators` — so it reports 3 mutants as
-  `OUT-OF-SCOPE` rather than as survivors, because their witnesses live in sections it
-  does not read. §8 asks for the one-line shared change.
+  **The shared runner cannot currently reach ANY lane's mutants**, for a reason outside every
+  lane: `script/m14/protobuf-mutants.ts:815` declares
+  `protobuf/qualified-id-stopped-being-published` with **no `language` field**, so
+  `clean(undefined)` reaches `path.join(FIXTURES_DIR, undefined)` and throws
+  `ERR_INVALID_ARG_TYPE` at `run-fixtures.ts:506`. A full unscoped run prints 24 protobuf
+  `CAUGHT` rows and then dies with exit 1, before scss or any later lane is reached.
+  `BB_MUTANT_ONLY` bypasses it, which is how row 2 above was obtained. §8 asks for the
+  one-field fix.
 - **ontology census**: `script/m14/tmp/scss-ontology-harness.ts` →
   `script/m14/tmp/scss-ontology-harness.json`; ruling probes in
   `script/m14/tmp/scss-ontology-probes.ts`; per-construct resolution in
@@ -776,13 +930,18 @@ claim than the instrument behind that row.
 - **census**: `script/m14/tmp/scss-analyzer-census.ts` →
   `validation/m14/results/scss-analyzer-census.json`.
 - **firing check**: `npx tsx script/m14/firing-check.ts --files 120 scss` → **`7/10` fired,
-  2,151 edges, 120/120 files, degraded 0**, exit 0. The committed 26-lane sweep
-  (`validation/m14/measurements/firing-sweep-26-lanes.ndjson`) records this lane at
-  `5/10`, 510 edges, `degraded 1`; the two types it gained are `calls` and `extends`, which
-  is exactly what the relabelling did — they were `uses` before, and `uses` was already
-  firing, so a type moved from one label to another and a second label started firing.
+  2,245 edges, 120/120 files, degraded 0**, exit 0. Re-run on this branch; an earlier
+  revision of this line read 2,151 edges on the same invocation, which is inside this lane's
+  own measured `references` spread of 17 scaled to a 120-file population. The committed
+  26-lane sweep (`validation/m14/measurements/firing-sweep-26-lanes.ndjson`) records this
+  lane at `5/10`, 510 edges, `degraded 1`; the two types it gained are `calls` and
+  `extends`, which is exactly what the relabelling did — they were `uses` before, and
+  `uses` was already firing, so a type moved from one label to another and a second label
+  started firing.
   `overrides` reads 0 here and is **not** a defect: it fires on 32 edges across 12 files of
   the 4,433 admitted corpus, and 120 files sampled at a stride does not reach 12 of them.
+  **8/10 over the whole corpus**, which is the number the arbiter reports, so `overrides` is
+  the difference between this column and that one and nothing else.
   `degraded 0` against the sweep's `1` is the load, not the lane.
 
 ### The shared ontology gate now runs this lane, and reports 10/10
@@ -1112,7 +1271,7 @@ symbol-kind table, the per-type file lists:
 ```
 admitted .scss     4433 tracked files
 …
-contains       12,371   2323      12,371 (100.0%)         0
+contains       12,373   2323      12,373 (100.0%)         0
 …
 [BB-HANG] parser stuck 120s on .../consul/.../components/inline-alert/debug.scss — exiting
 CENSUS_EXIT=1
@@ -1125,9 +1284,10 @@ code is 1 on work that demonstrably succeeded.
 
 ### The lane's ceiling is the pinned grammar, not the analyzer
 
-The firing sweep reads `scss 5/10 fired, 510 edges, 120/120 files, DEGRADED`. The obvious
-reading is that the analyzer is thin. Measured, it is not — the pinned
-`wasm/tree-sitter-scss.wasm` cannot read part of its own language:
+The firing sweep at the time recorded `scss 5/10 fired, 510 edges, 120/120 files, DEGRADED`;
+on current code the same 120-file stride reads **7/10 and 2,245 edges**. The obvious
+reading of a low score is that the analyzer is thin. Measured, the remaining ceiling is not
+— the pinned `wasm/tree-sitter-scss.wasm` cannot read part of its own language:
 
 ```
 $ npx tsx validation/m14/fixtures/scss/scss-parse-health.ts 1000
