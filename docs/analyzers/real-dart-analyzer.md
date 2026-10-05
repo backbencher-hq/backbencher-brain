@@ -2173,27 +2173,27 @@ dart lane regex census — instrument: TypeScript AST (ts.createSourceFile), no 
 scope: lane-owned set
 owned dirs: src/ast/real-dart-analyzer.ts | validation/m14/fixtures/dart/* |
             script/m14/oracles/dart-* | script/m14/dart-* | script/m14/verify-dart-*
-files scanned: 19  (8559 lines)   excluded from its own count: …/regex-census.ts
-lane-owned files: 19
+files scanned: 21  (9154 lines)   excluded from its own count: …/regex-census.ts
+lane-owned files: 21
 
 RESULT: 0 regexes in the lane-owned set.
 ```
 
-The 18 files that are not the instrument are the whole lane-owned set — 4 oracles,
-3 verifiers, the analyzer and 10 fixture harnesses. **Both numbers in that block are 19,
-not 18, and the difference is the census itself:** it counts itself in both totals and
+The 20 files that are not the instrument are the whole lane-owned set — 4 oracles,
+3 verifiers, the analyzer and 13 fixture harnesses. **Both numbers in that block are 21,
+not 20, and the difference is the census itself:** it counts itself in both totals and
 excludes itself only from the MATCH set (`hits.filter(h => laneOwned(h.file) && h.file
 !== SELF)`), because its own header carries example regex literals inside a comment. So
-19 files are scanned, 18 are evidence, and the RESULT sentence's own "MEASUREMENT over
-19 files" is one file generous. The block above previously read `16 (7881 lines)`,
-which matched no run: the set was 16 files then and is 18 evidence files now, so that
+21 files are scanned, 20 are evidence, and the RESULT sentence's own "MEASUREMENT over
+21 files" is one file generous. The block above previously read `16 (7881 lines)`,
+which matched no run: the set was 16 files then and is 20 evidence files now, so that
 figure had been carried through at least one file being added and removed.
 
-**The `lines` figure is one per file larger than the files hold.** 8,559 is
-`content.split(/\r?\n/).length` summed over 19 files, and every file ends in a newline,
-so each contributes one empty trailing segment: the real total is **8,540**
-(`wc -l` over the same 19). It is quoted as the instrument prints it because that is
-what a reviewer sees, and the 19-line gap is named here rather than left for someone to
+**The `lines` figure is one per file larger than the files hold.** 9,154 is
+`content.split(/\r?\n/).length` summed over 21 files, and every file ends in a newline,
+so each contributes one empty trailing segment: the real total is **9,133**
+(`wc -l` over the same 21). It is quoted as the instrument prints it because that is
+what a reviewer sees, and the 21-line gap is named here rather than left for someone to
 find.
 
 **Both figures in that block have moved three times, and every move is the same lesson.** They
@@ -3266,16 +3266,20 @@ reproduced exactly.
 Every analyzer edge either corpus measures is corroborated by independently derived
 truth, and the truth publishes nothing the analyzer does not — `unexplained` is 0 on both
 lanes in every mode measured on this branch. **The "no missing row" half of this sentence
-no longer holds and was correct only before 2026-10-02**: the 100 and 14 MISSING rows
-measured above are `overrides` truth rows the compared-label filter refuses to admit, not
-edges the analyzer failed to emit.
+no longer holds and was correct only before 2026-10-02.** This file then named the
+mechanism, and **an eleventh pass falsified the mechanism it named**: see *An eleventh
+pass, which falsifies this file's own explanation of its MISSING rows*. The short form:
+`overrides` truth rows are not being "refused by the compared-label filter", and the
+11,935 rows measured there are absent from the analyzer's output on a rule the sharpened
+comparison also fails to match.
 
 Fixtures **16/16** (13 before this wave added `type-references`,
 `object-interface-override` and `unknown-endpoint-r7`), `verify-dart-contains.ts`
 **37/37**, `verify-dart-overrides.ts` **14/14**, `verify-dart-references.ts` **38/38
-shapes, both sides**, mutants **42/42 caught**, regex census **0 over the 16
-lane-owned files** (17 scanned, the census being one of them), parse 0 errors on 1,294
-`lib` files, 2.0 min for the full corpus.
+shapes, both sides**, mutants **42/42 caught**, regex census **0 over 21 lane-owned
+files** (re-measured 2026-10-05; this line read `16 (17 scanned)` and the tenth pass
+read `20 (8,764 lines)`, and the three figures are reconciled under *The number is now an
+AST measurement*), parse 0 errors on 1,294 `lib` files, 2.0 min for the full corpus.
 
 Both oracle batteries are DIFFERENTIAL — each case asserts the oracle AND the
 analyzer against the same expected rows. `verify-dart-contains.ts` used to derive
@@ -3342,3 +3346,186 @@ positional fields are not member reads, so there is nothing to contain. Reading 
 field names as declarations would publish a `contains` edge for a type the file never
 declares — the exact error class this lane spent its existence removing. The 249 live
 occurrences stay unread.
+
+### An eleventh pass, which falsifies this file's own explanation of its MISSING rows
+
+2026-10-05. Every instrument re-run in the foreground, sequentially, no polling. The
+arbiter reproduced to the edge; the fixtures, the mutant battery and all three oracle
+batteries reproduced; and one of this file's own sentences did not survive.
+
+**The claim being tested.** Since the ninth pass this file has said the MISSING rows
+"are `overrides` truth rows the compared-label filter refuses to admit, not edges the
+analyzer failed to emit". That is a mechanism claim, and a mechanism can be measured.
+
+**The instrument.** `BB_F5_STRICT=1` re-matches each truth row on the target AS WRITTEN
+(`strictTargetText` keeps the qualifier, `normTarget` keeps only the leaf) and counts
+separately: `strictMissing` (no analyzer edge matches the strict key), `strictHidden` (a
+strict miss the PUBLISHED leaf rule nevertheless PASSES — a row the published rule
+hides), and `hard`/`soft` (the hidden subset, split by whether the truth side was
+qualified). The flag is report-only and moves no published figure.
+
+**The reading**, `differential.ts --lang dart --force-fresh`:
+
+| lane | truth | covered-as-written | strict-missing | hidden | hard | soft | published covered/missing |
+|---|---|---|---|---|---|---|---|
+| proxicall | 29,131 | 17,196 | **11,935** | **0** | **0** | **0** | 17,196 / **11,935** |
+| dart-http | 2,289 | 2,264 | **25** | **0** | **0** | **0** | 2,264 / **25** |
+
+Both lanes print `identities hold, and the published rule hid nothing on this corpus`.
+
+**What that excludes.** `hidden = 0` is the whole of the claim "the compared-label filter
+refuses to admit them": a row the published rule refuses while the sharpened rule admits
+is exactly a `strictHidden` row, and there are none. The two rules also agree on the
+totals — `strictMissing` equals `missingInAnalyzer` to the row on both lanes (11,935 and
+25). So the last-segment leaf match is not concealing anything, and the label filter is
+not the gate. **The explanation this file carried for six commits is excluded by
+measurement.**
+
+**What remains open, stated as open.** `hidden = 0` does NOT establish that the analyzer
+owes those 11,935 edges. It establishes that no comparison rule recovers them, which is
+consistent with two different causes that this pass did not separate: the analyzer omits
+an edge Dart has, or the lane's oracle derives a truth row Dart does not have. The
+printed samples point at the second for at least some rows — `contains
+AppLocalizationsBn -> unknown` is a truth row whose TARGET is the literal `unknown`, and
+the `AppLocalizations*` rows are all `overrides` off one generated l10n class — but a
+12-row sample is a sample. **This pass does not attribute the 11,935.** The instrument
+that would is a per-label MISSING census over the same 60 files, and the lane does not
+have one; the differential tallies `missingInAnalyzer` as a scalar and prints samples.
+
+**The MISSING count also moved by two orders of magnitude, and the rotation explains
+why.** The tenth pass recorded 100 and 14 at rotations 86 and 80. This pass read
+**11,935 and 25** at rotations 88/89 and 82/83. The truth denominator moved with it —
+6,220 → 29,131 on proxicall — because `cold-pool` advances the rotation each run and
+draws a different 60 of the 2,351 files. Both readings are the same lane on the same
+analyzer; neither is a regression. **A MISSING count from this differential is only
+meaningful beside its `tree-truth` denominator and its `hash`, and this file now records
+all three together.**
+
+**`unexplained = 0` on both lanes, at both rotations**, with `heuristic = 0` on both.
+That is the fabrication half and it is stable: the analyzer publishes no edge the
+independent oracle cannot account for.
+
+#### The arbiter's per-type table at n=400, which answers questions 5 and 6 per type
+
+Six passes recorded one arbiter per-type row (`imports`). This pass recorded all ten,
+from `--files 400 --json`, over 400/400 files parsed, **0 parse failures, 0 degraded
+fallbacks**, 14,684 symbols, 53,252 relationships, and all four zero-safety fields at
+zero (`emptySymbolNames`, `emptyOrUnknownKind`, `unknownEndpoints`).
+
+| type | edges | sourcePublished | sourceExternal | bothEndsResolve | rate | confidence < 0.7 |
+|---|---|---|---|---|---|---|
+| uses | 21,808 | 21,716 | 92 | 5,425 | 24.9% | **2,459 (11.3%)** |
+| contains | 11,885 | 11,885 | 0 | 11,885 | **100.0%** | 0 |
+| calls | 6,970 | 6,930 | 40 | 2,222 | 31.9% | 0 |
+| overrides | 6,646 | 6,646 | 0 | 110 | **1.7%** | 0 |
+| instantiates | 2,608 | 2,563 | 45 | 434 | 16.6% | 0 |
+| references | 1,420 | 1,412 | 8 | 1,412 | **99.4%** | 0 |
+| imports | 1,276 | 25 | **1,251** | **0** | **0.0%** | 0 |
+| extends | 475 | 475 | 0 | 243 | 51.2% | 0 |
+| implements | 155 | 155 | 0 | 47 | 30.3% | 0 |
+| exports | 9 | 0 | **9** | **0** | **0.0%** | 0 |
+
+Four readings this table settles that a single row could not.
+
+- **`references` is the lane's best-resolving emitted type at 99.4%** (1,412 of 1,420),
+  measured through the production entry point. CSS `references` at 66.8% is the
+  reference point named in the workstream, and this lane is 32.6 points above it. The
+  CSS figure is a different language's number; the comparison is only about which
+  instrument produced it.
+- **`overrides` is the worst at 1.7%** (110 of 6,646), on 6,646 `sourcePublished` — every
+  edge leaves a published symbol and 98.3% land on something this 400-file run did not
+  publish. That is the cross-file shape: an `overrides` target is a member of a BASE in
+  another file. This is a resolution finding, and it is the same population the 11,935
+  MISSING rows sit in, which is why the two are reported together rather than as one
+  clean number and one dirty one.
+- **`imports` and `exports` resolve at 0% because their SOURCE is the module, not a
+  symbol** — 1,251 of 1,276 `imports` and 9 of 9 `exports` read `sourceExternal`. A module
+  URI is not a declaration this run publishes, so the walk has no inbound end to start
+  from. The edges are real; the graph cannot walk to them. This is the "hopeless-string
+  target" shape from the incoming section, arriving at the SOURCE end, and no per-type
+  resolution rate computed before this pass could have told the two apart.
+- **`uses` carries the lane's entire heuristic population: 2,459 of 21,808 edges at
+  confidence < 0.7 (11.3%)**, and it is the only non-zero cell in that column. The other
+  nine types publish no edge below 0.7, so the contract §4 countability requirement is
+  met by one type and is not a whole-graph property.
+
+**`exports` remains the sample-sensitive type, and both readings are recorded rather than
+one overwritten.** At n=120 it is absent from the fired list and the lane reads 9/10; at
+n=400 it fires with 9 edges and the lane reads 10/10. Nine edges in 400 files is a real
+but thin population, and a reader should treat 10/10 as holding at the larger sample.
+
+#### Two arbiter defects re-verified mechanically, both still open in shared machinery
+
+Neither is in this lane and neither is edited here; both are stated with file, function
+and required behaviour under §Shared-machinery.
+
+1. **`analyzerDigest` cannot hash any analyzer, so the mid-run drift guard is inert.**
+   `firing-check.ts:204-219` joins `path.join(here, "..", "ast", …)` where `here` is
+   `script/m14`, producing `script/ast/<lang>-analyzer.ts`; the analyzers live in
+   `src/ast/`. The `LANGS[lang].analyzerFile` lookup above it is CORRECT
+   (`differential.ts:822` holds `dart: "real-dart-analyzer"`), so the defect is the join,
+   not the name. Measured again today: `"analyzerDigest":
+   "MISSING:$HOME/mcp/bb-lanes/dart/script/ast/real-dart-analyzer.ts"`. Because
+   `digestBefore === digestAfter` compares two identical `MISSING:` strings,
+   `analyzerStableDuringRun: true` is true **vacuously** for every lane, and the
+   `>>> THE ANALYZER CHANGED DURING THE RUN` branch at `:487` can never fire. Required:
+   join `..`, `..`, `src`, `ast`, and emit an explicit `analyzerDigestMissing: true` that
+   excludes the lane from any stability claim.
+2. **`types[type].files` is structurally 1 and carries no information.** `filesByType` is
+   declared at `firing-check.ts:334`, INSIDE the per-file loop, and consumed at `:380`,
+   also inside it, so each file overwrites the previous file's set with a set of size 1.
+   Measured today at n=400: **`files: 1` on all ten types**, including `uses` (21,808
+   edges) and `calls` (6,970). A type that fires in no file reads 0 — the same bug from
+   the other side, which is why `exports` read 0 at n=120 and 1 at n=400. Required:
+   declare `filesByType` above the file loop and consume it below. **The per-type `files`
+   column in any cross-lane table built from this instrument is void**; the lane-level
+   `filesParsed/filesAttempted` column is unaffected, and the fired count, the edge
+   count, `degraded` and the four zero-safety fields are all unaffected.
+
+#### What this pass did not re-measure
+
+The 2,735-file census (the ten headline per-type counts, 134,606 symbols, 403,674
+relationships, the twelve symbol kinds, the nine-column resolution table) was not re-run
+this pass; the arbiter and the differential were. Its numbers stand as the tenth pass
+recorded them. The `incoming-check` census was not re-run either, so the ambiguity,
+no-symbol and module-target splits stand as recorded there.
+
+**The lane regex census moved by exactly one file, and the delta identifies the cause.**
+Re-measured today: `files scanned: 21 (9154 lines)`, `lane-owned files: 21`, **RESULT: 0
+regexes in the lane-owned set**. The tenth pass recorded `20 (8,764 lines)`, and
+9,154 − 8,764 = **390** — which is `module-target-resolution.ts` (389 lines) plus the one
+trailing empty segment the instrument counts per file. That fixture landed in `b31e6d75f`,
+two commits AFTER the tenth pass wrote its figure, so the tenth pass's number was correct
+when written and is superseded by a file added afterwards. RESULT is 0 in both.
+
+**This file carried three different regex-census figures**, and the convention that
+resolves them is already established at *The number is now an AST measurement*: the census
+counts ITSELF in both totals and excludes itself only from the MATCH set, so "N files
+scanned" and "N lane-owned files" are equal, and the EVIDENCE count is N − 1. On that
+convention the readings are:
+
+| where | recorded | files | evidence files | RESULT |
+|---|---|---|---|---|
+| second pass (superseded) | `16 (7881 lines)` | 16 | 15 | 0 |
+| block at *The number is now an AST measurement* | `19 (8559 lines)` | 19 | 18 | 0 |
+| tenth pass | `20 (8,764 lines)` | 20 | 19 | 0 |
+| this pass | `21 (9154 lines)` | 21 | 20 | **0** |
+
+The tenth pass's `8,764` was measured against the set that existed at its commit; the
+`16 (17 scanned)` phrasing in the summary block above was not merely stale but used the
+opposite convention from the one this file defines, subtracting the census from the
+evidence count while calling the larger number "lane-owned". Both are corrected to the
+measured pair above rather than left for a reader to reconcile.
+
+**Three orchestrations I ran wrong before running them right**, recorded because each is a
+trap the tool does not warn about at the point of use. `BB_MUTANT_ONLY="dart"` matches 0 of
+1,789 mutants and exits 3 — the selector needs the `dart/` prefix form, and the failure is
+loud, which is the correct behaviour. `differential.ts --lang dart` without `--force-fresh`
+prints `RESUMED from journal` in about three seconds and reports a CACHED verdict, which on
+this run read `cov=59%` from a journal written by an earlier state; the file's own comment
+at `differential.ts:21595` describes that trap and the flag that avoids it, so a reader who
+runs the scoped command without reading the header gets a number about a previous run.
+`verify-dart-overrides.ts` reads `import.meta.dir`, which is Bun-only, so `npx tsx` on it
+dies at line 26 with `ERR_INVALID_ARG_TYPE` before a single case runs; its own header says
+`bun run`, so this is a runner mismatch rather than a defect, but a harness that cannot
+report which runner it needs is one command away from being read as a red battery.
