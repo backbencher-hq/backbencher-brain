@@ -113,7 +113,12 @@ const ISSUE_RELEVANT_FILES: Record<string, string[]> = {
   P2: ["src/lsp/freshness.ts", "script/m24/verify-freshness.ts"],
   L1: ["src/lsp/server.ts", "script/m24/verify-server.ts"],
   L2: ["src/lsp/hover.ts", "script/m24/verify-hover.ts"],
-  L3: ["src/lsp/navigation.ts", "script/m24/verify-navigation.ts"],
+  // L3 gained a third leg in wave 2 (M62 §2): the real-index differential and
+  // the §15.1 agreement measurement live in their own script and their own
+  // record, so they are listed as RELEVANT to L3 rather than shared — a change
+  // to either invalidates L3's evidence, and a change to L3's component does
+  // not silently leave that leg un-re-earned.
+  L3: ["src/lsp/navigation.ts", "script/m24/verify-navigation.ts", "script/m24/verify-callsite-agreement.ts", "src/intelligence/graph/line-address.ts", "src/lsp/positions.ts"],
   L4: ["src/lsp/symbols.ts", "script/m24/verify-symbols.ts"],
   L5: ["src/lsp/call_hierarchy.ts", "script/m24/verify-call-hierarchy.ts"],
   V1: ["script/m24/lsp_harness.ts", "script/m24/verify-harness.ts"],
