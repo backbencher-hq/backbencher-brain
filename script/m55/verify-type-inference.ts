@@ -526,6 +526,19 @@ const result = {
   verifierCommand: "npx tsx script/m55/verify-type-inference.ts",
   evidenceFile: "T6.json",
   generatedAt: new Date().toISOString(),
+  // §8.2 "byte-identical modulo timestamps declared as such". Declared here
+  // rather than left for a reader to guess, and MEASURED: two consecutive runs
+  // at a stable HEAD differ in exactly these fields and nothing else.
+  volatileFields: [
+    "generatedAt — the wall clock of the run",
+    "bbSeal — seals generatedAt, so it moves with it",
+    "fixture.workspace — an OS temp directory, different every run",
+    "fixture.projectId — derived by sha1 over realpathSync(workspace), so it is a function of that temp path",
+    "latency — measured p95/p50 timings",
+    "machine.loadavg — the machine's load at run time",
+  ],
+  // Asserted by the reproducibility check below: everything NOT listed above
+  // is byte-identical across runs at a stable HEAD.
   fixture: { workspace: ws, projectId: seed.projectId, symbols: T6_SYMBOLS.length },
   observed,
   wireTypeLines,
