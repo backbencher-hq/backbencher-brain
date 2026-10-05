@@ -173,4 +173,32 @@ export const CLEAN_MUTANTS: Mutant[] = [
       }),
     }),
   },
+  {
+    id: "clean/operator-class-declaration-spelling-only",
+    language: "clean",
+    defectClass: "missing-relationship-type",
+    description:
+      "SPELLING-MISMATCH CLASS, first half. An operator IS a class name in Clean and the two sites spell it differently: a DECLARATION writes `class (>>=) a where` and an INSTANCE writes `instance >>= Thing where`. The mutant keys `classMembers` on the declaration's `name` field VERBATIM — `(>>=)` — exactly as the code did before this round's correction — so the `overrides` in-file guard cannot find the member set and refuses every `overrides` edge for an operator-named class declared in the SAME FILE. Nothing is fabricated and nothing is mislabelled: an edge that should exist is silently dropped, which is the failure a count-only check cannot see, because the lane's `overrides` total goes DOWN rather than wrong. It is invisible in aggregate for a second reason too: the corpus spells its operator-named classes on ONE line (`class (==) infix 4 a :: !a !a -> Bool`, clean-stdlib/StdOverloaded.icl:23), and the one-line form gives the member set nothing to read — measured 0 new `overrides` edges on the 312-file corpus when the fix landed. So the fixture had to be written to reach the code at all: clean/extends-probe-roles declares `class (>>=) a where` in the `where` form and requires `overrides Thing.>>= -> >>=.>>=` at line 106.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter(
+        (x: any) => !(String(x.type).toLowerCase() === "overrides" && /^[(*+\-/<>=|&!~?:@#$%^.]/.test(String(x.target ?? ""))),
+      ),
+    }),
+  },
+  {
+    id: "clean/implements-external-class-always-external",
+    language: "clean",
+    defectClass: "wrong-payload",
+    description:
+      "SPELLING-MISMATCH CLASS, second half, and the one that is a FALSE STATEMENT rather than a missing edge. `isExternalClass` exists to say which of the two cases an `implements` edge is: the class is declared in this file, or it is imported. Almost every Clean class IS imported, so the flag is `true` for the normal case and is the only thing that stops a reader assuming otherwise. The mutant reverts the lookup to `!declaredTypeNames.has(className)` alone, so a class declared here as `class (==) infix 4 a ::` and read back by an instance as `==` is reported EXTERNAL — measured at 24 `implements` edges across the 312-file corpus, the false count after the fix being 0. Unlike the first half this one changes no count at all: same edges, same endpoints, same lines, same labels, and one metadata field quietly wrong on 24 of them. Caught by clean/extends-probe-roles, which pins `meta.isExternalClass: false` on `implements Thing -> ==` (line 75) and `implements Thing -> >>=` (line 105) AND forbids the same key reading false on `implements Thing -> Eq`, so the flag cannot be made constant to pass.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) =>
+        String(x.type).toLowerCase() === "implements"
+          ? { ...x, metadata: { ...(x.metadata ?? {}), isExternalClass: true } }
+          : x,
+      ),
+    }),
+  },
 ]

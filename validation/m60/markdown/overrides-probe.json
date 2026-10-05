@@ -1,0 +1,43 @@
+{
+  "instrument": "markdown overrides probe (validation/m14/fixtures/markdown/overrides-probe.ts)",
+  "corpusRoot": "$HOME/fixtures/repositories",
+  "seed": "markdown-construct-probe-v1",
+  "admittedMarkdownFiles": 12729,
+  "drawn": 1200,
+  "drawHash": "961778500f885236aecfe4ac82fa7b873b2da5cf27d7fcf376028acd087bee59",
+  "A_sameParentSameLevelSameText_secondOccurrence": {
+    "what": "the ruling's probe: a second declaration of a heading in the SAME scope, which is the shape a redefinition has because a redefinition replaces the prior one",
+    "occurrences": 570,
+    "files": 23,
+    "examples": [
+      "otp/erts/doc/references/driver_entry.md:101 under \"Description\" h4 \"Note {: .info }\"",
+      "openapi-spec/versions/3.0.2.md:2147 under \"Link Object\" h5 \"Examples\"",
+      "kubernetes/CHANGELOG/CHANGELOG-1.23.md:597 under \"Changes by Kind\" h3 \"Feature\"",
+      "kubernetes/CHANGELOG/CHANGELOG-1.23.md:601 under \"Changes by Kind\" h3 \"Bug or Regression\"",
+      "kubernetes/CHANGELOG/CHANGELOG-1.23.md:613 under \"Dependencies\" h3 \"Added\"",
+      "kubernetes/CHANGELOG/CHANGELOG-1.23.md:616 under \"Dependencies\" h3 \"Changed\"",
+      "kubernetes/CHANGELOG/CHANGELOG-1.23.md:630 under \"Dependencies\" h3 \"Removed\"",
+      "kubernetes/CHANGELOG/CHANGELOG-1.23.md:704 under \"Changes by Kind\" h3 \"Feature\""
+    ]
+  },
+  "B_sameLevelSameText_anywhere": {
+    "what": "the NAIVE probe — every repeated heading text, including repeats under a different parent, which are two sections that share a title rather than one replacing the other",
+    "occurrences": 2453,
+    "files": 50
+  },
+  "C_anchorHeldByMoreThanOneHeading": {
+    "what": "what a `#fragment` link has to choose between. Non-zero here is expected and is NOT an override: the renderer's rule gives every holder a distinct anchor (`slug`, `slug-1`, …), so no heading loses its address and nothing becomes unreachable.",
+    "anchors": 224,
+    "files": 61,
+    "examples": [
+      "openapi-spec/proposals/2019-12-24-Overlays.md: #fixed-fields held by 3 headings",
+      "otp/system/doc/reference_manual/ref_man_processes.md: #processes held by 2 headings",
+      "otp/erts/doc/references/driver_entry.md: #note--info- held by 2 headings",
+      "traefik/docs/content/reference/routing-configuration/other-providers/ecs.md: #configuration-options held by 8 headings",
+      "openapi-spec/versions/3.0.2.md: #fixed-fields held by 26 headings",
+      "openapi-spec/versions/3.0.2.md: #patterned-fields held by 4 headings",
+      "openapi-spec/versions/3.0.2.md: #examples held by 2 headings",
+      "shadcn-svelte/docs/content/components/sidebar.md: #props held by 2 headings"
+    ]
+  }
+}

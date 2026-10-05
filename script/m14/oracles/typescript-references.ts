@@ -97,6 +97,13 @@ export interface TruthEdge {
   label: string
   from: string
   target: string
+  /**
+   * Which SURFACE produced the row. Additive and optional: `differential.ts`
+   * reads `label`/`from`/`target` only, so nothing downstream changes, and a
+   * bucket count with no surface attached is not triageable — "1,419 MISSING"
+   * cannot be read, "1,419 MISSING, of which N are type-surface" can.
+   */
+  why?: string
 }
 
 const named = (n: any): any[] => (n?.namedChildren ?? [])
@@ -495,7 +502,7 @@ export function deriveTypeScriptReferencesTruth(root: any): TruthEdge[] {
         const key = `${sourceName}|${name}`
         if (!seen.has(key)) {
           seen.add(key)
-          edges.push({ label: "references", from: sourceName, target: name })
+          edges.push({ label: "references", from: sourceName, target: name, why: typeSurface ? "type" : "resolved" })
         }
       }
       return
