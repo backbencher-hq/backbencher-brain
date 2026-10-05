@@ -5797,7 +5797,7 @@ the sampler reads `3/10 fired`.
 | 2 | the report object referenced `protobufOnly`, never declared; the variable is `pbOnly` | `ReferenceError` after a 4 m 20 s corpus walk, so the whole walk was spent to produce no output |
 
 Both were found by running the file, and the first is why **no number in §2–§4 existed
-before this pass** despite the file carrying a complete header: the header claimed a
+before this pass** despite the file carrying a header written as if the walk had run: it claimed a
 measurement that the file had never performed. A probe that crashes on its first run is
 not evidence of anything, and neither is a header describing a walk that never
 happened. Backtick parity per line is now the check that finds defect 1.
@@ -5818,13 +5818,65 @@ shared file**, and the header now says which half of its earlier block is applie
 | gate | command | result |
 |---|---|---|
 | shared arbiter | `npx tsx script/m14/ontology-coverage-gate.ts protobuf` | **exit 1** — `emitted 5/10 ruled-sound 3 FALSIFIED 2`; both FALSIFIED rows attributed to `ontology-coverage-gate.ts:247` by §2–§4 |
-| ruling table, wired + grammar | `protobuf-ruling-table-proof.mts --only=c` | see §9 |
+| ruling table, wired + grammar | `protobuf-ruling-table-proof.mts --only=c` | **`emitted 5/10 ruled-sound 5 FALSIFIED 0`**, child gate **exit 1 on a parse trap** — §9 |
 | grammar wiring | `protobuf-arbiter-grammar-wiring.mts` | **exit 0** — 847 files, P1 and P2 hold, A flips `calls`, B flips `instantiates` |
 | fixtures | `npx tsx script/m14/run-fixtures.ts --lang protobuf` | **13 pass / 0 fail**, `no regressions`, **exit 0** |
 | mutants | `BB_MUTANT_ONLY="protobuf/" bun run script/m14/mutate-analyzer.ts` | **35 of 35 CAUGHT**, 0 survived, **exit 0** (pass 20 recorded 34; the 35th is `extension-member-id-rebuilt-from-the-extendee`) |
-| typecheck | `npx tsc --noEmit -p tsconfig.json` | see §9 |
+| typecheck | `npx tsc --noEmit -p tsconfig.json` | **exit 0**, no output |
 
-## 9. §8 — the one line that unblocks this lane
+## 9. The one line, applied: `FALSIFIED 0`
+
+Run (c) derives a wired copy of the arbiter MECHANICALLY — the shared sources are read
+as text, each anchor asserted present exactly once, spliced, run, then deleted — so
+this is the shared gate's own algorithm with the one missing line supplied, not a second
+arbiter to disagree with the first.
+
+```
+calls         RULED-SOUND  NOT EMITTED; the grammar produced 94 distinct node types across the corpus and NONE expresses it.
+uses          EMITTED      13,477 edges in 4+ files
+contains      EMITTED      40,605 edges in 4+ files
+imports       EMITTED      1,574 edges in 4+ files
+references    RULED-SOUND  NOT EMITTED; the grammar produced 94 distinct node types across the corpus and NONE expresses it.
+exports       EMITTED      4 edges in 4+ files
+extends       RULED-SOUND  NOT EMITTED; the grammar produced 94 distinct node types across the corpus and NONE expresses it.
+implements    RULED-SOUND  NOT EMITTED; the grammar produced 94 distinct node types across the corpus and NONE expresses it.
+overrides     EMITTED      2 edges in 2+ files
+instantiates  RULED-SOUND  NOT EMITTED; the construct occurs 0x on the parse tree.
+
+emitted 5/10   ruled-sound 5   FALSIFIED 0   ruled-without-justification 0
+```
+
+Three readings of that table are the point:
+
+- `ruled-sound 5 FALSIFIED 0` against §5's `ruled-sound 3 FALSIFIED 2`, **on the same 847
+  files and the same ruling table**, differing only in the `LANGS` entry.
+- the `94 distinct node types` in the detail lines is protobuf's own inventory, measured
+  independently by this pass's §2 probe as **94**, and bash's as **81**. §5's
+  `ruled-sound 3` rows read `81`.
+- `instantiates` reads **`0x` on the parse tree**, against §4's 1 bash hit that is 1
+  refusal and 0 constructs.
+
+**The child gate still exited 1, and the cause is on the page:**
+
+```
+[BB-PARSE-ERR] protobuf | .../pb-googleapis/google/api/auth.proto | memory access out of bounds
+[BB-HANG] parser stuck 120s on .../pb-googleapis/google/api/auth.proto - exiting
+```
+
+That is the documented `memory access out of bounds` fault on a **238-line, 9,262-byte**
+file, and it is followed by `process.exit(1)` from the `parseBomb` watchdog after the
+verdict table has already printed - the §8 item at `src/ast/engine.ts:1441`. It is not a
+verdict and it is not this lane's: the arbiter run in §5, same corpus, same file set,
+logged **0** `[BB-PARSE-ERR]` and **0** `[BB-HANG]`, so the trap is intermittent and this
+pass does not claim a rate for it.
+
+Its cost is visible in the emitted counts and is small enough to state rather than
+absorb: `uses` 13,477 against §5's 13,482 (**-5**) and `contains` 40,605 against 40,631
+(**-26**), which is the degraded file publishing fewer symbols - the same interaction
+pass 5 and pass 20 record for the `AnalyzeContext` item. `imports` 1,574, `exports` 4
+and `overrides` 2 are identical in both runs.
+
+## 10. §8 - the one line that unblocks this lane
 
 **`script/m14/differential.ts`, the `LANGS` record at line 740.** Add the key protobuf
 with the four fields `script/m14/run-fixtures.ts:91` already carries for this lane:
