@@ -1749,6 +1749,21 @@ apply are the ones listed.
     sha256 `2425a26e…`), so every node name quoted above is a name in *that*
     grammar. The 95 node types and their counts are re-measured by the census on
     every run rather than quoted from this document.
+11. **A DTD declaration's PUBLIC identifier is now recorded nowhere.** This round
+    withdrew `GIF -imports-> GIF` because a public identifier is not a path, and the
+    fix leaves `<!NOTATION gif PUBLIC "GIF">` with a `gif` symbol and no edge. That
+    identifier is a real, declared name: `PUBLIC "-//IETF//NOTATION TIFF//EN"` says
+    what a notation is, and a consumer that wants it now has nowhere to read it. The
+    right shape is a `references`-class edge from the declaration to a symbol carrying
+    the public id, which is a GAP this round did not adjudicate — so it is counted here
+    as a known loss and **not** as coverage. Measured population: 1 node in 11,552
+    files (`public-id-census.mts`), of which 299 are `ExternalID` nodes.
+12. **Every number in this document that comes from a corpus walk is a lower bound on
+    a population that is still growing.** The corpus root held 199 directories at this
+    round's runs, against the ~90 the brief describes, and other lanes clone into it
+    concurrently: admitted files moved 11,464 → 11,552 mid-round, which is why two
+    tables above carry different populations rather than one being wrong. Each number
+    states the population it was measured on.
 
 A `references` target is a local name, a built-in, a name in another file, or a
 name this file does not satisfy — and the four are told apart in
