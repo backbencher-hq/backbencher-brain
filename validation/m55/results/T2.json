@@ -2,20 +2,84 @@
   "issue": "M55.T2",
   "code": "T2",
   "milestone": "M55",
-  "status": "verified",
-  "checks": 39,
-  "passed": 39,
+  "status": "known-gap",
+  "checks": 53,
+  "passed": 51,
   "failed": 0,
-  "realFailed": 0,
+  "realFailed": 2,
   "mutantsCaught": 5,
   "mutantsTotal": 5,
-  "currentCommit": "505eaa6bd1709918876e1fa38055b95d9c317f1b",
-  "workingTreeRelevantChanges": [],
+  "mutantsNotJudged": 0,
+  "mutantsJudged": 5,
+  "mutantVerdicts": [
+    {
+      "name": "call sites: skip the source resolution (stored line / name-token fallback only)",
+      "caught": true,
+      "detail": "{\"rangesOk\":false,\"droppedOk\":true,\"selectionOk\":true,\"declaredOk\":true,\"hopOk\":true}",
+      "caughtBy": "rangesOk"
+    },
+    {
+      "name": "identity: re-admit receiver-qualified self-edges (the pre-M55 behavior)",
+      "caught": true,
+      "detail": "{\"rangesOk\":true,\"droppedOk\":false,\"selectionOk\":true,\"declaredOk\":true,\"hopOk\":true}",
+      "caughtBy": "droppedOk"
+    },
+    {
+      "name": "selection: point selectionRange at the whole body",
+      "caught": true,
+      "detail": "{\"rangesOk\":true,\"droppedOk\":true,\"selectionOk\":false,\"declaredOk\":true,\"hopOk\":true}",
+      "caughtBy": "selectionOk"
+    },
+    {
+      "name": "directness: re-admit transitive hops (the engine's depth > 0 rows)",
+      "caught": true,
+      "detail": "{\"rangesOk\":true,\"droppedOk\":true,\"selectionOk\":true,\"declaredOk\":true,\"hopOk\":false}",
+      "caughtBy": "hopOk"
+    },
+    {
+      "name": "declared: hide the approximation (undeclared substitute)",
+      "caught": true,
+      "detail": "{\"rangesOk\":true,\"droppedOk\":true,\"selectionOk\":true,\"declaredOk\":false,\"hopOk\":true}",
+      "caughtBy": "declaredOk"
+    }
+  ],
+  "mutantHarness": {
+    "importRewriting": "GENERIC: every relative import in the component copy is rewritten to an absolute file URL from what the source ACTUALLY imports (not a hand-written list)",
+    "preLaneDefect": "the pre-lane rewriter was a hand-written list that omitted ./signature (and, since wave 1, ./launch_languages, ./symbols, ../brain/freshness and ../intelligence/graph/line-address); every mutant then died on an import error while being counted \"caught\", so the evidence said 5/5 while the oracle had never run",
+    "importFailureIsNotCaught": true,
+    "componentImportsAtThisRun": [
+      "../brain/database",
+      "../brain/freshness",
+      "../intelligence/contracts",
+      "../intelligence/graph/graph-engine",
+      "../intelligence/graph/line-address",
+      "../project/schema",
+      "./launch_languages",
+      "./navigation",
+      "./positions",
+      "./signature",
+      "./symbols"
+    ]
+  },
+  "currentCommit": "e68fbb6628e9ee217491bcca92d97b67b5f264f4",
+  "workingTreeRelevantChanges": [
+    "script/m24/verify-call-hierarchy.ts",
+    "script/m55/verify-call-hierarchy.ts",
+    "script/m59/verify-honest-callsite.ts",
+    "src/lsp/call_hierarchy.ts",
+    "validation/m24/results/L4.json",
+    "validation/m24/results/L5.json",
+    "validation/m55/results/T2.json",
+    "validation/m59/results/honest-callsite.json",
+    "script/m55/measure-address-agreement.ts",
+    "validation/m55/fixtures/agreement-workspace/",
+    "validation/m55/results/address-agreement.json"
+  ],
   "verifierCommand": "npx tsx script/m55/verify-call-hierarchy.ts",
   "evidenceFile": "T2.json",
-  "generatedAt": "2026-09-19T02:53:57.428Z",
+  "generatedAt": "2026-10-05T02:52:27.635Z",
   "fixture": {
-    "root": "$HOME/backbencher-brain/validation/m55/fixtures/t2-workspace",
+    "root": "$HOME/Documents/Default Project/ishaq/wt/lsp5/validation/m55/fixtures/t2-workspace",
     "files": [
       "src/store.ts",
       "src/loop.ts",
@@ -33,14 +97,17 @@
       "one caller with two call sites (many → deep ×2) — both ranges reported"
     ]
   },
-  "failures": [],
+  "failures": [
+    "W1: `get` is never called anywhere in the fixture, so it has zero callers (no fabricated ones): [\"Store\",\"set\"]",
+    "C6: every rendered caller carries a call-site range for a CALLS row (a `contains`/`uses` row must not produce one): 2 rendered entries come from a non-`calls` relationship and carry a fromRange: [{\"name\":\"Store\",\"detail\":\"class · contains · 1 call site\",\"ranges\":[{\"start\":{\"line\":8,\"character\":22},\"end\":{\"line\":8,\"character\":25}}]},{\"name\":\"set\",\"detail\":\"method · uses · 1 call site · position approximate\",\"ranges\":[{\"start\":{\"line\":11,\"character\":2},\"end\":{\"line\":11,\"character\":5}}]}]"
+  ],
   "limitations": [
     "the analyzer stores relationship line_number = 0 for every row today; the call-site positions here are derived from the caller's own source, which is why they are exact. The stored-value path (a future analyzer change) is exercised only as a declared fallback.",
     "invocation scanning is line-comment aware but not string-literal aware (declared in the component header); every result is bounded by the caller's own declaration range."
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-19T02:53:57.430Z",
-    "contentSha256": "0c71cda0f65f441a747c1306440d92b968f5b384bae3721ce3ef66c05e1f0bc2"
+    "sealedAt": "2026-10-05T02:52:27.638Z",
+    "contentSha256": "b00e74b54f4a13c67859b7520c869ab87a1bd2edd404c525fc00f9105786d846"
   }
 }
