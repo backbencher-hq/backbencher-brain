@@ -1234,6 +1234,16 @@ without re-deriving it. None was worked around silently.
    `design_decision`, and if that path ever does match, `clean` will be reported stale
    for a table it has. Fix: add `if (onDisk.has(lang)) { … exit 1 … }` to the same loop,
    or drop `clean` from the list. **Not edited** — shared machinery.
+
+   **Re-verified independently at this commit, and the gate's own output states the
+   contradiction inside one invocation**: `unadjudicated lanes (neither table nor spec RULED)
+   : 4  (clean graphql r scss)` on the same run that prints `ruling tables on disk : 14  (bash
+   clean css fsharp json julia lua nim php protobuf sql toml xml zig)` and `registered in arbiter
+   : 14` with the same 14. So the list the file's own header calls "the real remaining work"
+   names a lane that is adjudicated twice over. The `INCOMPLETE LIST` check does cover the
+   opposite direction — a lane with neither source that is ABSENT from the list exits 1 — so
+   the gap is specifically over-inclusion, which is the direction that makes a finished lane
+   look unfinished.
 2. **`script/m14/verify-doc-truth-emissions.ts` needs `bun`.** See the gate table above:
    `__dirname` under `npx tsx`, and a 0 exit on the crash. **Not edited.**
 3. **The shared differential still audits no clean oracle for four emitted types.**
