@@ -331,9 +331,12 @@ never satisfies its condition. That is a corpus-shape limit with a count on it, 
 dead code, and the ruling above states it as one.
 
 **3 — Correct.** `script/m14/tmp/graphql/differential/score.mts` compares
-**377 hand-derived facts** over 8 fixtures in 4 channels — symbols 120, relationships
-228, parameters 16, docstrings 13 — at **P=1.000, R=1.000**, 0 range failures, 0
-violations. **Declared limitation of that oracle:** it is a second walker over the
+**387 hand-derived facts** over 9 fixtures in 4 channels — symbols 122, relationships
+236, parameters 16, docstrings 13 — at **P=1.000, R=1.000**, 0 range failures, 0
+violations. The ninth fixture and the seven mutants that drive it were added because
+`imports` — the one type this lane emitted — had **no mutant and no differential row**
+before them, and a suite that prints "0 survived" while the newest family has never been
+broken proves nothing about that family. **Declared limitation of that oracle:** it is a second walker over the
 **same grammar**, so a grammar-level defect shared by the analyzer and the oracle is
 invisible to it. It can prove the two agree; it cannot prove the grammar read the
 source correctly. The m12 layer's independent 113-construct specification battery is
@@ -467,15 +470,30 @@ Four of the five do have hand-derived truth; the DERIVATION check reads only
 
 | type | hand-derived truth | rows | asserted by |
 |---|---|---|---|
-| `contains` | `fixtures/ground-truth.json` | 66 | `differential/differential.mts` |
+| `contains` | `fixtures/ground-truth.json` | 67 | `differential/differential.mts` |
 | `uses` | `fixtures/ground-truth.json` | 39 | `differential/differential.mts` |
-| `references` | `fixtures/ground-truth.json` | 67 | `differential/differential.mts` |
-| `exports` | `fixtures/ground-truth.json` | 45 | `differential/differential.mts` |
-| `imports` | `validation/m14/fixtures/graphql/ontology-file-imports.expectation.json` | 4 expect + 12 forbid | `script/m14/run-fixtures.ts --lang graphql` |
+| `references` | `fixtures/ground-truth.json` | 68 | `differential/differential.mts` |
+| `exports` | `fixtures/ground-truth.json` | 46 | `differential/differential.mts` |
+| `imports` | `fixtures/ground-truth.json` + the m14 expectation | 5 + 4 expect / 12 forbid | `differential.mts` and `run-fixtures.ts --lang graphql` |
 
-Every row in both files was authored from the fixture source line by line, and
-`ontology-file-imports.expectation.json` carries `"authoredBeforeAnalyzerRun": true`.
-The `imports` rows are asserted in production shape, not by the differential's
+**`imports` was the one real hole and it is now closed.** When this section was first
+written, `imports` had an m14 fixture expectation and **no differential row and no
+mutant** — the one type this lane added, never broken. It now has all three:
+`fixtures/10-file-imports.graphql` with 5 positive spellings and 6 negative lines whose
+rows were derived from the fixture source before the analyzer was run on it, plus
+**7 mutants, all caught** (`imports-family-removed`, `import-source-becomes-the-file-sentinel`,
+`import-bindings-first-only`, `import-form-always-bare`, `import-bindings-key-dropped`,
+`import-unterminated-quote-read-to-end-of-line`, `import-as-form-rejected`).
+
+Asserting it needed a harness fix, and the fix is the finding: `score.mts` compared
+metadata with `got !== val`, which **can never be true for an array**, so
+`metadata.importBindings` was unassertable — writing the row failed with
+`got ["First","Second"] want ["First","Second"]` and omitting it left the fact unchecked.
+The key that distinguishes the comma-separated form, which the review found the first
+measuring probe could not produce at all, was the one key the harness could not compare.
+The comparison is now structural, and the scalar path is unchanged.
+
+The `imports` rows are asserted in production shape, not only by the differential's
 internal `analyze()` path: 4 exact `imports` edges with `meta.importForm` and
 `meta.importBindings`, plus 12 `forbidRelationships` that are the negative cases a
 keyword match cannot pass — `# important:` (prefix), `#   # this document imports
@@ -962,8 +980,8 @@ claim was the gate that could not run.
 `fixtures-graphql`. The canonical `validation/m14/results/M14.0.F3.json` does **not** yet name this lane: only a run covering every lane may write it, by the runner's own rule, so it is regenerated milestone-wide rather than by this lane. A cross-lane gap, recorded here rather than papered over with a lane-owned artifact that would shrink the milestone's claim |
 | `validation/m14/grammar-pins.json` | the grammar pin | wired sha `f988e0a0…`, 13 vendored files, source↔wasm proof **zero in both directions**. The `~/.bb/wasm` mirror is **not** byte-identical and is not expected to be: it still holds the pre-patch blob `9cd70f69…` (41,223 B, dated 2026-07-13) against the wired `f988e0a0…` (58,115 B). It is unreferenced, because `bbWasmCandidates` (`src/util/bb-data-dir.ts:28`) tries the repository's own `wasm/` copy **first** and only then the data-dir cache. An earlier draft of this line asserted the mirror was byte-identical; the pin verifier measures `copies:mirror=differs` and the claim was false |
 | `script/m14/tmp/graphql/out/contract-battery.json` | 59 hand-audited cases | **59/59** |
-| `script/m14/tmp/graphql/out/differential.json` | hand-derived ground truth, 8 fixtures, 4 channels (symbols 120, relationships 228, parameters 16, docstrings 13) | **377 facts, P=1.000, R=1.000** |
-| `script/m14/tmp/graphql/out/mutation.json` | 43 mutants, one per finding | **37 caught, 0 survived**; 2 defeated by another guard (defence in depth, measured); 4 declared equivalent — two of them **derivable** from the grammar's own rules rather than merely unobserved. **0 unapplied** — an anchor is a verbatim copy of analyzer source, so when `topLevelDefinitions` was refactored the anchor went stale, the mutant silently stopped testing anything, and the harness reported it as a *survival*. An unapplied edit is now a hard failure with its own exit path, because a suite that prints "0 survived" while a mutant was never applied proves nothing |
+| `script/m14/tmp/graphql/out/differential.json` | hand-derived ground truth, 9 fixtures, 4 channels (symbols 122, relationships 236, parameters 16, docstrings 13) | **387 facts, P=1.000, R=1.000** |
+| `script/m14/tmp/graphql/out/mutation.json` | 50 mutants, one per finding, **7 of them for `imports`** | **44 caught, 0 survived**; 2 defeated by another guard (defence in depth, measured); 4 declared equivalent — two of them **derivable** from the grammar's own rules rather than merely unobserved. **0 unapplied** — an anchor is a verbatim copy of analyzer source, so when `topLevelDefinitions` was refactored the anchor went stale, the mutant silently stopped testing anything, and the harness reported it as a *survival*. An unapplied edit is now a hard failure with its own exit path, because a suite that prints "0 survived" while a mutant was never applied proves nothing |
 | `script/m14/tmp/graphql/out/grammar-gaps.json` | 113 specification constructs | **0 valid constructs rejected**; 8 invalid still rejected |
 | `script/m14/tmp/graphql/out/corpus-sweep.json` | 47 real files, 4 repositories, 691,855 bytes | 8,747 symbols, 19,054 relationships, **0 phantoms, 0 duplicate identities, 0 crashes, 12/12 extension members** |
 | `script/m14/tmp/graphql/out/project-resolution.json` | all 19,054 relationships decided at **project** scope against the store's own two strategies, **sources included** | **93.38% resolvable**; **0** provable-but-unqualified; **0** unresolved sources; 747 ambiguous by the store's own uniqueness rule; 514 genuinely absent |
