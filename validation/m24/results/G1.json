@@ -7,23 +7,20 @@
   "passed": 23,
   "failed": 1,
   "negativeCases": 11,
-  "currentCommit": "fe6844fb9d5b77d0c30a7c4da7d16dfa387278d9",
-  "workingTreeRelevantChanges": [
-    "script/m24/verify-governance.ts",
-    "script/m24/verify-positions.ts"
-  ],
+  "currentCommit": "2cd1896802d2be3eca5d7866e2e5a9b7d339125d",
+  "workingTreeRelevantChanges": [],
   "verifierCommand": "npx tsx script/m24/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-10-05T04:21:13.525Z",
+  "generatedAt": "2026-10-05T04:29:32.158Z",
   "ledger": "validation/m24/results/manifest.json",
   "limitations": [
     "This gate validates governance metadata and mutation response; it does not verify LSP feature implementations.",
     "A run with relevant uncommitted M24 files is recorded as known-gap; verified status requires a clean relevant tree."
   ],
-  "blockedReason": "1 check(s) failed: G1: every non-planned ledger item has matching persisted evidence at the current commit — relevant uncommitted files at measure time: script/m24/verify-governance.ts, script/m24/verify-positions.ts",
+  "blockedReason": "1 check(s) failed: G1: every non-planned ledger item has matching persisted evidence at the current commit — the relevant tree was clean at measure time",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T04:21:13.531Z",
-    "contentSha256": "8067550b11afabda97694e08cfc32599aa2c7a50eb86e815b6a3d78a474aec80"
+    "sealedAt": "2026-10-05T04:29:32.166Z",
+    "contentSha256": "16f32b04547927391f5b2d2a14b8d446c37ba2f945591226bf719ac5b5b60e1e"
   }
 }

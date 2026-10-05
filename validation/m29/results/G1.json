@@ -4,32 +4,29 @@
   "milestone": "M29",
   "status": "known-gap",
   "checks": 70,
-  "passed": 68,
-  "failed": 2,
+  "passed": 66,
+  "failed": 4,
   "negativeCases": 10,
-  "currentCommit": "c2a31c00882e73d41a25815a9f0a2ebc1aec85bd",
+  "currentCommit": "2cd1896802d2be3eca5d7866e2e5a9b7d339125d",
   "workingTreeRelevantChanges": [
-    "package.json",
-    "src/ast/cross-language-migration-assistant.ts",
-    "src/ast/parallel-indexer.ts",
-    "src/lsp/cross_language_hover.ts",
-    "src/lsp/impact.ts"
+    "script/m29/verify-governance.ts"
   ],
   "verifierCommand": "npx tsx script/m29/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-09-30T20:20:29.698Z",
+  "generatedAt": "2026-10-05T04:29:49.909Z",
   "ledger": "validation/m29/results/manifest.json",
   "m28Bar": {
-    "ledgerStatus": "closed",
+    "ledgerStatus": "open",
     "m28GateExit": 1
   },
   "limitations": [
     "This gate validates governance metadata, mutation response, and the M28 bar; it does not verify the wave protocol, giant-repo budgets, or the precision ledger.",
     "A run with relevant uncommitted M29 files is recorded as known-gap; verified status requires a clean relevant tree."
   ],
+  "blockedReason": "4 check(s) failed: G1: M28 bar — ledger closed with all 7 issues verified (mechanical); G1: M28 bar — closure-gate evidence verified at an ancestor-or-equal commit; G1: M28 bar — M28 governance gate exits 0 at HEAD (spawned); G1: every non-planned ledger item has matching persisted evidence at the current commit — relevant uncommitted files at measure time: script/m29/verify-governance.ts",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-30T20:20:29.703Z",
-    "contentSha256": "fae6ed82675a5630522c1ea08e3593b82aa2ccc4d8ec6211301496d63a58a1ec"
+    "sealedAt": "2026-10-05T04:29:49.920Z",
+    "contentSha256": "2f56cf7f32a259cd7c5b4bbff3b9cec170d85e97a4230bfe7c0245853908cc52"
   }
 }
