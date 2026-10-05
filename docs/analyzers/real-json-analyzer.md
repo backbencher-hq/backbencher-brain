@@ -47,7 +47,7 @@ types, no fields), already under `notVendored`.
 | --- | --- |
 | Module identity | the file's basename **without** its extension (`Basic.json` → `Basic`), for **all three** routed spellings. It used to strip only `.json`, so `.jsonc` and `.json5` module symbols kept their extension while `.json` ones did not — a deviation from this very row, found by the differential as 24 MISSING and 207 UNEXPLAINED `contains` edges, every sampled example a dot-prefixed name like `.markdownlint-cli2.jsonc`. Small (4 `.jsonc` and 6 `.json5` files are tracked corpus-wide) and corrected. |
 | Symbol identity | a `pair` key is a symbol named by its key. Its **owner is the parent SYMBOL's name**, never its qualified path — a path is a fine identity and a useless endpoint when the endpoint is to be resolved by name. The path lives in `qualifiedName` and in edge metadata. |
-| Edge endpoints | **every relationship type emits QUALIFIED PATHS on both ends**, with one declared fallback. A bare JSON key is ambiguous by construction — a document repeats `name`, `type`, `items`, `properties` relentlessly — and the shared resolver declines a non-unique bare name, so an ambiguous endpoint does not degrade to a wrong answer, it degrades to **no answer**. Measured on a 202-file, 99-repo sample: **32,660 of 66,032 `contains` edges (49.4%)** named a target matching more than one published symbol, **1,119** were self-loops (source string == target string), and **51 corpus-wide** carried an endpoint equal to the literal `unknown`, because a real JSON key is named `unknown` (proxicall's 38 i18n bundles, redis 6, terraform 3, hasura-engine 1). The path is already computed — it is the symbol's `qualifiedName` — and it matches the resolver exactly. **Two types were still violating this row when the incoming pass measured it** — `calls` and the OpenAPI-endpoint `uses` — and both are fixed; see §*The incoming half*. |
+| Edge endpoints | **every relationship type emits QUALIFIED PATHS on both ends**, with one declared fallback (`imports`, whose target is another FILE). A bare JSON key is ambiguous by construction — a document repeats `name`, `type`, `items`, `properties` relentlessly — and the shared resolver declines a non-unique bare name, so an ambiguous endpoint does not degrade to a wrong answer, it degrades to **no answer**. Measured on a 202-file, 99-repo sample: **32,660 of 66,032 `contains` edges (49.4%)** named a target matching more than one published symbol, **1,119** were self-loops (source string == target string), and **51 corpus-wide** carried an endpoint equal to the literal `unknown`, because a real JSON key is named `unknown` (proxicall's 38 i18n bundles, redis 6, terraform 3, hasura-engine 1). The path is already computed — it is the symbol's `qualifiedName` — and it matches the resolver exactly. **Four types were still violating this row when the incoming pass measured it**, and all four are fixed: `calls` and the OpenAPI-endpoint `uses` in the second pass, and `overrides` in the third (§*The fourth bare endpoint*). |
 | Kinds | an **object** is `class`: it has named children and `contains` edges come from it. Everything else is `property`, **including an array** — the analyzer previously called arrays `variable`, importing a shell-shaped mutable-binding distinction JSON does not have. |
 | Arrays | a **leaf of scalars, a container of objects and of arrays**. Scalar elements are positional and unnamed: no symbol, no edge. An object element is a `class` named `<array>[i]`, contained by the array, and **its own keys are owned by the element**. An element identified by an index under a KEYED array keeps the key's name (`allOf[0]`); an element of an array that is itself an element is named from its qualified path (`rows[0][0]`), and it gets a symbol of its own because it owns elements. |
 | `line_number` | **every relationship carries a positive site line.** It used to carry none: the string did not occur once in the file, so every json edge in the index was stored with a NULL line while symbols carried `range` throughout. The position was known and simply not published. |
@@ -153,9 +153,14 @@ it, so the population moved and the figures have to move with it.
 `instantiates` 0. The differential's `220 UNEXPLAINED` and its single file. The
 `instantiates` ruling at **12,663 files / 141 repositories, 0 hits, 0 parse throws**. The
 verdict table at **emitted 9 / ruled-sound 1 / FALSIFIED 0 / without-justification 0**.
-Fixtures **14/14**. Lane mutants **16/16 caught, 0 survivors**; 24 registered for this lane
-across the shared and lane registries, **24 caught, 0 survivors**. Contract probe **28/28**.
+Fixtures **14/14**. Lane mutants **17/17 caught, 0 survivors**; 25 registered for this lane
+across the shared and lane registries, **25 caught, 0 survivors**. Contract probe **28/28**.
 `calls` ambiguous incoming targets **0**.
+
+(The mutant counts here are the **post-`overrides` figures** and supersede the 16/24 this
+pass originally recorded: the third pass added `json/overrides-endpoints-are-bare-names`,
+so the lane file went 16 → 17 and the lane's registration across both registries 24 → 25.
+All other rows in this paragraph reproduced to the digit and are the second pass's.)
 
 **What moved, and why.** `contains` 3,881,840 → **3,882,272** (+432) and the admitted
 population 12,543 → **12,547** (+4 files): the corpus grew from 171 to 182 repositories and
@@ -561,6 +566,88 @@ pass-1 table reproduced to the digit at the pass-1 corpus state, and the whole
      carry its sample width next to it**, because at the default width this lane's three
      rarest types are unreachable by arithmetic, not by chance.
 
+### The fourth bare endpoint, and the two instruments that agreed it was fine
+
+`overrides` was the **last** type still emitting bare names on both ends. It was found by
+`namespace-orphan-probe.ts` reporting **9 `DEFECT-in-document-target`** edges on
+`duckdb/data/json/11152.json` — while `census.ts` reported `overrides` at **100.00%**
+resolution and the shared `incoming-check.ts` reported **0 unresolved and 0 ambiguous**. Three
+instruments, three answers, on the same files, and the two shared ones were the ones that said
+there was nothing wrong.
+
+**Both are blind in the same direction, and that is the finding.** `census.ts` resolves "by
+name OR qualifiedName"; `incoming-check.ts` resolves by name into a last-wins map. So a bare
+target naming **five** symbols still reads as 100% resolved and 0 ambiguous. Neither can see a
+collision, because both collapse the name to one symbol before comparing.
+
+`validation/m14/fixtures/json/overrides-endpoint-probe.ts` counts the **collision set** instead
+of collapsing it. Whole admitted population, 12,547 files, 3,894,818 symbols, 12 files carrying
+the type, **22 `overrides` edges**:
+
+| metric | bare name | qualified path |
+| --- | ---: | ---: |
+| endpoints that are a qualified path | **0 of 22** | 22 of 22 |
+| target matches >1 published symbol | **22 of 22** | 22 of 22 |
+| target bindings, summed over edges | **85** (mean 3.86) | 83 (mean 3.77) |
+| source matches >1 published symbol | **2 of 22** | **0 of 22** |
+
+**Every one of the 22 was ambiguous by name, and the bare form is ambiguous in the WRONG
+DIRECTION.** `FSharp.Data`'s bare `rec2` names both elements of one array and its bare `1`
+names four keys, so the reverse walk could bind to a declaration in a **different object**:
+
+```
+FSharp.Data/tests/FSharp.Data.Tests/Data/DictionaryInference.json
+  [{ "rec": {"0":"111","1":"222"}, "rec2": {"0":{"a":"10"},"1":{"a":"20"}} },
+   { "rec": {"0":"333"},            "rec2": {"1":{"a":"30"},"1":{"a":"40"}} }]
+  bare:  rec2 -> 1                    matches 2 sources x 4 targets
+  path:  DictionaryInference[1].rec2 -> DictionaryInference[1].rec2.1
+```
+
+The endpoints now come from `parentPath` / `childPath`, which were **already in scope** at the
+collection site — the containing object's path is what `contains` publishes for the same key —
+so nothing is re-derived. The names are kept in metadata as `ownerName` / `key`, and
+`meta.endpoints` records the form. `overridesLine` still carries the prior declaration's line.
+
+**What the fix did and did not do, stated as measured.** Source ambiguity is **closed**, 2 of 22
+→ 0 of 22. Target ambiguity is **not closed**: the collision set shrinks from 85 bindings to 83
+and narrows on **1 of 22 edges**. Collision-set sizes under the path form are **2, 3, 5 and 7**.
+Two causes, both properties of the document rather than of the analyzer:
+
+1. the two declarations of one duplicated key share a name **and** a qualified path — only
+   `overridesLine` separates them (§limitation 6), and that is not closable per-file; and
+2. a key repeated across the **top-level values of a concatenated JSON document** gets one
+   module-qualified path, because the module symbol owns every top-level value.
+   `duckdb/data/json/11152.json` declares `fileSize` four times in its first object and once in
+   its second, so `11152.fileSize` names five declarations.
+
+An earlier draft of the probe printed "every remaining set is exactly 2". The measurement says
+otherwise, so the sentence was **withdrawn rather than the table re-read until it agreed**.
+
+**The cost, re-measured over the whole population: no edge count moved.**
+
+| instrument | result |
+| --- | --- |
+| census | 3,905,700 relationships / 12,547 files / 0 empty names / 0 empty-or-unknown kinds / **0 endpoints equal to `unknown`** / **0 edges below 0.7** — identical to the digit |
+| differential | truth 3,905,480 / analyzer 3,905,700 / covered **100.00%** / **0 MISSING** / 220 UNEXPLAINED (the one known `$ref: "#"` class) |
+| fixtures | **14/14** |
+| contract probe | **28/28** |
+| lane mutants | **17/17**, 0 survivors |
+| shared registry | **25/25**, 0 survivors, `M14.0.F4.json` byte-identical |
+| `namespace-orphan-probe` | **DEFECT-in-document-target 9 → 0**; orphan by qualified path **242 of 192,503 = 0.13%** |
+| shared `incoming-check.ts` | 24 ambiguous target names, **unchanged** — it collapses names last-wins, so its row never showed this and still does not |
+
+**The oracle had to be retargeted first, as it has for `contains`, `calls` and the OpenAPI
+`uses`.** Immediately after the analyzer moved, the whole-population differential read
+**`overrides` at 0 of 22 covered, 22 MISSING, 22 UNEXPLAINED** — an endpoint-form disagreement
+dressed as a disagreement about the language, the fourth time this lane has run that ground.
+
+**And nothing objected while it happened.** The suite had three `overrides` mutants — dropped,
+unscoped-to-file, prior-line-lost — and **none tested the endpoint FORM**, so the change passed
+16/16 and 24/24 with no registered check objecting. `json/overrides-endpoints-are-bare-names`
+now pins it. `DuplicateKey`'s `forbidRelationships` were migrated to the path form along with
+its pins: left as bare names they could never match a path-named edge, and a negative control
+that cannot fail is not a control.
+
 ## The incoming half — what reaches a declaration, and which targets are hopeless strings
 
 Everything above is outgoing: one file in, edges out. It cannot see a target that resolves
@@ -900,18 +987,29 @@ limitations:
   `Inherit.lsp.json` and `Inherit.duckdb.json` pin both inheritance shapes and their four
   declined forms; `manifest/package.json` pins `calls`, `exports` and the five `calls`
   shapes that are declined.
-- **Mutants** — **24 registered for this lane, 24 caught, 0 survivors**, re-measured at the
-  second pass: **16 lane-owned** in `script/m14/json-mutants.ts` (run by
-  `validation/m14/fixtures/json/mutants.ts`, **16/16 caught, 0 survivors**) plus **8 more
+- **Mutants** — **25 registered for this lane, 25 caught, 0 survivors**, re-measured after the
+  `overrides` endpoint change: **17 lane-owned** in `script/m14/json-mutants.ts` (run by
+  `validation/m14/fixtures/json/mutants.ts`, **17/17 caught, 0 survivors**) plus **8 more
   registered inline in the shared `script/m14/mutate-analyzer.ts`**
   (`json/edge-lines-dropped`, `json/imports-dropped`, `json/ref-target-is-name`,
   `json/contains-source-is-path`, `json/array-item-by-path-segment`,
   `json/array-child-owner-is-array`, `json/extends-dropped`, `json/extends-local-form-only`).
+  Scoped, byte-safe invocation and its measured result:
+  `BB_MUTANT_ONLY="json/" bun run script/m14/mutate-analyzer.ts` → **all 25 caught (filtered
+  1781 → 25)**, `M14.0.F4.json` md5 `8f73e5d8f9d001bebc9758d823d8a69c` before and after.
   The earlier "16" counted only the lane file and understated the registration; the shared
   harness ignores its language argument and sweeps every lane, so its 6 fleet-wide survivors
   (`php`, `erlang`, `zig`, `clojure`) are **not** this lane's and are reported in §*Unresolved*.
-  Two new in this pass: `dependency-version-is-the-json-type` (a published `metadata.version`
-  read `"string"` on all 4,625 dependency edges) and `calls-endpoints-are-bare-names`.
+  Three new across the three passes: `dependency-version-is-the-json-type` (a published
+  `metadata.version` read `"string"` on all 4,625 dependency edges),
+  `calls-endpoints-are-bare-names`, and `overrides-endpoints-are-bare-names` — the last added
+  because the suite had three `overrides` mutants and **none tested the endpoint FORM**, so
+  that change passed 16/16 and 24/24 with no registered check objecting (§*The fourth bare
+  endpoint*).
+  Two existing ones — `calls-callee-any-token` and `calls-runner-substring` — were emitting
+  bare-name endpoints and so became **invisible** rather than caught when the endpoint form
+  changed; a mutant that cannot fail is indistinguishable from a defect class with no mutant,
+  so both now carry qualified paths.
   Two existing ones — `calls-callee-any-token` and `calls-runner-substring` — were emitting
   bare-name endpoints and so became **invisible** rather than caught when the endpoint form
   changed; a mutant that cannot fail is indistinguishable from a defect class with no mutant,
@@ -1035,7 +1133,7 @@ exists to catch it. The `34 gaps across 19 lanes / 8,656 edges` total is the fle
 the same defect and is not this lane's to fix.
 ## §8 — items owed by the supervisor, specified so they need no re-derivation
 
-Five, all in shared machinery this lane does not edit. Each states file, what it must do,
+Six, all in shared machinery this lane does not edit. Each states file, what it must do,
 and why, so it can be applied without re-running anything in this lane.
 
 **1. `script/m14/differential.ts` — one clause: add `lang === "json"` to the compared-label
@@ -1077,7 +1175,8 @@ writes no evidence. The safe invocation **today**, verified not to write the art
 
 ```
 BB_MUTANT_ONLY="json/" bun run script/m14/mutate-analyzer.ts
-  -> all 24 mutants caught (filtered 1780 -> 24); M14.0.F4.json unchanged
+  -> all 25 mutants caught (filtered 1781 -> 25); M14.0.F4.json unchanged
+      (md5 8f73e5d8f9d001bebc9758d823d8a69c before and after)
 ```
 
 This lane reverted the overwrite with `git checkout --` and re-verified byte-equality, so no
@@ -1093,11 +1192,20 @@ is the engine's hardcoded watchdog around a synchronous WASM parse.
 
 **5. `validation/m14/results/M14.0.F4.json` — regenerate, but not before item 3's survivors
 are fixed.** F4 declares the **glob** `validation/m14/fixtures/` as an input (see
-`script/m14/verify-honesty.ts:232`), so any lane's probe or fixture change invalidates it —
-this lane's three probe files are the current trigger, and `verify-honesty.ts` reports
-`M14.0.F4: 3 declared input(s) changed`. It must be regenerated by an **unscoped**
-`bun run script/m14/mutate-analyzer.ts`, which cannot currently succeed: the harness
-`exit 2`s while any mutant survives, and the recorded artifact already reads
+`script/m14/verify-honesty.ts:232`), so any lane's probe or fixture change invalidates it.
+This lane's probe files are a trigger, but they are no longer the only one: at the 2026-10-04
+re-check `verify-honesty.ts` reports **`M14.0.F4: 637 declared input(s) changed`** — F1 64, F2
+2,384, F3 1,042, F5 67, F6 1,082, F7 61, F8 133, F9 70 — so the trigger is fleet-wide and this
+lane's contribution is a small share of it. The same run reports
+**`0 artifact(s) current against their declared inputs`** and **`freshness rule flags every
+artifact — it cannot distinguish current from stale`**, which means the freshness baseline is
+itself broken and the per-artifact counts above are all reading "changed". **This is a §8 item
+of its own: the freshness rule cannot currently tell a current artifact from a stale one, so
+it cannot be used to decide whether F4 needs regenerating.** It must be regenerated by an
+**unscoped** `bun run script/m14/mutate-analyzer.ts`, which cannot currently succeed: the
+harness `exit 2`s while any mutant survives, and the recorded artifact already reads
 `{mutantsRun: 1778, caught: 1772, survived: 6}`. So the ordering is item 3's guard, then the
 6 survivors (`php/drop-external-override-guess`, plus erlang, zig and clojure), then
-regenerate — otherwise the new artifact would certify a red suite.
+regenerate — otherwise the new artifact would certify a red suite. This lane verified the
+scoped alternative leaves it untouched: `BB_MUTANT_ONLY="json/"` caught all 25 with
+`M14.0.F4.json` md5 unchanged at `8f73e5d8f9d001bebc9758d823d8a69c`.
