@@ -2,11 +2,19 @@
   "issue": "494",
   "code": "L5",
   "status": "verified",
+<<<<<<< HEAD
   "currentCommit": "42da053221ba9dd3173faffe2e60913e9de35993",
   "sourceFingerprint": "66bd8c7c3a8846be4af7c7fe050f2252f8e4f0e6d3f3fa5cf10a6d17d72fa03f",
   "verifierCommand": "npx tsx script/m24/verify-call-hierarchy.ts",
   "evidenceFile": "L5.json",
   "generatedAt": "2026-10-05T04:20:31.237Z",
+=======
+  "currentCommit": "462f620be3ca6097a560b12d314fa9b98d8c6f1a",
+  "sourceFingerprint": "66bd8c7c3a8846be4af7c7fe050f2252f8e4f0e6d3f3fa5cf10a6d17d72fa03f",
+  "verifierCommand": "npx tsx script/m24/verify-call-hierarchy.ts",
+  "evidenceFile": "L5.json",
+  "generatedAt": "2026-10-05T03:25:43.893Z",
+>>>>>>> close/surface-and-docs
   "passed": 97,
   "failed": 0,
   "failures": [],
@@ -34,7 +42,12 @@
   ],
   "bbSeal": {
     "alg": "sha256",
+<<<<<<< HEAD
     "sealedAt": "2026-10-05T04:20:31.240Z",
     "contentSha256": "88e66a794f409a387627394b22ef2c4b029843bba1466d3bb8f18f10a76971df"
+=======
+    "sealedAt": "2026-10-05T03:25:43.894Z",
+    "contentSha256": "9dca8241e069ca0fac816686bf2a2bfe19ebc215371694d833c6f623feb7f332"
+>>>>>>> close/surface-and-docs
   }
 }

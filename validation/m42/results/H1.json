@@ -17,7 +17,11 @@
     "planned": 8
   },
   "fixture": {
+<<<<<<< HEAD
     "root": "$HOME/Documents/Default Project/ishaq/wt/mutants/.tools/m42-h1-fixture",
+=======
+    "root": "$HOME/Documents/Default Project/ishaq/wt/surface/.tools/m42-h1-fixture",
+>>>>>>> close/surface-and-docs
     "file": "src/main/java/com/demo/Highlight.java",
     "expectations": {
       "declarationLine": 5,
@@ -41,10 +45,17 @@
   "budgets": {
     "highlightP95Ms": 25
   },
+<<<<<<< HEAD
   "currentCommit": "462f620be3ca6097a560b12d314fa9b98d8c6f1a",
   "verifierCommand": "npx tsx script/m42/verify-highlight.ts",
   "evidenceFile": "H1.json",
   "generatedAt": "2026-10-05T04:11:23.379Z",
+=======
+  "currentCommit": "659b69f19993b7c8c08f475a0057d987f5875664",
+  "verifierCommand": "npx tsx script/m42/verify-highlight.ts",
+  "evidenceFile": "H1.json",
+  "generatedAt": "2026-10-05T03:59:23.234Z",
+>>>>>>> close/surface-and-docs
   "limitations": [
     "Lane 6: the warm budget is now a REAL p95 — ${WARM_SAMPLES} individually-timed requests, sorted, nearest-rank 95th percentile, no interpolation, compared against §12.7's 25 ms. The pre-lane check computed a MEAN over 40 and compared it against that p95 budget while naming itself 'warm p95', which is the substitution §3 forbids; it survived three waves because it was honestly recorded as a limitation rather than fixed. The mean is still reported alongside, for contrast only. The full E5 editor leg re-measures with the shared harness.",
     "Editor-leg (DocumentHighlight rendering + wake-up path) is asserted in the E5-pattern session at H1 acceptance; this file proves the server surface.",
@@ -53,7 +64,12 @@
   ],
   "bbSeal": {
     "alg": "sha256",
+<<<<<<< HEAD
     "sealedAt": "2026-10-05T04:11:23.381Z",
     "contentSha256": "bbd294919a26f51f26043fa09381d9a5a2e0d4d68f2ac9b815cb0a1f8063eeca"
+=======
+    "sealedAt": "2026-10-05T03:59:23.236Z",
+    "contentSha256": "806f60198e20e6884041a741c3195bf5011d7dc57af5d7ccae1b52b09c8592dc"
+>>>>>>> close/surface-and-docs
   }
 }

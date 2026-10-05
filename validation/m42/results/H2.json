@@ -2,6 +2,7 @@
   "issue": "650",
   "code": "H2",
   "milestone": "M42",
+<<<<<<< HEAD
   "status": "known-gap",
   "checks": 40,
   "passed": 39,
@@ -13,13 +14,65 @@
     "realComponentFailures": 1,
     "mutantsCaught": 6,
     "mutantsTotal": 6,
+=======
+  "status": "verified",
+  "checks": 44,
+  "passed": 44,
+  "failed": 0,
+  "failures": [],
+  "verdict": {
+    "realComponentFailures": 0,
+    "mutantsCaught": 5,
+    "mutantsTotal": 5,
+    "mutantsNotJudged": 0,
+>>>>>>> close/surface-and-docs
     "ok": true
   },
+  "mutants": {
+    "caught": 5,
+    "total": 5,
+    "notJudged": 0,
+    "verdicts": [
+      {
+        "name": "M1: wrong position — the link opens a line adjacent to the stored call site (±1)",
+        "caughtBy": "position",
+        "detail": "{\"position\":false,\"count\":true,\"edge\":true,\"contains\":true,\"label\":true}"
+      },
+      {
+        "name": "M2: wrong count — the usages header is one more than the list it headlines",
+        "caughtBy": "count",
+        "detail": "{\"position\":true,\"count\":false,\"edge\":true,\"contains\":true,\"label\":true}"
+      },
+      {
+        "name": "M3: dropped edge — the last collected row never reaches the section",
+        "caughtBy": "position, count, edge, label",
+        "detail": "{\"position\":false,\"count\":false,\"edge\":false,\"contains\":true,\"label\":false}"
+      },
+      {
+        "name": "M4: a declaration containment leaks into the connected summary",
+        "caughtBy": "contains",
+        "detail": "{\"position\":true,\"count\":true,\"edge\":true,\"contains\":false,\"label\":true}"
+      },
+      {
+        "name": "M5: undeclared substitution — the row label drops the caveat that says which position it opens",
+        "caughtBy": "label",
+        "detail": "{\"position\":true,\"count\":true,\"edge\":true,\"contains\":true,\"label\":false}"
+      }
+    ],
+    "whatTheseAre": "source-copy plants inside src/lsp/rich_hover.ts, judged by per-predicate verdicts computed against the REAL fixture files (byte columns read off the files on disk, so the component's own position owner resolves them) and read back out of the RENDERED markdown rather than from an intermediate object.",
+    "preLaneDefect": "the pre-lane M1..M6 reported 6/6 caught while only TWO planted anything. M2, M3, M4 and M5 each restated a check already asserted verbatim above them (connectedSummarySection(connectedGroups([containsOnly])) === \"\", usagesSection([], …) === \"\", usagesSection([3 sites], …).length > 0, md.includes(\"bb.openDefinition?\")), so four of the six could never have been anything but green. A duplicate cannot fail when the original passes.",
+    "oracleControl": "the suite asserts its oracle HOLDS on the real component before judging any plant; a predicate that is false on the real component would mark every mutant caught for free.",
+    "importFailureIsNotCaught": true
+  },
   "negatives": {
-    "planned": 6
+    "planned": 2
   },
   "fixture": {
+<<<<<<< HEAD
     "root": "$HOME/Documents/Default Project/ishaq/wt/integrate/.tools/m42-h2-fixture",
+=======
+    "root": "$HOME/Documents/Default Project/ishaq/wt/surface/.tools/m42-h2-fixture",
+>>>>>>> close/surface-and-docs
     "files": [
       "src/main/java/com/demo/App.java",
       "src/main/java/com/demo/Main2.java"
@@ -60,12 +113,38 @@
       "differentialFile": "src/main/java/com/demo/App.java"
     }
   },
+  "ground": {
+    "indexDataDir": "an isolated mkdtemp BB_DATA_DIR, passed to the indexer AND to the server this suite starts (the pre-lane run used the developer's default ~/.bb, so the answer depended on that machine's store)",
+    "storedRowsTouchingRender": [
+      {
+        "rowId": "3085f52e51705c17097677dd2c0736303b6c3001:rel:3085f52e51705c17097677dd2c0736303b6c3001:src/main/java/com/demo/App.java:main:13:render:calls:15",
+        "relType": "calls",
+        "storedLine": 15,
+        "sourceRel": "src/main/java/com/demo/App.java"
+      },
+      {
+        "rowId": "3085f52e51705c17097677dd2c0736303b6c3001:rel:3085f52e51705c17097677dd2c0736303b6c3001:src/main/java/com/demo/Main2.java:main:4:render:calls:6",
+        "relType": "calls",
+        "storedLine": 6,
+        "sourceRel": "src/main/java/com/demo/Main2.java"
+      },
+      {
+        "rowId": "3085f52e51705c17097677dd2c0736303b6c3001:rel:3085f52e51705c17097677dd2c0736303b6c3001:src/main/java/com/demo/App.java:Greeter:6:render:contains:7",
+        "relType": "contains",
+        "storedLine": 7,
+        "sourceRel": "src/main/java/com/demo/App.java"
+      }
+    ],
+    "usageRows": 2,
+    "groundHolds": true
+  },
   "budgets": {
     "hoverP95Ms": 50
   },
   "measured": {
     "regime": "warm",
     "samples": 200,
+<<<<<<< HEAD
     "p50Ms": 9.71,
     "p95Ms": 15.56,
     "maxMs": 24.34,
@@ -78,14 +157,44 @@
   "verifierCommand": "npx tsx script/m42/verify-rich-hover.ts",
   "evidenceFile": "H2.json",
   "generatedAt": "2026-10-05T04:27:04.148Z",
+=======
+    "p50Ms": 8.3,
+    "p95Ms": 13.27,
+    "maxMs": 17.68,
+    "meanMs": 8.61,
+    "budgetMs": 50,
+    "coldMs": 103.26,
+    "note": "A real p95 over a stated sample set. The pre-lane check was a MEAN over 40 compared against this budget and reported as a p95; the substitution was named as a limitation in KNOWN-GAPS.json for three waves instead of being fixed."
+  },
+  "currentCommit": "0b1f296a291b7a32ee9ff450b94852b9353e4d71",
+  "verifierCommand": "npx tsx script/m42/verify-rich-hover.ts",
+  "evidenceFile": "H2.json",
+  "generatedAt": "2026-10-05T04:23:06.418Z",
+  "supersededExpectations": [
+    {
+      "was": "H2/R4: the hover's call-site links DIFFER from the L3 reference lines, and the card states the difference",
+      "why": "superseded by the call-site migration (9c25a1dc2, src/lsp/navigation.ts now emits a per-stored-row `callSite` and textDocument/references lands on the call site for every row). It required two surfaces to DISAGREE about where a call is, which §15.1 forbids outright ('One surface, one answer').",
+      "governingLaw": "§15.1 + §12.1 — the two surfaces must agree, and every navigation target must equal an index-stored location, differentially checked.",
+      "replacedBy": "H2/R4: every hover usage link target EQUALS an index-stored location the references surface returns — exact path:line:character. Strictly stronger than lane 6's fallback, which compared FILES only and would have passed a link on the wrong line of the right file.",
+      "measured": "references answers App.java:15 and Main2.java:6 (1-based) — the two `render()` invocations — and all four hover usage links are exactly those two locations."
+    }
+  ],
+>>>>>>> close/surface-and-docs
   "limitations": [
     "A usage link opens the index-stored CALL SITE when brain_relationship.line_number holds a real line, and the referencing symbol's DECLARATION when it does not — every such row states which, in its own label and in the usages header. The store carries no call-site BYTE COLUMN, so a call-site link opens at character 0: the line is exact, the column is not stored.",
+    "Declared residual, unchanged by this lane: textDocument/references and the hover card now agree EXACTLY on the call site (both open the stored line at character 0), so there is no second answer left to reconcile on this surface. The agreement is what §15.1 asks for; the shared limit is the missing byte column, above.",
     "A hover renders at most 3 usage links plus a \"+N more\" link, so a symbol with many callers shows three of them on the card and the rest through the hub.",
-    "No editor leg: this file proves the server surface. Link clicking in a real session is the E5-pattern session at H2 acceptance."
+    "No editor leg: this file proves the server surface. Link clicking in a real session is the E5-pattern session at H2 acceptance.",
+    "FLAKY INPUT, observed once: on one run at commit 8938a728 this fixture indexed with 1 of its 2 calling rows and the gate reported 4 surface failures. Three consecutive runs at the same commit were 41/41. The gate now isolates BB_DATA_DIR (so the answer cannot depend on the developer's ~/.bb) and asserts the ground (R2) before any surface leg, so the next occurrence is attributable rather than misattributed."
   ],
   "bbSeal": {
     "alg": "sha256",
+<<<<<<< HEAD
     "sealedAt": "2026-10-05T04:27:04.151Z",
     "contentSha256": "27479c9930880b2c1c2bccb25b8e78792ed483db99ed63a33cfda7a576d32695"
+=======
+    "sealedAt": "2026-10-05T04:23:06.420Z",
+    "contentSha256": "eaf8f3a015710a4d43b6abbecc76dc61c8592a9ddcac6fe1a34d5f305fc81b91"
+>>>>>>> close/surface-and-docs
   }
 }
