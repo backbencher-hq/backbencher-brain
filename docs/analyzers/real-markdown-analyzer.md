@@ -316,35 +316,144 @@ branch's own history: the arbiter's two runs each admitted 15,234 files, and the
 written afterwards admits 17,456. Every figure below therefore names its population, and the
 population hash is in the JSON beside it.
 
-### The supervisor's arbiter does not report for this lane
+### The supervisor's arbiter now runs for this lane — and what it printed
 
-`npx tsx script/m14/ontology-coverage-gate.ts markdown` prints
+**Corrected 2026-10-05.** The section this replaces said the arbiter does not report for
+markdown. It no longer does not: it gained `resumableWalk` (`script/m14/resumable-walk.ts`)
+and the ruling table is wired (`RULED_BY_LANG.markdown`, line 261). Four invocations walked
+the whole admitted population and the fifth printed a verdict:
 
 ```
-ontology coverage gate — markdown
-corpus: 12729 admitted files
+walk: 17456/17456 files (100.0%)  newly walked 2440, resumed 15016
+
+type          status            detail
+------------------------------------------------------------------------------------------------
+calls         RULED-SOUND       NOT EMITTED; the grammar produced 84 distinct node types ...
+uses          EMITTED           30,696 edges in 4+ files
+contains      EMITTED           32,034 edges in 4+ files
+imports       EMITTED           69 edges in 4+ files
+references    EMITTED           342 edges in 4+ files
+exports       RULED-SOUND       NOT EMITTED; the grammar produced 84 distinct node types ...
+extends       RULED-SOUND       NOT EMITTED; the grammar produced 84 distinct node types ...
+implements    RULED-SOUND       NOT EMITTED; the grammar produced 84 distinct node types ...
+overrides     RULED-SOUND       NOT EMITTED; the grammar produced 84 distinct node types ...
+instantiates  RULED-SOUND       NOT EMITTED; the grammar produced 84 distinct node types ...
+------------------------------------------------------------------------------------------------
+emitted 4/10   ruled-sound 6   FALSIFIED 0   ruled-without-justification 0
 ```
 
-and then stops, twice over, for two independent reasons. Both are §8 items and neither is
-this lane's to fix:
+**Exit 0, `FALSIFIED 0`, `ruled-without-justification 0`** — which is what
+`script/m14/markdown-ruled.ts` is for, and the reason the wiring is a supervisor item rather
+than one of mine. **Those two zeros are the trustworthy part of that output.** The `emitted`
+split is not, and the reason is a defect in shared machinery that this lane must report
+rather than edit (§8). Two are recorded in `validation/m60/markdown/arbiter-findings.json`:
 
-1. **`src/ast/engine.ts:1412` kills the process.** The per-file self-destruct timer is
-   `setTimeout(..., 120000)` followed by `process.exit(1)`, and one corpus file trips it:
-   `[BB-HANG] parser stuck 120s on
-   $HOME/fixtures/repositories/dart-sdk/pkg/analysis_server/doc/implementation/lsp.md
-   — exiting`. The verdict table is never reached. The same run also reports four
-   `[BB-PARSE-ERR] … memory access out of bounds` on `dart-sdk`, `element-plus` and
-   `flutter-packages` markdown files, which are grammar-level findings and are recorded
-   here rather than treated as this lane's failures.
-2. **There is no ruling table for markdown.** `RULED_BY_LANG` in that file carries `bash`
-   and `json` and nothing else, so the gate's own guard fires:
-   *"no RULING TABLE for markdown. Refusing to report: a gate with an empty table would
-   call every un-emitted type RULED-UNJUSTIFIED and that is a verdict about the TABLE, not
-   about the lane."* That refusal is the gate behaving correctly.
+**MD-ARB-1 — the tally is not persisted, so a resumed run's counts cover only the files it
+re-parsed.** `observed` is populated inside the `run` callback passed to `resumableWalk`, and
+`resumableWalk` calls `run` only for paths not already in the checkpoint. So the counts above
+describe **the 2,440 files that run newly walked**, while the line above them reads
+`17456/17456 files (100.0%)`. Measured against the whole-population census:
 
-So the four probes below stand in for it, applying the same two instruments under the same
-discipline. The first version of this section used the arbiter's own header as its warrant;
-it does not, because the arbiter does not run.
+| Type | Whole population, 17,456 files | Arbiter's tally, over its 2,440 newly-walked files |
+| --- | --- | --- |
+| `uses` | 270,779 | 30,696 |
+| `contains` | 334,773 | 32,034 |
+| `references` | 16,857 | 342 |
+| `imports` | 105 | 69 |
+| `calls` | 8 | 0 |
+| `instantiates` | 3 | 0 |
+
+The subset is not a sample of the population either: files arrive in `readdirSync` order, so
+the tail is whichever repositories sort last, which is why `references` is off by 49× and
+`imports` by only 1.5×.
+
+The endpoint of that defect is worth stating plainly, because it inverts the lane's verdict
+on precisely the types the lane gets right. With the checkpoint complete, one more run printed:
+
+```
+walk: 17456/17456 files (100.0%)  newly walked 0, resumed 17456
+emitted 0/10   ruled-sound 7   FALSIFIED 0   ruled-without-justification 3
+```
+
+exit 1 — with `uses`, `contains`, `imports` and `references` reported **RULED-UNJUSTIFIED**.
+A lane that emits 4 types over 622,525 edges is told by the gate that it emits none of ten and
+has three unjustified rulings, because a tool cache was complete. The fix is to persist the
+tally beside the checkpoint (`<path>\t<type>\t<n>`, appended **before** the next file starts,
+for the same reason `resumable-walk` appends before it parses) and rebuild `observed` from it
+on startup.
+
+Because leaving a complete checkpoint in `validation/m14/measurements/walk-markdown.txt` arms
+that false verdict for the next run, this lane **moved** it to
+`validation/m60/markdown/walk-markdown.txt.complete` — 17,456 unique lines, 0 bad markers, the
+population genuinely walked — rather than deleting it. Nothing is lost and nothing is armed.
+
+**MD-ARB-2 — instrument A's denominator is 84 node types where the corpus's grammars produce
+108.** Instrument A loads one grammar, `LANGS[LANG].wasm` = `tree-sitter-markdown.wasm`, the
+BLOCK grammar. The analyzer reads a second: `src/ast/engine.ts:1277` loads the
+`tree-sitter-markdown-inline` companion and `real-markdown-analyzer.ts:6,13` consumes it. The
+arbiter never loads it, so its grammar inventory is blind to the entire inline vocabulary —
+`inline`, `emphasis`, `strong_emphasis`, `code_span`, `link_destination`, `strikethrough`,
+`pipe_table_*`, `image`, `uri_autolink`, `entity_reference` and the rest. Measured union over
+the whole population: **83 block + 64 inline = 108**, against the arbiter's 84.
+
+No markdown ruling moves — none of `exports`/`extends`/`implements`/`overrides` is expressible
+in the inline grammar either, and this lane measured that union rather than the block subset —
+but a construct that is **inline-only** would be falsely ruled by any lane whose arbiter
+inherits this. The fix already exists elsewhere: `script/m14/audit-analyzer-grammar.ts:176`
+declares `EXTRA_GRAMMARS = { markdown: ["tree-sitter-markdown_inline.wasm"] }` for precisely
+this reason. Instrument A should union over that map.
+
+**MD-ARB-3 — the spec ruling lookup matches the ruling PROSE, so a decision that merely names
+a type while explaining itself is returned as that type's ruling.** `rulingFor(t)`
+(`script/m14/ontology-coverage-gate.ts:384-391`) takes the table miss, scans
+`script/m14/spec/markdown-completeness.json` for a `status: RULED` decision, and accepts the
+first whose `resolution` **prose** matches `/\b<t>\b/i` plus a weak
+`/ontology|emits|excluded|type/i` subject heuristic. The spec already carries a
+machine-readable subject — `node_type` — and the loop never reads it. Measured against this
+lane's 12 decisions, all `RULED`:
+
+| decision | `node_type` | prose matches | consequence |
+| --- | --- | --- | --- |
+| MD-D7 | `ontology:extends` | `contains`, `extends` | **false positive** — returns the `extends` ruling as `contains`'s |
+| MD-D12 | `ontology:calls` | *(nothing)* | **false negative** — `calls` gets no spec ruling despite MD-D12 |
+| MD-D8/9/10/11 | `ontology:{implements,exports,overrides,instantiates}` | own type only | correct |
+| MD-D1..MD-D6 | bare node types (`atx_heading`, `html_block`, `section`, …) | — | `handled_verified` decisions, not relationship rulings |
+
+The false positive is observable in the committed log:
+`logs/arbiter-run4-full-checkpoint.stdout` prints
+`contains  RULED-SOUND  … Written ruling: script/m14/spec/markdown-completeness.json#MD-D7`,
+an `extends` decision cited as the justification for `contains`. It only became reachable
+through MD-ARB-1 — with `contains` tallying 0 on that run the gate fell through to the spec —
+which is why the two defects had to be found together.
+
+**This one moves the verdict in the opposite direction to MD-ARB-1**, which is why neither is
+visible from the other: MD-ARB-1 under-reports emission, MD-ARB-3 over-reports justification.
+The false negative is currently masked by this lane's own table — `calls` is row 6 of
+`MARKDOWN_RULED`, and the table is checked first — so it is the lane's table, not the spec,
+that keeps `calls` honest.
+
+The fix is to read the declared subject instead of the prose: `dec.node_type ===
+\`ontology:${t}\``, keeping the prose scan only as a fallback for specs predating the field
+and logging that the fallback fired, so a prose-matched ruling stays distinguishable from a
+declared one. All twelve of this lane's decisions already carry `node_type`, so the fallback
+would never fire here. Affects every lane: the loop is language-agnostic.
+
+**What made four invocations necessary**, recorded because it is what exposed MD-ARB-1:
+**14 distinct corpus files trap the WASM parser with `memory access out of bounds`**, and each
+run dies at `[BB-HANG]` ~120s after the first one it meets — naming a file that had *already*
+failed fast, because `src/ast/engine.ts:1410` arms the 120s bomb and `:1416 clearTimeout` runs
+only when parse RETURNS, so a trap that throws past it leaves the timer armed. The four runs
+died naming four different files. **The checkpoint finished 17,456/17,456 with 0 `!` bad
+markers, so none of the 14 is permanently unparseable** — the trap is load-dependent (load
+average 18.1 on 8 cores, 2 GB RAM available, disk 94% full, ten lanes sharing the machine),
+which is the same finding as the heap cliff recorded below.
+
+**Why the four probes below still stand in for the arbiter.** Not because it fails, and not
+because of MD-ARB-1: because the arbiter's own counts cannot be compared against a
+whole-population figure until MD-ARB-1 is fixed, and because MD-ARB-2 means the denominator it
+prints beside every A ruling is 24 node types short of this corpus's grammar. The adjudication
+below applies the arbiter's two instruments to the whole admitted population and states its
+own denominators.
 
 ### Verdicts
 
@@ -780,7 +889,7 @@ because it is emitted too and the three-column table omitted it.
 | --- | --- | --- | --- | --- |
 | **1. Exists** | yes — five `addRel` call sites | yes — three (inline destination, autolink, reference link / reference-form image) | yes — the resolved-anchor arm, relabelled from `uses` | yes — the file-naming include directive (MD-G3) |
 | **2. Fires** | **334,773** edges / 14,507 files | **270,779** / 9,915 | **16,857** / 1,136 | **105** / 74 |
-| **3. Correct** | 1,092/1,092 scala3, 8,499/8,499 kubernetes, MISSING=0, unexplained=0 | same rows | same rows, and MISSING=770 → 0 once the allowlist names it | 0 unexplained; never in the compared set at all |
+| **3. Correct** | 1,092/1,092 scala3, 8,499/8,499 kubernetes, MISSING=0, unexplained=0 | same rows | same rows, and MISSING=770 → 0 once the allowlist names it | 0 unexplained; **never in the compared set at all** — and measurably so: **1 edge in 1 file** across the differential's own 1,331-file corpora, **0 in kubernetes** |
 | **4. Labelled** | correct — no neighbouring type applies to intra-document containment | correct — 269,245 `markdown_link` + 1,534 `markdown_autolink` | correct — 16,857 `markdown_internal_anchor`, 0 rows under any other role | correct — 105 `markdown_template_include`, `import_based` |
 | **5. Resolved** | **334,773/334,773 (100%)** both ends file-local; 333,479 (99.6%) corpus-wide | **1/270,779 (0.0%)** both ends file-local; **258 (0.1%)** corpus-wide — by construction, the target is link text | **16,857/16,857 (100%)** file-local; 6,608 (39.2%) corpus-wide | **82/105 (78.1%)** source; **0/105** target — the target is a PATH |
 | **6. Confident** | 334,773 at 1.0, `structural`, 100% line-numbered, **0 below 0.7** | 270,779 at 1.0, `reference_qualified`, 100% line-numbered, **0 below 0.7** | 16,857 at 1.0, `reference_qualified`, 100% line-numbered, **0 below 0.7** | 105 at 1.0, `import_based`, 100% line-numbered, **0 below 0.7** |
@@ -952,23 +1061,57 @@ comment and stands here: the `reference_qualified` arm's `resolved === false` br
 unreachable in this lane, because every published `uses` edge resolves a destination the
 grammar read out of a node, so that branch is deliberately not invented.
 
-### DERIVATION findings: 0
+### DERIVATION findings: 2 — `references` and `imports`
 
-A DERIVATION finding is a type the analyzer emits that the differential never audits. The
-audited set is fixed at `script/m14/differential.ts:23392`:
+**Corrected 2026-10-05. This section previously read `DERIVATION findings: 0`, and both
+reasons it gave for the 0 were false.** It is kept in the corrected form rather than
+quietly overwritten because the error is instructive: it was a number produced by reading
+the oracle instead of the allowlist.
+
+A DERIVATION finding is a type the analyzer emits that the differential never audits. What
+is in the compared set is fixed at `script/m14/differential.ts:23392` — the allowlist, not
+the oracle:
 
 ```ts
 ...(lang === "markdown" ? ["contains", "uses"] : []),
 ```
 
-The lane emits exactly `contains`, `uses` and `references`, and the audited set is those
-three: the concurrent relabelling added `references` to
-`script/m14/differential.ts`'s markdown entry in the same commit cycle, so **emitted set =
-audited set and this lane's DERIVATION count is 0**, matching the handover figure. It was 0
-before this round, it is 0 after the setext fix (which adds `uses` edges, an audited kind),
-and it is 0 after the relabel — which is the check that matters here, because relabelling a
-type into the audited set without adding oracle truth for it is exactly how a DERIVATION
-finding is born.
+`script/m14/markdown-oracle.ts` derives all four the analyzer emits — `contains`
+(:375/:462/:471/:503), `references` (:530), `imports` (:635), `uses`
+(:702/:708/:729/:741) — and the previous text treated that as sufficient. It is not: the
+allowlist is what puts a kind in the COMPARED set, and it names two. The adjacent comment
+in the shared file asserts the lane "emits no `imports` (markdown has no module system) and
+no `references` (front-matter keys are a declared boundary, not a graph)", which is false
+against the census — `imports` is 105 edges over 74 files and `references` is 16,857 over
+1,136. `git log -S'lang === "markdown" ? ["contains", "uses", "references"]' --
+script/m14/differential.ts` returns **no commit**: no relabelling ever added it.
+
+So emitted = 4, oracle truth = 4, compared = 2, and the gap is **2**:
+
+| type | analyzer edges, whole admitted population | analyzer edges on the differential's OWN corpora | in compared set | consequence, measured |
+| --- | --- | --- | --- | --- |
+| `references` | 16,857 / 1,136 files | **10,172 / 76 files** (kubernetes 10,055 / 58, scala3 117 / 18) | no | **770 MISSING on kubernetes** — `logs/differential.log` |
+| `imports` | 105 / 74 files | **1 / 1 file** (scala3 `docs/_spec/index.md`; kubernetes **0**) | no | **compared against nothing in practice** |
+
+The corpora column is the part that had to be measured and could not be read
+(`differential-corpora-tally.ts`, `differential-corpora-tally.json`: 1,331 files,
+1,331 parsed, 0 failures, upper bound on any 60-file rotating draw). The two findings are
+not the same severity, and the difference is the whole point:
+
+- **`references` is reachable.** 76 of 1,331 files carry one, the pool draws from the same
+  population, and it demonstrably does — that is where the 770 come from. Its exclusion is
+  therefore **loud**: the truth exists, the analyzer rows exist, the allowlist drops the
+  analyzer side, and the shortfall reads as MISSING. A gate that can fail is failing.
+- **`imports` is effectively unreachable.** One edge, in one file, in one corpus, and
+  **zero in kubernetes**, which is where the differential spends half its draw. An oracle
+  can be complete over a kind no sample ever contains, and then the kind is audited in the
+  sense that a light exists and nobody is standing under it. This is the strict sense of the
+  word: stored and compared against nothing.
+
+Both are fixed by adding `"references"` and `"imports"` to that one array literal — measured
+at MISSING=0 and 100% coverage on both lanes with `unexplained` and `heuristic` unchanged at
+0 (`logs/differential-allowlisted-local.log`). The file is shared (§8), so it is reported
+here and **not edited**; `git diff script/m14/differential.ts` is empty.
 
 ### Edge recall: nodes on the tree against edges emitted
 
@@ -1382,18 +1525,41 @@ measurement rather than by assertion. Every edge carries a 1-based `line_number`
   the grammar's silence is why it took a text rule; 68 sites is the population and the
   extension test keeps 1,030+ macro calls out.
 
-### DERIVATION findings: 0, and the price of keeping it at 0
+### The cost of the two DERIVATION findings, and what it was mistaken for
 
 A DERIVATION finding is a label the analyzer emits that the differential never audits. At
-handover this lane had 0, and it has 0 now — **audited set == emitted set**, `contains`,
-`uses`, `references`, `imports` — because `script/m14/markdown-oracle.ts` derives all four
-independently. Keeping it at 0 cost two oracle changes this round, and both were found by
-measurement rather than by reading:
+handover this lane had 0 and published 0 for several rounds. **It is 2** — `references` and
+`imports`, for the reason and with the measurement in the DERIVATION section above. This
+paragraph is left because the reason the 0 was believed is the interesting part: it was
+believed because `script/m14/markdown-oracle.ts` derives all four independently, and that is
+true and not sufficient. The allowlist at `script/m14/differential.ts:23392` is what puts a
+kind in the compared set, and it names two of the four.
+
+What the 0 concealed, per finding:
+
+- **`references`** — the exclusion is loud rather than silent, and the lane had been
+  reading the loud part as a different thing. 770 rows on kubernetes read as MISSING, which
+  was recorded as "one allowlist entry, not 770 missing edges". That reading is correct
+  about the *edges* and wrong about the *state*: the edges were never unaudited, they were
+  audited and reported as a shortfall. The all-clear was inferred from a diagnostic that
+  was in fact an open finding.
+- **`imports`** — genuinely silent, and the silence is a property of the corpora rather
+  than of the oracle: **1 edge in 1 file across 1,331 files, 0 in kubernetes**. So this one
+  would have stayed hidden indefinitely, because there is no draw to expose it. The oracle
+  work below is real and worth doing — it is what makes the kind auditable *in principle* —
+  and it changed nothing observable, which is precisely the point: an oracle can be correct
+  and the kind can still be compared against nothing.
+
+The oracle changes this round were found by measurement rather than by reading, and both
+were necessary to the fix above rather than sufficient to it:
 
 - **`references`** had to be added to the oracle when the analyzer relabelled, or the new
-  edges would have been stored and compared against nothing.
+  edges would have had no truth to be compared against at all.
 - **`imports`** had to be derived from Liquid's tag syntax, independently written (the oracle
   splits the tag into `name`/argument triples; the analyzer sweeps character codes).
+
+Adding both kinds to the oracle without adding them to the allowlist is what left the count
+at a false 0 with a true-looking justification behind it.
 
 **MD-DEFECT-2 — the oracle carried MD-DEFECT-1 too.** The oracle's heading lookup was a
 direct-named-child scan, so it published nothing for a **setext** heading
