@@ -1794,3 +1794,189 @@ The remaining 2,407 are `NOT_BOUND` and are dominated by `instance Show Bool whe
 publishing `Bool` as a `class` (1,690) and `printPagePerPage :: !Bool !Bool` publishing
 `Bool` as a `type` (356) — the same withdrawal question as above, and the `type` family is
 still open.
+
+---
+
+## Where an emitted edge actually LANDS, and what that changes about the ambiguity column
+
+The ambiguity section above counts CANDIDATE DECLARATIONS per target. That is not the
+number a consumer of the graph experiences: a consumer reads
+`brain_relationship.target_symbol_id`, which is one symbol or NULL. This section measures
+the second quantity, because a lane optimising candidates when bindings are already right
+is optimising the wrong thing.
+
+Population: **120 Clean files** — the deterministic FIRST 120 of the sorted git-tracked
+`.icl`/`.dcl` admitted list — through production `parseFile` and `indexProjectParallel`,
+32.8 s, **3,831 symbols, 16,246 stored edges, 0 parse errors, 0 timeouts**.
+Instruments: `script/m14/clean-store-resolution.mts`,
+`script/m14/clean-unattached.mts`, `script/m14/clean-unattached-reconcile.mts`.
+Results: `validation/m14/measurements/clean/store-resolution-120.{json,log}`,
+`unattached-shapes-120.{json,log}`, `unattached-reconcile-120.{json,log}`.
+
+### Q5 restated: 10,516 of 10,516 decidable edges land in the source file
+
+| type | edges | unattached | landed in source file | unverifiable |
+|---|---:|---:|---:|---:|
+| `calls` | 2,114 | 0 | 2,108 | 6 |
+| `uses` | 1,330 | 5 | 1,325 | 0 |
+| `contains` | 3,767 | 3 | 3,762 | 2 |
+| `imports` | 691 | 306 | 8 | 377 |
+| `references` | 5,528 | 1,350 | 1,151 | 3,027 |
+| `exports` | 2,599 | 1 | 1,986 | 612 |
+| `implements` | 81 | 16 | 40 | 25 |
+| `overrides` | 14 | 0 | 14 | 0 |
+| `instantiates` | 122 | 0 | 122 | 0 |
+| **ALL** | **16,246** | **1,681** | **10,516** | **4,049** |
+
+**DECIDABLE** = the target is declared in the source's own file, so "landed in the source
+file" is the right answer and the row is decidable. Of those: **landed in the source file
+10,516 (100.0%), landed elsewhere 0 (0.0%)**. There is no wrong-file binding in this lane
+on this population.
+
+That is the answer to the question the 2,181-file candidate split left open. The store's
+own resolution pass ranks a bare target declared in the source file **first**, by
+`(s.file_id = src_file) DESC` (`src/ast/parallel-indexer.ts:4126-4153`). So the
+`B_MODULE` + `C_NAME_CONTRACT` ambiguity — 78.2% of target-side candidates — is candidate
+MULTIPLICITY, and the consumer disambiguates it correctly. **This lane should not spend
+effort on cause A.** The section above reaches the same conclusion by a different route
+(a structural argument that a per-file analyzer cannot know which module is in scope); this
+is the measurement, and it is stronger.
+
+The 4,049 **UNVERIFIABLE** rows are edges whose target the source file does not declare.
+This instrument does not claim to know which module's declaration was meant and does not
+score them. They are printed beside the scored rows so the two are never added.
+
+### The lane's real remaining cost is 1,681 unattached edges, and 328 of those are ineligible
+
+| bucket | edges | share | distinct | meaning |
+|---|---:|---:|---:|---|
+| `BARE_PUBLISHED_HERE` | **0** | 0.0% | 0 | bare target, published by the source file, still unattached — the only bucket this analyzer could have got right and did not |
+| `BARE_PUBLISHED_ELSE` | 9 | 0.6% | 3 | bare target another sample file publishes (`root`, `window`) |
+| `QUALIFIED` | 328 | 20.2% | 182 | target carries `.` or `:` — excluded from the store's pass by its own `WHERE` clause |
+| `UNPUBLISHED` | 1,288 | 79.3% | 41 | nothing in the sample publishes the target or its final segment |
+
+**`BARE_PUBLISHED_HERE` is 0.** Per the round brief's cause-B hypothesis — the edge target
+and the published symbol name are the same symbol spelled two ways, so retargeting the
+edge to the published name recovers it — this bucket is where such edges would appear. It
+is empty, so **cause B is 0 for this lane** and the graphql recipe does not apply. The 174
+`DOTTED_LAST_BARE` `imports` carry `Cocoa.Foundation:NSApplication` and
+`Cocoa.UserDefaults:registerApplicationDefaults`, which is Clean's qualified spelling for
+an item imported from a module; the bare final segment is not declared in the importing
+file, so retargeting would bind the edge to an unrelated same-named symbol elsewhere.
+That is a fabricated edge, which the workstream's one-thing-to-get-right forbids.
+
+`QUALIFIED` is ineligible by construction and no change to this analyzer moves it: the
+pass carries `AND instr(r.target_external,'.')=0 AND instr(r.target_external,':')=0`, and
+Clean spells qualified names `Module:Item` and `Module.Item`.
+
+### Cause C over the FULL corpus: 99.5% of 233,885 edges name a symbol the corpus publishes
+
+The 120-file slice puts 91.2% of unattached targets in `UNPROVEN_EXTERNAL` — the honest
+but weak bucket meaning "nothing in this slice declares it". **That bucket was an artefact
+of the slice.** Re-adjudicated over the full identity dump
+(`/tmp/opencode/clean-abc/identity`, 16 shards, 2,181 files, 62,980 declarations, 29,196
+distinct published names, 233,885 edges — the shards named by the committed
+`ambiguity-split-2181-abc.json`), instrument `script/m14/clean-cause-c-full.mts`:
+
+| bucket | edges | share | distinct | meaning |
+|---|---:|---:|---:|---|
+| `RESOLVABLE` | 232,753 | **99.5%** | 32,661 | the target, or its final segment after `.`/`:`, is a name the corpus publishes |
+| `MODULE_ONLY` | 316 | 0.1% | 119 | the module is a corpus name and the item is not (`Data.Func` 32, `System._Pointer` 22, `Text.GenJSON` 14) |
+| `NOTHING` | 816 | **0.3%** | 323 | neither the target, its final segment, nor its module qualifier is published anywhere in 2,181 files |
+
+The 816 `NOTHING` edges on 323 distinct strings are dependency targets with **0
+declarations under this exact name anywhere in the corpus**: `MaybeError` 37, `TC` 33,
+`StringAppender` 31, `ResponseMessage` 22, `UChar` 19, `LSP.ResponseMessage` 14. This
+instrument does **not** claim they are stdlib — it reports that 2,181 files declare none
+of them, which is the strongest externality claim this corpus supports. Marking them
+external needs a store-level marker and is a §8 item, not an analyzer change.
+
+`MODULE_ONLY` is counted separately from `RESOLVABLE` because retargeting it to the module
+would fabricate an edge: `Data.Func` names a module, not a declaration.
+
+### The unattached COUNT is not reproducible, and the whole spread is `imports`
+
+Four independent indexes of the same 120-file slice
+(`script/m14/clean-unattached-variance.mts`):
+
+| run | edges | unattached | symbols | `brain_import` | imports unattached | references unattached |
+|---|---:|---:|---:|---:|---:|---:|
+| 1 | 16,246 | 1,631 | 3,831 | 597 | 255 | 1,351 |
+| 2 | 16,246 | 1,660 | 3,831 | 597 | 284 | 1,351 |
+| 3 | 16,246 | 1,681 | 3,831 | 597 | 305 | 1,351 |
+| 4 | 16,246 | 1,648 | 3,831 | 597 | 272 | 1,351 |
+
+`edges`, `symbols` and `brain_import` are **bit-stable**. Unattached spread is 50 (3.0% of
+mean 1,655), and per type: `contains` 3/3/3/3, `exports` 1/1/1/1, `implements` 16/16/16/16,
+`references` 1,351 four times, `uses` 5/5/5/5, **`imports` 255/284/305/272**.
+
+**It is not a visibility race.** Index once, then run `runPostProcessing` twice more on the
+same, now-complete database (`script/m14/clean-import-determinism.mts`): imports unattached
+after pass 0/1/2 = `326 → 326 → 326`, `266 → 266 → 266`, `286 → 286 → 286`. **A second and
+third pass resolve nothing.** The pass has converged by pass 0; three indexes of identical
+input converge to three different answers.
+
+**The cause, located by diffing the `exports` `target_symbol_id` column between two runs:
+53 of 2,599 `exports` rows differ, and every differing row is the same name attached to a
+different one of its declarations, the same two files in opposite order.**
+
+```
+run1 NSView       …Clyde/Cocoa/tabview.icl:NSView:14
+run2 NSView       …Clyde/Cocoa/layout.dcl:NSView:82
+run1 TreeElement  …Clyde/outlineviewcontroller.dcl:TreeElement:22
+run2 TreeElement  …Clyde/projdocument.icl:TreeElement:306
+run1 close        …Clyde/Clyde/Console.icl:close:255
+run2 close        …Clyde/Clyde/Process.icl:close:230
+```
+
+Symbol ids are content-addressed (`project:file:name:line`) and stable across runs; what
+varies is the order rows land in the table, because the worker pool flushes in completion
+order, and the resolver's tie-break reads that order.
+
+**Consequence for every number in this lane.** For a bare target with more than one
+declaration, WHICH declaration an edge attaches to is not reproducible. For `imports`, the
+COUNT attached is not reproducible either, because a change in which name wins changes how
+many later rows find a free symbol. Per-type figures for the five stable types are exact;
+any `imports` figure carries roughly ±10%. Both files involved
+(`src/ast/import-resolution.ts`, the resolution passes in `src/ast/parallel-indexer.ts`)
+are shared machinery and are §8 report items. **No file this lane owns is involved** — the
+analyzer's own output is bit-stable across every run measured.
+
+### What the arbiter reported, and why it was wrong
+
+`npx tsx script/m14/ontology-coverage-gate.ts clean` returned **`emitted 0/10`,
+`ruled-without-justification 9`, EXIT=1**, with every emitted type marked
+`RULED-UNJUSTIFIED`, and the header line `walk: 312/312 files (100.0%) newly walked 0,
+resumed 312`.
+
+That is a defect in the gate, not a verdict on the analyzer. `observed` is populated
+**only** inside the resumable walk's per-file `run` callback
+(`script/m14/ontology-coverage-gate.ts:305-320`), and a resumed file never invokes it. A
+fully-resumed walk therefore observes nothing and every type reads `NOT EMITTED`. The walk
+checkpoint is gitignored and already held all 312 ids, so **every invocation of this gate
+for this lane after its first has been reporting `0/10` regardless of the analyzer.**
+
+Removed the checkpoint and re-ran — same 312 admitted files, same corpus, **EXIT=0**:
+
+```
+walk: 312/312 files (100.0%)  newly walked 312, resumed 0
+
+calls         EMITTED   3,798 edges
+uses          EMITTED   1,457
+contains      EMITTED   7,508
+imports       EMITTED   1,891
+references    EMITTED  10,108
+exports       EMITTED   4,837
+extends       RULED-SOUND  construct occurs 0x on the parse tree
+implements    EMITTED     712
+overrides     EMITTED     306
+instantiates  EMITTED     122
+
+emitted 9/10   ruled-sound 1   FALSIFIED 0   ruled-without-justification 0
+```
+
+This agrees with the committed full-corpus walk (9 fired of 233,885 edges) and with the
+store walk above (9 labels of 16,246 edges). The gate's own header documents `--fresh`
+for exactly this reason and does not warn that its DEFAULT invocation produces a false
+`0/10`. §8 item: `observed` should be checkpointed alongside the file ids, or the gate
+should refuse to print verdicts when `newly walked` is 0.
