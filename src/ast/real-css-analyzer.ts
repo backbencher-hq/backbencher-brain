@@ -495,6 +495,11 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
     // the module is written in the import itself and how the store spells a file.
     const lastSegment = lastPathSegment(filePath)
     this.importerName = lastSegment || filePath || "stylesheet"
+    // Whether that name is a REAL basename or the fallback above. The stylesheet module
+    // symbol is published only for a real basename: publishing one named `stylesheet`
+    // would put a placeholder literal in a name-bearing field, which is the M60 R7 rule
+    // this file already states about the `imports` source and would contradict.
+    this.hasRealModuleName = lastSegment.length > 0
 
     const ctx: CssContext = {
       symbols: [],
@@ -544,6 +549,47 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
     this.collectFontFaceNames(rootNode, ctx)
     this.collectCustomDefinitionNames(rootNode, ctx)
     this.collectNamespacePrefixes(rootNode, ctx)
+
+    // THE STYLESHEET IS THE MODULE, and it is published FIRST so a member's owner can name
+    // it. This is not an invention: `real-scss-analyzer.ts:273` publishes the Sass module
+    // under exactly this rule, and the bash lane publishes its script (BD2). CSS was the
+    // one language in that family WITHOUT it, and the cost was measurable rather than
+    // cosmetic:
+    //
+    //   `imports` resolution was 0 of 251 at BOTH ends over the 1,286-file corpus
+    //   (`validation/m14/measurements/css-parsefile-census-1286.json`, row `imports`:
+    //   srcPublished 0, tgtPublished 0). The TARGET is an external specifier and
+    //   `target_external` is the correct record for it. The SOURCE was the defect: the
+    //   `@import` edge names `this.importerName`, and no symbol in the file carried that
+    //   name, so the store recorded `source_external` for an edge whose source is not
+    //   external at all — it is this file.
+    //
+    // The name is the file's own basename WITH the extension, for the reason the bash and
+    // scss lanes give: deterministic (no machine path, so the index fingerprint is
+    // stable), and it cannot collide with anything else this analyzer publishes — a class
+    // selector is `.btn`, an id is `#x`, a custom property is `--x`, a bare type selector
+    // cannot contain a dot, and no at-rule name is written `theme.css`.
+    //
+    // It deliberately carries NO `contains` edges to the file's own rules. That would be
+    // true and it would be expensive: the admitted corpus publishes 178,084 `contains`
+    // edges, and adding one per top-level rule is a large-graph regression bought for a
+    // node that already has the `imports` edges pointing at it. The node exists so those
+    // edges resolve, not to restate the file's contents.
+    if (this.hasRealModuleName) {
+      ctx.symbols.unshift({
+        name: this.importerName,
+        kind: ASTEngine.SymbolKind.Module,
+        range: this.nodeToRange(rootNode),
+        scope: "",
+        visibility: "public",
+        complexity: 1,
+        metadata: {
+          cssSpecific: true,
+          isStylesheet: true,
+          stylesheetPath: filePath,
+        },
+      })
+    }
 
     const stack: StackFrame[] = [{ node: rootNode, media: "", supports: "", layer: "", container: "", scope: "", currentSelector: "", keyframeScope: "" }]
 
@@ -1187,6 +1233,9 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
 
   /** The importing stylesheet's name; set per `analyze` run. */
   private importerName = "stylesheet"
+
+  /** Whether `importerName` is a real basename rather than the fallback literal. */
+  private hasRealModuleName = false
 
   private determineSelectorKind(
     hasId: boolean,
@@ -2013,10 +2062,66 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
     return found
   }
 
+  /**
+   * The name an `imports` TARGET is published under, which is the same rule the SOURCE half
+   * already uses: a stylesheet is named by its LAST PATH SEGMENT.
+   *
+   * ## The defect this fixes
+   *
+   * One edge had its two ends spelled by two different rules. The source is
+   * `this.importerName` = `lastPathSegment(filePath)` = `layout.css`. The target was the
+   * specifier verbatim = `styles/layout.css`. So the store could never join them, and
+   * MEASURED over the 600-file window (`css-import-specifier-names.json`, 58 import edges):
+   * 11 edges named a file that exists under the basename with that basename UNIQUE in its own
+   * repo, and all 11 were unreachable.
+   *
+   * ## Why only stylesheet-extension specifiers
+   *
+   * A specifier's last segment is only a stylesheet's name when it is a stylesheet. Three
+   * cases in the same 58-edge population are NOT, and reducing them would FABRICATE a
+   * resolution:
+   *
+   *   `https://fonts.googleapis.com/css?family=Lato:400,400i` (10 edges) — the last segment
+   *   names no file anywhere; it would bind to whatever unrelated file shares its basename.
+   *   `tailwindcss`, `tw-animate-css` (24 edges) — package names, resolved by a package
+   *   manager or a PostCSS plugin. `tailwindcss` DOES collide with a real file in this
+   *   corpus, so recovering it resolves to the wrong thing.
+   *   `@fontsource-variable/figtree/index.css` (1 edge) — a package SUBPATH. The `index.css`
+   *   last segment is the package's internal file, not this repo's.
+   *
+   * The discriminator is a final segment carrying a stylesheet extension, checked by
+   * `charCodeAt` and `startsWith` — no pattern over text. `_variables.less` (9 edges, no
+   * slash) is the case that proves the discriminator has to be the EXTENSION and not the
+   * slash: it is a sibling file, and a slash test files it as a package.
+   *
+   * ## What this does NOT claim
+   *
+   * A basename held by more than one stylesheet in the same repo — 12 edges over 2 names in
+   * this window — is published under the basename and stays AMBIGUOUS, because the store
+   * binds by name (`WHERE project_id = ? AND name = ?`) and a disambiguator invented here
+   * would be a second, invented naming convention. That is a finding about the published-name
+   * contract, counted in `css-import-specifier-names.json` as `relative-ambiguous-basename`.
+   */
+  private importTargetName(specifier: string): string {
+    if (specifier.startsWith("http:") || specifier.startsWith("https:") || specifier.startsWith("//")) return specifier
+    if (specifier.startsWith("@") || specifier.startsWith("~")) return specifier
+    const slash = specifier.lastIndexOf("/")
+    if (slash < 0) return specifier
+    const segment = specifier.slice(slash + 1)
+    const dot = segment.lastIndexOf(".")
+    if (dot <= 0) return specifier
+    const ext = segment.slice(dot).toLowerCase()
+    for (const known of [".css", ".scss", ".sass", ".less"]) {
+      if (ext === known) return segment
+    }
+    return specifier
+  }
+
   private processImport(node: Node, ctx: CssContext) {
     const stringNode = this.findImportNameNode(node)
     if (stringNode) {
       const moduleName = unwrapUrl(stringNode.text)
+      const targetName = this.importTargetName(moduleName)
       ctx.imports.push({
         module: moduleName,
         source: moduleName,
@@ -2037,7 +2142,7 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
       // dangling by construction.
       ctx.relationships.push({
         source: this.importerName,
-        target: moduleName,
+        target: targetName,
         type: ASTEngine.RelationshipType.Imports,
         // M59.A7: the name on this edge is the MODULE, so the line is the
         // `string_value` / `call_expression` node — which can be on a LATER line
@@ -2046,7 +2151,7 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
         // enclosing construct, not the name.
         line_number: this.lineOf(stringNode),
         confidence: 1.0,
-        metadata: { isCssImport: true, importSource: this.importerName },
+        metadata: { isCssImport: true, importSource: this.importerName, importSpecifier: moduleName },
       })
       if (moduleName.indexOf("tailwind") !== -1) ctx.frameworks["Tailwind CSS"] = true
       if (moduleName.indexOf("bootstrap") !== -1) ctx.frameworks["Bootstrap"] = true
