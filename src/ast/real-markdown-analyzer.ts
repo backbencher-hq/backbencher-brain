@@ -717,7 +717,11 @@ export class RealMarkdownAnalyzer implements ASTEngine.LanguageAnalyzer {
         const destNode = this.findChildByType(n, new Set(["link_destination"]))
         if (labelNode && destNode) {
           const label = this.stripBrackets(labelNode.text)
-          const destination = destNode.text.trim()
+          // Same rule as the inline form and for the same reason (MD-G4): the angle
+          // brackets are delimiters, not the destination, so `[x]: <https://y>`
+          // defines the destination `https://y`. See the `link_destination` case in
+          // `walkInlineTree` for the full argument and the measured population.
+          const destination = this.stripAngleBrackets(destNode.text.trim()).trim()
           if (label && destination && !into.has(label)) {
             into.set(label, { destination, line: labelNode.startPosition.row + 1 })
           }
@@ -1047,7 +1051,36 @@ export class RealMarkdownAnalyzer implements ASTEngine.LanguageAnalyzer {
         case "link_destination": {
           // Only reached as a NAMED child of inline_link / image, so it is a real
           // destination and never a code span's punctuation.
-          const target = inn.text.trim()
+          //
+          // MD-G4 (2026-10-05). The `<...>` destination form arrived with its
+          // DELIMITERS still attached: `[x](<https://y>)` published the target
+          // `<https://y>`. CommonMark 0.31.2 §4.7 is explicit that the angle
+          // brackets are the enclosing syntax and not part of the destination, so
+          // the spelling was wrong independently of anything downstream — and it
+          // cost every such edge twice over:
+          //
+          //  - The universal identifier sanitizer at src/ast/pool-worker.ts:653
+          //    drops any relationship whose target leaf matches `/[{}`<>\n\r\t]/`,
+          //    so the `<`/`>` deleted the edge at the production boundary. Measured:
+          //    calling `analyze()` directly publishes it, calling `parseFile`
+          //    returns 0 edges for the same file. That sanitizer already exempts
+          //    json/yaml/hcl/terraform/graphql outright and bash for path-shaped
+          //    labels, and markdown is absent from both lists — reported, not
+          //    edited, because pool-worker.ts is shared machinery (§8).
+          //  - A store lookup on `<https://y>` can never bind, so the edge was
+          //    unreachable even had it survived.
+          //
+          // The population is small and is stated rather than inflated: 96 sites in
+          // 33 of the 17,456 admitted corpus files. It includes a corpus file whose
+          // entire purpose is this construct —
+          // `gh-cli/internal/attachments/testdata/references_input.md` — and four
+          // copies of the same GitHub `repo-assist.md` issue template.
+          //
+          // The BALANCED-PAREN form is deliberately NOT stripped: CommonMark allows
+          // unescaped parentheses inside a bare destination when they form a
+          // balanced pair, so `[x]((y))` has the destination `(y)` and the
+          // parentheses really are part of it.
+          const target = this.stripAngleBrackets(inn.text.trim()).trim()
           if (target) {
             // A destination that is ONLY a fragment names a heading in THIS document,
             // so it is an internal reference and not an external one. It is deferred
@@ -1062,7 +1095,13 @@ export class RealMarkdownAnalyzer implements ASTEngine.LanguageAnalyzer {
             if (pendingAnchors && target.charCodeAt(0) === 35 /* '#' */) {
               pendingAnchors.push({ source, fragment: target.slice(1), literal: target, line: fileLine(inn) })
             } else {
-              addRel(source, ASTEngine.RelationshipType.Uses, target, { role: "markdown_link", linkText: target }, fileLine(inn))
+              addRel(
+                source,
+                ASTEngine.RelationshipType.Uses,
+                target,
+                { role: "markdown_link", linkText: target, ...this.linkTargetMetadata(target) },
+                fileLine(inn),
+              )
             }
           }
           break
@@ -1072,7 +1111,21 @@ export class RealMarkdownAnalyzer implements ASTEngine.LanguageAnalyzer {
           // The grammar exposes the URI/email only as the node's raw text in angle
           // brackets (no child node) — strip the brackets by position.
           const target = this.stripAngleBrackets(inn.text)
-          if (target) addRel(source, ASTEngine.RelationshipType.Uses, target, { role: "markdown_autolink" }, fileLine(inn))
+          if (target) {
+            // An autolink is external BY CONSTRUCTION — `<https://x>` and
+            // `<a@b.c>` are the two forms CommonMark defines and neither can name a
+            // local declaration — so `isExternal` is true here without consulting
+            // the classifier, while `targetKind` still distinguishes a URI from an
+            // email address.
+            const kind = this.linkTargetMetadata(target)
+            addRel(
+              source,
+              ASTEngine.RelationshipType.Uses,
+              target,
+              { role: "markdown_autolink", isExternal: true, targetKind: this.uriSchemeOf(target) === null ? "emailAutolink" : kind.targetKind, ...(kind.externalScheme !== undefined ? { externalScheme: kind.externalScheme } : {}) },
+              fileLine(inn),
+            )
+          }
           break
         }
         case "full_reference_link":
@@ -1139,7 +1192,17 @@ export class RealMarkdownAnalyzer implements ASTEngine.LanguageAnalyzer {
       source,
       ASTEngine.RelationshipType.Uses,
       defined.destination,
-      { role: "markdown_link", linkText: label, linkForm: node.type, resolvedVia: "link_reference_definition" },
+      {
+        role: "markdown_link",
+        linkText: label,
+        linkForm: node.type,
+        resolvedVia: "link_reference_definition",
+        // The destination, not the label. A reference link resolves its LABEL
+        // through the definition and its DESTINATION is what the edge points at, so
+        // classifying the label would answer a question nobody asked — `[home]` is
+        // not a path and `http://example.com` is not a heading.
+        ...this.linkTargetMetadata(defined.destination),
+      },
       line,
     )
   }
@@ -1184,6 +1247,117 @@ export class RealMarkdownAnalyzer implements ASTEngine.LanguageAnalyzer {
       return t.slice(1, -1)
     }
     return t
+  }
+
+  /**
+   * A link destination's RFC 3986 scheme, or `null` when it has none.
+   *
+   * By the RFC's own rule rather than by pattern: `ALPHA *( ALPHA / DIGIT / "+" /
+   * "-" / "." ) ":"`, with `/`, `?` or `#` ending the scan because none of them may
+   * appear in a scheme. `https://x` has one; `docs/a.md` does not — the segment
+   * before its colon contains a `/`.
+   *
+   * TWO constraints, both measured rather than assumed:
+   *
+   *  - **Two characters minimum.** RFC 3986 admits `X:`, so a Windows drive path
+   *    `X:/src` classified as a URI scheme. It is a path in this repository, and
+   *    calling it external would be a false statement about where the target lives.
+   *  - **One balanced PARENTHESIS pair stripped first.** `[x]((https://…))` is
+   *    legal CommonMark and its destination really is `(https://…)` — the inner
+   *    pair is balanced, so the parentheses are part of the destination rather than
+   *    delimiters — so the scan has to see through them to find the scheme.
+   *
+   * An ANGLE pair is NOT stripped here, and that is deliberate: the `<...>`
+   * destination form is unwrapped at its source instead (`walkInlineTree`'s
+   * `link_destination` case and `collectReferenceDefinitions`), because CommonMark
+   * says those brackets are not part of the destination at all. Stripping them a
+   * second time here would be a branch that never fires, and a rule the
+   * implementation cannot reach is not a rule.
+   */
+  private uriSchemeOf(dest: string): string | null {
+    let body = dest.trim()
+    for (let guard = 0; guard < 2; guard++) {
+      if (body.length < 2) break
+      if (body.charCodeAt(0) !== 40 /* ( */ || body.charCodeAt(body.length - 1) !== 41 /* ) */) break
+      body = body.slice(1, -1).trim()
+    }
+    // A network-path reference, `//host/path`, has no scheme and is still a remote
+    // target: the authority is what makes it remote, not the scheme.
+    if (body.length >= 2 && body.charCodeAt(0) === 47 && body.charCodeAt(1) === 47) return "network-path"
+    let colon = -1
+    for (let i = 0; i < body.length; i++) {
+      const c = body.charCodeAt(i)
+      if (c === 58 /* : */) {
+        colon = i
+        break
+      }
+      if (c === 47 /* / */ || c === 63 /* ? */ || c === 35 /* # */) return null
+    }
+    if (colon < 2) return null
+    const first = body.charCodeAt(0)
+    const alpha = (first >= 65 && first <= 90) || (first >= 97 && first <= 122)
+    if (!alpha) return null
+    for (let k = 1; k < colon; k++) {
+      const d = body.charCodeAt(k)
+      const ok =
+        (d >= 65 && d <= 90) ||
+        (d >= 97 && d <= 122) ||
+        (d >= 48 && d <= 57) ||
+        d === 43 /* + */ ||
+        d === 45 /* - */ ||
+        d === 46 /* . */
+      if (!ok) return null
+    }
+    return body.slice(0, colon)
+  }
+
+  /**
+   * What KIND of place a link destination names, as metadata on the `uses` edge.
+   *
+   * Why this exists, measured on the 600-file prefix of this lane's 17,456-file
+   * admitted population (production `parseFile`, `validation/m60/markdown/
+   * abc-before-600.json`): 4,107 of the 4,951 edge targets that bind to no local
+   * declaration carry a URI scheme — 3,996 `https`, 110 `http`, 1 `some` — and a
+   * consumer reading a resolution rate cannot tell them apart from a reference to a
+   * heading that failed to bind. The column therefore overstated this lane's
+   * defects by 82.9% before the split existed.
+   *
+   * The three-way split is the substance, not a detail:
+   *
+   *  - `externalUri` — a remote resource. Outside the corpus by construction, so
+   *    it can never bind to a local declaration and must not be scored as a miss.
+   *  - `repoRelativePath` — 572 targets, a link to a sibling file in the SAME
+   *    repository (`CHANGELOG.md`, `docs/src/contributing.md`). Marking these
+   *    external would be a false statement: the file is in the corpus, the analyzer
+   *    simply has no document-target model. They are named so they are countable as
+   *    what they are — a modelling gap, not an external reference.
+   *  - `bareToken` — 272 targets, dominated by Documenter.jl's `@ref`
+   *    cross-reference placeholder (262 of them). A template directive, not a path.
+   *
+   * What this deliberately does NOT do, because each would be a fabrication or a
+   * contract break:
+   *
+   *  - It does not change the TARGET STRING. The endpoint is the link destination
+   *    as written; a consumer that wants a file target needs a file model, not a
+   *    renamed endpoint.
+   *  - It does not change the TYPE LABEL. `uses` over a URL is the lane's pinned
+   *    contract (`markdown-mutants.ts` mutant MD-L1 relabels these in place, and
+   *    `internal-anchor-links` forbids `uses` over an in-document anchor), so the
+   *    label is untouched and only metadata is added.
+   *  - It does not SUPPRESS the edge. A markdown link to a website is a real use of
+   *    that resource and belongs in the graph; dropping 4,107 edges to make a
+   *    column look better is the opposite of the point.
+   *
+   * Character scanning throughout, no regex, for the reason `anchorSlug` documents:
+   * 0 regex literals is a pinned property of this analyzer and
+   * `script/m12/verify-regex-census.ts` is the gate that decides it.
+   */
+  private linkTargetMetadata(dest: string): Record<string, unknown> {
+    const scheme = this.uriSchemeOf(dest)
+    if (scheme !== null) return { isExternal: true, externalScheme: scheme, targetKind: "externalUri" }
+    const body = dest.trim()
+    if (body.indexOf("/") >= 0 || body.indexOf(".") >= 0) return { isExternal: false, targetKind: "repoRelativePath" }
+    return { isExternal: false, targetKind: "bareToken" }
   }
 
   /**
