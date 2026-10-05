@@ -23,6 +23,8 @@ import { execFileSync } from "node:child_process"
 import path from "node:path"
 import { writeSealed } from "../lib/evidence.ts"
 import { parseSealedRecord } from "../lib/evidence.ts"
+import { projectLaneLedger } from "../m61/ledger_gate_wiring.ts"
+import type { ProjectableLedger } from "../m61/ledger_projection.ts"
 
 type Issue = {
   code: string
@@ -43,6 +45,8 @@ type Issue = {
     negativeCases?: number
     mutantsCaught?: number
     mutantsTotal?: number
+    /** §8.3: a non-verified entry records WHY. Required for known-gap/blocked. */
+    blockedReason?: string
   }
 }
 type Ledger = {
@@ -68,9 +72,13 @@ const statusTrackerPath = path.join(ROOT, "docs/IDE-PROGRAM-STATUS.md")
 let checks = 0
 let passed = 0
 let negatives = 0
+/** Every check's label and outcome, kept so the record can NAME what is red
+ *  (§8.3: a non-green run states its reason). */
+const checkLog: Array<[string, boolean]> = []
 
 function check(label: string, condition: boolean, detail = ""): void {
   checks++
+  checkLog.push([label, condition])
   if (condition) passed++
   else console.log(`  FAIL: ${label}${detail ? ` — ${detail}` : ""}`)
 }
@@ -93,6 +101,18 @@ function isClosable(issue: Issue): boolean {
     typeof e.mutantsCaught === "number" &&
     e.mutantsCaught > 0 &&
     e.mutantsTotal === e.mutantsCaught
+  // TWO BARS, TWO STATUSES. A `known-gap` entry exists BECAUSE the record
+  // failed; demanding realFailed === 0 of one makes the honest state
+  // structurally unrecordable, pushing a lane to lie (`verified` over a red
+  // record) or to omit the reason. `verified` keeps the full bar (green run +
+  // can-fail proof); `known-gap`/`blocked` must carry the REASON they are
+  // non-verified (contract §8.3). The m24/m25 fix, applied here for the same
+  // reason: the ledger projection made the honest states visible and this rule
+  // could not record them.
+  if (issue.status !== "verified") {
+    const reason = typeof e.blockedReason === "string" ? e.blockedReason.trim() : ""
+    return Boolean(e.status === issue.status && e.verifierCommand && e.evidenceFile && e.passed > 0 && reason.length > 0)
+  }
   return Boolean(
     e.status === issue.status &&
       e.verifierCommand &&
@@ -501,10 +521,117 @@ function main(): void {
   // counts every check that actually ran (the M24-inherited undercount bug,
   // found in the M28 extreme review and fixed in all five gates).
   const finalFailed2 = checks - passed
-  const finalResult = { ...result, checks, passed, failed: finalFailed2, status: finalFailed2 === 0 && currentWorkingTreeRelevantChanges.length === 0 ? "verified" : "known-gap" }
+  // §8.3: a non-green run records WHY, in the record itself. The ledger's G1
+  // entry is projected from THIS field.
+  const failingChecks = checkLog.filter(([, ok]) => !ok).map(([label]) => label)
+  const statusReason =
+    finalFailed2 === 0 && currentWorkingTreeRelevantChanges.length === 0
+      ? undefined
+      : [
+          failingChecks.length > 0 ? `${failingChecks.length} check(s) failed: ${failingChecks.slice(0, 4).join("; ")}${failingChecks.length > 4 ? " …" : ""}` : "no check failed",
+          currentWorkingTreeRelevantChanges.length > 0 ? `relevant uncommitted files at measure time: ${currentWorkingTreeRelevantChanges.slice(0, 6).join(", ")}` : "the relevant tree was clean at measure time",
+        ].join(" — ")
+  const finalResult = {
+    ...result,
+    checks,
+    passed,
+    failed: finalFailed2,
+    status: finalFailed2 === 0 && currentWorkingTreeRelevantChanges.length === 0 ? "verified" : "known-gap",
+    ...(statusReason !== undefined ? { blockedReason: statusReason } : {}),
+  }
   writeSealed(evidencePath, finalResult)
-  console.log(`G1: ${finalResult.status.toUpperCase()} (${passed}/${checks} passed, ${negatives} negative)`)
-  process.exit(finalFailed2 === 0 ? 0 : 1)
+
+  // --- The ledger is a PROJECTION of its records, written here ---------------
+  // At integration/lsp-truth HEAD 462f620be this manifest read `G1: verified`
+  // over a `known-gap` G1.json. The manifest was hand-maintained: this gate
+  // validated its shape and never compared an entry's status to the record it
+  // names. The record is the authority (contract §8.4).
+  const readM29Record = (file: string): Record<string, unknown> | null => {
+    const abs = path.join(ROOT, "validation/m29/results", file)
+    if (!existsSync(abs)) return null
+    try {
+      // The SAME trusted path the cross-check above uses; a projection reading
+      // by a weaker path would heal toward a tampered record's status.
+      return parseSealedRecord(abs) as Record<string, unknown>
+    } catch {
+      return null
+    }
+  }
+  const projectionFindings = projectLaneLedger({
+    ledgerPath,
+    resultsDir: path.join(ROOT, "validation/m29/results"),
+    readRecord: readM29Record,
+    readLedgerBack: () => {
+      try {
+        return parseSealedRecord(ledgerPath) as unknown as ProjectableLedger
+      } catch {
+        return undefined
+      }
+    },
+    ledger: ledger as unknown as ProjectableLedger,
+    g1Status: finalResult.status,
+    g1Record: finalResult as unknown as Record<string, unknown>,
+    writeLedger: (l) => writeSealed(ledgerPath, l as Record<string, unknown>),
+    onFinding: (detail) => check(`G1: the projected ledger agrees with its records`, false, detail),
+    onPass: (detail) => check(detail, true),
+    onHealed: (message) => console.log(`      ${message}`),
+  })
+
+  // The ledger is RE-VALIDATED from DISK, after the projection. Validating the
+// in-memory snapshot taken at the top of this gate validates a ledger the
+// projection has since rewritten, so the verdict described a state that no
+// longer existed - a validator that judges a stale copy is not auditing the
+// artifact. (Found live on m42: four honest `verified` entries read
+// `hollow-verified` from the pre-projection snapshot.)
+{
+  const readBack = parseSealedRecord(ledgerPath) as unknown as typeof ledger
+  const postErrors = validateLedger(readBack, plan, contract)
+  check(
+    "G1: the ledger VALIDATES WHOLE as it now stands on disk (post-projection, not the pre-projection snapshot)",
+    postErrors.length === 0,
+    postErrors.join(","),
+  )
+  check(
+    "G1: every non-planned entry is closable on the projected ledger (no honest entry reads hollow)",
+    (readBack.issues ?? []).filter((i) => i.status !== "planned").every((i) => isClosable(i as unknown as Issue)),
+    (readBack.issues ?? []).filter((i) => i.status !== "planned" && !isClosable(i as unknown as Issue)).map((i) => `${i.code}=${i.status}`).join(","),
+  )
+}
+// The record is written LAST, from the counters that now include the
+  // projection's own checks, and with this run's G1 verdict stamped into it so
+  // the ledger's G1 entry (written by the projection above) states the same
+  // verdict the record states. Nothing checks anything after this point
+  // (M61 G8: a check after a gate's last evidence write means the record can
+  // disagree with its own run).
+  const finalFailed3 = checks - passed
+  const finalFailedChecks = checkLog.filter(([, ok]) => !ok).map(([label]) => label)
+  const finalReason =
+    finalFailed3 === 0 && currentWorkingTreeRelevantChanges.length === 0
+      ? undefined
+      : [
+          finalFailedChecks.length > 0
+            ? `${finalFailedChecks.length} check(s) failed: ${finalFailedChecks.slice(0, 4).join("; ")}${finalFailedChecks.length > 4 ? " ..." : ""}`
+            : "no check failed",
+          currentWorkingTreeRelevantChanges.length > 0
+            ? `relevant uncommitted files at measure time: ${currentWorkingTreeRelevantChanges.slice(0, 6).join(", ")}`
+            : "the relevant tree was clean at measure time",
+          projectionFindings.length > 0 ? `${projectionFindings.length} ledger-projection finding(s)` : "",
+        ]
+          .filter(Boolean)
+          .join(" - ")
+  const finalRecord = {
+    ...finalResult,
+    checks,
+    passed,
+    failed: finalFailed3,
+    status: finalFailed3 === 0 && currentWorkingTreeRelevantChanges.length === 0 ? "verified" : "known-gap",
+    ...(finalReason !== undefined ? { blockedReason: finalReason } : {}),
+  }
+  writeSealed(evidencePath, finalRecord as unknown as Record<string, unknown>)
+
+  console.log(`${finalRecord.status.toUpperCase()} (${passed}/${checks} passed, ${negatives} negative)`)
+  process.exit(finalFailed3 === 0 ? 0 : 1)
+
 }
 
 main()

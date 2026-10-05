@@ -365,7 +365,24 @@ let currentCommit = "unknown"
 try {
   currentCommit = execFileSync("git", ["rev-parse", "HEAD"], { cwd: ROOT, encoding: "utf8" }).trim()
 } catch {}
-const sourceFingerprint = execFileSync("sha256sum", [COMPONENT], { cwd: ROOT, encoding: "utf8" }).trim().split(/\s+/)[0]
+// `sha256sum` is GNU coreutils and is absent on macOS, where the equivalent is
+// `shasum -a 256`. Calling it unconditionally made this verifier crash AFTER it
+// had already printed its verdict, so a passing run still ended in a stack
+// trace. Prefer whichever exists.
+const sourceFingerprint = (() => {
+  const opts = { cwd: ROOT, encoding: "utf8" as const }
+  for (const [bin, args] of [
+    ["sha256sum", [COMPONENT]],
+    ["shasum", ["-a", "256", COMPONENT]],
+  ] as const) {
+    try {
+      return execFileSync(bin, args as unknown as string[], opts).trim().split(/\s+/)[0]
+    } catch {
+      /* try the next one */
+    }
+  }
+  throw new Error("no sha256 tool available (need sha256sum or shasum)")
+})()
 
 const result = {
   issue: "M30.Q1",
@@ -393,5 +410,9 @@ writeFileSync(EVIDENCE_PATH, JSON.stringify(result, null, 2) + "\n")
 console.log(`  evidence: ${path.relative(ROOT, EVIDENCE_PATH)}`)
 
 function SemanticEngineLocalLabel(): string {
-  return "local-word-vectors"
+  // Must track `LOCAL_MODEL_LABEL` in src/brain/semantic/engine.ts. It was
+  // "local-word-vectors" and the engine bumped to "local-word-vectors-v3" during
+  // branch consolidation, so this gate asserted a label nothing produces and
+  // failed 3 checks against a correct implementation.
+  return "local-word-vectors-v3"
 }

@@ -34,6 +34,11 @@ import { tmpdir } from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { writeSealed } from "../lib/evidence.ts"
+// The fixture this gate indexes. Written BY the run (see indexFixture) — see the
+// note there for why that was not already true.
+import { writeU5Fixture } from "./u5-fixture.ts"
+// M62 lane-7: project identity has ONE owner (src/util/project-id.ts).
+import { getProjectId } from "../../src/util/project-id.ts"
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..")
 const EVIDENCE_DIR = path.join(ROOT, "validation/m44/results")
@@ -103,10 +108,21 @@ function makeDom(): { create: (t: string) => El; root: () => El; el: El } {
 // --- R0: the REAL indexer writes the seed the gate asserts against ---------------
 const U5_WS = path.join(ROOT, ".tools/m44-u5-fixture")
 async function indexFixture(): Promise<{ dataDir: string; projectId: string }> {
+  // M62 lane-7 finding (2026-10-05): the fixture was never written. This gate
+  // indexed `.tools/m44-u5-fixture` and expected it to be on disk, but nothing
+  // called `writeU5Fixture()` — the sibling `verify-usages-fallback.ts` does call
+  // `writeU6Fixture()`, so the two gates drifted apart and this one died at its
+  // first step with `not a directory`. It had been failing since the fixture
+  // module was extracted, and its sealed record still said `verified`, because a
+  // gate that cannot start cannot report a failure. Writing the fixture here
+  // makes the gate self-contained: the source it asserts against is now produced
+  // by the run that asserts, not by whoever happened to run it last.
+  writeU5Fixture()
   const dataDir = mkdtempSync(path.join(tmpdir(), "m44u5-data-"))
   process.env.BB_DATA_DIR = dataDir
-  const canonical = path.resolve(U5_WS)
-  const projectId = createHash("sha1").update(canonical).digest("hex").substring(0, 40)
+  // M62 lane-7: project identity has ONE owner. See indexFixture() for why a
+  // second derivation here is a defect rather than a style choice.
+  const projectId = getProjectId(U5_WS)
   execFileSync(BB, ["index", U5_WS, "--no-setup"], {
     cwd: ROOT,
     encoding: "utf8",
@@ -121,8 +137,9 @@ async function indexFixture(): Promise<{ dataDir: string; projectId: string }> {
 async function makeSeedFixture(): Promise<{ raw: any; projectId: string; dataDir: string; cleanup: () => void }> {
   const ws = mkdtempSync(path.join(tmpdir(), "m44u5-ws-"))
   const dataDir = mkdtempSync(path.join(tmpdir(), "m44u5-data2-"))
-  const canonical = path.resolve(ws)
-  const projectId = createHash("sha1").update(canonical).digest("hex").substring(0, 40)
+  // M62 lane-7: project identity has ONE owner. See indexFixture() for why a
+  // second derivation here is a defect rather than a style choice.
+  const projectId = getProjectId(ws)
   mkdirSync(path.join(dataDir, "projects", projectId), { recursive: true })
   process.env.BB_DATA_DIR = dataDir
   const { BrainDatabase } = await import(path.join(ROOT, "src/brain/database.ts"))

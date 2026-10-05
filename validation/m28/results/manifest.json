@@ -3,7 +3,7 @@
   "milestone": "M28",
   "githubMilestone": 39,
   "title": "M28: The Union (MCP + agent)",
-  "status": "closed",
+  "status": "open",
   "authority": "docs/m28/M28-MASTER-PLAN.md",
   "governingContract": "docs/IDE-HONESTY-CONTRACT.md",
   "evidencePolicy": {
@@ -17,7 +17,7 @@
       "code": "G1",
       "githubIssue": 623,
       "tool": "governance",
-      "status": "verified",
+      "status": "known-gap",
       "scope": "Ledger, governance map, closure gate with mutation-proof rules, and the version-ladder audit: the M27 completion bar re-verified inside this gate before any M28 issue may close.",
       "acceptanceCriteria": [
         "Gate rejects planned-closure, missing evidence, stale-commit, mutant-survival, and forged evidence — each rejection proven by mutation",
@@ -29,14 +29,14 @@
         "Evidence persisted at validation/m28/results/G1.json with commit stamp"
       ],
       "evidence": {
-        "status": "verified",
-        "currentCommit": "see G1.json",
+        "status": "known-gap",
+        "currentCommit": "2cd1896802d2be3eca5d7866e2e5a9b7d339125d",
         "verifierCommand": "npx tsx script/m28/verify-governance.ts",
         "evidenceFile": "G1.json",
         "passed": 70,
-        "failed": 0,
+        "failed": 4,
         "realFailed": 0,
-        "negativeCases": 10
+        "negativeCases": 14
       }
     },
     {
@@ -56,10 +56,10 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "see T1.json",
+        "currentCommit": "d5c265b3a9a185d0927d2167e0cc562f5092d6e9",
         "verifierCommand": "npx tsx script/m28/verify-mcp-tools.ts",
         "evidenceFile": "T1.json",
-        "passed": 25,
+        "passed": 24,
         "failed": 0,
         "realFailed": 0,
         "mutantsCaught": 5,
@@ -85,10 +85,11 @@
         "status": "verified",
         "verifierCommand": "npx tsx script/m28/verify-union.ts",
         "evidenceFile": "U1.json",
-        "passed": 16,
+        "passed": 24,
         "failed": 0,
         "mutantsCaught": 4,
-        "mutantsTotal": 4
+        "mutantsTotal": 4,
+        "currentCommit": "d5c265b3a9a185d0927d2167e0cc562f5092d6e9"
       }
     },
     {
@@ -120,7 +121,7 @@
       "code": "A2",
       "githubIssue": 627,
       "tool": "annotations-in-ide",
-      "status": "verified",
+      "status": "known-gap",
       "scope": "Agent annotations surface where the human works: an author-labeled hover section and a graph-webview annotation badge — an agent note never reads as index-derived fact (D-6); in-editor verification via the E5 pattern.",
       "acceptanceCriteria": [
         "Annotation provenance visible in both surfaces (agent note never reads as index fact)",
@@ -132,14 +133,15 @@
         "Evidence persisted at validation/m28/results/A2.json with commit stamp"
       ],
       "evidence": {
-        "status": "verified",
+        "status": "known-gap",
         "verifierCommand": "npx tsx script/m28/verify-annotation-ui.ts",
         "evidenceFile": "A2.json",
-        "passed": 23,
-        "failed": 0,
+        "passed": 12,
+        "failed": 1,
         "mutantsCaught": 4,
         "mutantsTotal": 4,
-        "inEditorLeg": "headless Neovim (N1 pattern) asserted author-labeled hover + bb/graph payload"
+        "inEditorLeg": "headless Neovim (N1 pattern) asserted author-labeled hover + bb/graph payload",
+        "currentCommit": "a0ed9eade7008de7ce93a312f6b0bd7e182a43a9"
       }
     },
     {
@@ -164,14 +166,15 @@
         "passed": 13,
         "failed": 0,
         "mutantsCaught": 2,
-        "mutantsTotal": 2
+        "mutantsTotal": 2,
+        "currentCommit": "d5c265b3a9a185d0927d2167e0cc562f5092d6e9"
       }
     },
     {
       "code": "X1",
       "githubIssue": 629,
       "tool": "closure-gate",
-      "status": "verified",
+      "status": "known-gap",
       "scope": "Closure gate: full-suite audit at HEAD with per-mutant named records, v4 completion-bar audit with negative probes (differential equality, provenance enforcement, no silent legs, M27 bar re-audit), byte-identical regeneration check.",
       "acceptanceCriteria": [
         "100% of suite legs green-or-blocked-with-reason at HEAD",
@@ -183,18 +186,20 @@
         "Evidence persisted at validation/m28/results/X1.json with commit stamp"
       ],
       "evidence": {
-        "status": "verified",
+        "status": "known-gap",
         "verifierCommand": "npx tsx script/m28/verify-closure.ts",
         "evidenceFile": "X1.json",
-        "passed": 31,
-        "failed": 0,
-        "negativeCases": 4
+        "passed": 22,
+        "failed": 9,
+        "negativeCases": 4,
+        "currentCommit": "a0ed9eade7008de7ce93a312f6b0bd7e182a43a9"
       }
     }
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-14T23:42:48.425Z",
-    "contentSha256": "4bced7c24df7ee9ba4aeb57ab062de5dc83f18ec3119e4ef8eb2d8c313f29f0f"
-  }
+    "sealedAt": "2026-10-05T15:35:47.752Z",
+    "contentSha256": "76438cec834bf1e76498b05004e5da5035b09219f5c0c84ecbc8b27e129099db"
+  },
+  "updatedAt": "2026-10-05T15:35:47.752Z"
 }

@@ -2,31 +2,48 @@
   "issue": "491",
   "code": "L2",
   "status": "verified",
-  "currentCommit": "a871d533a736e8e38cb826d80d986d3cc84022d1",
-  "sourceFingerprint": "29cac9a06d82b77da5ac9e5e59e67ca3b862970e73fbcbeb14ff79bb8a612b05",
+  "currentCommit": "5c3191642192207f018c2438a39cea6980007f21",
+  "sourceFingerprint": "fa3f897818688bdad2048ecc32334d633bd9f3999db9f13f1e61db8f31b7fe69",
   "verifierCommand": "npx tsx script/m24/verify-hover.ts",
   "evidenceFile": "L2.json",
-  "generatedAt": "2026-09-20T02:43:16.238Z",
-  "passed": 21,
+  "generatedAt": "2026-10-05T17:54:06.013Z",
+  "passed": 58,
   "failed": 0,
   "failures": [],
-  "negativeCases": 0,
+  "negativeCases": 14,
   "verdict": {
     "realComponentFailures": 0,
-    "mutantsCaught": 4,
-    "mutantsTotal": 4,
+    "mutantsCaught": 6,
+    "mutantsTotal": 6,
+    "mutantsByComponent": {
+      "hover": {
+        "caught": 4,
+        "total": 4,
+        "anchorDrift": 0
+      },
+      "rich_hover": {
+        "caught": 2,
+        "total": 2,
+        "anchorDrift": 0
+      }
+    },
     "ok": true,
+    "anchorDrift": 0,
+    "anchorDriftNote": "A mutant whose anchor no longer exists, or whose module fails to load, no longer tests what this gate names. It is reported as NOT-CAUGHT and forces known-gap — §8.3: silence is guilt, and a skip is not a pass.",
     "note": "`failed` counts real functional failures only; mutant runs are reported separately via the verdict block."
   },
   "limitations": [
     "index-sourced only; no compiler-backed types (complement stance)",
     "evidence tiers describe relationship data quality, not symbol truth",
     "fixture-backed double for the DB layer; live brain.db path covered by upstream freshness verifiers and the V1 harness",
-    "latency measured on this machine only; cross-platform budgets are M25 scope"
+    "latency measured on this machine only; cross-platform budgets are M25 scope",
+    "the unresolvable-row defence is TWO layers deep, and this is measured, not assumed: rich_hover.ts's `locationOf` catches PositionError, and navigation.ts's `edgeLocationDetailed` also catches it and returns a declared absence. Removing EITHER guard alone changes nothing observable (all four combinations were run against the real collector over the real unresolvable row: both present = no throw; each alone removed = no throw; both removed = PositionError). The resilience mutant therefore plants BOTH edits, because the defect it names — 'one unresolvable stored row kills the hover' — exists only when both guards are gone. A single-site mutant here would report SURVIVED while measuring redundancy, not coverage",
+    "G8's stimulus is a fixture double, not a real index. The 11.5%-of-symbols measurement in the header was taken on a real index by the lane that introduced the guard; this gate re-establishes the stimulus on a fixture and cannot re-measure the rate. The control asserts the stimulus is genuinely refused by the position owner, so G8 is not vacuous, but the rate itself is not re-measured here",
+    "the anchor-drift gate covers anchors that are ABSENT, empty, no-op, or unresolvable, and RECORDS (without failing) anchors that occur more than once. It cannot see the failure this file's resilience mutant actually had — an anchor that still matches, planted into a guard that another lane had superseded upstream. That failure is only observable by an assertion, which is why it is recorded as a measured fact in the mutant's own comment rather than claimed as gated"
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-20T02:43:16.239Z",
-    "contentSha256": "1b0155aa0fb97deb6d76afe8cda7a74d22344c687ac9e6266eb5af080e950d66"
+    "sealedAt": "2026-10-05T17:54:06.013Z",
+    "contentSha256": "8ce369ceb484bb2189d4a546e989b53c0e879bfbda01a4bcce7581a0bacfba48"
   }
 }

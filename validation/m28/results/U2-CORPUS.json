@@ -1,0 +1,4807 @@
+{
+  "issue": "M28.U2-CORPUS",
+  "code": "U2-CORPUS",
+  "milestone": "M28",
+  "status": "measured",
+  "whatWasMeasured": "src/lsp/evidence_tier.ts (the imported owner) vs the PRE-FIX inline derivation bb_graph's tierFor carried (transcribed verbatim in this script, and byte-identical to the body script/m28/verify-surface-parity.ts plants as mutant M1)",
+  "shippedDoorNowDelegates": true,
+  "dataDir": "$HOME/.bb",
+  "currentCommit": "a0ed9eade7008de7ce93a312f6b0bd7e182a43a9",
+  "verifierCommand": "npx tsx script/m28/measure-surface-divergence.ts",
+  "evidenceFile": "U2-CORPUS.json",
+  "generatedAt": "2026-10-04T23:52:43.378Z",
+  "counts": {
+    "indexesFound": 419,
+    "indexesMeasured": 222,
+    "storedRelationshipRowsStreamed": 1220000,
+    "rowsWhereTheTwoRulesCanDisagree": 491563,
+    "disagreements": 490540,
+    "shareOfAllStoredRows": 0.402082,
+    "shareOfDecidableRows": 0.997919
+  },
+  "perProject": [
+    {
+      "projectId": "024f0f183a1e84f1aa35f0863eed525bc2d24f98",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "029e5b72cc1f09ddd070d21e9876dd77d29b1946",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "02ec0e7d0fe2819912e2a80dc2690cd0528510a9",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 2,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 2,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "03d65426ddde5a2e7ec16e17a238047bb9c0a3f1",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:3"
+      ],
+      "storedRelationshipRows": 15,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 15,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "04844dacd824a27f9326958b47f47e2e70183b5b",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "0525c1dcfcfacf502388249295aa44a50c631b53",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 14,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 14,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "05b33e101b2206965026deef05cda5d5f3f7d6c3",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "05bde81bdfe76d5eac3d42086da6127210a50989",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:300"
+      ],
+      "storedRelationshipRows": 1500,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 1500,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "06322da9a1b81db460ab7c9f7de8ba30ef52be44",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 1,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 1,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "064be526733c31e95c0ac2beb42d209af9bab8e6",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:183"
+      ],
+      "storedRelationshipRows": 52597,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 52171,
+      "rowsWhereTheTwoRulesCanDisagree": 426,
+      "rowsWhereTheyDoDisagree": 426,
+      "shareOfAllStoredRows": 0.008099,
+      "shareOfDecidableRows": 1,
+      "byKind": [
+        {
+          "kind": "contains",
+          "rows": 426,
+          "example": "contains conf=1 stored=null: pre-fix copy=inferred owner=structural"
+        }
+      ]
+    },
+    {
+      "projectId": "07a7e87955b8000c6d7f3e3377d0cb1e0b486dea",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:2"
+      ],
+      "storedRelationshipRows": 13,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 13,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "080c8251c3254a507bd5d4d7c26481ab20b988d0",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "084745ef21f6dc6a03be5be65967ded30dc74d6b",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 14,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 14,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "08e3dc3556a53e092714dbeed28ab27d3c74495d",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:2"
+      ],
+      "storedRelationshipRows": 34,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 34,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "090f84dcde598f3cc1484120b57fbbc339df95fb",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "yaml:1"
+      ],
+      "storedRelationshipRows": 6,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 3,
+      "rowsWhereTheTwoRulesCanDisagree": 3,
+      "rowsWhereTheyDoDisagree": 3,
+      "shareOfAllStoredRows": 0.5,
+      "shareOfDecidableRows": 1,
+      "byKind": [
+        {
+          "kind": "contains",
+          "rows": 3,
+          "example": "contains conf=1 stored=null: pre-fix copy=inferred owner=structural"
+        }
+      ]
+    },
+    {
+      "projectId": "09bbd8e06cb9ef87ff29153d62c1d975a72dfd8b",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 14,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 14,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "0a5203fc2ac3b448a23c20b99e7e2f090ca6465f",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "0b0be681401abdf14e8b825b366391be61127314",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "0ba47f1824c4599261785438894337c853bb50f7",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "yaml:1"
+      ],
+      "storedRelationshipRows": 6,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 3,
+      "rowsWhereTheTwoRulesCanDisagree": 3,
+      "rowsWhereTheyDoDisagree": 3,
+      "shareOfAllStoredRows": 0.5,
+      "shareOfDecidableRows": 1,
+      "byKind": [
+        {
+          "kind": "contains",
+          "rows": 3,
+          "example": "contains conf=1 stored=null: pre-fix copy=inferred owner=structural"
+        }
+      ]
+    },
+    {
+      "projectId": "0bf9bf87b25b82568595eca92dace5d36f302d8a",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "0bfa3c36d3abe067aa28911dd087f7b99c1f6be9",
+      "status": "measured",
+      "languages": 2,
+      "languageBreakdown": [
+        "typescript:3",
+        "markdown:1"
+      ],
+      "storedRelationshipRows": 5,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 5,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "0c48a6148bea319da9f0d5b7196caa4c9be16967",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 19,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 19,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "0ce9eba5ae1ffb1a6b29dd7db2b18c19f6602043",
+      "status": "measured",
+      "languages": 2,
+      "languageBreakdown": [
+        "bash:1",
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 11,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 11,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "0d892b40cb12684860cc4d64c29d5f1af50fd47a",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "ruby:1"
+      ],
+      "storedRelationshipRows": 1,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 1,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "0d9508bb6215a01611552173cb8f2baaf5133a6a",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "0dd9d1288ce0d846cc003eb9d6c2b8248ce39fc3",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "0e1e97db6c55ca48d11a5a73fe174e1819a406f6",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:2"
+      ],
+      "storedRelationshipRows": 34,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 34,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "0e6a40f579acc29da47d6f81814681d73670212a",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 2,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 2,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "0eab7586e5a12ca6048abd28a6e9f3845577c427",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 1,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 1,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "0f1867b6aacf4bb0152bb717f110330356ae5011",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 2,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 2,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "0f9cbdc51465211f72cae4d84d29d2b1d0e01c87",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 19,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 19,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "0fba858616b5a2a7928d4ba4fa34beae9eac1d26",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "0fd152f21e039b422dbfab8e5d793d631f06479b",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "1000e3eb6745916989e66b8eebaa2a1c9b7acc82",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "115581a95920364bb466d30b1c0f3bb6b8a304e2",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:2"
+      ],
+      "storedRelationshipRows": 3,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 3,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "12318514ea84118f1dc8d4ad806bf6e364b9b1f3",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "13ff9c0642c514675e2f8d4b287cb1c54290ccb0",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "14346decb3de7330975045b711e40b10ef3571fa",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "python:1"
+      ],
+      "storedRelationshipRows": 14,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 14,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "15335b9f0af05ba6b98d2bf844018a86fffe71fa",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "java:3"
+      ],
+      "storedRelationshipRows": 20,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 20,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "1644b8489b755e88c91cb012d85f6edf9259bb07",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "16d123e0aa8c8e7d2460716911b3e53ccb43e05e",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 14,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 14,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "17264a3987d4648567909d57f24a6bf94b21db1a",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "17960d02f5e2ab661d5057b1f5a622566849e9d0",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "180f7571bc765187e38a72a4599e72ed6160007c",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "19167c1781dd7e58081430142e4ae6ae9095055b",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "19f31191525f602fdd5489a1a68feacfe02c7e66",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "1a305abf01b9cd5fafaf12ea2b96d7e3fe3be22c",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "1a7edc7a7e9fdb8a6906b1a864c0bbbd2e2d8fde",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "1b12f4560160d4c354339cdcb6582aeff48615f6",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "1bdfd94c9a2368366f80c120f9cc3c789badf7e5",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "1bf79ab94a65a7c98e0a2389e99cb1e41aca2118",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:2"
+      ],
+      "storedRelationshipRows": 8,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 7,
+      "rowsWhereTheTwoRulesCanDisagree": 1,
+      "rowsWhereTheyDoDisagree": 1,
+      "shareOfAllStoredRows": 0.125,
+      "shareOfDecidableRows": 1,
+      "byKind": [
+        {
+          "kind": "contains",
+          "rows": 1,
+          "example": "contains conf=1 stored=null: pre-fix copy=inferred owner=structural"
+        }
+      ]
+    },
+    {
+      "projectId": "1d448a91152420196176fafab895b3c1f0f80829",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "1dacc220044a7f5f9be40597f186af28b5788beb",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 2,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 2,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "1e20d8c7c4cec4b092eeb46ed6862ea693888b4c",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "1e6820ff4822d090d8d92f094a88a79cb5d5a448",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "1e939c9a3fdb557b8b3d45136d09607859a3bbd1",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:2"
+      ],
+      "storedRelationshipRows": 2,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 2,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "1ea1110586c9679bbae32d7ef89a1cbab5aba8e2",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "1efaa8867c55f1379697ba7913092ca97a8abbac",
+      "status": "measured",
+      "languages": 10,
+      "languageBreakdown": [
+        "bash:1",
+        "clojure:1",
+        "elixir:1",
+        "go:1",
+        "java:1",
+        "kotlin:1",
+        "python:1",
+        "ruby:1",
+        "rust:1",
+        "scala:1"
+      ],
+      "storedRelationshipRows": 251,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 247,
+      "rowsWhereTheTwoRulesCanDisagree": 4,
+      "rowsWhereTheyDoDisagree": 4,
+      "shareOfAllStoredRows": 0.015936,
+      "shareOfDecidableRows": 1,
+      "byKind": [
+        {
+          "kind": "contains",
+          "rows": 2,
+          "example": "contains conf=1 stored=null: pre-fix copy=inferred owner=structural"
+        },
+        {
+          "kind": "references",
+          "rows": 2,
+          "example": "references conf=0.9 stored=null: pre-fix copy=inferred owner=usage_contextual"
+        }
+      ]
+    },
+    {
+      "projectId": "1fa80876a26b8281e34bc9b48f397ff25ff72e06",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 14,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 14,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "1fd574b2dbd11a0621b8155b43aedafbdafab003",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "2168c8e35d8a8e13efa7ed202493868420e28ca8",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:2"
+      ],
+      "storedRelationshipRows": 2,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 2,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "216a21e50fb619f15b155324307bd695674c221b",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:2"
+      ],
+      "storedRelationshipRows": 10,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 10,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "21e7c2e27b4b4c1b9914b0385070babfd37b64db",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 5,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 5,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "22fa8520c47b08cd1df7fe5e9b93925b51f57907",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:2"
+      ],
+      "storedRelationshipRows": 2,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 2,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "2378048e63795a4a6a97680fbec02d29d39644e4",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "23d8cb0c9113ef17b3b70ac7c8e7f037b86d5106",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 2,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 2,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "2405639367d9302a9ff8a31b426ea539d7ada70c",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "240e51fff0e6feb312591c6012cfe9dd3c073736",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "24aca43d3d86c69c6547226bea8fa13b16f486a1",
+      "status": "measured",
+      "languages": 2,
+      "languageBreakdown": [
+        "go:1",
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 5,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 5,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "25150d0b310fa79f7f6f114f0bd78dad34ded751",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 2,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 2,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "255f8ffa5baed8068799c0e8508596b1899ad26f",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "2569479dd9ed9f02d494bcf007710339bfe87492",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "268aef12e4240afd29945dbe4a2298139117a9dc",
+      "status": "measured",
+      "languages": 2,
+      "languageBreakdown": [
+        "typescript:3",
+        "markdown:1"
+      ],
+      "storedRelationshipRows": 5,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 5,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "281df6ed1c5df2d6a4841106e9b705497a10deaa",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:3"
+      ],
+      "storedRelationshipRows": 3,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 3,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "285ae8f39d8bbd3840b3ccfef0c5ddc1eb8d808e",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 2,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 2,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "2886785d8167df1c40b17eebfc5810581e851ce9",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "2a2bd4471a73ec44467c352b53f8f91d0f914763",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "2ac53c910e00bac69f5faeae093116d8b6fbb24c",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "2b416ddaa02ca0ac123422a441f0dd003ce7f02c",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "2c142b5a7389665103155342281b32fe20d209a5",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "2cba0c15eb3386d5457129924968c1399b754cb9",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:48"
+      ],
+      "storedRelationshipRows": 23,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 23,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "2ce304d75220ea2d85c51bdc761f92a1f020fa26",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 1,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 1,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "2cff7600e843a1d2a7d8146fc907112d97544914",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 2,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 2,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "2e928979408d019b467f70ef63fc5e1d1f252709",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:48"
+      ],
+      "storedRelationshipRows": 23,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 23,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "2e96c0663b6509aedbb56b29351f9d8da48182fa",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "2f340ff653e2611cc36500ffa8cdc4e1f51fbb3c",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 2,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 2,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "301dd66ce14941d320d08d36c008b462dd72b3ed",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "305bb202663bb422c4c3e0a096c7c7c8adb519f2",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "java:2"
+      ],
+      "storedRelationshipRows": 12,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 12,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "307cc0c8eeedc7e4719f00d441bfb8942d1f549a",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "30b6abfa6fe6db33862ef4cd7f0e829c09e6ef2d",
+      "status": "measured",
+      "languages": 2,
+      "languageBreakdown": [
+        "typescript:61",
+        "python:1"
+      ],
+      "storedRelationshipRows": 61,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 61,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "3148912f5d960c0b75fa45f9afc64a70bbac385f",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:3"
+      ],
+      "storedRelationshipRows": 3,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 3,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "3176dd560f18b9a19046b4cea566deaa38bf1256",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "3189647af0057a3fbdfa954be95a1a18f1b22695",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 2,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 2,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "32103d369b49e51ba0951f433fc165b1d04fe88d",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 19,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 19,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "335df098d896a57d89af157eaf83904dbb55edd0",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 2,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 2,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "33748026e31114166b227eb1b35b084ed73c4579",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:2"
+      ],
+      "storedRelationshipRows": 10,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 10,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "3377e3aade895ed014bffd61335dec00ebb47c9a",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 14,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 14,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "33d8841937101ea46a2b36ab367ff1e270ce60ac",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "33ea29946e73eec6ae87a8d399185ee6859e0991",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 14,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 14,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "34053db63a60c4563a9c26c892cfd50e7793f9d4",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "345d2ca99a85188b8b4eeb7e8a254c310dfc3385",
+      "status": "measured",
+      "languages": 2,
+      "languageBreakdown": [
+        "typescript:61",
+        "python:1"
+      ],
+      "storedRelationshipRows": 61,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 61,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "347d45c2be484dbd73a8f32242e23ccf37dccfdd",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "35044892464192c32f97f2d7b58f990357e5b875",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "35342c96b029ec933b96db716c65b21284c81cf6",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "355e3fb1ef3bdf77c17b8298eba816606f11c606",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 1,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 1,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "3565231df88c2def68e246cc1fa3fcafa37139ae",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:2"
+      ],
+      "storedRelationshipRows": 10,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 10,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "35a2a6a90e8cd9413fee8714cb888acbbe5d20d7",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "365c9c6c737503602fa57caa2442d1e3447de7e3",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "367af5a094b4d6d7fa5f3948c25e18f2a943fa18",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "37656f057e180a0f352ab8707bc6ef113399c835",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:2"
+      ],
+      "storedRelationshipRows": 3,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 3,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "37f505999675cf1526d1a8b68440dcd2393a2e43",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:48"
+      ],
+      "storedRelationshipRows": 23,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 23,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "380afb259faa8c857af5d272b3712ca6a35428b9",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "3996ba6603e81cb8e2eff164c3779b31a3bf476b",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 19,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 19,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "3ab52597980fab1234e24f6dbde6ef25cfea59d7",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "3c06187bfa6e26498b88ebf24d825808140aad0c",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 14,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 14,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "3c3a10cafd4eb841bb344281c70773445293dff8",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:2"
+      ],
+      "storedRelationshipRows": 34,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 34,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "3cc428b844996aca94012db69bc4a6e85778e8a4",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "3d29772dd705167af6b935cb582f45998adcc4f7",
+      "status": "measured",
+      "languages": 4,
+      "languageBreakdown": [
+        "typescript:5",
+        "go:1",
+        "markdown:1",
+        "python:1"
+      ],
+      "storedRelationshipRows": 12,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 12,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "3d3d7ae9950fad84380b1b5562331618624896d3",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "3dce4c5553d5a0b665dc087080688961b608504a",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:2"
+      ],
+      "storedRelationshipRows": 2,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 2,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "3ea9d0f2852042bdac212beadf181882837878a3",
+      "status": "measured",
+      "languages": 2,
+      "languageBreakdown": [
+        "typescript:61",
+        "python:1"
+      ],
+      "storedRelationshipRows": 61,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 61,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "402033be49c84b43058993ea7f09659df36a6907",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "402a30d1ce45fb2b64833f66e5a343d40a2e7708",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:48"
+      ],
+      "storedRelationshipRows": 23,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 23,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "428a5e3358088e285f4382214ca8d3967c3a7d3f",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "42c8c560dcfd87ae57ed9d11eddd31a82f4c0bc3",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 1,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 1,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "43c148bbf200b6bb3fb80783e3e6cf915b697dc9",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "43dc3557147a38668331c1969fc2a60224276f77",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:2"
+      ],
+      "storedRelationshipRows": 34,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 34,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "4533ebc8e63779ef05d3563a3dc7698ed27a8d9b",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "470eedb7b544924d79bd23afec0c79d65f884f39",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "47bfe449e5f0b6c91e73262f8902fcab338e38d8",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "48d5fd7602dd79f9e05afc33a4c5a199a73a7e09",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 5,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 5,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "492815b546f5314220851489d0a88b2e62db8cd0",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 14,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 14,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "4965d4c9e705a3a6a6b20a02b77c9e79e5feace6",
+      "status": "measured",
+      "languages": 2,
+      "languageBreakdown": [
+        "typescript:61",
+        "python:1"
+      ],
+      "storedRelationshipRows": 61,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 61,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "4a42ac87e5b615ddd540083b06d4b0a58fb8e46e",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "4a5b3f593ce98a5ae77f35ca2d25131638bff01f",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:2"
+      ],
+      "storedRelationshipRows": 34,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 34,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "4a7735a3367b82be8234c02e5b8a32fb83036bc7",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 5,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 5,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "4b11b3cefc0c00ce7281e9844e80c5c6a5521e1b",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "4b323e1a571ea31dcac989c7b80b1d305a2ff637",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "4b760c8d843cecb8fac7fa77b8bbd17a73122013",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "4c3ac93c6fbeb36168cd848f9651f691515c1d18",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "4c430090a472d28ce5bd1b2903ef9b1693c1f674",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "4c7ba81fa0789d6321dbd354dab61e6c9262154d",
+      "status": "measured",
+      "languages": 2,
+      "languageBreakdown": [
+        "typescript:61",
+        "python:1"
+      ],
+      "storedRelationshipRows": 61,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 61,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "4ca0146bbe08055773d0e30eda40b095e12738b1",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:2"
+      ],
+      "storedRelationshipRows": 10,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 10,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "4dcf48e484a012084435f651f2b8f65c025db2f5",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "4e59e4501f6269ff67b9e49d8a9eb8c7ad848b7a",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 2,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 2,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "5070f5073654cc0f3c302014c8a6096ed4cfad54",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "510e414e3ae48dc9268dd12a79dcebd7060bc078",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "5213f42ec493c6655acdff6c2b3990cd03a58f79",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 5,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 5,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "532b1354511247b096713817717e5e5836782610",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:2"
+      ],
+      "storedRelationshipRows": 10,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 10,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "54fcce34823a0106111da0c553ee4c6303081c5b",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 14,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 14,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "55ed27cb22f564d77f3dadbeee0d0113e58b7f26",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "59310cc2460214d0708303a6a870bead94ae5881",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "59876fa9ef268aa8bfcabb747dd0d28a29c5cb53",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "59abfd335e4717f20d9dda0e4bd537c75ed38c68",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 14,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 14,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "59be56709fe90600c6f87445c8874d33671b4416",
+      "status": "measured",
+      "languages": 2,
+      "languageBreakdown": [
+        "typescript:61",
+        "python:1"
+      ],
+      "storedRelationshipRows": 61,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 61,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "5a04e1ed1cd45bbcea18783deedad621fc7f1946",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "5a5ac0eb928815c297475b8fa9709ab71ee0ef41",
+      "status": "measured",
+      "languages": 2,
+      "languageBreakdown": [
+        "go:1",
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 5,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 5,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "5affb3501c7f578bc66f66cdaa4c550d2e34945f",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "5ca37ac2cc01585a3cef8850e65498a85bd2fa19",
+      "status": "measured",
+      "languages": 2,
+      "languageBreakdown": [
+        "go:1",
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 5,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 5,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "5dee9d128d63dd0591bcad0f82f6a0f192bccbc1",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "5e8a6df5c37c83538b54e034a95ed0427e115496",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 2,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 2,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "5ef721bcaee30f5dee8166341ef4f3302f5d4191",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "5f0a9392f209ec90c9d3deeb8a00b2d12ab12bbb",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "5f3dab08c53b43bbc8c2a1492ee2a9b1716626ca",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "5f5531a60c5a7e430b5afa090b188fbbce4dd4da",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 14,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 14,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "606a1e72c1b2efa30ae1f2f605f6be304526e7c7",
+      "status": "measured",
+      "languages": 2,
+      "languageBreakdown": [
+        "go:1",
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 5,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 5,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "61add3ca8900eb9124f97b3f650c64638dfe3e0e",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "java:2"
+      ],
+      "storedRelationshipRows": 15,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 15,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "634f99614cd2506725c3634133d9c8b27fbfbc3a",
+      "status": "measured",
+      "languages": 2,
+      "languageBreakdown": [
+        "typescript:3",
+        "python:1"
+      ],
+      "storedRelationshipRows": 9,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 9,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "63dc734e62bc55f8dfee6dc8f4eb834787fa8e7f",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "65bec8cc1ca5fddb75d72a7ecab958569eb7f72f",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "660e247c50aeae79f2c332948f16f5324d28bb36",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:2"
+      ],
+      "storedRelationshipRows": 2,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 2,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "668d59cdd3c7d4122f31e1091a7f28a75e258f49",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:2"
+      ],
+      "storedRelationshipRows": 34,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 34,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "66bcfbc2a1c4375c0c5fb1f37e1c8cdd11135d5b",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "67143e75d611a0a05da0f16a55d438a7718324df",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:2"
+      ],
+      "storedRelationshipRows": 2,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 2,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "676db44f46794ef36949c25616ce07b6a3735e7f",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 2,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 2,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "67b0034f97c87b2010ebc24bc4b9a1a46d6c1a64",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:2"
+      ],
+      "storedRelationshipRows": 2,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 2,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "69a8d0b1e91385f5beab0eedf02addc0f5af4b46",
+      "status": "measured",
+      "languages": 2,
+      "languageBreakdown": [
+        "typescript:4",
+        "markdown:1"
+      ],
+      "storedRelationshipRows": 11,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 11,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "6a6f851eb50aac8ca53e4e4b79839df6160e2de6",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 2,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 2,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "6b157c827352a8871e08e506b428dc4ca8b006f9",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "6b3f15f4aeb863b487623fcfb41c35d40ba6bc8f",
+      "status": "measured",
+      "languages": 2,
+      "languageBreakdown": [
+        "json:1",
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 2,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 1,
+      "rowsWhereTheTwoRulesCanDisagree": 1,
+      "rowsWhereTheyDoDisagree": 1,
+      "shareOfAllStoredRows": 0.5,
+      "shareOfDecidableRows": 1,
+      "byKind": [
+        {
+          "kind": "contains",
+          "rows": 1,
+          "example": "contains conf=1 stored=null: pre-fix copy=inferred owner=structural"
+        }
+      ]
+    },
+    {
+      "projectId": "6b403b4fa77f421055dde455e1fda51cb66d603a",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "6c4c133b3cd1ba1b7384b93be32833e36350fcee",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 14,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 14,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "6cc4fe98097d0b62e96e5683e23b77e71248a32c",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 1,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 1,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "6d2f90fc6d01425efe3cc371be58bcaa2bbe23c4",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 2,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 2,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "6dd5d7b0b6553349c4d0c6724713576841a88522",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "6dd9b114dd9095bd50178d0cbc603891449d7e66",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "6e36c8fdfa850ec673e11e078ebda57456059186",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 2,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 2,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "6ed6501564e775814e983311fafb885e92e33d4f",
+      "status": "measured",
+      "languages": 6,
+      "languageBreakdown": [
+        "java:1",
+        "markdown:1",
+        "python:1",
+        "ruby:1",
+        "typescript:1",
+        "vue:1"
+      ],
+      "storedRelationshipRows": 33,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 33,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "6f8011544788799e971dcd52d511370d2ce99771",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "java:2"
+      ],
+      "storedRelationshipRows": 15,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 15,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "6fad81915bbec6efb28d82f88334bea623348634",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 2,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 2,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "700ec0ef10791b3566b0a5cba25660a031d7850b",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "7095370b7f2ebd095e3e6d7299767d2e04af9f01",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "yaml:1"
+      ],
+      "storedRelationshipRows": 6,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 3,
+      "rowsWhereTheTwoRulesCanDisagree": 3,
+      "rowsWhereTheyDoDisagree": 3,
+      "shareOfAllStoredRows": 0.5,
+      "shareOfDecidableRows": 1,
+      "byKind": [
+        {
+          "kind": "contains",
+          "rows": 3,
+          "example": "contains conf=1 stored=null: pre-fix copy=inferred owner=structural"
+        }
+      ]
+    },
+    {
+      "projectId": "7130edb89cf48e92a50425b569105ede5c6e4c42",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "7156f3ef80c0fea2f9b9d363e9a75b80ee9feee7",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "721da2eb95d24a0a76d667d719be5ffb8a385100",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "73ee9f45a6933b73b10e29f526b2883d6f3aab78",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "740390037777c527fa9cf3b580b60cb9cda160af",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "7542519e0b5d9e19c375c9011464cd572150ce14",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "75970af043cec832866d5440c93ae1a497ee6e48",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 14,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 14,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "763d638da7ce559d09a62874d445c813147f249e",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "ruby:2"
+      ],
+      "storedRelationshipRows": 6,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 5,
+      "rowsWhereTheTwoRulesCanDisagree": 1,
+      "rowsWhereTheyDoDisagree": 1,
+      "shareOfAllStoredRows": 0.166667,
+      "shareOfDecidableRows": 1,
+      "byKind": [
+        {
+          "kind": "contains",
+          "rows": 1,
+          "example": "contains conf=1 stored=null: pre-fix copy=inferred owner=structural"
+        }
+      ]
+    },
+    {
+      "projectId": "7695a994a927d6414af257749116598107587950",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 14,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 14,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "76d8fe85c57e3665e7f52dd2a2f85cd0d6e7147b",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 1,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 1,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "76e2ca93e991ee853773019de1ec95b98c8a3de1",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 5,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 5,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "78428e6aa8d3e07b740d40275a43727101f584db",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "7877f7c994f342af1c53b35f69687c651c2c2bb7",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "791382764f02bf3b90cd1c6613bc5bbfb76949d2",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:47"
+      ],
+      "storedRelationshipRows": 23,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 23,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "79d9f52f1885e4c1b42510a5048060f96a598735",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 2,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 2,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "7ad515e3975dd4cb5653c803e20543f18f661149",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 5,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 5,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "7b2bbdecf6165175b3a5e37a5bfb613cb1374ffb",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "7b2f009fc7108dac2f4ffe2870ebc9dbd1b93e57",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "7b320c4f41164616064fce8b744652c46f110b59",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "7bb5d40543248c86da74bc6e081bbd772af97464",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:2"
+      ],
+      "storedRelationshipRows": 2,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 2,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "7ce1bfe53244ded3490e8fc1aae3b612c09f0155",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 2,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 2,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "7f1b5a35482c6cff448e09351eba2363326eb42f",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "ruby:1"
+      ],
+      "storedRelationshipRows": 1,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 1,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "7f34607da36603a1bb360f95d7b6937fdf9335b7",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "7fb7b8d8b8a9f8114324d23f0d0356e26858d610",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "7fe65d13f9d23c47473a4ad4ffbea3e18cf9be17",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:2"
+      ],
+      "storedRelationshipRows": 13,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 13,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "8024a99b0b111f493b7a7839bcefb4af81e41767",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "python:1"
+      ],
+      "storedRelationshipRows": 14,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 14,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "804c13c58b634404d078bc6e45be976bd442b6a0",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:2"
+      ],
+      "storedRelationshipRows": 2,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 2,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "80bcee0afbc159b9f2c5513efd0051c7d6d90b55",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 2,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 2,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "81310a61e7ee5fffb76540f7757b0e4b6c66fde3",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 2,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 2,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "813d6032bc5da035d9acf670cab03d8b28d9cca9",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "818db37d8f54173ad1357ab24627373da2e9418c",
+      "status": "measured",
+      "languages": 49,
+      "languageBreakdown": [
+        "typescript:3534",
+        "json:2801",
+        "markdown:617",
+        "javascript:138",
+        "c:88",
+        "groovy:83",
+        "scala:73",
+        "clojure:67",
+        "bash:66",
+        "elixir:66",
+        "vue:66",
+        "python:65",
+        "java:59",
+        "cpp:57",
+        "kotlin:55",
+        "svelte:43",
+        "xml:40",
+        "yaml:36",
+        "tsx:35",
+        "csharp:34",
+        "rust:32",
+        "solidity:32",
+        "erlang:30",
+        "php:28"
+      ],
+      "storedRelationshipRows": 766227,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 280696,
+      "rowsWhereTheTwoRulesCanDisagree": 485531,
+      "rowsWhereTheyDoDisagree": 484508,
+      "shareOfAllStoredRows": 0.63233,
+      "shareOfDecidableRows": 0.997893,
+      "byKind": [
+        {
+          "kind": "contains",
+          "rows": 483370,
+          "example": "contains conf=1 stored=null: pre-fix copy=inferred owner=structural"
+        },
+        {
+          "kind": "uses",
+          "rows": 550,
+          "example": "uses conf=1 stored=null: pre-fix copy=inferred owner=usage_contextual"
+        },
+        {
+          "kind": "references",
+          "rows": 471,
+          "example": "references conf=0.9 stored=null: pre-fix copy=inferred owner=usage_contextual"
+        },
+        {
+          "kind": "instantiates",
+          "rows": 58,
+          "example": "instantiates conf=0.8 stored=null: pre-fix copy=inferred owner=structural"
+        },
+        {
+          "kind": "exports",
+          "rows": 46,
+          "example": "exports conf=1 stored=\"export_target\": pre-fix copy=inferred owner=structural"
+        },
+        {
+          "kind": "extends",
+          "rows": 13,
+          "example": "extends conf=1 stored=null: pre-fix copy=inferred owner=structural"
+        }
+      ]
+    },
+    {
+      "projectId": "82b4b609b405a64af70112da6c49609efcbcc843",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "831786394737f5429c9b90697daa96194dea2c30",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "833a9b16d03d794e6d3c93c6faace310b2fab523",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "83603776dc6331c532bc23748ad85b6f645fb4d9",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "ruby:2"
+      ],
+      "storedRelationshipRows": 2,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 2,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "85359a50b029e6fc865631e0e44bbefc7e2ec2cc",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "853d59ab32c0df115fb3f308c9bdea537695c6fd",
+      "status": "measured",
+      "languages": 9,
+      "languageBreakdown": [
+        "rust:1185",
+        "xml:380",
+        "toml:308",
+        "markdown:143",
+        "json:13",
+        "yaml:10",
+        "bash:6",
+        "python:2",
+        "javascript:1"
+      ],
+      "storedRelationshipRows": 145511,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 144078,
+      "rowsWhereTheTwoRulesCanDisagree": 1433,
+      "rowsWhereTheyDoDisagree": 1433,
+      "shareOfAllStoredRows": 0.009848,
+      "shareOfDecidableRows": 1,
+      "byKind": [
+        {
+          "kind": "contains",
+          "rows": 1433,
+          "example": "contains conf=1 stored=null: pre-fix copy=inferred owner=structural"
+        }
+      ]
+    },
+    {
+      "projectId": "871310a5fb13ec982eba9436106e33e5bc8e5819",
+      "status": "measured",
+      "languages": 2,
+      "languageBreakdown": [
+        "typescript:4",
+        "bash:1"
+      ],
+      "storedRelationshipRows": 4,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 4,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "875a7999c750c98891b38ca99b0449f6368725c8",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 19,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 19,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "8761e133a9c15781307398460c04b72ef2d16129",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "87b6fddc0dd1ab6a5a3789562e9dccce54551b0c",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "88ba529f66891ec8eafe10d9208d39107fbb91a5",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:2"
+      ],
+      "storedRelationshipRows": 34,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 34,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "89c0a66ff294127778ca08c26bfdd7bbff29b1cf",
+      "status": "measured",
+      "languages": 2,
+      "languageBreakdown": [
+        "typescript:61",
+        "python:1"
+      ],
+      "storedRelationshipRows": 61,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 61,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "8a27afda303fd12008a749e0ee98f92892c4212f",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 2,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 2,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "8a43dfff866f09840ac84f7d94324d4e16b16b0a",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "8a9c720169711dbb0cc6a8707e687b7e096a7e1f",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:300"
+      ],
+      "storedRelationshipRows": 300,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 300,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "8a9f6dd810c03bdb284e70255b061cdc4a6f5a58",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:2000"
+      ],
+      "storedRelationshipRows": 39975,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 39975,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "8d77600f3a5095ce6831ca66021e5092e5007a78",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "905dc72faebe330d3ff243c3b690f3fe7e965a18",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:47"
+      ],
+      "storedRelationshipRows": 23,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 23,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "90f31ae03a2b1ce39a5613a1a9f961060171b968",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:2"
+      ],
+      "storedRelationshipRows": 34,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 34,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "90fd0102e51d3cb1ab92f02dcdcebd9570bf121f",
+      "status": "measured",
+      "languages": 4,
+      "languageBreakdown": [
+        "typescript:5",
+        "go:1",
+        "markdown:1",
+        "python:1"
+      ],
+      "storedRelationshipRows": 12,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 12,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "9375305791878719a7ef2cba7feaf4a9eb9b519a",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:2"
+      ],
+      "storedRelationshipRows": 3,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 3,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "9375ca2da5780f6dccf9cea169c52f17e8bf6c46",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "python:1"
+      ],
+      "storedRelationshipRows": 14,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 14,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "946c0ae737d7fee03d8bc716b5d8c916e57b09be",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "94a9ea869be6bf11c3fbb1cda18530c84d75ff62",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "94eb96647ee9a298ca134f92af02bebf7797d2bf",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "968b750af7fd6872a34f50bc9de901836c7344da",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 150,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 150,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "9696677acdc8dbca2c698f1ad145981d028fb2af",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "97aec78e4871fe81f7bba927e2e9b8cf2c45559b",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "97b35ebdcc32b62217c5e5f1cc687ad7ec435525",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:47"
+      ],
+      "storedRelationshipRows": 23,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 23,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "99c211a1ad5953723c4719fd0017a5357ed349a5",
+      "status": "measured",
+      "languages": 6,
+      "languageBreakdown": [
+        "php:3188",
+        "xml:317",
+        "markdown:22",
+        "json:12",
+        "yaml:7",
+        "html:5"
+      ],
+      "storedRelationshipRows": 160007,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 156157,
+      "rowsWhereTheTwoRulesCanDisagree": 3850,
+      "rowsWhereTheyDoDisagree": 3850,
+      "shareOfAllStoredRows": 0.024061,
+      "shareOfDecidableRows": 1,
+      "byKind": [
+        {
+          "kind": "contains",
+          "rows": 3850,
+          "example": "contains conf=1 stored=null: pre-fix copy=inferred owner=structural"
+        }
+      ]
+    },
+    {
+      "projectId": "99d7f3c6bfd9270ca4f8d59920cfab0fc643cd45",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 1,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 1,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "9b5aed4e5d39d8c5ab5b08c564d636ccc2cfcf18",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:2"
+      ],
+      "storedRelationshipRows": 3,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 3,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "9b861fbddd2625355f02095805cbd26e2274bca6",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:48"
+      ],
+      "storedRelationshipRows": 23,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 23,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "9d3dae1d717a7721648a1bc08dd0b2bbcecd45c7",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 2,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 2,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "9e7d1aca3808daa8bc834858e5758d7899f4e129",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:3"
+      ],
+      "storedRelationshipRows": 3,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 3,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "9e8a87c2a528d0cac4eba5f9687d5351e489a2d0",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "9f0611570d60ec4d621c60b3f631b7fc59c5bff6",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "9f7aabf29080f2680558d00aa072d407b2893900",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 2,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 2,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "a17f0743d6f10aa4079e4770abb7b480c4375bfd",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:47"
+      ],
+      "storedRelationshipRows": 23,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 23,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "a2aa123b1c11fdd1f63eab81aec4cfb982c00efa",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "a2e615cc410ba39a4cc5d702d665275e230e860b",
+      "status": "measured",
+      "languages": 2,
+      "languageBreakdown": [
+        "typescript:61",
+        "python:1"
+      ],
+      "storedRelationshipRows": 61,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 61,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "a2f224b8bef872af68061b290a4159637ef6a21e",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 2,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 2,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "a35c282747bfb174b4030a37999bdbbbc9c5ff16",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "a39fb54559efa869ddb5941b0e63bbd3ff328f82",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "a649c50eac5d47bc6bba08905d6c089a33a087a3",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "a7058beaf8c848fb13ef34283c141fbac3645f33",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "a72d0eb52ea5d879888631661c107074c333cfa8",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "a7f3bb5b479a49014dd135f234b17d7c9caa1f6e",
+      "status": "measured",
+      "languages": 2,
+      "languageBreakdown": [
+        "typescript:3",
+        "python:1"
+      ],
+      "storedRelationshipRows": 9,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 9,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "a7fe1ae421d349f58903062b4db7ffd8553eb4c8",
+      "status": "measured",
+      "languages": 4,
+      "languageBreakdown": [
+        "go:36",
+        "markdown:17",
+        "yaml:5",
+        "make:1"
+      ],
+      "storedRelationshipRows": 5321,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 5169,
+      "rowsWhereTheTwoRulesCanDisagree": 152,
+      "rowsWhereTheyDoDisagree": 152,
+      "shareOfAllStoredRows": 0.028566,
+      "shareOfDecidableRows": 1,
+      "byKind": [
+        {
+          "kind": "contains",
+          "rows": 130,
+          "example": "contains conf=1 stored=null: pre-fix copy=inferred owner=structural"
+        },
+        {
+          "kind": "references",
+          "rows": 11,
+          "example": "references conf=1 stored=\"reference\": pre-fix copy=inferred owner=usage_contextual"
+        },
+        {
+          "kind": "exports",
+          "rows": 8,
+          "example": "exports conf=1 stored=\"export_target\": pre-fix copy=inferred owner=structural"
+        },
+        {
+          "kind": "uses",
+          "rows": 3,
+          "example": "uses conf=1 stored=\"external\": pre-fix copy=inferred owner=usage_contextual"
+        }
+      ]
+    },
+    {
+      "projectId": "aab78725f5a008221e3d755aaa4312018afdcd36",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 1,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 1,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "abee7668b4077eb900bbd44d3fca0932e39ac22e",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 2,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 2,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "ac9335f1a5d802cb67af428656088d73ee55ad7c",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "ad056b22cfe19117b4fef843c4001ad6f50fea26",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "adb9105df11fb263c490202d4e47f08212883730",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 19,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 19,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "ae74670b0a0f25e7cbd201bda73ca4ec2b833db2",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 14,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 14,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "aebb011d9823b36fbaf791cbc481e8c211cdc4d0",
+      "status": "measured",
+      "languages": 2,
+      "languageBreakdown": [
+        "typescript:61",
+        "python:1"
+      ],
+      "storedRelationshipRows": 61,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 61,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "aebd2871af0e067a1a6c6538aca0f40cc7280c24",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:2"
+      ],
+      "storedRelationshipRows": 10,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 10,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "afa9a3be95fc0c9f2e41a868beb7767b7f241e43",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "java:3"
+      ],
+      "storedRelationshipRows": 20,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 20,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "b00a956902e234a463a7c85450a4ce03bbef9b12",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 2,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 2,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "b10541cf4c67bc859d633bbe3f4b6fb18d9a6db2",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "b17156e37f72f77fca4c804e0e31096b4f3615d6",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "b28b91ba4d422613ccc8b819dc34f9532474d55c",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "b34f7037605d54485dceccb1748d186fe06aaf92",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 5,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 5,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "b38c63309185c8ea088c60884a1b2e2bb35ff989",
+      "status": "measured",
+      "languages": 2,
+      "languageBreakdown": [
+        "go:1",
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 5,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 5,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "b3c62abd3ffdb4b89464e00ae31af0ad306d6377",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "java:1"
+      ],
+      "storedRelationshipRows": 6,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 6,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "b3c8558341ecad4bd7d68d4421d3f17339a069ed",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "b3e4dfd8ba3c6d6968bdd171f4637986b9914226",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "b463b78cc62364096486c1169f9a6b1d53c9d0a1",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 1,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 1,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "b51276f22ddfce2f5ccddf090e32b95bd165e248",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "b5840218d00950b7f5a5b322d9ea82a3c6c605e8",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "b60a01d21504a654f4ebe1314e42d3e56f517314",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "b644db2814ccb444a966a8dd45f24e2013d4ea6e",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:40"
+      ],
+      "storedRelationshipRows": 200,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 200,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "b690d89adb604714b4f40472ed5b9fb2651c69ea",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "ruby:1"
+      ],
+      "storedRelationshipRows": 2,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 2,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "b81280908bc196fbed522a87ef58ef7741185058",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "b84298703757ef1fae851bab2dfca6e4651581c1",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:2"
+      ],
+      "storedRelationshipRows": 34,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 34,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "b91e514258c59c02faa987bb4fb5981261ee77b8",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "b9c72e18d2e1c942bd33d643051c920b7270dfd1",
+      "status": "measured",
+      "languages": 2,
+      "languageBreakdown": [
+        "typescript:61",
+        "python:1"
+      ],
+      "storedRelationshipRows": 61,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 61,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "ba76b5c282d938e91d904d047016457d4eee2eab",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "bad3449006419f729a811c4bf91cbb94173ed187",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 2,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 2,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "bb1ab2cf9f017ac28e748416da85d939f28d91b6",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "java:2"
+      ],
+      "storedRelationshipRows": 15,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 15,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "bbe2d5b489801c8c0ab588b0f7be09ccc0a55af5",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "bc07ab0f3f3f028b366b6a0c5151ac0023fd25cc",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "bc8c1072bc4db74d386fb95c3d9f0bd384a9611f",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:48"
+      ],
+      "storedRelationshipRows": 23,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 23,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "bcd9b02d71e4e29e703ffa40e080e19db1580b18",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "yaml:1"
+      ],
+      "storedRelationshipRows": 6,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 3,
+      "rowsWhereTheTwoRulesCanDisagree": 3,
+      "rowsWhereTheyDoDisagree": 3,
+      "shareOfAllStoredRows": 0.5,
+      "shareOfDecidableRows": 1,
+      "byKind": [
+        {
+          "kind": "contains",
+          "rows": 3,
+          "example": "contains conf=1 stored=null: pre-fix copy=inferred owner=structural"
+        }
+      ]
+    },
+    {
+      "projectId": "bd1cf037218ab19351002adf4586e1f0d081b7bc",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "be38511e06eb014de340f125d7c66c59e0761473",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "be8df67e4d8dbdf576c913e1b7c9191817f2e664",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "bf0c03633eaca4652123e26f0a34a1871e667f88",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "c078443bc4df746c96adf9523ac93fdf87617b88",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "c12ae4879d2afeaaf12ec99e6ab6c4a5e55db7fb",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "c175b903ce3a539ad2078812e47eddc9ab97507d",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "c361a139be68e8a015aa5705f78bdaf17ab65e98",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:2"
+      ],
+      "storedRelationshipRows": 2,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 2,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "c376fcfa02c2aad78e31e16ef941767cb83c2cf8",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:2"
+      ],
+      "storedRelationshipRows": 2,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 2,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "c3a75c73656a444a3fcd0327ab6f3235b824cc79",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "c3d2f31f96a4f8c6d1bbcf93383eb7e5fc0a5642",
+      "status": "measured",
+      "languages": 2,
+      "languageBreakdown": [
+        "typescript:61",
+        "python:1"
+      ],
+      "storedRelationshipRows": 61,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 61,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "c414ffc8345fbea2c151f3f1e8fccadedcc56a2e",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 1,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 1,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "c4192e46bb7b723e3ff5ef80937fa5d9d70f7983",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:2"
+      ],
+      "storedRelationshipRows": 10,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 10,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "c45cd84fe7c9a71d0b31a76c99cfb791f8de2877",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "c4e17ba2212348e8e20f9cd77cf5c1c96fd917f5",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "c55abce1ad81239d37b22176ff23ebb98db88968",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 19,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 19,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "c650b0bf1fff76f5bb7d21df5e6e38ec11799dfa",
+      "status": "measured",
+      "languages": 2,
+      "languageBreakdown": [
+        "typescript:3",
+        "markdown:1"
+      ],
+      "storedRelationshipRows": 5,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 5,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "c7bafa63bce38208577720b9c3d9a06f78bb7c21",
+      "status": "measured",
+      "languages": 2,
+      "languageBreakdown": [
+        "go:1",
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 5,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 5,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "c849592a524ce68a99c8d8ad14e5c2744de83902",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "c965402f065db3ccdb3549fc5437487c2a06cf85",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:2"
+      ],
+      "storedRelationshipRows": 10,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 10,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "ca865ce8806987f6a4b1eb9f5b5fa387a2240804",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 2,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 2,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "caded6aa5d9561f1ed74d300f68c4a30cf2e864b",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 2,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 2,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "cb2e7ac694f11267dd0a1ff29aa66c743362e8cd",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "java:1"
+      ],
+      "storedRelationshipRows": 6,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 6,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "cc0b2786cda44b21726787066c413274d0191e5b",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "ccb43f8f798aacfbd2cdfa7b37cfdcba160b15b2",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 1,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 1,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "cd216fb520a6e965724ac54ffec4e0dd316afe44",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:2"
+      ],
+      "storedRelationshipRows": 2,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 2,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "cd473e0412c86e7eb006392a3377c0f9cc7d50ed",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "cd74fb624d93454f0ede8e52e06d522dc23bccec",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "cd9bbd6388d879bd65e104c823a85a2d0a5a8245",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "ceff670f0ea00b8453e8b57bc6d2be7546a37db4",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "cfcb7e216d354e6061a8be6d64e5b616bc4e638d",
+      "status": "measured",
+      "languages": 4,
+      "languageBreakdown": [
+        "typescript:5",
+        "go:1",
+        "markdown:1",
+        "python:1"
+      ],
+      "storedRelationshipRows": 12,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 12,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "clyde",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "cpython",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "d08c2b3baaff7edcb70753730b7096482b3ff15a",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 2,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 2,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "d18b4336dd3501b642302386e83bfe85580b634e",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "d228488ee1e38406e899cbe6a2ca3ab88a8c364a",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "d282cc4ac6b6aa199181e7dd1e244bbbcd7a36ce",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "d2f35162e9294b4274b9000809cdd37b5df783f7",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "d39395a0c7edfbe4a88353ae25e6fbd25f9e59b0",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "d43447ecb02202b8efa4b1eabcc17804787e4967",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "d48003fec5c93fa576813eb2de54f9fff85ec6a9",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "java:2"
+      ],
+      "storedRelationshipRows": 15,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 15,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "d59fa944541934867b930f3e87bcf901035a25a7",
+      "status": "measured",
+      "languages": 4,
+      "languageBreakdown": [
+        "go:36",
+        "markdown:17",
+        "yaml:5",
+        "make:1"
+      ],
+      "storedRelationshipRows": 5321,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 5169,
+      "rowsWhereTheTwoRulesCanDisagree": 152,
+      "rowsWhereTheyDoDisagree": 152,
+      "shareOfAllStoredRows": 0.028566,
+      "shareOfDecidableRows": 1,
+      "byKind": [
+        {
+          "kind": "contains",
+          "rows": 130,
+          "example": "contains conf=1 stored=null: pre-fix copy=inferred owner=structural"
+        },
+        {
+          "kind": "references",
+          "rows": 11,
+          "example": "references conf=1 stored=\"reference\": pre-fix copy=inferred owner=usage_contextual"
+        },
+        {
+          "kind": "exports",
+          "rows": 8,
+          "example": "exports conf=1 stored=\"export_target\": pre-fix copy=inferred owner=structural"
+        },
+        {
+          "kind": "uses",
+          "rows": 3,
+          "example": "uses conf=1 stored=\"external\": pre-fix copy=inferred owner=usage_contextual"
+        }
+      ]
+    },
+    {
+      "projectId": "d74ae6d94c69a3bfb784fe5748c1e69aae4bb8e6",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:2"
+      ],
+      "storedRelationshipRows": 2,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 2,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "d7616f9b10161e4ad2537d0bd6adcfc95c1609ba",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 2,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 2,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "d7bc31c079d3b5d1a4eecf5b92cfd4368d89b197",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:47"
+      ],
+      "storedRelationshipRows": 23,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 23,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "d912a108970f100660f7afe55e22e1cb2a5105a9",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "da5bd762a1fc1716bdd63e113ea077d3351b5f4a",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "dc48601bf585d7044d640d2b3e94ef486a4abb79",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 2,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 2,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "dd6267251502a5debfd5dd04675013624dc7c2bf",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:2"
+      ],
+      "storedRelationshipRows": 34,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 34,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "de84bef0a01eb23478f139d7d760e904520da0aa",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:2"
+      ],
+      "storedRelationshipRows": 2,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 2,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "df3d05054893c23723f425ca723e1d3f2ef5f36c",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": [
+        "go:1"
+      ]
+    },
+    {
+      "projectId": "df6604dc22f100870bba81f504667aa05082e6da",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 1,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 1,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "e0c0c37808ab5a7b2f25dd1d14da7598b37d4b37",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "e0e1b81cf413a41faaff790eba0b5ca9c1ba928d",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "e1ba016f02c883cd71013cf2849f9793e040f93d",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 14,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 14,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "e3957d5fc708d571f1118ec9efa91cbff9bdbcf4",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:2"
+      ],
+      "storedRelationshipRows": 10,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 10,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "e4760e34a65af285d9f7e74a9276e4b55ce2c166",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "e477b2037278146cf39a74016993f028510d717a",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:2000"
+      ],
+      "storedRelationshipRows": 39975,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 39975,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "e5148f01936d120c532e8a6e47d491d34c4f8071",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "e5be8e005f0b40c50b957e36eff3a0f12f07a28f",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 14,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 14,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "e81eae68d759e3245f296cbe014710248cda48fa",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:48"
+      ],
+      "storedRelationshipRows": 23,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 23,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "e83f9c37a28bef3ec711c3ebbfbce15b21f036be",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "e88570869b599221b90448fb706f4d0b7f9988e5",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "e90f3439e2be1f14879d5138b4e657dbd57dfc66",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "eb31c3813a3f1f9b9a605b84e5115019d130d944",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:2"
+      ],
+      "storedRelationshipRows": 13,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 13,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "eb8132bcab5476fb9a98c648895be653bc34be48",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "ec9ca639b5a87cfad37c818ecbc6898cd48b9f26",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "ed5b0f38576f96b18540c77fa4a83707f592dc59",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "ee94ba61ab564e12b7d3f90d4e9cf6901f4deea0",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:2"
+      ],
+      "storedRelationshipRows": 2,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 2,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "eecc20938f15176dd53646e627f79a19672980ba",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "ef9017aadfb16cb22a5ceb07f6b5356c71dd131b",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "efd438eedb5955505970a162a2c412653e6aafb5",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "f0573d725b728032bae572e09201104b17a9ccff",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "f0b4b57f5592cf7f800f8ab4965159a62feebe34",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 1,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 1,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "f0d3a6b31e766f6133f4c19068f6693cac850812",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 14,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 14,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "f141d989eca4aaeab8a4c87a24e64a864b210d72",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "f149b87c77f3d454ffd05a517537991ca63c92af",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 5,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 5,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "f19748d6c05a453bb68d619d39f5800409d4062f",
+      "status": "measured",
+      "languages": 6,
+      "languageBreakdown": [
+        "java:1",
+        "markdown:1",
+        "python:1",
+        "ruby:1",
+        "typescript:1",
+        "vue:1"
+      ],
+      "storedRelationshipRows": 33,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 33,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "f1a45140ae2e94f1108e8943175e6f68961b590b",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "f2f735e9c0e6092fc791d45e20ed042543b0c753",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 19,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 19,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "f301a8c82c1f4514727d84184769d3a9d35108ff",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "f36134cd73e7583d4e2f3655730afb828759f22c",
+      "status": "measured",
+      "languages": 6,
+      "languageBreakdown": [
+        "java:1",
+        "markdown:1",
+        "python:1",
+        "ruby:1",
+        "typescript:1",
+        "vue:1"
+      ],
+      "storedRelationshipRows": 33,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 33,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "f3648390d9b7c32e9914e2a04152b58178444a22",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "f37b571a99b735fa868b0f7589ddc0b129351e4e",
+      "status": "measured",
+      "languages": 2,
+      "languageBreakdown": [
+        "go:1",
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 5,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 5,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "f3e0c0607204f5932d64335325fd7abb5fd18e4d",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:2"
+      ],
+      "storedRelationshipRows": 34,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 34,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "f3ebb407db4f009445103c86c5206e6dea7984ef",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "f4c348ec0048c696567e1d5a5cb78f2f12de4bde",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:48"
+      ],
+      "storedRelationshipRows": 23,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 23,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "f4f54913819c4e5642dd7e58f4b80cb0b80766aa",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "f5a74677db0b8a6074aa26f11b85836d33d1e134",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 14,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 14,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "f5ade0836635c32e918a1da4840922287ac2390c",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:2"
+      ],
+      "storedRelationshipRows": 2,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 2,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "f632886d48fc41e9218a8b5b8d007b09dd1c3ce1",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "f745e10ebc105b59a3cce515a42dfcb403b3b851",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 2,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 2,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "f7633b5d46ce887feacc04974c9b314242f6b2b1",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "f8001fc53bb118f6a1fca3979298ff5f27aac1f4",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "f843eeb47f6dbb297edf497a03902d439ad4aa70",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "f84a102e2fca7a494a9ed5bd2a2de0d32ab92e63",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:2"
+      ],
+      "storedRelationshipRows": 10,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 10,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "f9239bab9623f1d72623e123fa3bdee5e4311128",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "f978303c12e6abf5757808ab69adccca4832c404",
+      "status": "measured",
+      "languages": 6,
+      "languageBreakdown": [
+        "java:1",
+        "markdown:1",
+        "python:1",
+        "ruby:1",
+        "typescript:1",
+        "vue:1"
+      ],
+      "storedRelationshipRows": 33,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 33,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "fa01989265f458a6cf7bc73f630cf6f9dcf06046",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "fb1eb4a2ea7c44d419a4e87e95f45d8da48b92dc",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 14,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 14,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "fb34c64252023a35471ba6e402bd2f61a5fbdb7a",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "fb47bbcb9663cbf437fcdd402f15712fbe480e42",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 5,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 5,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "fba419e47c577a3510416ee147582cd082446242",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "fd1e76c86db945cf322d0a1bdf8477f3307bb9c5",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "fd45cd0cb3ecb04be6b824194a1e62428f39650c",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "fdae9fb1403e150c7450d0c0cc7f676be9f35d92",
+      "status": "measured",
+      "languages": 2,
+      "languageBreakdown": [
+        "go:1",
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 5,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 5,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "fdafdc74f71eb78809a47c06bc526bb557a3d598",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:2"
+      ],
+      "storedRelationshipRows": 10,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 10,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "fe90758c575672996a12db64177a862f4b5408b6",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    },
+    {
+      "projectId": "ff239cf83c97afc1f67876b208946b099e7b2d07",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:1"
+      ],
+      "storedRelationshipRows": 1,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 1,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "ffa825985261722689d483e596b49200cc2efd23",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:3"
+      ],
+      "storedRelationshipRows": 15,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 15,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "fff36fe45273f6fa327c103e44bf8710b00c1f72",
+      "status": "measured",
+      "languages": 1,
+      "languageBreakdown": [
+        "typescript:2"
+      ],
+      "storedRelationshipRows": 34,
+      "rowsWhoseStoredClassIsADeclaredLegendTier": 34,
+      "rowsWhereTheTwoRulesCanDisagree": 0,
+      "rowsWhereTheyDoDisagree": 0,
+      "shareOfAllStoredRows": 0,
+      "shareOfDecidableRows": null,
+      "byKind": []
+    },
+    {
+      "projectId": "nushell",
+      "status": "blocked",
+      "reason": "no stored relationship rows — a measurement over zero rows proves nothing",
+      "languages": []
+    }
+  ],
+  "claimLevel": "measured — the pre-fix derivation disagreed with the owner on 490540 of 491563 rows where a disagreement was possible (1220000 stored rows streamed) across 222 index(es) on this machine. Scoped to the indexes present at $HOME/.bb; no claim about any corpus not present here.",
+  "limitations": [
+    "READ-ONLY. Indexes are opened with better-sqlite3 readonly:true; nothing is written, seeded or modified. Point BB_DATA_DIR at a copy to remove even the open.",
+    "This measures a FIXED defect (the pre-fix derivation), not the shipped product. The gate over the product is script/m28/verify-surface-parity.ts (U2), which reads the tier out of bb_graph's own payload.",
+    "A row whose stored evidenceClass is already a declared legend tier cannot disagree — the stored claim wins on both sides — so the per-project count publishes both denominators (allStoredRows and rowsWhereTheTwoRulesCanDisagree).",
+    "Only indexes present under the resolved data dir are measured. An absent corpus is declared absent, never assumed, and with none present the result is `blocked` and the exit code is 1."
+  ],
+  "sourceFingerprint": {
+    "src/lsp/evidence_tier.ts": "4cc88ae81056af0f65e977d0c613121a2d8d545ff275afda13096e6294b0c5ce",
+    "src/mcp/tool-handlers.ts": "a2b91b7d013c5e153a115a2693f76c1e51b4ea8daae84550e757395a8c10f426",
+    "script/m28/measure-surface-divergence.ts": "75f66c77b52d6c7eed4bff1bd9c52ea943b7dc2d4015cf6a34910d128ff3d109"
+  },
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-10-04T23:52:43.383Z",
+    "contentSha256": "d315cea0d0a6876458b425b54087a4c1109f7fc558260393f297bcee886ef9ae"
+  }
+}
