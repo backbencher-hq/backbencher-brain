@@ -1050,9 +1050,59 @@ out what is available:
 
 ## Shared-machinery items
 
-Five defects outside `src/ast/real-graphql-analyzer.ts`. None was repaired here; each is
+Six defects outside `src/ast/real-graphql-analyzer.ts`. None was repaired here; each is
 stated with the file, the function and the measurement, so it can be applied without
 re-deriving it.
+
+### 0b. `script/m14/ontology-coverage-gate.ts:324` — **instrument A and instrument B parse the BASH grammar for 7 of the 16 lanes it can rule for**
+
+```
+324: const wasmPath = (LANGS as any)[LANG]?.wasm ?? "tree-sitter-bash.wasm"
+```
+
+`LANGS` is imported from `script/m14/differential.ts:740`, a 34-entry map that does
+**not** contain `graphql`. The `??` fallback therefore hands this lane the bash grammar,
+and it is used for **both** instruments: instrument A's vocabulary sweep (line ~326) and
+instrument B's parse-tree counts (line ~322, the same `parser.setLanguage`).
+
+Of the 16 lanes with a registered ruling table, **7 are absent from that map** and so
+are measured against bash:
+
+```
+lua, nim, protobuf, julia, xml, sql, graphql
+```
+
+The gate's own output is the evidence — for graphql it prints *"the grammar produced 57
+distinct node types across the corpus"* on every `A` row, and that 57 is bash's
+inventory, not graphql's. Measured over the same GraphQL bytes
+(`probe/wasm-which-grammar.mts`):
+
+| grammar loaded | distinct node types | nodes |
+|---|---|---|
+| `tree-sitter-bash.wasm` | 28 | 968 |
+| `tree-sitter-graphql.wasm` | 114 | 1,367 |
+
+Completely different vocabularies over identical input — bash's parser does not reject
+GraphQL, it silently mislabels it. So for those 7 lanes the `A` rows answer "none of
+these node types occurs" about **bash**, and the `B` rows count occurrences on **bash
+trees**: `A:supertype_clause_node: 0` is a count over bash parse trees.
+
+What this does and does not invalidate, for this lane:
+
+- It does **not** change any verdict here. All three rulings are independently supported
+  by my own census over the real graphql grammar — 75 named node types (summing to
+  exactly 882,672), 53 anonymous tokens, 128 in union, against which **0 of the 18
+  listed node types** for `calls` and `instantiates` appear; and `extends_condition_met
+  = 0` over the real trees from `probe/extends-condition.mts`.
+- It **does** mean the arbiter is currently publishing, as gate evidence, numbers derived
+  from the wrong grammar for 7 lanes — including the `FALSIFIED 0` that certifies them.
+  A ruling can be right and its *published evidence* wrong, which is the harder failure
+  to notice.
+
+Fix: resolve the wasm from the same place the ruling tables come from rather than from
+`differential.ts`, and **fail loudly** when `LANGS[LANG]` is absent instead of falling
+back to bash — a silent wrong-grammar fallback in an arbiter is worse than a hard exit.
+Worth a fleet-level re-run of instruments A and B for those 7 lanes once fixed.
 
 ### 0. `script/m14/ontology-coverage-gate.ts` — **every second run reports 0 emitted and exits 1, for every lane**
 
