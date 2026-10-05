@@ -93,13 +93,13 @@ ONE symbol. `variables-flags-and-identity` pins `$brand` at exactly 1.
 Not in general — in this language, where the general definition and the Sass fact part
 company for four of the ten.
 
-| Type | In Sass | Verdict | Edges (4,433 files / 116 repos) | Evidence class |
+| Type | In Sass | Verdict | Edges (run E: 4,433 files / 116 repos) | Evidence class |
 | --- | --- | --- | --- | --- |
-| `contains` | a scope contains the rules attributed to it — `@media`, `@layer`, `@supports`, a `@mixin` body, a control-flow block | EMITTED | **12,372** in 2,323 files, **100%** both-ends resolved | `structural` |
+| `contains` | a scope contains the rules attributed to it — `@media`, `@layer`, `@supports`, a `@mixin` body, a control-flow block | EMITTED | **12,369** in 2,321 files, **100%** both-ends resolved | `structural` |
 | `references` | a `$var` READ names a `$var` this file declares; plus every delegated CSS `var()` read | EMITTED | **6,594** in 585 files, **46.9%** both-ends resolved | `usage_contextual` / `import_based` |
 | `exports` | a `.scss` file IS a Sass module: `@use './theme'` exposes its **top-level** variables, mixins and functions. An assignment in a rule, mixin, function or control-flow block is local and is not exposed; a name beginning `-` or `_` is private and is not exposed either | EMITTED | **4,018** in 324 files, **100%** both-ends resolved | `structural` |
 | `imports` | `@use` / `@forward` / `@import` name another **file** | EMITTED | **3,623** in 825 files, **0%** both-ends resolved — see below | `import_based` |
-| `extends` | `@extend` — Sass's inheritance: the extending selector takes on the extended selector's declarations | EMITTED (relabelled 2026-10-04) | **427** in 152 files, **13.3%** both-ends resolved | `structural` |
+| `extends` | `@extend` — Sass's inheritance: the extending selector takes on the extended selector's declarations | EMITTED (relabelled 2026-10-04) | **423** in 151 files, **13.5%** both-ends resolved | `structural` |
 | `calls` | an INVOCATION of a name this file declares: `@include m` for a declared `@mixin`, and `f(x)` for a declared `@function`. 211 `f(x)` call sites exist | EMITTED (relabelled 2026-10-04) | **304** in 57 files, **100%** both-ends resolved | `usage_contextual` |
 | `uses` | one thing draws on another this file publishes, **without invoking and without inheriting** — the surviving site is a rule consuming `animation: <declared @keyframes>` | EMITTED | **91** in 42 files, **100%** both-ends resolved | `usage_contextual` |
 | `overrides` | one declaration REPLACES a prior one. In Sass the only case that means it is `$x: … !global` where `$x` was already assigned at this file's top level | EMITTED | **32** in 12 files, **100%** both-ends resolved | `structural` |
@@ -555,6 +555,50 @@ this lane was measured on before `consul`, `vault`, `nomad` and `waypoint` were 
 same three numbers were `contains` 2,225/2,225, `uses` 41/41, and `references` 223/223 for the
 lane's own `$var` reads — so the aggregate moves with the corpus while the per-construct
 resolution does not.
+
+## The six questions, per emitted type
+
+The questions fail independently, so the table has a column each and none of the columns is
+derived from another. "Exists" is read off the source; "Fires" is measured through production
+`parseFile`; "Resolved" and "Confident" come from the full-corpus census above. Populations
+are named per the honesty contract §2: census figures are run E over 4,433 admitted files /
+116 repos, firing figures are `firing-check.ts --files 120 scss` over a 120-file stride.
+
+| type | 1 Exists | 2 Fires | 3 Correct | 4 Labelled | 5 Resolved | 6 Confident |
+| --- | --- | --- | --- | --- | --- | --- |
+| `contains` | yes | 120/120 | yes — `structural`, a scope's own children | yes | **100.0%** (12,369/12,369) | `structural`, 0 under 0.7 |
+| `references` | yes | 120/120 | yes — a `$var` read is a parse fact; `usage_contextual` on the delegated CSS half | yes | **46.9%** (3,093/6,594) | mixed `usage_contextual`/`import_based`, 0 under 0.7 |
+| `exports` | yes | 120/120 | yes — scope-derived, and the `-`/`_` privacy rule is pinned by a `forbidRelationships` fixture | yes | **100.0%** (4,018/4,018) | `structural`, 0 under 0.7 |
+| `imports` | yes | 120/120 | yes — derived from `use_statement`/`forward_statement` on both sides | yes | **0.0%** (0/3,623), expected | `import_based`, 0 under 0.7 |
+| `extends` | yes | 120/120 | yes — `@extend` is the construct | **relabelled 2026-10-04** from `uses`; 2 label-reversion mutants pin it | **13.5%** (57/423) | `structural`, 0 under 0.7 |
+| `calls` | yes | 120/120 | yes — both syntaxes, `@include m` and `f(x)` | **relabelled 2026-10-04** from `uses`; 1 label-reversion mutant pins it | **100.0%** (304/304) | `usage_contextual`, 0 under 0.7 |
+| `uses` | yes | 120/120 | yes — one surviving class, a rule consuming a declared `@keyframes` | yes | **100.0%** (91/91) | `usage_contextual`, 0 under 0.7 |
+| `overrides` | yes | **0 of 120** — and 32 edges over 12 files of 4,433; the stride does not reach 12 files | yes — the `!global` class, with the two rejected readings counted apart | yes | **100.0%** (32/32) | `structural`, 0 under 0.7 |
+
+Three of these columns carry findings rather than confirmations, and they are the report:
+
+- **Column 4 is where this lane's real work was.** `@include` and `@extend` both carried
+  `uses`. `uses` is defined as drawing on a thing *without invoking and without inheriting*, so
+  both were mislabelled by construction, not by accident: an invocation labelled `uses` and an
+  inheritance labelled `uses` are both the neighbouring type. Fixed to `calls` and `extends`,
+  and the honest cost recorded — it moved 304 + 427 edges out of the differential's compared
+  set and into DERIVATION, audited against nothing until §8.1 is applied.
+- **Column 2 reads 0 for `overrides` and that is not a gap.** The type fires on 12 files of
+  4,433. A 120-file stride reaches 120 files and cannot reach all 12. Reporting this as a
+  firing failure would be scoring the sampler rather than the analyzer; the full-corpus count
+  is the measurement that answers the question, and the type is EMITTED.
+- **Column 5 has two low rates and both are explained rather than absorbed.** `imports` at
+  0.0% is the no-phantom rule: `@use './theme'` names a FILE, so closing the edge would mean
+  inventing a symbol no file declares. `extends` at 13.5% and `references` at 46.9% are the
+  same cross-file boundary against the CSS lane's 66.8% reference point.
+
+**Column 3's limitation, stated rather than implied.** The oracle is a separate walker
+(`deriveScssEdges` in `script/m14/differential.ts`) over the SAME tree-sitter grammar, so a
+grammar bug shared by both paths is invisible to it. This lane's differential coverage is
+89.5% (306 of 342 tree-truth edges) with 7 unexplained of 94 analyzer edges, and 6 of those 7
+are `overrides`, which has no oracle at all — so column 3 for `exports` and `overrides` rests
+on the fixtures and the mutants, not on the differential. Do not read column 3 as a stronger
+claim than the instrument behind that row.
 
 ## Declared limitations
 
