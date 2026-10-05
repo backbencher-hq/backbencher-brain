@@ -197,16 +197,98 @@ function runGate(extraEnv: Record<string, string> = {}): RunResult {
   return { exit: r.status ?? -1, stdout, crashed, failedChecks, verdict: vm?.[1] ?? "none" }
 }
 
-/** Restore a file byte-for-byte from git and PROVE it. */
-function restore(rel: string): { ok: boolean; detail: string } {
+/** Restore a file byte-for-byte from git and PROVE it.
+ *
+ *  THE ORIGINAL VERSION OF THIS FUNCTION WAS A DATA-LOSS BUG, and it is
+ *  recorded here because the fix is the lesson:
+ *
+ *  it restored from `git show HEAD:<file>` and PROVED the restore by comparing
+ *  the result to that same HEAD content. On a tree whose file differs from HEAD —
+ *  that is, on ANY worktree with uncommitted work in the file being mutated —
+ *  that is not a restore. It is an overwrite of the operator's uncommitted work
+ *  with the last commit, and the "proof" then confirms the destruction. Running
+ *  this harness against a work-in-progress change destroyed the uncommitted
+ *  edits to src/lsp/rich_hover.ts and src/lsp/relations.ts, which is how a
+ *  mutation harness became the most destructive thing in the lane.
+ *
+ *  Two independent causes, both fixed here:
+ *
+ *    1. THE TARGET MUST BE CLEAN BEFORE A MUTATION. A harness that edits a file
+ *       the operator has uncommitted changes to cannot promise to put it back,
+ *       because it has no copy of the operator's bytes to put back. So this
+ *       harness now REFUSES to run against a dirty target and says so, instead
+ *       of quietly reverting the operator's work.
+ *    2. WHEN IT DOES MUTATE, IT RESTORES THE BYTES IT READ — not HEAD's. The
+ *       pre-mutation content is captured per file and written back verbatim,
+ *       which is the only restore that is correct for a file the harness is
+ *       allowed to touch at all.
+ *
+ *  A harness that can destroy the tree it is measuring is a harness whose green
+ *  verdict means nothing: the run that reported "3/12" also deleted the change
+ *  under test. */
+const restoreLog: Array<{ file: string; ok: boolean; detail: string }> = []
+
+/** The working-tree state of every file this harness intends to mutate. */
+function dirtyTargets(): string[] {
+  const files = [...new Set(PLANTS.map((p) => p.file)), "src/lsp/relations.ts"]
+  const out: string[] = []
+  for (const rel of files) {
+    const st = execFileSync("git", ["status", "--porcelain", "--", rel], { cwd: ROOT, encoding: "utf8" }).trim()
+    if (st.length > 0) out.push(rel)
+  }
+  return out
+}
+
+const dirty = dirtyTargets()
+check(
+  "H0: every file this harness mutates is CLEAN in the working tree (an un-mutation harness that restores from HEAD destroys uncommitted work — this harness refused to run on a dirty target)",
+  dirty.length === 0,
+  dirty.length === 0
+    ? ""
+    : `these targets have uncommitted changes: ${dirty.join(", ")} — commit or stash them, then run this harness`,
+)
+if (dirty.length > 0) {
+  // Refuse to mutate. Writing the evidence and exiting non-zero is the honest
+  // outcome; carrying on would be the destructive one.
+  console.log("\nREFUSING TO RUN: a mutation target is dirty. No file was modified.")
+  const refused = {
+    issue: "M55.HOV-REDTEAM",
+    code: "HOV-REDTEAM",
+    milestone: "M55",
+    status: "known-gap",
+    checks,
+    passed,
+    failed: checks - passed,
+    realFailed: checks - passed,
+    negativeCases: 0,
+    plants: PLANTS.map((p) => ({ id: p.id, file: p.file, defect: p.defect, clause: p.clause, expectedFailedCheck: p.expectFailedCheck })),
+    currentCommit: execFileSync("git", ["rev-parse", "HEAD"], { cwd: ROOT, encoding: "utf8" }).trim(),
+    verifierCommand: "npx tsx script/m55/verify-hover-coverage-redteam.ts",
+    evidenceFile: "HOV-REDTEAM.json",
+    generatedAt: new Date().toISOString(),
+    refused: { reason: "dirty mutation target", files: dirty },
+    failures,
+    limitations: [
+      "This run measured nothing: it refused to mutate a dirty target, so its verdict is `known-gap` for the refusal, not for any defect class.",
+      "A mutation harness that restores from git HEAD DESTROYS uncommitted work in the file it mutates, and its byte-comparison 'proof' confirms the destruction rather than detecting it. The fix is the H0 guard plus a restore that writes back the bytes the harness read.",
+    ],
+  }
+  try {
+    writeSealed(EVIDENCE, refused)
+  } catch {}
+  console.log(`\nHOV-REDTEAM RESULT: REFUSED — dirty mutation target(s): ${dirty.join(", ")}`)
+  process.exit(1)
+}
+
+/** Restore a file to the EXACT bytes this harness read before mutating it. */
+function restore(rel: string, preMutationBytes: string): { ok: boolean; detail: string } {
   const abs = path.join(ROOT, rel)
   try {
-    const committed = execFileSync("git", ["show", `HEAD:${rel}`], { cwd: ROOT, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 })
-    writeFileSync(abs, committed)
+    writeFileSync(abs, preMutationBytes)
     const now = readFileSync(abs, "utf8")
-    return now === committed
-      ? { ok: true, detail: "byte-identical to HEAD" }
-      : { ok: false, detail: `post-restore content differs from HEAD (${now.length} vs ${committed.length} bytes)` }
+    return now === preMutationBytes
+      ? { ok: true, detail: "byte-identical to the pre-mutation bytes this harness read" }
+      : { ok: false, detail: `post-restore content differs from the pre-mutation bytes (${now.length} vs ${preMutationBytes.length})` }
   } catch (e) {
     return { ok: false, detail: `restore threw: ${String(e).slice(0, 160)}` }
   }
@@ -269,7 +351,7 @@ for (const plant of PLANTS) {
   try {
     res = runGate()
   } finally {
-    restores.push({ file: plant.file, ...restore(plant.file) })
+    restores.push({ file: plant.file, ...restore(plant.file, original) })
   }
   // Set difference, never the exit code. See the H2 note above.
   //
@@ -323,7 +405,7 @@ console.log("\nH1: a mutant that breaks the module must be classified as a CRASH
   try {
     res = runGate()
   } finally {
-    restores.push({ file: rel, ...restore(rel) })
+    restores.push({ file: rel, ...restore(rel, original) })
   }
   check(
     "H1: a mutant that removes a required export is reported as a CRASH, and this harness does not count it as a functional catch",
