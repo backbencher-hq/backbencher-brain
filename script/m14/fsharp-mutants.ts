@@ -466,4 +466,24 @@ export const FSHARP_MUTANTS: Mutant[] = [
       return { ...r, relationships: (r.relationships ?? []).filter((x: any) => !(String(x.type) === "calls" && x.metadata?.isPipelineCall === true)) }
     },
   },
+  {
+    id: "fsharp/drop-owner-qualified-name",
+    language: "fsharp",
+    defectClass: "unresolvable-endpoint",
+    description:
+      "M60 ontology lane pass 3, FS-P3-1. `overrides` is the only relationship this analyzer emits whose SOURCE it qualifies, because a bare member name is ambiguous: `type Resource() = interface System.IDisposable with override this.Dispose() = ()` writes `overrides Resource.Dispose -> IDisposable.Dispose`. The analyzer published every OWNED symbol under its BARE name, so that endpoint matched the store at 0 of 63 `overrides` edges on a 400-file stride draw of the 11,809-file population — confirmed on Grace/src/Grace.Actors/AccessControl.Actor.fs, where the stored symbol read `qualifiedName=\"OnActivateAsync\"` while the edge read `source=\"AccessControlActor.OnActivateAsync\"`. `pool-worker.ts:870` derives the stored value as `s.qualifiedName || s.metadata?.fqn || (s.scope ? … : name)`, and this analyzer set none of the three, so `brain_symbol.qualified_name` held a bare name while `brain_relationship.source_external` held a dotted one — and those are the two columns `src/ast/parallel-indexer.ts` JOINs. The mutant strips `metadata.fqn` from every symbol, which is the pre-fix state exactly, and it is written off the RESULT's own symbol table rather than off a name so it cannot silently stop matching when a fixture is renamed. Caught by fsharp/qualified-name-seam, whose two forbid rows forbid an owned member carrying NO fqn — a presence-ONLY row could not fail here, because the pre-fix symbol has no field to be absent from, which is why that fixture asserts the absence and not the value. The corpus-wide, owner-agnostic form of the same invariant is validation/m14/fixtures/fsharp/store-seam-check.ts.",
+    transform: (r: any) => {
+      const owned = (r.symbols ?? []).filter((s: any) => String(s?.ownerName ?? "").length > 0)
+      if (owned.length === 0) return r
+      return {
+        ...r,
+        symbols: (r.symbols ?? []).map((s: any) => {
+          if (String(s?.ownerName ?? "").length === 0 || !s?.metadata || s.metadata.fqn === undefined) return s
+          const metadata = { ...s.metadata }
+          delete metadata.fqn
+          return { ...s, metadata }
+        }),
+      }
+    },
+  },
 ]
