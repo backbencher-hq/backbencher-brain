@@ -5944,3 +5944,245 @@ now carry an explicit external marker, which is what makes them excludable rathe
 unresolved. Whether Z66 moved the raw corpus-tier rate, and by how much, is **not measured here** —
 that needs the full-population census, which needs disk this machine does not have (`/` was at 96%,
 21 G free).
+
+---
+
+## Pass 24 — cause B is zero, cause C was already done, and R7 holds at the full population
+
+Three negative results, each needing a population to establish, and each correcting a
+question the previous twenty-three passes left open. Nothing in `src/ast/real-zig-analyzer.ts`
+changed in this pass, and §B below is why: the two candidate repairs were measured and one
+of them would have fabricated edges.
+
+Claim level for this section: **L4** for the three findings (mutation-hardened at
+`50 / 50` caught, §G), resting on production `parseFile` over 3,848 corpus files.
+
+### A. The three causes, priced, at 3,848 files
+
+`ROUND-BRIEF.md` splits unresolved edges into three causes — **B** the edge target and the
+published name are spelled differently, **A** the name is not an identifier, **C** the target
+is external and emitted unmarked. `validation/m14/fixtures/zig/absent-class.ts` classifies
+every edge into seven disjoint classes that sum to the edge total, so the split is checkable
+against the total rather than asserted.
+
+Population: 3,848 `.zig` files, `find <root> -name '*.zig' -type f | sort | head -3848`,
+production `parseFile`, 3,848 parsed, 0 failed, 146,374 published symbols, **432,468 edges**.
+
+| class | edges | pct | what the class is |
+|---|---|---|---|
+| `fileLocalExact` | 255,300 | 59.03% | target is a published NAME in the edge's own file — resolved |
+| `corpusExact` | 96,125 | 22.23% | target is a published name in another file — resolved, ambiguous |
+| `corpusLeaf` | 31,341 | 7.25% | dotted target, leaf published in another file only |
+| `absentBare` | 33,521 | 7.75% | bare target, published nowhere in the sample |
+| `absentDotted` | 11,084 | 2.56% | dotted target, leaf published nowhere |
+| `fileLocalLeafX` | 5,097 | 1.18% | dotted target, leaf published in this file under a DIFFERENT qualified name |
+| **`fileLocalLeaf`** | **0** | **0.00%** | the class the cause-B recipe can safely touch |
+
+The cause-B class is empty. Not small — **zero of 432,468**. The row above it, 5,097 edges,
+is the population the recipe would have destroyed.
+
+### B. Cause B: the recipe does not apply to Zig, and its own predicate would fabricate
+
+`ROUND-BRIEF.md` ships a verified recipe: retarget every edge whose target is dotted and
+whose final segment is a published name. graphql went from 6,451 unresolved to 1,016 with
+it. Zig publishes members under BARE names and qualified paths under
+`scope + "." + name` (`pool-worker.ts:930`), so the recipe's predicate — dotted target, leaf
+published — selects two different populations here and cannot tell them apart.
+
+The discriminator is that projection. For a dotted target `T` whose leaf `L` the edge's own
+file publishes:
+
+- **`qualifiedName === T`** — the walk `scope + "." + name` reconstructs `T` exactly, so
+  retargeting to `L` preserves the graph's own spelling. Sound. This is `fileLocalLeaf`: **0**.
+- **`qualifiedName !== T`** — `L` names a DIFFERENT declaration. Retargeting binds the edge
+  to the wrong symbol. This is `fileLocalLeafX`: **5,097**, and every site sampled is this
+  shape:
+
+| target | the leaf's own qualifiedName | file |
+|---|---|---|
+| `std.debug.assert` | `assert` | `ghostty/build.zig` |
+| `std.mem.Allocator` | `Allocator` | `ghostty/pkg/freetype/face.zig` |
+| `builtin.os` | `Cache.Key.os` | `ghostty/pkg/apple-sdk/build.zig` |
+| `std.zig.system.NativeTargetInfo` | `NativeTargetInfo` | `ghostty/pkg/dcimgui/build.zig` |
+| `macos.text.Font` | `Font` | `ghostty/pkg/harfbuzz/coretext.zig` |
+| `translate_c.addImportToModule` | `HarfBuzzC.addImportToModule` | `ghostty/pkg/harfbuzz/build.zig` |
+
+So the recipe's rule, applied to Zig, does not recover 0 edges and does not cost 0 — it
+converts 5,097 edges that name a stdlib or module member into edges that name an unrelated
+local declaration of the same name. That is the fabricated-edge failure this workstream
+prices above every other, reached by following a rule another lane measured on another
+language.
+
+### C. The control that caught this instrument's own bug, and it caught it at zero
+
+The instrument also looks for the repairable residue: an `absentBare` target whose name IS
+DECLARED in the edge's own file's text, which would be a publication gap and the one class a
+lane edit can raise. It reports **4,193** such edges at the full population.
+
+That number is worthless without the control, and the first run of the control reported
+**0 / 645 — 0.00%**, i.e. the detector could not fire at all and its 0 meant nothing. The bug:
+`RegExp.exec` reports the index of the SEPARATOR capture group, so the 40-character window
+was cut one character early and the declaration keyword's trailing space fell outside it, so
+no declaration could ever match. The same detector, run against every name the analyzer
+DOES publish, from the same files' same bytes, now fires **74,145 / 118,653 = 62.49%**.
+
+The honest reading of the 4,193 is therefore a **lower bound**, bounded below by a detector
+that sees 62.49% of real declarations. Every site sampled is a function-local `const`/`var`
+or a `comptime` type parameter — `const expectError = @import("std").testing.expectError;`
+at `ghostty/pkg/freetype/errors.zig:291`, `comptime T` at `ghostty/pkg/harfbuzz/blob.zig` —
+and this analyzer declines to publish function locals by contract (`real-zig-analyzer.ts:383`,
+the Z8/Z9/Z22 rule: a local has no file-scope identity). So the largest repairable-looking
+class is 0.97% of edges and is a documented decision, not an oversight.
+
+### D. The resolver hypothesis, falsified
+
+If the unresolved edges were *correct* strings the store simply cannot look up, they would
+equal a published `qualifiedName`. Of the **75,946** edges that do not resolve by bare name,
+**22** do (0.03%), by type `references` 11 and `imports` 11 — and every one of the 22 is the
+same import path string `Target.zig`, which is a module path and not a reference at all.
+0 of the 22 are published by the edge's own file.
+
+So "the shared resolver ignores `qualifiedName`" is not why Zig resolves at 59.03%. The reason
+is structural: in Zig a dotted target is almost always an **import-alias path** (`macos.text`,
+`translate_c`, `std.mem`), and an alias is a local binding, so its qualified spelling is not
+any file's `qualifiedName` by construction.
+
+### E. Cause C was already done, by Z65, and my first count under-reported it
+
+Z65's `annotateTargetScope` (`real-zig-analyzer.ts:2894-2920`) sets
+`targetScope: "file-external"` on every edge whose target the file does not publish, and
+`file-local` on every edge it does. That IS the cause-C marker the brief asks for. The first
+run of this pass's instrument counted only Z66's `zigExternalRef` / `zigImport` /
+`zigImportAlias` flags and reported a marked population of 34,105; the marker predicate is
+Z65's annotation and the real figure is:
+
+- `targetScope` over all 432,468 edges: `file-local` **255,260**, `file-external` **177,193**,
+  absent **15**.
+- Of the 75,946 edges that do not resolve by bare name: marked **75,933 (99.98%)**, unmarked
+  **13**. By class, `absentDotted` 11,084/11,084, `corpusLeaf` 31,341/31,341,
+  `absentBare` 33,508/33,521.
+
+Cause B is 0, cause C is done, and cause A is the only live one — which item 38 already
+decided against changing the published `name`. The bar the brief sets, "optimise resolution,
+not counts", has no lever left in this lane that is not a shared-machinery change or a naming
+contract decision, and this pass says so rather than shipping a change to look busy.
+
+### F. R7 at the full population: 0 defects, and a gotcha for every consumer
+
+The workstream's standing rule R7 forbids an endpoint equal to the literal `unknown`. **Zig
+has no reserved words**, so `unknown` is a legal identifier — 37 published symbols in this
+corpus carry it (enum_member 26, property 8, constant 3). A consumer that filters the literal
+string would delete correct edges.
+
+`validation/m14/fixtures/zig/unknown-endpoint-probe.mts` classifies each such edge by whether
+the sample publishes the name at all, which is the only question that separates a placeholder
+from a Zig identifier:
+
+| verdict | edges | meaning |
+|---|---|---|
+| `fileLocal` | 39 | the edge's own file declares it — a real declaration |
+| `corpusLocal` | 2 | another file declares it — a real cross-file reference |
+| `nowhere` | **0** | nothing publishes it — the only class R7 is about |
+
+By type `contains` 36, `uses` 4, `exports` 1; by reason `zig_ownership` 36,
+`zig_field_access` 4, `zig_export` 1. The probe exits 1 when `nowhere > 0` and exits 2 when
+there are no occurrences at all, so it cannot pass by measuring nothing. Its first full run
+reported `nowhere` 2; both were its own predicate being too strict —
+`ghostty/src/terminal/osc/parsers/unknown.zig` reads `.unknown` off a `Command` declared in a
+sibling file, and `zig/test/cases/compile_errors/field_access_of_slices.zig:4` is a
+compile-error fixture whose own trailing comment quotes
+`:4:32: error: type '[]i32' has no members`.
+
+### G. Every gate this lane can run, re-run at this commit
+
+| gate | command | result |
+|---|---|---|
+| typecheck | `npx tsc --noEmit -p tsconfig.json` | **0 errors** |
+| fixture suite | `bun run script/m14/run-fixtures.ts --lang zig` | **15 pass / 0 fail**, no baseline regression |
+| mutation (shared, zig-scoped) | `BB_MUTANT_ONLY="zig/" bun run script/m14/mutate-analyzer.ts` | **50 / 50 CAUGHT** (1,815 → 50), exit 0 |
+| R7 probe, full population | `npx tsx validation/m14/fixtures/zig/unknown-endpoint-probe.mts <root> 3848` | 41 occurrences, `nowhere` **0**, exit 0 |
+| cause probe, full population | `npx tsx validation/m14/fixtures/zig/absent-class.ts <root> 3848` | `fileLocalLeaf` **0** / 432,468, control 62.49%, exit 0 |
+| ruled probe, full population | `npx tsx validation/m14/fixtures/zig/zig-ruled-probe.ts` | **10 / 10 controls**; `overrides` 0 hits, RAW 19, split 19/21/0/1; instrument A 239 declared / 232 produced, 0 of 17 supertype names; keyword calibration 11/11 declared, 10/11 produced |
+| census, 120-file hashed draw `sha256:02fb72df…` | `npx tsx validation/m14/fixtures/zig/ontology-census.ts --sample 120` | 7 types emitted; heuristic <0.7 **0 of 11,827**; empty-name symbols 0; kinds outside `SymbolKind` 0; `parseFile` fallback files 0 |
+| ontology arbiter, full root | `npx tsx script/m14/ontology-coverage-gate.ts zig` | **cannot finish — see §H.1** |
+
+Census per type, 120 files, 11,827 relationships, production `parseFile`:
+
+| type | count | files | srcMark% | srcDangle% | tgtLocal% | tgtCorpus% | heur% |
+|---|---|---|---|---|---|---|---|
+| `calls` | 3,815 | 81 | 13.18 | 0 | 40.05 | 51.25 | 0 |
+| `uses` | 3,686 | 84 | 21.60 | 0 | 37.95 | 55.10 | 0 |
+| `contains` | 2,214 | 45 | 0 | 14.68 | 100 | 100 | 0 |
+| `exports` | 722 | 93 | 100 | 0 | 100 | 100 | 0 |
+| `references` | 938 | 86 | 100 | 0 | 43.50 | 51.07 | 0 |
+| `imports` | 318 | 79 | 100 | 0 | 27.36 | 31.13 | 0 |
+| `instantiates` | 134 | 19 | 63.43 | 0 | 98.51 | 98.51 | 0 |
+
+The heuristic ratio is **0 of 11,827** and every edge carries both a `confidence` and a
+`metadata.relationshipType` (11,827/11,827 each). Question 6 is answered for Zig without a
+caveat, and it is a property of the construction rather than of the draw: every edge here
+comes from a parse fact — node type, field name, position — and the four confidence values
+in use are 1.0, 0.9, 0.85 and 0.75, all at or above the 0.7 threshold.
+
+### H. What pass 24 could not settle
+
+1. **The shared arbiter cannot finish a full-population run for Zig today.** A fresh walk
+   logs `[BB-PARSE-ERR] zig | … memory access out of bounds` on some files and then
+   `[BB-HANG] parser stuck 120s on <one of that run's own parse-error files> — exiting`,
+   which is `process.exit(1)` in shared machinery, before the table prints. Two fresh
+   attempts; the hang file rotated between them —
+   `zig/doc/langref/test_null_terminated_array.zig`, then `ghostty/src/lib/struct.zig`.
+   In **2 of 2** attempts the hang file was already among that run's parse-error files, which
+   is the mechanism item 21's guard was written for and which it does not currently catch.
+   So this pass reports **no** arbiter verdict, and the 7/10 EMITTED figure above comes from
+   the census instrument and the two probe instruments, not from the arbiter.
+2. **A PARTIAL checkpoint is a third failure mode, and it is the most deceptive of the
+   three.** Item 37 describes two states — run 1 correct, run 2 falsely `emitted 0/10`. An
+   interrupted run leaves a partial `validation/m14/measurements/walk-zig.txt` (this pass
+   found one at 1,512 of 3,834 paths), and the next run then tallies only the 2,322 files it
+   actually walks. Because Zig emits all seven types in nearly any file, the `emitted` column
+   still reads 7/10 and looks right while every COUNT is about 61% of the truth. The
+   checkpoint was removed and backed up to `/tmp/opencode/walk-zig.partial-1512.txt`;
+   `walk-*.txt` is gitignored (`.gitignore:274`) so nothing is committed either way.
+3. **15 edges of 432,468 (0.0035%) carry no `targetScope` at all** and are not attributed
+   here. `canonicalizePublishedNames` mutates relationships in place and does not drop
+   metadata, and the Z52 `uses` dedup runs before `annotateTargetScope`, so neither explains
+   it from the code. One more population walk to find them was not spent.
+4. **The 4,193 publication-gap edges are a lower bound, not a count.** The detector sees
+   62.49% of declarations the analyzer does publish, so it cannot see more than 62.49% of the
+   ones it does not. Every site sampled is a function local or a `comptime` parameter, which
+   is the contract, but the residue is unmeasured.
+5. **The `corpusExact` 96,125 (22.23%) population is still ambiguous** and still measured at
+   one draw per instrument. Item 38's decision not to change the published `name` stands on
+   the 70.95% per-file-reachable share from the addendum above; this pass did not re-measure
+   that share at 3,848 files and does not restate it.
+
+### I. §8 items, from this pass
+
+- **Item 37 is extended, not replaced.** *File:* `script/m14/ontology-coverage-gate.ts:306-319`
+  and `:473-511`, with `script/m14/resumable-walk.ts:168`. *What it must do, added by this
+  pass:* treat a PARTIAL checkpoint as its own failure state, not as a resume. When
+  `0 < walkStats.walked < corpusSize` the published per-type COUNTS are a fraction of the
+  population while the `emitted` column still looks right, so the gate must refuse to publish
+  counts unless the walk covered 100% of the admitted file set in that run, or must carry the
+  covered fraction next to every number. *Why, measured:* §H.2 — 1,512 of 3,834 paths on disk,
+  next run tallies 2,322, `emitted` still reads 7/10. *Reproduction:*
+  `bash validation/m14/fixtures/zig/arbiter-resume-repro.sh` shows the two documented states;
+  the third needs an interrupted run, which is what this pass had. *Not mine:* shared machinery.
+- **Item 40 — a `[BB-HANG]` that fires on a file which already failed to parse is the guard
+  working on the wrong condition.** *File:* the 120 s parser guard that emits
+  `[BB-HANG] parser stuck 120s on <file> — exiting`, in the pool-worker parse path.
+  *What it must do:* when a file has already logged `[BB-PARSE-ERR] … memory access out of
+  bounds`, do not re-parse it under the hang guard — record it as a parse failure with its
+  error and continue, so one bad wasm parse cannot end a whole corpus walk. *Why, measured:*
+  §H.1 — 2 of 2 fresh runs, the hang file was among that run's own parse-error files, and the
+  `process.exit(1)` cost the run its entire verdict. *Not mine:* shared machinery.
+- **Item 41 — the cause-B recipe needs a `qualifiedName` guard before another lane applies it.**
+  *File:* `ROUND-BRIEF.md`'s "PROVEN RECIPE" section, and whatever rule each lane implements
+  from it. *What it must do:* state the precondition the recipe actually depends on — that the
+  edge's target is dotted AND the leaf's published `qualifiedName` EQUALS the dotted target.
+  A lane that checks only "dotted and the leaf is published" will bind to a same-named
+  declaration. *Why, measured:* §B — 0 of 432,468 edges satisfy the guarded condition and
+  5,097 satisfy the unguarded one, all of them wrong bindings. *Not mine:* the brief is the
+  supervisor's; the measurement is this lane's and is reproducible with
+  `npx tsx validation/m14/fixtures/zig/absent-class.ts $HOME/fixtures/repositories 3848`.
