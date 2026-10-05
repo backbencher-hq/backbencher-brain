@@ -65,7 +65,7 @@ import { countUsageSites, USAGE_SITE_FILTER_LABEL } from "./relations"
 import { classifyStoredRow, orderTiers, primaryTier, type EvidenceTier, type StoredTierRow } from "./evidence_tier"
 import { parseParameters, renderSignature } from "./signature"
 import { parseForSafety } from "../ast/safety-primitives"
-import { actionsSection, connectedGroups, connectedSummarySection, definitionLink, richSitesForSymbol, usageSitesOf, usagesSection } from "./rich_hover"
+import { actionsSection, connectedGroups, connectedSummarySection, containmentSection, definitionLink, richSitesForSymbol, usageSitesOf, usagesSection } from "./rich_hover"
 
 /** The launch set, its membership test, and the path→language map live in
  *  the single-owner module (M29.R2: one owner; the set was duplicated here
@@ -126,6 +126,13 @@ export interface SymbolHoverData {
   /** M42.H2: pre-rendered usages section — empty string when no usage
    *  sites exist (declared absence). */
   usagesSection: string
+  /** Owner-decided ("show all the relationships, not just contains"): the
+   *  DECLARATION CONTAINMENT section — the rows `relations.ts` deliberately
+   *  excludes from the usage vocabulary (`contains`, `exports`), rendered in
+   *  their own labelled block. Empty string when the symbol neither declares
+   *  nor is declared by anything (declared absence). It is a separate section
+   *  rather than a loosened usage list precisely so the usage law stays intact. */
+  containmentSection: string
   /** M42.H4: pre-rendered hover-actions row (open in graph / impact /
    *  call hierarchy) — empty string when the symbol identity (declaration
    *  location) is not resolvable: no actions without a clickable target
@@ -398,6 +405,13 @@ export function formatHoverMarkdown(data: SymbolHoverData): string {
   if (data.usagesSection && data.usagesSection.length > 0) {
     lines.push(data.usagesSection)
   }
+  // The declaration-containment block, AFTER the usages section and in its own
+  // labelled header. Order matters for the negative test: a reader (and the
+  // gate) meets the usages list first, so a `contains` row can only ever be read
+  // as the containment it is.
+  if (data.containmentSection && data.containmentSection.length > 0) {
+    lines.push(data.containmentSection)
+  }
   // M42.H4: the actions row — the hover is the entry point to the deep
   // surfaces (graph, impact, call hierarchy). Empty row renders nothing
   // (declared absence: no symbol identity, no actions to offer).
@@ -617,6 +631,11 @@ export async function hover(
     // M42.H2: rich sections composed from stored relationship rows.
     connectedSection: connectedSummarySection(connectedGroups(sites)),
     usagesSection: usagesSection(usageSiteRows, usageCount, symbol.name, file.path, request.position.line, request.position.character),
+    // The declaration-containment rows come from the SAME collected array the
+    // usage list and the connected summary read (one collection, three
+    // renderings), so a containment count can never disagree with a usage count
+    // about the same rows.
+    containmentSection: containmentSection(sites),
     // LSP definition location (range.start) when resolvable; null otherwise
     // (the footnote then renders the plain location — still honest).
     definition: range === null ? null : { line: range.start.line, character: range.start.character },

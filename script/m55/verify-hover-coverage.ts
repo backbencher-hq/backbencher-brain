@@ -209,6 +209,460 @@ console.log(`  relationship kinds named ${totals.distinctKindsNamedInProse} / kn
 console.log(`  outgoing rows known ${totals.outgoingRowsKnown}; rows with a stored call-site line ${totals.rowsWithStoredCallSiteLine}, of which ${totals.rowsWhoseCallSiteDiffersFromDecl} differ from the declaration the hover links to`)
 console.log(`  external-end rows known ${totals.externalRowsKnown}; enriched rows known ${totals.enrichedRowsKnown}`)
 
+// ===========================================================================
+// R3b: PER-KIND VERB COVERAGE — the metric that cannot flatter itself
+// ===========================================================================
+//
+// WHY THIS BLOCK EXISTS AND WHY IT IS NOT THE OLD ONE
+//
+// The audit's earlier coverage number scored kinds by GREPPING THE RENDERED CARD
+// FOR ENGLISH WORDS. That metric is broken in a specific, measured way: the
+// usages header says "N stored references", so the word `references` scored on
+// seven cards for a reason that has nothing to do with `references` rows, while
+// `contains` — the second-most-stored kind — scored ZERO because it had no prose
+// word anywhere. A metric that awards points for a substring in a header is a
+// metric that measures the header.
+//
+// So this block measures the thing the owner's decision is about: for each
+// canonical relationship kind, how many STORED OUTGOING and INGOING rows did the
+// card render WITH A VERB. A row counts only when:
+//
+//   1. the index stores it on this symbol's end (`know()` — independent SQL,
+//      never the hover's collector);
+//   2. the card emitted a link for it (read back OUT of the markdown by
+//      parsing the command args — not recomputed from the hover's code); and
+//   3. that link's file:line EQUALS the index-stored location of the row's other
+//      end, differentially checked row by row (§12.1: every target must equal an
+//      index-stored location; a guessed link is a lie); and
+//   4. the link sits under a VERB in the card — a non-empty verb token.
+//
+// Condition 4 is what `contains` could never satisfy before this wave, and
+// conditions 1-3 are what a word-frequency scan could never establish. A row
+// that satisfies none of the three ways to be honest is reported in the
+// `declaredAbsent` column with the reason the SURFACE gives for it
+// (DECLARED_ABSENCE in src/lsp/rich_hover.ts) — and a row that is neither
+// rendered nor declared is a SILENT GAP, which the D1 check below fails on.
+//
+// The kinds the fixture does not store are reported too, as `storedRows: 0` with
+// the explicit note that the denominator is zero. They are neither a pass nor a
+// fail: an unstored kind cannot be rendered or missing.
+
+import {
+  CANONICAL_RELATIONSHIP_KINDS,
+  DECLARED_ABSENCE,
+  RELATIONSHIP_KIND_ALIASES,
+  verbFor,
+  isContainmentVerb,
+} from "../../src/lsp/rich_hover.ts"
+import { isDeclarationRelationship } from "../../src/lsp/relations.ts"
+
+interface KindCoverage {
+  kind: string
+  storedOutgoing: number
+  storedIncoming: number
+  /** stored rows rendered under a verb whose target equals the stored location */
+  renderedWithVerb: number
+  /** stored rows rendered as a USAGE row (the usages list labels its rows as
+   *  sites, not verbs — this is a DIFFERENT honest outcome and is counted apart
+   *  so the verb ratio is never inflated by usage-list rows) */
+  renderedAsUsage: number
+  /** stored rows the surface declares it does not render, with its reason */
+  declaredAbsent: number
+  /** the surface's declared-absence reason, when it has one for this kind */
+  declaredReason: string | null
+  /** stored rows that are neither rendered nor declared — a SILENT GAP */
+  silentGap: number
+  /** the renders that were claimed but whose target is NOT an index-stored
+   *  location for the row (a guessed link — §12.1) */
+  offTarget: number
+  /** examples of silent gaps, for the report */
+  silentGapExamples: string[]
+}
+
+/** The set of index-stored locations a row's OTHER end may legitimately open.
+ *
+ *  §12.1 requires every navigation target to EQUAL an index-stored location, and
+ *  the index stores TWO for a relationship row: `brain_relationship.line_number`
+ *  (the call site, classified by the declared owner
+ *  src/intelligence/graph/line-address.ts) and the other end symbol's own
+ *  `line_start` (its declaration). Which one a row opens is the §14 rule 3
+ *  question, measured separately in R4 — it is NOT this metric's question. This
+ *  metric asks the narrower question: does the link open a position the index
+ *  stores FOR THAT ROW, as opposed to a position it invents?
+ *
+ *  So the oracle is a SET, read differentially from the store. A link outside the
+ *  set scores nothing: a card that points a `contains` row at an unrelated line
+ *  is not coverage, and a recomputation that agreed with itself would be. */
+function storedFarEndLocations(raw: any, row: { direction: string; otherId: string | null; line: number | null }): Array<{ file: string; line: number }> {
+  if (row.otherId === null) return []
+  const o = raw
+    .prepare(
+      "SELECT f.path AS p, s.line_start AS ls, s.byte_start AS bs, s.byte_end AS be FROM brain_symbol s JOIN brain_file f ON f.id = s.file_id WHERE s.id = ?",
+    )
+    .get(row.otherId) as any
+  if (o === null || o.p === null || o.ls === null) return []
+  const out: Array<{ file: string; line: number }> = [{ file: String(o.p), line: Number(o.ls) - 1 }]
+  // The stored call-site line, through the ONE declared owner of what a stored
+  // line IS. `classifyStoredLine`/`deriveCallSiteAddress` are imported at the
+  // top of this gate and used by R4 for the same rows.
+  if (row.line !== null && row.line > 0) out.push({ file: String(o.p), line: row.line - 1 })
+  return out
+}
+
+// --- The per-kind table, measured across every pinned symbol ------------------
+const kindCoverage = new Map<string, KindCoverage>()
+for (const kind of CANONICAL_RELATIONSHIP_KINDS) {
+  kindCoverage.set(kind, {
+    kind,
+    storedOutgoing: 0,
+    storedIncoming: 0,
+    renderedWithVerb: 0,
+    renderedAsUsage: 0,
+    declaredAbsent: 0,
+    declaredReason: DECLARED_ABSENCE.find((d) => d.kind === kind)?.reason ?? null,
+    silentGap: 0,
+    offTarget: 0,
+    silentGapExamples: [],
+  })
+}
+for (const [alias, canonical] of Object.entries(RELATIONSHIP_KIND_ALIASES)) {
+  // An alias's rows are counted under the canonical kind it names, and the
+  // canonical kind is the one that carries the verb — otherwise `call` and
+  // `calls` would be two answers to one fact.
+  void alias
+  void canonical
+}
+
+/** The rendered links of one card, decoded once per pinned symbol. */
+const cardLinksByPin = new Map<string, ReturnType<typeof rendered>>()
+for (const pin of PINS) {
+  const fileRel = raw.prepare("SELECT f.path AS p FROM brain_symbol s JOIN brain_file f ON f.id=s.file_id WHERE s.id=?").get(pin.id) as any
+  const res = await hover(raw, { filePath: fileRel.p, position: pin.pos })
+  cardLinksByPin.set(pin.id, rendered(res.contents?.value ?? "", res.data))
+}
+
+for (const pin of PINS) {
+  const k = know(raw, dir, pin.id)
+  const r = cardLinksByPin.get(pin.id)!
+  for (const row of k.rows) {
+    const canonical = (CANONICAL_RELATIONSHIP_KINDS as readonly string[]).includes(row.kind.trim().toLowerCase())
+      ? row.kind.trim().toLowerCase()
+      : RELATIONSHIP_KIND_ALIASES[row.kind.trim().toLowerCase()] ?? null
+    // A kind outside the canonical ten has no bucket here: it is reported as a
+    // declared absence of its own class (see the silent-gap accounting below),
+    // and silently folding it into a canonical kind would misattribute it.
+    if (canonical === null) continue
+    const entry = kindCoverage.get(canonical)!
+    if (row.direction === "outgoing") entry.storedOutgoing++
+    else entry.storedIncoming++
+
+    // The index-stored locations this row's far end may legitimately open.
+    const farLocs = storedFarEndLocations(raw, row)
+    if (farLocs.length === 0) {
+      // The far end has no stored location: §12.1 forbids rendering a link to
+      // it, and the surface declares why.
+      entry.declaredAbsent++
+      continue
+    }
+    // Is there a rendered link at exactly one of those stored locations, under a
+    // verb?
+    const atTarget = r.links.filter((l) => farLocs.some((f) => f.file === l.file && f.line === l.line))
+    if (atTarget.length === 0) {
+      // No link at all for this row. Was it rendered as a usage row instead?
+      const asUsage = r.links.some((l) => l.section === "usages" && farLocs.some((f) => f.file === l.file))
+      if (asUsage) entry.renderedAsUsage++
+      else {
+        // Neither rendered nor declared by the surface.
+        entry.silentGap++
+        if (entry.silentGapExamples.length < 3) {
+          entry.silentGapExamples.push(`${row.direction} ${row.id} ${row.kind} -> ${farLocs.map((f) => `${f.file}:${f.line + 1}`).join("|")}`)
+        }
+      }
+      continue
+    }
+    // A link exists at the stored location. Does at least one carry a VERB, and
+    // is that verb the RIGHT one for this kind and direction?
+    //
+    // The accept set is declared, not inferred: a CONNECTION kind must carry its
+    // own verb from RELATIONSHIP_VERB, and a DECLARATION kind must carry one of
+    // the declared containment words (`declares` / `declared in`, or `contains`
+    // / `contained by` where the surface spells it that way). Both halves are
+    // checked, so a `contains` row rendered "called by" scores NOTHING: the right
+    // target under a label that says the wrong fact is a defect, not coverage.
+    const want = verbFor(row.kind, row.direction)
+    const declaration = isDeclarationRelationship(row.kind)
+    const verbed = atTarget.some((l) => {
+      const v = l.verb
+      if (v === "") return false
+      if (declaration) return isContainmentVerb(v)
+      return want !== null && v === want
+    })
+    if (verbed) entry.renderedWithVerb++
+    else {
+      // A link is present but carries no verb, or a verb the kind does not
+      // declare. That is the unlabelled-render defect the owner's decision
+      // names; it is neither coverage nor a declared absence.
+      entry.silentGap++
+      if (entry.silentGapExamples.length < 3) {
+        entry.silentGapExamples.push(`${row.direction} ${row.id} ${row.kind} -> ${farLocs.map((f) => `${f.file}:${f.line + 1}`).join("|")} (link verb=${JSON.stringify(atTarget.map((l) => l.verb))})`)
+      }
+    }
+  }
+}
+
+console.log("\nR3b: PER-KIND verb coverage (stored rows rendered with a verb)\n")
+console.log("  The denominator is STORED rows per kind, read with independent SQL.")
+console.log("  A row counts as rendered only when the card emitted a link whose target")
+console.log("  EQUALS the index-stored location of that row's far end, under a verb.\n")
+const kindTable = [...kindCoverage.values()]
+for (const e of kindTable) {
+  const stored = e.storedOutgoing + e.storedIncoming
+  const pctStr = stored === 0 ? "  n/a (kind not stored in this fixture)" : `  ${((100 * e.renderedWithVerb) / stored).toFixed(1)}%`
+  console.log(
+    `  ${e.kind.padEnd(13)} stored ${String(stored).padStart(2)} (out ${e.storedOutgoing}, in ${e.storedIncoming})` +
+      `  verb ${String(e.renderedWithVerb).padStart(2)}${pctStr}  usage-list ${e.renderedAsUsage}  declared ${e.declaredAbsent}  SILENT ${e.silentGap}`,
+  )
+  for (const ex of e.silentGapExamples) console.log(`       gap: ${ex}`)
+}
+const storedAllKinds = sum((e) => (e.known.distinctIncomingKinds.length + e.known.distinctOutgoingKinds.length))
+const verbRowsAllKinds = kindTable.reduce((n, e) => n + e.renderedWithVerb, 0)
+const storedRowsAllKinds = kindTable.reduce((n, e) => n + e.storedOutgoing + e.storedIncoming, 0)
+const silentRowsAllKinds = kindTable.reduce((n, e) => n + e.silentGap, 0)
+console.log(
+  `\n  verb-rendered rows ${verbRowsAllKinds} / stored relationship rows on pinned symbols ${storedRowsAllKinds}` +
+    (storedRowsAllKinds > 0 ? `  (${((100 * verbRowsAllKinds) / storedRowsAllKinds).toFixed(1)}%)` : ""),
+)
+console.log(`  kinds present in the fixture: ${kindTable.filter((e) => e.storedOutgoing + e.storedIncoming > 0).length} of ${CANONICAL_RELATIONSHIP_KINDS.length}`)
+console.log(`  kinds NOT stored in this fixture (declared, not scored): ${kindTable.filter((e) => e.storedOutgoing + e.storedIncoming === 0).map((e) => e.kind).join(", ") || "none"}`)
+console.log(`  SILENT gaps (a stored row neither rendered nor declared): ${silentRowsAllKinds}`)
+void storedAllKinds
+
+// ===========================================================================
+// D: the three checks that make this gate falsifiable
+// ===========================================================================
+//
+// Each check is written as a NAMED PREDICATE over data, and each mutant leg
+// runs that SAME predicate on doctored input and asserts it reports a
+// violation. Two reasons, and the second is the important one:
+//
+//   1. A check whose mutant leg re-states the healthy state proves nothing. The
+//      first draft of D1/MUTANT asserted `uses renders somewhere` — which is the
+//      HEALTHY condition — and so could never pass on the tree it was written
+//      for. It was a leg that failed every run for a reason that had nothing to
+//      do with the defect class.
+//   2. The red-team harness judges a mutant by the NAME of the check that
+//      fails. A check and its predicate must be the same thing, or the harness
+//      can be looking at a different predicate than the one the leg claims to
+//      falsify.
+
+console.log("\nD: the three checks that make this gate falsifiable\n")
+
+/** Every canonical kind stored on any pinned symbol, canonicalized. */
+function storedKindsOnPins(): Set<string> {
+  const kinds = new Set<string>()
+  for (const pin of PINS) {
+    for (const row of know(raw, dir, pin.id).rows) {
+      const t = row.kind.trim().toLowerCase()
+      kinds.add((CANONICAL_RELATIONSHIP_KINDS as readonly string[]).includes(t) ? t : RELATIONSHIP_KIND_ALIASES[t] ?? t)
+    }
+  }
+  return kinds
+}
+
+/** D1's predicate: a stored kind that neither renders nor is declared.
+ *
+ *  `table` is a parameter so the mutant leg can hand it a doctored measurement.
+ *  Re-reading the index here would make the leg unable to describe a mutation
+ *  that has not happened yet — which is the whole point of the leg. */
+function undeclaredKinds(kinds: Iterable<string>, table: Map<string, KindCoverage>): string[] {
+  return [...kinds].filter((kind) => {
+    const e = table.get(kind)
+    if (e === undefined) return false
+    return e.renderedWithVerb + e.renderedAsUsage === 0 && e.declaredAbsent === 0
+  })
+}
+
+/** D2's predicate: a section header whose stated count is not what it renders.
+ *
+ *  Only headers that STATE A COUNT are in scope. The `**connected**:` line is
+ *  not one — it is a prose summary with no number in it, and reading "the first
+ *  digit anywhere on the line" as its count produced seven fabricated D2
+ *  failures on cards whose headers were correct (`header=5 but rows+rest=2` on a
+ *  line that says no number at all). A predicate that manufactures failures is
+ *  as dishonest as one that hides them, and it is worse: it trains a reader to
+ *  ignore the check.
+ *
+ *  A section's countable total is its rows plus its DECLARED rest (the "+N
+ *  more" a capped list states). The connected summary's per-verb `+N` overflow is
+ *  not a rest — it is a count of what one verb group omits, and the section
+ *  states no total, so the summary is out of scope by construction. */
+function headerCountDisagreements(
+  sectionsByPin: Iterable<{ label: string; sections: RenderedSectionHeader[] }>,
+): string[] {
+  const out: string[] = []
+  for (const { label, sections } of sectionsByPin) {
+    for (const s of sections) {
+      if (s.count === null) continue
+      const countable = s.rows.length + s.rest
+      if (s.count !== countable) out.push(`${label}/${s.name}: header=${s.count} but rows+rest=${countable}`)
+    }
+  }
+  return out
+}
+
+/** D3's predicate: a rendered tier no stored row justifies. */
+function unjustifiedTiers(entries: Iterable<{ label: string; tiers: readonly string[]; justified: ReadonlySet<string> }>): string[] {
+  const out: string[] = []
+  for (const { label, tiers, justified } of entries) {
+    for (const t of tiers) if (!justified.has(t)) out.push(`${label}: ${JSON.stringify(t)}`)
+  }
+  return out
+}
+
+const { classifyStoredRow } = await import(path.join(ROOT, "src/lsp/evidence_tier.ts")) as {
+  classifyStoredRow: (row: { relationship_type: string; confidence: number | null; metadata?: string | null }) => string
+}
+
+/** The tiers the INDEX justifies for a symbol — the owner's own derivation over
+ *  the stored rows, read with independent SQL. This is the D3 oracle: it reads
+ *  the STORE, while the rendered tiers are read off the CARD. Two different
+ *  reads, so a card that invents a tier cannot inherit the invention. */
+function justifiedTiersFor(symbolId: string): Set<string> {
+  const rows = raw
+    .prepare(
+      "SELECT relationship_type, confidence, metadata FROM brain_relationship WHERE source_symbol_id = ? UNION SELECT relationship_type, confidence, metadata FROM brain_relationship WHERE target_symbol_id = ?",
+    )
+    .all(symbolId, symbolId) as Array<{ relationship_type: string; confidence: number | null; metadata: string | null }>
+  const set = new Set(rows.map((row) => classifyStoredRow(row)))
+  set.add("unknown")
+  return set
+}
+
+// The render side of each predicate, computed once from the cards.
+const sectionsByPin = PINS.map((pin) => ({ label: pin.label, sections: cardLinksByPin.get(pin.id)!.sections }))
+const tierEntries = PINS.map((pin) => ({
+  label: pin.label,
+  tiers: cardLinksByPin.get(pin.id)!.renderedTiers,
+  justified: justifiedTiersFor(pin.id),
+}))
+
+// --- D1: a stored kind is DROPPED FROM THE CARD, or is undeclared -------------
+// D1's defect: relations.ts reclassifies `uses` as a declaration, so every
+// incoming `uses` row vanishes from the usages list while the index still holds
+// it. The card's answer to "who uses this?" silently shrinks.
+//
+// The check asserts the UNDER-claim direction. The pre-existing M1 guards only
+// the OVER-claim direction (rendered > known); it said nothing about a card that
+// renders LESS than the index holds, which is exactly D1's shape and exactly the
+// defect that let `uses` and `references` render unlabelled for waves.
+{
+  const undeclared = undeclaredKinds(storedKindsOnPins(), kindCoverage)
+  check(
+    "D1: every stored relationship kind is rendered with a verb or DECLARED absent with a reason",
+    undeclared.length === 0,
+    `stored on pinned symbols: ${[...storedKindsOnPins()].sort().join(", ")} — unrendered and undeclared: ${undeclared.join(", ")}`,
+  )
+}
+// D1/MUTANT: the SAME predicate, on a doctored measurement that reproduces D1's
+// shape — a stored kind whose rows render nowhere and which nobody declared. If
+// this predicate returns that kind, the check above is real; if it returns
+// nothing, the check above cannot fail and D1 is uncaught.
+{
+  // The doctored table: `uses` loses every rendered row, exactly as the planted
+  // mutation makes it. Nothing else is touched, so a violation reported here is
+  // attributable to that one change.
+  const doctored = new Map<string, KindCoverage>(
+    [...kindCoverage].map(([k, v]) => [k, { ...v }]),
+  )
+  const usesEntry = doctored.get("uses")
+  if (usesEntry !== undefined) {
+    usesEntry.renderedWithVerb = 0
+    usesEntry.renderedAsUsage = 0
+  }
+  const caught = undeclaredKinds(new Set(["uses"]), doctored)
+  check(
+    "D1/MUTANT: the D1 predicate reports a stored kind that renders nowhere (a check that could not fail would return nothing here)",
+    caught.includes("uses"),
+    `predicate returned [${caught.join(", ")}] for a doctored table where \`uses\` renders 0 rows and is undeclared`,
+  )
+}
+
+// --- D2: a header COUNT disagrees with the rows beneath it -------------------
+// D2's defect: the usages header prints `usage.length + 1`. The list still has N
+// rows and the "+N more" is computed from N, so the header is one higher than
+// what the eye can count.
+//
+// §13.4 (counts equal what is rendered) and §14 rule 1 (one surface, one answer)
+// as a machine check. The pre-existing gate read the header with /(\d+) usage/
+// — which matches hover.ts's HEADLINE "N usages" line, not the usages SECTION
+// header — and counted list rows separately without ever comparing them. That is
+// why D2 survived: the two numbers were read and never subtracted.
+{
+  const disagreements = headerCountDisagreements(sectionsByPin)
+  check(
+    "D2: every section header's stated count equals the rows beneath it (count + declared rest)",
+    disagreements.length === 0,
+    disagreements.join(" | "),
+  )
+}
+// D2/MUTANT: the SAME predicate, on a doctored header that is one higher than
+// its list — the exact shape of the planted off-by-one.
+//
+// The mutation is applied to the first section that STATES a count, whatever it
+// is called. Hard-coding `usages` made the leg pass vacuously on a symbol whose
+// card has no usage list: the doctored map then held nothing to disagree with,
+// the predicate correctly returned [], and the check reported ✓ for a predicate
+// that had never been exercised. A mutant leg that can pass by not running is
+// the same defect as a gate that can pass by not running, one level down.
+{
+  const withCount = sectionsByPin.filter(({ sections }) => sections.some((s) => s.count !== null))
+  check(
+    "D2/MUTANT: a card with a counted section EXISTS for the mutant to attack (a leg with nothing to mutate passes vacuously)",
+    withCount.length > 0,
+    `cards with a counted section: ${withCount.length}`,
+  )
+  // Mutate the first section that STATES A COUNT, wherever it sits in the list.
+  // The first draft mutated `sections[0]`, which is `**connected**:` — a section
+  // with `count: null`, so the mutation changed nothing and the leg reported the
+  // predicate as blind when it had simply never been handed a counted header.
+  const doctored = withCount.map(({ label, sections }) => {
+    const target = sections.findIndex((s) => s.count !== null)
+    return {
+      label,
+      sections: sections.map((s, i) => (i === target && s.count !== null ? { ...s, count: s.count + 1 } : s)),
+    }
+  })
+  const caught = headerCountDisagreements(doctored)
+  check(
+    "D2/MUTANT: the D2 predicate reports an off-by-one counted header",
+    caught.length > 0,
+    caught.length > 0 ? `reported: ${caught[0]}` : "the predicate found nothing wrong with a header one higher than its list, so it cannot catch D2",
+  )
+}
+
+// --- D3: a FABRICATED evidence tier ------------------------------------------
+// D3's defect: evidence_tier.ts promotes an unclassified row to `structural`
+// (parser-fact tier) when the index stores no such class. §12.3 and §14 rule 3
+// forbid rendering an inference at parser-fact tier.
+{
+  const fabricated = unjustifiedTiers(tierEntries)
+  check(
+    "D3: every evidence tier the card renders is justified by a stored relationship row",
+    fabricated.length === 0,
+    fabricated.join(" | "),
+  )
+}
+// D3/MUTANT: the SAME predicate, on a card whose tier line carries a tier the
+// index never stored.
+{
+  const doctored = tierEntries.map((e) => ({ ...e, tiers: [...e.tiers, "structural-v2"] }))
+  const caught = unjustifiedTiers(doctored)
+  check(
+    "D3/MUTANT: the D3 predicate reports a tier the index never stored",
+    caught.length > 0,
+    caught.length > 0 ? `reported: ${caught[0]}` : "the predicate accepted a fabricated tier, so it cannot catch D3",
+  )
+}
 // --- R4: the call-site differential -----------------------------------------------------
 console.log("\nR4: call-site differential (the address owner vs the hover's link target)\n")
 // The measurement, stated as a differential: for every USAGE row the hover

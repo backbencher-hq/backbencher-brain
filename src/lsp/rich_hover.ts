@@ -13,16 +13,26 @@
 // Honesty law (IDE Honesty Contract §12.1): nothing unclickable, no guessed
 // link. A site renders only when its other end is a REAL indexed symbol with
 // a resolvable location; rows whose other end is NULL/external never render.
-// Rows of purely structural kinds (contains/exports) are usages (the L3
-// references surface counts them, and H2 stays differential with it) but are
-// NOT connection facts: they never appear in the connected summary.
+// Rows of purely structural kinds (contains/exports) are DECLARATIONS, not
+// usages: they render in their own labelled containment section and never in
+// the connection summary or the usage list.
 // Staleness is inherited from the hover response — this module never claims
 // freshness (contract §12.2).
+//
+// DECLARED ABSENCE, in ONE place, with reasons (contract §11.7 + the owner's
+// ratified decision "the hover should show all the relationships, not just
+// contains" — every stored kind reaches the card as a labelled relationship or
+// is DECLARED here, with the reason it is not; nothing is silently unlabelled).
+//
+// The table lives beside the verb tables (not in a gate) because it is a
+// statement about the SURFACE, and a statement about a surface has to live with
+// the surface: a register only a test owns is a register the surface can fail to
+// keep honest.
 
 import type { CoreDatabase } from "../brain/database"
 import { edgeLocation } from "./navigation"
 import { PositionError } from "./positions"
-import { usageSites, USAGE_SITE_FILTER_LABEL } from "./relations"
+import { isDeclarationRelationship, usageSites, USAGE_SITE_FILTER_LABEL } from "./relations"
 import {
   ADDRESS_NOTES,
   addressLine0,
@@ -44,8 +54,23 @@ export interface RichSite {
   character: number
   endLine: number
   endCharacter: number
-  /** relationship_type as the analyzer wrote it (source -> target) */
+  /** relationship_type as the analyzer wrote it (source -> target) — the FIRST
+   *  stored kind at this location, kept as the primary so existing readers of
+   *  this field keep working. Read `relationshipTypes` for the whole set. */
   relationshipType: string
+  /** EVERY stored kind at this location, in stored order.
+   *
+   *  This field exists because the collector deduplicates sites by location, and
+   *  two stored rows of DIFFERENT kinds can share one location: `reset uses
+   *  items` and `reset references items` are two stored relationships whose far
+   *  end is the same symbol on the same line. The first draft kept only the
+   *  first kind and dropped the second, so a real stored row of a real kind
+   *  rendered NOWHERE — and the coverage audit scored `references` at 0% for a
+   *  reason that had nothing to do with its verb table. §13.2: "when a symbol
+   *  relates through several relationship types, the group states the count and
+   *  names the types. Nothing is merged into silence." One location may still
+   *  render ONE usage row (§13.1), and it does — but the kinds are all named. */
+  relationshipTypes: string[]
   /** true when the hovered symbol is the TARGET of the row */
   reversed: boolean
   /** confidence as stored (ordering only; tiers render globally) */
@@ -80,29 +105,193 @@ export interface RichSite {
 
 export const MAX_USAGE_LINKS = 3
 
-// Display verbs for CONNECTION facts only. Purely structural kinds
-// (contains, exports, references, uses) intentionally have no entry: they
-// stay usages but are never connection claims.
-// Both stored conventions are covered: the M24-era fixtures write `call`, the
-// real analyzers write `calls` — same fact, two spellings (one of them must
-// never render as a plain usage while the other gets a verb).
-const OUT_VERB: Record<string, string> = {
-  calls: "calls",
+// ---------------------------------------------------------------------------
+// THE COVERAGE DENOMINATOR
+//
+// The canonical ten relationship kinds, enumerated by the MCP graph tool's own
+// `relationshipTypes` parameter description (src/mcp/tool-registry.ts:259).
+// This list is the denominator for "does the hover show all the relationships".
+// It is duplicated here rather than imported — the tool registry is a large
+// module and the LSP lane does not depend on it — so the two are COMPARED by the
+// drift gate in script/m55/verify-hover-coverage.ts instead of being assumed
+// equal. A denominator nobody re-checks is a denominator that rots.
+// ---------------------------------------------------------------------------
+export const CANONICAL_RELATIONSHIP_KINDS = [
+  "calls",
+  "extends",
+  "implements",
+  "uses",
+  "instantiates",
+  "overrides",
+  "contains",
+  "references",
+  "imports",
+  "exports",
+] as const
+
+export type CanonicalRelationshipKind = (typeof CANONICAL_RELATIONSHIP_KINDS)[number]
+
+/**
+ * Stored spellings that are NOT canonical kinds, kept because the index really
+ * carries them and a table with no entry for a spelling that exists is how
+ * `references` stayed invisible for waves. Each alias names the canonical kind
+ * it is a spelling OF, so an alias cannot become a second answer.
+ *
+ * `call` and `inherits` are real: the M24-era fixtures write `call` and five
+ * analyzers write `inherits`. `import`/`use`/`reference`/`usage` are the
+ * singular spellings `evidence_tier.ts` already recognizes as tier inputs.
+ */
+export const RELATIONSHIP_KIND_ALIASES: Readonly<Record<string, CanonicalRelationshipKind>> = {
   call: "calls",
-  instantiates: "instantiates",
-  implements: "implements",
-  overrides: "overrides",
-  extends: "extends",
-  inherits: "inherits",
+  inherits: "extends",
+  import: "imports",
+  use: "uses",
+  usage: "uses",
+  reference: "references",
 }
-const IN_VERB: Record<string, string> = {
-  calls: "called by",
-  call: "called by",
-  instantiates: "instantiated by",
-  implements: "implemented by",
-  overrides: "overridden by",
-  extends: "extended by",
-  inherits: "inherited by",
+
+/** The canonical kind a stored spelling names, or null when the index carries a
+ *  kind outside the ten (a non-canonical writer's spelling). */
+export function canonicalKind(relationshipType: string): CanonicalRelationshipKind | null {
+  const t = relationshipType.trim().toLowerCase()
+  if ((CANONICAL_RELATIONSHIP_KINDS as readonly string[]).includes(t)) return t as CanonicalRelationshipKind
+  return RELATIONSHIP_KIND_ALIASES[t] ?? null
+}
+
+// ---------------------------------------------------------------------------
+// VERB TABLE — every canonical kind, both directions
+// ---------------------------------------------------------------------------
+//
+// The owner's ratified decision: "the hover should show all the relationships,
+// not just contains". Before this wave the table carried SEVEN spellings and no
+// entry for `uses`, `references` or `imports`, so those kinds rendered with no
+// label at all — most of a measured 12.5% verb coverage.
+//
+// ONE table, keyed on the canonical kind, both directions. Keyed on the KIND
+// rather than on the stored spelling so `call` and `calls` cannot read
+// differently; the lookup canonicalizes through RELATIONSHIP_KIND_ALIASES first.
+//
+// The table answers "what word does this relationship read as". It does NOT
+// decide which SECTION the row renders in — `isDeclarationRelationship`
+// (src/lsp/relations.ts, the single owner of the usage vocabulary) does that.
+// Splitting the two is what lets every kind carry a word while a declaration
+// containment can never reach the CONNECTION summary: the table is total over
+// the ten kinds, and the section is chosen by the owner's class.
+const RELATIONSHIP_VERB: Record<CanonicalRelationshipKind, { outgoing: string; incoming: string }> = {
+  calls: { outgoing: "calls", incoming: "called by" },
+  extends: { outgoing: "extends", incoming: "extended by" },
+  implements: { outgoing: "implements", incoming: "implemented by" },
+  uses: { outgoing: "uses", incoming: "used by" },
+  instantiates: { outgoing: "instantiates", incoming: "instantiated by" },
+  overrides: { outgoing: "overrides", incoming: "overridden by" },
+  // §14 rule 4 + the owner's decision: `contains` reads as a CONTAINMENT verb,
+  // never as a usage or a connection. The words are chosen so that
+  // "Hub contains greet" and "greet — contained by Hub" are statements about
+  // DECLARATION from either end, and so that no reader can take either for
+  // "someone uses this". The negative test that proves it is in the gate.
+  contains: { outgoing: "contains", incoming: "contained by" },
+  references: { outgoing: "references", incoming: "referenced by" },
+  imports: { outgoing: "imports", incoming: "imported by" },
+  // `exports` is the other declaration containment (relations.ts). Same law.
+  exports: { outgoing: "exports", incoming: "exported by" },
+}
+
+/** The verb a stored kind renders with in a given direction, or null when the
+ *  index carries a kind outside the canonical ten (no declared word exists, so
+ *  the row is a DECLARED absence with a reason — never an unlabelled render). */
+export function verbFor(relationshipType: string, direction: "incoming" | "outgoing"): string | null {
+  const canonical = canonicalKind(relationshipType)
+  if (canonical === null) return null
+  const entry = RELATIONSHIP_VERB[canonical]
+  return direction === "incoming" ? entry.incoming : entry.outgoing
+}
+
+/** The words a DECLARATION containment is allowed to use. Anything a reader
+ *  could take for "someone uses this" is not in this set, which is what makes
+ *  the containment section's label safe — and it is the list the gate's negative
+ *  test runs against. */
+export const CONTAINMENT_VERBS: ReadonlySet<string> = new Set([
+  "contains",
+  "contained by",
+  "declares",
+  "declared in",
+  "exports",
+  "exported by",
+])
+
+/** True when a verb is a declaration-containment word rather than a connection
+ *  word. The surface-side half of relations.ts's vocabulary owner: the KIND
+ *  class comes from the owner, and this only asserts the WORDS agree with that
+ *  class — a `contains` row rendering "used by" would be the right fact under
+ *  the wrong label, which §14 rule 1 names as a defect. */
+export function isContainmentVerb(verb: string): boolean {
+  return CONTAINMENT_VERBS.has(verb)
+}
+
+/** The words the CONTAINMENT SECTION prints, one per direction. Named constants
+ *  so the gate's negative test can read them off the source rather than off a
+ *  copy, and so the two directions can never drift into one word. */
+export const CONTAINMENT_VERB_DECLARES = "declares"
+export const CONTAINMENT_VERB_DECLARED_IN = "declared in"
+
+// ---------------------------------------------------------------------------
+// DECLARED ABSENCE — one table, in the surface, with reasons
+// ---------------------------------------------------------------------------
+//
+// A stored relationship row can only be honest in one of three ways on this
+// card:
+//
+//   1. rendered, under a verb, with a clickable index-stored target;
+//   2. rendered as a USAGE row (relations.ts's own vocabulary);
+//   3. DECLARED here, with a reason.
+//
+// Without (3), a row that is neither rendered nor declared is a SILENT GAP — the
+// defect the coverage gate exists to find, and the defect that let `uses` and
+// `references` render unlabelled for waves. §11.7: absence is declared, and a
+// declared absence is verifiable by a NEGATIVE test. The negative test lives
+// with the gate (script/m55/verify-hover-coverage.ts), not here: a test a surface
+// also owned would be a test the surface could pass by lying in its own favour.
+//
+// Every entry is a DEBT. It names rows the index holds and this card does not
+// show, and the coverage metric counts those rows as NOT RENDERED. An entry
+// whose rows ARE rendered is stale, and the gate fails it.
+export interface DeclaredAbsence {
+  /** the canonical kind whose rows are not rendered, or one of the structural
+   *  classes that are not about a kind at all */
+  kind: CanonicalRelationshipKind | "external" | "self" | "unknown-kind"
+  /** the reason, in one sentence a reader can check */
+  reason: string
+}
+
+export const DECLARED_ABSENCE: readonly DeclaredAbsence[] = [
+  {
+    kind: "external",
+    reason:
+      "a stored row whose far end is an external name the index holds no symbol row for cannot be rendered as a link: §12.1 requires every target to equal an index-stored location, and this row stores none. The count is reported, the row is not named as a link.",
+  },
+  {
+    kind: "self",
+    reason:
+      "a self-loop row (both ends are this symbol) is an analyzer artifact, not a relationship to another symbol; rendering it would make a symbol appear to relate to itself.",
+  },
+  {
+    kind: "unknown-kind",
+    reason:
+      "a stored kind outside the canonical ten has no declared verb and no declared meaning; it renders nothing rather than being guessed at. The count is reported.",
+  },
+  {
+    kind: "imports",
+    reason:
+      "an `imports` row is a FILE-level edge: its far end is a module path, not an indexed symbol, so it has no index-stored location to navigate to. It is counted and named as a file-level row, never rendered as a symbol link (§13.5 noise is labelled, not hidden; §12.1 nothing unclickable).",
+  },
+]
+
+/** The declared-absence entry for a kind, or null when the kind is one this
+ *  surface renders. */
+export function declaredAbsenceFor(kind: string): DeclaredAbsence | null {
+  const canonical = canonicalKind(kind)
+  const target = canonical ?? (kind.trim().toLowerCase() as DeclaredAbsence["kind"])
+  return DECLARED_ABSENCE.find((d) => d.kind === target) ?? null
 }
 
 /** Command URI scheme for hover links (executed by the editor client). */
@@ -357,7 +546,19 @@ export function richSitesForSymbol(raw: CoreDatabase, symbolId: string): RichSit
         ? { path: loc.path, line: callLine0, character: 0, endLine: callLine0, endCharacter: 0 }
         : { path: loc.path, line: loc.line, character: loc.character, endLine: loc.endLine, endCharacter: loc.endCharacter }
     const key = `${opening.path}:${opening.line}:${opening.character}`
-    if (seen.has(key)) continue
+    // Dedup by location, but NEVER by dropping a kind. A second stored row at
+    // this location adds its relationship kind to the site already there; the
+    // first draft used `continue`, which silently discarded it — so
+    // `reset references items` vanished because `reset uses items` happened to
+    // share its location. One row per location is §13.1; losing a stored
+    // relationship KIND is §13.2's "nothing is merged into silence".
+    const existing = sites.find((x) => `${x.path}:${x.line}:${x.character}` === key)
+    if (existing !== undefined) {
+      if (!existing.relationshipTypes.includes(row.relationship_type)) {
+        existing.relationshipTypes.push(row.relationship_type)
+      }
+      continue
+    }
     seen.add(key)
     const enrichment = parseEnrichment(row.metadata)
     sites.push({
@@ -369,6 +570,7 @@ export function richSitesForSymbol(raw: CoreDatabase, symbolId: string): RichSit
       endLine: opening.endLine,
       endCharacter: opening.endCharacter,
       relationshipType: row.relationship_type,
+      relationshipTypes: [row.relationship_type],
       reversed: incoming,
       confidence: row.confidence,
       enrichment,
@@ -390,25 +592,52 @@ export function usageSitesForSymbol(raw: CoreDatabase, symbolId: string): RichSi
   return usageSitesOf(richSitesForSymbol(raw, symbolId))
 }
 
-/** Group sites into connection facts (summary-verb rows only). */
-// The verb maps below carry no entry for `contains`/`exports` (declaration
-// containments) or for structural ends: a declaration row can therefore never
-// become a connection claim, and every "called by X" name is a member of the
-// usage-site set above (both derive from the same collected rows).
+/** Group sites into CONNECTION facts (the `**connected**:` summary).
+ *
+ *  The law, unchanged and now enforced by the owner's CLASS rather than by the
+ *  verb table's silence: a DECLARATION CONTAINMENT (`contains`, `exports` —
+ *  `relations.ts`'s `isDeclarationRelationship`, the single owner of the
+ *  vocabulary) can never become a connection claim. This function does not
+ *  decide; it asks the owner and obeys. Before this wave the same outcome came
+ *  from the verb table having no entry, which is a different mechanism with the
+ *  same result — and it is why a `contains` row could not be RENDERED anywhere,
+ *  which is the half of the owner's decision this wave changes.
+ *
+ *  Every non-declaration kind now HAS a verb, so no row reaches this function
+ *  and renders with no label: `verbFor` returning null means the index stores a
+ *  kind outside the canonical ten, and that row is a declared absence with a
+ *  reason (DECLARED_ABSENCE), never an unlabelled link. */
 export function connectedGroups(sites: RichSite[]): ConnectedGroup[] {
   const groups = new Map<string, ConnectedGroup>()
   for (const site of sites) {
-    const verb = (site.reversed ? IN_VERB[site.relationshipType] : OUT_VERB[site.relationshipType]) ?? null
-    if (verb === null) continue
-    let g = groups.get(verb)
-    if (!g) {
-      g = { verb, sites: [] }
-      groups.set(verb, g)
+    // A site may carry SEVERAL stored kinds (§13.2 multiplicity). Each kind is
+    // grouped under its own verb, so `reset uses items` and
+    // `reset references items` render as two relationships rather than one
+    // silently standing for both.
+    for (const kind of siteKinds(site)) {
+      // The owner's law, applied before the word is looked up: a declaration is
+      // never a connection.
+      if (isDeclarationRelationship(kind)) continue
+      const verb = verbFor(kind, site.reversed ? "incoming" : "outgoing")
+      if (verb === null) continue
+      let g = groups.get(verb)
+      if (!g) {
+        g = { verb, sites: [] }
+        groups.set(verb, g)
+      }
+      g.sites.push(site)
     }
-    g.sites.push(site)
   }
   // First-appearance order (stable across runs).
   return [...groups.values()]
+}
+
+/** Every stored kind a site carries, in stored order. A site authored before
+ *  this field (a hand-built fixture in a verifier) carries its single
+ *  `relationshipType`, so no caller has to special-case the old shape. */
+function siteKinds(site: { relationshipType: string; relationshipTypes?: readonly string[] }): string[] {
+  const kinds = site.relationshipTypes
+  return kinds === undefined || kinds.length === 0 ? [site.relationshipType] : [...kinds]
 }
 
 export const MAX_SUMMARY_PER_VERB = 3
@@ -502,6 +731,93 @@ export function usagesSection(sites: RichSite[], total: number, forSymbol: strin
     lines.push(`+${rest} more — [show all usages](${showAllUsagesUri({ file: forFile, line: forLine, character: forCharacter, symbol: forSymbol })})`)
   }
   return lines.join("\n")
+}
+
+// ---------------------------------------------------------------------------
+// THE CONTAINMENT SECTION
+// ---------------------------------------------------------------------------
+//
+// `src/lsp/relations.ts` is the single owner of the USAGE vocabulary and its law
+// is correct and unchanged: a usage site is a stored row whose TARGET is this
+// symbol and whose kind is not a declaration containment, so `Greeter contains
+// greet` is how greet is DECLARED and never how it is USED. That law is not
+// weakened here — it is not touched.
+//
+// The consequence the owner ruled on is that the declaration row still has to
+// REACH the reader, somewhere a reader cannot mistake for a usage. That is this
+// section: a separately-labelled block whose header says in words that these are
+// declarations, and whose verbs are drawn from CONTAINMENT_VERBS (no word any
+// reader could take for "someone uses this").
+//
+// Three laws, each with a negative test in script/m55/verify-hover-coverage.ts
+// and script/m42/verify-rich-hover.ts:
+//
+//   L1 a `contains` row NEVER appears in the usages list, the usages header
+//      count, or the connected summary. It appears here and nowhere else.
+//   L2 the header count is the RENDERED truth (§13.4): the number of rows under
+//      the header is the number the header names, with an explicit "+N more" for
+//      the cap so the two can never silently disagree.
+//   L3 every row carries a working navigation target EQUAL to an index-stored
+//      location (§12.1). A member row with no resolvable location does not
+//      render; the count of such rows is declared instead.
+
+/** The cap on rendered containment rows, and its declared remainder. */
+export const MAX_CONTAINMENT_ROWS = 6
+
+/** The declaration-containment rows of a symbol, as ONE array — the same array
+ *  the count and the list are taken from, never two filters (§13.4). */
+export function containmentSitesOf(sites: readonly RichSite[]): RichSite[] {
+  return sites.filter((s) => siteKinds(s).some((k) => isDeclarationRelationship(k)))
+}
+
+/** Render the containment section. Empty string = declared absence: this symbol
+ *  declares nothing and is declared by nothing. */
+export function containmentSection(sites: RichSite[]): string {
+  // Defensive filter, as with usagesSection: a caller that forgets cannot leak a
+  // declaration into the usages list, and one that passes the wrong array cannot
+  // render a usage here. The filter is idempotent.
+  const declared = containmentSitesOf(sites)
+  if (declared.length === 0) return ""
+  // Two named lists, never merged: the rows a reader would ask for differ
+  // completely between them (a class's members vs a member's owner), and merging
+  // them is how a containment row came to read as a usage in the first place.
+  const members = declared.filter((s) => !s.reversed)
+  const owners = declared.filter((s) => s.reversed)
+  const parts: string[] = []
+  if (members.length > 0) parts.push(`${CONTAINMENT_VERB_DECLARES} ${linkedList(members)}`)
+  if (owners.length > 0) parts.push(`${CONTAINMENT_VERB_DECLARED_IN} ${linkedList(owners)}`)
+  // §13.2: multiplicity is DECLARED. A location reached by more than one stored
+  // containment kind names the kinds rather than merging them into one row that
+  // reads as a single fact.
+  const multi = declared
+    .map((s) => ({ site: s, kinds: siteKinds(s).filter((k) => isDeclarationRelationship(k)) }))
+    .filter((x) => x.kinds.length > 1)
+  for (const x of multi) parts.push(`_(also declared by ${x.kinds.join(", ")})_`)
+  // The header names the rendered total and says what the rows ARE. §13.4: a
+  // number the eye cannot verify against the list is a violation, so the number
+  // here is the array's own length, and the cap when reached is stated with its
+  // remainder rather than by omission.
+  const shown = Math.min(declared.length, MAX_CONTAINMENT_ROWS)
+  const rest = declared.length - shown
+  const header =
+    `**contained** — declares ${members.length} member${members.length === 1 ? "" : "s"}, ` +
+    `declared in ${owners.length} (declaration containment; never a usage)` +
+    (rest > 0 ? ` — showing ${shown} of ${declared.length}, +${rest} more on the symbol's own list` : "")
+  return [header, ...parts].join("\n")
+}
+
+/** The shared "verb + links" rendering for a containment list. Same-named rows
+ *  are disambiguated by file:line so a link's target is never a guess (§12.1),
+ *  and every link opens the row's OWN index-stored location. */
+function linkedList(sites: RichSite[]): string {
+  const seen = new Set<string>()
+  const links = sites.map((s) => {
+    const dup = seen.has(s.name)
+    seen.add(s.name)
+    const label = dup ? siteLabel(s) : s.name
+    return `[${label}](${openUsageUri(s)})`
+  })
+  return links.join(", ")
 }
 
 /** Render the clickable definition line (replaces the plain location in the
