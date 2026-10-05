@@ -1026,13 +1026,33 @@ const bracket = parent.lastIndexOf("[")
         type: "dependency",
         resolvedPath: "package-manager",
       })
+      // The endpoint is the DECLARING ENTRY's own qualified path, not the bare package name.
+      //
+      // Every other type in this analyzer targets the path, and this one did not, which
+      // made a manifest dependency the lane's largest source of an ambiguous endpoint. A
+      // bare `lru-cache` is published under that name by EVERY file that depends on it: on
+      // a 601-file sample, `lru-cache` is asked by `packages/server/package.json` and binds
+      // to 11 published symbols across 9 files, `lodash` and `typescript` to more. The
+      // reverse walk matches a target by name, so it can attach the edge to a declaration
+      // in a repository that has nothing to do with the one that declared the dependency —
+      // and `contains`-resolution-style metrics read it as resolved, because a binding does
+      // exist in the demanding file. The declaration being referred to is unambiguous and
+      // already computed: it is the dependency symbol's `qualifiedName`.
+      //
+      // The package NAME is not lost by this. It is the edge's `metadata.package`, and it
+      // is already the `module` of the import row pushed above, so a consumer asking "which
+      // package does this manifest depend on" reads the same string it read before.
       ctx.relationships.push({
         source: ctx.rootName,
-        target: dependency.name,
+        target: String(dependency.qualifiedName ?? dependency.name),
         type: ASTEngine.RelationshipType.Uses,
         confidence: 1,
         line_number: dependency.range?.startLine ?? 0,
-        metadata: { relationshipType: "package_dependency", version: this.dependencyVersion(ctx, dependency) },
+        metadata: {
+          relationshipType: "package_dependency",
+          package: dependency.name,
+          version: this.dependencyVersion(ctx, dependency),
+        },
       })
     }
   }
