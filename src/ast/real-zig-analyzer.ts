@@ -2833,6 +2833,14 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
    * `zig_function_call` 10, `zig_export` 3 and `identifier_usage` 1 — all different
    * constructs that share a line, since a relationship carries `line_number` and no range.
    *
+   * Measured AFTER this pass, same instrument, same 70 files: **18 of the 22 named `@field`
+   * sites are represented by a `zig_field_reflection` edge**, and 7 of those 18 have the edge
+   * on their OWN line. The gap between 18 and 7 is Z52's post-pass, which collapses one `uses`
+   * edge per (source, target) keeping the higher confidence: `zig/test/behavior/member_func.zig:77,78`
+   * name `one` and `two`, the reflection edge for each is emitted, and the dot-access edge the
+   * same file already published at lines 39 and 62 wins the tie at the same 0.75. The
+   * site-level number alone would have read 7 and filed a working derivation as 11 misses.
+   *
    * ## Why `@field` and NOT `@hasDecl`
    *
    * `@field(S, "a")` READS `S.a`: the corpus compiles, so `S` has that member and the code
@@ -2856,10 +2864,33 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
    * targets like `@"ziglib"` for names that were legitimate. The same guard applies — a
    * `string_content` carrying a character outside `[A-Za-z0-9_]` is an error name, not a
    * member this file declares, and publishing it would add an edge whose target is junk.
-   * Measured: **3 of the 22 named `@field` sites** are exactly this
-   * (`zig/lib/std/fmt.zig:1550,1557`, `zig/test/behavior/error.zig:897`) and **all 3 are
-   * declined**, which is what the arity measurement independently found (`@field` names
-   * resolving to 0 published symbols: 3).
+   * Measured: **2 of the 22 named `@field` sites** carry a non-identifier-shaped name
+   * (`zig/lib/std/fmt.zig:1550,1557`, both `"Expected closing ]"`) and **both are declined**.
+   *
+   * ## WHAT THE SHAPE GUARD DOES NOT DO, because a comment that claimed otherwise was wrong
+   *
+   * An earlier revision of this header read "3 of the 22 resolve to nothing and all 3 are
+   * declined, which is what the arity measurement independently found". The two numbers are
+   * 2 and 3 and they are not the same set. The third zero-resolving site is `NotFound` at
+   * `zig/test/behavior/error.zig:897`, `@field(anyerror, "NotFound")`, and its name IS
+   * identifier-shaped, so it is EMITTED — with `targetScope: file-external`, because nothing in
+   * that 3,000-line file publishes `NotFound`. So the guard is not an error-set detector: it
+   * declines error names containing punctuation and lets identifier-shaped error names
+   * through. That is the intended behaviour and it is stated rather than papered over:
+   *
+   *   - `error.NotFound` IS a legitimate declaration name in Zig, so the edge states a TRUE
+   *     dependency — on a name this particular file's corpus does not publish.
+   *   - `anyerror` is a `builtin_type` node, not an `identifier`, so its member namespace is
+   *     the inferred error set of the whole PROGRAM: unbounded, and bindable by no per-file
+   *     rule.
+   *   - Suppressing it instead would be inconsistent with the sibling pass, which publishes
+   *     `@typeInfo(u8).Int` → `Int` under the same `file-external` label, and `Int` equally
+   *     resolves to nothing in its own file. Dropping one unresolvable read and keeping the
+   *     other would be a fit to a single test line, not a rule.
+   *
+   * So the honest count is: of the 7 `zig_field_reflection` edges the corpus produces, **6
+   * carry a target published in their own file and exactly 1 does not**
+   * (`zig/test/behavior/error.zig:897`), and it says so on the edge.
    *
    * No regex: the shape test is a Set of node types and the character test is a
    * character-code range, both the file's existing zero-regex discipline.
