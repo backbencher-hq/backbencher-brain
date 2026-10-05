@@ -38,6 +38,7 @@ import { createToolHandlers } from "../../src/mcp/tool-handlers"
 // property from the other direction; the two gates must not disagree.
 import { classifyTier } from "../../src/lsp/evidence_tier"
 import { writeSealed } from "../lib/evidence.ts"
+import { fingerprintFields } from "../m61/claim_fingerprints.ts"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 
@@ -378,6 +379,7 @@ async function main(): Promise<void> {
     mutantsTotal,
     mutantRecords,
     currentCommit,
+    ...fingerprintFields(["m28.U1"], ROOT),
     verifierCommand: "npx tsx script/m28/verify-union.ts",
     evidenceFile: "U1.json",
     generatedAt: new Date().toISOString(),

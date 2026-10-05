@@ -26,6 +26,7 @@ import { mkdtempSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
 import path from "node:path"
 import { writeSealed } from "../lib/evidence.ts"
+import { fingerprintFields } from "../m61/claim_fingerprints.ts"
 
 const ROOT = path.resolve(import.meta.dirname, "../..")
 process.env.BB_DATA_DIR = mkdtempSync(path.join(tmpdir(), "bb-m28a1-"))
@@ -220,6 +221,7 @@ const result = {
   mutantsTotal,
   mutantRecords,
   currentCommit,
+  ...fingerprintFields(["m28.A1"], ROOT),
   verifierCommand: "npx tsx script/m28/verify-annotation-store.ts",
   evidenceFile: "A1.json",
   generatedAt: new Date().toISOString(),

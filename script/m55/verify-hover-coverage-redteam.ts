@@ -68,6 +68,7 @@ import { tmpdir } from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { writeSealed } from "../lib/evidence.ts"
+import { fingerprintFields } from "../m61/claim_fingerprints.ts"
 
 const HERE = path.dirname(fileURLToPath(import.meta.url))
 const ROOT = path.resolve(HERE, "..", "..")
@@ -542,6 +543,7 @@ const result = {
     .map((l) => l.slice(3).trim())
     .filter((p) => p.startsWith("validation/")),
   verifierCommand: "npx tsx script/m55/verify-hover-coverage-redteam.ts",
+  ...fingerprintFields(["m55.HOV-REDTEAM"], ROOT),
   evidenceFile: "HOV-REDTEAM.json",
   generatedAt: new Date().toISOString(),
   observed: {

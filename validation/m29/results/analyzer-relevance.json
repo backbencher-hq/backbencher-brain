@@ -96,16 +96,28 @@
   "failed": 0,
   "realFailed": 0,
   "failures": [],
-  "currentCommit": "4dfd8c4148d043ff3d1aa720a3b89474f9d677b3",
+  "currentCommit": "a8807f81027bd384f2f5d50a2d1bd143463639b8",
   "verifierCommand": "npx tsx script/m29/verify-analyzer-relevance.ts",
+  "sourceFingerprint": "eab6582cc9a119074b3e3a65ca9f9fb4b27036296938b662c9b7b18ad6fed803",
+  "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
+  "sourceFingerprintCovers": [
+    "script/m29/verify-analyzer-relevance.ts",
+    "src/lsp/hover.ts",
+    "src/lsp/launch_languages.ts",
+    "src/lsp/navigation.ts",
+    "src/lsp/server.ts",
+    "src/lsp/symbols.ts",
+    "script/m29/wave-execute.ts",
+    "script/m29/wave-protocol.ts"
+  ],
   "evidenceFile": "analyzer-relevance.json",
-  "generatedAt": "2026-09-15T22:31:42.184Z",
+  "generatedAt": "2026-10-05T22:34:24.774Z",
   "limitations": [
     "Static rule check over the live staleRelevantPaths module plus one differential against a stored leg pin; the legs' own S1-S6 gates re-run per execution."
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-15T22:31:42.185Z",
-    "contentSha256": "46ae2be369337500a5fe46f649f0b5fe6b3b09b9f8def55918c83eb50346ecfa"
+    "sealedAt": "2026-10-05T22:34:24.776Z",
+    "contentSha256": "2c2631f26f10b442ff50f7f8b921907ff7326c78a41978bb668014cf04dc4911"
   }
 }

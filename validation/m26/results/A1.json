@@ -28,13 +28,21 @@
       ]
     }
   },
-  "currentCommit": "8bcad3bb4cbe613d0cc454a46cfbfd2633c781a7",
+  "currentCommit": "a8807f81027bd384f2f5d50a2d1bd143463639b8",
   "verifierCommand": "npx tsx script/m26/verify-polyglot-e2e.ts",
+  "sourceFingerprint": "fc2d569e53f6731a53a0282ddb1215165bd0f4062f724a3e3e9fcf5ad2efb161",
+  "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
+  "sourceFingerprintCovers": [
+    "script/m26/verify-polyglot-e2e.ts",
+    "src/ast/parallel-indexer.ts",
+    "src/cli/index.ts",
+    "src/lsp/cross_language_hover.ts"
+  ],
   "evidenceFile": "A1.json",
-  "generatedAt": "2026-09-29T04:43:38.666Z",
+  "generatedAt": "2026-10-05T22:32:07.321Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-29T04:43:38.667Z",
-    "contentSha256": "1de5aeaeb1320c46772d6e24c79655090496a4eb08225e646b8b8adda6dfc3e0"
+    "sealedAt": "2026-10-05T22:32:07.322Z",
+    "contentSha256": "328b14151a8586b3b1e3b2e93ebb575bdd4e2d9918b52af56d1a288128033f75"
   }
 }

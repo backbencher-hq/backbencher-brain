@@ -16,6 +16,7 @@ import { execFileSync } from "node:child_process"
 import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync } from "node:fs"
 import path from "node:path"
 import { writeSealed, readEvidenceAllowingLegacy } from "../lib/evidence.ts"
+import { fingerprintFields } from "../m61/claim_fingerprints.ts"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const RESULTS = path.join(ROOT, "validation/m24/results")
@@ -301,6 +302,7 @@ const result = {
   negativeCases: 6,
   currentCommit: headCommit,
   verifierCommand: "npx tsx script/m24/verify-closure.ts",
+  ...fingerprintFields(["m24.X1"], ROOT),
   evidenceFile: "X1.json",
   generatedAt: new Date().toISOString(),
   suite: SUITE.map(({ code, evidenceFile }) => ({ code, evidenceFile, exit: exitCodes[code] })),

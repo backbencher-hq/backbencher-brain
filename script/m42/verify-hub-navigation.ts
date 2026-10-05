@@ -31,6 +31,7 @@ import { execFileSync } from "node:child_process"
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import path from "node:path"
 import { writeSealed } from "../lib/evidence.ts"
+import { fingerprintFields } from "../m61/claim_fingerprints.ts"
 
 const ROOT = path.resolve(import.meta.dirname, "../..")
 const EVIDENCE = path.join(ROOT, "validation/m42/results/H6.json")
@@ -372,6 +373,7 @@ const result = {
   mutantsCaught: mutants.caught,
   mutantsTotal: mutants.total,
   currentCommit,
+  ...fingerprintFields(["m42.H6"], ROOT),
   verifierCommand: "npx tsx script/m42/verify-hub-navigation.ts",
   evidenceFile: "H6.json",
   generatedAt: new Date().toISOString(),

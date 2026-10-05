@@ -2,43 +2,28 @@
   "issue": "M27.N1",
   "code": "N1",
   "milestone": "M27",
-  "status": "verified",
-  "checks": 31,
-  "passed": 31,
-  "failed": 0,
-  "mutantsCaught": 4,
-  "mutantsTotal": 4,
-  "mutantRecords": [
-    {
-      "name": "M1 hover position off by one line",
-      "caught": true
-    },
-    {
-      "name": "M2 wrong fixture symbol expected",
-      "caught": true
-    },
-    {
-      "name": "M3 capability expectation inverted (driver demands the wrong thing)",
-      "caught": true
-    },
-    {
-      "name": "M4 staleness payload corrupted (driver reports a non-boolean marker)",
-      "caught": true
-    }
+  "status": "blocked",
+  "blockedReason": "nvim not provisioned in .tools/ (D-7 portable layout)",
+  "checks": 1,
+  "passed": 0,
+  "failed": 1,
+  "mutantsCaught": 0,
+  "mutantsTotal": 0,
+  "mutantRecords": [],
+  "currentCommit": "a8807f81027bd384f2f5d50a2d1bd143463639b8",
+  "sourceFingerprint": "3057cdd27cf2ce6e475db699616b805fb4d08bebe68b418ecf2f17bcf38171b7",
+  "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
+  "sourceFingerprintCovers": [
+    "script/m27/verify-nvim.ts",
+    "src/lsp/server.ts",
+    "script/m27/nvim-driver.lua"
   ],
-  "nvim": "NVIM v0.12.5",
-  "currentCommit": "d3108fc04e89a991cc59b44fcd24156ef64ce9df",
   "verifierCommand": "npx tsx script/m27/verify-nvim.ts",
   "evidenceFile": "N1.json",
-  "generatedAt": "2026-10-05T21:49:20.404Z",
-  "claimLevel": "I3 — real editor session, machine-driven, real server over stdio",
-  "limitations": [
-    "Fixture seeded with the shared-core convention (real hash + stat) — the same shape M25.E5 uses.",
-    "Graph webview out of scope in Neovim (D-6); the capability matrix records the delta."
-  ],
+  "generatedAt": "2026-10-05T22:33:32.003Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T21:49:20.407Z",
-    "contentSha256": "58e674d0abef42a14982b39f36274d47498ff691690edb59c395b652ce4e7e63"
+    "sealedAt": "2026-10-05T22:33:32.006Z",
+    "contentSha256": "69145098b0e5661dbdbb5e6fe20666c3013361f486e32a3a4599b8558a3b674a"
   }
 }

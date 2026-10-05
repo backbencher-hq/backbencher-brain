@@ -32,6 +32,7 @@ import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node
 import path from "node:path"
 import { H2_EXPECT, H2_FILE_APP, H2_REL_APP, H2_ROOT, writeH2Fixture } from "./h2-fixture.ts"
 import { writeSealed } from "../lib/evidence.ts"
+import { fingerprintFields } from "../m61/claim_fingerprints.ts"
 import { parseSealedRecord } from "../lib/evidence.ts"
 
 const ROOT = path.resolve(import.meta.dirname, "../..")
@@ -480,6 +481,7 @@ const result = {
   fixture: "script/m42/h2-fixture.ts (real indexer + real dist server)",
   budgets: { impactWarmP95Ms: 300 },
   currentCommit,
+  ...fingerprintFields(["m42.H4"], ROOT),
   verifierCommand: "npx tsx script/m42/verify-hover-actions.ts",
   evidenceFile: "H4.json",
   generatedAt: new Date().toISOString(),

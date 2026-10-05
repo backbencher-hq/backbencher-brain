@@ -38,6 +38,7 @@ import { tmpdir } from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { writeSealed } from "../lib/evidence.ts"
+import { fingerprintFields } from "../m61/claim_fingerprints.ts"
 import { getProjectId } from "../../src/util/project-id.ts"
 import { LEGACY_NOTE, NOT_STORED_NOTE, SEED, SUBSTITUTE_NOTE, UNUSABLE_NOTE } from "./a1-fixture.ts"
 
@@ -239,6 +240,7 @@ async function main(): Promise<void> {
     mutantsCaught: mutantCaught,
     mutantsTotal: mutantHits,
     currentCommit,
+    ...fingerprintFields(["m62.A3"], ROOT),
     verifierCommand: "npx tsx script/m62/verify-arrival.ts",
     evidenceFile: "A3.json",
     generatedAt: new Date().toISOString(),

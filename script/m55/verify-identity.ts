@@ -40,6 +40,7 @@ import { pathToFileURL } from "node:url"
 import { T1_ROOT, T1_EXPECT, writeT1Fixture } from "./t1-fixture.ts"
 import { StdioLsp, ensureServerBuilt } from "./lsp-wire.ts"
 import { writeSealed } from "../lib/evidence.ts"
+import { fingerprintFields } from "../m61/claim_fingerprints.ts"
 
 const ROOT = path.resolve(import.meta.dirname, "../..")
 const IDENTITY = path.join(ROOT, "src/lsp/identity.ts")
@@ -543,6 +544,7 @@ const result = {
   mutantsTotal,
   negatives: 0,
   currentCommit,
+  ...fingerprintFields(["m55.T1"], ROOT),
   workingTreeRelevantChanges: branchDiffStatus.filter(
     (f) =>
       f.startsWith("src/lsp/") ||

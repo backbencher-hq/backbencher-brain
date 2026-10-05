@@ -23,6 +23,7 @@ import { realpathSync, statSync } from "node:fs"
 import os from "node:os"
 import path from "node:path"
 import { writeSealed } from "../lib/evidence.ts"
+import { fingerprintFields } from "../m61/claim_fingerprints.ts"
 import { parseSealedRecord } from "../lib/evidence.ts"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
@@ -141,6 +142,7 @@ async function main(): Promise<void> {
       status: "blocked", blockedReason: "nvim not provisioned in .tools/ (D-7 portable layout)",
     checks, passed, failed: checks - passed, mutantsCaught, mutantsTotal, mutantRecords,
     currentCommit,
+    ...fingerprintFields(["m27.N1"], ROOT),
     verifierCommand: "npx tsx script/m27/verify-nvim.ts", evidenceFile: "N1.json",
       generatedAt: new Date().toISOString(),
     }
