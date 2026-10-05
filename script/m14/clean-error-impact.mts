@@ -111,44 +111,93 @@ type ChildOut = {
   path: string; outcome: string; ms?: number; error?: string
   symbols?: number; edges?: number; parseErrors?: number
   findings?: {
-    name: string; line: number; family: string
-    published: boolean; kind: string; visibility: string; symLines: number[]
+    name: string; family: string; censusLines: number[]; copies: number
+    symbols: { kind: string; visibility: string; start: number; end: number; qualifiedName: string }[]
+    atCensusLine: boolean
     asSource: number; asTarget: number; asSourceTypes: Record<string, number>; asTargetTypes: Record<string, number>
   }[]
 }
 
 const results: ChildOut[] = []
 let done = 0
-let running = 0
 const queue = files.slice()
+
+/**
+ * `exit 228` is this lane's machine, not the file's property.
+ *
+ * Measured 2026-10-05: at `--concurrency 4` the first walk reported
+ *   files 145  PARSED 13  HUNG 0  ERRORED 132  — every error `exit 228`
+ * and the SAME file walked standalone to exit 0 with 62 symbols and 236 edges. The machine
+ * had `load average: 17.69` on 8 cores with `MemAvailable: 2 GiB` shared by ten lanes, and
+ * a failing child exits with the allocator's code, not with a parse verdict. Counting 132
+ * files as "this file's invented names published nothing" would have been a fabricated
+ * result of the shape this programme exists to prevent: a denominator of 13 over a
+ * population of 145 that reads as "97 census rows were measured".
+ *
+ * So an ERRORED file is retried ONCE, alone, and the retry's outcome is what the row
+ * carries. `retried` records how many needed it, so the number of files that only walked
+ * under a quieter machine stays visible in the JSON instead of being silently absorbed.
+ */
+let retried = 0
+
+async function walk(abs: string): Promise<ChildOut> {
+  const rows = byFile.get(abs)!
+  const payload = JSON.stringify(rows.map((r) => ({ name: r.published, line: r.line, family: r.family })))
+  const ex = await execFileP("npx", ["tsx", CHILD, abs, payload], {
+    encoding: "utf8", timeout: TIMEOUT_S * 1000, maxBuffer: 64 * 1024 * 1024,
+  })
+  return JSON.parse(ex.stdout) as ChildOut
+}
 
 async function worker(): Promise<void> {
   while (queue.length) {
     const abs = queue.shift()!
-    const rows = byFile.get(abs)!
-    const payload = JSON.stringify(rows.map((r) => ({ name: r.published, line: r.line, family: r.family })))
     try {
-      const r = await execFileP("npx", ["tsx", CHILD, abs, payload], {
-        encoding: "utf8", timeout: TIMEOUT_S * 1000, maxBuffer: 64 * 1024 * 1024,
-      })
-      const j = JSON.parse(r.stdout) as ChildOut
-      results.push(j)
+      results.push(await walk(abs))
     } catch (e) {
       const ex = e as { stdout?: string; stderr?: string; signal?: NodeJS.Signals; code?: number | string }
       const stderr = ex.stderr ?? ""
       const out = ex.stdout ?? ""
       const hung = /\[BB-HANG\]/.test(stderr) || /\[BB-HANG\]/.test(out) || ex.signal === "SIGTERM"
+      if (!hung) {
+        // Serial retry, one file, no competition. A hang is NOT retried: the 120 s
+        // wall-clock arm inside engine.ts is a property of the file and re-running it
+        // would only spend the budget twice to learn the same thing.
+        retried++
+        try {
+          results.push(await walk(abs))
+          done++
+          if (done % 10 === 0 || done === files.length) progress()
+          continue
+        } catch (e2) {
+          const ex2 = e2 as { stderr?: string; signal?: NodeJS.Signals; code?: number | string }
+          const hung2 = /\[BB-HANG\]/.test(ex2.stderr ?? "") || ex2.signal === "SIGTERM"
+          results.push({
+            path: abs, outcome: hung2 ? "HUNG" : "ERRORED",
+            error: `first: exit ${ex.code ?? ex.signal}; retry: exit ${ex2.code ?? ex2.signal}`,
+            findings: [],
+          })
+          done++
+          if (done % 10 === 0 || done === files.length) progress()
+          continue
+        }
+      }
       results.push({
-        path: abs, outcome: hung ? "HUNG" : "ERRORED",
+        path: abs, outcome: "HUNG",
         error: (stderr.split("\n").filter((l) => /\[BB-(HANG|PARSE-ERR)\]/.test(l)).join(" ") || `exit ${ex.code ?? ex.signal}`).slice(0, 300),
         findings: [],
       })
     }
     done++
-    if (done % 10 === 0 || done === files.length) {
-      console.log(`  [${String(done).padStart(4)}/${files.length}] parsed ${results.filter((r) => r.outcome === "PARSED").length}  hung ${results.filter((r) => r.outcome === "HUNG").length}  errored ${results.filter((r) => r.outcome === "ERRORED").length}`)
-    }
+    if (done % 10 === 0 || done === files.length) progress()
   }
+}
+
+function progress(): void {
+  const p = results.filter((r) => r.outcome === "PARSED").length
+  const h = results.filter((r) => r.outcome === "HUNG").length
+  const e = results.filter((r) => r.outcome === "ERRORED").length
+  console.log(`  [${String(done).padStart(4)}/${files.length}] parsed ${p}  hung ${h}  errored ${e}  retried ${retried}`)
 }
 await Promise.all(Array.from({ length: CONCURRENCY }, worker))
 
@@ -156,17 +205,46 @@ const parsed = results.filter((r) => r.outcome === "PARSED")
 const hung = results.filter((r) => r.outcome === "HUNG")
 const errored = results.filter((r) => r.outcome === "ERRORED")
 
-type Agg = { rows: number; published: number; unpublished: number; withEdge: number; asSource: number; asTarget: number; byKind: Record<string, number>; byVisibility: Record<string, number>; edgeTypes: Record<string, number> }
-const agg = (): Agg => ({ rows: 0, published: 0, unpublished: 0, withEdge: 0, asSource: 0, asTarget: 0, byKind: Object.create(null), byVisibility: Object.create(null), edgeTypes: Object.create(null) })
+/**
+ * ONE RECORD PER (file, name), NOT PER CENSUS ROW.
+ *
+ * The census reports one row per grammar NODE, so a name mentioned in three signatures
+ * yields three rows against the same published symbol. The child already counts that
+ * name's edges once per file; this level counts the name once per file too, so the
+ * totals are a count of PUBLISHED NAMES and not of mentions. `censusRows` is kept
+ * alongside so the two populations stay visible and their difference is checkable: rows
+ * are mentions, names are symbols, and for family C they differ by a factor of 2.
+ */
+type Agg = {
+  censusRows: number; names: number; published: number; unpublished: number
+  /** Published names carrying MORE THAN ONE symbol in their file — the reverse-walk ambiguity. */
+  ambiguousNames: number
+  /** Total symbol copies behind those names, so the mean multiplicity is computable. */
+  ambiguousCopies: number
+  /** Copies sitting exactly on a census line, i.e. the artifact the grammar produced. */
+  artifactCopies: number
+  withEdge: number; asSource: number; asTarget: number
+  byKind: Record<string, number>; byVisibility: Record<string, number>; edgeTypes: Record<string, number>
+}
+const agg = (): Agg => ({
+  censusRows: 0, names: 0, published: 0, unpublished: 0, ambiguousNames: 0, ambiguousCopies: 0,
+  artifactCopies: 0, withEdge: 0, asSource: 0, asTarget: 0,
+  byKind: Object.create(null), byVisibility: Object.create(null), edgeTypes: Object.create(null),
+})
 const perFamily: Record<string, Agg> = Object.create(null)
 for (const r of parsed) {
   for (const f of r.findings ?? []) {
     const a = perFamily[f.family] ??= agg()
-    a.rows++
-    if (f.published) {
+    a.names++
+    a.censusRows += f.censusLines.length
+    if (f.copies > 0) {
       a.published++
-      a.byKind[f.kind || "(empty)"] = (a.byKind[f.kind || "(empty)"] ?? 0) + 1
-      a.byVisibility[f.visibility || "(unset)"] = (a.byVisibility[f.visibility || "(unset)"] ?? 0) + 1
+      for (const s of f.symbols) {
+        a.byKind[s.kind || "(empty)"] = (a.byKind[s.kind || "(empty)"] ?? 0) + 1
+        a.byVisibility[s.visibility || "(unset)"] = (a.byVisibility[s.visibility || "(unset)"] ?? 0) + 1
+      }
+      if (f.copies > 1) { a.ambiguousNames++; a.ambiguousCopies += f.copies }
+      a.artifactCopies += f.symbols.filter((s) => f.censusLines.includes(s.start)).length
     } else a.unpublished++
     if (f.asSource + f.asTarget > 0) a.withEdge++
     a.asSource += f.asSource
@@ -177,17 +255,19 @@ for (const r of parsed) {
 }
 
 const pct = (a: number, b: number) => (b === 0 ? "n/a" : `${((100 * a) / b).toFixed(1)}%`)
-const totalRows = Object.values(perFamily).reduce((a, x) => a + x.rows, 0)
-const totalPub = Object.values(perFamily).reduce((a, x) => a + x.published, 0)
-const totalEdge = Object.values(perFamily).reduce((a, x) => a + x.withEdge, 0)
+const sum = (k: keyof Agg) => Object.values(perFamily).reduce((a, x) => a + (x[k] as number), 0)
+const totalRows = sum("censusRows"), totalNames = sum("names"), totalPub = sum("published")
+const totalEdge = sum("withEdge"), totalAmb = sum("ambiguousNames"), totalArt = sum("artifactCopies")
 
 console.log(`\nfiles measured ${files.length}  PARSED ${parsed.length}  HUNG ${hung.length}  ERRORED ${errored.length}`)
 console.log(`  edges in those files: ${parsed.reduce((a, r) => a + (r.edges ?? 0), 0)}   symbols: ${parsed.reduce((a, r) => a + (r.symbols ?? 0), 0)}`)
-console.log(`\nINVENTED NAMES, of ${totalRows} census rows in the files that walked:`)
+console.log(`\nINVENTED NAMES, from ${totalRows} census rows in the files that walked:`)
 for (const [fam, a] of Object.entries(perFamily).sort()) {
-  console.log(`  ${fam.padEnd(34)} rows ${String(a.rows).padStart(4)}  published ${String(a.published).padStart(4)} (${pct(a.published, a.rows).padStart(6)})  with >=1 edge ${String(a.withEdge).padStart(4)} (${pct(a.withEdge, a.rows).padStart(6)})  edges in ${String(a.asSource + a.asTarget).padStart(5)}`)
+  console.log(`  ${fam.padEnd(34)} rows ${String(a.censusRows).padStart(4)}  names ${String(a.names).padStart(4)}  published ${String(a.published).padStart(4)} (${pct(a.published, a.names).padStart(6)})  ambiguous ${String(a.ambiguousNames).padStart(3)}  artifactCopies ${String(a.artifactCopies).padStart(4)}  edges ${String(a.asSource + a.asTarget).padStart(5)}`)
 }
-console.log(`\n  TOTAL rows ${totalRows}  published ${totalPub} (${pct(totalPub, totalRows)})  with >=1 edge ${totalEdge} (${pct(totalEdge, totalRows)})`)
+console.log(`\n  TOTAL rows ${totalRows}  names ${totalNames}  published ${totalPub} (${pct(totalPub, totalNames)})`)
+console.log(`  of the published names, ${totalAmb} carry >1 symbol in their file = ${pct(totalAmb, totalPub)}, and ${totalArt} of the copies sit on a census line`)
+console.log(`  names with >=1 edge: ${totalEdge} (${pct(totalEdge, totalNames)})   edges touching an invented name: ${sum("asSource") + sum("asTarget")}`)
 console.log(`\n  published kinds:`)
 const kindsAll: Record<string, number> = Object.create(null)
 const visAll: Record<string, number> = Object.create(null)
@@ -210,9 +290,13 @@ fs.writeFileSync(NDJSON, flat.map((r) => JSON.stringify(r)).join("\n") + (flat.l
 fs.writeFileSync(OUT, JSON.stringify({
   instrument: "script/m14/clean-error-impact.mts",
   child: path.relative(ROOT, CHILD),
-  population: { censusRows: censusRows.length, files: files.length, parsed: parsed.length, hung: hung.length, errored: errored.length },
+  population: { censusRows: censusRows.length, files: files.length, parsed: parsed.length, hung: hung.length, errored: errored.length, retried },
   perFileBudgetS: TIMEOUT_S, concurrency: CONCURRENCY,
-  totals: { rows: totalRows, published: totalPub, withEdge: totalEdge },
+  totals: {
+    censusRows: totalRows, names: totalNames, published: totalPub,
+    ambiguousNames: totalAmb, artifactCopies: totalArt, withEdge: totalEdge,
+    edgesTouchingInventedNames: sum("asSource") + sum("asTarget"),
+  },
   perFamily, kinds: kindsAll, visibility: visAll, edgeTypes: edgeTypesAll,
   hung: hung.map((h) => h.path), errored: errored.map((h) => ({ path: h.path, error: h.error })),
   ndjson: path.relative(ROOT, NDJSON),
