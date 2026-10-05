@@ -5,8 +5,14 @@
  *
  * `script/m14/ontology-coverage-gate.ts` is the workstream's arbiter and it is the
  * SUPERVISOR's file. It reads a lane's ruling table from `RULED_BY_LANG`, and
- * `protobuf` is not in that map, so it exits 2 with "no RULING TABLE for protobuf"
- * and this lane's RULED verdicts have never been checked by anything.
+ * `protobuf` WAS absent from that map, so it exited 2 with "no RULING TABLE for
+ * protobuf". That is no longer the state: `f20be135f` ("wire the protobuf ruling
+ * table; the arbiter now covers 7 of 23 lanes") put `protobuf: PROTOBUF_RULED` into
+ * `RULED_BY_LANG`, and the shared gate now rules for this lane — it reports
+ * `ruled-sound 3` and exits 1 on `FALSIFIED 2`. The header is corrected rather than
+ * deleted because run (a) below still executes the shared gate UNTOUCHED, and what
+ * that run now prints is the wired-table-but-unwired-grammar state, not the
+ * exit-2 state this paragraph used to describe.
  *
  * The wiring is three lines across two files this lane does not own, so this script
  * does not make them. Instead it DERIVES a wired copy of the gate MECHANICALLY —
@@ -17,15 +23,18 @@
  * which one the supervisor's gate would have said. The only thing this script
  * contributes is the splice, and it refuses to run if any anchor has moved.
  *
- * The wiring the supervisor needs, in full:
+ * The wiring the supervisor needs, in full — with the first half already applied:
  *
- *   script/m14/ontology-coverage-gate.ts
+ *   script/m14/ontology-coverage-gate.ts          APPLIED in f20be135f
  *     + import { PROTOBUF_RULED } from "./protobuf-ruled"
  *     ~ const RULED_BY_LANG … = { bash: BASH_RULED, json: JSON_RULED, protobuf: PROTOBUF_RULED }
  *
- *   script/m14/differential.ts            (LANGS — also what selects the gate's wasm)
+ *   script/m14/differential.ts            (LANGS — also what selects the gate's wasm)   STILL NEEDED
  *     + protobuf: { wasm: "tree-sitter-protobuf.wasm", analyzerFile: "real-protobuf-analyzer",
  *                   className: "RealProtobufAnalyzer", ext: "proto" },
+ *
+ * So the outstanding wiring is ONE line in one shared file, and the splice below
+ * refuses to run if either anchor has moved.
  *
  * The second block is not cosmetic. The gate picks its wasm with
  * `(LANGS as any)[LANG]?.wasm ?? "tree-sitter-bash.wasm"`, so without a `protobuf`
@@ -34,6 +43,13 @@
  * reads "the grammar produced 81 distinct node types" where protobuf's own count is
  * 94, and `calls` comes back FALSIFIED because `function_definition` is a real BASH
  * node type. Run C is the same table with the right grammar.
+ *
+ * Both figures are independently reproduced by
+ * `script/m14/protobuf-arbiter-grammar-wiring.mts`, which parses the same 847 files
+ * under BOTH grammars and additionally reports the bash root-node distribution
+ * (`{"program":836,"ERROR":11}` against protobuf's `{"source_file":847}`) and the
+ * instrument-B split that accounts for the second FALSIFIED row: the one `instantiates`
+ * hit under bash is a `guardWrongGrammar` REFUSAL and 0 construct occurrences.
  *
  * `run-fixtures.ts:91` already carries those four LANGS fields for this lane, so the
  * second block is a copy of a value that exists rather than a new claim.
