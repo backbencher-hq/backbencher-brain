@@ -41,6 +41,32 @@
  *
  * Usage:
  *   npx tsx script/m14/clean-ontology-census.ts [--limit N] [--wide] [--json out]
+ *
+ * ## Sharding — why it exists
+ *
+ * A single-process walk of the WIDE population CANNOT complete on this machine, and
+ * the cause is not the parser: `src/ast/engine.ts:1441` arms a 120 s `setTimeout`
+ * and calls `process.exit(1)`, so one file that runs long under CPU contention
+ * destroys every other file's work in the same process. `--shard K --shards N`
+ * partitions the SORTED admitted list by `index % N`, so shards are disjoint,
+ * reproducible and independently re-runnable, and `script/m14/clean-wide-walk.mts`
+ * drives them as child processes — a shard that dies costs that shard, not the walk.
+ *
+ * `--shard` ALSO changes two things the aggregator must know about, and both are
+ * recorded in the JSON rather than left implicit:
+ *
+ *   1. `perType[t].files` is a per-shard distinct count, so it must be UNIONED
+ *      across shards and never summed. The JSON therefore carries `typeFiles`, the
+ *      actual per-type file lists, so the union is exact rather than a lower bound.
+ *   2. `corpusBoth` is measured against a name index built from the SAMPLED files
+ *      only, so inside a shard it is measured against that shard's names and is NOT
+ *      comparable to the single-process WIDE figure. The JSON therefore carries
+ *      `edgePairs` ([type, source, target]) plus this shard's `names`/`qnames`, so
+ *      the aggregator can rebuild the FULL corpus index and resolve every edge once,
+ *      against the whole population, with the same `resolves()` used here.
+ *
+ * `intraBoth` needs neither correction: it is resolved per file against that file's
+ * own symbols, so it is exactly additive across shards.
  */
 import * as fs from "node:fs"
 import * as path from "node:path"
@@ -57,6 +83,20 @@ const arg = (k: string) => { const i = argv.indexOf(k); return i >= 0 ? argv[i +
 const LIMIT = Number(arg("--limit") ?? 0) || 0
 const WANT_WIDE = argv.includes("--wide")
 const JSON_OUT = arg("--json")
+const SHARD = Number(arg("--shard") ?? 0) || 0
+const SHARDS = Number(arg("--shards") ?? 0) || 0
+const SKIP_FILE = arg("--skip")
+const SKIP = new Set<string>()
+if (SKIP_FILE && fs.existsSync(SKIP_FILE)) {
+  for (const line of fs.readFileSync(SKIP_FILE, "utf8").split("\n")) {
+    const t = line.trim()
+    if (t) SKIP.add(t)
+  }
+}
+if (SHARDS > 0 && (SHARD < 0 || SHARD >= SHARDS)) {
+  console.error(`bad shard: --shard ${SHARD} is outside --shards ${SHARDS}`)
+  process.exit(2)
+}
 
 const ALL_TYPES = ["calls", "uses", "contains", "imports", "references", "exports", "extends", "implements", "overrides", "instantiates"] as const
 type Type = (typeof ALL_TYPES)[number]
@@ -97,7 +137,23 @@ if (WANT_WIDE && fs.existsSync(WIDE_MANIFEST)) {
 }
 files.sort((a, b) => (a.abs < b.abs ? -1 : a.abs > b.abs ? 1 : 0))
 const nFilesAll = files.length
-const sample = LIMIT > 0 ? files.slice(0, LIMIT) : files
+const limited = LIMIT > 0 ? files.slice(0, LIMIT) : files
+// Deterministic, disjoint partition of the SORTED list: shard K takes every N-th
+// index. Not a stride over an unsorted walk, so shard membership does not depend on
+// directory iteration order. `--skip` is applied AFTER the partition, so excluding a
+// poison file does not renumber the shard — shard membership stays stable across the
+// retry loop in script/m14/clean-wide-walk.mts, and a shard's file set is reproducible
+// from its index alone.
+const partitioned = SHARDS > 0 ? limited.filter((_, i) => i % SHARDS === SHARD) : limited
+const sample = SKIP.size ? partitioned.filter((f) => !SKIP.has(f.abs)) : partitioned
+if (SHARDS > 0 && limited.length && partitioned.length === 0) {
+  console.error(`shard ${SHARD}/${SHARDS} selected 0 of ${limited.length} files — refuse to write an empty census`)
+  process.exit(2)
+}
+if (SKIP.size) {
+  const skipped = partitioned.length - sample.length
+  console.log(`--skip: ${SKIP.size} path(s) listed, ${skipped} of this shard's ${partitioned.length} files excluded\n`)
+}
 
 console.log(`clean ontology census`)
 console.log(`corpus root: ${CR}`)
@@ -141,6 +197,18 @@ const corpusNames = new Map<string, number>()
 const corpusQNames = new Map<string, number>()
 const samples: { rel: string; sym: number; edge: number }[] = []
 
+// Sharded-walk inputs. Collected ALWAYS (they are cheap, bounded by this shard's own
+// output) but only WRITTEN when --json is given, so an un-sharded run's report bytes
+// do not change. `typeFiles` is the exact per-type file list the 400-cap hides;
+// `names`/`qnames` are this shard's contribution to the global resolution index;
+// `edgePairs` is every edge as [typeIndex, source, target] for the aggregator to
+// resolve once against the FULL population.
+const typeFileList: Record<string, Set<string>> = Object.create(null)
+for (const t of ALL_TYPES) typeFileList[t] = new Set<string>()
+const shardNames = new Set<string>()
+const shardQNames = new Set<string>()
+const edgePairs: [number, string, string][] = []
+
 // The store's own three resolution strategies, per docs/analyzers/real-clean-analyzer.md
 // and parallel-indexer.ts:2734-2736: bare name, `Owner.member` qualified, or the leaf
 // after the first `.` for a dotted target.
@@ -159,6 +227,12 @@ function resolves(target: string, names: Set<string>, qnames: Set<string>, corpu
   }
   return false
 }
+
+// The endpoint reader, in ONE place. The edgePairs collection below and the tally
+// loop below must read the SAME two fields, or the aggregator would resolve a
+// different population than the one it is reporting counts for.
+const src0 = (x: any): string => String(x.source ?? "")
+const tgt0 = (x: any): string => String(x.target ?? "")
 
 let idx = 0
 const PERFILE: { abs: string; rel: string; root: string; r: any }[] = []
@@ -198,7 +272,9 @@ for (const { r, rel } of PERFILE) {
     const nm = String(s.name ?? "")
     if (!nm) emptyNames++
     names.add(nm)
+    if (nm) shardNames.add(nm)
     if (s.qualifiedName) qnames.add(String(s.qualifiedName))
+    if (s.qualifiedName) shardQNames.add(String(s.qualifiedName))
     const k = String(s.kind ?? "")
     kindTally[k] = (kindTally[k] ?? 0) + 1
     if (!k || k === "unknown") unknownKind++
@@ -212,8 +288,10 @@ for (const { r, rel } of PERFILE) {
     const row = rows[t]
     row.n++
     if (row.files.size < 400) row.files.add(rel)
-    const src = String(x.source ?? "")
-    const tgt = String(x.target ?? "")
+    typeFileList[t].add(rel)
+    edgePairs.push([ALL_TYPES.indexOf(t), src0(x), tgt0(x)])
+    const src = src0(x)
+    const tgt = tgt0(x)
     if (!src) row.emptyEndpoint++
     if (!tgt) row.emptyEndpoint++
     if (tgt === "unknown" || src === "unknown") row.unknownEndpoint++
@@ -293,6 +371,7 @@ for (const t of ALL_TYPES) {
 if (JSON_OUT) {
   fs.writeFileSync(JSON_OUT, JSON.stringify({
     corpusRoot: CR, admittedNarrow: nNarrow, total: nFilesAll, sampled: sample.length,
+    shard: SHARDS > 0 ? SHARD : null, shards: SHARDS > 0 ? SHARDS : null,
     filesParsed: filesSeen, parseFail, fallbackFiles, symbols, emptyNames, unknownKind, totalEdges,
     kindTally, evidenceTally,
     perType: Object.fromEntries(ALL_TYPES.map((t) => [t, {
@@ -301,6 +380,14 @@ if (JSON_OUT) {
       heuristic: rows[t].heuristic, noLine: rows[t].noLine, unknownEndpoint: rows[t].unknownEndpoint, selfEdges: rows[t].selfEdges,
       conf: rows[t].conf, meta: rows[t].meta,
     }])),
+    // Sharded-walk inputs, written only when sharding so an un-sharded JSON is
+    // unchanged. `typeFiles` is the real list behind the 400-capped `files` count.
+    ...(SHARDS > 0 ? {
+      typeFiles: Object.fromEntries(ALL_TYPES.map((t) => [t, [...typeFileList[t]].sort()])),
+      names: [...shardNames].sort(),
+      qnames: [...shardQNames].sort(),
+      edgePairs,
+    } : {}),
   }, null, 2))
   console.log(`\nJSON written: ${JSON_OUT}`)
 }
