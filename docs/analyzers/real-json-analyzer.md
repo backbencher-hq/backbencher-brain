@@ -1441,3 +1441,47 @@ harness `exit 2`s while any mutant survives, and the recorded artifact already r
 regenerate — otherwise the new artifact would certify a red suite. This lane verified the
 scoped alternative leaves it untouched: `BB_MUTANT_ONLY="json/"` caught all 25 with
 `M14.0.F4.json` md5 unchanged at `8f73e5d8f9d001bebc9758d823d8a69c`.
+
+**6. `git stash` is unsafe while the lanes run concurrently — it is NOT per-worktree, and it
+destroyed this lane's uncommitted work on 2026-10-05. Highest-priority item in this section.**
+The lane worktrees share one object database and one `refs/stash`: `refs/stash` is a plain ref
+under `refs/`, **not** a per-worktree ref like `HEAD` and the index, so any agent's
+`git stash push` is visible to, and poppable by, every other lane. Observed exactly:
+
+- this lane ran `git stash push -- src/ast/real-json-analyzer.ts` (correctly path-scoped),
+  then `git stash pop` after a measurement;
+- a **different** lane (protobuf, working in `$HOME/mcp/bb-lanes/protobuf`) ran an
+  unscoped `git stash` in between, which made its entry `stash@{0}` and displaced this lane's
+  to `stash@{1}`;
+- this lane's `git stash pop` therefore popped **the protobuf lane's stash**, applying 59
+  lines of `src/ast/real-protobuf-analyzer.ts` changes into the json worktree, and this
+  lane's own analyzer edit was gone. `git stash list` was empty afterwards, so the displaced
+  entry was dropped with it.
+
+Two distinct harms, both silent: **this lane lost an uncommitted fix** (recovered only because
+a `/tmp` copy existed), and **another lane's diff landed in this lane's working tree**, where
+it would have been committed under an `analyzer/JSON` message had the §8 file-ownership check
+not caught it. `verify-regex-census.ts` independently flags the same file as
+`working-tree drift … real-protobuf-analyzer.ts`, which is how it was noticed.
+
+What it must be: either (a) a documented rule that lanes MUST NOT use `git stash` at all and
+copy to `/tmp` instead, enforced in the lane prompt, or (b) per-worktree stash refs —
+`extensions.worktreeConfig` / `refs/worktree/*` — so a push in one worktree cannot appear in
+another's `stash list`. Until one of those lands, **`git stash` should be treated as a
+cross-lane destructive operation**, and an agent recovering from a lost session should check
+`git status` for files belonging to other analyzers before staging anything. This lane's
+recovery was `cp /tmp/json-analyzer-fullfix.ts src/ast/real-json-analyzer.ts`, re-verified by
+`tsc --noEmit` and by re-running the probe to the same numbers.
+
+**7. The admitted-file count is not one number, and three walks disagree.** For the same
+corpus root on 2026-10-05: `validation/m14/fixtures/json/top-level-array-selection.ts` reports
+**13,884** admitted; an independent walk of the same rules (`*.json`/`*.jsonc`/`*.json5`,
+skip-segments, depth ≤ 12, >5 MB dropped, space-containing paths dropped) reports **13,851**
+raw, of which 25 are over 5 MB and 110 contain a space; and `validation/m14/fixtures/json/
+census.ts` reports **13,951**. It is not resolved which is right, and the 67-file gap between
+the selector and the census is **not** explained by the 5 MB cut (25) or the space filter
+(110) — those push the other way. What it must be: one shared admitted-file enumerator that
+every json instrument imports, so the lane's denominator is stated once and the probes stop
+re-deriving it. Until then, ratios **within** one instrument are sound (this lane's
+17,803 of 120,464 is self-consistent, and the A/B ran on a fixed file list) and ratios
+**between** instruments — this probe against the census table above — must not be quoted.
