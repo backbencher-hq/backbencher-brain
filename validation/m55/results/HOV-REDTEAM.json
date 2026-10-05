@@ -31,39 +31,26 @@
       "expectedFailedCheck": "D3: every evidence tier the card renders is justified by a stored relationship row"
     }
   ],
-<<<<<<< HEAD
-  "currentCommit": "5130189a871f9bd35d3a6d957791f1f0b0448947",
+  "currentCommit": "a7d77e8adb61650b93680f88cf07b6cbbf07a60a",
   "workingTreeRelevantChanges": [
-    "validation/m24/results/D1.json",
+    "validation/m24/results/L2.json",
+    "validation/m24/results/L4.json",
+    "validation/m42/results/H1.json",
     "validation/m42/results/H2.json",
     "validation/m42/results/H3.json",
     "validation/m42/results/H4.json",
-    "validation/m55/results/EVID-TREE.json",
     "validation/m55/results/HOV-COVERAGE.json",
-    "validation/m55/results/T2.json",
+    "validation/m55/results/T3.json",
     "validation/m55/results/T4.json"
   ],
   "verifierCommand": "npx tsx script/m55/verify-hover-coverage-redteam.ts",
   "evidenceFile": "HOV-REDTEAM.json",
-  "generatedAt": "2026-10-05T04:17:01.038Z",
-=======
-  "currentCommit": "fad1500bd9beb2b0e30b96a0b993ea8860ddf91b",
-  "workingTreeRelevantChanges": [
-    "validation/m55/results/HOV-COVERAGE.json"
-  ],
-  "verifierCommand": "npx tsx script/m55/verify-hover-coverage-redteam.ts",
-  "evidenceFile": "HOV-REDTEAM.json",
-  "generatedAt": "2026-10-05T13:01:58.459Z",
->>>>>>> feat/hover-all-relationships
+  "generatedAt": "2026-10-05T14:27:46.999Z",
   "observed": {
-    "cleanTreeVerdict": "KNOWN-GAP",
-    "cleanTreeExit": 1,
-    "cleanTreeFailures": [
-      "R6/§3: warm hover p95 is under the declared 50 ms budget on ALL THREE busy shapes — worst p95=79.82ms — §3: a budget miss is a failed gate, not a footnote"
-    ],
-    "baselineFailures": [
-      "R6/§3: warm hover p95 is under the declared 50 ms budget on ALL THREE busy shapes — worst p95=79.82ms — §3: a budget miss is a failed gate, not a footnote"
-    ],
+    "cleanTreeVerdict": "VERIFIED",
+    "cleanTreeExit": 0,
+    "cleanTreeFailures": [],
+    "baselineFailures": [],
     "judgedBy": "SET DIFFERENCE of failing checks, never the exit code — on a loaded machine the gate's own §3 latency check is legitimately red, and an exit-code oracle would call every mutant detected for the wrong reason",
     "restores": [
       {
@@ -97,12 +84,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-<<<<<<< HEAD
-    "sealedAt": "2026-10-05T04:17:01.039Z",
-    "contentSha256": "7f2b90b3eb1d71ce4d99edd3f70b5932b8681f32e90f34f6d5c1186f846590e9"
-=======
-    "sealedAt": "2026-10-05T13:01:58.463Z",
-    "contentSha256": "73b18b8279e52618b50379da3275a7178052306eece61796eaa6fd2707116dbe"
->>>>>>> feat/hover-all-relationships
+    "sealedAt": "2026-10-05T14:27:47.002Z",
+    "contentSha256": "1f6f1eff4d9dc6bb71b447348d766bcf1dfe6c4118dd0b2c1c15ee43b32ed55f"
   }
 }
