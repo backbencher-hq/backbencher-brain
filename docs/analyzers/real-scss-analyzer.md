@@ -340,23 +340,31 @@ what `uses` is for. Corpus-wide, **663 of 4,433** admitted files declare `@keyfr
 `scss/invocation-and-inheritance-labels` pins all four rows in one file so this type can
 never again be carried only by the two that were mislabelled.
 
-### The three candidate readings of `overrides`, and the one that is an override
-
 ### The `@extend` resolution finding, measured on the tree
 
-`uses` resolves at both ends on **439 / 799 (54.9%)**, and the aggregate hides three
-constructs with three different reasons for an absent endpoint
+**This section's per-construct table is a PRE-RELABELLING measurement and is kept for what
+it separates, not for its aggregate.** It was taken when `@include` and `@extend` both
+carried `uses`, so its rows 1, 2, 4 and 5 are now `calls` and `extends` respectively. Its
+headline `uses` figure of 439/799 (54.9%) is therefore not the lane's current `uses` figure
+and must not be quoted as one — the current one is **91 / 91 = 100.0%**, and the 799 is
+listed again in "What is measured, and what is not" as the example of a narrower walk that
+disagreed with the arbiter. What survives the relabelling is the per-construct split, which
+is why the table is retained and relabelled rather than deleted
 (`script/m14/tmp/scss-uses-resolution.ts`):
 
-| construct | edges | both-ends resolved |
-| --- | --- | --- |
-| `@include` → a declared mixin | 153 | **153 / 153 = 100%** |
-| `f(x)` → a declared `@function` | 144 | **144 / 144 = 100%** |
-| `@extend`, top-level shape | 90 | 2 / 90 = 2.2% |
-| `@extend`, recovered shape (inside a rule body) | 320 | 49 / 320 = 15.3% |
-| delegated CSS (`@keyframes`, `@mixin` references) | 88 | 88 / 88 = 100% |
-| `exports` | 3,465 | 3,465 / 3,465 = 100% |
-| `overrides` | 16 | 16 / 16 = 100% |
+| construct | now labelled | edges | both-ends resolved |
+| --- | --- | --- | --- |
+| `@include` → a declared mixin | `calls` | 153 | **153 / 153 = 100%** |
+| `f(x)` → a declared `@function` | `calls` | 144 | **144 / 144 = 100%** |
+| `@extend`, top-level shape | `extends` | 90 | 2 / 90 = 2.2% |
+| `@extend`, recovered shape (inside a rule body) | `extends` | 320 | 49 / 320 = 15.3% |
+| delegated CSS (`@keyframes`, `@mixin` references) | `uses` | 88 | 88 / 88 = 100% |
+| `exports` | `exports` | 3,465 | 3,465 / 3,465 = 100% |
+| `overrides` | `overrides` | 16 | 16 / 16 = 100% |
+
+The aggregate hid two constructs with two different reasons for an absent endpoint, and the
+`uses` label was hiding one of them: the two `@extend` rows are `extends` now, so the type
+whose resolution rate is low is the one the type NAME says inherits.
 
 The low `@extend` rate is a **cross-file** property, and it is measured on the parse tree
 rather than asserted (`script/m14/tmp/scss-extend-tree-witness.ts`): of the corpus's 437
@@ -373,7 +381,7 @@ that name**, overwhelmingly a `%placeholder` the CSS lane publishes under its re
 `&.is-transparent` where the other reads `.is-transparent` — so the figure is an upper
 bound and is stated as one.
 
-### The recovered `@extend` shape: 63 of 99 statements were invisible
+### The recovered `@extend` shape: 577 of 676 statements were invisible
 
 A grammar fact, not a walk bug, and it is the largest single recall gain this lane has
 measured. The `extend_statement` RULE is written for a top-level `@extend`; the same text
