@@ -10,7 +10,11 @@
 > (declaration, child) pairs, 0 UNCLASSIFIED**, against a corpus of 2,181 files and a
 > second run over the 312 the arbiter walks. See
 > [`extends` — RULED, registered and falsifiable](#extends--ruled-registered-and-falsifiable).
-> No analyzer behaviour changed this round; the analyzer file is byte-identical to pass 2.
+> Pass 3 also found and fixed a **defect in the analyzer itself**, unrelated to the
+> ruling: an operator-named class declared in the same file read as imported
+> (`isExternalClass` false on **24** `implements` edges) and its member set read as
+> unreachable, so its `overrides` edges were dropped. Two mutants and one fixture pin
+> both halves; see [A spelling mismatch that made both lookups miss](#a-spelling-mismatch-that-made-both-lookups-miss--pass-3).
 >
 > **Status (M60 pass 2, ontology adversarial review).** The pass-1 body below is the
 > 2026-09-28 M14.0 completeness round and is retained as its record. That round
@@ -37,8 +41,9 @@
 | `script/m14/clean-label-probe.mts` | Q4 — whether each edge's TYPE label is provable against an independent walk of the same tree | 312 files |
 | `script/m14/clean-honesty-gate.ts` | resolution, empty names, unknown kinds, ownerless members, crash files — through **`analyze()`** | 312 files |
 | `script/m14/clean-completeness-gate.ts` | the grammar's named node types against the spec's buckets | fixtures |
-| `script/m14/run-fixtures.ts --lang clean` | 10 fixtures | fixtures |
-| `script/m14/clean-mutant-run.ts` | 7 mutants, judged by the shared harness's own rule | fixtures |
+| `script/m14/run-fixtures.ts --lang clean` | 11 fixtures | fixtures |
+| `script/m14/clean-mutant-run.ts` | 9 mutants, judged by the shared harness's own rule | fixtures |
+| `validation/m14/fixtures/clean/extends-probe-roles-check.mts` | the ruling census's slot ROLES, per declaration, importing the census from the ruling table | the one fixture |
 | `script/m60/rel-type-coverage-gate.ts --langs=clean` | DERIVATION — which emitted types an oracle actually audits | 1 lane |
 | `script/m14/differential.ts --lang clean --sample 60` | Q3 — the second-opinion oracle | Clyde + clean-stdlib, 60 files each |
 
@@ -613,6 +618,70 @@ its own, so its members are attributed to the class and the two composed endpoin
 identical. `frameOwner !== className` now refuses them; the mutant
 `clean/overrides-self-edge-guard-dropped` proves the refusal is load-bearing.
 
+### A spelling mismatch that made both lookups miss — pass 3
+
+**An operator is a class name in Clean, and the two sites spell it differently.**
+
+| site | spelling | corpus |
+| --- | --- | --- |
+| a DECLARATION | `class (==) infix 4 a :: !a !a -> Bool` — the symbol name keeps the parentheses | `clean-stdlib/StdOverloaded.icl:23`, `StdFile.icl:373` |
+| an INSTANCE | `instance == Bool :: !Bool !Bool -> Bool` — bare | `clean-stdlib/StdBool.dcl:10`, `eastwood/src/sharedUtil/Range.icl:31` |
+
+The analyzer read the declaration's `name` field verbatim as `(==)` and the instance's
+as `==`. Every lookup keyed on the bare spelling therefore missed, and it missed in two
+places at once:
+
+**1 — `implements.isExternalClass` was false 24 times.** The flag exists to say which of
+the two cases an `implements` edge is: the class is declared in this file, or it is
+imported. Almost every Clean class IS imported, so `true` is the normal case and the flag
+is the only thing stopping a reader assuming otherwise. Measured over the 312-file corpus
+with `analyze()`: **24 `implements` edges carried `isExternalClass: true` for a class
+declared in the same file** (`clean-stdlib/StdFile.dcl` and `StdFile.icl`, class
+`(<<<)`). The external count fell **555 → 531** and the false-external count is now **0**.
+No edge was added, removed or relabelled; one metadata field was wrong on 24 of 772.
+
+**2 — the `overrides` in-file guard could not see those classes' member sets.** Same
+miss, and here it silently DROPPED edges rather than mislabelling them: `classMembers`
+was keyed `(==)` and read as `==`, so the guard refused the edge for a class the file
+declares. **0 new edges on the 312-file corpus**, and the reason is worth stating because
+it is why the defect survived two rounds: the corpus spells its operator-named classes on
+ONE line (`class (==) … ::`), and the one-line form gives the member set nothing to read.
+So the aggregate count could not see it and neither could the differential. It is pinned
+by `clean/extends-probe-roles`, which declares `class (>>=) a where` in the `where` form
+and requires `overrides Thing.>>= -> >>=.>>=`.
+
+**The same miss was in this lane's honesty gate.** `implements.classNotDeclaredHere` reads
+`classNames`, built from interface-kind symbol names, so it inherited the paren
+mismatch: **318 → 306** after the same correction. The two figures are *not* the same 24
+edges and are not comparable — that bucket's predicate is
+`!resolvable(target) && !classNames.has(target) && !typeNames.has(target)`, which is
+narrower than the flag's, so 12 of the 24 were already resolving by `qualifiedName` and
+never entered it. Both numbers are recorded rather than reconciled, because reconciling
+them would mean changing a predicate whose exact shape is the gate's business.
+
+**Why no count-based check on this lane could have found it.** Both halves leave the
+edge totals intact or lower, the labels correct, the endpoints qualified and the site
+lines right. `verify-doc-truth-emissions` compares emitted type NAMES; the census
+compares totals; the differential has no oracle for either field. The only instrument
+that sees it is a fixture written to name the spelling, and the spelling is only visible
+in a file that declares an operator-named class in the `where` form — a shape this corpus
+does not contain.
+
+**And the lane's own hygiene gate caught the fix's regression.** The first version of
+`isLocallyDeclaredOperatorClass` guarded with `/^[A-Za-z_][A-Za-z0-9_']*$/`, and
+`clean-completeness-gate.ts` failed it:
+
+```
+FAIL analyzer contains 1 regex literal(s): /^[A-Za-z_][A-Za-z0-9_']*$/
+```
+
+This file's rule is stronger than the M49.R2 policy — **zero** `RegularExpressionLiteral`
+nodes — and the gate convicted the commit that added the fixture meant to prove the
+correction. Replaced with `isPlainIdentifierName`, a character test in the same shape as
+the file's other two character predicates. The gate is load-bearing and this is the
+second time on this lane it has caught something (the first is in
+[Hygiene](#hygiene-zero-regex-and-what-it-is-checked-against)).
+
 ## The six questions, per emitted type
 
 The questions fail independently, so each is answered with its own instrument and its
@@ -816,10 +885,11 @@ was clean before the doc edits and after them.
 | `npx tsx script/m14/firing-check.ts --files 120 clean` | `9/10 fired, 16231 edges, 120/120 files`, `degraded 0`, analyzer digest `stable` | 0 |
 | `npx tsx script/m14/clean-ontology-census.ts` | 312/312 parsed, 30,187 edges, 8,288 symbols, 0 empty names, 0 unknown kinds, 0 unknown endpoints, 0 degraded | 0 |
 | `npx tsx validation/m14/fixtures/clean/extends-construct-probe.mts` | TRACKED 0 UNCLASSIFIED / WIDE 0 UNCLASSIFIED; instrument A 0 of 39 probed | 0 |
-| `bun run script/m14/clean-honesty-gate.ts` | 312 files, 8,288 symbols, 30,689 relationships, **no violations** (`analyze()`, see Instruments) | 0 |
+| `bun run script/m14/clean-honesty-gate.ts` | 312 files, 8,288 symbols, 30,689 relationships, **no violations**; `implements.classNotDeclaredHere` 318 → 306 after this round's correction (`analyze()`, see Instruments) | 0 |
 | `bun run script/m14/clean-completeness-gate.ts` | 141 declared named node types, 141 classified, **all checks pass** | 0 |
-| `npx tsx script/m14/clean-mutant-run.ts` | 7 mutants, **caught 7/7**, every one made the suite red | 0 |
-| `npx tsx script/m14/run-fixtures.ts clean` | clean: **pass 10, fail 0, problems 0** | 0 |
+| `npx tsx script/m14/clean-mutant-run.ts` | 9 mutants, **caught 9/9**, every one made the suite red | 0 |
+| `npx tsx script/m14/run-fixtures.ts clean` | clean: **pass 11, fail 0, problems 0** | 0 |
+| `npx tsx validation/m14/fixtures/clean/extends-probe-roles-check.mts` | **PASS** — 18 declarations, 23 (declaration, child) pairs, 0 unclassified, 0 ERROR, 0 MISSING | 0 |
 | `npx tsx script/m60/rel-type-coverage-gate.ts --langs=clean` | 4 DERIVATION findings, 3 NEW; checks 2/3/4 pass — **and it OVERWRITES the repository-wide results file, see report item 5** | 0 |
 | `bash script/m14/no-regex-gate.sh` | `real-clean-analyzer.ts` contributes **0** of the tree's 4 regex literals (all 4 are `real-svelte-analyzer.ts`) | 0 |
 | `npx tsx script/m14/differential.ts --lang clean --sample 60` | **RED, and reproduced exactly.** Clyde: `tree-truth=1314 covered=787 (59.9%) MISSING=527 \| analyzer-edges=1322 unexplained=671 (50.8%) heuristic=0`. clean-stdlib: `tree-truth=655 covered=606 (92.5%) MISSING=49 \| analyzer-edges=941 unexplained=462 (49.1%) heuristic=0`. `COMPARED WITH NO TRUTH: overrides` on both (6 and 39 edges). Writes no artifact on a scoped run, by design | 0 |
@@ -1018,9 +1088,20 @@ gate: a check whose population is empty is itself a failure.
 | `declaration-forms.icl` | **new.** macro, generic, generic case, derive, special, fixity (both spellings), foreign export, class context, with- and where-locals |
 | `qualified-names.icl` | **new.** BOTH qualified-name spellings, and the selective import item list |
 | `type-and-expression-shapes.icl` | **new.** the type spine, every pattern shape, every operator spelling, comments, open-subset import markers |
-| `typeclass-overrides.icl` | **new this round.** the `overrides` rule: qualified `Thing.show -> Show.show`, two instances of one class at two site lines, and three FORBIDS — an instance member absent from the class's member set (`Bool.size`), the reversed direction (`Show.show`), unqualified endpoints, and the polymorphic-instance self-edge (`Sized.size`) |
+| `typeclass-overrides.icl` | **new in pass 2.** the `overrides` rule: qualified `Thing.show -> Show.show`, two instances of one class at two site lines, and three FORBIDS — an instance member absent from the class's member set (`Bool.size`), the reversed direction (`Show.show`), unqualified endpoints, and the polymorphic-instance self-edge (`Sized.size`) |
+| `extends-probe-roles.icl` | **new in pass 3, and it is TWO fixtures in one file.** (a) `extends-probe-roles.expectation.json` grades the ANALYZER: the operator-named-class spelling correction in both directions — `implements Thing -> ==` with `meta.isExternalClass: false`, `overrides Thing.>>= -> >>=.>>=`, and a FORBID on `meta.isExternalClass: false` for `implements Thing -> Eq` so the flag cannot be made constant — plus a FORBID on **any `extends` edge**, which is what convicts a future edit that relabels a dictionary requirement as a supertype. (b) `extends-probe-roles.probe.json`, checked by `extends-probe-roles-check.mts`, grades the RULING CENSUS: all six roles, 18 declarations, 23 (declaration, child) pairs, 0 unclassified, 0 ERROR, 0 MISSING |
 
-`script/m14/run-fixtures.ts --lang clean`: **10 pass, 0 fail.**
+Both halves exist because neither alone is load-bearing. The analyzer rows cannot see the
+census's slot table, and the census rows cannot see a metadata flag; a fixture that carried
+only one of them would let the other rot. `extends-probe-roles-check.mts` imports
+`censusCleanDeclarations` from `script/m14/clean-ruled.ts` rather than reimplementing it, so
+it cannot pass against a probe the arbiter does not run — and it reads a `.probe.json` beside
+the fixture rather than a `.expectation.json`, because `runLang` grades expectations against
+the analyzer's output and this asserts something the analyzer does not produce.
+
+`script/m14/run-fixtures.ts --lang clean`: **11 pass, 0 fail** (10 in pass 2).
+`npx tsx validation/m14/fixtures/clean/extends-probe-roles-check.mts`: **PASS**, 18
+declarations, 23 pairs, 0 unclassified.
 
 The three new fixtures exist because the F6 obligation ("every `handled_verified`
 type is exercised by a fixture") was not met: 11 of the analyzer's handled types
@@ -1031,19 +1112,49 @@ handled types are now fixture-backed, and the gate says so on every run. The cou
 
 ### Mutation (L4), and the wiring it needs
 
-`script/m14/clean-mutants.ts` defines **7 mutants** for the `overrides` type, one per
-way it can be wrong: dropped entirely; emitted without the in-file guard (fabrication);
-emitted with the direction reversed; emitted with unqualified endpoints (which every
-every resolution rate still reports as clean); emitted as a self-edge; relabelled
-`implements`; emitted without its site line. They are executed by
-`script/m14/clean-mutant-run.ts` through the shared suite's own `runLang` and judged by
-the shared harness's own rule (`mutate-analyzer.ts:18870`):
+`script/m14/clean-mutants.ts` defines **9 mutants**: seven for the `overrides` type, one
+per way it can be wrong — dropped entirely; emitted without the in-file guard
+(fabrication); emitted with the direction reversed; emitted with unqualified endpoints
+(which every resolution rate still reports as clean); emitted as a self-edge; relabelled
+`implements`; emitted without its site line — and **two added in pass 3** for the
+operator-named-class spelling correction, which are a different defect class from all
+seven:
+
+| mutant | what it reverts | how it fails |
+| --- | --- | --- |
+| `clean/operator-class-declaration-spelling-only` | `classMembers` keyed on the declaration's `name` field verbatim | the `overrides` edge for a same-file operator-named class is **dropped** — a count that goes DOWN, not wrong |
+| `clean/implements-external-class-always-external` | `isExternalClass` to the bare lookup alone | **no count moves at all**; one metadata field is false on 24 corpus edges |
+
+They are executed by `script/m14/clean-mutant-run.ts` through the shared suite's own
+`runLang` and judged by the shared harness's own rule (`mutate-analyzer.ts:18870`):
 
 ```
-baseline for clean: pass 10  fail 0  problems 0
-caught 7/7
+clean mutant runner — 9 mutants
+baseline for clean: pass 11  fail 0  problems 0
+
+CAUGHT   clean/overrides-dropped                      fail 0 -> 2  problems 0 -> 6
+           newly failing: clean/extends-probe-roles, clean/typeclass-overrides
+CAUGHT   clean/overrides-in-file-guard-dropped        fail 0 -> 1  problems 0 -> 1
+CAUGHT   clean/overrides-direction-reversed           fail 0 -> 2  problems 0 -> 8
+CAUGHT   clean/overrides-endpoints-unqualified        fail 0 -> 2  problems 0 -> 7
+CAUGHT   clean/overrides-self-edge-guard-dropped      fail 0 -> 1  problems 0 -> 2
+CAUGHT   clean/overrides-relabelled-as-implements     fail 0 -> 2  problems 0 -> 6
+CAUGHT   clean/overrides-site-line-lost               fail 0 -> 2  problems 0 -> 5
+CAUGHT   clean/operator-class-declaration-spelling-only   fail 0 -> 1  problems 0 -> 1
+           newly failing: clean/extends-probe-roles
+CAUGHT   clean/implements-external-class-always-external  fail 0 -> 1  problems 0 -> 3
+           newly failing: clean/extends-probe-roles
+
+caught 9/9
 every mutant made the suite red
 ```
+
+The new fixture also catches **5 of the 7 pre-existing `overrides` mutants**, which
+previously failed `typeclass-overrides` alone. That is a coverage gain nobody planned and
+it is worth recording: a fixture written for one defect turned out to be a second
+independent witness for four others, because both are about the same three properties —
+qualified endpoints, instance-member → class-member direction, and a member set that
+exists.
 
 **These mutants are NOT yet run by the shared F4 gate.** `script/m14/mutate-analyzer.ts`
 does not import `./clean-mutants`, and the file's own header records why a lane keeps its
@@ -1120,7 +1231,13 @@ import { CLEAN_MUTANTS } from "./clean-mutants"
     corpus-wide pairing is 1,036 occurrences across 78 classes; the analyzer emits 582.
     The 454 difference is instances whose class is declared in another file. That gap is
     deliberate (see the guard's rationale) and is a LIMITATION of the graph, not a
-    rounding error a reader should assume away.
+    rounding error a reader should assume away. **Pass 3 qualification**: part of that 454
+    was a spelling mismatch rather than a cross-file class, and pass 3 recovered **0** of
+    it on the corpus — because the corpus spells its operator-named classes on one line,
+    which gives the member set nothing to read. The recovered count would be **0** here
+    and non-zero only in a file using the `where` form, which is why
+    `clean/extends-probe-roles` exists. The 454 is therefore still 454, and the reason is
+    now a measured fact rather than an assumption.
 12. **11 instance `Class` symbols across 3 files are named after a TYPE EXPRESSION rather
     than an identifier.** `instance Array {#} {#.a}` (`clean-core/Sources/_SystemArray.icl`
     L189), `instance Array {#} {!.a}` (L233), `instance Show {!a}` /
@@ -1149,7 +1266,16 @@ import { CLEAN_MUTANTS } from "./clean-mutants"
     `[BB-HANG] parser stuck 120s` watchdog fires on a different file per run under load,
     which is the measured cause of this document's 0.03% run-to-run drift. Not a lane
     defect; a parser-robustness finding for whoever owns `wasm/tree-sitter-clean.wasm`.
-15. **The differential's oracle is a second walker over the SAME grammar**, so a grammar
+15. **An operator-named class still resolves under only one of its two spellings outside
+    this file.** `isLocallyDeclaredOperatorClass` and the honesty gate's `classNames` both
+    correct the BARE→parenthesised direction, because that is the direction the corpus
+    produces (a declaration parenthesised, an instance bare). The reverse — a file that
+    declares `class ==` bare and is instanced as `class (==)` — is not attempted, because
+    no corpus file produces it and a fix for an unobserved direction would be a claim
+    without a measurement. Both call sites are guarded so the untried direction cannot
+    produce a false positive, and `class (===)` coexisting with `class ===` in one file
+    resolves to the declaration that actually spells each name.
+16. **The differential's oracle is a second walker over the SAME grammar**, so a grammar
     bug in both paths is invisible to it. With 30.1% of real Clean files not parsing
     (limitation 0), that is not a theoretical caveat: it is the largest single blind spot
     on this lane, and no amount of differential testing closes it.
