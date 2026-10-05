@@ -464,5 +464,47 @@ export const CSS_MUTANTS: Mutant[] = [
       }),
     }),
   },
-
+  {
+    id: "css/media-scope-name-falls-back-to-the-first-query-term",
+    language: "css",
+    defectClass: "wrong-payload",
+    description:
+      "The pass-13 `contains` (at-rule scope) fix, reverted. `processMedia` builds the scope NAME from the at-rule's own prelude, so `@media A, B { }` publishes `@media A, B`; the pre-fix code handed `findChild` the FIRST query child and published `@media A`. That is not a cosmetic name: two lists differing only after the comma then share a name, and the identity merge folds two different conditions into one scope symbol together with their rules. The mutant restores the first-term name. Caught by css/media-comma-list-is-one-condition, whose two blocks share a first term and differ only after the comma, and by css/custom-media-in-every-query-shape, whose `@media (--a), (--b)` block the old code named `@media (--a)`. Neither fixture is reachable from a corpus number: `validation/m14/tmp/css-media-prelude-equivalence.ts` measures 102 comma lists against 0 `@custom-media` declarations in the admitted corpus, so a fixture is the only instrument that can see this.",
+    transform: (r: any) => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((x: any) => {
+        const n = typeof x?.name === "string" ? x.name : ""
+        if (!n.startsWith("@media ") || n.indexOf(",") < 0) return x
+        // Keep only the first comma-separated term, which is what the first query
+        // child holds.
+        let depth = 0
+        for (let i = "@media ".length; i < n.length; i++) {
+          const c = n.charAt(i)
+          if (c === "(" || c === "[") depth++
+          else if (c === ")" || c === "]") depth--
+          else if (c === "," && depth === 0) return { ...x, name: n.slice(0, i) }
+        }
+        return x
+      }),
+    }),
+  },
+  {
+    id: "css/custom-media-ref-read-from-the-first-query-term-only",
+    language: "css",
+    defectClass: "missing-relationship",
+    description:
+      "The second half of the pass-13 fix, which the name half alone would have left inconsistent. `customMediaRefsInList` unions the reference walk over the statement's DIRECT query children; the pre-fix code called `customMediaRefsIn` on the first query child alone, so for `@media (--a), (--b)` it found `--a` and could not see that `--b` sits in a SIBLING query node. With only the name mutant applied the scope would be named for both declarations while the graph recorded one dependency — the under-description moved from the name to the edges. Caught by css/custom-media-in-every-query-shape, which now asserts BOTH `references` edges from the one comma-list scope, and by nothing else in the lane.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter((x: any, i: number) => {
+        if ((x.metadata ?? {}).isCustomMediaRef !== true) return true
+        // Drop every custom-media reference except the first one sourced from each
+        // scope, which is what a single-term walk produces.
+        const seen = (r.relationships ?? []).slice(0, i).some(
+          (y: any) => (y.metadata ?? {}).isCustomMediaRef === true && y.source === x.source,
+        )
+        return !seen
+      }),
+    }),
+  },
 ]
