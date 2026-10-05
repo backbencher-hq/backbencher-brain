@@ -371,7 +371,62 @@ const jsonTopLevelArrayNameTruncatesBracket = (r: any) => ({
     }),
   })
 
-  export const JSON_MUTANTS: Mutant[] = [
+  /** Reverts the positional parent path for a document holding SEVERAL top-level values, so
+ *  every one of them publishes `<module>.<key>` again.
+ *
+ *  This models the defect this lane measured and fixed in this pass. Concatenated JSON is
+ *  real input — cargo/rustfix's recorded compiler-diagnostic fixtures hold 2 to 5 top-level
+ *  objects per file, FSharp.Data's TwitterSample.json holds 22 and theaters.json 1,564 —
+ *  and this grammar parses a sequence of them as ONE `document` node with N named children.
+ *  `pushNamedChildren` gave all N the same parent path, so the qualified name stopped
+ *  identifying anything. Measured on the real rustfix file before the fix: four symbols
+ *  named `code` under ONE qualified path at lines 3, 73, 143 and 213, the last `property`
+ *  where the other three were `class`, so the shared arbiter counts it AMBIGUOUS and the
+ *  reverse walk picks a winner that is simply the wrong line.
+ *
+ *  The transform is sound rather than convenient. It fires on symbols whose qualified path
+ *  begins `<module>[` where `[` is followed by DIGITS and then either end-of-string, `.` or
+ *  `[` — that is, a TOP-LEVEL position. An array element's path also contains `[`, but always
+ *  after a dotted key or after another position, so `…rows[0]`, `…rows[0][1]` and
+ *  `TopLevelArray[0].tags[0]` are all left alone. Verified against json/TopLevelArray and
+ *  json/ArrayInArray, whose brackets must survive.
+ *
+ *  Caught by json/TopLevelSiblings' `expectSymbols` on `TopLevelSiblings[0]` /
+ *  `TopLevelSiblings[1]` and its three `forbidSymbols`, which name the pre-fix spellings.
+ */
+const jsonTopLevelValuesShareOneParentPath = (r: any) => ({
+  ...r,
+  symbols: (r.symbols ?? []).map((s: any) => {
+    const q = String(s.qualifiedName ?? "")
+    const name = String(s.name ?? "")
+    const isTopLevelPosition = /^[^\[\]]+\[\d+\](\.|\[|$)/.test(q)
+    if (!isTopLevelPosition) return s
+    // `<module>[i]` becomes `<module>` and `<module>[i].key` becomes `<module>.key`: every
+    // top-level value back under one parent, which is the pre-fix shape.
+    const stripped = q.replace(/\[\d+\]/, "")
+    return {
+      ...s,
+      name: name === q ? String(stripped.split(".").pop() ?? "") : name,
+      qualifiedName: stripped,
+      ownerName: s.ownerKind === "module" ? String(stripped.split(".").pop() ?? "") : String(stripped.split(".")[0] ?? ""),
+    }
+  }),
+  relationships: (r.relationships ?? []).map((x: any) => ({
+    ...x,
+    source: String(x.source ?? "").replace(/\[\d+\]/, ""),
+    target: String(x.target ?? "").replace(/\[\d+\]/, ""),
+  })),
+})
+
+export const JSON_MUTANTS: Mutant[] = [
+  {
+    id: "json/top-level-values-share-one-parent-path",
+    language: "json",
+    defectClass: "wrong-symbol-identity",
+    description:
+      "M60 regression, MEASURED AND FIXED THIS LANE: a document holding several top-level values gives every one of them the SAME parent path, so `TopLevelSiblings[0].message` and `TopLevelSiblings[1].message` both publish `TopLevelSiblings.message` and the qualified name stops identifying a declaration. Measured on the real corpus before the fix: 45 documents of 13,951 hold >=2 top-level values, carrying 4,249 duplicated qualified names over 54,950 symbols, 14 of them with DISAGREEING kinds — and disagreeing kind is what the shared arbiter counts as ambiguous, so those edges make the reverse walk pick a winner that is simply the wrong line. The lane's own differential cannot see it: both walkers read qualified PATHS and agree, so it is structurally blind to a defect that lives only in the symbol NAME. Caught by json/TopLevelSiblings.",
+    transform: jsonTopLevelValuesShareOneParentPath,
+  },
   {
     id: "json/dependency-version-is-the-json-type",
     language: "json",
