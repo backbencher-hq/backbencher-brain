@@ -3235,9 +3235,25 @@ on it: `grep -rn resolvable src/ script/` returns no consumer outside
 | command | result |
 | --- | --- |
 | `npx tsx script/m14/run-fixtures.ts --lang xml` | **31 pass, 0 fail** — `xml/imports-target-class` is the new one |
-| `npx tsx validation/m14/fixtures/xml/ontology-mutants.mts` | **27/27 caught, 0 survivors, exit 0** — three new: `-removed` (whole-feature revert, 1 fixture), `-collapsed-to-one-value` (the over-correction: everything `external`, which would mislabel 58.2 % of the type), `-absolute-path-read-as-external` (the boundary error only the `/absolute/rooted.xsd` row notices) |
+| `npx tsx validation/m14/fixtures/xml/ontology-mutants.mts` | **27/27 caught, 0 survivors, exit 0** — three new: `-removed` (whole-feature revert), `-collapsed-to-one-value` (the over-correction: everything `external`, which would mislabel 58.2 % of the type), `-absolute-path-read-as-external` (the boundary error only the `/absolute/rooted.xsd` row notices) |
 | `BB_XML_WORKERS=1 npx tsx validation/m14/fixtures/xml/imports-target-classes.mts` | exit 0, draw `3bd539410d1a9189`, 263 edges, `hasResolvableMarker` 263, `disagree` 0 |
 | `npx tsc --noEmit -p tsconfig.json` | clean |
+
+**One more hole, closed, and it is the same shape as §8 item 7.** The fixture pins
+`resolvable` through `analyze()`, because `script/m14/run-fixtures.ts:728` reaches the
+analyzer that way — and item 7 is a measurement that the *production* path drops 13 of
+the 15 metadata keys this analyzer writes. Relationship metadata is a different path and
+does survive (the probe reads it off 263 of 263 edges through `parseFile`), but a corpus
+measurement is not a test, so `xml/imports-class-survives-the-worker` is a lane-owned
+property check that runs the same property through `parseFile`: every `imports` edge
+carries a class, the class is one of the three the language can express, and all three
+appear — so a marker collapsed to one value cannot pass by being present. It catches two
+of the three new mutants on the production path; the third is a per-target error and is
+correctly caught only by the fixture row for that target.
+
+That check needed `PropertyCheck.assert` to become optional with `assertRelationships`
+added beside it, under the same rule the symbol path already used: a check that selected
+nothing says so rather than passing.
 
 ### What this does not settle
 
@@ -3418,7 +3434,7 @@ mutants caught, 0 survivors** (was 21/23 with 2 survivors).
 | command | result |
 | --- | --- |
 | `npx tsx script/m14/run-fixtures.ts --lang xml` | **31 pass, 0 fail**, no regressions |
-| `npx tsx validation/m14/fixtures/xml/ontology-mutants.mts` | **27/27 caught, 0 survivors, exit 0** |
+| `npx tsx validation/m14/fixtures/xml/ontology-mutants.mts` | **27/27 caught, 0 survivors, exit 0**, including the production-`parseFile` property check `xml/imports-class-survives-the-worker` |
 | `npx tsx script/m14/ontology-coverage-gate.ts xml` | the shared gate at its own 8 workers **self-destructs before the verdict loop** — `[BB-HANG] … square-poll-horizontal.svg — exiting`, 8 m 47 s, no table, exit 1; §8 item 10 |
 | `BB_XML_WORKERS=1 npx tsx validation/m14/fixtures/xml/ruled-gate.ts` | **6/10 emitted, 4 ruled-sound, `FALSIFIED 0`, 0 ruled-without-justification, exit 0**, 11,552 admitted files, 0 `[BB-PARSE-ERR]`, 0 `[BB-HANG]`; rows `contains` 188,224 · `references` 11,108 · `imports` 468 · `extends` 1,429 · `calls` 402 · `overrides` 3 |
 | `BB_XML_WORKERS=1 npx tsx validation/m14/fixtures/xml/containment-ledger.mts` | **exit 0**, full 11,552-file population, `contains` 188,224 / 188,219 confirmed, `imports` 468 / 468 sites / 0 / 0 |
