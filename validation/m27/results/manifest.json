@@ -43,7 +43,7 @@
       "code": "N1",
       "githubIssue": 617,
       "tool": "nvim-adapter",
-      "status": "blocked",
+      "status": "verified",
       "scope": "Neovim adapter (I3): nvim-lspconfig-style config, headless driver opening the shared fixture workspace, real LSP session assertions (tiered hover, staleness marker, definition, references, document symbols), mutation-gated.",
       "acceptanceCriteria": [
         "Real nvim --headless session drives bb_lsp over stdio (no mock transport)",
@@ -55,12 +55,12 @@
         "Evidence persisted at validation/m27/results/N1.json with commit stamp"
       ],
       "evidence": {
-        "status": "blocked",
-        "currentCommit": "f70ec0734fbae53b25994d7395bb108fd1999343",
+        "status": "verified",
+        "currentCommit": "ba99e1001f5b6afc40254f74e51b1930290354f0",
         "verifierCommand": "npx tsx script/m27/verify-nvim.ts",
         "evidenceFile": "N1.json",
-        "passed": 0,
-        "failed": 1,
+        "passed": 31,
+        "failed": 0,
         "realFailed": 0,
         "mutantsCaught": 4,
         "mutantsTotal": 4,
@@ -111,10 +111,10 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "see Z1.json",
+        "currentCommit": "82cb16e608e5ec3cd68d5d8e63158cb215170f4b",
         "verifierCommand": "npx tsx script/m27/verify-zed.ts",
         "evidenceFile": "Z1.json",
-        "passed": 28,
+        "passed": 29,
         "failed": 0,
         "realFailed": 0,
         "mutantsCaught": 3,
@@ -204,8 +204,8 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T15:35:47.340Z",
-    "contentSha256": "def0d17f36188a3e6d8f80ed6c5d53e975ef0ac58f798213cc783ff28f9fc330"
+    "sealedAt": "2026-10-05T17:40:30.246Z",
+    "contentSha256": "9c7a3a98697d1e52e2465f7a413eb9b77a5e50f30da2635234de24c571a9241d"
   },
-  "updatedAt": "2026-10-05T15:35:47.340Z"
+  "updatedAt": "2026-10-05T17:40:30.246Z"
 }
