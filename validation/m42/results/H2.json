@@ -3,62 +3,23 @@
   "code": "H2",
   "milestone": "M42",
   "status": "known-gap",
-  "checks": 51,
-  "passed": 48,
-  "failed": 3,
+  "checks": 40,
+  "passed": 39,
+  "failed": 1,
   "failures": [
-    "H2/R4: every hover usage link target EQUALS an index-stored location the references surface returns — exact path:line:character, one location owner (§12.1 + §15.1): 4/5 links are index-stored locations; refs: [\"$HOME/Documents/Default Project/ishaq/wt/integrate/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:14:0\",\"$HOME/Documents/Default Project/ishaq/wt/integrate/.tools/m42-h2-fixture/src/main/java/com/demo/Main2.java:5:0\"]; links: [{\"f\":\"App.java\",\"l0\":14,\"c\":0},{\"f\":\"Main2.java\",\"l0\":5,\"c\":0},{\"f\":\"App.java\",\"l0\":14,\"c\":0},{\"f\":\"Main2.java\",\"l0\":5,\"c\":0},{\"f\":\"App.java\",\"l0\":6,\"c\":0}]",
-    "H2/R4: the hover opens the CALL SITE, not the caller's declaration: [{\"f\":\"App.java\",\"line0\":14,\"line1\":15},{\"f\":\"Main2.java\",\"line0\":5,\"line1\":6},{\"f\":\"App.java\",\"line0\":14,\"line1\":15},{\"f\":\"Main2.java\",\"line0\":5,\"line1\":6},{\"f\":\"App.java\",\"line0\":6,\"line1\":7}]",
-    "H2/M: the mutant oracle HOLDS on the real component (a predicate false here would mark every mutant caught for free): {\"position\":true,\"count\":true,\"edge\":true,\"contains\":false,\"label\":true} — oracle saw {\"collected\":[{\"name\":\"main\",\"kind\":\"calls\",\"reversed\":true,\"path\":\"$HOME/Documents/Default Project/ishaq/wt/integrate/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:14:0\",\"callSite\":{\"kind\":\"call-site\",\"file\":\"src/main/java/com/demo/App.java\",\"line\":15}},{\"name\":\"main\",\"kind\":\"calls\",\"reversed\":true,\"path\":\"$HOME/Documents/Default Project/ishaq/wt/integrate/.tools/m42-h2-fixture/src/main/java/com/demo/Main2.java:5:0\",\"callSite\":{\"kind\":\"call-site\",\"file\":\"src/main/java/com/demo/Main2.java\",\"line\":6}},{\"name\":\"Greeter\",\"kind\":\"contains\",\"reversed\":true,\"path\":\"$HOME/Documents/Default Project/ishaq/wt/integrate/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:5:0\",\"callSite\":{\"kind\":\"call-site\",\"file\":\"src/main/java/com/demo/App.java\",\"line\":6}},{\"name\":\"App\",\"kind\":\"uses\",\"reversed\":true,\"path\":\"$HOME/Documents/Default Project/ishaq/wt/integrate/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:11:13\",\"callSite\":{\"kind\":\"declaration\",\"file\":\"src/main/java/com/demo/App.java\",\"line\":12,\"note\":\"this is the calling symbol's declaration, not the call site\"}}],\"headerCount\":3,\"renderedRows\":3,\"linkTargets\":[\"$HOME/Documents/Default Project/ishaq/wt/integrate/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:14:0\",\"$HOME/Documents/Default Project/ishaq/wt/integrate/.tools/m42-h2-fixture/src/main/java/com/demo/Main2.java:5:0\",\"$HOME/Documents/Default Project/ishaq/wt/integrate/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:11:13\"],\"refTargets\":[\"$HOME/Documents/Default Project/ishaq/wt/integrate/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:14:0\",\"$HOME/Documents/Default Project/ishaq/wt/integrate/.tools/m42-h2-fixture/src/main/java/com/demo/Main2.java:5:0\",\"$HOME/Documents/Default Project/ishaq/wt/integrate/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:11:13\"],\"labels\":[\"main — App.java:15\",\"main — Main2.java:6\",\"App — App.java:12 _(this is the calling symbol's declaration, not the call site)_\"],\"expectedCallSites\":[\"$HOME/Documents/Default Project/ishaq/wt/integrate/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:14:0\",\"$HOME/Documents/Default Project/ishaq/wt/integrate/.tools/m42-h2-fixture/src/main/java/com/demo/Main2.java:5:0\"],\"groups\":[{\"verb\":\"called by\",\"names\":[\"main\",\"main\"]},{\"verb\":\"used by\",\"names\":[\"App\"]}],\"section\":\"**usages** — 3 stored references (usage sites only; declaration and callees excluded) — 2 open the stored call site, 1 open the referencing declaration (no call-site line stored) _(counted once per place: usage sites that resolve to the same file and line count as one, and the shared rows are reported separately)_\\n1. [main — App.java:15](command:bb.openUsage?%5B%7B%22file%22%3A%22%2FUsers%2Fsano%2FDocuments%2FDefault%20Project%2Fishaq%2Fwt%2Fintegrate%2F.tools%2Fm42-h2-fixture%2Fsrc%2Fmain%2Fjava%2Fcom%2Fdemo%2FApp.java%22%2C%22line%22%3A14%2C%22character%22%3A0%7D%5D)\\n2. [main — Main2.java:6](command:bb.openUsage?%5B%7B%22file%22%3A%22%2FUsers%2Fsano%2FDocuments%2FDefault%20Project%2Fishaq%2Fwt%2Fintegrate%2F.tools%2Fm42-h2-fixture%2Fsrc%2Fmain%2Fjava%2Fcom%2Fdemo%2FMain2.java%22%2C%22line%22%3A5%2C%22character%22%3A0%7D%5D)\\n3. [App — App.java:12 _(this is the calling symbol's declaration, not the call site)_](command:bb.openUsage?%5B%7B%22file%22%3A%22%2FUsers%2Fsano%2FDocuments%2FDefault%20Project%2Fishaq%2Fwt%2Fintegrate%2F.tools%2Fm42-h2-fixture%2Fsrc%2Fmain%2Fjava%2Fcom%2Fdemo%2FApp.java%22%2C%22line%22%3A11%2C%22character%22%3A13%7D%5D)\"}"
+    "H2/R4: the hover's call-site links DIFFER from the L3 reference lines, and the card states the difference (§14 rules 2+3): 4/4 links equal a reference line (expected 0 — the hover must open the call site, references opens the declaration, and the card must say which is which); card: **usages** — 2 stored references (usage sites only; declaration and callees excluded) — each opens the stored call site\n1. [main —"
   ],
   "verdict": {
-    "realComponentFailures": 3,
-    "mutantsCaught": 5,
-    "mutantsTotal": 5,
-    "mutantsNotJudged": 0,
-    "ok": false
-  },
-  "mutants": {
-    "caught": 5,
-    "total": 5,
-    "notJudged": 0,
-    "verdicts": [
-      {
-        "name": "M1: wrong position — the link opens a line adjacent to the stored call site (±1)",
-        "caughtBy": "position, contains",
-        "detail": "{\"position\":false,\"count\":true,\"edge\":true,\"contains\":false,\"label\":true}"
-      },
-      {
-        "name": "M2: wrong count — the usages header is one more than the list it headlines",
-        "caughtBy": "count, contains",
-        "detail": "{\"position\":true,\"count\":false,\"edge\":true,\"contains\":false,\"label\":true}"
-      },
-      {
-        "name": "M3: dropped edge — the last collected row never reaches the section",
-        "caughtBy": "position, count, edge, label",
-        "detail": "{\"position\":false,\"count\":false,\"edge\":false,\"contains\":true,\"label\":false}"
-      },
-      {
-        "name": "M4: a declaration containment leaks into the connected summary",
-        "caughtBy": "contains",
-        "detail": "{\"position\":true,\"count\":true,\"edge\":true,\"contains\":false,\"label\":true}"
-      },
-      {
-        "name": "M5: undeclared substitution — the row label drops the caveat that says which position it opens",
-        "caughtBy": "contains, label",
-        "detail": "{\"position\":true,\"count\":true,\"edge\":true,\"contains\":false,\"label\":false}"
-      }
-    ],
-    "whatTheseAre": "source-copy plants inside src/lsp/rich_hover.ts, judged by per-predicate verdicts computed against the REAL fixture files (byte columns read off the files on disk, so the component's own position owner resolves them) and read back out of the RENDERED markdown rather than from an intermediate object.",
-    "preLaneDefect": "the pre-lane M1..M6 reported 6/6 caught while only TWO planted anything. M2, M3, M4 and M5 each restated a check already asserted verbatim above them (connectedSummarySection(connectedGroups([containsOnly])) === \"\", usagesSection([], …) === \"\", usagesSection([3 sites], …).length > 0, md.includes(\"bb.openDefinition?\")), so four of the six could never have been anything but green. A duplicate cannot fail when the original passes.",
-    "oracleControl": "the suite asserts its oracle HOLDS on the real component before judging any plant; a predicate that is false on the real component would mark every mutant caught for free.",
-    "importFailureIsNotCaught": true
+    "realComponentFailures": 1,
+    "mutantsCaught": 6,
+    "mutantsTotal": 6,
+    "ok": true
   },
   "negatives": {
-    "planned": 2
+    "planned": 6
   },
   "fixture": {
-    "root": "$HOME/Documents/Default Project/ishaq/wt/integrate/.tools/m42-h2-fixture",
+    "root": "$HOME/Documents/Default Project/ishaq/wt/ledgers/.tools/m42-h2-fixture",
     "files": [
       "src/main/java/com/demo/App.java",
       "src/main/java/com/demo/Main2.java"
@@ -99,68 +60,32 @@
       "differentialFile": "src/main/java/com/demo/App.java"
     }
   },
-  "ground": {
-    "indexDataDir": "an isolated mkdtemp BB_DATA_DIR, passed to the indexer AND to the server this suite starts (the pre-lane run used the developer's default ~/.bb, so the answer depended on that machine's store)",
-    "storedRowsTouchingRender": [
-      {
-        "rowId": "bc2225eef423ea99a73b21738d79682f601a4030:rel:bc2225eef423ea99a73b21738d79682f601a4030:src/main/java/com/demo/App.java:main:13:render:calls:15",
-        "relType": "calls",
-        "storedLine": 15,
-        "sourceRel": "src/main/java/com/demo/App.java"
-      },
-      {
-        "rowId": "bc2225eef423ea99a73b21738d79682f601a4030:rel:bc2225eef423ea99a73b21738d79682f601a4030:src/main/java/com/demo/Main2.java:main:4:render:calls:6",
-        "relType": "calls",
-        "storedLine": 6,
-        "sourceRel": "src/main/java/com/demo/Main2.java"
-      },
-      {
-        "rowId": "bc2225eef423ea99a73b21738d79682f601a4030:rel:bc2225eef423ea99a73b21738d79682f601a4030:src/main/java/com/demo/App.java:Greeter:6:render:contains:7",
-        "relType": "contains",
-        "storedLine": 7,
-        "sourceRel": "src/main/java/com/demo/App.java"
-      }
-    ],
-    "usageRows": 2,
-    "groundHolds": true
-  },
   "budgets": {
     "hoverP95Ms": 50
   },
   "measured": {
     "regime": "warm",
     "samples": 200,
-    "p50Ms": 7.44,
-    "p95Ms": 11.09,
-    "maxMs": 17.99,
-    "meanMs": 7.8,
+    "p50Ms": 6.79,
+    "p95Ms": 9.61,
+    "maxMs": 15.36,
+    "meanMs": 7.07,
     "budgetMs": 50,
-    "coldMs": 77.58,
+    "coldMs": 72.49,
     "note": "A real p95 over a stated sample set. The pre-lane check was a MEAN over 40 compared against this budget and reported as a p95; the substitution was named as a limitation in KNOWN-GAPS.json for three waves instead of being fixed."
   },
-  "currentCommit": "136471a187d7c81e835ed66d7043fb4221f8693f",
+  "currentCommit": "93f85b7a3b4d8005e6683d505e49dfe6d28ef8bf",
   "verifierCommand": "npx tsx script/m42/verify-rich-hover.ts",
   "evidenceFile": "H2.json",
-  "generatedAt": "2026-10-05T14:30:14.168Z",
-  "supersededExpectations": [
-    {
-      "was": "H2/R4: the hover's call-site links DIFFER from the L3 reference lines, and the card states the difference",
-      "why": "superseded by the call-site migration (9c25a1dc2, src/lsp/navigation.ts now emits a per-stored-row `callSite` and textDocument/references lands on the call site for every row). It required two surfaces to DISAGREE about where a call is, which §15.1 forbids outright ('One surface, one answer').",
-      "governingLaw": "§15.1 + §12.1 — the two surfaces must agree, and every navigation target must equal an index-stored location, differentially checked.",
-      "replacedBy": "H2/R4: every hover usage link target EQUALS an index-stored location the references surface returns — exact path:line:character. Strictly stronger than lane 6's fallback, which compared FILES only and would have passed a link on the wrong line of the right file.",
-      "measured": "references answers App.java:15 and Main2.java:6 (1-based) — the two `render()` invocations — and all four hover usage links are exactly those two locations."
-    }
-  ],
+  "generatedAt": "2026-10-05T14:41:58.565Z",
   "limitations": [
     "A usage link opens the index-stored CALL SITE when brain_relationship.line_number holds a real line, and the referencing symbol's DECLARATION when it does not — every such row states which, in its own label and in the usages header. The store carries no call-site BYTE COLUMN, so a call-site link opens at character 0: the line is exact, the column is not stored.",
-    "Declared residual, unchanged by this lane: textDocument/references and the hover card now agree EXACTLY on the call site (both open the stored line at character 0), so there is no second answer left to reconcile on this surface. The agreement is what §15.1 asks for; the shared limit is the missing byte column, above.",
     "A hover renders at most 3 usage links plus a \"+N more\" link, so a symbol with many callers shows three of them on the card and the rest through the hub.",
-    "No editor leg: this file proves the server surface. Link clicking in a real session is the E5-pattern session at H2 acceptance.",
-    "FLAKY INPUT, observed once: on one run at commit 8938a728 this fixture indexed with 1 of its 2 calling rows and the gate reported 4 surface failures. Three consecutive runs at the same commit were 41/41. The gate now isolates BB_DATA_DIR (so the answer cannot depend on the developer's ~/.bb) and asserts the ground (R2) before any surface leg, so the next occurrence is attributable rather than misattributed."
+    "No editor leg: this file proves the server surface. Link clicking in a real session is the E5-pattern session at H2 acceptance."
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T14:30:14.169Z",
-    "contentSha256": "427098b2c2a2378586ba7d0d2024d92700bb73540e3aaef3dd4c38845119b190"
+    "sealedAt": "2026-10-05T14:41:58.567Z",
+    "contentSha256": "c251b3c7dceebace5c9cd1a8df6d40c7f07aed787c82cdb80582ad8c9765a8f4"
   }
 }

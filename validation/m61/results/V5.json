@@ -56,23 +56,22 @@
       "caught": true
     }
   ],
-  "currentCommit": "42da053221ba9dd3173faffe2e60913e9de35993",
+  "currentCommit": "d8dad6ebbf971c5f724e18275fbd97eb624e7d42",
   "verifierCommand": "npx tsx script/m61/verify-orphan-gates.ts",
   "evidenceFile": "V5.json",
-  "generatedAt": "2026-10-05T04:26:05.687Z",
+  "generatedAt": "2026-10-05T15:33:02.776Z",
   "census": {
-    "verifiers": 605,
+    "verifiers": 606,
     "wiredByNpmScripts": 416,
     "wiredIncludingClosureGateBodies": 416,
-    "orphans": 189,
-    "declaredOrphans": 183,
-    "verifiersNamedBySource": 64,
-    "unprotectedBySource": 12,
+    "orphans": 190,
+    "declaredOrphans": 184,
+    "verifiersNamedBySource": 62,
+    "unprotectedBySource": 11,
     "declaredSourceNamed": 8,
     "undeclaredSourceNamed": [
       "script/m24/verify-position-arithmetic.ts (named by src/lsp/navigation.ts)",
       "script/m26/verify-graph-transport.ts (named by src/lsp/server.ts)",
-      "script/m28/verify-surface-parity.ts (named by src/intelligence/documentation/doc-engine.ts)",
       "script/m55/verify-hover-coverage.ts (named by src/lsp/rich_hover.ts)"
     ]
   },
@@ -88,15 +87,7 @@
     "m20.D1: ledger=verified record=known-gap (D1.json)",
     "m20.D2: ledger=verified record=known-gap (D2.json)",
     "m20.D3: ledger=verified record=known-gap (D3.json)",
-    "m24.G1: ledger=verified record=known-gap (G1.json)",
-    "m25.G1: ledger=verified record=known-gap (G1.json)",
     "m26.G1: ledger=verified record=known-gap (G1.json)",
-    "m29.G1: ledger=verified record=known-gap (G1.json)",
-    "m42.G1: ledger=verified record=known-gap (G1.json)",
-    "m44.G1: ledger=verified record=known-gap (G1.json)",
-    "m45.G1: ledger=verified record=known-gap (G1.json)",
-    "m61.V4: ledger=verified record=known-gap (V4.json)",
-    "m61.V5: ledger=verified record=known-gap (V5.json)",
     "m62.A2: ledger=verified record=known-gap (A2.json)"
   ],
   "sourceNamedExemptions": {
@@ -116,7 +107,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T04:26:05.690Z",
-    "contentSha256": "f19f44cad12a3435f3f24b22d4bb213472d7661dcb025090b1beaa7f4e9c5ff2"
+    "sealedAt": "2026-10-05T15:33:02.780Z",
+    "contentSha256": "6eb058dd11f3a44bd6eb5ac44f8d12819bcbd3f2b954b631906829918b0613e9"
   }
 }

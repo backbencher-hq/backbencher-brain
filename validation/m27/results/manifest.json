@@ -56,7 +56,7 @@
       ],
       "evidence": {
         "status": "blocked",
-        "currentCommit": "a0ed9eade7008de7ce93a312f6b0bd7e182a43a9",
+        "currentCommit": "f70ec0734fbae53b25994d7395bb108fd1999343",
         "verifierCommand": "npx tsx script/m27/verify-nvim.ts",
         "evidenceFile": "N1.json",
         "passed": 0,
@@ -192,20 +192,20 @@
       ],
       "evidence": {
         "status": "known-gap",
-        "currentCommit": "a0ed9eade7008de7ce93a312f6b0bd7e182a43a9",
+        "currentCommit": "f70ec0734fbae53b25994d7395bb108fd1999343",
         "verifierCommand": "npx tsx script/m27/verify-closure.ts",
         "evidenceFile": "X1.json",
-        "passed": 27,
+        "passed": 30,
         "failed": 4,
         "realFailed": 0,
-        "negativeCases": 4
+        "negativeCases": 6
       }
     }
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-04T23:25:12.989Z",
-    "contentSha256": "ea62294f2febc918a80ac3e2a98e2c9319364fb25badf8416323516999d3d1b1"
+    "sealedAt": "2026-10-05T15:35:47.340Z",
+    "contentSha256": "def0d17f36188a3e6d8f80ed6c5d53e975ef0ac58f798213cc783ff28f9fc330"
   },
-  "updatedAt": "2026-10-04T23:25:12.989Z"
+  "updatedAt": "2026-10-05T15:35:47.340Z"
 }
