@@ -174,6 +174,23 @@ export const CLEAN_MUTANTS: Mutant[] = [
     }),
   },
   {
+    id: "clean/signature-lookup-by-derived-key-only",
+    language: "clean",
+    defectClass: "missing-relationship-type",
+    description:
+      "KEY-MISMATCH CLASS. Reverts `signaturesByNode`: the emitting pass is made to look its signature up ONLY by the derived string key, which is what the code did before this round's correction. The two passes derive that key independently and disagree for an instance member — the declaration pass files it under the MODULE owner (`|::cmp`, because it does not know the instance's target) and the emitting pass asks under the INSTANCE owner (`|[!a]::cmp`, because that is the scope the walk is in) — so the lookup misses, `applySignature` never runs, and the member's types and its `| C a` class context are read and discarded. Nothing is fabricated and nothing is mislabelled: real edges go MISSING, which is why a count-only check cannot see it and why the corpus had to be asked the question directly (of 473 class_context nodes at PROD, 20 published no edge at all). Measured at PROD, 312 files: `references` 10,049 -> 9,551, 498 edges absent, total 30,685 -> 30,187, and NO other type moves. Caught by clean/instance-member-signature-context, whose three `expectRelationships` rows pin `references cmp -> Ord` at L34, `references cmp -> Eq` at L43 and `references cmp -> Ord` at L53 — each an instance member's own dictionary requirement — plus `references inner -> Eq` at L67 for the `where`-local form.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter(
+        (x: any) => !(
+          String(x.type).toLowerCase() === "references"
+          && (x.metadata ?? {}).relationshipType === "class_context"
+          && /^(cmp|inner|moduleLevel)$/.test(String(x.source ?? ""))
+        ),
+      ),
+    }),
+  },
+  {
     id: "clean/operator-class-declaration-spelling-only",
     language: "clean",
     defectClass: "missing-relationship-type",
@@ -200,5 +217,66 @@ export const CLEAN_MUTANTS: Mutant[] = [
           : x,
       ),
     }),
+  },
+  {
+    id: "clean/ampersand-class-context-separator-dropped",
+    language: "clean",
+    defectClass: "missing-relationship-type",
+    description:
+      "TWO-SPELLINGS-ONE-CONSTRUCT CLASS, and the first mutant in this battery that needs the SOURCE TEXT to be reverted faithfully — which is why `transform` receives `source`. `readClassContext` reset `expectName` on a `,` child and on nothing else, so a `|` context joined by `&` published its first conjunct and dropped the rest. `&` is not a second construct: the child shape is identical with the token swapped (`| == a` -> `!| operator_compare type_variable` against `| == a & UList a` -> `!| operator_compare type_variable !& constructor type_variable`, clean-stdlib/StdOverloadedList.dcl:5,8), which is the same two-spellings-one-handler shape the `fixity` field is already handled for. Measured cost of the `,`-only reader (validation/m14/fixtures/clean/ampersand-context-probe.mts): 365 of the 1,995 WIDE `class_context` nodes carry an `&`, and the conjuncts such a reader drops split 249 that would ADD a row against 264 that name a class already published on the same line. Nothing is fabricated and nothing is mislabelled — an edge that should exist is silently absent, which is the failure a count-only check cannot see because the lane's `references` total goes DOWN rather than wrong. The mutant re-derives the `,`-only reader off `source`: for a `class_context` edge, take the line, cut the context at its first `|`, split on `&`, and drop the edge when its target appears only in a conjunct after the first. A line with no `|` keeps its edges, so the mutant drops only what it can show the pre-fix code dropped. Caught by clean/ampersand-class-context, whose rows at lines 36, 41, 57, 64, 70 and 72 are exactly the shapes this loses.",
+    transform: (r: any, source?: string) => {
+      if (!source) return r
+      const lines = source.split("\n")
+      const conjunctsOn = (lineNumber: number): string[] | null => {
+        const text = lines[lineNumber - 1]
+        if (!text) return null
+        const bar = text.indexOf("|")
+        if (bar < 0) return null
+        return text.slice(bar).split("&")
+      }
+      return {
+        ...r,
+        relationships: (r.relationships ?? []).filter((x: any) => {
+          if (String(x.type).toLowerCase() !== "references") return true
+          if (x?.metadata?.relationshipType !== "class_context") return true
+          const conjuncts = conjunctsOn(Number(x.line_number))
+          if (!conjuncts || conjuncts.length < 2) return true
+          const target = String(x.target ?? "")
+          if (!target) return true
+          if (conjuncts[0].includes(target)) return true
+          return !conjuncts.slice(1).some((c) => c.includes(target))
+        }),
+      }
+    },
+  },
+  {
+    id: "clean/ampersand-repeat-published-per-conjunct",
+    language: "clean",
+    defectClass: "duplicate-edge",
+    description:
+      "THE OPPOSITE ERROR TO THE ONE ABOVE, and the reason the dedupe is pinned by a COUNT row rather than by prose. `pushRel` collapses on `source|type|target|line`, so `| Ord Int & Ord Int & Size Int` publishes one edge to `Ord` and one to `Size` — two rows for three conjuncts. The mutant models the alternative that was live before this round settled it: publish one row per conjunct, so the repeated conjunct yields a SECOND identical `references` edge on the same line. Nothing is fabricated about the class — `Ord` really is required — and the edge is still correctly labelled; what is wrong is that the payload carries no multiplicity field, so the second row says nothing the first did not, and `bb_graph`'s edge count and `bb_impact`'s dependent count both rise for a file that did not change. 264 conjuncts at WIDE and 47 at TRACKED have this shape, so it is not a synthetic case: `| toReal a & toReal b & toReal c` is Clyde/Clyde/timeprofile.icl:337. Measured as an A/B on TRACKED (validation/m14/fixtures/clean/references-duplicate-probe.mts) the fix itself changed the count of `references` groups holding more than one edge by ZERO — 387 before, 387 after, identical per discriminator — which is the evidence that the shipped code does not do this. Caught by clean/ampersand-class-context through `expectRelationshipCount` on `repeated -> Ord` at line 96, `equals 1`: under this mutant the real count is 2.",
+    transform: (r: any, source?: string) => {
+      if (!source) return r
+      const lines = source.split("\n")
+      const repeatsOn = (lineNumber: number, target: string): boolean => {
+        const text = lines[lineNumber - 1]
+        if (!text) return false
+        const bar = text.indexOf("|")
+        if (bar < 0) return false
+        const conjuncts = text.slice(bar).split("&")
+        if (conjuncts.length < 2) return false
+        return conjuncts.slice(1).filter((c) => c.includes(target)).length > 0
+      }
+      const extra: any[] = []
+      for (const x of (r.relationships ?? [])) {
+        if (String(x.type).toLowerCase() !== "references") continue
+        if (x?.metadata?.relationshipType !== "class_context") continue
+        const target = String(x.target ?? "")
+        if (!target) continue
+        if (!repeatsOn(Number(x.line_number), target)) continue
+        extra.push({ ...x })
+      }
+      return { ...r, relationships: [...(r.relationships ?? []), ...extra] }
+    },
   },
 ]

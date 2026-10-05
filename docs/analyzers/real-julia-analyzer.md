@@ -38,10 +38,25 @@ bun  run validation/m14/fixtures/julia/mutation-check.ts --all
 npx tsx validation/m14/fixtures/julia/envelope.ts --files 400                     # the time envelope + load context
 npx tsx validation/m14/fixtures/julia/engine-concurrency-probe.ts --files 400      # why the arbiter cannot finish
 npx tsx validation/m14/fixtures/julia/core-wasm-race-probe.ts --rounds 24     # why the arbiter can die BEFORE reading a file
-npx tsx script/m14/ontology-coverage-gate.ts julia                            # exit 1 before it prints; see below
+npx tsx validation/m14/fixtures/julia/arbiter-resume-probe.ts                  # the arbiter's tally is a function of its CHECKPOINT (1 second)
+npx tsx script/m14/ontology-coverage-gate.ts julia --fresh                    # ONLY a --fresh run measures; without it a resumed run prints emitted 0/10
 ```
 
-**The arbiter reports this lane, and on this run it agrees with the census edge for edge.**
+**The arbiter reports this lane, and on this run it agrees with the census edge for edge — but this
+block is only reproducible on a run with NO checkpoint file, and re-running the command as printed
+now prints `emitted 0/10`.** Measured 2026-10-05, same commit, same 1,985-file corpus, three runs:
+run 1 (no checkpoint) prints the table below and exits 0; run 2 (checkpoint complete) prints
+`emitted 0/10` with zero edges and exits 1; run 3 (`--fresh`) dies on the width-8 wasm trap. The
+gate accumulates its tally inside the walk callback and the walk skips every path the checkpoint
+already holds, so a resumed run measures nothing and then prints `1985/1985 files (100.0%)` with
+`partial` false. **The block below is therefore a first-run artifact, and the command printed above it
+does not reproduce it.** §8 row 14 carries the measurement and
+`npx tsx validation/m14/fixtures/julia/arbiter-resume-probe.ts` reproduces the mechanism in a second.
+The lane's own numbers do not depend on the arbiter: `firing-check --files 2000 julia` reports
+**9/10 fired, 235,878 edges, 1,985/1,985 files, 0 degraded**, sequentially and with no checkpoint,
+and `doc-tables-check.ts` holds all 308 cells of this file against the census.
+
+**The recorded run, on a first run with no checkpoint:**
 `script/m14/ontology-coverage-gate.ts` used to carry ruling tables for `bash` and `json` only and
 exited 2 on julia with *"no RULING TABLE for julia … Refusing to report: a gate with an empty table
 would call every un-emitted type RULED-UNJUSTIFIED and that is a verdict about the TABLE, not about
@@ -1824,14 +1839,20 @@ That script is shared machinery and is reported rather than edited. The census's
 lane-owned substitute: it extracts the analyzer's node-type **claims** and checks each against the node
 types the production grammar actually produced over the 1,985 corpus files.
 
-**46 node-type claims, 0 unknown.** The extraction is narrowed to the three positions where a literal
+**47 node-type claims, 0 unknown, 0 scanner warnings.** The extraction is narrowed to the three positions where a literal
 IS a node type — a `.type` comparison, a `firstNamedChildOfType` type argument, or a member of a
 node-type `Set` — because an earlier version extracted every snake_case literal and accused 32 names of
 which 30 were relationship-type names, evidence-class names and `IMPLICIT_OR_CONSTANT` members.
 
 The count was **45** until the `imports`/`exports` work added `selected_import` to the analyzer
 (`932a20d27`), and this paragraph was the stale one: a count measured once and reprinted. It is written
-here as the number the census prints on every run for that reason.
+here as the number the census prints on every run for that reason. **It then read 46 for four commits
+while the census printed 47** — the same figure, in the same place, one syntactic level down from the
+cells `doc-tables-check.ts` does check, so nothing noticed. **Corrected against
+`/tmp/census-fresh.json` re-derived 2026-10-05: `claimCount: 47`, `notProduced: 0`,
+`scannerWarnings: 0`, `sharedGateHasJulia: false`.** The fourth value is the one that matters for §8
+row 15: the census already carries the flag saying the shared L2 gate has no julia entry, so the
+absence is measured rather than inferred.
 
 It immediately named **three dead branches**:
 
@@ -2444,7 +2465,7 @@ the current code does neither. **The julia symptom is benign** — the one julia
 is a genuine function and publishing it is correct — which is exactly why this belongs in a report
 rather than a fix: a lane that only tested julia would see nothing wrong.
 
-## A gate that reads this file's own tables — 305 cells
+## A gate that reads this file's own tables — 308 cells
 
 The defect that motivated this pass was not a wrong measurement. It was a right measurement in the
 wrong slot: the prose said **10,936** ambiguous-target edges while the table above it summed to
@@ -2460,11 +2481,11 @@ figure against `census.json`:
 $ npx tsx validation/m14/fixtures/julia/doc-tables-check.ts --json /tmp/census.json
 doc tables check — docs/analyzers/real-julia-analyzer.md
   (mutant-count scan: 4 current-state figure(s) checked, 5 historical citation(s) exempted by an explicit past-tense marker)
-cells checked: 305
+cells checked: 308
 PASS — every table cell equals the instrument's value
 ```
 
-**305 cells** across six tables: the 10-row verdict table (edge count + file count per type, with
+**308 cells** across six tables: the 10-row verdict table (edge count + file count per type, with
 RULED rows held to "emitted 0" instead of being read as an edge count), the 9-row incoming bucket
 table (all 9 buckets per type), the residual-ambiguity table including the requirement that each
 row's total equals its own two columns and that the column sum equals the instrument's total, the
@@ -2569,7 +2590,7 @@ file in every type's file column. The census it had read, `/tmp/census.json`, wa
 run of the day in which **one** file degraded — `StaticArrays.jl/test/matrix_multiply_add.jl`,
 `wasmParseThrew`, `analysedFiles` 1,984 of 1,985 — and a degraded file leaves every total while
 `admittedFiles` still counts it, so its shortfall arrived at the comparison looking exactly like doc
-drift. **Re-run against the clean census the same gate printed `PASS`, 305 of 305 cells, exit 0.**
+drift. **Re-run against the clean census the same gate printed `PASS`, 305 of 305 cells, exit 0.** (305 is that run's figure; the gate now checks 308, the growth being this pass's gate table and the §8 rows it reads.)
 This file was never wrong about a single cell.
 
 The gate's own default is the reason: it reads `/tmp/census.json` **by default**, so it silently
@@ -2803,8 +2824,218 @@ can be a fixture asserting things the code does not do, and the fixture is what 
 - **An oracle is a second walker over one grammar.** A grammar bug shared by the analyzer and all five
   oracles is invisible to every differential in this file, and nothing in them can see a relationship
   type that neither side derives. Only instrument A and instrument B measure the language.
+- **Nothing this lane emits can make a cross-file target resolve, and the reason is one line of shared
+  machinery.** `src/ast/parallel-indexer.ts:3393` reduces every emitted target to its leaf name before
+  the lookup at `:3500`, so the resolver cannot see a module qualifier, a kind, or a file. Measured
+  below: 65.8% of this lane's ambiguous targets are attributed across files by a rule nobody chose, and
+  the ceiling on every change this lane could make is 23.1%. This is §8 row 16.
 
 ---
+
+# THE AMBIGUITY SPLIT — what the fleet's column counts, and what the reverse walk actually does
+
+Round brief: measure this lane's own ambiguity split, then fix the largest bucket this lane controls. This
+section is both halves, and the second half's answer is **no analyzer change was made**, with the
+measurement that says why and the condition that would overturn it.
+
+Instrument: `validation/m14/fixtures/julia/ambiguity-split.ts`, lane-owned, drives production `parseFile`,
+writes only `--json`. Record: `validation/m14/measurements/julia-ambiguity-before.json`.
+Population: 600 of 1,985 admitted files, **stride 3 over `repo/rel` order**, `sampleHash 1c76a52a3ba9c16c`,
+corpus `1985 files / 199 repositories`, 10,681 symbols, 70,959 edges, 0 degraded, 0 parse failures.
+
+**The fleet's `ambiguousTargets` column is a floor, and the reason is its own definition.**
+`script/m14/incoming-check.ts:176-187` accumulates only the DISTINCT KINDS a name was published under and
+`:218` asks `hits.length > 1`. The reverse walk's question is DISTINCT SYMBOLS. On this identical sample:
+
+| | edges | share of ambSym |
+|---|---|---|
+| `ambSym` — binds to >1 published symbol (the reverse walk's problem) | **19,938** | 100.0% |
+| `ambKind` — binds to >1 kind (the fleet's definition, comparable) | **10,331** | 51.8% |
+| `ambSymButNotAmbKind` — invisible to the fleet column | **9,607** | 48.2% |
+
+9,607 edges over 965 names collide on **same-kind** duplicates — two `function`s named `main`, two
+`property`s named `name` — and read 0 in the fleet's column while being exactly as ambiguous.
+
+### The two instruments reconciled on the SAME 600 files, to the edge
+
+`script/m14/incoming-check.ts` was run on the identical file set — the `sampleList` out of the record, not
+a fresh sample — so the two columns are comparable rather than merely related:
+
+```
+npx tsx script/m14/incoming-check.ts julia $(python3 -c "… sampleList …")
+  incoming check — julia, 600 file(s), 10681 symbols
+  degraded parses: 0   parse failures: 0
+```
+
+| | `ambiguity-split.ts` | `incoming-check.ts` | difference |
+|---|---|---|---|
+| symbols | 10,681 | 10,681 | 0 |
+| edges | 70,959 | 70,959 | 0 |
+| unresolved | **27,735** | **27,735** | **0** |
+| ambiguous | **10,828** (`ambKind` 10,331 + 497 self-loops) | 10,828 | 0, once the self-loop arm is named |
+| ambiguous, symbol definition | **19,938** | not measured | **9,110 (84.2%)** |
+
+The unresolved column agrees exactly, which is the check that the two instruments are reading the same
+population; the ambiguous column agrees exactly once this file's self-loop arm (497) is added, because
+`incoming-check.ts:246` counts self-loops and `ambiguity-split.ts` separates them. **So the whole 9,110-edge
+difference between the two ambiguous columns is the definition, not the instrument** — and the fleet's
+column is the lower one on this sample by 84.2%.
+
+## The three-way split the brief asked for, and the refinement it needed
+
+Per edge whose target name binds to >1 published symbol, with `hit` the colliding declarations:
+
+| bucket | edges | share | what it is |
+|---|---|---|---|
+| B1 | 2,180 | 10.9% | one file, >1 enclosing `ownerName` |
+| B2 | 9,135 | 45.8% | >1 file of ONE repo declares it |
+| B3a | 7,525 | 37.7% | >1 repo declares it independently |
+| B3b | 1,098 | 5.5% | one file, one owner, two declarations share a spelling |
+
+**B2 is not one population, and calling it "repairable" was wrong at 9,135.** Split on the colliding set's
+owners (all three asserted to sum to `ambSym` at runtime, `exit 2` otherwise):
+
+| fine | edges | share | names | what it is |
+|---|---|---|---|---|
+| B2a | 2,849 | 14.3% | 85 | >1 file, one repo, every colliding declaration shares ONE non-empty `ownerName` — **one Julia binding with N method definitions**. mean 4.559 declarations, max 20; 1,405 all-`function` (a method table), 1,444 carry a non-`function` kind (`struct X` + `X(…)`, one binding twice) |
+| B2b | 2,793 | 14.0% | 121 | >1 file, one repo, **>=2 distinct non-empty `ownerName`s** — the referring file's `using`/`import` set says which module is in scope and the analyzer does not consult it |
+| B2c | 3,493 | 17.5% | 167 | >1 file, one repo, every colliding declaration has an EMPTY `ownerName` — no `module` block, so **there is no scope to model** |
+| B1x | 892 | 4.5% | 136 | one file, >=2 real module scopes; `ownerName` is on the symbol and absent from the edge |
+| B1e | 1,288 | 6.5% | 127 | one file, not >=2 non-empty owners |
+| B3a | 7,525 | 37.7% | 217 | >1 repo |
+| B3b | 1,098 | 5.5% | 112 | one file, one scope, two same-spelled declarations |
+
+So the addressable-looking half of B2 is **2,793, not 9,135**, and 3,493 of it has no scope anywhere in
+the corpus to derive an answer from. B2c is expected to be large rather than surprising: 71.9% of admitted
+Julia files declare no `module` at all.
+
+**A second partition, of the same 19,938 edges, asks the question that decides actionability**: does the
+REFERRING FILE hold the disambiguating evidence?
+
+| | edges | share |
+|---|---|---|
+| repairable — the file declares the name under >=2 scopes | **2,740** | 13.7% |
+| partial — the file declares it once, under exactly one real scope | **2,572** | 12.9% |
+| noScope — the file does not declare it, or declares it with no scope | **14,626** | 73.3% |
+
+## What the PRODUCT does with an ambiguous target — and why the fix is not in this lane
+
+`src/ast/parallel-indexer.ts:2239` is where an emitted target becomes a stored `target_symbol_id`:
+
+```sql
+SELECT s.id FROM brain_symbol s … WHERE s.project_id = ? AND s.name = ?
+ORDER BY COALESCE(s.is_declaration,0) ASC, (s.file_id = ?) DESC, (f.language = ?) DESC, s.id
+LIMIT 1
+```
+
+and `:3393` computes the `s.name` it matches from `extractLeaf(targetName)`. Two facts follow, and the
+second is the whole finding of this round:
+
+1. **The pick prefers the referring file, then `s.id`** — and `s.id` is `${fileId}:${name}:${line}` compared
+   as TEXT, so among same-file candidates the lexicographically smallest LINE wins. Nothing in that ORDER BY
+   encodes scope, kind, or the reference site.
+2. **`extractLeaf` strips `Owner.name` to `name` before the lookup, so a module-qualified target resolves
+   exactly as if the analyzer had emitted the bare name.** A change to what this lane emits cannot reach
+   this resolver.
+
+Measured against that ORDER BY, over the same 19,938 edges (third asserted partition):
+
+| arm | edges | share | what the resolver does |
+|---|---|---|---|
+| **forced** — the file declares the name EXACTLY once | **3,330** | 16.7% | the same-file preference has one candidate; the attribution is right whatever the ORDER BY returns |
+| inFileMulti — the file declares it >=2 times (mean 2.856, max 20) | 3,485 | 17.5% | picks among in-file candidates by TEXT-ordered line |
+| crossFile — the file declares it 0 times | **13,123** | **65.8%** | picks among 6.911 declarations on average, **max 71**, across files |
+
+**137,784 candidate declarations stand behind 19,938 edges.** Each edge is attributed to one of them, so
+**16,608 of 19,938 (83.3%) are attributed arbitrarily today**, and the 3,330 "forced" edges are ambiguous to
+`incoming-check` while being correct in the store. A count of ambiguous targets is not a count of wrong
+attributions, and this lane's overstates by **3,330 edges (16.7%)**.
+
+## The ceiling of every change this lane could make, computed without making it
+
+The analyzer controls exactly one thing the resolver reads: the SET of published symbols a name can bind to.
+So the ceiling of any publication change is computable from the published data, with no analyzer edit —
+fourth asserted partition:
+
+| | edges | share |
+|---|---|---|
+| would bind to exactly 1 symbol if every declaration of one name in one module of one repo published ONE symbol | **4,597** | 23.1% |
+| would still bind to >1 — >=2 modules or >=2 repos declare it | **15,341** | **76.9%** |
+
+(kind kept in the binding key instead: 16,975 still ambiguous.) 4,597 edges over 280 distinct names.
+
+**That 23.1% is an UPPER BOUND and it is not free, and this lane did not take it**, for three measured
+reasons:
+
+1. **It is wrong for the population that makes it large.** The key is `(repo, ownerName, name)`, and 3,493
+   of the collapsible edges (B2c) have an EMPTY `ownerName` in several files of one repo — files that a
+   package `include`s into one module, and also files that have nothing to do with each other. Collapsing
+   them asserts that two unrelated files' top-level `f` are one binding. A per-file analyzer cannot tell
+   those apart, and the doc's B2c row is the measurement of how much of it there is.
+2. **It costs the per-method symbol the lane's own `overrides` depends on.** `overrides` targets the METHOD
+   symbol and carries `metadata.replacesLine` naming the displaced site; collapsing N methods of one binding
+   to one symbol collapses the target of all 3 surviving edges and removes the method site they name.
+   `contains` targets move with it, and this file's 308 checked table cells read those figures.
+3. **Even taken, it leaves 76.9% ambiguous.** A change that costs method-level identity and moves 23.1% of
+   a population is a judgement call for the supervisor, not a silent default for a lane.
+
+**The lever that would move B2b and B1x — emitting `Owner.name` — is measured to move 0.** Not estimated:
+read at `:3393`. It is written up as §8 row 16, with the asymmetry that makes it a one-place change:
+**the SOURCE path has the exact-spelling step and the TARGET path does not.** `:3430` reads
+`nameToSymbol.get(sourceName) ?? nameToSymbol.get(sourceLeaf)`, and `nameToSymbol` was populated at
+`:2758-2762` with `${sScope}.${nm}` — so a source spelled `Owner.name` resolves to exactly one symbol. The
+target half at `:3500` goes straight to SQL on the leaf. One `nameToSymbol.get(targetName) ??` in front of
+it, falling back to today's leaf behaviour, is the whole fix and it is bounded to same-file qualified
+targets — which is this lane's `attribInFileMulti` arm (3,485) and `perFileRepairable` arm (2,740).
+
+**The precondition, stated because the fix is not safe on its own: a bare reference is not automatically the
+module-level binding.** Inside `module M`, a bare `f` at a site where a local variable `f` is in scope
+resolves to the LOCAL. This lane publishes 21,693 corpus-wide local bindings that are deliberately not
+symbols, so the shadow check exists — but a `Owner.name` target emitted without it is a fabricated binding,
+which is the one mistake this workstream's rules price highest. So the correct order is: shared-machinery
+step first, shadow-aware emission second. Neither shipped in this round, and the ambiguous count therefore
+did not move: **19,938 before, 19,938 after**, with `incoming-check` on the same 600 files quoted in the
+report.
+
+**Overturn condition.** A lane-owned emission change is worth making if and only if
+`src/ast/parallel-indexer.ts:3500` gains an exact-spelling target lookup (or the store gains an inbound
+edge, which laptop C owns). At that point the falsifiable prediction is: on sampleHash `1c76a52a3ba9c16c`,
+the `attribInFileMulti` arm (3,485 edges) moves to zero and `incoming-check`'s `ambiguous` column for
+`contains`, `references` and `instantiates` falls by at least the 827 + 1,343 + 357 = 2,527 same-file
+multi-declaration edges those three types contribute. **If a shadow-aware qualification shipped without the
+shared step, the honest prediction is that no column moves at all** — that is the control, and it is why the
+step is the ask.
+
+## Gates re-run on current shared machinery, 2026-10-05
+
+Every number this file publishes was re-derived on this date, on this commit, against the corpus the
+router selects now — 1,985 admitted files across 14 projects. Nothing in this table is quoted from an
+earlier run.
+
+| gate | command | result |
+|---|---|---|
+| this file's own table cells | `doc-tables-check.ts --json /tmp/census.json` | **PASS — 308 cells**; census clean, 1,985 of 1,985 analysed, 0 degraded |
+| what FIRES, whole population | `firing-check.ts --files 2000 julia` | **9/10 fired, 235,878 edges, 1,985/1,985 files, 0 degraded** — `calls,uses,contains,imports,references,exports,extends,overrides,instantiates` |
+| what FIRES, 120-file stride | `firing-check.ts --files 120 julia` | **8/10 fired, 14,263 edges, 120/120 files, 0 degraded** — the missing type is `overrides`, excluded by stride arithmetic, not by rarity |
+| the arbiter, resumed run | `ontology-coverage-gate.ts julia` | **FAILS AS A MEASUREMENT — prints `emitted 0/10`, zero edges, exit 1.** §8 row 14 |
+| the arbiter, `--fresh` | `ontology-coverage-gate.ts julia --fresh` | **[BB-PARSE-ERR] `Graphs.jl/test/core.jl`, then [BB-HANG] 120 s later, exit 1**, no table printed |
+| the arbiter's mechanism, 1 s | `arbiter-resume-probe.ts` | **REPRODUCED** — run 1: 9/10 and 54 edges; run 2: 0/10 and 0 edges with `partial` false. Exits 1 if the shared gate is fixed |
+| INCOMING, 5 pinned files | `incoming-check.ts julia <the 5 files named above>` | 375 symbols, **0 degraded, 0 parse failures**; 240 declarations named, 92 of 375 orphans, **8 ambiguous names**; all ten type rows reproduce |
+| the `implements` ruling | `ruled-probe-check.ts` | **MATCH — 449 occurrences in 87 files**, equal to `publishedCount`/`publishedFiles` inside the ruling |
+| `overrides` differential | `overrides-differential.ts` | **COVERED 3, MISSING 0, UNEXPLAINED 0, 100.0%**; both sides 3 edges in 3 files, 0 threw, 0 bombs fired |
+| per-label oracle, deterministic | `direct-oracle-check.ts --files 40` | 2,478 truth / 2,068 comparable / 188 missing / 410 unexplained = **83.5% covered**; `calls` 75.8%, `uses` 98.9%, `references` 88.0%, `contains` 86.8%, `extends` 57.1%, `instantiates` 73.1%, `overrides` 100.0% |
+| fixture lane | `run-fixtures.ts --lang julia` | **5 pass, 0 fail**; a scoped run writes no canonical artifact |
+| mutants | `mutation-check.ts --all` | **28 killed, 0 survived, of 28** |
+| type check | `npx tsc --noEmit` | **0 errors naming a julia file** |
+| no regex (shared M12 gate) | `verify-regex-census.ts` | **PASSED** — 4 census entries, 0 missing, 0 stale, 0 unclassified, 0 mislocated. **julia has no entry, so this is not evidence about this lane** — see below |
+
+**The M12 regex gate passing is not a julia result, and it will not be presented as one.**
+`verify-regex-census.ts` reports 4 census entries and no `julia` among them, so the shared gate tests
+nothing in this lane. This lane's "no regex" property is instead held structurally — the analyzer's
+text handling is `validation/m14/fixtures/julia/text-util.ts`, a character-level scanner with its own
+fixtures, and the analyzer's own node-type claims are checked against the 149 node types the grammar
+actually produces. **A shared gate that passes while containing no entry for the lane is a gap in the
+gate, not a clean bill for the analyzer**, and it is reported as §8 row 15.
 
 # Shared-file changes this lane needs (§8 — reported, not applied)
 
@@ -2828,3 +3059,6 @@ which is why none of them is in this lane's commits.
 | 11 | `script/m14/differential.ts` | the 40-file scoped sample picker (`--repo X --sample N`) | **print the sample-selection rule next to the hash, and keep the hash stable across a corpus that has not changed** | measured on an unchanged corpus — the five pinned incoming-check files still carry 2026-09-30 mtimes, census still 1,985 admitted — `--repo julia --sample 40` moved from `hash=3ced448db031430c` to `hash=ecef1a0f0244ce6f` between 2026-10-04 runs on shared machinery this lane does not own, and `MISSING` moved 131 -> 42 with it. **A third run on 2026-10-04 read `hash=3ced448db031430c` and `MISSING=131` again — back to the first value, so the movement is NOT a one-way drift and the hash is not a monotone function of shared-machinery state.** A reader comparing hashes would see "changed, changed back" and could not tell whether anything was stable in between. The run is deterministic, so nothing announces a change at all except a reader who compares hashes. Every lane doc that quotes a scoped figure is now stale or was already, and none of them can tell which without diffing a hash. This is the same defect as §7 (a fixed-name shared temp file observed at 0 bytes): a shared path whose identity is implicit |
 | 12 | `script/m14/verify-honesty.ts` | the artifact-freshness rule (the check that prints "declared input(s) changed since <sha> — regenerate") | **make the freshness rule able to say WHICH inputs changed and whether the artifact is stale because of a real edit or because the rule compares against a base that moved** — and stop it flagging every artifact unconditionally | measured 2026-10-04: the gate reports **26 failures** and its own last line is `freshness rule flags every artifact — it cannot distinguish current from stale`. Six of the failures are `M14.0.F1`–`F9` "declared input(s) changed" (F2 names 2,395; F6 1,091; F3 1,051; F4 646; F8 133; F9 70; F1 64; F7 61), and a rule that fires on all of them carries no information — a lane cannot tell a real regression from a base that moved under it. **None of the 26 is a julia file**, so nothing in this lane's verdicts is affected; the other findings are banned-term hits in other lanes' fixtures (`c`, `clean`, `csharp`, `html`, `sql`) and in shared `validation/m14/results/*.json`. The banned-term half of the gate works and is not what this row is about |
 | 13 | **`script/m14/ontology-coverage-gate.ts`** | **`:274`, and the per-type tally that consumes each worker result** | **count `fallback: true` from `parseFile` and print `files ANALYSED: N of M admitted` beside the verdict table, the way `validation/m14/fixtures/julia/census.ts` does; do not `continue` past a degraded file silently** | **measured 2026-10-05, the first run of this gate at its own configured width against the corpus this lane now has.** The gate drives 8 concurrent `parseFile` calls and has **no** degraded-file accounting: `grep -n "fallback\|degraded\|BB-PARSE-ERR" script/m14/ontology-coverage-gate.ts` returns nothing. Its run printed `[BB-PARSE-ERR] … LibGit2/src/utils.jl` and `[BB-HANG] … utils.jl — exiting`, then printed `corpus: 1985 admitted files` and a complete ten-row table — and that table was **32 relationships short** of the clean census (`calls` 122,129 vs 122,150; `uses` 37,083 vs 37,087; `references` 50,143 vs 50,150; the other six types identical). **A verifier's own totals were over a population one file smaller than the number it printed, with nothing on screen saying so.** The same gate at 8-wide on 2026-10-04 reported `fallback: 0`, so a reader has two runs of this gate disagreeing by 32 edges and no way to tell which population either measured. This is a **verifier** defect and not a census defect: the arbiter is what the fleet reads, and its per-type `EMITTED` counts get quoted as whole-population figures |
+| 14 | **`script/m14/ontology-coverage-gate.ts`** | **`:304-319`, and the table that consumes `observed` at `:472-503`** | **persist the per-type tally in the checkpoint beside the paths, not only the paths. Or: force `--fresh` whenever `walkStats.walked === 0 && walkStats.alreadyDone > 0`. Or minimally: print `ABORTING — a resumed run measures nothing` and exit non-zero, because a reader cannot be left with a table that is a function of a file's prior contents** | **measured 2026-10-05, and this is the largest defect this lane has found in the arbiter.** The gate accumulates `observed` inside the walk's `run` callback (`:307-318`) and `script/m14/resumable-walk.ts:134-138` SKIPS every index whose id is already in the checkpoint. So on any run after the first, `run` is never called, `observed` stays empty, and all ten rows take the `obs && obs.n > 0` false branch. **Three runs, same commit, same 1,985-file corpus, same `parseFile`:** run 1 with no checkpoint printed `emitted 9/10 … calls 122,150 …` and exited 0; run 2 with a complete checkpoint printed `emitted 0/10`, zero edges, every row `NOT EMITTED`, and **exit 1**; run 3 with `--fresh` printed `[BB-PARSE-ERR] … Graphs.jl/test/core.jl`, `[BB-HANG] … core.jl — exiting`, **exit 1**. **`walkStats.partial` is `false` on run 2**, because `walked + alreadyDone === count`, so the one line whose stated job is to disclose an incomplete population discloses a complete one: `walk: 1985/1985 files (100.0%) newly walked 0, resumed 1985`. The comment above the walk says *\"A resumed or partial walk produces the SAME edge counts as a complete one … so without this line a 99% walk reports identically to a 100% one\"* — the line was added for exactly this, and it reports 100.0% for a walk that read zero files. `firing-check` disagrees and is independent of the checkpoint: **9/10 fired, 235,878 edges, 1,985/1,985 files, 0 degraded**, sequential. **This makes the block quoted at the top of this file a FIRST-RUN-ONLY artifact**, which is why it cannot be re-verified by re-running the command the reader is told to run. `validation/m14/fixtures/julia/arbiter-resume-probe.ts` reproduces the mechanism in under a second against the shared `resumableWalk` (run 1 → 9/10 and 54 edges; run 2 → 0/10 and 0 edges, `partial` false) and **exits 1 if the shared gate is fixed**, so this row can be withdrawn rather than left standing. The checkpoint is gitignored (`validation/m14/measurements/walk-*.txt`), so every lane that has run the gate twice since the checkpoint landed reads `0/10 emitted` |
+| 15 | `script/m12/verify-regex-census.ts` | the census's language list / the `analyzer-complexity` input set | **add a `julia` entry so the shared NO REGEX gate has something to test in this lane** | the gate **PASSES** on this lane today and that is vacuous: it reports `census entries: 4` and julia is not one of them, so a lane that had regex everywhere would pass it identically. julia has no entry for the same reason it has no row in `script/m60/analyzer-complexity-gate.ts` and no `validation/m12/fixtures/julia` (§8 row 8) — the shared M12 harness was never extended to this lane. The lane's own substitute is the **46 node-type claims / 0 unknown** check in the L2 section, which is an AST-walk and not a regex census |
+| 16 | **`src/ast/parallel-indexer.ts`** | **`:3500`, in front of `resolveTargetStmt` (`:2239`); the alias map is built at `:2758-2762`** | **give the TARGET half the exact-spelling lookup the SOURCE half already has at `:3430` — `nameToSymbol.get(targetName) ??` in front of the SQL, falling back to today's `targetLeaf` when it misses. One clause, same-file only (`nameToSymbol` is built from the current file's `result.symbols`), so it cannot reach a cross-file target and cannot make an edge that resolves today stop resolving** | **measured 2026-10-05, and it is the reason no julia-side fix can move an ambiguous target.** `extractLeaf` at `:3393` reduces every emitted target to its leaf BEFORE the `:3500` lookup, so a module-qualified target resolves exactly as if the bare name had been emitted: qualification moves the store by zero. The asymmetry is one line apart in the same loop — `:3430` reads `nameToSymbol.get(sourceName) ?? nameToSymbol.get(sourceLeaf)` and `nameToSymbol` holds `${sScope}.${nm}` for every symbol with a scope (`:2758`), so an elixir-style `Scope.name` source resolves to exactly one symbol, while the target half of the same loop goes straight to SQL on the leaf. Population it would reach on this lane, measured on 600 files (`sampleHash 1c76a52a3ba9c16c`): the **3,485 `attribInFileMulti` edges** whose referring file declares the target name >=2 times — `contains` 827, `references` 1,343, `instantiates` 357, `calls` 246, `uses` 665, `exports` 33, `extends` 14 — today attributed by TEXT-ordered line inside `s.id`. The 13,123 `attribCrossFile` edges are out of reach of any same-file step and need laptop C's inbound edge. **Precondition for the lane half:** emitting `Owner.name` for a BARE reference is only correct when no local binding shadows the name at that site (this lane has 21,693 deliberately unpublished local bindings), so the shared step must land before a shadow-aware emission, not after |
