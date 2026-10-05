@@ -13,6 +13,30 @@ type SqlRelationship = ASTEngine.UniversalRelationship
 type Slice = { byteOffset: number; rowOffset: number; columnOffset: number }
 const IDENTITY: Slice = { byteOffset: 0, rowOffset: 0, columnOffset: 0 }
 
+/**
+ * One tree, indexed once.
+ *
+ * `byType` holds every node of each type in DOCUMENT ORDER, which makes it sorted by
+ * `startIndex` — the property `descendants` needs to turn "is this node inside that subtree"
+ * from a walk into a binary search plus a bounded forward scan.
+ *
+ * `nodes` is keyed by `Node.id`, which web-tree-sitter documents as unique within a tree. It
+ * carries the three things that would otherwise be recomputed per access: the node's children in
+ * index order, its depth, and its `descendants` answer per type.
+ *
+ * `depth` is load-bearing rather than incidental. Byte ranges alone cannot separate a DESCENDANT
+ * from an ANCESTOR that opens on the same byte: `statement` wrapping `insert` with no token
+ * between them shares a start index, and when the wrapper adds nothing at the end it shares the
+ * end too, so `start >= node.start && end <= node.end` accepts the wrapper as its own child's
+ * descendant. Measured on the corpus before `depth` was added: **1,432 such queries in 1955
+ * files**, every one an indexed count of 1 against a walked count of 0. Depth closes it, because
+ * in a tree a candidate that starts no earlier, ends no later, and is DEEPER must be inside — a
+ * candidate that is not inside is either shallower (an ancestor) or in a disjoint subtree, and a
+ * disjoint subtree fails the interval test by construction.
+ */
+type TreeIndexNode = { children: Node[]; depth: number; descendants?: Map<string, Node[]> }
+type TreeIndex = { byType: Map<string, Node[]>; nodes: Map<number, TreeIndexNode> }
+
 type ParseState = {
   symbols: SqlSymbol[]
   relationships: SqlRelationship[]
@@ -140,7 +164,40 @@ export const SQL_KEYWORDS = new Set([
  *                      `storage`, `extensions`), which is real in the file and
  *                      absent from the repository by construction
  */
-const POSTGRES_CATALOG = /^pg_[a-z_]+$/
+/**
+ * Is `t` a PostgreSQL catalog relation name — `pg_class`, `pg_trigger_depth`, `pg_stat_…`?
+ *
+ * WAS `/^pg_[a-z_]+$/`, which was this lane's last regular expression. The brief's rule is that a
+ * regex over analyzer text is a defect the lane owns, and the census
+ * (`script/m12/verify-regex-census.ts`) classified it `needs_review` with an empty justification.
+ *
+ * The substitution is exact rather than approximate, and the difference between the two readings is
+ * worth naming because it is the kind that silently widens a classifier:
+ *   - `^pg_`        → `t.startsWith("pg_")`
+ *   - `[a-z_]+`      → at least one further character, each `a`–`z` or `_`. `t.length > 3` is the
+ *                     `+`, not a `*`: `pg_catalog` matches, a bare `pg_` does NOT, and the loop
+ *                     bounds are `>= 97 && <= 122` on the CHAR CODE so no string comparison is
+ *                     needed per character.
+ *   - `$`            → the loop runs to `t.length`, so a trailing `.` or digit fails.
+ * The input is an identifier already lifted off the parse tree by the caller, never source text, so
+ * the defect class a regex invites here (matching a comment or a string literal, missing nested
+ * syntax) did not apply — but the rule is not "regexes are wrong here", it is "this lane's regexes
+ * are its debt", and a 4-line character scan settles it.
+ *
+ * Pinned by fixture `sqld12-external-targets`, which asserts the classification on both sides of
+ * each boundary: `pg_catalog.pg_class` is `postgresCatalog`, and `pg_` alone, `pg_` followed by a
+ * digit, and `pg_` followed by a dot are not.
+ */
+function isPostgresCatalogName(t: string): boolean {
+  if (t.length <= 3) return false
+  if (!t.startsWith("pg_")) return false
+  for (let i = 3; i < t.length; i++) {
+    const c = t.charCodeAt(i)
+    if (c !== 95 && (c < 97 || c > 122)) return false
+  }
+  return true
+}
+
 const INFORMATION_SCHEMA_VIEWS = new Set([
   "columns", "tables", "views", "routines", "schemata", "sequences", "key_column_usage",
   "table_constraints", "constraint_column_usage", "referential_constraints",
@@ -162,7 +219,7 @@ function classifyExternalTarget(
   const t = target.toLowerCase()
   if (t.startsWith("information_schema.")) return "informationSchema"
   if (INFORMATION_SCHEMA_VIEWS.has(t)) return "informationSchema"
-  if (POSTGRES_CATALOG.test(t)) return "postgresCatalog"
+  if (isPostgresCatalogName(t)) return "postgresCatalog"
   if (t === "public") return "implicitSchema"
   const dot = t.indexOf(".")
   if (dot > 0) {
@@ -484,6 +541,9 @@ export class RealSqlAnalyzer implements ASTEngine.LanguageAnalyzer {
     content: string,
     filePath: string,
   ): Omit<ASTEngine.ParseResult, "language" | "metadata"> & { metadata: Partial<ASTEngine.FileMetadata> } {
+    // One index per parse. See the field comment on `treeIndexes` for the key, the measurement
+    // that forced the index, and why the lifetime is stated here rather than left to the collector.
+    this.treeIndexes = new WeakMap()
     const state: ParseState = {
       nestedStatements: new Set<number>(),
       localCtes: new Set<string>(),
@@ -519,6 +579,7 @@ export class RealSqlAnalyzer implements ASTEngine.LanguageAnalyzer {
         keywordTargetsSuppressed: 0,
         recoveryCallsSuppressed: 0,
         sweepDeclarationsRecovered: 0,
+        sweepStatementsDispatched: 0,
         builtinCallsSuppressed: 0,
         quotedIdentifiers: 0,
         constraintsRecoveredFromError: 0,
@@ -1304,6 +1365,24 @@ export class RealSqlAnalyzer implements ASTEngine.LanguageAnalyzer {
         state.localCtes = this.cteScope(current, state)
         this.processStatement(current, state, null)
         state.localCtes.clear()
+        /**
+         * This re-entry is the pass's OTHER job and it had no counter, so the pass reported
+         * itself idle while it was working.
+         *
+         * `sweepDeclarationsRecovered` counts only a DECLARATION node nested inside another
+         * DECLARATION node, and that population does not occur on this corpus — it reads 0 over
+         * all 1,962 admitted files. Measured by ablation (`sweep-ablation.mts`, production
+         * `parseFile` with `sweepDeclarations` replaced by a no-op on the prototype, `src/`
+         * untouched): removing the pass loses **3,629 edges and 1,663 symbols**, 0 edges gained,
+         * over **234 of 1,962 files** — and every lost edge the sample printed is `uses` from a
+         * statement this branch is what reaches. On `proxicall/database/schema.sql` the
+         * ablated result is missing the symbol `function trigger_business_inbox_grants_updated_at`,
+         * which `processCalls` publishes for a callee reached only from inside a plpgsql body.
+         *
+         * So the pass was load-bearing and unmeasured: a counter that reads 0 on a pass that
+         * publishes 3,629 edges is a counter naming the wrong job. This one names this job.
+         */
+        state.ambiguity.sweepStatementsDispatched++
         for (const name of saved) state.localCtes.add(name)
       }
       if (DECLARATION_NODES.has(current.type)) {
@@ -1390,6 +1469,28 @@ export class RealSqlAnalyzer implements ASTEngine.LanguageAnalyzer {
       case "alter_table":
         this.addPattern("Schema Evolution (ALTER)", state)
         this.recordTableTarget(node, "uses", "alter", state)
+        // An `ALTER TABLE` can CALL a function, in a grammar-mandated expression slot:
+        // `ALTER TABLE t ALTER COLUMN c SET DEFAULT app.f()` is the shape, and
+        // `hasura-engine/server/src-rsr/migrations/41_to_42.sql` writes it five times in one
+        // file (`SET DEFAULT hdb_catalog.gen_hasura_uuid()`).
+        //
+        // It produced no edge, because the only two routes into `processCalls` were `processQuery`
+        // and `DECLARATION_NODES`, and an `alter_table` is neither — it is not a query and it
+        // declares nothing. `processAlterTable` cannot cover it either: it returns early when the
+        // statement adds no column, which is exactly the shape here. Settled by
+        // `validation/m14/fixtures/sql/pass3-invocation-why.mts`, which classifies every qualified
+        // invocation on the corpus tree that carries no `calls` edge: 742 on the tree, 449 emitted,
+        // 53 suppressed by the keyword/builtin guard, 240 not emitted — **224 inside an error
+        // subtree** (a grammar bound, not a lane defect), 2 inside a `plpgsql_block`, and **14 here**,
+        // the only bucket that is a candidate lane defect. This closes that bucket.
+        //
+        // Sourced to the ALTERED TABLE rather than to `global`, because the table is a published
+        // symbol and `global` is not — so this is also an edge the reverse walk can arrive at. The
+        // fallback is `global` only when the statement names no table.
+        //
+        // New type, new source: no existing edge changes, because `addRelationship` keys on
+        // (type, source, target) and nothing emitted `calls` from a table name before.
+        this.processCalls(node, this.referenceLeaf(this.directChild(node, "object_reference"), state) ?? "global", state)
         this.processAlterTable(node, state)
         return
       case "drop_table":
@@ -1404,6 +1505,25 @@ export class RealSqlAnalyzer implements ASTEngine.LanguageAnalyzer {
       case "drop_policy":
         this.addPattern("Schema Evolution (DROP)", state)
         this.recordTableTarget(node, "uses", "drop", state)
+        return
+      case "do_statement":
+        // `processDo` is DISPATCHED FROM HERE, and until pass 3 it was not dispatched from here at
+        // all: its only caller sat in `dispatchDeclaration`, which runs for `DECLARATION_NODES` only,
+        // and `do_statement` is not a declaration — it declares nothing. So `processDo` was
+        // unreachable dead code, and the source said otherwise: the method exists, its body is
+        // three real calls, and a source-derivation count of "which relationship types can this
+        // analyzer construct" would have counted it. This is the exact failure the ontology
+        // workstream was opened for, in this lane's own analyzer.
+        //
+        // Measured consequence, per statement rather than per corpus: `DO $$ BEGIN PERFORM f(1);
+        // END $$;` published NO `calls` edge, and `DO $$ BEGIN SELECT id FROM t; END $$;` published
+        // no `Anonymous Procedural Block` pattern — its `uses` edge came from the sweep dispatching
+        // a nested `statement`, which is a different code path reaching a different conclusion about
+        // the same file. Both were verified on single-statement fixtures rather than inferred.
+        //
+        // `processDo` also calls `processQueryDependencies`, which is what a DO block's own
+        // top-level reads were missing; the sweep only recovers statements nested INSIDE it.
+        this.processDo(node, state)
         return
       case "insert":
         this.recordDml(node, "insert", state)
@@ -1758,7 +1878,11 @@ private markDeclaration(node: Node, state: ParseState): boolean {
         references,
       },
     )
-    this.addRelationship(ASTEngine.RelationshipType.Contains, table.name, column.name, state)
+    // `memberKind` here as well as in `createSymbol`: this call exists for the paths where
+    // `createSymbol` returned early without emitting (an already-seen identity), and a key without
+    // the disambiguator would NOT dedup against the one `createSymbol` did emit — the same
+    // containment fact stored twice, once with the member's kind and once without.
+    this.addRelationship(ASTEngine.RelationshipType.Contains, table.name, column.name, state, { memberKind: ASTEngine.SymbolKind.Property })
     if (isPrimaryKey) this.addPattern("Primary Key Constraint", state)
     if (isUnique) this.addPattern("Unique Constraint", state)
     if (references && referenceNode) {
@@ -1820,9 +1944,35 @@ private markDeclaration(node: Node, state: ParseState): boolean {
     } else {
       nameNode = node.childForFieldName?.("name") ?? null
     }
-    // MySQL's `UNIQUE KEY <name> (cols)` puts the index name in a `name` field.
+    // MySQL's `UNIQUE KEY <name> (cols)` puts the index name in a direct `identifier` that PRECEDES
+    // the column list.
+    //
+    // ORDER IS THE WHOLE DISCRIMINATOR, and pass 3 found the shape that makes it necessary. A FOREIGN
+    // KEY with no `CONSTRAINT` name also has direct `identifier` children, and they are the
+    // REFERENCED table's columns, sitting AFTER `ordered_columns`:
+    //
+    //   foreign key (a, b) references u (x, y)
+    //     constraint
+    //       keyword_foreign  keyword_key
+    //       ordered_columns (a, b)        <- LOCAL columns, nested under `column`
+    //       keyword_references  object_reference u
+    //       identifier x  identifier y    <- DIRECT children: u's columns
+    //
+    // `directChild(node, "identifier")` returned `x`, so the analyzer published `constant:x` owned by
+    // the referencing table — a declaration the file does not contain. Measured on the corpus at
+    // HEAD before this fix: **57 phantom constants in 23 files**, e.g. two `constant:scope_id` under
+    // `auth_account` in `boundary/.../0/07_auth.up.sql` (lines 90 and 94, one per foreign key, both
+    // named after `auth_method`'s first column) against the real `property:scope_id` at line 72.
+    //
+    // Why it is expensive rather than cosmetic: a fabricated symbol is a row a consumer reads as a
+    // declaration, and it is also what made 51 of the 100 intra-file-ambiguous `contains` targets
+    // ambiguous — the collision `metadata.memberKind` was added for could not be closed while the
+    // second declaration was synthetic.
     if (!nameNode && keywordAt < 0) {
-      nameNode = this.directChild(node, "identifier")
+      const cand = this.directChild(node, "identifier")
+      // The first column list is `ordered_columns`, or a bare `column` in the reduced shape.
+      const cols = children.find((c) => c.type === "ordered_columns" || c.type === "column")
+      if (cand && (!cols || cand.startIndex < cols.startIndex)) nameNode = cand
     }
 
     const hasPrimary = this.containsChildType(node, "keyword_primary")
@@ -1848,7 +1998,7 @@ private markDeclaration(node: Node, state: ParseState): boolean {
           ...(recovered ? { recoveredFromErrorRegion: true } : {}),
         },
       )
-      this.addRelationship(ASTEngine.RelationshipType.Contains, table.name, constraint.name, state)
+      this.addRelationship(ASTEngine.RelationshipType.Contains, table.name, constraint.name, state, { memberKind: ASTEngine.SymbolKind.Constant })
     }
     if (hasPrimary) this.addPattern("Primary Key Constraint", state)
     if (hasUnique) this.addPattern("Unique Constraint", state)
@@ -1921,7 +2071,12 @@ private markDeclaration(node: Node, state: ParseState): boolean {
     this.addPattern("Custom Indexes", state)
     if (tableName) {
       this.addRelationship(ASTEngine.RelationshipType.References, name, tableName, state, { dependency: true, indexOn: tableName })
-      this.addRelationship(ASTEngine.RelationshipType.Contains, tableName, name, state)
+      // `memberKind` here too, because the owner's table may be declared LATER in the file and so
+      // `owner` was null above — `createSymbol` emits no containment edge without a parent, and this
+      // is the edge that survives. An index and a column of the same name under the same table is the
+      // collision `memberKind` exists to resolve; leaving it off this path would leave exactly those
+      // edges ambiguous, which is the case the key was added for.
+      this.addRelationship(ASTEngine.RelationshipType.Contains, tableName, name, state, { memberKind: ASTEngine.SymbolKind.Constant })
       if (state.metadata.performanceScore !== undefined) state.metadata.performanceScore += 10
     }
   }
@@ -2582,7 +2737,7 @@ private markDeclaration(node: Node, state: ParseState): boolean {
         state,
         { type: "column", sqlType: this.columnType(definition, state), addedByAlter: true },
       )
-      this.addRelationship(ASTEngine.RelationshipType.Contains, table, column.name, state)
+      this.addRelationship(ASTEngine.RelationshipType.Contains, table, column.name, state, { memberKind: ASTEngine.SymbolKind.Property })
     }
   }
 
@@ -2991,7 +3146,31 @@ private markDeclaration(node: Node, state: ParseState): boolean {
     symbol.id = id
     state.symbols.push(symbol)
     state.symbolNames.add(name)
-    if (parent) this.addRelationship(ASTEngine.RelationshipType.Contains, parent.name, name, state)
+    /**
+     * `memberKind` — why a containment edge carries the member's kind, which is a fact about the
+     * GRAPH rather than about SQL.
+     *
+     * A `contains` edge names its member by BARE NAME, and SQL's naming conventions make bare names
+     * collide constantly: `CREATE TABLE t (scope_id int)` beside `CREATE INDEX scope_id ON t(...)`
+     * is ordinary, and on the boundary migration corpus **100 of 11,305 `contains` edges** name two
+     * declarations that share a name AND an owner, distinguished only by kind (51 of the 100 are
+     * `constant`+`property`, i.e. index against column).
+     *
+     * `src/lsp/impact.ts` obtains reverse edges by scanning outgoing edges and matching targets, so
+     * an edge whose target names two declarations is an incoming edge attributed to one of them by a
+     * rule nobody chose. The information needed to disambiguate is already on the member symbol —
+     * `ownerName` and `kind` — but a consumer that only reads the edge cannot see it.
+     *
+     * `memberKind` closes that, and it is the minimum that does: combined with the edge's existing
+     * SOURCE (the owner) it is the pair a consumer needs, so no schema change and no stored inbound
+     * edge is required. Measured on the same corpus (`pass3-incoming.mts`): bare name alone resolves
+     * 9,374 of 11,305 (82.9 %), (name, owner) within the file resolves 11,204 (99.1 %), and this key
+     * is what carries the last 100.
+     *
+     * Deliberately NOT added: the owner's name. The edge's source already IS the owner, and
+     * duplicating it would grow every containment edge to carry a fact the consumer can read.
+     */
+    if (parent) this.addRelationship(ASTEngine.RelationshipType.Contains, parent.name, name, state, { memberKind: symbol.kind })
     return symbol
   }
 
@@ -3065,7 +3244,26 @@ private markDeclaration(node: Node, state: ParseState): boolean {
       state.externalTargets![externalKind]++
       metadata = { ...metadata, external: externalKind }
     }
-    const key = `${type}\u0000${source}\u0000${target}`
+    // The dedup key, and why `memberKind` is part of the IDENTITY rather than only of the payload.
+    //
+    // A (type, source, target) key cannot represent two DIFFERENT declarations that share a name
+    // under one owner, and SQL makes that ordinary: `CREATE TABLE t (scope_id int)` beside
+    // `CREATE INDEX scope_id ON t (...)` is legal, and phpMyAdmin's `resources/sql/create_tables.sql`
+    // writes `UNIQUE KEY `db_name` (`db_name`, `table_name`)` — an index named after one of its own
+    // columns. Both produce `contains t -> scope_id`, so the second was silently DROPPED: that index
+    // had no containment edge at all. Carrying `memberKind` in the payload alone would have made it
+    // worse rather than better, because the surviving edge's key would still claim to be the only
+    // fact about that name.
+    //
+    // Two edges with the same source and target and DIFFERENT members are two true facts, not a
+    // duplicate, so the disambiguator belongs in the identity. Read off the metadata rather than
+    // threaded through as a parameter, so a call site cannot forget it: a `contains` edge that does
+    // not say which kind of member it means has not said what it is about.
+    //
+    // Read from `metadata` BEFORE the `external` spread above can add keys, and only `memberKind`
+    // participates — every other type's key is unchanged, which is what keeps this from re-opening
+    // the `uses`-vs-`references` merge behaviour the operations-metadata branch below relies on.
+    const key = `${type}\u0000${source}\u0000${target}\u0000${metadata.memberKind ?? ""}`
     const existing = state.relationshipsByKey.get(key)
     if (existing) {
       if (metadata.operation) {
@@ -3274,6 +3472,85 @@ private markDeclaration(node: Node, state: ParseState): boolean {
     return null
   }
 
+  /**
+   * Per-parse memo for `namedChildren`, and a per-TREE document-order index for `descendants`.
+   *
+   * WHY THIS EXISTS, measured rather than guessed. `node --cpu-prof` on
+   * `postgrest/test/io/fixtures/big_schema.sql` (392 KB, 67,508 named nodes, depth 43) put
+   * **134 of 154 seconds** inside `walkDescendants` — 87 % of the whole run — against
+   * `ts_parser_parse_wasm` at **0.33 s**. The grammar was never the problem; the walk was.
+   * The file then crossed `engine.ts`'s 120 s analyzer timeout, returned
+   * `analysisVersion: "2.0-basic-fallback"` with 0 symbols and 0 relationships, and in 2 of 3
+   * solo runs. That is what made this lane's corpus total BIMODAL (see the docs page).
+   *
+   * The blowup is arithmetic, and it is not subtle once counted: 29,662 `descendants` calls
+   * collapsed to 4,199 distinct (node, type) queries, and those 4,199 walks visited
+   * **99,159,647 nodes** — 1,469 visits per node in the file. The queries sit near the root, so
+   * each one rescanned a near-root subtree: the memo alone removed 85 % of the CALLS and none of
+   * the COST.
+   *
+    * WHY AN INDEX RATHER THAN A SMALLER WALK. "Is node X of type T inside subtree S" is an
+    * interval question, and tree-sitter already gives every node a byte range. So one preorder
+    * walk per tree groups nodes by type in document order, and a query becomes a binary search for
+    * the first node of type T at or after S's start, then a forward scan while candidates begin
+    * before S's end, keeping those that also END inside it. Cost becomes proportional to the
+    * matches inside the subtree rather than to the subtree — the difference between 23,617 visits
+    * per query and a handful.
+    *
+    * WHY THE KEY IS `(node.tree, node.id)` AND NOT THE NODE OBJECT. This is the load-bearing
+    * detail, and it was measured rather than assumed, because the obvious key is wrong:
+    * web-tree-sitter's `unmarshalNode` ends in `new Node(...)`, so **every** property access
+    * returns a FRESH wrapper. Verified directly on the wired wasm (`_ident.mts` in this lane's
+    * fixtures): `rootNode === rootNode` is false, `namedChild(0) === namedChild(0)` is false, while
+    * `rootNode.tree === rootNode.tree` is true and `namedChild(0).id === namedChild(0).id` is true.
+    * A `WeakMap<Node, …>` therefore misses on essentially every lookup — which is exactly what a
+    * first attempt did: it removed 85 % of the `descendants` CALLS and none of the COST, and an
+    * index built the same way rebuilt itself **200+ times for one tree** because the root handle
+    * it keyed on was a new object each time. `Node.id` is documented as unique within a tree and
+    * `Node.tree` is the tree it belongs to, and both are plain fields, so together they are a
+    * stable identity.
+    *
+    * WHY PER TREE, LAZILY. `runResync` re-parses each top-level statement into its OWN tree and
+    * feeds those nodes back through `processRoot`, so there is more than one tree per parse and
+    * "the" tree is not a field anyone can set — `node.tree` is what says which. The build is lazy
+    * because a file that asks no subtree question should not pay for it.
+    */
+  private treeIndexes = new WeakMap<object, TreeIndex>()
+
+  /** This tree's index, built on first use. One preorder walk, then O(1) thereafter. */
+  private indexFor(node: Node): TreeIndex {
+    const tree = node.tree as unknown as object
+    const existing = this.treeIndexes.get(tree)
+    if (existing) return existing
+    const byType = new Map<string, Node[]>()
+    const nodes = new Map<number, TreeIndexNode>()
+    // Reversed pushes so the stack pops left to right: document order, which is what makes
+    // `byType` sorted by startIndex and therefore binary-searchable.
+    const stack: { node: Node; depth: number }[] = [{ node: node.tree.rootNode as unknown as Node, depth: 0 }]
+    while (stack.length) {
+      const { node: current, depth } = stack.pop()!
+      // One `namedChildCount` and one `namedChild(i)` per node — the floor for touching a tree
+      // once — and the children are kept, so `namedChildren` never asks again.
+      const count = current.namedChildCount
+      const children: Node[] = []
+      for (let i = 0; i < count; i++) {
+        const child = current.namedChild(i)
+        if (child) children.push(child)
+      }
+      const entry = nodes.get(current.id)
+      if (entry) { entry.children = children; entry.depth = depth }
+      else nodes.set(current.id, { children, depth })
+      const bucket = byType.get(current.type)
+      if (bucket) bucket.push(current)
+      else byType.set(current.type, [current])
+      for (let i = children.length - 1; i >= 0; i--) stack.push({ node: children[i], depth: depth + 1 })
+    }
+    const index: TreeIndex = { byType, nodes }
+    this.treeIndexes.set(tree, index)
+    return index
+  }
+
+
   private firstIdentifier(node: Node | null, state?: ParseState): Node | null {
     if (!node) return null
     void state
@@ -3321,39 +3598,96 @@ private markDeclaration(node: Node, state: ParseState): boolean {
   }
 
   private containsType(node: Node, type: string): boolean {
-    return node.type === type || this.descendants(node, type).length > 0
+    return this.findDescendant(node, type) !== null
+  }
+
+  /**
+   * The first descendant of `type` in DOCUMENT order, or null.
+   *
+   * Same order `descendants` produces — children pushed in reverse so the stack pops left to
+   * right — but it STOPS at the first match. `descendants(node, type)[0]` walked the entire
+   * subtree and then threw all but one node away, and `containsType` above did the same to ask
+   * a yes/no question; both were hot enough to show in the profile.
+   */
+  /**
+   * The first DESCENDANT of `type` in document order, or null.
+   *
+   * `findDescendant` stops at the first match; `descendants` cannot, because it returns a list.
+   * Both read the same index, so a `null` here and an empty array there mean the same thing.
+   */
+  private findDescendant(node: Node, type: string): Node | null {
+    if (node.type === type) return node
+    const index = this.indexFor(node)
+    const depth = index.nodes.get(node.id)!.depth
+    const candidates = index.byType.get(type)
+    if (!candidates) return null
+    for (let i = this.lowerBound(candidates, node.startIndex); i < candidates.length; i++) {
+      const candidate = candidates[i]
+      if (candidate.startIndex > node.endIndex) break
+      if (candidate.endIndex <= node.endIndex && index.nodes.get(candidate.id)!.depth > depth) return candidate
+    }
+    return null
+  }
+
+  /** The first entry of a document-order array whose `startIndex` is >= the given one. */
+  private lowerBound(sorted: Node[], startIndex: number): number {
+    let lo = 0
+    let hi = sorted.length
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1
+      if (sorted[mid].startIndex < startIndex) lo = mid + 1
+      else hi = mid
+    }
+    return lo
   }
 
   private firstDescendant(node: Node, type: string): Node | null {
-    if (node.type === type) return node
-    return this.descendants(node, type)[0] ?? null
+    return this.findDescendant(node, type)
   }
 
-  private descendants(node: Node, type?: string): Node[] {
-    const result: Node[] = []
-    const stack: Node[] = []
-    for (let i = node.namedChildCount - 1; i >= 0; i--) {
-      const child = node.namedChild(i)
-      if (child) stack.push(child)
+  /**
+   * Every DESCENDANT of `type` in `node`'s subtree, in document order.
+   *
+   * `type` is REQUIRED, not optional. The walk this replaced had an optional type and an untyped
+   * branch, and all 14 call sites passed one — so the untyped branch was unreachable code that a
+   * source count would have called a feature. Requiring the argument turns that from a claim into
+   * a compile error if a caller ever wants the untyped walk.
+   */
+  private descendants(node: Node, type: string): Node[] {
+    const index = this.indexFor(node)
+    // Non-null because `indexFor` inserts an entry for EVERY node it walks, and `node` came from
+    // this tree. An absent entry would mean the index and the node disagree about the tree, and
+    // the honest response to that is a crash rather than an empty list that reads as "no matches".
+    const entry = index.nodes.get(node.id)!
+    let memo = entry.descendants
+    if (!memo) { memo = new Map(); entry.descendants = memo }
+    const hit = memo.get(type)
+    if (hit) return hit
+    const found = this.withinType(index, node, type)
+    memo.set(type, found)
+    return found
+  }
+
+  /** Every node of `type` strictly inside `node`'s subtree, in document order. */
+  private withinType(index: TreeIndex, node: Node, type: string): Node[] {
+    const candidates = index.byType.get(type)
+    if (!candidates) return []
+    const depth = index.nodes.get(node.id)!.depth
+    const found: Node[] = []
+    for (let i = this.lowerBound(candidates, node.startIndex); i < candidates.length; i++) {
+      const candidate = candidates[i]
+      if (candidate.startIndex > node.endIndex) break
+      // Three tests, and all three are needed. The interval pair says "not in a disjoint subtree";
+      // the DEPTH is what says "not an ancestor", because a wrapper that adds no token shares its
+      // child's byte range exactly and would otherwise pass as its own descendant.
+      if (candidate.endIndex <= node.endIndex && index.nodes.get(candidate.id)!.depth > depth) found.push(candidate)
     }
-    while (stack.length) {
-      const current = stack.pop()!
-      if (!type || current.type === type) result.push(current)
-      for (let i = current.namedChildCount - 1; i >= 0; i--) {
-        const child = current.namedChild(i)
-        if (child) stack.push(child)
-      }
-    }
-    return result
+    return found
   }
 
   private namedChildren(node: Node): Node[] {
-    const result: Node[] = []
-    for (let i = 0; i < node.namedChildCount; i++) {
-      const child = node.namedChild(i)
-      if (child) result.push(child)
-    }
-    return result
+    // Same non-null reasoning as `descendants`: the index walks every node of the tree.
+    return this.indexFor(node).nodes.get(node.id)!.children
   }
 
   /**
@@ -3400,8 +3734,14 @@ private markDeclaration(node: Node, state: ParseState): boolean {
  * grammar never produces any of them either. script/m12/sql-node-types-compare.ts
  * fails this lane on exactly that class, over the whole corpus plus a declared
  * dialect battery rather than three fixture files.
+ *
+ * Exported so a measurement instrument reads THIS set instead of retyping it. The first version
+ * of `sweep-reachability.mts` recovered the list by running a regular expression over this file's
+ * source, which reaches comments and string literals alike and would silently return a plausible
+ * wrong set on the next edit. `SQL_KEYWORDS` and `SQL_BUILTINS` above are exported for the same
+ * reason. Adding to the set changes the product; reading it changes nothing.
  */
-const DECLARATION_NODES = new Set([
+export const DECLARATION_NODES = new Set([
   "create_table",
   "create_view",
   "create_materialized_view",

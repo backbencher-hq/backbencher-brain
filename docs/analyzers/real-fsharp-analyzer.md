@@ -1222,8 +1222,366 @@ Stated as unresolved rather than rounded off. Nothing here is claimed as settled
 
   The ranges overlap almost completely, so the +16% was the machine's load and **no claim
   finer than "inside the run-to-run spread of a shared box" is supported**. Reporting the first
-  number would have been a fabricated measurement of someone else's CPU time. Pass 1's own
-  latency row is neither re-baselined nor re-asserted here.
+number would have been a fabricated measurement of someone else's CPU time. Pass 1's own
+   latency row is neither re-baselined nor re-asserted here.
+
+## M60 ONTOLOGY LANE, PASS 3 — the arbiter's verdict, and one unresolvable endpoint (2026-10-03)
+
+Three passes in, this lane still had no adjudicated verdict on any of its ten types. Pass 1
+and pass 2 both recorded that `script/m14/ontology-coverage-gate.ts fsharp` exits 2 with "no
+RULING TABLE for fsharp", and neither wired one. That is now settled, and it settled itself
+against the arbiter rather than against this lane's own note.
+
+### The population GREW, so the pass-1 and pass-2 figures are not comparable to these
+
+| | pass 1 / 2 | pass 3 |
+|---|---|---|
+| fsharp files admitted | 6,619 | **11,799** (the gate's own count; 11,809 tracked, the gate caps at 512 KB/file) |
+| repos contributing | 1 (`fsharp`) | 22 |
+
+Nothing in this lane changed the corpus; other lanes cloned F# repositories. Pass 1's
+"6,619-file corpus" and the probe's "7,818 namespaces in 3,630 files" describe a
+**different population** from this pass's, so they are neither confirmed nor contradicted by
+anything below. Pass 2's seeded draw (`0x5f5a1`, `slice(0,400)`) was drawn from the 6,619
+population and its per-type counts are on that population, not this one.
+
+### What fires, through production `parseFile`
+
+`npx tsx script/m14/firing-check.ts --files 120 fsharp` — 120/120 files parsed, **0 degraded
+fallbacks**, 12,517 relationships, **9 of 10 types fired**:
+
+```
+calls, uses, contains, imports, references, extends, implements, overrides, instantiates
+```
+
+`exports` is the only zero, and a zero here is a FIRING FACT, not a ruling.
+
+**One defect in that instrument, found while reading its output, and not this lane's to fix.**
+Its `files` column is assigned rather than accumulated:
+
+```ts
+// script/m14/firing-check.ts:339 — inside the per-file loop, `filesByType` is fresh…
+for (const [type, set] of filesByType) res.types[type].files = set.size   // …so this OVERWRITES
+```
+
+so every type reads `files: 1` on the 400-file run regardless of how many files carried it.
+The `edges` column is correct (`row.edges++` accumulates). The per-type **file** counts in
+this section come from `edge-resolution-probe.ts`, which accumulates into a `Set` outside the
+loop. Report-to-supervisor, with the line number.
+
+### The arbiter's verdict, on the arbiter's own counts
+
+`validation/m14/fixtures/fsharp/ruled-gate.ts` applies the supervisor's two-line change to a
+**copy** of the gate under `/tmp` and runs the copy; the shared file is untouched. It first
+compares the gate's own `type Ruled` block against this lane's restatement field by field and
+exits 2 on any divergence — 5 fields, identical.
+
+```
+ontology coverage gate — fsharp          (975 admitted files, 2 workers)
+exports       RULED-SOUND   NOT EMITTED; the grammar produced 321 distinct node types across
+                             the corpus and NONE expresses it.
+                             Written ruling: script/m14/fsharp-ruled.ts (RULED_BY_LANG.fsharp)
+emitted 9/10   ruled-sound 1   FALSIFIED 0   ruled-without-justification 0
+exit code 0
+```
+
+The other nine, with the **arbiter's** counts (975 files, not this lane's 400-file draw):
+
+| type | status | edges | example file |
+|---|---|---|---|
+| `calls` | EMITTED | 85,653 | `FSharp.Data/docs/library/CsvFile.fsx` |
+| `references` | EMITTED | 14,689 | `FSharp.Data/docs/library/CsvFile.fsx` |
+| `contains` | EMITTED | 20,417 | `FSharp.Data/docs/tutorials/JsonAnonymizer.fsx` |
+| `imports` | EMITTED | 4,902 | `FSharp.Data/docs/library/CsvFile.fsx` |
+| `uses` | EMITTED | 8,122 | `FSharp.Data/docs/library/CsvProvider.fsx` |
+| `instantiates` | EMITTED | 624 | `FSharp.Data/docs/library/Http.fsx` |
+| `implements` | EMITTED | 375 | `FSharp.Data/src/FSharp.Data.Csv.Core/CsvRuntime.fs` |
+| `overrides` | EMITTED | 247 | `FSharp.Data/src/FSharp.Data.DesignTime/CommonProviderImplementation/Helpers.fs` |
+| `extends` | EMITTED | 112 | `FSharp.Data/src/FSharp.Data.DesignTime/Html/HtmlProvider.fs` |
+
+The verdict is stable across three populations — 1,024 files / 322 node types, 975 / 321,
+and the same `9 EMITTED · 1 RULED-SOUND · 0 FALSIFIED · 0 UNJUSTIFIED` each time. The
+`exports` ruling is instrument **A** and is falsifiable: the gate re-measures the grammar's own
+node-type inventory across every admitted file and prints FALSIFIED if any of the six named
+node types appears. It did not, and neither did any node type whose name contains `export`.
+
+**Coverage is reported as applicable, not as a flat 10: 9 EMITTED + 1 measured-absent = 9/9
+applicable, decided.** The denominator shrank by exactly one, by the RULED verdict and its
+measurement. Numerator (firing) and denominator (measured non-applicability) came from two
+different instruments — `firing-check.ts` through production `parseFile`, and the gate's
+instrument A over the grammar's node inventory — which is the separation the workstream
+requires.
+
+### The arbiter still cannot finish on the full corpus, and that is now a second file
+
+`npx tsx script/m14/ontology-coverage-gate.ts fsharp` over all 11,799 files died twice, on two
+**different** files, both with the same signature:
+
+```
+[BB-PARSE-ERR] fsharp | …/Fake/src/legacy/FakeLib/DynamicsNavFile.fs       | memory access out of bounds
+[BB-HANG]      parser stuck 120s on …/Fake/src/legacy/FakeLib/DynamicsNavFile.fs — exiting
+
+[BB-PARSE-ERR] fsharp | …/Grace/src/Grace.Cache.Storage/CacheArtifactStore.fs | memory access out of bounds
+[BB-HANG]      parser stuck 120s on …/Grace/src/Grace.Cache.Storage/CacheArtifactStore.fs — exiting
+```
+
+Pass 1 recorded the first of these and called it "a known parser-robustness finding". It is
+not one file, it is a class, and the reason the gate cannot report is structural rather than
+incidental: `parseFile` recovers from a WASM crash (it prints `[BB-PARSE-ERR]`, substitutes,
+continues), but the gate's **instrument A** then re-parses every admitted file with a RAW
+`web-tree-sitter` parser that has no timeout and no recovery, so the first file that crashes
+the WASM allocator ends the run before a verdict prints. The bounded population above excludes
+`Fake`, `Grace` and `giraffe` for exactly that reason, and says so rather than quietly
+presenting a smaller corpus as the whole one.
+
+### FS-P3-1 — `overrides` wrote an endpoint this lane never published
+
+**This is the pass's one code change, and it is a real defect rather than a style one.**
+
+`overrides` is the only relationship this analyzer emits whose **source** it qualifies on
+purpose, because a bare member name is ambiguous and the analyzer knows it:
+
+```fsharp
+type Resource() =
+    interface System.IDisposable with
+        override this.Dispose() = ()
+```
+
+emits `overrides Resource.Dispose -> IDisposable.Dispose`. That qualified spelling was a
+spelling the lane never **published**. Measured directly, on
+`Grace/src/Grace.Actors/AccessControl.Actor.fs`:
+
+```
+stored symbol : name="OnActivateAsync"  qualifiedName="OnActivateAsync"  ownerName="AccessControlActor"
+emitted edge  : source="AccessControlActor.OnActivateAsync"          → 0 exact matches
+```
+
+`pool-worker.ts:870` derives the stored value as
+`s.qualifiedName || s.metadata?.fqn || (s.scope ? … : name)`, and this analyzer set **none of
+the three**, so `brain_symbol.qualified_name` held a bare name for every owned symbol in the
+language while `brain_relationship.source_external` held a dotted one. Those are the two
+columns `src/ast/parallel-indexer.ts` joins — it documents its own strategies as "a bare
+`name`, a `qualified_name` (`Owner.member`), or — for a dotted target — everything after the
+first `.`". So an F# member that overrides something had **no reachable incoming edge**:
+`bb_impact` could not walk to it and `src/lsp/impact.ts`, which derives reverse edges by
+scanning outgoing edges and matching targets, inherited the miss with no way to report it.
+
+The fix mints `metadata.fqn` in `publish` — the single funnel all 15 symbol-mint sites pass
+through, so the edge spelling and the published spelling cannot drift apart again. 51 lines
+added, 49 of them the reason.
+
+**Measured both sides, on the same 400-file stride sample, production `parseFile`:**
+
+| | before | after |
+|---|---|---|
+| `overrides` source binds at the store's key (`src%STORE`) | **0.0%** | **100.0%** |
+| dotted `overrides` sources that bind (`dotSrcStore`) | **0 / 63** | **63 / 63** |
+| same column for all eight other types | unchanged | unchanged |
+
+Unchanged is the load-bearing part: `calls` 195/195, `uses` 329/329, `contains` 1665/1665,
+`imports` 1041/1041, `references` 1016/1016, `implements` 9/9, `extends` 0/0,
+`instantiates` 0/0 before and after. Those types' dotted sources already equalled their
+published bare name, so the fix is surgical rather than a broad re-spelling.
+
+And at the store's own key, over a 300-file sample (`store-seam-check.ts`):
+
+| | before | after |
+|---|---|---|
+| owned symbols publishing `owner.name` | 0 / 5,586 | **5,586 / 5,586** |
+| dotted relationship sources binding to a published key | 2,683 / 2,739 | **2,739 / 2,739** |
+
+### The six questions, after this pass
+
+400-file stride sample of 11,809, production `parseFile`, 42,706 relationships, 8,998 symbols,
+0 empty names, 0 empty/unknown kinds, 0 `unknown` endpoints, 0 degraded fallbacks.
+
+1. **Exists** — 10 of 10 are constructible; the arbiter's own EMITTED rows are the evidence
+   for 9, and the tenth is construct-absence rather than a code path.
+2. **Fires** — 9 of 10, measured at 120 files and again at 400. `exports` fires 0.
+3. **Correct** — unchanged from pass 2 and still carrying pass 2's declared limitation:
+   `script/m14/fsharp-truth-oracle.ts` is a second walker over the same grammar, so a grammar
+   bug shared by both paths is invisible to it. No claim here exceeds that.
+4. **Labelled** — unchanged; pass 2's FS-A2 fix (an interface member is not a base-class
+   override) stands and this pass adds no label.
+5. **Resolved** — the table below. **This is the question that moved.**
+6. **Confident** — **0 edges below 0.7 confidence, on all ten types, across 42,706
+   relationships.** The heuristic ratio is not merely small, it is zero, so nothing in this
+   lane's output needs the honesty contract §4 reason code on the strength of its number
+   alone. Stated with its denominator because a bare "no heuristics" is the kind of claim
+   §1 exists to catch.
+
+| type | edges | files | src binds | tgt binds | both ends | dotted srcs bound |
+|---|---|---|---|---|---|---|
+| `calls` | 26,167 | 260 | 99.9% | 21.8% | 21.8% | 195/195 |
+| `contains` | 7,537 | 309 | 100.0% | 99.9% | 99.9% | 1665/1665 |
+| `references` | 4,909 | 260 | 98.6% | 22.0% | 21.9% | 1016/1016 |
+| `uses` | 2,351 | 205 | 96.9% | 4.1% | 3.9% | 329/329 |
+| `imports` | 1,353 | 242 | 92.9% | 2.8% | 2.6% | 1041/1041 |
+| `instantiates` | 111 | 38 | 100.0% | 20.7% | 20.7% | 0/0 |
+| `implements` | 125 | 42 | 100.0% | 22.4% | 22.4% | 9/9 |
+| `extends` | 90 | 38 | 100.0% | 20.0% | 20.0% | 0/0 |
+| `overrides` | 63 | 20 | **100.0%** (was 0.0%) | 22.2% | 22.2% | **63/63** (was 0/63) |
+| `exports` | 0 | 0 | — | — | — | — |
+
+**Reading the low target rates honestly, which is the external/never-indexed split.** A low
+`tgt binds` is not by itself a defect, and for two of these types it is arithmetically
+impossible to be otherwise:
+
+- `imports` at 2.8% is the instrument's **ceiling**, not the analyzer's quality. A per-file
+  symbol set can never bind a cross-file edge, and an import names a scope in another file by
+  construction. 402 of the 1,353 import targets are names the sample publishes **elsewhere**,
+  so a population-wide walk reaches them and a per-file walk cannot. The rest name
+  `FSharp.Core`/`Microsoft.*` — external, and absent from the corpus because FSharp.Core is a
+  NuGet package, not a checked-out repository.
+- `calls` at 21.8% and `references` at 22.0% are dominated by the same thing: `String`,
+  `List`, `printfn`, `sprintf` are FSharp.Core, and an F# corpus without a FSharp.Core
+  checkout cannot bind them. 4,207 of the unresolved `calls` targets and 902 of the
+  `references` targets are names the sample publishes in another file, so those are
+  resolvable by a cross-file walk and are counted as such rather than as losses.
+
+This lane cannot close that gap by indexing more repositories: the missing targets are
+**standard-library declarations**, which is a different defect class from a declaration this
+lane failed to publish, and the two look identical in a count.
+
+### Ambiguity: 146 of 8,473, and the shape is the language's
+
+At the store's own key, on the 400-file sample: 8,473 distinct `qualified_name` values, of
+which **146 (1.7%) are carried by more than one published symbol.** By kind pair:
+
+| kind pair | collisions |
+|---|---|
+| `function` + `variable` | 25 |
+| `namespace` alone | 15 |
+| `class` alone | 14 |
+| `variable` alone | 13 |
+| `method` alone | 10 |
+| `function` alone | 9 |
+| `enum_member` alone | 8 |
+| `module` alone | 7 |
+| `class` + `module` | 7 |
+| `enum` + `module` | 5 |
+| `module` + `type` | 4 |
+
+(An entry reading `class` alone means several symbols of one kind share the qualified name —
+duplicate declarations, which `bb_search`'s containment match is built for. The `X` + `module`
+pairs are F#'s **companion pair**: `type Foo = …` beside `module Foo = …` is an ordinary
+idiom and yields two real declarations under one name. Measured on
+`Grace/src/Grace.Actors/AccessControl.Actor.fs`, a `class` at line 23 and a `module_defn` at
+line 27 both publishing `AccessControl.AccessControlState`.)
+
+`script/m14/incoming-check.ts` over 5 Grace files (228 symbols) reports the same thing from
+the other end: 6 ambiguous targets, every one of them the module/variable or class/module
+shape, and **0 ambiguous `overrides` targets**.
+
+**The companion pair cannot be disambiguated per file, and this lane says so instead of
+inventing a spelling.** A type and its companion module genuinely share a name; the language
+provides no third token to separate them, and a qualified name that encoded the kind
+(`AccessControl.AccessControlState:class`) would be a spelling no store consumer expects.
+Closing it needs the kind or the file as a **resolution input**, which is Laptop C's
+incoming-resolution layer, not an analyzer change. Stated with the count rather than left to
+be rediscovered.
+
+### DERIVATION findings — 2, unchanged
+
+`script/m14/fsharp-truth-oracle.ts` audits 8 of the 10 types. The 2 unaudited are the same 2
+pass 2 recorded, and neither is settled by this pass: they need an oracle branch in shared
+machinery, which is §8 and not this lane's file.
+
+### Regression nets
+
+- `validation/m14/fixtures/fsharp/qualified-name-seam.fs` + `.expectation.json` — 8 symbol
+  rows pinning `metadata.fqn` on owned members, 2 forbidding its absence, 4 relationship rows
+  pinning the `overrides` endpoints in the **same file** so the edge spelling and the symbol
+  spelling cannot diverge without a row failing.
+- **Proven able to fail**: with the mint disabled the suite goes red on that one fixture and
+  **the other ten stay green** —
+  `FAIL fsharp/qualified-name-seam … summary: {"fsharp":{"pass":10,"fail":1}}` — which is the
+  property that matters, since two passes of fixtures were green over a store that could not
+  resolve the edge.
+- `script/m14/fsharp-mutants.ts` gains `fsharp/drop-owner-qualified-name` (written off the
+  result's own symbol table, so it cannot silently stop matching when a fixture is renamed):
+  `CAUGHT fsharp/drop-owner-qualified-name (0 -> 1 failures; new failures:
+  fsharp/qualified-name-seam)`.
+- `store-seam-check.ts --self-test` exists because a verifier never seen to fail is
+  decoration. **It immediately caught a bug in its own first version**, which incremented one
+  counter for both "correct" and "absent" and so reported a clean pass over a corpus where no
+  symbol carried a qualified name at all. Stripping a field did not move the number being
+  compared, which is the signature of a check counting the wrong thing. The three cases are
+  counted separately now and the self-test requires the bound count to **move**.
+
+### Gates re-run at this pass's HEAD
+
+| command | result |
+|---|---|
+| `bun run script/m14/run-fixtures.ts --lang fsharp` | 11/11 pass (was 10/10) |
+| `BB_MUTANT_ONLY=fsharp/drop-owner-qualified-name bun run script/m14/mutate-analyzer.ts` | `CAUGHT … 0 -> 1 failures` |
+| `npx tsx script/m14/firing-check.ts --files 120 fsharp` | 9/10 fired, 12,517 edges, 0 degraded |
+| `npx tsx script/m14/ontology-coverage-gate.ts fsharp` (full corpus) | **no verdict** — dies in the parser on `DynamicsNavFile.fs` / `CacheArtifactStore.fs` |
+| `ruled-gate.ts` on a bounded 975-file root | `9 EMITTED · 1 RULED-SOUND · 0 FALSIFIED · 0 UNJUSTIFIED`, **exit 0** |
+| `npx tsx validation/m14/fixtures/fsharp/store-seam-check.ts --files 300 --self-test` | `SEAM HOLDS 5586/5586`, self-test OK |
+| `npx tsc --noEmit -p tsconfig.json` | clean |
+
+### The regex census: this lane's rows are stale, and the claim above them is not
+
+`npx tsx script/m12/verify-regex-census.ts` **FAILS**, and 6 of its 25 STALE rows are this
+lane's — `real-fsharp-analyzer.ts:1050:/[()<]/`, `:1050:/\s:/`,
+`:1050:/^[A-Za-z_][A-Za-z0-9_']*$/`, `:1288:/^['^]/`, `:1290:/^['^]/`,
+`:1292:/^[A-Za-z_][A-Za-z0-9_']*$/`.
+
+Those six literals **are not in the file**. Pass 1 (`a48701034`) removed all six and left the
+census artifact uncommitted because it is regenerated by its owner. Verified now against the
+committed blobs through the shared scanner:
+
+```
+total usages across all analyzers: 28
+real-fsharp-analyzer.ts usages at HEAD: 0
+```
+
+So this section's "regex-free" claim is **true and measured at 0 usages against the committed
+blobs**, and the artifact that would corroborate it is stale — which is the same shape pass 1
+wrote this section about, one level up. The fix is one command and belongs to the supervisor:
+`bun script/m12/regex-census.ts --head`, then commit
+`validation/m12/results/regex-census.json`. The other 19 STALE and all 26 MISSING rows belong
+to `css`, `julia`, `clean`, `javascript`, `python`, `svelte` and `typescript`; found, not
+touched.
+
+### Pass 3 — Unresolved
+
+- **The arbiter cannot produce a verdict on the full 11,799-file corpus.** Two named files
+  crash the fsharp WASM parser and instrument A has no timeout or recovery. A per-file
+  timeout in the gate's instrument A, or admitting the `[BB-PARSE-ERR]` files it already
+  recovered from, would make the full-corpus verdict reachable. Supervisor-owned (§8), not
+  patched here.
+- **`script/m14/firing-check.ts`'s `files` column is wrong** (assigned, not accumulated;
+  `script/m14/firing-check.ts:339`). It reads 1 for every type on a 400-file run. Its `edges`
+  column is correct. Not this lane's file.
+- **`script/m14/firing-check.ts` is untracked in the main checkout** and was copied into this
+  worktree to run, uncommitted. If it is superseded before this branch merges, the numbers
+  above are reproducible from `edge-resolution-probe.ts`, which is committed.
+- **The 2 DERIVATION findings** are unchanged and need an oracle branch in shared machinery.
+- **`exports` is RULED on instrument A over a 975-file population**, not the full 11,799. The
+  probe that carries the full-population version is
+  `validation/m14/fixtures/fsharp/ontology-probe.ts`; it was not re-run this pass, so its
+  6,619-file figures describe the older, smaller corpus and are not restated here as current.
+- **The 146 qualified-name collisions** are measured and named, and closing them needs a
+  resolution input this lane does not own.
+- **`imports` and `calls` targets that name FSharp.Core cannot resolve** from any corpus that
+  lacks a FSharp.Core checkout. Distinct from a declaration this lane failed to publish, and
+  indistinguishable from it in a count.
+
+### Two things this pass got wrong, recorded because both were caught by instruments rather than by reading
+
+1. `store-seam-check.ts`'s first version read `metadata.fqn` off the **mapped** symbol, which
+   `pool-worker.ts` does not re-expose — so it measured a field that is consumed into
+   `qualifiedName` and never published. It reported "SEAM HOLDS" over a corpus where **zero**
+   symbols carried a qualified name. The `--self-test` caught it; the counter bug above was
+   found in the same run. Both are why the file now reads `qualifiedName` and counts three
+   cases separately.
+2. `edge-resolution-probe.ts`'s first version reported `both%any` only — a union over four
+   schemes including `ownerDot`, which `ownerName` made computable **before** the fix. The
+   union could not move, so the probe would have shown no change at all for the defect it was
+   written to detect. The `src%STORE` and `dotSrcStore` columns exist because of that, and the
+   before/after table above is measured on both sides rather than inferred from one.
 
 ## Issue
 
