@@ -1,0 +1,115 @@
+{
+  "instrument": "markdown lane — audit of script/m14/ontology-coverage-gate.ts after it gained resumableWalk",
+  "date": "2026-10-05",
+  "why": "This lane's previous round recorded that the arbiter did not run for markdown. It now runs. Two defects were found by running it, both of which change what its output MEANS, and both are in shared machinery (workstream §8) so neither was edited.",
+  "whatChangedUnderneath": "script/m14/resumable-walk.ts now exists and the arbiter calls it, so the walk checkpoints per file path into validation/m14/measurements/walk-markdown.txt. Two prior arbiter runs died before printing any verdict; four runs on 2026-10-05 completed the 17,456-file population and printed a verdict.",
+
+  "reproduction": {
+    "walkCompleted": {
+      "command": "npx tsx script/m14/ontology-coverage-gate.ts markdown",
+      "attempts": 4,
+      "checkpointProgression": [4400, 8200, 11612, 15016, 17456],
+      "finalWalkLine": "walk: 17456/17456 files (100.0%)  newly walked 2440, resumed 15016",
+      "corpus": 17456,
+      "admittedBy": "detectLanguageFromPath(abs, text) === \"markdown\" — the arbiter's own test, over its own git ls-files walk",
+      "verdictLine": "emitted 4/10   ruled-sound 6   FALSIFIED 0   ruled-without-justification 0",
+      "exitCode": 0,
+      "note": "FALSIFIED 0 and ruled-without-justification 0 are STABLE across every run in this audit. The emitted/ruled SPLIT is not — see defect 1."
+    }
+  },
+
+  "defects": [
+    {
+      "id": "MD-ARB-1",
+      "severity": "the gate reports a verdict about a SUBSET while printing a line that reads as the whole population",
+      "file": "script/m14/ontology-coverage-gate.ts",
+      "function": "the `run` callback passed to `resumableWalk` (lines ~306-318)",
+      "whatIsWrong": "`observed` — the per-type edge tally that decides every EMITTED/RULED verdict — is populated ONLY inside `run`. `resumableWalk` calls `run` only for files NOT already in the checkpoint. So on any resumed run the tally covers only that run's newly-walked files, while the walk line prints `17456/17456 files (100.0%)`. The count and the population printed beside it describe different sets.",
+      "measured": [
+        {
+          "population": "17,456 files, 8 workers, 0 parse failures — validation/m60/markdown/whole-corpus-census.json",
+          "uses": 270779, "contains": 334773, "references": 16857, "imports": 105, "calls": 8, "instantiates": 3
+        },
+        {
+          "population": "the arbiter's tally over the 2,440 files it newly walked on its final run (15,016 resumed)",
+          "uses": 30696, "contains": 32034, "references": 342, "imports": 69, "calls": 0, "instantiates": 0
+        },
+        {
+          "population": "the arbiter's tally after the checkpoint was complete — `newly walked 0`",
+          "uses": 0, "contains": 0, "references": 0, "imports": 0, "calls": 0, "instantiates": 0
+        }
+      ],
+      "theInvertedVerdict": {
+        "command": "npx tsx script/m14/ontology-coverage-gate.ts markdown   # with the checkpoint complete",
+        "walkLine": "walk: 17456/17456 files (100.0%)  newly walked 0, resumed 17456",
+        "verdictLine": "emitted 0/10   ruled-sound 7   FALSIFIED 0   ruled-without-justification 3",
+        "exitCode": 1,
+        "typesFlippedToRULEDUNJUSTIFIED": ["uses", "contains", "imports", "references"],
+        "whyItMatters": "A lane that emits 4 types over 622,525 edges is reported by the arbiter as emitting 0 of 10 and as having 3 unjustified rulings. The four types flipped are EXACTLY the four the analyzer emits, so the failure is not noise — it inverts the lane's verdict on precisely the types it gets right."
+      },
+      "theFix": "Persist the tally with the checkpoint: have `run` append `<abs path>\\t<type>\\t<n>` to a sidecar beside `walk-<LANG>.txt` BEFORE the next file starts (append-before, for the same reason resumable-walk appends before it parses — a `process.exit()` inside a parse cannot flush at the end), and rebuild `observed` from that sidecar on startup, summing per type and unioning per-type file sets. Then a resumed run reports the union of all runs, and `newly walked 0` reports the whole population instead of nothing.",
+      "affectsEveryLane": true,
+      "whyEveryLane": "The tally is built inside `run` for all ten types and the defect is in the arbiter, not in a markdown path. Any lane whose corpus walk needs more than one invocation — which is every lane, because engine.ts:1411 kills the process — currently reports a partial tally labelled 100.0%."
+    },
+    {
+      "id": "MD-ARB-2",
+      "severity": "the instrument-A denominator is 24 node types short of the grammar the analyzer actually uses",
+      "file": "script/m14/ontology-coverage-gate.ts",
+      "function": "the instrument-A block (lines ~322-331)",
+      "whatIsWrong": "Instrument A loads ONE grammar: `const wasmPath = (LANGS as any)[LANG]?.wasm` — for markdown `tree-sitter-markdown.wasm`, the BLOCK grammar. The analyzer reads a SECOND grammar, the `tree-sitter-markdown-inline` companion, which src/ast/engine.ts:1277 loads and hands to the analyzer (src/ast/real-markdown-analyzer.ts:6,13). The arbiter never loads it, so its grammar-inventory denominator omits the entire inline vocabulary.",
+      "measured": {
+        "arbiterInstrumentA": 84,
+        "thisLaneUnionOverWholePopulation": 108,
+        "breakdown": { "block": 83, "inline": 64, "union": 108 },
+        "population": "17,456 admitted files, 0 parse failures, both pinned grammars — validation/m60/markdown/ruling-table-adjudication.json instrumentA",
+        "source": "validation/m60/markdown/ruling-table-adjudication.json"
+      },
+      "theFix": "Reuse the map that already exists for this exact problem: script/m14/audit-analyzer-grammar.ts:176 declares `EXTRA_GRAMMARS = { markdown: [\"tree-sitter-markdown_inline.wasm\"], ... }`. Instrument A should union the node types of every grammar in `EXTRA_GRAMMARS[LANG]` (when present) with the block grammar's, and report the union size and the per-grammar breakdown the way this lane's adjudication JSON does.",
+      "whyItMatters": "An A-instrument ruling is a claim about the grammar's whole vocabulary. For markdown the claim is printed over 84 of the 108 node types the corpus's grammars produce. No markdown ruling moves — none of the four ruled constructs (exports/extends/implements/overrides) is expressible in the inline grammar either, and this lane measured that union — but a construct that is INLINE-ONLY would be falsely ruled by a lane whose arbiter inherits this. The union is the only denominator that cannot do that.",
+      "affectsEveryLane": "every lane listed in audit-analyzer-grammar.ts EXTRA_GRAMMARS",
+      "doesNotMoveARuling": true
+    }
+  ],
+
+  "measuredInTheSameRunsAndNotDefects": {
+    "wasmTrapFiles": {
+      "distinctFilesTrappingWithMemoryAccessOutOfBounds": 14,
+      "files": [
+        "gql-graphql-mesh/examples/v1-next/openapi-petstore/README.md",
+        "gql-graphql-platform/src/HotChocolate/Data/test/Data.Tests/__snapshots__/ProjectableDataLoaderTests.Brand_Only_TypeName.md",
+        "kubernetes/pkg/kubelet/certificate/bootstrap/testdata/README.md",
+        "ohmyzsh/plugins/zsh-autosuggestions/MANUAL.md",
+        "ohmyzsh/plugins/zsh-interactive-cd/README.md",
+        "pb-googleapis/CONTRIBUTING.md",
+        "redwood/docs/versioned_docs/version-5.x/custom-web-index.md",
+        "requests/.github/CONTRIBUTING.md",
+        "requests/.github/ISSUE_TEMPLATE.md",
+        "requests/.github/ISSUE_TEMPLATE/Custom.md",
+        "requests/HISTORY.md",
+        "scala3/docs/_docs/reference/error-codes/E163.md",
+        "terraform/CHANGELOG.md",
+        "usethis/tests/testthat/_snaps/tibble.md"
+      ],
+      "rootPaths": "$HOME/fixtures/repositories/",
+      "loadAtTheTime": {"cores": 8, "loadAverage": 18.1, "memAvailableGB": 2, "diskUsedPct": 94},
+      "isItLoadDependent": "Yes, and measured: the checkpoint finished 17,456/17,456 with 0 `!` bad markers, so every one of these 14 files parsed successfully on some invocation. None is a permanently unparseable file.",
+      "whyItIsInThisArtifact": "It is the reason a corpus walk needs four invocations, which is what exposes MD-ARB-1. The mechanism was isolated by this lane in an earlier round — src/ast/engine.ts:1410 arms the 120s parse bomb and :1416 clearTimeout runs only when parse RETURNS, so a WASM trap that throws past it leaves the timer armed and it exits the process ~120s later NAMING A FILE THAT ALREADY FAILED FAST. Four runs died naming four different files for that reason.",
+      "seeAlso": "validation/m60/markdown/hang-probe.json, trap-sweep-8k.json, trap-sweep-8k-conc1.json"
+    },
+    "callsAndInstantiatesAreRunDependent": {
+      "observation": "`calls` and `instantiates` are emitted by production parseFile ONLY on a degraded parse. This lane measured 100% attribution of every such edge to src/ast/pool-worker.ts extractFallback (validation/m60/markdown/fallback-attribution.json).",
+      "consequenceForTheArbiter": "The two types flip between EMITTED and RULED-SOUND depending on whether the files walked in a given run happened to degrade. Measured: whole-corpus census at concurrency 8 -> calls 8, instantiates 3, both EMITTED (emitted 6/10 ruled-sound 4). Arbiter final run at the arbiter's own concurrency 8 over 2,440 files -> calls 0, instantiates 0, both RULED-SOUND (emitted 4/10 ruled-sound 6).",
+      "theStableReading": "MARKDOWN_RULED carries rows for both types for exactly this reason. When the run degrades they read EMITTED and the rows go unread; when it does not, they read RULED-SOUND from the written ruling. FALSIFIED 0 in both cases, so the SOUNDNESS verdict is stable and only the split moves.",
+      "doesNotNeedAFix": true
+    }
+  },
+
+  "stateLeftBehind": {
+    "checkpoint": "validation/m14/measurements/walk-markdown.txt, 17,456 unique lines, 0 bad markers — the population IS fully walked",
+    "hazard": "Left in place, the NEXT arbiter run for markdown prints `newly walked 0`, reports emitted 0/10 and exits 1 (see MD-ARB-1). That is a false verdict about this lane, produced by a tool cache rather than by any code change.",
+    "recommendation": "Either fix MD-ARB-1 first, or delete the checkpoint so the next run starts a fresh whole-population walk. This lane MOVED the file to validation/m60/markdown/walk-markdown.txt.complete rather than deleting it, so nothing is lost and the false verdict is not left armed.",
+    "movedBy": "analyzer/MARKDOWN"
+  },
+
+  "tsc": {"command": "npx tsc --noEmit -p tsconfig.json", "result": "clean", "exitCode": 0}
+}
