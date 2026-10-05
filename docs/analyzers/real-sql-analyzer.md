@@ -576,13 +576,30 @@ fixtures pass with no expectation rewritten for this half.
 
 | | before | after |
 | --- | --- | --- |
-| symbols with `qualifiedName` distinct from `name` | 0 | **18,652** |
+| symbols with `qualifiedName` distinct from `name` | 0 | **18,652** of 20,614 |
 | ambiguous edges whose candidates have NO distinct `qualifiedName` | 100% | **433 of 19,699 (2.2%)** |
+| `diagnose-incoming.mts` on 40 files: ambiguous targets with NO distinct `qualifiedName` | **57 (100%)** | **0 (0%)** |
 | `K3_qname` resolution | 651 / 2,512 / 4,364 … | **0 — unchanged, and reported as 0** |
 
 `K3` does not move because no edge in this lane targets a qualified name, and making one do so
 would be a second contract change. The qualified name is a precondition for a name-keyed choice
 to be **checkable**, not a resolution.
+
+**Both fields are written, and the second one was not redundant.** `metadata.fqn` is the arm
+`pool-worker.ts` reads, so the store saw the qualified name from the first commit of this pass.
+`ASTEngine.parseFile` derives nothing — it returns the analyzer's symbol objects unchanged — and
+it is the entry point `script/m14/diagnose-incoming.mts` uses. Measured on
+`postgrest/test/io/fixtures/big_schema.sql`, the same 1,054 symbols through both:
+
+| | `qualifiedName` != `name` | `metadata.fqn` present |
+| --- | --- | --- |
+| `pool-worker.parseFile` | 1,053 | 0 |
+| `ASTEngine.parseFile` | **0** | 1,054 |
+
+So the shared instrument printed `of those, NO distinct qualifiedName: 57 (100%)` about this lane
+— a true statement about the field it read and a false statement about the analyzer. Both fields
+are now written from one string so they cannot disagree, and the same command on the same 40 files
+prints `0 (0%)` with the 57 ambiguous targets and the B and C rows unchanged.
 
 ### Cause B: measured at 6 of 31,278 edges, and all 6 are a predicate artefact
 
@@ -618,12 +635,30 @@ does not have and will not guess.
   symbols and 1,003 distinct qualified names, so 50 collide — the shape this lane already
   documents for `contains` `memberKind`, an index named after its own column.
 
-### Every gate this lane can run, at `06b052952`
+### A mutant SURVIVED, and the cause was this pass
+
+`bun run script/m60/run-sql-ontology-mutants.ts` reads **20 / 21 caught** after the file-module
+change, against 21/21 at `b06a5151a`. The survivor is `sql/declaration-dispatched-twice`, whose
+transform copied `r.symbols[0]` to reproduce the pre-fix defect (the declaration sweep
+re-dispatching what the root walk already dispatched). Index 0 was a **declaration** only by
+accident of emission order; this pass publishes the module symbol at the FRONT of the list, so
+the copy landed there instead — a different defect, and an invisible one, because the fixture
+runner matches each `expectSymbols` entry against ≥1 actual item and tolerates extras.
+
+The transform now copies the first **non-module** symbol, which is the declaration the defect
+actually duplicated, and the battery reads 21/21. Recorded because the signal was the
+**survival**: nothing about a passing run says a transform has stopped describing its defect.
+
+### Every gate this lane can run, at `7616e0081`
 
 | Gate | Command | Result |
 | --- | --- | --- |
 | ontology arbiter, whole corpus, fresh walk | `npx tsx script/m14/ontology-coverage-gate.ts sql --fresh` | **`emitted 7/10   ruled-sound 3   FALSIFIED 0   ruled-without-justification 0`**, exit 0, 1,962/1,962 files newly walked |
 | fixture lane | `bun run script/m14/run-fixtures.ts --lang sql` | **16 / 16 PASS**, baseline gate `no regressions` |
+| mutant battery | `bun run script/m60/run-sql-ontology-mutants.ts` | **21/21 CAUGHT**, exit 0 |
+| perf gate | `bun run script/m60/sql-perf-gate.ts` | **PASSED** — 188,053 B/s over 438 files, p50 14.2 ms / p95 139.0 ms / max 328.9 ms, worst single file 329 ms |
+| ruling tables registered | `npx tsx script/m14/verify-ruling-tables-registered.ts` | **PASS** — 18 tables on disk, 18 registered |
+| differential | `npx tsx script/m14/differential.ts --lang sql` | **`SKIP sql: no corpus repo mapped in LANG_REPOS`** — shared machinery, §8 |
 | typecheck | `npx tsc --noEmit -p tsconfig.json` | **clean, exit 0** |
 | store resolution | `npx tsx validation/m14/fixtures/sql/store-resolution.mts --out …` | 5 projects, 1,903 files, 32,555 edges |
 | parseFile census | `npx tsx validation/m14/fixtures/sql/ambiguity-split.mts --files 1962 --out …` | 20,614 symbols, 31,278 edges, 0 empty names, 0 `unknown` endpoints |
