@@ -343,6 +343,7 @@ corpus occurrences.
 | Ruled | Reason |
 | --- | --- |
 | a read of a name bound by an enclosing scope | the local is not a symbol; the read is not a dependency on anything the index declares |
+| a MODULE as a symbol before the M60 pass — **overturned, see below** | the lane held that a `.nim` file is a scope rather than a declaration, so no node was published for the module an `imports` edge names. MEASURED consequence: `imports` resolved its target on **37.1%** of 13,364 edges and 8,404 of them named a module that existed nowhere in the symbol set. Not a resolution failure — there was no candidate to fail to find. A Nim `.nim` file has a name, is the unit `import` names and the unit `export` publishes from, and all three are facts about a declaration |
 | a destructuring binding as a read target | `let (_, name, _) = splitFile(f)` is a `tuple_deconstruct_declaration` wrapping its bindings, and the frame binder used to skip the whole node — so `name` was unbound and the read at `images.add((name, image))` was attributed to `EmojiSet.name`, a struct property declared 26 lines earlier. Not a dangling edge, so no dangling check could ever have caught it; only the shadow rule was wrong |
 | an assignment target as a read | `x = 1` and `a.x = 1` write. For `a[i] = 1` the base and the index *are* reads and are not suppressed |
 | a callee as both a `calls` and a `uses` edge | one construct, one edge; the callee leaf is excluded from the `uses` pass |
@@ -351,6 +352,133 @@ corpus occurrences.
 | a name in a type position | a type reference is `references`, not a value read |
 | a module path in an import/export/include | it is the import edge, already published |
 | a label (`block name:`, `break name`) and a colon field name | a goto target or a field name, never a read |
+
+### The module is a symbol, and the `imports` edge names it
+
+**This is the one place where this lane overturned its own ruling, and the corpus is
+what overturned it.** *What is ruled, and why* used to carry "a module path in an
+import/export/include — it is the import edge, already published", and no row carried
+a module symbol. The consequence was measurable: `imports` resolved its target on
+**37.1%** of 13,364 edges, and the unresolved population was not scattered — it was the
+module path *as written*, `std/assertions`(823) `std/syncio`(671) `std/strutils`(386)
+`std/os`(297) `std/tables`(240). Those are Nim's own modules. Nothing in the symbol set
+carried any of them.
+
+**8,404 of 13,364 edges named a module the graph could not bind to, and that is not a
+resolution failure — there was no candidate to fail to find.** A `.nim` file IS a
+module: it has a name, it is the unit `import` names, and it is the unit `export`
+publishes from. All three are facts about a declaration, and the graph had no node for
+it. `publishModuleSymbol` publishes one `SymbolKind.Module` symbol per `.nim` file,
+named by the file's basename, and the edge target is normalised to the same rule through
+one shared helper (`moduleNameOfPath`) so the publisher and the emitter cannot spell one
+module two ways.
+
+The store cannot rescue the old spelling, which was checked rather than assumed. Its
+insert-time target resolver matches `brain_symbol.name`
+(`parallel-indexer.ts:2239`); its three post-pass strategies match a bare `name`, a
+`qualified_name`, or — for a DOT target — everything after the first `.`
+(`parallel-indexer.ts:3755-3774`). `std/assertions` is none of those. The fourth,
+`resolveImportTargets`, is scoped to the `<module>:<item>` form that
+javascript/typescript/python emit, and nim writes a bare path, so it never reaches that
+planner.
+
+Measured, production `parseFile`, 6,063 files, **before 13,364 edges at 37.1% →
+after 13,365 at 92.0%** intra-file, and 38.6% → 96.4% corpus-wide. Same 600-file
+command, both analyzer digests recorded (`module-identity-ceiling-600.txt`): `imports`
+resolved 119 → **1,789**, unresolved 3,233 → **1,088**; `exports` resolved 79 → **103**;
+the 600-file total unresolved 9,430 → **7,252**.
+
+**The written path is not discarded.** `meta.nimModulePath` carries it and
+`imports[].module` is untouched, so `brain_import` and the file-dependency engine still
+read the path they read now. The 1,088 `imports` edges that remain unresolved are cause
+C, not cause B: the module is outside the sample (`strutils` 180, `tables` 110,
+`assertions` 97), and they are *named* rather than silent.
+
+**Three things the pass deliberately does not publish**, each with its reason, because
+each is a node the language cannot name or a name the language does not use:
+
+- **`.nims`.** A NimScript file is `include`d into another module; it is not a module
+  and nothing can `import` it.
+- **A renamed module.** `module Foo` inside `bar.nim` declares module `Foo`, and the
+  pinned grammar has NO node for that declaration — `grammars/tree-sitter-nim/grammar.js`
+  mentions "module" twice and neither is a declaration, so there is nothing on the tree
+  to read. The symbol is therefore named after the FILE. This is a real inaccuracy: a
+  file that renames its module gets a module symbol no `import` will ever name.
+- **An empty basename.** A path that yields no name publishes nothing, rather than an
+  empty-named symbol.
+
+#### `imports` is two kinds of edge, and the census groups them
+
+`validation/m14/fixtures/nim/import-resolution-probe.mts` splits the type, because
+`imports` is not one thing and a reader cannot otherwise tell an unbindable stdlib
+import from a broken one. `s18-import-probe.txt`, 6,063 files, 1 worker, analyzer
+sha256 `deeab0756e0c4c1f` unchanged on both sides:
+
+| subkind | edges | files | intra-file | corpus-wide | normalisation changed the target | verbatim would bind |
+| --- | --- | --- | --- | --- | --- | --- |
+| `nim_import` (`import`, `from … import`) | 12,907 | 3,351 | 91.8% | 96.3% | 352 | **0** |
+| `nim_include` (`include`) | 458 | 240 | 96.9% | 98.0% | 12 | **0** |
+| total | 13,365 | | **92.0%** | **96.4%** | 364 | **0** |
+
+**The last column is the load-bearing one: normalisation never lost a binding.** Of the
+1,074 edges the normalised target leaves unresolved in-file, 364 had their target
+changed at all, and going back to the written path would have bound **0** of them. So
+the pass is a pure gain, and this was measured rather than argued — a first version of
+this instrument reported "408 edges recovered by reverting", because it expanded the
+written path's segments before testing it and so tested the normalised name twice. An
+instrument that cannot tell 408 from 0 cannot decide whether to keep the change.
+
+#### Cause C: what is EXTERNAL, and the 419 that cannot be marked
+
+The B/A/C brief asks for external targets to carry a marker so they are countable and
+excluded instead of silently unresolved. Measured over the same walk, the population
+declared nowhere in the corpus is **485 edges**, and it splits by what the WRITTEN path
+says:
+
+| written path shape | edges | markable? |
+| --- | --- | --- |
+| bare name | 309 | **no** — per file, `import re` is a local module, a `lib/pure` module, or a typo, and nothing in one file separates them |
+| other path (a `nimble` package, a sibling dir) | 103 | not by any rule this lane can justify |
+| `std/` prefix | **66** | **yes** — Nim's standard-library root by the language's own rule |
+| `../` parent-relative | 8 | no — local by definition |
+
+So `meta.nimStdlibModule: true` ships on **5,389** edges corpus-wide, and **66** of the
+485 unbindable ones. 13.6% of the external population is markable from the spelling
+alone; the rest needs whole-program import resolution, which is shared machinery
+(*workstream §8*). The marker is deliberately NOT the family key `isExternalTarget`:
+in the 15 analyzers that write it, it means "the target is not declared in this file",
+which is vacuously true of every `imports` edge — a module is never declared in the file
+that imports it — so the family key would carry no information here.
+
+#### The module pass disarmed three mutants, and two of them were mine to re-arm
+
+**A mutant that can no longer express its defect is not a passing mutant.** Three nim
+mutants in `script/m14/mutate-analyzer.ts` select edges by their PATH-SHAPED target:
+`nim/relative-import-lost` (`target.startsWith("../")`), `nim/deep-import-path-lost`
+(`target.split("/").length > 2`), and `nim/module-list-collapsed-to-one-edge`
+(`target === "std/os" || "std/strutils"`). The module pass normalised every target to
+its last segment, so all three filters match nothing, all three transforms are no-ops,
+and all three **SURVIVE** (`s18-mutants.txt`, `BB_MUTANT_ONLY=nim/`):
+
+```
+SURVIVED  nim/relative-import-lost              (0 -> 0 failures)
+SURVIVED  nim/deep-import-path-lost             (0 -> 0 failures)
+SURVIVED  nim/module-list-collapsed-to-one-edge (0 -> 0 failures)
+```
+
+That file is §8 shared machinery and is not edited here, so the need is reported: each
+of the three should select on `metadata.nimModulePath`, which the pass preserved
+deliberately, and the fix is one property access per transform. Meanwhile
+`nim-mutants.ts` carries four replacements selected the same way — three `*-v2`
+re-expressions plus `nim/from-import-edge-dropped-without-its-imports-row`, which
+isolates the half of `nim/cross-file-macro-called-without-an-import` that the pass
+disarmed (that one still SURVIVES on its `imports[].module` clause alone, so it is
+caught for the wrong reason). **All four are CAUGHT**, so the guard is back inside the
+lane's own files.
+
+Current tally, `BB_MUTANT_ONLY=nim/`: **69 nim mutants, 66 caught, 3 survived** — and
+all three survivors are the stale shared ones named above, none of them in a file this
+lane owns.
 
 ## The ten relationship types: verdict and measurement
 
@@ -523,8 +651,12 @@ the column below were quoting the narrow scope without saying so. Both scopes:
 | `uses` | EMITTED | 45,664 | 99.8% | 99.8% | 1.0 (20,560) / 0.75 (25,104) | `usage_contextual` 45,606, `import_based` 58 |
 | `contains` | EMITTED | 29,330 | 99.8% | 99.9% | 1.0 | `structural` |
 | `references` | EMITTED | 56,445 | 45.6% | **96.9%** | 0.9 | `reference_qualified` 48,371, `import_based` 8,074 |
-| `imports` | EMITTED | 13,364 | 37.1% | 38.6% | 1.0 | `import_based` |
+| `imports` | EMITTED | 13,365 | **92.0%** | **96.4%** | 1.0 | `import_based` |
 | `instantiates` | EMITTED | 2,843 | 100.0% | 100.0% | 0.9 | `usage_contextual` |
+<!-- imports: the intra-file and corpus-wide columns are re-measured at the M60 module
+     pass; every other row in this table is still digest 1475e53d0e528d0a. See
+     "The module is a symbol" for the before/after and for the digest split. -->
+
 | `extends` | EMITTED | 627 | 71.0% | **99.4%** | 1.0 | `structural` |
 | `exports` | EMITTED | 617 | 3.7% | **75.4%** | 1.0 | `structural` |
 | `overrides` | EMITTED | 67 | 100.0% | 100.0% | 1.0 | `structural` |
@@ -879,7 +1011,7 @@ edges against a wider universe:
 | `references` | 56,445 | 45.6% | **96.9%** | +28,957 |
 | `exports` | 617 | 3.7% | **75.4%** | +442 |
 | `extends` | 627 | 71.0% | **99.4%** | +178 |
-| `imports` | 13,364 | 37.1% | 38.6% | +201 |
+| `imports` | 13,365 | **92.0%** | **96.4%** | **+7,609** |
 | `implements` | 47 | 91.5% | **100.0%** | +4 |
 | `contains` | 29,330 | 99.8% | 99.9% | +10 |
 | `uses` | 45,664 | 99.8% | 99.8% | 0 |
@@ -1574,7 +1706,7 @@ adjudicated per type.
 | `calls` | yes | 118,261 | 2,517 vs 2,528; 0 missing, **15 unexplained** | yes | 38.9% | 100% under 1.0; `usage_contextual` |
 | `uses` | yes | 45,664 | 1,002 vs 1,003; 0/1 | yes | 99.8% | 55.0% at 0.75, rest 1.0 |
 | `contains` | yes | 29,330 | 1,285 vs 1,295; 0/**10** | yes | 99.8% | 1.0, `structural` |
-| `imports` | yes | 13,364 | 382 vs 382; 0/0 | yes | 37.1% | 1.0, `import_based` |
+| `imports` | yes | 13,365 | 382 vs 382; 0/0 | yes | **92.0%** | 1.0, `import_based` |
 | `references` | yes | 56,445 | 694 vs 694; **3 missing**, 0 unexplained | yes | 45.6% | 0.9, `reference_qualified` |
 | `instantiates` | yes | 2,843 | 134 vs 134; 0/0 | yes | 100.0% | 0.9, `usage_contextual` |
 | `extends` | yes | 627 | 22 vs 22; 0/0 | yes | 71.0% | 1.0, `structural` |
@@ -1813,7 +1945,11 @@ quoted from an earlier round.
 
 | command | exit | result |
 | --- | --- | --- |
-| `npx tsx script/m14/ontology-coverage-gate.ts nim` | **1** | session 7, and this row's exit code has MOVED: earlier passes read **2** with `corpus: 6063 admitted files` then `no RULING TABLE for nim`. This pass never reaches the refusal — it prints the header and two `[BB-PARSE-ERR] … memory access out of bounds` lines (`dll/nimhcr_0_6.nim`, `package/stdlib/stdlib.nimble`) and then dies on `[BB-HANG] parser stuck 120s … dll/nimhcr_0_6.nim`. The §8 wiring is unchanged and still the reason the gate would refuse; at 8 workers the shared watchdog now gets there first, so the refusal is no longer the observable outcome. `RULED_BY_LANG` still carries `bash`, `json`, `lua`, `toml` and no `nim` (`session7-arbiter.txt`) |
+| `npx tsx script/m14/ontology-coverage-gate.ts nim` | **1** |
+| `BB_NIM_WORKERS=1 npx tsx validation/m14/fixtures/nim/census.ts <out>` | **0** | **session 18, at `deeab0756e0c4c1f`** (the module pass + the `std/` marker): 6,063 files, 6,063 parsed, **0 empty names, 0 empty kinds, 0 throws, 0 off-ontology edge types, 8 literal `unknown` endpoints**, **116,127 symbols**, of which **6,012 `module`** — the population the pass added, and it is 6,012 against 6,063 files because 51 corpus files are `.nims` and are deliberately not published. `imports` **92.0%** intra-file (was 37.1%); **all nine other types byte-identical to session 10**, which is the check that the pass touched one column and no finding (`s18-1w-census.txt`) |
+| `npx tsx validation/m14/fixtures/nim/import-resolution-probe.mts <out>` | **0** | **session 18, new instrument, at `deeab0756e0c4c1f`**: 6,063 files, 1 worker, 0 empty names, **0 empty-KIND symbols** (the guard that detects a degraded walk — `parseFile` does NOT throw on a WASM heap loss, it logs `[BB-PARSE-ERR]` and returns fewer edges, which is how an early version of this probe read 13,363 edges against the census's 13,365 without knowing why). `nim_import` 12,907 at 91.8% intra / 96.3% corpus-wide, `nim_include` 458 at 96.9% / 98.0%; **normalisation changed 364 targets and reverting binds 0**; `meta.nimStdlibModule: true` on **5,389** edges, **66** of the 485 declared nowhere in the corpus (`s18-import-probe.txt`) |
+| `npx tsx script/m14/diagnose-incoming.mts nim nim 600 <corpus>` | **0** | **session 18, before and after, same command and same 600 files**: unresolved targets **1,859 → 1,289** (-570, -30.7%); ambiguous targets 1,112 → 1,145 (+33, and the reason is stated below); B's recoverable count **3 → 0** — which is the point, not a null result. The `+33` on ambiguity is the honest cost of the pass: it published 600 module symbols in this window, 36 of which collide by basename, and `submodule.nim` alone is the basename of 16 files. **A gain of 570 resolutions bought with 33 newly ambiguous targets is a trade, and it is reported as one** (`s18-diagnose-BEFORE.txt`, `s18-diagnose-AFTER.txt`) |
+| `npx tsx script/m14/ontology-coverage-gate.ts nim` | **1** | session 18, at `deeab0756e0c4c1f`: `corpus: 6063 admitted files`, `walk: 6063/6063 files (100.0%)`, and the verdict **`emitted 10/10  ruled-sound 0  FALSIFIED 0  ruled-without-justification 0`** — printed BEFORE the exit, so the gate's verdict is recorded even though the process then dies on `[BB-HANG] parser stuck 120s on nimony/lib/std/stripes.nim`. That hang is the known robustness finding (*Limitations* 8) and it names a **different file on each run** (`session16-arbiter.txt` names `nim/tests/distinct/typeclassborrow.nim`, this one names `stripes.nim`), which is itself the evidence that it is a heap-exhaustion race rather than one bad input. Exit 1 is the hang, not the verdict (`s18-arbiter.txt`) | session 7, and this row's exit code has MOVED: earlier passes read **2** with `corpus: 6063 admitted files` then `no RULING TABLE for nim`. This pass never reaches the refusal — it prints the header and two `[BB-PARSE-ERR] … memory access out of bounds` lines (`dll/nimhcr_0_6.nim`, `package/stdlib/stdlib.nimble`) and then dies on `[BB-HANG] parser stuck 120s … dll/nimhcr_0_6.nim`. The §8 wiring is unchanged and still the reason the gate would refuse; at 8 workers the shared watchdog now gets there first, so the refusal is no longer the observable outcome. `RULED_BY_LANG` still carries `bash`, `json`, `lua`, `toml` and no `nim` (`session7-arbiter.txt`) |
 | `npx tsx validation/m14/fixtures/nim/ruled-gate.ts` | 0 | the arbiter's own verdict loop on a copy: **`emitted 10/10  ruled-sound 0  FALSIFIED 0  ruled-without-justification 0`**, 255s, `implements EMITTED 47 edges in 4+ files, e.g. nimony/lib/std/math.nim`. Table rows: 0 |
 | **`BB_NIM_RULED_WORKERS=1 npx tsx validation/m14/fixtures/nim/ruled-gate.ts`** | **0** | **session 11, 519s, at the CURRENT blob `1475e53d0e528d0a`: `emitted 10/10  ruled-sound 0  FALSIFIED 0  ruled-without-justification 0`**, 6,063 admitted files, and **all ten per-type counts identical to the digit with the current 1-worker census** — `calls` 118,261, `uses` 45,664, `contains` 29,330, `references` 56,445, `imports` 13,364, `instantiates` 2,843, `extends` 627, `exports` 617, `overrides` 67, `implements` 47. Two instruments, zero disagreement, at fan-out 1 (`session11-ruled-gate.txt`) |
 | `BB_NIM_RULED_WORKERS=1 npx tsx validation/m14/fixtures/nim/ruled-gate.ts` | 0 | session 7, 887s, at the PREVIOUS blob `9d9ee478e3295c28`: the same `emitted 10/10  ruled-sound 0  FALSIFIED 0  ruled-without-justification 0`, with `contains` **29,362** — the one cell the guard moved. Kept rather than deleted, because the two runs together are what shows the arbiter and the census agreeing at two different blobs, and one of them contains a number the other does not |
@@ -3556,14 +3692,70 @@ quiet machine will cover all 5,227 through the production path.
     "resolves by name" and "binds to this declaration" is not measured by anything in
     this lane. Closing it needs the position- and scope-qualified identity the
     cross-language work is already carrying, not a wider name set.
-29. **`imports` is the one type whose resolution figure rests on a heuristic rather than
-    a match**, in both scopes and in both instruments. An `imports` target is a module
-    path (`std/strutils`), not a symbol. `census.ts:149` treats every PATH SEGMENT of a
-    corpus file's module path as a candidate module name — so a directory called `lib`
-    makes `lib` resolvable — which is why the intra-file figure is 37.1% where a
-    basename-only match gives 2.6%. `resolution-scope.ts` reproduces that rule rather
-    than correcting it, so that it isolates one variable (the width of the universe) and
-    not two, and the consequence is declared here instead: **38.6% is not a measurement
-    of how many imports this analyzer resolves, it is a measurement of how many target
-    strings collide with a corpus path segment.** No instrument in this lane resolves a
-    Nim module path properly.
+29. **`imports` resolution is measured by a stem rule, and the 92.0% figure inherits
+    that rule's optimism.** An `imports` target is a module, and `census.ts` resolves a
+    module by treating every PATH SEGMENT of a corpus file's module path as a candidate
+    name — so a directory called `lib` makes `lib` resolvable. That rule is deliberately
+    UNCHANGED: it is what both the arbiter and `firing-check.ts` apply, so altering it
+    would move the number without moving what the number measures. What the M60 module
+    pass changed is the ANALYZER's side, not the instrument's: it removed the 8,404
+    edges that had no candidate at all, which is a real reduction and not an artefact of
+    the rule. So **92.0% is a measurement of how many `imports` target strings now name
+    a module the corpus declares, under a rule that also credits directory names.** The
+    number is comparable to the other nine rows because they share the rule, and it is
+    not the same claim as "92.0% of imports resolve to the right module". Splitting the
+    type by subkind (`import-resolution-probe.mts`, `s18-import-probe.txt`) is what
+    separates the two claims: `nim_import` 12,907 edges at 91.8% intra-file and 96.3%
+    corpus-wide, `nim_include` 458 at 96.9% and 98.0%.
+30. **A `.nim` file is published as a module by its BASENAME, and the corpus writes
+    modules that are not named after their file.** `module Foo` inside `bar.nim`
+    declares module `Foo`; the pinned grammar has no node for that declaration, so the
+    symbol is named after the FILE and a file that renames its module gets a module
+    symbol no `import` will ever name. This is a real inaccuracy introduced by the pass
+    that also removed 8,404 unbindable edges, and it is not bounded by anything this lane
+    measured: the corpus count of renamed modules is **not** established, so the size of
+    the population this mislabels is unknown rather than small.
+31. **The module symbol made 33 target names ambiguous in a 600-file window, and that
+    cost is not paid off.** Module identity is a basename, and basenames collide: 36 of
+    521 module names in that window are declared by more than one file, and
+    `submodule.nim` is the basename of 16 files. The trade is 570 recovered resolutions
+    against 33 newly ambiguous targets (`s18-diagnose-{BEFORE,AFTER}.txt`), and the
+    corpus-wide figure is **not** separable from the intra-file one because the collision
+    is a property of the sample's layout — a repo with flatter directory structure has
+    fewer. A module name is a DISPLAY LABEL here, not an identifier: the store's own
+    identity already includes the file path, so this lane's pass makes the edge target
+    match a published name without claiming the name is unique.
+32. **`include` is normalised by the same rule as `import`, which is a claim this lane
+    measured and then reversed itself on.** An earlier draft of the
+    `publishModuleSymbol` header asserted that `include` kept its written path; the code
+    normalised it, and the two disagreed. The measurement settled it — 458
+    `nim_include` edges resolve at both ends on 96.9% intra-file, and reverting them to
+    the verbatim path binds **0** of the 14 they leave unresolved — so the code is right
+    and the comment was wrong. What is still unmeasured is the case where normalisation
+    would bind an edge to the WRONG module: `include "x.nims"` where a module `x` also
+    exists. The corpus has no such pair in the sample, so this lane cannot say the
+    normalisation is safe there, only that it is safe on what was walked.
+33. **`meta.nimStdlibModule` marks 5,389 edges and disambiguates 66 of the 485 that
+    cannot bind.** The other 419 are not marked, and 309 of those are BARE names where
+    no per-file rule can help: `import re` is a local module, a `lib/pure` module, and a
+    typo, and it is the same string in all three. So the marker makes the external
+    population *partly* countable and the remainder is still silently unresolved —
+    reading `isExternalTarget` coverage as 100% would be wrong by 86.4%. Closing the rest
+    needs whole-program import resolution, which is shared machinery (§8).
+34. **Three mutants guarding the `imports` edge are dead and this lane cannot fix them.**
+    `nim/relative-import-lost`, `nim/deep-import-path-lost` and
+    `nim/module-list-collapsed-to-one-edge` live in `script/m14/mutate-analyzer.ts` (§8)
+    and select edges by a path-shaped target, which the module pass removed. They
+    SURVIVE, and a surviving mutant is a guard that cannot fail. Four replacements in
+    `nim-mutants.ts` restore the coverage inside this lane's own files and are CAUGHT,
+    but the shared copies still run and still pass vacuously in every full-repo mutation
+    gate until they are updated to select on `metadata.nimModulePath`.
+35. **`imports` gained 1 edge (13,364 → 13,365) and that is unexplained.** The census
+    and the probe agree on the total and on the split (12,907 + 458), so it is not a
+    disagreement between instruments; it is one edge that exists at `deeab0756e0c4c1f`
+    and did not at `2426fdda15f9960e`. The change in that range was the `std/` marker,
+    which adds metadata and no edge, so the edge count should not have moved — and it
+    moved anyway. **The most likely explanation is the walk itself**: the WASM parser's
+    heap exhaustion is load-dependent (*Limitations* 8), and a lost file costs edges
+    without raising an error. This lane has NOT established which file, so the +1 is
+    recorded as unexplained rather than attributed.
