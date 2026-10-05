@@ -9,7 +9,7 @@
  * oracle was written after the ruling — nothing agrees with nothing. So the gate needs, per type,
  * either production edges or a corpus-backed ruling. R needs neither for any of the ten:
  *
- *     type           edges (min-max over 4 runs)   files   instrument
+ *     type           edges (min-max over 5 runs)   files   instrument
  *     calls             48,028 - 48,233 (Δ205)    1,294   production parseFile
  *     uses                4,789 -  4,810 (Δ21)      584   production parseFile
  *     contains          17,550 - 17,634 (Δ84)     1,874   production parseFile
@@ -20,6 +20,14 @@
  *     implements          1,133 (invariant)         221   production parseFile
  *     overrides             107 (invariant)           9   production parseFile
  *     instantiates            3 (invariant)           2   production parseFile
+ *
+ * Those min-max endpoints are PER-TYPE, each the smallest and largest value one run
+ * observed for that type. They do NOT sum to an observed total: the minimums come from
+ * different runs (run F holds five of them, run G two, run 1 the rest), so adding them
+ * mixes sets — 79,702 is such a sum and is not a number any run printed. The totals
+ * runs actually printed are 80,095 / 80,015 / 79,756 / 79,823 / 80,055, so the observed
+ * TOTAL band is 79,756-80,095 (Δ339). The distinction is the same two-sets error this
+ * header exists to avoid, so it is stated rather than left for a reader to trip on.
  *
  * Population: every git-tracked file the production ROUTER
  * (`detectLanguageFromPath`) maps to `r` in `$HOME/fixtures/repositories` —
@@ -35,24 +43,30 @@
  *
  * This header used to print one count per type. Production walks over the SAME 2,184-file
  * population do not agree on them, so a single figure would be a claim the corpus does not
- * support. Measured, all four POST-FIX runs, production `parseFile`:
+ * support. Measured, all five POST-FIX runs, production `parseFile`:
  *
- *     type            run 1     run 2     run F     run G
- *     calls          48,233    48,174    48,082    48,028
- *     contains       17,634    17,622    17,550    17,601
- *     exports         3,592     3,585     3,525     3,581
- *     imports         2,095     2,095     2,087     2,087
- *     references      2,137     2,137     2,129     2,129
- *     uses            4,810     4,808     4,789     4,803
- *     extends           351       351       351       351
- *     implements      1,133     1,133     1,133     1,133
- *     overrides         107       107       107       107
- *     instantiates        3         3         3         3
+ *     type            run 1     run 2     run F     run G     run H
+ *     calls          48,233    48,174    48,082    48,028    48,206
+ *     contains       17,634    17,622    17,550    17,601    17,629
+ *     exports         3,592     3,585     3,525     3,581     3,588
+ *     imports         2,095     2,095     2,087     2,087     2,093
+ *     references      2,137     2,137     2,129     2,129     2,135
+ *     uses            4,810     4,808     4,789     4,803     4,810
+ *     extends           351       351       351       351       351
+ *     implements      1,133     1,133     1,133     1,133     1,133
+ *     overrides         107       107       107       107       107
+ *     instantiates        3         3         3         3         3
+ *     TOTAL           80,095    80,015    79,756    79,823    80,055
  *
  *   run 1 = validation/m14/fixtures/r/ontology-ten-types.txt   (committed artifact)
  *   run 2 = validation/m14/fixtures/r/labels-and-resolution.txt (committed artifact)
  *   run F = script/m14/ontology-coverage-gate.ts r, 2026-10-05 03:42 (output NOT captured)
  *   run G = validation/m14/fixtures/r/arbiter/arbiter-r-runG-2026-10-05.txt (committed)
+ *   run H = validation/m14/fixtures/r/arbiter/arbiter-r-runH-2026-10-05.txt (committed)
+ *
+ * Runs G and H are the two arbiter walks whose bytes are on disk; both printed
+ * `emitted 10/10   ruled-sound 0   FALSIFIED 0   ruled-without-justification 0` and both then
+ * exited 1 from the 120-second parse bomb, which is shared machinery (§8 of the workstream).
  *
  * Three runs predate the `::`/`:::` fix and reported `references` at 389 — that is a CHANGE,
  * not variance, and they are kept out of the table above for that reason. Their counts are
@@ -64,11 +78,16 @@
  * changes run to run. Run F lost 5 files to it (`ggplot2/R/scale-manual.R`,
  * `r-cli/R/width.R`, `r-cli/exec/news.R`, `r-cli/R/zzz.R`,
  * `r-testthat/R/expect-equality.R`), run G lost 2 (`ggplot2/R/scale-manual.R`,
- * `usethis/R/course.R`). A file that fails to parse contributes no edges, so the totals
- * track the failures.
+ * `usethis/R/course.R`), run H lost 2 (`usethis/R/ci.R`, `usethis/R/citation.R`). A file
+ * that fails to parse contributes no edges, so the totals track the failures.
+ *
+ * `usethis` is the repo the losses cluster in — 9 of the 11 lost files across the five runs
+ * are `usethis` or `r-cli` files, and `r-rlang`'s 160 files were walked by all five runs
+ * without one loss. That is a statement about which files exhaust the wasm parser's memory,
+ * not about the analyzer, and no analyzer rule reads a file count.
  *
  * The four types that DO NOT MOVE are the informative half of this table. `extends`,
- * `implements`, `overrides` and `instantiates` are identical in all four runs, which says the
+ * `implements`, `overrides` and `instantiates` are identical in all five runs, which says the
  * wobble is confined to the types whose counts are large enough to be sensitive to losing a
  * handful of files — not that those four are more correct than the others. The spread is a
  * property of the PARSER, not of the analyzer: no analyzer rule reads a file count, and the
