@@ -1414,8 +1414,13 @@ refuses a hand edit.
   line, 0 land on a line that does not contain their target; 8,410 symbols, all
   range/line/column/byteIndex self-consistent; 0 names that the grammar did not
   produce.**
-- **Mutation (L4)** — 23 mutants, each re-introducing one reviewed defect as a
-  source edit: **23 caught, 0 survivors**. A surviving mutant fails the issue.
+- **Mutation (L4)** — 15 mutants, each re-introducing one reviewed defect as a
+  source edit (`npx tsx validation/m14/fixtures/r/run-r-fixtures.ts --mutants`):
+  **15 caught, 0 survivors, 0 harness faults**. A surviving mutant fails the issue.
+  This line previously said 23. The battery is 15 mutants; the count is the number
+  the runner prints, and the runner refuses a mutant whose edits leave the analyzer
+  byte-identical, so it cannot inflate its own denominator. `src/ast/real-r-analyzer.ts`
+  is restored byte-identical after each run and the runner asserts it.
 - **Corpus** — `validation/m12/results/r-corpus-errors.json`: 1,174 files,
   16,467 symbols, 39,128 relationships, 2 files with parse errors (both correct).
 - **A/B against the previous analyzer** — +3,313 relationship instances, 601
