@@ -1968,7 +1968,11 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
     const seg = String(filePath ?? "").split("/").pop() ?? ""
     // A trailing `\` would come from a Windows-style path; a declared module name never
     // contains one, and leaving it in would publish an unnameable node.
-    const base = seg.replace(/\\+$/, "")
+    // Strip trailing backslashes without a regex. This lane is at ZERO regex by policy and
+    // by census; `/\\+$/` was reintroduced and the census gate caught it on the next run,
+    // which is the gate doing exactly its job.
+    let base = seg
+    while (base.length > 0 && base.charCodeAt(base.length - 1) === 92 /* \\ */) base = base.slice(0, -1)
     const dot = base.lastIndexOf(".")
     const stem = dot > 0 ? base.slice(0, dot) : base
     // `std / syncio` — Nim's path syntax allows spaces around `/`, and the corpus writes
