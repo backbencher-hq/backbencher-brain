@@ -457,11 +457,11 @@ for (const r of restores) {
 // found", and the mutant was scored as though a DIFFERENT check had caught it. An
 // absent anchor is not a pass, not a skip, and not a defect-detected; it is a hole
 // in the harness, and the only honest report of a hole is a red gate.
+const mutationTargets = [...new Set(PLANTS.map((p) => p.file))]
 {
-  const targets = [...new Set(PLANTS.map((p) => p.file))]
   const absent = PLANTS.filter((p) => !readFileSync(path.join(ROOT, p.file), "utf8").includes(p.from))
   check(
-    `H4/CLASS: every planted mutant's ANCHOR TEXT IS PRESENT in its target file (an absent anchor means the mutant never ran, so its class is UNTESTED — ${PLANTS.length} plants over ${targets.length} files)`,
+    `H4/CLASS: every planted mutant's ANCHOR TEXT IS PRESENT in its target file (an absent anchor means the mutant never ran, so its class is UNTESTED — ${PLANTS.length} plants over ${mutationTargets.length} files)`,
     absent.length === 0,
     absent.length === 0
       ? `all ${PLANTS.length} anchors found: ${PLANTS.map((p) => `${p.id}@${p.file}`).join(", ")}`
@@ -500,7 +500,7 @@ for (const r of restores) {
 // It makes the next run's numbers an artifact of this one.
 {
   const leaked: string[] = []
-  for (const rel of targets) {
+  for (const rel of mutationTargets) {
     const now = readFileSync(path.join(ROOT, rel), "utf8")
     if (preRunBytes.get(rel) !== undefined && now !== preRunBytes.get(rel)) leaked.push(rel)
   }
@@ -508,7 +508,7 @@ for (const r of restores) {
     "H5/LEAK: every mutation target is byte-identical to its content at the START of this process (a mutation left behind makes the next run's numbers an artifact of this one)",
     leaked.length === 0,
     leaked.length === 0
-      ? `no leaked mutation across ${targets.join(", ")}`
+      ? `no leaked mutation across ${mutationTargets.join(", ")}`
       : `LEAKED MUTATION in: ${leaked.join(", ")} — run \`git diff\` on those files before trusting any run after this one`,
   )
 }
