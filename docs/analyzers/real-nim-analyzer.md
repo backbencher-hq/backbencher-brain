@@ -2109,8 +2109,15 @@ own census to the digit** — `calls` 118,261, `uses` 45,664, `contains` 29,362,
 `imports` 13,364, `references` 56,445, `exports` 617, `extends` 627, `implements` 47,
 `overrides` 67, `instantiates` 2,843, total **267,297**, symbols **110,076**. Three
 instruments that share no counting code — this lane's census, its re-run, and the
-supervisor's arbiter — now agree on 267,297 and on 110,076. Artifacts
+supervisor's arbiter — agree on 267,297 and on 110,076. Artifacts
 `session3-1w-census.{txt,json}`, `session3-firingcheck-full.{txt,json}`.
+
+**Those totals are at blob `9d9ee478e3295c28`, not at HEAD.** The current figures are
+**267,265 edges over 110,043 symbols** with `contains` **29,330** and the other nine
+identical — see the verdict table and *The blob moved a second time*. The sentence
+above said "now agree", and "now" is the word that made it read as current; it is
+rewritten to "agree" for that reason, and the numbers are left at the blob that
+produced them.
 
 **Three defects in that shared script, measured and reported rather than fixed (§8).**
 
@@ -2358,29 +2365,36 @@ The DERIVATION arithmetic in the section above is unchanged by any of it: 0 by
 this lane's oracle, 6 by a gate that reads the differential's language-agnostic
 default audited list and never opens `nim-truth-oracle.ts`.
 
-**The gates, re-run at HEAD.** Two fail and **neither failure names nim**:
+**The gates, re-run at HEAD.** Two fail and **neither failure names nim**.
+The rows below marked **(s11)** were re-run at blob `1475e53d0e528d0a` on this pass
+and the rest are the earlier run at `9d9ee478e3295c28`, each carrying its own
+digest; where a number moved, the moved one is marked and the reason is the
+bare-`case` guard rather than a change in counting.
 
 | gate | exit | what it said about this lane |
 | --- | --- | --- |
 | `ontology-coverage-gate.ts nim` | 2 | `no RULING TABLE for nim` — this branch's copy predates the base's registration. The BASE's copy cannot be run in place either: it imports `./fsharp-ruled`, which also post-dates this fork. The verdict below comes from `ruled-gate.ts`, which applies the supervisor's two-line wiring to a copy in `/tmp` and runs the copy |
-| `ruled-gate.ts` (the arbiter, with the wiring applied) | **0** | **`emitted 10/10  ruled-sound 0  FALSIFIED 0  ruled-without-justification 0`**, 6,063 admitted files, 379 s, analyzer digest `9d9ee478e3295c28` unchanged on both sides of the walk |
+| `ruled-gate.ts` (the arbiter, with the wiring applied) | **0** | **(s11)** **`emitted 10/10  ruled-sound 0  FALSIFIED 0  ruled-without-justification 0`**, 6,063 admitted files, **519 s**, analyzer digest `1475e53d0e528d0a` unchanged on both sides of the walk, and all ten per-type counts identical to the current 1-worker census including `contains` 29,330 (`session11-ruled-gate.txt`). The earlier run at `9d9ee478e3295c28` read 379 s and `contains` 29,362 |
 | `firing-check.ts --files 100000 nim` (the arbiter) | **0** | **`10/10 fired, 267,297 edges, 6,063/6,063 files`**, 0 parse failures, 0 degraded fallbacks, 0 empty names, 0 empty kinds. Two of its output fields are broken — *Session 5* |
 | `firing-check.ts --files 120 nim` (its own default) | **0** | **`8/10 fired, 4,247 edges, 120/120`** — reproduces session 3 exactly. `implements` and `overrides` do not fire in a stride sample, for two different and separately documented reasons |
-| `verify-regex-census.ts` | 1 | **27 findings, `grep -in nim` over the whole output returns nothing.** css 5, julia 5, clean 1, fsharp 4, javascript 2, python 1, svelte 4, typescript 1 |
-| `verify-honesty.ts` | 6 | 22 failures, zero naming nim; banned-vocabulary lint over `validation/m14` + M14 docs **passes**. Re-run after this pass's doc edits: still exit 6, still **0** lines matching `nim` |
-| `run-fixtures.ts --lang nim` | 0 | `{"nim":{"pass":10,"fail":0}}`, scoped run wrote no evidence and refused `--update-baseline`. The **unscoped** form exits 6 at `2 fixture director(ies) no runner lane claims: r, lua` and never reaches nim — a repo-wide condition belonging to other lanes, recorded so it is not mistaken for this lane's |
-| `verify-mutants.ts` (lane's own) | 0 | 17 declared nim mutants run, **17 CAUGHT, 0 survived** |
+| `verify-regex-census.ts` | 1 | **(s11)** **28 findings on the working tree, `grep -in nim` over the whole output returns nothing.** css 7, julia 5, clean 1, fsharp 3, javascript 2, python 1, svelte 4, typescript 1, **plus 25 STALE entries the census carries that no longer exist on disk** — a lane's regex deleted but its census row kept. `missing from census: 26`, `stale in census: 25`, `unclassified: 0`, `mislocated: 0` |
+| `verify-honesty.ts` | 6 | **(s11)** **24 failures, zero naming nim.** 22 are cross-lane evidence staleness — `M14.0.F1..F9` each report a changed-input count because six agents are editing the shared inputs they declare — and 2 are `analyzer-hygiene-cpp` and `analyzer-hygiene-elixir`, which fail in other lanes. Also `freshness rule flags every artifact — it cannot distinguish current from stale` (2,531 inputs changed), which is the same shared-input drift seen from the other side. **No `nim` line appears in any of the 24.** `fixture-coverage all-green (27 languages)`, `M14.0.F8/F9/PIPE/WC1/SC1/CENSUS` all-green |
+| `run-fixtures.ts --lang nim` | 0 | **(s11)** **`{"nim":{"pass":11,"fail":0}}`** — 11 fixtures, the eleventh being `nim/bare-case`, added with the guard. Scoped run wrote no evidence and refused `--update-baseline`. **The form without `--lang` exits 6** at `2 fixture director(ies) no runner lane claims: lua, r` and never reaches nim — a repo-wide condition belonging to other lanes, recorded so it is not mistaken for this lane's |
+| `verify-mutants.ts` (lane's own) | 0 | **(s11)** **19 declared: 18 run, 18 CAUGHT, 0 survived, 1 retired.** The retired one is `nim/bare-case-guard-restored-by-keyword-list`, retired in `1f443af19` with a written reason, and the reason is structural: `mutate-analyzer.ts` transforms RESULTS, and a fix that changes which symbols EXIST cannot be undone by transforming the result of the fix. **The verifier did not read the `retired` flag until this pass**, so it executed it, counted it as a survivor and exited 2; the shared harness already honoured the flag. Fixed, and a retirement carrying no reason is now counted as a survivor so the flag cannot be used to hide a failure |
 | `verify-analyzer-hygiene-nim.ts` (lane's own substitute) | 0 | 0 findings on HEAD, and the reverted copy **is caught** by `bare-node-identity-comparison`, so the green is not vacuous |
 | `differential.ts --lang nim --sample 60` | 0 | `[lane] SKIP nim` — the §8 item above, declared unrun rather than measured |
-| `verify-analyzer-docs.ts` | 0 | nim is **absent** from the 13-lane missing-sections list, so all required sections are present |
+| `verify-analyzer-docs.ts` | 0 | **(s11)** nim is **absent** from the missing-sections list, so all required sections are present. **§8: this run rewrites `validation/m14/results/analyzer-docs.json`, which is supervisor-owned, and the rewrite sweeps in other lanes' in-flight drift (`go`, `lua`), so the file was reverted rather than committed. Same for `docs/DOC-TRUTH-EMISSIONS.md` after `verify-doc-truth-emissions.ts`** — which reads **0 findings for nim**, unchanged before and after this pass's doc edits |
 | `verify-grammar-pins.ts` | 3 | the `nim` pin holds — `421369fe6a88`, 5,797,624 B, `ids=377 named=127 anon=205 fields=24`, 19 files vendored. All four `PIN FAILURE` lines are julia's |
 
-The 17 here and the 60 in `session3-mutate-analyzer-shared.txt` are not in
-conflict and the difference is worth stating rather than reconciling away: 17 is
+The 19 here and the 60 in `session3-mutate-analyzer-shared.txt` are not in
+conflict and the difference is worth stating rather than reconciling away: 19 is
 what `script/m14/nim-mutants.ts` **declares** and the lane's `verify-mutants.ts`
-runs; 60 is what the shared `mutate-analyzer.ts` full sweep attributes to nim,
-the extra 43 being the harness's own generated kind-misclassification and
-symbol-drop mutants. Both report 0 survived.
+runs — 18 runnable plus 1 retired; 60 is what the shared `mutate-analyzer.ts` full
+sweep attributes to nim, the extra 41 being the harness's own generated
+kind-misclassification and symbol-drop mutants. Both report 0 survived. The lane
+count moved 17 → 19 because the bare-`case` fix added two mutants (`-guard-removed`,
+live and caught; `-restored-by-keyword-list`, retired) and that was the pass on
+which the verifier started disagreeing with the record.
 
 ## Differential ground truth
 
