@@ -2,10 +2,10 @@
   "issue": "M28.U2",
   "code": "U2",
   "milestone": "M28",
-  "status": "known-gap",
+  "status": "verified",
   "checks": 39,
-  "passed": 38,
-  "failed": 1,
+  "passed": 39,
+  "failed": 0,
   "mutantsCaught": 5,
   "mutantsTotal": 5,
   "mutantRecords": [
@@ -25,7 +25,7 @@
       "name": "U2 M3: a serialized stored parameter value rendered verbatim is OBSERVED as a raw-JSON leak in bb_doc's human line",
       "caught": true,
       "verdict": "observed",
-      "observed": "real line: -  _(100%)_ method count({\"name\":\"names\",\"type\":\"string\\[\\]\"}): int is defined in src/main/java/com/demo/Inventory.java at lines 4 || mutated line: method count({\"name\":\"names\",\"type\":\"string[]\"}): int is defined in src/main/java/com/demo/Inventory.java at lines 4-4."
+      "observed": "real line: -  _(100%)_ method count(…): int is defined in src/main/java/com/demo/Inventory.java at lines 4-4; the index records no parameter  || mutated line: method count({\"name\":\"names\",\"type\":\"string[]\"}): int is defined in src/main/java/com/demo/Inventory.java at lines 4-4."
     },
     {
       "name": "U2 M4: bb_impact stopping short of naming the member/owner substitution is OBSERVED as a silent relabel",
@@ -40,19 +40,19 @@
       "observed": "bb_graph resolved root.name=count (src/main/java/com/demo/Inventory.java:count:4) but published root.name=Inventory, and root.match still reads \"exact\" with no substitution declared"
     }
   ],
-  "currentCommit": "a0ed9eade7008de7ce93a312f6b0bd7e182a43a9",
+  "currentCommit": "697bd5e296e3ea8b49237a14ebfac5006618f835",
   "sourceFingerprint": {
     "src/mcp/tool-handlers.ts": "a2b91b7d013c5e153a115a2693f76c1e51b4ea8daae84550e757395a8c10f426",
     "src/lsp/evidence_tier.ts": "4cc88ae81056af0f65e977d0c613121a2d8d545ff275afda13096e6294b0c5ce",
     "src/lsp/cross_language_hover.ts": "4834862d382354263c5626bbefad8a50449854b4f1f27c2bec679aa513309a4c",
     "src/lsp/signature.ts": "027723d744f52f4c2746fcb27b020d4fe62af625c2c707ca35f0f5d29ca16e7d",
     "src/lsp/identity.ts": "8700844c11a8d70a844459f674252e3834759e2bfc314b770b09eb32aa53f2b8",
-    "src/intelligence/documentation/doc-engine.ts": "3de546d39ea31849349e9b6a0b8fdb97f84da2552cc959e62b634b7fd66a89c5",
+    "src/intelligence/documentation/doc-engine.ts": "d84684818dc806f6df31fa03f951cbe7d538320a63c37bde6582b5708d1735f8",
     "script/m28/verify-surface-parity.ts": "4f05759f85c781ec16f842e098d347a7c4a9d9b4671726756bffced55ebba70d"
   },
   "verifierCommand": "npx tsx script/m28/verify-surface-parity.ts",
   "evidenceFile": "U2.json",
-  "generatedAt": "2026-10-05T00:10:28.268Z",
+  "generatedAt": "2026-10-05T03:59:10.549Z",
   "counts": {
     "seededRelationshipShapes": 2170,
     "seededShapesReturnedByBbGraph": 2170,
@@ -62,7 +62,7 @@
     "crossLanguageFacts": 1,
     "hoverCrossLanguageFacts": 1,
     "parameterShapesProbed": 9,
-    "rawJsonLeaksInHumanText": 1
+    "rawJsonLeaksInHumanText": 0
   },
   "negativeCases": [
     {
@@ -78,7 +78,7 @@
     {
       "name": "U2 M3: a serialized stored parameter value rendered verbatim is OBSERVED as a raw-JSON leak in bb_doc's human line",
       "verdict": "observed",
-      "observed": "real line: -  _(100%)_ method count({\"name\":\"names\",\"type\":\"string\\[\\]\"}): int is defined in src/main/java/com/demo/Inventory.java at lines 4 || mutated line: method count({\"name\":\"names\",\"type\":\"string[]\"}): int is defined in src/main/java/com/demo/Inventory.java at lines 4-4."
+      "observed": "real line: -  _(100%)_ method count(…): int is defined in src/main/java/com/demo/Inventory.java at lines 4-4; the index records no parameter  || mutated line: method count({\"name\":\"names\",\"type\":\"string[]\"}): int is defined in src/main/java/com/demo/Inventory.java at lines 4-4."
     },
     {
       "name": "U2 M4: bb_impact stopping short of naming the member/owner substitution is OBSERVED as a silent relabel",
@@ -91,7 +91,7 @@
       "observed": "bb_graph resolved root.name=count (src/main/java/com/demo/Inventory.java:count:4) but published root.name=Inventory, and root.match still reads \"exact\" with no substitution declared"
     }
   ],
-  "claimLevel": "known-gap",
+  "claimLevel": "verified — every MCP tier and signature surface classifies through the imported owner, and each planted copy-projection was OBSERVED diverging",
   "limitations": [
     "The shape corpus is SEEDED into the fixture index (one symbol, one edge per kind x confidence bucket x stored class). It covers every kind and stored class the owner declares plus the fixture's own; it is a shape matrix, not a corpus sample, so the per-corpus divergence COUNT is reported in the lane report and not by this gate.",
     "bb_doc's markdown signature line is located by matching the engine's documented prose shape ('is defined in'). If that prose changes the §15.4 probe is UNREACHABLE and the run FAILS — it never passes silently.",
@@ -101,11 +101,11 @@
     "fixture relationship kinds: calls,contains,references",
     "seeded 2170 relationship shapes across 73 probe symbols (2170 kind x confidence x stored-class combinations)",
     "seed reachability: 2170 rows returned for 2170 seeded; 73 of 73 pages declared a filter in truncationReason (the filter the probe asked for)",
-    "seeded a member-through-owner shape: u2SeedMember (field) owned by Barcode (class)"
+    "seeded a member-through-owner shape: u2SeedMember (field) owned by Warehouse (class)"
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T00:10:28.269Z",
-    "contentSha256": "820a15a26e2fd75420b1edee50bcdd41df45dcaad17c013d6f1d3386601177f2"
+    "sealedAt": "2026-10-05T03:59:10.549Z",
+    "contentSha256": "58b279ba3277129f9792cacdb75943b0e89acff95c8820c154ca3d0728259ced"
   }
 }

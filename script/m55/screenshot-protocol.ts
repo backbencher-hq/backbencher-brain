@@ -34,7 +34,7 @@
 
 import { execFileSync, spawn, type ChildProcess } from "node:child_process"
 import { createHash } from "node:crypto"
-import { existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs"
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs"
 import { homedir } from "node:os"
 import path from "node:path"
 import { M55_ROOT } from "./lsp-wire.ts"
@@ -216,12 +216,67 @@ export function rigPreflight(fixture: string = DECLARED_FIXTURE): { ok: boolean;
   return { ok: missing.length === 0, missing, notes }
 }
 
-/** Hash the fixture's content so a fixture edit is visible in the evidence. */
+/** Every regular file under `root`, as absolute paths, in a byte-stable order.
+ *
+ *  Reproduces what the previous `find … | sort` produced, WITHOUT the shell:
+ *  `find -P` (the default) does not follow symlinks and `-type f` admits only
+ *  regular files, so `lstatSync().isFile()` is the same set. The sort is a
+ *  BYTE comparison (what `LC_ALL=C sort` does) so the order cannot drift with
+ *  the locale, which a plain `sort` would. */
+function listFixtureFiles(root: string): string[] {
+  const out: string[] = []
+  const walk = (dir: string): void => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      // The `*/node_modules/*` and `*/.git/*` exclusions the find spelled out:
+      // matching on a path SEGMENT is what `*/name/*` means, and skipping the
+      // directory is what `-not -path` plus find's own descent does.
+      if (entry.name === "node_modules" || entry.name === ".git") continue
+      const p = path.join(dir, entry.name)
+      if (entry.isDirectory()) walk(p)
+      else if (entry.isFile()) out.push(p)
+    }
+  }
+  walk(root)
+  return out.sort((a, b) => Buffer.compare(Buffer.from(a, "utf8"), Buffer.from(b, "utf8")))
+}
+
+/** Hash the fixture's content so a fixture edit is visible in the evidence.
+ *
+ *  This used to be `find … | sort | xargs sha256sum`, and `sha256sum` does not
+ *  exist on macOS — the call died with ENOENT and `catch { return null }` turned
+ *  that death into `contentHash: null`, i.e. a MISSING fixture hash rendered as
+ *  a null that reads like "no hash could be produced", indistinguishable from
+ *  the fixture being absent. That is the `ramGb: 0` defect class one layer up:
+ *  an unmeasurable fact that returns a plausible-looking value instead of a
+ *  declared absence. It is also the exact defect class
+ *  script/m24/verify-positions.ts (gate X3) is the permanent gate for, and
+ *  that gate named THIS line as one of the two M24.P1 failures on darwin.
+ *
+ *  The fix is the one the gate's own header names: hash the file list in Node.
+ *  node:crypto is in the runtime on every OS, so there is no OS left to
+ *  disagree about. The digest stays BYTE-IDENTICAL to the Linux run's, because
+ *  it folds in exactly the text `sha256sum` printed — `<64 hex>  <path>\n` per
+ *  file, paths as `find` emitted them (absolute, byte-sorted) — so a Linux
+ *  re-run with the original pipeline reproduces this value and a darwin run
+ *  agrees with it (contract §8.2, §10). */
 export function fixtureContentHash(workspace: string): string | null {
   if (!existsSync(workspace)) return null
   try {
-    const files = run("bash", ["-lc", `find ${JSON.stringify(workspace)} -type f -not -path '*/node_modules/*' -not -path '*/.git/*' | sort | xargs sha256sum`])
-    return createHash("sha256").update(files).digest("hex")
+    const files = listFixtureFiles(workspace)
+    if (files.length === 0) {
+      // An empty file list is not a measurement of "a workspace with no
+      // content": `xargs sha256sum` with no arguments does not run at all, so
+      // the old code threw here and this returned null. Declared, not invented.
+      return null
+    }
+    const h = createHash("sha256")
+    for (const f of files) {
+      h.update(sha256File(f))
+      h.update("  ")
+      h.update(f)
+      h.update("\n")
+    }
+    return h.digest("hex")
   } catch {
     return null
   }
