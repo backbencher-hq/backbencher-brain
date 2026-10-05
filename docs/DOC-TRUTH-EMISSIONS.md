@@ -155,7 +155,7 @@ This is the population the gate MEASURES rather than blocks. Each row is one ana
 | json | `calls contains exports extends implements overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | absent |
 | julia | `calls contains exports extends instantiates overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | line 527, 9 rows |
 | kotlin | `calls contains extends implements instantiates overrides references uses` | import-site: ImportInfo[], export-site: ExportInfo[] | line 30, 11 rows |
-| lua | `calls contains exports extends instantiates overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | line 75, 9 rows |
+| lua | `calls contains exports extends instantiates overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | line 100, 9 rows |
 | makefile | `calls contains exports references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | absent |
 | markdown | `contains references uses` | import-site: ImportInfo[] | absent |
 | nim | `calls contains exports extends implements instantiates overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | line 446, 10 rows |

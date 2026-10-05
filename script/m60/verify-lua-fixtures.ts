@@ -62,13 +62,27 @@ const LUA = {
 Object.assign(LANGS as Record<string, unknown>, { lua: LUA })
 
 const FIXTURES_DIR = new URL("../../validation/m14/fixtures/", import.meta.url).pathname
+// Every fixture committed under validation/m14/fixtures/lua/, and the list is checked
+// in BOTH directions — a renamed or deleted fixture fails `missing`, and a fixture added
+// without being listed here fails `extra`. Six were missing from this list when the gate
+// last executed, because it had never executed: commit c358309c9 un-pinned this file's
+// REPO constant and left a mismatched quote on the line below, so the whole module failed
+// to parse and the six fixtures added by waves 1-2 were never counted by anything. A gate
+// that cannot run is not a gate, and a stale expectation inside a gate that cannot run is
+// two defects wearing one hat.
 const EXPECTED = [
   "closure-scope",
   "edge-lines",
+  "export-edges",
   "export-shapes",
+  "extends-supertype",
   "local-declarations",
+  "loop-bindings",
   "member-identity",
+  "name-reads",
   "order-independent-ctor",
+  "override-shapes",
+  "read-classes",
 ]
 
 async function main() {
@@ -100,14 +114,14 @@ async function main() {
   if (missing.length) console.log(`  MISSING fixtures: ${missing.join(", ")}`)
   if (extra.length) console.log(`  UNEXPECTED fixtures: ${extra.join(", ")}`)
 
-  const out = `${REPO}/validation/m60/results/lua-fixtures-lane.json"
+  const out = `${REPO}/validation/m60/results/lua-fixtures-lane.json`
   writeFileSync(
     out,
     JSON.stringify(
       {
         schemaVersion: 1,
         gate: "verify-lua-fixtures",
-        note: "runs the six lua fixtures through the SHARED runLang; the shared LANGS map still has no lua entry, so the milestone gate does not yet run this lane",
+        note: "runs every lua fixture through the SHARED runLang, by registering a lua entry into its LANGS map at run time; the shared map itself still has no lua entry, so the milestone gate does not run this lane",
         expected: EXPECTED,
         ran,
         pass: r.pass,
