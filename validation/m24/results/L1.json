@@ -2,11 +2,11 @@
   "issue": "490",
   "code": "L1",
   "status": "verified",
-  "currentCommit": "5c3191642192207f018c2438a39cea6980007f21",
+  "currentCommit": "d3108fc04e89a991cc59b44fcd24156ef64ce9df",
   "sourceFingerprint": "4f40bd6129d60adf42c1da5747276246694405a0edc5d786da3b2fea68909c2d",
   "verifierCommand": "npx tsx script/m24/verify-server.ts",
   "evidenceFile": "L1.json",
-  "generatedAt": "2026-10-05T17:53:54.589Z",
+  "generatedAt": "2026-10-05T21:47:27.920Z",
   "passed": 142,
   "failed": 0,
   "failures": [],
@@ -93,7 +93,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T17:53:54.589Z",
-    "contentSha256": "72635485517aba5993b37a1948742ab83498d5e7bf8bd34096c85f036a2d4219"
+    "sealedAt": "2026-10-05T21:47:27.921Z",
+    "contentSha256": "68452458d2d0b10daa4de1c2b518b94a08e9aa278ec55303714a8ef901b476b3"
   }
 }
