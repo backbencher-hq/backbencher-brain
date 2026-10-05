@@ -35,10 +35,14 @@ import { H2_EXPECT, H2_FILE_APP, H2_FILE_MAIN2, H2_REL_APP, H2_REL_MAIN2, H2_ROO
 import {
   connectedGroups,
   connectedSummarySection,
+  containmentSection,
+  containmentSitesOf,
+  isContainmentVerb,
   MAX_USAGE_LINKS,
   richSitesForSymbol,
   siteLabel,
   usagesSection,
+  usageSitesOf,
   type RichSite,
 } from "../../src/lsp/rich_hover.ts"
 import { USAGE_SITE_FILTER_LABEL } from "../../src/lsp/relations.ts"
@@ -397,14 +401,117 @@ const containsOnly: RichSite = {
   endLine: 5,
   endCharacter: 9,
   relationshipType: "contains",
+  relationshipTypes: ["contains"],
   reversed: true,
   confidence: 1,
   enrichment: null, // un-enriched row — declared absence (M42.H3 shape)
   enrichmentStale: false,
   callSite: EXACT,
 }
-check("H2/R6: contains rows never render as connection facts", connectedSummarySection(connectedGroups([containsOnly])) === "", connectedSummarySection(connectedGroups([containsOnly])))
-const callSite: RichSite = { ...containsOnly, relationshipType: "calls", reversed: true, name: "main", line: 9, character: 4, endLine: 9, endCharacter: 4 }
+// ===========================================================================
+// H2/R6, RE-SCOPED — the containment law in its precise form
+// ===========================================================================
+//
+// The law used to read, in one sentence: "contains rows never render as
+// connection facts". That is right in spirit and it was TRUE — but it was
+// satisfied by `contains` rendering NOWHERE at all, which is why it could not
+// distinguish a correctly-absent declaration from one the surface had dropped.
+// It passed while `contains` was the second-most-stored kind and rendered on no
+// card in the program.
+//
+// The owner's ratified decision — "the hover should show all the relationships,
+// not just contains", with `contains` "labelled as CONTAINMENT, never as a
+// usage or a connection" — re-scopes it to a law with both halves:
+//
+//   H2/R6-CONTAIN-1  a `contains` row DOES render, in its own section;
+//   H2/R6-CONTAIN-2  that section's caption is a CONTAINMENT word;
+//   H2/R6-CONTAIN-3  the row appears in NO OTHER section — not the usage list,
+//                    not the connected summary;
+//   H2/R6-CONTAIN-4  and never in the usages HEADER count, which is the number a
+//                    reader takes away as "how many things use this".
+//
+// Nothing is deleted: the old assertion is kept as H2/R6-CONTAIN-3b, because a
+// law that only survives re-scoping when its old wording is discarded is a law
+// that was only ever half-true.
+const containsSite: RichSite = {
+  name: "Greeter",
+  symbolType: "class",
+  path: "/w/App.java",
+  line: 5,
+  character: 0,
+  endLine: 5,
+  endCharacter: 9,
+  relationshipType: "contains",
+  relationshipTypes: ["contains"],
+  reversed: true,
+  confidence: 1,
+  enrichment: null, // un-enriched row — declared absence (M42.H3 shape)
+  enrichmentStale: false,
+  callSite: EXACT,
+}
+check(
+  "H2/R6-CONTAIN-1: a `contains` row RENDERS — in its own labelled section (the old law was satisfied by `contains` rendering nowhere, which is why it could not tell correct absence from a dropped row)",
+  containmentSection([containsSite]).includes("**contained**") && containmentSitesOf([containsSite]).length === 1,
+  containmentSection([containsSite]),
+)
+check(
+  "H2/R6-CONTAIN-2: the containment section's caption is a CONTAINMENT word, never a usage or a connection word",
+  isContainmentVerb("declared in") && containmentSection([containsSite]).includes("declared in [Greeter]"),
+  containmentSection([containsSite]).split("\n").slice(0, 2).join(" | "),
+)
+check(
+  "H2/R6-CONTAIN-3b: contains rows never render as connection facts (the pre-existing law, restated rather than deleted)",
+  connectedSummarySection(connectedGroups([containsSite])) === "",
+  connectedSummarySection(connectedGroups([containsSite])),
+)
+check(
+  "H2/R6-CONTAIN-3: a `contains` row is NOT a usage site and appears in no usage list",
+  usageSitesOf([containsSite]).length === 0 && usagesSection([containsSite], 1, "greet", "/w/App.java", 6, 4) === "",
+  `usageSitesOf=[${JSON.stringify(usageSitesOf([containsSite]).map((s) => s.name))}] usagesSection=${JSON.stringify(usagesSection([containsSite], 1, "greet", "/w/App.java", 6, 4))}`,
+)
+check(
+  "H2/R6-CONTAIN-4: the usages HEADER count never includes a `contains` row, even when other kinds are present",
+  (() => {
+    // A card with one real usage AND one containment row. The header must count
+    // the usage alone: the containment is the symbol's DECLARATION context, not
+    // evidence that anything uses it.
+    const withUsage = usagesSection([{ ...containsSite, relationshipType: "calls", relationshipTypes: ["calls"], reversed: true, name: "main", line: 9, character: 4, endLine: 9, endCharacter: 4 }, containsSite], 1, "greet", "/w/App.java", 6, 4)
+    return withUsage.includes("**usages** — 1 stored reference") && !withUsage.includes("Greeter")
+  })(),
+  usagesSection([{ ...containsSite, relationshipType: "calls", relationshipTypes: ["calls"], reversed: true, name: "main", line: 9, character: 4, endLine: 9, endCharacter: 4 }, containsSite], 1, "greet", "/w/App.java", 6, 4).split("\n")[0] ?? "",
+)
+// H2/R6-CONTAIN-MUTANT: the re-scoped law must be ABLE TO FAIL in both
+// directions. Each leg takes the law's predicate and shows it reports a
+// violation for the shape that must be caught — including the shape the OLD law
+// could not see at all (a containment row that fails to render).
+{
+  const rendersSomewhere = (rows: RichSite[]): boolean => {
+    const section = containmentSection(rows)
+    return section.length > 0 || connectedSummarySection(connectedGroups(rows)).length > 0 || usagesSection(usageSitesOf(rows), usageSitesOf(rows).length, "x", "/w/App.java", 0, 0).length > 0
+  }
+  check(
+    "H2/R6-CONTAIN-MUTANT (a): the law REJECTS a `contains` row that is dropped from the card entirely (the shape the old law was blind to)",
+    rendersSomewhere([containsSite]) && !rendersSomewhere([]),
+    "a dropped containment row must render nowhere; the assertion needs a row that renders and one that does not",
+  )
+  const mixedCard = usagesSection(
+    [{ ...containsSite, relationshipType: "calls", relationshipTypes: ["calls"], reversed: true, name: "main", line: 9, character: 4, endLine: 9, endCharacter: 4 }, containsSite],
+    2, // the CALLER lies: it claims two usages when only one row is one
+    "greet", "/w/App.java", 6, 4,
+  )
+  check(
+    "H2/R6-CONTAIN-MUTANT (b): the usage header must NOT follow a caller's claim that would sweep a `contains` row into the count",
+    mixedCard.includes("**usages** — 1 stored reference") && !mixedCard.includes("Greeter"),
+    mixedCard.split("\n")[0] ?? mixedCard,
+  )
+}
+check("H2/R6: usagesSection([]) is empty (declared absence)", usagesSection([], 0, "render", "/w/App.java", 0, 0) === "")
+// The kind set travels with the kind: spreading `containsOnly` and overriding
+// only `relationshipType` left `relationshipTypes: ["contains"]` behind, so this
+// "call" site still classified as a declaration. The renderer reads the SET
+// (§13.2 multiplicity), so a fixture that overrides one field and not the other
+// is a fixture lying about its own shape.
+const callSite: RichSite = { ...containsOnly, relationshipType: "calls", relationshipTypes: ["calls"], reversed: true, name: "main", line: 9, character: 4, endLine: 9, endCharacter: 4 }
 const oneLink = connectedSummarySection(connectedGroups([callSite]))
 check("H2/R6: called-by renders one link for one call row", oneLink.startsWith("**connected**: called by [main](command:bb.openUsage?"), oneLink)
 check("H2/R6: usagesSection with >3 sites renders the +N more escape hatch", usagesSection([callSite, callSite, callSite, callSite], 4, "render", "/w/App.java", 6, 4).includes("+1 more — [show all usages]"), "")

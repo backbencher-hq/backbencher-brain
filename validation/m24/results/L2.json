@@ -1,19 +1,22 @@
 {
   "issue": "491",
   "code": "L2",
-  "status": "verified",
-  "currentCommit": "936b66d6d088776c7715e7d1aec492cc9c6d9841",
-  "sourceFingerprint": "08cae55c9091af3ad3ef2d78ecb9307056b0434645779a16292fb9ea3bc3b051",
+  "status": "known-gap",
+  "currentCommit": "39a6b52c0d4618af5af443f88c5f5d6b39e62be6",
+  "sourceFingerprint": "21d0ad943c6b4138b735005777430036bee687f2bc8e68a8d36e789a2e96c70d",
   "verifierCommand": "npx tsx script/m24/verify-hover.ts",
   "evidenceFile": "L2.json",
-  "generatedAt": "2026-10-05T02:32:16.253Z",
-  "passed": 45,
-  "failed": 0,
-  "failures": [],
+  "generatedAt": "2026-10-05T06:59:10.283Z",
+  "passed": 43,
+  "failed": 2,
+  "failures": [
+    "G8/CONTROL: the same stimulus DOES throw when the row is resolved unguarded (so G8 is not vacuous)",
+    "G4/§5.1: no file in src/lsp/ converts an LSP/index line inline (outside the position owner)"
+  ],
   "negativeCases": 14,
   "verdict": {
-    "realComponentFailures": 0,
-    "mutantsCaught": 6,
+    "realComponentFailures": 2,
+    "mutantsCaught": 5,
     "mutantsTotal": 6,
     "mutantsByComponent": {
       "hover": {
@@ -22,12 +25,12 @@
         "anchorDrift": 0
       },
       "rich_hover": {
-        "caught": 2,
+        "caught": 1,
         "total": 2,
         "anchorDrift": 0
       }
     },
-    "ok": true,
+    "ok": false,
     "anchorDrift": 0,
     "anchorDriftNote": "A mutant whose anchor no longer exists, or whose module fails to load, no longer tests what this gate names. It is reported as NOT-CAUGHT and forces known-gap — §8.3: silence is guilt, and a skip is not a pass.",
     "note": "`failed` counts real functional failures only; mutant runs are reported separately via the verdict block."
@@ -40,7 +43,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T02:32:16.254Z",
-    "contentSha256": "a9541cded92d19df8219bdfa1036dcc442974fbc863b27f4b180189a5a63a115"
+    "sealedAt": "2026-10-05T06:59:10.284Z",
+    "contentSha256": "5e08d39719959e7fb4625e9f31f6e3848cb07434d290eae7593fefc71186ac0c"
   }
 }
