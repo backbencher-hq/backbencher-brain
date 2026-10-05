@@ -694,6 +694,8 @@ export class RealSqlAnalyzer implements ASTEngine.LanguageAnalyzer {
     // adding one. Adopts index symbols whose table was declared after them.
     this.adoptLateDeclaredIndexOwners(state)
 
+    this.publishQualifiedNames(state)
+
     const tables = state.symbols.filter((s) => s.metadata?.type === "table")
     if (tables.length > 2) state.metadata.architecturalInsights!.push("Complex schema detected")
     if (state.patterns.has("Foreign Key Constraints")) {
@@ -742,6 +744,72 @@ export class RealSqlAnalyzer implements ASTEngine.LanguageAnalyzer {
    * from the start, and counts what it did in `ambiguity.indexOwnersAdopted`, so a
    * file where the order was already right reports 0.
    */
+    /**
+   * CAUSE A — publish a `qualifiedName` that is an IDENTIFIER rather than a repeat of `name`.
+   *
+   * MEASURED before this existed. Over the whole admitted SQL population (1,962 files, 199 corpus
+   * repos, production `parseFile`; record
+   * `validation/m14/fixtures/sql/measurements/pass13-ambiguity-split-BEFORE.json`): 18,652 symbols
+   * collapsed to 7,875 distinct `name`s, and the count of symbols whose `qualifiedName` DIFFERED
+   * from their `name` was **0**. Every ambiguous target in that run therefore also had no
+   * `qualifiedName` to disambiguate it — the brief's A symptom, 100% of the time.
+   *
+   * WHY THE FIELD WAS INERT, and it was not this lane's choice of names.
+   * `src/ast/pool-worker.ts` derives the stored value as
+   * `s.qualifiedName || s.metadata?.fqn || (s.scope ? \`${s.scope}.${s.name}\` : s.name)`.
+   * This analyzer sets `ownerName` and never `scope`, so the third arm never fired and the derived
+   * value was `name`. `metadata.fqn` is the arm that formula reads first after the analyzer's own
+   * field, it is the field the C# family already writes (`real-csharp-analyzer.ts` `fqn: fullName`),
+   * and fsharp took it for the same reason (`real-fsharp-analyzer.ts:138`). So this writes the one
+   * field that is designed for the job rather than renaming anything.
+   *
+   * WHY THE FILE IS PART OF IT. `ownerName` alone is not an identifier for this language: SQL
+   * collides overwhelmingly WITHIN a kind, and the corpus measurement names the offenders — 187
+   * files declare a symbol called `id`, 104 declare `name`, 36 declare `changed_by`, every one of
+   * them a `property` (a column). An `owner.name` qualified name would read `items.id` in
+   * `001_init.sql` and `items.id` again in `002_orders.sql`, so the name that exists to make a
+   * symbol addressable would still not address it. `search_path` is what resolves those in a live
+   * database and a migration file is loaded as a unit, so the file is the outer scope SQL actually
+   * has, and it goes in.
+   *
+   * `name` is untouched. The published name surface every consumer reads is exactly what it was,
+   * which is why this needs no fixture change and no coordination with any other lane; the
+   * relationship targets are untouched too, so no edge changes which row it names. What changes is
+   * that `brain_symbol.qualified_name` now carries an identifier, and the store's pass-1 resolution
+   * (`target_external = qualified_name`, the only EXACT match it owns) has something exact to match
+   * for any edge that chooses to target it.
+   *
+   * NOT CLAIMED: this does not make an edge resolve that did not resolve. Resolution is the store's
+   * name-keyed passes, measured in `store-resolution.mts`; a distinct qualified name is a
+   * precondition for a name-keyed choice to be checkable, not a resolution itself.
+   */
+  private publishQualifiedNames(state: ParseState): void {
+    const file = state.fileModuleName
+    for (const s of state.symbols) {
+      if (!s.name) continue
+      const fqn = s.name === file && s.kind === ASTEngine.SymbolKind.Module
+        ? file
+        : `${file}::${s.ownerName ? `${s.ownerName}.${s.name}` : s.name}`
+      // BOTH FIELDS, and the second one is not redundant. `pool-worker.ts:930` derives the
+      // stored value as `s.qualifiedName || s.metadata?.fqn || (s.scope ? … : s.name)`, so writing
+      // `fqn` alone is enough FOR THE WORKER — and invisible everywhere else, because
+      // `ASTEngine.parseFile` returns the analyzer's symbol objects unchanged and derives nothing.
+      // Measured, `postgrest/test/io/fixtures/big_schema.sql`, same 1,054 symbols through both
+      // production entry points:
+      //
+      //   pool-worker.parseFile   qualifiedName != name  1,053   metadata.fqn present  0
+      //   ASTEngine.parseFile     qualifiedName != name      0   metadata.fqn present  1,054
+      //
+      // `ASTEngine.parseFile` is the entry point `script/m14/diagnose-incoming.mts` uses, so with
+      // `fqn` alone that instrument reported "of those, NO distinct qualifiedName: 57 (100%)" for
+      // this lane — a true statement about the field it read and a false statement about the
+      // analyzer. `qualifiedName` is set as well so both entry points answer the same question the
+      // same way; the two agree by construction because both are written from `fqn` here.
+      s.qualifiedName = fqn
+      s.metadata = { ...s.metadata, fqn }
+    }
+  }
+
   private adoptLateDeclaredIndexOwners(state: ParseState): void {
     for (const symbol of state.symbols) {
       if (symbol.metadata?.type !== "index") continue
