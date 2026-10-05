@@ -181,6 +181,94 @@ for (const key of ["name", "qualifiedName", "metadataId"] as const) {
   }
 }
 
+// ---- A: is the published ID an identifier? Keyed on `qualifiedName`, the column
+// strategy 1 matches. An id published by MORE THAN ONE FILE is the condition under
+// which a reverse walk picks a winner nobody chose.
+const qFiles = new Map<string, Set<string>>()
+const qName = new Map<string, Set<string>>()
+const qKind = new Map<string, Set<string>>()
+for (const f of files) {
+  const r: any = await parseFile(f, CR)
+  for (const s of r?.symbols ?? []) {
+    const k = String(s.qualifiedName ?? "")
+    if (!k) continue
+    if (!qFiles.has(k)) {
+      qFiles.set(k, new Set())
+      qName.set(k, new Set())
+      qKind.set(k, new Set())
+    }
+    qFiles.get(k)!.add(f)
+    qName.get(k)!.add(String(s.name))
+    qKind.get(k)!.add(String(s.kind))
+  }
+}
+const ambiguousIds = [...qFiles.entries()].filter(([, v]) => v.size > 1)
+const ambHist = new Map<string, number>()
+for (const [, v] of ambiguousIds) {
+  const k = v.size > 10 ? "11+" : String(v.size)
+  ambHist.set(k, (ambHist.get(k) ?? 0) + 1)
+}
+// Two ids colliding while carrying DIFFERENT declaration names are two different
+// symbols sharing a published id — unrepairable inside one analyzer. Same name, same
+// kind, many files is one declaration vendored — the corpus's shape, not the analyzer's.
+const ambDistinctNames = ambiguousIds.filter(([k]) => (qName.get(k)?.size ?? 0) > 1)
+report.causeA = {
+  publishedIds: qFiles.size,
+  idsPublishedByMoreThanOneFile: ambiguousIds.length,
+  ofThoseCarryingMoreThanOneDistinctName: ambDistinctNames.length,
+  filesPerCollidingIdHistogram: Object.fromEntries([...ambHist].sort((a, b) => a[0].localeCompare(b[0]))),
+  edgesTargetingACollidingId: edges.filter((e) => (qFiles.get(e.t)?.size ?? 0) > 1).length,
+  worstIds: ambiguousIds
+    .sort((a, b) => b[1].size - a[1].size)
+    .slice(0, 5)
+    .map(([k, v]) => `${v.size} files  ${k}  names=${JSON.stringify([...(qName.get(k) ?? [])])}  kinds=${JSON.stringify([...(qKind.get(k) ?? [])])}`),
+  note:
+    "Keyed on qualifiedName. `name` is deliberately NOT used as the id: this lane publishes " +
+    "the fully-qualified id on both channels so strategy 1 binds deterministically, and a " +
+    "bare name is not an identifier for a protobuf declaration.",
+}
+
+// ---- C: what stays unresolved on the binding key, partitioned by whether the corpus
+// can answer it at all.
+const unresolvedOnQ = distinct.filter((t) => !TYPE.qualifiedName.has(t))
+const corpusBasenames = new Map<string, string[]>()
+for (const f of files) {
+  const b = f.slice(f.lastIndexOf("/") + 1)
+  if (!corpusBasenames.has(b)) corpusBasenames.set(b, [])
+  corpusBasenames.get(b)!.push(f)
+}
+const cNamesCorpusFile = unresolvedOnQ.filter((t) => {
+  const b = t.slice(t.lastIndexOf("/") + 1)
+  return corpusBasenames.has(b)
+})
+const cNoCorpusFile = unresolvedOnQ.filter((t) => {
+  const b = t.slice(t.lastIndexOf("/") + 1)
+  return !corpusBasenames.has(b)
+})
+// A target naming no corpus file AND matching a well-known-type or stdlib spelling is
+// external by design. The spellings checked are literal string prefixes, not patterns.
+const EXTERNAL_PREFIXES = [
+  "google.protobuf.", "google/protobuf/", "google.api.", "google/type/",
+  "google/rpc/", "protoc-gen-", "validate/", "envoy/", "grpc/",
+]
+const cExternalShaped = cNoCorpusFile.filter((t) => EXTERNAL_PREFIXES.some((p) => t.startsWith(p)))
+const cUnexplained = cNoCorpusFile.filter((t) => !EXTERNAL_PREFIXES.some((p) => t.startsWith(p)))
+report.causeC = {
+  unresolvedTargetsOnBindingKey: unresolvedOnQ.length,
+  namingACorpusFileByBasename: cNamesCorpusFile.length,
+  namingNoCorpusFile: cNoCorpusFile.length,
+  ofThoseExternalShaped: cExternalShaped.length,
+  ofThoseUnexplained: cUnexplained.length,
+  unexplainedExamples: cUnexplained.slice(0, 12),
+  externalShapedExamples: cExternalShaped.slice(0, 6),
+  edgesOnUnexplainedTargets: edges.filter((e) => cUnexplained.includes(e.t)).length,
+  note:
+    "Basename resolution is over the 842-file population, so a target naming a .proto OUTSIDE " +
+    "it is counted as naming no corpus file. `namingACorpusFileByBasename` is class U1 in this " +
+    "lane's pass-20 partition; the remainder is U2/U4. The external check is a literal prefix " +
+    "list, so a well-known type spelled some other way lands in `unexplained`, not in `external`.",
+}
+
 // Which key does the STORE bind on? Pass 5 established strategy 1 compares
 // target_external against brain_symbol.qualified_name. This measures how many edges
 // name a symbol under that key, which is the number that matters for bb_impact.
@@ -214,5 +302,19 @@ if (JSON_ONLY) {
   console.log(`store binding (strategy 1 / brain_symbol.qualified_name):`)
   console.log(`  edges naming a published qualifiedName: ${edgesOnQ}`)
   console.log(`  edges naming ONLY a bare published name:  ${edgesOnNameOnly}`)
+  console.log()
+  console.log(`A  name is not an identifier (keyed on qualifiedName):`)
+  console.log(`  published ids ${report.causeA.publishedIds}   ids in >1 file ${report.causeA.idsPublishedByMoreThanOneFile}   of those, >1 distinct name ${report.causeA.ofThoseCarryingMoreThanOneDistinctName}`)
+  console.log(`  edges targeting a colliding id: ${report.causeA.edgesTargetingACollidingId}`)
+  console.log(`  files-per-colliding-id: ${JSON.stringify(report.causeA.filesPerCollidingIdHistogram)}`)
+  for (const w of report.causeA.worstIds) console.log(`    ${w}`)
+  console.log()
+  console.log(`C  external / genuinely absent, on the binding key:`)
+  console.log(`  unresolved targets ${report.causeC.unresolvedTargetsOnBindingKey}`)
+  console.log(`    naming a corpus file by basename: ${report.causeC.namingACorpusFileByBasename}`)
+  console.log(`    naming no corpus file:            ${report.causeC.namingNoCorpusFile}`)
+  console.log(`      external-shaped:                ${report.causeC.ofThoseExternalShaped}`)
+  console.log(`      UNEXPLAINED:                    ${report.causeC.ofThoseUnexplained}  (${report.causeC.edgesOnUnexplainedTargets} edges)`)
+  if (report.causeC.unexplainedExamples.length) console.log(`      e.g. ${JSON.stringify(report.causeC.unexplainedExamples)}`)
 }
 writeFileSync(OUT, JSON.stringify(report, null, 2))
