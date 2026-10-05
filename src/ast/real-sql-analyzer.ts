@@ -787,13 +787,26 @@ export class RealSqlAnalyzer implements ASTEngine.LanguageAnalyzer {
     const file = state.fileModuleName
     for (const s of state.symbols) {
       if (!s.name) continue
-      if (s.name === file && s.kind === ASTEngine.SymbolKind.Module) {
-        s.metadata = { ...s.metadata, fqn: file }
-        continue
-      }
-      const owner = s.ownerName
-      const leaf = owner ? `${owner}.${s.name}` : s.name
-      s.metadata = { ...s.metadata, fqn: `${file}::${leaf}` }
+      const fqn = s.name === file && s.kind === ASTEngine.SymbolKind.Module
+        ? file
+        : `${file}::${s.ownerName ? `${s.ownerName}.${s.name}` : s.name}`
+      // BOTH FIELDS, and the second one is not redundant. `pool-worker.ts:930` derives the
+      // stored value as `s.qualifiedName || s.metadata?.fqn || (s.scope ? … : s.name)`, so writing
+      // `fqn` alone is enough FOR THE WORKER — and invisible everywhere else, because
+      // `ASTEngine.parseFile` returns the analyzer's symbol objects unchanged and derives nothing.
+      // Measured, `postgrest/test/io/fixtures/big_schema.sql`, same 1,054 symbols through both
+      // production entry points:
+      //
+      //   pool-worker.parseFile   qualifiedName != name  1,053   metadata.fqn present  0
+      //   ASTEngine.parseFile     qualifiedName != name      0   metadata.fqn present  1,054
+      //
+      // `ASTEngine.parseFile` is the entry point `script/m14/diagnose-incoming.mts` uses, so with
+      // `fqn` alone that instrument reported "of those, NO distinct qualifiedName: 57 (100%)" for
+      // this lane — a true statement about the field it read and a false statement about the
+      // analyzer. `qualifiedName` is set as well so both entry points answer the same question the
+      // same way; the two agree by construction because both are written from `fqn` here.
+      s.qualifiedName = fqn
+      s.metadata = { ...s.metadata, fqn }
     }
   }
 
