@@ -12,16 +12,14 @@
     "total": 4,
     "caught": 4
   },
-  "currentCommit": "a0ed9eade7008de7ce93a312f6b0bd7e182a43a9",
-  "workingTreeRelevantChanges": [
-    "script/m55/verify-hover-coverage.ts"
-  ],
+  "currentCommit": "936b66d6d088776c7715e7d1aec492cc9c6d9841",
+  "workingTreeRelevantChanges": [],
   "verifierCommand": "npx tsx script/m55/verify-signatures.ts",
   "evidenceFile": "T4.json",
-  "generatedAt": "2026-10-05T00:00:57.897Z",
+  "generatedAt": "2026-10-05T02:32:55.972Z",
   "fixture": {
-    "workspace": "/var/folders/4j/11tssyqj4kj0f8dfz06jsb700000gn/T/m55-t4-ws-En1elc",
-    "projectId": "7745075c0767cf89986421bd7c5d832694451991",
+    "workspace": "/var/folders/4j/11tssyqj4kj0f8dfz06jsb700000gn/T/m55-t4-ws-MBcssC",
+    "projectId": "135f46c4c26ea270ca1e6f5f29e8a9297a5a7258",
     "symbols": 10,
     "storedShapes": [
       "null",
@@ -69,7 +67,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T00:00:57.899Z",
-    "contentSha256": "e4a378f9c4b658a69fb672ca4c55f4441667007020022f9cbb6bc5e8f43da03d"
+    "sealedAt": "2026-10-05T02:32:55.975Z",
+    "contentSha256": "ee14150fb33f058d67f2cf904fd49afb3faed247e1f53ad01d9cd9a318370afc"
   }
 }

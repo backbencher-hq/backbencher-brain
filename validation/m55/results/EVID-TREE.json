@@ -12,38 +12,34 @@
     "total": 6,
     "caught": 6
   },
-  "currentCommit": "5b49217c5346271e75b331193af9352de9e49a5d",
+  "currentCommit": "936b66d6d088776c7715e7d1aec492cc9c6d9841",
   "workingTreeRelevantChanges": [
     "validation/m24/results/L2.json",
-    "validation/m26/core.v1mutant.1789395009246.2.ts",
-    "validation/m26/graph_request.mutant.1789359268925.ts",
-    "validation/m55/results/EVID-TREE.json"
+    "validation/m42/results/H1.json",
+    "validation/m42/results/H2.json",
+    "validation/m42/results/H3.json",
+    "validation/m42/results/H4.json",
+    "validation/m55/results/T3.json",
+    "validation/m55/results/T4.json"
   ],
   "verifierCommand": "npx tsx script/m55/verify-evidence-tree-clean.ts",
   "evidenceFile": "EVID-TREE.json",
-  "generatedAt": "2026-10-05T01:52:17.409Z",
+  "generatedAt": "2026-10-05T02:33:07.760Z",
   "observed": {
     "rule": {
       "id": "epoch-suffixed-mutant-scratch",
       "statement": "a basename matching /(?:^|[^A-Za-z0-9])v?\\d*mutant\\.\\d/i — 'mutant' as a delimited token, then '.', then digits",
       "pattern": {}
     },
-    "scannedFiles": 4656,
-    "trackedFiles": 4655,
-    "untrackedInValidation": [
-      "m55/results/EVID-TREE.json"
-    ],
+    "scannedFiles": 4657,
+    "trackedFiles": 4657,
+    "untrackedInValidation": [],
     "c1CountedUntracked": [],
     "selfExempt": [
       "m55/results/EVID-TREE.json"
     ],
     "committedScratchSignatures": [],
-    "violations": [
-      {
-        "rel": "m55/results/EVID-TREE.json",
-        "why": "untracked-in-evidence-tree"
-      }
-    ],
+    "violations": [],
     "sourceLawOffenders": [
       {
         "file": "script/m26/verify-webview-core.ts",
@@ -124,7 +120,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T01:52:17.411Z",
-    "contentSha256": "2d82daef6aaf86c4880b911c3566e0e278f849e514ce0b2ec50c79219e345e57"
+    "sealedAt": "2026-10-05T02:33:07.761Z",
+    "contentSha256": "6f65c491f966cab20d966977e9afdb79ba5ddfe50fe40459d078fb0431e881d5"
   }
 }
