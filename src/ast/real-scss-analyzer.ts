@@ -369,6 +369,22 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   /**
+   * The byte offset where an `@extend` statement's own selector stops.
+   *
+   * That is the first `;` at or after the statement starts, because `;` terminates the
+   * declaration the `@extend` belongs to and everything past it is the next declaration. A
+   * statement with no `;` is bounded by its own end.
+   *
+   * Returned as an OFFSET rather than used as a string test on the target, so a legitimate
+   * `@extend` whose target happens to contain `;`-adjacent punctuation is judged by position
+   * in the source and not by a shape.
+   */
+  private extendTargetBound(node: Node): number {
+    const semi = String(node.text ?? "").indexOf(";")
+    return semi < 0 ? node.endIndex : node.startIndex + semi
+  }
+
+  /**
    * Every strict descendant matching `predicate`, in tree order.
    *
    * Needed where `findDescendant`'s breadth-first FIRST match is the wrong node: on a
@@ -1101,9 +1117,39 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
     // lane resolved none of them. The interpolated one is rejected on its own text
     // (`%responsive-container-` is a PREFIX), because a prefix names no selector and an
     // edge to it would have an endpoint that resolves to nothing.
+    // A selector the `@extend` NAMES ends at the statement's first `;`. Nothing after that
+    // byte is this statement's referent, however the grammar hung the tokens, and the walk
+    // below is otherwise free to leave the statement: `findDescendant` searches the whole
+    // subtree and the subtree of a broken `extend_statement` INCLUDES the declarations that
+    // follow it.
+    //
+    // It did, and published the result. On the degenerate `@extend %;` the grammar produces no
+    // `placeholder` at all — the `%` survives only as an anonymous token — so the search fell
+    // through to the NEXT declaration's own selector node:
+    //
+    //     extend_statement [61]  "@extend %; background-color: ov.getVar("
+    //       ERROR         [61]   "%; background-color: ov.getVar("
+    //         % (anon)     [61]   "%"                       <- the referent, never parsed
+    //         class_selector [62] ".getVar"                 <- the NEXT declaration's selector
+    //
+    // and the lane emitted `extends .bd-quote button -> .getVar`: an `extends` edge to a class
+    // that no rule extends, pointing into an unrelated declaration. This is PRE-EXISTING — it
+    // reproduces identically on the analyzer before the delimiter recovery above — and it is
+    // the same defect class, so it is fixed here rather than filed. A class selector IS a
+    // legitimate `@extend .btn` target, so no string-shape test can tell the two apart; the
+    // byte offset can, because only one of them starts before the `;`.
+    //
+    // The bound errs toward suppressing: a `;` inside an interpolation
+    // (`@extend %foo#{map-get($m, a;b)}`) would cut the region short and lose a true edge. No
+    // such statement was measured on this corpus (0 of the 293 `extends` targets carry a `;`
+    // at all once interpolation is removed), so the direction of the error is stated rather
+    // than assumed.
+    const bound = this.extendTargetBound(node)
     const sel = this.findDescendant(
       node,
-      (n) => n.type === "class_selector" || n.type === "id_selector" || n.type === "plain_value" || n.type === "placeholder",
+      (n) =>
+        n.startIndex < bound &&
+        (n.type === "class_selector" || n.type === "id_selector" || n.type === "plain_value" || n.type === "placeholder"),
     )
     if (!sel) return undefined
     const name = collapseWhitespace(sel.text)
@@ -1134,7 +1180,10 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (containsStatementDelimiter(name)) {
       const inner = this.descendants(
         sel,
-        (n) => n.type === "placeholder" && isReadablePlaceholder(collapseWhitespace(n.text)),
+        (n) =>
+          n.startIndex < bound &&
+          n.type === "placeholder" &&
+          isReadablePlaceholder(collapseWhitespace(n.text)),
       )
       return inner.length > 0 ? collapseWhitespace(inner[0].text) : undefined
     }
