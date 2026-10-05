@@ -12,6 +12,7 @@
     "total": 7,
     "caught": 7
   },
+<<<<<<< HEAD
   "currentCommit": "800d8e8969b321b108a1f4e21c6251797bc14f0b",
   "workingTreeRelevantChanges": [],
   "verifierCommand": "npx tsx script/m55/verify-relations.ts",
@@ -20,6 +21,18 @@
   "fixture": {
     "workspace": "/var/folders/4j/11tssyqj4kj0f8dfz06jsb700000gn/T/m55-t3-ws-CH2d8K",
     "projectId": "aa7176c3ddebd6436b74812e88fcef3b80aba86a",
+=======
+  "currentCommit": "39a6b52c0d4618af5af443f88c5f5d6b39e62be6",
+  "workingTreeRelevantChanges": [
+    "src/lsp/rich_hover.ts"
+  ],
+  "verifierCommand": "npx tsx script/m55/verify-relations.ts",
+  "evidenceFile": "T3.json",
+  "generatedAt": "2026-10-05T12:01:09.142Z",
+  "fixture": {
+    "workspace": "/var/folders/4j/11tssyqj4kj0f8dfz06jsb700000gn/T/m55-t3-ws-ro000g",
+    "projectId": "261f18a9773e93b4db34081b3bdecbe952edce91",
+>>>>>>> feat/hover-all-relationships
     "symbols": 7,
     "rows": 12,
     "expect": {
@@ -135,7 +148,12 @@
   ],
   "bbSeal": {
     "alg": "sha256",
+<<<<<<< HEAD
     "sealedAt": "2026-10-05T13:09:46.396Z",
     "contentSha256": "655cd7c1d86e5d47de9e462cfd22c3d4bf0d24d4d72c3ceadc672c2562a6aa1f"
+=======
+    "sealedAt": "2026-10-05T12:01:09.144Z",
+    "contentSha256": "14382493fa229537477828c9492ced185fae5e614aea722599c3075124403d04"
+>>>>>>> feat/hover-all-relationships
   }
 }

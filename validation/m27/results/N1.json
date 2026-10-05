@@ -2,21 +2,43 @@
   "issue": "M27.N1",
   "code": "N1",
   "milestone": "M27",
-  "status": "blocked",
-  "blockedReason": "nvim not provisioned in .tools/ (D-7 portable layout)",
-  "checks": 1,
-  "passed": 0,
-  "failed": 1,
-  "mutantsCaught": 0,
-  "mutantsTotal": 0,
-  "mutantRecords": [],
-  "currentCommit": "a0ed9eade7008de7ce93a312f6b0bd7e182a43a9",
+  "status": "verified",
+  "checks": 31,
+  "passed": 31,
+  "failed": 0,
+  "mutantsCaught": 4,
+  "mutantsTotal": 4,
+  "mutantRecords": [
+    {
+      "name": "M1 hover position off by one line",
+      "caught": true
+    },
+    {
+      "name": "M2 wrong fixture symbol expected",
+      "caught": true
+    },
+    {
+      "name": "M3 capability expectation inverted (driver demands the wrong thing)",
+      "caught": true
+    },
+    {
+      "name": "M4 staleness payload corrupted (driver reports a non-boolean marker)",
+      "caught": true
+    }
+  ],
+  "nvim": "NVIM v0.12.5",
+  "currentCommit": "1590b45ff3a246db4d1e6b3b8775141a439e378e",
   "verifierCommand": "npx tsx script/m27/verify-nvim.ts",
   "evidenceFile": "N1.json",
-  "generatedAt": "2026-10-04T23:20:39.248Z",
+  "generatedAt": "2026-10-05T14:15:52.486Z",
+  "claimLevel": "I3 — real editor session, machine-driven, real server over stdio",
+  "limitations": [
+    "Fixture seeded with the shared-core convention (real hash + stat) — the same shape M25.E5 uses.",
+    "Graph webview out of scope in Neovim (D-6); the capability matrix records the delta."
+  ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-04T23:20:39.251Z",
-    "contentSha256": "b62a80bee9f2d9b738ff5a09c20fbac9d85aaac7bcd4d8faf8c7a1448d3fa1dd"
+    "sealedAt": "2026-10-05T14:15:52.489Z",
+    "contentSha256": "02818373b4705d67441ad7495359b54cc286fcc3168193694d1d604ba0184594"
   }
 }
