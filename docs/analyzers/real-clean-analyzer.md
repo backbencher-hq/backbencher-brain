@@ -1708,3 +1708,89 @@ import { CLEAN_MUTANTS } from "./clean-mutants"
 - It does not claim the graph is exhaustive. 4 types carry 0 oracle coverage, `extends`
   is compared against nothing, and the `overrides` in-file guard withholds 454 measured
   instances. Those are stated above with their counts.
+
+## Ambiguity: why an incoming target resolves to more than one declaration
+
+Round brief step 1. Population: the 2,181-file WIDE walk (`wide-walk-2181.log`, 16
+shards, 2181/2181 files measured, 0 excluded), 63,052 declarations, 234,000 edges,
+production `parseFile`, 16 identity shards. Instrument: `script/m14/clean-ambiguity-split.mts`.
+Result: `validation/m14/measurements/clean/ambiguity-split-2181.json`, log beside it,
+and `phantoms-2181.ndjson` — one row per flagged declaration with its source line, so
+every count below is re-derivable without re-running the walk.
+
+**This is not the 600-file `incoming-check` number and the two are not a before/after.**
+`incoming-check` indexes `name -> kinds`; this instrument resolves the store's own three
+strategies and counts CANDIDATE DECLARATIONS. An ambiguous edge is one edge that the
+reverse walk attributes to one of N declarations.
+
+### Target side — one edge, N candidate declarations, of 234,000 edges
+
+| bucket | edges | share | distinct names | what it is |
+|---|---:|---:|---:|---|
+| `B_MODULE` | 109,962 | 47.0% | 15,316 | one declaration per file, N files |
+| `C_NAME_CONTRACT` | 73,242 | 31.3% | 2,821 | one name, 2+ KINDS |
+| `NOT_BOUND` | 5,800 | 2.5% | 182 | the name is on the line, not bound as a definition there |
+| `A_SCOPE` | 2,086 | 0.9% | 837 | N declarations of one name inside ONE file |
+| `UNRESOLVED` | 1,238 | 0.5% | 478 | no declaration under any of the three rules |
+| `ABSENT` | 7 | 0.0% | 4 | the name does not occur on the line that declares it |
+| (`UNIQUE`) | 34,691 | 14.8% | 13,205 | one declaration, one kind |
+
+Source side, of 227,026 edges: `B_MODULE` 164,459 (72.4%), `C_NAME_CONTRACT` 26,110
+(11.5%), `A_SCOPE` 3,373 (1.5%), `NOT_BOUND` 911, `ABSENT` 58, `UNRESOLVED` 73.
+
+**`A_SCOPE` — the only bucket the round brief calls a scoping failure — is 0.9% of target
+edges and 1.5% of source edges.** 78.3% of target-side ambiguity is `B_MODULE` plus
+`C_NAME_CONTRACT`, and neither is a scoping failure in this analyzer.
+
+### The largest bucket is not repairable from inside this analyzer, and the proof is structural
+
+`parseFile(filePath, projectPath, context)` (`src/ast/pool-worker.ts:772`) takes ONE file.
+`real-clean-analyzer` is a per-file walk with no cross-file table, so it cannot know that
+a bare target `map` is declared in 50 modules and cannot say which one it meant. The
+analyzer does read the module — `ctx.currentModule` is set per symbol and every `imports`
+edge already names the modules in scope — but knowing WHICH MODULE IS IN SCOPE is not the
+same as knowing what that module declares, and only the second disambiguates.
+
+### The tempting fix is a regression, and the fixture says so
+
+`processInstance` publishes the instance's TARGET TYPE as a `Class` symbol
+(`src/ast/real-clean-analyzer.ts:1909`), which is how `instance Show Bool` came to publish
+a row named `Bool` in each of the files that instantiate it. Withholding the row when the
+target type is not declared in this file removes 1,690 duplicate declarations — the largest
+single driver of `C_NAME_CONTRACT`, where `Int` alone has 160 declarations across 62 files
+for 9,848 edges.
+
+**It was implemented, measured against the fixture suite, and reverted.** The instance
+body's scope is named by that same target (`src/ast/real-clean-analyzer.ts:2083`), so every
+instance MEMBER takes `ownerName` from it. Withholding the row leaves `cmp` in
+`instance Cmp [!a]` owned by a name with no declaration.
+`instance-member-signature-context` failed on exactly that (`[!a]`, `[!a!]`), 12 pass → 1
+fail. Trading N ownerless members for 1,690 fewer duplicate rows is not a fix, and the
+number that would have moved is not worth the one that would have broken. The change is
+reverted; `git status` is clean on the analyzer and `run-fixtures --lang clean` is 13/13.
+
+### Symbol rows whose name is not bound as a definition on its own line
+
+2,417 of 63,052 declarations (3.8%), of 63,052 lines read, 0 unreadable, SELF-CHECK 0.
+By kind: `class` 1,690, `type` 356, `function` 270, `constructor` 48, `macro` 48,
+`method` 5. Split `ABSENT` 10 / `NOT_BOUND` 2,407 — the two have different fixes and the
+earlier single bucket claimed "absent from their own declaration line" for both, which is
+false for the second. Every row, with its source line, is in `phantoms-2181.ndjson`.
+
+All 10 `ABSENT` rows are name-extraction defects, and none is a test artefact:
+
+| published | source line |
+|---|---|
+| `function ++` | `= (symTypes,hyp1++hyp2) @ i1` — an operator read out of an expression |
+| `function -` | `XOffs-14` — the same |
+| `function *` | `StartProcess :: !(*World -> *World)` — out of a type |
+| `function \` | `(\\t a = ...)` |
+| `class []` | `instance resolveFilename World` |
+| `function dertriplets` | `ordertriplets [] accu = accu` — a SUFFIX of the real name |
+| `function derLex` | `orderLex f Nil Nil = False ;` — the same defect |
+| `function Tasks_mu` | `newTask "andTasks_mu" (...)` — out of a string literal |
+
+The remaining 2,407 are `NOT_BOUND` and are dominated by `instance Show Bool where`
+publishing `Bool` as a `class` (1,690) and `printPagePerPage :: !Bool !Bool` publishing
+`Bool` as a `type` (356) — the same withdrawal question as above, and the `type` family is
+still open.
