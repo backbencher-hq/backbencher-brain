@@ -3,8 +3,8 @@
   "code": "H2",
   "milestone": "M42",
   "status": "verified",
-  "checks": 41,
-  "passed": 41,
+  "checks": 44,
+  "passed": 44,
   "failed": 0,
   "failures": [],
   "verdict": {
@@ -51,7 +51,7 @@
     "importFailureIsNotCaught": true
   },
   "negatives": {
-    "planned": 1
+    "planned": 2
   },
   "fixture": {
     "root": "$HOME/Documents/Default Project/ishaq/wt/surface/.tools/m42-h2-fixture",
@@ -95,24 +95,49 @@
       "differentialFile": "src/main/java/com/demo/App.java"
     }
   },
+  "ground": {
+    "indexDataDir": "an isolated mkdtemp BB_DATA_DIR, passed to the indexer AND to the server this suite starts (the pre-lane run used the developer's default ~/.bb, so the answer depended on that machine's store)",
+    "storedRowsTouchingRender": [
+      {
+        "rowId": "3085f52e51705c17097677dd2c0736303b6c3001:rel:3085f52e51705c17097677dd2c0736303b6c3001:src/main/java/com/demo/App.java:main:13:render:calls:15",
+        "relType": "calls",
+        "storedLine": 15,
+        "sourceRel": "src/main/java/com/demo/App.java"
+      },
+      {
+        "rowId": "3085f52e51705c17097677dd2c0736303b6c3001:rel:3085f52e51705c17097677dd2c0736303b6c3001:src/main/java/com/demo/Main2.java:main:4:render:calls:6",
+        "relType": "calls",
+        "storedLine": 6,
+        "sourceRel": "src/main/java/com/demo/Main2.java"
+      },
+      {
+        "rowId": "3085f52e51705c17097677dd2c0736303b6c3001:rel:3085f52e51705c17097677dd2c0736303b6c3001:src/main/java/com/demo/App.java:Greeter:6:render:contains:7",
+        "relType": "contains",
+        "storedLine": 7,
+        "sourceRel": "src/main/java/com/demo/App.java"
+      }
+    ],
+    "usageRows": 2,
+    "groundHolds": true
+  },
   "budgets": {
     "hoverP95Ms": 50
   },
   "measured": {
     "regime": "warm",
     "samples": 200,
-    "p50Ms": 7.54,
-    "p95Ms": 11.24,
-    "maxMs": 29.16,
-    "meanMs": 7.92,
+    "p50Ms": 6.88,
+    "p95Ms": 10.08,
+    "maxMs": 15.25,
+    "meanMs": 7.12,
     "budgetMs": 50,
-    "coldMs": 77.82,
+    "coldMs": 74.42,
     "note": "A real p95 over a stated sample set. The pre-lane check was a MEAN over 40 compared against this budget and reported as a p95; the substitution was named as a limitation in KNOWN-GAPS.json for three waves instead of being fixed."
   },
-  "currentCommit": "de5be3160efd761c14fe4222d8af103b83ff9fd1",
+  "currentCommit": "8938a728a7d54412e7b8048bf588524bebaf1817",
   "verifierCommand": "npx tsx script/m42/verify-rich-hover.ts",
   "evidenceFile": "H2.json",
-  "generatedAt": "2026-10-05T04:05:47.210Z",
+  "generatedAt": "2026-10-05T04:13:38.874Z",
   "supersededExpectations": [
     {
       "was": "H2/R4: the hover's call-site links DIFFER from the L3 reference lines, and the card states the difference",
@@ -126,11 +151,12 @@
     "A usage link opens the index-stored CALL SITE when brain_relationship.line_number holds a real line, and the referencing symbol's DECLARATION when it does not — every such row states which, in its own label and in the usages header. The store carries no call-site BYTE COLUMN, so a call-site link opens at character 0: the line is exact, the column is not stored.",
     "Declared residual, unchanged by this lane: textDocument/references and the hover card now agree EXACTLY on the call site (both open the stored line at character 0), so there is no second answer left to reconcile on this surface. The agreement is what §15.1 asks for; the shared limit is the missing byte column, above.",
     "A hover renders at most 3 usage links plus a \"+N more\" link, so a symbol with many callers shows three of them on the card and the rest through the hub.",
-    "No editor leg: this file proves the server surface. Link clicking in a real session is the E5-pattern session at H2 acceptance."
+    "No editor leg: this file proves the server surface. Link clicking in a real session is the E5-pattern session at H2 acceptance.",
+    "FLAKY INPUT, observed once: on one run at commit 8938a728 this fixture indexed with 1 of its 2 calling rows and the gate reported 4 surface failures. Three consecutive runs at the same commit were 41/41. The gate now isolates BB_DATA_DIR (so the answer cannot depend on the developer's ~/.bb) and asserts the ground (R2) before any surface leg, so the next occurrence is attributable rather than misattributed."
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T04:05:47.211Z",
-    "contentSha256": "83e5549f80061d6901a8feb1c236f856ae4e846642118bc107ed5cd6679db930"
+    "sealedAt": "2026-10-05T04:13:38.876Z",
+    "contentSha256": "590a5e18a169a88c8957646ff26287d0c0194a07561949762a4fc72bbb20c143"
   }
 }
