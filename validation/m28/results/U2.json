@@ -40,7 +40,7 @@
       "observed": "bb_graph resolved root.name=count (src/main/java/com/demo/Inventory.java:count:4) but published root.name=Inventory, and root.match still reads \"exact\" with no substitution declared"
     }
   ],
-  "currentCommit": "697bd5e296e3ea8b49237a14ebfac5006618f835",
+  "currentCommit": "42da053221ba9dd3173faffe2e60913e9de35993",
   "sourceFingerprint": {
     "src/mcp/tool-handlers.ts": "a2b91b7d013c5e153a115a2693f76c1e51b4ea8daae84550e757395a8c10f426",
     "src/lsp/evidence_tier.ts": "4cc88ae81056af0f65e977d0c613121a2d8d545ff275afda13096e6294b0c5ce",
@@ -52,7 +52,7 @@
   },
   "verifierCommand": "npx tsx script/m28/verify-surface-parity.ts",
   "evidenceFile": "U2.json",
-  "generatedAt": "2026-10-05T03:59:10.549Z",
+  "generatedAt": "2026-10-05T04:25:10.440Z",
   "counts": {
     "seededRelationshipShapes": 2170,
     "seededShapesReturnedByBbGraph": 2170,
@@ -101,11 +101,11 @@
     "fixture relationship kinds: calls,contains,references",
     "seeded 2170 relationship shapes across 73 probe symbols (2170 kind x confidence x stored-class combinations)",
     "seed reachability: 2170 rows returned for 2170 seeded; 73 of 73 pages declared a filter in truncationReason (the filter the probe asked for)",
-    "seeded a member-through-owner shape: u2SeedMember (field) owned by Warehouse (class)"
+    "seeded a member-through-owner shape: u2SeedMember (field) owned by Barcode (class)"
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T03:59:10.549Z",
-    "contentSha256": "58b279ba3277129f9792cacdb75943b0e89acff95c8820c154ca3d0728259ced"
+    "sealedAt": "2026-10-05T04:25:10.440Z",
+    "contentSha256": "7587fd4a6d842b42c23578edb3dbe92aae0610155fc92a00f8120e7fbbb8ced6"
   }
 }

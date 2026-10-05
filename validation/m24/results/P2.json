@@ -99,12 +99,12 @@
       "owner": "src/lsp owner — NOT edited by the m24 lane-1 repair"
     }
   ],
-  "currentCommit": "d3b06b5158f3e5e0860a7e9325f1635867343204",
+  "currentCommit": "42da053221ba9dd3173faffe2e60913e9de35993",
   "sourceFingerprint": "44bdf9f570c8807e4c84d2fda13eee1a64b1b15d8228b1bcefa4060e70223a4a",
   "sourceFingerprintAlgorithm": "sha256 over raw file bytes (node:crypto; no process spawn)",
   "verifierCommand": "npx tsx script/m24/verify-freshness.ts",
   "evidenceFile": "P2.json",
-  "generatedAt": "2026-10-05T00:41:34.839Z",
+  "generatedAt": "2026-10-05T04:23:18.487Z",
   "limitations": [
     "Watcher exercised through real fs.watch on a temp directory. THIS RUN'S OS IS IN `measuredOs`, and the watcher event classes the claims are scoped to are in `watcherEventClasses`; the per-run event counts are printed to the run log rather than recorded, because they vary between runs of the same commit and evidence must regenerate byte-identically (contract §8.2, §10.2: platform scope is declared per claim, other OSes declared absent, never assumed).",
     "The convergence legs (G1, G2, G3, G4, G5 recovery, G7) assert convergence WITHIN a declared bound (6000 ms) and stability across a 150 ms window, rather than at the instant drain() returned: watcher delivery latency is the platform's. The one-directional guarantee — never fresh before the reindex lands — is asserted at full strength, and the 'pendingReindex never clears' mutant proves the bounded wait cannot hide a stuck monitor.",
@@ -115,7 +115,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T00:41:34.839Z",
-    "contentSha256": "6ba67372a67648658964874c16297e8cce18dd6875732798c4c3c5ec2d42c161"
+    "sealedAt": "2026-10-05T04:23:18.487Z",
+    "contentSha256": "a7dc10a39da010698409ae48c6ffdbc29fbe0808c681360ff1a37a50a617e9c4"
   }
 }

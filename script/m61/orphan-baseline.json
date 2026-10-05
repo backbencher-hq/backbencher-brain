@@ -1,18 +1,23 @@
 {
   "schemaVersion": 1,
   "generatedBy": "script/m61/verify-orphan-gates.ts",
-  "head": "fbd8dd9d9bcc1a037387c0588cebd5d285550d7e",
+  "head": "42da053221ba9dd3173faffe2e60913e9de35993",
   "note": "The declared-orphan baseline. A verifier listed here is present on disk and reachable from NO npm script and NO closure gate; the reason states why. Adding a new unwired verifier without adding it here fails G1 of script/m61/verify-orphan-gates.ts. Generated content is the census; the `orphans` map is the reviewed declaration.",
   "census": {
-    "verifiers": 599,
+    "verifiers": 605,
     "wiredByNpmScripts": 416,
     "wiredIncludingClosureGateBodies": 416,
-    "orphans": 183,
+    "orphans": 189,
     "declaredOrphans": 183,
-    "verifiersNamedBySource": 57,
-    "unprotectedBySource": 8,
+    "verifiersNamedBySource": 64,
+    "unprotectedBySource": 12,
     "declaredSourceNamed": 8,
-    "undeclaredSourceNamed": []
+    "undeclaredSourceNamed": [
+      "script/m24/verify-position-arithmetic.ts (named by src/lsp/navigation.ts)",
+      "script/m26/verify-graph-transport.ts (named by src/lsp/server.ts)",
+      "script/m28/verify-surface-parity.ts (named by src/intelligence/documentation/doc-engine.ts)",
+      "script/m55/verify-hover-coverage.ts (named by src/lsp/rich_hover.ts)"
+    ]
   },
   "orphans": {
     "script/a3-relationship-enrichment/verify-embedding-integrity.ts": "A3 relationship-enrichment workstream gate — no milestone ledger in validation/ claims it (lane a3-relationship-enrichment)",

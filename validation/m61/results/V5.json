@@ -4,9 +4,9 @@
   "milestone": "M61",
   "status": "known-gap",
   "checks": 15,
-  "passed": 14,
-  "failed": 1,
-  "realFailed": 1,
+  "passed": 12,
+  "failed": 3,
+  "realFailed": 3,
   "negativeCases": 11,
   "mutantsTotal": 11,
   "mutantsCaught": 11,
@@ -56,20 +56,25 @@
       "caught": true
     }
   ],
-  "currentCommit": "fbd8dd9d9bcc1a037387c0588cebd5d285550d7e",
+  "currentCommit": "42da053221ba9dd3173faffe2e60913e9de35993",
   "verifierCommand": "npx tsx script/m61/verify-orphan-gates.ts",
   "evidenceFile": "V5.json",
-  "generatedAt": "2026-10-05T00:00:57.990Z",
+  "generatedAt": "2026-10-05T04:26:05.687Z",
   "census": {
-    "verifiers": 599,
+    "verifiers": 605,
     "wiredByNpmScripts": 416,
     "wiredIncludingClosureGateBodies": 416,
-    "orphans": 183,
+    "orphans": 189,
     "declaredOrphans": 183,
-    "verifiersNamedBySource": 57,
-    "unprotectedBySource": 8,
+    "verifiersNamedBySource": 64,
+    "unprotectedBySource": 12,
     "declaredSourceNamed": 8,
-    "undeclaredSourceNamed": []
+    "undeclaredSourceNamed": [
+      "script/m24/verify-position-arithmetic.ts (named by src/lsp/navigation.ts)",
+      "script/m26/verify-graph-transport.ts (named by src/lsp/server.ts)",
+      "script/m28/verify-surface-parity.ts (named by src/intelligence/documentation/doc-engine.ts)",
+      "script/m55/verify-hover-coverage.ts (named by src/lsp/rich_hover.ts)"
+    ]
   },
   "ledgerDrift": [
     "m20.M2: ledger=verified record=known-gap (M2.json)",
@@ -91,7 +96,8 @@
     "m44.G1: ledger=verified record=known-gap (G1.json)",
     "m45.G1: ledger=verified record=known-gap (G1.json)",
     "m61.V4: ledger=verified record=known-gap (V4.json)",
-    "m61.V5: ledger=verified record=known-gap (V5.json)"
+    "m61.V5: ledger=verified record=known-gap (V5.json)",
+    "m62.A2: ledger=verified record=known-gap (A2.json)"
   ],
   "sourceNamedExemptions": {
     "script/a3-relationship-enrichment/verify-embedding-integrity.ts": "co-agent A3 relationship-enrichment workstream gate — no milestone ledger in validation/ claims it and its lane owns the wiring decision (lane a3-relationship-enrichment)",
@@ -110,7 +116,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T00:00:57.991Z",
-    "contentSha256": "5cf5957b53112eed30cb60d9f7d528a16541821b506c775ee64dfa7fa7a4872c"
+    "sealedAt": "2026-10-05T04:26:05.690Z",
+    "contentSha256": "f19f44cad12a3435f3f24b22d4bb213472d7661dcb025090b1beaa7f4e9c5ff2"
   }
 }

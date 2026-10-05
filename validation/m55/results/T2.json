@@ -61,25 +61,24 @@
       "./symbols"
     ]
   },
-  "currentCommit": "e68fbb6628e9ee217491bcca92d97b67b5f264f4",
+  "currentCommit": "42da053221ba9dd3173faffe2e60913e9de35993",
   "workingTreeRelevantChanges": [
-    "script/m24/verify-call-hierarchy.ts",
-    "script/m55/verify-call-hierarchy.ts",
-    "script/m59/verify-honest-callsite.ts",
-    "src/lsp/call_hierarchy.ts",
+    "validation/m24/results/D1.json",
+    "validation/m24/results/L1.json",
+    "validation/m24/results/L2.json",
+    "validation/m24/results/L3.json",
     "validation/m24/results/L4.json",
     "validation/m24/results/L5.json",
-    "validation/m55/results/T2.json",
-    "validation/m59/results/honest-callsite.json",
-    "script/m55/measure-address-agreement.ts",
-    "validation/m55/fixtures/agreement-workspace/",
-    "validation/m55/results/address-agreement.json"
+    "validation/m24/results/P1.json",
+    "validation/m24/results/P2.json",
+    "validation/m24/results/V1.json",
+    "validation/m55/results/T3.json"
   ],
   "verifierCommand": "npx tsx script/m55/verify-call-hierarchy.ts",
   "evidenceFile": "T2.json",
-  "generatedAt": "2026-10-05T02:52:27.635Z",
+  "generatedAt": "2026-10-05T04:23:52.284Z",
   "fixture": {
-    "root": "$HOME/Documents/Default Project/ishaq/wt/lsp5/validation/m55/fixtures/t2-workspace",
+    "root": "$HOME/Documents/Default Project/ishaq/wt/integrate/validation/m55/fixtures/t2-workspace",
     "files": [
       "src/store.ts",
       "src/loop.ts",
@@ -107,7 +106,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T02:52:27.638Z",
-    "contentSha256": "b00e74b54f4a13c67859b7520c869ab87a1bd2edd404c525fc00f9105786d846"
+    "sealedAt": "2026-10-05T04:23:52.286Z",
+    "contentSha256": "69a485406b56540b5c868c8e3b6cbcc60bd5417000c59d8b3f15a9307310d4c6"
   }
 }
