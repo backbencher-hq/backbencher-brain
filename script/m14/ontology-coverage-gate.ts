@@ -56,8 +56,6 @@ import { FSHARP_RULED } from "./fsharp-ruled"
 // The same applies to the import block: it is a registry too. Both halves must be
 // present or the map does not compile — which is the one saving grace, because a
 // missing import is a hard error rather than a silent wrong answer.
-import { BASH_RULED } from "./bash-ruled"
-import { JSON_RULED } from "./json-ruled"
 import { PROTOBUF_RULED } from "./protobuf-ruled"
 import { ZIG_RULED } from "./zig-ruled"
 import { JULIA_RULED } from "./julia-ruled"
@@ -65,14 +63,26 @@ import { CSS_RULED } from "./css-ruled"
 import { XML_RULED } from "./xml-ruled"
 import { NIM_RULED } from "./nim-ruled"
 import { SCSS_RULED } from "./scss-ruled"
+import { MARKDOWN_RULED } from "./markdown-ruled"
 import { PHP_RULED } from "./php-ruled"
 import { SQL_RULED } from "./sql-ruled"
-import { SCSS_RULED } from "./scss-ruled"
 
 const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
 const LANG = process.argv[2] ?? "bash"
 const ALL_TYPES = ["calls", "uses", "contains", "imports", "references", "exports", "extends", "implements", "overrides", "instantiates"] as const
-type Type = (typeof ALL_TYPES)[number]
+/**
+ * EXPORTED so lane ruling tables can import it instead of restating the shape.
+ *
+ * Fourteen lanes each declared their own structural copy of `Ruled`, and because those
+ * copies typed `type` as `string` while the gate typed it as this literal union, `string`
+ * was not assignable and julia-ruled and xml-ruled failed to type-check at all. Their own
+ * docblocks predicted this and called the fix 'a one-line follow-up if the gate exports
+ * them'.
+ *
+ * That follow-up is now done rather than pending. Fourteen restatements of one shape is
+ * fourteen places for it to drift, and this is the only reason it did.
+ */
+export type Type = (typeof ALL_TYPES)[number]
 
 // ---------------------------------------------------------------- instruments
 //
@@ -98,11 +108,20 @@ type Type = (typeof ALL_TYPES)[number]
 //      heredoc cannot fake it.
 type Instrument = "A:grammar-inventory" | "B:parse-tree-count"
 
-type Ruled = {
+export type Ruled = {
   type: Type
   instrument: Instrument
   /** A: node types that would express the construct. B: unused. */
   nodeTypesThatWouldMeanIt?: string[]
+  /**
+   * B only: the count and file count this ruling PUBLISHES, over the corpus the gate
+   * discovers. These are the numbers a ruling is accountable to, so they live in the type
+   * rather than repeated in prose where they can go stale. julia-ruled's probe reads them
+   * directly — it used to hardcode the pair in its own source and reported MISMATCH while
+   * exiting 0 when the corpus grew, which is a gate that can neither fail nor be right.
+   */
+  publishedCount?: number
+  publishedFiles?: number
   /** B: count occurrences on the tree. A: unused. */
   countOnTree?: (root: any, fileLabel: string, hits: string[]) => void
   describe: string
@@ -218,6 +237,10 @@ const JSON_RULED: Ruled[] = [
 // always "both sides added a lane"; taking one side deletes the other's ruling table
 // silently, and a deleted entry makes the arbiter exit 2 for a lane that WAS ruled,
 // which reads as "unadjudicated" rather than "dropped in a merge".
+// The registry. A conflict here is ALWAYS "both sides added a lane", so the resolution
+// is ALWAYS the union — taking one side deletes the other lane's ruling table silently,
+// and a deleted entry does not fail loudly, it just makes the arbiter exit 2 for a lane
+// that WAS ruled, which reads as "unadjudicated" rather than "dropped in a merge".
 const RULED_BY_LANG: Record<string, Ruled[]> = {
   bash: BASH_RULED,
   json: JSON_RULED,
@@ -233,6 +256,7 @@ const RULED_BY_LANG: Record<string, Ruled[]> = {
   php: PHP_RULED,
   sql: SQL_RULED,
   scss: SCSS_RULED,
+  markdown: MARKDOWN_RULED,
 }
 const RULED: Ruled[] = RULED_BY_LANG[LANG] ?? []
 
