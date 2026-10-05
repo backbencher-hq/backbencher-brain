@@ -3185,3 +3185,129 @@ which is why none of them is in this lane's commits.
 | 17 | **`script/m14/verify-honesty.ts`** | **`:40-62`** — `collectProse` + the `BANNED` loop, and the unconditional `pass("banned-vocabulary lint …")` at `:62`** | **two changes, and the first is the urgent one: (a) derive the lint's own verdict from the number of findings instead of calling `pass()` unconditionally; (b) distinguish a harvested identifier from a prose claim — scan the artifact's prose, or exempt a declared set of data fields — and report the finding COUNT rather than the first match per pattern** | **measured 2026-10-05, and this lane is one of the artifacts it fails.** The lint reads every `.md`/`.json` under `validation/m14/` plus `docs/*M14*` as **raw bytes** and applies the prose word-boundary regexes, with exactly two hardcoded filename exemptions (`:56-57`) and no way to mark a span as data. So an artifact that records **corpus-harvested identifiers** fails the lint for containing them: this lane's `julia-ambiguity-before.json` holds **10 occurrences**, every one a real harvested binding — `complete` (`julia/base/stat.jl:313`, `complete = true`) and `incomplete_tag` (`Base.incomplete_tag()`) — and they are reported as **ONE** finding, because `text.match(re)` at `:58` keeps only the first match per pattern per file. The same class appears in `fsharp-shape-census.json` (`identifier "Completed"`) and `declaration-forms.expectation.json` (`analysisVersion: 12.0.0-clean-ast-complete`), while `csharp/field-initializer-read.expectation.json` is a **genuine prose violation** (`so a perfect analyzer passes every fi…`) and the `grammar-pins.json` hits are quoted third-party README text and a code excerpt. **So the lint is neither wholly false-positive nor wholly true-positive, and adding seven more filenames to the exemption list would not fix that — it needs the data/prose distinction.** Urgent half: at `:62` the `pass(...)` call is reached whether `fail()` fired 0 times or 11, so this run printed **11 `HONESTY-GATE FAIL: banned term` lines and then `ok   banned-vocabulary lint over validation/m14 + M14 docs` for the same check** — a reader scanning per-check verdicts reads the lint as passing. **This lane does not strip the identifiers to satisfy it:** the names are the evidence, and renaming them would leave a correct-looking artifact that no longer records what was measured. This lane's gate count is therefore 1 known, understood, and declared |
 
 | 16 | **`src/ast/parallel-indexer.ts`** | **`:3500`, in front of `resolveTargetStmt` (`:2239`); the alias map is built at `:2758-2762`** | **give the TARGET half the exact-spelling lookup the SOURCE half already has at `:3430` — `nameToSymbol.get(targetName) ??` in front of the SQL, falling back to today's `targetLeaf` when it misses. One clause, same-file only (`nameToSymbol` is built from the current file's `result.symbols`), so it cannot reach a cross-file target and cannot make an edge that resolves today stop resolving** | **measured 2026-10-05, and it is the reason no julia-side fix can move an ambiguous target.** `extractLeaf` at `:3393` reduces every emitted target to its leaf BEFORE the `:3500` lookup, so a module-qualified target resolves exactly as if the bare name had been emitted: qualification moves the store by zero. The asymmetry is one line apart in the same loop — `:3430` reads `nameToSymbol.get(sourceName) ?? nameToSymbol.get(sourceLeaf)` and `nameToSymbol` holds `${sScope}.${nm}` for every symbol with a scope (`:2758`), so an elixir-style `Scope.name` source resolves to exactly one symbol, while the target half of the same loop goes straight to SQL on the leaf. Population it would reach on this lane, measured on 600 files (`sampleHash 1c76a52a3ba9c16c`): the **3,485 `attribInFileMulti` edges** whose referring file declares the target name >=2 times — `contains` 827, `references` 1,343, `instantiates` 357, `calls` 246, `uses` 665, `exports` 33, `extends` 14 — today attributed by TEXT-ordered line inside `s.id`. The 13,123 `attribCrossFile` edges are out of reach of any same-file step and need laptop C's inbound edge. **Precondition for the lane half:** emitting `Owner.name` for a BARE reference is only correct when no local binding shadows the name at that site (this lane has 21,693 deliberately unpublished local bindings), so the shared step must land before a shadow-aware emission, not after |
+
+## An unfreed tree is a measurement that shrinks with the parse count, and four lane walkers did it
+
+`validation/m14/measurements/julia-scope-oracle-whole-corpus.json` recorded
+`closure.scanFailures.closure.parseThrew: 105`, every example `Aborted(). Build with -sASSERTIONS
+for more info.`, every example a `julia/test/*.jl` file — the largest in the corpus. Two readings
+were available and the record could not separate them: **105 files julia's grammar rejects**, or
+**105 files the process could not parse by then**. The second was never excluded, because the run
+that produced the record had already walked 600 files through `parseFile` before the closure scan
+began, and because the record carries `admittedFiles: 1985` in the same object as the 105 with
+nothing connecting them.
+
+`validation/m14/fixtures/julia/tree-lifetime-probe.ts` decides it: two arms, **one process each**,
+three passes over all 1,985 admitted files, the arms differing in one call.
+
+| arm | pass 1 | pass 2 | pass 3 | files that threw | RSS pass 1 → 3 |
+|---|---|---|---|---|---|
+| **retain** (no `tree.delete()`) | 1,985 parsed, 0 threw | 1,985 parsed, 0 threw | 57 parsed, **1,928 threw** | 1,928 of 1,985 | 587 → 649 MB |
+| **free** (`tree.delete()` after the walk) | 1,985 parsed, 0 threw | 1,985 parsed, 0 threw | 1,985 parsed, 0 threw | **0 of 1,985** | 124 → 78 MB |
+
+The first arm's first throw is cumulative parse **4,028 of 5,955**. 1,928 files parse in one arm and
+throw in the other, so the failure travels with the process and not with the file. RSS moved 587 →
+649 MB while failures went 0 → 1,928, so the exhaustion is **inside the wasm module's linear memory**
+and not in the host heap — it does not appear as memory pressure, cannot be tuned away from outside
+the module, and is invisible to any instrument that reports only a throw count.
+
+**One process per arm is load-bearing, and the version that got it wrong is recorded in the probe's
+header.** Both arms in one process: `retain` threw `Aborted()` on 1,928 files, then `free` threw
+`memory access out of bounds` on 1,985 — a pair that reads as "freeing the tree is worse" and is
+really "the second arm inherited a corpse", because a wasm trap leaves the module's memory unusable.
+
+### Four lane-owned walkers, and the one that was already right
+
+| fixture | freed before this commit | how the leak reached a published number |
+|---|---|---|
+| `validation/m14/fixtures/julia/scope-oracle.ts` (`scanFile`) | no | the closure arm lost 89 of 1,985 files and reported it as a scan failure |
+| `validation/m14/fixtures/julia/import-export-differential.ts` | no | its `continue` inside the label loop needed a `finally`, not a statement after the loop |
+| `validation/m14/fixtures/julia/import-export-shapes.ts` | no | whole sample parsed in one process |
+| `validation/m14/fixtures/julia/shared-filter-cost.ts` | no | a throw there is a silent `continue`, so the leak would have surfaced only as a smaller `analysed` count |
+| `validation/m14/fixtures/julia/census.ts` | **yes, both arms** | — |
+
+`census.ts` already released its trees, which is why it reported **1,985 of 1,985 analysed, 0
+degraded, 0 unreadable** while the scope oracle, leaking the same way over the same corpus, was
+losing files. Two instruments over one corpus disagreeing about population is the signal; neither
+number was wrong about its own arithmetic.
+
+### The closure arm, re-measured — like for like, same command, same corpus
+
+| quantity | before | after |
+|---|---|---|
+| admitted files scanned | **1,896 of 1,985** | **1,985 of 1,985** |
+| scan failures (read / parse threw / null tree) | 89 threw | **0 / 0 / 0** |
+| include sites over the corpus | 1,023 | **1,034** |
+| include targets resolved | 1,003 | **1,014** |
+| files with an owner module at full closure | 601 | **602** |
+| top-level-site edges (the denominator) | 179,986 | **180,144** |
+| **CEILING** — top-level-site edges in a file that gains an owner | 80,421 | **80,579 (44.7%)** |
+| arms julia decides | 13,762 | **13,791** |
+
+The leak was real and its numeric cost was **46 ceiling edges out of 180,144 — 0.026%**. The previous
+record *understated* the ceiling rather than inventing it. That is the finding, and it is worth
+stating plainly rather than dressing up: the numbers a reader would have quoted survived a defect
+that a reader could not see.
+
+### Attribution accuracy on the whole population, with the clean scan
+
+Of the **13,791** edges whose target julia itself resolves to exactly one declaration, the store
+attributes **9,575 correctly and 4,216 (30.6%) to a different declaration**. Per type, from
+`perType` in the same record:
+
+| type | edges | ambiguous | decided | right | wrong | wrong % of decided | shadow-capable | wrong + shadow |
+|---|---|---|---|---|---|---|---|---|
+| `calls` | 122,150 | 69,706 | 5,996 | 3,294 | 2,702 | **45.1%** | 3,960 | 1,726 |
+| `uses` | 37,087 | 20,886 | 3,139 | 2,342 | 797 | **25.4%** | 2,157 | 421 |
+| `contains` | 14,299 | 7,802 | 2,728 | 2,686 | 42 | **1.5%** | 1,123 | 22 |
+| `imports` | 3,386 | 1,166 | 166 | 40 | 126 | **75.9%** | 1 | 1 |
+| `references` | 50,150 | 24,873 | 1,361 | 879 | 482 | **35.4%** | 723 | 184 |
+| `exports` | 2,795 | 1,012 | 276 | 231 | 45 | **16.3%** | 2 | 0 |
+| `extends` | 2,580 | 759 | 53 | 37 | 16 | **30.2%** | 3 | 1 |
+| `overrides` | 3 | 3 | 3 | 3 | 0 | **0.0%** | 3 | 0 |
+| `instantiates` | 3,428 | 2,105 | 69 | 63 | 6 | **8.7%** | 44 | 0 |
+| `implements` | 0 | 0 | 0 | — | — | — | 0 | 0 |
+| **TOTAL** | **235,878** | **128,312** | **13,791** | **9,575** | **4,216** | **30.6%** | **8,016** | **2,355** |
+
+`imports` is the worst rate on the smallest decided population (166), so it is the row most likely to
+move; `contains` is the best (42 of 2,728) because containment's target is usually in the same file
+as the edge. The gap is **124,096 edges the language does not decide** and the store therefore cannot
+be shown wrong on — ambiguity is not wrongness, and the two columns are reported separately for that
+reason.
+
+**One correction, carried forward rather than edited away.** The commit that re-measured this record
+quoted `calls` as "3,294 wrong of 7,298" and `references` as "879 wrong of 2,240". Both are wrong: the
+harness's console table labelled its third column `decided` when it printed
+`arms.viaIncludeUnique + arms.viaIncludeViaUsing`, and its fourth `right` when it printed `decided`.
+Reading the mislabelled columns produced 3,294 (`calls`' **right**) over a denominator that is no
+column at all. The true figures are `calls` **2,702 wrong of 5,996 decided** and `references`
+**482 wrong of 1,361 decided**, as tabulated above. The header now names `viaIncl` and `decided` for
+those two columns. A table whose header does not name the quantity under it is the cheapest defect in
+this file to carry and the most expensive to read.
+
+### The same shape in 49 other files, and where it does NOT occur
+
+The leak is a property of *instrument* code, not of the product. Both production paths free their
+trees: `src/ast/engine.ts:1972-1980` deletes in a `finally` at the end of `parseFile`, and
+`src/ast/safety-primitives.ts:408-419` does the same in `parseForSafety`, which is the only caller
+of `ASTEngine.parseTree` — the one entry point that deliberately hands the tree back undeleted
+(`engine.ts:1508`, "the caller owns `tree.delete()`"). So nothing a user of the product sees is
+affected, and `firing-check`'s 1,985-of-1,985 clean population is consistent with that.
+
+Across `validation/m14/fixtures/` and `script/m14/` (excluding `script/m14/tmp/`), **122 files call a
+tree-sitter parse and 49 of them never call `.delete`** — 25 in `script/m14/` (13 of them
+`verify-*.ts` gates), 24 under `validation/m14/fixtures/` across 9 lanes. **This is a candidate list,
+not 49 leaks**: it is a textual test for one call, it cannot see a `finally` reached through a helper,
+and two of the 49 (`script/m14/resumable-walk.ts`, `script/m14/run-fixtures.ts`) are false positives
+whose only match is `parseInt(`/`JSON.parse(`. What turns a candidate into a measurement is
+`tree-lifetime-probe.ts`, which is why it exists as a runnable instrument rather than as a lint.
+
+**The one row worth acting on first is `script/m14/verify-corpus-census.ts`**, because it publishes
+numbers and is shared. At `:220` it parses without freeing and without a `try`, and at `:239` it
+reports `filesScanned: files.length` — the number of files it was *offered*, while two `continue`s
+at `:218` and `:219` (unreadable file, over 800 KB) reduce the population actually parsed. At its
+default `CENSUS_FILES = 60` per language (`:36`) the leak cannot bite: the exhaustion measured above
+needs more than **4,000 cumulative parses in one process** (first throw at 4,028 of 5,955), and each
+language gets its own `P()` parser at `:208`. Run with `--files 4000` for one language it would
+throw `Aborted()` mid-loop and take the whole verifier down with no verdict, rather than reporting the
+reduced population.
