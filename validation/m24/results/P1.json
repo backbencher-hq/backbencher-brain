@@ -79,7 +79,7 @@
     "declaredAbsentOses": [
       "win32"
     ],
-    "filesScanned": 166,
+    "filesScanned": 167,
     "spawnSitesJudged": 537,
     "spawnSitesByReach": {
       "directCallSitesResolvedByName": 227,
@@ -93,52 +93,52 @@
       {
         "name": "planted execFileSync sha256sum (the defect that killed this gate)",
         "caught": true,
-        "detail": "caught at line 1127 (non-portable-binary: sha256sum)"
+        "detail": "caught at line 1385 (non-portable-binary: sha256sum)"
       },
       {
         "name": "planted execSync shell sha256sum",
         "caught": true,
-        "detail": "caught at line 1127 (non-portable-binary: sha256sum)"
+        "detail": "caught at line 1385 (non-portable-binary: sha256sum)"
       },
       {
         "name": "planted spawnSync md5sum",
         "caught": true,
-        "detail": "caught at line 1127 (non-portable-binary: md5sum)"
+        "detail": "caught at line 1385 (non-portable-binary: md5sum)"
       },
       {
         "name": "planted spawn of an absent-on-darwin coreutils binary (timeout)",
         "caught": true,
-        "detail": "caught at line 1127 (non-portable-binary: timeout)"
+        "detail": "caught at line 1385 (non-portable-binary: timeout)"
       },
       {
         "name": "planted /proc read inside a shell spawn",
         "caught": true,
-        "detail": "caught at line 1127 (platform-only-path: /proc)"
+        "detail": "caught at line 1385 (platform-only-path: /proc)"
       },
       {
         "name": "planted GNU-only stat -c",
         "caught": true,
-        "detail": "caught at line 1127 (gnu-only-command-form: stat -c)"
+        "detail": "caught at line 1385 (gnu-only-command-form: stat -c)"
       },
       {
         "name": "planted GNU-only sort -V (accepted-but-ignored on BSD)",
         "caught": true,
-        "detail": "caught at line 1127 (gnu-only-command-form: sort -V)"
+        "detail": "caught at line 1385 (gnu-only-command-form: sort -V)"
       },
       {
         "name": "planted GNU-only grep -P",
         "caught": true,
-        "detail": "caught at line 1127 (gnu-only-command-form: grep -P)"
+        "detail": "caught at line 1385 (gnu-only-command-form: grep -P)"
       },
       {
         "name": "planted GNU-only sed -i in-place form (argv shape)",
         "caught": true,
-        "detail": "caught at line 1127 (gnu-only-command-form: sed -i (GNU form))"
+        "detail": "caught at line 1385 (gnu-only-command-form: sed -i (GNU form))"
       },
       {
         "name": "planted sha256sum laundered through a local spawn wrapper",
         "caught": true,
-        "detail": "caught at line 1128 (denylisted-binary-in-spawned-command: sha256sum)"
+        "detail": "caught at line 1386 (denylisted-binary-in-spawned-command: sha256sum)"
       },
       {
         "name": "PRECISION: the same spawn text inside a string literal is not a spawn",
@@ -219,12 +219,12 @@
     ],
     "ok": true
   },
-  "currentCommit": "697bd5e296e3ea8b49237a14ebfac5006618f835",
+  "currentCommit": "42da053221ba9dd3173faffe2e60913e9de35993",
   "sourceFingerprint": "cb86c59603cc4c331526ab1c1fc72a89ce4142f6c4f4cbac2b4832ba6bc65e52",
   "sourceFingerprintAlgorithm": "sha256 over raw file bytes (node:crypto; no process spawn)",
   "verifierCommand": "npx tsx script/m24/verify-positions.ts",
   "evidenceFile": "P1.json",
-  "generatedAt": "2026-10-05T04:00:27.816Z",
+  "generatedAt": "2026-10-05T04:17:34.900Z",
   "limitations": [
     "Fixture-based; does not exercise real analyzer output end-to-end (covered by the V1 harness).",
     "resolveRowByteColumns: a file-absolute row whose offset also fits the target line's byte length is still read as per-line (the pre-existing declared ambiguity in the function header). Only byte 0 — impossible as a 1-based per-line column — is disambiguated. Removing the ambiguity for real rows needs a writer-side convention flag (indexer lane); found and reported by M55.T2.",
@@ -238,7 +238,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T04:00:27.818Z",
-    "contentSha256": "70fe190998dbe273dd6d4e7ec0701fa78f4dec4574b2094f77b6dcecb320bea7"
+    "sealedAt": "2026-10-05T04:17:34.903Z",
+    "contentSha256": "87b4337e71ae3dee78659bfd5782cbca8480057260cf07ca5bcf0a7ed55a0cff"
   }
 }
