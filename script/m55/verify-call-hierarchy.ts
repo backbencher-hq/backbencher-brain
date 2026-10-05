@@ -72,10 +72,12 @@ const mutantVerdicts: Array<{ name: string; caught: boolean; detail: string; cau
  *  `instantiates`/`overrides` are deliberately NOT banned here: a `new Foo()` IS
  *  an invocable site and the resolver classifies it (`construct`), so whether
  *  this surface may include them is its owner's declared call, not this gate's.
- *  What this gate forbids is a kind that can never name a call. */
+ *  What this gate forbids is a kind that can never name a call. The list is an
+ *  ALLOW-list on purpose: the index's other kinds — contains, uses, references,
+ *  imports, exports, implements, extends, inherits — are all refused by it, and a
+ *  kind nobody has thought of yet is refused too.
+ */
 const CALL_SITE_CAPABLE_KINDS = new Set(["calls", "call", "instantiates", "overrides"]);
-/** Kinds that are membership or lexical reference — no invocation exists. */
-const NON_CALL_KINDS = new Set(["contains", "uses", "references", "imports", "exports"]);
 
 function mutant(label: string, caught: boolean, detail = ""): void {
   mutantsTotal++;

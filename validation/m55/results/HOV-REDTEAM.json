@@ -31,20 +31,27 @@
       "expectedFailedCheck": "a check asserting each rendered evidence tier is one the index stored"
     }
   ],
-  "currentCommit": "68a5d327d55fb98b36d92efe4876ed4848e97ec0",
+  "currentCommit": "659b69f19993b7c8c08f475a0057d987f5875664",
   "workingTreeRelevantChanges": [
     "validation/m42/results/H1.json",
+    "validation/m42/results/H3.json",
+    "validation/m42/results/H4.json",
+    "validation/m55/results/EVID-TREE.json",
     "validation/m55/results/HOV-COVERAGE.json",
-    "validation/m55/results/HOV-REDTEAM.json"
+    "validation/m55/results/T4.json"
   ],
   "verifierCommand": "npx tsx script/m55/verify-hover-coverage-redteam.ts",
   "evidenceFile": "HOV-REDTEAM.json",
-  "generatedAt": "2026-10-05T02:25:57.793Z",
+  "generatedAt": "2026-10-05T04:01:34.634Z",
   "observed": {
-    "cleanTreeVerdict": "VERIFIED",
-    "cleanTreeExit": 0,
-    "cleanTreeFailures": [],
-    "baselineFailures": [],
+    "cleanTreeVerdict": "KNOWN-GAP",
+    "cleanTreeExit": 1,
+    "cleanTreeFailures": [
+      "R6/§3: warm hover p95 is under the declared 50 ms budget on ALL THREE busy shapes — worst p95=80.15ms — §3: a budget miss is a failed gate, not a footnote"
+    ],
+    "baselineFailures": [
+      "R6/§3: warm hover p95 is under the declared 50 ms budget on ALL THREE busy shapes — worst p95=80.15ms — §3: a budget miss is a failed gate, not a footnote"
+    ],
     "judgedBy": "SET DIFFERENCE of failing checks, never the exit code — on a loaded machine the gate's own §3 latency check is legitimately red, and an exit-code oracle would call every mutant detected for the wrong reason",
     "restores": [
       {
@@ -70,9 +77,9 @@
     ]
   },
   "failures": [
-    "D1: planting \"a relationship kind the INDEX holds is DROPPED FROM THE HOVER: every incoming `uses` row…\" makes the EXPECTED check fail: exit=0 verdict=VERIFIED expectedOne=\"a check asserting every stored relationship ki\" hit=NO newFailures=[]",
+    "D1: planting \"a relationship kind the INDEX holds is DROPPED FROM THE HOVER: every incoming `uses` row…\" makes the EXPECTED check fail: exit=1 verdict=KNOWN-GAP expectedOne=\"a check asserting every stored relationship ki\" hit=NO — other checks DID newly fail ([\"R6/§3: warm hover p95 is under the declared 50 ms budget on ALL THREE busy shapes — worst p95=50.3ms — §3: a budget miss is a failed gate, not a footnote\"]) but none of them is the check that owns this defect, so this is NOT a catch",
     "D2: planting \"a COUNT that disagrees with the RENDERED LIST: the usages header claims one more usage t…\" makes the EXPECTED check fail: exit=0 verdict=VERIFIED expectedOne=\"a check asserting the usages-section header nu\" hit=NO newFailures=[]",
-    "D3: planting \"a FABRICATED TIER: a stored row the index never classified is rendered at parser-fact ti…\" makes the EXPECTED check fail: exit=0 verdict=VERIFIED expectedOne=\"a check asserting each rendered evidence tier \" hit=NO newFailures=[]"
+    "D3: planting \"a FABRICATED TIER: a stored row the index never classified is rendered at parser-fact ti…\" makes the EXPECTED check fail: exit=1 verdict=KNOWN-GAP expectedOne=\"a check asserting each rendered evidence tier \" hit=NO — other checks DID newly fail ([\"R6/§3: warm hover p95 is under the declared 50 ms budget on ALL THREE busy shapes — worst p95=56.28ms — §3: a budget miss is a failed gate, not a footnote\"]) but none of them is the check that owns this defect, so this is NOT a catch"
   ],
   "limitations": [
     "Each planted defect is a TEXTUAL mutation of a real source file, chosen because it is a real defect shape. It proves the gate's checks fire on that shape; it does not prove the gate catches every mutation of that file, and it says nothing about defects in files this lane does not own.",
@@ -82,7 +89,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T02:25:57.796Z",
-    "contentSha256": "8b6970871984e4f7280301a37f84dda319ea931d23a6a207e8bff41ed82be108"
+    "sealedAt": "2026-10-05T04:01:34.636Z",
+    "contentSha256": "fa0c856c70e2e50d59dccb34b23367f547ef5414862d2660a91fe440099c05f8"
   }
 }
