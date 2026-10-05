@@ -551,7 +551,16 @@ const evidence = {
     "No editor leg: every measurement here is the server component over the wire-less path. The editor render of these same facts is §12.6 E5 scope.",
     budget === null
       ? "the budget measurement did not run"
-      : `the warm p95 measured here is ${budget.p95} ms against a declared 50 ms budget${budget.p95 < 50 ? "" : " — the budget is MISSED and this record says so; the residual cost is dominated by one file read + PositionMapper construction per distinct file a symbol's rows point into, which is a navigation/positions-layer concern"}`,
+      // Lane 6: this entry is a LIMITATION, and when the budget is MET the old
+      // wording produced a sentence fragment that stated a PASSING FACT and
+      // carried no terminal period — "the warm p95 measured here is 34.4 ms
+      // against a declared 50 ms budget" — filed as though it limited the
+      // measurement. A limitation list whose entries sometimes assert success is
+      // a list a reader stops trusting. The passing case now says what it
+      // actually limits (the sample, and the machine), and is punctuated.
+      : budget.p95 < 50
+        ? `the warm p95 measured here is ${budget.p95} ms against the declared 50 ms budget, inside it on this machine at this load; the figure is a percentile of ${budget.n} timed requests on an AUTHORED fixture, not a corpus rate, and a loaded machine moves it (this lane measured 88.05 ms under load average 12+).`
+        : `the warm p95 measured here is ${budget.p95} ms against a declared 50 ms budget — the budget is MISSED and this record says so; the residual cost is dominated by one file read + PositionMapper construction per distinct file a symbol's rows point into, which is a navigation/positions-layer concern`,
   ],
 }
 writeSealed(EVIDENCE, evidence)
