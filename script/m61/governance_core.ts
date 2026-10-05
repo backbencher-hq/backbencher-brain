@@ -37,6 +37,21 @@ export const PREREQUISITE_RECORDS: Array<[string, string]> = [
  *  convention is the single owner; the gate does not restate its own totals). */
 export type ProofCounts = { mutants: number; negatives: number }
 
+/** The reason a record gives for being non-verified. Gates spell this several
+ *  ways (`blockedReason` for an unavailable platform/editor, `reason` for an
+ *  unavailable fork, `limitations` for a scoped claim); all three are read, and
+ *  the first non-empty wins. Same rule as script/m61/ledger_projection.ts's
+ *  `reasonFromRecord`, re-declared here rather than imported so this module
+ *  stays import-pure for a sibling gate (see the module header). */
+export function reasonFromRecord(record: Record<string, unknown>): string | undefined {
+  const s = (v: unknown): string | undefined => (typeof v === "string" && v.length > 0 ? v : undefined)
+  return (
+    s(record.blockedReason) ??
+    s(record.reason) ??
+    (Array.isArray(record.limitations) ? record.limitations.find((l): l is string => typeof l === "string" && l.length > 0) : undefined)
+  )
+}
+
 /** The evidence block a ledger entry must carry: nothing here is hand-typed —
  *  every field is READ from the record the entry points at. This is the
  *  milestone's answer to "a second place stating a count is a second place that
@@ -68,6 +83,15 @@ export function ledgerEntryFrom(
     // Absent (0) counts are omitted so an entry states only the proof it has:
     // a zero-valued field would read as "declared zero", not "not applicable".
     ...(proofs.negatives > 0 ? { negativeCases: proofs.negatives } : {}),
+    // §8.3: a non-verified entry records WHY. The reason is READ from the
+    // record's own declared text (`blockedReason`, `reason`, or its first
+    // limitation) and never typed here, so the ledger cannot state a reason the
+    // record does not carry. Without this, a `known-gap` entry could not satisfy
+    // the closure rule and the only way to a valid ledger was to claim
+    // `verified` over a red record.
+    ...(record.status === "verified" || !reasonFromRecord(record as Record<string, unknown>)
+      ? {}
+      : { blockedReason: reasonFromRecord(record as Record<string, unknown>) }),
     // The commit the projected record was RUN at. This is what makes the drift
     // check decidable: a record re-run at a different commit has legitimately
     // moved, and the projection is stale rather than hand-typed.
@@ -149,6 +173,8 @@ export type LedgerIssue = {
     negativeCases?: number
     mutantsCaught?: number
     mutantsTotal?: number
+    /** §8.3: a non-verified entry records WHY it is non-verified. */
+    blockedReason?: string
   }
 }
 export type Ledger = {
@@ -187,18 +213,34 @@ export function laneViolations(l: Partial<Ledger>): string[] {
   return out
 }
 
-/** A non-planned issue is closable only when its evidence block is complete and
- *  proves BOTH a green run (passed > 0, failed 0) AND a can-fail proof — the
- *  declared mutant totals, or explicit negative cases. */
+/** A non-planned issue is closable when its evidence block is complete and its
+ *  STATUS earns the bar that status carries.
+ *
+ *  TWO BARS, TWO STATUSES. This rule used to demand `realFailed === 0` of every
+ *  non-planned entry. A `known-gap` entry exists BECAUSE the record failed, so
+ *  the honest state was structurally unrecordable: the validator reported
+ *  `hollow-known-gap` for V2–V6 at this HEAD while their records said
+ *  `known-gap`, and the ledger carried `verified` over them — the very drift
+ *  M61 exists to kill, reproduced by M61's own rule. A gate that punishes
+ *  honesty gets an dishonest ledger.
+ *
+ *  - `verified`   → a GREEN run (passed > 0, failed 0) AND a can-fail proof.
+ *    Unchanged.
+ *  - `known-gap` / `blocked` → the REASON it is non-verified (contract §8.3: a
+ *    non-green leg records its reason, never omits it) plus a passed > 0, so the
+ *    leg actually ran. A red record whose reason is missing is still rejected.
+ */
 export function isClosable(issue: LedgerIssue): boolean {
   if (issue.status === "planned") return false
   const e = issue.evidence
   if (!e) return false
+  if (e.status !== issue.status || !e.verifierCommand || !e.evidenceFile || (e.passed ?? 0) <= 0) return false
+  if (issue.status !== "verified") return typeof e.blockedReason === "string" && e.blockedReason.trim().length > 0
   const realFailed = typeof e.realFailed === "number" ? e.realFailed : e.failed
   const canFail =
     (typeof e.mutantsCaught === "number" && e.mutantsCaught > 0 && e.mutantsTotal === e.mutantsCaught) ||
     (typeof e.negativeCases === "number" && e.negativeCases > 0)
-  return Boolean(e.status === issue.status && e.verifierCommand && e.evidenceFile && (e.passed ?? 0) > 0 && realFailed === 0 && canFail)
+  return realFailed === 0 && canFail
 }
 
 /** Entries that no SIBLING gate may judge the closure state of, because the
