@@ -95,29 +95,8 @@
  * No regex: `countOnTree` below navigates `node.type` and named children only.
  */
 
-/** Mirrors `ontology-coverage-gate.ts`'s non-exported `Instrument`. */
+import type { Ruled } from "./ontology-coverage-gate"
 type Instrument = "A:grammar-inventory" | "B:parse-tree-count"
-/** Mirrors `ontology-coverage-gate.ts`'s non-exported `Ruled`, minus `type: Type`. */
-export type Ruled = {
-  type: string
-  instrument: Instrument
-  /** A: node types that would express the construct. B: unused. */
-  nodeTypesThatWouldMeanIt?: string[]
-  /** B: count occurrences on the tree. A: unused. */
-  countOnTree?: (root: any, fileLabel: string, hits: string[]) => void
-  /**
-   * B only: the count and file count this ruling PUBLISHES for `countOnTree`, over the corpus the
-   * gate discovers. These are the numbers the ruling is accountable to, and they live HERE so there
-   * is one source of truth — `validation/m14/fixtures/julia/ruled-probe-check.ts` reads these fields
-   * rather than repeating the figures in a string. The first version of that probe hardcoded
-   * `325 occurrences / 60 files` in its own source, so when the corpus grew from 971 to 1,985 files
-   * the probe kept printing the stale pair and reported MISMATCH while exiting 0: a gate that could
-   * not fail and could not be right. Neither is acceptable for a number a ruling stands on.
-   */
-  publishedCount?: number
-  publishedFiles?: number
-  describe: string
-}
 
 export const JULIA_RULED: Ruled[] = [
   {

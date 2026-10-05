@@ -1439,3 +1439,215 @@ signal and had no floor under it.
 So the standing check now includes free space and DB size alongside agent state. A
 fleet that cannot write is not a fleet that is working, no matter how many agents
 report `working`.
+
+## Published to origin; laptop B at zero regexes; the last FALSIFIED verdict closed
+
+### `main` and the aggregate branch are on the remote
+
+`analyzers/ontology-laptop-b` pushed, then `main` fast-forwarded **after merging
+origin/main in** — main held 5 commits of the owner's own work that my branch predated
+(the laptop master prompts, and two test commits including *"do the relationship types
+actually FIRE? (withdraws the 10/10 claim)"*). Merging rather than pushing over them is
+the only way that keeps them; all 5 verified present afterwards, 0 divergence.
+
+This also retired the `origin/analyzers/ontology-laptop-b`-is-empty trap that cost the
+dart lane a round, so `repo-facts.md` was rewritten — a brief that still says "never on
+origin" is worse than no brief, because a lane reading it will distrust a working ref.
+
+### A gate on `main` was reporting 187 where the truth is 5
+
+`script/m14/no-regex-gate.sh` — inherited from main, never run by this supervisor until
+now — was a **`grep -nE` text scan**, and its own header explains why that is wrong
+before doing it anyway:
+
+> Regex over source text matches comments and string literals, misses nested syntax,
+> and breaks silently on the next grammar version. Everything must go through the
+> tree-sitter AST.
+
+It reported **187** against an AST census of the same tree reporting **5**. Its comment
+filter dropped only lines *starting* with `//`, `*`, or `/*`, so it missed regexes in the
+middle of block comments — and its pattern includes `.split(`, so **`content.split("\n")`
+counted as a regex**. That was the only "hit" on zig:
+
+```
+1133:  linesOfCode: content.split("\n").length,
+```
+
+There is no regex on that line. There is a newline escape in a string.
+
+A gate that cries wolf at 187 against 5 protects nothing: it teaches readers to ignore
+it, and the one real regex it eventually misses is lost in the noise. It now **delegates**
+to the AST census. One arbiter per question.
+
+**Two defects in my own first draft of that fix**, both the population rule written
+earlier the same session — which is decent evidence the rule earns its keep:
+
+1. It took a subdirectory argument and ignored it, printing whole-tree numbers that read
+   as scoped.
+2. Having fixed that, it computed the in-scope population by counting the census's
+   `perFile` entries — which lists only files *that have* a regex (2) — against
+   `analyzersScanned` (48), so it reported "2 of 48 in scope" for a directory containing
+   all 48. Mixing two populations that both happen to be integers.
+
+Both fixed: scope applied, population **derived from the filesystem**. An empty scope now
+exits 2 — "that is an empty population, NOT a pass" — instead of a vacuous PASS.
+
+### Laptop B: 18 regexes -> 0
+
+```
+real-svelte-analyzer.ts:50 / 622 / 1259 / 1445      <- the ONLY 4 left, another laptop's
+```
+
+CSS cleared 11, julia 9, XML 1, SCSS 2 (supervisor), SQL 1. Every removal was verified —
+SCSS's by a 428-case differential plus a whole-corpus A/B hashing the whole emitted graph
+byte-identical.
+
+### TOML: the only FALSIFIED verdict, closed
+
+The arbiter falsified toml's **own** ruling: the lane had ruled `references` inapplicable,
+then measured that the construct was real, and reported the contradiction instead of
+hiding it. Implemented rather than explained away:
+
+```
+  now: libraries.groovy-bom.version.ref -> versions.groovy
+  corpus: 167 references across 5 files, 0 unresolved
+  gate:   emitted 2/10  ruled-sound 8  FALSIFIED 0  ->  exit 0
+```
+
+167 is **exactly** the lane's independent measurement — two derivations agreeing.
+
+Resolving aliases AFTER the walk, not during: an alias may name a key declared later, and
+resolving inline would silently miss every forward reference. An ambiguous alias emits no
+edge and is counted, because picking one of two candidates is a guess.
+
+**And a root-cause bug surfaced that had nothing to do with aliases**: `valueOf(pair)`
+returned the last named child, which for `detekt = "1.23.8"  # comment` is the COMMENT.
+So a commented string reported `valueType: "comment"`; a commented version key was
+invisible to scalar detection (3 of 82 aliases silently unresolved); and — worst — **a key
+holding an inline table plus a trailing comment was never recognised as an inline table,
+so its nested keys were dropped from `metadata.inlineKeys` entirely**. That last one had
+been losing data across the corpus before this change and was not caused by it.
+
+### Agent supervision
+
+All 10 lanes `working`/`measuring`, none `STALLED`, none `DEAD`. The ZIG branch was
+**not** wholesale-merged: of its 87 commits, 53 touch only zig-owned files and 34 touch
+supervisor instruments or other lanes — including a stray `sql pass 2` and copies of
+`firing-check.ts` and `incoming-check.ts`. Cherry-picking the 53 applied 45 cleanly; the 8
+that could not apply are recorded by hash rather than force-pushed. Two of them turned out
+to carry a real fix to my own arbiter (`rulingFor()` read only the spec, so measured
+rulings looked unjustified) which had already arrived by another route and is verified
+present.
+
+## Corrected scope: 19 of MY 23 lanes are ruleable, not 13
+
+`docs/analyzers/PROMPT-LAPTOP-B.md:15` is the authoritative assignment: Bash, F#, Zig,
+Lua, Julia, Nim, PHP, PowerShell, R, Dart, SQL, GraphQL, Protobuf, JSON, YAML, CSS, SCSS,
+HCL, Make, TOML, XML, Markdown, Clean.
+
+My working list had **27** entries and was wrong in **both** directions:
+
+- **Included 6 that are not laptop B's** — `groovy`, `haskell`, `java`, `python`, `ruby`,
+  `scala`. The coverage gate was therefore making claims about other laptops' backlog,
+  and I ran the arbiter over python/java/scala in this session before noticing.
+- **Missed 2 of mine** — `graphql` and `markdown`. That is why they had no agent, no
+  ruling table, and no attention, while languages belonging to another team were being
+  measured on this machine.
+
+Six wrong entries is the population defect at the largest scale I have hit it: each is a
+*true* statement about a language this laptop does not own, and together they made the
+headline number describe work nobody here is responsible for. The list in
+`verify-ruling-tables-registered.ts` now quotes the prompt **with its line number**, so
+the next reader can check it rather than trust it.
+
+### Corrected standing over my 23
+
+| ruling source | n | lanes |
+|---|---|---|
+| corpus-measured TABLE | 13 | bash css fsharp json julia lua nim php protobuf sql toml xml zig |
+| SPEC (prose) | 6 | dart hcl make markdown powershell yaml |
+| **UNADJUDICATED** | **4** | **clean graphql r scss** |
+| **ruleable** | **19 / 23** | |
+
+So the honest figure was always 19 of 23, not the 13 I had been reporting. The genuine
+gap is 4 lanes, all of them mine, all of which now have an agent.
+
+### Spec-only lanes verified with the guard relaxed
+
+`hcl    emitted 7/10  ruled-sound 3  FALSIFIED 0`
+`make   emitted 6/10  ruled-sound 4  FALSIFIED 0`
+
+Both were previously unreportable. Neither is falsified, so the earlier `toml` finding
+was a genuine defect rather than a systematic one.
+
+**One measurement caveat worth stating:** the first `hcl` run in a background batch
+printed only its corpus line and no verdict, with no hang and no parse error. It was CPU
+starvation — 15 agents on 8 cores — not a lane fault, and the same lane returned 7/10 in
+the foreground immediately after. **A silent no-output from a measurement is not a
+result**, and under contention it is indistinguishable from one.
+
+## "10/10 with incoming" — measured across all 23 of my lanes
+
+`incoming-check` over a 30-file sample per lane, all 23 lanes, 0 failures.
+
+```
+lane        files fired ruled appl   edges targets   AMBIG   UNRES
+dart          30    10     0   10    5292    1632      15    2368
+clean         24     9     0    9    3608    1424     171     677
+fsharp        30     9     1   10    5238    1025     192    3373
+php           30     9     1   10    1404     251       1     958
+julia         30     8     1    9    2690     267      71    2202
+lua           30     8     1    9    5298    1913     251     933
+nim           30     8     1    9    3941     991      70    1663
+bash          30     6     1    7     608     188       3     224
+graphql       30     6     0    6     845     411       3     241
+make          19     6     0    6     822     289       0     369
+powershell    30     6     0    6    4680     710     155    2169
+scss          30     6     1    7     379     181       0      32
+zig           30     6     1    7    1403     540     181     546
+hcl           30     5     0    5    1607    1200      82     291
+r              3     5     0    5      29      12       0      16
+sql           30     5     1    6     322     154       0     111
+css           30     4     1    5   20301    6776       0      54
+yaml          30     4     0    4    3918    3821       0      16
+markdown      30     3     1    4    3053     207       2    2746
+protobuf      30     3     1    4    1635    1371       0     231
+xml           30     2     1    3     534     110     124       6
+json          30     1     1    2     739     650       0       0
+toml          30     1     1    2     247     144       2       0
+
+10/10 OUTGOING APPLICABLE ................ 3 of 23   (dart, fsharp, php)
+10/10 APPLICABLE *AND* incoming resolves  0 of 23
+```
+
+### But the 30-file sample CONFOUNDS the unresolved column, and here is the proof
+
+An edge to a symbol declared in the 31st file is "unresolved" inside a 30-file sample. So
+the unresolved column is partly an artifact of the population — the same defect as every
+other one in this programme, in the last place it could hide. Measured on `sql`:
+
+```
+                     30 files            400 files (13x)
+  uses          106 edges   75 unres (71%)   2180 edges  110 unres (5.0%)
+  references     66 edges   21 unres (32%)   1556 edges   20 unres (1.3%)
+  calls          42 edges   15 unres (36%)   1265 edges  457 unres (36%)
+```
+
+Read that carefully, because the three rows say different things:
+
+- **`uses` and `references` unresolved were mostly SAMPLING.** 71% -> 5.0% and 32% ->
+  1.3% with 13x the files. These are cross-file references whose target simply was not in
+  the sample. The 30-file number overstated them by more than an order of magnitude.
+- **`calls` unresolved did NOT improve: 36% -> 36%.** 457 call targets resolve to nothing
+  even with 400 files in scope. **That is a real defect, not a population artifact.**
+
+So the honest position on "how many are 10/10 with incoming" is: **0 of 23 as measured,
+and the measurement is not yet good enough to make that number mean what it appears to
+mean.** A 30-file sample cannot answer the question, because the question is precisely
+about whether edges reach declarations that live in OTHER files.
+
+The defensible claim today is narrower: **3 of 23 lanes are 10/10 on outgoing
+applicability; zero of 23 have been shown to have fully-resolving incoming, and the one
+type where the sample bias is ruled out — `calls` — has a real unresolved population in at
+least one lane.** Whole-corpus incoming runs, lane by lane, are the outstanding work, and
+`resumable-walk` is what makes them affordable.
