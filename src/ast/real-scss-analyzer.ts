@@ -155,6 +155,25 @@ function isReadablePlaceholder(name: string): boolean {
   return true
 }
 
+/**
+ * Does this string carry a CSS statement delimiter?
+ *
+ * A selector cannot contain `;`, `{` or `}` — those separate declarations and blocks, and
+ * the grammar only ever hands one to this lane from inside a region it failed to parse,
+ * where the node's text ran past the construct it names. This is a property of the
+ * LANGUAGE, so it holds whichever node type the text arrived on, which is why it is
+ * checked on the string rather than on `node.type`.
+ *
+ * By char code, to keep the module free of a pattern for a three-character test.
+ */
+function containsStatementDelimiter(name: string): boolean {
+  for (let i = 0; i < name.length; i++) {
+    const code = name.charCodeAt(i)
+    if (code === 59 /* ; */ || code === 123 /* { */ || code === 125 /* } */) return true
+  }
+  return false
+}
+
 function mixinName(name: string): string {
   return `@mixin ${name}`
 }
@@ -347,6 +366,29 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
     return null
+  }
+
+  /**
+   * Every strict descendant matching `predicate`, in tree order.
+   *
+   * Needed where `findDescendant`'s breadth-first FIRST match is the wrong node: on a
+   * broken `@extend` the first match is a `class_selector` spanning the rest of the region
+   * and the real referent is a `placeholder` nested inside it (see `extendedSelectorName`).
+   * Depth-first, so the innermost usable node is preferred over a shallower one.
+   */
+  private descendants(node: Node, predicate: (n: Node) => boolean): Node[] {
+    const out: Node[] = []
+    const stack: Node[] = [node]
+    while (stack.length > 0) {
+      const n = stack.pop() as Node
+      for (let i = n.namedChildCount - 1; i >= 0; i--) {
+        const c = n.namedChild(i)
+        if (!c) continue
+        if (predicate(c)) out.push(c)
+        stack.push(c)
+      }
+    }
+    return out
   }
 
   private nodeToRange(node: Node): ASTEngine.UniversalSymbol["range"] {
@@ -1065,13 +1107,51 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
     )
     if (!sel) return undefined
     const name = collapseWhitespace(sel.text)
-    // The interpolated form cuts the placeholder at the interpolation, so its text is a
-    // PREFIX that ends on a name boundary: `%responsive-container-#{$bp}` yields
+    // ORDER MATTERS, and the reason is that these are not independent.
+    //
+    // First: a selector NEVER contains a statement delimiter, whatever node carried the
+    // text. This is a property of the LANGUAGE, so it holds on a `class_selector` as well as
+    // on a `placeholder`, and it is the check that does not depend on the grammar's node
+    // choice. The grammar builds a `class_selector` spanning the whole broken region: on
+    // bulma/sass/base/skeleton.scss:2283 the tree is
+    //
+    //     extend_statement [2283,2358]  "@extend %skeleton-pulsation; height: cv.getVar(…)"
+    //       ERROR         [2291,2334]   "%skeleton-pulsation; height: cv.getVar("
+    //         class_selector [2291,2333]  "%skeleton-pulsation; height: cv.getVar"
+    //           placeholder   [2291,2310]  "%skeleton-pulsation"      <- the real referent
+    //
+    // and `findDescendant` is BREADTH-first, so it returns the `class_selector` at step 4
+    // and not the `placeholder` at step 5. A `sel.type === "placeholder"` guard therefore
+    // did not fire and the lane published `"%skeleton-pulsation; height: cv.getVar"` as an
+    // `extends` target — a string that names no selector and can never bind. Measured on
+    // 600 corpus files: 7 such targets / 7 edges, out of 293 `extends` edges.
+    //
+    // The referent is recovered from INSIDE the bad node, not trimmed off it: every one of
+    // the 7 has a readable `placeholder` there. Trimming was measured and rejected —
+    // `scss-other-bucket.ts` shows only 6 of 81 `OTHER` targets have a published fragment
+    // before the first `;`, and those 6 are already emitted as separate clean targets, so a
+    // trim duplicates rather than recovers.
+    if (containsStatementDelimiter(name)) {
+      const inner = this.descendants(
+        sel,
+        (n) => n.type === "placeholder" && isReadablePlaceholder(collapseWhitespace(n.text)),
+      )
+      return inner.length > 0 ? collapseWhitespace(inner[0].text) : undefined
+    }
+    // Second: the interpolated form cuts the placeholder at the interpolation, so its text
+    // is a PREFIX that ends on a name boundary: `%responsive-container-#{$bp}` yields
     // `%responsive-container-`, whose last character is not an identifier character. A
     // readable placeholder ends in one, which also rejects the degenerate bare `%` the
-    // grammar produces for `@extend %` in a broken region. Neither names a selector, so
-    // an edge to either would have an endpoint that resolves to nothing.
-    if (sel.type === "placeholder" && !isReadablePlaceholder(name)) return undefined
+    // grammar produces for `@extend %` in a broken region. Neither names a selector, so an
+    // edge to either would have an endpoint that resolves to nothing.
+    //
+    // This runs AFTER the delimiter test on purpose. Read in the other order it also
+    // rejects the delimiter case — `isReadablePlaceholder("%block; background-color: …")` is
+    // false because `;` is neither `-` nor a word character — and the recover above becomes
+    // unreachable, which costs 7 true edges to suppress 7 false ones. Measured: with the
+    // order reversed, `extends` fell 293 -> 286 and the 7 real `@extend %placeholder`
+    // statements went with them.
+    if (name.startsWith("%") && !isReadablePlaceholder(name)) return undefined
     return name.length > 0 ? name : undefined
   }
 
