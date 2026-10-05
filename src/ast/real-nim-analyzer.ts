@@ -991,6 +991,34 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
     return false
   }
 
+  /** True when this `variant_discriminator_declaration` holds an author-written
+   *  discriminator rather than a branch list the parser absorbed.
+   *
+   *  A genuine discriminator is written adjacent to `case` — `case kind: Kind` —
+   *  so its name node shares a source row with the `case` token. The bare form
+   *  has no name to write, recovery attaches the following `of A, B:` line to the
+   *  slot, and that line is on a later row by construction.
+   *
+   *  The `case` token is looked up among the owning `variant_declaration`'s
+   *  children rather than through a field name, because the grammar exposes it as
+   *  an anonymous `case` token. A missing token is answered pessimistically
+   *  (NOT adjacent), so an unexpected tree drops the field instead of publishing a
+   *  fabricated one — the asymmetry is deliberate: a lost field is recoverable,
+   *  a fabricated edge poisons `bb_graph`, `bb_impact` and `bb_migrate`. */
+  private discriminatorIsAdjacentToCase(node: Node): boolean {
+    const owner = node.parent
+    if (!owner || owner.type !== "variant_declaration") return false
+    let caseTok: Node | null = null
+    for (let i = 0; i < owner.childCount; i++) {
+      const c = owner.child(i)
+      if (c && c.type === "case") { caseTok = c; break }
+    }
+    if (!caseTok) return false
+    // Compare against the SLOT's own first row, not the name node's: the slot is
+    // what recovery re-parents, and the name node is its first declaration.
+    return caseTok.startPosition.row === node.startPosition.row
+  }
+
   private buildFieldSymbols(
     node: Node,
     owner: ASTEngine.UniversalSymbol,
@@ -1022,6 +1050,44 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
     // Inside an OBJECT there is no unnamed element, so the ancestor test is what
     // separates `tuple[int, string]` from `case isCircle`.
     if (!typeNode && this.hasAncestorOfType(node, "tuple_type")) return out
+    // ── the bare-`case` fabrication guard ────────────────────────────────────
+    // Nim writes a discriminator as `case <name>`, adjacent. It ALSO permits the
+    // bare form, in which there is no name to write and the following line is the
+    // branch list:
+    //
+    //     type Node = ref object
+    //       case
+    //       of AddOpr, SubOpr:
+    //         a, b: Node
+    //
+    // tree-sitter-nim gives that bare form no slot to put a name in, so error
+    // recovery attaches the NEXT LINE to `variant_discriminator_declaration`. The
+    // slot then holds a `symbol_declaration_list` whose first entry is a
+    // CONSTRUCTOR, and the loop below would publish it as a `property` of the
+    // owning type plus a `contains` edge to it — a field the object does not have.
+    //
+    // The node SHAPE cannot tell the two apart, and this was measured rather than
+    // assumed (`variant-discriminator.ts`, 43 slots over 1,508 nimony files):
+    //
+    //   tcaseobjectrange.nim:15  `case kind: Kind`     symbol_declaration_list,
+    //                                                          decls=1, errInSlot=0
+    //   opt.nim:33-34            bare `case`/`of None:` symbol_declaration_list,
+    //                                                          decls=1, errInSlot=0
+    //
+    // Identical. ERROR position cannot either — the recovery ERROR is a CHILD of
+    // `variant_declaration` in msumtype.nim and a SIBLING under
+    // `field_declaration_list` in tsumtype.nim, so an ERROR test catches 14 of 19
+    // and misses 5. A reserved-word test catches 5 of 19 and misses 14, because
+    // `None`, `Some`, `AddOpr`, `float` and `T` are all perfectly legal
+    // identifiers and are not keywords.
+    //
+    // What DOES separate them is the ROW: a genuine discriminator is adjacent to
+    // `case`, and an absorbed line is necessarily on a later one. Measured as a
+    // perfect separator on the same 43 slots — TP 19, FN 0, FP 0, TN 24 — which
+    // is the only reason this guard is shippable.
+    if (node.type === "variant_discriminator_declaration" && !this.discriminatorIsAdjacentToCase(node)) {
+      return out
+    }
     const doc = docCommentByStartLine.get(node.startPosition.row + 1)
     for (let i = 0; i < list.namedChildCount; i++) {
       const decl = list.namedChild(i)

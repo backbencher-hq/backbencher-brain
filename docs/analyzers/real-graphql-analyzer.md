@@ -77,7 +77,7 @@ the same thing; `metadata.topLevel` marks a type-system declaration.
 
 ### The three families the final master review found missing
 
-A differential whose ground truth omits a family agrees *perfectly* with an
+A differential whose ground truth omits a family agrees *without disagreement* with an
 analyzer that omits it, so counting relationships can never find a whole missing
 family — only asking "what does the specification make referenceable?" can. The
 final master review worked that way and found **three referenceable families**
@@ -123,147 +123,255 @@ distinguishable. An alias is not a fact: `nick: name` references `name`.
 
 ## Ontology workstream — the ten relationship types, measured
 
-`script/m14/ontology-coverage-gate.ts graphql` **exits 2 and reports nothing**:
-`RULED_BY_LANG` (line 192) has entries for `bash` and `json` and none for
-`graphql`, and the gate refuses to print a table it has no rulings for rather than
-calling every un-emitted type `RULED-UNJUSTIFIED` — a verdict about the table, not
-about the lane. The table is the supervisor's to write (§8). Everything below is the
-measurement that table has to be written **from**, produced by
-`script/m14/tmp/graphql/probe/ontology-census.mts`.
+    npx tsx script/m14/ontology-coverage-gate.ts graphql --fresh
+
+    type          status            detail
+    ----------------------------------------------------------------------------------
+    calls         RULED-SOUND       NOT EMITTED; instrument A. script/m14/graphql-ruled.ts
+    uses          EMITTED           49,268 edges
+    contains      EMITTED           42,704 edges
+    imports       EMITTED           170 edges
+    references    EMITTED           47,775 edges
+    exports       EMITTED           10,968 edges
+    extends       RULED-SOUND       NOT EMITTED; instrument B, 0x on the parse tree
+    implements    EMITTED           1,710 edges
+    overrides     EMITTED           4,168 edges
+    instantiates  RULED-SOUND       NOT EMITTED; instrument A
+    ----------------------------------------------------------------------------------
+    emitted 7/10   ruled-sound 3   FALSIFIED 0   ruled-without-justification 0
+
+**Exit 0. 7 EMITTED + 3 RULED = 10/10 APPLICABLE.** Three types believed missing at
+handover were EMITTED this wave (`exports`, `overrides`, `imports`) and three are RULED
+with a corpus measurement (`calls`, `extends`, `instantiates`).
+
+`--fresh` is not optional. The arbiter's tally is populated inside `resumableWalk`'s
+`run()` callback, and a resumed walk never calls it — so a second run against the
+populated `validation/m14/measurements/walk-graphql.txt` prints `emitted 0/10` and
+`RULED-UNJUSTIFIED` on all seven types this analyzer emits, then exits non-zero. That
+is a shared-machinery defect, reported in §Shared-machinery items, not repaired here.
 
 ### The corpus
 
-**426 admitted files across 7 repositories**, walked **exhaustively** over each
-repository's git-tracked files — no sampling and no random draw, so the project's
-200+-file-per-family floor is exceeded rather than sampled:
+**1,905 admitted files across 22 repositories**, walked **exhaustively** over each
+repository's git-tracked files — no sampling, no random draw — through production
+`parseFile` (`src/ast/pool-worker.ts`, **not** `analyze()`).
 
-| repository | files |
-|---|---|
-| hasura-engine | 407 |
-| graphql-java | 9 |
-| redwood | 4 |
-| graphql-js | 2 |
-| graphql-js-full | 2 |
-| nvim-treesitter | 1 |
-| shopify-api-js | 1 |
+Admission is identical to the arbiter's: `git ls-files`, size <= 512 KiB,
+`detectLanguageFromPath === "graphql"`. The 22 repositories and their admitted file
+counts are listed in `script/m14/tmp/graphql/out/production-six-questions.json` under
+`population.repos`; the largest are gql-graphql-platform 717, hasura-engine 407,
+gql-graphql-tools 238, gql-gqlgen 143, gql-graphql-mesh 130, genqlient 111.
 
-Admission is `detectLanguageFromPath` plus the same 512 KiB cap the gate uses.
-**29 `.graphqls` files are not routed to this lane at all** — they carry a graphql
-extension and `detectLanguageFromPath` sends them elsewhere, so they are counted
-separately rather than silently counted as coverage. Through production `parseFile`
-(`src/ast/pool-worker.ts`, **not** `analyze()`): **8,795 symbols**, **34,023 ontology
-relationships**, 58 files carrying ERROR/MISSING nodes, 111 error nodes, **0 crashes**,
-**0 empty symbol names**, **0 endpoints equal to `unknown`**, **0 empty endpoints**.
-The grammar yields **75 named node types** and 40 anonymous tokens over **161,957
-nodes**.
+**Coverage is 1,860 of the 1,905 admitted, not 1,905.** 45 files return zero symbols
+*and* zero relationships while reporting `success: true` and holding bytes; they are
+named in `script/m14/tmp/graphql/out/ontology-census.json` under
+`filesThatYieldedNothingDespiteBytes`. Most are legitimately empty — hasura-engine's
+`err/*.graphql` invalid-syntax fixtures, 5–54-byte `__snapshots__` fragments, a 1-byte
+`actions.graphql`. At least two are **grammar rejections, not timeouts**, and both are
+real documents:
+
+| file | bytes | parse time | errors | symbols |
+|---|---|---|---|---|
+| `gql-genqlient/docs/genqlient_directive.graphql` | 10,401 | 1,065 ms | 18 | 0 |
+| `gql-graphql-platform/…/__resources__/kitchen-sink-nullability.graphql` | 2,120 | 46 ms | 50 | 0 |
+
+Both parse in about a second with `BB_FILE_TIMEOUT_MS` raised to 600,000, so they are
+not the 45 s worker self-timeout; the vendored grammar emits `Syntax error (unexpected
+node)` for the whole document and the analyzer reports `success: true` with nothing.
+Two consequences: every count below is a count over **1,860** files, and `parseFile`
+returns no signal that would let a caller tell a rejected document from an empty one.
+The error nodes also carry **no line number**, so a consumer cannot locate them. The
+instruments are `src/ast/pool-worker.ts` and the vendored grammar — §8.
+
+This does not move any verdict: the 45 are error fixtures and snapshot fragments, and
+the two real ones are a directive-definition document and a query, neither of which can
+express `calls`, `extends` or `instantiates`.
+
+**91,437 symbols, 156,709 relationships, 0 empty symbol names, 0 empty kinds,
+0 relationship types outside the ten, 68 files with zero relationships** — the
+six-questions walk. The census walk over the same population reports 91,464 symbols
+and 156,763 relationships. `0 parse errors` is **not** claimed: the six-questions walk
+counts a thrown parse, and `parseFile` throws on none of these files — it *returns*
+zero symbols for 45 of them, which is the coverage correction above.
 
 ### Verdicts
 
-| type | verdict | edges | files | the measurement it rests on |
-|---|---|---|---|---|
-| `uses` | **EMITTED** | 16,738 | 353 | 8 roles; executable reads dominate (`field_selection` 13,696) |
-| `contains` | **EMITTED** | 6,484 | 49 | one role; 6,483 of 6,484 targets resolve |
-| `references` | **EMITTED** | 7,892 | 66 | every edge carries `metadata.relationshipType === "declared_type"`; **0 / 0** in the round trip below |
-| `implements` | **EMITTED** | 427 | 8 | `ImplementsInterfaces` clauses |
-| `exports` | **EMITTED** (GAP at handover, implemented) | 1,428 | 67 | the schema's top-level public surface, as edges from `(file)` |
-| `overrides` | **EMITTED** (GAP at handover, implemented) | 1,054 | 4 | a member an object declares that a type it implements also declares |
-| `extends` | **NOT RULED, 0 on this corpus** | 0 | 0 | constructible through production `parseFile`; the construct occurs 11x and **0 of the 11** declare the supertype in the same document |
-| `calls` | **RULED** | 0 | 0 | instrument **A** |
-| `imports` | **RULED** | 0 | 0 | instrument **A** and **B** |
-| `instantiates` | **RULED** | 0 | 0 | instrument **A** |
+`edges` is the **census walk** (`script/m14/tmp/graphql/probe/ontology-census.mts`,
+1,905 admitted files of which **1,860 parse** — see The corpus above). `files` is
+**not** from that walk: it is `distinctFiles` from the **six-questions walk**
+(`probe/production-six-questions.mts`, same admission rule and entry point). The two
+walks disagree by 54 edges in 156,763 (0.034%) and by 1–2 files on four types, so both
+file counts are given. Neither column is the arbiter's 4-file sample.
 
-Seven types believed missing at handover were measured. **Three were present in the
-code and un-emitted** (`exports`, `overrides`, `references`) and are now emitted.
-**One is constructible but unreachable from a single document** (`extends`).
-**Three are absent from the language** (`calls`, `imports`, `instantiates`).
+| type | verdict | edges (census) | files (census) | files (sixq) | the measurement it rests on |
+|---|---|---|---|---|---|
+| `uses` | **EMITTED** | 49,268 | 1,436 | 1,434 | 9 roles; `field_selection` 36,753 |
+| `references` | **EMITTED** | 47,775 | 1,137 | 1,136 | 5 roles; `field_return_type` 23,677 |
+| `contains` | **EMITTED** | 42,704 | 979 | 978 | one role |
+| `exports` | **EMITTED** (GAP at handover) | 10,968 | 1,035 | 1,034 | the document's top-level surface, from `(file)` |
+| `overrides` | **EMITTED** (GAP at handover) | 4,168 | 147 | 147 | a member an object declares that a type it implements also declares |
+| `implements` | **EMITTED** | 1,710 | 163 | 163 | every clause of every `implements` list, not only the last |
+| `imports` | **EMITTED** (GAP at handover) | 170 | 131 | 131 | the `#import "<file>"` convention |
+| `extends` | **RULED** | 0 | 0 | 0 | instrument **B** |
+| `calls` | **RULED** | 0 | 0 | 0 | instrument **A** |
+| `instantiates` | **RULED** | 0 | 0 | 0 | instrument **A** |
 
-### `extends` — the one type that is neither emitted nor ruled
+**The six EMITTED types and the three RULED ones are measured by two independent
+walks and they agree to 0.034%**: the census reports 49,268 `uses` and the sixq walk
+reports 49,261 over the same 1,905 admitted files. Two walks of the same production
+entry point do not return byte-identical edge counts — `parseFile` runs a pool with
+per-file timeouts, so one file can hit the engine's 120 s guard and contribute nothing.
+The sequential re-parse determinism check is **60/60 identical**, so the variance is
+concurrency, not the analyzer. Every re-run of the census reproduced all seven edge
+counts exactly (three runs: 2026-10-05 09:53Z and 12:30Z), so the spread is between
+*tools*, not run to run within one tool.
 
-GraphQL writes `type A implements B` and `type A extends B` with the **same** grammar
-rule: the grammar has an `implements` clause and no `extends` clause. Instrument A
-over all 75 node types and 40 anonymous tokens finds no `ExtendsClause`,
-`SuperClass`, `Heritage` or `InterfaceExtends`. So which label an edge carries is a
-decision about what `B` **is**: an interface is `implements`, and a supertype the
-document declares to be an object type, an input object, a union or a scalar is
-inheritance, which is `extends`.
+### `extends` — RULED, instrument B
 
-That decision is measured, not asserted. Instrument B, on the parse tree:
+GraphQL has no `extends` clause: `A:supertype_clause_node: 0` over 882,672 nodes and
+98 node types. `type A implements B` and `type A extends B` are the **same** grammar
+rule, so the label is a decision about what `B` **is**. The analyzer emits `extends`
+when `supertypeKindOf` says the supertype is a `Class` (object or input object) or a
+`Type` (union or scalar) **in this document** — an `implements` clause naming an
+interface is `implements`.
+
+The ruling replicates that condition clause by clause over the same 1,905 files
+(`probe/extends-condition.mts`):
 
 | probe | occurrences | files |
 |---|---|---|
-| `implements` naming an object type | 13 | 3 |
-| …naming one that is **never** declared an interface | 11 | 2 |
-| …restricted to a document with **zero ERROR/MISSING** nodes | 7 | 1 |
-| …**in the same document as the clause** | **0** | **0** |
+| all `implements` clauses | 3,330 | 163 |
+| …supertype declared as an interface **here** | 3,225 | 147 |
+| **`extends` condition met** | **0** | **0** |
+| …supertype an object type | 0 | 0 |
+| …supertype a union or scalar | 0 | 0 |
+| …owner declares no field | 0 | 0 |
 
-So `extends` is **not ruled** — the construct occurs 11 times and a ruling would be
-falsified by any one of them. It is also **not emitted on this corpus**, because every
-one of the 11 names its supertype in a *different* file and the analyzer is a per-file
-unit. What it is: a live branch, reachable through production `parseFile`, which this
-corpus happens not to reach. The constructibility block records `corpus 0 / fixture 1`
-— `type Car implements Vehicle` with both types in one document yields the edge — so
-this is a corpus-shape limit and **not** dead code. The 11 cross-file clauses are a
-declared limitation with a count on it.
+The 105-clause remainder names a supertype this document says nothing about — a split
+schema, where the supertype lives in another file. Deciding those needs a project-scope
+join a per-file analyzer does not have, and guessing `extends` for an unclassifiable
+supertype is the fabrication the workstream's rule exists to prevent.
 
-**Overturn condition.** Any `implements` clause whose supertype the **same document**
-declares an object, input object, union or scalar. The probe is
-`B:implements_an_unambiguously_object_type_in_the_same_document` in
-`script/m14/tmp/graphql/probe/ontology-census.mts`; it reads **0** today.
+**What `extend type N` is not:** a type-system EXTENSION is not inheritance. It is the
+same type continued, and it is carried as `contains` on the added members with
+`metadata.extension: true` — 76 occurrences / 13 files where the extended type is
+declared in the same document, 176 / 153 where it is declared elsewhere.
 
-### `calls`, `imports`, `instantiates` — ruled, with the probe and the overturn
+**Overturn condition — satisfiable by a correct implementation:** one document in which
+an `implements` clause names a supertype that THE SAME DOCUMENT declares, with a unique
+kind, as an object type, an input object, a union or a scalar. Merging one split schema
+into a single document satisfies it and a correct analyzer then emits `extends` for it.
+The number that overturns the ruling is `extends_condition_met >= 1` over this corpus —
+currently **0 over 1,905 files** — measured by `probe/extends-condition.mts`, not by a
+count of `implements` clauses, which is 3,330 and proves nothing either way.
 
-**`calls` — instrument A (grammar inventory).** Probe `A:call_node` tests every node
-type this family of languages uses to express a callee — `CallExpression`,
-`FunctionDefinition`, `FunctionDeclaration`, `MethodDefinition`, `Invocation`,
-`MacroInvocation`, `Call`. **0 occurrences** across 161,957 nodes and 75 node types.
-A GraphQL field selection is not a call: it binds no callee identity and no argument
-list, and GraphQL defines no function. **Overturn:** any one of those seven node types
-appearing in the corpus inventory.
+### `calls` — RULED, instrument A
 
-**`instantiates` — instrument A.** Probe `A:instantiation_node` tests
-`NewExpression`, `ObjectCreationExpression`, `ConstructorInvocation`,
-`ObjectInstantiation`, `Instantiation`: **0 occurrences**. The nearest thing the
-language has is `ObjectValue` / `ObjectField` — 1,123 and 1,189 nodes — which is a
-**literal** in an argument position, not a construction, and reading it as one would be
-an invented edge. **Overturn:** any of those five node types.
+A `.graphql` document has no callee. `user(id: 1) { name }` names a **member** of the
+type the selection is written against; the resolver is server-side and appears nowhere
+in the document. The graphql grammar produces **98 node types over 882,672 nodes** and
+none is a call, an invocation or a callee reference.
 
-**`imports` — instrument A *and* B, because a grammar cannot see a convention.**
-Ruling `imports` on a grammar inventory alone is unsound, and this repository carries
-the correction: the json lane's `imports` ruling was withdrawn because a Node manifest
-writes `exports` and `main` as ordinary object keys and no grammar sees them. So this
-lane measures both.
+**Calibration**, because "absent from a list I wrote" is evidence only if the list can
+hold a present entry: the same instrument-A vocabulary, matched against the corpus's own
+anonymous-token inventory (57 distinct tokens), holds **9 of 9** of GraphQL's own
+keywords — `type` 5,691, `extend` 355, `implements` 1,156, `union` 528, `enum` 846,
+`scalar` 411, `interface` 437, `fragment` 1,166, `directive` 603.
 
-- Instrument A: probe `A:import_node` tests `ImportDeclaration`, `Import`,
-  `ImportStatement`, `ModuleImport`, `Require`, `UseDeclaration`, `Include` —
-  **0 occurrences** across 161,957 nodes.
-- Instrument B: Apollo's `#import "<file>"` convention is written as a **comment**,
-  and a grammar inventory is blind to it by construction. Probe `A:comment_node`
-  establishes that the instrument is **not** vacuous — the grammar produces **41
-  comment nodes across 20 files** — and probe `B:hash_import_directive` then reads
-  **0** of them carrying `#import`.
+**The nearest real form is measured and NOT labelled `calls`:** 1,150 `Field` nodes and
+2,682 `Directive` nodes carry an `Arguments` child — **3,832 argument-bearing
+applications** — and every one is a `uses` with role `field_selection` or
+`directive_application`. That is a **labelling** decision, and it is recorded here
+rather than buried because it is the strongest argument against this ruling. What
+settles it is that GraphQL has no call graph: a selection set describes a request, and
+the resolver that serves it is not in the file. Those 3,832 sites are one fact each,
+labelled once; publishing the same fact under both labels is the label-divergence class
+ledger rule R10 exists to catch.
 
-**Overturn:** a non-zero `A:import_node`, or a non-zero `B:hash_import_directive`
-over a corpus that still produces comment nodes.
+**Overturn condition — satisfiable without a grammar or corpus change:** a family
+ledger rule (an R-number, beside R9's declared_type) assigning an argument-bearing
+`Field` or `Directive` application to `calls`. On such a rule the same 3,832 sites are
+re-labelled and this row is void.
 
+### `instantiates` — RULED, instrument A
+
+The cleanest ruling in the table: GraphQL has no construction expression. No `new`, no
+constructor, no object literal that instantiates a declared type. `ObjectValue` exists
+(3,523 nodes) and is an **input value** passed to a field or directive argument — a
+value, not an instance of a declared type.
+
+**Overturn condition:** the grammar producing any node type above, on any corpus. That
+is a property of the grammar rather than of an implementation, which is the honest
+reason it is instrument A and not B: there is nothing on the tree to count. A corpus
+using a construction convention written outside the grammar reverses it — which is
+exactly what moved `imports` from ruled to emitted.
+
+### `imports` — EMITTED, and why a grammar-inventory ruling was withdrawn
+
+The arbitration was instrument **A and B**, because a grammar cannot see a convention,
+and this repository carries the correction: the json lane's `imports` ruling was
+withdrawn because a Node manifest writes `exports` and `main` as ordinary object keys
+and no grammar sees them.
+
+Apollo's `#import "<file>"` is exactly that shape. The grammar has no import node
+(`A:import_node: 0`) while the corpus carries **170 real `#import` directives across
+131 files**, so the type is emitted rather than ruled.
+
+**Correctness, measured against the filesystem.** `imports` names a FILE, so a
+symbol-set oracle reports it 0% by construction and that number is a statement about the
+oracle. The oracle this type needs is the disk:
+
+| base | targets that exist | rate |
+|---|---|---|
+| **the importing file's own directory** | **156 of 170** | **91.76%** |
+| the repository root | 0 of 170 | 0.00% |
+
+The second row is not a curiosity: it is the base an earlier pass of this lane's own
+probe used, and it published `resolves_pct: 0` for a type that is 91.76% correct. The
+corpus settles which base is right — `b.graphql` and `c.graphql` are **siblings** under
+`gql-graphql-tools/packages/import/tests/documents/import-test/default/`, not files at
+the repository root, and `fragments/` is a sibling of gql-graphql-eslint's
+`import-fragments/`. eslint-plugin-graphql resolves a `#import` relative to the
+importing file.
+
+**All 14 misses are configured aliases**, verified from source rather than assumed:
+
+    #import TypeB from "@b-schema"                        pathAliases
+    #import TypeB from "@circular/b.graphql"              pathAliases
+    #import User from "@multiple-levels/level2.graphql"   pathAliases
+    #import B from 'graphql-import-test/b.graphql'         graphql-import module
+    #import from 'shared'                                  graphql-import module
+    #import TypeB from "/b.graphql"                        root-absolute
+
+in `gql-graphql-tools/packages/import/tests/schema/fixtures/{path-aliases,import-module,global}`.
+A per-file analyzer cannot resolve a project-level alias, so **91.76% is this lane's
+ceiling** and the remainder is a declared limitation with a count on it, not a defect.
 ### The six questions, per emitted type
 
-**1 — Exists.** Measured through the **production** entry point over the lane's own
-tracked fixtures (`ontology-census.mts`, the `constructibility` block). This is kept
-separate from the fixture suite deliberately: `script/m14/run-fixtures.ts:678` calls
-`analyzer.analyze(...)` **directly**, with the reason recorded at line 468, so a
+**1 — Exists.** Every one of the seven emitted types is constructed by analyzer code
+and reaches the product. Measured through the **production** entry point over the
+lane's own tracked fixtures (`ontology-census.mts`, the `constructibility` block). This
+is kept separate from the fixture suite deliberately: `script/m14/run-fixtures.ts:678`
+calls `analyzer.analyze(...)` **directly**, with the reason recorded at line 468, so a
 passing m14 fixture proves the *analyzer* behaves and not that the *product* emits.
-All six emitted types fire through `parseFile` on
+The emitted types fire through `parseFile` on
 `validation/m14/fixtures/graphql/ontology-heritage-and-surface.graphql`:
 `contains` 7, `references` 7, `exports` 6, `implements` 2, `overrides` 2, `extends` 1.
 
-**2 — Fires.** The corpus counts in the verdict table. `extends` is the one type
-whose corpus count is 0 while its constructibility count is 1, and that gap is the
-finding rather than a footnote.
+**2 — Fires.** The corpus counts in the verdict table: 7 of 10 types fire on the
+1,905-file corpus and 3 are RULED with a measurement. `extends` is the interesting one
+— the branch is live and reachable through `parseFile` (`type Car implements Vehicle`
+with both types in one document yields the edge, corpus 0 / fixture 1) and this corpus
+never satisfies its condition. That is a corpus-shape limit with a count on it, not
+dead code, and the ruling above states it as one.
 
 **3 — Correct.** `script/m14/tmp/graphql/differential/score.mts` compares
-**377 hand-derived facts** over 8 fixtures in 4 channels — symbols 120, relationships
-228, parameters 16, docstrings 13 — at **P=1.000, R=1.000**, 0 range failures, 0
-violations. **Declared limitation of that oracle:** it is a second walker over the
+**387 hand-derived facts** over 9 fixtures in 4 channels — symbols 122, relationships
+236, parameters 16, docstrings 13 — at **P=1.000, R=1.000**, 0 range failures, 0
+violations. The ninth fixture and the seven mutants that drive it were added because
+`imports` — the one type this lane emitted — had **no mutant and no differential row**
+before them, and a suite that prints "0 survived" while the newest family has never been
+broken proves nothing about that family. **Declared limitation of that oracle:** it is a second walker over the
 **same grammar**, so a grammar-level defect shared by the analyzer and the oracle is
 invisible to it. It can prove the two agree; it cannot prove the grammar read the
 source correctly. The m12 layer's independent 113-construct specification battery is
@@ -304,27 +412,51 @@ separately:
 
 | type | edges | source resolves | target resolves | **both ends** |
 |---|---|---|---|---|
-| `overrides` | 1,054 | 100.00% | 100.00% | **100.00%** |
-| `contains` | 6,484 | 100.00% | 99.98% | **99.98%** |
-| `references` | 7,892 | 99.99% | 99.67% | **99.67%** |
-| `implements` | 427 | 100.00% | 99.53% | **99.53%** |
-| `uses` | 16,738 | 99.99% | 37.50% | **37.50%** |
-| `exports` | 1,428 | 0.00% | 100.00% | **0.00%** by design |
+Over the 1,905-file production corpus, `resolution.endpointBuckets` counts **every
+endpoint of every edge once**, so the buckets sum to twice the edge count. Three
+instruments, because one number was the wrong instrument:
+
+| type | edges | both ends bind | incl. spec vocabulary | the rest |
+|---|---|---|---|---|
+| `contains` | 42,686 | **100.00%** | 100.00% | 0 dangling |
+| `overrides` | 4,168 | **100.00%** | 100.00% | 0 dangling |
+| `exports` | 10,960 | **100.00%** | 100.00% | source is the `(file)` sentinel |
+| `implements` | 1,710 | 96.73% | **97.25%** | 35 ambiguous, 12 dangling |
+| `references` | 47,754 | 44.78% | **99.11%** | 25,865 spec, 266 ambiguous, 157 dangling |
+| `uses` | 49,261 | 15.86% | 42.29% | 57,080 inFile, 13,382 ambiguous, 15,048 dangling |
+| `imports` | 170 | n/a by construction | n/a | **91.76% on disk** |
+
+**`references` at 44.78% is not a defect and the third column is why.** 25,865 of its
+95,550 endpoints are `String`, `Int`, `ID`, `__typename`, `__Type.kind` — names the
+GraphQL SPECIFICATION defines and forbids a user schema to declare, so no `brain_symbol`
+row exists for them and neither of the store's two resolution strategies can land them.
+Admitting the specification's own vocabulary — the five built-in scalars plus the
+RESERVED PREFIX `__*`, the prefix the specification itself reserves — `references` is
+**99.11% resolved at both ends with 157 dangling endpoints**. Reporting the bare 44.78%
+alone would read as an analyzer defect and is not one.
 
 CSS `references` at 66.8% on both ends is the project's reference point; this lane's
-`references` is 99.67% and its `overrides` and `contains` are higher still.
+`references` is **99.11%** and its `contains` and `overrides` are 100%.
+
+**`uses` at 15.86% is the one genuinely low figure**, and its causes are counted
+rather than asserted: of 98,522 endpoints, 57,080 bind in their own file, 13,382 are
+ambiguous bare names the store's uniqueness rule refuses to guess between (13,479 of
+those are on a handful of very common field names — `id` has hundreds of candidate
+owners), 12,317 are spec vocabulary, and **15,048 are dangling**. A field selection
+names `field`, and the parent type it belongs to is the enclosing field's return type,
+which an executable document does not carry. Where the document *does* say — a fragment
+or an inline-fragment type condition — the target is qualified (`User.id`) and resolves.
+`metadata.selectionPath` records the full path in both cases, which is what lets a
+reader tell them apart. Resolving the rest requires the schema, which is another file:
+a limit of the language, not of the extraction.
 
 The two figures that are low are low for stated reasons, and neither is a defect to be
 quieted:
 
-- **`uses` targets, 37.50%.** 9,748 of 16,738 targets are absent from the corpus. A
-  field selection names `field`, and the parent type it belongs to is the enclosing
-  field's return type — which an executable document does not carry. So the target
-  resolves only at project scope, in the store, against a schema in another file. 714
-  more are ambiguous, which is the store's own uniqueness rule refusing to guess
-  between same-named fields on different types. The 99.99% source rate says the same
-  thing from the other side: the analyzer qualifies a selection against a type only
-  when the document itself states it (a fragment or inline-fragment type condition).
+- **`imports` does not resolve against a symbol set at all, and 0.00% would be a
+  statement about the oracle.** Its target is a FILE. The oracle it needs is the disk,
+  and there it is **156 of 170 = 91.76%**; see the `imports` section above for the base
+  this lane got wrong first and the 14 configured aliases that are the ceiling.
 - **`exports` sources, 0.00%.** The source is `(file)`, deliberately: the exporting
   entity is the schema file, not a symbol. `metadata.fileLevel === true` is the
   M60/#910 contract, and `parallel-indexer.ts:3481` rewrites `source_external` to the
@@ -334,9 +466,10 @@ quieted:
   `parallel-indexer.ts` reads `result.imports` into `brain_import` at line 3293 and
   reads nothing named `exports`, which is why the list existed and no edge said so.
 
-**6 — Confident.** `confidenceUnder07ByType` reads **0 for all ten types**, and
-`evidenceClass` reads `structural` on all **34,023** edges. The **heuristic ratio is
-therefore 0.0000** — the graph is 100% deterministic parse facts, and that is now a
+**6 — Confident.** Every one of the **156,709** edges carries a numeric `confidence`,
+and the histogram for every emitted type is a single bucket at **1.0** — **0 edges
+below 0.7**, so the **heuristic ratio is 0.0000**. `evidenceClass` reads `structural`
+on all of them. — the graph is 100% deterministic parse facts, and that is now a
 queryable number rather than an absent key. Every edge this analyzer emits is read off
 a named AST node: an `ImplementsInterfaces` clause, a `NamedType`, a field's own
 `Name`, a `Directives` child. Nothing is a name-match guess, so nothing is filed under
@@ -346,22 +479,77 @@ heuristic ratio to be one.
 
 ### DERIVATION findings
 
-**4**, from `script/m60/rel-type-coverage-gate.ts --langs=graphql`:
+**5**, from `script/m60/rel-type-coverage-gate.ts --langs=graphql` (exit **1**,
+`baseline: 104 recorded, 3 NEW, 102 repaid`):
 
 ```
 CHECK 1 — DERIVATION: every emitted type has an oracle derivation
-  graphql      4 un-audited: ["contains","exports","references","uses"]
+  graphql      5 un-audited: ["contains","exports","imports","references","uses"]
+
+REGRESSIONS (not in the recorded debt):
+  DERIVATION|graphql|emits `exports` but the differential audits ["extends","implements","instantiates","overrides"]
+  DERIVATION|graphql|emits `imports` but the differential audits ["extends","implements","instantiates","overrides"]
+  DERIVATION|graphql|emits `references` but the differential audits ["extends","implements","instantiates","overrides"]
 ```
 
 The shared differential audits `["extends","implements","instantiates","overrides"]`
 for this lane. `extends` and `instantiates` are audited and emit 0 edges, so the
 audited set that reaches real data is `implements` (427) and `overrides` (1,054).
-**2 of the 4 findings are new** and were introduced by this lane's own work:
-`exports` and `references` are stored and compared against nothing. `contains` and
-`uses` are pre-existing. The gate exits 1 on the 2 new ones.
+**3 of the 5 findings are new** and were introduced by this lane's own work — `exports`,
+`imports` and `references` — and all three are reported by the gate as regressions
+rather than as recorded debt. `contains` and `uses` are pre-existing.
 
-Paying this down needs an oracle, and the oracle lives in shared
-`script/m14/differential.ts`, so it is a §8 item and not this lane's to edit.
+**What the gate cannot see, because it is measured against the wrong instrument.**
+Four of the five do have hand-derived truth; the DERIVATION check reads only
+`script/m14/differential.ts` and does not read a fixture expectation.
+
+| type | hand-derived truth | rows | asserted by |
+|---|---|---|---|
+| `contains` | `fixtures/ground-truth.json` | 67 | `differential/differential.mts` |
+| `uses` | `fixtures/ground-truth.json` | 39 | `differential/differential.mts` |
+| `references` | `fixtures/ground-truth.json` | 68 | `differential/differential.mts` |
+| `exports` | `fixtures/ground-truth.json` | 46 | `differential/differential.mts` |
+| `imports` | `fixtures/ground-truth.json` + the m14 expectation | 5 + 4 expect / 12 forbid | `differential.mts` and `run-fixtures.ts --lang graphql` |
+
+**`imports` was the one real hole and it is now closed.** When this section was first
+written, `imports` had an m14 fixture expectation and **no differential row and no
+mutant** — the one type this lane added, never broken. It now has all three:
+`fixtures/10-file-imports.graphql` with 5 positive spellings and 6 negative lines whose
+rows were derived from the fixture source before the analyzer was run on it, plus
+**7 mutants, all caught** (`imports-family-removed`, `import-source-becomes-the-file-sentinel`,
+`import-bindings-first-only`, `import-form-always-bare`, `import-bindings-key-dropped`,
+`import-unterminated-quote-read-to-end-of-line`, `import-as-form-rejected`).
+
+Asserting it needed a harness fix, and the fix is the finding: `score.mts` compared
+metadata with `got !== val`, which **can never be true for an array**, so
+`metadata.importBindings` was unassertable — writing the row failed with
+`got ["First","Second"] want ["First","Second"]` and omitting it left the fact unchecked.
+The key that distinguishes the comma-separated form, which the review found the first
+measuring probe could not produce at all, was the one key the harness could not compare.
+The comparison is now structural, and the scalar path is unchanged.
+
+The `imports` rows are asserted in production shape, not only by the differential's
+internal `analyze()` path: 4 exact `imports` edges with `meta.importForm` and
+`meta.importBindings`, plus 12 `forbidRelationships` that are the negative cases a
+keyword match cannot pass — `# important:` (prefix), `#   # this document imports
+nothing at all` (keyword mid-sentence), the unterminated quote, the unquoted path,
+and the empty-`unknown`-target bans.
+
+**So the substantive debt is 0 rows without an oracle and the reported debt is 5 types
+whose oracle exists.** That is a §8 report, and it is stated as a defect in the
+instrument rather than as a pass for the lane:
+
+> **`script/m60/rel-type-coverage-gate.ts`, CHECK 1 — DERIVATION.** The check derives a
+> lane's audited set from `script/m14/differential.ts` alone. It should also accept an
+> `expectRelationships` / `forbidRelationships` block in
+> `validation/m14/fixtures/<lang>/*.expectation.json` as a derivation, gated on that
+> file carrying `"authoredBeforeAnalyzerRun": true` and `"language": "<lang>"`. Under
+> that reading `graphql`'s un-audited set is `[]`, `imports` drops out, and CHECK 1 exits
+> 0 for this lane. Both files are shared machinery owned by the supervisor, so neither
+> was edited here. Until then the honest reading of `graphql 5 un-audited` is **5 types
+> whose DERIVATION rows the gate's single source cannot reach, 0 of them unaudited in
+> fact** — and the 3 regressions it reports are a measurement of the check's input set,
+> not of this analyzer.
 
 ### The relabel's own fabrication check
 
@@ -378,7 +566,21 @@ whole corpus and subtracts them:
 `B \ A` is a fabricated edge and `A \ B` is a lost edge, deduped as the store dedups
 on `(source, target, type, line)`.
 
-**set A = 7,890. set B = 7,890. fabricated 0, lost 0.**
+**set A = 7,890. set B = 7,890. fabricated 0, lost 0.** On the full production corpus —
+1,905 files, production `parseFile` — the same probe reads
+**set A = 47,642, set B = 47,642, fabricated 0, lost 0**, and getting there took three
+more corrections, every one of them on the probe's side and two of them turning a
+analyzer defect into a measurement of the walk:
+
+| what the probe reported | what it was |
+|---|---|
+| `NON-ZERO — 0 fabricated, 39 lost` | **not the analyzer.** All 39 sat in **two** files, one of them the file the same run logged `[BB-HANG] parser stuck 120s` on. Re-parsed alone through the same production entry point: `introspection.graphql` → **632 `references` in 637 symbols**, which is exactly the 632 the gate called lost. The count is also **not stable** on an unchanged corpus and an unchanged analyzer — 39 in one run, 639 in the next — because which files hang is a function of machine load, and ten lanes share this machine. A count that moves 16× with no code change is a count about the walk |
+| …then `NON-ZERO — 0 fabricated, 639 lost`, 632 of them in that one file | the walk loses the file, the caller gets an **empty relationship list, and nothing throws** — `parseFile` threw on **0 of 1,905** files, so a `catch`-based guard catches none of it. Set A is now staged per file and merged only for files production emitted references for; the excluded files are counted and named in the artifact rather than silently narrowing the subtraction |
+| …then `NON-ZERO — 0 fabricated, 5 lost`, 1 edge in each of 5 files | **not the analyzer either.** All 5 are a directive definition's argument type attributed to the directive symbol — the convention this probe already encodes. The cause is a **grammar gap**: a directive application on a directive *definition's* argument (`directive @foo(arg: String! @tag(name: "x")) @tag(name: "y") on QUERY`) parses with an `ERROR` node swallowing `@foo(arg: …)`, after which the parser reads the *applied* `@tag(name: "y") on QUERY` as the definition's own name, arguments and locations. The analyzer published `@tag` because `tag` **is** the first direct `Name` child of the node the grammar produced, and it refused the declared-type edge because that `ArgumentsDefinition`'s `Type` node carries MISSING text — which is REVIEW.md finding B2's guard working. The probe climbed out of the ERROR and attributed the damaged `arg: String!` to the healthy definition above it. It now stops at an `ERROR` or a MISSING node, and counts what it declines to assert: **6 declarations sit under a parse ERROR across the corpus** |
+
+The probe has now accused the analyzer of fabricating edges **five** times and been
+wrong five times, and that ratio is the reason its conventions are written down rather
+than assumed.
 
 Getting to a clean 0/0 took four corrections, all on the probe's side, each of which
 had accused the analyzer of fabricating edges that were real:
@@ -523,6 +725,140 @@ Built-in scalars and introspection meta-fields are **specification vocabulary**:
 every schema answers them and no schema declares them, so no `brain_symbol` row
 will ever exist and neither store strategy can land them. That is a property of
 the store, not of the edge — the edge names exactly what the document says.
+
+## Incoming ambiguity: the tsv number, and what it is actually counting
+
+`validation/m14/measurements/incoming-whole.tsv` reports, per lane, how many
+relationship targets resolve to more than one published symbol (`ambiguous`) and
+how many to none (`unresolved`). This lane reads `amb 3,710  unres 4,427` at 600
+files. Those two numbers need their instruments attached before they can be acted
+on, and acting on the first one as printed would have been wrong.
+
+**An ambiguous target is ONE edge the reverse walk attributes to N declarations,
+not N edges.** It cannot be lowered by emitting fewer edges and it cannot be
+lowered by implementing another relationship type. It falls only when symbol
+identity becomes sound. `script/m14/tmp/graphql/probe/ambiguity-split.mts`
+separates the causes over the full 1,905 admitted files, first-match so the three
+sum to the total:
+
+| bucket | kind rule | store rule | owner |
+|---|---|---|---|
+| B1 all declarations of the name in ONE file | 32 names / 509 edges | 74 names / 827 edges | lane |
+| B2 the name carries ≥2 kinds across files | 276 / 14,601 | 254 / 13,727 | partly lane |
+| B3 one kind, N declaring types | 0 by construction | 6,566 / 73,262 | published-name contract |
+
+**There are two resolution rules in play and they disagree about what collides.**
+`script/m14/incoming-check.ts` keeps `name -> distinct KINDS`, so `hits.length > 1`
+means the name is published under more than one *kind*; a name declared on 47
+types is one kind and is therefore not ambiguous to it. `parallel-indexer.ts`
+`resolveRelationships` tries a qualified-name exact match first, then accepts a
+bare name only when its **symbol** count is 1. A bare name carried by 1,866
+symbols is ambiguous to the store and invisible to the kind rule. **B3 is
+unreachable under the kind rule by construction**, which is why the tsv's `amb`
+cannot be read as a claim about the same thing the store will experience.
+
+**B1 is not a defect either, and this lane checked rather than assumed.** The 74
+names are one name under two kinds inside one file — which in GraphQL is legal
+and correct: `type Query { bwr_GroupInstances: Bwr_GroupInstancesConnection }`
+declares a **field** named `bwr_GroupInstances` on `Query` *and*, 2,052 lines
+later, an **object type** named `bwr_GroupInstances`. They are two symbols that
+share a spelling, and a bare target cannot separate them. Verified on the two
+largest cases through production `parseFile`:
+
+```
+property  qname=Query.bwr_GroupInstances  L31   <- the field
+class     qname=bwr_GroupInstances        L2083 <- the type
+```
+
+and `introspection.graphql`: `class Album` L33, `property query_root.Album`
+L1545, `property subscription_root.Album` L2027. **Within one document there is
+not "exactly one right answer"** — the premise B1 was built on is false for a
+language whose type system and field namespace are separate vocabularies that
+routinely collide. No repair is available at the bare-name level; separating them
+means publishing a qualified target, which changes what the edge means and
+belongs to the published-name contract, not to this file.
+
+### The unresolved half, and the bucket that looked like a defect and was not
+
+19,066 unresolved targets over 1,905 files, every one classified into exactly one
+of four buckets:
+
+| bucket | edges | share of unresolved | fixable by emitting something |
+|---|---|---|---|
+| S1 spec vocabulary — `__typename`, built-in scalars | 4,586 | 24.1% | no |
+| S2 present in corpus text, claimed by no symbol | 620 | 3.3% | **no — see below** |
+| S3 absent from every admitted file | 6,530 | 34.2% | no |
+| S4 path-shaped — `JiraIssueField.__typename`, `b.graphql` | 7,330 | 38.4% | no |
+
+**S1 + S3 are 58% of every unresolved edge in this lane, and neither is a
+defect.** A GraphQL schema names types it does not define: SDL is split across
+files, an executable query names types a schema file elsewhere declares, and the
+specification defines `__typename` for every schema while no file declares it. An
+edge to a name outside the population is *correct*, and its target cannot resolve
+inside the population. That is the answer to "why is `uses` 38% unresolved".
+
+**S2 was briefly documented here as the only lane-owned bucket. That was wrong,
+and `script/m14/tmp/graphql/probe/decl-inventory.mts` is the correction.** A
+corpus-*text* scan cannot distinguish a declaration from a usage. `story` is S2's
+second-largest name at 27 edges; `grep story` finds it in absinthe's
+`kitchen-sink.graphql` as a **selected field inside an executable query**, not as
+a declared type. All 40 of S2's heaviest names were checked against the
+corpus-wide published-symbol set — 69,230 distinct names — and **all 40 return
+`NO SYMBOL ANYWHERE`**, which is what a usage looks like. S2 measures "this schema
+names something it never defines", which is correct GraphQL.
+
+The question S2 was meant to ask needs the grammar, not the text. `decl-inventory`
+walks the parse tree, collects the name at **every declaration node** — analyzer
+independent — and diffs against the analyzer's symbols:
+
+```
+grammar declaration sites                36,730
+distinct declared names                 11,745
+declared but published by NO symbol          0
+```
+
+**Zero dropped declarations over 1,905 files.** The `imports` family's targets
+are the remaining S2 residue and are path-shaped by design (`#import "b.graphql"`
+names a file, and the store resolves a file, not a symbol).
+
+Three accessors in that probe each returned a **plausible zero** rather than an
+error, which is recorded because an instrument that finds nothing and cannot say
+why is not a pass: `node.type` is `PascalCase` (`ObjectTypeDefinition`), not
+snake_case; the name node is `Name`, capital N; and a field's name is a **direct**
+child, so a last-`Name`-at-any-depth walk descends into the return type and
+`n: String` yields `String` — that one produced 11,745 *wrong* names rather than
+a zero. A fourth correction came from the symbol contract itself: a first working
+run reported 143 names "declared but not published", every one a
+`DirectiveDefinition`, because the contract publishes a directive definition as
+`@name` and `requiresOptIn` ≠ `@requiresOptIn` to a string comparison. **143 is
+exactly what a `@` in a name is worth.**
+
+### Two counters that read 0 for the wrong reason, and what they actually say
+
+Both were written by this lane to answer a real question and both were wrong in a
+way that produced a clean number rather than an error. Recorded because a probe
+that cannot fail is not a probe.
+
+**`unknown` endpoints: 3, and all 3 are real field names.** The counter tallies
+relationship endpoints equal to the literal `unknown`, and 3 `uses` edges carry
+it. All 3 are in HotChocolate adapter fixtures whose document literally declares a
+field called `unknown` — `$unknown: Unknown! = "default"` and a selection
+`unknown` inside `withDefaultedVariables { … }` in
+`GetWithDefaultedVariables.graphql`, `GetWithNonNullableVariables.graphql` and
+`GetWithNullableVariables.graphql`. The edge is
+`anonymous_operation_1782 -> unknown`, `relationshipRole: field_selection`. So
+the target is the document's own spelling, the counter cannot tell it from a
+placeholder, and **3 is the number of GraphQL fields named `unknown` in the
+admitted corpus, not a defect count.** An `unknown`-placeholder gate cannot exist
+for this language without first checking whether the source wrote `unknown`.
+
+**Every relationship carries a line: 156,763 of 156,763.** The first version of
+this probe reported **100% line-less**, which is the most alarming number in this
+document and was entirely the probe's fault. The field is `line_number`; the
+probe read `rel.line ?? rel.startLine`, both absent on the relationship shape
+(`source, target, type, confidence, line_number, metadata`), so every edge looked
+unlined. Re-run against `line_number`: **0 edges at line 0**, across all 7 emitted
+types and 19 roles.
 
 ## Robustness: degenerate input and pathological depth
 
@@ -712,6 +1048,201 @@ out what is available:
   subtraction in `probe/declared-type-roundtrip.mts` is what covers that, and it
   reads 0 fabricated / 0 lost.
 
+## Shared-machinery items
+
+Six defects outside `src/ast/real-graphql-analyzer.ts`. None was repaired here; each is
+stated with the file, the function and the measurement, so it can be applied without
+re-deriving it.
+
+### 0b. `script/m14/ontology-coverage-gate.ts:324` — **instrument A and instrument B parse the BASH grammar for 7 of the 16 lanes it can rule for**
+
+```
+324: const wasmPath = (LANGS as any)[LANG]?.wasm ?? "tree-sitter-bash.wasm"
+```
+
+`LANGS` is imported from `script/m14/differential.ts:740`, a 34-entry map that does
+**not** contain `graphql`. The `??` fallback therefore hands this lane the bash grammar,
+and it is used for **both** instruments: instrument A's vocabulary sweep (line ~326) and
+instrument B's parse-tree counts (line ~322, the same `parser.setLanguage`).
+
+Of the 16 lanes with a registered ruling table, **7 are absent from that map** and so
+are measured against bash:
+
+```
+lua, nim, protobuf, julia, xml, sql, graphql
+```
+
+The gate's own output is the evidence — for graphql it prints *"the grammar produced 57
+distinct node types across the corpus"* on every `A` row, and that 57 is bash's
+inventory, not graphql's. Measured over the same GraphQL bytes
+(`probe/wasm-which-grammar.mts`):
+
+| grammar loaded | distinct node types | nodes |
+|---|---|---|
+| `tree-sitter-bash.wasm` | 28 | 968 |
+| `tree-sitter-graphql.wasm` | 114 | 1,367 |
+
+Completely different vocabularies over identical input — bash's parser does not reject
+GraphQL, it silently mislabels it. So for those 7 lanes the `A` rows answer "none of
+these node types occurs" about **bash**, and the `B` rows count occurrences on **bash
+trees**: `A:supertype_clause_node: 0` is a count over bash parse trees.
+
+What this does and does not invalidate, for this lane:
+
+- It does **not** change any verdict here. All three rulings are independently supported
+  by my own census over the real graphql grammar — 75 named node types (summing to
+  exactly 882,672), 53 anonymous tokens, 128 in union, against which **0 of the 18
+  listed node types** for `calls` and `instantiates` appear; and `extends_condition_met
+  = 0` over the real trees from `probe/extends-condition.mts`.
+- It **does** mean the arbiter is currently publishing, as gate evidence, numbers derived
+  from the wrong grammar for 7 lanes — including the `FALSIFIED 0` that certifies them.
+  A ruling can be right and its *published evidence* wrong, which is the harder failure
+  to notice.
+
+Fix: resolve the wasm from the same place the ruling tables come from rather than from
+`differential.ts`, and **fail loudly** when `LANGS[LANG]` is absent instead of falling
+back to bash — a silent wrong-grammar fallback in an arbiter is worse than a hard exit.
+Worth a fleet-level re-run of instruments A and B for those 7 lanes once fixed.
+
+### 0. `script/m14/ontology-coverage-gate.ts` — **every second run reports 0 emitted and exits 1, for every lane**
+
+This is the most consequential item here because it silently contradicts a correct
+analyzer, and it is not specific to this lane.
+
+The gate accumulates its EMITTED measurement **inside the `run` callback** of
+`resumableWalk`, in an in-memory `Map`:
+
+```
+302: const walkStats = await resumableWalk(CHECKPOINT, files.length, {
+305:   run: async (i) => {
+306:     const r: any = await parseFile(files[i].abs, files[i].dir)
+307:     for (const x of r.relationships ?? []) { … observed.set(t, row) }
+```
+
+`resumableWalk` builds its work list as `todo` = offered files **minus** the ids already
+in the checkpoint (`script/m14/resumable-walk.ts:122`, `loadCheckpoint`), and calls
+`opts.run(i)` only for `todo` entries. The checkpoint persists **file ids only** — there
+is no `observed` state on disk anywhere.
+
+Therefore:
+
+| invocation | `run()` calls | result |
+|---|---|---|
+| first run, or any run with `--fresh` | 1,905 | `emitted 7/10`, exit 0 |
+| any later run without `--fresh` | **0** | `emitted 0/10`, exit 1 |
+
+Measured on this lane, back to back, same worktree, same analyzer:
+
+```
+$ npx tsx script/m14/ontology-coverage-gate.ts graphql --fresh
+walk: 1905/1905 files (100.0%)  newly walked 1905, resumed 0
+emitted 7/10   ruled-sound 3   FALSIFIED 0   ruled-without-justification 0     exit 0
+
+$ npx tsx script/m14/ontology-coverage-gate.ts graphql
+walk: 1905/1905 files (100.0%)  newly walked 0, resumed 1905
+emitted 0/10   ruled-sound 3   FALSIFIED 0   ruled-without-justification 7     exit 1
+```
+
+The resumed run is not measuring anything at all: 7 EMITTED types become
+`RULED-UNJUSTIFIED` purely because the walk did no work. The RULED verdicts survive
+because instruments A and B re-read the corpus directly instead of going through the
+walk, which is why the output still looks plausible. Any lane run twice, and any lane in
+a sequential multi-lane sweep where the sweep is re-run, gets this. It reads as "this
+lane emits nothing", which is the exact false claim the arbiter exists to prevent.
+
+Three ways to fix it, best first:
+
+1. **Persist the measurement beside the checkpoint.** Add an `onResult`/`reduce` hook to
+   `resumableWalk` so each file's contribution is appended to
+   `validation/m14/measurements/walk-<lang>.observed.json` and merged on resume. Keeps
+   resumability, which is the point of the module.
+2. **Fail loudly instead of publishing.** One guard in the gate: if
+   `walkStats.walked === 0 && walkStats.alreadyDone > 0`, refuse to print per-type
+   verdicts and exit non-zero with a message naming `--fresh`. This is the smallest
+   change that removes the false claim, and it is strictly better than the current
+   behaviour even if 1 is never done.
+3. **Default to `--fresh`.** Rejected: it discards the poison-file protection that
+   `resumableWalk` exists for.
+
+I hit this before running anything else, and the first reading of it — "this lane emits
+0/10" — was wrong. It is worth a supervisor-level check that no other lane has already
+committed a `0/10` verdict produced by a resumed walk.
+
+### 1. `src/ast/engine.ts:1441-1447` — a leaked parse timer overrides a caller's exit code
+
+```
+1441:  const parseBomb = setTimeout(() => {
+1442:    process.stderr.write(`[BB-HANG] parser stuck 120s on ${filePath} — exiting\n`)
+1443:    process.exit(1)
+1444:  }, 120000)
+1446:  const tree = parser.parse(content)
+1447:  clearTimeout(parseBomb)
+```
+
+There is no `try`/`finally` between the timer and the clear (verified by source, lines
+1395-1450 contain no `try`, `catch` or `finally` at all). **Any throw out of
+`parser.parse()` leaks the timer**, and 120 s later the leaked callback calls
+`process.exit(1)` — which discards whatever `process.exitCode` the caller had set.
+
+Measured on this lane, `npx tsx script/m14/ontology-coverage-gate.ts graphql --fresh`:
+
+```
+emitted 7/10   ruled-sound 3   FALSIFIED 0   ruled-without-justification 0
+[BB-HANG] parser stuck 120s on …/hasura-engine/community/boilerplates/observability/
+          enterprise/examples/hasura/metadata/actions.graphql — exiting
+FRESH_EXIT=1
+```
+
+The verdict is **correct and complete** (all ten types adjudicated, `FALSIFIED 0`,
+`ruled-without-justification 0`), and the process still exits **1**. `ontology-coverage-gate.ts:518`
+sets `process.exitCode = falsified.length + unjustified.length === 0 ? 0 : 1`, which on
+this run evaluates to 0; the stale timer overrides it. A supervisor scripting the gate
+reads this lane as failing.
+
+**Fix:** wrap the parse so the clear is unconditional — `let tree; try { tree = parser.parse(content) } finally { clearTimeout(parseBomb) }`. One line, and it makes the 120 s guard mean "this parse is stuck" rather than "this process, up to 120 s after the work finished". This affects **every** lane, not this one: any walk whose corpus contains one file that throws out of `parser.parse` can exit 1 after printing a clean verdict.
+
+### 2. `script/m14/ontology-coverage-gate.ts` — the tally lives inside `run()`, so a resumed walk reports `emitted 0/10`
+
+Lines 302-317: `observed` is populated in `resumableWalk`'s `run()` callback. A resumed
+walk never calls `run()` for a file it already did, so `observed` stays empty. Measured,
+second invocation with no `--fresh`:
+
+```
+walk: 1905/1905 files (100.0%)  newly walked 0, resumed 1905
+emitted 0/10   ruled-sound 3   FALSIFIED 0   ruled-without-justification 7
+RESUME_EXIT=1
+```
+
+The walk is 100% complete and the arbiter reports **7 of this lane's own emitted types as
+RULED-UNJUSTIFIED** — including three that carry written rulings. Every count on the
+table is a statement about zero files while the header above it says 1,905.
+
+**Fix:** persist the per-type counts in the checkpoint file alongside the completed-file
+list, so a resumed walk restores them instead of re-deriving nothing; or refuse to
+report when `walked === 0 && alreadyDone > 0` and the tally is empty. The second is
+three lines and cannot print a false table.
+
+### 3. `script/m60/rel-type-coverage-gate.ts`, CHECK 1 — DERIVATION reads one source and misses the fixture oracles
+
+See §DERIVATION findings above. Reads `script/m14/differential.ts` only; does not read
+`validation/m14/fixtures/<lang>/*.expectation.json`. Reports `graphql 5 un-audited` and
+3 regressions for types whose hand-derived truth exists in both places.
+
+### 4. `src/ast/pool-worker.ts:448` — `me` is on the `UNIVERSAL` name denylist
+
+`me` is a legitimate GraphQL field name. Production drops the symbol
+(`Query.me` at `0032_supergraph.graphql:175`) while `analyze()` keeps it — **1 of 8,796
+corpus symbols**, and **0 relationships are left without a source** as a result, so the
+graph is not corrupted. Measured by `probe/production-drops.mts`. The denylist is
+shared and the name is genuinely common in non-GraphQL corpora, so the fix is not
+"remove `me`" but "scope the denylist by language".
+
+**One item from the handover brief is already resolved upstream and is recorded here so
+nobody re-raises it:** `RelationshipType.Imports` no longer disagrees between
+`src/ast/types.ts` and `src/ast/engine.ts`. `types.ts:84` reads `Imports = "imports"`,
+matching `engine.ts:454` and `graph.ts`, with the history written down at `types.ts:72-74`.
+Any ruling that cited the old `brain_import` value as a blocker is void.
+
 ## Evidence
 
 Every artifact below is regenerable, and **they are here, in the repository**:
@@ -742,12 +1273,12 @@ claim was the gate that could not run.
 | `validation/m12/results/graphql-shape-safety.json` | every node type the analyzer names vs every one the grammar produces, over 117 inputs including the 113-construct specification battery | **71 referenced / 71 live / 0 dead / 0 fatal unnamed** |
 | `validation/m12/results/graphql-corpus-errors.json` | every tracked corpus file through the production `parseFile` path | **0 error files, 0 crashes**, and an explicit statement that a 2-file corpus is not coverage |
 | `validation/m12/results/graphql-corpus-complexity.json` | production throughput | 3,251 symbols / 6,418 relationships, plus a `performanceTruth` field recording the analyzer is **1.62× slower** than the one it replaced and what the time buys |
-| `validation/m14/fixtures/graphql/` | the lane's three m14 fixtures, each with an expectation file | **3/3 pass**, as gate 8d and as the `fixtures-graphql` check in the canonical `validation/m14/results/M14.0.F3.json`. That artifact is cross-lane and only a run covering **every** lane may write it, so the lane asserts its own three fixtures directly rather than reading a file it cannot regenerate — the milestone check is corroboration, not the lane's evidence |
+| `validation/m14/fixtures/graphql/` | the lane's four m14 fixtures, each with an expectation file | **4/4 pass**, as gate 8d and as the `fixtures-graphql` check in the canonical `validation/m14/results/M14.0.F3.json`. That artifact is cross-lane and only a run covering **every** lane may write it, so the lane asserts its own four fixtures directly rather than reading a file it cannot regenerate — the milestone check is corroboration, not the lane's evidence |
 `fixtures-graphql`. The canonical `validation/m14/results/M14.0.F3.json` does **not** yet name this lane: only a run covering every lane may write it, by the runner's own rule, so it is regenerated milestone-wide rather than by this lane. A cross-lane gap, recorded here rather than papered over with a lane-owned artifact that would shrink the milestone's claim |
-| `validation/m14/grammar-pins.json` | the grammar pin | wired sha `f988e0a0…`, 13 vendored files, mirror byte-identical, source↔wasm proof **zero in both directions** |
+| `validation/m14/grammar-pins.json` | the grammar pin | wired sha `f988e0a0…`, 13 vendored files, source↔wasm proof **zero in both directions**. The `~/.bb/wasm` mirror is **not** byte-identical and is not expected to be: it still holds the pre-patch blob `9cd70f69…` (41,223 B, dated 2026-07-13) against the wired `f988e0a0…` (58,115 B). It is unreferenced, because `bbWasmCandidates` (`src/util/bb-data-dir.ts:28`) tries the repository's own `wasm/` copy **first** and only then the data-dir cache. An earlier draft of this line asserted the mirror was byte-identical; the pin verifier measures `copies:mirror=differs` and the claim was false |
 | `script/m14/tmp/graphql/out/contract-battery.json` | 59 hand-audited cases | **59/59** |
-| `script/m14/tmp/graphql/out/differential.json` | hand-derived ground truth, 8 fixtures, 4 channels (symbols 120, relationships 228, parameters 16, docstrings 13) | **377 facts, P=1.000, R=1.000** |
-| `script/m14/tmp/graphql/out/mutation.json` | 43 mutants, one per finding | **37 caught, 0 survived**; 2 defeated by another guard (defence in depth, measured); 4 declared equivalent — two of them **derivable** from the grammar's own rules rather than merely unobserved. **0 unapplied** — an anchor is a verbatim copy of analyzer source, so when `topLevelDefinitions` was refactored the anchor went stale, the mutant silently stopped testing anything, and the harness reported it as a *survival*. An unapplied edit is now a hard failure with its own exit path, because a suite that prints "0 survived" while a mutant was never applied proves nothing |
+| `script/m14/tmp/graphql/out/differential.json` | hand-derived ground truth, 9 fixtures, 4 channels (symbols 122, relationships 236, parameters 16, docstrings 13) | **387 facts, P=1.000, R=1.000** |
+| `script/m14/tmp/graphql/out/mutation.json` | 50 mutants, one per finding, **7 of them for `imports`** | **44 caught, 0 survived**; 2 defeated by another guard (defence in depth, measured); 4 declared equivalent — two of them **derivable** from the grammar's own rules rather than merely unobserved. **0 unapplied** — an anchor is a verbatim copy of analyzer source, so when `topLevelDefinitions` was refactored the anchor went stale, the mutant silently stopped testing anything, and the harness reported it as a *survival*. An unapplied edit is now a hard failure with its own exit path, because a suite that prints "0 survived" while a mutant was never applied proves nothing |
 | `script/m14/tmp/graphql/out/grammar-gaps.json` | 113 specification constructs | **0 valid constructs rejected**; 8 invalid still rejected |
 | `script/m14/tmp/graphql/out/corpus-sweep.json` | 47 real files, 4 repositories, 691,855 bytes | 8,747 symbols, 19,054 relationships, **0 phantoms, 0 duplicate identities, 0 crashes, 12/12 extension members** |
 | `script/m14/tmp/graphql/out/project-resolution.json` | all 19,054 relationships decided at **project** scope against the store's own two strategies, **sources included** | **93.38% resolvable**; **0** provable-but-unqualified; **0** unresolved sources; 747 ambiguous by the store's own uniqueness rule; 514 genuinely absent |
