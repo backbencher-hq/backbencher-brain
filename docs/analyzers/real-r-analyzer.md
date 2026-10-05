@@ -252,7 +252,7 @@ Total 80,095 relationships over **29,562** symbols in that run. `references` mov
 `references` label it should have carried all along; the measurement and the
 reasoning are under **R7** below.
 
-**The wobble is measured across six production walks of this same population, and
+**The wobble is measured across seven production walks of this same population, and
 it is a property of the parser, not of the analyzer.** Each row is the sum of that
 run's own ten per-type rows; the artifacts and the runs whose bytes were not kept
 are named so a reader can check them.
@@ -265,6 +265,7 @@ are named so a reader can check them.
 | G | `arbiter/arbiter-r-runG-2026-10-05.txt` | 48,028 | 4,803 | 17,601 | 2,087 | 2,129 | 3,581 | 351 | 1,133 | 107 | 3 | 79,823 | 2 |
 | H | `arbiter/arbiter-r-runH-2026-10-05.txt` | 48,206 | 4,810 | 17,629 | 2,093 | 2,135 | 3,588 | 351 | 1,133 | 107 | 3 | 80,055 | 2 |
 | I | `arbiter/arbiter-r-runI-2026-10-05.txt` | 48,215 | 4,806 | 17,632 | 2,095 | 2,137 | 3,590 | 351 | 1,133 | 107 | 3 | 80,069 | 1 |
+| J | `arbiter/arbiter-r-runJ-2026-10-05.txt` | 48,209 | 4,806 | 17,630 | 2,095 | 2,137 | 3,591 | 351 | 1,133 | 107 | 3 | 80,062 | 1 |
 
 The cause is named per run, not asserted: the wasm grammar dies with
 `[BB-PARSE-ERR] … memory access out of bounds` and WHICH files it dies on changes.
@@ -272,22 +273,30 @@ Run 2 lost `usethis/R/badge.R`; run F lost `ggplot2/R/scale-manual.R`,
 `r-cli/R/width.R`, `r-cli/exec/news.R`, `r-cli/R/zzz.R` and
 `r-testthat/R/expect-equality.R`; run G lost `ggplot2/R/scale-manual.R` and
 `usethis/R/course.R`; run H lost `usethis/R/ci.R` and `usethis/R/citation.R`; run I
-lost `r-testthat/R/expect-invisible.R`. A file that fails to parse contributes no
-edges, so the totals track the failures. The losses cluster — 7 of the 11 across
-the six runs are `usethis` (4) or `r-cli` (3) files, and `r-rlang`'s 160 files were
-walked by every run without one loss. That clustering is weaker than a previous
-revision of this document claimed: it said 9 of 11, which had both a wrong
-numerator (7, counted file by file from the committed artifacts) and a wrong
-denominator (ten losses were on record when 11 was written, and run I supplied the
-eleventh). Run I is also the first loss outside `usethis`, `r-cli` and `ggplot2`.
-Every total above is correct for the files its own run walked and none is correct
+lost `r-testthat/R/expect-invisible.R`; run J lost `r-cli/R/width.R`. A file that
+fails to parse contributes no edges, so the totals track the failures. The losses
+cluster — 8 of the 12 across the seven runs are `usethis` (4) or `r-cli` (4) file
+losses, and `r-rlang`'s 160 files were walked by every run without one loss. That
+clustering is weaker than a previous revision of this document claimed: it said 9 of
+11, which had both a wrong numerator (7 at the time, counted file by file from the
+committed artifacts) and a wrong denominator (ten losses were on record when 11 was
+written, run I supplied the eleventh and run J the twelfth). Run I is also the first
+loss outside `usethis`, `r-cli` and `ggplot2`. Every total above is correct for the
+files its own run walked and none is correct
 for the admitted population as a whole; **the observed total band for the ten types
 is 79,756–80,095 (Δ339), and every rate in this document inherits that band on its
 denominator.** Run 1 walked all 2,184 files with 0 parse failures and 0 degraded
-parses; run 2 with 0 and 1; runs F, G, H and I each reported 1 degraded parse, which
+parses; run 2 with 0 and 1; runs F, G, H, I and J each reported 1 degraded parse, which
 is the 120-second bomb substituting a regex extractor.
 
-`extends`, `implements`, `overrides` and `instantiates` are **identical in all six
+Two files are known vulnerable and were lost in two different runs each —
+`ggplot2/R/scale-manual.R` (runs F and G) and `r-cli/R/width.R` (runs F and J) — which
+is the evidence that WHICH file the parser dies on is not stable even for a file
+already known to die. Run J is additionally the first run whose `[BB-PARSE-ERR]` file is
+the SAME file the 120-second bomb then hung on, so counting parse-error lines in a
+run's bytes would double that run's loss column.
+
+`extends`, `implements`, `overrides` and `instantiates` are **identical in all seven
 runs**, which says the wobble is confined to the types whose counts are large enough
 to be sensitive to losing a handful of files — not that those four are more correct
 than the others.
