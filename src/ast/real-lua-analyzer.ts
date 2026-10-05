@@ -1389,7 +1389,7 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
         ASTEngine.RelationshipType.Extends,
         { luaSpecific: true, relationshipType: "lua_factory_supertype", evidenceClass: "usage_contextual" },
         null,
-        { dedupe: false, confidence: 0.95, symbolRange: { startLine: line } },
+        { confidence: 0.95, symbolRange: { startLine: line } },
       )
     }
   }
@@ -1625,7 +1625,7 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
             overriddenOwner: first.owner,
           },
           null,
-          { dedupe: false, confidence: 1.0, symbolRange: { startLine: d.line } },
+          { confidence: 1.0, symbolRange: { startLine: d.line } },
         )
       }
     }
@@ -1670,7 +1670,7 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
               evidenceClass: "usage_contextual",
             },
             null,
-            { dedupe: false, confidence: 0.95, symbolRange: { startLine: line } },
+            { confidence: 0.95, symbolRange: { startLine: line } },
           )
         }
       }
@@ -1733,7 +1733,7 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
         // not an invented node. Passing no node would leave the edge lineless,
         // which is the LUA-01 defect all over again on the one kind that CAN
         // name its line honestly.
-        this.addRelationship(ctx, owner, symbol.name, ASTEngine.RelationshipType.Contains, {}, undefined, { dedupe: false, symbolRange: symbol.range })
+        this.addRelationship(ctx, owner, symbol.name, ASTEngine.RelationshipType.Contains, {}, undefined, { symbolRange: symbol.range })
       }
     }
   }
@@ -1760,24 +1760,45 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
     // a purpose-built probe, against java's line_number:2 through the identical
     // pipeline, which is why M60's matrix reads lua `lines: n/a`.
     //
-    // A separate `dedupe` flag exists because Contains edges are SYNTHESIZED
-    // after the walk from symbol pairs rather than observed at a site; they
-    // carry no node and must not be invented one. See addContainsRelationships.
+// A synthesized edge carries no node, so its line comes from `opts.symbolRange`
+    // instead. See addContainsRelationships.
     nameNode?: Node | null,
-    opts?: { dedupe?: boolean; symbolRange?: { startLine: number }; confidence?: number },
+    opts?: { symbolRange?: { startLine: number }; confidence?: number },
   ): void {
     if (!source || !target) return
-    const key = `${type}${source}${target}`
-    // M60 LUA-01: `dedupe: false` is for SYNTHESIZED edges only. Observed edges
-    // keep the dedup so a callee called from four places is still one edge in
-    // the store. The per-site problem that dedup causes is recorded as its own
-    // finding (LUA-01b) and is NOT silently changed here, because whether the
-    // store may hold two edges of one kind between one pair of symbols is a
-    // schema question above this analyzer.
-    if (opts?.dedupe === false) {
-      // still recorded, so a later edge of the same shape is not re-added
-      if (ctx.seenRelationships.has(key)) return
-    } else if (ctx.seenRelationships.has(key)) return
+    const key = `${type}${source}${target}`
+    // M60 LUA-01: the dedup is UNCONDITIONAL, and it was already unconditional before
+    // this pass — a `dedupe` option existed, was passed `false` at four call sites, and
+    // could not change a single output:
+    //
+    //     if (opts?.dedupe === false) {
+    //       if (ctx.seenRelationships.has(key)) return
+    //     } else if (ctx.seenRelationships.has(key)) return
+    //     ctx.seenRelationships.add(key)
+    //
+    // Both arms ran the SAME test and the key was recorded either way, so the flag was
+    // read and ignored. A flag whose value does not matter is a claim about the output
+    // that no reader can check, which is the shape this analyzer has now produced three
+    // times — LUA-02's `isCoroutine` counter that could only read 0, LUA-10's dead `+5`
+    // scoring branch, and this. `script/m60/lua-dead-flag-probe.ts` measures the
+    // population; `script/m60/verify-lua-dedupe-invariant.ts` proves the removal is
+    // behaviour-preserving by diffing the whole edge set before and after.
+    //
+    // WHY UNCONDITIONAL IS THE RIGHT BEHAVIOUR and not merely the current one. A callee
+    // called from four places is one edge in the store, which is the intent stated above
+    // and in the LUA-01 note. The per-site problem the dedup causes is recorded as its
+    // own finding (LUA-01b) and is NOT silently changed here, because whether the store
+    // may hold two edges of one kind between one pair of symbols is a schema question
+    // above this analyzer.
+    //
+    // WHAT THAT COSTS, MEASURED. 37 of 90 redefinition attempts corpus-wide land on a key
+    // that already exists, so one name declared N times publishes ONE `overrides` edge
+    // and the later declarations' own lines are unrepresented. The extreme is 13 attempts
+    // on one key — `overrides global enqueue`, a name declared 14 times in one chunk.
+    // That is a real shortfall and it is declared (limitation 17) rather than fixed here,
+    // because making the flag work would add 37 edges that share (type, source, target)
+    // with an edge already stored — LUA-01b's schema question, decided above this file.
+    if (ctx.seenRelationships.has(key)) return
     ctx.seenRelationships.add(key)
     const relationship: ASTEngine.UniversalRelationship = {
       source,
