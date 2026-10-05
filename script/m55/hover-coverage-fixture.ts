@@ -573,6 +573,31 @@ export function know(raw: any, dir: string, symbolId: string): KnownFacts {
 }
 
 // --- R2: what the hover RENDERS -------------------------------------------------------
+export interface RenderedLink {
+  /** the label the card shows for the row */
+  label: string
+  /** the index-stored file the link's command args carry (LSP command args) */
+  file: string
+  /** LSP 0-based line the link's command args carry */
+  line: number
+  /** which SECTION of the card the link sits in */
+  section: "connected" | "usages" | "containment" | "other"
+  /** the verb under which the link renders; "" when the section groups rows
+   *  without one (the usages list is a list of sites, not verb groups) */
+  verb: string
+}
+
+export interface RenderedSectionHeader {
+  /** the header's own name, e.g. "usages", "contained", "connected" */
+  name: string
+  /** the number the header states; null when the header states none */
+  count: number | null
+  /** the rendered rows beneath the header */
+  rows: RenderedLink[]
+  /** the "+N more" remainder the header declares for a capped list */
+  rest: number
+}
+
 export interface RenderedFacts {
   symbol: string
   card: string
@@ -582,7 +607,18 @@ export interface RenderedFacts {
   claimedUsageCount: number | null
   /** the usages section's rendered rows */
   renderedUsageRows: string[]
-  /** relationship kinds the card NAMES in prose */
+  /** every rendered link, with its section, verb and index-stored target. This
+   *  is the STRUCTURAL read the per-kind coverage metric is taken from: a row
+   *  counts as rendered-with-a-verb only when a link carrying THAT row's stored
+   *  target is found under a verb, which no word-frequency scan can establish. */
+  links: RenderedLink[]
+  /** the parsed per-section headers, each with its own stated count */
+  sections: RenderedSectionHeader[]
+  /** the evidence tiers the card states, verbatim off the `evidence:` line */
+  renderedTiers: string[]
+  /** relationship kinds the card NAMES in prose — RETAINED ONLY as the
+   *  flattering metric it is, kept beside the structural one so the two can be
+   *  compared. Never used to score coverage. */
   namedKinds: string[]
   /** does the card carry the enrichment label at all */
   mentionsEnrichment: boolean
@@ -602,27 +638,184 @@ export interface RenderedFacts {
   declarationLinkCount: number
 }
 
+// The legacy word-frequency list, kept deliberately. The audit once scored
+// coverage by grepping the card for these English words, which is how
+// `references` scored on seven cards (the header says "N stored references")
+// while `contains` — the second-most-stored kind — scored ZERO because it had no
+// prose word. It is retained beside the structural metric so the gap between
+// them stays visible; it is never the score.
 const PROSE_KINDS = ["calls", "call", "instantiates", "implements", "overrides", "extends", "inherits", "uses", "references", "imports", "exports", "contains"]
 
-export function rendered(card: string, data: any, callSiteLines0: readonly number[] = [], declarationLines0: readonly number[] = []): RenderedFacts {
-  const linked: string[] = []
-  const linkedLines: number[] = []
-  const re = /\]\(command:bb\.openUsage\?([^)]+)\)/g
-  let m: RegExpExecArray | null
-  while ((m = re.exec(card)) !== null) {
-    try {
-      const decoded = JSON.parse(decodeURIComponent(m[1]!))
-      const args = (Array.isArray(decoded) ? decoded[0] : decoded) as any
-      linked.push(String(args?.file ?? ""))
-      linkedLines.push(Number(args?.line))
-    } catch {}
+/** Decode one `bb.openUsage` command link's args into its stored target. */
+function decodeLink(raw: string): { file: string; line: number } | null {
+  try {
+    const decoded = JSON.parse(decodeURIComponent(raw))
+    const args = (Array.isArray(decoded) ? decoded[0] : decoded) as any
+    if (args === null || typeof args !== "object") return null
+    return { file: String(args.file ?? ""), line: Number(args.line) }
+  } catch {
+    return null
   }
+}
+
+const LINK_RE = /\[([^\]]*)\]\(command:bb\.openUsage\?([^)]+)\)/g
+
+/** Every rendered relationship link, in card order, with its section, its verb
+ *  and the index-stored target its command args carry.
+ *
+ *  Section attribution is by POSITION in the card, never by a word match: the
+ *  card is a sequence of `**header**` blocks, and a link belongs to the block
+ *  whose header precedes it. A section whose header never appears contributes no
+ *  links, which is what makes a MISSING section measurable (0 links, 0 rows)
+ *  rather than invisible. */
+function parseLinks(card: string): RenderedLink[] {
+  // Where each section starts. Headers are the `**name**` tokens at the start of
+  // a line; `**usages** — N stored references` and `**contained** — declares…`
+  // both match, and the first token is the section name.
+  const headers: Array<{ name: string; at: number }> = []
+  for (const m of card.matchAll(/^\*\*([a-z]+)\*\*/gm)) headers.push({ name: m[1]!, at: m.index })
+  const sectionAt = (index: number): RenderedLink["section"] => {
+    let name = ""
+    for (const h of headers) if (h.at <= index) name = h.name
+    if (name === "usages") return "usages"
+    if (name === "contained" || name === "contains") return "containment"
+    if (name === "connected") return "connected"
+    return "other"
+  }
+  // The verb of a connected/containment link is the text that LEADS ITS GROUP.
+  // A group is `verb link, link, …` and a group boundary is a `;` (the connected
+  // summary joins groups with "; ") or a line break (the containment section puts
+  // each direction on its own line). So the verb is the text between the group's
+  // start and the group's FIRST link.
+  //
+  // Reading to the previous link's `)` instead was the first draft's bug and it
+  // was silent: in `called by [a](…), [b](…)` it gave `[b]` the verb "" and every
+  // row after the first in a group scored as an unlabelled gap. Reading to the
+  // line start was the second bug: it swallowed the previous group's whole link
+  // text, so a row's "verb" came back as `called by [c1](command:…)` and matched
+  // no declared verb — a metric that reported 0% on a card that labelled every
+  // row correctly. Both were invisible because the metric was reporting a gap
+  // either way; a gap number that cannot distinguish these two states is not a
+  // measurement.
+  //
+  // For the usages list the row's own numbering leads instead, so the verb is ""
+  // — that list is sites, not verb groups, and saying so keeps the per-kind
+  // metric honest about which section actually labels a row.
+  const groupVerb = (index: number, section: RenderedLink["section"]): string => {
+    if (section === "usages" || section === "other") return ""
+    const lineStart = card.lastIndexOf("\n", index) + 1
+    const before = card.slice(lineStart, index)
+    // The group begins after the nearest preceding group separator, which is
+    // the LATER of a `;` and the line start. The `**header**` token is consumed
+    // by the strip below.
+    const groupStart = lineStart + Math.max(0, before.lastIndexOf(";") + 1)
+    const lead = card.slice(groupStart, index)
+    // The verb is the lead text up to the group's first link; anything from a
+    // `[` onward belongs to a link, not to the label.
+    const firstLink = lead.indexOf("[")
+    const text = (firstLink === -1 ? lead : lead.slice(0, firstLink))
+      // Drop the section's own `**header**` token. It must be dropped WHOLE:
+      // replacing one `**` left `connected**: called by`, which matches no
+      // declared verb and so reported 0% coverage on a card that labelled every
+      // row correctly — a metric whose failure mode looks exactly like the
+      // defect it hunts.
+      .replace(/^\s*\*\*[^*]*\*\*/, " ")
+      // The leading separators a header or a list puts before a verb: markdown
+      // asterisks, spaces, a colon, an em dash, a comma, a hyphen. Listed as
+      // literals rather than a range — `—,` reads as a RANGE in a character
+      // class and throws "Range out of order", which is how this parser failed
+      // to load at all before the class was written out.
+      .replace(/^[\s*:,\-\u2014\u2013]+/, "")
+      .trim()
+    return text
+  }
+  const out: RenderedLink[] = []
+  for (const m of card.matchAll(LINK_RE)) {
+    const target = decodeLink(m[2]!)
+    if (target === null) continue
+    const index = m.index ?? 0
+    const section = sectionAt(index)
+    out.push({ label: m[1]!, file: target.file, line: target.line, section, verb: groupVerb(index, section) })
+  }
+  return out
+}
+
+/** The per-section headers with their stated counts and the rows beneath them.
+ *  §13.4 is checked against THIS structure: the header's own number against the
+ *  rows the eye can see under it. */
+function parseSections(links: RenderedLink[], card: string): RenderedSectionHeader[] {
+  // The section NAMES to look for. `contains` is NOT among them: it is a
+  // relationship KIND (the word `contains` appears in a containment row's verb
+  // and in the header's "declaration containment" clause), not a section name.
+  // Listing it produced a second, phantom copy of the containment section with
+  // its own count and the same rows, so the header-vs-list law was applied twice
+  // to the same numbers — and a mutant leg that mutated "the first counted
+  // section" could land on either copy.
+  const names = ["connected", "usages", "contained"]
+  return names.map((name) => {
+    const inSection = links.filter((l) => (name === "contained" ? l.section === "containment" : l.section === name))
+    // The count a header STATES — and ONLY a count it actually states.
+    //
+    // `**connected**:` states no total: it is `verb links; verb links` with a
+    // per-verb `+N` overflow. Reading "the first digit on the header's line" as
+    // its count is how this parser reported `header=5` for a header that says no
+    // number, which manufactured seven D2 failures on correct cards. A header
+    // with no number in it has count null, and a null count is out of the
+    // header-vs-list law's scope (§13.4 is about a number that disagrees with a
+    // list, not about a line that states none).
+    let count: number | null = null
+    if (name === "usages") {
+      // `**usages** — N stored reference(s) (…): the number immediately follows
+      // the dash, so it is read positionally rather than as "any digit". The
+      // `m` flag matters: the header is one line of a multi-line card.
+      const m = /^\*\*usages\*\*\s*[—\-:]\s*(\d+)\s+stored reference/m.exec(card)
+      if (m !== null) count = Number(m[1])
+    } else if (name === "contained") {
+      // The containment header names two counts — members declared, owners
+      // declared in — so the section's stated total is their sum.
+      const m2 = /declares (\d+) member[s]?, declared in (\d+)/.exec(card)
+      if (m2 !== null) count = Number(m2[1]) + Number(m2[2])
+    }
+    // The declared rest. It is a line of its OWN beneath the rows (`+2 more —
+    // [show all usages]`), not a clause of the header, so it is read from the
+    // section's body. The first draft searched the header line only, found
+    // nothing, and reported `header=5 but rows+rest=3` for a symbol whose header
+    // and list agreed exactly — a D2 failure raised by the measuring instrument,
+    // not by the surface. An instrument that manufactures failures is as
+    // dishonest as one that hides them.
+    let rest = 0
+    const headerAt = card.search(new RegExp(`^\\*\\*${name}\\*\\*`, "m"))
+    if (headerAt !== -1) {
+      const body = card.slice(headerAt)
+      const nextHeader = body.slice(1).search(/^\*\*[a-z]+\*\*/m)
+      const sectionBody = nextHeader === -1 ? body : body.slice(0, nextHeader + 1)
+      const restMatch = /^\+(\d+) more/m.exec(sectionBody)
+      if (restMatch !== null) rest = Number(restMatch[1])
+    }
+    return { name, count, rows: inSection, rest }
+  }).filter((s) => s.count !== null || s.rows.length > 0 || s.rest > 0)
+}
+
+export function rendered(card: string, data: any, callSiteLines0: readonly number[] = [], declarationLines0: readonly number[] = []): RenderedFacts {
+  const links = parseLinks(card)
+  const linked = links.map((l) => l.file)
+  const linkedLines = links.map((l) => l.line)
   const renderedUsageRows = card.includes("**usages**")
     ? card.slice(card.indexOf("**usages**")).split("\n").filter((l) => /^\d+\. \[/.test(l))
     : []
   const claimed = /(\d+) usage/.exec(card)
   const kinds: string[] = []
   for (const k of PROSE_KINDS) if (new RegExp(`\\b${k}\\b`).test(card)) kinds.push(k)
+  // The tiers the card states, read off the `evidence:` line and nothing else.
+  // The line `evidence: none (no indexed relationships)` is a DECLARED ABSENCE
+  // in prose, not a tier — reading it as one is how a symbol with zero stored
+  // rows looked like it rendered a tier the index never justified. It is
+  // returned as an empty list, which is what it means.
+  const evidenceLine = /^evidence: (.+)$/m.exec(card)
+  const renderedTiers =
+    evidenceLine === null || /^none\b/.test(evidenceLine[1]!.trim())
+      ? []
+      : evidenceLine[1]!.split(",").map((s) => s.trim()).filter((s) => s.length > 0)
   // Each emitted link is classified by the address owner's own verdict for the
   // row it names, so the two counts in the table are read off the RENDER, not
   // recomputed from the implementation.
@@ -639,6 +832,9 @@ export function rendered(card: string, data: any, callSiteLines0: readonly numbe
     linkedNames: linked,
     claimedUsageCount: claimed ? Number(claimed[1]) : null,
     renderedUsageRows,
+    links,
+    sections: parseSections(links, card),
+    renderedTiers,
     namedKinds: kinds,
     mentionsEnrichment: /enriched by index/.test(card),
     mentionsExternal: /\bext:|external/i.test(card),
