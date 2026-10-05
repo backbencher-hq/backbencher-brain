@@ -173,6 +173,18 @@ interface DartScopeEntry {
   kind: DartScopeKind
 }
 
+/**
+ * Which of the three library-directive forms a file used, published on its Module node.
+ *
+ * The three are different claims about a name and a consumer must not read one as
+ * another. `named` — `library X;`, the name is declared. `unnamed` — `library;`, the
+ * library exists and declares NO name, so the file stem this analyzer published is its
+ * own convention. `implicit` — no directive at all, and the Dart spec defines the
+ * library's name as the file stem, so here the stem is the language's own answer and
+ * not the analyzer's. Frequencies in a 3,000-file sample: 17 / 101 / 2,882.
+ */
+type DartLibraryDirective = "named" | "unnamed" | "implicit"
+
 function scopeOwnerName(scopes: DartScopeEntry[]): string | undefined {
   for (let i = scopes.length - 1; i >= 0; i--) {
     if (scopes[i].kind === DartScopeKind.Class) return scopes[i].name
@@ -248,7 +260,62 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     const frameworks: Record<string, boolean> = { Dart: true }
     const patterns: Record<string, boolean> = {}
     const scopes: DartScopeEntry[] = [{ name: "__global__", kind: DartScopeKind.Global }]
-    const moduleName = path.basename(filePath, path.extname(filePath))
+    // M60 D1: the library is a real Dart entity and the `imports`/`exports` edges
+    // already name it as their source, but nothing published it — 1,755 of 1,815
+    // `imports` sources at 600 files did not resolve and 1,755/1,755 were exactly
+    // the file stem. ONE name function feeds both sides, so the edge and the node
+    // cannot drift apart again.
+    //
+    // The name comes from the parse tree, and the three cases are counted, not
+    // assumed (3,000-file sample, `validation/m14/fixtures/dart/library-directive-census.ts`
+    // and `empty-library-name.ts`):
+    //   no `library` directive    2,882 files — an IMPLICIT library, whose name the Dart
+    //                              spec defines as the file stem. The stem is a FACT.
+    //   `library;` (unnamed)        101 files — a real directive whose `library_name` node
+    //                              is EMPTY. The library declares NO name, so the stem here
+    //                              is a CONVENTION this analyzer applies, not a fact, and
+    //                              the published node says so in `libraryDirective`.
+    //   `library X;` (named)         17 files — the declared name, read from the grammar.
+    //                              Frequently DOTTED (`_fe_analyzer_shared.scanner.characters`),
+    //                              which a first-token regex truncates to a name no other
+    //                              file imports. 15 further files produce a `library_name`
+    //                              whose only child is an `annotation` (`@TestOn('vm')`);
+    //                              those are rejected by the identifier shape below, which
+    //                              is correct — an annotation is not a library name.
+    const library = this.libraryName(rootNode, filePath)
+    const moduleName = library.name
+
+    // ...and the node. Published for EVERY file, not only for files that import
+    // something: a Dart file IS a library whether or not it has directives, and a
+    // module that appears only when the file imports something would be a node whose
+    // existence depends on the edges pointing at it.
+    //
+    // Range: the `library` DIRECTIVE when the file has one, else the file head at zero
+    // width. An implicit library has no declaration site — its identity is the file —
+    // so a zero-width mark at byte 0 is the honest position, and the whole-file range
+    // would claim the library spans every member it contains.
+    //
+// No `ownerName` on purpose: every pass that walks the symbol table keys on
+    // `ownerName` (`contains`) or on a declaration kind (`overrides` heritage,
+    // `references` visible types, `topLevelValues`), and Module is in none of those
+    // sets, so the node is inert for them and visible only as an edge endpoint.
+    //
+    // `metadata` carries the GRAMMAR's own node name and nothing this analyzer invented.
+    // `nodeType` is on `parseFile`'s metadata allowlist and a new key is not, so
+    // publishing the named/unnamed split as its own field would put a claim in the file
+    // that no production reader can see — an unverifiable claim on every dart symbol.
+    // The split stays readable from the RANGE instead: an implicit library is zero-width
+    // at byte 0, and `library;` is zero-width where the directive is.
+    symbols.push({
+      name: moduleName,
+      kind: ASTEngine.SymbolKind.Module,
+      range: library.directive
+        ? this.nodeToRange(library.directive)
+        : { startLine: 1, startColumn: 1, endLine: 1, endColumn: 1, startIndex: 0, endIndex: 0 },
+      visibility: "public",
+      scope: moduleName,
+      metadata: { nodeType: library.directive ? library.directive.type : "implicit_library" },
+    })
 
     // --- Error collection --------------------------------------------------
     if (rootNode.hasError) {
@@ -2604,6 +2671,58 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
   // ============================================================================
   // HELPERS
   // ============================================================================
+
+  /**
+   * The library this file declares: its name, the node that declared it, and which of
+   * the three directive forms it was.
+   *
+   * `library X;` names the library X. No `library` directive means the file is an
+   * implicit library named by its stem (Dart spec). `library;` — legal, and 101 of a
+   * 3,000-file sample — declares a library with NO name, so the stem there is this
+   * analyzer's convention and the caller records it as `kind: "unnamed"` rather than
+   * letting a consumer read it as a declared fact.
+   *
+   * The declared name is read from the parse tree, never from a regex over the text,
+   * because it is frequently DOTTED: `_fe_analyzer_shared.scanner.characters`, which a
+   * first-token match truncates to `_fe_analyzer_shared` — a name no other file imports.
+   * The corpus measurement that established the three frequencies and the `annotation`
+   * case is `validation/m14/fixtures/dart/library-directive-census.ts`; the
+   * `annotation` case is why the child must pass an IDENTIFIER shape test rather than
+   * being taken as text.
+   *
+   * Only a DIRECT child of `program` is considered: a `library_name` anywhere else in
+   * the tree is a declaration inside a part or a raw string (52 of 3,000 sampled files
+   * carry `library X;` inside a `'''...'''` test fixture, which is not a directive at
+   * all), not this file's library. Measured: no sampled file has more than one
+   * top-level `library_name`, so "first valid" is not a choice between two candidates.
+   */
+  private libraryName(rootNode: Node, filePath: string): { name: string; directive: Node | null; kind: DartLibraryDirective } {
+    const stem = path.basename(filePath, path.extname(filePath))
+    for (let i = 0; i < rootNode.namedChildCount; i++) {
+      const child = rootNode.namedChild(i)
+      if (!child || child.type !== "library_name") continue
+      // An EMPTY `library_name` is the unnamed `library;` directive. Measured: 101 of
+      // 3,000 files, and 0 of them declare a name anywhere else.
+      if (child.namedChildCount === 0) return { name: stem, directive: child, kind: "unnamed" }
+      for (let j = 0; j < child.namedChildCount; j++) {
+        const nameNode = child.namedChild(j)
+        if (!nameNode) continue
+        // Inner whitespace is stripped before the shape test: the grammar's
+        // `dotted_identifier_list` accepts `library a . b ;`, and at 600 files 2 of the
+        // declared names are written that way — so testing the raw text rejected 2 real
+        // library names that the parse tree had already handed over.
+        const declared = nameNode.text.replace(/\s+/g, "")
+        // A declared name is an identifier possibly joined by `.` — anything else is
+        // not a library name. Measured: 15 of 3,000 files put an `annotation`
+        // (`@TestOn('vm')`) where the name goes, and this test is what keeps an
+        // annotation from becoming a node.
+        if (declared.length > 0 && /^[A-Za-z_$][\w$]*(\.[A-Za-z_$][\w$]*)*$/.test(declared)) {
+          return { name: declared, directive: child, kind: "named" }
+        }
+      }
+    }
+    return { name: stem, directive: null, kind: "implicit" }
+  }
 
   private isDartGlobalBuiltin(name: string): boolean {
     // Global functions (filtered) + Object leaf methods (mirrors the JS
