@@ -46,6 +46,18 @@
 //                pair showed each function as its own caller).
 //   selection:   selectionRange is the symbol's NAME token (the editor uses it
 //                to highlight the symbol it navigates to), never its body.
+//   filter:      every rule above is keyed on `relationshipType === "calls"`,
+//                so this surface ASKS the engine for CALL rows
+//                (CALL_HIERARCHY_RELATIONSHIP_TYPES) instead of inheriting the
+//                engine's default ten-kind superset — a `contains`/`uses` row
+//                names no invocation, and LSP requires a non-empty
+//                `fromRanges`, so §15.3 admits exactly one honest rendering of
+//                such a row: omit it and DECLARE it, never render a
+//                plausible-looking range. The declared filter rides on EVERY
+//                response (§15.1), so a reader can tell "the store holds no
+//                call row" from "this surface reads no kind of row but calls",
+//                and the defence-in-depth drop keeps the surface correct even
+//                if the engine's option is ignored.
 //   detail:      every item names its symbol type, its call-site count and its
 //                evidence tier, plus `recursive` / `cycle` markers.
 //
@@ -110,8 +122,10 @@
 //
 // Mutation gates (script/m55/verify-call-hierarchy.ts): dropping the call-site
 // resolution, re-admitting receiver-qualified self-edges, re-admitting
-// transitive hops, returning a body selectionRange, and swallowing an
-// unresolvable call site each fail the gate.
+// transitive hops, returning a body selectionRange, swallowing an
+// unresolvable call site, rendering a non-call row, dropping the declared
+// relationship-kind filter, and dropping the declaration on an empty answer
+// each fail the gate.
 
 import { readFileSync } from "node:fs";
 import type { CoreDatabase } from "../brain/database";
@@ -149,6 +163,24 @@ import type {
 /** Engine-aligned budget defaults (the engine clamps to its own limits). */
 export const CH_MAX_DEPTH = 5;
 export const CH_FANOUT_BUDGET = 50;
+
+/**
+ * §15.1 + §15.3: the relationship kinds a CALL hierarchy may render.
+ *
+ * The graph engine's default projection is a deliberate, disclosed SUPERSET
+ * (script/m48/verify-d1-doc-truth.ts gates that disclosure), and its owner
+ * cascade folds rows stored against a member onto the owner. That is right for
+ * the graph, impact and MCP surfaces, which render EDGES. This surface renders
+ * `fromRanges`, so a row whose kind can name no invocation has no call site to
+ * point at — and §15.3 forbids emitting a plausible-looking range for one.
+ *
+ * `instantiates`/`overrides` are deliberately absent rather than banned: a
+ * `new Foo()` IS an invocation this surface's resolver already classifies
+ * (`construct`), so including them is a separate declared decision for this
+ * surface's owner. The law this constant encodes is narrower and does not
+ * prejudge it: EVERY kind listed here must be able to name a call site.
+ */
+export const CALL_HIERARCHY_RELATIONSHIP_TYPES = ["calls"] as const;
 
 /** LSP SymbolKind mapping for the symbol types the analyzers store. */
 const KIND_MAP: Record<string, number> = {
@@ -404,6 +436,13 @@ export interface ExpandResult {
   addressCrossCheck: AddressCrossCheck;
   /** §15.1: every edge whose two sources did not agree, with BOTH positions. */
   addressDisagreements: AddressDisagreement[];
+  /**
+   * §15.1: the relationship kinds THIS answer was built from, on every response.
+   * A surface that filters differently from the engine's default superset STATES
+   * its filter, so a reader can tell "the store holds no such row" from "this
+   * surface does not read that kind of row".
+   */
+  relationshipTypes: string[];
 }
 
 /** Injectable traversal — the default wraps the real M14 engine. */
@@ -1087,6 +1126,7 @@ export async function expandCalls(
       callSiteEntries: { resolved: 0, approximate: 0 },
       addressCrossCheck: emptyCrossCheck(),
       addressDisagreements: [],
+      relationshipTypes: [...CALL_HIERARCHY_RELATIONSHIP_TYPES],
     };
   }
   // Re-resolve the root row from the index for the engine's root shape.
@@ -1139,6 +1179,7 @@ export async function expandCalls(
       callSiteEntries: { resolved: 0, approximate: 0 },
       addressCrossCheck: emptyCrossCheck(),
       addressDisagreements: [],
+      relationshipTypes: [...CALL_HIERARCHY_RELATIONSHIP_TYPES],
     };
   }
   // §11.7: the ROOT's own file decides whether this surface serves the request
@@ -1160,6 +1201,7 @@ export async function expandCalls(
       callSiteEntries: { resolved: 0, approximate: 0 },
       addressCrossCheck: emptyCrossCheck(),
       addressDisagreements: [],
+      relationshipTypes: [...CALL_HIERARCHY_RELATIONSHIP_TYPES],
     };
   }
 
@@ -1191,6 +1233,9 @@ export async function expandCalls(
     maxDepth,
     callerBudget: CH_FANOUT_BUDGET,
     calleeBudget: CH_FANOUT_BUDGET,
+    // §15.3: ask for CALL rows only. Without this the engine's default ten-kind
+    // superset reaches a renderer whose `fromRanges` must name a call site.
+    relationshipTypes: [...CALL_HIERARCHY_RELATIONSHIP_TYPES],
   });
 
   const rootSource = readSource(rootRow.filePath);
@@ -1344,6 +1389,21 @@ export async function expandCalls(
     tallyCrossCheck(crossCheck, agreement, agreement.address !== null);
     if (!crossScanRan) crossCheck.comparisonNotRun++;
 
+    // §15.3, defence in depth: whatever the engine returns, a RENDERED range must
+    // belong to a call. A row of another kind names no invocation, so it is
+    // omitted and DECLARED with its kind — never rendered with a
+    // plausible-looking range and never relabelled as a call. Placed AFTER the
+    // cross-check so the census still partitions every stored edge this answer
+    // read, not only the ones it renders.
+    if (!(CALL_HIERARCHY_RELATIONSHIP_TYPES as readonly string[]).includes(edge.relationshipType)) {
+      droppedEdges.push({
+        name: node.name,
+        symbolId: otherId,
+        reason: `the stored row is a "${edge.relationshipType}" relation, not a call; a call hierarchy renders call sites and this relation names none, so the row is omitted rather than rendered with a range (contract 15.3)`,
+      });
+      continue;
+    }
+
     if (
       invocations.length === 0 &&
       callerSource !== null &&
@@ -1452,9 +1512,17 @@ export async function expandCalls(
     absence: calls.length === 0
       ? absenceWith(
           "symbol_not_at_position",
-          edges.length === 0
-            ? `the engine returned no stored ${direction === "callers" ? "caller" : "callee"} edge for ${rootRow.name} (this is an indexed, served symbol: the answer is "none stored", not "unknown")`
-            : `every stored ${direction === "callers" ? "caller" : "callee"} edge was dropped or declared absent (${droppedEdges.length} dropped, ${declaredAbsentNodes.length} declared absent) — none is rendered`,
+          // §11.7 + §15.1: BOTH branches name the filter. An answer emptied BY the
+            // filter is a different claim from an answer emptied because the
+            // STORE holds no row, and only the filter declaration tells the two
+            // apart. Measured: the engine still returns the depth-0 `calls`
+            // row for this symbol even under `relationshipTypes: ["calls"]`
+            // (the receiver-qualified artifact), so the "no edges at all"
+            // branch is NOT the branch a filtered empty answer takes — a
+            // reword confined to it would leave this answer implying the store
+            // holds nothing, which is false here (it holds `contains` and
+            // `uses` rows for the same symbol).
+            `no stored ${direction === "callers" ? "caller" : "callee"} CALL row of this symbol is rendered. This surface reads the ${CALL_HIERARCHY_RELATIONSHIP_TYPES.length} relationship kind(s) ${JSON.stringify(CALL_HIERARCHY_RELATIONSHIP_TYPES)} only and declares that filter on every response (§15.1): ${edges.length === 0 ? "no stored row of any kind reached this answer" : `${edges.length} stored CALL row(s) were read and ${droppedEdges.length} dropped or declared absent`} — rows of other kinds ARE stored for this symbol and are not ${direction === "callers" ? "callers" : "callees"} here, so this answer is "no stored call rendered", not "no stored relationship"`,
           rootRow.filePath,
         )
       : null,
@@ -1462,6 +1530,10 @@ export async function expandCalls(
     staleness: expandStaleness(raw, rootRow.fileId ?? null, rootRow.filePath, edgePaths),
     addressCrossCheck: crossCheck,
     addressDisagreements,
+    // §15.1: stated on the NORMAL answer too, not only on the absence paths —
+    // a reader of a non-empty caller list needs the same filter declaration as
+    // a reader of an empty one.
+    relationshipTypes: [...CALL_HIERARCHY_RELATIONSHIP_TYPES],
   };
 }
 
