@@ -139,6 +139,32 @@ const GATE_PROBE_NODES: Record<string, string[]> = {
   instantiates: ["new_expression", "object_creation_expression", "constructor_invocation"],
 }
 
+/** THIS lane's own lists, read off the ruling table rather than retyped, because the
+ *  point of the section below is which of them the arbiter's fallback grammar happens
+ *  to collide with. */
+const TABLE_PROBE_NODES: Record<string, string[]> = Object.fromEntries(
+  PROTOBUF_RULED.filter((r) => (r.nodeTypesThatWouldMeanIt?.length ?? 0) > 0).map((r) => [r.type, r.nodeTypesThatWouldMeanIt!]),
+)
+
+/**
+ * The sibling IDL lane's `calls` list, TRANSCRIBED from its own doc and checked against
+ * that doc here rather than trusted: `docs/analyzers/real-graphql-analyzer.md` names
+ * seven CamelCase node types for its `A:call_node` probe. It is in this file because the
+ * lane this probe belongs to was FALSIFIED for a name that the sibling lane spells the
+ * other way round, and the difference is case rather than evidence — which is the whole
+ * argument for moving every ruling here to instrument B.
+ */
+const SIBLING_IDL_CALL_NODES = ["CallExpression", "FunctionDefinition", "FunctionDeclaration", "MethodDefinition", "Invocation", "MacroInvocation", "Call"]
+const SIBLING_DOC = path.join(ROOT, "docs", "analyzers", "real-graphql-analyzer.md")
+let siblingListVerified: string | null = null
+try {
+  const doc = readFileSync(SIBLING_DOC, "utf8")
+  const missing = SIBLING_IDL_CALL_NODES.filter((n) => !doc.includes(n))
+  siblingListVerified = missing.length === 0 ? "all 7 names present in the doc" : `TRANSCRIPTION STALE — absent from the doc: ${missing.join(", ")}`
+} catch (e) {
+  siblingListVerified = `DECLARED ABSENT — ${SIBLING_DOC} unreadable: ${String((e as any)?.message ?? e)}`
+}
+
 type BProbe = { type: string; describe: string; hits: string[]; files: Set<string> }
 
 type Gram = {
@@ -231,24 +257,48 @@ const rows = Object.entries(GATE_PROBE_NODES).map(([type, nodes]) => ({
 }))
 
 /**
- * Instrument B, the lane's OWN `countOnTree` from `protobuf-ruled.ts`, run over both
- * grammars' trees.
+ * Instrument B, the lane's OWN `countOnTree` from `script/m14/protobuf-ruled.ts`, run
+ * over both grammars' trees.
  *
- * The split that matters here is between a hit that is the CONSTRUCT and a hit that is
- * the probe REFUSING to report on a tree it recognises as foreign: `guardWrongGrammar`
- * pushes a `WRONG GRAMMAR — …` line and returns, and the gate counts every line in
- * `hits` as one occurrence of the construct and grades it FALSIFIED. So a hit carrying
- * that marker is counted separately from a construct hit, because grading a refusal as
- * a construction is the whole defect.
+ * WHAT CHANGED AT 18594c5b8, and why this section had to be rewritten rather than
+ * re-run. The old table ran one instrument-B probe, and it guarded the wrong grammar by
+ * PUSHING A REFUSAL into `hits` and returning. The gate counts every element of `hits`
+ * as one occurrence of the construct, so at commit 86c5f05f4 the arbiter reported
+ * `instantiates` as occurring `1x across 1 file(s)` with the refusal quoted as its
+ * example. That number was a measurement of this probe, not of protobuf.
+ *
+ * The probe now DECLINES a tree whose root is not `source_file` and re-reads the file
+ * from the corpus root under `wasm/tree-sitter-protobuf.wasm`. So the column that used
+ * to read `arbiter(bash)` no longer means "what the arbiter's grammar yields": it means
+ * "what the probe reports when the arbiter hands it a bash tree", which is now zero by
+ * construction. The interesting split has moved, and it is printed below as two
+ * questions the old section never asked:
+ *
+ *   1. can the probe REBUILD the file it was handed a foreign tree for? Every label is
+ *      `${repo}/${rel}` and the corpus root is the gate's own `BB_CORPUS_ROOT`
+ *      default, so `path.join(CR, label)` should resolve — measured, not assumed,
+ *      because the whole self-parse branch rests on it.
+ *   2. do this lane's lists collide with the arbiter's fallback vocabulary, and does the
+ *      sibling IDL lane's identically-wrong verdict collide? That is the spelling test,
+ *      and it is why every ruling in the table is now an instrument-B count.
  */
+const labelsReconstructible = files.filter((f) => {
+  try {
+    readFileSync(path.join(CR, `${f.repo}/${f.rel}`), "utf8")
+    return true
+  } catch {
+    return false
+  }
+}).length
+
 const bRows = PROTOBUF_RULED.filter((r) => r.instrument === "B:parse-tree-count" && r.countOnTree).map((r) => {
   const under = (g: Gram) => {
     const p = g.b.find((x) => x.type === r.type)!
-    const refusals = p.hits.filter((h) => h.includes("WRONG GRAMMAR"))
+    const refusals = p.hits.filter((h) => h.includes("NOT MEASURED"))
     return {
       occurrences: p.hits.length,
       files: p.files.size,
-      wrongGrammarRefusals: refusals.length,
+      notMeasuredRefusals: refusals.length,
       constructOccurrences: p.hits.length - refusals.length,
       firstHit: p.hits[0] ?? null,
     }
@@ -257,11 +307,11 @@ const bRows = PROTOBUF_RULED.filter((r) => r.instrument === "B:parse-tree-count"
   const protobuf = under(pb)
   return {
     type: r.type,
-    arbiterGrammarBash: bash.occurrences > 0 ? "FALSIFIED" : "clean",
-    correctGrammarProtobuf: protobuf.occurrences > 0 ? "FALSIFIED" : "clean",
-    flipsBecauseOfWiring: bash.occurrences > 0 !== protobuf.occurrences > 0,
+    handedBashTree: bash.occurrences > 0 ? "HITS" : "clean",
+    handedProtobufTree: protobuf.occurrences > 0 ? "HITS" : "clean",
     bash,
     protobuf,
+    ownListCollidesWithBashVocabulary: (TABLE_PROBE_NODES[r.type] ?? []).filter((n) => (sh.inventory.get(n) ?? 0) > 0),
   }
 })
 
@@ -299,6 +349,37 @@ const report = {
   },
   gateVerdictRows: rows,
   instrumentBRows: bRows,
+  spellingTest: {
+    question:
+      "Instrument A is an INTERSECTION between a lane's node-type list and the vocabulary the gate observed. " +
+      "The gate's vocabulary is bash's for every lane absent from LANGS. So under the fallback an A verdict " +
+      "depends on whether the lane's list happens to collide with bash's node names.",
+    ownLists: Object.entries(TABLE_PROBE_NODES).map(([type, nodes]) => ({
+      type,
+      nodes: nodes.length,
+      collidingUnderBash: nodes.filter((n) => (sh.inventory.get(n) ?? 0) > 0),
+      collidingUnderProtobuf: nodes.filter((n) => (pb.inventory.get(n) ?? 0) > 0),
+      aVerdictUnderArbiterGrammar: nodes.some((n) => (sh.inventory.get(n) ?? 0) > 0) ? "FALSIFIED" : "clean",
+      aVerdictUnderCorrectGrammar: nodes.some((n) => (pb.inventory.get(n) ?? 0) > 0) ? "FALSIFIED" : "clean",
+    })),
+    siblingIdlCallList: {
+      source: "docs/analyzers/real-graphql-analyzer.md, probe A:call_node",
+      transcriptionCheck: siblingListVerified,
+      nodes: SIBLING_IDL_CALL_NODES.length,
+      collidingUnderBash: SIBLING_IDL_CALL_NODES.filter((n) => (sh.inventory.get(n) ?? 0) > 0),
+      note:
+        "Measured against bash's vocabulary over PROTOBUF's corpus, because that is the vocabulary the gate " +
+        "would hand a lane it has no entry for. It is not a measurement of that lane's own grammar and does " +
+        "not claim to be; it is here to show that the same defect that FALSIFIED this lane leaves that lane's " +
+        "rule clean, and that the difference is the case of a list.",
+    },
+  },
+  selfParse: {
+    question: "Can the probe rebuild the file it was handed a foreign tree for? The self-parse branch reads path.join(CR, `${repo}/${rel}`).",
+    corpusRoot: CR,
+    labelsReconstructible: `${labelsReconstructible}/${files.length}`,
+    allReconstructible: labelsReconstructible === files.length,
+  },
 }
 
 try {
@@ -347,18 +428,37 @@ for (const r of rows) {
 console.log("")
 console.log(`flipped by the wiring: ${rows.filter((r) => r.flipsBecauseOfWiring).map((r) => r.type).join(", ") || "none"}`)
 console.log("")
-console.log("INSTRUMENT B — this lane's OWN countOnTree, run over each grammar's trees")
-console.log("type          arbiter(bash)   correct(protobuf)   flips   bash hits / files / refusals / constructs   protobuf hits")
-for (const r of bRows) {
+console.log("SPELLING TEST — would THIS LANE'S OWN lists have failed under the arbiter's fallback grammar?")
+console.log("  (instrument A intersects a lane's list with the vocabulary the gate OBSERVED, and the gate's")
+console.log("   vocabulary is bash's for any lane absent from LANGS. A collision is a name bash also has.)")
+console.log("type          nodes  collides under bash   A-verdict under bash   A-verdict under protobuf")
+for (const r of report.spellingTest.ownLists) {
   console.log(
-    `${r.type.padEnd(13)} ${r.arbiterGrammarBash.padEnd(14)} ${r.correctGrammarProtobuf.padEnd(18)} ${(r.flipsBecauseOfWiring ? "YES" : "no").padEnd(6)} ` +
-      `${String(r.bash.occurrences).padStart(3)} / ${String(r.bash.files).padStart(3)} / ${String(r.bash.wrongGrammarRefusals).padStart(3)} / ${String(r.bash.constructOccurrences).padStart(3)}`.padEnd(34) +
-      `${r.protobuf.occurrences} / ${r.protobuf.files} files / ${r.protobuf.constructOccurrences} constructs`,
+    `${r.type.padEnd(13)} ${String(r.nodes).padStart(5)}  ${(r.collidingUnderBash.join(" ") || "none").padEnd(21)} ${r.aVerdictUnderArbiterGrammar.padEnd(21)} ${r.aVerdictUnderCorrectGrammar}`,
   )
-  if (r.bash.firstHit) console.log(`${"".padEnd(13)} bash first hit: ${r.bash.firstHit.slice(0, 150)}`)
 }
 console.log("")
-console.log(`instrument B flipped by the wiring: ${bRows.filter((r) => r.flipsBecauseOfWiring).map((r) => r.type).join(", ") || "none"}`)
+console.log(`  the sibling IDL lane's own \`calls\` list (${report.spellingTest.siblingIdlCallList.nodes} names, ${report.spellingTest.siblingIdlCallList.source}):`)
+console.log(`    collides under bash: ${report.spellingTest.siblingIdlCallList.collidingUnderBash.join(" ") || "none"}  -> its rule reads clean under the same broken wiring`)
+console.log(`    transcription check: ${report.spellingTest.siblingIdlCallList.transcriptionCheck}`)
+console.log("")
+console.log("INSTRUMENT B — this lane's OWN countOnTree, called with each grammar's tree")
+console.log(`  labels rebuildable as path.join(CR, label): ${report.selfParse.labelsReconstructible} (all: ${report.selfParse.allReconstructible})`)
+console.log("type          handed a bash tree   handed a protobuf tree   hits/files/refusals/constructs (bash)   constructs (protobuf)")
+for (const r of bRows) {
+  console.log(
+    `${r.type.padEnd(13)} ${r.handedBashTree.padEnd(19)} ${r.handedProtobufTree.padEnd(24)} ` +
+      `${String(r.bash.occurrences).padStart(3)}/${String(r.bash.files).padStart(3)}/${String(r.bash.notMeasuredRefusals).padStart(3)}/${String(r.bash.constructOccurrences).padStart(3)}`.padEnd(28) +
+      `${r.protobuf.constructOccurrences}`,
+  )
+  if (r.bash.firstHit) console.log(`${"".padEnd(13)} first hit: ${r.bash.firstHit.slice(0, 150)}`)
+}
+console.log("")
+console.log("  Both columns read clean, and that is the POINT rather than the absence of a finding: since")
+console.log("  18594c5b8 the probe declines a foreign tree and measures the file under protobuf's own grammar,")
+console.log("  so what the arbiter hands it no longer decides the verdict. At 86c5f05f4, by contrast, the")
+console.log("  same probe handed a bash tree reported `instantiates` as occurring 1x across 1 file — the")
+console.log("  refusal graded as a construction, which is the defect this section used to exist to catch.")
 console.log("")
 console.log("REMEDY (§8 — shared machinery, not this lane's to edit)")
 console.log("  file     script/m14/differential.ts")
@@ -369,12 +469,12 @@ console.log("             protobuf: { wasm: \"tree-sitter-protobuf.wasm\", analy
 console.log("  why      ontology-coverage-gate.ts:247 resolves a lane's grammar from this")
 console.log("           record and falls back to tree-sitter-bash.wasm for any lane absent")
 console.log("           from it, so an unregistered lane's instruments measure bash's parse of")
-console.log("           that lane's source. Both of this lane's FALSIFIED verdicts come from it.")
+console.log("           that lane's source. Both of this lane's FALSIFIED verdicts came from it,")
+console.log("           and the spelling test above shows every OTHER unregistered lane's verdict")
+console.log("           is decided by the case of its node-type list rather than by evidence.")
 console.log("  also     a `?? \"tree-sitter-bash.wasm\"` default that fires for an UNREGISTERED")
-console.log("           lane should fail loudly, as the gate's own instantiates row tries to do")
-console.log("           (\"WRONG GRAMMAR — this probe was handed a tree whose root node is")
-console.log("           `program`, not `source_file`\"). That complaint is correct and is filed")
-console.log("           against the corpus file; it is a wiring defect, so the check belongs")
-console.log("           where the grammar is chosen.")
+console.log("           lane should fail loudly. The check belongs where the grammar is chosen,")
+console.log("           not in a lane's probe: this lane's own probe has to re-read 847 files to")
+console.log("           work around it, which is 847 parses the arbiter did not ask for.")
 console.log("")
 console.log(`wrote ${OUT}`)
