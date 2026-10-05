@@ -377,7 +377,7 @@ nothing.
 It is worse for this lane specifically. Because `script/m14/r-ruled.ts` is legitimately
 empty, the observed-empty state falls through to the ruling branch, finds no ruling, and
 prints `RULED-UNJUSTIFIED` for all ten — so a resume artifact converts a 10/10 lane into
-one that appears to have ruled on nothing. A lane carrying a complete ruling table does
+one that appears to have ruled on nothing. A lane carrying a populated ruling table does
 not have this failure mode, which means the defect hides on exactly the lanes most
 likely to be re-run. Both files are shared machinery (workstream §8): reported, not
 worked around. The workaround is `--fresh`, which is why run N is the run this lane's
