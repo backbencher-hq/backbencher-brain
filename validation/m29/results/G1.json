@@ -4,14 +4,14 @@
   "milestone": "M29",
   "status": "known-gap",
   "checks": 70,
-  "passed": 65,
-  "failed": 5,
+  "passed": 64,
+  "failed": 6,
   "negativeCases": 10,
-  "currentCommit": "0709f04b2a920cc87718aab5c40b9afea0d465e2",
+  "currentCommit": "facecf800fff693596604f71bcc8e23cf0152277",
   "workingTreeRelevantChanges": [],
   "verifierCommand": "npx tsx script/m29/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-10-05T04:32:36.637Z",
+  "generatedAt": "2026-10-05T04:37:12.289Z",
   "ledger": "validation/m29/results/manifest.json",
   "m28Bar": {
     "ledgerStatus": "open",
@@ -21,10 +21,10 @@
     "This gate validates governance metadata, mutation response, and the M28 bar; it does not verify the wave protocol, giant-repo budgets, or the precision ledger.",
     "A run with relevant uncommitted M29 files is recorded as known-gap; verified status requires a clean relevant tree."
   ],
-  "blockedReason": "5 check(s) failed: G1: all 9 issue entries are unique and structurally complete; G1: M28 bar — ledger closed with all 7 issues verified (mechanical); G1: M28 bar — closure-gate evidence verified at an ancestor-or-equal commit; G1: M28 bar — M28 governance gate exits 0 at HEAD (spawned) … — the relevant tree was clean at measure time",
+  "blockedReason": "6 check(s) failed: G1: all 9 issue entries are unique and structurally complete; G1: no banned vocabulary in manifest.json (\\bcomplete(ly|d|ness)?\\b); G1: M28 bar — ledger closed with all 7 issues verified (mechanical); G1: M28 bar — closure-gate evidence verified at an ancestor-or-equal commit … — the relevant tree was clean at measure time",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T04:32:36.641Z",
-    "contentSha256": "2b622f3c2bd99d989aee1383f0b66fb6129907b675d596a5a9b3cd7ef2df1232"
+    "sealedAt": "2026-10-05T04:37:12.295Z",
+    "contentSha256": "e3f32b4b3556851b4eb515ea35147339b0dff592dbd0cf0881602cadde0621b9"
   }
 }

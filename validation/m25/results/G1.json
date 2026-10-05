@@ -4,14 +4,14 @@
   "milestone": "M25",
   "status": "known-gap",
   "checks": 72,
-  "passed": 67,
-  "failed": 5,
+  "passed": 66,
+  "failed": 6,
   "negativeCases": 11,
-  "currentCommit": "0709f04b2a920cc87718aab5c40b9afea0d465e2",
+  "currentCommit": "facecf800fff693596604f71bcc8e23cf0152277",
   "workingTreeRelevantChanges": [],
   "verifierCommand": "npx tsx script/m25/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-10-05T04:32:27.750Z",
+  "generatedAt": "2026-10-05T04:37:00.397Z",
   "ledger": "validation/m25/results/manifest.json",
   "m24Bar": {
     "ledgerStatus": "open",
@@ -21,10 +21,10 @@
     "This gate validates governance metadata, mutation response, and the M24 bar; it does not verify extension features.",
     "A run with relevant uncommitted M25 files is recorded as known-gap; verified status requires a clean relevant tree."
   ],
-  "blockedReason": "5 check(s) failed: G1: all 11 issue entries are unique and structurally complete; G1: no banned vocabulary in manifest.json (perfect(ion)?\\b); G1: M24 bar — ledger closed with all 11 issues verified (mechanical); G1: M24 bar — M24 governance gate exits 0 at HEAD (spawned) … — the relevant tree was clean at measure time",
+  "blockedReason": "6 check(s) failed: G1: all 11 issue entries are unique and structurally complete; G1: no banned vocabulary in manifest.json (perfect(ion)?\\b); G1: no banned vocabulary in manifest.json (\\bcomplete(ly|d|ness)?\\b); G1: M24 bar — ledger closed with all 11 issues verified (mechanical) … — the relevant tree was clean at measure time",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T04:32:27.756Z",
-    "contentSha256": "3fe0d0b1b5a860979be0959666d9a39c8b2f006f8f91d1b6e0641c7b9d8f85f4"
+    "sealedAt": "2026-10-05T04:37:00.404Z",
+    "contentSha256": "ca4f4c2569bda4f9558b0fbe33f76d40dbe633e19ea6c672c3b7ecaaa9ec9292"
   }
 }
