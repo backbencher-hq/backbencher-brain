@@ -2,24 +2,235 @@
   "issue": "650",
   "code": "H2",
   "milestone": "M42",
-  "status": "known-gap",
-  "checks": 40,
-  "passed": 39,
-  "failed": 1,
-  "failures": [
-    "H2/R4: the hover's call-site links DIFFER from the L3 reference lines, and the card states the difference (§14 rules 2+3): 4/4 links equal a reference line (expected 0 — the hover must open the call site, references opens the declaration, and the card must say which is which); card: **usages** — 2 stored references (usage sites only; declaration and callees excluded) — each opens the stored call site\n1. [main —"
-  ],
+  "status": "verified",
+  "checks": 71,
+  "passed": 71,
+  "failed": 0,
+  "failures": [],
   "verdict": {
-    "realComponentFailures": 1,
-    "mutantsCaught": 6,
-    "mutantsTotal": 6,
+    "realComponentFailures": 0,
+    "mutantsCaught": 7,
+    "mutantsTotal": 7,
+    "mutantsNotJudged": 0,
     "ok": true
   },
+  "mutants": {
+    "caught": 7,
+    "total": 7,
+    "notJudged": 0,
+    "verdicts": [
+      {
+        "name": "M1: wrong position — the link opens a line adjacent to the stored call site (±1)",
+        "caughtBy": "position, containmentInItsOwnBlock, sectionUsage, sectionConnected, sectionContainment",
+        "detail": "{\"position\":false,\"count\":true,\"edge\":true,\"containmentInItsOwnBlock\":false,\"sectionUsage\":false,\"sectionConnected\":false,\"sectionContainment\":false,\"label\":true}"
+      },
+      {
+        "name": "M2: wrong count — the usages header is one more than the list it headlines",
+        "caughtBy": "count",
+        "detail": "{\"position\":true,\"count\":false,\"edge\":true,\"containmentInItsOwnBlock\":true,\"sectionUsage\":true,\"sectionConnected\":true,\"sectionContainment\":true,\"label\":true}"
+      },
+      {
+        "name": "M3: dropped edge — the last collected row never reaches the section",
+        "caughtBy": "position, count, edge, label",
+        "detail": "{\"position\":false,\"count\":false,\"edge\":false,\"containmentInItsOwnBlock\":true,\"sectionUsage\":true,\"sectionConnected\":true,\"sectionContainment\":true,\"label\":false}"
+      },
+      {
+        "name": "M4: a declaration containment leaks into the connected summary (re-anchored on the declaration-class guard, which is the line that decides this law today — the pre-fix `verb === null` anchor is a DEAD guard and its plant was a no-op)",
+        "caughtBy": "containmentInItsOwnBlock, sectionConnected",
+        "detail": "{\"position\":true,\"count\":true,\"edge\":true,\"containmentInItsOwnBlock\":false,\"sectionUsage\":true,\"sectionConnected\":false,\"sectionContainment\":true,\"label\":true}"
+      },
+      {
+        "name": "M5: undeclared substitution — the row label drops the caveat that says which position it opens",
+        "caughtBy": "label",
+        "detail": "{\"position\":true,\"count\":true,\"edge\":true,\"containmentInItsOwnBlock\":true,\"sectionUsage\":true,\"sectionConnected\":true,\"sectionContainment\":true,\"label\":false}"
+      },
+      {
+        "name": "M6: section swap — the **usages** block renders the declaration-containment row (a `contains` row offered as a usage, the exact defect relations.ts exists to prevent)",
+        "caughtBy": "position, count, containmentInItsOwnBlock, sectionUsage",
+        "detail": "{\"position\":false,\"count\":false,\"edge\":true,\"containmentInItsOwnBlock\":false,\"sectionUsage\":false,\"sectionConnected\":true,\"sectionContainment\":true,\"label\":true}"
+      },
+      {
+        "name": "M7: section swap — the **contained** block renders nothing, so the owner's decision ('show all the relationships') silently drops the containment row",
+        "caughtBy": "containmentInItsOwnBlock, sectionContainment",
+        "detail": "{\"position\":true,\"count\":true,\"edge\":true,\"containmentInItsOwnBlock\":false,\"sectionUsage\":true,\"sectionConnected\":true,\"sectionContainment\":false,\"label\":true}"
+      }
+    ],
+    "whatTheseAre": "source-copy plants inside src/lsp/rich_hover.ts, judged by per-predicate verdicts computed against the REAL fixture files (byte columns read off the files on disk, so the component's own position owner resolves them) and read back out of the RENDERED markdown rather than from an intermediate object.",
+    "preLaneDefect": "the pre-lane M1..M6 reported 6/6 caught while only TWO planted anything. M2, M3, M4 and M5 each restated a check already asserted verbatim above them (connectedSummarySection(connectedGroups([containsOnly])) === \"\", usagesSection([], …) === \"\", usagesSection([3 sites], …).length > 0, md.includes(\"bb.openDefinition?\")), so four of the six could never have been anything but green. A duplicate cannot fail when the original passes.",
+    "oracleControl": "the suite asserts its oracle HOLDS on the real component before judging any plant; a predicate that is false on the real component would mark every mutant caught for free. The control has its OWN negative (H2/M [negative]): a control that cannot fail would report 5/5 for free, which is the failure this control exists to prevent.",
+    "oracleControlDefect": {
+      "what": "The control evaluated five predicates; `contains` read `groups.length === 1 && groups[0].verb === 'called by' && flat.length === 2` — a POSITIVE claim that the connected summary holds exactly one verb group of exactly two sites.",
+      "whenItBroke": "The owner's all-relationships wave gave EVERY canonical kind a verb (src/lsp/rich_hover.ts RELATIONSHIP_VERB now has all ten), so the mutant double's `uses` row renders as its own 'used by' group: 2 groups, 3 sites. The predicate went FALSE on a component that is correct.",
+      "whatItCost": "While it was false, M4 — the mutant that plant EXISTS FOR ('a declaration containment leaks into the connected summary') — was reported 'caught by: contains' for free, alongside a no-op plant (below). Measured at the pre-fix commit: control read {position: true, count: true, edge: true, contains: FALSE, label: true} while all 5 mutants reported caught. The count was 5/5 and neither half of M4's conviction was doing work: a broken predicate and a dead plant cancelled out and read as a pass.",
+      "replacement": "`containmentInItsOwnBlock` states the law in BOTH directions and positively: the declaration-containment row renders in ITS OWN block (one link per stored containment row, each equal to that row's stored location), reaches NEITHER other block, and the connected summary holds no containment row. It also asserts the non-declaration rows ARE rendered, so a kind that lost its verb fails rather than passing. Measured: true on the real component; false for M4, M6 and M7 — the three mutants that section laws exist to convict."
+    },
+    "mutantAnchorAudit": [
+      {
+        "mutant": "M4 (declaration containment leaks into the connected summary)",
+        "preFixAnchor": "if (verb === null) continue",
+        "measured": "With that anchor the plant is a NO-OP: `verbFor('contains')` returns 'contained by' (every canonical kind now has a verb), so a `contains` row never reaches the `verb === null` guard — the declaration-class guard `isDeclarationRelationship(kind) continue` above it skips the row first. Measured on this run at this commit: M4 with the old anchor reports [SURVIVED], all predicates unchanged.",
+        "reAnchoredOn": "if (isDeclarationRelationship(kind)) continue -> if (false && isDeclarationRelationship(kind)) continue",
+        "caughtBy": "containmentInItsOwnBlock, sectionConnected"
+      },
+      {
+        "mutant": "M1..M3, M5 (position, count, dropped edge, label caveat)",
+        "preFixAnchor": "unchanged — verified still present in the component source by the suite's own anchor check (a missing anchor is recorded NOT JUDGED, never as a catch)",
+        "measured": "M1 caught by position + all three section laws; M2 by count; M3 by position, count, edge, label; M5 by label."
+      }
+    ],
+    "importFailureIsNotCaught": true
+  },
+  "determinism": {
+    "declaredVolatileFields": [
+      "generatedAt",
+      "bbSeal.sealedAt",
+      "bbSeal.contentSha256",
+      "currentCommit",
+      "measured"
+    ],
+    "whyTheseAndNoOthers": "generatedAt / bbSeal.sealedAt are wall-clock stamps; bbSeal.contentSha256 hashes the record, which includes generatedAt; currentCommit changes when the gate is committed; `measured` is a latency sample set (p50/p95/max/mean in ms) and a latency sample is not reproducible to the last decimal. The ground rows, the section table, every count, every mutant verdict and every negative are functions of the index, the sources and this script. The fixture is written fresh into the worktree's own .tools/ and the index is written into a per-run mkdtemp BB_DATA_DIR, so no random path reaches an emitted field (the fixture's root is the worktree's, not the temp dir's).",
+    "measuredAt": "two consecutive runs at this commit, compared field by field after canonicalising the five declared volatile fields: identical"
+  },
+  "sections": {
+    "note": "one entry per rendered command link, in card order; `groundBranch` is which stored position the store permits for that row, derived by this gate from brain_relationship.line_number (never from the component).",
+    "links": [
+      {
+        "command": "bb.openUsage",
+        "block": "connected",
+        "label": "main",
+        "target": "$HOME/Documents/Default Project/ishaq/wt/h2oracle/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:14:0",
+        "inReferencesSet": true,
+        "storedRow": {
+          "id": "f22b805a50da5c052a758eb6d8274ac3e8d61409:rel:f22b805a50da5c052a758eb6d8274ac3e8d61409:src/main/java/com/demo/App.java:main:13:render:calls:15",
+          "kind": "calls",
+          "branch": "stored-line"
+        }
+      },
+      {
+        "command": "bb.openUsage",
+        "block": "connected",
+        "label": "main — Main2.java:6",
+        "target": "$HOME/Documents/Default Project/ishaq/wt/h2oracle/.tools/m42-h2-fixture/src/main/java/com/demo/Main2.java:5:0",
+        "inReferencesSet": true,
+        "storedRow": {
+          "id": "f22b805a50da5c052a758eb6d8274ac3e8d61409:rel:f22b805a50da5c052a758eb6d8274ac3e8d61409:src/main/java/com/demo/Main2.java:main:4:render:calls:6",
+          "kind": "calls",
+          "branch": "stored-line"
+        }
+      },
+      {
+        "command": "bb.openUsage",
+        "block": "usages",
+        "label": "main — App.java:15",
+        "target": "$HOME/Documents/Default Project/ishaq/wt/h2oracle/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:14:0",
+        "inReferencesSet": true,
+        "storedRow": {
+          "id": "f22b805a50da5c052a758eb6d8274ac3e8d61409:rel:f22b805a50da5c052a758eb6d8274ac3e8d61409:src/main/java/com/demo/App.java:main:13:render:calls:15",
+          "kind": "calls",
+          "branch": "stored-line"
+        }
+      },
+      {
+        "command": "bb.openUsage",
+        "block": "usages",
+        "label": "main — Main2.java:6",
+        "target": "$HOME/Documents/Default Project/ishaq/wt/h2oracle/.tools/m42-h2-fixture/src/main/java/com/demo/Main2.java:5:0",
+        "inReferencesSet": true,
+        "storedRow": {
+          "id": "f22b805a50da5c052a758eb6d8274ac3e8d61409:rel:f22b805a50da5c052a758eb6d8274ac3e8d61409:src/main/java/com/demo/Main2.java:main:4:render:calls:6",
+          "kind": "calls",
+          "branch": "stored-line"
+        }
+      },
+      {
+        "command": "bb.openUsage",
+        "block": "contained",
+        "label": "Greeter",
+        "target": "$HOME/Documents/Default Project/ishaq/wt/h2oracle/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:6:0",
+        "inReferencesSet": false,
+        "storedRow": {
+          "id": "f22b805a50da5c052a758eb6d8274ac3e8d61409:rel:f22b805a50da5c052a758eb6d8274ac3e8d61409:src/main/java/com/demo/App.java:Greeter:6:render:contains:7",
+          "kind": "contains",
+          "branch": "stored-line"
+        }
+      },
+      {
+        "command": "bb.openGraph",
+        "block": "actions",
+        "label": "Open in graph",
+        "target": "$HOME/Documents/Default Project/ishaq/wt/h2oracle/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:6:11",
+        "inReferencesSet": false,
+        "storedRow": null
+      },
+      {
+        "command": "bb.openImpact",
+        "block": "actions",
+        "label": "Impact analysis",
+        "target": "$HOME/Documents/Default Project/ishaq/wt/h2oracle/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:6:11",
+        "inReferencesSet": false,
+        "storedRow": null
+      },
+      {
+        "command": "bb.showCallHierarchy",
+        "block": "actions",
+        "label": "Call hierarchy",
+        "target": "$HOME/Documents/Default Project/ishaq/wt/h2oracle/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:6:11",
+        "inReferencesSet": false,
+        "storedRow": null
+      },
+      {
+        "command": "bb.openDefinition",
+        "block": "footnote",
+        "label": "$HOME/Documents/Default Project/ishaq/wt/h2oracle/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:7",
+        "target": "$HOME/Documents/Default Project/ishaq/wt/h2oracle/.tools/m42-h2-fixture/src/main/java/com/demo/App.java:6:11",
+        "inReferencesSet": false,
+        "storedRow": null
+      }
+    ],
+    "storedRows": [
+      {
+        "id": "f22b805a50da5c052a758eb6d8274ac3e8d61409:rel:f22b805a50da5c052a758eb6d8274ac3e8d61409:src/main/java/com/demo/App.java:main:13:render:calls:15",
+        "kind": "calls",
+        "declaration": false,
+        "farName": "main",
+        "farDeclLine1": 13,
+        "branch": "stored-line",
+        "servedAt": "App.java:14:0"
+      },
+      {
+        "id": "f22b805a50da5c052a758eb6d8274ac3e8d61409:rel:f22b805a50da5c052a758eb6d8274ac3e8d61409:src/main/java/com/demo/Main2.java:main:4:render:calls:6",
+        "kind": "calls",
+        "declaration": false,
+        "farName": "main",
+        "farDeclLine1": 4,
+        "branch": "stored-line",
+        "servedAt": "Main2.java:5:0"
+      },
+      {
+        "id": "f22b805a50da5c052a758eb6d8274ac3e8d61409:rel:f22b805a50da5c052a758eb6d8274ac3e8d61409:src/main/java/com/demo/App.java:Greeter:6:render:contains:7",
+        "kind": "contains",
+        "declaration": true,
+        "farName": "Greeter",
+        "farDeclLine1": 6,
+        "branch": "stored-line",
+        "servedAt": "App.java:6:0"
+      }
+    ],
+    "counts": {
+      "storedUsageRows": 2,
+      "storedContainmentRows": 1,
+      "referencesLocations": 2,
+      "renderedUsageLinks": 2,
+      "renderedConnectedLinks": 2,
+      "renderedContainmentLinks": 1,
+      "renderedActionLinks": 3
+    }
+  },
   "negatives": {
-    "planned": 6
+    "planned": 9
   },
   "fixture": {
-    "root": "$HOME/Documents/Default Project/ishaq/wt/ledgers/.tools/m42-h2-fixture",
+    "root": "$HOME/Documents/Default Project/ishaq/wt/h2oracle/.tools/m42-h2-fixture",
     "files": [
       "src/main/java/com/demo/App.java",
       "src/main/java/com/demo/Main2.java"
@@ -60,32 +271,146 @@
       "differentialFile": "src/main/java/com/demo/App.java"
     }
   },
+  "ground": {
+    "indexDataDir": "an isolated mkdtemp BB_DATA_DIR, passed to the indexer AND to the server this suite starts (the pre-lane run used the developer's default ~/.bb, so the answer depended on that machine's store)",
+    "storedRowsTouchingRender": [
+      {
+        "rowId": "f22b805a50da5c052a758eb6d8274ac3e8d61409:rel:f22b805a50da5c052a758eb6d8274ac3e8d61409:src/main/java/com/demo/App.java:main:13:render:calls:15",
+        "relType": "calls",
+        "storedLine": 15,
+        "sourceRel": "src/main/java/com/demo/App.java"
+      },
+      {
+        "rowId": "f22b805a50da5c052a758eb6d8274ac3e8d61409:rel:f22b805a50da5c052a758eb6d8274ac3e8d61409:src/main/java/com/demo/Main2.java:main:4:render:calls:6",
+        "relType": "calls",
+        "storedLine": 6,
+        "sourceRel": "src/main/java/com/demo/Main2.java"
+      },
+      {
+        "rowId": "f22b805a50da5c052a758eb6d8274ac3e8d61409:rel:f22b805a50da5c052a758eb6d8274ac3e8d61409:src/main/java/com/demo/App.java:Greeter:6:render:contains:7",
+        "relType": "contains",
+        "storedLine": 7,
+        "sourceRel": "src/main/java/com/demo/App.java"
+      }
+    ],
+    "usageRows": 2,
+    "groundHolds": true
+  },
   "budgets": {
     "hoverP95Ms": 50
   },
   "measured": {
     "regime": "warm",
     "samples": 200,
-    "p50Ms": 6.79,
-    "p95Ms": 9.61,
-    "maxMs": 15.36,
-    "meanMs": 7.07,
+    "p50Ms": 5.49,
+    "p95Ms": 8.23,
+    "maxMs": 12.73,
+    "meanMs": 5.87,
     "budgetMs": 50,
-    "coldMs": 72.49,
+    "coldMs": 60.05,
     "note": "A real p95 over a stated sample set. The pre-lane check was a MEAN over 40 compared against this budget and reported as a p95; the substitution was named as a limitation in KNOWN-GAPS.json for three waves instead of being fixed."
   },
-  "currentCommit": "93f85b7a3b4d8005e6683d505e49dfe6d28ef8bf",
+  "currentCommit": "03734944dbb7e6f604ead05f364b7189bea9fc05",
   "verifierCommand": "npx tsx script/m42/verify-rich-hover.ts",
   "evidenceFile": "H2.json",
-  "generatedAt": "2026-10-05T14:41:58.565Z",
+  "generatedAt": "2026-10-05T16:13:00.294Z",
+  "supersededExpectations": [
+    {
+      "was": "H2/R4: the hover's call-site links DIFFER from the L3 reference lines, and the card states the difference",
+      "why": "superseded by the call-site migration (9c25a1dc2, src/lsp/navigation.ts now emits a per-stored-row `callSite` and textDocument/references lands on the call site for every row). It required two surfaces to DISAGREE about where a call is, which §15.1 forbids outright ('One surface, one answer').",
+      "governingLaw": "§15.1 + §12.1 — the two surfaces must agree, and every navigation target must equal an index-stored location, differentially checked.",
+      "replacedBy": "H2/R4-LAW-USAGE (usage block) and H2/R4-LAW-CONNECTED (connected block): every link in those blocks equals the index-stored location of the row it names, row by row, and the usage block additionally equals a location references returns.",
+      "measured": "references answers App.java:15 and Main2.java:6 (1-based) — the two `render()` invocations — and the usage/connected blocks' four links are exactly those two locations."
+    },
+    {
+      "was": "H2/R4: every hover usage link target EQUALS an index-stored location the references surface returns (4 of 5 links are index-stored locations)",
+      "retiredBy": "this lane",
+      "why": "Wrong BY CONSTRUCTION once the card renders containment rows, not merely inconvenient. `textDocument/references` filters through `isUsageSiteRow` (src/lsp/navigation.ts:825, owner src/lsp/relations.ts) and a declaration containment is NEVER a usage site — so the containment row's own stored location is absent from the reference set by law. A law that says every link must be in that set cannot be satisfied by a card that renders `contains`. The two available 'fixes' — excluding the fifth link, or relaxing the count — would both restore the tick while removing the protection, and are forbidden by the assignment and by §12.1's differential requirement.",
+      "governingLaw": "§12.1 (every navigation target equals an index-stored location, differentially checked) applied PER SECTION, plus §15.1 (two surfaces, one answer) for the blocks a surface serves.",
+      "replacedBy": [
+        "H2/R4-LAW-USAGE — every **usages** link equals the stored location of the usage row it names, row by row, AND a location references returns.",
+        "H2/R4-LAW-CONNECTED — every **connected** link equals the stored location of a non-declaration row.",
+        "H2/R4-LAW-CONTAIN — every **contained** link equals the stored location of the `contains`/`exports` row it renders. This law did not exist before; it is the differential the old blanket law could not express.",
+        "H2/R4-LAW-ACTION — every action link equals the symbol's own stored location as `textDocument/definition` returns it. Also new: the actions row's three links were never differentially checked against anything.",
+        "H2/R4-LAW-LABEL — a row whose label states a position states its OWN link's position. Also new.",
+        "H2/R4-LAW-SECTION — every link falls in exactly one block, so no link escapes a law and none is judged twice."
+      ],
+      "measured": "On this fixture at this commit the store holds 3 rows touching `render`: 2 `calls` (stored lines 15 and 6) and 1 `contains` (stored line 7). references returns 2 locations (App.java:14:0, Main2.java:5:0). The card renders 5 `bb.openUsage` links: 2 in **connected** (both in the reference set), 2 in **usages** (both in the reference set), 1 in **contained** at App.java:6:0 — which is the `contains` row's OWN stored line (7 → 0-based 6) and is absent from the reference set, exactly as relations.ts requires.",
+      "whyStronger": [
+        "Coverage: 5 links judged with a NAMED row each, instead of one undifferentiated set checked for membership.",
+        "No escape hatch: the containment link has a real predicate, so there is nothing to exclude or relax.",
+        "LAW-CONTAIN convicts a containment link pointed at a usage location — a target that is index-stored AND served by references, so the old blanket law would have PASSED it. That case is the negative N3 leg below.",
+        "LAW-ACTION and LAW-LABEL are new coverage, not restatements.",
+        "LAW-SECTION makes block assignment a checked fact instead of an assumption: if the card's block order changed, the gate fails rather than silently judging the wrong links."
+      ]
+    },
+    {
+      "was": "H2/R4: the hover opens the CALL SITE, not the caller's declaration (asserted over every bb.openUsage link)",
+      "retiredBy": "this lane",
+      "why": "Also wrong by construction, for the mirror-image reason: a `contains` row stores its member's DECLARATION line (7 here), not a call site. Asserting 'every link opens a call site' over a block whose rows have no call site asserts a claim about a relationship that has none.",
+      "governingLaw": "§14 rule 3 (positions are where the thing is) and §15.3, applied per section.",
+      "replacedBy": "H2/R4: the hover opens the CALL SITE, not the caller's declaration — for every row of the **usages** block. The containment block's target is governed by H2/R4-LAW-CONTAIN instead, which requires it to equal the position that row stores.",
+      "measured": "Both usage rows carry a positive stored call-site line (App.java 15, Main2.java 6) and each is served at `line - 1`, character 0. The `contains` row stores line 7 and is served at App.java:6:0 — the member's declaration, which is what a containment row says."
+    }
+  ],
   "limitations": [
     "A usage link opens the index-stored CALL SITE when brain_relationship.line_number holds a real line, and the referencing symbol's DECLARATION when it does not — every such row states which, in its own label and in the usages header. The store carries no call-site BYTE COLUMN, so a call-site link opens at character 0: the line is exact, the column is not stored.",
+    "Declared residual, unchanged by this lane: textDocument/references and the hover card now agree EXACTLY on the call site (both open the stored line at character 0), so there is no second answer left to reconcile on this surface. The agreement is what §15.1 asks for; the shared limit is the missing byte column, above.",
+    "A SECTION-LEVEL defect in usagesSection's own defensive filter is invisible to the WIRE legs and is caught only by the in-process legs (R6-CONTAIN-3/4, mutant M6). MEASURED by rebuilding dist with `const usage = sites`: 66/70 with zero wire-leg failures. The cause is defence in depth — hover() passes `usageSiteRows = usageSitesOf(sites)` (src/lsp/hover.ts:526) into usagesSection (hover.ts:633), so the section's own filter is redundant on the wire path. The wire legs therefore prove the RENDERED card honours the usage vocabulary, not that the renderer enforces it unaided.",
     "A hover renders at most 3 usage links plus a \"+N more\" link, so a symbol with many callers shows three of them on the card and the rest through the hub.",
-    "No editor leg: this file proves the server surface. Link clicking in a real session is the E5-pattern session at H2 acceptance."
+    "No editor leg: this file proves the server surface. Link clicking in a real session is the E5-pattern session at H2 acceptance.",
+    "FLAKY INPUT, observed once: on one run at commit 8938a728 this fixture indexed with 1 of its 2 calling rows and the gate reported 4 surface failures. Three consecutive runs at the same commit were 41/41. The gate now isolates BB_DATA_DIR (so the answer cannot depend on the developer's ~/.bb) and asserts the ground (R2) before any surface leg, so the next occurrence is attributable rather than misattributed."
   ],
+  "redProofOfTheGate": {
+    "method": "for each of 7 planted component defects: apply the plant to src/lsp/rich_hover.ts, run `npx tsup` (rebuild dist), run the gate, record the verdict and the full list of failing checks.",
+    "result": "all 7 defects produce a RED verdict with a written evidence record. Convicting legs, measured:",
+    "perDefect": [
+      {
+        "defect": "usage link opens a line one off the stored call site",
+        "wireLegs": 9
+      },
+      {
+        "defect": "**usages** block renders the containment row",
+        "wireLegs": 0,
+        "note": "NOT visible to the wire (see the limitation in `limitations`); caught in-process by R6-CONTAIN-3, R6-CONTAIN-4, R6-CONTAIN-MUTANT (b), and by mutant M6"
+      },
+      {
+        "defect": "**contained** block renders nothing",
+        "wireLegs": 5,
+        "note": "R4 block-order, R4-LAW-SECTION, R4-LAW-CONTAIN, R4-LAW-CONTAIN-ROWS — the coverage law convicts it, and the absent-header range fix keeps the other blocks' counts honest while it is broken"
+      },
+      {
+        "defect": "containment leaks into the connected summary",
+        "wireLegs": 2,
+        "note": "R3 connected-summary, R4-LAW-CONNECTED"
+      },
+      {
+        "defect": "containment link opens a far line",
+        "wireLegs": 2,
+        "note": "R4-LAW-CONNECTED, R4-LAW-CONNECTED-ROWS"
+      },
+      {
+        "defect": "action link opens a line one off",
+        "wireLegs": 2,
+        "note": "R4-LAW-ACTION and its N6 negative — new coverage; before this lane nothing differentially checked these three targets"
+      },
+      {
+        "defect": "row label states a different line than it opens",
+        "wireLegs": 5,
+        "note": "R3 (three substring legs), R4-LAW-LABEL and its N5 negative"
+      }
+    ],
+    "findings": [
+      "THE FIRST RED PROOF MEASURED NOTHING. Neutering each law and running against a CORRECT component left the suite green in every case. That is not evidence the laws are inert — a correct component gives every check nothing to complain about, so green is the expected result. The measurement that discriminates plants a REAL defect and asks which legs convict it.",
+      "THE REBUILD IS NOT OPTIONAL, AND OMITTING IT PRODUCED A FALSE READING. The wire legs start `dist/lsp/server.js`; the in-process legs import `src/lsp/*.ts`. A src-only plant moves the in-process legs while every wire leg keeps reporting on the OLD build. The second attempt hit exactly this and read as a wire-law failure. Every defect measurement in this record was taken with `npx tsup` run after the plant.",
+      "A REAL GATE BUG, found by running the proof rather than by reasoning: with the containment block suppressed, the block-range derivation returned MAX_SAFE_INTEGER for an absent header, so a missing `**contained**` block extended the **usages** range to the end of the card — and the usages laws would then have judged the actions and footnote links as usage rows, with every count wrong for a reason unrelated to the defect. Fixed: an absent header now yields an EMPTY range for its own block, in both the wire splitter and the mutant splitter.",
+      "A SECOND REAL GATE BUG, same origin: a negative indexed element 0 of a possibly-empty array and threw `TypeError: Cannot read properties of undefined`. The throw escaped the check loop, so the suite exited with NO verdict and wrote NO evidence — worse than a clean failure, because it destroys the record a reader would use to find out what happened. All seven negatives are now guarded on their block being non-empty and report 'NOT RUN' with the reason instead of throwing.",
+      "A THIRD, in the gate's own M4 mutant: its plant anchor was a DEAD GUARD. See `mutants.mutantAnchorAudit` — the pre-fix plant changed nothing observable and was reported caught only because the control predicate was already false."
+    ]
+  },
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T14:41:58.567Z",
-    "contentSha256": "c251b3c7dceebace5c9cd1a8df6d40c7f07aed787c82cdb80582ad8c9765a8f4"
+    "sealedAt": "2026-10-05T16:13:00.295Z",
+    "contentSha256": "0f444eaa372d1c461acc54e6c4ac04e0b23c06ba67a35f63236babfe91f62cc9"
   }
 }
