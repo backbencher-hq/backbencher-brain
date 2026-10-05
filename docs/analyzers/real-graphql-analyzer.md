@@ -167,29 +167,35 @@ kinds, 0 relationship types outside the ten, 68 files with zero relationships.**
 
 ### Verdicts
 
-Counts are from the arbiter's own walk. `files` is the lane census count — every
-distinct file the type appeared in — not the arbiter's 4-file sample.
+`edges` is the **census walk** (`script/m14/tmp/graphql/probe/ontology-census.mts`,
+1,905 admitted files, production `parseFile`). `files` is **not** from that walk: it is
+`distinctFiles` from the **six-questions walk**
+(`probe/production-six-questions.mts`, same 1,905 files, same entry point). The two
+walks disagree by 54 edges in 156,763 (0.034%) and by 1–2 files on four types, so both
+file counts are given. Neither column is the arbiter's 4-file sample.
 
-| type | verdict | edges | files | the measurement it rests on |
-|---|---|---|---|---|
-| `uses` | **EMITTED** | 49,268 | 1,434 | 9 roles; `field_selection` 36,753 |
-| `references` | **EMITTED** | 47,775 | 1,136 | 5 roles; `field_return_type` 23,677 |
-| `contains` | **EMITTED** | 42,704 | 978 | one role |
-| `exports` | **EMITTED** (GAP at handover) | 10,968 | 1,034 | the document's top-level surface, from `(file)` |
-| `overrides` | **EMITTED** (GAP at handover) | 4,168 | 147 | a member an object declares that a type it implements also declares |
-| `implements` | **EMITTED** | 1,710 | 163 | every clause of every `implements` list, not only the last |
-| `imports` | **EMITTED** (GAP at handover) | 170 | 131 | the `#import "<file>"` convention |
-| `extends` | **RULED** | 0 | 0 | instrument **B** |
-| `calls` | **RULED** | 0 | 0 | instrument **A** |
-| `instantiates` | **RULED** | 0 | 0 | instrument **A** |
+| type | verdict | edges (census) | files (census) | files (sixq) | the measurement it rests on |
+|---|---|---|---|---|---|
+| `uses` | **EMITTED** | 49,268 | 1,436 | 1,434 | 9 roles; `field_selection` 36,753 |
+| `references` | **EMITTED** | 47,775 | 1,137 | 1,136 | 5 roles; `field_return_type` 23,677 |
+| `contains` | **EMITTED** | 42,704 | 979 | 978 | one role |
+| `exports` | **EMITTED** (GAP at handover) | 10,968 | 1,035 | 1,034 | the document's top-level surface, from `(file)` |
+| `overrides` | **EMITTED** (GAP at handover) | 4,168 | 147 | 147 | a member an object declares that a type it implements also declares |
+| `implements` | **EMITTED** | 1,710 | 163 | 163 | every clause of every `implements` list, not only the last |
+| `imports` | **EMITTED** (GAP at handover) | 170 | 131 | 131 | the `#import "<file>"` convention |
+| `extends` | **RULED** | 0 | 0 | 0 | instrument **B** |
+| `calls` | **RULED** | 0 | 0 | 0 | instrument **A** |
+| `instantiates` | **RULED** | 0 | 0 | 0 | instrument **A** |
 
 **The six EMITTED types and the three RULED ones are measured by two independent
-walks and they agree to 0.03%**: the arbiter reports 49,268 `uses` and this lane's own
-probe reports 49,261 over the same 1,905 files. Two walks of the same production entry
-point do not return byte-identical edge counts — `parseFile` runs a pool with per-file
-timeouts, so one file can hit the engine's 120 s guard and contribute nothing. The
-sequential re-parse determinism check is **60/60 identical**, so the variance is
-concurrency, not the analyzer.
+walks and they agree to 0.034%**: the census reports 49,268 `uses` and the sixq walk
+reports 49,261 over the same 1,905 admitted files. Two walks of the same production
+entry point do not return byte-identical edge counts — `parseFile` runs a pool with
+per-file timeouts, so one file can hit the engine's 120 s guard and contribute nothing.
+The sequential re-parse determinism check is **60/60 identical**, so the variance is
+concurrency, not the analyzer. Every re-run of the census reproduced all seven edge
+counts exactly (three runs: 2026-10-05 09:53Z and 12:30Z), so the spread is between
+*tools*, not run to run within one tool.
 
 ### `extends` — RULED, instrument B
 
