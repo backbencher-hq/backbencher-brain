@@ -188,6 +188,18 @@ interface CleanContext {
   functionSymbolIndex: Record<string, number>
   /** See `declarationKey`. -> the signature that declares it. */
   signatures: Map<string, SignatureInfo>
+  /**
+   * `type_signature` node id -> the signature read off it, for the emitter's lookup.
+   *
+   * `signatures` above is keyed by a STRING both passes must independently derive,
+   * and that is the whole defect this map removes. See `readSignature` /
+   * `processTypeSignature`: the declaration pass reads an instance member's
+   * signature under the MODULE owner (`|::cmp`) because it does not know the
+   * instance's target, while the emitting pass asks under the INSTANCE owner
+   * (`|[a]::cmp`), so the lookup missed and `applySignature` never ran. An
+   * identity both passes can read off the node itself cannot disagree.
+   */
+  signaturesByNode: Map<number, SignatureInfo>
   /** Lexical local identity (see LocalScopes). */
   localScopes: LocalScopes
   /** Module aliases from `import … as X`, so a `constructor X` in a type
@@ -488,6 +500,7 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
       declaredFunctions: new Set(),
       functionSymbolIndex: Object.create(null),
       signatures: new Map(),
+      signaturesByNode: new Map(),
       localScopes: { callableScoped: new Map(), blockLocals: new Map(), frameLocals: new Map() },
       importAliases: new Set(),
       declaredTypeNames: new Set(),
@@ -1200,7 +1213,23 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (name) {
             ctx.declaredFunctions.add(name)
             const key = declarationKey(frame, owner, name)
-            if (!ctx.signatures.has(key)) ctx.signatures.set(key, this.readSignature(n, ctx))
+            // Read ONCE PER NODE. `readSignature` has side effects on the context
+            // (`addTypeMention`, `ctx.patterns`), so it is never called twice for
+            // one node — but it IS called once per node even where two nodes share
+            // a KEY, because a colliding key is the failure this index exists to
+            // survive: three `cmp` members in three instances of one class all
+            // derive `|::cmp`, and reading the first one's info for the other two
+            // gave one member three signatures and two members none.
+            let info = ctx.signaturesByNode.get(n.id)
+            if (!info) {
+              info = this.readSignature(n, ctx)
+              ctx.signaturesByNode.set(n.id, info)
+              // `ctx.signatures` keeps its old contract — first signature per key
+              // wins — so `joinParameters`, which is handed a definition node and
+              // not the signature and can only ask by key, resolves what it did
+              // before this map existed.
+              if (!ctx.signatures.has(key)) ctx.signatures.set(key, info)
+            }
           }
           break
         }
@@ -2509,9 +2538,17 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
     const isMember =
       currentScope?.kind === ASTEngine.SymbolKind.Interface || currentScope?.kind === ASTEngine.SymbolKind.Class
     const key = declarationKey(ctx.currentFrame, this.ownerIdentity(currentScope, ctx), name)
-    const info = ctx.signatures.get(key)
+    // The NODE identity first, the derived key second. The key is what `joinParameters`
+    // still has to use — it is handed a definition node, not the signature — and the
+    // node is what the emitter can trust, because the two passes do not always derive
+    // the same key for the same signature. Measured: an instance member's signature is
+    // stored under the module owner and asked for under the instance's target
+    // (`|::cmp` vs `|[a]::cmp`), so 13 class_context sites in the 312-file corpus were
+    // read and then thrown away.
+    const info = ctx.signaturesByNode.get(node.id) ?? ctx.signatures.get(key)
     const existingIdx = ctx.functionSymbolIndex[key]
     if (existingIdx !== undefined) {
+      if (process.env.BB_CLEAN_DIAG) process.stderr.write(`DIAG apply L${this.lineOf(node)} sym=${ctx.symbols[existingIdx].name} key=${key} merge info=${info ? "Y" : "N"}\n`)
       // A repeated signature is ONE entity: the first occurrence wins and the
       // second's type information is merged in, so a `.dcl` that declares `f :: T`
       // twice does not publish two symbols.
@@ -2542,7 +2579,10 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
     this.attachComments(sym, node)
     ctx.symbols.push(sym)
     ctx.functionSymbolIndex[key] = ctx.symbols.length - 1
-    if (info) this.applySignature(sym, info, ctx, isLocal)
+    if (info) {
+      if (process.env.BB_CLEAN_DIAG) process.stderr.write(`DIAG apply L${this.lineOf(info.node)} sym=${sym.name} key=${key} fresh\n`)
+      this.applySignature(sym, info, ctx, isLocal)
+    }
   }
 
   /** Copy a `SignatureInfo` onto the symbol it declares, and emit its edges. */
