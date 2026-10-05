@@ -798,6 +798,33 @@ run reported 143 names "declared but not published", every one a
 `@name` and `requiresOptIn` ≠ `@requiresOptIn` to a string comparison. **143 is
 exactly what a `@` in a name is worth.**
 
+### Two counters that read 0 for the wrong reason, and what they actually say
+
+Both were written by this lane to answer a real question and both were wrong in a
+way that produced a clean number rather than an error. Recorded because a probe
+that cannot fail is not a probe.
+
+**`unknown` endpoints: 3, and all 3 are real field names.** The counter tallies
+relationship endpoints equal to the literal `unknown`, and 3 `uses` edges carry
+it. All 3 are in HotChocolate adapter fixtures whose document literally declares a
+field called `unknown` — `$unknown: Unknown! = "default"` and a selection
+`unknown` inside `withDefaultedVariables { … }` in
+`GetWithDefaultedVariables.graphql`, `GetWithNonNullableVariables.graphql` and
+`GetWithNullableVariables.graphql`. The edge is
+`anonymous_operation_1782 -> unknown`, `relationshipRole: field_selection`. So
+the target is the document's own spelling, the counter cannot tell it from a
+placeholder, and **3 is the number of GraphQL fields named `unknown` in the
+admitted corpus, not a defect count.** An `unknown`-placeholder gate cannot exist
+for this language without first checking whether the source wrote `unknown`.
+
+**Every relationship carries a line: 156,763 of 156,763.** The first version of
+this probe reported **100% line-less**, which is the most alarming number in this
+document and was entirely the probe's fault. The field is `line_number`; the
+probe read `rel.line ?? rel.startLine`, both absent on the relationship shape
+(`source, target, type, confidence, line_number, metadata`), so every edge looked
+unlined. Re-run against `line_number`: **0 edges at line 0**, across all 7 emitted
+types and 19 roles.
+
 ## Robustness: degenerate input and pathological depth
 
 Every other gate in this lane feeds the analyzer well-formed, shallow, ASCII
