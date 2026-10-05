@@ -121,7 +121,7 @@ const PLANTS: Planted[] = [
     // OVER-claim direction (rendered > known); nothing guards the UNDER-claim
     // direction — the index holds a row, the hover silently renders nothing,
     // and the gate reports itself verified.
-    expectFailedCheck: "a check asserting every stored relationship kind reaches the card or is declared absent",
+    expectFailedCheck: "D1: every stored relationship kind is rendered with a verb or DECLARED absent with a reason",
     clause: "§14 rule 1 (one surface, one answer); the audit's own question — index knows X, hover renders Y",
   },
   {
@@ -139,7 +139,7 @@ const PLANTS: Planted[] = [
     // usages` headline line — and counts list rows with /^\d+\. \[/. It never
     // compares the two against each other, and never parses the usages SECTION
     // header (`**usages** — N stored references`) at all.
-    expectFailedCheck: "a check asserting the usages-section header number equals the rows beneath it",
+    expectFailedCheck: "D2: every section header's stated count equals the rows beneath it",
     clause: "§13.4 (counts equal what is rendered); §14 rule 1",
   },
   {
@@ -155,7 +155,7 @@ const PLANTS: Planted[] = [
       '  return "structural"',
     // NO CHECK IN THE GATE OWNS THIS DEFECT CLASS. No check anywhere in the gate
     // compares a rendered evidence tier against the tier the index stored.
-    expectFailedCheck: "a check asserting each rendered evidence tier is one the index stored",
+    expectFailedCheck: "D3: every evidence tier the card renders is justified by a stored relationship row",
     clause: "§12.3 (enrichment/inference never at parser-fact tier); §14 rule 3",
   },
 ]
@@ -197,16 +197,104 @@ function runGate(extraEnv: Record<string, string> = {}): RunResult {
   return { exit: r.status ?? -1, stdout, crashed, failedChecks, verdict: vm?.[1] ?? "none" }
 }
 
-/** Restore a file byte-for-byte from git and PROVE it. */
-function restore(rel: string): { ok: boolean; detail: string } {
+/** Restore a file byte-for-byte from git and PROVE it.
+ *
+ *  THE ORIGINAL VERSION OF THIS FUNCTION WAS A DATA-LOSS BUG, and it is
+ *  recorded here because the fix is the lesson:
+ *
+ *  it restored from `git show HEAD:<file>` and PROVED the restore by comparing
+ *  the result to that same HEAD content. On a tree whose file differs from HEAD —
+ *  that is, on ANY worktree with uncommitted work in the file being mutated —
+ *  that is not a restore. It is an overwrite of the operator's uncommitted work
+ *  with the last commit, and the "proof" then confirms the destruction. Running
+ *  this harness against a work-in-progress change destroyed the uncommitted
+ *  edits to src/lsp/rich_hover.ts and src/lsp/relations.ts, which is how a
+ *  mutation harness became the most destructive thing in the lane.
+ *
+ *  Two independent causes, both fixed here:
+ *
+ *    1. THE TARGET MUST BE CLEAN BEFORE A MUTATION. A harness that edits a file
+ *       the operator has uncommitted changes to cannot promise to put it back,
+ *       because it has no copy of the operator's bytes to put back. So this
+ *       harness now REFUSES to run against a dirty target and says so, instead
+ *       of quietly reverting the operator's work.
+ *    2. WHEN IT DOES MUTATE, IT RESTORES THE BYTES IT READ — not HEAD's. The
+ *       pre-mutation content is captured per file and written back verbatim,
+ *       which is the only restore that is correct for a file the harness is
+ *       allowed to touch at all.
+ *
+ *  A harness that can destroy the tree it is measuring is a harness whose green
+ *  verdict means nothing: the run that reported "3/12" also deleted the change
+ *  under test. */
+const restoreLog: Array<{ file: string; ok: boolean; detail: string }> = []
+
+/** The working-tree state of every file this harness intends to mutate. */
+function dirtyTargets(): string[] {
+  const files = [...new Set(PLANTS.map((p) => p.file)), "src/lsp/relations.ts"]
+  const out: string[] = []
+  for (const rel of files) {
+    const st = execFileSync("git", ["status", "--porcelain", "--", rel], { cwd: ROOT, encoding: "utf8" }).trim()
+    if (st.length > 0) out.push(rel)
+  }
+  return out
+}
+
+const dirty = dirtyTargets()
+/** Every mutation target's content at the START of this process, for H5. Taken
+ *  before a single write, so "did anything survive me?" has a reference that
+ *  cannot itself have drifted. */
+const preRunBytes = new Map<string, string>(
+  [...new Set(PLANTS.map((p) => p.file))].map((rel) => [rel, readFileSync(path.join(ROOT, rel), "utf8")]),
+)
+check(
+  "H0: every file this harness mutates is CLEAN in the working tree (an un-mutation harness that restores from HEAD destroys uncommitted work — this harness refused to run on a dirty target)",
+  dirty.length === 0,
+  dirty.length === 0
+    ? ""
+    : `these targets have uncommitted changes: ${dirty.join(", ")} — commit or stash them, then run this harness`,
+)
+if (dirty.length > 0) {
+  // Refuse to mutate. Writing the evidence and exiting non-zero is the honest
+  // outcome; carrying on would be the destructive one.
+  console.log("\nREFUSING TO RUN: a mutation target is dirty. No file was modified.")
+  const refused = {
+    issue: "M55.HOV-REDTEAM",
+    code: "HOV-REDTEAM",
+    milestone: "M55",
+    status: "known-gap",
+    checks,
+    passed,
+    failed: checks - passed,
+    realFailed: checks - passed,
+    negativeCases: 0,
+    plants: PLANTS.map((p) => ({ id: p.id, file: p.file, defect: p.defect, clause: p.clause, expectedFailedCheck: p.expectFailedCheck })),
+    currentCommit: execFileSync("git", ["rev-parse", "HEAD"], { cwd: ROOT, encoding: "utf8" }).trim(),
+    verifierCommand: "npx tsx script/m55/verify-hover-coverage-redteam.ts",
+    evidenceFile: "HOV-REDTEAM.json",
+    generatedAt: new Date().toISOString(),
+    refused: { reason: "dirty mutation target", files: dirty },
+    failures,
+    limitations: [
+      "This run measured nothing: it refused to mutate a dirty target, so its verdict is `known-gap` for the refusal, not for any defect class.",
+      "A mutation harness that restores from git HEAD DESTROYS uncommitted work in the file it mutates, and its byte-comparison 'proof' confirms the destruction rather than detecting it. The fix is the H0 guard plus a restore that writes back the bytes the harness read.",
+    ],
+  }
+  try {
+    writeSealed(EVIDENCE, refused)
+  } catch {}
+  console.log(`\nHOV-REDTEAM RESULT: REFUSED — dirty mutation target(s): ${dirty.join(", ")}`)
+  process.exit(1)
+}
+
+/** Restore a file to the EXACT bytes this harness read before mutating it. */
+function restore(rel: string, preMutationBytes: string): { ok: boolean; detail: string } {
   const abs = path.join(ROOT, rel)
   try {
-    const committed = execFileSync("git", ["show", `HEAD:${rel}`], { cwd: ROOT, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 })
-    writeFileSync(abs, committed)
+    writeFileSync(abs, preMutationBytes)
     const now = readFileSync(abs, "utf8")
-    return now === committed
-      ? { ok: true, detail: "byte-identical to HEAD" }
-      : { ok: false, detail: `post-restore content differs from HEAD (${now.length} vs ${committed.length} bytes)` }
+    return now === preMutationBytes
+      ? { ok: true, detail: "byte-identical to the pre-mutation bytes this harness read" }
+      : { ok: false, detail: `post-restore content differs from the pre-mutation bytes (${now.length} vs ${preMutationBytes.length})` }
   } catch (e) {
     return { ok: false, detail: `restore threw: ${String(e).slice(0, 160)}` }
   }
@@ -269,7 +357,7 @@ for (const plant of PLANTS) {
   try {
     res = runGate()
   } finally {
-    restores.push({ file: plant.file, ...restore(plant.file) })
+    restores.push({ file: plant.file, ...restore(plant.file, original) })
   }
   // Set difference, never the exit code. See the H2 note above.
   //
@@ -323,7 +411,7 @@ console.log("\nH1: a mutant that breaks the module must be classified as a CRASH
   try {
     res = runGate()
   } finally {
-    restores.push({ file: rel, ...restore(rel) })
+    restores.push({ file: rel, ...restore(rel, original) })
   }
   check(
     "H1: a mutant that removes a required export is reported as a CRASH, and this harness does not count it as a functional catch",
@@ -355,6 +443,74 @@ for (const r of restores) {
   )
   const scratch = spawnSync("sh", ["-c", `find "${tmpdir()}" -maxdepth 1 -type d -name 'bblsp-*redteam*' 2>/dev/null`], { encoding: "utf8" })
   check("H3: no scratch directory left in the OS temp dir", (scratch.stdout ?? "").trim() === "", (scratch.stdout ?? "").trim())
+}
+
+// --- H4: the CLASS gate — a mutant whose ANCHOR text is ABSENT never ran -----
+// This is the whole harness's blind spot in one check. Every plant is a textual
+// substitution, so a plant whose `from` string is not present in the target has
+// not run anything. The harness records that per plant as a failing check, but a
+// per-plant line is easy to read as "one plant was skipped" and easy to skip past
+// in a long log. This asserts the CLASS: no anchor may be absent.
+//
+// It exists because the failure is silent in the worst way. The D1 anchor drifted
+// from its plant text during this lane, the suite printed "SKIP — anchor not
+// found", and the mutant was scored as though a DIFFERENT check had caught it. An
+// absent anchor is not a pass, not a skip, and not a defect-detected; it is a hole
+// in the harness, and the only honest report of a hole is a red gate.
+const mutationTargets = [...new Set(PLANTS.map((p) => p.file))]
+{
+  const absent = PLANTS.filter((p) => !readFileSync(path.join(ROOT, p.file), "utf8").includes(p.from))
+  check(
+    `H4/CLASS: every planted mutant's ANCHOR TEXT IS PRESENT in its target file (an absent anchor means the mutant never ran, so its class is UNTESTED — ${PLANTS.length} plants over ${mutationTargets.length} files)`,
+    absent.length === 0,
+    absent.length === 0
+      ? `all ${PLANTS.length} anchors found: ${PLANTS.map((p) => `${p.id}@${p.file}`).join(", ")}`
+      : `ANCHOR ABSENT for ${absent.map((p) => `${p.id} in ${p.file}: ${JSON.stringify(p.from.slice(0, 80))}`).join(" | ")} — these mutants did not run`,
+  )
+  // The half-anchor case: a plant's first line matching while its full multi-line
+  // text does not. `String.replace` would then apply to nothing, the mutated text
+  // equals the original, and the run reports a mutation that changed nothing as
+  // a clean catch.
+  const drifted = PLANTS.filter((p) => {
+    const src = readFileSync(path.join(ROOT, p.file), "utf8")
+    const firstLine = p.from.split("\n")[0]!
+    return src.includes(firstLine) && !src.includes(p.from)
+  })
+  check(
+    "H4/DRIFT: no anchor's first line is present while its full multi-line text is absent (a half-anchored substitution changes nothing and is scored as a clean catch)",
+    drifted.length === 0,
+    drifted.map((p) => `${p.id}: first line matches, full text does not`).join(" | "),
+  )
+}
+
+// --- H5: NO MUTATION MAY SURVIVE THIS PROCESS ------------------------------
+// The per-file restores above each check their own file. This asserts the
+// stronger property, over the whole set at once: every mutation target is
+// byte-identical to what it was when this process STARTED.
+//
+// It is here because of a real leak during this lane. The D1 mutation
+// (DECLARATION_RELATIONSHIPS gaining "uses") was present in the working tree at
+// the end of the lane and survived a commit; it turned m55 T3 from 51/57 to
+// 50/57 by making one of T3's own mutants report "SKIP — anchor not found",
+// which reads like a passing suite with a skipped leg and is neither. Nothing
+// noticed, because the restore checks and the working-tree diff were never
+// compared against EACH OTHER — each was individually satisfied.
+//
+// A harness that leaves a mutation behind does not merely risk a wrong verdict.
+// It makes the next run's numbers an artifact of this one.
+{
+  const leaked: string[] = []
+  for (const rel of mutationTargets) {
+    const now = readFileSync(path.join(ROOT, rel), "utf8")
+    if (preRunBytes.get(rel) !== undefined && now !== preRunBytes.get(rel)) leaked.push(rel)
+  }
+  check(
+    "H5/LEAK: every mutation target is byte-identical to its content at the START of this process (a mutation left behind makes the next run's numbers an artifact of this one)",
+    leaked.length === 0,
+    leaked.length === 0
+      ? `no leaked mutation across ${mutationTargets.join(", ")}`
+      : `LEAKED MUTATION in: ${leaked.join(", ")} — run \`git diff\` on those files before trusting any run after this one`,
+  )
 }
 
 // --- evidence -------------------------------------------------------------------------
