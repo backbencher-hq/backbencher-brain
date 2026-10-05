@@ -970,13 +970,57 @@ So: 307 hits, **0 of which is an implementation clause**. A Wayland `<interface>
 paragraph of documentation. A non-zero count of an element carrying an
 implementation clause — not a declaration of one — overturns the ruling.
 
-**Second finding from the same 261 sites, owed and not fixed here:** the Wayland
-protocol vocabulary is not in `DECLARATION_VOCABULARIES`, so 261 interface
-declarations are published under their tag name rather than the `name` attribute
-they carry. That is the declared-name recall gap X1 fixed for XSD, in a vocabulary
-nobody had listed. It is a recall gap, not a correctness one, and adding the
-vocabulary is a change to a shared table with 261 corpus sites of blast radius —
-recorded as owed rather than done in passing.
+**Second finding from the same 261 sites, owed, and the reason it was owed was WRONG.**
+This paragraph previously said the Wayland protocol vocabulary is missing from
+`DECLARATION_VOCABULARIES` and that adding it "is a change to a shared table with 261
+corpus sites of blast radius". **The table is not shared.** It is
+`RealXmlAnalyzer.DECLARATION_VOCABULARIES`, a `private static readonly` in
+`src/ast/real-xml-analyzer.ts:146` — this lane's own file. So the item was never blocked
+by ownership, and "shared table" was a reason that did not exist. It is refused now for a
+reason that does, measured by
+`validation/m14/fixtures/xml/wayland-vocabulary-blast-radius.mts`.
+
+**The real obstacle is that the vocabulary is namespace-less and the table is
+namespace-keyed.** The Wayland protocol files are `<protocol name="…">` with no `xmlns`,
+so an entry for them can only be keyed by the empty namespace — and every local name in it
+would then be claimed in **every** namespace-less document. Measured on the whole corpus,
+11,611 xml-admitted files by extension of which 11,552 were read (15 over 512 KB, 44
+unreadable — and 11,611 − 15 − 44 = 11,552 is exactly the arbiter's admitted count, so this
+probe reproduces the gate's population rather than approximating it):
+
+| local name | sites in namespace-less files | files | what those files actually are |
+| --- | ---: | ---: | --- |
+| `entry` | 3,154 | 21 | a docsets file, DocBook DTD-driven tables |
+| `arg` | 991 | 10 | Maven POMs (`clojure/build.xml`, a dbeaver `pom.xml`), libxslt API prose |
+| `property` | 678 | 67 | dbeaver plugin descriptors |
+| `interface` | 308 | 5 | **1 Wayland file and 4 DocBook prose documents** |
+| `description` | 213 | 45 | Writerside rules, FSharp.Data test data, ansible comps |
+| `enum` | 77 | 2 | 1 Wayland, 1 libxslt API doc |
+| `copyright` | 56 | 40 | Eclipse feature manifests |
+| `event` | 41 | 2 | 1 Wayland, 1 dbeaver plugin descriptor |
+| `request` | 4 | 2 | 1 Wayland, 1 phpunit fixture |
+| `protocol` | 1 | 1 | Wayland |
+
+**A namespace-less entry claims 5,523 sites across 195 files to recover 261 declarations in
+2 — an over-claim of 21×, and the over-claim is not near-miss noise.** Four of the five
+files claiming `<interface>` are DocBook documents where the element is prose structure;
+`<entry>`'s 21 files include an Alamofire docsets file and DocBook `tblcals.xml` /
+`tblxchg.xml`. Declaring those sites would publish wrong names at 21× the size of the
+defect it repairs, which is the fabrication class this lane treats as its most expensive
+available mistake.
+
+**What would overturn this refusal**, so it is a falsifiable claim and not a preference: a
+measurement showing a namespace-less vocabulary can be scoped to a *file* rather than to
+the empty namespace — i.e. that the effective namespace a document presents to
+`DECLARATION_VOCABULARIES` can carry the document's own identity, which is §8 item 9's
+file-scoped identity arriving at the analyzer rather than only at the store. A root element
+with a `name` attribute and no `xmlns` is a *heuristic* discriminator, not an identity, and
+`libxslt/tests/docbook/test/book2.xml` satisfies it as well as the Wayland file does, which
+is why it is not used here.
+
+**Left owed, at 261 declarations in 2 files of 11,552** — 0.002 % of the admitted
+population and 261 of 201,634 edges. It is stated here rather than in §8 because the
+obstruction is in this lane's file and the number is small enough to name exactly.
 
 #### `overrides` — was RULED, the corpus overturned it, and the type is EMITTED
 
