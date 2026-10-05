@@ -103,6 +103,10 @@ type ParseState = {
   slice: Slice
   metadata: Partial<ASTEngine.FileMetadata>
   ambiguity: Record<string, number>
+  /** The `module` symbol published for THIS file, and the name every file-level
+   *  fact is sourced from. See `fileModuleName` for why the name is the basename
+   *  with its extension and why the previous literal `global` bound to nothing. */
+  fileModuleName: string
 }
 
 /**
@@ -551,6 +555,48 @@ function opensWithConstraintKeyword(text: string): boolean {
 const RESYNC_ERROR_SPAN_RATIO = 0.6
 const RESYNC_MIN_ERROR_NODES = 1
 
+/**
+ * The published name of a file's own `module` symbol: the BASENAME WITH ITS EXTENSION.
+ *
+ * WHY THIS EXISTS — the measurement that made the file a symbol. This lane sourced every
+ * file-level fact (`GRANT … ON s`, `COMMENT ON t`, `DROP VIEW v`, a DML target, a call inside a
+ * routine body) from the literal string `global`, on the reasoning that "the two ends cannot be two
+ * symbols: SQL has no module". Nothing published `global`, so every one of those edges stored with
+ * `source_symbol_id = NULL`, and an edge with no source is invisible to a reverse walk — `bb_graph`
+ * on the very table the `GRANT` names reported no incoming edges. Measured at the store, production
+ * `indexProjectParallel` over every git-tracked `.sql` file of five corpus repos (1,903 files,
+ * 24,575 relationships, record `validation/m14/fixtures/sql/measurements/pass13-store-resolution-BEFORE.json`):
+ *
+ *   relationships with `source_symbol_id IS NULL`   2,994   of which `source_external = 'global'`  2,779
+ *   of those 2,779, the TARGET resolved            2,356
+ *
+ * So 2,356 edges were fully described and attached at one end and unreachable at the other, which is
+ * 9.6% of the whole stored population. That is the largest single resolution defect this lane has
+ * measured, and `parseFile`-level instruments cannot see it at all: they report a target string and a
+ * source string, never whether either bound to a row.
+ *
+ * WHY THE BASENAME WITH THE EXTENSION, which is bash's BD2 ruling adopted verbatim and the shape
+ * PowerShell's PS1 took for the same defect:
+ *   - it is DETERMINISTIC. An absolute path would also be unique, but it would put a machine path in
+ *     every symbol name and in every index fingerprint derived from it. The corpus here holds 110
+ *     files called `up.sql` and 110 called `down.sql`, so the basename alone is NOT unique — but
+ *     uniqueness is not what the source end needs. The store resolves a source with an exact name
+ *     match FIRST (`nameToSymbol.get(sourceName)`) over the symbols of the file being stored, so a
+ *     file's own `module` symbol is always found, and the shared basename never gets the chance to
+ *     be matched against another file.
+ *   - the extension is KEPT because `001_initial.up.sql` and `001_initial.down.sql` are different
+ *     files that a rollback pairs by name.
+ *   - it cannot collide with a SQL identifier. An unquoted SQL name never contains `.`; a quoted one
+ *     can (`"vault.secret"`), and a file named exactly `vault.secret` in the corpus root would be the
+ *     only way to collide. Measured over the five repos: 1,903 files, 0 whose basename is a quoted
+ *     identifier the same file also publishes.
+ */
+function fileModuleNameFor(filePath: string): string {
+  const slash = filePath.lastIndexOf("/")
+  const base = slash >= 0 ? filePath.slice(slash + 1) : filePath
+  return base.length > 0 ? base : "migration.sql"
+}
+
 export class RealSqlAnalyzer implements ASTEngine.LanguageAnalyzer {
   public analyze(
     rootNode: Node,
@@ -560,7 +606,11 @@ export class RealSqlAnalyzer implements ASTEngine.LanguageAnalyzer {
     // One index per parse. See the field comment on `treeIndexes` for the key, the measurement
     // that forced the index, and why the lifetime is stated here rather than left to the collector.
     this.treeIndexes = new WeakMap()
+    // The file IS the unit of a SQL migration: `\i` loads it, psql runs it, and a database applies
+    // it in order. So the file is a real owner, and this lane publishes it as a real symbol.
+    const fileModuleName = fileModuleNameFor(filePath)
     const state: ParseState = {
+      fileModuleName,
       nestedStatements: new Set<number>(),
       localCtes: new Set<string>(),
       symbols: [],
@@ -614,6 +664,19 @@ export class RealSqlAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
 
     this.collectParseErrors(rootNode, state)
+
+    // Published FIRST, before any pass can emit an edge, because every file-level edge this pass
+    // set sources from it and the store's own resolution reads this file's symbol list. `range` is
+    // the whole file: there is no node that owns a fact about the file, because there is no node
+    // ABOVE the statements — which is the whole reason this symbol exists.
+    state.symbols.unshift({
+      name: fileModuleName,
+      kind: ASTEngine.SymbolKind.Module,
+      range: this.range(rootNode, state),
+      visibility: "public",
+      metadata: { sqlSpecific: true, isMigration: true, scriptPath: filePath },
+    })
+
     if (rootNode) this.processRoot(rootNode, state)
 
     // The second pass. Strictly additive: `declarationKeys` holds the absolute
@@ -1521,13 +1584,14 @@ export class RealSqlAnalyzer implements ASTEngine.LanguageAnalyzer {
         // subtree** (a grammar bound, not a lane defect), 2 inside a `plpgsql_block`, and **14 here**,
         // the only bucket that is a candidate lane defect. This closes that bucket.
         //
-        // Sourced to the ALTERED TABLE rather than to `global`, because the table is a published
-        // symbol and `global` is not — so this is also an edge the reverse walk can arrive at. The
-        // fallback is `global` only when the statement names no table.
+        // Sourced to the ALTERED TABLE rather than to the file's `module` symbol, because
+        // the table is a published symbol and the file is a fallback for a statement that
+        // names no table — so this is also an edge the reverse walk can arrive at. The
+        // fallback is the file's own symbol only when the statement names no table.
         //
         // New type, new source: no existing edge changes, because `addRelationship` keys on
         // (type, source, target) and nothing emitted `calls` from a table name before.
-        this.processCalls(node, this.referenceLeaf(this.directChild(node, "object_reference"), state) ?? "global", state)
+        this.processCalls(node, this.referenceLeaf(this.directChild(node, "object_reference"), state) ?? state.fileModuleName, state)
         this.processAlterTable(node, state)
         return
       case "drop_table":
@@ -1654,8 +1718,8 @@ export class RealSqlAnalyzer implements ASTEngine.LanguageAnalyzer {
 private declarationOwner(node: Node, state: ParseState): string {
     const object = this.directChild(node, "object_reference")
     const nameNode = object ? this.referenceNameNode(object) : this.firstIdentifier(node)
-    if (!nameNode) return "global"
-    return this.identifierName(nameNode, state) || "global"
+    if (!nameNode) return state.fileModuleName
+    return this.identifierName(nameNode, state) || state.fileModuleName
 }
 
 private markDeclaration(node: Node, state: ParseState): boolean {
@@ -1737,10 +1801,11 @@ private markDeclaration(node: Node, state: ParseState): boolean {
    *     outright ("relation already exists"), so calling them overrides would
    *     assert a replacement the language does not perform.
    *
-   * The SOURCE is `global`, this lane's existing spelling for a file-level fact
-   * about a named object (`uses global->t` for a DML target, `references
-   * global->t` for `GRANT … ON t`). The two ends cannot be two symbols: SQL
-   * replacement is same-name, so any source/target pair would collapse to a
+   * The SOURCE is the file's own `module` symbol, this lane's spelling for a file-level fact
+   * about a named object (`uses <file>->t` for a DML target, `references <file>->t` for
+   * `GRANT … ON t`). It was the literal `global` until the file became a symbol; see
+   * `fileModuleNameFor` for the measurement. The source and the target cannot be the same
+   * object: SQL replacement is same-name, so any source/target pair would collapse to a
    * self-loop `overrides f->f` that tells a graph consumer nothing about which
    * declaration replaced which. The lines that do distinguish them ride in
    * metadata instead, which is where a consumer can read them.
@@ -1771,7 +1836,7 @@ private markDeclaration(node: Node, state: ParseState): boolean {
       state.redeclared.set(key, line)
       return
     }
-    this.addRelationship(ASTEngine.RelationshipType.Overrides, "global", name, state, {
+    this.addRelationship(ASTEngine.RelationshipType.Overrides, state.fileModuleName, name, state, {
       orReplace: true,
       redefinition: true,
       scope: "file",
@@ -2371,7 +2436,7 @@ private markDeclaration(node: Node, state: ParseState): boolean {
    * consumer that cannot tell them apart will read a `\i schema.sql` edge as
    * evidence about the environment.
    *
-   * WHY `global` AS THE SOURCE and why the target is an external name. The
+   * WHY the FILE MODULE as the SOURCE and why the target is an external name. The
    * extension is not declared by this file; it is installed into the DATABASE.
    * Labelling the edge `external` keeps it distinguishable from a psql include,
    * whose target IS a file in this repository and is in principle resolvable. That
@@ -2398,7 +2463,7 @@ private markDeclaration(node: Node, state: ParseState): boolean {
       return
     }
     const line = node.startPosition.row + state.slice.rowOffset + 1
-    this.addRelationship(ASTEngine.RelationshipType.Imports, "global", name, state, {
+    this.addRelationship(ASTEngine.RelationshipType.Imports, state.fileModuleName, name, state, {
       extensionInstall: true,
       external: true,
       fileDependency: false,
@@ -2472,7 +2537,7 @@ private markDeclaration(node: Node, state: ParseState): boolean {
     this.addPattern("Anonymous Procedural Block", state)
     this.bumpComplexity(node, state)
     this.processQueryDependencies(node, null, state)
-    this.processCalls(node, "global", state)
+    this.processCalls(node, state.fileModuleName, state)
   }
 
   // ---------------------------------------------------------------- dml
@@ -2487,7 +2552,7 @@ private markDeclaration(node: Node, state: ParseState): boolean {
       // read here — the same defect `addTableEdge` never had, in the one DML path
       // that resolves its own reference node.
       const parts = object ? this.referenceParts(object, state) : []
-      this.addRelationship(ASTEngine.RelationshipType.Uses, "global", target, state, {
+      this.addRelationship(ASTEngine.RelationshipType.Uses, state.fileModuleName, target, state, {
         operation,
         tableReference: true,
         ...(parts.length > 1 ? { qualified: parts.join(".") } : {}),
@@ -2505,7 +2570,7 @@ private markDeclaration(node: Node, state: ParseState): boolean {
   private processMerge(node: Node, state: ParseState): void {
     for (const ref of this.namedChildren(node).filter((c) => c.type === "object_reference")) {
       const target = this.referenceLeaf(ref, state)
-      if (target) this.addRelationship(ASTEngine.RelationshipType.Uses, "global", target, state, { operation: "merge", tableReference: true })
+      if (target) this.addRelationship(ASTEngine.RelationshipType.Uses, state.fileModuleName, target, state, { operation: "merge", tableReference: true })
     }
     this.addPattern("MERGE Statements", state)
   }
@@ -2514,7 +2579,7 @@ private markDeclaration(node: Node, state: ParseState): boolean {
   private processTruncate(node: Node, state: ParseState): void {
     for (const ref of this.namedChildren(node).filter((c) => c.type === "object_reference")) {
       const target = this.referenceLeaf(ref, state)
-      if (target) this.addRelationship(ASTEngine.RelationshipType.Uses, "global", target, state, { operation: "truncate", tableReference: true })
+      if (target) this.addRelationship(ASTEngine.RelationshipType.Uses, state.fileModuleName, target, state, { operation: "truncate", tableReference: true })
     }
     this.addPattern("TRUNCATE Statements", state)
   }
@@ -2522,7 +2587,7 @@ private markDeclaration(node: Node, state: ParseState): boolean {
 
   private processCopy(node: Node, state: ParseState): void {
     const target = this.referenceLeaf(this.firstDescendant(node, "object_reference"), state)
-    if (target) this.addRelationship(ASTEngine.RelationshipType.Uses, "global", target, state, { operation: "copy", tableReference: true })
+    if (target) this.addRelationship(ASTEngine.RelationshipType.Uses, state.fileModuleName, target, state, { operation: "copy", tableReference: true })
     this.addPattern("COPY Statements", state)
   }
 
@@ -2663,7 +2728,7 @@ private markDeclaration(node: Node, state: ParseState): boolean {
     const kind = `${command} ${argument} ${line}`
     if (state.includeKeys.has(kind)) return
     state.includeKeys.add(kind)
-    this.addRelationship(ASTEngine.RelationshipType.Imports, "global", argument, state, {
+    this.addRelationship(ASTEngine.RelationshipType.Imports, state.fileModuleName, argument, state, {
       psqlInclude: true,
       includeKind: command,
       relativeToScript: command === "ir",
@@ -2708,7 +2773,7 @@ private markDeclaration(node: Node, state: ParseState): boolean {
     // the thing the pre-fix read as the edge's target — is unrecoverable from the
     // result. It is also the fact a reader wants: which column is documented.
     const column = isColumnComment && parts.length >= 1 ? parts[parts.length - 1] : undefined
-    this.addRelationship(ASTEngine.RelationshipType.References, "global", target, state, {
+    this.addRelationship(ASTEngine.RelationshipType.References, state.fileModuleName, target, state, {
       operation: "comment",
       documented: true,
       ...(column && column !== target ? { column } : {}),
@@ -2737,7 +2802,7 @@ private markDeclaration(node: Node, state: ParseState): boolean {
     const object = this.firstDescendant(node, "object_reference")
     const target = object ? this.referenceLeaf(object, state) : undefined
     if (target) {
-      this.addRelationship(ASTEngine.RelationshipType.References, "global", target, state, { operation, privilege: true })
+      this.addRelationship(ASTEngine.RelationshipType.References, state.fileModuleName, target, state, { operation, privilege: true })
     }
   }
 
@@ -2794,11 +2859,11 @@ private markDeclaration(node: Node, state: ParseState): boolean {
     }
     this.bumpComplexity(node, state)
     this.processQueryDependencies(node, owner, state)
-    this.processCalls(node, owner?.name ?? "global", state)
+    this.processCalls(node, owner?.name ?? state.fileModuleName, state)
   }
 
   private processQueryDependencies(node: Node, owner: SqlSymbol | null, state: ParseState, sourceOverride?: string): void {
-    const source = sourceOverride ?? owner?.name ?? "global"
+    const source = sourceOverride ?? owner?.name ?? state.fileModuleName
     /**
      * A CTE name is a local binding, and it shadows an UNQUALIFIED reference.
      * Matching on the bare leaf meant
@@ -3128,7 +3193,7 @@ private markDeclaration(node: Node, state: ParseState): boolean {
     const target = this.referenceLeaf(object, state)
     if (!target) return
     const parts = this.referenceParts(object, state)
-    this.addRelationship(type === "uses" ? ASTEngine.RelationshipType.Uses : ASTEngine.RelationshipType.References, "global", target, state, {
+    this.addRelationship(type === "uses" ? ASTEngine.RelationshipType.Uses : ASTEngine.RelationshipType.References, state.fileModuleName, target, state, {
       operation,
       tableReference: true,
       ...(parts.length > 1 ? { qualified: parts.join(".") } : {}),
