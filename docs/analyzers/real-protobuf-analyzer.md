@@ -5925,3 +5925,251 @@ would be reported instead of silently measured on bash.
   are remotely parseable as bash — 736 of 847 trees carry `ERROR`.
 - **Nothing outside protobuf was measured**, and the 64 bash-only node types are bash's
   vocabulary, so the generalisation to other unregistered lanes is not measured here.
+
+---
+
+# PASS 22 — the cause-B recipe is worth 0 edges here, and the §8 price beside it was 80x low
+
+The round brief's highest-value item is cause B: find edges whose target string does not
+equal a published `name`, make the target equal the published name, re-measure. The
+recipe is proven on `graphql` (6,451 → 1,016 unresolved) and the brief says apply it to
+this lane. Two probes, both on production `parseFile` over the shared tool's own
+population, and neither of them is a code change.
+
+```
+npx tsx script/m14/protobuf-cause-b-keying.mts 842
+npx tsx script/m14/protobuf-unresolved-closure-price.mts 842
+```
+
+## 1. What the shared instrument reports for this lane
+
+`script/m14/diagnose-incoming.mts protobuf proto 80`, the brief's own command, unmodified:
+
+```
+files walked 80 (parsed 80, failed 0)
+published names 1481   edges 4623   distinct targets 3347
+   unresolved targets: 3337
+   final segment IS a published name: 3283 (98%)
+   EDGES recoverable by fixing the name function: 3976
+   by edge type: {"contains":3283,"uses":693}
+```
+
+Read literally, this lane has a 3,976-edge free win sitting in it. **It does not.** The
+same heuristic at 842 files reports **54,156** (`contains` 39,660, `uses` 12,920,
+`imports` 1,572, `exports` 4). Applying the recipe would retarget 52,603 of those at
+bare leaf names.
+
+## 2. Why: the tool and this lane key on different fields
+
+`diagnose-incoming.mts:47` builds its map with `byName.get(s.name)`. This lane publishes
+the fully-qualified id on **`s.qualifiedName` and `s.metadata.qualifiedName`**
+(`src/ast/real-protobuf-analyzer.ts:451,488`) so that `resolveRelationships` strategy 1
+matches `target_external` against `brain_symbol.qualified_name` deterministically,
+instead of taking the store's first-wins leaf-name fallback.
+
+That was pass 5's measured finding: with `qualified_name` equal to the bare name,
+**0 of 3,075** edges provably named the declaration they were about. With the id
+published, **2,977 of 3,075 (96.81%)**. So on this lane the bare `name` is the *defect*,
+and the shared tool reads the defect's size and calls it recoverable work.
+
+One walk, one file set, all three keys — `protobuf-cause-b-keying.mts`, 842 files:
+
+| key | resolved targets | rate | B-class edges |
+|---|---|---|---|
+| `name` | 42 / 37,704 | **0.11%** | **54,156** |
+| `qualifiedName` | 37,428 / 37,704 | **99.27%** | **1,576** |
+| `metadataId` | 0 / 37,704 | 0.00% | 0 |
+
+`edges naming a published qualifiedName: 52,650` · `edges naming ONLY a bare published
+name: **0**`. `metadataId` resolves 0 because `metadata.id` does not survive
+pool-worker's symbol projection — which is pass 5's "3,075 edges, ~3,000 bound, 0
+provably" reproduced on the key that was published first.
+
+## 3. The residual 1,576 is the heuristic misfiring, not 1,576 recoverable edges
+
+Partitioned rather than asserted, because the mechanism is a coincidence worth naming:
+
+```
+qualifiedName key, B-class: 1,576 edges  {imports: 1572, exports: 4}
+  module-path targets:                       243  (matched on {"proto": 243})
+  NOT module paths:                           14 targets / 23 edges
+```
+
+The heuristic tests a dotted target's text after the **last** dot. A module path ends in
+a **file extension**, so `google/protobuf/timestamp.proto` is tested against the name
+`proto` — and **`proto` is published**, as `kind=namespace`, by the 5 files under
+directories literally named `proto` (`pb-grpc/.../istio_echo.proto`,
+`terraform/internal/policy/proto/{callback,diagnostics,policy,types}.proto`). 243 of its
+257 targets match on that one string.
+
+The 14 that are not module paths are bare relative module paths — `rpc.proto`,
+`movie.proto`, `nested.proto`, `dart_options.proto`, `etcdserver.proto` — and `find`
+resolves each to 1–3 real corpus files. That is class **U1** in pass 20's partition (the
+sample window), not a name mismatch.
+
+**So: the recipe is worth 0 edges on this lane, and the 54,156 is a property of the
+measurement's key.** Per the brief's own instruction — "if a number does not move, say so"
+— the number does not move, and the reason is that it was never this lane's to move.
+
+## 4. Cause A, keyed on the identifier rather than the name
+
+`diagnose-incoming` reports `ambiguous targets: 0` for this lane on 80 files, which
+reads as a clean column. It is clean because this lane publishes an id. Keyed on
+`qualifiedName`, 842 files:
+
+| measurement | value |
+|---|---|
+| published ids | 38,881 |
+| ids published by **more than one file** | **1,969** |
+| of those, carrying **more than one distinct name** | **0** |
+| edges targeting a colliding id | **6,659** (`contains` 4,142, `uses` 2,517) |
+| files per colliding id | `2`:1689 · `3`:55 · `4`:189 · `5`:15 · `6`:4 · `7`:3 · `8`:2 · `11+`:12 |
+
+`more than one distinct name: 0` out of 1,969 is the load-bearing number: **no two
+different protobuf declarations share a published id on this lane.** The collisions are
+one declaration vendored — 37 files publish `proto2_unittest`, 36 publish `google.api`,
+25 publish `google.protobuf`, all `kind=namespace`. That is the corpus's shape (four
+vendored copies of `descriptor.proto` and its neighbours), not an analyzer defect, and it
+is exactly pass 20's class C. Cause A is therefore **not this lane's work**: the
+identifier already includes the owner, which is what the brief asks for.
+
+## 5. Cause C, and what is left after A and B are priced honestly
+
+Unresolved on the binding key: **276 targets**. Partitioned:
+
+| class | targets | reading |
+|---|---|---|
+| names a corpus file by basename | **253** | U1 — the 842-file window |
+| names no corpus file | 23 | |
+| — external-shaped (literal prefix list) | 1 | |
+| — **UNEXPLAINED** | **22** (55 edges) | worth a look |
+
+The 22 are `connect.IssuedCert`, `config.Config`, `common.EnterpriseMeta`,
+`types.Metric`, `NodeSpec.Membership`, … — every leaf declared in the corpus **under a
+different id**. §6 prices them.
+
+## 6. §8 item 1 restated: the price was 42 edges, and it is 3,390
+
+Pass 20 §8 item 1 asks `src/ast/parallel-indexer.ts:1300` for a protobuf declaration
+spec (plus `.proto` in `PROJECT_INDEX_EXTENSIONS`, `wasmByLang`, and a declaration spec
+in `src/ast/project-index.ts`) and prices it at **42 edges on 12 targets across 12 files,
+of 13,024 `uses` (0.32%)**.
+
+Measured with protoc's own rule, 842 files, production `parseFile`:
+
+```
+unresolved on the binding key:  5,202 edges, 798 distinct targets
+
+protoc WOULD RESOLVE:  3,390 edges (65.2% of unresolved), 454 targets
+  absolute — analyzer already emitted the correct id, could not CONFIRM it:
+    3,352 edges, 444 targets, 478 files (1,316 external-shaped)
+  relative — file wrote a scope-relative name, protoc walks out:
+       38 edges,  10 targets,  14 files
+
+protoc WOULD REFUSE:
+  declared but NOT transitively imported:  220 edges, 79 targets
+  no candidate in the scope chain:      1,584 edges, 264 targets
+```
+
+Two constraints are what keep this from being a larger and wrong number. The candidate
+must be **declared** in the corpus, and its declaring file must be in the referring
+file's **transitive import closure** — protoc refuses a symbol from a file the caller
+does not depend on. Drop the second and `docker.swarmkit.v1.Version` resolves from a file
+that never imports docker; **220 edges on 79 targets are found and then refused on exactly
+that ground**, which is the check that shows the walk is protoc's and not a name-shape
+heuristic.
+
+**The absolute/relative split is the actionable part.** In 3,352 of 3,390 cases the
+analyzer already emits the correct string and cannot confirm the id exists, because a
+per-file analyzer sees one file. So the ask is *"publish an id→file map in the project
+index"*, not *"write a second name resolver"* — a lookup, not an algorithm. 1,316 of
+those edges are well-known-type spellings that belong in a class-C external bucket
+regardless, which is why the probe prints external-shaped counts beside the totals rather
+than folding them in.
+
+All 38 relative edges are consul. Hand-verified end to end:
+
+| | |
+|---|---|
+| referencing file | `consul/proto/private/pbautoconf/auto_config.proto` |
+| its package | `hashicorp.consul.internal.autoconf` |
+| its imports | `private/pbconfig/config.proto`, `private/pbconnect/connect.proto` |
+| written as | `connect.IssuedCert Certificate = 3;` (line 50) |
+| protoc resolves to | `hashicorp.consul.internal.connect.IssuedCert` |
+| declared in | `consul/proto/private/pbconnect/connect.proto:144`, `package hashicorp.consul.internal.connect` |
+
+The analyzer emits `connect.IssuedCert` — unresolved — because a relative name is only
+resolvable against a package this file has not read. This is the same shape as the
+already-fixed `google.protobuf.compiler.FileDescriptorProto` ancestor case in
+`resolveBareViaImports`, one level of indirection further out.
+
+## 7. Gate table, pass 22
+
+| gate | command | result |
+|---|---|---|
+| typecheck | `npx tsc --noEmit -p tsconfig.json` | **exit 0** |
+| fixtures | `BB_M14_ROOT=<repo> npx tsx script/m14/run-fixtures.ts --lang protobuf` | **13 pass / 0 fail**, `no regressions`, **exit 0** |
+| mutants | `BB_MUTANT_ONLY="protobuf/" npx tsx script/m14/mutate-analyzer.ts` | **35 of 35 CAUGHT**, 0 survived, **exit 0** |
+| cause B / A / C split | `protobuf-cause-b-keying.mts 842` | exit 0 — B 54,156 → **1,576 → 0 real**; A 1,969 ids colliding, **0** with distinct names; C 276 unresolved, 22 unexplained |
+| closure price | `protobuf-unresolved-closure-price.mts 842` | exit 0 — 3,390 recoverable, 220 correctly refused |
+
+Analyzer unchanged this pass: both commits add probes, and no product code moved. The
+fix §6 asks for is in `src/ast/parallel-indexer.ts` and `src/ast/project-index.ts`, which
+this lane does not own.
+
+## 8. §8 — restated, with the corrected price
+
+1. **`src/ast/parallel-indexer.ts:1300` + `src/ast/project-index.ts`** — add `".proto"` to
+   `PROJECT_INDEX_EXTENSIONS`, `wasm/tree-sitter-protobuf.wasm` to `wasmByLang`, and a
+   protobuf declaration spec publishing **`id → declaring files`**. **Price, re-measured at
+   842 files: 3,390 `uses` edges on 454 targets across 478 files**, of which 3,352 need
+   only the lookup and 38 need the enclosing-scope walk. Pass 20 recorded 42 edges; that
+   number is superseded. **Why:** it is the only way a per-file analyzer confirms that the
+   id it already computed is declared somewhere the file can reach. **Constraint to
+   carry into the implementation:** the map must be filtered by the referring file's
+   transitive import closure, or 220 edges on 79 targets bind to declarations protoc
+   refuses.
+2. **`script/m14/differential.ts`** — add the `protobuf` key to `LANGS` (line 740):
+   `{ wasm: "tree-sitter-protobuf.wasm", analyzerFile: "real-protobuf-analyzer", className: "RealProtobufAnalyzer", ext: "proto" }`.
+   **Price, measured:** it is the whole difference between the shared arbiter's
+   `FALSIFIED 2` and `FALSIFIED 0` (pass 21 §2–§4). Unchanged.
+3. **`script/m14/diagnose-incoming.mts`** — resolve targets against `s.qualifiedName` as
+   well as `s.name`, and report both keys. **Price:** on this lane the `name`-keyed
+   reading is `unresolved 37,662 / B-class 54,156 edges`; the `qualifiedName`-keyed reading
+   is `276 / 0`. The instrument currently reports a lane's published-name contract as an
+   unresolved-edge finding, and a lane that publishes an id is penalised for it. §3's
+   `proto`-as-a-published-name coincidence is a second reason the last-segment heuristic
+   over-reports: it should not treat a file extension as a declaration name.
+4. **UNCHANGED:** `src/ast/engine.ts:743` (the 500-parse trap) and `:1441` (the
+   `parseBomb` watchdog's `process.exit(1)`, observed on `pb-googleapis/google/api/
+   auth.proto`, a 238-line file); `src/ast/parallel-indexer.ts:2164` (`insertSymbol`'s
+   31-vs-30 `VALUES` mismatch); `script/m14/incoming-check.ts` (ambiguity keyed on
+   `name → kinds[]`, and blind to module-path targets — 650 `imports` edges);
+   `script/m14/run-fixtures.ts` exits 6 on the orphan `r` and `lua` fixture directories on
+   this branch, so the fixture run above is scoped with `BB_M14_ROOT` set to the repo.
+
+## Declared limitations, pass 22
+
+- **The 3,390 is what protoc's rule WOULD resolve on this corpus, not what an
+  implementation will bind.** The probe applies the rule to the ids this analyzer
+  publishes; an implementation with a different id convention would recover a different
+  set. The claim is that the rule and the published ids agree on 3,390 edges.
+- **The corpus root is 842 files and 3 of its checkouts are sparse checkouts.** A
+  declaration living in a file not on disk is invisible to `find`, so a target this probe
+  classes as "names no corpus file" may be declared in a file the walk never saw. The
+  walk is the shared tool's population verbatim, so the numbers are comparable to the
+  instrument they correct, and neither is a whole-corpus claim.
+- **`declaredButNotTransitivelyImported` depends on the module-path → corpus-file
+  mapping**, which is a suffix match: a path answered by 2+ corpus files is ambiguous and
+  this probe takes all of them into the closure. That is more permissive than protoc,
+  which would refuse an ambiguous import, so the 220 refusal count is a **lower** bound on
+  what protoc would refuse and 3,390 is correspondingly an **upper** bound.
+- **The external-shaped classifier is a literal prefix list.** A well-known type spelled
+  some other way is counted in the totals and not in the external count, so 1,316 is not
+  the population of well-known-type references — it is the population this list names.
+- **`cause A`'s `ambiguous targets: 0` from the shared tool is not evidence that the
+  column is clean**; it is evidence that the tool keys on `name` and this lane publishes
+  ids. §4's 1,969 is the id-keyed number and is a different measurement.
+- **Nothing outside protobuf was measured this pass**, and §2's claim that other lanes
+  would see the same cause-B artifact is an argument from this lane's one example, not a
+  measurement of theirs.
