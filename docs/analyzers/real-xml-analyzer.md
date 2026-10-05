@@ -2217,7 +2217,8 @@ the project.
 | `BB_SPAN_MAX=400 npx tsx validation/m14/fixtures/xml/declaration-span-before-after.mts` | 36,774 symbols in **both** legs · **0 startLines moved** · **0 symbols added or removed** · spans held by 2+ names **253 → 0** · exits 2 rather than reporting if the stash did not take or the pop did not restore |
 | `BB_XML_WORKERS=1 npx tsx validation/m14/fixtures/xml/ruled-gate.ts` | **run TWICE**, exit 0 both, full 10-row table both, **0 `[BB-PARSE-ERR]`, 0 `[BB-HANG]`** both, `FALSIFIED 0`, `ruled-without-justification 0` both. `XML_B_PROBE_WALK uses walked=11464 / 11473 unparsed=0 occurrences=0`. The two runs differ in admitted population (11,464 → 11,473, another lane added a repository mid-afternoon) and agree on every row — see §`contains 185,957 did not reproduce` |
 | `npx tsx script/m14/ontology-coverage-gate.ts xml` | **THIS ROUND, run through `ruled-gate.ts` at `BB_XML_WORKERS=1` over 11,552 admitted files: `emitted 6/10  ruled-sound 4  FALSIFIED 0  ruled-without-justification 0`, exit 0, 0 `[BB-PARSE-ERR]`, 0 `[BB-HANG]`.** Rows: `contains` **188,267** · `references` **11,108** · `imports` **468** · `extends` **1,429** · `calls` **402** · `overrides` **3**; `uses`/`exports`/`implements`/`instantiates` RULED-SOUND. `XML_B_PROBE_WALK uses walked=11552 unparsed=0 occurrences=0`, so the `uses` 0 is walked-and-empty on the whole population. `unparsed=0` is also the production path's own answer to §`countsAreDeterministic` — the engine does not truncate where the lane's own parser did. Earlier, unfixed runs of the same command, retained because the movement is the evidence: **6/10 EMITTED, 4 RULED-SOUND, FALSIFIED 0, ruled-without-justification 0** — exit 0. At 8 workers `contains` printed **186,233** on one run and 186,149 on an earlier run of the same commit, against **186,270** on two `ruled-gate.ts` runs at `BB_XML_WORKERS=1` — see §`countsAreDeterministic: true` was false. `references` 11,094 · `imports` 465 · `extends` 1,429 · `calls` 402 · `overrides` 3, byte-identical across all five runs. `imports` **465 → 468** and `references` 11,094 → 11,108 are this round's withdrawal and a grown corpus respectively; `contains` 186,270 → 188,267 and `references` 11,094 → 11,108 track the population, 11,464 → 11,552. **Run through `ruled-gate.ts` at `BB_XML_WORKERS=1`, twice, both exit 0, both 0 `[BB-PARSE-ERR]` and 0 `[BB-HANG]`, both printing these numbers** — the shared gate at its own 8 workers cannot finish this corpus (it self-destructs at 120 s on one file before printing a row), so `ruled-gate.ts` is the instrument the numbers come from. See §`contains 185,957 did not reproduce` |
-| `npx tsx script/m14/firing-check.ts --files 120 xml` | **4/10 fired, 1,653 edges, 120/120 files, 0 degraded** — `contains, imports, references, extends` |
+| `npx tsx script/m14/firing-check.ts --files 120 xml` | **3/10 fired, 1,535 edges, 120/120 files, 0 degraded** — `contains, imports, references`. **This was 4/10 / 1,653 edges through the previous round and no longer reproduces.** The cause is measured, not argued: see §`fired 4/10 became 3/10, and the cause is a stride` |
+| `XML_FIRING_NDJSON=<ndjson line> BB_XML_WORKERS=1 npx tsx validation/m14/fixtures/xml/stride-sample-composition.mts` | exit 0, sample **PROVEN** (all 10 per-type edge totals equal `firing-check --ndjson`). corpusTotal **11,611**, stride **96**, 120 files, 128 repos · `contains` **1,517 / 118 files**, `imports` 7 / 6, `references` 11 / 5 · **118 of 120** sampled files carry `contains`, 0 parse failures, 0 degraded · the 1 sampled `.xsd` file holds **0 derivation sites** on the tree · reports `firing-check`'s per-type `files` column as structurally wrong (§8 item F1). Run **without** `XML_FIRING_NDJSON` it **exits 2 and writes nothing** |
 | `BB_XML_WORKERS=4 npx tsx validation/m14/fixtures/xml/ontology-census.mts` | 2,500 files, **0 failed**, 388,365 symbols, 86,412 relationships, **0 empty names, 0 `unknown` endpoints**, draw `c38110881a301dae`, **1 file silently degraded** (`phpmyadmin/…/dark/col-minus.svg`, 359 B, 0 symbols) |
 | `npx tsx validation/m14/fixtures/xml/worker-determinism-probe.mts --workers {1,8,16}` | `countsAreDeterministic: true` **falsified**. One 600-file draw, fingerprint `6ad7d4ddf1656e6f`: symbols 126,486 / 126,430 / 126,447, and **126,486 again at the same worker count on re-run**. A 1,200-file draw at 1 vs 8 workers: 230,021 both, **0 per-file differences**. `--diff` prints the per-file breakdown |
 | `BB_XML_ROUNDS=20 npx tsx validation/m14/fixtures/xml/shared-parser-probe.mts` | sequential 223,400 symbols, **0 files vary**; concurrent(8) 221,087 symbols, **5 of 48 files return 0 symbols**, every losing result `success=true fallback=true errors=0` |
@@ -2226,34 +2227,81 @@ the project.
 | `npx tsx script/m14/verify-honesty.ts` | gate FAILED project-wide, **23 failures and 0 name an xml file** — 12 banned-term rows in other lanes' fixtures and `validation/` artifacts, `M14.0.F7` non-passing on `analyzer-hygiene-cpp` / `analyzer-hygiene-elixir`, 9 `declared inputs changed since <sha>` regeneration rows, and `freshness rule flags every artifact`. Not one is this lane's |
 | `bun run script/m14/verify-doc-truth-emissions.ts --no-write` | gate FAILED project-wide, `UNDOCUMENTED=42 FALSE_NEGATIVE=7 MISSING_DOC=1 NO_CLAIM_TABLE=16`, and the single xml row is `UNDOCUMENTED [xml] contains` — the shared `parseClaimTable` first-row defect documented above, re-measured, unchanged |
 
-The `firing-check` row reads **4/10**, where the round brief's table says 5/10 for this
-lane, and the difference is **not** the `references` re-base. Measured both ways on the
-same stride sample, `src/ast/real-xml-analyzer.ts` stashed and restored:
+### `fired 4/10` became `3/10`, and the cause is a stride
+
+**This row previously read `4/10` with a cause attributed to sample drift, and the
+number no longer reproduces.** `script/m14/firing-check.ts --files 120 xml` now
+prints **`3/10`, 1,535 edges**, three consecutive runs byte-identical, and the type
+that left is `extends` — which the full-population arbiter still reports at 1,429
+edges in 108 files. A published figure that has stopped reproducing is a finding, so
+it is measured rather than re-quoted.
+
+`fired` is a property of the SAMPLE as well as of the analyzer, and the sample moves
+while the analyzer does not. `firing-check.ts:190` computes
+`stride = max(1, floor(corpusTotal / 120))` over a corpus that other lanes keep
+growing, so every file at index 0, stride, 2·stride, … is a different file once
+`corpusTotal` changes. Measured, by rebuilding the sample with firing-check's own
+walk (`validation/m14/fixtures/xml/stride-sample-composition.mts`):
 
 ```
-  analyzer stashed   xml  120/120  4/10  1,653 edges  0 degraded
-  analyzer restored  xml  120/120  4/10  1,653 edges  0 degraded
+corpusTotal (firing-check's own count) 11,611     stride 96     sampled 120     repos 128
+REPRODUCTION OF THE SAMPLE: PROVEN — all 10 per-type EDGE totals identical to firing-check --ndjson
+
+  type           edges   files
+  contains        1,517    118
+  imports             7      6
+  references         11      5
+
+sampled files with ZERO relationships : 2 of 120 (1.7 %)
+parseFile threw 0    degraded 0
 ```
 
-byte-identical, so the re-base neither added nor removed a firing type on this sample. The
-lost type is `calls`, whose 2 edges need an `xsl:call-template` whose target is declared in
-the same file, and the admitted corpus has grown since the brief was written (11,066 files
-/ 91 repositories → 11,456 / 110). The honest reading is that the stride sample no longer
-reaches a `calls` file, which is the same "high score on few files is a warning"
-situation the brief names for protobuf, pointed the other way. `calls` remains EMITTED at
-402 edges on the arbiter's full-corpus run, which is the instrument that counts.
+The reproduction is what makes the rest evidence. The probe re-implements the sampler,
+and a re-implementation that had quietly drifted would describe a sample the arbiter
+never looked at, so it **refuses to report** unless its own ten per-type edge totals
+equal the totals `firing-check --ndjson` printed for the same run. Proven.
 
-One of those rows is not a pass and is not written as one. The regex census gate
+**The stride does reach an `.xsd` file — 1 of 120 — so counting extensions is not the
+answer, and the first version of this section would have said so.** The next question
+is the one that matters: does that file contain a derivation site at all? Answered on
+the parse tree with `XML_RULED`'s own `countOnTree`, the instrument the arbiter grades
+`extends` against, on a fresh parser per file because this lane has measured that
+reusing one instance exhausts the wasm heap at document 8,513 (§8 item 3):
+
+```
+gql-graphql-mesh/e2e/soap-demo/SOAP.Demo.QueryByName.DS.cls.xsd
+  42 symbols, 46 relationships, 0 extends edges, 0 DERIVATION SITES on the tree
+```
+
+Zero sites, so `extends` cannot fire on this sample whatever the analyzer does. The
+construct is not absent from the language or from the population: the arbiter counts
+**1,652 derivation sites in 113 files** and `parseFile` emits **1,429 `extends` edges
+in 108 of them**. The 0 is a property of the 96th, 192nd, … indexed file.
+
+**What this lane's `fired` figure is and is not.** Not the protobuf shape the round
+brief warns about: 118 of 120 sampled files carry `contains`, so the 1,535 edges are
+not a handful of files. Nor is it the round brief's 5/10, which was measured on an
+admitted population of 11,066 files / 91 repositories against today's 11,611 / 128. A
+`fired` count quoted without its `corpusTotal` and `stride` is a number whose cause is
+unknown, and this lane now prints both beside it.
+
+Of the seven types the sample does not reach, each is accounted for:
+
+| type | on the 120-file stride sample | on the full admitted population |
+| --- | --- | --- |
+| `uses` | 0 | RULED-SOUND, instrument B, walked 11,552, unparsed 0, **occurrences 0** |
+| `exports` | 0 | RULED-SOUND, instrument A, **95** node types, none expresses it |
+| `implements` | 0 | RULED-SOUND, instrument A, **95** node types, none expresses it |
+| `instantiates` | 0 | RULED-SOUND, instrument A, **95** node types, none expresses it |
+| `calls` | 0, needs an `xsl:call-template` whose target is declared in the same file | EMITTED, **402** edges |
+| `extends` | 0, the 1 sampled `.xsd` file holds **0** derivation sites | EMITTED, **1,429** edges |
+| `overrides` | 0, needs two `xsl:template` with the same `match` and `mode` in one file | EMITTED, **3** edges in 3 files |
+
+One of the rows above is not a pass and is not written as one. The regex census gate
 FAILS; this lane contributes **zero** of its 18 findings and the failure belongs to four
-other lanes. Coverage as applicable is **6/10 EMITTED**, and the denominator shrank only by
-RULED verdicts carrying a corpus measurement, taken from the arbiter rather than from this
-lane. Of the four types the 120-file stride sample does not reach, all four are accounted
-for: three are RULED with a corpus measurement behind the ruling, and the fourth is
-`overrides`, whose 3 corpus edges sit in 3 of 11,456 files.
-
-The firing-check edge count is also not comparable with a figure quoted for an earlier
-corpus: the admitted population moved from 11,066 files / 91 repositories to 11,456 /
-110, and this lane's own edge counts moved with it.
+other lanes. Coverage as applicable is **6/10 EMITTED**, and the denominator shrank only
+by RULED verdicts carrying a corpus measurement, taken from the arbiter rather than
+from this lane.
 
 ## Evidence pointers
 
@@ -2537,6 +2585,66 @@ reachable from here — but it is reachable from a lane whose table is partial. 
 the decision's own `relationship` field, which the emitter already writes
 (`"relationship": "extends"`), compared for equality, with the prose test deleted rather
 than kept as a fallback — a fallback preserves the defect.
+
+**F1. `script/m14/firing-check.ts:294` — the per-type `files` column is not a file
+count. OPEN, found this round.** `filesByType` is declared INSIDE the per-file loop
+that starts at line 257:
+
+```ts
+for (const file of files) {          // line 257
+  ...
+  const filesByType = new Map<string, Set<string>>()   // line 294 — per FILE
+  for (const rel of rels) { ... filesByType.get(type)!.add(file) }   // line 312
+  ...
+  for (const [type, set] of filesByType) res.types[type].files = set.size   // line 340
+}
+```
+
+The set therefore holds one path, and line 340 overwrites the accumulator with `1` on
+every file where the type appears. `res.types[t].files` is structurally **1 for any type
+that fires anywhere and 0 for any type that does not** — it is a boolean wearing a
+count's name. Measured on this lane's own 120-file sample, against a probe whose other
+ten per-type totals match `firing-check` exactly:
+
+| type | `firing-check --ndjson` | true file count |
+| --- | ---: | ---: |
+| `contains` | 1 | **118** |
+| `imports` | 1 | **6** |
+| `references` | 1 | **5** |
+
+The fix is to hoist the declaration to the same scope as `res.types` (beside line 255,
+where the per-type rows are initialised) so the set accumulates across files. No other
+change is needed; `edges` already accumulates correctly and is unaffected.
+
+**Why it matters beyond this lane, and it is not a cosmetic column.** The round brief's
+third warning is "a high score on few files is a warning" and it names protobuf —
+2,069 edges from 10 of 120 files. The per-type `files` column is the field a reader
+would use to see that, and it reads `1` for every lane. A lane drawing 100 % of its
+edges from one file and a lane drawing them from 118 are indistinguishable in that
+column. This lane is the *lucky* case — 118 of 120 files carry `contains`, so the
+warning does not apply and the honest reading is that its 1,535 edges are broadly
+distributed. A lane in the unlucky case would have published a `files: 1` that looked
+identical to this lane's and meant the opposite thing. Every lane's NDJSON row in
+`validation/m14/measurements/` carries that column, so the affected rows are the whole
+sweep.
+
+**F2. `script/m14/firing-check.ts` — `fired` needs `corpusTotal` and `stride` printed
+beside it. OPEN.** §`fired 4/10` became `3/10` measured the second number into
+existence: `stride = floor(corpusTotal / limit)` over a corpus other lanes grow, so the
+`fired` column moves with **no edit to any analyzer**. This lane's row went 4/10 → 3/10
+on that alone, and `extends` — 1,429 edges across 108 files on the full population —
+left the column because the one `.xsd` file the new stride reached holds 0 derivation
+sites. Any cross-lane comparison of `fired` between two sweeps taken at different
+corpus states is comparing two different samples. The two numbers already exist in the
+sweep (`corpusTotal` per lane); printing `corpusTotal` and `stride` in the per-lane line
+costs one `console.log` and makes the column interpretable.
+
+**F3. The zero-regex census is only meaningful where the analyzer is at zero.** This
+lane's count is 0 before and after this round and `npx tsx
+script/m12/verify-regex-census.ts` reports **0 rows for `real-xml-analyzer.ts`**, which
+is the only claim the lane can make about that gate: the gate FAILS project-wide on 18
+HEAD-scan rows belonging to css, scss, sql, svelte, clean, fsharp, javascript, python,
+typescript and vue. Reported so the pass is not read as this lane's.
 
 **3. `src/ast/engine.ts:1442` — the per-file self-destruct ends the whole run, and the
 fault is NOT the XML grammar.** The 120 s timer calls `process.exit(1)`, so one
