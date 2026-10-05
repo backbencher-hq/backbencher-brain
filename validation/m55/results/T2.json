@@ -2,49 +2,91 @@
   "issue": "M55.T2",
   "code": "T2",
   "milestone": "M55",
-  "status": "known-gap",
-  "checks": 57,
-  "passed": 51,
+  "status": "verified",
+  "checks": 64,
+  "passed": 64,
   "failed": 0,
-  "realFailed": 6,
-  "mutantsCaught": 5,
-  "mutantsTotal": 5,
+  "realFailed": 0,
+  "mutantsCaught": 9,
+  "mutantsTotal": 9,
   "mutantsNotJudged": 0,
-  "mutantsJudged": 5,
+  "mutantsJudged": 9,
   "mutantVerdicts": [
     {
       "name": "call sites: skip the source resolution (stored line / name-token fallback only)",
       "caught": true,
-      "detail": "{\"rangesOk\":false,\"droppedOk\":true,\"selectionOk\":true,\"declaredOk\":true,\"hopOk\":true}",
+      "detail": "{\"rangesOk\":false,\"droppedOk\":true,\"selectionOk\":true,\"declaredOk\":true,\"hopOk\":true,\"nonCallRenderedOk\":true,\"filterDeclaredOk\":true,\"plantedOk\":true,\"absenceOk\":true,\"filterCoherentOk\":true}",
       "caughtBy": "rangesOk"
     },
     {
       "name": "identity: re-admit receiver-qualified self-edges (the pre-M55 behavior)",
       "caught": true,
-      "detail": "{\"rangesOk\":true,\"droppedOk\":false,\"selectionOk\":true,\"declaredOk\":true,\"hopOk\":true}",
-      "caughtBy": "droppedOk"
+      "detail": "{\"rangesOk\":true,\"droppedOk\":false,\"selectionOk\":true,\"declaredOk\":true,\"hopOk\":true,\"nonCallRenderedOk\":true,\"filterDeclaredOk\":true,\"plantedOk\":true,\"absenceOk\":false,\"filterCoherentOk\":true}",
+      "caughtBy": "droppedOk, absenceOk"
     },
     {
       "name": "selection: point selectionRange at the whole body",
       "caught": true,
-      "detail": "{\"rangesOk\":true,\"droppedOk\":true,\"selectionOk\":false,\"declaredOk\":true,\"hopOk\":true}",
+      "detail": "{\"rangesOk\":true,\"droppedOk\":true,\"selectionOk\":false,\"declaredOk\":true,\"hopOk\":true,\"nonCallRenderedOk\":true,\"filterDeclaredOk\":true,\"plantedOk\":true,\"absenceOk\":true,\"filterCoherentOk\":true}",
       "caughtBy": "selectionOk"
     },
     {
       "name": "directness: re-admit transitive hops (the engine's depth > 0 rows)",
       "caught": true,
-      "detail": "{\"rangesOk\":true,\"droppedOk\":true,\"selectionOk\":true,\"declaredOk\":true,\"hopOk\":false}",
+      "detail": "{\"rangesOk\":true,\"droppedOk\":true,\"selectionOk\":true,\"declaredOk\":true,\"hopOk\":false,\"nonCallRenderedOk\":true,\"filterDeclaredOk\":true,\"plantedOk\":true,\"absenceOk\":true,\"filterCoherentOk\":true}",
       "caughtBy": "hopOk"
     },
     {
       "name": "declared: hide the approximation (undeclared substitute)",
       "caught": true,
-      "detail": "{\"rangesOk\":true,\"droppedOk\":true,\"selectionOk\":true,\"declaredOk\":false,\"hopOk\":true}",
+      "detail": "{\"rangesOk\":true,\"droppedOk\":true,\"selectionOk\":true,\"declaredOk\":false,\"hopOk\":true,\"nonCallRenderedOk\":true,\"filterDeclaredOk\":true,\"plantedOk\":true,\"absenceOk\":true,\"filterCoherentOk\":true}",
       "caughtBy": "declaredOk"
+    },
+    {
+      "name": "filter: render a non-call row anyway (defence in depth removed)",
+      "caught": true,
+      "detail": "{\"rangesOk\":true,\"droppedOk\":true,\"selectionOk\":true,\"declaredOk\":true,\"hopOk\":true,\"nonCallRenderedOk\":true,\"filterDeclaredOk\":true,\"plantedOk\":false,\"absenceOk\":true,\"filterCoherentOk\":true}",
+      "caughtBy": "plantedOk"
+    },
+    {
+      "name": "filter: ask the engine for every relationship kind again (the pre-fix request)",
+      "caught": true,
+      "detail": "{\"rangesOk\":true,\"droppedOk\":true,\"selectionOk\":true,\"declaredOk\":true,\"hopOk\":true,\"nonCallRenderedOk\":true,\"filterDeclaredOk\":true,\"plantedOk\":true,\"absenceOk\":true,\"filterCoherentOk\":false}",
+      "caughtBy": "filterCoherentOk"
+    },
+    {
+      "name": "declared: answer without the relationship-kind filter (§15.1)",
+      "caught": true,
+      "detail": "{\"rangesOk\":true,\"droppedOk\":true,\"selectionOk\":true,\"declaredOk\":true,\"hopOk\":true,\"nonCallRenderedOk\":true,\"filterDeclaredOk\":false,\"plantedOk\":true,\"absenceOk\":true,\"filterCoherentOk\":true}",
+      "caughtBy": "filterDeclaredOk"
+    },
+    {
+      "name": "absence: imply the store holds no rows when the FILTER emptied the answer (§11.7)",
+      "caught": true,
+      "detail": "{\"rangesOk\":true,\"droppedOk\":true,\"selectionOk\":true,\"declaredOk\":true,\"hopOk\":true,\"nonCallRenderedOk\":true,\"filterDeclaredOk\":true,\"plantedOk\":true,\"absenceOk\":false,\"filterCoherentOk\":true}",
+      "caughtBy": "absenceOk"
     }
   ],
   "mutantHarness": {
     "importRewriting": "GENERIC: every relative import in the component copy is rewritten to an absolute file URL from what the source ACTUALLY imports (not a hand-written list)",
+    "baselineControl": {
+      "law": "every predicate the mutant table uses is evaluated against the UNMUTATED component first, and the run FAILS if any one of them is false there (check `M/CONTROL`). A predicate that never held convicts every mutant for free; §8.7 names that the tautology.",
+      "predicatesAtThisRun": {
+        "rangesOk": true,
+        "droppedOk": true,
+        "selectionOk": true,
+        "declaredOk": true,
+        "hopOk": true,
+        "nonCallRenderedOk": true,
+        "filterDeclaredOk": true,
+        "plantedOk": true,
+        "absenceOk": true,
+        "filterCoherentOk": true
+      },
+      "falseInBaseline": [],
+      "caughtByThisControl": "this lane added the four filter/declaration predicates while `selectionOk` still read `incomp.calls[0]`. The fix legitimately empties `get`'s caller list (that is the W1 law), so that entry was undefined, `selectionOk` was FALSE in the baseline, and four mutants reported `caught by: selectionOk` for free. Measured, then fixed: the predicate now reads an answer that renders (`deep/incoming`), asserts the NAME token in the caller's OWN file rather than non-emptiness against a fixed path, and M/CONTROL is what makes that class of defect fail loudly instead of quietly."
+    },
+    "relationshipKindReadCorrected": "C6, C6d's `plantedRendered` and the mutant predicate all read the relationship kind with `/^calls\\b/.test(detail)`. The component's detail line is `${symbolType} · ${relationshipType} · …`, so it never STARTS with the kind: measured on the real index, BOTH rendered callers of `deep` carry `function · calls · 1 call site` and the old test called both of them non-call rows. The check reported the pre-fix failure for the right reason and would have gone vacuously green afterwards for the wrong one — it could not tell a `calls` row from a `contains` row. Corrected to read the SECOND ` · `-delimited segment (`renderedRelationshipKind`). This is a correction to a check, justified by measurement, and it TIGHTENS the gate: the pre-fix component is still red under it (verified by re-running the suite against the unmutated pre-fix source through the same predicate).",
     "preLaneDefect": "the pre-lane rewriter was a hand-written list that omitted ./signature (and, since wave 1, ./launch_languages, ./symbols, ../brain/freshness and ../intelligence/graph/line-address); every mutant then died on an import error while being counted \"caught\", so the evidence said 5/5 while the oracle had never run",
     "importFailureIsNotCaught": true,
     "componentImportsAtThisRun": [
@@ -61,9 +103,17 @@
       "./symbols"
     ]
   },
+<<<<<<< HEAD
   "currentCommit": "5e3e7f6d797097a0c43c7c728adcd60ba6887ecd",
   "workingTreeRelevantChanges": [
     "validation/m42/results/H2.json"
+=======
+  "currentCommit": "c74169bbe48db2dbdc770c2e2a9c976f5504975d",
+  "workingTreeRelevantChanges": [
+    "src/lsp/call_hierarchy.ts",
+    "validation/m24/results/L5.json",
+    "validation/m55/results/T2.json"
+>>>>>>> fix/c6-call-site-filter
   ],
   "volatileFields": [
     "generatedAt",
@@ -73,9 +123,15 @@
   ],
   "verifierCommand": "npx tsx script/m55/verify-call-hierarchy.ts",
   "evidenceFile": "T2.json",
+<<<<<<< HEAD
   "generatedAt": "2026-10-05T04:28:38.308Z",
   "fixture": {
     "root": "$HOME/Documents/Default Project/ishaq/wt/integrate/validation/m55/fixtures/t2-workspace",
+=======
+  "generatedAt": "2026-10-05T12:59:31.105Z",
+  "fixture": {
+    "root": "$HOME/Documents/Default Project/ishaq/wt/c6fix/validation/m55/fixtures/t2-workspace",
+>>>>>>> fix/c6-call-site-filter
     "files": [
       "src/store.ts",
       "src/loop.ts",
@@ -93,6 +149,7 @@
       "one caller with two call sites (many → deep ×2) — both ranges reported"
     ]
   },
+<<<<<<< HEAD
   "failures": [
     "W1: `get` is never called anywhere in the fixture, so it has zero callers (no fabricated ones): [\"Store\",\"set\"]",
     "C6: every rendered caller carries a call-site range for a CALLS row (a `contains`/`uses` row must not produce one): 2 rendered entries come from a non-`calls` relationship and carry a fromRange: [{\"name\":\"Store\",\"detail\":\"class · contains · 1 call site\",\"ranges\":[{\"start\":{\"line\":8,\"character\":22},\"end\":{\"line\":8,\"character\":25}}]},{\"name\":\"set\",\"detail\":\"method · uses · 1 call site · position approximate\",\"ranges\":[{\"start\":{\"line\":11,\"character\":2},\"end\":{\"line\":11,\"character\":5}}]}]",
@@ -101,45 +158,48 @@
     "C6g: an answer emptied BY the filter says so — the declared absence names the filter instead of implying the store holds no rows (§11.7): {\"rendered\":0,\"absence\":{\"code\":\"symbol_not_at_position\",\"message\":\"every stored caller edge was dropped or declared absent (1 dropped, 0 declared absent) — none is rendered\",\"language\":\"typescript\",\"launchLanguages\":[\"java\",\"groovy\",\"kotlin\",\"scala\",\"typescript\",\"javascript\",\"python\",\"zig\",\"go\",\"rust\",\"c\",\"cpp\",\"vue\",\"svelte\"]},\"dropped\":[{\"name\":\"get\",\"symbolId\":\"e95d952fba30432b208fe7eb1646c1137063979a:src/store.ts:get:8\",\"reason\":\"receiver-qualified self-name call (this.items.get) targets another value, not this symbol\"}]}",
     "C6f: every expand answer DECLARES the relationship-kind filter it applied, and that filter contains only kinds that can name a call site (§15.1): [{\"filter\":\"(absent)\"},{\"filter\":\"(absent)\"},{\"filter\":\"(absent)\"}]"
   ],
+=======
+  "failures": [],
+>>>>>>> fix/c6-call-site-filter
   "c6Disposition": {
-    "decision": "(c) gate it precisely: this surface asks the graph engine for CALL rows, DECLARES that filter on every response (§15.1), and drops+declares any non-call row that still arrives. The change is one call site plus one declared field in src/lsp/call_hierarchy.ts, which is another lane's file, so this gate is honestly RED.",
+    "decision": "(c) gate it precisely: this surface asks the graph engine for CALL rows, DECLARES that filter on every response (§15.1), and drops+declares any non-call row that still arrives. APPLIED in src/lsp/call_hierarchy.ts on branch fix/c6-call-site-filter (gated RED here first, per F7: W1, C6, C6d, C6e, C6f and C6g all failed at 51/57 before the change and all pass at 58/58 after).",
+    "regressionCaught": "Sibling gate L5 (script/m24/verify-call-hierarchy.ts, this component's own M24 gate) went verified 97/97 -> known-gap 96/97 on the FIRST run of this patch, and its G7 check is the sibling law of the sentence this lane rewrote: G7 asserts the empty-answer absence contains \"none stored\". The first reword dropped that phrase and left L5 red. Fixed in the COMPONENT, not by touching L5: the absence now carries TWO sentences, one per branch, and the branch that answers \"the engine returned no rows at all\" keeps the \"none stored\" wording L5 asserts while stating that the claim is scoped to the kind(s) this surface reads. L5 re-runs at 97/97 with 23/23 mutants. Recorded because a fix that silently moves a sibling gate from verified to known-gap is a regression even when the failing check belongs to another milestone, and because the honest fix was in the wording, not in the other lane's assertion.",
+    "landed": {
+      "component": "src/lsp/call_hierarchy.ts",
+      "constant": "CALL_HIERARCHY_RELATIONSHIP_TYPES = [\"calls\"] as const, passed into the engine's traverse options",
+      "defenceInDepth": "a non-call row that still arrives is omitted and DECLARED with its kind named, placed AFTER the D4 tally so the census still partitions every stored edge read",
+      "declaration": "relationshipTypes on every ExpandResult, including all three early returns and the normal answer (§15.1)",
+      "absence": "TWO sentences, one per branch, because measurement showed a filtered empty answer does not take the \"no rows at all\" branch. Both name the filter; the first keeps the \"none stored\" wording M24 G7 asserts and scopes it to the kinds this surface reads, the second reports what was read and what was dropped with its kind.",
+      "specDrift": "the handoff patch spec (PATCHES.md) had three gaps against the file at HEAD, each measured rather than assumed: (1) it added relationshipTypes to the three early returns but NOT to the normal return, so tsc rejected the build (TS2741) and C6f stayed RED; (2) it reworded ONLY the `edges.length === 0` branch of the absence, which a filtered empty answer never takes — measured: the engine still returns the depth-0 `calls` row for this symbol under relationshipTypes [\"calls\"] (callers.length 1), so the taken branch was the other one and C6g stayed RED; (3) it placed the defence-in-depth drop correctly after the D4 tally, and that part was accurate."
+    },
     "causeMeasured": "For Store.get / callers the engine returns 8 edges: 2 exact, 6 owner-cascade. The row behind the headline range (Store rendered as a caller of get) is the EXACT depth-0 row `Store:contains:get` — the store genuinely holds 'Store contains get'. The pre-lane comment in this file said both non-call rows arrived via the cascade; that is wrong for the contains row and is corrected above. One level down the claim holds in substance: every rule in the component is keyed on `relationshipType === \"calls\"`, so the engine's default TEN-KIND superset feeds membership and lexical rows to a renderer that must emit call-site ranges.",
     "rejected": {
       "(a) fix the owner cascade": "refuted by measurement, not by taste: the contains row that produces the range is targetMatch \"exact\", so no cascade change removes it. The cascade is also a DELIBERATE, DISCLOSED superset for the graph/impact/MCP surfaces (its disclosure is itself gated, script/m48/verify-d1-doc-truth.ts), and §15.1 explicitly permits a surface to filter differently PROVIDED it states its filter. Changing the engine would move every graph/impact/MCP answer across 14 languages to fix a lie that lives in one adapter.",
       "(b) declare the behaviour with its reason": "not available. LSP requires a non-empty `fromRanges` on every CallHierarchyIncomingCall, and §15.3 says a range handed to the editor points at the call site it names — a `contains`/`uses` row names no invocation, so there is nothing to point at. The only declaration the protocol permits for such a row is omission with a reason. A labelled membership row in a CALLERS list is still a category error a developer reads as 'Store calls get'."
     },
     "measuredBlastRadius": "Run twice over the same index and the same component with one option changed: the receiver-qualified `get -> get` artifact is still dropped AND declared with its reason (C1 unchanged, droppedEdges keeps the 'receiver-qualified ... this.items.get' entry); rendered non-call entries go 2 -> 0 (C6d/C6); rendered callers go 2 -> 0 (W1); the D4 partition still holds (edges 3 -> 0, buckets sum to edges in both runs). What the change does NOT deliver by itself is C6f/C6g: the response still carries no declared filter, and the empty answer's absence text still does not say the store holds non-call rows — both are part of the same patch.",
-    "patchOwner": "src/lsp/call_hierarchy.ts (not this lane's file); the exact patch is in the lane report for close/surface-and-docs.",
-    "falsifiability": "C6, C6d, C6e, C6f and C6g are RED on the real component at this commit, and W1 is red on the real index. Each is therefore observed to fail, which is stronger evidence of falsifiability than a planted mutant. The filter mutant is deliberately NOT in MUTANTS: its only predicate is C6f, which is false in the baseline, so adding it would make all five existing mutants report 'caught' while judging nothing (see mutantsNotAdded)."
+    "patchOwner": "src/lsp/call_hierarchy.ts — this lane's file, changed on fix/c6-call-site-filter.",
+    "falsifiability": "Gated BEFORE the fix, per F7: at HEAD this suite reported 51/57 with W1, C6, C6d, C6e, C6f and C6g failing, so each of those six was OBSERVED TO FAIL rather than argued about. Four mutants then plant the three behaviours the fix introduces and convict them: the defence-in-depth drop (rendered non-call entry with a range), the engine request (a response declaring it read only `calls` while the engine handed it `contains`/`uses`), the missing declaration (relationshipTypes: []), and the absence that implies an empty store. Each is convicted by its own predicate, and the five pre-existing mutants still report the predicate they were convicted by, which is the evidence that no new predicate is false in the baseline.",
+    "whatTheSuiteCannotProve": "The engine request itself is not observable from the response, so no check here can prove `relationshipTypes: [\"calls\"]` was actually passed to traverseGraph. What IS proven is that the surface cannot render a range for a non-call row whether or not the option is honoured (the hermetic leg plants the rows directly, bypassing the engine), and that the response does not contradict itself about what it read (`filterCoherentOk`). Stated because a gate that cannot distinguish 'asks the engine' from 'drops the rows' should not be read as if it could.",
+    "measuredPredicateConvictions": "Each of the four new mutants is convicted by exactly ONE predicate, and it is the one that names its own defect: defence-in-depth removal -> plantedOk; the pre-fix engine request -> filterCoherentOk; a missing declaration -> filterDeclaredOk; the reverted absence -> absenceOk. That one-to-one mapping is the thing that makes 'caught' mean something here, and it was NOT the first result: with only the positive halves of C6g as the predicate, the reverted-absence mutant SURVIVED (the surviving text still contained the word 'kind'), and with only a presence test on relationshipTypes as the predicate, the pre-fix-request mutant SURVIVED (a surface that drops non-call rows honestly is not lying about them, it is only contradicting its own declaration). Both survived mutants are recorded rather than deleted."
   },
-  "mutantsNotAdded": [
-    {
-      "name": "filter: ask the engine for every relationship kind again",
-      "why": "Its only oracle predicate is C6f, which is RED on the real component. A mutant oracle whose baseline contains a false predicate marks every mutant caught for free, which is the tautology the harness above exists to prevent. Its falsifiability is carried by C6d/C6e/C6f/C6g being red instead."
-    }
-  ],
-  "knownGaps": [
-    {
-      "checks": [
-        "W1",
-        "C6",
-        "C6d",
-        "C6e",
-        "C6f",
-        "C6g"
-      ],
-      "why": "one defect with one cause and one owner: this surface renders relationship kinds that cannot name a call site. The fix is in src/lsp/call_hierarchy.ts (another lane). W1 and C6 observe it on the real index; C6d/C6e plant it hermetically in both directions; C6f/C6g pin the two ways a fix could answer without declaring itself.",
-      "owner": "src/lsp/call_hierarchy.ts"
-    }
-  ],
+  "mutantsNotAdded": [],
+  "knownGaps": [],
   "limitations": [
     "the analyzer stores relationship line_number = 0 for every row today; the call-site positions here are derived from the caller's own source, which is why they are exact. The stored-value path (a future analyzer change) is exercised only as a declared fallback.",
     "invocation scanning is line-comment aware but not string-literal aware (declared in the component header); every result is bounded by the caller's own declaration range.",
-    "declared on the real index at this commit and NOT fixed: the same receiver-qualified artifact row is reported twice in droppedEdges (once from the depth-0 row, once from a deeper cascade re-fetch of it). The drop is correct and declared both times, so no range is rendered; the duplicate is a reportability defect in the engine's per-direction row dedupe (src/intelligence/graph/graph-engine.ts), not a position lie, and it is not this lane's file."
+    "declared on the real index at this commit and NOT fixed: the same receiver-qualified artifact row is reported twice in droppedEdges (once from the depth-0 row, once from a deeper cascade re-fetch of it). The drop is correct and declared both times, so no range is rendered; the duplicate is a reportability defect in the engine's per-direction row dedupe (src/intelligence/graph/graph-engine.ts), not a position lie, and it is not this lane's file.",
+    "the relationship-kind filter this surface declares is `calls` alone. `instantiates`/`overrides` are deliberately NOT included, so a `new Foo()` relationship stored for a symbol is omitted from this hierarchy with its kind named. A `new Foo()` IS an invocable site and this surface's resolver already classifies it as `construct`, so including those kinds is a plausible future widening — it is this surface owner's declared call, not this gate's, and it is left un-widened rather than decided by default.",
+    "the engine's owner cascade can still place a non-`calls` row at depth 0 adjacent to a traced member (the exact `Store:contains:get` row is one, measured). This surface now omits every such row and declares its kind, so the cascade's rows cannot produce a range here — but the cascade itself is a deliberate, disclosed superset for the graph/impact/MCP surfaces (gated by script/m48/verify-d1-doc-truth.ts) and was NOT changed, so this gate makes no claim about what those surfaces render."
   ],
   "bbSeal": {
     "alg": "sha256",
+<<<<<<< HEAD
     "sealedAt": "2026-10-05T04:28:38.311Z",
     "contentSha256": "2306e6acca723346339078c56e652582f3c5dc14c3fd0ce893e6f7083ab592a4"
+=======
+    "sealedAt": "2026-10-05T12:59:31.109Z",
+    "contentSha256": "a2be6aa8a2a688eb3fea6c9b3a7a03c8fab0dcf02d6ced925d3ec69e60955525"
+>>>>>>> fix/c6-call-site-filter
   }
 }
