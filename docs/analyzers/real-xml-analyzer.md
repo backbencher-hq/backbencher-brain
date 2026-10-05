@@ -351,7 +351,7 @@ the 603-file probe that came back INCONCLUSIVE, and what would separate them.
 | --- | --- | ---: | ---: | ---: | ---: |
 | `contains` | yes — EMITTED | **186,270** | 10,847+ | **100.0 %** | 0 |
 | `references` | yes — EMITTED | **11,094** | 391+ | **48.4 %** target / **100.0 %** source; **93.9 % of sources are names the file writes** (was 84.2 %) | 0 |
-| `imports` | yes — EMITTED | 465 | 278+ | 0.0 %, target is a file, by design | 0 |
+| `imports` | yes — EMITTED | **468** | 332 | 0.0 %, target is a file, by design; **468 of 468 edges have a site on the tree and 0 sites have no edge** (was 186 of 469 — the ledger's parser had died at document 8,513) | 0 |
 | `calls` | yes — EMITTED (was GAP) | **402** | 76+ | **100 %**, and **100 % of sources are declared callers** | 0 |
 | `extends` | yes — EMITTED (was GAP) | **1,429** | 113 | **31.3 %** both ends / **100.0 %** source | 0 |
 | `overrides` | yes — EMITTED (was RULED — the corpus overturned it) | **3** | 3 | **100 %** | 0 |
@@ -1182,6 +1182,25 @@ automatically a false containment, and merging the two would have produced a cou
 reads as 474 wrong edges when the truth is 194 unverifiable plus 280 mis-anchored. Both are
 real, and they have different fixes.
 
+**At the full admitted population the same instrument finds 5 residual edges in 186,270,
+and every one of them is adjudicated rather than rounded into the rate:**
+
+| class | edges | what it is |
+| --- | ---: | --- |
+| `C-source-symbol-absent` | 1 | `libxslt/tests/general/bug-110.xml` `elem -contains-> id` — `<!ATTLIST elem id ID #IMPLIED>` names an element the document never declares. Already documented below as correct |
+| `D-spans-disjoint` | 3 | 2 are the `NDATA` notation edges, whose target is declared **earlier** in the DTD and therefore cannot be nested — fixed this round by moving the tier off `structural`; 1 is `special -contains-> decimal-separator` in `libxslt/tests/numbers/format-number.xsl`, a shape-3 declaration whose `name` value sits on its own line |
+| `G`-collision | 1 | `special -contains-> name`, same file and same cause |
+
+and the 9 byte ranges still held by two names, in 5 files:
+
+| names sharing one range | count | what it is |
+| --- | ---: | --- |
+| `match` + `xsl:template[match=\|mode=\|priority=]#0` / `#1` | 6 | the `overrides` pass's **derived** identity, which is built to be disjoint from every declarable name and is published only for templates that actually collide — it shares the `match` attribute's range by construction |
+| `name` + `special`, `duration` + `name`, `endTime` + `name` | 3 | the declared residual of anchoring shapes 2 and 3 to the name node |
+
+So 6 of 9 are a deliberate trade and 3 of 9 are this fix's known cost. Neither is a
+fabricated edge.
+
 **Neither class is visible to any instrument the lane already had.** `contains` resolves
 **100.0 % at both ends**, it carries `confidence: 1` and tier `structural`, and
 `run-fixtures` asserts targets and lines. A range that cannot express the claim it makes is
@@ -1212,7 +1231,9 @@ After, same 400 files:
 | direction B: 36,319 immediate-owner pairs, pairs with no edge | **0** | 0.0 % |
 
 The edge count moved 4,383 → 5,856 only because this draw is 400 files and the `before`
-column was taken at 300. Both columns are the same instrument over the same corpus.
+column was taken at 300. Both columns are the same instrument over the same corpus. **At the
+full 11,464-file admitted population** the figure is 186,265 of 186,270 confirmed, and the
+5 that are not are the table above — every one adjudicated, none dismissed.
 
 **The fix is partial and the residual is pinned, not rounded away.** Shapes 2 and 3 keep the
 old anchor, so their containment stays unverifiable, and on shape 3 the order is inverted
@@ -1288,6 +1309,138 @@ the fix); and the collision map keyed by range alone, above. A fourth was operat
 for the wrong reason, and the change itself sitting in `stash@{0}`. `SIGTERM`/`SIGINT`/
 `SIGHUP` now pop it, and the probe exits 2 rather than reporting if the stash did not take
 or the pop did not restore.
+
+### The ledger's own parser died at document 8,513, and the site numbers moved with it
+
+The ledger above is the instrument that answers `imports` row 3 and direction B for
+`contains`. It builds its tree in a second pass, and the way it built it made its own
+coverage claim false in a way no error marker reported.
+
+**The measurement.** `validation/m14/fixtures/xml/parser-lifetime.mts`, over the whole
+admitted population, one reused parser versus a fresh parser per file:
+
+```
+admitted: 11552
+ONE reused parser : failures=11552 of 11552, firstFailureAtIndex=8513
+FRESH parser each  : ok=0 parseFail=0 newParserThrew=11552 firstThrowAtIndex=0
+```
+
+Read the first line rather than the count. The parser served documents `0..8512` and then
+failed on **every one of the remaining 3,039** — and `unparsedByOwnParser` was 3,039.
+Those are the same 3,039 files. It was never a property of the corpus: it is the point at
+which the wasm heap stops growing, so the failure is permanent rather than per-file, which
+is why the second line throws at index **0**. A fresh `Parser()` cannot recover it, because
+by then the heap is already spent. The two lines together are the whole diagnosis: this is
+exhaustion, not a bad file, and the obvious repair does not work.
+
+**What it was hiding.** Phase 2 kept every tree alive and parsed 11,552 documents through
+one instance. Every site-side number was therefore computed over the first 8,513 documents
+of a sorted population and truncated at the heap boundary — and a heap boundary is not a
+file boundary, so nothing in the report could see it. The consequence is measurable in the
+artifact: `sitesOnTree` read **186** while the ledger's own `sitesWithNoEdge` read **0**,
+which reads as complete coverage of 186 sites and says nothing about the other 283 edges.
+It also explains a discrepancy this document could previously only observe:
+
+| draw | admitted | `unparsedByOwnParser` | `sitesOnTree` |
+| --- | ---: | ---: | ---: |
+| `84970cf3d`, 11:16 | 11,464 | 2,631 | 234 |
+| same commit, same corpus, later | 11,464 | 2,631 | 234 |
+| +88 files admitted by other lanes | 11,552 | 3,039 | **186** |
+
+Sites went **down** while the population went **up**, and the arbiter's own `contains`
+figures drifted across runs for reasons §`countsAreDeterministic` could not name. Both are
+this: which documents fall past the boundary depends on the sort order, so adding files
+mid-list pushes more of them over. The count of "unparsed files" was itself the artifact.
+
+**The fix, and it is one line.** Phase 2 now calls `ASTEngine.parseTree`, the same entry
+the production analyzers receive their tree from, which deletes each tree in a `finally`
+(`src/ast/engine.ts:1972-1981`) and keeps its parsers in an evicting pool
+(`src/ast/engine.ts:189-195`). Phase 1 already called `parseFile`, so the edge walk and the
+site walk now share one parser discipline instead of two. Measured, same corpus:
+
+| | before | after |
+| --- | ---: | ---: |
+| `unparsedByOwnParser` | 3,039 | **0** |
+| `imports` sites on the tree | 186 | **468** |
+| `imports` sites with no edge | 0 | 0 |
+| `imports` edges with a site | 186 | **468** |
+| `imports` edges with **no** site | 283 | **1** |
+| `contains` edges / confirmed | 188,267 / 188,262 | 188,267 / 188,262 |
+
+Site coverage of `imports` edges went from **39.7 %** to **99.8 %**, and the instrument was
+reporting the gap as zero. `contains` is unchanged, which is itself worth stating: its
+confirmation reads symbol spans from phase 1 and never consulted the phase-2 walk, so the
+truncation could not touch it. `filesWithParseErrors` is 57 and is newly visible for the
+same reason — it was always being counted, over a population 3,039 files short of the one
+it claimed.
+
+### A PUBLIC identifier is not a file, and one `imports` edge was withdrawn
+
+The single edge the parser fix left without a site is the whole finding:
+
+```
+libxslt/tests/general/bug-52.xml
+  <!NOTATION GIF PUBLIC "GIF">
+  <!ENTITY graphic SYSTEM "graphic.gif" NDATA GIF>
+->
+  GIF -imports-> GIF   role=notation_external_id   confidence=1
+```
+
+`extractExternalId` read `findDirectChild(externalId, "SystemLiteral") ??
+findDirectChild(externalId, "PubidLiteral")`, and its notation caller reached further still:
+`findDirectChild(node, "ExternalID") || (isNotation ? findDirectChild(node, "PublicID") : null)`.
+The grammar makes the two ExternalID shapes different node types, which
+`validation/m14/fixtures/xml/dump-dtd.mts` prints:
+
+```
+GEDecl        <!ENTITY graphic SYSTEM "graphic.gif" NDATA GIF>
+  ExternalID  SYSTEM "graphic.gif"
+    SystemLiteral  "graphic.gif"     <- a PATH. the only shape that imports
+
+NotationDecl  <!NOTATION GIF PUBLIC "GIF">
+  PublicID    PUBLIC "GIF"
+    PubidLiteral   "GIF"             <- a CATALOGUE NAME. names no file
+```
+
+A `PublicID` has no `SystemLiteral` child at all, so a read that falls back to
+`PubidLiteral` is not reading a file. XML's own grammar permits `PUBLIC PubidLiteral` with
+no system literal precisely so a parser can resolve the name against a catalogue. This is
+the defect class the powerShell round removed from `New-Object $type`: a value that is not
+a file published as an edge target. The analyzer's own node glossary called `PublicID`
+"a file reference on a NotationDecl", and that sentence is where the error started.
+
+**Counted twice, from sources that do not share a code path.**
+`validation/m14/fixtures/xml/public-id-census.mts`, 11,552 admitted files:
+
+| | count |
+| --- | ---: |
+| A, the tree: `ExternalID`/`PublicID` nodes | 299 |
+| A, nodes carrying a `SystemLiteral` | 298 |
+| A, nodes carrying **only** a `PubidLiteral` | **1** |
+| B, `imports` edges with `externalIdKind: "system"` | 298 |
+| B, `imports` edges with `externalIdKind: "public"` | **1** |
+
+Both ones are `libxslt/tests/general/bug-52.xml` line 2. Two instruments, one file, and
+the counts agree to the edge — which is what makes the fix scoped rather than guessed. The
+`SystemLiteral` path needed no change and the agreement says so: 298 nodes, 298 edges.
+
+**Withdrawn:** `imports` **469 → 468**, and edges with no site **1 → 0**. The invariant now
+lives in `extractExternalId`, at the single point where the target string is created, so a
+future caller that hands it a `PublicID` gets nothing rather than an edge. The glossary
+entries for `ExternalID`, `PubidLiteral` and `PublicID` state what each is.
+
+Fixture `xml/dtd-public-id-names-no-file` pins it and carries a SYSTEM notation (`jpeg`) and
+a `PUBLIC "pubid" SYSTEM "sys"` notation (`pairs`) as controls, so it cannot pass by
+refusing the construct; its forbid row is constrained on `from: "gif"` **alone**, because a
+row naming the fabricated target would be satisfied by an analyzer that invented a different
+one. Two mutants, one per direction: `xml/public-id-published-as-an-import` reinstates the
+fabrication, `xml/notation-import-refused-entirely` performs the over-correction. Both are
+caught; **21/21 caught, 0 survivors**.
+
+**Not claimed.** That a public identifier is worthless is not what this says. `PUBLIC
+"-//IETF//NOTATION TIFF//EN"` on a notation is a real, declared identifier and a consumer
+that wants it has nowhere to read it now. That is a `references`-class GAP this round did
+not adjudicate, and it is listed as unresolved rather than counted as coverage.
 
 ### The six questions, answered for every emitted type
 
@@ -2038,10 +2191,13 @@ the project.
 | --- | --- |
 | `npx tsc --noEmit -p tsconfig.json` | exit 0 |
 | `npx tsx script/m12/verify-regex-census.ts` | gate FAILED project-wide, **0 rows for `real-xml-analyzer.ts`** — census entries 26, HEAD scan 18, **17 missing + 25 stale**, and every one of the 42 rows belongs to another lane (css 11, scss 2, sql 1, svelte 3, clean 2, fsharp 4, javascript 1, python 1, typescript 6, vue 11). This lane's count is **0 before and 0 after** this round |
-| `bun run script/m14/run-fixtures.ts --lang xml` | `{"xml":{"pass":26,"fail":0}}` — 26 since `xml/declaration-range-contains-its-members` was added this round |
-| `BB_MUTANT_ONLY="xml/" bun run script/m14/mutate-analyzer.ts` | **all 21 caught**, 0 survivors (filtered 1748 → 21) |
-| `npx tsx validation/m14/fixtures/xml/ontology-mutants.mts` | **18/18 caught**, 0 survivors. The mutant added this round, `xml/declaration-anchored-to-the-name-attribute-again`, is caught **only** by `xml/declaration-range-contains-its-members` and localises there — it is invisible to the M19 line fixture, which is the measurement that the pre-existing suite had a hole in this shape |
-| `BB_LEDGER_MAX=400 npx tsx validation/m14/fixtures/xml/containment-ledger.mts` | `contains` **5,856/5,856 edges confirmed, rate 1.0000**, `G`/`D` classes **0**, **0 byte ranges held by 2+ names**, direction B **0 of 36,319** immediate-owner pairs with no edge · `imports` **50 edges / 50 tree sites / 0 with no site / 0 with no edge**. Before the fix, same instrument at 300 files: 3,909 of 4,383 = **89.2 %**, 253 colliding ranges. The full-population run is in the artifact's `corpus` block and is the number quoted in the tables |
+| `npx tsx script/m14/run-fixtures.ts --lang xml` | `{"xml":{"pass":28,"fail":0}}` — 28 since `xml/dtd-public-id-names-no-file` was added this round |
+| `BB_MUTANT_ONLY="xml/" bun run script/m14/mutate-analyzer.ts` | **all 21 caught**, 0 survivors (filtered 1748 → 21) — not re-run this round; the two new mutants are in the lane-local suite below because `script/m14/mutate-analyzer.ts` is supervisor-owned |
+| `npx tsx validation/m14/fixtures/xml/ontology-mutants.mts` | **21/21 caught**, 0 survivors. Added this round: `xml/public-id-published-as-an-import` (caught by `xml/dtd-public-id-names-no-file`) and `xml/notation-import-refused-entirely` (caught by `xml/dtd-public-id-names-no-file`, `xml/dtd-declarations`, `xml/dtd-self-named-external-id` — the over-correction is visible in three fixtures, the fabrication in one). Earlier, `xml/declaration-anchored-to-the-name-attribute-again` is caught **only** by `xml/declaration-range-contains-its-members` and localises there — it is invisible to the M19 line fixture, which is the measurement that the pre-existing suite had a hole in that shape |
+| `BB_XML_WORKERS=1 npx tsx validation/m14/fixtures/xml/containment-ledger.mts` | **FULL POPULATION, 11,552 admitted files**, run after the parser-lifetime fix and the public-id withdrawal, and **two consecutive draws byte-identical**. `unparsedByOwnParser` **0** (was 3,039) · `filesWithParseErrors` 57 · `contains` **188,267 edges / 188,262 confirmed, rate 1.0000**, classes `A` 188,262 / `C-source-symbol-absent` 1 / `D-spans-disjoint` 3 / `G-collision` 1, **9 byte ranges held by 2+ names in 5 files** · direction B **787,972 candidate span pairs, 20 with no edge** · `imports` **468 edges / 468 tree sites / 0 with no site / 0 with no edge** (was 469 / 186 / 1 / 0). Before the earlier span fix, same instrument at 300 files: 3,909 of 4,383 = **89.2 %**, 253 colliding ranges |
+| `npx tsx validation/m14/fixtures/xml/parser-lifetime.mts` | `ONE reused parser : failures=11552 of 11552, firstFailureAtIndex=8513` · `FRESH parser each : ok=0 parseFail=0 newParserThrew=11552 firstThrowAtIndex=0`. The wasm heap is exhausted at document 8,513 and a fresh `Parser()` cannot recover it — which is why the ledger's own `unparsedByOwnParser` was 3,039 |
+| `BB_XML_WORKERS=1 npx tsx validation/m14/fixtures/xml/public-id-census.mts` | tree **299** `ExternalID`/`PublicID` nodes, **298** with a `SystemLiteral`, **1** pubid-only · edges **469** `imports`, `externalIdKind=system` **298**, `externalIdKind=public` **1** · both ones are `libxslt/tests/general/bug-52.xml:2`. Pre-fix figures; the post-fix re-run is in §Unresolved |
+| `npx tsx validation/m14/fixtures/xml/dump-dtd.mts <file>` | prints the `doctypedecl` subtree to depth 4. On `bug-52.xml` it shows `GEDecl > ExternalID > SystemLiteral` beside `NotationDecl > PublicID > PubidLiteral` — the two shapes are different node types, which is the fact the fix rests on |
 | `BB_SPAN_MAX=400 npx tsx validation/m14/fixtures/xml/declaration-span-before-after.mts` | 36,774 symbols in **both** legs · **0 startLines moved** · **0 symbols added or removed** · spans held by 2+ names **253 → 0** · exits 2 rather than reporting if the stash did not take or the pop did not restore |
 | `BB_XML_WORKERS=1 npx tsx validation/m14/fixtures/xml/ruled-gate.ts` | **run TWICE**, exit 0 both, full 10-row table both, **0 `[BB-PARSE-ERR]`, 0 `[BB-HANG]`** both, `FALSIFIED 0`, `ruled-without-justification 0` both. `XML_B_PROBE_WALK uses walked=11464 / 11473 unparsed=0 occurrences=0`. The two runs differ in admitted population (11,464 → 11,473, another lane added a repository mid-afternoon) and agree on every row — see §`contains 185,957 did not reproduce` |
 | `npx tsx script/m14/ontology-coverage-gate.ts xml` | **6/10 EMITTED, 4 RULED-SOUND, FALSIFIED 0, ruled-without-justification 0** — exit 0. `contains` **186,233** on this run and 186,149 on an earlier run of the same commit at the same 8 workers, against **186,270** on two `ruled-gate.ts` runs at `BB_XML_WORKERS=1` — see §`countsAreDeterministic: true` was false. `references` 11,094 · `imports` 465 · `extends` 1,429 · `calls` 402 · `overrides` 3, byte-identical across all five runs. **Run through `ruled-gate.ts` at `BB_XML_WORKERS=1`, twice, both exit 0, both 0 `[BB-PARSE-ERR]` and 0 `[BB-HANG]`, both printing these numbers** — the shared gate at its own 8 workers cannot finish this corpus (it self-destructs at 120 s on one file before printing a row), so `ruled-gate.ts` is the instrument the numbers come from. See §`contains 185,957 did not reproduce` |
@@ -2589,6 +2745,48 @@ contributor to the memory and I/O pressure documented in item 3, and cleaning `/
 this lane would risk the exact bug the per-process tag was added to prevent — deleting a
 file another lane's process is mid-`Language.load` on, which silently degrades that lane
 into the 0.4/0.5-confidence regex extractor. It needs an owner.
+
+**8. Any lane instrument that builds its own tree-sitter parser will silently truncate,
+and there is no shared gate that can see it.** This is the same wasm heap as items 3 and
+6, reached from a different direction, and it is reported here because the fix is one line
+in the caller and there is no gate anywhere in the repository that would notice.
+
+`validation/m14/fixtures/xml/parser-lifetime.mts` over 11,552 corpus files:
+
+```
+ONE reused parser : failures=11552 of 11552, firstFailureAtIndex=8513
+FRESH parser each  : ok=0 parseFail=0 newParserThrew=11552 firstThrowAtIndex=0
+```
+
+The parser served documents `0..8512` and then failed on **every one of the remaining
+3,039**. A tree-sitter `parse()` call in `web-tree-sitter` is ASYNC, so N holders of one
+instance interleave inside the WASM module — the same reentrancy item 3 names as candidate
+mechanism one — and the failure mode is not a thrown error but a silent `Abort` after which
+the instance never recovers. The two lines together are what make it diagnosable rather
+than merely mysterious: a fresh `Parser()` throws at index **0**, so the heap is spent
+process-wide, which rules out "a bad file" and rules out the obvious repair.
+
+The consequence for an instrument is that its coverage claim becomes unfalsifiable. This
+lane's ledger reported `sitesOnTree 186` and `sitesWithNoEdge 0` — which reads as complete
+coverage of 186 sites and says nothing about the other 283 edges — while its own
+`unparsedByOwnParser` field held the only evidence, and that field read as a corpus
+property. Site coverage of `imports` edges was **39.7 %** reported as **100 %**. Nothing
+errored, nothing was flagged, and two draws agreed with each other, so every reproducibility
+check this lane had would have passed.
+
+Two things would serve every lane, and neither is this lane's to make:
+
+  - **Use `ASTEngine.parseTree`.** It is the entry the production analyzers get their tree
+    from, it deletes each tree in a `finally` (`src/ast/engine.ts:1972-1981`), and it keeps
+    parsers in an evicting pool (`src/ast/engine.ts:189-195`, recreate every 500 parses).
+    A census that walks its own tree beside `parseFile` has re-implemented the one part of
+    the engine that was already correct, and gets it wrong in the direction that flatters
+    the analyzer. This lane's fix was to delete its own parser, which is the whole change.
+  - **A shared arity guard in the instrument layer.** Any probe that parses more than N
+    files with one instance should count consecutive failures and REFUSE to report, the way
+    `ruled-gate.ts` already refuses when the per-probe walk count line is absent
+    (§Relationship ontology). The failure is silent, periodic and self-consistent, so no
+    amount of re-running detects it; only a counter can.
 
 ## Issue
 
