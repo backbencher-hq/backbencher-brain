@@ -40,7 +40,7 @@
       "observed": "bb_graph resolved root.name=count (src/main/java/com/demo/Inventory.java:count:4) but published root.name=Inventory, and root.match still reads \"exact\" with no substitution declared"
     }
   ],
-  "currentCommit": "42da053221ba9dd3173faffe2e60913e9de35993",
+  "currentCommit": "ba99e1001f5b6afc40254f74e51b1930290354f0",
   "sourceFingerprint": {
     "src/mcp/tool-handlers.ts": "a2b91b7d013c5e153a115a2693f76c1e51b4ea8daae84550e757395a8c10f426",
     "src/lsp/evidence_tier.ts": "4cc88ae81056af0f65e977d0c613121a2d8d545ff275afda13096e6294b0c5ce",
@@ -52,7 +52,7 @@
   },
   "verifierCommand": "npx tsx script/m28/verify-surface-parity.ts",
   "evidenceFile": "U2.json",
-  "generatedAt": "2026-10-05T04:25:10.440Z",
+  "generatedAt": "2026-10-05T16:53:24.531Z",
   "counts": {
     "seededRelationshipShapes": 2170,
     "seededShapesReturnedByBbGraph": 2170,
@@ -105,7 +105,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T04:25:10.440Z",
-    "contentSha256": "7587fd4a6d842b42c23578edb3dbe92aae0610155fc92a00f8120e7fbbb8ced6"
+    "sealedAt": "2026-10-05T16:53:24.532Z",
+    "contentSha256": "8287e02f5beefb2937da7f0df22fabdab2992592ec1d722e9b8f241ebc0175dd"
   }
 }
