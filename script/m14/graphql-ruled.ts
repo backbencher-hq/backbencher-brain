@@ -7,9 +7,25 @@
  *     instantiates RULED  instrument A (grammar-inventory)
  *
  * `imports` is NOT here. It was on this list until this round and is now EMITTED: the
- * `#import "<file>"` convention is 170 directives across 131 corpus files, 144 of the 158
- * well-formed ones naming a file that exists on disk. Its written reason and measurements
- * are GRAPHQL.I.1 in `script/m14/spec/graphql-completeness.json`.
+ * `#import "<file>"` convention is 170 directives across 131 corpus files. Over the 1,905 admitted
+ * files, 156 of those 170 targets name a file that EXISTS on disk — 91.76% — resolved against the
+ * importing file's own directory, which is what eslint-plugin-graphql does. The same 170 targets
+ * resolved against the REPOSITORY root give 0 of 170, which is the base an earlier pass used and
+ * the reason an earlier artifact reported the type at 0% on disk. The 14 that miss are configured
+ * aliases (`@b-schema`, `@circular/b.graphql`, `@multiple-levels/level2.graphql`,
+ * `graphql-import-test/b.graphql`, `shared`, `/b.graphql`) that a per-file analyzer cannot resolve.
+ *
+ * ## RUN THE ARBITER WITH `--fresh`, OR IT REPORTS THIS LANE AS EMITTING NOTHING
+ *
+ *     npx tsx script/m14/ontology-coverage-gate.ts graphql --fresh
+ *
+ * Without `--fresh` the arbiter resumed from `validation/m14/measurements/walk-graphql.txt`, which
+ * already held all 1,905 files, so `resumableWalk` never called its `run()` callback, the `observed`
+ * tally stayed empty, and it printed `emitted 0/10` with `RULED-UNJUSTIFIED` on the seven types
+ * this analyzer emits — while exiting non-zero for a reason that had nothing to do with any of them.
+ * Every accumulator in that gate is populated inside `run()`, so a resumed walk measures nothing and
+ * reports a full-looking table over a population it never walked. `--fresh` is not optional for any arbiter whose results are not
+ * persisted. Shared machinery, so this is recorded here rather than edited.
  *
  * The other six types (`uses`, `contains`, `references`, `exports`, `implements`,
  * `overrides`) are EMITTED and the gate counts them from production `parseFile`, so they
@@ -47,12 +63,19 @@
  * rather than trust: `publishedCount` / `publishedFiles` on the B row are the numbers the
  * gate is accountable to, read the way julia-ruled reads its own.
  *
+ * THE SYMPTOM, so the next reader recognises it: a correct `--fresh` run of
+ * `ontology-coverage-gate.ts graphql` prints, for the two `A` rows, "the grammar produced
+ * **57** distinct node types across the corpus". The graphql grammar produces **98**. 57 is
+ * the BASH grammar's inventory — the same run prints it for every lane, because the value is
+ * `(LANGS as any)[LANG]?.wasm ?? "tree-sitter-bash.wasm"` with no `graphql` entry to find.
+ * So an `A` row reading "57 node types, none of them a call" is a statement about bash.
+ *
  * ## WHAT INSTRUMENT A CAN AND CANNOT SEE IN THIS LANGUAGE
  *
  * Instrument A asks one question: does the grammar PRODUCE any node type in the list?
  * For `calls` and `instantiates` that is the right question and the answer is positive
  * evidence: the graphql grammar yields **98 distinct node types over 882,672 nodes on
- * 1,905 admitted files**, and the complete inventory is in
+ * 1,905 admitted files**, and the whole inventory is in
  * `script/m14/tmp/graphql/out/ontology-census.json` under `instrumentA.inventory`. It
  * contains `Field`, `Arguments`, `Argument`, `Directive`, `OperationDefinition` and 92
  * others, and it contains no call node and no construction node.
