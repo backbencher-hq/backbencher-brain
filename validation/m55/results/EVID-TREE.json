@@ -12,16 +12,18 @@
     "total": 6,
     "caught": 6
   },
-  "currentCommit": "659b69f19993b7c8c08f475a0057d987f5875664",
+  "currentCommit": "5130189a871f9bd35d3a6d957791f1f0b0448947",
   "workingTreeRelevantChanges": [
-    "validation/m42/results/H1.json",
+    "validation/m24/results/D1.json",
+    "validation/m42/results/H2.json",
     "validation/m42/results/H3.json",
     "validation/m42/results/H4.json",
+    "validation/m55/results/T2.json",
     "validation/m55/results/T4.json"
   ],
   "verifierCommand": "npx tsx script/m55/verify-evidence-tree-clean.ts",
   "evidenceFile": "EVID-TREE.json",
-  "generatedAt": "2026-10-05T03:59:33.708Z",
+  "generatedAt": "2026-10-05T04:15:15.606Z",
   "observed": {
     "rule": {
       "id": "epoch-suffixed-mutant-scratch",
@@ -117,7 +119,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T03:59:33.710Z",
-    "contentSha256": "ce630332559e03a6f83b3ff3a8dc182030609506336511025a20e0a2fec7072a"
+    "sealedAt": "2026-10-05T04:15:15.608Z",
+    "contentSha256": "482033e1623d8ee84010ab5a3f430749416d98f128ac795d92d87c71d2c133ed"
   }
 }
