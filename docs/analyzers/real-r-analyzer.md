@@ -252,10 +252,10 @@ Total 80,095 relationships over **29,562** symbols in that run. `references` mov
 `references` label it should have carried all along; the measurement and the
 reasoning are under **R7** below.
 
-**The wobble is measured across four production walks of this same population, and
+**The wobble is measured across five production walks of this same population, and
 it is a property of the parser, not of the analyzer.** Each row is the sum of that
-run's own ten per-type rows; the two harness files and the two arbiter runs are named
-so a reader can check the bytes.
+run's own ten per-type rows; the artifacts and the runs whose bytes were not kept
+are named so a reader can check them.
 
 | run | instrument | calls | uses | contains | imports | references | exports | extends | implements | overrides | instantiates | total | files lost |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -263,21 +263,25 @@ so a reader can check the bytes.
 | 2 | `labels-and-resolution.txt` | 48,174 | 4,808 | 17,622 | 2,095 | 2,137 | 3,585 | 351 | 1,133 | 107 | 3 | 80,015 | 1 |
 | F | arbiter, output not captured | 48,082 | 4,789 | 17,550 | 2,087 | 2,129 | 3,525 | 351 | 1,133 | 107 | 3 | 79,756 | 5 |
 | G | `arbiter/arbiter-r-runG-2026-10-05.txt` | 48,028 | 4,803 | 17,601 | 2,087 | 2,129 | 3,581 | 351 | 1,133 | 107 | 3 | 79,823 | 2 |
+| H | `arbiter/arbiter-r-runH-2026-10-05.txt` | 48,206 | 4,810 | 17,629 | 2,093 | 2,135 | 3,588 | 351 | 1,133 | 107 | 3 | 80,055 | 2 |
 
 The cause is named per run, not asserted: the wasm grammar dies with
 `[BB-PARSE-ERR] … memory access out of bounds` and WHICH files it dies on changes.
 Run 2 lost `usethis/R/badge.R`; run F lost `ggplot2/R/scale-manual.R`,
 `r-cli/R/width.R`, `r-cli/exec/news.R`, `r-cli/R/zzz.R` and
 `r-testthat/R/expect-equality.R`; run G lost `ggplot2/R/scale-manual.R` and
-`usethis/R/course.R`. A file that fails to parse contributes no edges, so the totals
-track the failures. Every total above is correct for the files its own run walked and
-none is correct for the admitted population as a whole; **the population figure for
-the ten types is 79,756–80,095 (Δ339), and every rate in this document inherits that
+`usethis/R/course.R`; run H lost `usethis/R/ci.R` and `usethis/R/citation.R`. A file
+that fails to parse contributes no edges, so the totals track the failures. The
+losses cluster in two repositories — 9 of the 11 across the five runs are `usethis`
+or `r-cli` files, and `r-rlang`'s 160 files were walked by every run without one
+loss. Every total above is correct for the files its own run walked and none is
+correct for the admitted population as a whole; **the observed total band for the
+ten types is 79,756–80,095 (Δ339), and every rate in this document inherits that
 band on its denominator.** Run 1 walked all 2,184 files with 0 parse failures and 0
-degraded parses; run 2 with 0 and 1; runs F and G each reported 1 degraded parse,
+degraded parses; run 2 with 0 and 1; runs F, G and H each reported 1 degraded parse,
 which is the 120-second bomb substituting a regex extractor.
 
-`extends`, `implements`, `overrides` and `instantiates` are **identical in all four
+`extends`, `implements`, `overrides` and `instantiates` are **identical in all five
 runs**, which says the wobble is confined to the types whose counts are large enough
 to be sensitive to losing a handful of files — not that those four are more correct
 than the others.
@@ -858,10 +862,11 @@ than the number sees one tier for this lane.
   the cause is `keepSymbol`, not an R rule. The accounting is closed rather than
   partial, which is a stronger statement than the one it replaces: there is no
   unexplained residue left in either rate.
-- **Corpus totals for R are not bit-reproducible under concurrency.** Every
-  production census of this lane logged `[BB-PARSE-ERR] r | <file> | memory access
-  out of bounds`, and WHICH files logged it changed between two runs over the
-  identical corpus: 22,449 symbols in one, 22,464 in another. `probe-oom.ts`
+- **Corpus totals for R are not bit-reproducible under concurrency.** Five
+  production walks of this lane over the identical 2,184-file population logged
+  `[BB-PARSE-ERR] r | <file> | memory access out of bounds` on 0, 1, 5, 2 and 2
+  files respectively, totalling 79,756 to 80,095 edges for the ten types. The
+  per-run table above carries each walk's own counts. `probe-oom.ts`
   establishes what is *not* wrong: over `r-rlang` (160 files, 3 passes each),
   **0** files had a symbol or relationship count that differed between passes, and
   15 files legitimately publish no symbols (roxygen topic files and testthat
