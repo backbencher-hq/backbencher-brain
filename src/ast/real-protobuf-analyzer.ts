@@ -34,18 +34,27 @@ import { ASTEngine } from "./engine"
  * ## Relationship ontology
  *
  *   - `contains`  declaration → member. message→field, message→nested type,
- *                 message→oneof, oneof→field, enum→enum_field, service→rpc.
+ *                 message→oneof, enum→enum_field, service→rpc. There is
+ *                 deliberately NO oneof→field edge: the message owns the field
+ *                 and the oneof is a sibling grouping, so one edge meaning both
+ *                 membership and grouping would make one edge mean two things. The
+ *                 grouping travels as `metadata.oneof` on the field.
  *   - `uses`      declaration → referenced type. A field's declared type, a
  *                 map value type, a `oneof_field` type, and BOTH of an rpc's
  *                 request and response types. A SCALAR type is not a reference
  *                 and produces no edge.
  *   - `imports`   file → a file it depends on. The source is the importing
- *                 file's own module name (its basename) and the target is the
+ *                 file's own identity — its `package` namespace symbol where it
+ *                 declares one, its basename otherwise — and the target is the
  *                 path as written, because `protoc` resolves an import against
- *                 `-I` include roots this file is never told. Both endpoints are
- *                 therefore MODULE PATHS rather than symbols, which is the
- *                 family's convention (`real-css-analyzer.ts`,
- *                 `real-dart-analyzer.ts`) and not a protobuf invention.
+ *                 `-I` include roots this file is never told, so the TARGET is a
+ *                 module path and is external by necessity. The SOURCE was
+ *                 measured rather than assumed (pass 16): it was a basename,
+ *                 which resolved at 0 of 1,565 module edges and was shared with
+ *                 another corpus file on 967 of them. It is now the `package`
+ *                 namespace this analyzer already publishes, so 1,560 of 1,565
+ *                 (99.68%) resolve, and `metadata.moduleOwner` says which
+ *                 spelling an edge used.
  *   - `exports`   file → a file it re-exports. `import public "x.proto"` is
  *                 BOTH a dependency and a republication, so it emits BOTH
  *                 edges: the two are separate facts, and pass 1's ruling that
@@ -608,7 +617,66 @@ export class RealProtobufAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (hit !== null) return hit
         return text
       }
+      // An unqualified name is assumed package-relative — but "assumed" is where
+      // this used to end, and the assumption is wrong whenever the declaration is
+      // in an ANCESTOR package the file imports. protoc's rule is C++ scope
+      // lookup: `plugin.proto` in `package google.protobuf.compiler` imports
+      // `google/protobuf/descriptor.proto` and writes its field type BARE as
+      // `repeated FileDescriptorProto proto_file = 15;`, and
+      // `FileDescriptorProto` is declared in `package google.protobuf` — the
+      // imported file's package, an ancestor of this one. protoc resolves it
+      // there; prefixing this file's package produced
+      // `google.protobuf.compiler.FileDescriptorProto`, which no corpus file
+      // publishes. So the assumption emitted a name that resolves to nothing for
+      // the shape the reference implementation's own corpus is built from.
+      // `echo_duplicate.proto` is the same shape one package over: it declares
+      // `package grpc.testing.duplicate`, imports the file holding
+      // `package grpc.testing`, spells one rpc's types in full and leaves the
+      // next rpc's bare.
+      //
+      // The walk is `resolveViaImports`' condition applied to an unqualified
+      // name: the candidate is `${scope}.${text}`, and it is accepted only when
+      // that scope's directory is one this file actually imports. Same evidence,
+      // same suffix guard, same refusal to guess when a more specific scope is
+      // also imported — so this cannot resolve a name to a package this file
+      // cannot see.
+      const bare = resolveBareViaImports(text, scope)
+      if (bare !== null) return bare
       return qualify(pkg || null, text)
+    }
+
+    /**
+     * The unqualified-name form of `resolveViaImports`: does any ENCLOSING scope
+     * name a directory this file imports?
+     *
+     * Where `resolveViaImports` asks "is the package written into the dotted
+     * name one of my imports", this asks "is one of my ANCESTOR packages one of my
+     * imports" — which is the only question an unqualified name leaves open. The
+     * scope chain is walked innermost first, because protoc stops at the first
+     * scope that holds a declaration, and a nearer scope is the one it stops at.
+     *
+     * The directory-suffix guard is the same one `resolveViaImports` carries, and
+     * for the same reason: a directory name need not be the package it holds, so a
+     * match at a broad scope whose directory is a proper suffix of a more
+     * specific candidate's is not evidence. Declining leaves the caller's
+     * package-relative guess in place, which is what this function's caller did
+     * before any of it existed.
+     */
+    const resolveBareViaImports = (text: string, scope: string | null): string | null => {
+      if (importDirs.size === 0) return null
+      const chain = specScopeChain(scope)
+      for (const base of chain) {
+        if (base.length === 0) continue
+        const dir = base.split(".").join("/")
+        if (!importDirs.has(dir)) continue
+        for (const other of chain) {
+          if (other.length === 0) continue
+          const otherDir = other.split(".").join("/")
+          if (otherDir !== dir && otherDir.endsWith(dir)) return null
+        }
+        return `${base}.${text}`
+      }
+      return null
     }
 
     /**
@@ -675,6 +743,45 @@ export class RealProtobufAnalyzer implements ASTEngine.LanguageAnalyzer {
       return inner ? inner.text : null
     }
 
+    /**
+     * The owner a member's PUBLISHED ID is built from — which is not always the
+     * owner it belongs to.
+     *
+     * Everywhere except inside an `extend` this is `ctx.owner`, so nothing moves.
+     * Inside an `extend` it is `ctx.scope`, and the difference is `protoc`'s
+     * rather than this lane's: an extension's identity is its own enclosing
+     * declaration chain plus its own name, and the EXTENDEE is a separate
+     * descriptor field (`extendee`) that is never part of the name.
+     *
+     *     package pb;
+     *     extend google.protobuf.FeatureSet {
+     *       TestFeatures test = 9999;          // protoc: pb.test
+     *     }
+     *
+     * `google.protobuf.FeatureSet.test` is a name no compiler defines and no
+     * source file writes. It was what this analyzer published, for all 834
+     * extension members in 64 corpus files, and it merged genuinely distinct
+     * symbols into one id: `pb-reference/src/google/protobuf/
+     * unittest_features.proto:32` declares `test = 9999` in `package pb` and
+     * `unittest_custom_features.proto:14` declares `test = 9995` in `package
+     * custom_features`, and both were published as
+     * `google.protobuf.FeatureSet.test`. One id, two extensions, two field
+     * numbers, two packages.
+     *
+     * The merge is what the reverse walk suffers from, and it is the only
+     * class-B bucket in this corpus the analyzer owns: `protoc` ACCEPTS a
+     * compilation unit holding both files, so it sees two symbols where this
+     * analyzer saw one. `ownerName` and the `contains` edge keep pointing at the
+     * EXTENDEE, because membership is unchanged and is what `contains` means;
+     * only the published identity moves, to the name `protoc` uses.
+     *
+     * A member id is now built from `ctx.scope` in exactly the one place the
+     * group TYPE already did (`typeOwner` below), so a proto2 `group` inside an
+     * `extend` gets the same treatment as a plain field there — its type and its
+     * field share a name, which `uniqueId` already disambiguates.
+     */
+    const idOwner = (ctx: Ctx): string | null => (ctx.viaExtension ? ctx.scope : ctx.owner)
+
     const addFieldLike = (
       node: Node,
       nameNode: Node,
@@ -686,7 +793,7 @@ export class RealProtobufAnalyzer implements ASTEngine.LanguageAnalyzer {
       const meta: Record<string, unknown> = { ...extra }
       if (ctx.oneof) meta.oneof = ctx.oneof
       if (ctx.viaExtension) meta.viaExtension = true
-      const id = addSymbol(qualify(ctx.owner, name), {
+      const id = addSymbol(qualify(idOwner(ctx), name), {
         name,
         kind: SymbolKind.Property,
         range: nodeToRange(node),
@@ -813,7 +920,7 @@ export class RealProtobufAnalyzer implements ASTEngine.LanguageAnalyzer {
           // the block's own scope is not itself an extension member. It was true for
           // these rows and is false now; on a group outside an `extend` it was
           // already false.
-          const typeOwner = ctx.viaExtension ? ctx.scope : ctx.owner
+          const typeOwner = idOwner(ctx)
           // Two symbols, two ids: the type takes the plain dotted id and the
           // field is disambiguated by `uniqueId`, so the `uses` edge below
           // points field→type instead of looping a symbol onto itself.
@@ -833,7 +940,7 @@ export class RealProtobufAnalyzer implements ASTEngine.LanguageAnalyzer {
             metadata: { isGroupType: true },
           })
           if (typeOwner) addRel(typeOwner, typeId, RelationshipTypeContains, lineOf(node), { member: "groupType" })
-          const fieldId = addSymbol(qualify(ctx.owner, gname), {
+          const fieldId = addSymbol(qualify(idOwner(ctx), gname), {
             name: gname,
             kind: SymbolKind.Property,
             range: nodeToRange(node),
@@ -917,7 +1024,7 @@ export class RealProtobufAnalyzer implements ASTEngine.LanguageAnalyzer {
       const nameNode = firstOfType(node, "identifier")
       if (!nameNode) return
       const name = nameNode.text
-      const id = addSymbol(qualify(ctx.owner, name), {
+      const id = addSymbol(qualify(idOwner(ctx), name), {
         name,
         kind: SymbolKind.EnumMember,
         range: nodeToRange(node),
@@ -1236,16 +1343,57 @@ export class RealProtobufAnalyzer implements ASTEngine.LanguageAnalyzer {
           // basename for the same reason CSS uses one, with the full path kept in
           // metadata so a consumer that knows the include root can do better.
           if (path) {
-            // The SOURCE is the importing file's own module name and the TARGET
-            // is the path as written. Taking the basename of the IMPORTED path
-            // for the source instead — which a first draft did — makes a file
-            // appear to import ITSELF: `import public "common/v1/types.proto"`
-            // became `types.proto -> common/v1/types.proto`, an edge whose two
-            // endpoints name the same module and which `bb_graph` would read as a
+            // The SOURCE is the importing file's own identity, and until this pass
+            // it was the file's BASENAME. Two measurements killed that, both from
+            // `script/m14/protobuf-module-edge-sources.mts` over 821 `.proto` files:
+            //
+            //   1. THE SOURCE RESOLVED AT 0%. 0 of 1,561 `imports` and 0 of 4
+            //      `exports` edges had a source that is a published symbol id. Every
+            //      one asserted a node the index does not hold, so `bb_graph` could
+            //      not walk outward from any of them.
+            //   2. THE SOURCE WAS AMBIGUOUS FOR THE MAJORITY. 112 basenames are
+            //      shared across the corpus, 424 files sit on one, and 967 of the
+            //      1,565 module edges (61.8%) hang off a basename another file also
+            //      uses — so two unrelated files named `types.proto` produced
+            //      indistinguishable edges.
+            //
+            // The file's own `package` is the substitute, and it is not a new idea:
+            // this analyzer ALREADY publishes it as a `Namespace` symbol and already
+            // hangs the file's top-level declarations off it (7,166 `contains`
+            // edges). Measured, that substitution resolves 1,556 of 1,561 `imports`
+            // and 4 of 4 `exports` — 1,560 of 1,565, 99.68% — and the 5 that do
+            // not are the edges of the 11 files that declare no package at all,
+            // which keep the basename spelling.
+            //
+            // WHAT IT COSTS, counted rather than assumed: 90 packages are declared
+            // by more than one file, 66 of them by more than one IMPORTING file, so
+            // 810 of the 1,560 edges would land on a namespace another file's edges
+            // also land on (widest: `controller.api.services.v1`, 24 files). That is
+            // aggregation — but it is aggregation that replaces ANONYMOUS
+            // aggregation: today those same edges are already merged onto one
+            // unresolvable basename node, keyed on a spelling two unrelated
+            // packages share. The change makes the merge key published and
+            // semantically the owner, and it is still the node `contains` hangs the
+            // same file's declarations from. A per-FILE node would be the only way
+            // to keep the granularity, and a file is not a protobuf declaration, so
+            // minting one would be inventing a symbol the language does not have.
+            //
+            // The basename is still carried, in `metadata.filePath`, so a consumer
+            // that wants the old spelling takes the last segment of it. The TARGET
+            // is unchanged and still unresolved by design: `protoc` resolves an
+            // import against `-I` include roots this analyzer is never told.
+            //
+            // Taking the basename of the IMPORTED path for the source instead —
+            // which a first draft did — makes a file appear to import ITSELF:
+            // `import public "common/v1/types.proto"` became
+            // `types.proto -> common/v1/types.proto`, an edge whose two endpoints
+            // name the same module and which `bb_graph` would read as a
             // self-dependency. CSS's `importerName` is the importing file for the
-            // same reason.
-            const selfMod = filePath.split("/").pop() || filePath
-            const moduleMeta = { modulePath: path, filePath }
+            // same reason, and CSS is also where the divergence is earned: a
+            // stylesheet has no package declaration, so it has no file-level symbol
+            // to hang the edge on and a basename is the only name it has.
+            const selfMod = pkg.length > 0 ? pkg : filePath.split("/").pop() || filePath
+            const moduleMeta = { modulePath: path, filePath, ...(pkg.length > 0 ? { moduleOwner: "package" } : { moduleOwner: "basename" }) }
             if (modifier === "public") {
               // `import public` is BOTH, and this was wrong in pass 1.
               //

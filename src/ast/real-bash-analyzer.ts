@@ -335,8 +335,30 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
     // current as aliases are discovered.
     const scopeOwners: Set<string> = localFunctions
     const functionStack: string[] = []
-    // First declaration line per function name, for the BD8b `overrides` edge.
-    const functionFirstDeclaration = new Map<string, number>()
+    // The PRIOR declaration line per function name, for the BD8b `overrides` edge.
+    //
+    // This recorded the FIRST declaration and the map's name said so, which was
+    // true and wrong at once for a name declared more than twice. `overridesLine` is
+    // read by the edge as "the declaration this one replaces", and the declaration a
+    // redefinition replaces is the one IN EFFECT — the latest before it, not the
+    // first. Measured on the 600-file sample: 21 of 30 ambiguous `overrides` edges
+    // published a line that is a real declaration of the name and is NOT the
+    // declaration the edge overrides, every one of them a chain:
+    //
+    //   dart-sdk ... clipcopy declared at 55,58,61,64,67,70,73,76,79,82,85,97
+    //   edge@61  overridesLine=55   the definition in effect is 58
+    //   edge@67  overridesLine=55   the definition in effect is 64
+    //
+    // So a consumer that trusts the key draws an `overrides` edge from 61 to 55
+    // while 58 is the row that definition 61 actually displaces — an edge to a real
+    // declaration, asserted as the wrong one. `probe-bash-contains-overrides-ceiling.mts`
+    // measures it: `overridesLine` picks a declaration 30/30 and names the
+    // immediately-prior one 9/30.
+    //
+    // The map is renamed with the behaviour rather than left to read as a first-line
+    // index, and `functionDeclLines` below no longer needs the comment that explained
+    // why this one recorded only the first.
+    const functionPriorDeclaration = new Map<string, number>()
     const functionParams = new Map<string, Set<string>>()
     const relKeys = new Set<string>()
     // BD1: the line is part of an edge's identity. Keyed with the line so two
@@ -475,7 +497,27 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
           // `overridesLine` carries the prior declaration's line explicitly so a
           // consumer does not have to infer it. `contains` already emits both
           // declarations, so the pair is resolvable.
-          const prior = functionFirstDeclaration.get(name)
+          //
+          // `overridesLine` names the declaration IN EFFECT at the moment of the
+          // redefinition — the immediately prior one — because that is the
+          // declaration this one displaces. In bash the binding a call site uses is
+          // whatever is in effect when it runs, so a later definition does not
+          // override the first one it happens to be preceded by; it overrides the
+          // one the running shell would have called. For a name declared twice the
+          // two readings coincide, which is why the error was invisible until a
+          // name was declared three or more times: `ohmyzsh/lib/clipboard.zsh`
+          // declares `clipcopy` at 55,58,61,64,67,70,73,76,79,82,85,97.
+          //
+          // Measured on the 600-file sample with the previous first-declaration
+          // behaviour: all 30 ambiguous `overrides` edges resolved `overridesLine`
+          // to a real declaration of the name, and only 9 of those 30 were the
+          // immediately prior one — the other 21 named an earlier declaration, so a
+          // consumer reading the key drew `overrides` to a row the definition never
+          // displaced. `probe-bash-contains-overrides-ceiling.mts` is the
+          // instrument, and `validation/m14/fixtures/bash/overrides-prior-line.sh`
+          // is what keeps it fixed — a four-declaration chain, because the two-row
+          // `redefinition-overrides.sh` cannot tell this reading from the old one.
+          const prior = functionPriorDeclaration.get(name)
           if (prior !== undefined) {
             addRel(
               parentFn || scriptName,
@@ -490,9 +532,12 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
                 evidenceClass: "structural",
               },
             )
-          } else {
-            functionFirstDeclaration.set(name, node.startPosition.row + 1)
           }
+          // Set UNCONDITIONALLY, after the edge: the next declaration of this name
+          // must find the one in effect, which is this one. Writing it only on the
+          // branch that emitted no edge would freeze the map at the first
+          // declaration forever, which is the defect this line replaced.
+          functionPriorDeclaration.set(name, node.startPosition.row + 1)
         }
         patterns.add("Function Definition")
       } else if (node.type === "command_substitution") {
@@ -669,10 +714,11 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     // Every declaration line per FUNCTION name, for the `calls` attribution below.
     //
-    // `functionFirstDeclaration` (above) records only the first, because `overrides`
-    // needs the prior one and nothing else. A `calls` edge needs the opposite
-    // question — WHICH of several declarations is the one in effect at the call
-    // site — so it needs all of them.
+    // `functionPriorDeclaration` (above) holds only the most recent declaration of a
+    // name, because that is the only prior declaration an `overrides` edge can
+    // mean, and it keeps none of the earlier ones. A `calls` edge needs the
+    // opposite question — WHICH of several declarations is the one in effect at the
+    // call site — so it needs all of them.
     //
     // It is indexed from the PUBLISHED `symbols`, not from the walk's own
     // bookkeeping, so a `targetLine` produced from it is a line the store actually
@@ -845,7 +891,41 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (rel.type !== ASTEngine.RelationshipType.Calls) continue
       const meta = rel.metadata as Record<string, unknown>
       if (meta.targetResolution !== undefined) continue
-      if (meta.isFunctionCall !== true) continue // an external binary names nothing local
+      if (meta.isFunctionCall !== true) {
+        // The comment this replaces read "an external binary names nothing local",
+        // and it is FALSE for a name this file also declares. Measured on the whole
+        // corpus: `ohmyzsh/plugins/pip/pip.plugin.zsh` declares `local xargs=` on 106
+        // and again on 114, then RUNS `xargs` at 107 and 115. The two edges at 107/115
+        // are correct — `xargs` there is /usr/bin/xargs — and a consumer matching
+        // reverse edges by target finds two `variable` candidates and no way to
+        // choose, because the edge published nothing. "Names nothing local" and
+        // "names something local that is not this edge's target" are different facts
+        // and publishing neither is what made this invisible for nine rounds.
+        //
+        // The answer publishes NO line, because there is no declaration at that line
+        // the call denotes: command position resolves to a function or a PATH lookup,
+        // never to a variable. So the fact a consumer needs is the KIND of thing the
+        // name collides with, not a line among the colliding declarations. Both
+        // `xargs` edges get `targetResolution: "commandNameIsExternal"` and
+        // `collidesWithLocalDeclaration: true`, which together let a consumer discard
+        // the variable candidates instead of picking one.
+        //
+        // It is NOT published on an edge read out of error recovery. The same pass
+        // over the whole corpus also reaches `calls -> key` (Paket/completion/
+        // paket-completion.zsh:1486, where the word `local` was swallowed into an
+        // ERROR and `key` became the command name) and `calls -> name` twice
+        // (kubernetes/cluster/gce/util.sh:3829/:4057, where a gcloud `--filter`
+        // string was handed back as a command). Those three name no program the
+        // source runs, so telling a consumer they reach an external binary would be
+        // a false claim about a false edge — the labels exist to make a real
+        // ambiguity visible, not to dress wreckage up as a decision.
+        if (meta.commandInErrorRecovery === true) continue
+        const name = String(rel.target ?? "")
+        if (!namesWithNonFunctionDecl.has(name)) continue // truly external: nothing local to confuse
+        meta.targetResolution = "commandNameIsExternal"
+        meta.collidesWithLocalDeclaration = true
+        continue
+      }
       const resolved = this.resolveFunctionTarget(
         functionDeclLines,
         String(rel.target ?? ""),
@@ -1152,6 +1232,16 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
    *                              and function@151; mvdan-sh/syntax/typedjson/
    *                              testdata/roundtrip/file.sh `foo` against
    *                              function@19 and variable@20).
+   *   commandNameIsExternal      NOT this function. Published by the CALLER, not
+   *                              here: `isFunctionCall` is false and the name is
+   *                              declared in this file as something that is not a
+   *                              function, so a name-matching consumer has
+   *                              candidates that are not this edge's target. The
+   *                              sibling of `commandNameIsAFunction` and the same
+   *                              fact seen from the other side — there the
+   *                              function is the answer, here nothing local is.
+   *                              2 whole-corpus edges (`xargs` in
+   *                              ohmyzsh/plugins/pip/pip.plugin.zsh at 107/115).
    *   ambiguousInFile            two declarations on the same line, which the
    *                              published line cannot separate. No line: picking
    *                              one would be the invented attribution.
@@ -2284,8 +2374,45 @@ private extractAssignment(
       isFunctionCall: isLocal,
       isExternalCommand: !isLocal,
       resolvedWithinFile: isLocal,
+      // Where this command node sits, so the attribution pass can tell a name
+      // collision from wreckage. Published on true only, and it is a statement
+      // about the node's POSITION rather than a verdict on the edge — round 13
+      // measured 427 function names whose `name:` field sits inside an ERROR span
+      // and every one is a real declaration, the span reaching back over intact
+      // code. So this flag never removes an edge. It exists because the
+      // attribution pass runs AFTER the walk and would otherwise have to re-derive
+      // the shape from a node it no longer holds.
+      commandInErrorRecovery: this.isInsideErrorNode(node) || undefined,
       bashSpecific: true,
     })
+  }
+
+  /**
+   * Is this node a DESCENDANT of a tree-sitter `ERROR` node?
+   *
+   * The narrow half of what round 3's guard B would have tested, and the half that
+   * survives its own measurement. Guard B was "any damaged region — subtree or
+   * ancestor chain" and it removed 96 of 2,945 `calls` edges on a 200-file sample,
+   * 15 of them real `kube::log::status` calls, because a MISSING token anywhere in
+   * a file condemns every command under it.
+   *
+   * Re-measured at whole corpus with the analyzer's OWN selector for the command
+   * name (`commandNameNode`, which scans all named children — the first version of
+   * the probe read `namedChild(0)` and so missed the very shape round 3 named):
+   *
+   *   2,891 `calls` edges come from a command inside an ERROR subtree, and the
+   *   removal set is `setopt`, `print`, `echoti`, `autoload`, `emulate`, `title`,
+   *   `terminal-notifier`, `notify-send` — real work, overwhelmingly zsh.
+   *
+   * So the flag is published and NO guard is built on it. The three whole-corpus
+   * edges it would have caught are named in the lane doc as residuals, because the
+   * alternative is deleting 2,891 correct edges to remove 3.
+   */
+  private isInsideErrorNode(node: Node): boolean {
+    for (let cur: Node | null = node.parent; cur; cur = cur.parent) {
+      if (cur.type === "ERROR") return true
+    }
+    return false
   }
 
   private handleExportCommand(
