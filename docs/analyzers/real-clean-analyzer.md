@@ -1220,7 +1220,7 @@ than an error — and the `lua`/`r` orphan finding it surfaces is **not** clean'
 
 ## Reported to the supervisor, not fixed
 
-Seven findings outside this lane's ownership. Each is stated so it can be applied
+8 findings outside this lane's ownership. Each is stated so it can be applied
 without re-deriving it. None was worked around silently.
 
 1. **`script/m14/verify-ruling-tables-registered.ts` cannot see a lane that has shipped
