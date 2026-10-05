@@ -3,8 +3,8 @@
   "code": "H2",
   "milestone": "M42",
   "status": "verified",
-  "checks": 31,
-  "passed": 31,
+  "checks": 40,
+  "passed": 40,
   "failed": 0,
   "failures": [],
   "verdict": {
@@ -17,7 +17,7 @@
     "planned": 6
   },
   "fixture": {
-    "root": "$HOME/backbencher-brain/.tools/m42-h2-fixture",
+    "root": "$HOME/Documents/Default Project/ishaq/wt/lsp6/.tools/m42-h2-fixture",
     "files": [
       "src/main/java/com/demo/App.java",
       "src/main/java/com/demo/Main2.java"
@@ -61,19 +61,29 @@
   "budgets": {
     "hoverP95Ms": 50
   },
-  "currentCommit": "a871d533a736e8e38cb826d80d986d3cc84022d1",
+  "measured": {
+    "regime": "warm",
+    "samples": 200,
+    "p50Ms": 6.82,
+    "p95Ms": 8.98,
+    "maxMs": 15.88,
+    "meanMs": 6.99,
+    "budgetMs": 50,
+    "coldMs": 71.99,
+    "note": "A real p95 over a stated sample set. The pre-lane check was a MEAN over 40 compared against this budget and reported as a p95; the substitution was named as a limitation in KNOWN-GAPS.json for three waves instead of being fixed."
+  },
+  "currentCommit": "936b66d6d088776c7715e7d1aec492cc9c6d9841",
   "verifierCommand": "npx tsx script/m42/verify-rich-hover.ts",
   "evidenceFile": "H2.json",
-  "generatedAt": "2026-09-20T02:50:20.458Z",
+  "generatedAt": "2026-10-05T02:32:37.401Z",
   "limitations": [
-    "Header usage count keeps the M24 semantics (raw relationship-row count); the usages section lists deduplicated L3 locations — when several rows point at one site the numbers differ, honestly.",
-    "The analyzer stores no call-site byte ranges; usage links point at the referencing symbol's declaration (the same location the native references tree jumps to).",
-    "Warm-budget check uses mean-over-40 as a p95 proxy; the E5 editor leg re-measures with the shared harness.",
-    "Editor-leg (link clicking in a real session) is asserted in the E5-pattern session at H2 acceptance; this file proves the server surface."
+    "A usage link opens the index-stored CALL SITE when brain_relationship.line_number holds a real line, and the referencing symbol's DECLARATION when it does not — every such row states which, in its own label and in the usages header. The store carries no call-site BYTE COLUMN, so a call-site link opens at character 0: the line is exact, the column is not stored.",
+    "A hover renders at most 3 usage links plus a \"+N more\" link, so a symbol with many callers shows three of them on the card and the rest through the hub.",
+    "No editor leg: this file proves the server surface. Link clicking in a real session is the E5-pattern session at H2 acceptance."
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-20T02:50:20.458Z",
-    "contentSha256": "976002aa573fc531f8584bdc8b37293200834fdf68515c19a93a1dc40541e2cf"
+    "sealedAt": "2026-10-05T02:32:37.403Z",
+    "contentSha256": "8b65169580702bb495b2c06e780d79ee44b21fa58e4aa208b9a46feb70228b12"
   }
 }

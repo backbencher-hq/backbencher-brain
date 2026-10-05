@@ -2,24 +2,24 @@
   "issue": "M55.T3",
   "code": "T3",
   "milestone": "M55",
-  "status": "verified",
-  "checks": 52,
-  "passed": 52,
-  "failed": 0,
-  "realFailed": 0,
+  "status": "known-gap",
+  "checks": 57,
+  "passed": 55,
+  "failed": 2,
+  "realFailed": 2,
   "negativeCases": 3,
   "mutants": {
     "total": 3,
     "caught": 3
   },
-  "currentCommit": "c53a90abfc4d4042c3e8d260168f8fbdec274b3b",
+  "currentCommit": "936b66d6d088776c7715e7d1aec492cc9c6d9841",
   "workingTreeRelevantChanges": [],
   "verifierCommand": "npx tsx script/m55/verify-relations.ts",
   "evidenceFile": "T3.json",
-  "generatedAt": "2026-09-19T02:54:03.575Z",
+  "generatedAt": "2026-10-05T02:33:02.545Z",
   "fixture": {
-    "workspace": "/tmp/m55-t3-ws-79bzNK",
-    "projectId": "3a25404dc80611745f7c76bdd878593dcf1d7b77",
+    "workspace": "/var/folders/4j/11tssyqj4kj0f8dfz06jsb700000gn/T/m55-t3-ws-1HreZl",
+    "projectId": "267a053fde697689f1d47f87c3bf23c40babad55",
     "symbols": 7,
     "rows": 12,
     "expect": {
@@ -48,7 +48,10 @@
     "referencesNoDecl": 3,
     "referencesWithDecl": 4
   },
-  "failures": [],
+  "failures": [
+    "R3: every bb/graph caller is a usage site or a stored referrer the index cannot locate (the graph declares its own profile): {\"callers\":[\"Greeter\",\"describe\",\"ghost\",\"greetAll\",\"main\"],\"allowed\":[\"describe\",\"ghost\",\"greetAll\",\"main\"]}",
+    "R3: the hub's declared difference is exactly the referrers with no resolvable location: {\"extra\":[\"Greeter\",\"ghost\"],\"unresolvable\":[\"ghost\"]}"
+  ],
   "limitations": [
     "The analyzers of the confirmatory languages store line_number = 0 for call rows (verified on the demo index: every TypeScript/Java usage row carries 0), so a usage row's file:line is the REFERENCING symbol's indexed location — where the call is — and the rendered copy says so. Invocation-column precision needs the analyzers to store call-site lines; the gate asserts the stored-line case only if the index carries one (it does not today).",
     "The wire legs run the real dist server against a real seeded index in an isolated BB_DATA_DIR; a stale dist is rebuilt first (lsp-wire.ts), never silently used.",
@@ -56,7 +59,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-19T02:54:03.577Z",
-    "contentSha256": "04503387eb26832eef10c081064977aa96dbe89886212fa7639fa0b375849864"
+    "sealedAt": "2026-10-05T02:33:02.546Z",
+    "contentSha256": "e2219f5fb26d6c82018291029830ba81fb0fd631aeaa53f76ee1c9af95becdee"
   }
 }
