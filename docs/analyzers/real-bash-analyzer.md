@@ -139,34 +139,43 @@ round 3 reproduced round 2's denominators exactly (400 files / 48 repositories /
 4,012 admitted / 441,259 tracked). The gate column is quoted as a range for that
 reason and not as a single figure.
 
-| type | emitted? | **WHOLE CORPUS: 4,133 admitted, production `parseFile` (round 12)** | census: 400 files (round 12) | **edges that resolve to ONE declaration** | evidence |
+| type | emitted? | **WHOLE CORPUS: 4,185 admitted, production `parseFile` (round 14)** | census: 400 files (round 14) | **edges that resolve to ONE declaration** | evidence |
 | --- | --- | --- | --- | --- | --- |
-| `calls` | **EMITTED** | **55,241** | 5,097 | 231 of 236 ambiguous; **0 dangling** | `census-bash-ontology.ts --all`, gate row, `probe-bash-published-resolvability.mts --all` |
-| `uses` | **EMITTED** | **81,534** | 7,856 | 11,205 of 12,165 ambiguous; 960 decline; **0 dangling** | same |
-| `contains` | **EMITTED** | **38,327** | 3,775 | **6,202 of 6,202 (100%)** — the edge's own line | same |
+| `calls` | **EMITTED** | **56,181** | 5,181 | 236 of 15,261 ambiguous; **0 dangling** | `census-bash-ontology.ts --all`, gate row, `probe-bash-published-resolvability.mts --all` |
+| `uses` | **EMITTED** | **83,392** | 8,104 | 12,372 of 12,372 ambiguous; 0 decline; **0 dangling** | same |
+| `contains` | **EMITTED** | **39,083** | 3,889 | **6,263 of 6,263 (100%)** — the edge's own line — **and 1 DANGLING**, see round 14 | same |
 | `imports` | **EMITTED** | **679** | 44 | n/a — the target is a path, 0 present | same |
 | `references` | **EMITTED** | **679** | 44 | n/a — the twin edge, 0 present | same |
-| `exports` | **EMITTED** | **1,929** | 210 | **96 of 96 (100%)** | same |
+| `exports` | **EMITTED** | **1,963** | 211 | **100 of 100 (100%)** | same |
 | `overrides` | **EMITTED** | **138** | 28 | **138 of 138 (100%)** — definitional | same |
-| `extends` | **RULED — never emitted** | 0 | 0 | n/a | instrument A + B below |
-| `implements` | **RULED — never emitted** | 0 | 0 | n/a | instrument A + B below |
-| `instantiates` | **RULED — never emitted** | 0 | 0 | n/a | instrument A + B below |
+| `extends` | **RULED — never emitted** | 0 | 0 | n/a | instrument A, now corpus-independent — see round 14 |
+| `implements` | **RULED — never emitted** | 0 | 0 | n/a | instrument A, now corpus-independent — see round 14 |
+| `instantiates` | **RULED — never emitted** | 0 | 0 | n/a | instrument A, now corpus-independent — see round 14 |
+
+**Every number in this table is pinned to a corpus, and round 14 made the pin a
+value rather than a sentence.** `setHash d0c89242a59a3fa0f3aae9f4e035c3520ee07fbb9019d712f6392ad80cb00b72`
+over the sorted `repo/rel` of every admitted bash file, `contentHash
+bceda140b2ef111dc170183db9c10ce59bfab3a8c0eba79eeba16c42b81c05fc`, `sampleHash
+96b156d97c7d9e3d8296386ef465d099e80a86c59c712a420b0fcaa8c15c06f9` at N=400. The
+census prints its own `setHash` on every run and computes it independently of
+`probe-bash-corpus-pin.mts`; both read the value above, so the two files check
+each other rather than one being trusted.
 
 **Totals, in prose because the gate grades this table:** the seven emitted types sum
-to **178,527 relationships over 42,469 symbols**, from 4,133 admitted files, 0 parse
-failures, and **4,133 grammar-read / 0 answered by `extractFallback`** (round 11 read
-178,388/42,420 with 1 fallback; rounds 9 and 10 read 178,463/42,418 and
-178,396/42,403 on the same admitted set). **Round 12's +139 relationships and +49
-symbols are NOT all the round's change, and the difference is attributed rather than
-absorbed**: the A/B on the whole corpus measures the change at **+45 symbols and +47
-`contains` edges**, and the remaining ~+94 across `calls` and `uses` is the documented
-instrument wobble. See
-[Round 12](#round-12-the-assignment-that-binds-a-name-and-the-flag-whose-answer-was-a-line-number).
-The **last column** answers "can the graph walk to a declaration": over **18,837
-name-ambiguous edges, 0 leave zero candidates in any type.** (A
-`total` row is not a row in this table: `verify-doc-truth-emissions.ts` parses every
-data row as a relationship type and reports a summary line as
-`NON_ENGINE_KIND [bash] total`, which this lane introduced once and removed.)
+to **182,115 relationships over 43,275 symbols**, from 4,185 admitted files, 0 parse
+failures, and **4,183 grammar-read / 2 answered by `extractFallback`** contributing
+**0** relationships. **This is not comparable to round 12's column and is not a
+delta:** round 12 measured 4,133 admitted files and round 14 measures 4,185, because
+six agents are told to extend this corpus and one of them cloned during this round.
+With no analyzer change in between — `git log 17c6cfc0e..HEAD -- src/` is empty,
+and `17c6cfc0e` IS the commit round 12's column was measured at — the +52 admitted
+files are the whole difference. The types that did NOT move are the informative
+ones: `imports` 679, `references` 679 and `overrides` 138 are byte-identical to
+round 12, because they are rare enough that a hash-ordered sample keeps hitting all
+of them, and `contains` moved +756 while `symbols` moved +806. (A `total` row is not
+a row in this table: `verify-doc-truth-emissions.ts` parses every data row as a
+relationship type and reports a summary line as `NON_ENGINE_KIND [bash] total`,
+which this lane introduced once and removed.)
 
 **The whole-corpus column exists because round 9 established that it can be
 taken**, and until then this file's numbers were a 400-file sample (9.7% of
@@ -2524,6 +2533,259 @@ continuing to behave this way, and it is the number to quote.
 ### Coverage, unchanged
 
 **7/7 applicable, 3 measured-absent, 0 unaccounted.**
+
+## Round 14: the corpus that moved under the measurement, and a `this` that is not noise
+
+Round 13 asked what the GRAMMAR has. Round 14 asked two things that had been
+assumed: **which corpus** the numbers belong to, and **whether the analyzer contains
+a branch the corpus never exercises**. Both assumptions were wrong in an interesting
+way, and one of them was wrong in shared machinery rather than in this lane.
+
+**No verdict changed: 7/7 applicable, 3 measured-absent, 0 unaccounted.** All three
+RULED types are now settled by a property of the pinned binary rather than of a
+corpus, which is a strictly stronger footing, and the one defect found is a
+`contains` edge that resolves to nothing — 1 of 39,083.
+
+### Limitation 14 was true and checked nothing
+
+It said "the census sample is reproducible only against a pinned corpus", which is
+correct and leaves the reader with no way to tell a regression from a corpus that
+grew. It was caught in the act, in one session, with **no analyzer change between the
+two runs** — `git log 17c6cfc0e..HEAD -- src/` is empty, and `17c6cfc0e` is the commit
+the whole-corpus column was measured at:
+
+| instrument | admitted | symbols | rels |
+| --- | --- | --- | --- |
+| `census-bash-ontology.ts --all` (first run) | 4,133 | 42,456 | 178,464 |
+| `ontology-coverage-gate.ts bash` (minutes later) | **4,185** | — | — |
+
++52 admitted files in the hour, because six agents are told to extend this corpus.
+Two instruments disagreeing is the only reason it surfaced; prose would have absorbed
+it as drift and the next reader would have inherited an unattributable delta.
+
+`probe-bash-corpus-pin.mts` makes the pin a value. Three hashes, because "the same
+corpus" is three different questions:
+
+| hash | over | value |
+| --- | --- | --- |
+| `setHash` | sorted `repo/rel` of every admitted bash file | `d0c89242a59a3fa0f3aae9f4e035c3520ee07fbb9019d712f6392ad80cb00b72` |
+| `contentHash` | `repo/rel:size:sha256(bytes)` | `bceda140b2ef111dc170183db9c10ce59bfab3a8c0eba79eeba16c42b81c05fc` |
+| `sampleHash` (N=400) | the first 400 of the census's own hash order | `96b156d97c7d9e3d8296386ef465d099e80a86c59c712a420b0fcaa8c15c06f9` |
+
+`setHash` decides whether two runs saw the same admitted FILE SET — and therefore
+whether a hash-ordered sample of the same size is the same sample. `contentHash`
+separates "the corpus grew" from "a file I already had changed underneath me".
+`sampleHash` is the claim the per-type columns actually need. The corpus is a tree of
+`--depth 1 --filter=blob:none` clones other agents extend, so it is **not pinnable by
+revision**; these hashes are the pin, and `--expect <setHash>` exits non-zero on a
+mismatch.
+
+The census now prints its own `setHash` on every run, computed from its own admitted
+list. It is not a call into the pin probe — two independent computations that agree
+are evidence, one computation reported twice is a tautology.
+
+### The census's denominator label was wrong, and the difference is the finding
+
+It printed `scanned : 462809 tracked files`. That number counted files it
+successfully **read** and called them tracked files. Corrected to four lines:
+
+```
+tracked  : 525,586 files listed by git ls-files
+scanned  : 501,320 of those present in the working tree and read
+absent   :  23,090 tracked files ABSENT from the working tree, never read here
+admitted :   4,185 files routed to bash by detectLanguageFromPath
+```
+
+23,090 of 525,586, concentrated in four repositories whose checkout never completed
+— `pb-grpc` 9,792 of 10,504 missing, `pb-googleapis` 9,153 of 9,390, `pb-reference`
+2,797 of 3,678, `julia` 1,107 of 2,059.
+
+### 394 bash files no instrument on this host can read
+
+`probe-bash-recovered-blobs.mts` tries to read the absent population from the object
+database. It cannot:
+
+```
+tracked-but-absent      22,861
+blob not in object db   22,849
+ADMITTED AS BASH             0
+```
+
+The clone is `--filter=blob:none` with a promisor remote, so the blobs were never
+fetched, and this host has no route to `github.com`: a plain `git cat-file` on an
+unheld blob blocks **135 seconds on connect** before failing. The first version of
+that probe hung 30 minutes on julia's 1,107 absent files without printing a line,
+which is why `GIT_NO_LAZY_FETCH=1` and `git cat-file --batch` are documented in its
+header rather than left as an unexplained fast path.
+
+**394** of the absent files carry a `.sh` / `.bash` / `.zsh` extension — counted
+twice, independently, because a first ad-hoc count of mine said 962 and was wrong.
+Extensionless files carrying a bash shebang are also admitted by the router and
+**cannot be counted here**, because the shebang is in the blob and the blob is what
+is missing, so 394 is a floor.
+
+So every published bash number in this file is a count over a corpus with a known
+hole in it, at least 394 files wide, and no sample size closes it.
+
+### The first version of that probe printed a vacuous pass
+
+It recovered 0 files, found 0 node types, and printed *"All three rulings survive a
+population they had never been measured over"* — a green over a population of 22,861,
+394 of which carry a bash extension. **An empty result over a non-empty corpus is a
+failed check, not a pass**, and the instrument had committed exactly the error it
+exists to catch. It now distinguishes the two cases, prints `NOT MEASURED` with exit
+3, and states what would close the hole: re-cloning those four repositories *with*
+blobs. That is a corpus decision affecting every lane, so it is reported and not
+taken. Nothing in the shared corpus was written.
+
+### The RULED types do not depend on that hole, and now neither does their evidence
+
+Instrument A had always been a count of node types a **corpus** produced: 144 on the
+400-file sample, 164 corpus-wide by the gate. Both are properties of which files were
+read, so both sat on top of the 394-file hole.
+
+But a tree-sitter grammar's node-type vocabulary is **closed and finite** — it is the
+symbol table the parser was compiled with — and web-tree-sitter exposes it from the
+pinned wasm directly. `probe-bash-grammar-vocabulary.mts` reads it:
+
+| | |
+| --- | --- |
+| symbol slots (`nodeTypeCount`) | 280 |
+| **distinct node names** | **236** — 59 named, 177 anonymous |
+| grammar / abi / states / fields | `bash` / 15 / reported by the API |
+
+None of the 13 falsifier names in `script/m14/bash-ruled.ts` — `class_declaration`,
+`interface_declaration`, `trait_declaration`, `struct_declaration`,
+`inheritance_specifier`, `implements_clause`, `extends_clause`, `superclass`,
+`interface_implementation`, `new_expression`, `object_creation_expression`,
+`constructor_invocation` — is in that set. No corpus can produce a node type the
+parser was not compiled with, so **the three rulings stop being corpus-dependent
+claims and become properties of the pinned binary.**
+
+Two limits stated rather than buried:
+
+- **Instrument A settling does NOT settle instrument B.** The corpus-text lexical
+  probe in `probe-bash-ruled-constructs.mts` is still corpus-dependent and still
+  cannot be extended to the unreadable files. One of the two instruments covers the
+  hole; the other does not. Instrument B remains necessary because a missing node
+  type does not exclude a construct reached by runtime indirection (`eval`,
+  `${!var}`, `bash -c`), which never becomes a node at all.
+- **The vocabulary prints a number that cuts the other way.** 236 distinct node types
+  exist; this corpus produces 164; so **73 node types the grammar can produce have
+  never been produced here**. Absence of evidence in a corpus is not evidence of
+  absence in a grammar, and only the second is claimed.
+
+### 0 of 31 node-type branches are dead, and the instrument found two defects in itself
+
+Rounds 12 and 13 were the same defect class twice: a handler correct for the shape it
+names and dead for a shape the grammar also produces. Round 12 read an assignment LHS
+as a direct `variable_name` when the grammar holds `subscript > variable_name`. So the
+standing question is which of the analyzer's branches the corpus ever exercises — and
+it had never been asked.
+
+`probe-bash-dead-branches.mts` reads the branch names out of
+`src/ast/real-bash-analyzer.ts` with the **TypeScript compiler API**: a walk for
+`===` / `!==` whose one side is a string literal and the other a property access named
+`type`, plus switch clauses on the same. That is exact, not approximate — there is no
+`OfType` helper in the analyzer, so every node-type comparison is inline and every one
+is found. A pattern would also have matched the same names inside comments and inside
+this lane's own prose.
+
+| | 400-file sample | **whole corpus** |
+| --- | --- | --- |
+| node types the analyzer branches on | 31 across 92 sites | 31 across 92 sites |
+| **branches the corpus never exercises** | **0** | **0** |
+| branches naming an impossible node type | 0 | 0 |
+| distinct node types seen | 143 | **164** |
+
+The corpus walk owns its `web-tree-sitter` handle, never the engine's, because two
+owners of one parser handle is what makes the shared gate's totals wobble between runs
+(limitation 15). Its **164** distinct node types are an independent confirmation of
+the gate's 164.
+
+**And it found two defects in instruments written five minutes earlier — both mine:**
+
+1. The vocabulary probe headlined `nodeTypeCount 280` as the vocabulary. It is not:
+   280 is **symbol slots**, and anonymous tokens share surface forms. The distinct
+   count is **236**. Quoting 280 overstated the grammar by 44 and would have made the
+   unexercised gap read as 116 instead of 73. Corrected; the distinct count is now
+   the headline.
+2. **`ERROR` is absent from `nodeTypeForId`'s enumeration while the parser emits it
+   constantly** — 195 nodes on a 400-file sample, 2,205 on the whole corpus, and 427
+   function definitions sitting inside one. So the dead-branch probe's first run
+   flagged its own `ERROR` guard at `:1372` as "a node type the grammar cannot
+   produce", in the same run that counted 148 `ERROR` nodes. The enumeration is
+   incomplete; the analyzer is fine. The rule is now that **observation overrides the
+   vocabulary** — a branch is impossible only when the corpus never produces it either.
+   Both probes record the limit so the next reader does not rediscover it as a defect.
+
+The standing number, and why this file stays useful after it goes green: **73 of 236**
+grammar node types have never been produced by this corpus. The window round 12's
+defect lived in is still open, it is 73 wide, and a branch keyed on one of them is dead
+until measured.
+
+### The one defect: `this=$1` is a real bash declaration, and shared machinery deletes it
+
+The whole-corpus census prints a label check the 400-file sample never trips:
+
+```
+contains target not a symbol in its file : 1
+e.g. vault/.github/scripts/install-cob.sh: usage -> this
+```
+
+**One `contains` edge of 39,083 names a target the run does not publish.** Read, not
+guessed: `install-cob.sh:6` declares `usage()`, and line 7 inside it is `this=$1`. So
+`usage` contains a declaration named `this`, the analyzer publishes the `contains`
+edge for it, and the symbol never reaches the caller.
+
+**Nothing in `src/ast/real-bash-analyzer.ts` drops it.** The symbol is published by
+`analyze()` and deleted one layer up, in shared machinery this lane does not own:
+
+```
+src/ast/pool-worker.ts:483  keepSymbol() -> UNIVERSAL = new Set(["this", "super", ...])
+src/ast/pool-worker.ts:917  symbols: parsed.symbols.filter((s) => keepSymbol(s, lang))
+```
+
+The comment above that set states the design correctly — keep only names **reserved in
+the language being parsed**, decided per language — and six lanes had already been
+moved off it for producing a counterexample: R, graphql, sql, lua, hcl, solidity.
+`this` and `super` were kept unconditionally on the stated ground that *"no lane
+produced a legitimate declaration of any of them"*.
+
+**This lane produced one.** In bash `this` is an ordinary variable name with no special
+meaning; the language has no `this`. Whole corpus, measured:
+
+| | |
+| --- | --- |
+| `variable_assignment` nodes whose LHS base name the shared filter rejects | **1** |
+| site | `vault/.github/scripts/install-cob.sh:7` — `this=` |
+| published by production `parseFile` | **NO** — deleted by `keepSymbol` |
+| edge left naming it | **YES** — a `contains` edge the graph cannot walk |
+
+It is the **seventh** counterexample to that set and the **third distinct consequence**:
+R and graphql lost symbols, lua and sql lost symbols *and* edges, and here one
+declaration and one edge are lost. `probe-bash-keepsymbol-denylist.mts` **calls** the
+exported `keepSymbol` rather than restating its list — a probe that copied the
+denylist would be a second copy to keep in step, and would report zero the moment the
+two diverged, which is the failure mode of every "the census says zero" claim in this
+lane's history. It walks every declaration-shaped LHS (`variable_assignment`,
+`declaration_command`, `for_statement`, `read`, and the `subscript` form), then
+measures the consequence through production `parseFile` instead of assuming it.
+
+**Reported, not applied** (§8 — `pool-worker.ts` is shared machinery). The fix is to
+move `this` and `super` into the per-language `RESERVED` set the rest of that list
+already uses, for the languages that actually reserve them. bash reserves neither.
+
+**This corrects a figure earlier rounds of this file published.** The whole-corpus
+column's "0 dangling" is 0 for `calls`, 0 for `uses`, 0 for `exports` — and **1 for
+`contains`**. The label-check line is where the 1 was visible all along, on a census
+whose `contains` resolution column was reading 100%.
+
+### Coverage, unchanged, and the corpus it was measured over
+
+**7/7 applicable, 3 measured-absent, 0 unaccounted** — now with the three RULED
+verdicts resting on the pinned grammar's 236-node vocabulary rather than on any
+corpus, and with one known hole of ≥394 files underneath every count in the table.
 
 ## The two fabrications pass 2 found, and the guard that removed them
 
