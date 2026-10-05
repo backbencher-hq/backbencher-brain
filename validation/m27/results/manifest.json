@@ -30,11 +30,11 @@
       ],
       "evidence": {
         "status": "known-gap",
-        "currentCommit": "a0ed9eade7008de7ce93a312f6b0bd7e182a43a9",
+        "currentCommit": "a8807f81027bd384f2f5d50a2d1bd143463639b8",
         "verifierCommand": "npx tsx script/m27/verify-governance.ts",
         "evidenceFile": "G1.json",
-        "passed": 71,
-        "failed": 2,
+        "passed": 70,
+        "failed": 3,
         "realFailed": 0,
         "negativeCases": 13
       }
@@ -43,7 +43,7 @@
       "code": "N1",
       "githubIssue": 617,
       "tool": "nvim-adapter",
-      "status": "verified",
+      "status": "blocked",
       "scope": "Neovim adapter (I3): nvim-lspconfig-style config, headless driver opening the shared fixture workspace, real LSP session assertions (tiered hover, staleness marker, definition, references, document symbols), mutation-gated.",
       "acceptanceCriteria": [
         "Real nvim --headless session drives bb_lsp over stdio (no mock transport)",
@@ -55,12 +55,12 @@
         "Evidence persisted at validation/m27/results/N1.json with commit stamp"
       ],
       "evidence": {
-        "status": "verified",
-        "currentCommit": "ba99e1001f5b6afc40254f74e51b1930290354f0",
+        "status": "blocked",
+        "currentCommit": "a8807f81027bd384f2f5d50a2d1bd143463639b8",
         "verifierCommand": "npx tsx script/m27/verify-nvim.ts",
         "evidenceFile": "N1.json",
-        "passed": 31,
-        "failed": 0,
+        "passed": 0,
+        "failed": 1,
         "realFailed": 0,
         "mutantsCaught": 4,
         "mutantsTotal": 4,
@@ -71,7 +71,7 @@
       "code": "J1",
       "githubIssue": 618,
       "tool": "lsp4ij-template",
-      "status": "verified",
+      "status": "known-gap",
       "scope": "JetBrains/LSP4IJ adapter: user-defined server template (JSON, no Kotlin plugin), method-set subset proof against bb_lsp declared capabilities, byte-stable template export, runIde leg attempted and honestly classified (D-7: blocked-with-reason, no IDE download on this machine).",
       "acceptanceCriteria": [
         "Template valid per LSP4IJ user-defined schema",
@@ -83,12 +83,12 @@
         "Evidence persisted at validation/m27/results/J1.json with commit stamp"
       ],
       "evidence": {
-        "status": "verified",
-        "currentCommit": "see J1.json",
+        "status": "known-gap",
+        "currentCommit": "a8807f81027bd384f2f5d50a2d1bd143463639b8",
         "verifierCommand": "npx tsx script/m27/verify-lsp4ij.ts",
         "evidenceFile": "J1.json",
-        "passed": 22,
-        "failed": 0,
+        "passed": 13,
+        "failed": 3,
         "realFailed": 0,
         "mutantsCaught": 4,
         "mutantsTotal": 4
@@ -98,7 +98,7 @@
       "code": "Z1",
       "githubIssue": 619,
       "tool": "zed-extension",
-      "status": "verified",
+      "status": "known-gap",
       "scope": "Zed adapter: minimal extension (extension.toml + thin wasm shim owning binary resolution only), shim unit-proven across found/not-found/override paths, extension built via zed CLI, session leg attempted and honestly classified.",
       "acceptanceCriteria": [
         "extension.toml + shim build clean via zed extension CLI",
@@ -110,12 +110,12 @@
         "Evidence persisted at validation/m27/results/Z1.json with commit stamp"
       ],
       "evidence": {
-        "status": "verified",
-        "currentCommit": "82cb16e608e5ec3cd68d5d8e63158cb215170f4b",
+        "status": "known-gap",
+        "currentCommit": "a8807f81027bd384f2f5d50a2d1bd143463639b8",
         "verifierCommand": "npx tsx script/m27/verify-zed.ts",
         "evidenceFile": "Z1.json",
-        "passed": 29,
-        "failed": 0,
+        "passed": 21,
+        "failed": 2,
         "realFailed": 0,
         "mutantsCaught": 3,
         "mutantsTotal": 3
@@ -125,7 +125,7 @@
       "code": "H1",
       "githubIssue": 620,
       "tool": "helix-config",
-      "status": "verified",
+      "status": "known-gap",
       "scope": "Helix adapter: languages.toml fragment with drift-gated launch command, TOML validity machine-checked, claim level honest (I2 unless a driven hx session exists; D-7: deeper leg blocked-with-reason).",
       "acceptanceCriteria": [
         "Fragment parses (TOML validity machine-checked)",
@@ -137,12 +137,12 @@
         "Evidence persisted at validation/m27/results/H1.json with commit stamp"
       ],
       "evidence": {
-        "status": "verified",
-        "currentCommit": "see H1.json",
+        "status": "known-gap",
+        "currentCommit": "a8807f81027bd384f2f5d50a2d1bd143463639b8",
         "verifierCommand": "npx tsx script/m27/verify-helix.ts",
         "evidenceFile": "H1.json",
-        "passed": 21,
-        "failed": 0,
+        "passed": 12,
+        "failed": 3,
         "realFailed": 0,
         "mutantsCaught": 4,
         "mutantsTotal": 4
@@ -152,7 +152,7 @@
       "code": "V1",
       "githubIssue": 621,
       "tool": "capability-matrix",
-      "status": "verified",
+      "status": "known-gap",
       "scope": "Fork capability matrix v3: docs/m27/FORK-CAPABILITY-MATRIX.md fully GENERATED from the ledger and verifier outputs (byte-identical drift gate), per-editor x per-feature claim levels, graph webview delta declared (VS Code-only in v3).",
       "acceptanceCriteria": [
         "Regeneration is byte-identical; hand edits fail the gate",
@@ -164,12 +164,12 @@
         "Evidence persisted at validation/m27/results/V1.json with commit stamp"
       ],
       "evidence": {
-        "status": "verified",
-        "currentCommit": "a0ed9eade7008de7ce93a312f6b0bd7e182a43a9",
+        "status": "known-gap",
+        "currentCommit": "a8807f81027bd384f2f5d50a2d1bd143463639b8",
         "verifierCommand": "npx tsx script/m27/verify-matrix.ts",
         "evidenceFile": "V1.json",
-        "passed": 14,
-        "failed": 0,
+        "passed": 12,
+        "failed": 2,
         "realFailed": 0,
         "mutantsCaught": 2,
         "mutantsTotal": 2
@@ -204,8 +204,8 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T17:40:30.246Z",
-    "contentSha256": "9c7a3a98697d1e52e2465f7a413eb9b77a5e50f30da2635234de24c571a9241d"
+    "sealedAt": "2026-10-05T22:34:59.040Z",
+    "contentSha256": "107a1aa92f5697baf8f4dfeb0ddcd0d550880dd1b72f8c9cb5f28a99b2ec96b2"
   },
-  "updatedAt": "2026-10-05T17:40:30.246Z"
+  "updatedAt": "2026-10-05T22:34:59.040Z"
 }

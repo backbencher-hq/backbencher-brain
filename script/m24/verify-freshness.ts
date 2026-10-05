@@ -30,6 +30,7 @@ import { hashFileContent } from "../../src/brain/freshness"
 import { detectLanguageFromPath } from "../../src/ast/language-detection"
 import { SHA256_KAT, gitHead, measuredOs, sha256File, sha256Text } from "./portability.ts"
 import { writeSealed } from "../lib/evidence.ts"
+import { fingerprintFields } from "../m61/claim_fingerprints.ts"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const COMPONENT = path.join(ROOT, "src/lsp/freshness.ts")
@@ -744,8 +745,7 @@ async function main() {
       },
     ],
     currentCommit,
-    sourceFingerprint,
-    sourceFingerprintAlgorithm: "sha256 over raw file bytes (node:crypto; no process spawn)",
+    ...fingerprintFields(["m24.P2"], ROOT),
     verifierCommand: "npx tsx script/m24/verify-freshness.ts",
     evidenceFile: "P2.json",
     generatedAt: new Date().toISOString(),

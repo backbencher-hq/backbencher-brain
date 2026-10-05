@@ -74,6 +74,7 @@ import {
 // the fact this gate checks against the owner-approved wave records below.
 import { LAUNCH_LANGUAGES } from "../../src/lsp/launch_languages"
 import { canFailFromChecks, writeSealed } from "../lib/evidence.ts"
+import { fingerprintFields } from "../m61/claim_fingerprints.ts"
 // The ANCHOR-DRIFT class gate (script/m24/mutant-anchor-gate.ts). Shared with
 // script/m24/verify-hover.ts so the class is gated by ONE implementation.
 import {
@@ -2231,7 +2232,7 @@ async function main(): Promise<void> {
     code: "L1",
     status,
     currentCommit,
-    sourceFingerprint,
+    ...fingerprintFields(["m24.L1"], ROOT),
     verifierCommand: "npx tsx script/m24/verify-server.ts",
     evidenceFile: "L1.json",
     generatedAt: new Date().toISOString(),

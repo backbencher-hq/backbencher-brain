@@ -148,7 +148,7 @@
       "code": "V1",
       "githubIssue": 628,
       "tool": "mcp-surface-doc",
-      "status": "verified",
+      "status": "known-gap",
       "scope": "docs/m28/MCP-SURFACE.md fully GENERATED from src/mcp/tool-registry.ts descriptors + the evidence ledger (byte-identical drift gate, D1 pattern).",
       "acceptanceCriteria": [
         "Regeneration byte-identical; hand edits fail the gate",
@@ -160,14 +160,14 @@
         "Evidence persisted at validation/m28/results/V1.json with commit stamp"
       ],
       "evidence": {
-        "status": "verified",
+        "status": "known-gap",
         "verifierCommand": "npx tsx script/m28/verify-mcp-surface.ts",
         "evidenceFile": "V1.json",
-        "passed": 13,
-        "failed": 0,
+        "passed": 12,
+        "failed": 1,
         "mutantsCaught": 2,
         "mutantsTotal": 2,
-        "currentCommit": "d5c265b3a9a185d0927d2167e0cc562f5092d6e9"
+        "currentCommit": "a8807f81027bd384f2f5d50a2d1bd143463639b8"
       }
     },
     {
@@ -198,8 +198,8 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T15:35:47.752Z",
-    "contentSha256": "76438cec834bf1e76498b05004e5da5035b09219f5c0c84ecbc8b27e129099db"
+    "sealedAt": "2026-10-05T22:34:59.310Z",
+    "contentSha256": "558d6aab24661b73802a2359579d51b1a41f10adb6eb1ac1141d0569d363e538"
   },
-  "updatedAt": "2026-10-05T15:35:47.752Z"
+  "updatedAt": "2026-10-05T22:34:59.310Z"
 }
