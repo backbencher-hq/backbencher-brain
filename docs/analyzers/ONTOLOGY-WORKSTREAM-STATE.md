@@ -1651,3 +1651,73 @@ applicability; zero of 23 have been shown to have fully-resolving incoming, and 
 type where the sample bias is ruled out — `calls` — has a real unresolved population in at
 least one lane.** Whole-corpus incoming runs, lane by lane, are the outstanding work, and
 `resumable-walk` is what makes them affordable.
+
+## The real answer to "10/10 with incoming" — whole-corpus, all 23 lanes
+
+The 30-file sample could not answer this, because the question is *precisely* whether
+edges reach declarations in OTHER files. Measured at 600 files per lane (129 for `make`,
+164 for `clean`, 21 for `r` — their whole corpora), via `incoming-check` over the real
+production path. Artifact: `validation/m14/measurements/incoming-whole.tsv`.
+
+```
+lane        files fired   AMBIGUOUS  UNRESOLVED
+dart          600    10       4,673     14,515
+php           600    10       4,606     17,784
+fsharp        600     9      40,791     33,339
+powershell    600     9      18,665     46,944
+nim           600     8      12,491      9,424
+lua           600     9       7,409      6,663
+xml           600     3       6,007          72
+julia         600     8       4,249     19,281
+graphql       600     6       3,710      4,427
+clean         164     9       3,520      3,097
+hcl           600     5       3,800      8,417
+zig           600     7      19,962     14,461
+bash          600     6         623      5,084
+sql           600     6         198        973
+markdown      600     4          68     15,107
+yaml          600     5         135        225
+protobuf      600     4           3      1,486
+toml          600     1          45          0
+json          600     5          71          0
+scss          600     8           0      1,185
+make          129     6           0      1,636
+r             21     7           8        190
+```
+
+### The verdict, stated without softening it
+
+**ZERO of 23 lanes have fully-resolving incoming.** Not one.
+
+**Two lanes reach 10/10 OUTGOING applicable** — dart and php (php moved 9 -> 10 at
+corpus scale; dart holds). Neither has clean incoming: dart 4,673 ambiguous / 14,515
+unresolved, php 4,606 / 17,784.
+
+**Zero ambiguous — the strongest incoming result any lane has:**
+- `scss` 0 ambiguous, 8 fired. Its 1,185 unresolved are `imports`/`references` naming
+  things the 600-file window does not contain, not collisions.
+- `make` 0 ambiguous, 6 fired, 129 files (whole corpus).
+
+**Zero unresolved:**
+- `json` 71 ambiguous / **0 unresolved** — the cleanest lane in the fleet on resolution.
+- `toml` 45 ambiguous / **0 unresolved**.
+
+### What the numbers say the real problem is
+
+`fsharp` at **40,791 ambiguous** and `powershell` at **18,665** are not measurement
+artifacts at this scale — they are name-collision populations. An ambiguous edge is ONE
+edge that the reverse walk attributes to N declarations, so the count is not an edge count
+and cannot be reduced by emitting fewer edges. It is a **scoping** problem: the analyzer
+cannot tell which of several same-named symbols it meant.
+
+That is the deepest remaining work in this programme, and it is a different kind of work
+from coverage. `zig` (19,962) is in the same class. Coverage can be completed by
+implementing types; ambiguity can only be completed by making symbol identity sound.
+
+### The standing claim
+
+- 17 of 23 lanes have a corpus-measured ruling table; all 17 are registered and a gate
+  enforces that. 1 lane (`graphql`) is unadjudicated.
+- Laptop B regexes: **0**.
+- Whole-corpus incoming: **0 of 23 clean.** The best lanes are `json` and `toml` (0
+  unresolved) and `scss`/`make` (0 ambiguous).
