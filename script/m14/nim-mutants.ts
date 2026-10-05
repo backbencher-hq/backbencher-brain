@@ -570,4 +570,66 @@ export const NIM_MUTANTS: NimMutant[] = [
       relationships: (r.relationships ?? []).filter((e: any) => !NIM_RESERVED.has(String(e.target ?? ""))),
     }),
   },
+  // ═══════════════════════════════════════════════════════════════════════
+  // M60 module identity — the module symbol and the target that names it
+  //
+  // Two emitters spelling one symbol differently is the defect class the
+  // B/A/C brief calls "format mismatch", and it is worth two mutants rather
+  // than one because the two halves fail INDEPENDENTLY and a fixture that only
+  // pins one of them passes while the other half is broken.
+  // ═══════════════════════════════════════════════════════════════════════
+  {
+    id: "nim/module-symbol-dropped",
+    language: "nim",
+    defectClass: "unresolvable-endpoint",
+    description:
+      "A `.nim` file stops publishing the MODULE it defines, so every `imports` edge " +
+      "names a module that exists nowhere in the symbol set. This is not a resolution " +
+      "failure — there is no candidate to fail to find — and the store cannot rescue " +
+      "it: the insert-time resolver matches `brain_symbol.name` " +
+      "(parallel-indexer.ts:2239), the three post-pass strategies match a bare name, a " +
+      "`qualified_name`, or everything after the first `.` of a dotted target " +
+      "(:3755-3774), and `std/assertions` is none of those; the fourth, " +
+      "`resolveImportTargets`, is scoped to the `<module>:<item>` form " +
+      "javascript/typescript/python emit and nim never reaches it. " +
+      "MEASURED with production `parseFile` over the 6,063-file corpus " +
+      "(validation/m14/fixtures/nim/census.ts): `imports` resolved on 37.1% of 13,364 " +
+      "edges before the module pass and 92.0% of 13,365 after it. " +
+      "Caught by nim/module-target's expectSymbols {module-target, kind: module}. The " +
+      "mutant is kept separate from the target-normalisation mutant below because " +
+      "dropping the symbol while keeping the normalised target leaves the edge pointing " +
+      "at a name that exists, which a target-only fixture would not notice is wrong.",
+    transform: (r: any) => ({
+      ...r,
+      symbols: (r.symbols ?? []).filter((s: any) => s.kind !== "module"),
+    }),
+  },
+  {
+    id: "nim/import-target-keeps-the-written-path",
+    language: "nim",
+    defectClass: "unresolvable-endpoint",
+    description:
+      "The `imports` target goes back to the module path AS WRITTEN while the module " +
+      "symbol stays published. The two halves drifted apart in the first place, which " +
+      "is why this is expressible as its own mutant: the emitter wrote the path " +
+      "`parseModuleExpression` returned and the publisher wrote the file's basename, " +
+      "and no test compared them. `import std/os` then targets `std/os`, which no " +
+      "symbol carries, and `import ./helpers` targets `./helpers`. Both were CORRECT " +
+      "for the corpus by accident and wrong for the graph. " +
+      "Caught by nim/module-target's three forbidRelationships rows — {imports, " +
+      "std/os}, {imports, std/private/globs}, {imports, ../shared} — and by " +
+      "nim/contract's five retargeted `imports` rows, whose `meta.nimModulePath` pins " +
+      "the written path separately from the target so the two cannot be confused " +
+      "again. Verified by hand before registration: reverting the three target sites " +
+      "made nim/module-target and nim/contract FAIL (10 pass / 2 fail) with all three " +
+      "forbid rows firing.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((e: any) => {
+        const written = e?.metadata?.nimModulePath
+        if (!written) return e
+        return { ...e, target: written }
+      }),
+    }),
+  },
 ]
