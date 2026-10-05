@@ -9,17 +9,17 @@
  * oracle was written after the ruling — nothing agrees with nothing. So the gate needs, per type,
  * either production edges or a corpus-backed ruling. R needs neither for any of the ten:
  *
- *     type           edges    files   instrument
- *     calls         48,136    1,293   production parseFile
- *     uses           4,799      584   production parseFile
- *     contains      17,620    1,873   production parseFile
- *     imports        2,090    1,112   production parseFile
- *     references       389      202   production parseFile
- *     exports        3,581      711   production parseFile
- *     extends          350       60   production parseFile
- *     implements     1,133      221   production parseFile
- *     overrides        107        9   production parseFile
- *     instantiates       3        2   production parseFile
+ *     type           edges (min-max over 4 runs)   files   instrument
+ *     calls             48,136 - 48,230 (Δ94)     1,293   production parseFile
+ *     uses                4,799 -  4,810 (Δ11)      584   production parseFile
+ *     contains          17,620 - 17,632 (Δ12)     1,873   production parseFile
+ *     imports            2,090 -  2,095 (Δ5)      1,112   production parseFile
+ *     references            389 (invariant)          202   production parseFile
+ *     exports             3,581 -  3,590 (Δ9)        711   production parseFile
+ *     extends               350 -    351 (Δ1)         60   production parseFile
+ *     implements          1,133 (invariant)          221   production parseFile
+ *     overrides             107 (invariant)            9   production parseFile
+ *     instantiates            3 (invariant)            2   production parseFile
  *
  * Population: every git-tracked file the production ROUTER
  * (`detectLanguageFromPath`) maps to `r` in `$HOME/fixtures/repositories` —
@@ -30,6 +30,46 @@
  *
  * and the committed outputs `validation/m14/fixtures/r/ontology-ten-types.txt` and
  * `validation/m14/fixtures/r/labels-and-resolution.txt`.
+ *
+ * ## Why a RANGE and not a single number — this table's first version was wrong that way
+ *
+ * This header used to print one count per type. Four production walks over the SAME 2,184-file
+ * population do not agree on them, so a single figure would be a claim the corpus does not
+ * support. Measured, all four runs, production `parseFile`, 4 workers:
+ *
+ *     type            run A     run B     run C     run D
+ *     calls          48,205    48,136    48,230    48,195
+ *     contains       17,629    17,620    17,632    17,625
+ *     exports         3,590     3,581     3,590     3,584
+ *     imports         2,094     2,090     2,095     2,094
+ *     extends           351       350       351       351
+ *     uses            4,810     4,799     4,810     4,810
+ *     references        389       389       389       389
+ *     implements      1,133     1,133     1,133     1,133
+ *     overrides         107       107       107       107
+ *     instantiates        3         3         3         3
+ *
+ *   A = validation/m14/fixtures/r/ontology-ten-types.txt        B = its predecessor
+ *   C = validation/m14/fixtures/r/labels-and-resolution.txt      D = ontology-coverage-gate.ts r
+ *
+ * The cause is measured, not guessed: the wasm parser intermittently dies on R files with
+ * `[BB-PARSE-ERR] … memory access out of bounds`, and WHICH files it dies on changes run to run
+ * (logged: `ggplot2/R/scale-hue.R` on run B, `ggplot2/R/scale-manual.R` on run D). A file that
+ * fails to parse contributes no edges, so the totals track the failures.
+ *
+ * The four types that DO NOT MOVE are the informative half of this table. `references`,
+ * `implements`, `overrides` and `instantiates` are identical in all four runs, which says the
+ * wobble is confined to the types whose counts are large enough to be sensitive to losing a
+ * handful of files — not that those four are more correct than the others. The spread is a
+ * property of the PARSER, not of the analyzer: no analyzer rule reads a file count, and the
+ * fixture `validation/m14/fixtures/r/probe-oom.ts` shows per-file counts stable to 0 of 160
+ * `r-rlang` files across 3 passes.
+ *
+ * So every count below is a RANGE, and no type's EMITTED verdict depends on which end of it is
+ * true: the smallest observed value of every one of the ten is non-zero, which is what the gate
+ * tests. The delta is reported because a reader planning a re-measure needs to know that two runs
+ * will not agree to the digit, and the DENOMINATOR of every rate printed in
+ * `docs/analyzers/real-r-analyzer.md` inherits the same ±0.2% band.
  *
  * ## Why the table is registered rather than omitted
  *
