@@ -103,18 +103,8 @@
       "./symbols"
     ]
   },
-<<<<<<< HEAD
-  "currentCommit": "5e3e7f6d797097a0c43c7c728adcd60ba6887ecd",
-  "workingTreeRelevantChanges": [
-    "validation/m42/results/H2.json"
-=======
-  "currentCommit": "c74169bbe48db2dbdc770c2e2a9c976f5504975d",
-  "workingTreeRelevantChanges": [
-    "src/lsp/call_hierarchy.ts",
-    "validation/m24/results/L5.json",
-    "validation/m55/results/T2.json"
->>>>>>> fix/c6-call-site-filter
-  ],
+  "currentCommit": "800d8e8969b321b108a1f4e21c6251797bc14f0b",
+  "workingTreeRelevantChanges": [],
   "volatileFields": [
     "generatedAt",
     "bbSeal.sealedAt",
@@ -123,15 +113,9 @@
   ],
   "verifierCommand": "npx tsx script/m55/verify-call-hierarchy.ts",
   "evidenceFile": "T2.json",
-<<<<<<< HEAD
-  "generatedAt": "2026-10-05T04:28:38.308Z",
+  "generatedAt": "2026-10-05T13:07:24.811Z",
   "fixture": {
     "root": "$HOME/Documents/Default Project/ishaq/wt/integrate/validation/m55/fixtures/t2-workspace",
-=======
-  "generatedAt": "2026-10-05T12:59:31.105Z",
-  "fixture": {
-    "root": "$HOME/Documents/Default Project/ishaq/wt/c6fix/validation/m55/fixtures/t2-workspace",
->>>>>>> fix/c6-call-site-filter
     "files": [
       "src/store.ts",
       "src/loop.ts",
@@ -149,18 +133,7 @@
       "one caller with two call sites (many → deep ×2) — both ranges reported"
     ]
   },
-<<<<<<< HEAD
-  "failures": [
-    "W1: `get` is never called anywhere in the fixture, so it has zero callers (no fabricated ones): [\"Store\",\"set\"]",
-    "C6: every rendered caller carries a call-site range for a CALLS row (a `contains`/`uses` row must not produce one): 2 rendered entries come from a non-`calls` relationship and carry a fromRange: [{\"name\":\"Store\",\"detail\":\"class · contains · 1 call site\",\"ranges\":[{\"start\":{\"line\":8,\"character\":22},\"end\":{\"line\":8,\"character\":25}}]},{\"name\":\"set\",\"detail\":\"method · uses · 1 call site · position approximate\",\"ranges\":[{\"start\":{\"line\":11,\"character\":2},\"end\":{\"line\":11,\"character\":5}}]}]",
-    "C6d: a planted `contains`/`uses` row produces NO rendered range in EITHER direction (hermetic — §15.3): 4 planted non-call row(s) rendered with a range: [{\"direction\":\"incoming\",\"name\":\"Store\",\"detail\":\"class · contains · 1 call site\",\"ranges\":[{\"start\":{\"line\":8,\"character\":22},\"end\":{\"line\":8,\"character\":25}}]},{\"direction\":\"incoming\",\"name\":\"set\",\"detail\":\"method · uses · 1 call site · position approximate\",\"ranges\":[{\"start\":{\"line\":11,\"character\":2},\"end\":{\"line\":11,\"character\":5}}]},{\"direction\":\"outgoing\",\"name\":\"Store\",\"detail\":\"class · contains · 1 call site · position approximate\",\"ranges\":[{\"start\":{\"line\":0,\"character\":13},\"end\":{\"line\":0,\"character\":18}}]},{\"direction\":\"outgoing\",\"name\":\"set\",\"detail\":\"method · uses · 1 call site · position approximate\",\"ranges\":[{\"start\":{\"line\":11,\"character\":2},\"end\":{\"line\":11,\"character\":5}}]}]",
-    "C6e: every omitted non-call row is DECLARED with its kind named (omission is declared, never silent — §11.7): []",
-    "C6g: an answer emptied BY the filter says so — the declared absence names the filter instead of implying the store holds no rows (§11.7): {\"rendered\":0,\"absence\":{\"code\":\"symbol_not_at_position\",\"message\":\"every stored caller edge was dropped or declared absent (1 dropped, 0 declared absent) — none is rendered\",\"language\":\"typescript\",\"launchLanguages\":[\"java\",\"groovy\",\"kotlin\",\"scala\",\"typescript\",\"javascript\",\"python\",\"zig\",\"go\",\"rust\",\"c\",\"cpp\",\"vue\",\"svelte\"]},\"dropped\":[{\"name\":\"get\",\"symbolId\":\"e95d952fba30432b208fe7eb1646c1137063979a:src/store.ts:get:8\",\"reason\":\"receiver-qualified self-name call (this.items.get) targets another value, not this symbol\"}]}",
-    "C6f: every expand answer DECLARES the relationship-kind filter it applied, and that filter contains only kinds that can name a call site (§15.1): [{\"filter\":\"(absent)\"},{\"filter\":\"(absent)\"},{\"filter\":\"(absent)\"}]"
-  ],
-=======
   "failures": [],
->>>>>>> fix/c6-call-site-filter
   "c6Disposition": {
     "decision": "(c) gate it precisely: this surface asks the graph engine for CALL rows, DECLARES that filter on every response (§15.1), and drops+declares any non-call row that still arrives. APPLIED in src/lsp/call_hierarchy.ts on branch fix/c6-call-site-filter (gated RED here first, per F7: W1, C6, C6d, C6e, C6f and C6g all failed at 51/57 before the change and all pass at 58/58 after).",
     "regressionCaught": "Sibling gate L5 (script/m24/verify-call-hierarchy.ts, this component's own M24 gate) went verified 97/97 -> known-gap 96/97 on the FIRST run of this patch, and its G7 check is the sibling law of the sentence this lane rewrote: G7 asserts the empty-answer absence contains \"none stored\". The first reword dropped that phrase and left L5 red. Fixed in the COMPONENT, not by touching L5: the absence now carries TWO sentences, one per branch, and the branch that answers \"the engine returned no rows at all\" keeps the \"none stored\" wording L5 asserts while stating that the claim is scoped to the kind(s) this surface reads. L5 re-runs at 97/97 with 23/23 mutants. Recorded because a fix that silently moves a sibling gate from verified to known-gap is a regression even when the failing check belongs to another milestone, and because the honest fix was in the wording, not in the other lane's assertion.",
@@ -194,12 +167,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-<<<<<<< HEAD
-    "sealedAt": "2026-10-05T04:28:38.311Z",
-    "contentSha256": "2306e6acca723346339078c56e652582f3c5dc14c3fd0ce893e6f7083ab592a4"
-=======
-    "sealedAt": "2026-10-05T12:59:31.109Z",
-    "contentSha256": "a2be6aa8a2a688eb3fea6c9b3a7a03c8fab0dcf02d6ced925d3ec69e60955525"
->>>>>>> fix/c6-call-site-filter
+    "sealedAt": "2026-10-05T13:07:24.814Z",
+    "contentSha256": "e1f07229de53ddb1619ef4d781b309fd76d5a7a33b83cfc9439a5ebcb7c33853"
   }
 }
