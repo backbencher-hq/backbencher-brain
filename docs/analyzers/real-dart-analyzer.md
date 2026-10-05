@@ -3643,3 +3643,108 @@ almost never writes — it appears in files that re-export a public surface. At 
 stride over a 33,755-file population, 9 edges means the construct is present but rare in
 this corpus; it is not absent from the language and `incoming-check` at n=117 draws a
 third independent sample that finds 7.
+
+#### The incoming arbiter at n=117 did NOT reproduce, and the cause is the file list
+
+The section above records an `incoming-check.ts` run at n=117. Re-run on this pass it does
+not reproduce, and the cause is narrower than "the numbers moved": **the analyzer, the
+instrument, and every piece of shared machinery the dart lane touches are byte-identical
+to when that table was written.**
+
+    git diff 03e7932b5 HEAD -- script/m14/incoming-check.ts          # empty
+    git diff 03e7932b5 HEAD -- src/ast/real-dart-analyzer.ts         # empty
+    git diff 03e7932b5 HEAD -- src/ast/pool-worker.ts src/ast/engine.ts \
+                              src/ast/language-detection.ts          # empty
+    git diff 03e7932b5 HEAD --stat -- src/ | cat
+    # 14 sibling analyzers + src/ast/types.ts (the `Imports` enum rename).
+    # Nothing else.
+
+**The instrument is deterministic.** `incoming-check.ts --json dart <117 files>` run twice
+back to back returns byte-identical results: `symbols 2960, distinctIncomingTargets 701,
+orphanDeclarations 365, orphanRate 0.12331081081081081`, and identical edges on all ten
+types. So `parseFile` concurrency nondeterminism — the mechanism this lane documented for
+the 2,735-file census — is not available as an explanation here.
+
+**The stated method cannot produce the stated sample.** The section says the population is
+"every `.dart` file under `proxicall`, `dart-http` and `riverpod`, sorted, then every
+14th — 117 files of a 1,630-file population". Those two claims are inconsistent:
+
+| pool | `.dart` files | every 14th |
+|---|---|---|
+| `dart-http` + `riverpod` | **1,630** (335 + 1,295) | **117** |
+| `proxicall` + `dart-http` + `riverpod` | **3,984** (2,351 + 335 + 1,295) | **285** |
+
+1,630 is exactly `dart-http` + `riverpod`, so `proxicall` is named in the prose and absent
+from the arithmetic. Eight candidate lists were built and measured to find which one
+produces the recorded table:
+
+| candidate | files | symbols | distinctTargets | orphans | uses | contains | exports |
+|---|---|---|---|---|---|---|---|
+| `dart-http`+`riverpod`, every 14th (the only 117 from a 1,630 pool) | 117 | **2,960** | 701 | 365 | 2,087 | 1,929 | 8 |
+| same, via `git ls-files` instead of `find` (pool identical: 1,630) | 117 | 2,960 | 701 | 365 | 2,087 | 1,929 | 8 |
+| all three, forward-sorted, every 14th, first 117 | 117 | 20,466 | 7,407 | 124 | 9,749 | 19,989 | 8 |
+| all three, forward-sorted, every 14th, all | 285 | 23,745 | 8,831 | 541 | 14,297 | 22,116 | 14 |
+| all three, REVERSED-sorted, every 14th, first 117 | 117 | **1,859** | 636 | **337** | 2,251 | 1,089 | 2 |
+| all three, REVERSED-sorted, every 14th, last 117 | 117 | 21,595 | 8,039 | 172 | 10,259 | 20,939 | 12 |
+| all three, every 34th | 118 | 8,535 | 7,171 | 218 | 6,189 | 7,801 | 28 |
+| **recorded in the section above** | 117 | **1,981** | 629 | **337** | 2,274 | 1,175 | 7 |
+
+**No candidate reproduces it.** The closest is the reversed-order 117-file prefix, which
+matches `orphanDeclarations` EXACTLY at 337 while differing on symbols (1,859 vs 1,981)
+and every per-type edge count. An exact match on one aggregate beside a mismatch on every
+other is not the same sample measured twice; it is a different sample with one field in
+common. **The file list that produced the recorded table is not recoverable from this
+file's own stated method, and this pass does not reconstruct it.** That is stated rather
+than papered over by choosing the candidate closest to the target, which is the trap the
+tenth pass already records for the census rotation.
+
+**What survives, and it is every conclusion the section drew.** Re-measured on the
+1,630-file pool — the only sample whose derivation is self-consistent:
+
+| type | fired | edges | distinct targets | ambiguous | unresolved | unres % | self-loops |
+|---|---|---|---|---|---|---|---|
+| uses | yes | 2,087 | 266 | 63 | 1,146 | 54.9% | 45 |
+| contains | yes | 1,929 | 324 | **202** | **0** | **0.0%** | 0 |
+| calls | yes | 1,276 | 204 | 22 | 778 | 61.0% | 26 |
+| overrides | yes | 802 | 34 | 0 | 758 | 94.5% | 0 |
+| instantiates | yes | 604 | 140 | 0 | 341 | 56.5% | 0 |
+| extends | yes | 414 | 10 | 0 | 396 | 95.7% | 0 |
+| references | yes | 352 | 108 | **0** | **0** | **0.0%** | 0 |
+| imports | yes | 349 | **0** | 0 | **349** | **100.0%** | 0 |
+| implements | yes | 33 | 16 | 2 | 10 | 30.3% | 0 |
+| exports | yes | 8 | **0** | 0 | **8** | **100.0%** | 0 |
+
+117 files, **2,960 symbols**, 0 degraded, 0 parse failures, `distinctIncomingTargets 701`,
+`orphanDeclarations 365`, `orphanRate 0.1233`. **10/10 fired**, `exports` among them at 8
+edges — a fourth independent sample in which `exports` is present.
+
+The nine readings that section asserted, re-checked one by one:
+
+| claim (recorded) | re-measured | holds? |
+|---|---|---|
+| all ten fire, `exports` among them | 10/10, `exports` 8 edges | yes |
+| `contains` is the highest-ambiguity type | 202 of 324 = **62.3%**, vs `uses` 23.7%, `calls` 10.8% | yes |
+| `references` has 0 ambiguous and 0 unresolved targets | 0 of 108 ambiguous, 0 of 352 unresolved | yes |
+| `imports`/`exports` resolve at 0% because a module URI is no declaration | 349/349 and 8/8 unresolved, 0 distinct targets both | yes |
+| `overrides` unresolved ≈ 95.9% | 94.5% | yes, −1.4 |
+| `extends` unresolved ≈ 93.0% | 95.7% | yes, +2.7 |
+| `calls` unresolved ≈ 61.7% | 61.0% | yes, −0.7 |
+| `uses` unresolved ≈ 60.3% | 54.9% | direction holds, −5.4 |
+| `instantiates` unresolved ≈ 71.2% | 56.5% | **no**, −14.7 |
+| self-loops exist on `calls` and `uses` | 26 and 45 | yes |
+
+**Eight of the ten assertions hold; one moves by 5.4 points and one — `instantiates` at
+71.2% vs 56.5% — does not reproduce and is withdrawn.** `instantiates` was the one
+`instantiates` figure in the section used to argue that the unresolved column is "almost
+exact"; at 56.5% it sits with `calls` and `uses` as an ordinary cross-file type and no
+longer demonstrates anything about the column's precision. The claim that the unresolved
+column separates into a module-URI population and a cross-file population survives
+without it: `imports`/`exports` at 100.0%, `overrides` 94.5% and `extends` 95.7% are one
+cluster, and `calls` 61.0%, `instantiates` 56.5% and `uses` 54.9% are another.
+
+The two rows that are **not** claims about the analyzer are corrected rather than
+re-measured: `symbols 1,981 -> 2,960`, `distinctIncomingTargets 629 -> 701`,
+`orphanDeclarations 337 -> 365`, `orphanRate 0.170 -> 0.1233`. A reader comparing this
+pass against the section above should treat the section above as **superseded and not
+reproduced**, and this table as the current reading on the one sample whose derivation is
+self-consistent.
