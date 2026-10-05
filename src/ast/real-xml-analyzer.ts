@@ -54,16 +54,16 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
     Name: "the name-bearing leaf for tags, attributes, PIs, DTD declarations and notations",
     Attribute: "a property of its element, and the source of `references` / `imports` edges for its value",
     doctypedecl: "a Type symbol naming the DTD, plus its ExternalID import",
-    ExternalID: "a file reference on a doctypedecl, entity or notation",
+    ExternalID: "a file reference on a doctypedecl, entity or notation — ONLY when it carries a SystemLiteral",
     SystemLiteral: "the file path inside a SYSTEM ExternalID",
-    PubidLiteral: "the public identifier inside a PUBLIC ExternalID",
+    PubidLiteral: "the public identifier inside a PUBLIC ExternalID; a catalogue name, not a path",
     elementdecl: "a Type symbol for a DTD element declaration; its contentspec is the content model",
     AttlistDecl: "the element whose attributes are declared here",
     AttDef: "a Property symbol plus a `contains` edge from the element it is declared for",
     GEDecl: "a general entity declaration: a Type symbol owned by the DTD, plus its ExternalID import",
     PEDecl: "a parameter entity declaration: a Type symbol owned by the DTD, plus its ExternalID import",
     NotationDecl: "a notation declaration: a Type symbol owned by the DTD, plus its ExternalID import",
-    PublicID: "a file reference on a NotationDecl",
+    PublicID: "a PUBLIC identifier on a NotationDecl; it names NO file, so it publishes no import",
     NDataDecl: "the notation an unparsed entity points at: a `contains` edge",
     contentspec: "the content model of an element declaration; each Name leaf becomes a `contains` edge",
     NotationType: "the notations an attribute may carry: each Name leaf becomes a `contains` edge",
@@ -1233,7 +1233,32 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
             }, nameNode)
           }
 
-          const externalId = this.findDirectChild(node, "ExternalID") || (isNotation ? this.findDirectChild(node, "PublicID") : null)
+          // `PUBLIC "pubid"` WITH NO SYSTEM LITERAL NAMES NO FILE, so it is not an
+          // ExternalID and there is nothing to import. This used to read
+          // `ExternalID || (isNotation ? PublicID : null)`, and the `PublicID` branch is
+          // what produced the corpus's one fabricated `imports` edge:
+          //
+          //   libxslt/tests/general/bug-52.xml
+          //     <!NOTATION GIF PUBLIC "GIF">
+          //     <!ENTITY graphic SYSTEM "graphic.gif" NDATA GIF>
+          //   ->  GIF -imports-> GIF  role=notation_external_id  confidence=1
+          //
+          // The grammar makes the two shapes distinct nodes, and the distinction is the
+          // whole point: `SYSTEM "graphic.gif"` is an `ExternalID` with a `SystemLiteral`,
+          // while `PUBLIC "GIF"` is a `PublicID` with a `PubidLiteral` and nothing else.
+          // XML's own grammar allows `PUBLIC PubidLiteral` with no system literal
+          // precisely so a parser can resolve it from a catalogue — a symbolic name, not
+          // a path. Reading it as one is the same defect the powerShell round removed
+          // from `New-Object $type`: a value that is not a file published as a target.
+          //
+          // Measured both ways by `validation/m14/fixtures/xml/public-id-census.mts`, and
+          // the two agree, which is what makes this fix exactly scoped rather than a
+          // guess: 299 ExternalID/PublicID nodes over 11,552 files, 298 with a
+          // SystemLiteral and 1 without, and 469 `imports` edges of which 298 carry
+          // `externalIdKind: "system"` and 1 carries `"public"` — that same edge. The
+          // SystemLiteral path needs no change; the count matches to the edge.
+          const externalId = this.findDirectChild(node, "ExternalID")
+
           if (externalId) {
             this.extractExternalId(
               externalId,
@@ -2063,6 +2088,21 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
    * path, so the edge's line is the LITERAL's line (M59.A7 / #825) — passing the
    * `ExternalID` node instead points the edge at the `SYSTEM` keyword's line,
    * which is the line of no name in the edge.
+   *
+   * A `SystemLiteral` is REQUIRED and a `PubidLiteral` is not a substitute. The two are
+   * different things and only one of them is a file: `SYSTEM "graphic.gif"` names a path
+   * a parser opens, `PUBLIC "GIF"` names a symbolic identifier a parser matches against a
+   * catalogue. This read was `systemLiteral || pubidLiteral`, so the second stood in for
+   * the first and a public identifier became an edge target — the fabricated
+   * `GIF -imports-> GIF` in `libxslt/tests/general/bug-52.xml`, at `confidence: 1`, on a
+   * tier table that maps `notation_external_id` to `import_based`.
+   *
+   * The invariant lives HERE rather than only at the one caller that broke it, because
+   * this is the single point where the target string is created: any future caller that
+   * hands this a `PublicID` now gets nothing instead of an edge, which is the correct
+   * outcome for a node that carries no file. Measured by
+   * `validation/m14/fixtures/xml/public-id-census.mts` — 298 system-literal nodes and 298
+   * `externalIdKind: "system"` edges agree exactly, so nothing legitimate is lost.
    */
   private extractExternalId(
     externalId: Node,
@@ -2071,9 +2111,7 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
     addRelationship: (source: string, target: string, type: ASTEngine.RelationshipType, metadata: Record<string, any>, node?: Node | null) => void,
     imports: ASTEngine.ImportInfo[],
   ): void {
-    const systemLiteral = this.findDirectChild(externalId, "SystemLiteral")
-    const pubidLiteral = this.findDirectChild(externalId, "PubidLiteral")
-    const literal = systemLiteral || pubidLiteral
+    const literal = this.findDirectChild(externalId, "SystemLiteral")
     if (!literal) return
     const path = this.unquote(literal.text)
     if (!path) return
@@ -2082,11 +2120,11 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
       path,
       importType: "xml-doctype",
       range: this.nodeToRange(literal),
-      metadata: { isDtdExternalId: true, role, systemId: Boolean(systemLiteral) },
+      metadata: { isDtdExternalId: true, role, systemId: true },
     })
     addRelationship(owner, path, ASTEngine.RelationshipType.Imports, {
       role,
-      externalIdKind: systemLiteral ? "system" : "public",
+      externalIdKind: "system",
     }, literal)
   }
 
