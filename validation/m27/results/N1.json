@@ -10,13 +10,13 @@
   "mutantsCaught": 0,
   "mutantsTotal": 0,
   "mutantRecords": [],
-  "currentCommit": "a0ed9eade7008de7ce93a312f6b0bd7e182a43a9",
+  "currentCommit": "f70ec0734fbae53b25994d7395bb108fd1999343",
   "verifierCommand": "npx tsx script/m27/verify-nvim.ts",
   "evidenceFile": "N1.json",
-  "generatedAt": "2026-10-04T23:20:39.248Z",
+  "generatedAt": "2026-10-05T14:22:46.516Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-04T23:20:39.251Z",
-    "contentSha256": "b62a80bee9f2d9b738ff5a09c20fbac9d85aaac7bcd4d8faf8c7a1448d3fa1dd"
+    "sealedAt": "2026-10-05T14:22:46.518Z",
+    "contentSha256": "57b6565727439d19e4f1f2c72e91bed1a434da544f10441729df549e84d35991"
   }
 }
