@@ -27,7 +27,12 @@
  *
  * Usage:
  *   npx tsx script/m14/clean-wide-walk.mts [--shards 24] [--out /tmp/clean-wide]
- *          [--shard-timeout 900] [--extra "--limit 120"] [--narrow]
+ *          [--shard-timeout 900] [--extra "--limit 120"] [--narrow] [--resume]
+ *
+ * `--resume` re-uses a shard's JSON when that JSON records its own shard index, its own
+ * shard count and a non-zero parsed count, and re-reads that shard's `.skip` file so its
+ * exclusions survive into the aggregate's denominator. Without it, a driver killed
+ * part-way loses the shards that already succeeded.
  */
 import { execFileSync, spawnSync } from "node:child_process"
 import * as fs from "node:fs"
@@ -43,6 +48,7 @@ const SHARDS = Number(arg("--shards") ?? 24) || 24
 const SHARD_TIMEOUT_S = Number(arg("--shard-timeout") ?? 900) || 900
 const EXTRA = arg("--extra") || ""
 const NARROW = argv.includes("--narrow")
+const RESUME = argv.includes("--resume")
 
 // `--narrow` measures only the 312 git-tracked files the arbiter walks, and exists for
 // the CONTROL run: the sharded machinery must reproduce the single-process PROD totals
@@ -72,7 +78,7 @@ function hangPaths(stderr: string): string[] {
   return out
 }
 
-type ShardResult = { shard: number; attempts: number; excluded: string[]; parsed: number; sampled: number }
+type ShardResult = { shard: number; attempts: number; excluded: string[]; parsed: number; sampled: number; resumed?: boolean }
 
 const results: ShardResult[] = []
 const allExcluded = new Set<string>()
@@ -89,6 +95,39 @@ for (let shard = 0; shard < SHARDS; shard++) {
   let parsed = 0
   let sampled = 0
 
+  // RESUME. A shard that already produced a complete, self-describing JSON is not
+  // re-run. This is not an optimisation: on this machine the whole-process timeout is
+  // shorter than the walk, so the driver gets killed part-way and the next session has
+  // to redo the shards that already succeeded. The guard is on the JSON's OWN recorded
+  // population, not on its existence — a JSON left behind by a shard that then hit its
+  // own retry loop is partial in `sampled` and is re-run.
+  const outFile = path.join(OUT_DIR, `shard-${shard}.json`)
+  if (RESUME && fs.existsSync(outFile)) {
+    try {
+      const j = JSON.parse(fs.readFileSync(outFile, "utf8")) as { sampled?: number; filesParsed?: number; shard?: number | null; shards?: number | null }
+      const own = j.shard === shard && (j.shards ?? 0) === SHARDS
+      const complete = Number(j.sampled ?? 0) > 0 && Number(j.filesParsed ?? 0) > 0
+      if (own && complete) {
+        parsed = Number(j.filesParsed)
+        sampled = Number(j.sampled)
+        // A resumed shard DID exclude files on its earlier attempt. Its `.skip` file is
+        // the only record of them, and the aggregate's denominator counts them, so it
+        // is read back here — otherwise a resumed shard reports its exclusions as zero
+        // and the aggregate silently claims a coverage it did not measure.
+        const skipPath = path.join(OUT_DIR, `shard-${shard}.skip`)
+        if (fs.existsSync(skipPath)) {
+          for (const line of fs.readFileSync(skipPath, "utf8").split("\n")) {
+            const t = line.trim()
+            if (t && !excludedForShard.includes(t)) { excludedForShard.push(t); allExcluded.add(t) }
+          }
+        }
+        results.push({ shard, attempts: 0, excluded: excludedForShard, parsed, sampled, resumed: true })
+        console.log(`shard ${String(shard).padStart(3)}/${SHARDS} SKIP resumed  parsed ${parsed}/${sampled}  excluded ${excludedForShard.length}`)
+        continue
+      }
+    } catch { /* unreadable partial — fall through and re-run */ }
+  }
+
   for (;;) {
     attempts++
     totalAttempts++
@@ -98,7 +137,6 @@ for (let shard = 0; shard < SHARDS; shard++) {
     }
     const skipFile = path.join(OUT_DIR, `shard-${shard}.skip`)
     fs.writeFileSync(skipFile, excludedForShard.join("\n") + (excludedForShard.length ? "\n" : ""))
-    const outFile = path.join(OUT_DIR, `shard-${shard}.json`)
     const args = censusArgsFor(shard, outFile, skipFile)
 
     const r = spawnSync("npx", ["tsx", CENSUS, ...args], {
