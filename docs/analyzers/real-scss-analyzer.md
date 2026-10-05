@@ -144,6 +144,15 @@ arbiter's verdict either** — see "[BB-HANG] is an ORPHANED timer" below for th
 The verdict the arbiter computed is 8/10 with 2 sound rulings; the exit code is a stray
 timer that fires after the verdict has been printed.
 
+A **second** `--fresh` arbiter run over the same 4,433 files reads `contains` 12,375,
+`imports` 3,615, `references` 9,350, `exports` 4,018, `extends` 427, `calls` 304,
+`uses` 91, `overrides` 32 — the same verdict, and every figure inside the census spreads
+above except `exports`, where 4,018 sits **one below** the 4,019 floor and widens that
+spread to 4,018–4,048. The arbiter is a different instrument from the census and is quoted
+as a pair rather than merged into its spread table, so this is stated rather than
+reconciled: two `--fresh` runs of the arbiter agree on the verdict and disagree on `exports`
+by 22, which is the same order as the census's own 29.
+
 ### `references` moved 6,594 → 9,350, and the added 2,756 edges resolve on 0 of them
 
 This lane **delegates** its CSS half to `src/ast/real-css-analyzer.ts`, so a change there
