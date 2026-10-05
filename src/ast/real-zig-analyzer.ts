@@ -403,7 +403,8 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
             // (1,458 bindings in 400 corpus files), a `pub const X = @import(...)`
             // re-export named a binding the index could not resolve (the fixture
             // runner's export invariant caught it), and the binding was invisible
-            // while the import EDGE was perfect. The fix is the REMOVAL of an early
+            // while the import EDGE was published for every one of them. The fix is the
+            // REMOVAL of an early
             // exit: at file or container scope the walk falls through to the same
             // const/var handling every other declaration gets, so kind, visibility
             // and owner are decided in ONE place. Inside a function body the exit
@@ -1365,6 +1366,38 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
               metadata: { relationshipType: "zig_field_access", fieldAccessExpression: n.text.slice(0, 60) },
             })
           }
+        }
+      }
+      // Z24 (pass 24): `@field(S, "x")` reads the member `x` of `S` by name-as-text. The
+      // read is the same fact `S.x` states, so it is a `uses` edge at the same confidence —
+      // what the analyzer does NOT know is that the symbol the graph will bind `x` to is
+      // `S`'s own member, which is exactly the inference `zig_field_access` already makes,
+      // and that is why this is 0.75 and not 1.0. `@hasDecl` is deliberately absent; see
+      // `zigReflectionFieldName` for the reason and the measured population.
+      //
+      // The dedup key is `emittedUses`' own `${source}->${field}` on purpose: Z52's
+      // post-pass already collapses one `uses` edge per (source, target) keeping the higher
+      // confidence, so a file that both reads `p.x` and reflects on it publishes ONE edge.
+      // A separate key would have published the same target twice with two reason codes,
+      // which is the defect Z52 was written to remove.
+      const reflectedName = this.zigReflectionFieldName(n)
+      if (reflectedName) {
+        const source = nextInFn && nextFn ? nextFn : "(global)"
+        const k = `${source}->${reflectedName.text}`
+        if (!emittedUses.has(k)) {
+          emittedUses.add(k)
+          relationships.push({
+            source,
+            target: reflectedName.text,
+            type: ASTEngine.RelationshipType.Uses,
+            confidence: 0.75,
+            // M59.A7 (#825): the line of the NAME, matching `zig_field_access`.
+            ...(this.nodeLine(reflectedName) ? { line_number: this.nodeLine(reflectedName)! } : {}),
+            metadata: {
+              relationshipType: "zig_field_reflection",
+              reflectedMember: reflectedName.text,
+            },
+          })
         }
       }
       for (let i = n.namedChildCount - 1; i >= 0; i--) {
@@ -2778,6 +2811,94 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (child && predicate(child)) return child
     }
     return null
+  }
+
+  /**
+   * Z24 (pass 24): the DECLARATION NAME `@field` reads, when it is spelled as a string.
+   *
+   * ## The construct
+   *
+   * Zig can read a container's member by name-as-text rather than by identifier:
+   *
+   *     @field(p, "x")        // the field `x` of whatever `p` holds
+   *     @field(Point, "z")    // the field `z` of the type `Point`
+   *
+   * Measured over the whole zig corpus (`validation/m14/fixtures/zig/reflection-builtin-probe.mts`,
+   * 8 shards, 3,848/3,848 files, 0 parse traps): **779 `@field` and 210 `@hasDecl` call
+   * sites over 242 files**, of which **206 name a declaration as a string**. Before this
+   * pass the analyzer read none of them — `reflection-firing.mts` drove the production
+   * `parseFile` over all 70 files carrying such a site and found **0** edges attributed to
+   * a reflection reason code. The 52 sites whose line carried an edge naming the same
+   * declaration decompose, by the analyzer's own reason codes, into `zig_field_access` 39,
+   * `zig_function_call` 10, `zig_export` 3 and `identifier_usage` 1 — all different
+   * constructs that share a line, since a relationship carries `line_number` and no range.
+   *
+   * ## Why `@field` and NOT `@hasDecl`
+   *
+   * `@field(S, "a")` READS `S.a`: the corpus compiles, so `S` has that member and the code
+   * consumes its value. That is exactly the claim the `zig_field_access` pass already makes
+   * for `S.a` written with dots, so it is emitted as `uses` at the same confidence, with a
+   * distinct reason code so the two derivations stay auditable apart.
+   *
+   * `@hasDecl(S, "a")` is an EXISTENCE TEST. Its whole purpose is to ask whether `a` is
+   * there, and the surrounding code handles both answers (`if (@hasDecl(T, "opt")) … else
+   * …`). A hard `uses`/`references` edge would assert a dependency the source deliberately
+   * does not take, which is the fabrication this workstream exists to prevent, so it is NOT
+   * emitted. Its measured population is published instead: 184 named sites, and 128 of the
+   * 184 name a declaration this corpus does not publish at all (a foreign container, a type
+   * parameter, a translate-c struct), so even a permissive reading would have produced 128
+   * edges the graph cannot walk to.
+   *
+   * ## Why the name must be identifier-shaped
+   *
+   * `@field(anyerror, "Expected closing ]")` is a legal Zig read of an error-set member, and
+   * Z18 already recorded what publishing such a text as a bare target does: it produced
+   * targets like `@"ziglib"` for names that were legitimate. The same guard applies — a
+   * `string_content` carrying a character outside `[A-Za-z0-9_]` is an error name, not a
+   * member this file declares, and publishing it would add an edge whose target is junk.
+   * Measured: **3 of the 22 named `@field` sites** are exactly this
+   * (`zig/lib/std/fmt.zig:1550,1557`, `zig/test/behavior/error.zig:897`) and **all 3 are
+   * declined**, which is what the arity measurement independently found (`@field` names
+   * resolving to 0 published symbols: 3).
+   *
+   * No regex: the shape test is a Set of node types and the character test is a
+   * character-code range, both the file's existing zero-regex discipline.
+   */
+  private zigReflectionFieldName(node: Node): Node | null {
+    if (node.type !== "builtin_function") return null
+    const bid = this.anyChild(node, (c) => c.type === "builtin_identifier")
+    if (!bid || bid.text !== "@field") return null
+    const args = this.anyChild(node, (c) => c.type === "arguments")
+    if (!args) return null
+    // The SECOND argument is the member name; the first is the container. A `@field` with
+    // no string second argument names its member by a comptime VALUE, which is not a name
+    // this pass can read — `@field(T, field_name)` where `field_name` is a comptime
+    // variable is the majority shape in the corpus (757 of the 779 sites) and correctly
+    // yields nothing here.
+    let stringArg: Node | null = null
+    let seen = 0
+    for (let i = 0; i < args.namedChildCount; i++) {
+      const a = args.namedChild(i)
+      if (!a) continue
+      seen++
+      if (seen === 2 && a.type === "string") stringArg = a
+    }
+    if (!stringArg) return null
+    const content = this.anyChild(stringArg, (c) => c.type === "string_content")
+    if (!content) return null
+    const text = content.text
+    if (!text) return null
+    // ≡ /^[A-Za-z_][A-Za-z0-9_]*$/ — first char is a letter or underscore, then letters,
+    // digits and underscores. A member name that is not identifier-shaped is an error-set
+    // member (see the Z24 header).
+    const isStart = (c: number) =>
+      (c >= 65 && c <= 90) || (c >= 97 && c <= 122) || c === 95
+    const isRest = (c: number) => isStart(c) || (c >= 48 && c <= 57)
+    if (!isStart(text.charCodeAt(0))) return null
+    for (let i = 1; i < text.length; i++) {
+      if (!isRest(text.charCodeAt(i))) return null
+    }
+    return content
   }
 
   // The `pub`/`export`/`inline` modifiers are anonymous token children
