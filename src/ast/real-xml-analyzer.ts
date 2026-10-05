@@ -2289,6 +2289,25 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
       visibility: "public",
       ownerName,
       ownerKind: ASTEngine.SymbolKind.Class,
+      // M60: an attribute is a declaration OWNED BY the element it is written on,
+      // and `pool-worker.ts:930` defaults `qualifiedName` to the bare name when the
+      // analyzer leaves it unset. So `svg/@fill` and `path/@fill` were both
+      // published under the single key `fill` and the store could not tell two
+      // declarations of two elements apart (`parallel-indexer.ts:3038` writes
+      // `symbol.qualifiedName || symbol.name`). Measured on the 600-file draw
+      // `099e7a868f7b73ee`: 83,454 `property` symbols and 1,002 `namespace` symbols
+      // carried a qualified name equal to their bare name.
+      //
+      // The same expression already used for elements at `:790` and `:920`, so this
+      // is one convention in one analyzer rather than a second identity scheme.
+      //
+      // WHAT IT DOES NOT FIX, stated rather than implied: two instances of the SAME
+      // tag (`<path fill>` twice) still publish `path.fill` twice, because a
+      // qualified name is unique within a scope and the distinguishing information
+      // — ancestry and position — is not in the published name. Measured residual
+      // for this edit: 2,195 of 14,081 ambiguous edges repaired, 11,886 left
+      // (`validation/m14/measurements/xml/qname-population-after-d1.json`).
+      qualifiedName: ownerName ? `${ownerName}.${name}` : name,
       metadata: {
         nodeType: node.type,
         isXmlAttribute: !isNamespace,

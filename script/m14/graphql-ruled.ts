@@ -65,7 +65,8 @@
  *
  * THE SYMPTOM, so the next reader recognises it: a correct `--fresh` run of
  * `ontology-coverage-gate.ts graphql` prints, for the two `A` rows, "the grammar produced
- * **57** distinct node types across the corpus". The graphql grammar produces **98**. 57 is
+ * **57** distinct node types across the corpus". The graphql grammar produces **75**
+ * named node types over the same files — 128 including anonymous tokens. 57 is
  * the BASH grammar's inventory — the same run prints it for every lane, because the value is
  * `(LANGS as any)[LANG]?.wasm ?? "tree-sitter-bash.wasm"` with no `graphql` entry to find.
  * So an `A` row reading "57 node types, none of them a call" is a statement about bash.
@@ -74,10 +75,10 @@
  *
  * Instrument A asks one question: does the grammar PRODUCE any node type in the list?
  * For `calls` and `instantiates` that is the right question and the answer is positive
- * evidence: the graphql grammar yields **98 distinct node types over 882,672 nodes on
- * 1,905 admitted files**, and the whole inventory is in
+ * evidence: the graphql grammar yields **75 named node types over 882,672 nodes on
+ * 1,905 admitted files** (plus 53 anonymous token types, 128 in union), and the whole inventory is in
  * `script/m14/tmp/graphql/out/ontology-census.json` under `instrumentA.inventory`. It
- * contains `Field`, `Arguments`, `Argument`, `Directive`, `OperationDefinition` and 92
+ * contains `Field`, `Arguments`, `Argument`, `Directive`, `OperationDefinition` and 71
  * others, and it contains no call node and no construction node.
  *
  * CALIBRATION, because "absent from a list I wrote" is only evidence if the list can hold
@@ -245,7 +246,7 @@ export const GRAPHQL_RULED: Ruled[] = [
       }
     },
     describe:
-      "an `implements` clause whose supertype THIS DOCUMENT declares — with a unique kind — as an object type, input object type, union or scalar. GraphQL has no `extends` clause at all (`A:supertype_clause_node: 0` over 882,672 nodes / 98 node types), so this is the only shape that could carry the edge; 3,330 `implements` clauses exist on the corpus and 0 of them resolve to an inheritance-shaped supertype in the same document.",
+      "an `implements` clause whose supertype THIS DOCUMENT declares — with a unique kind — as an object type, input object type, union or scalar. GraphQL has no `extends` clause at all (`A:supertype_clause_node: 0` over 882,672 nodes / 75 named node types), so this is the only shape that could carry the edge; 3,330 `implements` clauses exist on the corpus and 0 of them resolve to an inheritance-shaped supertype in the same document.",
   },
 
   // ─────────────────────────────────────────────────────────────── calls
@@ -255,7 +256,7 @@ export const GRAPHQL_RULED: Ruled[] = [
   // The structural reason: a `.graphql` document has no callee. `user(id: 1) { name }`
   // names a MEMBER of the type the selection is written against; the entity that would be
   // called — the resolver — is server-side and appears nowhere in the document. The grammar
-  // confirms the shape of that claim: 98 distinct node types over 882,672 nodes on 1,905
+  // confirms the shape of that claim: 75 named node types over 882,672 nodes on 1,905
   // admitted files, and none of them is a call, an invocation or a callee reference.
   //
   // WHAT THE CONSTRUCT'S NEAREST REAL FORM MEASURES, because the ruling is worthless without
@@ -308,7 +309,7 @@ export const GRAPHQL_RULED: Ruled[] = [
       "CallableReference",
     ],
     describe:
-      "a node naming a callee, or applying a named callee to arguments. GraphQL's 98 node types over 882,672 nodes carry none — a selection set DESCRIBES a request and the resolver that serves it is not in the document. The nearest real form is measured and NOT labelled `calls`: 1,150 `Field` nodes and 2,682 `Directive` nodes carry an `Arguments` child, and all 3,832 are `uses` with role `field_selection` / `directive_application`. That is a family labelling decision (one fact, one label, ledger R10), so the overturn condition is an R-number assigning them to `calls` — satisfiable by relabelling, with no grammar or corpus change.",
+      "a node naming a callee, or applying a named callee to arguments. GraphQL's 75 named node types over 882,672 nodes carry none — a selection set DESCRIBES a request and the resolver that serves it is not in the document. The nearest real form is measured and NOT labelled `calls`: 1,150 `Field` nodes and 2,682 `Directive` nodes carry an `Arguments` child, and all 3,832 are `uses` with role `field_selection` / `directive_application`. That is a family labelling decision (one fact, one label, ledger R10), so the overturn condition is an R-number assigning them to `calls` — satisfiable by relabelling, with no grammar or corpus change.",
   },
 
   // ─────────────────────────────────────────────────────────────── instantiates
@@ -341,7 +342,7 @@ export const GRAPHQL_RULED: Ruled[] = [
       "Allocate",
     ],
     describe:
-      "a node constructing an instance of a declared type. GraphQL's 98 node types over 882,672 nodes carry none: a schema document declares types and an executable document describes a request, and neither creates a value of a declared type. `ObjectValue` (3,523 nodes) is an argument value, not an instance. Overturn condition: the grammar producing any listed node, or a construction convention written outside the grammar the way `#import` is — which is what moved `imports` from ruled to emitted.",
+      "a node constructing an instance of a declared type. GraphQL's 75 named node types over 882,672 nodes carry none: a schema document declares types and an executable document describes a request, and neither creates a value of a declared type. `ObjectValue` (3,523 nodes) is an argument value, not an instance. Overturn condition: the grammar producing any listed node, or a construction convention written outside the grammar the way `#import` is — which is what moved `imports` from ruled to emitted.",
   },
 ]
 
