@@ -3587,3 +3587,59 @@ runs the scoped command without reading the header gets a number about a previou
 dies at line 26 with `ERR_INVALID_ARG_TYPE` before a single case runs; its own header says
 `bun run`, so this is a runner mismatch rather than a defect, but a harness that cannot
 report which runner it needs is one command away from being read as a red battery.
+
+### A twelfth pass: the per-type table reproduces to the EDGE across a base merge
+
+Every number in *The arbiter's per-type table at n=400* above was re-measured on a
+tree that did not exist when it was written. This branch's merge-base with
+`origin/analyzers/ontology-laptop-b` was `44e3a111f`; the base tip was `c227de16f`
+("9 lanes integrated — arbiter now rules 17 of 23, 1 lane unadjudicated"). The merge
+brought in 14 changes to OTHER analyzers (`real-clean`, `real-css`, `real-go`,
+`real-json`, `real-markdown`, `real-protobuf`, `real-r`, `real-rust`, `real-scss`,
+`real-sql`, `real-toml`, `real-typescript`, `real-vue`, `real-xml`), a 17-line change
+to `src/ast/types.ts`, and a 14-line change to `firing-check.ts` itself.
+`src/ast/real-dart-analyzer.ts` is byte-identical across it.
+
+`npx tsx script/m14/firing-check.ts --files 400 --json dart` on the merged tree:
+
+| type | edges | sourcePublished | sourceExternal | bothEndsResolve | rate | confidence < 0.7 |
+|---|---|---|---|---|---|---|
+| uses | 21,808 | 21,716 | 92 | 5,425 | 24.9% | 2,459 |
+| contains | 11,885 | 11,885 | 0 | 11,885 | 100.0% | 0 |
+| calls | 6,970 | 6,930 | 40 | 2,222 | 31.9% | 0 |
+| overrides | 6,646 | 6,646 | 0 | 110 | 1.7% | 0 |
+| instantiates | 2,608 | 2,563 | 45 | 434 | 16.6% | 0 |
+| references | 1,420 | 1,412 | 8 | 1,412 | 99.4% | 0 |
+| imports | 1,276 | 25 | 1,251 | 0 | 0.0% | 0 |
+| extends | 475 | 475 | 0 | 243 | 51.2% | 0 |
+| implements | 155 | 155 | 0 | 47 | 30.3% | 0 |
+| exports | 9 | 0 | 9 | 0 | 0.0% | 0 |
+
+**53,252 relationships, 14,684 symbols, 400/400 files parsed, 0 parse failures, 0
+degraded fallbacks, and all four zero-safety fields at 0** (`emptySymbolNames`,
+`emptyOrUnknownKind`, `unknownEndpoints` = 0). **10/10 fired.**
+
+Every cell equals the cell above it — not approximately, not to the row, but to each
+individual count including the 92 / 40 / 45 / 8 / 1,251 `sourceExternal` rows and the
+2,459 sub-0.7 `uses` rows. The reading is therefore not an artifact of the tree it was
+taken on: 14 sibling analyzers moving, an enum in shared `types.ts` changing
+(`RelationshipType.Imports` `"brain_import"` → `"imports"`, which this lane does not
+read because it emits through `ASTEngine.RelationshipType`), and the arbiter gaining a
+field all left the dart column unchanged. A table that moves with other lanes' work
+would not do this.
+
+**`exports` is now read at both samples in one pass, which no earlier pass could say.**
+This pass ran both: at n=120 the arbiter reports **9/10 fired, 8,290 edges, 120/120
+files, 0 degraded, 0 parse failures, 2,413 symbols** with `exports` at 0 edges; at
+n=400 it reports **10/10** with `exports` at 9 edges. The eleventh pass recorded the
+same contrast across two passes. Both numbers are on the same tree, in the same
+session, minutes apart, so `exports` absence at n=120 is a property of the SAMPLE and
+not of the analyzer — which is what *Two DECISIONS, not RULED verdicts* already
+claimed from two different instruments, now confirmed by one.
+
+**The 9 `exports` edges at n=400 are concentrated, and the sample is stated rather than
+assumed.** `exports` fires on `library_export`, which real Flutter application code
+almost never writes — it appears in files that re-export a public surface. At a 400-file
+stride over a 33,755-file population, 9 edges means the construct is present but rare in
+this corpus; it is not absent from the language and `incoming-check` at n=117 draws a
+third independent sample that finds 7.
