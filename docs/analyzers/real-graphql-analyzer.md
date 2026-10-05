@@ -148,7 +148,7 @@ with a corpus measurement (`calls`, `extends`, `instantiates`).
 `run()` callback, and a resumed walk never calls it — so a second run against the
 populated `validation/m14/measurements/walk-graphql.txt` prints `emitted 0/10` and
 `RULED-UNJUSTIFIED` on all seven types this analyzer emits, then exits non-zero. That
-is a shared-machinery defect, reported in §Report, not repaired here.
+is a shared-machinery defect, reported in §Shared-machinery items, not repaired here.
 
 ### The corpus
 
@@ -441,22 +441,62 @@ heuristic ratio to be one.
 
 ### DERIVATION findings
 
-**4**, from `script/m60/rel-type-coverage-gate.ts --langs=graphql`:
+**5**, from `script/m60/rel-type-coverage-gate.ts --langs=graphql` (exit **1**,
+`baseline: 104 recorded, 3 NEW, 102 repaid`):
 
 ```
 CHECK 1 — DERIVATION: every emitted type has an oracle derivation
-  graphql      4 un-audited: ["contains","exports","references","uses"]
+  graphql      5 un-audited: ["contains","exports","imports","references","uses"]
+
+REGRESSIONS (not in the recorded debt):
+  DERIVATION|graphql|emits `exports` but the differential audits ["extends","implements","instantiates","overrides"]
+  DERIVATION|graphql|emits `imports` but the differential audits ["extends","implements","instantiates","overrides"]
+  DERIVATION|graphql|emits `references` but the differential audits ["extends","implements","instantiates","overrides"]
 ```
 
 The shared differential audits `["extends","implements","instantiates","overrides"]`
 for this lane. `extends` and `instantiates` are audited and emit 0 edges, so the
 audited set that reaches real data is `implements` (427) and `overrides` (1,054).
-**2 of the 4 findings are new** and were introduced by this lane's own work:
-`exports` and `references` are stored and compared against nothing. `contains` and
-`uses` are pre-existing. The gate exits 1 on the 2 new ones.
+**3 of the 5 findings are new** and were introduced by this lane's own work — `exports`,
+`imports` and `references` — and all three are reported by the gate as regressions
+rather than as recorded debt. `contains` and `uses` are pre-existing.
 
-Paying this down needs an oracle, and the oracle lives in shared
-`script/m14/differential.ts`, so it is a §8 item and not this lane's to edit.
+**What the gate cannot see, because it is measured against the wrong instrument.**
+Four of the five do have hand-derived truth; the DERIVATION check reads only
+`script/m14/differential.ts` and does not read a fixture expectation.
+
+| type | hand-derived truth | rows | asserted by |
+|---|---|---|---|
+| `contains` | `fixtures/ground-truth.json` | 66 | `differential/differential.mts` |
+| `uses` | `fixtures/ground-truth.json` | 39 | `differential/differential.mts` |
+| `references` | `fixtures/ground-truth.json` | 67 | `differential/differential.mts` |
+| `exports` | `fixtures/ground-truth.json` | 45 | `differential/differential.mts` |
+| `imports` | `validation/m14/fixtures/graphql/ontology-file-imports.expectation.json` | 4 expect + 12 forbid | `script/m14/run-fixtures.ts --lang graphql` |
+
+Every row in both files was authored from the fixture source line by line, and
+`ontology-file-imports.expectation.json` carries `"authoredBeforeAnalyzerRun": true`.
+The `imports` rows are asserted in production shape, not by the differential's
+internal `analyze()` path: 4 exact `imports` edges with `meta.importForm` and
+`meta.importBindings`, plus 12 `forbidRelationships` that are the negative cases a
+keyword match cannot pass — `# important:` (prefix), `#   # this document imports
+nothing at all` (keyword mid-sentence), the unterminated quote, the unquoted path,
+and the empty-`unknown`-target bans.
+
+**So the substantive debt is 0 rows without an oracle and the reported debt is 5 types
+whose oracle exists.** That is a §8 report, and it is stated as a defect in the
+instrument rather than as a pass for the lane:
+
+> **`script/m60/rel-type-coverage-gate.ts`, CHECK 1 — DERIVATION.** The check derives a
+> lane's audited set from `script/m14/differential.ts` alone. It should also accept an
+> `expectRelationships` / `forbidRelationships` block in
+> `validation/m14/fixtures/<lang>/*.expectation.json` as a derivation, gated on that
+> file carrying `"authoredBeforeAnalyzerRun": true` and `"language": "<lang>"`. Under
+> that reading `graphql`'s un-audited set is `[]`, `imports` drops out, and CHECK 1 exits
+> 0 for this lane. Both files are shared machinery owned by the supervisor, so neither
+> was edited here. Until then the honest reading of `graphql 5 un-audited` is **5 types
+> whose DERIVATION rows the gate's single source cannot reach, 0 of them unaudited in
+> fact** — and the 3 regressions it reports are a measurement of the check's input set,
+> not of this analyzer.
 
 ### The relabel's own fabrication check
 
@@ -806,6 +846,87 @@ out what is available:
   while keeping every fact is invisible to it by construction. The two-set
   subtraction in `probe/declared-type-roundtrip.mts` is what covers that, and it
   reads 0 fabricated / 0 lost.
+
+## Shared-machinery items
+
+Four defects outside `src/ast/real-graphql-analyzer.ts`. None was repaired here; each is
+stated with the file, the function and the measurement, so it can be applied without
+re-deriving it.
+
+### 1. `src/ast/engine.ts:1441-1447` — a leaked parse timer overrides a caller's exit code
+
+```
+1441:  const parseBomb = setTimeout(() => {
+1442:    process.stderr.write(`[BB-HANG] parser stuck 120s on ${filePath} — exiting\n`)
+1443:    process.exit(1)
+1444:  }, 120000)
+1446:  const tree = parser.parse(content)
+1447:  clearTimeout(parseBomb)
+```
+
+There is no `try`/`finally` between the timer and the clear (verified by source, lines
+1395-1450 contain no `try`, `catch` or `finally` at all). **Any throw out of
+`parser.parse()` leaks the timer**, and 120 s later the leaked callback calls
+`process.exit(1)` — which discards whatever `process.exitCode` the caller had set.
+
+Measured on this lane, `npx tsx script/m14/ontology-coverage-gate.ts graphql --fresh`:
+
+```
+emitted 7/10   ruled-sound 3   FALSIFIED 0   ruled-without-justification 0
+[BB-HANG] parser stuck 120s on …/hasura-engine/community/boilerplates/observability/
+          enterprise/examples/hasura/metadata/actions.graphql — exiting
+FRESH_EXIT=1
+```
+
+The verdict is **correct and complete** (all ten types adjudicated, `FALSIFIED 0`,
+`ruled-without-justification 0`), and the process still exits **1**. `ontology-coverage-gate.ts:518`
+sets `process.exitCode = falsified.length + unjustified.length === 0 ? 0 : 1`, which on
+this run evaluates to 0; the stale timer overrides it. A supervisor scripting the gate
+reads this lane as failing.
+
+**Fix:** wrap the parse so the clear is unconditional — `let tree; try { tree = parser.parse(content) } finally { clearTimeout(parseBomb) }`. One line, and it makes the 120 s guard mean "this parse is stuck" rather than "this process, up to 120 s after the work finished". This affects **every** lane, not this one: any walk whose corpus contains one file that throws out of `parser.parse` can exit 1 after printing a clean verdict.
+
+### 2. `script/m14/ontology-coverage-gate.ts` — the tally lives inside `run()`, so a resumed walk reports `emitted 0/10`
+
+Lines 302-317: `observed` is populated in `resumableWalk`'s `run()` callback. A resumed
+walk never calls `run()` for a file it already did, so `observed` stays empty. Measured,
+second invocation with no `--fresh`:
+
+```
+walk: 1905/1905 files (100.0%)  newly walked 0, resumed 1905
+emitted 0/10   ruled-sound 3   FALSIFIED 0   ruled-without-justification 7
+RESUME_EXIT=1
+```
+
+The walk is 100% complete and the arbiter reports **7 of this lane's own emitted types as
+RULED-UNJUSTIFIED** — including three that carry written rulings. Every count on the
+table is a statement about zero files while the header above it says 1,905.
+
+**Fix:** persist the per-type counts in the checkpoint file alongside the completed-file
+list, so a resumed walk restores them instead of re-deriving nothing; or refuse to
+report when `walked === 0 && alreadyDone > 0` and the tally is empty. The second is
+three lines and cannot print a false table.
+
+### 3. `script/m60/rel-type-coverage-gate.ts`, CHECK 1 — DERIVATION reads one source and misses the fixture oracles
+
+See §DERIVATION findings above. Reads `script/m14/differential.ts` only; does not read
+`validation/m14/fixtures/<lang>/*.expectation.json`. Reports `graphql 5 un-audited` and
+3 regressions for types whose hand-derived truth exists in both places.
+
+### 4. `src/ast/pool-worker.ts:448` — `me` is on the `UNIVERSAL` name denylist
+
+`me` is a legitimate GraphQL field name. Production drops the symbol
+(`Query.me` at `0032_supergraph.graphql:175`) while `analyze()` keeps it — **1 of 8,796
+corpus symbols**, and **0 relationships are left without a source** as a result, so the
+graph is not corrupted. Measured by `probe/production-drops.mts`. The denylist is
+shared and the name is genuinely common in non-GraphQL corpora, so the fix is not
+"remove `me`" but "scope the denylist by language".
+
+**One item from the handover brief is already resolved upstream and is recorded here so
+nobody re-raises it:** `RelationshipType.Imports` no longer disagrees between
+`src/ast/types.ts` and `src/ast/engine.ts`. `types.ts:84` reads `Imports = "imports"`,
+matching `engine.ts:454` and `graph.ts`, with the history written down at `types.ts:72-74`.
+Any ruling that cited the old `brain_import` value as a blocker is void.
 
 ## Evidence
 
