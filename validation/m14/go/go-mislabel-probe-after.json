@@ -1,0 +1,14 @@
+{
+  "compared": 500,
+  "crashed": 0,
+  "exportsTotal": 4153,
+  "bogusExportCount": 0,
+  "filesWithBogusExports": 0,
+  "bogusExports": [],
+  "instSixTotal": 147,
+  "instSixSelector": 0,
+  "instSixQualifiedOrBare": 132,
+  "sawTopLevelFuncNamedTarget": 147,
+  "filesWithBogusInst": 0,
+  "bogusInst": []
+}
