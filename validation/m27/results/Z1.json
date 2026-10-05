@@ -26,21 +26,17 @@
       "caught": true
     }
   ],
-  "currentCommit": "b5ea6a8b6ff3fc27d67cadba9083ed8bce0da271",
+  "currentCommit": "d3108fc04e89a991cc59b44fcd24156ef64ce9df",
   "build": {
     "ran": true,
-    "ok": false,
-    "reason": "cargo build failed: error: rustup could not choose a version of cargo to run, because one wasn't specified explicitly, and no default is configured.\nhelp: run 'rustup default stable' to download the latest stable release of Rust and set it as your default toolchain.\n"
+    "ok": true,
+    "reason": "wasm shim built"
   },
   "verifierCommand": "npx tsx script/m27/verify-zed.ts",
   "evidenceFile": "Z1.json",
-  "generatedAt": "2026-10-05T17:58:05.358Z",
-  "claimLevel": "I2 — extension + shim unit-proven against the real server's wire capabilities; wasm build blocked-with-reason (toolchain boundary per D-7); no editor session driven",
+  "generatedAt": "2026-10-05T21:49:07.678Z",
+  "claimLevel": "I2 — extension + shim unit-proven, wasm built; editor-session leg blocked-with-reason (no display session driven)",
   "blockedLegs": [
-    {
-      "leg": "wasm shim build",
-      "reason": "cargo build failed: error: rustup could not choose a version of cargo to run, because one wasn't specified explicitly, and no default is configured.\nhelp: run 'rustup default stable' to download the latest stable release of Rust and set it as your default toolchain.\n"
-    },
     {
       "leg": "in-editor Zed session",
       "reason": "Zed GUI session not machine-driven on this display-less environment; extension + server proven at their respective levels"
@@ -52,7 +48,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T17:58:05.360Z",
-    "contentSha256": "9fdc430551d1df6e07e0f3dcc6e580c1e0affebfbf6b5d9c662dff44a14660cf"
+    "sealedAt": "2026-10-05T21:49:07.680Z",
+    "contentSha256": "5ad1d381d61ea1ef6db015e5799874d65334e4ac5d4cd780639f3a0d9e631a8a"
   }
 }

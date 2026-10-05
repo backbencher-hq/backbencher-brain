@@ -20,12 +20,12 @@
     "loadFailureIsACatch": false,
     "note": "A mutant whose module will not import runs no probe and no harness assertion. This gate booked that as a detected defect — PROVEN: a mutant whose replacement was a bare syntax error printed 'mutant failed to load — counts as detected' and the gate still reported 6/6 mutants caught and VERIFIED. An unevaluable mutant, and an anchor that no longer matches, are both FAILURES now (§8.3 silence is guilt; the old branch printed the word SKIP and continued)."
   },
-  "currentCommit": "d5f2ea6d64aecf7e0728c205a9c3eb518344b30b",
+  "currentCommit": "6a19b00cc00e1cd2ed8d38b1fd4dd54499f4c067",
   "verifierCommand": "npx tsx script/m42/verify-hub.ts",
   "evidenceFile": "H5.json",
-  "generatedAt": "2026-10-05T22:31:32.110Z",
+  "generatedAt": "2026-10-05T22:33:18.429Z",
   "fixture": {
-    "root": "$HOME/Documents/Default Project/ishaq/wt/hubgap/.tools/m42-h2-fixture",
+    "root": "$HOME/Documents/Default Project/ishaq/backbencher-brain/.tools/m42-h2-fixture",
     "files": [
       "src/main/java/com/demo/App.java",
       "src/main/java/com/demo/Main2.java"
@@ -54,7 +54,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T22:31:32.111Z",
-    "contentSha256": "0760b84dad7590ed3da6f2f3fe9648e0637d849b28ae104c253d0ecac4a8f604"
+    "sealedAt": "2026-10-05T22:33:18.432Z",
+    "contentSha256": "a5cbb47b21069203e56a06d304474cc84fcaaae474e4e09994b20a46d72cbbef"
   }
 }
