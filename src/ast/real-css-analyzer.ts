@@ -495,6 +495,11 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
     // the module is written in the import itself and how the store spells a file.
     const lastSegment = lastPathSegment(filePath)
     this.importerName = lastSegment || filePath || "stylesheet"
+    // Whether that name is a REAL basename or the fallback above. The stylesheet module
+    // symbol is published only for a real basename: publishing one named `stylesheet`
+    // would put a placeholder literal in a name-bearing field, which is the M60 R7 rule
+    // this file already states about the `imports` source and would contradict.
+    this.hasRealModuleName = lastSegment.length > 0
 
     const ctx: CssContext = {
       symbols: [],
@@ -544,6 +549,47 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
     this.collectFontFaceNames(rootNode, ctx)
     this.collectCustomDefinitionNames(rootNode, ctx)
     this.collectNamespacePrefixes(rootNode, ctx)
+
+    // THE STYLESHEET IS THE MODULE, and it is published FIRST so a member's owner can name
+    // it. This is not an invention: `real-scss-analyzer.ts:273` publishes the Sass module
+    // under exactly this rule, and the bash lane publishes its script (BD2). CSS was the
+    // one language in that family WITHOUT it, and the cost was measurable rather than
+    // cosmetic:
+    //
+    //   `imports` resolution was 0 of 251 at BOTH ends over the 1,286-file corpus
+    //   (`validation/m14/measurements/css-parsefile-census-1286.json`, row `imports`:
+    //   srcPublished 0, tgtPublished 0). The TARGET is an external specifier and
+    //   `target_external` is the correct record for it. The SOURCE was the defect: the
+    //   `@import` edge names `this.importerName`, and no symbol in the file carried that
+    //   name, so the store recorded `source_external` for an edge whose source is not
+    //   external at all — it is this file.
+    //
+    // The name is the file's own basename WITH the extension, for the reason the bash and
+    // scss lanes give: deterministic (no machine path, so the index fingerprint is
+    // stable), and it cannot collide with anything else this analyzer publishes — a class
+    // selector is `.btn`, an id is `#x`, a custom property is `--x`, a bare type selector
+    // cannot contain a dot, and no at-rule name is written `theme.css`.
+    //
+    // It deliberately carries NO `contains` edges to the file's own rules. That would be
+    // true and it would be expensive: the admitted corpus publishes 178,084 `contains`
+    // edges, and adding one per top-level rule is a large-graph regression bought for a
+    // node that already has the `imports` edges pointing at it. The node exists so those
+    // edges resolve, not to restate the file's contents.
+    if (this.hasRealModuleName) {
+      ctx.symbols.unshift({
+        name: this.importerName,
+        kind: ASTEngine.SymbolKind.Module,
+        range: this.nodeToRange(rootNode),
+        scope: "",
+        visibility: "public",
+        complexity: 1,
+        metadata: {
+          cssSpecific: true,
+          isStylesheet: true,
+          stylesheetPath: filePath,
+        },
+      })
+    }
 
     const stack: StackFrame[] = [{ node: rootNode, media: "", supports: "", layer: "", container: "", scope: "", currentSelector: "", keyframeScope: "" }]
 
@@ -1187,6 +1233,9 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
 
   /** The importing stylesheet's name; set per `analyze` run. */
   private importerName = "stylesheet"
+
+  /** Whether `importerName` is a real basename rather than the fallback literal. */
+  private hasRealModuleName = false
 
   private determineSelectorKind(
     hasId: boolean,
@@ -2099,6 +2148,40 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
     return out
   }
 
+  /**
+   * The `@custom-media` references of a whole comma-separated query LIST.
+   *
+   * `customMediaRefsIn` walks ONE node's subtree. A comma list is not inside one
+   * node — the grammar leaves the terms as SIBLING query children of the statement —
+   * so the single-term walk cannot see past the first comma. This unions the walk
+   * over the statement's own DIRECT query children, which is what makes
+   * `@media (--a), (--b)` depend on both `--a` and `--b`.
+   *
+   * Direct children only, so the walk cannot descend into the block and read a
+   * declaration value as a reference. For a single-term query there is exactly one
+   * such child, so the result is identical to `customMediaRefsIn(queryNode)` — which
+   * is why this is a widening and not a rewrite.
+   */
+  private customMediaRefsInList(statement: Node): string[] {
+    const out: string[] = []
+    for (let i = 0; i < statement.childCount; i++) {
+      const c = statement.child(i)
+      if (!c) continue
+      if (
+        c.type !== "keyword_query" &&
+        c.type !== "binary_query" &&
+        c.type !== "feature_query" &&
+        c.type !== "parenthesized_query" &&
+        c.type !== "unary_query" &&
+        c.type !== "selector_query"
+      ) {
+        continue
+      }
+      for (const name of this.customMediaRefsIn(c)) if (out.indexOf(name) === -1) out.push(name)
+    }
+    return out
+  }
+
   private processMedia(node: Node, ctx: CssContext): string | null {
     // M14 F1 debt repaid 2026-09-26, and it carried a real defect with it.
     //
@@ -2131,7 +2214,36 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
           c.type === "selector_query"),
     )
     if (queryNode) {
-      const mediaName = `@media ${collapseWhitespace(queryNode.text)}`
+      // The scope's NAME must describe the WHOLE condition, not its first term.
+      //
+      // M60 pass 13. `@media A, B { … }` is a comma-separated query LIST and the
+      // block applies when EITHER term matches. The pinned grammar does not wrap
+      // the list in a node — measured on `@media screen and (min-width: 769px),print`
+      // the `media_statement`'s children are `@media`, `binary_query`, `,`,
+      // `keyword_query`, `block` — so `findChild` above returns the FIRST query
+      // term and every term after the first comma was silently DISCARDED from the
+      // name. Two consequences, both measured on the corpus:
+      //
+      // 1. The published name UNDER-DESCRIBES the scope. `Documenter.jl/assets/html/
+      //    themes/catppuccin-mocha.css` published
+      //    `@media screen and (min-width: 769px)` for a block whose condition is
+      //    `screen and (min-width: 769px),print`, so a reader cannot tell the block
+      //    also applies to print.
+      // 2. It is an IDENTITY COLLISION. `@media screen and (min-width: 769px),print`
+      //    and `@media screen and (min-width: 769px), screen` differ only after the
+      //    comma, and both publish the same name — so the identity merge folds two
+      //    different conditions into one scope symbol and their rules together.
+      //    `FSharp.Formatting/docs/content/fsdocs-default.css:192` is the measured
+      //    case: the block's condition runs to
+      //    `screen and (min-resolution: 120dpi) and (max-width: 767.9px)`.
+      //
+      // The name is therefore built from the at-rule's own PRELUDE — the source text
+      // between the `@media` keyword and the block — which is the whole condition by
+      // construction and needs no node type to wrap it. For a SINGLE-term query the
+      // prelude is byte-identical to `queryNode.text`, so this cannot move a name
+      // that was already right; `css-media-prelude-equivalence` measures that claim
+      // rather than asserting it.
+      const mediaName = `@media ${collapseWhitespace(this.atRulePrelude(node, "@media"))}`
       ctx.patterns["Responsive Design (Media Queries)"] = true
       // RULING (2026-09-26). The comment this replaces read "a media query is a
       // structural scope, not a symbol — it is NOT emitted as a standalone
@@ -2215,7 +2327,19 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
         // fixture `custom-media-in-every-query-shape` is the only evidence for it.
         // That is stated because "0 in the corpus" is what a broken probe and a
         // working branch both report.
-        for (const declared of this.customMediaRefsIn(queryNode)) {
+        // Every term of the LIST, not just the first. `@media (--a), (--b)` is one
+        // condition depending on TWO declarations, and `customMediaRefsIn` walks the
+        // subtree of the node it is handed — so handing it the first query term found
+        // the `--a` in it and could not see the `--b` that sits in a SIBLING query
+        // node. That left the scope named for both while the graph recorded one
+        // dependency, which is the same under-description the name fix above removed,
+        // one level down: the fixture `custom-media-in-every-query-shape` states the
+        // intent in its own comment ("a comma list, so the scope depends on TWO") and
+        // asserted only ONE edge, so it passed against the loss.
+        //
+        // The terms are the statement's own DIRECT query children, so the walk cannot
+        // descend into the block and invent a reference from a declaration value.
+        for (const declared of this.customMediaRefsInList(node)) {
           if (!ctx.customMediaNames[declared]) continue
           ctx.relationships.push({
             source: mediaName,

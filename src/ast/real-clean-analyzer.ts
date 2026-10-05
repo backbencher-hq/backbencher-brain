@@ -188,6 +188,18 @@ interface CleanContext {
   functionSymbolIndex: Record<string, number>
   /** See `declarationKey`. -> the signature that declares it. */
   signatures: Map<string, SignatureInfo>
+  /**
+   * `type_signature` node id -> the signature read off it, for the emitter's lookup.
+   *
+   * `signatures` above is keyed by a STRING both passes must independently derive,
+   * and that is the whole defect this map removes. See `readSignature` /
+   * `processTypeSignature`: the declaration pass reads an instance member's
+   * signature under the MODULE owner (`|::cmp`) because it does not know the
+   * instance's target, while the emitting pass asks under the INSTANCE owner
+   * (`|[a]::cmp`), so the lookup missed and `applySignature` never ran. An
+   * identity both passes can read off the node itself cannot disagree.
+   */
+  signaturesByNode: Map<number, SignatureInfo>
   /** Lexical local identity (see LocalScopes). */
   localScopes: LocalScopes
   /** Module aliases from `import … as X`, so a `constructor X` in a type
@@ -488,6 +500,7 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
       declaredFunctions: new Set(),
       functionSymbolIndex: Object.create(null),
       signatures: new Map(),
+      signaturesByNode: new Map(),
       localScopes: { callableScoped: new Map(), blockLocals: new Map(), frameLocals: new Map() },
       importAliases: new Set(),
       declaredTypeNames: new Set(),
@@ -1130,10 +1143,26 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
             for (let i = 0; i < n.namedChildCount; i++) {
               const m = n.namedChild(i)
               if (m?.type !== "class_member") continue
+
               const declared = this.memberDeclaredName(m)
               if (declared) members.add(declared)
             }
-            if (members.size > 0) ctx.classMembers.set(nm.text, members)
+            if (members.size > 0) {
+              ctx.classMembers.set(nm.text, members)
+              // An OPERATOR is a class name in Clean, and the DECLARATION spells it
+              // parenthesised while the INSTANCE spells it bare: `class (==) infix 4 a ::`
+              // (clean-stdlib/StdOverloaded.icl:23) declares `==`, and `instance == Bool`
+              // (clean-stdlib/StdBool.dcl:10) reads it back without the parentheses. So
+              // `nm.text` is `(==)` and the instance's `className` is `==`, and keying
+              // only on the declaration's own spelling silently refused every
+              // `overrides` edge for an operator-named class declared in the SAME file —
+              // 24 `implements` edges on the 312-file corpus carry the same mismatch in
+              // their `isExternalClass` flag. Registering the bare spelling is what makes
+              // the in-file guard mean what it says; the guard is not relaxed, it is
+              // given the name the instance actually reads.
+              const bare = this.unparenthesize(nm.text)
+              if (bare !== null && bare !== nm.text) ctx.classMembers.set(bare, members)
+            }
           }
           nextOwner = nm?.text ?? nextOwner
           break
@@ -1184,7 +1213,23 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (name) {
             ctx.declaredFunctions.add(name)
             const key = declarationKey(frame, owner, name)
-            if (!ctx.signatures.has(key)) ctx.signatures.set(key, this.readSignature(n, ctx))
+            // Read ONCE PER NODE. `readSignature` has side effects on the context
+            // (`addTypeMention`, `ctx.patterns`), so it is never called twice for
+            // one node — but it IS called once per node even where two nodes share
+            // a KEY, because a colliding key is the failure this index exists to
+            // survive: three `cmp` members in three instances of one class all
+            // derive `|::cmp`, and reading the first one's info for the other two
+            // gave one member three signatures and two members none.
+            let info = ctx.signaturesByNode.get(n.id)
+            if (!info) {
+              info = this.readSignature(n, ctx)
+              ctx.signaturesByNode.set(n.id, info)
+              // `ctx.signatures` keeps its old contract — first signature per key
+              // wins — so `joinParameters`, which is handed a definition node and
+              // not the signature and can only ask by key, resolves what it did
+              // before this map existed.
+              if (!ctx.signatures.has(key)) ctx.signatures.set(key, info)
+            }
           }
           break
         }
@@ -1343,10 +1388,48 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   /**
-   * The class names a `|` context constrains on, split at the `,` CHILD nodes.
-   * Measured: `class_context` is `|` followed by a flat comma-separated
-   * constraint list — `| Enum, Ord, Num a` is ONE node with three named children
-   * and two `,` tokens — so the split is a child walk, not a text split.
+   * The class names a `|` context constrains on, split at the `,` and `&` CHILD
+   * nodes. Measured: `class_context` is `|` followed by a flat constraint list —
+   * `| Enum, Ord, Num a` is ONE node with three named children and two `,`
+   * tokens — so the split is a child walk, not a text split.
+   *
+   * **`&` is a second spelling of `,` and was not read.** The two forms produce
+   * the SAME child shape with a different separator token, so this is the
+   * two-spellings-one-handler case, not two constructs:
+   *
+   *     | == a          -> !| operator_compare type_variable
+   *     | == a & UList a -> !| operator_compare type_variable !& constructor type_variable
+   *
+   * (`clean-stdlib/StdOverloadedList.dcl:5,8`.) Reading only `,` published the
+   * first conjunct and dropped the second. Measured over the corpus
+   * (`validation/m14/fixtures/clean/ampersand-context-probe.mts`): 1,995
+   * `class_context` nodes at WIDE carry only the three unnamed child types `|`,
+   * `,` and `&`; 365 contain an `&`; and the conjuncts a `,`-only reader dropped
+   * split **249 that would ADD a row** against **264 that would name a class
+   * already published on that same line** — `| toReal a & toReal b & toReal c`
+   * (Clyde/Clyde/timeprofile.icl:337) is the shape, and at TRACKED the split is
+   * 62 against 47.
+   *
+   * The 264 are NOT a doubling, and the reason is `pushRel`'s own key rather than
+   * a judgement made here: it collapses on `source|type|target|line`, so a repeated
+   * conjunct cannot produce a second identical edge on one line. Measured as an A/B
+   * on the TRACKED population, reverting only the `&` in this line
+   * (`validation/m14/fixtures/clean/references-duplicate-probe.mts`):
+   *
+   *                references edges   distinct (source,target,line)   groups with >1
+   *     `,` only            10,049                    9,570                      387
+   *     `,` and `&`         10,108                    9,629                      387
+   *
+   * Both columns of the third are identical, per discriminator, so the fix adds 59
+   * edges and 59 NEW groups and changes the duplicate count by zero. The previous
+   * round declined to ship this fix precisely because it could not show that, and
+   * named the duplicate-vs-multiplicity question as the blocker; the question is
+   * answered by a key that was already in the file. `249` is the WIDE count of rows
+   * this adds, not a measured edge delta — WIDE is not re-measurable on this
+   * machine, so only the TRACKED `+59` is a measurement of the output.
+   *
+   * `&&` is NOT handled: it is 0 of the 1,995 contexts, and handling an unobserved
+   * token would be a claim no measurement supports.
    *
    * A constraint that names no class publishes nothing and emits no edge: 5 of
    * the 474 contexts in the corpus are `*` (a `uniqueness_star` leaf — the
@@ -1358,7 +1441,7 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
       const c = context.child(i)
       if (!c) continue
       if (!c.isNamed) {
-        if (c.type === ",") expectName = true
+        if (c.type === "," || c.type === "&") expectName = true
         continue
       }
       if (!expectName) continue
@@ -1603,7 +1686,74 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
    * 3 `list_type`, 1 `type_paren`, 1 `unit_type` and 71 bare `constructor`
    * (synonym / enumerated).
    */
+  /**
+   * Is this `type_definition` the PARSER'S RECOVERY OF A SIGNATURE rather than a
+   * declaration? A Clean signature such as `widByPtr :: !WID -> Bool` is not a
+   * `type_signature` to the pinned grammar: it comes back as a `type_definition` with no
+   * `body`, no `rhs`, a `name` field holding the FIRST ARGUMENT TYPE, and text that stops
+   * there (`:: !WID`). Publishing that row puts a fabricated `type` in the symbol set and
+   * makes every edge that mentions the argument type point at it.
+   *
+   * MEASURED over the 2,179-file WIDE manifest (`validation/m14/measurements/clean/
+   * type-definition-recovery-2179.txt`, regenerable with
+   * `npx tsx .tmp-probe/tdef-rule.mts`), production wasm, node shapes only:
+   *
+   *   type_definition with a body or rhs      3,930
+   *   with NEITHER                               447   (10.21% of all type_definitions)
+   *
+   * Of the 447, 74 carry a uniqueness marker (`!`, `#`) or an `ERROR` as the child
+   * immediately after the `::`, and reading all 74 sites shows every one of them is a
+   * signature. The other 373 are real declarations the rule must not touch: 293 `:: ErrPrefs`
+   * (an abstract type in a `.dcl`), 32 `:: Conversions a`, 25 `:: *TTY` (an abstract unique
+   * class) and 23 with a trailing `;` or a body the grammar filed under `uniqueness_type`.
+   *
+   * 74 IS NOT THE WITHDRAWABLE SET, and the reason is the trap this function exists to
+   * avoid. `eastwood/test/suite-default/GoToModule1.dcl:89` is `:: !*AbstractTypeSynonym`
+   * and `:92` is `:: !*EastwoodAbstractNewType` — two REAL declarations whose child shape
+   * `[:: ! ERROR constructor]` is byte-identical to the phantom at
+   * `Libraries/Hilde/FamkeConcurrentClean.dcl:8` (`:: !(*World`). No node-INTERNAL rule
+   * separates them; every child, field and name is the same. So the discriminator is
+   * POSITIONAL and uses node positions only: a signature's `::` follows the callable's name
+   * on the same row, a definition's `::` begins its own row. Measured on the same
+   * population, that withdraws 72 and keeps exactly those 2.
+   *
+   * NO TEXT AND NO REGEX. The test is whether the nearest preceding NAMED sibling ENDS on
+   * this node's start row, so no string can be mistaken for a construct and no file-path
+   * convention can stand in for one.
+   */
+  private isSignatureRecoveryTypeDefinition(node: Node): boolean {
+    if (node.childForFieldName("body") || node.childForFieldName("rhs")) return false
+    // The child immediately after the `::` decides it. Anonymous nodes included: `!` and
+    // `#` are tokens, and skipping them would leave only the ERROR case standing.
+    let afterColonColon = ""
+    for (let i = 0; i < node.childCount; i++) {
+      const c = node.child(i)
+      if (!c || c.type !== "::") continue
+      const next = node.child(i + 1)
+      if (next) afterColonColon = next.type
+      break
+    }
+    if (afterColonColon !== "!" && afterColonColon !== "#" && afterColonColon !== "ERROR") return false
+    // Positional: is the `::` preceded on its own row by a named sibling?
+    const parent = node.parent
+    if (!parent) return false
+    let index = -1
+    for (let i = 0; i < parent.childCount; i++) {
+      const c = parent.child(i)
+      if (c && c.id === node.id) { index = i; break }
+    }
+    if (index < 0) return false
+    for (let i = index - 1; i >= 0; i--) {
+      const sibling = parent.child(i)
+      if (!sibling || !sibling.isNamed) continue
+      return sibling.endPosition.row === node.startPosition.row
+    }
+    // Nothing named before it on its row: the `::` opens the declaration.
+    return false
+  }
+
   private processTypeDefinition(node: Node, ctx: CleanContext, scopeStack: Scope[]): boolean {
+    if (this.isSignatureRecoveryTypeDefinition(node)) return false
     // The name comes from the `name` FIELD. The old version used
     // `findChild(node, n => n.type === "constructor")`, which reads the FIRST
     // constructor child; 5 `type_definition`s carry an `rhs` constructor as a
@@ -1857,7 +2007,16 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
         // Almost every class is imported (`instance Eq Int` names StdEnv's `Eq`),
         // so the flag records the normal case explicitly instead of leaving the
         // reader to infer it from a missing symbol.
-        isExternalClass: !ctx.declaredTypeNames.has(className),
+        //
+        // The second spelling is the operator case, and it is not cosmetic: a class
+        // DECLARATION spells an operator-named class parenthesised (`class (==) infix 4 a ::`,
+        // clean-stdlib/StdOverloaded.icl:23) while the INSTANCE spells it bare
+        // (`instance == Bool`, clean-stdlib/StdBool.dcl:10). `declaredTypeNames` therefore
+        // holds `(==)` and the lookup below held only `==`, so 24 `implements` edges on
+        // the 312-file corpus carried `isExternalClass: true` for a class declared in the
+        // SAME file — a false statement in the one field whose whole job is to say which
+        // of the two it is. `classMembers` gets the same treatment where `overrides` reads it.
+        isExternalClass: !ctx.declaredTypeNames.has(className) && !this.isLocallyDeclaredOperatorClass(ctx, className),
         // The instance's target is a type VARIABLE, so the instance is polymorphic:
         // it publishes no symbol (see above) and this flag says why the edge has no
         // symbol at its source.
@@ -2484,9 +2643,17 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
     const isMember =
       currentScope?.kind === ASTEngine.SymbolKind.Interface || currentScope?.kind === ASTEngine.SymbolKind.Class
     const key = declarationKey(ctx.currentFrame, this.ownerIdentity(currentScope, ctx), name)
-    const info = ctx.signatures.get(key)
+    // The NODE identity first, the derived key second. The key is what `joinParameters`
+    // still has to use — it is handed a definition node, not the signature — and the
+    // node is what the emitter can trust, because the two passes do not always derive
+    // the same key for the same signature. Measured: an instance member's signature is
+    // stored under the module owner and asked for under the instance's target
+    // (`|::cmp` vs `|[a]::cmp`), so 13 class_context sites in the 312-file corpus were
+    // read and then thrown away.
+    const info = ctx.signaturesByNode.get(node.id) ?? ctx.signatures.get(key)
     const existingIdx = ctx.functionSymbolIndex[key]
     if (existingIdx !== undefined) {
+      if (process.env.BB_CLEAN_DIAG) process.stderr.write(`DIAG apply L${this.lineOf(node)} sym=${ctx.symbols[existingIdx].name} key=${key} merge info=${info ? "Y" : "N"}\n`)
       // A repeated signature is ONE entity: the first occurrence wins and the
       // second's type information is merged in, so a `.dcl` that declares `f :: T`
       // twice does not publish two symbols.
@@ -2517,7 +2684,10 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
     this.attachComments(sym, node)
     ctx.symbols.push(sym)
     ctx.functionSymbolIndex[key] = ctx.symbols.length - 1
-    if (info) this.applySignature(sym, info, ctx, isLocal)
+    if (info) {
+      if (process.env.BB_CLEAN_DIAG) process.stderr.write(`DIAG apply L${this.lineOf(info.node)} sym=${sym.name} key=${key} fresh\n`)
+      this.applySignature(sym, info, ctx, isLocal)
+    }
   }
 
   /** Copy a `SignatureInfo` onto the symbol it declares, and emit its edges. */
@@ -3343,6 +3513,45 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
 
   private unparenthesize(text: string): string | null {
     return unparenthesizeText(text)
+  }
+
+  /**
+   * Is `name` a class this file declares, under the OTHER spelling Clean uses for an
+   * operator-named class?
+   *
+   * A declaration writes `class (==) …` and an instance reads `instance == …`, so
+   * `declaredTypeNames` holds `(==)` while the lookup holds `==`. Only the parenthesised
+   * direction is tried, and only when the bare name is not itself declared, so a file
+   * that declares BOTH `class (===)` and `class ===` still resolves `===` to the
+   * declaration that actually spells it that way. Returns false for any name that is not
+   * a plausible operator, which keeps this from matching an ordinary identifier.
+   */
+  private isLocallyDeclaredOperatorClass(ctx: CleanContext, name: string): boolean {
+    if (this.isPlainIdentifierName(name)) return false
+    const parenthesised = `(${name})`
+    return ctx.declaredTypeNames.has(parenthesised) || ctx.declaredClassNames.has(parenthesised)
+  }
+
+  /**
+   * Is `name` an ordinary identifier — a letter or `_`, then letters, digits, `_` or `'`?
+   *
+   * Character tests, not a pattern. This file's one regex-free property is checked by
+   * `script/m14/clean-completeness-gate.ts`, which fails on ANY `RegularExpressionLiteral`
+   * — a stronger rule than the M49.R2 "no regex doing syntax work" policy, and the reason a
+   * two-line predicate like `/^[A-Za-z_][A-Za-z0-9_']*$/` had to be written this way. The
+   * first version of `isLocallyDeclaredOperatorClass` used that regex and turned the gate
+   * red, which is the gate working: it caught a regression introduced by the very commit
+   * that added the fixture meant to prove the correction.
+   */
+  private isPlainIdentifierName(name: string): boolean {
+    if (name.length === 0) return false
+    const isHead = (c: string) => c === "_" || (c >= "a" && c <= "z") || (c >= "A" && c <= "Z")
+    if (!isHead(name[0])) return false
+    for (let i = 1; i < name.length; i++) {
+      const c = name[i]
+      if (!isHead(c) && !(c >= "0" && c <= "9") && c !== "'") return false
+    }
+    return true
   }
 
   /**
