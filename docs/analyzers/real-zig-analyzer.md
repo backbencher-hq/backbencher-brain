@@ -238,8 +238,9 @@ census cannot finish on this corpus at all.
 ### Verdicts
 
 Measured over that draw, through `parseFile` at the shipped analyzer (Z59 included),
-**re-measured 2026-10-03 in 8 shards**: **127,429 symbols, 392,550 relationships,
-0 symbols with an empty name, 0 kinds outside the shared `SymbolKind`.**
+**re-measured 2026-10-04 at HEAD in 8 shards**: **131,097 symbols, 395,967 relationships,
+0 symbols with an empty name, 0 kinds outside the shared `SymbolKind`, 0 edges under
+confidence 0.7.**
 
 The pass-1 figures were 127,536 / 392,086 / 0 empty names / **192 kindless symbols**.
 The draw is byte-identical (`sha256:2f3545f9…`, 3,834 of 3,834, asserted by the
@@ -259,7 +260,7 @@ degradation is now RATE-measured by
 `validation/m14/fixtures/zig/fallback-degradation-rate.py`, both instruments count
 `parseFile`'s `fallback: true` per file, and both merges REFUSE a degraded shard
 rather than publishing a mixture. On a run where every shard reports 0 the
-figures above reproduce exactly — 127,429 symbols, 392,550 relationships, 0 empty
+figures above reproduce exactly — 131,097 symbols, 395,967 relationships, 0 empty
 names, 0 kinds outside `SymbolKind`, 0 edges below 0.7 — so the numbers are right
 and what was wrong was calling one run's value a property. **The 192 kindless
 symbols and the 7 sub-0.7 edges pass 1 published were real, and they were the same
@@ -285,9 +286,9 @@ row is still here for a reader; it is simply the row no script grades.
 | `extends` | no — RULED, ZIG.O.1, instrument A: 0 of 28 inheritance words in the grammar's 239-entry type table or its 16 fields; 0 UNCLASSIFIED of 1,797 header-slot children | 0 | 0 | — | — | — | — | — | — |
 | `calls` | yes — emitted, and every target is called at its own line (A2: 0 of 113,476) | 113,476 | 2,781 | 11.53 | **0.0** | 40.13 | 95.55 | 95.55 | 0.85 ×113476 |
 | `uses` | yes — emitted, and 0 of 132,201 targets contradict their reason code (A3) | 132,201 | 2,852 | 22.48 | **0.0** | 47.73 | 97.43 | 97.43 | 1 ×13406 · 0.75 ×118795 |
-| `contains` | yes — emitted; 4.80% of owners are name-ambiguous (A5) | 80,714 | 1,557 | 0.0 | **0.0** | 99.99 | 99.99 | 99.99 | 1 ×80714 |
-| `imports` | yes — emitted; 20,396 of 20,400 spell `@import` on the line, 0 paths absent (A8) | 10,200 | 2,693 | 100.0 | **0.0** | 29.89 | 33.8 | 33.8 | 0.9 ×10200 |
-| `references` | yes — emitted; 75 of 20,594 declared-type targets are not type names (A7) | 30,794 | 2,966 | 100.0 | **0.0** | 44.39 | 74.66 | 74.66 | 1 ×10200 · 0.9 ×20594 |
+| `contains` | yes — emitted; 4.80% of owners are name-ambiguous (A5) | 80,876 | 1,557 | 0.0 | **0.0** | 99.99 | 99.99 | 99.99 | 1 ×80876 |
+| `imports` | yes — emitted; 20,396 of 20,400 spell `@import` on the line, 0 paths absent (A8) | 10,200 | 2,693 | 100.0 | **0.0** | 29.89 | 33.92 | 33.92 | 0.9 ×10200 |
+| `references` | yes — emitted; 75 of 20,594 declared-type targets are not type names (A7) | 30,794 | 2,966 | 100.0 | **0.0** | 44.39 | 74.70 | 74.70 | 1 ×10200 · 0.9 ×20594 |
 | `exports` | yes — emitted; 0 of 24,114 targets name a non-public symbol (A6) | 24,114 | 3,164 | 100.0 | **0.0** | 100.0 | 100.0 | 100.0 | 1 ×24114 |
 | `instantiates` | yes — emitted; 615 of 4,306 targets bind to nothing published (A4) — ZIG.O.4; the earlier ruling that this branch was unreachable was false and is retracted | 4,306 | 530 | 55.04 | **0.0** | 85.72 | 96.05 | 96.05 | 1 ×4306 |
 | `implements` | no — RULED, ZIG.O.2, instrument A, same tables; Zig models an interface as `opaque` + fn-pointer fields, so there is no conformance clause to name | 0 | 0 | — | — | — | — | — | — |
