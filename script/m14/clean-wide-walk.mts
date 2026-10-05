@@ -70,6 +70,18 @@ const SHARDS = Number(arg("--shards") ?? 24) || 24
 const SHARD_TIMEOUT_S = Number(arg("--shard-timeout") ?? 900) || 900
 const CONCURRENCY = Math.max(1, Number(arg("--concurrency") ?? 1) || 1)
 const EXTRA = arg("--extra") || ""
+
+/**
+ * The `--identity-dir` inside EXTRA, if there is one.
+ *
+ * A resumed shard is not re-run, so a shard whose tally JSON exists but whose IDENTITY
+ * dump does not would be resumed with no dump — and the aggregator downstream would
+ * read a SHORTER population than the JSON beside it claims, which is the exact failure
+ * this driver already had once (six shards that were all shard 0). The guard is
+ * therefore on the ARTEFACT the next stage needs, not only on the JSON's own fields.
+ */
+const IDENTITY_DIR = (EXTRA.match(/(?:^|\s)--identity-dir\s+(\S+)/) ?? [])[1] ?? ""
+const identityPathFor = (shard: number): string => path.join(IDENTITY_DIR, `identity-${shard}.ndjson`)
 const NARROW = argv.includes("--narrow")
 const RESUME = argv.includes("--resume")
 
@@ -130,7 +142,8 @@ async function runShard(shard: number): Promise<ShardResult> {
       const j = JSON.parse(fs.readFileSync(outFile, "utf8")) as { sampled?: number; filesParsed?: number; shard?: number | null; shards?: number | null }
       const own = j.shard === shard && (j.shards ?? 0) === SHARDS
       const complete = Number(j.sampled ?? 0) > 0 && Number(j.filesParsed ?? 0) > 0
-      if (own && complete) {
+      const dumped = !IDENTITY_DIR || fs.existsSync(identityPathFor(shard))
+      if (own && complete && dumped) {
         parsed = Number(j.filesParsed)
         sampled = Number(j.sampled)
         // A resumed shard DID exclude files on its earlier attempt. Its `.skip` file is

@@ -41,6 +41,13 @@
  *
  * Usage:
  *   npx tsx script/m14/clean-ontology-census.ts [--limit N] [--wide] [--json out]
+ *          [--identity-dir DIR] [--shard K --shards N] [--skip file]
+ *
+ * `--identity-dir DIR` writes `identity-<shard>.ndjson`: one line per PARSED file
+ * carrying every declaration's name/kind/qualifiedName/line/owner and every edge as a
+ * typed (source, target, line, confidence, discriminator) tuple. It exists because the
+ * incoming question needs DECLARATION IDENTITY and no count on this lane carried it —
+ * see the comment above the dump for the `!a` case that makes the difference visible.
  *
  * ## Sharding — why it exists
  *
@@ -85,6 +92,7 @@ const WANT_WIDE = argv.includes("--wide")
 const JSON_OUT = arg("--json")
 const SHARD = Number(arg("--shard") ?? 0) || 0
 const SHARDS = Number(arg("--shards") ?? 0) || 0
+const IDENTITY_DIR = arg("--identity-dir")
 const SKIP_FILE = arg("--skip")
 const SKIP = new Set<string>()
 if (SKIP_FILE && fs.existsSync(SKIP_FILE)) {
@@ -315,6 +323,55 @@ for (const { r, rel } of PERFILE) {
     if (sC && tC) row.corpusBoth++
     if (row.examples.length < 4) row.examples.push(`${rel}:${ln ?? "?"} ${src} -> ${tgt}`)
   }
+}
+
+// ---------------------------------------------------------------- identity dump
+//
+// WHY. `incoming-check.ts` answers "can the reverse walk find the declaration this
+// edge names?", and it answers it with a `name -> distinct KINDS` index. That is a
+// question about a NAME, so it cannot see the ambiguity that matters most on this
+// lane: ONE file that declares the same name FOUR times (`Data/Array/Strict.dcl`
+// publishes four `class` symbols named `!a`, at lines 18, 20, 21, 23 — each an
+// `instance Show {!a}` / `Eq` / `Ord` / `Appendable`). Four declarations, one kind,
+// so a kind-keyed index reads 1 and the reverse walk has three wrong candidates to
+// choose between with a rule nobody wrote. Resolving THAT needs the declaration
+// identity, which is what this dump carries and what no existing artefact on this
+// lane does: per-file, per-declaration name/kind/qualifiedName/line/owner, plus
+// every edge as a typed (source, target) pair.
+//
+// It is a DUMP, not a verdict. Nothing here classifies an ambiguity; the classifier
+// is `clean-ambiguity-split.mts`, which reads these lines and prints the split. The
+// two are separate files because a measurement that shares code with its own
+// interpretation cannot be re-run with the interpretation changed.
+if (IDENTITY_DIR) {
+  fs.mkdirSync(IDENTITY_DIR, { recursive: true })
+  const out = path.join(IDENTITY_DIR, `identity-${SHARDS > 0 ? SHARD : "all"}.ndjson`)
+  const lines: string[] = []
+  for (const { rel, r } of PERFILE) {
+    const s: unknown[][] = []
+    for (const y of r.symbols ?? []) {
+      s.push([
+        String(y.name ?? ""),
+        String(y.kind ?? ""),
+        String(y.qualifiedName ?? ""),
+        Number(y.startLine ?? 0) || 0,
+        String(y.ownerName ?? ""),
+        String(y.visibility ?? ""),
+      ])
+    }
+    const rr: unknown[][] = []
+    for (const x of r.relationships ?? []) {
+      const t = String(x.type ?? x.relationshipType ?? "").toLowerCase()
+      const ti = ALL_TYPES.indexOf(t as Type)
+      if (ti < 0) continue
+      const md = (x.metadata ?? {}) as Record<string, any>
+      const disc = String(md.relationshipType ?? md.context ?? (md.isDerive ? "derive" : md.isInstance ? "instance" : md.isWildcard ? "wildcard" : md.isQualifiedCall ? "qualified_call" : md.isTypeClassOverride ? "typeclass_override" : "ABSENT"))
+      rr.push([ti, src0(x), tgt0(x), Number((x as any).line_number ?? 0) || 0, Number(x.confidence), disc])
+    }
+    lines.push(JSON.stringify({ f: rel, s, r: rr }))
+  }
+  fs.writeFileSync(out, lines.join("\n") + (lines.length ? "\n" : ""))
+  console.log(`\nIDENTITY dump written: ${out}  (${PERFILE.length} files, ${lines.reduce((a, l) => a + JSON.parse(l).s.length, 0)} declarations, ${lines.reduce((a, l) => a + JSON.parse(l).r.length, 0)} edges)`)
 }
 
 // ---------------------------------------------------------------- report
