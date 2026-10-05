@@ -1100,6 +1100,7 @@ dump("RESIDUAL: `var()` shapes that yield no edge at all", resid.varLeafResidual
 dump("RESIDUAL: per-file shortfall, grammar `--x` leaves minus published isVariableRef", resid.varPerFileShortfall)
 dump("RESIDUAL: import_statement shapes the analyzer cannot reach", resid.importResidual)
 dump("RESIDUAL: same keyframes name under more than one keyword (NOT an override by design)", resid.keyframeResidual)
+dump("RESIDUAL: rule_set in a NAMED scope whose selector name was never published", resid.containsResidual)
 
 say()
 say("published edges per type, from production parseFile:")
