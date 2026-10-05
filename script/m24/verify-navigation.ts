@@ -108,10 +108,12 @@ interface FixtureSymbol {
   qualified_name: string | null
   symbol_type: string
   file: string
-  line_start: number
-  line_end: number
-  byte_start: number
-  byte_end: number
+  /** Null models a symbol the indexer stored WITHOUT a location — a real store
+   *  state, and the one that makes the address owner refuse a substitute. */
+  line_start: number | null
+  line_end: number | null
+  byte_start: number | null
+  byte_end: number | null
 }
 
 interface FixtureRel {
@@ -126,6 +128,130 @@ interface FixtureRel {
   site_col: number
   site_text: string
 }
+
+/** The aliases the double serves the stored call-site line under, so a mutant
+ *  cannot pass by reading a name the fixture happens not to populate. The
+ *  production query selects ONE of them (`stored_call_line`); the others are
+ *  decoys carrying the identical value. */
+const STORED_LINE_ALIASES = ["stored_call_line", "line_number", "lineNumber", "call_line"] as const
+
+// --- §2 CALL-SITE FIXTURE (M62 §2) -----------------------------------------
+//
+// The fixture that makes the §2 laws observable, and the reason the existing
+// fixture cannot make them observable at all.
+//
+// The shape is chosen so each of the three possible models produces a
+// DIFFERENT number, and the number is the proof. One caller function, eight
+// stored rows, all targeting `greet`:
+//
+//   1  function caller() {
+//   2    const a = greet()     <- rel-u-a     stored line 2
+//   3    const b = greet()     <- rel-u-b     stored line 3
+//   4    greet(); greet()      <- rel-u-c AND rel-u-d, BOTH stored line 4
+//   5    return a
+//   6  }
+//
+//   - the pre-M62 model (the referencing symbol's DECLARATION, which is what
+//     this surface served for every row): all eight rows resolve to caller's
+//     line 1, so a position-only dedupe key collapses them to 1 location;
+//   - the §2 position with the OLD key (`path:line:character`): stored lines
+//     2, 3, 4, 4 -> the two line-4 rows collapse -> the count is one short of
+//     what the store recorded. Still a lie, in the other direction;
+//   - the §2 position with `path:line:rowId`: one location per stored row.
+//
+// So asserting a single total is NOT enough to catch the old dedupe key — a
+// count-only test passes with either key. Every count assertion below is paired
+// with a shape assertion about which rows survived, and U1's regression check
+// is on the line-4 PAIR specifically.
+//
+// The source side comes from a REAL JOIN: every row here names a source
+// SYMBOL, so the double serves `source_*` from that symbol's own indexed range
+// — exactly what `LEFT JOIN brain_symbol ss ON ss.id = r.source_symbol_id`
+// returns. That is what makes "plant the old declaration position" observable:
+// with a real join, the declaration line (1) is a DIFFERENT line from every
+// stored call-site line, so serving it is visible instead of coincidental.
+const CALLSITE_REL = "calls.ts"
+const FIXTURE_CALLSITE = `function caller() {
+  const a = greet()
+  const b = greet()
+  greet(); greet()
+  return a
+}
+`
+
+/** `caller`'s indexed declaration. The index convention this repository's
+ *  analyzers follow (see the `Greeter` fixture above): `byte_start` is on
+ *  `line_start`, and `byte_end` is on `line_END` — a multi-line symbol's end
+ *  column belongs to its last line. Line 1 is `function caller() {`, so the
+ *  name token starts at 1-based byte column 10 ("function " is 9 bytes); line 6
+ *  is `}`, whose exclusive end column is 2. */
+const CALLSITE_SYMBOLS: FixtureSymbol[] = [
+  { id: "sym-caller", name: "caller", qualified_name: null, symbol_type: "function", file: CALLSITE_REL, line_start: 1, line_end: 6, byte_start: 10, byte_end: 2 },
+  // A caller whose declaration the store has NO line for. The address owner
+  // refuses to substitute for it, so a row from this symbol with no stored
+  // call site has no position at all — the second absent-position reason.
+  { id: "sym-orphan", name: "orphan", qualified_name: null, symbol_type: "function", file: "orphan.ts", line_start: null, line_end: null, byte_start: null, byte_end: null },
+  // A caller in a file that is NOT on disk (see CALLSITE_NOT_ON_DISK).
+  { id: "sym-ghost-caller", name: "ghostCaller", qualified_name: null, symbol_type: "function", file: "ghost.ts", line_start: 2, line_end: 4, byte_start: 10, byte_end: 21 },
+]
+
+const ORPHAN_REL = "orphan.ts"
+const FIXTURE_ORPHAN = `function orphan() {
+  greet()
+}
+`
+/** The §2 fixture's own extra files. `ghost.ts` is NOT among them on purpose:
+ *  the stored call-site row in it must be unresolvable against the source. */
+const CALLSITE_FILES: Record<string, string> = {
+  [CALLSITE_REL]: FIXTURE_CALLSITE,
+  [ORPHAN_REL]: FIXTURE_ORPHAN,
+}
+
+/** The eight stored rows, each a different fact about the store. */
+interface CallSiteRel extends FixtureRel {
+  /** Not a column. The declaration line the double will serve as
+   *  `ss.line_start` for this row — i.e. the caller's OWN declaration, which
+   *  is what the production join returns and the only substitute the address
+   *  owner is permitted. It comes from the source SYMBOL now, so this field
+   *  only records which symbol the row names. */
+  callerSymbol: string
+}
+
+const CALLSITE_RELS: CallSiteRel[] = [
+  // The four exact call sites. Note rel-u-c and rel-u-d: same stored line, same
+  // caller, DIFFERENT rows. This pair is the dedupe regression.
+  { id: "rel-u-a", source_symbol_id: "sym-caller", target_symbol_id: "sym-greet", relationship_type: "call", confidence: 1.0, line_number: 2, site_file: CALLSITE_REL, site_line: 2, site_col: 13, site_text: "greet", callerSymbol: "sym-caller" },
+  { id: "rel-u-b", source_symbol_id: "sym-caller", target_symbol_id: "sym-greet", relationship_type: "call", confidence: 1.0, line_number: 3, site_file: CALLSITE_REL, site_line: 3, site_col: 13, site_text: "greet", callerSymbol: "sym-caller" },
+  { id: "rel-u-c", source_symbol_id: "sym-caller", target_symbol_id: "sym-greet", relationship_type: "call", confidence: 0.9, line_number: 4, site_file: CALLSITE_REL, site_line: 4, site_col: 3, site_text: "greet", callerSymbol: "sym-caller" },
+  { id: "rel-u-d", source_symbol_id: "sym-caller", target_symbol_id: "sym-greet", relationship_type: "call", confidence: 0.8, line_number: 4, site_file: CALLSITE_REL, site_line: 4, site_col: 12, site_text: "greet", callerSymbol: "sym-caller" },
+  // The store's two DECLARED unknown states, with a resolvable caller
+  // declaration: the owner substitutes it and says so in the payload.
+  { id: "rel-u-legacy", source_symbol_id: "sym-caller", target_symbol_id: "sym-greet", relationship_type: "call", confidence: 0.7, line_number: 0, site_file: CALLSITE_REL, site_line: 4, site_col: 3, site_text: "greet", callerSymbol: "sym-caller" },
+  { id: "rel-u-null", source_symbol_id: "sym-caller", target_symbol_id: "sym-greet", relationship_type: "call", confidence: 0.6, line_number: null, site_file: CALLSITE_REL, site_line: 4, site_col: 3, site_text: "greet", callerSymbol: "sym-caller" },
+  // `unusable` (a negative stored line): the owner REFUSES to substitute, so
+  // this row has no position and must be omitted and counted. Serving the
+  // declaration here would be the exact dishonesty this lane removed.
+  { id: "rel-u-unusable", source_symbol_id: "sym-caller", target_symbol_id: "sym-greet", relationship_type: "call", confidence: 0.5, line_number: -5, site_file: CALLSITE_REL, site_line: 4, site_col: 3, site_text: "greet", callerSymbol: "sym-caller" },
+  // `not-stored` AND no resolvable caller declaration: `unknown` too, with a
+  // different note. Two absent positions, two reasons, both counted.
+  { id: "rel-u-nostored", source_symbol_id: "sym-orphan", target_symbol_id: "sym-greet", relationship_type: "call", confidence: 0.4, line_number: null, site_file: ORPHAN_REL, site_line: 2, site_col: 3, site_text: "greet", callerSymbol: "sym-orphan" },
+  // A REAL stored line that is PAST THE END of the file it names. The address
+  // is exact (the store's line is a positive integer) and §12.1 still forbids
+  // serving it: a line 98 rows below a 6-line file is a link nobody can check,
+  // and it is exactly what a stale or half-written index produces. Without this
+  // row the §12.1 check is VACUOUS — the "line past EOF" mutant would survive,
+  // because no fixture row would ever reach that branch.
+  { id: "rel-u-past-eof", source_symbol_id: "sym-caller", target_symbol_id: "sym-greet", relationship_type: "call", confidence: 0.3, line_number: 99, site_file: CALLSITE_REL, site_line: 99, site_col: 1, site_text: "greet", callerSymbol: "sym-caller" },
+]
+
+/** A stored call-site line in a file that is not on disk. The store names a
+ *  REAL line, so the address is exact — and §12.1 still forbids serving it: a
+ *  target nobody can differentially check is a guessed link. Omitted and
+ *  counted as UNRESOLVABLE (a different count from the two unpositionable
+ *  rows). `ghost.ts` is deliberately absent from FILES. */
+const CALLSITE_GHOST_RELS: CallSiteRel[] = [
+  { id: "rel-u-ghost", source_symbol_id: "sym-ghost-caller", target_symbol_id: "sym-greet", relationship_type: "call", confidence: 0.35, line_number: 3, site_file: "ghost.ts", site_line: 3, site_col: 3, site_text: "greet", callerSymbol: "sym-ghost-caller" },
+]
 
 // Byte columns are PER-LINE 1-based byte columns, end exclusive — the same
 // convention the analyzers store and the P1 component converts (Tree-sitter
@@ -208,9 +334,17 @@ function makeFixture(dir: string, extraFiles: Record<string, string> = {}): any 
     if (!existsSync(p)) writeFileSync(p, content)
   }
   // The emoji rows join the served symbol set only when the test asks for the
-  // emoji file to exist — so no other test's counts shift under it.
-  const extraSymbols = extraFiles[EMOJI_REL] !== undefined ? Object.values(EMOJI_SYMBOLS) : []
+  // emoji file to exist — so no other test's counts shift under it. The same
+  // discipline for the §2 call-site rows.
+  const extraSymbols: FixtureSymbol[] = []
+  const extraRels: CallSiteRel[] = []
+  if (extraFiles[EMOJI_REL] !== undefined) extraSymbols.push(...Object.values(EMOJI_SYMBOLS))
+  if (extraFiles[CALLSITE_REL] !== undefined) {
+    extraSymbols.push(...CALLSITE_SYMBOLS)
+    extraRels.push(...CALLSITE_RELS, ...CALLSITE_GHOST_RELS)
+  }
   const allSymbols = [...FIXTURE_SYMBOLS, ...extraSymbols]
+  const allRels: FixtureRel[] = [...ALL_RELS, ...extraRels]
   const allFiles = { ...FILES, ...extraFiles }
 
   const abs = (rel: string) => join(dir, rel)
@@ -259,7 +393,7 @@ function makeFixture(dir: string, extraFiles: Record<string, string> = {}): any 
           }
           if (s.includes("from brain_relationship r")) {
             const sid = args[0] as string
-            return ALL_RELS.filter((r) => r.target_symbol_id === sid || r.source_symbol_id === sid).map((r) => {
+            return allRels.filter((r) => r.target_symbol_id === sid || r.source_symbol_id === sid).map((r) => {
               const useSource = r.target_symbol_id === sid
               const siteFile = r.site_file
               const siteText = r.site_text
@@ -267,19 +401,43 @@ function makeFixture(dir: string, extraFiles: Record<string, string> = {}): any 
               // Per-line 1-based byte columns, end exclusive.
               const siteCol = r.site_col
               const siteEndCol = siteCol + Buffer.byteLength(siteText, "utf8")
-              const declSym = FIXTURE_SYMBOLS.find((x) => x.id === (useSource ? r.source_symbol_id : r.target_symbol_id))
+              const declSym = allSymbols.find((x) => x.id === (useSource ? r.source_symbol_id : r.target_symbol_id))
+              // THE REAL JOIN SHAPE (M62 §2). When the row names a source
+              // SYMBOL, the `source_*` columns are that symbol's own indexed
+              // range — what `LEFT JOIN brain_symbol ss ON ss.id =
+              // r.source_symbol_id` returns, and what the production query
+              // gets. The pre-existing fixture rows name NO source symbol, and
+              // for those the double keeps serving the site's own coordinates.
+              //
+              // DECLARED, because it is a real divergence and a hidden one
+              // would be worse: for a row whose `source_symbol_id` is NULL the
+              // production LEFT JOIN yields NULL for every `source_*` column,
+              // so those rows are UNRESOLVABLE in production, whereas the
+              // double hands them a resolvable site range. U0 pins both halves
+              // of this: the §2 rows must come from the join, and the
+              // pre-existing rows' divergence is asserted, not assumed.
+              const joined = useSource ? allSymbols.find((x) => x.id === r.source_symbol_id) ?? null : null
+              const sourcePath = joined ? abs(joined.file) : useSource ? abs(siteFile) : declSym ? abs(declSym.file) : null
+              const sourceByteStart = joined ? joined.byte_start : useSource ? siteCol : declSym ? declSym.byte_start : null
+              const sourceByteEnd = joined ? joined.byte_end : useSource ? siteEndCol : declSym ? declSym.byte_end : null
+              const sourceLineStart = joined ? joined.line_start : useSource ? siteLine : declSym ? declSym.line_start : null
+              const sourceLineEnd = joined ? joined.line_end : useSource ? siteLine : declSym ? declSym.line_end : null
               return {
                 id: r.id,
                 source_symbol_id: r.source_symbol_id,
                 target_symbol_id: r.target_symbol_id,
-                line_number: r.line_number,
+                // The stored call-site line, served under EVERY alias in
+                // STORED_LINE_ALIASES with the identical value: a mutant that
+                // reads any of them is judged against the same store, and none
+                // can pass by picking a name the fixture left unpopulated.
+                ...Object.fromEntries(STORED_LINE_ALIASES.map((a) => [a, r.line_number])),
                 confidence: r.confidence,
                 relationship_type: r.relationship_type,
-                source_path: useSource ? abs(siteFile) : declSym ? abs(declSym.file) : null,
-                source_byte_start: useSource ? siteCol : declSym ? declSym.byte_start : null,
-                source_byte_end: useSource ? siteEndCol : declSym ? declSym.byte_end : null,
-                source_line_start: useSource ? siteLine : declSym ? declSym.line_start : null,
-                source_line_end: useSource ? siteLine : declSym ? declSym.line_end : null,
+                source_path: sourcePath,
+                source_byte_start: sourceByteStart,
+                source_byte_end: sourceByteEnd,
+                source_line_start: sourceLineStart,
+                source_line_end: sourceLineEnd,
                 target_path: useSource ? (declSym ? abs(declSym.file) : null) : abs(siteFile),
                 target_byte_start: useSource ? (declSym ? declSym.byte_start : null) : siteCol,
                 target_byte_end: useSource ? (declSym ? declSym.byte_end : null) : siteEndCol,
@@ -563,10 +721,26 @@ async function testUnresolvableOmission(): Promise<void> {
     !refs.locations.some((l: any) => l.path.includes("ghost.ts")),
     JSON.stringify(refs.locations.map((l: any) => l.path)),
   )
+  // §15.3, RE-STATED for the post-M62 shape. The pre-M62 form of this check was
+  // "no location is a zero-width range" — correct then, when a zero-width range
+  // could only mean the fabricated `{line: lineStart - 1, character: 0}` this
+  // suite was written to kill. M62 §2 makes zero-width the DECLARED shape of an
+  // exact call site: the store records a line and no column, so a line-only
+  // range is the most the index knows. The lie is not the zero width — it is a
+  // zero-width range that does not SAY it is line-only. So the law is now:
+  // every zero-width range carries `callSite.kind === "call-site"`, and no
+  // zero-width range exists at all for a row the component could not verify.
+  // This is a TIGHTER claim than the one it replaces, not a relaxed one.
+  const zeroWidth = refs.locations.filter((l: any) => l.character === 0 && l.endCharacter === 0 && l.line === l.endLine)
   check(
-    "P2: locations carry no zero-width fabricated range (character 0 with endCharacter 0 on a named identifier)",
-    !refs.locations.some((l: any) => l.character === 0 && l.endCharacter === 0 && l.line === l.endLine),
-    JSON.stringify(refs.locations),
+    "P2: every zero-width range is an EXACT call site that says so (never an unlabelled or unreadable one)",
+    zeroWidth.length > 0 && zeroWidth.every((l: any) => l.callSite?.kind === "call-site"),
+    `${zeroWidth.length} zero-width of ${refs.locations.length}; kinds=${JSON.stringify(zeroWidth.map((l: any) => l.callSite?.kind))}`,
+  )
+  check(
+    "P2: no zero-width range exists for a row whose source could not be verified",
+    !zeroWidth.some((l: any) => String(l.path).includes("ghost.ts")),
+    JSON.stringify(zeroWidth.map((l: any) => String(l.path).replace(dir, ""))),
   )
 
   // totalCount must count what was RENDERED, not what was stored — the header
@@ -705,6 +879,356 @@ const EMOJI_SYMBOLS: Record<string, FixtureSymbol> = {
     const span = byteSpan(EMOJI_ASCII_LINE, "greet")
     return { id: "sym-emoji-greet", name: "greet", qualified_name: null, symbol_type: "variable", file: EMOJI_REL, line_start: 2, line_end: 2, byte_start: span.start, byte_end: span.end }
   })(),
+}
+
+// --- §2 CALL-SITE MIGRATION (contract §15.3) --------------------------------
+//
+// The defect: pre-M62, `textDocument/references` served the referencing
+// symbol's OWN DECLARATION for every reference row. The store records a
+// call-site line per row (`brain_relationship.line_number`); the surface read
+// the caller symbol's `line_start` instead. The editor's "find references" on
+// `greet` landed on `function caller()` — not a fabricated line, but the wrong
+// answer to the question asked, and with two call sites inside one function the
+// position-only dedupe key collapsed them into a single entry, so the list also
+// under-counted what the index held.
+//
+// Nine assertions, each paired so that no single number can carry it:
+//   U0 the fixture is adversarial AND honest (the real join shape, two rows on
+//      one line, four store states, one file that is not on disk)
+//   U1 positions are where the thing is: the served lines are the STORE's
+//      lines, and the caller's declaration line is NOT among them
+//   U2 THE DEDUPE REGRESSION: two stored rows on one line stay two locations
+//   U3 differential against the STORE, not a recomputation: each served
+//      call-site line equals that row's own `line_number`, and the identifier
+//      really is on that line of the source
+//   U4 the four store states end as four declared outcomes (exact / labelled
+//      substitute ×2 / absent ×2), and the two absent ones are COUNTED
+//   U5 the omission counters are DISTINCT facts, and no location is fabricated
+//      for the file that is not on disk
+//   U6 §13.4: the header count equals the rendered rows
+//   U7 includeDeclaration labels itself, so a declaration is never presented
+//      as a usage
+//   U8 §5 + the M62 discipline: the stored column is read ONCE, handed to the
+//      owner, and never rendered inline
+
+async function testCallSiteMigration(): Promise<void> {
+  const dir = mkdtempSync(join(tmpdir(), "bblsp-l3-callsite-"))
+  const raw = makeFixture(dir, CALLSITE_FILES)
+  const nav = await import(COMPONENT)
+  // The SAME owner the component uses. The oracle must not re-derive what the
+  // implementation derives (contract §8.7: the oracle must not share a bug with
+  // the implementation) — it CALLS the owner.
+  const owner = await import(join(ROOT, "src", "intelligence", "graph", "line-address.ts"))
+  const callsiteFile = join(dir, CALLSITE_REL)
+  const greetAt = { filePath: join(dir, MAIN_REL), line: 1, character: 2 }
+  const refs = () => nav.resolveReferences(raw, { ...greetAt, includeDeclaration: false })
+  const locsOf = (r: any) => r.locations as any[]
+  const rowsFor = (id: string) => CALLSITE_RELS.find((r) => r.id === id)!
+  const servedFor = (id: string) => locsOf(refs()).find((l) => l.callSite?.rowId === id)
+
+  // --- U0 PRECONDITIONS. A fixture that cannot make the defect observable
+  // --- makes every assertion below vacuous, so the shape is asserted first.
+  check("U0: the §2 fixture stores 9 rows into greet", CALLSITE_RELS.length === 9, String(CALLSITE_RELS.length))
+  const line4 = CALLSITE_RELS.filter((r) => r.line_number === 4).map((r) => r.id).sort()
+  check(
+    "U0: two stored rows share stored line 4 — the case the old dedupe key collapses",
+    line4.length === 2,
+    JSON.stringify(line4),
+  )
+  check(
+    "U0: the four store states are all present (real / legacy 0 / null / unusable)",
+    [CALLSITE_RELS.some((r) => r.line_number === 2), CALLSITE_RELS.some((r) => r.line_number === 0), CALLSITE_RELS.some((r) => r.line_number === null), CALLSITE_RELS.some((r) => r.line_number === -5)].every(Boolean),
+    JSON.stringify(CALLSITE_RELS.map((r) => `${r.id}:${String(r.line_number)}`)),
+  )
+  // The ghost file must genuinely be absent, or U5's omission is proving
+  // nothing about an unreadable file.
+  check("U0: the §2 ghost file is NOT on disk (so its row cannot be verified)", !existsSync(join(dir, "ghost.ts")))
+  // HONESTY OF THE FIXTURE, stated as a law: the §2 rows' source side comes
+  // from the production join (the caller's own indexed range), NOT from the
+  // site coordinates the pre-existing rows use. Without this the §2 tests would
+  // pass against a double that hands the surface a position no real join can
+  // produce — and the whole defect would be untestable.
+  const joinRow = raw
+    .prepare("SELECT r.source_path FROM brain_relationship r WHERE r.target_symbol_id = ?")
+    .all("sym-greet") as Array<Record<string, unknown>>
+  const callerJoin = joinRow.find((r) => r.source_path === callsiteFile)
+  check(
+    "U0: a §2 row's source side is served from the CALLER SYMBOL's join (the production shape), not the site coordinates",
+    callerJoin !== undefined,
+    JSON.stringify(joinRow.map((r) => String(r.source_path).replace(dir, ""))),
+  )
+  check(
+    "U0: the caller's joined declaration line is 1 — DIFFERENT from every stored call-site line, so serving it is observable",
+    CALLSITE_SYMBOLS[0]!.line_start === 1 && CALLSITE_RELS.filter((r) => r.line_number !== null && r.line_number > 0).every((r) => r.line_number !== 1),
+    `caller.line_start=${String(CALLSITE_SYMBOLS[0]!.line_start)}`,
+  )
+
+  const all = refs()
+  /** The §2 rows only. The pre-existing fixture rows are ALSO served as exact
+   *  call sites after §2 (their stored lines are real too), so every §2
+   *  assertion is scoped to `rel-u-*` — otherwise it would be judging rows it
+   *  does not own, and its counts would silently drift when the pre-existing
+   *  fixture changes. */
+  const isU = (l: any) => typeof l.callSite?.rowId === "string" && l.callSite.rowId.startsWith("rel-u-")
+  const uLocs = locsOf(all).filter(isU)
+
+  // Declared before U1 so the "is not vacuous" guards can name it: the stored
+  // rows the owner says are exact, and the exact call sites served FOR THIS
+  // FIXTURE. Both are computed from the OWNER / the rows, never from the
+  // component's own answer.
+  const exact = CALLSITE_RELS.filter(
+    (r) =>
+      owner.isExactAddress(owner.deriveCallSiteAddress({ storedLine: r.line_number, file: CALLSITE_REL, callerDeclaration: { line: CALLSITE_SYMBOLS[0]!.line_start } })) &&
+      !(NOT_SERVEABLE_BY_DESIGN as readonly string[]).includes(r.id),
+  )
+  const servedExact = uLocs.filter((l) => l.callSite?.kind === "call-site")
+
+  // --- U1 §15.3: POSITIONS ARE WHERE THE THING IS
+  const servedLines = servedExact.map((l) => l.line).sort((a, b) => a - b)
+  check(
+    "U1: the exact rows are served at the STORE's call-site lines (1-based 2,3,4,4 -> 0-based 1,2,3,3)",
+    servedLines.join(",") === "1,2,3,3",
+    `served 0-based lines=${JSON.stringify(servedLines)}`,
+  )
+  // The declaration law, stated as it actually holds: a row with a REAL stored
+  // line is never served at the caller's declaration. (A row with no stored
+  // line IS served there — as a labelled `declaration` substitute, which U4
+  // checks. The distinction is the whole point of §2.)
+  check(
+    "U1: no row with a real stored call-site line is served at the caller's DECLARATION line (0-based 0) — positions are where the thing is",
+    servedExact.every((l) => l.line !== 0) && servedExact.length === exact.length,
+    `${servedExact.length} exact rows served at lines ${JSON.stringify(servedExact.map((l) => l.line).sort())}; ${exact.length} stored exact rows`,
+  )
+  check(
+    "U1: every served §2 location is inside the caller's OWN file (no row is served at some other file's line)",
+    uLocs.every((l) => String(l.path) === callsiteFile),
+    JSON.stringify(uLocs.map((l) => String(l.path).replace(dir, ""))),
+  )
+
+  // --- U2 THE DEDUPE REGRESSION, with the number spelled out
+  const onLine4 = uLocs.filter((l) => l.callSite?.kind === "call-site" && l.line === 3)
+  check(
+    "U2: the two stored rows on line 4 remain TWO locations (path:line:rowId, not path:line:character)",
+    onLine4.length === 2,
+    `${onLine4.length} location(s) on 0-based line 3; rows ${JSON.stringify(line4)}`,
+  )
+  check(
+    "U2: both line-4 rows are present by identity, so the count is not produced by two rows for one location",
+    line4.every((id) => servedFor(id) !== undefined),
+    JSON.stringify(locsOf(all).map((l) => l.callSite?.rowId).sort()),
+  )
+  // The stored rows that produce an exact call site: 4. Each must contribute
+  // exactly one location, so the served count is the STORE's count.
+  check(
+    "U2: every stored row with a real call-site line is served, and none is duplicated",
+    servedExact.length === exact.length && new Set(servedExact.map((l) => l.callSite?.rowId)).size === servedExact.length,
+    `${servedExact.length} served vs ${exact.length} stored; ids=${JSON.stringify(servedExact.map((l) => l.callSite?.rowId).sort())}`,
+  )
+
+  // --- U3 DIFFERENTIAL against the store, plus a check against the SOURCE.
+  // Asserting equality with a recomputation of the same formula would pass for
+  // any plausible position; asserting it against the ROW and then reading the
+  // bytes at the served line proves the line is where the call site is.
+  let diffFail = 0
+  let diffDetail = ""
+  for (const rel of CALLSITE_RELS) {
+    const expected = owner.deriveCallSiteAddress({
+      storedLine: rel.line_number,
+      file: CALLSITE_REL,
+      callerDeclaration: { line: CALLSITE_SYMBOLS[0]!.line_start },
+    })
+    const served = servedFor(rel.id)?.callSite
+    if (!owner.isExactAddress(expected)) continue
+    if ((NOT_SERVEABLE_BY_DESIGN as readonly string[]).includes(rel.id)) {
+      // The store names a real line the source cannot confirm. §12.1 forbids
+      // serving it, so it is asserted the OTHER way round, and asserted here so
+      // this loop cannot pass by skipping it.
+      if (served !== undefined) {
+        diffFail++
+        diffDetail = `${rel.id}: served at line ${served.line} although the source cannot confirm it`
+      }
+      continue
+    }
+    if (served === undefined) {
+      diffFail++
+      diffDetail = `${rel.id}: not served at all (owner says ${expected.kind})`
+      continue
+    }
+    // KIND and LINE are the owner's verdict, compared as-is. `file` is
+    // compared separately below because this surface DELIBERATELY serves an
+    // absolute path (it hands the editor absolute paths and holds no project
+    // root to relativise against), which is a declared divergence from the
+    // owner's RELATIVE-path convention — asserted here rather than smuggled in.
+    if (served.line !== expected.line || served.kind !== expected.kind) {
+      diffFail++
+      if (diffDetail === "") diffDetail = `${rel.id}: served ${JSON.stringify(served)} vs owner ${JSON.stringify(expected)}`
+    }
+    if (served.file !== join(dir, CALLSITE_REL)) {
+      diffFail++
+      if (diffDetail === "") diffDetail = `${rel.id}: address file ${JSON.stringify(served.file)} is not this surface's own location path ${JSON.stringify(callsiteFile)}`
+    }
+    // The stored line, verified against the SOURCE TEXT: the identifier the
+    // row is about really is on that line of the file. This is the §12.1
+    // differential — not "the number is arithmetically right" but "the file says
+    // so".
+    const text = readFileSync(callsiteFile, "utf8").split("\n")[served.line - 1] ?? ""
+    if (!text.includes("greet")) {
+      diffFail++
+      if (diffDetail === "") diffDetail = `${rel.id}: line ${served.line} of calls.ts does not mention greet — ${JSON.stringify(text)}`
+    }
+  }
+  check("U3: each served call site EQUALS the store's line for that row, on this surface's own path, and the source confirms the line", diffFail === 0, `${diffFail} mismatch(es); ${diffDetail}`)
+
+  // --- U4 the four store states end as four declared outcomes
+  const legacy = servedFor("rel-u-legacy")?.callSite
+  check(
+    "U4: a legacy stored 0 yields the DECLARATION substitute, with the OWNER's substitute note",
+    legacy?.kind === "declaration" && legacy?.note === owner.ADDRESS_NOTES.substitute && legacy?.line === 1,
+    JSON.stringify(legacy),
+  )
+  const nullLine = servedFor("rel-u-null")?.callSite
+  check(
+    "U4: a NULL stored line yields the DECLARATION substitute too (both are the store's DECLARED unknown states)",
+    nullLine?.kind === "declaration" && nullLine?.note === owner.ADDRESS_NOTES.substitute,
+    JSON.stringify(nullLine),
+  )
+  check(
+    "U4: the substitute's note NEGATES the call-site claim in words, so a reader of the rendered string is not misled either",
+    typeof legacy?.note === "string" && /not the call site/i.test(legacy.note),
+    JSON.stringify(legacy),
+  )
+  // A substituted declaration keeps the caller's OWN stored columns, so the two
+  // kinds are distinguishable ON THE WIRE and not collapsed into one shape. The
+  // differential is against the index's own byte column: column 10 on line 1 is
+  // UTF-16 character 9, and that is where the range must start.
+  const legacyLoc = servedFor("rel-u-legacy")
+  check(
+    "U4: the substituted declaration starts at the CALLER's own stored name token (index byte column 10 -> character 9), not on the call site's line",
+    legacyLoc !== undefined && legacyLoc.line === 0 && legacyLoc.character === 9 && legacyLoc.endLine === 5,
+    JSON.stringify(legacyLoc),
+  )
+  // `unusable` (negative line) and `not-stored` + no resolvable declaration have
+  // NO position. They must not appear as locations at all.
+  check("U4: an UNUSABLE stored line produces NO location (the owner never substitutes for one)", servedFor("rel-u-unusable") === undefined, JSON.stringify(servedFor("rel-u-unusable")))
+  check("U4: a NULL stored line with no resolvable caller declaration produces NO location", servedFor("rel-u-nostored") === undefined, JSON.stringify(servedFor("rel-u-nostored")))
+  negative(
+    "U4: those two absent rows are COUNTED, not silently dropped (omittedUnpositionable)",
+    all.omittedUnpositionable === 2,
+    `omittedUnpositionable=${String(all.omittedUnpositionable)}, expected 2`,
+  )
+
+  // --- U5 the two omission counters are DISTINCT facts, and nothing is invented
+  check(
+    "U5: the rows the store names but the source does not confirm count as UNRESOLVABLE — a different fact from 'the store names no position'",
+    all.omittedUnresolvable === 2 && all.omittedUnpositionable === 2,
+    `unresolvable=${all.omittedUnresolvable} (expected 2: the file not on disk + the line past EOF) unpositionable=${String(all.omittedUnpositionable)} (expected 2)`,
+  )
+  check(
+    "U5: a REAL stored line that is past the end of its file is omitted, not served — §12.1 makes an unverifiable target a guessed link",
+    servedFor("rel-u-past-eof") === undefined,
+    JSON.stringify(servedFor("rel-u-past-eof")),
+  )
+  check(
+    "U5: no location was fabricated for the file that is not on disk",
+    !locsOf(all).some((l) => String(l.path).includes("ghost.ts")),
+    JSON.stringify(locsOf(all).map((l) => String(l.path).replace(dir, ""))),
+  )
+  // Every §2 row that was stored is accounted for: served, or counted. Nothing
+  // disappears between the index and the payload without appearing in one of
+  // the two counters — the §11.7 discipline applied to the reference loop.
+  check(
+    "U5: every stored §2 row is either served or counted (nothing is dropped between the index and the payload)",
+    CALLSITE_RELS.every((r) => servedFor(r.id) !== undefined || all.omittedUnresolvable + all.omittedUnpositionable > 0) &&
+      servedExact.length + (uLocs.filter((l) => l.callSite?.kind === "declaration").length) + all.omittedUnresolvable + all.omittedUnpositionable === CALLSITE_RELS.length + CALLSITE_GHOST_RELS.length,
+    `served exact=${servedExact.length} served substitutes=${uLocs.filter((l) => l.callSite?.kind === "declaration").length} unresolvable=${all.omittedUnresolvable} unpositionable=${String(all.omittedUnpositionable)} of ${CALLSITE_RELS.length + CALLSITE_GHOST_RELS.length} stored §2 rows`,
+  )
+  check(
+    "U5: a served §2 location on line 0 is ALWAYS labelled a declaration — a call-site row is never clamped to the first line",
+    uLocs.filter((l) => l.line === 0).every((l) => l.callSite?.kind === "declaration") && uLocs.every((l) => l.line >= 0),
+    JSON.stringify(uLocs.map((l) => [l.line, l.callSite?.kind])),
+  )
+  // A call-site range is LINE-ONLY, and that is declared rather than accidental.
+  check(
+    "U5: an exact call site is a zero-width range — the store carries a line, never a column, and the payload says so",
+    servedExact.length > 0 && servedExact.every((l) => l.character === 0 && l.endCharacter === 0 && l.line === l.endLine),
+    `servedExact=${servedExact.length}; ${JSON.stringify(servedExact.map((l) => [l.line, l.character, l.endCharacter]))}`,
+  )
+
+  // --- U6 §13.4 COUNTS EQUAL WHAT IS RENDERED
+  check("U6: totalCount equals the rendered rows", all.totalCount === all.locations.length, `totalCount=${all.totalCount} locations=${all.locations.length}`)
+  check("U6: truncated=false under the cap", all.truncated === false)
+  check(
+    "U6: every served location carries a callSite — a client never has to infer the kind from a line number",
+    locsOf(all).every((l) => typeof l.callSite?.kind === "string" && typeof l.callSite?.rowId === "string"),
+    JSON.stringify(locsOf(all).map((l) => l.callSite)),
+  )
+
+  // --- U7 includeDeclaration labels ITSELF (§15.2: identity is stated)
+  const withDecl = nav.resolveReferences(raw, { ...greetAt, includeDeclaration: true })
+  const declEntry = (withDecl.locations as any[]).find((l) => l.callSite?.rowId?.startsWith("declaration:"))
+  check(
+    "U7: the includeDeclaration entry carries a DECLARATION address, so it can never be presented as a usage",
+    declEntry?.callSite?.kind === "declaration" && declEntry.line === 1 && String(declEntry.path) === join(dir, MAIN_REL),
+    JSON.stringify((withDecl.locations as any[]).filter((l) => l.callSite?.rowId?.startsWith("declaration:")).map((l) => [l.path, l.line, l.callSite])),
+  )
+  check(
+    "U7: the includeDeclaration note does not claim to be a call site, and does not reuse the substitute note (which would misdescribe it)",
+    typeof declEntry?.callSite?.note === "string" &&
+      declEntry.callSite.note.length > 0 &&
+      declEntry.callSite.note !== owner.ADDRESS_NOTES.substitute &&
+      !/call site/i.test(declEntry.callSite.note),
+    JSON.stringify(declEntry?.callSite),
+  )
+  check(
+    "U7: includeDeclaration adds exactly one entry over the plain result",
+    withDecl.totalCount === all.totalCount + 1,
+    `${withDecl.totalCount} vs ${all.totalCount}`,
+  )
+
+  // --- U8 §5 + the M62 discipline on the stored column
+  const source = readFileSync(COMPONENT, "utf8")
+  check(
+    "U8: navigation imports the ONE address owner and uses all three of its entry points",
+    /from "\.\.\/intelligence\/graph\/line-address"/.test(source) &&
+      /deriveCallSiteAddress\(/.test(source) &&
+      /addressLine0\(/.test(source) &&
+      /isExactAddress\(/.test(source),
+    source.split("\n").filter((l) => /line-address|deriveCallSiteAddress|addressLine0|isExactAddress/.test(l)).join(" | "),
+  )
+  check(
+    "U8: the stored column appears in navigation.ts EXACTLY ONCE, as the hand-off to the owner (zero would mean the surface cannot reach a call site; two would mean the read is not confined to the hand-off)",
+    countColumnLiterals(source) === 1,
+    `${countColumnLiterals(source)} occurrence(s) of the column name in code`,
+  )
+  check(
+    "U8: the stored column is never rendered into a location field directly (no `line:` assigned from the row's own column)",
+    !/line:\s*[^,\n]*stored_call_line/.test(source),
+    source.split("\n").filter((l) => /line:\s*[^,\n]*stored_call_line/.test(l)).join(" | "),
+  )
+
+  cleanupDir(dir)
+}
+
+/** The §2 rows the fixture DELIBERATELY makes unserveable, with the reason for
+ *  each. Declared rather than discovered, because an expectation must never be
+ *  whatever the component happens to do. `rel-u-past-eof` carries a REAL stored
+ *  line (the address owner calls it exact) that the SOURCE refuses: line 99 of a
+ *  six-line file. That is the §12.1 case — a link nobody can differentially
+ *  check — and it is why "exact" below is not simply "every row the owner calls
+ *  exact". */
+const NOT_SERVEABLE_BY_DESIGN = ["rel-u-past-eof"] as const
+
+/** How many times navigation.ts names the store's call-site column in CODE (not
+ *  in prose). Zero would mean the surface cannot reach a call site at all; more
+ *  than one means the read is not confined to the hand-off to the owner. */
+function countColumnLiterals(source: string): number {
+  let n = 0
+  source.split("\n").forEach((line) => {
+    const t = line.trim()
+    if (t.startsWith("//") || t.startsWith("*") || t.startsWith("/*")) return
+    if (/\bline_number\b|\blineNumber\b/.test(line)) n++
+  })
+  return n
 }
 
 async function testMapperOwnership(): Promise<void> {
@@ -919,7 +1443,13 @@ function cleanupDir(dir: string): void {
  *               arithmetic.ts). Some defects are invisible to any oracle on
  *               RESULTS: a hand-rolled byte->UTF-16 walk produces nearly the
  *               right answer, so only reading the source sees it. */
-type MutantOracle = "behavior" | "lint";
+type MutantOracle = "behavior" | "lint"
+
+/** Per-run mutant judging counters. These exist so the evidence can state what
+ *  each catch actually PROVED rather than asserting it — see
+ *  `verdict.mutantsNotJudged` in the emitted record. */
+let lintCaught = 0
+let crashCaught = 0;
 
 const NAV_MUTANTS: Array<{ name: string; from: string; to: string; oracle?: MutantOracle }> = [
   {
@@ -1039,12 +1569,71 @@ const NAV_MUTANTS: Array<{ name: string; from: string; to: string; oracle?: Muta
     to: "    jsCol = (mapper as unknown as { byteOffsetToUtf16Offset(l: number, b: number): number }).byteOffsetToUtf16Offset(indexPos.line - 1, indexPos.column - 1);",
   },
   {
-    // §15.3 (permanent, F7 rule): the omission count is dropped. Every served
+    // §15.3 (permanent, F7 rule): an omission count is dropped. Every served
     // location is still correct and the list still looks complete — only the
     // explicit count assertion sees the difference.
     name: "declared absence: unresolvable reference rows silently dropped (count lost)",
-    from: "    absence: null,\n    omittedUnresolvable,\n  };",
-    to: "    absence: null,\n    omittedUnresolvable: 0,\n  };",
+    from: "    absence: null,\n    omittedUnresolvable,\n    omittedUnpositionable,\n  };",
+    to: "    absence: null,\n    omittedUnresolvable: 0,\n    omittedUnpositionable,\n  };",
+  },
+  {
+    // M62 §2 (permanent, F7 rule): THE pre-§2 defect. The address owner is
+    // bypassed and the row is served at the CALLING SYMBOL'S DECLARATION — the
+    // exact line the store records for a call site. Behaviourally visible: the
+    // four exact rows, which the store places on lines 2, 3, 4 and 4, would all
+    // be served on line 1. This is the lie §15.3 names first.
+    name: "position: the old declaration position is served for a stored call site (§15.3)",
+    from: "  if (isExactAddress(address)) {\n    const line0 = addressLine0(address);",
+    to: "  if (false && isExactAddress(address)) {\n    const line0 = addressLine0(address);",
+  },
+  {
+    // M62 §2 (permanent, F7 rule): THE dedupe-key defect. The key goes back to
+    // `path:line:character`, so two stored rows on one line — `greet(); greet()`
+    // — collapse into ONE location. The list then under-reports what the index
+    // holds, which is §13.4's count lie, and the user cannot reach the second
+    // call site from it.
+    name: "references: the old path:line:character dedupe key restored (two call sites on one line collapse)",
+    from: "    const key = `${loc.path}:${loc.line}:${edge.id}`;",
+    to: "    const key = `${loc.path}:${loc.line}:${loc.character}`;",
+  },
+  {
+    // M62 §2 (permanent, F7 rule): a FABRICATED position for a row the index
+    // cannot place. `unusable` (a negative stored line) and `not-stored` with
+    // no resolvable caller declaration have no position; the pre-§2 fallback
+    // substituted the caller's declaration silently. Restoring it is exactly the
+    // dishonesty this lane removed, and the omission counters see it.
+    name: "position: a row with NO position is served at the caller's declaration instead of being omitted and declared",
+    from: "  if (address.kind === \"unknown\") return { location: null, omission: \"unpositionable\" };",
+    to: "  if (address.kind === \"unknown\") {\n    const fake = edgeLocationDetailed(edge.source_path, edge.source_byte_start, edge.source_byte_end, edge.source_line_start, edge.source_line_end).location;\n    return fake === null ? { location: null, omission: \"unresolvable\" } : { location: { ...fake, callSite: { kind: \"call-site\", file: fake.path, line: fake.line + 1, rowId: edge.id } }, omission: \"none\" };\n  }",
+  },
+  {
+    // M62 §2 (permanent, F7 rule): the unpositionable count is dropped. The two
+    // absent rows vanish from the payload's accounting, so a client showing 6 of
+    // 8 has no way to know the other two were dropped on purpose.
+    name: "declared absence: unpositionable rows silently dropped (count lost)",
+    from: "    absence: null,\n    omittedUnresolvable,\n    omittedUnpositionable,\n  };",
+    to: "    absence: null,\n    omittedUnresolvable,\n    omittedUnpositionable: 0,\n  };",
+  },
+  {
+    // M62 §2 (permanent, F7 rule): the stored line is CHECKED against the
+    // source. Drop the bound and a stored line past the end of the file is
+    // handed to the editor as a position nobody can verify — §12.1's guessed
+    // link, and the §15.3 clause the wave-1 lane already killed once for a
+    // different branch of the same function.
+    name: "position: a stored call-site line past the end of the file is served unverified (§12.1)",
+    from: "    if (line0 >= createPositionMapper(sourceText).lineTexts.length) {\n      return { location: null, omission: \"unresolvable\" };\n    }",
+    to: "    if (false) {\n      return { location: null, omission: \"unresolvable\" };\n    }",
+  },
+  {
+    // M62 §2 (permanent, F7 rule): the address is dropped from the payload
+    // while the POSITION is kept. The ranges are then right and the payload is
+    // silent about what they are — the client cannot tell an exact call site
+    // from a labelled declaration substitute, which is the §15.2 identity
+    // requirement. Caught on the "every served location carries a callSite"
+    // law, not on any count.
+    name: "position: the callSite address is stripped from the payload (ranges right, kind undeclared)",
+    from: "        callSite: { ...address, rowId: edge.id },\n      },\n      omission: \"none\",\n    };",
+    to: "      },\n      omission: \"none\",\n    };",
   },
 ]
 
@@ -1072,6 +1661,7 @@ async function runNavMutants(): Promise<number> {
       const findings = noInlinePositionArithmetic([{ path: COMPONENT_REL, text: mutantSource }])
       if (findings.length > 0) {
         caught++
+        lintCaught++
         console.log(`  caught (${POSITION_LINT_GATE}): ${mutant.name}`)
         console.log(`      ${findings.map((f) => `${f.rule} ${f.file}:${f.line}`).join(", ")}`)
       } else {
@@ -1120,6 +1710,7 @@ async function runNavMutants(): Promise<number> {
       // That is a real behavioral catch — the defect is visible — but the
       // message must name it as a crash, not hide it as a load failure.
       caught++
+      crashCaught++
       console.log(`  caught (component crash): ${mutant.name}`)
       console.log(`      ${String(error).split("\n")[0]}`)
     } finally {
@@ -1145,6 +1736,11 @@ function rewriteRelativeImports(source: string): string {
  *  from an import failure (the previous harness counted both as "caught"). */
 async function navMutantOracle(mod: any): Promise<{ caught: boolean; detail: string }> {
   const dir = mkdtempSync(join(tmpdir(), "bblsp-l3mut-"))
+  // A SECOND temp dir for the §2 fixture. It is separate because `makeFixture`
+  // gates its §2 rows on the call-site file being present, and the emoji dir
+  // must not grow those rows — a fixture that changes the expected numbers of a
+  // passing assertion cannot tell its own noise from a defect.
+  const csDir = mkdtempSync(join(tmpdir(), "bblsp-l3mut-cs-"))
   try {
     // The emoji fixture is part of EVERY mutant run, not only of the astral
     // tests: a conversion bypass is invisible on ASCII lines, so the oracle
@@ -1311,9 +1907,102 @@ async function navMutantOracle(mod: any): Promise<{ caught: boolean; detail: str
       return { caught: true, detail: `the ASCII-line symbol resolved to ${JSON.stringify(greetLine1.symbol)}, expected greet` }
     }
 
+    // --- §2 / §15.3 oracle (M62, permanent, F7 rule). The SAME fixture shape
+    // the suite's U-laws use, so every §2 mutant is judged on behaviour and not
+    // on a source reading. Ordered so the first broken law is the one named.
+    const csFixture = makeFixture(csDir, CALLSITE_FILES)
+    const csRefs = mod.resolveReferences(csFixture, { filePath: join(csDir, MAIN_REL), line: 1, character: 2, includeDeclaration: false })
+    const csLocs = csRefs.locations as any[]
+    const csU = csLocs.filter((l) => typeof l.callSite?.rowId === "string" && l.callSite.rowId.startsWith("rel-u-"))
+
+    // O1 every served location states WHAT it is. A payload with the right
+    // ranges and no declared kind is still a lie (§15.2).
+    if (csLocs.some((l) => typeof l.callSite?.kind !== "string")) {
+      return { caught: true, detail: "a served reference location carries no callSite.kind" }
+    }
+    if (csLocs.some((l) => typeof l.callSite?.rowId !== "string")) {
+      return { caught: true, detail: "a served reference location carries no callSite.rowId" }
+    }
+    // O2 THE DEDUPE REGRESSION. The store holds two rows on line 4; the old
+    // position-only key serves one location for them.
+    const csLine4 = csU.filter((l) => l.callSite?.kind === "call-site" && l.line === 3)
+    if (csLine4.length !== 2) {
+      return { caught: true, detail: `${csLine4.length} location(s) on stored line 4; the store records 2 rows there` }
+    }
+    // O3 THE DECLARATION DEFECT. Four stored rows name real call sites on
+    // lines 2, 3, 4 and 4; none may be served at the caller's declaration.
+    const csExact = csU.filter((l) => l.callSite?.kind === "call-site")
+    if (csExact.length !== 4) {
+      return { caught: true, detail: `${csExact.length} exact call sites served; the store records 4` }
+    }
+    if (csExact.some((l) => l.line === 0)) {
+      return { caught: true, detail: `an exact call site was served at the caller's declaration (line ${JSON.stringify(csExact.map((l) => l.line))})` }
+    }
+    if (csExact.map((l) => l.line).sort().join(",") !== "1,2,3,3") {
+      return { caught: true, detail: `exact call sites served at lines ${JSON.stringify(csExact.map((l) => l.line).sort())}; the store says 1,2,3,3 (0-based)` }
+    }
+    // O4 the two absent rows are omitted AND counted, apart from the one
+    // unreadable file. A fabricated fallback or a lost count dies here.
+    if (csRefs.omittedUnpositionable !== 2) {
+      return { caught: true, detail: `omittedUnpositionable = ${csRefs.omittedUnpositionable}, expected 2` }
+    }
+    if (csRefs.omittedUnresolvable !== 2) {
+      return { caught: true, detail: `omittedUnresolvable = ${csRefs.omittedUnresolvable}, expected 2 (the file that is not on disk, and the stored line past EOF)` }
+    }
+    if (csU.some((l) => String(l.path).includes("ghost.ts"))) {
+      return { caught: true, detail: "a location was fabricated for the file that is not on disk" }
+    }
+    // O4b §12.1: a stored line past the end of its file is a guessed link.
+    if (csU.some((l) => l.callSite?.rowId === "rel-u-past-eof")) {
+      return { caught: true, detail: `a stored call-site line past EOF was served at ${JSON.stringify(csU.find((l) => l.callSite?.rowId === "rel-u-past-eof")?.line)}` }
+    }
+    // O5 a row the store cannot place is absent — not served at a declaration.
+    for (const id of ["rel-u-unusable", "rel-u-nostored"]) {
+      if (csU.some((l) => l.callSite?.rowId === id)) {
+        return { caught: true, detail: `${id} (no position) was served at ${JSON.stringify(csU.find((l) => l.callSite?.rowId === id)?.callSite)}` }
+      }
+    }
+    // O6 the two labelled substitutes exist, carry the OWNER's note, and sit on
+    // the caller's own stored columns rather than at a call site.
+    for (const id of ["rel-u-legacy", "rel-u-null"]) {
+      const sub = csU.find((l) => l.callSite?.rowId === id)
+      if (sub?.callSite?.kind !== "declaration") {
+        return { caught: true, detail: `${id} is served as ${JSON.stringify(sub?.callSite?.kind)}, expected a labelled declaration substitute` }
+      }
+      if (typeof sub.callSite.note !== "string" || sub.callSite.note.length === 0) {
+        return { caught: true, detail: `${id} is served as a declaration with no note` }
+      }
+      if (sub.line !== 0 || sub.character !== 9) {
+        return { caught: true, detail: `${id} is served at ${sub.line}:${sub.character}, expected the caller's own name token at 0:9` }
+      }
+    }
+    // O7 the substitute must not be laundered into a bare call site.
+    const legacySub = csU.find((l) => l.callSite?.rowId === "rel-u-legacy")
+    if (/^as call site/i.test(String(legacySub?.callSite?.note)) || legacySub?.callSite?.note === "") {
+      return { caught: true, detail: `the substitute note does not say what it is: ${JSON.stringify(legacySub?.callSite?.note)}` }
+    }
+    // O8 includeDeclaration labels itself, so a declaration is never rendered
+    // as a usage.
+    const csWithDecl = mod.resolveReferences(csFixture, { filePath: join(csDir, MAIN_REL), line: 1, character: 2, includeDeclaration: true })
+    const csDeclEntry = (csWithDecl.locations as any[]).find((l) => typeof l.callSite?.rowId === "string" && l.callSite.rowId.startsWith("declaration:"))
+    if (csDeclEntry?.callSite?.kind !== "declaration") {
+      return { caught: true, detail: `the includeDeclaration entry carries ${JSON.stringify(csDeclEntry?.callSite?.kind)}, expected a declaration` }
+    }
+    if (typeof csDeclEntry.callSite.note !== "string" || csDeclEntry.callSite.note.length === 0) {
+      return { caught: true, detail: "the includeDeclaration entry carries no note" }
+    }
+    if (csWithDecl.totalCount !== csRefs.totalCount + 1) {
+      return { caught: true, detail: `includeDeclaration moved the count by ${csWithDecl.totalCount - csRefs.totalCount}, expected +1` }
+    }
+    // O9 §13.4: the header count is the rendered truth.
+    if (csRefs.totalCount !== csRefs.locations.length) {
+      return { caught: true, detail: `totalCount ${csRefs.totalCount} != rendered ${csRefs.locations.length}` }
+    }
+
     return { caught: false, detail: "" }
   } finally {
     try { rmSync(dir, { recursive: true, force: true }) } catch {}
+    try { rmSync(csDir, { recursive: true, force: true }) } catch {}
   }
 }
 
@@ -1326,6 +2015,7 @@ async function main(): Promise<void> {
   await testHonesty()
   await testDeclaredAbsence()
   await testUnresolvableOmission()
+  await testCallSiteMigration()
   await testReferences()
   await testTruncation()
   await testMapperOwnership()
@@ -1358,37 +2048,100 @@ async function main(): Promise<void> {
       mutantsTotal: NAV_MUTANTS.length,
       ok,
       note: "`failed` counts real functional failures only; mutant runs are reported separately via the verdict block.",
+      /**
+       * WHY THIS BLOCK EXISTS. The wave-1 lesson, and the program's central one:
+       * a mutant caught ONLY by a LOAD FAILURE is not caught — the defect never
+       * ran, so the suite proved nothing about it while reporting a catch. Six
+       * mutants were in exactly that state at HEAD. So the accounting is
+       * explicit, not inferred from the count:
+       *
+       *   mutantsJudgedByBehaviour = the mutant loaded AND ran AND the oracle
+       *     observed a wrong SERVED ANSWER. This is the only class that counts
+       *     as a catch of the mutation.
+       *   mutantsJudgedByLint     = the mutation is invisible to any oracle on
+       *     results (the hand-rolled byte walk is behaviourally almost right),
+       *     so the independent source-level §5 rule 1 gate judges it. It is a
+       *     separate script, so it cannot be edited away with this suite.
+       *   mutantsNotJudged        = anything else — a load failure, a missing
+       *     or ambiguous anchor, or a component crash. These are reported as
+       *     FAILURES of the harness, never as catches.
+       *
+       * `mutantsNotJudged` is measured per run from the mutants this run
+       * actually judged; `mutantsJudgedByCrash` names the one class that is
+       * counted separately because a crash on the fixture IS a real
+       * behavioural defect (the component throws where the contract requires
+       * declared absence) but it is a weaker signal than a wrong answer, and a
+       * reader is entitled to know which mutants died that way.
+       */
+      mutantsJudgedByBehaviour: mutantsCaught - lintCaught - crashCaught,
+      mutantsJudgedByLint: lintCaught,
+      mutantsJudgedByCrash: crashCaught,
+      mutantsNotJudged: NAV_MUTANTS.length - mutantsCaught,
+      mutantsNotJudgedMeans:
+        "mutants whose anchor did not match exactly once, or whose mutated copy failed to load, or whose run was aborted by a harness failure. Every one of those increments `failed` and prints FAIL, so the count cannot be laundered into a catch.",
       harnessDefectsFoundAndFixed: [
         "Every mutant at HEAD was 'caught' as an IMPORT FAILURE: the harness rewrote ./positions and ./hover to absolute paths but not ./relations, so the mutated copy could not load. A load error was counted as a behavioral catch (§8.7: the tautological gate). Fixed by deriving the rewrite from the source's own relative imports and by recording an import failure as a FAILURE of the harness.",
         "Two mutant anchors matched zero or two occurrences and the harness printed 'SKIP (anchor not found)' and continued — so a rename would silently delete a mutation without changing the verdict. Fixed: a missing or ambiguous anchor is now a FAILURE.",
         "The oracle returned a bare boolean, so a catch could not say WHICH law broke. Now it returns {caught, detail}, and the log names the law.",
+        "Wave 2 (M62 §2): the 'a stored call-site line past the end of the file is served unverified' mutant SURVIVED its first run, because no fixture row ever reached that branch — a mutant with no fixture is a mutant with no gate. Fixed at the FIXTURE, not by weakening the mutant: `rel-u-past-eof` stores a real line 99 in a six-line file, and the omission counts moved from 1/2 to 2/2 to match.",
+        "Wave 2: three §2 assertions passed VACUOUSLY against the pre-§2 component (a zero-width-range check over an empty set, a 'kind is call-site' check over rows that had no kind, and a 'column appears at most once' check satisfied by zero occurrences). A check that cannot fail is not a check (§8.7), so each now carries an explicit non-emptiness precondition and the column check is `=== 1`, not `<= 1`.",
       ],
       declaredAbsenceLaws: ["N0-N8 (§11.7)", "P0-P3 (§15.3)"],
       positionOwnershipLaws: ["S0-S2 (§5 rule 1)", "G5"],
+      callSiteMigrationLaws: [
+        "U0 the §2 fixture is adversarial AND honest (the production join shape, two rows on one stored line, four store states, a file that is not on disk, a line past EOF)",
+        "U1 positions are where the thing is (§15.3): the exact rows are served at the store's lines, never at the caller's declaration",
+        "U2 THE DEDUPE REGRESSION: two stored rows on one line stay two locations",
+        "U3 differential against the store's own row plus a check against the source text at the served line (§12.1)",
+        "U4 the four store states end as four declared outcomes, and the two absent ones are counted",
+        "U5 the two omission counters are distinct facts, nothing is fabricated, every stored row is served or counted",
+        "U6 §13.4 the header count equals the rendered rows, and every location states what it is",
+        "U7 includeDeclaration labels itself as a declaration (§15.2)",
+        "U8 §5 plus the M62 discipline: the stored column is read exactly once, as the hand-off to the owner",
+      ],
       lintJudgedMutants: NAV_MUTANTS.filter((m) => m.oracle === "lint").length,
       behaviorJudgedMutants: NAV_MUTANTS.filter((m) => m.oracle !== "lint").length,
       lintJudgedNote: "Two mutants are invisible to any oracle on results — the hand-rolled byte walk is behaviorally almost right — and are judged by the source-level §5 rule 1 lint instead. That lint is its own script (script/m24/verify-position-arithmetic.ts) so it cannot be edited away with this suite.",
+      determinismOfMutantJudgement:
+        "No §2 mutant is judged by the lint and none by a load failure: all six are judged by the behavioural oracle (O1-O9 in navMutantOracle), which serves the mutated module the same call-site fixture the U-laws use.",
     },
     determinism: {
       declaredVolatileFields: ["generatedAt", "bbSeal.sealedAt", "bbSeal.contentSha256"],
       note:
-        "Re-running this verifier at an unchanged commit reproduces every field byte-for-byte EXCEPT the three named above. generatedAt is a wall-clock stamp; bbSeal.sealedAt is the write time; bbSeal.contentSha256 is a sha256 over the record's content, which includes generatedAt, so it changes with it. All three are declared here as volatile (contract §8.2 allows regeneration modulo declared timestamps). No other field is time-, path-, or order-dependent: the fixture is temp-dir based and every emitted collection is sorted or in insertion order.",
+        "Re-running this verifier at an unchanged commit reproduces every field byte-for-byte EXCEPT the three named above. generatedAt is a wall-clock stamp; bbSeal.sealedAt is the write time; bbSeal.contentSha256 is a sha256 over the record's content, which includes generatedAt, so it changes with it. All three are declared here as volatile (contract §8.2 allows regeneration modulo declared timestamps). No other field is time-, path-, or order-dependent: the fixture is temp-dir based (the temp DIRECTORY is random, but no emitted field contains it), and every emitted collection is sorted or in insertion order.",
       measured:
-        "Two consecutive runs of `npx tsx script/m24/verify-navigation.ts` compared after canonicalising the three declared volatile fields: identical. The same comparison holds for validation/m24/results/POSITION-OWNERSHIP.json across two runs of its own verifier.",
+        "Two consecutive runs of `npx tsx script/m24/verify-navigation.ts` compared after canonicalising the three declared volatile fields: identical. Measured again for wave 2 after the §2 gate was added, with the same result. The same comparison holds for validation/m24/results/POSITION-OWNERSHIP.json across two runs of its own verifier. The CALLSITE-AGREEMENT record additionally names the index path and its mtime, because its numbers are properties of an INPUT (a real index) rather than of this repository — re-indexing changes them, and the record says which index it read.",
+    },
+    callSiteSurfaceLimitations: {
+      statement:
+        "§2 moved textDocument/references from the referencing symbol's DECLARATION to the store's CALL-SITE line, and from a position-only dedupe key to one location per stored row. Four consequences are declared rather than left for a reader to discover.",
+      items: [
+        "AN EXACT CALL SITE IS A LINE-ONLY RANGE. brain_relationship stores a line and no column for a call site, so the served range is zero-width at character 0 of the stored line and the editor places the caret at the start of that line. The payload declares this: callSite.kind === 'call-site'. The exact token needs a call-site column in the store, which is M59's lane (A4/A8), not this one.",
+        "THE ADDRESS OWNER'S `file` FIELD CARRIES AN ABSOLUTE PATH HERE. The owner's contract documents it as the RELATIVE path (its graph/hub/MCP consumers render file:line); this surface hands the editor absolute brain_file paths and holds no project root to relativise against. Declared in the payload, asserted by U3, and reported as a gap in the owner's field contract — a renderer printing this address gets an absolute path, which is correct for navigation and differs from the other three surfaces.",
+        "THE STORE'S CALL-SITE COVERAGE IS NOT THIS LANE'S CLAIM. Per-language real-line coverage is M59.A7. On an index where every row carries a real line (measured: 10,267 of 10,267 rows on the corpus this lane indexed), the labelled-substitute branch cannot be exercised from real data and is proven on the fixture instead — declared in the CALLSITE-AGREEMENT record, not implied.",
+        "THE SERVER DOES NOT FORWARD callSite TO THE WIRE. src/lsp/server.ts maps each location through navLocationToWire, which drops callSite, omittedUnresolvable and omittedUnpositionable. The component is honest; the LSP wire cannot carry the declaration under LSP 3.18's Location[] shape. Until that is wired, an editor cannot tell an exact call site from a labelled substitute. See wiringNeededInServerTs.",
+      ],
+    },
+    declaredConflictsWithOtherGates: {
+      M62_P6_permanence_lint:
+        "script/m62/verify-consumers.ts's P6 lint flags ANY code line in a display surface that names brain_relationship.line_number, with no exception for the hand-off to the address owner. §2 REQUIRES this surface to select the column — the store's line is the only place a call site is recorded — so the honest implementation trips it: A2 now reports TWO P6 findings (src/lsp/navigation.ts:252 and the pre-existing src/lsp/impact.ts:1242) where it reported one. A2's STATUS is unchanged (known-gap, 15/16, before and after), but the finding count rose by one and that is the correct outcome rather than a regression: the alternative was to spell the column so the regex cannot see it, which is obfuscation and a worse lie than the lint violation. Recommended resolution for the lint's owner: narrow P6 to reads that do not feed deriveCallSiteAddress, and pin that exception with its own planted mutant so it cannot widen silently.",
     },
     limitations: [
       "index-sourced only; no compiler-backed go-to-definition (complement stance)",
       "reference sites resolve to relationship edge coordinates; heuristic-edge ratio per language is declared in the master plan",
-      "fixture-backed double for the DB layer; live brain.db path covered by upstream freshness verifiers and the V1 harness",
+      "fixture-backed double for the DB layer; the live brain.db leg is script/m24/verify-callsite-agreement.ts (CALLSITE-AGREEMENT.json), which differentials every served position against its OWN stored row on a real index and re-checks the line's own source text",
       "latency measured on this machine only; cross-platform budgets are M25 scope",
       "the declared-absence reason reaches the wire only through src/lsp/server.ts, which is not this lane's file — see `wiringNeededInServerTs` below. This gate proves the component carries the reason; it cannot prove the editor receives it.",
       "the launch gate keys off the file EXTENSION (languageForPath), not brain_file.language. A file whose extension maps to a launch language while its rows say otherwise is served; a file the extension cannot classify is declared absent with language:null.",
-      "§15.3 omission count is per-response (omittedUnresolvable); the reasons behind each omission are in the per-row absence from edgeLocationDetailed, which the references result does not enumerate.",
+      "§15.3 omission counts are per-response and split into TWO declared facts: omittedUnresolvable (the store names a line the source does not confirm) and omittedUnpositionable (the store names no position at all). The per-row reason is in the owner's note / edgeLocationDetailed's absence, which the references result does not enumerate row by row.",
+      "THE §2 FIXTURE'S PRE-EXISTING ROWS DIVERGE FROM THE PRODUCTION JOIN, and U0 says so out loud. Rows whose source_symbol_id is NULL have their site coordinates served as the source side, which the production LEFT JOIN cannot produce (it yields NULL for every source_* column). Those rows are retained so wave-1's accepted numbers keep their meaning; the §2 rows use the real join. A fixture that quietly laundered both shapes would prove nothing about production.",
+      "no claim is made about call hierarchy: src/lsp/call_hierarchy.ts is another lane's file, actively being edited for the same migration, and was neither read for behaviour nor modified here.",
     ],
     wiringNeededInServerTs: [
       "src/lsp/server.ts:573 (textDocument/definition) — `if (!r.found || r.location === null) return null` discards r.absence. The LSP wire shape for definition is `Location | Location[] | null`, so the reason cannot ride the result; it needs either a window/logMessage carrying the reason, or an accepted deviation recorded here.",
       "src/lsp/server.ts:607 (textDocument/references) — `return r.locations.map(navLocationToWire)` turns a declared absence into a bare `[]`, which contract §11.7 calls a violation ('silent empty results that look like no references found'). LSP 3.18 requires Location[] for this request, so the honest options are: (a) a window/logMessage with r.absence.detail, or (b) the client reading a custom field — neither is available on this wire shape.",
       "src/lsp/server.ts:547 (textDocument/hover) — `if (r.contents === null || r.range === null || r.data === null) return null` discards provenance.limitations, which already names the language and the launch set. Same wire constraint as above.",
+      "NEW IN WAVE 2 — src/lsp/server.ts:729 navLocationToWire copies only path/line/character/endLine/endCharacter, so it DROPS loc.callSite. Consequence: the editor receives correct line-only ranges but cannot tell an exact call site from a labelled declaration substitute, and cannot see either omission counter. That is §15.2's identity requirement unmet at the wire. LSP permits extra properties on a Location object, so the fix is available; the wire shape is the server's decision and that file is not this lane's.",
     ],
   }
 
