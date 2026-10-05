@@ -328,18 +328,42 @@ export function deriveJsonEdges(root: any, scriptName: string, opts?: { manifest
       // would have convicted correct edges, which is the one failure a differential
       // must never produce.
       const items = (node.namedChildren ?? []).filter((c: any) => c.type !== "[")
+      // An element that is itself an ARRAY is a container with a declared position, so it
+      // carries containment and needs a name. Declining it — which this oracle did, and which
+      // is why 30 `contains` edges on a 3,272-file corpus had no truth to match — states less
+      // than the document does: `{ "rows": [[{"cell":1}]] }` plainly has `rows` containing
+      // `rows[0]`. Named from the array's own QUALIFIED path, which is what an array nested
+      // inside another array needs: the inner array's bare name is the outer array's name, so
+      // naming from it made two different objects collide and produced
+      // `rows[0] contains rows[0][1]` between objects that are not nested at all.
+      // An array that is itself an ELEMENT has no key of its own, so its children are named
+      // from its qualified path; an array written under a KEY keeps the short name that key
+      // gives it, because that is the name the document already uses (`allOf[0]`). The test is
+      // the path's last segment: an element's ends in `]`.
+      // A document whose TOP LEVEL is an array is named by the MODULE, whose basename may
+      // contain a dot — `Dotted.name.json` — so its element is `Dotted.name[0]` and not
+      // `name[0]`. That case is why the module name, and not the last dot-segment, is the
+      // identity here.
+      const lastSegment = parentPath.slice(parentPath.lastIndexOf(".") + 1)
+      const self =
+        parentPath === scriptName
+          ? scriptName
+          : lastSegment.endsWith("]")
+            ? parentPath.slice(scriptName.length + 1)
+            : lastSegment
       items.forEach((item: any, i: number) => {
-        if (!isObject(item)) return // a scalar element has no named children
-        // The item is named from the ARRAY's own name plus the index, never from
-        // the item's path. Taking the last dot-segment is correct only while the
-        // module name has no dot, and `index.svelte.warnings.json` is an ordinary
-        // filename: that path gives `warnings[0]` where the truth is
-        // `index.svelte.warnings[0]`. The analyzer had the same bug and both were
-        // fixed from the same rule — an array element is identified by its index
-        // UNDER THE ARRAY, and the array is named by the key it was written under.
+        const isContainer = isObject(item) || isArray(item)
+        if (!isContainer) return // a scalar element has no named children and nothing to own
         const itemPath = `${parentPath}[${i}]`
-        const itemName = `${parentName}[${i}]`
-        if (parentName) edges.push({ label: "contains", from: parentName, target: itemName })
+        const itemName = `${self}[${i}]`
+        // `contains` endpoints are QUALIFIED PATHS on both sides, and this is why: a JSON
+        // document repeats key names relentlessly, so a bare-name endpoint is ambiguous by
+        // construction and the shared resolver declines a non-unique bare name — the edge is in
+        // the graph, asserts containment, and cannot be walked in either direction. Measured on
+        // a 202-file, 99-repo sample: 32,660 of 66,032 `contains` edges (49.4%) named a target
+        // matching more than one published symbol, and 1,119 were self-loops because the source
+        // and the target were the same bare string.
+        if (parentName) edges.push({ label: "contains", from: parentPath, target: itemPath })
         pathToName.set(itemPath, itemName)
         walk(item, itemPath, itemName)
       })
@@ -399,25 +423,49 @@ export function deriveJsonEdges(root: any, scriptName: string, opts?: { manifest
       const key = keyText(pair)
       const value = valueOf(pair)
       if (!key || !value) continue
+      const here = parentPath ? `${parentPath}.${key}` : key
       if (key.length > 0) {
         if (declaredHere.has(key)) {
-          if (parentName) edges.push({ label: "overrides", from: parentName, target: key })
+          // Both endpoints are QUALIFIED PATHS, like every other label here. They were the
+          // bare owner name and the bare key, which is the last bare-name edge the analyzer
+          // emitted; the whole-population differential read `overrides` at 0 of 22 covered
+          // after the analyzer moved and this side had not, which is the fourth time this
+          // lane has had to retarget an oracle after an endpoint-form change (`contains`,
+          // `calls`, OpenAPI `uses`, and now `overrides`). A bare key is ambiguous on every
+          // corpus edge: 22 of 22 matched more than one published symbol by name, against
+          // 14 of 22 by path — `FSharp.Data`'s bare `rec2` names both elements of one array
+          // and its bare `1` names four keys.
+          if (parentPath) edges.push({ label: "overrides", from: parentPath, target: here })
         } else {
           declaredHere.add(key)
         }
       }
-      const here = parentPath ? `${parentPath}.${key}` : key
-      // CONTAINMENT: the object a key is written in contains that key. The SOURCE
-      // is the parent SYMBOL's name, never its qualified path — an edge whose source
-      // is not a symbol name resolves to nothing, which is the defect the contract
-      // probe caught.
-      if (parentName) edges.push({ label: "contains", from: parentName, target: key })
+      // CONTAINMENT: the object a key is written in contains that key, and both endpoints are
+      // QUALIFIED PATHS. The SOURCE used to be the parent symbol's BARE name, on the reasoning
+      // that an edge whose source is not a symbol name resolves to nothing — which is true and
+      // is also why the edge was unwalkable: a bare name shared by every array element in the
+      // file resolves to an arbitrary one of them, and 51 corpus-wide resolved to nothing at
+      // all because a real JSON key is named `unknown`. The path is the symbol's identity and
+      // the resolver matches it exactly, so it is what both sides emit.
+      if (parentName) edges.push({ label: "contains", from: parentPath, target: here })
       pathToName.set(here, key)
       // OpenAPI path entry: a `/`-prefixed key whose object declares an HTTP method.
-      if (key.length > 1 && key.startsWith("/") && isObject(value)) {
+      //
+      // The guard used to read `key.length > 1`, which excluded the ROOT path `/` — and the
+      // root path is a legal OpenAPI path key, so that condition declined a valid edge. The
+      // OpenAPI 3.0 Paths Object requires each path name to BEGIN with a forward slash, and
+      // `/` does; `gql-graphql-mesh/packages/loaders/openapi/tests/fixtures/blockfrost.json`
+      // declares `paths["/"]` with a `get` returning a 200 describing the service root, so the
+      // whole-population differential read the edge as 1 UNEXPLAINED `uses` against an
+      // analyzer that was right. Found by that disagreement, not by a fixture.
+      //
+      // The condition is now exactly the rule this comment states — non-empty, starts with `/`,
+      // value is an object, and the object declares an HTTP method — with no length floor,
+      // because nothing in the document shape imposes one.
+      if (key.length > 0 && key.startsWith("/") && isObject(value)) {
         const methods = (value.namedChildren ?? []).filter((c: any) => c.type === "pair").map((c: any) => keyText(c))
         if (methods.some((m: string | null) => !!m && HTTP_METHOD_KEYS.has(m))) {
-          endpoints.push({ from: parentName || scriptName, target: key })
+          endpoints.push({ from: parentPath, target: here })
         }
       }
       if (opts?.manifest && MANIFEST_DEPENDENCY_KEYS.has(key) && isObject(value)) {
@@ -574,7 +622,20 @@ export function deriveJsonEdges(root: any, scriptName: string, opts?: { manifest
     // the root object is the document's only named child
     const rootObject = (root?.namedChildren ?? []).find((c: any) => c.type === "object") ?? (root?.type === "object" ? root : null)
     for (const name of manifestPublished(rootObject)) edges.push({ label: "exports", from: scriptName, target: name })
-    for (const c of npmScriptCalls(rootObject)) edges.push({ label: "calls", from: c.from, target: c.target })
+    for (const c of npmScriptCalls(rootObject)) {
+      // QUALIFIED PATHS on both ends, because both endpoints are keys of ONE `scripts`
+      // object and therefore both have a position in the document. The oracle published bare
+      // script names while the analyzer published paths, which put every `calls` edge on the
+      // population at 0% covered / 217 MISSING / 217 UNEXPLAINED — a disagreement about
+      // endpoint FORM dressed as a disagreement about the language. This is the second time
+      // this lane has run it (the first was `contains`); an endpoint-form change is a change
+      // to the comparison, and the comparison has to be re-run or it certifies nothing.
+      edges.push({
+        label: "calls",
+        from: `${scriptName}.scripts.${c.from}`,
+        target: `${scriptName}.scripts.${c.target}`,
+      })
+    }
   }
 
   for (const d of deps) edges.push({ label: "uses", from: d.from, target: d.name })
