@@ -3748,3 +3748,125 @@ re-measured: `symbols 1,981 -> 2,960`, `distinctIncomingTargets 629 -> 701`,
 pass against the section above should treat the section above as **superseded and not
 reproduced**, and this table as the current reading on the one sample whose derivation is
 self-consistent.
+
+### A thirteenth pass: the library was an edge endpoint nothing published
+
+Every earlier pass in this file measured *whether* a type fired. This one asks where the
+edge points, and finds that `imports` and `exports` were the only two types in this lane
+whose SOURCE was a string the analyzer had never emitted as a symbol.
+
+**The defect, at 600 files on the committed `dart-sample-list-600.txt`.** 1,755 of 1,815
+`imports` sources and 10 of 10 `exports` sources resolved to nothing, and 1,755 of those
+1,755 were *exactly the file stem* — the edge named a string that existed nowhere in the
+symbol table. A library graph had no library in it: `bb_graph` on any Dart library
+returned an empty callee set, because the node the `imports` edges emanated from was not
+a node.
+
+**What changed.** `libraryName` reads the name from the parse tree instead of the file
+stem, and the library is now *published* — one `SymbolKind.Module` node per file, with no
+`ownerName`, so it is inert to every pass that keys on `ownerName` or on a declaration
+kind and visible only as an edge endpoint. One function feeds both sides, so the edge and
+the node cannot drift apart again.
+
+| | before | after |
+|---|---|---|
+| `imports` source resolves (600 files) | 60 / 1,815 (3%) | **1,815 / 1,815 (100%)** |
+| `exports` source resolves (600 files) | 0 / 10 (0%) | **10 / 10 (100%)** |
+| `imports` `sourcePublished` (arbiter, n=400) | 25 / 1,276 | **1,276 / 1,276** |
+| `exports` `sourcePublished` (arbiter, n=400) | 0 / 9 | **9 / 9** |
+| `sourceExternal`, ALL TEN types (n=400) | 1,445 | **0** |
+| edges (n=400) | 54,006 | 54,006 (**zero new edges**) |
+| symbols (n=400) | 14,680 | 15,080 (+400, one per file) |
+| `bothEndsResolve` (n=400) | — | +87: uses 5,440→5,503, calls 2,357→2,363, instantiates 435→445, references 1,412→1,420 |
+
+The n=400 before/after is `git stash` on this tree with the same deterministic sample and
+the same base — **not** a comparison against a number recorded on an older tree. That
+distinction is load-bearing here: the twelfth pass above reports 53,252 edges at n=400,
+this tree emits 54,006 with *and* without the change, so the 754-edge difference between
+those two readings is the base, not this work. Attributing it to this change would have
+been wrong, and a lane that reports a number it did not measure on the tree it is
+reporting is the failure mode this file keeps finding in itself.
+
+**`bothEndsResolve` for `imports` stays 0, and that is not this change failing.** The
+target is `package:http/src/settings.dart:*`. A URI is not a declared name anywhere in
+Dart; the imported library's published name is its declared or implicit library name,
+never the URI that reaches it. Binding it is a resolver that maps a URI to a file's
+library, which is shared machinery. An analyzer-side workaround would publish a second
+node per file per URI, which is not a fact about the file.
+
+#### The three library forms, and why one of them is a convention
+
+The name is not always a fact, and the analyzer now records which of three cases it
+published. Frequencies are from the parse tree over 3,000 files
+(`library-directive-census.ts`, `empty-library-name.ts`, `library-name-multiplicity.ts`):
+
+| form | files | what the published stem is |
+|---|---|---|
+| no `library` directive | 2,882 | **the Dart spec's own answer** — an implicit library is named by its file stem. A fact. |
+| `library;` (unnamed) | 101 | **this analyzer's convention.** The library declares no name at all. Not a fact. |
+| `library X;` (named) | 17 | the declared name. Frequently DOTTED — `_fe_analyzer_shared.scanner.characters` — which a first-token match truncates to a name no other file imports. |
+| `annotation` in the name slot | 15 | falls back to the stem, which is right: `@TestOn('vm')` is not a library name. |
+
+Two more measured facts, because both were assumptions before they were numbers. **No
+sampled file carries more than one top-level `library_name`** (0 of 3,000), so "first
+valid" is not a choice between two candidates. And **52 of 3,000 files appeared to
+declare a library the tree could not expose** — all 52 are `library X;` inside a
+`'''...'''` raw string, a test fixture. The TEXT instrument was wrong; the parser was
+right. Neither is load-bearing now.
+
+#### What publishing a name costs
+
+41 of 45,590 edges (0.09%) — 38 `uses`, 3 `calls` — are expression edges whose *only*
+resolvable declarations are Module nodes: bare identifiers that happen to equal a library
+name. `uses driver` reading a local variable binds to the library of `driver.dart`. These
+are bindings this change made and should not have made, and they are not removable in a
+flat name space: any string that can be an edge endpoint can also be an identifier. This
+is the cause-A defect — a name that is not an identifier — arriving at the module level,
+and it is counted rather than absorbed.
+
+99 of the 1,815 `imports` sources and 1 of the 10 `exports` sources now land on a library
+name that **more than one file publishes** (`main` ×8, `test` ×8, `main.1` ×4,
+`test_all` ×3, six names ×2). Those are ambiguous, not resolved, and the artifact records
+them in their own column. The fix would be a package-qualified library name, which needs
+pubspec/package-config resolution.
+
+#### A correction to a committed number
+
+`validation/m14/measurements/dart-abc-endpoint-600.txt` reports `43,887 edges` in its
+header. Its own ten per-type rows sum to **45,590**, which is what this tree emits with
+and without the Module nodes. The header total was wrong by 1,703 and is corrected in
+`dart-library-node-600.txt`. Every row of that file reproduces, including all six types
+this change does not touch — which is what makes the two `imports`/`exports` rows a
+comparison rather than two unrelated runs.
+
+#### The declared-name path is rare, and that is measured, not assumed
+
+24 of 600 sampled files and 17 of 3,000 declare a library name. A mutation that broke the
+declared-name read entirely would cost 0.6% of published library names — which is why
+`dart/library-source-pins` exists: its file stem (`library-source-pins`) differs from the
+library it declares (`_pins.explicit_library`), so a regress-to-stem name function fails
+it. Two mutants, both caught: regress-to-stem → `dart/library-source-pins` fails (19/20);
+remove the publication → all three library fixtures fail (17/20); unmutated 20/20.
+
+#### Declared limitations of this pass
+
+- `imports`/`exports` targets resolve 0/1,825. Resolver work, not analyzer work.
+- The 41 coincidental bindings are unfixed and unfixable in a flat name space.
+- 100 of 1,825 library sources are ambiguous for want of a package-qualified name.
+- `overrides` still emits a QUALIFIED source against a BARE published name (1,220/1,220).
+  The ROUND-BRIEF recipe does not apply: bare source and bare target are the same string,
+  so retargeting converts 1,220 edges into 1,220 self-loops. Measured 0/1,220 for
+  `source == lastSegment(target)`, which is the same statement from the other side.
+  Needs a resolver keyed on `qualifiedName` — section 8.
+- `ontology-coverage-gate.ts dart` was NOT completed this pass. It is a whole-corpus walk
+  of 33,755 files and the machine was carrying five other lanes' gates (load average
+  19.9); a 40-minute foreground attempt advanced its checkpoint by 0 lines. The per-type
+  verdict here comes from `firing-check.ts --files 400`, which is the scoped arbiter this
+  file already uses, and it reports 10/10 fired. That is a smaller population than the
+  gate's and is not presented as the gate's verdict.
+- `verify-honesty.ts` reports 33 failures, all on `validation/m14/results/*.json` lineage
+  and freshness, and it names inputs this lane never touched
+  (`src/ast/analysis-exclusions.ts`, `src/ast/brain-surgical-patcher.ts`,
+  `src/ast/cross-language-migration-assistant.ts`). Those artifacts are section 8. The
+  failure is pre-existing base drift, not this change; it is reported, not fixed.
+
