@@ -161,8 +161,33 @@ const FAMILIES: [string, (n: any) => string | null][] = [
   ["C_signature_tail_as_a_type", familyC],
 ]
 
-type Row = { family: string; nodeType: string; published: string; file: string; line: number; column: number; inError: boolean; src: string }
+type Row = { population: string; family: string; nodeType: string; published: string; file: string; line: number; column: number; inError: boolean; src: string }
 const rows: Row[] = []
+/**
+ * WIDE is a SUPERSET of TRACKED — it is TRACKED plus the manifest — so a TRACKED file is
+ * walked twice by the two `run()` calls and would contribute its invented names to the
+ * NDJSON twice. The first version emitted 836 rows where the two tallies account for
+ * 765 + 17 + 54 = 836, i.e. every TRACKED row was counted a second time under WIDE, and
+ * the NDJSON row total then said something no single population supported. Rows are
+ * therefore tagged with the population that produced them and de-duplicated on
+ * (file, line, family, published), so the NDJSON describes exactly ONE population and
+ * says which on every row.
+ *
+ * FIRST-WINS, so a row from a file in BOTH populations is tagged `tracked` because the
+ * TRACKED `run()` executes first (line 294). That is the copy that survives, not the WIDE
+ * one. The two copies are equal in every measured field — same file, same parse, same
+ * line, same name — so which one survives costs nothing; the tag is the only difference
+ * and it is honest either way.
+ *
+ * The arithmetic that closes: after the fix the NDJSON holds 823 rows, of which 13 are
+ * tagged `tracked` and 810 `wide`, with 0 duplicate keys. 13 is exactly the number of
+ * rows the TRACKED walk contributed, and since WIDE ⊇ TRACKED those 13 are all
+ * re-encounters under WIDE — so the distinct-key count (823) equals the WIDE row count
+ * (823), which is the population the JSON reports as WIDE. Nothing is counted twice and
+ * nothing is counted in a population that does not contain it.
+ */
+const rowKey = (r: Row): string => `${r.file}:${r.line}:${r.family}:${r.published}`
+const seenRowKeys = new Set<string>()
 
 type Tally = {
   files: number; filesWithError: number; errorNodes: number; missingNodes: number
@@ -239,11 +264,14 @@ function run(list: string[], label: string): Tally {
         t.familyCounts[fam] = (t.familyCounts[fam] ?? 0) + 1
         fileFamilies.add(fam)
         const ln = n.startPosition.row + 1
-        rows.push({
+        const row: Row = {
+          population: label.startsWith("TRACKED") ? "tracked" : "wide",
           family: fam, nodeType: n.type, published: got, file: rel(f), line: ln,
           column: n.startPosition.column, inError: n.parent?.type === "ERROR",
           src: (srcLines[ln - 1] ?? "").slice(0, 120),
-        })
+        }
+        const k = rowKey(row)
+        if (!seenRowKeys.has(k)) { seenRowKeys.add(k); rows.push(row) }
       }
       for (let i = 0; i < n.childCount; i++) { const c = n.child(i); if (c) walkFam(c) }
     }
