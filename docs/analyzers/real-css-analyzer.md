@@ -102,7 +102,7 @@ and this pass does not claim the residual is closed.
 
 | gate | pass 12 | pass 11 | |
 | --- | --- | --- | --- |
-| `npx tsx script/m14/ontology-coverage-gate.ts css` | **table printed, `emitted 5/10  ruled-sound 5  FALSIFIED 0  ruled-without-justification 0`**, exit 1 on `[BB-HANG]` | identical | **the VERDICT reproduces unchanged from pass 11**, exit 1 on limitation 24's memory condition — this is the same verdict line every earlier gate round in this lane printed, at every admitted-file count the corpus has taken |
+| `npx tsx script/m14/ontology-coverage-gate.ts css` | **exit 0**, all ten rows, `emitted 5/10  ruled-sound 5  FALSIFIED 0  ruled-without-justification 0`; `contains` **178,084** / `uses` **2,630** / `references` **164,939** / `imports` **251** / `overrides` **48** | exit 1 on `[BB-HANG]` | **the first pass-12 run of this gate exited 0**, because limitation 24's memory condition did not bite, and every count then equals this lane's census EXACTLY — `178,084`, `164,939`, `2,630`, `251`, `48`. That is item (k)'s third clause measured in the positive direction: when the guard does not fire, the table is not a lower bound. When it does fire (pass 11 and the run before this one) the same table printed `references` 164,921 against the census 164,939. **The verdict line is identical either way**, so the verdict was never the thing at risk — the counts were |
 | `npx tsx validation/m14/census/css-emitted-coverage.ts` | **1,286 files / 85 repos, 1,286/1,286 parsed, 0 failures, 0 degraded**; `imports` 0, `overrides` 0, `contains` custom-property 0, `references` +172 — all byte-identical; **ATTRIBUTABLE 31,732 → 36,457** | 31,732 | the one row that moved, and the 4 hand-typed notes |
 | `npx tsx validation/m14/census/css-parsefile-census.ts --all` | **1,286/1,286 parsed, 0 failures, 0 degraded**; 242,494 symbols, **345,952 relationships**; **0** empty names, **0** empty/unknown kind, **0** `unknown` endpoints, **0** empty-string endpoints | identical | reproduced on an UNMOVED corpus — 199 repos / 9.1 GB, and the FIRST unmoved round since pass 9: passes 10 and 11 each re-measured because the corpus had moved under them |
 | `npx tsx script/m14/firing-check.ts --files 120 css` | **5/10 fired, 46,241 edges, 120/120 files, 0 degraded** | 5/10, 46,241 | **bit-identical**, which is what an unmoved corpus should give |
@@ -2278,7 +2278,19 @@ and keep the table, because the verdict DID reproduce in every run that printed 
 current behaviour discards a full ten-row verdict over one file; **(3)** report the count of
 files lost to parse errors next to the admitted-file count, because the table's own numbers are
 otherwise a silent lower bound — pass 11's gate run printed `references` 164,921 against this
-lane's census 164,939 for exactly that reason. Not applied here: `ontology-coverage-gate.ts` is
+lane's census 164,939 for exactly that reason.
+
+**PASS 12 MEASURED CLAUSE (3) IN THE POSITIVE DIRECTION, which is the form of the evidence the
+item did not have.** A pass-12 run of the gate on the same corpus, the same commit and the same
+1,286 admitted files **exited 0** — the memory condition did not bite — and every count in its
+table then equalled this lane's census EXACTLY: `contains` 178,084, `references` 164,939, `uses`
+2,630, `imports` 251, `overrides` 48. So the degradation is not a property of the lane's
+arithmetic and it is not permanent: it is entirely attributable to files lost to the wasm heap
+failing under load, and it disappears when they are not lost. **The verdict line
+(`emitted 5/10  ruled-sound 5  FALSIFIED 0  ruled-without-justification 0`) was byte-identical in
+both runs**, which localises the whole of the risk to clause (3) and none of it to the verdicts.
+That is the argument for printing a lost-file count: without it a reader cannot tell a complete
+run from a truncated one, because the run says `0 FALSIFIED` in both. Not applied here: `ontology-coverage-gate.ts` is
 shared machinery and this is §8.
 
 **(i) ADDED IN PASS 9 — `script/m14/firing-check.ts` walks a DIFFERENT corpus from the
