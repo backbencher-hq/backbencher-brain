@@ -1,19 +1,22 @@
 {
   "issue": "496",
   "code": "D1",
-  "status": "verified",
-  "currentCommit": "a871d533a736e8e38cb826d80d986d3cc84022d1",
+  "status": "known-gap",
+  "currentCommit": "462f620be3ca6097a560b12d314fa9b98d8c6f1a",
   "sourceFingerprint": "4fe136ceb104bc7523db076bbc1e9fe18316dc685d06aec6d0e5a38e062e5c2e",
   "verifierCommand": "npx tsx script/m24/verify-docs.ts",
   "evidenceFile": "D1.json",
-  "generatedAt": "2026-09-20T02:43:43.747Z",
-  "passed": 44,
-  "failed": 0,
-  "failures": [],
+  "generatedAt": "2026-10-05T03:26:30.640Z",
+  "passed": 42,
+  "failed": 2,
+  "failures": [
+    "G1: regenerated tool doc is byte-identical to committed",
+    "G2: claim table cites verified evidence for L2"
+  ],
   "negativeCases": 3,
   "verdict": {
-    "realComponentFailures": 0,
-    "ok": true,
+    "realComponentFailures": 2,
+    "ok": false,
     "note": "doc fingerprint is the committed TOOL-DOC.md; regeneration byte-identity is the drift gate."
   },
   "limitations": [
@@ -23,7 +26,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-20T02:43:43.747Z",
-    "contentSha256": "ca8056660be3d2330246a33ba534a4a2bc12abc6870f0db3a4baa8f8dc45e513"
+    "sealedAt": "2026-10-05T03:26:30.643Z",
+    "contentSha256": "837f4616651a54e9e0f3e441843d4b19b29a18cebc6ebd9ffc8565be77b0ab29"
   }
 }
