@@ -548,11 +548,38 @@ function headerCountDisagreements(
   return out
 }
 
-/** D3's predicate: a rendered tier no stored row justifies. */
+/** D3's predicate: the card's evidence tiers are NOT the tiers its own stored
+ *  rows justify.
+ *
+ *  This is set EQUALITY, and the direction matters. The first version asked only
+ *  "is every rendered tier justified?", which accepts any SUBSET — and the D3
+ *  mutant's effect is to REMOVE a tier, not to add one: promoting every
+ *  unclassified row to `structural` collapses `structural, usage_contextual` to
+ *  `structural`, and every member of that smaller set was still justified. The
+ *  red-team survived the mutation and this is why.
+ *
+ *  Equality is the correct law, not a stricter one: the card's `evidence:` line
+ *  is derived from exactly the symbol's stored relationship rows and nothing
+ *  else, so the set it prints must BE that set. A subset is a card that knows
+ *  something and did not say it — the same defect class as a dropped kind, and
+ *  §14 rule 1 ("one surface, one answer") applies to the tiers as much as to the
+ *  counts. A superset is the fabrication §12.3 names.
+ *
+ *  A symbol with no stored rows renders no tier line at all, so it contributes
+ *  an empty expected set and an empty rendered set — agreement, not a special
+ *  case. */
 function unjustifiedTiers(entries: Iterable<{ label: string; tiers: readonly string[]; justified: ReadonlySet<string> }>): string[] {
   const out: string[] = []
   for (const { label, tiers, justified } of entries) {
-    for (const t of tiers) if (!justified.has(t)) out.push(`${label}: ${JSON.stringify(t)}`)
+    // `unknown` is the declared answer for a symbol with no rows; the card
+    // prints a prose sentence for that case rather than a tier, so the only tier
+    // a row-less card may legitimately print is none at all.
+    const rendered = new Set(tiers.filter((t) => t !== "unknown"))
+    const expected = new Set([...justified].filter((t) => t !== "unknown"))
+    const extra = [...rendered].filter((t) => !expected.has(t))
+    const missing = [...expected].filter((t) => !rendered.has(t))
+    if (extra.length > 0) out.push(`${label}: card asserts ${extra.join(", ")} — no stored row justifies it`)
+    if (missing.length > 0) out.push(`${label}: card omits ${missing.join(", ")} — its own stored rows justify them (§14 rule 1)`)
   }
   return out
 }
@@ -772,9 +799,8 @@ const tierEntries = PINS.map((pin) => ({
     caught.length > 0,
     caught.length > 0 ? `reported: ${caught[0]}` : "the predicate accepted an invented tier name, so it cannot catch D3",
   )
-  // (b) The real shape. The fixture must store a row whose OWN columns justify a
-  // NON-structural tier, and the card must not claim parser-fact `structural` on
-  // the strength of it. `structural` is a REAL tier name, so only an oracle
+  // (b) A card claiming parser-fact `structural` over a store that justifies only
+  // a weaker tier. `structural` is a REAL tier name, so only an oracle
   // independent of the mutated function can reject this; that independence is
   // the whole point of `independentTier` above.
   //
@@ -803,6 +829,37 @@ const tierEntries = PINS.map((pin) => ({
       ? "no card on this fixture justifies a single non-structural tier, so the fabrication has no victim and this leg would pass vacuously"
       : `card ${victim.label} justifies exactly [${[...victim.justified].sort().join(", ")}]; a ` + "`structural` claim over that store must be reported",
   )
+  // (c) THE LEG THAT MATTERS FOR THE PLANTED MUTANT: the card DROPS a tier its
+  // own rows justify. This is what promoting every unclassified row to
+  // `structural` does — the tier set collapses rather than gaining — so the
+  // subset check that leg (a) alone would satisfy reported the mutation caught
+  // while letting it through. The fixture must contain a symbol with BOTH tiers
+  // justified for the leg to have something to drop.
+  // `unknown` is added to every justified set as the declared answer for a
+  // row-less symbol, so it must be excluded here or every card looks like it has
+  // two tiers. The first draft of this precondition counted it and picked a card
+  // whose only "second tier" was the marker, so the collapse it simulated dropped
+  // nothing real and the leg reported a predicate failure it had not caused.
+  const twoTierCards = tierEntries.filter((e) => [...e.justified].filter((t) => t !== "unknown").length >= 2)
+  check(
+    "D3/MUTANT (c)/PRECONDITION: a card on this fixture has MORE THAN ONE tier justified by its own rows, so a collapsing mutation has something to collapse",
+    twoTierCards.length > 0,
+    `cards with 2+ justified tiers: ${twoTierCards.length} (e.g. ${twoTierCards.slice(0, 2).map((e) => `${e.label}:[${[...e.justified].filter((t) => t !== "unknown").sort().join("+")}]`).join(", ")})`,
+  )
+  if (twoTierCards.length > 0) {
+    const target = twoTierCards[0]!
+    const real = [...target.justified].filter((t) => t !== "unknown")
+    const collapsed = real.filter((t) => t === "structural")
+    const dropped = real.filter((t) => !collapsed.includes(t))
+    const caughtC = unjustifiedTiers([{ label: target.label, tiers: collapsed, justified: target.justified }])
+    check(
+      "D3/MUTANT (c): the D3 predicate reports a card that DROPPED a tier its own stored rows justify (the direction the planted mutation actually moves)",
+      caughtC.length > 0,
+      caughtC.length > 0
+        ? `reported: ${caughtC[0]}`
+        : `${target.label} justifies [${real.sort().join(", ")}]; collapsing it to [${collapsed.join(", ")}] dropped [${dropped.join(", ")}] and the predicate found nothing wrong`,
+    )
+  }
 }
 // --- R4: the call-site differential -----------------------------------------------------
 console.log("\nR4: call-site differential (the address owner vs the hover's link target)\n")
