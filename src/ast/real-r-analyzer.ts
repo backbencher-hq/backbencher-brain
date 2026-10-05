@@ -1886,6 +1886,29 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
           relationshipSubType: "namespace_access",
           accessOperator: op,
         }, ns)
+        // The same dependency, published as `references` too, because that is the
+        // type every OTHER R dependency form already carries both of.
+        //
+        // `src/ast/types.ts:72` declares `DependsOn = "references"`, so `references`
+        // IS this ontology's dependsOn type, and `base::det` (Matrix/R/kappa.R:19) is a
+        // dependsOn exactly as `library(base)` is — R must load the namespace to evaluate
+        // it, so it is a hard dependency, not a mention. The asymmetry was measurable:
+        // library()/require() (:2066,:2085) and source()/sourceCpp() (:2117-2118) each
+        // emitted the pair, and namespace access did not, which left `references` at 387
+        // edges where the independent oracle derives 2,171 — recall 16.9%, the lowest of
+        // the ten types by a factor of four.
+        //
+        // Same confidence (1.0) and the same `namespace_access` subtype as the `imports`
+        // edge beside it, deliberately: `rcpp_source` and `r_source` are already carried
+        // by both types under one name, so a consumer keying on the subtype sees the pair
+        // rather than an unexplained extra edge. The cost is stated rather than assumed:
+        // 1,751 of the 2,095 `imports` edges in this corpus are namespace access, so this
+        // takes `references` from 389 to about 2,140 and the lane's total by 2.2%.
+        this.pushRel(relationships, "global", this.unquoteIdentifier(ns.text), ASTEngine.RelationshipType.References, 1.0, {
+          rSpecific: true,
+          relationshipSubType: "namespace_access",
+          accessOperator: op,
+        }, ns)
       }
     }
 
