@@ -56,7 +56,25 @@ interface JsonContext {
    *  its object: the same key in two different objects is not a redefinition and is
    *  the corpus's dominant shape (120,174 occurrences across 7,679 files, against
    *  21 genuine duplicates across 11). */
-  overrideCandidates: { ownerName: string; key: string; line: number; overridesLine: number }[]
+  /**
+   *  A redefinition candidate. `ownerPath`/`targetPath` are the QUALIFIED PATHS of the
+   *  containing object and of the repeated key, carried alongside the names because this
+   *  was the last type still emitting bare endpoints and the bare form is ambiguous for
+   *  every edge on the corpus: measured over the whole admitted population, 22 of 22
+   *  `overrides` targets matched MORE THAN ONE published symbol by name, against 14 of 22
+   *  by path (`validation/m14/fixtures/json/overrides-endpoint-probe.ts`). A bare target
+   *  can bind to a declaration in a DIFFERENT object — `FSharp.Data`'s `rec2` names two
+   *  elements of one array and `1` names four keys — so the ambiguity is not confined to
+   *  the two declarations this edge is about. The names are kept for the metadata, where
+   *  they read as names. */
+  overrideCandidates: {
+    ownerName: string
+    ownerPath: string
+    key: string
+    targetPath: string
+    line: number
+    overridesLine: number
+  }[]
   /** True when the document uses LSP's `{"kind":"reference","name":X}` literal — a
    *  DISCRIMINATED UNION for "this is a named type", as against `{"kind":"or","items":[…]}`
    *  and `{"kind":"array","element":…}`. Measured over the whole admitted population, 2 of
@@ -400,7 +418,15 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
         const line = node.startPosition.row + 1
         const prior = frame.duplicateKeys.get(key)
         if (prior === undefined) frame.duplicateKeys.set(key, line)
-        else ctx.overrideCandidates.push({ ownerName: parentName, key, line, overridesLine: prior })
+        else
+          ctx.overrideCandidates.push({
+            ownerName: parentName,
+            ownerPath: parentPath,
+            key,
+            targetPath: this.childPath(parentPath, key),
+            line,
+            overridesLine: prior,
+          })
       }
       const path = this.childPath(parentPath, key)
       const valueType = this.valueType(value)
@@ -1057,8 +1083,20 @@ const bracket = parent.lastIndexOf("[")
    * The edge shape is the BASH lane's, deliberately, because it is the only shape that
    * works when both declarations share one name: source is the OWNER symbol, target is
    * the repeated key, and `overridesLine` carries the PRIOR declaration's line so the
-   * replacement is readable without re-deriving it. Both endpoints resolve — `contains`
-   * already emits a row for each declaration, so the pair exists independently.
+   * replacement is readable without re-deriving it.
+   *
+   * Both endpoints are QUALIFIED PATHS, like every other type on this lane. It used to be
+   * the last type emitting bare names, and the bare form was ambiguous on EVERY corpus
+   * edge: measured over the whole admitted population, 22 of 22 targets matched more than
+   * one published symbol by name, against 14 of 22 by path. The 8 that become unique are
+   * real gains — a bare `rec2` names both elements of an array and a bare `1` names four
+   * keys, so the bare endpoint could bind to a declaration in a DIFFERENT object. The 14
+   * that stay ambiguous are the two declarations of ONE key sharing a name AND a path,
+   * which is declined below and carried in `overridesLine`. The names are retained in
+   * metadata as `ownerName`/`key`, where they read as names.
+   *
+   * `contains` already emits a row for each declaration, so the pair exists independently
+   * of this edge.
    *
    * Three things are declined, each because the edge would assert something the file
    * does not say:
@@ -1079,8 +1117,8 @@ const bracket = parent.lastIndexOf("[")
   private extractDuplicateKeyOverrides(ctx: JsonContext): void {
     for (const c of ctx.overrideCandidates) {
       ctx.relationships.push({
-        source: c.ownerName,
-        target: c.key,
+        source: c.ownerPath,
+        target: c.targetPath,
         type: ASTEngine.RelationshipType.Overrides,
         confidence: 1,
         line_number: c.line,
@@ -1088,6 +1126,9 @@ const bracket = parent.lastIndexOf("[")
           jsonSpecific: true,
           redefinition: true,
           overridesLine: c.overridesLine,
+          ownerName: c.ownerName,
+          key: c.key,
+          endpoints: "qualified_path",
           evidenceClass: "structural",
         },
       })
@@ -1405,8 +1446,37 @@ const bracket = parent.lastIndexOf("[")
     // `name[0]`, and that is the defect this fixture was written for.
     if (arrayPath === rootName) return { item: `${rootName}[${index}]`, holder: rootName }
     const lastSegment = arrayPath.slice(arrayPath.lastIndexOf(".") + 1)
-    const self = lastSegment.endsWith("]") ? arrayPath.slice(rootName.length + 1) : lastSegment
+    const self = lastSegment.endsWith("]") ? this.afterModuleImpl(arrayPath, rootName) : lastSegment
     return { item: `${self}[${index}]`, holder: self }
+  }
+
+  /**
+   * The name a qualified path carries once the module prefix is removed — the ONE place that
+   * strips it, because getting it wrong is invisible in isolation and expensive in aggregate.
+   *
+   * The character at `rootName.length` says what kind of path this is, and the two cases need
+   * OPPOSITE handling:
+   *
+   *   `.`  the path continues under a KEY, and the key is the name — drop the separator, so
+   *       `mod.rows[0]` gives `rows[0]`.
+   *   `[`  the path hangs off the module by an INDEX and there is no key at all, so the
+   *       bracket IS the name's first character — keep it, so `mod[4]` gives `[4]`.
+   *
+   * A fixed `slice(rootName.length + 1)` assumes the first case and therefore eats the `[` in
+   * the second, publishing `4]`, `4][2]`, `4][2][6]`. Measured on a sample of the corpus's
+   * top-level-array documents: 19,708 names over 214 files, 14.9% of that population — a
+   * family (`4][2][6][1]`) no keyed or element name can produce, which is what distinguishes
+   * it from the correct `Statement[0]` spelling that also ends in `]`.
+   *
+   * A path that is neither (no separator at all) returns the path unchanged rather than
+   * chopping a leading character off a name that has no prefix to remove.
+   */
+  private afterModuleImpl(path: string, rootName: string): string {
+    if (path === rootName) return path
+    const boundary = path.charAt(rootName.length)
+    if (boundary === "[") return path.slice(rootName.length)
+    if (boundary === ".") return path.slice(rootName.length + 1)
+    return path
   }
 
   private addArrayObjectSymbol(ctx: JsonContext, node: Node, path: string, itemName: string): void {
@@ -1450,7 +1520,7 @@ const bracket = parent.lastIndexOf("[")
     // array it is the key. The qualified path is the reliable statement in both cases, and the
     // two agree whenever the array is written under a key.
     const lastSegment = path.slice(path.lastIndexOf(".") + 1)
-    const name = lastSegment.endsWith("]") ? (path === ctx.rootName ? path : path.slice(ctx.rootName.length + 1)) : lastSegment
+    const name = lastSegment.endsWith("]") ? this.afterModuleImpl(path, ctx.rootName) : lastSegment
     // The holder is the name up to this element's own bracket, so the owner is the ENCLOSING
     // array and not the module. `addArrayObjectSymbol` derives it the same way, and the two
     // must agree or a `contains` edge from one of them resolves to nothing.
@@ -1505,9 +1575,20 @@ const bracket = parent.lastIndexOf("[")
     }
   }
 
+  /**
+   * Depth of a qualified path below the module, counted in dot-separated segments.
+   *
+   * This reads the same prefix `afterModuleImpl` removes, so it calls that rather than
+   * repeating the arithmetic. The two derivations had drifted independently and the second
+   * one was wrong for the same reason: for a top-level array the character at
+   * `rootName.length` is `[`, so the fixed `+ 1` ate it. It happened to cost nothing here —
+   * both `4][2][6]` and `[4][2][6]` split to one segment — which is exactly why it survived
+   * a fix to the naming rule beside it. Two copies of one derivation is a second chance to be
+   * wrong for free.
+   */
   private pathDepth(path: string, rootName: string): number {
     if (path === rootName) return 0
-    return path.slice(rootName.length + 1).split(".").length
+    return this.afterModuleImpl(path, rootName).split(".").length
   }
 
   private updateDepth(ctx: JsonContext, path: string): void {

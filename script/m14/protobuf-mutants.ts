@@ -563,6 +563,58 @@ export const PROTOBUF_MUTANTS: Mutant[] = [
   },
 
   {
+    id: "protobuf/module-edge-source-back-to-the-basename",
+    language: "protobuf",
+    defectClass: "wrong-source",
+    description:
+      "Pass 16 measured that the `imports`/`exports` SOURCE resolved against published ids at 0 of 1,561 + 4 edges, and that 967 of 1,565 (61.8%) hung off a basename another corpus file also uses. The source is now the file's own `package` namespace, which the analyzer already publishes. This mutant is the pre-pass-16 state, reproduced GENERICALLY: any `imports`/`exports` edge whose `metadata.moduleOwner` is `package` has its source replaced by `path.basename(metadata.filePath)`. Caught by protobuf/imports-and-editions and protobuf/ancestor-scope-resolution, whose module-edge rows name the package as the source, and by protobuf/module-edge-source-fallback, which pins the other arm so the transform cannot be satisfied by always emitting a basename either.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: rels(r).map((x: any) => {
+        const t = x.type ?? x.relationshipType
+        if ((t !== "imports" && t !== "exports") || x?.metadata?.moduleOwner !== "package") return x
+        const fp = String(x?.metadata?.filePath ?? "")
+        const base = fp.split("/").pop()
+        if (!base) return x
+        const { moduleOwner, ...rest } = x.metadata as any
+        return { ...x, source: base, metadata: rest }
+      }),
+    }),
+  },
+  {
+    id: "protobuf/module-edge-source-the-empty-package",
+    language: "protobuf",
+    defectClass: "unknown-endpoint",
+    description:
+      "The same rule read `pkg` without checking it, which is what happens to a file declaring no `package`: 11 of 821 corpus files, carrying 5 of the 1,561 `imports` edges. The edge is published with the EMPTY STRING as its source, which is an endpoint the index cannot hold and the graph cannot walk from. Reverted generically: any `imports`/`exports` edge whose `metadata.moduleOwner` is `basename` — which is exactly the set of edges whose file declared no package — has its source emptied. Caught by protobuf/module-edge-source-fallback, whose fallback row names the basename and whose `forbidRelationships` carries `{type: \"imports\", from: \"\"}` for this shape. No other fixture can catch it: all ten other protobuf fixtures declare a package.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: rels(r).map((x: any) => {
+        const t = x.type ?? x.relationshipType
+        if ((t !== "imports" && t !== "exports") || x?.metadata?.moduleOwner !== "basename") return x
+        const { moduleOwner, ...rest } = x.metadata as any
+        return { ...x, source: "", metadata: rest }
+      }),
+    }),
+  },
+  {
+    id: "protobuf/module-edge-source-loses-which-spelling-it-used",
+    language: "protobuf",
+    defectClass: "missing-field",
+    description:
+      "`metadata.moduleOwner` is the only thing that tells a consumer whether an unresolvable module-edge source is a file that declares no package — an external-by-necessity endpoint — or a name the analyzer simply failed to publish. Without it the two are indistinguishable, which is the same confusion this lane separates everywhere else (an external package versus a declaration it failed to publish). Reverted by deleting the key from every edge that carries it. Caught by protobuf/module-edge-source-fallback, which asserts `meta.moduleOwner: \"basename\"` on its fallback row, and by protobuf/imports-and-editions and protobuf/ancestor-scope-resolution, which assert it on the package arm.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: rels(r).map((x: any) => {
+        const md = x?.metadata
+        if (!md || md.moduleOwner === undefined) return x
+        const { moduleOwner, ...rest } = md as any
+        return { ...x, metadata: rest }
+      }),
+    }),
+  },
+
+  {
     id: "protobuf/dotted-reference-back-to-the-name-as-written",
     language: "protobuf",
     defectClass: "dangling-endpoint",
@@ -761,6 +813,20 @@ export const PROTOBUF_MUTANTS: Mutant[] = [
   },
   {
     id: "protobuf/qualified-id-stopped-being-published",
+    // `language` and `defectClass` were MISSING from this entry, and the mutant had
+    // therefore never run. `mutate-analyzer.ts:18869` calls `clean(m.language)` and
+    // `runLang(undefined)` throws `TypeError: The "paths[1]" property must be of type
+    // string, got undefined` — so the shared F4 gate CRASHES on this mutant rather than
+    // passing it, and a crash is not a verdict: every mutant after it in the array goes
+    // unrun. Measured at this pass: with `BB_MUTANT_ONLY="protobuf/"` the battery reported
+    // 30 CAUGHT and then died on mutant 31 of 34, and 33 of the lane's mutants had
+    // reached a verdict while `qualified-id-stopped-being-published` had reached none.
+    // Importing the array directly is what made it visible —
+    // `PROTOBUF_MUTANTS.filter(m => !m.language).map(m => m.id)` returned exactly this
+    // one id — because a crash inside a long run reads as an infrastructure failure
+    // rather than as a mutant that cannot be constructed.
+    language: "protobuf",
+    defectClass: "dangling-endpoint",
     description:
       "The resolved id is published on the symbol through TWO channels — `qualifiedName` (the one " +
       "pool-worker's projection carries into `brain_symbol.qualified_name`, which is the column " +
@@ -794,9 +860,9 @@ export const PROTOBUF_MUTANTS: Mutant[] = [
     description:
       "A proto2 `group` declared inside an `extend` block has its TYPE declared at the BLOCK'S OWN " +
       "SCOPE; only its FIELD belongs to the extendee. `Ctx` carries `scope` (the lexical position) " +
-      "separately from `owner` (the extendee), and the group's type takes `scope` while its field " +
-      "keeps `owner`. This transform reinstates the single value by re-pointing a group's TYPE at the " +
-      "OWNER — the pre-fix behaviour — which is a fabricated declaration: `optional group GroupField " +
+      "separately from `owner` (the extendee), and the group's type takes `scope`. This transform " +
+      "reinstates the single value by re-pointing a group's TYPE at the EXTENDEE — the pre-fix " +
+      "behaviour — which is a fabricated declaration: `optional group GroupField " +
       "= 121` written in a file-scope `extend TestAllTypesProto2` in " +
       "`pb-reference/src/google/protobuf/test_messages_proto2.proto` produced a nested type " +
       "`protobuf_test_messages.proto2.TestAllTypesProto2.GroupField`, which `protoc` 36.2's " +
@@ -843,19 +909,39 @@ export const PROTOBUF_MUTANTS: Mutant[] = [
         if (!typeSym?.metadata?.isGroupType) continue
         const oldTypeId = idOf(typeSym)
         const fieldSym = out.find(
-          (f: any) =>
-            f?.metadata?.isGroup === true &&
-            f?.name === typeSym.name &&
-            ownerOf(idOf(f)) !== oldTypeId.slice(oldTypeId.lastIndexOf(".") + 1),
+          (f: any) => f?.metadata?.isGroup === true && f?.name === typeSym.name,
         )
-        // The group's FIELD is the `isGroup` property sharing the type's name whose
-        // owner is the EXTENDEE. When the two share an owner (a group not in an
-        // `extend`) there is nothing to re-own and this mutant is a no-op, which is
-        // correct: the pre-fix rule and the post-fix rule agree there.
         if (!fieldSym) continue
-        const fieldOwner = ownerOf(idOf(fieldSym))
-        if (fieldOwner === ownerOf(oldTypeId)) continue
-        typeRemap.set(oldTypeId, `${fieldOwner}.${typeSym.name}`)
+        // WHICH declaration the group's FIELD belongs to, read off the analyzer's own
+        // output rather than off an id prefix. This had to be rewritten when pass 21
+        // moved the extension FIELD's published id onto the block's own scope: the old
+        // trigger compared the field id's PREFIX with the type id's parent, and from
+        // pass 21 on those two are the SAME string for a group inside an `extend` —
+        // `ownerOf(field.id)` is now the block's scope, which is also `ownerOf(type.id)` —
+        // so the guard `fieldOwner === ownerOf(oldTypeId)` below turned this mutant into
+        // a NO-OP and it SURVIVED with 0 -> 0 failures. A mutant that cannot fire is
+        // worse than no mutant: the gate reads a green it did not earn.
+        //
+        // The extendee is still published, on the field's `contains` EDGE: membership
+        // did not move when the published identity did, so the edge's SOURCE is the
+        // extendee and its `metadata.viaExtension` is what distinguishes this edge from
+        // the `groupType` membership edge, which runs from the block's own scope.
+        if (fieldSym?.metadata?.viaExtension !== true) continue
+        const fieldId = idOf(fieldSym)
+        const fieldEdge = relsOf(r).find(
+          (e: any) =>
+            (e?.type ?? e?.relationshipType) === "contains" &&
+            String(e.target) === fieldId &&
+            (e?.metadata as any)?.viaExtension === true,
+        )
+        if (!fieldEdge) continue
+        const extendee = String(fieldEdge.source)
+        if (!extendee) continue
+        // A group outside an `extend` carries no `viaExtension`, so it is skipped
+        // above; a group whose block scope IS the extendee has nothing to re-own, and
+        // there the pre-fix rule and the post-fix rule agree, so the no-op is correct.
+        if (extendee === ownerOf(oldTypeId)) continue
+        typeRemap.set(oldTypeId, `${extendee}.${typeSym.name}`)
       }
       if (typeRemap.size === 0) return r
 
@@ -962,6 +1048,174 @@ export const PROTOBUF_MUTANTS: Mutant[] = [
       })
       void byId
       return { ...r, symbols: out, relationships: remapped }
+    },
+  },
+  {
+    id: "protobuf/extension-member-id-rebuilt-from-the-extendee",
+    language: "protobuf",
+    defectClass: "dangling-endpoint",
+    description:
+      "An extension member's PUBLISHED ID is built from the block's own enclosing declaration " +
+      "chain plus the member's own name. The EXTENDEE is a separate descriptor field " +
+      "(`extendee`), never part of the name, so an id carrying it is a name no compiler defines. " +
+      "This transform reinstates the single value by re-building every extension member's id from " +
+      "the EXTENDED TYPE that the `contains` edge already names as its source — the pre-pass-21 " +
+      "behaviour, reproduced generically from the analyzer's own `metadata.viaExtension` flag and " +
+      "its `contains` edges, so editing a fixture cannot silently stop it matching.\n\n" +
+      "It leaves the `contains` edge's SOURCE and the symbol's `ownerName` alone: membership is " +
+      "unchanged and `contains` means membership, so only the edge's TARGET is re-pointed along " +
+      "with the id. That is what makes the mutant SELF-CONSISTENT — a mutant whose edges dangled " +
+      "would fail every fixture for the wrong reason and prove nothing about this rule. A group's " +
+      "FIELD moves with the other members, because its published id is the member id plus the " +
+      "`#property` disambiguator and its `contains` edge carries `viaExtension` like any other " +
+      "extension member's. A group's TYPE does NOT move, and the mutant does not pretend " +
+      "otherwise: that id already took the block's own scope before pass 21 (it is the same value " +
+      "the sibling mutant `protobuf/group-type-owned-by-the-extendee` reinstates a violation of), " +
+      "so pass 21 left it alone and reverting pass 21 leaves it alone too.\n\n" +
+      "MEASURED by `protoc` as the discriminator, not by argument. Pass 20 reported 50 colliding " +
+      "ids within one repository as a bare count; `script/m14/protobuf-classb-protoc-adjudication.mts` " +
+      "ran libprotoc 35.1 over those 50 and read its own duplicate-symbol diagnostic: 41 REJECTED " +
+      "the set (a corpus fact — no compilation unit holds both files, so the id is correct in " +
+      "each), 4 inconclusive (an unresolved import, so the compiler never reached the check), and " +
+      "5 ACCEPTED it. Those 5 are one symbol the analyzer published as two, and every one is an " +
+      "extension member, in one repository: `google.protobuf.FeatureSet.test` " +
+      "(`unittest_features.proto:32` declares " +
+      "`test = 9999` in package `pb`; `unittest_custom_features.proto:14` declares `test = 9995` in " +
+      "package `custom_features`), `google.protobuf.FieldOptions.field_opt1`, " +
+      "`google.protobuf.FileOptions.file_opt1` and `google.protobuf.MessageOptions.message_opt1` " +
+      "between `unittest_custom_options.proto` and `unittest_custom_options_unlinked.proto`, and " +
+      "`google.protobuf.MessageOptions.custom_option_lifetimes_message` between " +
+      "`unittest_custom_options.proto` and `unittest_features.proto`. Re-running that same probe " +
+      "over the same 842 files with this analyzer at HEAD reads 50 rows and 5 ACCEPTED, and with the " +
+      "fix reads 45 rows and 0 ACCEPTED, with 38,876 distinct published ids before and 38,881 " +
+      "after: the five removed rows are exactly the five protoc accepted, and no row was added. " +
+      "Read back from `protoc`'s " +
+      "descriptor on the fixtures, the names it defines are `ext.v1.extra`, `ext.v1.counts`, " +
+      "`ext.v1.audit_ticket`, `gie.demo.Hoisted`, `gie.demo.Outer.Inner`, `nse.demo.which_twin` " +
+      "and `nse.demo.Nest.Leaf.leaf_ref` — every one the span this transform reverts.\n\n" +
+      "Caught by three fixtures, and each is load-bearing. protobuf/extend-and-group loses " +
+      "`ext.v1.extra` and regains the forbidden `ext.v1.Container.extra`, so an analyzer that " +
+      "hoists only to the PACKAGE cannot pass by accident. protobuf/group-in-extend-scope loses " +
+      "`gie.demo.Hoisted#property` and regains the forbidden `gie.demo.Target.Hoisted#property`; " +
+      "its ROW 2 is the guard, so the rule cannot be satisfied by 'always the file's package'. " +
+      "protobuf/nested-extend-scope covers the third depth — a block nested inside the type whose " +
+      "name it references — losing `nse.demo.Nest.Leaf.leaf_ref` and `nse.demo.which_twin`. " +
+      "The `uses` rows matter as much as the `contains` ones: a transform that moved the member id " +
+      "but left the field->type edge alone would produce one right edge and one wrong one.",
+    transform: (r: any) => {
+      // Which ids are EXTENDED TYPES: the source of a `contains` edge carrying
+      // `viaExtension`. Read off the analyzer's own output, not a name list.
+      const extendedTypes = new Set<string>()
+      for (const x of rels(r)) {
+        if ((x.type ?? x.relationshipType) !== "contains") continue
+        if (!(x?.metadata as any)?.viaExtension) continue
+        extendedTypes.add(String(x.source))
+      }
+      if (extendedTypes.size === 0) return r
+
+      // The member set: every symbol the `contains` edge adds to an extended type. The
+      // edge's TARGET is the member id as published now; re-sourcing the same edge onto
+      // `extendee + "." + leaf` is the pre-fix identity, so no name is hardcoded.
+      const remap = new Map<string, string>()
+      for (const x of rels(r)) {
+        if ((x.type ?? x.relationshipType) !== "contains") continue
+        if (!(x?.metadata as any)?.viaExtension) continue
+        const src = String(x.source)
+        if (!extendedTypes.has(src)) continue
+        const tgt = String(x.target)
+        const cut = tgt.lastIndexOf(".")
+        if (cut <= 0) continue
+        remap.set(tgt, `${src}${tgt.slice(cut)}`)
+      }
+      // Nothing else to remap. An earlier draft of this transform carried a second pass over
+      // the symbol list "to catch the group's TYPE as a symbol whose owner differs from its
+      // id's parent"; it was a NO-OP — both ternary arms built the same string, so it mapped
+      // every id to itself and moved nothing while looking like it reached the group. It was
+      // deleted rather than repaired, because there is nothing there to reach: the group's
+      // TYPE id already carries the block's scope, and the group's FIELD id is already the
+      // target of a `viaExtension` `contains` edge, so the loop above covers it.
+      if (remap.size === 0) return r
+
+      const map = (id: string): string => remap.get(id) ?? id
+      const out = syms(r).map((s2: any) => {
+        const before = String(s2?.metadata?.id ?? s2?.qualifiedName ?? "")
+        const after = map(before)
+        if (after === before) return s2
+        const cut = after.lastIndexOf(".")
+        return {
+          ...s2,
+          qualifiedName: after,
+          metadata: { ...(s2?.metadata ?? {}), id: after, qualifiedName: after },
+          ...(typeof s2?.ownerName === "string" ? { ownerName: after.slice(0, cut) } : {}),
+        }
+      })
+      return {
+        ...r,
+        symbols: out,
+        relationships: rels(r).map((e: any) => {
+          const source = map(String(e.source))
+          const target = map(String(e.target))
+          // The `contains` edge's SOURCE is the extendee and is already correct; only
+          // its target moves, and only where it is the member.
+          if (source === e.source && target === e.target) return e
+          return { ...e, source, target }
+        }),
+      }
+    },
+  },
+  {
+    id: "protobuf/dotted-relative-name-package-prefixed",
+    language: "protobuf",
+    defectClass: "dangling-endpoint",
+    description:
+      "Prefixes the file's own `package` onto a DOTTED type name whenever the import-directory " +
+      "guard declines — the defect the analyzer avoids by construction, reproduced here so the " +
+      "refusal has a regression test rather than being an unexamined gap.\n\n" +
+      "`resolveViaImports` returns the name AS WRITTEN when no enclosing scope's candidate " +
+      "directory is one this file imports, because that is the only honest outcome: the import " +
+      "path is relative to an include root the analyzer is never told, so path and package are " +
+      "independent and the path is not evidence about any package name. The tempting repair is " +
+      "to fall back on the package-relative reading that UNQUALIFIED names already get.\n\n" +
+      "Measured over all 842 on-disk corpus files, that fallback would be wrong on every dotted " +
+      "name the guard declines, and it is wrong in a way no fixture can miss: it produces a " +
+      "fully-qualified-looking id that no file anywhere publishes. `extend " +
+      "google.protobuf.MessageOptions` inside `package a` would become " +
+      "`a.google.protobuf.MessageOptions`, which the language cannot declare.\n\n" +
+      "The corpus shapes it breaks, from script/m14/protobuf-ambiguity-split.mts over 842 files " +
+      "and 13,024 `uses` edges: 42 edges on 12 distinct targets whose leaf IS declared under a " +
+      "different id — `common.EnterpriseMeta`, `common.RaftIndex`, `common.Locality`, " +
+      "`types.Platform`, `types.Metric`, `NodeSpec.Membership`, `connect.IssuedCert`, " +
+      "`connect.CARoots`, `config.Config`, `common.QueryMeta`, `status.Status`, " +
+      "`NodeSpec.Availability` — plus 4 edges whose leaf is declared nowhere. The transform " +
+      "below keys on the analyzer's own `metadata.role: \"fieldType\"`, so it stops matching the " +
+      "moment a fixture is edited rather than silently passing.\n\n" +
+      "Caught by protobuf/dotted-relative-sibling-package ROW 3, which requires the target to " +
+      "stay `resources.scopes.v1.ScopeInfo`; this mutant rewrites it to " +
+      "`corp.api.resources.accounts.v1.resources.scopes.v1.ScopeInfo`. Caught also by " +
+      "protobuf/ancestor-scope-resolution, whose `resources.scopes.v1.ScopeInfo` and " +
+      "`types.Platform` rows are CLIMBS the guard resolves — the mutant leaves those alone, " +
+      "which is why one fixture is not enough: the always-declines mutant is caught there and " +
+      "this one is caught here.",
+    transform: (r: any) => {
+      const rels = (x: any): any[] => (x?.relationships ?? []) as any[]
+      const pkg = (r?.metadata ?? {}).protoPackage as string | undefined
+      if (!pkg) return r
+      // Keyed on `role: "fieldType"` rather than on a name from a fixture, so editing a
+      // fixture cannot make this stop matching. Two exclusions keep it to ONE defect: an
+      // unqualified name (the package-relative reading is already correct for it) and a
+      // target that already carries the file's own package (the climb the guard
+      // performed). A target the guard CLIMBED is therefore left alone, which is why
+      // `protobuf/ancestor-scope-resolution` is not the fixture that catches this and
+      // `protobuf/dotted-relative-sibling-package` is.
+      const remapped = rels(r).map((e: any) => {
+        if ((e.type ?? e.relationshipType) !== "uses") return e
+        if (role(e) !== "fieldType") return e
+        const t = e.target as string
+        if (!t.includes(".")) return e
+        if (t.startsWith(`${pkg}.`)) return e
+        return { ...e, target: `${pkg}.${t}` }
+      })
+      return { ...r, relationships: remapped }
     },
   },
 ]
