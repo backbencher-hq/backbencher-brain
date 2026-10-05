@@ -483,10 +483,14 @@ same fact — typescript suppresses the duplicate explicitly
 `exports` and `overrides` families only.
 
 The split is measured on the tree, not asserted: probe
-`B:type_node_in_a_declaration` counts **7,949** `Type` nodes sitting directly under a
-declaration, and the positions that stay `uses` are counted too — union member 345,
-root operation type 12, fragment type condition 504, inline-fragment type condition
-672 — because a name in a list or a name in a mapping is not a type clause.
+`B:type_node_in_a_declaration` counts **48,206** `Type` nodes sitting directly under a
+declaration across 1,140 files, and the positions that stay `uses` are counted too —
+union member 1,739, root operation type 440, fragment type condition 1,162,
+inline-fragment type condition 1,316 — because a name in a list or a name in a
+mapping is not a type clause. The 5 `references` roles account for 47,771 of the
+48,206, and the 4 `uses` roles account for the remaining 4,657; the difference is
+the six declarations sitting under a parse `ERROR` node, for which the analyzer
+emits no edge (see the roundtrip probe below).
 
 Three source spellings in the declared-type family, none of which is a bug on either
 side and all three of which are now written down here and in
@@ -494,10 +498,12 @@ side and all three of which are now written down here and in
 
 - a **field argument**'s declared type is attributed to the **field** symbol
   (`Actor.avatarUrl -> Int`), because arguments are published as the field's
-  `parameters` metadata and no argument symbol exists to own it. 2,067 edges.
+  `parameters` metadata and no argument symbol exists to own it. **8,017 edges**
+  (`references|field_argument_type`).
 - a **directive argument**'s declared type is attributed to the **directive** symbol
   (`@example -> Boolean`), for the same reason under a different spelling; the argument
-  name survives in `metadata.argument`. 15 edges.
+  name survives in `metadata.argument`. **902 edges**
+  (`references|directive_argument_type`).
 - a member declared in an `extend type X { ... }` block is published exactly as a
   member of a definition.
 
@@ -664,8 +670,10 @@ on `(source, target, type, line)`.
 
 **set A = 7,890. set B = 7,890. fabricated 0, lost 0.** On the full production corpus —
 1,905 files, production `parseFile` — the same probe reads
-**set A = 47,642, set B = 47,642, fabricated 0, lost 0**, and getting there took three
-more corrections, every one of them on the probe's side and two of them turning a
+**set A = 47,667, set B = 47,667, fabricated 0, lost 0** — re-measured at HEAD,
+1,905 files, production `parseFile`, 0 excluded, 1 file returning no references, 6
+declarations under a parse `ERROR`. Getting to a clean 0/0 took three more
+corrections, every one of them on the probe's side and two of them turning a
 analyzer defect into a measurement of the walk:
 
 | what the probe reported | what it was |
@@ -1136,19 +1144,23 @@ out what is available:
   why the corpus sweep measures grammar errors from the tree and not from the
   analyzer.
 - **A field argument's declared type is attributed to the FIELD symbol**
-  (`Actor.avatarUrl -> Int`, 2,067 edges), and a directive argument's to the
-  **directive symbol** (`@example -> Boolean`, 15 edges), because arguments are
+  (`Actor.avatarUrl -> Int`, 8,017 edges), and a directive argument's to the
+  **directive symbol** (`@example -> Boolean`, 902 edges), because arguments are
   published as the owning declaration's `parameters` metadata and no argument
   symbol exists to own them. A consumer reading `Actor.avatarUrl -> Int` as
   "this field's type is Int" would be wrong — its own return type is `URI`. The
   role (`field_return_type` vs `field_argument_type`), the line and
   `metadata.argument` are what disambiguate them, and all three are carried.
-- **11 `implements` clauses in the corpus name an object-typed supertype the same
-  document does not declare**, so they stay `implements` and emit no `extends`
-  edge. The analyzer is a per-file unit; resolving them needs a project-scope
-  join it does not have. Measured by
-  `B:implements_an_unambiguously_object_type_in_the_same_document` — 11 project
-  scope, 0 same document.
+- **8 `implements` clauses in the corpus name an object-typed supertype, and 5 of
+  those are in a document with no parse damage — yet 0 are in the SAME document as
+  the supertype's declaration**, so they stay `implements` and emit no `extends`
+  edge. The analyzer is a per-file unit; resolving them needs a project-scope join
+  it does not have. Measured by instrument B in the census artifact:
+  `B:implements_an_unambiguously_object_type` **8 over 4 files**,
+  `B:implements_an_unambiguously_object_type_in_a_clean_document` **5 over 3 files**,
+  `B:implements_an_unambiguously_object_type_in_the_same_document` **0 over 0**. The
+  gap between 5 and 0 is split schemas: `hasura-engine/…/0018_object_type_definition.graphql`
+  has `type Person implements Human` and the `Human` interface in a different file.
 - **1 of 8,796 corpus symbols is dropped by production, not by this analyzer.**
   `Query.me` at `0032_supergraph.graphql:175` is a legitimate GraphQL field, and
   `me` is on the `UNIVERSAL` name denylist in `src/ast/pool-worker.ts:448`, so
