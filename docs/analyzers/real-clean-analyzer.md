@@ -1,7 +1,19 @@
 # real-clean-analyzer.md
 
+> **Status (M60 pass 3 — the ruling table).** Pass 2 adjudicated nine types and left
+> `extends` as prose. It is now a registered ruling with a falsifying probe:
+> `script/m14/clean-ruled.ts` exports `CLEAN_RULED`, the arbiter runs it, and
+> `npx tsx script/m14/ontology-coverage-gate.ts clean` exits **0** with
+> **`FALSIFIED 0`** and **`ruled-without-justification 0`** — **emitted 9/10,
+> ruled-sound 1**, over 312 admitted files. The new evidence is a PARSE-TREE POSITION
+> CENSUS rather than a node-name list: **5,567 declarations, 55 distinct
+> (declaration, child) pairs, 0 UNCLASSIFIED**, against a corpus of 2,181 files and a
+> second run over the 312 the arbiter walks. See
+> [`extends` — RULED, registered and falsifiable](#extends--ruled-registered-and-falsifiable).
+> No analyzer behaviour changed this round; the analyzer file is byte-identical to pass 2.
+>
 > **Status (M60 pass 2, ontology adversarial review).** The pass-1 body below is the
-> 2026-09-28 M14.0 completeness round and is retained as its record. This round
+> 2026-09-28 M14.0 completeness round and is retained as its record. That round
 > re-measured it, found **`overrides` was a GAP rather than an absence** and
 > implemented it (582 edges, 2,181 files), and **restated 9 of the pass-1 figures**
 > because the grammar pin moved to v1.2.8 and the corpus instrument changed — not
@@ -16,19 +28,45 @@
 
 | instrument | what it measures | corpus |
 | --- | --- | --- |
-| `script/m14/clean-ontology-census.ts` | relationship types, resolution rates, confidence, site lines, endpoint hygiene — **through production `parseFile`**, never `analyze()` | 2,181 files |
-| `script/m14/clean-extends-overrides-probe.ts` | `extends` and `overrides`: grammar inventory (A) and parse-tree semantic counts (B) | 2,181 files |
+| `script/m14/clean-ontology-census.ts` | relationship types, resolution rates, confidence, site lines, endpoint hygiene — **through production `parseFile`**, never `analyze()` | 2,181 files (default: the 312 tracked) |
+| `script/m14/clean-extends-overrides-probe.ts` | `overrides` and the pass-2 `extends` reading: grammar inventory (A) and parse-tree semantic counts (B) | 2,181 files |
+| `validation/m14/fixtures/clean/extends-construct-probe.mts` | pass 3 — the `extends` POSITION census and the grammar inventory, importing the ruling table's own walk so the evidence and the arbiter cannot drift | 312 tracked + 2,181 wide, both reported |
+| `script/m14/clean-ruled.ts` | the ruling table the arbiter consumes; `countOnTree` IS the position census | whatever the arbiter walks |
+| `script/m14/ontology-coverage-gate.ts clean` | EMITTED vs RULED-SOUND vs FALSIFIED, per type | 312 admitted files |
+| `script/m14/firing-check.ts --files 120 clean` | does each type FIRE through production `parseFile` | 120-file stride sample |
 | `script/m14/clean-label-probe.mts` | Q4 — whether each edge's TYPE label is provable against an independent walk of the same tree | 312 files |
-| `script/m14/clean-honesty-gate.ts` | resolution, empty names, unknown kinds, ownerless members, crash files | 312 files |
+| `script/m14/clean-honesty-gate.ts` | resolution, empty names, unknown kinds, ownerless members, crash files — through **`analyze()`** | 312 files |
 | `script/m14/clean-completeness-gate.ts` | the grammar's named node types against the spec's buckets | fixtures |
 | `script/m14/run-fixtures.ts --lang clean` | 10 fixtures | fixtures |
 | `script/m14/clean-mutant-run.ts` | 7 mutants, judged by the shared harness's own rule | fixtures |
+| `script/m60/rel-type-coverage-gate.ts --langs=clean` | DERIVATION — which emitted types an oracle actually audits | 1 lane |
 | `script/m14/differential.ts --lang clean --sample 60` | Q3 — the second-opinion oracle | Clyde + clean-stdlib, 60 files each |
 
 **The two census instruments disagree and both are reported.** `clean-ontology-census.ts`
 (2,181 files, `parseFile`) and `clean-honesty-gate.ts` (312 files, `analyze()`) are
 different code paths over different corpora, so their totals are not comparable and
-are never mixed in one table.
+are never mixed in one table. The size of the gap is measured rather than waved at:
+on the **same 312 files**, `parseFile` yields **30,187** relationships and `analyze()`
+**30,689** — a difference of **502 edges (1.7%)**, and it is not spread evenly:
+
+| type | `parseFile` (production) | `analyze()` (per-file unit) | delta |
+| --- | --- | --- | --- |
+| `uses` | 1,457 | 1,457 | 0 |
+| `overrides` | 306 | 306 | 0 |
+| `instantiates` | 122 | 122 | 0 |
+| `references` | 9,551 | 9,559 | +8 |
+| `imports` | 1,891 | 1,920 | +29 |
+| `calls` | 3,798 | 3,886 | +88 |
+| `implements` | 712 | 772 | +60 |
+| `exports` | 4,839 | 4,937 | +98 |
+| `contains` | 7,511 | 7,730 | +219 |
+
+Both are reproducible: the arbiter, the firing check and the census independently
+report `calls 3,798 / contains 7,511 / imports 1,891 / exports 4,839 / implements 712`
+for the same 312 files, and `parseFile` was run twice with identical totals. The delta
+is therefore **the pipeline stages `analyze()` skips**, not run-to-run noise — which is
+the reason every production figure in this document is the `parseFile` one.
+
 
 ## Language
 
@@ -369,26 +407,30 @@ Round 1's before/after table, retained as its record. The "after" column is what
 
 `EMITTED` means production `parseFile` produced the type on real corpus files.
 `RULED` means a written reason **and** a corpus measurement, and the ruling names the
-probe and what count would overturn it. Counts and rates are
-`clean-ontology-census.ts --wide`, 2,181 files, 232,773 edges.
+probe and what count would overturn it.
 
-| type | emitted | verdict | edges | intra-file resolution | corpus resolution | self-edges |
-| --- | --- | --- | --- | --- | --- | --- |
-| `extends` | ❌ not emitted | **RULED** — instrument A: 0 of 199 grammar node types express inheritance; instrument B: 104 context constraints, published as `references` | 0 | — | — | — |
-| `calls` | ✅ EMITTED | — | 27,485 | 27,274/27,485 = 99.3% | 27,451/27,485 = 99.9% | 4,464 |
-| `uses` | ✅ EMITTED | — | 11,864 | 11,846/11,864 = 99.8% | 11,846/11,864 = 99.8% | 14 |
-| `contains` | ✅ EMITTED | — | 57,855 | 57,836/57,855 = 100.0% | 57,836/57,855 = 100.0% | 0 |
-| `imports` | ✅ EMITTED | — | 11,878 | 170/11,878 = 1.4% | 11,593/11,878 = 97.6% | 0 |
-| `references` | ✅ EMITTED | — | 81,534 | 15,776/81,534 = 19.3% | 80,711/81,534 = 99.0% | 341 |
-| `exports` | ✅ EMITTED | — | 37,126 | 37,118/37,126 = 100.0% | 37,118/37,126 = 100.0% | 2,147 |
-| `implements` | ✅ EMITTED | — | 2,990 | 1,304/2,990 = 43.6% | 2,909/2,990 = 97.3% | 0 |
-| `instantiates` | ✅ EMITTED | — | 1,459 | 1,458/1,459 = 99.9% | 1,458/1,459 = 99.9% | 0 |
-| `overrides` | ✅ EMITTED | **GAP → implemented this round**; believed missing at handover | 582 | 582/582 = 100.0% | 582/582 = 100.0% | 0 |
+**Two populations, never mixed.** `PROD` is the **312 files `git ls-files` admits** —
+the set `script/m14/ontology-coverage-gate.ts` and `script/m14/firing-check.ts` walk,
+measured through production `parseFile` at this commit. `WIDE` is the 2,181-file
+content-deduplicated corpus (`script/m14/clean-wide-manifest.txt`).
+
+| type | emitted | verdict | PROD edges (312 files) | PROD corpus resolution | WIDE edges (2,181 files) | WIDE corpus resolution | self-edges (PROD) |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `extends` | ❌ not emitted | **RULED** — registered in `script/m14/clean-ruled.ts`; instrument B position census, 0 UNCLASSIFIED of 5,567 declarations; corroborated by instrument A | 0 | — | 0 | — | — |
+| `calls` | ✅ EMITTED | — | 3,798 | 98.9% | 27,485 | 99.9% | 809 |
+| `uses` | ✅ EMITTED | — | 1,457 | 100.0% | 11,864 | 99.8% | 1 |
+| `contains` | ✅ EMITTED | — | 7,511 | 100.0% | 57,855 | 100.0% | 0 |
+| `imports` | ✅ EMITTED | — | 1,891 | 84.2% | 11,878 | 97.6% | 0 |
+| `references` | ✅ EMITTED | — | 9,551 | 88.3% | 81,534 | 99.0% | 54 |
+| `exports` | ✅ EMITTED | — | 4,839 | 100.0% | 37,126 | 100.0% | 293 |
+| `implements` | ✅ EMITTED | — | 712 | 97.2% | 2,990 | 97.3% | 0 |
+| `overrides` | ✅ EMITTED | **GAP → implemented in pass 2**; believed missing at handover | 306 | 100.0% | 582 | 100.0% | 0 |
+| `instantiates` | ✅ EMITTED | — | 122 | 100.0% | 1,459 | 99.9% | 0 |
 
 The `emitted` column is machine-graded by `script/m14/verify-doc-truth-emissions.ts`,
 which reads this table and compares each row against the `RelationshipType.*` aliases
 `src/ast/real-clean-analyzer.ts` actually constructs. `overrides` moved from a negative
-to a positive in this round, and the gate is what convicts a doc that claims otherwise.
+to a positive in pass 2, and the gate is what convicts a doc that claims otherwise.
 `extends` leads the table because it is the only type whose absence is a measurement,
 and a ruling is the row a reader needs first. It also happens to be the row the gate
 needs not to lose — see the finding below.
@@ -408,44 +450,131 @@ the first data row arrives — and that row is consumed to set the flag and neve
 **The first row of every claim table in the repository goes uncompared.** Measured on
 this lane: with `calls` first, the gate reported `UNDOCUMENTED [clean] calls`; with
 `extends` first it reports nothing for clean. That is a gate defect, not a doc defect,
-and it is reported to the supervisor rather than worked around silently — the reorder
+and it is reported to the supervisor rather than worked around silently — the ordering
 above is disclosed here for exactly that reason. `script/m14/verify-doc-truth-emissions.ts`
-is shared machinery and was not modified.
+is shared machinery and was not modified. **Re-verified at this commit**: `clean` is
+absent from `FALSE_NEGATIVE`, `FALSE_POSITIVE` and `UNDOCUMENTED`, and
+`docs/DOC-TRUTH-EMISSIONS.md` records its row as
+``calls contains exports implements instantiates overrides references uses imports``
+— 9 types, matching the analyzer.
 
 The `files` column is deliberately absent: the census caps its per-type file set at
 400, so any type at the cap reads `400` and the number is not a count. Types below the
 cap: `uses` 366 files, `overrides` 40, `instantiates` 167.
 
-### `extends` — RULED, with both instruments
+PROD totals: **30,187 relationships, 8,288 symbols, 312/312 files parsed, 0 parse
+failures, 0 degraded fallbacks, 0 empty names, 0 empty/unknown kinds, 0 `unknown`
+endpoints, 0 edges without a site line.** WIDE totals: **232,773 edges**. Both read
+through `parseFile`; `script/m14/clean-ontology-census.ts` prints the production entry
+point in its own header so a reader cannot mistake one for the other.
 
-**Reason.** Clean has no type inheritance. A class constrains its type parameter
-(`class Ord a | Eq a`) rather than inheriting from another type, and the constraint is a
-DICTIONARY REQUIREMENT, not a supertype relation: `Ord` is not a kind of `Eq`, `a` is
-merely required to have both. Publishing it as `extends` would assert a subtype
-relationship the language never writes.
+`extends` leads the table because it is the only type whose absence is a measurement,
+and a ruling is the row a reader needs first.
 
-**Instrument A — grammar inventory.** `clean-extends-overrides-probe.ts` walked
-**3,107,897 nodes** over 2,181 files and recorded **199 distinct node types**. It then
-checked 16 type names that would express inheritance or an override specifier
-(`extends`, `extend`, `implements`, `inherit`, `inheritance`, `superclass`, `super`,
-`base_class`, `parent_class`, `override`, `overrides`, `mixin`,
-`interface_declaration`, `trait`, `subclass`, `sub_type`) against that observed set.
-**0 of the 199 matched.** The full list of 199 is printed by the probe so the negative
-is auditable rather than asserted.
+### `extends` — RULED, registered and falsifiable
 
-**Instrument B — parse-tree semantic count.** A grammar inventory is silent by
-construction when the language can express the shape, so the one shape Clean *can*
-write — a class naming another class — was counted on the tree: a `class_context`
-constraint naming a class **this file declares**. Measured **104 occurrences**. All 104
-are `references` edges already (`class_context: 1,817` at the 2,181-file corpus), which
-is the label the construct actually earns.
+**Structural reason.** Clean has no type inheritance. A class constrains its type
+parameter (`class Ord a | Eq a`) rather than inheriting from another type, and the
+constraint is a DICTIONARY REQUIREMENT, not a supertype relation: `Ord` is not a kind
+of `Eq`, `a` is merely required to have both. Publishing it as `extends` would assert a
+subtype relationship the language never writes.
 
-**What would overturn this ruling.** A probe finding a class or instance whose declared
-supertype clause names another class declared in the corpus — i.e. a non-zero count
-from a tree walk over `class_declaration`/`instance_declaration` subtrees that reads a
-supertype rather than a constraint. In grammar terms: a named node type among the 199
-that expresses a supertype clause. `extends` was measured 0 on both instruments at
-2,181 files.
+**Why the table rules on instrument B and not instrument A.** Instrument A asks whether
+the grammar has a RULE for the construct, and for Clean the answer is a clean negative:
+the pinned wasm declares **290 node types and 29 field names**, **0** of the 22 probed
+supertype node types and **0** of the 17 probed supertype words appear in either, and
+**0** of the 29 field names is a supertype slot. But a bare A-ruling for Clean would be
+hiding the strongest counter-argument instead of answering it. Clean HAS a `class`
+declaration carrying a `class_context`, and `class_context` is the node a reader will
+point at: `class Ord a | Eq a` names another class inside a class declaration, and
+`instance Ord Int with Eq Int` does the same on an instance. **8 node types the grammar
+declares have "class" or "inst" in their name** (`class`, `class_method_name`,
+`class_context`, `class_declaration`, `class_name`, `class_member`, `instance_class`,
+`instance_declaration`, `instance_member`), and seven of them are produced by this
+corpus. A table that listed them would be falsified by the arbiter; a table that
+omitted them without saying why would be decoration. So the ruling rests on the
+**position** measurement instrument A cannot make: *every slot a Clean declaration
+exposes is a name, a member, a context, a parameter annotation, a body or a comment.*
+
+**Instrument B — parse-tree position census, and it is the arbiter's own probe.**
+`script/m14/clean-ruled.ts` exports `countCleanExtendsConstruct`, and the evidence file
+`validation/m14/fixtures/clean/extends-construct-probe.json` is produced by importing
+that same function, so the number and the probe cannot drift apart. The probe walks
+every `class_declaration`, `instance_declaration`, `derive_declaration` and
+`class_context`, and reports any direct named child no measured slot accounts for.
+
+| population | files | nodes walked | declarations | distinct (declaration, child) pairs | **UNCLASSIFIED** |
+| --- | --- | --- | --- | --- | --- |
+| TRACKED — what the arbiter walks | 312 | 331,048 | 1,430 (173 class, 741 instance, 43 derive, 473 context) | 55 | **0** |
+| WIDE | 2,181 | 3,107,897 | 5,567 (423 class, 2,539 instance, 610 derive, 1,995 context) | 55 | **0** |
+
+Every one of the 55 pairs is in a named role, and the roles are counted, not asserted:
+
+| role | slots | occurrences | what it is |
+| --- | --- | --- | --- |
+| name | `class_name`, `instance_class`, `constructor`, `identifier`, `class_method_name`, 14 operator-token types | 9,607 | the declared name, or the constraint's name — `class Foo a`, `\| Eq a`, `\| == a` |
+| member | `class_member`, `instance_member` | 3,756 | a member the declaration owns |
+| parameter | `type_variable`, `type_function`, `type_paren`, `type_application`, `list_type`, `tuple_type`, `array_type`, `dotted_type`, `fixity_annotation`, `generic_kind_type`, `uniqueness_star`, `question_type`, `unit_type` | 5,341 | a type parameter and its annotation |
+| context | `class_context` | 393 | a dictionary requirement or composition |
+| body | `code_expression` | 135 | the member bodies of an instance or generic class |
+| comment | `line_comment`, `block_comment` | 350 | not code |
+| parse-error | `ERROR` | 82 | the parser failing; counted apart, never as a construct |
+
+**UNCLASSIFIED is the only bucket a supertype clause could occupy, and it is empty on
+both populations.** The whitelist was not written down and then defended — it was
+iterated against the corpus, and the three iterations are recorded because each one is
+a reading a reader would otherwise have to reconstruct:
+
+1. **230 hits, all `operator_*`** — `class_context > operator_compare` (160),
+   `operator_mul` (6), `operator_add` (29), `operator` (4). Read, not assumed:
+   `instance == (StrictList a) | == a` (`clean-ide/Util/StrictList.icl:9`) makes `==` a
+   class, so an operator token is a constraint's NAME here, the same role `constructor`
+   plays 1,496 times for `| Eq a`. All 14 operator node types the grammar DECLARES are
+   in the name role, not just the 4 this corpus uses — listing only the observed four
+   would have reported a corpus that constrained on `&&` as carrying a supertype clause,
+   which is a false conviction of a correct ruling. `operator_definition` is excluded on
+   purpose: `name :: type` is a member definition.
+2. **15 hits, all type expressions** — `question_type` (`? a`, `?^ a`, `?# a`) 9 and
+   `unit_type` (`()`) 6, children of `instance_declaration` and `derive_declaration`.
+   An instance target carrying one is annotating a parameter.
+3. **0 hits.** The two roles that remained unexercised at each step are the ones a
+   supertype would have to occupy, and neither exists.
+
+**Instrument A, corroborating.** `extends-construct-probe.json` → `instrumentA`:
+
+| measurement | value |
+| --- | --- |
+| node types the grammar PRODUCES over the corpus | 199 (188 over the 312 tracked) |
+| probed supertype node types present | **0** of 22 |
+| probed supertype words present | **0** of 17 |
+| grammar's own declared node types / field names | 290 / 29 |
+| supertype words in the declared type table | **0** |
+| supertype slot field names in the declared field table | **0** |
+| Clean keywords present as declared types (calibration) | **22** of 23 — `class`, `instance`, `where`, `with`, `derive`, `import`, `definition`, `implementation`, `infix`, `special`, `generic`, `if`, `case`, `let`, `export`, `qualified`, `as`, `from`, `module`, `of`, `::`, `\|`. The one absent is `deriving`, which the tree-sitter-clean grammar spells `derive`. |
+
+The calibration row is what makes the negative meaningful: the table is demonstrably
+capable of holding Clean keywords, so "absent" means absent rather than "the probe holds
+nothing". The 11 `dotted_type` children of `class_declaration` were read one by one —
+they are kind annotations on a type parameter (`class List .l e` → `.(a .e)`), not
+supertypes.
+
+**What would overturn this ruling.** The probe pushing a single hit, which is what a
+grammar that added a supertype clause would produce on the first file that used it: any
+`class_declaration` / `instance_declaration` / `derive_declaration` / `class_context`
+carrying a named child outside the 55 measured pairs. Or a tree-sitter-clean release
+declaring a node type or field name among the 22 and 30 probed. Or a corpus file in
+which a class names another class in a position that is not `class_context`. **All three
+are satisfiable by a correct implementation**, which is what makes this a falsifiability
+claim rather than a decoration — and the arbiter flips the row to FALSIFIED by itself,
+with no supervisor action, if the first happens.
+
+**The limitation this ruling cannot retire, stated rather than implied.** The pinned
+grammar does not record the difference between a dictionary requirement `| Eq a` and a
+composition `with Eq Int` — same `class_context` node, same fields, no field marking a
+constraint as a base type. So the ruling rests on the **absence of a supertype SLOT**,
+not on the presence of a constraint, and no probe over this wasm could decide it by
+reading a `with` clause. If a future tree-sitter-clean distinguishes them, the
+composition form becomes a separate question this ruling has not answered.
 
 ### `overrides` — a GAP the handover belief got wrong
 
@@ -616,13 +745,25 @@ attached to that number:
 
 ### DERIVATION findings: **4**
 
-`script/m60/rel-type-coverage-gate.ts --langs=clean`, re-run and reproduced at this
-commit:
+`script/m60/rel-type-coverage-gate.ts --langs=clean`, **re-run and reproduced at this
+commit** (pass 3):
 
 ```
 CHECK 1 — DERIVATION: every emitted type has an oracle derivation
   clean        4 un-audited: ["contains","exports","imports","uses"]
+  4 findings in 1 lanes
+baseline: 104 recorded, 3 NEW, 103 repaid
+REGRESSIONS (not in the recorded debt):
+  DERIVATION|clean|emits `exports` but the differential audits ["calls","extends","implements","instantiates","overrides","references"]
+  DERIVATION|clean|emits `imports` but the differential audits ["calls","extends","implements","instantiates","overrides","references"]
+  DERIVATION|clean|emits `uses`    but the differential audits ["calls","extends","implements","instantiates","overrides","references"]
 ```
+
+**Three of the four are NEW, not recorded.** The gate's own baseline line says so:
+`3 NEW`. Only `contains` appears in `validation/m60/ledger.json`'s recorded debt, so
+`exports`, `imports` and `uses` are un-audited types the ledger does not yet know about.
+That is a ledger-completeness finding about shared state, not about this lane — the
+lane-side number is 4 either way, and the derivations needed are unchanged.
 
 Those four are emitted, stored, and compared against nothing: **57,855 + 37,126 + 11,878
 + 11,864 = 118,723 edges (50.8% of the lane's payload)** ride in no oracle. The gate's
@@ -659,6 +800,93 @@ each derivable from grammar fields with no analyzer import:
 for an `instance_declaration` whose class appears in a `class_declaration` member set —
 the same pairing `clean-extends-overrides-probe.ts` instrument B1 already computes, so
 the rule exists and is measured.
+
+## Gates re-run at this commit
+
+Every command below was run in this worktree on `analyzer/CLEAN` at this commit, and
+the result is the one printed — not a remembered one. `npx tsc --noEmit -p tsconfig.json`
+was clean before the doc edits and after them.
+
+| command | result | exit |
+| --- | --- | --- |
+| `npx tsc --noEmit -p tsconfig.json` | no output | 0 |
+| `npx tsx script/m14/ontology-coverage-gate.ts clean` | `emitted 9/10   ruled-sound 1   FALSIFIED 0   ruled-without-justification 0` over 312 admitted files | **0** |
+| `npx tsx script/m14/ontology-coverage-gate.ts --coverage` | 14 lanes can be ruled for, `clean` among them | 0 |
+| `npx tsx script/m14/verify-ruling-tables-registered.ts` | 14 tables on disk, 14 registered, `PASS` | 0 |
+| `npx tsx script/m14/firing-check.ts --files 120 clean` | `9/10 fired, 16231 edges, 120/120 files`, `degraded 0`, analyzer digest `stable` | 0 |
+| `npx tsx script/m14/clean-ontology-census.ts` | 312/312 parsed, 30,187 edges, 8,288 symbols, 0 empty names, 0 unknown kinds, 0 unknown endpoints, 0 degraded | 0 |
+| `npx tsx validation/m14/fixtures/clean/extends-construct-probe.mts` | TRACKED 0 UNCLASSIFIED / WIDE 0 UNCLASSIFIED; instrument A 0 of 39 probed | 0 |
+| `bun run script/m14/clean-honesty-gate.ts` | 312 files, 8,288 symbols, 30,689 relationships, **no violations** (`analyze()`, see Instruments) | 0 |
+| `bun run script/m14/clean-completeness-gate.ts` | 141 declared named node types, 141 classified, **all checks pass** | 0 |
+| `npx tsx script/m14/clean-mutant-run.ts` | 7 mutants, **caught 7/7**, every one made the suite red | 0 |
+| `npx tsx script/m14/run-fixtures.ts clean` | clean: **pass 10, fail 0, problems 0** | 0 |
+| `npx tsx script/m60/rel-type-coverage-gate.ts --langs=clean` | 4 DERIVATION findings, 3 NEW; checks 2/3/4 pass — **and it OVERWRITES the repository-wide results file, see report item 5** | 0 |
+| `bash script/m14/no-regex-gate.sh` | `real-clean-analyzer.ts` contributes **0** of the tree's 4 regex literals (all 4 are `real-svelte-analyzer.ts`) | 0 |
+| `npx tsx script/m14/differential.ts --lang clean --sample 60` | **RED, and reproduced exactly.** Clyde: `tree-truth=1314 covered=787 (59.9%) MISSING=527 \| analyzer-edges=1322 unexplained=671 (50.8%) heuristic=0`. clean-stdlib: `tree-truth=655 covered=606 (92.5%) MISSING=49 \| analyzer-edges=941 unexplained=462 (49.1%) heuristic=0`. `COMPARED WITH NO TRUTH: overrides` on both (6 and 39 edges). Writes no artifact on a scoped run, by design | 0 |
+| `bun run script/m14/verify-doc-truth-emissions.ts` | repository `FAIL` (7 FALSE_NEGATIVE / 42 UNDOCUMENTED / 15 NO_CLAIM_TABLE) — **`clean` in none of them**; its row reads 9 types | 0 |
+
+**Q3 is red, and the red is not new.** The 527/49 MISSING counts and the 50.8%/49.1%
+unexplained rates reproduce the figures already recorded under
+[Known limits](#known-limits-stated) 7 and 8 to the digit, so this round neither
+introduced nor repaired them. What the red is made of is named per label:
+`unexplained-by-label` is `references=383, calls=278, overrides=6, implements=2,
+instantiates=2` on Clyde and `references=196, calls=191, overrides=39, implements=36`
+on clean-stdlib. Two of those five labels are not analyzer defects at all —
+`overrides` has no oracle by construction (limitation 8), and the `instantiates`
+MISSING rows are the 24,986-site row's `declinedInstantiations` family, where the
+analyzer deliberately declines to name a receiver it cannot type. The oracle is shared
+(`script/m14/differential.ts`) and was not modified.
+
+
+**The one gate that must be run with `bun`, not `npx tsx`.**
+`script/m14/verify-doc-truth-emissions.ts` reads `__dirname` at line 131, which is not
+defined in ES-module scope, so `npx tsx` dies with
+`ReferenceError: __dirname is not defined in ES module scope` **before reading a single
+doc** — and it exits 0 while doing it, so a caller that only checks the exit code reads
+it as a pass. Two lanes' worth of honesty gate is in that trap. The file is shared
+machinery and was not modified; the fix is `import { fileURLToPath } from "node:url"`
+plus `const __dirname = path.dirname(fileURLToPath(import.meta.url))`, or a `.cts`
+rename.
+
+## Reported to the supervisor, not fixed
+
+Four findings outside this lane's ownership. Each is stated so it can be applied
+without re-deriving it. None was worked around silently.
+
+1. **`script/m14/verify-ruling-tables-registered.ts` cannot see a lane that has shipped
+   a table.** Its `UNADJUDICATED` list is still `["clean","graphql","r","scss"]` after
+   this round added `script/m14/clean-ruled.ts`, and the gate still prints
+   `PASS`. The stale-list check at lines 77-83 tests each entry with `specSuppliesRuling`
+   only — never against the `onDisk` set built at line 33 — so a lane whose spec happens
+   to carry a `RULED` decision passes the staleness check forever. `clean`'s spec
+   carries **no** `RULED` decision (6 decisions, 0 with that status), so the lane slips
+   through on a different accident: the check reads `decisions` under
+   `design_decision`, and if that path ever does match, `clean` will be reported stale
+   for a table it has. Fix: add `if (onDisk.has(lang)) { … exit 1 … }` to the same loop,
+   or drop `clean` from the list. **Not edited** — shared machinery.
+2. **`script/m14/verify-doc-truth-emissions.ts` needs `bun`.** See the gate table above:
+   `__dirname` under `npx tsx`, and a 0 exit on the crash. **Not edited.**
+3. **The shared differential still audits no clean oracle for four emitted types.**
+   `contains`, `exports`, `imports`, `uses` — and the gate now reports **3 of them as
+   NEW regressions** against `validation/m60/ledger.json`. The four derivations are
+   written out in [DERIVATION findings](#derivation-findings-4) and need
+   `script/m14/differential.ts`'s `deriveCleanEdges` (exported at line 16735) plus one
+   `…CLEAN_TRUTH` import. **Not edited.**
+4. **`script/m14/verify-doc-truth-emissions.ts`'s `parseClaimTable` drops the first body
+   row of every claim table.** Reproduced in [the verdict table's
+   note](#the-10-relationship-types-one-verdict-each) and unchanged by this round;
+   it is why `extends` is ordered first in this lane's table, which is disclosed rather
+   than relied on. **Not edited.**
+5. **`script/m60/rel-type-coverage-gate.ts --langs=<one>` DESTROYS the repository-wide
+   evidence file it reports from.** Run scoped, it overwrites
+   `validation/m60/results/rel-type-coverage.json` with the single lane's result.
+   Measured here: the file went from its committed content to **1,445 changed lines,
+   almost all deletions**, i.e. every other lane's recorded findings removed, and
+   `git diff --stat` was the only thing that showed it — the command printed a correct
+   clean-lane report and exited 0. It was restored with `git checkout --` in the same
+   minute and **nothing was committed from it**. A scoped `--langs` run should either
+   write to a per-lane path or refuse to write when the lane set is not the full set.
+   **Not edited** — `validation/m60/` is supervisor-owned.
 
 ## Figures that moved, and why
 
