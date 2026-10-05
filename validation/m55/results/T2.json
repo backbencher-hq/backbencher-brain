@@ -3,10 +3,10 @@
   "code": "T2",
   "milestone": "M55",
   "status": "known-gap",
-  "checks": 53,
+  "checks": 57,
   "passed": 51,
   "failed": 0,
-  "realFailed": 2,
+  "realFailed": 6,
   "mutantsCaught": 5,
   "mutantsTotal": 5,
   "mutantsNotJudged": 0,
@@ -61,6 +61,7 @@
       "./symbols"
     ]
   },
+<<<<<<< HEAD
   "currentCommit": "42da053221ba9dd3173faffe2e60913e9de35993",
   "workingTreeRelevantChanges": [
     "validation/m24/results/D1.json",
@@ -79,6 +80,25 @@
   "generatedAt": "2026-10-05T04:23:52.284Z",
   "fixture": {
     "root": "$HOME/Documents/Default Project/ishaq/wt/integrate/validation/m55/fixtures/t2-workspace",
+=======
+  "currentCommit": "0b1f296a291b7a32ee9ff450b94852b9353e4d71",
+  "workingTreeRelevantChanges": [
+    "validation/m24/results/D1.json",
+    "validation/m42/results/H2.json",
+    "validation/m55/results/T2.json"
+  ],
+  "volatileFields": [
+    "generatedAt",
+    "bbSeal.sealedAt",
+    "bbSeal.contentSha256",
+    "workingTreeRelevantChanges"
+  ],
+  "verifierCommand": "npx tsx script/m55/verify-call-hierarchy.ts",
+  "evidenceFile": "T2.json",
+  "generatedAt": "2026-10-05T04:22:57.577Z",
+  "fixture": {
+    "root": "$HOME/Documents/Default Project/ishaq/wt/surface/validation/m55/fixtures/t2-workspace",
+>>>>>>> close/surface-and-docs
     "files": [
       "src/store.ts",
       "src/loop.ts",
@@ -98,15 +118,56 @@
   },
   "failures": [
     "W1: `get` is never called anywhere in the fixture, so it has zero callers (no fabricated ones): [\"Store\",\"set\"]",
-    "C6: every rendered caller carries a call-site range for a CALLS row (a `contains`/`uses` row must not produce one): 2 rendered entries come from a non-`calls` relationship and carry a fromRange: [{\"name\":\"Store\",\"detail\":\"class · contains · 1 call site\",\"ranges\":[{\"start\":{\"line\":8,\"character\":22},\"end\":{\"line\":8,\"character\":25}}]},{\"name\":\"set\",\"detail\":\"method · uses · 1 call site · position approximate\",\"ranges\":[{\"start\":{\"line\":11,\"character\":2},\"end\":{\"line\":11,\"character\":5}}]}]"
+    "C6: every rendered caller carries a call-site range for a CALLS row (a `contains`/`uses` row must not produce one): 2 rendered entries come from a non-`calls` relationship and carry a fromRange: [{\"name\":\"Store\",\"detail\":\"class · contains · 1 call site\",\"ranges\":[{\"start\":{\"line\":8,\"character\":22},\"end\":{\"line\":8,\"character\":25}}]},{\"name\":\"set\",\"detail\":\"method · uses · 1 call site · position approximate\",\"ranges\":[{\"start\":{\"line\":11,\"character\":2},\"end\":{\"line\":11,\"character\":5}}]}]",
+    "C6d: a planted `contains`/`uses` row produces NO rendered range in EITHER direction (hermetic — §15.3): 4 planted non-call row(s) rendered with a range: [{\"direction\":\"incoming\",\"name\":\"Store\",\"detail\":\"class · contains · 1 call site\",\"ranges\":[{\"start\":{\"line\":8,\"character\":22},\"end\":{\"line\":8,\"character\":25}}]},{\"direction\":\"incoming\",\"name\":\"set\",\"detail\":\"method · uses · 1 call site · position approximate\",\"ranges\":[{\"start\":{\"line\":11,\"character\":2},\"end\":{\"line\":11,\"character\":5}}]},{\"direction\":\"outgoing\",\"name\":\"Store\",\"detail\":\"class · contains · 1 call site · position approximate\",\"ranges\":[{\"start\":{\"line\":0,\"character\":13},\"end\":{\"line\":0,\"character\":18}}]},{\"direction\":\"outgoing\",\"name\":\"set\",\"detail\":\"method · uses · 1 call site · position approximate\",\"ranges\":[{\"start\":{\"line\":11,\"character\":2},\"end\":{\"line\":11,\"character\":5}}]}]",
+    "C6e: every omitted non-call row is DECLARED with its kind named (omission is declared, never silent — §11.7): []",
+    "C6g: an answer emptied BY the filter says so — the declared absence names the filter instead of implying the store holds no rows (§11.7): {\"rendered\":0,\"absence\":{\"code\":\"symbol_not_at_position\",\"message\":\"every stored caller edge was dropped or declared absent (1 dropped, 0 declared absent) — none is rendered\",\"language\":\"typescript\",\"launchLanguages\":[\"java\",\"groovy\",\"kotlin\",\"scala\",\"typescript\",\"javascript\",\"python\",\"zig\",\"go\",\"rust\",\"c\",\"cpp\",\"vue\",\"svelte\"]},\"dropped\":[{\"name\":\"get\",\"symbolId\":\"309b2f4903c9ab7050107eed93227ada895554f7:src/store.ts:get:8\",\"reason\":\"receiver-qualified self-name call (this.items.get) targets another value, not this symbol\"}]}",
+    "C6f: every expand answer DECLARES the relationship-kind filter it applied, and that filter contains only kinds that can name a call site (§15.1): [{\"filter\":\"(absent)\"},{\"filter\":\"(absent)\"},{\"filter\":\"(absent)\"}]"
+  ],
+  "c6Disposition": {
+    "decision": "(c) gate it precisely: this surface asks the graph engine for CALL rows, DECLARES that filter on every response (§15.1), and drops+declares any non-call row that still arrives. The change is one call site plus one declared field in src/lsp/call_hierarchy.ts, which is another lane's file, so this gate is honestly RED.",
+    "causeMeasured": "For Store.get / callers the engine returns 8 edges: 2 exact, 6 owner-cascade. The row behind the headline range (Store rendered as a caller of get) is the EXACT depth-0 row `Store:contains:get` — the store genuinely holds 'Store contains get'. The pre-lane comment in this file said both non-call rows arrived via the cascade; that is wrong for the contains row and is corrected above. One level down the claim holds in substance: every rule in the component is keyed on `relationshipType === \"calls\"`, so the engine's default TEN-KIND superset feeds membership and lexical rows to a renderer that must emit call-site ranges.",
+    "rejected": {
+      "(a) fix the owner cascade": "refuted by measurement, not by taste: the contains row that produces the range is targetMatch \"exact\", so no cascade change removes it. The cascade is also a DELIBERATE, DISCLOSED superset for the graph/impact/MCP surfaces (its disclosure is itself gated, script/m48/verify-d1-doc-truth.ts), and §15.1 explicitly permits a surface to filter differently PROVIDED it states its filter. Changing the engine would move every graph/impact/MCP answer across 14 languages to fix a lie that lives in one adapter.",
+      "(b) declare the behaviour with its reason": "not available. LSP requires a non-empty `fromRanges` on every CallHierarchyIncomingCall, and §15.3 says a range handed to the editor points at the call site it names — a `contains`/`uses` row names no invocation, so there is nothing to point at. The only declaration the protocol permits for such a row is omission with a reason. A labelled membership row in a CALLERS list is still a category error a developer reads as 'Store calls get'."
+    },
+    "measuredBlastRadius": "Run twice over the same index and the same component with one option changed: the receiver-qualified `get -> get` artifact is still dropped AND declared with its reason (C1 unchanged, droppedEdges keeps the 'receiver-qualified ... this.items.get' entry); rendered non-call entries go 2 -> 0 (C6d/C6); rendered callers go 2 -> 0 (W1); the D4 partition still holds (edges 3 -> 0, buckets sum to edges in both runs). What the change does NOT deliver by itself is C6f/C6g: the response still carries no declared filter, and the empty answer's absence text still does not say the store holds non-call rows — both are part of the same patch.",
+    "patchOwner": "src/lsp/call_hierarchy.ts (not this lane's file); the exact patch is in the lane report for close/surface-and-docs.",
+    "falsifiability": "C6, C6d, C6e, C6f and C6g are RED on the real component at this commit, and W1 is red on the real index. Each is therefore observed to fail, which is stronger evidence of falsifiability than a planted mutant. The filter mutant is deliberately NOT in MUTANTS: its only predicate is C6f, which is false in the baseline, so adding it would make all five existing mutants report 'caught' while judging nothing (see mutantsNotAdded)."
+  },
+  "mutantsNotAdded": [
+    {
+      "name": "filter: ask the engine for every relationship kind again",
+      "why": "Its only oracle predicate is C6f, which is RED on the real component. A mutant oracle whose baseline contains a false predicate marks every mutant caught for free, which is the tautology the harness above exists to prevent. Its falsifiability is carried by C6d/C6e/C6f/C6g being red instead."
+    }
+  ],
+  "knownGaps": [
+    {
+      "checks": [
+        "W1",
+        "C6",
+        "C6d",
+        "C6e",
+        "C6f",
+        "C6g"
+      ],
+      "why": "one defect with one cause and one owner: this surface renders relationship kinds that cannot name a call site. The fix is in src/lsp/call_hierarchy.ts (another lane). W1 and C6 observe it on the real index; C6d/C6e plant it hermetically in both directions; C6f/C6g pin the two ways a fix could answer without declaring itself.",
+      "owner": "src/lsp/call_hierarchy.ts"
+    }
   ],
   "limitations": [
     "the analyzer stores relationship line_number = 0 for every row today; the call-site positions here are derived from the caller's own source, which is why they are exact. The stored-value path (a future analyzer change) is exercised only as a declared fallback.",
-    "invocation scanning is line-comment aware but not string-literal aware (declared in the component header); every result is bounded by the caller's own declaration range."
+    "invocation scanning is line-comment aware but not string-literal aware (declared in the component header); every result is bounded by the caller's own declaration range.",
+    "declared on the real index at this commit and NOT fixed: the same receiver-qualified artifact row is reported twice in droppedEdges (once from the depth-0 row, once from a deeper cascade re-fetch of it). The drop is correct and declared both times, so no range is rendered; the duplicate is a reportability defect in the engine's per-direction row dedupe (src/intelligence/graph/graph-engine.ts), not a position lie, and it is not this lane's file."
   ],
   "bbSeal": {
     "alg": "sha256",
+<<<<<<< HEAD
     "sealedAt": "2026-10-05T04:23:52.286Z",
     "contentSha256": "69a485406b56540b5c868c8e3b6cbcc60bd5417000c59d8b3f15a9307310d4c6"
+=======
+    "sealedAt": "2026-10-05T04:22:57.579Z",
+    "contentSha256": "5b14613a996870b018619cde47a304cf7045e5b6902cb5cb16b7dd2bbf88e717"
+>>>>>>> close/surface-and-docs
   }
 }
