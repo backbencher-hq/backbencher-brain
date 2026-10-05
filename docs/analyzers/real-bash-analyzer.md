@@ -3929,6 +3929,34 @@ that any consumer DOES. Whether the metadata should be read, promoted into
 `target_symbol_id` at ingest, or dropped for being unread is a schema decision
 (Laptop C's), reported here rather than acted on.
 
+### Reported, not edited: a lane-scoped gate CLOBBERS the shared baseline
+
+`npx tsx script/m60/rel-type-coverage-gate.ts --langs=bash` prints the four CHECK
+results this lane's evidence quotes, and it is not idempotent on a shared checkout.
+It rewrites `validation/m60/results/rel-type-coverage.json` with the SCOPED run's
+rows:
+
+```
+1,469 lines before
+$ npx tsx script/m60/rel-type-coverage-gate.ts --langs=bash
+ 61 lines after
+$ git diff --numstat …    5 insertions, 1,413 deletions
+```
+
+**1,413 lines of every other lane's baseline are deleted by a command that reads as a
+read-only gate.** Six agents each running their own `--langs=<lane>` on one checkout
+overwrite each other, and the loser's rows are gone with no conflict marker — last
+writer wins silently. `git checkout --` restores it, which is what this lane did, and
+the file is outside §8 so nothing was committed.
+
+Report, in the shape needed to apply it without re-deriving it: in
+`script/m60/rel-type-coverage-gate.ts`, the evidence write must be scoped the same way
+the run is — write beside the full-sweep path when `--langs` is given, or skip the
+write entirely on a scoped run the way `script/m14/differential.ts` already does
+("a scoped run is for inspecting lanes, and writing it here would replace that claim
+with a smaller one"). The precedent is in the codebase already; this is the only
+writer that ignores it.
+
 ## Complexity envelope and measured performance
 
 One iterative pre-order walk with a constant-time function-scope stack, a Map of
