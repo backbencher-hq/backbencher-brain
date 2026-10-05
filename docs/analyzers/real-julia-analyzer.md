@@ -1839,14 +1839,20 @@ That script is shared machinery and is reported rather than edited. The census's
 lane-owned substitute: it extracts the analyzer's node-type **claims** and checks each against the node
 types the production grammar actually produced over the 1,985 corpus files.
 
-**46 node-type claims, 0 unknown.** The extraction is narrowed to the three positions where a literal
+**47 node-type claims, 0 unknown, 0 scanner warnings.** The extraction is narrowed to the three positions where a literal
 IS a node type — a `.type` comparison, a `firstNamedChildOfType` type argument, or a member of a
 node-type `Set` — because an earlier version extracted every snake_case literal and accused 32 names of
 which 30 were relationship-type names, evidence-class names and `IMPLICIT_OR_CONSTANT` members.
 
 The count was **45** until the `imports`/`exports` work added `selected_import` to the analyzer
 (`932a20d27`), and this paragraph was the stale one: a count measured once and reprinted. It is written
-here as the number the census prints on every run for that reason.
+here as the number the census prints on every run for that reason. **It then read 46 for four commits
+while the census printed 47** — the same figure, in the same place, one syntactic level down from the
+cells `doc-tables-check.ts` does check, so nothing noticed. **Corrected against
+`/tmp/census-fresh.json` re-derived 2026-10-05: `claimCount: 47`, `notProduced: 0`,
+`scannerWarnings: 0`, `sharedGateHasJulia: false`.** The fourth value is the one that matters for §8
+row 15: the census already carries the flag saying the shared L2 gate has no julia entry, so the
+absence is measured rather than inferred.
 
 It immediately named **three dead branches**:
 
