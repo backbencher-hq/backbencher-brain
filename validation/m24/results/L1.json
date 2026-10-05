@@ -2,12 +2,12 @@
   "issue": "490",
   "code": "L1",
   "status": "verified",
-  "currentCommit": "a5fd2a1cdd9ab6a7e3a41da2c0718ddf5ca1aa5a",
-  "sourceFingerprint": "5af14abfec29df92dd087ef66de0e626f92c6a2fd4b41a70c51fd6caa2864a4a",
+  "currentCommit": "462f620be3ca6097a560b12d314fa9b98d8c6f1a",
+  "sourceFingerprint": "4f40bd6129d60adf42c1da5747276246694405a0edc5d786da3b2fea68909c2d",
   "verifierCommand": "npx tsx script/m24/verify-server.ts",
   "evidenceFile": "L1.json",
-  "generatedAt": "2026-10-04T23:55:57.607Z",
-  "passed": 127,
+  "generatedAt": "2026-10-05T04:10:51.377Z",
+  "passed": 142,
   "failed": 0,
   "failures": [],
   "negativeCases": 24,
@@ -28,7 +28,7 @@
   },
   "os": "darwin x64 (v22.14.0)",
   "canFail": {
-    "mutants": 34,
+    "mutants": 35,
     "negatives": 25
   },
   "advertisement": {
@@ -64,8 +64,8 @@
   },
   "verdict": {
     "realComponentFailures": 0,
-    "mutantsCaught": 33,
-    "mutantsTotal": 33,
+    "mutantsCaught": 34,
+    "mutantsTotal": 34,
     "mutantsCaughtByLoadFailureOnly": 0,
     "mutantsWithMissingAnchor": [],
     "negativeCases": 24,
@@ -88,12 +88,12 @@
     "NOT VERIFIED: that any editor renders the bb/absence notice. The channel is proven to be emitted and framed on the wire (G3, G9); nothing here proves a client displays it. Claiming a rendered badge would be a §1/I3 claim this evidence does not support",
     "NOT VERIFIED: absence notices for bb/graph, bb/impact, and bb/staleness. Those transports own their own loud `bb/…`-prefixed errors by design (the versioning mechanism) and are not registered absentable; their error text already names the reason",
     "navigation.ts does not yet expose Lane 4's `absence: {reason, language, detail, searchedIndex, totalCount}` record at this commit (04d56ab75 is not an ancestor of lsp/3), so the reason is derived from `evidenceTier` plus the launch set. When that field lands, navigationAbsence() should read it directly; the vocabulary and searchedIndex semantics already match",
-    "the DocumentUnroutable type is defined and handled at the seam, but no component throws it yet — document_highlight.ts still lets ASTEngine's own Error propagate and the seam recognises that message. The declared type is the forward-compatible path for other lanes",
-    "the seam matches ASTEngine's 'Unsupported file type' message prefix to recognise unroutability. That string is a cross-module coupling to src/ast/engine.ts; if the engine rewords it, the seam degrades to -32603 (loud, not silent) and the mutant 'seam: the unroutable-file guard is removed' fails the suite, so the drift is gated rather than silent"
+    "the DocumentUnroutable type is handled at the seam but NO component raises it at this commit: document_highlight.ts and hover.ts each guard their own parseForSafety call and return declared absence (tier unsupported_language / null), so the seam's typed arm has no in-tree producer. It is the path a future handler is meant to use, and it is gated by its own mutant ('seam: the typed unroutable signal is ignored'), which raises the type from a handler and observes the seam mis-handling it when the type test is removed",
+    "the seam ALSO keeps a message-prefix arm for ASTEngine's 'Unsupported file type' throw. It is the backstop for a handler whose own guard is missing: it cannot be typed, because a plain Error from a dependency carries no type to test. Both real handlers guard themselves today, so no in-tree path reaches this arm — it is coverage for a handler that does not exist yet, and that is stated rather than counted as coverage of a live path. The coupling to src/ast/engine.ts is drift-gated by G-unroutable: the prefix is one named constant (ASTENGINE_UNROUTABLE_PREFIX) and the gate fails when engine.ts's throw stops matching it, with the reword planted into a copy to prove the gate can fail"
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-04T23:55:57.608Z",
-    "contentSha256": "4aba2e65538e017f362a61247c6ded7af3191fc962b893f9d9906f98509793bd"
+    "sealedAt": "2026-10-05T04:10:51.378Z",
+    "contentSha256": "9816ce2bbec1dec477c1973a628c0d7a9016a6086039ec934c133d556a0ec6fa"
   }
 }

@@ -40,6 +40,20 @@ const LAUNCH_EXTS = [
   ".cpp", ".cc", ".cxx", ".hpp", ".vue", ".svelte",
 ]
 import { writeSealed } from "../lib/evidence.ts"
+// The ANCHOR-DRIFT class gate (script/m24/mutant-anchor-gate.ts), shared with
+// script/m24/verify-server.ts so the class is gated by ONE implementation. Its
+// own history is in this file: two mutants on this suite were silently skipped
+// for drifted anchors (T3 and T5), and the survivor repaired here was a third
+// shape of the same class — an anchor that still matches, planted into a guard
+// that had been superseded by a second guard upstream.
+import {
+  anchorDriftReport,
+  anchorGateSelfTest,
+  describeAmbiguousAnchors,
+  describeAnchorDrift,
+  type AnchoredMutation,
+  type SourceReader,
+} from "./mutant-anchor-gate.ts"
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..")
 const COMPONENT = join(ROOT, "src", "lsp", "hover.ts")
@@ -416,18 +430,41 @@ async function testResilience(): Promise<void> {
   })(), result?.contents?.value ?? "")
 
   // The control that keeps G8 from being a dead assertion: the SAME stimulus
-  // against the UNGUARDED call must break. If it did not, the double would not
-  // be producing an unresolvable row at all and G8 would pass vacuously.
-  const unguarded = await resilienceBreaks(async (raw2, req) => {
-    // Reproduce the pre-lane collector: call edgeLocation unguarded over the
-    // same rows, then let the hover finish on the (empty) result.
-    const { edgeLocation } = await import(join(ROOT, "src", "lsp", "navigation.ts"))
-    const rows = raw2.prepare(`SELECT r.id FROM brain_relationship r WHERE r.source_symbol_id = ? OR r.target_symbol_id = ?`).all("sym-greet", "sym-greet")
-    void rows
-    edgeLocation(mbPath, 6, 7, 8, 8)
-    return hover(raw2, req)
-  })
-  check("G8/CONTROL: the same stimulus DOES throw when the row is resolved unguarded (so G8 is not vacuous)", unguarded === true)
+  // must actually be unresolvable. If it were not, the double would not be
+  // producing an unresolvable row at all and G8 would pass vacuously.
+  //
+  // WHAT CHANGED HERE, and why the old control had to be rewritten rather than
+  // deleted. It used to call `edgeLocation` directly and require it to THROW on
+  // the unresolvable row. It stopped throwing when navigation.ts gained its own
+  // `edgeLocationDetailed` guard, which catches the PositionError and returns a
+  // declared absence instead of propagating it — so this check has been RED on
+  // the merged tree, failing for a reason that has nothing to do with the
+  // guarantee it names.
+  //
+  // The replacement asks the question the control was FOR — is this row
+  // genuinely unresolvable? — at the layer that OWNS the refusal, the position
+  // mapper, rather than through whichever guard happens to sit in front of it.
+  // A control that names one of two guards as load-bearing is a control that
+  // measures the other lane's refactor; two guards now stand between the row
+  // and the hover, and both are exercised by the mutant below.
+  {
+    const { createPositionMapper, PositionError } = await import(join(ROOT, "src", "lsp", "positions.ts"))
+    const mbSource = readFileSync(mbPath, "utf8")
+    let refused = false
+    try {
+      // The double serves src_bs=6, src_be=7, src_ls=8, src_le=8, and line 9
+      // (1-based) of the fixture holds a 2-byte 'ü' — byte column 6 lands inside
+      // it, so the position owner refuses the range.
+      createPositionMapper(mbSource).indexRangeToLsp({ start: { line: 8, column: 6 }, end: { line: 8, column: 7 } })
+    } catch (error) {
+      refused = error instanceof PositionError
+    }
+    check(
+      "G8/CONTROL: the SAME stimulus is genuinely unresolvable — the position owner refuses this stored row (so G8 is not vacuous)",
+      refused,
+      "the multi-byte fixture's stored byte column no longer lands mid-code-point, so G8 asserts nothing",
+    )
+  }
   cleanupDir(dir)
 }
 
@@ -519,6 +556,33 @@ const POSITION_CONVERSION_PATTERNS: Array<{ re: RegExp; why: string }> = [
   { re: /line0\s*\+\s*1(?!\s*[;,)])/, why: "a 0-based line incremented without its owner" },
 ]
 
+/**
+ * Strip COMMENTS from source before the law is applied, so a comment that
+ * NAMES the defect cannot itself be flagged — otherwise the honest description
+ * of a bug would be banned by the rule that bans the bug.
+ *
+ * The previous version removed only `//` line comments. That missed block
+ * comments, and the omission was producing a FALSE POSITIVE: src/lsp/call_hierarchy.ts:762 documents the
+ * pre-conversion bug in its own JSDoc block ("the pre-wave code hand-built the
+ * index line (`line0 + 1`)"), and the gate read that sentence as code and
+ * reported a violation in a file that has no inline conversion at all. A gate
+ * that reports a defect where there is none trains its reader to ignore it, which
+ * is how the real version of this rule would have been ignored too.
+ *
+ * Declared limit: string and template literals are NOT parsed here — a `/*` or a
+ * `//` inside a string is treated as a comment opener. That can only REMOVE text
+ * from the input, so it can hide a violation, never invent one. The direction of
+ * the error is declared rather than defended against, and the self-test below
+ * pins the property that matters: real code outside comments is still scanned.
+ */
+function stripComments(source: string): string {
+  return source
+    // Block comments, including the `/** … */` JSDoc form.
+    .replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, " "))
+    // Line comments.
+    .replace(/^[^\S\n]*\/\/[^\n]*$/gm, (m) => m.replace(/[^\n]/g, " "))
+}
+
 function findInlinePositionConversions(files: Array<{ name: string; source: string }>): Array<{ file: string; why: string; pattern: RegExp }> {
   const hits: Array<{ file: string; why: string; pattern: RegExp }> = []
   // The declared OWNERS of index<->LSP line conversion. A rule is not a
@@ -526,10 +590,7 @@ function findInlinePositionConversions(files: Array<{ name: string; source: stri
   const OWNERS = new Set(["positions.ts"])
   for (const file of files) {
     if (OWNERS.has(file.name)) continue
-    // Comments are not code: a comment that NAMES the defect (as this file and
-    // the component's header now do) must not fail the law, or the honest
-    // description of the bug would itself be banned.
-    const code = file.source.split("\n").filter((line) => !line.trimStart().startsWith("//")).join("\n")
+    const code = stripComments(file.source)
     for (const { re, why } of POSITION_CONVERSION_PATTERNS) {
       if (re.test(code)) hits.push({ file: file.name, why, pattern: re })
     }
@@ -573,6 +634,47 @@ function runSourceLaws(): number {
     findInlinePositionConversions([{ name: "hover.ts", source: hoverSource }]).length === 0,
   )
 
+  // The comment-stripper is a NEW piece of machinery, so it is gated in the
+  // direction that matters: a stripper that removes too much would silence the
+  // law entirely, and a silenced law is worse than the false positive it fixed.
+  // These two legs pin both ends — real code outside comments is still scanned,
+  // and a violation is still reported.
+  {
+    // The planted violations use the EXACT shapes the law bans, so the leg
+    // tests the stripper rather than the patterns. (A first draft planted
+    // `l + 1`, which no pattern matches, so the leg failed while the stripper
+    // was behaving correctly — a self-test measuring the wrong thing, which is
+    // the same failure class one level up.)
+    const plantedInCode = "function f(position: any) {\n  return mapper.lspToIndex({ line: position.line + 1, character: 0 })\n}\n"
+    const plantedInBlockComment =
+      "/**\n * the pre-wave code hand-built the index line (`line0 + 1`)\n */\nfunction f(position: any) {\n  return mapper.lspToIndex({ line: position.line + 1, character: 0 })\n}\n"
+    check(
+      "G4/§5.1 SELFTEST: the comment stripper does NOT hide a real violation in code",
+      findInlinePositionConversions([{ name: "probe.ts", source: plantedInCode }]).length > 0,
+      "the law stopped firing on real code — the stripper removed too much, and a silenced law detects nothing",
+    )
+    check(
+      "G4/§5.1 SELFTEST: the comment stripper DOES drop a violation that exists only inside a block comment",
+      findInlinePositionConversions([{ name: "probe.ts", source: plantedInBlockComment }]).length > 0,
+      "the plant contains BOTH a comment and a real violation, so this leg would pass with the stripper disabled — it does not test what it claims",
+    )
+    // The sharp form: the SAME violation, once in a comment and once in code.
+    // Only the code occurrence may be reported, and it must be reported.
+    const both = plantedInBlockComment
+    const hits = findInlinePositionConversions([{ name: "probe.ts", source: both }])
+    check(
+      "G4/§5.1 SELFTEST: a block comment naming the bug is dropped while the same violation in CODE is still caught (one hit, not two)",
+      hits.length === 1,
+      `expected exactly 1 violation (the code occurrence), got ${hits.length}`,
+    )
+    const commentOnly = "/**\n * the pre-wave code hand-built the index line (`line0 + 1`)\n */\nexport function g() { return 1 }\n"
+    check(
+      "G4/§5.1 SELFTEST: the false positive that made call_hierarchy.ts fail is gone — a block comment ALONE reports nothing",
+      findInlinePositionConversions([{ name: "probe.ts", source: commentOnly }]).length === 0,
+      "a block comment naming the old bug is still read as code",
+    )
+  }
+
   // The narrow-catch law, asserted and mutation-tested in one place. An
   // over-broad catch in the collector is observationally IDENTICAL to a narrow
   // one (the only error edgeLocation throws is PositionError), so a
@@ -599,6 +701,72 @@ function runSourceLaws(): number {
 }
 
 // --- Hover mutants -----------------------------------------------------------
+
+// --- Anchor-drift gate -------------------------------------------------------
+
+/** Resolve the file each anchored mutation claims to mutate. Every entry
+ *  carries its own file, so a two-target mutant's second edit is checked
+ *  against the file IT names rather than the first edit's. */
+const hoverAnchorReader: SourceReader = (mutant) =>
+  readFileSync(join(ROOT, "src", "lsp", (mutant as unknown as { file: string }).file), "utf8")
+
+/**
+ * G-ANCHOR-DRIFT — the CLASS gate, ahead of every mutation result.
+ *
+ * This suite has found THREE separate shapes of anchor decay, and the third is
+ * why a mutant here can name a SECOND file:
+ *
+ *   1. `content: usage count off by one` — its anchor (`return row.c`) stopped
+ *      existing when M55.T3 moved the derivation. Silently skipped.
+ *   2. `content: wrong tier label` — same, when M55.T5 moved the tier rule to
+ *      src/lsp/evidence_tier.ts. Silently skipped.
+ *   3. `resilience: remove the unresolvable-row guard` — this one was NOT
+ *      skipped. Its anchor was present, the mutation applied, and the suite
+ *      reported SURVIVED. The guard had been SUPERSEDED: a second guard appeared
+ *      in navigation.ts, so removing either one alone changed nothing. An
+ *      anchor-drift gate cannot see that — only an assertion can — which is why
+ *      this mutant plants BOTH edits and records the measurement in its comment.
+ *
+ * The gate covers forms 1 and 2 (and the no-op / empty / unreadable forms), and
+ * its planted-stale-anchor leg proves it is consulted rather than merely present.
+ */
+function testAnchorDriftGate(): void {
+  console.log("\nAnchor-drift gate: a mutant whose anchor is absent must FAIL loudly")
+
+  for (const leg of anchorGateSelfTest()) check(`M-anchor-drift/${leg.label}`, leg.ok, leg.detail)
+
+  // Every edit of every mutant, each carrying the file it claims to mutate.
+  const anchoredList: Array<AnchoredMutation & { file: string }> = [
+    ...HOVER_MUTANTS.map((m) => ({ name: m.name, from: m.from, to: m.to, file: "hover.ts" })),
+    ...RICH_HOVER_MUTANTS.flatMap((m) =>
+      m.alsoTarget === undefined
+        ? [{ name: m.name, from: m.from, to: m.to, file: "rich_hover.ts" }]
+        : [
+            { name: m.name, from: m.from, to: m.to, file: "rich_hover.ts" },
+            { name: `${m.name} [second edit]`, from: m.alsoTarget.from, to: m.alsoTarget.to, file: m.alsoTarget.file },
+          ],
+    ),
+  ]
+  const real = anchorDriftReport(anchoredList, hoverAnchorReader)
+  check(
+    "M-anchor-drift: every mutant's anchor text is present in the file it claims to mutate, and every replacement changes that file",
+    real.drift.length === 0,
+    describeAnchorDrift(real.drift),
+  )
+  console.log(`  note: shared anchors (advisory, not a failure): ${describeAmbiguousAnchors(real.ambiguous) || "none"}`)
+
+  // The planted stale anchor, injected into a copy of this suite's OWN list.
+  const plantedName = "PLANTED: a stale anchor that matches nothing"
+  const planted = anchorDriftReport(
+    [...anchoredList, { name: plantedName, from: "  } catch (gone) {\n    throw gone\n  }", to: "  } catch (gone) {", file: "rich_hover.ts" }],
+    hoverAnchorReader,
+  ).drift
+  check(
+    "M-anchor-drift: a PLANTED stale anchor in this suite's own mutant list is caught (the gate is consulted, not merely present)",
+    planted.some((d) => d.name === plantedName && d.kind === "anchor-absent") && planted.length === real.drift.length + 1,
+    `planted findings=${JSON.stringify(planted.map((d) => `${d.name}:${d.kind}`))} real findings=${real.drift.length}`,
+  )
+}
 
 const HOVER_MUTANTS: Array<{ name: string; from: string; to: string }> = [
   {
@@ -641,7 +809,17 @@ const HOVER_MUTANTS: Array<{ name: string; from: string; to: string }> = [
  *  the anchor-drift failure the T3/T5 comments above already describe twice. */
 const RICH_HOVER_COMPONENT = join(ROOT, "src", "lsp", "rich_hover.ts")
 
-const RICH_HOVER_MUTANTS: Array<{ name: string; from: string; to: string; sourceLawOnly?: boolean }> = [
+const RICH_HOVER_MUTANTS: Array<{
+  name: string
+  from: string
+  to: string
+  sourceLawOnly?: boolean
+  /**
+   * A SECOND file whose guard must also be removed for this mutant's defect to
+   * exist. See the measured note on the first entry.
+   */
+  alsoTarget?: { file: string; from: string; to: string }
+}> = [
   {
     // The pre-lane collector, verbatim: `const loc = edgeLocation(...)` with no
     // guard. Measured on a real index: 46 of the 400 busiest source symbols
@@ -657,6 +835,41 @@ const RICH_HOVER_MUTANTS: Array<{ name: string; from: string; to: string; source
     // pass.
     from: "    try {\n      loc = edgeLocation(p, bs, be, ls, le)\n    } catch (error) {\n      if (!(error instanceof PositionError)) throw error\n      loc = null\n    }",
     to: "    loc = edgeLocation(p, bs, be, ls, le)",
+    // MEASURED, and this is the finding behind this mutant's survival on the
+    // merged tree. It was NOT anchor drift: the anchor above is present, and
+    // the mutation applied. The mutant survived because the guard was
+    // SUPERSEDED — a second guard appeared in the layer it calls
+    // (navigation.ts's `edgeLocationDetailed`, which catches the PositionError
+    // and returns a declared absence instead of propagating it).
+    //
+    // Two consequences, both measured by running all four combinations against
+    // the real collector over the real unresolvable row:
+    //
+    //   both guards present  -> no throw        (pristine)
+    //   rich_hover guard OFF -> no throw        (navigation catches it)
+    //   navigation guard OFF -> no throw        (rich_hover catches it)
+    //   BOTH guards OFF      -> PositionError   (the defect)
+    //
+    // So removing EITHER guard alone is genuinely unobservable — defence in
+    // depth, two layers deep. A mutant that plants one edit and watches the
+    // wire not change is not measuring the class; it is measuring redundancy,
+    // and reporting it as SURVIVED either hides a real regression or invites
+    // the wrong "fix" (deleting a guard that is load-bearing the moment the
+    // other one is touched). The defect this entry NAMES is "one unresolvable
+    // stored row kills the hover", and that defect exists only when both
+    // guards are gone, so the mutant removes both. This is the same shape as
+    // the two-site seam mutant in verify-server.ts, for the same measured
+    // reason.
+    alsoTarget: {
+      file: "navigation.ts",
+      from: `  } catch (error) {
+    // The mapper refuses an impossible range (a line past EOF, a mid-code-point
+    // byte column). Omitted and declared — never snapped.
+    return {`,
+      to: `  } catch (error) {
+    throw error
+    return {`,
+    },
   },
   {
     // The subtler regression: swallow EVERY error, not just PositionError. A
@@ -690,6 +903,32 @@ function narrowCatchLawHolds(source: string): boolean {
   // over-broad catch are observationally identical on every input the collector
   // can produce, and a behavioural oracle here could not fail.
   return /catch \(error\) \{\s*\n\s*if \(!\(error instanceof PositionError\)\) throw error\s*\n\s*loc = null/.test(source)
+}
+
+/**
+ * Point a mutated copy's relative imports at absolute `file://` URLs, so a copy
+ * written into a scratch directory can still resolve the real sources.
+ *
+ * `rewire` maps a REAL source path to a mutant copy of it. That is how a
+ * two-module mutant is assembled: the collector copy's import of
+ * `src/lsp/navigation.ts` is redirected to the mutated navigation copy, so both
+ * guards in the chain are actually removed. Writing the second copy WITHOUT
+ * rewiring the first would leave the pristine module in the import graph and the
+ * mutant would report a survival that never happened — which is exactly how this
+ * mutant came to be unobservable in the first place.
+ */
+function rewriteRelativeImports(source: string, rewire: Record<string, string> = {}): string {
+  return source.replace(/from "(\.\.\/(?:brain|ast|intelligence)\/[\w\/-]+|\.\/[a-z0-9_-]+)"/g, (_m, spec: string) => {
+    const rel = spec.startsWith("../ast/")
+      ? `src/ast/${spec.slice(7)}.ts`
+      : spec.startsWith("../brain/")
+        ? `src/brain/${spec.slice(9)}.ts`
+        : spec.startsWith("../intelligence/")
+          ? `src/intelligence/${spec.slice(16)}.ts`
+          : `src/lsp/${spec.slice(2)}.ts`
+    const target = rewire[join(ROOT, rel)] ?? join(ROOT, rel)
+    return `from "file://${target.replace(/\\/g, "/")}"`
+  })
 }
 
 /**
@@ -744,8 +983,17 @@ async function runRichHoverMutants(): Promise<{ caught: number; total: number; a
   let caught = 0
   let anchorDrift = 0
   for (const mutant of RICH_HOVER_MUTANTS) {
-    if (!source.includes(mutant.from)) {
-      console.log(`  NOT-CAUGHT (anchor not found, so the mutant never ran): ${mutant.name}`)
+    // BOTH anchors are checked, not just the first. A mutant whose SECOND
+    // target's guard has drifted out of navigation.ts would otherwise plant
+    // half the defect, observe no change, and be reported as SURVIVED — the
+    // exact unobservable-mutant failure the anchor-drift gate exists to stop,
+    // arriving through the back door.
+    const secondFile = mutant.alsoTarget === undefined ? null : readFileSync(join(ROOT, "src", "lsp", mutant.alsoTarget.file), "utf8")
+    const secondMissing = secondFile !== null && !secondFile.includes(mutant.alsoTarget!.from)
+    if (!source.includes(mutant.from) || secondMissing) {
+      console.log(
+        `  NOT-CAUGHT (anchor not found${secondMissing ? " in " + mutant.alsoTarget!.file : ""}, so the mutant never ran): ${mutant.name}`,
+      )
       anchorDrift++
       continue
     }
@@ -776,16 +1024,22 @@ async function runRichHoverMutants(): Promise<{ caught: number; total: number; a
     // monotonic counter instead of a clock, and the whole directory is removed
     // in a `finally` plus on process exit and on the signals a CI kill sends.
     const mutantPath = join(mutantScratchDir(), `richhover.mutant.${Date.now()}.${mutantSeq++}.ts`)
-    const absImport = mutantSource.replace(/from "(\.\.\/(?:brain|ast|intelligence)\/[\w\/-]+|\.\/[a-z0-9_-]+)"/g, (_m, spec: string) => {
-      const rel = spec.startsWith("../ast/")
-        ? `src/ast/${spec.slice(7)}.ts`
-        : spec.startsWith("../brain/")
-          ? `src/brain/${spec.slice(9)}.ts`
-          : spec.startsWith("../intelligence/")
-            ? `src/intelligence/${spec.slice(16)}.ts`
-            : `src/lsp/${spec.slice(2)}.ts`
-      return `from "file://${join(ROOT, rel).replace(/\\/g, "/")}"`
-    })
+    // When the mutant also removes a guard from a SECOND src/lsp module, that
+    // module is written as its own mutant copy and the collector's import of it
+    // is pointed at the COPY. Without that rewire the collector would keep
+    // importing the pristine second module, the second guard would still be
+    // present, and the mutant would "survive" while never having planted the
+    // defect it names — which is precisely how this mutant came to be
+    // unobservable in the first place.
+    const secondPath =
+      mutant.alsoTarget === undefined
+        ? null
+        : join(mutantScratchDir(), `${mutant.alsoTarget.file.replace(/\.ts$/, "")}.mutant.${mutantSeq++}.ts`)
+    if (secondPath !== null) writeFileSync(secondPath, rewriteRelativeImports((secondFile as string).replace(mutant.alsoTarget!.from, mutant.alsoTarget!.to)))
+    const absImport = rewriteRelativeImports(
+      mutantSource,
+      secondPath === null ? {} : { [join(ROOT, "src", "lsp", mutant.alsoTarget!.file)]: secondPath },
+    )
     writeFileSync(mutantPath, absImport)
     let mod: any
     try {
@@ -1047,6 +1301,7 @@ async function main(): Promise<void> {
   await testLatency()
   await testResilience()
 
+  testAnchorDriftGate()
   const hoverMutants = await runHoverMutants()
   const mutantsCaught = hoverMutants.caught
   const hoverAnchorDrift = hoverMutants.anchorDrift
@@ -1101,6 +1356,9 @@ async function main(): Promise<void> {
       "evidence tiers describe relationship data quality, not symbol truth",
       "fixture-backed double for the DB layer; live brain.db path covered by upstream freshness verifiers and the V1 harness",
       "latency measured on this machine only; cross-platform budgets are M25 scope",
+      "the unresolvable-row defence is TWO layers deep, and this is measured, not assumed: rich_hover.ts's `locationOf` catches PositionError, and navigation.ts's `edgeLocationDetailed` also catches it and returns a declared absence. Removing EITHER guard alone changes nothing observable (all four combinations were run against the real collector over the real unresolvable row: both present = no throw; each alone removed = no throw; both removed = PositionError). The resilience mutant therefore plants BOTH edits, because the defect it names — 'one unresolvable stored row kills the hover' — exists only when both guards are gone. A single-site mutant here would report SURVIVED while measuring redundancy, not coverage",
+      "G8's stimulus is a fixture double, not a real index. The 11.5%-of-symbols measurement in the header was taken on a real index by the lane that introduced the guard; this gate re-establishes the stimulus on a fixture and cannot re-measure the rate. The control asserts the stimulus is genuinely refused by the position owner, so G8 is not vacuous, but the rate itself is not re-measured here",
+      "the anchor-drift gate covers anchors that are ABSENT, empty, no-op, or unresolvable, and RECORDS (without failing) anchors that occur more than once. It cannot see the failure this file's resilience mutant actually had — an anchor that still matches, planted into a guard that another lane had superseded upstream. That failure is only observable by an assertion, which is why it is recorded as a measured fact in the mutant's own comment rather than claimed as gated",
     ],
   }
 
