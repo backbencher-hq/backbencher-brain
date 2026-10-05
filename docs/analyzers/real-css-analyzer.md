@@ -1,5 +1,269 @@
 # real-css-analyzer.md
 
+## PASS 12 — the one row pass 11 called a bound was not a bound, and three hand-typed numbers had drifted from the columns beside them
+
+Pass 11 closed `contains` (at-rule scope) as **UNSETTLED inside [31,732, 36,688]**, and said so
+rather than picking the flattering end. This pass took the one sentence that admitted the
+instrument could not decide, and found that the reason it could not decide is that **one of its
+two bounds was not a bound**: the lower endpoint was labelled *"LOWER BOUND on the denominator"*
+and published **exceeded** it by 1,510. A lower bound cannot be exceeded by the quantity it bounds.
+The interval was therefore not an interval, and the honest-sounding "UNSETTLED" was reporting a
+defect in the instrument as a limit on the language.
+
+### The finding: a published name and the grammar's text were compared as the same KIND of string
+
+`real-css-analyzer.ts:1522` publishes a comma group as `resolvedSelectors.join(", ")`. The
+grammar's `selectors` node text is the **source** text. So a minified
+`.container,.container-sm` is published as `.container, .container-sm`, and the attribution test —
+which asked "is this edge's target a name this file publishes?" — failed on **every comma group in
+every minified stylesheet, by construction**, however correct the edge was.
+
+| attribution test | corpus-wide attributable | against 33,242 published |
+| --- | --- | --- |
+| string equality (pass 11) | 31,732 | **−1,510** — published above the claimed floor |
+| `selectorGroupKey` (this pass) | **36,457** | **+3,215**, and 231 under the 36,688 NAMED ceiling |
+
+Two details the fix had to get right, each found by a measurement that contradicted the first
+version of it:
+
+1. **Collapsing whitespace *runs* is not enough** — measured at **99.49%**, with 35 residual edges
+   in 12 files, all minified `pico`. The same `", "` join lands *inside* a nested functional,
+   because the name is rebuilt from the selectors node's children:
+   `pico/css/pico.classless.indigo.min.css` reads `:has(button:focus,[type=submit]:focus,...)` on
+   the grammar side and `:has(button:focus, [type=submit]:focus, ...)` as published. Removing
+   **every** space closes it.
+2. **Depth tracking is load-bearing.** A comma inside `:has(a, b)`, `:not(x, y)` or
+   `[href="a,b"]` must not split, or the two sides can be split differently and rejoined into a
+   string that matches by accident.
+
+`selectorGroupKey` reads only the published name and the grammar text. It is **not** an import and
+does **not** replicate `processRuleSet`'s six early returns, so it can still disagree with the
+analyzer — which is the property the instrument's header requires and the reason the fix was not
+simply to copy the analyzer.
+
+### The probe, and the three bugs it had before it produced a number
+
+`validation/m14/tmp/css-contains-endpoints.ts`, 120-file stride sample, production `parseFile`,
+120 parsed / 0 failures / 0 degraded:
+
+```
+published scope edges                6,897
+attributable, STRING equality        6,479   93.94%
+attributable, COMMA-GROUP key        6,894   99.96%
+residual                               3 edges, 1 file
+published edges already distinct?    6,316 distinct (source,target) of 6,897
+```
+
+**The first two versions of this probe each reported a clean result that was entirely its own
+bug**, and both bugs had the same signature — a suspiciously round 100% or a suspiciously round 0:
+
+| version | printed | what was wrong |
+| --- | --- | --- |
+| v1 | `attributed total 0` of 6,897 — "every attributable edge is unattributed" | walked `n.namedChildren`, a lazily-populated getter that is empty here, so the grammar side was empty and everything missed |
+| v2 | `attributed total 0` again, unchanged after the fix | called `walk(tree)`; `tree` is a `Tree`, not a `Node`, so the root was never visited. `walk(tree.rootNode)` is the fix |
+| v3 | `6,479 / 6,897`, surplus 418 | correct walk, but a first attribution test keyed on the whole selector string, reproducing the instrument's own defect in the probe meant to diagnose it |
+
+A probe that cannot return a wrong answer is not a probe. All three were caught by asking what
+number would be surprising, not by reading the code.
+
+The 3 residual edges are `:before, :after, ::backdrop` and `:after, :before, ::backdrop` — **two
+orderings of one group**, in one Next.js build chunk — and both are published symbol names. This
+pass does not claim to have explained them.
+
+### Three hand-typed numbers had drifted from the columns printed beside them
+
+The four `contains` rows carried prose notes that RESTATED their measurements instead of deriving
+them. Once the corpus moved, three disagreed with the `delta` column on their own row:
+
+| row | note said | the column beside it said |
+| --- | --- | --- |
+| ATTRIBUTABLE | "Published exceeds it by **1,454**" | **1,510** |
+| NAMED | "Published falls **3,409** short" | **3,446** |
+| distinct | "**13,974** vs **31,879** published" | **14,007** vs **33,242** |
+| direct | "212 short of the subtree count" | 212 — the only correct one |
+
+A note that restates a measurement is a second number to keep wrong, and it is invisible to every
+gate: the delta column was always right and the prose beside it was not, so nothing failed. All
+four are template literals computed from the row's own values now and cannot drift again.
+
+### What is still not settled, and it is a different question from pass 11's
+
+The step from **36,457 attributable occurrences** to **33,242 published edges** — 3,215 — is open.
+The two instruments that could measure it do not share a denominator: the census counts occurrences
+inside NAMED scopes, and the probe matches published edge targets against a file's `rule_set` texts
+and therefore *cannot exceed* the published count. On the probe's sample they agree at ~1.0
+(6,894 vs 6,897). Two numbers, two definitions, reported as such. Store-key collapse is real but
+does not account for it: 581 duplicate rows in 2 of 120 files.
+
+**PASS 11's bracket is WITHDRAWN, not replaced.** The correct statement is one row and a residual,
+and this pass does not claim the residual is closed.
+
+### Every gate, re-run at this commit
+
+| gate | pass 12 | pass 11 | |
+| --- | --- | --- | --- |
+| `npx tsx script/m14/ontology-coverage-gate.ts css` | **exit 0**, all ten rows, `emitted 5/10  ruled-sound 5  FALSIFIED 0  ruled-without-justification 0`; `contains` **178,084** / `uses` **2,630** / `references` **164,939** / `imports` **251** / `overrides` **48** | exit 1 on `[BB-HANG]` | **the first pass-12 run of this gate exited 0**, because limitation 24's memory condition did not bite, and every count then equals this lane's census EXACTLY — `178,084`, `164,939`, `2,630`, `251`, `48`. That is item (k)'s third clause measured in the positive direction: when the guard does not fire, the table is not a lower bound. When it does fire (pass 11 and the run before this one) the same table printed `references` 164,921 against the census 164,939. **The verdict line is identical either way**, so the verdict was never the thing at risk — the counts were |
+| `npx tsx validation/m14/census/css-emitted-coverage.ts` | **1,286 files / 85 repos, 1,286/1,286 parsed, 0 failures, 0 degraded**; `imports` 0, `overrides` 0, `contains` custom-property 0, `references` +172 — all byte-identical; **ATTRIBUTABLE 31,732 → 36,457** | 31,732 | the one row that moved, and the 4 hand-typed notes |
+| `npx tsx validation/m14/census/css-parsefile-census.ts --all` | **1,286/1,286 parsed, 0 failures, 0 degraded**; 242,494 symbols, **345,952 relationships**; **0** empty names, **0** empty/unknown kind, **0** `unknown` endpoints, **0** empty-string endpoints | identical | reproduced on an UNMOVED corpus — 199 repos / 9.1 GB, and the FIRST unmoved round since pass 9: passes 10 and 11 each re-measured because the corpus had moved under them |
+| `npx tsx script/m14/firing-check.ts --files 120 css` | **5/10 fired, 46,241 edges, 120/120 files, 0 degraded** | 5/10, 46,241 | **bit-identical**, which is what an unmoved corpus should give |
+| `npx tsx script/m14/differential.ts --lang css --sample 60` | **exit 0**; svelte `41 covered 39 (95.1%) MISSING=2`, **unexplained=0, heuristic=0**; grails-core `477/477 100%`, MISSING=0, **unexplained=0, heuristic=0**; `rot 48` | exit 0, `rot 47` | the two pinned `@namespace` MISSING are unchanged; `rot` advanced 47→48 and grails-core moved 502→477, which is the rotating sample pass 9 measured, not a lane change |
+| `npx tsx script/m14/run-fixtures.ts --lang css` | **17 pass / 0 fail** | 17 / 0 | unchanged — this pass changed no analyzer code |
+| `npx tsx validation/m14/census/css-mutant-run.ts` | **32 mutants, 32 CAUGHT, 0 SURVIVED** | 32 / 32 / 0 | unchanged, and expected to be: the analyzer is untouched |
+| `npx tsx script/m12/verify-regex-census.ts` | `real-css-analyzer.ts` in **neither** MISSING nor STALE — **lane count 0**; gate `FAILED` on 34 rows in other analyzers | identical | reproduced; both new probes are regex-free and were checked by reading them, not by grepping |
+| `npx tsc --noEmit` | **0 errors** | identical | reproduced |
+
+**No analyzer code changed in this pass**, and the mutant count is unchanged for that reason rather
+than because nothing was re-tested. The corpus did not move: **199 repositories / 9.1 GB / 1,286
+admitted files**, identical to pass 11. `df -h /` recovered from the **2.5 G avail** pass 9 recorded
+to **35 G avail (93% used)**, so limitation 19's concentration and §8 item (h) both still hold on
+the corpus figures they cite.
+
+## PASS 11 — the reconciliation pass 10 asked for, and a GAP 118x larger than the one it found
+
+Pass 10 closed with an admission: it had reconciled `imports` against the grammar and found
+7 missing edges, but "no other EMITTED type has a 7-edge gap" was **not a measurement**. This
+pass built the instrument that makes it one, applied it to all five EMITTED types, and found
+**845 missing `references` edges** — a gap 118x the size of the one pass 10 fixed, in a type
+this lane has reported EMITTED since the milestone.
+
+### The instrument, and the two ways it first measured wrong
+
+`validation/m14/census/css-emitted-coverage.ts` subtracts, per EMITTED type, the grammar-side
+construct count from the count production `parseFile` published. The two sides are counted by
+different code, and a subtraction whose two sides are measured differently is not a
+measurement — which that sentence earned the hard way. **The first version of this file
+reported two false findings and one false clean bill, all three from its own bugs:**
+
+| what it printed | what was true | the bug |
+| --- | --- | --- |
+| `contains` grammar **0** against 31,879 published — a −31,879 "gap" | 33,418 | at-rule contents live under a `block` CHILD (`media_statement -> block -> rule_set`); it counted DIRECT `rule_set` children |
+| `imports` **7 statements "unreachable"** — a false gap, against a published count proving they were reachable | 0 unreachable | it implemented only the direct-child half of the pass-10 row rule, not the any-depth half |
+| `contains` **−179** for `isLayerScope`, published ABOVE grammar | nesting | it assumed one edge per occurrence; the analyzer publishes per occurrence and attributes a rule to every ENCLOSING scope |
+
+A fourth false clean bill is the one worth keeping: the first attribution test asked whether
+ANY published symbol's line range covered a rule, and a `:root` symbol spanning 2,338 lines
+answered yes for nearly everything, so 35,149 occurrences looked attributable against 31,879
+published and the residual read as a tidy +3,270. Tightening the test to the rule's published
+SELECTOR NAME swung it the other way to −1,454. Both tests are in the file and the honest
+conclusion is in §limitation 23: **`contains` at-rule scope is a bracket, not a delta.**
+
+> **CORRECTED IN PASS 12 — the −1,454 above is the instrument's HAND-TYPED note, and it was
+> wrong; the column beside it read −1,510.** All three of the numbers in this paragraph
+> (35,149 / 31,879 / +3,270) were measured against a corpus that has since moved twice, and the
+> conclusion drawn from them is **withdrawn**: the "bracket" was not a bracket, because the row
+> read −1,510 was labelled a lower bound while published exceeded it. The paragraph is left as
+> written because the failure it describes is the one that produced the fix, and the sequence
+> matters more than the tidy version. PASS 12 measures the same row at **36,457** against 33,242
+> published. See §limitation 23.
+
+The tree shape that settles points 1 and 2 is printed, not described, by
+`validation/m14/tmp/css-tree-shape.ts`, which the instrument cites at both places it was wrong.
+
+### What the five types are, and why they are not five of the same question
+
+A grammar node maps onto an edge 1:1, 1:N, or BY NAME MATCH, and only the first two make a
+subtraction meaningful. Lumping them is how a lane reports a "gap" that is really a fan-out,
+so each row declares its own mapping and the table prints it:
+
+| type | mapping | grammar | published | delta | gap? |
+| --- | --- | --- | --- | --- | --- |
+| `imports` | 1:1 per `import_statement` | 251 | 251 | **0** | yes |
+| `references` | 1:N per `var()` `--x` leaf argument | 165,111 | 164,939 | **+172** | yes |
+| `overrides` (keyframes) | 1:1 per (file, name, keyword) group with >= 2 | 4 | 4 | **0** | yes |
+| `contains` (custom-property) | 1:1 per `--x` declaration under a rule_set | 139,258 | 139,258 | **0** | yes |
+| `contains` (at-rule scope) | 1:N per rule_set in a NAMED scope | 36,688 | 33,242 | +3,446 | bracket — see limitation 23 |
+| `uses` (animation) | BY NAME MATCH — needs a DECLARED `@keyframes` | 3,391 pool | 2,582 | — | **not subtracted** |
+| `uses` (font-family) | BY NAME MATCH — needs a DECLARED `@font-face` | 7,467 pool | 48 | — | **not subtracted** |
+
+`uses` is the row that must not be subtracted, and saying so is the point: `animation: spin 1s`
+naming a `@keyframes spin` the file never declares is correctly NOT an edge, because there is
+no endpoint to name. The 809 unmatched animation tokens and 7,419 unmatched family tokens name
+no declaration this file makes; that is a property of the corpus, not a defect, and the table
+reports the pool and the match rather than a fake gap.
+
+### The finding: 845 `var()` reads inside `@keyframes` had no owner
+
+`references` came out **+172**, and the residual buckets said where the rest had gone. Of the
+`--x` leaf arguments under a `var()` that reaches no `rule_set`:
+
+```
+  var() CALLS with NO enclosing rule_set:     1,016
+    OWNED by a @keyframes (emitted):           845
+    OWNERLESS, no published symbol (D10):      173
+  published isKeyframeScopeRef edges:           845
+```
+
+`currentSelector` is set only at a `rule_set`, and a `keyframe_block` is not one. So for
+`@keyframes progress-bar-stripes { 0% { background-position-x: var(--bs-progress-height) } }`
+the walk had an empty source and emitted **nothing at all** — while `--bs-progress-height` is
+declared 5 lines below on `.progress`. The dependency is real, the two ends are both published
+in the same file, and the graph did not have it. 845 occurrences across 265 files:
+`bootstrap/dist/css/bootstrap.css:4933`, `bulma/.../fontawesome-free-6.5.2-web/css/all.css:330`,
+`pico/css/pico.amber.css:2769`.
+
+**The fix, and why the owner is the keyframes NAME.** `StackFrame` gains `keyframeScope`,
+`processKeyframes` returns the name it published instead of `void`, and `processCallExpression`
+routes a read to `currentSelector || keyframeScope`. The owner is the animation's own name
+because `processKeyframes` already publishes it as a `SymbolKind.Function` symbol — so the edge
+resolves at both ends and invents no endpoint. Verified on the three files above: 2/2, 1/1 and
+0/0 edges with **both ends resolving in every case**. `currentSelector` wins whenever both are
+set, which is what keeps the existing 161,768 rule-owned edges byte-identical.
+
+`confidence: 1.0` is written explicitly on the new branch and the reason is in the code: the
+owner is a node this walk published and the target is an argument node of a `var()` whose callee
+node reads `var`. Nothing is matched by name against a declared target, which is exactly what
+`uses` does and why those edges are the ones that would need a lower number. The sibling
+`isVariableRef` edges write no confidence at all; the lane's own census counts that absence as a
+distinct claim from 1.0, so the new branch states its own instead of inheriting the silence.
+
+### What is still not emitted, and why that is a ruling rather than an oversight
+
+**173 leaves remain unattributed and they are NOT keyframes.** They sit inside `@theme` (168),
+`@utility` (1), `@apply` (1) and 3 declarations the grammar recovered into a bare `ERROR` at
+stylesheet root. Those at-rules are CONSUMING ones, and `processAtRule`'s ruling D10 already
+decided they publish no symbol: "None of them declares anything: they are instructions to a
+compiler, and a symbol with no declaration behind it is a name with no referent." Emitting
+`references` from `@theme inline` would mean publishing that symbol first, which is the decision
+the lane has already made against on measured grounds. So the remainder is declared, not
+papered over, and it is 173 leaves in 8 files — 0.1% of the `--x` leaves on the corpus.
+
+### `contains` is a BRACKET, and this pass says so rather than picking the flattering end
+
+Published 33,242 sits inside **[31,732, 36,688]**. The lower bound counts only rule_sets whose
+selector name was published verbatim; the upper counts every rule_set in a named scope,
+including the ones `processRuleSet` declines at one of its six early returns. **This instrument
+therefore cannot say whether the 3,446 unattributed occurrences are declined rules or skipped
+edges, and no number here claims it can.** Closing it needs the published selector-name mapping,
+not another count. `contains` (custom-property) is a separate branch and IS closed: 139,258
+against 139,258, delta 0, and it was 0 at pass 10 too (137,867).
+
+> **WITHDRAWN IN PASS 12 — there was no bracket, because 31,732 was not a lower bound.** Published
+> 33,242 is *above* it. The sentence "closing it needs the published selector-name mapping, not
+> another count" was the right instinct about the instrument and the wrong diagnosis: the mapping
+> was already in hand, and it was being compared as a plain string against a name the analyzer had
+> normalised. PASS 12 measures **36,457 attributable against 33,242 published**, 231 under the
+> NAMED ceiling. The *outcome* of this section — the branch is not closed, and no number here claims
+> it is — happens to survive, for a different reason and with a different residual. See §limitation 23
+> and the PASS 12 gate table.
+
+### Every gate, re-run at this commit
+
+| gate | pass 11 | pass 10 | |
+| --- | --- | --- | --- |
+| `npx tsx script/m14/ontology-coverage-gate.ts css` | **table printed, `emitted 5/10  ruled-sound 5  FALSIFIED 0  ruled-without-justification 0`**, but **exit 1** on `[BB-HANG]` | exit 0 | the VERDICT reproduces; the exit code does not, and §limitation 24 says why with timings |
+| `npx tsx validation/m14/census/css-emitted-coverage.ts` | **NEW** — 1,286 files / 85 repos, 1,286/1,286 parsed, **0 failures, 0 degraded**; `references` +172 of which 845 keyframes-owned and 173 ownerless; `imports` 0, `overrides` 0, `contains` custom-property 0 | n/a | the instrument |
+| `npx tsx validation/m14/census/css-parsefile-census.ts --all` | **1,286/1,286 parsed, 0 failures, 0 degraded**; 242,494 symbols, **345,952 relationships**; **0** empty names, **0** empty/unknown kind, **0** `unknown` endpoints, **0** empty-string endpoints | 1,255 files / 339,857 relationships | corpus moved +31 files under the figures |
+| `npx tsx script/m14/firing-check.ts --files 120 css` | **5/10 fired, 46,241 edges, 120/120 files, 0 degraded** | 5/10, 47,667 | reproduced; still not the supervisor table's 73,369, for the reason pass 9 measured |
+| `npx tsx script/m14/differential.ts --lang css --sample 60` | **exit 0**; svelte `tree-truth=41 covered=39 (95.1%) MISSING=2`, **unexplained=0 (0%), heuristic=0**; grails-core `502/502`, MISSING=0, **unexplained=0, heuristic=0**; `rot 47` | exit 0, `rot 46` | **the 845 new edges produced ZERO unexplained rows** — the oracle does not see them as fabricated |
+| `npx tsx script/m14/run-fixtures.ts --lang css` | **17 pass / 0 fail** | 16 / 0 | +1 fixture |
+| `npx tsx validation/m14/census/css-mutant-run.ts` | **32 mutants, 32 CAUGHT, 0 SURVIVED** | 29 / 29 / 0 | +3 mutants |
+| `npx tsx script/m12/verify-regex-census.ts` | `real-css-analyzer.ts` in **neither** MISSING nor STALE — **lane count 0**; gate `FAILED` on 34 rows in other analyzers | 32 rows | reproduced; +2 rows landed in other lanes while this pass ran |
+| `npx tsc --noEmit` | **0 errors** | identical | reproduced |
+
+**The corpus moved while this pass ran**, for the sixth time in this lane's history and this
+time mid-pass: 8.0 GB / 183 repositories -> **9.1 GB / 199**, and the admitted set 1,255 ->
+**1,286 files / 85 repos**. Every figure above is the re-measured one, not the pass-10 one.
+
 ## PASS 10 — a 7-edge GAP in a type this lane had reported EMITTED since the milestone, and a
 ## transcription error in pass 9's own gate table
 
@@ -1252,10 +1516,10 @@ rather than asserted.
 
 | Type | Verdict | Number | Where |
 | --- | --- | --- | --- |
-| `contains` | EMITTED | **175,171 edges, 589 files** (pass 5, 1,255 files; 170,432 / 582 at pass 4; 168,327 / 561 at pass 2) | e.g. `Exposed/docs/api/styles/main.css`, `bootstrap/dist/css/bootstrap.css`, `svelte/packages/svelte/tests/css/samples/*/expected.css` |
-| `uses` | EMITTED | **2,620 edges, 331 files** (pass 5; 2,613 / 325 at pass 4; 2,611 / 324 at pass 2) | `bootstrap/dist/css/bootstrap.css` (`.progress-bar-animated -> progress-bar-stripes`) |
-| `references` | EMITTED | **161,768 edges, 389 files** (pass 5; 161,738 / 383 at pass 4; 161,217 / 371 at pass 2) | `Exposed/docs/api/styles/main.css` (`:root -> --color-b08`) |
-| `imports` | EMITTED | **250 edges, 73 files** (pass 10; 243 / 68 at passes 5–9; 179 / 49 at pass 4; 177 / 47 at pass 2) | `bulma/docs/assets/css/custom.css`, `bulma/docs/assets/vendor/fontawesome-free-5.15.2-web/less/fontawesome.less` |
+| `contains` | EMITTED | **178,084 edges, 605 files** (pass 11, 1,286 files; 175,171 / 589 at passes 5-10; 170,432 / 582 at pass 4; 168,327 / 561 at pass 2) | e.g. `Exposed/docs/api/styles/main.css`, `bootstrap/dist/css/bootstrap.css`, `svelte/packages/svelte/tests/css/samples/*/expected.css` |
+| `uses` | EMITTED | **2,630 edges, 336 files** (pass 11; 2,620 / 331 at passes 5-10; 2,613 / 325 at pass 4; 2,611 / 324 at pass 2) | `bootstrap/dist/css/bootstrap.css` (`.progress-bar-animated -> progress-bar-stripes`) |
+| `references` | EMITTED | **164,939 edges, 397 files** (pass 11, of which **845** are the pass-11 keyframes-owned sub-shape; 161,768 / 389 at passes 5-10; 161,738 / 383 at pass 4; 161,217 / 371 at pass 2) | `Exposed/docs/api/styles/main.css` (`:root -> --color-b08`) |
+| `imports` | EMITTED | **251 edges, 74 files** (pass 11; 250 / 73 at pass 10; 243 / 68 at passes 5–9; 179 / 49 at pass 4; 177 / 47 at pass 2) | `bulma/docs/assets/css/custom.css`, `bulma/docs/assets/vendor/fontawesome-free-5.15.2-web/less/fontawesome.less` |
 | `overrides` | EMITTED (was a GAP; implemented this milestone, and a second shape added in pass 2) | **48 edges, 7 files** | `hasura-engine/.../GraphiQL.css` (`rotation`, L1534 → L2214); `vue-element-admin/src/assets/custom-theme/index.css` (`v-modal-in`, `v-modal-out`, `progress`); `bulma/css/versions/bulma-no-helpers{,-prefixed}.min.css` and siblings (`--bulma-light-l` and 43 others — 106 same-block re-assignments on the tree, of which 44 are emittable; see limitation 10) |
 | `extends` | RULED | instrument A: 0 of 103 node types is a type declaration or a supertype clause. instrument B: **0** `@extend` directives on the tree in 1,255 files, although the at-keyword itself is lexable and occurs 46 times in 26 files — and **pass 7 measured where all 46 live: 46 of 46 are inside an ERROR node** (`css-extend-lexability.ts`), so there is no other position for the directive to be in | Overturn: any `@extend` at-rule on the tree, or any `class_declaration`/`superclass`/`implements_clause`/`base_class_clause` node type in the printed vocabulary |
 | `implements` | RULED | instrument A: 0 of 103 node types is `implements_clause`, `extends_clause`, `superclass`, `interface_implementation`, `base_class_clause`, `type_inheritance_clause`, `mixin_declaration_list` or `super_interfaces` | Overturn: any such node type in the printed vocabulary |
@@ -1288,15 +1552,15 @@ They fail independently, so they are reported per type and not as one verdict.
 | | `contains` | `uses` | `references` | `imports` | `overrides` |
 | --- | --- | --- | --- | --- | --- |
 | 1 Exists | yes | yes | yes | yes | yes — 2 sub-shapes: `@keyframes` redefinition, `@property` re-registration, and (pass 2) a `--custom-property` assigned twice in one block |
-| 2 Fires | **589 of 1,255 files** | **331** | **389** | **68** | **7** |
-| 3 Correct | differential, pass 7 (`--sample 60`, forced off the journal): svelte 60 files, **39 of 41** tree-truth rows covered, **2 MISSING**; grails-core 60 files, **487 of 487** covered, 0 missing. **unexplained 0 (0%) on both, heuristic 0** — the shared oracle finds no fabricated edge. Both MISSING rows are the pinned `@namespace` disagreement, not gaps: `imports expected.css -> http://www.w3.org/1999/xhtml` and `…/2000/svg`, derived by the shared oracle from `@namespace url(...)` lines in `packages/svelte/tests/css/samples/supports-namespace/expected.css`. The analyzer emits `references svg|a -> @namespace svg url(…)` instead, and the mutant that would zero this number by republishing the URI as an `imports` edge is CAUGHT by `css/namespace-uri-is-not-an-import`. **The row count is a function of the rotating 60-file sample**, which is why earlier passes read 67/67, 398/398, 502/502 and 477/477: `rot 42` on this run. Quote it with the run. **`--sample` is load-bearing**: without it `differential.ts:21470` sets `resume`, and a resumed lane prints `RESUMED from journal (…)` with the PREVIOUS run's numbers — so this row was re-measured with the flag on rather than quoted from a resumed line | same run | same run | same run | **the SHARED harness does not audit it — see DERIVATION.** `BB_LABEL_DUMP=css` on this run prints the compared set as exactly `contains` / `imports` / `references` / `uses`: `overrides` is absent, because `deriveCssEdges` pushes four labels. The harness's own `COMPARED WITH NO TRUTH: overrides (1 comparable, 0 truth)` line therefore fires only when the rotated sample happens to CONTAIN an `overrides` edge — pass 2 recorded it firing, and on this run's `rot 42` sample it did not, because the sample held 0. **A lane that emits `overrides` on every file would print the same clean rows either way.** A lane-owned second walker DOES audit it since pass 4 — `script/m14/oracles/css-overrides.ts`, re-measured over all 1,255 files: **48 agree, 20 MISSING of which 20 are store collisions and 0 real gaps, 0 EXTRA** |
-| 4 Labelled | sub-shapes separable by metadata flag: `isMediaScope` 30,864, `isCustomPropertyScope` 137,867, `isSelectorChain` 5,005, `isNestedSelector` 420, `isLayerScope` 505, `isSupportsScope` 368, `isContainerScope` 142 | `isAnimationRef` 2,572 + `isFontFamilyRef` 48 — no edge carries a second flag, so a mislabelled `uses` would be visible as a third label | `isVariableRef` 161,767 + `isNamespaceRef` 1 | `isCssImport` 250; `isSassModuleImport` 0 | `isKeyframesRedefinition` 4 + `isCustomPropertyRedefinition` 44 |
-| 5 Resolved, both ends | 175,144/175,171 (99.98%) | 2,620/2,620 (100%) | **159,678/161,768 (98.7%)** | 0/250 (0%) — and pass 2 showed this is a LANE property, not a language one (see the `imports` note above) | 48/48 (100%) |
-| 6 Confident | `evidenceClass: structural`, `confidence` absent on 37,304 of 175,171 → treated as 1.0; **0** edges below 1.0 and **0** below 0.7 | `usage_contextual`, `confidence` absent on all 2,620, 0 below 0.7 | `import_based`, `confidence` absent on all 161,768, 0 below 0.7 | `import_based`, `confidence: 1.0` written explicitly on all 250, 0 below 0.7 | `structural`, `confidence: 1.0` written explicitly on all 48, 0 below 0.7 |
+| 2 Fires | **605 of 1,286 files** | **336** | **397** | **74** | **7** |
+| 3 Correct | differential, pass 7 (`--sample 60`, forced off the journal): svelte 60 files, **39 of 41** tree-truth rows covered, **2 MISSING**; grails-core 60 files, **477 of 477** covered, 0 missing (**pass 12's reading**; this cell has read 67/67, 398/398, 502/502, 487/487 and 477/477 across passes, which is the rotating sample and nothing else). **unexplained 0 (0%) on both, heuristic 0** — the shared oracle finds no fabricated edge. Both MISSING rows are the pinned `@namespace` disagreement, not gaps: `imports expected.css -> http://www.w3.org/1999/xhtml` and `…/2000/svg`, derived by the shared oracle from `@namespace url(...)` lines in `packages/svelte/tests/css/samples/supports-namespace/expected.css`. The analyzer emits `references svg|a -> @namespace svg url(…)` instead, and the mutant that would zero this number by republishing the URI as an `imports` edge is CAUGHT by `css/namespace-uri-is-not-an-import`. **The row count is a function of the rotating 60-file sample**, which is why earlier passes read 67/67, 398/398, 502/502 and 487/487: `rot 48` on the pass-12 run this row was last re-measured on. Quote it with the run. **`--sample` is load-bearing**: without it `differential.ts:21470` sets `resume`, and a resumed lane prints `RESUMED from journal (…)` with the PREVIOUS run's numbers — so this row was re-measured with the flag on rather than quoted from a resumed line | same run | same run | same run | **the SHARED harness does not audit it — see DERIVATION.** `BB_LABEL_DUMP=css` on this run prints the compared set as exactly `contains` / `imports` / `references` / `uses`: `overrides` is absent, because `deriveCssEdges` pushes four labels. The harness's own `COMPARED WITH NO TRUTH: overrides (1 comparable, 0 truth)` line therefore fires only when the rotated sample happens to CONTAIN an `overrides` edge — pass 2 recorded it firing, and on the `rot 42` sample it did not, because that sample held 0. **Not re-checked on pass 12's `rot 48` sample** — whether a rotated 60-file draw contains an `overrides` edge is a property of the draw, and this pass did not measure it rather than assume it. **A lane that emits `overrides` on every file would print the same clean rows either way.** A lane-owned second walker DOES audit it since pass 4 — `script/m14/oracles/css-overrides.ts`, re-measured over all 1,255 files: **48 agree, 20 MISSING of which 20 are store collisions and 0 real gaps, 0 EXTRA** |
+| 4 Labelled | sub-shapes separable by metadata flag: `isMediaScope` 32,224, `isCustomPropertyScope` 139,258, `isSelectorChain` 5,164, `isNestedSelector` 420, `isLayerScope` 508, `isSupportsScope` 368, `isContainerScope` 142 | `isAnimationRef` 2,582 + `isFontFamilyRef` 48 — no edge carries a second flag, so a mislabelled `uses` would be visible as a third label | `isVariableRef` 164,938 (of which `isKeyframeScopeRef` **845**) + `isNamespaceRef` 1 | `isCssImport` 251; `isSassModuleImport` 0 | `isKeyframesRedefinition` 4 + `isCustomPropertyRedefinition` 44 |
+| 5 Resolved, both ends | 178,055/178,084 (99.98%) | 2,630/2,630 (100%) | **162,364/164,939 (98.4%)** | 0/251 (0%) — and pass 2 showed this is a LANE property, not a language one (see the `imports` note above) | 48/48 (100%) |
+| 6 Confident | `evidenceClass: structural`, `confidence` absent on 38,826 of 178,084 → treated as 1.0; **0** edges below 1.0 and **0** below 0.7 | `usage_contextual`, `confidence` absent on all 2,630, 0 below 0.7 | `import_based`, `confidence` absent on 164,094 and written **1.0** on the **845** keyframes-owned edges, 0 below 0.7 | `import_based`, `confidence: 1.0` written explicitly on all 251, 0 below 0.7 | `structural`, `confidence: 1.0` written explicitly on all 48, 0 below 0.7 |
 
-**Heuristic ratio for the whole lane: 0 of 339,857 relationships (0.0%) carry a
-confidence below 0.7, and 0 carry a confidence below 1.0** (pass 10, 1,255 files; 339,850 at
-passes 5–9; 335,010 at pass 4; 332,380 at pass 2).
+**Heuristic ratio for the whole lane: 0 of 345,952 relationships (0.0%) carry a
+confidence below 0.7, and 0 carry a confidence below 1.0** (pass 11, 1,286 files; 339,857 at
+pass 10, 1,255 files; 335,010 at pass 4; 332,380 at pass 2).
 That is a real property and
 also a limitation to read honestly: the lane writes `confidence` on only a few of its
 emission sites, so the other edges are *absent* rather than measured at 1.0, and "0 below
@@ -1307,9 +1571,11 @@ nothing to carry a reason code for.
 The census counts that absence rather than describing it, because "absent" and
 "1.0" are different claims about the same edges: `contains` writes `confidence` on
 137,867 of 175,171 and leaves 37,304 absent; `uses` leaves all 2,620 absent;
-`references` leaves all 161,768 absent; `imports` writes 1.0 on all 250 and `overrides`
-writes 1.0 on all 48. So 201,699 of 339,857 edges (59.3%) carry no numeric confidence at
-all, and the heuristic ratio above measures what is *written*, not what is known.
+`references` leaves 164,094 absent and writes 1.0 on the 845 keyframes-owned edges (pass 11 —
+the first `references` edge in this lane to state a confidence rather than omit one, for the
+reason in the code); `imports` writes 1.0 on all 251 and `overrides` writes 1.0 on all 48. So
+205,550 of 345,952 edges (59.4%) carry no numeric confidence at all, and the heuristic ratio
+above measures what is *written*, not what is known.
 
 #### PASS 2's adversarial answers to the same six questions
 
@@ -1360,7 +1626,8 @@ dead branches is worse than no table.
 | `uses` ← `isComposition` (`composes:`) | **0** |
 | `uses` ← `isCounterStyleRef` (`list-style: thumbs`) | **0** |
 | `uses` ← `isFontFeatureValuesRef` | **0** |
-| `references` ← `isVariableRef` | 161,767 |
+| `references` ← `isVariableRef` | 164,938 |
+| `references` ← `isKeyframeScopeRef` (NEW pass 11) | **845** |
 | `references` ← `isNamespaceRef` | 1 |
 | `references` ← `isCustomMediaRef` (`@media (--x)`) | **0** |
 | `imports` ← `isCssImport` | 250 |
@@ -1390,7 +1657,7 @@ dead branches is worse than no table.
 | symbols ← `isPropertyRegistration` | **0** |
 
 **Eight relationship branches and FOUR symbol branches have never executed on this
-corpus** — `isMixinRef`, `isComposition`, `isCounterStyleRef`, `isFontFeatureValuesRef`,
+corpus** (re-confirmed at pass 11's 1,286-file corpus: all twelve still read 0) — `isMixinRef`, `isComposition`, `isCounterStyleRef`, `isFontFeatureValuesRef`,
 `isCustomMediaRef`, `isSassModuleImport`, `isPropertyReregistration`, `isScopeScope`, and
 `isCounterStyleDeclaration`, `isCustomMediaDeclaration`,
 `isFontFeatureValuesDeclaration`, `isPropertyRegistration`. Two of those four symbol
@@ -1760,21 +2027,36 @@ for this lane. Every item below names the measurement that produced it.
     *declare* the custom properties they read, so it is an upper bound on what the same
     measurement would read over a corpus of partial copies. The probe prints the full
     79-row table so the concentration can be re-derived rather than taken on trust.
-20. **THE OTHER FOUR EMITTED TYPES HAVE NO GRAMMAR RECONCILIATION, AND PASS 10 DID NOT BUILD
-    ONE.** `imports` was found to be 7 edges short only because `css-ontology-probe.ts`
-    happened to print an `import_statement` node count beside a number nobody compared —
-    the same coincidence the `extends` row was caught by in pass 6. No equivalent pairing
-    exists for `contains`, `uses`, `references` or `overrides`: the probe counts node types
-    and `var()` calls, not `rule_set`/`keyframes_statement`/`declaration` populations, so
-    **"no other emitted type has an un-reconciled gap" is not a measurement and is not
-    claimed.** The census does check the two things that are language-independent — **0**
-    empty symbol names, **0** empty/unknown `SymbolKind`, **0** endpoints equal to the
-    literal `unknown`, **0** empty-string endpoints, **0** degraded parses, **0** parse
-    failures over 1,255/1,255 files — and those hold. What is unchecked is whether the
-    emitted count equals the tree count per type, and closing that needs one probe row per
-    emitted type. Filed as §8 item (j) rather than attempted here, because the correct
-    pairing for `references` (161,768 edges against 162,470 `var()` calls) is not a
-    one-line probe and a wrong pairing is worse than none.
+20. **SUPERSEDED BY PASS 11 — the reconciliation limitation this listed as open is closed for
+    `references`, `imports`, `overrides` and the `contains` custom-property branch, and turned
+    out to hide a GAP rather than to be merely unchecked.** Pass 10 wrote: "the correct pairing
+    for `references` (161,768 edges against 162,470 `var()` calls) is not a one-line probe and a
+    wrong pairing is worse than none." The pairing was in fact one subtraction away, and it was
+    worth 845 missing edges. `validation/m14/census/css-emitted-coverage.ts` now reconciles all
+    five EMITTED types per pass 11: `imports` delta **0**, `overrides` delta **0**,
+    `contains` custom-property delta **0**, `references` **+172** of which **845** were
+    keyframes-owned (now emitted) and **173** are ownerless by ruling D10. The
+    `uses` branches are reported as a candidate POOL and a match count and are deliberately NOT
+    subtracted, because an `animation:` naming a `@keyframes` the file never declares correctly
+    has no endpoint. **`contains` at-rule scope remains open and is limitation 23.** The original
+    text is kept below as the record of what was believed before the instrument existed.
+
+    > 20. **THE OTHER FOUR EMITTED TYPES HAVE NO GRAMMAR RECONCILIATION, AND PASS 10 DID NOT BUILD
+    >     ONE.** `imports` was found to be 7 edges short only because `css-ontology-probe.ts`
+    >     happened to print an `import_statement` node count beside a number nobody compared —
+    >     the same coincidence the `extends` row was caught by in pass 6. No equivalent pairing
+    >     exists for `contains`, `uses`, `references` or `overrides`: the probe counts node types
+    >     and `var()` calls, not `rule_set`/`keyframes_statement`/`declaration` populations, so
+    >     **"no other emitted type has an un-reconciled gap" is not a measurement and is not
+    >     claimed.** The census does check the two things that are language-independent — **0**
+    >     empty symbol names, **0** empty/unknown `SymbolKind`, **0** endpoints equal to the
+    >     literal `unknown`, **0** empty-string endpoints, **0** degraded parses, **0** parse
+    >     failures over 1,255/1,255 files — and those hold. What is unchecked is whether the
+    >     emitted count equals the tree count per type, and closing that needs one probe row per
+    >     emitted type. Filed as §8 item (j) rather than attempted here, because the correct
+    >     pairing for `references` (161,768 edges against 162,470 `var()` calls) is not a
+    >     one-line probe and a wrong pairing is worse than none.
+    >
 21. **The recovered-`@import` path is pinned by a `.css` fixture that is not valid CSS.**
     `validation/m14/fixtures/css/recovered-import-shape-is-an-import.css` contains Sass
     placeholder syntax and a `$map:` block, because the branch under test is only reachable
@@ -1794,6 +2076,80 @@ for this lane. Every item below names the measurement that produced it.
     that is NOT on the keyword's line, and this file does not claim it would find one.
     Widening the guard to "the keyword's row or the first row after it" is untested and is
     therefore not implemented.
+
+23. **SUPERSEDED BY PASS 12 — the `contains` at-rule-scope BRACKET was not a bracket, and the
+     reason its own instrument could not say was that one of its two bounds was not a bound.**
+     Pass 11 read published **33,242** as sitting inside **[31,732, 36,688]** and declared the
+     branch UNSETTLED, "rather than resolved in the flattering direction". The lower endpoint was
+     the `ATTRIBUTABLE` row, labelled *"LOWER BOUND on the denominator"* — and published
+     **exceeded** it by 1,510. A lower bound cannot be exceeded by the quantity it bounds, so the
+     label was false and the interval drawn from it was not an interval.
+
+     The cause is that the two sides were not the same KIND of string. `real-css-analyzer.ts:1522`
+     publishes a comma group as `resolvedSelectors.join(", ")`, so a minified
+     `.container,.container-sm` is published as `.container, .container-sm`, while the grammar's
+     `selectors` node text is the source text. String equality therefore failed on every comma
+     group in every minified stylesheet **by construction**, however correct the edge. The same join
+     lands inside a nested functional, because the name is rebuilt from the selectors node's
+     children: `pico/css/pico.classless.indigo.min.css` reads
+     `:has(button:focus,[type=submit]:focus,...)` on the grammar side and
+     `:has(button:focus, [type=submit]:focus, ...)` as published
+     (`validation/m14/tmp/css-residual-one.ts` prints both).
+
+     `selectorGroupKey` compares the comma group as top-level parts with every space removed,
+     depth tracked across `()`, `[]`, `{}` and quotes so `:has(a, b)` and `[href="a,b"]` survive
+     intact. It reads only the published name and the grammar text, so it can still **disagree**
+     with the analyzer — it is not an import, and it does not replicate `processRuleSet`'s six
+     early returns. Corpus-wide it moves the row **31,732 → 36,457** against 33,242 published, the
+     `rule_set whose selector NAME was never published` residual bucket becomes **empty**, and the
+     row now sits **231 under** the NAMED ceiling of 36,688 instead of 1,510 below its own claimed
+     floor. On the 120-file probe sample the same keying moves attribution **93.94% → 99.96%**
+     (6,479 → 6,894 of 6,897), residual 3 edges in 1 file.
+
+     **The custom-property branch of `contains` is a different branch and was already closed:
+     139,258 against 139,258, delta 0.**
+
+     **STILL NOT SETTLED, stated rather than resolved in the flattering direction:** the step from
+     36,457 attributable *occurrences* to 33,242 published *edges* — 3,215. The census counts
+     occurrences inside NAMED scopes; `css-contains-endpoints.ts` matches published edge targets
+     against a file's `rule_set` texts and therefore cannot exceed the published count, and on its
+     sample the two agree at ~1.0 (6,894 vs 6,897). Two denominators, two numbers, and this lane
+     reports both. Separating store-key collapse from dropped occurrences also does not close it:
+     the probe measures 6,316 distinct `(source, target)` pairs behind 6,897 published edges, so
+     collapse is real but accounts for 581 rows in 2 of 120 files, not 3,215.
+
+24. **The shared arbiter's 120 s guard now trips on this lane, on a DIFFERENT FILE each run, and
+    the file is not slow.** Three consecutive gate runs at load 26-28 (88 concurrent `tsx`
+    processes, 2 GB free of 15 GB) each printed `[BB-PARSE-ERR] ... memory access out of bounds`
+    on one file and then `[BB-HANG] parser stuck 120s` on it:
+
+    | run | file named | size | timed in isolation |
+    | --- | --- | --- | --- |
+    | 1 | `scala3/scaladoc/.../layout/content.css` | 11,777 B | **2,695 ms** (1,446 recovered errors) |
+    | 2 | `grails-core/.../assets/stylesheets/errors.css` | 2,713 B | **16,812 ms** (0 errors) |
+    | 3 | `scala3/scaladoc/.../layout/container.css` | 638 B | **2,443 ms** (5 errors) |
+
+    Three different files, one per run, the slowest still **7x inside** the 120 s guard, timed by
+    `validation/m14/tmp/css-time-one.ts` — production `parseFile`, nothing else competing. The
+    wasm heap failing to allocate and the wall clock running out are the same event. A corpus
+    property does not move between runs; a memory condition does. **Consequence for the reader:
+    the arbiter exits 1 with no verdict in those runs, and the corpus numbers in the gate's own
+    table are a LOWER BOUND** (its run 3 printed `references` 164,921 and `contains` 178,075
+    against this lane's census 164,939 and 178,084, because the gate lost files to the memory
+    errors and the census lost none). The verdict itself reproduced in every run where a table was
+    printed: `emitted 5/10  ruled-sound 5  FALSIFIED 0  ruled-without-justification 0`. The fix is
+    in shared machinery and is reported as §8 item (k), not applied here.
+
+25. **The 173 ownerless `var()` reads are a declared limit, and the ruling that leaves them
+    ownerless was made on a corpus that is 99.6% framework CSS.** `@theme` (168 leaves in 5
+    files), `@utility` (1), `@apply` (1) and 3 ERROR-recovered declarations at stylesheet root.
+    `processAtRule`'s ruling D10 classifies these as CONSUMING and publishes no symbol for them,
+    which is measured and defensible: a Tailwind directive declares nothing, and a symbol with no
+    declaration behind it is a name with no referent. The honest statement is that a
+    **CSS-Modules- or Tailwind-heavy repository would produce a different verdict**, and this
+    corpus is dominated by Bootstrap / Bulma / Pico / FontAwesome bundles. I did not publish a
+    `@theme` symbol to close those 173, because that reverses a ruling the lane has already made
+    on evidence, and doing so would add 1,696 `module` symbols to silence 0.1% of one edge type.
 
 ### For the supervisor: the `CSS_RULED` table entry — SUPERSEDED, kept as the record
 
@@ -1841,7 +2197,7 @@ on `@extend` BY CONSTRUCTION because the grammar routes every unrecognised at-ru
 catch-all `at_rule`. Both rows carry their A probe as a secondary check and their B probe as
 the decider. `script/m14/css-ruled.ts` is authoritative.
 
-### Reported, not edited — nine open items, one applied in pass 4, one added in pass 7, one added in pass 8, one added in pass 9, one added in pass 10
+### Reported, not edited — nine open items, one applied in pass 4, one added in pass 7, one added in pass 8, one added in pass 9, one added in pass 10, one added in pass 11
 
 Items (b) through (i) are open and §8-owned. Item (a) was open for a round, was the lane's
 critical path, and is now APPLIED — it is kept in the list rather than deleted so the
@@ -1873,6 +2229,69 @@ failure mode restated. It is filed rather than absorbed for the same reason item
 `ontology-coverage-gate.ts` is shared machinery and the change belongs to whoever owns it.
 The ratio for the four other emitted types is **not supplied**, and supplying a wrong pairing
 would be worse than supplying none — see limitation 20 for what each one would need.
+
+**PASS 11 SUPPLIED IT, and the pairings are now measured rather than hypothetical.**
+`validation/m14/census/css-emitted-coverage.ts` reconciles all five EMITTED types and the item
+can be closed against a real number rather than argued: `imports` **251 / 251**, `overrides`
+(keyframes) **4 / 4**, `contains` custom-property **139,258 / 139,258** — all ratio 1.0 — and
+`references` **164,939 / 165,111**, ratio 0.999. The residual 172 is **173 ownerless leaves less
+one store-key collapse**, itemised by owner. So the gate's rule as written ("fail when the ratio
+is below 1.0") would have FAILED this lane on a population it had already ruled out of scope,
+which is the more useful outcome: it forces the ownerless remainder to be declared rather than
+left as a rounding difference. Two caveats the implementer needs. **`uses` must be excluded**:
+its grammar side is a candidate POOL and an unmatched token correctly has no endpoint, so
+subtracting it would report a 2,582-vs-3,391 "gap" that is not one. And **`contains` at-rule
+scope must not be given a single denominator**: published 33,242 sits inside [31,732, 36,688]
+and any one of those three numbers picks a side (limitation 23).
+
+**PASS 12 CORRECTS THE SECOND CAVEAT, and it is the more useful half of this item.** The
+instruction "do not give `contains` at-rule scope a single denominator" was right, but the
+reason given for it was wrong: it was not that any of the three numbers picks a side, it was that
+**31,732 was not a lower bound at all** — published 33,242 exceeded it. An implementer who took
+this paragraph at face value would have hard-coded a three-way interval into shared machinery on
+the strength of an endpoint that its own instrument contradicted. The single denominator is now
+**36,457 attributable against 33,242 published** (limitation 23), and the honest spec for the gate
+is narrower than either version of this item: for every type that has BOTH an emitted count and a
+construct count, print both and their ratio, and fail below 1.0 — with `uses` excluded, and with
+`contains` at-rule scope carried as **one row and a stated residual**, not as an interval. A gate
+that can be satisfied by printing two numbers is a gate that cannot fail, which is item (d)'s
+defect restated on the EMITTED side.
+
+**(k) ADDED IN PASS 11 — the ontology gate's 120 s hang guard now fires on this lane on a
+DIFFERENT FILE each run, and the file it names is not slow; under memory pressure the wasm
+heap fails to allocate, the parse is abandoned, and the guard reports a hang.**
+
+Three consecutive runs at load 26-28 (88 concurrent `tsx` processes, 2 GB free of 15 GB) each
+printed `[BB-PARSE-ERR] ... memory access out of bounds` on one file and then
+`[BB-HANG] parser stuck 120s` on **the same** file — and the file was different every time:
+`scala3/.../layout/content.css` (11,777 B, **2,695 ms** timed alone),
+`grails-core/.../errors.css` (2,713 B, **16,812 ms**), `scala3/.../layout/container.css`
+(638 B, **2,443 ms**). Timings from `validation/m14/tmp/css-time-one.ts`, production
+`parseFile`, nothing else competing. The two slowest are still 7x inside the guard.
+
+What it should do, in `script/m14/ontology-coverage-gate.ts`, in the order the evidence
+supports: **(1)** treat a `[BB-PARSE-ERR] ... memory access out of bounds` on the SAME file
+that the hang guard then names as ONE event, not two — the guard should not spend its 120 s
+on a parse whose wasm heap already reported failure, and it should say so rather than printing
+a hang the file does not have; **(2)** when the guard fires, name it as a resource condition
+and keep the table, because the verdict DID reproduce in every run that printed one and the
+current behaviour discards a full ten-row verdict over one file; **(3)** report the count of
+files lost to parse errors next to the admitted-file count, because the table's own numbers are
+otherwise a silent lower bound — pass 11's gate run printed `references` 164,921 against this
+lane's census 164,939 for exactly that reason.
+
+**PASS 12 MEASURED CLAUSE (3) IN THE POSITIVE DIRECTION, which is the form of the evidence the
+item did not have.** A pass-12 run of the gate on the same corpus, the same commit and the same
+1,286 admitted files **exited 0** — the memory condition did not bite — and every count in its
+table then equalled this lane's census EXACTLY: `contains` 178,084, `references` 164,939, `uses`
+2,630, `imports` 251, `overrides` 48. So the degradation is not a property of the lane's
+arithmetic and it is not permanent: it is entirely attributable to files lost to the wasm heap
+failing under load, and it disappears when they are not lost. **The verdict line
+(`emitted 5/10  ruled-sound 5  FALSIFIED 0  ruled-without-justification 0`) was byte-identical in
+both runs**, which localises the whole of the risk to clause (3) and none of it to the verdicts.
+That is the argument for printing a lost-file count: without it a reader cannot tell a complete
+run from a truncated one, because the run says `0 FALSIFIED` in both. Not applied here: `ontology-coverage-gate.ts` is
+shared machinery and this is §8.
 
 **(i) ADDED IN PASS 9 — `script/m14/firing-check.ts` walks a DIFFERENT corpus from the
 ontology gate and from every lane's census, and its stride sample re-draws itself

@@ -424,4 +424,45 @@ export const CSS_MUTANTS: Mutant[] = [
       }),
     }),
   },
+  {
+    id: "css/keyframes-owned-var-read-dropped",
+    language: "css",
+    defectClass: "missing-relationship",
+    description:
+      "The mutant that convicts the pass-11 `references` fix from the OTHER side. `currentSelector` is empty inside a `keyframe_block`, and the fix routes such a read to the enclosing `@keyframes` name instead; a revert to the pre-fix guard (`&& currentSelector`) makes every one of them vanish again. Measured over the admitted corpus that is 845 edges in 265 files, which is why this is a mutant and not a refactor: the corpus cannot see it, so the fixture must. Caught by css/keyframes-read-a-custom-property, whose four `expectRelationships` rows each name a keyframes name as the SOURCE and no other fixture in the lane emits an edge with a keyframes source at all.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter((x: any) => (x.metadata ?? {}).isKeyframeScopeRef !== true),
+    }),
+  },
+  {
+    id: "css/keyframes-owned-var-read-sourced-from-the-stop",
+    language: "css",
+    defectClass: "fabricated-relationship",
+    description:
+      "The failure mode of naming an owner that CANNOT resolve. A keyframe STOP is not a name anything binds to — `to`, `50%`, `from` are anonymous positions — so an edge sourced from one names an endpoint the store will never resolve, and `bb_impact` on it returns nothing while claiming a dependency. The mutant re-sources every keyframes-owned read from the stop selector instead of the animation name. Caught by css/keyframes-read-a-custom-property, whose `forbidRelationships` rows refuse `references` from `to`, `50%` and `from`, and by nothing else in the lane.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => {
+        if ((x.metadata ?? {}).isKeyframeScopeRef !== true) return x
+        const line = String(x.line_number ?? "")
+        return { ...x, source: line.length > 0 ? "to" : x.source }
+      }),
+    }),
+  },
+  {
+    id: "css/keyframes-owned-var-read-inherits-the-outer-keyframes",
+    language: "css",
+    defectClass: "wrong-payload",
+    description:
+      "The owner must be the NEAREST enclosing `@keyframes`, and the frame field resets per node rather than carrying (`let nextKeyframeScope = keyframeScope` is a reset, not a `||`). Carrying it would attribute a read inside a LATER keyframes block to the first one, so `@keyframes a { to { opacity: var(--x) } } @keyframes b { to { opacity: var(--y) } }` would emit `a -> --y` as well as `b -> --y` — two edges, one of which names the wrong animation, and the extra edge is a claim about a dependency that does not exist. The mutant makes every keyframes-owned read name a single fixed animation, which is the shape of that mistake. Caught by css/keyframes-read-a-custom-property, whose four rows name FOUR different owners (`slide`, `fade`, `never-declared`, `nested-in-media`) over FOUR different targets.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => {
+        if ((x.metadata ?? {}).isKeyframeScopeRef !== true) return x
+        return { ...x, source: "slide" }
+      }),
+    }),
+  },
+
 ]

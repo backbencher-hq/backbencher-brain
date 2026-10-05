@@ -142,6 +142,66 @@
     "rule": "Anchors from the heading's display text: lowercase, keep letters/digits/hyphens, spaces and tabs to hyphens, drop the rest; a repeated anchor takes a `-1`, `-2` ordinal. A fragment is percent-decoded (invalid escapes fall back to raw text rather than throwing, so a typo cannot fail a parse) and lowercased before matching. Resolution is DEFERRED to the end of the block walk, because a link may precede its heading. A fragment matching no heading is NOT published — the internal twin of MD-D1 — and the count is disclosed in `metadata.patterns` as `Markdown undefined internal anchors: N` so the measurement survives where the edge does not. Each resolved edge carries the HEADING's line (M59 #825: the line that carries the name the edge is about, and the only choice under which the store's `fileId:name:line` key resolves) with the link's own line kept as `metadata.linkLine`.",
     "limitation": "Non-ASCII LETTERS in a heading diverge from the renderer: GitHub's slugger keeps Unicode letters (`Café` -> `#café`), this lane's slug is ASCII-only, so it would produce `#caf`. The ASCII-only rule is deliberate and MEASURED, not an oversight. The corpus has 24 headings containing non-ASCII characters and all 24 are Unicode PUNCTUATION (the right single quote in `What’s new in the 0.13.0-RC1 technology preview?`), which the renderer also drops, so ASCII-only matches on every one of them; and 0 corpus links target a non-ASCII anchor. Telling a Unicode letter from Unicode punctuation without a pattern IS the whole problem, and this lane's zero-regex property is measured and pinned, so the boundary is declared rather than quietly approximated. Documents affected: 0 as measured, unknown in general — which is the honest form of that sentence.",
     "pinned_by": "validation/m14/fixtures/markdown/internal-anchor-links (six behaviours, incl. forbidRelationships naming the RAW FRAGMENT) + markdown/internal-anchor-unresolved mutant. The oracle implements the same specification INDEPENDENTLY from the tree (script/m14/markdown-oracle.ts mdAnchorSlug/mdDecodeFragment): the specification is external and checkable, so two implementations agreeing is evidence, whereas the shared helper that would have guaranteed agreement is the mistake this lane has now paid for twice."
+   },
+   {
+    "id": "MD-D7",
+    "status": "RULED",
+    "node_type": "ontology:extends",
+    "instrument": "A:grammar-inventory",
+    "question": "Should the markdown analyzer emit a `extends` relationship? RULED: no.",
+    "ruling": "RULED",
+    "resolution": "RULED: markdown emits no `extends` edge, and the construct one needs does not exist. A document declares SECTIONS and a section is CONTAINED in a section, which this lane emits as `contains` (7,603 edges over 322 corpus files, both ends resolving 100.0%); it never inherits from one. Measured: 0 of the 104 node types BOTH pinned grammars produce across a 1,200-file draw is a type declaration or a supertype clause. OVERTURN: the grammar instantiating a type-declaration or superclass node, which `validation/m14/grammar-pins.json` is drift-gated against.",
+    "measured": "See script/m14/markdown-ruled.ts (MARKDOWN_RULED) for the instrument's node-type denominator and the overturn condition, and validation/m60/markdown/*.json for the counts."
+   },
+   {
+    "id": "MD-D8",
+    "status": "RULED",
+    "node_type": "ontology:implements",
+    "instrument": "A:grammar-inventory",
+    "question": "Should the markdown analyzer emit a `implements` relationship? RULED: no.",
+    "ruling": "RULED",
+    "resolution": "RULED: markdown emits no `implements` edge. There are no types, so there is nothing to conform to and no endpoint an edge could name. Measured: 0 of the 104 node types either pinned grammar produces is a supertype, conformance or constraint clause. The one corpus construct that binds one document to another BY CONTRACT is a Jekyll `{% include %}`, and that is a binding by FILE, which this lane emits under MD-G3 as a file dependency rather than as a type relationship. OVERTURN: a clause binding a document to a named type, or any grammar node expressing conformance.",
+    "measured": "See script/m14/markdown-ruled.ts (MARKDOWN_RULED) for the instrument's node-type denominator and the overturn condition, and validation/m60/markdown/*.json for the counts."
+   },
+   {
+    "id": "MD-D9",
+    "status": "RULED",
+    "node_type": "ontology:exports",
+    "instrument": "A:grammar-inventory",
+    "question": "Should the markdown analyzer emit a `exports` relationship? RULED: no.",
+    "ruling": "RULED",
+    "resolution": "RULED, and this is the type where a grammar alone is NOT enough — json's lane recorded that a grammar cannot see a CONVENTION, and json's own `exports` ruling was overturned by measuring one. So the convention was measured here too, on the document's own reserved positions: front matter and the first H1, 193 occurrences in 193 files on the draw. Every one of the 193 names THE DOCUMENT ITSELF, so the edge would be a self-edge, which is the M60 R7 class. The Jekyll keys that do carry cross-file meaning (`title:`, `permalink:`, `redirect_from:`) live inside `minus_metadata`, which has ZERO named children across 319 nodes in 319 files, so the grammar exposes no key to read. 0 of the 104 node types is an export or manifest node. OVERTURN: a document publishing a name that a DIFFERENT corpus document binds to — measurable by parsing both and looking for the pair, not by reading a spec.",
+    "measured": "See script/m14/markdown-ruled.ts (MARKDOWN_RULED) for the instrument's node-type denominator and the overturn condition, and validation/m60/markdown/*.json for the counts."
+   },
+   {
+    "id": "MD-D10",
+    "status": "RULED",
+    "node_type": "ontology:overrides",
+    "instrument": "A:grammar-inventory",
+    "question": "Should the markdown analyzer emit a `overrides` relationship? RULED: no.",
+    "ruling": "RULED",
+    "resolution": "RULED: markdown emits no `overrides` edge, and the naive probe for it is wrong on this language in a way worth recording. The bash probe — a second declaration of a name already declared in the file — returns 570 same-parent, same-level, same-text heading redeclarations in 23 of 1,200 files, and 2,453 repeated heading texts at any scope in 50. Those are two SECTIONS sharing a title, not one replacing the other: CommonMark renders both, and the renderer's rule gives each a distinct anchor. Measured: 224 anchors in 61 files are held by more than one heading and 0 of them displace, because the ordinal (`slug`, `slug-1`) exists; `markdown/internal-anchor-links` pins that on `Duplicate` and `Duplicate#2`. So the deciding count is 570 redeclarations and 0 displacements. OVERTURN: a heading becoming unreachable after a later one claims its address, which `markdown/internal-anchor-links` would fail on.",
+    "measured": "See script/m14/markdown-ruled.ts (MARKDOWN_RULED) for the instrument's node-type denominator and the overturn condition, and validation/m60/markdown/*.json for the counts."
+   },
+   {
+    "id": "MD-D11",
+    "status": "RULED",
+    "node_type": "ontology:instantiates",
+    "instrument": "A:grammar-inventory",
+    "question": "Should the markdown analyzer emit a `instantiates` relationship? RULED: no.",
+    "ruling": "RULED",
+    "resolution": "RULED: markdown emits no `instantiates` edge. Measured two ways, because a grammar alone leaves the component case open. 0 of the 104 node types either pinned grammar produces is a construction node. And the component reading is 0 as well: `html_block` holds 1,802 nodes in the draw, 10 contain a `<script>` tag and none carries a `src`, and 0 `html_tag` in the corpus has a capitalised name, so nothing is used as a component. OVERTURN: a capitalised tag inside an `html_block`, or a grammar node expressing a construction.",
+    "measured": "See script/m14/markdown-ruled.ts (MARKDOWN_RULED) for the instrument's node-type denominator and the overturn condition, and validation/m60/markdown/*.json for the counts."
+   },
+   {
+    "id": "MD-D12",
+    "status": "RULED",
+    "node_type": "ontology:calls",
+    "instrument": "A:grammar-inventory",
+    "question": "Should the markdown analyzer emit a `calls` relationship? RULED: no.",
+    "ruling": "RULED",
+    "resolution": "RULED, with the measured alternative stated because markdown demonstrably CARRIES other languages' programs. 0 of the 104 node types either pinned grammar produces is a call or invocation node. 6,243 fenced code blocks in the 1,200-file draw declare another language in their info string; a call inside one is a fact about that language and an edge emitted from it would name endpoints no markdown file declares, so `bb_impact` would offer to rewrite a caller that does not exist. The delegation route is measured too and is empty: 1,802 `html_block` nodes, 10 carrying a `<script>`, none with a `src`. OVERTURN: a call edge derivable from markdown's own nodes.",
+    "measured": "See script/m14/markdown-ruled.ts (MARKDOWN_RULED) for the instrument's node-type denominator and the overturn condition, and validation/m60/markdown/*.json for the counts."
    }
   ]
  },
