@@ -3382,9 +3382,31 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
    * a plausible operator, which keeps this from matching an ordinary identifier.
    */
   private isLocallyDeclaredOperatorClass(ctx: CleanContext, name: string): boolean {
-    if (name.length === 0 || /^[A-Za-z_][A-Za-z0-9_']*$/.test(name)) return false
+    if (this.isPlainIdentifierName(name)) return false
     const parenthesised = `(${name})`
     return ctx.declaredTypeNames.has(parenthesised) || ctx.declaredClassNames.has(parenthesised)
+  }
+
+  /**
+   * Is `name` an ordinary identifier — a letter or `_`, then letters, digits, `_` or `'`?
+   *
+   * Character tests, not a pattern. This file's one regex-free property is checked by
+   * `script/m14/clean-completeness-gate.ts`, which fails on ANY `RegularExpressionLiteral`
+   * — a stronger rule than the M49.R2 "no regex doing syntax work" policy, and the reason a
+   * two-line predicate like `/^[A-Za-z_][A-Za-z0-9_']*$/` had to be written this way. The
+   * first version of `isLocallyDeclaredOperatorClass` used that regex and turned the gate
+   * red, which is the gate working: it caught a regression introduced by the very commit
+   * that added the fixture meant to prove the correction.
+   */
+  private isPlainIdentifierName(name: string): boolean {
+    if (name.length === 0) return false
+    const isHead = (c: string) => c === "_" || (c >= "a" && c <= "z") || (c >= "A" && c <= "Z")
+    if (!isHead(name[0])) return false
+    for (let i = 1; i < name.length; i++) {
+      const c = name[i]
+      if (!isHead(c) && !(c >= "0" && c <= "9") && c !== "'") return false
+    }
+    return true
   }
 
   /**
