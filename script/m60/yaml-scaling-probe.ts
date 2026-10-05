@@ -36,10 +36,40 @@
 //
 // Usage: bun run script/m60/yaml-scaling-probe.ts [--reps=7] [--max-keys=32768]
 // Writes: validation/m60/results/yaml-scaling.json
-import { execFileSync } from "node:child_process"
 import * as fs from "node:fs"
+import * as os from "node:os"
 import * as path from "node:path"
 import { parseFile } from "../../src/ast/pool-worker"
+
+/**
+ * The machine load during the run: a MEASUREMENT or a DECLARED ABSENCE with
+ * its reason.
+ *
+ * WHAT THIS REPLACES. `execFileSync("cat", ["/proc/loadavg"])` sat unguarded in
+ * the payload literal, at the very END of the probe — so on every host without
+ * procfs (macOS, Windows) the whole scaling measurement ran to completion and
+ * then THREW, and the artifact was never written. The run was not red and not
+ * green: it was DEAD, and the previous artifact stayed on disk looking current.
+ * That is the exact hazard the disqualified-record comment in
+ * script/m60/powershell-perf.ts describes, reached by a different route.
+ *
+ * `os.loadavg()` is the runtime's own answer and works on darwin and linux.
+ * On win32 it is a DECLARED ABSENCE, not a zero: Node documents it to "always
+ * return [0,0,0]" there, and a fabricated 0.00 would be the `ramGb: 0` quiet
+ * lie (contract §10 — a machine fact published without provenance).
+ */
+function loadAtReading(): { value: string | null; source: string; reason?: string } {
+  if (process.platform === "win32") {
+    return { value: null, source: "os.loadavg() — DECLARED ABSENT on win32", reason: "os.loadavg() is documented to return [0,0,0] on win32, which is a fabricated zero rather than a measurement, so no load fact is claimed" }
+  }
+  const l = os.loadavg()
+  if (!(l.length >= 3 && l.slice(0, 3).every((n) => Number.isFinite(n) && n >= 0))) {
+    return { value: null, source: "os.loadavg()", reason: `os.loadavg() returned ${JSON.stringify(l)}, which is not three non-negative finite numbers, so no load fact is claimed` }
+  }
+  // The /proc/loadavg spelling the committed Linux records carry — the first
+  // three columns only, so a darwin run's value is comparable with them.
+  return { value: `${l[0]!.toFixed(2)} ${l[1]!.toFixed(2)} ${l[2]!.toFixed(2)}`, source: "os.loadavg() (1/5/15-minute columns, the /proc/loadavg spelling)" }
+}
 
 // Two levels up from script/m60/ is the REPO ROOT. One level up is `script/`, which is
 // where the first version wrote its artifact — so the run printed a relative path that
@@ -274,7 +304,7 @@ async function main() {
       gate: "e <= 1.35 — looser than 1.0 because fixed per-file cost pushes the measured exponent below 1 at small sizes and above at large ones",
       shapes: "wide siblings, deep nesting, many anchors — three different stress on sibling lookup, recursion and dedupe, so one shape cannot hide another",
     },
-    loadAt: execFileSync("cat", ["/proc/loadavg"], { encoding: "utf8" }).trim(),
+    load: loadAtReading(),
     verdict: !usable.length ? "undetermined"
       : worst <= 1.35 ? "all shapes linear in the measured regime"
       : `NOT LINEAR: worst per-doubling ${worst.toFixed(3)} (1.0 = linear, 2.0 = quadratic)`,
@@ -284,7 +314,7 @@ async function main() {
   fs.writeFileSync(OUT, JSON.stringify(payload, null, 2) + "\n")
   console.log(`VERDICT: ${payload.verdict}`)
   console.log(`  gate is per-doubling <= 1.35; sizes ${SIZES.join(", ")}; shapes ${Object.keys(SHAPES).join(", ")}`)
-  console.log(`load during run: ${payload.loadAt}`)
+  console.log(`load during run: ${payload.load.value === null ? `NOT MEASURED (${payload.load.reason ?? "no reason recorded"})` : payload.load.value}`)
   console.log(`-> ${path.relative(ROOT, OUT)}`)
 }
 main()
