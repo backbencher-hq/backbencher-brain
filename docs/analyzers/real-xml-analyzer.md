@@ -350,7 +350,7 @@ the 603-file probe that came back INCONCLUSIVE, and what would separate them.
 | Type | Emitted? | Edges | Files | Both ends resolve | `confidence` < 0.7 |
 | --- | --- | ---: | ---: | ---: | ---: |
 | `contains` | yes — EMITTED | **186,270** | 10,847+ | **100.0 %** | 0 |
-| `references` | yes — EMITTED | **11,094** | 391+ | **48.4 %** target / **100.0 %** source; **93.9 % of sources are names the file writes** (was 84.2 %) | 0 |
+| `references` | yes — EMITTED | **11,108** | 391+ | **48.4 %** target / **100.0 %** source; **93.9 % of sources are names the file writes** (was 84.2 %) | 0 |
 | `imports` | yes — EMITTED | **468** | 332 | 0.0 %, target is a file, by design; **468 of 468 edges have a site on the tree and 0 sites have no edge** (was 186 of 469 — the ledger's parser had died at document 8,513) | 0 |
 | `calls` | yes — EMITTED (was GAP) | **402** | 76+ | **100 %**, and **100 % of sources are declared callers** | 0 |
 | `extends` | yes — EMITTED (was GAP) | **1,429** | 113 | **31.3 %** both ends / **100.0 %** source | 0 |
@@ -1460,7 +1460,7 @@ was not re-measured would be a stale claim rather than a history.
 | 3. Correct | **site ledger; 5,856 of 5,856 edges have the target's span inside the source's, 0 with no site, 0 of 36,319 real nestings with no edge** | **no ledger; `unmeasured`** | **site ledger; 50 sites on the tree, 50 edges, 0 with no site, 0 with no edge** | **site ledger; 481 accepted sites, 481 occurrences, 0 unrepresented** | **1 oracle; 1,615 of 1,652 sites covered, 37 refused, 0 edges without a site** | **no ledger; 3 probe sites in 3 files against 3 edges in 3 files, per-file identity only** |
 | 4. Labelled | `structural` 77,882 (100 %) | `reference_qualified` 7,415 (100 %) | `import_based` 261 (100 %) | `reference_qualified` 2 (100 %) | `structural` 852 (100 %) | `structural` 3 (100 %) |
 | 5. Resolved | 77,882/77,882 = **100.0 %** | source **7,415/7,415 = 100.0 %**; target 3,591/7,415 = **48.4 %** | 0/261 = 0 %, target is a file | 2/2 = **100 %** | source **1,429/1,429 = 100.0 %**; both ends 267/852 = 31.3 %, and 56.4 % of bases are built-in or imported | 3/3 = **100 %** |
-| 5b. Source is a name the file writes | 77,882/77,882 (the parent, read off the tree) | **10,413/11,094 = 93.9 %** — was 8,771/10,411 = 84.2 % | n/a, the target is a file | **402/402 = 100 %** | **1,429/1,429 = 100 %** — was 438/438 = 0 % | 3/3 = **100 %** |
+| 5b. Source is a name the file writes | 77,882/77,882 (the parent, read off the tree) | **10,427/11,108 = 93.9 %** — was 8,771/10,411 = 84.2 % | n/a, the target is a file | **402/402 = 100 %** | **1,429/1,429 = 100 %** — was 438/438 = 0 % | 3/3 = **100 %** |
 | 5c. The claim is expressible in the ranges the analyzer publishes | **5,856/5,856 = 100.0 %** — was 3,909/4,383 = 89.2 %; byte ranges held by 2+ names **0**, was 253 | n/a | n/a | n/a | n/a | n/a |
 | 6. Confident | 0 edges < 0.7 | 0 | 0 | 0 | 0 | 0 |
 
@@ -1541,8 +1541,8 @@ doubt, and it was built to close a false verdict rather than to audit an emitter
 
 Q6 in full: every emitted edge carries `confidence: 1`. The heuristic ratio —
 edges below the 0.7 threshold — is **0 of 86,412** on the 2,500-file draw and **0 of
-199,663** on the full admitted population at `BB_XML_WORKERS=1`
-(186,270 + 11,094 + 465 + 1,429 + 402 + 3), and the `inferred` tier, the
+201,677** on the full admitted population at `BB_XML_WORKERS=1`
+(188,267 + 11,108 + 468 + 1,429 + 402 + 3), and the `inferred` tier, the
 honest default for a rule the tier table does not name, holds **0 edges**. Every
 edge's tier is assigned where the edge is written, from `EVIDENCE_TIER`, keyed by
 the rule's role.
@@ -1670,12 +1670,14 @@ XML oracle to run. It was 4 before the M60 ontology pass added `calls` and
 `extends`, and 6 after this pass added `overrides`; the debt grew by exactly the
 work that was supposed to reduce it, which is the shape of the problem.
 
-A 5th type, `contains`, is audited only by a lane-local instrument outside the
-shared differential (`script/m12/xml-differential-gap.mts`, 43 unexplained of
-250,135 edges over 8,889 files in the m12 corpus). So **no relationship type this
-lane emits has a shared-oracle check**, and the debt is not new: before this work
-the lane emitted `references` and `imports` with no auditor, which is exactly the
-structural condition the ontology workstream was convened to end.
+**This paragraph previously opened "A 5th type, `contains`", which counted a type that
+is already in the six above it.** `contains` is one of the six; what is true of it and
+not of the others is that it is the one type with a lane-local instrument outside the
+shared differential (`script/m12/xml-differential-gap.mts`, 43 unexplained of 250,135
+edges over 8,889 files in the m12 corpus). So **no relationship type this lane emits
+has a shared-oracle check**, and the debt is not new: before this work the lane
+emitted `references` and `imports` with no auditor, which is exactly the structural
+condition the ontology workstream was convened to end.
 
 **One of the six has been paid down since, and the instrument that paid it was not
 built for that.** The `extends` probe added to `script/m14/xml-ruled.ts` to close the
@@ -1725,11 +1727,11 @@ apply are the ones listed.
    template, reached by walking containment back up when the call sits in an inline
    `<xsl:variable>` body. `bb_graph`'s owner-cascade attributes member rows to the
    owner class, so the answer is reachable, but the hop exists and its depth varies.
-7. **111 of 11,094 `references` edges still carry a vocabulary tag as their source,
+7. **111 of 11,108 `references` edges still carry a vocabulary tag as their source,
    because the site has no named declaration to name.** All three types that resolve
    below 100 % had this defect and it is now fixed in the two fixed forms: `extends`
    was 438/438 fabricated, `calls` 495/548, `references` was 1,066/10,411 and is
-   111/11,094 after the re-base. The residue is not a smaller version of the same
+   111/11,108 after the re-base. The residue is not a smaller version of the same
    bug — every one of the 111 sits where **nothing declares a name**: XSLT 1.0 §5.4
    gives a `match=`-dispatched template no `name`, and an instruction at stylesheet
    top level is inside no template at all. By role: `entity_reference` 85,
@@ -2222,7 +2224,7 @@ the project.
 | `BB_XML_WORKERS=4 npx tsx validation/m14/fixtures/xml/ontology-census.mts` | 2,500 files, **0 failed**, 388,365 symbols, 86,412 relationships, **0 empty names, 0 `unknown` endpoints**, draw `c38110881a301dae`, **1 file silently degraded** (`phpmyadmin/…/dark/col-minus.svg`, 359 B, 0 symbols) |
 | `npx tsx validation/m14/fixtures/xml/worker-determinism-probe.mts --workers {1,8,16}` | `countsAreDeterministic: true` **falsified**. One 600-file draw, fingerprint `6ad7d4ddf1656e6f`: symbols 126,486 / 126,430 / 126,447, and **126,486 again at the same worker count on re-run**. A 1,200-file draw at 1 vs 8 workers: 230,021 both, **0 per-file differences**. `--diff` prints the per-file breakdown |
 | `BB_XML_ROUNDS=20 npx tsx validation/m14/fixtures/xml/shared-parser-probe.mts` | sequential 223,400 symbols, **0 files vary**; concurrent(8) 221,087 symbols, **5 of 48 files return 0 symbols**, every losing result `success=true fallback=true errors=0` |
-| `npx tsx validation/m14/fixtures/xml/derivation-accounting.mts` | `extends` fabricated **0 of 1,429** · `calls` fabricated **0 of 402** · call-site ledger **481 accepted = 481 occurrences, 0 unrepresented** · `references` fabricated **111 of 11,094** (was 1,066 of 10,411) · **0 edges with no site behind them** |
+| `npx tsx validation/m14/fixtures/xml/derivation-accounting.mts` | `extends` fabricated **0 of 1,429** · `calls` fabricated **0 of 402** · call-site ledger **481 accepted = 481 occurrences, 0 unrepresented** · `references` fabricated **111 of 11,108** (was 1,066 of 10,411) · **0 edges with no site behind them** |
 | `npx tsx validation/m14/fixtures/xml/concurrent-parser-probe.mts --files 600` | grade **INCONCLUSIVE**, exit 0 (control intact) |
 | `npx tsx script/m14/verify-honesty.ts` | gate FAILED project-wide, **23 failures and 0 name an xml file** — 12 banned-term rows in other lanes' fixtures and `validation/` artifacts, `M14.0.F7` non-passing on `analyzer-hygiene-cpp` / `analyzer-hygiene-elixir`, 9 `declared inputs changed since <sha>` regeneration rows, and `freshness rule flags every artifact`. Not one is this lane's |
 | `bun run script/m14/verify-doc-truth-emissions.ts --no-write` | gate FAILED project-wide, `UNDOCUMENTED=42 FALSE_NEGATIVE=7 MISSING_DOC=1 NO_CLAIM_TABLE=16`, and the single xml row is `UNDOCUMENTED [xml] contains` — the shared `parseClaimTable` first-row defect documented above, re-measured, unchanged |
