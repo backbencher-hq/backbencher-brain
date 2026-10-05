@@ -1762,8 +1762,19 @@ instead of attempted on the strength of a remedy that reads well.
 Instrument: `validation/m14/fixtures/r/r-cause-a-counterfactual.ts`, committed output
 `r-cause-a-counterfactual.txt`. Population: the whole admitted set — **2,184 files across
 16 repositories, no sampling**, corpus set sha256 `953c0314…`, production `parseFile`,
-analyzer sha256 `ecb02eec…`. 79,878 edges, 29,556 symbols, 0 parse failures, 2 files on
-regex fallback.
+analyzer sha256 `ecb02eec…`. **Correction, stated before the rows rather than folded into
+them:** that artifact records 79,878 edges, 29,556 symbols, 2 files on regex fallback, and it
+**undercounts the population by 54 edges and 6 symbols**. Two of its 2,184 rows are empty
+because the parse was cut short by the shared 120-second watchdog in an earlier session, and
+its resume logic counts an empty row as a completed walk, so it never re-walked them. The
+rows are `usethis/R/ci.R` (4 symbols, 34 edges) and `usethis/R/code-of-conduct.R` (2 symbols,
+20 edges) — and `usethis/R/ci.R` is named in `fixtures/r/arbiter/README.md` as lost to `memory
+access out of bounds` in arbiter run H. Every count in this section therefore reads **+54
+edges / +6 symbols** against the corrected population of **80,083 edges and 29,562 symbols**,
+established in [the population section](#an-incoming-number-is-a-statement-about-a-file-set)
+below by three walks that agree. The relative judgements in this section are unaffected —
+nothing here turns on an absolute edge count — but the absolutes are restated with the
+correction visible rather than silently replaced.
 
 The instrument scores alternative key spaces **over the same bytes**, so every row below is
 a count over one file set and one analyzer build and the rows are directly comparable.
@@ -1876,6 +1887,171 @@ both sides, with a separator no repository name or R identifier can contain, so
 quoted anywhere.
 
 
+## An incoming number is a statement about a file set
+
+The programme's own rule is that a count must name its population every time. R's row in
+`validation/m14/measurements/incoming-whole.tsv` is the clearest case in the fleet of that rule
+biting, and the population is readable without an instrument at all:
+
+| corpus glob | files |
+|---|---|
+| `*.r` (lower case) | **21** |
+| `*.R` (UPPER case) | 2,163 |
+
+R source is `.R`. A lower-case glob finds **21 of 2,184 admitted files — 0.96%** — and those 21
+are Rcpp `inst/examples` scripts, one `r-scales/R/pal-shape.r`, an nvim query test and a
+testthat snapshot: the least representative R files in the corpus. So every cross-file number in
+the fleet's R row is a statement about 21 example scripts.
+
+**The row reproduces, to one edge.** `r-incoming-population.ts --pop lower` walks those same 21
+files and runs `script/m14/incoming-check.ts` as a *child process* over the identical file list,
+printing a field-by-field diff rather than trusting its own transcription:
+
+```
+PARITY OK on all 10 types and the file count — the transcription is faithful
+fired 7/10   ambiguous 8   unresolved 191
+fleet tsv row (r): files 21 fired 7 amb 8 unres 190
+```
+
+`fired` and `ambiguous` tie. `unresolved` is 191 against a stored 190. `r-population-drift.ts`
+names the edge by diffing the walk spools of two analyzer builds over one corpus set — both
+digests are in every spool name, so a spool can never be read against the wrong build:
+
+| analyzer build | edges | symbols | fired | unres |
+|---|---|---|---|---|
+| `530a2348` (61cd882c5) | 297 | 225 | 4/10 | 136 |
+| `32ac06bf` (97f680240) | 352 | 225 | 6/10 | 188 |
+| `00daa28d` (841f6c060) | 352 | 225 | 6/10 | 188 |
+| `984fd5db` (e2a3808d5) | 352 | 225 | 6/10 | 188 |
+| `55efedc6` (f8c899d9c) | 349 | 220 | 6/10 | 188 |
+| **`0e4cd636` (b851cd226)** | **351** | 220 | 7/10 | **190** |
+| **`6f0a7cb7` (b5b819fac)** | **351** | 220 | 7/10 | **190** |
+| `ecb02eec` (HEAD) | 352 | 220 | 7/10 | 191 |
+
+190 is printed by two builds and no later one, and the entire delta between either of them and
+HEAD is one edge:
+
+```
+- references: global -> cli    r-scales/R/pal-shape.r
+```
+
+which is `cli::cli_warn(c(` at `pal-shape.r:9`, emitted by `68150d31e` (`::`/`:::` is a
+dependsOn too). Target `cli` is unresolved in a 21-file set holding no `cli` declaration, because
+r-cli is a different repository. **The fleet row is not wrong — it was measured on a build in
+the window `[b851cd226, b5b819fac]` and is stale by one edge against HEAD.** The owner of that
+staleness is whoever regenerates the tsv, not this lane.
+
+### The same two columns over three populations
+
+`--pop lower` is the fleet row's population, `--pop r600` a deterministic stride
+(`floor(k * 2184 / 600)`, 600 distinct indices — a stride rather than a prefix because the
+admitted list is grouped by repository and a prefix would describe one or two of them), and
+`--pop all` the whole admitted set with no sampling.
+
+| | 21 files | 600 files | 2,184 files (whole) |
+|---|---|---|---|
+| symbols | 220 | 8,115 | **29,562** |
+| edges | 352 | 22,391 | **80,083** |
+| fired | 7/10 | 9/10 | **10/10** |
+| ambiguous | 8 | 1,752 | **11,828** |
+| unresolved | 191 | 10,876 | **24,036** |
+| self-loops | 2 | 28 | 151 |
+
+Two readings the 21-file population gets wrong about R:
+
+- **`instantiates` reads 0 at 600 files.** The whole set carries 3 edges. This type lives
+  outside the stride sample, so a 600-file draw cannot see it — a type whose count depends on
+  the population is a type whose count must name it.
+- **Ambiguity reads 100% bucket B1 SAME-FILE at 21 files, on ONE name.** At the whole
+  population it is 81.0% B1 / 4.7% B2 / 14.3% B3. The 21-file picture was an artefact of 21
+  example scripts, not a property of R.
+
+### Resolution rate per type, whole population
+
+`resolution` is 1 − `unresolved / edges`; `ambiguous` is the subset of resolved edges whose
+target is published under two or more `SymbolKind` values.
+
+| type | edges | unresolved | resolution | ambiguous | self-loops |
+|---|---|---|---|---|---|
+| calls | 48,233 | 19,396 | 59.8% | 6,354 | 117 |
+| uses | 4,810 | 1,704 | 64.6% | 1,477 | 13 |
+| contains | 17,634 | 4 | **99.98%** | 3,215 | 0 |
+| imports | 2,095 | 1,355 | 35.3% | 167 | 0 |
+| references | 2,137 | 1,355 | 36.6% | 193 | 21 |
+| exports | 3,592 | 1 | **99.97%** | 139 | 0 |
+| extends | 351 | 36 | 89.7% | 123 | 0 |
+| implements | 1,133 | 185 | 83.7% | 136 | 0 |
+| overrides | 95 | 0 | **100%** | 24 | 0 |
+| instantiates | 3 | 0 | **100%** | 0 | 0 |
+
+Against the brief's CSS reference point — `references` resolving at both ends on 66.8% — R's
+`references` resolves on **36.6%**, and `imports` on 35.3%. The two containment and binding
+types (`contains`, `exports`) and the two class-relation types R can decide alone
+(`overrides`, `instantiates`) resolve at or above 99.97%. The split is not noise: it is exactly
+the difference between an edge whose target is a declaration in the same file and one whose
+target is base R or another package, which is 88.6% of the unresolved residue by cause C.
+
+### An empty walk row is not a completed walk — 54 edges were being lost by it
+
+Two walks of the same 2,184 paths under the same analyzer digest disagreed by 180 edges. It was
+not nondeterminism; it was three files, named:
+
+| file | walk A | walk B |
+|---|---|---|
+| `r-testthat/R/evaluate-promise.R` | 1 symbol / 25 edges | 0 / 0 |
+| `usethis/R/ci.R` | 0 / 0 | 4 symbols / 34 edges |
+| `usethis/R/code-of-conduct.R` | 0 / 0 | 2 symbols / 20 edges |
+
+A parse cut short by the shared 120-second watchdog (`src/ast/engine.ts` `process.exit()`) yields
+0 symbols and 0 edges, and **`parseFile` returns rather than throwing** — so a harness records a
+truncated file as a completed walk with an empty row, and a resume that skips "already recorded"
+skips it forever. Both directions of harm are measured here: the truncation is invisible
+(`files walked OK: 2184 parse failures: 0` while 25 edges are missing), and a resumed walk
+inherits it and cannot detect it.
+
+Zero symbols is not evidence of a successful parse: **233 of the 2,184 admitted files genuinely
+declare nothing** (r-testthat's `test-parallel` fixtures, r-air's snapshot fixtures, roxygen
+templates, comment-only files). `usethis/R/ci.R` is named in this lane's own
+`fixtures/r/arbiter/README.md` as lost to `memory access out of bounds` in arbiter run H, so this
+class of loss is the same class the arbiter already counts.
+
+An empty row is therefore no longer accepted as a completed walk: `r-incoming-population.ts`
+drops empty rows from the done-set and re-walks them every run, printing how many it dropped and
+how many remained, so a count that *rises* names new truncations instead of hiding them. The
+re-walk is idempotent, so a genuinely empty file costs one parse and nothing else.
+
+**Three independent walks now reconcile exactly**, which is the check that the fix removed a
+defect rather than moving a number:
+
+```
+labels-and-resolution.txt   80,083 edges                        (self-loops included)
+this run    80,058 +  25    = 80,083     (one truncated file)
+cause-A     79,878 +  54 + 151 self-loops it does not record = 80,083
+symbols     29,556 +  6     = 29,562     and   29,561 + 1     = 29,562
+```
+
+All ten per-type counts in the new walk **tie `labels-and-resolution.txt` exactly**
+(48,233 / 4,810 / 17,634 / 2,095 / 2,137 / 3,592 / 351 / 1,133 / 95 / 3 = 80,083) — two
+harnesses written at different times agreeing on all ten.
+
+### The ambiguity split over the whole population
+
+Per ambiguous EDGE, charged to where its colliding declarations live. Partition closes **11,777
+of 11,777**:
+
+| bucket | edges | share | names | who can act |
+|---|---|---|---|---|
+| B1 SAME-FILE | 9,545 | 81.0% | 238 | the analyzer knows the file and the positions |
+| B2 ONE-REPO | 552 | 4.7% | 45 | R's package IS the repository; 466 of 552 collide in the **source edge's own** repository |
+| B3 CROSS-REPO | 1,680 | 14.3% | 113 | no single-file analyzer can separate these — a published-name-contract finding |
+
+B2's sub-split is the actionable part and it is small: **466 of 552** B2 edges have every
+colliding declaration inside the source edge's own repository, which is the population a
+same-repository preference rule could reach without changing the name surface. That is a bound
+on a possible fix, not a proposal — the D2 measurement above scores the whole per-repository key
+space and it is a net loss, so the B2 sub-split is reported as the size of the prize and left
+unclaimed.
+
 ## Limitations
 
 Declared non-empty because R is Turing-complete, and each entry carries the
@@ -1971,11 +2147,15 @@ number that bounds it rather than an adjective.
   occurrence** in 2,342 corpus files, so the loss is bounded and named rather
   than fixed.
 - **Cross-package edges cannot be resolved, and a per-package key space would make that
-  worse rather than better.** 13,789 of 79,878 edges name something the source package does
+  worse rather than better.** 13,789 of the then-measured 79,878 edges name something the
+  source package does
   not declare, and D2 would move every one of them from resolved to unresolved to buy 8,233
   fewer ambiguous edges (11,774 → 3,541 against 24,021 → 37,810 unresolved). Measured, not
-  estimated: `r-cause-a-counterfactual.txt`. So the lane publishes a flat key space
-  deliberately, and the 24,021 unresolved edges are the price of the choice rather than an
+  estimated: `r-cause-a-counterfactual.txt`, over the population 54 edges short of the
+  corrected one (see the correction note at the head of this section; the corrected whole-
+  population columns are ambiguous 11,828 and unresolved 24,036). So the lane publishes a flat
+  key space
+  deliberately, and the 24,036 unresolved edges are the price of the choice rather than an
   unexamined defect.
 - **External references are not marked, and cannot be from an analyzer.** 21,271 of the
   24,021 unresolved edges name something no corpus file defines, and whether a given target
