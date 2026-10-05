@@ -73,8 +73,56 @@ function stripAllQuotes(text: string): string {
   return out.trim()
 }
 
+// The JS `\\s` class, as an explicit set. Kept local rather than imported from
+// real-css-analyzer so the two lanes stay independent; the css lane cleared the
+// same literal on the same reasoning.
+const JS_WHITESPACE = new Set([
+  " ", "\t", "\n", "\v", "\f", "\r",
+  "\u00a0", "\u1680", "\u2000", "\u2001", "\u2002", "\u2003", "\u2004",
+  "\u2005", "\u2006", "\u2007", "\u2008", "\u2009", "\u200a", "\u2028",
+  "\u2029", "\u202f", "\u205f", "\u3000", "\ufeff",
+])
+
+/** `\\w` — [A-Za-z0-9_] — by char code, no regex. */
+function isWordCharCode(code: number): boolean {
+  return (
+    (code >= 97 && code <= 122) || // a-z
+    (code >= 65 && code <= 90) || // A-Z
+    (code >= 48 && code <= 57) || // 0-9
+    code === 95 // _
+  )
+}
+
+/** `\\w` by character, no regex. */
+function isWordChar(ch: string): boolean {
+  return isWordCharCode(ch.charCodeAt(0))
+}
+
+/**
+ * Collapse every run of whitespace to a single space and trim the ends — the
+ * exact behaviour of `.replace(/\\s+/g, " ").trim()`, without the regex.
+ *
+ * Written as one pass rather than trim-then-collapse because the original
+ * collapses the trailing run to a space and THEN trims it; doing it in one pass
+ * is the same result with a single traversal.
+ */
 function collapseWhitespace(text: string): string {
-  return text.replace(/\s+/g, " ").trim()
+  let out = ""
+  let pendingSpace = false
+  for (const ch of text) {
+    if (JS_WHITESPACE.has(ch)) {
+      // Only remember a space if real output has already been written, which is
+      // what makes the leading run vanish without a separate trim pass.
+      if (out.length > 0) pendingSpace = true
+      continue
+    }
+    if (pendingSpace) {
+      out += " "
+      pendingSpace = false
+    }
+    out += ch
+  }
+  return out
 }
 
 /**
@@ -86,6 +134,27 @@ function collapseWhitespace(text: string): string {
  * CSS lane's own `@mixin` DECLARING entry would have produced, so the two agree rather
  * than disagreeing in the same file.
  */
+/**
+ * The exact predicate of `/^%[-\w]*[\w]$/`, by char code.
+ *
+ * Decomposed rather than approximated: the leading `%` is mandatory, the tail must
+ * be a `\w` (so the trailing `-` of an interpolated prefix is rejected), every
+ * character in between must be `-` or `\w`, and the bare `%` the grammar produces
+ * for `@extend %` in a broken region is rejected by the length check.
+ */
+function isReadablePlaceholder(name: string): boolean {
+  if (name.length < 2) return false
+  if (name.charCodeAt(0) !== 37 /* % */) return false
+  const last = name.charCodeAt(name.length - 1)
+  if (!isWordCharCode(last)) return false
+  for (let i = 1; i < name.length - 1; i++) {
+    const code = name.charCodeAt(i)
+    if (code === 45 /* - */ || isWordCharCode(code)) continue
+    return false
+  }
+  return true
+}
+
 function mixinName(name: string): string {
   return `@mixin ${name}`
 }
@@ -845,10 +914,16 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (!target) return
     const owner = this.ownerForNode(node, ctx)
     if (!owner) return
+    // `calls`, not `uses`. The lane already resolved the callee to a mixin or function
+    // THIS FILE DECLARES — `target` is `@mixin name` or `@function name` and nothing else
+    // gets here — so this is a resolved invocation, and the ontology's rule for a
+    // resolved invocation is the one the lua lane states (`real-lua-analyzer.md:647`):
+    // "a member that is called is not merely read". `uses` was the neighbour, and it is
+    // the same label `@extend` carried until the change measured in `emitExtend`.
     ctx.relationships.push({
       source: owner,
       target,
-      type: ASTEngine.RelationshipType.Uses,
+      type: ASTEngine.RelationshipType.Calls,
       // M59.A7: the name is the mixin's own line, which is the VALUE's line for a
       // namespaced call and the statement's line otherwise. The value is the more
       // specific of the two and survives reformatting better.
@@ -924,10 +999,28 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (!target) return
     const owner = this.ownerForNode(node, ctx)
     if (!owner) return
+    // `extends`, not `uses`. `@extend` IS Sass's inheritance: the extending selector
+    // takes on the extended selector's declarations, and the ontology has a type for
+    // exactly that. `uses` is the neighbour that loses the meaning — with the edge
+    // labelled `uses`, a consumer cannot tell an inheritance edge from a variable read,
+    // which is the whole question `@extend` exists to answer.
+    //
+    // MEASURED COST, and it is a cost rather than a free correction. Relabelling this
+    // edge and the `@include` edge below moves the lane's differential from
+    // `covered=1558 (96.5%) MISSING=56` to `covered=1514 (93.8%) MISSING=100` on the
+    // canonical 149-file element-plus sample. The 44 new MISSING rows are the ORACLE's
+    // mislabelling, not a recall loss: `script/m14/differential.ts`'s `deriveScssEdges`
+    // pushes `uses` for both constructs, so the truth rows now have no analyzer row to
+    // match. `unexplained` is UNCHANGED at 13 across both runs, because the scss
+    // compared-label allowlist filters the ANALYZER side, so a relabelled edge is
+    // dropped from the comparison rather than counted as a fabrication. The oracle
+    // change is a §8 report-to-supervisor item and is specified in
+    // docs/analyzers/real-scss-analyzer.md; it is not applied here because
+    // script/m14/differential.ts is shared machinery.
     ctx.relationships.push({
       source: owner,
       target,
-      type: ASTEngine.RelationshipType.Uses,
+      type: ASTEngine.RelationshipType.Extends,
       line_number: this.lineOf(lineNode),
       metadata: {
         evidenceClass: "structural",
@@ -978,7 +1071,7 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
     // readable placeholder ends in one, which also rejects the degenerate bare `%` the
     // grammar produces for `@extend %` in a broken region. Neither names a selector, so
     // an edge to either would have an endpoint that resolves to nothing.
-    if (sel.type === "placeholder" && !/^%[-\w]*[\w]$/.test(name)) return undefined
+    if (sel.type === "placeholder" && !isReadablePlaceholder(name)) return undefined
     return name.length > 0 ? name : undefined
   }
 
@@ -1250,6 +1343,11 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
       // hand audit found precisely that, as the single false negative in the first
       // run of this lane against it (9 expected, 8 observed, recall 0.889).
       //
+      // `calls`, and for the same reason as `@include`: an invocation of a declared
+      // `@function` is a call whether the syntax is `name(x)` or `@include name`. One
+      // syntax carrying `uses` and the other `calls` would make the label a function of
+      // the surface syntax rather than of what happened.
+      //
       // BOTH ends must resolve, which is the whole discipline: the name is looked up
       // in `functionNames`, so only a function this file DECLARES produces an edge.
       // That is what keeps `calc(100% - 2px)`, `var(--x)`, `rgba(0,0,0,.1)`,
@@ -1273,7 +1371,7 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
             ctx.relationships.push({
               source: owner,
               target: declared,
-              type: ASTEngine.RelationshipType.Uses,
+              type: ASTEngine.RelationshipType.Calls,
               line_number: this.lineOf(n),
               metadata: {
                 evidenceClass: "usage_contextual",

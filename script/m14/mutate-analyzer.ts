@@ -24,6 +24,14 @@ import { CSS_MUTANTS } from "./css-mutants"
 import { NIM_MUTANTS } from "./nim-mutants"
 import { PROTOBUF_MUTANTS } from "./protobuf-mutants"
 import { JSON_MUTANTS } from "./json-mutants"
+import { CLEAN_MUTANTS } from "./clean-mutants"
+import { POWERSHELL_MUTANTS } from "../m60/powershell-mutants"
+import { SQL_ONTOLOGY_MUTANTS } from "../m60/sql-ontology-mutants"
+import { JULIA_MUTANTS } from "../m60/julia-mutants"
+import { MARKDOWN_MUTANTS } from "../m60/markdown-mutants"
+import { SCSS_MUTANTS } from "../m60/scss-mutants"
+import { SOLIDITY_MUTANTS } from "../m60/solidity-mutants"
+import { YAML_MUTANTS } from "../m60/yaml-mutants"
 
 const ROOT = process.env.BB_M14_ROOT ? path.resolve(process.env.BB_M14_ROOT) : path.resolve((import.meta as any).dirname ?? path.dirname(Bun?.main ?? process.argv[1] ?? "."), "..", "..")
 
@@ -2417,6 +2425,14 @@ export const MUTANTS: Mutant[] = [
   ...NIM_MUTANTS,
   ...PROTOBUF_MUTANTS,
   ...JSON_MUTANTS,
+  ...CLEAN_MUTANTS,
+  ...POWERSHELL_MUTANTS,
+  ...JULIA_MUTANTS,
+  ...MARKDOWN_MUTANTS,
+  ...SCSS_MUTANTS,
+  ...SOLIDITY_MUTANTS,
+  ...YAML_MUTANTS,
+  ...SQL_ONTOLOGY_MUTANTS,
   // ---------------------------------------------------------------- VB wave
   // 2026-09-27. The vb lane reported a 1.000 F5 differential and a healthy-looking
   // corpus profile while THREE whole classes of output were missing or wrong. Each

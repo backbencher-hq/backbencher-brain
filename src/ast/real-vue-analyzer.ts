@@ -1354,6 +1354,11 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
       return this.findChildByType(n, "property_identifier")?.text
     }
 
+    // ONTOLOGY (2026-10-03): the `extends`/`mixins` bases this options object
+    // names, resolved to an options OBJECT where — and only where — this parse tree
+    // can read one. See `sameTreeOptionsObject` for why that is a narrow rule.
+    const mergeBases: Array<{ name: string; isMixin: boolean; node: Node; optionsObject: Node | undefined }> = []
+
     for (let i = 0; i < objectNode.namedChildCount; i++) {
       const child = objectNode.namedChild(i)
       if (!child) continue
@@ -1465,6 +1470,19 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
             metadata: { isMixin, isOptionsApi: true },
           })
         }
+        // ONTOLOGY (2026-10-03): remember the merge so the `overrides` pass below
+        // can compare this component's members against the BASE's, for a base this
+        // tree can read. Collected here because the base can appear before the
+        // member-bearing options (`mixins` is conventionally written first) and the
+        // member set only exists once the loop over the options object has run.
+        for (const base of this.identifiersOf(value)) {
+          mergeBases.push({
+            name: base.name,
+            isMixin,
+            node: base.node,
+            optionsObject: this.sameTreeOptionsObject(base.node, value, scriptRoot),
+          })
+        }
         // The inline-object form (`extends: { methods: {…} }`) merges another
         // component's options in wholesale, so its members are THIS component's
         // members — the same contract a `methods:`/`computed:` block declares.
@@ -1539,6 +1557,198 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
         })
       }
     }
+
+    // ONTOLOGY (2026-10-03) — `overrides`, the Options-API merge.
+    //
+    // WHAT THIS IS. Vue's own merge rule is that a component's own value for an
+    // option WINS over the base's, so a member declared here that the base also
+    // declares is an override of that member. That is the only sense the language
+    // has one, and it is the reason the label belongs to Vue at all: there is no
+    // keyword for it.
+    //
+    // WHY IT WAS ABSENT, MEASURED. Two separate facts, and conflating them is how
+    // this type went missing for a whole wave elsewhere:
+    //
+    //   (a) THE BRANCH DID NOT EXIST, for any input. Not "the corpus never reached
+    //       it": the reachability probe
+    //       (`script/m14/vue-branch-reachability.mts`) writes an Options component
+    //       whose `mixins` base is another `.vue` SFC in the same directory and one
+    //       whose base is a `const` in the same `<script>` block, and production
+    //       `parseFile` emits 0 `overrides` rows for both. So the gap was the
+    //       analyzer's, not the corpus's.
+    //   (b) THE COMMON BASE IS NOT IN THE TREE. On 1,411 admitted `.vue` files there
+    //       are 12 `mixins`/`extends` bases and NONE is another SFC: 10 are plain
+    //       non-SFC modules (`./mixins/resize`, `./mixin/ResizeHandler`,
+    //       `@front/mixins/data-field-edit`) and 2 are declared nowhere in the file.
+    //       So the shape implemented here fires 0 times on that corpus and the
+    //       corpus CANNOT prove it — which is stated in the doc rather than
+    //       dressed up as a measurement.
+    //
+    // WHAT IS DELIBERATELY NOT DONE. Resolving the 10 non-SFC bases would mean
+    // reading another file from inside the analyzer, which this lane's contract
+    // forbids ("this walk never leaves the tree, so it costs no I/O and cannot
+    // depend on the filesystem" — the rule `boundMacroEntries` was written under).
+    // The probe counts what that would buy: 14 real override rows on the corpus
+    // (7 components re-declaring `mounted` and `beforeDestroy` over
+    // `./mixins/resize.js`). That number is the size of the remaining gap, and it
+    // is a shared-component change — the engine already pre-parses SFC script
+    // blocks and hands them over via `AnalyzeContext`, so pre-parsing a merge
+    // base's module is the natural place, and `engine.ts` is not this lane's.
+    //
+    // CONFIDENCE. 0.95, the value every other in-repo `overrides` producer uses
+    // (javascript:1504, typescript:5242). Not 1.0: this lane's other edges to a
+    // named base are 0.9, and a consumer's threshold must not behave differently
+    // depending on which producer fired the row.
+    if (mergeBases.length > 0 && relationships) {
+      // This component's own member names, from the symbols this loop just emitted.
+      // Read from SYMBOLS rather than re-derived from the tree so the override edge
+      // names a member that is actually published — an override edge whose target
+      // resolves to nothing is the dangling-target class the resolution census
+      // counts, and `contains` already publishes each of these.
+      //
+      // The test is KIND, not a metadata key. The first version listed
+      // `isMethod`/`isComputed`/… and matched nothing, because the Options
+      // extraction stamps `metadata: { [meta]: true }` with meta = "method",
+      // "computed", "isWatcher" — three of which are not `is*` at all. A kind test
+      // is both correct and future-proof: at this point in the pipeline the ONLY
+      // symbols owned by the component are its Options-API members (props, emits,
+      // computed, data keys, methods, watchers, lifecycle hooks, `setup`), because
+      // the delegated script symbols inside the default-export object were filtered
+      // out in step 3b and `provide` ownership is applied later.
+      const MEMBER_KINDS = new Set<ASTEngine.SymbolKind>([
+        ASTEngine.SymbolKind.Method,
+        ASTEngine.SymbolKind.Property,
+      ])
+      const own = new Map<string, ASTEngine.UniversalSymbol>()
+      for (const s of symbols) {
+        if (s.ownerName !== componentName) continue
+        if (!MEMBER_KINDS.has(s.kind)) continue
+        own.set(s.name, s)
+      }
+      const emitted = new Set<string>()
+      for (const base of mergeBases) {
+        const baseMembers = base.optionsObject ? this.optionsMemberNames(base.optionsObject) : undefined
+        if (!baseMembers || baseMembers.size === 0) continue
+        for (const [name, sym] of own) {
+          if (!baseMembers.has(name)) continue
+          // The delegate's endpoint convention, kept identical so one consumer's
+          // join works on both producers' rows: `${owner}.${member}` on both ends.
+          const edgeKey = `${componentName}.${name}->${base.name}.${name}`
+          if (emitted.has(edgeKey)) continue
+          emitted.add(edgeKey)
+          relationships.push({
+            source: `${componentName}.${name}`,
+            target: `${base.name}.${name}`,
+            type: ASTEngine.RelationshipType.Overrides,
+            confidence: 0.95,
+            ...(sym.range?.startLine
+              ? { line_number: this.offsetRange(sym.range, lineOffset, colOffset, indexOffset).startLine }
+              : {}),
+            metadata: {
+              baseOption: base.name,
+              isMixin: base.isMixin,
+              isOptionsApi: true,
+              // Honesty contract §4.1: a sub-1.0 confidence carries a
+              // machine-readable reason, not just a number.
+              reasonCode: "verified-in-file",
+            },
+          })
+        }
+      }
+    }
+  }
+
+  /**
+   * ONTOLOGY (2026-10-03): the options OBJECT a `mixins`/`extends` base names,
+   * when this parse tree can read one, and `undefined` when it cannot.
+   *
+   * Two accepted shapes, both resolved WITHOUT leaving the tree:
+   *
+   *   INLINE       `mixins: [{ methods: { … } }]` / `extends: { … }` — the object
+   *                is the element (or the value) itself.
+   *   SAME-FILE    `const shared = { … }` in the same `<script>` block, named by
+   *                the mixins array. Resolved by walking `variable_declarator`s
+   *                for the wanted name, which is exactly what `boundMacroEntries`
+   *                does for `defineProps(binding)` — the same rule, for the same
+   *                reason: a same-tree declaration is the only form whose keys are
+   *                published by nothing else, so reading them here cannot double
+   *                count another producer's symbols.
+   *
+   * Anything else returns `undefined` and the caller emits nothing. That is the
+   * honest answer for an imported base: the analyzer has not read the base, so it
+   * does not know what the base declares, and an `overrides` row needs that.
+   */
+  private sameTreeOptionsObject(baseNode: Node, value: Node, scriptRoot: Node | undefined): Node | undefined {
+    if (baseNode.type === "object") return baseNode
+    // `extends: { … }` — the value IS the base's options object.
+    if (value.type === "object" && baseNode.startIndex === value.startIndex) return value
+    if (baseNode.type !== "identifier" || !scriptRoot) return undefined
+    const wanted = baseNode.text
+    const stack: Node[] = [scriptRoot]
+    while (stack.length > 0) {
+      const n = stack.pop()!
+      if (n.type === "variable_declarator") {
+        const nameField = n.childForFieldName("name")
+        const valueField = n.childForFieldName("value")
+        if (nameField?.type === "identifier" && nameField.text === wanted && valueField) {
+          const peeled = peelTypeWrappers(valueField)
+          if (peeled.type === "object") return peeled
+        }
+      }
+      for (let i = n.namedChildCount - 1; i >= 0; i--) {
+        const c = n.namedChild(i)
+        if (c) stack.push(c)
+      }
+    }
+    return undefined
+  }
+
+  /**
+   * ONTOLOGY (2026-10-03): every member name an options object declares, across
+   * the member-bearing options plus the lifecycle shorthand methods.
+   *
+   * The shorthand methods are the majority of a real merge's collisions and were
+   * the first version's blind spot: `mounted()` and `beforeDestroy()` are written
+   * as `method_definition` children of the options object, not as `pair` keys, so
+   * reading only `pair` children misses every lifecycle override. Measured on the
+   * corpus: `./mixins/resize.js` declares `mounted` and `beforeDestroy`, and all 14
+   * override rows the corpus supports are lifecycle hooks.
+   */
+  private optionsMemberNames(optionsObject: Node): Set<string> {
+    const out = new Set<string>()
+    const MEMBER_OPTIONS = new Set(["methods", "computed", "props", "emits", "watch", "inject"])
+    for (let i = 0; i < optionsObject.namedChildCount; i++) {
+      const child = optionsObject.namedChild(i)
+      if (!child) continue
+      if (child.type === "method_definition") {
+        const name = child.childForFieldName("name")?.text
+        if (name && !name.startsWith("[")) out.add(unquote(name))
+        continue
+      }
+      if (child.type !== "pair") continue
+      const key = child.childForFieldName("key")?.text
+      if (!key || key.startsWith("[")) continue
+      const k = child.childForFieldName("key")!.type === "string" ? unquote(key) : key
+      if (!MEMBER_OPTIONS.has(key)) continue
+      const v = child.childForFieldName("value")
+      if (!v) { out.add(k); continue }
+      if (v.type === "object") {
+        for (let j = 0; j < v.namedChildCount; j++) {
+          const m = v.namedChild(j)
+          if (!m || (m.type !== "pair" && m.type !== "method_definition" && m.type !== "shorthand_property_identifier")) continue
+          const mk = m.type === "pair" ? m.childForFieldName("key")?.text : m.type === "method_definition" ? m.childForFieldName("name")?.text : m.text
+          if (mk && !mk.startsWith("[")) out.add(unquote(mk))
+        }
+      } else if (v.type === "array") {
+        for (let j = 0; j < v.namedChildCount; j++) {
+          const m = v.namedChild(j)
+          if (m?.type === "string") out.add(unquote(m.text))
+        }
+      } else {
+        out.add(k)
+      }
+    }
+    return out
   }
 
   /**

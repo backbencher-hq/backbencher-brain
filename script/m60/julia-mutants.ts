@@ -713,4 +713,200 @@ const firstByScope = new Map<string, { scope: string; line: number }>()
       relationships: rels(r).filter((x: any) => !(x.type === "extends" && x.metadata?.isWhereBound === true)),
     }),
   },
+  {
+    id: "julia/imports-source-collapses-to-root",
+    language: "julia",
+    defectClass: "mislabel",
+    description:
+      "REVERT: an `imports` edge's source is the declaration doing the importing, not the file root. " +
+      "This mutant rewrites every `imports` source to `root` and is the REVERT of the exact distinction " +
+      "this lane's own `imports` RULED on: the ruling's overturn condition was 'a julia `imports` " +
+      "relationship row that is not an import-site artifact — a row whose source is the importing " +
+      "declaration rather than the literal `root`'. Emitting `imports` at all was therefore read as " +
+      "refuting the ruling, and the fix that satisfied the condition was mistaken for a violation of " +
+      "it. Measured over the 971 admitted corpus files, 446 of 1,502 `imports` edges carry a real " +
+      "module symbol as their source and 595 carry the file scope; collapsing the two asserts that " +
+      "`module M` depends on packages it never named. Caught by the four `imports` assertions and two " +
+      "`forbidRelationships` in `imports-and-exports`.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: rels(r).map((x: any) => (x.type === "imports" ? { ...x, source: "root" } : x)),
+    }),
+  },
+  {
+    id: "julia/drop-imports-relationships",
+    language: "julia",
+    defectClass: "omission",
+    description:
+      "REVERT: every `imports` relationship is dropped while the `ImportInfo[]` channel keeps filling, " +
+      "which is the pre-M60 state of this lane. The lane recorded the construct on the payload and " +
+      "declined to publish it as an edge, then RULED it non-applicable on the grounds that " +
+      "`RelationshipType.Imports` serializes to `brain_import` and the repo treats `ImportInfo[]` as " +
+      "the import surface — a convention read as a constraint, since `real-python-analyzer.ts:979`, " +
+      "`real-lua-analyzer.ts:569`, `real-yaml-analyzer.ts:1017`, `real-nim-analyzer.ts:1064` and " +
+      "`real-typescript-analyzer.ts:5509` all emit the relationship through the same string. The " +
+      "construct is not rare in julia: 1,675 `import_statement`/`using_statement` nodes across 504 of " +
+      "the 971 admitted files. Caught by the `imports` assertions in `imports-and-exports`.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: rels(r).filter((x: any) => x.type !== "imports"),
+    }),
+  },
+  {
+    id: "julia/drop-exports-relationships",
+    language: "julia",
+    defectClass: "omission",
+    description:
+      "REVERT: every `exports` relationship is dropped while the `ExportInfo[]` channel keeps filling. " +
+      "The ruling this reverts demanded 'an `exports` relationship count above the `ExportInfo` count " +
+      "for the same corpus' — a threshold that emitting one row per `ExportInfo` entry cannot exceed, so " +
+      "the only way to satisfy it was an edge that was WRONG. `real-python-analyzer.ts:1166` emits " +
+      "both channels from one `__all__` walk. Measured: 308 `export_statement`/`public_statement` " +
+      "nodes across 152 of the 971 admitted files, publishing 1,770 export names. Caught by the " +
+      "`exports` assertions in `imports-and-exports`.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: rels(r).filter((x: any) => x.type !== "exports"),
+    }),
+  },
+  {
+    id: "julia/exports-source-collapses-to-root",
+    language: "julia",
+    defectClass: "mislabel",
+    description:
+      "REVERT: an `exports` edge's source is the module doing the exporting. This mutant rewrites every " +
+      "`exports` source to `root`, which is the collapse the `imports` source mutant performs in the " +
+      "other direction: it makes a module's published surface indistinguishable from a file's, so " +
+      "`bb_impact` on a module reports every re-export of every module in the corpus as its own " +
+      "dependents. Measured: 962 of 1,770 `exports` edges carry a real module symbol as their source " +
+      "and 783 carry the file scope, because 71.9% of julia corpus files open no module at all and " +
+      "julia's `public`/`export` are legal at file scope in `Main`. Caught by the `exports` " +
+      "assertions and the two `exports` `forbidRelationships` in `imports-and-exports`.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: rels(r).map((x: any) => (x.type === "exports" ? { ...x, source: "root" } : x)),
+    }),
+  },
+  {
+    id: "julia/imports-collapses-multi-module",
+    language: "julia",
+    defectClass: "omission",
+    description:
+      "JUL-16 REVERT: `using A, B` publishes ONE `imports` edge and calls the second module an item of " +
+      "the first. `importTargets()` walked the statement's named children IN ORDER carrying a `pending` " +
+      "variable, and one branch read \"a bare identifier when something is already pending, with no items " +
+      "yet, and a different name — that is an ITEM of the pending target\"; that branch cannot tell a " +
+      "second MODULE from an item of the first. This mutant reinstates the collapse by keeping only the " +
+      "FIRST `imports` edge per (source, statement line) pair, which is what the state machine produced " +
+      "for a multi-module statement.\n\n" +
+      "MEASURED, not asserted: `script/m14/oracles/julia-imports.ts` — an independent derivation sharing " +
+      "no rule, key set or resolver with the analyzer — found 167 of 440 derived import edges MISSING on " +
+      "a 200-file draw, 38% of the type, and the two- and three-path statement shapes are the second and " +
+      "third most common in the corpus (`validation/m14/fixtures/julia/import-export-shapes.ts`: 32 " +
+      "two-path and 12 three-path statements in a 400-file draw). `DataFrames.jl/src/DataFrames.jl:3-19` " +
+      "is ONE `using` naming 17 modules, of which the analyzer published 1.\n\n" +
+      "Caught by the `Compat` and `Logging` `imports` assertions in `imports-and-exports`.",
+    transform: (r: any) => {
+      const seen = new Set<string>()
+      const kept: any[] = []
+      for (const x of rels(r)) {
+        if (x.type !== "imports") { kept.push(x); continue }
+        const k = `${x.source}|${x.line_number}`
+        if (seen.has(k)) continue
+        seen.add(k)
+        kept.push(x)
+      }
+      return { ...r, relationships: kept }
+    },
+  },
+  {
+    id: "julia/imports-drops-renamed-import",
+    language: "julia",
+    defectClass: "omission",
+    description:
+      "JUL-17 REVERT: `import A as B` publishes nothing. The `import_alias` branch was gated on a " +
+      "`pending` that a statement whose ONLY named child is an `import_alias` never had, so the whole " +
+      "statement was silently dropped — on `StaticArrays.jl/ext/StaticArraysChainRulesCoreExt.jl`, " +
+      "which writes `import ChainRulesCore as CRC`.\n\n" +
+      "This mutant drops every `imports` edge whose metadata records the aliased form, which is the " +
+      "shape the gate produced. It is a separate defect from the multi-module collapse because the fix " +
+      "for one does not fix the other: a stateless per-child walk that classifies `import_alias` recovers " +
+      "both, and a fixture that pinned only the first would leave the second able to regress silently.\n\n" +
+      "Caught by the `ChainRulesCore` `imports` assertion in `imports-and-exports`.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: rels(r).filter((x: any) => !(x.type === "imports" && x.metadata?.importRenamed === true)),
+    }),
+  },
+  {
+    id: "julia/exports-accepts-misparsed-public",
+    language: "julia",
+    defectClass: "fabrication",
+    description:
+      "JUL-18 REVERT: a `public_statement` whose FIRST NAMED child is an `ERROR` still publishes its " +
+      "`exports` edges. `public` and `export` are CONTEXTUAL KEYWORDS in julia — keywords only when a " +
+      "name list follows — so `public = expr` declares a local variable, and the production grammar emits " +
+      "a `public_statement` for it anyway.\n\n" +
+      "MEASURED: 49 of the corpus's 3,570 import/export statements carry an ERROR descendant, and in " +
+      "exactly 2 the STATEMENT NODE is wrong rather than one part of it. Both published fabricated " +
+      "edges: `Documenter.jl/src/expander_pipeline.jl:632` published `exports` rows for the local " +
+      "`fields`, the local `private` and a bare `:`, and `julia/stdlib/REPL/src/docview.jl:408` " +
+      "published one for `binding`, a FUNCTION PARAMETER of `summarize`. A fabricated export is a fake " +
+      "dependency: it is counted `unexplained` by every oracle and becomes wrong refactoring advice in " +
+      "`bb_impact`.\n\n" +
+      "The refusal is \"first named child is an ERROR\" and NOT \"contains an ERROR\", because the " +
+      "other 47 are legitimate julia the grammar cannot fully parse (`import .Base.Math.@horner`, in " +
+      "julia's own stdlib) and refusing those would trade 45 real edges for 2 fabricated ones.\n\n" +
+      "WHY IT READS `source` AND NOT THE RESULT. The refusal's whole effect is that the result carries " +
+      "NO trace of the misparsed statement, so a result-only revert would have to hardcode the names it " +
+      "publishes — and a hardcoded name stops matching the moment a fixture is renamed, which is the " +
+      "failure `Mutant.transform`'s `source` parameter exists to prevent. This one re-derives them from " +
+      "the file's own text with a character test, which is what the pre-fix walk effectively did when it " +
+      "returned one string per named child of the misparsed node.\n\n" +
+      "Caught by the `fields` and `select_probe` `exports` `forbidRelationships` in " +
+      "`imports-and-exports` — both names ARE declared in that fixture, so the edges RESOLVE and are " +
+      "merely FALSE, which is the shape no resolution check can catch.",
+    transform: (r: any, source?: string) => {
+      if (typeof source !== "string" || !source) return r
+      // A misparsed `public = …` / `export = …` line: the keyword, then `=`, then the right-hand side.
+      // Character tests only — no regex, per the lane's standing rule.
+      const isWordChar = (c: string): boolean => {
+        const code = c.charCodeAt(0)
+        return (code >= 48 && code <= 57) || (code >= 65 && code <= 90) || (code >= 97 && code <= 122) || c === "_"
+      }
+      const isKeyword = (c: string): boolean => "!<>=+-*/\\^%~&|?:.".includes(c)
+      const fabricated: any[] = []
+      let owner = "root"
+      for (const s of r.symbols ?? []) if (s.kind === "module") owner = String(s.name)
+      const lines = source.split("\n")
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i]!
+        const eq = line.indexOf("=")
+        if (eq < 0) continue
+        const head = line.slice(0, eq).trim()
+        if (head !== "public" && head !== "export") continue
+        // The right-hand side's word tokens are exactly the named children the pre-fix walk saw.
+        let word = ""
+        const flush = (): void => {
+          if (!word) return
+          if (word !== "true" && word !== "false" && word !== "nothing" && !/^\d/.test(word)) {
+            fabricated.push({
+              source: owner, target: word, type: "exports", confidence: 1,
+              line_number: i + 1,
+              metadata: { juliaSpecific: true, exportForm: "public_statement", declaresNothing: true },
+            })
+          }
+          word = ""
+        }
+        for (const c of line.slice(eq + 1)) {
+          if (isWordChar(c)) { word += c; continue }
+          if (isKeyword(c) && c !== ":") { flush(); continue }
+          flush()
+        }
+        flush()
+      }
+      if (!fabricated.length) return r
+      return { ...r, relationships: [...(r.relationships ?? []), ...fabricated] }
+    },
+  },
 ]

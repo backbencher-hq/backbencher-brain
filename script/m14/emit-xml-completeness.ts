@@ -11,6 +11,31 @@
  */
 import * as fs from "node:fs"
 import * as path from "node:path"
+// The lane's four RULED ontology verdicts, read from the table the arbiter consumes
+// rather than restated here. One source of truth: a ruling written into this spec and
+// a ruling written into `script/m14/xml-ruled.ts` are the same sentence in two places
+// only until one of them is edited, and then the spec starts disagreeing with the
+// instrument that measures it.
+//
+// The three fields below are what `script/m14/ontology-coverage-gate.ts`'s `rulingFor()`
+// actually reads: `status === "RULED"` and a `resolution` mentioning the type. Without
+// them this lane's four RULED verdicts are invisible to the arbiter, which then reports
+// every one as RULED-UNJUSTIFIED — a verdict about the spec's field names rather than
+// about the rulings. `overrides` is absent from this list because it is EMITTED: an
+// entry for an emitted type is dead configuration.
+import { XML_RULED } from "./xml-ruled"
+
+const XML_ONTOLOGY_RULINGS = XML_RULED.map((r) => ({
+  id: `XML-ONTOLOGY-${r.type.toUpperCase()}`,
+  concept: `${r.type} — ontology ruling (${r.instrument})`,
+  relationship: r.type,
+  status: "RULED",
+  instrument: r.instrument,
+  node_type: (r.nodeTypesThatWouldMeanIt ?? []).join(" / "),
+  ruling: r.describe.split(".")[0] + ".",
+  resolution: r.describe,
+  measured: `probe and count are in the resolution; instruments in validation/m14/fixtures/xml/ontology-census.mts and validation/m14/fixtures/xml/overrides-probe.mts, executed against the table by validation/m14/fixtures/xml/ruled-gate.ts`,
+}))
 
 const ROOT = path.resolve((import.meta as any).dirname ?? ".", "..", "..")
 const shape = JSON.parse(fs.readFileSync(path.join(ROOT, "validation/m12/results/xml-shape-safety.json"), "utf8"))
@@ -85,26 +110,22 @@ const spec = {
       { concept: "imports", relationship: "imports", ruling: "a FILE PATH, the one case where a value is the right target", measured: "630 distinct schemaLocation targets, 238 DOCTYPE external IDs, 78 entity/notation external IDs, 18 stylesheet hrefs — 0 of them emitted before the fix", node_type: "" },
       { concept: "declared name", ruling: "in a declaration vocabulary the DECLARED name is an attribute VALUE and the tag is kept as meta.tagName", measured: "26,578 in-vocabulary declarations: recall 0.045 -> 0.696, with the 29,196 out-of-vocabulary `name` attributes (DATA) left untouched", node_type: "" },
       { concept: "self edge", ruling: "refused for references and imports; ALLOWED for contains, because a DTD and an element it declares routinely share a name and those are two distinct declarations", measured: "3 self-references and 3 phantom symbols removed from a 20-symbol XSD; the contains case is pinned by xml/dtd-declarations and xml/conditional-section", node_type: "" },
-      { concept: "PEReference", ruling: "inside an internal subset it is a DeclSep (XML 1.0 s2.4) — a separator, not a use — so it emits nothing", measured: "24 corpus occurrences, 0 edges; the parameter entity it would name is declared by the PEDecl and IS published", node_type: "PEReference" },
+      { concept: "PEReference", ruling: "a parameter entity reference IS a use and emits `references`, owned by the DOCTYPE in the internal subset and by the DECLARING ENTITY inside replacement text; the `% name 'value'` VALUE form names nothing and is refused, as is a reference whose semicolon is missing", measured: "0 PEReference nodes across the FULL 11,456-file admitted population — the 22 admitted files whose text carries `<!ENTITY %` are bare .dtd fragments this grammar cannot root, and the one admitted .xml carries its occurrences inside CDATA. The branch is live on fixtures (4 nodes in 2 files, all published) and pinned by xml/xsd-parameter-entity-refs and xml/pereference-semicolon-required; instrument validation/m14/fixtures/xml/pereference-shape-probe.mts", node_type: "PEReference" },
       { concept: "xmlns with an empty prefix", ruling: "declares nothing publishable", measured: "4 corpus occurrences published a symbol named the empty string; 0 now, pinned by the M12 probe", node_type: "Attribute" },
+      // The four RULED ontology verdicts, carried in the fields the arbiter reads.
+      // `overrides` is NOT here: it was, until the arbiter falsified the ruling over
+      // 11,456 corpus files, and it is emitted now.
+      ...XML_ONTOLOGY_RULINGS,
     ],
   },
   notApplicable: [
     {
-      concept: "calls",
-      measured: "XML declares no procedure. A DTD entity carries an EntityValue or an ExternalID, never a parameter list, and no corpus file contains anything a call edge could name. The closest construct — an XSLT `call-template` — names a template DECLARATION, and it is emitted as `references`, which is what it is.",
+      concept: "RULED types, and the instrument each ruling rests on",
+      measured: "Four of the ten ontology types are RULED with a corpus measurement, not with prose, and each names the probe that produced its number and the count that would overturn it. `uses` (instrument B, parse-tree count): 0 occurrences of `xsl:use-attribute-sets` or `xsl:use-package` in the XSLT namespace over a 2,500-file draw. `exports` (instrument A, grammar inventory): none of 7 export-declaration node types among the 86 the wired grammar produces over 2,787,237 nodes, with 611 string-shaped `<exports>`/`<exportedmodules>` elements adjudicated as gtk-doc/Doxygen payload describing a C library's API. `implements` (A): none of 5 supertype-clause node types among the 86, with 5 string-shaped hits adjudicated as 2 Wayland `<interface>` DECLARATIONS and 3 DocBook `<abstract>` prose. `instantiates` (A): none of 5 construction node types among the 86, and 0 elements named new/instantiate/newinstance/create. Overturn conditions are in script/m14/xml-ruled.ts, whose probes are executed by validation/m14/fixtures/xml/ruled-gate.ts.",
     },
     {
-      concept: "extends / implements / overrides / instantiates",
-      measured: "no type system. An XSD names a type by an ATTRIBUTE VALUE and links to it with a `references` edge: 11,117 resolvable QName references over 511 files. A `complexType` is not a subclass of another, it REFERENCES one by `base` — and publishing that as `extends` would be a category error the M60.R10 class of finding is about.",
-    },
-    {
-      concept: "exports",
-      measured: "an XML document has no public surface to export. The whole file is the surface and the document element is already a symbol.",
-    },
-    {
-      concept: "PEReference as a use",
-      measured: "inside an internal subset a PEReference is a DeclSep (XML 1.0 s2.4) — a separator, not a use — so it emits nothing. The parameter entity it would name is declared by the PEDecl instead, and that IS published (85 parameter-entity declarations, 10 with a real file import).",
+      concept: "calls / extends / overrides — NOT applicable, and this entry is the record of that being WRONG",
+      measured: "This entry previously claimed all four of `calls`, `extends`, `implements`, `overrides` and `instantiates` inapplicable, on the reasoning that an XSD names a type by an ATTRIBUTE VALUE so `base=` is a `references` edge. The M60 ontology census overturned it by measurement: `calls` is emitted for XSLT `xsl:call-template` (XSLT 1.0 §6, 548 edges), `extends` for XSD `<xs:extension base=>`/`<xs:restriction base=>` type derivation (XSD 1.0 §3.4.2, 438 edges), and `overrides` for XSLT 1.0 §5.5 competing template rules — that last one only after script/m14/ontology-coverage-gate.ts reported this lane's RULED verdict FALSIFIED over 11,456 files (3 sites in 3 files, e.g. libxslt/tests/docbook/fo/toc.xsl lines 180 and 190). The reasoning was not wrong about the SYNTAX: `base=` is an attribute value. It was wrong about the RELATION, because a vocabulary element that defines a relation is a declaration of that relation however its operand is spelled. Kept as a record because a reader comparing this spec against an older one needs to see that the claim changed and why.",
     },
     {
       concept: "standalone .dtd documents",
@@ -112,6 +133,11 @@ const spec = {
     },
   ],
   requiredKinds: ["contains", "references", "imports"],
+  // The three emitted ONTOLOGY types, and the two the M60 census added. `calls` and
+  // `extends` were named a `references` edge by an earlier version of this spec; the
+  // census overturned that and the reasoning is recorded in `notApplicable` above.
+  ontologyRelationshipsEmitted: ["contains", "references", "imports", "calls", "extends", "overrides"],
+  ontologyRelationshipsRuled: ["uses", "exports", "implements", "instantiates"],
   kindRulings: {
     contains:
       "structural containment read straight off the tree: element->element, element->attribute, element->namespace, DTD->declaration, declaration->content-model member, declaration->notation, PI->target. Every contains TARGET is a published symbol in the same file — enforced structurally, not by convention, and pinned by `xml/dtd-declarations` (`every contains target resolves to a symbol in the same file`).",
