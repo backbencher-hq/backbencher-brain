@@ -160,12 +160,63 @@ try {
   const decoyFree = H1_EXPECT.decoyLines.every((l) => !highLines.has(l))
   check("H1/R2: decoys (javadoc/comment/string) never highlight", decoyFree, `highlighted lines ${[...highLines]}`)
   check("H1/R2: highlights are byte-precise (index ranges, not whole lines)", highs.every((h) => typeof h.start.character === "number" && typeof h.end.character === "number"), JSON.stringify(highs[0]))
-  const t1 = performance.now()
-  for (let i = 0; i < 40; i++) {
-    await lsp.request("textDocument/documentHighlight", { textDocument: { uri: fileUri }, position: { line: H1_EXPECT.queryLine, character: 13 } })
+  // --- R5: the warm budget, as a REAL p95 (contract §3) ----------------------
+  //
+  // Lane 6. This used to be:
+  //
+  //   const warmMs = (performance.now() - t1) / 40
+  //   check("H1/R5: warm p95 budget <= 25ms (mean over 40 steady-state calls)", warmMs < 25)
+  //
+  // which is not a p95. It is a MEAN over 40 samples compared against a p95
+  // budget, and it was labelled with the words "warm p95" in the check name — the
+  // check said one thing and computed another. §3 is explicit that the warm
+    // figure is a p95, and a mean is systematically lower than the percentile it
+  // stands in for: a request distribution with one slow tail passes a mean and
+  // fails the p95 the user actually experiences. The substitution survived three
+  // waves because it was honestly recorded as a limitation in
+  // validation/m42/results/KNOWN-GAPS.json — naming a measurement defect is not
+  // the same as fixing it, and the naming is what let it persist.
+  //
+  // What replaced it: every sample timed INDIVIDUALLY, sorted, and the 95th
+  // percentile read off. The sample count is stated because a percentile of the
+  // samples drawn is not the distribution. Cold is reported separately, as §3
+  // defines it (fresh process, first request, one-time WASM init included).
+  const WARM_SAMPLES = 200
+  const warmSamples: number[] = []
+  for (let i = 0; i < WARM_SAMPLES; i++) {
+    const s = performance.now()
+    await lsp.request("textDocument/documentHighlight", {
+      textDocument: { uri: fileUri },
+      position: { line: H1_EXPECT.queryLine, character: 13 },
+    })
+    warmSamples.push(performance.now() - s)
   }
-  const warmMs = (performance.now() - t1) / 40
-  check("H1/R5: warm p95 budget <= 25ms (mean over 40 steady-state calls)", warmMs < 25, `${warmMs.toFixed(2)}ms/call`)
+  warmSamples.sort((a, b) => a - b)
+  // Nearest-rank p95 — the smallest sample at or above the 95th percentile. No
+  // interpolation, so the reported figure IS an observed request, not a number
+  // between two observations that neither experienced.
+  const warmP95 = warmSamples[Math.min(warmSamples.length - 1, Math.ceil(0.95 * warmSamples.length) - 1)]!
+  const warmP50 = warmSamples[Math.min(warmSamples.length - 1, Math.floor(0.5 * warmSamples.length))]!
+  const warmMax = warmSamples[warmSamples.length - 1]!
+  const warmMean = warmSamples.reduce((a, b) => a + b, 0) / warmSamples.length
+  console.log(
+    `  warm highlight over ${WARM_SAMPLES} requests: p50=${warmP50.toFixed(2)}ms ` +
+      `p95=${warmP95.toFixed(2)}ms max=${warmMax.toFixed(2)}ms mean=${warmMean.toFixed(2)}ms ` +
+      `(mean is reported for contrast, NOT compared to the budget)`,
+  )
+  check(
+    `H1/R5: warm p95 <= 25ms over ${WARM_SAMPLES} individually-timed requests (a real p95, not a mean)`,
+    warmP95 < 25,
+    `p95=${warmP95.toFixed(2)}ms p50=${warmP50.toFixed(2)}ms max=${warmMax.toFixed(2)}ms over n=${WARM_SAMPLES}`,
+  )
+  // The distribution must be genuinely spread, or a "p95" computed over 200
+  // identical numbers is indistinguishable from the mean it replaced and this
+  // change would be cosmetic. A real request stream has a tail.
+  check(
+    "H1/R5: the timed distribution is genuinely spread (a p95 over identical samples is a mean in disguise)",
+    warmMax > warmP50 * 1.2,
+    `p50=${warmP50.toFixed(2)}ms max=${warmMax.toFixed(2)}ms — max/p50=${(warmMax / Math.max(warmP50, 1e-9)).toFixed(2)}`,
+  )
 
   // --- R3: declared tier + staleness (wire law: metadata rides each item's data) ---
   console.log("\nR3: declared absence + staleness fields (wire law)")
@@ -225,7 +276,7 @@ const result = {
   evidenceFile: "H1.json",
   generatedAt: new Date().toISOString(),
   limitations: [
-    "Warm-budget check uses mean-over-40 as a p95 proxy; the full E5 editor leg re-measures with the shared harness.",
+    "Lane 6: the warm budget is now a REAL p95 — ${WARM_SAMPLES} individually-timed requests, sorted, nearest-rank 95th percentile, no interpolation, compared against §12.7's 25 ms. The pre-lane check computed a MEAN over 40 and compared it against that p95 budget while naming itself 'warm p95', which is the substitution §3 forbids; it survived three waves because it was honestly recorded as a limitation rather than fixed. The mean is still reported alongside, for contrast only. The full E5 editor leg re-measures with the shared harness.",
     "Editor-leg (DocumentHighlight rendering + wake-up path) is asserted in the E5-pattern session at H1 acceptance; this file proves the server surface.",
   ],
 }
