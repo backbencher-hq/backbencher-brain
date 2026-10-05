@@ -73,11 +73,67 @@ const SAMPLE = parseInt(val("--sample", "60") ?? "60", 10)
  * the load is known and stated.
  */
 const LOAD_THRESHOLD = parseFloat(val("--load-threshold", "8") ?? "8")
-function machineLoad(): { one: number; five: number; fifteen: number; cores: number } {
-  try {
-    const out = execSync("cat /proc/loadavg", { encoding: "utf8" }).trim().split(/\s+/)
-    return { one: parseFloat(out[0]), five: parseFloat(out[1]), fifteen: parseFloat(out[2]), cores: 0 }
-  } catch { return { one: NaN, five: NaN, fifteen: NaN, cores: 0 } }
+
+/**
+ * The machine load this timing was taken under — a MEASUREMENT or a DECLARED
+ * ABSENCE with its reason, never a plausible-looking number.
+ *
+ * WHAT THIS REPLACES. `execSync("cat /proc/loadavg")` is Linux-only. On darwin
+ * the spawn threw, `catch` returned `{one: NaN, …}`, and
+ * `contaminated = Number.isFinite(NaN) && …` was therefore FALSE — so the
+ * artifact published `machineLoad: {one: null, five: null, fifteen: null}`
+ * (JSON renders NaN as null) under `loadContaminated: false`. That reads as
+ * "the load was measured and the box was quiet" when nothing was measured at
+ * all, and it disabled the refusal this whole gate exists for on every
+ * non-Linux host. It is the `ramGb: 0` defect class from
+ * script/m24/lsp_harness.ts machineFacts(): a fact that could not be read
+ * published as a value instead of as an absence.
+ *
+ * `os.loadavg()` is the runtime's own answer and works on darwin and linux, so
+ * the gate's refusal capability is RESTORED there rather than merely made to
+ * stop crashing.
+ *
+ * win32 IS A DECLARED ABSENCE, NOT A ZERO: Node documents `os.loadavg()` to
+ * "always return [0,0,0]" there, and a fabricated 0.00 load is precisely the
+ * quiet falsehood contract §10 forbids ("a machine fact published without
+ * provenance is a quiet falsehood"). So the load is null WITH a reason on
+ * win32, and the record says the contamination gate did not judge the run.
+ * The same shape machineFacts() uses, and it costs no process spawn.
+ */
+interface LoadReading {
+  one: number | null
+  five: number | null
+  fifteen: number | null
+  cores: number | null
+  source: string
+  reason?: string
+}
+function machineLoad(): LoadReading {
+  const cores = os.cpus().length
+  const coresReading: number | null = Number.isFinite(cores) && cores > 0 ? cores : null
+  const base = { cores: coresReading, coresSource: "os.cpus().length" }
+  if (process.platform === "win32") {
+    // Not a guess and not a zero: the runtime does not measure it here.
+    return {
+      one: null, five: null, fifteen: null, ...base,
+      source: "os.loadavg() — DECLARED ABSENT on win32",
+      reason: "os.loadavg() is documented to return [0,0,0] on win32, which is a fabricated zero rather than a measurement, so no load fact is claimed and the contamination gate did not judge this run",
+    }
+  }
+  const l = os.loadavg()
+  const ok = l.length >= 3 && l.slice(0, 3).every((n) => Number.isFinite(n) && n >= 0)
+  if (!ok) {
+    return {
+      one: null, five: null, fifteen: null, ...base,
+      source: "os.loadavg()",
+      reason: `os.loadavg() returned ${JSON.stringify(l)}, which is not three non-negative finite numbers, so no load fact is claimed and the contamination gate did not judge this run`,
+    }
+  }
+  return { one: l[0]!, five: l[1]!, fifteen: l[2]!, ...base, source: "os.loadavg()" }
+}
+/** A load number for prose, or the declared absence spelled out. */
+function fmtLoad(n: number | null): string {
+  return n === null ? "NOT MEASURED" : n.toFixed(2)
 }
 const ANALYZER = path.join(ROOT, "src/ast/real-powershell-analyzer.ts")
 
@@ -186,14 +242,19 @@ function stats(xs: number[]): Record<string, number> {
 function round(x: number): number { return Math.round(x * 1000) / 1000 }
 
 const load = machineLoad()
-load.cores = 0
-try { load.cores = parseInt(execSync("getconf _NPROCESSORS_ONLN", { encoding: "utf8" }).trim(), 10) || 0 } catch { /* leave 0 */ }
 const LOAD = load
-const contaminated = Number.isFinite(load.one) && load.one > LOAD_THRESHOLD
+// Contamination is judged only from a MEASURED load. An unmeasured load is not
+// evidence of a quiet machine, so `loadMeasured` is published beside the
+// boolean: `loadContaminated: false` with `loadMeasured: false` means "this gate
+// did not judge", which is a different statement from "the box was quiet".
+const loadMeasured = load.one !== null
+const contaminated = loadMeasured && load.one > LOAD_THRESHOLD
 const forced = has("--force")
-console.log(`machine load: ${load.one.toFixed(2)} / ${load.five.toFixed(2)} / ${load.fifteen.toFixed(2)}` +
-  (load.cores ? ` on ${load.cores} cores` : "") +
-  (contaminated ? `  — ABOVE the ${LOAD_THRESHOLD} threshold${forced ? " (--force: recording anyway)" : ": this run is LOAD-CONTAMINATED and its timings are not citable"}` : ""))
+console.log(`machine load: ${fmtLoad(load.one)} / ${fmtLoad(load.five)} / ${fmtLoad(load.fifteen)}` +
+  (load.cores !== null ? ` on ${load.cores} cores` : "") +
+  (contaminated ? `  — ABOVE the ${LOAD_THRESHOLD} threshold${forced ? " (--force: recording anyway)" : ": this run is LOAD-CONTAMINATED and its timings are not citable"}`
+    : loadMeasured ? ""
+    : `  — NOT MEASURED (${load.reason ?? "no reason recorded"}): the contamination gate DID NOT JUDGE this run, so these timings carry no quiet-machine claim`))
 if (contaminated && !forced && !has("--report-only")) {
   // A DISQUALIFIED record is written rather than nothing, and that distinction is
   // the point. Writing nothing leaves the PREVIOUS artifact in place, looking
@@ -208,10 +269,11 @@ if (contaminated && !forced && !has("--report-only")) {
     at: new Date().toISOString(),
     commit: safeCommit(),
     machineLoad: load,
+    loadMeasured: true,
     loadContaminated: true,
     measured: false,
     reason:
-      `The 1-minute load average was ${load.one.toFixed(2)} on ${load.cores} cores, above the ${LOAD_THRESHOLD} threshold. ` +
+      `The 1-minute load average was ${fmtLoad(load.one)} on ${load.cores === null ? "an unmeasured core count" : `${load.cores} cores`}, above the ${LOAD_THRESHOLD} threshold. ` +
       "A timing on a machine this far past its core count measures the machine, not the analyzer. This artifact is written " +
       "so that it REPLACES any earlier perf record rather than leaving one in place to be read as current: the honesty " +
       "contract's L0 is \"no evidence file, or stale evidence\", and a stale file that says nothing is worse than one that " +
@@ -330,8 +392,9 @@ const out = {
   at: new Date().toISOString(),
   commit: safeCommit(),
   machineLoad: LOAD,
+  loadMeasured,
   loadContaminated: contaminated && !forced,
-  loadPolicy: `A run whose 1-minute load average exceeds ${LOAD_THRESHOLD} is refused without --force and the refusal is printed, because a timing on a machine five times oversubscribed measures the machine. Measured on this instrument's own history: two runs of IDENTICAL analyzer code minutes apart read boot 4,906 ms / facts-per-ms 4,902 and boot 9,612 ms / facts-per-ms 2,432. The same rule is F10's load-context pin (#871) and M49 W22's "perf budgets vs machine load" triage reason.`,
+  loadPolicy: `A run whose 1-minute load average exceeds ${LOAD_THRESHOLD} is refused without --force and the refusal is printed, because a timing on a machine five times oversubscribed measures the machine. Measured on this instrument's own history: two runs of IDENTICAL analyzer code minutes apart read boot 4,906 ms / facts-per-ms 4,902 and boot 9,612 ms / facts-per-ms 2,432. The same rule is F10's load-context pin (#871) and M49 W22's "perf budgets vs machine load" triage reason. When the load itself cannot be measured the gate does NOT judge the run and says so (loadMeasured:false with a reason) rather than reporting the run as clean — the previous \`cat /proc/loadavg\` read made every non-Linux host publish a null load under loadContaminated:false.`,
   sampleLimit: SAMPLE,
   sample: { files: files.length, digest: hashOf(files.map((f) => f.rel).join("\n")) },
   current: { bootMs: round(current.bootMs), perFile: stats(current.perFileMs), facts: current.facts, nodes: current.nodes, factsPerMs: perFact(current) },

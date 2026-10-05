@@ -34,6 +34,7 @@ import { createPositionMapper } from "../../src/lsp/positions.ts"
 import { deriveCallSiteAddress, isExactAddress, addressLine0 } from "../../src/intelligence/graph/line-address.ts"
 import { isUsageSiteRow } from "../../src/lsp/relations.ts"
 import { writeSealed } from "../lib/evidence.ts"
+import { sha256File } from "./portability.ts"
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..")
 const EVIDENCE_PATH = join(ROOT, "validation", "m24", "results", "CALLSITE-AGREEMENT.json")
@@ -370,7 +371,14 @@ async function main(): Promise<void> {
   console.log("M24 wave-2 — real-index call-site differential + §15.1 agreement\n")
   const index = findIndex()
   const currentCommit = execFileSync("git", ["rev-parse", "HEAD"], { cwd: ROOT, encoding: "utf8" }).trim()
-  const sourceFingerprint = execFileSync("shasum", ["-a", "256", join(ROOT, "src", "lsp", "navigation.ts")], { encoding: "utf8" }).split(" ")[0]!
+  // The fingerprint is node:crypto over raw bytes (script/m24/portability.ts,
+  // the lane's owner, which carries the NIST KAT vectors for it). It used to
+  // spawn `shasum -a 256` — the BSD/macOS spelling — so this gate was DEAD on
+  // every OS but macOS (on linux `shasum` may be absent) and was named by
+  // M24.P1's gate X3 as a non-portable spawn. Same digest either way: sha256sum
+  // and `shasum -a 256` both print the hex digest of the file's raw bytes, so
+  // the sealed record's value is unchanged.
+  const sourceFingerprint = sha256File(join(ROOT, "src", "lsp", "navigation.ts"))
 
   if (index === null) {
     // §8.3: silence is guilt. An absent index is a BLOCKED leg with its reason,
