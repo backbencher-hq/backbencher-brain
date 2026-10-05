@@ -153,8 +153,8 @@ different claims and only one of them is supported.
 - **H1** — a mutant that removes a required export **is** classified as a CRASH,
   and is explicitly *not* counted as a functional catch. This program's repeated
   lesson, implemented.
-- **H2** — the positive control: the gate completes on the clean tree and its
-  failing set is recorded as the baseline.
+- **H2** — the positive control: the gate runs to a verdict on the clean tree
+  and its failing set is recorded as the baseline.
 - **H3** — all four mutations restored byte-for-byte; nothing left untracked
   under `validation/`; no scratch in the OS temp dir. The harness does not
   become the mutation-scratch leak it is hunting.
