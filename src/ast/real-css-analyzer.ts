@@ -133,6 +133,29 @@ interface StackFrame {
    */
   scope: string
   currentSelector: string
+  /**
+   * The name of the nearest enclosing `@keyframes`, or `""`.
+   *
+   * This is the OWNER of a declaration that `currentSelector` cannot own, and the reason it
+   * exists is measured, not imagined. `@keyframes fade { from { opacity: var(--o) } }` is a
+   * real custom-property read — the animation's behaviour depends on a property declared
+   * elsewhere — and `currentSelector` is EMPTY inside a `keyframe_block`, because the walk
+   * only sets it at a `rule_set` and a keyframe block is not one. So before this field
+   * existed, every `var()` inside `@keyframes` produced no edge at all: measured over the
+   * admitted corpus, **827 of the 1,014 `--x` leaves that reach no `rule_set`** are in a
+   * `keyframes_statement`, across 265 files (`bootstrap/css/bootstrap.css:4933`,
+   * `bulma/.../fontawesome-free-6.5.2-web/css/all.css:330`,
+   * `pico/css/pico.amber.css:2769`). The dependency was real and the graph did not have it.
+   *
+   * The owner is the keyframes NAME because that name is already published as a symbol
+   * (`processKeyframes`, `SymbolKind.Function`, `isKeyframes`), so the edge resolves at both
+   * ends without inventing an endpoint. Nothing here is emitted for a `@theme`/`@apply`/
+   * `@utility` block instead: those are CONSUMING at-rules with deliberately no symbol
+   * (`processAtRule`'s ruling D10 — "a symbol with no declaration behind it is a name with no
+   * referent"), so a `var()` inside one still has no owner to name. That remainder is
+   * counted and declared, not papered over: 167 leaves in 4 files.
+   */
+  keyframeScope: string
 }
 
 // ============================================================================
@@ -350,6 +373,18 @@ function collapseWhitespace(text: string): string {
 }
 
 /**
+ * Is this callee node the CSS `var()` function?
+ *
+ * Character equality after trimming, not a pattern: a node-type or text test has to
+ * distinguish the FUNCTION `var` from a class named `.var`, a property `--var`, or the word
+ * "var" inside a comment, and only the node's own text can answer that. A pattern over the
+ * enclosing statement could not.
+ */
+function fnNameNameIsVar(fnNameNode: Node): boolean {
+  return fnNameNode.text.trim() === "var"
+}
+
+/**
  * Does this selector text contain a NESTING `&`?
  *
  * Escape-aware, and it has to be: the corpora carry Tailwind arbitrary values whose
@@ -510,10 +545,10 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
     this.collectCustomDefinitionNames(rootNode, ctx)
     this.collectNamespacePrefixes(rootNode, ctx)
 
-    const stack: StackFrame[] = [{ node: rootNode, media: "", supports: "", layer: "", container: "", scope: "", currentSelector: "" }]
+    const stack: StackFrame[] = [{ node: rootNode, media: "", supports: "", layer: "", container: "", scope: "", currentSelector: "", keyframeScope: "" }]
 
     while (stack.length > 0) {
-      const { node, media, supports, layer, container, scope, currentSelector } = stack.pop()!
+      const { node, media, supports, layer, container, scope, currentSelector, keyframeScope } = stack.pop()!
 
       // Record every parse error the tree reports, and NEVER claim otherwise.
       //
@@ -529,7 +564,7 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
       // ERROR/MISSING nodes — grails-core's `docs-core/.../main.css` produces
       // 3,418 of them, and the first spans the ENTIRE 1,217-line file. Skipping
       // error subtrees deleted 883 of that file's 964 lost output lines, i.e. the
-      // whole file, including the rules the grammar had read perfectly well.
+      // whole file, including the rules the grammar had parsed without error.
       //
       // The suppression was also never necessary. Inside a real ERROR node the
       // children are tokens the switch does not match — for the
@@ -567,6 +602,11 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
       let nextContainer = container
       let nextScope = scope
       let nextSelector = currentSelector
+      // The nearest enclosing `@keyframes` OWNS the declarations inside it, so a frame
+      // inherits the name of the one it is inside. Reset per node (not `|| carried`) so a
+      // `keyframes_statement` that publishes no name cannot inherit an outer one: the
+      // nearest owner is the only correct owner.
+      let nextKeyframeScope = keyframeScope
 
       switch (node.type) {
         case "rule_set":
@@ -582,9 +622,11 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
           }
           break
         }
-        case "keyframes_statement":
-          this.processKeyframes(node, ctx)
+        case "keyframes_statement": {
+          const kfName = this.processKeyframes(node, ctx)
+          nextKeyframeScope = kfName
           break
+        }
         case "supports_statement": {
           const newSupports = this.processSupports(node, ctx)
           if (newSupports) nextSupports = newSupports
@@ -620,7 +662,7 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
           break
         }
         case "call_expression":
-          this.processCallExpression(node, currentSelector, ctx)
+          this.processCallExpression(node, currentSelector, keyframeScope, ctx)
           break
       }
 
@@ -635,6 +677,7 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
             container: nextContainer,
             scope: nextScope,
             currentSelector: nextSelector,
+            keyframeScope: nextKeyframeScope,
           })
         }
       }
@@ -997,9 +1040,9 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
    * True when the node IS the parse failure, rather than merely containing one.
    *
    * `Node.hasError` is true for a node with a broken descendant too, so using it
-   * as a suppression test would discard declarations that are perfectly well
-   * formed. A MISSING node is a token the parser inserted where the source had
-   * none, which is equally not a declaration.
+   * as a suppression test would discard declarations that are well formed. A
+   * MISSING node is a token the parser inserted where the source had none,
+   * which is equally not a declaration.
    */
   /**
    * The 1-based line of a node — the M59 convention, matching the symbol
@@ -1332,7 +1375,7 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
     // Recovery debris is not a rule. When the pinned grammar cannot read a
     // construct it emits an ERROR node for the construct's HEAD and re-parses
     // the remainder as a sibling of that ERROR — so the fabricated nodes are
-    // perfectly well-formed and no subtree suppression can reach them. The
+    // well-formed and no subtree suppression can reach them. The
     // measured case is `@keyframes "fade" { from {…} to {…} }` (a quoted
     // keyframes name, which the grammar cannot represent):
     //
@@ -1914,8 +1957,64 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
     return selectorText
   }
 
+  /**
+   * The node that NAMES the module an `@import` pulls in, or `null` when the statement
+   * carries none.
+   *
+   * A DIRECT `string_value` / `call_expression` child is the shape the grammar produces for
+   * a well-formed `@import`, and it stays the first thing tried so the 243 edges that were
+   * already published are untouched.
+   *
+   * The DESCENDANT pass exists because pass 10 measured a 7-edge gap on the admitted corpus:
+   * 250 `import_statement` nodes, 243 published `imports` edges
+   * (`validation/m14/census/css-import-coverage.ts`). The 7 are indented-Sass `.sass`
+   * partials, which this pinned CSS grammar cannot parse, and it recovers them into an
+   * ERROR shape — `;+@import+ERROR+binary_expression`, `;+@import+ERROR+ERROR+float_value+
+   * keyword_query` and four siblings — where the quoted specifier is still a real
+   * `string_value` node but sits under the ERROR rather than directly under the statement.
+   * `@import "../utilities/mixins"` is a genuine fetch the user agent performs; publishing
+   * nothing for it is a silent miss, not a ruling.
+   *
+   * **The line guard is what makes the descendant pass safe, and it is not optional.** The
+   * ERROR recovery SWALLOWS the rest of the file into the `import_statement` node:
+   * `Documenter.jl/.../bulma/elements/button.sass` spans L2..L50 and carries ELEVEN
+   * `string_value` descendants — one at L2 (`"../utilities/mixins"`, the module) and ten at
+   * L47 (the `$breakpoints` map's `"mobile"`, `"small"`, `"normal"`, … ). Taking the first
+   * descendant in document order happens to pick the right one there, and would pick the
+   * WRONG one for any statement whose own specifier is not a node. Restricting the search to
+   * the `@import` KEYWORD's own row rejects the L47 ten by construction, so the name is
+   * always the specifier written on the `@import` line and never a string the recovery
+   * swept up from a later line.
+   *
+   * Node-type and position tests only. No pattern over raw text, so a quoted word in a
+   * comment, in a `content:` value or in a class name cannot become a module name.
+   */
+  private findImportNameNode(node: Node): Node | null {
+    const isNameNode = (n: Node): boolean => n.type === "string_value" || n.type === "call_expression"
+    const direct = this.findChild(node, isNameNode)
+    if (direct) return direct
+
+    const keyword = this.findChild(node, (c) => c?.type === "@import")
+    const keywordRow = (keyword ?? node).startPosition.row
+
+    let found: Node | null = null
+    const walk = (n: Node): void => {
+      if (found) return
+      if (n.startPosition.row === keywordRow && isNameNode(n)) {
+        found = n
+        return
+      }
+      for (let i = 0; i < n.childCount; i++) {
+        const child = n.child(i)
+        if (child) walk(child)
+      }
+    }
+    walk(node)
+    return found
+  }
+
   private processImport(node: Node, ctx: CssContext) {
-    const stringNode = this.findChild(node, (c) => c?.type === "string_value" || c?.type === "call_expression")
+    const stringNode = this.findImportNameNode(node)
     if (stringNode) {
       const moduleName = unwrapUrl(stringNode.text)
       ctx.imports.push({
@@ -2420,12 +2519,23 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
   }
 
-  private processKeyframes(node: Node, ctx: CssContext) {
+  /**
+   * Publishes a `@keyframes` declaration as a symbol and returns the name it published, or
+   * `""` when it published none.
+   *
+   * The RETURN is load-bearing and is new: the caller stores it as the owning scope for the
+   * declarations inside, which is what lets a `var()` inside a `keyframe_block` be emitted
+   * as a `references` edge from the animation instead of being dropped. See
+   * `StackFrame.keyframeScope`. It returns the name rather than `void` so the two can never
+   * disagree — a symbol published under a name the caller has to re-derive is the shape that
+   * produced the bare-`@container` identity collision this lane already had to undo.
+   */
+  private processKeyframes(node: Node, ctx: CssContext): string {
     const nameNode = this.findChild(
       node,
       (c) => c && (c.type === "keyframes_name" || c.type === "identifier" || c.type === "string_value"),
     )
-    if (!nameNode) return
+    if (!nameNode) return ""
     const name = stripAllQuotes(nameNode.text)
     ctx.symbols.push({
       name: name,
@@ -2450,6 +2560,7 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
     const keywordNode = this.findChild(node, (c) => c?.type === "at_keyword")
     const keyword = keywordNode ? keywordNode.text.trim().toLowerCase() : "@keyframes"
     this.recordKeyframesOverride(ctx, name, keyword, this.lineOf(node))
+    return name
   }
 
   /**
@@ -3418,19 +3529,33 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
   }
 
-  private processCallExpression(node: Node, currentSelector: string, ctx: CssContext) {
+  /**
+   * `keyframeScope` is the nearest enclosing `@keyframes` name, or `""`. A `var()` whose
+   * owner is a keyframe block rather than a rule is emitted from THAT name; see
+   * `StackFrame.keyframeScope` for the measurement that made it necessary.
+   */
+  private processCallExpression(node: Node, currentSelector: string, keyframeScope: string, ctx: CssContext) {
     const fnNameNode = this.findChild(node, (c) => c?.type === "function_name" || c?.type === "identifier")
     if (!fnNameNode) return
 
-    if (fnNameNode.text === "var" && currentSelector) {
+    if (fnNameNameIsVar(fnNameNode) && (currentSelector || keyframeScope)) {
       const argsNode = this.findChild(node, (c) => c?.type === "arguments")
       if (argsNode) {
+        // The OWNER of this read: the rule's selector when there is one, otherwise the
+        // enclosing `@keyframes` name. `currentSelector` wins whenever both are set, which
+        // is the case that keeps the 161,768 existing edges byte-identical — a `var()`
+        // inside a `rule_set` is a rule's read, and the keyframes scope it may sit inside is
+        // a different, weaker claim.
+        const owner = currentSelector || keyframeScope
+        // `isKeyframeScopeRef` is TRUE only for the owner-less case, so a consumer can count
+        // the new sub-shape without re-deriving it, and so the fixture can pin it.
+        const ownedByKeyframes = currentSelector === "" && keyframeScope !== ""
         const argStack = [argsNode]
         while (argStack.length > 0) {
           const n = argStack.pop()!
           if (n.namedChildCount === 0 && n.text.trim().startsWith("--")) {
             ctx.relationships.push({
-              source: currentSelector,
+              source: owner,
               target: n.text.trim(),
               type: ASTEngine.RelationshipType.References,
               // M59.A7: the name is the custom property INSIDE `var()`, so the
@@ -3438,7 +3563,20 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
               // receiver's position, which for `calc(var(--x) * 2)` is the
               // `calc` — a different line whenever the value wraps.
               line_number: this.lineOf(n),
-              metadata: { cssSpecific: true, isVariableRef: true },
+              // A parse fact, written explicitly rather than left absent: the owner is a
+              // node this walk published and the target is an argument node of a `var()`
+              // whose callee node reads `var`. Nothing here is matched by name against a
+              // declared target — that is what `uses` does, and it is why those edges are
+              // the ones that need a lower confidence. `isVariableRef`'s 161,768 siblings
+              // write no confidence at all, which the lane's own census counts as a
+              // distinct claim; this branch states its own instead of inheriting the
+              // absence.
+              ...(ownedByKeyframes ? { confidence: 1.0 } : {}),
+              metadata: {
+                cssSpecific: true,
+                isVariableRef: true,
+                ...(ownedByKeyframes ? { isKeyframeScopeRef: true } : {}),
+              },
             })
             ctx.patterns["CSS Custom Properties"] = true
           }

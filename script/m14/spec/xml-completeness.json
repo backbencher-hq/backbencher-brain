@@ -258,6 +258,17 @@
         "measured": "probe and count are in the resolution; instruments in validation/m14/fixtures/xml/ontology-census.mts and validation/m14/fixtures/xml/overrides-probe.mts, executed against the table by validation/m14/fixtures/xml/ruled-gate.ts"
       },
       {
+        "id": "XML-ONTOLOGY-EXTENDS",
+        "concept": "extends — ontology ruling (B:parse-tree-count)",
+        "relationship": "extends",
+        "status": "RULED",
+        "instrument": "B:parse-tree-count",
+        "node_type": "",
+        "ruling": "XSD type DERIVATION — `<xs:extension base=\"T\">` / `<xs:restriction base=\"T\">` (XSD 1.",
+        "resolution": "XSD type DERIVATION — `<xs:extension base=\"T\">` / `<xs:restriction base=\"T\">` (XSD 1.0 Part 1 §3.4.2), emitted as role `xsd_type_derivation` with the base type as target. THIS TYPE IS EMITTED, so this row is reached only on a corpus where the analyzer produced 0 derivation edges, and the two outcomes mean opposite things. 0 derivation SITES on the tree: the corpus simply contains no XSD derivation — the Ruling is that the CORPUS is empty, not that XML lacks the construct, and the fix is a wider corpus. A derivation SITE present on the tree with 0 emitted edges: the gate reports FALSIFIED and is right, because the analyzer is failing to read a construct the corpus does use. That is the whole reason this entry exists: without it the gate's spec fallback attributes an `extends` verdict to WHATEVER RULED PROSE MENTIONS THE WORD, and on this lane that is `XML-ONTOLOGY-IMPLEMENTS`, whose resolution describes 'an implements/extends clause'. A 0 would then be graded RULED-SOUND on a decision written about a different type. OVERTURN: a non-zero derivation-site count on the parse tree of a corpus where this analyzer emits 0 `extends` edges.",
+        "measured": "probe and count are in the resolution; instruments in validation/m14/fixtures/xml/ontology-census.mts and validation/m14/fixtures/xml/overrides-probe.mts, executed against the table by validation/m14/fixtures/xml/ruled-gate.ts"
+      },
+      {
         "id": "XML-ONTOLOGY-EXPORTS",
         "concept": "exports — ontology ruling (A:grammar-inventory)",
         "relationship": "exports",

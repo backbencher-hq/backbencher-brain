@@ -409,6 +409,61 @@ const exportPrivateMembers = (r: any) => {
   return { ...r, relationships: [...(r.relationships ?? []), ...extra] }
 }
 
+/**
+ * S16 REVERT — an `@extend` edge is labelled `uses` again instead of `extends`.
+ *
+ * The edge is still there, still has two real endpoints, and every COUNT is unchanged,
+ * which is what makes this class worth a mutant: the defect is not a missing edge but a
+ * MISLABELLED one, and no count-based gate on the project can see it. `uses` is the
+ * ontology's neighbour of `extends` — a claim that the extending rule merely consumes
+ * the extended selector, where the truth is that it INHERITS its declarations — so the
+ * graph cannot answer "what inherits from .btn" at all.
+ *
+ * Caught by control-flow-and-extend's `extends` row AND by placeholder-selectors-and-
+ * extend's `forbidRelationships` rows, which pin BOTH labels on the interpolated
+ * `%responsive-#{$bp}` target so the guard survives whichever way a future edit goes.
+ */
+const relabelExtendToUses = (r: any) => ({
+  ...r,
+  relationships: (r.relationships ?? []).map((x: any) =>
+    x.metadata?.isScssExtend ? { ...x, type: "uses" } : x,
+  ),
+})
+
+/**
+ * S17 REVERT — a `@include` of a mixin declared in this file is labelled `uses` again.
+ *
+ * The same mislabelling as S16 on the invocation side, and the one that costs the most:
+ * `uses` is what the ontology uses for a name a rule merely reads, so relabelling it
+ * makes "who calls .button-size mixin" unanswerable, and `uses` edges are the ones a
+ * consumer is least likely to treat as call sites.
+ *
+ * Caught by module-system-and-mixins' `calls` row with its `meta.isScssInclude` pin.
+ */
+const relabelIncludeToUses = (r: any) => ({
+  ...r,
+  relationships: (r.relationships ?? []).map((x: any) =>
+    x.metadata?.isScssInclude ? { ...x, type: "uses" } : x,
+  ),
+})
+
+/**
+ * S18 REVERT — an `f(x)` call to a `@function` declared in this file is labelled `uses`.
+ *
+ * The inconsistency this mutant exists to prevent is a LABEL THAT DEPENDS ON SURFACE
+ * SYNTAX: the same invocation would be `uses` as `f(x)` and `calls` as `@include f`, and
+ * a graph whose edge labels are a function of how the caller was spelled cannot be
+ * aggregated. Caught by functions-return-and-undeclared-uses' `calls` row with its
+ * `meta.isScssFunctionCall` pin, and by reads-recovered-from-error-regions' recovered-
+ * region `calls` row.
+ */
+const relabelFunctionCallToUses = (r: any) => ({
+  ...r,
+  relationships: (r.relationships ?? []).map((x: any) =>
+    x.metadata?.isScssFunctionCall ? { ...x, type: "uses" } : x,
+  ),
+})
+
 export const SCSS_MUTANTS = [
   {
     id: "scss/identically-named-scopes-collapsed",
@@ -598,5 +653,29 @@ export const SCSS_MUTANTS = [
     description:
       "S15 REVERT: Sass's private-member rule is dropped, so a `-`/`_`-prefixed top-level variable is exported. Subtler than S14 because the name still LOOKS like a member — it is a top-level variable in a file anyone can `@use` — and the only thing that makes it private is the first character of its name. Caught by module-exports-and-global-overrides' `$_internal` forbid row.",
     transform: exportPrivateMembers,
+  },
+  {
+    id: "scss/extend-label-reverted-to-uses",
+    language: "scss",
+    defectClass: "mislabel",
+    description:
+      "S16 REVERT: an `@extend` edge is labelled `uses` again instead of `extends`. The edge is still there, still has two real endpoints, and every COUNT is unchanged, which is what makes this class worth a mutant: the defect is not a missing edge but a MISLABELLED one, and no count-based gate on the project can see it. `uses` is the ontology's neighbour of `extends` — a claim that the extending rule merely consumes the extended selector, where the truth is that it INHERITS its declarations. Caught by control-flow-and-extend's `extends` row AND by placeholder-selectors-and-extend's forbid rows, which pin BOTH labels on the interpolated `%responsive-#{$bp}` target so the guard survives whichever way a future edit goes.",
+    transform: relabelExtendToUses,
+  },
+  {
+    id: "scss/include-label-reverted-to-uses",
+    language: "scss",
+    defectClass: "mislabel",
+    description:
+      "S17 REVERT: an `@include` of a mixin declared in this file is labelled `uses` again. The same mislabelling as S16 on the invocation side, and the one that costs the most: `uses` is what the ontology uses for a name a rule merely reads, so relabelling it makes \"who calls this mixin\" unanswerable, and `uses` edges are the ones a consumer is least likely to treat as call sites. Caught by module-system-and-mixins' `calls` row with its `meta.isScssInclude` pin.",
+    transform: relabelIncludeToUses,
+  },
+  {
+    id: "scss/function-call-label-reverted-to-uses",
+    language: "scss",
+    defectClass: "mislabel",
+    description:
+      "S18 REVERT: an `f(x)` call to a `@function` declared in this file is labelled `uses`. The inconsistency this mutant exists to prevent is a LABEL THAT DEPENDS ON SURFACE SYNTAX: the same invocation would be `uses` as `f(x)` and `calls` as `@include f`, and a graph whose edge labels are a function of how the caller was spelled cannot be aggregated. Caught by functions-return-and-undeclared-uses' `calls` row with its `meta.isScssFunctionCall` pin, and by reads-recovered-from-error-regions' recovered-region `calls` row.",
+    transform: relabelFunctionCallToUses,
   },
 ]

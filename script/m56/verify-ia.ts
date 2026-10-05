@@ -177,6 +177,20 @@ try {
     sitemapBody = ""
   }
 }
+// The per-language detail pages: one route on disk (`languages/[slug]`) that
+// statically expands to one page per display family. This gate is an
+// INDEPENDENT instrument from S1, so it reads the slug declaration with its own
+// parser rather than importing S1's helper or the site's module.
+function languageDetailRoutes(): string[] {
+  const src = site("src/data/language-depth/slugs.ts")
+  const start = src.indexOf("export const FAMILY_SLUGS")
+  if (start < 0) return []
+  const block = src.slice(start, src.indexOf("\n}", start))
+  return [...block.matchAll(/^\s*(?:"([^"]+)"|([A-Za-z][A-Za-z0-9 #.-]*)):\s*"([a-z0-9-]+)",\s*$/gm)].map(
+    (m) => `/languages/${m[3]}`,
+  )
+}
+
 const discovered = (() => {
   const appDir = path.join(SITE, "src/app")
   const routes: string[] = existsSync(path.join(appDir, "page.tsx")) ? [""] : []
@@ -185,9 +199,20 @@ const discovered = (() => {
     if (!existsSync(path.join(appDir, e.name, "page.tsx"))) continue
     routes.push(`/${e.name}`)
   }
+  // A dynamic segment is not itself a URL, so the walk cannot see it; its
+  // concrete URLs come from the one place they are declared.
+  if (existsSync(path.join(appDir, "languages/[slug]/page.tsx"))) routes.push(...languageDetailRoutes())
   return routes.sort()
 })()
 check("I1: route discovery sees the built site's routes", built && discovered.length >= 12, `routes=${discovered.length}`)
+// Every live surface and every language detail page carries the shared footer.
+// The detail pages are checked on disk rather than in the built HTML so a page
+// that failed to generate is still held to the footer contract.
+{
+  const detailPage = "src/app/languages/[slug]/page.tsx"
+  const detailRoutes = languageDetailRoutes()
+  check("I1: the language detail route carries the shared footer", detailRoutes.length === 0 || (site(detailPage).includes("<SiteFooter />")), detailPage)
+}
 const expectedSitemap = discovered.filter((r) => !RETIRED.includes(r)).map((r) => `https://backbencher.cc${r}`)
 const published = [...sitemapBody.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]!)
 check(

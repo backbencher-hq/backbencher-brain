@@ -1312,17 +1312,21 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
             if (entry.type === "argument") {
               const nm = entry.childForFieldName("name")
               const v = entry.childForFieldName("value")
-              const text = nm?.text ?? (v ? this.nodeAsName(v) : "")
+              const text = nm?.text ?? (v ? this.baseClassNodeName(v) : "")
               if (text === wanted) return nm ?? v ?? entry
             } else {
-              if (this.nodeAsName(entry) === wanted) return entry
+              if (this.baseClassNodeName(entry) === wanted) return entry
             }
           }
         }
-        if (this.nodeAsName(value) === wanted) return value
+        if (this.baseClassNodeName(value) === wanted) return value
         continue
       }
-      if (this.nodeAsName(value) === wanted) return value
+      // `baseClassNodeName` and not `nodeAsName`: the five callers are all base-class
+      // arguments, and `nodeAsName` returns "" for the `pkg::Parent` spelling, which left the
+      // edge real but unstamped — `BC -extends-> AC` published with no line. An edge whose
+      // line is unknown is not wrong, but it is unattributable, and this one is attributable.
+      if (this.baseClassNodeName(value) === wanted) return value
     }
     return null
   }
@@ -2746,22 +2750,56 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
             if (!ca || ca.type === "comma") continue
             if (ca.type === "argument") {
               const v = ca.childForFieldName("value")
-              if (v && (v.type === "string" || v.type === "identifier")) {
-                const text = v.type === "string" ? this.stringNodeText(v) : this.unquoteIdentifier(v.text)
-                if (text) results.push(text)
-              }
-            } else if (ca.type === "string" || ca.type === "identifier") {
-              const text = ca.type === "string" ? this.stringNodeText(ca) : this.unquoteIdentifier(ca.text)
+              const text = v ? this.baseClassNodeName(v) : ""
+              if (text) results.push(text)
+            } else {
+              const text = this.baseClassNodeName(ca)
               if (text) results.push(text)
             }
           }
         }
-      } else if (valNode.type === "string" || valNode.type === "identifier") {
-        const text = valNode.type === "string" ? this.stringNodeText(valNode) : this.unquoteIdentifier(valNode.text)
+      } else {
+        const text = this.baseClassNodeName(valNode)
         if (text) results.push(text)
       }
     }
     return results
+  }
+
+  /**
+   * The class name a base-class ARGUMENT node carries, or "".
+   *
+   * R writes a base class three ways and this reads all three:
+   *
+   *   inherit = Parent            identifier      -> Parent
+   *   contains = "Parent"         string          -> Parent
+   *   inherit = pkg::Parent       namespace_operator
+   *
+   * The third was dropped. R6 documents it — `inherit` may name a class in another package,
+   * and R6's own test suite uses it: `R6/tests/manual/test-inheritance.R:126` writes
+   * `BC <- R6Class(inherit = R6testA::AC, ...)`, where `AC` is declared 9 lines above in the
+   * same file inside the `R6testA = {...}` argument. A census of every class-constructor call
+   * in the corpus (738 of them across 2,342 R files: `new_class` 283, `R6Class` 229,
+   * `setClass` 201, `new_base_class` 12, `setRefClass` 9) found exactly ONE qualified base
+   * class, so this is a 1-edge gap and is recorded as one rather than dressed up. It is a
+   * deterministic parse fact, so the edge it produces is a fact and not a heuristic.
+   *
+   * The qualifier is dropped and the BARE name kept: `pkg::Parent` names the class `Parent`,
+   * which is what `class(x)` returns and what dispatch keys on, and a symbol named
+   * `pkg::Parent` binds to nothing in any file.
+   */
+  private baseClassNodeName(node: Node | null | undefined): string {
+    if (!node) return ""
+    if (node.type === "string") return this.stringNodeText(node)
+    if (node.type === "identifier") return this.unquoteIdentifier(node.text)
+    if (node.type === "namespace_operator") {
+      // `pkg::Parent` — the `rhs` field is the name. `pkg:::Parent` reaches here as the same
+      // node type; `calleeName` already normalises `:::` to `::` and the class name is the
+      // same token either way.
+      const rhs = node.childForFieldName("rhs")
+      return rhs ? this.unquoteIdentifier(rhs.text) : ""
+    }
+    return ""
   }
 
   /**
