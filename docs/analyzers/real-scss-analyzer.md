@@ -1084,7 +1084,7 @@ defect in the same lane.
 
 #### §8.3 `script/m14/run-fixtures.ts` — the orphan-lane gate exits 6 before running any lane
 
-**File** `script/m14/run-fixtures.ts`, the orphan check at lines 1576–1585. **What it must
+**File** `script/m14/run-fixtures.ts`, the orphan check at lines 1570–1584. **What it must
 do:** report the orphan lanes as a WARNING and still run every lane the caller named, or
 require an explicit flag to make them fatal.
 
@@ -1105,6 +1105,62 @@ healthy and the gate is the only thing standing in the way. Worth noting the run
 distinguishes a scoped run from a full one in its output; the orphan gate just does not
 respect that distinction.
 
+#### §8.4 `script/m14/resumable-walk.ts` — a RESUMED arbiter run inverts the verdict, and looks more trustworthy than a fresh one
+
+**This is the most consequential finding of this round and it affects every lane, not this
+one.** Found by running the arbiter twice, which is the ordinary way anyone re-runs it.
+
+Same branch, same code, same 4,433-file corpus, two invocations:
+
+```
+$ npx tsx script/m14/ontology-coverage-gate.ts scss --fresh
+walk: 4433/4433 files (100.0%)  newly walked 4433, resumed 0
+calls         EMITTED           304 edges in 4+ files
+… 8 emitted …
+emitted 8/10   ruled-sound 2   FALSIFIED 0   ruled-without-justification 0
+
+$ npx tsx script/m14/ontology-coverage-gate.ts scss
+walk: 4433/4433 files (100.0%)  newly walked 0, resumed 4433
+calls         RULED-UNJUSTIFIED NOT EMITTED and its construct is absent, but NO written ruling was found in the spec
+… all 8 emitted types now read RULED-UNJUSTIFIED …
+emitted 0/10   ruled-sound 2   FALSIFIED 0   ruled-without-justification 8
+```
+
+Both print `4433/4433 (100.0%)`. The second one is **wrong**, and its only tell is the pair
+`newly walked 0, resumed 4433` — which is exactly the signal a reader who has learned to
+trust the coverage line will not look at.
+
+**File** `script/m14/ontology-coverage-gate.ts`, the `resumableWalk` call at lines 301–318,
+together with `script/m14/resumable-walk.ts`. **Why:** the arbiter accumulates
+`observed` (per-type edge counts, line 286) **only inside the `run` callback**, and
+`resumableWalk` skips every index whose `id` is already in the checkpoint. The checkpoint
+persists the **path** and not the per-file counts, so on a resumed run `run` executes zero
+times, `observed` stays empty, and every type reads 0 — which the verdict loop then routes to
+`RULED-UNJUSTIFIED` rather than to "this run measured nothing". Instrument A is unaffected
+(it re-walks trees outside the checkpoint), which is why the two RULED-SOUND rows survive and
+the bug looks like a lane that suddenly emits nothing rather than like an instrument defect.
+
+**What it must do**, in the order the risk falls:
+
+1. **Refuse to print a verdict from a walk that observed nothing.** If
+   `walkStats.walked === 0 && walkStats.alreadyDone > 0`, the counts are not a smaller
+   measurement, they are an absent one, and the gate must say so and exit non-zero rather than
+   print `emitted 0/10`.
+2. **Make the checkpoint carry the counts.** This lane's own census sidecar already stores
+   per-file per-type counts keyed by corpus-relative path
+   (`validation/m14/fixtures/scss/scss-census-run-F-sidecar.json` shape), which is precisely
+   what a resumable aggregate needs. Rehydrating `observed` from it turns the checkpoint from
+   a skip-list into a cache and makes resumption actually preserve work.
+3. Failing both, print the `newly walked / resumed` pair **in the verdict line itself**, not
+   only in the coverage line, so it cannot be read as a completed measurement.
+
+**Why this is not a scss finding.** It reproduces on this lane's data because this lane was
+run twice; nothing about SCSS is involved. Any lane whose arbiter run is interrupted by the
+§8.0 orphaned timer — and `resumable-walk.ts`'s own header names nim, scss and hcl as the
+three that hit it — leaves a checkpoint behind, and every subsequent run of that lane then
+reports the inverted verdict. **A supervisor merging a lane that was verified by a resumed
+run would be merging a verdict that says the lane emits nothing.**
+
 ### The arbiter's exit code is 1 on a verdict of FALSIFIED 0, and the cause is shared code
 
 `npx tsx script/m14/ontology-coverage-gate.ts scss` prints its verdict and then exits
@@ -1112,9 +1168,13 @@ respect that distinction.
 
 ```
 emitted 8/10   ruled-sound 2   FALSIFIED 0   ruled-without-justification 0
-[BB-HANG] parser stuck 120s on .../consul/.../icons/triangle-fill/index.scss — exiting
-EXIT_CODE=1
+[BB-HANG] parser stuck 120s on .../consul/.../components/informed-action/layout.scss — exiting
+GATE_EXIT=1
 ```
+
+Re-run on this branch with the current arbiter, over a **complete** walk of 4,433/4,433
+files — and note that this verdict is only obtainable with `--fresh`, for the reason in
+§8.4, which is worth reading before reading this one.
 
 Those two lines are not in conflict, and the second one is not this lane's. The gate sets
 `process.exitCode = falsified.length + unjustified.length === 0 ? 0 : 1` from the line it
