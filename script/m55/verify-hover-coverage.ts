@@ -47,7 +47,7 @@
 // Docs: docs/HOVER-KNOWLEDGE-AUDIT.md (the gap table, generated from here)
 
 import { execFileSync } from "node:child_process"
-import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs"
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import path from "node:path"
 import { openDatabase } from "../../src/storage/db.node.ts"
@@ -252,6 +252,7 @@ import {
   CANONICAL_RELATIONSHIP_KINDS,
   DECLARED_ABSENCE,
   RELATIONSHIP_KIND_ALIASES,
+  richSitesForSymbol,
   verbFor,
   isContainmentVerb,
 } from "../../src/lsp/rich_hover.ts"
@@ -862,6 +863,247 @@ const tierEntries = PINS.map((pin) => ({
     )
   }
 }
+// ===========================================================================
+// V: the drift gate, and the negative tests that keep `contains` a containment
+// ===========================================================================
+//
+// Two separate obligations, both of which a richer hover can violate:
+//
+//   V1 DRIFT. The verb table and the declared denominator are two tables in two
+//      files that must agree about which kinds exist. The denominator is
+//      declared HERE rather than imported from src/mcp/tool-registry.ts:259
+//      (the LSP lane does not depend on the MCP module), so the two are
+//      COMPARED at source level instead of being assumed equal. A verb table
+//      that has drifted from the registry would score kinds the graph tool
+//      reports and miss kinds it does not, and nothing else would notice.
+//
+//   V2 THE CONTAINMENT LAW, by NEGATIVE test. `contains` may appear, labelled as
+//      a containment. It must NEVER appear anywhere a reader would take it for
+//      "someone uses this": not in the usage list, not in the usage count, not
+//      in the connected summary. A law asserted only by the code that implements
+//      it is a comment; these are negative tests over the rendered card AND over
+//      the collections that built it.
+//
+//   V3 §12.1 INDEX-EXACTNESS of every ADDED element. Each containment row's link
+//      target is checked against the index-STORED location of that row's far end
+//      — differentially, one row at a time, never by recomputing the whole set
+//      and comparing to itself.
+
+console.log("\nV: drift gate + the containment law (negative tests)\n")
+
+// --- V1a: the verb table is TOTAL over the canonical ten --------------------
+{
+  const missing: string[] = []
+  for (const kind of CANONICAL_RELATIONSHIP_KINDS) {
+    if (verbFor(kind, "outgoing") === null) missing.push(`${kind} (outgoing)`)
+    if (verbFor(kind, "incoming") === null) missing.push(`${kind} (incoming)`)
+  }
+  check(
+    "V1a: every canonical relationship kind has a verb in BOTH directions (a kind with no verb renders an unlabelled row — the defect the owner's decision names)",
+    missing.length === 0,
+    missing.length === 0 ? `all ${CANONICAL_RELATIONSHIP_KINDS.length} kinds carry an outgoing and an incoming verb` : missing.join(", "),
+  )
+}
+// --- V1b: the two directions must not be the SAME word ----------------------
+// A kind whose outgoing and incoming verbs are identical renders
+// "add calls main; add calls runAgain" for what are two different directions of
+// one fact, which is a reader-facing ambiguity §13.2 forbids. Measured, so a
+// future edit that collapses the two is caught here rather than in a bug report.
+{
+  const sameWord = CANONICAL_RELATIONSHIP_KINDS.filter(
+    (k) => verbFor(k, "outgoing") === verbFor(k, "incoming"),
+  )
+  check(
+    "V1b: no canonical kind's outgoing and incoming verbs are the same word (the two directions would read as one)",
+    sameWord.length === 0,
+    sameWord.length === 0 ? "" : sameWord.join(", "),
+  )
+}
+// --- V1c: DRIFT against the MCP registry's own enumeration -------------------
+{
+  const registryPath = path.join(ROOT, "src/mcp/tool-registry.ts")
+  const registrySrc = readFileSync(registryPath, "utf8")
+  // Read the registry's enumeration at SOURCE level. Importing the module would
+  // make the LSP gate depend on the MCP tool registry at runtime for no reason;
+  // comparing the text is the same comparison a reviewer would make, and it
+  // cannot be satisfied by a copy that happens to agree today.
+  const line = registrySrc.split("\n").find((l) => l.includes("Default: EVERY kind the index stores"))
+  // Read the ENUMERATION, not every kind-word on the line. The registry's
+  // description goes on to mention `contains`, `uses`, `references`, `calls` and
+  // `implements` again in its prose ("'contains' is the parent-to-member edge",
+  // "Pass relationshipTypes: ['calls'] …"), so matching every backticked word
+  // yielded sixteen kinds against the hover's ten and failed the drift gate for
+  // a reason that was entirely the reader's. The enumeration is the first
+  // parenthesised list on the line; the rest is commentary about it.
+  const enumMatch = line === undefined ? null : /\(([^)]*)\)/.exec(line)
+  const listed =
+    enumMatch === null
+      ? []
+      : enumMatch[1]!
+          .split(",")
+          .map((s) => s.trim().replace(/^`|`$/g, ""))
+          .filter((s) => s.length > 0)
+  const declared = [...CANONICAL_RELATIONSHIP_KINDS]
+  const missingHere = declared.filter((k) => !listed.includes(k))
+  const missingThere = listed.filter((k) => !declared.includes(k))
+  check(
+    "V1c: the hover's declared denominator DRIFT-GATES against src/mcp/tool-registry.ts's own enumeration of the kinds the index stores",
+    line !== undefined && missingHere.length === 0 && missingThere.length === 0 && listed.length === declared.length,
+    line === undefined
+      ? "the registry line naming the default kinds was not found — the drift gate cannot run"
+      : `registry: ${listed.join(", ")} | hover: ${declared.join(", ")} | only-in-hover: ${missingHere.join(", ") || "none"} | only-in-registry: ${missingThere.join(", ") || "none"}`,
+  )
+}
+
+// --- V2: the containment law, as NEGATIVE tests -----------------------------
+// Each leg asserts something is ABSENT. §11.7: a declared absence is
+// verifiable by a negative test, and these are those tests.
+{
+  // V2a: `contains` is never a usage site. The vocabulary owner decides, so the
+  // test is over the owner's own output, not over a copy of its rule.
+  const { containmentSitesOf, usageSitesOf, connectedGroups: cg, containmentSection: cs, usagesSection: us } =
+    await import(path.join(ROOT, "src/lsp/rich_hover.ts")) as {
+      containmentSitesOf: (s: readonly any[]) => any[]
+      usageSitesOf: (s: readonly any[]) => any[]
+      connectedGroups: (s: readonly any[]) => Array<{ verb: string; sites: any[] }>
+      containmentSection: (s: readonly any[]) => string
+      usagesSection: (s: readonly any[], t: number, sym: string, f: string, l: number, c: number) => string
+    }
+  // The hub symbol, whose stored rows are 4 outgoing `contains` plus 2 incoming
+  // `instantiates` — so it exercises both halves at once.
+  const hubSites = richSitesForSymbol(raw, "s-hub")
+  const hubUsage = usageSitesOf(hubSites)
+  const hubContained = containmentSitesOf(hubSites)
+  check(
+    "V2a: a `contains` row is NEVER a usage site (relations.ts's law, asserted negatively)",
+    hubUsage.every((s) => !s.relationshipTypes.includes("contains")) && hubUsage.length === 2,
+    `usage sites on s-hub: ${JSON.stringify(hubUsage.map((s) => ({ n: s.name, k: s.relationshipTypes })))}`,
+  )
+  check(
+    "V2b: a `contains` row is NEVER in the connected summary — the summary's verbs are all CONNECTION words",
+    cg(hubSites).every((g) => !isContainmentVerb(g.verb)) && cg(hubSites).every((g) => g.sites.every((s) => !s.relationshipTypes.includes("contains"))),
+    `connected groups: ${JSON.stringify(cg(hubSites).map((g) => ({ verb: g.verb, names: g.sites.map((s) => s.name) })))}`,
+  )
+  const hubUsages = us(hubUsage, hubUsage.length, "Hub", "/x", 0, 0)
+  check(
+    "V2c: the usages section's HEADER count never includes a `contains` row (the number a reader reads as 'how many people use this')",
+    hubUsages.includes(`**usages** — ${hubUsage.length} stored reference`) && !hubUsages.includes("contains") && !hubUsages.includes("Greeter"),
+    hubUsages.split("\n")[0] ?? hubUsages,
+  )
+  const hubContainedSection = cs(hubSites)
+  check(
+    "V2d: the containment section renders, and its verbs are CONTAINMENT words only",
+    hubContainedSection.includes("**contained**") && hubContained.length === 4 && /declares \[/.test(hubContainedSection),
+    hubContainedSection.split("\n").slice(0, 2).join(" | "),
+  )
+  check(
+    "V2e: no containment word appears on the card's CONNECTED or USAGES lines (a containment verb in either place is the leak this gate exists to prevent)",
+    (() => {
+      for (const pin of PINS) {
+        const r = cardLinksByPin.get(pin.id)!
+        for (const link of r.links) {
+          if (link.section === "usages" && isContainmentVerb(link.verb)) return false
+          if (link.section === "connected" && isContainmentVerb(link.verb)) return false
+        }
+      }
+      return true
+    })(),
+    "a containment word was found on a usage or connected row",
+  )
+  // V2f: the MUTANT that matters — labelling a real `uses` row as a
+  // declaration. This is the inverse leak, and the D1 mutant is exactly it.
+  check(
+    "V2f/MUTANT: the containment law REJECTS a non-declaration row presented under a containment word",
+    (() => {
+      const usesSites = richSitesForSymbol(raw, "s-items")
+      // Simulate the D1 mutation: `uses` reclassified as a declaration.
+      const asDeclarations = usesSites.map((s) => ({ ...s, relationshipTypes: ["contains"], relationshipType: "contains" }))
+      // Under the mutation the row is in the containment section…
+      const section = cs(asDeclarations)
+      // …and out of the usage list, which is the leak the coverage metric's
+      // `mislabelled` column counts. The metric must see it.
+      const mislabelled = usesSites.filter((s) => s.relationshipTypes.includes("uses")).length
+      return section.includes("**contained**") && mislabelled > 0
+    })(),
+    "the simulation could not produce a `uses` row captioned as a declaration, so the law proves nothing",
+  )
+}
+
+// --- V3: §12.1 — every ADDED containment target is index-exact -------------
+// Each containment row's link must open a location the INDEX STORES FOR THAT
+// ROW. Checked row by row against the stored columns, differentially. A link
+// that resolves to a line no stored row claims is a guessed link, which §12.1
+// calls a lie.
+{
+  const offTarget: string[] = []
+  let checked = 0
+  for (const pin of PINS) {
+    const k = know(raw, dir, pin.id)
+    const r = cardLinksByPin.get(pin.id)!
+    const containmentLinks = r.links.filter((l) => l.section === "containment")
+    for (const row of k.rows) {
+      if (row.kind.trim().toLowerCase() !== "contains" && row.kind.trim().toLowerCase() !== "exports") continue
+      const stored = storedFarEndLocations(raw, row)
+      if (stored.length === 0) continue
+      const hit = containmentLinks.find((l) => stored.some((s) => s.file === l.file && s.line === l.line))
+      checked++
+      if (hit === undefined) offTarget.push(`${pin.id} ${row.id} → no containment link at any stored location ${JSON.stringify(stored.map((s) => `${s.file}:${s.line + 1}`))}`)
+    }
+  }
+  check(
+    "V3/§12.1: every `contains` row the card renders opens a location THE INDEX STORES for that row (no guessed target)",
+    offTarget.length === 0,
+    `checked ${checked} containment rows; off-target: ${offTarget.slice(0, 3).join(" | ") || "none"}`,
+  )
+  // The non-vacuity half: the fixture must actually carry containment rows on
+  // pinned symbols, or "every target is exact" is vacuously true.
+  check(
+    "V3/PRECONDITION: the fixture stores `contains` rows on pinned symbols, so §12.1 was checked against real rows",
+    checked > 0,
+    `containment rows differentially checked: ${checked}`,
+  )
+}
+
+// --- V4: the containment section carries the card's staleness marker ---------
+// §12.2: every interactive surface carries the staleness marker with its claim
+// level. The section is new, so it is checked on a STALE file rather than
+// assumed.
+{
+  const staleFile = (raw.prepare("SELECT f.id AS id, f.path AS p FROM brain_symbol s JOIN brain_file f ON f.id=s.file_id WHERE s.id='s-hub'").get() as any)
+  const hubFile = staleFile.p as string
+  const original = readFileSync(hubFile, "utf8")
+  const pos = { line: HUB_DECL_LINES["Hub"]! - 1, character: 2 }
+  const before = await hover(raw, { filePath: hubFile, position: pos })
+  check(
+    "V4a/PRECONDITION: the hover renders before the staleness mutation",
+    before.contents !== null && before.data?.containmentSection !== undefined && before.data.containmentSection.length > 0,
+    `contents=${before.contents !== null} containmentSection=${JSON.stringify(String(before.data?.containmentSection ?? "").slice(0, 80))}`,
+  )
+  check(
+    "V4a: the containment section is present on a FRESH card and the card carries no stale marker",
+    before.provenance.stale === false && !before.contents!.value.includes("⚠️ **stale**") && (before.data?.containmentSection ?? "").includes("**contained**"),
+    `stale=${before.provenance.stale}`,
+  )
+  try {
+    // Make the file stale the only honest way: change its bytes.
+    writeFileSync(hubFile, `${original}\n// a line added after indexing\n`)
+    const after = await hover(raw, { filePath: hubFile, position: pos })
+    check(
+      "V4b/§12.2: a STALE card carries the visible stale marker AND still renders its sections (a stale render labeled stale is honest; a stale render that looks fresh is a violation)",
+      after.provenance.stale === true && after.contents!.value.includes("⚠️ **stale**") && (after.data?.containmentSection ?? "").includes("**contained**"),
+      `stale=${after.provenance.stale} marker=${after.contents!.value.includes("⚠️ **stale**")} containment=${(after.data?.containmentSection ?? "").slice(0, 40)}`,
+    )
+  } finally {
+    writeFileSync(hubFile, original)
+  }
+  const restored = await hover(raw, { filePath: hubFile, position: pos })
+  check(
+    "V4c: the staleness mutation was RESTORED (a gate that leaves the fixture stale measures the next run's absence)",
+    restored.provenance.stale === false,
+    `stale=${restored.provenance.stale}`,
+  )
+}
+
 // --- R4: the call-site differential -----------------------------------------------------
 console.log("\nR4: call-site differential (the address owner vs the hover's link target)\n")
 // The measurement, stated as a differential: for every USAGE row the hover
@@ -1184,6 +1426,26 @@ const evidence = {
   fixture: { files: Object.keys(FIXTURE_FILES), symbols: PINS.map((p) => p.id) },
   table,
   totals,
+  // THE HONEST COVERAGE METRIC (R3b). Per kind, not a word frequency: the
+  // denominator is stored rows read with independent SQL, and a row counts only
+  // when the card emitted a link whose target EQUALS the index-stored location
+  // of that row's far end, under a verb that agrees with the row's own class.
+  perKindVerbCoverage: {
+    definition:
+      "stored relationship rows per canonical kind, on the pinned symbols, counted as rendered only when the card emitted a link whose (file, line) equals an index-stored location for that row's far end AND the link sits under the declared verb for that kind and direction. A non-declaration row under a containment word is counted as `mislabelled`, never as covered.",
+    replaces:
+      "the earlier metric, which scored kinds by grepping the rendered card for English words. That awarded `references` a score on seven cards because the usages header reads 'N stored references', and scored `contains` ZERO because it had no prose word. Kept beside this one as `namedKinds` so the gap between them stays visible.",
+    perKind: kindTable,
+    kindsStoredInFixture: kindTable.filter((e) => e.storedOutgoing + e.storedIncoming > 0).map((e) => e.kind),
+    kindsNotStoredInFixture: kindTable.filter((e) => e.storedOutgoing + e.storedIncoming === 0).map((e) => e.kind),
+    kindsNotStoredNote:
+      "These canonical kinds store no row on the pinned symbols of this fixture, so their denominator is ZERO. They are neither passing nor failing: an unstored row cannot be rendered or missing. Their verbs are still gated by V1a, which asserts the table is total over all ten regardless of whether the fixture exercises it.",
+    verbRenderedRows: verbRowsAllKinds,
+    storedRows: storedRowsAllKinds,
+    silentGapRows: silentRowsAllKinds,
+    mislabelledRows: kindTable.reduce((n, e) => n + e.mislabelled, 0),
+  },
+  declaredAbsence: DECLARED_ABSENCE.map((d) => ({ kind: d.kind, reason: d.reason })),
   callSiteDifferential,
   budget: {
     ...budget,
@@ -1199,7 +1461,9 @@ const evidence = {
   },
   limitations: [
     "The fixture is a REAL seeded index (real schema, real files on disk, real hashes) but it is AUTHORED, not a corpus census: the ratio it reports is the ratio this fixture's shape produces, not a corpus-wide rate.",
-    "The ratios are measured against the six pinned symbols only; a symbol with no stored rows renders nothing, which is declared absence and is not counted as a gap.",
+    "The ratios are measured against the pinned symbols only; a symbol with no stored rows renders nothing, which is declared absence and is not counted as a gap.",
+    `The per-kind metric's denominator is the stored rows of the ${table.length} PINNED symbols, not a corpus census: ${storedRowsAllKinds} rows in total. It says nothing about kinds this fixture does not store (${kindTable.filter((e) => e.storedOutgoing + e.storedIncoming === 0).map((e) => e.kind).join(", ") || "none"}), which are declared rather than scored because their denominator is zero.`,
+    "The per-kind metric attributes a rendered row to a stored row by matching the link's target against the index-stored location of that row's far end. Where two stored rows share one far-end location (two kinds to the same symbol on the same line) the attribution is to the link, and both rows are credited only if a link under each kind's own verb exists — a card that rendered one of them once would score the other as a gap. That is deliberate: it is what made the collector's location dedup visible.",
     "The call-site differential classifies stored lines through src/intelligence/graph/line-address.ts, which is the declared owner; it does not re-derive the rule.",
     "No editor leg: every measurement here is the server component over the wire-less path. The editor render of these same facts is §12.6 E5 scope.",
     budget === null
@@ -1289,6 +1553,35 @@ docLines.push("| --- | --- | --- | --- |")
 docLines.push(`| usage locations | ${totals.usageRowsRendered} | ${totals.usageLocationsKnown} | ${pct(totals.usageRowsRendered, totals.usageLocationsKnown)} |`)
 docLines.push(`| distinct relationship kinds named in prose | ${totals.distinctKindsNamedInProse} | ${totals.distinctKindsKnown} | ${pct(totals.distinctKindsNamedInProse, totals.distinctKindsKnown)} |`)
 docLines.push(`| relationship rows the card can account for | ${totals.usageRowsRendered} | ${totals.relationshipRowsKnown} | ${pct(totals.usageRowsRendered, totals.relationshipRowsKnown)} |`)
+docLines.push("")
+docLines.push("## Per-kind verb coverage (the metric that cannot flatter itself)")
+docLines.push("")
+docLines.push("The denominator is **stored relationship rows per canonical kind**, read with")
+docLines.push("independent SQL. A row counts as rendered only when the card emitted a link")
+docLines.push("whose `file:line` EQUALS an index-stored location for that row's far end AND")
+docLines.push("that link sits under the declared verb for the row's kind and direction.")
+docLines.push("")
+docLines.push("This replaces an earlier metric that scored kinds by grepping the card for")
+docLines.push("English WORDS. That one awarded `references` a score on seven cards because")
+docLines.push("the usages header reads \"N stored references\", and scored `contains` — the")
+docLines.push("second-most-stored kind — ZERO because it had no prose word anywhere. A metric")
+docLines.push("that awards points for a substring in a header is measuring the header.")
+docLines.push("")
+docLines.push("| kind | stored rows | out | in | rendered with a verb | usage-list rows | declared absent | mislabelled | silent gap |")
+docLines.push("| --- | --- | --- | --- | --- | --- | --- | --- | --- |")
+for (const e of kindTable) {
+  const stored = e.storedOutgoing + e.storedIncoming
+  docLines.push(
+    `| \`${e.kind}\` | ${stored === 0 ? "0 (not stored in this fixture)" : stored} | ${e.storedOutgoing} | ${e.storedIncoming} | ` +
+      `${stored === 0 ? "n/a" : `${e.renderedWithVerb} (${((100 * e.renderedWithVerb) / stored).toFixed(1)}%)`} | ${e.renderedAsUsage} | ${e.declaredAbsent} | ${e.mislabelled} | ${e.silentGap} |`,
+  )
+}
+docLines.push("")
+docLines.push(`Verb-rendered rows: **${verbRowsAllKinds} / ${storedRowsAllKinds}** stored relationship rows on the ${table.length} pinned symbols.`)
+docLines.push("")
+docLines.push(`Kinds stored in this fixture: ${kindTable.filter((e) => e.storedOutgoing + e.storedIncoming > 0).map((e) => e.kind).join(", ") || "none"}.`)
+docLines.push("")
+docLines.push(`Kinds NOT stored in this fixture, and therefore DECLARED rather than scored: ${kindTable.filter((e) => e.storedOutgoing + e.storedIncoming === 0).map((e) => e.kind).join(", ") || "none"}. Their denominator is zero — an unstored row cannot be rendered or missing — and V1a gates their verbs anyway, because the verb table is total over all ten whether or not this fixture exercises them.`)
 docLines.push("")
 docLines.push("## The call-site differential (the headline)")
 docLines.push("")
