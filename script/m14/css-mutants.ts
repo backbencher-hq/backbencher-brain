@@ -219,6 +219,135 @@ export const CSS_MUTANTS: Mutant[] = [
     }),
   },
   {
+    id: "css/custom-media-ref-narrows-to-a-bare-query",
+    language: "css",
+    defectClass: "dropped-construct",
+    description:
+      "UNDERSHOOT, and the exact defect the parse-tree rewrite of this branch fixed. The `isCustomMediaRef` edge used to be recovered from the media query's own TEXT: peel one leading `(` and one trailing `)` off it, then ask whether what was left begins with `--`. That answers `@media (--narrow)` and nothing else, because in `@media screen and (--wide)` nothing is peeled at the front — the string starts with `s` — so the reference is silently LOST even though the grammar hands it over as a `keyword_query` inside a `parenthesized_query`. The mutant reinstates that reach by keeping only the edges whose scope name is ITSELF a single parenthesised `--ident`, which is exactly the set the text version produced. Caught by css/custom-media-in-every-query-shape, whose `expectRelationships` rows pin the composed shape (`@media screen and (--wide) -> --wide`) and the negated shape (`@media not (--c) -> --c`); neither row exists under the old behaviour. The corpus cannot catch this one: `css-ontology-probe.ts` measures 0 `@custom-media` declarations across the whole admitted set, so the branch has no corpus occurrences and a fixture is the only instrument that can fail on it.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter((x: any) => {
+        if ((x.metadata as any)?.isCustomMediaRef !== true) return true
+        const src = String(x.source ?? "")
+        // The text version's reach: the scope name is `@media (--ident)` and nothing
+        // else. `startsWith("@media (--")` plus a closing paren at the end is that set.
+        return src.startsWith("@media (--") && src.endsWith(")")
+      }),
+    }),
+  },
+  {
+    id: "css/custom-media-ref-accepts-a-media-type",
+    language: "css",
+    defectClass: "fabricated-relationship",
+    description:
+      "FABRICATION DIRECTION on the same branch, and the opposite of the mutant above — a fixture that pins only the positive shapes constrains a type that can be broken in the direction nobody checked. A custom-media reference is a `keyword_query` node, and so is a MEDIA TYPE: `@media print` and `@media speech` are `keyword_query` nodes in the same grammar, distinguished only by the `--` prefix. An implementation that keys on the node type alone therefore turns every media-type query into a reference, and each such edge names a `@media`-scoped rule as depending on a construct that is a device category, not a declaration. The mutant drops the prefix test. Caught by css/custom-media-in-every-query-shape, whose `forbidRelationships` rows refuse `isCustomMediaRef` targeting `print` and `screen`, while the same fixture requires four real references — so the guard cannot be satisfied by suppressing the whole branch.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: [
+        ...(r.relationships ?? []),
+        // The node-type-only reading: every `@media <bare-ident>` scope is treated as
+        // naming a declaration. `<bare-ident>` is decided from the PUBLISHED scope name,
+        // which is the same information the analyzer reads, so the mutant needs no
+        // private state.
+        ...(r.symbols ?? [])
+          .filter((s: any) => {
+            const nm = String(s.name ?? "")
+            if (!nm.startsWith("@media ")) return false
+            const q = nm.slice("@media ".length)
+            if (q.length === 0) return false
+            // A media TYPE: one bare ident, no query punctuation.
+            for (const ch of "(),") if (q.includes(ch)) return false
+            for (const w of ["and", "or", "not"]) if (q.includes(w)) return false
+            return q.startsWith("-") === false
+          })
+          .map((s: any) => ({
+            type: "references",
+            source: String(s.name),
+            target: String(s.name).slice("@media ".length),
+            confidence: 1,
+            metadata: { cssSpecific: true, isCustomMediaRef: true, evidenceClass: "import_based" },
+          })),
+      ],
+    }),
+  },
+  {
+    id: "css/import-source-taken-from-the-wrong-segment",
+    language: "css",
+    defectClass: "wrong-endpoint",
+    description:
+      "ENDPOINT CLASS, on the field the lane's `lastPathSegment` pure-String helper produces and on which no css fixture pinned anything until this round. The `imports` edge is sourced from the importing stylesheet's own file name, taken as the LAST `/`-separated path segment, because that is how the store spells a file and how the module is written in the import itself. Two wrong separators produce a wrong source here and both are the same defect: splitting the path on `/` and taking index 0 drops every directory (`themes/scope-conditions-and-custom-properties.css`), and splitting on `.` drops the extension (`scope-conditions-and-custom-properties`). THE FIRST IS NOT REACHABLE FROM THE EDGE ALONE — once the source has been reduced to a basename there is no separator left in it to get wrong — so this mutant injects the second, which is. It is recorded that way rather than quietly, because a mutant suite that only counts survivors would otherwise have let a non-reachable mutant sit in the registry looking like coverage. Caught by css/scope-conditions-and-custom-properties, whose two `imports` rows now pin `from` as well as `target`; before this round every row constrained `target` only, so the mutant would have SURVIVED and the suite would have reported coverage it did not have. The pin was added BECAUSE the mutant was written — the fixture did not fail first and teach us, which is the direction a mutation-first lane works in and the reverse of the one this repo's M13 retrospective was about.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => {
+        if (String(x.type).toLowerCase() !== "imports") return x
+        const src = String(x.source ?? "")
+        // The wrong-separator reading: split on `.` and take index 0.
+        const dot = src.indexOf(".")
+        if (dot <= 0) return x
+        return { ...x, source: src.slice(0, dot) }
+      }),
+    }),
+  },
+  {
+    id: "css/at-rule-prelude-boundary-by-text-search",
+    language: "css",
+    defectClass: "wrong-payload",
+    description:
+      "THE REPLACEMENT'S OWN FAILURE MODE, which is why the boundary is read off the tree. `atRulePrelude` used to find the end of an at-rule's prelude with `node.text.indexOf(block.text)` — a substring search from offset 0 of the node's text — so a prelude that CONTAINS the block's own text truncated at the wrong offset and published a scope name cut mid-word. The mutant reproduces the class from the published side: every at-rule scope symbol's name is re-cut at the first `(` in its OWN query text, which is where a text search lands whenever the query text also occurs inside the block (a `@supports (display: grid)` whose body repeats the condition, a `@media` prelude that names a selector the block also uses). Caught by css/custom-media-in-every-query-shape, css/scope-conditions-and-custom-properties and css/declarations-the-corpus-never-uses, all of which pin at-rule scope NAMES containing a parenthesised query — `@media screen and (--wide)`, `@supports (display: grid)`, `@container (min-width: 400px)`. Without this mutant the tree rewrite would have had no pin at all, since a boundary bug that only fires when a prelude repeats its own block text cannot be produced by a hand-written fixture without inventing that file.",
+    transform: (r: any) => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) => {
+        const nm = String(s.name ?? "")
+        if (!nm.startsWith("@media ") && !nm.startsWith("@supports ") && !nm.startsWith("@container ") && !nm.startsWith("@scope ")) return s
+        // The text-search truncation: cut the name where its own query's first paren
+        // sits, as `indexOf(<the block's text>)` would when the prelude contains it.
+        const q = nm.indexOf(" ")
+        if (q === -1) return s
+        const head = nm.slice(0, q)
+        const query = nm.slice(q + 1)
+        const at = query.indexOf("(")
+        if (at <= 0) return s
+        return { ...s, name: `${head} ${query.slice(0, at)}` }
+      }),
+    }),
+  },
+  {
+    id: "css/namespace-uri-published-as-an-import",
+    language: "css",
+    defectClass: "fabricated-relationship",
+    description:
+      "FABRICATION CLASS, and the one this lane most nearly shipped by agreeing with a tool. `script/m14/differential.ts --lang css` reports 2 MISSING on the svelte sample, both `imports expected.css -> http://www.w3.org/1999/xhtml`, derived from the `@namespace url(...)` lines in `packages/svelte/tests/css/samples/supports-namespace/expected.css`. The cheap way to make that number zero is this mutant: take each `@namespace` declaration the analyzer already publishes and republish its URI as an `imports` edge. The differential would then read 2/2 and every gate would go quiet. The edge is false. A namespace URI is a NAME that a prefixed type selector is compared against; the CSS syntax never dereferences it, so `imports` would assert this stylesheet pulls in an external resource, and `imports` is the relation that drives module resolution and the refactoring advice `bb_migrate` gives. The analyzer's existing edge is `references svg|a -> @namespace svg url(...)`, which says which selector depends on which declaration — strictly more than the file->URI edge the oracle wants. Caught by css/namespace-uri-is-not-an-import, whose `forbidRelationships` rows refuse `imports` targeting either namespace URI, in both the bare and the prefixed spelling. The `@import url(\"theme.css\")` line in that fixture is what makes the refusal mean something: the mutant must still pass the positive `imports` row, so it is the namespace specifically being refused rather than an `imports` branch that never fires.",
+    transform: (r: any) => {
+      const rels: any[] = r.relationships ?? []
+      const syms: any[] = r.symbols ?? []
+      // The file's own name, which is what an `imports` edge leaves from. Taken from
+      // the real `imports` edges when the file has one, so the mutant does not
+      // hardcode a fixture name.
+      const importEdge = rels.find((x: any) => String(x.type).toLowerCase() === "imports")
+      const from = importEdge?.metadata?.importSource ?? importEdge?.source ?? ""
+      const fabricated = syms
+        .filter((s: any) => s.kind === "module" && String(s.name ?? "").startsWith("@namespace "))
+        .map((s: any) => {
+          const name = String(s.name)
+          const open = name.indexOf("url(")
+          if (open < 0) return null
+          const close = name.lastIndexOf(")")
+          if (close <= open + 4) return null
+          return {
+            type: "imports",
+            source: String(from),
+            target: name.slice(open + 4, close),
+            confidence: 1,
+            line_number: s.range?.startLine,
+            metadata: { evidenceClass: "import_based", isCssImport: true },
+          }
+        })
+        .filter((x: any) => x !== null)
+      if (fabricated.length === 0) return r
+      return { ...r, relationships: [...rels, ...fabricated] }
+    },
+  },
+  {
     id: "css/animation-use-relabelled-as-a-call",
     language: "css",
     defectClass: "wrong-relationship-type",
@@ -230,6 +359,151 @@ export const CSS_MUTANTS: Mutant[] = [
         if (String(x.type).toLowerCase() !== "uses") return x
         if ((x.metadata as any)?.isAnimationRef !== true) return x
         return { ...x, type: "calls" }
+      }),
+    }),
+  },
+  {
+    id: "css/import-name-taken-from-any-line-of-the-recovered-statement",
+    language: "css",
+    defectClass: "fabricated-relationship",
+    description:
+      "FABRICATION CLASS, and the guard half of pass 10's `@import` fix. `findImportNameNode` takes a direct `string_value` / `call_expression` child first, and failing that the first such node AT ANY DEPTH whose row equals the `@import` KEYWORD's own row. The row test is load-bearing and the mutant removes it: every quoted span in the file becomes a module the stylesheet imports. The shape it reproduces is measured on the corpus — `Documenter.jl/assets/html/scss/bulma/elements/button.sass` has an `import_statement` node spanning L2..L50 with ELEVEN `string_value` descendants, one at L2 (the real module) and ten at L47 (a `$breakpoints` map's \"mobile\", \"small\", \"normal\", \"medium\", \"large\", \"tablet-only\", ...). An unguarded traversal reaching those ten publishes ten `imports` edges asserting that this partial pulls in ten stylesheets it never names, and `imports` is the type that drives module resolution and the advice `bb_migrate` gives, so the cost lands on refactoring. Caught by css/recovered-import-shape-is-an-import, whose `$map: ( \"a-key\": 1, \"b-key\": 2, )` block puts both decoys INSIDE the `import_statement` node that spans L13..L19, and whose `forbidRelationships` rows refuse `imports` targeting `a-key` and `b-key`.",
+    transform: (r: any, source?: string) => {
+      const rels: any[] = r.relationships ?? []
+      if (typeof source !== "string" || source.length === 0) return r
+      const already = new Set(
+        rels.filter((x: any) => String(x.type).toLowerCase() === "imports").map((x: any) => String(x.target)),
+      )
+      // The unguarded search's reach: every `"…"` span in the file, minus the ones already
+      // published. Pure-String scan — no pattern over raw text anywhere in this lane.
+      const quoted: string[] = []
+      for (let i = 0; i < source.length; i++) {
+        if (source.charAt(i) !== '"') continue
+        let j = i + 1
+        while (j < source.length && source.charAt(j) !== '"' && source.charAt(j) !== "\n") j++
+        if (j >= source.length || source.charAt(j) !== '"') continue
+        const span = source.slice(i + 1, j)
+        if (span.length > 0 && !already.has(span)) {
+          already.add(span)
+          quoted.push(span)
+        }
+        i = j
+      }
+      if (quoted.length === 0) return r
+      const host = rels.find((x: any) => String(x.type).toLowerCase() === "imports")
+      const from = host?.metadata?.importSource ?? host?.source ?? ""
+      return {
+        ...r,
+        relationships: [
+          ...rels,
+          ...quoted.map((t) => ({
+            type: "imports",
+            source: from,
+            target: t,
+            confidence: 1,
+            metadata: { cssSpecific: true, evidenceClass: "import_based", isCssImport: true, isRowGuardDropped: true },
+          })),
+        ],
+      }
+    },
+  },
+  {
+    id: "css/import-name-published-with-its-quotes",
+    language: "css",
+    defectClass: "wrong-payload",
+    description:
+      "PAYLOAD CLASS on the same edge, and the bug a new branch invites. The recovered path returns a `string_value` NODE, and a node's text still carries its quotes; `unwrapUrl` is what turns `\"../utilities/mixins\"` into `../utilities/mixins`. A branch that forgets that call publishes the quoted spelling, which is a DIFFERENT string from the one every other language's import target uses and a different graph node from the unquoted one — so the same partial becomes two nodes and the edge binds to neither. The mutant rewrites every `imports` target to its quoted form, which is the shape of that mistake. Caught by css/recovered-import-shape-is-an-import, whose `forbidRelationships` rows refuse the three quoted spellings, and independently by css/namespace-uri-is-not-an-import, whose `expectRelationships` row requires `target: theme.css` unquoted.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => {
+        if (String(x.type).toLowerCase() !== "imports") return x
+        const t = String(x.target ?? "")
+        if (t.length === 0) return x
+        if (t.charAt(0) === '"') return x
+        return { ...x, target: `"${t}"` }
+      }),
+    }),
+  },
+  {
+    id: "css/keyframes-owned-var-read-dropped",
+    language: "css",
+    defectClass: "missing-relationship",
+    description:
+      "The mutant that convicts the pass-11 `references` fix from the OTHER side. `currentSelector` is empty inside a `keyframe_block`, and the fix routes such a read to the enclosing `@keyframes` name instead; a revert to the pre-fix guard (`&& currentSelector`) makes every one of them vanish again. Measured over the admitted corpus that is 845 edges in 265 files, which is why this is a mutant and not a refactor: the corpus cannot see it, so the fixture must. Caught by css/keyframes-read-a-custom-property, whose four `expectRelationships` rows each name a keyframes name as the SOURCE and no other fixture in the lane emits an edge with a keyframes source at all.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter((x: any) => (x.metadata ?? {}).isKeyframeScopeRef !== true),
+    }),
+  },
+  {
+    id: "css/keyframes-owned-var-read-sourced-from-the-stop",
+    language: "css",
+    defectClass: "fabricated-relationship",
+    description:
+      "The failure mode of naming an owner that CANNOT resolve. A keyframe STOP is not a name anything binds to — `to`, `50%`, `from` are anonymous positions — so an edge sourced from one names an endpoint the store will never resolve, and `bb_impact` on it returns nothing while claiming a dependency. The mutant re-sources every keyframes-owned read from the stop selector instead of the animation name. Caught by css/keyframes-read-a-custom-property, whose `forbidRelationships` rows refuse `references` from `to`, `50%` and `from`, and by nothing else in the lane.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => {
+        if ((x.metadata ?? {}).isKeyframeScopeRef !== true) return x
+        const line = String(x.line_number ?? "")
+        return { ...x, source: line.length > 0 ? "to" : x.source }
+      }),
+    }),
+  },
+  {
+    id: "css/keyframes-owned-var-read-inherits-the-outer-keyframes",
+    language: "css",
+    defectClass: "wrong-payload",
+    description:
+      "The owner must be the NEAREST enclosing `@keyframes`, and the frame field resets per node rather than carrying (`let nextKeyframeScope = keyframeScope` is a reset, not a `||`). Carrying it would attribute a read inside a LATER keyframes block to the first one, so `@keyframes a { to { opacity: var(--x) } } @keyframes b { to { opacity: var(--y) } }` would emit `a -> --y` as well as `b -> --y` — two edges, one of which names the wrong animation, and the extra edge is a claim about a dependency that does not exist. The mutant makes every keyframes-owned read name a single fixed animation, which is the shape of that mistake. Caught by css/keyframes-read-a-custom-property, whose four rows name FOUR different owners (`slide`, `fade`, `never-declared`, `nested-in-media`) over FOUR different targets.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => {
+        if ((x.metadata ?? {}).isKeyframeScopeRef !== true) return x
+        return { ...x, source: "slide" }
+      }),
+    }),
+  },
+  {
+    id: "css/media-scope-name-falls-back-to-the-first-query-term",
+    language: "css",
+    defectClass: "wrong-payload",
+    description:
+      "The pass-13 `contains` (at-rule scope) fix, reverted. `processMedia` builds the scope NAME from the at-rule's own prelude, so `@media A, B { }` publishes `@media A, B`; the pre-fix code handed `findChild` the FIRST query child and published `@media A`. That is not a cosmetic name: two lists differing only after the comma then share a name, and the identity merge folds two different conditions into one scope symbol together with their rules. The mutant restores the first-term name. Caught by css/media-comma-list-is-one-condition, whose two blocks share a first term and differ only after the comma, and by css/custom-media-in-every-query-shape, whose `@media (--a), (--b)` block the old code named `@media (--a)`. Neither fixture is reachable from a corpus number: `validation/m14/tmp/css-media-prelude-equivalence.ts` measures 102 comma lists against 0 `@custom-media` declarations in the admitted corpus, so a fixture is the only instrument that can see this.",
+    transform: (r: any) => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((x: any) => {
+        const n = typeof x?.name === "string" ? x.name : ""
+        if (!n.startsWith("@media ") || n.indexOf(",") < 0) return x
+        // Keep only the first comma-separated term, which is what the first query
+        // child holds.
+        let depth = 0
+        for (let i = "@media ".length; i < n.length; i++) {
+          const c = n.charAt(i)
+          if (c === "(" || c === "[") depth++
+          else if (c === ")" || c === "]") depth--
+          else if (c === "," && depth === 0) return { ...x, name: n.slice(0, i) }
+        }
+        return x
+      }),
+    }),
+  },
+  {
+    id: "css/custom-media-ref-read-from-the-first-query-term-only",
+    language: "css",
+    defectClass: "missing-relationship",
+    description:
+      "The second half of the pass-13 fix, which the name half alone would have left inconsistent. `customMediaRefsInList` unions the reference walk over the statement's DIRECT query children; the pre-fix code called `customMediaRefsIn` on the first query child alone, so for `@media (--a), (--b)` it found `--a` and could not see that `--b` sits in a SIBLING query node. With only the name mutant applied the scope would be named for both declarations while the graph recorded one dependency — the under-description moved from the name to the edges. Caught by css/custom-media-in-every-query-shape, which now asserts BOTH `references` edges from the one comma-list scope, and by nothing else in the lane.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter((x: any, i: number) => {
+        if ((x.metadata ?? {}).isCustomMediaRef !== true) return true
+        // Drop every custom-media reference except the first one sourced from each
+        // scope, which is what a single-term walk produces.
+        const seen = (r.relationships ?? []).slice(0, i).some(
+          (y: any) => (y.metadata ?? {}).isCustomMediaRef === true && y.source === x.source,
+        )
+        return !seen
       }),
     }),
   },

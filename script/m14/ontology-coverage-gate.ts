@@ -45,11 +45,47 @@ import { parseFile } from "../../src/ast/pool-worker"
 import { LANGS } from "./differential"
 import { LUA_RULED } from "./lua-ruled"
 import { TOML_RULED } from "./toml-ruled"
+import { FSHARP_RULED } from "./fsharp-ruled"
+// This file is a REGISTRY, so a merge conflict here is always "both sides added a
+// lane" and the correct resolution is always the UNION. Taking either side deletes the
+// other lane's ruling table SILENTLY, and a deleted entry does not fail loudly — the
+// arbiter just exits 2 for that lane again, which reads as "nobody has ruled on this
+// yet" rather than "someone's work was dropped in a merge". Silent loss in a registry
+// is the failure mode to fear, so resolve toward MORE entries here, never fewer.
+//
+// The same applies to the import block: it is a registry too. Both halves must be
+// present or the map does not compile — which is the one saving grace, because a
+// missing import is a hard error rather than a silent wrong answer.
+import { PROTOBUF_RULED } from "./protobuf-ruled"
+import { ZIG_RULED } from "./zig-ruled"
+import { JULIA_RULED } from "./julia-ruled"
+import { CSS_RULED } from "./css-ruled"
+import { XML_RULED } from "./xml-ruled"
+import { NIM_RULED } from "./nim-ruled"
+import { SCSS_RULED } from "./scss-ruled"
+import { MARKDOWN_RULED } from "./markdown-ruled"
+import { PHP_RULED } from "./php-ruled"
+import { SQL_RULED } from "./sql-ruled"
+import { CLEAN_RULED } from "./clean-ruled"
+import { R_RULED } from "./r-ruled"
+import { GRAPHQL_RULED } from "./graphql-ruled"
 
 const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
 const LANG = process.argv[2] ?? "bash"
 const ALL_TYPES = ["calls", "uses", "contains", "imports", "references", "exports", "extends", "implements", "overrides", "instantiates"] as const
-type Type = (typeof ALL_TYPES)[number]
+/**
+ * EXPORTED so lane ruling tables can import it instead of restating the shape.
+ *
+ * Fourteen lanes each declared their own structural copy of `Ruled`, and because those
+ * copies typed `type` as `string` while the gate typed it as this literal union, `string`
+ * was not assignable and julia-ruled and xml-ruled failed to type-check at all. Their own
+ * docblocks predicted this and called the fix 'a one-line follow-up if the gate exports
+ * them'.
+ *
+ * That follow-up is now done rather than pending. Fourteen restatements of one shape is
+ * fourteen places for it to drift, and this is the only reason it did.
+ */
+export type Type = (typeof ALL_TYPES)[number]
 
 // ---------------------------------------------------------------- instruments
 //
@@ -75,11 +111,20 @@ type Type = (typeof ALL_TYPES)[number]
 //      heredoc cannot fake it.
 type Instrument = "A:grammar-inventory" | "B:parse-tree-count"
 
-type Ruled = {
+export type Ruled = {
   type: Type
   instrument: Instrument
   /** A: node types that would express the construct. B: unused. */
   nodeTypesThatWouldMeanIt?: string[]
+  /**
+   * B only: the count and file count this ruling PUBLISHES, over the corpus the gate
+   * discovers. These are the numbers a ruling is accountable to, so they live in the type
+   * rather than repeated in prose where they can go stale. julia-ruled's probe reads them
+   * directly — it used to hardcode the pair in its own source and reported MISMATCH while
+   * exiting 0 when the corpus grew, which is a gate that can neither fail nor be right.
+   */
+  publishedCount?: number
+  publishedFiles?: number
   /** B: count occurrences on the tree. A: unused. */
   countOnTree?: (root: any, fileLabel: string, hits: string[]) => void
   describe: string
@@ -191,7 +236,34 @@ const JSON_RULED: Ruled[] = [
   },
 ]
 
-const RULED_BY_LANG: Record<string, Ruled[]> = { bash: BASH_RULED, json: JSON_RULED, lua: LUA_RULED, toml: TOML_RULED }
+// Resolved to the UNION — see the note at the imports above. A registry conflict is
+// always "both sides added a lane"; taking one side deletes the other's ruling table
+// silently, and a deleted entry makes the arbiter exit 2 for a lane that WAS ruled,
+// which reads as "unadjudicated" rather than "dropped in a merge".
+// The registry. A conflict here is ALWAYS "both sides added a lane", so the resolution
+// is ALWAYS the union — taking one side deletes the other lane's ruling table silently,
+// and a deleted entry does not fail loudly, it just makes the arbiter exit 2 for a lane
+// that WAS ruled, which reads as "unadjudicated" rather than "dropped in a merge".
+const RULED_BY_LANG: Record<string, Ruled[]> = {
+  bash: BASH_RULED,
+  json: JSON_RULED,
+  lua: LUA_RULED,
+  toml: TOML_RULED,
+  fsharp: FSHARP_RULED,
+  nim: NIM_RULED,
+  protobuf: PROTOBUF_RULED,
+  zig: ZIG_RULED,
+  julia: JULIA_RULED,
+  css: CSS_RULED,
+  xml: XML_RULED,
+  php: PHP_RULED,
+  sql: SQL_RULED,
+  scss: SCSS_RULED,
+  markdown: MARKDOWN_RULED,
+clean: CLEAN_RULED,
+  r: R_RULED,
+  graphql: GRAPHQL_RULED,
+}
 const RULED: Ruled[] = RULED_BY_LANG[LANG] ?? []
 
 // ---------------------------------------------------------------- corpus
@@ -214,14 +286,29 @@ console.log(`corpus: ${files.length} admitted files\n`)
 
 // ---------------------------------------------------------------- what is emitted
 const observed = new Map<Type, { n: number; files: Set<string> }>()
-let idx = 0
-async function worker() {
-  while (true) {
-    const i = idx++
-    if (i >= files.length) return
+
+// Resumable, because `parseFile` can kill this process outright: parser.parse() is
+// synchronous WASM and a grammar that loops on a pathological input cannot be
+// interrupted, so ASTEngine answers a hang with process.exit(). The 120s guard's own
+// comment claims "the indexer is incremental - re-running resumes", which is true of the
+// indexer and false of every tool that walks a corpus in ONE process, including this
+// one. Measured consequence, repeatedly: nim, scss and hcl each lost an entire corpus
+// walk to a single file (a 1.6 MB generated sprite, a tree-sitter-nim fault, a terraform
+// testdata file), and because the file is always in the corpus, every re-run lost it
+// again.
+//
+// So the walk checkpoints. `--fresh` starts over; without it a second run resumes where
+// the last one died, and a file that hangs is recorded as bad and never retried.
+const { resumableWalk, resetCheckpoint } = await import("./resumable-walk")
+const CHECKPOINT = `validation/m14/measurements/walk-${LANG}.txt`
+if (process.argv.includes("--fresh")) resetCheckpoint(CHECKPOINT)
+
+const walkStats = await resumableWalk(CHECKPOINT, files.length, {
+  id: (i) => files[i].abs,
+  concurrency: 8,
+  run: async (i) => {
     const f = files[i]
-    let r: any
-    try { r = await parseFile(f.abs, f.dir) } catch { continue }
+    const r: any = await parseFile(f.abs, f.dir)
     for (const x of r.relationships ?? []) {
       const t = String(x.type ?? x.relationshipType ?? "").toLowerCase() as Type
       if (!ALL_TYPES.includes(t)) continue
@@ -230,9 +317,8 @@ async function worker() {
       if (row.files.size < 4) row.files.add(`${f.repo}/${f.rel}`)
       observed.set(t, row)
     }
-  }
-}
-await Promise.all(Array.from({ length: 8 }, () => worker()))
+  },
+})
 
 // ---------------------------------------------------------------- measure with the right instrument
 const wts: any = await import("web-tree-sitter")
@@ -334,11 +420,55 @@ if (process.argv.includes("--coverage")) {
 }
 
 if (RULED_BY_LANG[LANG] === undefined) {
-  console.log(`\nontology coverage gate — no RULING TABLE for ${LANG}.`)
-  console.log(`Refusing to report: a gate with an empty table would call every un-emitted type`)
-  console.log(`RULED-UNJUSTIFIED and that is a verdict about the TABLE, not about the lane.`)
-  process.exit(2)
+  // The guard's original reasoning was right — a lane with no ruling source at all
+  // would get every un-emitted type called RULED-UNJUSTIFIED, which is a verdict about
+  // the TABLE rather than about the lane. But it fired on the ABSENCE OF A TABLE alone,
+  // and `rulingFor` legitimately reads TWO places: the table, then
+  // `script/m14/spec/<lang>-completeness.json`.
+  //
+  // So it refused lanes whose spec DOES carry rulings — HCL-D1..D6, MAKE-D1..D5 among
+  // them — discarding real evidence and reporting those lanes as unadjudicated when
+  // they had been adjudicated all along. Measured: 13 of 26 lanes were blocked, and 12
+  // of the 13 have spec rulings that were never consulted.
+  //
+  // The precise guard is this one: refuse only when rulingFor() finds NOTHING for any
+  // un-emitted type, i.e. when neither source can supply a verdict. The original failure
+  // mode is still fully prevented — a lane with neither a table nor spec decisions
+  // still refuses — and the lanes it now lets through are reported with a note saying
+  // their rulings came from the spec, so a spec-only lane is never mistaken for a
+  // corpus-measured one.
+  const unEmittedForGuard = ALL_TYPES.filter((t) => (observed.get(t)?.n ?? 0) === 0)
+  const ruledFromSpec = unEmittedForGuard.filter((t) => rulingFor(t) !== null)
+  if (ruledFromSpec.length === 0) {
+    console.log(`\nontology coverage gate — no RULING SOURCE for ${LANG}.`)
+    console.log(`Refusing to report: with no ruling anywhere, every un-emitted type would be called`)
+    console.log(`RULED-UNJUSTIFIED, and that is a verdict about the absence of evidence, not about the lane.`)
+    console.log(`Neither RULED_BY_LANG.${LANG} nor script/m14/spec/${LANG}-completeness.json supplies one.`)
+    process.exit(2)
+  }
+  console.log(`note: ${LANG} has no ruling TABLE; ${ruledFromSpec.length}/${unEmittedForGuard.length} un-emitted types are ruled from its SPEC.`)
+  console.log(`      a spec ruling is prose; a table ruling is a corpus probe. They are not equally strong.`)
 }
+
+// The population this verdict is actually about. A resumed or partial walk produces the
+// SAME edge counts as a complete one over the files it did see — the counts do not know
+// they are smaller — so without this line a 99% walk reports identically to a 100% one and
+// the reader cannot tell. Stated before the table, not in a footnote.
+const walkedPct = walkStats.total === 0 ? 0 : ((walkStats.walked + walkStats.alreadyDone) / walkStats.total) * 100
+console.log(
+  `walk: ${walkStats.walked + walkStats.alreadyDone}/${walkStats.total} files ` +
+    `(${walkedPct.toFixed(1)}%)  newly walked ${walkStats.walked}, resumed ${walkStats.alreadyDone}` +
+    (walkStats.skippedBad > 0 ? `  SKIPPED-BAD ${walkStats.skippedBad}` : ``) +
+    (walkStats.partial ? `  PARTIAL` : ``),
+)
+if (walkStats.partial) {
+  console.log(
+    `      every edge count below is over ${walkedPct.toFixed(1)}% of the corpus. ` +
+      `${walkStats.skippedBad} file(s) hang or cannot be parsed and are excluded; re-run to resume, ` +
+      `--fresh to start over. Checkpoint: ${walkStats.checkpoint}`,
+  )
+}
+console.log()
 
 const rows: Row[] = []
 for (const t of ALL_TYPES) {

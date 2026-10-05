@@ -1,0 +1,47 @@
+{
+  "compared": 200,
+  "crashed": 0,
+  "shapes": [
+    {
+      "shape": "bare_type_result",
+      "sites": 262,
+      "filesWithSite": 46,
+      "expectedEdges": 265,
+      "publishedEdges": 1,
+      "examples": []
+    },
+    {
+      "shape": "parenthesised_result",
+      "sites": 156,
+      "filesWithSite": 33,
+      "expectedEdges": 167,
+      "publishedEdges": 162,
+      "examples": []
+    }
+  ],
+  "absentTotal": 269,
+  "absentExamples": [
+    "src/cmd/cgo/gcc.go:294 guessKinds -> Name (result node type slice_type)",
+    "src/cmd/cgo/gcc.go:538 loadDWARF -> debug (result node type pointer_type)",
+    "src/cmd/cgo/gcc.go:1463 rewriteUnsafe -> Expr (result node type qualified_type)",
+    "src/cmd/cgo/gcc.go:1605 rewriteName -> Expr (result node type qualified_type)",
+    "src/cmd/cgo/gcc.go:1608 rewriteName -> Ident (result node type pointer_type)",
+    "src/cmd/cgo/gcc.go:2379 base -> Type (result node type qualified_type)",
+    "src/cmd/cgo/gcc.go:2396 unqual -> Type (result node type qualified_type)",
+    "src/cmd/cgo/gcc.go:2474 Type -> Type (result node type pointer_type)",
+    "src/cmd/cgo/gcc.go:2479 loadType -> Type (result node type pointer_type)",
+    "src/cmd/cgo/gcc.go:2962 FuncArg -> Type (result node type pointer_type)",
+    "src/cmd/cgo/gcc.go:3011 FuncType -> FuncType (result node type pointer_type)",
+    "src/cmd/cgo/gcc.go:3046 Ident -> Ident (result node type pointer_type)",
+    "src/cmd/cgo/gcc.go:3051 Opaque -> Expr (result node type qualified_type)",
+    "src/cmd/cgo/gcc.go:3059 intExpr -> Expr (result node type qualified_type)",
+    "src/cmd/compile/internal/inline/inlheur/callsite.go:119 buildEncodedCallSiteTab -> encodedCallSiteTab (result node type type_identifier)",
+    "src/cmd/compile/internal/liveness/plive.go:192 Get -> StackMapIndex (result node type qualified_type)",
+    "src/cmd/compile/internal/liveness/plive.go:397 newliveness -> Liveness (result node type pointer_type)",
+    "src/cmd/compile/internal/liveness/plive.go:452 blockEffects -> blockEffects (result node type pointer_type)",
+    "src/cmd/compile/internal/liveness/plive.go:1498 emitStackObjects -> LSym (result node type pointer_type)",
+    "src/cmd/compile/internal/riscv64/gsubr.go:13 ginsnop -> Prog (result node type pointer_type)"
+  ],
+  "sampleSize": 200,
+  "corpusRoot": "$HOME/fixtures/repositories/go-stdlib"
+}
