@@ -25,9 +25,10 @@
  * observed for that type. They do NOT sum to an observed total: the minimums come from
  * different runs (run F holds five of them, run G two, run 1 the rest), so adding them
  * mixes sets — 79,702 is such a sum and is not a number any run printed. The totals
- * runs actually printed are 80,095 / 80,015 / 79,756 / 79,823 / 80,055, so the observed
- * TOTAL band is 79,756-80,095 (Δ339). The distinction is the same two-sets error this
- * header exists to avoid, so it is stated rather than left for a reader to trip on.
+ * runs actually printed are 80,095 / 80,015 / 79,756 / 79,823 / 80,055 / 80,069 /
+ * 80,062, so the observed TOTAL band is 79,756-80,095 (Δ339). The distinction is the
+ * same two-sets error this header exists to avoid, so it is stated rather than left for
+ * a reader to trip on.
  *
  * Population: every git-tracked file the production ROUTER
  * (`detectLanguageFromPath`) maps to `r` in `$HOME/fixtures/repositories` —
@@ -43,20 +44,20 @@
  *
  * This header used to print one count per type. Production walks over the SAME 2,184-file
  * population do not agree on them, so a single figure would be a claim the corpus does not
- * support. Measured, all six POST-FIX runs, production `parseFile`:
+ * support. Measured, all seven POST-FIX runs, production `parseFile`:
  *
- *     type            run 1     run 2     run F     run G     run H     run I
- *     calls          48,233    48,174    48,082    48,028    48,206    48,215
- *     contains       17,634    17,622    17,550    17,601    17,629    17,632
- *     exports         3,592     3,585     3,525     3,581     3,588     3,590
- *     imports         2,095     2,095     2,087     2,087     2,093     2,095
- *     references      2,137     2,137     2,129     2,129     2,135     2,137
- *     uses            4,810     4,808     4,789     4,803     4,810     4,806
- *     extends           351       351       351       351       351       351
- *     implements      1,133     1,133     1,133     1,133     1,133     1,133
- *     overrides         107       107       107       107       107       107
- *     instantiates        3         3         3         3         3         3
- *     TOTAL           80,095    80,015    79,756    79,823    80,055    80,069
+ *     type            run 1     run 2     run F     run G     run H     run I     run J
+ *     calls          48,233    48,174    48,082    48,028    48,206    48,215    48,209
+ *     contains       17,634    17,622    17,550    17,601    17,629    17,632    17,630
+ *     exports         3,592     3,585     3,525     3,581     3,588     3,590     3,591
+ *     imports         2,095     2,095     2,087     2,087     2,093     2,095     2,095
+ *     references      2,137     2,137     2,129     2,129     2,135     2,137     2,137
+ *     uses            4,810     4,808     4,789     4,803     4,810     4,806     4,806
+ *     extends           351       351       351       351       351       351       351
+ *     implements      1,133     1,133     1,133     1,133     1,133     1,133     1,133
+ *     overrides         107       107       107       107       107       107       107
+ *     instantiates        3         3         3         3         3         3         3
+ *     TOTAL           80,095    80,015    79,756    79,823    80,055    80,069    80,062
  *
  *   run 1 = validation/m14/fixtures/r/ontology-ten-types.txt   (committed artifact)
  *   run 2 = validation/m14/fixtures/r/labels-and-resolution.txt (committed artifact)
@@ -64,14 +65,16 @@
  *   run G = validation/m14/fixtures/r/arbiter/arbiter-r-runG-2026-10-05.txt (committed)
  *   run H = validation/m14/fixtures/r/arbiter/arbiter-r-runH-2026-10-05.txt (committed)
  *   run I = validation/m14/fixtures/r/arbiter/arbiter-r-runI-2026-10-05.txt (committed)
+ *   run J = validation/m14/fixtures/r/arbiter/arbiter-r-runJ-2026-10-05.txt (committed)
  *
- * Runs G, H and I are the three arbiter walks whose bytes are on disk; all three printed
+ * Runs G, H, I and J are the four arbiter walks whose bytes are on disk; all four printed
  * `emitted 10/10   ruled-sound 0   FALSIFIED 0   ruled-without-justification 0` and all
- * three then exited 1 from the 120-second parse bomb, which is shared machinery (§8 of the
- * workstream). Run I set no new extremum on any type: calls 48,215 falls inside the existing
- * 48,028-48,233 span, uses 4,806 inside 4,789-4,810, contains 17,632 inside 17,550-17,634,
- * exports 3,590 inside 3,525-3,592, and references 2,137 and imports 2,095 both TIE the
- * observed maximum.
+ * four then exited 1 from the 120-second parse bomb, which is shared machinery (§8 of the
+ * workstream). Neither run I nor run J set a new extremum on any type: run J's calls
+ * 48,209 falls inside the existing 48,028-48,233 span, uses 4,806 inside 4,789-4,810,
+ * contains 17,630 inside 17,550-17,634, exports 3,591 inside 3,525-3,592, and its
+ * references 2,137 and imports 2,095 both TIE the observed maximum a second time. The
+ * total band is therefore unchanged at 79,756-80,095 across seven walks.
  *
  * Three runs predate the `::`/`:::` fix and reported `references` at 389 — that is a CHANGE,
  * not variance, and they are kept out of the table above for that reason. Their counts are
@@ -84,20 +87,22 @@
  * `r-cli/R/width.R`, `r-cli/exec/news.R`, `r-cli/R/zzz.R`,
  * `r-testthat/R/expect-equality.R`), run G lost 2 (`ggplot2/R/scale-manual.R`,
  * `usethis/R/course.R`), run H lost 2 (`usethis/R/ci.R`, `usethis/R/citation.R`), run I
- * lost 1 (`r-testthat/R/expect-invisible.R`). A file that fails to parse contributes no
- * edges, so the totals track the failures.
+ * lost 1 (`r-testthat/R/expect-invisible.R`), run J lost 1 (`r-cli/R/width.R`, the same
+ * file run F lost, and in run J also the file the 120-second bomb hung on). A file that
+ * fails to parse contributes no edges, so the totals track the failures.
  *
- * The losses cluster — 7 of the 11 across the six runs are `usethis` (4) or `r-cli` (3)
- * files, and `r-rlang`'s 160 files were walked by all six runs without one loss. An earlier
- * revision of this header said "9 of the 11", which was wrong on both numbers: counted file
- * by file from the committed artifacts the numerator is 7, and only ten losses were on
- * record when 11 was written (run I supplied the eleventh). Run I is also the first loss
- * outside `usethis`, `r-cli` and `ggplot2`, so the clustering is weaker than the old claim
- * and is stated weaker. It remains a statement about which files exhaust the wasm parser's
- * memory, not about the analyzer, and no analyzer rule reads a file count.
+ * The losses cluster — 8 of the 12 across the seven runs are `usethis` (4) or `r-cli` (4)
+ * file losses, and `r-rlang`'s 160 files were walked by all seven runs without one loss.
+ * An earlier revision of this header said "9 of the 11", which was wrong on both numbers:
+ * counted file by file from the committed artifacts the numerator was 7 at the time, and
+ * only ten losses were on record when 11 was written (run I supplied the eleventh, run J the
+ * twelfth). Run I is also the first loss outside `usethis`, `r-cli` and `ggplot2`, so the
+ * clustering is weaker than the old claim and is stated weaker. It remains a statement about
+ * which files exhaust the wasm parser's memory, not about the analyzer, and no analyzer rule
+ * reads a file count.
  *
  * The four types that DO NOT MOVE are the informative half of this table. `extends`,
- * `implements`, `overrides` and `instantiates` are identical in all six runs, which says the
+ * `implements`, `overrides` and `instantiates` are identical in all seven runs, which says the
  * wobble is confined to the types whose counts are large enough to be sensitive to losing a
  * handful of files — not that those four are more correct than the others. The spread is a
  * property of the PARSER, not of the analyzer: no analyzer rule reads a file count, and the
