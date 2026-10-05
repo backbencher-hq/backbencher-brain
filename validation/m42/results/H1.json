@@ -3,8 +3,8 @@
   "code": "H1",
   "milestone": "M42",
   "status": "verified",
-  "checks": 15,
-  "passed": 15,
+  "checks": 16,
+  "passed": 16,
   "failed": 0,
   "failures": [],
   "verdict": {
@@ -17,7 +17,7 @@
     "planned": 4
   },
   "fixture": {
-    "root": "$HOME/backbencher-brain/.tools/m42-h1-fixture",
+    "root": "$HOME/Documents/Default Project/ishaq/wt/lsp6/.tools/m42-h1-fixture",
     "file": "src/main/java/com/demo/Highlight.java",
     "expectations": {
       "declarationLine": 5,
@@ -40,17 +40,17 @@
   "budgets": {
     "highlightP95Ms": 25
   },
-  "currentCommit": "a871d533a736e8e38cb826d80d986d3cc84022d1",
+  "currentCommit": "936b66d6d088776c7715e7d1aec492cc9c6d9841",
   "verifierCommand": "npx tsx script/m42/verify-highlight.ts",
   "evidenceFile": "H1.json",
-  "generatedAt": "2026-09-20T02:50:16.904Z",
+  "generatedAt": "2026-10-05T02:32:30.083Z",
   "limitations": [
-    "Warm-budget check uses mean-over-40 as a p95 proxy; the full E5 editor leg re-measures with the shared harness.",
+    "Lane 6: the warm budget is now a REAL p95 — ${WARM_SAMPLES} individually-timed requests, sorted, nearest-rank 95th percentile, no interpolation, compared against §12.7's 25 ms. The pre-lane check computed a MEAN over 40 and compared it against that p95 budget while naming itself 'warm p95', which is the substitution §3 forbids; it survived three waves because it was honestly recorded as a limitation rather than fixed. The mean is still reported alongside, for contrast only. The full E5 editor leg re-measures with the shared harness.",
     "Editor-leg (DocumentHighlight rendering + wake-up path) is asserted in the E5-pattern session at H1 acceptance; this file proves the server surface."
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-20T02:50:16.905Z",
-    "contentSha256": "a915300ce90575c3c4d778d6f3eec7d2d54487e28fecd5a7e95f7ca66aaf8b83"
+    "sealedAt": "2026-10-05T02:32:30.085Z",
+    "contentSha256": "ae8fbb48556f88b0c2bc7700da6aa11bf52eec18af0c15c5039b592ec54acb81"
   }
 }
