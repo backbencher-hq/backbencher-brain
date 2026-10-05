@@ -174,6 +174,23 @@ export const CLEAN_MUTANTS: Mutant[] = [
     }),
   },
   {
+    id: "clean/signature-lookup-by-derived-key-only",
+    language: "clean",
+    defectClass: "missing-relationship-type",
+    description:
+      "KEY-MISMATCH CLASS. Reverts `signaturesByNode`: the emitting pass is made to look its signature up ONLY by the derived string key, which is what the code did before this round's correction. The two passes derive that key independently and disagree for an instance member — the declaration pass files it under the MODULE owner (`|::cmp`, because it does not know the instance's target) and the emitting pass asks under the INSTANCE owner (`|[!a]::cmp`, because that is the scope the walk is in) — so the lookup misses, `applySignature` never runs, and the member's types and its `| C a` class context are read and discarded. Nothing is fabricated and nothing is mislabelled: real edges go MISSING, which is why a count-only check cannot see it and why the corpus had to be asked the question directly (of 473 class_context nodes at PROD, 20 published no edge at all). Measured at PROD, 312 files: `references` 10,049 -> 9,551, 498 edges absent, total 30,685 -> 30,187, and NO other type moves. Caught by clean/instance-member-signature-context, whose three `expectRelationships` rows pin `references cmp -> Ord` at L34, `references cmp -> Eq` at L43 and `references cmp -> Ord` at L53 — each an instance member's own dictionary requirement — plus `references inner -> Eq` at L67 for the `where`-local form.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter(
+        (x: any) => !(
+          String(x.type).toLowerCase() === "references"
+          && (x.metadata ?? {}).relationshipType === "class_context"
+          && /^(cmp|inner|moduleLevel)$/.test(String(x.source ?? ""))
+        ),
+      ),
+    }),
+  },
+  {
     id: "clean/operator-class-declaration-spelling-only",
     language: "clean",
     defectClass: "missing-relationship-type",
