@@ -2,15 +2,28 @@
   "issue": "629",
   "code": "X1",
   "milestone": "M28",
-  "status": "verified",
+  "status": "known-gap",
   "checks": 31,
-  "passed": 31,
-  "failed": 0,
-  "failures": [],
+  "passed": 22,
+  "failed": 9,
+  "failures": [
+    "X1: T1 verifier passes at HEAD — exit=1",
+    "X1: U1 verifier passes at HEAD — exit=1",
+    "X1: A2 verifier passes at HEAD — exit=1",
+    "X1: V1 verifier passes at HEAD — exit=1",
+    "X1: v4 completion bar audited item-by-item — zero violations — bar2: union equality not machine-proven; bar4: no real in-editor leg",
+    "X1: T1 regeneration run passes — exit=1",
+    "X1: U1 regeneration run passes — exit=1",
+    "X1: A2 regeneration run passes — exit=1",
+    "X1: V1 regeneration run passes — exit=1"
+  ],
   "negativeCases": 4,
-  "currentCommit": "0dbafd74ef4f3d63be8e44dd6caa58833732a7db",
+  "currentCommit": "a0ed9eade7008de7ce93a312f6b0bd7e182a43a9",
   "verifierCommand": "npx tsx script/m28/verify-closure.ts",
-  "barViolations": [],
+  "barViolations": [
+    "bar2: union equality not machine-proven",
+    "bar4: no real in-editor leg"
+  ],
   "perMutantRecords": {
     "T1": [],
     "U1": [],
@@ -18,10 +31,10 @@
     "A2": [],
     "V1": []
   },
-  "generatedAt": "2026-09-20T02:25:14.067Z",
+  "generatedAt": "2026-10-04T23:07:01.422Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-20T02:25:14.068Z",
-    "contentSha256": "7b92ed9841bef474a8058602781b33e8ae8770df93b0cbd9c8a3b895a9911e83"
+    "sealedAt": "2026-10-04T23:07:01.424Z",
+    "contentSha256": "9d24c08ebce39ec567eae8e437f503f3f5da49984da2252e2622b47d7051ad23"
   }
 }

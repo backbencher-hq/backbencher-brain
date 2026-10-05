@@ -1,6 +1,13 @@
 # M44: The Understandable Hub (IDE Program v7)
 
-Status: `open` (filed on GitHub)
+Status: `closed` on GitHub (milestone 44 closed; the closure gate X1 was verified
+48/48 at the closing commit) — **with a live ledger caveat**: at commit
+`a0ed9eade` (this file's last truth pass) `validation/m44/results/G1.json` on disk
+reads `known-gap`, so the lane's GOVERNANCE record is not green even though the
+milestone itself is closed. The honest state is "milestone closed, governance
+record known-gap"; see [IDE-PROGRAM-STATUS.md](../IDE-PROGRAM-STATUS.md) and
+[gate wiring](../m61/M61-MASTER-PLAN.md). Read this line as a pointer to the
+records, never as a green tick.
 GitHub milestone: `44` (free slot confirmed against the live board, 2026-09-06; M43 is the
 co-agent's active lane and is not touched)
 Parent program: [IDE Program Decision Record](../IDE-PROGRAM-DECISIONS.md)

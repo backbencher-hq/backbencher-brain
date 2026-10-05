@@ -1,5 +1,13 @@
 # M62: Address Truth — nothing shows a position it does not know
 
+Status: `closed` on GitHub (milestone 62 closed; ledger `validation/m62/results/manifest.json`
+reads `closed` with G1/A1/A2/A3/X1 `verified`, projected from the records by
+`script/m62/verify-governance.ts` — the only lane that already did this before
+the others were fixed). **Scope of the claim:** the closing evidence is pinned at
+commit `a943047e5c`; it has NOT been re-earned on the machine that last touched
+this file, and no gate in this lane re-runs the editor legs. M62's own closure
+gate X1 re-audits the whole IDE lane at one HEAD — run it before citing M62 as
+verified anywhere.
 GitHub milestone: `62`
 Lane: the IDE lane — `src/lsp/*`, `src/intelligence/graph/*`,
 `src/intelligence/contracts.ts`, `src/mcp/tool-handlers.ts`,
