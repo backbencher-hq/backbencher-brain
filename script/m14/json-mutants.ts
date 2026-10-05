@@ -160,6 +160,36 @@ const jsonOverridesLineLost = (r: any) => ({
 })
 
 /**
+ * Reverts `overrides` to BARE-NAME endpoints — the state before the third endpoint-form
+ * change on this lane. This is the mutant that class needed and did not have: the suite had
+ * three `overrides` mutants (dropped, unscoped-to-file, prior-line-lost) and none of them
+ * tested the endpoint FORM, so the endpoint change passed 16/16 and 24/24 without a single
+ * registered check objecting. That is the same trap this file already records twice for
+ * `calls` (`calls-callee-any-token`, `calls-runner-substring` became INVISIBLE rather than
+ * caught when `calls` endpoints became paths).
+ *
+ * Caught by json/DuplicateKey, whose `overrides` pins were migrated to `DuplicateKey.repeated`
+ * and whose `forbidRelationships` were migrated with them — leaving the forbids as bare names
+ * would have made the negative control vacuous, since a bare-named forbid can never match a
+ * path-named edge.
+ *
+ * Corpus cost of the bare form, measured by
+ * `validation/m14/fixtures/json/overrides-endpoint-probe.ts` over the whole admitted
+ * population: 22 of 22 targets and 8 of 22 sources stop being qualified paths, and 2 of 22
+ * sources become name-ambiguous (0 under the path form).
+ */
+const jsonOverridesEndpointsAreBareNames = (r: any) => ({
+  ...r,
+  relationships: (r.relationships ?? []).map((x: any) => {
+    if (relType(x) !== "overrides") return x
+    const meta = x.metadata ?? {}
+    const src = typeof meta.ownerName === "string" ? meta.ownerName : String(x.source ?? "")
+    const tgt = typeof meta.key === "string" ? meta.key : String(x.target ?? "")
+    return { ...x, source: src, target: tgt }
+  }),
+})
+
+/**
  * Pass-2 mutants. Four defects the pass-1 suite could not have caught, because the code they
  * break did not exist: the `implements` emitter, the `extends` source, and the two
  * document-level preconditions that keep the inheritance emitter from firing everywhere.
@@ -286,6 +316,40 @@ const jsonArrayItemNamedFromBareName = (r: any) => ({
     const m = /^(.*)\[(\d+)\]\[(\d+)\](.*)$/.exec(t)
     if (!m) return x
     return { ...x, target: `${m[1]}[${m[2]}]${m[4]}`, source: String(x.source ?? "").replace(/\[(\d+)\]$/, "") }
+  }),
+})
+
+/** Reverts the module-prefix strip to the fixed `slice(rootName.length + 1)`, for the one
+ *  path shape where the character at `rootName.length` is `[` rather than `.`.
+ *
+ *  This models the defect this lane measured and fixed: a document whose TOP LEVEL is an
+ *  array has no key to name it, so the MODULE is the only thing that can, the qualified path
+ *  hangs off the module by an index, and a strip that assumes the dot eats the bracket. The
+ *  published name becomes `0].tags[0]` where the contract says `[0].tags[0]` — a `]` with no
+ *  `[` before it, a family no keyed form (`Statement[0]`) and no element form produces.
+ *
+ *  The predicate is `name.startsWith("[")`, which is SOUND rather than convenient: after the
+ *  fix a symbol name begins with `[` if and only if `afterModuleImpl` took its bracket branch,
+ *  so this transforms exactly the population the defect affected and nothing else. It is a
+ *  plain character comparison — no pattern matching — unlike several transforms above it.
+ *
+ *  Caught by json/TopLevelArray's three `forbidSymbols` (`0].tags[0]`, `0].tags[1]`,
+ *  `0].tags`) and by its two `expectSymbols` pins on the bracket form.
+ */
+const jsonTopLevelArrayNameTruncatesBracket = (r: any) => ({
+  ...r,
+  symbols: (r.symbols ?? []).map((s: any) => {
+    const name = String(s.name ?? "")
+    if (!name.startsWith("[")) return s
+    const owner = String(s.ownerName ?? "")
+    return {
+      ...s,
+      name: name.slice(1),
+      // The owner's name is derived from the child's by cutting at the last `[`, so it
+      // carries the same truncation and must be reverted together or the fixture would
+      // catch a half-applied defect.
+      ownerName: owner.startsWith("[") ? owner.slice(1) : owner,
+    }
   }),
 })
 
@@ -429,11 +493,27 @@ const jsonArrayItemNamedFromBareName = (r: any) => ({
     transform: jsonOverridesLineLost,
   },
   {
+    id: "json/overrides-endpoints-are-bare-names",
+    language: "json",
+    defectClass: "ambiguous-endpoint",
+    description:
+      "M14 ontology regression: `overrides` reverts to bare-name endpoints, violating the lane's own contract row that every relationship type emits QUALIFIED PATHS on both ends. Measured over the whole admitted population, 22 of 22 targets and 8 of 22 sources stop being paths, and 2 of 22 sources become name-ambiguous. The suite had three other `overrides` mutants and none tested endpoint FORM, so the change passed 16/16 and 24/24 with nothing objecting. Caught by json/DuplicateKey, whose `overrides` pins AND `forbidRelationships` were both migrated to the path form.",
+    transform: jsonOverridesEndpointsAreBareNames,
+  },
+  {
     id: "json/edge-lines-dropped",
     language: "json",
     defectClass: "dishonest-payload",
     description:
       "M14 ontology regression: every edge loses its site line, restoring the measured pre-M60 state in which `line_number` occurred ZERO times in the analyzer and every json edge in the index was stored with a NULL line while symbols carried `range` throughout.",
     transform: stripJsonEdgeLines,
+  },
+  {
+    id: "json/top-level-array-name-truncates-bracket",
+    language: "json",
+    defectClass: "wrong-symbol-identity",
+    description:
+      "M60 regression, MEASURED AND FIXED THIS LANE: the module-prefix strip is a fixed `slice(rootName.length + 1)`, which assumes the character at `rootName.length` is the dot separating a module from its first key. In a document whose TOP LEVEL is an array that character is `[`, so the `+1` ate it and `mod[0].tags[0]` published the name `0].tags[0]` — a `]` with no `[` before it, a spelling no keyed form (`Statement[0]`) and no element form (`rows[0][0]`) can produce. Over a 514-file stride sample of the 2,569 admitted corpus documents whose top level is an array: 17,803 such names in 215 of 514 files, 14.8% of the 120,464-symbol population; after the fix 0, with the 17,803 reappearing as the bracket form and the other three spelling buckets and the total symbol count unchanged to the digit. Measured to be SPELLING-ONLY and not a graph defect: edge count, both-ends resolution (120,464 of 120,464), containment soundness (120,464 of 120,464) and declared-owner agreement (85,670 of 85,670) are byte-identical on both sides of the fix, and the lane's own differential reports the same 363,344 contains edges covered with 0 unexplained either way — the oracle reads qualified PATHS, so it is structurally blind to a defect that lives only in the symbol NAME. That blindness is why this mutant exists. Caught by json/TopLevelArray.",
+    transform: jsonTopLevelArrayNameTruncatesBracket,
   },
 ]

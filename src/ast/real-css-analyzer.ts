@@ -133,6 +133,29 @@ interface StackFrame {
    */
   scope: string
   currentSelector: string
+  /**
+   * The name of the nearest enclosing `@keyframes`, or `""`.
+   *
+   * This is the OWNER of a declaration that `currentSelector` cannot own, and the reason it
+   * exists is measured, not imagined. `@keyframes fade { from { opacity: var(--o) } }` is a
+   * real custom-property read — the animation's behaviour depends on a property declared
+   * elsewhere — and `currentSelector` is EMPTY inside a `keyframe_block`, because the walk
+   * only sets it at a `rule_set` and a keyframe block is not one. So before this field
+   * existed, every `var()` inside `@keyframes` produced no edge at all: measured over the
+   * admitted corpus, **827 of the 1,014 `--x` leaves that reach no `rule_set`** are in a
+   * `keyframes_statement`, across 265 files (`bootstrap/css/bootstrap.css:4933`,
+   * `bulma/.../fontawesome-free-6.5.2-web/css/all.css:330`,
+   * `pico/css/pico.amber.css:2769`). The dependency was real and the graph did not have it.
+   *
+   * The owner is the keyframes NAME because that name is already published as a symbol
+   * (`processKeyframes`, `SymbolKind.Function`, `isKeyframes`), so the edge resolves at both
+   * ends without inventing an endpoint. Nothing here is emitted for a `@theme`/`@apply`/
+   * `@utility` block instead: those are CONSUMING at-rules with deliberately no symbol
+   * (`processAtRule`'s ruling D10 — "a symbol with no declaration behind it is a name with no
+   * referent"), so a `var()` inside one still has no owner to name. That remainder is
+   * counted and declared, not papered over: 167 leaves in 4 files.
+   */
+  keyframeScope: string
 }
 
 // ============================================================================
@@ -350,6 +373,18 @@ function collapseWhitespace(text: string): string {
 }
 
 /**
+ * Is this callee node the CSS `var()` function?
+ *
+ * Character equality after trimming, not a pattern: a node-type or text test has to
+ * distinguish the FUNCTION `var` from a class named `.var`, a property `--var`, or the word
+ * "var" inside a comment, and only the node's own text can answer that. A pattern over the
+ * enclosing statement could not.
+ */
+function fnNameNameIsVar(fnNameNode: Node): boolean {
+  return fnNameNode.text.trim() === "var"
+}
+
+/**
  * Does this selector text contain a NESTING `&`?
  *
  * Escape-aware, and it has to be: the corpora carry Tailwind arbitrary values whose
@@ -510,10 +545,10 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
     this.collectCustomDefinitionNames(rootNode, ctx)
     this.collectNamespacePrefixes(rootNode, ctx)
 
-    const stack: StackFrame[] = [{ node: rootNode, media: "", supports: "", layer: "", container: "", scope: "", currentSelector: "" }]
+    const stack: StackFrame[] = [{ node: rootNode, media: "", supports: "", layer: "", container: "", scope: "", currentSelector: "", keyframeScope: "" }]
 
     while (stack.length > 0) {
-      const { node, media, supports, layer, container, scope, currentSelector } = stack.pop()!
+      const { node, media, supports, layer, container, scope, currentSelector, keyframeScope } = stack.pop()!
 
       // Record every parse error the tree reports, and NEVER claim otherwise.
       //
@@ -567,6 +602,11 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
       let nextContainer = container
       let nextScope = scope
       let nextSelector = currentSelector
+      // The nearest enclosing `@keyframes` OWNS the declarations inside it, so a frame
+      // inherits the name of the one it is inside. Reset per node (not `|| carried`) so a
+      // `keyframes_statement` that publishes no name cannot inherit an outer one: the
+      // nearest owner is the only correct owner.
+      let nextKeyframeScope = keyframeScope
 
       switch (node.type) {
         case "rule_set":
@@ -582,9 +622,11 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
           }
           break
         }
-        case "keyframes_statement":
-          this.processKeyframes(node, ctx)
+        case "keyframes_statement": {
+          const kfName = this.processKeyframes(node, ctx)
+          nextKeyframeScope = kfName
           break
+        }
         case "supports_statement": {
           const newSupports = this.processSupports(node, ctx)
           if (newSupports) nextSupports = newSupports
@@ -620,7 +662,7 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
           break
         }
         case "call_expression":
-          this.processCallExpression(node, currentSelector, ctx)
+          this.processCallExpression(node, currentSelector, keyframeScope, ctx)
           break
       }
 
@@ -635,6 +677,7 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
             container: nextContainer,
             scope: nextScope,
             currentSelector: nextSelector,
+            keyframeScope: nextKeyframeScope,
           })
         }
       }
@@ -2056,6 +2099,40 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
     return out
   }
 
+  /**
+   * The `@custom-media` references of a whole comma-separated query LIST.
+   *
+   * `customMediaRefsIn` walks ONE node's subtree. A comma list is not inside one
+   * node — the grammar leaves the terms as SIBLING query children of the statement —
+   * so the single-term walk cannot see past the first comma. This unions the walk
+   * over the statement's own DIRECT query children, which is what makes
+   * `@media (--a), (--b)` depend on both `--a` and `--b`.
+   *
+   * Direct children only, so the walk cannot descend into the block and read a
+   * declaration value as a reference. For a single-term query there is exactly one
+   * such child, so the result is identical to `customMediaRefsIn(queryNode)` — which
+   * is why this is a widening and not a rewrite.
+   */
+  private customMediaRefsInList(statement: Node): string[] {
+    const out: string[] = []
+    for (let i = 0; i < statement.childCount; i++) {
+      const c = statement.child(i)
+      if (!c) continue
+      if (
+        c.type !== "keyword_query" &&
+        c.type !== "binary_query" &&
+        c.type !== "feature_query" &&
+        c.type !== "parenthesized_query" &&
+        c.type !== "unary_query" &&
+        c.type !== "selector_query"
+      ) {
+        continue
+      }
+      for (const name of this.customMediaRefsIn(c)) if (out.indexOf(name) === -1) out.push(name)
+    }
+    return out
+  }
+
   private processMedia(node: Node, ctx: CssContext): string | null {
     // M14 F1 debt repaid 2026-09-26, and it carried a real defect with it.
     //
@@ -2088,7 +2165,36 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
           c.type === "selector_query"),
     )
     if (queryNode) {
-      const mediaName = `@media ${collapseWhitespace(queryNode.text)}`
+      // The scope's NAME must describe the WHOLE condition, not its first term.
+      //
+      // M60 pass 13. `@media A, B { … }` is a comma-separated query LIST and the
+      // block applies when EITHER term matches. The pinned grammar does not wrap
+      // the list in a node — measured on `@media screen and (min-width: 769px),print`
+      // the `media_statement`'s children are `@media`, `binary_query`, `,`,
+      // `keyword_query`, `block` — so `findChild` above returns the FIRST query
+      // term and every term after the first comma was silently DISCARDED from the
+      // name. Two consequences, both measured on the corpus:
+      //
+      // 1. The published name UNDER-DESCRIBES the scope. `Documenter.jl/assets/html/
+      //    themes/catppuccin-mocha.css` published
+      //    `@media screen and (min-width: 769px)` for a block whose condition is
+      //    `screen and (min-width: 769px),print`, so a reader cannot tell the block
+      //    also applies to print.
+      // 2. It is an IDENTITY COLLISION. `@media screen and (min-width: 769px),print`
+      //    and `@media screen and (min-width: 769px), screen` differ only after the
+      //    comma, and both publish the same name — so the identity merge folds two
+      //    different conditions into one scope symbol and their rules together.
+      //    `FSharp.Formatting/docs/content/fsdocs-default.css:192` is the measured
+      //    case: the block's condition runs to
+      //    `screen and (min-resolution: 120dpi) and (max-width: 767.9px)`.
+      //
+      // The name is therefore built from the at-rule's own PRELUDE — the source text
+      // between the `@media` keyword and the block — which is the whole condition by
+      // construction and needs no node type to wrap it. For a SINGLE-term query the
+      // prelude is byte-identical to `queryNode.text`, so this cannot move a name
+      // that was already right; `css-media-prelude-equivalence` measures that claim
+      // rather than asserting it.
+      const mediaName = `@media ${collapseWhitespace(this.atRulePrelude(node, "@media"))}`
       ctx.patterns["Responsive Design (Media Queries)"] = true
       // RULING (2026-09-26). The comment this replaces read "a media query is a
       // structural scope, not a symbol — it is NOT emitted as a standalone
@@ -2172,7 +2278,19 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
         // fixture `custom-media-in-every-query-shape` is the only evidence for it.
         // That is stated because "0 in the corpus" is what a broken probe and a
         // working branch both report.
-        for (const declared of this.customMediaRefsIn(queryNode)) {
+        // Every term of the LIST, not just the first. `@media (--a), (--b)` is one
+        // condition depending on TWO declarations, and `customMediaRefsIn` walks the
+        // subtree of the node it is handed — so handing it the first query term found
+        // the `--a` in it and could not see the `--b` that sits in a SIBLING query
+        // node. That left the scope named for both while the graph recorded one
+        // dependency, which is the same under-description the name fix above removed,
+        // one level down: the fixture `custom-media-in-every-query-shape` states the
+        // intent in its own comment ("a comma list, so the scope depends on TWO") and
+        // asserted only ONE edge, so it passed against the loss.
+        //
+        // The terms are the statement's own DIRECT query children, so the walk cannot
+        // descend into the block and invent a reference from a declaration value.
+        for (const declared of this.customMediaRefsInList(node)) {
           if (!ctx.customMediaNames[declared]) continue
           ctx.relationships.push({
             source: mediaName,
@@ -2476,12 +2594,23 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
   }
 
-  private processKeyframes(node: Node, ctx: CssContext) {
+  /**
+   * Publishes a `@keyframes` declaration as a symbol and returns the name it published, or
+   * `""` when it published none.
+   *
+   * The RETURN is load-bearing and is new: the caller stores it as the owning scope for the
+   * declarations inside, which is what lets a `var()` inside a `keyframe_block` be emitted
+   * as a `references` edge from the animation instead of being dropped. See
+   * `StackFrame.keyframeScope`. It returns the name rather than `void` so the two can never
+   * disagree — a symbol published under a name the caller has to re-derive is the shape that
+   * produced the bare-`@container` identity collision this lane already had to undo.
+   */
+  private processKeyframes(node: Node, ctx: CssContext): string {
     const nameNode = this.findChild(
       node,
       (c) => c && (c.type === "keyframes_name" || c.type === "identifier" || c.type === "string_value"),
     )
-    if (!nameNode) return
+    if (!nameNode) return ""
     const name = stripAllQuotes(nameNode.text)
     ctx.symbols.push({
       name: name,
@@ -2506,6 +2635,7 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
     const keywordNode = this.findChild(node, (c) => c?.type === "at_keyword")
     const keyword = keywordNode ? keywordNode.text.trim().toLowerCase() : "@keyframes"
     this.recordKeyframesOverride(ctx, name, keyword, this.lineOf(node))
+    return name
   }
 
   /**
@@ -3474,19 +3604,33 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
   }
 
-  private processCallExpression(node: Node, currentSelector: string, ctx: CssContext) {
+  /**
+   * `keyframeScope` is the nearest enclosing `@keyframes` name, or `""`. A `var()` whose
+   * owner is a keyframe block rather than a rule is emitted from THAT name; see
+   * `StackFrame.keyframeScope` for the measurement that made it necessary.
+   */
+  private processCallExpression(node: Node, currentSelector: string, keyframeScope: string, ctx: CssContext) {
     const fnNameNode = this.findChild(node, (c) => c?.type === "function_name" || c?.type === "identifier")
     if (!fnNameNode) return
 
-    if (fnNameNode.text === "var" && currentSelector) {
+    if (fnNameNameIsVar(fnNameNode) && (currentSelector || keyframeScope)) {
       const argsNode = this.findChild(node, (c) => c?.type === "arguments")
       if (argsNode) {
+        // The OWNER of this read: the rule's selector when there is one, otherwise the
+        // enclosing `@keyframes` name. `currentSelector` wins whenever both are set, which
+        // is the case that keeps the 161,768 existing edges byte-identical — a `var()`
+        // inside a `rule_set` is a rule's read, and the keyframes scope it may sit inside is
+        // a different, weaker claim.
+        const owner = currentSelector || keyframeScope
+        // `isKeyframeScopeRef` is TRUE only for the owner-less case, so a consumer can count
+        // the new sub-shape without re-deriving it, and so the fixture can pin it.
+        const ownedByKeyframes = currentSelector === "" && keyframeScope !== ""
         const argStack = [argsNode]
         while (argStack.length > 0) {
           const n = argStack.pop()!
           if (n.namedChildCount === 0 && n.text.trim().startsWith("--")) {
             ctx.relationships.push({
-              source: currentSelector,
+              source: owner,
               target: n.text.trim(),
               type: ASTEngine.RelationshipType.References,
               // M59.A7: the name is the custom property INSIDE `var()`, so the
@@ -3494,7 +3638,20 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
               // receiver's position, which for `calc(var(--x) * 2)` is the
               // `calc` — a different line whenever the value wraps.
               line_number: this.lineOf(n),
-              metadata: { cssSpecific: true, isVariableRef: true },
+              // A parse fact, written explicitly rather than left absent: the owner is a
+              // node this walk published and the target is an argument node of a `var()`
+              // whose callee node reads `var`. Nothing here is matched by name against a
+              // declared target — that is what `uses` does, and it is why those edges are
+              // the ones that need a lower confidence. `isVariableRef`'s 161,768 siblings
+              // write no confidence at all, which the lane's own census counts as a
+              // distinct claim; this branch states its own instead of inheriting the
+              // absence.
+              ...(ownedByKeyframes ? { confidence: 1.0 } : {}),
+              metadata: {
+                cssSpecific: true,
+                isVariableRef: true,
+                ...(ownedByKeyframes ? { isKeyframeScopeRef: true } : {}),
+              },
             })
             ctx.patterns["CSS Custom Properties"] = true
           }
