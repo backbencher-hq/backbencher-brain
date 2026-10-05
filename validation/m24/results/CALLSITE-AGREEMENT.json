@@ -1,11 +1,20 @@
 {
   "code": "CALLSITE-AGREEMENT",
   "status": "verified",
-  "currentCommit": "84fccdd23edd470c920a3cca35536a9a65429b64",
-  "sourceFingerprint": "8e89a3181a003235f90ca988b601ad55c54feffb8c5dadd82310498a92f98407",
+  "currentCommit": "268586a6a659ca3f6f9c8ee36659fccc68c19ef2",
+  "sourceFingerprint": "5617e505984b280ab73e1d04b41c27f040cc7df992968c3f62bd500e3f80f302",
+  "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
+  "sourceFingerprintCovers": [
+    "script/m24/verify-callsite-agreement.ts",
+    "src/intelligence/graph/line-address.ts",
+    "src/lsp/navigation.ts",
+    "src/lsp/positions.ts",
+    "src/lsp/relations.ts",
+    "script/m24/portability.ts"
+  ],
   "verifierCommand": "npx tsx script/m24/verify-callsite-agreement.ts",
   "evidenceFile": "CALLSITE-AGREEMENT.json",
-  "generatedAt": "2026-10-05T04:01:10.811Z",
+  "generatedAt": "2026-10-05T22:18:34.061Z",
   "passed": 13,
   "failed": 0,
   "failures": [],
@@ -16,12 +25,12 @@
     "selectionCaveat": "machine-local: these numbers describe ONE index on ONE machine. Reproducing them elsewhere needs `--db` pointed at an equivalent index. The rule is declared and deterministic (most relationship rows, ties by path) so two runs on an unchanged store read the same input — the first version of this harness picked the NEWEST index by mtime and two consecutive runs read different stores (601 checked positions vs 7), which is the §8.2 failure one level up: a byte-stable record carrying an unstable claim."
   },
   "measured": {
-    "symbolsWithIncomingRows": 498,
+    "symbolsWithIncomingRows": 493,
     "positionsChecked": 46,
     "exactCallSitesServed": 46,
     "sourceTextCheck": {
       "linesChecked": 46,
-      "linesNamingTheCallee": 44
+      "linesNamingTheCallee": 42
     },
     "labelledDeclarationSubstitutes": 0,
     "sourcesUnreadable": 0,
@@ -34,15 +43,31 @@
     "rowAccountability": {
       "agreements": 2,
       "disagreements": 0,
-      "behindLaunchGate": 496,
+      "behindLaunchGate": 491,
       "declaredAbsentForOtherReasons": 0,
       "examples": [],
       "harnessDefectFoundAndFixed": "The first version of A2-STORE ignored the §11.7 launch gate and reported 73 'unaccounted rows' on the 765k-row index — every one a yaml/python file the launch set had refused on purpose. Reading a declared absence as a missing row is precisely what §11.7 calls a violation, and the harness was committing it against the component. The gate is now counted as declared absence."
     },
     "nameTestDisagreements": {
       "checked": 46,
-      "containTheCalleeName": 44,
+      "containTheCalleeName": 42,
       "reported": [
+        {
+          "rowId": "818db37d8f54173ad1357ab24627373da2e9418c:rel:818db37d8f54173ad1357ab24627373da2e9418c:website/src/app/docs/page.tsx:DocsPage:117:Database:uses:152",
+          "relationshipType": "uses",
+          "callee": "Database",
+          "servedLine": 152,
+          "storedLine": 152,
+          "text": ""
+        },
+        {
+          "rowId": "818db37d8f54173ad1357ab24627373da2e9418c:rel:818db37d8f54173ad1357ab24627373da2e9418c:website/src/app/docs/page.tsx:DocsPage:117:Database:uses:166",
+          "relationshipType": "uses",
+          "callee": "Database",
+          "servedLine": 166,
+          "storedLine": 166,
+          "text": ""
+        },
         {
           "rowId": "818db37d8f54173ad1357ab24627373da2e9418c:rel:818db37d8f54173ad1357ab24627373da2e9418c:script/m14/run-fixtures.ts:runLang:442:constructor:uses:474",
           "relationshipType": "uses",
@@ -97,7 +122,7 @@
   },
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T04:01:10.811Z",
-    "contentSha256": "5c8f94acadf26bcd639fef2d9f268f168bb3ad5b84a5ecc88fd90eca59844714"
+    "sealedAt": "2026-10-05T22:18:34.061Z",
+    "contentSha256": "c6e58775d26c3a2e8fdfa63344c0e98472e66ecd8bbbebbcb93a14f048c62fa5"
   }
 }

@@ -21,6 +21,7 @@ import { execFileSync } from "node:child_process"
 import { existsSync, readFileSync, writeFileSync } from "node:fs"
 import { join, resolve } from "node:path"
 import { writeSealed } from "../lib/evidence.ts"
+import { fingerprintFields } from "../m61/claim_fingerprints.ts"
 
 const ROOT = resolve(import.meta.dirname, "../..")
 const EVIDENCE_PATH = join(ROOT, "validation/m29/results/X1.json")
@@ -224,6 +225,7 @@ const result = {
   negativeCases: negatives,
   suiteExits: exits,
   currentCommit,
+  ...fingerprintFields(["m29.X1"], ROOT),
   verifierCommand: "npx tsx script/m29/verify-closure.ts",
   evidenceFile: "X1.json",
   ownerSpotCheck: spotCheck,

@@ -24,6 +24,7 @@ import os from "node:os"
 import path from "node:path"
 import { createToolHandlers } from "../../src/mcp/tool-handlers"
 import { writeSealed } from "../lib/evidence.ts"
+import { fingerprintFields } from "../m61/claim_fingerprints.ts"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 
@@ -216,6 +217,7 @@ async function main(): Promise<void> {
     mutantsTotal,
     mutantRecords,
     currentCommit,
+    ...fingerprintFields(["m28.T1"], ROOT),
     verifierCommand: "npx tsx script/m28/verify-mcp-tools.ts",
     evidenceFile: "T1.json",
     generatedAt: new Date().toISOString(),

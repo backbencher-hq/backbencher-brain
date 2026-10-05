@@ -40,13 +40,13 @@
       ],
       "evidence": {
         "status": "known-gap",
-        "currentCommit": "82cb16e608e5ec3cd68d5d8e63158cb215170f4b",
+        "currentCommit": "a8807f81027bd384f2f5d50a2d1bd143463639b8",
         "verifierCommand": "npx tsx script/m24/verify-governance.ts",
         "evidenceFile": "G1.json",
         "passed": 23,
         "failed": 1,
         "negativeCases": 11,
-        "blockedReason": "1 check(s) failed: G1: every non-planned ledger item has matching persisted evidence at the current commit — the relevant tree was clean at measure time"
+        "blockedReason": "1 check(s) failed: G1: every non-planned ledger item has matching persisted evidence at the current commit — relevant uncommitted files at measure time: script/m24/verify-call-hierarchy.ts, script/m24/verify-callsite-agreement.ts, script/m24/verify-closure.ts, script/m24/verify-docs.ts, script/m24/verify-freshness.ts, script/m24/verify-harness.ts"
       }
     },
     {
@@ -57,7 +57,7 @@
       "scope": "LSP 0-based UTF-16 <-> index 1-based lines/byte columns conversion component with mutation suite",
       "evidence": {
         "status": "verified",
-        "currentCommit": "ba99e1001f5b6afc40254f74e51b1930290354f0",
+        "currentCommit": "a8807f81027bd384f2f5d50a2d1bd143463639b8",
         "verifierCommand": "npx tsx script/m24/verify-positions.ts",
         "evidenceFile": "P1.json",
         "passed": 48,
@@ -84,7 +84,7 @@
       "scope": "file-watch, incremental reindex, machine-readable stale markers with declared debounce/catch-up guarantees",
       "evidence": {
         "status": "verified",
-        "currentCommit": "ba99e1001f5b6afc40254f74e51b1930290354f0",
+        "currentCommit": "a8807f81027bd384f2f5d50a2d1bd143463639b8",
         "verifierCommand": "npx tsx script/m24/verify-freshness.ts",
         "evidenceFile": "P2.json",
         "passed": 34,
@@ -124,7 +124,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "ba99e1001f5b6afc40254f74e51b1930290354f0",
+        "currentCommit": "a8807f81027bd384f2f5d50a2d1bd143463639b8",
         "verifierCommand": "npx tsx script/m24/verify-server.ts",
         "evidenceFile": "L1.json",
         "passed": 142,
@@ -154,7 +154,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "ba99e1001f5b6afc40254f74e51b1930290354f0",
+        "currentCommit": "a8807f81027bd384f2f5d50a2d1bd143463639b8",
         "verifierCommand": "npx tsx script/m24/verify-hover.ts",
         "evidenceFile": "L2.json",
         "passed": 58,
@@ -184,7 +184,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "ba99e1001f5b6afc40254f74e51b1930290354f0",
+        "currentCommit": "a8807f81027bd384f2f5d50a2d1bd143463639b8",
         "verifierCommand": "npx tsx script/m24/verify-navigation.ts",
         "evidenceFile": "L3.json",
         "passed": 122,
@@ -214,7 +214,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "ba99e1001f5b6afc40254f74e51b1930290354f0",
+        "currentCommit": "a8807f81027bd384f2f5d50a2d1bd143463639b8",
         "verifierCommand": "npx tsx script/m24/verify-symbols.ts",
         "evidenceFile": "L4.json",
         "passed": 50,
@@ -244,7 +244,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "ba99e1001f5b6afc40254f74e51b1930290354f0",
+        "currentCommit": "a8807f81027bd384f2f5d50a2d1bd143463639b8",
         "verifierCommand": "npx tsx script/m24/verify-call-hierarchy.ts",
         "evidenceFile": "L5.json",
         "passed": 97,
@@ -274,10 +274,10 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "ba99e1001f5b6afc40254f74e51b1930290354f0",
+        "currentCommit": "a8807f81027bd384f2f5d50a2d1bd143463639b8",
         "verifierCommand": "npx tsx script/m24/verify-harness.ts",
         "evidenceFile": "V1.json",
-        "passed": 24,
+        "passed": 22,
         "failed": 0,
         "negativeCases": 6,
         "blockedReason": "bun-source leg is blocked in this environment (bun not installed); the harness attempts it every run and records the reason — never a silent skip",
@@ -302,7 +302,7 @@
       ],
       "evidence": {
         "status": "verified",
-        "currentCommit": "ba99e1001f5b6afc40254f74e51b1930290354f0",
+        "currentCommit": "a8807f81027bd384f2f5d50a2d1bd143463639b8",
         "verifierCommand": "npx tsx script/m24/verify-docs.ts",
         "evidenceFile": "D1.json",
         "passed": 47,
@@ -342,7 +342,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T17:40:20.229Z",
-    "contentSha256": "84b3d2f8d512f4fdde5bb760db74b5193f1e8594c486ce9dd204429d0a652edd"
+    "sealedAt": "2026-10-05T22:34:55.198Z",
+    "contentSha256": "99ee6ff94aa9f8d1db0a52a95219170d2d8316cee8c8b668b654e1e3bc7f4352"
   }
 }

@@ -25,6 +25,7 @@ import { execFileSync } from "node:child_process"
 import { join, dirname } from "node:path"
 import { fileURLToPath } from "node:url"
 import { writeSealed } from "../lib/evidence.ts"
+import { fingerprintFields } from "../m61/claim_fingerprints.ts"
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..")
 const SHELL = join(ROOT, "script", "m26", "webview-html.ts")
@@ -166,6 +167,7 @@ async function main(): Promise<void> {
     mutantsTotal,
     currentCommit: commit,
     verifierCommand: "npx tsx script/m26/verify-content-security.ts",
+    ...fingerprintFields(["m26.W6"], ROOT),
     evidenceFile: "W6.json",
     generatedAt: new Date().toISOString(),
     adversarialFixtures: ADVERSARIAL_FIXTURES.map((f) => f.name),

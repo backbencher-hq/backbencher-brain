@@ -2,10 +2,10 @@
   "issue": "M27.J1",
   "code": "J1",
   "milestone": "M27",
-  "status": "verified",
-  "checks": 22,
-  "passed": 22,
-  "failed": 0,
+  "status": "known-gap",
+  "checks": 16,
+  "passed": 13,
+  "failed": 3,
   "mutantsCaught": 4,
   "mutantsTotal": 4,
   "mutantRecords": [
@@ -26,10 +26,18 @@
       "caught": true
     }
   ],
-  "currentCommit": "f70ec0734fbae53b25994d7395bb108fd1999343",
+  "currentCommit": "a8807f81027bd384f2f5d50a2d1bd143463639b8",
+  "sourceFingerprint": "a6650f1cfafbcb25acd37a245876f79e4160968afdb07c6733f97df4974e37d5",
+  "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
+  "sourceFingerprintCovers": [
+    "script/m27/verify-lsp4ij.ts",
+    "src/lsp/server.ts",
+    "script/m24/lsp_harness.ts",
+    "script/m27/server-caps.ts"
+  ],
   "verifierCommand": "npx tsx script/m27/verify-lsp4ij.ts",
   "evidenceFile": "J1.json",
-  "generatedAt": "2026-10-05T14:21:59.568Z",
+  "generatedAt": "2026-10-05T22:33:25.252Z",
   "claimLevel": "I2 — template verified against the real server's wire capabilities; runIde leg blocked-with-reason (D-7)",
   "blockedLegs": [
     {
@@ -43,7 +51,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T14:21:59.571Z",
-    "contentSha256": "295113cf7f62704e5f125519da2ff590c32660637de3c4f4f9eae7377ec3ed70"
+    "sealedAt": "2026-10-05T22:33:25.254Z",
+    "contentSha256": "049fb7691c6d6dda288814ef4a04490319048a09be9b0f08dc1b391601787443"
   }
 }

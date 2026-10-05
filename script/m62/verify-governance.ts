@@ -29,6 +29,7 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { readEvidence, verifySeal, writeSealed } from "../lib/evidence.ts"
+import { fingerprintFields } from "../m61/claim_fingerprints.ts"
 import {
   EXPECTED_CODES,
   GATE_COMMANDS,
@@ -213,6 +214,7 @@ function main(): void {
     mutantsCaught: 0,
     mutantsTotal: 0,
     currentCommit,
+    ...fingerprintFields(["m62.G1"], ROOT),
     verifierCommand: "npx tsx script/m62/verify-governance.ts",
     evidenceFile: "G1.json",
     generatedAt: new Date().toISOString(),

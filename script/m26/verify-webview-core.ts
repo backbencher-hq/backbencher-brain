@@ -30,6 +30,7 @@ import { readFileSync, mkdirSync, writeFileSync, rmSync } from "node:fs"
 import { execFileSync } from "node:child_process"
 import path from "node:path"
 import { writeSealed } from "../lib/evidence.ts"
+import { fingerprintFields } from "../m61/claim_fingerprints.ts"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const CORE = path.join(ROOT, "script/m26/graph-core.ts")
@@ -370,6 +371,7 @@ async function main(): Promise<void> {
     mutantsTotal,
     currentCommit: commit,
     verifierCommand: "npx tsx script/m26/verify-webview-core.ts",
+    ...fingerprintFields(["m26.W1"], ROOT),
     evidenceFile: "W1.json",
     generatedAt: new Date().toISOString(),
     limitations: [

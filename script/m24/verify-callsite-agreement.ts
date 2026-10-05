@@ -34,6 +34,7 @@ import { createPositionMapper } from "../../src/lsp/positions.ts"
 import { deriveCallSiteAddress, isExactAddress, addressLine0 } from "../../src/intelligence/graph/line-address.ts"
 import { isUsageSiteRow } from "../../src/lsp/relations.ts"
 import { writeSealed } from "../lib/evidence.ts"
+import { fingerprintFields } from "../m61/claim_fingerprints.ts"
 import { sha256File } from "./portability.ts"
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..")
@@ -385,7 +386,6 @@ async function main(): Promise<void> {
   // M24.P1's gate X3 as a non-portable spawn. Same digest either way: sha256sum
   // and `shasum -a 256` both print the hex digest of the file's raw bytes, so
   // the sealed record's value is unchanged.
-  const sourceFingerprint = sha256File(join(ROOT, "src", "lsp", "navigation.ts"))
 
   if (index === null) {
     // §8.3: silence is guilt. An absent index is a BLOCKED leg with its reason,
@@ -396,7 +396,7 @@ async function main(): Promise<void> {
       blockedReason: "no brain.db reachable under ~/.bb/projects, and no --db path was given. The differential and the §15.1 comparison need a real index: a fixture cannot prove that a served position equals an INDEX-STORED location, because the fixture is the thing that invented it.",
       verdict: { ok: false, passed, failed },
       currentCommit,
-      sourceFingerprint,
+      ...fingerprintFields(["m24.CALLSITE-AGREEMENT"], ROOT),
       verifierCommand: "npx tsx script/m24/verify-callsite-agreement.ts",
       evidenceFile: "CALLSITE-AGREEMENT.json",
       generatedAt: new Date().toISOString(),
@@ -735,7 +735,7 @@ async function main(): Promise<void> {
       code: "CALLSITE-AGREEMENT",
       status: failed === 0 ? "verified" : "known-gap",
       currentCommit,
-      sourceFingerprint,
+      ...fingerprintFields(["m24.CALLSITE-AGREEMENT"], ROOT),
       verifierCommand: "npx tsx script/m24/verify-callsite-agreement.ts",
       evidenceFile: "CALLSITE-AGREEMENT.json",
       generatedAt: new Date().toISOString(),
