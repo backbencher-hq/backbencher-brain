@@ -2020,6 +2020,42 @@ drops empty rows from the done-set and re-walks them every run, printing how man
 how many remained, so a count that *rises* names new truncations instead of hiding them. The
 re-walk is idempotent, so a genuinely empty file costs one parse and nothing else.
 
+**The shared walker has the same defect, and it is not this lane's to fix.**
+`script/m14/resumable-walk.ts` `worker()` (lines 160-179) appends the file id to the checkpoint
+whenever `opts.run(i)` **resolves**, with no check that the work produced anything, and the only
+escape is `MARK_BAD`, which is written only when `run` *rejects*. A truncated parse resolves, so
+it is marked done forever.
+
+The arbiter's own checkpoint demonstrates it, in bytes —
+`validation/m14/measurements/walk-r.txt`:
+
+```
+2,184 lines, 0 lines beginning with the MARK_BAD prefix
+usethis/R/ci.R                  present as DONE
+usethis/R/code-of-conduct.R     present as DONE
+r-testthat/R/evaluate-promise.R present as DONE
+```
+
+Those are three files measured above to yield 0 symbols and 0 edges on the walk that recorded
+them. And the 0 `MARK_BAD` entries are themselves the finding: this lane's `arbiter/README.md`
+records **8 files lost to `memory access out of bounds`** in the `--fresh` run N on the same day,
+yet not one of them is marked bad, because a lost parse does not throw. So a resumed arbiter run
+reports them as walked and their edges are absent from every subsequent total.
+
+**§8 report item.** File `script/m14/resumable-walk.ts`, function `worker`. It must distinguish
+"the work completed" from "the work produced nothing": record a third checkpoint state (`!empty`)
+when `run` resolves with no contribution, and treat those rows as todo on the next run, the way
+`MARK_BAD` rows are excluded from `todo`. This needs one hook from the caller — a predicate such
+as `opts.empty?: (index: number) => boolean`, or a sentinel return from `run` — because only the
+caller knows whether its work was empty. **Why:** every lane that measures over a corpus is
+affected, not R only; a whole-corpus count is a lower bound that shrinks silently as the corpus
+grows, and `stats.walked` reports the file as walked, so the shrink is invisible at every layer
+above. The companion defect in the same area is already recorded in
+`fixtures/r/arbiter/README.md`: `ontology-coverage-gate.ts` populates `observed` inside the
+`run:` callback, so a fully-resumed walk observes zero edges and prints `RULED-UNJUSTIFIED` for
+all ten types of a lane that emits all ten. Both are shared machinery and are reported, not
+worked around.
+
 **Three independent walks now reconcile exactly**, which is the check that the fix removed a
 defect rather than moving a number:
 
