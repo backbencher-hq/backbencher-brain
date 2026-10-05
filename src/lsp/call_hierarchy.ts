@@ -1395,6 +1395,21 @@ export async function expandCalls(
     // plausible-looking range and never relabelled as a call. Placed AFTER the
     // cross-check so the census still partitions every stored edge this answer
     // read, not only the ones it renders.
+    //
+    // This guard is REDUNDANT while the request above is honoured, and that is
+    // the point of keeping it: measured on the T2 fixture, with the request
+    // present the engine returns 1 caller row (all `calls`) and with it removed 8
+    // (6 of them `contains`/`uses`). A surface that renders `fromRanges` must not
+    // be one engine option away from emitting a range for a relation that names
+    // no call.
+    //
+    // Also redundant, and also deliberate: `edge.relationshipType === "calls"` is
+    // still carried on the directness rule below. It is left in place because
+    // removing it would change THAT rule's meaning for a future non-`calls` kind
+    // that reaches this far, and this lane's disposition was to narrow what is
+    // RENDERED, not to redefine what the directness rule means. Narrowing it is
+    // that rule's owner's call; this comment says so rather than leaving the
+    // redundancy looking accidental.
     if (!(CALL_HIERARCHY_RELATIONSHIP_TYPES as readonly string[]).includes(edge.relationshipType)) {
       droppedEdges.push({
         name: node.name,
