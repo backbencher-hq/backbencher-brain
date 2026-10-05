@@ -34,7 +34,8 @@
  * exclusions survive into the aggregate's denominator. Without it, a driver killed
  * part-way loses the shards that already succeeded.
  */
-import { execFileSync, spawnSync } from "node:child_process"
+import { spawnSync } from "node:child_process"
+import { createHash } from "node:crypto"
 import * as fs from "node:fs"
 import * as path from "node:path"
 
@@ -183,24 +184,51 @@ const summary = {
   perShard: results,
 }
 
-// A partition that produced identical shards is a broken partition, and the way it
-// failed before was silent: six copies of shard 0 sum to a plausible-looking total.
-// Two shards can legitimately agree on an edge count, so the test is on identity of
-// the MEASURED FILE COUNT plus edge count together, and it is a warning with a
-// non-zero exit rather than a claim.
-const sig = (r: ShardResult) => `${r.parsed}/${r.sampled}:${r.excluded.length}`
+// A partition that produced identical shards is a broken partition. It once failed
+// SILENTLY: six copies of shard 0 summed to a plausible-looking total.
+//
+// The test has to be on the shards' FILE SETS, not on their counts. The first version
+// signed on `parsed/sampled:excluded`, and a balanced partition of 312 files into 12
+// shards where every file parses signs identically on all 12 — 26/26:0 — so the check
+// fired on a healthy 12-shard CONTROL and would have had to be muted. A count cannot
+// distinguish "balanced" from "duplicated"; a disjoint set can: two shards sharing a
+// digest share every file, which a partition cannot do. `sha1` over the sorted file
+// list is that digest, and it is exact rather than probabilistic — SHA-1 collisions
+// between two file lists of a real corpus are not a concern here because the check
+// also prints both shard indices for a human to look at.
+function shardDigest(dir: string, shard: number): string | null {
+  const f = path.join(dir, `shard-${shard}.json`)
+  if (!fs.existsSync(f)) return null
+  try {
+    const j = JSON.parse(fs.readFileSync(f, "utf8")) as { sampleFiles?: string[] }
+    if (!Array.isArray(j.sampleFiles)) return null
+    return createHash("sha1").update(j.sampleFiles.slice().sort().join("\n")).digest("hex")
+  } catch { return null }
+}
+
 const groups = new Map<string, number[]>()
+const noDigest: number[] = []
 for (const r of results) {
   if (r.parsed === 0) continue
-  const k = sig(r)
-  groups.set(k, [...(groups.get(k) ?? []), r.shard])
+  const d = shardDigest(OUT_DIR, r.shard)
+  if (!d) { noDigest.push(r.shard); continue }
+  groups.set(d, [...(groups.get(d) ?? []), r.shard])
 }
 const duplicates = [...groups.entries()].filter(([, v]) => v.length > 1)
+if (noDigest.length) {
+  console.error(`\nPARTITION UNVERIFIED — shards ${noDigest.join(", ")} carry no sampleFiles, so their`)
+  console.error(`membership cannot be checked. Re-run them with this census revision to make the`)
+  console.error(`check possible; until then the aggregate is UNMEASURED for membership.`)
+}
 if (duplicates.length) {
-  console.error(`\nSUSPECT PARTITION: ${duplicates.length} group(s) of shards report identical (parsed/sampled) signatures:`)
-  for (const [k, v] of duplicates) console.error(`  signature ${k} shared by shards ${v.join(", ")}`)
-  console.error(`Distinct shard membership cannot produce identical parsed counts unless the partition`)
-  console.error(`is degenerate. Treat the aggregate as UNMEASURED until this is explained.`)
+  console.error(`\nDEGENERATE PARTITION: ${duplicates.length} group(s) of shards share a FILE-SET digest:`)
+  for (const [d, v] of duplicates) console.error(`  sha1 ${d} shared by shards ${v.join(", ")}`)
+  console.error(`Disjoint shards cannot share a file set. Treat the aggregate as UNMEASURED.`)
+} else if (!noDigest.length) {
+  const total = results.reduce((a, r) => a + r.parsed, 0)
+  const distinct = new Set<string>()
+  for (const r of results) { const d = shardDigest(OUT_DIR, r.shard); if (d) distinct.add(d) }
+  console.log(`\nPARTITION OK — ${results.length} shards, ${distinct.size} distinct file-set digests, ${total} files measured.`)
 }
 
 fs.writeFileSync(path.join(OUT_DIR, "walk-summary.json"), JSON.stringify(summary, null, 2))
@@ -215,4 +243,4 @@ if (allExcluded.size) {
   for (const f of [...allExcluded].sort()) console.log(`  ${f}`)
 }
 console.log(`\naggregate with:\n  npx tsx script/m14/clean-wide-aggregate.mts --in ${OUT_DIR}`)
-if (duplicates.length) process.exit(3)
+if (duplicates.length || noDigest.length) process.exit(3)
