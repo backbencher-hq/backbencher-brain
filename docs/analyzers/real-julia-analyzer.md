@@ -2881,6 +2881,52 @@ population; the ambiguous column agrees exactly once this file's self-loop arm (
 difference between the two ambiguous columns is the definition, not the instrument** — and the fleet's
 column is the lower one on this sample by 84.2%.
 
+### The brief's row for this lane, per type — and the resolution rate it implies
+
+`validation/m14/measurements/julia-incoming-600.{txt,json}`, measured 2026-10-05 by `script/m14/incoming-check.ts`
+on the **same** 600 files this file's own split uses (`sampleHash 1c76a52a3ba9c16c`, width 1, 10,681
+symbols). This is the population the fleet-wide table builds at 600 files per lane, so it is directly
+comparable to it; the two instruments agree on `unresolved` to the digit and on `ambiguous` once the
+497 self-loops `incoming-check` counts and this file separates are named.
+
+| type | fires | edges | distinct targets | ambiguous | unresolved | resolves at both ends |
+|---|---|---|---|---|---|---|
+| `calls` | yes | 36,988 | 4,220 | 4,857 | 13,500 | 50.4% |
+| `uses` | yes | 11,263 | 1,670 | 2,082 | 4,175 | 44.4% |
+| `contains` | yes | 4,168 | 3,060 | 863 | 1 | 79.3% |
+| `imports` | yes | 879 | 38 | 60 | 557 | 29.8% |
+| `references` | yes | 15,038 | 694 | 2,331 | 8,607 | 27.3% |
+| `exports` | yes | 996 | 505 | 83 | 439 | 47.6% |
+| `extends` | yes | 669 | 83 | 30 | 456 | 27.4% |
+| `implements` | **NO** | 0 | 0 | 0 | 0 | n/a — 0 edges |
+| `overrides` | **NO** | 0 | 0 | 0 | 0 | n/a — 0 edges |
+| `instantiates` | yes | 958 | 563 | 522 | 0 | 45.5% |
+| **total** | **8/10** | **70,959** | — | **10,828** | **27,735** | **45.7%** |
+
+Read the last column with the section above it. An edge that is neither ambiguous nor unresolved binds to
+exactly one published symbol, so the column is the share of each type the reverse walk can walk without a
+rule nobody chose. The two ends of it are both julia facts and neither is a defect on its own:
+
+- `contains` is the best-resolving type at **79.3%**, and it is the only one of the eight with a
+  **near-zero unresolved count: 1 edge in 4,168**. That is the signature of an intra-file type whose
+  target is the enclosing declaration. Its 863 ambiguous edges are one file declaring the same
+  enclosing name under two scopes (`B1`), so they are a scoping question and not a missing declaration.
+- `instantiates` resolves at **45.5%** with **0 unresolved** — every one of its 958 targets names
+  something this sample published, and 522 of them name it more than once. The ambiguity is
+  cross-file/cross-repo (`B3a`), the bucket no analyzer can close.
+- `calls` is the largest type (36,988 edges, **52.1%** of all edges) and resolves at **50.4%**. Its
+  13,500 unresolved targets are dominated by `Base`/`Core` bindings this 600-file window does not
+  contain — the "EXTERNAL vs NEVER INDEXED" split above is the measurement of which is which, and it
+  is not a per-type defect list.
+- The weakest three are `references` **27.3%**, `extends` **27.4%** and `imports` **29.8%**. All three
+  are **outbound by construction** — they name something in another file or another package, so a
+  600-file window over 199 repositories is expected to leave most of their targets outside it. The
+  brief's rule applies and is the reason they are not reported as defects: an unresolved target naming
+  a file outside the window is not a defect.
+- `implements` and `overrides` read 0 here. `implements` is the lane's **RULED** type (§ above, 449
+  occurrences in 87 files, 0 publishable). `overrides` fires at whole population (3 edges) and is excluded
+  at 600 files by **stride arithmetic, not rarity** — the whole-population figure is 9/10 fired.
+
 ## The three-way split the brief asked for, and the refinement it needed
 
 Per edge whose target name binds to >1 published symbol, with `hit` the colliding declarations:
