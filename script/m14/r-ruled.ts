@@ -188,11 +188,17 @@
  *      RULE-COUPLED for calls, uses, contains and overrides by its own declaration, so it cannot
  *      see a bug those four rules share. Correcting that is a supervisor-owned edit
  *      (§8 of the workstream brief).
- *   2. `evidenceClass` IS ABSENT ON 100% OF R EDGES — 80,015 of 80,015. 42 of the 48
+ *   2. `evidenceClass` IS ABSENT ON 100% OF R EDGES — 80,083 of 80,083. 42 of the 48
  *      `src/ast/real-*-analyzer.ts` files set it; R is one of six that do not (clojure, elixir,
  *      erlang, fsharp, r, vb). The store derives the tier from confidence instead
  *      (`src/lsp/evidence_tier.ts` rule 2), so every R edge reads `structural`. Legal, and an
- *      outlier.
+ *      outlier. The 80,083 is the whole admitted population under production `parseFile` —
+ *      2,184 files, analyzer sha256 `ecb02eec`, corpus set sha256 `953c0314…`, 0 degraded, 0
+ *      parse failures — and it is the figure three independent walks agree on
+ *      (`validation/m14/fixtures/r/r-incoming-all.txt`, whose ten per-type counts tie
+ *      `labels-and-resolution.txt` exactly). An earlier draft of this line said 80,015, which
+ *      was a `/tmp` arbiter walk whose bytes were never kept; the number here is one a reader
+ *      can re-run.
  *   3. TWO SUBTYPES CARRY TWO LABELS BY DESIGN: `r_source` and `rcpp_source` appear under BOTH
  *      `imports` and `references` (real-r-analyzer.ts:1884 and :1907 emit the pair deliberately, and the
  *      comment there says why). A consumer keying on the subtype cannot recover the label.
