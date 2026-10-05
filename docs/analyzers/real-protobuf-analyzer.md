@@ -6004,8 +6004,11 @@ directories literally named `proto` (`pb-grpc/.../istio_echo.proto`,
 
 The 14 that are not module paths are bare relative module paths — `rpc.proto`,
 `movie.proto`, `nested.proto`, `dart_options.proto`, `etcdserver.proto` — and `find`
-resolves each to 1–3 real corpus files. That is class **U1** in pass 20's partition (the
-sample window), not a name mismatch.
+resolves each to 1–3 real corpus files. That is a module path in relative form, not a name
+mismatch. *(Pass 24 corrects the label "class U1 … the sample window": there is no window.
+§1 of pass 24 measures the population at 847 source `.proto` files, so a target naming a
+corpus file is naming a file that IS in the population, and the reason it does not resolve
+is that a module path is not a declaration.)*
 
 **So: the recipe is worth 0 edges on this lane, and the 54,156 is a property of the
 measurement's key.** Per the brief's own instruction — "if a number does not move, say so"
@@ -6039,10 +6042,10 @@ Unresolved on the binding key: **276 targets**. Partitioned:
 
 | class | targets | reading |
 |---|---|---|
-| names a corpus file by basename | **253** | U1 — the 842-file window |
+| names a corpus file by basename | **253** | U1 — a module path. *(Pass 24 corrects the label: this is not a window effect. There is no `.proto` outside the population; the target is a module path and module paths are not declarations. See §1 of pass 24.)* |
 | names no corpus file | 23 | |
 | — external-shaped (literal prefix list) | 1 | |
-| — **UNEXPLAINED** | **22** (55 edges) | worth a look |
+| — **UNEXPLAINED** | **22** (55 edges) | **SUPERSEDED by pass 24 §5: 0 unexplained. All 22 are type ids, not module paths, and every one is accounted for.** |
 
 The 22 are `connect.IssuedCert`, `config.Config`, `common.EnterpriseMeta`,
 `types.Metric`, `NodeSpec.Membership`, … — every leaf declared in the corpus **under a
@@ -6393,9 +6396,12 @@ edge:
 - **`imports` 0.00% at both ends is arithmetic, not failure.** An `imports` edge targets a
   **module path** (`google/protobuf/timestamp.proto`), not a declaration, so it cannot
   resolve against a symbol id. Pass 22 §5 priced these: **253 of the 276** unresolved
-  targets on the binding key name a corpus file by basename, which is the **sample
-  window** (a target naming a `.proto` outside the 842-file walk), 1 is external-shaped,
-  and **22 are unexplained** on 55 edges.
+  targets on the binding key name a corpus file by basename, 1 is external-shaped, and
+  **22 are unexplained** on 55 edges. *(Pass 24 corrects both halves of this: the 253 are
+  not a "sample window" — see §1 of pass 24, the population is the whole source corpus and
+  there is no file outside it — and the 22 are not unexplained. They are type ids, which
+  the pass-22 classifier could not tell from module paths, and every one is accounted for
+  in §5 of pass 24.)*
 - **`exports` 0.00%** for the same reason at a smaller scale: 4 edges, all module paths.
 - **`uses` 73.08%** is the per-population figure for a cross-file reference and is not
   comparable to a single-file figure; §2 of pass 20 gives the corpus-wide 99.58% and the
@@ -6458,6 +6464,16 @@ the check). Evidence JSON: `validation/m14/measurements/protobuf/classb-protoc-p
    (`insertSymbol`'s 31-vs-30 `VALUES` mismatch); `script/m14/incoming-check.ts`;
    `script/m14/run-fixtures.ts` exits 6 on the orphan `r` and `lua` fixture directories on
    this branch, so the fixture run is scoped with `BB_M14_ROOT` set to the repo.
+6. **`src/ast/pool-worker.ts:481`, `keepSymbol`'s `UNIVERSAL` set — remove `"this"`.**
+   *(Added by pass 24; filed earlier at this doc's line 3970 as the highest-severity ask and
+   absent from this table until now.)* Protobuf reserves nothing named `this`, and this lane
+   produces one deterministically — `boundary/internal/proto/controller/custom_options/v1/options.proto:46`
+   declares `string this = 1;` inside `message MaskMapping`. The entry's own comment reads
+   "no lane produced a legitimate declaration of any of them"; this lane has. **Price,
+   re-measured at pass 24: 1 symbol and 1 stored `contains` edge naming a declaration the
+   store does not hold** — the single defect inside pass 24's 4-target cause-C residue (§3),
+   and the only one of the four that is not an external dependency. Fix direction: drop
+   `"this"` from the set, or exempt protobuf. Price: `protobuf-keep-symbol-audit.mts`.
 
 ## Declared limitations, pass 23
 
@@ -6488,3 +6504,199 @@ the check). Evidence JSON: `validation/m14/measurements/protobuf/classb-protoc-p
   lane's verdict on its own corpus.
 - **The counts in §1 and §7 are from a walk that can lose a file (§7).** `uses` and
   `contains` are quoted as the pair of runs that disagree; the difference is one file.
+
+---
+
+# Pass 24 — the population is the whole corpus, and cause C's residue is 4 targets
+
+Pass 22 closed cause B (§3) and cause A (§4) and left cause C open at **22 UNEXPLAINED
+targets on 55 edges** (§5), described there as "worth a look". This pass closes it. The
+headline is not the 22; it is that the classifier which produced them could not see the
+distinction that decides the question, and that one of its numbers was wrong in the
+direction that hides a defect.
+
+## 1. The population is 847 source files, and there is no window
+
+Every count in this doc that says "842" is over `find $CR -name '*.proto' -type f`, and
+several passages describe the difference between 842 and 847 as a **sample window** — a
+module path naming "a `.proto` outside the 842-file walk". Measured
+(`script/m14/protobuf-cause-c-residual.mts`, which prints the three populations):
+
+```
+.proto reachable following symlinked dirs   1,692
+  of those vendored node_modules copies        845
+  of those SOURCE                              847
+`find -type f` reaches                           842
+.proto files that ARE symlinks                    5
+```
+
+**There is no file outside the population.** `find -type f` excludes a `.proto` file that
+is itself a **symlink**, and exactly 5 are:
+
+```
+pb-grpc/examples/python/auth/helloworld.proto
+pb-grpc/examples/python/debug/helloworld.proto
+pb-grpc/examples/python/wait_for_ready/helloworld.proto
+terraform/internal/tfplugin5/tfplugin5.proto
+terraform/internal/tfplugin6/tfplugin6.proto
+```
+
+So the 847−842 gap this doc repeatedly attributed to a window is the symlink count. The
+other 845 `.proto` files exist only behind symlinked directories, are `node_modules`
+vendored copies (`@google-cloud/firestore/build/protos/…`), and are build noise under the
+project's own exclude rules — correctly not walked.
+
+Consequence for §5 of pass 22 and §8a of pass 23: the 253 targets "naming a corpus file
+by basename" and the 1,523 `imports` edges in the U1 row are **not** explained by a target
+naming a file outside the walk. They are explained by arithmetic — an `imports` or
+`exports` edge targets a **module path**, and a module path is not a declaration, so it
+cannot resolve against a symbol id however far the walk reaches. Both passages are
+corrected in place above.
+
+## 2. The 22 are not unexplained; the classifier could not tell a path from an id
+
+`protobuf-cause-b-keying.mts` decides "can the corpus answer this?" by taking the target's
+**basename** — the text after the last `/` — and asking whether a `.proto` file of that
+name exists. That test is meaningful only for a **module path**. A type id has no `/`, so
+`connect.IssuedCert` has basename `connect.IssuedCert`, matches no filename, and is filed
+beside a genuinely external target. Every one of the 22 is a type id.
+
+`protobuf-ambiguity-split.mts` reads the same edges on the correct key and reports
+**U3 45 edges** (leaf declared under another id) and **U4 5 edges** (names nothing) — 50
+edges against the cause-B probe's 55, which is the same population read two ways. §5 of
+pass 22 read 22 + 1 = 23 "names no corpus file" as a bucket containing something unknown.
+
+Re-partitioned on the distinction the classifier needs. 842 files, production `parseFile`,
+**54,276 edges**, 38,881 published ids:
+
+| | targets | edges | what it is |
+|---|---|---|---|
+| **P1** module path, names a corpus file | **240** | **1,548** | an `imports`/`exports` edge targets a PATH |
+| **P2** module path, names no corpus file | **3** | **5** | external, or outside the corpus |
+| **P3** type id, leaf **declared** under another id | **29** | **68** | priced in pass 22 §6 — needs the id→file map |
+| **P4** type id, leaf declared **nowhere** | **4** | **5** | the only population that could be a defect |
+
+`partition conserves the total: true` (240+3+29+4 = 276). The conservation check is printed
+and gates the exit code because the split could otherwise manufacture a clean P4 by
+pushing failures into P1/P2, which would be the dishonest direction.
+
+## 3. P4 is 4 targets and none of them is a lane defect
+
+Each row is put to the corpus with a question it can answer either way, not read by eye.
+
+| edges | target | verdict |
+|---|---|---|
+| 1 | `controller.custom_options.v1.MaskMapping.this` (`contains`) | **dropped by `keepSymbol`**, `src/ast/pool-worker.ts:481` lists the bare name `"this"` in its `UNIVERSAL` set. The analyzer DID publish it — verified by calling the analyzer on that file — and the pipeline deletes it afterwards. The `contains` edge survives, which is the 1 dangling edge in 39,674. Shared machinery; filed as the "NEW, and it is the highest-severity item" ask at the §8 items list of pass 12 (this doc, line 3970) and restated as item 6 of §8 below. Already priced by `script/m14/protobuf-keep-symbol-audit.mts`. |
+| 1 | `sls.asfd.asfd.CustomType` (`uses`) | nvim-treesitter's syntax-highlighting fixture: `required CustomType Value = 2;` at `test.proto:40` names a type the file never declares. External. |
+| 2 | `xds.data.orca.v3.OrcaLoadReport` (`uses`) | referenced as an rpc payload (`orca_service.proto:37`, `rpc StreamCoreMetrics(OrcaLoadReportRequest) returns (stream xds.data.orca.v3.OrcaLoadReport)`) and **never declared** in the corpus. External. |
+| 1 | `github.com.hashicorp.go.kms.wrapping.v2.types.BlobInfo` (`uses`) | the file imports `github.com/hashicorp.go.kms.wrapping.v2.types.proto` at `multi_wrap_value.proto:8` — a generated Go-protocol path the corpus does not hold. External. |
+
+**P4 targets that are a lane defect: 0.** The single defect among them is in shared
+machinery and is already filed.
+
+## 4. The probe had a bug, and its own self-test is what found it
+
+The first version of this probe scanned **raw text** for declarations and reported the leaf
+`this` as *"declared in corpus text: 4 times"*. Every one of those 4 was a **comment**:
+
+```
+docker/vendor/github.com/moby/swarmkit/v2/api/control.proto:452
+  // ServiceID is the ID of the service this status describes
+pb-googleapis/google/api/servicemanagement/v1/servicemanager.proto:494
+  // Name of the service this report belongs to.
+```
+
+`grep -rF "message this"` over the corpus returns 0; the count came from the `service `
+keyword hitting prose. The row still adjudicated correctly in §3 above **only because the
+`keepSymbol` branch won**, so the wrong number was invisible in the output. On a target
+where the declaration count is the deciding branch it would have reported a LANE DEFECT
+that does not exist — the one direction a probe like this must not be wrong in.
+
+Comments are now stripped by index arithmetic (string-literal aware, offsets preserved so an
+offset still locates its file), and a six-assertion **self-test on a constructed string**
+gates the exit code:
+
+```
+SELF-TEST (stripComments): PASS  declarations of Widget  raw 3 -> stripped 1 (want 3 -> 1);
+  comment prose ignored true; real declaration kept true; string literal intact true;
+  offsets preserved true
+```
+
+The self-test then caught a bug in **its own fixture** — three occurrences asserted, zero
+present — which is the second time in this file's development that a check found something
+reading the code did not. Both are recorded because the honest reading of "P4 = 0" depends
+on the classifier being right, and it was wrong once already.
+
+## 5. The three causes, final accounting
+
+Per the round brief's requested format, from one walk each:
+
+```
+B: unresolved before 7,395 targets -> after 110      (0 edges recoverable)
+A: ambiguous  before 15 ids in >1 file -> after 15   (0 names became unique; 0 edges target them)
+C: targets now accounted for 276 of 276  (P1 240 + P2 3 + P3 29 + P4 4)
+C: unexplained 22 -> 0                               (4 targets adjudicated, 0 lane defects)
+```
+
+- **B does not move, and the reason is structural.** Keyed on the binding key the store
+  uses (`qualifiedName`), 7,305 of 7,415 targets resolve — **98.52%** — and the B-class
+  remainder is **0**. The shared tool's `54,156` is the same walk keyed on `s.name`, where
+  the same lane resolves 20 of 7,415 (0.27%). Applying the recipe here would mean
+  retargeting 3,976 edges at bare leaf names, and pass 5 measured that as the defect rather
+  than the fix: publishing bare names took store-bound edges that named their declaration
+  from 96.81% to 0 of 3,075 provably.
+- **A does not move.** 15 ids are published by more than one file and **0** of them carry
+  more than one distinct name, and **0** edges target a colliding id. All 15 are
+  `kind=namespace` — `controller.api.services.v1` in 24 files, `perfetto.protos` in 12 —
+  which is one declaration vendored, not two declarations colliding.
+- **C moves from 22 to 0**, and the movement is a correction of the classifier, not a change
+  to the analyzer.
+
+## 6. Gate table, pass 24
+
+| gate | command | result |
+|---|---|---|
+| typecheck | `npx tsc --noEmit -p tsconfig.json` | **exit 0** |
+| ontology arbiter | `npx tsx script/m14/ontology-coverage-gate.ts protobuf` | **exit 0**, `emitted 5/10  ruled-sound 5  FALSIFIED 0  ruled-without-justification 0`, 847 files, 4,235 probe calls, 94 distinct node types |
+| fixtures | `BB_M14_ROOT=<repo> npx tsx script/m14/run-fixtures.ts --lang protobuf` | **13 pass / 0 fail**, `no regressions`, exit 0 |
+| mutants | `BB_MUTANT_ONLY="protobuf/" npx tsx script/m14/mutate-analyzer.ts` | **35 of 35 CAUGHT**, 0 survived, exit 0 |
+| cause B keying | `npx tsx script/m14/protobuf-cause-b-keying.mts 200` | exit 0 — B 0 under `qualifiedName`; A 15 colliding ids, 0 edges; C 110 unresolved |
+| cause C residual | `npx tsx script/m14/protobuf-cause-c-residual.mts 842` | exit 0 — partition total true, P4 4 targets / 0 lane defects, self-test PASS |
+| closure price | `npx tsx script/m14/protobuf-unresolved-closure-price.mts 842` | exit 0 — 3,390 protoc would resolve, 220 correctly refused |
+| ambiguity split | `npx tsx script/m14/protobuf-ambiguity-split.mts 200` | exit 0 — 842/842 parsed, U3 45 / U4 5 edges |
+
+Evidence: `cause-c-residual-pass24.{json,txt}`, `closure-price-pass24.json`,
+`cause-b-keying-pass24.json`, `ambiguity-split-pass24.txt` under
+`validation/m14/measurements/protobuf/`.
+
+No analyzer change this pass. `src/ast/real-protobuf-analyzer.ts` is byte-identical to
+pass 23; the commit adds one probe and its evidence.
+
+## 7. Declared limitations, pass 24
+
+- **P4 = 0 is not "everything resolves".** 1,548 P1 edges and 68 P3 edges are still
+  unresolved, and this pass says nothing new about them: P1 is arithmetic, P3 is the pass 22
+  §6 ask for an id→file map in `src/ast/parallel-indexer.ts` / `src/ast/project-index.ts`,
+  which this lane does not own. What this pass removes is the *unexplained* residue, and it
+  is the unexplained residue that a reader cannot act on.
+- **The P4 adjudication asks the corpus, not `protoc`.** "Declared nowhere in the corpus" is
+  decided by scanning comment-stripped corpus text for `message`/`enum`/`service`/`oneof`
+  declarations. A declaration written with a macro, or in a file the corpus does not hold,
+  is counted as absent. That is the conservative direction for *this* question — it cannot
+  manufacture a lane defect — but it means P2/P4's external verdicts are corpus-relative.
+  Pass 8's `protoc` oracle remains the instrument for whether a name resolves, and it was
+  not re-run this pass.
+- **The population counts are a property of this corpus as of this pass.** 847 source
+  `.proto` files, 5 of them symlinks, 845 vendored copies excluded. A corpus that vendored
+  protobuf schemas outside `node_modules` would move P1 and P4 together, and the P1/P2
+  boundary with them.
+- **`stripComments` is a hand-written scanner, not the grammar's.** It is string-literal
+  aware and offset-preserving and it passes six assertions, but it is a second
+  implementation of lexical rules that the grammar already encodes. A raw string or an
+  unterminated block comment would desynchronise it. The declarations it feeds are only
+  used to label a residue, never to emit an edge, so a desynchronisation would change a
+  label and not the graph — but that is a mitigation, not a proof.
+- **The counts here are from the 842-file walk, which is 5 files short of the arbiter's
+  847.** §1 explains the gap and it is not a `head` cutoff, but every number in §2 and §3
+  would move slightly on the full 847. Nothing in §3's verdicts turns on the missing 5:
+  they are 3 copies of a `helloworld.proto` example and terraform's two plugin schemas.
