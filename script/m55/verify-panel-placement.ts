@@ -35,6 +35,7 @@ import { tmpdir } from "node:os"
 import path from "node:path"
 import { pathToFileURL } from "node:url"
 import { writeSealed } from "../lib/evidence.ts"
+import { fingerprintFields } from "../m61/claim_fingerprints.ts"
 import { parseSealedRecord } from "../lib/evidence.ts"
 
 const ROOT = path.resolve(import.meta.dirname, "../..")
@@ -235,6 +236,7 @@ const result = {
   currentHost: process.platform,
   focusLeg: "pending — column count + active editor are asserted in-editor by V1's rig (closure requirement)",
   currentCommit,
+  ...fingerprintFields(["m55.P1"], ROOT),
   workingTreeRelevantChanges: dirty.filter((f) => f.startsWith("ide/vscode/") || f.startsWith("script/m55/")),
   verifierCommand: "npx tsx script/m55/verify-panel-placement.ts",
   evidenceFile: "P1.json",

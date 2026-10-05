@@ -29,6 +29,7 @@ import { readFileSync } from "node:fs"
 import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
 import { writeSealed } from "../lib/evidence.ts"
+import { fingerprintFields } from "../m61/claim_fingerprints.ts"
 import { POSITION_OWNER, listLspSources, noInlinePositionArithmetic, type PositionFinding } from "./no-inline-position-arithmetic.ts"
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..")
@@ -218,9 +219,7 @@ function main(): void {
     code: "POSITION-OWNERSHIP",
     status: ok ? "verified" : "known-gap",
     currentCommit,
-    sourceFingerprint: createHash("sha256")
-      .update(sources.map((s) => `${s.path}\n${s.text}`).join("\n"))
-      .digest("hex"),
+    ...fingerprintFields(["m24.POSITION-OWNERSHIP"], ROOT),
     verifierCommand: "npx tsx script/m24/verify-position-arithmetic.ts",
     evidenceFile: "POSITION-OWNERSHIP.json",
     generatedAt: new Date().toISOString(),

@@ -25,6 +25,7 @@ import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs"
 import path from "node:path"
 import { execFileSync } from "node:child_process"
 import { writeSealed } from "../lib/evidence.ts"
+import { fingerprintFields } from "../m61/claim_fingerprints.ts"
 import { parseSealedRecord } from "../lib/evidence.ts"
 
 const ROOT = path.resolve(import.meta.dirname, "..", "..")
@@ -152,6 +153,7 @@ const evidence = {
   checks,
   currentCommit: commit,
   verifierCommand: "npx tsx script/m29/verify-analyzer-relevance.ts",
+  ...fingerprintFields(["m29.analyzer-relevance"], ROOT),
   evidenceFile: "analyzer-relevance.json",
   generatedAt: new Date().toISOString(),
   limitations: [

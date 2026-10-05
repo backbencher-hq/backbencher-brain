@@ -65,6 +65,7 @@ import { tmpdir } from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { writeSealed } from "../lib/evidence.ts"
+import { fingerprintFields } from "../m61/claim_fingerprints.ts"
 
 const HERE = path.dirname(fileURLToPath(import.meta.url))
 const ROOT = path.resolve(HERE, "..", "..")
@@ -548,6 +549,7 @@ const result = {
     .map((l) => l.slice(3).trim())
     .filter((p) => p.startsWith("validation/")),
   verifierCommand: "npx tsx script/m55/verify-evidence-tree-clean.ts",
+  ...fingerprintFields(["m55.EVID-TREE"], ROOT),
   evidenceFile: "EVID-TREE.json",
   generatedAt: new Date().toISOString(),
   observed: {

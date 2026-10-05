@@ -51,6 +51,7 @@ import { pathToFileURL } from "node:url"
 import { T3_EXPECT, T3_ROWS, T3_SYMBOLS, seedT3Db, writeT3Workspace } from "./t3-fixture.ts"
 import { StdioLsp, ensureServerBuilt } from "./lsp-wire.ts"
 import { writeSealed } from "../lib/evidence.ts"
+import { fingerprintFields } from "../m61/claim_fingerprints.ts"
 
 const ROOT = path.resolve(import.meta.dirname, "../..")
 const RELATIONS = path.join(ROOT, "src/lsp/relations.ts")
@@ -1051,6 +1052,7 @@ const result = {
   negativeCases: mutantsTotal,
   mutants: { total: mutantsTotal, caught: mutantsCaught },
   currentCommit,
+  ...fingerprintFields(["m55.T3"], ROOT),
   workingTreeRelevantChanges: worktreeRelevant,
   verifierCommand: "npx tsx script/m55/verify-relations.ts",
   evidenceFile: "T3.json",

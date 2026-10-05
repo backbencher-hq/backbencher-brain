@@ -60,6 +60,7 @@ import { classifyTier, isDeclaredTier, EVIDENCE_TIERS, STRUCTURAL_FLOOR, UNCLAIM
 import { tierForCrossLanguageEdge, factsFromRows, storedCrossLanguageRows } from "../../src/lsp/cross_language_hover"
 import { renderSignature, renderParameterList, parseParameters, carriesRawJson, UNKNOWN_PARAMETER_LIST } from "../../src/lsp/signature"
 import { writeSealed } from "../lib/evidence.ts"
+import { fingerprintFields } from "../m61/claim_fingerprints.ts"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 
@@ -712,15 +713,7 @@ async function main(): Promise<void> {
     mutantsTotal: mutantRecords.length,
     mutantRecords,
     currentCommit,
-    sourceFingerprint: {
-      "src/mcp/tool-handlers.ts": sha256(sourceOf("src/mcp/tool-handlers.ts")),
-      "src/lsp/evidence_tier.ts": sha256(sourceOf("src/lsp/evidence_tier.ts")),
-      "src/lsp/cross_language_hover.ts": sha256(sourceOf("src/lsp/cross_language_hover.ts")),
-      "src/lsp/signature.ts": sha256(sourceOf("src/lsp/signature.ts")),
-      "src/lsp/identity.ts": sha256(sourceOf("src/lsp/identity.ts")),
-      "src/intelligence/documentation/doc-engine.ts": sha256(sourceOf("src/intelligence/documentation/doc-engine.ts")),
-      "script/m28/verify-surface-parity.ts": sha256(sourceOf("script/m28/verify-surface-parity.ts")),
-    },
+    ...fingerprintFields(["m28.U2"], ROOT),
     verifierCommand: "npx tsx script/m28/verify-surface-parity.ts",
     evidenceFile: "U2.json",
     generatedAt: new Date().toISOString(),

@@ -21,6 +21,7 @@ import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs"
 import { execFileSync } from "node:child_process"
 import path from "node:path"
 import { writeSealed, parseSealedRecord } from "../lib/evidence.ts"
+import { fingerprintFields } from "../m61/claim_fingerprints.ts"
 import { parseSealedRecord } from "../lib/evidence.ts"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
@@ -186,6 +187,7 @@ function main(): void {
     mutantsTotal,
     mutantRecords,
     currentCommit,
+    ...fingerprintFields(["m28.V1"], ROOT),
     verifierCommand: "npx tsx script/m28/verify-mcp-surface.ts",
     evidenceFile: "V1.json",
     generatedAt: new Date().toISOString(),

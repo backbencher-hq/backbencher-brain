@@ -29,6 +29,7 @@ import { execFileSync } from "node:child_process"
 import { tmpdir } from "node:os"
 import path from "node:path"
 import { writeSealed } from "../lib/evidence.ts"
+import { fingerprintFields } from "../m61/claim_fingerprints.ts"
 import {
   KNOWN_PORTABLE_BINARIES,
   NON_PORTABLE_BINARIES,
@@ -610,8 +611,7 @@ const result = {
     ok: portabilityVerdictOk,
   },
   currentCommit,
-  sourceFingerprint,
-  sourceFingerprintAlgorithm: "sha256 over raw file bytes (node:crypto; no process spawn)",
+  ...fingerprintFields(["m24.P1"], ROOT),
   verifierCommand: "npx tsx script/m24/verify-positions.ts",
   evidenceFile: "P1.json",
   generatedAt: new Date().toISOString(),
