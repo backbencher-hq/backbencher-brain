@@ -135,7 +135,7 @@ This is the population the gate MEASURES rather than blocks. Each row is one ana
 | --- | --- | --- | --- |
 | bash | `calls contains exports overrides references uses imports` | import-site: ImportInfo[] | line 142, 9 rows |
 | c | `calls contains exports instantiates references uses imports` | import-site: ImportInfo[] | line 51, 7 rows |
-| clean | `calls contains exports implements instantiates overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | line 375, 9 rows |
+| clean | `calls contains exports implements instantiates overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | line 424, 9 rows |
 | clojure | `calls contains extends implements instantiates references uses` | import-site: ImportInfo[], export-site: ExportInfo[] | line 96, 10 rows |
 | cpp | `calls contains extends instantiates overrides references uses` | import-site: ImportInfo[], export-site: ExportInfo[] | line 259, 9 rows |
 | csharp | `calls contains extends implements instantiates overrides references uses` | import-site: ImportInfo[], export-site: ExportInfo[] | line 44, 9 rows |
@@ -174,7 +174,7 @@ This is the population the gate MEASURES rather than blocks. Each row is one ana
 | sql | `calls contains exports extends implements instantiates overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | absent |
 | svelte | `calls contains instantiates uses` | import-site: ImportInfo[], export-site: ExportInfo[] | line 39, 9 rows |
 | swift | `calls contains extends implements instantiates overrides references uses` | import-site: ImportInfo[], export-site: ExportInfo[] | line 36, 7 rows |
-| toml | `contains` | — | absent |
+| toml | `contains references` | — | absent |
 | typescript | `calls contains exports extends implements instantiates overrides references uses imports` | import-site: ImportInfo[], export-site: ExportInfo[] | line 29, 12 rows |
 | vb | `calls contains extends implements overrides references imports` | import-site: ImportInfo[] | absent |
 | vue | `contains exports extends instantiates references uses` | import-site: ImportInfo[], export-site: ExportInfo[] | line 56, 9 rows |
