@@ -5844,3 +5844,103 @@ Those 30 edges are the price of not binding a stdlib member to a same-named loca
   `GhosttyResources`, `GhosttyDocs`, `GhosttyWebdata`, `GhosttyI18n` among them, all in one corpus
   repo, all named by edges and published by nothing. A publication gap and a genuinely absent
   declaration look identical from outside, which is why this is an item and not a fix.
+
+### Addendum to pass 23 — the draw is one repo's build scripts, and it corrected two claims above
+
+§B–§D priced the three causes on `diagnose-incoming.mts`'s own draw at `N=80`. Before quoting any of
+it, the draw itself was measured, and it is not a sample of the corpus:
+
+| draw | files | repos present | of which named `build.zig` |
+|---|---|---|---|
+| `head -80` of the sorted `.zig` path list | 80 | **1 — `ghostty`** | **39** |
+| `head -400` | 400 | **1 — `ghostty`** | 52 |
+
+Sorted by absolute path, every `.zig` file under `ghostty/` precedes every `.zig` file under any other
+repo, so both draws are one repository, and half of the smaller one is build scripts. Every A/B/C
+number in §B–§D is therefore a statement about **ghostty's build scripts**, and this document should
+not let it be read as a statement about zig. §G's last bullet understated this; it is restated with
+numbers here. The population is printed by the instrument on every run, which is how it was caught.
+
+Re-run at `N=400`, production arm, same instrument and the same rules:
+
+| quantity | `N=80` | `N=400` |
+|---|---|---|
+| published names | 744 | 4,571 |
+| edges | 3,645 | 35,596 |
+| unresolved targets | 595 | 3,383 |
+| rule-B edges / marked / unmarked | 56 / **56** / **0** | 2,189 / **2,189** / **0** |
+| ambiguous targets | 86 | 976 |
+| edges on an ambiguous target | 799 | 15,971 |
+| … naming a module | 164 | 1,302 |
+| … naming a local declaration | 635 | **14,669** |
+| … with a same-file candidate | 563 (88.66%) | **10,409 (70.95%)** |
+| … with no same-file candidate | 72 (11.34%) | **4,260 (29.05%)** |
+| `zigExternalRef` edges / distinct unresolved targets | 255 / 124 (20.84%) | 5,009 / 1,039 (**30.71%**) |
+| unmarked unresolved targets | 438 | 1,885 |
+
+**Cause B is 0 at 5× the sample** — 2,189 of 2,189 marked, 0 unmarked — so §B was not a
+small-population accident.
+
+**§H item 38's 88.66% was optimistic and is corrected here.** The share of ambiguous local edges a
+per-file resolver can reach **falls** from 88.66% to 70.95% as the population grows, because a
+wider population publishes more colliding names and more of the colliding edges come from files that
+do not declare the target. Two draws are not a trend, so the honest statement is the direction and
+its direction is against the resolver's reach: at 3,834 files the per-file share is unknown and this
+pass did not measure it. The decision recorded in item 38 — do not change the published `name` — is
+**not** overturned by this, because it was made on the ground that 563 of 635 need no name change,
+and 10,409 of 14,669 is still 71%. What changes is the size of the class a name change would address:
+29.05% at `N=400`, not 11.34%.
+
+**§H item 39's premise is falsified and the item is withdrawn.** The 80-file residue's `Ghostty*`
+cluster was a draw artefact. `ghostty/src/build/main.zig` — which declares `pub const GhosttyExe`,
+`GhosttyI18n`, `GhosttyZig`, `GhosttyResources`, `GhosttyDocs`, `GhosttyWebdata` and `SharedDeps` at
+lines 13 ff. — is **not in the `N=80` draw and is in the `N=400` draw** (line 314 of the sorted list).
+Parsed alone through production `parseFile`, that file publishes 24 symbols including all seven names,
+each with an `exports` edge carrying `exportKind: "type"`, `targetScope: "file-local"`. The names
+disappear from the residue at `N=400`: **6 of 6 present at 80, 0 of 6 present at 400.** So there was
+no publication gap and this lane published those declarations correctly all along.
+
+The 400-file residue is a different and better-characterised thing, and its shape is legible:
+`dependOn`, `addSystemCommand`, `addFileArg`, `addError`, `addInstallLibFile`, `addInstallDirectory`,
+`addRunArtifact`, `addArgs`, `setEnvironmentVariable`, `getInstallPath`, `isWasm`, `isDarwin`,
+`pathFromRoot`, `cpu`, `fmt`. These are **`std.Build.Step` and `std.Build` methods reached through a
+value of a type declared outside the corpus** — `b.step.dependOn(…)` in a `build.zig`. The analyzer
+publishes `step` (the field read) and has no edge for `dependOn` to attach to, because `dependOn` is
+a member of a type the corpus does not declare and this analyzer does not infer the receiver's type.
+That is an honest limitation of a declaration-site analyzer, stated here rather than filed as a defect
+of this lane.
+
+### Addendum — per-type resolution and the heuristic ratio, production arm, `N=400`
+
+Two tiers, and the difference between them is the whole of cause A: **file-local** means the edge's
+own file publishes the target, the only tier where the name is not a guess; **corpus-tier** means some
+file in the population publishes it, which is what a consumer indexing one whole project reaches.
+**marked** is the share carrying `zigExternalRef` or `zigImport`, i.e. already declared external.
+
+| type | edges | file-local | corpus-tier | marked external | conf < 0.7 | no conf field |
+|---|---|---|---|---|---|---|
+| `uses` | 11,220 | 41.08% | 61.84% | 26.04% | 0 | 0 |
+| `calls` | 10,640 | 27.20% | 53.58% | 16.17% | 0 | 0 |
+| `contains` | 5,878 | **99.98%** | **99.98%** | 0% | 0 | 0 |
+| `references` | 4,284 | 38.19% | 49.51% | 52.94% | 0 | 0 |
+| `imports` | 1,902 | 30.34% | 34.70% | **100%** | 0 | 0 |
+| `exports` | 1,540 | **100%** | **100%** | 0% | 0 | 0 |
+| `instantiates` | 132 | 91.67% | 92.42% | 0% | 0 | 0 |
+| **all** | **35,596** | — | — | — | **0 (0.00%)** | **0** |
+
+**The heuristic ratio is 0 of 35,596 and every edge carries a confidence field.** Question 6 of the
+workstream's six is answered for zig without a caveat: no edge this analyzer emits is a
+below-0.7 heuristic, and none is published without the number. That is consistent with pass 17 §F,
+which recorded `uses` at 1.0 and 0.75 and `calls` at 0.85 — all at or above the threshold — and it is a
+property of the construction rather than of the sample: every edge here comes from a parse fact
+(node type, field name, position) rather than from a name-shape guess.
+
+**These corpus-tier percentages must not be compared with pass 22 §F's.** Pass 22 measured 3,834 files
+across ~20 repos and 130,935 published symbols and reported `uses` at 97.43% corpus-tier; this is 400
+files from one repo and 4,571 published symbols, at 61.84%. The populations differ by 9.6× in
+published names, so the gap between the two numbers measures the populations, **not** Z66. Z66's own
+effect is measured directly and is the `marked` column: 26.04% of `uses` and 52.94% of `references`
+now carry an explicit external marker, which is what makes them excludable rather than silently
+unresolved. Whether Z66 moved the raw corpus-tier rate, and by how much, is **not measured here** —
+that needs the full-population census, which needs disk this machine does not have (`/` was at 96%,
+21 G free).
