@@ -579,6 +579,7 @@ export class RealSqlAnalyzer implements ASTEngine.LanguageAnalyzer {
         keywordTargetsSuppressed: 0,
         recoveryCallsSuppressed: 0,
         sweepDeclarationsRecovered: 0,
+        sweepStatementsDispatched: 0,
         builtinCallsSuppressed: 0,
         quotedIdentifiers: 0,
         constraintsRecoveredFromError: 0,
@@ -1364,6 +1365,24 @@ export class RealSqlAnalyzer implements ASTEngine.LanguageAnalyzer {
         state.localCtes = this.cteScope(current, state)
         this.processStatement(current, state, null)
         state.localCtes.clear()
+        /**
+         * This re-entry is the pass's OTHER job and it had no counter, so the pass reported
+         * itself idle while it was working.
+         *
+         * `sweepDeclarationsRecovered` counts only a DECLARATION node nested inside another
+         * DECLARATION node, and that population does not occur on this corpus — it reads 0 over
+         * all 1,962 admitted files. Measured by ablation (`sweep-ablation.mts`, production
+         * `parseFile` with `sweepDeclarations` replaced by a no-op on the prototype, `src/`
+         * untouched): removing the pass loses **3,629 edges and 1,663 symbols**, 0 edges gained,
+         * over **234 of 1,962 files** — and every lost edge the sample printed is `uses` from a
+         * statement this branch is what reaches. On `proxicall/database/schema.sql` the
+         * ablated result is missing the symbol `function trigger_business_inbox_grants_updated_at`,
+         * which `processCalls` publishes for a callee reached only from inside a plpgsql body.
+         *
+         * So the pass was load-bearing and unmeasured: a counter that reads 0 on a pass that
+         * publishes 3,629 edges is a counter naming the wrong job. This one names this job.
+         */
+        state.ambiguity.sweepStatementsDispatched++
         for (const name of saved) state.localCtes.add(name)
       }
       if (DECLARATION_NODES.has(current.type)) {
@@ -3715,8 +3734,14 @@ private markDeclaration(node: Node, state: ParseState): boolean {
  * grammar never produces any of them either. script/m12/sql-node-types-compare.ts
  * fails this lane on exactly that class, over the whole corpus plus a declared
  * dialect battery rather than three fixture files.
+ *
+ * Exported so a measurement instrument reads THIS set instead of retyping it. The first version
+ * of `sweep-reachability.mts` recovered the list by running a regular expression over this file's
+ * source, which reaches comments and string literals alike and would silently return a plausible
+ * wrong set on the next edit. `SQL_KEYWORDS` and `SQL_BUILTINS` above are exported for the same
+ * reason. Adding to the set changes the product; reading it changes nothing.
  */
-const DECLARATION_NODES = new Set([
+export const DECLARATION_NODES = new Set([
   "create_table",
   "create_view",
   "create_materialized_view",

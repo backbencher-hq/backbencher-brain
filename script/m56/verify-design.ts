@@ -101,6 +101,26 @@ const token = (name: string): string => {
   const m = globals.match(new RegExp(`--${name}:\\s*(#[0-9a-fA-F]{6})`))
   return m ? m[1]!.toLowerCase() : ""
 }
+// A token may only be DECLARED once. `token()` takes the first match, but the
+// browser takes the last — so a variable declared twice means the contrast
+// floors below are certifying a value the page never paints. That is not a
+// theoretical concern: `--muted` was declared as the ink tier #9a8f7d and then
+// re-declared as the surface #1e1710, this gate read the first and reported a
+// passing 5.57:1, and every `.eyebrow` on the site rendered near-black on a
+// near-black canvas. The check has to count declarations, not read one.
+const BGS_NAMES = ["--bg", "--surface", "--surface-2"]
+const INK_NAMES = ["--ink", "--ink-2", "--body", "--muted", "--faint"]
+{
+  const DECLARED_ONCE = [...BGS_NAMES, ...INK_NAMES, "--ember", "--ember-bright"]
+  const declared = (name: string): number => (globals.match(new RegExp(`${name}:\\s*#[0-9a-fA-F]{6}`, "g")) ?? []).length
+  const shadowed = DECLARED_ONCE.filter((name) => declared(name) > 1)
+  const absent = DECLARED_ONCE.filter((name) => declared(name) === 0)
+  check(
+    "D2: every contrast token is declared exactly once (the cascade must not shadow the checked value)",
+    shadowed.length === 0 && absent.length === 0,
+    shadowed.length ? `shadowed: ${shadowed.join(", ")}` : `absent: ${absent.join(", ")}`,
+  )
+}
 // The three surfaces text can sit on, plus the ink tiers. Parsed, so editing a
 // token in CSS re-runs the floor here instead of silently changing the contrast.
 const BGS = [token("bg"), token("surface"), token("surface-2")].filter(Boolean)
@@ -387,6 +407,13 @@ check(
 negative("N1: a darkened ink token fails the floor detector", contrast("#766b5b", LIGHTEST) < FLOOR)
 // N2 (bytes): a sub-floor literal colour must be detected.
 negative("N2: a sub-floor literal text colour is detected", contrast("#71717a", LIGHTEST) < FLOOR)
+// N2b (bytes): a re-declared token must be counted as a shadow, which is the
+// exact shape of the bug this gate shipped blind for one milestone: the first
+// declaration passes the floor, the last declaration is what the browser paints.
+negative("N2b: a re-declared contrast token is detected as shadowed", (() => {
+  const shadowedOnce = `  --muted: #9a8f7d;\n  --muted: #1e1710;\n`
+  return (shadowedOnce.match(/--muted:\s*#[0-9a-fA-F]{6}/g) ?? []).length > 1
+})())
 // N3 (bytes): an alpha-faded text class must be detected.
 negative("N3: an alpha-faded text class is detected", /text-\[(#[0-9A-Fa-f]{6})\]\/([0-9]{1,3})/.test('class="text-[#E2553B]/70"'))
 // N4 (bytes): a cool-grey class must be detected.
