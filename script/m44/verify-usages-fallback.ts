@@ -120,14 +120,34 @@ async function main(): Promise<void> {
     check("R2: the +N more escape hatch renders", block.includes(`+${U6_EXPECT.hiddenMore} more — [show all usages](command:bb.showAllUsages?`), block.slice(0, 300))
     // §13.4, the half the two checks above cannot see: the header's number must
     // equal what the section can actually take the reader to — the rows it
-    // rendered plus the rows the escape hatch stands for. Read from the served
-    // text, not from the fixture, so a header that drifts from its own list
-    // fails here.
+    // rendered plus the rows the escape hatch stands for.
+    //
+    // THE HATCH'S OWN N IS READ FROM THE SERVED TEXT, not from the fixture. A
+    // first version of this check added the FIXTURE's hiddenMore to the
+    // rendered count, and a red-team pass falsified it: a hatch that printed
+    // "+0 more" while the header still said 5 PASSED, because the fixture's 2
+    // was doing the arithmetic the surface should have done. §13.4 asks the
+    // header to equal what the eye can verify against the list, and the only
+    // number the eye can verify against the hatch is the one the hatch prints.
+    // The fixture is then an INDEPENDENT oracle on top of that, not the
+    // mechanism.
     const headerTotal = /^\*\*usages\*\* — (\d+) stored reference/.exec(block)?.[1]
+    const hatchN = /\+(\d+) more — \[show all usages\]/.exec(block)
+    const hiddenRendered = hatchN === null ? 0 : Number(hatchN[1])
     check(
-      "R2: the header's total == rendered rows + what the escape hatch stands for (§13.4)",
-      headerTotal !== undefined && Number(headerTotal) === usageLinkCount + U6_EXPECT.hiddenMore && Number(headerTotal) === U6_EXPECT.totalPlaces,
-      `header=${headerTotal} rendered=${usageLinkCount} hiddenMore=${U6_EXPECT.hiddenMore} fixturePlaces=${U6_EXPECT.totalPlaces}`,
+      "R2: the header's total == rendered rows + the N the escape hatch itself prints (§13.4)",
+      headerTotal !== undefined && Number(headerTotal) === usageLinkCount + hiddenRendered,
+      `header=${headerTotal} rendered=${usageLinkCount} hatchSays=${hiddenRendered}`,
+    )
+    check(
+      "R2: the escape hatch's N matches the fixture's hidden places (an independent oracle, not the arithmetic)",
+      hiddenRendered === U6_EXPECT.hiddenMore,
+      `hatch prints +${hiddenRendered}, the fixture authored ${U6_EXPECT.hiddenMore} hidden`,
+    )
+    check(
+      "R2: shown + hidden == the fixture's authored place count (§13.4, the fixture side)",
+      usageLinkCount + U6_EXPECT.hiddenMore === U6_EXPECT.totalPlaces && headerTotal !== undefined && Number(headerTotal) === U6_EXPECT.totalPlaces,
+      `shown=${usageLinkCount} + hidden=${U6_EXPECT.hiddenMore} vs authored ${U6_EXPECT.totalPlaces}; header=${headerTotal}`,
     )
     // The declaration must NOT appear inside the usages section. M55.T3 gave
     // `Greeter contains render` its own labelled block; if it ever leaks back
