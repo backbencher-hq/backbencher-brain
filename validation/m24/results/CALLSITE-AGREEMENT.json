@@ -1,11 +1,11 @@
 {
   "code": "CALLSITE-AGREEMENT",
   "status": "verified",
-  "currentCommit": "04d56ab75b840f860abd32b48c1921138416ed3f",
+  "currentCommit": "9c25a1dc2384899d2370c0ad05c638b1f362aa17",
   "sourceFingerprint": "d499decfe16768270aac85bda33321a5e0a58e053081cc71d8a17dcd04d77774",
   "verifierCommand": "npx tsx script/m24/verify-callsite-agreement.ts",
   "evidenceFile": "CALLSITE-AGREEMENT.json",
-  "generatedAt": "2026-10-05T02:42:24.828Z",
+  "generatedAt": "2026-10-05T02:45:42.470Z",
   "passed": 13,
   "failed": 0,
   "failures": [],
@@ -97,7 +97,7 @@
   },
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T02:42:24.828Z",
-    "contentSha256": "d3a5a60a0988f0441a1057ddc1f8f3efb8047a416a9a52031db5e4aec25bfb95"
+    "sealedAt": "2026-10-05T02:45:42.471Z",
+    "contentSha256": "9bc2515cd065ac01f051d6e50c36b4dc2f39017869ecbb267e603f866c8d86c2"
   }
 }
