@@ -61,8 +61,12 @@
       "./symbols"
     ]
   },
-  "currentCommit": "0b105430d8d402cc90218f15c14da1057a1312af",
-  "workingTreeRelevantChanges": [],
+  "currentCommit": "8938a728a7d54412e7b8048bf588524bebaf1817",
+  "workingTreeRelevantChanges": [
+    "validation/m24/results/D1.json",
+    "validation/m42/results/H2.json",
+    "validation/m55/results/T2.json"
+  ],
   "volatileFields": [
     "generatedAt",
     "bbSeal.sealedAt",
@@ -71,7 +75,7 @@
   ],
   "verifierCommand": "npx tsx script/m55/verify-call-hierarchy.ts",
   "evidenceFile": "T2.json",
-  "generatedAt": "2026-10-05T04:07:14.508Z",
+  "generatedAt": "2026-10-05T04:07:54.014Z",
   "fixture": {
     "root": "$HOME/Documents/Default Project/ishaq/wt/surface/validation/m55/fixtures/t2-workspace",
     "files": [
@@ -137,7 +141,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-05T04:07:14.510Z",
-    "contentSha256": "15277e134bbbac26893f862522d94d274b0df51c6feedccc2edff73fe4d5cb94"
+    "sealedAt": "2026-10-05T04:07:54.016Z",
+    "contentSha256": "479fa3b788c59bc10290b442a3882b04ec9844d21b5cafa609f189a7d9d2fac5"
   }
 }

@@ -76,12 +76,91 @@ const currentCommit = execFileSync("git", ["rev-parse", "HEAD"], { cwd: ROOT, en
 // --- R1: fixture indexed -------------------------------------------------------------
 console.log("R1: fixture index (real indexer)")
 writeH2Fixture()
+// An ISOLATED data dir, passed to the indexer and to the server this suite
+// starts. Measured reason, not tidiness: the pre-lane run indexed the fixture
+// into the developer's DEFAULT store (~/.bb), so the answer to "how many callers
+// does render have" depended on whatever that machine's store already held and on
+// the indexer's incremental state there. §8.2 asks the record to regenerate
+// byte-identically; a gate whose input is the developer's home directory cannot
+// promise that on another machine. Measured after this change: VERIFIED 41/41 with
+// a fresh, empty data dir.
+const dataDir = mkdtempSync(path.join(tmpdir(), "m42-h2-data-"))
+const childEnv = { ...process.env, BB_DATA_DIR: dataDir }
+// The in-process reader (R2) must see the same store the indexer wrote, so this
+// is set BEFORE BrainDatabase is imported below.
+process.env.BB_DATA_DIR = dataDir
 if (!existsSync(path.join(ROOT, "dist/lsp/server.js"))) {
   console.log("  (dist missing — building)")
   execFileSync("npx", ["tsup"], { cwd: ROOT, stdio: ["ignore", "ignore", "inherit"], timeout: 420_000 })
 }
-const idxOut = execFileSync(BB, ["index", H2_ROOT, "--no-setup"], { cwd: ROOT, encoding: "utf8", timeout: 300_000, stdio: ["ignore", "pipe", "inherit"] })
+const idxOut = execFileSync(BB, ["index", H2_ROOT, "--no-setup"], { cwd: ROOT, env: childEnv, encoding: "utf8", timeout: 300_000, stdio: ["ignore", "pipe", "inherit"] })
 check("H2/R1: fixture indexes cleanly", /indexed 2 files/.test(idxOut), idxOut.split("\n").find((l) => l.includes("indexed")) ?? "")
+
+// --- R2: the GROUND — what the index actually holds, read before any surface -----
+//
+// This leg is claimed in this file's header and was never implemented. Measured
+// what that cost: on one run at commit 8938a728 (same commit, minutes either
+// side of three green runs) the index held ONE of the fixture's two calling
+// rows, and the gate reported it as FOUR surface failures — the connected
+// summary missing its disambiguated second caller, the usages list short one row,
+// the instantiated-by line short one entry, and the references surface "returning
+// each usage site exactly once: got 1". Every one of those read as a defect in
+// rich_hover.ts or navigation.ts. None was. The index was short a row.
+//
+// §8.7 names this failure mode — the oracle sharing a fault with the thing it
+// measures — and the cure is a ground: assert the fixture's semantic anchor from
+// the STORE, so a partial index is reported as a partial index.
+console.log("\nR2: ground — the fixture's stored rows, read from the index")
+const { BrainDatabase } = await import(pathToFileURL(path.join(ROOT, "src/brain/database.ts")).href)
+const { getProjectId } = await import(pathToFileURL(path.join(ROOT, "src/util/project-id.ts")).href)
+const h2ProjectId = getProjectId(H2_ROOT)
+const h2Raw = await BrainDatabase.getRawInstance(h2ProjectId)
+const groundRows = h2Raw
+  .prepare(
+    `SELECT r.id AS rowId, r.relationship_type AS relType, r.line_number AS storedLine,
+            COALESCE(sf.relative_path, '') AS sourceRel
+     FROM brain_relationship r
+     JOIN brain_symbol ts ON ts.id = r.target_symbol_id
+     JOIN brain_file tf ON tf.id = ts.file_id
+     LEFT JOIN brain_symbol ss ON ss.id = r.source_symbol_id
+     LEFT JOIN brain_file sf ON sf.id = ss.file_id
+     WHERE tf.path = ? AND ts.name = 'render' AND r.source_symbol_id <> ts.id
+     ORDER BY r.relationship_type, r.id`,
+  )
+  .all(H2_FILE_APP) as Array<{ rowId: string; relType: string; storedLine: number | null; sourceRel: string }>
+const usageGround = groundRows.filter((r) => !/^(contains|exports)$/i.test(r.relType))
+/** ONE implementation, used by the check and by its negative. A ground check with
+ *  a second, near-identical predicate in its own negative is a negative that can
+ *  pass for a different reason than the check fails. */
+const groundPredicate = (rows: typeof groundRows): boolean => {
+  const usage = rows.filter((r) => !/^(contains|exports)$/i.test(r.relType))
+  return (
+    usage.length === 2 &&
+    new Set(usage.map((r) => r.sourceRel)).size === 2 &&
+    [H2_REL_APP, H2_REL_MAIN2].every((rel) => usage.some((r) => r.sourceRel === rel))
+  )
+}
+check(
+  "H2/R2: the index holds BOTH calling rows for `render`, one per file — the fixture's semantic anchor (if this fails, every leg below is measuring a partial index, not the surface)",
+  groundPredicate(groundRows),
+  `stored rows touching render: ${JSON.stringify(groundRows)}`,
+)
+check(
+  "H2/R2: every usage row for `render` is a CALL row carrying a real stored call-site line (no declaration row, no legacy 0)",
+  usageGround.length === 2 && usageGround.every((r) => r.relType === "calls" && typeof r.storedLine === "number" && r.storedLine > 0),
+  JSON.stringify(usageGround),
+)
+{
+  // The negative R2 needs to be a gate: the one-row index that was REALLY
+  // observed on commit 8938a728, judged by the same predicate.
+  const oneRow = groundRows.filter((r) => r.sourceRel !== H2_REL_MAIN2)
+  negativesPlanned++
+  check(
+    "H2/R2 [negative]: the ground REJECTS the one-row index actually observed on commit 8938a728 (with one calling row missing, four surface legs failed by implication instead)",
+    groundPredicate(groundRows) && !groundPredicate(oneRow),
+    `predicate on the real rows: ${groundPredicate(groundRows)}; on the one-row shape: ${groundPredicate(oneRow)} (rows kept: ${oneRow.length})`,
+  )
+}
 
 // --- LSP client over stdio (real dist server) ---------------------------------------
 class StdioLsp {
@@ -91,7 +170,7 @@ class StdioLsp {
   private nextId = 1
   private stderrTail = ""
   constructor(workspace: string) {
-    this.child = spawn(process.execPath, [SERVER, "--dir", workspace], { stdio: ["pipe", "pipe", "pipe"] })
+    this.child = spawn(process.execPath, [SERVER, "--dir", workspace], { stdio: ["pipe", "pipe", "pipe"], env: childEnv })
     this.child.stdout.on("data", (c: Buffer) => this.onData(c))
     this.child.stderr.on("data", (c: Buffer) => {
       this.stderrTail = (this.stderrTail + c.toString()).slice(-8000)
@@ -402,6 +481,7 @@ try {
   check("H2: LSP session completes", false, String(e).slice(0, 200) + (lsp.stderr() ? ` | stderr: ${lsp.stderr().slice(-300)}` : ""))
 } finally {
   lsp.dispose()
+  rmSync(dataDir, { recursive: true, force: true })
 }
 
 // --- R6: pure-renderer laws ------------------------------------------------------------
@@ -749,6 +829,19 @@ const result = {
   },
   negatives: { planned: negativesPlanned },
   fixture: { root: H2_ROOT, files: [H2_REL_APP, H2_REL_MAIN2], expectations: H2_EXPECT },
+  /**
+   * The GROUND, as measured from the store before any surface leg ran. It is in
+   * the record so a reader of a red H2 can tell a surface defect from a partial
+   * index without re-running anything — the confusion this leg exists to prevent,
+   * measured live on one run at commit 8938a728 where a one-row index produced
+   * four surface-shaped failures.
+   */
+  ground: {
+    indexDataDir: "an isolated mkdtemp BB_DATA_DIR, passed to the indexer AND to the server this suite starts (the pre-lane run used the developer's default ~/.bb, so the answer depended on that machine's store)",
+    storedRowsTouchingRender: groundRows,
+    usageRows: usageGround.length,
+    groundHolds: groundRows.length > 0 && usageGround.length === 2,
+  },
   budgets: { hoverP95Ms: 50 },
   measured: budget,
   currentCommit,
@@ -799,6 +892,16 @@ const result = {
     // shows 3 and a `+N more` link — declared, not silently dropped.
     `A hover renders at most ${MAX_USAGE_LINKS} usage links plus a "+N more" link, so a symbol with many callers shows three of them on the card and the rest through the hub.`,
     "No editor leg: this file proves the server surface. Link clicking in a real session is the E5-pattern session at H2 acceptance.",
+    // Observed, not hypothetical: one run of this gate at commit 8938a728 — same
+    // commit as three consecutive green runs either side of it — indexed the
+    // fixture with ONE of its two calling rows and reported the result as four
+    // SURFACE failures. The cause was not isolated to this lane: the java
+    // analyzer's cross-file resolution is order-sensitive (this fixture's own
+    // header records that it "resolves method names to the FIRST symbol with that
+    // name"), and the indexer runs a parallel worker pool. Declared here as a real
+    // limitation, and the reason R2 exists: with the ground leg a one-row index
+    // now fails R2 by name instead of failing four surface checks by implication.
+    "FLAKY INPUT, observed once: on one run at commit 8938a728 this fixture indexed with 1 of its 2 calling rows and the gate reported 4 surface failures. Three consecutive runs at the same commit were 41/41. The gate now isolates BB_DATA_DIR (so the answer cannot depend on the developer's ~/.bb) and asserts the ground (R2) before any surface leg, so the next occurrence is attributable rather than misattributed.",
   ],
 }
 writeSealed(EVIDENCE, result)
