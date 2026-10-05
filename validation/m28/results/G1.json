@@ -4,18 +4,14 @@
   "milestone": "M28",
   "status": "known-gap",
   "checks": 74,
-  "passed": 71,
-  "failed": 3,
+  "passed": 70,
+  "failed": 4,
   "negativeCases": 14,
-  "currentCommit": "a0ed9eade7008de7ce93a312f6b0bd7e182a43a9",
-  "workingTreeRelevantChanges": [
-    "docs/m28/MCP-SURFACE.md",
-    "package.json",
-    "script/m28/verify-governance.ts"
-  ],
+  "currentCommit": "2cd1896802d2be3eca5d7866e2e5a9b7d339125d",
+  "workingTreeRelevantChanges": [],
   "verifierCommand": "npx tsx script/m28/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-10-04T23:25:13.050Z",
+  "generatedAt": "2026-10-05T04:29:45.478Z",
   "ledger": "validation/m28/results/manifest.json",
   "m27Bar": {
     "ledgerStatus": "open",
@@ -27,7 +23,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-04T23:25:13.055Z",
-    "contentSha256": "82e74932d5671eb8107505438cbfa7d950c88f62376de02bd74de402e4d35d66"
+    "sealedAt": "2026-10-05T04:29:45.482Z",
+    "contentSha256": "24e3b198c8aa1555838f5959d95ef84b26e3e3d933c956972c5a72b5d80bf976"
   }
 }
