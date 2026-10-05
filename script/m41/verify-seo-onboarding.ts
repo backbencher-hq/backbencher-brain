@@ -21,7 +21,7 @@
 
 import path from "node:path"
 import { execFileSync } from "node:child_process"
-import { readFileSync, writeFileSync, mkdirSync, readdirSync } from "node:fs"
+import { readFileSync, writeFileSync, mkdirSync, readdirSync, existsSync } from "node:fs"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const RESULTS = path.join(ROOT, "validation/m41/results")
@@ -127,6 +127,25 @@ const PREVIOUS_DEPLOYED = ["", "/install", "/docs", "/tools", "/faq", "/troubles
 
 // Independent instrument. S1 discovers the route set too, and M56's rule is that
 // the two instruments must not share code, so a single bug cannot satisfy both.
+//
+// A dynamic segment is not a URL. `[slug]` is skipped by the walk and then
+// expanded separately, from the one declaration the pages themselves are
+// generated from (website/src/data/language-depth/slugs.ts) — so the live
+// sitemap is compared against the real set of language URLs rather than against
+// a literal `[slug]` that could never be crawled.
+function declaredLanguageSlugs(): string[] {
+  let src = ""
+  try {
+    src = readFileSync(path.join(ROOT, "website/src/data/language-depth/slugs.ts"), "utf8")
+  } catch {
+    return []
+  }
+  const start = src.indexOf("export const FAMILY_SLUGS")
+  if (start < 0) return []
+  const block = src.slice(start, src.indexOf("\n}", start))
+  return [...block.matchAll(/:\s*"([a-z0-9-]+)",\s*$/gm)].map((m) => m[1]!)
+}
+
 function discoverCanonicalRoutes(): string[] {
   const appDir = path.join(ROOT, "website/src/app")
   const found: string[] = []
@@ -146,6 +165,12 @@ function discoverCanonicalRoutes(): string[] {
     }
   }
   walk(appDir, "")
+  // Expand the one dynamic segment that publishes documents. Guarded on the
+  // route actually existing, so a slug list without pages cannot inflate the
+  // canonical set.
+  if (existsSync(path.join(appDir, "languages/[slug]/page.tsx"))) {
+    for (const slug of declaredLanguageSlugs()) found.push(`/languages/${slug}`)
+  }
   const retired = new Set(
     [...readFileSync(path.join(ROOT, "website/src/lib/redirects.ts"), "utf8").matchAll(/^\s*"(\/[^"]+)":/gm)].map((m) => m[1]!),
   )

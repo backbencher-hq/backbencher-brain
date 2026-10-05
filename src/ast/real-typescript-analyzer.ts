@@ -81,6 +81,41 @@ function stringContent(node: Node): string {
   return unquote(node.text)
 }
 
+/**
+ * A MODULE SPECIFIER, and only when it is one.
+ *
+ * `stringContent` above is the right reader for a quoted literal, and it is
+ * wrong for a template: `` `data:text/javascript,${src}` `` has a
+ * `string_fragment` child holding the LITERAL PREFIX, so `stringContent` returns
+ * `data:text/javascript,` — a module path that does not exist and that no file
+ * in any project can be joined against.
+ *
+ * Measured: `await import(`data:text/javascript;charset=utf-8,${encodeURIComponent(enumSource)}`)`
+ * in tools/scripts/tsc/generate-enums.ts published `imports generate-enums ->
+ * "data:text/javascript;charset=utf-8,:*"`. That is an `imports` edge whose
+ * target names a module no injector can serve and no exporter can publish, and
+ * it is the one row of 2,926 on a 200-file draw the imports oracle derived that
+ * the analyzer did not — the audit found it because the oracle REFUSES to derive
+ * a row for a computed specifier, which is the same rule stated on the other
+ * side of the comparison.
+ *
+ * So: a specifier is a plain `string`, or a `template_string` with no
+ * substitution in it. Anything else is computed, and a computed module path is
+ * not an edge target.
+ */
+function literalModulePath(node: Node): string | undefined {
+  if (!node) return undefined
+  if (node.type === "string") return stringContent(node)
+  if (node.type === "template_string") {
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const c = node.namedChild(i)
+      if (c && c.type !== "string_fragment") return undefined
+    }
+    return stringContent(node)
+  }
+  return undefined
+}
+
 function stripCommentMarkers(text: string): string {
   if (text.startsWith("//")) return text.slice(2).trimStart()
   if (text.startsWith("/*")) {
@@ -2059,6 +2094,39 @@ class TypeScriptAnalysisRunner {
     // M14 — the corpus oracle never checked it.
     this.extractDeclaredTypeRefs(rootNode, relationships)
 
+    // DERIV_TS (2026-10-03): ONE mention, ONE label.
+    //
+    // Two passes read a name written in a TYPE position and they disagree about
+    // what to call it. `extractUsageRelationships` publishes `uses` at 0.9 with
+    // `isTypeReference`; `extractDeclaredTypeRefs` publishes `references` at 0.95
+    // with `relationshipType` (`declared_type`, `return_type`, `type_alias`,
+    // `cast_target`, `type_argument`, `instanceof_check`, `satisfies_target`).
+    // `extractDeclaredTypeRefs` runs LAST, and its `alreadyPublished` set holds
+    // only `references` rows — so it cannot see the `uses` row that is already in
+    // the array, and the same (source, target) reached the graph under BOTH labels.
+    //
+    // Measured on 200 tracked files of microsoft/TypeScript: `references` carried
+    // 9,445 type-position rows and `uses` 733, and 733+ (source, target) pairs
+    // appeared under both — the probe's row list capped at 200 samples, so 733 is
+    // the `uses` side's full count and the OVERLAP is at least that. The zig lane
+    // called the same shape a defect on the same grounds ("duplicating the
+    // declared-type class that already publishes `references (declared-type)` for
+    // the same text"), and this lane's own TSD18/TSD28 rulings established the
+    // principle for template reads: one read, one label.
+    //
+    // The `references` row is the one that survives, for two measured reasons.
+    // It is the SUPERSET: `uses` fires only when `symbolNames[typeName]` is set,
+    // so 733 of the mentions `references` records were never in `uses` at all, and
+    // keeping `uses` would delete 8,712 real rows. And it is the richer row — it
+    // carries `relationshipType`, which says WHICH type position the mention is in,
+    // and 0.95 rather than 0.9. Nothing is lost but the duplicate.
+    //
+    // The `uses` label therefore means, from here: a value or member READ in an
+    // expression position — a field access, a template interpolation, a JSX tag.
+    // `references` means: a mention of a TYPE. docs/analyzers/
+    // real-typescript-analyzer.md said the opposite for `uses` and was wrong.
+    this.dropDuplicateTypeMentionLabels(relationships)
+
     this.classifyEvidenceTier(relationships)
 
     // M49 dup-key ruling (#746) post-walk half: all relationship phases
@@ -2620,46 +2688,62 @@ class TypeScriptAnalysisRunner {
           break
         }
 
+        // A CALL SIGNATURE and a CONSTRUCT SIGNATURE declare no name. TypeScript
+        // spells them `interface Event<T> { (listener: T): Disposable }` and
+        // `interface Ctor { new (a: A): B }`, and there is no identifier there to
+        // take. This used to publish a Method symbol literally named `(call)` and a
+        // Constructor named `(new)`, which put a placeholder literal into the
+        // symbol table and a `contains Event -> (call)` edge into the graph.
+        //
+        // That edge is not joinable: no declaration anywhere carries the name
+        // `(call)`, so bb_graph cannot follow it, hover has nothing to resolve, and
+        // every interface in every file shares ONE target name — so the rows
+        // aggregate unrelated declarations into a single node. Standing rule R7
+        // names exactly this ("a placeholder literal is not a name"), and the
+        // differential agreed independently: on a 200-file draw these were the only
+        // two `contains` rows of 6,357 that no oracle could derive, i.e. the
+        // oracle read them as fabrications and the analyzer published them anyway.
+        // 8 placeholder endpoints per 200 tracked files, all of them this shape.
+        //
+        // The FACT is not lost — it is recorded on the interface that declares it,
+        // which is the symbol a consumer actually asks about. Nothing that read
+        // `isCallSignature` / `isConstructSignature` existed to break: zero hits
+        // outside this file.
         case "call_signature": {
-          const params = this.extractParameters(member)
-          const returnType = this.extractReturnType(member)
-
-          symbols.push({
-            name: "(call)",
-            kind: ASTEngine.SymbolKind.Method,
-            range: this.nodeRange(member),
-            scope: interfaceName,
-            parameters: params,
-            returnType,
-            ownerName: interfaceName,
-            ownerKind: ASTEngine.SymbolKind.Interface,
-            metadata: {
-              isCallSignature: true,
-            },
-          })
+          this.recordSignatureOnOwner(symbols, interfaceName, member, "hasCallSignature", "isCallSignature")
           break
         }
 
         case "construct_signature": {
-          const params = this.extractParameters(member)
-          const returnType = this.extractReturnType(member)
-
-          symbols.push({
-            name: "(new)",
-            kind: ASTEngine.SymbolKind.Constructor,
-            range: this.nodeRange(member),
-            scope: interfaceName,
-            parameters: params,
-            returnType,
-            ownerName: interfaceName,
-            ownerKind: ASTEngine.SymbolKind.Interface,
-            metadata: {
-              isConstructSignature: true,
-            },
-          })
+          this.recordSignatureOnOwner(symbols, interfaceName, member, "hasConstructSignature", "isConstructSignature")
           break
         }
       }
+    }
+  }
+
+  /**
+   * Record an UNNAMED member on the declaration that owns it, under a key that
+   * says what it is. `hasCallSignature` is a fact about the interface; `(call)` is
+   * a name that does not exist. See the `call_signature` case for the measurement.
+   */
+  private recordSignatureOnOwner(
+    symbols: ASTEngine.UniversalSymbol[],
+    ownerName: string,
+    member: Node,
+    flag: string,
+    legacyKey: string,
+  ): void {
+    const params = this.extractParameters(member)
+    const returnType = this.extractReturnType(member)
+    for (const s of symbols) {
+      if (s.name !== ownerName) continue
+      const metadata = (s.metadata ??= {})
+      metadata[flag] = true
+      // The legacy keys are kept because an evidence file or a fixture may name
+      // them; they are metadata ON THE OWNER now, not a fabricated member.
+      metadata[legacyKey] = true
+      metadata.signature = { parameters: params, returnType }
     }
   }
 
@@ -3598,6 +3682,35 @@ class TypeScriptAnalysisRunner {
   }
 
   /**
+   * Drop the `uses` half of a type mention that `extractDeclaredTypeRefs` already
+   * published as `references`. In-place compaction, order-preserving, and it only
+   * ever removes a row whose (source, target) pair is still present under the other
+   * label — so no mention loses its edge.
+   *
+   * `references` is not the only label `extractDeclaredTypeRefs` writes, but it is
+   * the only one it writes for a TYPE POSITION, and the test is on the row's own
+   * `isTypeReference` metadata rather than on the label, so a `uses` row from the
+   * field or template surfaces is untouched: those are reads, not type mentions.
+   */
+  private dropDuplicateTypeMentionLabels(relationships: ASTEngine.UniversalRelationship[]): void {
+    const asReferences = new Set<string>()
+    for (const r of relationships) {
+      if (r.type === ASTEngine.RelationshipType.References) asReferences.add(`${r.source}|${r.target}`)
+    }
+    if (asReferences.size === 0) return
+    let write = 0
+    for (let read = 0; read < relationships.length; read++) {
+      const r = relationships[read]
+      const meta = r.metadata as { isTypeReference?: unknown } | undefined
+      const isTypeSurfaceUses =
+        r.type === ASTEngine.RelationshipType.Uses && meta?.isTypeReference === true
+      if (isTypeSurfaceUses && asReferences.has(`${r.source}|${r.target}`)) continue
+      relationships[write++] = r
+    }
+    relationships.length = write
+  }
+
+  /**
    * M14 #299 - evidence-tier classification for EVERY emitted relationship.
    * Same rules as the JVM family (structural / usage_contextual /
    * import_based / reference_qualified / inferred).
@@ -3966,8 +4079,13 @@ class TypeScriptAnalysisRunner {
         const args = node.childForFieldName("arguments")
         if (args && args.namedChildCount > 0) {
           const pathArg = args.namedChild(0)
-          if (pathArg && (pathArg.type === "string" || pathArg.type === "template_string")) {
-            const modulePath = stringContent(pathArg)
+          // `literalModulePath`, for the reason in the helper: a template
+          // specifier with a substitution is COMPUTED, and the literal prefix
+          // `stringContent` would return is not a module. The relationship pass
+          // below reads the same helper, so the `imports` array and the
+          // `imports` edges cannot disagree about whether a specifier is one.
+          const modulePath = pathArg ? literalModulePath(pathArg) : undefined
+          if (modulePath) {
             imports.push({
               module: modulePath,
               items: ["*"],
@@ -5579,8 +5697,11 @@ class TypeScriptAnalysisRunner {
       if (isDynamicImport || isRequireCall) {
         const args = node.childForFieldName("arguments")
         const pathArg = args && args.namedChildCount > 0 ? args.namedChild(0) : null
-        if (pathArg && (pathArg.type === "string" || pathArg.type === "template_string")) {
-          const modulePath = stringContent(pathArg)
+        // `literalModulePath`, not `stringContent`: a template argument with a
+        // substitution is a COMPUTED specifier and its literal prefix is not a
+        // module. See the helper for the measured row this replaces.
+        const modulePath = pathArg ? literalModulePath(pathArg) : undefined
+        if (modulePath) {
           relationships.push({
             source: this.moduleLeafName(),
             target: `${modulePath}:*`,

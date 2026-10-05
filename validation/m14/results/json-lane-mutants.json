@@ -216,6 +216,19 @@
       ]
     },
     {
+      "id": "json/overrides-endpoints-are-bare-names",
+      "language": "json",
+      "defectClass": "ambiguous-endpoint",
+      "description": "M14 ontology regression: `overrides` reverts to bare-name endpoints, violating the lane's own contract row that every relationship type emits QUALIFIED PATHS on both ends. Measured over the whole admitted population, 22 of 22 targets and 8 of 22 sources stop being paths, and 2 of 22 sources become name-ambiguous. The suite had three other `overrides` mutants and none tested endpoint FORM, so the change passed 16/16 and 24/24 with nothing objecting. Caught by json/DuplicateKey, whose `overrides` pins AND `forbidRelationships` were both migrated to the path form.",
+      "cleanFail": 0,
+      "mutatedPass": 13,
+      "mutatedFail": 1,
+      "caught": true,
+      "newlyFailingFixtures": [
+        "json/DuplicateKey"
+      ]
+    },
+    {
       "id": "json/edge-lines-dropped",
       "language": "json",
       "defectClass": "dishonest-payload",
@@ -238,7 +251,7 @@
       ]
     }
   ],
-  "total": 16,
-  "caught": 16,
+  "total": 17,
+  "caught": 17,
   "survivors": 0
 }

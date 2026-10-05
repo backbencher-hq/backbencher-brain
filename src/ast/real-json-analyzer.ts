@@ -56,7 +56,25 @@ interface JsonContext {
    *  its object: the same key in two different objects is not a redefinition and is
    *  the corpus's dominant shape (120,174 occurrences across 7,679 files, against
    *  21 genuine duplicates across 11). */
-  overrideCandidates: { ownerName: string; key: string; line: number; overridesLine: number }[]
+  /**
+   *  A redefinition candidate. `ownerPath`/`targetPath` are the QUALIFIED PATHS of the
+   *  containing object and of the repeated key, carried alongside the names because this
+   *  was the last type still emitting bare endpoints and the bare form is ambiguous for
+   *  every edge on the corpus: measured over the whole admitted population, 22 of 22
+   *  `overrides` targets matched MORE THAN ONE published symbol by name, against 14 of 22
+   *  by path (`validation/m14/fixtures/json/overrides-endpoint-probe.ts`). A bare target
+   *  can bind to a declaration in a DIFFERENT object — `FSharp.Data`'s `rec2` names two
+   *  elements of one array and `1` names four keys — so the ambiguity is not confined to
+   *  the two declarations this edge is about. The names are kept for the metadata, where
+   *  they read as names. */
+  overrideCandidates: {
+    ownerName: string
+    ownerPath: string
+    key: string
+    targetPath: string
+    line: number
+    overridesLine: number
+  }[]
   /** True when the document uses LSP's `{"kind":"reference","name":X}` literal — a
    *  DISCRIMINATED UNION for "this is a named type", as against `{"kind":"or","items":[…]}`
    *  and `{"kind":"array","element":…}`. Measured over the whole admitted population, 2 of
@@ -400,7 +418,15 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
         const line = node.startPosition.row + 1
         const prior = frame.duplicateKeys.get(key)
         if (prior === undefined) frame.duplicateKeys.set(key, line)
-        else ctx.overrideCandidates.push({ ownerName: parentName, key, line, overridesLine: prior })
+        else
+          ctx.overrideCandidates.push({
+            ownerName: parentName,
+            ownerPath: parentPath,
+            key,
+            targetPath: this.childPath(parentPath, key),
+            line,
+            overridesLine: prior,
+          })
       }
       const path = this.childPath(parentPath, key)
       const valueType = this.valueType(value)
@@ -1057,8 +1083,20 @@ const bracket = parent.lastIndexOf("[")
    * The edge shape is the BASH lane's, deliberately, because it is the only shape that
    * works when both declarations share one name: source is the OWNER symbol, target is
    * the repeated key, and `overridesLine` carries the PRIOR declaration's line so the
-   * replacement is readable without re-deriving it. Both endpoints resolve — `contains`
-   * already emits a row for each declaration, so the pair exists independently.
+   * replacement is readable without re-deriving it.
+   *
+   * Both endpoints are QUALIFIED PATHS, like every other type on this lane. It used to be
+   * the last type emitting bare names, and the bare form was ambiguous on EVERY corpus
+   * edge: measured over the whole admitted population, 22 of 22 targets matched more than
+   * one published symbol by name, against 14 of 22 by path. The 8 that become unique are
+   * real gains — a bare `rec2` names both elements of an array and a bare `1` names four
+   * keys, so the bare endpoint could bind to a declaration in a DIFFERENT object. The 14
+   * that stay ambiguous are the two declarations of ONE key sharing a name AND a path,
+   * which is declined below and carried in `overridesLine`. The names are retained in
+   * metadata as `ownerName`/`key`, where they read as names.
+   *
+   * `contains` already emits a row for each declaration, so the pair exists independently
+   * of this edge.
    *
    * Three things are declined, each because the edge would assert something the file
    * does not say:
@@ -1079,8 +1117,8 @@ const bracket = parent.lastIndexOf("[")
   private extractDuplicateKeyOverrides(ctx: JsonContext): void {
     for (const c of ctx.overrideCandidates) {
       ctx.relationships.push({
-        source: c.ownerName,
-        target: c.key,
+        source: c.ownerPath,
+        target: c.targetPath,
         type: ASTEngine.RelationshipType.Overrides,
         confidence: 1,
         line_number: c.line,
@@ -1088,6 +1126,9 @@ const bracket = parent.lastIndexOf("[")
           jsonSpecific: true,
           redefinition: true,
           overridesLine: c.overridesLine,
+          ownerName: c.ownerName,
+          key: c.key,
+          endpoints: "qualified_path",
           evidenceClass: "structural",
         },
       })
