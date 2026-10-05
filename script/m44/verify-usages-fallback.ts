@@ -47,6 +47,9 @@ let passed = 0
 let negativeCases = 0
 const failures: string[] = []
 let mutants = { caught: 0, total: 0 }
+/** Named after the law each mutant is CONVICTED BY, so the record can say
+ *  which assertion ran rather than only how many ran (§6). */
+const mutantsCaughtBy: string[] = []
 
 function check(label: string, ok: boolean, detail = "", negative = false): void {
   checks++
@@ -102,10 +105,34 @@ async function main(): Promise<void> {
     check("R2: hover resolves render over the real index", md.includes("**render** — method"), `head=${md.slice(0, 80)}; stderr=${lsp.stderr().slice(-200)}`)
     const usagesIdx = md.indexOf("**usages**")
     check("R2: usages section renders", usagesIdx !== -1, md.slice(0, 200))
-    const block = usagesIdx === -1 ? "" : md.slice(usagesIdx)
+    // The counting window must be THE USAGES SECTION, not "everything after
+    // the word usages". M55.T3 moved the owning-class `contains` row into its
+    // own labelled **contained** block — and that block emits its own
+    // `command:bb.openUsage` link ("declared in [Greeter]"). The old window ran
+    // to the end of the hover, so it counted a DECLARATION as a usage and this
+    // check read 4 links where the section renders 3. A declaration is never a
+    // usage (src/lsp/relations.ts, the vocabulary owner); a counter that cannot
+    // tell them apart cannot police §13.4.
+    const nextBlock = usagesIdx === -1 ? -1 : md.slice(usagesIdx + 1).search(/\n\*\*/)
+    const block = usagesIdx === -1 ? "" : md.slice(usagesIdx, nextBlock === -1 ? md.length : usagesIdx + 1 + nextBlock)
     const usageLinkCount = (block.match(/command:bb\.openUsage/g) ?? []).length
-    check("R2: top-3 usage links render (bounded hover, unchanged)", usageLinkCount === U6_EXPECT.shownLinks, String(usageLinkCount))
+    check("R2: top-3 usage links render (bounded hover, unchanged)", usageLinkCount === U6_EXPECT.shownLinks, `usage links in the usages SECTION = ${usageLinkCount} (the window stops at the next ** block, so a containment link can never be counted as a usage)`)
     check("R2: the +N more escape hatch renders", block.includes(`+${U6_EXPECT.hiddenMore} more — [show all usages](command:bb.showAllUsages?`), block.slice(0, 300))
+    // §13.4, the half the two checks above cannot see: the header's number must
+    // equal what the section can actually take the reader to — the rows it
+    // rendered plus the rows the escape hatch stands for. Read from the served
+    // text, not from the fixture, so a header that drifts from its own list
+    // fails here.
+    const headerTotal = /^\*\*usages\*\* — (\d+) stored reference/.exec(block)?.[1]
+    check(
+      "R2: the header's total == rendered rows + what the escape hatch stands for (§13.4)",
+      headerTotal !== undefined && Number(headerTotal) === usageLinkCount + U6_EXPECT.hiddenMore && Number(headerTotal) === U6_EXPECT.totalPlaces,
+      `header=${headerTotal} rendered=${usageLinkCount} hiddenMore=${U6_EXPECT.hiddenMore} fixturePlaces=${U6_EXPECT.totalPlaces}`,
+    )
+    // The declaration must NOT appear inside the usages section. M55.T3 gave
+    // `Greeter contains render` its own labelled block; if it ever leaks back
+    // into the list, this fires (and the old unbounded window could not see it).
+    check("R2: the owning class is not offered as a usage (§14 rule 1 — a declaration is never a usage)", !/^\d+\. \[Greeter\]/m.test(block), block.slice(0, 200))
 
     const sau = firstCommandLink(block, "bb.showAllUsages")
     check("R2: exactly one showAllUsages link", sau !== null, "")
@@ -135,6 +162,8 @@ async function main(): Promise<void> {
   // --- M: mutants — the suite CAN fail ------------------------------------------
   console.log("\nM: mutants")
   const mutantTargets: Array<{ name: string; file: string; from: string; to: string; probe: (m: any) => boolean }> = [
+    // M1-M4 are the pre-existing four; the last two are §13.6's own named case
+    // — a dead end reached while the native references surface WORKS.
     {
       // THE acceptance-criterion mutant: a regression that returns the
       // message-only path must FAIL the gate.
@@ -172,6 +201,24 @@ async function main(): Promise<void> {
         return typeof dec?.symbol === "string" && dec.symbol === "render"
       },
     },
+    {
+      // §13.6: the law is that a dead end is a defect. Planted where the
+      // NATIVE references surface EXISTS and the user is sent nowhere anyway —
+      // the exact case the contract names, and one no other mutant here covers.
+      name: "dead end while the native references surface is available (handoff ok -> reveal floor)",
+      file: CORE,
+      from: 'if (handoff === "ok") return { surface: "native-references" }',
+      to: 'if (handoff === "ok") return { surface: "reveal" } // the native surface works and the user is sent nowhere',
+      probe: (m) => m.resolveUsageFallback({ file: "a", line: 0, character: 0, symbol: "render" }, "ok").surface !== "reveal",
+    },
+    {
+      // §13.6: and the same dead end reached through the unavailable branch.
+      name: "dead end on the unavailable branch (the hub fallback replaced by the reveal floor)",
+      file: CORE,
+      from: 'if (args.symbol.length > 0) return { surface: "fallback-hub", symbol: args.symbol }',
+      to: 'if (args.symbol.length > 0) return { surface: "reveal" } // message-only dead end',
+      probe: (m) => m.resolveUsageFallback({ file: "/w/App.java", line: 9, character: 8, symbol: "render" }, "unavailable").surface !== "reveal",
+    },
   ]
   const coreSrc = readFileSync(CORE, "utf8")
   const richSrc = readFileSync(RICH_HOVER, "utf8")
@@ -180,22 +227,57 @@ async function main(): Promise<void> {
     const source = mutant.file === CORE ? coreSrc : richSrc
     const mutated = source.replace(mutant.from, mutant.to)
     if (mutated === source) {
-      check(`M: mutant anchor matched — ${mutant.name}`, false, "anchor not found")
+      // §8.3 silence is guilt: an anchor that no longer matches means the
+      // mutant was never planted. That is a failure, not a skip.
+      check(`M: ${mutant.name} — ANCHOR DRIFT: the mutant was never planted`, false, `anchor not in ${path.basename(mutant.file)}: ${mutant.from.slice(0, 90)}`)
       continue
     }
-    const mutantPath = path.join(ROOT, "validation/m44", `.u6-mutant.${mutants.total}.ts`)
+    // WHERE the mutant file is written decides whether its RELATIVE imports
+    // resolve — and this gate got that wrong for its whole life.
+    //
+    // PROVEN: the mutant was written to validation/m44/, and the module under
+    // test is src/lsp/rich_hover.ts, whose `./navigation` /
+    // `./positions` / `./enrichment` imports are relative to src/lsp/. From
+    // validation/m44/ none of them exist, so the mutant could NEVER load — and
+    // the old catch block booked that as "caught". M4 (the one mutant proving
+    // the hover link carries the symbol, i.e. §13.6's whole premise) has
+    // therefore had ZERO coverage while the evidence read 4/4 mutants caught.
+    //
+    // The fix is to place the mutant where its own imports resolve: inside the
+    // module's own directory, under a name tsconfig's `include` cannot see.
+    const mutantDir = path.dirname(mutant.file)
+    const mutantPath = path.join(mutantDir, `.u6-mutant.${mutants.total}.${process.pid}.mts`)
     writeFileSync(mutantPath, mutated)
+    let mod: any = null
+    let loadError = ""
     try {
-      const mod = await import(pathToFileURL(mutantPath).href)
-      const caught = mutant.probe(mod) === false
-      if (caught) mutants.caught++
-      check(`M: mutant caught — ${mutant.name}`, caught, caught ? "" : "SURVIVED")
+      mod = await import(pathToFileURL(mutantPath).href)
     } catch (error) {
-      mutants.caught++ // an import failure is still a visible catch
-      check(`M: mutant caught — ${mutant.name}`, true, "import failure")
+      loadError = String(error instanceof Error ? error.message : error).slice(0, 140)
     } finally {
       try { rmSync(mutantPath, { force: true }) } catch {}
     }
+    if (mod === null) {
+      // PROVEN HOLE (this suite shipped it): a module that will not import
+      // exercised ZERO §13.6 paths, and the old catch block booked that as a
+      // catch — a mutant whose replacement was a bare syntax error still
+      // printed "mutant caught" and the gate still counted it. An
+      // unevaluable mutant is coverage that was never measured, so it FAILS.
+      check(`M: ${mutant.name} — the mutant could not be EVALUATED (a load failure is not a catch)`, false, loadError)
+      continue
+    }
+    let caught = false
+    let probeError = ""
+    try {
+      caught = mutant.probe(mod) === false
+    } catch (error) {
+      // The probe itself blew up: that is the harness failing to measure, not
+      // the mutant being convicted. Same honesty rule.
+      probeError = String(error instanceof Error ? error.message : error).slice(0, 140)
+    }
+    if (caught) mutants.caught++
+    check(`M: mutant caught — ${mutant.name}`, caught, caught ? "" : probeError ? `probe could not run: ${probeError}` : "SURVIVED")
+    if (caught) mutantsCaughtBy.push(mutant.name)
   }
 
   // --- Evidence ------------------------------------------------------------------
@@ -211,12 +293,36 @@ async function main(): Promise<void> {
     negativeCases,
     mutantsCaught: mutants.caught,
     mutantsTotal: mutants.total,
+    // §6 asks which defect each mutant convicts; the count alone can hide a
+    // mutant that was never really run. These names are the ones whose probe
+    // returned false on a module that LOADED.
+    mutantsCaughtBy,
+    mutantHonesty: {
+      loadFailureIsACatch: false,
+      note: "A mutant whose module will not import exercises no §13.6 path. This gate booked that as a catch — PROVEN twice: a mutant whose replacement was a bare syntax error printed 'mutant caught', and M4 (the hover-link mutant, written to validation/m44/ where src/lsp/rich_hover.ts's relative imports do not resolve) could never load at all, so the one mutant that proves the link carries the symbol had ZERO coverage while the record read 4/4. Mutants are now written beside the module they mutate, and an unevaluable mutant, a probe that cannot run, and an anchor that no longer matches are all FAILURES (§8.3 silence is guilt).",
+    },
+    failures,
     currentCommit: execFileSync("git", ["log", "-1", "--format=%H"], { cwd: ROOT, encoding: "utf8" }).trim(),
-    workingTreeRelevantChanges: [],
+    // MEASURED, not asserted. This field was the literal [] while the source it
+    // describes was being edited — a record claiming a clean tree mid-change is
+    // exactly the silence §8.3 bans.
+    workingTreeRelevantChanges: relevantWorkingTreeChanges(),
     verifierCommand: "npx tsx script/m44/verify-usages-fallback.ts",
     evidenceFile: "U6.json",
     generatedAt: new Date().toISOString(),
-    fixture: { root: U6_ROOT, files: Object.values(U6_REL), symbol: U6_EXPECT.symbol, shownLinks: U6_EXPECT.shownLinks, hiddenMore: U6_EXPECT.hiddenMore },
+    fixture: {
+      root: U6_ROOT,
+      files: Object.values(U6_REL),
+      symbol: U6_EXPECT.symbol,
+      shownLinks: U6_EXPECT.shownLinks,
+      hiddenMore: U6_EXPECT.hiddenMore,
+      // Declared so the number is checkable against the store, not against a
+      // second hand-written figure (§13.4).
+      usagePlaces: U6_EXPECT.totalPlaces,
+      placeUnit: "one per served position — a stored call-site line, else the referencing declaration (src/lsp/relations.ts)",
+      places: ["App.java:6 (main)", "App.java:19 (ExtraCalls.both)", "App.java:20 (ExtraCalls.both)", "Extra1.java:5 (main)", "Extra2.java:5 (main)"],
+      excluded: ["App.java:11 Greeter contains render — a DECLARATION, never a usage (§14 rule 1, M55.T3)"],
+    },
     limitations: [
       "The vscode command handler cannot execute headlessly; its wiring is pinned structurally (R3) and executed live by the E5 in-editor leg (click show-all-usages → native peek OR usages fallback, never a bare message).",
       "The pure core's reveal floor is reachable only for legacy clients that predate the symbol-carrying link; it remains a declared outcome, not a message-only dead end.",
@@ -301,6 +407,32 @@ class StdioLsp {
     } catch {}
     setTimeout(() => this.child.kill("SIGKILL"), 2000)
     this.child.on("exit", () => process.exitCode = 0)
+  }
+}
+
+/** The evidence's own claim about the tree it was measured on, MEASURED.
+ *  This field was the literal `[]` while the sources it describes were being
+ *  edited — a record asserting a clean tree mid-change is the silence §8.3
+ *  bans. Paths are the ones this verdict's inputs live in, so the list says
+ *  what a reader must distrust. */
+function relevantWorkingTreeChanges(): string[] {
+  const watched = [
+    "script/m44/verify-usages-fallback.ts",
+    "script/m44/u6-fixture.ts",
+    "ide/vscode/src/usage-fallback.ts",
+    "ide/vscode/src/hover-commands.ts",
+    "src/lsp/rich_hover.ts",
+    "src/lsp/relations.ts",
+  ]
+  try {
+    const out = execFileSync("git", ["status", "--porcelain", "--", ...watched], { cwd: ROOT, encoding: "utf8" })
+    return out
+      .split("\n")
+      .map((l) => l.trim())
+      .filter((l) => l.length > 0)
+      .map((l) => l.replace(/^..\s+/, ""))
+  } catch {
+    return ["UNMEASURED — git status failed, so this record makes no claim about the tree it ran on"]
   }
 }
 
