@@ -6365,6 +6365,58 @@ smaller — did not move. Analyzer output per file is deterministic; the loss is
 No analyzer change this pass: all four commits touch `script/m14/` only.
 `src/ast/real-protobuf-analyzer.ts` is byte-identical to pass 22.
 
+## 8a. The six questions, measured at HEAD on the arbiter's 847 files
+
+`script/m14/protobuf-census.ts --limit=847`, production `parseFile`, one pass, 847 files
+in 21 repositories. Resolution is both endpoints against the ids the analyzer publishes,
+corpus-wide. Evidence JSON: `validation/m14/measurements/protobuf/census-pass23.json`.
+
+| type | edges | resolves at both ends | % | confidence < 0.7 | `evidenceClass` |
+|---|---|---|---|---|---|
+| `uses` | 13,482 | 9,853 | **73.08** | **0** | `structural` 13,482 |
+| `contains` | 40,631 | 40,320 | **99.23** | **0** | `structural` 40,631 |
+| `imports` | 1,574 | 0 | **0.00** | **0** | `import_based` 1,574 |
+| `exports` | 4 | 0 | **0.00** | **0** | `structural` 4 |
+| `overrides` | 2 | 2 | **100.00** | **0** | `structural` 2 |
+
+Same walk, the counts that decide whether the graph is usable at all: **42,544 symbols**
+published through `parseFile`, **55,693 edges**, **0** symbols with an empty name, **0**
+bad `SymbolKind` values, **0** relationship endpoints equal to the literal `unknown`,
+**0** self-loops, and **0** files the analyzer read that production published nothing for.
+42,545 symbols and 56,695 edges are produced when the analyzer is called directly, so the
+pipeline drops **1 symbol** and **1,002 edges** and adds **none** — the known
+`keepSymbol` finding, unchanged at HEAD.
+
+Three of the five rows read zero and one reads 0.00%, and neither is a defect in the
+edge:
+
+- **`imports` 0.00% at both ends is arithmetic, not failure.** An `imports` edge targets a
+  **module path** (`google/protobuf/timestamp.proto`), not a declaration, so it cannot
+  resolve against a symbol id. Pass 22 §5 priced these: **253 of the 276** unresolved
+  targets on the binding key name a corpus file by basename, which is the **sample
+  window** (a target naming a `.proto` outside the 842-file walk), 1 is external-shaped,
+  and **22 are unexplained** on 55 edges.
+- **`exports` 0.00%** for the same reason at a smaller scale: 4 edges, all module paths.
+- **`uses` 73.08%** is the per-population figure for a cross-file reference and is not
+  comparable to a single-file figure; §2 of pass 20 gives the corpus-wide 99.58% and the
+  88.57%-to-exactly-one-declaration numbers, and pass 22 §3 explains why the shared
+  instrument's own reading of this column is keyed wrong.
+
+**Heuristic ratio: 0 of 55,693 edges below 0.7 confidence.** Every emitted edge is
+`structural` except the 1,574 `import_based` `imports`, which is a different *kind* of
+evidence rather than a weaker one — the import path is written in the file.
+
+**The one independent oracle, re-run at HEAD.** `uses` is the only emitted type with a
+second implementation behind it: pass 8 adjudicated 11,250 of its targets with `protoc` at
+**99.627%** agreement, naming all 42 disagreements. `protoc` was not installed in this
+environment at the start of this pass (`grpc_tools` absent from the system python), so the
+pass-8 figure is quoted, not re-verified. What *was* re-run at HEAD is the pass-21
+adjudication of the other direction — 45 ids that **two files in one repository publish
+with two distinct declaration texts** — and a real compiler agrees with this lane's
+reading of them: `grpc_tools.protoc` (libprotoc 35.1) **REJECTS 41** as duplicate symbols,
+**ACCEPTS 0**, and **4 are inconclusive** (an unresolved import, so protoc never reached
+the check). Evidence JSON: `validation/m14/measurements/protobuf/classb-protoc-pass23.json`.
+
 ## 9. §8 — restated, with item 2's price corrected
 
 1. **`script/m14/differential.ts:740`** — add the `protobuf` key to `LANGS`:
