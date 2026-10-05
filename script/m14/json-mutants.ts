@@ -160,6 +160,36 @@ const jsonOverridesLineLost = (r: any) => ({
 })
 
 /**
+ * Reverts `overrides` to BARE-NAME endpoints — the state before the third endpoint-form
+ * change on this lane. This is the mutant that class needed and did not have: the suite had
+ * three `overrides` mutants (dropped, unscoped-to-file, prior-line-lost) and none of them
+ * tested the endpoint FORM, so the endpoint change passed 16/16 and 24/24 without a single
+ * registered check objecting. That is the same trap this file already records twice for
+ * `calls` (`calls-callee-any-token`, `calls-runner-substring` became INVISIBLE rather than
+ * caught when `calls` endpoints became paths).
+ *
+ * Caught by json/DuplicateKey, whose `overrides` pins were migrated to `DuplicateKey.repeated`
+ * and whose `forbidRelationships` were migrated with them — leaving the forbids as bare names
+ * would have made the negative control vacuous, since a bare-named forbid can never match a
+ * path-named edge.
+ *
+ * Corpus cost of the bare form, measured by
+ * `validation/m14/fixtures/json/overrides-endpoint-probe.ts` over the whole admitted
+ * population: 22 of 22 targets and 8 of 22 sources stop being qualified paths, and 2 of 22
+ * sources become name-ambiguous (0 under the path form).
+ */
+const jsonOverridesEndpointsAreBareNames = (r: any) => ({
+  ...r,
+  relationships: (r.relationships ?? []).map((x: any) => {
+    if (relType(x) !== "overrides") return x
+    const meta = x.metadata ?? {}
+    const src = typeof meta.ownerName === "string" ? meta.ownerName : String(x.source ?? "")
+    const tgt = typeof meta.key === "string" ? meta.key : String(x.target ?? "")
+    return { ...x, source: src, target: tgt }
+  }),
+})
+
+/**
  * Pass-2 mutants. Four defects the pass-1 suite could not have caught, because the code they
  * break did not exist: the `implements` emitter, the `extends` source, and the two
  * document-level preconditions that keep the inheritance emitter from firing everywhere.
@@ -427,6 +457,14 @@ const jsonArrayItemNamedFromBareName = (r: any) => ({
     description:
       "M14 ontology regression: the `overrides` edge is emitted but `overridesLine` is zeroed, and since both declarations share a name AND a qualified path the prior line is the only thing that distinguishes them — the edge then asserts a replacement without saying what was replaced. Caught by json/DuplicateKey's `meta.overridesLine` pin.",
     transform: jsonOverridesLineLost,
+  },
+  {
+    id: "json/overrides-endpoints-are-bare-names",
+    language: "json",
+    defectClass: "ambiguous-endpoint",
+    description:
+      "M14 ontology regression: `overrides` reverts to bare-name endpoints, violating the lane's own contract row that every relationship type emits QUALIFIED PATHS on both ends. Measured over the whole admitted population, 22 of 22 targets and 8 of 22 sources stop being paths, and 2 of 22 sources become name-ambiguous. The suite had three other `overrides` mutants and none tested endpoint FORM, so the change passed 16/16 and 24/24 with nothing objecting. Caught by json/DuplicateKey, whose `overrides` pins AND `forbidRelationships` were both migrated to the path form.",
+    transform: jsonOverridesEndpointsAreBareNames,
   },
   {
     id: "json/edge-lines-dropped",
