@@ -3284,3 +3284,30 @@ column at all. The true figures are `calls` **2,702 wrong of 5,996 decided** and
 **482 wrong of 1,361 decided**, as tabulated above. The header now names `viaIncl` and `decided` for
 those two columns. A table whose header does not name the quantity under it is the cheapest defect in
 this file to carry and the most expensive to read.
+
+### The same shape in 49 other files, and where it does NOT occur
+
+The leak is a property of *instrument* code, not of the product. Both production paths free their
+trees: `src/ast/engine.ts:1972-1980` deletes in a `finally` at the end of `parseFile`, and
+`src/ast/safety-primitives.ts:408-419` does the same in `parseForSafety`, which is the only caller
+of `ASTEngine.parseTree` — the one entry point that deliberately hands the tree back undeleted
+(`engine.ts:1508`, "the caller owns `tree.delete()`"). So nothing a user of the product sees is
+affected, and `firing-check`'s 1,985-of-1,985 clean population is consistent with that.
+
+Across `validation/m14/fixtures/` and `script/m14/` (excluding `script/m14/tmp/`), **122 files call a
+tree-sitter parse and 49 of them never call `.delete`** — 25 in `script/m14/` (13 of them
+`verify-*.ts` gates), 24 under `validation/m14/fixtures/` across 9 lanes. **This is a candidate list,
+not 49 leaks**: it is a textual test for one call, it cannot see a `finally` reached through a helper,
+and two of the 49 (`script/m14/resumable-walk.ts`, `script/m14/run-fixtures.ts`) are false positives
+whose only match is `parseInt(`/`JSON.parse(`. What turns a candidate into a measurement is
+`tree-lifetime-probe.ts`, which is why it exists as a runnable instrument rather than as a lint.
+
+**The one row worth acting on first is `script/m14/verify-corpus-census.ts`**, because it publishes
+numbers and is shared. At `:220` it parses without freeing and without a `try`, and at `:239` it
+reports `filesScanned: files.length` — the number of files it was *offered*, while two `continue`s
+at `:218` and `:219` (unreadable file, over 800 KB) reduce the population actually parsed. At its
+default `CENSUS_FILES = 60` per language (`:36`) the leak cannot bite: the exhaustion measured above
+needs more than **4,000 cumulative parses in one process** (first throw at 4,028 of 5,955), and each
+language gets its own `P()` parser at `:208`. Run with `--files 4000` for one language it would
+throw `Aborted()` mid-loop and take the whole verifier down with no verdict, rather than reporting the
+reduced population.
