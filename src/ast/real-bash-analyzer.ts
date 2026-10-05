@@ -1153,6 +1153,50 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   /**
+   * Publish, on a `uses` edge, that this file binds `name` as a VARIABLE nowhere.
+   *
+   * ## Why this is not the same as "external"
+   *
+   * The obvious field name here is `isExternal`, and it would be a false claim on a
+   * measured population. Measured on the pinned corpus — 600 `*.sh` files in path order,
+   * production `parseFile`, analyzer digest `6d5542aa6d6640e2` — 490 `uses` edges go to a
+   * name no file in the window declares, and a whole-corpus pass over all 3,748 tracked
+   * bash files found a real declaration for 101 of them:
+   *
+   *     consul/test/integration/connect/envoy/defaults.sh   DEFAULT_REQUIRED_SERVICES  32 edges
+   *     fsharp/eng/common/tools.sh                            HOME                       48 edges
+   *     consul/test/integration/connect/envoy/run-tests.sh   CASE_DIR, CLUSTER, XDS_TARGET
+   *
+   * Those 101 reads are not external. They read a variable that a `source`d file assigns,
+   * and a single-file analyzer cannot see it. Calling them external would tell a consumer
+   * to stop looking for a declaration that exists.
+   *
+   * So the published fact is the one that is true and checkable: **no variable, alias or
+   * local in THIS FILE binds this name.**
+   *
+   * ## Why the field says "variable"
+   *
+   * `declSites` holds variables, aliases and locals and never functions — the same
+   * limitation `resolveReadAgainstFunctionSymbol` is built around (a `$name` read cannot
+   * denote a function). So for a name declared only as a function, "no declaration in this
+   * file" is FALSE while "no VARIABLE binding in this file" is TRUE. The field is named for
+   * the index it is derived from so the row cannot be over-read, and the distinction is the
+   * one a consumer needs: a read that no variable binds is unresolved for a different
+   * reason than one that binds ambiguously, and `targetResolution` already reports the
+   * latter.
+   *
+   * Published on both states, as `resolvedWithinFile` is, so a consumer reads one field
+   * rather than inferring the negative from an absent one.
+   */
+  private declareAbsenceOfVariableBinding(
+    declSites: Map<string, { owner: string; line: number; kind: string }[]>,
+    name: string,
+  ): Record<string, unknown> {
+    const cands = declSites.get(name)
+    return { variableDeclaredInFile: cands !== undefined && cands.length > 0 }
+  }
+
+  /**
    * A `$name` read in a file that also declares `name` as a FUNCTION.
    *
    * `resolveDeclaration` declines here, and correctly so: it is asked "is this name
@@ -1652,6 +1696,11 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
           // a consumer can tell `${BASH_SOURCE[0]}` from a project variable
           // instead of seeing 23 undiagnosable edges to one shell name.
           ...(SHELL_DEFINED_VARS.has(name) ? { isShellDefined: true } : {}),
+          // Why a `uses` edge does not name a line, when the reason is that this file
+          // binds the name as a variable nowhere. `resolveDeclaration` publishes nothing
+          // in that case and the edge looks identical to one that resolved, so the
+          // population is unreadable from the row alone.
+          ...this.declareAbsenceOfVariableBinding(declSites, name),
           // WHICH declaration, when this file has more than one. A `uses` edge
           // puts the READ's line on the row, which is a different line from the
           // declaration, so without this the declaration is unrecoverable from
